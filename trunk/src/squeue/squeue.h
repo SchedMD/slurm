@@ -48,28 +48,40 @@
 
 #include <src/api/slurm.h>
 #include <src/common/hostlist.h>
+#include <src/common/list.h>
 #include <src/common/log.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 #include <src/common/list.h>
+#include <src/squeue/print.h>
 
-#include "print.h"
+struct job_step {
+	uint32_t job_id;
+	uint32_t step_id;
+};
+typedef struct job_step squeue_job_step_t;
 
 struct squeue_parameters {
 	bool job_flag;
 	bool step_flag;
-	char* jobs;
-	char* steps;
-	uint16_t step;
-	uint32_t job;
-	enum job_states state;
+	bool iterate;
+	bool long_list;
 	int verbose;
-	char* format;
+
+	char* jobs;
 	char* partitions;
+	char* states;
+	char* steps;
+	char* users;
+	char* format;
+
+	List  job_list;
+	List  part_list;
+	List  state_list;
+	List  step_list;
+	List  user_list;
 };
 
-int parse_state( char* str, enum job_states* states );
 int parse_command_line( int argc, char* argv[] );
-void print_options();
 
 #endif
