@@ -33,6 +33,7 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			slurm_protocol_util.c	\
 			slurm_protocol_socket_implementation.c	\
 			slurm_protocol_defs.c	\
+			slurm_protocol_errno.c		\
 			$(elan_sources)
 
 noinst_HEADERS = 	xmalloc.h 	\
@@ -56,6 +57,8 @@ noinst_HEADERS = 	xmalloc.h 	\
 			slurm_protocol_mongo_common.h	\
 			slurm_protocol_interface.h	\
 			slurm_protocol_errno.h		\
+			slurm_errno.h		\
+			slurm_return_codes.h		\
 			qsw.h	
 
 EXTRA_libcommon_la_SOURCES =		\
