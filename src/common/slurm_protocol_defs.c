@@ -299,9 +299,9 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		xfree(msg->argv);
 	}
 	xfree(msg->global_task_ids);
+	xfree(msg->ifname);
 	xfree(msg->ofname);
-	xfree(msg->ofname);
-	xfree(msg->ofname);
+	xfree(msg->efname);
 
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
