@@ -187,7 +187,6 @@ main (int argc, char *argv[])
         if (send_registration_msg(SLURM_SUCCESS) < 0) 
 		error("Unable to register with slurm controller");
 
-
 	_install_fork_handlers();
 	list_install_fork_handlers();
 
@@ -216,11 +215,11 @@ static void
 _msg_engine()
 {
 	slurm_fd sock;
-	slurm_addr cli;
 
 	while (!_shutdown) {
-		if ((sock = slurm_accept_msg_conn(conf->lfd, &cli)) >= 0) {
-			_handle_connection(sock, &cli);
+		slurm_addr *cli = xmalloc (sizeof (*cli));
+		if ((sock = slurm_accept_msg_conn(conf->lfd, cli)) >= 0) {
+			_handle_connection(sock, cli);
 			continue;
 		}
 		/*
@@ -341,6 +340,7 @@ _service_connection(void *arg)
 		error ("close(%d): %m", con->fd);
 
     done:
+	xfree(con->cli_addr);
 	xfree(con);
 	slurm_free_msg(msg);
 	_decrement_thd_count();
@@ -350,20 +350,23 @@ _service_connection(void *arg)
 int
 send_registration_msg(uint32_t status)
 {
+	int retval = SLURM_SUCCESS;
 	slurm_msg_t req;
 	slurm_msg_t resp;
-	slurm_node_registration_status_msg_t msg;
+	slurm_node_registration_status_msg_t *msg = xmalloc (sizeof (*msg));
 
-	_fill_registration_msg(&msg);
-	msg.status   = status;
+	_fill_registration_msg(msg);
+	msg->status  = status;
 
 	req.msg_type = MESSAGE_NODE_REGISTRATION_STATUS;
-	req.data     = &msg;
+	req.data     = msg;
 
 	if (slurm_send_recv_controller_msg(&req, &resp) < 0) {
 		error("Unable to register: %m");
-		return SLURM_FAILURE;
+		retval = SLURM_FAILURE;
 	}
+
+	slurm_free_node_registration_status_msg (msg);
 
 	/* XXX look at response msg
 	 */
@@ -379,7 +382,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	job_step_t  *s;
 	int          n;
 
-	msg->node_name = conf->hostname;
+	msg->node_name = xstrdup (conf->hostname);
 
 	get_procs(&msg->cpus);
 	get_memory(&msg->real_memory_size);
