@@ -94,8 +94,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	uint16_t conn_type, node_use, rotate, target_size = 1;
 	uint32_t req_procs = job_ptr->num_procs;
 
-	sort_bgl_record_inc_size(bgl_list);
-
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
 		SELECT_DATA_CONN_TYPE, &conn_type);
 	select_g_get_jobinfo(job_ptr->select_jobinfo,
