@@ -168,7 +168,7 @@ _session_mgr(slurmd_job_t *job)
 	}
 
 	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to `%s': %m: going to /tmp instead",
+		error("couldn't chdir to '%s': %m: going to /tmp instead",
 		      job->cwd);
 		if (chdir("/tmp") < 0) {
 			error("couldn't chdir to /tmp either. dying.");
