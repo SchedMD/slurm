@@ -371,7 +371,7 @@ static void  _init_config(void)
 static void *_slurmctld_signal_hand(void *no_data)
 {
 	int sig;
-	int error_code;
+	int rc;
 	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
 	sigset_t set;
 	/* Locks: Read configuration */
@@ -400,7 +400,9 @@ static void *_slurmctld_signal_hand(void *no_data)
 
 	while (1) {
 		xsignal_sigset_create(sig_array, &set);
-		sigwait(&set, &sig);
+		rc = sigwait(&set, &sig);
+		if (rc == EINTR)
+			continue;
 		switch (sig) {
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
@@ -417,10 +419,10 @@ static void *_slurmctld_signal_hand(void *no_data)
 			 * restart the (possibly new) plugin.
 			 */
 			lock_slurmctld(config_write_lock);
-			error_code = read_slurm_conf(0);
-			if (error_code)
+			rc = read_slurm_conf(0);
+			if (rc)
 				error("read_slurm_conf: %s",
-				      slurm_strerror(error_code));
+				      slurm_strerror(rc));
 			else {
 				_update_cred_key();
 				set_slurmctld_state_loc();
