@@ -1524,8 +1524,10 @@ void make_node_idle(struct node_record *node_ptr,
 		last_job_update = time (NULL);
 		bit_clear(job_ptr->node_bitmap, inx);
 		if (job_ptr->node_cnt) {
-			if ((--job_ptr->node_cnt) == 0)
+			if ((--job_ptr->node_cnt) == 0) {
+				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);
+			}
 		} else {
 			error("node_cnt underflow on job_id %u", 
 			      job_ptr->job_id);

@@ -531,7 +531,8 @@ static void *_thread_per_node_rpc(void *args)
 
 	switch (rc) {
 	case SLURM_SUCCESS:
-		debug3("agent processed RPC to node %s", thread_ptr->node_name);
+		debug3("agent processed RPC to node %s", 
+			thread_ptr->node_name);
 		thread_state = DSH_DONE;
 		break;
 	case ESLURMD_EPILOG_FAILED:
