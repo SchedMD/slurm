@@ -13,6 +13,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
@@ -87,7 +88,34 @@ main (int argc, char *argv[])
 	printf ("NOTE: we expect this to print \"leftover\"\n");
 	report_leftover (in_line, 0);
 
-	printf ("\n\n_testing buffer i/o functions...\n");
+	i = 89;
+	strcpy (in_line,
+		"test1=56 left_over test4=my,string test5=1.234");
+	error_code = slurm_parser (in_line, 
+		"test1=", 'd', &int_found, 
+		"test2=", 'd', &i, 
+		"test4=", 's', &string_found,
+		"test5=", 'f', &float_found,
+		"END");
+	if (error_code != 0)
+		printf ("slurm_parser error %d\n", error_code);
+	if (int_found != 56)
+		printf ("load_integer parse error on test6, got %d\n",
+			int_found);
+	if (i != 89)
+		printf ("load_integer parse error on test7, got %d\n",
+			int_found);
+	if (strcmp (string_found, "my,string") != 0)
+		printf ("load_string parse error on test8, got :%s:\n",
+			string_found);
+	xfree (string_found);
+	if ((float_found - 1.234) > 0.001)
+		printf ("load_float parse error on test9, got %f\n",
+			float_found);
+	printf ("NOTE: we expect this to print \"leftover\"\n");
+	report_leftover (in_line, 0);
+
+	printf ("testing buffer i/o functions...\n");
 	buffer = NULL;
 	buffer_offset = buffer_size = 0;
 	error_code =
@@ -134,6 +162,21 @@ main (int argc, char *argv[])
 	exit (0);
 }
 #endif
+
+
+
+/*
+ * block_or_cycle - map string into integer
+ * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
+ * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
+ */
+int
+block_or_cycle (char *in_string)
+{
+	if (strcmp (in_string, "BLOCK") == 0) return 1;
+	if (strcmp (in_string, "CYCLE")  == 0) return 0;
+	return -1;
+}
 
 
 /*
@@ -266,6 +309,7 @@ load_string (char **destination, char *keyword, char *in_line)
 	}
 	return 0;
 }
+
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf  
@@ -429,6 +473,60 @@ report_leftover (char *in_line, int line_num)
 
 
 /* 
+ * slurm_parser - parse the supplied specification into keyword/value pairs
+ *	only the keywords supplied will be searched for. the supplied specification
+ *	is altered, overwriting the keyword and value pairs with spaces.
+ * input: spec - pointer to the string of specifications
+ *	sets of three values (as many sets as required): keyword, type, value 
+ *	keyword - string with the keyword to search for including equal sign 
+ *		(e.g. "name=")
+ *	type - char with value 'd' for int, 'f' for float, 's' for string
+ *	value - pointer to storage location for value (char **) for type 's'
+ * output: spec - everything read is overwritten by speces
+ *	value - set to read value (unchanged if keyword not found)
+ *	return - 0 if no error, otherwise errno code
+ * NOTE: terminate with a keyword value of "END"
+ * NOTE: values of type (char *) are xfreed if non-NULL. caller must xfree any 
+ *	returned value
+ */
+int
+slurm_parser (char *spec, ...)
+{
+	va_list ap;
+	char *keyword, **str_ptr;
+	int error_code, *int_ptr, type;
+	float *float_ptr;
+	
+	error_code = 0;
+	va_start(ap, spec);
+	while (error_code == 0) {
+		keyword = va_arg(ap, char *);
+		if (strcmp (keyword, "END") == 0)
+			break;
+		type = va_arg(ap, int);
+		switch (type) {
+		case 'd':
+			int_ptr = va_arg(ap, int *);
+			error_code = load_integer(int_ptr, keyword, spec);
+			break;
+		case 'f':
+			float_ptr = va_arg(ap, float *);
+			error_code = load_float(float_ptr, keyword, spec);
+			break;
+		case 's':
+			str_ptr = va_arg(ap, char **);
+			error_code = load_string(str_ptr, keyword, spec);
+			break;
+		default:
+			fatal ("parse_spec: invalid type %c", type);
+		}
+	}
+	va_end(ap);
+	return error_code;
+}
+
+
+/* 
  * write_buffer - write the specified line to the specified buffer, 
  *               enlarging the buffer as needed
  * input: buffer - pointer to write buffer, must be allocated by alloc()
@@ -456,4 +554,17 @@ write_buffer (char **buffer, int *buffer_offset, int *buffer_size, char *line)
 	memcpy (buffer[0] + (*buffer_offset), line, line_size);
 	(*buffer_offset) += line_size;
 	return 0;
+}
+
+/*
+ * yes_or_no - map string into integer
+ * input: in_string: pointer to string containing "YES" or "NO"
+ * output: returns 1 for "YES", 0 for "NO", -1 otherwise
+ */
+int
+yes_or_no (char *in_string)
+{
+	if (strcmp (in_string, "YES") == 0) return 1;
+	if (strcmp (in_string, "NO")  == 0) return 0;
+	return -1;
 }

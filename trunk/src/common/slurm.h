@@ -33,6 +33,7 @@
 #define CONTROL_DAEMON  	"/usr/local/slurm/slurmd.control"
 #define CONTROLLER_TIMEOUT 	300
 #define EPILOG			""
+#define FAST_SCHEDULE		1
 #define HASH_BASE		10
 #define HEARTBEAT_INTERVAL	60
 #define INIT_PROGRAM		""
@@ -58,6 +59,7 @@ extern char *backup_controller;	/* name of computer acting as slurm backup contr
 #define NODE_STRUCT_FORMAT "NodeName=%s Atate=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
+#define NO_VAL   (-9812)
 struct config_record {
 	unsigned magic;		/* magic cookie to test data integrity */
 	int cpus;		/* count of cpus running on the node */
@@ -135,7 +137,7 @@ extern struct part_record *default_part_loc;	/* location of default partition */
 /* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
 #define JOB_STRUCT_VERSION 1
 #define JOB_STRUCT_FORMAT1 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f\n"
-#define JOB_STRUCT_FORMAT2 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f NumProcs=%d NumNodes=%d ReqNodes=%s Features=%s Groups=%s Shared=%d Contiguous=%d MinProcs=%d MinMemory=%d MinTmpDisk=%d Dist=%d Script=%s ProcsPerTask=%d TotalProcs=%d\n"
+#define JOB_STRUCT_FORMAT2 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f TotalProcs=%d TotalNodes=%d ReqNodes=%s Features=%s Shared=%d Contiguous=%d MinProcs=%d MinMemory=%d MinTmpDisk=%d Distribution=%d Script=%s ProcsPerTask=%d TotalProcs=%d\n"
 extern time_t last_job_update;	/* time of last update to part records */
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
@@ -163,7 +165,6 @@ struct job_details {
 	int num_nodes;			/* minimum number of nodes */
 	char *nodes;			/* required nodes */
 	char *features;			/* required features */
-	char *groups;			/* groups the user belongs to, partition filter */
 	int shared;			/* desires shared nodes, 1=true, 0=false */
 	int contiguous;			/* requires contiguous nodes, 1=true, 0=false */
 	int min_procs;			/* minimum processors per node, MB */
@@ -207,14 +208,29 @@ extern List job_list;			/* list of job_record entries */
 extern int bitmap2node_name (bitstr_t *bitmap, char **node_list);
 
 /*
- * create_config_record - create a config_record entry, append it to the config_list, 
- *	and set is values to the defaults in default_config_record.
- * input: error_code - pointer to an error code
- * output: returns pointer to the config_record
- *         error_code - set to zero if no error, errno otherwise
- * NOTE: the pointer returned is allocated memory that must be freed when no longer needed.
+ * block_or_cyclic - map string into integer
+ * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
+ * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
  */
-extern struct config_record *create_config_record (int *error_code);
+extern int block_or_cyclic (char *in_string);
+
+/*
+ * count_cpus - report how many cpus are associated with the identified nodes 
+ * input: bitmap - a node bitmap
+ * output: returns a cpu count
+ * globals: node_record_count - number of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ */
+extern int  count_cpus (unsigned *bitmap);
+
+/*
+ * create_config_record - create a config_record entry and set is values to the defaults.
+ * output: returns pointer to the config_record
+ * global: default_config_record - default configuration values
+ * NOTE: memory allocated will remain in existence until delete_config_record() is called 
+ *	to deletet all configuration records
+ */
+extern struct config_record *create_config_record (void);
 
 /* 
  * create_job_record - create an empty job_record including job_details.
@@ -224,34 +240,34 @@ extern struct config_record *create_config_record (int *error_code);
  *         returns a pointer to the record or NULL if error
  * global: job_list - global job list
  *         job_count - number of jobs in the system
- * NOTE: allocates memory that should be xfreed with list_delete_job
+ * NOTE: allocates memory that should be xfreed with either
+ *	delete_job_record or list_delete_job
  */
-extern struct job_record *create_job_record (int *error_code);
+extern struct job_record * create_job_record (int *error_code);
 
 /* 
  * create_node_record - create a node record
  * input: error_code - location to store error value in
  *        config_point - pointer to node's configuration information
  *        node_name - name of the node
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or null if error
+ * output: returns a pointer to the record or null if error
  * note the record's values are initialized to those of default_node_record, node_name and 
  *	config_point's cpus, real_memory, and tmp_disk values
  * NOTE: allocates memory that should be freed with delete_part_record
  */
-extern struct node_record *create_node_record (int *error_code,
-					       struct config_record
+extern struct node_record *create_node_record (struct config_record
 					       *config_point,
 					       char *node_name);
 
 /* 
  * create_part_record - create a partition record
- * input: error_code - location to store error value in
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or null if error
+ * output: returns a pointer to the record or NULL if error
+ * global: default_part - default partition parameters
+ *         part_list - global partition list
  * NOTE: the record's values are initialized to those of default_part
+ * NOTE: allocates memory that should be xfreed with delete_part_record
  */
-extern struct part_record *create_part_record (int *error_code);
+extern struct part_record *create_part_record (void);
 
 /* 
  * delete_job_record - delete record for job with specified job_id
@@ -399,6 +415,14 @@ extern int init_node_conf ();
  */
 extern int init_part_conf ();
 
+/* 
+ * is_key_valid - determine if supplied key is valid
+ * input: key - a slurm key acquired by user root
+ * output: returns 1 if key is valid, 0 otherwise
+ * NOTE: this is only a placeholder for a future function
+ */
+extern int  is_key_valid (int key);
+
 /* job_lock - lock the job information */
 extern void job_lock ();
 
@@ -463,6 +487,23 @@ extern int load_integer (int *destination, char *keyword, char *in_line);
  */
 extern int load_string (char **destination, char *keyword, char *in_line);
 
+/*
+ * match_feature - determine if the desired feature (seek) is one of those available
+ * input: seek - desired feature
+ *        available - comma separated list of features
+ * output: returns 1 if found, 0 otherwise
+ */
+extern int  match_feature (char *seek, char *available);
+
+/*
+ * match_group - determine if the user is a member of any groups permitted to use this partition
+ * input: allow_groups - comma delimited list of groups permitted to use the partition, 
+ *			NULL is for all groups
+ *        user_groups - comma delimited list of groups the user belongs to
+ * output: returns 1 if user is member, 0 otherwise
+ */
+extern int match_group (char *allow_groups, char *user_groups);
+
 /* node_lock - lock the node and configuration information */
 extern void node_lock ();
 
@@ -491,6 +532,23 @@ extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
  * NOTE: the caller must xfree memory at node_list when no longer required iff no error
  */
 extern int  node_name2list (char *node_names, char **node_list, int *node_count);
+
+/* 
+ * parse_job_specs - pick the appropriate fields out of a job request specification
+ * input: job_specs - string containing the specification
+ *        req_features, etc. - pointers to storage for the specifications
+ * output: req_features, etc. - the job's specifications
+ *         returns 0 if no error, errno otherwise
+ * NOTE: the calling function must xfree memory at req_features[0], req_node_list[0],
+ *	job_name[0], req_group[0], and req_partition[0]
+ */
+extern int parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
+		 char **job_name, char **req_group, char **req_partition,
+		 int *contiguous, int *req_cpus, int *req_nodes,
+		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
+		 int *shared, int *dist, char **script, int *time_limit, 
+		 int *procs_per_task, char **job_id, float *priority, 
+		 int *user_id);
 
 /* part_lock - lock the partition information */
 extern void part_lock ();
@@ -534,6 +592,25 @@ extern int read_SLURM_CONF (char *file_name);
  * output: none
  */
 extern void report_leftover (char *in_line, int line_num);
+
+/* 
+ * slurm_parser - parse the supplied specification into keyword/value pairs
+ *	only the keywords supplied will be searched for. the supplied specification
+ *	is altered, overwriting the keyword and value pairs with spaces.
+ * input: spec - pointer to the string of specifications
+ *	sets of three values (as many sets as required): keyword, type, value 
+ *	keyword - string with the keyword to search for including equal sign 
+ *		(e.g. "name=")
+ *	type - char with value 'd' for int, 'f' for float, 's' for string
+ *	value - pointer to storage location for value (char **) for type 's'
+ * output: spec - everything read is overwritten by speces
+ *	value - set to read value (unchanged if keyword not found)
+ *	return - 0 if no error, otherwise errno code
+ * NOTE: terminate with a keyword value of "END"
+ * NOTE: values of type (char *) are xfreed if non-NULL. caller must xfree any 
+ *	returned value
+ */
+extern int slurm_parser (char *spec, ...);
 
 /*
  * update_job - update a job's parameters
@@ -588,5 +665,12 @@ extern int validate_node_specs (char *node_name,
  */
 extern int write_buffer (char **buffer, int *buffer_offset, int *buffer_size,
 			 char *line);
+
+/*
+ * yes_or_no - map string into integer
+ * input: in_string: pointer to string containing "YES" or "NO"
+ * output: returns 1 for "YES", 0 for "NO", -1 otherwise
+ */
+extern int yes_or_no (char *in_string);
 
 #endif /* !_HAVE_SLURM_H */
