@@ -93,6 +93,8 @@ typedef enum {
 	RESPONSE_PARTITION_INFO,
 	REQUEST_ACCTING_INFO,
 	RESPONSE_ACCOUNTING_INFO,
+	REQUEST_JOB_ID,
+	RESPONSE_JOB_ID,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -329,6 +331,14 @@ typedef struct batch_job_launch_msg {
 				 *   name=value pairs, one per line */
 } batch_job_launch_msg_t;
 
+typedef struct job_id_request_msg {
+	uint32_t job_pid;	/* local process_id of a job */
+} job_id_request_msg_t;
+
+typedef struct job_id_response_msg {
+	uint32_t job_id;	/* slurm job_id */
+} job_id_response_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -369,6 +379,9 @@ slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 
 void inline slurm_free_job_info(job_info_t * job);
 void inline slurm_free_job_info_members(job_info_t * job);
+
+void inline slurm_free_job_id_request_msg(job_id_request_msg_t * msg);
+void inline slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 
 void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 

@@ -66,6 +66,16 @@ void slurm_free_return_code_msg(return_code_msg_t * msg)
 	xfree(msg);
 }
 
+void slurm_free_job_id_request_msg(job_id_request_msg_t * msg)
+{
+	xfree(msg);
+}
+
+void slurm_free_job_id_response_msg(job_id_response_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 {
 	int i;
