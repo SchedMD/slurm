@@ -196,7 +196,7 @@ void * task_exec_thread ( void * arg )
 			/*1*/setup_parent_pipes ( task_start->pipes ) ;
 			info ( "before waitpid ") ;
 			/*2*/waitpid ( cpid , & task_return_code , 0 ) ;
-			info ( "before wait_on_io_threads " ) ;
+			info ( "taskid: %i before wait_on_io_threads " , cpid ) ;
 			/*3*/wait_on_io_threads ( task_start ) ;
 			info ( "before cleanup_parent_pipes " ) ;
 			/*4*/cleanup_parent_pipes (  task_start->pipes ) ;
