@@ -54,6 +54,7 @@
 #include "src/slurmd/smgr.h"
 #include "src/slurmd/ulimits.h"
 #include "src/slurmd/interconnect.h"
+#include "src/slurmd/setenvpf.h"
 #include "src/slurmd/io.h"
 
 /*
@@ -68,6 +69,7 @@ static int   _send_exit_status(slurmd_job_t *job, int fd, int id, int status);
 static int   _writen(int fd, void *buf, size_t nbytes);
 static int   _unblock_all_signals(void);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
+static int   _setup_env(slurmd_job_t *job, int taskid);
 
 /* parallel debugger support */
 static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
@@ -262,6 +264,9 @@ _exec_task(slurmd_job_t *job, int i)
 		if (interconnect_env(job, i) < 0)
 			error("error establishing env for interconnect: %m");
 
+		if (_setup_env(job, i) < 0)
+			error("error establishing SLURM env vars: %m");
+
 		_pdebug_stop_current(job);
 	}
 
@@ -326,6 +331,27 @@ _send_exit_status(slurmd_job_t *job, int fd, int tid, int status)
 	debug("task %d exited with status %d", tid, status);
 
 	return len;
+}
+
+
+static int
+_setup_env(slurmd_job_t *job, int taskid)
+{
+	int cnt = (int) job->envc;
+	task_info_t *t = job->task[taskid];
+
+	if (setenvpf(&job->env, &cnt, "SLURM_NODEID=%d", job->nodeid) < 0)
+		return -1;
+	if (setenvpf(&job->env, &cnt, "SLURM_PROCID=%d", t->gid     ) < 0)
+		return -1;
+	if (setenvpf(&job->env, &cnt, "SLURM_NNODES=%d", job->nnodes) < 0)
+		return -1;
+	if (setenvpf(&job->env, &cnt, "SLURM_NPROCS=%d", job->nprocs) < 0)
+		return -1;
+
+	job->envc = (uint16_t) cnt;
+
+	return SLURM_SUCCESS;
 }
 
 /*

@@ -149,6 +149,9 @@ int interconnect_env(slurmd_job_t *job, int taskid)
 		return -1;
 	if (setenvpf(&job->env, &cnt, "RMS_NPROCS=%d", job->nprocs) < 0)
 		return -1;
+
+	job->envc = (uint16_t) cnt;
+
 	return 0;
 }
 
