@@ -11,7 +11,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -102,6 +102,12 @@ if {[string compare $host_3 ""] != 0} {
 	send_user "\nFAILURE: Started more than three tasks\n"
 	set exit_code   1	
 }
+
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
+	exit $exit_code
+}
+
 set dup_hostname 0
 if {[string compare $host_0 $host_1] == 0} {
 	set dup_hostname 1	

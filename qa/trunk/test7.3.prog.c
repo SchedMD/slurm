@@ -97,6 +97,10 @@ int main (int argc, char *argv[])
 		tasks = atoi(argv[3]);
 	if (tasks < 1)
 		tasks = max_nodes * TASKS_PER_NODE;
+	if (tasks < max_nodes) {
+		fprintf(stderr, "Invalid task count argument\n");
+		exit(1);
+	}
 	printf("Starting %d tasks on %d nodes\n", tasks, nodes);
 
 	/* Set up step configuration */

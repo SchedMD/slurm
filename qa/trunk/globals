@@ -332,3 +332,21 @@ proc wait_for_job { job_id state } {
 		}
 	}
 }
+
+################################################################
+#
+# Proc: test_front_end
+#
+# Purpose: Determine if the execution host is one in which the
+# slurmd daemon executes on a front-end node rather than the 
+# compute hosts (e.g. Blue Gene systems).
+#
+# Returns 1 if the system uses a front-end, 0 otherwise
+#
+################################################################
+
+proc test_front_end { } {
+# Need to add code to test for specific libraries or header files
+	return 0
+}
+

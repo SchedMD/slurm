@@ -63,6 +63,10 @@ if {[file executable $totalviewcli] == 0} {
 	send_user "\nWARNING: $totalviewcli does not exists\n"
 	exit 0
 }
+if {[test_front_end] != 0} {
+        send_user "\nWARNING: This test is incompatable with front-end systems\n"
+        exit 0
+}
 
 #
 # Delete left-over program and rebuild it
