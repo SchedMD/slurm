@@ -53,7 +53,7 @@ void get_part(void)
 		    slurm_load_partitions((time_t) NULL, &new_part_ptr, 0);
 	if (error_code) {
 		if (quiet_flag != 1) {
-			clear_window(text_win);
+			wclear(text_win);
 			ycord = text_win->_maxy / 2;
 			xcord = text_win->_maxx;
 			mvwprintw(text_win, ycord, 1,
@@ -191,24 +191,25 @@ int print_text_part(partition_info_t * part_ptr)
 	prefixlen = i;
 	while (nodes[i] != '\0') {
 		width = text_win->_maxx - xcord;
-		
-                if (!prefixlen && nodes[i] == '[' && nodes[i - 1] == ',')
+
+		if (!prefixlen && nodes[i] == '[' && nodes[i - 1] == ',')
 			prefixlen = i + 1;
-		
-                if (nodes[i-1] == ',' && (width - 10) <= 0) {
+
+		if (nodes[i - 1] == ',' && (width - 12) <= 0) {
 			ycord++;
 			xcord = tempxcord + prefixlen;
-		} else if(xcord>text_win->_maxx) {
-                	ycord++;
+		} else if (xcord > text_win->_maxx) {
+			ycord++;
 			xcord = tempxcord + prefixlen;
-                }
-                
-                  
-		if ((printed =  mvwaddch(text_win, ycord, xcord, nodes[i])) < 0)
-                  return printed;
+		}
+
+
+		if ((printed =
+		     mvwaddch(text_win, ycord, xcord, nodes[i])) < 0)
+			return printed;
 		xcord++;
-		
-                i++;
+
+		i++;
 	}
 
 	xcord = 1;
