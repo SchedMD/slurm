@@ -626,6 +626,20 @@ io_thr_create(job_t *job)
 	return SLURM_SUCCESS;
 }
 
+static bool 
+_is_fd_ready(int fd)
+{
+	struct pollfd pfd[1];
+	int    rc;
+
+	pfd[0].fd     = fd;
+	pfd[0].events = POLLIN;
+
+	rc = poll(pfd, 1, 10);
+
+	return ((rc == 1) && (pfd[0].revents & POLLIN));
+}
+
 
 static void
 _accept_io_stream(job_t *job, int i)
@@ -644,6 +658,17 @@ _accept_io_stream(job_t *job, int i)
 		slurm_io_stream_header_t hdr;
 		Buf buffer;
 
+		/* 
+		 * Return early if fd is not now ready
+		 * This ensures that we never block when trying 
+		 * to read the io header below.
+		 *
+		 * (XXX: This should eventually be fixed by making
+		 *  reads of IO headers nonblocking)
+		 */
+		if (!_is_fd_ready(fd))
+			return;
+
 		while ((sd = accept(fd, &addr, &size)) < 0) {
 			if (errno == EINTR)
 				continue;
@@ -659,6 +684,8 @@ _accept_io_stream(job_t *job, int i)
 
 		sin = (struct sockaddr_in *) &addr;
 		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
+
+		debug3("Accepted IO connection: ip=%s sd=%d", buf, sd); 
 
 		buffer = init_buf(len);
 		size_read = _readn(sd, buffer->head, len); 

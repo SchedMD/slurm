@@ -852,7 +852,7 @@ static void _opt_args(int ac, char **av)
 			break;
 
 		case OPT_CDDIR:
-			free(opt.cwd);
+			xfree(opt.cwd);
 			opt.cwd = strdup(arg);
 			break;
 

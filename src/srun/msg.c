@@ -64,8 +64,8 @@
 
 static time_t time_first_launch = 0;
 
-static int tasks_exited = 0;
-static uint32_t slurm_user_id;
+static int   tasks_exited = 0;
+static uid_t slurm_uid;
 
 static void	_accept_msg_connection(job_t *job, int fdnum);
 static void	_confirm_launch_complete(job_t *job);
@@ -412,8 +412,10 @@ static char *   _taskid2hostname (int task_id, job_t * job)
 static void
 _handle_msg(job_t *job, slurm_msg_t *msg)
 {
-	uid_t    req_uid = slurm_auth_uid(msg->cred);
-	if ((req_uid != slurm_user_id) && (req_uid != 0)) {
+	uid_t req_uid = slurm_auth_uid(msg->cred);
+	uid_t uid     = getuid();
+
+	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {
 		error ("Security violation, slurm message from uid %u", 
 		       (unsigned int) req_uid);
 		return;
@@ -547,7 +549,7 @@ msg_thr(void *arg)
 	job_t *job = (job_t *) arg;
 
 	debug3("msg thread pid = %ld", getpid());
-	slurm_user_id = slurm_get_slurm_user_id();
+	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	_msg_thr_poll(job);
 	return (void *)1;
 }
