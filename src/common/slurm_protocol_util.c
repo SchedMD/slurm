@@ -6,6 +6,7 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>
+#include <src/common/slurm_authentication.h>
 #include <src/common/log.h>
 
 /* checks to see that the specified header was sent from a node running the same version of the protocol as the current node */
@@ -25,6 +26,12 @@ void init_header ( header_t * header , slurm_msg_type_t msg_type , uint16_t flag
 	header -> version = SLURM_PROTOCOL_VERSION ;
 	header -> flags = flags ;
 	header -> msg_type = msg_type ;
+}
+
+void update_header ( header_t * header , uint32_t cred_length , uint32_t msg_length )
+{
+	header -> cred_length = cred_length ;
+	header -> body_length = msg_length ;
 }
 
 /* checks to see that the specified header was sent from a node running the same version of the protocol as the current node */

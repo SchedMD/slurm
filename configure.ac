@@ -178,6 +178,23 @@ AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$slurmconf",
 
 
 
+dnl check for whether to include authd support
+dnl
+AC_MSG_CHECKING(whether to include authd support)
+AC_ARG_WITH(authd,
+  AC_HELP_STRING([--with-authd],[compile with authd support]),
+  [ case "${withval}" in
+      yes) authd=yes ;;
+      no)  authd=no ;;
+      *) AC_MSG_ERROR([bad value ${enableval} for --with-authd]) ;;
+    esac
+  ]
+)
+AC_MSG_RESULT(${authd=no})
+AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
+
+
+
 dnl check for whether to include Elan support
 dnl
 AC_MSG_CHECKING(whether to include Elan support)

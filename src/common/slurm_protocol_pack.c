@@ -32,6 +32,7 @@
 #include <src/common/bitstring.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/slurm_authentication.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
 #include <src/common/xmalloc.h>
@@ -50,6 +51,8 @@ void pack_header ( header_t * header, char ** buffer , uint32_t * length )
 {
 	pack16 ( header -> version , ( void ** ) buffer , length ) ;
 	pack16 ( header -> flags , ( void ** ) buffer , length ) ;
+        pack16 ( (uint16_t)header -> cred_type , ( void ** ) buffer , length ) ;
+	pack32 ( header -> cred_length ,( void ** ) buffer , length ) ;
 	pack16 ( (uint16_t)header -> msg_type , ( void ** ) buffer , length ) ;
 	pack32 ( header -> body_length , ( void ** ) buffer , length ) ;
 }
@@ -66,7 +69,10 @@ void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 	unpack16 ( & header -> version , ( void ** ) buffer , length ) ;
 	unpack16 ( & header -> flags , ( void ** ) buffer , length ) ;
 	unpack16 ( & tmp , ( void ** ) buffer , length ) ;
-	header -> msg_type = (slurm_msg_type_t )tmp;
+	header -> cred_type = (slurm_credential_type_t ) tmp ;
+	unpack32 ( & header -> cred_length , ( void ** ) buffer , length ) ;
+	unpack16 ( & tmp , ( void ** ) buffer , length ) ;
+	header -> msg_type = (slurm_msg_type_t ) tmp ;
 	unpack32 ( & header -> body_length , ( void ** ) buffer , length ) ;
 }
 
