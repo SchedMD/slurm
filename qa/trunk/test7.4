@@ -78,13 +78,17 @@ exec $mpicc -o $test_prog ${test_prog}.c
 # Now run totalviewcli (command line interface to TotalView)
 #
 set matches 0
+set no_capability 0
 set timeout $max_job_delay
-spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 $test_prog
+spawn $totalviewcli -verbosity info -e $no_bulk $srun -a -n4 -N1-2 -O $test_prog
 expect {
 	-re "d1.<>" {
 		if {$matches == 0} {
 			incr matches
 			send "G\n"
+		}
+		if {$no_capability != 0} {
+			send "quit\n"
 		}
 		exp_continue
 	}
@@ -100,6 +104,10 @@ expect {
 	}
 	-re "I just received msg from Rank" {
 		incr matches
+		exp_continue
+	}
+	-re "elan_init: No capability, can't continue" {
+		incr no_capability
 		exp_continue
 	}
 	-re "Process 1 has exited" {
@@ -119,6 +127,10 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$no_capability != 0} {
+	send_user "\nWARNING: Unable to run test with present configuration\n"
+	exit 0
 }
 if {$matches != 9} {
 	send_user "\nFAILURE: totalviewcli operation matches = $matches\n"
