@@ -60,8 +60,7 @@
 #include "bgl_job_run.h"
 #include "state_test.h"
 
-#define PSETS_PER_BP 8
-#define USER_NAME "nobody"
+#define USER_NAME "slurm"
 
 /* Global variables */
 extern rm_BGL_t *bgl;
@@ -69,7 +68,7 @@ extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
-extern char *change_numpsets;
+extern int numpsets;
 extern pa_system_t *pa_system_ptr;
 extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
 
@@ -80,7 +79,7 @@ extern bool agent_fini;
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
 
-typedef struct {
+typedef struct bgl_record {
 	char *nodes;			/* String of nodes in partition */
 	char *owner_name;		/* Owner of partition		*/
 	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
@@ -95,6 +94,7 @@ typedef struct {
 	int bp_count;                   /* size */
 	int switch_count;
 	bitstr_t *bitmap;
+	struct bgl_record *partner;
 } bgl_record_t;
 
 typedef struct {
@@ -180,3 +180,4 @@ extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
 extern int bgl_free_partition(pm_partition_id_t part_id);
 
 #endif /* _BLUEGENE_H_ */
+ 

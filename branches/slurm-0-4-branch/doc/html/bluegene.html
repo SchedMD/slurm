@@ -99,7 +99,7 @@ SLURM will assume this responsibility for batch jobs.
 The script that you submit to SLURM can contain multiple invocations of mpirun as
 well as any desired commands for pre- and post-processing.
 The mpirun command will get its <i>bglblock</i> or BGL partition information from the
-<i>BGL_PARTITION_ID</i> as set by SLURM. A sample script is shown below.
+<i>MPIRUN_PARTITION</i> as set by SLURM. A sample script is shown below.
 <pre>
 #!/bin/bash
 # pre-processing
@@ -185,11 +185,11 @@ node selection performed using a system aware of the system's topography
 and interfaces. 
 The value of <i>SchedulerType</i> should be set to "sched/builtin".
 The value of <i>Prolog</i> should be set to a program that will delay 
-execution until the bglblock identified by the BGL_PARTITION_ID environment 
+execution until the bglblock identified by the MPIRUN_PARTITION environment 
 variable is ready for use. It is recommended that you construct a script 
 that serves this function and calls the supplied program <i>slurm_prolog</i>.
 The value of <i>Epilog</i> should be set to a program that will wait
-until the bglblock identified by the BGL_PARTITION_ID environment
+until the bglblock identified by the MPIRUN_PARTITION environment
 variable has been freed. It is recommended that you construct a script
 that serves this function and calls the supplied program <i>slurm_epilog</i>.
 The prolog and epilog programs are used to insure proper synchronization 

@@ -33,7 +33,7 @@ AC_DEFUN([X_AC_BGL],
          fi
 
          have_bgl_ar=yes
-         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib -Wl,-L$bgl_dir/lib -Wl,-whole-archive -Wl,-lbglbridge -Wl,-no-whole-archive $bgl_dir/lib/bglbootload.a $bgl_dir/lib/bglsp440supt.a -lbgldb -lbglmachine -ltableapi -lexpat -lbglsp"
+         bgl_ldflags="$bgl_ldflags -Wl,-rpath $bgl_dir/lib -Wl,-L$bgl_dir/lib -Wl,-whole-archive -Wl,-lbglbridge -Wl,-no-whole-archive $bgl_dir/lib/bglbootload.a $bgl_dir/lib/bglsp440supt.a -lsaymessage -lbgldb -lbglmachine -ltableapi -lexpat -lbglsp"
       fi
 
       # Search for required DB2 library in the directory

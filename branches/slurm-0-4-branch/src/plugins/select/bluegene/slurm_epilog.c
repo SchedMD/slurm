@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
 
 	part_name = getenv("MPIRUN_PARTITION");	/* get partition ID */
 	if (!part_name) {
-		fprintf(stderr, "MPIRUN_PARTITION not set for job %s\n", 
+		fprintf(stderr, "MPIRUN_PARTITION not set for job %s\n",
 			job_id);
 		exit(0);
 	}

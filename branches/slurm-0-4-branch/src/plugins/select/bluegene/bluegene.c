@@ -52,6 +52,7 @@ List bgl_found_part_list = NULL;  	/* found bgl partitions */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL;
 char *change_numpsets = NULL;
+int numpsets;
 bool agent_fini = false;
 
 /* some local functions */
@@ -352,7 +353,9 @@ extern int create_static_partitions(List part_list)
 		}
 		list_iterator_destroy(itr_found);
 		if(found_record == NULL) {
+			printf("yeap\n");
 #ifdef HAVE_BGL_FILES
+			printf("found one %s\n",bgl_record->nodes);
 			//bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 			configure_partition(bgl_record);
 			print_bgl_record(bgl_record);
@@ -828,9 +831,9 @@ extern int read_bgl_conf(void)
 		fatal("MloaderImage not configured in bluegene.conf");
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
-	if (!change_numpsets)
-		info("Warning: ChangeNumpsets not configured in bluegene.conf");
-
+	if (!numpsets)
+		info("Warning: Numpsets not configured in bluegene.conf");
+	
 	/* Check to see if the configs we have are correct */
 	if (!_validate_config_nodes()) { 
 		_delete_old_partitions();
@@ -838,6 +841,7 @@ extern int read_bgl_conf(void)
 		 * partition deletions */
 		sleep(3);
 	}
+	
 	/* looking for partitions only I created */
 	if (create_static_partitions(NULL)) {
 		/* error in creating the static partitions, so
@@ -880,14 +884,14 @@ static int _parse_bgl_spec(char *in_line)
 	char *nodes = NULL, *conn_type = NULL, *node_use = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
-	char *change = NULL;
+	char *pset_num=NULL;
 	bgl_record_t *bgl_record, *found_record;
 	
 	error_code = slurm_parser(in_line,
 				  "BlrtsImage=", 's', &blrts_image,
 				  "LinuxImage=", 's', &linux_image,
 				  "MloaderImage=", 's', &mloader_image,
-				  "ChangeNumpsets=", 's', &change,
+				  "Numpsets=", 's', &pset_num,
 				  "Nodes=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
@@ -918,11 +922,10 @@ static int _parse_bgl_spec(char *in_line)
 		bluegene_ramdisk = ramdisk_image;
 		ramdisk_image = NULL;	/* nothing left to xfree */
 	}
-	if (change) {
-		xfree(change_numpsets);
-		_strip_13_10(change);
-		change_numpsets = change;
-		change = NULL;	/* nothing left to xfree */
+	if (pset_num) {
+		_strip_13_10(pset_num);
+		numpsets = atoi(pset_num);
+		xfree(pset_num);
 	}
 
 	/* Process node information */
@@ -963,6 +966,7 @@ static int _parse_bgl_spec(char *in_line)
 			bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 		else
 			bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+		bgl_record->partner = NULL;
 	} else {
 		/* If not then we will make both. */
 
@@ -973,6 +977,9 @@ static int _parse_bgl_spec(char *in_line)
 		found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_list, found_record);
 	
+		bgl_record->partner = found_record;
+		found_record->partner = bgl_record;
+		
 		found_record->bgl_part_list = bgl_record->bgl_part_list;			
 		found_record->hostlist = bgl_record->hostlist;
 		found_record->nodes = xstrdup(bgl_record->nodes);

@@ -89,8 +89,6 @@ static void _print_list(List list)
  */
 static void _pre_allocate(bgl_record_t *bgl_record)
 {
-	int psets = (PSETS_PER_BP * bgl_record->bp_count);
-
 	rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   
 		bluegene_blrts);
 	rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   
@@ -103,7 +101,7 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 		&bgl_record->conn_type);
 	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
 		&bgl_record->node_use);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionPsetNum, &psets); 
+	rm_set_data(bgl_record->bgl_part, RM_PartitionPsetNum, &numpsets); 
 	rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, USER_NAME);
 }
 
@@ -127,12 +125,12 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	/* Get back the new partition id */
 	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &part_id);
 	bgl_record->bgl_part_id = xstrdup(part_id);
-	if (change_numpsets) {
-		memset(command,0,255);
-		sprintf(command,"%s %s", change_numpsets, part_id);
-		info("%s",command);
-		system(command);
-	}
+	/* if (change_numpsets) { */
+/* 		memset(command,0,255); */
+/* 		sprintf(command,"%s %s", change_numpsets, part_id); */
+/* 		info("%s",command); */
+/* 		system(command); */
+/* 	} */
 	/* We are done with the partition */
 	rm_free_partition(bgl_record->bgl_part);
 
