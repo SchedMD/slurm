@@ -473,7 +473,17 @@ int Read_Node_Spec_Conf (char *File_Name) {
     Default_Record.Partition = 1;
     Default_Record.NodeState= STATE_UNKNOWN;
     Default_Record.LastResponse = 0;
-    Node_Record_List = list_create(NULL);
+    if (Node_Record_List == NULL) {
+	Node_Record_List = list_create(NULL);
+	if (Node_Record_List == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
+#else
+	    syslog(LOG_ERR, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
+#endif
+	    return ENOMEM;
+	} /* if */
+    } /* if */
 
     /* Process the data file */
     Line_Num = 0;
@@ -731,9 +741,9 @@ int Update_Node_Spec_Conf (char *Specification) {
 	memset(Node_Record_Point, 0, (size_t)sizeof(struct Node_Record));
 	if (list_append(Node_Record_List, (void *)Node_Record_Point) == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Update_Node_Spec_Conf list_append can not allocate memory\n");
+	    fprintf(stderr, "Update_Node_Spec_Conf: list_append can not allocate memory\n");
 #else
-	    syslog(LOG_ERR, "Update_Node_Spec_Conf list_append can not allocate memory\n");
+	    syslog(LOG_ERR, "Update_Node_Spec_Conf: list_append can not allocate memory\n");
 #endif
 	    return errno;
 	} /* if */

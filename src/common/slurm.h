@@ -91,7 +91,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Partition);
 
 /*
  * Read_Node_Spec_Conf - Load the node specification information from the specified file 
- * NOTE: Call this routine only once at daemon startup, otherwise call Update_Node_Spec_Conf
+ * NOTE: Call this routine must be called at SLURM Controller daemon startup
  * Input: File_Name - Name of the file containing node specification
  * Output: return - 0 if no error, otherwise errno
  */
@@ -99,7 +99,7 @@ int Read_Node_Spec_Conf (char *File_Name);
 
 /*
  * Read_Part_Spec_Conf - Load the partition specification information from the specified file 
- * NOTE: Call this routine only once at daemon startup, otherwise call Update_Part_Spec_Conf
+ * NOTE: Call this routine must be called at SLURM Controller daemon startup
  * Input: File_Name - Name of the file containing node specification
  * Output: return - 0 if no error, otherwise errno
  */
