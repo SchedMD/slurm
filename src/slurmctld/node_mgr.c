@@ -1074,7 +1074,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	error_code = 0;
 
 	if (cpus < config_ptr->cpus) {
-		error ("validate_node_specs: node %s has low cpu count", node_name);
+		error ("validate_node_specs: node %s has low cpu count %u", node_name, cpus);
 		error_code = EINVAL;
 	}
 	node_ptr->cpus = cpus;
@@ -1082,13 +1082,13 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		node_ptr->partition_ptr->total_cpus += (cpus - config_ptr->cpus);
 
 	if (real_memory < config_ptr->real_memory) {
-		error ("validate_node_specs: node %s has low real_memory size", node_name);
+		error ("validate_node_specs: node %s has low real_memory size %u", node_name, real_memory);
 		error_code = EINVAL;
 	}
 	node_ptr->real_memory = real_memory;
 
 	if (tmp_disk < config_ptr->tmp_disk) {
-		error ("validate_node_specs: node %s has low tmp_disk size", node_name);
+		error ("validate_node_specs: node %s has low tmp_disk size %u", node_name, tmp_disk);
 		error_code = EINVAL;
 	}
 	node_ptr->tmp_disk = tmp_disk;

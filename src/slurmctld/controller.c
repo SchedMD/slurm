@@ -59,7 +59,6 @@ static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 int server_thread_count = 0;
 pid_t slurmctld_pid;
 
-int getnodename (char *name, size_t len);
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
 void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
