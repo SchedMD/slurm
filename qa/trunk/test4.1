@@ -21,7 +21,7 @@ print_header $test_id
  
 spawn $sinfo --usage  
 expect {
-	-re "Usage: .*usage.*" {
+	-re "Usage: .*partition.*" {
 		incr matches
 		exp_continue
 	}
