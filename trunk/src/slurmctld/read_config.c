@@ -116,7 +116,7 @@ static int _build_bitmaps(void)
 	if ((idle_node_bitmap     == NULL) ||
 	    (avail_node_bitmap    == NULL) ||
 	    (share_node_bitmap    == NULL)) 
-		fatal ("memory allocation failure");
+		fatal ("bit_alloc malloc failure");
 	/* Set all bits, all nodes initially available for sharing */
 	bit_nset(share_node_bitmap, 0, (node_record_count-1));
 
@@ -131,7 +131,7 @@ static int _build_bitmaps(void)
 		config_ptr->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
 		if (config_ptr->node_bitmap == NULL)
-			fatal ("memory allocation failure");
+			fatal ("bit_alloc malloc failure");
 	}
 	list_iterator_destroy(config_iterator);
 
@@ -146,7 +146,7 @@ static int _build_bitmaps(void)
 			continue;
 		tmp_bits = bit_copy(job_ptr->node_bitmap);
 		if (tmp_bits == NULL)
-			fatal ("memory allocation failure");
+			fatal ("bit_copy malloc failure");
 		bit_not(tmp_bits);
 		bit_and(share_node_bitmap, tmp_bits);
 		bit_free(tmp_bits);
@@ -182,7 +182,7 @@ static int _build_bitmaps(void)
 	/* scan partition table and identify nodes in each */
 	all_part_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if (all_part_node_bitmap == NULL)
-		fatal ("memory allocation failure");
+		fatal ("bit_alloc malloc failure");
 	part_iterator = list_iterator_create(part_list);
 	if (part_iterator == NULL)
 		fatal ("memory allocation failure");
@@ -192,7 +192,7 @@ static int _build_bitmaps(void)
 		part_ptr->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
 		if (part_ptr->node_bitmap == NULL)
-			fatal ("memory allocation failure");
+			fatal ("bit_alloc malloc failure");
 
 		/* check for each node in the partition */
 		if ((part_ptr->nodes == NULL) || (part_ptr->nodes[0] == '\0'))

@@ -351,6 +351,8 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		return NULL;
 	
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
+	if (nodes_avail == NULL)
+		fatal("bit_copy malloc failure");
 	bit_and (nodes_avail, avail_node_bitmap);
 
 	if ( step_spec->node_count == INFINITE)	/* use all nodes */
@@ -391,8 +393,11 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		bit_and (nodes_avail, relative_nodes);
 		bit_free (relative_nodes);
 	}
-	else
+	else {
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
+		if (nodes_picked == NULL)
+			fatal("bit_alloc malloc failure");
+	}
 
 	/* if user specifies step needs a specific processor count and  */
 	/* all nodes have the same processor count, just translate this to */
