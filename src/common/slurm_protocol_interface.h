@@ -80,6 +80,8 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
 slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address ) ;
 slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address ) ;
 slurm_fd _slurm_open_stream ( slurm_addr * slurm_address ) ;
+extern int _slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address ) ;
+extern int _slurm_close_stream ( slurm_fd open_fd ) ;
 
 /*******************************\
  **  General-Purpose Functions  **

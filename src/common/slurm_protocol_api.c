@@ -514,9 +514,14 @@ size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
 	}
 }
 
+int slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address )
+{
+	return _slurm_get_stream_addr ( open_fd , address ) ;
+}
+
 int slurm_close_stream ( slurm_fd open_fd )
 {
-	return _slurm_close ( open_fd ) ;
+	return _slurm_close_stream ( open_fd ) ;
 }
 
 /************************/

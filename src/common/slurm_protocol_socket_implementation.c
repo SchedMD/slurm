@@ -246,6 +246,14 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 	return connection_fd ;
 
 }
+	
+int _slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address )
+{
+	int size ;
+	
+	size = sizeof ( address ) ;
+	return _slurm_getsockname ( open_fd , address , & size ) ;
+}
 
 int _slurm_close_stream ( slurm_fd open_fd )
 {
