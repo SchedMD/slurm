@@ -25,7 +25,7 @@
 /* global variables */
 
 /* prototypes */
-int kill_task ( task_t * task ) ;
+int kill_task ( task_t * task , int signal ) ;
 
 int interconnect_init ( launch_tasks_request_msg_t * launch_msg );
 int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg );
@@ -242,15 +242,15 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 	task_t * task_ptr = job_step_ptr -> head_task ;
 	while ( task_ptr != NULL )
 	{
-		kill_task ( task_ptr ) ;
+		kill_task ( task_ptr , kill_task_msg -> signal ) ;
 		task_ptr = task_ptr -> next ;
 	}
 	return error_code ;
 }
 
-int kill_task ( task_t * task )
+int kill_task ( task_t * task , int signal )
 {
-	return kill ( task -> task_start . exec_pid , SIGKILL ) ;
+	return kill ( task -> task_start . exec_pid , signal ) ;
 }
 
 int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
