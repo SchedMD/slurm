@@ -1354,7 +1354,7 @@ top_priority (struct job_record *job_ptr) {
 			fatal ("top_priority: job integrity is bad");
 		if (job_record_point == job_ptr)
 			continue;
-		if (job_record_point->job_state == JOB_PENDING)
+		if (job_record_point->job_state != JOB_PENDING)
 			continue;
 		if (job_record_point->priority >  job_ptr->priority &&
 				job_record_point->part_ptr == job_ptr->part_ptr) {
