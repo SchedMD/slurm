@@ -92,20 +92,20 @@ static int _valid_features(char *requested, char *available);
 
 /*
  * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
- * IN bitmap - map of nodes to be allocated
+ * IN job_ptr - job being allocated resources
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  *	last_node_update - last update time of node table
  */
-void allocate_nodes(unsigned *bitmap)
+void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
 
 	last_node_update = time(NULL);
 
 	for (i = 0; i < node_record_count; i++) {
-		if (bit_test(bitmap, i))
-			make_node_alloc(&node_record_table_ptr[i]);
+		if (bit_test(job_ptr->node_bitmap, i))
+			make_node_alloc(&node_record_table_ptr[i], job_ptr);
 	}
 	return;
 }
@@ -191,7 +191,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_ptr->name, MAX_NAME_LEN);
 		agent_args->node_count++;
-		make_node_comp(node_ptr);
+		make_node_comp(node_ptr, job_ptr);
 	}
 
 	if ((agent_args->node_count - down_node_cnt) == 0)
@@ -654,9 +654,15 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		    (req_cpus  <= total_cpus )) {
 			if (!bit_super_set(*req_bitmap, avail_node_bitmap))
 				return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-			if ((!shared) &&
-			    (!bit_super_set(*req_bitmap, idle_node_bitmap)))
-				return ESLURM_NODES_BUSY;
+			if (shared) {
+				if (!bit_super_set(*req_bitmap, 
+							share_node_bitmap))
+					return ESLURM_NODES_BUSY;
+			} else {
+				if (!bit_super_set(*req_bitmap, 
+							idle_node_bitmap))
+					return ESLURM_NODES_BUSY;
+			}
 			return SLURM_SUCCESS;	/* user can have selected 
 						 * nodes, we're done! */
 		}
@@ -681,7 +687,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 						   &total_bitmap, 
 						   &total_nodes, &total_cpus);
 			bit_and(node_set_ptr[i].my_bitmap, avail_node_bitmap);
-			if (!shared)
+			if (shared)
+				bit_and(node_set_ptr[i].my_bitmap,
+					share_node_bitmap);
+			else
 				bit_and(node_set_ptr[i].my_bitmap,
 					idle_node_bitmap);
 			node_set_ptr[i].nodes =
@@ -917,7 +926,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	/* assign the nodes and stage_in the job */
 	job_ptr->nodes = bitmap2node_name(req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
-	allocate_nodes(job_ptr->node_bitmap);
+	allocate_nodes(job_ptr);
 	build_node_details(job_ptr);
 	req_bitmap = NULL;
 	job_ptr->job_state = JOB_RUNNING;

@@ -66,8 +66,8 @@ time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation
 time_t last_node_update = (time_t) NULL;	/* time of last update to 
 						 * node records */
 bitstr_t *avail_node_bitmap = NULL;	/* bitmap of available nodes */
-bitstr_t *idle_node_bitmap = NULL;	/* bitmap of idle nodes */
-
+bitstr_t *idle_node_bitmap  = NULL;	/* bitmap of idle nodes */
+bitstr_t *share_node_bitmap = NULL;  	/* bitmap of sharable nodes */
 
 static int	_delete_config_record (void);
 static void 	_dump_node_state (struct node_record *dump_node_ptr, 
@@ -1207,8 +1207,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		}
 
 		node_inx = node_ptr - node_record_table_ptr;
-		if (job_count == 0)
+		if (job_count == 0) {
 			bit_set (idle_node_bitmap, node_inx);
+			bit_set (share_node_bitmap, node_inx);
+		}
 
 		if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 		    (node_ptr->node_state == NODE_STATE_DRAINING) ||
@@ -1255,8 +1257,10 @@ void node_did_resp (char *name)
 		info("node_did_resp: node %s returned to service", name);
 		xfree(node_ptr->reason);
 	}
-	if (node_ptr->node_state == NODE_STATE_IDLE)
+	if (node_ptr->node_state == NODE_STATE_IDLE) {
 		bit_set (idle_node_bitmap, node_inx);
+		bit_set (share_node_bitmap, node_inx);
+	}
 	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 	    (node_ptr->node_state == NODE_STATE_DRAINING) ||
 	    (node_ptr->node_state == NODE_STATE_DRAINED))
@@ -1475,15 +1479,25 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 }
 
 
-/* make_node_alloc - flag specified node as allocated to a job */
-void make_node_alloc(struct node_record *node_ptr)
+/* make_node_alloc - flag specified node as allocated to a job
+ * IN node_ptr - pointer to node being allocated
+ * IN job_ptr  - pointer to job that is starting
+ */
+extern void make_node_alloc(struct node_record *node_ptr,
+		            struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag, base_state;
 
 	last_node_update = time (NULL);
+
 	(node_ptr->run_job_cnt)++;
 	bit_clear(idle_node_bitmap, inx);
+	if (job_ptr->details && (job_ptr->details->shared == 0)) {
+		bit_clear(share_node_bitmap, inx);
+		(node_ptr->no_share_job_cnt)++;
+	}
+
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND ;
 	if (base_state != NODE_STATE_COMPLETING)
@@ -1491,8 +1505,12 @@ void make_node_alloc(struct node_record *node_ptr)
 	xfree(node_ptr->reason);
 }
 
-/* make_node_comp - flag specified node as completing a job */
-void make_node_comp(struct node_record *node_ptr)
+/* make_node_comp - flag specified node as completing a job
+ * IN node_ptr - pointer to node marked for completion of job
+ * IN job_ptr - pointer to job that is completing
+ */
+extern void make_node_comp(struct node_record *node_ptr,
+			   struct job_record *job_ptr)
 {
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag, base_state;
@@ -1503,6 +1521,16 @@ void make_node_comp(struct node_record *node_ptr)
 		(node_ptr->run_job_cnt)--;
 	else
 		error("Node %s run_job_cnt underflow", node_ptr->name);
+
+	if (job_ptr->details && (job_ptr->details->shared == 0)) {
+		if (node_ptr->no_share_job_cnt)
+			(node_ptr->no_share_job_cnt)--;
+		else
+			error("Node %s no_share_job_cnt underflow", 
+				node_ptr->name);
+		if (node_ptr->no_share_job_cnt == 0)
+			bit_set(share_node_bitmap, inx);
+	}
 
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND;
@@ -1540,7 +1568,8 @@ static void _make_node_down(struct node_record *node_ptr)
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state = NODE_STATE_DOWN | no_resp_flag;
 	bit_clear (avail_node_bitmap, inx);
-	bit_clear (idle_node_bitmap, inx);
+	bit_clear (idle_node_bitmap,  inx);
+	bit_set   (share_node_bitmap, inx);
 }
 
 /*
