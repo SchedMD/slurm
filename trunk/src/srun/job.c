@@ -129,9 +129,10 @@ job_t *
 job_create_noalloc(void)
 {
 	job_t *job = NULL;
-	allocation_info_t *info = xmalloc(sizeof(*info));
-	int cpn     = 1;
-	int i;
+	allocation_info_t *ai = xmalloc(sizeof(*ai));
+	int cpn = 1;
+	int i   = 0;
+
 	hostlist_t  hl = hostlist_create(opt.nodelist);
 
 	if (!hl) {
@@ -140,27 +141,27 @@ job_create_noalloc(void)
 	}
 
 	srand48(getpid());
-	info->jobid          = MIN_NOALLOC_JOBID +
+	ai->jobid          = MIN_NOALLOC_JOBID +
 				((uint32_t) lrand48() % 
 				(MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
-	info->stepid         = (uint32_t) (lrand48());
-	info->nodelist       = opt.nodelist;
-	info->nnodes         = hostlist_count(hl);
+	ai->stepid         = (uint32_t) (lrand48());
+	ai->nodelist       = opt.nodelist;
+	ai->nnodes         = hostlist_count(hl);
 
-	/* if (opt.nprocs < info->nnodes)
+	/* if (opt.nprocs < ai->nnodes)
 		opt.nprocs = hostlist_count(hl);
 	*/
 	hostlist_destroy(hl);
 
-	cpn = opt.nprocs / info->nnodes;
-	info->cpus_per_node  = &cpn;
-	info->cpu_count_reps = &opt.nprocs;
-	info->addrs          = NULL; 
+	cpn = (opt.nprocs + ai->nnodes - 1) / ai->nnodes;
+	ai->cpus_per_node  = &cpn;
+	ai->cpu_count_reps = &ai->nnodes;
+	ai->addrs          = NULL; 
 
 	/* 
 	 * Create job, then fill in host addresses
 	 */
-	job = _job_create_internal(info);
+	job = _job_create_internal(ai);
 
 	for (i = 0; i < job->nhosts; i++) {
 		slurm_set_addr ( &job->slurmd_addr[i], 
@@ -171,7 +172,7 @@ job_create_noalloc(void)
 	_job_fake_cred(job);
 
    error:
-	xfree(info);
+	xfree(ai);
 	return (job);
 
 }
