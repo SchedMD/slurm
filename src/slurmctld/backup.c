@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -170,7 +170,7 @@ void run_backup(void)
  *	backup controller */
 static void *_background_signal_hand(void *no_data)
 {
-	int sig, error_code;
+	int sig, rc;
 	sigset_t set;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = { 
@@ -188,7 +188,9 @@ static void *_background_signal_hand(void *no_data)
 
 	while (slurmctld_config.shutdown_time == 0) {
 		xsignal_sigset_create(backup_sigarray, &set);
-		sigwait(&set, &sig);
+		rc = sigwait(&set, &sig);
+		if (rc == EINTR)
+			continue;
 		switch (sig) {
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
@@ -205,10 +207,10 @@ static void *_background_signal_hand(void *no_data)
 			 * restart the (possibly new) plugin.
 			 */
 			lock_slurmctld(config_write_lock);
-			error_code = read_slurm_conf(0);
-			if (error_code)
+			rc = read_slurm_conf(0);
+			if (rc)
 				error("read_slurm_conf: %s",
-					slurm_strerror(error_code));
+					slurm_strerror(rc));
 			else {
 				/* Leave config lock set through this */
 				_update_cred_key();
