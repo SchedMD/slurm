@@ -359,7 +359,8 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
 		error("rm_get_data(RM_JobListSize): %s", bgl_err_str(rc));
 		jobs = 0;
-	}
+	} else if (jobs > 128)
+		fatal("Active job count (%d) invalid, restart DB2", jobs);
 
 	for (i=0; i<jobs; i++) {
 		rm_element_t *job_elem;
