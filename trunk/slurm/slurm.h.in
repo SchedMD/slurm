@@ -832,8 +832,15 @@ extern int slurm_update_partition PARAMS(( update_part_msg_t * part_msg ));
 
 
 /*****************************************************************************\
- *	SLURM RECONFIGURE/SHUTDOWN FUNCTIONS
+ *	SLURM PING/RECONFIGURE/SHUTDOWN FUNCTIONS
 \*****************************************************************************/
+
+/*
+ * slurm_ping - issue RPC to have Slurm controller (slurmctld)
+ * IN controller - 1==primary controller, 2==secondary controller
+ * RET 0 or a slurm error code
+ */
+extern int slurm_ping PARAMS(( int primary ));
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)

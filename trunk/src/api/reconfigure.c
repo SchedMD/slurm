@@ -110,6 +110,31 @@ slurm_reconfigure ( void )
 }
 
 /*
+ * slurm_ping - issue RPC to have Slurm controller (slurmctld)
+ * IN controller - 1==primary controller, 2==secondary controller
+ * RET 0 or a slurm error code
+ */
+int
+slurm_ping (int primary)
+{
+	int rc ;
+	slurm_msg_t request_msg ;
+
+	request_msg . msg_type = REQUEST_PING ;
+
+	if (primary == 1)
+		rc = _send_message_controller ( PRIMARY_CONTROLLER,
+						&request_msg );
+	else if (primary == 2)
+		rc = _send_message_controller ( SECONDARY_CONTROLLER,
+						&request_msg );
+	else
+		rc = SLURM_ERROR;
+
+	return rc;
+}
+
+/*
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
  *	cease operations, both the primary and backup controller 
  *	are shutdown.
