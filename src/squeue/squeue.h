@@ -74,12 +74,14 @@ struct squeue_parameters {
 	char* steps;
 	char* users;
 	char* format;
+	char* sort;
 
 	List  job_list;
 	List  part_list;
 	List  state_list;
 	List  step_list;
 	List  user_list;
+	List  format_list;
 };
 
 extern struct squeue_parameters params;

@@ -63,55 +63,60 @@ int print_step_from_format( job_step_info_t* job_step, List list );
 int job_format_add_function ( List list, int width, bool right_justify, 
 		int (*function)(job_info_t*,int,bool) );
 
-#define job_format_add_job_id(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_job_id)
-#define job_format_add_name(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_name)
-#define job_format_add_user_name(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_user_name)
-#define job_format_add_job_state(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_job_state)
-#define job_format_add_job_state_compact(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_job_state_compact)
-#define job_format_add_time_limit(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_time_limit)
-#define job_format_add_start_time(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_start_time)
-#define job_format_add_end_time(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_end_time)
-#define job_format_add_priority(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_priority)
-#define job_format_add_nodes(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_nodes)
-#define job_format_add_node_inx(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_node_inx)
-#define job_format_add_partition(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_partition)
-#define job_format_add_num_procs(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_num_procs)
-#define job_format_add_num_nodes(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_num_nodes)
-#define job_format_add_shared(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_shared)
-#define job_format_add_contiguous(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_contiguous)
-#define job_format_add_min_procs(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_min_procs)
-#define job_format_add_min_memory(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_min_memory)
-#define job_format_add_min_tmp_disk(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_min_tmp_disk)
-#define job_format_add_req_nodes(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_req_nodes)
-#define job_format_add_req_node_inx(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_req_node_inx)
-#define job_format_add_features(list,wid,left) \
-		job_format_add_function(list,wid,left,_print_job_features)
+#define job_format_add_job_id(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_job_id)
+#define job_format_add_partition(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_partition)
+#define job_format_add_name(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_name)
+#define job_format_add_user_name(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_user_name)
+#define job_format_add_user_id(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_user_id)
+#define job_format_add_job_state(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_job_state)
+#define job_format_add_job_state_compact(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_job_state_compact)
+#define job_format_add_time_limit(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_time_limit)
+#define job_format_add_start_time(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_start_time)
+#define job_format_add_end_time(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_end_time)
+#define job_format_add_priority(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_priority)
+#define job_format_add_nodes(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_nodes)
+#define job_format_add_node_inx(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_node_inx)
+#define job_format_add_partition(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_partition)
+#define job_format_add_num_procs(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_num_procs)
+#define job_format_add_num_nodes(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_num_nodes)
+#define job_format_add_shared(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_shared)
+#define job_format_add_contiguous(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_contiguous)
+#define job_format_add_min_procs(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_min_procs)
+#define job_format_add_min_memory(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_min_memory)
+#define job_format_add_min_tmp_disk(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_min_tmp_disk)
+#define job_format_add_req_nodes(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_req_nodes)
+#define job_format_add_req_node_inx(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_req_node_inx)
+#define job_format_add_features(list,wid,right) \
+		job_format_add_function(list,wid,right,_print_job_features)
 
 /*****************************************************************************
  * Job Line Print Functions
  *****************************************************************************/
 int _print_job_job_id( job_info_t* job, int width, bool right_justify );    
+int _print_job_partition( job_info_t* job, int width, bool right_justify );
 int _print_job_name( job_info_t* job, int width, bool right_justify );
 int _print_job_user_id( job_info_t* job, int width, bool right_justify );
 int _print_job_user_name( job_info_t* job, int width, bool right_justify );
@@ -141,20 +146,26 @@ int _print_job_features( job_info_t* job, int width, bool right_justify );
 int step_format_add_function ( List list, int width, bool right_justify, 
 		int (*function)(job_step_info_t*,int,bool) );
 
-#define step_format_add_id(list,wid,left) \
-		step_format_add_function(list,wid,left,_print_step_id)
-#define step_format_add_user_id(list,wid,left) \
-		step_format_add_function(list,wid,left,_print_step_user_id)
-#define step_format_add_start_time(list,wid,left) \
-		step_format_add_function(list,wid,left,_print_step_start_time)
-#define step_format_add_nodes(list,wid,left) \
-		step_format_add_function(list,wid,left,_print_step_nodes)
+#define step_format_add_id(list,wid,right) \
+		step_format_add_function(list,wid,right,_print_step_id)
+#define step_format_add_partition(list,wid,right) \
+		step_format_add_function(list,wid,right,_print_step_partition)
+#define step_format_add_user_id(list,wid,right) \
+		step_format_add_function(list,wid,right,_print_step_user_id)
+#define step_format_add_user_name(list,wid,right) \
+		step_format_add_function(list,wid,right,_print_step_user_name)
+#define step_format_add_start_time(list,wid,right) \
+		step_format_add_function(list,wid,right,_print_step_start_time)
+#define step_format_add_nodes(list,wid,right) \
+		step_format_add_function(list,wid,right,_print_step_nodes)
 
 /*****************************************************************************
  * Step Line Print Functions
  *****************************************************************************/
 int _print_step_id( job_step_info_t* step, int width, bool right_justify );
+int _print_step_partition( job_step_info_t* step, int width, bool right_justify );
 int _print_step_user_id( job_step_info_t* step, int width, bool right_justify );
+int _print_step_user_name( job_step_info_t* step, int width, bool right_justify );
 int _print_step_start_time( job_step_info_t* step, int width, bool right_justify );
 int _print_step_nodes( job_step_info_t* step, int width, bool right_justify );
 
