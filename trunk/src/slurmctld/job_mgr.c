@@ -435,7 +435,9 @@ job_cancel (uint32_t job_id)
 }
 
 /*
- * job_create - parse the suppied job specification and create job_records for it
+ * job_create - parse the suppied job specification and create job_records for it.
+ *	this performs only basic tests for request validity (access to partition, 
+ *	nodes count in partition, and sufficient processors in partition).
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
  *	job_rec_ptr - place to park pointer to the job (or NULL)
@@ -454,9 +456,7 @@ int
 job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate, 
 		int will_run, struct job_record **job_rec_ptr)
 {
-	int i; 
-	int error_code;
-	int shared;
+	int error_code, i; 
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL ;
 
@@ -547,16 +547,18 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		goto cleanup;
 	}
 
-	if (part_ptr->shared == 2)	/* shared=force */
-		shared = 1;
-	else if ((shared != 1) || (part_ptr->shared == 0)) /* user or partition want no sharing */
-		shared = 0;
-
 	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , 
 							req_bitmap ) ) )  {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY ;
 		goto cleanup ;
 	}
+
+	if (part_ptr->shared == 2)		/* shared=force */
+		(*job_rec_ptr)->details->shared = 1;
+	else if (((*job_rec_ptr)->details->shared != 1) || 
+	         (part_ptr->shared == 0))	/* user or partition want no sharing */
+		(*job_rec_ptr)->details->shared = 0;
+
 	*new_job_id = (*job_rec_ptr)->job_id;
 	return SLURM_SUCCESS ;
 

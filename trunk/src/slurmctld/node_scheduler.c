@@ -855,6 +855,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	build_node_list (req_bitmap, 
 		&job_ptr->details->node_list, 
 		&job_ptr->details->total_procs);
+	allocate_nodes (req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
 	req_bitmap = NULL;
 	job_ptr->job_state = JOB_STAGE_IN;
