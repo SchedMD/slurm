@@ -516,27 +516,30 @@ int switch_p_job_postfini ( switch_jobinfo_t jobinfo, uid_t pgid,
 	return SLURM_SUCCESS;
 }
 
-int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env, int nodeid, 
-			int procid, int nnodes, int nprocs, gid_t gid )
+int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env, 
+			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
+			uint32_t nprocs, uint32_t rank )
 {
-	debug3("nodeid=%d nnodes=%d procid=%d nprocs=%d", 
-		nodeid, nnodes, procid, nprocs);
+	debug3("nodeid=%lu nnodes=%lu procid=%lu nprocs=%lu rank=%lu", 
+		(unsigned long) nodeid, (unsigned long) nnodes, 
+		(unsigned long) procid, (unsigned long) nprocs, 
+		(unsigned long) rank);
 	debug3("setting capability in process %lu", 
 		(unsigned long) getpid());
-	if (qsw_setcap((qsw_jobinfo_t)jobinfo, procid) < 0) {
+	if (qsw_setcap((qsw_jobinfo_t) jobinfo, (int) procid) < 0) {
 		error("qsw_setcap: %m");
 		return SLURM_ERROR;
 	}
 
-	if (setenvpf(env, "RMS_RANK",   "%d", gid   ) < 0)
+	if (setenvpf(env, "RMS_RANK",   "%lu", (unsigned long) rank  ) < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_NODEID", "%d", nodeid) < 0)
+	if (setenvpf(env, "RMS_NODEID", "%lu", (unsigned long) nodeid) < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_PROCID", "%d", gid   ) < 0)
+	if (setenvpf(env, "RMS_PROCID", "%lu", (unsigned long) rank  ) < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_NNODES", "%d", nnodes) < 0)
+	if (setenvpf(env, "RMS_NNODES", "%lu", (unsigned long) nnodes) < 0)
 		return SLURM_ERROR;
-	if (setenvpf(env, "RMS_NPROCS", "%d", nprocs) < 0)
+	if (setenvpf(env, "RMS_NPROCS", "%lu", (unsigned long) nprocs) < 0)
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
