@@ -949,8 +949,8 @@ _opt_verify(poptContext optctx)
 	bool verified = true;
 
 
-	if (opt.slurmd_debug + LOG_LEVEL_INFO > LOG_LEVEL_DEBUG2)
-		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_INFO;
+	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
+		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
 
 	if (opt.no_alloc && !opt.nodelist) {
 		error("must specify a node list with -Z, --no-allocate.");
