@@ -29,6 +29,7 @@
 #endif
 
 #include <errno.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -72,9 +73,15 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 {
 	int j;
 	char time_str[16];
+	struct passwd *user_info = NULL;
 
-	fprintf ( out, "JobId=%u UserId=%u ", 
-		  job_ptr->job_id, job_ptr->user_id);
+	fprintf ( out, "JobId=%u ", job_ptr->job_id);
+	user_info = getpwuid((uid_t) job_ptr->user_id);
+	if (user_info && user_info->pw_name[0])
+		fprintf ( out, "UserId=%s(%u) ", 
+			  user_info->pw_name, job_ptr->user_id);
+	else
+		fprintf ( out, "UserId=(%u) ", job_ptr->user_id);
 	fprintf ( out, "Name=%s JobState=%s\n", 
 		  job_ptr->name, job_state_string(job_ptr->job_state));
 
