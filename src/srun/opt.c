@@ -39,7 +39,12 @@
 #  define _GNU_SOURCE
 #endif
 
-#include <getopt.h>
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
+
 #include <stdarg.h>		/* va_start   */
 #include <stdlib.h>		/* getenv     */
 #include <pwd.h>		/* getpwuid   */

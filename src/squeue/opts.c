@@ -28,7 +28,16 @@
 #  define _GNU_SOURCE
 #endif
 
-#include <getopt.h>
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
+
 #include <pwd.h>
 #include <stdlib.h>
 #include <string.h>

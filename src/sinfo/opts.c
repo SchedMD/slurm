@@ -32,7 +32,12 @@
 #  define _GNU_SOURCE
 #endif
 
-#include <getopt.h>
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
+
 #include <stdlib.h>
 #include <unistd.h>
 

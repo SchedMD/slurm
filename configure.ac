@@ -35,7 +35,6 @@ AC_PROG_LIBTOOL
 dnl Checks for libraries
 dnl
 
-
 dnl Checks for header files.
 dnl
 AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
@@ -81,6 +80,9 @@ AC_CHECK_FUNCS( \
 )
 
 AC_CHECK_DECLS([hstrerror, strsignal, sys_siglist])
+
+AC_CHECK_FUNCS(unsetenv, [have_unsetenv=yes])
+AM_CONDITIONAL(HAVE_UNSETENV, test "x$have_unsetenv" = "xyes")
 
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
@@ -217,6 +219,16 @@ else
 fi
 
 AC_SUBST(READLINE_LIBS)
+
+dnl Check for getopt_long
+dnl
+AC_CHECK_HEADERS([getopt.h])
+AC_CHECK_FUNCS([getopt_long],,
+   [# FreeBSD has a gnugetopt library for this
+    AC_CHECK_LIB([gnugetopt],[getopt_long],[have_getopt_long=yes])
+     ])
+AM_CONDITIONAL(HAVE_GETOPT_LONG, test "x$have_getopt_long" = "xyes")
+
 
 dnl OpenSSL location (taken from openssh configure.ac)
 dnl
