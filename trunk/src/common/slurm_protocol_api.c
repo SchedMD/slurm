@@ -478,8 +478,10 @@ int slurm_send_node_msg(slurm_fd fd, slurm_msg_t * msg)
          * Pack auth credential
          */
         if (g_slurm_auth_pack(auth_cred, buffer)) {
-                error("authentication: %s",
+		error("authentication: %s",
                        g_slurm_auth_errstr(g_slurm_auth_errno(auth_cred)));
+        	free_buf(buffer);
+		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
         }
         (void) g_slurm_auth_destroy(auth_cred);
 
