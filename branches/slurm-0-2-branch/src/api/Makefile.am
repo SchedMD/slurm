@@ -48,21 +48,14 @@ libslurm_la_LIBADD         = \
 
 libslurm_la_LDFLAGS        = \
 	-export-symbols libslurm.sym           \
-	-version-info $(current):$(rev):$(age) \
-	-Wl,--version-script=libslurm.map      
+	-version-info $(current):$(rev):$(age) 
 
 libslurm_la_DEPENDENCIES   = \
-	libslurm.map \
 	libslurm.sym \
 	$(common_dir)/libcommon.la
 
 libslurm.sym : $(top_builddir)/slurm/slurm.h
 	-sed -n 's/^extern .* \([a-zA-Z0-9_]*\) PARAMS.*$$/\1/p' $< $* >libslurm.sym
-
-libslurm.map : libslurm.sym
-	-echo "{ global:"                     >  libslurm.map
-	-sed -n 's/^\(.*\)$$/   \1;/p' $< $*  >> libslurm.map
-	-echo "   local: *;};"                >> libslurm.map
 
 distclean-local: 
 	-rm -rf libslurm.map libslurm.sym
