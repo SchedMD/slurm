@@ -119,8 +119,8 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 		/* fill in task_start struct */
 		task_start[i] -> launch_msg = launch_msg ;
 		task_start[i] -> local_task_id = i ; 
-		task_start[i] -> inout_dest = *( launch_msg -> streams + ( i * 2 )  ) ; 
-		task_start[i] -> err_dest = *( launch_msg -> streams + ( i * 2 ) + 1 ) ; 
+		task_start[i] -> inout_dest = launch_msg -> streams ; 
+		task_start[i] -> err_dest = launch_msg -> streams ; 
 
 		if ( pthread_create ( & task_start[i]->pthread_id , NULL , task_exec_thread , ( void * ) task_start[i] ) )
 			goto kill_threads;
@@ -626,8 +626,8 @@ int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
 		task_t * task = find_task ( job_step_ptr , req_msg->global_task_ids[i] ) ;
 		if ( task != NULL )
 		{
-			task -> task_start . inout_dest = * ( req_msg -> streams + ( i * 2 ) ) ;
-			task -> task_start . err_dest = * ( req_msg -> streams + ( i * 2 ) + 1 ) ;
+			task -> task_start . inout_dest =  req_msg -> streams ;
+			task -> task_start . err_dest =  req_msg -> streams ;
 		}
 		else
 		{
