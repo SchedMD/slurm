@@ -202,6 +202,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->cwd     = xstrdup(msg->work_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
+	job->eio     = eio_handle_create();
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 
