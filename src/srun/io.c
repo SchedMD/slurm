@@ -34,6 +34,7 @@ typedef struct fd_info {
 
 static void _accept_io_stream(job_t *job, int i);
 static int  _do_task_output_poll(fd_info_t *info);
+static int  _handle_pollerr(fd_info_t *info);
 static int  _shutdown_fd_poll(fd_info_t *info);
 static int  _close_stream(int *fd, FILE *out, int tasknum);
 static int  _do_task_output(int *fd, FILE *out, int tasknum);
@@ -66,6 +67,23 @@ static int
 _shutdown_fd_poll(fd_info_t *info)
 {
 	return _close_stream(info->fd, info->fp, info->taskid);
+}
+
+static int
+_handle_pollerr(fd_info_t *info)
+{
+	int fd = *info->fd;
+	int err;
+	socklen_t size = sizeof(int);
+	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &size) < 0)
+		error("_handle_error_poll: getsockopt: %m");
+	else
+		error("poll error on fd %d: %s", fd, slurm_strerror(err));
+
+	if (*info->fd > 0)
+		return _do_task_output_poll(info);
+	else 
+		return 0;
 }
 
 static void
@@ -139,7 +157,7 @@ _io_thr_poll(void *job_arg)
 		while (poll(fds, nfds, -1) < 0) {
 			switch(errno) {
 				case EINTR:
- 				case EAGAIN:
+				case EAGAIN:
 					continue;
 					break;
 				case ENOMEM:
@@ -163,25 +181,16 @@ _io_thr_poll(void *job_arg)
 		for (; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
 			xassert(!(revents & POLLNVAL));
-			if (revents & POLLERR || revents & POLLHUP) {
-				int err;
-				socklen_t size = sizeof(int);
-				getsockopt(fds[i].fd, SOL_SOCKET, 
-					   SO_ERROR, (void *)&err, &size);
-				error("poll error condition %d on fd %d", 
-						err, fds[i].fd);
-				_shutdown_fd_poll(&map[i]);
-			}
+			if (revents & POLLERR || revents & POLLHUP)
+				_handle_pollerr(&map[i]);
 
-			else if (revents & POLLIN) {
+			if (revents & POLLIN && *map[i].fd > 0) 
 				_do_task_output_poll(&map[i]);
-			} 
 		}
-
 	}
 }
 
-static void 
+	static void 
 *_io_thr_select(void *job_arg)
 {
 	job_t *job = (job_t *) job_arg;
@@ -253,7 +262,7 @@ static void
 	return (void *)(0);
 }
 
-void *
+	void *
 io_thr(void *arg)
 {
 	return _io_thr_poll(arg);
@@ -315,12 +324,15 @@ _accept_io_stream(job_t *job, int i)
 static int
 _close_stream(int *fd, FILE *out, int tasknum)
 {	
+	int retval;
 	debug("%d: <%s disconnected>", tasknum, 
-	       out == stdout ? "stdout" : "stderr");
+			out == stdout ? "stdout" : "stderr");
 	fflush(out);
-	shutdown(*fd, SHUT_RDWR);
-	close(*fd);
+	retval = shutdown(*fd, SHUT_RDWR);
+	if (retval >= 0 || errno != EBADF) 
+		close(*fd);
 	*fd = IO_DONE;
+	return retval;
 }
 
 static int
@@ -329,7 +341,6 @@ _do_task_output(int *fd, FILE *out, int tasknum)
 	char buf[IO_BUFSIZ];
 	char *line, *p;
 	int len = 0;
-
 
 	if ((len = _readx(*fd, buf, IO_BUFSIZ)) <= 0) {
 		_close_stream(fd, out, tasknum);
@@ -357,7 +368,7 @@ _readx(int fd, char *buf, size_t maxbytes)
 			goto again;
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
 			return 0;
-		error("Unable to read rc = %d: %m", n);
+		error("readx fd %d: %m", fd, n);
 		return -1; /* shutdown socket, cleanup. */
 	}
 	/* null terminate */
