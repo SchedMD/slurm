@@ -149,6 +149,18 @@ Unix computers including Redhat's Linux, IBM's AIX, Sun's Solaris,
 and Compaq's Tru-64. The only module at this time which is operating 
 system dependent is Get_Mach_Stat.c.
 <p>
+The node selection logic allocates nodes to jobs in a fashion which 
+makes most sense for a Quadrics switch interconnect. It allocates 
+the smallest collection of consecutive nodes that satisfies the 
+request (e.g. if there are 32 consecutive nodes and 16 consecutive 
+nodes available, a job needing 16 or fewer nodes will be allocated 
+those nodes from the 16 node set rather than fragment the 32 node 
+set). If the job can not be allocated consecutive nodes, it will 
+be allocated the smallest number of consecutive sets (e.g. if there 
+are sets of available consecutive nodes of sizes 6, 4, 3, 3, 2, 1, 
+and 1 then a request for 10 nodes will always be allocated the 6 
+and 4 node sets rather than use the smaller sets).
+<p>
 We have tried to develop the SLURM code to be quite general and
 flexible, but compromises were made in several areas for the sake of 
 simplicity and ease of support. Entire nodes are dedicated to user 
