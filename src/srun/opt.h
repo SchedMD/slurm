@@ -135,6 +135,7 @@ typedef struct srun_options {
 	bool quit_on_intr;      /* --quit-on-interrupt, -q      */
 	int  quiet;
 	bool parallel_debug;	/* srun controlled by debugger	*/
+	bool debugger_test;	/* --debugger-test		*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/

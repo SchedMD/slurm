@@ -74,6 +74,7 @@ static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
  */
 static void	_accept_msg_connection(job_t *job, int fdnum);
 static void	_confirm_launch_complete(job_t *job);
+static void	_dump_proctable(job_t *job);
 static void 	_exit_handler(job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(job_t *job, slurm_msg_t *msg);
 static inline bool _job_msg_done(job_t *job);
@@ -131,11 +132,34 @@ _build_proctable(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 
 	if (tasks_recorded == opt.nprocs) {
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
-		MPIR_Breakpoint(); 
+		MPIR_Breakpoint();
+		if (opt.debugger_test)
+			_dump_proctable(job); 
 	}
 }
 
+static void _dump_proctable(job_t *job)
+{
+	int node_inx, task_inx, taskid, max_task;
+	MPIR_PROCDESC *tv;
 
+	if (opt.overcommit)
+		max_task = opt.nprocs;
+
+	for (node_inx=0; node_inx<job->nhosts; node_inx++) {
+		if (!opt.overcommit)
+			max_task = job->cpus[node_inx];
+		for (task_inx=0; ; task_inx++) {
+			taskid = job->tids[node_inx][task_inx];
+			if ((task_inx > 0) && (taskid == 0))
+				break;
+			tv = &MPIR_proctable[taskid];
+			info("task:%d, host:%s, pid:%d",
+				taskid, tv->host_name, tv->pid);
+		}
+	} 
+}
+	
 void debugger_launch_failure(void)
 {
 	if (opt.parallel_debug) {
@@ -148,7 +172,7 @@ void MPIR_Breakpoint(void)
 {
 	debug("In MPIR_Breakpoint");
 	/* This just notifies parallel 
-         * debugger that some event of interest occured */ 
+         * debugger that some event of interest occurred */ 
 }
 
 /*
