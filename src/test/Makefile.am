@@ -1,9 +1,14 @@
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = pack.h bitstring.h qsw.h
+if WITH_ELAN
+elan_testprogs = runqsw
+else
+elan_testprogs =
+endif
 
-bin_PROGRAMS = runqsw
+noinst_PROGRAMS = $(elan_testprogs)
 
-srun_SOURCES = runqsw.c qsw.c bitstring.c pack.c
-srun_LDFLAGS = 
-srun_LDADD = -lrms -lelan3 -lpthread
+TESTS =
+
+runqsw_SOURCES = runqsw.c 
+runqsw_LDADD = $(top_srcdir)/src/common/libcommon.a 
