@@ -69,8 +69,11 @@ static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
 int 	copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id ) ;
-int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap) ;
+int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
+		struct job_record ** job_ptr , struct part_record *part_ptr, 
+		bitstr_t *req_bitmap) ;
 void	delete_job_desc_files (uint32_t job_id);
+void 	dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
@@ -260,6 +263,259 @@ delete_job_desc_files (uint32_t job_id)
 	if (stat (dir_name, &sbuf) == 0)	/* remove job directory as needed */
 		(void) rmdir2 (dir_name);
 	xfree (dir_name);
+}
+
+/* dump_all_job_state - save the state of all jobs to file */
+int
+dump_all_job_state ( void )
+{
+	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, log_fd;
+	char *buffer;
+	void *buf_ptr;
+	char *old_file, *new_file, *reg_file;
+	/* Locks: Read config and node */
+	slurmctld_lock_t job_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
+
+	buffer_allocated = (BUF_SIZE*16);
+	buffer = xmalloc(buffer_allocated);
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
+
+	/* write header: time */
+	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
+
+	/* write individual job records */
+	lock_slurmctld (job_read_lock);
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
+		if (job_record_point->magic != JOB_MAGIC)
+			fatal ("dump_all_job: job integrity is bad");
+
+		dump_job_state (job_record_point, &buf_ptr, &buf_len);
+		if (buf_len > BUF_SIZE) 
+			continue;
+		buffer_allocated += (BUF_SIZE*16);
+		buf_len += (BUF_SIZE*16);
+		buffer_offset = (char *)buf_ptr - buffer;
+		xrealloc(buffer, buffer_allocated);
+		buf_ptr = buffer + buffer_offset;
+	}		
+	unlock_slurmctld (job_read_lock);
+	list_iterator_destroy (job_record_iterator);
+
+	/* write the buffer to file */
+	old_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (old_file, "/job_state.old");
+	reg_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (reg_file, "/job_state");
+	new_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (new_file, "/job_state.new");
+	lock_state_files ();
+	log_fd = creat (new_file, 0600);
+	if (log_fd == 0) {
+		error ("Create error %d on file %s, can't save state", errno, new_file);
+		error_code = errno;
+	}
+	else {
+		buf_len = buffer_allocated - buf_len;
+		if (write (log_fd, buffer, buf_len) != buf_len) {
+			error ("Write error %d on file %s, can't save state", errno, new_file);
+			error_code = errno;
+		}
+		close (log_fd);
+	}
+	if (error_code) 
+		(void) unlink (new_file);
+	else {	/* file shuffle */
+		(void) unlink (old_file);
+		(void) link (reg_file, old_file);
+		(void) unlink (reg_file);
+		(void) link (new_file, reg_file);
+		(void) unlink (new_file);
+	}
+	xfree (old_file);
+	xfree (reg_file);
+	xfree (new_file);
+	unlock_state_files ();
+
+	xfree (buffer);
+	return error_code;
+}
+
+/*
+ * dump_job_state - dump the state of a specific job to a buffer
+ * input:  dump_job_ptr - pointer to job for which information is requested
+ *	buf_ptr - buffer for job information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ */
+void 
+dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
+{
+	char tmp_str[MAX_STR_PACK];
+	struct job_details *detail_ptr;
+
+	pack32  (dump_job_ptr->job_id, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->priority, buf_ptr, buf_len);
+
+	pack32  ((uint32_t) dump_job_ptr->start_time, buf_ptr, buf_len);
+	pack32  ((uint32_t) dump_job_ptr->end_time, buf_ptr, buf_len);
+	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
+	pack16  ((uint16_t) dump_job_ptr->next_step_id, buf_ptr, buf_len);
+
+	packstr (dump_job_ptr->nodes, buf_ptr, buf_len);
+	packstr (dump_job_ptr->partition, buf_ptr, buf_len); 
+	packstr (dump_job_ptr->name, buf_ptr, buf_len);
+
+	detail_ptr = dump_job_ptr->details;
+
+	if (detail_ptr) {
+		if (detail_ptr->magic != DETAILS_MAGIC)
+			fatal ("dump_all_job: job detail integrity is bad");
+		pack16  ((uint16_t) 1, buf_ptr, buf_len);	/* details flag */
+
+		pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
+		pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
+		pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
+
+		pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->submit_time, buf_ptr, buf_len);
+
+		if ((detail_ptr->req_nodes == NULL) ||
+		    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
+			packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+
+		if (detail_ptr->features == NULL ||
+				strlen (detail_ptr->features) < MAX_STR_PACK)
+			packstr (detail_ptr->features, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+
+		if (detail_ptr->stderr == NULL ||
+				strlen (detail_ptr->stderr) < MAX_STR_PACK)
+			packstr (detail_ptr->stderr, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->stderr, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+
+		if (detail_ptr->stdin == NULL ||
+				strlen (detail_ptr->stdin) < MAX_STR_PACK)
+			packstr (detail_ptr->stdin, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->stdin, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+
+		if (detail_ptr->stdout == NULL ||
+				strlen (detail_ptr->stdout) < MAX_STR_PACK)
+			packstr (detail_ptr->stdout, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->stdout, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+
+		if (detail_ptr->work_dir == NULL ||
+				strlen (detail_ptr->work_dir) < MAX_STR_PACK)
+			packstr (detail_ptr->work_dir, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->work_dir, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+
+		pack_job_credential ( &detail_ptr->credential , buf_ptr , buf_len ) ;
+	}
+	else
+		pack16  ((uint16_t) 0, buf_ptr, buf_len);
+}
+
+/*
+ * load_job_state - load the job state from file, recover from slurmctld restart.
+ *	execute this after loading the configuration file data.
+ */
+int
+load_job_state ( void )
+{
+	int buffer_allocated, buffer_used = 0, error_code = 0;
+	uint32_t time, buffer_size = 0;
+	int state_fd;
+	char *buffer, *state_file;
+	void *buf_ptr;
+
+	/* read the file */
+	state_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (state_file, "/job_state");
+	lock_state_files ();
+	state_fd = open (state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info ("No job state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	}
+	else {
+		buffer_allocated = BUF_SIZE;
+		buffer = xmalloc(buffer_allocated);
+		buf_ptr = buffer;
+		while ((buffer_used = read (state_fd, buf_ptr, BUF_SIZE)) == BUF_SIZE) {
+			buffer_size += buffer_used;
+			buffer_allocated += BUF_SIZE;
+			xrealloc(buffer, buffer_allocated);
+			buf_ptr = (void *) (buffer + buffer_size);
+		}
+		buffer_size += buffer_used;
+		close (state_fd);
+		if (buffer_used < 0) 
+			error ("Read error %d on %s", errno, state_file);
+	}
+	xfree (state_file);
+	unlock_state_files ();
+
+	if (buffer_size > sizeof (uint32_t))
+		unpack32 (&time, &buf_ptr, &buffer_size);
+
+	while (buffer_size >= (4 *sizeof (uint32_t))) {
+/* UNPACK HERE 
+WHAT IF PARTITION BAD on load?
+also to restore: *part_ptr, *node_bitmap, *detail, num_cpu_groups, *cpus_per_node; 
+also to restore: *cpu_count_reps; step_list;
+to restore for job details: *req_node_bitmap; total_procs;
+		unpackstr_xmalloc (&node_name, &name_len, &buf_ptr, &buffer_size);
+		unpack16 (&node_state, &buf_ptr, &buffer_size);
+		unpack32 (&cpus, &buf_ptr, &buffer_size);
+		unpack32 (&real_memory, &buf_ptr, &buffer_size);
+		unpack32 (&tmp_disk, &buf_ptr, &buffer_size);
+
+		node_ptr = find_node_record (node_name);
+		if (node_ptr) {
+			node_ptr->node_state = node_state;
+			node_ptr->cpus = cpus;
+			node_ptr->real_memory = real_memory;
+			node_ptr->tmp_disk = tmp_disk;
+		}
+		if (node_name)
+			xfree (node_name);
+ */
+	}
+	return error_code;
 }
 
 /* 
@@ -1306,8 +1562,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 
 	/* write individual job records */
 	job_record_iterator = list_iterator_create (job_list);		
-	while ((job_record_point = 
-				(struct job_record *) list_next (job_record_iterator))) {
+	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("dump_all_job: job integrity is bad");
 
@@ -1380,8 +1635,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		packstr (NULL, buf_ptr, buf_len);
 
 	detail_ptr = dump_job_ptr->details;
-	if (detail_ptr &&  
-			dump_job_ptr->job_state == JOB_PENDING) {
+	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
 		pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);

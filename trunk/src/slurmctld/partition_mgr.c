@@ -360,6 +360,7 @@ dump_all_part_state ( void )
 		buf_ptr = buffer + buffer_offset;
 	}			
 	list_iterator_destroy (part_record_iterator);
+	unlock_slurmctld (part_read_lock);
 
 	/* write the buffer to file */
 	old_file = xstrdup (slurmctld_conf.state_save_location);
@@ -368,7 +369,6 @@ dump_all_part_state ( void )
 	xstrcat (reg_file, "/part_state");
 	new_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (new_file, "/part_state.new");
-	unlock_slurmctld (part_read_lock);
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {

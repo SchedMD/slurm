@@ -534,11 +534,6 @@ dump_all_node_state ( void )
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
-	old_file = xstrdup (slurmctld_conf.state_save_location);
-	xstrcat (old_file, "/node_state.old");
-	new_file = xstrdup (slurmctld_conf.state_save_location);
-	xstrcat (new_file, "/node_state");
-
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
@@ -563,6 +558,7 @@ dump_all_node_state ( void )
 		xrealloc(buffer, buffer_allocated);
 		buf_ptr = buffer + buffer_offset;
 	}
+	unlock_slurmctld (node_read_lock);
 
 	/* write the buffer to file */
 	old_file = xstrdup (slurmctld_conf.state_save_location);
@@ -571,7 +567,6 @@ dump_all_node_state ( void )
 	xstrcat (reg_file, "/node_state");
 	new_file = xstrdup (slurmctld_conf.state_save_location);
 	xstrcat (new_file, "/node_state.new");
-	unlock_slurmctld (node_read_lock);
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {
