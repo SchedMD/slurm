@@ -111,15 +111,18 @@ main(int argc, char * argv[]) {
 
     cycles = atoi(argv[2]);
     printf("Let's reinitialize the database %d times. Run /bin/ps to get memory size.\n", cycles);
-    sleep(10);
+    sleep(5);
     for (i=0; i<cycles; i++) {
 	Error_Code = Init_SLURM_Conf();
-	if (Error_Code != 0) exit(Error_Code);
+	if (Error_Code) {
+	    printf("Error %d from Init_SLURM_Conf\n", Error_Code);
+	    exit(Error_Code);
+	} /* if */
 
 	Error_Code = Read_SLURM_Conf(argv[1]);
 	if (Error_Code) {
 	    printf("Error %d from Read_SLURM_Conf\n", Error_Code);
-	    exit(1);
+	    exit(Error_Code);
 	} /* if */
     } /* for */
     printf("All done. Run /bin/ps again look for increase in memory size (leakage).\n");
@@ -137,7 +140,7 @@ main(int argc, char * argv[]) {
  * Output: Returns 0 if no error, errno otherwise
  */
 int Build_BitMaps() {
-    int i, j, size;
+    int i, j, size, Error_Code;
     ListIterator Config_Record_Iterator;	/* For iterating through Config_Record */
     ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
     struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
@@ -203,7 +206,9 @@ int Build_BitMaps() {
 	memset(Config_Record_Point->NodeBitMap, 0, size);
 
 	/* Check for each node in the configuration record */
-	Parse_Node_Name(Config_Record_Point->Nodes, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	Error_Code = Parse_Node_Name(Config_Record_Point->Nodes, &Format, 
+		&Start_Inx, &End_Inx, &Count_Inx);
+	if (Error_Code) continue;
 	for (i=Start_Inx; i<=End_Inx; i++) {
 	    if (Count_Inx == 0) {	/* Deal with comma separated node names here */
 		if (i == Start_Inx)
@@ -212,7 +217,7 @@ int Build_BitMaps() {
 		    str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
 		if (str_ptr2 == NULL) break;
 		End_Inx++;
-		strcpy(This_Node_Name, str_ptr2);
+		strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
 	    } else
 		sprintf(This_Node_Name, Format, i);
 	    Node_Record_Point = Find_Node_Record(This_Node_Name);
@@ -270,7 +275,9 @@ int Build_BitMaps() {
 	memset(Part_Record_Point->NodeBitMap, 0, size);
 
 	/* Check for each node in the partition */
-	Parse_Node_Name(Part_Record_Point->Nodes, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	Error_Code = Parse_Node_Name(Part_Record_Point->Nodes, &Format, 
+		&Start_Inx, &End_Inx, &Count_Inx);
+	if (Error_Code) continue;
 	for (i=Start_Inx; i<=End_Inx; i++) {
 	    if (Count_Inx == 0) {	/* Deal with comma separated node names here */
 		if (i == Start_Inx)
@@ -279,7 +286,7 @@ int Build_BitMaps() {
 		    str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
 		if (str_ptr2 == NULL) break;
 		End_Inx++;
-		strcpy(This_Node_Name, str_ptr2);
+		strncpy(This_Node_Name, str_ptr2, sizeof(strncpy));
 	    } else
 		sprintf(This_Node_Name, Format, i);
 	    Node_Record_Point = Find_Node_Record(This_Node_Name);
@@ -354,15 +361,14 @@ int Parse_Node_Spec (char *In_Line) {
 
     NodeName = State = Feature = (char *)NULL;
     CPUs_Val = RealMemory_Val = State_Val = NO_VAL;
-    TmpDisk_Val = NO_VAL;
-    Weight_Val = NO_VAL;
+    TmpDisk_Val = Weight_Val = NO_VAL;
     if (Error_Code=Load_String(&NodeName, "NodeName=", In_Line))      return Error_Code;
     if (NodeName == NULL) return 0;	/* No Node info */
 
-    Error_Code += Load_Integer(&CPUs_Val, "CPUs=", In_Line);
-    Error_Code += Load_Integer(&RealMemory_Val, "RealMemory=", In_Line);
-    Error_Code += Load_Integer(&TmpDisk_Val, "TmpDisk=", In_Line);
-    Error_Code += Load_Integer(&Weight_Val, "Weight=", In_Line);
+    if (Error_Code == 0) Error_Code = Load_Integer(&CPUs_Val, "CPUs=", In_Line);
+    if (Error_Code == 0) Error_Code = Load_Integer(&RealMemory_Val, "RealMemory=", In_Line);
+    if (Error_Code == 0) Error_Code = Load_Integer(&TmpDisk_Val, "TmpDisk=", In_Line);
+    if (Error_Code == 0) Error_Code = Load_Integer(&Weight_Val, "Weight=", In_Line);
     if (Error_Code != 0) {
 	free(NodeName);
 	return Error_Code;
@@ -415,7 +421,7 @@ int Parse_Node_Spec (char *In_Line) {
 		str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
 	    if (str_ptr2 == NULL) break;
 	    End_Inx++;
-	    strcpy(This_Node_Name, str_ptr2);
+	    strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
 	} else
 	    sprintf(This_Node_Name, Format, i);
 	if (strlen(This_Node_Name) >= MAX_NAME_LEN) {
@@ -489,12 +495,12 @@ int Parse_Node_Spec (char *In_Line) {
  */
 int Parse_Part_Spec (char *In_Line) {
     int Line_Num;		/* Line number in input file */
-    char *AllowGroups, *Nodes, *PartitionName, *State;
+    char *AllowGroups, *Nodes, *PartitionName;
     int MaxTime_Val, MaxNodes_Val, Key_Val, Default_Val, StateUp_Val;
     int Error_Code, i;
     struct Part_Record *Part_Record_Point;
 
-    AllowGroups = Nodes = PartitionName = State = (char *)NULL;
+    AllowGroups = Nodes = PartitionName = (char *)NULL;
     MaxTime_Val = MaxNodes_Val = Key_Val = Default_Val = NO_VAL;
 
     if (Error_Code=Load_String(&PartitionName, "PartitionName=", In_Line))      return Error_Code;
@@ -509,17 +515,17 @@ int Parse_Part_Spec (char *In_Line) {
 	return EINVAL;
     } /* if */
 
-    Error_Code += Load_Integer(&MaxTime_Val,  "MaxTime=", In_Line);
-    Error_Code += Load_Integer(&MaxNodes_Val, "MaxNodes=", In_Line);
-    Error_Code += Load_Integer(&Default_Val,  "Default=NO", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&MaxTime_Val,  "MaxTime=", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&MaxNodes_Val, "MaxNodes=", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=NO", In_Line);
     if (Default_Val == 1) Default_Val=0;
-    Error_Code += Load_Integer(&Default_Val,  "Default=YES", In_Line);
-    Error_Code += Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=YES", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
     if (StateUp_Val == 1) StateUp_Val=0;
-    Error_Code += Load_Integer(&StateUp_Val,  "State=UP", In_Line);
-    Error_Code += Load_Integer(&Key_Val,      "Key=NO", In_Line);
-    if (Key_Val == 1) Key_Val=0;
-    Error_Code += Load_Integer(&Key_Val,      "Key=YES", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=UP", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Key_Val,      "Key=NO", In_Line);
+    if (Key_Val == 1)     Key_Val=0;
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Key_Val,      "Key=YES", In_Line);
     if (Error_Code != 0) {
 	free(PartitionName);
 	return Error_Code;

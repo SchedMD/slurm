@@ -62,7 +62,7 @@ struct Config_Record {
 };
 extern List Config_List;		/* List of Config_Record entries */
 
-/* Last entry must be "END" */
+/* Last entry must be STATE_END, keep in sync with Node_State_String */
 enum Node_State {
 	STATE_UNKNOWN, 		/* Node's initial state, unknown */
 	STATE_IDLE, 		/* Node idle and available for use */
@@ -72,7 +72,9 @@ enum Node_State {
 	STATE_DOWN, 		/* Node unavailable */
 	STATE_DRAINED, 		/* Node idle and not to be allocated future work */
 	STATE_DRAINING,		/* Node in use, but not to be allocated future work */
+	STATE_UP,		/* Node in up, more specific state info unavailable */
 	STATE_END };		/* LAST ENTRY IN TABLE */
+/* Last entry must be "END", keep in sync with Node_State */
 extern char *Node_State_String[];
 
 extern time_t Last_Node_Update;		/* Time of last update to Node Records */
@@ -127,12 +129,28 @@ extern void BitMapAND(unsigned *BitMap1, unsigned *BitMap2);
 extern void BitMapClear(unsigned *BitMap, int Position);
 
 /*
+ * BitMapConsecutive - Return the count of consecutive set bits in the specified bitmap
+ * Input: BitMap - The bit map to get count from
+ *        Position - Location into which the node index of the first entry is stored
+ * Output: Position - Location of the first node index in the sequence
+ *         Returns the count of set bits
+ */
+extern int BitMapConsecutive(unsigned *BitMap, int *Position);
+ 
+/*
  * BitMapCopy - Create a copy of a bitmap
  * Input: BitMap - The bitmap create a copy of
  * Output: Returns pointer to copy of BitMap or NULL if error (no memory)
  *   The returned value MUST BE FREED by the calling routine
  */
 extern unsigned * BitMapCopy(unsigned *BitMap);
+
+/*
+ * BitMapCount - Return the count of set bits in the specified bitmap
+ * Input: BitMap - The bit map to get count from
+ * Output: Returns the count of set bits
+ */
+extern int BitMapCount(unsigned *BitMap);
 
 /*
  * BitMapOR - OR two bitmaps together
@@ -161,7 +179,7 @@ extern void BitMapSet(unsigned *BitMap, int Position);
  * BitMapValue - Return the value of specified bit in the specified bitmap
  * Input: BitMap - The bit map to get value from
  *        Position - Postition to get
- * Output: Returns the value 0 or 1
+ * Output: Normally returns the value 0 or 1, returns -1 if given bad BitMap ponter
  */
 extern int BitMapValue(unsigned *BitMap, int Position);
 
@@ -211,6 +229,23 @@ extern int Delete_Node_Record(char *name);
 extern int Delete_Part_Record(char *name);
 
 /* 
+ * Dump_Node - Dump all configuration and node information to a buffer
+ * Input: Buffer_Ptr - Location into which a pointer to the data is to be stored.
+ *                     The data buffer is actually allocated by Dump_Node and the 
+ *                     calling function must free the storage.
+ *         Buffer_Size - Location into which the size of the created buffer is in bytes
+ *         Update_Time - Dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * Output: Buffer_Ptr - The pointer is set to the allocated buffer.
+ *         Buffer_Size - Set to size of the buffer in bytes
+ *         Update_Time - set to time partition records last updated
+ *         Returns 0 if no error, errno otherwise
+ * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: This is a prototype for a function to ship data partition to an API.
+ */
+extern int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
+
+/* 
  * Find_Node_Record - Find a record for node with specified name,
  * Input: name - name of the desired node 
  * Output: return pointer to node record or NULL if not found
@@ -257,6 +292,35 @@ extern void List_Delete_Part(void *Part_Entry);
  * Key is partition name or "UNIVERSAL_KEY" for all partitions */
 extern int List_Find_Part(void *Part_Entry, void *key);
 
+/*
+ * Load_Integer - Parse a string for a keyword, value pair  
+ * Input: *destination - Location into which result is stored
+ *        keyword - String to search for
+ *        In_Line - String to search for keyword
+ * Output: *destination - set to value, No change if value not found, 
+ *             Set to 1 if keyword found without value, 
+ *             Set to -1 if keyword followed by "UNLIMITED"
+ *         In_Line - The keyword and value (if present) are overwritten by spaces
+ *         return value - 0 if no error, otherwise an error code
+ * NOTE: In_Line is overwritten, DO NOT USE A CONSTANT
+ */
+extern int Load_Integer(int *destination, char *keyword, char *In_Line);
+
+/*
+ * Load_String - Parse a string for a keyword, value pair  
+ * Input: *destination - Location into which result is stored
+ *        keyword - String to search for
+ *        In_Line - String to search for keyword
+ * Output: *destination - set to value, No change if value not found, 
+ *	     if *destination had previous value, that memory location is automatically freed
+ *         In_Line - The keyword and value (if present) are overwritten by spaces
+ *         return value - 0 if no error, otherwise an error code
+ * NOTE: destination must be free when no longer required
+ * NOTE: if destination is non-NULL at function call time, it will be freed 
+ * NOTE: In_Line is overwritten, DO NOT USE A CONSTANT
+ */
+extern int Load_String(char **destination, char *keyword, char *In_Line);
+
 /* 
  * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
  * generate multiple node names as needed.
@@ -275,8 +339,45 @@ extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *E
  * Call Init_SLURM_Conf before ever calling Read_SLURM_Conf.  
  * Read_SLURM_Conf can be called more than once if so desired.
  * Input: File_Name - Name of the file containing SLURM configuration information
- * Output: return - 0 if no error, otherwise an error code
+ * Output: Return - 0 if no error, otherwise an error code
  */
 extern int Read_SLURM_Conf (char *File_Name);
+
+/* 
+ * Report_Leftover - Report any un-parsed (non-whitespace) characters on the
+ * configuration input line.
+ * Input: In_Line - What is left of the configuration input line.
+ *        Line_Num - Line number of the configuration file.
+ * Output: NONE
+ */
+extern void Report_Leftover(char *In_Line, int Line_Num);
+
+/* 
+ * Update_Node - Update a node configuration data
+ * Input: NodeName - Node name specification (can include real expression)
+ *        Spec - The updates to the node's specification 
+ * Output:  Return - 0 if no error, otherwise an error code
+ */
+extern int Update_Node(char *NodeName, char *Spec);
+
+/* 
+ * Update_Part - Update a partition's configuration data
+ * Input: PartitionName - Partition's name
+ *        Spec - The updates to the partition's specification 
+ * Output:  Return - 0 if no error, otherwise an error code
+ * NOTE: The contents of Spec are overwritten by white space
+ */
+extern int Update_Part(char *PartitionName, char *Spec);
+
+/*
+ * Validate_Node_Specs - Validate the node's specifications as valid, 
+ *   if not set state to DOWN, in any case update LastResponse
+ * Input: NodeName - Name of the node
+ *        CPUs - Number of CPUs measured
+ *        RealMemory - MegaBytes of RealMemory measured
+ *        TmpDisk - MegaBytes of TmpDisk measured
+ * Output: Returns 0 if no error, ENOENT if no such node, EINVAL if values too low
+ */ 
+extern int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk);
 
 #endif /* !_HAVE_SLURM_H */

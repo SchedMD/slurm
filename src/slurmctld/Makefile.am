@@ -44,11 +44,11 @@ slurmctld_SOURCES = bits_bytes.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-read_config   : read_config_d.o bits_bytes.o node_mgr.o partition_mgr.o
 bits_bytes    : bits_bytes_d.o
-controller    : controller_d.o
+controller    : controller_d.o bits_bytes.o node_mgr.o partition_mgr.o read_config.o 
 node_mgr      : node_mgr_d.o bits_bytes.o
-partition_mgr : partition_mgr_d.o
+partition_mgr : partition_mgr_d.o bits_bytes.o node_mgr.o
+read_config   : read_config_d.o bits_bytes.o node_mgr.o partition_mgr.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
