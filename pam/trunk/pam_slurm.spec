@@ -3,8 +3,8 @@
 ##
 
 Name:		pam_slurm
-Version:	1.0
-Release:	1
+Version:	1.2
+Release:	2
 
 Summary:	PAM module for restricting access to compute nodes via SLURM.
 Group:		System Environment/Base
