@@ -142,7 +142,6 @@ extern void print_bgl_record(bgl_record_t* bgl_record)
 		error("print_bgl_record, record given is null");
 		return;
 	}
-
 #if _DEBUG
 	info(" bgl_record: ");
 	if (bgl_record->bgl_part_id)
@@ -362,6 +361,8 @@ extern int create_static_partitions(List part_list)
 			found_record->bgl_part_list = bgl_record->bgl_part_list;			
 			found_record->hostlist = bgl_record->hostlist;
 			found_record->nodes = xstrdup(bgl_record->nodes);
+			//_process_nodes(found_record);
+	
 			found_record->bp_count = bgl_record->bp_count;
 			found_record->switch_count = bgl_record->switch_count;
 			found_record->geo[X] = bgl_record->geo[X];
@@ -370,7 +371,7 @@ extern int create_static_partitions(List part_list)
 			
 			found_record->conn_type = bgl_record->conn_type;
 			found_record->bitmap = bgl_record->bitmap;
-			bgl_record->node_use = SELECT_COPROCESSOR_MODE;
+			found_record->node_use = SELECT_COPROCESSOR_MODE;
 			configure_partition(found_record);
 			/*********************************************************/
 			print_bgl_record(found_record);
@@ -389,21 +390,21 @@ extern int create_static_partitions(List part_list)
 	reset_pa_system();
 
 	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-	list_push(bgl_list, bgl_record);
 	
-	bgl_record->bgl_part_list = list_create(NULL);			
-	bgl_record->hostlist = hostlist_create(NULL);
 	bgl_record->nodes = xmalloc(sizeof(char)*13);
 	memset(bgl_record->nodes, 0, 13);
 	sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
-       	_process_nodes(bgl_record);
-	itr = list_iterator_create(bgl_list);
+       	itr = list_iterator_create(bgl_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
 			goto no_total;	/* don't reboot this one */
 		}
 	}
-
+	bgl_record->bgl_part_list = list_create(NULL);			
+	bgl_record->hostlist = hostlist_create(NULL);
+	_process_nodes(bgl_record);
+	list_push(bgl_list, bgl_record);
+	
 	bgl_record->conn_type = SELECT_TORUS;
 	
 	set_bgl_part(bgl_record->bgl_part_list, 
@@ -413,12 +414,13 @@ extern int create_static_partitions(List part_list)
 	configure_partition(bgl_record);
 
 	found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-	list_push(bgl_list, found_record);
+	//list_push(bgl_list, found_record);
 			
 	found_record->bgl_part_list = bgl_record->bgl_part_list;			
 	found_record->hostlist = bgl_record->hostlist;
 	found_record->nodes = xstrdup(bgl_record->nodes);
-	//found_record->bgl_part = bgl_record->bgl_part;
+	//_process_nodes(bgl_record);
+	
 	found_record->bp_count = bgl_record->bp_count;
 	found_record->switch_count = bgl_record->switch_count;
 	found_record->geo[X] = bgl_record->geo[X];
@@ -435,7 +437,6 @@ extern int create_static_partitions(List part_list)
 no_total:
 	rc = SLURM_SUCCESS;
 	list_iterator_destroy(itr);
-	
 	return rc;
 }
 
