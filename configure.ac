@@ -73,7 +73,7 @@ if test $with_elan; then
 fi
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(popt.h mcheck.h values.h)
+AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
