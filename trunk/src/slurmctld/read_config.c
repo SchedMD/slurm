@@ -48,6 +48,7 @@
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -642,7 +643,12 @@ static int _parse_part_spec(char *in_line)
 /*
  * read_slurm_conf - load the slurm configuration from the configured file. 
  * read_slurm_conf can be called more than once if so desired.
- * IN recover - set to use state saved from last slurmctld shutdown
+ * IN recover - replace job, node and/or partition data with last saved 
+ *              state information depending upon value
+ *              0 = use no saved state information
+ *              1 = recover saved job state, 
+ *                  node DOWN/DRAIN state and reason information
+ *              2 = recover all state saved from last slurmctld shutdown
  * RET 0 if no error, otherwise an error code
  * Note: Operates on common variables only
  */
@@ -765,17 +771,26 @@ int read_slurm_conf(int recover)
 	    (strcmp(node_name, slurmctld_conf.control_machine) == 0))
 		(void) shutdown_backup_controller();
 
-	if (recover) {
-		(void) load_all_node_state();
+	if (recover > 1) {	/* Load node, part and job info */
+		(void) load_all_node_state(false);
 		(void) load_all_part_state();
 		(void) load_all_job_state();
-	} else {
-		reset_first_job_id();
+	} else if (recover == 1) {	/* Load job info only */
+		if (old_node_table_ptr) {
+			debug("restoring original state of nodes");
+			_restore_node_state(old_node_table_ptr, 
+					    old_node_record_count);
+		} else
+			(void) load_all_node_state(true);
+		(void) load_all_job_state();
+		reset_job_bitmaps();
+	} else {	/* Load no info, preserve all state */
 		if (old_node_table_ptr) {
 			debug("restoring original state of nodes");
 			_restore_node_state(old_node_table_ptr, 
 					    old_node_record_count);
 		}
+		reset_first_job_id();
 		reset_job_bitmaps();
 	}
 	(void) _sync_nodes_to_jobs();

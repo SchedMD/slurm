@@ -47,6 +47,8 @@
 #include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/xstring.h"
+
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 
 static int          _background_process_msg(slurm_msg_t * msg);
@@ -127,7 +129,7 @@ void run_backup(void)
 
 	/* clear old state and read new state */
 	job_fini();
-	if (read_slurm_conf(1))	/* Recover all state */
+	if (read_slurm_conf(2))	/* Recover all state */
 		fatal("Unable to recover slurm state");
 	slurmctld_config.shutdown_time = (time_t) 0;
 	return;

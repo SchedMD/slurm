@@ -726,11 +726,13 @@ extern int list_find_part (void *part_entry, void *key);
 extern int load_all_job_state ( void );
 
 /*
- * load_all_node_state - load the node state from file, recover on slurmctld 
- *	restart. execute this after loading the configuration file data.
- *	data goes into common storage
+ * load_all_node_state - Load the node state from file, recover on slurmctld 
+ *	restart. Execute this after loading the configuration file data.
+ *	Data goes into common storage.
+ * IN state_only - if true over-write only node state and reason fields
+ * RET 0 or error code
  */
-extern int load_all_node_state ( void );
+extern int load_all_node_state ( bool state_only );
 
 /*
  * load_part_uid_allow_list - reload the allow_uid list of partitions
@@ -877,15 +879,6 @@ void part_fini (void);
  */
 void purge_old_job (void);
 
-/*
- * read_slurm_conf - load the slurm configuration from the configured file. 
- * read_slurm_conf can be called more than once if so desired.
- * IN recover - set to use state saved from last slurmctld shutdown
- * RET 0 if no error, otherwise an error code
- * Note: Operates on common variables only
- */
-extern int  read_slurm_conf (int recover);
-
 /* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
  * just preserve it */
 void rehash_jobs(void);
@@ -1013,19 +1006,6 @@ extern int step_create ( step_specs *step_specs,
  */
 extern bool step_on_node(struct job_record  *job_ptr, 
 			 struct node_record *node_ptr);
-
-/*
- * switch_state_fini - save switch state and shutdown switch
- * RET 0 if no error, otherwise an error code
- */ 
-extern int switch_state_fini(void);
-
-/*
- * switch_state_begin - Recover or initialize switch state
- * IN recover - If set, recover switch state as previously saved
- * RET 0 if no error, otherwise an error code
- */ 
-extern int switch_state_begin(int recover);
 
 /*
  * Synchronize the batch job in the system with their files.
