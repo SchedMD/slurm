@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * bitstring.h - definitions for bitstring.c, bitmap manipulation functions
+ *  bitstring.h - definitions for bitstring.c, bitmap manipulation functions
  *****************************************************************************
  *  Reimplementation of the functionality of Paul Vixie's bitstring.h macros
  *  from his cron package and later contributed to 4.4BSD.  Little remains, 
