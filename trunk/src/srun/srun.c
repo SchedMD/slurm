@@ -134,18 +134,18 @@ int srun(int ac, char **av)
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
 	 */
-	if (opt.batch) {
-		if (_run_batch_job() < 0)
-			exit (1);
-		exit (0);
-
-	} else if (opt.test_only) {
+	if (opt.test_only) {
 		int rc = allocate_test();
 		if (rc) {
 			slurm_perror("allocation failure");
 			exit (1);
 		}
 		info("allocation success");
+		exit (0);
+
+	} else if (opt.batch) {
+		if (_run_batch_job() < 0)
+			exit (1);
 		exit (0);
 
 	} else if (opt.no_alloc) {
