@@ -90,10 +90,13 @@
  *    --leak-resolution=med slurmctld -D
  * then exercise the slurmctld functionality before executing
  * > scontrol shutdown
+ *
  * The OpenSSL code produces a bunch of errors related to use of 
- * non-initialized memory use. Otherwise the report should be free 
- * of errors. Remember to reset MEM_LEAK_TEST to 0 afterwards for 
- * best system response (non-seamless backup controller use).
+ * non-initialized memory use. 
+ * The switch/elan plugin orphans 640 bytes at shutdown.
+ * Otherwise the report should be free of errors. Remember to reset 
+ * MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
+ * backup controller use).
 \**************************************************************************/
 #define MEM_LEAK_TEST     0	/* Running memory leak test if set */
 
@@ -336,15 +339,17 @@ int main(int argc, char *argv[])
 	\*   Anything left over represents a leak.   */
 	sleep(5);	/* give running agents a chance to complete */
 	agent_purge();
+	job_fini();
+	part_fini();	/* part_fini() must preceed node_fini() */
+	node_fini();
+	/* Plugins are needed to purge job/node data structures,
+	 * unplug after other data structures are purged */
 	slurm_select_fini();
 	g_slurm_jobcomp_fini();
 	slurm_sched_fini();
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
-	job_fini();
-	part_fini();	/* part_fini() must preceed node_fini() */
-	node_fini();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	free_slurm_conf(&slurmctld_conf);
 	slurm_api_clear_config();
