@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  bluegene.c - bgl node allocation plugin. 
+ *  bluegene.c - blue gene node allocation module. 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>
+ *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include "src/slurmctld/proc_req.h"
+#include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
@@ -34,7 +35,6 @@
 #include "src/common/xstring.h"
 #include "bluegene.h"
 #include "partition_sys.h"
-#include "src/common/hostlist.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128
@@ -60,7 +60,7 @@ static int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slur
 			       int min_nodes, int max_nodes,
 			       int spec, bgl_record_t** found_bgl_record);
 static int _parse_request(char* request_string, partition_t** request);
-static int _wire_bgl_partitions();
+static int _wire_bgl_partitions(void);
 static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static void _destroy_bgl_record(void* object);
@@ -70,7 +70,7 @@ static void _process_config();
 static int _parse_bgl_spec(char *in_line);
 static bgl_conf_record_t* _find_config_by_nodes(char* nodes);
 static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
-static void _update_bgl_node_bitmap();
+static void _update_bgl_node_bitmap(void);
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 		char *tv_str, int len_tv_str);
 
@@ -95,9 +95,8 @@ extern int create_static_partitions(List part_list)
 		bgl_list = list_create(_destroy_bgl_record);
 
 	/** copy the slurm conf partition info, this will fill in bgl_list */
-	if (_copy_slurm_partition_list(part_list)){
+	if (_copy_slurm_partition_list(part_list))
 		return SLURM_ERROR;
-	}
 
 	_process_config();
 	/* after reading in the configuration, we have a list of partition 
@@ -105,30 +104,26 @@ extern int create_static_partitions(List part_list)
 	 */
 	_wire_bgl_partitions();
 
-	
 	return SLURM_SUCCESS;
 }
 
 /**
  * IN - requests: list of bgl_record(s)
  */
-static int _wire_bgl_partitions()
+static int _wire_bgl_partitions(void)
 {
 	bgl_record_t* cur_record;
 	partition_t* cur_partition;
 	ListIterator itr;
-	debug("bluegene::wire_bgl_partitions");
 
 	itr = list_iterator_create(bgl_list);
 	while ((cur_record = (bgl_record_t*) list_next(itr))) {
 		cur_partition = (partition_t*) cur_record->alloc_part;
-		if (configure_switches(cur_partition)){
+		if (configure_switches(cur_partition))
 			error("error on cur_record %s", cur_record->nodes);
-		}
 	}	
 	list_iterator_destroy(itr);
 
-	debug("wire_bgl_partitions done");
 	return SLURM_SUCCESS;
 }
 
@@ -197,8 +192,10 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 		orig_ptr = nodes_tmp;
 
 		cur_nodes = strtok_r(nodes_tmp, delimiter, &next_ptr);
-		debug3("_copy_slurm_partition_list parse:%s, token[0]:%s", 
+#if _DEBUG
+		debug("_copy_slurm_partition_list parse:%s, token[0]:%s", 
 			slurm_part->nodes, cur_nodes);
+#endif
 		/** 
 		 * for each of the slurm partitions, there may be
 		 * several bgl partitions, so we need to find how to
@@ -228,12 +225,15 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
-	
-			if ((slurm_part->min_nodes == slurm_part->max_nodes)
-			&& (bgl_record->size == slurm_part->max_nodes))
-				bgl_record->part_lifecycle = STATIC;
-			else 
+
+#if 0	/* Future use */
+			if ((slurm_part->min_nodes != slurm_part->max_nodes)
+			|| (bgl_record->size != slurm_part->max_nodes))
 				bgl_record->part_lifecycle = DYNAMIC;
+			else
+#endif
+				bgl_record->part_lifecycle = STATIC;
+
 			print_bgl_record(bgl_record);
 			list_push(bgl_list, bgl_record);
 
@@ -250,7 +250,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	return rc;
 }
 
-extern int read_bgl_conf()
+extern int read_bgl_conf(void)
 {
 	DEF_TIMERS;
 	FILE *bgl_spec_file;	/* pointer to input data file */
@@ -276,8 +276,7 @@ extern int read_bgl_conf()
 		line_num++;
 		if (strlen(in_line) >= (BUFSIZE - 1)) {
 			error("read_bgl_config line %d, of input file %s "
-			      "too long", 
-			      line_num, bgl_conf);
+			      "too long", line_num, bgl_conf);
 			fclose(bgl_spec_file);
 			return E2BIG;
 			break;
@@ -399,7 +398,7 @@ static void _destroy_bgl_record(void* object)
 {
 	bgl_record_t* this_record = (bgl_record_t*) object;
 
-	if (this_record){
+	if (this_record) {
 		xfree(this_record->nodes);
 		xfree(this_record->slurm_part_id);
 		if (this_record->hostlist)
@@ -416,7 +415,7 @@ static void _destroy_bgl_record(void* object)
 static void _destroy_bgl_conf_record(void* object)
 {
 	bgl_conf_record_t* this_record = (bgl_conf_record_t*) object;
-	if (this_record){
+	if (this_record) {
 		xfree(this_record->nodes);
 		xfree(this_record);
 	}
@@ -624,9 +623,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		bitstr_t* slurm_part_bitmap, int min_nodes, int max_nodes,
 		int spec, bgl_record_t** found_bgl_record)
 {
-	/** FIXME, need to get all the partition_t's in a list, or a common data structure
-	 * that holds all that info I need!!!
-	 */
 	ListIterator itr;
 	bgl_record_t* record;
 	int i;
@@ -645,6 +641,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		SELECT_DATA_ROTATE, &rotate);
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		target_size *= req_geometry[i];
+	if (target_size == 0)	/* no geometry specified */
+		target_size = min_nodes;
 
 	/** this is where we should have the control flow depending on
 	    the spec arguement*/
@@ -668,6 +666,13 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			continue;
 		}
 
+		/* Check that configured */
+		if (!record->alloc_part) {
+			error("warning, bgl_record %s undefined in bluegene.conf",
+				record->nodes);
+			continue;
+		}
+
 		/*
 		 * Next we check that this partition's bitmap is within 
 		 * the set of nodes which the job can use. 
@@ -684,39 +689,26 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-#if _DEBUG
-		info("part type match %s ? %s", convert_part_type(conn_type), 
-			convert_part_type(record->part_type));
-#endif
-
 		if ((conn_type != record->part_type)
 		&& (conn_type != RM_NAV)) {
+			debug("bgl partition %s conn-type not usable", record->nodes);
 			continue;
 		} 
 
 		/***********************************************/
 		/* check the node_use specified matches */
 		/***********************************************/
-#if _DEBUG
-		info("node use match %s ? %s", convert_node_use(node_use), 
-			convert_node_use(record->node_use));
-#endif
-
-		if (node_use != record->node_use)
+		if (node_use != record->node_use) {
+			debug("bgl partition %s node-use not usable", record->nodes);
 			continue;
+		}
 
 		/*****************************************/
 		/** match up geometry as "best" possible */
 		/*****************************************/
-		if (!record->alloc_part) {
-			error("warning, bgl_record %s has not found a home...",
-				record->nodes);
-			continue;
-		}
-
-		if (req_geometry[0] == 0) {
-			debug("Geometry not specified");
-		} else {	/* match requested geometry */
+		if (req_geometry[0] == 0)
+			;	/*Geometry not specified */
+		else {	/* match requested geometry */
 			bool match = false;
 			int rot_cnt = 0;	/* attempt six rotations of dimensions */
 
@@ -748,15 +740,14 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	}	
 	
 	/** set the bitmap and do other allocation activities */
-	if (*found_bgl_record){
-		debug("phung: SUCCESS! found partition %s <%s>", 
+	if (*found_bgl_record) {
+		debug("_find_best_partition_match %s <%s>", 
 		      (*found_bgl_record)->slurm_part_id, (*found_bgl_record)->nodes);
 		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
-		debug("- - - - - - - - - - - - -");
 		return SLURM_SUCCESS;
 	}
 	
-	debug("phung: FAILURE! no bgl record found");
+	debug("_find_best_partition_match none found");
 	return SLURM_ERROR;
 }
 
@@ -821,22 +812,13 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	char buf[100];
 
 	debug("bluegene::submit_job");
-	/*
-	itr = list_iterator_create(bgl_list);
-	while ((record = (bgl_record_t*) list_next(itr))) {
-		print_bgl_record(record);
-	}
-	*/
-	debug("******** job request ********");
+
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
-	debug("%s", buf);
-	debug("min_nodes:\t%d", min_nodes);
-	debug("max_nodes:\t%d", max_nodes);
-	_print_bitmap(slurm_part_bitmap);
+	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
 	
 	if (_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, max_nodes, 
-				       spec, &record)){
+				       spec, &record)) {
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */
@@ -852,8 +834,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	}
 
 	/** we should do the BGL stuff here like, init BGL job stuff... */
-	debug("return slurm partition bitmap");
-	_print_bitmap(slurm_part_bitmap);
 	return SLURM_SUCCESS;
 }
 
@@ -875,7 +855,7 @@ static void _print_bitmap(bitstr_t* bitmap)
  * through the list anyways, we would like to have instant O(1) access
  * to the nodelist that we need to update.
  */
-static void _update_bgl_node_bitmap()
+static void _update_bgl_node_bitmap(void)
 {
 #ifdef _RM_API_H__
 	int bp_num,wire_num,switch_num,i;
@@ -883,15 +863,16 @@ static void _update_bgl_node_bitmap()
 	rm_switch_t *my_switch;
 	rm_wire_t *my_wire;
 	rm_BP_state_t bp_state;
-	rm_location_t BPLoc;
+	rm_location_t bp_loc;
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	char* reason = NULL;
 	char down_node_list[BUFSIZE] = "";
 	char bgl_down_node[128];
 
-	if (!bgl){
+	if (!bgl) {
 		error("error, BGL is not initialized");
+		return;
 	}
 
 	debug("---------rm_get_BGL------------");
@@ -911,20 +892,20 @@ static void _update_bgl_node_bitmap()
 		
 		// is this blocking call?
 		rm_get_data(my_bp,RM_BPState,&bp_state);
-		rm_get_data(my_bp,RM_BPLoc,&BPLoc);
+		rm_get_data(my_bp,RM_BPLoc,&bp_loc);
 		/* from here we either update the node or bitmap
 		   entry */
 		/** translate the location to the "node name" */
 		snprintf(bgl_down_node, sizeof[bgl_down_node], "bgl%d%d%d", 
-			BPLoc.X, BPLoc.Y, BPLoc.Z);
+			bp_loc.X, bp_loc.Y, bp_loc.Z);
 		debug("update bgl node bitmap: %s loc(%s) is in state %s", 
 		      BPID, 
 		      bgl_down_node,
 		      convert_bp_state(RM_BPState));
 		// convert_partition_state(BPPartState);
-		// BPID,convert_bp_state(BPState),BPLoc.X,BPLoc.Y,BPLoc.Z,BPPartID
+		// BPID,convert_bp_state(BPState),bp_loc.X,bp_loc.Y,bp_loc.Z,BPPartID
 
-		if (RM_BPState == RM_BP_DOWN){
+		if (RM_BPState == RM_BP_DOWN) {
 			/* now we have to convert the BGL BP to a node
 			 * that slurm knows about = comma separated
 			 * node list
@@ -937,7 +918,8 @@ static void _update_bgl_node_bitmap()
 				error("down_node_list overflow");
 		}
 	}
-	if (!down_node_list){
+
+	if (!down_node_list) {
 		char reason[128];
 		time_t now = time(NULL);
 		struct tm * time_ptr = localtime(&now);
@@ -1005,7 +987,7 @@ bluegene_agent(void *args)
 		gettimeofday(&tv2, NULL);
 		_diff_tv_str(&tv1, &tv2, tv_str, 20);
 #if _DEBUG
-		info("Bluegene status update: completed, %s", tv_str);
+		debug("Bluegene status update: completed, %s", tv_str);
 #endif
 		sleep(SLEEP_TIME);      /* don't run continuously */
 	}
@@ -1027,7 +1009,7 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
 }
 
-/* Rotate a geometry array through six permutations */
+/* Rotate a 3-D geometry array through its six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 {
 	uint16_t tmp;
