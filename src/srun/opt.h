@@ -102,7 +102,8 @@ typedef struct srun_options {
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int  max_threads;	/* --threads, -T (threads in srun) */
-	int  nodes;		/* --nodes=n,       -N n	*/ 
+	int  min_nodes;		/* --nodes=n,       -N n	*/ 
+	int  max_nodes;		/* --nodes=x-n,       -N x-n	*/ 
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
@@ -143,6 +144,7 @@ typedef struct srun_options {
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
+	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 	bool no_alloc;		/* --no-allocate, -Z		*/
 
 } opt_t;

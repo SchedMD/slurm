@@ -61,7 +61,7 @@ main (int argc, char *argv[])
 	job_mesg. priority = 100;
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 10;
-	job_mesg. num_nodes = 1;
+	job_mesg. min_nodes = 1;
 	job_mesg. user_id = 1500;
 
 

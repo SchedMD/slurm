@@ -30,7 +30,7 @@ main (int argc, char *argv[])
 
 	strcpy (job_rec->name, "Name1");
 	strcpy (job_rec->partition, "batch");
-	job_rec->details->num_nodes = 1;
+	job_rec->details->min_nodes = 1;
 	job_rec->details->num_procs = 1;
 	tmp_id = job_rec->job_id;
 
@@ -44,7 +44,7 @@ main (int argc, char *argv[])
 
 		strcpy (job_rec->name, "Name2");
 		strcpy (job_rec->partition, "debug");
-		job_rec->details->num_nodes = i;
+		job_rec->details->min_nodes = i;
 		job_rec->details->num_procs = i;
 	}
 
