@@ -83,46 +83,46 @@ typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bgl_record {
-	char* slurm_part_id;		/* ID specified by admins	*/
+	char* nodes;			/* String of nodes in partition */
 	char * owner_name;		/* Owner of partition		*/
 	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
-	char* nodes;			/* String of nodes in partition */
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
-	hostlist_t hostlist;		/* expanded form of hosts */
-	bitstr_t *bitmap;		/* bitmap of nodes for this partition */
-	struct partition* alloc_part;	/* the allocated partition   */
-	int size;			/* node count for the partitions */
+	rm_partition_state_t state;   	/* the allocated partition   */
+	int coord[SYSTEM_DIMENSIONS];   /* bottom left coordinates */
 	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
+	rm_partition_t *bgl_part;
+	List bgl_part_list;
+	int bp_count;
+	int switch_count;
 } bgl_record_t;
-/** 
- * structure for use by partitioning algorithm to refer to the
- * structural elements of the BGL partition system.
- */
-typedef struct partition {
-	int bl_coord[SYSTEM_DIMENSIONS]; /* bottom left coordinates */
-	int tr_coord[SYSTEM_DIMENSIONS]; /* top right coordinates */
-	ushort dimensions[SYSTEM_DIMENSIONS]; /* X,Y,Z dimensions */
-	void* bgl_record_ptr;		/* pointer to referring bgl_record */
-	int size;
-	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
-	ushort conn_type;	/* Type=Mesh/Torus/NAV		*/
-	ushort node_use;	/* Use=Virtual/Coprocessor	*/
-} partition_t;
 
+typedef struct {
+	int source;
+	int target;
+} bgl_conn_t;
+
+typedef struct {
+	int dim;
+	List conn_list;
+} bgl_switch_t;
+
+typedef struct {
+	int *coord;
+	int used;
+	List switch_list;
+} bgl_bp_t;
 
 /*
  * bgl_conf_record is used to store the elements read from the bluegene.conf
  * file and is loaded by init().
  */
-typedef struct bgl_conf_record {
-	char* nodes;
-	rm_connection_type_t conn_type;/* Mesh or Torus or NAV */
-	rm_partition_mode_t node_use;
-	List bgl_part_list;
-	int size;
-	rm_partition_t *bgl_part;
-} bgl_conf_record_t;
+/* typedef struct bgl_conf_record { */
+/* 	char* nodes; */
+/* 	rm_connection_type_t conn_type;/\* Mesh or Torus or NAV *\/ */
+/* 	rm_partition_mode_t node_use; */
+/* 	rm_partition_t *bgl_part; */
+/* } bgl_conf_record_t; */
 
 
 
@@ -174,7 +174,7 @@ char *bgl_err_str(status_t inx);
 
 /* partition_sys.c */
 /*****************************************************/
-int configure_partition(bgl_conf_record_t * bgl_conf_record);
+int configure_partition(bgl_record_t * bgl_conf_record);
 int read_bgl_partitions();
 
 /* state_test.c */
@@ -223,6 +223,6 @@ int term_job(struct job_record *job_ptr);
 
 /* bgl_switch_connections.c */
 /*****************************************************/
-int configure_partition_switches(bgl_conf_record_t * bgl_conf_record);
+int configure_partition_switches(bgl_record_t * bgl_conf_record);
 
 #endif /* _BLUEGENE_H_ */

@@ -33,43 +33,37 @@
 
 #define _DEBUG 0
 
-#define SWAP(a,b,t)	\
-_STMT_START {		\
-	(t) = (a);	\
-	(a) = (b);	\
-	(b) = (t);	\
-} _STMT_END
 
-static int  _find_best_partition_match(struct job_record* job_ptr,
+static int _rotate_geo(int *geometry);
+static bgl_record_t *_find_best_partition_match(struct job_record* job_ptr,
 				bitstr_t* slurm_part_bitmap,
 				int min_nodes, int max_nodes,
-				int spec, bgl_record_t** found_bgl_record);
-static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
+				int spec);
 
 /* Rotate a 3-D geometry array through its six permutations */
-static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
+static int _rotate_geo(int *geometry)
 {
-	uint16_t tmp;
+	static int rotate_count = 0;
+	int temp;
 
-	switch (rot_cnt) {
-		case 0:		/* ABC -> ACB */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
-			break;
-		case 1:		/* ACB -> CAB */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
-			break;
-		case 2:		/* CAB -> CBA */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
-			break;
-		case 3:		/* CBA -> BCA */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
-			break;
-		case 4:		/* BCA -> BAC */
-			SWAP(req_geometry[1], req_geometry[2], tmp);
-			break;
-		case 5:		/* BAC -> ABC */
-			SWAP(req_geometry[0], req_geometry[1], tmp);
-			break;
+	if (rotate_count==(PA_SYSTEM_DIMENSIONS-1)) {
+		//printf("Special!\n");
+		temp=geometry[X];
+		geometry[X]=geometry[Z];
+		geometry[Z]=temp;
+		rotate_count++;
+		return 1;
+		
+	} else if(rotate_count<(PA_SYSTEM_DIMENSIONS*2)) {
+		temp=geometry[X];
+		geometry[X]=geometry[Y];
+		geometry[Y]=geometry[Z];
+		geometry[Z]=temp;
+		rotate_count++;
+		return 1;
+	} else {
+		rotate_count = 0;
+		return 0;
 	}
 }
 /*
@@ -83,15 +77,15 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
  * returns 1 for error (no match)
  * 
  */
-static int _find_best_partition_match(struct job_record* job_ptr, 
+static bgl_record_t *_find_best_partition_match(struct job_record* job_ptr, 
 		bitstr_t* slurm_part_bitmap, int min_nodes, int max_nodes,
-		int spec, bgl_record_t** found_bgl_record)
+		int spec)
 {
 	ListIterator itr;
-	bgl_record_t* record;
+	bgl_record_t *record;
 	int i;
-	uint16_t req_geometry[SYSTEM_DIMENSIONS];
-	uint16_t conn_type, node_use, rotate, target_size = 1;
+	int req_geometry[SYSTEM_DIMENSIONS];
+	int conn_type, node_use, rotate, target_size = 1;
 
 	sort_bgl_record_inc_size(bgl_list);
 
@@ -111,125 +105,51 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 	itr = list_iterator_create(bgl_list);
-	*found_bgl_record = NULL;
-
-	/*
-	 * FIXME: NEED TO PUT THIS LOGIC IN: 
-	 * if RM_NAV, then the partition with both the TORUS and the
-	 * dims should be favored over the MESH and the dims, but
-	 * foremost is the correct num of dims. 
-	 */
+	
 	debug("number of partitions to check: %d", list_count(bgl_list));
-	while ((record = (bgl_record_t*) list_next(itr))) {
+	while ((record = (bgl_record_t*) list_next(itr)) != NULL) {
 		/*
 		 * check that the number of nodes is suitable
 		 */
- 		if ((record->size < min_nodes)
-		||  (max_nodes != 0 && record->size > max_nodes)
-		||  (record->size < target_size)) {
-			debug("partition %s node count not suitable",
-				record->slurm_part_id);
-			continue;
-		}
-
-		/* Check that configured */
-		if (!record->alloc_part) {
-			error("warning, bgl_record %s undefined in "
-				"bluegene.conf", record->nodes);
-			continue;
-		}
-
-		/*
-		 * Next we check that this partition's bitmap is within 
-		 * the set of nodes which the job can use. 
-		 * Nodes not available for the job could be down,
-		 * drained, allocated to some other job, or in some 
-		 * SLURM partition not available to this job.
-		 */
-		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
-			debug("bgl partition %s has nodes not usable by this "
-				"job", record->nodes);
-			continue;
-		}
-
-		/*
-		 * Insure that any required nodes are in this BGL partition
-		 */
-		if (job_ptr->details->req_node_bitmap
-		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
-				record->bitmap))) {
-			info("bgl partition %s lacks required nodes",
-				record->nodes);
-			continue;
-		}
-
-		/***********************************************/
-		/* check the connection type specified matches */
-		/***********************************************/
-		if ((conn_type != record->conn_type)
-		&&  (conn_type != SELECT_NAV)) {
-			debug("bgl partition %s conn-type not usable", 
-				record->nodes);
-			continue;
-		} 
-
-		/***********************************************/
-		/* check the node_use specified matches        */
-		/***********************************************/
-		if ((node_use != record->node_use) 
-		&&  (node_use != SELECT_NAV)) {
-			debug("bgl partition %s node-use not usable", 
-					record->nodes);
-			continue;
-		}
-
-		/*****************************************/
-		/* match up geometry as "best" possible  */
-		/*****************************************/
-		if (req_geometry[0] == 0)
-			;	/* Geometry not specified */
-		else {	/* match requested geometry */
-			bool match = false;
-			int rot_cnt = 0;	/* attempt six rotations  */
-
-			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
-				for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-					if (record->alloc_part->dimensions[i] <
-							req_geometry[i])
+ 		if ((record->state == RM_PARTITION_FREE)  
+		      && ((conn_type == record->conn_type)
+			|| (conn_type != SELECT_NAV))
+		    && ((node_use == record->node_use) 
+			|| (node_use != SELECT_NAV))
+		    && (record->bp_count > min_nodes)
+		    && (record->bp_count < max_nodes)
+		    && (record->bp_count < target_size) 
+			) {
+		
+			/*****************************************/
+			/* match up geometry as "best" possible  */
+			/*****************************************/
+			if (req_geometry[0]) {				
+				/* match requested geometry */
+				
+				while(1) {
+					if ((record->coord[X] == req_geometry[X])
+					    && (record->coord[Y] == req_geometry[Y])
+					    && (record->coord[Z] == req_geometry[Z]))
+						break;
+					else if(!_rotate_geo(req_geometry))
 						break;
 				}
-				if (i == SYSTEM_DIMENSIONS) {
-					match = true;
-					break;
-				}
-				if (rotate == 0)
-					break;		/* not usable */
-				_rotate_geo(req_geometry, rot_cnt);
-			}
-
-			if (!match) 
-				continue;	/* Not usable */
-		}
-
-		if ((*found_bgl_record == NULL)
-		||  (record->size < (*found_bgl_record)->size)) {
-			*found_bgl_record = record;
-			if (record->size == target_size)
+				
+			} else if (record->bp_count == target_size)
 				break;
+			
 		}
-	}	
-	
-	/* set the bitmap and do other allocation activities */
-	if (*found_bgl_record) {
-		debug("_find_best_partition_match %s <%s>", 
-			(*found_bgl_record)->slurm_part_id, 
-			(*found_bgl_record)->nodes);
-		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
-		return SLURM_SUCCESS;
+		
+		/* set the bitmap and do other allocation activities */
+		if (record) {
+			
+			return record;
+		}
 	}
 	
 	debug("_find_best_partition_match none found");
-	return SLURM_ERROR;
+	return NULL;
 }
 
 /*
@@ -252,20 +172,24 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
 	
-	if (_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
-					max_nodes, spec, &record)) {
+	if((record = _find_best_partition_match(job_ptr, 
+						slurm_part_bitmap, 
+						min_nodes, 
+						max_nodes, 
+						spec)) == NULL) {
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */
-		char bgl_part_id[BITSIZE];
+		
 #ifdef HAVE_BGL_FILES
-		snprintf(bgl_part_id, BITSIZE, "%s", record->bgl_part_id);
-#else
-		snprintf(bgl_part_id, BITSIZE, "UNDEFINED");
-#endif
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_PART_ID, bgl_part_id);
+				     SELECT_DATA_PART_ID, record->bgl_part_id);
+#else
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+				     SELECT_DATA_PART_ID, "UNDEFINED");
+#endif
+		
 	}
-
+	
 	return SLURM_SUCCESS;
 }

@@ -60,8 +60,8 @@ List bgl_init_part_list = NULL;	/* Initial bgl partition state */
 // static int  _get_bp(rm_element_t *bp, rm_location_t *loc);
 /*    static int  _is_not_equals_all_coord (int* rec_a, int* rec_b); */
 /*    static int  _is_not_equals_some_coord(int* rec_a, int* rec_b); */
-   static void _pre_allocate(bgl_conf_record_t *bgl_conf_record);
-   static int _post_allocate(rm_partition_t *my_part);
+   static void _pre_allocate(bgl_record_t *bgl_record);
+   static int _post_allocate(bgl_record_t *bgl_record);
 // static int _get_switch_list(partition_t* partition, List* switch_list);
 
 /* static int  _create_bgl_partitions(List requests); */
@@ -83,20 +83,6 @@ static int  _post_bgl_init_read(void *object, void *arg);
 /*   extern void debug(const char *fmt, ...); */
 /* #endif */
 
-void print_partition(partition_t* part)
-{
-	if (part == NULL)
-		return;
-
-	debug("\tdimensions: [ %d %d %d ]", part->dimensions[0], 
-	      part->dimensions[1], part->dimensions[2]);
-	debug("\tbl coord:   [ %d %d %d ]", part->bl_coord[0], 
-	      part->bl_coord[1], part->bl_coord[2]);
-	debug("\ttr coord:   [ %d %d %d ]", part->tr_coord[0], 
-	      part->tr_coord[1], part->tr_coord[2]);
-	debug("\tsize: %d", part->size);
-	debug("\tbgl_record_ptr addr: %d", part->bgl_record_ptr);
-}
 /** 
  * print out a list
  */
@@ -128,84 +114,85 @@ void print_list(List list)
 	list_iterator_destroy(itr);
 }
 
-/** 
- * print out list of the system partitions
- */
-void print_sys_list(List list)
-{
-	ListIterator itr;
-	int i, part_count=0;
-	partition_t* stuff;
+/* /\**  */
+/*  * print out list of the system partitions */
+/*  *\/ */
+/* void print_sys_list(List list) */
+/* { */
+/* 	ListIterator itr; */
+/* 	int i, part_count=0; */
+/* 	partition_t* stuff; */
 
-	if (list == NULL){
-		debug("List is empty (NULL)");
-		return;
-	}
+/* 	if (list == NULL){ */
+/* 		debug("List is empty (NULL)"); */
+/* 		return; */
+/* 	} */
 
-	itr = list_iterator_create(list);
-	while ((stuff = (partition_t*) list_next(itr))) {
-		if (stuff == NULL){
-			break; 
-		}
+/* 	itr = list_iterator_create(list); */
+/* 	while ((stuff = (partition_t*) list_next(itr))) { */
+/* 		if (stuff == NULL){ */
+/* 			break;  */
+/* 		} */
 
-		debug("part %d: dimensions [ %d", part_count++, stuff->dimensions[0]);
-		for (i=1; i<SYSTEM_DIMENSIONS; i++){
-			debug(" x %d", stuff->dimensions[i]);
-		}
-		debug(" ]");
+/* 		debug("part %d: dimensions [ %d", part_count++, stuff->dimensions[0]); */
+/* 		for (i=1; i<SYSTEM_DIMENSIONS; i++){ */
+/* 			debug(" x %d", stuff->dimensions[i]); */
+/* 		} */
+/* 		debug(" ]"); */
 
-		debug("bl coord [ %d", stuff->bl_coord[0]);
-		for (i=1; i<SYSTEM_DIMENSIONS; i++){
-			debug(" x %d", stuff->bl_coord[i]);
-		}
-		debug(" ]");
+/* 		debug("bl coord [ %d", stuff->bl_coord[0]); */
+/* 		for (i=1; i<SYSTEM_DIMENSIONS; i++){ */
+/* 			debug(" x %d", stuff->bl_coord[i]); */
+/* 		} */
+/* 		debug(" ]"); */
 
-		debug("tr coord [ %d", stuff->tr_coord[0]);
-		for (i=1; i<SYSTEM_DIMENSIONS; i++){
-			debug(" x %d", stuff->tr_coord[i]);
-		}
-		debug(" ]");
+/* 		debug("tr coord [ %d", stuff->tr_coord[0]); */
+/* 		for (i=1; i<SYSTEM_DIMENSIONS; i++){ */
+/* 			debug(" x %d", stuff->tr_coord[i]); */
+/* 		} */
+/* 		debug(" ]"); */
 
-	}
-	list_iterator_destroy(itr);
-}
+/* 	} */
+/* 	list_iterator_destroy(itr); */
+/* } */
 /** 
  * initialize the BGL partition in the resource manager 
  */
-static void _pre_allocate(bgl_conf_record_t *bgl_conf_record)
+static void _pre_allocate(bgl_record_t *bgl_record)
 {
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionBlrtsImg,   bluegene_blrts);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionLinuxImg,   bluegene_linux);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionMloaderImg, bluegene_mloader);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionRamdiskImg, bluegene_ramdisk);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionConnection, &bgl_conf_record->conn_type);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionMode, &bgl_conf_record->node_use);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionUserName, USER_NAME);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   bluegene_blrts);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   bluegene_linux);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionMloaderImg, bluegene_mloader);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionRamdiskImg, bluegene_ramdisk);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionConnection, &bgl_record->conn_type);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, &bgl_record->node_use);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, USER_NAME);
 }
 
 /** 
  * add the partition record to the DB and boot it up!
  */
-static int _post_allocate(rm_partition_t *my_part)
+static int _post_allocate(bgl_record_t *bgl_record)
 {
 	int rc;
 //	rm_partition_state_t state=RM_PARTITION_READY;
 	pm_partition_id_t part_id;
 	char command[100];
+	
 	/* Add partition record to the DB */
 	printf("adding partition\n");
 	//my_part->description = "Stand-alone mpirun";
-	rc = rm_add_partition(my_part);
+	rc = rm_add_partition(bgl_record->bgl_part);
 	if (rc != STATUS_OK) {
 		error("Error adding partition");
 		return(-1);
 	}
 	printf("done adding\n");
-
+	
 	/* Get back the new partition id */
-	rm_get_data(my_part, RM_PartitionID, &part_id);
+	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &part_id);
 	/* We are done with the partition */
-	rm_free_partition(my_part);
+	rm_free_partition(bgl_record->bgl_part);
 	//exit(0);
 	/* Initiate boot of the partition */
 	/*debug("Booting Partition %s", part_id);
@@ -216,7 +203,7 @@ static int _post_allocate(rm_partition_t *my_part)
 		}*/
 
 	/* Wait for Partition to be booted */
-	rc = rm_get_partition(part_id, &my_part);
+	rc = rm_get_partition(part_id, &bgl_record->bgl_part);
 	if (rc != STATUS_OK) {
 		error("Error in GetPartition");
 		return(-1);
@@ -224,22 +211,27 @@ static int _post_allocate(rm_partition_t *my_part)
 	memset(command,0,100);
 	sprintf(command,"/home/da/allocate_block %s %s", part_id, USER_NAME);
 	system(command);
-	
-	//rm_set_data(my_part, RM_PartitionState, state);
+
+	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &bgl_record->bgl_part_id);
+	bgl_record->nodes = xstrdup(bgl_record->nodes);
+		
+	bgl_record->node_use = bgl_record->node_use;
+	bgl_record->conn_type = bgl_record->conn_type;
+	list_push(bgl_list, bgl_record);
 	fflush(stdout);
 
 	return 0;
 }
 
 
-int configure_partition(bgl_conf_record_t *bgl_conf_record)
+int configure_partition(bgl_record_t *bgl_record)
 {
-	rm_new_partition(&bgl_conf_record->bgl_part); /* new partition to be added */
-	_pre_allocate(bgl_conf_record);
+	rm_new_partition(&bgl_record->bgl_part); /* new partition to be added */
+	_pre_allocate(bgl_record);
 	
-	configure_partition_switches(bgl_conf_record);
+	configure_partition_switches(bgl_record);
 	
-	_post_allocate(bgl_conf_record->bgl_part); 
+	_post_allocate(bgl_record); 
 	return 1;
 }
 	
@@ -801,60 +793,6 @@ int max_dim_index(int* array)
 }
 
 /** 
- * rotate the given partition configuration into decreasing
- * order. (ie, 2,1,4 -> 4,2,1).  
- * 
- * note: this is for 3d only!
- */
-void rotate_part(const uint16_t* config, uint16_t** new_config)
-{
-	if (config == NULL)
-		return;
-
-	xfree(*new_config);
-	(*new_config) = (uint16_t*) xmalloc(SYSTEM_DIMENSIONS * 
-		sizeof(uint16_t));
-
-	if (config[0] > config[1]){
-		if (config[1] > config[2]){
-			; // array already sorted
-		} else {
-			if (config[0] > config[2]){
-				(*new_config)[0] = config[0];
-				(*new_config)[1] = config[2];
-				(*new_config)[2] = config[1];
-				return;
-			} else {
-				(*new_config)[0] = config[2];
-				(*new_config)[1] = config[0];
-				(*new_config)[2] = config[1];
-				return;
-			}
-		}
-	/* config[0] <= config[1] */
-	} else {
-		if (config[1] > config[2]){
-			if (config[0] > config [2]){
-				(*new_config)[0] = config[1];
-				(*new_config)[1] = config[0];
-				(*new_config)[2] = config[2];
-				return;
-			} else {
-				(*new_config)[0] = config[1];
-				(*new_config)[1] = config[2];
-				(*new_config)[2] = config[0];
-				return;
-			}
-		} else {
-			(*new_config)[0] = config[2];
-			(*new_config)[1] = config[1];
-			(*new_config)[2] = config[0];
-			return;
-		}
-	}
-}
-
-/** 
  * get the initial configuration of the BGL system (or clean it up so
  * that we know what we're dealing with).
  * 
@@ -1027,7 +965,6 @@ int read_bgl_partitions()
 			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
 			list_push(bgl_init_part_list, bgl_part_ptr);
 			bgl_part_ptr->bgl_part_id = xstrdup(part_id);
-			bgl_part_ptr->hostlist = hostlist_create(node_name_tmp);
 			if ((rm_rc = rm_get_data(part_ptr,
 					RM_PartitionConnection,
 					&bgl_part_ptr->conn_type))
@@ -1058,12 +995,9 @@ int read_bgl_partitions()
 				error("rm_free_partition(): %s",
 					bgl_err_str(rm_rc));
 			}
-		} else {
-			/* Add node name to existing BGL partition record */
-			hostlist_push(bgl_part_ptr->hostlist, node_name_tmp);
 		}
 
-		(bgl_part_ptr->size)++;
+		bgl_part_ptr->bp_count++;
 	}
 
 	/* perform post-processing for each bluegene partition */
@@ -1074,17 +1008,17 @@ int read_bgl_partitions()
 /* #ifdef HAVE_BGL_FILES */
 static int _post_bgl_init_read(void *object, void *arg)
 {
-	bgl_record_t *bgl_part_ptr = (bgl_record_t *) object;
-	int i = 1024;
+	/* bgl_record_t *bgl_part_ptr = (bgl_record_t *) object; */
+/* 	int i = 1024; */
 
-	bgl_part_ptr->nodes = xmalloc(i);
-	while (hostlist_ranged_string(bgl_part_ptr->hostlist, i,
-			bgl_part_ptr->nodes) < 0) {
-		i *= 2;
-		xrealloc(bgl_part_ptr->nodes, i);
-	}
+/* 	bgl_part_ptr->nodes = xmalloc(i); */
+/* 	while (hostlist_ranged_string(bgl_part_ptr->hostlist, i, */
+/* 			bgl_part_ptr->nodes) < 0) { */
+/* 		i *= 2; */
+/* 		xrealloc(bgl_part_ptr->nodes, i); */
+/* 	} */
 
-	print_bgl_record(bgl_part_ptr);
+/* 	print_bgl_record(bgl_part_ptr); */
 
 	return SLURM_SUCCESS;
 }
@@ -1096,13 +1030,6 @@ static void _part_list_del(void *object)
 	if (part_ptr) {
 		xfree(part_ptr->bgl_part_id);
 		xfree(part_ptr->nodes);
-		xfree(part_ptr->slurm_part_id);
-		if (part_ptr->bitmap) {
-			bit_free(part_ptr->bitmap);
-			part_ptr->bitmap = NULL;
-		}
-		if (part_ptr->hostlist)
-			hostlist_destroy(part_ptr->hostlist);
 		xfree(part_ptr);
 	}
 }
