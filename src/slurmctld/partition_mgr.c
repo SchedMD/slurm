@@ -433,18 +433,17 @@ list_find_part (void *part_entry, void *key)
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change PART_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_part() in api/part_info.c whenever the data format changes
  */
-int 
+void 
 pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	ListIterator part_record_iterator;
 	struct part_record *part_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code;
+	int buf_len, buffer_allocated, buffer_offset = 0;
 	char *buffer;
 	void *buf_ptr;
 	int parts_packed;
@@ -452,7 +451,7 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_part_update)
-		return 0;
+		return;
 
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
@@ -472,10 +471,7 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		if (part_record_point->magic != PART_MAGIC)
 			fatal ("pack_all_part: data integrity is bad");
 
-		error_code = pack_part(part_record_point, &buf_ptr, &buf_len);
-		if (error_code != 0) {
-			continue;
-		}
+		pack_part(part_record_point, &buf_ptr, &buf_len);
 		if (buf_len > BUF_SIZE) 
 		{
 			parts_packed ++ ;
@@ -501,8 +497,6 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
         buf_ptr = buffer;
         buf_len = buffer_allocated;
         pack32  ((uint32_t) parts_packed, &buf_ptr, &buf_len);
-
-	return 0;
 }
 
 
@@ -514,12 +508,11 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	buf_len - byte size of buffer
  * output: buf_ptr - advanced to end of data written
  *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if buffer too small
  * global: default_part_loc - pointer to the default partition
  * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
  *	and make the corresponding changes to load_part_config in api/partition_info.c
  */
-int 
+void 
 pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
 {
 	uint16_t default_part_flag;
@@ -549,9 +542,6 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 	}
 	else
 		packstr ("", buf_ptr, buf_len);
-
-
-	return 0;
 }
 
 

@@ -934,16 +934,15 @@ node_unlock ()
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
  * NOTE: change NODE_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_node() in api/node_info.c whenever the data format changes
  */
-int 
+void 
 pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code, inx;
+	int buf_len, buffer_allocated, buffer_offset = 0, inx;
 	char *buffer;
 	void *buf_ptr;
 	int nodes_packed;
@@ -951,7 +950,7 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_node_update)
-		return 0;
+		return;
 
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
@@ -969,9 +968,7 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
 			fatal ("pack_all_node: data integrity is bad");
 
-		error_code = pack_node(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
-		if (error_code != 0) 
-			continue;
+		pack_node(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
 		if (buf_len > BUF_SIZE) 
 		{
 			nodes_packed ++ ;
@@ -996,8 +993,6 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
         buf_ptr = buffer;
         buf_len = buffer_allocated;
         pack32  ((uint32_t) nodes_packed, &buf_ptr, &buf_len);
-
-	return 0;
 }
 
 
@@ -1009,11 +1004,10 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	buf_len - byte size of buffer
  * output: buf_ptr - advanced to end of data written
  *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if buffer too small
  * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
  *	and make the corresponding changes to load_node_config in api/node_info.c
  */
-int 
+void 
 pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len) 
 {
 	packstr (dump_node_ptr->name, buf_ptr, buf_len);
@@ -1034,8 +1028,6 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 		packstr (dump_node_ptr->partition_ptr->name, buf_ptr, buf_len);
 	else
 		packstr (NULL, buf_ptr, buf_len);
-
-	return 0;
 }
 
 
