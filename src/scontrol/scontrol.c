@@ -11,7 +11,8 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include "slurmlib.h"
+
+#include <src/api/slurm.h>
 
 #define	BUF_SIZE 1024
 #define	max_input_fields 128
