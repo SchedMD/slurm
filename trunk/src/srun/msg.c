@@ -72,8 +72,6 @@ static int    tasks_exited     = 0;
 static uid_t  slurm_uid;
 static slurm_fd slurmctld_fd   = (slurm_fd) NULL;
 
-
-
 /*
  *  Static prototypes
  */
@@ -472,7 +470,8 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		slurm_mutex_unlock(&job->task_mutex);
 
 		tasks_exited++;
-		if (tasks_exited == opt.nprocs) {
+		if ( (tasks_exited == opt.nprocs) ||
+		     ((opt.mpi_type == MPI_LAM) && (tasks_exited == job->nhosts)) ) {
 			debug2("All tasks exited");
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}

@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "December 2003" "srun 0.3" "slurm components"
+.TH SRUN "1" "January 2004" "srun 0.3" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -153,7 +153,20 @@ Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
 is the supplied \fBexecutable\fR program's name.
 .TP
-\fB--jobid\fR=\fIid\fR
+\fB\-\-mpi\R=\fImpi_type\fR
+Identify the type of MPI to be used. May result in unique initiation 
+procedures.
+.RS
+.TP
+.B lam
+Initiates one 'lamd' process per node and establishes necessary 
+environment variables for LAM/MPI.
+.TP
+.B qsw
+Establishes necessary environment variables for Quadrics MPI.
+.RE
+.TP
+\fB\-\-jobid\fR=\fIid\fR
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOBID environment variable was set.
