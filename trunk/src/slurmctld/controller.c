@@ -53,7 +53,8 @@
 #define BUF_SIZE 1024
 #define MAX_SERVER_THREAD_COUNT 20
 
-log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
+/* Log to stderr and syslog until becomes a daemon */
+log_options_t log_opts = { 1, LOG_LEVEL_INFO,  LOG_LEVEL_INFO, LOG_LEVEL_QUIET } ;
 slurm_ctl_conf_t slurmctld_conf;
 time_t shutdown_time = (time_t)0;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -62,6 +63,7 @@ pid_t slurmctld_pid;
 pthread_t thread_id_bg = (pthread_t)0;
 pthread_t thread_id_main = (pthread_t)0;
 pthread_t thread_id_rpc = (pthread_t)0;
+int daemonize = 0;
 
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
@@ -115,13 +117,19 @@ main (int argc, char *argv[])
 	 * Establish initial configuration
 	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	parse_commandline ( argc, argv, &slurmctld_conf );
+	if (daemonize) {
+		error_code = daemon (0, 0);
+		if (error_code)
+			error ("daemon errno %d", errno);
+	}
+
 	thread_id_main = pthread_self();
 	fatal_add_cleanup_job (slurmctld_cleanup, NULL);
 
 	slurmctld_pid = getpid ( );
 	init_ctld_conf ( &slurmctld_conf );
 	init_locks ( );
-	parse_commandline ( argc, argv, &slurmctld_conf );
 
 	if ( ( error_code = read_slurm_conf ()) ) 
 		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
@@ -139,7 +147,6 @@ main (int argc, char *argv[])
 	/* block all signals for now */
 	if (sigfillset (&set))
 		error ("sigfillset errno %d", errno);
-
 	if (pthread_sigmask (SIG_BLOCK, &set, NULL))
 		error ("pthread_sigmask errno %d", errno);
 
@@ -1369,9 +1376,13 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 	int c = 0, errlev;
 	opterr = 0;
 
-	while ((c = getopt (argc, argv, "e:f:hl:s:")) != -1)
+	while ((c = getopt (argc, argv, "de:f:hl:s:")) != -1)
 		switch (c)
 		{
+			case 'd':
+				daemonize = 1;
+				log_opts . stderr_level = LOG_LEVEL_QUIET;
+				break;
 			case 'e':
 				errlev = strtol (optarg, (char **) NULL, 10);
 				if ((errlev < LOG_LEVEL_QUIET) || 
@@ -1423,6 +1434,7 @@ void
 usage (char *prog_name) 
 {
 	printf ("%s [OPTIONS]\n", prog_name);
+	printf ("  -d           Become a daemon\n");
 	printf ("  -e <errlev>  Set stderr logging to the specified level\n");
 	printf ("  -f <file>    Use specified configuration file name\n");
 	printf ("  -h           Print a help message describing usage\n");
