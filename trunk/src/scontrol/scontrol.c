@@ -869,14 +869,14 @@ update_part (int argc, char *argv[])
 				return 0;
 			}
 		}
-		else if (strncmp_i(argv[i], "Key=", 4) == 0) {
-			if (strcmp_i(&argv[i][4], "NO") == 0)
-				part_msg.key = 0;
-			else if (strcmp_i(&argv[i][4], "YES") == 0)
-				part_msg.key = 1;
+		else if (strncmp_i(argv[i], "RootOnly=", 4) == 0) {
+			if (strcmp_i(&argv[i][9], "NO") == 0)
+				part_msg.root_only = 0;
+			else if (strcmp_i(&argv[i][9], "YES") == 0)
+				part_msg.root_only = 1;
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
-				fprintf (stderr, "Acceptable Key values are YES and NO\n");
+				fprintf (stderr, "Acceptable RootOnly values are YES and NO\n");
 				return 0;
 			}
 		}

@@ -67,10 +67,10 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
 	fprintf ( out, "TotalNodes=%u ", part_ptr->total_nodes);
 	fprintf ( out, "TotalCPUs=%u ", part_ptr->total_cpus);
-	if (part_ptr->key)
-		fprintf ( out, "Key=YES\n");
+	if (part_ptr->root_only)
+		fprintf ( out, "RootOnly=YES\n");
 	else
-		fprintf ( out, "Key=NO\n");
+		fprintf ( out, "RootOnly=NO\n");
 	if (part_ptr->default_part)
 		fprintf ( out, "   Default=YES ");
 	else

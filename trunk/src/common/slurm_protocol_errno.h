@@ -24,7 +24,7 @@
 /* job_mgr.c/job_create */
 #define ESLURM_INVALID_PARTITION_NAME			-2000
 #define ESLURM_DEFAULT_PARTITION_NOT_SET		-2001
-#define ESLURM_JOB_MISSING_PARTITION_KEY		-2002
+#define ESLURM_ACCESS_DENIED				-2002
 #define ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP	-2003
 #define ESLURM_REQUESTED_NODES_NOT_IN_PARTITION		-2004
 #define ESLURM_TOO_MANY_REQUESTED_CPUS			-2005
@@ -49,8 +49,8 @@
 /* already defined above ESLURM_INVALID_NODE_NAME	-2018 */
 
 /* node_mgr.c/update_node */
+/* already defined above ESLURM_ACCESS_DENIED		-2002 */
 /* already defined above ESLURM_INVALID_NODE_NAME	-2018 */
-#define ESLURM_ACCESS_DENIED				-2202
 
 /* step_mgr.c */
 /* already defined above ESLURM_ACCESS_DENIED		-2202 */

@@ -104,7 +104,7 @@ struct part_record {
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint16_t key;		/* 1 if slurm distributed key is required for use of partition */
+	uint16_t root_only;	/* 1 if allocate/submit RPC can only be issued by user root */
 	uint16_t shared;	/* 1 if >1 job can share a node, 2 if required */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes in partition */

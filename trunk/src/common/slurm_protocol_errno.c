@@ -27,7 +27,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	/* job_mgr.c/job_create */
 	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
 	{ ESLURM_DEFAULT_PARTITION_NOT_SET, 	"System default partition not set" },
-	{ ESLURM_JOB_MISSING_PARTITION_KEY, 	"Key must be specified to use this partition" },
+	{ ESLURM_ACCESS_DENIED,			"Access denied" },
 	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,	"User's group not permitted to use this partition" },
 	{ ESLURM_REQUESTED_NODES_NOT_IN_PARTITION, "Requested nodes not in this partition" },
 	{ ESLURM_TOO_MANY_REQUESTED_CPUS, 	"More processors requested than permitted" },
@@ -48,7 +48,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 
-	{ ESLURM_ACCESS_DENIED,			"Access denied" },
 
 	{ SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH,		"Received zero length message" },
 	{ SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH,	"Received message length < 0" },

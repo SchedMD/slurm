@@ -624,16 +624,15 @@ parse_node_spec (char *in_line) {
 int 
 parse_part_spec (char *in_line) {
 	char *allow_groups, *nodes, *partition_name;
-	char *default_str, *key_str, *shared_str, *state_str;
-	int max_time_val, max_nodes_val, key_val, default_val;
+	char *default_str, *root_str, *shared_str, *state_str;
+	int max_time_val, max_nodes_val, root_val, default_val;
 	int state_val, shared_val;
 	int error_code;
 	struct part_record *part_record_point;
 
 	partition_name = (char *) NULL;
 	default_str = shared_str = state_str = (char *) NULL;
-	max_time_val = max_nodes_val = key_val = default_val = state_val =
-		shared_val = NO_VAL;
+	max_time_val = max_nodes_val = root_val = default_val = state_val = shared_val = NO_VAL;
 
 	if ((error_code =
 	    load_string (&partition_name, "PartitionName=", in_line)))
@@ -647,12 +646,12 @@ parse_part_spec (char *in_line) {
 		return EINVAL;
 	}			
 
-	allow_groups = default_str = key_str = nodes = NULL;
+	allow_groups = default_str = root_str = nodes = NULL;
 	shared_str = state_str = NULL;
 	error_code = slurm_parser(in_line,
 		"AllowGroups=", 's', &allow_groups, 
 		"Default=", 's', &default_str, 
-		"Key=", 's', &key_str, 
+		"RootOnly=", 's', &root_str, 
 		"MaxTime=", 'd', &max_time_val, 
 		"MaxNodes=", 'd', &max_nodes_val, 
 		"Nodes=", 's', &nodes, 
@@ -678,19 +677,19 @@ parse_part_spec (char *in_line) {
 		default_str = NULL;
 	}
 
-	if (key_str) {
-		if (strcmp(key_str, "YES") == 0)
-			key_val = 1;
-		else if (strcmp(key_str, "NO") == 0)
-			key_val = 0;
+	if (root_str) {
+		if (strcmp(root_str, "YES") == 0)
+			root_val = 1;
+		else if (strcmp(root_str, "NO") == 0)
+			root_val = 0;
 		else {
 			error ("update_part: ignored partition %s update, bad key %s",
-			    partition_name, key_str);
+			    partition_name, root_str);
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		xfree (key_str);
-		key_str = NULL;
+		xfree (root_str);
+		root_str = NULL;
 	}
 
 	if (shared_str) {
@@ -731,8 +730,8 @@ parse_part_spec (char *in_line) {
 			default_part.max_time = max_time_val;
 		if (max_nodes_val != NO_VAL)
 			default_part.max_nodes = max_nodes_val;
-		if (key_val != NO_VAL)
-			default_part.key = key_val;
+		if (root_val != NO_VAL)
+			default_part.root_only = root_val;
 		if (state_val != NO_VAL)
 			default_part.state_up = state_val;
 		if (shared_val != NO_VAL)
@@ -769,8 +768,8 @@ parse_part_spec (char *in_line) {
 		part_record_point->max_time = max_time_val;
 	if (max_nodes_val != NO_VAL)
 		part_record_point->max_nodes = max_nodes_val;
-	if (key_val != NO_VAL)
-		part_record_point->key = key_val;
+	if (root_val != NO_VAL)
+		part_record_point->root_only = root_val;
 	if (state_val != NO_VAL)
 		part_record_point->state_up = state_val;
 	if (shared_val != NO_VAL)
@@ -800,8 +799,8 @@ parse_part_spec (char *in_line) {
 		xfree(allow_groups);
 	if (default_str)
 		xfree(default_str);
-	if (key_str)
-		xfree(key_str);
+	if (root_str)
+		xfree(root_str);
 	if (nodes)
 		xfree(nodes);
 	if (partition_name)

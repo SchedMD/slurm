@@ -1,6 +1,7 @@
 /*****************************************************************************\
  *  node_scheduler.c - select and allocated nodes to jobs 
- *	Note: there is a global node table (node_record_table_ptr) *****************************************************************************
+ *	Note: there is a global node table (node_record_table_ptr) 
+ *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Moe Jette <jette1@llnl.gov>
@@ -442,7 +443,8 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 	if (consec_nodes[consec_index] != 0)
 		consec_end[consec_index++] = index - 1;
 
-#if DEBUG_SYSTEM > 1
+#ifdef EXTREME_DEBUG
+	/* don't compile this, slows things down too much */
 	info ("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
 	for (i = 0; i < consec_index; i++) {
 		if (consec_req[i] != -1)
@@ -680,7 +682,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 
 		/* determine if job could possibly run (if configured nodes all available) */
 		if ((error_code == 0) && (runable == 0) &&
-		    (total_nodes > req_nodes) && (total_cpus > req_cpus) &&
+		    (total_nodes >= req_nodes) && (total_cpus >= req_cpus) &&
 		    ((req_bitmap[0] == NULL) || (bit_super_set (req_bitmap[0], total_bitmap) == 1)) &&
 		    ((max_nodes == INFINITE) || (req_nodes <= max_nodes))) {
 			pick_code = pick_best_quadrics (total_bitmap, req_bitmap[0], req_nodes, req_cpus, contiguous);
@@ -834,7 +836,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		node_set_ptr[node_set_index].cpus_per_node = config_record_point->cpus;
 		node_set_ptr[node_set_index].weight = config_record_point->weight;
 		node_set_ptr[node_set_index].feature = tmp_feature;
-		debug ("found %d usable nodes from configuration with %s",
+		debug ("found %d usable nodes from configuration containing node %s",
 			node_set_ptr[node_set_index].nodes,
 			config_record_point->nodes);
 
