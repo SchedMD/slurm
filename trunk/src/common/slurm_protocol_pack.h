@@ -56,6 +56,17 @@ int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buffer , int * buffer_
 int unpack_job_table_msg ( job_table_t ** job , void ** buf_ptr , int * buffer_size );
 int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size );
 
+/* job_step_info messages 
+ * the pack_job_step_info_members is to be used programs such as slurmctld which do
+ * not use the protocol structures internally.
+ */
+void pack_job_step_info ( job_step_info_t* step, void ** buf_ptr , int * buffer_size );
+void pack_job_step_info_members(   uint32_t job_id, uint16_t step_id, 
+		uint32_t user_id, time_t start_time, char *partition, char *nodes,
+		void ** buf_ptr , int * buffer_size );
+int unpack_job_step_info ( job_step_info_t ** step , void ** buf_ptr , int * buffer_size );
+
+
 void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size );
 int unpack_partition_info_msg ( partition_info_msg_t ** , void ** buffer , int * buffer_size );
 int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size );
@@ -71,6 +82,10 @@ int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , void ** buffer , uint32_t 
 
 void pack_cancel_job_step_msg ( job_step_id_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+
+int unpack_job_step_info ( job_step_info_t ** step , void ** buf_ptr , int * buffer_size );
+int unpack_job_step_info_members ( job_step_info_t * step , void ** buf_ptr , int * buffer_size );
+int unpack_job_step_info_response_msg ( job_step_info_response_msg_t** msg, void ** buf_ptr , int * buffer_size );
 
 void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
