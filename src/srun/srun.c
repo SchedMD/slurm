@@ -575,9 +575,6 @@ static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 	task_info_t *task_info_ptr;
 	thd_t *thread_ptr;
 
-	if (opt.max_threads > job->nhosts) 	/* don't need more threads than tasks */
-		opt.max_threads = job->nhosts;
-
 	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
 		if (req_array_ptr[i].msg_type == 0)
