@@ -198,6 +198,11 @@ static void _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer);
 static int  _unpack_job_id_response_msg(job_id_response_msg_t ** msg, 
 					Buf buffer);
 
+static void _pack_batch_job_resp_msg(batch_launch_response_msg_t * msg,
+				     Buf buffer);
+static int  _unpack_batch_job_resp_msg(batch_launch_response_msg_t ** msg, 
+				       Buf buffer);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 /* pack_header
@@ -455,6 +460,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_batch_job_launch_msg((batch_job_launch_msg_t *)
 					    msg->data, buffer);
 		 break;
+	 case RESPONSE_BATCH_JOB_LAUNCH:
+		 _pack_batch_job_resp_msg((batch_launch_response_msg_t *)
+					    msg->data, buffer);
+		 break;
 	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
 		 break;
 	 case RESPONSE_SLURM_RC:
@@ -664,6 +673,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case REQUEST_BATCH_JOB_LAUNCH:
 		 rc = _unpack_batch_job_launch_msg((batch_job_launch_msg_t **)
 						   & (msg->data), buffer);
+		 break;
+	 case RESPONSE_BATCH_JOB_LAUNCH:
+		 rc = _unpack_batch_job_resp_msg(
+					(batch_launch_response_msg_t **)
+					& (msg->data), buffer);
 		 break;
 	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
 		 break;
@@ -1524,8 +1538,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
 
-	safe_unpack16(&job->job_state, buffer);
+	safe_unpack16(&job->job_state,  buffer);
 	safe_unpack16(&job->batch_flag, buffer);
+	safe_unpack32(&job->batch_sid,  buffer);
 	safe_unpack32(&job->time_limit, buffer);
 
 	safe_unpack_time(&job->start_time, buffer);
@@ -2411,6 +2426,36 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
 	*msg = tmp_ptr;
 
 	/* load the data values */
+	safe_unpack32(&tmp_ptr->job_id, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_batch_job_resp_msg(batch_launch_response_msg_t * msg, Buf buffer)
+{
+	assert(msg != NULL);
+
+	pack32(msg->sid,    buffer);
+	pack32(msg->job_id, buffer);
+}
+
+static int
+_unpack_batch_job_resp_msg(batch_launch_response_msg_t ** msg, Buf buffer)
+{
+	batch_launch_response_msg_t *tmp_ptr;
+
+	/* alloc memory for structure */
+	assert(msg != NULL);
+	tmp_ptr = xmalloc(sizeof(batch_launch_response_msg_t));
+	*msg = tmp_ptr;
+
+	/* load the data values */
+	safe_unpack32(&tmp_ptr->sid,    buffer);
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	return SLURM_SUCCESS;
 
