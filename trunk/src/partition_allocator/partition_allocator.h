@@ -165,6 +165,7 @@ typedef struct {
 	pa_node_t ***grid;
 	pa_node_t *fill_in_value;
 } pa_system_t;
+
 /**
  * create a partition request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
