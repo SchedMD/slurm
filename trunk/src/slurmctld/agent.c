@@ -127,9 +127,9 @@ agent (void *args)
 	agent_info_ptr = xmalloc (sizeof (agent_info_t));
 	thread_ptr = xmalloc (agent_arg_ptr->addr_count * sizeof (thd_t));
 	if (pthread_mutex_init (&agent_info_ptr->thread_mutex, NULL))
-		fatal ("agent: pthread_mutex_init errno %d", errno);
+		fatal ("agent: pthread_mutex_init error %m");
 	if (pthread_cond_init (&agent_info_ptr->thread_cond, NULL))
-		fatal ("agent: pthread_cond_init errno %d", errno);
+		fatal ("agent: pthread_cond_init error %m");
 	agent_info_ptr->thread_count = agent_arg_ptr->addr_count;
 	agent_info_ptr->threads_active = 0;
 	agent_info_ptr->thread_struct = thread_ptr;
@@ -141,18 +141,18 @@ agent (void *args)
 
 	/* start the watchdog thread */
 	if (pthread_attr_init (&attr_wdog))
-		fatal ("agent: pthread_attr_init errno %d", errno);
+		fatal ("agent: pthread_attr_init error %m");
 	if (pthread_attr_setdetachstate (&attr_wdog, PTHREAD_CREATE_DETACHED))
-		error ("agent: pthread_attr_setdetachstate errno %d", errno);
+		error ("agent: pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	if (pthread_attr_setscope (&attr_wdog, PTHREAD_SCOPE_SYSTEM))
-		error ("agent: pthread_attr_setscope errno %d", errno);
+		error ("agent: pthread_attr_setscope error %m");
 #endif
 	if (pthread_create (&thread_wdog, &attr_wdog, wdog, (void *)agent_info_ptr)) {
-		error ("agent: pthread_create errno %d", errno);
+		error ("agent: pthread_create error %m");
 		sleep (1); /* sleep and try once more */
 		if (pthread_create (&thread_wdog, &attr_wdog, wdog, args))
-			fatal ("agent: pthread_create errno %d", errno);
+			fatal ("agent: pthread_create error %m");
 	}
 
 	/* start all the other threads (at most AGENT_THREAD_COUNT active at once) */
@@ -185,7 +185,7 @@ agent (void *args)
 			pthread_mutex_unlock (&agent_info_ptr->thread_mutex);
 
 			if (rc) {
-				error ("pthread_create errno %d\n", errno);
+				error ("pthread_create error %m");
 				/* execute task within this thread */
 				thread_per_node_rpc ((void *) task_specific_ptr);
 			}
@@ -301,14 +301,12 @@ thread_per_node_rpc (void *args)
 	pthread_mutex_unlock (task_ptr->thread_mutex);
 
 	/* accept SIGALRM */
-	if (sigemptyset (&set))
-		error ("sigemptyset errno %d", errno);
-	if (sigaddset (&set, SIGALRM))
-		error ("sigaddset errno %d on SIGALRM", errno);
+	sigemptyset (&set);
+	sigaddset (&set, SIGALRM);
 
 	/* init message connection for message communication with slurmd */
 	if ( ( sockfd = slurm_open_msg_conn (& thread_ptr->slurm_addr) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_per_node_rpc/slurm_open_msg_conn errno %d", errno);
+		error ("thread_per_node_rpc/slurm_open_msg_conn error %m");
 		goto cleanup;
 	}
 
@@ -316,19 +314,19 @@ thread_per_node_rpc (void *args)
 	request_msg . msg_type = task_ptr->msg_type ;
 	request_msg . data = task_ptr->msg_args ; 
 	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_per_node_rpc/slurm_send_node_msg errno %d", errno);
+		error ("thread_per_node_rpc/slurm_send_node_msg error %m");
 		goto cleanup;
 	}
 
 	/* receive message */
 	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_per_node_rpc/slurm_receive_msg errno %d", errno);
+		error ("thread_per_node_rpc/slurm_receive_msg error %m");
 		goto cleanup;
 	}
 
 	/* shutdown message connection */
 	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
-		error ("thread_per_node_rpc/slurm_shutdown_msg_conn errno %d", errno);
+		error ("thread_per_node_rpc/slurm_shutdown_msg_conn error %m");
 		goto cleanup;
 	}
 	if ( msg_size ) {

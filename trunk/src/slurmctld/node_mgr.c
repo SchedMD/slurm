@@ -572,13 +572,13 @@ dump_all_node_state ( void )
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {
-		error ("Create error %d on file %s, can't save state", errno, new_file);
+		error ("Can't save state, error creating file %s %m", new_file);
 		error_code = errno;
 	}
 	else {
 		buf_len = buffer_allocated - buf_len;
 		if (write (log_fd, buffer, buf_len) != buf_len) {
-			error ("Write error %d on file %s, can't save state", errno, new_file);
+			error ("Can't save state, error writing file %s %m", new_file);
 			error_code = errno;
 		}
 		close (log_fd);
@@ -659,7 +659,7 @@ load_node_state ( void )
 		buffer_size += buffer_used;
 		close (state_fd);
 		if (buffer_used < 0) 
-			error ("Read error %d on %s", errno, state_file);
+			error ("Read error on %s, %m", state_file);
 	}
 	xfree (state_file);
 	unlock_state_files ();
@@ -916,7 +916,7 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 	}
 
 	if ( (host_list = hostlist_create (node_names)) == NULL) {
-		error ("hostlist_create errno %d on %s", errno, node_names);
+		error ("hostlist_create on %s error:", node_names);
 		return EINVAL;
 	}
 
@@ -1164,7 +1164,7 @@ update_node ( update_node_msg_t * update_node_msg )
 	state_val = update_node_msg -> node_state ; 
 	
 	if ( (host_list = hostlist_create (update_node_msg -> node_names)) == NULL) {
-		error ("hostlist_create errno %d on %s", errno, update_node_msg -> node_names);
+		error ("hostlist_create error on %s: %m", update_node_msg -> node_names);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
