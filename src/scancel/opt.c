@@ -162,7 +162,7 @@ _xlate_state_name(const char *state_name)
 static uint16_t _xlate_signal_name(const char *signal_name)
 {
 	uint16_t sig_num;
-	char *end_ptr, *sig_names;
+	char *end_ptr, *sig_names = NULL;
 	int i;
 
 	sig_num = (uint16_t) strtol(signal_name, &end_ptr, 10);
