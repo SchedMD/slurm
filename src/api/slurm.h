@@ -487,23 +487,26 @@ extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 
 
 /*****************************************************************************\
- *	JOB/STEP CANCELATION FUNCTIONS
+ *	JOB/STEP SIGNALING FUNCTIONS
 \*****************************************************************************/
 
 /*
- * slurm_cancel_job - cancel an existing job and all of its steps 
+ * slurm_kill_job - send the specified signal to all steps of an existing job
  * IN job_id - the job's id
+ * IN signal - signal number
  * RET 0 on success or slurm error code
  */
-extern int slurm_cancel_job (uint32_t job_id);
+extern int slurm_kill_job (uint32_t job_id, uint16_t signal);
 
 /*
- * slurm_cancel_job_step - cancel a specific job step
+ * slurm_kill_job_step - send the specified signal to an existing job step
  * IN job_id - the job's id
  * IN step_id - the job step's id
+ * IN signal - signal number
  * RET 0 on success or slurm error code
  */
-extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);
+extern int slurm_kill_job_step (uint32_t job_id, uint32_t step_id, 
+				uint16_t signal);
 
 
 /*****************************************************************************\

@@ -194,6 +194,12 @@ typedef struct job_step_id {
 	uint32_t job_step_id;
 } job_step_id_t;
 
+typedef struct job_step_kill_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;
+	uint16_t signal;
+} job_step_kill_msg_t;
+
 typedef struct job_id_msg {
 	uint32_t job_id;
 } job_id_msg_t;
@@ -411,6 +417,8 @@ void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
 void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 
 void inline slurm_free_batch_resp_msg(batch_launch_response_msg_t * msg);
+
+void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);

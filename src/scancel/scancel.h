@@ -28,7 +28,7 @@
 #define _HAVE_SCANCEL_H
 
 #if HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
 /*
@@ -53,7 +53,8 @@ typedef struct scancel_options {
 	bool interactive;	/* --interactive, -i		*/
 	char *job_name;		/* --name=n, -nn		*/
 	char *partition;	/* --partition=n, -pn		*/
-	enum job_states state;	/* --state=n, -sn		*/
+	uint16_t signal;	/* --signal=n, -sn		*/
+	enum job_states state;	/* --state=n, -tn		*/
 	uid_t user_id;		/* --user=n, -un		*/
 	char *user_name;	/* --user=n, -un		*/
 	int verbose;		/* --verbose, -v		*/
