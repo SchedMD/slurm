@@ -93,8 +93,10 @@ extern void get_job(void)
 					    fill_in_value[count].color));
 			count++;
 		} else if((job.job_state == JOB_PENDING)) {
-
-			//job.num_nodes = job.req_nodes;
+			//count--;
+			init_pair(pa_system_ptr->fill_in_value[count].color,
+				  pa_system_ptr->fill_in_value[count].color,
+				  COLOR_BLACK);
 			job.nodes = "waiting...";
 			job.num_procs = (int) pa_system_ptr->fill_in_value[count].
 				letter;
@@ -210,7 +212,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		}
 		i++;
 	}
-
+			
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord++;
 	return printed;
