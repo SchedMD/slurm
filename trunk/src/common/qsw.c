@@ -61,6 +61,9 @@
 
 struct qsw_libstate *qsw_internal_state = NULL;
 
+/*
+ * Seed the rng once per program invocation.
+ */
 static void
 _srand_if_needed(void)
 {
@@ -120,11 +123,14 @@ qsw_fini(struct qsw_libstate *savestate)
 
 /*
  * Allocate a program description number.  Program descriptions, which are the
- * key abstraction maintained by the rms.o kernel module,  must be unique
- * per node.  It is like an inescapable process group.  If the library is 
- * initialized, we allocate these consecutively, otherwise we generate a 
- * random one, assuming we are being called by a transient program like pdsh.  
- * Ref: rms_prgcreate(3).
+ * key abstraction maintained by the rms.o kernel module, must not be used
+ * more than once simultaneously on a single node.  We allocate one to each
+ * parallel job which more than meets this requirement.  A program description
+ * can be compared to a process group, except there is no way for a process to
+ * disassociate itself or its children from the program description.  
+ * If the library is initialized, we allocate these consecutively, otherwise 
+ * we generate a random one, assuming we are being called by a transient 
+ * program like pdsh.  Ref: rms_prgcreate(3).
  */
 static int
 _generate_prognum(void)
@@ -146,10 +152,11 @@ _generate_prognum(void)
 }
 
 /*
- * Elan hardware context numbers must be unique per node.  One is allocated 
- * to each parallel process.  In order for processes on the same node to 
- * communicate, they must use contexts in the hi-lo range of a common 
- * capability.
+ * Elan hardware context numbers are an adapter resource that must not be used
+ * more than once on a single node.  One is allocated to each process on the
+ * node that will be communication over Elan.  In order for processes on the 
+ * same node to communicate with one another and with other nodes across QsNet,
+ * they must use contexts in the hi-lo range of a common capability.
  * If the library is initialized, we allocate these consecutively, otherwise 
  * we generate a random one, assuming we are being called by a transient 
  * program like pdsh.  Ref: rms_setcap(3).
@@ -213,7 +220,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	cap->Entries = nprocs;
 
 	/* set the hw broadcast bit if consecutive nodes */
-	if (abs(cap->HighNode - cap->LowNode) == nnodes)
+	if (abs(cap->HighNode - cap->LowNode) == nnodes - 1)
 		cap->Type |= ELAN_CAP_TYPE_BROADCASTABLE;
 
 	/*
@@ -254,7 +261,8 @@ qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, bitstr_t *nodeset,
 	assert(jp != NULL);
 
 	/* sanity check on args */
-	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS || nnodes == 0 
+	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
+	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS || nnodes <= 0 
 			|| (nprocs % nnodes) != 0) {
 		errno = EINVAL;
 		return -1;
@@ -289,31 +297,113 @@ qsw_destroy_jobinfo(struct qsw_jobinfo *jobinfo)
 	free(jobinfo);
 }
 
+/*
+ * Call this in a forked child.  Parent will call qsw_destroy_prg().
+ */
 int
-qsw_create_prg(struct qsw_jobinfo *jobinfo)
+qsw_create_prg(struct qsw_jobinfo *jobinfo, uid_t uid)
 {
+	ELAN3_CTX *ctx;
+
+	/* obtain an Elan context to use in call to elan3_create */
+	if ((ctx = _elan3_init(0)) == NULL) {
+		/* sets errno */
+		return -1;
+	}
+
+	/* associate this process and its children with prgnum */
+	if (rms_prgcreate(jobinfo->j_prognum, uid, 1) < 0) {
+		/* sets errno */
+		return -1;
+	}
+
+      	/* make cap known via rms_getcap/rms_ncaps to members of this prgnum */
+	if (elan3_create(ctx, &jobinfo->j_cap) < 0) {
+		/* sets errno */
+		return -1;
+	}
+	if (rms_prgaddcap(jobinfo->j_prognum, 0, &jobinfo->j_cap) < 0) {
+		/* sets errno */
+		return -1;
+	}
+
 	return 0;
 }
 
+/*
+ * Destroy the program description.  Call this in the parent of the
+ * process that calls qsw_create_prg.  If return val is -1 and errno 
+ * is ECHILD, there are still active processes out there in the program group.
+ */
 int
 qsw_destroy_prg(struct qsw_jobinfo *jobinfo)
 {
+	if (rms_prgdestroy(jobinfo->j_prognum) < 0) {
+		/* sets errno */
+		return -1;
+	}
 	return 0;
 }
 
 int
 qsw_attach(struct qsw_jobinfo *jobinfo, int procnum)
 {
+	/*
+	 * Assign elan hardware context to current process.
+	 * - arg1 (0 below) is an index into the kernel's list of caps for this 
+	 *   program desc (added by rms_prgaddcap).  There will be
+	 *   one per rail.
+	 * - arg2 indexes the hw ctxt range in the capability
+	 *   [cap->LowContext, cap->HighContext]
+	 */
+	if (rms_setcap(0, procnum) < 0) {
+		/* sets errno */
+		return -1;
+	}
 	return 0;
 }
 
 #ifdef DEBUG_MODULE
+#define TRUNC_BITMAP 1
+static void
+_dump_capbitmap(ELAN_CAPABILITY *cap)
+{
+	int bit_max = sizeof(cap->Bitmap)*8 - 1;
+	int bit;
+#if TRUNC_BITMAP
+	bit_max = bit_max >= 64 ? 64 : bit_max;
+#endif
+	for (bit = bit_max; bit >= 0; bit--)
+		printf("%c", BT_TEST(cap->Bitmap, bit) ? '1' : '0');
+	printf("\n");
+}
+
 static void
 _dump_jobinfo(struct qsw_jobinfo *jobinfo)
 {
+	ELAN_CAPABILITY *cap;
+
 	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
+
 	printf("__________________\n");
-	printf("jobinfo.prognum=%d\n", jobinfo->j_prognum);
+	printf("prognum=%d\n", jobinfo->j_prognum);
+
+	cap = &jobinfo->j_cap;
+	printf("cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
+			cap->UserKey.Values[0], cap->UserKey.Values[1],
+			cap->UserKey.Values[2], cap->UserKey.Values[3]);
+	printf("cap.Version=%d\n", cap->Version);
+	printf("cap.Type=0x%x\n", cap->Type);
+	printf("cap.Generation=%d\n", cap->Generation);
+	printf("cap.LowContext=%d\n", cap->LowContext);
+	printf("cap.HighContext=%d\n", cap->HighContext);
+	printf("cap.MyContext=%d\n", cap->MyContext);
+	printf("cap.LowNode=%d\n", cap->LowNode);
+	printf("cap.HighNode=%d\n", cap->HighNode);
+	printf("cap.Entries=%d\n", cap->Entries);
+	printf("cap.Railmask=0x%x\n", cap->RailMask);
+	printf("cap.Bitmap=");
+	_dump_capbitmap(cap);
 	printf("------------------\n");
 }
 
@@ -336,7 +426,7 @@ main(int argc, char *argv[])
 
 	bit_nset(nodeset, 4, 7);
 
-	_safe_mkjob(&job, 4, nodeset, 0);
+	_safe_mkjob(&job, 8, nodeset, 0);
 	_dump_jobinfo(job);
 	qsw_destroy_jobinfo(job);
 	
@@ -359,6 +449,14 @@ main(int argc, char *argv[])
 	qsw_init(&libstate);
 
 	_safe_mkjob(&job, 4, nodeset, 0);
+	_dump_jobinfo(job);
+	qsw_destroy_jobinfo(job);
+
+	_safe_mkjob(&job, 12, nodeset, 1);
+	_dump_jobinfo(job);
+	qsw_destroy_jobinfo(job);
+
+	_safe_mkjob(&job, 513, nodeset, 1);
 	_dump_jobinfo(job);
 	qsw_destroy_jobinfo(job);
 
