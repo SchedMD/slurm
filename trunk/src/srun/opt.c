@@ -107,6 +107,10 @@
 #define OPT_HOLD	0x1b
 #define OPT_RELATIVE    0x1c
 #define OPT_JOBID       0x1d
+#define OPT_NO_KILL	0x1e
+#define OPT_SHARE	0x1f
+#define OPT_LABELIO	0x20
+#define OPT_UNBUFFERED	0x21
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -128,7 +132,7 @@ struct poptOption attachTable[] = {
 	{"attach", 'a', POPT_ARG_STRING, &opt.attach, OPT_ATTACH,
 	 "attach to running job with job id = id",
 	 "id"},
-	{"join", 'j', POPT_ARG_NONE, &opt.join, OPT_JOIN,
+	{"join", 'j', POPT_ARG_NONE, NULL, OPT_JOIN,
 	 "When used with --attach, allow forwarding of signals and stdin",
 	},
 	POPT_TABLEEND
@@ -136,7 +140,7 @@ struct poptOption attachTable[] = {
 
 /* options directly related to allocate-only mode */
 struct poptOption allocateTable[] = {
-	{"allocate", 'A', POPT_ARG_NONE, &opt.allocate, OPT_ALLOCATE,
+	{"allocate", 'A', POPT_ARG_NONE, NULL, OPT_ALLOCATE,
 	 "allocate resources and spawn a shell",
 	 },
 	POPT_TABLEEND
@@ -156,7 +160,7 @@ struct poptOption constraintTable[] = {
 	{"constraint", 'C', POPT_ARG_STRING, &opt.constraints,
 	 OPT_CONSTRAINT, "specify a list of constraints",
 	 "list"},
-	{"contiguous", '\0', POPT_ARG_NONE, &opt.contiguous, OPT_CONTIG,
+	{"contiguous", '\0', POPT_ARG_NONE, NULL, OPT_CONTIG,
 	 "demand a contiguous range of nodes",
 	 },
 	{"nodelist", 'w', POPT_ARG_STRING, &opt.nodelist, OPT_NODELIST,
@@ -165,7 +169,7 @@ struct poptOption constraintTable[] = {
 	{"exclude", 'x', POPT_ARG_STRING, &opt.exc_nodes, OPT_EXC_NODES,
 	 "exclude a specific list of hosts",
 	 "hosts..."},
-	{"no-allocate", 'Z', POPT_ARG_NONE, &opt.no_alloc, OPT_NO_ALLOC,
+	{"no-allocate", 'Z', POPT_ARG_NONE, NULL, OPT_NO_ALLOC,
 	 "don't allocate nodes (must supply -w)",
 	},
 	POPT_TABLEEND
@@ -191,7 +195,7 @@ struct poptOption runTable[] = {
 	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
 	 "partition requested",
 	 "partition"},
-	{"hold", 'H', POPT_ARG_NONE, &opt.hold, OPT_HOLD,
+	{"hold", 'H', POPT_ARG_NONE, NULL, OPT_HOLD,
 	 "submit job in held state",
 	 },
 	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
@@ -203,19 +207,19 @@ struct poptOption runTable[] = {
 	{"immediate", 'I', POPT_ARG_NONE, &opt.immediate, 0,
 	 "exit if resources are not immediately available",
 	 },
-	{"overcommit", 'O', POPT_ARG_NONE, &opt.overcommit, 0,
+	{"overcommit", 'O', POPT_ARG_NONE, NULL, OPT_OVERCOMMIT,
 	 "overcommit resources",
 	 },
-	{"no-kill", 'k', POPT_ARG_NONE, &opt.no_kill, 0,
+	{"no-kill", 'k', POPT_ARG_NONE, NULL, OPT_NO_KILL,
 	 "do not kill job on node failure",
 	 },
-	{"share", 's', POPT_ARG_NONE, &opt.share, 0,
+	{"share", 's', POPT_ARG_NONE, NULL, OPT_SHARE,
 	 "share node with other jobs",
 	 },
-	{"label", 'l', POPT_ARG_NONE, &opt.labelio, 0,
+	{"label", 'l', POPT_ARG_NONE, NULL, OPT_LABELIO,
 	 "prepend task number to lines of stdout/err",
 	 },
-	{"unbuffered", 'u',  POPT_ARG_NONE, &opt.unbuffered, 0,
+	{"unbuffered", 'u',  POPT_ARG_NONE, NULL, OPT_UNBUFFERED,
 	 "do not line-buffer stdout/err",
 	},
 	{"distribution", 'm', POPT_ARG_STRING, 0, OPT_DISTRIB,
@@ -235,10 +239,10 @@ struct poptOption runTable[] = {
 	{"error", 'e', POPT_ARG_STRING, 0, OPT_ERROR,
 	 "location of stderr redirection",
 	 "err"},
-	{"batch", 'b', POPT_ARG_NONE, &opt.batch, OPT_BATCH,
+	{"batch", 'b', POPT_ARG_NONE, NULL, OPT_BATCH,
 	 "submit as batch job for later execution",
 	 "err"},
-        {"verbose", 'v', 0, 0, OPT_VERBOSE,
+        {"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE,
 	 "verbose operation (multiple -v's increase verbosity)", },
         {"slurmd-debug", 'd', POPT_ARG_INT, &opt.slurmd_debug, OPT_DEBUG,
 	 "slurmd debug level", "value"},
@@ -707,6 +711,7 @@ _process_env_var(env_vars_t *e, const char *val)
 			    error("%s=%s invalid. ignoring...", e->var, val);
 	    }
 	    break;
+
 	case OPT_DEBUG:
 	    if (val != NULL) {
 		    _verbose = (int) strtol(val, &end, 10);
@@ -714,6 +719,7 @@ _process_env_var(env_vars_t *e, const char *val)
 			    error("%s=%s invalid", e->var, val);
 	    }
 	    break;
+
 	case OPT_DISTRIB:
 	    dt = _verify_dist_type(val);
 	    if (dt == SRUN_DIST_UNKNOWN) {
@@ -722,6 +728,7 @@ _process_env_var(env_vars_t *e, const char *val)
 	    } else 
 		    opt.distribution = dt;
 	    break;
+
 	case OPT_NODES:
 	    opt.nodes_set = _verify_node_count( val, 
 			                        &opt.min_nodes, 
@@ -731,9 +738,11 @@ _process_env_var(env_vars_t *e, const char *val)
 			  e->var, val);
 	    }
 	    break;
+
 	case OPT_OVERCOMMIT:
 	    opt.overcommit = true;
 	    break;
+	    
 	default:
 	    /* do nothing */
 	    break;
@@ -812,6 +821,7 @@ static void _opt_args(int ac, char **av)
 				exit(1);
 			}
 			mode = MODE_ALLOCATE;
+			opt.allocate = true;
 			break;
 
 		case OPT_BATCH:
@@ -821,6 +831,7 @@ static void _opt_args(int ac, char **av)
 				exit(1);
 			}
 			mode = MODE_BATCH;
+			opt.batch = true;
 			break;
 
 		default:
@@ -849,6 +860,34 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_ERROR:
 			opt.efname = xstrdup(arg);
+			break;
+
+		case OPT_JOIN:
+			opt.join = true;
+			break;
+
+		case OPT_HOLD:
+			opt.hold = true;
+			break;
+
+		case OPT_OVERCOMMIT:
+			opt.overcommit = true;
+			break;
+
+		case OPT_NO_KILL:
+			opt.no_kill = true;
+			break;
+
+		case OPT_SHARE:
+			opt.share = true;
+			break;
+
+		case OPT_LABELIO:
+			opt.labelio = true;
+			break;
+
+		case OPT_UNBUFFERED:
+			opt.unbuffered = true;
 			break;
 
 		case OPT_DISTRIB:
@@ -893,6 +932,14 @@ static void _opt_args(int ac, char **av)
 				error("invalid memory constraint %s", arg);
 				exit(1);
 			}
+			break;
+
+		case OPT_CONTIG:
+			opt.contiguous = true;
+			break;
+
+		case OPT_NO_ALLOC:
+			opt.no_alloc = true;
 			break;
 
 		case OPT_TMPDISK:
