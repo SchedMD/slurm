@@ -37,6 +37,7 @@
 #include <stdio.h>
 
 #include "src/common/log.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 
@@ -233,32 +234,35 @@ void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 {
 	int i;
-	if (msg) {
-		xfree(msg->credential);
-		if (msg->env) {
-			for (i = 0; i < msg->envc; i++) {
-				xfree(msg->env[i]);
-			}
-			xfree(msg->env);
-		}
-		xfree(msg->cwd);
-		if (msg->argv) {
-			for (i = 0; i < msg->argc; i++) {
-				xfree(msg->argv[i]);
-			}
-			xfree(msg->argv);
-		}
-		xfree(msg->global_task_ids);
-		xfree(msg->ofname);
-		xfree(msg->ofname);
-		xfree(msg->ofname);
+	if (msg == NULL)
+		return;
 
-#		ifdef HAVE_LIBELAN3
-		qsw_free_jobinfo(msg->qsw_job);
-#		endif
 
-		xfree(msg);
+	slurm_cred_destroy(msg->cred);
+
+	if (msg->env) {
+		for (i = 0; i < msg->envc; i++) {
+			xfree(msg->env[i]);
+		}
+		xfree(msg->env);
 	}
+	xfree(msg->cwd);
+	if (msg->argv) {
+		for (i = 0; i < msg->argc; i++) {
+			xfree(msg->argv[i]);
+		}
+		xfree(msg->argv);
+	}
+	xfree(msg->global_task_ids);
+	xfree(msg->ofname);
+	xfree(msg->ofname);
+	xfree(msg->ofname);
+
+#	ifdef HAVE_LIBELAN3
+	qsw_free_jobinfo(msg->qsw_job);
+#	endif
+
+	xfree(msg);
 }
 
 void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)

@@ -43,6 +43,7 @@
 
 #include <assert.h>
 #include <time.h>
+#include <string.h>
 
 #define BUF_MAGIC 0x42554545
 

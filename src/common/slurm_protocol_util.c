@@ -239,16 +239,6 @@ int write_io_stream_header2(slurm_io_stream_header_t * header, slurm_fd fd)
 	return SLURM_SUCCESS;
 }
 
-/* log the supplied slurm credential as debug3() level */
-void slurm_print_job_credential(slurm_job_credential_t * credential)
-{
-	debug3("credential.job_id: %i", credential->job_id);
-	debug3("credential.user_id: %i", credential->user_id);
-	debug3("credential.node_list: %s", credential->node_list);
-	debug3("credential.expiration_time: %lu",
-	       credential->expiration_time);
-	debug3("credential.signature: %#x", credential->signature);
-}
 
 /* log the supplied slurm task launch message as debug3() level */
 void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
@@ -258,7 +248,6 @@ void slurm_print_launch_task_msg(launch_tasks_request_msg_t * msg)
 	debug3("job_id: %i", msg->job_id);
 	debug3("job_step_id: %i", msg->job_step_id);
 	debug3("uid: %i", msg->uid);
-	slurm_print_job_credential(msg->credential);
 	debug3("tasks_to_launch: %i", msg->tasks_to_launch);
 	debug3("envc: %i", msg->envc);
 	for (i = 0; i < msg->envc; i++) {

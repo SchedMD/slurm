@@ -138,13 +138,10 @@ enum node_states {
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
 
-typedef struct {
-	uint32_t job_id;	/* job's id */
-	uid_t user_id;		/* user who job is running as */
-	char *node_list;	/* list of allocated nodes */
-	time_t expiration_time;	/* expiration of credential */
-	char signature[SLURM_SSL_SIGNATURE_LENGTH];	
-} slurm_job_credential_t;
+#ifndef __slurm_cred_t_defined
+#  define __slurm_cred_t_defined
+   typedef struct slurm_job_credential * slurm_cred_t;
+#endif
 
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
@@ -254,7 +251,7 @@ typedef struct job_step_specs {
 typedef struct job_step_create_response_msg {
 	uint32_t job_step_id;	/* assigned job step id */
 	char *node_list;	/* list of allocated nodes */
-	slurm_job_credential_t *credentials;
+	slurm_cred_t cred;      /* slurm job credential */
 #ifdef	HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
 #endif
@@ -340,7 +337,7 @@ typedef struct resource_allocation_and_run_response_msg {
 	slurm_addr *node_addr;	/* network addresses */
 
 	uint32_t job_step_id;	/* assigned step id */
-	slurm_job_credential_t *credentials;
+	slurm_cred_t cred;      /* slurm job credential */
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
 #endif

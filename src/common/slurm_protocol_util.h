@@ -122,7 +122,7 @@ extern int read_io_stream_header2(slurm_io_stream_header_t * header, slurm_fd fd
 extern int write_io_stream_header(slurm_io_stream_header_t * header, slurm_fd fd);
 
 /* log the supplied slurm credential as debug3() level */
-extern void slurm_print_job_credential(slurm_job_credential_t * credential);
+/* extern void slurm_print_job_credential(slurm_job_credential_t * credential);*/
 
 /*
  * write an i/o stream header to the supplied slurm stream

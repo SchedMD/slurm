@@ -37,6 +37,7 @@
 #include "src/common/log.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
@@ -889,7 +890,7 @@ static void
 	pack16(msg->node_cnt, buffer);
 	_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
 
-	pack_job_credential(msg->credentials, buffer);
+	slurm_cred_pack(msg->cred, buffer);
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo(msg->qsw_job, buffer);
 #endif
@@ -938,7 +939,7 @@ static int
 	} else
 		tmp_ptr->node_addr = NULL;
 
-	if (unpack_job_credential(&tmp_ptr->credentials, buffer))
+	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
@@ -1157,8 +1158,6 @@ _pack_revoke_credential_msg(revoke_credential_msg_t * msg, Buf buffer)
 	pack32(msg->job_id,  buffer);
 	pack32(msg->job_uid, buffer);
 	pack_time(msg->expiration_time, buffer);
-	packmem_array(msg->signature,
-		      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
 }
 
 static int
@@ -1168,14 +1167,12 @@ _unpack_revoke_credential_msg(revoke_credential_msg_t ** msg, Buf buffer)
 
 	/* alloc memory for structure */
 	assert(msg);
-	tmp_ptr = xmalloc(sizeof(slurm_job_credential_t));
+	tmp_ptr = xmalloc(sizeof(*tmp_ptr));
 	*msg = tmp_ptr;
 
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(& (tmp_ptr->expiration_time), buffer);
-	safe_unpackmem_array(tmp_ptr->signature,
-			     (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
 
 	return SLURM_SUCCESS;
 
@@ -1214,58 +1211,6 @@ _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer)
 	return SLURM_ERROR;
 }
 
-/* pack_job_credential
- * packs a slurm job credential
- * IN cred - pointer to the credential
- * IN/OUT buffer - destination of the pack, contains pointers that are 
- *			automatically updated
- */
-void
-pack_job_credential(slurm_job_credential_t * cred, Buf buffer)
-{
-	assert(cred != NULL);
-
-	pack32(cred->job_id, buffer);
-	pack16((uint16_t) cred->user_id, buffer);
-	packstr(cred->node_list, buffer);
-	pack_time(cred->expiration_time, buffer);
-	packmem_array(cred->signature,
-		      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
-}
-
-/* unpack_job_credential
- * unpacks a slurm job credential
- * OUT cred - pointer to the credential pointer
- * IN/OUT buffer - source of the unpack, contains pointers that are 
- *			automatically updated
- * RET 0 or error code
- */
-int
-unpack_job_credential(slurm_job_credential_t ** cred, Buf buffer)
-{
-	uint16_t uint16_tmp;
-	slurm_job_credential_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	tmp_ptr = xmalloc(sizeof(slurm_job_credential_t));
-	*cred = tmp_ptr;
-
-	safe_unpack32(&(tmp_ptr->job_id), buffer);
-	safe_unpack16((uint16_t *) & (tmp_ptr->user_id), buffer);
-	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
-	safe_unpack_time(&(tmp_ptr->expiration_time), buffer);
-	safe_unpackmem_array(tmp_ptr->signature,
-			     (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
-
-	return SLURM_SUCCESS;
-
-      unpack_error:
-	xfree(tmp_ptr->node_list);
-	xfree(tmp_ptr);
-	*cred = NULL;
-	return SLURM_ERROR;
-}
-
 static void
 _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 				   Buf buffer)
@@ -1274,7 +1219,7 @@ _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 
 	pack32(msg->job_step_id, buffer);
 	packstr(msg->node_list, buffer);
-	pack_job_credential(msg->credentials, buffer);
+	slurm_cred_pack(msg->cred, buffer);
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo(msg->qsw_job, buffer);
 #endif
@@ -1295,7 +1240,7 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 
 	safe_unpack32(&tmp_ptr->job_step_id, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint16_tmp, buffer);
-	if (unpack_job_credential(&tmp_ptr->credentials, buffer))
+	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 
 #ifdef HAVE_LIBELAN3
@@ -2061,7 +2006,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32(msg->nprocs, buffer);
 	pack32(msg->uid, buffer);
 	pack32(msg->srun_node_id, buffer);
-	pack_job_credential(msg->credential, buffer);
+	slurm_cred_pack(msg->cred, buffer);
 	pack32(msg->tasks_to_launch, buffer);
 	packstr_array(msg->env, msg->envc, buffer);
 	packstr(msg->cwd, buffer);
@@ -2097,7 +2042,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
-	if (unpack_job_credential(&msg->credential, buffer))
+	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 	safe_unpack32(&msg->tasks_to_launch, buffer);
 	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
