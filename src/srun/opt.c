@@ -1097,7 +1097,7 @@ void _opt_list()
 	info("distribution   : %s", format_distribution_t(opt.distribution));
 	info("core format    : %s", opt.core_format);
 	info("verbose        : %d", _verbose);
-	info("debug          : %d", _debug);
+	info("slurmd_debug   : %d", opt.slurmd_debug);
 	info("immediate      : %s", tf_(opt.immediate));
 	info("label output   : %s", tf_(opt.labelio));
 	info("allocate       : %s", tf_(opt.allocate));

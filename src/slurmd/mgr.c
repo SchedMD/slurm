@@ -242,6 +242,10 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	int           status = 0;
 	slurmd_job_t *job;
 	char         *batchdir;
+	char         buf[256];
+
+	snprintf(buf, sizeof(buf), "[%d]", msg->job_id);
+	log_set_fpfx(buf);
 
 	/* New process, so must reinit shm */
 	if ((rc = shm_init()) < 0) 

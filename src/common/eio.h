@@ -44,6 +44,7 @@ struct io_operations {
 	int  (*handle_read )(io_obj_t *, List);
 	int  (*handle_write)(io_obj_t *, List);
 	int  (*handle_error)(io_obj_t *, List);
+	int  (*handle_close)(io_obj_t *, List);
 };
 
 struct io_obj {

@@ -264,7 +264,7 @@ static void * _p_launch_task(void *args)
 	int host_inx = msg_ptr->srun_node_id;
 	int failure = 0;
 
-	if (_verbose || _debug)
+	if (_verbose)
 	        _print_launch_msg(msg_ptr, job_ptr->host[host_inx]);
 	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
 		error("task launch error on %s: %m", job_ptr->host[host_inx]);

@@ -483,13 +483,13 @@ _fopen(char *filename)
 	xassert(filename != NULL);
 
 	if (!(fp = fopen(filename, "w"))) 
-		error ("Unable to open file `%s' for writing: %m", filename);
+		error ("Unable to open `%s' for writing: %m", filename);
 
 	return fp;
 }
 
-static void
-_open_streams(job_t *job)
+int
+open_streams(job_t *job)
 {
 	if ((job->ifname->type != IO_PER_TASK) && job->ifname->name) 
 		job->stdinfd = _stdin_open(job->ifname->name);
@@ -506,6 +506,10 @@ _open_streams(job_t *job)
 	else
 		job->errstream = stderr;
 
+	if (!job->outstream || !job->errstream || (job->stdinfd < 0))
+		return -1;
+
+	return 0;
 }
 
 
@@ -542,11 +546,13 @@ io_thr_create(job_t *job)
 		net_set_low_water(job->iofd[i], 140);
 	}
 
-	_open_streams(job);
+	if (open_streams(job) < 0) {
+		return SLURM_ERROR;
+	}
 
 	pthread_attr_init(&attr);
 	if ((errno = pthread_create(&job->ioid, &attr, &io_thr, (void *) job)))
-		fatal("Unable to create io thread: %m");
+		return SLURM_ERROR;
 
 	debug("Started IO server thread (%d)", job->ioid);
 
