@@ -146,7 +146,9 @@ slurm_auth_get_ops( slurm_auth_context_t c )
 		"slurm_auth_get_gid",
 		"slurm_auth_pack",
 		"slurm_auth_unpack",
-		"slurm_auth_print"
+		"slurm_auth_print",
+		"slurm_auth_errno",
+		"slurm_auth_errstr"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
