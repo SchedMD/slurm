@@ -26,13 +26,15 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  endif
+#  if WITH_PTHREADS
+#    include <pthread.h>
+#  endif
 #endif
 
 #include <stdio.h>
@@ -40,13 +42,8 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_xlator.h"
+#include "src/common/xassert.h"
 #include "src/slurmctld/slurmctld.h"
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif /* WITH_PTHREADS */
-
-#include "slurm/slurm_errno.h"
 #include "bluegene.h"
 
 /*
@@ -93,24 +90,20 @@ static int _init_status_pthread();
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-int init ( void )
+extern int init ( void )
 {
 #ifndef HAVE_BGL
 	fatal("Plugin select/bluegene is illegal on non-BlueGene computers");
 #endif
 #if (SYSTEM_DIMENSIONS != 3)
-	fatal("SYSTEM_DIMENSIONS value invalid for Blue Gene (%d)",
+	fatal("SYSTEM_DIMENSIONS value (%d) invalid for Blue Gene",
 		SYSTEM_DIMENSIONS);
 #endif
 
 	verbose("%s loading...", plugin_name);
-	if (init_bgl())
-		return SLURM_ERROR;
-	
-	if (_init_status_pthread())
+	if (init_bgl() || _init_status_pthread())
 		return SLURM_ERROR;
 
-	verbose("%s done loading, system ready for use.", plugin_name);
 	return SLURM_SUCCESS;
 }
 
@@ -134,10 +127,8 @@ static int _init_status_pthread()
 	return SLURM_SUCCESS;
 }
 
-int fini ( void )
+extern int fini ( void )
 {
-	debug("fini");
-
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( thread_running ) {
 		verbose( "Bluegene select plugin shutting down" );
@@ -162,14 +153,13 @@ int fini ( void )
  * - new configuration file is loaded
  */
 extern int select_p_part_init(List part_list)
-{ 
-	debug("select_p_part_init");
-
+{
+	xassert(part_list);
 	if (read_bgl_conf())
 		return SLURM_ERROR;
 
 	/* create_static_partitions */
-	if (create_static_partitions(part_list)){
+	if (create_static_partitions(part_list)) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
 		 * correspond to actual slurm partitions/bgl
@@ -184,84 +174,62 @@ extern int select_p_part_init(List part_list)
 
 extern int select_p_state_save(char *dir_name)
 {
-	debug("select_p_state_save");
+	/* no-op for static partitions */
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
-	debug("select_p_state_restore");
+	/* no-op for static partitions */
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	debug("select_p_node_init");
-	if (node_ptr == NULL) {
-		error("select_p_node_init: node_ptr == NULL");
-		return SLURM_ERROR;
-	}
-
-	if (node_cnt < 0) {
-		error("select_p_node_init: node_cnt < 0");
-		return SLURM_ERROR;
-	}
-
-	debug("select_p_node_init should be doing a system wide status "
-	      "check on all the nodes to updated the system bitmap, "
-	      "along with killing old jobs, etc");
+	/* This is a no-op.
+	 * All initialization is performed by select_p_part_init() */
 	return SLURM_SUCCESS;
 }
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
  *	identify the nodes which "best" satify the request.
- * 	"best" is defined as either single set of consecutive nodes satisfying 
- *	the request and leaving the minimum number of unused nodes OR 
- *	the fewest number of consecutive node sets
  * IN job_ptr - pointer to job being scheduled
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
  * IN min_nodes - minimum count of nodes
  * IN max_nodes - maximum count of nodes (0==don't care)
  * RET zero on success, EINVAL otherwise
- * globals (passed via select_p_node_init): 
- *	node_record_count - count of nodes configured
- *	node_record_table_ptr - pointer to global node table
  * NOTE: bitmap must be a superset of req_nodes at the time that 
  *	select_p_job_test is called
  */
 extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 			     int min_nodes, int max_nodes)
 {
-	debug("select_p_job_test");
-	debug("select/bluegene plugin in alpha development");
-
-
 	/* bgl partition test - is there a partition where we have:
-	 * 1) geometery requested
+	 * 1) geometry requested
 	 * 2) min/max nodes (BPs) requested
-	 * 3) type? (TORUS is harder than MESH to fulfill)...HOW TO TEST?!?!!
+	 * 3) type: TORUS or MESH or NAV (torus else mesh)
+	 * 4) use: VIRTUAL or COPROCESSOR
 	 * 
 	 * note: we don't have to worry about security at this level
-	 * b/c the SLURM partition logic will handle access rights.
+	 * as the SLURM partition logic will handle access rights.
 	 */
 
-	if (submit_job(job_ptr, bitmap, min_nodes, max_nodes)){
+	if (submit_job(job_ptr, bitmap, min_nodes, max_nodes))
 		return SLURM_ERROR;
-	} else {
-		return SLURM_SUCCESS;
-	}
+
+	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_init(struct job_record *job_ptr)
 {
-	debug("select_p_job_init");
+	/* no-op for static partitions */
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	debug("select_p_job_fini");
+	/* no-op for static partitions */
 	return SLURM_SUCCESS;
 }
