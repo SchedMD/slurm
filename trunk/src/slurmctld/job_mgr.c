@@ -1219,7 +1219,8 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (independent && (!too_fragmented))
 		top_prio = _top_priority(job_ptr);
 	else
-		top_prio = true;	/* don't bother testing */
+		top_prio = true;	/* don't bother testing, 
+					 * it is not runable anyway */
 	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
@@ -2827,10 +2828,12 @@ static bool _top_priority(struct job_record *job_ptr)
 		list_iterator_destroy(job_iterator);
 	}
 
-	if ((!top) &&			/* not top prio and */ 
-	    (job_ptr->priority != 1) && /* not system hold */
-	    (detail_ptr))
-		detail_ptr->wait_reason = WAIT_PRIORITY;
+	if ((!top) && detail_ptr) {	/* not top prio */
+		if (job_ptr->priority == 0)		/* user/admin hold */
+			detail_ptr->wait_reason = WAIT_HELD;
+		else if (job_ptr->priority != 1)	/* not system hold */
+			detail_ptr->wait_reason = WAIT_PRIORITY;
+	}
 	return top;
 }
 

@@ -151,7 +151,8 @@ enum job_wait_reason {
 	WAIT_RESOUCES,		/* required resources not available */
 	WAIT_PART_NODE_LIMIT,	/* request exceeds partition node limit */
 	WAIT_PART_TIME_LIMIT,	/* request exceeds partition time limit */
-	WAIT_PART_STATE		/* requested partition is down */
+	WAIT_PART_STATE,	/* requested partition is down */
+	WAIT_HELD		/* job is held, priority==0 */
 };
 
 #ifdef HAVE_BGL
