@@ -38,15 +38,16 @@ start() {
     daemon /usr/sbin/$1 $2
     RETVAL=$?
     echo
-    touch /var/lock/subsys/$prog 
+    touch /var/lock/subsys/slurm
     return $RETVAL
 }
 
-stop() { echo -n "stopping $1: "
+stop() { 
+    echo -n "stopping $1: "
     killproc $1 -TERM
     RETVAL=$?
     echo
-    rm -f /var/lock/subsys/$prog
+    rm -f /var/lock/subsys/slurm
     return $RETVAL
 }
 
@@ -55,6 +56,52 @@ startall() {
         optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
         start $prog ${!optvar} 
      done 
+}
+
+# status() with slight modifications to take into account
+# instantiations of job manager slurmd's, which should not be
+# counted as "running"
+#
+slurmstatus() {
+    local base=${1##*/}
+    local pid
+    local rpid
+    local pidfile
+
+    pidfile=`grep -i ${base}pid /etc/slurm/slurm.conf | grep -v '^ *#'`
+    if [ $? = 0 ]; then
+        pidfile=${pidfile##*=}
+    else
+        pidfile=/var/run/${base}.pid
+    fi
+
+    pid=`pidof -o $$ -o $$PPID -o %PPID -x $1 || \
+         pidof -o $$ -o $$PPID -o %PPID -x ${base}`
+
+    if [ -f $pidfile ]; then
+        read rpid < $pidfile
+        if [ "$rpid" != "" -a "$pid" != "" ]; then
+            for i in $pid ; do
+                if [ "$i" = "$rpid" ]; then 
+                    echo $"${base} (pid $pid) is running..."
+                    return 0
+                fi     
+            done
+        elif [ "$rpid" != "" -a "$pid" = "" ]; then
+            echo $"${base} dead but pid file exists"
+            return 1
+        fi 
+
+    fi
+
+    if [ "$base" = "slurmctld" -a "$pid" != "" ] ; then
+        echo $"${base} (pid $pid) is running..."
+        return 0
+    fi
+     
+    echo $"${base} is stopped"
+    
+    return 3
 }
 
 
@@ -81,19 +128,19 @@ case "$1" in
         ;;
     status)
 	for prog in `scontrol show daemons`; do
-	   status $prog
+	   slurmstatus $prog
 	done
         ;;
     restart)
         $0 stop && $0 start
         ;;
     condrestart)
-        for prog in `scontrol show daemons`; do
-            if [ -f /var/lock/subsys/$prog ]; then
+        if [ -f /var/lock/subsys/slurm ]; then
+            for prog in `scontrol show daemons`; do
                  stop $prog
                  start $prog
-            fi
-        done
+            done
+        fi
         ;;
     reconfig)
 	for prog in `scontrol show daemons`; do

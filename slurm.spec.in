@@ -174,9 +174,10 @@ fi
 if [ -x /etc/rc.d/init.d/slurm ]; then
     [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
     [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-    if ! /etc/rc.d/init.d/slurm status | grep -q running; then
+    if ! /etc/rc.d/init.d/slurm status | grep -q running \
+      || ! /etc/rc.d/init.d/slurm test | grep -q  slurmctld; then
         /etc/rc.d/init.d/slurm start
-    fi
+    fi 
 fi
 
 %preun
