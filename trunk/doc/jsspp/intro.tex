@@ -1,30 +1,30 @@
 \section{Introduction}
 Linux clusters, often constructed by using commodity off-the-shelf (COTS) componnets,
 have become increasingly populuar as a computing platform for parallel computation
-in recent years, mainly due to their ability to deliver high perfomance-cost ratio.
-Researchers have built and used small to medium size clusters for developing and debugging
-applicationsd~\cite{BeowulfWeb,LokiWeb}.
-Now, continuous decrease in the price of the COTS parts  in conjunction with
-the good scalability of the cluster architecture has made it feasible to economically
+in recent years, mainly due to their ability to deliver a high perfomance-cost ratio.
+Researchers have built and used small to medium size clusters for various
+applications~\cite{BeowulfWeb,LokiWeb}.
+The continuous decrease in the price of the COTS parts in conjunction with
+the good scalability of the cluster architecture has now made it feasible to economically
 build large-scale clusters with thousands of processors~\cite{MCRWeb,PCRWeb}.
 
-An essential component that is needed to 
-run user applications on a cluster is cluster management system.
+An essential component that is needed to harness such a resource is a 
+cluster management system.
 A cluster management system (or cluster manager) performs such crucial tasks as
-scheduling user jobs, monitoring machine and job ststus, launching user applications, and
+scheduling user jobs, monitoring machine and job status, launching user applications, and
 managing machine configuration,
 An ideal cluster manager should be simple, efficient, scalable, and fault-tolerant.
 
-Unfortunately, there are no open-source or proprietary cluster management systems currently available, 
-which satisfy these requirements while being immediately available for clusters of any architecture. 
-A survey~\cite{Jette02} has revealed that the existing cluster managers have poor scalability and hence 
-they are not suitable for large clusters of thousands of 
-processors~\cite{LoadLevelerWeb,LoadLevelerManual}.
-Many of these cluster managers also cannot be easily ported to other clusters since they are 
-tied to specific components of the cluster that they are 
-targeted to~\cite{RMS,LoadLevelerWeb,LoadLevelerManual}. 
-Furthermore, their cluster management functionality is usually provided as a part of a specific 
-job scheduling system package. 
+Unfortunately there are no open-source cluster management systems currently available 
+which satisfy these requirements.
+A survey~\cite{Jette02} has revealed that many existing cluster managers have poor scalability and fault-tolerance rendering them unsuitable for large clusters having 
+thousands of processors~\cite{LoadLevelerWeb,LoadLevelerManual}.
+While some proprietary cluster managers are suitable for large clusters, 
+they are typically designed for particular computer systems and/or 
+interconnects~\cite{RMS,LoadLevelerWeb,LoadLevelerManual}. 
+Proprietary systems can also be expensive and unavailable in source-code form. 
+Furthermore, proprietary cluster management functionality is usually provided as a 
+part of a specific job scheduling system package. 
 This mandates the use of the given scheduler just to manage a cluster, 
 even though the scheduler does not necessarily meet the need of organization that hosts the cluster.
 Clear separation of the cluster management functionality from scheduling policy is desired.
@@ -98,7 +98,7 @@ and inexpensive tool that anybody can use to efficiently manage clusters of diff
 The SLURM is highly scalable\footnote{It was observed that it took less than two seconds for SLURM to launch a thousand-task job on 
 a large cluster currently being built for Lawrence Livermore National Laboratory.}. 
 The SLURM can be easily ported to any cluster system with minimal effort with its plug-in 
-capability and can be used with any meta-batch scheduler or even a Grid resource broker~\cite{Gridbook}
+capability and can be used with any meta-batch scheduler or a Grid resource broker~\cite{Gridbook}
 with its well-defined interfaces.
 
 The rest of the paper is organized as follows. 

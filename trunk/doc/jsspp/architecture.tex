@@ -81,9 +81,10 @@ are explained in more detail below.
 \subsection{SLURM Local Daemon (Slurmd)}
 
 The \slurmd\ is a multi-threaded daemon running on each compute node.
-It reads the common SLURM configuration file, 
+It reads the common SLURM configuration file and recovers any 
+previously saved state information, 
 notifies the controller that it is active, waits for work, 
-executes the work, returns status,then waits for more work.  
+executes the work, returns status, and waits for more work.  
 Since it initiates jobs for other users, it must run with root privilege.
 It also asynchronously exchanges node and job status information with {\tt slurmctld}.  
 The only job information it has at any given time pertains to its 
@@ -130,7 +131,7 @@ disk periodically with incremental changes written to disk immediately
 for fault-tolerance.  
 The \slurmctld\ runs in either master or standby mode, depending on the
 state of its fail-over twin, if any.
-The \\slurmctld\ need not execute with root privilege.
+The \slurmctld\ need not execute with root privilege.
 %In fact, it is recommended that a unique user entry be created for 
 %executing \slurmctld\ and that user must be identified in the SLURM 
 %configuration file as {\tt SlurmUser}.
