@@ -79,7 +79,8 @@ The node configuration specifies the following information:
 
 <dt>NodeName
 <dd>Name of a node as returned by hostname (e.g. "lx12"). 
-<a name="NodeExp">A simple real expression may optionally be used to specify ranges 
+<a name="NodeExp">A simple regular expression may optionally 
+be used to specify ranges 
 of nodes to avoid building a configuration file with thousands 
 of entries. The real expression can contain one  
 pair of square brackets optionally followed by "o"
@@ -116,10 +117,9 @@ The default value is 1.
 
 <dt>State
 <dd>State of the node with respect to the initiation of user jobs. 
-Acceptable values are "UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", 
-"DRAINING". For example, the SLURM control machine may very well 
-not be used for initiation of user jobs and its state could thus 
-be set to "DRAINED". The default value is "UNKNOWN".
+Acceptable values are "DOWN", "UNKNOWN", "IDLE", and "DRAINING". 
+The <a href="#NodeStates">node states</a> are fully described below. 
+The default value is "UNKNOWN".
 
 <dt>TmpDisk
 <dd>Total size of temporary disk storage in TMP_FS in MegaBytes 
@@ -188,7 +188,7 @@ on some architectures,
 node specifications should be place in this file in consecutive order.
 The size of each line in the file is limited to 1024 characters.
 <p>
-The node states have the following meanings:
+<a name="NodeStates">The node states have the following meanings:</a>
 <dl>
 <dt>BUSY
 <dd>The node has been allocated work (one or more user jobs) and is 
@@ -215,6 +215,14 @@ prepare some nodes for maintenance work.
 
 <dt>IDLE
 <dd>The node is idle and available for use.
+
+<dt>STAGE_IN
+<dd>The node has been allocated to a job, which is being prepared for 
+the job's execution.
+
+<dt>STAGE_OUT
+<dd>The has been allocated to a job, which has completed execution. 
+The node is performing job termination work.
 
 <dt>UNKNOWN
 <dd>Default initial node state upon startup of SLURM.
@@ -345,7 +353,7 @@ at the end of this document.
 
 <h3>Job Configuration</h3>
 The job configuration format specified below is used by the 
-slurm_admin administration tool to modify job state information: 
+scontrol administration tool to modify job state information: 
 <dl>
 
 <dt>Contiguous
@@ -402,11 +410,11 @@ value is represented internally as -1.
 <dd>Comma separated list of nodes which are allocated to the job. 
 The nodes may be specified using regular expressions (e.g.
 "lx[10-20],lx[33-40]".
-This value may not be changed by slurm_admin. 
+This value may not be changed by scontrol. 
 
 <dt>Number
 <dd>Unique number by which the job can be referenced. This value 
-may not be changed by slurm_admin.
+may not be changed by scontrol.
 
 <dt>Partition
 <dd>Name of the partition in which this job should execute.
@@ -514,61 +522,61 @@ configuration file. The default value is "/etc/SLURM.conf".
 temporary storage. The default value is "/tmp".
 </dl>
 
-<h2>Slurm_admin Administration Tool</h2>
-The tool you will primarily use in the administration of SLURM is slurm_admin. 
+<h2>scontrol Administration Tool</h2>
+The tool you will primarily use in the administration of SLURM is scontrol. 
 It provides the means of viewing and updating node and partition 
 configurations. It can also be used to update some job state 
-information. You can execute slurm_admin with a single keyword on 
+information. You can execute scontrol with a single keyword on 
 the execute line or it will query you for input and process those 
-keywords on an interactive basis. The slurm_admin keywords are shown below.
-A <a href="#SampleAdmin">sample slurm_admin session</a> with examples is appended.
+keywords on an interactive basis. The scontrol keywords are shown below.
+A <a href="#SampleAdmin">sample scontrol session</a> with examples is appended.
 
 <p>
-Usage: slurm_admin [-q | -v] [&lt;keyword&gt;]<br>
+Usage: scontrol [-q | -v] [&lt;keyword&gt;]<br>
 -q is equivalent to the "quiet" keyword<br>
 -v is equivalent to the "verbose" keyword<br>
 </pre>
 <dl>
 <dt>exit
-<dd>Terminate slurm_admin.
+<dd>Terminate scontrol.
 
 <dt>help
-<dd>Display this list of slurm_admin commands and options.
+<dd>Display this list of scontrol commands and options.
 
 <dt>quiet
 <dd>Print no messages other than error messages.
 
 <dt>quit
-<dd>Terminate slurm_admin.
+<dd>Terminate scontrol.
 
-<dt>reconfigure [&lt;NodeName&gt;]
-<dd>The SLURM daemons on the specified node are instructed to re-read 
-the configuration files. The default is that all daemons on all nodes 
-are reconfigured. NodeName may be specified using a real expression.
+<dt>reconfigure
+<dd>The SLURM control daemon re-reads its configuration files.
 
 <dt>show &lt;entity&gt; [&lt;ID&gt;]
 <dd>Show the configuration for a given entity. Entity must 
-be "job", "node", or "partition". By default, state information 
-for all records is reported. If you only wish to see the 
-state of one entity record, specify either its ID number
-(assumed if entirely numeric) or its name. 
+be "build", "job", "node", or "partition" for SLURM  build 
+parameters, job, node and partition information respectively.
+By default, state information for all records is reported. 
+If you only wish to see the state of one entity record, 
+specify either its ID number (assumed if entirely numeric) 
+or its name. <a href="#NodeExp">Regular expressions</a> may 
+be used to identify node names.
 
 <dt>update &lt;options&gt;
 <dd>Update the configuration information. 
 Options are of the same format as the configuration file. 
+Not all configuration information can be modified using 
+this mechanism, such as the configuration of a node 
+after it has registered. One can always modify the 
+SLURM configuration file and use the reconfigure command 
+to rebuild all controller information if required. 
 This command can only be issued by user <b>root</b>.
 
 <dt>verbose
-<dd>Enable detailed logging of slurm_admin execution state information.
+<dd>Enable detailed logging of scontrol execution state information.
 
 <dt>version
-<dd>Display the slurm_admin tool version number.
-
-<dt>write &lt;filename&gt;
-<dd>Write current configuration information to the specified file. 
-This file can subsequently be used as a SLURM configuration file. 
-This file can be quite verbose as regular expressions will not be 
-used for node identification. (To do: add regular expressions) 
+<dd>Display the scontrol tool version number.
 </dl>
 
 <h2>Miscellaneous</h2>
@@ -601,25 +609,25 @@ PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default=YES
 PartitionName=class MaxCpus=16  MaxTime=10  Nodes=lx[31-32] AllowGroups=students
 </pre>
 
-<a name="SampleAdmin"><h2>Sample slurm_admin Execution</h2></a>
+<a name="SampleAdmin"><h2>Sample scontrol Execution</h2></a>
 <pre>
 Remove node lx30 from service, removing jobs as needed:
-  # slurm_admin
-  slurm_admin: update NodeName=lx30 State=DRAINING
-  slurm_admin: show job
+  # scontrol
+  scontrol: update NodeName=lx30 State=DRAINING
+  scontrol: show job
   ID=1234 Name=Simulation MaxTime=100 Nodes=lx[29-30] State=RUNNING User=smith
   ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx20,lx23 State=RUNNING User=smith
-  slurm_admin: update job ID=1234 State=ENDING
-  slurm_admin: show job 1234
+  scontrol: update job ID=1234 State=ENDING
+  scontrol: show job 1234
   Job 1234 not found
-  slurm_admin: show node lx30
+  scontrol: show node lx30
   Name=lx30 Partition=class State=DRAINED CPUs=16 RealMemory=2048 TmpDisk=16384
-  slurm_admin: quit
+  scontrol: quit
 </pre>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified March 19, 2002</p>
+<p>Last Modified April 5, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
