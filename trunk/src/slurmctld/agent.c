@@ -499,13 +499,16 @@ static void *_thread_per_node_rpc(void *args)
 		timeout = slurmctld_conf.kill_wait + 2;  /* 2 extra seconds 
 							   for slurmd reply */
 
-	if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
-		error("agent: %s: %m", thread_ptr->node_name);
-		goto cleanup;
-	}
-
-	if (!task_ptr->get_reply) {
-		thread_state = DSH_DONE;
+	if (task_ptr->get_reply) {
+		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
+			error("agent: %s: %m", thread_ptr->node_name);
+			goto cleanup;
+		}
+	} else {
+		if (slurm_send_only_node_msg(&msg) < 0)
+			error("agent: %s: %m", thread_ptr->node_name);
+		else
+			thread_state = DSH_DONE;
 		goto cleanup;
 	}
 
