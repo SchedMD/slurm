@@ -6,7 +6,7 @@ Necessary include files
 <slurm.h>
 
 All interaction with slurm consists of structured messages
-All messages returned to a double pointer **, must be freed by calling the corresponding free function
+All messages returned to a double pointer **, and must be freed by calling the corresponding free function
 
 ---------------------------
 API Layer init/destroy functions
@@ -18,7 +18,7 @@ slurm_protocol_config_t * slurm_get_api_config ( )
 	Returns the current api configuration
 
 int slurm_set_default_controllers ( char * primary_controller_hostname , char *
-secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port )
+secondary_controller_hostname, uint16_t pri_port , uint16_t sec_port )
 	This will set the default controllers' addresses and ports.  This is
 the minimal amount of initialization that must occur before using the api
 functions
@@ -26,7 +26,7 @@ functions
 ---------------------------
 INFO Message functions
 ---------------------------
-For all of the following inforamational calls, if update_time is equal to the last time changes where made, nothing is returned.  Otherwise all the node, job, or partition records are returned.
+For all of the following are informational calls, if update_time is equal to the last time changes where made, nothing is returned.  Otherwise all the node, job, or partition records are returned.
 
 int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	Returns a job_info_msg_t that contains an array of job_table records
@@ -41,17 +41,17 @@ int slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_
 ---------------------------
 JOB Allocation functions
 ---------------------------
-Once a job_desc_msg_t structure has been declared it must first be initializediby the following function before it is used.
+Once a job_desc_msg_t structure has been declared it must first be initialized by the following function before it is used.
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg ) ;
 
 int slurm_submit_batch_job ( job_desc_msg_t * job_desc_msg )
 Used to submit a batch/script job
 
 int slurm_will_job_run ( job_desc_msg_t * job_desc_msg , job_allocation_response_msg_t ** job_alloc_msg )
-Returns success if the resources are availible immediately to launch the job
+Returns success if the resources are available immediately to launch the job
 
 int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , job_allocation_response_msg_t ** job_alloc_msg , int immediately )
-Blocks until resources are allocated
+Blocks until resources are allocated.  If the immediate flag is set, the job will either allocate immediately or return a failure code if resources are not available..
 
 
 ---------------------------
@@ -68,7 +68,7 @@ Error Code Functions
 Slurm Functions will return -1 on error and will provide detailed error information using the following functions
 
 	int slurm_get_errno () 
-	char * slurm_get_errmsg ( int errno )
+	char * slurm_strerror ( int errno )
 
 
 
@@ -92,6 +92,8 @@ void slurm_free_node_table ( node_table_t * node ) ;
 ---------------------------
 Message Structure definitions
 ---------------------------
+SEE src/common/slurm_protocol_defs.h for the latest structure.
+
 typedef struct slurm_job_allocation_response_msg
 {
 	uint32_t job_id;
