@@ -166,6 +166,14 @@ typedef struct slurm_protocol_header
 	uint32_t body_length ;
 } header_t ;
 
+typedef struct slurm_stream_io_header
+{
+	uint16_t version ; /*version/magic number*/
+	char key[16] ;
+	uint32_t task_id ;
+	uint16_t type ;
+} slurm_stream_io_header ;
+
 /* Job credential */
 typedef struct slurm_job_credential
 {
@@ -173,7 +181,7 @@ typedef struct slurm_job_credential
 	uid_t user_id;
 	char* node_list;
 	time_t experation_time;	
-	uint32_t signature; /* What are we going to do here? */
+	char signature[16]; /* What are we going to do here? */
 } slurm_job_credential_t;
 
 typedef struct slurm_msg
