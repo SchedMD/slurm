@@ -85,6 +85,8 @@ void slurm_print_ctl_conf ( FILE* out,
 	fprintf(out, "SlurmUser         = %s(%u)\n", 
 		slurm_ctl_conf_ptr->slurm_user_name,
 		slurm_ctl_conf_ptr->slurm_user_id);
+	fprintf(out, "SlurmctldDebug    = %u\n", 
+		slurm_ctl_conf_ptr->slurmctld_debug);
 	fprintf(out, "SlurmctldLogFile  = %s\n", 
 		slurm_ctl_conf_ptr->slurmctld_logfile);
 	fprintf(out, "SlurmctldPidFile  = %s\n", 
@@ -93,6 +95,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->slurmctld_port);
 	fprintf(out, "SlurmctldTimeout  = %u\n", 
 		slurm_ctl_conf_ptr->slurmctld_timeout);
+	fprintf(out, "SlurmdDebug       = %u\n", 
+		slurm_ctl_conf_ptr->slurmd_debug);
 	fprintf(out, "SlurmdLogFile     = %s\n", 
 		slurm_ctl_conf_ptr->slurmd_logfile);
 	fprintf(out, "SlurmdPidFile     = %s\n", 

@@ -59,8 +59,9 @@
 		_X	= NULL; 	\
 	} while (0)
 
-static int _parse_node_spec (char *in_line);
-static int _parse_part_spec (char *in_line);
+inline static void _normalize_debug_level(uint16_t *level);
+static int  _parse_node_spec (char *in_line);
+static int  _parse_part_spec (char *in_line);
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
@@ -89,10 +90,12 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	FREE_NULL (ctl_conf_ptr->slurm_user_name);
+	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
 	FREE_NULL (ctl_conf_ptr->slurmctld_logfile);
 	FREE_NULL (ctl_conf_ptr->slurmctld_pidfile);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL; 
 	FREE_NULL (ctl_conf_ptr->slurmd_logfile);
 	FREE_NULL (ctl_conf_ptr->slurmd_pidfile);
 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
@@ -125,6 +128,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1;
 	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
+	int slurmctld_debug = -1, slurmd_debug = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL;
@@ -157,10 +161,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
 		"SlurmUser=", 's', &slurm_user,
+		"SlurmctldDebug=", 'd', &slurmctld_debug,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
 		"SlurmctldPidFile=", 's', &slurmctld_pidfile,
 		"SlurmctldPort=", 's', &slurmctld_port,
 		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
+		"SlurmdDebug=", 'd', &slurmd_debug,
 		"SlurmdLogFile=", 's', &slurmd_logfile,
 		"SlurmdPidFile=",  's', &slurmd_pidfile,
 		"SlurmdPort=", 's', &slurmd_port,
@@ -213,7 +219,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->epilog = epilog;
 	}
 
-	if ( fast_schedule != -1) {
+	if ( fast_schedule != -1 ) {
 		if ( ctl_conf_ptr->fast_schedule != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "FastSchedule");
 		ctl_conf_ptr->fast_schedule = fast_schedule;
@@ -287,6 +293,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		}
 	}
 
+	if ( slurmctld_debug != -1) {
+		if ( ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "SlurmctldDebug");
+		ctl_conf_ptr->slurmctld_debug = slurmctld_debug;
+	}
+
 	if ( slurmctld_pidfile ) {
 		if ( ctl_conf_ptr->slurmctld_pidfile ) {
 			error (MULTIPLE_VALUE_MSG, "SlurmctldPidFile");
@@ -320,6 +332,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->slurmctld_timeout != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmctldTimeout");
 		ctl_conf_ptr->slurmctld_timeout = slurmctld_timeout;
+	}
+
+	if ( slurmd_debug != -1) {
+		if ( ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "SlurmdDebug");
+		ctl_conf_ptr->slurmd_debug = slurmd_debug;
 	}
 
 	if ( slurmd_logfile ) {
@@ -431,14 +449,10 @@ _parse_node_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
-	if (feature)
-		xfree (feature);
-	if (node_addr)
-		xfree (node_addr);
-	if (node_name)
-		xfree (node_name);
-	if (state)
-		xfree (state);
+	FREE_NULL(feature);
+	FREE_NULL(node_addr);
+	FREE_NULL(node_name);
+	FREE_NULL(state);
 
 	return 0;
 }
@@ -473,20 +487,13 @@ _parse_part_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
-	if (allow_groups)
-		xfree (allow_groups);
-	if (default_str)
-		xfree (default_str);
-	if (partition)
-		xfree (partition);
-	if (root_str)
-		xfree (root_str);
-	if (nodes)
-		xfree (nodes);
-	if (shared_str)
-		xfree (shared_str);
-	if (state_str)
-		xfree (state_str);
+	FREE_NULL(allow_groups);
+	FREE_NULL(default_str);
+	FREE_NULL(partition);
+	FREE_NULL(root_str);
+	FREE_NULL(nodes);
+	FREE_NULL(shared_str);
+	FREE_NULL(state_str);
 
 	return 0;
 }
@@ -523,7 +530,7 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr)
 		line_num++;
 		line_size = strlen (in_line);
 		if (line_size >= (BUF_SIZE - 1)) {
-			error ("read_slurm_conf_ctl line %d, of input file %s too long",
+			error ("Line %d, of configuration file %s too long",
 			       line_num, ctl_conf_ptr->slurm_conf);
 			fclose (slurm_spec_file);
 			return E2BIG;
@@ -681,5 +688,21 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 							(char **) NULL, 10);
 		endservent ();
 	}
+
+	if (ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
+		_normalize_debug_level(&ctl_conf_ptr->slurmctld_debug);
+
+	if (ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
+		_normalize_debug_level(&ctl_conf_ptr->slurmd_debug);
 }
 
+/* Normalize supplied debug level to be in range per log.h definitions */
+static void _normalize_debug_level(uint16_t *level)
+{
+	if (*level > LOG_LEVEL_DEBUG3) {
+		error("Normalizing debug level from %u to %d", 
+		      *level, LOG_LEVEL_DEBUG3);
+		*level = LOG_LEVEL_DEBUG3;
+	}
+	/* level is uint16, always > LOG_LEVEL_QUIET(0), can't underflow */
+}

@@ -42,6 +42,12 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 
+#define FREE_NULL(_X)			\
+	do {				\
+		if (_X) xfree (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 
@@ -694,9 +700,8 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->node_names)
-		xfree(tmp_ptr->node_names);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->node_names);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -756,13 +761,10 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (node_reg_ptr->node_name)
-		xfree(node_reg_ptr->node_name);
-	if (node_reg_ptr->job_id)
-		xfree(node_reg_ptr->job_id);
-	if (node_reg_ptr->step_id)
-		xfree(node_reg_ptr->step_id);
-	xfree(node_reg_ptr);
+	FREE_NULL(node_reg_ptr->node_name);
+	FREE_NULL(node_reg_ptr->job_id);
+	FREE_NULL(node_reg_ptr->step_id);
+	FREE_NULL(node_reg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -834,13 +836,10 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->node_list)
-		xfree(tmp_ptr->node_list);
-	if (tmp_ptr->cpus_per_node)
-		xfree(tmp_ptr->cpus_per_node);
-	if (tmp_ptr->cpu_count_reps)
-		xfree(tmp_ptr->cpu_count_reps);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->node_list);
+	FREE_NULL(tmp_ptr->cpus_per_node);
+	FREE_NULL(tmp_ptr->cpu_count_reps);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -922,13 +921,10 @@ static int
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->node_list)
-		xfree(tmp_ptr->node_list);
-	if (tmp_ptr->cpus_per_node)
-		xfree(tmp_ptr->cpus_per_node);
-	if (tmp_ptr->cpu_count_reps)
-		xfree(tmp_ptr->cpu_count_reps);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->node_list);
+	FREE_NULL(tmp_ptr->cpus_per_node);
+	FREE_NULL(tmp_ptr->cpu_count_reps);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -956,7 +952,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -991,10 +987,8 @@ _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (node)
-		xfree(node);
-	xfree(*msg);
-	*msg = NULL;
+	FREE_NULL(node);
+	FREE_NULL(*msg);
 	return SLURM_ERROR;
 }
 
@@ -1017,18 +1011,9 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (node->name) {
-		xfree(node->name);
-		node->name = NULL;
-	}
-	if (node->features) {
-		xfree(node->features);
-		node->features = NULL;
-	}
-	if (node->partition) {
-		xfree(node->partition);
-		node->partition = NULL;
-	}
+	FREE_NULL(node->name);
+	FREE_NULL(node->features);
+	FREE_NULL(node->partition);
 	return SLURM_ERROR;
 }
 
@@ -1073,13 +1058,10 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->name)
-		xfree(tmp_ptr->name);
-	if (tmp_ptr->nodes)
-		xfree(tmp_ptr->nodes);
-	if (tmp_ptr->allow_groups)
-		xfree(tmp_ptr->allow_groups);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->name);
+	FREE_NULL(tmp_ptr->nodes);
+	FREE_NULL(tmp_ptr->allow_groups);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1126,9 +1108,8 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->node_list)
-		xfree(tmp_ptr->node_list);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->node_list);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1162,7 +1143,7 @@ _unpack_revoke_credential_msg(revoke_credential_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1191,7 +1172,7 @@ _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1242,9 +1223,8 @@ unpack_job_credential(slurm_job_credential_t ** cred, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->node_list)
-		xfree(tmp_ptr->node_list);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->node_list);
+	FREE_NULL(tmp_ptr);
 	*cred = NULL;
 	return SLURM_ERROR;
 }
@@ -1292,9 +1272,8 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (tmp_ptr->node_list)
-		xfree(tmp_ptr->node_list);
-	xfree(tmp_ptr);
+	FREE_NULL(tmp_ptr->node_list);
+	FREE_NULL(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1329,10 +1308,8 @@ _unpack_partition_info_msg(partition_info_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(*msg);
-	*msg = NULL;
-	if (partition)
-		xfree(partition);
+	FREE_NULL(*msg);
+	FREE_NULL(partition);
 	return SLURM_ERROR;
 }
 
@@ -1363,20 +1340,16 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 		part->node_inx = bitfmt2int("");
 	else {
 		part->node_inx = bitfmt2int(node_inx_str);
-		xfree(node_inx_str);
+		FREE_NULL(node_inx_str);
 		node_inx_str = NULL;
 	}
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (part->name)
-		xfree(part->name);
-	if (part->allow_groups)
-		xfree(part->allow_groups);
-	if (part->nodes)
-		xfree(part->nodes);
-	if (node_inx_str)
-		xfree(node_inx_str);
+	FREE_NULL(part->name);
+	FREE_NULL(part->allow_groups);
+	FREE_NULL(part->nodes);
+	FREE_NULL(node_inx_str);
 	return SLURM_ERROR;
 }
 
@@ -1443,10 +1416,8 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (step->partition)
-		xfree(step->partition);
-	if (step->nodes)
-		xfree(step->nodes);
+	FREE_NULL(step->partition);
+	FREE_NULL(step->nodes);
 	return SLURM_ERROR;
 }
 
@@ -1472,10 +1443,8 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (step)
-		xfree(step);
-	xfree(*msg);
-	*msg = NULL;
+	FREE_NULL(step);
+	FREE_NULL(*msg);
 	return SLURM_ERROR;
 }
 
@@ -1507,9 +1476,8 @@ _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (job)
-		xfree(job);
-	xfree(*msg);
+	FREE_NULL(job);
+	FREE_NULL(*msg);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1545,7 +1513,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->node_inx = bitfmt2int("");
 	else {
 		job->node_inx = bitfmt2int(node_inx_str);
-		xfree(node_inx_str);
+		FREE_NULL(node_inx_str);
 	}
 
 	safe_unpack32(&job->num_procs, buffer);
@@ -1563,22 +1531,17 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->req_node_inx = bitfmt2int("");
 	else {
 		job->req_node_inx = bitfmt2int(node_inx_str);
-		xfree(node_inx_str);
+		FREE_NULL(node_inx_str);
 	}
 	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (job->nodes)
-		xfree(job->nodes);
-	if (job->partition)
-		xfree(job->partition);
-	if (job->name)
-		xfree(job->name);
-	if (job->req_nodes)
-		xfree(job->req_nodes);
-	if (job->features)
-		xfree(job->features);
+	FREE_NULL(job->nodes);
+	FREE_NULL(job->partition);
+	FREE_NULL(job->name);
+	FREE_NULL(job->req_nodes);
+	FREE_NULL(job->features);
 	return SLURM_ERROR;
 }
 
@@ -1599,8 +1562,12 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->prioritize, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->ret2service, buffer);
+	pack16(build_ptr->slurm_user_id, buffer);
+	packstr(build_ptr->slurm_user_name, buffer);
+	pack16(build_ptr->slurmctld_debug, buffer);
 	packstr(build_ptr->slurmctld_logfile, buffer);
 	pack16(build_ptr->slurmctld_timeout, buffer);
+	pack16(build_ptr->slurmd_debug, buffer);
 	packstr(build_ptr->slurmd_logfile, buffer);
 	packstr(build_ptr->slurmd_spooldir, buffer);
 	pack16(build_ptr->slurmd_timeout, buffer);
@@ -1640,9 +1607,14 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->prioritize, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
+	safe_unpack16(&build_ptr->slurm_user_id, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->slurm_user_name,
+			       &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->slurmctld_debug, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmctld_logfile,
 			       &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->slurmctld_timeout, buffer);
+	safe_unpack16(&build_ptr->slurmd_debug, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_logfile, &uint16_tmp,
 			       buffer);
 	safe_unpackstr_xmalloc(&build_ptr->slurmd_spooldir, &uint16_tmp,
@@ -1660,37 +1632,22 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (build_ptr->backup_addr)
-		xfree(build_ptr->backup_addr);
-	if (build_ptr->control_addr)
-		xfree(build_ptr->control_addr);
-	if (build_ptr->control_addr)
-		xfree(build_ptr->control_addr);
-	if (build_ptr->control_machine)
-		xfree(build_ptr->control_machine);
-	if (build_ptr->epilog)
-		xfree(build_ptr->epilog);
-	if (build_ptr->prioritize)
-		xfree(build_ptr->prioritize);
-	if (build_ptr->prolog)
-		xfree(build_ptr->prolog);
-	if (build_ptr->slurmctld_logfile)
-		xfree(build_ptr->slurmctld_logfile);
-	if (build_ptr->slurmd_logfile)
-		xfree(build_ptr->slurmd_logfile);
-	if (build_ptr->slurmd_spooldir)
-		xfree(build_ptr->slurmd_spooldir);
-	if (build_ptr->slurm_conf)
-		xfree(build_ptr->slurm_conf);
-	if (build_ptr->state_save_location)
-		xfree(build_ptr->state_save_location);
-	if (build_ptr->tmp_fs)
-		xfree(build_ptr->tmp_fs);
-	if (build_ptr->job_credential_private_key)
-		xfree(build_ptr->job_credential_private_key);
-	if (build_ptr->job_credential_public_certificate)
-		xfree(build_ptr->job_credential_public_certificate);
-	xfree(build_ptr);
+	FREE_NULL(build_ptr->backup_addr);
+	FREE_NULL(build_ptr->backup_controller);
+	FREE_NULL(build_ptr->control_addr);
+	FREE_NULL(build_ptr->control_machine);
+	FREE_NULL(build_ptr->epilog);
+	FREE_NULL(build_ptr->prioritize);
+	FREE_NULL(build_ptr->prolog);
+	FREE_NULL(build_ptr->slurmctld_logfile);
+	FREE_NULL(build_ptr->slurmd_logfile);
+	FREE_NULL(build_ptr->slurmd_spooldir);
+	FREE_NULL(build_ptr->slurm_conf);
+	FREE_NULL(build_ptr->state_save_location);
+	FREE_NULL(build_ptr->tmp_fs);
+	FREE_NULL(build_ptr->job_credential_private_key);
+	FREE_NULL(build_ptr->job_credential_public_certificate);
+	FREE_NULL(build_ptr);
 	*build_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -1797,27 +1754,17 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (job_desc_ptr->features)
-		xfree(job_desc_ptr->features);
-	if (job_desc_ptr->name)
-		xfree(job_desc_ptr->name);
-	if (job_desc_ptr->partition)
-		xfree(job_desc_ptr->partition);
-	if (job_desc_ptr->req_nodes)
-		xfree(job_desc_ptr->req_nodes);
-	if (job_desc_ptr->environment)
-		xfree(job_desc_ptr->environment);
-	if (job_desc_ptr->script)
-		xfree(job_desc_ptr->script);
-	if (job_desc_ptr->err)
-		xfree(job_desc_ptr->err);
-	if (job_desc_ptr->in)
-		xfree(job_desc_ptr->in);
-	if (job_desc_ptr->out)
-		xfree(job_desc_ptr->out);
-	if (job_desc_ptr->work_dir)
-		xfree(job_desc_ptr->work_dir);
-	xfree(job_desc_ptr);
+	FREE_NULL(job_desc_ptr->features);
+	FREE_NULL(job_desc_ptr->name);
+	FREE_NULL(job_desc_ptr->partition);
+	FREE_NULL(job_desc_ptr->req_nodes);
+	FREE_NULL(job_desc_ptr->environment);
+	FREE_NULL(job_desc_ptr->script);
+	FREE_NULL(job_desc_ptr->err);
+	FREE_NULL(job_desc_ptr->in);
+	FREE_NULL(job_desc_ptr->out);
+	FREE_NULL(job_desc_ptr->work_dir);
+	FREE_NULL(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -1847,7 +1794,7 @@ _unpack_old_job_desc_msg(old_job_alloc_msg_t **
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(job_desc_ptr);
+	FREE_NULL(job_desc_ptr);
 	*job_desc_buffer_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -1870,7 +1817,7 @@ _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(last_update_msg);
+	FREE_NULL(last_update_msg);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -1893,7 +1840,7 @@ _unpack_return_code_msg(return_code_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(return_code_msg);
+	FREE_NULL(return_code_msg);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2007,7 +1954,7 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(msg);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2045,9 +1992,8 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (msg->node_name)
-		xfree(msg->node_name);
-	xfree(msg);
+	FREE_NULL(msg->node_name);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2151,7 +2097,7 @@ _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(msg);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2174,7 +2120,7 @@ _unpack_shutdown_msg(shutdown_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(msg);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2215,7 +2161,7 @@ _unpack_job_step_id_msg(job_step_id_t ** msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(msg);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2247,7 +2193,7 @@ _unpack_complete_job_step_msg(complete_job_step_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(msg);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
@@ -2274,7 +2220,7 @@ _unpack_get_job_step_info_msg(job_step_info_request_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	xfree(job_step_info);
+	FREE_NULL(job_step_info);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2315,8 +2261,7 @@ _unpack_slurm_addr_array(slurm_addr ** slurm_address,
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (*slurm_address)
-		xfree(*slurm_address);
+	FREE_NULL(*slurm_address);
 	*slurm_address = NULL;
 	return SLURM_ERROR;
 }
@@ -2377,23 +2322,15 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	if (launch_msg_ptr->nodes)
-		xfree(launch_msg_ptr->nodes);
-	if (launch_msg_ptr->script)
-		xfree(launch_msg_ptr->script);
-	if (launch_msg_ptr->work_dir)
-		xfree(launch_msg_ptr->work_dir);
-	if (launch_msg_ptr->err)
-		xfree(launch_msg_ptr->err);
-	if (launch_msg_ptr->in)
-		xfree(launch_msg_ptr->in);
-	if (launch_msg_ptr->out)
-		xfree(launch_msg_ptr->out);
-	if (launch_msg_ptr->argv)
-		xfree(launch_msg_ptr->argv);
-	if (launch_msg_ptr->environment)
-		xfree(launch_msg_ptr->environment);
-	xfree(launch_msg_ptr);
+	FREE_NULL(launch_msg_ptr->nodes);
+	FREE_NULL(launch_msg_ptr->script);
+	FREE_NULL(launch_msg_ptr->work_dir);
+	FREE_NULL(launch_msg_ptr->err);
+	FREE_NULL(launch_msg_ptr->in);
+	FREE_NULL(launch_msg_ptr->out);
+	FREE_NULL(launch_msg_ptr->argv);
+	FREE_NULL(launch_msg_ptr->environment);
+	FREE_NULL(launch_msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
 }
@@ -2424,9 +2361,8 @@ int unpack_ ( ** msg_ptr , Buf buffer )
 	return SLURM_SUCCESS;
 
     unpack_error:
-	if (msg -> x)
-		xfree (msg -> x);
-	xfree (msg);
+	FREE_NULL(msg -> x);
+	FREE_NULL(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }
