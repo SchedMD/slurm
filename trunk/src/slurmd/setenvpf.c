@@ -89,8 +89,6 @@ _extend_env(char ***envp)
 	while (*ep == NULL)
 		--ep;
 
-	info ("resized to %d, last = %s", newcnt, *ep);
-
 	return (++ep);
 }
 
