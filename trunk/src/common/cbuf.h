@@ -1,6 +1,5 @@
 /*****************************************************************************\
- * src/common/cbuf.h - circular buffer implementation
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,17 +34,17 @@
  ***********/
 /*
  *  Cbuf is a circular-buffer capable of dynamically resizing itself.
- *    If it has reached its maximum size or if additional memory is
- *    unavailable, then old data in the buffer will be overwritten.
+ *  If it has reached its maximum size or if additional memory is
+ *  unavailable, then old data in the buffer will be overwritten.
  *
  *  If NDEBUG is not defined, internal debug code will be enabled.
- *    This is intended for development use only and production code
- *    should define NDEBUG.
+ *  This is intended for development use only and production code
+ *  should define NDEBUG.
  *
  *  By default, out_of_memory() is a macro definition that returns NULL.
- *    This macro may be redefined to invoke another routine instead.
- *    If WITH_OOMF is defined, this macro will not be defined and the
- *    linker will expect to find an external Out-Of-Memory Function.
+ *  This macro may be redefined to invoke another routine instead.
+ *  If WITH_OOMF is defined, this macro will not be defined and the
+ *  linker will expect to find an external Out-Of-Memory Function.
  *
  *  If WITH_PTHREADS is defined, these routines will be thread-safe.
  */
@@ -106,6 +105,20 @@ int cbuf_used (cbuf_t cb);
  *  Returns the number of bytes in 'cb' available for reading.
  */
 
+int cbuf_drop (cbuf_t cb, int len);
+/*
+ *  Discards up to 'len' bytes of unread data from 'cb';
+ *    this data will still be available via the replay buffer.
+ *  Returns the number of bytes dropped, or <0 on error (with errno set).
+ */
+
+int cbuf_peek (cbuf_t cb, void *dstbuf, int len);
+/*
+ *  Reads up to 'len' bytes of data from 'cb' into the buffer 'dstbuf',
+ *    but does not consume the data read from the cbuf.
+ *  Returns the number of bytes read, or <0 on error (with errno set).
+ */
+
 int cbuf_read (cbuf_t cb, void *dstbuf, int len);
 /*
  *  Reads up to 'len' bytes of data from 'cb' into the buffer 'dstbuf'.
@@ -126,27 +139,62 @@ int cbuf_write (cbuf_t cb, void *srcbuf, int len, int *dropped);
  *    Sets 'dropped' (if not NULL) to the number of bytes of data overwritten.
  */
 
-int cbuf_read_fd (cbuf_t cb, int dstfd, int len);
+int cbuf_peek_to_fd (cbuf_t cb, int dstfd, int len);
 /*
  *  Reads up to 'len' bytes of data from 'cb' into the file referenced by the
- *    file descriptor 'dstfd'.  If len is -1, it will be set to cbuf_used().
+ *    file descriptor 'dstfd', but does not consume the data read from the
+ *    cbuf.  If 'len' is -1, it will be set to cbuf_used().
  *  Returns the number of bytes read, or <0 on error (with errno set).
  */
 
-int cbuf_replay_fd (cbuf_t cb, int dstfd, int len);
+int cbuf_read_to_fd (cbuf_t cb, int dstfd, int len);
+/*
+ *  Reads up to 'len' bytes of data from 'cb' into the file referenced by the
+ *    file descriptor 'dstfd'.  If 'len' is -1, it will be set to cbuf_used().
+ *  Returns the number of bytes read, or <0 on error (with errno set).
+ */
+
+int cbuf_replay_to_fd (cbuf_t cb, int dstfd, int len);
 /*
  *  Replays up to 'len' bytes of previously read data from 'cb' into the file
- *    referenced by the file descriptor 'dstfd'.  If len is -1, it will be
+ *    referenced by the file descriptor 'dstfd'.  If 'len' is -1, it will be
  *    set to the maximum number of bytes available for replay.
  *  Returns the number of bytes replayed, or <0 on error (with errno set).
  */
 
-int cbuf_write_fd (cbuf_t cb, int srcfd, int len, int *dropped);
+int cbuf_write_from_fd (cbuf_t cb, int srcfd, int len, int *dropped);
 /*
  *  Writes up to 'len' bytes of data from the file referenced by the file
- *    descriptor 'srcfd' into 'cb'.  If len is -1, it will be set to
+ *    descriptor 'srcfd' into 'cb'.  If 'len' is -1, it will be set to
  *    cbuf_free().
  *  Returns the number of bytes written, 0 on EOF, or <0 on error (with errno).
+ *    Sets 'dropped' (if not NULL) to the number of bytes of data overwritten.
+ */
+
+int cbuf_gets (cbuf_t cb, char *dst, int len);
+/*
+ *  Reads a line of data from 'cb' into the buffer 'dst'.  Reading stops after
+ *    a newline which is also stored in the 'dst' buffer.  The buffer will
+ *    always be NUL-terminated and contain at most 'len - 1' characters.
+ *  Returns the strlen of the line on success; truncation occurred if >= 'len'.
+ *    Returns 0 if a newline is not found; no data is consumed in this case.
+ *    Returns <0 on error (with errno set).
+ */
+
+int cbuf_peeks (cbuf_t cb, char *dst, int len);
+/*
+ *  Reads a line of data from 'cb' into the buffer 'dst', but does not consume
+ *    the data read from the cbuf.  Reading stops after a newline which is also
+ *    stored in the 'dst' buffer.  The buffer will always be NUL-terminated and
+ *    contain at most 'len - 1' characters.
+ *  Returns the strlen of the line on success; truncation occurred if >= 'len'.
+ *    Returns 0 if a newline is not found, or <0 on error (with errno set).
+ */
+
+int cbuf_puts (cbuf_t cb, char *src, int *dropped);
+/*
+ *  Writes the NUL-terminated string 'src' into 'cb'.
+ *  Returns the number of characters written, or <0 or error (with errno set).
  *    Sets 'dropped' (if not NULL) to the number of bytes of data overwritten.
  */
 

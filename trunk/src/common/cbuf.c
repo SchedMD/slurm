@@ -1,6 +1,5 @@
 /*****************************************************************************\
- * src/common/cbuf.c - circular buffer implementation
- * $Id$
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -99,11 +98,14 @@ typedef int (*cbuf_iof) (void *cbuf_data, void *arg, int len);
  *  Prototypes  *
  ****************/
 
+static int cbuf_find_nl (cbuf_t cb);
+
 static int cbuf_get_fd (void *srcbuf, int *pdstfd, int len);
 static int cbuf_get_mem (void *srcbuf, unsigned char **pdstbuf, int len);
 static int cbuf_put_fd (void *dstbuf, int *psrcfd, int len);
 static int cbuf_put_mem (void *dstbuf, unsigned char **psrcbuf, int len);
 
+static int cbuf_peeker (cbuf_t cb, int len, cbuf_iof getf, void *dst);
 static int cbuf_reader (cbuf_t cb, int len, cbuf_iof getf, void *dst);
 static int cbuf_replayer (cbuf_t cb, int len, cbuf_iof getf, void *dst);
 static int cbuf_writer (cbuf_t cb, int len, cbuf_iof putf, void *src,
@@ -133,26 +135,38 @@ static int cbuf_is_valid (cbuf_t cb);
 
 #  define cbuf_mutex_init(mutex)                                              \
      do {                                                                     \
-         if ((errno = pthread_mutex_init(mutex, NULL)) != 0)                  \
-             perror("ERROR: pthread_mutex_init() failed"), exit(1);           \
+         int cbuf_errno;                                                      \
+         if ((cbuf_errno = pthread_mutex_init(mutex, NULL)) != 0) {           \
+             fprintf(stderr, "ERROR: pthread_mutex_init() failed: %s\n",      \
+                     strerror(cbuf_errno)); exit(1);                          \
+         }                                                                    \
      } while (0)
 
 #  define cbuf_mutex_lock(mutex)                                              \
      do {                                                                     \
-         if ((errno = pthread_mutex_lock(mutex)) != 0)                        \
-             perror("ERROR: pthread_mutex_lock() failed"), exit(1);           \
+         int cbuf_errno;                                                      \
+         if ((cbuf_errno = pthread_mutex_lock(mutex)) != 0) {                 \
+             fprintf(stderr, "ERROR: pthread_mutex_lock() failed: %s\n",      \
+                     strerror(cbuf_errno)); exit(1);                          \
+         }                                                                    \
      } while (0)
 
 #  define cbuf_mutex_unlock(mutex)                                            \
      do {                                                                     \
-         if ((errno = pthread_mutex_unlock(mutex)) != 0)                      \
-             perror("ERROR: pthread_mutex_unlock() failed"), exit(1);         \
+         int cbuf_errno;                                                      \
+         if ((cbuf_errno = pthread_mutex_unlock(mutex)) != 0) {               \
+             fprintf(stderr, "ERROR: pthread_mutex_unlock() failed: %s\n",    \
+                     strerror(cbuf_errno)); exit(1);                          \
+         }                                                                    \
      } while (0)
 
 #  define cbuf_mutex_destroy(mutex)                                           \
      do {                                                                     \
-         if ((errno = pthread_mutex_destroy(mutex)) != 0)                     \
-             perror("ERROR: pthread_mutex_destroy() failed"), exit(1);        \
+         int cbuf_errno;                                                      \
+         if ((cbuf_errno = pthread_mutex_destroy(mutex)) != 0) {              \
+             fprintf(stderr, "ERROR: pthread_mutex_destroy() failed: %s\n",   \
+                     strerror(cbuf_errno)); exit(1);                          \
+         }                                                                    \
      } while (0)
 
 #else /* !WITH_PTHREADS */
@@ -323,42 +337,81 @@ cbuf_used(cbuf_t cb)
 
 #if 0
 int
-cbuf_gets(cbuf_t cb, char *dst, int len)
+cbuf_copy(cbuf_t src, cbuf_t dst, int len)
 {
-    assert(cb != NULL);
-
-    if ((dst == NULL) || (len <= 0)) {
-        errno = EINVAL;
-        return(-1);
-    }
-    /*  XXX: Not implemented yet.
+    /*  XXX: Identical to cbuf_move(), but s/cbuf_reader/cbuf_peeker/.
      */
-    return(-1);
+    return(0);
 }
+#endif
 
 
 int
-cbuf_puts(cbuf_t cb, char *src, int *dropped)
+cbuf_drop(cbuf_t cb, int len)
 {
     int n;
-    int len;
 
     assert(cb != NULL);
 
-    if (src == NULL) {
+    if (len < 0) {
         errno = EINVAL;
         return(-1);
     }
-    len = strlen(src);
-    if (len == 0) {
-        return(0);
-    }
     cbuf_mutex_lock(&cb->mutex);
-    n = cbuf_writer(cb, len, (cbuf_iof) cbuf_put_mem, src, dropped);
+    assert(cbuf_is_valid(cb));
+
+    n = MIN(len, cb->used);
+    if (n > 0) {
+        cb->used -= n;
+        cb->i_out = (cb->i_out + n) % (cb->size + 1);
+    }
+    assert(cbuf_is_valid(cb));
     cbuf_mutex_unlock(&cb->mutex);
     return(n);
 }
-#endif /* 0 */
+
+
+#if 0
+int
+cbuf_move(cbuf_t src, cbuf_t dst, int len)
+{
+    unsigned char buf[CBUF_PAGE];
+    int n, m;
+
+    assert(src != NULL);
+    assert(dst != NULL);
+
+    if (len < 0) {
+        errno = EINVAL;
+        return(-1);
+    }
+
+    /*  XXX: What about deadlock?  Yow!
+     *       Grab the locks in  order of the lowest memory address.
+     */
+    cbuf_mutex_lock(&src->mutex);
+    cbuf_mutex_lock(&dst->mutex);
+    assert(cbuf_is_valid(src));
+    assert(cbuf_is_valid(dst));
+    /*
+     *  XXX: NOT IMPLEMENTED.
+     */
+    assert(cbuf_is_valid(dst));
+    assert(cbuf_is_valid(src));
+    cbuf_mutex_unlock(&dst->mutex);
+    cbuf_mutex_unlock(&src->mutex);
+    return(0);
+}
+#endif
+
+
+int
+cbuf_peek(cbuf_t cb, void *dstbuf, int len)
+{
+    /*  XXX: NOT IMPLEMENTED.
+     */
+    return(0);
+}
 
 
 int
@@ -425,7 +478,16 @@ cbuf_write(cbuf_t cb, void *srcbuf, int len, int *dropped)
 
 
 int
-cbuf_read_fd(cbuf_t cb, int dstfd, int len)
+cbuf_peek_to_fd(cbuf_t cb, int dstfd, int len)
+{
+    /*  XXX: NOT IMPLEMENTED.
+     */
+    return(0);
+}
+
+
+int
+cbuf_read_to_fd(cbuf_t cb, int dstfd, int len)
 {
     int n = 0;
 
@@ -446,7 +508,7 @@ cbuf_read_fd(cbuf_t cb, int dstfd, int len)
 
 
 int
-cbuf_replay_fd(cbuf_t cb, int dstfd, int len)
+cbuf_replay_to_fd(cbuf_t cb, int dstfd, int len)
 {
     int n = 0;
 
@@ -467,7 +529,7 @@ cbuf_replay_fd(cbuf_t cb, int dstfd, int len)
 
 
 int
-cbuf_write_fd(cbuf_t cb, int srcfd, int len, int *dropped)
+cbuf_write_from_fd(cbuf_t cb, int srcfd, int len, int *dropped)
 {
     int n = 0;
 
@@ -484,6 +546,91 @@ cbuf_write_fd(cbuf_t cb, int srcfd, int len, int *dropped)
         n = cbuf_writer(cb, len, (cbuf_iof) cbuf_put_fd, &srcfd, dropped);
     cbuf_mutex_unlock(&cb->mutex);
     return(n);
+}
+
+
+int
+cbuf_gets(cbuf_t cb, char *dst, int len)
+{
+    /*  XXX: Pro'ly best to do this as cbuf_peek + cbuf_drop.
+     */
+    assert(cb != NULL);
+
+    if ((dst == NULL) || (len <= 0)) {
+        errno = EINVAL;
+        return(-1);
+    }
+    /*  XXX: NOT IMPLEMENTED.
+     */
+    return(-1);
+}
+
+
+int
+cbuf_peeks(cbuf_t cb, char *dst, int len)
+{
+    /*  XXX: Use cbuf_find_nl.
+     */
+    assert(cb != NULL);
+
+    if ((dst == NULL) || (len <= 0)) {
+        errno = EINVAL;
+        return(-1);
+    }
+    /*  XXX: NOT IMPLEMENTED.
+     */
+    return(-1);
+}
+
+
+int
+cbuf_puts(cbuf_t cb, char *src, int *dropped)
+{
+    /*  XXX: Handle case where src string exceeds buffer size.
+     *       But cannot simply advance src ptr, since writer()
+     *       may be able to grow cbuf if needed.  Ugh!
+     *       Pro'ly best to wrap it in a loop.  Sigh.
+     *       Should always return strlen(src).
+     */
+    int n;
+    int len;
+
+    assert(cb != NULL);
+
+    if (src == NULL) {
+        errno = EINVAL;
+        return(-1);
+    }
+    len = strlen(src);
+    if (len == 0) {
+        return(0);
+    }
+    cbuf_mutex_lock(&cb->mutex);
+    n = cbuf_writer(cb, len, (cbuf_iof) cbuf_put_mem, src, dropped);
+    cbuf_mutex_unlock(&cb->mutex);
+    return(n);
+}
+
+
+static int
+cbuf_find_nl(cbuf_t cb)
+{
+/*  Returns the number of bytes up to and including the next newline.
+ *  Assumes 'cb' is locked upon entry.
+ */
+    int i, n;
+
+    assert(cb != NULL);
+
+    i = cb->i_out;
+    n = 1;
+    while (i != cb->i_in) {
+        if (cb->data[i] == '\n')
+            return(n);
+        i = (i + 1) % (cb->size + 1);
+        n++;
+    }
+    return(0);
 }
 
 
@@ -504,8 +651,6 @@ cbuf_get_fd(void *srcbuf, int *pdstfd, int len)
     do {
         n = write(*pdstfd, srcbuf, len);
     } while ((n < 0) && (errno == EINTR));
-    if (n < 0)
-	    fprintf(stderr, "cbuf_get_fd: %s\n", strerror(errno));
     return(n);
 }
 
@@ -566,9 +711,18 @@ cbuf_put_mem(void *dstbuf, unsigned char **psrcbuf, int len)
 
 
 static int
+cbuf_peeker(cbuf_t cb, int len, cbuf_iof getf, void *dst)
+{
+    /*  XXX: NOT IMPLEMENTED.
+     */
+    return(0);
+}
+
+
+static int
 cbuf_reader(cbuf_t cb, int len, cbuf_iof getf, void *dst)
 {
-/*  DOCUMENT ME.
+/*  XXX: DOCUMENT ME.
  */
     int nget, ngot;
     int shortget;
@@ -621,7 +775,7 @@ cbuf_reader(cbuf_t cb, int len, cbuf_iof getf, void *dst)
 static int
 cbuf_replayer(cbuf_t cb, int len, cbuf_iof getf, void *dst)
 {
-/*  DOCUMENT ME.
+/*  XXX: DOCUMENT ME.
  */
     assert(cb != NULL);
     assert(len > 0);
@@ -629,7 +783,7 @@ cbuf_replayer(cbuf_t cb, int len, cbuf_iof getf, void *dst)
     assert(dst != NULL);
     assert(cbuf_is_valid(cb));
 
-    /*  XXX: Not implemented yet.
+    /*  XXX: NOT IMPLEMENTED.
      */
     return(0);
 }
@@ -638,7 +792,7 @@ cbuf_replayer(cbuf_t cb, int len, cbuf_iof getf, void *dst)
 static int
 cbuf_writer(cbuf_t cb, int len, cbuf_iof putf, void *src, int *pdropped)
 {
-/*  DOCUMENT ME.
+/*  XXX: DOCUMENT ME.
  */
     int free;
     int nget, ngot;
@@ -759,17 +913,18 @@ cbuf_grow(cbuf_t cb, int n)
 
 #ifndef NDEBUG
     /*  A round cookie with one bite out of it looks like a C.
-     *  The underflow cookie will have been copied by realloc().
-     *  But the overflow cookie must be rebaked.
+     *  The underflow cookie will have been copied by realloc() if needed.
+     *    But the overflow cookie must be rebaked.
      */
     cb->data += CBUF_MAGIC_LEN;         /* jump forward past underflow magic */
     * (unsigned int *) (cb->data + cb->size + 1) = CBUF_MAGIC;
 #endif /* !NDEBUG */
 
     /*  If unread data wrapped-around the old buffer, move the first chunk
-     *    to the end of the new buffer so it wraps-around in the same manner.
+     *    to the new end of the buffer so it wraps-around in the same manner.
      *
      *  XXX: What does this do to the replay buffer?
+     *       Replay data should be shifted as well.
      */
     if (cb->i_out > cb->i_in) {
         n = (size_old + 1) - cb->i_out;
@@ -786,15 +941,18 @@ cbuf_grow(cbuf_t cb, int n)
 static int
 cbuf_shrink(cbuf_t cb)
 {
-/*  DOCUMENT ME.
+/*  XXX: DOCUMENT ME.
+ *  Assumes 'cb' is locked upon entry.
  */
+    assert(cb != NULL);
+
     if (cb->size == cb->minsize) {
         return(0);
     }
     if (cb->size - cb->used <= CBUF_CHUNK) {
         return(0);
     }
-    /*  XXX: Not implemented yet.
+    /*  XXX: NOT IMPLEMENTED.
      */
     assert(cbuf_is_valid(cb));
     return(0);
@@ -805,9 +963,9 @@ cbuf_shrink(cbuf_t cb)
 static int
 cbuf_is_valid(cbuf_t cb)
 {
-/*  Validates the data structure.  Assumes 'cb' is locked upon entry.
+/*  Validates the data structure.  All invariants should be tested here.
  *  Returns true if everything is valid; o/w, aborts due to assertion failure.
- *  All invariants of the data structure should be tested here.
+ *  Assumes 'cb' is locked upon entry.
  */
     int free;
 
