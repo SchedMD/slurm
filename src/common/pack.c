@@ -85,9 +85,9 @@ _unpack16(uint16_t *valp, void **bufp, int *lenp)
  * (size of size_val) plus the value of size_val.
  */
 void
-_packstr(char *valp, uint32_t size_val, void **bufp, int *lenp)
+_packstr(char *valp, uint16_t size_val, void **bufp, int *lenp)
 {
-	uint32_t nl = htonl(size_val);
+	uint16_t nl = htons(size_val);
 
 	memcpy(*bufp, &nl, sizeof(nl));
 	(size_t)*bufp += sizeof(nl);
@@ -110,12 +110,12 @@ _packstr(char *valp, uint32_t size_val, void **bufp, int *lenp)
  *	the data is not made
  */
 void
-_unpackstr_ptr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
+_unpackstr_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 {
-	uint32_t nl;
+	uint16_t nl;
 
 	memcpy(&nl, *bufp, sizeof(nl));
-	*size_valp = ntohl(nl);
+	*size_valp = ntohs(nl);
 	(size_t)*bufp += sizeof(nl);
 	(size_t)*lenp -= sizeof(nl);
 
@@ -141,12 +141,12 @@ _unpackstr_ptr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
  *	if non-NULL (set to NULL on zero size buffer value)
  */
 void
-_unpackstr_xmalloc(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
+_unpackstr_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 {
-	uint32_t nl;
+	uint16_t nl;
 
 	memcpy(&nl, *bufp, sizeof(nl));
-	*size_valp = ntohl(nl);
+	*size_valp = ntohs(nl);
 	(size_t)*bufp += sizeof(nl);
 	(size_t)*lenp -= sizeof(nl);
 

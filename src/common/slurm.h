@@ -46,11 +46,7 @@
 #define SLURM_CONF		"/g/g0/jette/slurm/etc/slurm.conf2"
 #define TMP_FS			"/tmp"
 
-/* NOTE: change BUILD_STRUCT_VERSION value whenever the contents of BUILD_STRUCT_FORMAT change */
-#define BUILD_STRUCT_VERSION 1
 #define HEAD_FORMAT "#time=%lu version=%d\n"
-#define BUILD_STRUCT_FORMAT  "%s %s\n"
-#define BUILD_STRUCT2_FORMAT "%s %d\n"
 
 extern char *control_machine;	/* name of computer acting as slurm controller */
 extern char *backup_controller;	/* name of computer acting as slurm backup controller */

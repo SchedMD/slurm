@@ -19,40 +19,47 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
 #include "slurmlib.h"
-
-static char *build_api_buffer = NULL;
-static int build_api_buffer_size = 0;
-static pthread_mutex_t build_api_mutex = PTHREAD_MUTEX_INITIALIZER;
+#include "pack.h"
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
 int
-main (int argc, char *argv[]) {
-	char req_name[BUILD_SIZE], next_name[BUILD_SIZE], value[BUILD_SIZE];
+main (int argc, char *argv[]) 
+{
+	static time_t last_update_time = (time_t) NULL;
 	int error_code;
+	struct build_buffer *build_buffer_ptr = NULL;
+	struct build_table  *build_table_ptr = NULL;
 
-	error_code = slurm_load_build ();
+	error_code = slurm_load_build (last_update_time, &build_buffer_ptr);
 	if (error_code) {
 		printf ("slurm_load_build error %d\n", error_code);
 		exit (1);
-	}			
-	strcpy (req_name, "");	/* start at beginning of build configuration list */
-	while (error_code == 0) {
-		error_code = slurm_load_build_name (req_name, next_name, value);
-		if (error_code != 0) {
-			printf ("slurm_load_build_name error %d finding %s\n",
-				error_code, req_name);
-			exit (1);
-		}		
+	}
 
-		printf ("%s=%s\n", req_name, value);
-		if (strlen (next_name) == 0)
-			break;
-		strcpy (req_name, next_name);
-	}			
-	slurm_free_build_info ();
+	printf("Updated at %lx\n", build_buffer_ptr->last_update);
+	build_table_ptr = build_buffer_ptr->build_table_ptr;
+	printf("backup_interval	= %u\n", build_table_ptr->backup_interval);
+	printf("backup_location	= %s\n", build_table_ptr->backup_location);
+	printf("backup_machine	= %s\n", build_table_ptr->backup_machine);
+	printf("control_daemon	= %s\n", build_table_ptr->control_daemon);
+	printf("control_machine	= %s\n", build_table_ptr->control_machine);
+	printf("epilog		= %s\n", build_table_ptr->epilog);
+	printf("fast_schedule	= %u\n", build_table_ptr->fast_schedule);
+	printf("hash_base	= %u\n", build_table_ptr->hash_base);
+	printf("heartbeat_interval	= %u\n", 
+				build_table_ptr->heartbeat_interval);
+	printf("init_program	= %s\n", build_table_ptr->init_program);
+	printf("kill_wait	= %u\n", build_table_ptr->kill_wait);
+	printf("prioritize	= %s\n", build_table_ptr->prioritize);
+	printf("prolog		= %s\n", build_table_ptr->prolog);
+	printf("server_daemon	= %s\n", build_table_ptr->server_daemon);
+	printf("server_timeout	= %u\n", build_table_ptr->server_timeout);
+	printf("slurm_conf	= %s\n", build_table_ptr->slurm_conf);
+	printf("tmp_fs		= %s\n", build_table_ptr->tmp_fs);
+
+	slurm_free_build_info (build_buffer_ptr);
 	exit (0);
 }
 #endif
@@ -60,32 +67,44 @@ main (int argc, char *argv[]) {
 
 /*
  * slurm_free_build_info - free the build information buffer (if allocated)
- * NOTE: buffer is loaded by load_build and used by load_build_name.
+ * NOTE: buffer is loaded by slurm_load_build.
  */
-void slurm_free_build_info (void) {
-	pthread_mutex_lock(&build_api_mutex);
-	if (build_api_buffer)
-		free (build_api_buffer);
-	build_api_buffer = NULL;
-	pthread_mutex_unlock(&build_api_mutex);
+void
+slurm_free_build_info (struct build_buffer *build_buffer_ptr)
+{
+	if (build_buffer_ptr == NULL)
+		return;
+	if (build_buffer_ptr->raw_buffer_ptr)
+		free (build_buffer_ptr->raw_buffer_ptr);
+	if (build_buffer_ptr->build_table_ptr)
+		free (build_buffer_ptr->build_table_ptr);
 }
 
 
 /*
- * slurm_load_build - update the build information buffer for use by info gathering APIs
- * output: returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure.
- * NOTE: buffer is used by load_build_name and freed by free_build_info.
+ * slurm_load_build - load the slurm build information buffer for use by info 
+ *	gathering APIs if build info has changed since the time specified. 
+ * input: update_time - time of last update
+ *	build_buffer_ptr - place to park build_buffer pointer
+ * output: build_buffer_ptr - pointer to allocated build_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
+ *		ENOMEM if malloc failure
+ * NOTE: the allocated memory at build_buffer_ptr freed by slurm_free_node_info.
  */
-int slurm_load_build () {
-	int buffer_offset, buffer_size, error_code, in_size, version;
-	char *buffer, *my_line;
-	int sockfd;
+int
+slurm_load_build (time_t update_time, struct build_buffer **build_buffer_ptr)
+{
+	int buffer_offset, buffer_size, in_size, sockfd;
+	char request_msg[64], *buffer;
+	void *buf_ptr;
 	struct sockaddr_in serv_addr;
-	unsigned long my_time;
+	uint32_t uint32_tmp, uint32_time;
+	uint16_t uint16_tmp;
+	struct build_table *build_ptr;
 
-	if (build_api_buffer)
-		return 0;	/* already loaded */
-
+	*build_buffer_ptr = NULL;
 	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
 		return EINVAL;
 	serv_addr.sin_family = PF_INET;
@@ -97,13 +116,16 @@ int slurm_load_build () {
 		close (sockfd);
 		return EINVAL;
 	}			
-	if (send (sockfd, "DumpBuild", 10, 0) < 10) {
+	sprintf (request_msg, "DumpBuild LastUpdate=%lu",
+		 (long) (update_time));
+	if (send (sockfd, request_msg, strlen (request_msg) + 1, 0) <
+	    strlen (request_msg)) {
 		close (sockfd);
 		return EINVAL;
 	}			
 	buffer = NULL;
 	buffer_offset = 0;
-	buffer_size = 1024;
+	buffer_size = 8 * 1024;
 	while (1) {
 		buffer = realloc (buffer, buffer_size);
 		if (buffer == NULL) {
@@ -113,7 +135,7 @@ int slurm_load_build () {
 		in_size =
 			recv (sockfd, &buffer[buffer_offset],
 			      (buffer_size - buffer_offset), 0);
-		if (in_size <= 0) {	/* end if input */
+		if (in_size <= 0) {	/* end of input */
 			in_size = 0;
 			break;
 		}		
@@ -125,125 +147,64 @@ int slurm_load_build () {
 	buffer = realloc (buffer, buffer_size);
 	if (buffer == NULL)
 		return ENOMEM;
-
-	buffer_offset = 0;
-	error_code =
-		read_buffer (buffer, &buffer_offset, buffer_size, &my_line);
-	if ((error_code) || (strlen (my_line) < strlen (HEAD_FORMAT))) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "load_build: node buffer lacks valid header\n");
-#else
-		syslog (LOG_ERR,
-			"load_build: node buffer lacks valid header\n");
-#endif
+	if (strcmp (buffer, "nochange") == 0) {
 		free (buffer);
-		return EINVAL;
-	}			
-	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
-	if (version != BUILD_STRUCT_VERSION) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "load_build: expect version %d, read %d\n",
-			 BUILD_STRUCT_VERSION, version);
-#else
-		syslog (LOG_ERR, "load_build: expect version %d, read %d\n",
-			BUILD_STRUCT_VERSION, version);
-#endif
-		free (buffer);
-		return EINVAL;
-	}			
-
-	pthread_mutex_lock(&build_api_mutex);
-	if (build_api_buffer) free(build_api_buffer);
-	build_api_buffer = buffer;
-	build_api_buffer_size = buffer_size;
-	pthread_mutex_unlock(&build_api_mutex);
-	return 0;
-}
-
-
-/* 
- * slurm_load_build_name - load the state information about the named build parameter
- * input: req_name - name of the parameter for which information is requested
- *		     if "", then get info for the first parameter in list
- *        next_name - location into which the name of the next parameter is 
- *                   stored, "" if no more
- *        value - pointer to location into which the information is to be stored
- * output: req_name - the parameter's name is stored here
- *         next_name - the name of the next parameter in the list is stored here
- *         value - the parameter's state information
- *         returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  req_name, next_name, and value must be declared by caller with have 
- *        length BUILD_SIZE or larger
- * NOTE: buffer is loaded by load_build and freed by free_build_info.
- */
-int slurm_load_build_name (char *req_name, char *next_name, char *value) {
-	int i, error_code, version, buffer_offset;
-	static char next_build_name[BUILD_SIZE] = "";
-	static int last_buffer_offset;
-	unsigned long my_time;
-	char *my_line;
-	char my_build_name[BUILD_SIZE], my_build_value[BUILD_SIZE];
+		return -1;
+	}
 
 	/* load buffer's header (data structure version and time) */
-	pthread_mutex_lock(&build_api_mutex);
-	buffer_offset = 0;
-	error_code =
-		read_buffer (build_api_buffer, &buffer_offset,
-			     build_api_buffer_size, &my_line);
-	if (error_code) {
-		pthread_mutex_unlock(&build_api_mutex);
-		return error_code;
+	buf_ptr = buffer;
+	unpack32 (&uint32_tmp, &buf_ptr, &buffer_size);
+	if (uint32_tmp != BUILD_STRUCT_VERSION) {
+		free (buffer);
+		return EINVAL;
 	}
-	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
+	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
 
-	if ((strcmp (req_name, next_build_name) == 0) &&
-	    (strlen (req_name) != 0))
-		buffer_offset = last_buffer_offset;
+	/* load the data values */
+	build_ptr = malloc (sizeof  (struct build_table));
+	if (build_ptr == NULL) {
+		free (buffer);
+		return ENOMEM;
+	}
+	unpack16 (&build_ptr->backup_interval, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->backup_location, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->backup_machine, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->control_daemon, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->control_machine, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpack16 (&build_ptr->controller_timeout, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->epilog, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpack16 (&build_ptr->fast_schedule, &buf_ptr, &buffer_size);
+	unpack16 (&build_ptr->hash_base, &buf_ptr, &buffer_size);
+	unpack16 (&build_ptr->heartbeat_interval, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->init_program, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpack16 (&build_ptr->kill_wait, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->prioritize, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->prolog, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->server_daemon, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpack16 (&build_ptr->server_timeout, &buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->slurm_conf, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
+	unpackstr_ptr (&build_ptr->tmp_fs, &uint16_tmp, 
+		&buf_ptr, &buffer_size);
 
-	while (1) {
-		/* load all info for next parameter */
-		error_code =
-			read_buffer (build_api_buffer, &buffer_offset,
-				     build_api_buffer_size, &my_line);
-		if (error_code == EFAULT)
-			break;	/* end of buffer */
-		if (error_code) {
-			pthread_mutex_unlock(&build_api_mutex);
-			return error_code;
-		}
-
-		i = sscanf (my_line, BUILD_STRUCT_FORMAT, my_build_name,
-			    my_build_value);
-		if (i == 1)
-			strcpy (my_build_value, "");	/* empty string passed */
-		if (strlen (req_name) == 0)
-			strncpy (req_name, my_build_name, BUILD_SIZE);
-
-		/* check if this is requested parameter */
-		if (strcmp (req_name, my_build_name) != 0)
-			continue;
-
-		/*load values to be returned */
-		strncpy (value, my_build_value, BUILD_SIZE);
-
-		last_buffer_offset = buffer_offset;
-		error_code =
-			read_buffer (build_api_buffer, &buffer_offset,
-				     build_api_buffer_size, &my_line);
-		if (error_code) {	/* no more records */
-			strcpy (next_build_name, "");
-			strcpy (next_name, "");
-		}
-		else {
-			sscanf (my_line, BUILD_STRUCT_FORMAT, my_build_name,
-				my_build_value);
-			strncpy (next_build_name, my_build_name, BUILD_SIZE);
-			strncpy (next_name, my_build_name, BUILD_SIZE);
-		}		
-		pthread_mutex_unlock(&build_api_mutex);
-		return 0;
-	}			
-	pthread_mutex_unlock(&build_api_mutex);
-	return ENOENT;
+	*build_buffer_ptr = malloc (sizeof (struct build_buffer));
+	if (*build_buffer_ptr == NULL) {
+		free (buffer);
+		free (build_ptr);
+		return ENOMEM;
+	}
+	(*build_buffer_ptr)->last_update = (time_t) uint32_time;
+	(*build_buffer_ptr)->raw_buffer_ptr = buffer;
+	(*build_buffer_ptr)->build_table_ptr = build_ptr;
+	return 0;
 }

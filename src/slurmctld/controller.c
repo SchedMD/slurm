@@ -25,6 +25,9 @@
 
 #define BUF_SIZE 1024
 
+time_t init_time;
+
+int dump_build (char **buffer_ptr, int *buffer_size, time_t last_update);
 int msg_from_root (void);
 void slurmctld_req (int sockfd);
 
@@ -36,6 +39,7 @@ main (int argc, char *argv[]) {
 	char node_name[MAX_NAME_LEN];
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
+	init_time = time (NULL);
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	error_code = init_slurm_conf ();
@@ -94,131 +98,78 @@ main (int argc, char *argv[]) {
  *                     the data buffer is actually allocated by dump_part and the 
  *                     calling function must xfree the storage.
  *         buffer_size - location into which the size of the created buffer is in bytes
+ *	   last_update - only perform dump if updated since time specified
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         returns 0 if no error, errno otherwise
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: if you make any changes here be sure to increment the value of BUILD_STRUCT_VERSION
- *       and make the corresponding changes to load_build_name in api/build_info.c
+ * NOTE: if you make any changes here be sure to increment the value of 
+ *	 	BUILD_STRUCT_VERSION and make the corresponding changes to 
+ *		load_build in api/build_info.c
  */
 int
-dump_build (char **buffer_ptr, int *buffer_size)
+dump_build (char **buffer_ptr, int *buffer_size, time_t last_update)
 {
+	int buf_len, buffer_allocated;
 	char *buffer;
-	int buffer_offset, buffer_allocated;
-	char out_line[BUILD_SIZE * 2];
+	void *buf_ptr;
+	uint16_t backup_len, control_len, epilog_len, init_len, prio_len;
+	uint16_t prolog_len, server_len, conf_len, tmpfs_len;
+	uint16_t primary_len, secondary_len;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	buffer = NULL;
-	buffer_offset = 0;
-	buffer_allocated = 0;
+	if (init_time <= last_update) 
+		return 0;
 
-	/* write haeader, version and time */
-	sprintf (out_line, HEAD_FORMAT, (unsigned long) time (NULL),
-		 BUILD_STRUCT_VERSION);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
+	backup_len	= strlen (BACKUP_LOCATION);
+	secondary_len	= strlen (backup_controller);
+	control_len	= strlen (CONTROL_DAEMON);
+	primary_len	= strlen (control_machine);
+	epilog_len	= strlen (EPILOG);
+	init_len	= strlen (INIT_PROGRAM);
+	prio_len	= strlen (PRIORITIZE);
+	prolog_len	= strlen (PROLOG);
+	server_len	= strlen (SERVER_DAEMON);
+	conf_len	= strlen (SLURM_CONF);
+	tmpfs_len	= strlen (TMP_FS);
 
-	/* write paramter records */
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "BACKUP_INTERVAL",
-		 BACKUP_INTERVAL);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
+	buffer_allocated = (BUF_SIZE + backup_len + control_len + 
+			    epilog_len + init_len + prio_len + 
+			    prolog_len + server_len + conf_len + 
+			    tmpfs_len + primary_len + secondary_len);
+	buffer = xmalloc(buffer_allocated);
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
 
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "BACKUP_LOCATION",
-		 BACKUP_LOCATION);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
+	/* write header: version and time */
+	pack32  ((uint32_t) BUILD_STRUCT_VERSION, &buf_ptr, &buf_len);
+	pack32  ((uint32_t) init_time, &buf_ptr, &buf_len);
 
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "CONTROL_DAEMON",
-		 CONTROL_DAEMON);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
+	/* write data values */
+	pack16  ((uint16_t) BACKUP_INTERVAL, &buf_ptr, &buf_len);
+	packstr (BACKUP_LOCATION, backup_len, &buf_ptr, &buf_len);
+	packstr (backup_controller, secondary_len, &buf_ptr, &buf_len);
+	packstr (CONTROL_DAEMON, control_len, &buf_ptr, &buf_len);
+	packstr (control_machine, primary_len, &buf_ptr, &buf_len);
+	pack16  ((uint16_t) CONTROLLER_TIMEOUT, &buf_ptr, &buf_len);
+	packstr (EPILOG, epilog_len, &buf_ptr, &buf_len);
+	pack16  ((uint16_t) FAST_SCHEDULE, &buf_ptr, &buf_len);
+	pack16  ((uint16_t) HASH_BASE, &buf_ptr, &buf_len);
+	pack16  ((uint16_t) HEARTBEAT_INTERVAL, &buf_ptr, &buf_len);
+	packstr (INIT_PROGRAM, init_len, &buf_ptr, &buf_len);
+	pack16  ((uint16_t) KILL_WAIT, &buf_ptr, &buf_len);
+	packstr (PRIORITIZE, prio_len, &buf_ptr, &buf_len);
+	packstr (PROLOG, prolog_len, &buf_ptr, &buf_len);
+	packstr (SERVER_DAEMON, server_len, &buf_ptr, &buf_len);
+	pack16  ((uint16_t) SERVER_TIMEOUT, &buf_ptr, &buf_len);
+	packstr (SLURM_CONF, conf_len, &buf_ptr, &buf_len);
+	packstr (TMP_FS, tmpfs_len, &buf_ptr, &buf_len);
 
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "CONTROLLER_TIMEOUT",
-		 CONTROLLER_TIMEOUT);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "EPILOG", EPILOG);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "FAST_SCHEDULE", FAST_SCHEDULE);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "HASH_BASE", HASH_BASE);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "HEARTBEAT_INTERVAL",
-		 HEARTBEAT_INTERVAL);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "INIT_PROGRAM", INIT_PROGRAM);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "KILL_WAIT", KILL_WAIT);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "PRIORITIZE", PRIORITIZE);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "PROLOG", PROLOG);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "SERVER_DAEMON",
-		 SERVER_DAEMON);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT2_FORMAT, "SERVER_TIMEOUT",
-		 SERVER_TIMEOUT);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "SLURM_CONF", SLURM_CONF);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "TMP_FS", TMP_FS);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	xrealloc (buffer, buffer_offset);
-
+	*buffer_size = (char *)buf_ptr - buffer;
+	xrealloc (buffer, *buffer_size);
 	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
 	return 0;
-
-      cleanup:
-	if (buffer)
-		xfree (buffer);
-	return EINVAL;
 }
 
 
@@ -273,14 +224,26 @@ slurmctld_req (int sockfd) {
 
 	/* DumpBuild - dump the SLURM build parameters */
 	else if (strncmp ("DumpBuild", in_line, 9) == 0) {
-		error_code = dump_build (&dump, &dump_size);
+		time_stamp = NULL;
+		error_code =
+			load_string (&time_stamp, "LastUpdate=", in_line);
+		if (time_stamp) {
+			last_update = strtol (time_stamp, (char **) NULL, 10);
+			xfree (time_stamp);
+		}
+		else
+			last_update = (time_t) 0;
+
+		error_code = dump_build (&dump, &dump_size, last_update);
 		if (error_code)
 			info ("slurmctld_req: dump_build error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
 			info ("slurmctld_req: dump_build returning %d bytes, time=%ld",
 				 dump_size, (long) (clock () - start_time));
-		if (error_code == 0) {
+		if (dump_size == 0)
+			send (sockfd, "nochange", 9, 0);
+		else if (error_code == 0) {
 			dump_loc = 0;
 			while (dump_size > 0) {
 				i = send (sockfd, &dump[dump_loc], dump_size, 0);

@@ -6,6 +6,7 @@
  */
 
 #define BUILD_SIZE	128
+#define BUILD_STRUCT_VERSION 1
 #define FEATURE_SIZE	1024
 #define MAX_ID_LEN	32
 #define MAX_NAME_LEN	16
@@ -30,6 +31,35 @@ enum node_states {
 	STATE_DRAINED,		/* node idle and not to be allocated future work */
 	STATE_DRAINING,		/* node in use, but not to be allocated future work */
 	STATE_END		/* last entry in table */
+};
+
+struct build_table {
+	uint16_t backup_interval;/* slurmctld save state interval, seconds */
+	char *backup_location;	/* pathname of state save directory */
+	char *backup_machine;	/* name of slurmctld secondary server */
+	char *control_daemon;	/* pathname of slurmctld */
+	char *control_machine;	/* name of slurmctld primary server */
+	uint16_t controller_timeout; /* seconds for secondary slurmctld to take over */
+	char *epilog;		/* pathname of job epilog */
+	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
+				 * (only check configuration file, faster) */
+	uint16_t hash_base;	/* base used for hashing node table */
+	uint16_t heartbeat_interval; /* interval between node heartbeats, seconds */
+	char *init_program;	/* pathname of program to complete with exit 0 
+ 				 * before slurmctld or slurmd start on that node */
+	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
+	char *prioritize;	/* pathname of program to set initial job priority */
+	char *prolog;		/* pathname of job prolog */
+	char *server_daemon;	/* pathame of slurmd */
+	uint16_t server_timeout;/* how long slurmctld waits for setting node DOWN */
+	char *slurm_conf;	/* pathname of slurm config file */
+	char *tmp_fs;		/* pathname of temporary file system */
+};
+
+struct build_buffer {
+	time_t last_update;	/* time of last buffer update */
+	void *raw_buffer_ptr;	/* raw network buffer info */
+	struct build_table *build_table_ptr;
 };
 
 struct node_table {
@@ -99,10 +129,10 @@ extern int slurm_allocate (char *spec, char **node_list, char **job_id);
 extern int slurm_cancel (char *job_id);
 
 /*
- * slurm_free_build_info - free the build information buffer (if allocated).
- * NOTE: buffer is loaded by slurm_load_build and used by slurm_load_build_name.
+ * slurm_free_build_info - free the build information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_build.
  */
-extern void slurm_free_build_info (void);
+extern void slurm_free_build_info (struct build_buffer *build_buffer_ptr);
 
 /*
  * slurm_free_node_info - free the node information buffer (if allocated)
@@ -117,28 +147,20 @@ extern void slurm_free_node_info (struct node_buffer *node_buffer_ptr);
 extern void slurm_free_part_info (struct part_buffer *part_buffer_ptr);
 
 /*
- * slurm_load_build - update the build information buffer for use by info gathering APIs
- * output: returns 0 if no error, einval if the buffer is invalid, enomem if malloc failure.
- * NOTE: buffer is used by slurm_load_build_name and freed by slurm_free_build_info.
+ * slurm_load_build - load the slurm build information buffer for use by info 
+ *	gathering APIs if build info has changed since the time specified. 
+ * input: update_time - time of last update
+ *	build_buffer_ptr - place to park build_buffer pointer
+ * output: build_buffer_ptr - pointer to allocated build_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
+ *		ENOMEM if malloc failure
+ * NOTE: the allocated memory at build_buffer_ptr freed by slurm_free_node_info.
  */
-extern int slurm_load_build ();
+extern int slurm_load_build (time_t update_time, 
+	struct build_buffer **build_buffer_ptr);
 
-/* 
- * slurm_load_build_name - load the state information about the named build parameter
- * input: req_name - name of the parameter for which information is requested
- *		     if "", then get info for the first parameter in list
- *        next_name - location into which the name of the next parameter is 
- *                   stored, "" if no more
- *        value - pointer to location into which the information is to be stored
- * output: req_name - the parameter's name is stored here
- *         next_name - the name of the next parameter in the list is stored here
- *         value - the parameter's state information
- *         returns 0 on success, enoent if not found, or einval if buffer is bad
- * NOTE:  req_name, next_name, and value must be declared by caller with have 
- *        length BUILD_SIZE or larger
- * NOTE: buffer is loaded by slurm_load_build and freed by slurm_free_build_info.
- */
-extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
 
 /*
  * slurm_load_node - load the supplied node information buffer for use by info 
