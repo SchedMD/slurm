@@ -2132,7 +2132,7 @@ void hostset_destroy(hostset_t set)
  */
 static int hostset_insert_range(hostset_t set, hostrange_t hr)
 {
-	int i, n;
+	int i, n = 0;
 	int inserted = 0;
 	int retval = 0;
 	hostlist_t hl;

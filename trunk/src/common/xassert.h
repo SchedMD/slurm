@@ -17,7 +17,7 @@
 
 #ifdef NDEBUG
 
-#  define xassert(expr)	((void)0)
+#  define xassert(expr)	((void) (0))
 
 #else /* !NDEBUG */
 
