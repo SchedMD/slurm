@@ -21,12 +21,13 @@
 #include "slurm.h"
 
 #define BUF_SIZE 	1024
+#define NO_VAL	 	-99
 #define SEPCHARS 	" \n\t"
 
 List 	Config_List = NULL;		/* List of Config_Record entries */
 int	Node_Record_Count = 0;		/* Count of records in the Node Record Table */
 struct Node_Record *Node_Record_Table_Ptr = NULL; /* Location of the node records */
-char 	*Node_State_String[] = {"UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT", "DOWN", "DRAINED", "DRAINING", "END"};
+char 	*Node_State_String[] = {"UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT", "DOWN", "DRAINED", "DRAINING", "UP", "END"};
 int	*Hash_Table = NULL;		/* Table of hashed indicies into Node_Record */
 struct 	Config_Record Default_Config_Record;
 struct 	Node_Record   Default_Node_Record;
@@ -44,7 +45,6 @@ void 	Rehash();
 char *Node_API_Buffer = NULL;
 int  Node_API_Buffer_Size = 0;
 
-int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
 int Load_Node(char *Buffer, int Buffer_Size);
 int Load_Node_Config(int Index, int *CPUs, 
 	int *RealMemory, int *TmpDisk, int *Weight, char **Features,
@@ -75,6 +75,7 @@ main(int argc, char * argv[]) {
     time_t Update_Time;
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
     int BitMapSize;		/* Bytes in NodeBitMap */
+    char Update_Spec[] = "State=DRAINING";
 
     /* Bitmap setup */
     Node_Record_Count = 97;
@@ -114,6 +115,10 @@ main(int argc, char * argv[]) {
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
     strcpy(Node_Ptr->Name, "lx02");
     Node_Ptr->Config_Ptr = NULL;
+    Error_Code = Update_Node("lx[01-02]", Update_Spec);
+    if (Error_Code) printf("ERROR: Update_Node error1 %d\n", Error_Code);
+    if (Node_Ptr->NodeState != STATE_DRAINING) 
+	printf("ERROR: Update_Node error2 NodeState=%d\n", Node_Ptr->NodeState);
     Node_Ptr   = Create_Node_Record(&Error_Code);
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
     Config_Ptr = Create_Config_Record(&Error_Code);
@@ -129,8 +134,13 @@ main(int argc, char * argv[]) {
     U_Map[1] = 0xbeef;
     Up_NodeBitMap = &U_Map[0];
     Idle_NodeBitMap = &U_Map[1];
+    Error_Code = Validate_Node_Specs("lx01", 12, 345, 67);
+    if (Error_Code) printf("ERROR: Validate_Node_Specs error1\n");
     Error_Code = Dump_Node(&Dump, &Dump_Size, &Update_Time);
     if (Error_Code) printf("ERROR: Dump_Node error %d\n", Error_Code);
+    printf("NOTE: We expect Validate_Node_Specs to report bad CPU, RealMemory and TmpDisk on lx01\n");
+    Error_Code = Validate_Node_Specs("lx01", 1, 2, 3);
+    if (Error_Code != EINVAL) printf("ERROR: Validate_Node_Specs error2\n");
 
     Rehash();
     Dump_Hash();
@@ -587,7 +597,6 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	i = (int)(Node_Record_Table_Ptr+inx)->NodeState;
 	memcpy(Buffer_Loc, &i, sizeof(i)); 
 	Buffer_Loc += sizeof(i);
-
 	for (i=0; i<Config_Spec_List_Cnt; i++) {
 	    if (Config_Spec_List[i].Config_Record_Point ==
 		(Node_Record_Table_Ptr+inx)->Config_Ptr) break;
@@ -929,6 +938,197 @@ void Rehash() {
     } /* for */
 
 } /* Rehash */
+
+
+/* 
+ * Update_Node - Update a node's configuration data
+ * Input: NodeName - Node's name
+ *        Spec - The updates to the node's specification 
+ * Output:  Return - 0 if no error, otherwise an error code
+ * NOTE: The contents of Spec are overwritten by white space
+ */
+int Update_Node(char *NodeName, char *Spec) {
+    int Bad_Index, Error_Code, i;
+    char *Format, *State, This_Node_Name[BUF_SIZE];
+    int Start_Inx, End_Inx, Count_Inx, State_Val;
+    char *str_ptr1, *str_ptr2;
+    struct Node_Record *Node_Record_Point;
+
+    if (strcmp(NodeName, "DEFAULT") == 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Node: Invalid node name %s\n", NodeName);
+#else
+	syslog(LOG_ALERT, "Update_Node: Invalid node name  %s\n", NodeName);
+#endif
+	return EINVAL;
+    } /* if */
+
+    State_Val = NO_VAL;
+    State = NULL;
+    if (Error_Code=Load_String (&State, "State=", Spec)) return Error_Code;
+    if (State != NULL) {
+	for (i=0; i<=STATE_END; i++) {
+	    if (strcmp(Node_State_String[i], "END") == 0) break;
+	    if (strcmp(Node_State_String[i], State) == 0) {
+		State_Val = i;
+		break;
+	    } /* if */
+	} /* for */
+	if (State_Val == NO_VAL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Update_Node: Invalid State %s for NodeName %s\n", State, NodeName);
+#else
+	    syslog(LOG_ERR, "Update_Node: Invalid State %s for NodeName %s\n", State, NodeName);
+#endif
+	    free(State);
+	    return EINVAL;
+	} /* if */
+	free(State);
+    } /* if */
+
+    /* Check for anything else (unparsed) in the specification */
+    Bad_Index = -1;
+    for (i=0; i<strlen(Spec); i++) {
+	if (Spec[i] == '\n') Spec[i]=' ';
+	if (isspace((int)Spec[i])) continue;
+	Bad_Index=i;
+	break;
+    } /* if */
+
+    if (Bad_Index != -1) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Node: Ignored node %s update specification: %s\n", 
+		NodeName, &Spec[Bad_Index]);
+#else
+	syslog(LOG_ERR, "Update_Node: Ignored node %s update specification: %s\n", 
+		NodeName, &Spec[Bad_Index]);
+#endif
+	return EINVAL;
+    } /* if */
+
+    Error_Code = Parse_Node_Name(NodeName, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+    if (Error_Code) return Error_Code;
+    for (i=Start_Inx; i<=End_Inx; i++) {
+	if (Count_Inx == 0) {	/* Deal with comma separated node names here */
+	    if (i == Start_Inx)
+		str_ptr2 = (char *)strtok_r(Format, ",", &str_ptr1);
+	    else
+		str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
+	    if (str_ptr2 == NULL) break;
+	    End_Inx++;
+	    strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
+	} else
+	    sprintf(This_Node_Name, Format, i);
+	if (strlen(This_Node_Name) >= MAX_NAME_LEN) {
+#if DEBUG_SYSTEM
+    	    fprintf(stderr, "Update_Node: Node name %s too long\n", This_Node_Name);
+#else
+    	    syslog(LOG_ERR, "Update_Node: Node name %s too long\n", This_Node_Name);
+#endif
+	    Error_Code = EINVAL;
+	    break;
+	} /* if */
+
+	Node_Record_Point = Find_Node_Record(This_Node_Name);
+	if (Node_Record_Point == NULL) {
+#if DEBUG_SYSTEM
+    	    fprintf(stderr, "Update_Node: Node name %s does not exist, can not be updated\n", 
+		This_Node_Name);
+#else
+    	    syslog(LOG_ERR, "Update_Node: Node name %s does not exist, can not be updated\n", 
+		This_Node_Name);
+#endif
+	    Error_Code = EINVAL;
+	    break;
+	} /* if */
+
+	if (State_Val != NO_VAL) {
+	    Node_Record_Point->NodeState = State_Val;
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Update_Node: Node %s state set to %s\n", 
+		This_Node_Name, Node_State_String[State_Val]);
+#else
+	    syslog(LOG_INFO, "Update_Node: Node %s state set to %s\n", 
+		This_Node_Name, Node_State_String[State_Val]);
+#endif
+	} /* if */
+    } /* for */
+
+    free(Format);
+    return Error_Code;
+} /* Update_Node */
+
+
+/*
+ * Validate_Node_Specs - Validate the node's specifications as valid, 
+ *   if not set state to DOWN, in any case update LastResponse
+ * Input: NodeName - Name of the node
+ *        CPUs - Number of CPUs measured
+ *        RealMemory - MegaBytes of RealMemory measured
+ *        TmpDisk - MegaBytes of TmpDisk measured
+ * Output: Returns 0 if no error, ENOENT if no such node, EINVAL if values too low
+ */ 
+int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
+    int Error_Code;
+    struct Config_Record *Config_Ptr;
+    struct Node_Record *Node_Ptr;
+
+    Node_Ptr = Find_Node_Record(NodeName);
+    if (Node_Ptr == NULL) return ENOENT;
+    Node_Ptr->LastResponse = time(NULL);
+
+    Config_Ptr = Node_Ptr->Config_Ptr;
+    Error_Code = 0;
+
+    if (CPUs < Config_Ptr->CPUs) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Validate_Node_Specs: Node %s has low CPU count\n", NodeName);
+#else
+	syslog(LOG_ERR, "Validate_Node_Specs: Node %s has low CPU count\n", NodeName);
+#endif
+	Error_Code = EINVAL;
+    } /* if */
+
+    if (RealMemory < Config_Ptr->RealMemory) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Validate_Node_Specs: Node %s has low RealMemory size\n", NodeName);
+#else
+	syslog(LOG_ERR, "Validate_Node_Specs: Node %s has low RealMemory size\n", NodeName);
+#endif
+	Error_Code = EINVAL;
+    } /* if */
+
+    if (TmpDisk < Config_Ptr->TmpDisk) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Validate_Node_Specs: Node %s has low TmpDisk size\n", NodeName);
+#else
+	syslog(LOG_ERR, "Validate_Node_Specs: Node %s has low TmpDisk size\n", NodeName);
+#endif
+	Error_Code = EINVAL;
+    } /* if */
+
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Validate_Node_Specs: Setting node %s state to DOWN\n", NodeName);
+#else
+	syslog(LOG_ERR, "Validate_Node_Specs: Setting node %s state to DOWN\n", NodeName);
+#endif
+	Node_Ptr->NodeState = STATE_DOWN;
+	BitMapClear(Up_NodeBitMap, (Node_Ptr - Node_Record_Table_Ptr));
+
+    } else if ((Node_Ptr->NodeState == STATE_DOWN) || 
+               (Node_Ptr->NodeState == STATE_UNKNOWN)) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Validate_Node_Specs: Setting node %s state to UP\n", NodeName);
+#else
+	syslog(LOG_ERR, "Validate_Node_Specs: Setting node %s state to UP\n", NodeName);
+#endif
+	Node_Ptr->NodeState = STATE_UP;
+	BitMapSet(Up_NodeBitMap, (Node_Ptr - Node_Record_Table_Ptr));
+    } /* else */
+
+    return Error_Code;
+}  /* Validate_Node_Specs */
 
 
 #if PROTOTYPE_API

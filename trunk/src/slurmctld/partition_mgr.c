@@ -22,6 +22,7 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
+#define NO_VAL   -99
 #define SEPCHARS " \n\t"
 
 struct	Part_Record Default_Part;		/* Default configuration values */
@@ -30,6 +31,7 @@ char	Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
 struct	Part_Record *Default_Part_Loc = NULL;	/* Location of default partition */
 time_t	Last_Part_Update;			/* Time of last update to Part Records */
 
+int 	Build_Part_BitMap(struct Part_Record *Part_Record_Point);
 void	List_Delete_Part(void *Part_Entry);
 int	List_Find_Part(void *Part_Entry, void *key);
 
@@ -46,7 +48,6 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
-int	Node_Record_Count = 0;
 main(int argc, char * argv[]) {
     int Error_Code;
     time_t Update_Time;
@@ -65,7 +66,10 @@ main(int argc, char * argv[]) {
     int StateUp;		/* 1 if state is UP */
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
     int BitMapSize;		/* Bytes in NodeBitMap */
+    char Update_Spec[] = "MaxTime=34 MaxNodes=56 Key=NO State=DOWN";
 
+    Error_Code = Init_Node_Conf();
+    if (Error_Code) printf("Init_Node_Conf error %d\n", Error_Code);
     Error_Code = Init_Part_Conf();
     if (Error_Code) printf("Init_Part_Conf error %d\n", Error_Code);
     Default_Part.MaxTime	= 223344;
@@ -103,12 +107,19 @@ main(int argc, char * argv[]) {
     else 
 	strcpy(Part_Ptr->Name, "Class");
 
-    Part_Ptr   = list_find_first(Part_List, &List_Find_Part, "Batch");
-    if (Part_Ptr == 0) printf("ERROR: list_find failure\n");
-
     Update_Time = (time_t)0;
     Error_Code = Dump_Part(&Dump, &Dump_Size, &Update_Time);
     if (Error_Code) printf("ERROR: Dump_Part error %d\n", Error_Code);
+
+    Error_Code = Update_Part("Batch", Update_Spec);
+    if (Error_Code) printf("ERROR: Update_Part error %d\n", Error_Code);
+
+    Part_Ptr   = list_find_first(Part_List, &List_Find_Part, "Batch");
+    if (Part_Ptr == NULL) printf("ERROR: list_find failure\n");
+    if (Part_Ptr->MaxTime  != 34) printf("ERROR: Update_Part MaxTime not reset\n");
+    if (Part_Ptr->MaxNodes != 56) printf("ERROR: Update_Part MaxNodes not reset\n");
+    if (Part_Ptr->Key != 0)       printf("ERROR: Update_Part Key not reset\n");
+    if (Part_Ptr->StateUp != 0)   printf("ERROR: Update_Part StateUp not set\n");
 
     Error_Code = Delete_Part_Record("Batch");
     if (Error_Code != 0)  printf("Delete_Part_Record error1 %d\n", Error_Code);
@@ -152,6 +163,63 @@ main(int argc, char * argv[]) {
     exit(0);
 } /* main */
 #endif
+
+
+/*
+ * Build_Part_BitMap - Update the TotalCPUs, TotalNodes, and NodeBitMap for the specified partition
+ * Input: Part_Record_Point - Pointer to the partition
+ * Output: Returns 0 if no error, errno otherwise
+ * NOTE: This does not report nodes defined in more than one partition. This is checked only  
+ *	upon reading the configuration file, not on an update
+ */
+int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
+    int Start_Inx, End_Inx, Count_Inx;
+    int i, j, size;
+    char *str_ptr1, *str_ptr2, *Format, This_Node_Name[MAX_NAME_LEN];
+    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+
+    Part_Record_Point->TotalCPUs  = 0;
+    Part_Record_Point->TotalNodes = 0;
+    
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
+		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
+    size *= 8;				/* Bytes in bitmap */
+    if (Part_Record_Point->NodeBitMap == NULL) {
+	Part_Record_Point->NodeBitMap = malloc(size);
+	if (Part_Record_Point->NodeBitMap == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Build_Part_BitMap: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
+#endif
+	    return ENOMEM;
+	} /* if */
+    } /* if */
+    memset(Part_Record_Point->NodeBitMap, 0, size);
+
+    Parse_Node_Name(Part_Record_Point->Nodes, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+    for (i=Start_Inx; i<=End_Inx; i++) {
+	if (Count_Inx == 0) {	/* Deal with comma separated node names here */
+	    if (i == Start_Inx)
+		str_ptr2 = strtok_r(Format, ",", &str_ptr1);
+	    else
+		str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
+	    if (str_ptr2 == NULL) break;
+	    End_Inx++;
+	    strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
+	} else
+	    sprintf(This_Node_Name, Format, i);
+	Node_Record_Point = Find_Node_Record(This_Node_Name);
+	if (Node_Record_Point == NULL) continue;
+	j = Node_Record_Point - Node_Record_Table_Ptr;
+	BitMapSet(Part_Record_Point->NodeBitMap, j);
+	Part_Record_Point->TotalNodes++;
+	Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
+    } /* for */
+    if(Format) free(Format);
+    return 0;
+} /* Build_Part_BitMap */
+
 
 /* 
  * Create_Part_Record - Create a partition record
@@ -201,7 +269,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 	} /* if */
 	strcpy(Part_Record_Point->AllowGroups, Default_Part.AllowGroups);
     } else
-	Part_Record_Point->AllowGroups = (char *)NULL;
+	Part_Record_Point->AllowGroups = NULL;
 
     if (Default_Part.Nodes) {
 	Part_Record_Point->Nodes = (char *)malloc(strlen(Default_Part.Nodes)+1);
@@ -218,7 +286,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 	} /* if */
 	strcpy(Part_Record_Point->Nodes, Default_Part.Nodes);
     } else
-	Part_Record_Point->Nodes = (char *)NULL;
+	Part_Record_Point->Nodes = NULL;
 
     if (list_append(Part_List, Part_Record_Point) == NULL) {
 #if DEBUG_SYSTEM
@@ -482,6 +550,125 @@ int List_Find_Part(void *Part_Entry, void *key) {
     if (strcmp(Part_Record_Point->Name, (char *)key) == 0) return 1;
     return 0;
 } /* List_Find_Part */
+
+
+/* 
+ * Update_Part - Update a partition's configuration data
+ * Input: PartitionName - Partition's name
+ *        Spec - The updates to the partition's specification 
+ * Output:  Return - 0 if no error, otherwise an error code
+ * NOTE: The contents of Spec are overwritten by white space
+ */
+int Update_Part(char *PartitionName, char *Spec) {
+    int Error_Code;
+    struct Part_Record *Part_Ptr;
+    int MaxTime_Val, MaxNodes_Val, Key_Val, State_Val, Default_Val;
+    char *AllowGroups, *Nodes;
+    int Bad_Index, i;
+
+    if (strcmp(PartitionName, "DEFAULT") == 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: Invalid partition name %s\n", PartitionName);
+#else
+	syslog(LOG_ALERT, "Update_Part: Invalid partition name  %s\n", PartitionName);
+#endif
+	return EINVAL;
+    } /* if */
+
+    Part_Ptr   = list_find_first(Part_List, &List_Find_Part, PartitionName);
+    if (Part_Ptr == 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: Partition %s does not exist, being created.\n", PartitionName);
+#else
+	syslog(LOG_ALERT, "Update_Part: Partition %s does not exist, being created.\n", PartitionName);
+#endif
+	Part_Ptr = Create_Part_Record(&Error_Code);
+	if (Error_Code) return Error_Code;
+    } /* if */
+
+    MaxTime_Val = NO_VAL;
+    Error_Code = Load_Integer(&MaxTime_Val, "MaxTime=", Spec);
+    if (Error_Code) return Error_Code;
+
+    MaxNodes_Val = NO_VAL;
+    Error_Code = Load_Integer(&MaxNodes_Val, "MaxNodes=", Spec);
+    if (Error_Code) return Error_Code;
+
+    Key_Val = NO_VAL;
+    Error_Code = Load_Integer(&Key_Val, "Key=NO", Spec);
+    if (Error_Code) return Error_Code;
+    if (Key_Val == 1) Key_Val = 0;
+    Error_Code = Load_Integer(&Key_Val, "Key=YES", Spec);
+    if (Error_Code) return Error_Code;
+
+    State_Val = NO_VAL;
+    Error_Code = Load_Integer(&State_Val, "State=DOWN", Spec);
+    if (Error_Code) return Error_Code;
+    if (State_Val == 1) State_Val = 0;
+    Error_Code = Load_Integer(&State_Val, "State=UP", Spec);
+    if (Error_Code) return Error_Code;
+
+    Default_Val = NO_VAL;
+    Error_Code = Load_Integer(&Default_Val, "Default=YES", Spec);
+    if (Error_Code) return Error_Code;
+
+    AllowGroups = NULL;
+    Error_Code = Load_String (&AllowGroups, "AllowGroups=", Spec);
+    if (Error_Code) return Error_Code;
+
+    Nodes = NULL;
+    Error_Code = Load_String (&Nodes, "Nodes=", Spec);
+    if (Error_Code) return Error_Code;
+
+    Bad_Index = -1;
+    for (i=0; i<strlen(Spec); i++) {
+	if (Spec[i] == '\n') Spec[i]=' ';
+	if (isspace((int)Spec[i])) continue;
+	Bad_Index=i;
+	break;
+    } /* if */
+
+    if (Bad_Index != -1) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: Ignored partition %s update specification: %s\n", 
+		PartitionName, &Spec[Bad_Index]);
+#else
+	syslog(LOG_ERR, "Update_Part: Ignored partition %s update specification: %s\n", 
+		PartitionName, &Spec[Bad_Index]);
+#endif
+	return EINVAL;
+    } /* if */
+
+    if (MaxTime_Val  != NO_VAL) Part_Ptr->MaxTime  = MaxTime_Val;
+    if (MaxNodes_Val != NO_VAL) Part_Ptr->MaxNodes = MaxNodes_Val;
+    if (Key_Val      != NO_VAL) Part_Ptr->Key      = Key_Val;
+    if (State_Val    != NO_VAL) Part_Ptr->StateUp  = State_Val;
+    if (Default_Val == 1) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: changing default partition from %s to %s\n", 
+		    Default_Part_Name, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: changing default partition from %s to %s\n", 
+		    Default_Part_Name, PartitionName);
+#endif
+	strcpy(Default_Part_Name, PartitionName);
+	Default_Part_Loc = Part_Ptr;
+    } /* if */
+
+    if (AllowGroups != NULL) {
+	if (Part_Ptr->AllowGroups) free(Part_Ptr->AllowGroups);
+	Part_Ptr->AllowGroups = AllowGroups;
+    } /* if */
+
+    if (Nodes != NULL) {
+	if (Part_Ptr->Nodes) free(Part_Ptr->Nodes);
+	Part_Ptr->Nodes = Nodes;
+	/* Now we need to update TotalCPUs, TotalNodes, and NodeBitMap */
+	Error_Code = Build_Part_BitMap(Part_Ptr);
+	if (Error_Code) return Error_Code;
+    } /* if */
+    return 0;
+} /* Update_Part */
 
 
 #if PROTOTYPE_API
