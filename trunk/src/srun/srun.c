@@ -49,6 +49,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "src/common/fd.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
