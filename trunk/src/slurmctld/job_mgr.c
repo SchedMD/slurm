@@ -1921,7 +1921,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
  */
 static char *_copy_nodelist_no_dup(char *node_list)
 {
-	int   new_size = 32;
+	int   new_size = 64;
 	char *new_str;
 	hostlist_t hl = hostlist_create(node_list);
 	if (hl == NULL)
