@@ -52,6 +52,10 @@ int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg ) ;
 
 void * task_exec_thread ( void * arg ) ;
 
+void pthread_fork_before ( void );
+void pthread_fork_parent_after ( void );
+void pthread_fork_child_after ( void );
+
 typedef struct task_start
 {
 	/*task control thread id*/

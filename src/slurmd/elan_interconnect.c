@@ -29,6 +29,7 @@ static int do_env(int nodeid, int nnodes, int procid, int nprocs) ;
 /*launch_tasks should really be named launch_job_step*/
 int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
 {
+	pthread_atfork ( NULL , NULL , pthread_fork_child_after ) ;
 	return interconnect_init ( launch_msg );
 }
 
