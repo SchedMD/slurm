@@ -409,21 +409,14 @@ int _print_job_job_state_compact(job_info_t * job, int width, bool right,
 int _print_job_time_limit(job_info_t * job, int width, bool right, 
 			  char* suffix)
 {
-	char time[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("TIMELIMIT", width, right, true);
 	else if (job->time_limit == INFINITE)
 		_print_str("UNLIMITED", width, right, true);
 	else if (job->time_limit == NO_VAL)
 		_print_str("NOT_SET", width, right, true);
-	else {
-		/* format is "hours:minutes" */
-		snprintf(time, FORMAT_STRING_SIZE, "%d:%2.2d",
-			 job->time_limit / 60,
-			 job->time_limit % 60);
-
-		_print_str(time, width, right, true);
-	}
+	else
+		_print_secs((job->time_limit*60), width, right, false);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
