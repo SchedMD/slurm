@@ -1,0 +1,14 @@
+slurm_allocate
+slurm_free_build_info
+slurm_load_build
+bitfmt2int
+parse_node_name
+slurm_free_job_info
+slurm_load_job
+slurm_free_node_info
+slurm_load_node
+slurm_free_part_info
+slurm_load_part
+reconfigure
+slurm_submit
+update_config

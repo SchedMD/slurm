@@ -1,0 +1,145 @@
+.TH SCONTROL "1" "September 2002" "scontrol 0.1" "Slurm components"
+
+.SH "NAME"
+scontrol \- Used view and modify Slurm configuration and state.
+
+.SH "SYNOPSIS"
+\fBscontrol\fR [\fIOPTIONS\fR...] [\fICOMMAND\fR...]
+.SH "DESCRIPTION"
+\fBscontrol\fR is used to view or modify Slurm configuration including: job, 
+job step, node, partition, and overall system configuration. Most of the 
+commands can only be executed by user root. If an attempt to view or modify 
+configuration information is made by an unauthorized user, an error message 
+will be printed and the requested action will not occur. If no command is 
+entered on the execute line, \fBscontrol\fR will operate in an interactive 
+mode and prompt for input. It will continue prompting for input and executing 
+commands until explicitly terminated. If a command is entered on the execute 
+line, \fBscontrol\fR will execute that command and terminate. All commands 
+and options are case-insensitive, although node names and partition names 
+are case-sensitive (node names "LX" and "lx" are distinct).
+
+.TP
+OPTIONS
+.TP
+\fB-h\fR
+Print a help message describing the usage of scontrol.
+.TP
+\fB-q\fR
+Print no warning or informational messages, only fatal error messages.
+.TP
+\fB-v\fR
+Print detailed event logging. This includes time-stamps on data structures, 
+record counts, etc.
+.TP
+COMMAND
+.TP
+\fIabort\fP
+Instruct the Slurm controller to terminate immediately and generate a core file.
+.TP
+\fIexit\fP
+Terminate the execution of scontrol.
+.TP
+\fIhelp\fP
+Display a description of scontrol options and commands.
+.TP
+\fIquiet\fP
+Print no warning or informational messages, only fatal error messages.
+.TP
+\fIquit\fP
+Terminate the execution of scontrol.
+.TP
+\fIreconfigure\fP
+Instruct the Slurm controller to re-read its configuration file. 
+This mechanism would be used to register the physical addition or removal of 
+nodes from the cluster or recognize the change of a node's configuration, 
+such as the addition of memory or processors. Running jobs continue execution.
+.TP
+\fIshow\fP \fIENTITY\fP \fPID\fP
+Display the state of the specified entity with the specified identification.
+\fIENTITY\fP may be \fIconfig\fP, \fIjob\fP, \fInode\fP, \fIpartition\fP
+or \fIstep\fP.
+\fIID\fP can be used to identify a specific element of the identified 
+entity: the configuration parameter name, job ID, node name, partition name, 
+or job step ID for entities \fIconfig\fP, \fIjob\fP, \fInode\fP, \fIpartition\fP, 
+and \fIstep\fP respectively. 
+Multiple node names may be specified using simple regular expressions 
+(e.g. "lx[10-20]"). All other \fIID\fP values must identify a single 
+element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
+By default, all elements of the entity type specified are printed.
+.TP
+\fIshutdown\fP
+Instruct the Slurm controller to save its current state and terminate.
+.TP
+\fIupdate\fP \fISPECIFICATION\fP 
+Update job, node or partition configuration per the supplied specification.
+\fISPECIFICATION\fP is in the same format as the Slurm configuration file 
+and the output of the \fIshow\fP command described above. It may be desirable 
+to execute the \fIshow\fP command (described above) on the specific entity 
+you which to update, then use cut-and-paste tools to enter updated configuration 
+values to the \fIupdate\fP. Note that while most configuration values can be 
+changed using this command, not all can be changed using this mechanism. In 
+particular, the hardware configuration of a node or the physical addition or 
+removal of nodes from the cluster may only be accomplished through editing 
+the Slurm configuration file and executing the \fIreconfigure\fP command 
+(described above).
+.TP
+\fIverbose\fP
+Print detailed event logging. This includes time-stamps on data structures, 
+record counts, etc.
+.TP
+\fIversion\fP
+Display the version number of scontrol being executed.
+.TP
+\fI!!\fP
+Repeat the last command executed.
+
+.SH "EXAMPLE"
+.eo
+.br 
+# scontrol
+.br 
+scontrol: show part class
+.br 
+PartitionName=class MaxTime=30 MaxNodes=2 TotalNodes=10 TotalCPUs=160 RootOnly=NO
+.br 
+   Default=NO Shared=NO State=UP Nodes=lx[0031-0040] AllowGroups=students
+.br 
+scontrol: update PartitionName=class MaxTime=300 MaxNodes=4
+.br 
+scontrol: show job 65539
+.br 
+JobId=65539 UserId=1500 JobState=PENDING TimeLimit=100 Priority=100 Partition=batch
+.br 
+   Name=job01 NodeList=(null) StartTime=0 EndTime=0 Shared=0 
+.br 
+   ReqProcs=1000 ReqNodes=400 Contiguous=1 MinProcs=4 MinMemory=1024 MinTmpDisk=2034
+.br 
+   ReqNodeList=lx[3000-3003] Features=(null) JobScript=/bin/hostname 
+.br 
+scontrol: update JobId=65539 TimeLimit=200 Priority=500
+.br 
+scontrol: quit
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)

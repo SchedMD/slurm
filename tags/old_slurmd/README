@@ -1,0 +1,29 @@
+TO BUILD:
+  cd slurm
+  ./autogen.sh
+  ./configure
+  make
+
+
+TO TEST:
+  cd slurm/src/slurmctld
+  ./slurmctld		# start the controller
+
+Submit jobs and exercise the other APIs using the DejaGnu scripts
+  cd slurm/testsuite/slurm_unit/api/manual
+  make
+  ./submit-tst [number of jobs]
+  ./allocate-tst [number of jobs]
+  ./update_config-tst
+  ./reconfigure-tst
+  ./cancel-tst [job_id]
+
+You can also use the tools scontrol, squeue, and scancel.
+These tools are in sub-directories of "slurm/src". 
+All of these tools also have man pages in "slurm/doc/man".
+The job initiation tool srun is not quite ready for use (as of 7/22/2002)
+
+NOTES:
+You should have autoconf version 2.52 or higher (see "autoconf -V").
+On the cluster dev[0-25].llnl.gov, do this by putting /usr/local/pkg/autoconf-2.53/bin
+at the begining of your search path.

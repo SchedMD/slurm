@@ -1,0 +1,32 @@
+# 
+# Sample /etc/slurm.conf.localhost
+# Author: John Doe
+# Date: 11/06/2001
+# Note: "localhost" is translated by slurmctld to the actual hostname
+#
+ControlMachine=localhost BackupController=localhost
+Epilog="" Prolog=""
+FastSchedule=1
+FirstJobId=65536
+HashBase=10
+HeartbeatInterval=60
+InactiveLimit=120
+KillWait=30
+Prioritize=/usr/local/maui/priority
+ReturnToService=0
+SlurmctldPort=7002 SlurmdPort=7003
+SlurmctldTimeout=300 SlurmdTimeout=300
+StateSaveLocation=/tmp/slurm.state
+TmpFS=/tmp
+JobCredentialPrivateKey=private.key
+JobCredentialPublicCertificate=public.cert
+#
+# Node Configurations
+#
+NodeName=DEFAULT TmpDisk=512 State=UNKNOWN
+NodeName=localhost Procs=1 RealMemory=128 Weight=16
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT MaxTime=30 MaxNodes=1
+PartitionName=debug Nodes=localhost State=UP    Default=YES
