@@ -332,9 +332,9 @@
 #
 #     "NodeName"   : The only required node configuration parameter, NodeName
 #                    specifies a node or set of nodes to be managed by SLURM.
-#                    The special NodeName of "DEFAULT" may be used to set up
-#                    a list of default node configuration parameters
-#                    (which are described below)
+#                    The special NodeName of "DEFAULT" may be used to establish
+#                    default node configuration parameters for subsequent node
+#                    records.
 #
 #     "Feature"    : comma separated list of "features" for the given node(s) 
 #
@@ -369,7 +369,10 @@
 #   not be allowed to span partitions. The following partition configuration
 #   parameters are recognized:
 #
-#    "PartitionName" : Name used to reference this partition
+#    "PartitionName" : Name used to reference this partition. The special
+#                      PartitionName of "DEFAULT" may be used to establish
+#                      default partition configurations parameters for 
+#                      subsequent partition records.
 #
 #    "Nodes"         : list of nodes that compose this partition
 #
