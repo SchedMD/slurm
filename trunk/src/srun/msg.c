@@ -285,7 +285,7 @@ _confirm_launch_complete(job_t *job)
 
 	for (i=0; i<job->nhosts; i++) {
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			error ("Node %s not responding, terminiating job step",
+			error ("Node %s not responding, terminating job step",
 			       job->host[i]);
 			job->rc = 124;
 			update_job_state(job, SRUN_JOB_FAILED);
