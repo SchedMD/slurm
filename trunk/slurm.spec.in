@@ -61,6 +61,11 @@ Summary: SLURM scheduling plugin for the Maui scheduler.
 Group: System Environment/Base
 Requires: slurm
 
+%package smap
+Summary: SLURM GUI.
+Group: System Environment/Base
+Requires: slurm
+
 %package switch-elan
 Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
@@ -90,6 +95,9 @@ SLURM plugin interfaces to IBM Blue Gene system
 
 %description sched-wiki
 SLURM scheduling plugin for the Maui scheduler.
+
+%description smap 
+SLURM GUI.
 
 %description switch-elan
 SLURM switch plugin for Quadrics Elan3 or Elan4.
@@ -148,7 +156,11 @@ rm -rf $RPM_BUILD_ROOT
 %doc COPYING
 %doc etc/slurm.conf.example
 %doc doc/html
-%{_bindir}/*
+%{_bindir}/scancel
+%{_bindir}/scontrol
+%{_bindir}/sinfo
+%{_bindir}/squeue
+%{_bindir}/srun
 %{_sbindir}/*
 %{_libdir}/*.so*
 %{_libdir}/slurm/src/*
@@ -202,6 +214,11 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki.so
 #############################################################################
 
+%files smap
+%defattr(-,root,root,0755)
+%{_bindir}/smap
+#############################################################################
+
 %files -f switch_elan.files switch-elan
 %defattr(-,root,root)
 #############################################################################
@@ -238,6 +255,8 @@ fi
 
 
 %changelog
+* Wed Jan 02 2005 Morris Jette <jette1@llnl.gov>
+- added smap package
 * Tue Nov 16 2004 Morris Jette <jette1@llnl.gov>
 - added sched_hold plugin
 * Wed Oct 13 2004 Morris Jette <jette1@llnl.gov>

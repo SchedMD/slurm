@@ -2,8 +2,10 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
 * Changes in SLURM 0.4.0
-=======================
+========================
  -- Minor tweak to init.d/slurm for BlueGene systems.
+ -- Added smap RPM package (to install binary built on BlueGene 
+    service node on front-end nodes).
 
 * Changes in SLURM 0.4.0-pre11
 ==============================
