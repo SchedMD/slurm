@@ -26,15 +26,17 @@
 
 int Is_Key_Valid(int Key);
 int Match_Group(char *AllowGroups, char *UserGroups);
+int Match_Feature(char *Seek, char *Available);
 int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, char **Job_Name,
 	char **Req_Group, char **Req_Partition, int *Contiguous, int *Req_CPUs, 
-	int *Req_Nodes, int *Min_CPUs, int *Min_Memory, int *Min_TmpDisk, int *Key);
+	int *Req_Nodes, int *Min_CPUs, int *Min_Memory, int *Min_TmpDisk, int *Key, int *Shared);
 int ValidFeatures(char *Requested, char *Available);
 
 struct Node_Set {	/* Set of nodes with same configuration that could be allocated */
 	int CPUs_Per_Node;
 	int Nodes;
 	int Weight;
+	int Feature;
 	unsigned *My_BitMap;
 };
 
@@ -75,6 +77,19 @@ main(int argc, char * argv[]) {
 		errno, argv[2]);
 	exit(1);
     } /* if */
+
+    i = ValidFeatures("FS1&FS2","FS1");
+    if (i != 0) printf("ValidFeatures error 1\n");
+    i = ValidFeatures("FS1|FS2","FS1");
+    if (i != 1) printf("ValidFeatures error 2\n");
+    i = ValidFeatures("FS1|FS2&FS3","FS1,FS3");
+    if (i != 1) printf("ValidFeatures error 3\n");
+    i = ValidFeatures("[FS1|FS2]&FS3","FS2,FS3");
+    if (i != 2) printf("ValidFeatures error 4\n");
+    i = ValidFeatures("FS0&[FS1|FS2]&FS3","FS2,FS3");
+    if (i != 0) printf("ValidFeatures error 5\n");
+    i = ValidFeatures("FS3&[FS1|FS2]&FS3","FS2,FS3");
+    if (i != 2) printf("ValidFeatures error 6\n");
 
     Line_Num = 0;
     printf("\n");
@@ -136,6 +151,45 @@ int Is_Key_Valid(int Key) {
     if (Key == NO_VAL) return 0;
     return 1;
 }  /* Is_Key_Valid */
+
+
+/*
+ * Match_Feature - Determine if the desired feature (Seek) is one of those available
+ * Input: Seek - Desired feature
+ *        Available - Comma separated list of features
+ * Output: Returns 1 if found, 0 otherwise
+ */
+int Match_Feature(char *Seek, char *Available) {
+    char *Tmp_Available, *str_ptr3, *str_ptr4;
+    int found;
+
+    if (Seek      == NULL) return 1;	/* Nothing to look for */
+    if (Available == NULL) return 0;	/* Nothing to find */
+
+    Tmp_Available = malloc(strlen(Available)+1);
+    if (Tmp_Available == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Match_Feature: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Match_Feature: unable to allocate memory\n");
+#endif
+	return 1; /* Assume good for now */
+    } /* if */
+    strcpy(Tmp_Available, Available);
+
+    found = 0;
+    str_ptr3 = (char *)strtok_r(Tmp_Available, ",", &str_ptr4);
+    while (str_ptr3) {
+	if (strcmp(Seek, str_ptr3) == 0) {  /* We have a match */
+	    found = 1;
+	    break;
+	} /* if */
+	str_ptr3 = (char *)strtok_r(NULL, ",", &str_ptr4);
+    } /* while (str_ptr3) */
+
+    free(Tmp_Available);
+    return found;
+} /* Match_Feature */
 
 
 /*
@@ -205,12 +259,13 @@ int Match_Group(char *AllowGroups, char *UserGroups) {
  */
 int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, char **Job_Name,
 	char **Req_Group, char **Req_Partition, int *Contiguous, int *Req_CPUs, 
-	int *Req_Nodes, int *Min_CPUs, int *Min_Memory, int *Min_TmpDisk, int *Key) {
+	int *Req_Nodes, int *Min_CPUs, int *Min_Memory, int *Min_TmpDisk, int *Key, int *Shared) {
     int Bad_Index, Error_Code, i;
     char *Temp_Specs;
 
     Req_Features[0] = Req_Node_List[0] = Req_Group[0] = Req_Partition[0] = Job_Name[0] = NULL;
     *Contiguous = *Req_CPUs = *Req_Nodes = *Min_CPUs = *Min_Memory = *Min_TmpDisk = NO_VAL;
+    *Key = *Shared = NO_VAL;
 
     Temp_Specs = malloc(strlen(Job_Specs)+1);
     if (Temp_Specs == NULL) {
@@ -257,6 +312,9 @@ int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, 
     if (Error_Code) goto cleanup;
 
     Error_Code = Load_Integer (Key, "Key=", Temp_Specs);
+    if (Error_Code) goto cleanup;
+
+    Error_Code = Load_Integer (Shared, "Shared=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
     Bad_Index = -1;
@@ -307,9 +365,13 @@ cleanup:
 int Pick_Best_Nodes(struct Node_Set *Node_Set_Ptr, int Node_Set_Size, 
 	unsigned **Req_BitMap, int Req_CPUs, int  Req_Nodes, int Contiguous) {
     int Error_Code, i;
-    int Total_Nodes, Total_CPUs;
+    int Total_Nodes, Total_CPUs;	/* Total resources configured in partition */
+    int Avail_Nodes, Avail_CPUs;	/* Resources available for use now */
+    int *CPUs_Per_Node;
 
-    Error_Code = Total_Nodes = Total_CPUs = 0;
+    Error_Code = 0;
+    Total_Nodes = Total_CPUs = 0;
+    Avail_Nodes = Avail_CPUs = 0;
     if (Req_BitMap[0]) {	/* Specific nodes required */
 				/* Already confirmed nodes are up, available and contiguous */
 	if (Req_Nodes != NO_VAL) Total_Nodes=BitMapCount(Req_BitMap[0]);
@@ -319,7 +381,17 @@ int Pick_Best_Nodes(struct Node_Set *Node_Set_Ptr, int Node_Set_Size,
 printf("More work to be done here: Add nodes to given list to satisfy CPU and/or node requirements\n");
 
     } else {			/* Any nodes usable */
-printf("More work to be done here\n");
+	if (Node_Set_Size == 0) return EINVAL;
+printf("More work to be done here: Add nodes to given list to satisfy CPU and/or node requirements\n");
+	for (i=0; i<Node_Set_Size; i++) {
+	    if (i==0) 
+		Req_BitMap[0] = BitMapCopy(Node_Set_Ptr[i].My_BitMap);
+	    else
+		BitMapOR(Req_BitMap[0], Node_Set_Ptr[i].My_BitMap);
+	    Total_Nodes += Node_Set_Ptr[i].Nodes;
+	    Total_CPUs += (Node_Set_Ptr[i].Nodes * Node_Set_Ptr[i].CPUs_Per_Node);
+	    if ((Total_Nodes >= Req_Nodes) && (Total_CPUs >= Req_CPUs)) break;
+	} /* for */
     } /* else */
 
     return Error_Code;
@@ -338,7 +410,7 @@ printf("More work to be done here\n");
 int Select_Nodes(char *Job_Specs, char **Node_List) {
     char *Req_Features, *Req_Node_List, *Job_Name, *Req_Group, *Req_Partition, *Out_Line;
     int Contiguous, Req_CPUs, Req_Nodes, Min_CPUs, Min_Memory, Min_TmpDisk;
-    int Error_Code, CPU_Tally, Node_Tally, Key;
+    int Error_Code, CPU_Tally, Node_Tally, Key, Shared;
     struct Part_Record *Part_Ptr;
     unsigned *Req_BitMap, *Scratch_BitMap;
     ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
@@ -349,7 +421,8 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
 
     Req_Features = Req_Node_List = Req_Group = Req_Partition = NULL;
     Req_BitMap = Scratch_BitMap = NULL;
-    Contiguous = Req_CPUs = Req_Nodes = Min_CPUs = Min_Memory = Min_TmpDisk = Key = NO_VAL;
+    Contiguous = Req_CPUs = Req_Nodes = Min_CPUs = Min_Memory = Min_TmpDisk = NO_VAL;
+    Key = Shared = NO_VAL;
     Node_Set_Ptr = NULL;
     Config_Record_Iterator = NULL;
     Node_List[0] = NULL;
@@ -357,7 +430,7 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
     /* Setup and basic parsing */
     Error_Code = Parse_Job_Specs(Job_Specs, &Req_Features, &Req_Node_List, &Job_Name, &Req_Group, 
 		&Req_Partition, &Contiguous, &Req_CPUs, &Req_Nodes, &Min_CPUs, 
-		&Min_Memory, &Min_TmpDisk, &Key);
+		&Min_Memory, &Min_TmpDisk, &Key, &Shared);
     if (Error_Code == ENOMEM) {
 	Error_Code = EAGAIN;	/* Don't want to kill the job off */
 	goto cleanup;
@@ -505,10 +578,14 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
     } /* if */
 
     while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
-	if ((Min_CPUs    != NO_VAL) && (Min_CPUs    > Config_Record_Point->CPUs))       continue;
-	if ((Min_Memory  != NO_VAL) && (Min_Memory  > Config_Record_Point->RealMemory)) continue;
-	if ((Min_TmpDisk != NO_VAL) && (Min_TmpDisk > Config_Record_Point->TmpDisk))    continue;
-	if (ValidFeatures(Req_Features,Config_Record_Point->Feature) == 0) continue;
+	int Tmp_Feature;
+/* Since nodes can register with more resources than defined in the configuration, we want   */
+/* to use those higher values for scheduling and ignore the values in the configuration file */
+/*	if ((Min_CPUs    != NO_VAL) && (Min_CPUs    > Config_Record_Point->CPUs))       continue; */
+/*	if ((Min_Memory  != NO_VAL) && (Min_Memory  > Config_Record_Point->RealMemory)) continue; */
+/*	if ((Min_TmpDisk != NO_VAL) && (Min_TmpDisk > Config_Record_Point->TmpDisk))    continue; */
+	Tmp_Feature = ValidFeatures(Req_Features, Config_Record_Point->Feature);
+	if (Tmp_Feature == 0) continue;
 
 	Node_Set_Ptr[Node_Set_Index].My_BitMap = BitMapCopy(Config_Record_Point->NodeBitMap);
 	if (Node_Set_Ptr[Node_Set_Index].My_BitMap == NULL) {
@@ -530,6 +607,7 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
 	    } /* if */
 	    Node_Set_Ptr[Node_Set_Index].CPUs_Per_Node = Config_Record_Point->CPUs;
 	    Node_Set_Ptr[Node_Set_Index].Weight = Config_Record_Point->Weight;
+	    Node_Set_Ptr[Node_Set_Index].Feature = Tmp_Feature;
 #if DEBUG_MODULE > 1
 	    printf("Found %d usable nodes from configuration with %s\n",
 		Node_Set_Ptr[Node_Set_Index].Nodes, Config_Record_Point->Nodes);
@@ -629,14 +707,17 @@ cleanup:
 /* ValidFeatures - Determine if the Requested features are satisfied by those Available
  * Input: Requested - Requested features (by a job)
  *        Available - Available features (on a node)
- * Output: Returns 0 if request is not satisfied, 1 otherwise
- * NOTE: This is only checking comma separated features (Interpretted as AND), 
- *       this should be expanded to support AND, OR, and parentheses "(&|)"
+ * Output: Returns 0 if request is not satisfied, otherwise an integer indicating 
+ *		which mutually exclusive feature is satisfied. For example
+ *		ValidFeatures("[FS1|FS2|FS3|FS4]", "FS3") returns 3. See the 
+ *		SLURM administrator and user guides for details. Returns 1 if 
+ *		requirements are satisfied without mutually exclusive feature list.
  */
 int ValidFeatures(char *Requested, char *Available) {
-    char *Tmp_Requested, *str_ptr1, *str_ptr2;
-    char *Tmp_Available, *str_ptr3, *str_ptr4;
-    int found;
+    char *Tmp_Requested, *str_ptr1;
+    int bracket, found, i, option, position, result;
+    int last_op;	/* Last operation 0 for OR, 1 for AND */
+    int save_op, save_result; /* For bracket support */
 
     if (Requested == NULL) return 1;	/* No constraints */
     if (Available == NULL) return 0;	/* No features */
@@ -652,34 +733,94 @@ int ValidFeatures(char *Requested, char *Available) {
     } /* if */
     strcpy(Tmp_Requested, Requested);
 
-    Tmp_Available = malloc(strlen(Available)+1);
-    if (Tmp_Available == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "ValidFeatures: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "ValidFeatures: unable to allocate memory\n");
-#endif
-	free(Tmp_Requested);
-	return 1; /* Assume good for now */
-    } /* if */
+    bracket = option = position = 0;
+    str_ptr1 = Tmp_Requested;	/* Start of feature name */
+    result = last_op = 1;	/* Assume good for now */
+    for (i=0; ; i++) {
+printf("res:%d:last:%d:%c:\n",result,last_op,Tmp_Requested[i]);
+	if (Tmp_Requested[i] == (char)NULL) {
+	    if (strlen(str_ptr1) == 0) break;
+	    found = Match_Feature(str_ptr1, Available);
+	    if (last_op == 1)	/* AND */
+		result &= found;
+	    else		/* OR */
+		result |= found;
+	    break;
+	} /* if */
 
-    found = 1;
-    str_ptr1 = (char *)strtok_r(Tmp_Requested, ",", &str_ptr2);
-    while (str_ptr1) {
-	found = 0;
-	strcpy(Tmp_Available, Available);
-	str_ptr3 = (char *)strtok_r(Tmp_Available, ",", &str_ptr4);
-	while (str_ptr3) {
-	    if (strcmp(str_ptr1, str_ptr3) == 0) {  /* We have a match */
-		found = 1;
+	if (Tmp_Requested[i] == '&') {
+	    if (bracket != 0) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "ValidFeatures: Parsing failure 1 on %s\n", Requested);
+#else
+		syslog(LOG_NOTICE, "ValidFeatures: Parsing failure 1 on %s\n", Requested);
+#endif
+		result = 0;
 		break;
 	    } /* if */
-	    str_ptr3 = (char *)strtok_r(NULL, ",", &str_ptr4);
-	} /* while (str_ptr3) */
-	if (found == 0) break;
-	str_ptr1 = (char *)strtok_r(NULL, ",", &str_ptr2);
-    } /* while (str_ptr1) */
+	    Tmp_Requested[i] = (char)NULL;
+	    found = Match_Feature(str_ptr1, Available);
+	    if (last_op == 1)	/* AND */
+		result &= found;
+	    else		/* OR */
+		result |= found;
+	    str_ptr1 = &Tmp_Requested[i+1];
+	    last_op = 1;	/* AND */
+
+	} else if (Tmp_Requested[i] == '|') {
+	    Tmp_Requested[i] = (char)NULL;
+	    found = Match_Feature(str_ptr1, Available);
+	    if (bracket != 0) {
+		if (found) option=position;
+		position++;
+	    } 
+	    if (last_op == 1)	/* AND */
+		result &= found;
+	    else		/* OR */
+		result |= found;
+	    str_ptr1 = &Tmp_Requested[i+1];
+	    last_op = 0;	/* OR */
+
+	} else if (Tmp_Requested[i] == '[') {
+	    bracket++;
+	    position = 1;
+	    save_op = last_op;
+	    save_result = result;
+	    last_op = result =1;
+	    str_ptr1 = &Tmp_Requested[i+1];
+
+	} else if (Tmp_Requested[i] == ']') {
+	    Tmp_Requested[i] = (char)NULL;
+	    found = Match_Feature(str_ptr1, Available);
+	    if (found) option=position;
+	    result |= found;
+	    if (save_op == 1)	/* AND */
+		result &= save_result;
+	    else		/* OR */
+		result |= save_result;
+	    if ((Tmp_Requested[i+1] == '&') && (bracket == 1)) {
+		last_op = 1;
+		str_ptr1 = &Tmp_Requested[i+2];
+	    } else if ((Tmp_Requested[i+1] == '|') && (bracket == 1)) {
+		last_op = 0;
+		str_ptr1 = &Tmp_Requested[i+2];
+	    } else if ((Tmp_Requested[i+1] == (char)NULL) && (bracket == 1)) {
+		break;
+	    } else {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "ValidFeatures: Parsing failure 2 on %s\n", Requested);
+#else
+		syslog(LOG_NOTICE, "ValidFeatures: Parsing failure 2 on %s\n", Requested);
+#endif
+		result = 0;
+		break;
+	    } /* else */
+	    bracket = 0;
+	} /* else */
+    } /* for */
+
+    if (position) result *= option;
     free(Tmp_Requested);
-    free(Tmp_Available);
-    return found;  /* No match */
+printf("Res:%d:last:%d:\n",result,last_op);
+    return result;
 } /* ValidFeatures */
