@@ -382,6 +382,7 @@ int init ( void )
 	pthread_create(&script_thread, &attr, script_agent, NULL);
 	
 	pthread_mutex_unlock(&thread_flag_mutex);
+	pthread_attr_destroy(&attr);
 
 	return SLURM_SUCCESS;
 }
