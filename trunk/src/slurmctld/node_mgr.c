@@ -471,7 +471,7 @@ int load_all_node_state ( void )
 			error ("Invalid data for node %s: cpus=%u, state=%u",
 				node_name, cpus, node_state);
 			error ("No more node data will be processed from the checkpoint file");
-			FREE_NULL (node_name);
+			xfree (node_name);
 			error_code = EINVAL;
 			break;
 			
@@ -489,7 +489,7 @@ int load_all_node_state ( void )
 			error ("Node %s has vanished from configuration", 
 			       node_name);
 		}
-		FREE_NULL (node_name);
+		xfree (node_name);
 	}
 
 	free_buf (buffer);
@@ -673,8 +673,8 @@ static void _list_delete_config (void *config_entry)
 	struct config_record *config_record_point;
 
 	config_record_point = (struct config_record *) config_entry;
-	FREE_NULL (config_record_point->feature);
-	FREE_NULL (config_record_point->nodes);
+	xfree (config_record_point->feature);
+	xfree (config_record_point->nodes);
 	FREE_NULL_BITMAP (config_record_point->node_bitmap);
 	xfree (config_record_point);
 }

@@ -317,7 +317,7 @@ static int _parse_node_spec(char *in_line)
 			getnodename(this_node_name, 128);
 		}
 		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
-			FREE_NULL(node_name);
+			xfree(node_name);
 			if (cpus_val != NO_VAL)
 				default_config_record.cpus = cpus_val;
 			if (real_memory_val != NO_VAL)
@@ -331,7 +331,7 @@ static int _parse_node_spec(char *in_line)
 			if (state_val != NO_VAL)
 				default_node_record.node_state = state_val;
 			if (feature) {
-				FREE_NULL(default_config_record.feature);
+				xfree(default_config_record.feature);
 				default_config_record.feature = feature;
 				feature = NULL;
 			}
@@ -355,7 +355,7 @@ static int _parse_node_spec(char *in_line)
 			if (weight_val != NO_VAL)
 				config_point->weight = weight_val;
 			if (feature) {
-				FREE_NULL(config_point->feature);
+				xfree(config_point->feature);
 				config_point->feature = feature;
 				feature = NULL;
 			}
@@ -400,17 +400,17 @@ static int _parse_node_spec(char *in_line)
 	}
 
 	/* free allocated storage */
-	FREE_NULL(node_addr);
+	xfree(node_addr);
 	if (addr_list)
 		hostlist_destroy(addr_list);
 	hostlist_destroy(host_list);
 	return error_code;
 
       cleanup:
-	FREE_NULL(node_addr);
-	FREE_NULL(node_name);
-	FREE_NULL(feature);
-	FREE_NULL(state);
+	xfree(node_addr);
+	xfree(node_name);
+	xfree(feature);
+	xfree(state);
 	return error_code;
 }
 
@@ -542,12 +542,12 @@ static int _parse_part_spec(char *in_line)
 		if (shared_val != NO_VAL)
 			default_part.shared = shared_val;
 		if (allow_groups) {
-			FREE_NULL(default_part.allow_groups);
+			xfree(default_part.allow_groups);
 			default_part.allow_groups = allow_groups;
 			allow_groups = NULL;
 		}
 		if (nodes) {
-			FREE_NULL(default_part.nodes);
+			xfree(default_part.nodes);
 			default_part.nodes = nodes;
 			nodes = NULL;
 		}
@@ -582,12 +582,12 @@ static int _parse_part_spec(char *in_line)
 	if (shared_val != NO_VAL)
 		part_record_point->shared = shared_val;
 	if (allow_groups) {
-		FREE_NULL(part_record_point->allow_groups);
+		xfree(part_record_point->allow_groups);
 		part_record_point->allow_groups = allow_groups;
 		allow_groups = NULL;
 	}
 	if (nodes) {
-		FREE_NULL(part_record_point->nodes);
+		xfree(part_record_point->nodes);
 		if (strcmp(nodes, "localhost") == 0) {
 			xfree(nodes);
 			nodes = xmalloc(128);
@@ -602,13 +602,13 @@ static int _parse_part_spec(char *in_line)
 	return 0;
 
       cleanup:
-	FREE_NULL(allow_groups);
-	FREE_NULL(default_str);
-	FREE_NULL(root_str);
-	FREE_NULL(nodes);
-	FREE_NULL(partition_name);
-	FREE_NULL(shared_str);
-	FREE_NULL(state_str);
+	xfree(allow_groups);
+	xfree(default_str);
+	xfree(root_str);
+	xfree(nodes);
+	xfree(partition_name);
+	xfree(shared_str);
+	xfree(state_str);
 	return error_code;
 }
 
@@ -658,7 +658,7 @@ int read_slurm_conf(int recover)
 			error
 			    ("read_slurm_conf line %d, of input file %s too long",
 			     line_num, slurmctld_conf.slurm_conf);
-			FREE_NULL(old_node_table_ptr);
+			xfree(old_node_table_ptr);
 			fclose(slurm_spec_file);
 			return E2BIG;
 			break;
@@ -688,21 +688,21 @@ int read_slurm_conf(int recover)
 		if ((error_code =
 		     parse_config_spec(in_line, &slurmctld_conf))) {
 			fclose(slurm_spec_file);
-			FREE_NULL(old_node_table_ptr);
+			xfree(old_node_table_ptr);
 			return error_code;
 		}
 
 		/* node configuration parameters */
 		if ((error_code = _parse_node_spec(in_line))) {
 			fclose(slurm_spec_file);
-			FREE_NULL(old_node_table_ptr);
+			xfree(old_node_table_ptr);
 			return error_code;
 		}
 
 		/* partition configuration parameters */
 		if ((error_code = _parse_part_spec(in_line))) {
 			fclose(slurm_spec_file);
-			FREE_NULL(old_node_table_ptr);
+			xfree(old_node_table_ptr);
 			return error_code;
 		}
 
@@ -716,13 +716,13 @@ int read_slurm_conf(int recover)
 
 	if (default_part_loc == NULL) {
 		error("read_slurm_conf: default partition not set.");
-		FREE_NULL(old_node_table_ptr);
+		xfree(old_node_table_ptr);
 		return EINVAL;
 	}
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
-		FREE_NULL(old_node_table_ptr);
+		xfree(old_node_table_ptr);
 		return EINVAL;
 	}
 

@@ -195,17 +195,17 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details->magic != DETAILS_MAGIC)
 		fatal
 		    ("delete_job_details: passed invalid job details pointer");
-	FREE_NULL(job_entry->details->req_nodes);
-	FREE_NULL(job_entry->details->exc_nodes);
+	xfree(job_entry->details->req_nodes);
+	xfree(job_entry->details->exc_nodes);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
-	FREE_NULL(job_entry->details->credential.node_list);
-	FREE_NULL(job_entry->details->features);
-	FREE_NULL(job_entry->details->err);
-	FREE_NULL(job_entry->details->in);
-	FREE_NULL(job_entry->details->out);
-	FREE_NULL(job_entry->details->work_dir);
-	FREE_NULL(job_entry->details);
+	xfree(job_entry->details->credential.node_list);
+	xfree(job_entry->details->features);
+	xfree(job_entry->details->err);
+	xfree(job_entry->details->in);
+	xfree(job_entry->details->out);
+	xfree(job_entry->details->work_dir);
+	xfree(job_entry->details);
 }
 
 /* _delete_job_desc_files - delete job descriptor related files */
@@ -534,9 +534,9 @@ static int _load_job_state(Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	FREE_NULL(nodes);
-	FREE_NULL(partition);
-	FREE_NULL(name);
+	xfree(nodes);
+	xfree(partition);
+	xfree(name);
 	FREE_NULL_BITMAP(node_bitmap);
 	return SLURM_FAILURE;
 }
@@ -657,15 +657,15 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	FREE_NULL(req_nodes);
-	FREE_NULL(exc_nodes);
+	xfree(req_nodes);
+	xfree(exc_nodes);
 	FREE_NULL_BITMAP(req_node_bitmap);
 	FREE_NULL_BITMAP(exc_node_bitmap);
-	FREE_NULL(features);
-	FREE_NULL(err);
-	FREE_NULL(in);
-	FREE_NULL(out);
-	FREE_NULL(work_dir);
+	xfree(features);
+	xfree(err);
+	xfree(in);
+	xfree(out);
+	xfree(work_dir);
 	return SLURM_FAILURE;
 }
 
@@ -733,7 +733,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
-	FREE_NULL(step_node_list);
+	xfree(step_node_list);
 	return SLURM_FAILURE;
 }
 
@@ -2456,7 +2456,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 
 	if (job_specs->features && detail_ptr) {
 		if (super_user) {
-			FREE_NULL(detail_ptr->features);
+			xfree(detail_ptr->features);
 			detail_ptr->features = job_specs->features;
 			info("update_job: setting features to %s for job_id %u", 
 			     job_specs->features, job_specs->job_id);
@@ -2504,7 +2504,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				error_code = ESLURM_INVALID_NODE_NAME;
 			}
 			if (req_bitmap) {
-				FREE_NULL(detail_ptr->req_nodes);
+				xfree(detail_ptr->req_nodes);
 				detail_ptr->req_nodes =
 				    job_specs->req_nodes;
 				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);

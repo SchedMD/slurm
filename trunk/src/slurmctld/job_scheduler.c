@@ -161,8 +161,8 @@ int schedule(void)
 		}
 	}
 
-	FREE_NULL(failed_parts);
-	FREE_NULL(job_queue);
+	xfree(failed_parts);
+	xfree(job_queue);
 	unlock_slurmctld(job_write_lock);
 	return job_cnt;
 }
