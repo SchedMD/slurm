@@ -15,6 +15,11 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 URL: http://www.llnl.gov/linux/slurm
 Requires: openssl >= 0.9.6
 
+#
+# Patch for RPM backward compatability
+#
+%_unpackaged_files_terminate_build 0
+%_missing_doc_files_terminate_build 0
 
 #
 # If "--with debug" is set compile with --enable-debug 
@@ -148,8 +153,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
-%dir doc/html
-%doc doc/html/*
+%doc doc/html
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
