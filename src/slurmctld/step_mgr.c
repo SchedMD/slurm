@@ -341,13 +341,21 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 			node_id = qsw_getnodeid_byhost (node_record_table_ptr[i].name);
 			if (node_id >= 0)	/* no lookup error */
 				bit_set(nodeset, node_id);
-			else
+			else {
 				error ("qsw_getnodeid_byhost lookup failure on %s",
 				       node_record_table_ptr[i].name);
+				delete_step_record (job_ptr, step_ptr->step_id);
+				bit_free (nodeset);
+				return ESLURM_INTERCONNECT_FAILURE;
+			}
 		}
 	}
-	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->cyclic_alloc) < 0)
-		fatal ("step_create: qsw_setup_jobinfo error %m");
+	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->cyclic_alloc) < 0) {
+		error ("step_create: qsw_setup_jobinfo error %m");
+		delete_step_record (job_ptr, step_ptr->step_id);
+		bit_free (nodeset);
+		return ESLURM_INTERCONNECT_FAILURE;
+	}
 	bit_free (nodeset);
 #endif
 
