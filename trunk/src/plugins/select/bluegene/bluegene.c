@@ -173,7 +173,7 @@ static int  _validate_config_nodes(void)
 			break;
 		}
 		if (!conf_record->bgl_part_id) {
-			info("BGL PartitionID:NONE Nodes %s", nodes);
+			info("BGL PartitionID:NONE Nodes:%s", nodes);
 			rc = EINVAL;
 		} else {
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
