@@ -24,7 +24,9 @@ noinst_PROGRAMS = $(test_modules)
 LDADD   = $(top_srcdir)/src/common/libcommon.la 
 
 slurmctld_SOURCES = 	\
+	slurmctld.h	\
 	util.c		\
+	util.h		\
 	parse_spec.c	\
 	controller.c 	\
 	job_mgr.c 	\
@@ -34,6 +36,8 @@ slurmctld_SOURCES = 	\
 	partition_mgr.c \
 	read_config.c	\
 	step_mgr.c
+
+
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
