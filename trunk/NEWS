@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix memory leak in BlueGene plugin.
  -- Srun's --test-only option takes precedence over --batch option.
+ -- Add sleep(1) after setting bglblock owner due to apparent race condition 
+    in the BGL API.
+ -- Slurm was timing out and killing batch jobs if the node registered when 
+    a job prolog was still running.
 
 * Changes in SLURM 0.4.1
 ========================
