@@ -13,7 +13,7 @@ typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
 
 #define QSW_LIBSTATE_PACK_MAX	12
 #define QSW_JOBINFO_PACK_MAX	120
-#define QSW_MAX_PROCS		1024
+#define QSW_MAX_TASKS		1024
 
 int		qsw_alloc_libstate(qsw_libstate_t *lsp);
 void		qsw_free_libstate(qsw_libstate_t ls);

@@ -189,7 +189,7 @@ qsw_init(qsw_libstate_t oldstate)
 {
 	qsw_libstate_t new;
 
-	assert(ELAN_MAX_VPS == QSW_MAX_PROCS);
+	assert(ELAN_MAX_VPS == QSW_MAX_TASKS);
 
 	assert(qsw_internal_state == NULL);
 	_srand_if_needed();
