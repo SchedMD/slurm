@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "October 2003" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "December 2003" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -193,15 +193,18 @@ The default value is "root".
 .TP
 \fBSlurmctldDebug\fR
 The level of detail to provide \fBslurmctld\fR daemon's logs. 
-Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' being insanely verbose.
+Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' 
+being insanely verbose.
 The default value is 3.
 .TP
 \fBSlurmctldLogFile\fR
-Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's logs are written.
+Fully qualified pathname of a file into which the \fBslurmctld\fR daemon's 
+logs are written.
 The default value is none (performs logging via syslog).
 .TP
 \fBSlurmctldPidFile\fR
-Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon may write its process id. This may be used for automated signal processing.
+Fully qualified pathname of a file into which the  \fBslurmctld\fR daemon 
+may write its process id. This may be used for automated signal processing.
 The default value is "/var/run/slurmctld.pid".
 .TP
 \fBSlurmctldPort\fR
@@ -218,11 +221,13 @@ The default value is 120 seconds.
 .TP
 \fBSlurmdDebug\fR
 The level of detail to provide \fBslurmd\fR daemon's logs. 
-Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' being insanely verbose.
+Values from 0 to 7 are legal, with `0' being "quiet" operation and `7' being 
+insanely verbose.
 The default value is 3.
 .TP
 \fBSlurmdLogFile\fR
-Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's logs are written.
+Fully qualified pathname of a file into which the  \fBslurmd\fR daemon's 
+logs are written.
 The default value is none (performs logging via syslog).
 .TP
 \fBSlurmdPidFile\fR
@@ -257,7 +262,8 @@ A value of zero indicates the node should never be set DOWN if not respnding.
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the slurm controller, 
 \fBslurmctld\fR, saves its state (e.g. "/usr/local/slurm/checkpoint"). SLURM 
-state will saved here to recover from system failures. The default value is "/tmp".
+state will saved here to recover from system failures. 
+The default value is "/tmp".
 If any slurm daemons terminate abnormally, their core files will also be written 
 into this directory.
 .TP
