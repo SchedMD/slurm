@@ -537,7 +537,7 @@ static inline void _comm_err(char *node_name)
 }
 
 /*
- * _thread_per_node_rpc - thread to issue an RPC on a collection of nodes
+ * _thread_per_node_rpc - thread to issue an RPC on a single node
  * IN/OUT args - pointer to task_info_t, xfree'd on completion
  */
 static void *_thread_per_node_rpc(void *args)
