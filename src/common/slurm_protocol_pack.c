@@ -275,7 +275,7 @@ void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size
 
 	 memcpy ( *buf_ptr , msg->data , msg->data_size );
 	((char*)*buf_ptr) += msg->data_size;
-	((char*)*buffer_size) -= msg->data_size;
+	(*buffer_size) -= msg->data_size;
 }
 
 int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
@@ -338,7 +338,7 @@ void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer
 
 	memcpy ( *buf_ptr , msg->data , msg->data_size );
 	((char*)*buf_ptr) += msg->data_size;
-	((char*)*buffer_size) -= msg->data_size;
+	(*buffer_size) -= msg->data_size;
 }
 
 int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
@@ -417,7 +417,7 @@ void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size 
 
 	memcpy ( *buf_ptr , msg->data , msg->data_size );
 	((char*)*buf_ptr) += msg->data_size;
-	((char*)*buffer_size) -= msg->data_size;
+	(*buffer_size) -= msg->data_size;
 }
 
 int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
