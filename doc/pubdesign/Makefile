@@ -14,8 +14,8 @@ REPORT = report
 TEX = llnl.tex $(REPORT).tex
 
 FIGDIR = figures
-FIGS = arch.eps \
-       slurm-arch.eps \
+FIGS = $(FIGDIR)/arch.eps \
+       $(FIGDIR)/slurm-arch.eps \
        $(FIGDIR)/entities.eps \
        $(FIGDIR)/connections.eps \
        $(FIGDIR)/interactive-job-init.eps \
