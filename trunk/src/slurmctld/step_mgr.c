@@ -204,25 +204,24 @@ init_step_conf ()
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
  * global: step_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change STEP_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_step() in api/step_info.c whenever the data format changes
  */
-int 
+void 
 pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code;
+	int buf_len, buffer_allocated, buffer_offset = 0;
 	char *buffer;
 	void *buf_ptr;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_step_update)
-		return 0;
+		return;
 
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
@@ -241,8 +240,7 @@ pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		if (step_record_point->magic != STEP_MAGIC)
 			fatal ("pack_all_step: data integrity is bad");
 
-		error_code = pack_step (step_record_point, &buf_ptr, &buf_len);
-		if (error_code != 0) continue;
+		pack_step (step_record_point, &buf_ptr, &buf_len);
 		if (buf_len > BUF_SIZE) 
 			continue;
 		buffer_allocated += (BUF_SIZE*16);
@@ -259,7 +257,6 @@ pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buffer_ptr[0] = buffer;
 	*buffer_size = buffer_offset;
 	*update_time = last_step_update;
-	return 0;
 }
 
 
@@ -277,7 +274,7 @@ pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time)
  * NOTE: the caller must insure that the buffer is sufficiently large to hold 
  *	 the data being written (space remaining at least BUF_SIZE)
  */
-int 
+void 
 pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len) 
 {
 	char node_inx_ptr[BUF_SIZE];
@@ -309,8 +306,6 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 	else
 		packstr (NULL, buf_ptr, buf_len);
 #endif
-
-	return 0;
 }
 
 

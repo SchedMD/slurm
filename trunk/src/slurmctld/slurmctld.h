@@ -593,137 +593,44 @@ extern int  node_name2list (char *node_names, char **node_list, int *node_count)
 
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
- *	machine independent form (for network transmission)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if job records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: job_list - global list of job records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
- */
-extern int pack_all_jobs (char **buffer_ptr, int *buffer_size, 
+ *	machine independent form (for network transmission) */
+extern void pack_all_jobs (char **buffer_ptr, int *buffer_size, 
 	time_t * update_time);
 
-/* 
- * pack_all_node - dump all configuration and node information for all nodes in 
+/* pack_all_node - dump all configuration and node information for all nodes in 
  *	machine independent form (for network transmission)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_node and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
  */
-extern int pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
+extern void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
  * pack_all_part - dump all partition information for all partitions in 
- *	machine independent form (for network transmission)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: part_list - global list of partition records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change PART_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_part() in api/part_info.c whenever the data format changes
- */
-extern int pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
+ *	machine independent form (for network transmission) */
+extern void pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
  * pack_all_step - dump all job step information for all steps in 
- *	machine independent form (for network transmission)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: step_list - global list of partition records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change STEP_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_step() in api/step_info.c whenever the data format changes
- */
-extern int pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time);
+ *	machine independent form (for network transmission) */
+extern void pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
  * pack_job - dump all configuration information about a specific job in 
- *	machine independent form (for network transmission)
- * input:  dump_job_ptr - pointer to job for which information is requested
- *	buf_ptr - buffer for job information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if buffer too small
- * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
- */
-extern int pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
+ *	machine independent form (for network transmission) */
+extern void pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
 
-/* 
- * pack_node - dump all configuration information about a specific node in 
- *	machine independent form (for network transmission)
- * input:  dump_node_ptr - pointer to node for which information is requested
- *	buf_ptr - buffer for node information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
- *	and make the corresponding changes to load_node_config in api/node_info.c
- */
-extern int pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len); 
+/* pack_node - dump all configuration information about a specific node in 
+ *	machine independent form (for network transmission) */
+extern void pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len); 
 
 /* 
  * pack_part - dump all configuration information about a specific partition in 
- *	machine independent form (for network transmission)
- * input:  dump_part_ptr - pointer to partition for which information is requested
- *	buf_ptr - buffer for node information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if buffer too small
- * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
- *	and make the corresponding changes to load_part_config in api/partition_info.c
- */
-extern int pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
+ *	machine independent form (for network transmission) */
+extern void pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
 
 /* 
  * pack_step - dump state information about a specific job step in 
- *	machine independent form (for network transmission)
- * input:  dump_step_ptr - pointer to step for which information is requested
- *	buf_ptr - buffer for step information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if buffer too small
- * NOTE: change STEP_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_step() in api/step_info.c whenever the data format changes
- * NOTE: the caller must insure that the buffer is sufficiently large to hold 
- *	 the data being written (space remaining at least BUF_SIZE)
- */
-extern int pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
+ *	machine independent form (for network transmission) */
+extern void pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
 
 /* 
  * parse_job_specs - pick the appropriate fields out of a job request specification

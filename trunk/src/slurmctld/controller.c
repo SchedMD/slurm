@@ -214,7 +214,6 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 void
 slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 {
-	int error_code;
 	clock_t start_time;
 	char *dump;
 	int dump_size;
@@ -225,23 +224,16 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 
 	start_time = clock ();
 
-	error_code = pack_all_jobs (&dump, &dump_size, &last_update);
-	if (error_code)
-		info ("slurmctld_req: pack_all_jobs error %d, time=%ld",
-			 error_code, (long) (clock () - start_time));
-	else
-		info ("slurmctld_req: pack_all_jobs returning %d bytes, time=%ld",
-			 dump_size, (long) (clock () - start_time));
-
-	/* no changed data */
-	if (dump_size == 0)
+	if ( last_time_msg -> last_update >= last_job_update )
 	{
+		info ("slurmctld_req: dump_job, no change, time=%ld", 
+			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
-	/* successful call */
-	else if (error_code == 0)
+	else
 	{
 		/* success */
+		pack_all_jobs (&dump, &dump_size, &last_update);
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_JOB_INFO ;
@@ -250,21 +242,17 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+		info ("slurmctld_req: dump_job, size=%d, time=%ld", 
+		      dump_size, (long) (clock () - start_time));
+		if (dump)
+			xfree (dump);
 	}
-	/* error code returned */
-	else
-	{
-		slurm_send_rc_msg ( msg , error_code );
-	}
-	if (dump)
-		xfree (dump);
 }
 
 /* DumpNode - dump the node configurations */
 void
 slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 {
-	int error_code;
 	clock_t start_time;
 	char *dump;
 	int dump_size;
@@ -274,23 +262,16 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 
 	start_time = clock ();
 
-	error_code = pack_all_node (&dump, &dump_size, &last_update);
-	if (error_code)
-		info ("slurmctld_req: part_all_node error %d, time=%ld",
-				error_code, (long) (clock () - start_time));
-	else
-		info ("slurmctld_req: part_all_node returning %d bytes, time=%ld",
-				dump_size, (long) (clock () - start_time));
-
-	/* no changed data */
-	if (dump_size == 0)
+	if ( last_time_msg -> last_update >= last_node_update )
 	{
+		info ("slurmctld_req: dump_node, no change, time=%ld", 
+			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
-	/* successful call */
-	else if (error_code == 0)
+	else
 	{
 		/* success */
+		pack_all_node (&dump, &dump_size, &last_update);
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_NODE_INFO ;
@@ -299,21 +280,17 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+		info ("slurmctld_req: dump_node, size=%d, time=%ld", 
+		      dump_size, (long) (clock () - start_time));
+		if (dump)
+			xfree (dump);
 	}
-	/* error code returned */
-	else
-	{
-		slurm_send_rc_msg ( msg , error_code );
-	}
-	if (dump)
-		xfree (dump);
 }
 
 /* DumpPart - dump the partition configurations */
 void
 slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 {
-	int error_code;
 	clock_t start_time;
 	char *dump;
 	int dump_size;
@@ -323,23 +300,16 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 
 	start_time = clock ();
 
-	error_code = pack_all_part (&dump, &dump_size, &last_update);
-	if (error_code)
-		info ("slurmctld_req: dump_part error %d, time=%ld",
-				error_code, (long) (clock () - start_time));
-	else
-		info ("slurmctld_req: dump_part returning %d bytes, time=%ld",
-				dump_size, (long) (clock () - start_time));
-
-	/* no changed data */
-	if (dump_size == 0)
+	if ( last_time_msg -> last_update >= last_part_update )
 	{
+		info ("slurmctld_req: dump_part, no change, time=%ld", 
+			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
-	/* successful call */
-	else if (error_code == 0)
+	else
 	{
 		/* success */
+		pack_all_part (&dump, &dump_size, &last_update);
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_PARTITION_INFO ;
@@ -348,14 +318,11 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+		info ("slurmctld_req: dump_part, size=%d, time=%ld", 
+		      dump_size, (long) (clock () - start_time));
+		if (dump)
+			xfree (dump);
 	}
-	/* error code returned */
-	else
-	{
-		slurm_send_rc_msg ( msg , error_code );
-	}
-	if (dump)
-		xfree (dump);
 }
 
 /* JobCancel - cancel a slurm job or reservation */

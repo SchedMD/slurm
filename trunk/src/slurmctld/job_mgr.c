@@ -799,18 +799,17 @@ list_find_job_old (void *job_entry, void *key)
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
  */
-int 
+void 
 pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code;
+	int buf_len, buffer_allocated, buffer_offset = 0;
 	char *buffer;
 	void *buf_ptr;
 	int jobs_packed ;
@@ -818,7 +817,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_job_update)
-		return 0;
+		return;
 
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
@@ -839,8 +838,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("dump_all_job: job integrity is bad");
 
-		error_code = pack_job(job_record_point, &buf_ptr, &buf_len);
-		if (error_code != 0) continue;
+		pack_job(job_record_point, &buf_ptr, &buf_len);
 		if (buf_len > BUF_SIZE) 
 		{
 			jobs_packed ++ ;
@@ -866,7 +864,6 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buf_ptr = buffer;
 	buf_len = buffer_allocated;
 	pack32  ((uint32_t) jobs_packed, &buf_ptr, &buf_len);
-	return 0;
 }
 
 
@@ -878,13 +875,12 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	buf_len - byte size of buffer
  * output: buf_ptr - advanced to end of data written
  *	buf_len - byte size remaining in buffer
- *	return 0 if no error, 1 if buffer too small
  * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
  * NOTE: the caller must insure that the buffer is sufficiently large to hold 
  *	 the data being written (space remaining at least BUF_SIZE)
  */
-int 
+void 
 pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
 {
 	char tmp_str[MAX_STR_PACK];
@@ -974,8 +970,6 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);
 	}
-
-	return 0;
 }
 
 
