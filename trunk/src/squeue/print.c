@@ -257,7 +257,7 @@ _print_job_user_name( job_info_t* job, int width, bool right )
 		return SLURM_SUCCESS;
 	}
 	user_info = getpwuid( (uid_t) job->user_id );
-	if ( user_info != NULL || user_info->pw_name[0] == '\0' )
+	if ( user_info != NULL && user_info->pw_name[0] != '\0' )
 		_print_str( user_info->pw_name, width, right, true );
 	else
 		_print_int( job->user_id, width, right, true );
