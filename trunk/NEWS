@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.3.2 (not yet tagged)
 ========================
+ -- Srun wakes immeditely upon resource allocation (via new RPC) 
+    rather than polling.
 
 * Changes in SLURM 0.3.1
 ========================

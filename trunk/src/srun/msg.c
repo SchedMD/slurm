@@ -770,18 +770,21 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 }
 
 /* Set up port to handle messages from slurmctld */
-extern void slurmctld_msg_init(void)
+extern slurm_fd slurmctld_msg_init(void)
 {
 	slurm_addr slurm_address;
 	char hostname[64];
 	uint16_t port;
-	
+
+	if (slurmctld_fd)	/* May set early for queued job allocation */
+		return slurmctld_fd;
+
+	if (opt.allocate && opt.noshell)
+		return -1;
+
 	slurmctld_fd = -1;
 	slurmctld_comm_addr.hostname = NULL;
 	slurmctld_comm_addr.port = 0;
-
-	if (opt.allocate && opt.noshell)
-		return;
 
 	if ((slurmctld_fd = slurm_init_msg_engine_port(0)) < 0)
 		fatal("slurm_init_msg_engine_port error %m");
@@ -798,6 +801,7 @@ extern void slurmctld_msg_init(void)
 			slurmctld_comm_addr.hostname, 
 			slurmctld_comm_addr.port);
 
+	return slurmctld_fd;
 }
 
 
