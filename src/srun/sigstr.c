@@ -38,7 +38,7 @@
  */
 #if defined (HAVE_DECL_STRSIGNAL) && !HAVE_DECL_STRSIGNAL
 #  ifndef strsignal
- extern const char *strsignal(int);
+ extern char *strsignal(int);
 #  endif
 #endif /* defined HAVE_DECL_STRSIGNAL && !HAVE_DECL_STRSIGNAL */
 

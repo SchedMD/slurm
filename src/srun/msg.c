@@ -358,7 +358,7 @@ _print_exit_status(hostlist_t hl, char *host, int status)
 	hostlist_ranged_string(hl, sizeof(buf), buf);
 
 	if (status == 0) {
-		verbose("%s: Done", buf);
+		verbose("%s: %s: Done", host, buf);
 		return;
 	}
 
