@@ -184,26 +184,39 @@ void get_command(void)
 				request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 				results = list_create(NULL);
 				
-				new_pa_request(request, geo, i, rotate, elongate, force_contig, torus);
-
-				if (!allocate_part(request, &results)){
-					printf("allocate failure for %d%d%d\n", 
-					       geo[0], geo[1], geo[2]);
-					list_destroy(results);
-				}
-				results_i = list_iterator_create(results);
-				
-				while ((current = list_next(results_i)) != NULL) {
-					x = current->coord[0]; 
-					y = current->coord[1]; 
-					z = current->coord[2]; 
-					smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
-					smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
+				if(!new_pa_request(request, geo, i, rotate, elongate, force_contig, torus)) {
+				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+					  smap_info_ptr->xcord,"Problems with request for %d%d%d", geo[0], geo[1], geo[2]);
+				smap_info_ptr->ycord++;
+				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+					  smap_info_ptr->xcord,"Either you put in something that doesn't work,");
+				smap_info_ptr->ycord++;
+				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+					  smap_info_ptr->xcord,"or we are unable to process your request.");
+					list_destroy(results);	
+				} else {
+					if (!allocate_part(request, results)){
+						mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+							  smap_info_ptr->xcord,"allocate failure for %d%d%d\n", 
+							  geo[0], geo[1], geo[2]);
+						smap_info_ptr->ycord++;
+						list_destroy(results);
+					} else {
+						results_i = list_iterator_create(results);
+						
+						while ((current = list_next(results_i)) != NULL) {
+							x = current->coord[0]; 
+							y = current->coord[1]; 
+							z = current->coord[2]; 
+							smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
+							smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
+						}
+						count++;
+					
+						delete_pa_request(request);
+						list_destroy(results);
 					}
-				count++;
-								
-				delete_pa_request(request);
-				//list_destroy(results);
+				}
 			}
 
 		} else if (!strncmp(com->str, "save", 4)) {

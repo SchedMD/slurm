@@ -27,25 +27,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include "partition_allocator.h"
-#include "graph_solver.h"
-
-#define EQUAL_ADDRESS(a,b) \
-_STMT_START {		\
-	(a) = (b);	\
-} _STMT_END
 
 int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {8,4,4};
 #define DEBUG_PA
+#define BEST_COUNT_INIT 10;
 
-/**
- * These lists hold the partition data and corresponding
- * configurations.  The structs that define the elements in the list
- * are in graph_solver.h
- * 
- * these lists hold the actual conf_results, while the lists in the
- * pa_node only hold shallow copies (addresses) to those elements.
- */
-List _conf_result_list[PA_SYSTEM_DIMENSIONS];
 bool _initialized = false;
 
 
@@ -55,6 +41,7 @@ pa_system_t * _pa_system_ptr;
 List _pa_system_list;
 List path;
 List best_path;
+int best_count;
 
 /** internal helper functions */
 /** */
@@ -62,71 +49,29 @@ void _new_pa_node(pa_node_t *pa_node, int coordinates[PA_SYSTEM_DIMENSIONS]);
 /** */
 void _print_pa_node();
 /** */
-void _delete_pa_node(pa_node_t* pa_node);
-/** */
-int _listfindf_pa_node(pa_node_t* A, pa_node_t* B);
-/** */
-bool _is_down_node(pa_node_t* pa_node);
-/* */
-void _create_pa_system(pa_system_t* pa_system, List conf_result_list[PA_SYSTEM_DIMENSIONS]);
-/* */
-void _print_pa_system(pa_system_t *pa_system);
+void _create_pa_system(pa_system_t* pa_system);
 /* */
 void _delete_pa_system(void* object);
 /* */
-void _copy_pa_system(pa_system_t *pa_system_target, pa_system_t* pa_system_source);
-/* */
 void _backup_pa_system();
-/** load the partition configuration from file */
-int _load_part_config(char* filename, List part_config_list);
-/* run the graph solver to get the conf_result(s) */
-int _get_part_config(int num_nodes, List port_config_list, List conf_result_list);
 /* find the first partition match in the system */
 int _check_for_options(pa_request_t* pa_request); 
-int _find_match(pa_request_t* pa_request, List* results);
-bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int const_dim, 
-			   int dimA, int dimB, List* results);
-/* check to see if the conf_result matches */
-/* bool _node_used(pa_node_t* pa_node, int geometry,  */
-/*  		    int conn_type, bool force_contig, */
-/* 		    dimension_t dim, int cur_node_id); */
-bool _node_used(pa_node_t* pa_node);
+int _find_match(pa_request_t* pa_request, List results);
+bool _node_used(pa_node_t* pa_node, int *geometry);
 /* */
-void _process_results(List results, pa_request_t* request);
-/* */
-void _process_result(pa_node_t* result, pa_request_t* request, List* result_indices);
-/* */
-void _get_result_indices(List results, pa_request_t* request, 
-			 List** result_indices);
-/* */
-void _delete_result_indices(List* result_indices);
-/** print out the result indices */
-void _print_result_indices(List* result_indices);
-/* */
-int _listfindf_int(int* A, int* B);
-/* */
-int _cmpf_int(int* A, int* B);
-/* returns true if node_id array is contiguous (e.g. [53241])*/
-bool _is_contiguous(int size, int* node_id);
-/* */
-static void _print_results(List results);
-/* */
-static void _insert_result(List results, pa_node_t* result);
-/** */
-int _parse_conf_result(char *in_line, List config_result_list);
-/** */
-int _tokenize_int(char* source, int size, char* delimiter, int* int_array);
-/** */
-int _tokenize_node_ids(char* source, int size, int* partition_sizes, 
-		       char *delimiter, char *separator, int** node_id);
-int _tokenize_port_conf_list(char* source, char* delimiter, 
-			     char* separator, List port_conf_list);
-int _tokenize_port_conf(char* source, char* delimiter,
-			List port_conf_list);
-/** */
 void _reset_pa_system();
 /** */
 void set_ptr(void* A, void* B);
+/* */
+int _create_config_even(pa_node_t ***grid);
+/* */
+void _switch_config(pa_node_t* source, pa_node_t* target, int dim, int port_src, int port_tar);
+/* */
+void _set_external_wires(int dim, int count, pa_node_t* source, pa_node_t* target_1, pa_node_t* target_2, pa_node_t* target_first, pa_node_t* target_second);
+/* */
+int _set_internal_wires(List *nodes, int size);
+/* */
+int _set_best_path();
 
 /** */
 void _new_pa_node(pa_node_t *pa_node, int coord[PA_SYSTEM_DIMENSIONS])
@@ -137,42 +82,14 @@ void _new_pa_node(pa_node_t *pa_node, int coord[PA_SYSTEM_DIMENSIONS])
 	// pa_node = (pa_node_t*) xmalloc(sizeof(pa_node_t));
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 		pa_node->coord[i] = coord[i];
-		pa_node->conf_result_list[i] = NULL;
 	}
-}
-
-/** destroy the shallow copies of the list, and then the pa_node */
-void _delete_pa_node(pa_node_t* pa_node)
-{
-	int i;
-	if (!pa_node || !pa_node->conf_result_list){
-		return;
-	}
-
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		if (pa_node->conf_result_list[i]){
-			list_destroy(pa_node->conf_result_list[i]);
-			pa_node->conf_result_list[i] = NULL;	
-		}
-	}
-
-}
-
-/** return true if the node is a "down" node*/
-bool _is_down_node(pa_node_t* pa_node)
-{
-	if (!pa_node || pa_node->conf_result_list == NULL){
-		return true;
-	}
-	return false;
 }
 
 /** */
 void _print_pa_node(pa_node_t* pa_node)
 {
 	int i;
-	conf_result_t* conf_result;
-	ListIterator itr;
+
 	if (pa_node == NULL){
 		printf("_print_pa_node Error, pa_node is NULL\n");
 		return;
@@ -184,20 +101,12 @@ void _print_pa_node(pa_node_t* pa_node)
 	}
 	printf("\n");
 	printf("        used:\t%d\n", pa_node->used);
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		printf("   conf list:\t%s\n", convert_dim(i));
-		itr = list_iterator_create(pa_node->conf_result_list[i]);
-		while((conf_result = (conf_result_t*) list_next(itr))){
-			print_conf_result(conf_result);
-		}
-		list_iterator_destroy(itr);
-	}
 }
 
 /** */
-void _create_pa_system(pa_system_t* target_pa_system, List source_list[PA_SYSTEM_DIMENSIONS])
+void _create_pa_system(pa_system_t* target_pa_system)
 {
-	int i, x, y, z;
+	int x, y, z;
 	
 	target_pa_system->grid = (pa_node_t***) xmalloc(sizeof(pa_node_t**) * DIM_SIZE[X]);
 	for (x=0; x<DIM_SIZE[X]; x++) {
@@ -208,25 +117,6 @@ void _create_pa_system(pa_system_t* target_pa_system, List source_list[PA_SYSTEM
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				int coord[PA_SYSTEM_DIMENSIONS] = {x,y,z};
 				_new_pa_node(&target_pa_system->grid[x][y][z], coord);
-
-				for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-					list_copy(source_list[i], &target_pa_system->grid[x][y][z].conf_result_list[i]);
-				}
-			}
-		}
-	}
-}
-
-/** */
-void _print_pa_system(pa_system_t *pa_system)
-{
-	int x=0,y=0,z=0;
-	printf("pa_system: %d%d%d\n", DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
-	for (x=0; x<DIM_SIZE[X]; x++){
-		for (y=0; y<DIM_SIZE[Y]; y++){
-			for (z=0; z<DIM_SIZE[Z]; z++){
-				printf(" pa_node %d%d%d 0x%p: \n", x, y, z,&pa_system->grid[x][y][z]);
-				_print_pa_node(&pa_system->grid[x][y][z]);
 			}
 		}
 	}
@@ -251,32 +141,6 @@ void _delete_pa_system(void* object)
 	xfree(pa_system);
 }
 
-/* */
-void _copy_pa_system(pa_system_t* target_pa_system, pa_system_t *source_pa_system)
-{
-	int i, x, y, z;
-	
-	target_pa_system = xmalloc(sizeof(pa_system_t));
-
-	target_pa_system->grid = (pa_node_t***) xmalloc(sizeof(pa_node_t**) * DIM_SIZE[X]);
-	for (x=0; x<DIM_SIZE[X]; x++) {
-		target_pa_system->grid[x] = (pa_node_t**) xmalloc(sizeof(pa_node_t*) * DIM_SIZE[Y]);
-		for (y=0; y<DIM_SIZE[Y]; y++) {
-			target_pa_system->grid[x][y] = (pa_node_t*) xmalloc(sizeof(pa_node_t) * DIM_SIZE[Z]);
-			
-			for (z=0; z<DIM_SIZE[Z]; z++){
-				int coord[PA_SYSTEM_DIMENSIONS] = {x,y,z};
-				_new_pa_node(&target_pa_system->grid[x][y][z], coord);
-
-       				for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-					if (source_pa_system->grid[x][y][z].conf_result_list[i] != NULL)
-						list_copy(source_pa_system->grid[x][y][z].conf_result_list[i], &target_pa_system->grid[x][y][z].conf_result_list[i]);
-				}
-			}
-		}
-	}
-}
-
 void set_ptr(void* A, void* B)
 {
 	A = B;
@@ -284,232 +148,10 @@ void set_ptr(void* A, void* B)
 
 void _backup_pa_system()
 {
-	pa_system_t* new_system;
-	_copy_pa_system(new_system, _pa_system_ptr);
+	pa_system_t* new_system = (pa_system_t *) xmalloc(sizeof(pa_system_t));
+	_create_pa_system(new_system);
 	list_push(_pa_system_list, &_pa_system_ptr);
 	set_ptr(_pa_system_ptr, new_system);
-}
-
-/** load the partition configuration from file */
-int _load_part_config(char* filename, List config_result_list)
-{
-
-	FILE *conf_file;	/* pointer to input data file */
-	int line_num;		/* line number in input file */
-	char in_line[BUFSIZE];	/* input line */
-	int i, j, error_code;
-
-#ifdef DEBUG_PA
-	printf("loading partition configuration from %s\n", filename);
-#endif
-
-	/* initialization */
-	conf_file = fopen(filename, "r");
-	if (conf_file == NULL)
-		fatal("_load_part_config error opening file %s, %m",
-		      filename);
-
-	/* process the data file */
-	line_num = 0;
-	while (fgets(in_line, BUFSIZE, conf_file) != NULL) {
-		line_num++;
-		if (strlen(in_line) >= (BUFSIZE - 1)) {
-			error("_load_part_configig line %d, of input file %s "
-			      "too long", line_num, filename);
-			fclose(conf_file);
-			return E2BIG;
-			break;
-		}
-
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
-		/* escape sequence "\#" translated to "#" */
-		for (i = 0; i < BUFSIZE; i++) {
-			if (in_line[i] == (char) NULL)
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < BUFSIZE; j++) {
-					in_line[j - 1] = in_line[j];
-				}
-				continue;
-			}
-			in_line[i] = (char) NULL;
-			break;
-		}
-		
-		/* parse what is left, non-comments */
-		/* partition configuration parameters */
-		error_code = _parse_conf_result(in_line, config_result_list);
-		
-		/* report any leftover strings on input line */
-		report_leftover(in_line, line_num);
-	}
-	fclose(conf_file);
-	
-	return error_code;
-}
-
-/*
- * _parse_conf_result - parse the partition configuration result,
- * build table and set values
- * IN/OUT in_line - line from the configuration file
- * 
- * RET 0 if no error, error code otherwise
- */
-int _parse_conf_result(char *in_line, List config_result_list)
-{
-	int error_code = SLURM_SUCCESS;
-	conf_result_t *conf_result;
-	conf_data_t *conf_data;
-
-	/* stuff used for tokenizing */
-	char *delimiter=",", *separator="/";
-
-	/* elements of the file */
-	int num_partitions;
-	char *part_sizes = NULL, *part_types = NULL, *node_ids = NULL, *port_confs = NULL;
-
-	error_code = slurm_parser(in_line,
-				  "NumPartitions=", 'd', &num_partitions,
-				  "PartitionSizes=", 's', &part_sizes,
-				  "PartitionTypes=", 's', &part_types,
-				  "NodeIDs=", 's', &node_ids,
-				  "PortConfig=", 's', &port_confs,
-				  "END");
-
-	if (error_code || num_partitions<1 || !part_sizes || !part_types ||
-	    !node_ids || !port_confs){
-		error_code = SLURM_ERROR;
-		goto cleanup;
-	}
-
-	new_conf_data(&conf_data, num_partitions);
-	
-	_tokenize_int(part_sizes, num_partitions,
-		      delimiter, conf_data->partition_sizes);
-	_tokenize_int(part_types, num_partitions,
-		      delimiter, (int*) conf_data->partition_type);
-	_tokenize_node_ids(node_ids, num_partitions, conf_data->partition_sizes,
-			   delimiter, separator, conf_data->node_id);
-
-	new_conf_result(&conf_result, conf_data);
-
-	_tokenize_port_conf_list(port_confs, delimiter, separator,
-				 conf_result->port_conf_list);
-
-	list_push(config_result_list, conf_result);
-
-  cleanup:
-	xfree(part_sizes);
-	xfree(part_types);
-	xfree(node_ids);
-	xfree(port_confs);
-	return error_code;
-}
-
-/* */
-int _tokenize_int(char* source, int size, char* delimiter, int* int_array)
-{
-	char *stuff, *cpy, *next_ptr;
-	int i;
-
-	cpy = source;
-	stuff = strtok_r(cpy, delimiter, &next_ptr);
-	for (i = 0; i<size; i++){
-		int_array[i] = atoi(stuff);
-		cpy = next_ptr;
-		stuff = strtok_r(cpy, delimiter, &next_ptr);
-	}
-	return SLURM_SUCCESS;
-}
-
-/* */
-int _tokenize_node_ids(char* source, int size, int* partition_sizes, 
-		       char *delimiter, char *separator, int** node_id)
-{
-	char *stuff, *cpy, *next_ptr;
-	int i;
-
-	cpy = source;
-	stuff = strtok_r(cpy, delimiter, &next_ptr);
-	for (i = 0; i<size; i++){
-		// int_array[i] = stuff;
-		node_id[i] = (int*) xmalloc(sizeof(int)*partition_sizes[i]);
-		if (_tokenize_int(stuff, partition_sizes[i], separator, node_id[i])){
-			return SLURM_ERROR;
-		}
-		cpy = next_ptr;
-		stuff = strtok_r(cpy, delimiter, &next_ptr);
-	}
-	return SLURM_SUCCESS;
-}
-
-int _tokenize_port_conf_list(char* source, char* delimiter, 
-			     char* separator, List port_conf_list)
-{
-	char *stuff, *cpy, *next_ptr;
-
-	cpy = source;
-	while((stuff = strtok_r(cpy, delimiter, &next_ptr))){
-		_tokenize_port_conf(stuff, separator, port_conf_list);
-
-		// int_array[i] = atoi(stuff);
-		cpy = next_ptr;
-		// stuff = strtok_r(cpy, delimiter, &next_ptr);
-	}
-
-	return SLURM_SUCCESS;
-}
-
-int _tokenize_port_conf(char* source, char* delimiter,
-			List port_conf_list)
-{
-	char *stuff, *cpy, *next_ptr;
-	int i;
-	int plus_ports[PA_SYSTEM_DIMENSIONS];
-	int minus_ports[PA_SYSTEM_DIMENSIONS];
-	port_conf_t* port_conf;
-	
-	cpy = source;
-	stuff = strtok_r(cpy, delimiter, &next_ptr);
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		plus_ports[i] = stuff[i]-'0';
-	}
-
-	cpy = next_ptr;
-	stuff = strtok_r(cpy, delimiter, &next_ptr);
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		minus_ports[i] = stuff[i]-'0';
-	}
-	new_port_conf(&port_conf, plus_ports, minus_ports);
-	list_append(port_conf_list, port_conf);
-	return SLURM_SUCCESS;
-}
-
-/** 
- * get the partition configuration for the given port configuration
- */
-int _get_part_config(int num_nodes, List switch_config_list, List config_result_list)
-{
-	int rc = 1;
-	if (gs_init(switch_config_list, num_nodes)){
-		printf("error initializing system\n");
-		goto cleanup;
-	}
-	/* first we find the partition configurations for the separate
-	 * dimensions
-	 */
-	/* if (find_all_tori(config_result_list)){ */
-/* 		printf("error finding all tori\n"); */
-/* 		goto cleanup; */
-/* 	} */
-	rc = 0;
-
- cleanup:
-	//gs_fini();
-	return rc;
 }
 
 int _check_for_options(pa_request_t* pa_request) 
@@ -547,7 +189,7 @@ int _check_for_options(pa_request_t* pa_request)
 /** 
  * greedy algorithm for finding first match
  */
-int _find_match(pa_request_t* pa_request, List* results)
+int _find_match(pa_request_t* pa_request, List results)
 {
 	int x=0, y=0, z=0;
 	int *geometry = pa_request->geometry;
@@ -562,18 +204,18 @@ start_again:
 		for (y=0; y<geometry[Y]; y++) {			
 			for (x=0; x<geometry[X]; x++) {
 				pa_node = &_pa_system_ptr->grid[find_x][find_y][find_z];
-				if (!_node_used(pa_node)) {
-					//	cont_x++;			
+				if (!_node_used(pa_node,geometry)) {
 					
 					//printf("Yeap, I found one at %d%d%d\n", find_x, find_y, find_z);
-					_insert_result(*results, pa_node);
+					//_insert_result(results, pa_node);
+					list_append(results, pa_node);
 					find_x++;
 					found_one=1;
 				} else {
 					//printf("hey I am used! %d%d%d\n", find_x, find_y, find_z);
 					if(found_one) {
-						list_destroy(*results);
-						*results = list_create(NULL);
+						list_destroy(results);
+						results = list_create(NULL);
 						found_one=0;
 					}
 					if((DIM_SIZE[X]-find_x-1)>=geometry[X]) {
@@ -659,7 +301,7 @@ start_again:
 		/** THIS IS where we might should call the graph
 		 * solver to see if the allocation can be wired,
 		 * before returning a definitive TRUE */
-		_set_internal_wires(results, pa_request->size);
+		_set_internal_wires(&results, pa_request->size);
 	} else {
 		printf("couldn't find it 2\n");
 		return 0;
@@ -667,423 +309,32 @@ start_again:
 	return 1;
 }
 
-/**
- * auxilliary recursive call.
- * 
- * 
- */
-bool _find_first_match_aux(pa_request_t* pa_request, 
-			   int dim2check, int var_dim,
-			   int dimA, int dimB, List* results)
-{
-	int i=0;
-	int found_count[PA_SYSTEM_DIMENSIONS] = {0,0,0};
-	bool match_found, request_filled = false;
-	int* geometry = pa_request->geometry;
-	int a, b, c;
-
-	/** we want to go up the Y dim, but checking for correct X size*/
-	for (i=0; i<DIM_SIZE[var_dim]; i++){
-
-		pa_node_t* pa_node;
-		if (var_dim == X){
-			printf("_find_first_match_aux: aaah, this should never happen\n");
-			return false;
-			
-		} else if (var_dim == Y){
-			a = dimA;
-			b = i;
-			c = dimB;
-		} else {
-			a = dimA;
-			b = dimB;
-			c = i;
-		}
-
-		// printf("_find_first_match_aux pa_node %d%d%d(%s) dim2check %s\n",
-		// pa_node->coord[X], pa_node->coord[Y], pa_node->coord[Z], 
-		// convert_dim(var_dim), convert_dim(dim2check));
-		pa_node = &_pa_system_ptr->grid[a][b][c];
-		if (found_count[dim2check] != geometry[dim2check]){
-			match_found = _node_used(pa_node);
-			if (!match_found){
-				bool remaining_OK;
-				if (dim2check == X){
-					/* index "i" should be the y dir here */
-					remaining_OK = _find_first_match_aux(pa_request, Y, Z, dimA, i, results);
-				} else {
-					remaining_OK = true;
-				}
-
-				if (remaining_OK){
-					/* insert the pa_node_t* into the List of results */
-					_insert_result(*results, pa_node);
-
-#ifdef DEBUG_PA
-					//					printf("_find_first_match_aux: found match for %s = %d%d%d\n",
-					// convert_dim(dim2check), pa_node->coord[0], pa_node->coord[1], pa_node->coord[2]); 
-#endif
-					
-					// found_count[dim2check]++;
-					found_count[var_dim]++;
-#ifdef DEBUG_PA
-					if (var_dim == Z && match_found){
-						printf("var_dim %d dim2check %d\n", var_dim, dim2check);
-						printf("match found for Z\n");
-						printf("found_count %d\n", found_count[var_dim]);
-					}
-					printf("dim %d <found %d geometry %d>\n", var_dim, found_count[var_dim], geometry[var_dim]);
-#endif
-					if (found_count[var_dim] == geometry[var_dim]){
-					// if (found_count[dim2check] == geometry[dim2check]){
-#ifdef DEBUG_PA
-						; // printf("_find_first_match_aux: found full match for %s dimension\n", convert_dim(dim2check));
-#endif
-						request_filled = true;
-						goto done;
-					}
-				} else {
-					goto done;
-				}
-			} 
-		}
-	}
-
- done:
-	/* if the request is filled, we then return our result to the
-	 * previous caller */
-
-	return request_filled;
-}
 
 /* bool _node_used(pa_node_t* pa_node, int geometry,  */
 /*  		    int conn_type, bool force_contig, */
 /* 		    dimension_t dim, int cur_node_id) */
-bool _node_used(pa_node_t* pa_node)
+bool _node_used(pa_node_t* pa_node, int *geometry)
 {
-/* 	ListIterator itr; */
-/* 	conf_result_t* conf_result; */
-/* 	int i=0, j = 0; */
+	int i=0;
+	pa_switch_t* pa_switch;
+	
 
 	/* printf("_node_used: node to check against %s %d\n", convert_dim(dim), cur_node_id); */
 	/* if we've used this node in another partition already */
-	if (_is_down_node(pa_node) || pa_node->used)
+	if (!pa_node || pa_node->used)
 		return true;
-	else
-		return false;
-
-}
-
-/**
- * process the results respective of the original request 
- */
-void _process_results(List results, pa_request_t* request)
-{
-	ListIterator itr;
-	pa_node_t* result;
-	List* result_indices;
-
-#ifdef DEBUG_PA
-	printf("*****************************\n");
-	printf("****  processing results ****\n");
-	printf("*****************************\n");
-#endif
-
-	/* create a list of REFERENCEs to the indices of the results */
-	_get_result_indices(results, request, &result_indices);
-#ifdef DEBUG_PA
-	_print_result_indices(result_indices);
-#endif
 	
-	itr = list_iterator_create(results);
-	while((result = (pa_node_t*) list_next(itr))){
-		_process_result(result, request, result_indices);
-	}	
-	list_iterator_destroy(itr);
-	_delete_result_indices(result_indices);
-}
-
-/**
- * process the result respective of the original request 
- * 
- * all cur_dim nodes for x = 0, z = 1 must have a request[cur_dim]
- * part for the partition where the node num = coord[cur_dim] in the
- * cur_dim config list.
- */
-void _process_result(pa_node_t* result, pa_request_t* pa_request, List* result_indices)
-{
-	ListIterator itr;
-	int cur_dim, cur_size;
-	int i=0,j=0,k=0, x=0,y=0,z=0;
-	int num_part;
-	conf_result_t* conf_result;
-	bool conf_match;
-	result->used = true;
-	pa_node_t* pa_node;
-	
-
-#ifdef DEBUG_PA
-	printf("processing result for %d%d%d\n", 
-	       result->coord[X], result->coord[Y], result->coord[Z]);
-#endif
-	int a, b, c;
-	for (cur_dim=0; cur_dim<PA_SYSTEM_DIMENSIONS; cur_dim++){
-		for(i=0; i<DIM_SIZE[cur_dim]; i++){
-			if (cur_dim == X){
-				a = i;
-				b = y;
-				c = z;
-			} else if (cur_dim == Y) {
-				a = x;
-				b = i;
-				c = z;
-			} else {
-				a = x;
-				b = y;
-				c = i;
-			}
-				
-			pa_node = &_pa_system_ptr->grid[a][b][c];
-			// printf("touching Z %d%d%d\n", x, y, i);
-			if (_is_down_node(pa_node)){
-				// printf("down node X %d%d%d\n", x, y, i);
-				continue;
-			}
-			/* if the node only has one remaining configuration left, then
-			 * that's the configuration it's going to have, so we don't
-			 * need to narrow it down any more */
-			if (list_count(pa_node->conf_result_list[cur_dim]) == 1){
-				continue;
-			}
-			itr = list_iterator_create(pa_node->conf_result_list[cur_dim]);
-			while((conf_result = (conf_result_t*) list_next(itr))){
-				/*
-				printf("node %d%d%d list_count %d for %s\n", 
-				       *a,*b,*c,
-				       list_count(pa_node->conf_result_list[cur_dim]),
-				       convert_dim(cur_dim));
-				*/
-				/* all config list entries
-				 * must have these matching
-				 * data
-				 * - request[cur_dim];
-				 * - coord[cur_dim];
-				 */
-				num_part = conf_result->conf_data->num_partitions;
-				/* we have to check each of the partions for the correct
-				 * node_id that has the correct size, conn_type, etc. */
-				conf_match = false;
-				/* check all the partitions */
-				for(j=0; j<num_part; j++){
-					cur_size = conf_result->conf_data->partition_sizes[j];
-					/* check geometry of the partition */
-					if (cur_size == pa_request->geometry[cur_dim]){
-						/* now we check to see if the node_id's match. 
-						 */
-						for (k=0; k<conf_result->conf_data->partition_sizes[j]; k++){
-							if (!list_find_first(result_indices[cur_dim],
-									     (ListFindF) _listfindf_int,
-									     &(conf_result->conf_data->node_id[j][k]))){
-								goto next_partition;
-							}
-						}
-						if (conf_result->conf_data->partition_type[j] != pa_request->conn_type){
-							goto next_partition;							
-						}
-						if (pa_request->force_contig){
-							if (_is_contiguous(cur_size,
-									   conf_result->conf_data->node_id[j]))
-								conf_match = true;
-						} else {
-							conf_match = true;
-							/* break back out to the next conf_list */
-							break;
-						}
-					}
-				next_partition:
-					; // noop target to jump to next partition
-				}
-				/* if it doesn't match, remove it */
-				if (conf_match == false){
-					list_remove(itr);
-				}
-			}
-			list_iterator_destroy(itr);
+	/* if we've used this nodes switches completely in another partition already */
+	for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) {
+		if(geometry[i]>1) {
+			pa_switch = &pa_node->axis_switch[i];
+			if(pa_switch->int_wire[3].used && pa_switch->int_wire[5].used)
+				return true;
 		}
 	}
-}
+		
+	return false;
 
-/** 
- * get the indices of the results in a sorted int** array 
- * 
- * returned stucture must be freed with _delete_result_indices
- */
-// int _get_result_indices(List pa_node_list, pa_request_t* request, 
-// 			int*** result_indices)
-void _get_result_indices(List pa_node_list, pa_request_t* request, 
-			List** result_indices)
-{
-	int i;
-	ListIterator itr;
-	pa_node_t* pa_node;
-
-	*result_indices = (List*) xmalloc(sizeof(List)*PA_SYSTEM_DIMENSIONS);
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		(*result_indices)[i] = list_create(NULL);
-	}
-
-	itr = list_iterator_create(pa_node_list);
-	/* go through one time and get the minimums of each */
-	while((pa_node = (pa_node_t*) list_next(itr))){
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-			if (!list_find_first((*result_indices)[i], 
-					     (ListFindF) _listfindf_int, 
-					     &(pa_node->coord[i])))
-				list_append((*result_indices)[i], &(pa_node->coord[i]));
-		}
-	}	
-
-	list_iterator_destroy(itr);
-
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		list_sort((*result_indices)[i], (ListCmpF) _cmpf_int);
-	}
-}
-
-/* */
-void _delete_result_indices(List* result_indices)
-{
-	int i;
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		list_destroy(result_indices[i]);
-	}
-	xfree(result_indices);
-}
-
-/** print out the result indices */
-void _print_result_indices(List* result_indices)
-{
-	int i, *int_ptr;
-	ListIterator itr;
-	printf("result indices: \n");
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		printf(" (%s)", convert_dim(i));
-		itr = list_iterator_create(result_indices[i]);
-		while((int_ptr = (int*) list_next(itr))){
-			printf("%d", *int_ptr);
-		}		
-	}
-	printf("\n");
-}
-
-/** 
- * detect whether the node_id's are continguous, despite their being 
- * sorted or not.
- *
- * imagine we had 53142, we first find the lowest (eg. 1), 
- * then start filling up the bool array: 
- * 5: [00001]
- * 3: [00101]
- * 1: [10101]
- * 4: [10111]
- * 2: [11111]
- * 
- * then we'll know that the set of nodes is contiguous. 
- * 
- * returns true if node_ids are contiguous
- */
-bool _is_contiguous(int size, int* node_id)
-{
-	int i;
-	bool* cont;
-	int node_min = BIG_MAX;
-	bool result = true;
-	
-	if (size < 1){
-		return false;
-	}
-
-	if (size == 1){
-		return true;
-	}
-
-	cont = (bool*) xmalloc(sizeof(bool)*size);
-	/* first we need to find the diff index between the node_id and
-	 * the bool* cont array */
-	for (i=0; i<size; i++){
-		if (node_id[i] < node_min){
-			node_min = node_id[i];
-		}
-	}
-
-	for (i=0; i<size; i++){
-		int index = node_id[i] - node_min;
-		if (index < 0 || index >= size){
-			result = false;
-			goto done;
-		} else {
-			cont[index] = true;
-		}
-	}
-
-	for (i=0; i<size; i++){
-		if (cont[i] == false){
-			result = false;
-			goto done;
-		}
-	}
-
- done: 
-	xfree(cont);
-	return result;
-}
-
-/* print out the list of results */
-static void _print_results(List results)
-{
-	ListIterator itr = list_iterator_create(results);
-	pa_node_t* result;
-	printf("Results: \n");
-	while((result = (pa_node_t*) list_next(itr))){
-		_print_pa_node(result);
-	}
-}
-
-/* */
-static void _insert_result(List results, pa_node_t* result)
-{
-	if (!list_find_first(results, (ListFindF) _listfindf_pa_node, result))
-		list_append(results, result);
-}
-
-/* */
-int _listfindf_pa_node(pa_node_t* A, pa_node_t* B)
-{
-	int i;
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		if (A->coord[i] != B->coord[i]){
-			return false;
-		}
-	}
-
-	return true;
-}
-
-/* */
-int _listfindf_int(int* A, int* B)
-{
-	return (*A == *B);
-}
-
-/*  */
-int _cmpf_int(int* A, int* B)
-{
-	if (*A == *B)
-		return 0;
-	else if (*A < *B)
-		return -1;
-	else 
-		return 1;
 }
 
 /** */
@@ -1091,22 +342,13 @@ void _reset_pa_system()
 {
 	pa_system_t* pa_system = NULL;
 	while((pa_system = (pa_system_t*) list_pop(_pa_system_list))){
-		;
+		
 	}
 	
 	/* after that's done, we should be left with the top
 	 * of the stack which was the original pa_system */
 	// _pa_system = *pa_system;
 	set_ptr(_pa_system_ptr, pa_system);
-}
-
-int _find_smallest_dim(int size, int dim) 
-{
-	int smaller=0;
-	if(size%2) {
-		
-	}
-	return smaller;
 }
 
 /**
@@ -1235,7 +477,7 @@ int new_pa_request(pa_request_t* pa_request,
 endit:
 	pa_request->size = sz;
 	
-	printf("geometry: %d %d %d size = %d\n", pa_request->geometry[0],pa_request->geometry[1],pa_request->geometry[2], pa_request->size);
+	//printf("geometry: %d %d %d size = %d\n", pa_request->geometry[0],pa_request->geometry[1],pa_request->geometry[2], pa_request->size);
 		
 	pa_request->conn_type = conn_type;
 	pa_request->rotate_count= 0;
@@ -1273,7 +515,7 @@ void print_pa_request(pa_request_t* pa_request)
 	}
 	printf("\n");
 	printf("      size:\t%d\n", pa_request->size);
-	printf(" conn_type:\t%s\n", convert_conn_type(pa_request->conn_type));
+	printf(" conn_type:\t%d\n", pa_request->conn_type);
 	printf("    rotate:\t%d\n", pa_request->rotate);
 	printf("  elongate:\t%d\n", pa_request->elongate);
 	printf("force contig:\t%d\n", pa_request->force_contig);
@@ -1289,11 +531,7 @@ void print_pa_request(pa_request_t* pa_request)
  */
 void pa_init()
 {
-	int i;
-//	List switch_config_list;
-#ifdef DEBUG_PA
-	printf("pa_init()\n");
-#endif
+
 	/* if we've initialized, just pop off all the old crusty
 	 * pa_systems */
 	if (_initialized){
@@ -1301,76 +539,16 @@ void pa_init()
 		return;
 	}
 	
-//	char* filenames[3];
-	
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		_conf_result_list[i] = list_create(delete_conf_result);
-	}
-
-	/* see if we can load in the filenames from the env */
-
-/* 	filenames[X] = "X_alt_dim_torus.conf"; */
-/* 	filenames[Y] = "Y_dim_torus.conf"; */
-/* 	filenames[Z] = "Z_dim_torus.conf"; */
-
-	// filenames[X] = getenv("X_DIM_CONF");
-	// filenames[Y] = getenv("Y_DIM_CONF");
-	// filenames[Z] = getenv("Z_DIM_CONF");
-
-	/* create the X configuration (8 nodes) */
-/* 	if (filenames[X]){ */
-/* 		time_t start, end; */
-/* 		time(&start); */
-/* 		_load_part_config(filenames[X], _conf_result_list[X]); */
-/* 		time(&end); */
-/* 		printf("loading file time: %ld\n", (end-start)); */
-/* 	} else { */
-	
-/* 		switch_config_list = list_create(delete_gen); */
-/* 		create_config_8_1d(switch_config_list); */
-/* 		if (_get_part_config(8, switch_config_list, _conf_result_list[X])){ */
-/* 			printf("Error getting configuration\n"); */
-/* 			exit(0); */
-/* 		} */
-/* 		list_destroy(switch_config_list); */
-/* 	} */
-
-/* 	/\* create the Y configuration (4 nodes) *\/ */
-/* 	if (filenames[Y]){ */
-/* 		_load_part_config(filenames[Y], _conf_result_list[Y]); */
-/* 	} else { */
-/* 		switch_config_list = list_create(delete_gen); */
-/* 		create_config_4_1d(switch_config_list); */
-/* 		if (_get_part_config(4, switch_config_list, _conf_result_list[Y])){ */
-/* 			printf("Error getting configuration\n"); */
-/* 			exit(0); */
-/* 		} */
-/* 		list_destroy(switch_config_list); */
-/* 	} */
-
-/* 	/\* create the Z configuration (4 nodes) *\/ */
-/* 	if (filenames[Z]){ */
-/* 		_load_part_config(filenames[Z], _conf_result_list[Z]); */
-/* 	} else { */
-/* 		switch_config_list = list_create(delete_gen); */
-/* 		create_config_4_1d(switch_config_list); */
-/* 		if (_get_part_config(4, switch_config_list, _conf_result_list[Z])){ */
-/* 			printf("Error getting configuration\n"); */
-/* 			exit(0); */
-/* 		} */
-/* 		list_destroy(switch_config_list); */
-/* 	} */
-
-	_pa_system_ptr = xmalloc(sizeof(pa_system_t));
+	best_count=BEST_COUNT_INIT;
+					
+	_pa_system_ptr = (pa_system_t *) xmalloc(sizeof(pa_system_t));
 		
-	_create_pa_system(_pa_system_ptr, _conf_result_list);
+	_create_pa_system(_pa_system_ptr);
 	_create_config_even(_pa_system_ptr->grid);
 	path = list_create(NULL);
 	best_path = list_create(NULL);
 	_pa_system_list = list_create(_delete_pa_system);
 	_initialized = true;
-	
-	// whenever we make a change, we do this: 
 }
 
 /** 
@@ -1378,18 +556,8 @@ void pa_init()
  */
 void pa_fini()
 {
-	int i;
-
-#ifdef DEBUG_PA
-	printf("pa_fini()\n");
-#endif
-
 	if (!_initialized){
 		return;
-	}
-
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) {
-		list_destroy(_conf_result_list[i]);
 	}
 
 	list_destroy(path);
@@ -1397,7 +565,7 @@ void pa_fini()
 	list_destroy(_pa_system_list);
 	_delete_pa_system(_pa_system_ptr);
 
-	printf("pa system destroyed\n");
+//	printf("pa system destroyed\n");
 }
 
 
@@ -1422,7 +590,6 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 
 	/* basically set the node as NULL */
 	_pa_system_ptr->grid[c[0]][c[1]][c[2]].used = true;
-	// _delete_pa_node(&_pa_system_ptr->grid[c[0]][c[1]][c[2]]);
 }
 
 /** 
@@ -1435,7 +602,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request, List *results)
+int allocate_part(pa_request_t* pa_request, List results)
 {
 
 	if (!_initialized){
@@ -1448,10 +615,6 @@ int allocate_part(pa_request_t* pa_request, List *results)
 		return 0;
 	}
 	
-#ifdef DEBUG_PA
-	print_pa_request(pa_request);
-#endif
-
 	// _backup_pa_system();
 	if (_find_match(pa_request, results)){
 		//printf("hey I am returning 1\n");
@@ -1480,75 +643,6 @@ int undo_last_allocatation()
 		set_ptr(_pa_system_ptr, pa_system);
 	}
 	return SLURM_SUCCESS;
-}
-
-/** 
- * get the port configuration for the nodes in the partition
- * allocation result
- *
- *
- * IN: pa_node list from result of allocate_part
- * OUT/return: char* to be appended to output of each partition in the
- * bluegene.conf file
- * 
- * NOTE, memory for returned string must be xfree'd by caller
- */
-char* get_conf_result_str(List pa_node_list)
-{
-	char* result_str;
-	ListIterator pan_itr, cf_itr, pc_itr;
-	pa_node_t* pa_node;
-	conf_result_t* conf_result;
-	port_conf_t* port_conf;
-	result_str = xstrdup("NodeIDs=");
-
-	pan_itr = list_iterator_create(pa_node_list);
-	pa_node = (pa_node_t*) list_next(pan_itr);
-	while(pa_node != NULL){
-		_xstrfmtcat(&result_str, "%d%d%d",
-			    pa_node->coord[0], 
-			    pa_node->coord[1], 
-			    pa_node->coord[2]);
-
-		pa_node = (pa_node_t*) list_next(pan_itr);
-		if(pa_node != NULL){
-			_xstrcat(&result_str, ",");			
-		}
-	}
-
-	
-	_xstrcat(&result_str, " PortConfigs=");
-	list_iterator_reset(pan_itr);
-	while((pa_node = (pa_node_t*) list_next(pan_itr))){
-		int i;
-		
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-			cf_itr = list_iterator_create(pa_node->conf_result_list[i]);
-			// while((conf_result = (conf_result_t*) list_next(cf_itr))){
-			conf_result = (conf_result_t*) list_next(cf_itr);
-			pc_itr = list_iterator_create(conf_result->port_conf_list);
-			port_conf = (port_conf_t*) list_next(pc_itr);
-			while(port_conf != NULL){
-				
-				_xstrfmtcat(&result_str, "%d%d%d/%d%d%d",
-					    port_conf->plus_ports[0],
-					    port_conf->plus_ports[1],
-					    port_conf->plus_ports[2],
-					    port_conf->minus_ports[0],
-					    port_conf->minus_ports[1],
-					    port_conf->minus_ports[2]);
-				
-				port_conf = (port_conf_t*) list_next(pc_itr);
-				if(port_conf != NULL){
-						_xstrcat(&result_str, ",");
-				}
-			}
-			list_iterator_destroy(cf_itr);
-		}
-	}
-	list_iterator_destroy(pan_itr);
-	printf("Str result = %s",result_str);
-	return result_str;
 }
 
 /** */
@@ -1618,6 +712,8 @@ void _switch_config(pa_node_t* source, pa_node_t* target, int dim, int port_src,
 
 	/* Set the port of the source target node on the internal to itself, */
 	/* and the extrenal to the target */
+	config->int_wire[port_src].used = 0;
+	config_tar->int_wire[port_tar].used = 0;
 	config->int_wire[port_src].port_tar = port_src;
 	config->ext_wire[port_src].port_tar = port_tar;
 	
@@ -1701,8 +797,9 @@ int _set_internal_port(pa_switch_t *curr_switch, int check_port, int *coord, int
 int _find_best_path(pa_switch_t *start, int source_port, int *target, int dim, int count) 
 {
 	pa_switch_t *next_switch; 
-	pa_path_switch_t *path_add = (pa_path_switch_t *)xmalloc(sizeof(pa_path_switch_t));
+	pa_path_switch_t *path_add = (pa_path_switch_t *) xmalloc(sizeof(pa_path_switch_t));
 	pa_path_switch_t *path_switch;
+	pa_path_switch_t *temp_switch;
 	int port_tar;
 	int target_port=0;
 	int ports_to_try[2] = {3,5};
@@ -1711,6 +808,7 @@ int _find_best_path(pa_switch_t *start, int source_port, int *target, int dim, i
 	int i;
 	int used=0;
 	static bool found = false;
+
 	ListIterator itr;
 
 	path_add->geometry[X] = node_src[X];
@@ -1718,17 +816,36 @@ int _find_best_path(pa_switch_t *start, int source_port, int *target, int dim, i
 	path_add->geometry[Z] = node_src[Z];
 	path_add->dim = dim;
 	path_add->in = source_port;
-	
+
+	if(count>=best_count)
+		return 0;
+
 	if((node_tar[X]==target[X] && node_tar[Y]==target[Y] && node_tar[Z]==target[Z])) {
+		list_destroy(best_path);
+		best_path = list_create(NULL);
 		found = true;
-		if((ports_to_try[0]%2))
+		if((source_port%2))
 			target_port=1;
 		
 		path_add->out = target_port;
 		list_push(path, path_add);
 		
-		printf("count = %d\n",count);
-		list_copy(path, &best_path);
+		//printf("count = %d\n",count);
+		itr = list_iterator_create(path);
+		while((path_switch = (pa_path_switch_t*) list_next(itr))){
+			//printf("%d%d%d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], path_switch->in,  path_switch->out);
+			temp_switch = (pa_path_switch_t *) xmalloc(sizeof(pa_path_switch_t));
+			 
+			temp_switch->geometry[X] = path_switch->geometry[X];
+			temp_switch->geometry[Y] = path_switch->geometry[Y];
+			temp_switch->geometry[Z] = path_switch->geometry[Z];
+			temp_switch->dim = path_switch->dim;
+			temp_switch->in = path_switch->in;
+			temp_switch->out = path_switch->out;
+			list_append(best_path,temp_switch);
+		}
+		list_iterator_destroy(itr);
+		best_count = count;
 		return 1;
 	} 
 	
@@ -1741,26 +858,20 @@ int _find_best_path(pa_switch_t *start, int source_port, int *target, int dim, i
 		used=0;
 		itr = list_iterator_create(path);
 		while((path_switch = (pa_path_switch_t*) list_next(itr))){
-//			printf("%d%d%d %d%d%d %d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], node_src[X], node_src[Y], node_src[Z], ports_to_try[i], path_switch->in,  path_switch->out);
-			if(((path_switch->geometry[X] == node_src[X]) && (path_switch->geometry[Y] == node_src[Y]) && (path_switch->geometry[Z] == node_tar[Z])) && (path_switch->in==ports_to_try[i] || path_switch->out==ports_to_try[i])) {
-				used = 1;
-				printf("found\n");
-				break;
+			//printf("%d%d%d %d%d%d %d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], node_src[X], node_src[Y], node_src[Z], ports_to_try[i], path_switch->in,  path_switch->out);
+			if(((path_switch->geometry[X] == node_src[X]) && (path_switch->geometry[Y] == node_src[Y]) && (path_switch->geometry[Z] == node_tar[Z]))) {
+				//printf("hey\n");
+				if( path_switch->out==ports_to_try[i]) {
+					used = 1;
+					//printf("found\n");
+				}
 			}
-//			printf("%d %d\n",(path_switch->geometry[X] == node_src[X] && path_switch->geometry[Y] == node_src[Y]) && path_switch->geometry[Z] == node_tar[Z]),(path_switch->in==ports_to_try[i] || path_switch->out==ports_to_try[i]));
 		}
 		list_iterator_destroy(itr);
-		
-//		if(!start->int_wire[ports_to_try[i]].used) {
+
 		if(!used) {
-			start->int_wire[source_port].used = 1;
-			start->int_wire[source_port].port_tar = ports_to_try[i];
-			start->int_wire[ports_to_try[i]].used = 1;
-			start->int_wire[ports_to_try[i]].port_tar = source_port;
-		
 			port_tar = start->ext_wire[ports_to_try[i]].port_tar;
 			node_tar = start->ext_wire[ports_to_try[i]].node_tar;
-			//printf("%d%d%d - %d-%d -> %d%d%d - %d\n",node_src[X],node_src[Y],node_src[Z], source_port, ports_to_try[i], node_tar[X],node_tar[Y],node_tar[Z], port_tar);
 			
 			next_switch = &_pa_system_ptr->grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
 			
@@ -1769,28 +880,190 @@ int _find_best_path(pa_switch_t *start, int source_port, int *target, int dim, i
 			list_push(path, path_add);
 			//printf("%d%d%d %d - %d\n", path_add->geometry[X], path_add->geometry[Y], path_add->geometry[Z], path_add->in,  path_add->out);
 			_find_best_path(next_switch, port_tar, target, dim, count);
-			
-			if(found) {
-				break;
+			//printf("popping %d%d%d %d - %d\n", path_add->geometry[X], path_add->geometry[Y], path_add->geometry[Z], path_add->in,  path_add->out);
+			while(list_pop(path) != path_add){
 			}
 		}
-		//list_pop(path);
-	
 	}
+	xfree(path_add);
 	return 0;
 }
 
+int _set_best_path()
+{
+	ListIterator itr;
+	pa_path_switch_t *path_switch;
+	pa_switch_t *curr_switch; 
+	
+	itr = list_iterator_create(best_path);
+	while((path_switch = (pa_path_switch_t*) list_next(itr))){
+		//printf("final %d%d%d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], path_switch->in,  path_switch->out);
+		curr_switch = &_pa_system_ptr->grid[path_switch->geometry[X]][path_switch->geometry[Y]][path_switch->geometry[Z]].axis_switch[path_switch->dim];
+		curr_switch->int_wire[path_switch->in].used = 1;
+		curr_switch->int_wire[path_switch->in].port_tar = path_switch->out;
+		curr_switch->int_wire[path_switch->out].used = 1;
+		curr_switch->int_wire[path_switch->out].port_tar = path_switch->in;			
+	}	
+	best_count=BEST_COUNT_INIT;
+	//printf("\n");
+	return 1;
+}
+
+int _configure_dims(int *coord, int *end)
+{
+	pa_switch_t *curr_switch; 
+	int dim;
+	int target[PA_SYSTEM_DIMENSIONS] = {0,0,0};
+	int check_port;
+	/* set it up for the X axis */
+	for(dim=0; dim<PA_SYSTEM_DIMENSIONS; dim++) {
+		curr_switch = &_pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]].axis_switch[dim];
+		if(coord[dim]<(end[dim]-1)) {
+			/* set it up for 0 */
+			if(!curr_switch->ext_wire[4].used) {
+				check_port=4;
+				_set_internal_port(curr_switch, check_port, coord, dim);
+			} else if(!curr_switch->ext_wire[2].used) {
+				if(!curr_switch->int_wire[0].used) {
+					if(dim==X)
+						target[X]=coord[X]+1;
+					else
+						target[X]=coord[X];	
+
+					if(dim==Y)
+						target[Y]=coord[Y]+1;
+					else
+						target[Y]=coord[Y];
+
+					if(dim==Z)
+						target[Z]=coord[Z]+1;
+					else
+						target[Z]=coord[Z];
+					_find_best_path(curr_switch, 0, target, dim, 0);
+					_set_best_path();
+				}
+				if(!curr_switch->int_wire[1].used) { 
+					if(dim==X)
+						target[X]=coord[X]+2;
+					else
+						target[X]=coord[X];	
+
+					if(dim==Y)
+						target[Y]=coord[Y]+2;
+					else
+						target[Y]=coord[Y];
+
+					if(dim==Z)
+						target[Z]=coord[Z]+2;
+					else
+						target[Z]=coord[Z];
+					_find_best_path(curr_switch, 1, target, dim, 0);
+					_set_best_path();
+				}
+			} else /* the switch is full on this level, we can't use it */
+				return 0;
+			
+			/* set it up for 1 */
+			if(!curr_switch->ext_wire[3].used) {
+				check_port=3;
+				_set_internal_port(curr_switch, check_port, coord, dim);
+			} else if(!curr_switch->ext_wire[5].used) {
+				if(!curr_switch->int_wire[0].used) {
+					if(dim==X)
+						target[X]=coord[X]+1;
+					else
+						target[X]=coord[X];	
+
+					if(dim==Y)
+						target[Y]=coord[Y]+1;
+					else
+						target[Y]=coord[Y];
+
+					if(dim==Z)
+						target[Z]=coord[Z]+1;
+					else
+						target[Z]=coord[Z];
+					_find_best_path(curr_switch, 0, target, dim, 0);
+					_set_best_path();
+				}
+				if(!curr_switch->int_wire[1].used) { 
+					if(dim==X)
+						target[X]=coord[X]+2;
+					else
+						target[X]=coord[X];	
+
+					if(dim==Y)
+						target[Y]=coord[Y]+2;
+					else
+						target[Y]=coord[Y];
+
+					if(dim==Z)
+						target[Z]=coord[Z]+2;
+					else
+						target[Z]=coord[Z];
+					_find_best_path(curr_switch, 1, target, dim, 0);
+					_set_best_path();
+				}
+			} else /* the switch is full on this level, we can't use it */
+				return 0;
+			/*****************************/
+			
+		} else if(coord[dim]==(end[dim]-1)) {
+			//next_switch = &_pa_system_ptr->grid[coord[X]+1][coord[Y]][coord[Z]].axis_switch[X];	
+			if(dim==X)
+				target[X]=coord[X]+1;
+			else
+				target[X]=coord[X];	
+			
+			if(dim==Y)
+				target[Y]=coord[Y]+1;
+			else
+				target[Y]=coord[Y];
+			
+			if(dim==Z)
+				target[Z]=coord[Z]+1;
+			else
+				target[Z]=coord[Z];
+			if(!curr_switch->int_wire[0].used) {
+				_find_best_path(curr_switch, 0, target, dim, 0);
+				_set_best_path();
+			}
+			if(!curr_switch->int_wire[1].used) {
+				_find_best_path(curr_switch, 1, target, dim, 0);	
+				_set_best_path();
+			} 
+		}
+	}
+	return 1;
+	
+}
+int _set_one_dim(int *start, int *end, int *coord)
+{
+	int dim;
+	pa_switch_t *curr_switch; 
+	
+	for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
+		if(start[dim]==end[dim]) {
+			curr_switch = &_pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]].axis_switch[dim];
+			if(!curr_switch->int_wire[0].used) {
+				if(!curr_switch->int_wire[1].used) {
+					curr_switch->int_wire[0].used = 1;
+					curr_switch->int_wire[0].port_tar = 1;
+					curr_switch->int_wire[1].used = 1;
+					curr_switch->int_wire[1].port_tar = 0;
+				} 
+			}
+		}
+	}
+	return 1;
+}
 
 int _set_internal_wires(List *nodes, int size)
 {
 	pa_node_t* pa_node[size];
-	pa_switch_t *curr_switch; 
-	pa_path_switch_t *path_switch;
 	//pa_switch_t *next_switch; 
-	int check_port;
 	int count=0;
 	int coord[PA_SYSTEM_DIMENSIONS] = {0,0,0};
-	int target[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 	int *start;
 	int *end;
 	ListIterator itr;
@@ -1800,68 +1073,39 @@ int _set_internal_wires(List *nodes, int size)
 	while((pa_node[count] = (pa_node_t*) list_next(itr))){
 		count++;
 	}
+
 	list_iterator_destroy(itr);
 		
 	start = pa_node[0]->coord;
 	end = pa_node[count-1]->coord;
-	printf("grid = [%d%d%d - %d%d%d]\n",start[X], start[Y], start[Z], end[X], end[Y], end[Z]);
+	//printf("grid = [%d%d%d - %d%d%d]\n",start[X], start[Y], start[Z], end[X], end[Y], end[Z]);
 	for(coord[X]=start[X];coord[X]<=end[X];coord[X]++) {
 		for(coord[Y]=start[Y];coord[Y]<=end[Y];coord[Y]++) {
 			for(coord[Z]=start[Z];coord[Z]<=end[Z];coord[Z]++) {
-				if(!_pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]].used) {
-					
-					/* set it up for the X axis */
-					curr_switch = &_pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]].axis_switch[X];
-					if(coord[X]<(end[X]-1)) {
-						/* set it up for 0 */
-						if(!curr_switch->ext_wire[4].used) 
-							check_port=4;
-						else
-							check_port=2;
-						_set_internal_port(curr_switch, check_port, coord, X);
-												
-						/* set it up for 1 */
-						if(!curr_switch->ext_wire[3].used) 
-							check_port=3;
-						else
-							check_port=5;
-						_set_internal_port(curr_switch, check_port, coord, X);
-						/*****************************/
-
-					} else if(coord[X]==(end[X]-1)) {
-						//next_switch = &_pa_system_ptr->grid[coord[X]+1][coord[Y]][coord[Z]].axis_switch[X];	
-						target[X]=coord[X]+1;
-						target[Y]=coord[Y];
-						target[Z]=coord[Z];
-						if(!curr_switch->int_wire[0].used) 
-							_find_best_path(curr_switch, 0, target, X, 0);
-						else
-							_find_best_path(curr_switch, 1, target, X, 0);	
-					} 
-					
+				if(!_pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]].used) {	
+					if(size!=1) 
+						_configure_dims(coord, end);
 					_pa_system_ptr->grid[coord[X]][coord[Y]][coord[Z]].used=1;
-		
-				}
+					 
+				} else 
+					return 0;
 			}
 		}
 	}
-	itr = list_iterator_create(best_path);
-	while((path_switch = (pa_path_switch_t*) list_next(itr))){
-		printf("%d%d%d %d - %d\n", path_switch->geometry[X], path_switch->geometry[Y], path_switch->geometry[Z], path_switch->in,  path_switch->out);
-		curr_switch = &_pa_system_ptr->grid[path_switch->geometry[X]][path_switch->geometry[Y]][path_switch->geometry[Z]].axis_switch[path_switch->dim];
-		curr_switch->int_wire[path_switch->in].used = 1;
-		curr_switch->int_wire[path_switch->in].port_tar = path_switch->out;
-		curr_switch->int_wire[path_switch->out].used = 1;
-		curr_switch->int_wire[path_switch->out].port_tar = path_switch->in;			
-	}
-	list_iterator_destroy(itr);
-	for(count=0;count<size;count++) {
-		
-		printf("Using node %d%d%d\n",pa_node[count]->coord[X], pa_node[count]->coord[Y], pa_node[count]->coord[Z]);
-		printf("O set %d -> %d - %d%d%d\n",pa_node[count]->axis_switch[X].int_wire[0].port_tar, pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[0].port_tar].port_tar, pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[0].port_tar].node_tar[X],pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[0].port_tar].node_tar[Y],pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[0].port_tar].node_tar[Z]);
-		printf("1 set %d -> %d - %d%d%d\n",pa_node[count]->axis_switch[X].int_wire[1].port_tar, pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[1].port_tar].port_tar, pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[1].port_tar].node_tar[X],pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[1].port_tar].node_tar[Y],pa_node[count]->axis_switch[X].ext_wire[pa_node[count]->axis_switch[X].int_wire[1].port_tar].node_tar[Z]);
-
-	}
+	
+	for(coord[X]=start[X];coord[X]<=end[X];coord[X]++)
+		for(coord[Y]=start[Y];coord[Y]<=end[Y];coord[Y]++)
+			for(coord[Z]=start[Z];coord[Z]<=end[Z];coord[Z]++)
+				_set_one_dim(start, end, coord);
+				
+	/* for(count=0;count<size;count++) { */
+/* 		int i; */
+/* 		printf("Using node %d%d%d\n",pa_node[count]->coord[X], pa_node[count]->coord[Y], pa_node[count]->coord[Z]); */
+/* 		for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) { */
+/* 			printf("dim %d O set %d -> %d - %d%d%d\n",i,pa_node[count]->axis_switch[i].int_wire[0].port_tar, pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[0].port_tar].port_tar, pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[0].port_tar].node_tar[X],pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[0].port_tar].node_tar[Y],pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[0].port_tar].node_tar[Z]); */
+/* 			printf("dim %d 1 set %d -> %d - %d%d%d\n",i,pa_node[count]->axis_switch[i].int_wire[1].port_tar, pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[1].port_tar].port_tar, pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[1].port_tar].node_tar[X],pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[1].port_tar].node_tar[Y],pa_node[count]->axis_switch[i].ext_wire[pa_node[count]->axis_switch[i].int_wire[1].port_tar].node_tar[Z]); */
+/* 		} */
+/* 	} */
 return 1;
 }				
 
@@ -1879,17 +1123,21 @@ int main(int argc, char** argv)
 	request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 		
 	//printf("geometry: %d %d %d size = %d\n", request->geometry[0], request->geometry[1], request->geometry[2], request->size);
-	time(&start);
+	
 	pa_init();
-	time(&end);
-	printf("init: %ld\n", (end-start));
-
+	
 	results = list_create(NULL);
-	geo[0] = 3;
+	geo[0] = 1;
 	geo[1] = 1;
 	geo[2] = 1;	
 	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
-	allocate_part(request, &results);
+	time(&start);
+#ifdef DEBUG_PA
+	print_pa_request(request);
+#endif
+	allocate_part(request, results);
+	time(&end);
+	//printf("allocate_part: %ld\n", (end-start));
 	list_destroy(results);
 			
 	// time(&start);
@@ -1898,7 +1146,6 @@ int main(int argc, char** argv)
 	// printf("fini: %ld\n", (end-start));
 
 	delete_pa_request(request);
-	gs_fini();
 	
 	return 0;
 }
