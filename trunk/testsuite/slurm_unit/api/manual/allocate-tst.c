@@ -70,6 +70,7 @@ main (int argc, char *argv[])
 		printf ("allocate error %d\n", errno);
 	else
 		report_results(resp_msg);
+	slurm_free_resource_allocation_response_msg ( resp_msg );
 
 	for (job_count = 1 ; job_count <max_jobs;  job_count++) {
 		slurm_init_job_desc_msg( &job_mesg );
@@ -96,6 +97,7 @@ main (int argc, char *argv[])
 		}
 		else 
 			report_results(resp_msg);
+		slurm_free_resource_allocation_response_msg ( resp_msg );
 	}
 
 	for ( ; job_count <max_jobs;  job_count++) {
@@ -111,6 +113,7 @@ main (int argc, char *argv[])
 		}
 		else 
 			report_results(resp_msg);
+		slurm_free_resource_allocation_response_msg ( resp_msg );
 	}
 
 	for ( ; job_count <max_jobs;  job_count++) {
@@ -126,6 +129,7 @@ main (int argc, char *argv[])
 		}
 		else 
 			report_results(resp_msg);
+		slurm_free_resource_allocation_response_msg ( resp_msg );
 	}
 
 	return (0);
