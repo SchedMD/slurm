@@ -13,6 +13,6 @@ slurmd_SOURCES = slurmd.c \
 		read_proc.c \
 		task_mgr.c \
 		shmem_struct.c \
-		circular_buffer.c
-
+		circular_buffer.c \
+		credential_utils.c
 
