@@ -42,6 +42,8 @@ typedef struct slurm_sched_ops {
 	int		(*schedule)		( void );
 	u_int32_t	(*initial_priority)	( u_int32_t );
 	void            (*job_is_pending)     	( void );
+	int		(*get_errno)		( void );
+	char *		(*strerror)		( int );
 } slurm_sched_ops_t;
 
 
@@ -72,7 +74,9 @@ slurm_sched_get_ops( slurm_sched_context_t *c )
 	static const char *syms[] = {
 		"slurm_sched_plugin_schedule",
 		"slurm_sched_plugin_initial_priority",
-		"slurm_sched_plugin_job_is_pending"
+		"slurm_sched_plugin_job_is_pending",
+		"slurm_sched_get_errno",
+		"slurm_sched_strerror"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -235,3 +239,26 @@ slurm_sched_job_is_pending( void )
 	(*(g_sched_context->ops.job_is_pending))();
 }
 
+/* *********************************************************************** */
+/*  TAG(                   slurm_sched_p_get_errno                      )  */
+/* *********************************************************************** */
+int 
+slurm_sched_p_get_errno( void )
+{
+	if ( slurm_sched_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_sched_context->ops.get_errno))( );
+}
+
+/* *********************************************************************** */
+/*  TAG(                   slurm_sched_p_strerror                       )  */
+/* *********************************************************************** */
+char *
+slurm_sched_p_strerror( int errnum )
+{
+	if ( slurm_sched_init() < 0 )
+		return NULL;
+
+	return (*(g_sched_context->ops.strerror))( errnum );
+}

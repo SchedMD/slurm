@@ -57,6 +57,30 @@ typedef struct qsw_libstate 	*qsw_libstate_t;
 #define QSW_MAX_TASKS		ELAN_MAX_VPS
 #define QSW_PACK_SIZE		(4 * (2+4+1+8+ELAN_BITMAPSIZE))
 
+/* NOTE: error codes should be between ESLURM_SWITCH_MIN and 
+ * ESLURM_SWITCH MAX as defined in slurm/slurm_errno.h */
+enum {
+	/* Quadrics Elan specific error codes */
+	ENOSLURM =					3000,
+	EBADMAGIC_QSWLIBSTATE,
+	EBADMAGIC_QSWJOBINFO,
+	EINVAL_PRGCREATE,
+	ECHILD_PRGDESTROY,
+	EEXIST_PRGDESTROY,
+	EELAN3INIT,
+	EELAN3CONTROL,
+	EELAN3CREATE,
+	ESRCH_PRGADDCAP,
+	EFAULT_PRGADDCAP,
+	EINVAL_SETCAP,
+	EFAULT_SETCAP,
+	EGETNODEID,
+	EGETNODEID_BYHOST,
+	EGETHOST_BYNODEID,
+	ESRCH_PRGSIGNAL,
+	EINVAL_PRGSIGNAL
+};
+
 int		qsw_alloc_libstate(qsw_libstate_t *lsp);
 void		qsw_free_libstate(qsw_libstate_t ls);
 

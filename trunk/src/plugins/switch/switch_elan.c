@@ -69,6 +69,56 @@ static pthread_cond_t  neterr_cond  = PTHREAD_COND_INITIALIZER;
 
 #endif /* HAVE_LIBELAN3 */
 
+/* Type for error string table entries */
+typedef struct {
+	int xe_number;
+	char *xe_message;
+} slurm_errtab_t;
+
+static slurm_errtab_t slurm_errtab[] = {
+	{0, "No error"},
+	{-1, "Unspecified error"},
+
+	/* Quadrics Elan routine error codes */
+
+	{ ENOSLURM, 	/* oh no! */
+	  "Out of slurm"					},
+	{ EBADMAGIC_QSWLIBSTATE, 
+	  "Bad magic in QSW libstate"				},
+	{ EBADMAGIC_QSWJOBINFO, 
+	  "Bad magic in QSW jobinfo"				},
+	{ EINVAL_PRGCREATE,
+	  "Program identifier in use or CPU count invalid, try again" },
+	{ ECHILD_PRGDESTROY,
+	  "Processes belonging to this program are still running" },
+	{ EEXIST_PRGDESTROY, 
+	  "Program identifier does not exist"			},
+	{ EELAN3INIT, 
+	  "Too many processes using Elan or mapping failure"	},
+	{ EELAN3CONTROL, 
+	  "Could not open elan3 control device"			},
+	{ EELAN3CREATE, 
+	  "Could not create elan capability"			},
+	{ ESRCH_PRGADDCAP, 
+	  "Program does not exist (addcap)"			},
+	{ EFAULT_PRGADDCAP, 
+	  "Capability has invalid address (addcap)"		},
+	{ EINVAL_SETCAP, 
+	  "Invalid context number (setcap)" 		 	},
+	{ EFAULT_SETCAP, 
+	  "Capability has invalid address (setcap)"		},
+	{ EGETNODEID, 
+	  "Cannot determine local elan address"			},
+	{ EGETNODEID_BYHOST, 
+	  "Cannot translate hostname to elan address"		},
+	{ EGETHOST_BYNODEID, 
+	  "Cannot translate elan address to hostname"		},
+	{ ESRCH_PRGSIGNAL, 
+	  "No such program identifier"				},
+	{ EINVAL_PRGSIGNAL, 
+	  "Invalid signal number"				}
+};
+
 /*
  * These variables are required by the generic plugin interface.  If they
  * are not found in the plugin, the plugin loader will ignore it.
@@ -129,7 +179,7 @@ int switch_p_libstate_save (char *dir_name)
 	char *file_name;
 
 	if (qsw_alloc_libstate(&old_state))
-		return errno;
+		return SLURM_ERROR;
 	qsw_fini(old_state);
 	buffer = init_buf(1024);
 	(void) qsw_pack_libstate(old_state, buffer);
@@ -140,7 +190,7 @@ int switch_p_libstate_save (char *dir_name)
 	if (state_fd == 0) {
 		error ("Can't save state, error creating file %s %m",
 			file_name);
-		error_code = errno;
+		error_code = SLURM_ERROR;
 	} else {
 		char  *buf = get_buf_data(buffer);
 		size_t len =get_buf_offset(buffer);
@@ -152,7 +202,7 @@ int switch_p_libstate_save (char *dir_name)
 				break;
 			if (wrote < 0) {
 				error ("Can't save switch state: %m");
-				error_code = errno;
+				error_code = SLURM_ERROR;
 				break;
 			}
 			buf += wrote;
@@ -216,7 +266,7 @@ int switch_p_libstate_restore (char *dir_name)
 		} else {
 			buffer = create_buf (data, data_size);
 			if (qsw_unpack_libstate(old_state, buffer) < 0)
-				error_code = errno;
+				error_code = SLURM_ERROR;
 		}
 	}
 
@@ -270,7 +320,8 @@ int switch_p_build_jobinfo ( switch_jobinfo_t switch_job, char *nodelist,
 		else {
 			error("qsw_getnodeid_byhost(%s) failure", 
 					this_node_name);
-			error_code = ESLURM_INTERCONNECT_FAILURE;
+			slurm_seterrno(ESLURM_INTERCONNECT_FAILURE);
+			error_code = SLURM_ERROR;
 		}
 		free(this_node_name);
 	}
@@ -332,7 +383,6 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_jobinfo, char *buf,
 int switch_p_node_init ( void )
 {
 #if HAVE_LIBELAN3
-	int err = 0;
 	pthread_attr_t attr;
 
         /* 
@@ -343,19 +393,18 @@ int switch_p_node_init ( void )
 	 *  Load neterr elanid/hostname values into kernel 
 	 */
 	if (_set_elan_ids() < 0)
-		return SLURM_FAILURE;
+		return SLURM_ERROR;
 
-	if ((err = pthread_attr_init(&attr)))
-		error("pthread_attr_init: %s", slurm_strerror(err));
+	if (pthread_attr_init(&attr))
+		error("pthread_attr_init: %m");
 
-	err = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (err)
-		error("pthread_attr_setdetachstate: %s", slurm_strerror(err));
+	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate: %m");
 
 	slurm_mutex_lock(&neterr_mutex);
 
-	if ((err = pthread_create(&neterr_tid, &attr, _neterr_thr, NULL)))
-		return SLURM_FAILURE;
+	if (pthread_create(&neterr_tid, &attr, _neterr_thr, NULL))
+		return SLURM_ERROR;
 
 	/*
 	 *  Wait for successful startup of neterr thread before
@@ -430,12 +479,11 @@ static void *_neterr_thr(void *arg)
 int switch_p_node_fini ( void )
 {
 #if HAVE_LIBELAN3
-	int err = pthread_cancel(neterr_tid);
-	if (err == 0) 
+	if (pthread_cancel(neterr_tid) == 0) 
 		return SLURM_SUCCESS;
 
-	error("Unable to cancel neterr thread: %s", slurm_strerror(err));
-	return SLURM_FAILURE;
+	error("Unable to cancel neterr thread: %m");
+	return SLURM_ERROR;
 #else  /* !HAVE_LIBELAN3 */
 
         return SLURM_SUCCESS;
@@ -562,7 +610,41 @@ _set_elan_ids(void)
 			error("elan3_load_neterr_svc(%d, %s): %m", i, host);
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 #endif
+
+/* 
+ * Linear search through table of errno values and strings,
+ * returns NULL on error, string on success.
+ */
+static char *_lookup_slurm_api_errtab(int errnum)
+{
+	char *res = NULL;
+	int i;
+
+	for (i = 0; i < sizeof(slurm_errtab) / sizeof(slurm_errtab_t); i++) {
+		if (slurm_errtab[i].xe_number == errnum) {
+			res = slurm_errtab[i].xe_message;
+			break;
+		}
+	}
+	return res;
+}
+
+extern int switch_p_get_errno(void)
+{
+	int err = slurm_get_errno();
+
+	if ((err >= ESLURM_SWITCH_MIN) && (err <= ESLURM_SWITCH_MAX))
+		return err;
+
+	return SLURM_SUCCESS;
+}
+
+extern char *switch_p_strerror(int errnum)
+{
+	char *res = _lookup_slurm_api_errtab(errnum);
+	return (res ? res : strerror(errnum));
+}

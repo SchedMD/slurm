@@ -42,13 +42,16 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/slurm_jobcomp.h"
+#include "src/common/switch.h"
+
 /* Type for error string table entries */
 typedef struct {
 	int xe_number;
 	char *xe_message;
 } slurm_errtab_t;
 
-/* Add new error values to xerrno.h, and their descriptions to this table */
+/* Add new error values to slurm/slurm_errno.h, and their descriptions to this table */
 static slurm_errtab_t slurm_errtab[] = {
 	{0, "No error"},
 	{-1, "Unspecified error"},
@@ -156,45 +159,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_SWITCHTYPE_CHANGE,
 	  "SwitchType change requires restart of all SLURM daemons and jobs"},
 
-	/* Quadrics Elan routine error codes */
-
-	{ ENOSLURM, 	/* oh no! */
-	  "Out of slurm"					},
-	{ EBADMAGIC_QSWLIBSTATE, 
-	  "Bad magic in QSW libstate"				},
-	{ EBADMAGIC_QSWJOBINFO, 
-	  "Bad magic in QSW jobinfo"				},
-	{ EINVAL_PRGCREATE,
-	  "Program identifier in use or CPU count invalid, try again" },
-	{ ECHILD_PRGDESTROY,
-	  "Processes belonging to this program are still running" },
-	{ EEXIST_PRGDESTROY, 
-	  "Program identifier does not exist"			},
-	{ EELAN3INIT, 
-	  "Too many processes using Elan or mapping failure"	},
-	{ EELAN3CONTROL, 
-	  "Could not open elan3 control device"			},
-	{ EELAN3CREATE, 
-	  "Could not create elan capability"			},
-	{ ESRCH_PRGADDCAP, 
-	  "Program does not exist (addcap)"			},
-	{ EFAULT_PRGADDCAP, 
-	  "Capability has invalid address (addcap)"		},
-	{ EINVAL_SETCAP, 
-	  "Invalid context number (setcap)" 		 	},
-	{ EFAULT_SETCAP, 
-	  "Capability has invalid address (setcap)"		},
-	{ EGETNODEID, 
-	  "Cannot determine local elan address"			},
-	{ EGETNODEID_BYHOST, 
-	  "Cannot translate hostname to elan address"		},
-	{ EGETHOST_BYNODEID, 
-	  "Cannot translate elan address to hostname"		},
-	{ ESRCH_PRGSIGNAL, 
-	  "No such program identifier"				},
-	{ EINVAL_PRGSIGNAL, 
-	  "Invalid signal number"				},
-
 	/* slurmd error codes */
 
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN, 
@@ -297,6 +261,25 @@ static char *_lookup_slurm_api_errtab(int errnum)
 			break;
 		}
 	}
+
+	if ((res == NULL) && 
+	    (errnum >= ESLURM_JOBCOMP_MIN) &&
+	    (errnum <= ESLURM_JOBCOMP_MAX))
+		res = g_slurm_jobcomp_strerror(errnum);
+
+#if 0	
+	/* If needed, re-locate slurmctld/sched_plugin.[ch] into common */
+	if ((res == NULL) && 
+	    (errnum >= ESLURM_SCHED_MIN) &&
+	    (errnum <= ESLURM_SCHED_MAX))
+		res = sched_strerror(errnum);
+#endif
+
+	if ((res == NULL) &&
+	    (errnum >= ESLURM_SWITCH_MIN) &&
+	    (errnum <= ESLURM_SWITCH_MAX))
+		res = switch_strerror(errnum);
+
 	return res;
 }
 

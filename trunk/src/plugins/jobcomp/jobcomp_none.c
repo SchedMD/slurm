@@ -104,6 +104,11 @@ int slurm_jobcomp_get_errno( void )
 	return SLURM_SUCCESS;
 }
 
+char *slurm_jobcomp_strerror( int errnum )
+{
+	        return NULL;
+}
+
 int fini ( void )
 {
 	return SLURM_SUCCESS;

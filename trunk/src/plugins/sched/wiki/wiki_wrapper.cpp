@@ -50,6 +50,9 @@ extern "C" {
 	uint32_t	plugin_version	= 90;
 }
 
+/* A plugin-global errno. */
+static int plugin_errno = SLURM_SUCCESS;
+
 static pthread_t receptionist_thread;
 static bool thread_running = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -180,5 +183,23 @@ slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 extern "C" void slurm_sched_plugin_job_is_pending( void )
 {
 	// Wiki does not respond to pending job
+}
+
+// *************************************************************************
+//  TAG(              slurm_sched_get_errno                                )
+// *************************************************************************
+extern "C" int 
+slurm_sched_get_errno( void )
+{
+	return plugin_errno;
+}
+
+// ************************************************************************
+// TAG(              slurm_sched_strerror                                 ) 
+// ************************************************************************
+extern "C" char *
+slurm_sched_strerror( int errnum )
+{
+	return NULL;
 }
 

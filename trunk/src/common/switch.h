@@ -46,7 +46,7 @@
 typedef struct slurm_switch_context * slurm_switch_context_t;
 
 /*****************************************\
- * GLOBAL SWITCH STATE MANGEMENT FUNCIONS*
+ * GLOBAL SWITCH STATE MANGEMENT FUNCIONS *
 \ *****************************************/
 
 /* initialize the switch plugin */
@@ -72,6 +72,15 @@ extern int  switch_restore(char *dir_name);
  * RET          - true if fragmentation is important
  */
 extern bool switch_no_frag(void);
+
+/* return the number of a switch-specific error code */
+extern int switch_get_errno(void);
+
+/* return a string description of a switch specific error code
+ * IN errnum - switch specific error return code
+ * RET       - string describing the nature of the error
+ */
+extern char *switch_strerror(int errnum);
 
 /******************************************************\
  * JOB-SPECIFIC SWITCH CREDENTIAL MANAGEMENT FUNCIONS *
@@ -135,6 +144,7 @@ extern void switch_print_jobinfo(FILE *fp, switch_jobinfo_t jobinfo);
  */
 extern char *switch_sprint_jobinfo( switch_jobinfo_t jobinfo,
 			char *buf, size_t size);
+
 /********************************************************************\
  * JOB LAUNCH AND MANAGEMENT FUNCTIONS RELATED TO SWITCH CREDENTIAL *
 \********************************************************************/

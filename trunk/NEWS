@@ -16,6 +16,10 @@ documents those changes that are of interest to users and admins.
  -- Return errors when trying to change configuration parameters
     AuthType, SchedulerType, and SwitchType via "scontrol reconfig"
     or SIGHUP. Document how to safely change these parameters.
+ -- Plugin-specific error number definitions and descriptive strings 
+    moved from common into plugin modules
+ -- Documentation for writing scheduler, switch, and job completion 
+    logging plugins added
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
