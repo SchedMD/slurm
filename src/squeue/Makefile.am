@@ -8,7 +8,7 @@ bin_PROGRAMS = squeue
 
 LDADD = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/api/libslurm.la \
-		$(top_srcdir)/src/popt/libpopt.a
+		$(POPT_LIBS)
 
 squeue_SOURCES = squeue.c print.c
 
