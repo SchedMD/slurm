@@ -989,7 +989,7 @@ update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_DRAINED) {
-				if (~bit_test (idle_node_bitmap, node_inx))
+				if (bit_test (idle_node_bitmap, node_inx) == false)
 					state_val = NODE_STATE_DRAINING;
 				bit_clear (up_node_bitmap, node_inx);
 			}
@@ -1085,11 +1085,19 @@ validate_node_specs (char *node_name, uint32_t cpus,
 #endif
 		resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
-		if (node_ptr->node_state == NODE_STATE_UNKNOWN)
-			node_ptr->node_state = NODE_STATE_IDLE;
-		else if ((node_ptr->node_state == NODE_STATE_DOWN) &&
-		         (slurmctld_conf.ret2service == 1)) {
-
+		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+			if (job_count)
+				node_ptr->node_state = NODE_STATE_ALLOCATED;
+			else
+				node_ptr->node_state = NODE_STATE_IDLE;
+		} else if (node_ptr->node_state == NODE_STATE_DRAINING) {
+			if (job_count == 0)
+				node_ptr->node_state = NODE_STATE_DRAINED;
+		} else if (node_ptr->node_state == NODE_STATE_DRAINED) {
+			if (job_count != 0)
+				node_ptr->node_state = NODE_STATE_DRAINING;
+		} else if ((node_ptr->node_state == NODE_STATE_DOWN) &&
+		           (slurmctld_conf.ret2service == 1)) {
 			if (job_count)
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
 			else
