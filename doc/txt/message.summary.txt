@@ -6,8 +6,8 @@ form a REQ/REPLY pair, where - following Moe's convention - the Input is
 contained in the `request' message, and the Output will be found in the
 `reply.'
 
-Command(s):	Get job information, separate commands for 
-          	accounting, node, partition, job step and build info
+Command(s):	Get job/accounting/node/partition/job_step/build information, 
+		separate API for each data type
 Client:   	squeue and scontrol commands, plus DPCS from API, any node in cluster
 Server: 	slurmctld
 Input:  	time-stamp, version, user id
@@ -16,94 +16,106 @@ Output: 	error code, version, time-stamp, record count, array of records
 Notes:  	most information generally available, some might be restricted by user id
 
 
-Command(s):	Get key
+Command(s):	Get partition_key
 Client:  	API call (used by DPCS)
 Server: 	slurmctld
 Input:  	uid (must be root)
-Output: 	key
+Output: 	partition_key
 Notes:   	used to control access to some partitions. for example, any user 
 		can run jobs in the "batch" partition, but only when initiated by 
 		a batch controller (e.g. DPCS). this prevents users from running 
 		jobs outside of the queue structure
 
 
-Command(s):	Allocate 
+Command(s):	Allocate job
 Client:   	srun or slurm api call
 Server: 	slurmctld 
 Input:		username/uid,nnodes,ntasks, group
-		optional: partition,time_limit,constraints,features,node list, key
+		optional: partition,time_limit,constraints,features,node list, partition_key
 		flags   : wait_for_resources, test only (don't allocate resources, 
 		          just reply whether or not allocate would have succeeded, 
 		          used by DPCS)
-Output: 	jobid, return code, error code, node list, ncpus for *each* node in list
+Output: 	job_id, return code, error code, node list, ncpus for *each* node in list, 
+		job_key
 Notes:  	allocate resources to a ``job''
 
 
-Command(s):	Submit
+Command(s):	Claim job allocation
+Client:   	srun
+Server: 	slurmctld
+Input:  	uid, job_id, job_key
+Output: 	error_code
+Notes:  	ties allocation to a specific process_id, used to determine when a 
+		job is really complete
+
+
+Command(s):	Submit job
 Client:   	srun or slurm api call
 Server: 	slurmctld
 Input:  	Allocate input + script path, environment, cwd 
                 optional: partition, time_limit, constraints, features, 
-		          I/O location, signal handling, key
+		          I/O location, signal handling, partition_key
 		flags:
-Output: 	jobid, return code, error code
+Output: 	job_id, return code, error code
 Notes:  	submit a batch job to the slurm queue
 
 
 Command(s):	Run Job Step	
 Client:   	srun or slurm api call
 Server: 	slurmctld
-Input:  	jobid,username/uid
+Input:  	job_id,username/uid
 		optional: nnodes,ntasks,cpus_per_task,distribution,time_limit,
 		          constraints,features,signal handling
 		flags   : wait_for_resources
-Output: 	jobid, stepid, return code, error code, node list, ncpus/node
+Output: 	job_id, step_id, return code, error code, node list, ncpus/node
  		credential list,
 Notes:  	run a set of parallel tasks under an allocated job
- 		allocate resources if jobid < MIN_JOBID, otherwise assume 
+ 		allocate resources if job_id < MIN_JOBID, otherwise assume 
 		resources are already available
 
 
-Command(s):	Job Resource Request
+Command(s):	Job Step Resource Request
 Client:   	srun, scancel 
 Server: 	slurmctld
-Input:  	stepid
+Input:  	job_id, step_id, uid
 Output: 	return code, error code, node list, ncpus/node, credentials
 Notes:  	obtain a new set of credentials for a job. Needed for
- 		at least `srun --attach`
+ 		at least `srun --attach`, uid must match that of job_id
 	
 	
-Command(s):	Run Job Request
+Command(s):	Run Job Step Request
 Client:   	srun or slurmctld
 Server: 	slurmd
-Input:  	username/uid, jobid, stepid, credential, ntasks, environment, 
+Input:  	username/uid, job_id, step_id, credential, ntasks, environment, 
 		cwd, command line, stdin location, stdout/err location
 Output: 	return code, error code
 Notes:  	request initiation of ntasks tasks on this node.
 
 
-Command(s):	Signal Job Request
+Command(s):	Signal Job Step Request
 Client:   	srun or slurmctld (possibly scancel)
 Server: 	slurmd
-Input:  	uid, jobid or stepid, signal no.
-		optional: task no.
+Input:  	uid, signal no., job_id
+		optional: step_id, task no.
 Output: 	return code
-Notes:  	
+Notes:  	Signal all steps and all tasks unless otherwise specified.
+		This could be used to support gang scheduling
 
 
-Command(s):	Kill Job Request
-Client:   	srun or slurmctld (possibly scancel)
+Command(s):	Kill Job Step Request
+Client:   	srun or slurmctld or scancel
 Server: 	slurmd
-Input:  	uid, jobid or stepid
+Input:  	uid, job_id 
+		optional: step_id
 Output: 	return code
-Notes:  	explicitly kill job as opposed to implicit job kill
-		with a signal job request.
+Notes:  	explicitly kill job as opposed to implicit job kill with a
+		signal job request. Kill all steps unless otherwise specified.
 
 
-Command(s):	Job Attach Request
+Command(s):	Job Step Attach Request
 Client:   	srun
 Server: 	slurmd
-Input:  	uid, stepid
+Input:  	uid, job_id, step_id
 Output: 	return code, error code, 
 		stdout/err duplicated to srun stdout/err, signals propagated,
 Notes:  	srun process ``attaches'' to a currently running job. This
@@ -111,12 +123,14 @@ Notes:  	srun process ``attaches'' to a currently running job. This
 		to interactively reattach to a batch job.
 
 
-Command(s):	Cancel job or allocation
+Command(s):	Cancel job step or entire job
 Client:   	scancel user command, plus DPCS from API, any node in cluster
 Server: 	slurmctld
-Input:  	user id, jobid or stepid
+Input:  	user id, job_id
+		optional: step_id
 Output: 	error code
-Notes:  	can only be run as user root or the user id for the job
+Notes:  	Can only be run as user root or the user id for the job
+		Cancel all steps unless otherwise specified.
 
 
 Command(s):	Reconfigure (tell slurmctld to re-read configuration)
@@ -127,15 +141,15 @@ Output: 	error code, version
 Notes:  	can only be run as user root
 
 
-Command(s):	Register node (slurmd starting)
+Command(s):	Register node
 Client:   	slurmd daemon, any node in cluster
 Server: 	slurmctld
 Input:  	version, time stamp, processor count, memory size, temporary disk space
 Output: 	none
-Notes:  	
+Notes:  	Done when slurmd restarts
 
 
-Command(s):	Status node
+Command(s):	Report node status
 Client:   	slurmctld or backup slurmctld
 Server: 	slurmd or slurmctld (for backup check) daemon, any node in cluster
 Input:  	none
@@ -157,16 +171,9 @@ Client:   	DPCS API
 Server: 	slurmd daemon on the same node as DPCS API is executed
 Input:  	process id
 Output: 	SLURM job id
-Notes:  	until SLURM accounting is fully funcational, DPCS needs help figuring 
-		out what processes are associated with each job
-
-
-Command(s):	Create job step
-Client:   	srun from user script, any node in cluster
-Server: 	slurmctld
-Input:  	job id, uid, node list, task distribution, processors per task
-Output: 	step id, elan context (opaque data structure)
-Notes:  	needed to start parallel program
+Notes:  	Until SLURM accounting is fully funcational, DPCS needs help figuring 
+		out what processes are associated with each job. All message traffic 
+		within a node
 
 
 Command(s):	Get job step infomration
@@ -210,6 +217,44 @@ Output: 	error code
 Notes:  	On termination of a job (not the job step), slurmctld tells
 		slurmd to execute its epilog program (if any). 
 
+
+Summary of interactions:
+dpcs->slurmd		Get job id from process id
+
+scancel->slurmctld	Cancel job step or entire job
+
+scancel->slurmd		Kill Job Step Request
+			Signal Job Step Request
+
+scontrol->slurmctld	Reconfigure
+			Modify job information
+			Modify node information
+			Modify partition information
+			Get job/accounting/node/partition/job_step/build information
+
+slurmctld->slurmctld	Report node status (backup to primary controller)
+		
+slurmctld->slurmd	Kill Job Step Request
+			Report node status
+			Run epilog
+			Run Job Step Request
+			Upload accounting information
+			Signal Job Step Request
+
+slurmd->slurmctld	Get job step infomration
+			Register node
+
+srun->slurmctld		Get job step infomration
+			Job Step Attach Request
+			Job Step Resource Request
+			Run Job Step
+			Submit job
+			Allocate job
+			Claim job allocation
+
+srun->slurmd		Kill Job Step Request
+			Signal Job Step Request
+			Run Job Step Request
 
 ----TEMPLATE----
 Command(s):	
