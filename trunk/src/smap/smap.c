@@ -43,6 +43,7 @@ int quiet_flag = 0;
 
 int _get_option();
 void *_resize_handler(int sig);
+int _set_pairs();
 
 int main(int argc, char *argv[])
 {
@@ -130,6 +131,7 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 	if(!params.commandline) {
+		_set_pairs();
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 			
@@ -255,6 +257,36 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
+int _set_pairs()
+{
+	int x,y,z;
+
+	z = 0;
+	y = 65;
+	for (x = 0; x < pa_system_ptr->num_of_proc; x++) {
+		if (y == 91)
+			y = 97;
+		else if(y == 123)
+			y = 48;
+		else if(y == 58)
+			y = 65;
+		pa_system_ptr->fill_in_value[x].letter = y;
+		y++;
+		if(z == 4)
+			z++;
+		z = z % 7;
+		if (z == 0)
+			z = 1;
+		
+		pa_system_ptr->fill_in_value[x].color = z;
+		z++;
+		
+		init_pair(pa_system_ptr->fill_in_value[x].color,
+			  pa_system_ptr->fill_in_value[x].color,
+			  COLOR_BLACK);
+	}
+	return 1;
+}
 
 int _get_option()
 {

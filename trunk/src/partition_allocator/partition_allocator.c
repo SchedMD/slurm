@@ -693,30 +693,6 @@ void init_grid(node_info_msg_t * node_info_ptr)
 				}
 				pa_system_ptr->grid[x][y][z].indecies = i++;
 			}
-	z = 0;
-	y = 65;
-	for (x = 0; x < pa_system_ptr->num_of_proc; x++) {
-		if (y == 91)
-			y = 97;
-		else if(y == 123)
-			y = 48;
-		else if(y == 58)
-			y = 65;
-		pa_system_ptr->fill_in_value[x].letter = y;
-		y++;
-		if(z == 4)
-			z++;
-		z = z % 7;
-		if (z == 0)
-			z = 1;
-		
-		pa_system_ptr->fill_in_value[x].color = z;
-		z++;
-		
-		init_pair(pa_system_ptr->fill_in_value[x].color,
-			  pa_system_ptr->fill_in_value[x].color,
-			  COLOR_BLACK);
-	}
 	return;
 }
 
