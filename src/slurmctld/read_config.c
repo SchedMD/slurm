@@ -81,8 +81,7 @@ int node_record_count = 0;
  *    also sets values of total_nodes and total_cpus for every partition.
  * RET 0 if no error, errno otherwise
  * Note: Operates on common variables, no arguments
- * global: idle_node_bitmap - bitmap record of idle nodes
- *	avail_node_bitmap - bitmap records of up nodes
+ * global: idle_node_bitmap, avail_node_bitmap, share_node_bitmap 
  *	node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  *	part_list - pointer to global partition list
@@ -96,6 +95,8 @@ static int _build_bitmaps(void)
 	struct config_record *config_ptr;
 	struct part_record   *part_ptr;
 	struct node_record   *node_ptr;
+	struct job_record    *job_ptr;
+	ListIterator job_iterator;
 	bitstr_t *all_part_node_bitmap;
 	hostlist_t host_list;
 
@@ -105,11 +106,17 @@ static int _build_bitmaps(void)
 	/* initialize the idle and up bitmaps */
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(share_node_bitmap);
 	idle_node_bitmap  = (bitstr_t *) bit_alloc(node_record_count);
 	avail_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	if ((idle_node_bitmap  == NULL) ||
-	    (avail_node_bitmap == NULL)) 
+	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
+	if ((idle_node_bitmap     == NULL) ||
+	    (avail_node_bitmap    == NULL) ||
+	    (share_node_bitmap == NULL)) 
 		fatal ("memory allocation failure");
+	/* Set all bits, all nodes initially available for sharing */
+	bit_nset(share_node_bitmap, 0, (node_record_count-1));
+
 	/* initialize the configuration bitmaps */
 	config_iterator = list_iterator_create(config_list);
 	if (config_iterator == NULL)
@@ -124,6 +131,24 @@ static int _build_bitmaps(void)
 			fatal ("memory allocation failure");
 	}
 	list_iterator_destroy(config_iterator);
+
+	/* identify all nodes non-sharable due to non-sharing jobs */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		bitstr_t *tmp_bits;
+		if ((job_ptr->job_state   != JOB_RUNNING) ||
+		    (job_ptr->node_bitmap == NULL)        ||
+		    (job_ptr->details     == NULL)        ||
+		    (job_ptr->details->shared != 0))
+			continue;
+		tmp_bits = bit_copy(job_ptr->node_bitmap);
+		if (tmp_bits == NULL)
+			fatal ("memory allocation failure");
+		bit_not(tmp_bits);
+		bit_and(share_node_bitmap, tmp_bits);
+		bit_free(tmp_bits);
+	}
+	list_iterator_destroy(job_iterator);
 
 	/* scan all nodes and identify which are up, idle and 
 	 * their configuration */
@@ -870,6 +895,8 @@ static int _sync_nodes_to_jobs(void)
 		    (job_ptr->job_state &  JOB_COMPLETING))
 			update_cnt += _sync_nodes_to_active_job(job_ptr);
 	}
+	list_iterator_destroy(job_iterator);
+
 	if (update_cnt)
 		info("_sync_nodes_to_jobs updated state of %d nodes",
 		     update_cnt);
@@ -915,6 +942,9 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
 				* This counter moved to comp_job_cnt 
 				* by _sync_nodes_to_comp_job() */
+		if ((job_ptr->job_state == JOB_RUNNING) &&
+		    (job_ptr->details) && (job_ptr->details->shared == 0))
+			node_record_table_ptr[i].no_share_job_cnt++;
 
 		if (base_state == NODE_STATE_DOWN) {
 			time_t now = time(NULL);

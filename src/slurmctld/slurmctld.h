@@ -168,6 +168,8 @@ struct node_record {
 	slurm_addr slurm_addr;		/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	uint16_t run_job_cnt;		/* count of jobs running on node */
+	uint16_t no_share_job_cnt;	/* count of jobs running that will
+					 * not share nodes */
 	char *reason; 			/* why a node is DOWN or DRAINING */
 };
 
@@ -179,6 +181,7 @@ extern int node_record_count;		/* count in node_record_table_ptr */
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes, 
 					 * not DOWN, DRAINED or DRAINING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
+extern bitstr_t *share_node_bitmap;	/* bitmap of non-sharable nodes */
 extern struct config_record default_config_record;
 extern struct node_record default_node_record;
 
@@ -325,12 +328,12 @@ extern List job_list;			/* list of job_record entries */
 
 /*
  * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
- * IN bitmap - map of nodes to be allocated
+ * IN job_ptr - job being allocated resources
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  *	last_node_update - last update time of node table
  */
-extern void  allocate_nodes (unsigned *bitmap);
+extern void  allocate_nodes (struct job_record *job_ptr);
 
 /*
  * bitmap2node_name - given a bitmap, build a list of comma separated node 
@@ -775,16 +778,24 @@ extern void load_part_uid_allow_list ( int force );
  */
 extern int load_all_part_state ( void );
 
-/* make_node_alloc - flag specified node as allocated to a job */
-extern void make_node_alloc(struct node_record *node_ptr);
+/* make_node_alloc - flag specified node as allocated to a job
+ * IN node_ptr - pointer to node being allocated
+ * IN job_ptr  - pointer to job that is starting
+ */
+extern void make_node_alloc(struct node_record *node_ptr,
+			    struct job_record *job_ptr);
 
-/* make_node_comp - flag specified node as completing a job */
-extern void make_node_comp(struct node_record *node_ptr);
+/* make_node_comp - flag specified node as completing a job
+ * IN node_ptr - pointer to node marked for completion of job
+ * IN job_ptr  - pointer to job that is completing
+ */
+extern void make_node_comp(struct node_record *node_ptr,
+			   struct job_record *job_ptr);
 
 /*
  * make_node_idle - flag specified node as having finished with a job
  * IN node_ptr - pointer to node reporting job completion
- * IN job_ptr - pointer to job that just completed
+ * IN job_ptr  - pointer to job that just completed
  */
 extern void make_node_idle(struct node_record *node_ptr, 
 			   struct job_record *job_ptr);
