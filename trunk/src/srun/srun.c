@@ -214,8 +214,12 @@ srun(int ac, char **av)
 	if (pthread_join(job->lid, NULL) < 0)
 		error ("Waiting on launch thread: %m");
 
+	/*
+	 *  Send SIGHUP to IO thread so it can clean up, then
+	 *    wait for all output to complete
+	 */
 	debug("Waiting for IO thread");
-	/* wait for stdio */
+	pthread_kill(job->ioid, SIGHUP);
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
 
