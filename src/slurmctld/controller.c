@@ -1072,7 +1072,7 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 		alloc_msg . job_step_id = step_rec->step_id;
 		alloc_msg . credentials = & step_rec-> job_ptr-> details-> credential ;
 #ifdef HAVE_LIBELAN3
-		alloc_mgs . qsw_job =  step_rec-> qsw_job ;
+		alloc_msg . qsw_job =  step_rec-> qsw_job ;
 #endif
 	        response_msg . msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
                 response_msg . data =  & alloc_msg ;
@@ -1209,7 +1209,7 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 		job_step_resp.credentials = & step_rec-> job_ptr-> details-> credential ;
 				
 #ifdef HAVE_LIBELAN3
-		job_step_resp.qsw_job = & step_rec-> qsw_job ;
+		job_step_resp.qsw_job = step_rec-> qsw_job ;
 #endif
 		resp. address = msg -> address ;
 		resp. msg_type = RESPONSE_JOB_STEP_CREATE ;
