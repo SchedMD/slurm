@@ -145,5 +145,17 @@ int allocate_part(struct pa_request* pa_request, List* results);
  */
 int undo_last_allocatation();
 
+/** 
+ * get the port configuration for the nodes in the partition
+ * allocation result
+ *
+ *
+ * IN: pa_node list from result of allocate_part
+ * OUT/return: char* to be appended to output of each partition in the
+ * bluegene.conf file
+ * 
+ * NOTE, memory for returned string must be xfree'd by caller
+ */
+char* get_conf_result_str(List pa_node_list);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */

@@ -1410,6 +1410,75 @@ int undo_last_allocatation()
 	return SLURM_SUCCESS;
 }
 
+/** 
+ * get the port configuration for the nodes in the partition
+ * allocation result
+ *
+ *
+ * IN: pa_node list from result of allocate_part
+ * OUT/return: char* to be appended to output of each partition in the
+ * bluegene.conf file
+ * 
+ * NOTE, memory for returned string must be xfree'd by caller
+ */
+char* get_conf_result_str(List pa_node_list)
+{
+	char* result_str;
+	ListIterator pan_itr, cf_itr, pc_itr;
+	pa_node_t* pa_node;
+	conf_result_t* conf_result;
+	port_conf_t* port_conf;
+
+	result_str = xstrdup("NodeIDs=");
+
+	pan_itr = list_iterator_create(pa_node_list);
+	pa_node = (pa_node_t*) list_next(pan_itr);
+	while(pa_node != NULL){
+		_xstrfmtcat(&result_str, "%d%d%d",
+			    pa_node->coord[0], 
+			    pa_node->coord[1], 
+			    pa_node->coord[2]);
+
+		pa_node = (pa_node_t*) list_next(pan_itr);
+		if(pa_node != NULL){
+			_xstrcat(&result_str, ",");			
+		}
+	}
+
+
+	_xstrcat(&result_str, " PortConfigs=");
+	list_iterator_reset(pan_itr);
+	while((pa_node = (pa_node_t*) list_next(pan_itr))){
+		int i;
+		
+		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+			cf_itr = list_iterator_create(pa_node->conf_result_list[i]);
+			// while((conf_result = (conf_result_t*) list_next(cf_itr))){
+			conf_result = (conf_result_t*) list_next(cf_itr);
+			pc_itr = list_iterator_create(conf_result->port_conf_list);
+			port_conf = (port_conf_t*) list_next(pc_itr);
+			while(port_conf != NULL){
+				
+				_xstrfmtcat(&result_str, "%d%d%d/%d%d%d",
+					    port_conf->plus_ports[0],
+					    port_conf->plus_ports[1],
+					    port_conf->plus_ports[2],
+					    port_conf->minus_ports[0],
+					    port_conf->minus_ports[1],
+					    port_conf->minus_ports[2]);
+				
+				port_conf = (port_conf_t*) list_next(pc_itr);
+				if(port_conf != NULL){
+						_xstrcat(&result_str, ",");
+				}
+			}
+			list_iterator_destroy(cf_itr);
+		}
+	}
+	list_iterator_destroy(pan_itr);
+	
+	return result_str;
+}
 
 /** */
 int main(int argc, char** argv)
@@ -1455,16 +1524,16 @@ int main(int argc, char** argv)
 	  printf("done setting node down\n");
 	*/
 	
-	int i=0;
-	for (; i<8; i++){
 	time(&start);
 	if (allocate_part(request, &results)){
 		ListIterator itr;
-		pa_node_t* result;
+
 		printf("allocation succeeded\n");
 		       
 		itr = list_iterator_create(results);
 		printf("results: \n");
+		/*
+		pa_node_t* result;
 		while((result = (pa_node_t*) list_next(itr))){
 			printf("%d%d%d ", 
 			       result->coord[0], 
@@ -1472,14 +1541,18 @@ int main(int argc, char** argv)
 			       result->coord[2]);
 		}
 		printf("\n");
-		// _print_results(results);
+		*/
+		char* result = get_conf_result_str(results);
+		printf("results: %s\n", result);
+		xfree(result);
 		list_destroy(results);
+		// _print_results(results);
 	} else {
 		printf("request failed\n");
 	}
 	time(&end);
 	printf("allocate: %ld\n", (end-start));
-	}
+
 
 	time(&start);
 	pa_fini();

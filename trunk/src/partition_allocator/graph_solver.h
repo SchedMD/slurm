@@ -52,7 +52,7 @@ typedef struct conf_data {
 	conn_type_t* partition_type;
 	/* the node id's corresponding to each of the partition sizes.
 	 * so if there is a conf_data with partition_sizes: 2 1 1, then
-	 * node_id might have something like [ [0 1] [2] [3] ]
+	 * node_id might have something like [ 0/1,2,3 ]
 	 */
 	int** node_id;
 } conf_data_t;
