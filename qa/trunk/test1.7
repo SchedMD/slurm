@@ -45,15 +45,19 @@ print_header $test_id
 #
 # Ideally the job gets a "job exceeded timelimit" followed by a 
 # "Terminated" message, but if the timing is bad only the "Terminated" 
-# message gets sent
+# message gets sent. This is due to srun recognizing job termination 
+# prior to the message from slurmd being processed.
 #
 set timeout [expr $max_job_delay + $sleep_time]
 set timed_out 0
 spawn $srun -t1 $bin_sleep $sleep_time
 expect {
 	-re "job exceeded timelimit" {
-		send_user "This error is expected, no worries\n"
-		incr timed_out
+		set timed_out 1
+		exp_continue
+	}
+	-re "Terminated" {
+		set timed_out 1
 		exp_continue
 	}
 	timeout {
@@ -66,7 +70,9 @@ expect {
 		wait
 	}
 }
-if {$timed_out != 1} {
+if {$timed_out == 1} {
+	send_user "Early termination is expected, no worries.\n"
+} else {
 	send_user "\nFAILURE: time limit not enforced\n"
 	set exit_code 1
 }
@@ -75,6 +81,14 @@ set completions 0
 spawn $srun -t4 $bin_sleep $sleep_time
 expect {
 	-re "job exceeded timelimit" {
+		set completions -1
+		exp_continue
+	}
+	-re "Terminated" {
+		set completions -1
+		exp_continue
+	}
+	-re "error" {
 		set completions -1
 		exp_continue
 	}
@@ -90,7 +104,7 @@ expect {
 	}
 }
 if {$completions != 1} {
-	send_user "\nFAILURE: job failed to completed\n"
+	send_user "\nFAILURE: job failed to complete properly\n"
 	set exit_code 1
 }
 
