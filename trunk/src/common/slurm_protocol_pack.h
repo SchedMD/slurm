@@ -65,34 +65,6 @@ extern void pack_header ( header_t  * header , Buf buffer );
 extern int unpack_header ( header_t * header , Buf buffer );
 
 
-/****************************/
-/* Stream header functions  */
-/****************************/
-
-/* size_io_stream_header - get the size of an I/O stream header
- * RET number of bytes in an I/O steam header
- */
-extern int size_io_stream_header ( void );
-
-/* pack_io_stream_header
- * packs an i/o stream protocol header used for stdin/out/err
- * IN header - the header structure to pack
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-extern void pack_io_stream_header ( slurm_io_stream_header_t * header , 
-                                    Buf buffer ) ;
-
-/* unpack_io_stream_header
- * unpacks an i/o stream protocol header used for stdin/out/err
- * OUT header - the header structure to unpack
- * IN/OUT buffer - source of the unpack data, contains pointers that are
- *			automatically updated
- * RET 0 or error code
- */
-extern int unpack_io_stream_header ( slurm_io_stream_header_t * header , 
-                                     Buf buffer ) ;
-
 /**************************************************************************/
 /* generic case statement Pack / Unpack methods for slurm protocol bodies */
 /**************************************************************************/

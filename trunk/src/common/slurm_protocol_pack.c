@@ -235,58 +235,6 @@ unpack_header(header_t * header, Buf buffer)
 	return SLURM_ERROR;
 }
 
-/* size_io_stream_header - get the size of an I/O stream header
- * RET number of bytes in an I/O steam header
- */
-int
-size_io_stream_header(void)
-{
-	/* must match un/pack_io_stream_header and size_io_stream_header */
-	return (SLURM_SSL_SIGNATURE_LENGTH +
-		2 * sizeof(uint16_t) + sizeof(uint32_t));
-}
-
-/* pack_io_stream_header
- * packs an i/o stream protocol header used for stdin/out/err
- * IN header - the header structure to pack
- * IN/OUT buffer - destination of the pack, contains pointers that are
- *			automatically updated
- */
-void
-pack_io_stream_header(slurm_io_stream_header_t * header, Buf buffer)
-{				/* must match un/pack_io_stream_header and size_io_stream_header */
-
-	assert(header != NULL);
-
-	pack16(header->version, buffer);
-	packmem_array(header->key, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH,
-		      buffer);
-	pack32(header->task_id, buffer);
-	pack16(header->type, buffer);
-}
-
-/* unpack_io_stream_header
- * unpacks an i/o stream protocol header used for stdin/out/err
- * OUT header - the header structure to unpack
- * IN/OUT buffer - source of the unpack data, contains pointers that are
- *			automatically updated
- * RET 0 or error code
- */
-int
-unpack_io_stream_header(slurm_io_stream_header_t * header, Buf buffer)
-{
-	/* must match un/pack_io_stream_header and size_io_stream_header */
-	safe_unpack16(&header->version, buffer);
-	safe_unpackmem_array(header->key,
-			     (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
-	safe_unpack32(&header->task_id, buffer);
-	safe_unpack16(&header->type, buffer);
-	return SLURM_SUCCESS;
-
-      unpack_error:
-	return SLURM_ERROR;
-}
-
 
 /* pack_msg
  * packs a generic slurm protocol message body
@@ -1849,8 +1797,7 @@ _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 	packstr(msg->ofname, buffer);
 	packstr(msg->efname, buffer);
 	packstr(msg->ifname, buffer);
-	packmem_array(msg->key,
-		      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
+	slurm_cred_pack(msg->cred, buffer);
 }
 
 static int
@@ -1871,8 +1818,9 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
-	safe_unpackmem_array(msg->key,
-			     (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
+
+	if (!(msg->cred = slurm_cred_unpack(buffer)))
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 

@@ -313,7 +313,7 @@ create_job_step(job_t *job)
 		job_fatal (job, "Unable to create job step: %m");
 
 	job->stepid  = resp->job_step_id;
-	job->cred    = resp->credentials;
+	job->cred    = resp->cred;
 #ifdef HAVE_LIBELAN3
 	job->qsw_job = resp->qsw_job;
 #endif

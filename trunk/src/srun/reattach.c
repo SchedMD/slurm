@@ -308,10 +308,8 @@ _attach_to_job(job_t *job)
 		r->srun_node_id    = (uint32_t) i;
 		r->io_port         = ntohs(job->ioport[i%job->niofds]);
 		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+		r->cred            = job->cred;
 
-		/* XXX: Get random key */
-		memcpy(r->key, job->cred->signature, 
-		       SLURM_SSL_SIGNATURE_LENGTH);
 
 		/* XXX: redirecting output to files not yet
 		 * supported

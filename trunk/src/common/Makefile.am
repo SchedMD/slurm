@@ -15,7 +15,7 @@ noinst_LTLIBRARIES = 	\
 	libcommon.la 	\
 	libdaemonize.la \
 	libhostlist.la	\
-        libeio.la
+	libeio.la  	
 
 
 libcommon_la_SOURCES = 			\
@@ -65,7 +65,9 @@ libhostlist_la_SOURCES   = \
 	hostlist.c hostlist.h
 
 libeio_la_SOURCES = 	   \
-	eio.c eio.h
+	eio.c eio.h	   \
+	io_hdr.c io_hdr.h
+
 
 EXTRA_libcommon_la_SOURCES = \
 	qsw.c qsw.h

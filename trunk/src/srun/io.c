@@ -44,9 +44,11 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_protocol_pack.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
+#include "src/common/io_hdr.h"
 
 #include "src/srun/io.h"
 #include "src/srun/job.h"
@@ -81,9 +83,8 @@ static int      _do_task_input(job_t *job, int taskid);
 static int 	_do_task_input_poll(job_t *job, fd_info_t *info);
 static inline bool _io_thr_done(job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
-static ssize_t	_readn(int fd, void *buf, size_t nbytes);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
-static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
+static int      _read_io_header(int fd, job_t *job, char *host);
 
 #define _poll_set_rd(_pfd, _fd) do { 	\
 	(_pfd).fd = _fd;		\
@@ -566,22 +567,71 @@ _is_fd_ready(int fd)
 }
 
 
+static int
+_read_io_header(int fd, job_t *job, char *host)
+{
+	int      size = io_hdr_packed_size();
+	cbuf_t   cb   = cbuf_create(size, size);
+	char    *key  = NULL;
+	int      len  = 0;
+	io_hdr_t hdr;
+
+	if (cbuf_write_from_fd(cb, fd, size, NULL) < 0) {
+		error ("Bad stream header read: %m");
+		goto fail;
+	}
+
+	if (io_hdr_read_cb(cb, &hdr) < 0) {
+		error ("Unable to unpack io header: %m");
+		goto fail;
+	}
+
+	if (slurm_cred_get_signature(job->cred, &key, &len) < 0) {
+		error ("Couldn't get existing cred signature");
+		goto fail;
+	}
+
+	if (io_hdr_validate(&hdr, key, len) < 0)  /* check key */
+		goto fail;
+
+	/* 
+	 * validate reality of hdr.taskid
+	 */
+	if ((hdr.taskid < 0) || (hdr.taskid >= opt.nprocs)) {
+		error ("Invalid taskid %d from %s", hdr.taskid, host);
+		goto fail;
+	}
+
+	if (hdr.type == SLURM_IO_STDOUT)
+		job->out[hdr.taskid] = fd;
+	else
+		job->err[hdr.taskid] = fd;
+
+	debug2("accepted %s connection from %s task %ld, sd=%d", 
+	       (hdr.type == SLURM_IO_STDERR ? "stderr" : "stdout"), 
+		host, hdr.taskid, fd                               );
+
+	return SLURM_SUCCESS;
+
+    fail:
+	close(fd);
+	return SLURM_ERROR;
+}
+
+
 static void
 _accept_io_stream(job_t *job, int i)
 {
-	int len = size_io_stream_header();
 	int j;
 	int fd = job->iofd[i];
 	debug2("Activity on IO server port %d fd %d", i, fd);
 
 	for (j = 0; j < 15; i++) {
-		int sd, size_read;
+		int sd;
 		struct sockaddr addr;
 		struct sockaddr_in *sin;
 		int size = sizeof(addr);
 		char buf[INET_ADDRSTRLEN];
-		slurm_io_stream_header_t hdr;
-		Buf buffer;
 
 		/* 
 		 * Return early if fd is not now ready
@@ -612,55 +662,13 @@ _accept_io_stream(job_t *job, int i)
 
 		debug3("Accepted IO connection: ip=%s sd=%d", buf, sd); 
 
-		buffer = init_buf(len);
-		size_read = _readn(sd, buffer->head, len); 
-		if (size_read != len) {
-			/* A fatal error for this stream */
-			error("Incomplete stream header read");
-			free_buf(buffer);
-			return;
-		}
-
-		if (unpack_io_stream_header(&hdr, buffer)) {
-			/* A fatal error for this stream */
-			error ("Bad stream header read");
-			free_buf(buffer); /* NOTE: this frees msgbuf */
-			return;
-		}
-		free_buf(buffer); /* NOTE: this frees msgbuf */
-		if (_validate_header(&hdr, job))	/* check key */
-			return;
-
-
-		/* Assign new fds arbitrarily for now, until slurmd
-		 * sends along some control information
-		 */
-		if ((hdr.task_id < 0) || (hdr.task_id >= opt.nprocs)) {
-			error ("Invalid task_id %d from %s", hdr.task_id, buf);
-			continue;
-		}
-
 		/*
-		 * IO connection from task may come after task exits,
-		 * in which case, state should be waiting for IO.
-		 * 
-		 * Update to RUNNING now handled in msg.c
-		 *
-		 * slurm_mutex_lock(&job->task_mutex);
-		 * job->task_state[hdr.task_id] = SRUN_TASK_RUNNING;
-		 * slurm_mutex_unlock(&job->task_mutex);
+		 * Read IO header and update job structure appropriately
 		 */
+		if (_read_io_header(sd, job, buf) < 0)
+			continue;
 
 		fd_set_nonblocking(sd);
-
-		if (hdr.type == SLURM_IO_STREAM_INOUT)
-			job->out[hdr.task_id] = sd;
-		else
-			job->err[hdr.task_id] = sd;
-
-		debug2("accepted %s connection from %s task %ld, sd=%d", 
-				(hdr.type ? "stderr" : "stdout"), 
-				buf, hdr.task_id, sd                   );
 	}
 
 }
@@ -739,31 +747,6 @@ _readx(int fd, char *buf, size_t maxbytes)
 }	
 
 
-ssize_t
-_readn(int fd, void *buf, size_t nbytes) 
-{
-	int n = 0;
-	char *pbuf = (char *)buf;
-	size_t nleft = nbytes;
-
-	while (nleft > 0) {
-		n = read(fd, (void *)pbuf, nleft);
-		if (n > 0) {
-			pbuf+=n;
-			nleft-=n;
-		} else if (n == 0) 	/* EOF */
-			break;
-		else if (errno == EINTR)
-			continue;
-		else {
-			error("read error: %m");
-			break;
-		}
-	}
-
-	return(n);
-}
-
 static void
 _write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
 {
@@ -836,33 +819,5 @@ _bcast_stdin(int fd, job_t *job)
 	}
 
 	return;
-}
-
-static 
-int _validate_header(slurm_io_stream_header_t *hdr, job_t *job)
-{
-	if (hdr->version != SLURM_PROTOCOL_VERSION) {
-		error("Invalid header version, notify administrators");
-		return SLURM_ERROR;
-	}
-
-	if ((hdr->task_id < 0) && (hdr->task_id >= opt.nprocs)) {
-		error("Invalid header client task_id, notify administrators");
-		return SLURM_ERROR;
-	}
-
-	if ((hdr->type != SLURM_IO_STREAM_INOUT) && 
-	    (hdr->type != SLURM_IO_STREAM_SIGERR)) {
-		error("Invalid header client type, notify administrators");
-		return SLURM_ERROR;
-	}
-
-	if (memcmp((void *)job->cred->signature,
-	           (void *)hdr->key, SLURM_SSL_SIGNATURE_LENGTH)) {
-		error("Invalid header signature, notify administrators");
-		return SLURM_ERROR;
-	}
-
-	return SLURM_SUCCESS;
 }
 

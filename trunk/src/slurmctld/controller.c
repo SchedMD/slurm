@@ -115,7 +115,7 @@ static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static int          _make_step_cred(struct step_record *step_rec, 
-				    slurm_cred_t slurm_cred);
+				    slurm_cred_t *slurm_cred);
 static void         _parse_commandline(int argc, char *argv[], 
                                        slurm_ctl_conf_t *);
 static int          _ping_controller(void);
@@ -225,7 +225,11 @@ int main(int argc, char *argv[])
 						 job_credential_private_key);
 	if (!cred_ctx)
 		fatal("slurm_cred_creator_ctx_create: %m");
-	slurm_cred_ctx_set(cred_ctx, SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
+	/* Not used in creator
+	 *
+	 * slurm_cred_ctx_set(cred_ctx, 
+	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
+	 */
 
 	/* Block SIGALRM everyone not explicitly enabled */
 	if (sigemptyset(&set))
@@ -1516,7 +1520,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	req_step_msg.task_dist  = job_desc_msg->task_dist;
 	error_code = step_create(&req_step_msg, &step_rec, true);
 	if (error_code == SLURM_SUCCESS)
-		error_code = _make_step_cred(step_rec, slurm_cred);
+		error_code = _make_step_cred(step_rec, &slurm_cred);
 
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
@@ -1872,7 +1876,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		error_code = step_create(req_step_msg, &step_rec, false);
 	}
 	if (error_code == SLURM_SUCCESS)
-		error_code = _make_step_cred(step_rec, slurm_cred);
+		error_code = _make_step_cred(step_rec, &slurm_cred);
 
 	/* return result */
 	if (error_code) {
@@ -1910,7 +1914,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 /* create a credential for a given job step, return error code */
 static int _make_step_cred(struct step_record *step_rec, 
-			   slurm_cred_t slurm_cred)
+			   slurm_cred_t *slurm_cred)
 {
 	slurm_cred_arg_t cred_arg;
 
@@ -1918,10 +1922,12 @@ static int _make_step_cred(struct step_record *step_rec,
 	cred_arg.stepid   = step_rec->step_id;
 	cred_arg.uid      = step_rec->job_ptr->user_id;
 	cred_arg.hostlist = step_rec->step_node_list;
-	if ((slurm_cred = slurm_cred_create(cred_ctx, &cred_arg)) == NULL) {
+
+	if ((*slurm_cred = slurm_cred_create(cred_ctx, &cred_arg)) == NULL) {
 		error("slurm_cred_create error");
 		return ESLURM_INVALID_JOB_CREDENTIAL;
 	}
+
 	return SLURM_SUCCESS;
 }
 

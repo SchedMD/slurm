@@ -43,9 +43,8 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
-#define SLURM_KEY_SIZE	64
 typedef struct srun_key {
-	unsigned char data[SLURM_KEY_SIZE];
+	unsigned char data[SLURM_IO_KEY_SIZE];
 } srun_key_t;
 
 typedef enum task_state {

@@ -57,6 +57,8 @@ typedef enum {false, true} bool;
 #define MAX(a,b) ((a) > (b) ? (a) : (b))	
 #endif
 
+#define SLURM_IO_KEY_SIZE 8
+
 #  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
         (((uint64_t) (val) &                                                  \
           (uint64_t) (0x00000000000000ffU)) << 56) |                          \
