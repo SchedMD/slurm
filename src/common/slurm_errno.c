@@ -81,6 +81,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_WRITING_TO_FILE,		"I/O error writing script/environment to file" },
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
+	{ ESLURM_INTERCONNECT_FAILURE,		"Error configuring interconnect" },
 
 	/* Quadrics Elan routine error codes */
 	{ ENOSLURM,             "Out of slurm" }, /* oh no! */
