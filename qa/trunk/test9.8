@@ -71,6 +71,10 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 			incr start_cnt
 			exp_continue
 		}
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			exp_continue
+		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			kill_srun
@@ -80,6 +84,10 @@ for {set inx 0} {$inx < $job_cnt} {incr inx} {
 			wait
 		}
 	}
+}
+if {$start_cnt < 1} {
+	send_user "\nFAILURE: no jobs submitted\n"
+	exit 1
 }
 if {$start_cnt < $job_cnt} {
 	send_user "\nFAILURE: not all jobs submitted\n"
@@ -99,7 +107,12 @@ expect {
 		wait
 	}
 }
-exec $scancel --quiet --user $user_name
+spawn $scancel --quiet --user $user_name
+expect {
+	eof {
+		wait
+	}
+}
 
 #
 # Give a few seconds for clean-up and insure things are still fine

@@ -61,18 +61,21 @@ while [ $inx -le $iterations ]
 do
 	echo "########## LOOP $inx ########## " >>$log 2>&1
 	$exec1                                  >>$log 2>&1
-	if [ $? -ne 0 ]; then
-		exit_code=$?
+	rc=$?
+	if [ $rc -ne 0 ]; then
+		exit_code=$rc
 	fi
 	sleep $sleep_time
 	$exec2 -N1-$inx -c1 -s -l hostname         >>$log 2>&1
-	if [ $? -ne 0 ]; then
-		exit_code=$?
+	rc=$?
+	if [ $rc -ne 0 ]; then
+		exit_code=$rc
 	fi
 	sleep $sleep_time
 	$exec3                                  >>$log 2>&1
-	if [ $? -ne 0 ]; then
-		exit_code=$?
+	rc=$?
+	if [ $rc -ne 0 ]; then
+		exit_code=$rc
 	fi
 	sleep $sleep_time
 	inx=$((inx+1))

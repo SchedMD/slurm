@@ -11,7 +11,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -61,6 +61,10 @@ expect {
 		exec $bin_rm -f $file_in
 		exit $exit_code
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "Job initiated\n"
 	}
@@ -96,6 +100,10 @@ expect {
 			set host_1 $expect_out(2,string)
 		}
 		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
 	}
 	"$prompt" {
 		send_user "srun completed\n"
@@ -140,6 +148,10 @@ expect {
 		}
 		exp_continue
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "srun completed\n"
 	}
@@ -171,6 +183,10 @@ expect {
 			set exit_code   1	
 		}
 		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
 	}
 	"$prompt" {
 		send_user "srun completed\n"
@@ -204,6 +220,10 @@ expect {
 		}
 		exp_continue
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "srun completed\n"
 	}
@@ -235,6 +255,10 @@ expect {
 			set exit_code   1	
 		}
 		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
 	}
 	"$prompt" {
 		send_user "srun completed\n"
@@ -336,6 +360,10 @@ expect {
 		}
 		exp_continue
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "srun completed\n"
 	}
@@ -362,6 +390,10 @@ expect {
 	-re "($number): ($alpha_numeric)" {
 		incr processors
 		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
 	}
 	"$prompt" {
 		send_user "srun completed\n"

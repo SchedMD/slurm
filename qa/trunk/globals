@@ -74,7 +74,7 @@ set bin_wc	"wc"
 # be initiated within this number of seconds.
 # for interactive slurm jobs: set timeout $max_job_delay
 #
-set max_job_delay 100
+set max_job_delay 120
 
 #
 # Files must be propogated between nodes within this number of seconds.
@@ -276,6 +276,10 @@ proc wait_for_job { job_id state } {
 		spawn -noecho $scontrol -o show job $job_id
 		expect {
 			-re "Job \[0-9]* not found" {
+				set is_done 1 
+				exp_continue
+			}
+			-re "JobState=CANCELLED" {
 				set is_done 1 
 				exp_continue
 			}

@@ -11,7 +11,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -66,6 +66,10 @@ expect {
 		kill_srun
 		exit 0
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "Job initiated\n"
 	}
@@ -108,6 +112,10 @@ expect {
 	-re "3: ($alpha_numeric)" {
 		set host_3 $expect_out(1,string)
 		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
 	}
 	"$prompt" {
 		send_user "srun completed\n"
@@ -176,7 +184,10 @@ expect {
 		set exit_code   1	
 		exp_continue
 	}
-
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "srun completed\n"
 	}
@@ -223,7 +234,10 @@ expect {
 		set exit_code   1	
 		exp_continue
 	}
-
+	 -re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "srun completed\n"
 	}
@@ -276,7 +290,10 @@ expect {
 		set exit_code   1	
 		exp_continue
 	}
-
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	"$prompt" {
 		send_user "srun completed\n"
 	}

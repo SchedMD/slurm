@@ -15,7 +15,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -71,7 +71,7 @@ expect {
 #
 if {[string compare $host ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname\n"
-	set exit_code   1	
+	exit 1	
 }
 if {$cpu_count < 2} {
 	send_user "\nWARNING: The node only has one CPU\n"

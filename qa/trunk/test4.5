@@ -10,7 +10,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -57,6 +57,10 @@ expect {
 		}
 		exp_continue
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	timeout {
 		send_user "\nFAILURE: sinfo not responding\n"
 		set exit_code 1
@@ -78,6 +82,10 @@ expect {
 		}
 		exp_continue
 	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
+	}
 	timeout {
 		send_user "\nFAILURE: sinfo not responding\n"
 		set exit_code 1
@@ -98,6 +106,10 @@ expect {
 			incr mismatches
 		}
 		exp_continue
+	}
+	-re "Unable to contact" {
+		send_user "\nFAILURE: slurm appears to be down\n"
+		exit 1
 	}
 	timeout {
 		send_user "\nFAILURE: sinfo not responding\n"

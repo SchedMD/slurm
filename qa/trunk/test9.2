@@ -11,7 +11,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -52,6 +52,10 @@ proc run_hostname_job { output_file } {
 
 	spawn $srun --input=/dev/null --output=$output_file --error=/dev/null -n$task_cnt -N$node_cnt $other_opts -t1 $bin_hostname
 	expect {
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			return 1  
+		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
 			kill_srun
@@ -73,6 +77,7 @@ set timeout $max_job_delay
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
 	if {[run_hostname_job $file_out]} {
 		set exit_code 1
+		continue
 	}
 	set stdout_lines [get_line_cnt $file_out]
 	if {$stdout_lines != $task_cnt} {

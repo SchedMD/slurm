@@ -54,8 +54,8 @@ for {set inx 0} {$inx < $task_cnt} {incr inx} {
 set success_cnt 0
 set timeout [expr $max_job_delay * $interations * $task_cnt]
 for {set inx 0} {$inx < $task_cnt} {incr inx} {
+	set spawn_id $task_id($inx)
 	expect {
-		-i $task_id($inx)
 		"########## EXIT_CODE 0 ##########" {
 			incr success_cnt
 		}
