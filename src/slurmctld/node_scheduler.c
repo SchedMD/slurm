@@ -791,10 +791,11 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
 	if (job_ptr->time_limit == INFINITE)
-		job_ptr->end_time = INFINITE;
+		job_ptr->end_time = job_ptr->start_time + 
+				    (365 * 24 * 60 * 60); /* secs in year */
 	else
-		job_ptr->end_time =
-		    job_ptr->start_time + (job_ptr->time_limit * 60);
+		job_ptr->end_time = job_ptr->start_time + 
+				    (job_ptr->time_limit * 60);   /* secs */
 	build_job_cred(job_ptr); /* uses end_time set above */
 
       cleanup:

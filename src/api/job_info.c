@@ -79,16 +79,25 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 		  job_ptr->name, job_state_string(job_ptr->job_state));
 
 	fprintf ( out, "   Priority=%u Partition=%s BatchFlag=%u\n", 
-		  job_ptr->priority, job_ptr->partition, job_ptr->batch_flag);
+		  job_ptr->priority, job_ptr->partition, 
+		  job_ptr->batch_flag);
 
-	fprintf ( out, "   AllocNode:Sid=%s:%u TimeLimit=%u\n", 
-		  job_ptr->alloc_node, job_ptr->alloc_sid, 
-		  job_ptr->time_limit);
+	fprintf ( out, "   AllocNode:Sid=%s:%u TimeLimit=", 
+		  job_ptr->alloc_node, job_ptr->alloc_sid);
+	if (job_ptr->time_limit == INFINITE)
+		fprintf ( out, "UNLIMITED\n");
+	else
+		fprintf ( out, "%u\n", job_ptr->time_limit);
 
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
-	fprintf ( out, "   StartTime=%s ", time_str);
-	make_time_str ((time_t *)&job_ptr->end_time, time_str);
-	fprintf ( out, "EndTime=%s\n", time_str);
+	fprintf ( out, "   StartTime=%s EndTime=", time_str);
+	if ((job_ptr->time_limit == INFINITE) && 
+	    (job_ptr->end_time > time(NULL)))
+		fprintf ( out, "NONE\n", time_str);
+	else {
+		make_time_str ((time_t *)&job_ptr->end_time, time_str);
+		fprintf ( out, "%s\n", time_str);
+	}
 
 	fprintf ( out, "   NodeList=%s ", job_ptr->nodes);
 	fprintf ( out, "NodeListIndecies=");
