@@ -18,14 +18,18 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 	launch_tasks_response_msg_t *msg = 
 		(launch_tasks_response_msg_t *) resp->data;
 
-	debug2("recieved launch resp from %s", msg->node_name);
+	debug2("recieved launch resp from %s nodeid=%d", msg->node_name,
+			msg->srun_node_id);
 	
 	if (msg->return_code != 0)  {
 		error("recvd return code %d from %s", msg->return_code,
 				msg->node_name);
 		return;
 	} else {
-		/* job->host_state[msg->host_id] = SRUN_HOST_REPLIED; */
+		
+		if (msg->srun_node_id > 0 && msg->srun_node_id < job->nhosts)
+			job->host_state[msg->srun_node_id] = 
+				SRUN_HOST_REPLIED;
 	}
 
 }
