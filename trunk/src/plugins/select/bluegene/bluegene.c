@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
+ *  Written by Danny Auble <auble1@llnl.gov> et. al.
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -64,10 +64,13 @@ static int  _validate_config_nodes(void);
  *   configurations. Fill in bgl_part_id 
  * RET - success of fitting all configurations
  */
-/* <<<<<<< bluegene.c */
 int create_static_partitions(List part_list)
 {
 	int rc = SLURM_SUCCESS;
+
+#ifdef HAVE_BGL_FILES
+/* FIXME: we really do want to validate configuration here in any case,
+ * I just took this out on a temporary basis */
 	ListIterator itr;
 	int number, j=0;
 	int x, y, z;
@@ -139,7 +142,8 @@ int create_static_partitions(List part_list)
 			pm_destroy_partition(part_id[i]);
 		
 		rm_get_data(my_part, RM_PartitionState, &state);
-		while ((state != RM_PARTITION_FREE) && (state != RM_PARTITION_ERROR)){
+		while ((state != RM_PARTITION_FREE)
+		&&     (state != RM_PARTITION_ERROR)) {
 			printf(".");
 			rc=rm_free_partition(my_part);
 			if(rc!=STATUS_OK){
@@ -217,6 +221,21 @@ int create_static_partitions(List part_list)
 		list_iterator_destroy(itr);
 		rc = SLURM_SUCCESS;
 /* 	} */
+#else
+	if (bgl_list) {
+		bgl_record_t *record;
+		while ((record = list_pop(bgl_list)))
+			_destroy_bgl_record(record);
+	} else
+		bgl_list = list_create(_destroy_bgl_record);
+
+	/* copy the slurm.conf partition info from slurmctld into bgl_list */
+	if ((rc = _copy_slurm_partition_list(part_list)))
+		return rc;
+
+	/* syncronize slurm.conf and bluegene.conf data */
+	_process_config();
+#endif
 	return rc;
 }
 
@@ -415,7 +434,6 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 			
 	} /* end while(slurm_part) */
 	list_iterator_destroy(itr);
-	printf("rc %d",rc);
 	return rc;
 }
 
@@ -587,20 +605,16 @@ static int _parse_bgl_spec(char *in_line)
 	new_record->nodes = nodes;
 	nodes = NULL;	/* pointer moved, nothing left to xfree */
 	
-	printf("this is the type ");
-	printf("%s %d\n",conn_type,strlen(conn_type));
-	
-	if (!strcasecmp(conn_type,"MESH"))
-		new_record->conn_type = SELECT_MESH;
-	else 
+	if (!conn_type || !strcasecmp(conn_type,"TORUS"))
 		new_record->conn_type = SELECT_TORUS;
+	else
+		new_record->conn_type = SELECT_MESH;
 	
-	if (!node_use || !strcasecmp(conn_type,"COPROCESSOR"))
+	if (!node_use || !strcasecmp(node_use,"COPROCESSOR"))
 		new_record->node_use = SELECT_COPROCESSOR_MODE;
 	else
 		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-	printf("this is the type ");
-	printf("%d\n",new_record->conn_type);
+
 	list_append(bgl_conf_list, new_record);
 #if _DEBUG
 	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
