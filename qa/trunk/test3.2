@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -34,12 +34,46 @@ source ./globals
 set test_id        "3.2"
 set authorized     1
 set exit_code      0
+set job_runnable 0
 set part_name      ""
 set part_old_state ""
 set part_new_state ""
 set read_state     ""
 
 print_header $test_id
+
+# Execute a srun job in the specified partition name
+# Returns 0 on successful completion, returns 1 otherwise
+proc run_job { part_name } {
+	global bin_hostname srun timeout
+	set rc 1
+
+	spawn $srun --output=none --error=none -p $part_name -N1-128 -t1 $bin_hostname
+	expect {
+		-re "Unable to contact" {
+			send_user "\nFAILURE: slurm appears to be down\n"
+			return 1  
+		}
+		-re "uid" {
+			set rc 0
+			exp_continue
+		}
+		-re "not available" {
+			kill_srun
+			exp_continue
+		}
+		timeout {
+			send_user "\nFAILURE: srun not responding\n"
+			kill_srun
+			return 1
+		}
+		eof {
+			wait
+		}
+	}
+
+	return $rc
+}
 
 #
 # Identify a partition and its state
@@ -81,15 +115,27 @@ if {[string compare $part_old_state ""] == 0} {
 	exit 1
 }
 if {[string compare $part_old_state "UP"] == 0} {
+	set job_runable 1
 	set part_new_state "DOWN"
 }
 if {[string compare $part_old_state "DOWN"] == 0} {
+	set job_runable 0
 	set part_new_state "UP"
 }
 if {[string compare $part_new_state ""] == 0} {
 	send_user "\nFAILURE: state of partition $part_name is"
 	send_user " invalid: $part_old_state\n"
 	exit 1
+}
+
+#
+# Confirm that a DOWN partition does not run any jobs
+#
+if {$job_runable == 0} {
+	if {[run_job $part_name] == 0} {
+		send_user "\nFAILURE: Job ran in DOWN partition\n"
+		set exit_code 1
+	}
 }
 
 #
@@ -144,6 +190,16 @@ expect {
 if {$authorized == 1} {
 	if {[string compare $read_state $part_new_state] != 0} {
 		send_user "\nFAILURE: scontrol state change error\n"
+		set exit_code 1
+	}
+}
+
+#
+# Confirm that a DOWN partition does not run any jobs
+#
+if {$job_runable == 1} {
+	if {[run_job $part_name] == 0} {
+		send_user "\nFAILURE: Job ran in DOWN partition\n"
 		set exit_code 1
 	}
 }
