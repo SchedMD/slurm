@@ -116,7 +116,7 @@ Specifies the pointer to the structure to be created and filled in by the functi
 successful, a job entry is created. Note that if the job's requested node 
 count or time allocation are outside of the partition's limits then a job 
 entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left 
-queued until the partition limits are changed.
+queued until the partition's limits are changed.
 Always release the response message when no longer required using 
 the function \fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
@@ -148,7 +148,7 @@ release the response message when no longer required using the function
 \fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
 \fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if 
-the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition limits are changed and resources are available.  Always release the response message when no 
+the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition's limits are changed and resources are available.  Always release the response message when no 
 longer required using the function \fBslurm_free_submit_response_msg\fR.
 .SH "RETURN VALUE"
 .LP
