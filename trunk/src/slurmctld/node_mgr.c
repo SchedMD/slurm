@@ -962,13 +962,13 @@ int update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_DRAINED) {
-				if (bit_test (idle_node_bitmap, node_inx) == 
-									false)
+				if (!bit_test (idle_node_bitmap, node_inx))
 					state_val = NODE_STATE_DRAINING;
 				bit_clear (up_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_DRAINING) {
-				if (bit_test (idle_node_bitmap, node_inx)) {
+				if (bit_test (idle_node_bitmap, node_inx) ||
+				    (!bit_test (up_node_bitmap, node_inx))) {
 					state_val = NODE_STATE_DRAINED;
 					bit_clear (idle_node_bitmap, node_inx);
 				}
