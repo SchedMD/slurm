@@ -169,14 +169,15 @@ _print_time( time_t t, int level, int width, bool right_justify )
 	struct tm time;
 	char str[FORMAT_STRING_SIZE];
 	
-	gmtime_r( &t, &time );
+	localtime_r( &t, &time );
 	
 	switch ( level )
 	{
 		case 1:
 		case 2:
 		default:
-			snprintf(str, FORMAT_STRING_SIZE, "%.2u-%.2u-%.2u:%.2u", time.tm_mon ,time.tm_mday ,time.tm_hour, time.tm_min);
+			snprintf(str, FORMAT_STRING_SIZE, "%2.2u/%2.2u-%2.2u:%2.2u", 
+				(time.tm_mon+1) ,time.tm_mday ,time.tm_hour, time.tm_min);
 			break;
 	}
 
