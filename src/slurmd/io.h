@@ -26,10 +26,24 @@ enum
 	SIG_STDERR_SOCK = 1
 } ;
 
+
+/* forward_io
+ * controlling thread for io forwarding or io piping
+ * IN task_arg		- task_arg structure containing per task launch info
+ * RET int		- return_code
+ */
 int forward_io ( task_start_t * task_arg ) ;
+
+/* individual io piping threads called by forward_io */
 void * stdin_io_pipe_thread ( void * arg ) ;
 void * stdout_io_pipe_thread ( void * arg ) ;
 void * stderr_io_pipe_thread ( void * arg ) ;
+
+/* wait_on_io_threads
+ * called by exec_task_thread parent proccess to insure streams have been flushed before returning task exit status
+ * IN task_arg		- task_arg structure containing per task launch info
+ * RET int		- return_code
+ */
 int wait_on_io_threads ( task_start_t * task_start ) ;
 
 #endif
