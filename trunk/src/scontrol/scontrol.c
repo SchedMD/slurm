@@ -87,7 +87,7 @@ main (int argc, char *argv[])
 	exit_flag = 0;
 	input_field_count = 0;
 	quiet_flag = 0;
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but let's continue anyway */
 		input_words = argc;
@@ -286,7 +286,8 @@ print_job (char * job_id_str)
  * input: node_name - NULL to print all node information
  *	  node_ptr - pointer to node table of information
  * NOTE: call this only after executing load_node, called from print_node_list
- * NOTE: To avoid linear searches, we remember the location of the last name match
+ * NOTE: To avoid linear searches, we remember the location of the last name
+match
  */
 void
 print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
@@ -321,8 +322,10 @@ print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 
 
 /*
- * print_node_list - print information about the supplied node list (or regular expression)
- * input: node_list - print information about the supplied node list (or regular expression)
+ * print_node_list - print information about the supplied node list (or regular
+expression)
+ * input: node_list - print information about the supplied node list (or regular
+expression)
  */
 void
 print_node_list (char *node_list) 
@@ -401,7 +404,8 @@ print_part (char *partition_name)
 	partition_info_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
-		error_code = slurm_load_partitions (old_part_info_ptr->last_update, &part_info_ptr);
+		error_code = slurm_load_partitions (old_part_info_ptr->last_update,
+&part_info_ptr);
 		if (error_code == 0) {
 			slurm_free_partition_info_msg (old_part_info_ptr);
 		}
@@ -451,7 +455,8 @@ print_part (char *partition_name)
 
 /*
  * print_step - print the specified job step's information
- * input: job_step_id_str - job step's id or NULL to print information about all job steps
+ * input: job_step_id_str - job step's id or NULL to print information about all
+job steps
  */
 void 
 print_step (char *job_step_id_str)
@@ -689,7 +694,8 @@ update_it (int argc, char *argv[])
 	
 	if (i >= argc) {	
 		printf("No valid entity in update command\n");
-		printf("Input line must include \"NodeName\", \"PartitionName\", or \"JobId\"\n");
+		printf("Input line must include \"NodeName\", \"PartitionName\", or
+\"JobId\"\n");
 	}
 	else if (error_code) {
 		slurm_perror ("slurm_update error");
@@ -819,7 +825,8 @@ update_node (int argc, char *argv[])
 }
 
 /* 
- * update_part - update the slurm partition configuration per the supplied arguments 
+ * update_part - update the slurm partition configuration per the supplied
+arguments 
  * input: argc - count of arguments
  *        argv - list of arguments
  * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
@@ -916,28 +923,42 @@ usage () {
 	printf ("scontrol [-q | -v] [<COMMAND>]\n");
 	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
 	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
-	printf ("  <keyword> may be omitted from the execute line and scontrol will execute in interactive\n");
-	printf ("    mode. It will process commands as entered until explicitly terminated.\n");
+	printf ("  <keyword> may be omitted from the execute line and scontrol will
+execute in interactive\n");
+	printf ("    mode. It will process commands as entered until explicitly
+terminated.\n");
 	printf ("    Valid <COMMAND> values are:\n");
-	printf ("     abort                    shutdown slurm controller immediately generating a core file.\n");
+	printf ("     abort                    shutdown slurm controller immediately
+generating a core file.\n");
 	printf ("     exit                     terminate this command.\n");
 	printf ("     help                     print this description of use.\n");
-	printf ("     quiet                    print no messages other than error messages.\n");
+	printf ("     quiet                    print no messages other than error
+messages.\n");
 	printf ("     quit                     terminate this command.\n");
 	printf ("     reconfigure              re-read configuration files.\n");
-	printf ("     show <ENTITY> [<ID>]     display state of identified entity, default is all records.\n");
+	printf ("     show <ENTITY> [<ID>]     display state of identified entity,
+default is all records.\n");
 	printf ("     shutdown                 shutdown slurm controller.\n");
-	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
+	printf ("     update <SPECIFICATIONS>  update job, node, or partition
+configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
 	printf ("     !!                       Repeat the last command entered.\n");
-	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or \"step\".\n");
-	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
-	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
-	printf ("     The job step id is the job id followed by a period and the step id.\n");
-	printf ("  <SPECIFICATIONS> are specified in the same format as the configuration file. You may\n");
-	printf ("     wish to use the \"show\" keyword then use its output as input for the update keyword,\n");
+	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or
+\"step\".\n");
+	printf ("  <ID> may be a configuration parametername , job id, node name,
+partition name or job step id.\n");
+	printf ("     Node names mayspecified using simple regular expressions, (e.g.
+\"lx[10-20]\").\n");
+	printf ("     The job step id is the job id followed by a period and the step
+id.\n");
+	printf ("  <SPECIFICATIONS> are specified in the same format as the
+configuration file. You may\n");
+	printf ("     wish to use the \"show\" keyword then use its output as input for
+the update keyword,\n");
 	printf ("     editing as needed.\n");
-	printf ("  All commands and options are case-insensitive, although node names and partition\n");
-	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are distinct).\n");
+	printf ("  All commands and options are case-insensitive, although node names
+and partition\n");
+	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are
+distinct).\n");
 }
