@@ -297,7 +297,7 @@ struct Part_Record *Find_Part_Record(char *name) {
 int Find_Valid_Parts (char *Specification, unsigned *Parition) { 
     int Error_Code;
     char *Scratch;
-    char *str_ptr1, *str_ptr2;
+    char *str_ptr1, *str_ptr2, *str_ptr3;
     char My_User[30];
     char My_Partition[MAX_PART_LEN];
     int My_MaxTime; 	/* Default is -1, unlimited */
@@ -323,7 +323,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     str_ptr1 = (char *)strstr(Specification, "Partition=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+10);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	if ((strlen(str_ptr2)+1) >= MAX_PART_LEN) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Find_Valid_Parts: Partition name too long\n");
@@ -347,7 +347,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 	return EINVAL;
     } /* if */
     strcpy(Scratch, str_ptr1+5);
-    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
     if ((strlen(str_ptr2)+1) >= sizeof(My_User)) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Valid_Parts: User name too long\n");
@@ -357,13 +357,13 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 	free(Scratch);
 	return EINVAL;
     } /* if */
-    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
     strcpy(My_User, str_ptr2);
 
     str_ptr1 = (char *)strstr(Specification, "MaxTime=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	My_MaxTime = (int) strtol(str_ptr2, (char **)NULL, 10);
     } else {
 	My_MaxTime = -1;
@@ -372,7 +372,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     str_ptr1 = (char *)strstr(Specification, "CpuCount=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	My_CPUs = (int) strtol(str_ptr2, (char **)NULL, 10);
     } else {
 	My_CPUs = 1;
@@ -394,7 +394,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 	return EINVAL;
     } /* if */
     strcpy(Scratch, str_ptr1+8);
-    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
     if (strcmp(str_ptr2, "INTERACTIVE") == 0) {
 	My_JobType = 1;
     } else if (strcmp(str_ptr2, "BATCH") == 0) {
@@ -436,7 +436,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 	} /* if */ 
 	if (Part_Record_Point->AllowUsers != (char *)NULL) {
 	    strcpy(Scratch, Part_Record_Point->AllowUsers);
-	    strtok(Scratch, SEPCHARS);	/* make any white-space into end of string */
+	    strtok_r(Scratch, SEPCHARS, &str_ptr3);	/* make any white-space into end of string */
 	    str_ptr1 = (char *)strtok_r(Scratch, ",", &str_ptr2);
 	    while (str_ptr1 != NULL) {
 		if (strcmp(str_ptr1, My_User) == 0) break;
@@ -445,7 +445,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 	    if (str_ptr1 == NULL) continue;  /* Not in allow list */
  	} else if (Part_Record_Point->DenyUsers != (char *)NULL) {
 	    strcpy(Scratch, Part_Record_Point->DenyUsers);
-	    strtok(Scratch, SEPCHARS);	/* make any white-space into end of string */
+	    strtok_r(Scratch, SEPCHARS, &str_ptr2);	/* make any white-space into end of string */
 	    str_ptr1 = (char *)strtok_r(Scratch, ",", &str_ptr2);
 	    while (str_ptr1 != NULL) {
 		if (strcmp(str_ptr1, My_User) == 0) break;
@@ -474,7 +474,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
 	int *My_MaxTime, int *Set_MaxTime, int *My_MaxCpus, int *Set_MaxCpus, 
 	char **My_AllowUsers, char **My_DenyUsers) {
     char *Scratch;
-    char *str_ptr1, *str_ptr2, *str_ptr3;
+    char *str_ptr1, *str_ptr2, *str_ptr3, *str_ptr4;
     int Error_Code, user_len;
 
     Error_Code         = 0;
@@ -507,7 +507,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "Name=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	if (strlen(str_ptr2) < MAX_PART_LEN) strcpy(My_Name, str_ptr2);
 	else {
 #if DEBUG_SYSTEM
@@ -523,7 +523,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "Number=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+7);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	*My_Number = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_Number = 1;
     } /* if */
@@ -531,7 +531,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "JobType=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	if (strcmp(Scratch, "BATCH") == 0) {
 	    *My_Batch          = 1;
 	    *Set_Batch         = 1;
@@ -553,7 +553,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "MaxTime=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	if (strncmp(str_ptr2, "UNLIMITED", 9) == 0)
 	    *My_MaxTime = -1;
 	else
@@ -564,7 +564,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "MaxCpus=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	if (strncmp(str_ptr2, "UNLIMITED", 9) == 0)
 	    *My_MaxCpus = -1;
 	else
@@ -575,7 +575,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "State=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+6);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	if (strcmp(Scratch, "UP") == 0) {
 	    *My_Available      = 1;
 	    *Set_Available     = 1;
@@ -588,7 +588,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "AllowUsers=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+11);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	user_len = strlen(str_ptr2);
 	str_ptr3 = malloc(user_len+1);
 	if (str_ptr3 == NULL) {
@@ -607,7 +607,7 @@ int Parse_Part_Spec(char *Specification, char *My_Name,
     str_ptr1 = (char *)strstr(Specification, "DenyUsers=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+10);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr4);
 	user_len = strlen(str_ptr2);
 	str_ptr3 = malloc(user_len+1);
 	if (str_ptr3 == NULL) {

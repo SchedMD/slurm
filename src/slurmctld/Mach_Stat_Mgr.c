@@ -221,7 +221,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Partition, int *Set_Partition, 
 	enum Node_State *My_NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse) {
     char *Scratch;
-    char *str_ptr1, *str_ptr2;
+    char *str_ptr1, *str_ptr2, *str_ptr3;
     int Error_Code, i;
 
     Error_Code         = 0;
@@ -250,7 +250,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "Name=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	if (strlen(str_ptr2) < MAX_NAME_LEN) 
 	    strcpy(My_Name, str_ptr2);
 	else {
@@ -267,7 +267,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "OS=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+3);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	if (strlen(str_ptr2) < MAX_OS_LEN) 
 	    strcpy(My_OS, str_ptr2);
 	else {
@@ -282,7 +282,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "CPUs=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_CPUs = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_CPUs = 1;
     } /* if */
@@ -290,7 +290,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "Speed=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+6);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_Speed = (float) strtod(str_ptr2, (char **)NULL);
 	*Set_Speed = 1;
     } /* if */
@@ -298,7 +298,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "RealMemory=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+11);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_RealMemory = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_RealMemory = 1;
     } /* if */
@@ -306,7 +306,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "VirtualMemory=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+14);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_VirtualMemory = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_VirtualMemory = 1;
     } /* if */
@@ -314,7 +314,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "TmpDisk=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_TmpDisk = strtol(str_ptr2, (char **)NULL, 10);
 	*Set_TmpDisk = 1;
     } /* if */
@@ -322,7 +322,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "Partition=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+10);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	Partition_String_To_Value(str_ptr2, My_Partition, &Error_Code);
 	*Set_Partition = 1;
     } /* if */
@@ -330,7 +330,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "State=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+6);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	for (i=0; i<= STATE_END; i++) {
 	    if (strcmp(Node_State_String[i], "END") == 0) break;
 	    if (strcmp(Node_State_String[i], Scratch) == 0) {
@@ -344,7 +344,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "LastResponse=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+13);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_LastResponse = (time_t) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_LastResponse = 1;
     } /* if */

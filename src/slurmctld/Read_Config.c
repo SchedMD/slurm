@@ -77,7 +77,7 @@ int Read_SLURM_Conf (char *File_Name) {
 
     int Set_Admin, Set_ControlMach, Set_Backup, Set_NodeSpec, Set_PartSpec;
     int Set_ControlDaemon, Set_ServerDaemon;
-    char *str_ptr1, *str_ptr2;
+    char *str_ptr1, *str_ptr2, *str_ptr3;
     int str_len;
 
     /* Initialization */
@@ -111,7 +111,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "Administrators=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+15);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (Administrators != NULL) free(Administrators);
 	    Administrators = (char *)malloc(str_len+1);
@@ -129,7 +129,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "ControlMachine=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+15);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (ControlMachine != NULL) free(ControlMachine);
 	    ControlMachine = (char *)malloc(str_len+1);
@@ -147,7 +147,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "BackupController=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+17);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (BackupController != NULL) free(ControlMachine);
 	    BackupController = (char *)malloc(str_len+1);
@@ -165,7 +165,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "NodeSpecConf=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+13);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (NodeSpecConf != NULL) free(NodeSpecConf);
 	    NodeSpecConf = (char *)malloc(str_len+1);
@@ -183,7 +183,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "PartitionConf=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+14);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (PartitionConf != NULL) free(PartitionConf);
 	    PartitionConf = (char *)malloc(str_len+1);
@@ -201,7 +201,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "ControlDaemon=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+14);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (ControlDaemon != NULL) free(ControlDaemon);
 	    ControlDaemon = (char *)malloc(str_len+1);
@@ -219,7 +219,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	str_ptr1 = (char *)strstr(In_Line, "ServerDaemon=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+13);
-	    str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	    str_len = strlen(str_ptr2);
 	    if (ServerDaemon != NULL) free(ServerDaemon);
 	    ServerDaemon = (char *)malloc(str_len+1);

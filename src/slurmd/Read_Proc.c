@@ -76,3 +76,43 @@ printf("%s\n",Proc_Ent->d_name);
     /* Termination */
     closedir(Proc_FS);
 } /* Read_Proc */
+
+
+void stat2proc(char* S, proc_t* P) {
+    int num;
+    char* tmp = strrchr(S, ')');	/* split into "PID (cmd" and "<rest>" */
+    *tmp = '\0';			/* replace trailing ')' with NUL */
+    /* parse these two strings separately, skipping the leading "(". */
+    memset(P->cmd, 0, sizeof P->cmd);	/* clear even though *P xcalloc'd ?! */
+    sscanf(S, "%d (%15c", &P->pid, P->cmd);   /* comm[16] in kernel */
+    num = sscanf(tmp + 2,			/* skip space after ')' too */
+       "%c "
+       "%d %d %d %d %d "
+       "%lu %lu %lu %lu %lu %lu %lu "
+       "%ld %ld %ld %ld %ld %ld "
+       "%lu %lu "
+       "%ld "
+       "%lu %lu %lu %lu %lu %lu "
+       "%*s %*s %*s %*s " /* discard, no RT signals & Linux 2.1 used hex */
+       "%lu %lu %lu %*d %d",
+       &P->state,
+       &P->ppid, &P->pgrp, &P->session, &P->tty, &P->tpgid,
+       &P->flags, &P->min_flt, &P->cmin_flt, &P->maj_flt, &P->cmaj_flt, &P->utime, &P->stime,
+       &P->cutime, &P->cstime, &P->priority, &P->nice, &P->timeout, &P->it_real_value,
+       &P->start_time, &P->vsize,
+       &P->rss,
+       &P->rss_rlim, &P->start_code, &P->end_code, &P->start_stack, &P->kstk_esp, &P->kstk_eip,
+/*     P->signal, P->blocked, P->sigignore, P->sigcatch,   */ /* can't use */
+       &P->wchan, &P->nswap, &P->cnswap /* , &P->exit_signal  */, &P->lproc);
+/* TODO: add &P->exit_signal support here, perhaps to identify Linux threads */
+    
+/*    fprintf(stderr, "stat2proc converted %d fields.\n",num); */
+    if (P->tty == 0)
+	P->tty = -1;  /* the old notty val, update elsewhere bef. moving to 0 */
+    if (linux_version_code < LINUX_VERSION(1,3,39)) {
+	P->priority = 2*15 - P->priority;	/* map old meanings to new */
+	P->nice = 15 - P->nice;
+    }
+    if (linux_version_code < LINUX_VERSION(1,1,30) && P->tty != -1)
+	P->tty = 4*0x100 + P->tty;		/* when tty wasn't full devno */
+}
