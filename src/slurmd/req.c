@@ -439,13 +439,14 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		debug ("kill req for starting job step %d.%d", 
 		       step->jobid, step->stepid);
 		rc = ESLURMD_JOB_NOTRUNNING;
+		goto done;
 	}
 
 	if (step->sid <= 0) {
 		debug ("step %ld.%d invalid in shm [mpid:%d sid:%d]", 
 			req->job_id, req->job_step_id, 
 			step->mpid, step->sid);
-		rc = ESLURM_INVALID_JOB_ID;
+		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
