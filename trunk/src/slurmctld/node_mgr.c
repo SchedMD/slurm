@@ -1129,8 +1129,11 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			      node_name);
 			resp_state = 1;	/* just started responding */
 		} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
-			   (job_count == 0)) {
-			node_ptr->node_state = NODE_STATE_IDLE; /* job vanished */
+			   (job_count == 0)) {	/* job vanished */
+			node_ptr->node_state = NODE_STATE_IDLE;
+		} else if ((node_ptr->node_state == NODE_STATE_COMPLETING) &&
+			   (job_count == 0)) {	/* job already done */
+			node_ptr->node_state = NODE_STATE_IDLE;
 		}
 
 		if (node_ptr->node_state == NODE_STATE_IDLE) {
@@ -1484,3 +1487,46 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		}
 	}
 }
+
+
+/* make_node_comp - flag specified node as completing a job */
+void make_node_comp(struct node_record *node_ptr)
+{
+	uint16_t no_resp_flag, base_state;
+
+	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	if ((base_state == NODE_STATE_DOWN) ||
+	    (base_state == NODE_STATE_DRAINED) ||
+	    (base_state == NODE_STATE_DRAINING)) {
+		debug3("Node %s being left in state %s", 
+		       node_state_string((enum node_states)node_ptr->name));
+	} else {
+		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
+	}
+}
+
+/* make_node_idle - flag specified node as no longer being in use */
+void make_node_idle(struct node_record *node_ptr)
+{
+	int inx = node_ptr - node_record_table_ptr;
+	uint16_t no_resp_flag, base_state;
+
+	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	if ((base_state == NODE_STATE_DOWN) ||
+	    (base_state == NODE_STATE_DRAINED)) {
+		debug3("Node %s being left in state %s", 
+		       node_state_string((enum node_states)node_ptr->name));
+	} else if (base_state == NODE_STATE_DRAINING) {
+		node_ptr->node_state = NODE_STATE_DRAINED;
+		bit_clear(idle_node_bitmap, inx);
+		bit_clear(up_node_bitmap, inx);
+	} else {
+		node_ptr->node_state = NODE_STATE_IDLE | no_resp_flag;
+		if (no_resp_flag == 0)
+			bit_set(idle_node_bitmap, inx);
+	}
+}
+

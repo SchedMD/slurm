@@ -46,6 +46,9 @@
  *
  *  All the state for each thread is maintained in thd_t struct, which is 
  *  used by the watchdog thread as well as the communication threads.
+ *
+ *  NOTE: REQUEST_REVOKE_JOB_CREDENTIAL responses are handled immediately 
+ *  rather than in bulk upon completion of the RPC to all nodes
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -425,6 +428,10 @@ static void *_wdog(void *args)
 			node_did_resp(thread_ptr[i].node_name);
 	}
 	unlock_slurmctld(node_write_lock);
+	/* attempt to schedule when all nodes registered, not 
+	 * after each node, the overhead would be too high */
+	if (agent_ptr->msg_type == REQUEST_REVOKE_JOB_CREDENTIAL) 
+		schedule();
 #else
 	/* Build a list of all responding nodes and send it to slurmctld to 
 	 * update time stamps */
@@ -469,6 +476,11 @@ static void *_thread_per_node_rpc(void *args)
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
 	sigset_t set;
+#if AGENT_IS_THREAD
+	/* Locks: Write write node */
+	slurmctld_lock_t node_write_lock =
+	    { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+#endif
 
 	/* set up SIGALRM handler */
 	if (sigemptyset(&set))
@@ -539,6 +551,20 @@ static void *_thread_per_node_rpc(void *args)
 		rc = slurm_rc_msg->return_code;
 		slurm_free_return_code_msg(slurm_rc_msg);
 		if (rc == 0) {
+#if AGENT_IS_THREAD
+			/* SPECIAL CASE: Immediately mark node as idle */
+			if ((task_ptr->msg_type == 
+			     REQUEST_REVOKE_JOB_CREDENTIAL) &&
+			    (rc == SLURM_SUCCESS)) {
+				lock_slurmctld(node_write_lock);
+				make_node_idle(
+					find_node_record(
+					thread_ptr->node_name));
+				unlock_slurmctld(node_write_lock);
+				/* scheduler(); Overhead too high, 
+				 * do when last node registers */
+			}
+#endif
 			debug3("agent processed RPC to node %s",
 			       thread_ptr->node_name);
 			thread_state = DSH_DONE;

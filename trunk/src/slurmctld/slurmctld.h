@@ -701,6 +701,9 @@ extern void load_part_uid_allow_list ( int force );
  */
 extern int load_all_part_state ( void );
 
+/* make_node_comp - flag specified node as completing a job */
+extern void make_node_comp(struct node_record *node_ptr);
+
 /* make_node_idle - flag specified node as no longer being in use */
 extern void make_node_idle(struct node_record *node_ptr);
 

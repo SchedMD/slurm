@@ -169,7 +169,7 @@ void deallocate_nodes(struct job_record *job_ptr)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->node_count++;
-		make_node_idle(&node_record_table_ptr[i]);
+		make_node_comp(&node_record_table_ptr[i]);
 	}
 
 	if (agent_args->node_count == 0) {
@@ -203,27 +203,6 @@ void deallocate_nodes(struct job_record *job_ptr)
 	return;
 }
 
-
-/* make_node_idle - flag specified node as no longer being in use */
-void make_node_idle(struct node_record *node_ptr)
-{
-	int inx = node_ptr - node_record_table_ptr;
-	uint16_t no_resp_flag, base_state;
-
-	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
-	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	if (base_state == NODE_STATE_DOWN) {
-		debug3("Node %s being left DOWN", node_ptr->name);
-	} else if (base_state == NODE_STATE_DRAINING) {
-		node_ptr->node_state = NODE_STATE_DRAINED;
-		bit_clear(idle_node_bitmap, inx);
-		bit_clear(up_node_bitmap, inx);
-	} else {
-		node_ptr->node_state = NODE_STATE_IDLE | no_resp_flag;
-		if (no_resp_flag == 0)
-			bit_set(idle_node_bitmap, inx);
-	}
-}
 
 /*
  * _match_feature - determine if the desired feature is one of those available
