@@ -457,6 +457,6 @@ void
 job_delete_shm(slurmd_job_t *job)
 {
 	if (shm_delete_step(job->jobid, job->stepid) == SLURM_FAILURE)
-		error("deleting step:  %ld.%ld not found in shmem", 
-				(long) job->jobid, (long) job->stepid); 
+		error("deleting step:  %u.%u not found in shmem", 
+				job->jobid, job->stepid); 
 }
