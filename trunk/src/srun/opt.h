@@ -96,8 +96,11 @@ typedef struct srun_options {
 	char *cwd;		/* current working directory	*/
 
 	int  nprocs;		/* --nprocs=n,      -n n	*/
+	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
+	bool cpus_set;		/* true if cpus_per_task explicitly set */
 	int  nodes;		/* --nodes=n,       -N n	*/ 
+	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum distribution_t

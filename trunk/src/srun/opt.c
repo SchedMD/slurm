@@ -247,18 +247,19 @@ typedef struct env_vars {
 	const char *var;
 	int type;
 	void *arg;
+	void *set_flag;
 } env_vars_t;
 
 env_vars_t env_vars[] = {
-	{"SLURM_DEBUG", OPT_DEBUG, NULL},
-	{"SLURM_NPROCS", OPT_INT, &opt.nprocs},
-	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task},
-	{"SLURM_NNODES", OPT_INT, &opt.nodes},
-	{"SLURM_PARTITION", OPT_STRING, &opt.partition},
-	{"SLURM_STDINMODE", OPT_INPUT, &opt.input},
-	{"SLURM_STDOUTMODE", OPT_OUTPUT, &opt.output},
-	{"SLURM_STDERRMODE", OPT_ERROR, &opt.error},
-	{"SLURM_DISTRIBUTION", OPT_DISTRIB, NULL},
+	{"SLURM_DEBUG", OPT_DEBUG, NULL, NULL},
+	{"SLURM_NPROCS", OPT_INT, &opt.nprocs, &opt.nprocs_set},
+	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set},
+	{"SLURM_NNODES", OPT_INT, &opt.nodes, &opt.nodes_set},
+	{"SLURM_PARTITION", OPT_STRING, &opt.partition, NULL},
+	{"SLURM_STDINMODE", OPT_INPUT, &opt.input, NULL},
+	{"SLURM_STDOUTMODE", OPT_OUTPUT, &opt.output, NULL},
+	{"SLURM_STDERRMODE", OPT_ERROR, &opt.error, NULL},
+	{"SLURM_DISTRIBUTION", OPT_DISTRIB, NULL, NULL},
 	{NULL, 0, NULL}
 };
 
@@ -281,7 +282,7 @@ static void opt_args(int, char **);
 
 /* verify options sanity 
  */
-static bool opt_verify(poptContext, bool, bool, bool);
+static bool opt_verify(poptContext);
 
 /* return command name from its full path name */
 static char * base_name(char* command);
@@ -513,8 +514,11 @@ static void opt_default()
 	opt.progname = NULL;
 
 	opt.nprocs = 1;
+	opt.nprocs_set = false;
 	opt.cpus_per_task = 1;
+	opt.cpus_set = false;
 	opt.nodes = 0; /* nodes need not be set */
+	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
 
@@ -578,6 +582,9 @@ static void opt_env()
 
 			debug2("now processing env var %s=%s", e->var,
 			       val);
+
+			if (e->set_flag)
+				*((bool *) e->set_flag) = true;
 
 			switch (e->type) {
 
@@ -651,7 +658,6 @@ static void opt_args(int ac, char **av)
 {
 	int rc;
 	int i;
-	bool nprocs_set, nnodes_set, cpus_set;
 	const char **rest;
 	const char *arg;
 	char *fullpath;
@@ -709,13 +715,7 @@ static void opt_args(int ac, char **av)
 		}
 	}
 
-
 	poptResetContext(optctx);
-
-	nprocs_set = false;
-	nnodes_set = false;
-	cpus_set = false;
-
 
 	while ((rc = poptGetNextOpt(optctx)) > 0) {
 		arg = poptGetOptArg(optctx);
@@ -756,15 +756,15 @@ static void opt_args(int ac, char **av)
 			break;
 
 		case OPT_NPROCS:
-			nprocs_set = true;
+			opt.nprocs_set = true;
 			break;
 
 		case OPT_CPUS:
-			cpus_set = true;
+			opt.cpus_set = true;
 			break;
 
 		case OPT_NODES:
-			nnodes_set = true;
+			opt.nodes_set = true;
 			break;
 
 		case OPT_REALMEM:
@@ -793,7 +793,6 @@ static void opt_args(int ac, char **av)
 			/* do nothing */
 		}
 	}
-
 
 	if (rc < -1) {
 		const char *bad_opt;
@@ -828,7 +827,7 @@ static void opt_args(int ac, char **av)
 		} 
 	}
 
-	if (!opt_verify(optctx, nnodes_set, cpus_set, nprocs_set)) {
+	if (!opt_verify(optctx)) {
 		poptPrintUsage(optctx, stderr, 0);
 		exit(1);
 	}
@@ -842,8 +841,7 @@ static void opt_args(int ac, char **av)
  *
  */
 static bool
-opt_verify(poptContext optctx,
-	   bool nodes_set, bool cpus_set, bool procs_set)
+opt_verify(poptContext optctx)
 {
 	bool verified = true;
 
@@ -866,7 +864,7 @@ opt_verify(poptContext optctx,
 		opt.job_name = base_name(remote_argv[0]);
 
 	if (mode == MODE_ATTACH) {	/* attach to a running job */
-		if (nodes_set || cpus_set || procs_set) {
+		if (opt.nodes_set || opt.cpus_set || opt.nprocs_set) {
 			error("do not specific a node allocation "
 			      "with --attach (-a)");
 			verified = false;
@@ -922,21 +920,21 @@ opt_verify(poptContext optctx,
 		}
 
 		/* massage the numbers */
-		if (nodes_set && !procs_set) {
+		if (opt.nodes_set && !opt.nprocs_set) {
 			/* 1 proc / node default */
 			opt.nprocs = opt.nodes;
 
-		} else if (nodes_set && procs_set) {
+		} else if (opt.nodes_set && opt.nprocs_set) {
 
 			/* make sure # of procs >= nodes */
 			if (opt.nprocs < opt.nodes) {
-				info("Warning: can't run %d processes on %d " 
-				     "nodes, setting nnodes to %d", 
-				     opt.nprocs, opt.nodes, opt.nprocs);
+				error("Warning: can't run %d processes on %d " 
+				      "nodes, setting nnodes to %d", 
+				      opt.nprocs, opt.nodes, opt.nprocs);
 				opt.nodes = opt.nprocs;
 			}
 
-		} /* else if (procs_set && !nodes_set) */
+		} /* else if (opt.nprocs_set && !opt.nodes_set) */
 
 	}
 
@@ -1131,6 +1129,8 @@ print_commandline()
 {
 	int i;
 	char buf[256];
+
+	buf[0] = '\0';
 	for (i = 0; i < remote_argc; i++)
 		snprintf(buf, 256,  "%s", remote_argv[i]);
 	return xstrdup(buf);
@@ -1144,36 +1144,35 @@ void opt_list()
 	char *str;
 
 	info("defined options for program `%s'", opt.progname);
-	info("------------ ---------------------");
+	info("--------------- ---------------------");
 
-	info("user        : `%s'", opt.user);
-	info("uid         : %ld", (long) opt.uid);
-	info("cwd         : %s", opt.cwd);
-	info("nprocs      : %d", opt.nprocs);
-	info("cpus/proc   : %d", opt.cpus);
-	info("nodes       : %d", opt.nodes);
-	info("total cpus  : %d", opt.nprocs * opt.cpus);
-	info("partition   : %s",
+	info("user           : `%s'", opt.user);
+	info("uid            : %ld", (long) opt.uid);
+	info("cwd            : %s", opt.cwd);
+	info("nprocs         : %d", opt.nprocs);
+	info("cpus_per_task  : %d", opt.cpus_per_task);
+	info("nodes          : %d", opt.nodes);
+	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
-	info("job name    : `%s'", opt.job_name);
-	info("distribution: %s", format_distribution_t(opt.distribution));
-	info("output      : %s",
+	info("job name       : `%s'", opt.job_name);
+	info("distribution   : %s", format_distribution_t(opt.distribution));
+	info("output         : %s",
 	     print_io_t_with_filename(opt.output, opt.ofname));
-	info("error       : %s",
+	info("error          : %s",
 	     print_io_t_with_filename(opt.error, opt.efname));
-	info("input       : %s",
+	info("input          : %s",
 	     print_io_t_with_filename(opt.input, opt.ifname));
-	info("core format : %s", opt.core_format);
-	info("verbose     : %d", _verbose);
-	info("debug       : %d", _debug);
-	info("immediate   : %s", tf_(opt.immediate));
-	info("label output: %s", tf_(opt.labelio));
-	info("allocate    : %s", tf_(opt.allocate));
-	info("attach      : `%s'", opt.attach);
-	info("overcommit  : %s", tf_(opt.overcommit));
-	info("batch       : %s", tf_(opt.batch));
+	info("core format    : %s", opt.core_format);
+	info("verbose        : %d", _verbose);
+	info("debug          : %d", _debug);
+	info("immediate      : %s", tf_(opt.immediate));
+	info("label output   : %s", tf_(opt.labelio));
+	info("allocate       : %s", tf_(opt.allocate));
+	info("attach         : `%s'", opt.attach);
+	info("overcommit     : %s", tf_(opt.overcommit));
+	info("batch          : %s", tf_(opt.batch));
 	str = print_constraints();
-	info("constraints : %s", str);
+	info("constraints    : %s", str);
 	xfree(str);
 	str = print_commandline();
 	info("remote command : `%s'", str);
