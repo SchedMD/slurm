@@ -141,6 +141,7 @@ _io_thr_poll(void *job_arg)
 	xassert(job != NULL);
 
 	debug3("IO thread pid = %ld", getpid());
+	time_startup = time(NULL);
 
 	/* need ioport + msgport + stdin + 2*nprocs fds */
 	fds = xmalloc(numfds*sizeof(*fds));
