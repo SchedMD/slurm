@@ -1051,8 +1051,6 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else {
-		/* FIXME Needs to be fixed to really work with a credential */
-		slurm_job_credential_t cred = { 1,1,"test",start_time, "signature"} ;
 
 		info ("slurm_rpc_allocate_and_run allocated nodes %s to JobId=%u, time=%ld",
                         node_list_ptr , job_id , (long) (clock () - start_time));
@@ -1064,9 +1062,9 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	        alloc_msg . cpus_per_node  = cpus_per_node;
 	        alloc_msg . cpu_count_reps = cpu_count_reps;
 		alloc_msg . job_step_id = step_rec->step_id;
-		alloc_msg . credentials = &cred;
+		alloc_msg . credentials = & step_rec-> job_ptr-> details-> credential ;
 #ifdef HAVE_LIBELAN3
-	        /* FIXME */
+		alloc_mgs . qsw_job =  step_rec-> qsw_job ;
 #endif
 	        response_msg . msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
                 response_msg . data =  & alloc_msg ;
@@ -1203,7 +1201,7 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 		job_step_resp.credentials = & step_rec-> job_ptr-> details-> credential ;
 				
 #ifdef HAVE_LIBELAN3
-	/* FIXME */
+		job_step_resp.qsw_job = & step_rec-> qsw_job ;
 #endif
 		resp. address = msg -> address ;
 		resp. msg_type = RESPONSE_JOB_STEP_CREATE ;
