@@ -177,7 +177,7 @@ main(int ac, char **av)
 		else
 			printf("jobid %u\n", resp->job_id); 
 		run_job_script(resp->job_id);
-		slurm_complete_job(resp->job_id);
+		slurm_complete_job(resp->job_id, 0, 0);
 		if (_verbose || _debug)
 			info ("Spawned srun shell terminated");
 		exit (0);
@@ -276,10 +276,10 @@ main(int ac, char **av)
 
 	if (old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
-		slurm_complete_job_step(job->jobid, job->stepid);
+		slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
 	} else if (!opt.no_alloc) {
 		debug("cancelling job %u", job->jobid);
-		slurm_complete_job(job->jobid);
+		slurm_complete_job(job->jobid, 0, 0);
 	}
 
 	exit(0);
@@ -382,7 +382,7 @@ sig_kill_alloc(int signum)
 	static uint32_t job_id = 0;
 
 	if (signum == SIGINT) {			/* <Control-C> */
-		slurm_complete_job (job_id);
+		slurm_complete_job (job_id, 0, 0);
 		exit (0);
 	} else if (signum < 0)
 		job_id = (uint32_t) (0 - signum);	/* kluge to pass the job id */
@@ -446,7 +446,7 @@ create_job_step(job_t *job)
 		return_code_msg_t *rcmsg = (return_code_msg_t *) resp_msg.data;
 		error("unable to create job step: %s", 
 				slurm_strerror(rcmsg->return_code));
-		slurm_complete_job(job->jobid);
+		slurm_complete_job(job->jobid, 0, rcmsg->return_code);
 		exit(1);
 	}
 
