@@ -178,6 +178,11 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			bit_clear(job_ptr->node_bitmap, i);
 			job_ptr->node_cnt--;
 		}
+		make_node_comp(node_ptr, job_ptr);
+#ifdef HAVE_BGL
+		if (agent_args->node_count > 0)
+			continue;
+#endif
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 128;
 			xrealloc((agent_args->slurm_addr),
@@ -192,7 +197,6 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_ptr->name, MAX_NAME_LEN);
 		agent_args->node_count++;
-		make_node_comp(node_ptr, job_ptr);
 	}
 
 	if ((agent_args->node_count - down_node_cnt) == 0)
