@@ -173,6 +173,11 @@ int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id,
 	int rc = SLURM_SUCCESS;
 	int job_comp_fd = -1;
 
+	if (!log_name) {
+		error("JobCompLoc configuration parameter not set");
+		return SLURM_ERROR;
+	}
+
 	slurm_mutex_lock( &file_lock );
 	job_comp_fd = open(log_name, O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (job_comp_fd == -1) {
