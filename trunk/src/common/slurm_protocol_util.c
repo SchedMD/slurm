@@ -161,7 +161,9 @@ void slurm_print_launch_task_msg ( launch_tasks_request_msg_t * msg )
 	{
 		debug3 ( "argv[%i]: %s", i , msg->argv[i] ) ;
 	}
+	debug3 ( "msg -> response_addr" ) ;
 	slurm_print_slurm_addr ( stderr , & msg -> response_addr ) ;
+	debug3 ( "msg -> streams" ) ;
 	slurm_print_slurm_addr ( stderr , & msg -> streams ) ;
 	for ( i=0 ; i < msg->tasks_to_launch ; i++ )
 	{
