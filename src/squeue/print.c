@@ -234,16 +234,6 @@ int _print_int(int number, int width, bool right, bool cut_output)
 }
 
 
-int _create_format(char *buffer, const char *type, int width, bool right)
-{
-	if (snprintf
-	    (buffer, FORMAT_STRING_SIZE,
-	     (right ? " %%-%d.%d%s" : "%%%d.%d%s "), width, width - 1,
-	     type) == -1)
-		return SLURM_ERROR;
-	return SLURM_SUCCESS;
-}
-
 int _print_secs(long time, int width, bool right, bool cut_output)
 {
 	char str[FORMAT_STRING_SIZE];
