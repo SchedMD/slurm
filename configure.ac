@@ -82,6 +82,7 @@ dnl need to add squeue and scancel when they're there
 
 AC_CONFIG_FILES([Makefile 
                  src/Makefile 
+		 src/api/Makefile 
 		 src/common/Makefile 
 		 src/popt/Makefile 
 		 src/srun/Makefile 
