@@ -140,7 +140,6 @@ ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp,
                 xfree(*pbuf);
                 *pbuf = NULL;
 		slurm_seterrno_ret(SLURM_COMMUNICATIONS_RECEIVE_ERROR);
-                return SLURM_PROTOCOL_ERROR;
         }
 
         *lenp = msglen;
