@@ -46,33 +46,34 @@ static int _print_str(char *str, int width, bool right, bool cut_output);
  *****************************************************************************/
 int print_jobs(List jobs, List format)
 {
+	if (!params.no_header)
+		print_job_from_format(NULL, format);
+
 	if (list_count(jobs) > 0) {
 		job_info_t *job = NULL;
 		ListIterator i = list_iterator_create(jobs);
 
-		print_job_from_format(NULL, format);
 		while ((job = (job_info_t *) list_next(i)) != NULL) {
 			print_job_from_format(job, format);
 		}
 		list_iterator_destroy(i);
-	} else
-		printf("No jobs found in system\n");
+	}
 
 	return SLURM_SUCCESS;
 }
 
 int print_steps(List steps, List format)
 {
+	print_step_from_format(NULL, format);
+	
 	if (list_count(steps) > 0) {
 		job_step_info_t *step = NULL;
 		ListIterator i = list_iterator_create(steps);
 
-		print_step_from_format(NULL, format);
 		while ((step = (job_step_info_t *) list_next(i)) != NULL) {
 			print_step_from_format(step, format);
 		}
-	} else
-		printf("No job steps found in system\n");
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -134,6 +135,9 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 int print_steps_array(job_step_info_t * steps, int size, List format)
 {
 
+	if (!params.no_header)
+		print_step_from_format(NULL, format);
+	
 	if (size > 0) {
 		int i = 0;
 		List step_list;
@@ -141,8 +145,6 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		job_step_info_t *step_ptr;
 
 		step_list = list_create(NULL);
-		if (!params.no_header)
-			print_step_from_format(NULL, format);
 
 		/* Filter out the jobs of interest */
 		for (; i < size; i++) {
@@ -175,8 +177,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		}
 		list_iterator_destroy(step_iterator);
 		list_destroy(step_list);
-	} else
-		printf("No job steps found in system\n");
+	}
 
 	return SLURM_SUCCESS;
 }
