@@ -65,6 +65,9 @@ expect {
 		set host1 $host0
 		exp_continue
 	}
+	-re "error: .*exit code 1" {
+		exp_continue
+	}
 	-re "0: ($alpha_numeric)" {
 		set host_1 $expect_out(1,string)
 		exp_continue
@@ -101,9 +104,9 @@ if {[string compare $host_0 $include_node] != 0} {
 #
 # Run three tasks at a time on some node and do so repeatedly
 # This checks for slurmd race conditions
+# Note: process output in order of expected completion
 #
 set successes 0
-set timeout $max_job_delay
 for {set inx 0} {$inx < $interations} {incr inx} {
 	set failures 0
 	spawn $srun -N1 --nodelist=$include_node -t1 -l $bin_hostname
@@ -115,16 +118,24 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	spawn $srun -N1 --nodelist=$include_node -Z $bin_usleep 250000
 	set   noalloc2 $spawn_id
 
-	set spawn_id $alloc
+	set timeout 4
+	set spawn_id $noalloc2
 	expect {
-		-i $alloc
-		-re "0: ($alpha_numeric)" {
-			set host_0 $expect_out(1,string)
+		-i $noalloc2
+		-re "error: .*try again" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
+		-re "error: .*exit code 1" {
+			exp_continue
+		}
+		-re "error:" {
+			send_user "\nFAILURE: some error happened\n"
+			set failures 1
 			exp_continue
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			kill_srun
 			set failures 1
 		}
 		eof {
@@ -139,14 +150,15 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 			send_user "Can't avoid this possible error\n"
 			exp_continue
 		}
+		-re "error: .*exit code 1" {
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
-			set failures 1
 			exp_continue
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			kill_srun
 			set failures 1
 		}
 		eof {
@@ -154,21 +166,16 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 		}
 	}
 
-	set spawn_id $noalloc2
+	set timeout $max_job_delay
+	set spawn_id $alloc
 	expect {
-		-i $noalloc2
-		-re "error: .*try again" {
-			send_user "Can't avoid this possible error\n"
-			exp_continue
-		}
-		-re "error:" {
-			send_user "\nFAILURE: some error happened\n"
-			set failures 1
+		-i $alloc
+		-re "0: ($alpha_numeric)" {
+			set host_0 $expect_out(1,string)
 			exp_continue
 		}
 		timeout {
 			send_user "\nFAILURE: srun not responding\n"
-			kill_srun
 			set failures 1
 		}
 		eof {
@@ -180,6 +187,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 		incr successes
 		set  include_node $host_0
 	} else {
+		kill_srun
 		set exit_code 1
 	}
 }
