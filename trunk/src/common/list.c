@@ -41,9 +41,10 @@
 **  Constants  **
 \***************/
 
-#define LIST_ALLOC 10
-#define LIST_MAGIC 0xDEADBEEF
-
+#define LIST_ALLOC	10
+#define LIST_MAGIC 	0xDEADBEEF
+#define LIST_DESTROYED	0xDEEDDEED
+#define ITER_DESTROYED	0x1EED1EED
 
 /****************\
 **  Data Types  **
@@ -182,7 +183,7 @@ void list_destroy(List l)
     while (i) {
         assert(i->magic == LIST_MAGIC);
         iTmp = i->iNext;
-        assert(i->magic = 1);		/* clear magic via assert abuse */
+        assert(i->magic = LIST_DESTROYED);	/* clear magic via assert abuse */
         list_iterator_free(i);
         i = iTmp;
     }
@@ -194,7 +195,7 @@ void list_destroy(List l)
         list_node_free(p);
         p = pTmp;
     }
-    assert(l->magic = 1);		/* clear magic via assert abuse */
+    assert(l->magic = LIST_DESTROYED);		/* clear magic via assert abuse */
     list_mutex_unlock(&l->mutex);
     list_mutex_destroy(&l->mutex);
     list_free(l);
@@ -465,7 +466,7 @@ void list_iterator_destroy(ListIterator i)
         }
     }
     list_mutex_unlock(&i->list->mutex);
-    assert(i->magic = 1);		/* clear magic via assert abuse */
+    assert(i->magic = ITER_DESTROYED);		/* clear magic via assert abuse */
     list_iterator_free(i);
     return;
 }
