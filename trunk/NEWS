@@ -1,6 +1,17 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.11
+=========================
+ -- Changes in srun:
+   - Fixed bug in signal handling that occaisonally resulted in orphaned 
+     jobs when using Ctrl-C.
+   - Return non-zero exit code when remote tasks are killed by a signal.
+   - SIGALRM is now blocked by default.
+ -- Added ``reason'' string for down, drained, or draining nodes. 
+ -- Added -V,--version option to squeue and sinfo.
+ -- Improved some error messages from user utilities.
+
 * Changes in SLURM 0.2.10
 =========================
  -- New slurm.conf configuration parameters:
