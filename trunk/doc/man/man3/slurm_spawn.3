@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "June 2004" "Morris Jette" "Slurm task spawn functions"
+.TH "Slurm API" "3" "July 2004" "Morris Jette" "Slurm task spawn functions"
 .SH "NAME"
 slurm_spawn \- Slurm task spawn functions
 .SH "SYNTAX"
@@ -9,6 +9,16 @@ slurm_spawn \- Slurm task spawn functions
 slurm_step_ctx \fBslurm_step_ctx_create\fR (
 .br
 	job_step_create_request_msg_t *\fIstep_req\fP 
+.br
+);
+.LP
+int \fBslurm_step_ctx_get\fR (
+.br
+	slurm_step_ctx \fIctx\fP,
+.br
+	int \fIctx_key\fP,
+.br
+	...
 .br
 );
 .LP
@@ -55,7 +65,8 @@ Job step context. Created by \fBslurm_step_ctx_create\fR, used in subsequent
 function calls, and destroyed by \fBslurm_step_ctx_destroy\fR.
 .TP
 \fIctx_key\fP
-Identifies the fields in \fIctx\fP to be set by \fBslurm_step_ctx_set\fR.
+Identifies the fields in \fIctx\fP to be collected by \fBslurm_step_ctx_get\fR
+or set by \fBslurm_step_ctx_set\fR.
 .TP
 \fIfd_array\fP
 Array of socket file descriptors to be connected to the initiated tasks.
@@ -70,6 +81,11 @@ Signal to be sent to the spawned tasks.
 \fBslurm_step_ctx_create\fR Create a job step context. To avoid memory 
 leaks call \fBslurm_step_ctx_destroy\fR when the use of this context is
 finished.
+.LP
+\fBslurm_step_ctx_get\fR Get values from a job step context.
+\fIctx_key\fP identifies the fields to be gathered from the job step context.
+Subsequent arguments to this function are dependent upon the value
+of \fIctx_key\fP. See the \fBCONTEXT KEYS\fR section for details.
 .LP
 \fBslurm_step_ctx_set\fR Set values in a job step context.
 \fIctx_key\fP identifies the fields to be set in the job step context.
@@ -108,6 +124,25 @@ Sets the environment variable count and values for the executable.
 Accepts two additional arguments, the first of type int and
 the second of type char **. By default the current environment 
 variables are copied to started task's environment.
+.TP
+\fBSLURM_STEP_CTX_TASKS\fR
+Get the number of tasks per node for a given job.
+Accepts one additional argument of type uint32_t **. 
+This argument will be set to point to an array with the 
+task counts of each node in an element of the array.
+See \fBSLURM_STEP_CTX_TID\fR below to determine the 
+task ID numbers associated with each of those tasks.
+.TP
+\fBSLURM_STEP_CTX_TID\fR
+Get the task ID numbers associated with the tasks allocated to 
+a specific node.
+Accepts two additional arguments, the first of type int and
+the second of type uint32_t **. The first argument identifies 
+the node number of interest (zero origin). The second argument 
+will be set to point to an array with the task ID numbers of 
+each task allocated to the node (also zero origin). 
+See \fBSLURM_STEP_CTX_TASKS\fR above to determine how many 
+tasks are associated with each node.
 .SH "RETURN VALUE"
 .LP
 For \fB slurm_step_ctx_create\fR a context is return upon success. On error
@@ -159,7 +194,7 @@ int main (int argc, char *argv[])
 .br 
 {
 .br
-	int i, nodes = 1, tasks;
+	int i, j, nodes = 1, tasks;
 .br
 	job_desc_msg_t job_req;
 .br
@@ -172,6 +207,8 @@ int main (int argc, char *argv[])
 	char *task_argv[2];
 .br
 	int *fd_array;
+.br
+	uint32_t *task_cnt; *tid;
 .LP
 	if (argc > 1) {
 .br
@@ -222,11 +259,7 @@ int main (int argc, char *argv[])
 		exit(1);
 .br
 	}
-.br
-	printf("Starting %d tasks on %d nodes\n",
-.br
-		step_req.num_tasks, step_req.node_count);
-.br
+.LP
 	task_argv[0] = "/bin/hostname";
 .br
 	if (slurm_step_ctx_set(ctx, SLURM_STEP_CTX_ARGS,
@@ -248,6 +281,34 @@ int main (int argc, char *argv[])
 		exit(1);
 .br
 	}
+.LP
+	printf("Started %d tasks on %d nodes\\n",
+.br
+		step_req.num_tasks, step_req.node_count);
+.br
+	if (slurm_step_ctx_get(ctx, SLURM_STEP_CTX_TASKS, &task_cnt)) {
+.br
+		slurm_perror("slurm_step_ctx_create");
+.br
+		exit(1);
+.br
+	}
+.br
+	for (i=0; i<step_req.node_count; i++) {
+.br
+		if (slurm_step_ctx_get(ctx, SLURM_STEP_CTX_TID, i, &tid)) {
+.br
+			slurm_perror("slurm_step_ctx_create");
+.br
+			exit(1);
+.br
+		}
+.br
+		for (j=0; j<task_cnt[i]; j++)
+.br
+			printf("tid[%d][%d] = %u\\n", i, j, tid[j]);
+.br
+	
 .LP
 	/* Interact with spawned tasks as desired */
 .br
