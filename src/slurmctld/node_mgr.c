@@ -46,7 +46,7 @@ void split_node_name (char *name, char *prefix, char *suffix, int *index,
 /* main is used here for testing purposes only */
 main (int argc, char *argv[]) 
 {
-	int error_code, node_count, i;
+	int error_code, node_count, i, total_procs;
 	char *out_line;
 	bitstr_t *map1, *map2, *map3;
 	struct config_record *config_ptr;
@@ -108,14 +108,14 @@ main (int argc, char *argv[])
 			node_ptr->node_state);
 
 	config_ptr = create_config_record ();
-	config_ptr->cpus = 543;
+	config_ptr->cpus = 54;
 	config_ptr->nodes = "lx[03-20]";
 	config_ptr->feature = "for_lx03,lx04";
 	config_ptr->node_bitmap = map2;
 	node_ptr = create_node_record (config_ptr, "lx03");
 	if (node_ptr->last_response != (time_t) 678)
 		printf ("ERROR: node default last_response not set\n");
-	if (node_ptr->cpus != 543)
+	if (node_ptr->cpus != 54)
 		printf ("ERROR: node default cpus not set\n");
 	if (node_ptr->real_memory != 345)
 		printf ("ERROR: node default real_memory not set\n");
@@ -141,8 +141,12 @@ main (int argc, char *argv[])
 	if (strcmp (out_line, "lx[01-02],lx04") != 0)
 		printf ("ERROR: bitmap2node_name results bad %s vs %s\n",
 			out_line, "lx[01-02],lx04");
+	build_node_list (map3, DIST_CYCLE, 6, &node_list, &total_procs);
+	printf("build_node_list: 6 procs/task over lx[01-02],lx04 has %d procs over %s\n",
+		 total_procs, node_list);
 	bit_free (map3);
 	xfree (out_line);
+	xfree (node_list);
 
 	update_time = (time_t) 0;
 	error_code = validate_node_specs ("lx01", 12, 345, 67);
@@ -151,6 +155,14 @@ main (int argc, char *argv[])
 	error_code = dump_all_node (&dump, &dump_size, &update_time);
 	if (error_code)
 		printf ("ERROR: dump_all_node error %d\n", error_code);
+	else {
+		printf("\ndump of node info:\n");
+		for (i=0; i<dump_size; ) {
+			printf("%s", &dump[i]);
+			i += strlen(&dump[i]) + 1;
+		}
+		printf("\n");
+	}
 	if (dump)
 		xfree(dump);
 
@@ -288,6 +300,76 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 	}
 	xrealloc (node_list[0], strlen (node_list[0]) + 1);
 	return 0;
+}
+
+
+/*
+ * build_node_list - build a node_list for a job laying out the actual
+ *	task distributions on the nodes
+ * input: bitmap - bitmap of nodes to use
+ *	dist - distribution of tasks, BLOCK or CYCLE
+ *	procs_per_task - how many processor each task will consume
+ *	node_list - place to store node list
+ *	total_procs - place to store count of total processors allocated
+ * output: node_list - comma separated list of nodes on which the tasks 
+ *		are to be initiated
+ *	total_procs - count of total processors allocated
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the storage at node_list must be xfreed by the caller
+ */
+void 
+build_node_list (bitstr_t *bitmap, enum task_dist dist, 
+		int procs_per_task, char **node_list, int *total_procs)
+{
+	int i, j, node_list_size, max_procs, min_procs;
+	int node_proc_count, sum_procs;
+
+	*total_procs = 0;
+	node_list[0] = NULL;
+	node_list_size = 0;
+	if (bitmap == NULL)
+		fatal ("build_node_list: bitmap is NULL");
+	if (procs_per_task < 0)
+		fatal ("build_node_list: procs_per_task invalid (%d)", 
+			procs_per_task);
+
+	node_list[0] = xmalloc (BUF_SIZE);
+	strcpy (node_list[0], "");
+
+	sum_procs = 0;
+	max_procs = procs_per_task;
+	for (min_procs = procs_per_task; min_procs <= max_procs; 
+	     min_procs+= procs_per_task) {
+ 		for (i = 0; i < node_record_count; i++) {
+			if (bit_test (bitmap, i) != 1)
+				continue;
+			node_proc_count = node_record_table_ptr[i].cpus;
+			if (node_proc_count < min_procs) 
+				continue;
+			if (min_procs == procs_per_task)
+				sum_procs += node_proc_count;
+			if (node_proc_count > max_procs)
+				max_procs = node_proc_count;
+
+			if (node_list_size <
+			    (strlen (node_list[0]) + 
+				(MAX_NAME_LEN+1) * node_proc_count)) {
+				node_list_size += BUF_SIZE;
+				xrealloc (node_list[0], node_list_size);
+			}
+			for (j = 0; j < node_proc_count; j += procs_per_task) {
+				if (strlen (node_list[0]) > 0)
+					strcat (node_list[0], ",");
+				strcat (node_list[0], node_record_table_ptr[i].name);
+				if (dist == DIST_CYCLE)
+					break;
+			}
+		}
+		if (dist == DIST_BLOCK)
+			break;
+	}
+	*total_procs = sum_procs;
+	xrealloc (node_list[0], strlen (node_list[0]) + 1);
 }
 
 

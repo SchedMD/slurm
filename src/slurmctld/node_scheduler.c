@@ -819,6 +819,10 @@ select_nodes (struct job_record *job_ptr)
 		error ("bitmap2node_name error %d", error_code);
 		goto cleanup;
 	}
+	build_node_list (req_bitmap, job_ptr->details->dist, 
+		job_ptr->details->procs_per_task, 
+		&job_ptr->details->node_list, 
+		&job_ptr->details->total_procs);
 	allocate_nodes (req_bitmap);
 	job_ptr->job_state = JOB_STAGE_IN;
 	job_ptr->start_time = time(NULL);

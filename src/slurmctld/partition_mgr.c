@@ -35,7 +35,7 @@ int list_find_part (void *part_entry, void *key);
 /* main is used here for module testing purposes only */
 main (int argc, char *argv[]) 
 {
-	int error_code;
+	int error_code, i;
 	time_t update_time;
 	struct part_record *part_ptr;
 	char *dump;
@@ -101,6 +101,14 @@ main (int argc, char *argv[])
 	error_code = dump_all_part (&dump, &dump_size, &update_time);
 	if (error_code)
 		printf ("ERROR: dump_part error %d\n", error_code);
+	else {
+		printf("\ndump of partition info:\n");
+		for (i=0; i<dump_size; ) {
+			printf("%s", &dump[i]);
+			i += strlen(&dump[i]) + 1;
+		}
+		printf("\n");
+	}
 
 	error_code = update_part ("batch", update_spec);
 	if (error_code)
