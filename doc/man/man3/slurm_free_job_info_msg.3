@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "April 2004" "Morris Jette" "Slurm job information reporting functions"
+.TH "Slurm API" "3" "June 2004" "Morris Jette" "Slurm job information reporting functions"
 .SH "NAME"
 slurm_free_job_info_msg, slurm_get_end_time,
 slurm_load_jobs, slurm_pid2jobid, 
@@ -24,7 +24,7 @@ int \fBslurm_load_jobs\fR (
 .br 
 	job_info_msg_t **\fIjob_info_msg_pptr\fP,
 .br
-	uint16_t \fIshow_all\fP
+	uint16_t \fIshow_flags\fP
 .br 
 );
 .LP 
@@ -50,7 +50,7 @@ void \fBslurm_print_job_info\fR (
 .br
 	job_info_t *\fIjob_ptr\fP,
 .br
-	int \fIone_linerfP
+	int \fIone_liner\fP
 .br 
 );
 .LP 
@@ -60,7 +60,7 @@ void \fBslurm_print_job_info_msg\fR (
 .br
 	job_info_msg_t *\fIjob_info_msg_ptr\fP,
 .br
-	int \fIone_linerfP
+	int \fIone_liner\fP
 .br 
 );
 .SH "ARGUMENTS"
@@ -102,11 +102,13 @@ Print one record per line if non-zero.
 \fIout_file\fP
 Specifies the file to print data to.
 .TP 
-\fIshow_all\fP
-Report information about jobs in all partitions if non-zero.
+\fIshow_flags\fP
+Job filtering flags, may be ORed. 
 Information about jobs in partitions that are configured as 
 hidden and partitions that the user's group is unable to utilize 
 are not reported by default.
+The \fBSHOW_ALL\fP flag will cause information about jobs in all 
+partitions to be displayed.
 .TP 
 \fIupdate_time\fP
 For all of the following informational calls, if update_time is equal to or 
@@ -175,7 +177,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_load_jobs ((time_t) NULL, 
 .br
-	                      &job_buffer_ptr, 1) ) {
+	                      &job_buffer_ptr, SHOW_ALL) ) {
 .br
 		slurm_perror ("slurm_load_jobs error");
 .br
@@ -231,8 +233,8 @@ int main (int argc, char *argv[])
 
 .SH "NOTE"
 Some data structures contain index values to cross-reference each other. 
-If the \fIshow_all\fP argument is not set when getting this data, these index 
-values will be invalid.
+If the \fIshow_flags\fP argument is not set to SHOW_ALL when getting this 
+data, these index values will be invalid.
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.

@@ -567,14 +567,14 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
  * IN job_id - specific id or zero for all
  * IN step_id - specific id or zero for all
  * IN uid - user issuing request
- * IN show_all - don't report data for hidden partitions unless set
+ * IN show_flags - job step filtering options
  * OUT buffer - location to store data, pointers automatically advanced 
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
 extern int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
 			uint32_t step_id, uid_t uid, 
-			uint16_t show_all, Buf buffer)
+			uint16_t show_flags, Buf buffer)
 {
 	ListIterator job_iterator;
 	ListIterator step_iterator;
@@ -594,7 +594,8 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 		while ((job_ptr = 
 				(struct job_record *) 
 				list_next(job_iterator))) {
-			if ((show_all == 0) && (job_ptr->part_ptr) && 
+			if (((show_flags & SHOW_ALL) == 0) && 
+			    (job_ptr->part_ptr) && 
 			    (job_ptr->part_ptr->hidden))
 				continue;
 			step_iterator =
@@ -612,7 +613,8 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	} else if (step_id == 0) {
 		/* Return all steps for specific job_id */
 		job_ptr = find_job_record(job_id);
-		if ((show_all == 0) && (job_ptr->part_ptr) && 
+		if (((show_flags & SHOW_ALL) == 0) && 
+		    (job_ptr->part_ptr) && 
 		    (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
 		if (job_ptr) {
@@ -630,7 +632,8 @@ extern int pack_ctld_job_step_info_response_msg(uint32_t job_id,
 	} else {
 		/* Return data for specific job_id.step_id */
 		job_ptr = find_job_record(job_id);
-		if ((show_all == 0) && (job_ptr->part_ptr) && 
+		if (((show_flags & SHOW_ALL) == 0) && 
+		    (job_ptr->part_ptr) && 
 		    (job_ptr->part_ptr->hidden))
 			job_ptr = NULL;
 		step_ptr = find_step_record(job_ptr, step_id);

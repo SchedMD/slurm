@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -84,7 +84,7 @@ static int	_get_command (int *argc, char *argv[]);
 static bool	_in_node_bit_list(int inx, int *node_list_array);
 static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
 static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr, 
-			int load_all);
+			uint16_t show_flags);
 static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
 static void	_parse_conf_line (char *in_line, bool *any_slurmctld,
 				bool *have_slurmctld, bool *have_slurmd);
@@ -130,7 +130,7 @@ main (int argc, char *argv[])
 	};
 
 	command_name      = argv[0];
-	all_flag	= 0;
+	all_flag          = 0;
 	exit_code         = 0;
 	exit_flag         = 0;
 	input_field_count = 0;
@@ -322,14 +322,18 @@ _load_jobs (job_info_msg_t ** job_buffer_pptr)
 {
 	int error_code;
 	static job_info_msg_t *old_job_info_ptr = NULL;
-	static int last_all_flag = -1;
+	static uint16_t last_show_flags = 0xffff;
+	uint16_t show_flags = 0;
 	job_info_msg_t * job_info_ptr = NULL;
 
+	if (all_flag)
+		show_flags |= SHOW_ALL;
+
 	if (old_job_info_ptr) {
-		if (last_all_flag != all_flag)
+		if (last_show_flags != show_flags)
 			old_job_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_jobs (old_job_info_ptr->last_update, 
-					&job_info_ptr, all_flag);
+					&job_info_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg (old_job_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -341,11 +345,11 @@ _load_jobs (job_info_msg_t ** job_buffer_pptr)
 	}
 	else
 		error_code = slurm_load_jobs ((time_t) NULL, &job_info_ptr,
-				all_flag);
+				show_flags);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_job_info_ptr = job_info_ptr;
-		last_all_flag = all_flag;
+		last_show_flags  = show_flags;
 		*job_buffer_pptr = job_info_ptr;
 	}
 
@@ -353,18 +357,18 @@ _load_jobs (job_info_msg_t ** job_buffer_pptr)
 }
 /* Load current node table information into *node_buffer_pptr */
 static int 
-_load_nodes (node_info_msg_t ** node_buffer_pptr, int load_all) 
+_load_nodes (node_info_msg_t ** node_buffer_pptr, uint16_t show_flags) 
 {
 	int error_code;
 	static node_info_msg_t *old_node_info_ptr = NULL;
-	static int last_all_flag = -1;
+	static int last_show_flags = 0xffff;
 	node_info_msg_t *node_info_ptr = NULL;
 
 	if (old_node_info_ptr) {
-		if (last_all_flag != load_all)
+		if (last_show_flags != show_flags)
 			old_node_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_node (old_node_info_ptr->last_update, 
-			&node_info_ptr, load_all);
+			&node_info_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg (old_node_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -376,11 +380,11 @@ _load_nodes (node_info_msg_t ** node_buffer_pptr, int load_all)
 	}
 	else
 		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr,
-				load_all);
+				show_flags);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_node_info_ptr = node_info_ptr;
-		last_all_flag = load_all;
+		last_show_flags = show_flags;
 		*node_buffer_pptr = node_info_ptr;
 	}
 
@@ -393,15 +397,19 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 {
 	int error_code;
 	static partition_info_msg_t *old_part_info_ptr = NULL;
-	static int last_all_flag = -1;
+	static uint16_t last_show_flags = 0xffff;
+	uint16_t show_flags = 0;
 	partition_info_msg_t *part_info_ptr = NULL;
 
+	if (all_flag)
+		show_flags |= SHOW_ALL;
+
 	if (old_part_info_ptr) {
-		if (last_all_flag != all_flag)
+		if (last_show_flags != show_flags)
 			old_part_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_load_partitions (
 						old_part_info_ptr->last_update,
-						&part_info_ptr, all_flag);
+						&part_info_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg (old_part_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -413,11 +421,11 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 	}
 	else
 		error_code = slurm_load_partitions ((time_t) NULL, 
-						    &part_info_ptr, all_flag);
+						    &part_info_ptr, show_flags);
 
 	if (error_code == SLURM_SUCCESS) {
 		old_part_info_ptr = part_info_ptr;
-		last_all_flag = all_flag;
+		last_show_flags = show_flags;
 		*part_buffer_pptr = part_info_ptr;
 	}
 
@@ -469,6 +477,7 @@ _print_completing (void)
 	job_info_msg_t  *job_info_msg;
 	job_info_t      *job_info;
 	node_info_msg_t *node_info_msg;
+	uint16_t         show_flags = 0;
 
 	error_code = _load_jobs  (&job_info_msg);
 	if (error_code) {
@@ -479,7 +488,9 @@ _print_completing (void)
 	}
 	/* Must load all nodes including hidden for cross-index 
 	 * from job's node_inx to node table to work */
-	error_code = _load_nodes (&node_info_msg, 1);
+	/*if (all_flag)		Always set this flag */
+		show_flags |= SHOW_ALL;
+	error_code = _load_nodes (&node_info_msg, show_flags);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -880,10 +891,13 @@ _print_node_list (char *node_list)
 	node_info_msg_t *node_info_ptr = NULL;
 	hostlist_t host_list;
 	int error_code;
+	uint16_t show_flags = 0;
 	char *this_node_name;
 
+	if (all_flag)
+		show_flags |= SHOW_ALL;
 
-	error_code = _load_nodes(&node_info_ptr, all_flag);
+	error_code = _load_nodes(&node_info_ptr, show_flags);
 	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
@@ -997,7 +1011,8 @@ _print_step (char *job_step_id_str)
 	job_step_info_t * job_step_ptr;
 	static uint32_t last_job_id = 0, last_step_id = 0;
 	static job_step_info_response_msg_t *old_job_step_info_ptr = NULL;
-	static int last_all_flag = -1;
+	static uint16_t last_show_flags = 0xffff;
+	uint16_t show_flags = 0;
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
@@ -1007,14 +1022,17 @@ _print_step (char *job_step_id_str)
 		}
 	}
 
+	if (all_flag)
+		show_flags |= SHOW_ALL;
+
 	if ((old_job_step_info_ptr) &&
 	    (last_job_id == job_id) && (last_step_id == step_id)) {
-		if (last_all_flag != all_flag)
+		if (last_show_flags != show_flags)
 			old_job_step_info_ptr->last_update = (time_t) 0;
 		error_code = slurm_get_job_steps ( 
 					old_job_step_info_ptr->last_update,
 					job_id, step_id, &job_step_info_ptr,
-					all_flag);
+					show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg (
 					old_job_step_info_ptr);
@@ -1031,8 +1049,8 @@ _print_step (char *job_step_id_str)
 					old_job_step_info_ptr);
 			old_job_step_info_ptr = NULL;
 		}
-		error_code = slurm_get_job_steps ( (time_t) 0, 
-					job_id, step_id, &job_step_info_ptr, all_flag);
+		error_code = slurm_get_job_steps ( (time_t) 0, job_id, step_id, 
+				&job_step_info_ptr, show_flags);
 	}
 
 	if (error_code) {
@@ -1043,7 +1061,7 @@ _print_step (char *job_step_id_str)
 	}
 
 	old_job_step_info_ptr = job_step_info_ptr;
-	last_all_flag = all_flag;
+	last_show_flags = show_flags;
 	last_job_id = job_id;
 	last_step_id = step_id;
 

@@ -2336,7 +2336,7 @@ _pack_job_info_request_msg(job_info_request_msg_t * msg,
 				Buf buffer)
 {
 	pack_time(msg->last_update, buffer);
-	pack16(msg->show_all, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 static int
@@ -2349,7 +2349,7 @@ _unpack_job_info_request_msg(job_info_request_msg_t** msg,
 	*msg = job_info;
 
 	safe_unpack_time(&job_info->last_update, buffer);
-	safe_unpack16(&job_info->show_all, buffer);
+	safe_unpack16(&job_info->show_flags, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2364,7 +2364,7 @@ _pack_job_step_info_req_msg(job_step_info_request_msg_t * msg, Buf buffer)
 	pack_time(msg->last_update, buffer);
 	pack32(msg->job_id, buffer);
 	pack32(msg->step_id, buffer);
-	pack16(msg->show_all, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 static int
@@ -2378,7 +2378,7 @@ _unpack_job_step_info_req_msg(job_step_info_request_msg_t ** msg, Buf buffer)
 	safe_unpack_time(&job_step_info->last_update, buffer);
 	safe_unpack32(&job_step_info->job_id, buffer);
 	safe_unpack32(&job_step_info->step_id, buffer);
-	safe_unpack16(&job_step_info->show_all, buffer);
+	safe_unpack16(&job_step_info->show_flags, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2391,7 +2391,7 @@ static void
 _pack_node_info_request_msg(node_info_request_msg_t * msg, Buf buffer)
 {
 	pack_time(msg->last_update, buffer);
-	pack16(msg->show_all, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 static int
@@ -2403,7 +2403,7 @@ _unpack_node_info_request_msg(node_info_request_msg_t ** msg, Buf buffer)
 	*msg = node_info;
 
 	safe_unpack_time(&node_info->last_update, buffer);
-	safe_unpack16(&node_info->show_all, buffer);
+	safe_unpack16(&node_info->show_flags, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2416,7 +2416,7 @@ static void
 _pack_part_info_request_msg(part_info_request_msg_t * msg, Buf buffer)
 {
 	pack_time(msg->last_update, buffer);
-	pack16(msg->show_all, buffer);
+	pack16(msg->show_flags, buffer);
 }
 
 static int
@@ -2428,7 +2428,7 @@ _unpack_part_info_request_msg(part_info_request_msg_t ** msg, Buf buffer)
 	*msg = part_info;
 
 	safe_unpack_time(&part_info->last_update, buffer);
-	safe_unpack16(&part_info->show_all, buffer);
+	safe_unpack16(&part_info->show_flags, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

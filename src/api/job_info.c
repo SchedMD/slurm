@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -237,13 +237,13 @@ slurm_make_time_str (time_t *time, char *string)
  *	information if changed since update_time 
  * IN update_time - time of current configuration data
  * IN job_info_msg_pptr - place to store a job configuration pointer
- * IN show_all - if set then report even "hidden" partitions
+ * IN show_flags -  job filtering options
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
 slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
-		uint16_t show_all)
+		uint16_t show_flags)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -251,7 +251,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
 	job_info_request_msg_t req;
 
 	req.last_update  = update_time;
-	req.show_all = show_all;
+	req.show_flags = show_flags;
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 

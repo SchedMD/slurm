@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
+ *             Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -103,11 +104,15 @@ _query_server(partition_info_msg_t ** part_pptr,
 	static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
 	static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
 	int error_code;
+	uint16_t show_flags = 0;
+
+	if (params.all_flag)
+		show_flags |= SHOW_ALL;
 
 	if (old_part_ptr) {
 		error_code =
 		    slurm_load_partitions(old_part_ptr->last_update,
-					  &new_part_ptr, params.all_flag);
+					  &new_part_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(old_part_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -117,7 +122,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 	} else
 		error_code =
 		    slurm_load_partitions((time_t) NULL, &new_part_ptr,
-			params.all_flag);
+			show_flags);
 	if (error_code) {
 		slurm_perror("slurm_load_part");
 		return error_code;
@@ -129,7 +134,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 	if (old_node_ptr) {
 		error_code =
 		    slurm_load_node(old_node_ptr->last_update,
-				    &new_node_ptr, params.all_flag);
+				    &new_node_ptr, show_flags);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg(old_node_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -138,7 +143,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 		}
 	} else
 		error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
-				params.all_flag);
+				show_flags);
 	if (error_code) {
 		slurm_perror("slurm_load_node");
 		return error_code;
