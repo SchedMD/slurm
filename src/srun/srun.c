@@ -91,6 +91,7 @@ static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
 static void  _run_job_script(uint32_t jobid, uint32_t node_cnt);
 static int   _set_batch_script_env(uint32_t jobid, uint32_t node_cnt);
+static int   _set_rlimit_env(void);
 
 
 #ifdef HAVE_LIBELAN3
@@ -103,10 +104,8 @@ srun(int ac, char **av)
 {
 	allocation_resp *resp;
 	job_t *job;
-	struct rlimit rlim;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
-
 
 	log_init(xbasename(av[0]), logopt, 0, NULL);
 
@@ -114,11 +113,7 @@ srun(int ac, char **av)
 	 * verify some basic values
 	 */
 	initialize_and_process_args(ac, av);
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
-		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_NOFILE, &rlim);
-	}
+	(void) _set_rlimit_env();
 
 	/* reinit log with new verbosity (if changed by command line)
 	 */
@@ -545,19 +540,20 @@ _build_script (char *fname, int file_type)
 static int
 _set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
 {
+	int rc = SLURM_SUCCESS;
 	char *dist = NULL;
 
 	if (jobid > 0) {
 		if (setenvf("SLURM_JOBID=%u", jobid)) {
 			error("Unable to set SLURM_JOBID environment");
-			return -1;
+			rc = SLURM_FAILURE;
 		}
 	}
 
 	if (node_cnt > 0) {
 		if (setenvf("SLURM_NNODES=%u", node_cnt)) {
 			error("Unable to set SLURM_NNODES environment");
-			return -1;
+			rc = SLURM_FAILURE;
 		}
 		if (!opt.nprocs_set)
 			opt.nprocs = node_cnt;
@@ -565,13 +561,13 @@ _set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
 
 	if (opt.nprocs_set && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");
-		return -1;
+		rc = SLURM_FAILURE;
 	}
 
 	if ( (opt.cpus_per_task > 0) &&
 	     setenvf("SLURM_CPUS_PER_TASK=%u", opt.cpus_per_task)) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
-		return -1;
+		rc = SLURM_FAILURE;
 	}
 
 	if (opt.distribution != SRUN_DIST_UNKNOWN) {
@@ -580,23 +576,68 @@ _set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
 
 		if (setenvf("SLURM_DISTRIBUTION=%s", dist)) {
 			error("Can't set SLURM_DISTRIBUTION env variable");
-			return -1;
+			rc = SLURM_FAILURE;
 		}
 	}
 
 	if ((opt.overcommit) &&
 	    (setenvf("SLURM_OVERCOMMIT=1"))) {
 		error("Unable to set SLURM_OVERCOMMIT environment variable");
-		return -1;
+		rc = SLURM_FAILURE;
 	}
 
 	if ((opt.slurmd_debug) 
 	    && setenvf("SLURMD_DEBUG=%d", opt.slurmd_debug)) {
 		error("Can't set SLURMD_DEBUG environment variable");
-		return -1;
+		rc = SLURM_FAILURE;
 	}
 
-	return 0;
+	return rc;
+}
+
+/* Set SLURM_RLIMIT_* environment variables with current resource 
+ * limit values, reset RLIMIT_NOFILE to maximum possible value */
+static int _set_rlimit_env(void)
+{
+	int rc = SLURM_SUCCESS;
+	struct rlimit my_rlimit;
+
+	if (getrlimit(RLIMIT_FSIZE, &my_rlimit) ||
+	    setenvf("SLURM_RLIMIT_FSIZE=%ld", (long)my_rlimit.rlim_cur)) {
+		error("Can't set SLURM_RLIMIT_FSIZE environment variable");
+		rc = SLURM_FAILURE;
+	}
+
+	if (getrlimit(RLIMIT_CORE, &my_rlimit) ||
+	    setenvf("SLURM_RLIMIT_CORE=%ld", (long)my_rlimit.rlim_cur)) {
+		error("Can't set SLURM_RLIMIT_CORE environment variable");
+		rc = SLURM_FAILURE;
+	}
+
+	if (getrlimit(RLIMIT_NPROC, &my_rlimit) ||
+	    setenvf("SLURM_RLIMIT_NPROC=%ld", (long)my_rlimit.rlim_cur)) {
+		error("Can't set SLURM_RLIMIT_NPROC environment variable");
+		rc = SLURM_FAILURE;
+	}
+
+	if (getrlimit(RLIMIT_NOFILE, &my_rlimit) == 0) {
+		if (setenvf("SLURM_RLIMIT_NOFILE=%ld", 
+			    (long)my_rlimit.rlim_cur)) {
+			error("Can't set SLURM_RLIMIT_NOFILE environment variable");
+			rc = SLURM_FAILURE;
+		}
+		my_rlimit.rlim_cur = my_rlimit.rlim_max;
+		if (setrlimit(RLIMIT_NOFILE, &my_rlimit)) {
+			error("Can't set SLURM_RLIMIT_NOFILE value");
+			rc = SLURM_FAILURE;
+		}
+	} else {
+		error("Can't get RLIMIT_NOFILE value");
+		rc = SLURM_FAILURE;
+	}
+
+
+	return rc;
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
