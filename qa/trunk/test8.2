@@ -133,7 +133,7 @@ if {[wait_for_file $file_out] == 0} {
 	set found_env 0
 	spawn $bin_cat $file_out
 	expect {
-		-re "BGL_PARTITION_ID" {
+		-re "MPIRUN_PARTITION" {
 			incr found_env
 			exp_continue
 		}
