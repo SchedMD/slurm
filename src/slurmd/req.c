@@ -540,7 +540,7 @@ _job_still_running(uint32_t job_id)
 static void 
 _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int   rc;
+	int   rc      = SLURM_SUCCESS;
 	uid_t req_uid = slurm_auth_uid(msg->cred);
 	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
 
@@ -549,8 +549,7 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 		      (unsigned int) req_uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 	} else {
-		rc = revoke_credential(req, conf->cred_state_list);
-		if (rc < 0)
+		if (revoke_credential(req, conf->cred_state_list) < 0)
 			error("revoking credential for job %d: %m", 
 			      req->job_id);
 		else {
