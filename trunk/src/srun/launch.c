@@ -29,6 +29,7 @@
 #endif
 
 #include <errno.h>
+#include <signal.h>
 #include <string.h>
 #include <unistd.h>
 #include <sys/param.h>
@@ -203,7 +204,7 @@ launch(void *arg)
 	if (fail_launch_cnt) {
 		error("%d task launch requests failed, terminating job step", 
 		      fail_launch_cnt);
-		if (slurm_cancel_job_step(job->jobid, job->stepid))
+		if (slurm_kill_job_step(job->jobid, job->stepid, SIGKILL))
 			error("slurm_cancel_job_step error %m");
 		update_job_state(job, SRUN_JOB_FAILED);
 	} else {

@@ -5,6 +5,7 @@
 #endif
 
 #include <errno.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,7 +28,7 @@ main( int argc, char* argv[])
 {
 	int error_code;	
 	int job_id = atoi( argv[1] );
-	error_code = slurm_cancel_job ( job_id ); 
+	error_code = slurm_kill_job ( job_id, SIGKILL ); 
 
 	if (error_code)
 		slurm_perror( "slurm_cancel_job faile: ");
