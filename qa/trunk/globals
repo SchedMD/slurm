@@ -339,14 +339,39 @@ proc wait_for_job { job_id state } {
 #
 # Purpose: Determine if the execution host is one in which the
 # slurmd daemon executes on a front-end node rather than the 
-# compute hosts (e.g. Blue Gene systems).
+# compute hosts (e.g. Blue Gene systems). This is based upon 
+# our ability to locate a specific Blue Gene library file.
 #
 # Returns 1 if the system uses a front-end, 0 otherwise
 #
 ################################################################
 
 proc test_front_end { } {
-# Need to add code to test for specific libraries or header files
+	if [file exists "/usr/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/usr/lib/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/usr/local/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/usr/local/lib/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/bgl/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/bgl/lib/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/bgl/bglsched/bglbridge.a"] {
+		return 1
+	}
+	if  [file exists "/bgl/bglsched/lib/bglbridge.a"] {
+		return 1
+	}
+
 	return 0
 }
 
