@@ -45,7 +45,7 @@ main(int argc, char *argv[])
 
 		bs2 = bit_copy(bs);
 		bit_fill_gaps(bs2);
-		TEST(bit_ffs(bs2) == 9, "firsy bit set = 9 ");
+		TEST(bit_ffs(bs2) == 9, "first bit set = 9 ");
 		TEST(bit_fls(bs2) == 14, "last bit set = 14");
 		TEST(bit_set_count(bs2) == 6, "bitstring");
 		TEST(bit_test(bs2,12), "bitstring");
@@ -65,15 +65,15 @@ main(int argc, char *argv[])
 		TEST(bit_test(bs,12), "bitstring");
 		TEST(bit_test(bs,14), "bitstring");
 
-		TEST(bit_ffs(bs) == 9, "bitstring");
-		TEST(bit_ffc(bs) == 0, "bitstring");
+		TEST(bit_ffs(bs) == 9, "ffs");
+		TEST(bit_ffc(bs) == 0, "ffc");
 		bit_nset(bs,0,8);
-		TEST(bit_ffc(bs) == 15, "bitstring");
+		TEST(bit_ffc(bs) == 15, "ffc");
 
 		bit_free(bs);
 		/*bit_set(bs,9); */	/* triggers TEST in bit_set - OK */
 	}
-	note("Testing and/or\n");
+	note("Testing and/or/not\n");
 	{
 		bitstr_t *bs1 = bit_alloc(128);
 		bitstr_t *bs2 = bit_alloc(128);
@@ -83,20 +83,44 @@ main(int argc, char *argv[])
 		bit_set(bs2, 100);
 
 		bit_and(bs1, bs2);
-		TEST(bit_test(bs1, 100), "bitstring");
-		TEST(!bit_test(bs1, 104), "bitstring");
+		TEST(bit_test(bs1, 100), "and");
+		TEST(!bit_test(bs1, 104), "and");
 
 		bit_set(bs2, 110);
 		bit_set(bs2, 111);
 		bit_set(bs2, 112);
 		bit_or(bs1, bs2);
-		TEST(bit_test(bs1, 100), "bitstring");
-		TEST(bit_test(bs1, 110), "bitstring");
-		TEST(bit_test(bs1, 111), "bitstring");
-		TEST(bit_test(bs1, 112), "bitstring");
+		TEST(bit_test(bs1, 100), "or");
+		TEST(bit_test(bs1, 110), "or");
+		TEST(bit_test(bs1, 111), "or");
+		TEST(bit_test(bs1, 112), "or");
+
+		bit_not(bs1);
+		TEST(!bit_test(bs1, 100), "not");
+		TEST(!bit_test(bs1, 12), "not");
 
 		bit_free(bs1);
 		bit_free(bs2);
+	}
+
+	note("testing bit selection\n");
+	{
+		bitstr_t *bs1 = bit_alloc(128), *bs2;
+		bit_set(bs1, 21);
+		bit_set(bs1, 100);
+		bit_fill_gaps(bs1);
+		bs2 = bit_pick_cnt(bs1,20);
+
+		if (bs2) {
+			TEST(bit_set_count(bs2) == 20, "pick");
+			TEST(bit_ffs(bs2) == 21, "pick");
+			TEST(bit_fls(bs2) == 40, "pick");
+			bit_free(bs2);
+		}
+		else
+			TEST(0, "alloc fail");
+
+		bit_free(bs1);
 	}
 	note("Testing realloc\n");
 	{
