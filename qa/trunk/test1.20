@@ -38,17 +38,24 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
 #
 # Spawn a shell via srun with stderr forwarding disabled
 #
+set srun_exit 0
 spawn $srun --error=none -t1 $bin_sleep aaa
 expect {
 	-re "invalid" {
 		send_user "\nFAILURE: srun improperly forwarded stderr\n"
 		set exit_code 1
+		exp_continue
+	}
+	-re "exit code 1" {
+		send_user "This error is expected, no worries\n"
+		set srun_exit 1
 		exp_continue
 	}
 	timeout {
@@ -58,7 +65,13 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
+}
+
+if {$srun_exit == 0} {
+	send_user "\nFAILURE: srun exit code does not indicate error\n"
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
