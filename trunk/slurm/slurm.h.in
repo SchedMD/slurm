@@ -93,6 +93,26 @@ BEGIN_C_DECLS
 #endif
 
 /*****************************************************************************\
+ *      DEFINITIONS FOR VERSION MANAGEMENT
+\*****************************************************************************/
+
+#ifndef SLURM_MAJOR
+/* Define the project's major version. */
+#undef SLURM_MAJOR
+
+/* Define the project's minor version. */
+#undef SLURM_MINOR
+
+/* Define the project's micro version. */
+#undef SLURM_MICRO
+#endif
+
+#define SLURM_VERSION_NUM(a,b,c) (((a) << 16) + ((b) << 8) + (c))
+#define SLURM_VERSION_MAJOR(a)   (((a) >> 16) & 0xff)
+#define SLURM_VERSION_MINOR(a)   (((a) >>  8) & 0xff)
+#define SLURM_VERSION_MICRO(a)    ((a)        & 0xff)
+
+/*****************************************************************************\
  *	DEFINITIONS FOR INPUT VALUES
 \*****************************************************************************/
 
@@ -606,6 +626,14 @@ extern int slurm_complete_job_step PARAMS((
 /*****************************************************************************\
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
+
+/*
+ * slurm_api_version - Return a single number reflecting the SLURM API's 
+ *	version number. Use the macros SLURM_VERSION_NUM, SLURM_VERSION_MAJOR, 
+ *	SLURM_VERSION_MINOR, and SLURM_VERSION_MICRO to work with this value
+ * RET API's version number
+ */
+extern long slurm_api_version PARAMS((void));
 
 /*
  * make_time_str - convert time_t to string with "month/date hour:min:sec" 

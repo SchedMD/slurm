@@ -182,6 +182,13 @@ main (int argc, char *argv[])
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
+	if (quiet_flag == -1) {
+		long version = slurm_api_version();
+		printf("slurm_api_version: %ld, %ld.%ld.%ld\n", version,
+			SLURM_VERSION_MAJOR(version), 
+			SLURM_VERSION_MINOR(version),
+			SLURM_VERSION_MICRO(version));
+	}
 }
 
 

@@ -38,6 +38,17 @@
 #include "src/common/slurm_protocol_api.h"
 
 /*
+ * slurm_api_version - Return a single number reflecting the SLURM API's 
+ *      version number. Use the macros SLURM_VERSION_NUM, SLURM_VERSION_MAJOR, 
+ *      SLURM_VERSION_MINOR, and SLURM_VERSION_MICRO to work with this value
+ * RET API's version number
+ */
+extern long slurm_api_version (void)
+{
+	return (long) SLURM_VERSION_NUM(SLURM_MAJOR, SLURM_MINOR, SLURM_MICRO);
+}
+
+/*
  * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
  * IN out - file to write to
