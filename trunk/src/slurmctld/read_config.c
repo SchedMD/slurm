@@ -48,10 +48,13 @@
 
 #define BUF_SIZE 1024
 
-static int	init_slurm_conf ();
+static int	init_slurm_conf (void);
 static int	parse_config_spec (char *in_line);
 static int	parse_node_spec (char *in_line);
 static int	parse_part_spec (char *in_line);
+#ifdef 	HAVE_LIBELAN3
+static void	validate_node_proc_count (void);
+#endif
 
 static char highest_node_name[MAX_NAME_LEN] = "";
 int node_record_count = 0;
@@ -242,8 +245,8 @@ static int
 parse_config_spec (char *in_line) 
 {
 	int error_code;
-	int fast_schedule = 0, hash_base = 0, heartbeat_interval = 0, kill_wait = 0;
-	int ret2service = 0, slurmctld_timeout = 0, slurmd_timeout = 0;
+	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1, kill_wait = -1;
+	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
 	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurmctld_port = NULL, *slurmd_port = NULL;
@@ -294,19 +297,19 @@ parse_config_spec (char *in_line)
 		slurmctld_conf.epilog = epilog;
 	}
 
-	if ( fast_schedule ) 
+	if ( fast_schedule != -1) 
 		slurmctld_conf.fast_schedule = fast_schedule;
 
 	if ( first_job_id ) 
 		slurmctld_conf.first_job_id = first_job_id;
 
-	if ( hash_base ) 
+	if ( hash_base != -1) 
 		slurmctld_conf.hash_base = hash_base;
 
-	if ( heartbeat_interval ) 
+	if ( heartbeat_interval != -1) 
 		slurmctld_conf.heartbeat_interval = heartbeat_interval;
 
-	if ( kill_wait ) 
+	if ( kill_wait != -1) 
 		slurmctld_conf.kill_wait = kill_wait;
 
 	if ( prioritize ) {
@@ -321,7 +324,7 @@ parse_config_spec (char *in_line)
 		slurmctld_conf.prolog = prolog;
 	}
 
-	if ( ret2service ) 
+	if ( ret2service != -1) 
 		slurmctld_conf.ret2service = ret2service;
 
 	if ( slurmctld_port ) {
@@ -333,7 +336,7 @@ parse_config_spec (char *in_line)
 		endservent ();
 	}
 
-	if ( slurmctld_timeout ) 
+	if ( slurmctld_timeout != -1) 
 		slurmctld_conf.slurmctld_timeout = slurmctld_timeout;
 
 	if ( slurmd_port ) {
@@ -345,7 +348,7 @@ parse_config_spec (char *in_line)
 		endservent ();
 	}
 
-	if ( slurmd_timeout ) 
+	if ( slurmd_timeout != -1) 
 		slurmctld_conf.slurmd_timeout = slurmd_timeout;
 
 	if ( state_save_location ) {
@@ -866,6 +869,9 @@ read_slurm_conf (int recover) {
 
 	if ((error_code = build_bitmaps ()))
 		return error_code;
+#ifdef 	HAVE_LIBELAN3
+	validate_node_proc_count ();
+#endif
 	if (recover) {
 		(void) sync_nodes_to_jobs ();
 	}
@@ -923,3 +929,36 @@ sync_nodes_to_jobs (void)
 		info ("sync_nodes_to_jobs updated state of %d nodes", update_cnt);
 	return update_cnt;
 }
+
+#ifdef 	HAVE_LIBELAN3
+/* Every node in a given partition must have the same processor count at present */
+void validate_node_proc_count (void)
+{
+	ListIterator part_record_iterator;
+	struct part_record *part_record_point;
+	int first_bit, last_bit, i, node_size, part_size;
+
+	part_record_iterator = list_iterator_create (part_list);		
+	while ((part_record_point = (struct part_record *) list_next (part_record_iterator))) {
+		first_bit = bit_ffs (part_record_point->node_bitmap);
+		last_bit  = bit_fls (part_record_point->node_bitmap);
+		part_size = -1;
+		for (i=first_bit; i<=last_bit; i++) {
+			if (bit_test (part_record_point->node_bitmap, i) == 0)
+				continue;
+
+			if (slurmctld_conf.fast_schedule)
+				node_size = node_record_table_ptr[i].config_ptr->cpus;
+			else 
+				node_size = node_record_table_ptr[i].cpus;
+
+			if (part_size == -1)
+				part_size = node_size;
+			else if (part_size != node_size)
+				fatal ("Partition %s has inconsisent processor count",
+					part_record_point->name);
+		}
+	}			
+	list_iterator_destroy (part_record_iterator);
+}
+#endif

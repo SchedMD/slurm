@@ -1051,12 +1051,25 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	else {
 		info ("validate_node_specs: node %s has registered", node_name);
+		node_ptr->cpus = cpus;
+		node_ptr->real_memory = real_memory;
+		node_ptr->tmp_disk = tmp_disk;
+#ifdef 		HAVE_LIBELAN3
+		/* Every node in a given partition must have the same processor count at present */
+		if ((slurmctld_conf.fast_schedule == 0) &&
+		    (node_ptr->config_ptr->cpus != cpus)) {
+			error ("Node %s has processor count inconsistent with rest of partition",
+				node_name);
+			return EINVAL;		/* leave node down */
+		}
+#endif
 		resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 			node_ptr->node_state = NODE_STATE_IDLE;
 		else if ((node_ptr->node_state == NODE_STATE_DOWN) &&
 		         (slurmctld_conf.ret2service == 1)) {
+
 			if (job_count)
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
 			else
