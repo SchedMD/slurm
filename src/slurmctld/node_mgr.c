@@ -417,14 +417,16 @@ extern int load_all_node_state ( bool state_only )
 	else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
-		while ((data_read = 
-			   read (state_fd, &data[data_size], BUF_SIZE)) == 
-					BUF_SIZE) {
-			data_size += data_read;
-			data_allocated += BUF_SIZE;
+		while (1) {
+			data_read = read (state_fd, &data[data_size], BUF_SIZE);
+			if ((data_read == -1) && (errno == EINTR))
+				 continue;
+			if (data_read == 0)     /* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
-		data_size += data_read;
 		close (state_fd);
 		if (data_read < 0) 
 			error ("Read error on %s, %m", state_file);
@@ -934,11 +936,11 @@ static void _split_node_name (char *name, char *prefix, char *suffix,
  */
 int update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int error_code = 0, state_val, base_state, node_inx;
+	int error_code = 0, base_state, node_inx;
 	struct node_record *node_ptr;
 	char  *this_node_name ;
 	hostlist_t host_list;
-	uint16_t no_resp_flag = 0;
+	uint16_t no_resp_flag = 0, state_val;
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s", 
@@ -968,7 +970,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			break;
 		}
 
-		if (state_val != NO_VAL) {
+		if (state_val != (uint16_t) NO_VAL) {
 			base_state = node_ptr->node_state & 
 			             (~NODE_STATE_NO_RESPOND);
 			if (!_valid_node_state_change(base_state, state_val)) {
@@ -977,11 +979,11 @@ int update_node ( update_node_msg_t * update_node_msg )
 					this_node_name, 
 					node_state_string(base_state),
 					node_state_string(state_val));
-				state_val = NO_VAL;
+				state_val = (uint16_t) NO_VAL;
 				error_code = ESLURM_INVALID_NODE_STATE;
 			}
 		}
-		if (state_val != NO_VAL) {
+		if (state_val != (uint16_t) NO_VAL) {
 			if (state_val == NODE_STATE_DOWN) {
 				/* We must set node down before killing its jobs */
 				_make_node_down(node_ptr);
