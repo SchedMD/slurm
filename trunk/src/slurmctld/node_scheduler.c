@@ -365,7 +365,7 @@ cleanup:
  */
 int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Req_CPUs, 
 	int Consecutive) {
-    int bit, size, word, i, index, Error_Code, Sufficient;
+    int i, index, Error_Code, Sufficient;
     int *Consec_Nodes;	/* How many nodes we can add from this consecutive set of nodes */
     int *Consec_CPUs;	/* How many nodes we can add from this consecutive set of nodes */
     int *Consec_Start;	/* Where this consecutive set starts (index) */
@@ -374,7 +374,6 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
     int Consec_Index, Consec_Size;
     int Rem_CPUs, Rem_Nodes;	/* Remaining resources required */
     int Best_Fit_Nodes, Best_Fit_CPUs, Best_Fit_Req, Best_Fit_Location;
-    unsigned mask;
 
     if (BitMap == NULL) {
 #if DEBUG_SYSTEM
@@ -405,56 +404,50 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 
     Consec_CPUs[Consec_Index] = Consec_Nodes[Consec_Index] = 0;
     Consec_Req[Consec_Index]  = -1;	/* No required nodes here by default */
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
-    size /= sizeof(unsigned);			/* Count of unsigned's */
-    index = -1;
     Rem_CPUs  = Req_CPUs;
     Rem_Nodes = Req_Nodes;
-    for (word=0; word<size; word++) {
-	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
-	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-	    index++;
-	    if (Req_BitMap && (Req_BitMap[word] & mask) && (Consec_Req[Consec_Index] == -1))
-		Consec_Req[Consec_Index] = index;	/* First required node in set */
-	    if (BitMap[word] & mask) {
-		if (Consec_Nodes[Consec_Index] == 0) Consec_Start[Consec_Index] = index;
-		i = Node_Record_Table_Ptr[index].CPUs;
-		if (Req_BitMap && (Req_BitMap[word] & mask)) {
-		    Rem_CPUs -= i;	/* Reduce count of additional resources required */
-		    Rem_Nodes--;	/* Reduce count of additional resources required */
-		} else {
-		    BitMap[word] &= (~mask);
-		    Consec_CPUs[Consec_Index] += i;
-		    Consec_Nodes[Consec_Index]++;
-		} /* else */
-	    } else if (Consec_Nodes[Consec_Index] == 0) { 
-		continue;
+    for (index=0; index<Node_Record_Count; index++) {
+	if (BitMapValue(BitMap,index)) {
+	    if (Consec_Nodes[Consec_Index] == 0) Consec_Start[Consec_Index] = index;
+	    i = Node_Record_Table_Ptr[index].CPUs;
+	    if (Req_BitMap && BitMapValue(Req_BitMap,index)) {
+		if (Consec_Req[Consec_Index] == -1) 
+			Consec_Req[Consec_Index] = index;	/* First required node in set */
+		Rem_CPUs -= i;	/* Reduce count of additional resources required */
+		Rem_Nodes--;	/* Reduce count of additional resources required */
 	    } else {
-		Consec_End[Consec_Index] = index - 1;
-		if (++Consec_Index >= Consec_Size) {
-		    Consec_Size *= 2;
-		    Consec_CPUs  = realloc(Consec_CPUs , sizeof(int)*Consec_Size);
-		    Consec_Nodes = realloc(Consec_Nodes, sizeof(int)*Consec_Size);
-		    Consec_Start = realloc(Consec_Start, sizeof(int)*Consec_Size);
-		    Consec_End   = realloc(Consec_End,   sizeof(int)*Consec_Size);
-		    Consec_Req   = realloc(Consec_Req,   sizeof(int)*Consec_Size);
-		    if ((Consec_CPUs  == NULL) || (Consec_Nodes == NULL) || 
-		        (Consec_Start == NULL) || (Consec_End   == NULL) || (Consec_Req   == NULL)) {
-#if DEBUG_SYSTEM
-			fprintf(stderr, "Pick_Best_CPUs: unable to allocate memory\n");
-#else
-			syslog(LOG_ALERT, "Pick_Best_CPUs: unable to allocate memory\n");
-#endif
-			goto cleanup;
-		    } /* if */
-		} /* if */
-		Consec_CPUs[Consec_Index]  = 0;
-		Consec_Nodes[Consec_Index] = 0;
-		Consec_Req[Consec_Index]   = -1;
+		BitMapClear(BitMap, index);
+		Consec_CPUs[Consec_Index] += i;
+		Consec_Nodes[Consec_Index]++;
 	    } /* else */
-	} /* for (bit */
-    } /* for (word */
-    if (Consec_Nodes[Consec_Index] != 0) Consec_End[Consec_Index] = index;
+	} else if (Consec_Nodes[Consec_Index] == 0) { 
+	    Consec_Req[Consec_Index]  = -1;	/* Already picked up any required nodes */
+						/* Re-use this record */
+	} else {
+	    Consec_End[Consec_Index] = index - 1;
+	    if (++Consec_Index >= Consec_Size) {
+		Consec_Size *= 2;
+		Consec_CPUs  = realloc(Consec_CPUs , sizeof(int)*Consec_Size);
+		Consec_Nodes = realloc(Consec_Nodes, sizeof(int)*Consec_Size);
+		Consec_Start = realloc(Consec_Start, sizeof(int)*Consec_Size);
+		Consec_End   = realloc(Consec_End,   sizeof(int)*Consec_Size);
+		Consec_Req   = realloc(Consec_Req,   sizeof(int)*Consec_Size);
+		if ((Consec_CPUs  == NULL) || (Consec_Nodes == NULL) || 
+		    (Consec_Start == NULL) || (Consec_End   == NULL) || (Consec_Req   == NULL)) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "Pick_Best_CPUs: unable to allocate memory\n");
+#else
+		    syslog(LOG_ALERT, "Pick_Best_CPUs: unable to allocate memory\n");
+#endif
+		    goto cleanup;
+		} /* if */
+	    } /* if */
+	    Consec_CPUs[Consec_Index]  = 0;
+	    Consec_Nodes[Consec_Index] = 0;
+	    Consec_Req[Consec_Index]   = -1;
+	} /* else */
+    } /* for (index */
+    if (Consec_Nodes[Consec_Index] != 0) Consec_End[Consec_Index++] = index-1;
 
 #if DEBUG_SYSTEM > 1
     for (i=0; i<Consec_Index; i++) {
@@ -470,9 +463,9 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 #endif
 
 
-    while (1) {
+    while (Consec_Index) {
 	Best_Fit_CPUs = Best_Fit_Nodes = 0;
-	Best_Fit_Req = -1;
+	Best_Fit_Req = -1;	/* First required node, -1 if none */
 	for (i=0; i<Consec_Index; i++) {
 	    if (Consec_Nodes[i] == 0) continue;
 	    Sufficient = ((Consec_Nodes[i] >= Rem_Nodes) && (Consec_CPUs[i] >= Rem_CPUs));
@@ -491,13 +484,14 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 	if (Best_Fit_Req != -1) {	/* Work out from required nodes */
 	    for (i=Best_Fit_Req; i<=Consec_End[Best_Fit_Location]; i++) {
 		if ((Rem_Nodes <= 0) && (Rem_CPUs <= 0)) break;
+		if (BitMapValue(BitMap, i)) continue;
 		BitMapSet(BitMap, i);
 		Rem_Nodes--;
 		Rem_CPUs -= Node_Record_Table_Ptr[i].CPUs;
 	    } /* for */
 	    for (i=(Best_Fit_Req-1); i>=Consec_Start[Best_Fit_Location]; i--) {
 		if ((Rem_Nodes <= 0) && (Rem_CPUs <= 0)) break;
-		if (BitMapValue(BitMap, i) == 1) continue;
+		/* if (BitMapValue(BitMap, i)) continue;  nothing set earlier */
 		BitMapSet(BitMap, i);
 		Rem_Nodes--;
 		Rem_CPUs -= Node_Record_Table_Ptr[i].CPUs;
@@ -505,6 +499,7 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 	} else {
 	    for (i=Consec_Start[Best_Fit_Location]; i<=Consec_End[Best_Fit_Location]; i++) {
 		if ((Rem_Nodes <= 0) && (Rem_CPUs <= 0)) break;
+		if (BitMapValue(BitMap, i)) continue;
 		BitMapSet(BitMap, i);
 		Rem_Nodes--;
 		Rem_CPUs -= Node_Record_Table_Ptr[i].CPUs;
@@ -571,6 +566,7 @@ int Pick_Best_Nodes(struct Node_Set *Node_Set_Ptr, int Node_Set_Size, unsigned *
 	    if ((Shared != 1) && (BitMapIsSuper(Req_BitMap[0], Idle_NodeBitMap) != 1)) return EAGAIN;
 	    return 0;		/* User can have selected nodes, we're done! */
 	} /* if */
+        Total_Nodes = Total_CPUs = 0;  /* reinitialize */
     } /* if */
 
     /* Identify how many feature sets we have (e.g. "[FS1|FS2|FS3|FS4]" */
@@ -888,7 +884,7 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
 		BitMapOR(Scratch_BitMap, Node_Set_Ptr[Node_Set_Index].My_BitMap);
 	    else {
 		Scratch_BitMap = BitMapCopy(Node_Set_Ptr[Node_Set_Index].My_BitMap);
-		if (Scratch_BitMap == NULL) { /* No memory */
+		if (Scratch_BitMap == NULL) { 
 		    Error_Code = EAGAIN; 
 		    goto cleanup;
 		} /* if */
