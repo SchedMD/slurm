@@ -246,6 +246,12 @@ is run as root, submit the job with \fIuser\fR's access permissions.
 If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used, 
 submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR 
 may be the group name or the numerical group ID.
+.TP
+\fB\-\-core\fR=\fItype\fR
+Adjust corefile format for parallel job. If possible, srun will set
+up the environment for the job such that a corefile format other than
+full core dumps is enabled. If run with type = "list", srun will
+print a list of supported corefile format types to stdout and exit.
 .PP
 Allocate options:
 .TP
