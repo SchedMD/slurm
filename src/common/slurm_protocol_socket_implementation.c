@@ -368,7 +368,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 		}
 		else 
 		{
-			rc = _slurm_recv ( open_fd, buffer , size , flags ) ;
+			rc = _slurm_recv ( open_fd, buffer+bytes_recv , size , flags ) ;
 			if ( rc  == SLURM_PROTOCOL_ERROR || rc < 0 )
 			{
 
