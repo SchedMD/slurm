@@ -28,6 +28,7 @@
 #  include "config.h"
 #endif
 
+#include <errno.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <dlfcn.h>        /* don't know if there's an autoconf for this. */
@@ -37,6 +38,17 @@
 #include "src/common/plugin.h"
 #include <slurm/slurm_errno.h>
 
+/* dlerror() on AIX sometimes fails, revert to strerror() as needed */
+static char *_dlerror(void)
+{
+	int error_code = errno;
+	char *rc = dlerror();
+
+	if ((rc == NULL) || (rc[0] == '\0'))
+		rc = strerror(error_code);
+
+	return rc;
+}
 
 int
 plugin_peek( const char *fq_path,
@@ -50,7 +62,7 @@ plugin_peek( const char *fq_path,
 	
 	plug = dlopen( fq_path, RTLD_LAZY );
 	if ( plug == NULL ) {
-		debug2( "plugin_peek: dlopen(%s): %s", fq_path, dlerror() );
+		debug2( "plugin_peek: dlopen(%s): %s", fq_path, _dlerror() );
 		return SLURM_ERROR;
 	}
 
@@ -97,7 +109,7 @@ plugin_load_from_file( const char *fq_path )
         if ( plug == NULL ) {
 		debug( "plugin_load_from_file: dlopen(%s): %s",
 			fq_path,
-			dlerror() );
+			_dlerror() );
                 return PLUGIN_INVALID_HANDLE;
         }
 	
