@@ -267,6 +267,7 @@ env_vars_t env_vars[] = {
 	{"SLURM_STDOUTMODE", OPT_OUTPUT, &opt.output, NULL},
 	{"SLURM_STDERRMODE", OPT_ERROR, &opt.error, NULL},
 	{"SLURM_DISTRIBUTION", OPT_DISTRIB, NULL, NULL},
+	{"SLURM_WAIT", OPT_INT, &opt.max_wait, NULL},
 	{NULL, 0, NULL}
 };
 
