@@ -363,9 +363,6 @@ node_state_string(uint16_t inx)
 		"UNKNOWN", 
 		"IDLE", 
 		"ALLOCATED", 
-		"STAGE_IN", 
-		"RUNNING", 
-		"STAGE_OUT", 
 		"DRAINED", 
 		"DRAINING", 
 		"END" 
