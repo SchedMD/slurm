@@ -30,8 +30,8 @@
 #include "math.h"
 
 #define DEBUG_PA
-#define MY_SYSTEM_DIMENSIONS 3
-int DIM_SIZE[MY_SYSTEM_DIMENSIONS] = {4,4,4};
+#define PA_SYSTEM_DIMENSIONS 3
+int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {4,4,4};
 
 /**
  * These lists hold the partition data and corresponding
@@ -58,23 +58,29 @@ struct pa_node*** _pa_system;
  * null if you want lower dimensions).
  */
 typedef struct pa_node {
-	/* shallow copy of the conf_results */
+	/* shallow copy of the conf_results.  initialized and used as
+	 * array of Lists accessed by dimension, ie conf_result_list[dim]
+	 */
 	List* conf_result_list; 
 	
 } pa_node_t;
 
 /** internal helper functions */
-/* */
-void _create_pa_system();
-// void _create_pa_system(pa_node_t**** pa_system, List* conf_result_list);
-/* */
-void _delete_pa_system();
-// void _delete_pa_system(pa_node_t*** pa_system);
 /** */
 void _new_pa_node(pa_node_t* pa_node);
 // void _new_pa_node(pa_node_t** pa_node);
 /** */
+void _print_pa_node();
+/** */
 void _delete_pa_node(pa_node_t* pa_node);
+/* */
+void _create_pa_system();
+/* */
+void _print_pa_system();
+// void _create_pa_system(pa_node_t**** pa_system, List* conf_result_list);
+/* */
+void _delete_pa_system();
+// void _delete_pa_system(pa_node_t*** pa_system);
 /* run the graph solver to get the conf_result(s) */
 int _get_part_config(List port_config_list, List conf_result_list);
 /* find the first partition match in the system */
@@ -89,8 +95,8 @@ void _new_pa_node(pa_node_t* pa_node)
 {
 	int i;
 	// pa_node = (pa_node_t*) xmalloc(sizeof(pa_node_t));
-	pa_node->conf_result_list = (List*) xmalloc(sizeof(List) * SYSTEM_DIMENSIONS);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
+	pa_node->conf_result_list = (List*) xmalloc(sizeof(List) * PA_SYSTEM_DIMENSIONS);
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 		pa_node->conf_result_list[i] = NULL;
 	}
 }
@@ -103,13 +109,28 @@ void _delete_pa_node(pa_node_t* pa_node)
 		return;
 	}
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 		if (pa_node->conf_result_list[i]){
 			list_destroy(pa_node->conf_result_list[i]);
 		}
 	}
 
 	xfree(pa_node->conf_result_list);
+}
+
+/** */
+void _print_pa_node(pa_node_t* pa_node)
+{
+	int i;
+	conf_result_t* conf_result;
+	ListIterator itr;
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+		itr = list_iterator_create(pa_node->conf_result_list[i]);
+		while((conf_result = (conf_result_t*) list_next(itr))){
+			print_conf_result(conf_result);
+		}
+		list_iterator_destroy(itr);
+	}
 }
 
 /** */
@@ -121,16 +142,31 @@ void _create_pa_system()
 		_pa_system[x] = (pa_node_t**) xmalloc(sizeof(pa_node_t*) * DIM_SIZE[Y]);
 
 		for (y=0; y<DIM_SIZE[Y]; y++){
-
 			_pa_system[x][y] = (pa_node_t*) xmalloc(sizeof(pa_node_t) * DIM_SIZE[Z]);
+
 			for (z=0; z<DIM_SIZE[Z]; z++){
-
 				_new_pa_node(&(_pa_system[x][y][z]));
-				for (i=0; i<SYSTEM_DIMENSIONS; i++){
 
+				for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 					list_copy(_conf_result_list[i], 
 						  &(_pa_system[x][y][z].conf_result_list[i]));
 				}
+			}
+		}
+	}
+}
+
+/** */
+void _print_pa_system()
+{
+	int i, x=0,y=0,z=0;
+	printf("pa_system: \n");
+	for (x=0; x<DIM_SIZE[X]; x++){
+		for (y=0; y<DIM_SIZE[Y]; y++){
+			for (z=0; z<DIM_SIZE[Z]; z++){
+				printf(" pa_node %d%d%d 0x%p: \n", x, y, z,
+				       &(_pa_system[x][y][z]));
+				_print_pa_node(&(_pa_system[x][y][z]));
 			}
 		}
 	}
@@ -178,7 +214,6 @@ int _get_part_config(List switch_config_list, List part_config_list)
 		printf("error finding all tori\n");
 		goto cleanup;
 	}
-	printf("done\n");
 	rc = 0;
 
  cleanup:
@@ -195,53 +230,88 @@ int _get_part_config(List switch_config_list, List part_config_list)
 int _find_first_match(int* geometry, int conn_type)
 {
 	int i=0, j=0, k=0, x=0, y=0, z=0;
-	int found_count[MY_SYSTEM_DIMENSIONS] = {0,0,0};
+	int found_count[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 	ListIterator itr;
 	conf_result_t* conf_result;
 	bool match_found, request_filled = false;
 
 	for (x=0; x<DIM_SIZE[X]; x++){
-
+	for (y=0; y<DIM_SIZE[Y]; y++){ 
+	for (z=0; z<DIM_SIZE[Z]; z++){ 
+		/***************************************************************/
 		/* if we've already found a match for this dimension
 		 * note that this can be reset if any of the dimensions fail.
 		 */
 		if (found_count[X] == geometry[X]){
-			printf("skipping X dim\n");
+#ifdef DEBUG_PA
+			// 			printf("skipping X dim\n");
+#endif
 		} else {
 			pa_node_t* pa_node = &(_pa_system[x][y][z]);
 			if (pa_node->conf_result_list == NULL){
-				printf("conf_result_list is nULL\n");
+				printf("conf_result_list is NULL\n");
 			}
-			printf("address of pa_node %d\n", _pa_system[x][y][z]);
-			exit(0);
+			printf("address of pa_node %d%d%d 0x%p\n", 
+			       x,y,z, &(_pa_system[x][y][z]));
 			match_found = _check_pa_node(&(_pa_system[x][y][z]), 
 						     geometry[X], conn_type, X,
 						     x);
+			if (match_found){
+#ifdef DEBUG_PA
+				printf("_find_first_match: found match for X\n"); 
+#endif
+				
+				found_count[X]++;
+				if (found_count[X] == geometry[X]){
+#ifdef DEBUG_PA
+					printf("_find_first_match: found full match for X dimension\n"); 
+#endif
+				}
+			} 
 		}
 
-	for (y=0; y<DIM_SIZE[Y]; y++){ 
+		/***************************************************************/
 		if (found_count[Y] == geometry[Y]){
 			printf("skipping Y dim\n");
 		} else {
+			printf("address of pa_node %d%d%d 0x%p\n", 
+			       x,y,z, &(_pa_system[x][y][z]));
 			match_found = _check_pa_node(&(_pa_system[x][y][z]), 
 						     geometry[Y], conn_type, Y,
 						     y);
+
+			if (match_found){
+#ifdef DEBUG_PA
+				printf("_find_first_match: found match for Y\n"); 
+#endif
+				
+				found_count[Y]++;
+				if (found_count[Y] == geometry[Y]){
+#ifdef DEBUG_PA
+					printf("_find_first_match: found full match for Y dimension\n"); 
+#endif
+				}
+			} 
 		}
-
-	for (z=0; z<DIM_SIZE[Z]; z++){ 
-
+		/***************************************************************/
 		if (found_count[Z] == geometry[Z]){
 			printf("skipping Z dim\n");
 		} else {
-			match_found = _check_pa_node(&(_pa_system[x][y][z]), 
+			printf("address of pa_node %d%d%d 0x%p\n", 
+			       x,y,z, &(_pa_system[x][y][z]));
+			match_found = _check_pa_node(&(_pa_system[x][y][z]),
 						     geometry[Z], conn_type, Z, 
 						     z);
 
 			if (match_found){
+#ifdef DEBUG_PA
+				printf("_find_first_match: found match for Z\n"); 
+#endif
+				
 				found_count[Z]++;
 				if (found_count[Z] == geometry[Z]){
 #ifdef DEBUG_PA
-					printf("_find_first_match: match found for Z dimension\n"); 
+					printf("_find_first_match: found full match for Z dimension\n"); 
 #endif
 				}
 			} 
@@ -249,7 +319,7 @@ int _find_first_match(int* geometry, int conn_type)
 
 		/* check whether we're done */
 		bool all_found = true;
-		for (k=0; k<MY_SYSTEM_DIMENSIONS; k++){
+		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
 			if (found_count[k] != geometry[k]) {
 				all_found = false;
 				break;
@@ -270,7 +340,7 @@ int _find_first_match(int* geometry, int conn_type)
 		printf("_find_first_match: match NOT found for Z dimension,"
 		       " resetting previous results\n"); 
 #endif
-		for (k=0; k<MY_SYSTEM_DIMENSIONS; k++){
+		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
 			found_count[k] = 0;
 		}
 	}
@@ -280,15 +350,15 @@ int _find_first_match(int* geometry, int conn_type)
 		 * still haven't found a match, we need to start over
 		 * on the matching.
 		 */
-		if (found_count[Y] != geometry[Y]) {
+	if (found_count[Y] != geometry[Y]) {
 #ifdef DEBUG_PA
-			printf("_find_first_match: match NOT found for Y dimension,"
-			       " resetting previous results\n"); 
+		printf("_find_first_match: match NOT found for Y dimension,"
+		       " resetting previous results\n"); 
 #endif
-			for (k=0; k<MY_SYSTEM_DIMENSIONS; k++){
-				found_count[k] = 0;
-			}
+		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
+			found_count[k] = 0;
 		}
+	}
 	} /* X dimension for loop*/
 	
  done:
@@ -310,15 +380,29 @@ bool _check_pa_node(pa_node_t* pa_node, int geometry,
 {
 	ListIterator itr;
 	conf_result_t* conf_result;
-	int i, j;
+	int i=0, j = 0;
+
+	if (!pa_node){
+		printf("what the hell, the NODE is null!!!!\n");
+	}
 
 	/** this is the designation of a DOWN_NODE_*/
-	if (pa_node->conf_result_list == NULL)
+	if (pa_node->conf_result_list == NULL){
+		printf("what the hell? a down node?\n");
 		return false;
+	}
+
+	if (dim == Y){
+		printf("!!! checking Y dim\n");
+	}
 
 	itr = list_iterator_create(pa_node->conf_result_list[dim]);
 	while((conf_result = (conf_result_t*) list_next(itr) )){
-		
+		if (dim == Y){
+			print_conf_result(conf_result);
+		}
+
+
 		for (i=0; i<conf_result->conf_data->num_partitions; i++){
 				
 			/* check that the size and connection type match */
@@ -357,11 +441,11 @@ bool _check_pa_node(pa_node_t* pa_node, int geometry,
 void init()
 {
 	int i, num_nodes;
-	List switch_config_list = list_create(delete_gen);
+	List switch_config_list;
 
-	_conf_result_list = (List*) xmalloc(sizeof(List) * SYSTEM_DIMENSIONS);
+	_conf_result_list = (List*) xmalloc(sizeof(List) * PA_SYSTEM_DIMENSIONS);
 	
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 		_conf_result_list[i] = list_create(delete_conf_result);
 	}
 
@@ -373,7 +457,8 @@ void init()
 	 * in case they change
 	 */
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++){
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+		switch_config_list = list_create(delete_gen);
 		create_config_4_1d(switch_config_list);
 		if (_get_part_config(switch_config_list, _conf_result_list[i])){
 			printf("Error getting X configuration\n");
@@ -393,11 +478,12 @@ void fini()
 {
 	int i;
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) {
 		list_destroy(_conf_result_list[i]);
 	}
 	xfree(_conf_result_list);
 	_delete_pa_system();
+	printf("pa system destroyed\n");
 }
 
 
@@ -441,7 +527,7 @@ int allocate_part_by_size(int size, bool elongate, int conn_type,
 			  bitstr_t** bitmap)
 {
 	/* decompose the size into a cubic geometry */
-	int geometry[SYSTEM_DIMENSIONS];
+	int geometry[PA_SYSTEM_DIMENSIONS];
 	int rc, i;
 
 	if (!_initialized){
@@ -456,11 +542,11 @@ int allocate_part_by_size(int size, bool elongate, int conn_type,
 	}
 
 	if (size == 1){
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
 			geometry[i] = 1;
 	} else {
-		int literal = size / pow(2,(SYSTEM_DIMENSIONS-1));
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		int literal = size / pow(2,(PA_SYSTEM_DIMENSIONS-1));
+		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++)
 			geometry[i] = literal;
 	}
 
@@ -533,11 +619,21 @@ int main(int argc, char** argv)
 	printf("done setting node down\n");
 	*/
 
+	// _print_pa_system();
+	
 	int request[3] = {2,2,2};
 	bool rotate = false;
 	bitstr_t* result;
-	allocate_part_by_geometry(request, false, TORUS, &result);
-
+	if (!allocate_part_by_geometry(request, false, TORUS, &result)){
+		printf("allocate success for %d%d%d\n", 
+		       request[0], request[1], request[2]);
+	}
+	
+	if (!allocate_part_by_geometry(request, false, TORUS, &result)){
+		printf("allocate success for %d%d%d\n", 
+		       request[0], request[1], request[2]);
+	}
+	
 	fini();
 	return 0;
 }
