@@ -124,7 +124,6 @@ static int    find_obj(void *obj, void *key);
 /* static int    find_fd(void *obj, void *key); */
 static bool   _isa_client(struct io_info *io);
 static bool   _isa_task(struct io_info *io);
-static void   _obj_close(io_obj_t *obj, List objs);
 static void   _io_client_attach(io_obj_t *, io_obj_t *, io_obj_t *, 
 		                List objList);
 static int    _open_output_file(slurmd_job_t *job, task_info_t *t, 
@@ -155,6 +154,7 @@ static int  _client_read(io_obj_t *, List);
 static int  _task_error(io_obj_t *, List);
 static int  _client_error(io_obj_t *, List);
 static int  _connecting_write(io_obj_t *, List);
+static int  _obj_close(io_obj_t *, List);
 
 /* Task Output operations (TASK_STDOUT, TASK_STDERR)
  * These objects are never writable --
@@ -163,7 +163,8 @@ static int  _connecting_write(io_obj_t *, List);
 struct io_operations task_out_ops = {
         readable:	&_readable,
 	handle_read:	&_task_read,
-        handle_error:	&_task_error
+        handle_error:	&_task_error,
+	handle_close:   &_obj_close
 };
 
 /* Task Input operations (TASK_STDIN)
@@ -173,6 +174,7 @@ struct io_operations task_in_ops = {
 	writable:	&_writable,
 	handle_write:	&_write,
 	handle_error:	&_task_error,
+	handle_close:   &_obj_close
 };
 			
 /* Normal client operations (CLIENT_STDOUT, CLIENT_STDERR, CLIENT_STDIN)
@@ -186,6 +188,7 @@ struct io_operations client_ops = {
 	handle_read:	&_client_read,
 	handle_write:	&_write,
 	handle_error:	&_client_error,
+	handle_close:   &_obj_close
 };
 
 
@@ -198,7 +201,8 @@ struct io_operations client_ops = {
 struct io_operations connecting_client_ops = {
         writable:	&_writable,
         handle_write:	&_connecting_write,
-        handle_error:   &_client_error
+        handle_error:   &_client_error,
+	handle_close:   &_obj_close
 };
 
 /* 
@@ -303,6 +307,9 @@ io_close_all(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++)
 		_io_finalize(job->task[i]);
 
+	/* No more debug info will be recieved by client after this point
+	 */
+	debug("Closing debug channel");
 	close(STDERR_FILENO);
 
 	/* Signal IO thread to close appropriate 
@@ -1087,7 +1094,7 @@ io_prepare_child(task_info_t *t)
 	return SLURM_SUCCESS;
 }
 
-static void
+static int
 _obj_close(io_obj_t *obj, List objs)
 {
 	struct io_info *io = (struct io_info *) obj->arg;
@@ -1107,6 +1114,8 @@ _obj_close(io_obj_t *obj, List objs)
 		_shutdown_task_obj(io);
 
 	xassert(_validate_io_list(objs));
+
+	return SLURM_SUCCESS;
 }
 
 static bool 
@@ -1460,10 +1469,19 @@ static int
 _client_error(io_obj_t *obj, List objs)
 {
 	struct io_info *io = (struct io_info *) obj->arg;
+	socklen_t size = sizeof(int);
+	int err = 0;
 
 	xassert(io->magic == IO_MAGIC);
 
-	error("%s task %d", _io_str[io->type], io->id); 
+	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
+		error ("getsockopt: %m");
+
+	if (err) {
+		debug("task %d %s: poll error: %s", 
+		     io->id, _io_str[io->type], slurm_strerror(err));
+	}
+
 	return 0;
 }
 

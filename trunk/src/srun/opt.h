@@ -56,7 +56,6 @@
 /* global variables relating to user options */
 char **remote_argv;
 int remote_argc;
-int _debug;
 int _verbose;
 
 /* mutually exclusive modes for srun */

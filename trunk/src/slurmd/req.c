@@ -112,6 +112,7 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 	pid_t pid;
 	int rc;
 
+	
 	switch ((pid = fork())) {
 		case -1:
 			error("launch_tasks: fork: %m");
@@ -123,7 +124,6 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 			destroy_credential_state_list(conf->cred_state_list);
 			slurm_destroy_ssl_key_ctx(&conf->vctx);
 			slurm_ssl_destroy();
-			log_reinit();
 			rc = mgr_launch_batch_job(req, cli);
 			exit(rc);
 			/* NOTREACHED */
@@ -155,7 +155,6 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			destroy_credential_state_list(conf->cred_state_list);
 			slurm_destroy_ssl_key_ctx(&conf->vctx);
 			slurm_ssl_destroy();
-			log_reinit();
 			rc = mgr_launch_tasks(req, cli);
 			exit(rc);
 			/* NOTREACHED */

@@ -119,6 +119,11 @@ static void 		 _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
 static void 		*_p_signal_task(void *args);
 static int               _set_batch_script_env(uint32_t jobid);
 
+#define die(msg, args...) do { \
+	  error(msg, ##args);  \
+	  goto cleanup;        \
+	} while (0)
+
 #ifdef HAVE_LIBELAN3
 #  include "src/common/qsw.h"
    static void _qsw_standalone(job_t *job);
@@ -151,9 +156,8 @@ srun(int ac, char **av)
 
 	/* reinit log with new verbosity (if changed by command line)
 	 */
-	if (_verbose || _debug) {
-		if (_verbose) 
-			logopt.stderr_level+=_verbose;
+	if (_verbose) {
+		logopt.stderr_level+=_verbose;
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
@@ -182,7 +186,7 @@ srun(int ac, char **av)
 	} else if (opt.allocate) {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
-		if (_verbose || _debug)
+		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp); 
 		_run_job_script(resp->job_id);
@@ -198,7 +202,7 @@ srun(int ac, char **av)
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
-		if (_verbose || _debug)
+		if (_verbose)
 			_print_job_information(resp);
 
 		job = job_create_allocation(resp); 
@@ -213,7 +217,7 @@ srun(int ac, char **av)
 	sigaddset(&sigset, SIGTSTP);
 	sigaddset(&sigset, SIGSTOP);
 	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
-		fatal("sigprocmask: %m");
+		die("sigprocmask: %m");
 	action.sa_handler = &_sigterm_handler;
 	action.sa_flags   = 0;
 	sigaction(SIGTERM, &action, NULL);
@@ -221,22 +225,22 @@ srun(int ac, char **av)
 	/* job structure should now be filled in */
 
 	if (msg_thr_create(job) < 0)
-		fatal("Unable to create msg thread");
+		die("Unable to create msg thread");
 
 	if (io_thr_create(job) < 0) 
-		fatal("Unable to create IO thread");
+		die("failed to initialize IO");
 
 	pthread_attr_init(&attr);
 	/* spawn signal thread */
 	if ((errno = pthread_create(&job->sigid, &attr, &_sig_thr, 
 	                            (void *) job)) != 0)
-		fatal("Unable to create signal thread. %m");
+		die("Unable to create signal thread. %m");
 	debug("Started signals thread (%d)", job->sigid);
 
 
 	/* launch jobs */
 	if ((errno = pthread_create(&job->lid, &attr, &launch, (void *) job)))
-		fatal("Unable to create launch thread. %m");
+		die("Unable to create launch thread. %m");
 	debug("Started launch thread (%d)", job->lid);
 
 	/* wait for job to terminate */
@@ -268,6 +272,7 @@ srun(int ac, char **av)
 	/* kill signal thread */
 	pthread_cancel(job->sigid);
 
+    cleanup:
 	if (old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
 		slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
@@ -631,7 +636,7 @@ static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 		task_info_ptr->host_inx = i;
 
 		if (pthread_attr_init (&thread_ptr[i].attr))
-			fatal ("pthread_attr_init error %m");
+			error ("pthread_attr_init error %m");
 		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, 
 		                                 PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
@@ -968,6 +973,12 @@ _set_batch_script_env(uint32_t jobid)
 		return -1;
 	}
 
+	if ((opt.slurmd_debug) 
+	    && setenvf("SLURMD_DEBUG=%d", opt.slurmd_debug)) {
+		error("Can't set SLURMD_DEBUG environment variable");
+		return -1;
+	}
+
 	return 0;
 }
 
@@ -1005,12 +1016,12 @@ static void _run_job_script (uint32_t jobid)
 	}
 
 	/* spawn the shell with arguments (if any) */
-	if (_verbose || _debug)
+	if (_verbose)
 		info ("Spawning srun shell %s", shell);
 
 	switch ( (child = fork()) ) {
 		case -1:
-			fatal("Fork error %m");
+			error ("Fork error %m");
 		case 0:
 			execv(shell, remote_argv);
 			fatal("exec error %m");

@@ -179,10 +179,14 @@ _poll_handle_event(short revents, io_obj_t *obj, List objList)
 		if ((*obj->ops->handle_error) (obj, objList) < 0) 
 			return;
 	}
+
 	if (((revents & POLLIN) || (revents & POLLHUP))
 	    && obj->ops->handle_read ) {
 		(*obj->ops->handle_read ) (obj, objList);
+	} else if ((revents & POLLHUP) && obj->ops->handle_close) {
+		(*obj->ops->handle_close) (obj, objList);
 	}
+
 	if ((revents & POLLOUT) && obj->ops->handle_write) {
 		(*obj->ops->handle_write) (obj, objList);
 	}

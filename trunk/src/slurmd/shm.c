@@ -276,7 +276,10 @@ _create_ipc_name(const char *name)
 #if defined(POSIX_IPC_PREFIX) && defined(HAVE_POSIX_SEMS)
 	dir = POSIX_IPC_PREFIX;
 #else
-	if (!(dir = conf->spooldir) || !(dir = getenv("TMPDIR")) || !strlen(dir)) 
+	dir = conf->spooldir;
+	if (  !(dir = conf->spooldir) 
+	   && !(strlen(dir)) 
+	   && !(dir = getenv("TMPDIR"))) 
 		dir = "/tmp";
 #endif /* POSIX_IPC_PREFIX */
 
@@ -567,7 +570,7 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 		job_step_t *s = &slurmd_shm->step[i];
 
 		/* Only allow one addr update at a time */
-		if (1 || !s->io_update) {
+		if ( 1 || !s->io_update) {
 			s->ioaddr    = *ioaddr;
 			s->respaddr  = *respaddr;
 			memcpy(s->key.data, keydata, SLURM_KEY_SIZE);
@@ -890,19 +893,19 @@ _shm_lock_and_initialize()
 	   && (shm_lock != SEM_FAILED)) {           
 		/* we've already opened shared memory */
 		_shm_lock();
-		if (attach_pid != getpid()) {
-			attach_pid = getpid();
-			slurmd_shm->users++;
-		}
+		attach_pid = getpid();
+		slurmd_shm->users++;
 		_shm_unlock();
 		return SLURM_SUCCESS;
 	}
 
 	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0);
+	debug3("lockname is `%s'", lockname);
 	if (shm_lock != SEM_FAILED) /* lock didn't exist. Create shmem      */
 		return _shm_new();
 	else                        /* lock exists. Attach to shared memory */
 		return _shm_reopen();
+
 }
 
 static void 

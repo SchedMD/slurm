@@ -10,5 +10,6 @@ void *io_thr(void *arg);
 int   io_thr_create(job_t *job);
 void  report_job_status(job_t *job);
 void  report_task_status(job_t *job);
+int   open_streams(job_t *job);
 
 #endif /* !_HAVE_IO_H */

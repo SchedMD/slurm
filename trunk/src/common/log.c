@@ -114,6 +114,22 @@ extern char * program_invocation_short_name;
 #  define default_argv0 ""
 #endif
 
+
+/* 
+ * pthread_atfork handlers:
+ */
+#ifdef WITH_PTHREADS
+static void _atfork_prep()   { if (log) slurm_mutex_lock(&log_lock);   }
+static void _atfork_parent() { if (log) slurm_mutex_unlock(&log_lock); }
+static void _atfork_child()  { if (log) slurm_mutex_init(&log_lock);   }
+#  define atfork_install_handlers()                                           \
+          do {                                                                \
+                pthread_atfork(_atfork_prep, _atfork_parent, _atfork_child);  \
+	  } while (0)
+#else 
+#  define atfork_install_handlers() (NULL)
+#endif
+
 /*
  * Initialize log with 
  * prog = program name to tag error messages with
@@ -134,6 +150,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->buf   = NULL;
 		log->fbuf  = NULL;
 		log->fpfx  = NULL; 
+		atfork_install_handlers();
 	}
 
 	if (prog) {
@@ -318,13 +335,13 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				xslurm_strerrorcat(buf);
 				break;
 
-			case 't': 	/* "%t" => locally preferred date/time */ 
+			case 't': 	/* "%t" => locally preferred date/time*/ 
 				xstrftimecat(buf, "%x %X");
 				break;
-			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off"  */
+			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
 				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");   
 				break;
-			case 'M':       /* "%M" => "Mon DD hh:mm:ss"           */
+			case 'M':       /* "%M" => "Mon DD hh:mm:ss"          */
 				xstrftimecat(buf, "%b %d %T");
 				break;
 			case 's':	/* "%s" => append string */
@@ -523,7 +540,7 @@ log_has_data()
 	bool rc = false;
 	slurm_mutex_lock(&log_lock);
 	if (log->opt.buffered)
-		rc =  (cbuf_used(log->buf) > 0);
+		rc = (cbuf_used(log->buf) > 0);
 	slurm_mutex_unlock(&log_lock);
 	return rc;
 }
