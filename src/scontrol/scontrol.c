@@ -729,7 +729,7 @@ update_job (int argc, char *argv[])
 		else if (strncmp_i(argv[i], "MinMemory=", 10) == 0)
 			job_msg.min_memory = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
 		else if (strncmp_i(argv[i], "MinTmpDisk=", 11) == 0)
-			job_msg.min_tmp_disk = (uint32_t) strtol(&argv[i][1], (char **) NULL, 10);
+			job_msg.min_tmp_disk = (uint32_t) strtol(&argv[i][11], (char **) NULL, 10);
 		else if (strncmp_i(argv[i], "Partition=", 10) == 0)
 			job_msg.partition = &argv[i][10];
 		else if (strncmp_i(argv[i], "Name=", 5) == 0)
@@ -740,7 +740,7 @@ update_job (int argc, char *argv[])
 			else if (strcmp_i(&argv[i][7], "NO") == 0)
 				job_msg.shared = 0;
 			else
-				job_msg.shared = (uint32_t) strtol(&argv[i][7], (char **) NULL, 10);
+				job_msg.shared = (uint16_t) strtol(&argv[i][7], (char **) NULL, 10);
 		}
 		else if (strncmp_i(argv[i], "Contiguous=", 11) == 0) {
 			if (strcmp_i(&argv[i][11], "YES") == 0)
@@ -748,7 +748,7 @@ update_job (int argc, char *argv[])
 			else if (strcmp_i(&argv[i][11], "NO") == 0)
 				job_msg.contiguous = 0;
 			else
-				job_msg.contiguous = (uint32_t) strtol(&argv[i][11], (char **) NULL, 10);
+				job_msg.contiguous = (uint16_t) strtol(&argv[i][11], (char **) NULL, 10);
 		}
 		else if (strncmp_i(argv[i], "ReqNodeList=", 12) == 0)
 			job_msg.req_nodes = &argv[i][12];
@@ -761,8 +761,7 @@ update_job (int argc, char *argv[])
 		}
 	}
 
-	printf("Not yet implemented\n");
-/*	error_code = slurm_update_job(&job_msg); */
+	error_code = slurm_update_job(&job_msg);
 	return error_code;
 }
 
