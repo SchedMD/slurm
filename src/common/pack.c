@@ -85,7 +85,7 @@ _unpack16(uint16_t *valp, void **bufp, int *lenp)
  * (size of size_val) plus the value of size_val.
  */
 void
-_packstr(char *valp, uint16_t size_val, void **bufp, int *lenp)
+_packmem(char *valp, uint16_t size_val, void **bufp, int *lenp)
 {
 	uint16_t nl = htons(size_val);
 
@@ -110,7 +110,7 @@ _packstr(char *valp, uint16_t size_val, void **bufp, int *lenp)
  *	the data is not made
  */
 void
-_unpackstr_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
+_unpackmem_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 {
 	uint16_t nl;
 
@@ -141,7 +141,7 @@ _unpackstr_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
  *	if non-NULL (set to NULL on zero size buffer value)
  */
 void
-_unpackstr_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
+_unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 {
 	uint16_t nl;
 
