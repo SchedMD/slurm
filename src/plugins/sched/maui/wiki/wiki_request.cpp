@@ -264,7 +264,8 @@ wiki_request_t::compose_response( wiki_request_t	*request,
 			}
 			break;
 		case 'i':
-			if ( (*(int16_t *) val) != NO_VAL ) {
+			if ( (uint16_t) (*(int16_t *) val) != 
+			     (uint16_t) NO_VAL ) {
 				str += field_str;
 				str += "=";
 				str += (*(int16_t *) val);
@@ -281,7 +282,8 @@ wiki_request_t::compose_response( wiki_request_t	*request,
 			break;
 			
 		case 'u':
-			if ( (*(uint16_t *) val) != NO_VAL ) {
+			if ( (uint16_t) (*(uint16_t *) val) != 
+			     (uint16_t) NO_VAL ) {
 				str += field_str;
 				str += "=";
 				str += (*(uint16_t *) val);
