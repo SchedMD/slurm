@@ -131,6 +131,9 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_update_partition_msg ( ( update_part_msg_t * ) msg->data , 
 				( void ** ) buffer ,  buf_len ) ;
 			break ;
+		case REQUEST_REATTACH_TASKS_STREAMS :
+			pack_reattach_tasks_streams_msg ( ( reattach_tasks_streams_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
+			break ;
 		case REQUEST_LAUNCH_TASKS :
 			pack_launch_tasks_msg ( ( launch_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
@@ -262,6 +265,10 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case REQUEST_LAUNCH_TASKS :
 			unpack_launch_tasks_msg ( ( launch_tasks_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer , buf_len ) ;
+			break ; 
+		case REQUEST_REATTACH_TASKS_STREAMS :
+			unpack_reattach_tasks_streams_msg ( ( reattach_tasks_streams_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ; 
 		case REQUEST_KILL_TASKS :
@@ -1016,9 +1023,42 @@ int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * 
 	return 0 ;
 }
 
+void pack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> job_id , buffer , length ) ;
+	pack32 ( msg -> job_step_id , buffer , length ) ;
+	pack32 ( msg -> uid , buffer , length ) ;
+	pack_job_credential ( msg -> credentials , buffer , length ) ;
+	pack32 ( msg -> tasks_to_reattach , buffer , length ) ;
+	pack_slurm_addr_array ( msg -> streams , ( uint16_t ) msg -> tasks_to_reattach, buffer , length ) ;
+	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_reattach , buffer , length ) ;
+}
+
+int unpack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	reattach_tasks_streams_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	if (msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> job_id , buffer , length ) ;
+	unpack32 ( & msg -> job_step_id , buffer , length ) ;
+	unpack32 ( & msg -> uid , buffer , length ) ;
+	unpack_job_credential( & msg -> credentials ,  buffer , length ) ;
+	unpack32 ( & msg -> tasks_to_reattach , buffer , length ) ;
+	unpack_slurm_addr_array ( & msg -> streams , & uint16_tmp , buffer , length ) ;
+	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
 void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_t * length )
 {
-	
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
 	pack32 ( msg -> uid , buffer , length ) ;

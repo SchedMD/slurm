@@ -139,7 +139,9 @@ typedef enum {
 	RESPONSE_LAUNCH_TASKS,
 	MESSAGE_TASK_EXIT,
 	REQUEST_KILL_TASKS,
-
+	REQUEST_REATTACH_TASKS_STREAMS,
+	RESPONSE_REATTACH_TASKS_STREAMS,
+		
 	/*DPCS get key to sign submissions*/
 	REQUEST_GET_KEY = 7001,
 	RESPONSE_GET_KEY,
@@ -249,6 +251,17 @@ typedef struct launch_tasks_msg
 	slurm_addr * streams;
 	uint32_t * global_task_ids;
 } launch_tasks_msg_t ;
+
+typedef struct reattach_tasks_streams_msg
+{
+	uint32_t job_id ;
+	uint32_t job_step_id ;
+	uint32_t uid ;
+	slurm_job_credential_t* credentials;
+	uint32_t tasks_to_reattach ;
+	slurm_addr * streams;
+	uint32_t * global_task_ids;
+} reattach_tasks_streams_msg_t ;
 
 typedef struct kill_tasks_msg
 {
