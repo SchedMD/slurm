@@ -34,7 +34,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include <errno.h>
-#include "log.h"
+#include "src/common/log.h"
 
 
 #ifdef WITH_PTHREADS
