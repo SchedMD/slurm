@@ -43,6 +43,12 @@
 resource_allocation_response_msg_t * allocate_nodes(void);
 
 /*
+ * Test if an allocation would occur now given the job request.
+ * Do not actually allocate resources
+ */
+int allocate_test(void);
+
+/*
  * Create a job_desc_msg_t object, filled in from the current srun options
  * (see opt.h), if script != NULL then this is a batch job.
  * The resulting memory must be freed with  job_desc_msg_destroy()

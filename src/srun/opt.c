@@ -98,6 +98,7 @@
 #define LONG_OPT_DEBUG_TS 0x110
 #define LONG_OPT_CONNTYPE 0x111
 #define LONG_OPT_NODE_USE 0x112
+#define LONG_OPT_TEST_ONLY 0x113
 
 /*---- forward declarations of static functions  ----*/
 
@@ -491,6 +492,7 @@ static void _opt_default()
 	opt.max_wait	= slurm_get_wait_time();
 
 	opt.quit_on_intr = false;
+	opt. test_only   = false;
 
 	opt.quiet = 0;
 	_verbose = 0;
@@ -768,6 +770,7 @@ static void _opt_args(int argc, char **argv)
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{"conn-type",        required_argument, 0, LONG_OPT_CONNTYPE},
 		{"node-use",         required_argument, 0, LONG_OPT_NODE_USE},
+		{"test-only",        no_argument,       0, LONG_OPT_TEST_ONLY},
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:klm:n:N:"
@@ -1031,6 +1034,9 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case LONG_OPT_NODE_USE:
 			opt.node_use = _verify_node_use(optarg);
+			break;
+		case LONG_OPT_TEST_ONLY:
+			opt.test_only = true;
 			break;
 		}
 	}

@@ -139,6 +139,15 @@ int srun(int ac, char **av)
 			exit (1);
 		exit (0);
 
+	} else if (opt.test_only) {
+		int rc = allocate_test();
+		if (rc) {
+			slurm_perror("slurm_job_will_run");
+			exit (1);
+		}
+		info("allocation success");
+		exit (0);
+
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
 		sig_setup_sigmask();
