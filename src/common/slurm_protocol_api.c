@@ -62,8 +62,7 @@
 
 /* #DEFINES */
 #define _DEBUG        0
-#define MAX_SHUTDOWN_RETRY 10
-#define SLURM_DEFAULT_TIMEOUT 2000
+#define MAX_SHUTDOWN_RETRY 5
 
 /* STATIC VARIABLES */
 static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -474,7 +473,7 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
         xassert(fd >= 0);
 
         if ((timeout*=1000) == 0)
-                timeout = SLURM_DEFAULT_TIMEOUT;
+                timeout = SLURM_MESSAGE_TIMEOUT_MSEC_STATIC;
 
         /*
          * Receive a msg. slurm_msg_recvfrom() will read the message
