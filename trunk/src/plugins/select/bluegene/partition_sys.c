@@ -47,7 +47,7 @@
 
 /****************************/
 /*   for testing purposes   */
-uint16_t BGL_PARTITION_NUMBER = 0;
+uint16_t BGL_PARTITION_NUMBER;
 /****************************/
 
 #ifdef _UNIT_TEST_
@@ -331,6 +331,7 @@ int _break_up_partition(List sys, partition_t* partition_to_break, int index)
 	if (sys == NULL || partition_to_break == NULL)
 		return 1;
 
+	/** these get xfree'd when the sys list is destroyed */
 	first_part = (partition_t*) xmalloc(sizeof(partition_t));
 	second_part = (partition_t*) xmalloc(sizeof(partition_t));
 
@@ -350,7 +351,6 @@ int _break_up_partition(List sys, partition_t* partition_to_break, int index)
 	diff = partition_to_break->tr_coord[index] - partition_to_break->bl_coord[index];
 	first_part->tr_coord[index] = floor(diff/2);
 	second_part->bl_coord[index] = ceil(diff/2);
-
 
 	itr = list_iterator_create(sys);
 	while ((next = (partition_t*) list_next(itr))) {
@@ -687,6 +687,11 @@ int configure_switches(partition_t* partition)
 		} /* end of cur_coord[1]*/
 	} /* end of cur_coord[1]*/
 
+	bgl_part_id = (pm_partition_id_t*) xmalloc(sizeof(pm_partition_id_t));
+	if (!bgl_part_id){
+		error("_configure_switches: not enough memory for bgl_part_id");
+		return SLURM_ERROR;
+	}
 #ifdef _RM_API_H__
 	post_allocate(bgl_part, bgl_part_id);
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
@@ -695,7 +700,6 @@ int configure_switches(partition_t* partition)
 
 #else 
 
-	bgl_part_id = (pm_partition_id_t*) xmalloc(sizeof(pm_partition_id_t));
 	// *bgl_part_id = (int)(rand()%100);
 	*bgl_part_id = BGL_PARTITION_NUMBER++;
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
@@ -703,7 +707,7 @@ int configure_switches(partition_t* partition)
 	partition->bgl_part_id = bgl_part_id;
 
 #endif
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /** 
@@ -1119,3 +1123,8 @@ void debug(const char *fmt, ...)
 	printf(fmt, ...);
 }
 #endif
+
+void init_BGL_PARTITION_NUM()
+{
+	BGL_PARTITION_NUMBER = 0;
+}

@@ -43,7 +43,7 @@ char* bgl_conf = BLUEGENE_CONFIG_FILE;
 /** */
 int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
 			       int min_nodes, int max_nodes,
-			       int spec, bgl_record_t* found_bgl_record);
+			       int spec, bgl_record_t** found_bgl_record);
 /** */
 int _parse_request(char* request_string, partition_t** request);
 /** */
@@ -370,6 +370,8 @@ int _parse_bgl_spec(char *in_line)
 	if (error_code || !nodes || !part_type){
 		xfree(nodes);
 		xfree(part_type);
+		nodes = NULL;
+		part_type = NULL;
 		return error_code;
 	}
 
@@ -383,7 +385,16 @@ int _parse_bgl_spec(char *in_line)
 	}
 
 	new_record->nodes = xstrdup(nodes);
+	if (!(new_record->nodes)){
+		error("_parse_bgl_spec: not enough memory for new_record nodes string");
+		return SLURM_ERROR;		
+	}
 	new_record->part_type = xmalloc(sizeof(rm_partition_t));
+	if (!(new_record->part_type)){
+		error("_parse_bgl_spec: not enough memory for new_record part type");
+		return SLURM_ERROR;
+	}
+
 	if (strcasecmp(part_type, "TORUS") == 0){
 		// error("warning, TORUS specified, but I can't handle those yet!  Defaulting to mesh");
 		/** FIXME */
@@ -407,36 +418,54 @@ void _destroy_bgl_record(void* object)
 {
 	bgl_record_t* this_record = (bgl_record_t*) object;
 	if (this_record){
-		if (this_record->slurm_part_id)
+		if (this_record->slurm_part_id){
 			xfree(this_record->slurm_part_id);
-		if (this_record->nodes)
+			this_record->slurm_part_id = NULL;
+		}
+		if (this_record->nodes){
 			xfree(this_record->nodes);
-		if (this_record->part_type)
+			this_record->nodes = NULL;
+		}
+		if (this_record->part_type){
 			xfree(this_record->part_type);
-		if (this_record->hostlist)
+			this_record->part_type = NULL;
+		}
+		if (this_record->hostlist){
 			hostlist_destroy(*(this_record->hostlist));
-		if (this_record->bitmap)
+			*(this_record->hostlist) = NULL;
+		}
+		if (this_record->bitmap){
 			bit_free(this_record->bitmap);
+			this_record->bitmap = NULL;
+		}
 
 #ifdef _RM_API_H__
-		if (this_record->bgl_part_id)
+		if (this_record->bgl_part_id){
 			xfree(this_record->bgl_part_id);
+			this_record->bgl_part_id = NULL;
+		}
 #endif
 
 	}
 	xfree(this_record);
+	this_record = NULL;
 }
 
 void _destroy_bgl_conf_record(void* object)
 {
 	bgl_conf_record_t* this_record = (bgl_conf_record_t*) object;
 	if (this_record){
-		if (this_record->nodes)
+		if (this_record->nodes){
 			xfree(this_record->nodes);
-		if (this_record->part_type)
+			this_record->nodes = NULL;
+		}
+		if (this_record->part_type){
 			xfree(this_record->part_type);
+			this_record->part_type = NULL;
+		}
 	}
 	xfree(this_record);
+	this_record = NULL;
 }
 
 /** 
@@ -534,6 +563,7 @@ int char2intptr(char* request, int** bl, int** tr)
 
 	if (orig_ptr != NULL){
 		xfree(orig_ptr);
+		orig_ptr = NULL;
 	}
 
 	return rc;
@@ -651,6 +681,7 @@ int init_bgl()
 #endif
 	/** global variable */
 	bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
+	init_BGL_PARTITION_NUM();
 
 	return SLURM_SUCCESS;
 }
@@ -658,31 +689,29 @@ int init_bgl()
 int _extract_range(char* request, char** result)
 {
 	int RANGE_SIZE = 7; /* expecting something of the size: 000x000 = 7 chars */
-	int i, my_i, request_length;
+	int i, request_length;
 	int start = 0, end = 0;
 
 	if (!request)
 		return SLURM_ERROR;
+	*result = (char*) xmalloc(sizeof(RANGE_SIZE) + 1); /* +1 for NULL term */
 	if (!(*result)) {
-		*result = (char*) xmalloc(sizeof(RANGE_SIZE) + 1);
-		if (!(*result)) {
-			error("_extract_range: not enough memory for *result");
-			return SLURM_ERROR;
-		}
+		error("_extract_range: not enough memory for *result");
+		return SLURM_ERROR;
 	}
 
 	request_length = strlen(request);
-	
-	for(i=0, my_i=0; i<request_length; i++){
+	for(i=0; i<request_length; i++){
 		if (request[i] == ']'){
-			(*result)[ (my_i) ] = '\0';
+			xstrcatchar(*result, '\0');
 			end = 1;
 			break;
 		}
 
-		if (start)
-			(*result)[ (my_i++) ] = request[i];			
-
+		if (start){
+			xstrcatchar(*result, request[i]);
+		}
+		
 		if (request[i] == '[')
 			start = 1;
 	}
@@ -693,8 +722,11 @@ int _extract_range(char* request, char** result)
 	return SLURM_SUCCESS;
 
  cleanup:
-	xfree(*result);
-	*result = NULL;
+	if (*result){
+		xfree(*result);
+		*result = NULL;
+	}
+	error("_extract_range: could not extract range from node list");
 	return SLURM_ERROR;
 }
 
@@ -731,6 +763,7 @@ void print_bgl_record(bgl_record_t* record)
 		char* bitstring = (char*) xmalloc(sizeof(char)*bitsize);
 		bit_fmt(bitstring, bitsize, record->bitmap);
 		debug("\tbitmap: %s", bitstring);
+		xfree(bitstring);
 	}
 }
 
@@ -771,7 +804,7 @@ char* convert_part_type(rm_partition_t* pt)
  */
 int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
 			       int min_nodes, int max_nodes,
-			       int spec, bgl_record_t* found_bgl_record)
+			       int spec, bgl_record_t** found_bgl_record)
 {
 	/** FIXME, need to get all the partition_t's in a list, or a common data structure
 	 * that holds all that info I need!!!
@@ -786,7 +819,7 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 	    the spec arguement*/
 	num_dim_best = 0;
 	itr = list_iterator_create(bgl_list);
-	found_bgl_record = NULL;
+	*found_bgl_record = NULL;
 	/* NEED TO PUT THIS LOGIC IN: 
 	 * if RM_NAV, then the partition with both the TORUS and the
 	 * dims should be favored over the MESH and the dims, but
@@ -849,7 +882,7 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 		/*****************************************/
 		if (job_ptr->geometry[0] == 0){
 			debug("find_best_partitionmatch: we don't care about geometry");
-			found_bgl_record = record;
+			*found_bgl_record = record;
 			break;
 		}
 		if (job_ptr->rotate)
@@ -873,7 +906,7 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 		}
 		
 		if (cur_dim_match > num_dim_best){
-			found_bgl_record = record;
+			*found_bgl_record = record;
 			num_dim_best = cur_dim_match;
 			if (num_dim_best == SYSTEM_DIMENSIONS)
 					break;
@@ -881,10 +914,10 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 	}	
 	
 	/** set the bitmap and do other allocation activities */
-	if (found_bgl_record){
+	if (*found_bgl_record){
 		debug("phung: SUCCESS! found partition %s <%s>", 
-		      found_bgl_record->slurm_part_id, found_bgl_record->nodes);
-		bit_and(slurm_part_bitmap, found_bgl_record->bitmap);
+		      (*found_bgl_record)->slurm_part_id, (*found_bgl_record)->nodes);
+		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
 		debug("- - - - - - - - - - - - -");
 		return SLURM_SUCCESS;
 	}
@@ -968,19 +1001,23 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	_print_bitmap(slurm_part_bitmap);
 	
 	if (_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, max_nodes, 
-				       spec, record)){
+				       spec, &record)){
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */
 		// FIXME, create a fake bgl part id string
-		char* fake_bgl_part_id;
 		/* since the bgl_part_id is a number, (most likely single digit), 
 		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
 		 */
-		fake_bgl_part_id = (char*) xmalloc(sizeof(char)*7);
-		sprintf(fake_bgl_part_id, "LLNL_%d\0", record->bgl_part_id);
-		job_ptr->bgl_part_id = xstrdup(fake_bgl_part_id);
-		xfree(fake_bgl_part_id);
+		job_ptr->bgl_part_id = (char*) xmalloc(sizeof(char)*7);
+		if (!(job_ptr->bgl_part_id)){
+			error("submit_job: not enough memory for fake bgl_part_id");
+			return SLURM_ERROR;
+		}
+
+		xstrfmtcat(job_ptr->bgl_part_id, "LLNL_%i", *(record->bgl_part_id));
+		debug("found fake bgl_part_id %s", job_ptr->bgl_part_id);
+		/* calling function must free the bgl_part_id */
 	}
 
 	/** we should do the BGL stuff here like, init BGL job stuff... */
@@ -999,6 +1036,7 @@ void _print_bitmap(bitstr_t* bitmap)
 	bit_fmt(bitstring, bitsize, bitmap);
 	debug("bitmap:\t%s", bitstring);
 	xfree(bitstring);
+	bitstring = NULL;
 }
 
 /** 
