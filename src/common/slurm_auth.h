@@ -88,7 +88,7 @@ gid_t slurm_auth_gid( slurm_auth_t cred );
  * Methods for packing and unpacking the credentials for transport.
  */
 void slurm_auth_pack_credentials( slurm_auth_t cred, Buf buffer );
-void slurm_auth_unpack_credentials( slurm_auth_t *cred, Buf buffer );
+int  slurm_auth_unpack_credentials( slurm_auth_t *cred, Buf buffer );
 
 #if DEBUG
 void slurm_auth_print_credentials( slurm_auth_t *cred );

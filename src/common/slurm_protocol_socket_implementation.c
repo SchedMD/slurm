@@ -821,11 +821,15 @@ void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , Buf buffer )
 	pack16 ( ntohs ( slurm_address -> sin_port ) , buffer ) ;
 }
 
-void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer )
+int _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer )
 {
 	slurm_address -> sin_family = AF_SLURM ;
-	unpack32 ( & slurm_address -> sin_addr.s_addr , buffer ) ;
+	safe_unpack32 ( & slurm_address -> sin_addr.s_addr , buffer ) ;
 	slurm_address -> sin_addr.s_addr = htonl ( slurm_address -> sin_addr.s_addr );
-	unpack16 ( & slurm_address -> sin_port , buffer ) ;
+	safe_unpack16 ( & slurm_address -> sin_port , buffer ) ;
 	slurm_address -> sin_port = htons ( slurm_address -> sin_port ) ;
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	return SLURM_ERROR;
 }

@@ -128,7 +128,7 @@ extern void _slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n 
 /* slurm addr pack functions */
 /*****************************/
 extern void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , Buf buffer ) ;
-extern void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer ) ;
+extern int _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer ) ;
 
 
 /*******************************\

@@ -45,12 +45,12 @@
 
 /* Pack / Unpack methods for slurm protocol header */
 void pack_header ( header_t  * header , Buf buffer );
-void unpack_header ( header_t * header , Buf buffer );
+int  unpack_header ( header_t * header , Buf buffer );
 
 /* Pack / Unpack methods for slurm io pipe streams header */
 int size_io_stream_header (void);
 void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
-void unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
+int unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
 
 /* generic case statement Pack / Unpack methods for slurm protocol bodies */
 int pack_msg ( slurm_msg_t const * msg , Buf buffer );
@@ -168,7 +168,7 @@ void pack_kill_tasks_msg ( kill_tasks_msg_t * msg , Buf buffer );
 int unpack_kill_tasks_msg ( kill_tasks_msg_t ** msg_ptr , Buf buffer );
 
 void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, Buf buffer );
-void unpack_slurm_addr_array ( slurm_addr ** slurm_address , uint16_t * size_val , Buf buffer );
+int  unpack_slurm_addr_array ( slurm_addr ** slurm_address , uint16_t * size_val , Buf buffer );
 
 
 extern void pack_get_job_step_info ( job_step_info_request_msg_t * msg , Buf buffer );
@@ -180,9 +180,6 @@ int unpack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t ** msg_ptr 
 void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , Buf buffer ) ;
 int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , Buf buffer ) ;
 
-void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
-void unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
-
 void pack_task_exit_msg ( task_exit_msg_t * msg , Buf buffer ) ;
 int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , Buf buffer ) ;
 
@@ -190,6 +187,6 @@ void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;
 int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer ) ;
 
 void pack_batch_job_launch ( batch_job_launch_msg_t* cred , Buf buffer ) ;
-void unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer ) ;
+int  unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer ) ;
 
 #endif

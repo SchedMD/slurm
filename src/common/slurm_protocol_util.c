@@ -94,8 +94,11 @@ int read_io_stream_header(slurm_io_stream_header_t * header, int fd)
 	data = xmalloc(buf_size);
 	rsize = slurm_read_stream(fd, data, buf_size);
 	my_buf = create_buf (data, buf_size);
-	if (rsize == buf_size)
-		unpack_io_stream_header(header, my_buf);
+	if ((rsize == buf_size) &&
+	    (unpack_io_stream_header(header, my_buf) != SLURM_SUCCESS)) {
+		error ("Malformed stream header");
+		rsize = 0;
+	}
 	free_buf(my_buf);
 	return rsize;
 }

@@ -173,21 +173,26 @@ void slurm_auth_pack_credentials( slurm_auth_t cred, Buf buffer)
 }
 
 
-void slurm_auth_unpack_credentials( slurm_auth_t *credp, Buf buffer)
+int slurm_auth_unpack_credentials( slurm_auth_t *credp, Buf buffer)
 {
 	uint16_t dummy;
 	char *data;
 	slurm_auth_t cred;
 
 	cred = slurm_auth_alloc_credentials();
-	unpack32     ( &cred->creds.uid,        buffer );
-	unpack32     ( &cred->creds.gid,        buffer );
-	unpack_time  ( &cred->creds.valid_from, buffer );
-	unpack_time  ( &cred->creds.valid_to,   buffer );
-	unpackmem_ptr( &data, &dummy,           buffer );
+	safe_unpack32     ( &cred->creds.uid,        buffer );
+	safe_unpack32     ( &cred->creds.gid,        buffer );
+	safe_unpack_time  ( &cred->creds.valid_from, buffer );
+	safe_unpack_time  ( &cred->creds.valid_to,   buffer );
+	safe_unpackmem_ptr( &data, &dummy,           buffer );
 	memcpy( cred->sig.data, data, sizeof( signature ) );
 	*credp = cred;
-	return;
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	slurm_auth_free_credentials( cred );
+	*credp = NULL;
+	return SLURM_ERROR;
 }
 
 
