@@ -184,8 +184,8 @@ slurm_fd slurm_init_msg_engine ( slurm_addr * slurm_address )
 }
 
 /* just calls close on an established msg connection
- * open_fd	- an open file descriptor
- * int	- the return code
+ * open_fd		- an open file descriptor
+ * int 			- the return code
  */
 int slurm_shutdown_msg_engine ( slurm_fd open_fd ) 
 {
@@ -193,8 +193,8 @@ int slurm_shutdown_msg_engine ( slurm_fd open_fd )
 }
 
 /* just calls close on an established msg connection
- * open_fd	- an open file descriptor
- * int	- the return code
+ * open_fd		- an open file descriptor
+ * int			- the return code
  */
 int slurm_shutdown_msg_conn ( slurm_fd open_fd ) 
 {
@@ -205,7 +205,7 @@ int slurm_shutdown_msg_conn ( slurm_fd open_fd )
  * In the mongo implementation it creates a SOCK_DGRAM socket and calls connect on it
  * a SOCK_DGRAM socket called with connect is defined to only receive messages from the address/port pair argument of the connect call
  * slurm_address 	- for now it is really just a sockaddr_in
- * int	- the return code
+ * int			- the return code
  */
 slurm_fd slurm_open_msg_conn ( slurm_addr * slurm_address ) 
 {
@@ -214,7 +214,7 @@ slurm_fd slurm_open_msg_conn ( slurm_addr * slurm_address )
 
 /* calls connect to make a connection-less datagram connection to the the primary or secondary slurmctld message engine
  * slurm_address 	- for now it is really just a sockaddr_in
- * int	- the return code
+ * int			- the return code
  */
 slurm_fd slurm_open_controller_conn ( )
 {
@@ -237,7 +237,7 @@ slurm_fd slurm_open_controller_conn ( )
  * In the mongo it returns the open_fd and is essentially a no-op function call
  * open_fd		- file descriptor to accept connection on
  * slurm_address 	- for now it is really just a sockaddr_in
- * int	- the return code
+ * int			- the return code
  */
 slurm_fd slurm_accept_msg_conn ( slurm_fd open_fd , slurm_addr * slurm_address ) 
 {
@@ -247,7 +247,7 @@ slurm_fd slurm_accept_msg_conn ( slurm_fd open_fd , slurm_addr * slurm_address )
 /* In the bsd implmentation maps directly to a close call, to close the socket that was accepted
  * In the mongo it is a no-op (  slurm_shutdown_msg_engine should be called to close the mongo socket since there is no "accept" phase for datagrams
  * open_fd		- file descriptor to accept connection on
- * int	- the return code
+ * int			- the return code
  */
 int slurm_close_accepted_conn ( slurm_fd open_fd ) 
 {
@@ -257,9 +257,9 @@ int slurm_close_accepted_conn ( slurm_fd open_fd )
 /***** recv msg functions */
 /*
  * note that a memory is allocated for the returned msg and must be freed at some point 
- * open_fd 		- file descriptor to receive msg on
- * msg 		- a slurm msg struct
- * int		- size of msg received in bytes before being unpacked
+ * open_fd		- file descriptor to receive msg on
+ * msg			- a slurm msg struct
+ * int			- size of msg received in bytes before being unpacked
  */
 int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg ) 
 {
@@ -295,9 +295,9 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 /* sends a slurm_protocol msg to the slurmctld based on location information retrieved from the slurmd.conf
  * if unable to contant the primary slurmctld attempts will be made to contact the backup controller
  * 
- * open_fd	- file descriptor to send msg on
- * msg	- a slurm msg struct
- * int	- size of msg sent in bytes
+ * open_fd		- file descriptor to send msg on
+ * msg			- a slurm msg struct
+ * int			- size of msg sent in bytes
  */
 int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 {
@@ -320,7 +320,7 @@ int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg )
  *
  * open_fd		- file descriptor to send msg on
  * msg			- a slurm msg struct
- * int		- size of msg sent in bytes
+ * int			- size of msg sent in bytes
  */
 int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 {
@@ -355,7 +355,7 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
  * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
  * data_buffer		- buffer for data to be received into
  * buf_len		- length of data buffer 
- * int             - size of msg received in bytes
+ * int			- size of msg received in bytes
  */
 int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_type_t * msg_type , char * data_buffer , size_t buf_len )
 {
@@ -396,7 +396,7 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
  * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
  * data_buffer          - buffer to be sent
  * buf_len              - length of buffer to be sent
- * int             - size of msg sent in bytes
+ * int			- size of msg sent in bytes
  */
 int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
@@ -422,7 +422,7 @@ int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type 
  * msg_type		- type of msg to be sent ( see slurm_protocol_defs.h for msg types )
  * data_buffer		- buffer to be sent
  * buf_len		- length of buffer to be sent 
- * int		- size of msg sent in bytes
+ * int			- size of msg sent in bytes
  */
 int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
@@ -562,19 +562,6 @@ void slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buf
 {
 	_slurm_unpack_slurm_addr_no_alloc ( slurm_address , buffer , length ) ;
 }
-
-/************************/
-/***** slurm addr functions */
-/************************/
-/* sets/gets the fields of a slurm_addri */
-
-void slurm_free_msg ( slurm_msg_t * msg )
-{
-	xfree ( msg ) ;
-}
-
-
-
 
 /*******************************************/
 /***** slurm send highlevel msg  functions */
