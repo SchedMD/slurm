@@ -179,12 +179,6 @@ int main(int argc, char *argv[])
 	_parse_commandline(argc, argv, &slurmctld_conf);
 	init_locks();
 
-	/* 
-	 * Need to create pidfile here in case we setuid() below
-	 * (init_pidfile() exits if it can't initialize pid file)
-	 */
-	_init_pidfile();
-
 	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_NOFILE, &rlim);
@@ -199,7 +193,13 @@ int main(int argc, char *argv[])
 		      error_code, SLURM_CONFIG_FILE);
 		exit(1);
 	}
-	
+
+	/* 
+	 * Need to create pidfile here in case we setuid() below
+	 * (init_pidfile() exits if it can't initialize pid file)
+	 */
+	_init_pidfile();
+
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
 	    (setuid(slurmctld_conf.slurm_user_id))) {
