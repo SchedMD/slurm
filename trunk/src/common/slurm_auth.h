@@ -46,19 +46,7 @@
 #include "src/common/pack.h"
 
 /*
- * This is really two APIs.  We provide an authentication context object
- * which can be bound to any authentication type available in the system
- * and several of which may happily exist together.  The API thunks with
- * a "c_" prefix operate on these.  The typical order of calls is:
- *
- * 	slurm_auth_context_t foo = slurm_auth_context_create( my type );
- *     	void *bar = c_slurm_auth_alloc( foo );
- *	c_slurm_auth_activate( foo, bar, 1 );
- *	c_slurm_auth_verify( foo, bar );
- *	c_slurm_auth_free( foo, bar );
- *	slurm_auth_context_destroy( foo );
- *
- * There is also a parallel API operating on a global authentication
+ * This API operates on a global authentication
  * context, one per application.  The API thunks with the "g_" prefix
  * operate on that global instance.  It is initialized implicitly if
  * necessary when any API thunk is called, or explicitly with
@@ -69,7 +57,6 @@
  * system's global configuration.  A typical order of calls is:
  *
  *	void *bar = g_slurm_auth_alloc();
- *	g_slurm_auth_activate( bar, 1 );
  *	g_slurm_auth_verify( bar );
  *	g_slurm_auth_free( bar );
  *
@@ -113,22 +100,6 @@ int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
  * is currently RedHat Linux's ID for the user "nobody".
  */
 #define SLURM_AUTH_NOBODY		99
-
-/*
- * Static bindings for an arbitrary authentication context.  We avoid
- * exposing the API directly to avoid object lifetime issues.
- */
-void	*c_slurm_auth_alloc( slurm_auth_context_t c );
-int	c_slurm_auth_free( slurm_auth_context_t c, void *cred );
-int	c_slurm_auth_activate( slurm_auth_context_t c, void *cred );
-int	c_slurm_auth_verify( slurm_auth_context_t c, void *cred );
-uid_t	c_slurm_auth_get_uid( slurm_auth_context_t c, void *cred );
-gid_t	c_slurm_auth_get_gid( slurm_auth_context_t c, void *cred );
-int	c_slurm_auth_pack( slurm_auth_context_t c, void *cred, Buf buf );
-int	c_slurm_auth_unpack( slurm_auth_context_t c, void *cred, Buf buf );
-int	c_slurm_auth_print( slurm_auth_context_t c, void *cred, FILE *fp );
-int	c_slurm_auth_errno( slurm_auth_context_t c, void *cred );
-const char *c_slurm_auth_errstr( slurm_auth_context_t c, int slurm_errno );
 
 /*
  * Prepare the global context.
