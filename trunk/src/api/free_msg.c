@@ -108,7 +108,8 @@ void slurm_free_job_step_create_response_msg(
 		X_FREE(msg->credentials);
 
 #		ifdef HAVE_LIBELAN3
-		qsw_free_jobinfo(msg->qsw_job);
+		if (msg->qsw_job)
+			qsw_free_jobinfo(msg->qsw_job);
 #		endif
 
 		xfree(msg);
