@@ -766,10 +766,15 @@ _wait_for_session(slurmd_job_t *job)
 
     done:
 	if (WIFSIGNALED(status)) {
+
+		error ("slurmd session manager killed by signal %d",
+		       WTERMSIG(status));
+
 		/*
 		 * Make sure all processes in session are dead
 		 */
-		killpg(job->smgr_pid, SIGKILL);
+		if (job->smgr_pid > (pid_t) 0)
+			killpg(job->smgr_pid, SIGKILL);
 		return ESLURMD_SESSION_KILLED;
 	}
 
