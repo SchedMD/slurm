@@ -360,14 +360,16 @@ int load_all_part_state(void)
 	} else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
-		while ((data_read =
-			read(state_fd, &data[data_size],
-			     BUF_SIZE)) == BUF_SIZE) {
-			data_size += data_read;
-			data_allocated += BUF_SIZE;
+		while (1) {
+			data_read = read(state_fd, &data[data_size], BUF_SIZE);
+			if ((data_read == -1) && (errno == EINTR))
+				continue;
+			if (data_read == 0)     /* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
-		data_size += data_read;
 		close(state_fd);
 		if (data_read < 0)
 			error("Error reading file %s: %m", state_file);
