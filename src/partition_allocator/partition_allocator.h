@@ -33,6 +33,9 @@
 #include "src/partition_allocator/graph_structs.h"
 
 #define PA_SYSTEM_DIMENSIONS 3
+// #define DEBUG_PA
+#define UNDO_BUFFER 3
+#define BIG_MAX 9999;
 
 extern bool _initialized;
 struct pa_request;
