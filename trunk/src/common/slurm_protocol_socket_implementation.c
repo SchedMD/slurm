@@ -62,7 +62,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
 
-#define PORT_RETRIES    2
+#define PORT_RETRIES    0
 #define MIN_USER_PORT   (IPPORT_RESERVED + 1)
 #define MAX_USER_PORT   0xffff
 #define RANDOM_USER_PORT ((uint16_t) ((lrand48() % \
