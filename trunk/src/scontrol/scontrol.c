@@ -34,6 +34,9 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
 
 #if HAVE_READLINE
 #  include <readline/readline.h>
@@ -48,14 +51,8 @@
 #  endif
 #endif  /* HAVE_INTTYPES_H */
 
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-#include <unistd.h>
-
 #include <slurm/slurm.h>
 
-#include "src/common/cbuf.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/parse_spec.h"
