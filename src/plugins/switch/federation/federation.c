@@ -231,6 +231,8 @@ char *fed_sprint_jobinfo(fed_jobinfo_t *j, char *buf,
 		j->job_desc,
 		j->window_memory,
 		j->table_size);
+	if(count < 0)
+		return buf;
 	remaining -= count;
 	tmp += count;
 	if(remaining < 1)
@@ -583,6 +585,8 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 	assert(n->magic == FED_NODEINFO_MAGIC);
 
 	count = snprintf(tmp, remaining, "Node: %s\n", n->name);
+	if(count < 0)
+		return buf;
 	remaining -= count;
 	tmp += count;
 	if(remaining < 1)
@@ -612,7 +616,8 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 			a->name,
 			a->window_count);
 #endif
-			
+		if(count < 0)
+			return buf;
 		remaining -= count;
 		tmp += count;
 		if(remaining < 1)
@@ -630,6 +635,8 @@ fed_print_nodeinfo(fed_nodeinfo_t *n, char *buf, size_t size)
 			else
 				count = 0;
 #endif
+			if(count < 0)
+				return buf;
 			remaining -= count;
 			tmp += count;
 			if(remaining < 1)
