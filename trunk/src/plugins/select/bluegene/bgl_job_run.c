@@ -226,6 +226,10 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
  */
 static int _boot_part(pm_partition_id_t bgl_part_id)
 {
+#ifdef USE_BGL_FILES
+/* Due to various system problems, we do not want to boot BGL
+ * partitions when each job is started, but only at slurmctld 
+ * startup on an as needed basis. */
 	int rc;
 
 	info("Booting partition %s", bgl_part_id);
@@ -234,6 +238,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 			bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
+#endif
 	return SLURM_SUCCESS;
 }
 
