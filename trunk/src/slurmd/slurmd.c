@@ -548,7 +548,7 @@ _restore_cred_state(List *list)
 	xstrcat(file_name, "/cred_state");
 	cred_fd = open(file_name, O_RDONLY);
 	if (cred_fd < 0) {
-		error("open %s error %m", file_name);
+		info("open %s error %m", file_name);
 		goto cleanup;
 	}
 
