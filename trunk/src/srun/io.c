@@ -461,8 +461,7 @@ static int _validate_header(slurm_io_stream_header_t *hdr, job_t *job)
 
 	if (memcmp((void *)job->cred->signature,
 	           (void *)hdr->key, SLURM_SSL_SIGNATURE_LENGTH)) {
-		debug("Invalid header signature, notify administrators");
-	return SLURM_SUCCESS; /* FIXME */
+		error("Invalid header signature, notify administrators");
 		return SLURM_ERROR;
 	}
 
