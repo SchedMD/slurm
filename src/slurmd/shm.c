@@ -281,12 +281,10 @@ _create_ipc_name(const char *name)
 	char *dst, *dir, *slash;
 	int rc;
 
-	if ((rc = _is_valid_ipc_name(name)) != 1) {
-		error("invalid ipc name: `%s' %d", name, rc);
-		return NULL;
-	}
+	if ((rc = _is_valid_ipc_name(name)) != 1)
+		fatal("invalid ipc name: `%s' %d", name, rc);
 	else if (!(dst = xmalloc(PATH_MAX)))
-		return NULL;
+		fatal("memory allocation failure");
 
 #if defined(POSIX_IPC_PREFIX) && defined(HAVE_POSIX_SEMS)
 	dir = POSIX_IPC_PREFIX;
@@ -327,9 +325,8 @@ _sem_open(const char *name, int oflag, ...)
 	mode_t mode;
 	unsigned int value;
 
-	if (!(lockname = _create_ipc_name(name))) {
+	if (!(lockname = _create_ipc_name(name)))
 		fatal("sem_open failed for [%s]: invalid IPC name", name);
-	}
 
 	if (oflag & O_CREAT) {
 		va_start(ap, oflag);
@@ -928,14 +925,17 @@ _shm_reopen()
 	int retval = SLURM_SUCCESS;
 
 	if ((shm_lock = _sem_open(SHM_LOCKNAME, 0)) == SEM_FAILED) {
-		if (errno == ENOENT) {
-			debug("Lockfile found but semaphore deleted:"
-			     " creating new shm segment");
-			shm_cleanup();
-			return _shm_lock_and_initialize();
+		if (errno != ENOENT) {
+			error("Unable to initialize semaphore: %m");
+			return SLURM_FAILURE;
 		}
-		error("Unable to initialize semaphore: %m");
-		return SLURM_FAILURE;
+		debug("Lockfile found but semaphore deleted: "
+		      "creating new shm segment");
+		shm_cleanup();
+		if ((shm_lock = _sem_open(SHM_LOCKNAME, 0)) == SEM_FAILED) {
+			error("Unable to initialize semaphore: %m");
+			return SLURM_FAILURE;
+		}
 	}
 
 	/* Attach to shared memory region */
