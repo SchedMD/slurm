@@ -148,8 +148,6 @@ main(int ac, char **av)
 	while (job->state != SRUN_JOB_OVERDONE) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 		debug3("main thread woke up, state is now %d", job->state);
-		if (errno == EINTR)
-			debug("got signal");
 	}
 
 	/* job is now overdone, blow this popsicle stand  */
