@@ -220,6 +220,9 @@ _io_thr_poll(void *job_arg)
 
 	_set_iofds_nonblocking(job);
 
+	out_fd_state = WAITING_FOR_IO;
+	err_fd_state = WAITING_FOR_IO;
+
 	if (job->ofname->type == IO_ALL)
 		out_fd_state = WAITING_FOR_IO;
 	else {
@@ -638,11 +641,10 @@ _accept_io_stream(job_t *job, int i)
 		/* Assign new fds arbitrarily for now, until slurmd
 		 * sends along some control information
 		 */
-		
 		if ((hdr.task_id < 0) || (hdr.task_id >= opt.nprocs)) {
 			error ("Invalid task_id %d from %s", hdr.task_id, buf);
 			continue;
-		} 
+		}
 
 		/*
 		 * IO connection from task may come after task exits,
@@ -656,6 +658,7 @@ _accept_io_stream(job_t *job, int i)
 		 */
 
 		fd_set_nonblocking(sd);
+
 		if (hdr.type == SLURM_IO_STREAM_INOUT)
 			job->out[hdr.task_id] = sd;
 		else

@@ -66,7 +66,7 @@ typedef struct slurmd_config {
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir	           */
 	char         *pidfile;		/* PidFile location		   */
-	/* char         *nodename; */		/* this node's hostname            */
+
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
 	char         *epilog;		/* Path to Epilog script	   */

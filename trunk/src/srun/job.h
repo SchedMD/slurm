@@ -141,9 +141,24 @@ void    job_force_termination(job_t *job);
 job_t * job_create_noalloc(void);
 job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
 
+/* 
+ * Issue a fatal error message and terminate running job
+ */
 void    job_fatal(job_t *job, const char *msg);
+
+/* 
+ * Deallocates job and or job step via slurm API
+ */
 void    job_destroy(job_t *job, int error);
 
+/* 
+ * Send SIGKILL to running job via slurm controller
+ */
+void    job_kill(job_t *job);
+
+/*
+ * returns number of active tasks on host with id = hostid.
+ */
 int     job_active_tasks_on_host(job_t *job, int hostid);
 
 #endif /* !_HAVE_JOB_H */

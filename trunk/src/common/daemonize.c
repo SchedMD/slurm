@@ -153,7 +153,6 @@ create_pidfile(const char *pidfile)
 	}
 
 	fflush(fp);
-
 	
 	/*
 	 * if (fclose(fp) == EOF) {
@@ -161,7 +160,7 @@ create_pidfile(const char *pidfile)
          *	goto error;
          *}
 	 */
-	return 0;
+	return (fileno(fp));
 
   error:
 	if (unlink(pidfile) < 0)

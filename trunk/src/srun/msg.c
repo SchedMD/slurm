@@ -180,8 +180,8 @@ static bool _job_msg_done(job_t *job)
 static void
 _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 {
-	if (   (msg->srun_node_id >= 0) 
-	    && (msg->srun_node_id < job->nhosts) ) {
+	if ((msg->srun_node_id >= 0) 
+	    && (msg->srun_node_id < job->nhosts)) {
 
 		pthread_mutex_lock(&job->task_mutex);
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
@@ -194,7 +194,7 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 				 msg->local_pids, remote_argv[0] );
 
 	} else {
-		error("launch resp from %s has bad task_id %d",
+		error("launch resp from %s has bad task id %d",
 				msg->node_name, msg->srun_node_id);
 #ifdef HAVE_TOTALVIEW
 		tv_launch_failure();
@@ -352,7 +352,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		uint32_t taskid = msg->task_id_list[i];
 
 		if ((taskid < 0) || (taskid >= opt.nprocs)) {
-			error("task exit resp has bad task_id %d", taskid);
+			error("task exit resp has bad task id %d", taskid);
 			return;
 		}
 
@@ -593,8 +593,7 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid,
 		}
 
 		hostlist_ranged_string(pids, sizeof(buf), buf);
-		verbose("command:%s host:%s %s", 
-			executable_name, host, buf);
+		verbose("%s: %s %s", host, executable_name, buf);
 	}
 }
 

@@ -121,6 +121,8 @@ static slurm_ctl_conf_t slurmctld_conf;
 int 
 main (int argc, char *argv[])
 {
+	int pidfd;
+
 	_create_conf();
 	_init_conf();
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
@@ -148,10 +150,9 @@ main (int argc, char *argv[])
 	_create_msg_socket();
 
 	conf->pid = getpid();
-	create_pidfile(conf->pidfile);
+	pidfd = create_pidfile(conf->pidfile);
 
 	info("%s started on %T", xbasename(argv[0]));
-
 
 	if (_slurmd_init() < 0)
 		exit(1);
@@ -165,12 +166,18 @@ main (int argc, char *argv[])
 
 	_msg_engine();
 
+	/* 
+	 * Close pidfile, thus releasing write lock and
+	 * allowing a waiting to continue.
+	 */
+	(void) close(pidfd);  /* Ignore errors */
+	if (unlink(conf->pidfile) < 0)
+		error("Unable to remove pidfile `%s': %m", conf->pidfile);
+
 	_wait_for_all_threads();
 
 	_slurmd_fini();
 
-	if (unlink(conf->pidfile) < 0)
-		error("Unable to remove pidfile `%s': %m", conf->pidfile);
 
 	return 0;
 }
@@ -212,6 +219,7 @@ _decrement_thd_count(void)
 {
 	slurm_mutex_lock(&active_mutex);
 	active_threads--;
+	pthread_cond_signal(&active_cond);
 	slurm_mutex_unlock(&active_mutex);
 }
 
@@ -271,12 +279,6 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 		return;
 	}
 	return;
-}
-
-static int
-_find_tid(pthread_t *tid, pthread_t *key)
-{
-	return (*tid == *key);
 }
 
 static void *
@@ -719,7 +721,13 @@ _set_slurmd_spooldir(void)
 		fatal("chdir(%s): %m", conf->spooldir);
 }
 
-static void
+
+/* Kill the currently running slurmd 
+ *
+ * Returns file descriptor for the existing pidfile so that the
+ * current slurmd can wait on termination of the old.
+ */
+static void 
 _kill_old_slurmd(void)
 {
 	int fd;

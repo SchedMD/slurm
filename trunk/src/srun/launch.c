@@ -208,9 +208,7 @@ launch(void *arg)
 	if (fail_launch_cnt) {
 		error("%d task launch requests failed, terminating job step", 
 		      fail_launch_cnt);
-		if (slurm_kill_job_step(job->jobid, job->stepid, SIGKILL))
-			error("slurm_cancel_job_step error %m");
-		update_job_state(job, SRUN_JOB_FAILED);
+		job_kill(job);
 	} else {
 		debug("All task launch requests sent");
 		update_job_state(job, SRUN_JOB_STARTING);
@@ -280,7 +278,7 @@ _send_msg_rc(slurm_msg_t *msg)
 	return_code_msg_t *rcmsg   = NULL;
 	int		   rc      = 0;
 
-       	if ((rc = slurm_send_recv_node_msg(msg, &resp)) < 0)
+       	if ((rc = slurm_send_recv_node_msg(msg, &resp)) < 0) 
 		return rc;
 
 	switch (resp.msg_type) {
@@ -298,34 +296,55 @@ _send_msg_rc(slurm_msg_t *msg)
 	slurm_seterrno_ret (rc);
 }
 
+static void
+_update_failed_node(job_t *j, int id)
+{
+	pthread_mutex_lock(&j->task_mutex);
+	if (j->host_state[id] == SRUN_HOST_INIT)
+		j->host_state[id] = SRUN_HOST_UNREACHABLE;
+	pthread_mutex_unlock(&j->task_mutex);
+
+	/* update_failed_tasks(j, id); */
+}
+
+static void
+_update_contacted_node(job_t *j, int id)
+{
+	pthread_mutex_lock(&j->task_mutex);
+	if (j->host_state[id] == SRUN_HOST_INIT)
+		j->host_state[id] = SRUN_HOST_CONTACTED;
+	pthread_mutex_unlock(&j->task_mutex);
+}
+
 
 /* _p_launch_task - parallelized launch of a specific task */
-static void * _p_launch_task(void *args)
+static void * _p_launch_task(void *arg)
 {
-	task_info_t *task_info_ptr = (task_info_t *)args;
-	slurm_msg_t *req_ptr = task_info_ptr->req_ptr;
-	launch_tasks_request_msg_t *msg_ptr = 
-				(launch_tasks_request_msg_t *) req_ptr->data;
-	job_t *job_ptr = task_info_ptr->job_ptr;
-	int host_inx = msg_ptr->srun_node_id;
-	int failure = 0;
+	task_info_t                *tp     = (task_info_t *)arg;
+	slurm_msg_t                *req    = tp->req_ptr;
+	launch_tasks_request_msg_t *msg    = req->data;
+	job_t                      *job    = tp->job_ptr;
+	int                        nodeid  = msg->srun_node_id;
+	int                        failure = 0;
+	int                        retry   = 3; /* retry thrice */
 
 	if (_verbose)
-	        _print_launch_msg(msg_ptr, job_ptr->host[host_inx]);
+	        _print_launch_msg(msg, job->host[nodeid]);
 
-	if (_send_msg_rc(req_ptr) < 0) {	/* Has timeout */
-		error("launch error on %s: %m", job_ptr->host[host_inx]);
-		pthread_mutex_lock(&job_ptr->task_mutex);
-		if (job_ptr->host_state[host_inx] == SRUN_HOST_INIT)
-			job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
-		pthread_mutex_unlock(&job_ptr->task_mutex);
+    again:
+	if  (_send_msg_rc(req) < 0) {	/* Has timeout */
+
+		error("launch error on %s: %m", job->host[nodeid]);
+		if ((errno != ETIMEDOUT) && retry--) {
+			sleep(1);
+			goto again;
+		}
+
+		_update_failed_node(job, nodeid);
 		failure = 1;
-	} else {
-		pthread_mutex_lock(&job_ptr->task_mutex);
-		if (job_ptr->host_state[host_inx] == SRUN_HOST_INIT)
-			job_ptr->host_state[host_inx] = SRUN_HOST_CONTACTED;
-		pthread_mutex_unlock(&job_ptr->task_mutex);
-	}
+
+	} else 
+		_update_contacted_node(job, nodeid);
 
 
 	pthread_mutex_lock(&active_mutex);
@@ -333,7 +352,8 @@ static void * _p_launch_task(void *args)
 	fail_launch_cnt += failure;
 	pthread_cond_signal(&active_cond);
 	pthread_mutex_unlock(&active_mutex);
-	xfree(args);
+
+	xfree(arg);
 	return NULL;
 }
 
