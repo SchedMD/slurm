@@ -94,18 +94,19 @@ BEGIN_C_DECLS
 #define NO_VAL	 (0xfffffffe)
 #define MAX_TASKS_PER_NODE 64
 
-/* last entry must be JOB_END
- * NOTE: keep in sync with job_state_string and job_state_string_compact */
+/* last entry must be JOB_END, keep in sync with job_state_string and 
+ *	job_state_string_compact, if a job is in the process of de-
+ *	allocating nodes, its final state is ORed with JOB_COMPLETING */
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
 	JOB_RUNNING,		/* allocated resources and executing */
-	JOB_COMPLETING,		/* completing execution */
 	JOB_COMPLETE,		/* completed execution successfully */
 	JOB_FAILED,		/* completed execution unsuccessfully */
 	JOB_TIMEOUT,		/* terminated on reaching time limit */
 	JOB_NODE_FAIL,		/* terminated on node failure */
 	JOB_END			/* last entry in table */
 };
+#define JOB_COMPLETING (0x8000)
 
 /* Possible task distributions across the nodes */
 enum task_dist_states {

@@ -183,11 +183,17 @@ static enum job_states xlate_state_name(const char *state_name)
 	char *state_names;
 
 	for (i=0; i<JOB_END; i++) {
-		if ((strcasecmp(state_name, job_state_string(i)) == 0) ||
-		    (strcasecmp(state_name, job_state_string_compact(i)) == 0)) {
+		if ((strcasecmp(state_name,job_state_string(i)) == 0) ||
+		    (strcasecmp(state_name,job_state_string_compact(i)) == 0)){
 			return i;
 		}
 	}
+	if ((strcasecmp(state_name, 
+			job_state_string(JOB_COMPLETING)) == 0) ||
+	    (strcasecmp(state_name, 
+			job_state_string_compact(JOB_COMPLETING)) == 0)) {
+		return JOB_COMPLETING;
+	}	
 
 	fprintf (stderr, "Invalid job state specified: %s", state_name);
 	state_names = xstrdup(job_state_string(0));
@@ -195,6 +201,8 @@ static enum job_states xlate_state_name(const char *state_name)
 		xstrcat(state_names, ",");
 		xstrcat(state_names, job_state_string(i));
 	}
+	xstrcat(state_names, ",");
+	xstrcat(state_names, job_state_string(JOB_COMPLETING));
 	fprintf (stderr, "Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	exit (1);
