@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -67,6 +67,11 @@ expect {
 		wait
 	}
 }
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: job submit failure\n"
+	exit 1
+}
+
 spawn $srun --batch --output=/dev/null --error=/dev/null --job-name=job2 -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
@@ -82,6 +87,11 @@ expect {
 	eof {
 		wait
 	}
+}
+if {$job_id2 == 0} {
+	kill_srun
+	send_user "\nFAILURE: job submit failure\n"
+	exit 1
 }
 exec $bin_rm -f $file_in
 
