@@ -1202,7 +1202,7 @@ static void _help(void)
 	printf("  -m, --distribution=type       distribution method for processes\n");
 	printf("                                (type = block|cyclic)\n");
 	printf("  -J, --job-name=jobname        name of job\n");
-	printf("  --jobid=id                    run under already allocated job\n");
+	printf("      --jobid=id                run under already allocated job\n");
 	printf("  -b, --batch                   submit as batch job for later execution\n");
 	printf("  -v, --verbose                 verbose operation (multiple -v's\n");
 	printf("                                increase verbosity)\n");
@@ -1220,9 +1220,9 @@ static void _help(void)
  	printf("                                forwarding of signals and stdin\n");
 
 	printf("\nConstraint options:\n");
-	printf("  --mincpus=n                   minimum number of cpus per node\n");
-	printf("  --mem=MB                      minimum amount of real memory\n");
- 	printf("  --tmp=MB                      minimum amount of temporary disk\n");
+	printf("      --mincpus=n               minimum number of cpus per node\n");
+	printf("      --mem=MB                  minimum amount of real memory\n");
+ 	printf("      --tmp=MB                  minimum amount of temporary disk\n");
 	printf("  -C, --constraint=list         specify a list of constraints\n");
 	printf("  --contiguous                  demand a contiguous range of nodes\n");
 	printf("  -w, --nodelist=hosts...       request a specific list of hosts\n");
@@ -1230,8 +1230,8 @@ static void _help(void)
 	printf("  -Z, --no-allocate             don't allocate nodes (must supply -w)\n");
 
 	printf("\nHelp options:\n");
-	printf("  --help                        show this help message\n");
- 	printf("  --usage                       display brief usage message\n");
+	printf("      --help                    show this help message\n");
+ 	printf("      --usage                   display brief usage message\n");
 
 	printf("\nOther options:\n");
 	printf("  -V, --version                 output version information and exit\n");
