@@ -227,18 +227,19 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 
 void log_fini()
 {
+	if (!log) return;
 	log_flush();
 	slurm_mutex_lock(&log_lock);
 	if (log->argv0)
 		xfree(log->argv0);
 	if (log->fpfx)
-		xfree(log->argv0);
-	if (log->logfp)
-		fclose(log->logfp);
+		xfree(log->fpfx);
 	if (log->buf)
 		cbuf_destroy(log->buf);
 	if (log->fbuf)
 		cbuf_destroy(log->fbuf);
+	if (log->logfp)
+		fclose(log->logfp);
 	xfree(log);
 	log = NULL;
 	slurm_mutex_unlock(&log_lock);
@@ -617,13 +618,19 @@ void fatal(const char *fmt, ...)
 	exit(1);
 }
 
-void error(const char *fmt, ...)
+int error(const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_ERROR, fmt, ap);
 	va_end(ap);
+
+	/*
+	 *  Return SLURM_ERROR so calling functions can
+	 *    do "return error (...);"
+	 */
+	return SLURM_ERROR;
 }
 
 void info(const char *fmt, ...)
