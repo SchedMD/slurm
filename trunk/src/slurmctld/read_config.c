@@ -47,6 +47,7 @@ int parse_config_spec (char *in_line);
 int parse_node_spec (char *in_line);
 int parse_part_spec (char *in_line);
 
+static char highest_node_name[MAX_NAME_LEN] = "";
 int node_record_count = 0;
 
 #if DEBUG_MODULE
@@ -349,6 +350,7 @@ init_slurm_conf () {
 	if ((error_code = init_job_conf ()))
 		return error_code;
 
+	strcpy(highest_node_name, "");
 	return 0;
 }
 
@@ -495,7 +497,6 @@ parse_node_spec (char *in_line) {
 	struct node_record *node_record_point;
 	struct config_record *config_point = NULL;
 	hostlist_t host_list = NULL;
-	static char highest_node_name[MAX_NAME_LEN] = "";
 
 	node_name = state = feature = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
