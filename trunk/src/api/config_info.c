@@ -22,7 +22,6 @@
 #include "pack.h"
 
 #include "slurm.h"
-#include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_api.h>
 #define SLURM_PORT 7000 
 
