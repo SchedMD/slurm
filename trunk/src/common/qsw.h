@@ -40,4 +40,6 @@ void 		qsw_prog_fini(qsw_jobinfo_t jobinfo);
 
 int 		qsw_attach(qsw_jobinfo_t jobinfo, int procnum);
 
+int		qsw_getnodeid(void);
+
 #endif /* _QSW_INCLUDED */
