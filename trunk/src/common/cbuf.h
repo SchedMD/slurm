@@ -1,9 +1,7 @@
 /*****************************************************************************
  *  $Id$
  *****************************************************************************
- *  $LSDId: cbuf.h,v 1.17 2002/12/03 20:34:03 dun Exp $
- *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
  *
@@ -25,8 +23,8 @@
  *****************************************************************************/
 
 
-#ifndef _LSD_CBUF_H
-#define _LSD_CBUF_H
+#ifndef LSD_CBUF_H
+#define LSD_CBUF_H
 
 
 /***********
@@ -121,9 +119,19 @@ int cbuf_used (cbuf_t cb);
  *  Returns the number of bytes in [cb] available for reading.
  */
 
+int cbuf_lines_used (cbuf_t cb);
+/*
+ *  Returns the number of lines in [cb] available for reading.
+ */
+
 int cbuf_reused (cbuf_t cb);
 /*
  *  Returns the number of bytes in [cb] available for replaying/rewinding.
+ */
+
+int cbuf_lines_reused (cbuf_t cb);
+/*
+ *  Returns the number of lines in [cb] available for replaying/rewinding.
  */
 
 int cbuf_is_empty (cbuf_t cb);
@@ -308,4 +316,4 @@ int cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped);
  */
 
 
-#endif /* !_LSD_CBUF_H */
+#endif /* !LSD_CBUF_H */

@@ -909,6 +909,8 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 obj->ops    = _ops_copy(&client_ops);
 		 io->buf     = cbuf_create(1024, 1048576);
 		 io->writers = list_create(NULL);
+
+		 cbuf_opt_set(io->buf, CBUF_OPT_OVERWRITE, CBUF_WRAP_ONCE);
 		 break;
 	 case CLIENT_STDIN: 
 		 obj->ops    = _ops_copy(&client_ops);
@@ -1192,7 +1194,7 @@ _write(io_obj_t *obj, List objs)
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
 			return 0;
 		if ((errno == EPIPE) || (errno == EINVAL) || (errno == EBADF))
-			_obj_close(obj, objs);
+			_obj_close(obj, objs); 
 		else
 			error("write failed: <task %d>: %m", io->id);
 		return -1;

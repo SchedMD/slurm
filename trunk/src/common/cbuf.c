@@ -1,9 +1,9 @@
 /*****************************************************************************
  *  $Id$
  *****************************************************************************
- *  $LSDId: cbuf.c,v 1.30 2002/12/04 02:58:03 dun Exp $
+ *  $LSDId: cbuf.c,v 1.32 2003/01/03 21:08:19 dun Exp $
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2002-2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
  *
@@ -121,8 +121,8 @@ typedef int (*cbuf_iof) (void *cbuf_data, void *arg, int len);
  *  Prototypes  *
  ****************/
 
-static int cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl);
-static int cbuf_find_unread_line (cbuf_t cb, int chars, int lines);
+static int cbuf_find_replay_line (cbuf_t cb, int chars, int *nlines, int *nl);
+static int cbuf_find_unread_line (cbuf_t cb, int chars, int *nlines);
 
 static int cbuf_get_fd (void *dstbuf, int *psrcfd, int len);
 static int cbuf_get_mem (void *dstbuf, unsigned char **psrcbuf, int len);
@@ -365,6 +365,20 @@ cbuf_used (cbuf_t cb)
 
 
 int
+cbuf_lines_used (cbuf_t cb)
+{
+    int lines = -1;
+
+    assert(cb != NULL);
+    cbuf_mutex_lock(cb);
+    assert(cbuf_is_valid(cb));
+    cbuf_find_unread_line(cb, cb->size, &lines);
+    cbuf_mutex_unlock(cb);
+    return(lines);
+}
+
+
+int
 cbuf_reused (cbuf_t cb)
 {
     int reused;
@@ -375,6 +389,20 @@ cbuf_reused (cbuf_t cb)
     reused = (cb->i_out - cb->i_rep + (cb->size + 1)) % (cb->size + 1);
     cbuf_mutex_unlock(cb);
     return(reused);
+}
+
+
+int
+cbuf_lines_reused (cbuf_t cb)
+{
+    int lines = -1;
+
+    assert(cb != NULL);
+    cbuf_mutex_lock(cb);
+    assert(cbuf_is_valid(cb));
+    cbuf_find_replay_line(cb, cb->size, &lines, NULL);
+    cbuf_mutex_unlock(cb);
+    return(lines);
 }
 
 
@@ -626,7 +654,7 @@ cbuf_drop_line (cbuf_t src, int len, int lines)
     cbuf_mutex_lock(src);
     assert(cbuf_is_valid(src));
 
-    n = cbuf_find_unread_line(src, len, lines);
+    n = cbuf_find_unread_line(src, len, &lines);
     if (n > 0) {
         cbuf_dropper(src, n);
     }
@@ -653,7 +681,7 @@ cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines)
     }
     cbuf_mutex_lock(src);
     assert(cbuf_is_valid(src));
-    n = cbuf_find_unread_line(src, len - 1, lines);
+    n = cbuf_find_unread_line(src, len - 1, &lines);
     if (n > 0) {
         if (len > 0) {
             m = MIN(n, len - 1);
@@ -689,7 +717,7 @@ cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines)
     }
     cbuf_mutex_lock(src);
     assert(cbuf_is_valid(src));
-    n = cbuf_find_unread_line(src, len - 1, lines);
+    n = cbuf_find_unread_line(src, len - 1, &lines);
     if (n > 0) {
         if (len > 0) {
             m = MIN(n, len - 1);
@@ -727,7 +755,7 @@ cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines)
     }
     cbuf_mutex_lock(src);
     assert(cbuf_is_valid(src));
-    n = cbuf_find_replay_line(src, len - 1, lines, &nl);
+    n = cbuf_find_replay_line(src, len - 1, &lines, &nl);
     if (n > 0) {
         if (len > 0) {
             assert((nl == 0) || (nl == 1));
@@ -771,7 +799,7 @@ cbuf_rewind_line (cbuf_t src, int len, int lines)
     cbuf_mutex_lock(src);
     assert(cbuf_is_valid(src));
 
-    n = cbuf_find_replay_line(src, len, lines, NULL);
+    n = cbuf_find_replay_line(src, len, &lines, NULL);
     if (n > 0) {
         src->used += n;
         src->i_out = (src->i_out - n + (src->size + 1)) % (src->size + 1);
@@ -1079,23 +1107,30 @@ cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped)
 
 
 static int
-cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl)
+cbuf_find_replay_line (cbuf_t cb, int chars, int *nlines, int *nl)
 {
 /*  Finds the specified number of lines from the replay region of the buffer.
- *  If ([lines] > 0), returns the number of bytes comprising the line count
- *    specified by [lines], or 0 if this number is not found (ie, all or none).
- *  If ([lines] == -1), returns the number of bytes comprising the maximum line
- *    count contained within the number of characters specified by [chars].
+ *  If ([nlines] > 0), returns the number of bytes comprising the line count,
+ *    or 0 if this number of lines is not available (ie, all or none).
+ *  If ([nlines] == -1), returns the number of bytes comprising the maximum
+ *    line count bounded by the number of characters specified by [chars].
  *  Only complete lines (ie, those terminated by a newline) are counted,
  *    with once exception: the most recent line of replay data is treated
  *    as a complete line regardless of the presence of a terminating newline.
+ *  Sets the value-result parameter [nlines] to the number of lines found.
  *  Sets [nl] to '1' if a newline is required to terminate the replay data.
  */
-    int i, n, m;
+    int i, n, m, l;
+    int lines;
 
     assert(cb != NULL);
-    assert(lines >= -1);
+    assert(nlines != NULL);
+    assert(*nlines >= -1);
     assert(cbuf_mutex_is_locked(cb));
+
+    n = m = l = 0;
+    lines = *nlines;
+    *nlines = 0;
 
     if (nl) {
         *nl = 0;                        /* init in case of early return */
@@ -1123,10 +1158,12 @@ cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl)
         }
         --chars;
     }
-    else if (lines > 0) {
-        ++lines;
+    else {
+        if (lines > 0) {
+            ++lines;
+        }
+        --l;
     }
-    n = m = 0;
     i = cb->i_out;
     while (i != cb->i_rep) {
         i = (i + cb->size) % (cb->size + 1); /* (i - 1 + (S+1)) % (S+1) */
@@ -1141,6 +1178,7 @@ cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl)
                 --lines;
             }
             m = n - 1;                  /* do not include preceding '\n' */
+            ++l;
         }
         if ((chars == 0) || (lines == 0)) {
             break;
@@ -1153,29 +1191,38 @@ cbuf_find_replay_line (cbuf_t cb, int chars, int lines, int *nl)
             --lines;
         }
         m = n;
+        ++l;
     }
     if (lines > 0) {
         return(0);                      /* all or none, and not enough found */
     }
+    *nlines = l;
     return(m);
 }
 
 
 static int
-cbuf_find_unread_line (cbuf_t cb, int chars, int lines)
+cbuf_find_unread_line (cbuf_t cb, int chars, int *nlines)
 {
 /*  Finds the specified number of lines from the unread region of the buffer.
- *  If ([lines] > 0), returns the number of bytes comprising the line count
- *    specified by [lines], or 0 if this number is not found (ie, all or none).
- *  If ([lines] == -1), returns the number of bytes comprising the maximum line
- *    count contained within the number of characters specified by [chars].
+ *  If ([nlines] > 0), returns the number of bytes comprising the line count,
+ *    or 0 if this number of lines is not available (ie, all or none).
+ *  If ([nlines] == -1), returns the number of bytes comprising the maximum
+ *    line count bounded by the number of characters specified by [chars].
  *  Only complete lines (ie, those terminated by a newline) are counted.
+ *  Sets the value-result parameter [nlines] to the number of lines found.
  */
-    int i, n, m;
+    int i, n, m, l;
+    int lines;
 
     assert(cb != NULL);
-    assert(lines >= -1);
+    assert(nlines != NULL);
+    assert(*nlines >= -1);
     assert(cbuf_mutex_is_locked(cb));
+
+    n = m = l = 0;
+    lines = *nlines;
+    *nlines = 0;
 
     if ((lines == 0) || ((lines <= -1) && (chars <= 0))) {
         return(0);
@@ -1186,7 +1233,6 @@ cbuf_find_unread_line (cbuf_t cb, int chars, int lines)
     if (lines > 0) {
         chars = -1;                     /* chars parm not used if lines > 0 */
     }
-    n = m = 0;
     i = cb->i_out;
     while (i != cb->i_in) {
         ++n;
@@ -1198,6 +1244,7 @@ cbuf_find_unread_line (cbuf_t cb, int chars, int lines)
                 --lines;
             }
             m = n;
+            ++l;
         }
         if ((chars == 0) || (lines == 0)) {
             break;
@@ -1207,6 +1254,7 @@ cbuf_find_unread_line (cbuf_t cb, int chars, int lines)
     if (lines > 0) {
         return(0);                      /* all or none, and not enough found */
     }
+    *nlines = l;
     return(m);
 }
 

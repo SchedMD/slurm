@@ -210,22 +210,24 @@ srun(int ac, char **av)
 		fwd_signal(job, SIGINT);
 	}
 
-	/* Tell slurmctld that job is done */
-	job_destroy(job, 0);
 
 	/* wait for launch thread */
 	if (pthread_join(job->lid, NULL) < 0)
 		error ("Waiting on launch thread: %m");
 
+	debug("Waiting for IO thread");
 	/* wait for stdio */
 	if (pthread_join(job->ioid, NULL) < 0)
 		error ("Waiting on IO: %m");
 
+	/* Tell slurmctld that job is done */
+	job_destroy(job, 0);
+
 	/* kill msg server thread */
-	pthread_kill(job->jtid,  SIGHUP);
+	/*pthread_kill(job->jtid,  SIGHUP);*/
 
 	/* kill signal thread */
-	pthread_kill(job->sigid, SIGHUP);
+	/*pthread_kill(job->sigid, SIGHUP);*/
 
 	log_fini();
 	return 0;
