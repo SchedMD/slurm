@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  slurm_jobcomp.h - implementation-independent job completion logging 
- *  API definitions
+ *  slurm_jobcomp.c - implementation-independent job completion logging 
+ *  functions
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Jay Windley <jwindley@lnxi.com> and Moe Jette <jette@llnl.com>
+ *  Written by Jay Windley <jwindley@lnxi.com>, Morris Jette <jette1@llnl.com>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
