@@ -1,3 +1,5 @@
+# $Id$
+#
 # Makefile for slurmctld
 
 AUTOMAKE_OPTIONS = foreign
@@ -46,7 +48,7 @@ Node_Mgr      : Node_Mgr_d.o
 Partition_Mgr : Partition_Mgr_d.o
 
 % : %_d.o
-	$(LINK) $(LDFLAGS) $< $(LDADD)
+	$(LINK) $(LDFLAGS) $^ $(LDADD)
 
 %_d.o : %.c
 	$(COMPILE) -DDEBUG_MODULE -c -o $@ $< 
