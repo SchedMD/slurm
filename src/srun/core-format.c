@@ -99,7 +99,8 @@ static void _print_valid_core_types (void)
 		if ((ci->type == CORE_LIGHT) ||
 		    (ci->type == CORE_LCB)) {
 			struct stat buf;
-			if ((stat("/usr/lib/" LIB_LIGHT, &buf) < 0) &&
+			if ((stat("/lib/"           LIB_LIGHT, &buf) < 0) &&
+			    (stat("/usr/lib/"       LIB_LIGHT, &buf) < 0) &&
 			    (stat("/usr/local/lib/" LIB_LIGHT, &buf) < 0))
 				continue;
 		}
