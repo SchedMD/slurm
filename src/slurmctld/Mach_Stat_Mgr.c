@@ -321,7 +321,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 
     str_ptr1 = (char *)strstr(Specification, "Partition=");
     if (str_ptr1 != NULL) {
-	strcpy(Scratch, str_ptr1+5);
+	strcpy(Scratch, str_ptr1+10);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
 	Partition_String_To_Value(str_ptr2, My_Partition, &Error_Code);
 	*Set_Partition = 1;
@@ -377,7 +377,8 @@ void Partition_String_To_Value (char *partition, unsigned int *Partition_Value, 
 	    break;
 	} else {
 	    *Partition_Value |= (1 << Partition_Num);
-	    if ((Sep_Ptr[0] == (char)NULL) || (Sep_Ptr[0] == '\n')) break;
+	    if ((Sep_Ptr[0] == (char)NULL) || (Sep_Ptr[0] == '\n') ||
+	        (Sep_Ptr[0] == ' ')        || (Sep_Ptr[0] == '\t')) break;
 	    Partition_Ptr = Sep_Ptr + 1;
 	} /* else */
     } /* for */
@@ -421,6 +422,7 @@ void Partition_Value_To_String(unsigned int partition, char *Partition_String, i
 	strcat(Partition_String, Tmp_String);
     } /* for */
 } /* Partition_Value_To_String */
+
 
 /*
  * Read_Node_Spec_Conf - Load the node specification information from the specified file 
@@ -468,7 +470,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
     Default_Record.RealMemory = 0;
     Default_Record.VirtualMemory = 0;
     Default_Record.TmpDisk = 0L;
-    Default_Record.Partition = 0;
+    Default_Record.Partition = 1;
     Default_Record.NodeState= STATE_UNKNOWN;
     Default_Record.LastResponse = 0;
     Node_Record_List = list_create(NULL);
@@ -546,7 +548,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 		Node_Record_Point->RealMemory    = Default_Record.RealMemory;
 		Node_Record_Point->VirtualMemory = Default_Record.VirtualMemory;
 		Node_Record_Point->TmpDisk       = Default_Record.TmpDisk;
-		Node_Record_Point->Partition          = Default_Record.Partition;
+		Node_Record_Point->Partition     = Default_Record.Partition;
 		Node_Record_Point->NodeState     = Default_Record.NodeState;
 	    } else {
 #if DEBUG_SYSTEM
@@ -563,8 +565,8 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	    if (Set_RealMemory != 0)    Node_Record_Point->RealMemory=My_RealMemory;
 	    if (Set_VirtualMemory != 0) Node_Record_Point->VirtualMemory=My_VirtualMemory;
 	    if (Set_TmpDisk != 0)       Node_Record_Point->TmpDisk=My_TmpDisk;
-	    if (Set_Partition != 0)          Node_Record_Point->Partition=My_Partition;
-	    if (Set_State != 0)         Node_Record_Point->NodeState=My_Partition;
+	    if (Set_Partition != 0)     Node_Record_Point->Partition=My_Partition;
+	    if (Set_State != 0)         Node_Record_Point->NodeState=My_NodeState;
 	} /* else */
     } /* while */
 
@@ -870,7 +872,7 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	Partition_Value_To_String(Node_Record_Point->Partition, Out_Line, sizeof(Out_Line), Node_Record_Point->Name);
 	if (Full_Dump == 1) {
-	    sprintf(Out_Buf, "State=%s, LastResponse=%ld\n", 
+	    sprintf(Out_Buf, "State=%s LastResponse=%ld\n", 
 		Node_State_String[Node_Record_Point->NodeState], Node_Record_Point->LastResponse); 
 	} else {
 	    strcpy(Out_Buf, "\n"); 

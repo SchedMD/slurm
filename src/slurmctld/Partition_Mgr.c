@@ -316,7 +316,7 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
     } /* if */
 
     /* Parse the specification */
-    strcpy(My_Partition, "");
+    My_Partition[0] = (char)NULL;
     str_ptr1 = (char *)strstr(Specification, "Partition=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+10);
