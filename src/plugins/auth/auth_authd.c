@@ -69,13 +69,20 @@
 #include "src/common/xassert.h"
 #include "src/common/pack.h"
 #include "src/common/log.h"
+#include "src/common/arg_desc.h"
 
 const char plugin_name[]	= "Brett Chun's authd authentication plugin";
 const char plugin_type[]	= "auth/authd";
 const uint32_t plugin_version = 90;
 
-/* Default life span of an authd credential in seconds. */
-static const int authd_ttl = 2;
+/*
+ * Where to find the timeout in the argument vector.  This is set
+ * during initialization and should not change.
+ */
+static int timeout_idx = -1;
+
+/* Default timeout. */
+static const int AUTHD_TTL = 2;
 
 typedef struct _slurm_auth_credential {
 	credentials cred;
@@ -231,22 +238,47 @@ slurm_auth_verify_signature( credentials *cred, signature *sig )
 	return rc_error;
 }
 
-slurm_auth_credential_t *
-slurm_auth_create( void )
+
+int init( void )
 {
-	int ttl = authd_ttl;
-	slurm_auth_credential_t *cred = 
-		(slurm_auth_credential_t *)
+	const arg_desc_t *desc;
+	
+	verbose( "authd authenticaiton module initializing" );
+
+	if ( ( desc = slurm_auth_get_arg_desc() ) == NULL ) {
+		error( "unable to query SLURM for argument vector layout" );
+		return SLURM_ERROR;
+	}
+
+	if ( ( timeout_idx = arg_idx_by_name( desc, ARG_TIMEOUT ) ) < 0 ) {
+		error( "Required argument 'Timeout' not provided" );
+		return SLURM_ERROR;
+	}
+	
+	return SLURM_SUCCESS;
+}
+
+
+slurm_auth_credential_t *
+slurm_auth_create( void *argv[] )
+{
+	int ttl;	
+	slurm_auth_credential_t *cred;
+
+	if ( argv == NULL ) {
+		plugin_errno = SLURM_AUTH_MEMORY;
+		return NULL;
+	}
+
+	cred = (slurm_auth_credential_t *)
 		xmalloc( sizeof( slurm_auth_credential_t ) );
 	cred->cr_errno = SLURM_SUCCESS;
-
-	/* Initialize credential with our user and group. */
 	cred->cred.uid = geteuid();
 	cred->cred.gid = getegid();
 
-	/* Set a valid time interval. */
 	cred->cred.valid_from = time( NULL );
 
+	ttl = timeout_idx >= 0 ? (int) argv[ timeout_idx ] : AUTHD_TTL;
 	/*
 	 * In debug mode read the time-to-live from an environment
 	 * variable.
@@ -260,7 +292,7 @@ slurm_auth_create( void )
 		}
 	}
 #endif /*NDEBUG*/
-	 
+
 	cred->cred.valid_to = cred->cred.valid_from + ttl;
 
 	/* Sign the credential. */
@@ -285,12 +317,12 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
 }
 
 int
-slurm_auth_verify( slurm_auth_credential_t *cred )
+slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[] )
 {
 	int rc;
 	time_t now;
 
-	if ( cred == NULL ) {
+	if ( ( cred == NULL ) || ( argv == NULL ) ) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}

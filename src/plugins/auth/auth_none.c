@@ -146,9 +146,10 @@ enum {
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
  */
-void init ( void )
+int init ( void )
 {
 	debug("authentication==none");
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -161,7 +162,7 @@ void init ( void )
  * NULL if it cannot allocate a credential.
  */
 slurm_auth_credential_t *
-slurm_auth_create( void )
+slurm_auth_create( void *argv[] )
 {
 	slurm_auth_credential_t *cred;
 
@@ -194,7 +195,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *cred )
+slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[] )
 {
 	return SLURM_SUCCESS;
 }
