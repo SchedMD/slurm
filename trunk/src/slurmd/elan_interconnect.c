@@ -42,55 +42,50 @@ int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
 int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 {
 	pid_t pid;
-	int i=0;
 
 	/* Process 1: */
 	switch ((pid = fork())) 
 	{
 		case -1:
-			slurm_perror("fork");
+			error ("elan interconnect_init fork error %m errno: %i",errno);
 			return SLURM_ERROR ;
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
-				slurm_perror("wait");
+				error ("elan interconnect_init waitpid error %m errno: %i",errno);
 				return SLURM_ERROR ;
 			}
-			while(true)
-			{
 			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
-				pid_t pids[256];
-				int npids;
-				int i;
-				
-				slurm_perror("qsw_prgdestroy");
-				debug ("qsw_prgdestroy iteration %i, %m errno: %i", i , errno);
-				sleep (1);
-				i++ ;
-
-				if (rms_prginfo( launch_msg -> qsw_job -> j_prognum , sizeof(pids)/sizeof(pid_t), pids, &npids) < 0) {
-					perror("rms_prginfo");
+				qsw_prgsignal( launch_msg -> qsw_job , SIGTERM) ;
+				if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
+					qsw_prgsignal( launch_msg -> qsw_job , SIGKILL) ;
+					if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
+						error ("elan interconnect_init qsw_prgdestroy error %m errno: %i",errno);
+						return SLURM_ERROR ;
+					}	
+					else
+					{
+						return SLURM_SUCCESS ;
+					}
 				}
-				printf("pids");
-				for (i = 0; i < npids; i++)
-					printf("%d\n", pids[i]);
-				printf("\n");
-				continue ;
-				return SLURM_ERROR ;
+				else
+				{
+					return SLURM_SUCCESS ;
+				}
 			}
-			break ;
-			debug ("successfull qsw_prgdestroy");
+			else
+			{
+				return SLURM_SUCCESS ;
 			}
-			return SLURM_SUCCESS ;
 	}
 
 	/* Process 2: */
 	info("qsw_prog_init called from process %ld", getpid());
 	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) 
 	{
-		slurm_perror("qsw_prog_init");
+		error ("elan interconnect_init qsw_prog_init error %m errno: %i",errno);
 		_exit(1) ;
 	}
 	
