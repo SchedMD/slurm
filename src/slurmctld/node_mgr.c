@@ -1050,7 +1050,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error ("Node %s processor count inconsistent with rest "
 			"of partition", node_name);
 		error_code = EINVAL;
-		reason_down = "Inconsisent CPU count in partition";
+		reason_down = "Inconsistent CPU count in partition";
 	}
 
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
