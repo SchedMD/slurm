@@ -39,13 +39,15 @@ including heterogeneous clusters of workstations, supercomputers, and
 massively parallel systems. PBS was developed as a replacement for 
 NQS (Network Queuing System) by many of the same people.
 
-PBS has sophisticated scheduling logic. It spawn's daemons on each 
+PBS supports sophisticated scheduling logic (via the Maui 
+Scheduler\footnote{http://superclustergroup.org/maui}). 
+PBS spawn's daemons on each 
 machine to shepherd the job's tasks (similar to LoadLeveler 
 and Condor). It provides an interface for administrators to easily 
 interface their own scheduling modules (a nice feature).  PBS can support 
 long delays in file staging (in and out) with retry.  Host 
-authentication provided by checking port number (low ports only 
-accessible to root).  Credential service used for user authentication. 
+authentication is provided by checking port numbers (low ports numbers are only 
+accessible to user root).  Credential service is used for user authentication. 
 It has the job prolog and epilog feature, which is useful.  PBS Supports 
 high priority queue for smaller "interactive" jobs.  Signal to daemons 
 causes current log file (e.g. accounting) to be closed, renamed with 
@@ -303,7 +305,7 @@ Elan3 interconnect.
 
 \section{Sun Grid Engine}
 
-SGE\footnote{http://www.sun.com/products-n-solutions/edu/hpc/presentations/june01/omar\_hassaine.pdf}
+SGE\footnote{http://www.sun.com/gridware/} is now proprietary.
 
 
 \section{SCIDAC}
@@ -311,7 +313,9 @@ SGE\footnote{http://www.sun.com/products-n-solutions/edu/hpc/presentations/june0
 The Scientific Discovery through Advanced Computing (SciDAC) 
 project\footnote{http://www.scidac.org/ScalableSystems}
 has a Resource Management and Accounting working group
-and a white paper\cite{Res2000}.
+and a white paper\cite{Res2000}. Deployment of a system with 
+the required fault-tolerance and scalability is scheduled 
+for June 2006.
 
 \section{GNU Queue}
 
