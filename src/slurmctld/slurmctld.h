@@ -68,9 +68,11 @@
 		_X	= NULL; 	\
 	} while (0)
 #define IS_JOB_FINISHED(_X)		\
-	((_X->job_state & (~JOB_COMPLETING)) > JOB_RUNNING)
+	((_X->job_state & (~JOB_COMPLETING)) >  JOB_RUNNING)
 #define IS_JOB_PENDING(_X)		\
 	((_X->job_state & (~JOB_COMPLETING)) == JOB_PENDING)
+#define MAX(x,y) (((x)>(y))?(x):(y))
+#define MIN(x,y) (((x)<(y))?(x):(y))
 
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures

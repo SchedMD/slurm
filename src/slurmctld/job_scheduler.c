@@ -143,6 +143,10 @@ int schedule(void)
 				 sizeof(struct part_record *));
 			failed_parts[failed_part_cnt++] =
 			    job_ptr->part_ptr;
+		} else if (error_code == 
+			   ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
+			debug2("job %u not runnable with present config",
+			       job_ptr->job_id);
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
 			last_job_update = time(NULL);
