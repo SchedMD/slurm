@@ -29,57 +29,59 @@ int main (int argc, char *argv[])
 {
 	int passed = 0;
 	int failed = 0;
+	Buf buffer;
             
-        char buffer[1024];
-        void *bufp;
-        int len_buf = 0;
         uint16_t test16 = 1234, out16, byte_cnt;
         uint32_t test32 = 5678, out32;
         char testbytes[] = "TEST BYTES", *outbytes;
 	char teststring[] = "TEST STRING",  *outstring = NULL;
 	char *nullstr = NULL;
+	char *data;
+	int data_size;
 
-        bufp = buffer;
-        len_buf = sizeof(buffer);
-        pack16(test16, &bufp, &len_buf);
-        pack32(test32, &bufp, &len_buf);
+	buffer = init_buf (0);
+        pack16(test16, buffer);
+        pack32(test32, buffer);
 
-        packstr(testbytes, &bufp, &len_buf);
-        packstr(teststring, &bufp, &len_buf);
-	packstr(nullstr, &bufp, &len_buf);
+        packstr(testbytes, buffer);
+        packstr(teststring, buffer);
+	packstr(nullstr, buffer);
 
-	packstr("literal", &bufp, &len_buf);
-	packstr("", &bufp, &len_buf);
-        printf("wrote %d bytes\n", len_buf);
+	packstr("literal", buffer);
+	packstr("", buffer);
+        data_size = get_buf_offset(buffer);
+        printf("wrote %d bytes\n", data_size);
 
-        bufp = buffer;
-        len_buf = sizeof(buffer);
-        unpack16(&out16, &bufp, &len_buf);
+	/* Pull data off old buffer, destroy it, and create a new one */
+	data = xfer_buf_data(buffer);
+	buffer = create_buf(data, data_size);
+
+        unpack16(&out16, buffer);
 	TEST(out16 != test16, "un/pack16 failed");
 
-        unpack32(&out32, &bufp, &len_buf);
+        unpack32(&out32, buffer);
         TEST(out32 != test32, "un/pack32 failed");
 
-        unpackstr_ptr(&outbytes, &byte_cnt, &bufp, &len_buf);
+        unpackstr_ptr(&outbytes, &byte_cnt, buffer);
         TEST(strcmp(testbytes, outbytes) != 0, "un/packstr_ptr failed");
 
-        unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
+        unpackstr_xmalloc(&outstring, &byte_cnt, buffer);
         TEST(strcmp(teststring, outstring) != 0, "un/packstr_xmalloc failed");
 	xfree(outstring);
 
-	unpackstr_xmalloc(&nullstr, &byte_cnt, &bufp, &len_buf);
+	unpackstr_xmalloc(&nullstr, &byte_cnt, buffer);
 	TEST(nullstr != NULL, "un/packstr of null string failed.");
 
-	unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
+	unpackstr_xmalloc(&outstring, &byte_cnt, buffer);
 	TEST(strcmp("literal", outstring) != 0, 
 	     "un/packstr of string literal failed");
 	xfree(outstring);
 
-	unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
+	unpackstr_xmalloc(&outstring, &byte_cnt, buffer);
 	TEST(strcmp("", outstring) != 0, "un/packstr of string \"\" failed");
 	xfree(outstring);
 
-
+	free_buf(buffer);
         printf("%d tests passed, %d failed.\n", passed, failed);
 
 	return failed;

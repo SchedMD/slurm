@@ -16,6 +16,7 @@
 #include <stdarg.h>
 
 #include <src/common/bitstring.h>
+#include <src/common/pack.h>
 #include <src/common/qsw.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/macros.h>
@@ -242,13 +243,12 @@ main(int argc, char *argv[])
 	 */
 	qsw_print_jobinfo(stderr, job);
 	if (pack_jobinfo) {
-		int len;
-		char buftmp[8192];
-	        char *buf = buftmp;
-		qsw_pack_jobinfo(job, (void **) &buf, &len);
+		Buf buffer;
+		buffer = init_buf(8096);
+		qsw_pack_jobinfo(job, buffer);
 		qsw_alloc_jobinfo(&j);
-		buf = buftmp;
-		qsw_unpack_jobinfo(j, (void **) &buf, &len);
+		set_buf_offset(buffer,0);
+		qsw_unpack_jobinfo(j, buffer);
 		qsw_print_jobinfo(stderr, j);
 	} else 
 		j = job;

@@ -38,30 +38,14 @@
 
 #include <src/common/bitstring.h>
 #include <src/common/list.h>
+#include <src/common/pack.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
-#define REALLOC_MULTIPLIER 4  
-
-
-/* buffer_realloc - reallocates the buffer if/when it gets smaller than BUF_SIZE */
-inline void buffer_realloc( void** buffer, void** current, int* size, int* len_left )
-{
-	int current_offset = *current - *buffer;
-
-	if ( *len_left < BUF_SIZE )
-	{
-		*size += BUF_SIZE * REALLOC_MULTIPLIER ;
-		*len_left += BUF_SIZE * REALLOC_MULTIPLIER ;
-		*buffer = xrealloc( *buffer, *size );
-		*current = buffer + current_offset;
-	}
-}
-
 
 void
-pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len)
+pack_ctld_job_step_info( struct  step_record* step, Buf buffer)
 {
 	char *node_list;
 
@@ -79,33 +63,28 @@ pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len
 				step->start_time,
 				step->job_ptr->partition ,
 				node_list,
-				buf_ptr,
-				buf_len
+				buffer
 			);
 	xfree (node_list);
 }
 
 /* pack_ctld_job_step_info_response_msg - packs the message
  * IN - job_id and step_id - zero for all
- * OUT - packed buffer and length NOTE- MUST xfree buffer
+ * OUT - packed buffer and length NOTE- MUST free_buf buffer
  * return - error code
  */
 int
-pack_ctld_job_step_info_response_msg (void** buffer_base, int* buffer_length, 
-					uint32_t job_id, uint32_t step_id )
+pack_ctld_job_step_info_response_msg ( uint32_t job_id, uint32_t step_id, Buf buffer )
 {
 	ListIterator job_record_iterator;
 	ListIterator step_record_iterator;
-	int buffer_size = BUF_SIZE * REALLOC_MULTIPLIER;
-	int current_size = buffer_size;
-	int error_code = 0, steps_packed = 0;
-	void* current = NULL;
+	int error_code = 0;
+	uint32_t steps_packed = 0, tmp_offset;
 	struct step_record* step_ptr;
 	struct job_record * job_ptr;
 
-	current = *buffer_base = xmalloc( buffer_size );
-	pack32( last_job_update, &current, &current_size );
-	pack32( steps_packed , &current, &current_size );	/* steps_packed is placeholder for now */
+	pack_time( last_job_update, buffer );
+	pack32( steps_packed , buffer );	/* steps_packed is placeholder for now */
 
 	if ( job_id == 0 )
 	/* Return all steps for all jobs */
@@ -114,8 +93,7 @@ pack_ctld_job_step_info_response_msg (void** buffer_base, int* buffer_length,
 		while ((job_ptr = (struct job_record *) list_next (job_record_iterator))) {
 			step_record_iterator = list_iterator_create (job_ptr->step_list);		
 			while ((step_ptr = (struct step_record *) list_next (step_record_iterator))) {
-				pack_ctld_job_step_info( step_ptr, &current, &current_size );
-				buffer_realloc( buffer_base, &current, &buffer_size, &current_size );
+				pack_ctld_job_step_info( step_ptr, buffer );
 				steps_packed++;
 			}
 			list_iterator_destroy (step_record_iterator);
@@ -130,8 +108,7 @@ pack_ctld_job_step_info_response_msg (void** buffer_base, int* buffer_length,
 		if (job_ptr) {
 			step_record_iterator = list_iterator_create (job_ptr->step_list);		
 			while ((step_ptr = (struct step_record *) list_next (step_record_iterator))) {
-				pack_ctld_job_step_info( step_ptr, &current, &current_size );
-				buffer_realloc( buffer_base, &current, &buffer_size, &current_size );
+				pack_ctld_job_step_info( step_ptr, buffer );
 				steps_packed++;
 			}
 			list_iterator_destroy (step_record_iterator);
@@ -148,25 +125,18 @@ pack_ctld_job_step_info_response_msg (void** buffer_base, int* buffer_length,
 		if ( step_ptr ==  NULL ) 
 			error_code = ESLURM_INVALID_JOB_ID;
 		else {
-			pack_ctld_job_step_info( step_ptr, &current, &current_size );
+			pack_ctld_job_step_info( step_ptr, buffer );
 			steps_packed++;
 		}
 	}
 
-	if( error_code ) {
-		xfree( *buffer_base );
-		*buffer_base = NULL;
-		if( buffer_length )
-			*buffer_length = 0;
-	}
-	else {
-		if( buffer_length )
-			*buffer_length = buffer_size - current_size;
-		current = *buffer_base;
-		current_size = buffer_size;
-		pack32( last_job_update, &current, &current_size );
-		pack32( steps_packed , &current, &current_size );
-	}
+	/* put the real record count in the message body header */	
+	tmp_offset = get_buf_offset (buffer);
+	set_buf_offset (buffer, 0);
+	pack_time (last_job_update, buffer);
+	pack32  (steps_packed, buffer);
+	set_buf_offset (buffer, tmp_offset);
+
 	return 	error_code;
 }
 

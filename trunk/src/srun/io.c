@@ -13,6 +13,7 @@
 #include <src/common/xmalloc.h>
 #include <src/common/log.h>
 #include <src/common/macros.h>
+#include <src/common/pack.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_pack.h>
 
@@ -281,8 +282,8 @@ _accept_io_stream(job_t *job, int i)
 		char buf[INET_ADDRSTRLEN];
 		slurm_io_stream_header_t hdr;
 		uint32_t len = sizeof(hdr) - 4;
-		char msgbuf[len];
-		char *bufptr = msgbuf;
+		char *msgbuf;
+		Buf buffer;
 
 		while ((sd = accept(job->iofd[i], &addr, (socklen_t *)&size)) < 0) {
 			if (errno == EINTR)
@@ -297,8 +298,11 @@ _accept_io_stream(job_t *job, int i)
 		sin = (struct sockaddr_in *) &addr;
 		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
 
-		_readn(sd, &msgbuf, len); 
-		unpack_io_stream_header(&hdr, (void **) &bufptr, &len); 
+		msgbuf = xmalloc(len);
+		_readn(sd, msgbuf, len); 
+		buffer = create_buf(msgbuf, len);
+		unpack_io_stream_header(&hdr, buffer); 
+		free_buf(buffer); /* NOTE: this frees msgbuf */
 
 		/* Assign new fds arbitrarily for now, until slurmd
 		 * sends along some control information
@@ -407,7 +411,7 @@ ssize_t
 _readn(int fd, void *buf, size_t nbytes) 
 {
 	int n;
-	int pbuf = (int)buf;
+	char *pbuf = (char *)buf;
 	size_t nleft = nbytes;
 
 	while(nleft > 0) {

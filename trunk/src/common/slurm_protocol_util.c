@@ -1,3 +1,29 @@
+/*****************************************************************************\
+ *  slurm_protocol_util.c - communication infrastructure functions
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +34,7 @@
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>
 #include <src/common/log.h>
+#include <src/common/xmalloc.h>
 
 /* checks to see that the specified header was sent from a node running the same version of the protocol as the current node */
 uint32_t check_header_version(header_t * header)
@@ -59,23 +86,31 @@ void init_io_stream_header(slurm_io_stream_header_t * header, char *key,
 
 int read_io_stream_header(slurm_io_stream_header_t * header, int fd)
 {
-	char buffer[sizeof(slurm_io_stream_header_t)];
-	char *buf_ptr = buffer;
-	int  buf_size = sizeof(slurm_io_stream_header_t);
-	int  size     = sizeof(slurm_io_stream_header_t);
-	int  rsize    = slurm_read_stream(fd, buffer, buf_size);
-	unpack_io_stream_header(header, (void **) &buf_ptr, &size);
+	char *data;
+	int  buf_size, rsize;
+	Buf my_buf;
+
+	buf_size = sizeof(slurm_io_stream_header_t);
+	data = xmalloc(buf_size);
+	rsize = slurm_read_stream(fd, data, buf_size);
+	my_buf = create_buf (data, buf_size);
+	if (rsize == buf_size)
+		unpack_io_stream_header(header, my_buf);
+	free_buf(my_buf);
 	return rsize;
 }
 
 int write_io_stream_header(slurm_io_stream_header_t * header, int fd)
 {
-	char buffer[sizeof(slurm_io_stream_header_t)];
-	char *buf_ptr = buffer;
-	int buf_size  = sizeof(slurm_io_stream_header_t);
-	int size      = sizeof(slurm_io_stream_header_t);
-	pack_io_stream_header(header, (void **) &buf_ptr, &size);
-	return slurm_write_stream(fd, buffer, buf_size - size);
+	int  buf_size, wsize;
+	Buf my_buf;
+
+	buf_size = sizeof(slurm_io_stream_header_t);
+	my_buf = init_buf(buf_size);
+	pack_io_stream_header(header, my_buf);
+	wsize = slurm_write_stream(fd, get_buf_data(my_buf), get_buf_offset(my_buf));
+	free_buf(my_buf);
+	return wsize;
 }
 
 int read_io_stream_header2(slurm_io_stream_header_t * header, int fd)

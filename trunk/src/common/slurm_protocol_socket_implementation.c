@@ -96,25 +96,22 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 	char * size_buffer = size_buffer_temp ;
 	char * moving_buffer = NULL ;
 	unsigned int size_buffer_len = 8 ;
-	uint32_t transmit_size ;
+	uint32_t transmit_size, nw_format_size ;
 	unsigned int total_len ;
 	unsigned int excess_len = 0 ;
 
-	moving_buffer = size_buffer ;
+	moving_buffer = (char *)&nw_format_size ;
 	total_len = 0 ;
 	while ( total_len < sizeof ( uint32_t ) )
 	{	
-		//if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR  )
-		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR  )
+		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , 
+				(sizeof ( uint32_t ) - total_len), 
+				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR  )
 		{
 			if ( errno ==  EINTR )
-			{
 				continue ;
-			}
 			else
-			{
 				return SLURM_PROTOCOL_ERROR ;
-			}
 		}
 		else if ( recv_len > 0 )
 		{
@@ -134,7 +131,8 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 			return SLURM_PROTOCOL_ERROR ;
 		}
 	}
-	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
+
+	transmit_size = ntohl(nw_format_size);
 	if (transmit_size > size) {
 		error ("_slurm_msg_recvfrom_timeout buffer too small (%d of %u), excess discarded", 
 			size, transmit_size);
@@ -147,7 +145,6 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 	total_len = 0 ;
 	while ( total_len < transmit_size )
 	{
-		//if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , (transmit_size-total_len) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
 		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , (transmit_size-total_len) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR )
 		{
 			if ( errno ==  EINTR )
@@ -229,9 +226,6 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size
 {
 	size_t send_len ;
 
-	char size_buffer_temp [8] ;
-	char * size_buffer = size_buffer_temp ;
-	unsigned int size_buffer_len = 8 ;
 	uint32_t usize;
 
 	struct sigaction newaction ;
@@ -242,67 +236,44 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size
 	/* ignore SIGPIPE so that send can return a error code if the other side closes the socket */
 	sigaction(SIGPIPE, &newaction , & oldaction );
 
-	usize = size;
-	pack32 (  usize , ( void ** ) & size_buffer , & size_buffer_len ) ;
+	usize = htonl(size);
 
 	while ( true )
 	{
-		//if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS) )  == SLURM_PROTOCOL_ERROR )
-		if ( ( send_len = _slurm_send_timeout ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) )  == SLURM_PROTOCOL_ERROR )
+		if ( ( send_len = _slurm_send_timeout ( open_fd , &usize , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) )  == SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
-			{
 				continue ;
-			}
 			else
-			{
 				goto _slurm_msg_sendto_exit_error ;
-				//sigaction(SIGPIPE, &oldaction , &newaction);
-				//return SLURM_PROTOCOL_ERROR ;
-			}
 		}
 		else if ( send_len != sizeof ( uint32_t ) )
 		{
-			/*debug ( "Error sending length of datagram" ) ;*/
 			/*debug ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , sizeof ( uint32_t ) ) ;*/
 			slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT ) ;
 			goto _slurm_msg_sendto_exit_error ;
-			//sigaction(SIGPIPE, &oldaction , &newaction);
-			//return SLURM_PROTOCOL_ERROR ;
 		}
 		else
-		{
 			break ;
-		}
 	}
 	while ( true )
 	{
-		//if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
-		if ( ( send_len = _slurm_send_timeout ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( send_len = _slurm_send_timeout ( open_fd ,  buffer , size , 
+				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
-			{
 				continue ;
-			}
 			else
-			{
 				goto _slurm_msg_sendto_exit_error ;
-			//	sigaction(SIGPIPE, &oldaction , &newaction);
-			//	return SLURM_PROTOCOL_ERROR ;
-			}
 		}
 		else if ( send_len != size )
 		{
 			/*debug ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;*/
 			slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT ) ;
 			goto _slurm_msg_sendto_exit_error ;
-			//sigaction(SIGPIPE, &oldaction , &newaction);
-			//return SLURM_PROTOCOL_ERROR ;
 		}
 		else
-		{
 			break ;
-		}
 	}
 	
 	sigaction(SIGPIPE, &oldaction , & newaction );
@@ -819,17 +790,17 @@ void _slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n )
 }
 	
 
-void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length )
+void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , Buf buffer )
 {
-	pack32 ( ntohl ( slurm_address -> sin_addr.s_addr ) , ( void ** ) buffer , length ) ;
-	pack16 ( ntohs ( slurm_address -> sin_port ) , ( void ** ) buffer , length ) ;
+	pack32 ( ntohl ( slurm_address -> sin_addr.s_addr ) , buffer ) ;
+	pack16 ( ntohs ( slurm_address -> sin_port ) , buffer ) ;
 }
 
-void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
+void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer )
 {
 	slurm_address -> sin_family = AF_SLURM ;
-	unpack32 ( & slurm_address -> sin_addr.s_addr , ( void ** ) buffer , length ) ;
+	unpack32 ( & slurm_address -> sin_addr.s_addr , buffer ) ;
 	slurm_address -> sin_addr.s_addr = htonl ( slurm_address -> sin_addr.s_addr );
-	unpack16 ( & slurm_address -> sin_port , ( void ** ) buffer , length ) ;
+	unpack16 ( & slurm_address -> sin_port , buffer ) ;
 	slurm_address -> sin_port = htons ( slurm_address -> sin_port ) ;
 }

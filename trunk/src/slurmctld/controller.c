@@ -963,10 +963,12 @@ slurm_rpc_job_step_get_info ( slurm_msg_t * msg )
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	}
 	else {
-		error_code = pack_ctld_job_step_info_response_msg (&resp_buffer, 
-					&resp_buffer_size, 
-					request->job_id, request->step_id);
+		Buf buffer;
+		buffer = init_buf (BUF_SIZE);
+		error_code = pack_ctld_job_step_info_response_msg (request->job_id, request->step_id, buffer);
 		unlock_slurmctld (job_read_lock);
+		resp_buffer_size = get_buf_offset (buffer);
+		resp_buffer = xfer_buf_data (buffer);
 		if (error_code == ESLURM_INVALID_JOB_ID)
 			info ("slurm_rpc_job_step_get_info, no such job step %u.%u, time=%ld", 
 				request->job_id, request->step_id, (long) (clock () - start_time));

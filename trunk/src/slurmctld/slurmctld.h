@@ -69,22 +69,28 @@
 /* Default temporary storage for slurm state and user files */
 #define DEFAULT_TMP_FS	"/tmp"
 
-#define safe_unpack16(valp,bufp,lenp) {			\
-        if (*(lenp) < sizeof(*(valp)))			\
+#define safe_unpack16(valp,buf) {			\
+        if (remaining_buf(buf) < sizeof(*(valp)))	\
 		break;					\
-	unpack16(valp,bufp,lenp);			\
+	unpack16(valp,buf);				\
 }
 
-#define safe_unpack32(valp,bufp,lenp) {			\
-        if (*(lenp) < sizeof(*(valp)))			\
+#define safe_unpack32(valp,buf) {			\
+        if (remaining_buf(buf) < sizeof(*(valp)))	\
 		break;					\
-	unpack32(valp,bufp,lenp);			\
+	unpack32(valp,buf);				\
 }
 
-#define safe_unpackstr_xmalloc(valp,size_valp,bufp,lenp) { \
-       if (*(lenp) < sizeof(uint16_t))			\
+#define safe_unpackstr_xmalloc(valp,size_valp,buf) { 	\
+       if (remaining_buf(buf) < sizeof(uint16_t))	\
 		break;					\
-	unpackmem_xmalloc(valp,size_valp,bufp,lenp);	\
+	unpackmem_xmalloc(valp,size_valp,buf);		\
+}
+
+#define safe_unpack_time(valp,buf) {			\
+        if (remaining_buf(buf) < sizeof(time_t))	\
+		break;					\
+	unpack_time(valp,buf);				\
 }
 
 extern slurm_ctl_conf_t slurmctld_conf;
@@ -433,8 +439,8 @@ extern void node_not_resp (char *name);
  *	machine independent form (for network transmission)
  * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
  */
-extern void pack_all_jobs (char **buffer_ptr, int *buffer_size, 
-	time_t * update_time);
+extern void pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+;
 
 /* pack_all_node - dump all configuration and node information for all nodes in 
  *	machine independent form (for network transmission)
@@ -444,15 +450,14 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_
 
 /* pack_ctld_job_step_info_response_msg - packs the message
  * IN - job_id and step_id - zero for all
- * OUT - packed buffer and length NOTE- MUST xfree buffer
+ * OUT - packed buffer and length NOTE- MUST free_buf buffer
  * return - error code
  */
-extern int pack_ctld_job_step_info_response_msg (void** buffer_base, int* buffer_length, 
-						uint32_t job_id, uint32_t step_id );
+extern int pack_ctld_job_step_info_response_msg ( uint32_t job_id, uint32_t step_id, Buf buffer );
 
 /* pack_ctld_job_step_info - packs a job_step_info_t from a step_record
  */
-extern void pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len);
+extern void pack_ctld_job_step_info( struct  step_record* step, Buf buffer);
 	
 /* 
  * pack_all_part - dump all partition information for all partitions in 
@@ -465,13 +470,13 @@ extern void pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_
  * pack_job - dump all configuration information about a specific job in 
  *	machine independent form (for network transmission)
  */
-extern void pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
+extern void pack_job (struct job_record *dump_job_ptr, Buf buffer);
 
 /* 
  * pack_part - dump all configuration information about a specific partition in 
  *	machine independent form (for network transmission)
  */
-extern void pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
+extern void pack_part (struct part_record *part_record_point, Buf buffer);
 
 /* ping_nodes - check that all nodes and daemons are alive */
 extern void ping_nodes (void);

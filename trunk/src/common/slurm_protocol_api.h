@@ -17,6 +17,7 @@
 #include <sys/types.h>
 #include <stdarg.h>
 
+#include <src/common/pack.h>
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>
 #include <src/common/slurm_protocol_defs.h>
@@ -304,22 +305,16 @@ void inline slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n )
 /* slurm_pack_slurm_addr
  * packs a slurm_addr into a buffer to serialization transport
  * IN slurm_address	- slurm_addr to pack
- * NOTE : the buffer and length parameters are modified by the function 
- * NOTE : *buffer is incremented and *length is decremented SEE pack.c
  * IN/OUT buffer	- buffer to pack the slurm_addr into
- * IN/OUT length	- size of the buffer
  */
-void inline slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+void inline slurm_pack_slurm_addr ( slurm_addr * slurm_address , Buf buffer ) ;
 
 /* slurm_pack_slurm_addr
  * unpacks a buffer into a slurm_addr after serialization transport
  * OUT slurm_address	- slurm_addr to unpack to
- * NOTE : the buffer and length parameters are modified by the function 
- * NOTE : *buffer is incremented and *length is decremented SEE pack.c
  * IN/OUT buffer	- buffer to upack the slurm_addr from
- * IN/OUT length	- size of the buffer
  */
-void inline slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+void inline slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer ) ;
 
 /*******************************************/
 /* simplified communication routines 

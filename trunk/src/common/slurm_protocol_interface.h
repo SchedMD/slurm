@@ -1,7 +1,28 @@
-/******************************************************************************\
- *  $Id$
- *    by Chris Dunlap <cdunlap@llnl.gov>
- \******************************************************************************/
+/*****************************************************************************\
+ *  slurm_protocol_interface.j - mid-level slurm communication definitions
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Chris Dunlap <cdunlap@llnl.gov>, et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 
 #ifndef _SLURM_PROTOCOL_INTERFACE_H
@@ -41,6 +62,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
+#include <src/common/pack.h>
 #include <src/common/slurm_protocol_common.h>
 
 extern struct timeval SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
@@ -105,8 +127,8 @@ extern void _slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n 
 /*****************************/
 /* slurm addr pack functions */
 /*****************************/
-extern void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
-extern void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+extern void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , Buf buffer ) ;
+extern void _slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , Buf buffer ) ;
 
 
 /*******************************\
