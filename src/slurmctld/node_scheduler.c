@@ -211,7 +211,9 @@ void make_node_idle(struct node_record *node_ptr)
 
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	if (base_state == NODE_STATE_DRAINING) {
+	if (base_state == NODE_STATE_DOWN) {
+		debug3("Node %s being left DOWN", node_ptr->name);
+	} else if (base_state == NODE_STATE_DRAINING) {
 		node_ptr->node_state = NODE_STATE_DRAINED;
 		bit_clear(idle_node_bitmap, inx);
 		bit_clear(up_node_bitmap, inx);

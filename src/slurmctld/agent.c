@@ -73,7 +73,8 @@
 #  define WDOG_POLL 		2	/* secs */
 #endif
 
-typedef enum { DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED } state_t;
+typedef enum { DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_NO_RESP, 
+	       DSH_FAILED } state_t;
 
 typedef struct thd {
 	pthread_t thread;		/* thread ID */
@@ -296,7 +297,8 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
  */
 static void *_wdog(void *args)
 {
-	int i, fail_cnt, work_done, delay, max_delay = 0;
+	int fail_cnt, no_resp_cnt, work_done;
+	int i, delay, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 #if AGENT_IS_THREAD
@@ -309,8 +311,10 @@ static void *_wdog(void *args)
 #endif
 
 	while (1) {
-		work_done = 1;	/* assume all threads complete for now */
-		fail_cnt = 0;	/* assume all threads complete sucessfully for now */
+		work_done   = 1;	/* assume all threads complete */
+		fail_cnt    = 0;	/* assume no threads failures */
+		no_resp_cnt = 0;	/* assume all threads respond */
+
 		sleep(WDOG_POLL);
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
@@ -332,6 +336,9 @@ static void *_wdog(void *args)
 					max_delay =
 					    (int) thread_ptr[i].time;
 				break;
+			case DSH_NO_RESP:
+				no_resp_cnt++;
+				break;
 			case DSH_FAILED:
 				fail_cnt++;
 				break;
@@ -343,12 +350,12 @@ static void *_wdog(void *args)
 	}
 
 	/* Notify slurmctld of non-responding nodes */
-	if (fail_cnt) {
+	if (no_resp_cnt) {
 #if AGENT_IS_THREAD
 		/* Update node table data for non-responding nodes */
 		lock_slurmctld(node_write_lock);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
-			if (thread_ptr[i].state == DSH_FAILED)
+			if (thread_ptr[i].state == DSH_NO_RESP)
 				node_not_resp(thread_ptr[i].node_name);
 		}
 		unlock_slurmctld(node_write_lock);
@@ -358,7 +365,7 @@ static void *_wdog(void *args)
 		slurm_names = xmalloc(fail_cnt * MAX_NAME_LEN);
 		fail_cnt = 0;
 		for (i = 0; i < agent_ptr->thread_count; i++) {
-			if (thread_ptr[i].state == DSH_FAILED) {
+			if (thread_ptr[i].state == DSH_NO_RESP) {
 				strncpy(&slurm_names
 					[MAX_NAME_LEN * fail_cnt],
 					thread_ptr[i].node_name,
@@ -383,6 +390,8 @@ static void *_wdog(void *args)
 	/* Update last_response on responding nodes */
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
+		if (thread_ptr[i].state == DSH_FAILED)
+			set_node_down(thread_ptr[i].node_name);
 		if (thread_ptr[i].state == DSH_DONE)
 			node_did_resp(thread_ptr[i].node_name);
 	}
@@ -390,16 +399,17 @@ static void *_wdog(void *args)
 #else
 	/* Build a list of all responding nodes and send it to slurmctld to 
 	 * update time stamps */
-	done_cnt = agent_ptr->thread_count - fail_cnt;
+	done_cnt = agent_ptr->thread_count - fail_cnt - no_resp_cnt;
 	slurm_names = xmalloc(done_cnt * MAX_NAME_LEN);
 	done_cnt = 0;
 	for (i = 0; i < agent_ptr->thread_count; i++) {
-		if (thread_ptr[i].state == DSH_DONE) {
+		if (thread_ptr[i].state == DSH_DONE)
 			strncpy(&slurm_names[MAX_NAME_LEN * done_cnt],
 				thread_ptr[i].node_name, MAX_NAME_LEN);
 			done_cnt++;
 		}
 	}
+	/* need support for node failures here too */
 
 	/* send RPC */
 	fatal("Code development needed here if agent is not thread");
@@ -428,7 +438,7 @@ static void *_thread_per_node_rpc(void *args)
 	return_code_msg_t *slurm_rc_msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
-	state_t thread_state = DSH_FAILED;
+	state_t thread_state = DSH_NO_RESP;
 	sigset_t set;
 
 	/* set up SIGALRM handler */
@@ -494,19 +504,27 @@ static void *_thread_per_node_rpc(void *args)
 		slurm_rc_msg = (return_code_msg_t *) response_msg->data;
 		rc = slurm_rc_msg->return_code;
 		slurm_free_return_code_msg(slurm_rc_msg);
-		if (rc)
-			error("_thread_per_node_rpc/rc error from host %s: %s",
+		if (rc == 0) {
+			debug3("agent processed RPC to node %s",
+			       thread_ptr->node_name);
+			thread_state = DSH_DONE;
+		} else if (rc == ESLURMD_EPILOG_FAILED) {
+			error("Epilog failure on host %s, setting DOWN",
+			      thread_ptr->node_name);
+			thread_state = DSH_FAILED;
+		} else if (rc == ESLURMD_PROLOG_FAILED) {
+			error("Prolog failure on host %s, setting DOWN",
+			      thread_ptr->node_name);
+			thread_state = DSH_FAILED;
+		} else {
+			error("agent error from host %s: %s",
 			      thread_ptr->node_name,
 			      slurm_strerror(rc));	/* Don't use %m */
-		else {
-			debug3
-			    ("agent sucessfully processed RPC to node %s",
-			     thread_ptr->node_name);
+			thread_state = DSH_DONE;
 		}
-		thread_state = DSH_DONE;
 		break;
 	default:
-		error("_thread_per_node_rpc from host %s, bad msg_type %d",
+		error("agent reply from host %s, bad msg_type %d",
 		      thread_ptr->node_name, response_msg->msg_type);
 		break;
 	}
@@ -578,7 +596,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		if (thread_ptr[i].state != DSH_FAILED)
+		if (thread_ptr[i].state != DSH_NO_RESP)
 			continue;
 		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
 		strncpy(&agent_arg_ptr->node_names[j * MAX_NAME_LEN],

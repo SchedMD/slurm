@@ -1194,6 +1194,32 @@ void node_not_resp (char *name)
 	return;
 }
 
+/* set_node_down - make the specified node's state DOWN, kill jobs as needed 
+ * IN name - name of the node */
+void set_node_down (char *name)
+{
+	struct node_record *node_ptr;
+	int node_inx;
+	uint16_t resp_state;
+
+	node_ptr = find_node_record (name);
+	if (node_ptr == NULL) {
+		error ("node_not_resp unable to find node %s", name);
+		return;
+	}
+
+	node_inx = node_ptr - node_record_table_ptr;
+	last_node_update = time (NULL);
+	/* preserve NODE_STATE_NO_RESPOND flag if set */
+	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	node_ptr->node_state = NODE_STATE_DOWN | resp_state;
+	bit_clear (up_node_bitmap,   node_inx);
+	bit_clear (idle_node_bitmap, node_inx);
+	(void) kill_running_job_by_node_name(name, false);
+
+	return;
+}
+
 /* ping_nodes - check that all nodes and daemons are alive,  
  *	get nodes in UNKNOWN state to register */
 void ping_nodes (void)
