@@ -52,52 +52,49 @@ structure:Laboratories and Other Field Facilities">
 <a href="quickstart_admin.html" class="nav">Guide</a></p></td>
 <td><img src="spacer.gif" width="10" height="1" alt=""></td>
 <td valign="top"><h2>Download</h2>
-<p>We expect to post SLURM for download when version 0.3 is completed and tested 
-in the first quarter of 2004. However, we will provide the code upon request (send 
-e-mail to <a href="mailto:jette@llnl.gov">jette@llnl.gov</a>). The available components 
-include: </p>
+<p>
+SLURM source can be downloaded from <br>
 <ul>
-<li><b>Source Code<br>
-</b>Includes the code for all SLURM daemons, commands, and libraries. Man pages 
-and other documents are included. </li>
-<ul>
-<li>Version 0.3 
-<a href="ftp://ftp.llnl.gov/pub/linux/slurm/beta/slurm-0.3.0.tar.gz">slurm-0.3.0.tar.gz</a></li>
+<a href="ftp://ftp.llnl.gov/pub/linux/slurm/">ftp.llnl.gov:/pub/linux/slurm</a>
 </ul>
-<li><b>Test Suite<br>
-</b>Includes a collection of about 100 functionality and stress tests for SLURM. 
+The latest stable release is version 0.3.
+</p>
+<p>
+Other software available for download includes
+<ul>
+<li><b>Test Suite (slurm-qa)</b><br>
+Includes a collection of about 100 functionality and stress tests for SLURM. 
 Approximately 1000 SLURM jobs will be executed by this test suite. Total execution 
-time will vary by system type and size but will be on the order of 40 minutes. </li>
-<ul>
-<li>Version 0.3
-<a href="ftp://ftp.llnl.gov/pub/linux/slurm/slurm-qa.0.3.0.tar.gz">slurm-qa.0.3.0.tar.gz</a></li>
-</ul>
-<li><b>PAM Module<br>
-</b>Pluggable Authentication Module (PAM) for restricting access to compute nodes 
+time will vary by system type and size but will be on the order of 40 minutes.
+</li>
+<li><b>PAM Modules (pam_slurm)</b><br>
+Pluggable Authentication Module (PAM) for restricting access to compute nodes 
 where SLURM performs resource management. Access to the node is restricted to 
-user root and users who have been allocated resources on that node. </li>
-<ul>
-<li>Version 1.2 (works with SLURM version 0.3)
-<a href="ftp://ftp.llnl.gov/pub/linux/slurm/slurm-pam.1.2.1.tar.gz">slurm-pam.1.2.1.tar.gz</a></li>
-</ul>
-<li><b>MPICH Patch<br>
-</b>MPICH normally uses the <b>rsh</b> program to initiate tasks. Because these 
-processes are not directly under the control of SLURM daemons, SLURM functionality 
-is restricted. For example, SLURM has no reliable means of determining which processes 
-are associated with a given job. This patch improves the integration of SLURM 
-and MPICH. </li>
-<ul>
-<li>NOTE: Patch unavailable as of April 2004.</li>
-</ul>
+user root and users who have been allocated resources on that node. <br>
+pam_slurm is available for download from 
+<a href="ftp://ftp.llnl.gov/pub/linux/pam_slurm/">ftp.llnl.gov:/pub/linux/pam_slurm</a>
 </ul>
 <h2>Related Software</h2>
 <ul>
 <li>Authentication plugins</li>
 <ul>
-<li><a href="http://www.theether.org/authd/">Authd</a></li>
-<li><a href="ftp://ftp.llnl.gov/pub/linux/munge/">Munge</a></li>
+<li><b>Munge</b><br>
+In order to compile the "auth/munge" authentication plugin for SLURM, you will need
+to build and install Munge, available from 
+<a href="ftp://ftp.llnl.gov/pub/linux/munge/">ftp.llnl.gov:/pub/linux/munge</a>.
+</li> </ul>
+<li>Interconnect plugins</li>
+<ul>
+<li><b>QsNet</b><br>
+In order to build the "switch/elan" plugin for SLURM, you will need
+the <b>qsnetlibs</b> development libraries from 
+<a href="http://www.quadrics.com">Quadrics</a>. The Elan
+plugin also requires the <b>libelanhosts</b> library and
+a corresponding /etc/elanhosts configuration file, used to map
+hostnames to Elan IDs. The libelanhosts source is available from
+<a href="ftp://ftp.llnl.gov/pub/linux/libelanhosts/">ftp.llnl.gov:/pub/linux/libelanhosts</a>.
 </ul>
-<li>MPI version supported</li>
+<li>MPI versions supported</li>
 <ul>
 <li><a href="http://www.lam-mpi.org/">LAM/MPI</a></li>
 <li><a href="http://www.mpi-softtech.com/">ChaMPIon, MPI Software Technology</a></li>
