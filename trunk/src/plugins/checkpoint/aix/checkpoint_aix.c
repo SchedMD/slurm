@@ -41,6 +41,7 @@
 
 #include "src/common/log.h"
 #include "src/common/pack.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -104,20 +105,23 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 		struct step_record * step_ptr )
 {
 	int rc = SLURM_SUCCESS;
+	struct check_job_info *check_ptr = 
+		(struct check_job_info *) step_ptr->check_job;
+
+	xassert(check_ptr);
 
 	switch (op) {
 		case CHECK_COMPLETE:
-			step_ptr->check_job->ckpt_errno = 0;
-			if (step_ptr->check_job->vacate)
+			check_ptr->ckpt_errno = 0;
 			break;
 		case CHECK_DISABLE:
-			step_ptr->check_job->disabled = 1;
+			check_ptr->disabled = 1;
 			break;
 		case CHECK_ENABLE:
-			step_ptr->check_job->disabled = 0;
+			check_ptr->disabled = 0;
 			break;
 		case CHECK_FAILED:
-			step_ptr->check_job->ckpt_errno = data;
+			check_ptr->ckpt_errno = data;
 			break;
 		case CHECK_CREATE:
 		case CHECK_VACATE:
@@ -135,8 +139,11 @@ extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 extern int slurm_ckpt_error ( struct step_record * step_ptr, 
 		uint32_t *ckpt_errno, char **ckpt_strerror)
 {
+	struct check_job_info *check_ptr = 
+		(struct check_job_info *) step_ptr->check_job;
+
 	if (ckpt_errno)
-		*ckpt_errno = step_ptr->check_job->ckpt_errno;
+		*ckpt_errno = check_ptr->ckpt_errno;
 	else
 		return EINVAL;
 
@@ -150,7 +157,7 @@ extern int slurm_ckpt_error ( struct step_record * step_ptr,
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
 {
-	*jobinfo = (check_jobinfo_t) xmalloc(sizeof(check_jobinfo_t));
+	*jobinfo = (check_jobinfo_t) xmalloc(sizeof(struct check_job_info));
 	return SLURM_SUCCESS;
 }
 
@@ -162,16 +169,22 @@ extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	pack16(job_info->ckpt_errno, buffer);
-	pack16(job_info->disabled, buffer);
+	struct check_job_info *check_ptr = 
+		(struct check_job_info *)jobinfo;
+ 
+	pack16(check_ptr->ckpt_errno, buffer);
+	pack16(check_ptr->disabled, buffer);
 
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	safe_unpack16(&jobinfo->ckpt_errno, buffer);
-	safe_unpack16(&jobinfo->disabled, buffer);
+	struct check_job_info *check_ptr =
+		(struct check_job_info *)jobinfo;
+
+	safe_unpack16(&check_ptr->ckpt_errno, buffer);
+	safe_unpack16(&check_ptr->disabled, buffer);
 
 	return SLURM_SUCCESS; 
 
