@@ -28,6 +28,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "src/slurmd/job.h"
 #include "src/slurmd/fname.h"
@@ -116,3 +119,65 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 	return name;
 }
 
+static int
+find_fname(void *obj, void *key)
+{
+	char *str  = obj;
+	char *name = key;
+
+	if (strcmp(str, name) == 0) 
+		return 1;
+	return 0;
+}
+
+static int
+_trunc_file(char *path)
+{
+	int flags = O_CREAT|O_TRUNC|O_WRONLY;
+	int fd;
+       
+	do {
+		fd = open(path, flags, 0644);
+	} while ((fd < 0) && (errno == EINTR));
+
+	if (fd < 0) {
+		error("Unable to open `%s': %m", path);
+		return -1;
+	} else
+		debug3("opened and truncated `%s'", path);
+
+	if (close(fd) < 0)
+		error("Unable to close `%s': %m", path);
+
+	return 0;
+}
+
+static void
+fname_free(void *name)
+{
+	xfree(name);
+}
+int 
+fname_trunc_all(slurmd_job_t *job, const char *fmt)
+{
+	int i, rc;
+	char *fname;
+	ListIterator filei;
+	List files = list_create((ListDelF)fname_free);
+
+	for (i = 0; i < job->ntasks; i++) {
+		fname = fname_create(job, fmt, job->task[i]->gid);
+		if (!list_find_first(files, (ListFindF) find_fname, fname))
+			list_append(files, (void *)fname);
+	}	
+
+	filei = list_iterator_create(files);
+	while ((fname = list_next(filei))) {
+		if ((rc = _trunc_file(fname)) < 0)
+			goto done;
+	}
+
+    done:
+	list_destroy(files);
+	return rc;
+}
