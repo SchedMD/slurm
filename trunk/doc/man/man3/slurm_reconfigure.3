@@ -129,6 +129,10 @@ node state transition is not valid.
 .LP
 \fBESLURM_INVALID_PARTITION_NAME\fR The requested partition name is not valid. 
 .LP
+\fBESLURM_INVALID_AUTHTYPE_CHANGE\fR The \fBAuthType\fR parameter can
+not be changed using the \fBslurm_reconfigure\fR function, but all SLURM
+daemons and commands must be restarted. See \fBslurm.conf\fR(5) for more information.
+.LP
 \fBESLURM_INVALID_SCHEDTYPE_CHANGE\fR The \fBSchedulerType\fR parameter can 
 not be changed using the \fBslurm_reconfigure\fR function, but the 
 \fBslurmctld\fR daemon must be restarted. Manual changes to existing job 

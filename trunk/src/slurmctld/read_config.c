@@ -876,13 +876,19 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
  * RET zero or error code
  */
 static int  _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
-		char *old_auth_type, 
-		char *old_sched_type, char *old_switch_type)
+		char *old_auth_type, char *old_sched_type, 
+		char *old_switch_type)
 {
 	int rc = SLURM_SUCCESS;
 
-	xfree(ctl_conf_ptr->authtype);
-	ctl_conf_ptr->authtype = old_auth_type;
+	if (old_auth_type) {
+		if (strcmp(old_auth_type, ctl_conf_ptr->authtype)) {
+			xfree(ctl_conf_ptr->authtype);
+			ctl_conf_ptr->authtype = old_auth_type;
+			rc =  ESLURM_INVALID_AUTHTYPE_CHANGE;
+		} else	/* free duplicate value */
+			xfree(old_auth_type);
+	}
 
 	if (old_sched_type) {
 		if (strcmp(old_sched_type, ctl_conf_ptr->schedtype)) {
