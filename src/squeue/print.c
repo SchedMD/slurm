@@ -39,6 +39,7 @@
 
 static int _filter_job(job_info_t * job);
 static int _filter_step(job_step_info_t * step);
+static int _print_str(char *str, int width, bool right, bool cut_output);
 
 /*****************************************************************************
  * Global Print Functions
@@ -178,7 +179,7 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 	return SLURM_SUCCESS;
 }
 
-int _print_str(char *str, int width, bool right, bool cut_output)
+static int _print_str(char *str, int width, bool right, bool cut_output)
 {
 	char format[64];
 	int printed = 0;
