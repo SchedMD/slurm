@@ -46,8 +46,37 @@
 #include <unistd.h>
 #include <limits.h>	/* INT_MAX */
 #include <stdio.h>
-#include <elan3/elan3.h>
-#include <elan3/elanvp.h>
+
+#if HAVE_LIBELANCTRL
+# include <elan/elanctrl.h>
+# include <elan/capability.h>
+
+/* These are taken from elan3/elanvp.h, which we don't
+ *  want to include here since we are using the new
+ *  version-nonspecific libelanctrl.
+ *  (XXX: What is the equivalent in libelanctrl?)
+ */
+# define ELAN_USER_BASE_CONTEXT_NUM    0x020
+# define ELAN_USER_TOP_CONTEXT_NUM     0x7ff
+
+# define Version      cap_version
+# define HighNode     cap_highnode
+# define LowNode      cap_lownode
+# define HighContext  cap_highcontext
+# define LowContext   cap_lowcontext
+# define MyContext    cap_mycontext
+# define Bitmap       cap_bitmap
+# define Type         cap_type
+# define UserKey      cap_userkey
+# define RailMask     cap_railmask
+# define Values       key_values
+#elif HAVE_LIBELAN3 
+# include <elan3/elan3.h>
+# include <elan3/elanvp.h>
+#else
+# error "Must have either libelan3 or libelanctrl to compile this module!"
+#endif /* HAVE_LIBELANCTRL */
+
 #include <rms/rmscall.h>
 
 #include <slurm/slurm_errno.h>
@@ -94,7 +123,6 @@ struct qsw_jobinfo {
 	int             j_magic;
 	int             j_prognum;
 	ELAN_CAPABILITY j_cap;
-	ELAN3_CTX      *j_ctx;
 };
 
 /* Copy library state */
@@ -275,7 +303,7 @@ qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 	if (!new)
 		slurm_seterrno_ret(ENOMEM);
 	new->j_magic = QSW_JOBINFO_MAGIC;
-	new->j_ctx = NULL;
+	
 	*jp = new;
 	return 0;
 }
@@ -306,7 +334,6 @@ qsw_free_jobinfo(qsw_jobinfo_t j)
 	if (j == NULL)
 		return;
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
-	assert(j->j_ctx == NULL);
 	j->j_magic = 0;
 	free(j);
 }
@@ -332,14 +359,26 @@ qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	for (i = 0; i < 4; i++)
 		pack32(j->j_cap.UserKey.Values[i], buffer);
 	pack16(j->j_cap.Type, 		buffer);
+#if HAVE_LIBELANCTRL
+#  ifdef ELAN_CAP_ELAN3
+	pack16(j->j_cap.cap_elan_type,  buffer);
+#  else
+	j->j_cap.cap_spare = ELAN_CAP_UNINITIALISED;
+	pack16(j->j_cap.cap_spare,      buffer);
+#  endif 
+#endif
+#if HAVE_LIBELAN3
 	pack16(j->j_cap.padding, 	buffer);
+#endif 
 	pack32(j->j_cap.Version,	buffer);
 	pack32(j->j_cap.LowContext, 	buffer);
 	pack32(j->j_cap.HighContext, 	buffer);
 	pack32(j->j_cap.MyContext, 	buffer);
 	pack32(j->j_cap.LowNode, 	buffer);
 	pack32(j->j_cap.HighNode, 	buffer);
+#if HAVE_LIBELAN3
 	pack32(j->j_cap.Entries, 	buffer);
+#endif 
 	pack32(j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
 		pack32(j->j_cap.Bitmap[i], buffer);
@@ -366,14 +405,25 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 	for (i = 0; i < 4; i++)
 		safe_unpack32(&j->j_cap.UserKey.Values[i], buffer);
 	safe_unpack16(&j->j_cap.Type,		buffer);
+#if HAVE_LIBELANCTRL
+#  ifdef ELAN_CAP_ELAN3
+	safe_unpack16(&j->j_cap.cap_elan_type,  buffer);
+#  else
+	safe_unpack16(&j->j_cap.cap_spare,      buffer);
+#  endif
+#endif
+#if HAVE_LIBELAN3  
 	safe_unpack16(&j->j_cap.padding, 	buffer);	    
+#endif
 	safe_unpack32(&j->j_cap.Version,	buffer); 	    
 	safe_unpack32(&j->j_cap.LowContext, 	buffer);
 	safe_unpack32(&j->j_cap.HighContext,	buffer);
 	safe_unpack32(&j->j_cap.MyContext,	buffer);
 	safe_unpack32(&j->j_cap.LowNode, 	buffer);
 	safe_unpack32(&j->j_cap.HighNode,	buffer);
+#if HAVE_LIBELAN3
 	safe_unpack32(&j->j_cap.Entries, 	buffer);
+#endif
 	safe_unpack32(&j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
 		safe_unpack32(&j->j_cap.Bitmap[i], buffer);
@@ -468,7 +518,11 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	_srand_if_needed();
 
 	/* start with a clean slate */
+#if HAVE_LIBELANCTRL
+	elan_nullcap(cap);
+#else
 	elan3_nullcap(cap);
+#endif
 
 	/* initialize for single rail and either block or cyclic allocation */
 	if (cyclic_alloc)
@@ -477,6 +531,14 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 		cap->Type = ELAN_CAP_TYPE_BLOCK;
 	cap->Type |= ELAN_CAP_TYPE_MULTI_RAIL;
 	cap->RailMask = 1;
+
+#if HAVE_LIBELANCTRL
+#  ifdef ELAN_CAP_ELAN3
+	cap->cap_elan_type = ELAN_CAP_ELAN3;
+#  else
+	cap->cap_spare = ELAN_CAP_UNINITIALISED;
+#  endif
+#endif 
 
 	/* UserKey is 128 bits of randomness which should be kept private */
         for (i = 0; i < 4; i++)
@@ -492,7 +554,10 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	assert(cap->LowNode != -1);
 	cap->HighNode = bit_fls(nodeset);
 	assert(cap->HighNode != -1);
+
+#if HAVE_LIBELAN3
 	cap->Entries = nprocs;
+#endif
 
 #if USE_OLD_LIBELAN
 	/* set the hw broadcast bit if consecutive nodes */
@@ -541,7 +606,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 /*
  * Create all the QsNet related information needed to set up a QsNet parallel
  * program and store it in the qsw_jobinfo struct.  
- * Call this on the "client" process, e.g. pdsh, srun, slurctld, etc..
+ * Call this on the "client" process, e.g. pdsh, srun, slurmctld, etc..
  */
 int
 qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset, 
@@ -560,7 +625,6 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
       
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
-	j->j_ctx = NULL;
 	_init_elan_capability(&j->j_cap, nprocs, nnodes, nodeset, 
 	                      cyclic_alloc);
 
@@ -621,14 +685,15 @@ qsw_prgdestroy(qsw_jobinfo_t jobinfo)
 void
 qsw_prog_fini(qsw_jobinfo_t jobinfo)
 {
+	/* Do nothing... apparently this will be handled by
+	 *  callbacks in the kernel exit handlers ... 
+	 */
+#if 0
 	if (jobinfo->j_ctx) {
-#if USE_OLD_LIBELAN
-		_elan3_fini(jobinfo->j_ctx);
-#else
 		elan3_control_close(jobinfo->j_ctx);
-#endif
 		jobinfo->j_ctx = NULL;
 	}
+#endif
 }
 
 /*
@@ -638,14 +703,30 @@ int
 qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 {
 	int err;
-#if USE_OLD_LIBELAN
-	/* obtain an Elan context (not the same as a hardware context num!) */
-	if ((jobinfo->j_ctx = _elan3_init(0)) == NULL) {
-		slurm_seterrno(EELAN3INIT);
-		goto fail;
-	}
-#else
 	int i, nrails;
+#if HAVE_LIBELANCTRL
+	nrails = elan_nrails(&jobinfo->j_cap);
+
+	for (i = 0; i < nrails; i++) {
+		ELANCTRL_HANDLE handle;
+		/*
+		 *  Open up the Elan control device so we can create
+		 *   a new capability.
+		 */
+		if (elanctrl_open(&handle) != 0) {
+			slurm_seterrno(EELAN3CONTROL);
+			goto fail;
+		}
+
+		/*  Push capability into device driver */
+		if (elanctrl_create_cap(handle, &jobinfo->j_cap) < 0) {
+			error("elanctrl_create_cap: %m");
+			slurm_seterrno(EELAN3CREATE);
+			goto fail;
+		}
+	}
+
+#else /* !HAVE_LIBELANCTRL */
 	nrails = elan3_nrails(&jobinfo->j_cap);
 
 	for (i = 0; i < nrails; i++) {
@@ -746,20 +827,31 @@ qsw_setcap(qsw_jobinfo_t jobinfo, int procnum)
 int
 qsw_getnodeid(void)
 {
-	ELAN3_CTX *ctx = _elan3_init(0); /* rail 0 */
 	int nodeid = -1;
+#if HAVE_LIBELANCTRL
+	ELAN_DEV_IDX    devidx = 0;
+	ELANCTRL_HANDLE handle;
+	ELAN_POSITION   position;
 
+	if (elanctrl_open(&handle) != 0) 
+		slurm_seterrno_ret(EGETNODEID);
+
+	if (elanctrl_get_position(handle, devidx, &position) != 0)
+		slurm_seterrno_ret(EGETNODEID);
+
+	nodeid = position.pos_nodeid;
+
+#else
+	ELAN3_CTX *ctx = _elan3_init(0); /* rail 0 */
 	if (ctx) {
 		nodeid = ctx->devinfo.Position.NodeId;
-#if USE_OLD_LIBELAN
-		_elan3_fini(ctx);
-#else
 		elan3_control_close(ctx);
-#endif
 	}
+#endif
 	if (nodeid == -1)
 		slurm_seterrno(EGETNODEID);
 	return nodeid;
+
 }
 
 /*
@@ -869,7 +961,6 @@ qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum)
 
 #define _USE_ELAN3_CAPABILITY_STRING 1
 
-
 #ifndef _USE_ELAN3_CAPABILITY_STRING
 #define TRUNC_BITMAP 1
 static void
@@ -896,11 +987,17 @@ qsw_capability_string(struct qsw_jobinfo *j, char *buf, size_t size)
 
 	cap = &j->j_cap;
 
+#if HAVE_LIBELANCTRL
+	snprintf(buf, size, "prg=%d ctx=%x.%x nodes=%d.%d",
+	         j->j_prognum, cap->LowContext, cap->HighContext, 
+		 cap->LowNode, cap->HighNode);
+#else 
 	snprintf(buf, size, "prg=%d ctx=%x.%x nodes=%d.%d entries=%d",
 	         j->j_prognum, cap->LowContext, cap->HighContext, 
 		 cap->LowNode, cap->HighNode, 
 	         cap->Entries);
-	         
+#endif
+         
 	return buf;
 }
 
@@ -918,20 +1015,26 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 	cap = &jobinfo->j_cap;
 	/* use elan3_capability_string as a shorter alternative for now */
 #if _USE_ELAN3_CAPABILITY_STRING
+#  if HAVE_LIBELANCTRL
+	fprintf(fp, "%s\n", elan_capability_string(cap, str));
+#  else
 	fprintf(fp, "%s\n", elan3_capability_string(cap, str));
+#  endif
 #else 
 	fprintf(fp, "cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
 			cap->UserKey.Values[0], cap->UserKey.Values[1],
 			cap->UserKey.Values[2], cap->UserKey.Values[3]);
 	/*fprintf(fp, "cap.Version=%d\n", cap->Version);*/
 	fprintf(fp, "cap.Type=0x%hx\n", cap->Type);
-	fprintf(fp, "cap.padding=%hd\n", cap->padding);
 	fprintf(fp, "cap.LowContext=%d\n", cap->LowContext);
 	fprintf(fp, "cap.HighContext=%d\n", cap->HighContext);
 	fprintf(fp, "cap.MyContext=%d\n", cap->MyContext);
 	fprintf(fp, "cap.LowNode=%d\n", cap->LowNode);
 	fprintf(fp, "cap.HighNode=%d\n", cap->HighNode);
+#if HAVE_LIBELAN3
+	fprintf(fp, "cap.padding=%hd\n", cap->padding);
 	fprintf(fp, "cap.Entries=%d\n", cap->Entries);
+#endif
 	fprintf(fp, "cap.Railmask=0x%x\n", cap->RailMask);
 	fprintf(fp, "cap.Bitmap=");
 	_print_capbitmap(fp, cap);
