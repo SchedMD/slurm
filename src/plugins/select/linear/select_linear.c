@@ -154,7 +154,7 @@ extern int select_p_part_init(List part_list)
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request.
+ *	identify the nodes which "best" satisfy the request.
  * 	"best" is defined as either single set of consecutive nodes satisfying 
  *	the request and leaving the minimum number of unused nodes OR 
  *	the fewest number of consecutive node sets
@@ -373,8 +373,9 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		consec_cpus[best_fit_location] = 0;
 		consec_nodes[best_fit_location] = 0;
 	}
+
 	if (error_code && (rem_cpus <= 0) && 
-	    max_nodes  && ((max_nodes - rem_nodes) >= min_nodes))
+	    ((max_nodes == 0) || ((max_nodes - rem_nodes) >= min_nodes)))
 		error_code = SLURM_SUCCESS;
 
 	xfree(consec_cpus);

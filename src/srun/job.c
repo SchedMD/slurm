@@ -39,6 +39,7 @@
 #include "src/common/cbuf.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/xmalloc.h"
@@ -234,9 +235,10 @@ job_create_noalloc(void)
 	job = _job_create_internal(ai);
 
 	for (i = 0; i < job->nhosts; i++) {
+		char *nd = get_conf_node_hostname(job->host[i]);
 		slurm_set_addr ( &job->slurmd_addr[i], 
-				  slurm_get_slurmd_port(), 
-				  job->host[i] );
+				  slurm_get_slurmd_port(), nd );
+		xfree(nd);
 	}
 
 	_job_fake_cred(job);
@@ -445,8 +447,11 @@ _compute_task_count(allocation_info_t *info)
 static void
 _set_nprocs(allocation_info_t *info)
 {
-	if (!opt.nprocs_set)
+	if (!opt.nprocs_set) {
 		opt.nprocs = _compute_task_count(info);
+		if (opt.cpus_set)
+			opt.nprocs_set = true;	/* implicit */
+	}
 }
 
 
@@ -476,7 +481,7 @@ _job_create_internal(allocation_info_t *info)
 
 	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);
-#ifdef HAVE_FRONT_END
+#ifdef HAVE_FRONT_END	/* Limited job step support */
 	/* All jobs execute through front-end on Blue Gene/L.
 	 * Normally we would not permit execution of job steps, 
 	 * but can fake it by just allocating all tasks to 

@@ -487,11 +487,13 @@ typedef struct slurm_ctl_conf {
 				 * inactive resource allocation is released */
 	char *job_comp_type;	/* job completion logger type */
 	char *job_comp_loc;	/* job completion logging location */
+	uint16_t kill_tree;     /* Kill all descendants processes */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	uint16_t max_job_cnt;	/* maximum number of active jobs */
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */
+	uint16_t mpich_gm_dir;  /* MPICH-GM direct support */
 	char *plugindir;	/* pathname to plugins */
 	char *prolog;		/* pathname of job prolog */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 

@@ -41,6 +41,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -56,6 +57,193 @@
 inline static void _normalize_debug_level(uint16_t *level);
 static int  _parse_node_spec (char *in_line);
 static int  _parse_part_spec (char *in_line);
+
+
+typedef struct names_ll_s {
+	char *node_hostname;
+	char *node_name;
+	struct names_ll_s *next;
+} names_ll_t;
+#define NAME_HASH_LEN 512
+static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
+static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
+
+static void _free_name_hashtbl()
+{
+	int i;
+	names_ll_t *p, *q;
+
+	for (i=0; i<NAME_HASH_LEN; i++) {
+		p = host_to_node_hashtbl[i];
+		while (p) {
+			xfree(p->node_hostname);
+			xfree(p->node_name);
+			q = p->next;
+			xfree(p);
+			p = q;
+		}
+		host_to_node_hashtbl[i] = NULL;
+		p = node_to_host_hashtbl[i];
+		while (p) {
+			xfree(p->node_hostname);
+			xfree(p->node_name);
+			q = p->next;
+			xfree(p);
+			p = q;
+		}
+		node_to_host_hashtbl[i] = NULL;
+	}
+}
+
+static void _init_name_hashtbl()
+{
+	return;
+}
+
+static int _get_hash_idx(char *s)
+{
+	int i;
+
+	i = 0;
+	while (*s) i += (int)*s++;
+	return i % NAME_HASH_LEN;
+}
+
+static void _push_to_hashtbl(char *node, char *host)
+{
+	int idx;
+	names_ll_t *p, *new;
+	char *hh;
+
+	hh = host ? host : node;
+	idx = _get_hash_idx(hh);
+#ifndef HAVE_FRONT_END		/* Operate only on front-end */
+	p = host_to_node_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->node_hostname, hh)==0) {
+			fatal("Duplicated NodeHostname in the config file");
+			return;
+		}
+		p = p->next;
+	}
+#endif
+	new = (names_ll_t *)xmalloc(sizeof(*new));
+	new->node_hostname = xstrdup(hh);
+	new->node_name = xstrdup(node);
+	new->next = host_to_node_hashtbl[idx];
+	host_to_node_hashtbl[idx] = new;
+
+	idx = _get_hash_idx(node);
+	p = node_to_host_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->node_name, node)==0) {
+			fatal("Duplicated NodeName in the config file");
+			return;
+		}
+		p = p->next;
+	}
+	new = (names_ll_t *)xmalloc(sizeof(*new));
+	new->node_name = xstrdup(node);
+	new->node_hostname = xstrdup(hh);
+	new->next = node_to_host_hashtbl[idx];
+	node_to_host_hashtbl[idx] = new;
+}
+
+/*
+ * Register the given NodeName in the alias table.
+ * If node_hostname is NULL, only node_name will be used and 
+ * no lookup table record is created.
+ */
+extern void register_conf_node_aliases(char *node_name, char *node_hostname)
+{
+	hostlist_t node_list = NULL, host_list = NULL;
+	char *hn = NULL, *nn;
+	static char *me = NULL;
+
+	if (node_hostname == NULL
+	|| node_name == NULL || *node_name == '\0')
+		return;
+	if (strcasecmp(node_name, "DEFAULT") == 0) {
+		if (node_hostname) {
+			fatal("NodeHostname for NodeName=DEFAULT is illegal");
+		}
+		return;
+	}
+	if (!me) {
+		me = xmalloc(MAX_NAME_LEN);
+		getnodename(me, MAX_NAME_LEN);
+	}
+	if (strcasecmp(node_name, "localhost") == 0)
+		node_name = me;
+	if (node_hostname && (strcasecmp(node_hostname, "localhost") == 0))
+		node_hostname = me;
+
+	node_list = hostlist_create(node_name);
+#ifdef HAVE_FRONT_END	/* Common NodeHostname for all NodeName values */
+	/* Expect one common node_hostname for all back-end nodes */
+	hn = node_hostname;
+#else
+	if (node_hostname && *node_hostname != '\0') {
+		host_list = hostlist_create(node_hostname);
+		if (hostlist_count(node_list) != hostlist_count(host_list))
+			fatal("NodeName and NodeHostname have different "
+				"number of records");
+	}
+#endif
+	while ((nn = hostlist_shift(node_list))) {
+		if (host_list)
+			hn = hostlist_shift(host_list);
+		_push_to_hashtbl(nn, hn);
+		if (host_list)
+			free(hn);
+		free(nn);
+	}
+	hostlist_destroy(node_list);
+	if (host_list)
+		hostlist_destroy(host_list);
+
+	return;
+}
+
+/*
+ * get_conf_node_hostname - Return the NodeHostname for given NodeName
+ */
+extern char *get_conf_node_hostname(char *node_name)
+{
+	int idx;
+	names_ll_t *p;
+
+	idx = _get_hash_idx(node_name);
+	p = node_to_host_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->node_name, node_name) == 0) {
+			return xstrdup(p->node_hostname);
+		}
+		p = p->next;
+	}
+	return xstrdup(node_name);
+}
+
+/*
+ * get_conf_node_name - Return the NodeName for given NodeHostname
+ */
+extern char *get_conf_node_name(char *node_hostname)
+{
+	int idx;
+	names_ll_t *p;
+
+	idx = _get_hash_idx(node_hostname);
+	p = host_to_node_hashtbl[idx];
+	while (p) {
+		if (strcmp(p->node_hostname, node_hostname) == 0) {
+			return xstrdup(p->node_name);
+		}
+		p = p->next;
+	}
+	return xstrdup(node_hostname);
+}
+
+
 
 
 /* getnodename - equivalent to gethostname, but return only the first 
@@ -119,6 +307,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->state_save_location);
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->tmp_fs);
+
+	_free_name_hashtbl();
 }
 
 /* 
@@ -146,9 +336,11 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
+	ctl_conf_ptr->kill_tree   		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
+	ctl_conf_ptr->mpich_gm_dir		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
@@ -173,6 +365,10 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->switch_type);
 	xfree (ctl_conf_ptr->tmp_fs);
 	ctl_conf_ptr->wait_time			= (uint16_t) NO_VAL;
+	
+	_free_name_hashtbl();
+	_init_name_hashtbl();
+
 	return;
 }
 
@@ -201,6 +397,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int slurmctld_debug = -1, slurmd_debug = -1;
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	int slurmctld_port = -1, slurmd_port = -1;
+	int mpich_gm_dir = -1, kill_tree = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *checkpoint_type = NULL, *control_addr = NULL;
 	char *control_machine = NULL, *epilog = NULL;
@@ -236,9 +433,11 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
 		"JobCredentialPublicCertificate=", 's', 
 					&job_credential_public_certificate,
+		"KillTree=", 'd', &kill_tree,
 		"KillWait=", 'd', &kill_wait,
 		"MaxJobCount=", 'd', &max_job_cnt,
 		"MinJobAge=", 'd', &min_job_age,
+		"MpichGmDirectSupport=", 'd', &mpich_gm_dir,
 		"PluginDir=", 's', &plugindir,
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
@@ -391,6 +590,20 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 					job_credential_public_certificate;
 	}
 
+	if ( kill_tree != -1) {
+		if ( ctl_conf_ptr->kill_tree != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "KillTree");
+#if HAVE_AIX
+		if (kill_tree) {
+			error("KillTree=%d presently invalid on AIX", 
+				kill_tree);
+			kill_tree = 0;
+		}
+#else
+		ctl_conf_ptr->kill_tree = kill_tree;
+#endif
+	}
+
 	if ( kill_wait != -1) {
 		if ( ctl_conf_ptr->kill_wait != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "KillWait");
@@ -407,6 +620,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->min_job_age != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "MinJobAge");
 		ctl_conf_ptr->min_job_age = min_job_age;
+	}
+
+	if ( mpich_gm_dir != -1) {
+		if ( ctl_conf_ptr->mpich_gm_dir != (uint16_t) NO_VAL)
+			error (MULTIPLE_VALUE_MSG, "MpichGmDirectSupport");
+		ctl_conf_ptr->mpich_gm_dir = mpich_gm_dir;
 	}
 
 	if ( plugindir ) {
@@ -602,12 +821,14 @@ _parse_node_spec (char *in_line)
 	int error_code;
 	char *feature = NULL, *node_addr = NULL, *node_name = NULL;
 	char *state = NULL, *reason=NULL;
+	char *node_hostname = NULL;
 	int cpus_val, real_memory_val, tmp_disk_val, weight_val;
 
 	error_code = slurm_parser (in_line,
 		"Feature=", 's', &feature, 
 		"NodeAddr=", 's', &node_addr, 
 		"NodeName=", 's', &node_name, 
+		"NodeHostname=", 's', &node_hostname, 
 		"Procs=", 'd', &cpus_val, 
 		"RealMemory=", 'd', &real_memory_val, 
 		"Reason=", 's', &reason, 
@@ -619,13 +840,18 @@ _parse_node_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
+	if (node_name) {
+		register_conf_node_aliases(node_name, node_hostname);
+	}
+
 	xfree(feature);
 	xfree(node_addr);
 	xfree(node_name);
+	xfree(node_hostname);
 	xfree(reason);
 	xfree(state);
 
-	return 0;
+	return error_code;
 }
 
 /*
@@ -791,7 +1017,7 @@ void
 validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	if ((ctl_conf_ptr->backup_controller != NULL) &&
-	    (strcmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
+	    (strcasecmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
 		xfree (ctl_conf_ptr->backup_controller);
 		ctl_conf_ptr->backup_controller = xmalloc (MAX_NAME_LEN);
 		if ( getnodename (ctl_conf_ptr->backup_controller, 
@@ -812,7 +1038,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->control_machine == NULL)
 		fatal ("validate_config: ControlMachine not specified.");
-	else if (strcmp("localhost", ctl_conf_ptr->control_machine) == 0) {
+	else if (strcasecmp("localhost", ctl_conf_ptr->control_machine) == 0) {
 		xfree (ctl_conf_ptr->control_machine);
 		ctl_conf_ptr->control_machine = xmalloc (MAX_NAME_LEN);
 		if ( getnodename (ctl_conf_ptr->control_machine, 
@@ -864,6 +1090,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->job_comp_type == NULL)
 		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 
+	if (ctl_conf_ptr->kill_tree == (uint16_t) NO_VAL)
+		ctl_conf_ptr->kill_tree = DEFAULT_KILL_TREE;
+
 	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
 		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
 
@@ -872,6 +1101,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->min_job_age == (uint16_t) NO_VAL)
 		ctl_conf_ptr->min_job_age = DEFAULT_MIN_JOB_AGE;
+
+	if (ctl_conf_ptr->mpich_gm_dir == (uint16_t) NO_VAL)
+		ctl_conf_ptr->mpich_gm_dir = DEFAULT_MPICH_GM_DIR;
 
 	if (ctl_conf_ptr->plugindir == NULL)
 		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);

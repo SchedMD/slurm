@@ -260,9 +260,11 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 					job_credential_private_key);
 	conf_ptr->job_credential_public_certificate = xstrdup(slurmctld_conf.
 					job_credential_public_certificate);
+	conf_ptr->kill_tree           = slurmctld_conf.kill_tree;
 	conf_ptr->kill_wait           = slurmctld_conf.kill_wait;
 	conf_ptr->max_job_cnt         = slurmctld_conf.max_job_cnt;
 	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
+	conf_ptr->mpich_gm_dir        = slurmctld_conf.mpich_gm_dir;
 	conf_ptr->plugindir           = xstrdup(slurmctld_conf.plugindir);
 	conf_ptr->prolog              = xstrdup(slurmctld_conf.prolog);
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
@@ -470,7 +472,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-#ifdef HAVE_FRONT_END
+#ifdef HAVE_FRONT_END	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */
 	if (!_is_super_user(uid)) {
@@ -959,7 +961,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 
-#ifdef HAVE_FRONT_END
+#ifdef HAVE_FRONT_END	/* Limited job step support */
 	/* Non-super users not permitted to run job steps on front-end.
 	 * A single slurmd can not handle a heavy load. */
 	if (!_is_super_user(uid)) {

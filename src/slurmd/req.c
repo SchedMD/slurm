@@ -35,7 +35,6 @@
 #include <sys/param.h>
 #include <unistd.h>
 #include <stdlib.h>
-
 #include <sys/poll.h>
 #include <sys/wait.h>
 
@@ -45,6 +44,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
@@ -53,6 +53,7 @@
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/mgr.h"
+#include "src/slurmd/kill_tree.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -62,7 +63,8 @@
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
-static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
+static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *,
+			slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
@@ -77,7 +79,8 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
-static int  _spawn_task(spawn_task_request_msg_t *, slurm_addr *);
+static int  _spawn_task(spawn_task_request_msg_t *, slurm_addr *,
+			slurm_addr *);
 
 static bool _pause_for_job_completion (uint32_t jobid, int maxtime);
 static int _waiter_init (uint32_t jobid);
@@ -267,23 +270,24 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 }
 
 static int
-_launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
+_launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli,
+	      slurm_addr *self)
 {
 	int retval;
 
 	if ((retval = _fork_new_slurmd()) == 0)
-		exit (mgr_launch_tasks(req, cli));
+		exit (mgr_launch_tasks(req, cli, self));
 
 	return (retval <= 0) ? retval : 0;
 }
 
 static int
-_spawn_task(spawn_task_request_msg_t *req, slurm_addr *cli)
+_spawn_task(spawn_task_request_msg_t *req, slurm_addr *cli, slurm_addr *self)
 {
 	int retval;
 
 	if ((retval = _fork_new_slurmd()) == 0)
-		exit (mgr_spawn_task(req, cli));
+		exit (mgr_spawn_task(req, cli, self));
 
 	return (retval <= 0) ? retval : 0;
 }
@@ -331,7 +335,7 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 		goto fail;
 	}
 
-	if (!hostset_within(hset, conf->hostname)) {
+	if (!hostset_within(hset, conf->node_name)) {
 		error("job credential invald for this host [%d.%d %ld %s]",
 		      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
 		goto fail;
@@ -360,6 +364,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
 	bool     super_user = false, run_prolog = false;
+	slurm_addr self;
+	socklen_t adlen;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -395,7 +401,9 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	if (_launch_tasks(req, cli) < 0)
+	adlen = sizeof(self);
+	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
+	if (_launch_tasks(req, cli, &self) < 0)
 		errnum = errno;
 
     done:
@@ -430,6 +438,8 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	uint32_t jobid  = req->job_id;
 	uint32_t stepid = req->job_step_id;
 	bool     super_user = false, run_prolog = false;
+	slurm_addr self;
+	socklen_t adlen;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 
@@ -465,7 +475,9 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	if (_spawn_task(req, cli) < 0)
+	adlen = sizeof(self);
+	_slurm_getsockname(msg->conn_fd, (struct sockaddr *)&self, &adlen);
+	if (_spawn_task(req, cli, &self) < 0)
 		errnum = errno;
 
     done:
@@ -617,16 +629,20 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-	if (kill(-step->sid, req->signal) < 0)
-		rc = errno; 
-
-	if (rc == SLURM_SUCCESS)
-		verbose("Sent signal %d to %u.%u", 
-			req->signal, req->job_id, req->job_step_id);
-	else
-		verbose("Error sending signal %d to %u.%u: %s", 
-			req->signal, req->job_id, req->job_step_id, 
-			slurm_strerror(rc));
+	if (conf->cf.kill_tree) {
+		kill_proc_tree(step->sid, req->signal);
+		rc = SLURM_SUCCESS;
+	} else {
+		if (kill(-step->sid, req->signal) < 0)
+			rc = errno; 
+		if (rc == SLURM_SUCCESS)
+			verbose("Sent signal %d to %u.%u", 
+				req->signal, req->job_id, req->job_step_id);
+		else
+			verbose("Error sending signal %d to %u.%u: %s", 
+				req->signal, req->job_id, req->job_step_id, 
+				slurm_strerror(rc));
+	}
 
   done:
 	if (step)
@@ -835,7 +851,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	debug2("update step addrs rc = %d", rc);
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
-	resp.node_name        = conf->hostname;
+	resp.node_name        = conf->node_name;
 	resp.srun_node_id     = req->srun_node_id;
 	resp.return_code      = rc;
 
@@ -862,8 +878,11 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 	int step_cnt       = 0;  
 
 	while ((s = list_next(i))) {
-		if (s->jobid != jobid)		/* wrong job */
+		if (s->jobid != jobid) {
+			debug("Wrong job: s->jobid=%d, jobid=%d",
+			      s->jobid, jobid);
 			continue;
+		}
 
 		if (s->sid <= 0) {
 			debug ("bad sid value in shm for %d!", jobid);
@@ -874,10 +893,16 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 			continue;
 
 		step_cnt++;
-		debug2("signal %d to job %u (pg:%d)", sig, jobid, s->sid);
 
-		if (kill(-s->sid, sig) < 0)
-			error("kill jid %d sid %d: %m", s->jobid, s->sid);
+		if (conf->cf.kill_tree) {
+			kill_proc_tree(s->sid, sig);
+		} else {
+			debug2("signal %d to job %u (pg:%d)",
+			       sig, jobid, s->sid);
+			if (kill(-s->sid, sig) < 0)
+				error("kill jid %d sid %d: %m",
+				      s->jobid, s->sid);
+		}
 	}
 	list_destroy(steps);
 	if (step_cnt == 0)
@@ -918,7 +943,7 @@ _epilog_complete(uint32_t jobid, int rc)
 
 	req.job_id      = jobid;
 	req.return_code = rc;
-	req.node_name   = conf->hostname;
+	req.node_name   = conf->node_name;
 
 	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
 	msg.data        = &req;
@@ -1161,5 +1186,3 @@ _run_epilog(uint32_t jobid, uid_t uid)
 	slurm_mutex_unlock(&conf->config_mutex);
 	return error_code;
 }
-
-

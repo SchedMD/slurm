@@ -96,6 +96,9 @@ typedef struct srun_job {
 
 	slurm_addr *slurmd_addr;/* slurm_addr vector to slurmd's */
 
+	pthread_t gtid;		/* GMPI master thread */
+	int gmpi_fd;		/* fd for accept(2) */
+
 	pthread_t sigid;	/* signals thread tid		  */
 
 	pthread_t jtid;		/* job control thread id 	  */

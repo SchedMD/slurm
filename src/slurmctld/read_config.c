@@ -57,7 +57,8 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUF_SIZE 1024
+#define BUF_SIZE	1024
+#define MAX_NAME_LEN	32
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
@@ -303,7 +304,7 @@ static int _init_all_slurm_conf(void)
 static int _parse_node_spec(char *in_line)
 {
 	char *node_addr = NULL, *node_name = NULL, *state = NULL;
-	char *feature = NULL, *reason = NULL;
+	char *feature = NULL, *reason = NULL, *node_hostname = NULL;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
 	struct node_record   *node_ptr;
@@ -321,10 +322,16 @@ static int _parse_node_spec(char *in_line)
 		return error_code;
 	if (node_name == NULL)
 		return 0;	/* no node info */
+	if (strcasecmp(node_name, "localhost") == 0) {
+		xfree(node_name);
+		node_name = xmalloc(MAX_NAME_LEN);
+		getnodename(node_name, MAX_NAME_LEN);
+	}
 
 	error_code = slurm_parser(in_line,
 				  "Feature=", 's', &feature,
 				  "NodeAddr=", 's', &node_addr,
+				  "NodeHostname=", 's', &node_hostname,
 				  "Procs=", 'd', &cpus_val,
 				  "RealMemory=", 'd', &real_memory_val,
 				  "Reason=", 's', &reason,
@@ -355,7 +362,7 @@ static int _parse_node_spec(char *in_line)
 		xfree(state);
 	}
 
-#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
+#ifndef HAVE_FRONT_END	/* Support NodeAddr expression */
 	if (node_addr &&
 	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
 		error("hostlist_create error for %s: %m", node_addr);
@@ -372,13 +379,6 @@ static int _parse_node_spec(char *in_line)
 
 	first = 1;
 	while ((this_node_name = hostlist_shift(host_list))) {
-		if (strcmp(this_node_name, "localhost") == 0) {
-			free(this_node_name);
-			this_node_name = malloc(128);
-			if (this_node_name == NULL)
-				fatal ("memory allocation failure");
-			getnodename(this_node_name, 128);
-		}
 		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
 			xfree(node_name);
 			if (cpus_val != NO_VAL)
@@ -437,10 +437,13 @@ static int _parse_node_spec(char *in_line)
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_ptr->node_state = state_val;
 			node_ptr->last_response = (time_t) 0;
-#ifdef HAVE_FRONT_END	/* Fake node addresses for front-end */
+#ifdef HAVE_FRONT_END	/* Permit NodeAddr value reuse for front-end */
 			if (node_addr)
 				strncpy(node_ptr->comm_name,
 					node_addr, MAX_NAME_LEN);
+			else if (node_hostname)
+				strncpy(node_ptr->comm_name,
+					node_hostname, MAX_NAME_LEN);
 			else
 				strncpy(node_ptr->comm_name,
 					node_ptr->name, MAX_NAME_LEN);
@@ -484,6 +487,7 @@ static int _parse_node_spec(char *in_line)
       cleanup:
 	xfree(node_addr);
 	xfree(node_name);
+	xfree(node_hostname);
 	xfree(feature);
 	xfree(reason);
 	xfree(state);
@@ -708,12 +712,10 @@ static int _parse_part_spec(char *in_line)
 		allow_groups = NULL;
 	}
 	if (nodes) {
-		if (strcmp(nodes, "localhost") == 0) {
+		if (strcasecmp(nodes, "localhost") == 0) {
 			xfree(nodes);
-			nodes = xmalloc(128);
-			if (nodes == NULL)
-				fatal ("memory allocation failure");
-			getnodename(nodes, 128);
+			nodes = xmalloc(MAX_NAME_LEN);
+			getnodename(nodes, MAX_NAME_LEN);
 		}
 		if (part_ptr->nodes) {
 			xstrcat(part_ptr->nodes, ",");

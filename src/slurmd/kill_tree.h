@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * src/slurmd/mgr.c - job management functions for slurmd
+ *  gmpi.h - srun support for MPICH-GM (GMPI)
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  Written by Takao Hatazaki <takao.hatazaki@hp.com>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,35 +23,17 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _MGR_H
-#define _MGR_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#ifndef _HAVE_KILL_TREE_H
+#define _HAVE_KILL_TREE_H
 
-#include "src/common/slurm_protocol_defs.h"
+#include <sys/types.h>
 
-#include "src/slurmd/job.h"
-
-/* Spawn a task / job step on this node
- */
-int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
-		   slurm_addr *self);
-
-/* Launch a job step on this node
- */
-int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
-		     slurm_addr *self);
-
-/* 
- * Launch batch script on this node
- */
-int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
-
+extern void kill_proc_tree(pid_t top, int sig);
 /*
- * Run epilog or prolog on this node
+ * Some of processes may not be in the same process group
+ * (e.g. GMPI processes).  So, find out the process tree,
+ * then kill all that subtree.
  */
-int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid);
 
-#endif
+#endif  /* _HAVE_KILL_TREE_H */

@@ -44,6 +44,7 @@
 #include "src/common/macros.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/read_config.h"
 
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
@@ -193,10 +194,6 @@ _get_job_info(srun_step_t *s)
 	job_info_msg_t *resp = NULL;
 	job_info_t     *job  = NULL;
 	hostlist_t      hl;
-#ifdef HAVE_FRONT_END		/* Fake address for front-end node */
-	old_job_alloc_msg_t                 alloc_req;
-	resource_allocation_response_msg_t *alloc_resp = NULL;
-#endif
 
 	s->nodes = NULL;
 
@@ -232,26 +229,11 @@ _get_job_info(srun_step_t *s)
 		error ("Unable to create hostlist from `%s'", job->nodes);
 		goto done;
 	}
-
-	rc = 0;
 	s->nodes  = hostlist_shift(hl);
-	s->ntasks = 1;
-
 	hostlist_destroy(hl);
 
-#ifdef HAVE_FRONT_END		/* Fake address for front-end node */
-	/* now get actual node name for systems using front-end node */
-	alloc_req.job_id = s->jobid;
-	alloc_req.uid    = getuid();
-	if (slurm_confirm_allocation(&alloc_req, &alloc_resp) == 0) {
-		uint16_t port;
-		free(s->nodes);
-		s->nodes = malloc(128);
-		slurm_get_addr(&alloc_resp->node_addr[0], &port,
-			s->nodes, 128);
-		slurm_free_resource_allocation_response_msg(alloc_resp);
-	}
-#endif
+	s->ntasks = 1;
+	rc = 0;
 
   done:
 	if (resp)
@@ -312,6 +294,7 @@ _attach_to_job(job_t *job)
 	uint16_t port = slurm_get_slurmd_port();
 	reattach_tasks_request_msg_t *req;
 	slurm_msg_t *msg;
+	char *nd;
 
 	req = xmalloc(job->nhosts * sizeof(*req));
 	msg = xmalloc(job->nhosts * sizeof(*msg));
@@ -339,7 +322,7 @@ _attach_to_job(job_t *job)
 
 		m->data            = r;
 		m->msg_type        = REQUEST_REATTACH_TASKS;
-		slurm_set_addr_char(&m->address, port, job->host[i]);
+		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
 	_p_reattach(msg, job);

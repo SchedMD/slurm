@@ -29,6 +29,7 @@ slurmd_SOURCES = 	        	\
 	shm.c shm.h			\
 	fname.c fname.h			\
 	ulimits.c ulimits.h     	\
+	kill_tree.c kill_tree.h		\
 	setproctitle.c setproctitle.h
 
 slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)

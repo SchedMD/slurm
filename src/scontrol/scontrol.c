@@ -88,8 +88,6 @@ static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
 static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr, 
 			uint16_t show_flags);
 static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
-static void	_parse_conf_line (char *in_line, bool *any_slurmctld,
-				bool *have_slurmctld, bool *have_slurmd);
 static void	_pid_info(pid_t job_pid);
 static void	_ping_slurmctld(slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr);
 static void	_print_completing (void);
@@ -665,132 +663,38 @@ _ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
 static void
 _print_daemons (void)
 {
+	slurm_ctl_conf_info_msg_t  conf;
+	char me[MAX_NAME_LEN], *b, *c, *n;
+	int actld = 0, ctld = 0, d = 0;
 	char daemon_list[] = "slurmctld slurmd";
-	FILE *slurm_spec_file;
-	int line_num, line_size, i, j;
-	char in_line[BUF_SIZE];
-	bool have_slurmctld = false, have_slurmd = false;
-	bool any_slurmctld = false;
 
-	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
-	if (slurm_spec_file == NULL) {
-		if (quiet_flag == -1)
-			fprintf(stderr, "Can't open %s\n", 
-				SLURM_CONFIG_FILE);
-		exit(1);
+	bzero(&conf, sizeof(conf));
+	if (read_slurm_conf_ctl(&conf) != SLURM_SUCCESS)
+		return;
+	getnodename(me, MAX_NAME_LEN);
+	if ((b = conf.backup_controller)) {
+		if ((strcmp(b, me) == 0) ||
+		    (strcasecmp(b, "localhost") == 0))
+			ctld = 1;
 	}
-
-	/* process the data file */
-	line_num = 0;
-	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
-		line_num++;
-		line_size = strlen (in_line);
-		if (line_size >= (BUF_SIZE - 1)) {
-			exit_code = 1;
-			if (quiet_flag == -1)
-				fprintf(stderr, 
-					"Line %d of config file %s too long\n", 
-					line_num, SLURM_CONFIG_FILE);
-			continue;	/* bad config file */
-		}
-
-		/* everything after a non-escaped "#" is a comment      */
-		/* replace comment flag "#" with a `\0' (End of string) */
-		/* an escaped value "\#" is translated to "#"           */
-		/* this permitted embedded "#" in node/partition names  */
-		for (i = 0; i < line_size; i++) {
-			if (in_line[i] == '\0')
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {
-				for (j = i; j < line_size; j++) {
-					in_line[j - 1] = in_line[j];
-				}
-				line_size--;
-				continue;
-			}
-			in_line[i] = '\0';
-			break;
-		}
-
-		_parse_conf_line (in_line, &any_slurmctld, 
-				  &have_slurmctld, &have_slurmd);
-		if (have_slurmctld && have_slurmd)
-			break;
+	if ((c = conf.control_machine)) {
+		actld = 1;
+		if ((strcmp(c, me) == 0) ||
+		    (strcasecmp(c, "localhost") == 0))
+			ctld = 1;
 	}
-	fclose (slurm_spec_file);
+	if ((n = get_conf_node_name(me))) {
+		d = 1;
+		xfree(n);
+	}
+	free_slurm_conf(&conf);
 
 	strcpy(daemon_list, "");
-	if (any_slurmctld && have_slurmctld)
+	if (actld && ctld)
 		strcat(daemon_list, "slurmctld ");
-	if (any_slurmctld && have_slurmd)
+	if (actld && d)
 		strcat(daemon_list, "slurmd");
 	fprintf (stdout, "%s\n", daemon_list) ;
-}
-
-/*  _parse_conf_line - determine if slurmctld or slurmd location identified */
-static void _parse_conf_line (char *in_line, bool *any_slurmctld,
-			      bool *have_slurmctld, bool *have_slurmd)
-{
-	int error_code;
-	char *backup_controller = NULL, *control_machine = NULL;
-	char *node_name = NULL, *node_addr = NULL;
-	static char *this_host = NULL;
-
-	error_code = slurm_parser (in_line,
-		"BackupController=", 's', &backup_controller,
-		"ControlMachine=", 's', &control_machine,
-		"NodeAddr=", 's', &node_addr,
-		"NodeName=", 's', &node_name,
-		"END");
-	if (error_code) {
-		exit_code = 1;
-		if (quiet_flag == -1)
-			fprintf(stderr, "Can't parse %s of %s\n",
-				in_line, SLURM_CONFIG_FILE);
-		return;
-	}
-
-	if (this_host == NULL) {
-		this_host = xmalloc(MAX_NAME_LEN);
-		getnodename(this_host, MAX_NAME_LEN);
-	}
-
-	if (backup_controller) {
-		if ((strcmp(backup_controller, this_host) == 0) ||
-		    (strcasecmp(backup_controller, "localhost") == 0))
-			*have_slurmctld = true;
-		xfree(backup_controller);
-	}
-	if (control_machine) {
-		*any_slurmctld = true;
-		if ((strcmp(control_machine, this_host) == 0) ||
-		    (strcasecmp(control_machine, "localhost") == 0))
-			*have_slurmctld = true;
-		xfree(control_machine);
-	}
-	if (node_name) {
-		char *node_entry;
-		hostlist_t node_list = hostlist_create(node_name);
-		while ((*have_slurmd == false) && 
-		       (node_entry = hostlist_shift(node_list)) ) {
-			if ((strcmp(node_entry, this_host) == 0) || 
-			    (strcmp(node_entry, "localhost") == 0))
-				*have_slurmd = true;
-			free(node_entry);
-		}
-		hostlist_destroy(node_list);
-		xfree(node_name);
-	}
-#if HAVE_FRONT_END
-	if (node_addr) {
-		if ((strcmp(node_addr, this_host) == 0)
-		||  (strcasecmp(node_addr, "localhost") == 0))
-			*have_slurmd = true;
-	}
-#endif
-	xfree(node_addr);
 }
 
 /*

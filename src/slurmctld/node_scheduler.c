@@ -517,6 +517,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
+
 		if ((!runable_ever || !runable_avail)
 		&&  (total_nodes >= min_nodes)
 		&&  ((slurmctld_conf.fast_schedule == 0) ||
