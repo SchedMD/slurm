@@ -117,13 +117,13 @@ MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
 MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
-SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO-$SLURM_RELEASE"
-test $SLURM_RELEASE != "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", 
+SLURM_VERSION="$MAJOR.$MINOR.$MICRO"
+test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$MAJOR", 
                    [Define the project's major version.])
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR",
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$MINOR",
                    [Define the project's minor version.])
-AC_DEFINE_UNQUOTED(SLURM_MICRO, "$SLURM_MICRO",
+AC_DEFINE_UNQUOTED(SLURM_MICRO, "$MICRO",
                    [Define the project's minor version.])
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION",
