@@ -1,6 +1,22 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.14
+=========================
+ -- Fixes for reported problems:
+   - slurm/194: "srun doesn't handle most options when run under an allocation."
+   - slurm/244: "REQ: squeue shows requested size of pending jobs."
+ -- SLURM_NODELIST environment variable now exported to all jobs, not
+    only batch jobs.
+ -- Nodelist displayed in squeue for completing jobs is now restricted to 
+    completing nodes.
+ -- Node "reason" field properly displayed in sinfo even with filtering. 
+ -- ``slurm_tv_clean'' daemon now supports a log file.
+ -- Batch jobs are now re-queued on launch failure.
+ -- Controller confirms job scripts for batch jobs are still running on 
+    node zero at node registration.
+ -- Default RPMs no longer stop/start SLURM daemons on upgrade or install.
+
 * Changes in SLURM 0.2.13
 =========================
  -- Fixes for reported problems:
