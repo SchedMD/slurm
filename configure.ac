@@ -66,7 +66,7 @@ if test $with_elan; then
     [], 
     [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support.])], 
   )
-  AC_CHECK_LIB(rms, rms_prgcreate, 
+  AC_CHECK_LIB(rmscall, rms_prgcreate, 
     [],
     [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
   )

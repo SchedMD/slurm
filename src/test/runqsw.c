@@ -200,6 +200,10 @@ main(int argc, char *argv[])
 		usage();
 	if (nprocs == 0)
 		nprocs = 2;
+	if (nodeid < 0) {
+		fprintf(stderr, "runqsw: could not determine elan address\n");
+		exit(1);
+	}
 	while (optind < argc)
 		sprintf(cmdbuf + strlen(cmdbuf), "%s ", argv[optind++]);
 	cmdbuf[strlen(cmdbuf) - 1] = '\0';
