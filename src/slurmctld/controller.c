@@ -98,7 +98,7 @@
  * MEM_LEAK_TEST to 0 afterwards for best system response (non-seamless 
  * backup controller use).
 \**************************************************************************/
-#define MEM_LEAK_TEST     0	/* Running memory leak test if set */
+#define MEM_LEAK_TEST     1	/* Running memory leak test if set */
 
 
 /* Log to stderr and syslog until becomes a daemon */
@@ -337,11 +337,15 @@ int main(int argc, char *argv[])
 #if MEM_LEAK_TEST
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
-	sleep(5);	/* give running agents a chance to complete */
+	/* Give running agents a chance to complete and purge */
+	sleep(5);
 	agent_purge();
+
+	/* Purge our local data structures */
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
+
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
 	slurm_select_fini();
@@ -350,6 +354,8 @@ int main(int argc, char *argv[])
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();
+
+	/* purge remaining data structures */
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	free_slurm_conf(&slurmctld_conf);
 	slurm_api_clear_config();
