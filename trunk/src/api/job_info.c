@@ -57,11 +57,12 @@ slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 {
 	int j;
 
-	fprintf ( out, "JobId=%u UserId=%u ", job_ptr->job_id, job_ptr->user_id);
+	fprintf ( out, "JobId=%u UserId=%u Name=%s ", 
+		job_ptr->job_id, job_ptr->user_id, job_ptr->name);
 	fprintf ( out, "JobState=%s TimeLimit=%u ", job_state_string(job_ptr->job_state), job_ptr->time_limit);
 	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
-	fprintf ( out, "   Name=%s NodeList=%s ", job_ptr->name, job_ptr->nodes);
-	fprintf ( out, "StartTime=%x EndTime=%x ", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
+	fprintf ( out, "   StartTime=%u EndTime=%u ", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
+	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
 
 	fprintf ( out, "NodeListIndecies=");
 	for (j = 0; job_ptr->node_inx; j++) {
@@ -78,7 +79,7 @@ slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 	fprintf ( out, "Shared=%u Contiguous=%u ", job_ptr->shared, job_ptr->contiguous);
 	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, job_ptr->min_memory);
 	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
-	fprintf ( out, "   ReqNodeList=%s Features=%s ", job_ptr->req_nodes, job_ptr->features);
+	fprintf ( out, "   Features=%s ReqNodeList=%s ", job_ptr->features, job_ptr->req_nodes);
 	fprintf ( out, "ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
