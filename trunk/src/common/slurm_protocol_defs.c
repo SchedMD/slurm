@@ -315,6 +315,12 @@ void slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t *msg)
 void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
 {
 	if (msg) {
+		if (msg->node_name)
+			xfree(msg->node_name);
+		if (msg->local_pids)
+			xfree(msg->local_pids);
+		if (msg->gids)
+			xfree(msg->gids);
 		xfree(msg);
 	}
 }

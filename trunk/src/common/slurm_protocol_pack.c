@@ -1947,18 +1947,31 @@ static void
 _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 				  Buf buffer)
 {
-	pack32(msg->return_code, buffer);
+	packstr(msg->node_name,   buffer);
+	pack32(msg->return_code,  buffer);
 	pack32(msg->srun_node_id, buffer);
+	pack32(msg->ntasks,       buffer);
+	pack32_array(msg->gids,       msg->ntasks, buffer);
+	pack32_array(msg->local_pids, msg->ntasks, buffer);
 }
 
 static int
 _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 				    Buf buffer)
 {
+	uint32_t ntasks;
+	uint16_t uint16_tmp;
 	reattach_tasks_response_msg_t *msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
-	safe_unpack32(&msg->return_code, buffer);
+
+	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
+	safe_unpack32(&msg->return_code,  buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
+	safe_unpack32(&msg->ntasks,       buffer);
+	safe_unpack32_array(&msg->gids,       &ntasks, buffer);
+	safe_unpack32_array(&msg->local_pids, &ntasks, buffer);
+	if (msg->ntasks != ntasks)
+		goto unpack_error;
 	return SLURM_SUCCESS;
 
       unpack_error:

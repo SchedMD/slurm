@@ -74,6 +74,7 @@ static void	_launch_handler(job_t *job, slurm_msg_t *resp);
 static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
 static char *	_taskid2hostname(int task_id, job_t * job);
+static void     _print_pid_list(const char *host, int ntasks, uint32_t *pid);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -116,9 +117,9 @@ _node_name_to_addr(const char *name, job_t *job, int *inx)
 	*inx = -1;
 	return NULL;
 }
- 
-static void 
-_build_tv_list(launch_tasks_response_msg_t *msg, job_t *job)
+
+static void
+_build_tv_list(job_t *job, char *host, int ntasks, uint32_t *pid)
 {
 	MPIR_PROCDESC * tv_tasks;
 	int i, node_inx, task_id;
@@ -128,7 +129,7 @@ _build_tv_list(launch_tasks_response_msg_t *msg, job_t *job)
 	if (!opt.totalview)
 		return;
 
-	node_addr = _node_name_to_addr(msg->node_name, job, &node_inx);
+	node_addr = _node_name_to_addr(host, job, &node_inx);
 	if ((node_addr == NULL) || (node_inx < 0))
 		return;
 
@@ -137,24 +138,24 @@ _build_tv_list(launch_tasks_response_msg_t *msg, job_t *job)
 		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs);
 	}
 
-	for (i=0; i<msg->count_of_pids; i++) {
+	for (i = 0; i < ntasks; i++) {
 		tasks_recorded++;
 		task_id = job->tids[node_inx][i];
 		tv_tasks = &MPIR_proctable[task_id];
 		tv_tasks->host_name = node_addr;
 		tv_tasks->executable_name = remote_argv[0];
-		tv_tasks->pid = msg->local_pids[i];
+		tv_tasks->pid = pid[i];
 		debug("task=%d host=%s executable=%s pid=%d", task_id,
 		      tv_tasks->host_name, tv_tasks->executable_name, 
 		      tv_tasks->pid);
 	}
-	msg->node_name = NULL;	/* nothing to free */
 
 	if (tasks_recorded == opt.nprocs) {
 		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
 		MPIR_Breakpoint(); 
 	}
 }
+
 
 void tv_launch_failure(void)
 {
@@ -174,8 +175,6 @@ void MPIR_Breakpoint(void)
 static void
 _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 {
-	int i;
-
 	if (   (msg->srun_node_id >= 0) 
 	    && (msg->srun_node_id < job->nhosts) ) {
 
@@ -183,20 +182,11 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		pthread_mutex_unlock(&job->task_mutex);
 #ifdef HAVE_TOTALVIEW
-		_build_tv_list(msg, job);
+		_build_tv_list( job, msg->node_name, msg->count_of_pids,
+				msg->local_pids );
 #endif
-		if (_verbose) {
-			hostlist_t pids = hostlist_create(NULL);
-			char buf[1024];
-			for (i = 0; i < msg->count_of_pids; i++) {
-				snprintf(buf, sizeof(buf), "pids:%d", 
-						msg->local_pids[i]);
-				hostlist_push(pids, buf);
-			}
-
-			hostlist_ranged_string(pids, sizeof(buf), buf);
-			verbose("%s: %s", msg->node_name, buf);
-		}
+		_print_pid_list( msg->node_name, msg->count_of_pids, 
+				 msg->local_pids );
 
 	} else {
 		error("launch resp from %s has bad task_id %d",
@@ -294,6 +284,7 @@ _confirm_launch_complete(job_t *job)
 static void
 _reattach_handler(job_t *job, slurm_msg_t *msg)
 {
+	int i;
 	reattach_tasks_response_msg_t *resp = msg->data;
 
 	if ((resp->srun_node_id < 0) || (resp->srun_node_id >= job->nhosts)) {
@@ -317,12 +308,24 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 		}
 	}
 
+	/* 
+	 * store global task id information as returned from slurmd
+	 */
+	job->tids[resp->srun_node_id] = xmalloc(resp->ntasks * sizeof(uint32_t));
+	for (i = 0; i < resp->ntasks; i++)
+		job->tids[resp->srun_node_id][i] = resp->gids[i];
+
+#if HAVE_TOTALVIEW
+	_build_tv_list(job, resp->node_name, resp->ntasks, resp->local_pids);
+#endif
+	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids);
+
 	update_running_tasks(job, resp->srun_node_id);
 
 	/* 
-	if (job->stepid == NO_VAL)
-		update_job_state(job, SRUN_JOB_OVERDONE);
-		*/
+	   if (job->stepid == NO_VAL)
+	   update_job_state(job, SRUN_JOB_OVERDONE);
+	 */
 
 }
 
@@ -562,4 +565,23 @@ msg_thr_create(job_t *job)
 
 	return SLURM_SUCCESS;
 }
+ 
+static void
+_print_pid_list(const char *host, int ntasks, uint32_t *pid)
+{
+	if (_verbose) {
+		int i;
+		hostlist_t pids = hostlist_create(NULL);
+		char buf[1024];
+
+		for (i = 0; i < ntasks; i++) {
+			snprintf(buf, sizeof(buf), "pids:%d", pid[i]);
+			hostlist_push(pids, buf);
+		}
+
+		hostlist_ranged_string(pids, sizeof(buf), buf);
+		verbose("%s: %s", host, buf);
+	}
+}
+
 

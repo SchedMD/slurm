@@ -150,6 +150,11 @@ int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
  */
 void log_set_fpfx(char *pfx);
 
+/* 
+ * (re)set argv0 string prepended to all log messages
+ */
+void log_set_argv0(char *pfx);
+
 /* grab the FILE * of the current logfile (or stderr if not logging to
  * a file)
  */
