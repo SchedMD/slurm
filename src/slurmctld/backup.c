@@ -57,6 +57,9 @@ static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static int          _ping_controller(void);
 
+/* Local variables */
+static bool     dump_core = false;
+
 /*
  * Static list of signals to block in this process
  * *Must be zero-terminated*
@@ -133,7 +136,10 @@ void run_backup(void)
 			verbose("Unable to remove pidfile '%s': %m",
 				slurmctld_conf.slurmctld_pidfile);
 		log_fini();
-		exit(0);
+		if (dump_core)
+			abort();
+		else
+			exit(0);
 	}
 
 	error("ControlMachine %s not responding, "
@@ -172,12 +178,19 @@ static void *_background_signal_hand(void *no_data)
 		switch (sig) {
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
-		case SIGABRT:   /* abort */
-			info("Terminate signal (SIGABRT, SIGINT or SIGTERM) received");
+			info("Terminate signal (SIGINT or SIGTERM) received");
 			slurmctld_config.shutdown_time = time(NULL);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmctld_shutdown();
 			return NULL;	/* Normal termination */
+			break;
+		case SIGABRT:   /* abort */
+			info("SIGABRT received");
+			slurmctld_config.shutdown_time = time(NULL);
+			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+			slurmctld_shutdown();
+			dump_core = true;
+			return NULL;    /* Normal termination */
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);
