@@ -302,7 +302,7 @@ _parse_format( char* format )
 					right_justify, 
 					suffix );
 		} else if (field[0] == 'A') {
-			format_add_nodes_at( params.format_list, 
+			format_add_nodes_ai( params.format_list, 
 					field_size, 
 					right_justify, 
 					suffix );

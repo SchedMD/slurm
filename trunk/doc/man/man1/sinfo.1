@@ -62,7 +62,7 @@ The field specifications available include:
 .br
 \fB%a\fR State/availability of a partition
 .br
-\fB%A\fR Number of nodes by state in the format "allocated/total". 
+\fB%A\fR Number of nodes by state in the format "allocated/idle". 
 Do not use this with a node state option ("%t" or "%T") or 
 the different node states will be placed on separate lines.
 .br
@@ -179,9 +179,9 @@ Names of nodes associated with this configuration/partition.
 \fBNODES\fR
 Count of nodes with this particular configuration.
 .TP
-\fBNODES(A/T)\fR
+\fBNODES(A/I)\fR
 Count of nodes with this particular configuration by node 
-state in the form "available/total".
+state in the form "available/idle".
 .TP
 \fBNODES(A/I/O/T)\fR
 Count of nodes with this particular configuration by node
