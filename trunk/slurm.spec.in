@@ -18,7 +18,13 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 %{!?_with_elan: %{!?_without_elan: %define _with_elan --with-elan}}
 %{!?_with_totalview: %{!?_without_totalview: %define _with_totalview --with-totalview}}
 
-%{?_with_elan:BuildRequires: qsnetdevkit}
+%{?_with_elan:BuildRequires: qsnetlibs}
+
+# 
+# Don't strip installed binaries for now:
+#
+%define %__strip ""
+
 
 %package devel
 Summary: Development package for SLURM.
