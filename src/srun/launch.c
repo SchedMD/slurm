@@ -126,7 +126,7 @@ launch(void *arg)
 		msg_array_ptr[i].cwd = opt.cwd;
 		msg_array_ptr[i].nnodes = job->nhosts;
 		msg_array_ptr[i].nprocs = opt.nprocs;
-#if HAVE_LIBELAN3
+#ifdef HAVE_LIBELAN3
 		msg_array_ptr[i].qsw_job = job->qsw_job;
 #endif 
 
@@ -136,7 +136,7 @@ launch(void *arg)
 		msg_array_ptr[i].srun_node_id    = (uint32_t)i;
 		msg_array_ptr[i].io_port         = ntohs(job->ioport[i%job->niofds]);
 		msg_array_ptr[i].resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
-#if HAVE_TOTALVIEW
+#ifdef HAVE_TOTALVIEW
 		if (opt.totalview)
 			msg_array_ptr[i].task_flags &= TASK_TOTALVIEW_DEBUG;
 #endif
