@@ -13,7 +13,9 @@ process_lib = libthreaded.la
 io_lib = libthreaded_io.la
 endif
 
+#sbin_PROGRAMS = slurmd slurmd_nbio slurmd_elan
 sbin_PROGRAMS = slurmd slurmd_nbio
+
 noinst_LTLIBRARIES = libelan_interconnect.la \
 		libno_interconnect.la \
 		libforked_io.la  \
@@ -25,13 +27,12 @@ noinst_LTLIBRARIES = libelan_interconnect.la \
 LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/common/libdaemonize.la \
 	$(top_srcdir)/src/common/libcred.la \
-	$(interconnect_lib) \
 	$(SSL_LIBS)
 
-slurmd_LDADD = $(process_lib) $(io_lib) $(LDADD)
-slurmd_nbio_LDADD = $(process_lib) libnb_io.la $(LDADD)
+slurmd_LDADD = $(process_lib) $(io_lib) $(LDADD) $(interconnect_lib)
+slurmd_nbio_LDADD = $(process_lib) libnb_io.la $(LDADD) $(interconnect_lib)
 	
-slurmd_SOURCES = slurmd.c \
+common_sources = slurmd.c \
 		get_mach_stat.c \
 		read_proc.c \
 		task_mgr.c \
@@ -40,14 +41,12 @@ slurmd_SOURCES = slurmd.c \
 		pipes.c \
 		locks.c
 
-slurmd_nbio_SOURCES = slurmd.c \
-		get_mach_stat.c \
-		read_proc.c \
-		task_mgr.c \
-		shmem_struct.c \
-		circular_buffer.c \
-		pipes.c \
-		locks.c
+slurmd_SOURCES = $(common_sources)
+slurmd_nbio_SOURCES = $(common_sources)
+
+#slurmd_elan_LDADD = libforked.la libforked_io.la  $(LDADD) libelan_interconnect.la
+#slurmd_elan_SOURCES = $(common_sources)
+
 
 libforked_la_SOURCES = forked_ctrl.c
 libthreaded_la_SOURCES = threaded_ctrl.c

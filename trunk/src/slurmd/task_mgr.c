@@ -83,7 +83,11 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 		task_start[i] -> io_streams_dest = launch_msg -> streams ; 
 
 		if ( launch_task ( task_start[i] ) )
+		{
+			info ( "launch_task error " ) ;
 			goto kill_tasks_label ;
+		}
+		info ( "task %i launched" , i ) ;
 	}
 	
 	/* wait for all the launched threads to finish */
@@ -194,16 +198,11 @@ void * task_exec_thread ( void * arg )
 			/* ask me how I know :) */
 			/* think once, twice, 10^100000000 times before changeing the below */
 			/*1*/setup_parent_pipes ( task_start->pipes ) ;
-			info ( "before waitpid ") ;
 			/*2*/waitpid ( cpid , & task_return_code , 0 ) ;
-			info ( "taskid: %i before wait_on_io_threads " , cpid ) ;
 			/*3*/wait_on_io_threads ( task_start ) ;
-			info ( "before cleanup_parent_pipes " ) ;
 			/*4*/cleanup_parent_pipes (  task_start->pipes ) ;
-			info ( "before end_task_exit_msg" ) ;
 			
 			send_task_exit_msg ( task_return_code , task_start ) ;
-			info ( "task_exec_thread done" ) ;
 			break;
 	}
 	return ( void * ) SLURM_SUCCESS ;
