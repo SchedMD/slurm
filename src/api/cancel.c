@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 #include <src/api/slurm.h>
-#include <src/common/slurm.h>
+#include <src/common/slurm_protocol_api.h>
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -31,7 +31,7 @@ main (int argc, char *argv[])
 	}
 
 	for (i=1; i<argc; i++) {
-		error_code = slurm_cancel ((uint32_t) atoi(argv[i]));
+		error_code = slurm_cancel_job ((uint32_t) atoi(argv[i]));
 		if (error_code != 0)
 			printf ("slurm_cancel error %d for job %s\n", 
 				error_code, argv[i]);
@@ -41,7 +41,7 @@ main (int argc, char *argv[])
 }
 #endif
 
-slurm_cancel_job ( uint32_t job_id )
+int slurm_cancel_job ( uint32_t job_id )
 {
         int msg_size ;
         int rc ;
@@ -57,7 +57,7 @@ slurm_cancel_job ( uint32_t job_id )
 
         /* send request message */
 	job_id_msg . job_id = job_id ;
-        request_msg . msg_type = REQUEST_JOB_CANCEL ;
+        request_msg . msg_type = REQUEST_CANCEL_JOB ;
         request_msg . data = &job_id_msg ;
         if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;

@@ -83,7 +83,7 @@ extern int slurm_allocate (char *spec, char **node_list, uint32_t *job_id);
  * output: returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
  */
-extern int slurm_cancel (uint32_t job_id);
+extern int slurm_cancel_job (uint32_t job_id);
 
 
 /***************************

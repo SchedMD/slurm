@@ -24,16 +24,16 @@ main (int argc, char *argv[]) {
 	char node_update1[] = "NodeName=lx1234 State=DOWN";
 	char node_update2[] = "NodeName=lx1234 State=IDLE";
 
-	error_code = update_config (part_update1);
+	error_code = slurm_update_config (part_update1);
 	if (error_code)
 		printf ("error %d for part_update1\n", error_code);
-	error_code = update_config (part_update2);
+	error_code = slurm_update_config (part_update2);
 	if (error_code)
 		printf ("error %d for part_update2\n", error_code);
-	error_code = update_config (node_update1);
+	error_code = slurm_update_config (node_update1);
 	if (error_code)
 		printf ("error %d for node_update1\n", error_code);
-	error_code = update_config (node_update2);
+	error_code = slurm_update_config (node_update2);
 	if (error_code)
 		printf ("error %d for node_update2\n", error_code);
 
