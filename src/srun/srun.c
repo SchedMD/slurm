@@ -177,8 +177,6 @@ main(int ac, char **av)
 		job = job_create(resp); 
 		if (_verbose || _debug)
 			_print_job_information(resp);
-		else
-			printf("jobid %u\n", resp->job_id); 
 		_run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
 
@@ -190,8 +188,6 @@ main(int ac, char **av)
 			exit(1);
 		if (_verbose || _debug)
 			_print_job_information(resp);
-		else
-			printf("jobid %u\n", resp->job_id); 
 
 		job = job_create(resp); 
 		_create_job_step(job);
