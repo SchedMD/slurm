@@ -1173,8 +1173,12 @@ void node_did_resp (char *name)
 		info("Node %s now responding", name);
 		retry_pending (name);	/* Do all pending RPCs now */
 	}
-	if (node_ptr->node_state != NODE_STATE_DOWN)
-		bit_set (up_node_bitmap, node_inx);
+	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
+	    (node_ptr->node_state == NODE_STATE_DRAINING) ||
+	    (node_ptr->node_state == NODE_STATE_DRAINED))
+		bit_clear (up_node_bitmap, node_inx);
+	else
+		bit_set   (up_node_bitmap, node_inx);
 	return;
 }
 
