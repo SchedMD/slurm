@@ -276,6 +276,7 @@ static char *_part_state_str(rm_partition_state_t state)
 {
 	static char tmp[16];
 
+#ifdef HAVE_BGL_FILES
 	switch (state) {
 		case RM_PARTITION_BUSY: 
 			return "BUSY";
@@ -291,10 +292,11 @@ static char *_part_state_str(rm_partition_state_t state)
 			return "NAV";
 		case RM_PARTITION_READY:
 			return "READY";
-		default:
-			snprintf(tmp, sizeof(tmp), "%d", state);
-			return tmp;
 	}
+#endif
+
+	snprintf(tmp, sizeof(tmp), "%d", state);
+	return tmp;
 }
 
 static int _print_text_part(partition_info_t * part_ptr, 
@@ -787,8 +789,14 @@ static db2_block_info_t *_find_part_db2(char *nodelist)
 	hostlist_destroy(hostlist);
 	return rc;
 #else
-	static db2_block_info_t dummy_block = {"UNKNOWN", "", SELECT_NAV, 
-					       SELECT_NAV_MODE, NULL};
+	static db2_block_info_t dummy_block;
+
+	/* perform block initialization (once) using structure field names */
+	if (dummy_block.bgl_block_name == NULL) {
+		dummy_block.bgl_block_name	= "UNKNOWN";
+		dummy_block.bgl_conn_type	= SELECT_NAV;
+		dummy_block.bgl_node_use	= SELECT_NAV_MODE;
+	}
 
 	return &dummy_block;
 #endif
