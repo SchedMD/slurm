@@ -68,14 +68,14 @@ main(int argc, char * argv[]) {
     for (i=0; i<Node_Record_Count; i++) {
 	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;
 	printf("NodeName=%s ",      (Node_Record_Table_Ptr+i)->Name);
-	printf("NodeState=%s ",     Node_State_String[(Node_Record_Table_Ptr+i)->NodeState]);
-	printf("LastResponse=%ld ", (long)(Node_Record_Table_Ptr+i)->LastResponse);
+	printf("NodeState=%s ",     Node_State_String[Node_Record_Table_Ptr[i].NodeState]);
+	printf("LastResponse=%ld ", (long)Node_Record_Table_Ptr[i].LastResponse);
 
-	printf("Weight=%d ",        (Node_Record_Table_Ptr+i)->Config_Ptr->Weight);
-	printf("Feature=%s\n",      (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
-	printf("CPUs=%d ",          (Node_Record_Table_Ptr+i)->CPUs);
-	printf("RealMemory=%d ",    (Node_Record_Table_Ptr+i)->RealMemory);
-	printf("TmpDisk=%d ",       (Node_Record_Table_Ptr+i)->TmpDisk);
+	printf("CPUs=%d ",          Node_Record_Table_Ptr[i].CPUs);
+	printf("RealMemory=%d ",    Node_Record_Table_Ptr[i].RealMemory);
+	printf("TmpDisk=%d ",       Node_Record_Table_Ptr[i].TmpDisk);
+	printf("Weight=%d ",        Node_Record_Table_Ptr[i].Config_Ptr->Weight);
+	printf("Feature=%s\n",      Node_Record_Table_Ptr[i].Config_Ptr->Feature);
     } /* for */
     BitMap = BitMapPrint(Up_NodeBitMap);
     printf("\nUp_NodeBitMap  =%s\n", BitMap);
@@ -210,7 +210,7 @@ int Build_BitMaps() {
 	if ((Node_Record_Table_Ptr+i)->NodeState == STATE_IDLE) BitMapSet(Idle_NodeBitMap, i);
 	if ((Node_Record_Table_Ptr+i)->NodeState != STATE_DOWN) BitMapSet(Up_NodeBitMap, i);
 	if ((Node_Record_Table_Ptr+i)->Config_Ptr) 
-		BitMapSet((Node_Record_Table_Ptr+i)->Config_Ptr->NodeBitMap, i);
+		BitMapSet(Node_Record_Table_Ptr[i].Config_Ptr->NodeBitMap, i);
     } /* for */
 
     /* Scan partition table and identify nodes in each */
@@ -251,7 +251,7 @@ int Build_BitMaps() {
 	/* Check for each node in the partition */
 	if ((Part_Record_Point->Nodes == NULL) || 
 	    (strlen(Part_Record_Point->Nodes) == 0)) continue;
-	My_Node_List = malloc(strlen(Part_Record_Point->Nodes)+1);
+	My_Node_List = (char *)malloc(strlen(Part_Record_Point->Nodes)+1);
 	if (My_Node_List == NULL) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
