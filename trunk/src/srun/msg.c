@@ -169,13 +169,6 @@ void debugger_launch_failure(void)
 	}
 }
 
-void MPIR_Breakpoint(void)
-{
-	debug("In MPIR_Breakpoint");
-	/* This just notifies parallel 
-         * debugger that some event of interest occurred */ 
-}
-
 /*
  * Job has been notified of it's approaching time limit. 
  * Job will be killed shortly after timeout.

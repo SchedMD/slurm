@@ -18,6 +18,7 @@ srun_SOURCES = \
 	launch.c    \
 	launch.h    \
 	attach.h    \
+	attach.c    \
 	reattach.c  \
 	reattach.h  \
 	fname.c     \
@@ -45,6 +46,9 @@ srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 force:
 $(convenience_libs) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+attach.o : attach.c
+	$(COMPILE) -c -g -o attach.o $(srcdir)/attach.c 
 
 install-exec-local:
 	umask 022; \

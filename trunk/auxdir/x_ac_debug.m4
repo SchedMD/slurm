@@ -12,7 +12,6 @@
 #    If CFLAGS are not passed to configure, they will be set based
 #    on whether debugging has been enabled.  Also, the NDEBUG macro
 #    (used by assert) will be set accordingly.
-#    Always enable "-g" debug flag so debugger can work with srun.
 #
 #  WARNINGS:
 #    This macro must be placed after AC_PROG_CC or equivalent.
@@ -31,15 +30,15 @@ AC_DEFUN([X_AC_DEBUG],
       esac
     ]
   )
-
-  if test -z "$ac_save_CFLAGS"; then
-    test "$ac_cv_prog_cc_g" = yes && CFLAGS="-g $CFLAGS"
-  fi
-
+#
+#  if test -z "$ac_save_CFLAGS"; then
+#    test "$ac_cv_prog_cc_g" = yes && CFLAGS="-g $CFLAGS"
+#  fi
+#
   if test "$ac_debug" = yes; then
     if test -z "$ac_save_CFLAGS"; then
       test "$GCC" = yes && 
-           CFLAGS="-Wall -fno-strict-aliasing $CFLAGS"
+           CFLAGS="-g -Wall -fno-strict-aliasing $CFLAGS"
       AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
     fi
   else
