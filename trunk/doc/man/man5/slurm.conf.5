@@ -170,7 +170,9 @@ until a system administrator explicitly changes its state
 \fBSchedulerAuth\fR
 An authentication token, if any, that must be used in a scheduler 
 communication protocol. The interpreation of this value depends 
-upon the value of \fBSchedulerType\fR.
+upon the value of \fBSchedulerType\fR.  In the Wiki scheduler plugin,
+this value must correspond to the checksum seed with which Maui was
+compiled.
 .TP
 \fBSchedulerPort\fR
 For polling schedulers, the port number on which slurmctld should 
