@@ -87,6 +87,7 @@ slurm_submit_batch_job (job_desc_msg_t *req,
 	if (rc == SLURM_SOCKET_ERROR)
 		return SLURM_ERROR;
 
+	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

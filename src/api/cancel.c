@@ -73,7 +73,8 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
 		return SLURM_FAILURE;
 
-	if (rc) slurm_seterrno_ret(rc);
+	if (rc)
+		slurm_seterrno_ret(rc);
 
 	return SLURM_SUCCESS;
 }

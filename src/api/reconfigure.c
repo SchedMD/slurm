@@ -58,7 +58,8 @@ slurm_reconfigure ( void )
 	if (slurm_send_recv_controller_rc_msg(&req, &rc) < 0)
 		return SLURM_ERROR;
 
-	if (rc) slurm_seterrno_ret(rc);
+	if (rc)
+		slurm_seterrno_ret(rc);
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
@@ -129,6 +130,7 @@ _send_message_controller (enum controller_id dest, slurm_msg_t *req)
 	if ((rc = slurm_receive_msg(fd, &resp_msg, 0)) < 0)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR);
 
+	slurm_free_cred(resp_msg.cred);
 	if (slurm_shutdown_msg_conn(fd) != SLURM_SUCCESS)
 		slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
 
