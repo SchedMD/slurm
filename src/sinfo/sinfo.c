@@ -418,7 +418,8 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr,
 			sinfo_ptr->max_weight = node_ptr->weight;
 	}
 
-	if (node_ptr->node_state == NODE_STATE_ALLOCATED)
+	if ((node_ptr->node_state == NODE_STATE_ALLOCATED) ||
+	    (node_ptr->node_state == NODE_STATE_COMPLETING))
 		sinfo_ptr->nodes_alloc++;
 	else if (node_ptr->node_state == NODE_STATE_IDLE)
 		sinfo_ptr->nodes_idle++;
@@ -441,7 +442,8 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 
 	if (node_ptr) {
 		sinfo_ptr->node_state = node_ptr->node_state;
-		if (node_ptr->node_state == NODE_STATE_ALLOCATED)
+		if ((node_ptr->node_state == NODE_STATE_ALLOCATED) ||
+		    (node_ptr->node_state == NODE_STATE_COMPLETING))
 			sinfo_ptr->nodes_alloc++;
 		else if (node_ptr->node_state == NODE_STATE_IDLE)
 			sinfo_ptr->nodes_idle++;
