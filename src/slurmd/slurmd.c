@@ -270,12 +270,15 @@ void slurmd_req ( slurm_msg_t * msg )
 void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = SLURM_SUCCESS ;
 	clock_t start_time;
 	launch_tasks_request_msg_t * task_desc = ( launch_tasks_request_msg_t * ) msg->data ;
 	slurm_msg_t resp_msg ;
 	launch_tasks_response_msg_t task_resp ;
 	char node_name[MAX_NAME_LEN];
+
+	start_time = clock ();
+	info ("slurmd_req: launch tasks message received");
 
 	slurm_print_launch_task_msg ( task_desc ) ;
 
@@ -283,11 +286,9 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) )
 		fatal ("slurmd: errno %d from getnodename", errno);
 
-	start_time = clock ();
-	info ("slurmd_req: launch tasks message received");
 
 	/* do RPC call */
-	error_code = launch_tasks ( task_desc );
+	/* test credentials */
 
 	task_resp . return_code = error_code ;
 	task_resp . node_name = node_name ;
@@ -306,10 +307,12 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	}
 	else
 	{
-		info ("slurmd_req: launch tasks completed successfully, time=%ld", 
+		info ("slurmd_req: launch authorization completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_only_node_msg ( & resp_msg );
 	}
+	
+	error_code = launch_tasks ( task_desc );
 
 }
 
