@@ -20,7 +20,7 @@ main (int argc, char *argv[])
 	job_mesg. groups = ("students,employee\0");
 	job_mesg. job_id = 12345;
 	job_mesg. name = ("job01\0");
-	job_mesg. partition_key = NULL;
+	job_mesg. partition_key = "1234";
 	job_mesg. min_procs = 4;
 	job_mesg. min_memory = 1024;
 	job_mesg. min_tmp_disk = 2034;
@@ -29,7 +29,7 @@ main (int argc, char *argv[])
 	job_mesg. req_nodes = "lx[3000-3003]\0";
 	job_mesg. job_script = "/bin/hostname\0";
 	job_mesg. shared = 0;
-	job_mesg. time_limit = 100;
+	job_mesg. time_limit = 200;
 	job_mesg. num_procs = 1000;
 	job_mesg. num_nodes = 400;
 	job_mesg. user_id = 1500;

@@ -151,7 +151,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION :
-			slurm_rpc_allocate_resources_immediately ( msg -> data ) ;
+			slurm_rpc_allocate_resources_immediately ( msg ) ;
 			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_JOB_WILL_RUN :
@@ -489,7 +489,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
+	error_code = job_allocate(job_desc_msg, 
 			&job_id, &node_name_ptr, false , false );
 
 	/* return result */
@@ -542,7 +542,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 
 }
 
-/* JobWillRun - determine if job with given configuration can be initiated now */
+/* slurm_rpc_allocate_resources_immediately - test if job could initiated now */
 void slurm_rpc_allocate_resources_immediately ( slurm_msg_t * msg )
 {
 	/* init */
@@ -555,8 +555,7 @@ void slurm_rpc_allocate_resources_immediately ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
-			&job_id, &node_name_ptr, true , false );
+	error_code = job_allocate(job_desc_msg, &job_id, &node_name_ptr, true , false );
 	
 	/* return result */
 	if (error_code)

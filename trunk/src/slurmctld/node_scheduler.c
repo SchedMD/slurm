@@ -219,13 +219,14 @@ deallocate_nodes (unsigned *bitmap)
  * input: key - a slurm key acquired by user root
  * output: returns 1 if key is valid, 0 otherwise
  * NOTE: this is only a placeholder for a future function
+ *	the format of the key is TBD
  */
 int 
-is_key_valid (int key) 
+is_key_valid (void * key) 
 {
-	if (key == NO_VAL)
-		return 0;
-	return 1;
+	if (key)
+		return 1;
+	return 0;
 }
 
 
@@ -801,7 +802,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		node_set_ptr[node_set_size++].my_bitmap = NULL;
 	}			
 	if (node_set_index == 0) {
-		info ("select_nodes: no node configurations satisfy requirements %d:%d:%d:%s",
+		info ("select_nodes: no node configurations satisfy requirements procs=%d:mem=%d:disk=%d:feature=%s",
 			job_ptr->details->min_procs, job_ptr->details->min_memory, 
 			job_ptr->details->min_tmp_disk, job_ptr->details->features);
 		error_code = EINVAL;
@@ -816,7 +817,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	if (req_bitmap) {
 		if ((scratch_bitmap == NULL)
 		    || (bit_super_set (req_bitmap, scratch_bitmap) != 1)) {
-			info ("select_nodes: requested nodes do not satisfy configurations requirements %d:%d:%d:%s",
+			info ("select_nodes: requested nodes do not satisfy configurations requirements procs=%d:mem=%d:disk=%d:feature=%s",
 			    job_ptr->details->min_procs, job_ptr->details->min_memory, 
 			    job_ptr->details->min_tmp_disk, job_ptr->details->features);
 			error_code = EINVAL;

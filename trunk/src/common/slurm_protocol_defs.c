@@ -273,6 +273,7 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 	job_desc_msg -> min_tmp_disk = SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK ;
 	job_desc_msg -> partition = SLURM_JOB_DESC_DEFAULT_PARTITION ;
 	job_desc_msg -> priority = SLURM_JOB_DESC_DEFAULT_PRIORITY ;
+        job_desc_msg -> procs_per_task = SLURM_JOB_DESC_DEFAULT_PROCS_PER_TASK ;
 	job_desc_msg -> req_nodes = SLURM_JOB_DESC_DEFAULT_REQ_NODES ;
 	job_desc_msg -> job_script = SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT ;
 	job_desc_msg -> shared = SLURM_JOB_DESC_DEFAULT_SHARED ;

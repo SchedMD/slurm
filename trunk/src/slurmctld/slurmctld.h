@@ -422,13 +422,7 @@ extern int init_step_conf ();
  */
 extern int init_slurm_conf ();
 
-/* 
- * is_key_valid - determine if supplied key is valid
- * input: key - a slurm key acquired by user root
- * output: returns 1 if key is valid, 0 otherwise
- * NOTE: this is only a placeholder for a future function
- */
-extern int  is_key_valid (int key);
+extern int  is_key_valid (void * key);
 
 /*
  * job_allocate - parse the suppied job specification, create job_records for it, 
