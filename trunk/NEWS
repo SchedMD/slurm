@@ -7,6 +7,7 @@ documents those changes that are of interest to users and admins.
    - slurm/265: Job was orphaned when allocation response message could 
      not be sent. Job is now killed on allocation response message transmit 
      failure and socket error details are logged.
+   - Fix for slurm/267: "Job epilog may run multiple times."
  -- Squeue job TIMELIMIT format changed from "h:mm" to "d:h:mm:ss".
  -- DPCS initiated jobs have steps execute properly without explicit 
     specification of node count.
