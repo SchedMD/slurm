@@ -1677,6 +1677,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	packstr(build_ptr->authtype, buffer);
 	packstr(build_ptr->backup_addr, buffer);
 	packstr(build_ptr->backup_controller, buffer);
+	packstr(build_ptr->checkpoint_type, buffer);
 	packstr(build_ptr->control_addr, buffer);
 	packstr(build_ptr->control_machine, buffer);
 	packstr(build_ptr->epilog, buffer);
@@ -1736,6 +1737,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpackstr_xmalloc(&build_ptr->backup_addr, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->backup_controller, &uint16_tmp,
 			       buffer);
+	safe_unpackstr_xmalloc(&build_ptr->checkpoint_type, &uint16_tmp,
+				buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_addr, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->control_machine, &uint16_tmp,
 			       buffer);

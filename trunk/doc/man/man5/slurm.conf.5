@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "July 2004" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "August 2004" "slurm.conf 0.4" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -53,6 +53,11 @@ as a controller only upon the failure of ControlMachine and will revert
 to a "standby" mode when the ControlMachine becomes available once again. 
 This should be a node name without the full domain name (e.g. "lx0002"). 
 While not essential, it is recommended that you specify a backup controller.
+.TP
+\fBCheckpointType\fR
+Define the system-initiated checkpoint method to be used for user jobs. 
+The slurmctld daemon must be restarted for a change in CheckpointType 
+to take effect.
 .TP
 \fBControlAddr\fR
 Name that \fBControlMachine\fR should be referred to in 

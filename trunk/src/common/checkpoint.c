@@ -180,20 +180,14 @@ _slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
 
 /* initialize checkpoint plugin */
 extern int
-checkpoint_init(void)
+checkpoint_init(char *checkpoint_type)
 {
 	int retval = SLURM_SUCCESS;
-	char *checkpoint_type;
 
 	slurm_mutex_lock( &context_lock );
 
 	if ( g_context )
 		_slurm_checkpoint_context_destroy(g_context);
-#if 0
-	checkpoint_type = slurm_get_checkpoint_type();
-#else
-	checkpoint_type = xstrdup("checkpoint/none");
-#endif
 	g_context = _slurm_checkpoint_context_create( checkpoint_type );
 	if ( g_context == NULL ) {
 		error( "cannot create a context for %s", checkpoint_type );
@@ -209,7 +203,6 @@ checkpoint_init(void)
 		retval = SLURM_ERROR;
 	}
 	verbose("Checkpoint plugin loaded: %s", checkpoint_type);
-	xfree(checkpoint_type);
 
   done:
 	slurm_mutex_unlock( &context_lock );

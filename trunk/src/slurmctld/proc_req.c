@@ -63,7 +63,6 @@
 #define BUF_SIZE	  1024	/* Temporary buffer size */
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
-static void         _free_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _make_step_cred(struct step_record *step_rec, 
@@ -245,6 +244,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->backup_addr         = xstrdup(slurmctld_conf.backup_addr);
 	conf_ptr->backup_controller   = xstrdup(slurmctld_conf.
 					backup_controller);
+	conf_ptr->checkpoint_type     = xstrdup(slurmctld_conf.checkpoint_type);
 	conf_ptr->control_addr        = xstrdup(slurmctld_conf.control_addr);
 	conf_ptr->control_machine     = xstrdup(slurmctld_conf.
 					control_machine);
@@ -296,35 +296,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->tmp_fs              = xstrdup(slurmctld_conf.tmp_fs);
 	conf_ptr->wait_time           = slurmctld_conf.wait_time;
 	return;
-}
-
-/* _free_ctld_conf - free memory allocated by _fill_ctld_conf */
-static void _free_ctld_conf(slurm_ctl_conf_t * conf_ptr)
-{
-	xfree(conf_ptr->authtype);
-	xfree(conf_ptr->backup_addr);
-	xfree(conf_ptr->backup_controller);
-	xfree(conf_ptr->control_addr);
-	xfree(conf_ptr->control_machine);
-	xfree(conf_ptr->epilog);
-	xfree(conf_ptr->job_comp_loc);
-	xfree(conf_ptr->job_comp_type);
-	xfree(conf_ptr->job_credential_private_key);
-	xfree(conf_ptr->job_credential_public_certificate);
-	xfree(conf_ptr->plugindir);
-	xfree(conf_ptr->prolog);
-	xfree(conf_ptr->schedauth);
-	xfree(conf_ptr->schedtype);
-	xfree(conf_ptr->slurm_user_name);
-	xfree(conf_ptr->slurmctld_logfile);
-	xfree(conf_ptr->slurmctld_pidfile);
-	xfree(conf_ptr->slurmd_logfile);
-	xfree(conf_ptr->slurmd_pidfile);
-	xfree(conf_ptr->slurmd_spooldir);
-	xfree(conf_ptr->slurm_conf);
-	xfree(conf_ptr->state_save_location);
-	xfree(conf_ptr->switch_type);
-	xfree(conf_ptr->tmp_fs);
 }
 
 /* return true if supplied uid is a super-user: root, self, or SlurmUser */
@@ -608,7 +579,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		_free_ctld_conf(&config_tbl);
+		free_slurm_conf(&config_tbl);
 	}
 }
 
