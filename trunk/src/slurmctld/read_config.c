@@ -634,6 +634,7 @@ int read_slurm_conf(int recover)
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	struct node_record *node_record_point;
+	char node_name[MAX_NAME_LEN];
 
 	/* initialization */
 	start_time = clock();
@@ -717,6 +718,7 @@ int read_slurm_conf(int recover)
 
 	validate_config(&slurmctld_conf);
 	_set_config_defaults(&slurmctld_conf);
+	update_logging();
 
 	if (default_part_loc == NULL) {
 		error("read_slurm_conf: default partition not set.");
@@ -732,6 +734,12 @@ int read_slurm_conf(int recover)
 
 	rehash();
 	set_slurmd_addr();
+
+	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
+		fatal("getnodename error %s", slurm_strerror(error_code));
+	if (slurmctld_conf.control_machine &&
+	    (strcmp(node_name, slurmctld_conf.control_machine) == 0))
+		(void) shutdown_backup_controller();
 
 	if (recover) {
 		(void) load_all_node_state();
