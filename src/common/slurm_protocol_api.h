@@ -56,17 +56,6 @@ inline slurm_protocol_config_t * slurm_get_api_config ( );
  */
 int inline slurm_api_set_default_config ( );
 
-/* slurm_set_default_controllers
- * sets the controller info members of the default slurm_protocol_config object
- * NOT THREAD SAFE
- * IN primary_controller_hostname	- primary controller hostname
- * IN secondary_controller_hostnme	- secondary controller hostnme
- * IN pri_port				- primary controller port
- * IN sec_port				- secondary controller port
- * RET int				- retrun code
- */
-int inline slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port );
-
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET short int	- slurmd port
