@@ -44,6 +44,8 @@
 #include <src/slurmd/slurmd.h> 
 #include <src/slurmd/task_mgr.h> 
 #include <src/slurmd/shmem_struct.h> 
+#include <src/slurmd/signature_utils.h> 
+#include <src/slurmd/credential_utils.h> 
 
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN 1024
@@ -53,6 +55,8 @@
 
 time_t init_time;
 slurmd_shmem_t * shmem_seg ;
+char hostname[MAX_NAME_LEN] ;
+slurm_ssl_key_ctx_t verify_ctx ;
 
 /* function prototypes */
 static void slurmd_req ( slurm_msg_t * msg );
@@ -66,6 +70,8 @@ inline static void slurm_rpc_revoke_credential ( slurm_msg_t * msg ) ;
 
 inline static int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
 static void * service_connection ( void * arg ) ;
+inline int slurmd_init ( ) ;
+inline int slurmd_destroy ( ) ;
 
 typedef struct connection_arg
 {
@@ -89,10 +95,12 @@ int main (int argc, char *argv[])
 */
 
 	/* shared memory init */
-	shmem_seg = get_shmem ( ) ;
-	init_shmem ( shmem_seg ) ;
+	slurmd_init ( ) ;
 
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
+		fatal ("slurmd: errno %d from getnodename", errno);
+
+	if ( ( error_code = getnodename (hostname, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: errno %d from getnodename", errno);
 
 	/* send registration message to slurmctld*/
@@ -101,7 +109,24 @@ int main (int argc, char *argv[])
 	slurmd_msg_engine ( NULL ) ;
 
 	/*slurm_msg_engine is a infinite io loop, but just in case we get back here */
+	slurmd_destroy ( ) ;
+	return SLURM_SUCCESS ;
+}
+
+int slurmd_init ( )
+{
+	shmem_seg = get_shmem ( ) ;
+	init_shmem ( shmem_seg ) ;
+	slurm_ssl_init ( ) ;
+	slurm_init_verifier ( & verify_ctx , "pub_key_file" ) ;
+	return SLURM_SUCCESS ;
+}
+
+int slurmd_destroy ( )
+{
 	rel_shmem ( shmem_seg ) ;
+	slurm_destroy_ssl_key_ctx ( & verify_ctx ) ;
+	slurm_ssl_destroy ( ) ;
 	return SLURM_SUCCESS ;
 }
 
@@ -289,6 +314,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 
 	/* do RPC call */
 	/* test credentials */
+	verify_credential ( & verify_ctx , task_desc -> credential ) ;
 
 	task_resp . return_code = error_code ;
 	task_resp . node_name = node_name ;

@@ -10,31 +10,7 @@
 #include <openssl/ssl.h>
 
 #include <src/common/slurm_protocol_api.h>
-
-enum key_type { SIGNER_PRIVATE_KEY , VERIFIER_PUBLIC_KEY } ;
-enum { SLURM_OPENSSL_SIGNED = 1 } ;
-enum { SLURM_OPENSSL_VERIFIED = 1 } ;
-
-typedef struct credential_tools_ctx
-{
-	enum key_type ;
-	unsigned int key_length ;
-	union key
-	{
-		EVP_PKEY * private ;
-		EVP_PKEY * public ;
-	} key ;
-} credential_tools_ctx_t ;
-
-int ssl_init ( ) ;
-int ssl_destroy ( ) ;
-
-int init_signer ( credential_tools_ctx_t * ctx , char * path ) ;
-int init_verifier ( credential_tools_ctx_t * ctx , char * path ) ;
-
-int destroy_credential_ctx ( credential_tools_ctx_t * ctx ) ;
-
-int credential_sign ( credential_tools_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int * signature_length ) ;
-int credential_verify ( credential_tools_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int signature_length ) ;
+#include <src/slurmd/signature_utils.h>
+int verify_credential ( slurm_ssl_key_ctx_t * verfify_ctx , slurm_job_credential_t * credential ) ;
 
 #endif
