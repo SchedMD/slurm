@@ -119,8 +119,6 @@ int main(int ac, char **av)
 	 */
 	initialize_and_process_args(ac, av);
 
-	if (!opt.allocate)
-		(void) _set_rlimit_env();
 
 	/* reinit log with new verbosity (if changed by command line)
 	 */
@@ -130,6 +128,9 @@ int main(int ac, char **av)
 		logopt.prefix_level = 1;
 		log_alter(logopt, 0, NULL);
 	}
+
+	if (!opt.allocate)
+		(void) _set_rlimit_env();
 
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
@@ -691,49 +692,81 @@ _set_batch_script_env(job_t *job)
 static int _set_rlimit_env(void)
 {
 	int rc = SLURM_SUCCESS;
-	struct rlimit my_rlimit;
+	struct rlimit rlim[1];
 
+	struct rlimit_info {
+		const int res;
+		const char *var;
+	} rlimit_vars[] = {
+#ifdef RLIMIT_CPU
+		{ RLIMIT_CPU,    "CPU"    },
+#endif
 #ifdef RLIMIT_FSIZE
-	if (getrlimit(RLIMIT_FSIZE, &my_rlimit) ||
-	    setenvf("SLURM_RLIMIT_FSIZE=%ld", (long)my_rlimit.rlim_cur)) {
-		error("Can't set SLURM_RLIMIT_FSIZE environment variable");
-		rc = SLURM_FAILURE;
-	}
+		{ RLIMIT_FSIZE,  "FSIZE"  },
 #endif
-
+#ifdef RLIMIT_DATA
+		{ RLIMIT_DATA,   "DATA"   },
+#endif
+#ifdef RLIMIT_STACK
+		{ RLIMIT_STACK,  "STACK"  },
+#endif
 #ifdef RLIMIT_CORE
-	if (getrlimit(RLIMIT_CORE, &my_rlimit) ||
-	    setenvf("SLURM_RLIMIT_CORE=%ld", (long)my_rlimit.rlim_cur)) {
-		error("Can't set SLURM_RLIMIT_CORE environment variable");
-		rc = SLURM_FAILURE;
-	}
+		{ RLIMIT_CORE,   "CORE"   },
 #endif
-
+#ifdef RLIMIT_RSS
+		{ RLIMIT_RSS,    "RSS"    },
+#endif
 #ifdef RLIMIT_NPROC
-	if (getrlimit(RLIMIT_NPROC, &my_rlimit) ||
-	    setenvf("SLURM_RLIMIT_NPROC=%ld", (long)my_rlimit.rlim_cur)) {
-		error("Can't set SLURM_RLIMIT_NPROC environment variable");
-		rc = SLURM_FAILURE;
-	}
+		{ RLIMIT_NPROC,  "NPROC"  },
 #endif
-
 #ifdef RLIMIT_NOFILE
-	if (getrlimit(RLIMIT_NOFILE, &my_rlimit) == 0) {
-		if (setenvf("SLURM_RLIMIT_NOFILE=%ld", 
-			    (long)my_rlimit.rlim_cur)) {
-			error("Can't set SLURM_RLIMIT_NOFILE environment variable");
-			rc = SLURM_FAILURE;
-		}
-		my_rlimit.rlim_cur = my_rlimit.rlim_max;
-		if (setrlimit(RLIMIT_NOFILE, &my_rlimit)) {
-			error("Can't set SLURM_RLIMIT_NOFILE value");
-			rc = SLURM_FAILURE;
-		}
-	} else {
-		error("Can't get RLIMIT_NOFILE value");
-		rc = SLURM_FAILURE;
-	}
+		{ RLIMIT_NOFILE, "NOFILE" },
 #endif
+#ifdef RLIMIT_MEMLOCK
+		{ RLIMIT_MEMLOCK,"MEMLOCK"},
+#endif
+#ifdef RLIMIT_AS
+		{ RLIMIT_AS,     "AS"     },
+#endif
+		{ 0,             NULL}
+	};
+
+	struct rlimit_info *r;
+
+
+
+	for (r = rlimit_vars; r->var; r++) {
+		long cur;
+
+		if (getrlimit (r->res, rlim) < 0) {
+			error ("getrlimit (%s): %m", r->var);
+			rc = SLURM_FAILURE;
+			continue;
+		}
+		
+		cur = (long) rlim->rlim_cur;
+
+		if (setenvf ("SLURM_RLIMIT_%s=%ld", r->var, cur) < 0) {
+			error ("unable to set RLIMIT_%s in environment",
+			       r->var);
+			rc = SLURM_FAILURE;
+			continue;
+		}
+
+		debug ("propagating RLIMIT_%s=%ld", r->var, cur);
+	}
+
+	/* 
+	 *  Now increase NOFILE to the max available for this srun
+	 */
+	if (getrlimit (RLIMIT_NOFILE, rlim) < 0)
+	 	return (error ("getrlimit (RLIMIT_NOFILE): %m"));
+
+	if (rlim->rlim_cur < rlim->rlim_max) {
+		rlim->rlim_cur = rlim->rlim_max;
+		if (setrlimit (RLIMIT_NOFILE, rlim) < 0) 
+			return (error ("Unable to increase max no. files: %m"));
+	}
 
 	return rc;
 }

@@ -19,6 +19,8 @@ documents those changes that are of interest to users and admins.
     shared nodes.
  -- Set SLURM_DISTRIBUTION environment varible for user tasks.
  -- Fix for file descriptor leak in slurmd.
+ -- Propagate stacksize limit to jobs along with other resource limits
+    that were previously ignored.
 
 * Changes in SLURM 0.3.0.0-pre9
 ===============================
