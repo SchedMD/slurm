@@ -86,36 +86,87 @@ pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len
 }
 
 /* pack_ctld_job_step_info_reponse_msg - packs the message
- * IN - List of steps to pack
- * OUT - packed buffer NOTE- MUST xfree buffer
- * return - buffer length - number of bytes in buffer
+ * IN - job_id and step_id - zero for all
+ * OUT - packed buffer and length NOTE- MUST xfree buffer
+ * return - error code
  */
-
 int
-pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer_length )
+pack_ctld_job_step_info_reponse_msg (void** buffer_base, int* buffer_length, uint32_t job_id, uint32_t step_id )
 {
-	ListIterator iterator = list_iterator_create( steps );
-	struct step_record* current_step = NULL;		
+	ListIterator job_record_iterator;
+	ListIterator step_record_iterator;
 	int buffer_size = BUF_SIZE * REALLOC_MULTIPLIER;
 	int current_size = buffer_size;
+	int error_code = 0, steps_packed = 0;
 	void* current = NULL;
-	uint32_t list_size = list_count(steps);
+	struct step_record* step_ptr;
+	struct job_record * job_ptr;
+
 	current = *buffer_base = xmalloc( buffer_size );
-
-	debug3("job_step_count = %u\n", list_size);
 	pack32( last_job_update, &current, &current_size );
-	pack32( list_size , &current, &current_size );
+	pack32( steps_packed , &current, &current_size );	/* steps_packed is placeholder for now */
 
-	/* Pack the Steps */
-	while( ( current_step = (struct step_record*)list_next( iterator ) ) != NULL )
+	if ( job_id == 0 )
+	/* Return all steps for all jobs */
 	{
-		pack_ctld_job_step_info( current_step, &current, &current_size ); 
-		buffer_realloc( buffer_base, &current, &buffer_size, &current_size );
+		job_record_iterator = list_iterator_create (job_list);		
+		while ((job_ptr = (struct job_record *) list_next (job_record_iterator))) {
+			step_record_iterator = list_iterator_create (job_ptr->step_list);		
+			while ((step_ptr = (struct step_record *) list_next (step_record_iterator))) {
+				pack_ctld_job_step_info( step_ptr, &current, &current_size );
+				buffer_realloc( buffer_base, &current, &buffer_size, &current_size );
+				steps_packed++;
+			}
+			list_iterator_destroy (step_record_iterator);
+		}
+		list_iterator_destroy (job_record_iterator);
 	}
 
-	if ( buffer_length != NULL )
-		*buffer_length = buffer_size - current_size;
-	return 	*buffer_length;
+	else if ( step_id == 0 )
+	/* Return all steps for specific job_id */
+	{
+		job_ptr = find_job_record( job_id );
+		if (job_ptr) {
+			step_record_iterator = list_iterator_create (job_ptr->step_list);		
+			while ((step_ptr = (struct step_record *) list_next (step_record_iterator))) {
+				pack_ctld_job_step_info( step_ptr, &current, &current_size );
+				buffer_realloc( buffer_base, &current, &buffer_size, &current_size );
+				steps_packed++;
+			}
+			list_iterator_destroy (step_record_iterator);
+		}
+		else
+			error_code = ESLURM_INVALID_JOB_ID;
+	}		
+
+	else
+	/* Return  step with give step_id/job_id */
+	{
+		job_ptr = find_job_record( job_id );
+		step_ptr =  find_step_record( job_ptr, step_id ); 
+		if ( step_ptr ==  NULL ) 
+			error_code = ESLURM_INVALID_JOB_ID;
+		else {
+			pack_ctld_job_step_info( step_ptr, &current, &current_size );
+			steps_packed++;
+		}
+	}
+
+	if( error_code ) {
+		xfree( *buffer_base );
+		*buffer_base = NULL;
+		if( buffer_length )
+			*buffer_length = 0;
+	}
+	else {
+		if( buffer_length )
+			*buffer_length = buffer_size - current_size;
+		current = *buffer_base;
+		current_size = buffer_size;
+		pack32( last_job_update, &current, &current_size );
+		pack32( steps_packed , &current, &current_size );
+	}
+	return 	error_code;
 }
 
 

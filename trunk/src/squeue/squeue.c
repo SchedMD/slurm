@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * squeue - Report jobs in the system
+ *  squeue.c - Report jobs in the system
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -109,9 +109,9 @@ print_job_steps( uint32_t job_id, uint16_t step_id )
 	step_format_add_start_time( format, 12, true );
 	step_format_add_nodes( format, 20, true );
 	
-	if ( ( rc = slurm_get_job_steps( job_id, step_id, &step_msg ) ) != SLURM_SUCCESS )
+	if ( ( rc = slurm_get_job_steps( (time_t) NULL, job_id, step_id, &step_msg ) ) != SLURM_SUCCESS )
 	{
-		slurm_perror( "slurm_get_job_steps: ");
+		slurm_perror( "slurm_get_job_steps failed");
 		return;
 	}
 
