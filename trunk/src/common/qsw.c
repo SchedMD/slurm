@@ -49,7 +49,7 @@
 #include <src/common/bitstring.h>
 #include <src/common/pack.h>
 #include <src/common/qsw.h>
-#include <src/common/xerrno.h>
+#include <src/common/slurm_errno.h>
 
 /*
  * Definitions local to this module.
