@@ -192,6 +192,8 @@ _get_job_info(srun_step_t *s)
 	int             i, rc = -1;
 	job_info_msg_t *resp = NULL;
 	job_info_t     *job  = NULL;
+	old_job_alloc_msg_t alloc_req;
+	resource_allocation_response_msg_t *alloc_resp = NULL;
 	hostlist_t      hl;
 
 	s->nodes = NULL;
@@ -234,6 +236,18 @@ _get_job_info(srun_step_t *s)
 	s->ntasks = 1;
 
 	hostlist_destroy(hl);
+
+	/* now get actual node name for systems using front-end node */
+	alloc_req.job_id = s->jobid;
+	alloc_req.uid    = getuid();
+	if (slurm_confirm_allocation(&alloc_req, &alloc_resp) == 0) {
+		uint16_t port;
+		free(s->nodes);
+		s->nodes = malloc(128);
+		slurm_get_addr(&alloc_resp->node_addr[0], &port,
+			s->nodes, 128);
+		slurm_free_resource_allocation_response_msg(alloc_resp);
+	}
 
   done:
 	if (resp)
