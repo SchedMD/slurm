@@ -189,19 +189,14 @@ struct part_record *create_part_record(void)
 	part_ptr->node_bitmap = NULL;
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 
-	if (default_part.allow_groups) {
-		part_ptr->allow_groups =
-		    (char *) xmalloc(strlen(default_part.allow_groups) + 1);
-		strcpy(part_ptr->allow_groups,
-		       default_part.allow_groups);
-	} else
+	if (default_part.allow_groups)
+		part_ptr->allow_groups = xstrdup(default_part.allow_groups);
+	else
 		part_ptr->allow_groups = NULL;
 
-	if (default_part.nodes) {
-		part_ptr->nodes =
-		    (char *) xmalloc(strlen(default_part.nodes) + 1);
-		strcpy(part_ptr->nodes, default_part.nodes);
-	} else
+	if (default_part.nodes)
+		part_ptr->nodes = xstrdup(default_part.nodes);
+	else
 		part_ptr->nodes = NULL;
 
 	if (list_append(part_list, part_ptr) == NULL)
@@ -646,7 +641,7 @@ void pack_part(struct part_record *part_record_point, Buf buffer)
  */
 int update_part(update_part_msg_t * part_desc)
 {
-	int error_code, i;
+	int error_code;
 	struct part_record *part_ptr;
 
 	if ((part_desc->name == NULL) ||
@@ -715,9 +710,7 @@ int update_part(update_part_msg_t * part_desc)
 
 	if (part_desc->allow_groups != NULL) {
 		xfree(part_ptr->allow_groups);
-		i = strlen(part_desc->allow_groups) + 1;
-		part_ptr->allow_groups = xmalloc(i);
-		strcpy(part_ptr->allow_groups, part_desc->allow_groups);
+		part_ptr->allow_groups = xstrdup(part_desc->allow_groups);
 		info("update_part: setting allow_groups to %s for partition %s", 
 		     part_desc->allow_groups, part_desc->name);
 		xfree(part_ptr->allow_uids);
@@ -728,9 +721,7 @@ int update_part(update_part_msg_t * part_desc)
 	if (part_desc->nodes != NULL) {
 		char *backup_node_list;
 		backup_node_list = part_ptr->nodes;
-		i = strlen(part_desc->nodes) + 1;
-		part_ptr->nodes = xmalloc(i);
-		strcpy(part_ptr->nodes, part_desc->nodes);
+		part_ptr->nodes = xstrdup(part_desc->nodes);
 
 		error_code = _build_part_bitmap(part_ptr);
 		if (error_code) {
@@ -819,10 +810,7 @@ uid_t *_get_groups_members(char *group_names)
 
 	if (group_names == NULL)
 		return NULL;
-
-	i = strlen(group_names) + 1;
-	tmp_names = xmalloc(i);
-	strcpy(tmp_names, group_names);
+	tmp_names = xstrdup(group_names);
 
 	one_group_name = strtok_r(tmp_names, ",", &name_ptr);
 	while (one_group_name) {

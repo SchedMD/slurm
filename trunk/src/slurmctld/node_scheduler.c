@@ -42,6 +42,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -232,9 +233,7 @@ static int _match_feature(char *seek, char *available)
 	if (available == NULL)
 		return SLURM_SUCCESS;	/* nothing to find */
 
-	tmp_available = xmalloc(strlen(available) + 1);
-	strcpy(tmp_available, available);
-
+	tmp_available = xstrdup(available);
 	found = 0;
 	str_ptr3 = (char *) strtok_r(tmp_available, ",", &str_ptr4);
 	while (str_ptr3) {
@@ -1066,9 +1065,7 @@ static int _valid_features(char *requested, char *available)
 	if (available == NULL)
 		return 0;	/* no features */
 
-	tmp_requested = xmalloc(strlen(requested) + 1);
-	strcpy(tmp_requested, requested);
-
+	tmp_requested = xstrdup(requested);
 	bracket = option = position = 0;
 	str_ptr1 = tmp_requested;	/* start of feature name */
 	result = last_op = 1;	/* assume good for now */

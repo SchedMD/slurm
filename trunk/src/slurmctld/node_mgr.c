@@ -215,14 +215,10 @@ struct config_record * create_config_record (void)
 	config_ptr->nodes = NULL;
 	config_ptr->node_bitmap = NULL;
 	xassert (config_ptr->magic = CONFIG_MAGIC);  /* set value */
-	if (default_config_record.feature) {
-		config_ptr->feature =
-			(char *)
-			xmalloc (strlen (default_config_record.feature) + 1);
-		strcpy (config_ptr->feature, default_config_record.feature);
-	}
+	if (default_config_record.feature)
+		config_ptr->feature = xstrdup(default_config_record.feature);
 	else
-		config_ptr->feature = (char *) NULL;
+		config_ptr->feature = NULL;
 
 	if (list_append(config_list, config_ptr) == NULL)
 		fatal ("create_config_record: unable to allocate memory");
