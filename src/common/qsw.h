@@ -3,6 +3,8 @@
  *
  * Copyright (C) 2001-2002 Regents of the University of California
  */
+#include <sys/types.h>
+#include <src/common/bitstring.h>
 
 #ifndef _QSW_INCLUDED
 #define _QSW_INCLUDED

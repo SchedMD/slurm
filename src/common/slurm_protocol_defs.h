@@ -86,7 +86,9 @@ enum part_shared {
 	SHARED_YES,		/* Nodes possible to share in partition */
 	SHARED_FORCE		/* Nodes always shares in partition */
 };
-
+#ifdef HAVE_LIBELAN3
+#include <src/common/qsw.h>
+#endif
 #include <src/common/macros.h>
 #include <src/common/slurm_protocol_common.h>
 
@@ -371,7 +373,7 @@ typedef struct job_step_create_response_msg
 	char* node_list;
 	slurm_job_credential_t* credentials;
 #ifdef HAVE_LIBELAN3
-    qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
+    	qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
 #endif
 	
 } job_step_create_response_msg_t; 
