@@ -143,7 +143,7 @@ void * task_exec_thread ( void * arg )
 
 		case CHILD_PROCCESS:	
 			/* log init stuff */
-			snprintf ( log_name , 1024, "%s_%i", launch_msg->argv[0], launch_msg -> global_task_ids[ task_start -> local_task_id ]);
+			snprintf ( log_name , 1024, "%s_%i", "slurmd" , launch_msg -> global_task_ids[ task_start -> local_task_id ]);
 			log_init( log_name , log_opts_def, SYSLOG_FACILITY_DAEMON, NULL);
 
 			unblock_all_signals ( ) ;
