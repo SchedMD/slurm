@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "October 2003" "scancel 0.2" "Slurm components"
+.TH SCANCEL "1" "October 2003" "scancel 0.3" "Slurm components"
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
@@ -28,6 +28,10 @@ The name of jobs to be signaled.
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
 The name of the partition from which jobs are to be signaled.
 .TP
+\fB\-q\fR, \fB\-\-quiet\fR
+Do not report an error if the specified job is already completed.
+This option is incompatible with the \fB\-\-verbose\fR option.
+.TP
 \fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
 The name or number of the signal to be send. Default value is "KILL".
 .TP
@@ -39,7 +43,8 @@ either "PENDING" or "RUNNING".
 The name of the user whose jobs are to be signaled.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
-Print additional logging. Multiple v's increase logging detail. 
+Print additional logging. Multiple v's increase logging detail.
+This option is incompatible with the \fB\-\-quiet\fR option.
 .TP
 \fB\-V\fR, \fB\-\-Version\fR
 Print the version number of the scontrol command. 
