@@ -27,18 +27,18 @@
 #include <sys/ioctl.h>
 #include <termcap.h>
 #include <termios.h>
-#include <src/squeue/squeue.h>
+
+#include "src/squeue/squeue.h"
 
 static char *command_name;
 struct squeue_parameters params;
 int quiet_flag = 0;
 int max_line_size;
 
-int  get_window_width( void );
-void print_date( void );
-void print_job (void);
-void print_job_steps( void );
-void usage ();
+static int  _get_window_width( void );
+static void _print_date( void );
+static void _print_job (void);
+static void _print_job_steps( void );
 
 int 
 main (int argc, char *argv[]) 
@@ -50,17 +50,17 @@ main (int argc, char *argv[])
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
-	max_line_size = get_window_width( );
+	max_line_size = _get_window_width( );
 	
 	while (1) 
 	{
 		if ( params.iterate && (params.verbose || params.long_list) )
-			print_date ();
+			_print_date ();
 
 		if ( params.step_flag )
-			print_job_steps( );
+			_print_job_steps( );
 		else 
-			print_job( );
+			_print_job( );
 
 		if ( params.iterate ) {
 			printf( "\n");
@@ -73,9 +73,9 @@ main (int argc, char *argv[])
 	exit (0);
 }
 
-
-int  
-get_window_width( void )
+/* get_window_width - return the size of the window STDOUT goes to */
+static int  
+_get_window_width( void )
 {
 	int width = 80;
 
@@ -97,17 +97,16 @@ get_window_width( void )
 }
 
 
-/*
- * print_job - print the specified job's information
- */
-void 
-print_job ( void ) 
+/* _print_job - print the specified job's information */
+static void 
+_print_job ( void ) 
 {
 	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
 	int error_code;
 
 	if (old_job_ptr) {
-		error_code = slurm_load_jobs (old_job_ptr->last_update, &new_job_ptr);
+		error_code = slurm_load_jobs (old_job_ptr->last_update, 
+		                              &new_job_ptr);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_info_msg( old_job_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -124,7 +123,8 @@ print_job ( void )
 	old_job_ptr = new_job_ptr;
 	
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) new_job_ptr->last_update);
+		printf ("last_update_time=%ld\n", 
+		        (long) new_job_ptr->last_update);
 
 	if (params.format_list == NULL) {
 		int out_size = 0;
@@ -138,21 +138,26 @@ print_job ( void )
 		job_format_add_user_name( params.format_list, 8, false );
 		out_size += (8 + 1);
 		if (params.long_list) {
-			job_format_add_job_state( params.format_list, 8, false );
+			job_format_add_job_state( params.format_list, 
+			                          8, false );
 			out_size += (8 + 1);
 		} else {
-			job_format_add_job_state_compact( params.format_list, 2, false );
+			job_format_add_job_state_compact( params.format_list, 
+			                                  2, false );
 			out_size += (2 + 1);
 		}
-		job_format_add_start_time( params.format_list, 11, false );
-		out_size += (11 + 1);
-		job_format_add_end_time( params.format_list, 11, false);
-		out_size += (11 + 1);
+		job_format_add_time_limit( params.format_list, 9, true );
+		out_size += (9 + 1);
 		if (params.long_list) {
-			job_format_add_priority( params.format_list, 8, true );
-			out_size += (8 + 1);
-			job_format_add_time_limit( params.format_list, 10, true );
+			job_format_add_priority( params.format_list, 10, true );
 			out_size += (10 + 1);
+			job_format_add_start_time( params.format_list, 11, false );
+			out_size += (11 + 1);
+			job_format_add_end_time( params.format_list, 11, false);
+			out_size += (11 + 1);
+		} else {
+			job_format_add_priority( params.format_list, 4, true );
+			out_size += (4 + 1);
 		}
 		/* Leave nodes at the end, length is highly variable */
 		if (params.long_list) {
@@ -161,7 +166,8 @@ print_job ( void )
 			out_size  = max_line_size - out_size - 1;
 			if (out_size < 8)
 				out_size = 8;
-			job_format_add_nodes( params.format_list, out_size, false );
+			job_format_add_nodes( params.format_list, out_size, 
+			                      false );
 		}
 	}
 
@@ -171,14 +177,17 @@ print_job ( void )
 }
 
 
-void
-print_job_steps( void )
+/* _print_job_step - print the specified job step's information */
+static void
+_print_job_steps( void )
 {
 	int error_code;
-	static job_step_info_response_msg_t * old_step_ptr = NULL, * new_step_ptr;
+	static job_step_info_response_msg_t * old_step_ptr = NULL;
+	static job_step_info_response_msg_t  * new_step_ptr;
 
 	if (old_step_ptr) {
-		error_code = slurm_get_job_steps (old_step_ptr->last_update, 0, 0, &new_step_ptr);
+		error_code = slurm_get_job_steps (old_step_ptr->last_update, 
+		                                  0, 0, &new_step_ptr);
 		if (error_code ==  SLURM_SUCCESS)
 			slurm_free_job_step_info_response_msg( old_step_ptr );
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
@@ -187,7 +196,8 @@ print_job_steps( void )
 		}
 	}
 	else
-		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, &new_step_ptr);
+		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, 
+		                                  &new_step_ptr);
 	if (error_code) {
 		slurm_perror ("slurm_get_job_steps error:");
 		return;
@@ -195,7 +205,8 @@ print_job_steps( void )
 	old_step_ptr = new_step_ptr;
 
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) new_step_ptr->last_update);
+		printf ("last_update_time=%ld\n", 
+		        (long) new_step_ptr->last_update);
 	
 	if (params.format_list == NULL) {
 		int out_size = 0;
@@ -214,18 +225,20 @@ print_job_steps( void )
 			out_size  = max_line_size - out_size - 1;
 			if (out_size < 8)
 				out_size = 8;
-			step_format_add_nodes( params.format_list, out_size, false );
+			step_format_add_nodes( params.format_list, out_size, 
+			                       false );
 		}
 	}
 		
-	print_steps_array( new_step_ptr->job_steps, new_step_ptr->job_step_count, 
+	print_steps_array( new_step_ptr->job_steps, 
+			new_step_ptr->job_step_count, 
 			params.format_list );
 	return;
 }
 
 
-void 
-print_date( void )
+static void 
+_print_date( void )
 {
 	time_t now;
 
