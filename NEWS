@@ -13,9 +13,10 @@ documents those changes that are of interest to users and admins.
    - Added "ping" command to show current state of SLURM controllers.
    - Job dump in scontrol shows user name as well as UID. 
    - Node state of DRAIN is appropriately mapped to DRAINING or DRAINED.
+ -- Fix for bug where request for task count greater than partition limit
+    was queued anyway.
+ -- Fix for bugs in job end time handling.
  -- Modifications for error free builds on 64 bit architectures.
- -- Fix bug where request for task count exceeding partition limit
-    was accepted and queued indefinitely.
  -- Job cancel immediately deallocates nodes instead of waiting on srun.
  -- Attempt to create slurmd spool if it does not exist.
  -- Fixed signal handling bug in srun allocate mode.
