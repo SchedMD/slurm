@@ -195,6 +195,7 @@ create_job_record (int *error_code)
 		return NULL;
 	}
 
+	job_count++;
 	*error_code = 0;
 	last_job_update = time (NULL);
 
@@ -795,10 +796,16 @@ cleanup:
 void 	
 add_job_hash (struct job_record *job_ptr) 
 {
-	if (job_hash[job_hash_inx (job_ptr->job_id)]) 
+	int inx;
+
+	inx = job_hash_inx (job_ptr->job_id);
+	if (job_hash[inx]) {
+		if (max_hash_over >= MAX_JOB_COUNT)
+			fatal ("Job hash table overflow");
 		job_hash_over[max_hash_over++] = job_ptr;
+	}
 	else
-		job_hash[job_hash_inx (job_ptr->job_id)] = job_ptr;
+		job_hash[inx] = job_ptr;
 }
 
 
