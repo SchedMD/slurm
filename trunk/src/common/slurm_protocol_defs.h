@@ -18,6 +18,7 @@
 #define true -1
 #define false 0
 
+#include <src/common/slurm_protocol_common.h>
 
 /* for sendto and recvfrom commands */
 #define NO_SEND_RECV_FLAGS 0
@@ -96,7 +97,8 @@ typedef enum {
 	REQUEST_RUN_JOB_STEP			= 48,
 	RESPONSE_RUN_JOB_STEP			= 49
 	*/
-} slurm_msg_type_t ;
+} SLURM_MSG_TYPE_T ;
+typedef uint16_t slurm_msg_type_t ;
 	
 #define REQUEST_NODE_REGISRATION_STATUS 	1
 #define MESSAGE_NODE_REGISRATION_STATUS 	2	
@@ -161,9 +163,40 @@ typedef struct slurm_node_registration_status_msg
  	uint32_t temporary_disk_space ;
 } node_registration_status_msg_t ;
 
+typedef struct job_desc {    /* Job descriptor for submit, allocate, and update requests */
+	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
+				 * default=0 */
+	char *features;         /* comma separated list of required features, default NONE */
+	char *groups;           /* comma separated list of groups the user can access,
+				 * default set output of "/usr/bin/groups" by API,
+				 * can only be set if user is root */
+	uint32_t job_id;        /* job ID, default set by SLURM */
+	char *name;             /* name of the job, default "" */
+	void *partition_key;    /* root key to submit job, format TBD, default NONE */
+	uint32_t min_procs;     /* minimum processors required per node, default=0 */
+	uint32_t min_memory;    /* minimum real memory required per node, default=0 */
+	uint32_t min_tmp_disk;  /* minimum temporary disk required per node, default=0 */
+	char *partition;        /* name of requested partition, default in SLURM config */
+	uint32_t priority;      /* relative priority of the job, default set by SLURM,
+				 * can only be explicitly set if user is root, maximum
+				 *                                  * value is #fffffffe */
+	char *req_nodes;        /* comma separated list of required nodes, default NONE */
+	char *job_script;       /* pathname of required script, default NONE */
+	uint16_t shared;        /* 1 if job can share nodes with other jobs, 0 otherwise,
+				 * default in SLURM configuration */
+	uint32_t time_limit;    /* maximum run time in minutes, default is partition
+				 * limit as defined in SLURM configuration, maximum
+				 *                                  * value is #fffffffe */
+	uint32_t num_procs;     /* number of processors required by job, default=0 */
+	uint32_t num_nodes;     /* number of nodes required by job, default=0 */
+	uint32_t user_id;       /* set only if different from current UID, default set
+				 * to UID by API, can only be set if user is root */
+} job_desc_t ;
+
 typedef struct slurm_msg
 {
-	uint16_t msg_type ;
+	slurm_msg_type_t msg_type ;
+	slurm_addr address ;
 	void * msg ;
 } slurm_msg_t ;
 #endif
