@@ -773,10 +773,8 @@ static void opt_args(int ac, char **av)
 	if (rc < -1) {
 		const char *bad_opt;
 		bad_opt = poptBadOption(optctx, POPT_BADOPTION_NOALIAS);
-		if (strcmp (bad_opt, "-h"))
-			error("bad argument %s: %s", bad_opt, poptStrerror(rc));
-		poptPrintUsage(optctx, stderr, 0);
-
+		error("bad argument %s: %s", bad_opt, poptStrerror(rc));
+		error("Try \"srun --help\" for more information\n");
 		exit(1);
 	}
 
