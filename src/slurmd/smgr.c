@@ -166,8 +166,10 @@ _session_mgr(slurmd_job_t *job)
 		exit(2);
 
 	cont_id = slurm_create_container(job->jobid);
-	if (cont_id == 0)
+	if (cont_id == 0) {
+		error("slurm_create_container: %m");
 		exit(3);
+	}
 
 	if (chdir(job->cwd) < 0) {
 		error("couldn't chdir to '%s': %m: going to /tmp instead",
