@@ -18,7 +18,7 @@
 */
 
 #ifndef HAVE_POPT_H
-#  include "popt/popt.h"
+#  include <src/popt/popt.h>
 #else 
 #  include <popt.h>
 #endif
