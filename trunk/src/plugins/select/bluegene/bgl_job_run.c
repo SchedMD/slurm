@@ -122,7 +122,7 @@ static int _remove_job(db_job_id_t job_id)
 		if ((rc = rm_get_data(job_rec, RM_JobState, &job_state)) != 
 				STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
-				debug("job %d removed from DB2", job_id);
+				debug("job %d not found in DB2", job_id);
 				rc = STATUS_OK;
 			} else
 				error("rm_get_data(RM_JobState) for jobid=%d "
