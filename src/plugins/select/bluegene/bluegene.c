@@ -51,7 +51,8 @@ static bgl_record_t* _find_config_by_nodes(char* nodes);
 static int  _listfindf_part_record(bgl_record_t* record, char *nodes);
 static int  _parse_bgl_spec(char *in_line);
 //static int  _parse_request(char* request_string, partition_t** request);
-//static void _process_config(void);
+static void _process_config(void);
+static int _read_bgl_conf(void);
 //static int  _sync_partitions(void);
 static int  _validate_config_nodes(void);
 
@@ -208,18 +209,24 @@ int create_static_partitions(List part_list)
 		j=0;
 		/* printf("creating list %d%d%dx%d%d%d\n", */
 /* 			       start[X],start[Y],start[Z],end[X],end[Y],end[Z]); */
-		for (x = start[X]; x <= end[X]; x++)
-			for (y = start[Y]; y <= end[Y]; y++)
+		for (x = start[X]; x <= end[X]; x++) {
+			for (y = start[Y]; y <= end[Y]; y++) {
 				for (z = start[Z]; z <= end[Z]; z++) {
 					list_append(bgl_record->bgl_part_list, 
 						    &pa_system_ptr->grid[x][y][z]);
 					j++;
 				}
+			}
+		}
 		bgl_record->bp_count = j;
 		set_bgl_part(bgl_record->bgl_part_list, 
 			     bgl_record->bp_count, 
 			     bgl_record->conn_type);			
-		
+		if (node_name2bitmap(bgl_record->nodes, false, 
+				&(bgl_record->bitmap))) {
+			error("Unable to convert nodes %s to bitmap", 
+				bgl_record->nodes);
+		}
 	}
 	list_iterator_destroy(itr);
 	
@@ -437,7 +444,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
  * Read and process the bluegene.conf configuration file so to interpret what
  * partitions are static/dynamic, torus/mesh, etc.
  */
-extern int read_bgl_conf(void)
+static int _read_bgl_conf(void)
 {
 	DEF_TIMERS;
 	FILE *bgl_spec_file;	/* pointer to input data file */
@@ -465,7 +472,7 @@ extern int read_bgl_conf(void)
 	/* bgl_conf defined in bgl_node_alloc.h */
 	bgl_spec_file = fopen(bgl_conf, "r");
 	if (bgl_spec_file == NULL)
-		fatal("read_bgl_conf error opening file %s, %m",
+		fatal("_read_bgl_conf error opening file %s, %m",
 		      bgl_conf);
 
 	/* empty the old list before reading new data */
@@ -482,7 +489,7 @@ extern int read_bgl_conf(void)
 	while (fgets(in_line, BUFSIZE, bgl_spec_file) != NULL) {
 		line_num++;
 		if (strlen(in_line) >= (BUFSIZE - 1)) {
-			error("read_bgl_config line %d, of input file %s "
+			error("_read_bgl_config line %d, of input file %s "
 			      "too long", line_num, bgl_conf);
 			fclose(bgl_spec_file);
 			return E2BIG;
@@ -525,7 +532,7 @@ extern int read_bgl_conf(void)
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
 	END_TIMER;
-	debug("read_bgl_conf: finished loading configuration %s", TIME_STR);
+	debug("_read_bgl_conf: finished loading configuration %s", TIME_STR);
 	
 	return error_code;
 }
@@ -631,13 +638,12 @@ static void _destroy_bgl_record(void* object)
 	bgl_record_t* this_record = (bgl_record_t*) object;
 
 	if (this_record) {
-		if(this_record->nodes)
-			xfree(this_record->nodes);
-		if(this_record->owner_name)
-			xfree(this_record->owner_name);
-		if(this_record->bgl_part_list)
+		xfree(this_record->nodes);
+		xfree(this_record->owner_name);
+		if (this_record->bgl_part_list)
 			list_destroy(this_record->bgl_part_list);
-		
+		if (this_record->bitmap)
+			bit_free(this_record->bitmap);
 		//xfree(this_record->bgl_part_id);
 		xfree(this_record);
 	}
@@ -759,7 +765,7 @@ extern int init_bgl(void)
 	rm_size3D_t bp_size;
 #endif
 
-	read_bgl_conf();
+	_read_bgl_conf();
 
 #ifdef HAVE_BGL_FILES
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
