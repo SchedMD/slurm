@@ -49,9 +49,6 @@ void slurm_free_return_code_msg ( return_code_msg_t * msg )
 	xfree ( msg ) ;
 }
 
-
-
-
 void slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 {
 	if ( build_ptr ) 
@@ -267,6 +264,33 @@ void slurm_free_update_node_msg ( update_node_msg_t * msg )
 			xfree ( msg -> node_names ) ;
 		xfree ( msg ) ;
 	}
+}
+
+void slurm_free_job_step_create_request_msg ( job_step_create_request_msg_t * msg )
+{ 
+	if ( msg )
+	{
+		if (msg->node_list )
+			xfree( msg->node_list );
+		xfree( msg );
+	}
+}
+
+void slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * msg )
+{
+	if ( msg )
+	{
+		if (msg->credentials )
+			xfree( msg->credentials );
+
+#		ifdef HAVE_LIBELAN3
+		if ( msg->qsw_job )
+			xfree( msg->qsw_job );
+#		endif
+
+		xfree( msg );
+	}
+
 }
 
 void slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg )

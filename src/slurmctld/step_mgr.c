@@ -107,7 +107,6 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
  * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: pointer to the job step's record, NULL on error
- * global: step_list - global step list
  */
 struct step_record *
 find_step_record(struct job_record *job_ptr, uint16_t step_id) 
@@ -142,7 +141,6 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
- * global: step_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change unpack_step_desc() in common/slurm_protocol_pack.c whenever the
  *	data format changes

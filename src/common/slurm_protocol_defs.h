@@ -40,6 +40,7 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
@@ -80,73 +81,72 @@ enum part_shared {
 #include <src/common/slurm_protocol_common.h>
 
 /* SLURM Message types */
-typedef enum { test1, test2
-} SLURM_MSG_TYPE_T ;
-	
-#define REQUEST_NODE_REGISTRATION_STATUS 	1001
-#define MESSAGE_NODE_REGISTRATION_STATUS 	1002	
-#define REQUEST_RECONFIGURE			1011
-#define RESPONSE_RECONFIGURE			1012 
+typedef enum { 
+	REQUEST_NODE_REGISTRATION_STATUS = 1001,
+	MESSAGE_NODE_REGISTRATION_STATUS,
+	REQUEST_RECONFIGURE,
+	RESPONSE_RECONFIGURE,
 
-#define REQUEST_BUILD_INFO			3011
-#define RESPONSE_BUILD_INFO			3012
-#define REQUEST_JOB_INFO			3021
-#define RESPONSE_JOB_INFO			3022
-#define REQUEST_JOB_STEP_INFO			3031
-#define RESPONSE_JOB_STEP_INFO			3032
-#define REQUEST_NODE_INFO			3041
-#define RESPONSE_NODE_INFO			3042
-#define REQUEST_PARTITION_INFO			3051
-#define RESPONSE_PARTITION_INFO			3052
-#define REQUEST_ACCTING_INFO			3061
-#define RESPONSE_ACCOUNTING_INFO		3062
-#define REQUEST_GET_JOB_STEP_INFO		3071
-#define RESPONSE_GET_JOB_STEP_INFO		3072
+	REQUEST_BUILD_INFO=2001,
+	RESPONSE_BUILD_INFO,
+	REQUEST_JOB_INFO,
+	RESPONSE_JOB_INFO,
+	REQUEST_JOB_STEP_INFO,
+	RESPONSE_JOB_STEP_INFO,
+	REQUEST_NODE_INFO,
+	RESPONSE_NODE_INFO,
+	REQUEST_PARTITION_INFO,
+	RESPONSE_PARTITION_INFO,
+	REQUEST_ACCTING_INFO,
+	RESPONSE_ACCOUNTING_INFO,
+	REQUEST_GET_JOB_STEP_INFO,
+	RESPONSE_GET_JOB_STEP_INFO,
 
-#define REQUEST_UPDATE_JOB			3081
-#define REQUEST_UPDATE_NODE			3082
-#define REQUEST_UPDATE_PARTITION		3083
+	REQUEST_UPDATE_JOB = 3001,
+	REQUEST_UPDATE_NODE,
+	REQUEST_UPDATE_PARTITION,
 
-#define REQUEST_RESOURCE_ALLOCATION 		4001
-#define RESPONSE_RESOURCE_ALLOCATION		4002
-#define REQUEST_SUBMIT_BATCH_JOB		4011
-#define RESPONSE_SUBMIT_BATCH_JOB		4012
-#define REQUEST_BATCH_JOB_LAUNCH		4021
-#define RESPONSE_BATCH_JOB_LAUNCH		4022
-#define REQUEST_SIGNAL_JOB			4031
-#define RESPONSE_SIGNAL_JOB			4032
-#define REQUEST_CANCEL_JOB			4041
-#define RESPONSE_CANCEL_JOB			4042	
-#define REQUEST_JOB_RESOURCE			4051
-#define RESPONSE_JOB_RESOURCE			4052
-#define REQUEST_JOB_ATTACH			4061
-#define RESPONSE_JOB_ATTACH			4062
-#define REQUEST_IMMEDIATE_RESOURCE_ALLOCATION	4071
-#define RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION	4072
-#define REQUEST_JOB_WILL_RUN	 		4081
-#define RESPONSE_JOB_WILL_RUN			4082
-#define MESSAGE_REVOKE_JOB_CREDENTIAL		4901
+	REQUEST_RESOURCE_ALLOCATION = 4001,
+	RESPONSE_RESOURCE_ALLOCATION,
+	REQUEST_SUBMIT_BATCH_JOB,
+	RESPONSE_SUBMIT_BATCH_JOB,
+	REQUEST_BATCH_JOB_LAUNCH,
+	RESPONSE_BATCH_JOB_LAUNCH,
+	REQUEST_SIGNAL_JOB,
+	RESPONSE_SIGNAL_JOB,
+	REQUEST_CANCEL_JOB,
+	RESPONSE_CANCEL_JOB,
+	REQUEST_JOB_RESOURCE,
+	RESPONSE_JOB_RESOURCE,
+	REQUEST_JOB_ATTACH,
+	RESPONSE_JOB_ATTACH,
+	REQUEST_IMMEDIATE_RESOURCE_ALLOCATION,
+	RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION,
+	REQUEST_JOB_WILL_RUN,
+	RESPONSE_JOB_WILL_RUN,
+	MESSAGE_REVOKE_JOB_CREDENTIAL,
 
-#define REQUEST_CREATE_JOB_STEP			5001
-#define RESPONSE_CREATE_JOB_STEP		5002
-#define REQUEST_RUN_JOB_STEP			5011
-#define RESPONSE_RUN_JOB_STEP			5012
-#define REQUEST_SIGNAL_JOB_STEP			5021
-#define RESPONSE_SIGNAL_JOB_STEP		5022
-#define REQUEST_CANCEL_JOB_STEP			5031
-#define RESPONSE_CANCEL_JOB_STEP		5032
+	REQUEST_JOB_STEP_CREATE = 5001,
+	RESPONSE_JOB_STEP_CREATE,
+	REQUEST_RUN_JOB_STEP,
+	RESPONSE_RUN_JOB_STEP,
+	REQUEST_SIGNAL_JOB_STEP,
+	RESPONSE_SIGNAL_JOB_STEP,
+	REQUEST_CANCEL_JOB_STEP,
+	RESPONSE_CANCEL_JOB_STEP,
 
-#define REQUEST_LAUNCH_TASKS			6001	
-#define RESPONSE_LAUNCH_TASKS			6002
-#define MESSAGE_TASK_EXIT		 	6003	
-#define REQUEST_KILL_TASKS			6004
+	REQUEST_LAUNCH_TASKS = 6001,
+	RESPONSE_LAUNCH_TASKS,
+	MESSAGE_TASK_EXIT,
+	REQUEST_KILL_TASKS,
 
-/*DPCS get key to sign submissions*/
-#define REQUEST_GET_KEY				8001	
-#define RESPONSE_GET_KEY			8002
+	/*DPCS get key to sign submissions*/
+	REQUEST_GET_KEY = 7001,
+	RESPONSE_GET_KEY,
 
-#define RESPONSE_SLURM_RC			9000	
-#define MESSAGE_UPLOAD_ACCOUNTING_INFO		9010	
+	RESPONSE_SLURM_RC = 8001,
+	MESSAGE_UPLOAD_ACCOUNTING_INFO,
+} slurm_msg_type_t ;
 
 /*core api configuration struct */
 typedef struct slurm_protocol_config 
@@ -160,9 +160,19 @@ typedef struct slurm_protocol_header
 {
 	uint16_t version ;
 	uint16_t flags ;
-	uint16_t msg_type ;
+	slurm_msg_type_t  msg_type ;
 	uint32_t body_length ;
 } header_t ;
+
+/* Job credential */
+typedef struct slurm_job_credential
+{
+	uint32_t job_id;
+	uid_t user_id;
+	char* node_list;
+	time_t experation_time;	
+	uint32_t signature; /* What are we going to do here? */
+} slurm_job_credential_t;
 
 typedef struct slurm_msg
 {
@@ -206,12 +216,31 @@ typedef struct slurm_node_registration_status_msg
  	uint32_t temporary_disk_space ;
 } slurm_node_registration_status_msg_t ;
 
+typedef struct job_step_create_request_msg 
+{
+	uint32_t node_count;
+	uint32_t proc_count;
+	uint16_t relative;
+	char* node_list;
+} job_step_create_request_msg_t; 
+
+typedef struct job_step_create_response_msg 
+{
+	uint32_t job_step_id;
+	char* node_list;
+	slurm_job_credential_t* credentials;
+#ifdef HAVE_LIBELAN3
+    qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
+#endif
+	
+} job_step_create_response_msg_t; 
+
 typedef struct launch_tasks_msg
 {
 	uint32_t job_id ;
 	uint32_t job_step_id ;
 	uint32_t uid ;
-	char * credentials ;
+	slurm_job_credential_t* credentials;
 	uint32_t tasks_to_launch ;
 	uint16_t envc ;
 	char ** env ;
@@ -408,6 +437,8 @@ void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
 void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
+void inline slurm_free_job_step_create_request_msg ( job_step_create_request_msg_t * msg );
+void inline slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * msg );
 void inline slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg ) ;
 void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
 
