@@ -18,7 +18,7 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-/* slurm_submit_job - load the supplied node information buffer if changed */
+/* slurm_allocate_resources - allocated resources for a job request */
 int
 slurm_allocate_resources (job_desc_msg_t * job_desc_msg , job_allocation_response_msg_t * job_alloc_resp_msg, int immediate )
 {
