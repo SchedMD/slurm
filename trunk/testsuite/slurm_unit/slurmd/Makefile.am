@@ -2,6 +2,12 @@ AUTOMAKE_OPTIONS = foreign
 
 noinst_PROGRAMS = task_mgr-test circular_buffer-test task_launch-test credential_util-test
 
+if WITH_ELAN
+interconnect_lib = $(top_srcdir)/src/slurmd/libelan_interconnect.a
+else
+interconnect_lib = $(top_srcdir)/src/slurmd/libno_interconnect.a
+endif
+
 
 INCLUDES = -I$(top_srcdir)/src/common
 LDADD   = $(top_srcdir)/src/common/libcommon.la \
@@ -12,5 +18,6 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/slurmd/signature_utils.o \
 	$(top_srcdir)/src/slurmd/io.o \
 	$(top_srcdir)/src/slurmd/pipes.o \
-	$(SSL_LIBS)
+	$(SSL_LIBS) \
+	$(interconnect_lib)
 
