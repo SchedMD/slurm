@@ -2,8 +2,9 @@
  * read_config.c - Read the overall SLURM configuration file
  * See slurm.h for documentation on external functions and data structures
  *
- * NOTE: DEBUG_MODULE of read_config requires that it be loaded with 
- *       bits_bytes, partition_mgr, and node_mgr
+ * NOTE: DEBUG_MODULE mode test with execution line
+ *	read_config ../../etc/SLURM.conf1
+ *	read_config ../../etc/SLURM.conf1 1000
  *
  * Author: Moe Jette, jette@llnl.gov
  */

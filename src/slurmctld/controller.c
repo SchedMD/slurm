@@ -65,7 +65,7 @@ main(int argc, char * argv[]) {
 
     Command_File = fopen(argv[2], "r");
     if (Command_File == NULL) {
-	fprintf(stderr, "Read_Node_Spec_Conf: error %d opening command file %s\n", 
+	fprintf(stderr, "controller: error %d opening command file %s\n", 
 		errno, argv[2]);
 	exit(1);
     } /* if */

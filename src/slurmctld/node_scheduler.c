@@ -28,7 +28,8 @@ int Is_Key_Valid(int Key);
 int Match_Group(char *AllowGroups, char *UserGroups);
 int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, char **Job_Name,
 	char **Req_Group, char **Req_Partition, int *Contiguous, int *Req_CPUs, 
-	int *Req_Nodes, int *Min_CPUs, int *Min_RealMemory, int *Min_TmpDisk, int *Key);
+	int *Req_Nodes, int *Min_CPUs, int *Min_Memory, int *Min_TmpDisk, int *Key);
+int ValidFeatures(char *Requested, char *Available);
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -62,16 +63,18 @@ main(int argc, char * argv[]) {
     } /* if */
 
     Line_Num = 0;
+    printf("\n");
     while (fgets(In_Line, BUF_SIZE, Command_File)) {
+	if (In_Line[strlen(In_Line)-1] == '\n') In_Line[strlen(In_Line)-1]=(char)NULL;
 	Line_Num++;
 	Error_Code = Allocate_Nodes(In_Line, &Node_List);
 	if (Error_Code) {
-	    if (strncmp(In_Line, "Name=FAIL", 9) != 0) printf("ERROR:");
-	    printf("For job: %s", In_Line, Node_List);
+	    if (strncmp(In_Line, "JobName=FAIL", 12) != 0) printf("ERROR:");
+	    printf("For job: %s\n", In_Line, Node_List);
 	    printf("node_scheduler: Error %d from Allocate_Nodes on line %d\n\n", Error_Code, Line_Num);
 	} else {
-	    if (strncmp(In_Line, "Name=FAIL", 9) == 0) printf("ERROR: ");
-	    printf("For job: %s  Nodes selected %s\n\n", In_Line, Node_List);
+	    if (strncmp(In_Line, "JobName=FAIL", 12) == 0) printf("ERROR: ");
+	    printf("For job: %s\n  Nodes selected %s\n\n", In_Line, Node_List);
 	    free(Node_List);
 	} /* else */
     } /* while */
@@ -90,18 +93,31 @@ main(int argc, char * argv[]) {
  */
 int Allocate_Nodes(char *Job_Specs, char **Node_List) {
     char *Req_Features, *Req_Node_List, *Job_Name, *Req_Group, *Req_Partition, *Out_Line;
-    int Contiguous, Req_CPUs, Req_Nodes, Min_CPUs, Min_RealMemory, Min_TmpDisk;
+    int Contiguous, Req_CPUs, Req_Nodes, Min_CPUs, Min_Memory, Min_TmpDisk;
     int Error_Code, CPU_Tally, Node_Tally, Key;
     struct Part_Record *Part_Ptr;
-    unsigned *Req_BitMap, *Part_BitMap;
+    unsigned *Req_BitMap, *Scratch_BitMap;
+    ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
+    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
+    int i;
+    struct Node_Set {	/* Set of jobs with same weight that could be allocated */
+	int CPUs_Per_Node;
+	int Nodes;
+	unsigned *My_BitMap;
+    } *Node_Set_Ptr;
+    int Node_Set_Index, Node_Set_Size;
 
     Req_Features = Req_Node_List = Req_Group = Req_Partition = NULL;
-    Req_BitMap = Part_BitMap = NULL;
-    Contiguous = Req_CPUs = Req_Nodes = Min_CPUs = Min_RealMemory = Min_TmpDisk = Key = NO_VAL;
+    Req_BitMap = Scratch_BitMap = NULL;
+    Contiguous = Req_CPUs = Req_Nodes = Min_CPUs = Min_Memory = Min_TmpDisk = Key = NO_VAL;
+    Node_Set_Ptr = NULL;
+    Config_Record_Iterator = NULL;
+    Node_List[0] = NULL;
 
+    /* Setup and basic parsing */
     Error_Code = Parse_Job_Specs(Job_Specs, &Req_Features, &Req_Node_List, &Job_Name, &Req_Group, 
 		&Req_Partition, &Contiguous, &Req_CPUs, &Req_Nodes, &Min_CPUs, 
-		&Min_RealMemory, &Min_TmpDisk, &Key);
+		&Min_Memory, &Min_TmpDisk, &Key);
     if (Error_Code == ENOMEM) {
 	Error_Code = EAGAIN;	/* Don't want to kill the job off */
 	goto cleanup;
@@ -115,6 +131,16 @@ int Allocate_Nodes(char *Job_Specs, char **Node_List) {
 #endif
 	goto cleanup;
     } /* if */
+    if ((Req_CPUs == NO_VAL) && (Req_Nodes == NO_VAL) && (Req_Node_List == NULL)) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Allocate_Nodes: Job failed to specify NodeList, CPU or Node count\n");
+#else
+	syslog(LOG_NOTICE, "Allocate_Nodes: Job failed to specify NodeList, CPU or Node count\n");
+#endif
+	Error_Code =  EINVAL;
+	goto cleanup;
+    } /* if */
+
 
     /* Find selected partition */
     if (Req_Partition) {
@@ -141,6 +167,7 @@ int Allocate_Nodes(char *Job_Specs, char **Node_List) {
 	Part_Ptr = Default_Part_Loc;
     } /* if */
 
+
     /* Can this user access this partition */
     if (Part_Ptr->Key && (Is_Key_Valid(Key) == 0)) {
 #if DEBUG_SYSTEM
@@ -164,6 +191,7 @@ int Allocate_Nodes(char *Job_Specs, char **Node_List) {
 	Error_Code = EINVAL;
 	goto cleanup;
     } /* if */
+
 
     /* Check if select partition has sufficient resources to satisfy request */
     if ((Req_CPUs != NO_VAL) && (Req_CPUs > Part_Ptr->TotalCPUs)) {
@@ -195,13 +223,8 @@ int Allocate_Nodes(char *Job_Specs, char **Node_List) {
 	    Error_Code = EAGAIN;  /* No memory */
 	    goto cleanup;
 	} /* if */
-	Part_BitMap = BitMapCopy(Part_Ptr->NodeBitMap);
-	if (Part_BitMap == NULL)  {
-	    Error_Code = EAGAIN;  /* No memory */
-	    goto cleanup;
-	} /* if */
-	BitMapAND(Part_BitMap, Req_BitMap);
-	if (BitMapCount(Part_BitMap) != BitMapCount(Req_BitMap)) {
+	if (Contiguous != NO_VAL) BitMapFill(Req_BitMap);
+	if (BitMapIsSuper(Req_BitMap, Part_Ptr->NodeBitMap) != 1) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Allocate_Nodes: Requested nodes %s not in partition %s\n", 
 		Req_Node_List, Part_Ptr->Name);
@@ -215,7 +238,111 @@ int Allocate_Nodes(char *Job_Specs, char **Node_List) {
     } else
 	Req_BitMap = (unsigned *)NULL;
 
+
     /* Pick up nodes from the Weight ordered configuration list */
+    Node_Set_Index = 0;
+    Node_Set_Size = 10;
+    Node_Set_Ptr = (struct Node_Set *)malloc(sizeof(struct Node_Set *)*Node_Set_Size);
+    if (Node_Set_Ptr == 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Allocate_Nodes: Unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Allocate_Nodes: Unable to allocate memory\n");
+#endif
+	Error_Code = EAGAIN;
+	goto cleanup;
+    } /* if */
+	
+    Config_Record_Iterator = list_iterator_create(Config_List);
+    if (Config_Record_Iterator == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Allocate_Nodes: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Allocate_Nodes: list_iterator_create unable to allocate memory\n");
+#endif
+	Error_Code = EAGAIN;
+	goto cleanup;
+    } /* if */
+
+    while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
+	if ((Min_CPUs    != NO_VAL) && (Min_CPUs    > Config_Record_Point->CPUs))       continue;
+	if ((Min_Memory  != NO_VAL) && (Min_Memory  > Config_Record_Point->RealMemory)) continue;
+	if ((Min_TmpDisk != NO_VAL) && (Min_TmpDisk > Config_Record_Point->TmpDisk))    continue;
+	if (ValidFeatures(Req_Features,Config_Record_Point->Feature) == 0) continue;
+
+	Node_Set_Ptr[Node_Set_Index].My_BitMap = BitMapCopy(Config_Record_Point->NodeBitMap);
+	if (Node_Set_Ptr[Node_Set_Index].My_BitMap == NULL) {
+	    Error_Code = EAGAIN;  /* No memory */
+	    list_iterator_destroy(Config_Record_Iterator);
+	    goto cleanup;
+	} /* if */
+	BitMapAND(Node_Set_Ptr[Node_Set_Index].My_BitMap, Part_Ptr->NodeBitMap);
+	Node_Set_Ptr[Node_Set_Index].Nodes = BitMapCount(Node_Set_Ptr[Node_Set_Index].My_BitMap);
+	if (Node_Set_Ptr[Node_Set_Index].Nodes == 0)
+	    free(Node_Set_Ptr[Node_Set_Index].My_BitMap);
+	else {
+	    if (Req_BitMap) {
+		if (Node_Set_Index == 0) 
+		    Scratch_BitMap = BitMapCopy(Node_Set_Ptr[Node_Set_Index].My_BitMap);
+		else
+		    BitMapOR(Scratch_BitMap, Node_Set_Ptr[Node_Set_Index].My_BitMap);
+	    } /* if */
+	    Node_Set_Ptr[Node_Set_Index].CPUs_Per_Node = Config_Record_Point->CPUs;
+#if DEBUG_MODULE
+	    printf("Found %d usable nodes from %s\n",
+		Node_Set_Ptr[Node_Set_Index].Nodes, Config_Record_Point->Nodes);
+#endif
+	    Node_Set_Index++;
+	    if (Node_Set_Index++ >= Node_Set_Size) {
+		Node_Set_Size += 10;
+		Node_Set_Ptr = (struct Node_Set *)realloc(Node_Set_Ptr, 
+				sizeof(struct Node_Set *)*Node_Set_Size);
+		if (Node_Set_Ptr == 0) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "Allocate_Nodes: Unable to allocate memory\n");
+#else
+		    syslog(LOG_ALERT, "Allocate_Nodes: Unable to allocate memory\n");
+#endif
+		    list_iterator_destroy(Config_Record_Iterator);
+		    Error_Code = EAGAIN;   /* No memory */
+		    goto cleanup;
+		} /* if */
+	    } /* if */
+	} /* else */
+    } /* while */
+    list_iterator_destroy(Config_Record_Iterator);
+    if (Node_Set_Index == 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Allocate_Nodes: No node configurations satisfy requirements %d:%d:%d:%s\n", 
+		Min_CPUs, Min_Memory, Min_TmpDisk, Req_Features);
+#else
+	syslog(LOG_NOTICE, "Allocate_Nodes: No node configurations satisfy requirements %d:%d:%d:%s\n", 
+		Min_CPUs, Min_Memory, Min_TmpDisk, Req_Features);
+#endif
+	Error_Code = EINVAL;
+	goto cleanup;
+    } /* if */
+    Node_Set_Size = Node_Set_Index - 1;
+    if (Req_BitMap) {
+	if (BitMapIsSuper(Req_BitMap, Scratch_BitMap) != 1) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Allocate_Nodes: Requested nodes do not satisfy configurations requirements %d:%d:%d:%s\n", 
+		Min_CPUs, Min_Memory, Min_TmpDisk, Req_Features);
+#else
+	    syslog(LOG_NOTICE, "Allocate_Nodes: Requested nodes do not satisfy configurations requirements %d:%d:%d:%s\n", 
+		Min_CPUs, Min_Memory, Min_TmpDisk, Req_Features);
+#endif
+	    Error_Code = EINVAL;
+	    goto cleanup;
+	} /* if */
+    } /* if */
+    if (Scratch_BitMap) {
+	free(Scratch_BitMap);
+	Scratch_BitMap = NULL;
+    } /* if */
+
+
+    /* Insure nodes are up and available */
 
     /* Pick the nodes providing a best-fit */
 
@@ -230,7 +357,8 @@ cleanup:
     if (Req_Group)	free(Req_Group);
     if (Req_Partition)	free(Req_Partition);
     if (Req_BitMap)	free(Req_BitMap);
-    if (Part_BitMap)	free(Part_BitMap);
+    if (Scratch_BitMap)	free(Scratch_BitMap);
+    if (Node_Set_Ptr)	free(Node_Set_Ptr);
     return Error_Code;
 } /* Allocate_Nodes */
 
@@ -282,7 +410,6 @@ int Match_Group(char *AllowGroups, char *UserGroups) {
 	free(Tmp_Allow_Group);
 	return 1; /* Assume good for now */
     } /* if */
-    strcpy(Tmp_User_Group, UserGroups);
 
     str_ptr1 = (char *)strtok_r(Tmp_Allow_Group, ",", &str_ptr2);
     while (str_ptr1) {
@@ -297,7 +424,7 @@ int Match_Group(char *AllowGroups, char *UserGroups) {
 	    str_ptr3 = (char *)strtok_r(NULL, ",", &str_ptr4);
 	} /* while (str_ptr3) */
 	str_ptr1 = (char *)strtok_r(NULL, ",", &str_ptr2);
-    } /* while (str_ptr1)*/
+    } /* while (str_ptr1) */
     free(Tmp_Allow_Group);
     free(Tmp_User_Group);
     return 0;  /* No match */
@@ -315,12 +442,12 @@ int Match_Group(char *AllowGroups, char *UserGroups) {
  */
 int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, char **Job_Name,
 	char **Req_Group, char **Req_Partition, int *Contiguous, int *Req_CPUs, 
-	int *Req_Nodes, int *Min_CPUs, int *Min_RealMemory, int *Min_TmpDisk, int *Key) {
+	int *Req_Nodes, int *Min_CPUs, int *Min_Memory, int *Min_TmpDisk, int *Key) {
     int Bad_Index, Error_Code, i;
     char *Temp_Specs;
 
     Req_Features[0] = Req_Node_List[0] = Req_Group[0] = Req_Partition[0] = Job_Name[0] = NULL;
-    *Contiguous = *Req_CPUs = *Req_Nodes = *Min_CPUs = *Min_RealMemory = *Min_TmpDisk = NO_VAL;
+    *Contiguous = *Req_CPUs = *Req_Nodes = *Min_CPUs = *Min_Memory = *Min_TmpDisk = NO_VAL;
 
     Temp_Specs = malloc(strlen(Job_Specs)+1);
     if (Temp_Specs == NULL) {
@@ -333,37 +460,37 @@ int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, 
     } /* if */
     strcpy(Temp_Specs, Job_Specs);
 
-    Error_Code = Load_String (Job_Name, "Name=", Temp_Specs);
+    Error_Code = Load_String (Job_Name, "JobName=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
     Error_Code = Load_String (Req_Features, "Features=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_String (Req_Node_List, "Node_List=", Temp_Specs);
+    Error_Code = Load_String (Req_Node_List, "NodeList=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
     Error_Code = Load_String (Req_Group, "Groups=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_String (Req_Partition, "PartitionName=", Temp_Specs);
+    Error_Code = Load_String (Req_Partition, "Partition=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
     Error_Code = Load_Integer (Contiguous, "Contiguous", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_Integer (Req_CPUs, "Req_CPUs=", Temp_Specs);
+    Error_Code = Load_Integer (Req_CPUs, "TotalCPUs=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_Integer (Req_Nodes, "Req_Nodes=", Temp_Specs);
+    Error_Code = Load_Integer (Req_Nodes, "TotalNodes=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_Integer (Min_CPUs, "Min_CPUs=", Temp_Specs);
+    Error_Code = Load_Integer (Min_CPUs, "MinCPUs=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_Integer (Min_RealMemory, "Min_RealMemory=", Temp_Specs);
+    Error_Code = Load_Integer (Min_Memory, "MinMemory=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
-    Error_Code = Load_Integer (Min_TmpDisk, "Min_TmpDisk=", Temp_Specs);
+    Error_Code = Load_Integer (Min_TmpDisk, "MinTmpDisk=", Temp_Specs);
     if (Error_Code) goto cleanup;
 
     Error_Code = Load_Integer (Key, "Key=", Temp_Specs);
@@ -381,9 +508,11 @@ int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, 
 
     if (Bad_Index != -1) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Parse_Job_Specs: Bad job specification input: %s\n", &Temp_Specs[Bad_Index]);
+	fprintf(stderr, "Parse_Job_Specs: Bad job specification input: %s\n", 
+		&Temp_Specs[Bad_Index]);
 #else
-	syslog(LOG_ERR, "Parse_Job_Specs: Bad job specification input: %s\n", &Temp_Specs[Bad_Index]);
+	syslog(LOG_ERR, "Parse_Job_Specs: Bad job specification input: %s\n", 
+		&Temp_Specs[Bad_Index]);
 #endif
 	Error_Code = EINVAL;
     } /* if */
@@ -399,3 +528,62 @@ cleanup:
     if (Req_Group[0])     free(Req_Group[0]);
     if (Req_Partition[0]) free(Req_Partition[0]);
 } /* Parse_Job_Specs */
+
+
+/* ValidFeatures - Determine if the Requested features are satisfied by those Available
+ * Input: Requested - Requested features (by a job)
+ *        Available - Available features (on a node)
+ * Output: Returns 0 if request is not satisfied, 1 otherwise
+ * NOTE: This is only checking comma separated features (Interpretted as AND), 
+ *       this should be expanded to support AND, OR, and parentheses "(&|)"
+ */
+int ValidFeatures(char *Requested, char *Available) {
+    char *Tmp_Requested, *str_ptr1, *str_ptr2;
+    char *Tmp_Available, *str_ptr3, *str_ptr4;
+    int found;
+
+    if (Requested == NULL) return 1;	/* No constraints */
+    if (Available == NULL) return 0;	/* No features */
+
+    Tmp_Requested = malloc(strlen(Requested)+1);
+    if (Tmp_Requested == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "ValidFeatures: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "ValidFeatures: unable to allocate memory\n");
+#endif
+	return 1; /* Assume good for now */
+    } /* if */
+    strcpy(Tmp_Requested, Requested);
+
+    Tmp_Available = malloc(strlen(Available)+1);
+    if (Tmp_Available == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "ValidFeatures: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "ValidFeatures: unable to allocate memory\n");
+#endif
+	free(Tmp_Requested);
+	return 1; /* Assume good for now */
+    } /* if */
+
+    found = 1;
+    str_ptr1 = (char *)strtok_r(Tmp_Requested, ",", &str_ptr2);
+    while (str_ptr1) {
+	found = 0;
+	strcpy(Tmp_Available, Available);
+	str_ptr3 = (char *)strtok_r(Tmp_Available, ",", &str_ptr4);
+	while (str_ptr3) {
+	    if (strcmp(str_ptr1, str_ptr3) == 0) {  /* We have a match */
+		found = 1;
+		break;
+	    } /* if */
+	    str_ptr3 = (char *)strtok_r(NULL, ",", &str_ptr4);
+	} /* while (str_ptr3) */
+	if (found == 0) break;
+	str_ptr1 = (char *)strtok_r(NULL, ",", &str_ptr2);
+    } /* while (str_ptr1) */
+    free(Tmp_Requested);
+    free(Tmp_Available);
+    return found;  /* No match */
+} /* ValidFeatures */

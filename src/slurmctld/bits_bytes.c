@@ -71,24 +71,32 @@ main(int argc, char * argv[]) {
     BitMapSet(Map1, 23);
     BitMapSet(Map1, 71);
     Out_Line = BitMapPrint(Map1);
-    printf("BitMapPrint #1 shows %s\n", Out_Line);
+    printf("BitMapPrint #1 Map1 shows %s\n", Out_Line);
     free(Out_Line);
     Map2 = BitMapCopy(Map1);
     Out_Line = BitMapPrint(Map2);
-    printf("BitMapPrint #2 shows %s\n", Out_Line);
+    printf("BitMapPrint #2 Map2 shows %s\n", Out_Line);
     free(Out_Line);
     Map3 = BitMapCopy(Map1);
     BitMapClear(Map2, 23);
+    if (BitMapIsSuper(Map2,Map1) != 1) printf("ERROR: BitMapIsSuper error 1\n");
+    if (BitMapIsSuper(Map1,Map2) != 0) printf("ERROR: BitMapIsSuper error 2\n");
     BitMapOR(Map3, Map2);
-    if (BitMapValue(Map3, 23) != 1) printf("ERROR: BitMap error 1\n");
-    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMap error 2\n");
-    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMap error 3\n");
+    if (BitMapValue(Map3, 23) != 1) printf("ERROR: BitMapOR error 1\n");
+    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMapOR error 2\n");
+    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMapOR error 3\n");
     BitMapAND(Map3, Map2);
-    if (BitMapValue(Map3, 23) != 0) printf("ERROR: BitMap error 4\n");
-    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMap error 5\n");
-    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMap error 6\n");
+    if (BitMapValue(Map3, 23) != 0) printf("ERROR: BitMapAND error 1\n");
+    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMapAND error 2\n");
+    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMapAND error 3\n");
     Out_Line = BitMapPrint(Map3);
-    printf("BitMapPrint #3 shows %s\n", Out_Line);
+    printf("BitMapPrint #3 Map3 shows %s\n", Out_Line);
+    free(Out_Line);
+
+    BitMapFill(Map1);
+    Out_Line = BitMapPrint(Map1);
+    if (BitMapValue(Map1, 34) != 1) printf("ERROR: BitMapFill error 1\n");
+    printf("BitMapPrint #4 Map1 shows %s\n", Out_Line);
     free(Out_Line);
 
     memset(Map1, 0, size);
@@ -97,7 +105,7 @@ main(int argc, char * argv[]) {
 	if (i>0) BitMapSet(Map1, (i+65));
     } /* for */
     Out_Line = BitMapPrint(Map1);
-    printf("BitMapPrint #4 shows %s\n", Out_Line);
+    printf("BitMapPrint #6 Map1 shows %s\n", Out_Line);
     size = BitMapCount(Map1);
     if (size != 19) printf("ERROR: BitMapCount error, %d\n", size);
     size = BitMapConsecutive(Map1, &i);
@@ -250,8 +258,8 @@ unsigned *BitMapCopy(unsigned *BitMap) {
  * Output: Returns the count of set bits
  */
 int BitMapCount(unsigned *BitMap) {
-    int count, bit, size, word;
-    unsigned mask;
+    int count, byte, size, word;
+    unsigned scan;
 
     if (BitMap == NULL) {
 #if DEBUG_SYSTEM
@@ -266,15 +274,95 @@ int BitMapCount(unsigned *BitMap) {
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
     size /= sizeof(unsigned);			/* Count of unsigned's */
     for (word=0; word<size; word++) {
-	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
-	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-	    if (BitMap[word] & mask) {
-		count++;
-	    } /* if */
-	} /* for (bit */
+	for (byte=0; byte<(sizeof(unsigned)*8); byte+=8) {
+	    scan = BitMap[word] >> ((sizeof(unsigned)*8)-8-byte);
+	    if (scan & 0x01) count++;
+	    if (scan & 0x02) count++;
+	    if (scan & 0x04) count++;
+	    if (scan & 0x08) count++;
+	    if (scan & 0x10) count++;
+	    if (scan & 0x20) count++;
+	    if (scan & 0x40) count++;
+	    if (scan & 0x80) count++;
+	} /* for (byte */
     } /* for (word */
     return count;
 } /* BitMapCount */
+
+
+/*
+ * BitMapFill - Fill the provided bitmap so that all bits between the highest and lowest
+ * 	previously set bits are also set (i.e fill in the gaps to make it contiguous)
+ * Input: BitMap - Pointer to the bit map to fill in
+ * Output: BitMap - The filled in bitmap
+ */
+void BitMapFill(unsigned *BitMap) {
+    int bit, size, word;
+    int first, last, position, gap;
+    unsigned mask;
+
+    if (BitMap == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "BitMapFill: BitMap pointer is NULL\n");
+#else
+	syslog(LOG_ALERT, "BitMapFill: BitMap pointer is NULL\n");
+#endif
+	return;
+    } /* if */
+
+    first = last = position = gap = -1;
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
+    size /= sizeof(unsigned);			/* Count of unsigned's */
+    for (word=0; word<size; word++) {
+	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
+	    position++;
+	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
+	    if (BitMap[word] & mask) {
+		if (first == -1) first=position;
+		if ((last != (position-1)) && (last != -1)) gap=1;
+		last = position;
+	    } /* else */
+	} /* for (bit */
+    } /* for (word */
+
+    if (gap == -1) return;
+
+    position = -1;
+    for (word=0; word<size; word++) {
+	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
+	    position++;
+	    if (position <= first) continue;
+	    if (position >= last)  continue;
+	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
+	    BitMap[word] |= mask;
+	} /* for (bit */
+    } /* for (word */
+} /* BitMapFill */
+
+
+/* 
+ * BitMapIsSuper - Report if one bitmap's contents are a superset of another
+ * Input: BitMap1 and BitMap2 - The bitmaps to compare
+ * Output: Return 1 if if all bits in BitMap1 are also in BitMap2, 0 otherwise 
+ */
+int BitMapIsSuper(unsigned *BitMap1, unsigned *BitMap2) {
+    int i, size;
+
+    if ((BitMap1 == NULL) || (BitMap2 == NULL)) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "BitMapOR: BitMap pointer is NULL\n");
+#else
+	syslog(LOG_ALERT, "BitMapOR: BitMap pointer is NULL\n");
+#endif
+	return;
+    } /* if */
+
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    for (i=0; i<size; i++) {
+	if (BitMap1[i] != (BitMap1[i] & BitMap2[i])) return 0;
+    } /* for (i */
+    return 1;
+} /* BitMapIsSuper */
 
 
 /*
