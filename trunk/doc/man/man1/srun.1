@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "November 2004" "srun 0.4" "slurm components"
+.TH SRUN "1" "February 2005" "srun 0.4" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -186,12 +186,13 @@ Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOBID environment variable was set.
 .TP
 \fB\-o\fR, \fB\-\-output\fR=\fImode\fR
-Specify the mode for stdout redirection. By default,
+Specify the mode for stdout redirection. By default in interactive mode,
 .B srun
 collects stdout from all tasks and line buffers this output to
 the attached terminal. With \fB\-\-output\fR stdout may be redirected
 to a file, to one file per task, or to /dev/null. See section 
 \fBIO Redirection\fR below for the various forms of \fImode\fR.
+If the specified file already exists, it will be overwritten.
 .TP
 \fB\-i\fR, \fB\-\-input\fR=\fImode\fR
 Specify how stdin is to redirected. By default,
@@ -200,12 +201,13 @@ redirects stdin from the terminal all tasks. See \fBIO Redirection\fR
 below for more options.
 .TP
 \fB\-e\fR, \fB\-\-error\fR=\fImode\fR
-Specify how stderr is to be redirected. By default,
+Specify how stderr is to be redirected. By default in interactive mode,
 .B srun
 redirects stderr to the same file as stdout, if one is specified. The
 \fB\-\-error\fR option is provided to allow stdout and stderr to be
 redirected to different locations.
 See \fBIO Redirection\fR below for more options.
+If the specified file already exists, it will be overwritten.
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
 Submit in "batch mode." \fBsrun\fR will make a copy of the \fIexecutable\fR 
@@ -215,7 +217,9 @@ The \fIexecutable\fR file will run on the first node allocated to the
 job and must contain \fBsrun\fR commands to initiate parallel tasks.
 stdin will be redirected from /dev/null, stdout and stderr will be
 redirected to a file (default is \fIjobname\fR.out or \fIjobid\fR.out in
-current working directory, see \fB\-o\fR for other IO options). 
+current working directory, see \fB\-o\fR for other IO options).
+Note that if the slurm daemons are cold-started, jobid values will be 
+reused. Plan accordingly to avoid over-writing output and error files. 
 \fIexecutable\fR must be specified using either a fully qualified 
 pathname or its pathname will be relative to the current working directory. 
 The search path will not be used to locate the file. \fIexecutable\fR 
