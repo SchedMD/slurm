@@ -2,8 +2,6 @@
 
 /* Started with Jim Garlick's xstring functions from pdsh */
 
-/* $Id$ */
-
 #ifndef _XSTRING_H
 #define _XSTRING_H	1
 
