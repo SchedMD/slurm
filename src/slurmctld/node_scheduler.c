@@ -165,7 +165,7 @@ allocate_nodes (unsigned *bitmap)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		node_record_table_ptr[i].node_state = STATE_BUSY;
+		node_record_table_ptr[i].node_state = STATE_ALLOCATED;
 		bit_clear (idle_node_bitmap, i);
 	}
 	return;

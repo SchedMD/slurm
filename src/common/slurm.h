@@ -46,8 +46,6 @@
 #define SLURM_CONF		"../../etc/slurm.conf2"
 #define TMP_FS			"/tmp"
 
-#define HEAD_FORMAT "#time=%lu version=%d\n"
-
 extern char *control_machine;	/* name of computer acting as slurm controller */
 extern char *backup_controller;	/* name of computer acting as slurm backup controller */
 

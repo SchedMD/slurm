@@ -22,7 +22,8 @@
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* location of the node records */
 char *node_state_string[] =
-	{ "DOWN", "UNKNOWN", "IDLE", "BUSY", "DRAINED", "DRAINING", "END" };
+	{ "DOWN", "UNKNOWN", "IDLE", "ALLOCATED", "STAGE_IN", "RUNNING", "STAGE_OUT", 
+	  "DRAINED", "DRAINING", "END" };
 int *hash_table = NULL;		/* table of hashed indicies into node_record */
 struct config_record default_config_record;
 struct node_record default_node_record;
