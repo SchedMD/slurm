@@ -48,7 +48,8 @@ make
 
 %install
 
-%makeinstall
+DESTDIR="$RPM_BUILD_ROOT" make install
+
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 
 %clean
@@ -78,8 +79,32 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
 
+%pre
+if [ -x /etc/rc.d/init.d/slurm ]; then
+	if /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
+		/etc/rc.d/init.d/slurm stop
+	fi
+fi
 
 %post
+if [ -x /etc/rc.d/init.d/slurm ]; then
+	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+	if ! /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
+		/etc/rc.d/init.d/slurm start
+	fi
+fi
+
+%preun
+if [ "$1" = 0 ]; then
+	if [ -x /etc/rc.d/init.d/slurm ]; then
+		[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+		if /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
+			/etc/rc.d/init.d/slurm stop
+		fi
+	fi
+fi
+
 
 %changelog
 * Sat Jan 26 2003 Joey Ekstrom <jcekstrom@llnl.gov> 
