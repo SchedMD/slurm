@@ -27,7 +27,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #if HAVE_STDLIB_H
@@ -36,9 +36,9 @@
 
 #include <stdio.h>
 
-#include <src/common/log.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/common/xmalloc.h>
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
 
 
 void slurm_free_last_update_msg(last_update_msg_t * msg)
