@@ -678,7 +678,7 @@ _io_disconnect_client(struct io_info *client, List objs)
 
 	xassert(client == client->obj->arg);
 
-	if (client->buf)
+	if (!client->eof && client->buf)
 		cbuf_rewind_line(client->buf, 256, -1);
 
 	if (destroy) {
