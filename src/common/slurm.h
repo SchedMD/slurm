@@ -74,6 +74,13 @@ int Dump_Node_Records (char *File_Name);
 int Dump_Part_Records (char *File_Name, char *File_Name_UserList);
 
 /* 
+ * Find_Node_Record - Find a record for node with specified name,
+ * Input: name - name of the desired node 
+ * Output: return pointer to node record or NULL if not found
+ */
+struct Node_Record *Find_Node_Record(char *name);
+
+/* 
  * Find_Valid_Parts - Determine which partitions the job specification can execute on
  * Input: Specification - Standard configuration file input line
  *        Partition - Location into which the bit-map of valid partitions is placed
@@ -146,10 +153,11 @@ int Validate_Node_Spec (char *Specification);
  * Will_Job_Run - Determine if the given job specification can be initiated now
  * Input: Job_Spec - Specifications for the job
  * Output: Returns node list, NULL if can not be initiated
+ *         Error_Code indicates type of error
  *
  * NOTE: The value returned MUST be freed to avoid memory leak
  */
-char *Will_Job_Run(char *Specification);
+char *Will_Job_Run(char *Specification, int *Error_Code);
 
 /*
  * Write_Node_Spec_Conf - Dump the node specification information into the specified file 

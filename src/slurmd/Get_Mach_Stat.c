@@ -18,6 +18,7 @@
 #include "slurm.h"
 
 #define DEBUG_MODULE 0
+#define DEBUG_SYSTEM 1
 
 int Get_CPUs(int *CPUs);
 int Get_OS_Name(char *OS_Name);
@@ -64,7 +65,7 @@ int Get_CPUs(int *CPUs) {
     *CPUs = 1;
     CPU_Info_File = fopen("/proc/stat", "r");
     if (CPU_Info_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Get_CPUs: error %d opening /proc/stat\n", errno);
 #else
 	syslog(LOG_ERR, "Get_CPUs: error %d opening /proc/stat\n", errno);
@@ -98,7 +99,7 @@ int Get_OS_Name(char *OS_Name) {
     strcpy(OS_Name, "UNKNOWN");
     Error_Code = uname(&Sys_Info);
     if (Error_Code != 0) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Get_OS_Name: uname error %d\n", Error_Code);
 #else
 	syslog(LOG_WARNING, "Get_OS_Name: uname error %d\n", Error_Code);
@@ -107,7 +108,7 @@ int Get_OS_Name(char *OS_Name) {
     } /* if */
 
     if ((strlen(Sys_Info.sysname) + strlen(Sys_Info.release)) >= MAX_OS_LEN) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Get_OS_Name: OS name too long\n");
 #else
 	syslog(LOG_WARNING, "Get_OS_Name: OS name too long\n");
@@ -131,7 +132,7 @@ int Get_Mach_Name(char *Node_Name) {
 
     Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
     if (Error_Code != 0) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Get_Mach_Name: gethostname error %d\n", Error_Code);
 #else
 	syslog(LOG_ERR, "Get_Mach_Name: gethostname error %d\n", Error_Code);
@@ -158,7 +159,7 @@ int Get_Memory(int *RealMemory, int *VirtualMemory) {
     *VirtualMemory = 1;
     Mem_Info_File = fopen("/proc/meminfo", "r");
     if (Mem_Info_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Get_Memory: error %d opening /proc/meminfo\n", errno);
 #else
 	syslog(LOG_ERR, "Get_Memory: error %d opening /proc/meminfo\n", errno);
@@ -195,7 +196,7 @@ int Get_Speed(float *Speed) {
     *Speed = 1.0;
     CPU_Info_File = fopen("/proc/cpuinfo", "r");
     if (CPU_Info_File == NULL) {
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	fprintf(stderr, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
 #else
 	syslog(LOG_ERR, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
@@ -217,16 +218,15 @@ int Get_Speed(float *Speed) {
 } /* Get_Speed */
 
 /*
- * Get_TmpDisk - Return the total size of /var/tmp and /tmp file systems on 
- *    this system (NOTE: Goal is to only counts if separate file system, but 
- *    without distinct file system IDs, this is not assured)
+ * Get_TmpDisk - Return the total size of /tmp file system on 
+ *    this system 
  * Input: TmpDisk - buffer for the disk space size
  * Output: TmpDisk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
 int Get_TmpDisk(long *TmpDisk) {
     struct statfs Stat_Buf;
-    char  *FS_Name[] = {"/", "/tmp", "/var", "/var/tmp"};
+    char  *FS_Name[] = {"/", "/tmp"};
     fsid_t FS_Fsid[4];
     long   FS_Size[4];
     long   Total_Size;
@@ -238,7 +238,7 @@ int Get_TmpDisk(long *TmpDisk) {
     Total_Size = 0;
     Page_Size = (getpagesize() / 1048576.0); /* Megabytes per page */
 
-    for (i=0; i<4; i++) {
+    for (i=0; i<2; i++) {
 	if (statfs(FS_Name[i], &Stat_Buf) == 0) {
 	    FS_Fsid[i] = Stat_Buf.f_fsid;
 	    FS_Size[i] = (long)Stat_Buf.f_blocks;
@@ -246,7 +246,7 @@ int Get_TmpDisk(long *TmpDisk) {
 	    FS_Size[i] = 0;
 	} else {
 	    Error_Code = errno;
-#if DEBUG_MODULE
+#if DEBUG_SYSTEM
 	    fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, FS_Name[i]);
 #else
 	    syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, FS_Name[i]);
@@ -257,11 +257,6 @@ int Get_TmpDisk(long *TmpDisk) {
     /* Determine if /tmp is distinct file system, comparing FS_Fsid would be best if it worked */
     if (FS_Size[0] != FS_Size[1]) {
 	Total_Size += FS_Size[1];
-    } /* if */
-
-    /* Determine if /var/tmp is distinct file system, comparing FS_Fsid would be best if it worked */
-    if ((FS_Size[1] != FS_Size[3]) && (FS_Size[2] != FS_Size[3])) {
-	Total_Size += FS_Size[3];
     } /* if */
 
     *TmpDisk += (long)(Total_Size * Page_Size);
