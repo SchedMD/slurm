@@ -293,7 +293,7 @@ _setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
 
 		if (job->task_state[i] == SRUN_TASK_FAILED) {
 			job->out[i] = IO_DONE;
-			if (job->err[i] == WAITING_FOR_IO)
+			if ((job->err[i] == WAITING_FOR_IO))
 				job->err[i] = IO_DONE;
 		}
 
@@ -360,21 +360,18 @@ _io_thr_poll(void *job_arg)
 
 		nfds = _setup_pollfds(job, fds, map);
 
-		while ((!_io_thr_done(job)) && 
-		       ((rc = poll(fds, nfds, -1)) <= 0)) {
-
+		if ((rc = poll(fds, nfds, -1)) <= 0) {
 			switch(errno) {
 				case EINTR:
 				case EAGAIN:
 					continue;
-					break;
 				case ENOMEM:
 				case EFAULT:
 					fatal("poll: %m");
 					break;
 				default:
 					error("poll: %m. trying again.");
-					break;
+					continue;
 			}
 		}
 

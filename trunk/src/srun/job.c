@@ -223,6 +223,13 @@ job_rc(job_t *job)
 
 	if (job->rc >= 0) return(job->rc);
 
+	/*
+	 *  return (1) if any tasks failed launch
+	 */
+	for (i = 0; i < opt.nprocs; i++) {
+		if (job->task_state[i] == SRUN_TASK_FAILED) 
+			return (job->rc = 1);
+	}
 
 	for (i = 0; i < opt.nprocs; i++) {
 		if (job->rc < job->tstatus[i])
