@@ -1598,7 +1598,8 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 		validate_jobs_on_node (
 			node_reg_stat_msg -> node_name ,
 			node_reg_stat_msg -> job_count ,
-			node_reg_stat_msg -> job_id ) ;
+			node_reg_stat_msg -> job_id ,
+			node_reg_stat_msg -> step_id ) ;
 		unlock_slurmctld (job_write_lock);
 	}
 

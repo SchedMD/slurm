@@ -28,6 +28,7 @@
 #define _HAVE_SLURM_H
 
 #include <pthread.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/types.h>
@@ -512,13 +513,14 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
 /* update_part - update a partition's configuration data per the supplied specification */
 extern int update_part (update_part_msg_t * part_desc );
 
+/* validate_group - validate that the submit uid is authorized to run in this partition */
+extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);
+
 /* validate_jobs_on_node - validate that any jobs that should be on the node are 
  *	actually running, if not clean up the job records and/or node records,
  *	call this function after validate_node_specs() sets the node state properly */
-extern void validate_jobs_on_node ( char *node_name, uint32_t job_count, uint32_t *job_id_ptr);
-
-/* validate_group - validate that the submit uid is authorized to run in this partition */
-extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);
+extern void validate_jobs_on_node ( char *node_name, uint32_t job_count, 
+			uint32_t *job_id_ptr, uint16_t *step_id_ptr);
 
 /* validate_node_specs - validate the node's specifications as valid */
 extern int validate_node_specs (char *node_name,
