@@ -23,6 +23,12 @@
 #include <stdarg.h> 
 #include <string.h>
 
+#ifdef _DEJAGNU_WAIT_
+#	include <sys/time.h>
+#	include <sys/types.h>
+#	include <unistd.h>
+#endif
+
 #define _BUFFER_SIZE_ 512
 
 static int passed;
@@ -31,6 +37,20 @@ static int untest;
 static int unresolve;
 
 static char buffer[ _BUFFER_SIZE_ ];
+
+#ifdef _DEJAGNU_WAIT_
+void
+wait(void) {
+	fd_set rfds;
+	struct timeval tv;
+
+	FD_ZERO(&rfds);
+	tv.tv_sec = 0;
+	tv.tv_usec = 1;
+
+	select(0, &rfds, NULL, NULL, &tv);
+}
+#endif
 
 inline void
 pass (const char* fmt, ... ) {
@@ -41,6 +61,10 @@ pass (const char* fmt, ... ) {
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
     printf ("\tPASSED: %s\n", buffer );
+	fflush( stdout );
+#ifdef _DEJAGNU_WAIT_
+	wait();
+#endif
 }
 
 inline void
@@ -52,6 +76,10 @@ fail (const char* fmt, ... ) {
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
     printf ("\tFAILED: %s\n", buffer );
+	fflush( stdout );
+#ifdef _DEJAGNU_WAIT_
+	wait();
+#endif
 }
 
 inline void
@@ -63,6 +91,10 @@ untested (const char* fmt, ... ) {
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
     printf ("\tUNTESTED: %s\n", buffer );
+	fflush( stdout );
+#ifdef _DEJAGNU_WAIT_
+	wait();
+#endif
 }
 
 inline void
@@ -74,6 +106,24 @@ unresolved (const char* fmt, ... ) {
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
     printf ("\tUNRESOLVED: %s\n", buffer );
+	fflush( stdout );
+#ifdef _DEJAGNU_WAIT_
+	wait();
+#endif
+}
+
+inline void
+note (const char* fmt, ... ) {
+	va_list ap;
+
+	va_start( ap, fmt );
+	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
+	va_end( ap );
+    printf ("\tNOTE: %s\n", buffer );
+	fflush( stdout );
+#ifdef _DEJAGNU_WAIT_
+	wait();
+#endif
 }
 
 inline void
