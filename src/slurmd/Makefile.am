@@ -57,7 +57,6 @@ libthreaded_io_la_SOURCES = threaded_io.c reconnect_utils.c io_threads.c
 libnb_io_la_SOURCES =  nb_io.c nbio.c reconnect_utils.c
 
 libelan_interconnect_la_SOURCES =  elan_interconnect.c
-libelan_interconnect_la_LIBADD = $(top_srcdir)/src/common/libcommon.la
 libno_interconnect_la_SOURCES =  no_interconnect.c 
 
 
