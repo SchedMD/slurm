@@ -54,7 +54,8 @@ char *bluegene_ramdisk = NULL;
 char *change_numpsets = NULL;
 int numpsets;
 bool agent_fini = false;
-
+FILE *fp = NULL;
+		
 /* some local functions */
 #ifdef HAVE_BGL
 static int  _addto_node_list(bgl_record_t *bgl_record, int *start, int *end);
@@ -70,9 +71,8 @@ extern int init_bgl(void)
 {
 #ifdef HAVE_BGL_FILES
 	int rc;
-	
 	rm_size3D_t bp_size;
-
+	
 	info("Attempting to contact MMCS");
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
@@ -863,7 +863,7 @@ static int _parse_bgl_spec(char *in_line)
 	char *nodes = NULL, *conn_type = NULL, *node_use = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
-	char *pset_num=NULL;
+	char *pset_num=NULL, *api_verb=NULL;
 	bgl_record_t *bgl_record, *found_record;
 	
 	error_code = slurm_parser(in_line,
@@ -871,6 +871,7 @@ static int _parse_bgl_spec(char *in_line)
 				  "LinuxImage=", 's', &linux_image,
 				  "MloaderImage=", 's', &mloader_image,
 				  "Numpsets=", 's', &pset_num,
+				  "BridgeAPIVerbose=", 's', &api_verb,
 				  "Nodes=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
@@ -906,7 +907,16 @@ static int _parse_bgl_spec(char *in_line)
 		numpsets = atoi(pset_num);
 		xfree(pset_num);
 	}
-
+	if(api_verb) {
+		if(fp)
+			fclose(fp);
+		fp = fopen("/var/log/slurm/bridgeapi.log","a");
+		
+		_strip_13_10(api_verb);
+		setSayMessageParams(fp, atoi(api_verb));
+		xfree(api_verb);
+		
+	}
 	/* Process node information */
 	if (!nodes && !conn_type)
 		goto cleanup;	/* no data */
