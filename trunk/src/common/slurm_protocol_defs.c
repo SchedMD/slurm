@@ -75,10 +75,14 @@ void slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 
 void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 {
+	int i;
+
 	if ( msg )
 	{
-		if ( msg->environment )
-			xfree ( msg->environment ) ;
+		for (i = 0; i < msg->env_size; i++) {
+			if ( msg->environment[i] )
+				xfree ( msg->environment[i] ) ;
+		}
 		if ( msg->features )
 			xfree ( msg->features ) ;
 		if ( msg->groups )
@@ -366,6 +370,7 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 {
 	job_desc_msg -> contiguous = (uint16_t) SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;
 	job_desc_msg -> environment = SLURM_JOB_DESC_DEFAULT_ENVIRONMENT ;
+	job_desc_msg -> env_size = SLURM_JOB_DESC_DEFAULT_ENV_SIZE ;
 	job_desc_msg -> features = SLURM_JOB_DESC_DEFAULT_FEATURES ;
 	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
 	job_desc_msg -> job_id = SLURM_JOB_DESC_DEFAULT_JOB_ID ; /* will be set by api */
