@@ -241,7 +241,7 @@ _service_connection(void *arg)
 	slurm_msg_t *msg = xmalloc(sizeof(*msg));
 
 	if ((rc = slurm_receive_msg(con->fd, msg)) < 0) {
-		error("slurm_recieve_msg: %m");
+		error("slurm_receive_msg: %m");
 		slurm_free_msg(msg);
 	} else {
 		msg->conn_fd = con->fd;

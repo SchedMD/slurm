@@ -339,7 +339,7 @@ static void xstrfmtcat(char **dst, const char *fmt, ...)
 
 /*
  * log a message at the specified level to facilities that have been 
- * configured to recieve messages at that level
+ * configured to receive messages at that level
  */
 static void log_msg(log_level_t level, const char *fmt, va_list args)
 {

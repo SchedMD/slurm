@@ -358,7 +358,7 @@ _complete_job(slurmd_job_t *job, int err, int status)
 	}
 
 	if (size < 0) {
-		error("Unable to recieve resp from controller");
+		error("Unable to receive resp from controller");
 		return SLURM_ERROR;
 	}
 

@@ -434,8 +434,10 @@ _alloc_nodes_step(void)
 	else 	/* (opt.distribution == SRUN_DIST_CYCLIC) */
 		job.task_dist  = SLURM_DIST_CYCLIC;
 
-	if (slurm_allocate_resources_and_run(&job, &resp) == SLURM_FAILURE)
+	if (slurm_allocate_resources_and_run(&job, &resp) == SLURM_FAILURE) {
+		debug("slurm_allocate_resources_and_run error %m");
 		return NULL;
+	}
 
 	return resp;
 }
