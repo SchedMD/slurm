@@ -23,17 +23,16 @@ Requires: slurm
 
 
 %description 
-The common slurm package, which includes the base libraries, client
-utilitues for SLURM, slurmd, and slurmctld.  Slurmd  is the compute node
-daemon of Slurm. It monitors all tasks running on the compute node ,
-accepts work (tasks), launches tasks, and kills running tasks upon
-request.  Slurmctld  is  the central management daemon of Slurm. It
-monitors all other Slurm daemons and resources, accepts work (jobs),
-and allocates resources to those jobs.
+SLURM is a simple resource management system which manages
+exclusive access to a set of compute resources and distrubutes
+work to those resources. Included in this package are the SLURM
+controller, compute node daemon, and all clients necessary to
+access SLURM functionality.
+
 
 %description devel
 Development package for SLURM.  This package includes the header files
-and static libraries.
+and static libraries for the SLURM API.
 
 
 %prep
@@ -73,6 +72,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc README 
 %doc DISCLAIMER
 %doc COPYING
+%doc etc/slurm.conf.example
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
@@ -89,28 +89,28 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
 
-%pre
-if [ -x /etc/rc.d/init.d/slurm ]; then
-	if /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
-		/etc/rc.d/init.d/slurm stop
-	fi
-fi
+#%pre
+#if [ -x /etc/rc.d/init.d/slurm ]; then
+#	if /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
+#		/etc/rc.d/init.d/slurm stop
+#	fi
+#fi
 
 %post
 /sbin/ldconfig %{_libdir}
-if [ -x /etc/rc.d/init.d/slurm ]; then
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-	if ! /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
-		/etc/rc.d/init.d/slurm start
-	fi
-fi
+#if [ -x /etc/rc.d/init.d/slurm ]; then
+#	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+#	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+#	if ! /etc/rc.d/init.d/slurm status | grep -q running; then
+#		/etc/rc.d/init.d/slurm start
+#	fi
+#fi
 
 %preun
 if [ "$1" = 0 ]; then
 	if [ -x /etc/rc.d/init.d/slurm ]; then
 		[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-		if /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
+		if /etc/rc.d/init.d/slurm status | grep -q running; then
 			/etc/rc.d/init.d/slurm stop
 		fi
 	fi
