@@ -42,7 +42,7 @@
 #define	_BITSTRING_H_
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
@@ -77,7 +77,7 @@ typedef bitstr_t bitoff_t;
 
 /* bitstr_t signature in first word */
 #define BITSTR_MAGIC 		0x42434445
-#define BITSTR_MAGIC_STACK	0x42434446 /* signature if allocated on stack */
+#define BITSTR_MAGIC_STACK	0x42434446 /* signature if on stack */
 
 /* max bit position in word */
 #define BITSTR_MAXPOS		(sizeof(bitstr_t)*8 - 1) 
