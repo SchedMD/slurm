@@ -45,23 +45,33 @@
  *	only the keywords supplied will be searched for. the supplied 
  *	specification is altered, overwriting the keyword and value pairs 
  *	with spaces.
+ * spec - pointer to the string of specifications, sets of three values 
+ *	(as many sets as required): keyword, type, value 
+ * IN keyword - string with the keyword to search for including equal sign 
+ *		(e.g. "name=")
+ * IN type - char with value 'd'==int, 'f'==float, 's'==string, 'l'==long
+ * IN/OUT value - pointer to storage location for value (char **) for type 's'
+ * RET 0 if no error, otherwise errno code
+ * NOTE: terminate with a keyword value of "END"
+ * NOTE: values of type (char *) are xfreed if non-NULL. caller must xfree any 
+ *	returned value
  */
 extern int slurm_parser (char *spec, ...) ;
 
-/* load_float - parse a string for a keyword, value pair, and load the 
- *	float value */
-extern int load_float (float *destination, char *keyword, char *in_line) ;
-
-/* load_integer - parse a string for a keyword, value pair, and load the 
- *	integer value */
-extern int load_integer (int *destination, char *keyword, char *in_line) ;
-
-/* load_long - parse a string for a keyword, value pair, and load the 
- *	long value */
-extern int load_long (long *destination, char *keyword, char *in_line) ;
-
-/* load_string - parse a string for a keyword, value pair, and load the 
- *	char value */
+/*
+ * load_string  - parse a string for a keyword, value pair, and load the 
+ *	char value
+ * IN/OUT destination - location into which result is stored, set to value, 
+ *	no change if value not found, if destination had previous value, 
+ *	that memory location is automatically freed
+ * IN keyword - string to search for
+ * IN/OUT in_line - string to search for keyword, the keyword and value 
+ *	(if present) are overwritten by spaces
+ * RET 0 if no error, otherwise an error code
+ * NOTE: destination must be free when no longer required
+ * NOTE: if destination is non-NULL at function call time, it will be freed 
+ * NOTE: in_line is overwritten, do not use a constant
+ */
 extern int load_string (char **destination, char *keyword, char *in_line) ;
 
 #endif
