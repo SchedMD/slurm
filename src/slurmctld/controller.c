@@ -80,13 +80,29 @@ inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;	
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
+static void * service_connection ( void * arg ) ;
 void usage (char *prog_name);
+
+/* kevins_way allows a higher degree of parrallelism, not thread pooling would also be a good security addition to prevent thread explosion*/
+#define kevins_way
+#ifdef kevins_way
+typedef struct connection_arg
+{
+	int newsockfd ;
+} connection_arg_t ;
+#endif
 
 /* main - slurmctld main function, start various threads and process RPCs */
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code, sig;
+	int sig ;
+	int error_code;
+	pthread_t thread_id;
+	slurm_fd newsockfd;
+        slurm_fd sockfd;
+	slurm_msg_t * msg = NULL ;
+	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
 	pthread_t thread_id_bg, thread_id_rpc;
 	pthread_attr_t thread_attr_bg, thread_attr_rpc;
@@ -201,6 +217,9 @@ slurmctld_rpc_mgr ( void * no_data )
 	 */
 	while (shutdown_time == 0) 
 	{
+#ifdef kevins_way
+		connection_arg_t * conn_arg = xmalloc ( sizeof ( connection_arg_t ) ) ;
+#endif
 		/* accept needed for stream implementation 
 		 * is a no-op in message implementation that just passes sockfd to newsockfd
 		 */
@@ -209,7 +228,15 @@ slurmctld_rpc_mgr ( void * no_data )
 			error ("slurm_accept_msg_conn error %d", errno) ;
 			continue ;
 		}
+#ifdef kevins_way
+		conn_arg -> newsockfd = newsockfd ;
+		if (pthread_create ( &thread_id_rpc_req, &thread_attr_rpc_req, service_connection, (void *) conn_arg )) {
+			/* Do without threads on failure */
+			error ("pthread_create errno %d", errno);
+			service_connection ( ( void * ) conn_arg ) ;
+		}		
 		
+#elif
 		/* receive message call that must occur before thread spawn because in message 
 		 * implementation their is no connection and the message is the sign of a new connection */
 		msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
@@ -234,8 +261,40 @@ slurmctld_rpc_mgr ( void * no_data )
 			 * the following call will be a no-op in a message/mongo implementation */
 			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 		}
+#endif
 	}			
 	pthread_exit ((void *)0);
+}
+
+void * service_connection ( void * arg )
+{
+	int error_code;
+	slurm_fd newsockfd = ( ( connection_arg_t * ) arg ) -> newsockfd ;
+	slurm_msg_t * msg = NULL ;
+	
+	msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
+
+	if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
+	{
+		error ("slurm_receive_msg error %d", errno);
+		slurm_free_msg ( msg ) ;
+	}
+	else
+	{
+		msg -> conn_fd = newsockfd ;	
+		slurmctld_req ( msg );	/* process the request */
+	}
+
+	/* close should only be called when the socket implementation is being used 
+	* the following call will be a no-op in a message/mongo implementation */
+	slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+
+	xfree ( arg ) ;
+#ifdef kevins_way
+	return NULL ;	
+#else
+	pthread_exit (NULL);
+#endif
 }
 
 /* slurmctld_background - process slurmctld background activities */

@@ -54,13 +54,19 @@ time_t init_time;
 slurmd_shmem_t * shmem_seg ;
 
 /* function prototypes */
-void * request_thread ( void * arg ) ;
-void slurmd_req ( slurm_msg_t * msg );
-int slurmd_msg_engine ( void * args ) ;
-int send_node_registration_status_msg ( ) ;
-void slurm_rpc_kill_tasks ( slurm_msg_t * msg ) ;
-void slurm_rpc_launch_tasks ( slurm_msg_t * msg ) ;
-int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
+static void * request_thread ( void * arg ) ;
+static void slurmd_req ( slurm_msg_t * msg );
+static int slurmd_msg_engine ( void * args ) ;
+inline static int send_node_registration_status_msg ( ) ;
+inline static void slurm_rpc_kill_tasks ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_launch_tasks ( slurm_msg_t * msg ) ;
+inline static int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
+static void * service_connection ( void * arg ) ;
+
+typedef struct connection_arg
+{
+	int newsockfd ;
+} connection_arg_t ;
 
 int main (int argc, char *argv[]) 
 {
@@ -141,7 +147,6 @@ int slurmd_msg_engine ( void * args )
 	int error_code ;
 	slurm_fd newsockfd;
         slurm_fd sockfd;
-	slurm_msg_t * msg = NULL ;
 	slurm_addr cli_addr ;
 	pthread_t request_thread_id ;
 	pthread_attr_t thread_attr ;
@@ -152,7 +157,7 @@ int slurmd_msg_engine ( void * args )
 	if ( ( sockfd = slurm_init_msg_engine_port ( slurm_get_slurmd_port ( ) ) )
 			 == SLURM_SOCKET_ERROR )
 		fatal ("slurmd: error starting message engine \n", errno);
-#ifdef PTHREAD_IMPL
+	
 	if ( ( error_code = pthread_attr_init ( & thread_attr ) ) ) 
 	{
 		error ("slurmd: error %d initializing thread attr", error_code ) ;
@@ -161,44 +166,30 @@ int slurmd_msg_engine ( void * args )
 	{
 		error ("slurmd: error %d setting detach thread state", error_code ) ;
 	}
-#endif
+	
 	while (true) 
 	{
+		connection_arg_t * conn_arg = xmalloc ( sizeof ( connection_arg_t ) ) ;
+			
 		/* accept needed for stream implementation 
 		 * is a no-op in mongo implementation that just passes sockfd to newsockfd
 		 */
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
 			error ("slurmctld: error %d from connect", errno) ;
-			break ;
+			continue ;
 		}
 		
 		/* receive message call that must occur before thread spawn because in message 
 		 * implementation their is no connection and the message is the sign of a new connection */
-		msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
-		if (msg == NULL)
-			return ENOMEM;
+		conn_arg -> newsockfd = newsockfd ;
 		
-		if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
+		if ( ( error_code = pthread_create ( & request_thread_id , & thread_attr , service_connection , ( void * ) conn_arg ) ) ) 
 		{
-			error ("slurmctld: error %d from accept", errno);
-			break ;
+			/* Do without threads on failure */
+			error ("pthread_create errno %d", errno);
+			service_connection ( ( void * ) conn_arg ) ;
 		}
-
-		msg -> conn_fd = newsockfd ;	
-
-#ifdef PTHREAD_IMPL		
-		if ( ( error_code = pthread_create ( & request_thread_id , & thread_attr , request_thread , ( void * ) msg ) ) ) 
-		{
-			error ("slurmctld: error %d creating request thread", error_code ) ;
-		}
-#else
-                slurmd_req ( msg );     /* process the request */
-                /* close should only be called when the stream implementation is being used
-                 * the following call will be a no-op in the message implementation */
-                slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
-
-#endif
 	}			
 	return 0 ;
 }
@@ -207,14 +198,29 @@ int slurmd_msg_engine ( void * args )
  * arg - a slurm_msg_t representing the accepted incomming message
  * returns - nothing, void * because of pthread def
  */
-void * request_thread ( void * arg )
+void * service_connection ( void * arg ) 
 {
-	slurm_msg_t * msg = ( slurm_msg_t * ) arg ;
+	int error_code;
+	slurm_fd newsockfd = ( ( connection_arg_t * ) arg ) -> newsockfd ;
+	slurm_msg_t * msg = NULL ;
 
-	slurmd_req ( msg ) ;
+	msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
 
-	slurm_close_accepted_conn ( msg -> conn_fd ) ;
-	pthread_exit ( 0 ) ;
+	if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
+	{
+		error ("slurmctld: error %d from accept", errno);
+		slurm_free_msg ( msg ) ;
+	}
+	else
+	{
+		msg -> conn_fd = newsockfd ;	
+		slurmd_req ( msg );     /* process the request */
+	}
+
+	/* close should only be called when the stream implementation is being used
+	 * the following call will be a no-op in the message implementation */
+	slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+	xfree ( arg ) ;
 	return NULL ;
 }
 
