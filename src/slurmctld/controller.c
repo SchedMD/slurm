@@ -16,7 +16,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 
@@ -226,10 +225,10 @@ slurmctld_req (int sockfd) {
 	int dump_size, dump_loc;
 
 	in_size = recv (sockfd, in_line, sizeof (in_line), 0);
+	start_time = clock ();
 
 	/* Allocate:  allocate resources for a job */
 	if (strncmp ("Allocate", in_line, 8) == 0) {
-		start_time = clock ();
 		node_name_ptr = NULL;
 		error_code = select_nodes (&in_line[8], &node_name_ptr);  /* skip "Allocate" */
 		if (error_code)
@@ -252,7 +251,6 @@ slurmctld_req (int sockfd) {
 
 	/* DumpBuild - dump the SLURM build parameters */
 	else if (strncmp ("DumpBuild", in_line, 9) == 0) {
-		start_time = clock ();
 		error_code = dump_build (&dump, &dump_size);
 		if (error_code)
 			info ("slurmctld_req: dump_build error %d, time=%ld",
@@ -276,7 +274,6 @@ slurmctld_req (int sockfd) {
 
 	/* DumpNode - dump the node configurations */
 	else if (strncmp ("DumpNode", in_line, 8) == 0) {
-		start_time = clock ();
 		time_stamp = NULL;
 		error_code =
 			load_string (&time_stamp, "LastUpdate=", in_line);
@@ -312,7 +309,6 @@ slurmctld_req (int sockfd) {
 
 	/* DumpPart - dump the partition configurations */
 	else if (strncmp ("DumpPart", in_line, 8) == 0) {
-		start_time = clock ();
 		time_stamp = NULL;
 		error_code =
 			load_string (&time_stamp, "LastUpdate=", in_line);
@@ -346,9 +342,26 @@ slurmctld_req (int sockfd) {
 			xfree (dump);
 	}
 
+	/* JobCancel - cancel a slurm job or reservation */
+	else if (strncmp ("JobCancel", in_line, 9) == 0) {
+		time_stamp = NULL;
+		error_code = EINVAL;
+		if (error_code)
+			info ("slurmctld_req: job_cancel error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
+		else
+			info ("slurmctld_req: job_cancel success for %s, time=%ld",
+				 &in_line[10], (long) (clock () - start_time));
+		fprintf (stderr, "job_cancel time = %ld usec\n",
+			 (long) (clock () - start_time));
+		if (error_code == 0)
+			send (sockfd, dump, dump_size, 0);
+		else
+			send (sockfd, "EINVAL", 7, 0);
+	}
+
 	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
-		start_time = clock ();
 		time_stamp = NULL;
 		error_code = EINVAL;
 		if (error_code)
@@ -367,7 +380,6 @@ slurmctld_req (int sockfd) {
 
 	/* JobWillRun - determine if job with given configuration can be initiated now */
 	else if (strncmp ("JobWillRun", in_line, 10) == 0) {
-		start_time = clock ();
 		time_stamp = NULL;
 		error_code = EINVAL;
 		if (error_code)
@@ -385,7 +397,6 @@ slurmctld_req (int sockfd) {
 	/* NodeConfig - determine if a node's actual configuration satisfies the
 	 * configured specification */
 	else if (strncmp ("NodeConfig", in_line, 10) == 0) {
-		start_time = clock ();
 		time_stamp = NULL;
 		node_name_ptr = NULL;
 		cpus = real_memory = tmp_disk = NO_VAL;
@@ -422,7 +433,6 @@ slurmctld_req (int sockfd) {
 
 	/* Reconfigure - re-initialized from configuration files */
 	else if (strncmp ("Reconfigure", in_line, 11) == 0) {
-		start_time = clock ();
 		time_stamp = NULL;
 		error_code = init_slurm_conf ();
 		if (error_code == 0)
@@ -440,7 +450,6 @@ slurmctld_req (int sockfd) {
 
 	/* Update - modify node or partition configuration */
 	else if (strncmp ("Update", in_line, 6) == 0) {
-		start_time = clock ();
 		node_name_ptr = part_name = NULL;
 		error_code = load_string (&node_name_ptr, "NodeName=", in_line);
 		if ((error_code == 0) && (node_name_ptr != NULL))

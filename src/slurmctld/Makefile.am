@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = controller node_mgr node_scheduler partition_mgr read_config 
+test_modules = controller job_mgr job_scheduler node_mgr node_scheduler partition_mgr read_config 
 else
 test_modules = 
 endif
@@ -22,6 +22,8 @@ noinst_PROGRAMS = $(test_modules)
 LDADD = $(top_srcdir)/src/api/libslurmapi.a $(top_srcdir)/src/common/libcommon.a
 
 slurmctld_SOURCES = controller.c \
+		    job_mgr.c \
+		    job_scheduler.c \
 		    node_mgr.c \
 		    node_scheduler.c \
 		    partition_mgr.c \
@@ -32,6 +34,8 @@ slurmctld_SOURCES = controller.c \
 # place of the rules that follow.
 
 #controller_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
+#job_mgr_CFLAGS        = -DDEBUG_MODULE $(AM_CFLAGS)
+#job_scheduler_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
 #node_mgr_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
 #node_scheduler_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
 #partition_mgr_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
@@ -45,6 +49,8 @@ slurmctld_SOURCES = controller.c \
 # Note: automake 1.5 will complain about these...
 #
 controller     : controller_d.o node_mgr.o node_scheduler.o partition_mgr.o read_config.o 
+job_mgr        : job_mgr_d.o
+job_scheduler  : job_scheduler_d.o job_mgr.o
 node_mgr       : node_mgr_d.o
 node_scheduler : node_scheduler_d.o node_mgr.o partition_mgr.o read_config.o
 partition_mgr  : partition_mgr_d.o node_mgr.o
