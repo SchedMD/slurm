@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Specify number of I/O nodes associated with BlueGene partition.
  -- Do not launch a job's tasks if the job is cancelled while its
     prolog is running (which can be slow on BlueGene).
+ -- Add new error code, ESLURM_BATCH_ONLY for attepts to launch 
+    job steps on front-end system (e.g. Blue Gene).
 
 * Changes in SLURM 0.4.0-pre9
 =============================

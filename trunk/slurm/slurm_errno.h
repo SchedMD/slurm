@@ -133,6 +133,7 @@ enum {
 	ESLURM_NOT_SUPPORTED,
 	ESLURM_DISABLED,
 	ESLURM_DEPENDENCY,
+	ESLURM_BATCH_ONLY,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,
