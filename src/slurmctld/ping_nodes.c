@@ -279,7 +279,7 @@ void ping_nodes (void)
 		hostlist_uniq(down_hostlist);
 		hostlist_ranged_string(down_hostlist,
 			sizeof(host_str), host_str);
-		error("Node %s not responding, setting DOWN", host_str);
+		error("Nodes %s not responding, setting DOWN", host_str);
 		hostlist_destroy(down_hostlist);
 	}
 	hostlist_destroy(ping_hostlist);
