@@ -38,6 +38,7 @@
 #include <sys/param.h>
 #include <sys/resource.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -47,8 +48,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xsignal.h"
 #include "src/common/daemonize.h"
-#include "src/common/credential_utils.h"
-#include "src/common/signature_utils.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/parse_spec.h"
 #include "src/common/hostlist.h"
@@ -103,9 +103,8 @@ static void      _init_conf();
 static void      _print_conf();
 static void      _read_config();
 static void 	 _kill_old_slurmd();
-static void      _list_recovered_creds(List list);
 static void      _reconfigure();
-static void      _restore_cred_state(List *list);
+static void      _restore_cred_state(slurm_cred_ctx_t ctx);
 static void      _increment_thd_count();
 static void      _decrement_thd_count();
 static void      _wait_for_all_threads();
@@ -584,13 +583,10 @@ _slurmd_init()
 		setrlimit(RLIMIT_NOFILE,&rlim);
 	}
 
-	if (slurm_ssl_init() < 0) 
+	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
 
-	if (slurm_init_verifier(&conf->vctx, conf->pubkey) < 0)
-		return SLURM_FAILURE;
-
-	_restore_cred_state(&conf->cred_state_list); 
+	_restore_cred_state(conf->vctx); 
 
 	if (conf->shm_cleanup)
 		shm_cleanup();
@@ -602,14 +598,12 @@ _slurmd_init()
 }
 
 static void
-_restore_cred_state(List *list)
+_restore_cred_state(slurm_cred_ctx_t ctx)
 {
 	char *file_name, *data = NULL;
 	uint32_t data_size = 0;
 	int cred_fd, data_allocated, data_read = 0;
 	Buf buffer = NULL;
-
-	initialize_credential_state_list(list);
 
 	file_name = xstrdup(conf->spooldir);
 	xstrcat(file_name, "/cred_state");
@@ -627,12 +621,8 @@ _restore_cred_state(List *list)
 	data_size += data_read;
 	close(cred_fd);
 	buffer = create_buf(data, data_size);
-	unpack_credential_list(*list, buffer);
 
-	if (list_count(*list))
-		clear_expired_credentials(*list);
-
-	_list_recovered_creds(*list);
+	slurm_cred_ctx_unpack(ctx, buffer);
 
       cleanup:
 	xfree(file_name);
@@ -640,35 +630,10 @@ _restore_cred_state(List *list)
 		free_buf(buffer);
 }
 
-static void _list_recovered_creds(List list)
-{
-	ListIterator iterator;
-	hostlist_t l = hostlist_create(NULL);
-	char *str = NULL;
-	char buf[1024];
-	credential_state_t *s;
-
-	iterator = list_iterator_create(list);
-	while ((s = list_next(iterator))) {
-		xstrfmtcat(str, "jobs%u", s->job_id);
-		hostlist_push(l, str);
-		xfree(str);
-	}
-	list_iterator_destroy(iterator);
-
-	if (hostlist_count(l)) {
-		hostlist_ranged_string(l, 1024, buf);
-		verbose("credentials recovered for %s", buf);
-	}
-	hostlist_destroy(l);
-}
-
 static int
 _slurmd_fini()
 {
-	save_cred_state(conf->cred_state_list);
-	slurm_destroy_ssl_key_ctx(&conf->vctx);
-	slurm_ssl_destroy();
+	save_cred_state(conf->vctx);
 	shm_fini();
 	return SLURM_SUCCESS;
 }
@@ -678,15 +643,12 @@ _slurmd_fini()
  * IN list - list of credentials
  * RET int - zero or error code
  */
-int save_cred_state(List list)
+int save_cred_state(slurm_cred_ctx_t ctx)
 {
 	char *old_file, *new_file, *reg_file;
 	int cred_fd = 0, error_code = SLURM_SUCCESS;
 	Buf buffer = NULL;
 	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-	if (list_count(list))
-		clear_expired_credentials(list);
 
 	old_file = xstrdup(conf->spooldir);
 	xstrcat(old_file, "/cred_state.old");
@@ -703,7 +665,7 @@ int save_cred_state(List list)
 		goto cleanup;
 	}
 	buffer = init_buf(1024);
-	pack_credential_list(list, buffer);
+	slurm_cred_ctx_pack(ctx, buffer);
 	if (write(cred_fd, get_buf_data(buffer), 
 		  get_buf_offset(buffer)) != get_buf_offset(buffer)) {
 		error("write %s error %m", new_file);

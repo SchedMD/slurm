@@ -154,6 +154,13 @@ int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid);
 bool slurm_cred_jobid_cached(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 
+/*
+ * Add a jobid to the slurm credential context without inserting
+ * a credential state. This is used by the verifier to track job ids
+ * that it has seen, but not necessarily recieved a credential for.
+ */
+int slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid);
+
 /* Free memory associated with slurm credential `cred.'
  */
 void slurm_cred_destroy(slurm_cred_t cred);
