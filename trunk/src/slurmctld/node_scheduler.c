@@ -765,8 +765,11 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							max_nodes, req_cpus, 
 							contiguous);
 				if (pick_code == SLURM_SUCCESS) {
-					runable_avail = true;
 					runable_ever  = true;
+					if ((node_lim == INFINITE) ||
+					    (bit_set_count(avail_bitmap) <=
+					     node_lim))
+						runable_avail = true;
 				}
 			}
 			if (!runable_ever) {
