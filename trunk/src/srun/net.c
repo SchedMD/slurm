@@ -114,7 +114,7 @@ int accept_stream(int fd)
 
 int readn(int fd, void *buf, size_t nbytes)
 {
-	int n;
+	int n = 0;
 	char *pbuf = (char *)buf;
 	size_t nleft = nbytes;
 
