@@ -844,7 +844,6 @@ void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buf_pt
 	pack16 (build_ptr->fast_schedule, buf_ptr, buffer_size);
 	pack16 (build_ptr->hash_base, buf_ptr, buffer_size);
 	pack16 (build_ptr->heartbeat_interval, buf_ptr, buffer_size);
-	packstr (build_ptr->init_program, buf_ptr, buffer_size);
 	pack16 (build_ptr->kill_wait, buf_ptr, buffer_size);
 	packstr (build_ptr->prioritize, buf_ptr, buffer_size);
 	packstr (build_ptr->prolog, buf_ptr, buffer_size);
@@ -878,7 +877,6 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void *
 	unpack16 (&build_ptr->fast_schedule, buffer, buffer_size);
 	unpack16 (&build_ptr->hash_base, buffer, buffer_size);
 	unpack16 (&build_ptr->heartbeat_interval, buffer, buffer_size);
-	unpackstr_xmalloc (&build_ptr->init_program, &uint16_tmp, buffer, buffer_size);
 	unpack16 (&build_ptr->kill_wait, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->prioritize, &uint16_tmp, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->prolog, &uint16_tmp, buffer, buffer_size);

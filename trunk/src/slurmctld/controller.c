@@ -765,7 +765,6 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->fast_schedule     	= 0 ;
 	conf_ptr->hash_base         	= 0 ;
 	conf_ptr->heartbeat_interval	= 0;
-	conf_ptr->init_program      	= NULL ;
 	conf_ptr->kill_wait         	= 0 ;
 	conf_ptr->prioritize        	= NULL ;
 	conf_ptr->prolog            	= NULL ;
@@ -789,7 +788,6 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->fast_schedule     	= FAST_SCHEDULE ;
 	conf_ptr->hash_base         	= HASH_BASE ;
 	conf_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
-	conf_ptr->init_program      	= INIT_PROGRAM ;
 	conf_ptr->kill_wait         	= KILL_WAIT ;
 	conf_ptr->prioritize        	= PRIORITIZE ;
 	conf_ptr->prolog            	= PROLOG ;

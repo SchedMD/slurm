@@ -45,8 +45,6 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xmalloc.h>
 
-#define DEBUG_SYSTEM 1
-
 #if DEBUG_MODULE
 slurm_ctl_conf_t slurmctld_conf;
 #else

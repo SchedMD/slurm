@@ -333,8 +333,6 @@ struct slurm_ctl_conf {
 				 * (only check configuration file, faster) */
 	uint16_t hash_base;	/* base used for hashing node table */
 	uint16_t heartbeat_interval; /* interval between node heartbeats, seconds */
-	char *init_program;	/* pathname of program to complete with exit 0 
- 				 * before slurmctld or slurmd start on that node */
 	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
 	char *prioritize;	/* pathname of program to set initial job priority */
 	char *prolog;		/* pathname of job prolog */

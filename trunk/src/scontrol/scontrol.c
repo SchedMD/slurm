@@ -62,7 +62,7 @@ static int input_words;			/* number of words of input permitted */
 
 void dump_command (int argc, char *argv[]);
 int get_command (int *argc, char *argv[]);
-void print_build (char *build_param);
+void print_config (char *config_param);
 void print_job (char * job_id_str);
 void print_node (char *node_name, node_info_msg_t *node_info_ptr);
 void print_node_list (char *node_list);
@@ -220,11 +220,11 @@ get_command (int *argc, char **argv)
 
 
 /* 
- * print_build - print the specified build parameter and value 
- * input: build_param - NULL to print all parameters and values
+ * print_config - print the specified configuration parameter and value 
+ * input: config_param - NULL to print all parameters and values
  */
 void 
-print_build (char *build_param)
+print_config (char *config_param)
 {
 	int error_code;
 	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
@@ -239,7 +239,7 @@ print_build (char *build_param)
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
-				printf ("slurm_load_build no change in data\n");
+				printf ("slurm_load_ctl_conf no change in data\n");
 		}
 	}
 	else
@@ -252,70 +252,67 @@ print_build (char *build_param)
 	}
 	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
 
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "BACKUP_INTERVAL") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "BACKUP_INTERVAL") == 0)
 		printf ("BACKUP_INTERVAL	= %u\n", 
 			slurm_ctl_conf_ptr->backup_interval);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "BACKUP_LOCATION") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "BACKUP_LOCATION") == 0)
 		printf ("BACKUP_LOCATION	= %s\n", 
 			slurm_ctl_conf_ptr->backup_location);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "BACKUP_MACHINE") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "BACKUP_MACHINE") == 0)
 		printf ("BACKUP_MACHINE	= %s\n", 
 			slurm_ctl_conf_ptr->backup_machine);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "CONTROL_DAEMON") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "CONTROL_DAEMON") == 0)
 		printf ("CONTROL_DAEMON	= %s\n", 
 			slurm_ctl_conf_ptr->control_daemon);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "CONTROL_MACHINE") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "CONTROL_MACHINE") == 0)
 		printf ("CONTROL_MACHINE	= %s\n", 
 			slurm_ctl_conf_ptr->control_machine);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "CONTROLLER_TIMEOUT") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "CONTROLLER_TIMEOUT") == 0)
 		printf ("CONTROLLER_TIMEOUT	= %u\n", 
 			slurm_ctl_conf_ptr->controller_timeout);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "EPILOG") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "EPILOG") == 0)
 		printf ("EPILOG  	= %s\n", slurm_ctl_conf_ptr->epilog);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "FAST_SCHEDULE") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "FAST_SCHEDULE") == 0)
 		printf ("FAST_SCHEDULE	= %u\n", 
 			slurm_ctl_conf_ptr->fast_schedule);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "HASH_BASE") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "HASH_BASE") == 0)
 		printf ("HASH_BASE	= %u\n", 
 			slurm_ctl_conf_ptr->hash_base);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "HEARTBEAT_INTERVAL") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "HEARTBEAT_INTERVAL") == 0)
 		printf ("HEARTBEAT_INTERVAL	= %u\n", 
 			slurm_ctl_conf_ptr->heartbeat_interval);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "INIT_PROGRAM") == 0)
-		printf ("INIT_PROGRAM	= %s\n", slurm_ctl_conf_ptr->init_program);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "KILL_WAIT") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "KILL_WAIT") == 0)
 		printf ("KILL_WAIT	= %u\n", slurm_ctl_conf_ptr->kill_wait);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "PRIORITIZE") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "PRIORITIZE") == 0)
 		printf ("PRIORITIZE	= %s\n", slurm_ctl_conf_ptr->prioritize);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "PROLOG") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "PROLOG") == 0)
 		printf ("PROLOG  	= %s\n", slurm_ctl_conf_ptr->prolog);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "SERVER_DAEMON") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "SERVER_DAEMON") == 0)
 		printf ("SERVER_DAEMON	= %s\n", 
 			slurm_ctl_conf_ptr->server_daemon);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "SERVER_TIMEOUT") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "SERVER_TIMEOUT") == 0)
 		printf ("SERVER_TIMEOUT	= %u\n", 
 			slurm_ctl_conf_ptr->server_timeout);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "SLURM_CONF") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "SLURM_CONF") == 0)
 		printf ("SLURM_CONF	= %s\n", slurm_ctl_conf_ptr->slurm_conf);
-	if (build_param == NULL ||
-	    strcmp_i (build_param, "TMP_FS") == 0)
+	if (config_param == NULL ||
+	    strcmp_i (config_param, "TMP_FS") == 0)
 		printf ("TMP_FS  	= %s\n", slurm_ctl_conf_ptr->tmp_fs);
 }
 
@@ -600,11 +597,11 @@ process_command (int argc, char *argv[])
 					 "too few arguments for keyword:%s\n",
 					 argv[0]);
 		}
-		else if (strncmp_i (argv[1], "build", 3) == 0) {
+		else if (strncmp_i (argv[1], "config", 3) == 0) {
 			if (argc > 2)
-				print_build (argv[2]);
+				print_config (argv[2]);
 			else
-				print_build (NULL);
+				print_config (NULL);
 		}
 		else if (strncmp_i (argv[1], "jobs", 3) == 0) {
 			if (argc > 2)
@@ -934,9 +931,9 @@ usage () {
 	printf ("     update <SPECIFICATIONS>   update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
-	printf ("  <ENTITY> may be \"build\", \"job\", \"node\", or \"partition\".\n");
-	printf ("  <ID> may be a build parameter, job id, node name or partition name. Node names may\n");
-	printf ("     specified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
+	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", or \"partition\".\n");
+	printf ("  <ID> may be a configuration parametername , job id, node name or partition name.\n");
+	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
 	printf ("  <SPECIFICATIONS> are specified in the same format as the configuration file. You may\n");
 	printf ("     wish to use the \"show\" keyword then use its output as input for the update keyword,\n");
 	printf ("     editing as needed.\n");
