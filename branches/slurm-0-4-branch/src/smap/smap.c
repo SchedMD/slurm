@@ -129,7 +129,6 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 	if(!params.commandline) {
-		_set_pairs();
 		
 		signal(SIGWINCH, (sighandler_t) _resize_handler);
 		initscr();
@@ -157,6 +156,7 @@ int main(int argc, char *argv[])
 		curs_set(1);
 		nodelay(stdscr, TRUE);
 		start_color();
+		_set_pairs();
 		
 		pa_system_ptr->grid_win = newwin(height, width, starty, startx);
 		max_display = pa_system_ptr->grid_win->_maxy*pa_system_ptr->grid_win->_maxx;
@@ -411,7 +411,7 @@ static int _set_pairs()
 
 	z = 0;
 	y = 65;
-	for (x = 0; x < pa_system_ptr->num_of_proc; x++) {
+	for (x = 0; x < 128; x++) {
 		if (y == 91)
 			y = 97;
 		else if(y == 123)
