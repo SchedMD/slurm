@@ -60,9 +60,6 @@ libcommon_la_SOURCES = 			\
 	$(elan_sources) \
         $(auth_sources)
 
-include_HEADERS =	\
-	hostlist.h
-
 libdaemonize_la_SOURCES =  \
 	daemonize.c        \
 	daemonize.h        \
