@@ -62,6 +62,18 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
+#define FREE_NULL(_X)			\
+	do {				\
+		if (_X) xfree (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
+#define FREE_NULL_BITMAP(_X)		\
+	do {				\
+		if (_X) bit_free (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
@@ -190,7 +202,7 @@ extern time_t last_job_update;	/* time of last update to part records */
 extern int job_count;			/* number of jobs in the system */
 
 /* job_details - specification of a job's constraints, 
- can be purged after initiation */
+ * can be purged after initiation */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
 	uint32_t num_procs;		/* minimum number of processors */
@@ -199,6 +211,7 @@ struct job_details {
 	char *req_nodes;		/* required nodes */
 	char *exc_nodes;		/* excluded nodes */
 	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
+	bitstr_t *exc_node_bitmap;	/* bitmap of excluded nodes */
 	slurm_job_credential_t	credential;	/* job credential */
 	char *features;			/* required features */
 	uint16_t shared;		/* set node can be shared*/
@@ -258,7 +271,9 @@ struct 	step_record {
 					   across nodes */
 	uint32_t num_tasks;		/* number of tasks required */
 	time_t start_time;      	/* step allocation time */
-	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job 
+	char *step_node_list;		/* list of nodes allocated to job 
+					   step */
+	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque */
@@ -641,18 +656,18 @@ int list_compare_config (void *config_entry1, void *config_entry2);
 extern int list_find_part (void *part_entry, void *key);
 
 /*
- * load_job_state - load the job state from file, recover from last slurmctld 
+ * load_all_job_state - load the job state from file, recover from last 
  *	checkpoint. Execute this after loading the configuration file data.
  * RET 0 or error code
  */
-extern int load_job_state ( void );
+extern int load_all_job_state ( void );
 
 /*
- * load_node_state - load the node state from file, recover from slurmctld 
+ * load_all_node_state - load the node state from file, recover on slurmctld 
  *	restart. execute this after loading the configuration file data.
  *	data goes into common storage
  */
-extern int load_node_state ( void );
+extern int load_all_node_state ( void );
 
 /*
  * load_part_uid_allow_list - reload the allow_uid list of partitions
@@ -662,11 +677,14 @@ extern int load_node_state ( void );
 extern void load_part_uid_allow_list ( int force );
 
 /*
- * load_part_state - load the partition state from file, recover from 
+ * load_all_part_state - load the partition state from file, recover from 
  *	slurmctld restart. execute this after loading the configuration 
  *	file data.
  */
-extern int load_part_state ( void );
+extern int load_all_part_state ( void );
+
+/* make_node_idle - flag specified node as no longer being in use */
+extern void make_node_idle(struct node_record *node_ptr);
 
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap 

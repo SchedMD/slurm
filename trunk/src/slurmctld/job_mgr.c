@@ -65,22 +65,10 @@
 slurm_ssl_key_ctx_t sign_ctx;
 
 #define DETAILS_FLAG 0xdddd
-#define MAX_STR_PACK 128
+#define MAX_STR_PACK 1024
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
-
-#define FREE_NULL(_X)			\
-	do {				\
-		if (_X) xfree (_X);	\
-		_X	= NULL; 	\
-	} while (0)
-
-#define FREE_NULL_BITMAP(_X)			\
-	do {				\
-		if (_X) bit_free (_X);	\
-		_X	= NULL; 	\
-	} while (0)
 
 #define JOB_HASH_INX(_job_id)	(_job_id % MAX_JOB_COUNT)
 
@@ -107,10 +95,11 @@ static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
 static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct job_record **job_ptr,
 					 struct part_record *part_ptr,
-					 bitstr_t * req_bitmap);
+					 bitstr_t ** exc_bitmap,
+					 bitstr_t ** req_bitmap);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
-static void _dump_job_details_state(struct job_details *detail_ptr,
+static void _dump_job_details(struct job_details *detail_ptr,
 				    Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer);
@@ -123,6 +112,9 @@ static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_old(void *job_entry, void *key);
+static int  _load_job_details(struct job_record *job_ptr, Buf buffer);
+static int  _load_job_state(Buf buffer);
+static int  _load_step_state(struct job_record *job_ptr, Buf buffer);
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
@@ -134,7 +126,6 @@ static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
 				int signum, struct node_record *node_ptr);
 static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
-static int  _unload_step_state(struct job_record *job_ptr, Buf buffer);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
 static void _validate_job_files(List batch_dirs);
@@ -204,16 +195,17 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details->magic != DETAILS_MAGIC)
 		fatal
 		    ("delete_job_details: passed invalid job details pointer");
-	FREE_NULL(job_entry->details->credential.node_list);
 	FREE_NULL(job_entry->details->req_nodes);
+	FREE_NULL(job_entry->details->exc_nodes);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
+	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
+	FREE_NULL(job_entry->details->credential.node_list);
 	FREE_NULL(job_entry->details->features);
 	FREE_NULL(job_entry->details->err);
 	FREE_NULL(job_entry->details->in);
 	FREE_NULL(job_entry->details->out);
 	FREE_NULL(job_entry->details->work_dir);
-	xfree(job_entry->details);
-	job_entry->details = NULL;
+	FREE_NULL(job_entry->details);
 }
 
 /* _delete_job_desc_files - delete job descriptor related files */
@@ -242,7 +234,7 @@ static void _delete_job_desc_files(uint32_t job_id)
 	xfree(dir_name);
 }
 
-/* dump_all_job_state - save the state of all jobs to file
+/* dump_all_job_state - save the state of all jobs to file for checkpoint
  * RET 0 or error code */
 int dump_all_job_state(void)
 {
@@ -312,6 +304,68 @@ int dump_all_job_state(void)
 }
 
 /*
+ * load_all_job_state - load the job state from file, recover from last 
+ *	checkpoint. Execute this after loading the configuration file data.
+ * RET 0 or error code
+ */
+int load_all_job_state(void)
+{
+	int data_allocated, data_read = 0, error_code = 0;
+	uint32_t data_size = 0;
+	int state_fd;
+	char *data = NULL, *state_file;
+	Buf buffer;
+	time_t buf_time;
+
+	/* read the file */
+	state_file = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(state_file, "/job_state");
+	lock_state_files();
+	state_fd = open(state_file, O_RDONLY);
+	if (state_fd < 0) {
+		info("No job state file (%s) to recover", state_file);
+		error_code = ENOENT;
+	} else {
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while ((data_read =
+			read(state_fd, &data[data_size],
+			     BUF_SIZE)) == BUF_SIZE) {
+			data_size += data_read;
+			data_allocated += BUF_SIZE;
+			xrealloc(data, data_allocated);
+		}
+		data_size += data_read;
+		close(state_fd);
+		if (data_read < 0)
+			error("Error reading file %s: %m", state_file);
+	}
+	xfree(state_file);
+	unlock_state_files();
+
+	if (job_id_sequence < 0)
+		job_id_sequence = slurmctld_conf.first_job_id;
+
+	buffer = create_buf(data, data_size);
+	safe_unpack_time(&buf_time, buffer);
+
+	while (remaining_buf(buffer) > 0) {
+		error_code = _load_job_state(buffer);
+		if (error_code != SLURM_SUCCESS)
+			goto unpack_error;
+	}
+
+	free_buf(buffer);
+	return error_code;
+
+      unpack_error:
+	error("Incomplete job data checkpoint file");
+	error("Job state not completely restored");
+	free_buf(buffer);
+	return SLURM_FAILURE;
+}
+
+/*
  * _dump_job_state - dump the state of a specific job, its details, and 
  *	steps to a buffer
  * IN dump_job_ptr - pointer to job for which information is requested
@@ -348,7 +402,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal("dump_all_job: job detail integrity is bad");
 		pack16((uint16_t) DETAILS_FLAG, buffer);
-		_dump_job_details_state(detail_ptr, buffer);
+		_dump_job_details(detail_ptr, buffer);
 	} else
 		pack16((uint16_t) 0, buffer);	/* no details flag */
 
@@ -364,20 +418,140 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack16((uint16_t) 0, buffer);	/* no step flag */
 }
 
+/* Unpack a job's state information from a buffer */
+static int _load_job_state(Buf buffer)
+{
+	uint32_t job_id, user_id, time_limit, priority;
+	time_t start_time, end_time;
+	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
+	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
+	char *nodes = NULL, *partition = NULL, *name = NULL;
+	bitstr_t *node_bitmap = NULL;
+	struct job_record *job_ptr;
+	struct part_record *part_ptr;
+	int error_code;
+
+	safe_unpack32(&job_id, buffer);
+	safe_unpack32(&user_id, buffer);
+	safe_unpack32(&time_limit, buffer);
+	safe_unpack32(&priority, buffer);
+
+	safe_unpack_time(&start_time, buffer);
+	safe_unpack_time(&end_time, buffer);
+
+	safe_unpack16(&job_state, buffer);
+	safe_unpack16(&next_step_id, buffer);
+	safe_unpack16(&kill_on_node_fail, buffer);
+	safe_unpack16(&kill_on_step_done, buffer);
+	safe_unpack16(&batch_flag, buffer);
+
+	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
+	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
+	safe_unpackstr_xmalloc(&name, &name_len, buffer);
+
+	/* validity test as possible */
+	if ((job_state >= JOB_END) || (batch_flag > 1)) {
+		error("Invalid data for job %u: job_state=%u batch_flag=%u",
+		      job_id, job_state, batch_flag);
+		goto unpack_error;
+	}
+	if ((kill_on_node_fail > 1) || (kill_on_step_done > 1)) {
+		error("Invalid data for job %u: kill_on_node_fail=%u",
+		      job_id, kill_on_node_fail);
+		goto unpack_error;
+	}
+	if ((kill_on_node_fail > 1) || (kill_on_step_done > 1)) {
+		error("Invalid data for job %u: kill_on_step_done=%u",
+		      job_id, kill_on_step_done);
+		goto unpack_error;
+	}
+	if ((nodes) && (node_name2bitmap(nodes, &node_bitmap))) {
+		error("_load_job_state: invalid nodes (%s) for job_id %u",
+		      nodes, job_id);
+		goto unpack_error;
+	}
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		part_ptr = list_find_first(part_list, &list_find_part,
+					   partition);
+		if (part_ptr == NULL) {
+			info("Invalid partition (%s) for job_id %u", 
+			     partition, job_id);
+			goto unpack_error;
+		}
+		job_ptr = create_job_record(&error_code);
+		if (error_code) {
+			error("Create job entry failed for job_id %u",
+			      job_id);
+			goto unpack_error;
+		}
+		job_ptr->job_id = job_id;
+		strncpy(job_ptr->partition, partition, MAX_NAME_LEN);
+		job_ptr->part_ptr = part_ptr;
+		_add_job_hash(job_ptr);
+	}
+
+	if (default_prio >= priority)
+		default_prio = priority - 1;
+	if (job_id_sequence <= job_id)
+		job_id_sequence = job_id + 1;
+
+	safe_unpack16(&details, buffer);
+	if ((details == DETAILS_FLAG) && 
+	    (_load_job_details(job_ptr, buffer)))
+		goto unpack_error;
+
+	job_ptr->user_id = user_id;
+	job_ptr->time_limit = time_limit;
+	job_ptr->priority = priority;
+	job_ptr->start_time = start_time;
+	job_ptr->end_time = end_time;
+	job_ptr->time_last_active = time(NULL);
+	job_ptr->job_state = job_state;
+	job_ptr->next_step_id = next_step_id;
+	strncpy(job_ptr->name, name, MAX_NAME_LEN);
+	FREE_NULL(name);
+	job_ptr->nodes = nodes;
+	nodes = NULL;	/* reused, nothing left to free */
+	job_ptr->node_bitmap = node_bitmap;
+	FREE_NULL(partition);
+	job_ptr->kill_on_node_fail = kill_on_node_fail;
+	job_ptr->kill_on_step_done = kill_on_step_done;
+	job_ptr->batch_flag = batch_flag;
+	info("recovered job id %u", job_id);
+
+	safe_unpack16(&step_flag, buffer);
+	while (step_flag == STEP_FLAG) {
+		if ((error_code = _load_step_state(job_ptr, buffer)))
+			goto unpack_error;
+		safe_unpack16(&step_flag, buffer);
+	}
+
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(nodes);
+	FREE_NULL(partition);
+	FREE_NULL(name);
+	FREE_NULL_BITMAP(node_bitmap);
+	return SLURM_FAILURE;
+}
+
 /*
- * _dump_job_details_state - dump the state of a specific job details to 
+ * _dump_job_details - dump the state of a specific job details to 
  *	a buffer
  * IN detail_ptr - pointer to job details for which information is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-void _dump_job_details_state(struct job_details *detail_ptr, Buf buffer)
+void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	char tmp_str[MAX_STR_PACK];
-
 	pack_job_credential(&detail_ptr->credential, buffer);
 
 	pack32((uint32_t) detail_ptr->num_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_nodes, buffer);
+	pack32((uint32_t) detail_ptr->max_nodes, buffer);
+	pack32((uint32_t) detail_ptr->total_procs, buffer);
 
 	pack16((uint16_t) detail_ptr->shared, buffer);
 	pack16((uint16_t) detail_ptr->contiguous, buffer);
@@ -386,62 +560,112 @@ void _dump_job_details_state(struct job_details *detail_ptr, Buf buffer)
 	pack32((uint32_t) detail_ptr->min_memory, buffer);
 	pack32((uint32_t) detail_ptr->min_tmp_disk, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
-	pack32((uint32_t) detail_ptr->total_procs, buffer);
 
-	if ((detail_ptr->req_nodes == NULL) ||
-	    (strlen(detail_ptr->req_nodes) < MAX_STR_PACK))
-		packstr(detail_ptr->req_nodes, buffer);
-	else {
-		strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-		packstr(tmp_str, buffer);
-	}
+	safe_packstr(detail_ptr->req_nodes, MAX_STR_PACK, buffer);
+	safe_packstr(detail_ptr->exc_nodes, MAX_STR_PACK, buffer);
+	safe_packstr(detail_ptr->features,  MAX_STR_PACK, buffer);
 
-	if (detail_ptr->features == NULL ||
-	    strlen(detail_ptr->features) < MAX_STR_PACK)
-		packstr(detail_ptr->features, buffer);
-	else {
-		strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-		packstr(tmp_str, buffer);
-	}
-
-	if ((detail_ptr->err == NULL) ||
-	    (strlen(detail_ptr->err) < MAX_STR_PACK))
-		packstr(detail_ptr->err, buffer);
-	else {
-		strncpy(tmp_str, detail_ptr->err, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-		packstr(tmp_str, buffer);
-	}
-
-	if ((detail_ptr->in == NULL) ||
-	    (strlen(detail_ptr->in) < MAX_STR_PACK))
-		packstr(detail_ptr->in, buffer);
-	else {
-		strncpy(tmp_str, detail_ptr->in, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-		packstr(tmp_str, buffer);
-	}
-
-	if (detail_ptr->out == NULL ||
-	    strlen(detail_ptr->out) < MAX_STR_PACK)
-		packstr(detail_ptr->out, buffer);
-	else {
-		strncpy(tmp_str, detail_ptr->out, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-		packstr(tmp_str, buffer);
-	}
-
-	if ((detail_ptr->work_dir == NULL) ||
-	    (strlen(detail_ptr->work_dir) < MAX_STR_PACK))
-		packstr(detail_ptr->work_dir, buffer);
-	else {
-		strncpy(tmp_str, detail_ptr->work_dir, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-		packstr(tmp_str, buffer);
-	}
+	safe_packstr(detail_ptr->err,       MAX_STR_PACK, buffer);
+	safe_packstr(detail_ptr->in,        MAX_STR_PACK, buffer);
+	safe_packstr(detail_ptr->out,       MAX_STR_PACK, buffer);
+	safe_packstr(detail_ptr->work_dir,  MAX_STR_PACK, buffer);
 }
+
+/* _load_job_details - Unpack a job details information from buffer */
+static int _load_job_details(struct job_record *job_ptr, Buf buffer)
+{
+	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
+	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
+	bitstr_t *req_node_bitmap = NULL, *exc_node_bitmap = NULL;
+	slurm_job_credential_t *credential_ptr = NULL;
+	uint32_t num_procs, min_nodes, max_nodes, min_procs;
+	uint16_t shared, contiguous, name_len;
+	uint32_t min_memory, min_tmp_disk, total_procs;
+	time_t submit_time;
+
+	/* unpack the job's details from the buffer */
+	if (unpack_job_credential(&credential_ptr, buffer))
+		goto unpack_error;
+
+	safe_unpack32(&num_procs, buffer);
+	safe_unpack32(&min_nodes, buffer);
+	safe_unpack32(&max_nodes, buffer);
+	safe_unpack32(&total_procs, buffer);
+
+	safe_unpack16(&shared, buffer);
+	safe_unpack16(&contiguous, buffer);
+
+	safe_unpack32(&min_procs, buffer);
+	safe_unpack32(&min_memory, buffer);
+	safe_unpack32(&min_tmp_disk, buffer);
+	safe_unpack_time(&submit_time, buffer);
+
+	safe_unpackstr_xmalloc(&req_nodes, &name_len, buffer);
+	safe_unpackstr_xmalloc(&exc_nodes, &name_len, buffer);
+	safe_unpackstr_xmalloc(&features,  &name_len, buffer);
+
+	safe_unpackstr_xmalloc(&err, &name_len, buffer);
+	safe_unpackstr_xmalloc(&in,  &name_len, buffer);
+	safe_unpackstr_xmalloc(&out, &name_len, buffer);
+	safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
+
+	/* validity test as possible */
+	if ((shared > 1) || (contiguous > 1)) {
+		error("Invalid data for job %u: shared=%u contiguous=%u",
+		      job_ptr->job_id, shared, contiguous);
+		goto unpack_error;
+	}
+	if ((req_nodes) && (node_name2bitmap(req_nodes, &req_node_bitmap))) {
+		error("Invalid req_nodes (%s) for job_id %u",
+		      req_nodes, job_ptr->job_id);
+		goto unpack_error;
+	}
+	if ((exc_nodes) && (node_name2bitmap(exc_nodes, &exc_node_bitmap))) {
+		error("Invalid exc_nodes (%s) for job_id %u",
+		      exc_nodes, job_ptr->job_id);
+		goto unpack_error;
+	}
+
+	/* now put the details into the job record */
+	memcpy(&job_ptr->details->credential, credential_ptr,
+	       sizeof(job_ptr->details->credential));
+	job_ptr->details->num_procs = num_procs;
+	job_ptr->details->min_nodes = min_nodes;
+	job_ptr->details->max_nodes = max_nodes;
+	job_ptr->details->total_procs = total_procs;
+	job_ptr->details->shared = shared;
+	job_ptr->details->contiguous = contiguous;
+	job_ptr->details->min_procs = min_procs;
+	job_ptr->details->min_memory = min_memory;
+	job_ptr->details->min_tmp_disk = min_tmp_disk;
+	job_ptr->details->submit_time = submit_time;
+	job_ptr->details->req_nodes = req_nodes;
+	job_ptr->details->req_node_bitmap = req_node_bitmap;
+	job_ptr->details->exc_nodes = exc_nodes;
+	job_ptr->details->exc_node_bitmap = exc_node_bitmap;
+	job_ptr->details->features = features;
+	job_ptr->details->err = err;
+	job_ptr->details->in = in;
+	job_ptr->details->out = out;
+	job_ptr->details->work_dir = work_dir;
+	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node, 
+					 *	cpu_count_reps, node_cnt, and
+					 *	node_addr */
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(req_nodes);
+	FREE_NULL(exc_nodes);
+	FREE_NULL_BITMAP(req_node_bitmap);
+	FREE_NULL_BITMAP(exc_node_bitmap);
+	FREE_NULL(features);
+	FREE_NULL(err);
+	FREE_NULL(in);
+	FREE_NULL(out);
+	FREE_NULL(work_dir);
+	return SLURM_FAILURE;
+}
+
 
 /*
  * _dump_job_step_state - dump the state of a specific job step to a buffer
@@ -450,325 +674,37 @@ void _dump_job_details_state(struct job_details *detail_ptr, Buf buffer)
  */
 static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 {
-	char *node_list;
-
 	pack16((uint16_t) step_ptr->step_id, buffer);
 	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
 	pack32(step_ptr->num_tasks, buffer);
 	pack_time(step_ptr->start_time, buffer);
-	node_list = bitmap2node_name(step_ptr->node_bitmap);
-	packstr(node_list, buffer);
-	xfree(node_list);
+
+	safe_packstr(step_ptr->step_node_list,  MAX_STR_PACK, buffer);
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo(step_ptr->qsw_job, buffer);
 #endif
 }
 
-/*
- * load_job_state - load the job state from file, recover from last slurmctld 
- *	checkpoint. Execute this after loading the configuration file data.
- * RET 0 or error code
- */
-int load_job_state(void)
-{
-	int data_allocated, data_read = 0, error_code = 0;
-	uint32_t data_size = 0;
-	int state_fd;
-	char *data = NULL, *state_file;
-	Buf buffer;
-	uint32_t job_id, user_id, time_limit, priority, total_procs;
-	time_t buf_time, start_time, end_time, submit_time;
-	uint16_t job_state, next_step_id, details;
-	char *nodes = NULL, *partition = NULL, *name = NULL;
-	uint32_t num_procs, min_nodes, min_procs, min_memory, min_tmp_disk;
-	uint16_t shared, contiguous, batch_flag;
-	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
-	char *req_nodes = NULL, *features = NULL;
-	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
-	slurm_job_credential_t *credential_ptr = NULL;
-	struct job_record *job_ptr;
-	struct part_record *part_ptr;
-	bitstr_t *node_bitmap = NULL, *req_node_bitmap = NULL;
-	uint16_t step_flag;
-
-	/* read the file */
-	state_file = xstrdup(slurmctld_conf.state_save_location);
-	xstrcat(state_file, "/job_state");
-	lock_state_files();
-	state_fd = open(state_file, O_RDONLY);
-	if (state_fd < 0) {
-		info("No job state file (%s) to recover", state_file);
-		error_code = ENOENT;
-	} else {
-		data_allocated = BUF_SIZE;
-		data = xmalloc(data_allocated);
-		while ((data_read =
-			read(state_fd, &data[data_size],
-			     BUF_SIZE)) == BUF_SIZE) {
-			data_size += data_read;
-			data_allocated += BUF_SIZE;
-			xrealloc(data, data_allocated);
-		}
-		data_size += data_read;
-		close(state_fd);
-		if (data_read < 0)
-			error("Error reading file %s: %m", state_file);
-	}
-	xfree(state_file);
-	unlock_state_files();
-
-	if (job_id_sequence < 0)
-		job_id_sequence = slurmctld_conf.first_job_id;
-
-	buffer = create_buf(data, data_size);
-	safe_unpack_time(&buf_time, buffer);
-
-	while (remaining_buf(buffer) > 0) {
-		safe_unpack32(&job_id, buffer);
-		safe_unpack32(&user_id, buffer);
-		safe_unpack32(&time_limit, buffer);
-		safe_unpack32(&priority, buffer);
-
-		safe_unpack_time(&start_time, buffer);
-		safe_unpack_time(&end_time, buffer);
-
-		safe_unpack16(&job_state, buffer);
-		safe_unpack16(&next_step_id, buffer);
-		safe_unpack16(&kill_on_node_fail, buffer);
-		safe_unpack16(&kill_on_step_done, buffer);
-		safe_unpack16(&batch_flag, buffer);
-
-		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
-		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
-		safe_unpackstr_xmalloc(&name, &name_len, buffer);
-
-		/* validity test as possible */
-		if ((job_state >= JOB_END) || 
-		    (kill_on_node_fail > 1) ||
-		    (kill_on_step_done > 1) ||
-		    (batch_flag > 1)) {
-			error
-			    ("Invalid data for job %u: job_state=%u  batch_flag=%u kill_on_node_fail=%u kill_on_step_done=%u",
-			     job_id, job_state, batch_flag, 
-			     kill_on_node_fail, kill_on_step_done);
-			error
-			    ("No more job data will be processed from the checkpoint file");
-			FREE_NULL(nodes);
-			FREE_NULL(partition);
-			FREE_NULL(name);
-			error_code = EINVAL;
-			break;
-		}
-
-		safe_unpack16(&details, buffer);
-
-		if (details == DETAILS_FLAG) {
-			if (unpack_job_credential(&credential_ptr, buffer))
-				goto unpack_error;
-
-			safe_unpack32(&num_procs, buffer);
-			safe_unpack32(&min_nodes, buffer);
-
-			safe_unpack16(&shared, buffer);
-			safe_unpack16(&contiguous, buffer);
-
-			safe_unpack32(&min_procs, buffer);
-			safe_unpack32(&min_memory, buffer);
-			safe_unpack32(&min_tmp_disk, buffer);
-			safe_unpack_time(&submit_time, buffer);
-			safe_unpack32(&total_procs, buffer);
-
-			safe_unpackstr_xmalloc(&req_nodes, &name_len,
-					       buffer);
-			safe_unpackstr_xmalloc(&features, &name_len,
-					       buffer);
-			safe_unpackstr_xmalloc(&err, &name_len, buffer);
-			safe_unpackstr_xmalloc(&in, &name_len, buffer);
-			safe_unpackstr_xmalloc(&out, &name_len, buffer);
-			safe_unpackstr_xmalloc(&work_dir, &name_len,
-					       buffer);
-
-			/* validity test as possible */
-			if ((shared > 1) ||
-			    (contiguous > 1) || (batch_flag > 1)) {
-				error
-				    ("Invalid data for job %u: shared=%u contiguous=%u",
-				     job_id, shared, contiguous);
-				error
-				    ("No more job data will be processed from the checkpoint file");
-				FREE_NULL(req_nodes);
-				FREE_NULL(features);
-				FREE_NULL(err);
-				FREE_NULL(in);
-				FREE_NULL(out);
-				FREE_NULL(work_dir);
-				error_code = EINVAL;
-				break;
-			}
-		}
-
-		if (nodes) {
-			error_code = node_name2bitmap(nodes, &node_bitmap);
-			if (error_code) {
-				error
-				    ("load_job_state: invalid nodes (%s) for job_id %u",
-				     nodes, job_id);
-				goto cleanup;
-			}
-		}
-		if (req_nodes) {
-			error_code =
-			    node_name2bitmap(req_nodes, &req_node_bitmap);
-			if (error_code) {
-				error
-				    ("load_job_state: invalid req_nodes (%s) for job_id %u",
-				     req_nodes, job_id);
-				goto cleanup;
-			}
-		}
-
-		job_ptr = find_job_record(job_id);
-		if (job_ptr == NULL) {
-			part_ptr =
-			    list_find_first(part_list, &list_find_part,
-					    partition);
-			if (part_ptr == NULL) {
-				info("load_job_state: invalid partition (%s) for job_id %u", 
-				     partition, job_id);
-				error_code = EINVAL;
-				goto cleanup;
-			}
-			job_ptr = create_job_record(&error_code);
-			if (error_code) {
-				error
-				    ("load_job_state: unable to create job entry for job_id %u",
-				     job_id);
-				goto cleanup;
-			}
-			job_ptr->job_id = job_id;
-			strncpy(job_ptr->partition, partition,
-				MAX_NAME_LEN);
-			job_ptr->part_ptr = part_ptr;
-			_add_job_hash(job_ptr);
-			info("recovered job id %u", job_id);
-		}
-
-		job_ptr->user_id = user_id;
-		job_ptr->time_limit = time_limit;
-		job_ptr->priority = priority;
-		job_ptr->start_time = start_time;
-		job_ptr->end_time = end_time;
-		job_ptr->time_last_active = time(NULL);
-		job_ptr->job_state = job_state;
-		job_ptr->next_step_id = next_step_id;
-		strncpy(job_ptr->name, name, MAX_NAME_LEN);
-		job_ptr->nodes = nodes;
-		nodes = NULL;
-		job_ptr->node_bitmap = node_bitmap;
-		node_bitmap = NULL;
-		job_ptr->kill_on_node_fail = kill_on_node_fail;
-		job_ptr->kill_on_step_done = kill_on_step_done;
-		job_ptr->batch_flag = batch_flag;
-		build_node_details(job_ptr);
-
-		if (default_prio >= priority)
-			default_prio = priority - 1;
-		if (job_id_sequence <= job_id)
-			job_id_sequence = job_id + 1;
-
-		if (details == DETAILS_FLAG) {
-			job_ptr->details->num_procs = num_procs;
-			job_ptr->details->min_nodes = min_nodes;
-			job_ptr->details->shared = shared;
-			job_ptr->details->contiguous = contiguous;
-			job_ptr->details->min_procs = min_procs;
-			job_ptr->details->min_memory = min_memory;
-			job_ptr->details->min_tmp_disk = min_tmp_disk;
-			job_ptr->details->submit_time = submit_time;
-			job_ptr->details->total_procs = total_procs;
-			job_ptr->details->req_nodes = req_nodes;
-			req_nodes = NULL;
-			job_ptr->details->req_node_bitmap =
-			    req_node_bitmap;
-			req_node_bitmap = NULL;
-			job_ptr->details->features = features;
-			features = NULL;
-			job_ptr->details->err = err;
-			err = NULL;
-			job_ptr->details->in = in;
-			in = NULL;
-			job_ptr->details->out = out;
-			out = NULL;
-			job_ptr->details->work_dir = work_dir;
-			work_dir = NULL;
-			memcpy(&job_ptr->details->credential,
-			       credential_ptr,
-			       sizeof(job_ptr->details->credential));
-		}
-
-		safe_unpack16(&step_flag, buffer);
-		while (step_flag == STEP_FLAG) {
-			if ((error_code = _unload_step_state(job_ptr, buffer)))
-				goto unpack_error;
-			safe_unpack16(&step_flag, buffer);
-		}
-		if (error_code)
-			break;
-
-	      cleanup:
-		FREE_NULL(nodes);
-		FREE_NULL(partition);
-		FREE_NULL(name);
-		FREE_NULL(req_nodes);
-		FREE_NULL(features);
-		FREE_NULL(err);
-		FREE_NULL(in);
-		FREE_NULL(out);
-		FREE_NULL(work_dir);
-		FREE_NULL_BITMAP(node_bitmap);
-		FREE_NULL_BITMAP(req_node_bitmap);
-		FREE_NULL(credential_ptr);
-	}
-
-	free_buf(buffer);
-	return error_code;
-
-      unpack_error:
-	error("Incomplete job data checkpoint file");
-	error("Job state not completely restored");
-	FREE_NULL(nodes);
-	FREE_NULL(partition);
-	FREE_NULL(name);
-	FREE_NULL(req_nodes);
-	FREE_NULL(features);
-	FREE_NULL(err);
-	FREE_NULL(in);
-	FREE_NULL(out);
-	FREE_NULL(work_dir);
-	free_buf(buffer);
-	return EFAULT;
-}
-
-/* Unpack a job step state information from a buffer */
-static int _unload_step_state(struct job_record *job_ptr, Buf buffer)
+/* Unpack job step state information from a buffer */
+static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 {
 	struct step_record *step_ptr;
 	uint16_t step_id, cyclic_alloc, name_len;
 	uint32_t num_tasks;
 	time_t start_time;
-	char *node_list = NULL;
+	char *step_node_list = NULL;
 
 	safe_unpack16(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
 	safe_unpack32(&num_tasks, buffer);
 	safe_unpack_time(&start_time, buffer);
-	safe_unpackstr_xmalloc(&node_list, &name_len, buffer);
+	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
 
 	/* validity test as possible */
 	if (cyclic_alloc > 1) {
 		error("Invalid data for job %u.%u: cyclic_alloc=%u",
 		      job_ptr->job_id, step_id, cyclic_alloc);
-		return SLURM_FAILURE;
+		goto unpack_error;
 	}
 
 	step_ptr = create_step_record(job_ptr);
@@ -778,22 +714,23 @@ static int _unload_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->cyclic_alloc = cyclic_alloc;
 	step_ptr->num_tasks = num_tasks;
 	step_ptr->start_time = start_time;
-	info("recovered job step %u.%u", job_ptr->job_id, step_id);
-	if (node_list) {
-		(void) node_name2bitmap(node_list, &(step_ptr->node_bitmap));
-		FREE_NULL(node_list);
-	}
+	step_ptr->step_node_list = step_node_list;
+	if (step_node_list)
+		(void) node_name2bitmap(step_node_list, 
+					&(step_ptr->step_node_bitmap));
+	step_node_list = NULL;	/* re-used, nothing left to free */
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&step_ptr->qsw_job);
 	if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
 		qsw_free_jobinfo(step_ptr->qsw_job);
-		return SLURM_FAILURE;
+		goto unpack_error;
 	}
 #endif
+	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
       unpack_error:
-	FREE_NULL(node_list);
+	FREE_NULL(step_node_list);
 	return SLURM_FAILURE;
 }
 
@@ -897,8 +834,7 @@ int kill_running_job_by_node_name(char *node_name)
 		(struct job_record *) list_next(job_record_iterator))) {
 		if (job_record_point->job_state != JOB_RUNNING)
 			continue;	/* job not active */
-		if (bit_test(job_record_point->node_bitmap, bit_position)
-		    == 0)
+		if (!bit_test(job_record_point->node_bitmap, bit_position))
 			continue;	/* job not on this node */
 
 		error("Running job_id %u on failed node %s",
@@ -915,6 +851,7 @@ int kill_running_job_by_node_name(char *node_name)
 			/* Remove node from this job's list */
 			_excise_node_from_job(job_record_point, 
 					      node_record_point);
+			make_node_idle(node_record_point);
 		}
 
 	}
@@ -1292,7 +1229,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 {
 	int error_code, i;
 	struct part_record *part_ptr;
-	bitstr_t *req_bitmap = NULL;
+	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 
 	if ((error_code = _validate_job_desc(job_desc, allocate)))
 		return error_code;
@@ -1343,8 +1280,10 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	if (job_desc->req_nodes) {
 		error_code =
 		    node_name2bitmap(job_desc->req_nodes, &req_bitmap);
-		if (error_code == EINVAL)
+		if (error_code == EINVAL) {
+			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup;
+		}
 		if (error_code != 0) {
 			error_code = EAGAIN;	/* no memory */
 			goto cleanup;
@@ -1365,8 +1304,34 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		if (i > job_desc->min_nodes)
 			job_desc->min_nodes = i;
 	}
+	if (job_desc->exc_nodes) {
+		error_code =
+		    node_name2bitmap(job_desc->exc_nodes, &exc_bitmap);
+		if (error_code == EINVAL) {
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto cleanup;
+		}
+	}
+	if ((exc_bitmap != NULL) && (req_bitmap != NULL)) {
+		bitstr_t *tmp_bitmap = NULL;
+		bool first_set;
+		tmp_bitmap = bit_copy(exc_bitmap);
+		bit_and(tmp_bitmap, req_bitmap);
+		first_set = bit_ffs(tmp_bitmap);
+		FREE_NULL_BITMAP(tmp_bitmap);
+		if (first_set != -1) {
+			info("Job's required and excluded node lists overlap");
+			error_code = ESLURM_INVALID_NODE_NAME;
+			goto cleanup;
+		}
+	}
+
+	if (job_desc->min_nodes == NO_VAL)
+		job_desc->min_nodes = 1;
+	if (job_desc->max_nodes == NO_VAL)
+		job_desc->max_nodes = 0;
 	if (job_desc->min_nodes > part_ptr->total_cpus) {
-		info("_job_create: too many cpus (%d) requested of partition %s(%d)", 
+		info("Job requested too many cpus (%d) of partition %s(%d)", 
 		     job_desc->min_nodes, part_ptr->name, 
 		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
@@ -1378,11 +1343,20 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 			i = part_ptr->max_nodes;
 		else
 			i = part_ptr->total_nodes;
-		info("_job_create: too many nodes (%d) requested of partition %s(%d)", 
+		info("Job requested too many nodes (%d) of partition %s(%d)", 
 		     job_desc->min_nodes, part_ptr->name, i);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
+	if (job_desc->max_nodes && 
+	    (job_desc->max_nodes < job_desc->min_nodes)) {
+		info("Job's max_nodes < min_nodes");
+		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+		goto cleanup;
+	}
+	if (job_desc->max_nodes > part_ptr->max_nodes) 
+		job_desc->max_nodes = part_ptr->max_nodes;
+
 
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
@@ -1395,7 +1369,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_rec_ptr,
 						       part_ptr,
-						       req_bitmap))) {
+						       &req_bitmap,
+						       &exc_bitmap))) {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup;
 	}
@@ -1423,6 +1398,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
       cleanup:
 	FREE_NULL_BITMAP(req_bitmap);
+	FREE_NULL_BITMAP(exc_bitmap);
 	return error_code;
 }
 
@@ -1736,7 +1712,8 @@ static int
 _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 			     struct job_record **job_rec_ptr,
 			     struct part_record *part_ptr,
-			     bitstr_t * req_bitmap)
+			     bitstr_t ** req_bitmap,
+			     bitstr_t ** exc_bitmap)
 {
 	int error_code;
 	struct job_details *detail_ptr;
@@ -1772,9 +1749,16 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->min_nodes = job_desc->min_nodes;
+	detail_ptr->max_nodes = job_desc->max_nodes;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
-		detail_ptr->req_node_bitmap = req_bitmap;
+		detail_ptr->req_node_bitmap = *req_bitmap;
+		*req_bitmap = NULL;	/* Reused nothing left to free */
+	}
+	if (job_desc->exc_nodes) {
+		detail_ptr->exc_nodes = xstrdup(job_desc->exc_nodes);
+		detail_ptr->exc_node_bitmap = *exc_bitmap;
+		*exc_bitmap = NULL;	/* Reused nothing left to free */
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup(job_desc->features);
@@ -1904,11 +1888,11 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate)
 		     job_desc_msg->name);
 		return ESLURM_JOB_NAME_TOO_LONG;
 	}
-	if (job_desc_msg->contiguous == NO_VAL)
+	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
-	if (job_desc_msg->kill_on_node_fail == NO_VAL)
+	if (job_desc_msg->kill_on_node_fail == (uint16_t) NO_VAL)
 		job_desc_msg->kill_on_node_fail = 1;
-	if (job_desc_msg->shared == NO_VAL)
+	if (job_desc_msg->shared == (uint16_t) NO_VAL)
 		job_desc_msg->shared = 0;
 
 	if ((job_desc_msg->job_id != NO_VAL) &&
@@ -1925,7 +1909,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate)
 		job_desc_msg->min_memory = 1;	/* default 1 MB mem per node */
 	if (job_desc_msg->min_tmp_disk == NO_VAL)
 		job_desc_msg->min_tmp_disk = 1;	/* default 1 MB disk per node */
-	if (job_desc_msg->shared == NO_VAL)
+	if (job_desc_msg->shared == (uint16_t) NO_VAL)
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
@@ -2070,7 +2054,6 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
  */
 void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 {
-	char tmp_str[MAX_STR_PACK];
 	struct job_details *detail_ptr;
 
 	pack32(dump_job_ptr->job_id, buffer);
@@ -2087,12 +2070,8 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
-	if (dump_job_ptr->node_bitmap) {
-		(void) bit_fmt(tmp_str, MAX_STR_PACK,
-			       dump_job_ptr->node_bitmap);
-		packstr(tmp_str, buffer);
-	} else
-		packstr(NULL, buffer);
+	safe_pack_bit_fmt(dump_job_ptr->node_bitmap, 
+			  MAX_STR_PACK, buffer);
 
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
@@ -2101,10 +2080,10 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 		_pack_job_details(NULL, buffer);
 }
 
+/* pack job details for "get_job_info" RPC */
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 {
 	if (detail_ptr) {
-		char tmp_str[MAX_STR_PACK];
 		pack32((uint32_t) detail_ptr->num_procs, buffer);
 		pack32((uint32_t) detail_ptr->min_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
@@ -2114,32 +2093,10 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) detail_ptr->min_memory, buffer);
 		pack32((uint32_t) detail_ptr->min_tmp_disk, buffer);
 
-		if ((detail_ptr->req_nodes == NULL) ||
-		    (strlen(detail_ptr->req_nodes) < MAX_STR_PACK))
-			packstr(detail_ptr->req_nodes, buffer);
-		else {
-			strncpy(tmp_str, detail_ptr->req_nodes,
-				MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-			packstr(tmp_str, buffer);
-		}
-
-		if (detail_ptr->req_node_bitmap) {
-			(void) bit_fmt(tmp_str, MAX_STR_PACK,
-				       detail_ptr->req_node_bitmap);
-			packstr(tmp_str, buffer);
-		} else
-			packstr(NULL, buffer);
-
-		if (detail_ptr->features == NULL ||
-		    strlen(detail_ptr->features) < MAX_STR_PACK)
-			packstr(detail_ptr->features, buffer);
-		else {
-			strncpy(tmp_str, detail_ptr->features,
-				MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK - 1] = (char) NULL;
-			packstr(tmp_str, buffer);
-		}
+		safe_packstr(detail_ptr->req_nodes, MAX_STR_PACK, buffer);
+		safe_pack_bit_fmt(detail_ptr->req_node_bitmap, 
+				  MAX_STR_PACK, buffer);
+		safe_packstr(detail_ptr->features, MAX_STR_PACK, buffer);
 	} 
 
 	else {
@@ -2157,6 +2114,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		packstr(NULL, buffer);
 	}
 }
+
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
@@ -2214,6 +2172,12 @@ void reset_job_bitmaps(void)
 					 req_nodes,
 					 &job_record_point->details->
 					 req_node_bitmap);
+		FREE_NULL_BITMAP(job_record_point->details->exc_node_bitmap);
+		if (job_record_point->details->exc_nodes)
+			node_name2bitmap(job_record_point->details->
+					 exc_nodes,
+					 &job_record_point->details->
+					 exc_node_bitmap);
 	}
 
 	list_iterator_destroy(job_record_iterator);

@@ -96,8 +96,8 @@ delete_all_step_records (struct job_record *job_ptr)
 #ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
-		if (step_record_point->node_bitmap)
-			bit_free (step_record_point->node_bitmap);
+		FREE_NULL(step_record_point->step_node_list);
+		FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
 		xfree (step_record_point);
 	}		
 
@@ -130,8 +130,8 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 #ifdef HAVE_LIBELAN3
 			qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
-			if (step_record_point->node_bitmap)
-				bit_free (step_record_point->node_bitmap);
+			FREE_NULL(step_record_point->step_node_list);
+			FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
 			xfree (step_record_point);
 			error_code = 0;
 			break;
@@ -401,15 +401,12 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		}
 	}
 
-	if (nodes_avail)
-		bit_free(nodes_avail);
+	FREE_NULL_BITMAP(nodes_avail);
 	return nodes_picked;
 
 cleanup:
-	if (nodes_avail)
-		bit_free(nodes_avail);
-	if (nodes_picked)
-		bit_free(nodes_picked);
+	FREE_NULL_BITMAP(nodes_avail);
+	FREE_NULL_BITMAP(nodes_picked);
 	return NULL;
 }
 
@@ -484,7 +481,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		fatal ("create_step_record failed with no memory");
 
 	/* set the step_record values */
-	step_ptr->node_bitmap = nodeset;
+	step_ptr->step_node_list = bitmap2node_name(nodeset);
+	step_ptr->step_node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
 	step_ptr->num_tasks = step_specs->num_tasks;
@@ -492,13 +490,13 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 #ifdef HAVE_LIBELAN3
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
 		fatal ("step_create: qsw_alloc_jobinfo error");
-	first = bit_ffs (step_ptr->node_bitmap);
-	last  = bit_fls (step_ptr->node_bitmap);
+	first = bit_ffs (step_ptr->step_node_bitmap);
+	last  = bit_fls (step_ptr->step_node_bitmap);
 	nodeset = bit_alloc (node_set_size);
 	if (nodeset == NULL)
 		fatal ("step_create: bit_alloc error");
 	for (i = first; i <= last; i++) {
-		if (bit_test (step_ptr->node_bitmap, i)) {
+		if (bit_test (step_ptr->step_node_bitmap, i)) {
 			node_id = qsw_getnodeid_byhost (
 					node_record_table_ptr[i].name);
 			if (node_id >= 0)	/* no lookup error */
@@ -533,23 +531,13 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
  */
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 {
-	char *node_list;
-
-	if (step->node_bitmap)
-		node_list = bitmap2node_name(step->node_bitmap);
-	else {
-		node_list = xmalloc(1);
-		node_list[0] = '\0';
-	}
-
 	pack_job_step_info_members(step->job_ptr->job_id,
 				   step->step_id,
 				   step->job_ptr->user_id,
 				   step->num_tasks,
 				   step->start_time,
 				   step->job_ptr->partition,
-				   node_list, buffer);
-	xfree(node_list);
+				   step->step_node_list, buffer);
 }
 
 /* 

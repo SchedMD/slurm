@@ -334,11 +334,11 @@ static void _dump_part_state(struct part_record *part_record_point, Buf buffer)
 }
 
 /*
- * load_part_state - load the partition state from file, recover from 
+ * load_all_part_state - load the partition state from file, recover on 
  *	slurmctld restart. execute this after loading the configuration 
  *	file data.
  */
-int load_part_state(void)
+int load_all_part_state(void)
 {
 	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
 	uint32_t max_time, max_nodes;
@@ -428,7 +428,7 @@ int load_part_state(void)
 				xfree(part_ptr->nodes);
 			part_ptr->nodes = nodes;
 		} else {
-			info("load_part_state: partition %s removed from configuration file", 
+			info("load_all_part_state: partition %s removed from configuration file", 
 			     part_name);
 		}
 
