@@ -29,8 +29,29 @@
 #define _SLURM_H
 
 #include <stdio.h>			/* for FILE definitions */
+#include <time.h>			/* for time_t definitions */
 
-#include <src/common/slurm_protocol_defs.h>
+/* FIXME: Need better way to define qsw_jobinfo_t */
+#ifdef	HAVE_LIBELAN3
+#include <src/common/qsw.h>
+#endif
+
+/* FIXME: Need better way to define slurm_addr */
+#if MONGO_IMPLEMENTATION
+#include <src/common/slurm_protocol_mongo_common.h>
+#else
+#include <src/common/slurm_protocol_socket_common.h>
+#endif
+
+#include <src/common/slurm_errno.h>
+#include <src/common/hostlist.h>
+
+/* FIXME: For the slurm library, we need to link
+ * api (everything)
+ * common/hostlist.c
+ * common/slurm_errno.c
+ * common/slurm_protocol_*.c
+ */
 
 /*****************************************************************************\
  *	DEFINITIONS FOR INPUT VALUES
@@ -61,6 +82,279 @@
 #define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_WORKING_DIR	NULL
+
+/* last entry must be JOB_END
+ * NOTE: keep in sync with job_state_string and job_state_string_compact */
+enum job_states {
+	JOB_PENDING,		/* queued waiting for initiation */
+	JOB_RUNNING,		/* allocated resources and executing */
+	JOB_COMPLETE,		/* completed execution successfully */
+	JOB_FAILED,		/* completed execution unsuccessfully */
+	JOB_TIMEOUT,		/* terminated on reaching time limit */
+	JOB_NODE_FAIL,		/* terminated on node failure */
+	JOB_END			/* last entry in table */
+};
+
+/* Possible task distributions across the nodes */
+enum task_dist_states {
+	SLURM_DIST_CYCLIC,	/* distribute tasks one per node, round robin */
+	SLURM_DIST_BLOCK	/* distribute tasks filling node by node */
+};
+
+/* last entry must be STATE_END, keep in sync with node_state_string    */
+/* 	if a node ceases to respond, its last state is ORed with 	*/
+/* 	NODE_STATE_NO_RESPOND	*/
+enum node_states {
+	NODE_STATE_DOWN,	/* node is not responding */
+	NODE_STATE_UNKNOWN,	/* node's initial state, unknown */
+	NODE_STATE_IDLE,	/* node idle and available for use */
+	NODE_STATE_ALLOCATED,	/* node has been allocated to a job */
+	NODE_STATE_DRAINED,	/* node idle and not to be allocated work */
+	NODE_STATE_DRAINING,	/* node in use, but not to be allocated work */
+	NODE_STATE_END		/* last entry in table */
+};
+#define NODE_STATE_NO_RESPOND (0x8000)
+
+/* used to define the size of the credential.signature size
+ * used to define the key size of the io_stream_header_t
+ */
+#define SLURM_SSL_SIGNATURE_LENGTH 128
+
+/*****************************************************************************\
+ *	PROTOCOL DATA STRUCTURE DEFINITIONS
+\*****************************************************************************/
+
+typedef struct {
+	uint32_t job_id;	/* job's id */
+	uid_t user_id;		/* user who job is running as */
+	char *node_list;	/* list of allocated nodes */
+	time_t expiration_time;	/* expiration of credential */
+	char signature[SLURM_SSL_SIGNATURE_LENGTH];	
+} slurm_job_credential_t;
+
+typedef struct job_descriptor {	/* For submit, allocate, and update requests */
+	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
+				 * 0 otherwise,default=0 */
+	uint16_t kill_on_node_fail; /* 1 if node failure to kill job, 
+				 * 0 otherwise,default=1 */
+	char **environment;	/* environment variables to set for job, 
+				 *  name=value pairs, one per line */
+	uint16_t env_size;	/* element count in environment */
+	char *features;		/* comma separated list of required features, 
+				 * default NONE */
+	uint32_t job_id;	/* job ID, default set by SLURM */
+	char *name;		/* name of the job, default "" */
+	uint32_t min_procs;	/* minimum processors per node, default=0 */
+	uint32_t min_memory;	/* minimum real memory per node, default=0 */
+	uint32_t min_tmp_disk;	/* minimum temporary disk per node, default=0 */
+	char *partition;	/* name of requested partition, 
+				 * default in SLURM config */
+	uint32_t priority;	/* relative priority of the job, explicitly only
+				 * for user root */
+	char *req_nodes;	/* comma separated list of required nodes
+				 * default NONE */
+	uint16_t shared;	/* 1 if job can share nodes with other jobs,
+				 * 0 otherwise */
+	uint32_t time_limit;	/* maximum run time in minutes, default is
+				 * partition limit */
+	uint32_t num_procs;	/* total count of processors required, 
+				 * default=0 */
+	uint32_t num_nodes;	/* number of nodes required by job, default=0 */
+	char *script;		/* the actual job script, default NONE */
+	char *err;		/* pathname of stderr */
+	char *in;		/* pathname of stdin */
+	char *out;		/* pathname of stdout */
+	uint32_t user_id;	/* set only if different from current UID, 
+				 * can only be explicitly set by user root */
+	char *work_dir;		/* pathname of working directory */
+} job_desc_msg_t;
+
+typedef struct job_info {
+	uint32_t job_id;	/* job ID */
+	char *name;		/* name of the job */
+	uint32_t user_id;	/* user the job runs as */
+	uint16_t job_state;	/* state of the job, see enum job_states */
+	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
+	time_t start_time;	/* time execution begins, actual or expected */
+	time_t end_time;	/* time of termination, actual or expected */
+	uint32_t priority;	/* relative priority of the job */
+	char *nodes;		/* list of nodes allocated to job */
+	int *node_inx;		/* list index pairs into node_table for *nodes:
+				 * start_range_1, end_range_1, 
+				 * start_range_2, .., -1  */
+	char *partition;	/* name of assigned partition */
+	uint32_t num_procs;	/* number of processors required by job */
+	uint32_t num_nodes;	/* number of nodes required by job */
+	uint16_t shared;	/* 1 if job can share nodes with other jobs */
+	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
+	uint32_t min_procs;	/* minimum processors required per node */
+	uint32_t min_memory;	/* minimum real memory required per node */
+	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */
+	char *req_nodes;	/* comma separated list of required nodes */
+	int *req_node_inx;	/* list index pairs into node_table: 
+				 * start_range_1, end_range_1, 
+				 * start_range_2, .., -1  */
+	char *features;		/* comma separated list of required features */
+} job_info_t;
+
+typedef struct job_info_msg {
+	time_t last_update;	/* time of latest info */
+	uint32_t record_count;	/* number of records */
+	job_info_t *job_array;	/* the job records */
+} job_info_msg_t;
+
+typedef struct job_step_specs {
+	uint32_t job_id;	/* job ID */
+	uint32_t user_id;	/* user the job runs as */
+	uint32_t node_count;	/* count of required nodes */
+	uint32_t cpu_count;	/* count of required processors */
+	uint16_t relative;	/* first node to use of job's allocation */
+	uint16_t task_dist;	/* see enum task_dist_state */
+	char *node_list;	/* list of required nodes */
+} job_step_create_request_msg_t;
+
+typedef struct job_step_create_response_msg {
+	uint32_t job_step_id;	/* assigned job step id */
+	char *node_list;	/* list of allocated nodes */
+	slurm_job_credential_t *credentials;
+#ifdef	HAVE_LIBELAN3
+	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
+#endif
+} job_step_create_response_msg_t;
+
+typedef struct {
+	uint32_t job_id;	/* job ID */
+	uint16_t step_id;	/* step ID */
+	uint32_t user_id;	/* user the job runs as */
+	time_t start_time;	/* step start time */
+	char *partition;	/* name of assigned partition */
+	char *nodes;		/* list of nodes allocated to job_step */
+} job_step_info_t;
+
+typedef struct job_step_info_response_msg {
+	time_t last_update;		/* time of latest info */
+	uint32_t job_step_count;	/* number of records */
+	job_step_info_t *job_steps;	/* the job step records */
+} job_step_info_response_msg_t;
+
+typedef struct node_info {
+	char *name;		/* node name */
+	uint16_t node_state;	/* see enum node_states */
+	uint32_t cpus;		/* configured count of cpus running on the node */
+	uint32_t real_memory;	/* configured MB of real memory on the node */
+	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
+	uint32_t weight;	/* arbitrary priority of node for scheduling */
+	char *features;		/* arbitrary list of features for node */
+	char *partition;	/* name of partition node configured to */
+} node_info_t;
+
+typedef struct node_info_msg {
+	time_t last_update;		/* time of latest info */
+	uint32_t record_count;		/* number of records */
+	node_info_t *node_array;	/* the node records */
+} node_info_msg_t;
+
+typedef struct old_job_alloc_msg {
+	uint32_t job_id;	/* job ID */
+	uint32_t uid;		/* user the job runs as */
+} old_job_alloc_msg_t;
+
+typedef struct partition_info {
+	char *name;		/* name of the partition */
+	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint16_t default_part;	/* 1 if this is default partition */
+	uint16_t root_only;	/* 1 if allocate must come for user root */
+	uint16_t shared;	/* 1 if job can share nodes, 
+				 * 2 if job must share nodes */
+	uint16_t state_up;	/* 1 if state is up, 0 if down */
+	char *nodes;		/* list names of nodes in partition */
+	int *node_inx;		/* list index pairs into node_table:
+				 * start_range_1, end_range_1, 
+				 * start_range_2, .., -1  */
+	char *allow_groups;	/* comma delimited list of groups, 
+				 * null indicates all */
+} partition_info_t;
+
+typedef struct resource_allocation_response_msg {
+	uint32_t job_id;	/* assigned job id */
+	char *node_list;	/* assigned list of nodes */
+	int16_t num_cpu_groups;	/* elements in below cpu arrays */
+	int32_t *cpus_per_node;	/* cpus per node */
+	int32_t *cpu_count_reps;/* how many nodes have same cpu count */
+	uint16_t node_cnt;	/* count of nodes */
+	slurm_addr *node_addr;	/* network addresses */
+} resource_allocation_response_msg_t;
+
+typedef struct resource_allocation_and_run_response_msg {
+	uint32_t job_id;	/* assigned job id */
+	char *node_list;	/* assigned list of nodes */
+	int16_t num_cpu_groups;	/* elements in below cpu arrays */
+	int32_t *cpus_per_node;	/* cpus per node */
+	int32_t *cpu_count_reps;/* how many nodes have same cpu count */
+	uint32_t job_step_id;	/* assigned step id */
+	uint16_t node_cnt;	/* count of nodes */
+	slurm_addr *node_addr;	/* network addresses */
+	slurm_job_credential_t *credentials;
+#ifdef HAVE_LIBELAN3
+	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
+#endif
+} resource_allocation_and_run_response_msg_t;
+
+typedef struct partition_info_msg {
+	time_t last_update;	/* time of latest info */
+	uint32_t record_count;	/* number of records */
+	partition_info_t *partition_array; /* the partition records */
+} partition_info_msg_t;
+
+typedef struct slurm_ctl_conf {
+	time_t last_update;	/* last update time of the build parameters */
+	char *backup_addr;	/* comm path of slurmctld secondary server */
+	char *backup_controller;/* name of slurmctld secondary server */
+	char *control_addr;	/* comm path of slurmctld primary server */
+	char *control_machine;	/* name of slurmctld primary server */
+	char *epilog;		/* pathname of job epilog */
+	uint32_t first_job_id;	/* first slurm generated job_id to assign */
+	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
+				 * (only check configuration file, faster) */
+	uint16_t hash_base;	/* base used for hashing node table */
+	uint16_t heartbeat_interval;	/* interval between heartbeats, seconds */
+	uint16_t inactive_limit;	/* seconds of inactivity before a
+				 * non-active resource allocation is released */
+	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
+				 * on job termination */
+	char *prioritize;	/* pathname of program to set initial job 
+				 * priority */
+	char *prolog;		/* pathname of job prolog */
+	uint16_t ret2service;	/* 1 return DOWN node to service at registration */ 
+	char *slurmctld_logfile;/* where slurmctld error log gets written */
+	uint32_t slurmctld_port;/* default communications port to slurmctld */
+	uint16_t slurmctld_timeout;	/* seconds that backup controller waits 
+				 * on non-responding primarly controller */
+	char *slurmd_logfile;	/* where slurmd error log gets written */
+	uint32_t slurmd_port;	/* default communications port to slurmd */
+	char *slurmd_spooldir;	/* where slurmd put temporary state info */
+	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
+				 * considering node DOWN */
+	char *slurm_conf;	/* pathname of slurm config file */
+	char *state_save_location;/* pathname of slurmctld state save directory */
+	char *tmp_fs;		/* pathname of temporary file system */
+	char *job_credential_private_key;	/* path to private key */
+	char *job_credential_public_certificate; /* path to public certificate */
+} slurm_ctl_conf_t;
+
+typedef struct submit_response_msg {
+	uint32_t job_id;	/* job ID */
+} submit_response_msg_t;
+
+typedef struct slurm_update_node_msg {
+	char *node_names;	/* comma separated list of required nodes */
+	uint16_t node_state;	/* see enum node_states */
+} update_node_msg_t;
+
+typedef struct partition_info update_part_msg_t;
 
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS

@@ -40,6 +40,7 @@
 #include <unistd.h>
 
 #include <src/api/slurm.h>
+#include <src/common/slurm_protocol_defs.h>
 #include <src/common/hostlist.h>
 #include <src/common/log.h>
 #include <src/common/macros.h>
