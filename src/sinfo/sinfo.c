@@ -72,7 +72,6 @@ static int _build_min_max_string(char *buffer, int max, int min);
 static void _print_date(void);
 static int _print_int(int number, int width, bool right);
 static int _print_str(char *number, int width, bool right);
-static char *_int_to_str(int num);
 
 /* Display partition functions */
 static struct partition_summary *_find_partition_summary(List l, char *name);
