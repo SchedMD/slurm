@@ -55,7 +55,7 @@ char *change_numpsets = NULL;
 bool agent_fini = false;
 
 /* some local functions */
-#if HAVE_BGL
+#ifdef HAVE_BGL
 static int  _addto_node_list(bgl_record_t *bgl_record, int *start, int *end);
 #endif
 static void _set_bgl_lists();
@@ -510,7 +510,7 @@ extern int bgl_free_partition(pm_partition_id_t part_id)
 	return SLURM_SUCCESS;
 }
 
-#if HAVE_BGL
+#ifdef HAVE_BGL
 static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 {
 	int node_count=0;
@@ -1001,7 +1001,7 @@ static int _parse_bgl_spec(char *in_line)
 
 static void _process_nodes(bgl_record_t *bgl_record)
 {
-#if HAVE_BGL
+#ifdef HAVE_BGL
 	int j=0, number;
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
