@@ -370,7 +370,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 
 static void
-_kill_all_active_steps(uint32_t jobid)
+_kill_all_active_steps(uint32_t jobid, int sig)
 {
 	List         steps = shm_get_steps();
 	ListIterator i     = list_iterator_create(steps);
@@ -381,11 +381,11 @@ _kill_all_active_steps(uint32_t jobid)
 			/* Kill entire process group 
 			 * (slurmd manager will clean up any stragglers)
 			 */
-			debug2("sending SIGKILL to process group %d", s->sid);
-			killpg(s->sid, SIGKILL);
+			debug2("sending signal %d to jobid %d (pg:%d)", 
+			       sig, jobid, s->sid);
+			shm_signal_step(jobid, s->stepid, sig); 
 		}
 	}
-	list_iterator_destroy(i);
 	list_destroy(steps);
 }
 
@@ -407,7 +407,7 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 		 * Now kill all steps associated with this job, they are
 		 * no longer allowed to be running
 		 */
-		_kill_all_active_steps(req->job_id);
+		_kill_all_active_steps(req->job_id, SIGKILL);
 
 		if (rc < 0)
 			error("revoking credential for job %d: %m", 
