@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  slurm_auth.h - implementation-independent authentication API definitions
+ *  slurm_auth.c - implementation-independent authentication API definitions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
