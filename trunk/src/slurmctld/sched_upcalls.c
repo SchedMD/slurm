@@ -1105,9 +1105,9 @@ sched_cancel_job( const uint32_t job_id )
 {
 	int rc = SLURM_SUCCESS;
 	
-	/* Locks: Read config, write jobs */
+	/* Locks: Read config, read nodes, write jobs */
 	slurmctld_lock_t job_write_lock = {
-		READ_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 	/*
 	 * The nice way to do things would be to send SIGTERM, wait for

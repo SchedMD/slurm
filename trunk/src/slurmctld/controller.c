@@ -68,6 +68,7 @@
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
+#include "src/slurmctld/select_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 #include "src/slurmctld/state_save.h"
 
@@ -214,6 +215,8 @@ int main(int argc, char *argv[])
 	 */
 	if ( slurm_sched_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize scheduling plugin" );
+	if ( slurm_select_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize node selection plugin" );
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
@@ -246,6 +249,12 @@ int main(int argc, char *argv[])
 		}
 		info("Running as primary controller");
 
+		/* Recover node scheduler and switch state info */
+		if (select_g_state_restore(slurmctld_conf.state_save_location)
+				!= SLURM_SUCCESS ) {
+			error("failed to restore node selection state");
+			abort();
+		}
 		if (switch_state_begin(recover)) {
 			error("switch_state_begin: %m");
 			abort();
@@ -290,6 +299,9 @@ int main(int argc, char *argv[])
 		pthread_join(slurmctld_config.thread_id_sig,  NULL);
 		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
 		pthread_join(slurmctld_config.thread_id_save, NULL);
+		if (select_g_state_save(slurmctld_conf.state_save_location)
+				!= SLURM_SUCCESS )
+			error("failed to restore node selection state");
 		switch_state_fini();
 		if (slurmctld_config.resume_backup == false)
 			break;
@@ -648,9 +660,10 @@ static void *_slurmctld_background(void *no_data)
 	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { 
 		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-	/* Locks: Read config, write node */
+	/* Locks: Read config, write job, write node
+	 * (Might kill jobs on nodes set DOWN) */
 	slurmctld_lock_t node_write_lock = { 
-		READ_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };

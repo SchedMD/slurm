@@ -846,8 +846,8 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	complete_job_step_msg_t *complete_job_step_msg =
 	    (complete_job_step_msg_t *) msg->data;
 	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
-		WRITE_LOCK, NO_LOCK
+	slurmctld_lock_t job_write_lock = { 
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK
 	};
 	uid_t uid;
 	bool job_requeue = false;
@@ -1635,9 +1635,9 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	delete_part_msg_t *part_desc_ptr = (delete_part_msg_t *) msg->data;
-	/* Locks: write job, write partition */
+	/* Locks: write job, read node, write partition */
 	slurmctld_lock_t part_write_lock = { 
-		NO_LOCK, WRITE_LOCK, NO_LOCK, WRITE_LOCK };
+		NO_LOCK, WRITE_LOCK, READ_LOCK, WRITE_LOCK };
 	uid_t uid;
 
 	START_TIMER;
