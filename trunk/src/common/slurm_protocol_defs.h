@@ -317,16 +317,19 @@ void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
 void inline slurm_free_job_step_id(job_step_id_t * msg);
 
-#define slurm_free_job_step_id_msg(msg) slurm_free_job_step_id((job_step_id_t*)(msg))
-#define slurm_free_job_step_info_request_msg(msg) slurm_free_job_step_id(msg)
-#define slurm_free_job_info_request_msg(msg) slurm_free_job_step_id(msg)
+#define slurm_free_job_step_id_msg(msg) \
+	slurm_free_job_step_id((job_step_id_t*)(msg))
+#define slurm_free_job_step_info_request_msg(msg) \
+	slurm_free_job_step_id(msg)
+#define slurm_free_job_info_request_msg(msg) \
+	slurm_free_job_step_id(msg)
 
 void inline slurm_free_shutdown_msg (shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
 
-void inline
-slurm_free_node_registration_status_msg (slurm_node_registration_status_msg_t * msg);
+void inline slurm_free_node_registration_status_msg (
+			slurm_node_registration_status_msg_t * msg);
 
 void inline slurm_free_job_info(job_info_t * job);
 void inline slurm_free_job_info_members(job_info_t * job);
@@ -335,18 +338,18 @@ void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 void inline slurm_free_update_node_msg(update_node_msg_t * msg);
 void inline slurm_free_update_part_msg(update_part_msg_t * msg);
-void inline
-slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
-				       msg);
-void inline slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t
-						* msg);
-void inline
-slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t * msg);
+void inline slurm_free_job_step_create_request_msg(
+			job_step_create_request_msg_t * msg);
+void inline slurm_free_launch_tasks_request_msg(
+			launch_tasks_request_msg_t * msg);
+void inline slurm_free_launch_tasks_response_msg(
+			launch_tasks_response_msg_t * msg);
 void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
-void inline
-slurm_free_reattach_tasks_streams_msg(reattach_tasks_streams_msg_t * msg);
-void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
+void inline slurm_free_reattach_tasks_streams_msg(
+			reattach_tasks_streams_msg_t * msg);
+void inline slurm_free_revoke_credential_msg(
+			revoke_credential_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
