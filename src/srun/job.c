@@ -171,6 +171,16 @@ update_job_state(job_t *job, job_state_t state)
 	pthread_mutex_unlock(&job->state_mutex);
 }
 
+job_state_t 
+job_state(job_t *job)
+{
+	job_state_t state;
+	slurm_mutex_lock(&job->state_mutex);
+	state = job->state;
+	slurm_mutex_unlock(&job->state_mutex);
+	return state;
+}
+
 
 void 
 job_force_termination(job_t *job)
