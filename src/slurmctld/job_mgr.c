@@ -933,54 +933,51 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	if (job_specs == NULL)
 		return;
 
-	job_id = (job_specs->job_id != NO_VAL) ? job_specs->job_id : -1;
+	job_id = (job_specs->job_id != NO_VAL) ? 
+			(long) job_specs->job_id : -1L;
 	debug3("JobDesc: user_id=%u job_id=%ld partition=%s name=%s",
 	       job_specs->user_id, job_id,
 	       job_specs->partition, job_specs->name);
 
-	min_procs =
-	    (job_specs->min_procs != NO_VAL) ? job_specs->min_procs : -1;
-	min_memory =
-	    (job_specs->min_memory != NO_VAL) ? job_specs->min_memory : -1;
-	min_tmp_disk =
-	    (job_specs->min_tmp_disk !=
-	     NO_VAL) ? job_specs->min_tmp_disk : -1;
+	min_procs    = (job_specs->min_procs != NO_VAL) ? 
+			(long) job_specs->min_procs : -1L;
+	min_memory   = (job_specs->min_memory != NO_VAL) ? 
+			(long) job_specs->min_memory : -1L;
+	min_tmp_disk = (job_specs->min_tmp_disk != NO_VAL) ? 
+			(long) job_specs->min_tmp_disk : -1L;
 	debug3
 	    ("   min_procs=%ld min_memory=%ld min_tmp_disk=%ld features=%s",
 	     min_procs, min_memory, min_tmp_disk, job_specs->features);
 
-	num_procs =
-	    (job_specs->num_procs != NO_VAL) ? job_specs->num_procs : -1;
-	min_nodes =
-	    (job_specs->min_nodes != NO_VAL) ? job_specs->min_nodes : -1;
-	max_nodes =
-	    (job_specs->max_nodes != NO_VAL) ? job_specs->max_nodes : -1;
-	immediate = (job_specs->immediate == 0) ? 0 : 1;
+	num_procs = (job_specs->num_procs != NO_VAL) ? 
+			(long) job_specs->num_procs : -1L;
+	min_nodes = (job_specs->min_nodes != NO_VAL) ? 
+			(long) job_specs->min_nodes : -1L;
+	max_nodes = (job_specs->max_nodes != NO_VAL) ? 
+			(long) job_specs->max_nodes : -1L;
+	immediate = (job_specs->immediate == 0) ? 0L : 1L;
 	debug3("   num_procs=%ld min_nodes=%ld max_nodes=%ld immediate=%ld",
 	       num_procs, min_nodes, max_nodes, immediate);
 
 	debug3("   req_nodes=%s exc_nodes=%s", 
 	       job_specs->req_nodes, job_specs->exc_nodes);
 
-	time_limit =
-	    (job_specs->time_limit != NO_VAL) ? job_specs->time_limit : -1;
-	priority =
-	    (job_specs->priority != NO_VAL) ? job_specs->priority : -1;
-	contiguous =
-	    (job_specs->contiguous !=
-	     (uint16_t) NO_VAL) ? job_specs->contiguous : -1;
-	kill_on_node_fail =
-	    (job_specs->kill_on_node_fail !=
-	     (uint16_t) NO_VAL) ? job_specs->kill_on_node_fail : -1;
-	shared =
-	    (job_specs->shared !=
-	     (uint16_t) NO_VAL) ? job_specs->shared : -1;
+	time_limit = (job_specs->time_limit != NO_VAL) ? 
+			(long) job_specs->time_limit : -1L;
+	priority   = (job_specs->priority != NO_VAL) ? 
+			(long) job_specs->priority : -1L;
+	contiguous = (job_specs->contiguous != (uint16_t) NO_VAL) ? 
+			(long) job_specs->contiguous : -1L;
+	shared = (job_specs->shared != (uint16_t) NO_VAL) ? 
+			(long) job_specs->shared : -1L;
 	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld",
 	       time_limit, priority, contiguous, shared);
 
-	task_dist =
-	    (job_specs->task_dist !=
-	     (uint16_t) NO_VAL) ? job_specs->task_dist : -1;
+	kill_on_node_fail = (job_specs->kill_on_node_fail != 
+			     (uint16_t) NO_VAL) ? 
+			(long) job_specs->kill_on_node_fail : -1L;
+	task_dist = (job_specs->task_dist != (uint16_t) NO_VAL) ? 
+			(long) job_specs->task_dist : -1L;
 	debug3("   kill_on_node_fail=%ld task_dist=%ld script=%.40s...",
 	       kill_on_node_fail, task_dist, job_specs->script);
 
