@@ -1,0 +1,107 @@
+Job information to be kept in three tables. 
+Each table will have its own lock, to maximize parallelism.
+We will use the common/list library to manage the tables.
+
+
+JOB TABLE (basic job information)
+---------
+Partition name (string)
+Job Name (string)
+Job ID (number)
+User ID (number)
+Nodes (string, comma separated list with regular expressions)
+State (Pending, Held, Stage_In, Running, Stage_Out, Complete, Reserved_Resources, others?)
+Time_Limit (minutes)
+Start_Time (UTS, Anticipated time if State is Pending, NULL if Held, Actual time otherwise)
+End_Time (UTS, Expected if Stage_In or Running, Actual if Complete, NULL otherwise)
+Priority (Float)
+Key (for Elan connection)
+Num_Procs (Actual number of processors allocated to the job)
+other??
+
+NOTES: 
+Sort list by Partition then Priority.
+
+Anticipated start time is difficult to calculate, at least given the need for contiguous nodes. 
+Initially, I expect to just do FIFO. Later to set the anticpated start time based on node counts 
+in the partition considering when job's complete.This will be sub-optimal, but with DPCS on top 
+will work fine. Final version would be true backfill considering all the constraints (Phase 4+).
+
+Purge entries if End_Time is over some configurable age and the job is complete OR 
+if we have too many entries. In the event that we have too many entries, there will 
+probably be a multitude of bad jobs that fail right away for a particular user. 
+We want to elimate those entries first.
+
+
+JOB DETAILS (needed for job initiation)
+-----------
+Node_List (required nodes, if any, default NONE)
+Num_Procs (Minimum processor count, default NONE)
+Num_Nodes (Minimum node count, default NONE)
+Features (Required features, default NONE)
+Share (Flag if nodes can be shared, default NO)
+Contiguous (Flag if contiguous nodes required, default NO)
+Min_Procs (Minimum count of processors per node, default NONE)
+Min_Mem (Minimum size of real memory per node in MB, default NONE)
+Min_TmpDisk (Minimum size of temporary disk space per node in MB, default NONE)
+Dist (Distribution of tasks on the nodes, block or cyclic, default ??)
+Job_Script (Fully qualified pathname of script to be initiated)
+Procs_Per_Task (number of processors required for each task initiated, default 1)
+other?
+
+NOTES:
+srun job MUST supply User ID, group names (for partition group filter) and
+either Node_List OR Num_Procs OR Num_Nodes. All other parameters are optional.
+
+srun job may also supply immediate flag (run or fail, not to be queued if set, 
+default is NOT set).
+
+Can all of the other state information for a job (environment, stdout, etc.) 
+all be managed in the Job_Script? Can slurctld just tell slurmd to start 
+the specified Job_Script?
+
+Notes for Moe: Dist needs to be added to Parse_Job_Specs. Need to return 
+Node_List by task, plus IP address list.
+
+
+ACCOUNTING TABLE
+----------------
+Job ID (zero if not a SLURM job)
+User ID (not redundant for non-SLURM jobs)
+CPU_Time_Allocated (computed from Num_Procs and Start_Time in JOB TABLE)
+CPU_Time_Used (actual use for job's processes, both system and user time)
+Real_Memory_Integral
+Virtual_Memory_Integral (DPCS has this, but we may be able to drop it)
+Real_Memory_Highwater (Largest real memory seen at any time on any node for the job)
+Virtual_Memory_Highwater (DPCS has this, but we may be able to drop it)
+
+NOTES: 
+DPCS supports this virtual memory information. Based upon my experience, this 
+information is virtually worthless. Essentially all of our applications have a 
+real memory (Resident Set Size) that is almost equal to the virtual memory size.
+
+CPU time allocated equals the CPUs allocated to the job times its time in State Running.
+I am breaking this out here to more easily support gang scheduling and/or checkpoint/restart
+in the future.
+
+The raw information will be collected by slurmd on each node. It will read the 
+process tables, combine the data by session ID, compute changes since previous 
+snapshot, assign a Job ID to the records, and hold the data. We need to provide 
+a Job ID to the session record(s) associated with a running SLURM job. We keep
+tallying the data until slurmctld requests it. At that time slurmd send the 
+totals back and clears the records. slurmd needs to make sure that resource 
+use does not go backwards and processes may terminate between snapshots. 
+Since slurmd just sends up deltas, it need preserve no accounting data between 
+restarts. Only the slurmctld will have actual totals.
+
+We want to collect resource utilization information on all processes, 
+not just those associated with a SLURM job. This includes the operating 
+system, system daemons, and idle time. We also want to report down time. 
+This not necessarily represent node down time, but slurmd down time. 
+When the system is stable, these should be the same. We will need to 
+establish psuedo UIDs for IDLE and DOWN time to distinguish them from 
+root resource use.
+
+Users will be charged for reserved resources, even if no processes are running.
+
+This information will be provided in Phase 4 of SLURM.
