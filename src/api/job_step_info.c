@@ -65,7 +65,7 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
 
 /* slurm_load_job_steps - issue RPC to get Slurm job_step state information */
 int
-slurm_get_job_steps ( uint32_t job_id, int16_t step_id, job_step_info_response_msg_t **step_response_pptr)
+slurm_get_job_steps ( uint32_t job_id, uint32_t step_id, job_step_info_response_msg_t **step_response_pptr)
 {
 	int msg_size ;
 	int rc ;
