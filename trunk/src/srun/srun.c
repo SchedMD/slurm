@@ -60,6 +60,7 @@
 #include "src/srun/io.h"
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
+#include "src/srun/reattach.h"
 #include "src/srun/opt.h"
 
 #include "src/srun/net.h"
