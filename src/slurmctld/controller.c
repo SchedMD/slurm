@@ -1482,6 +1482,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	uid_t uid;
 	uint16_t node_cnt;
 	slurm_addr *node_addr;
+	int immediate = true;   /* implicit job_desc_msg->immediate == true */
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_ALLOCATE_AND_RUN_JOB_STEP");
@@ -1491,21 +1492,18 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	uid = g_slurm_auth_get_uid(msg->cred);
 	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0) && (uid != getuid())) {
-		error_code = ESLURM_USER_ID_MISSING;
-		error
-		    ("Security violation, ALLOCATE_AND_RUN RPC from uid %u",
-		     (unsigned int) uid);
+		error("Security violation, ALLOCATE_AND_RUN RPC from uid %u",
+		      (unsigned int) uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
 	}
 
-	if (error_code == SLURM_SUCCESS) {
-		int immediate = true; /* job_desc_msg->immediate == true */
-		lock_slurmctld(job_write_lock);
-		error_code = job_allocate(job_desc_msg, &job_id,
-					  &node_list_ptr, &num_cpu_groups,
-					  &cpus_per_node, &cpu_count_reps,
-					  immediate, false, true, uid,
-					  &node_cnt, &node_addr);
-	}
+	lock_slurmctld(job_write_lock);
+	error_code = job_allocate(job_desc_msg, &job_id,
+				  &node_list_ptr, &num_cpu_groups,
+				  &cpus_per_node, &cpu_count_reps,
+				  immediate, false, true, uid,
+				  &node_cnt, &node_addr);
 
 	/* return result */
 	if (error_code) {
@@ -1533,8 +1531,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		unlock_slurmctld(job_write_lock);
 		info(
 		   "_slurm_rpc_allocate_and_run creating job step, time=%ld, error=%s", 
-		   (long) (clock() - start_time),
-		   slurm_strerror(error_code));
+		   (long) (clock() - start_time), slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 
