@@ -25,6 +25,7 @@
 #define DEFAULT_MASTER_DAEMON   "/usr/local/SLURM/Slurmd.Master"
 #define DEFAULT_CONTROL_DAEMON  "/usr/local/SLURM/Slurmd.Control"
 #define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd.Server"
+#define DEFAULT_TMP_FS		"/tmp"
 #define DEFAULT_CONTROLLER_TIMEOUT 300
 #define DEFAULT_SERVER_TIMEOUT  300
 

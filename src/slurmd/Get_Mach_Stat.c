@@ -2,6 +2,8 @@
  * Get_Mach_Stat - Get the status of the current machine and return it in the standard 
  *	node configuration format "Name=linux.llnl.gov CPUs=4 ..."
  * NOTE: Most of these modules are very much system specific. Built on RedHat2.4
+ * NOTE: While not currently used by SLURM, this code can also get a nodes OS name, 
+ *       virtual memory size, and CPU speed.
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -21,11 +23,13 @@
 #define DEBUG_SYSTEM 1
 
 int Get_CPUs(int *CPUs);
-int Get_OS_Name(char *OS_Name);
 int Get_Mach_Name(char *Node_Name);
-int Get_Memory(int *RealMemory, int *VirtualMemory);
-int Get_Speed(float *Speed);
+int Get_Memory(int *RealMemory);
 int Get_TmpDisk(long *TmpDisk);
+#if 0
+int Get_OS_Name(char *OS_Name);
+int Get_Speed(float *Speed);
+#endif
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -36,15 +40,12 @@ main(int argc, char * argv[]) {
     Error_Code = Get_Mach_Name(This_Node.Name);
     if (Error_Code != 0) exit(1);    /* The show is all over without a node name */
 
-    Error_Code += Get_OS_Name(This_Node.OS);
     Error_Code += Get_CPUs(&This_Node.CPUs);
-    Error_Code += Get_Speed(&This_Node.Speed);
-    Error_Code += Get_Memory(&This_Node.RealMemory, &This_Node.VirtualMemory);
+    Error_Code += Get_Memory(&This_Node.RealMemory);
     Error_Code += Get_TmpDisk(&This_Node.TmpDisk);
 
-    printf("Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld\n", 
-	This_Node.Name, This_Node.OS, This_Node.CPUs, This_Node.Speed, This_Node.RealMemory, 
-	This_Node.VirtualMemory, This_Node.TmpDisk);
+    printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%ld\n", 
+	This_Node.Name, This_Node.CPUs, This_Node.RealMemory, This_Node.TmpDisk);
     if (Error_Code != 0) printf("Get_Mach_Stat Errors encountered, Error_Code=%d\n", Error_Code);
     exit (Error_Code);
 } /* main */
@@ -86,6 +87,7 @@ int Get_CPUs(int *CPUs) {
     return 0;
 }
 
+#if 0
 /*
  * Get_OS_Name - Return the operating system name and version 
  * Input: OS_Name - buffer for the OS name, must be at least MAX_OS_LEN characters
@@ -121,6 +123,7 @@ int Get_OS_Name(char *OS_Name) {
     strcat(OS_Name, Sys_Info.release);
     return 0;
 } /* Get_OS_Name */
+#endif
 
 /*
  * Get_Mach_Name - Return the name of this node 
@@ -146,18 +149,15 @@ int Get_Mach_Name(char *Node_Name) {
 /*
  * Get_Memory - Return the count of CPUs on this system 
  * Input: RealMemory - buffer for the Real Memory size
- *        VirtualMemory - buffer for the Virtual Memory size
  * Output: RealMemory - the Real Memory size in MB, "1" if error
- *         VirtualMemory - the Virtual Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_Memory(int *RealMemory, int *VirtualMemory) {
+int Get_Memory(int *RealMemory) {
     char buffer[128];
     FILE *Mem_Info_File;
     char *buf_ptr;
 
     *RealMemory = 1;
-    *VirtualMemory = 1;
     Mem_Info_File = fopen("/proc/meminfo", "r");
     if (Mem_Info_File == NULL) {
 #if DEBUG_SYSTEM
@@ -173,16 +173,19 @@ int Get_Memory(int *RealMemory, int *VirtualMemory) {
 	    *RealMemory = (int)strtol(buf_ptr+9, (char **)NULL, 10);
 	    if (strstr(buf_ptr, "kB") != NULL) *RealMemory /= 1024;
 	} /* if */
+#if 0
 	if ((buf_ptr=strstr(buffer, "SwapTotal:")) != NULL) {
 	    *VirtualMemory = (int)strtol(buf_ptr+10, (char **)NULL, 10);
 	    if (strstr(buf_ptr, "kB") != NULL) *VirtualMemory /= 1024;
 	} /* if */
+#endif
     } /* while */
 
     fclose(Mem_Info_File);
     return 0;
 }
 
+#if 0
 /*
  * Get_Speed - Return the speed of CPUs on this system (MHz clock)
  * Input: CPUs - buffer for the CPU speed
@@ -217,6 +220,7 @@ int Get_Speed(float *Speed) {
     fclose(CPU_Info_File);
     return 0;
 } /* Get_Speed */
+#endif
 
 /*
  * Get_TmpDisk - Return the total size of /tmp file system on 
@@ -227,9 +231,6 @@ int Get_Speed(float *Speed) {
  */
 int Get_TmpDisk(long *TmpDisk) {
     struct statfs Stat_Buf;
-    char  *FS_Name[] = {"/", "/tmp"};
-    fsid_t FS_Fsid[4];
-    long   FS_Size[4];
     long   Total_Size;
     int Error_Code, i;
     float Page_Size;
@@ -239,26 +240,16 @@ int Get_TmpDisk(long *TmpDisk) {
     Total_Size = 0;
     Page_Size = (getpagesize() / 1048576.0); /* Megabytes per page */
 
-    for (i=0; i<2; i++) {
-	if (statfs(FS_Name[i], &Stat_Buf) == 0) {
-	    FS_Fsid[i] = Stat_Buf.f_fsid;
-	    FS_Size[i] = (long)Stat_Buf.f_blocks;
-	} else if (errno == ENOENT) {
-	    FS_Size[i] = 0;
-	} else {
-	    Error_Code = errno;
+    if (statfs(DEFAULT_TMP_FS, &Stat_Buf) == 0) {
+	Total_Size = (long)Stat_Buf.f_blocks;
+    } else if (errno != ENOENT) {
+	Error_Code = errno;
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, FS_Name[i]);
+	fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, DEFAULT_TMP_FS);
 #else
-	    syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, FS_Name[i]);
+	syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, DEFAULT_TMP_FS);
 #endif
-	} /* else */
-    } /* for */
-
-    /* Determine if /tmp is distinct file system, comparing FS_Fsid would be best if it worked */
-    if (FS_Size[0] != FS_Size[1]) {
-	Total_Size += FS_Size[1];
-    } /* if */
+    } /* else */
 
     *TmpDisk += (long)(Total_Size * Page_Size);
     return Error_Code;
