@@ -205,7 +205,8 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	/* check to see if build_data has changed */	
 	if ( last_time_msg -> last_update >= init_time )
 	{
-		info ("slurmctld_req: dump_build time=%ld", (long) (clock () - start_time));
+		info ("slurmctld_req: dump_build, no change, time=%ld", 
+			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
 	else
