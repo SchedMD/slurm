@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="2 August 2004">
+<meta name="LLNLRandRdate" content="9 September 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -320,6 +320,23 @@ buffer into which the job credential information is to be written.<br>
 <span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) size of buf in 
 bytes</p>
 <p style="margin-left:.2in"><b>Returns</b>: location of buffer, same as <i>buf</i>.</p>
+
+<p class="commandline">int switch_p_get_data_jobinfo(switch_jobinfo_t switch_job,
+int key, void *resulting_data);</p>
+<p style="margin-left:.2in"><b>Description</b>: Get data from a job's
+switch credential.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_job</span>&nbsp; &nbsp;&nbsp;(input) a job's
+switch credential.<br>
+<span class="commandline"> key</span>&nbsp; &nbsp;&nbsp;(input) identification 
+of the type of data to be retrieved from the switch credential. NOTE: The 
+interpretation of this key is dependent upon the switch type. <br>
+<span class="commandline"> resulting_data</span>&nbsp; &nbsp;&nbsp;(input/output) 
+pointer to where the requested data should be stored. </p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+the plugin should return SLURM_ERROR and set the errno to an appropriate value
+to indicate the reason for failure.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h4>Node Specific Switch Management Functions</h4>
@@ -468,7 +485,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified August 2, 2004</p></td>
+Last modified 9 September 2004</p></td>
 </tr>
 </table>
 </td>
