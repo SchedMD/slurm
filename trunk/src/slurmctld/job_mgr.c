@@ -296,7 +296,8 @@ dump_job_state (struct job_record *dump_job_ptr, Buf buffer)
 	pack_time  (dump_job_ptr->start_time, buffer);
 	pack_time  (dump_job_ptr->end_time, buffer);
 	pack16  ((uint16_t) dump_job_ptr->job_state, buffer);
-	pack16  ((uint16_t) dump_job_ptr->next_step_id, buffer);
+	pack16  (dump_job_ptr->next_step_id, buffer);
+	pack16  (dump_job_ptr->kill_on_node_fail, buffer);
 
 	packstr (dump_job_ptr->nodes, buffer);
 	packstr (dump_job_ptr->partition, buffer); 
@@ -340,7 +341,6 @@ dump_job_details_state (struct job_details *detail_ptr, Buf buffer)
 
 	pack16  ((uint16_t) detail_ptr->shared, buffer);
 	pack16  ((uint16_t) detail_ptr->contiguous, buffer);
-	pack16  ((uint16_t) detail_ptr->kill_on_node_fail, buffer);
 	pack16  ((uint16_t) detail_ptr->batch_flag, buffer);
 
 	pack32  ((uint32_t) detail_ptr->min_procs, buffer);
@@ -433,12 +433,12 @@ int
 load_job_state ( void )
 {
 	int data_allocated, data_read = 0, error_code = 0;
-	uint32_t time, data_size = 0;
+	uint32_t data_size = 0;
 	int state_fd;
 	char *data, *state_file;
 	Buf buffer;
 	uint32_t job_id, user_id, time_limit, priority, total_procs;
-	time_t start_time, end_time;
+	time_t buf_time, start_time, end_time;
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
@@ -481,7 +481,7 @@ load_job_state ( void )
 
 	buffer = create_buf (data, data_size);
 	if (data_size > sizeof (time_t))
-		unpack_time (&time, buffer);
+		unpack_time (&buf_time, buffer);
 
 	while (remaining_buf (buffer) > 0) {
 		safe_unpack32 (&job_id, buffer);
@@ -493,6 +493,7 @@ load_job_state ( void )
 		unpack_time (&end_time, buffer);
 		safe_unpack16 (&job_state, buffer);
 		safe_unpack16 (&next_step_id, buffer);
+		safe_unpack16 (&kill_on_node_fail, buffer);
 
 		safe_unpackstr_xmalloc (&nodes, &name_len, buffer);
 		safe_unpackstr_xmalloc (&partition, &name_len, buffer);
@@ -513,7 +514,6 @@ load_job_state ( void )
 
 			safe_unpack16 (&shared, buffer);
 			safe_unpack16 (&contiguous, buffer);
-			safe_unpack16 (&kill_on_node_fail, buffer);
 			safe_unpack16 (&batch_flag, buffer);
 
 			safe_unpack32 (&min_procs, buffer);
@@ -574,11 +574,13 @@ load_job_state ( void )
 		job_ptr->priority = priority;
 		job_ptr->start_time = start_time;
 		job_ptr->end_time = end_time;
+		job_ptr->time_last_active = time(NULL);
 		job_ptr->job_state = job_state;
 		job_ptr->next_step_id = next_step_id;
 		strncpy (job_ptr->name, name, MAX_NAME_LEN);
 		job_ptr->nodes = nodes; nodes = NULL;
 		job_ptr->node_bitmap = node_bitmap; node_bitmap = NULL;
+		job_ptr->kill_on_node_fail = kill_on_node_fail;
 		build_node_details (job_ptr->node_bitmap, &job_ptr->num_cpu_groups,
 			&job_ptr->cpus_per_node, &job_ptr->cpu_count_reps);
 
@@ -592,7 +594,6 @@ load_job_state ( void )
 			job_ptr->details->num_nodes = num_nodes;
 			job_ptr->details->shared = shared;
 			job_ptr->details->contiguous = contiguous;
-			job_ptr->details->kill_on_node_fail = kill_on_node_fail;
 			job_ptr->details->batch_flag = batch_flag;
 			job_ptr->details->min_procs = min_procs;
 			job_ptr->details->min_memory = min_memory;
@@ -802,7 +803,7 @@ kill_running_job_by_node_name (char *node_name)
 			job_record_point->job_id, node_name);
 		job_count++;
 		if ( (job_record_point->details == NULL) || 
-		     (job_record_point->details->kill_on_node_fail)) {
+		     (job_record_point->kill_on_node_fail)) {
 			last_job_update = time (NULL);
 			job_record_point->job_state = JOB_NODE_FAIL;
 			job_record_point->end_time = time(NULL);
@@ -1603,6 +1604,8 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		job_ptr->priority = job_desc->priority;
 	else
 		set_job_prio (job_ptr);
+	if (job_desc->kill_on_node_fail != NO_VAL)
+		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = job_desc->num_procs;
@@ -1617,8 +1620,6 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		detail_ptr->shared = job_desc->shared;
 	if (job_desc->contiguous != NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
-	if (job_desc->kill_on_node_fail != NO_VAL)
-		detail_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 	if (job_desc->min_procs != NO_VAL)
 		detail_ptr->min_procs = job_desc->min_procs;
 	if (job_desc->min_memory != NO_VAL)
@@ -1695,6 +1696,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id, uid_t uid)
 			return ESLURM_ALREADY_DONE;
 		}
 
+		job_ptr->time_last_active = time(NULL);
 		return SLURM_SUCCESS;
 	} 
 
@@ -1761,14 +1763,25 @@ job_time_limit (void)
 	while ((job_ptr = (struct job_record *) list_next (job_record_iterator))) {
 		if (job_ptr->magic != JOB_MAGIC)
 			fatal ("job_time_limit: job integrity is bad");
-		if ((job_ptr->time_limit == INFINITE) ||
-		    (job_ptr->end_time > now))
-			continue;
 		if ((job_ptr->job_state == JOB_PENDING) ||
 		    (job_ptr->job_state == JOB_FAILED) ||
 		    (job_ptr->job_state == JOB_COMPLETE) ||
 		    (job_ptr->job_state == JOB_TIMEOUT) ||
 		    (job_ptr->job_state == JOB_NODE_FAIL))
+			continue;
+		if (slurmctld_conf.inactive_limit) {
+			if (job_ptr->step_list &&
+			    (list_count(job_ptr->step_list) > 0))
+				job_ptr->time_last_active = now;
+			else if ((job_ptr->time_last_active + 
+					slurmctld_conf.inactive_limit) <= now) {
+				/* job inactive, kill it */
+				job_ptr->end_time = now;
+				job_ptr->time_limit = 1;
+			}
+		}
+		if ((job_ptr->time_limit == INFINITE) || 
+		    (job_ptr->end_time > now))
 			continue;
 		last_job_update = now;
 		info ("Time limit exhausted for job_id %u, terminated", job_ptr->job_id);
@@ -2358,8 +2371,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs -> kill_on_node_fail != (uint16_t) NO_VAL && detail_ptr) {
-		detail_ptr -> kill_on_node_fail = job_specs -> kill_on_node_fail;
+	if (job_specs -> kill_on_node_fail != (uint16_t) NO_VAL) {
+		job_ptr -> kill_on_node_fail = job_specs -> kill_on_node_fail;
 		info ("update_job: setting kill_on_node_fail to %u for job_id %u",
 			job_specs -> kill_on_node_fail, job_specs -> job_id);
 	}

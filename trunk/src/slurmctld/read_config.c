@@ -245,7 +245,8 @@ static int
 parse_config_spec (char *in_line) 
 {
 	int error_code;
-	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1, kill_wait = -1;
+	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1;
+	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
 	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
@@ -263,6 +264,7 @@ parse_config_spec (char *in_line)
 		"FirstJobId=", 'l', &first_job_id,
 		"HashBase=", 'd', &hash_base,
 		"HeartbeatInterval=", 'd', &heartbeat_interval,
+		"InactiveLimit=", 'd', &inactive_limit,
 		"KillWait=", 'd', &kill_wait,
 		"Prioritize=", 's', &prioritize,
 		"Prolog=", 's', &prolog,
@@ -308,6 +310,9 @@ parse_config_spec (char *in_line)
 
 	if ( heartbeat_interval != -1) 
 		slurmctld_conf.heartbeat_interval = heartbeat_interval;
+
+	if ( inactive_limit != -1) 
+		slurmctld_conf.inactive_limit = inactive_limit;
 
 	if ( kill_wait != -1) 
 		slurmctld_conf.kill_wait = kill_wait;
