@@ -620,6 +620,9 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	if (kill(-step->sid, req->signal) < 0)
 		rc = errno; 
 
+	if (kill (-step->task_list->pid, req->signal) < 0)
+		rc = errno;
+
 	if (rc == SLURM_SUCCESS)
 		verbose("Sent signal %d to %u.%u", 
 			req->signal, req->job_id, req->job_step_id);

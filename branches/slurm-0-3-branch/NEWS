@@ -4,6 +4,7 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.3.10
 =========================
  -- Move startup script from "/etc/rc.d/init.d/slurm" to "/etc/init.d/slurm"
+ -- Avoid creating orphaned process group when starting job processes.
 
 * Changes in SLURM 0.3.9
 ========================
