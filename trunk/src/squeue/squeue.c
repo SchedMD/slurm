@@ -146,34 +146,23 @@ _print_job ( void )
 			                                  2, false, " " );
 			out_size += (2 + 1);
 		}
-		job_format_add_time_limit( params.format_list, 8, true, " " );
-		out_size += (7 + 1);
+		job_format_add_time_used( params.format_list, 9, true, " " );
+		out_size += (9 + 1);
 		if (params.long_list) {
-			job_format_add_priority( params.format_list, 10, 
-						 true, " " );
-			out_size += (10 + 1);
-			job_format_add_start_time( params.format_list,11,
-						   false, " ");
-			out_size += (11 + 1);
-			job_format_add_end_time( params.format_list, 11,
-						 false, " ");
-			out_size += (11 + 1);
-		} else {
-			job_format_add_priority( params.format_list, 4, 
-						 true, " " );
-			out_size += (4 + 1);
+			job_format_add_time_limit( params.format_list, 8, 
+						   true, " " );
+			out_size += (8 + 1);
 		}
-		/* Leave nodes at the end, length is highly variable */
-		if (params.long_list) {
-			job_format_add_nodes( params.format_list, 0, 
-					      false, NULL );
-		} else {
-			out_size  = max_line_size - out_size - 1;
-			if (out_size < 8)
-				out_size = 8;
-			job_format_add_nodes( params.format_list, out_size, 
-			                      false, NULL );
-		}
+		job_format_add_num_nodes( params.format_list, 6, true, " " );
+		out_size += (6 + 1);
+		/* Leave node list at the end, length is highly variable */
+#ifdef		LINE_LENGTH_LIMITED
+		out_size  = max_line_size - out_size - 1;
+		job_format_add_nodes( params.format_list, out_size, false, 
+		                      NULL );
+#else
+		job_format_add_nodes( params.format_list, 0, false, NULL );
+#endif
 	}
 
 	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , 
@@ -222,19 +211,16 @@ _print_job_steps( void )
 		out_size += (9 + 1);
 		step_format_add_user_name( params.format_list, 8, false, " " );
 		out_size += (8 + 1);
-		step_format_add_start_time( params.format_list, 11, 
-					    false, " " );
+		step_format_add_time_used( params.format_list, 9, 
+					    true, " " );
 		out_size += (11 + 1);
-		if (params.long_list) {
-			step_format_add_nodes( params.format_list, 0, 
-					       false, NULL );
-		} else {
-			out_size  = max_line_size - out_size - 1;
-			if (out_size < 8)
-				out_size = 8;
-			step_format_add_nodes( params.format_list, out_size, 
-			                       false, NULL );
-		}
+#ifdef		LINE_LENGTH_LIMITED
+		out_size  = max_line_size - out_size - 1;
+		step_format_add_nodes( params.format_list, out_size, false, 
+			               NULL );
+#else
+		step_format_add_nodes( params.format_list, 0, false, NULL );
+#endif
 	}
 		
 	print_steps_array( new_step_ptr->job_steps, 

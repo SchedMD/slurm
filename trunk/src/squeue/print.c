@@ -79,57 +79,54 @@ int print_steps(List steps, List format)
 
 int print_jobs_array(job_info_t * jobs, int size, List format)
 {
-	if (size > 0) {
-		int i = 0;
-		List job_list;
-		ListIterator job_iterator;
-		job_info_t *job_ptr;
+	int i = 0;
+	List job_list;
+	ListIterator job_iterator;
+	job_info_t *job_ptr;
 
-		job_list = list_create(NULL);
-		if (!params.no_header)
-			print_job_from_format(NULL, format);
+	job_list = list_create(NULL);
+	if (!params.no_header)
+		print_job_from_format(NULL, format);
 
-		/* Filter out the jobs of interest */
-		for (; i < size; i++) {
-			if (_filter_job(&jobs[i]))
-				continue;
-			list_append(job_list, (void *) &jobs[i]);
-		}
+	/* Filter out the jobs of interest */
+	for (; i < size; i++) {
+		if (_filter_job(&jobs[i]))
+			continue;
+		list_append(job_list, (void *) &jobs[i]);
+	}
 
-		/* Sort the jobs */
-		if (params.sort == NULL) {
-			params.sort = xmalloc(6);
-			/* Partition, state, priority */
-			strcat(params.sort, "P,t,p");
-		}
-		for (i = strlen(params.sort); i >= 0; i--) {
-			if (params.sort[i] == ',')
-				continue;
-			else if (params.sort[i] == 'i')
-				sort_job_by_job_id(job_list);
-			else if (params.sort[i] == 'j')
-				sort_job_by_job_name(job_list);
-			else if (params.sort[i] == 'p')
-				sort_job_by_priority(job_list);
-			else if (params.sort[i] == 'P')
-				sort_job_by_partition(job_list);
-			else if ((params.sort[i] == 't')
-				 || (params.sort[i] == 'T'))
-				sort_job_by_state(job_list);
-			else if ((params.sort[i] == 'u')
-				 || (params.sort[i] == 'U'))
-				sort_job_by_user(job_list);
-		}
+	/* Sort the jobs */
+	if (params.sort == NULL) {
+		params.sort = xmalloc(6);
+		/* Partition, state, priority */
+		strcat(params.sort, "P,t,p");
+	}
+	for (i = strlen(params.sort); i >= 0; i--) {
+		if (params.sort[i] == ',')
+			continue;
+		else if (params.sort[i] == 'i')
+			sort_job_by_job_id(job_list);
+		else if (params.sort[i] == 'j')
+			sort_job_by_job_name(job_list);
+		else if (params.sort[i] == 'p')
+			sort_job_by_priority(job_list);
+		else if (params.sort[i] == 'P')
+			sort_job_by_partition(job_list);
+		else if ((params.sort[i] == 't') ||
+			 (params.sort[i] == 'T'))
+			sort_job_by_state(job_list);
+		else if ((params.sort[i] == 'u') ||
+			 (params.sort[i] == 'U'))
+			sort_job_by_user(job_list);
+	}
 
-		/* Print the jobs of interest */
-		job_iterator = list_iterator_create(job_list);
-		while ((job_ptr = list_next(job_iterator))) {
-			print_job_from_format(job_ptr, format);
-		}
-		list_iterator_destroy(job_iterator);
-		list_destroy(job_list);
-	} else
-		printf("No jobs found in system\n");
+	/* Print the jobs of interest */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = list_next(job_iterator))) {
+		print_job_from_format(job_ptr, format);
+	}
+	list_iterator_destroy(job_iterator);
+	list_destroy(job_list);
 
 	return SLURM_SUCCESS;
 }
@@ -445,11 +442,30 @@ int _print_job_time_limit(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_start_time(job_info_t * job, int width, bool right, 
+int _print_job_time_used(job_info_t * job, int width, bool right, 
+			   char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("TIME_USED", width, false, true);
+	else {
+		char time_str[64];
+		long delta_t = difftime(time(NULL), job->start_time) / 60;
+		/* format is "hours:minutes" */
+		snprintf(time_str, FORMAT_STRING_SIZE, "%ld:%2.2ld",
+			 delta_t / 60, delta_t % 60);
+
+		_print_str(time_str, width, right, true);
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_time_start(job_info_t * job, int width, bool right, 
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("START_TIME", width, right, true);
+		_print_str("TIME_START", width, false, true);
 	else
 		_print_time(job->start_time, 0, width, right);
 	if (suffix)
@@ -457,10 +473,10 @@ int _print_job_start_time(job_info_t * job, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_end_time(job_info_t * job, int width, bool right, char* suffix)
+int _print_job_time_end(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("END_TIME", width, right, true);
+		_print_str("TIME_END", width, false, true);
 	else if ((job->time_limit == INFINITE) &&
 		 (job->end_time > time(NULL)))
 		_print_str("NONE", width, right, true);
@@ -506,9 +522,10 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 		int *current = job->node_inx;
 		int curr_width = 0;
 		while (*current != -1 && curr_width < width) {
-			curr_width +=
-			    _print_int(*current, width, right, true);
-			printf(",");
+			if (curr_width)
+				printf(",");
+			curr_width += _print_int(*current, width, right, true);
+			current++;
 		}
 		while (curr_width < width)
 			curr_width += printf(" ");
@@ -521,7 +538,7 @@ int _print_job_node_inx(job_info_t * job, int width, bool right, char* suffix)
 int _print_job_num_procs(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("NUM_PROCS", width, right, true);
+		_print_str("#CPUS", width, right, true);
 	else
 		_print_int(job->num_procs, width, right, true);
 	if (suffix)
@@ -533,9 +550,13 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 			 char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("NUM_NODES", width, right_justify, true);
-	else
-		_print_int(job->num_nodes, width, right_justify, true);
+		_print_str("#NODES", width, right_justify, true);
+	else {
+		int *current = job->node_inx, node_cnt = 0;
+		for ( ; *current != -1; current +=2)
+			node_cnt += current[1] - current[0] + 1;
+		_print_int(node_cnt, width, right_justify, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -771,13 +792,32 @@ int _print_step_user_name(job_step_info_t * step, int width, bool right,
 	return SLURM_SUCCESS;
 }
 
-int _print_step_start_time(job_step_info_t * step, int width, bool right, 
+int _print_step_time_start(job_step_info_t * step, int width, bool right, 
 			   char* suffix)
 {
 	if (step == NULL)	/* Print the Header instead */
-		_print_str("START_TIME", width, right, true);
+		_print_str("TIME_START", width, false, true);
 	else
 		_print_time(step->start_time, 0, width, right);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_step_time_used(job_step_info_t * step, int width, bool right, 
+			   char* suffix)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("TIME_USED", width, false, true);
+	else {
+		char time_str[64];
+		long delta_t = difftime(time(NULL), step->start_time) / 60;
+		/* format is "hours:minutes" */
+		snprintf(time_str, FORMAT_STRING_SIZE, "%ld:%2.2ld",
+			 delta_t / 60, delta_t % 60);
+
+		_print_str(time_str, width, right, true);
+	}
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
