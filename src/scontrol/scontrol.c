@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include <src/api/slurm.h>
+#include <src/common/slurm_protocol_defs.h>
 
 #define	BUF_SIZE 1024
 #define	max_input_fields 128
@@ -196,28 +197,26 @@ void
 print_build (char *build_param)
 {
 	int error_code;
-	static struct build_buffer *old_build_buffer_ptr = NULL;
-	struct build_buffer *build_buffer_ptr = NULL;
+	static struct build_table *old_build_table_ptr= NULL;
 	struct build_table  *build_table_ptr = NULL;
 
-	if (old_build_buffer_ptr) {
-		error_code = slurm_load_build (old_build_buffer_ptr->last_update,
-			 &build_buffer_ptr);
+	if (old_build_table_ptr) {
+		error_code = slurm_load_build (old_build_table_ptr->last_update,
+			 &build_table_ptr);
 		if (error_code == 0)
-			slurm_free_build_info(old_build_buffer_ptr);
+			slurm_free_build_info(old_build_table_ptr);
 		else if (error_code == -1)
-			build_buffer_ptr = old_build_buffer_ptr;
+			build_table_ptr = old_build_table_ptr;
 	}
 	else
-		error_code = slurm_load_build ((time_t) NULL, &build_buffer_ptr);
+		error_code = slurm_load_build ((time_t) NULL, &build_table_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_build error %d\n", error_code);
 		return;
 	}
-	old_build_buffer_ptr = build_buffer_ptr;
+	old_build_table_ptr = build_table_ptr;
 
-	build_table_ptr = build_buffer_ptr->build_table_ptr;
 	if (build_param == NULL ||
 	    strcmp (build_param, "BACKUP_INTERVAL") == 0)
 		printf ("BACKUP_INTERVAL	= %u\n", 
