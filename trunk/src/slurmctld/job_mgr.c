@@ -961,22 +961,16 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 {
 	int error_code, test_only;
 	struct job_record *job_ptr;
-	/* Locks: Write job, write node, read partition */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
-	lock_slurmctld (job_write_lock);
 	error_code = job_create (job_specs, new_job_id, allocate, will_run, &job_ptr);
-	if (error_code) {
-		unlock_slurmctld (job_write_lock);
+	if (error_code)
 		return error_code;
-	}
 	if (job_ptr == NULL)
 		fatal ("job_allocate: allocated job %u lacks record", new_job_id);
 
 	if (immediate && top_priority(job_ptr) != 1) {
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
-		unlock_slurmctld (job_write_lock);
 		return ESLURM_NOT_TOP_PRIORITY; 
 	}
 
@@ -997,14 +991,12 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 		}
 		else 	/* job remains queued */
 			error_code = 0;
-		unlock_slurmctld (job_write_lock);
 		return error_code;
 	}
 
 	if (error_code) {	/* fundamental flaw in job request */
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
-		unlock_slurmctld (job_write_lock);
 		return error_code; 
 	}
 
@@ -1019,7 +1011,6 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 		cpus_per_node[0]  = job_ptr->cpus_per_node;
 		cpu_count_reps[0] = job_ptr->cpu_count_reps;
 	}
-	unlock_slurmctld (job_write_lock);
 	return SLURM_SUCCESS;
 }
 
@@ -1597,11 +1588,8 @@ job_time_limit (void)
 	ListIterator job_record_iterator;
 	struct job_record *job_ptr;
 	time_t now;
-	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	now = time (NULL);
-	lock_slurmctld (job_write_lock);
 	job_record_iterator = list_iterator_create (job_list);		
 	while ((job_ptr = (struct job_record *) list_next (job_record_iterator))) {
 		if (job_ptr->magic != JOB_MAGIC)
@@ -1623,7 +1611,6 @@ job_time_limit (void)
 	}		
 
 	list_iterator_destroy (job_record_iterator);
-	unlock_slurmctld (job_write_lock);
 }
 
 /* validate_job_desc - validate that a job descriptor for job submit or 

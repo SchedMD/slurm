@@ -404,11 +404,15 @@ slurmctld_background ( void * no_data )
 
 		if ((now - last_timelimit_time) > PERIODIC_TIMEOUT) {
 			last_timelimit_time = now;
+			debug ("Performing job time limit check");
+			lock_slurmctld (job_write_lock);
 			job_time_limit ();
+			unlock_slurmctld (job_write_lock);
 		}
 
 		if ((now - last_sched_time) > PERIODIC_SCHEDULE) {
 			last_sched_time = now;
+			debug ("Performing purge of old job records");
 			lock_slurmctld (job_write_lock);
 			purge_old_job ();	/* remove defunct job records */
 			unlock_slurmctld (job_write_lock);
@@ -433,6 +437,7 @@ slurmctld_background ( void * no_data )
 			}
 			else {
 				last_checkpoint_time = now;
+				debug ("Performing full system state save");
 				save_all_state ( );
 			}
 		}
@@ -449,6 +454,7 @@ save_all_state ( void )
 	clock_t start_time;
 
 	start_time = clock ();
+	/* Each of these functions lock their own databases */
 	(void) dump_all_node_state ( );
 	(void) dump_all_part_state ( );
 	(void) dump_all_job_state ( );
@@ -1078,14 +1084,19 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	slurm_msg_t response_msg ;
 	submit_response_msg_t submit_msg ;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+	/* Locks: Write job, read node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_SUBMIT_BATCH_JOB");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
+	lock_slurmctld (job_write_lock);
 	error_code = job_allocate (job_desc_msg, &job_id, (char **) NULL, 
 		(uint16_t *) NULL, (uint32_t **) NULL, (uint32_t **) NULL,
 		false, false, false);
+	unlock_slurmctld (job_write_lock);
 
 	/* return result */
 	if (error_code)
@@ -1103,8 +1114,8 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
 		response_msg . data = & submit_msg ;
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
-		schedule ();
-		(void) dump_all_job_state ();
+		schedule ();			/* has own locks */
+		(void) dump_all_job_state ();	/* has own locks */
 	}
 }
 
@@ -1122,14 +1133,22 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	uint32_t * cpus_per_node = NULL, * cpu_count_reps = NULL;
 	uint32_t job_id ;
 	resource_allocation_response_msg_t alloc_msg ;
+	/* Locks: Write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	start_time = clock ();
+	if (immediate)
+		debug ("Processing RPC: REQUEST_IMMEDIATE_RESOURCE_ALLOCATION");
+	else
+		debug ("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
 
 	/* do RPC call */
 	dump_job_desc (job_desc_msg);
+	lock_slurmctld (job_write_lock);
 	error_code = job_allocate(job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
 			immediate , false, true );
+	unlock_slurmctld (job_write_lock);
 
 	/* return result */
 	if (error_code)
@@ -1177,17 +1196,22 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
         resource_allocation_and_run_response_msg_t alloc_msg ;
 	struct step_record* step_rec; 
 	job_step_create_request_msg_t req_step_msg;
+	/* Locks: Write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
         start_time = clock ();
+	debug ("Processing RPC: REQUEST_ALLOCATE_AND_RUN_JOB_STEP");
 
         /* do RPC call */
         dump_job_desc (job_desc_msg);
+	lock_slurmctld (job_write_lock);
         error_code = job_allocate(job_desc_msg, &job_id,
                         &node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps,
                         true , false, true );
 
         /* return result */
         if (error_code) {
+		unlock_slurmctld (job_write_lock);
                 info ("slurm_rpc_allocate_and_run error %d allocating resources, time=%ld",
                         error_code,  (long) (clock () - start_time));
                 slurm_send_rc_msg ( msg , error_code );
@@ -1200,6 +1224,7 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	error_code = step_create ( &req_step_msg, &step_rec );
 	/* note: no need to free step_rec, pointer to global job step record */
 	if ( error_code ) {
+		unlock_slurmctld (job_write_lock);
 		info ("slurm_rpc_allocate_and_run error %d creating job step, time=%ld",
 			error_code,  (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
@@ -1223,8 +1248,9 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	        response_msg . msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
                 response_msg . data =  & alloc_msg ;
 
+		unlock_slurmctld (job_write_lock);
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
-		(void) dump_all_job_state ( );
+		(void) dump_all_job_state ( );	/* Has its own locks */
 	}
 }
 
@@ -1240,15 +1266,20 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	uint32_t job_id ;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 	char * node_list_ptr = NULL;
+	/* Locks: Write job, read node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_JOB_WILL_RUN");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
+	lock_slurmctld (job_write_lock);
 	error_code = job_allocate(job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
 			false , true, true );
-	
+	unlock_slurmctld (job_write_lock);
+
 	/* return result */
 	if (error_code)
 	{
@@ -1307,8 +1338,14 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 void 
 slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response )
 {
-	/* do RPC call */
 /* must be user root */
+
+	/* do RPC call */
+	if (response)
+		debug ("Performing RPC: REQUEST_SHUTDOWN");
+	else
+		debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
+
 	if (shutdown_time)
 		debug3 ("slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
 	else if (thread_id_sig) {
