@@ -27,63 +27,17 @@
 
 #include "src/smap/smap.h"
 
-/* _init_grid - set values of every grid point */
-void init_grid(node_info_msg_t * node_info_ptr)
-{
-	node_info_t *node_ptr;
-	int x, y, z, i = 0;
-	int c[PA_SYSTEM_DIMENSIONS];
-	uint16_t node_base_state;
-
-	for (x = 0; x < smap_info_ptr->X; x++)
-		for (y = 0; y < smap_info_ptr->Y; y++)
-			for (z = 0; z < smap_info_ptr->Z; z++) {
-				node_ptr = &node_info_ptr->node_array[i];
-				node_base_state = (node_ptr->node_state) & (~NODE_STATE_NO_RESPOND);
-				smap_info_ptr->grid[x][y][z].color = 7;
-				if ((node_base_state == NODE_STATE_DOWN) ||  (node_base_state == NODE_STATE_DRAINED) || (node_base_state == NODE_STATE_DRAINING)) {
-					smap_info_ptr->grid[x][y][z].color = 0;
-					smap_info_ptr->grid[x][y][z].letter = '#';
-					if(_initialized) {
-						c[0] = x;
-						c[1] = y;
-						c[2] = z;
-						set_node_down(c);
-					}
-				} else {
-					smap_info_ptr->grid[x][y][z].color = 7;
-					smap_info_ptr->grid[x][y][z].letter = '.';
-				}
-				smap_info_ptr->grid[x][y][z].state = node_ptr->node_state;
-				smap_info_ptr->grid[x][y][z].indecies = i++;
-			}
-	y = 65;
-	z = 0;
-	for (x = 0; x < smap_info_ptr->num_of_proc; x++) {
-		y = y % 128;
-		if (y == 0)
-			y = 65;
-		smap_info_ptr->fill_in_value[x].letter = y;
-		z = z % 7;
-		if (z == 0)
-			z = 1;
-		smap_info_ptr->fill_in_value[x].color = z;
-		z++;
-		y++;
-	}
-	return;
-}
 
 int set_grid(int start, int end, int count)
 {
 	int x, y, z;
-	for (y = smap_info_ptr->Y - 1; y >= 0; y--)
-		for (z = 0; z < smap_info_ptr->Z; z++)
-			for (x = 0; x < smap_info_ptr->X; x++) {
-				if (smap_info_ptr->grid[x][y][z].indecies >= start && smap_info_ptr->grid[x][y][z].indecies <= end) {
-					if (smap_info_ptr->grid[x][y][z].state != NODE_STATE_DOWN || smap_info_ptr->grid[x][y][z].state != NODE_STATE_DRAINED || smap_info_ptr->grid[x][y][z].state != NODE_STATE_DRAINING) {
-						smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
-						smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
+	for (y = DIM_SIZE[Y] - 1; y >= 0; y--)
+		for (z = 0; z < DIM_SIZE[Z]; z++)
+			for (x = 0; x < DIM_SIZE[X]; x++) {
+				if (pa_system_ptr->grid[x][y][z].indecies >= start && pa_system_ptr->grid[x][y][z].indecies <= end) {
+					if (pa_system_ptr->grid[x][y][z].state != NODE_STATE_DOWN || pa_system_ptr->grid[x][y][z].state != NODE_STATE_DRAINED || pa_system_ptr->grid[x][y][z].state != NODE_STATE_DRAINING) {
+						pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
+						pa_system_ptr->grid[x][y][z].color = pa_system_ptr->fill_in_value[count].color;
 					}
 				}
 			}
@@ -96,19 +50,19 @@ int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
 {
 	int x, y, z;
 	int i = 0;
-	assert(endx < smap_info_ptr->X);
+	assert(endx < DIM_SIZE[X]);
 	assert(startx >= 0);
-	assert(endy < smap_info_ptr->Y);
+	assert(endy < DIM_SIZE[Y]);
 	assert(starty >= 0);
-	assert(endz < smap_info_ptr->Z);
+	assert(endz < DIM_SIZE[Z]);
 	assert(startz >= 0);
-	assert(count < smap_info_ptr->num_of_proc);
+	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
 	for (x = startx; x <= endx; x++)
 		for (y = starty; y <= endy; y++)
 			for (z = startz; z <= endz; z++) {
-				smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
-				smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
+				pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
+				pa_system_ptr->grid[x][y][z].color = pa_system_ptr->fill_in_value[count].color;
 				i++;
 			}
 
@@ -118,31 +72,31 @@ int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
 /* _print_grid - print values of every grid point */
 void print_grid(void)
 {
-	int x, y, z, i = 0, offset = smap_info_ptr->Z;
+	int x, y, z, i = 0, offset = DIM_SIZE[Z];
 	int grid_xcord, grid_ycord = 2;
-	for (y = smap_info_ptr->Y - 1; y >= 0; y--) {
-		offset = smap_info_ptr->Z + 1;
-		for (z = 0; z < smap_info_ptr->Z; z++) {
+	for (y = DIM_SIZE[Y] - 1; y >= 0; y--) {
+		offset = DIM_SIZE[Z] + 1;
+		for (z = 0; z < DIM_SIZE[Z]; z++) {
 			grid_xcord = offset;
 
-			for (x = 0; x < smap_info_ptr->X; x++) {
-				if (smap_info_ptr->grid[x][y][z].color)
-					init_pair(smap_info_ptr->grid[x][y][z].color,
-						  smap_info_ptr->grid[x][y][z].color,
+			for (x = 0; x < DIM_SIZE[X]; x++) {
+				if (pa_system_ptr->grid[x][y][z].color)
+					init_pair(pa_system_ptr->grid[x][y][z].color,
+						  pa_system_ptr->grid[x][y][z].color,
 						  COLOR_BLACK);
 				else
-					init_pair(smap_info_ptr->grid[x][y][z].color,
-						  smap_info_ptr->grid[x][y][z].color, 
+					init_pair(pa_system_ptr->grid[x][y][z].color,
+						  pa_system_ptr->grid[x][y][z].color, 
                                                   7);
 
-				wattron(smap_info_ptr->grid_win,
-					COLOR_PAIR(smap_info_ptr->grid[x][y][z].color));
+				wattron(pa_system_ptr->grid_win,
+					COLOR_PAIR(pa_system_ptr->grid[x][y][z].color));
 
-				mvwprintw(smap_info_ptr->grid_win,
+				mvwprintw(pa_system_ptr->grid_win,
 					  grid_ycord, grid_xcord, "%c",
-					  smap_info_ptr->grid[x][y][z].letter);
-				wattroff(smap_info_ptr->grid_win,
-					 COLOR_PAIR(smap_info_ptr->grid[x][y][z].color));
+					  pa_system_ptr->grid[x][y][z].letter);
+				wattroff(pa_system_ptr->grid_win,
+					 COLOR_PAIR(pa_system_ptr->grid[x][y][z].color));
 				grid_xcord++;
 				i++;
 			}

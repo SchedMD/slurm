@@ -31,90 +31,49 @@
 /********************
  * Global Variables *
  ********************/
-struct smap_parameters params;
-
-smap_info *smap_info_ptr;
+smap_parameters_t params;
 
 int quiet_flag = 0;
 
 /************
  * Functions *
  ************/
-int _get_option(void);
 
-typedef void (*sighandler_t) (int);
-
+int _get_option();
 void *_resize_handler(int sig);
 
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	node_info_msg_t *node_info_ptr;
-	node_info_t *node_ptr;
 	int error_code;
 	int height = 40;
 	int width = 100;
 	int startx = 0;
 	int starty = 0;
 	int end = 0;
-	int i, j, start, temp;
+	int i;
 	//char *name;
         
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
-        
-	smap_info_ptr = xmalloc(sizeof(smap_info));
-	smap_info_ptr->xcord = 1;
-	smap_info_ptr->ycord = 1;
-	smap_info_ptr->X = 0;
-	smap_info_ptr->Y = 0;
-	smap_info_ptr->Z = 0;
-	smap_info_ptr->num_of_proc = 0;
-	smap_info_ptr->resize_screen = 0;
-        
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
 		slurm_perror("slurm_load_node");
 		exit(0);
 	} else {
-		for (i = 0; i < node_info_ptr->record_count; i++) {
-			node_ptr = &node_info_ptr->node_array[i];
-			start = atoi(node_ptr->name + 3);
-			temp = start / 100;
-			if (smap_info_ptr->X < temp)
-				smap_info_ptr->X = temp;
-			temp = (start % 100) / 10;
-			if (smap_info_ptr->Y < temp)
-				smap_info_ptr->Y = temp;
-			temp = start % 10;
-			if (smap_info_ptr->Z < temp)
-				smap_info_ptr->Z = temp;
-		}
-		smap_info_ptr->X++;
-		smap_info_ptr->Y++;
-		smap_info_ptr->Z++;
-		
-                smap_info_ptr->grid = (axis ***) xmalloc(sizeof(axis **) * smap_info_ptr->X);
-		for (i = 0; i < smap_info_ptr->X; i++) {
-			smap_info_ptr->grid[i] = (axis **) xmalloc(sizeof(axis *) * smap_info_ptr->Y);
-			for (j = 0; j < smap_info_ptr->Y; j++)
-				smap_info_ptr->grid[i][j] = (axis *) xmalloc(sizeof(axis) * smap_info_ptr->Z);
-		}
-		
-                smap_info_ptr->num_of_proc = node_info_ptr->record_count;
-                
-		smap_info_ptr->fill_in_value = (axis *) xmalloc(sizeof(axis) * smap_info_ptr->num_of_proc);
-                
-                height = smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y + 3;
-                width = smap_info_ptr->X + smap_info_ptr->Z + 3;
-                init_grid(node_info_ptr);
-	}
-	signal(SIGWINCH, (sighandler_t) _resize_handler);
+		pa_init(node_info_ptr);
+        }
 #else
 	printf("This will only run on a BGL system right now.\n");
 	exit(0);
 #endif
+	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+	
+	signal(SIGWINCH, (sighandler_t) _resize_handler);
+
 	initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
@@ -131,27 +90,27 @@ int main(int argc, char *argv[])
 	nodelay(stdscr, TRUE);
 	start_color();
 
-	smap_info_ptr->grid_win = newwin(height, width, starty, startx);
-	box(smap_info_ptr->grid_win, 0, 0);
+	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
+	box(pa_system_ptr->grid_win, 0, 0);
 
 	startx = width;
 	COLS -= 2;
 	width = COLS - width;
 	height = LINES;
-	smap_info_ptr->text_win = newwin(height, width, starty, startx);
-	box(smap_info_ptr->text_win, 0, 0);
-	wrefresh(smap_info_ptr->text_win);
-	wrefresh(smap_info_ptr->grid_win);
+	pa_system_ptr->text_win = newwin(height, width, starty, startx);
+	box(pa_system_ptr->text_win, 0, 0);
+	wrefresh(pa_system_ptr->text_win);
+	wrefresh(pa_system_ptr->grid_win);
 	
 	while (!end) {
 		_get_option();
 	      redraw:
 
 		init_grid(node_info_ptr);
-		wclear(smap_info_ptr->text_win);
-		//wclear(smap_info_ptr->grid_win);        
-		smap_info_ptr->xcord = 1;
-		smap_info_ptr->ycord = 1;
+		wclear(pa_system_ptr->text_win);
+		//wclear(pa_system_ptr->grid_win);        
+		pa_system_ptr->xcord = 1;
+		pa_system_ptr->ycord = 1;
 
 		print_date();
 		switch (params.display) {
@@ -167,10 +126,10 @@ int main(int argc, char *argv[])
 		}
 
 		print_grid();
-		box(smap_info_ptr->text_win, 0, 0);
-		box(smap_info_ptr->grid_win, 0, 0);
-		wrefresh(smap_info_ptr->text_win);
-		wrefresh(smap_info_ptr->grid_win);
+		box(pa_system_ptr->text_win, 0, 0);
+		box(pa_system_ptr->grid_win, 0, 0);
+		wrefresh(pa_system_ptr->text_win);
+		wrefresh(pa_system_ptr->grid_win);
 
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
@@ -178,8 +137,8 @@ int main(int argc, char *argv[])
 				sleep(1);
 				if (_get_option())
 					goto redraw;
-				else if (smap_info_ptr->resize_screen) {
-					smap_info_ptr->resize_screen = 0;
+				else if (pa_system_ptr->resize_screen) {
+					pa_system_ptr->resize_screen = 0;
 					goto redraw;
 				}
 			}
@@ -190,52 +149,13 @@ int main(int argc, char *argv[])
 	nodelay(stdscr, FALSE);
 	getch();
 	endwin();
-	for (i = 0; i < smap_info_ptr->X; i++) {
-		for (j = 0; j < smap_info_ptr->Y; j++)
-			xfree(smap_info_ptr->grid[i][j]);
-		xfree(smap_info_ptr->grid[i]);
-	}
-	xfree(smap_info_ptr->grid);
-	xfree(smap_info_ptr->fill_in_value);
-
+	pa_fini();
+        
 	exit(0);
 }
 
-void print_date(void)
-{
-	smap_info_ptr->now_time = time(NULL);
-	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%s",
-		  ctime(&smap_info_ptr->now_time));
-	smap_info_ptr->ycord++;
-}
 
-extern void snprint_time(char *buf, size_t buf_size, time_t time)
-{
-	if (time == INFINITE) {
-		snprintf(buf, buf_size, "UNLIMITED");
-	} else {
-		long days, hours, minutes, seconds;
-		seconds = time % 60;
-		minutes = (time / 60) % 60;
-		hours = (time / 3600) % 24;
-		days = time / 86400;
-
-		if (days)
-			snprintf(buf, buf_size,
-				"%ld:%2.2ld:%2.2ld:%2.2ld",
-				days, hours, minutes, seconds);
-		else if (hours)
-			snprintf(buf, buf_size,
-				"%ld:%2.2ld:%2.2ld", 
-				hours, minutes, seconds);
-		else
-			snprintf(buf, buf_size,
-				"%ld:%2.2ld", minutes,seconds);
-	}
-}
-
-int _get_option(void)
+int _get_option()
 {
 	char ch;
 
@@ -268,13 +188,13 @@ int _get_option(void)
 
 void *_resize_handler(int sig)
 {
-        int height = smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y + 3;
-        int width = smap_info_ptr->X + smap_info_ptr->Z + 3;
+        int height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+        int width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
         int tempwidth = width;
-        smap_info_ptr->ycord = 1;
+        pa_system_ptr->ycord = 1;
 	
-	delwin(smap_info_ptr->grid_win);
-	delwin(smap_info_ptr->text_win);
+	delwin(pa_system_ptr->grid_win);
+	delwin(pa_system_ptr->text_win);
 	
 	endwin();
 	initscr();
@@ -286,10 +206,10 @@ void *_resize_handler(int sig)
 		exit(0);
 	}
 	
-	smap_info_ptr->grid_win = newwin(height, width, 0, 0);
+	pa_system_ptr->grid_win = newwin(height, width, 0, 0);
 
 	width = COLS - width;
-	smap_info_ptr->text_win = newwin(LINES, width, 0, tempwidth);
+	pa_system_ptr->text_win = newwin(LINES, width, 0, tempwidth);
 
 	print_date();
 	switch (params.display) {
@@ -305,10 +225,10 @@ void *_resize_handler(int sig)
 	}
 
 	print_grid();
-	box(smap_info_ptr->text_win, 0, 0);
-	box(smap_info_ptr->grid_win, 0, 0);
-	wrefresh(smap_info_ptr->text_win);
-	wrefresh(smap_info_ptr->grid_win);
-	smap_info_ptr->resize_screen = 1;
+	box(pa_system_ptr->text_win, 0, 0);
+	box(pa_system_ptr->grid_win, 0, 0);
+	wrefresh(pa_system_ptr->text_win);
+	wrefresh(pa_system_ptr->grid_win);
+	pa_system_ptr->resize_screen = 1;
 	return NULL;
 }
