@@ -252,22 +252,28 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 	if ( ( rc = _slurm_setsockopt(connection_fd , SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one) ) ) ) 
 	{
 		debug ("setsockopt SO_REUSEADDR failed");
-		return rc ;
+		goto error_cleanup ; 
 	}
 
 	if ( ( rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error binding slurm stream socket: errno %i" , errno ) ;
-		return rc ;
+		goto error_cleanup ; 
 	}
 
 	if ( ( rc = _slurm_listen ( connection_fd , SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error listening on slurm stream socket: errno %i" , errno ) ;
-		return rc ;
+		goto error_cleanup ; 
 	}
 
+	
 	return connection_fd ;
+
+	error_cleanup:
+	_slurm_close_stream ( connection_fd ) ;
+	return rc;
+	
 }
 
 slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
@@ -295,11 +301,14 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 	if ( ( rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error connecting on slurm stream socket: errno %i" , errno ) ;
-		return rc ;
+		goto error_cleanup ; 
 	}
 
 	return connection_fd ;
 
+	error_cleanup:
+	_slurm_close_stream ( connection_fd ) ;
+	return rc;
 }
 	
 int _slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address )
