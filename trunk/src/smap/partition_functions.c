@@ -348,8 +348,6 @@ static void _block_list_del(void *object)
 
 	if (block_ptr) {
 		xfree(block_ptr->bgl_block_name);
-		xfree(block_ptr->bgl_conn_type);
-		xfree(block_ptr->bgl_node_use);
 		xfree(block_ptr->nodes);
 		if (block_ptr->hostlist)
 			hostlist_destroy(block_ptr->hostlist);
@@ -444,9 +442,6 @@ static int _print_rest(void *object, void *arg)
 	int *count = (int *) arg;
 	int start, startx, starty, startz, endx, endy, endz;
 	partition_info_t part;
-	hostlist_t hostlist;
-	hostlist_iterator_t host_iter;
-	char *host_name;
 
 	if (block_ptr->printed)
 		return SLURM_SUCCESS;
@@ -487,8 +482,8 @@ static int _print_rest(void *object, void *arg)
 	part.name = NULL;
 	part.allow_groups = block_ptr->nodes;
 	part.root_only = (int) pa_system_ptr->fill_in_value[*count].letter;
-	if (block_ptr->bgl_conn_type == SELECT_TORUS)
-		part.root_only += 32;
+//	if (block_ptr->bgl_conn_type == SELECT_TORUS)
+//		part.root_only += 32;
 	wattron(pa_system_ptr->text_win, 
 		COLOR_PAIR(pa_system_ptr->fill_in_value[*count].color));
 	_print_text_part(&part, block_ptr);
@@ -497,6 +492,7 @@ static int _print_rest(void *object, void *arg)
 	(*count)++;
 	return SLURM_SUCCESS;
 }
+
 #ifdef HAVE_BGL_FILES
 static int _post_block_read(void *object, void *arg)
 {
@@ -553,7 +549,6 @@ static void _read_part_db2(void)
 			return;
 		}
 	}
-
 
 	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
 		fprintf(stderr, "Missing DB2INSTANCE or VWSPATH env var.\n"
@@ -648,7 +643,7 @@ static void _read_part_db2(void)
 					bgl_err_str(rc));
 				block_ptr->bgl_node_use = SELECT_NAV_MODE;
 			} else
-				block_ptr->bgl_conn_type = node_use;
+				block_ptr->bgl_node_use = node_use;
 			if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) {
 				fprintf(stderr, "rm_free_partition(): %s\n",
 					bgl_err_str(rc));
@@ -712,8 +707,6 @@ static char* _convert_conn_type(enum connection_type conn_type)
 			return "TORUS";
 		case (SELECT_NAV):
 			return "NAV";
-		default:
-			break;
 	}
 	return "?";
 }
@@ -727,8 +720,6 @@ static char* _convert_node_use(enum node_use_type node_use)
 			return "VIRTUAL";
 		case (SELECT_NAV_MODE):
 			return "NAV";
-		default:
-			break;
 	}
 	return "?";
 }

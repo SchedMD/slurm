@@ -39,9 +39,8 @@ extern void get_job(void)
 	job_info_t job;
 
 	if (job_info_ptr) {
-		error_code =
-		    slurm_load_jobs(job_info_ptr->last_update,
-				    &new_job_ptr, 0);
+		error_code = slurm_load_jobs(job_info_ptr->last_update,
+				&new_job_ptr, 0);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg(job_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
@@ -49,10 +48,9 @@ extern void get_job(void)
 			new_job_ptr = job_info_ptr;
 		}
 	} else
-		error_code =
-		    slurm_load_jobs((time_t) NULL, &new_job_ptr, 0);
+		error_code = slurm_load_jobs((time_t) NULL, &new_job_ptr, 0);
 
-	if (error_code)
+	if (error_code) {
 		if (quiet_flag != 1) {
 			mvwprintw(pa_system_ptr->text_win,
 				pa_system_ptr->ycord, 1,
@@ -61,6 +59,7 @@ extern void get_job(void)
 			pa_system_ptr->ycord++;
 			return;
 		}
+	}
 
 	if (new_job_ptr->record_count && !params.no_header)
 		_print_header_job();
