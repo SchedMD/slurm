@@ -33,6 +33,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
@@ -82,7 +83,7 @@ void slurm_free_resource_allocation_and_run_response_msg (
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
 		xfree(msg->node_addr);
-		xfree(msg->credentials);
+		slurm_cred_destroy(msg->cred);
 #		ifdef HAVE_LIBELAN3
 		if (msg->qsw_job)
 			qsw_free_jobinfo(msg->qsw_job);
@@ -102,7 +103,7 @@ void slurm_free_job_step_create_response_msg(
 		job_step_create_response_msg_t * msg)
 {
 	if (msg) {
-		xfree(msg->credentials);
+		slurm_cred_destroy(msg->cred);
 
 #		ifdef HAVE_LIBELAN3
 		if (msg->qsw_job)
