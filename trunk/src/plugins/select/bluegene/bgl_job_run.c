@@ -403,15 +403,20 @@ static void *_part_agent(void *args)
 {
 	bgl_update_t *bgl_update_ptr;
 
-	while (1) {
+	/*
+	 * Don't just exit when there is no work left. Creating 
+	 * pthreads from within a dynamically linked object (plugin)
+	 * causes large memory leaks on some systems that seem 
+	 * unavoidable even from detached pthreads.
+	 */
+	while (!agent_fini) {
 		slurm_mutex_lock(&agent_cnt_mutex);
 		bgl_update_ptr = list_dequeue(bgl_update_list);
-		if (!bgl_update_ptr) {
-			agent_cnt = 0;
-			slurm_mutex_unlock(&agent_cnt_mutex);
-			return NULL;
-		}
 		slurm_mutex_unlock(&agent_cnt_mutex);
+		if (!bgl_update_ptr) {
+			usleep(100000);
+			continue;
+		}
 		if (bgl_update_ptr->op == START_OP)
 			_start_agent(bgl_update_ptr);
 		else if (bgl_update_ptr->op == TERM_OP)
@@ -419,7 +424,11 @@ static void *_part_agent(void *args)
 		else if (bgl_update_ptr->op == SYNC_OP)
 			_sync_agent(bgl_update_ptr);
 		_bgl_list_del(bgl_update_ptr);
-	}	
+	}
+	slurm_mutex_lock(&agent_cnt_mutex);
+	agent_cnt = 0;
+	slurm_mutex_unlock(&agent_cnt_mutex);
+	return NULL;
 }
 
 /* Perform an operation upon a BGL partition (block) for starting or 
@@ -443,7 +452,6 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	}
 	agent_cnt = 1;
 	slurm_mutex_unlock(&agent_cnt_mutex);
-
 	/* spawn an agent */
 	slurm_attr_init(&attr_agent);
 	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_JOINABLE))
