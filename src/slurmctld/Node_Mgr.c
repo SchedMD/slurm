@@ -5,6 +5,8 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
+#define DEBUG_SYSTEM 1
+
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif 
@@ -103,12 +105,12 @@ main(int argc, char * argv[]) {
 	printf("Find_Node_Record failure 2\n");
     else if (Node_Ptr->LastResponse != (time_t)678) 
 	printf("Node defaults not set\n");
-    printf("NOTE: We execte Delete_Node_Record to report not finding a record for lx04\n");
+    printf("NOTE: We expect Delete_Node_Record to report not finding a record for lx04\n");
     Error_Code = Delete_Node_Record("lx04");
     if (Error_Code != ENOENT) printf("Delete_Node_Record failure 1\n");
     Error_Code = Delete_Node_Record("lx02");
     if (Error_Code != 0) printf("Delete_Node_Record failure 2\n");
-    printf("NOTE: We execte Delete_Node_Record to report not finding a record for lx02\n");
+    printf("NOTE: We expect Find_Node_Record to report not finding a record for lx02\n");
     Node_Ptr   = Find_Node_Record("lx02");
     if (Node_Ptr != 0) printf("Find_Node_Record failure 3\n");
 
@@ -175,7 +177,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "BitMapCopy: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n")
+	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n");
 #endif
 	return NULL;
     } /* if */
@@ -220,7 +222,7 @@ char *BitMapPrint(unsigned *BitMap) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "BitMapPrint: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "BitMapPrint: unable to allocate memory\n")
+	syslog(LOG_ALERT, "BitMapPrint: unable to allocate memory\n");
 #endif
 	return NULL;
     } /* if */
@@ -293,7 +295,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Create_Config_Record: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n")
+	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
 	*Error_Code = ENOMEM;
 	return (struct Config_Record *)NULL;
@@ -313,7 +315,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Create_Config_Record: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n")
+	    syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
 	    free(Config_Point);
 	    *Error_Code = ENOMEM;
@@ -326,7 +328,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Create_Config_Record: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n")
+	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
 	if (Config_Point->Feature != (char *)NULL) free(Config_Point->Feature);
 	free(Config_Point);
@@ -389,7 +391,14 @@ int Delete_Node_Record(char *name) {
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
 
     Node_Record_Point = Find_Node_Record(name);
-    if (Node_Record_Point == NULL) return ENOENT;
+    if (Node_Record_Point == (struct Node_Record *)NULL) {
+#if DEBUG_MODULE
+	fprintf(stderr, "Delete_Node_Record: Attempt to delete non-existent node %s\n", name);
+#else
+	syslog(LOG_ALERT, "Delete_Node_Record: Attempt to delete non-existent node %s\n", name);
+#endif
+	return ENOENT;
+    } /* if */
 
     strcpy(Node_Record_Point->Name, "");
     Node_Record_Point->NodeState = STATE_DOWN;
@@ -403,7 +412,7 @@ void Dump_Hash() {
 
     if (Hash_Table ==  NULL) return;
     for (i=0; i<Node_Record_Count; i++) {
-	if (Hash_Table[i] == (int)NULL) continue;
+	if (strlen((Node_Record_Table_Ptr+Hash_Table[i])->Name) == 0) continue;
 	printf("Hash:%d:%s\n", i, (Node_Record_Table_Ptr+Hash_Table[i])->Name);
     } /* for */
 } /* Dump_Hash */
@@ -426,7 +435,7 @@ struct Node_Record *Find_Node_Record(char *name) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Node_Record: Hash table lookup failure for %s\n", name);
 #else
-	syslog(LOG_DEBUG, "Find_Node_Record: Hash table lookup failure for %s\n", name)
+	syslog(LOG_DEBUG, "Find_Node_Record: Hash table lookup failure for %s\n", name);
 #endif
     } /* if */
 
@@ -443,6 +452,11 @@ struct Node_Record *Find_Node_Record(char *name) {
 	return (Node_Record_Table_Ptr+i);
     } /* for */
 
+#if DEBUG_SYSTEM
+    fprintf(stderr, "Find_Node_Record: Lookup failure for %s\n", name);
+#else
+    syslog(LOG_ERR, "Find_Node_Record: Lookup failure for %s\n", name);
+#endif
     return (struct Node_Record *)NULL;
 } /* Find_Node_Record */
 
@@ -527,7 +541,7 @@ int Init_Node_Conf() {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Init_Node_Conf: list_create can not allocate memory\n");
 #else
-	syslog(LOG_ALARM, "Init_Node_Conf: list_create can not allocate memory\n");
+	syslog(LOG_ALERT, "Init_Node_Conf: list_create can not allocate memory\n");
 #endif
 	return ENOMEM;
     } /* if */
@@ -556,7 +570,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Parse_Node_Name: unable to allocate memory\n");
 #else
-	syslog(LOG_ERR, "Parse_Node_Name: unable to allocate memory\n")
+	syslog(LOG_ERR, "Parse_Node_Name: unable to allocate memory\n");
 #endif
 	return ENOMEM;
     } /* if */
@@ -579,7 +593,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 #if DEBUG_SYSTEM
 		fprintf(stderr, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
 #else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName)
+		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
 #endif
 		free(Format[0]);
 		return EINVAL;
@@ -607,7 +621,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 			NodeName[i], NodeName);
 #else
 		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName)
+			NodeName[i], NodeName);
 #endif
 		free(Format[0]);
 		return EINVAL;
@@ -626,7 +640,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 			NodeName[i], NodeName);
 #else
 		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName)
+			NodeName[i], NodeName);
 #endif
 		free(Format[0]);
 		return EINVAL;
@@ -671,7 +685,7 @@ void Rehash() {
 #endif
 	return;
     } /* if */
-    memset(Hash_Table, 0, (sizeof(int *) * Node_Record_Count));
+    memset(Hash_Table, 0, (sizeof(int) * Node_Record_Count));
 
     for (i=0; i<Node_Record_Count; i++) {
 	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;

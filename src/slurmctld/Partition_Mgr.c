@@ -5,6 +5,8 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
+#define DEBUG_SYSTEM 1
+
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -36,6 +38,7 @@ main(int argc, char * argv[]) {
     Default_Part.MaxTime     = 223344;
     Default_Part.MaxNodes    = 556677;
 
+    printf("Create some partitions and test defaults\n");
     Part_Ptr = Create_Part_Record(&Error_Code);
     if (Error_Code) 
 	printf("Create_Part_Record error %d\n", Error_Code);
@@ -139,7 +142,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n")
+	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
 	if (Part_Record_Point->Nodes       != NULL) free(Part_Record_Point->Nodes);
 	if (Part_Record_Point->AllowGroups != NULL) free(Part_Record_Point->AllowGroups);
@@ -189,6 +192,11 @@ int Delete_Part_Record(char *name) {
     } /* while */
 
     list_iterator_destroy(Part_Record_Iterator);
+#if DEBUG_SYSTEM
+    fprintf(stderr, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
+#else
+    syslog(LOG_ERR, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
+#endif
     return ENOENT;
 } /* Delete_Part_Record */
 
@@ -239,7 +247,7 @@ int Init_Part_Conf() {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Init_Part_Conf: list_create can not allocate memory\n");
 #else
-	syslog(LOG_ALARM, "Init_Part_Conf: list_create can not allocate memory\n");
+	syslog(LOG_ALERT, "Init_Part_Conf: list_create can not allocate memory\n");
 #endif
 	return ENOMEM;
     } /* if */

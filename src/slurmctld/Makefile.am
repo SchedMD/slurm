@@ -32,7 +32,6 @@ slurmctld_SOURCES = Controller.c \
 #Mach_Stat_Mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
 #Partition_Mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
 #Read_Config_CFLAGS   = -DDEBUG_MODULE $(AM_CFLAGS)
-#Read_Proc_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
 
 # debug modules to built as binaries:
 #
@@ -41,7 +40,7 @@ slurmctld_SOURCES = Controller.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-Read_Config   : Read_Config_d.o
+Read_Config   : Read_Config_d.o Node_Mgr.o Partition_Mgr.o
 Controller    : Controller_d.o
 Node_Mgr      : Node_Mgr_d.o
 Partition_Mgr : Partition_Mgr_d.o
