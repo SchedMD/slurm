@@ -17,37 +17,37 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-void slurm_print_partition_info ( partition_info_msg_t * part_info_ptr )
+void slurm_print_partition_info ( FILE* out, partition_info_msg_t * part_info_ptr )
 {
 	int i ;
 	partition_table_t * part_ptr = part_info_ptr->partition_array ;
 
 	for (i = 0; i < part_info_ptr->record_count; i++) {
-		slurm_print_partition_table ( & part_ptr[i] ) ;
+		slurm_print_partition_table ( out, & part_ptr[i] ) ;
 	}
 
 }
 
-void slurm_print_partition_table ( partition_table_t * part_ptr )
+void slurm_print_partition_table ( FILE* out, partition_table_t * part_ptr )
 {
 	int j ;
 
-	printf ("PartitionName=%s MaxTime=%u ", part_ptr->name, part_ptr->max_time);
-	printf ("MaxNodes=%u TotalNodes=%u ", part_ptr->max_nodes, part_ptr->total_nodes);
-	printf ("TotalCPUs=%u Key=%u\n", part_ptr->total_cpus, part_ptr->key);
-	printf ("   Default=%u ", part_ptr->default_part);
-	printf ("Shared=%u StateUp=%u ", part_ptr->shared, part_ptr->state_up);
-	printf ("Nodes=%s AllowGroups=%s\n", part_ptr->nodes, part_ptr->allow_groups);
-	printf ("   NodeIndecies=");
+	fprintf ( out, "PartitionName=%s MaxTime=%u ", part_ptr->name, part_ptr->max_time);
+	fprintf ( out, "MaxNodes=%u TotalNodes=%u ", part_ptr->max_nodes, part_ptr->total_nodes);
+	fprintf ( out, "TotalCPUs=%u Key=%u\n", part_ptr->total_cpus, part_ptr->key);
+	fprintf ( out, "   Default=%u ", part_ptr->default_part);
+	fprintf ( out, "Shared=%u StateUp=%u ", part_ptr->shared, part_ptr->state_up);
+	fprintf ( out, "Nodes=%s AllowGroups=%s\n", part_ptr->nodes, part_ptr->allow_groups);
+	fprintf ( out, "   NodeIndecies=");
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
-			printf(",%d", part_ptr->node_inx[j]);
+			fprintf( out, ",%d", part_ptr->node_inx[j]);
 		else
-			printf("%d", part_ptr->node_inx[j]);
+			fprintf( out, "%d", part_ptr->node_inx[j]);
 		if (part_ptr->node_inx[j] == -1)
 			break;
 	}
-	printf("\n\n");
+	fprintf( out, "\n\n");
 }
 
 

@@ -40,58 +40,58 @@
 
 /* print the entire job_info_msg */
 void 
-slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr )
+slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 {
 	int i;
 	job_table_t * job_ptr = job_info_msg_ptr -> job_array ;
 
-	printf("Jobs updated at %d, record count %d\n",
+	fprintf( out, "Jobs updated at %d, record count %d\n",
 		job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
 
 	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
 	{
-		slurm_print_job_table ( & job_ptr[i] ) ;
+		slurm_print_job_table ( out, & job_ptr[i] ) ;
 	}
 }
 
 /* print an individual job_table entry */
 void
-slurm_print_job_table (job_table_t * job_ptr )
+slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 {
 	int j;
-	printf ("JobId=%u UserId=%u ", job_ptr->job_id, job_ptr->user_id);
-	printf ("JobState=%u TimeLimit=%u ", job_ptr->job_state, job_ptr->time_limit);
-	printf ("Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
-	printf ("   Name=%s NodeList=%s ", job_ptr->name, job_ptr->nodes);
-	printf ("StartTime=%x EndTime=%x\n", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
+	fprintf ( out, "JobId=%u UserId=%u ", job_ptr->job_id, job_ptr->user_id);
+	fprintf ( out, "JobState=%u TimeLimit=%u ", job_ptr->job_state, job_ptr->time_limit);
+	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
+	fprintf ( out, "   Name=%s NodeList=%s ", job_ptr->name, job_ptr->nodes);
+	fprintf ( out, "StartTime=%x EndTime=%x\n", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
 
-	printf ("   NodeListIndecies=");
+	fprintf ( out, "   NodeListIndecies=");
 	for (j = 0; job_ptr->node_inx; j++) {
 		if (j > 0)
-			printf(",%d", job_ptr->node_inx[j]);
+			fprintf( out, ",%d", job_ptr->node_inx[j]);
 		else
-			printf("%d", job_ptr->node_inx[j]);
+			fprintf( out, "%d", job_ptr->node_inx[j]);
 		if (job_ptr->node_inx[j] == -1)
 			break;
 	}
-	printf("\n");
+	fprintf( out, "\n");
 
-	printf ("   ReqProcs=%u ReqNodes=%u ", job_ptr->num_procs, job_ptr->num_nodes);
-	printf ("Shared=%u Contiguous=%u ", job_ptr->shared, job_ptr->contiguous);
-	printf ("MinProcs=%u MinMemory=%u ", job_ptr->min_procs, job_ptr->min_memory);
-	printf ("MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
-	printf ("   ReqNodeList=%s Features=%s ", job_ptr->req_nodes, job_ptr->features);
-	printf ("JobScript=%s\n", job_ptr->job_script);
-	printf ("   ReqNodeListIndecies=");
+	fprintf ( out, "   ReqProcs=%u ReqNodes=%u ", job_ptr->num_procs, job_ptr->num_nodes);
+	fprintf ( out, "Shared=%u Contiguous=%u ", job_ptr->shared, job_ptr->contiguous);
+	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, job_ptr->min_memory);
+	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
+	fprintf ( out, "   ReqNodeList=%s Features=%s ", job_ptr->req_nodes, job_ptr->features);
+	fprintf ( out, "JobScript=%s\n", job_ptr->job_script);
+	fprintf ( out, "   ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
-			printf(",%d", job_ptr->req_node_inx[j]);
+			fprintf( out, ",%d", job_ptr->req_node_inx[j]);
 		else
-			printf("%d", job_ptr->req_node_inx[j]);
+			fprintf( out, "%d", job_ptr->req_node_inx[j]);
 		if (job_ptr->req_node_inx[j] == -1)
 			break;
 	}
-	printf("\n\n");
+	fprintf( out, "\n\n");
 }
 
 /* slurm_load_job - load the supplied job information buffer if changed */
