@@ -7,6 +7,12 @@
 #include <src/common/log.h>
 #include <src/slurmctld/slurmctld.h>
 
+/* pack_header
+ * packs a slurm protocol header that proceeds every slurm message
+ * header 	- the header structure to pack
+ * buffer	- destination of the pack, note buffer will be incremented by underlying pack routines
+ * length	- length of buffer, note length will be decremented by underlying pack routines
+ */
 void pack_header ( header_t * header, char ** buffer , uint32_t * length )
 {
 	pack16 ( header -> version , ( void ** ) buffer , length ) ;
@@ -15,6 +21,12 @@ void pack_header ( header_t * header, char ** buffer , uint32_t * length )
 	pack32 ( header -> body_length , ( void ** ) buffer , length ) ;
 }
 
+/* unpack_header
+ * unpacks a slurm protocol header that proceeds every slurm message
+ * header 	- the header structure to unpack
+ * buffer	- destination of the pack, note buffer will be incremented by underlying unpack routines
+ * length	- length of buffer, note length will be decremented by underlying unpack routines
+ */
 void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 {
 	unpack16 ( & header -> version , ( void ** ) buffer , length ) ;
@@ -23,6 +35,12 @@ void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 	unpack32 ( & header -> body_length , ( void ** ) buffer , length ) ;
 }
 
+/* pack_msg
+ * packs a slurm protocol mesg body
+ * header 	- the body structure to pack
+ * buffer	- destination of the pack, note buffer will be incremented by underlying pack routines
+ * length	- length of buffer, note length will be decremented by underlying pack routines
+ */
 int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 {
 	switch ( msg -> msg_type )
@@ -94,6 +112,12 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 	return 0 ;
 }
 
+/* unpack_msg
+ * unpacks a slurm protocol msg body
+ * header 	- the body structure to unpack
+ * buffer	- destination of the pack, note buffer will be incremented by underlying unpack routines
+ * length	- length of buffer, note length will be decremented by underlying unpack routines
+ */
 int unpack_msg ( slurm_msg_t * msg ,char ** buffer , uint32_t * buf_len )
 {
 	switch ( msg-> msg_type )
@@ -179,7 +203,6 @@ void unpack_node_registration_status_msg ( node_registration_status_msg_t * msg 
 	unpack32 ( & msg -> temporary_disk_space , ( void ** ) buffer , length ) ;
 }
 
-
 int unpack_build_info ( struct build_buffer **build_buffer_ptr, void * buffer , int buffer_size )
 {	
 	uint16_t uint16_tmp;
@@ -229,6 +252,12 @@ int unpack_build_info ( struct build_buffer **build_buffer_ptr, void * buffer , 
 	return 0;
 }
 
+/* pack_job_desc
+ * packs a job_desc struct 
+ * header 	- the body structure to pack
+ * buf_ptr	- destination of the pack, note buffer will be incremented by underlying pack routines
+ * buffer_size	- length of buffer, note length will be decremented by underlying pack routines
+ */
 void pack_job_desc ( job_desc_t * job_desc_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	/* load the data values */
@@ -260,6 +289,12 @@ void pack_job_desc ( job_desc_t * job_desc_ptr, void ** buf_ptr , int * buffer_s
 
 }
 
+/* unpack_msg
+ * unpacks a job_desc struct
+ * header 	- the body structure to unpack
+ * buf_ptr	- destination of the pack, note buffer will be incremented by underlying unpack routines
+ * buffer_size	- length of buffer, note length will be decremented by underlying unpack routines
+ */
 void unpack_job_desc ( job_desc_t **job_desc_buffer_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	uint16_t uint16_tmp;
@@ -304,13 +339,13 @@ void unpack_job_desc ( job_desc_t **job_desc_buffer_ptr, void ** buf_ptr , int *
 }
 
 /* template 
-void pack_ ( char ** buffer , uint32_t * length , * msg )
+void pack_ ( * msg , char ** buffer , uint32_t * length )
 {
 	pack16 ( msg -> , buffer , length ) ;
 	pack32 ( msg -> , buffer , length ) ;
 }
 
-void unpack_ ( char ** buffer , uint32_t * length , * messge )
+void unpack_ ( * msg , char ** buffer , uint32_t * length )
 {
 	unpack16 ( & msg -> , buffer , length ) ;
 	unpack32 ( & msg -> , buffer , length ) ;
