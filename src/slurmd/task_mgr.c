@@ -158,7 +158,8 @@ void * task_exec_thread ( void * arg )
 			}
 
 			/* initgroups */
-			if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
+			if ( (getuid() == (uid_t)0) && 
+			     (rc = initgroups(pwd->pw_name, pwd->pw_gid )) == SLURM_ERROR )
 			{
 				info ( "init groups failed " ) ;
 				//_exit ( SLURM_FAILURE ) ;
@@ -172,7 +173,7 @@ void * task_exec_thread ( void * arg )
 			
 
 			/* run bash and cmdline */
-			debug( "cwd %s", launch_msg->cwd ) ;
+			/* debug( "cwd %s", launch_msg->cwd ) ; */
 			chdir ( launch_msg->cwd ) ;
 			execve ( launch_msg->argv[0], launch_msg->argv , launch_msg->env );
 
@@ -187,6 +188,7 @@ void * task_exec_thread ( void * arg )
 			break;
 			
 		default: /*parent proccess */
+			debug("forked pid %ld", cpid);
 			task_start->exec_pid = cpid ;
 			/* order below is very important ie deadlock can occur if you mess with it*/
 			/* ask me how I know :) */
@@ -216,6 +218,8 @@ int send_task_exit_msg ( int task_return_code , task_start_t * task_start )
 	resp_msg . address = task_start -> launch_msg -> response_addr ;
 	resp_msg . data = & task_exit ;
 	resp_msg . msg_type = MESSAGE_TASK_EXIT;
+
+	debug("sending task exit code");
 
 	/* send message */
 	return slurm_send_only_node_msg ( & resp_msg ) ;
