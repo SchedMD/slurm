@@ -39,6 +39,7 @@ set squeue      "${slurm_dir}/bin/squeue"
 set srun        "${slurm_dir}/bin/srun"
 
 set mpicc	"/usr/local/bin/mpicc"
+set mpirun	"mpirun"
 set totalviewcli	"/usr/local/bin/totalviewcli"
 
 #
@@ -55,6 +56,7 @@ set bin_echo	"echo"
 set bin_env	"env"
 set bin_file	"file"
 set bin_id	"id"
+set bin_grep    "grep"
 set bin_hostname "hostname"
 set bin_kill	"kill"
 set bin_make	"make"
