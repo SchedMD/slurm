@@ -6,6 +6,6 @@ else
 elan_testprogs =
 endif
 
-noinst_PROGRAMS = $(elan_testprogs) slurm_protocol_stream_client slurm_protocol_stream_server 
+noinst_PROGRAMS = $(elan_testprogs) 
 
 LDADD = $(top_srcdir)/src/common/libcommon.la
