@@ -25,10 +25,11 @@
 
 #define _BUFFER_SIZE_ 512
 
-static int passed;
-static int failed;
-static int untest;
-static int unresolve;
+static int passed = 0;
+static int failed = 0;
+static int untest = 0;
+static int unresolve = 0;
+static int tests = 0;
 
 static char buffer[ _BUFFER_SIZE_ ];
 
@@ -36,12 +37,13 @@ static char buffer[ _BUFFER_SIZE_ ];
 inline void
 pass (const char* fmt, ... ) {
 	va_list ap;
-	
-    passed++;
+
+	tests++;
+	passed++;
 	va_start( ap, fmt );
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
-    printf ("\tPASSED: %s\n", buffer );
+	printf ("\tPASSED: #%d %s\n", tests, buffer );
 	fflush( stdout );
 }
 
@@ -49,11 +51,12 @@ inline void
 fail (const char* fmt, ... ) {
 	va_list ap;
 
-    failed++;
+	tests++;
+	failed++;
 	va_start( ap, fmt );
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
-    printf ("\tFAILED: %s\n", buffer );
+	printf ("\tFAILED: #%d %s\n", tests, buffer );
 	fflush( stdout );
 }
 
@@ -61,11 +64,12 @@ inline void
 untested (const char* fmt, ... ) {
 	va_list ap;
 
-    untest++;
+	tests++;
+	untest++;
 	va_start( ap, fmt );
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
-    printf ("\tUNTESTED: %s\n", buffer );
+	printf ("\tUNTESTED: #%d %s\n", tests, buffer );
 	fflush( stdout );
 }
 
@@ -73,11 +77,12 @@ inline void
 unresolved (const char* fmt, ... ) {
 	va_list ap;
 
-    unresolve++;
+	tests++;
+	unresolve++;
 	va_start( ap, fmt );
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
-    printf ("\tUNRESOLVED: %s\n", buffer );
+	printf ("\tUNRESOLVED: #%d %s\n", tests, buffer );
 	fflush( stdout );
 }
 
@@ -88,19 +93,19 @@ note (const char* fmt, ... ) {
 	va_start( ap, fmt );
 	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
 	va_end( ap );
-    printf ("\tNOTE: %s\n", buffer );
+	printf ("\tNOTE: %s\n", buffer );
 	fflush( stdout );
 }
 
 inline void
 totals (void) {
-    printf ("\nTotals:\n");
-    printf ("\t#passed:\t\t%d\n", passed);
-    printf ("\t#failed:\t\t%d\n", failed);
-    if (untest)
-        printf ("\t#untested:\t\t%d\n", untest);
-    if (unresolve)
-        printf ("\t#unresolved:\t\t%d\n", unresolve);
+	printf ("\nTotals:\n");
+	printf ("\t#passed:\t\t%d\n", passed);
+	printf ("\t#failed:\t\t%d\n", failed);
+	if (untest)
+		printf ("\t#untested:\t\t%d\n", untest);
+	if (unresolve)
+		printf ("\t#unresolved:\t\t%d\n", unresolve);
 }
 
 #ifdef __cplusplus
@@ -119,10 +124,10 @@ totals (void) {
 #endif
 
 const char *outstate_list[] = {
-    "FAILED: ",
-    "PASSED: ",
-    "UNTESTED: ",
-    "UNRESOLVED: "
+	"FAILED: ",
+	"PASSED: ",
+	"UNTESTED: ",
+	"UNRESOLVED: "
 };
 
 const char ** outstate = outstate_list;
@@ -130,124 +135,124 @@ const char ** outstate = outstate_list;
 #if 0
 extern ios& __iomanip_testout (ios&, int);
 inline smanip<int> testout (int n) {
-    return smanip<int> (__iomanip_testout, n);
+	return smanip<int> (__iomanip_testout, n);
 }
 ios & __iomanip_testout (ios& i, int x) {
-    return i;
+	return i;
 }
 
 template<class T>
 class OMANIP {
- private:
-    T i;
-    ostream &(*f)(ostream&, T);
- public:
-    OMANIP(ostream& (*ff)(ostream&, T), T ii) : f(ff), i(ii) {
-    }
-    friend ostream operator<<(ostream& us, OMANIP& m) {
-      return m.f(os,m.i);
-    }
+	private:
+		T i;
+		ostream &(*f)(ostream&, T);
+	public:
+		OMANIP(ostream& (*ff)(ostream&, T), T ii) : f(ff), i(ii) {
+		}
+		friend ostream operator<<(ostream& us, OMANIP& m) {
+			return m.f(os,m.i);
+		}
 };
 
 ostream&
 freakout(ostream& os, int x) {
-    return os << "FREAKOUT" ;
-//    return x << "TESTOUT " << x ;
+	return os << "FREAKOUT" ;
+	//    return x << "TESTOUT " << x ;
 }
 
 OMANIP<int> testout(int i) {
-    return OMANIP<int>(&freakout,i);
+	return OMANIP<int>(&freakout,i);
 }
 #endif
 
 enum teststate {FAILED, PASSED,UNTESTED,UNRESOLVED} laststate;
 
 class TestState {
- private:
-    teststate laststate;
-    std::string lastmsg;
- public:
-    TestState(void) {
-        passed = 0;
-        failed = 0;
-        untest = 0;
-        unresolve = 0;
-    }
-    ~TestState(void) {
-        totals();
-    };
+	private:
+		teststate laststate;
+		std::string lastmsg;
+	public:
+		TestState(void) {
+			passed = 0;
+			failed = 0;
+			untest = 0;
+			unresolve = 0;
+		}
+		~TestState(void) {
+			totals();
+		};
 
-    void testrun (bool b, std::string s) {
-        if (b)
-            pass (s);
-        else
-            fail (s);
-    }
+		void testrun (bool b, std::string s) {
+			if (b)
+				pass (s);
+			else
+				fail (s);
+		}
 
-    void pass (std::string s) {
-        passed++;
-        laststate = PASSED;
-        lastmsg = s;
-        std::cout << "\t" << outstate[PASSED] << s << std::endl;
-    }
-    void pass (const char *c) {
-        std::string s = c;
-        pass (s);
-    }
+		void pass (std::string s) {
+			passed++;
+			laststate = PASSED;
+			lastmsg = s;
+			std::cout << "\t" << outstate[PASSED] << s << std::endl;
+		}
+		void pass (const char *c) {
+			std::string s = c;
+			pass (s);
+		}
 
-    void fail (std::string s) {
-        failed++;
-        laststate = FAILED;
-        lastmsg = s;
-        std::cout << "\t" << outstate[FAILED] << s << std::endl;
-    }
-    void fail (const char *c) {
-        std::string s = c;
-        fail (s);
-    }
+		void fail (std::string s) {
+			failed++;
+			laststate = FAILED;
+			lastmsg = s;
+			std::cout << "\t" << outstate[FAILED] << s << std::endl;
+		}
+		void fail (const char *c) {
+			std::string s = c;
+			fail (s);
+		}
 
-    void untested (std::string s) {
-        untest++;
-        laststate = UNTESTED;
-        lastmsg = s;
-        std::cout << "\t" << outstate[UNTESTED] << s << std::endl;
-    }
-    void untested (const char *c) {
-        std::string s = c;
-        untested (s);
-    }
+		void untested (std::string s) {
+			untest++;
+			laststate = UNTESTED;
+			lastmsg = s;
+			std::cout << "\t" << outstate[UNTESTED] << s << std::endl;
+		}
+		void untested (const char *c) {
+			std::string s = c;
+			untested (s);
+		}
 
-    void unresolved (std::string s) {
-        unresolve++;
-        laststate = UNRESOLVED;
-        lastmsg = s;
-        std::cout << "\t" << outstate[UNRESOLVED] << s << std::endl;
-    }
-    void unresolved (const char *c) {
-        std::string s = c;
-        unresolved (s);
-    }
+		void unresolved (std::string s) {
+			unresolve++;
+			laststate = UNRESOLVED;
+			lastmsg = s;
+			std::cout << "\t" << outstate[UNRESOLVED] << s << std::endl;
+		}
+		void unresolved (const char *c) {
+			std::string s = c;
+			unresolved (s);
+		}
 
-    void totals (void) {
-        std::cout << "\t#passed:\t\t" << passed << std::endl;
-        std::cout << "\t#failed:\t\t" << failed << std::endl;
-        if (untest)
-            std::cout << "\t#untested:\t\t" << untest << std::endl;
-        if (unresolve)
-            std::cout << "\t#unresolved:\t\t" << unresolve << std::endl;
-    }
+		void totals (void) {
+			std::cout << "\t#passed:\t\t" << passed << std::endl;
+			std::cout << "\t#failed:\t\t" << failed << std::endl;
+			if (untest)
+				std::cout << "\t#untested:\t\t" << untest << std::endl;
+			if (unresolve)
+				std::cout << "\t#unresolved:\t\t" << unresolve << std::endl;
+		}
 
-    // This is so this class can be printed in an ostream.
-    friend std::ostream & operator << (std::ostream &os, TestState& t) {
-        return os << "\t" << outstate[t.laststate] << t.lastmsg ;
-    }
+		// This is so this class can be printed in an ostream.
+		friend std::ostream & operator << (std::ostream &os, TestState& t) {
+			return os << "\t" << outstate[t.laststate] << t.lastmsg ;
+		}
 
-    int GetState(void) {
-        return laststate;
-    }
-    std::string GetMsg(void) {
-        return lastmsg;
-    }
+		int GetState(void) {
+			return laststate;
+		}
+		std::string GetMsg(void) {
+			return lastmsg;
+		}
 };
 
 #endif		// __cplusplus
