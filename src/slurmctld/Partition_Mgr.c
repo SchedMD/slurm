@@ -1,6 +1,6 @@
 /* 
  * Partition_Mgr.c - Manage the partition information of SLURM
- * See Mach_Stat_Mgr.h for documentation on external functions and data structures
+ * See slurm.h for documentation on external functions and data structures
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -8,16 +8,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 
 #include "config.h"
 #include "list.h"
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
+#define DEBUG_MODULE 0
 #define SEPCHARS " \n\t"
 
 List   Part_Record_List = NULL;		/* List of Part_Records */
+char *Job_Type_String[]   = {"NONE", "INTERACTIVE", "BATCH", "ALL", "END"};
 
 int	Delete_Part_Record(char *name);
 int 	Find_Valid_Parts (char *Specification, unsigned *Parition);
@@ -39,6 +41,7 @@ main(int argc, char * argv[]) {
 	printf("Usage: %s <in_file> <text_file> <raw_file> <user_list_file>\n", argv[0]);
 	exit(0);
     } /* if */
+
     Error_Code = Read_Part_Spec_Conf(argv[1]);
     if (Error_Code != 0) {
 	printf("Error %d from Read_Part_Spec_Conf", Error_Code);

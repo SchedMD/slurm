@@ -1,22 +1,23 @@
 /* 
  * Mach_Stat_Mgr.c - Manage the node specification information of SLURM
- * See Mach_Stat_Mgr.h for documentation on external functions and data structures
+ * See slurm.h for documentation on external functions and data structures
  *
  * Author: Moe Jette, jette@llnl.gov
  */
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <syslog.h>
 
 #include "config.h"
 #include "list.h"
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
+#define DEBUG_MODULE 0
 #define SEPCHARS " \n\t"
 
-List   Node_Record_List = NULL;		/* List of Node_Records */
+char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
 
 int	Delete_Node_Record(char *name);
 struct Node_Record  *Find_Node_Record(char *name);
@@ -29,6 +30,8 @@ void	Partition_String_To_Value (char *partition, unsigned int *Partition_Value, 
 void 	Partition_Value_To_String(unsigned int partition, char *Partition_String, int Partition_String_size, char *node_name);
 int	Tally_Node_CPUs(char *Node_List);
 
+List   Node_Record_List = NULL;		/* List of Node_Records */
+
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
@@ -39,6 +42,7 @@ main(int argc, char * argv[]) {
 	printf("Usage: %s <in_file> <text_file> <raw_file>\n", argv[0]);
 	exit(0);
     } /* if */
+
     Error_Code = Read_Node_Spec_Conf(argv[1]);
     if (Error_Code != 0) {
 	printf("Error %d from Read_Node_Spec_Conf\n", Error_Code);
@@ -406,8 +410,8 @@ void Partition_Value_To_String(unsigned int partition, char *Partition_String, i
 int Read_Node_Spec_Conf (char *File_Name) {
     FILE *Node_Spec_File;	/* Pointer to input data file */
     int Error_Code;		/* Error returns from system functions */
-    int Line_Num;		/* Line number in input file */
     char In_Line[BUF_SIZE];	/* Input line */
+    int Line_Num;		/* Line number in input file */
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
     char My_Name[MAX_NAME_LEN];
     char My_OS[MAX_OS_LEN];
@@ -463,7 +467,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 #endif
 	    Error_Code = E2BIG;
 	    break;
-	}
+	} /* if */
 	if (In_Line[0] == '#') continue;
 	Error_Code = Parse_Node_Spec(In_Line, My_Name, My_OS, 
 	    &My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
