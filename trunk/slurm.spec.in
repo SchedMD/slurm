@@ -24,6 +24,11 @@ Requires: slurm
 # Authentication plugin sub-packages: 
 # XXX: How to conditionally build these?
 #
+%package auth-none
+Summary SLURM auth NULL implementation (no authentication)
+Group System Environment/Base
+Requires: slurm
+
 %package auth-authd
 Summary: SLURM auth implementation using Brent Chun's authd
 Group: System Environment/Base
@@ -44,6 +49,9 @@ access SLURM functionality.
 %description devel
 Development package for SLURM.  This package includes the header files
 and static libraries for the SLURM API.
+
+%description auth-none
+SLURM NULL authentication module 
 
 %description auth-authd
 SLURM authentication module for Brent Chun's authd
@@ -90,7 +98,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
-%{_libdir}/slurm/auth_none.so
 %{_mandir}/man1/*
 %{_mandir}/man5/*
 %{_mandir}/man8/*
@@ -104,13 +111,17 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
 
-%files auth-authd
+%files auth-none
 %defattr(-,root,root)
-%{_libdir}/slurm/auth_authd.so
+%{_libdir}/slurm/auth_none.so
 
 %files auth-munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
+
+%files auth-authd
+%defattr(-,root,root)
+%{_libdir}/slurm/auth_authd.so
 
 %pre
 if [ -x /etc/rc.d/init.d/slurm ]; then
