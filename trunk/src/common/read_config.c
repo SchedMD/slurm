@@ -856,6 +856,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurm_user_name = xstrdup("root");
 		ctl_conf_ptr->slurm_user_id   = 0;
 	}
+
+	if (ctl_conf_ptr->slurmd_spooldir == NULL) 
+		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */

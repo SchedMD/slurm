@@ -70,8 +70,6 @@
 
 #define MAX_THREADS		64
 
-#define DEFAULT_SPOOLDIR	"/var/spool/slurmd"
-
 typedef struct connection {
 	slurm_fd fd;
 	slurm_addr *cli_addr;

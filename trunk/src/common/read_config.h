@@ -35,6 +35,7 @@
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
+#define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
 #define DEFAULT_WAIT_TIME           0
 
 /* 
