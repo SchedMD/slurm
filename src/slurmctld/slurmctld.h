@@ -55,6 +55,9 @@
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
 
+/* Pathname of group file record for checking update times */
+#define GROUP_FILE	"/etc/group"
+
 #define safe_unpack16(valp,bufp,lenp) {			\
         if (*(lenp) < sizeof(*(valp)))			\
 		break;					\
@@ -335,7 +338,7 @@ extern int  is_key_valid (void * key);
 /* job_allocate - allocate resource for the supplied job specifications */
 extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-	int immediate, int will_run, int allocate);
+	int immediate, int will_run, int allocate, uid_t submit_uid);
 
 /* job_cancel - cancel the specified job */
 extern int job_cancel (uint32_t job_id, uid_t uid);
@@ -348,10 +351,6 @@ extern int job_complete (uint32_t job_id, uid_t uid);
 
 /* job_step_complete - note the completion the specified job step*/
 extern int job_step_complete (uint32_t job_id, uint32_t job_step_id, uid_t uid);
-
-/* job_create - create a job table record for the supplied specifications */
-extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
-	    int will_run, struct job_record **job_rec_ptr);
 
 /* job_time_limit - enforce job time limits */
 extern void job_time_limit (void);
@@ -368,10 +367,6 @@ extern void list_delete_config (void *config_entry);
 /* list_find_config - find an entry in the configuration list */
 extern int list_find_config (void *config_entry, void *key);
 
-/* list_delete_part - delete an entry from the partition list, 
- * see list.h for documentation */
-extern void list_delete_part (void *part_entry);
-
 /* list_find_part - find an entry in the partition list */
 extern int list_find_part (void *part_entry, void *key);
 
@@ -386,9 +381,6 @@ extern int load_part_state ( void );
 
 /* match_feature - determine if the desired feature (seek) is one of those available */
 extern int  match_feature (char *seek, char *available);
-
-/* match_group - determine if the user is a member of any groups permitted to use this partition */
-extern int match_group (char *allow_groups, char *user_groups);
 
 /* mkdir2 - issues system calls for mkdir (if root) */
 int mkdir2 (char * path, int modes);
@@ -498,6 +490,8 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
 /* update_part - update a partition's configuration data per the supplied specification */
 extern int update_part (update_part_msg_t * part_desc );
 
+/* validate_group - validate that the submit uid is authorized to run in this partition */
+extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);
 
 /* validate_node_specs - validate the node's specifications as valid */
 extern int validate_node_specs (char *node_name,

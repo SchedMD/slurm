@@ -32,6 +32,8 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <grp.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,109 +56,13 @@ char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 struct part_record *default_part_loc = NULL;	/* location of default partition */
 time_t last_part_update;		/* time of last update to partition records */
 
-int	build_part_bitmap (struct part_record *part_record_point);
-void	dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
-void	list_delete_part (void *part_entry);
-int	list_find_part (void *part_entry, void *key);
-
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-int 
-main (int argc, char *argv[]) 
-{
-	int error_code, error_count;
-	time_t update_time;
-	struct part_record *part_ptr;
-	char *dump;
-	int dump_size;
-	char update_spec[] =
-		"MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
-	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-
-	error_count = 0;
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
-	error_code = init_node_conf ();
-	if (error_code) {
-		printf ("init_node_conf error %d\n", error_code);
-		error_count++;
-	}
-	error_code = init_part_conf ();
-	if (error_code) {
-		printf ("init_part_conf error %d\n", error_code);
-		error_count++;
-	}
-	default_part.max_time = 223344;
-	default_part.max_nodes = 556677;
-	default_part.total_nodes = 4;
-	default_part.total_cpus = 16;
-	default_part.key = 1;
-	node_record_count = 8;
-
-	printf ("create some partitions and test defaults\n");
-	part_ptr = create_part_record ();
-	if (part_ptr->max_time != 223344) {
-		printf ("ERROR: partition default max_time not set\n");
-		error_count++;
-	}
-	if (part_ptr->max_nodes != 556677) {
-		printf ("ERROR: partition default max_nodes not set\n");
-		error_count++;
-	}
-	if (part_ptr->total_nodes != 4) {
-		printf ("ERROR: partition default total_nodes not set\n");
-		error_count++;
-	}
-	if (part_ptr->total_cpus != 16) {
-		printf ("ERROR: partition default max_nodes not set\n");
-		error_count++;
-	}
-	if (part_ptr->key != 1) {
-		printf ("ERROR: partition default key not set\n");
-		error_count++;
-	}
-	if (part_ptr->state_up != 1) {
-		printf ("ERROR: partition default state_up not set\n");
-		error_count++;
-	}
-	if (part_ptr->shared != SHARED_NO) {
-		printf ("ERROR: partition default shared not set\n");
-		error_count++;
-	}
-	strcpy (part_ptr->name, "interactive");
-	part_ptr->nodes = "lx[01-04]";
-	part_ptr->allow_groups = "students";
-	part_ptr->node_bitmap = (bitstr_t *) bit_alloc(20);
-	bit_nset(part_ptr->node_bitmap, 2, 5);
-
-	part_ptr = create_part_record ();
-	strcpy (part_ptr->name, "batch");
-	part_ptr = create_part_record ();
-	strcpy (part_ptr->name, "class");
-
-	update_time = (time_t) 0;
-	error_code = pack_all_part (&dump, &dump_size, &update_time);
-	if (error_code) {
-		printf ("ERROR: pack_all_part error %d\n", error_code);
-		error_count++;
-	}
-	xfree (dump);
-
-	node_record_count = 0;	/* delete_part_record dies if node count is bad */
-	error_code = delete_part_record ("batch");
-	if (error_code != 0) {
-		printf ("delete_part_record error1 %d\n", error_code);
-		error_count++;
-	}
-	printf ("NOTE: we expect delete_part_record to report not finding a record for batch\n");
-	error_code = delete_part_record ("batch");
-	if (error_code != ENOENT) {
-		printf ("ERROR: delete_part_record error2 %d\n", error_code);
-		error_count++;
-	}
-
-	exit (error_count);
-}
-#endif
+static	int	build_part_bitmap (struct part_record *part_record_point);
+static	void	dump_part_state (struct part_record *part_record_point, 
+			void **buf_ptr, int *buf_len);
+static	uid_t 	*get_group_members (char *group_name);
+static	time_t	get_group_tlm (void);
+static	void	list_delete_part (void *part_entry);
+static	void 	print_group_members (uid_t *uid_list);
 
 
 /*
@@ -845,4 +751,85 @@ update_part (update_part_msg_t * part_desc )
 	}
 			
 	return error_code;
+}
+
+
+/* validate_group - validate that the submit uid is authorized to run in this partition */
+int
+validate_group (struct part_record *part_ptr, uid_t submit_uid)
+{
+	return 1;
+}
+
+/* get_group_members - indentify the users in a given group name
+ * Returns a zero terminated list of its UIDs or NULL on error 
+ * NOTE: User root has implicitly access to every group (the zero terminating uid)
+ * NOTE: The caller must xfree non-NULL return values */
+uid_t *
+get_group_members (char *group_name)
+{
+	struct group *group_struct_ptr;
+	struct passwd *user_pw_ptr;
+	int i, j;
+	int *group_uids = NULL;
+	int uid_cnt = 0;
+
+	group_struct_ptr = getgrnam(group_name);   /* Note: static memory, do not free */
+	if (group_struct_ptr == NULL) {
+		printf ("Could not find group %s\n", group_name);
+		setgrent ();
+		return NULL;
+	}
+
+	for (i=0; ; i++) {
+		if (group_struct_ptr->gr_mem[i] == NULL)
+			break;
+	}
+	uid_cnt = i;
+	group_uids = (int *) malloc (sizeof (uid_t) * (uid_cnt + 1));
+	memset (group_uids, 0, (sizeof (uid_t) * (uid_cnt + 1)));
+
+	j = 0;
+	for (i=0; i<uid_cnt; i++) {
+		user_pw_ptr = getpwnam (group_struct_ptr->gr_mem[i]);
+		if (user_pw_ptr) {
+			if (user_pw_ptr->pw_uid)
+				group_uids[j++] = user_pw_ptr->pw_uid;
+		}
+		else
+			printf ("Could not find user %s\n", group_struct_ptr->gr_mem[i]);
+		setpwent ();
+	}
+
+	setgrent ();
+	return group_uids;
+}
+
+/* get_group_tlm - return the time of last modification for the GROUP_FILE (/etc/group) */
+time_t 
+get_group_tlm (void)
+{
+	struct stat stat_buf;
+
+	if (stat (GROUP_FILE, &stat_buf)) {
+		printf ("can't stat /etc/group file\n");
+		return (time_t) 0;
+	}
+	return stat_buf.st_mtime;
+}
+
+/* print_group_members - print the members of a uid list */
+void 
+print_group_members (uid_t *uid_list)
+{
+	int i;
+
+	if (uid_list) {
+		for (i=0; uid_list[i]; i++) {
+			if (i > 0)
+				printf (",");
+			printf ("%u", (unsigned int) uid_list[i]);
+		}
+	}
+	printf ("\n\n");
 }
