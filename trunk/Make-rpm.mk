@@ -76,7 +76,11 @@ tar rpm:
 	ver=`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $$meta`; \
 	rel=`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $$meta`; \
 	rver="$$ver"; \
-	test "$$tag" = "HEAD" && rel="`date +%Y%m%d%H%M`"; \
+	if test "$$tag" = "HEAD"; then \
+          rel="`date +%Y%m%d%H%M`"; \
+	  set -x; \
+          perl -pi -e "s/^(\s*Release:\s*).*/\$${1}$$rel/i" $$meta; fi; \
+	set +x; \
 	if test -z "$$rel"; then \
 	  pkg=$$name-$$ver; rel=1; else pkg=$$name-$$ver-$$rel; fi; \
         if test -x "$$tmp/$$proj/autogen.sh"; then \
