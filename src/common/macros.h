@@ -86,4 +86,44 @@ typedef enum {false, true} bool;
 #  endif
 #endif
 
+#ifdef WITH_PTHREADS
+
+#  define slurm_mutex_init(mutex)                                              \
+     do {                                                                      \
+         if ((errno = pthread_mutex_init(mutex, NULL)) != 0)                   \
+             error("%s:%d %s: pthread_mutex_init(): %m", 		       \
+	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
+     } while (0)
+
+#  define slurm_mutex_destroy(mutex)                                           \
+     do {                                                                      \
+         if ((errno = pthread_mutex_destroy(mutex)) != 0)                      \
+             error("%s:%d %s: pthread_mutex_destroy(): %m", 		       \
+	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
+     } while (0)
+
+#  define slurm_mutex_lock(mutex)                                              \
+     do {                                                                      \
+         if ((errno = pthread_mutex_lock(mutex)) != 0)	                       \
+             error("%s:%d %s: pthread_mutex_lock(): %m", 		       \
+	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
+     } while (0)
+
+#  define slurm_mutex_unlock(mutex)                                            \
+     do {                                                                      \
+         if ((errno = pthread_mutex_unlock(mutex)) != 0)                       \
+             error("%s:%d %s: pthread_mutex_unlock(): %m", 		       \
+	           __FILE__, __LINE__, __CURRENT_FUNC__);            	       \
+     } while (0)
+
+#else /* !WITH_PTHREADS */
+
+#  define slurm_mutex_init(mutex)
+#  define slurm_mutex_destroy(mutex)
+#  define slurm_mutex_lock(mutex)
+#  define slurm_mutex_unlock(mutex)
+
+#endif /* WITH_PTHREADS */
+
+
 #endif /* !_MACROS_H */

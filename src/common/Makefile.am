@@ -28,7 +28,10 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 		      	xstring.c	\
 		      	strlcpy.c	\
 			list.c  	\
+			fd.c		\
 		      	log.c		\
+			eio.c		\
+			cbuf.c		\
 			safeopen.c	\
 			bitstring.c     \
 			pack.c		\
@@ -40,7 +43,6 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			slurm_protocol_util.c	\
 			slurm_protocol_socket_implementation.c	\
 			slurm_protocol_defs.c	\
-			util_signals.c \
 			$(elan_sources) \
 			$(authd_sources)
 
@@ -50,6 +52,8 @@ noinst_HEADERS = 	xmalloc.h 	\
 			macros.h	\
 		 	list.h 		\
 		 	log.h 		\
+			eio.h		\
+			cbuf.h		\
 			safeopen.h	\
 		 	strlcpy.h	\
 			bitstring.h     \
@@ -65,8 +69,7 @@ noinst_HEADERS = 	xmalloc.h 	\
 			slurm_protocol_mongo_common.h	\
 			slurm_protocol_interface.h	\
 			slurm_errno.h		\
-			qsw.h			\
-			util_signals.h
+			qsw.h			
 
 libdaemonize_la_SOURCES = \
 			daemonize.c
