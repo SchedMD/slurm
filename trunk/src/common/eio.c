@@ -119,7 +119,6 @@ _poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
 	unsigned int  nfds = 0;
 
 	while ((obj = (io_obj_t *) list_next(i))) {
-		verbose("processing fd %d", obj->fd);
 		if (_is_writable(obj) && _is_readable(obj)) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLOUT | POLLIN;
