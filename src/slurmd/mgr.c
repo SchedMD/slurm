@@ -316,7 +316,6 @@ _run_job(slurmd_job_t *job)
 	if (!job->batch && interconnect_init(job) == SLURM_ERROR) {
 		error("interconnect_init: %m");
 		rc = errno;
-		/* shm_init(); */
 		goto fail;
 	}
 
@@ -524,7 +523,7 @@ _reclaim_privileges(struct passwd *pwd)
 	/* 
 	 * No need to reclaim privileges if our uid == pwd->pw_uid
 	 */
-	if (getuid() == pwd->pw_uid)
+	if (geteuid() == pwd->pw_uid)
 		return SLURM_SUCCESS;
 
 	if (seteuid(pwd->pw_uid) < 0) {
