@@ -100,22 +100,22 @@ static int max_hash_over = 0;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
-static int _copy_job_desc_to_file(job_desc_msg_t * job_desc,
-				  uint32_t job_id);
-static int _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
-					struct job_record **job_ptr,
-					struct part_record *part_ptr,
-					bitstr_t * req_bitmap);
+static int  _copy_job_desc_to_file(job_desc_msg_t * job_desc,
+				   uint32_t job_id);
+static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
+					 struct job_record **job_ptr,
+					 struct part_record *part_ptr,
+					 bitstr_t * req_bitmap);
 static void _delete_job_desc_files(uint32_t job_id);
 static void _dump_job_details_state(struct job_details *detail_ptr,
 				    Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer);
-static int _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
-		       int allocate, int will_run,
-		       struct job_record **job_rec_ptr, uid_t submit_uid);
+static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
+		        int allocate, int will_run,
+		        struct job_record **job_rec_ptr, uid_t submit_uid);
 static void _list_delete_job(void *job_entry);
-static int _list_find_job_old(void *job_entry, void *key);
+static int  _list_find_job_old(void *job_entry, void *key);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
 static void _read_data_from_file(char *file_name, char **data);
@@ -317,9 +317,12 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
+
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16(dump_job_ptr->next_step_id, buffer);
 	pack16(dump_job_ptr->kill_on_node_fail, buffer);
+	pack16(dump_job_ptr->kill_on_step_done, buffer);
+	pack16(dump_job_ptr->batch_flag, buffer);
 
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
@@ -364,7 +367,6 @@ void _dump_job_details_state(struct job_details *detail_ptr, Buf buffer)
 
 	pack16((uint16_t) detail_ptr->shared, buffer);
 	pack16((uint16_t) detail_ptr->contiguous, buffer);
-	pack16((uint16_t) detail_ptr->batch_flag, buffer);
 
 	pack32((uint32_t) detail_ptr->min_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_memory, buffer);
@@ -465,8 +467,8 @@ int load_job_state(void)
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk;
-	uint16_t shared, contiguous, kill_on_node_fail, name_len;
-	uint16_t batch_flag;
+	uint16_t shared, contiguous, batch_flag;
+	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
 	char *req_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	slurm_job_credential_t *credential_ptr = NULL;
@@ -515,19 +517,26 @@ int load_job_state(void)
 
 		safe_unpack_time(&start_time, buffer);
 		safe_unpack_time(&end_time, buffer);
+
 		safe_unpack16(&job_state, buffer);
 		safe_unpack16(&next_step_id, buffer);
 		safe_unpack16(&kill_on_node_fail, buffer);
+		safe_unpack16(&kill_on_step_done, buffer);
+		safe_unpack16(&batch_flag, buffer);
 
 		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 		safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 		safe_unpackstr_xmalloc(&name, &name_len, buffer);
 
 		/* validity test as possible */
-		if ((job_state >= JOB_END) || (kill_on_node_fail > 1)) {
+		if ((job_state >= JOB_END) || 
+		    (kill_on_node_fail > 1) ||
+		    (kill_on_step_done > 1) ||
+		    (batch_flag > 1)) {
 			error
-			    ("Invalid data for job %u: job_state=%u, kill_on_node_fail=%u",
-			     job_id, job_state, kill_on_node_fail);
+			    ("Invalid data for job %u: job_state=%u  batch_flag=%u kill_on_node_fail=%u kill_on_step_done=%u",
+			     job_id, job_state, batch_flag, 
+			     kill_on_node_fail, kill_on_step_done);
 			error
 			    ("No more job data will be processed from the checkpoint file");
 			FREE_NULL(nodes);
@@ -548,7 +557,6 @@ int load_job_state(void)
 
 			safe_unpack16(&shared, buffer);
 			safe_unpack16(&contiguous, buffer);
-			safe_unpack16(&batch_flag, buffer);
 
 			safe_unpack32(&min_procs, buffer);
 			safe_unpack32(&min_memory, buffer);
@@ -570,9 +578,8 @@ int load_job_state(void)
 			if ((shared > 1) ||
 			    (contiguous > 1) || (batch_flag > 1)) {
 				error
-				    ("Invalid data for job %u: shared=%u, contiguous=%u, batch_flag=%u",
-				     job_id, shared, contiguous,
-				     batch_flag);
+				    ("Invalid data for job %u: shared=%u contiguous=%u",
+				     job_id, shared, contiguous);
 				error
 				    ("No more job data will be processed from the checkpoint file");
 				FREE_NULL(req_nodes);
@@ -646,6 +653,8 @@ int load_job_state(void)
 		job_ptr->node_bitmap = node_bitmap;
 		node_bitmap = NULL;
 		job_ptr->kill_on_node_fail = kill_on_node_fail;
+		job_ptr->kill_on_step_done = kill_on_step_done;
+		job_ptr->batch_flag = batch_flag;
 		build_node_details(job_ptr);
 
 		if (default_prio >= priority)
@@ -658,7 +667,6 @@ int load_job_state(void)
 			job_ptr->details->num_nodes = num_nodes;
 			job_ptr->details->shared = shared;
 			job_ptr->details->contiguous = contiguous;
-			job_ptr->details->batch_flag = batch_flag;
 			job_ptr->details->min_procs = min_procs;
 			job_ptr->details->min_memory = min_memory;
 			job_ptr->details->min_tmp_disk = min_tmp_disk;
@@ -1195,7 +1203,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		      job_id, job_ptr->job_state);
 	}
 
-	if (requeue && job_ptr->details && job_ptr->details->batch_flag) {
+	if (requeue && job_ptr->details && job_ptr->batch_flag) {
 		job_ptr->job_state = JOB_PENDING;
 		info("Requeing job %u", job_ptr->job_id);
 	} else {
@@ -1349,9 +1357,9 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 			error_code = ESLURM_WRITING_TO_FILE;
 			goto cleanup;
 		}
-		(*job_rec_ptr)->details->batch_flag = 1;
+		(*job_rec_ptr)->batch_flag = 1;
 	} else
-		(*job_rec_ptr)->details->batch_flag = 0;
+		(*job_rec_ptr)->batch_flag = 0;
 
 	if (part_ptr->shared == SHARED_FORCE)	/* shared=force */
 		(*job_rec_ptr)->details->shared = 1;
@@ -2019,7 +2027,9 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
+
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
+	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);

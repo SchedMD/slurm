@@ -193,7 +193,6 @@ extern int job_count;			/* number of jobs in the system */
  can be purged after initiation */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
-	uint16_t batch_flag;		/* 1 if batch job (with script) */
 	uint32_t num_procs;		/* minimum number of processors */
 	uint32_t num_nodes;		/* minimum number of nodes */
 	char *req_nodes;		/* required nodes */
@@ -220,6 +219,7 @@ struct job_record {
 	char name[MAX_NAME_LEN];	/* name of the job */
 	char partition[MAX_NAME_LEN];	/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
+	uint16_t batch_flag;		/* 1 if batch job (with script) */
 	uint32_t user_id;		/* user the job runs as */
 	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
