@@ -1053,21 +1053,22 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	 */
 	conf->log_opts.stderr_level = LOG_LEVEL_ERROR + job->debug;
 
-	/* Connect slurmd stderr to job's stderr */
-	if (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0) {
-		error("job_log_init: dup2(stderr): %m");
-		return;
-	}
-
-	fd_set_nonblocking(STDERR_FILENO);
-
 	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->hostname);
 
 	/* 
 	 * reinitialize log 
 	 */
-	log_init(argv0, conf->log_opts, 0, NULL);
+	log_alter(conf->log_opts, 0, NULL);
+	log_set_argv0(argv0);
+
+	/* Connect slurmd stderr to job's stderr */
+	if (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0) {
+		error("job_log_init: dup2(stderr): %m");
+		return;
+	}
 }
+
+
 
 
 /*
