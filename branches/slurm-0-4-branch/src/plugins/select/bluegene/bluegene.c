@@ -368,25 +368,6 @@ extern int create_static_partitions(List part_list)
 			configure_partition(bgl_record);
 			print_bgl_record(bgl_record);
 			
-/* 			found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t)); */
-/* 			list_push(bgl_list, found_record); */
-			
-/* 			found_record->bgl_part_list = bgl_record->bgl_part_list;			 */
-/* 			found_record->hostlist = bgl_record->hostlist; */
-/* 			found_record->nodes = xstrdup(bgl_record->nodes); */
-				
-/* 			found_record->bp_count = bgl_record->bp_count; */
-/* 			found_record->switch_count = bgl_record->switch_count; */
-/* 			found_record->geo[X] = bgl_record->geo[X]; */
-/* 			found_record->geo[Y] = bgl_record->geo[Y]; */
-/* 			found_record->geo[Z] = bgl_record->geo[Z]; */
-			
-/* 			found_record->conn_type = bgl_record->conn_type; */
-/* 			found_record->bitmap = bgl_record->bitmap; */
-/* 			found_record->node_use = SELECT_COPROCESSOR_MODE; */
-/* 			configure_partition(found_record); */
-/* 			/\*********************************************************\/ */
-/* 			print_bgl_record(found_record); */
 #endif
 		}
 	}

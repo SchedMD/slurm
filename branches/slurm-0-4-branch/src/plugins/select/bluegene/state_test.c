@@ -115,6 +115,12 @@ static char *_convert_bp_state(rm_BP_state_t state)
 	case RM_BP_DOWN:
 		return "RM_BP_DOWN";
 		break;
+	case RM_BP_MISSING:
+		return "RM_BP_MISSING";
+		break;
+	case RM_BP_ERROR:
+		return "RM_BP_ERROR";
+		break;
 	case RM_BP_NAV:
 		return "RM_BP_NAV";
 	}

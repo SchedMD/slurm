@@ -108,7 +108,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 			}
 		}
 		conn.part_state = RM_PARTITION_READY;
-			
+		
 		if(firstconnect) {
 			rm_set_data(curr_switch, RM_SwitchFirstConnection, &conn);
 			firstconnect=0;
@@ -239,6 +239,7 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 	char *name2;
 	rm_BP_t *curr_bp;
 	rm_switch_t *coord_switch[PA_SYSTEM_DIMENSIONS];
+	rm_switch_t *curr_switch;
 	pa_switch_t *pa_switch;
 	char *bpid, *curr_bpid;
 	int found_bpid = 0;
@@ -324,23 +325,23 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 		rm_get_data(curr_bp, RM_BPID, &bpid);
 				
 		rm_get_data(bgl, RM_SwitchNum, &switch_count);
-		rm_get_data(bgl, RM_FirstSwitch,&coord_switch[X]);
+		rm_get_data(bgl, RM_FirstSwitch,&curr_switch);
 		found_bpid = 0;
 		for (i=0; i<switch_count; i++) {
-			rm_get_data(coord_switch[X], RM_SwitchBPID, &curr_bpid);
+			rm_get_data(curr_switch, RM_SwitchBPID, &curr_bpid);
 			
 			if (!strcasecmp((char *)bpid, (char *)curr_bpid)) {
-				found_bpid = 1;
-				break;
+				coord_switch[found_bpid] = curr_switch;
+				found_bpid++;
+				if(found_bpid==PA_SYSTEM_DIMENSIONS)
+					break;
 			}
 			
-			rm_get_data(bgl,RM_NextSwitch,&coord_switch[X]);
+			rm_get_data(bgl,RM_NextSwitch,&curr_switch);
 		}
 	
-		if(found_bpid) {
-			rm_get_data(bgl,RM_NextSwitch,&coord_switch[Y]);
-			rm_get_data(bgl,RM_NextSwitch,&coord_switch[Z]);
-					
+		if(found_bpid==PA_SYSTEM_DIMENSIONS) {
+						
 			switch_itr = list_iterator_create(bgl_bp->switch_list);
 			while((bgl_switch = list_next(switch_itr)) != NULL) {
 				rm_get_data(coord_switch[bgl_switch->dim],

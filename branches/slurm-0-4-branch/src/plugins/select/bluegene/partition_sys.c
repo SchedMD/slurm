@@ -115,6 +115,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	char command[255];
 	/* Add partition record to the DB */
 	debug("adding partition\n");
+	
 	rc = rm_add_partition(bgl_record->bgl_part);
 	if (rc != STATUS_OK) {
 		error("Error adding partition");
@@ -158,6 +159,7 @@ static int _post_allocate(bgl_record_t *bgl_record)
 
 extern int configure_partition(bgl_record_t *bgl_record)
 {
+	
 	rm_new_partition(&bgl_record->bgl_part); /* new partition to be added */
 	_pre_allocate(bgl_record);
 	
