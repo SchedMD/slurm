@@ -281,7 +281,7 @@ fi
 
 
 %changelog
-* Thr Mar 10 2005 Morris Jette <jette1@llnl.gov>
+* Thu Mar 10 2005 Morris Jette <jette1@llnl.gov>
 - added federation switch plugin
 * Fri Mar 04 2005 Morris Jette <jette1@llnl.gov>
 - added proctrack_aix plugin
