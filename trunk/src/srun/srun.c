@@ -88,6 +88,7 @@ typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
 static allocation_resp	*_allocate_nodes(void);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
+static inline bool 	 _job_all_done(job_t *job);
 static void		 _sig_kill_alloc(int signum);
 static char 		*_build_script (char *pathname, int file_type);
 static char 		*_get_shell (void);
@@ -204,10 +205,8 @@ srun(int ac, char **av)
 	/* wait for job to terminate */
 	slurm_mutex_lock(&job->state_mutex);
 	debug3("before main state loop: state = %d", job->state);
-	while ((job->state != SRUN_JOB_OVERDONE) && 
-	       (job->state != SRUN_JOB_FAILED  )) {
+	while (!_job_all_done(job)) 
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
-	}
 	slurm_mutex_unlock(&job->state_mutex);
 
 	/* job is now overdone, clean up  */
@@ -216,26 +215,26 @@ srun(int ac, char **av)
 		fwd_signal(job, SIGINT);
 	}
 
-	/* kill launch thread */
-	pthread_cancel(job->lid);
-
-	/* kill msg server thread */
-	pthread_cancel(job->jtid);
-
-	/* wait for stdio */
-	if (pthread_join(job->ioid, NULL) < 0) {
-		error ("Waiting on IO: %m");
-	}
-
+	/* Tell slurmctld that job is done */
 	job_destroy(job);
 
-	/* kill signal thread */
-	pthread_cancel(job->sigid);
-	log_fini();
+	/* wait for launch thread */
+	if (pthread_join(job->lid, NULL) < 0)
+		error ("Waiting on launch thread: %m");
 
+	/* wait for stdio */
+	if (pthread_join(job->ioid, NULL) < 0)
+		error ("Waiting on IO: %m");
+
+	/* kill msg server thread */
+	pthread_kill(job->jtid,  SIGHUP);
+
+	/* kill signal thread */
+	pthread_kill(job->sigid, SIGHUP);
+
+	log_fini();
 	return 0;
 }
-
 
 /*
  * allocate nodes from slurm controller via slurm api
@@ -351,6 +350,15 @@ _sig_kill_alloc(int signum)
 
 }
 
+static bool _job_all_done(job_t *job)
+{
+	if ((job->state == SRUN_JOB_DETACHED ) ||
+	    (job->state == SRUN_JOB_FAILED   ) ||
+	    (job->state == SRUN_JOB_OVERDONE))
+		return true;
+	else
+		return false;
+}
 
 
 #ifdef HAVE_LIBELAN3

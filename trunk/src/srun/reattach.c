@@ -66,8 +66,9 @@ typedef struct thd {
 	job_t          *job;
 } thd_t;
 
-static void p_reattach(slurm_msg_t *req, job_t *job);
-static void * p_reattach_task(void *args);
+static inline bool	 _job_all_done(job_t *job);
+static void		 _p_reattach(slurm_msg_t *req, job_t *job);
+static void 		*_p_reattach_task(void *args);
 
 typedef struct _srun_step {
 	uint32_t  jobid;
@@ -323,7 +324,7 @@ _attach_to_job(job_t *job)
 		slurm_set_addr_char(&m->address, port, job->host[i]);
 	}
 
-	p_reattach(msg, job);
+	_p_reattach(msg, job);
 
 	return SLURM_SUCCESS;
 }
@@ -353,7 +354,7 @@ _attr_init(pthread_attr_t *attr)
 }
 
 static void
-p_reattach(slurm_msg_t *msg, job_t *job)
+_p_reattach(slurm_msg_t *msg, job_t *job)
 {
 	int i;
 	thd_t *thd = xmalloc(job->nhosts * sizeof(thd_t));
@@ -374,9 +375,9 @@ p_reattach(slurm_msg_t *msg, job_t *job)
 			exit(1);
 
 		if (pthread_create( &thd[i].thread, &thd[i].attr,
-				    p_reattach_task, (void *) &thd[i])) {
+				    _p_reattach_task, (void *) &thd[i])) {
 			error("pthread_create: %m");
-			p_reattach_task((void *) &thd[i]);
+			_p_reattach_task((void *) &thd[i]);
 		}
 
 	}
@@ -390,7 +391,7 @@ p_reattach(slurm_msg_t *msg, job_t *job)
 }
 
 static void *
-p_reattach_task(void *arg)
+_p_reattach_task(void *arg)
 {
 	thd_t *t   = (thd_t *) arg;
 	int rc     = 0;
@@ -469,7 +470,7 @@ int reattach()
 		log_set_argv0(new_argv0);
 	}
 
-	if (opt.join)
+/*	if (opt.join)    MARK: IS THIS NEEDED?? */
 		sig_setup_sigmask();
 
 	if (msg_thr_create(job) < 0) {
@@ -489,21 +490,33 @@ int reattach()
 	_attach_to_job(job);
 
 	slurm_mutex_lock(&job->state_mutex);
-	while (   (job->state != SRUN_JOB_OVERDONE)
-	       && (job->state != SRUN_JOB_FAILED  )
-	       && (job->state != SRUN_JOB_DETACHED) )
+	while (!_job_all_done(job)) 
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	slurm_mutex_unlock(&job->state_mutex);
 
-	if (job->state == SRUN_JOB_FAILED) {
+	if (job->state == SRUN_JOB_FAILED)
 		error ("Attach to job failed!");
-	}
 
-	pthread_cancel(job->jtid);
-	pthread_join(job->ioid, NULL);
+	/* wait for stdio */
+	if (pthread_join(job->ioid, NULL) < 0)
+		error ("Waiting on IO: %m");
+
+	/* kill msg server thread */
+	pthread_kill(job->jtid, SIGHUP);
 
 	/* _complete_job(job); */
 	
 	exit(0);
+}
+
+
+static bool _job_all_done(job_t *job)
+{
+	if ((job->state == SRUN_JOB_DETACHED ) ||
+	    (job->state == SRUN_JOB_FAILED   ) ||
+	    (job->state == SRUN_JOB_OVERDONE))
+		return true;
+	else
+		return false;
 }
 

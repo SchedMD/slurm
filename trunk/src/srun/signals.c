@@ -72,11 +72,21 @@ typedef struct task_info {
  */
 static void   _sigterm_handler(int);
 static void   _handle_intr(job_t *, time_t *, time_t *); 
+static inline bool _job_sig_done(job_t *job);
 static void   _sig_thr_setup(sigset_t *set);
 static void * _sig_thr(void *);
 static void   _p_fwd_signal(slurm_msg_t *, job_t *);
 static void * _p_signal_task(void *);
 
+
+static bool _job_sig_done(job_t *job)
+{
+	if ((job->state == SRUN_JOB_DETACHED) ||
+	    (job->state == SRUN_JOB_OVERDONE))
+		return true;
+	else
+		return false;
+}
 
 int 
 sig_setup_sigmask(void)
@@ -96,6 +106,7 @@ sig_setup_sigmask(void)
 	}
 
 	xsignal(SIGTERM, &_sigterm_handler);
+	xsignal(SIGHUP,  &_sigterm_handler);	/* just an interupt */
 
 	return SLURM_SUCCESS;
 }
@@ -211,7 +222,7 @@ _sig_thr(void *arg)
 	time_t last_intr_sent = 0;
 	int signo;
 
-	while (1) {
+	while (!_job_sig_done(job)) {
 
 		_sig_thr_setup(&set);
 
