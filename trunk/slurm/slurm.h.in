@@ -886,6 +886,15 @@ extern int slurm_pid2jobid PARAMS(( pid_t job_pid, uint32_t * job_id_ptr )) ;
  */
 extern int slurm_update_job PARAMS(( job_desc_msg_t * job_msg )) ;
 
+/*
+ * slurm_get_select_jobinfo - get data from a select job credential
+ * IN jobinfo  - updated select job credential
+ * IN data_type - type of data to enter into job credential
+ * IN/OUT data - the data to enter into job credential
+ * RET 0 or -1 on error
+ */
+extern int slurm_get_select_jobinfo PARAMS((select_jobinfo_t jobinfo,
+		enum select_data_type data_type, void *data));
 
 /*****************************************************************************\
  *	SLURM JOB STEP CONFIGURATION READ/PRINT/UPDATE FUNCTIONS

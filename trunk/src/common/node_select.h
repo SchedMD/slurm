@@ -106,7 +106,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo);
  * IN data - the data to enter into job credential
  */
 extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
-		int data_type, void *data);
+		enum select_data_type data_type, void *data);
 
 /* get data from a select job credential
  * IN jobinfo  - updated select job credential
@@ -114,7 +114,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
  * IN/OUT data - the data to enter into job credential
  */
 extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
-		int data_type, void *data);
+		enum select_data_type data_type, void *data);
 
 /* copy a select job credential
  * IN jobinfo - the select job credential to be copied
