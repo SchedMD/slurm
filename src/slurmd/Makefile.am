@@ -35,8 +35,8 @@ LDADD = $(top_srcdir)/src/common/libcommon.a
 # need to create a rule to build each binary from an object file with _d suffix
 # as these will have been compiled with -DDEBUG_MODULE
 #
-Read_Proc$(EXEEXT)     : Read_Proc_d.o
-Get_Mach_Stat$(EXEEXT) : Get_Mach_Stat_d.o
+Read_Proc     : Read_Proc_d.o
+Get_Mach_Stat : Get_Mach_Stat_d.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $< $(LDADD)
