@@ -37,6 +37,13 @@
 extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 
 /*
+ * getnodename - equivalent to gethostname(), but return only the first 
+ *      component of the fully qualified name (e.g. "linux123.foo.bar" 
+ *      becomes "linux123") 
+ */
+extern int getnodename (char *name, size_t len);
+
+/*
  * parse_config_spec - parse the overall configuration specifications, update  
  *	values
  * IN/OUT in_line - input line, parsed info overwritten with white-space

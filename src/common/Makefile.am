@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
 if WITH_ELAN
-elan_sources = qsw.c
+elan_sources = qsw.c qsw.h
 else
 elan_sources = 
 endif
@@ -17,33 +17,43 @@ else
 auth_sources = slurm_auth_authd.c
 endif
 
-noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la libcred.la 
+noinst_LTLIBRARIES = 	\
+	libcommon.la 	\
+	libdaemonize.la \
+	libcred.la	\
+	libhostlist.la	\
+        libeio.la
 
-libcommon_la_SOURCES = 	\
-	xmalloc.c 	\
-	xassert.c	\
-	xstring.c	\
-	xsignal.c	\
-	strlcpy.c	\
-	list.c  	\
-	fd.c		\
-	log.c		\
-	eio.c		\
-	cbuf.c		\
-	safeopen.c	\
-	bitstring.c     \
-	pack.c		\
-	hostlist.c	\
-	parse_spec.c	\
-	plugin.c	\
-	read_config.c	\
-	slurm_errno.c	\
-	slurm_protocol_api.c	\
-	slurm_protocol_pack.c	\
-	slurm_protocol_util.c	\
+
+libcommon_la_SOURCES = 			\
+	xmalloc.c xmalloc.h 		\
+	xassert.c xassert.h		\
+	xstring.c xstring.h		\
+	xsignal.c xsignal.h		\
+	strlcpy.c strlcpy.h		\
+	list.c list.h 			\
+	fd.c fd.h			\
+	log.c log.h			\
+	cbuf.c cbuf.h			\
+	safeopen.c safeopen.h		\
+	bitstring.c bitstring.h 	\
+	pack.c pack.h			\
+	parse_spec.c parse_spec.h	\
+	plugin.c plugin.h		\
+	read_config.c read_confi.h	\
+	slurm_errno.c			\
+	slurm_protocol_api.c		\
+ 	slurm_protocol_api.h		\
+	slurm_protocol_pack.c		\
+	slurm_protocol_pack.h		\
+	slurm_protocol_util.c		\
+	slurm_protocol_util.h		\
 	slurm_protocol_socket_implementation.c	\
-	slurm_protocol_defs.c	\
-	util-net.c	\
+	slurm_protocol_socket_implementation.h	\
+	slurm_protocol_defs.c		\
+	slurm_protocol_defs.h		\
+	util-net.c util-net.h		\
+	slurm_auth.h			\
 	$(elan_sources) \
         $(auth_sources)
 
@@ -51,49 +61,25 @@ include_HEADERS =	\
 	hostlist.h	\
 	slurm_errno.h
 
-noinst_HEADERS = 	\
-	xmalloc.h 	\
-	xassert.h 	\
-	xstring.h	\
-	xsignal.h	\
-	macros.h	\
-	list.h 		\
-	log.h 		\
-	eio.h		\
-	cbuf.h		\
-	fd.h		\
-	safeopen.h	\
-	strlcpy.h	\
-	bitstring.h     \
-	pack.h		\
-	parse_spec.h	\
-	plugin.h	\
-	read_config.h	\
-	slurm_auth.h    \
-	slurm_protocol_api.h	\
-	slurm_protocol_pack.h	\
-	slurm_protocol_util.h	\
-	slurm_protocol_defs.h	\
-	slurm_protocol_common.h	\
-	slurm_protocol_socket_common.h	\
-	slurm_protocol_mongo_common.h	\
-	slurm_protocol_interface.h	\
-	util-net.h	\
-	qsw.h			
-
 libdaemonize_la_SOURCES =  \
 	daemonize.c        \
 	daemonize.h        \
-        fd.c fd.h
+	fd.c fd.h
 
 libcred_la_SOURCES =       \
-        credential_utils.c \
+	credential_utils.c \
 	credential_utils.h \
 	signature_utils.c  \
 	signature_utils.h
 
+libhostlist_la_SOURCES   = \
+	hostlist.c hostlist.h
+
+libeio_la_SOURCES = 	   \
+	eio.c eio.h
+
 EXTRA_libcommon_la_SOURCES = \
-	qsw.c
+	qsw.c qsw.h
 
 libcommon_la_LIBADD   = $(AUTHD_LIBS) $(SSL_LIBS)
 libcred_la_LIBADD     = $(SSL_LIBS) 

@@ -42,7 +42,6 @@
 
 #include "src/api/slurm.h"
 #include "src/common/slurm_protocol_defs.h"
-#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/parse_spec.h"
@@ -57,6 +56,37 @@
 inline static void _normalize_debug_level(uint16_t *level);
 static int  _parse_node_spec (char *in_line);
 static int  _parse_part_spec (char *in_line);
+
+
+/* getnodename - equivalent to gethostname, but return only the first 
+ * component of the fully qualified name 
+ * (e.g. "linux123.foo.bar" becomes "linux123") 
+ */
+int
+getnodename (char *name, size_t len)
+{
+	int error_code, name_len;
+	char *dot_ptr, path_name[1024];
+
+	error_code = gethostname (path_name, sizeof(path_name));
+	if (error_code)
+		return error_code;
+
+	dot_ptr = strchr (path_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = path_name + strlen(path_name);
+	else
+		dot_ptr[0] = '\0';
+
+	name_len = (dot_ptr - path_name);
+	if (name_len > len)
+		return ENAMETOOLONG;
+
+	strcpy (name, path_name);
+	return 0;
+}
+
+
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 

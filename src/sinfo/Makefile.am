@@ -7,9 +7,10 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = $(POPT_INCLUDES) -I$(top_srcdir) -I$(top_srcdir)/src/api
 bin_PROGRAMS = sinfo
 
-sinfo_LDADD =					\
-	$(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la 	\
+sinfo_LDADD =					  \
+	$(top_builddir)/src/common/libcommon.la   \
+	$(top_builddir)/src/common/libhostlist.la \
+	$(top_builddir)/src/api/libslurm.la 	  \
 	$(POPT_LIBS)
 
 noinst_HEADERS = sinfo.h
