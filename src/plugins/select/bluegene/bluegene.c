@@ -43,7 +43,7 @@
 #include "src/common/parse_spec.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "bgl_job.h"
+#include "bgl_job_place.h"
 #include "bluegene.h"
 #include "partition_sys.h"
 #include "state_test.h"
