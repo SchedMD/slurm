@@ -42,18 +42,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE, "Requested node configuration is not available" },
 	{ ESLURM_NODES_BUSY,			"Requested nodes are busy" },
 	{ ESLURM_INVALID_JOB_ID,		"Invalid job id specified" },
-	{ ESLURM_INVALID_NODE_NAMES,		"Invalid node name specified" },
+	{ ESLURM_INVALID_NODE_NAME,		"Invalid node name specified" },
 	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
-	{ fBESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
+	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 
-	/* partition_mgr.c/update_part */
-	{ ESLURM_INVALID_NODE_NAME_SPECIFIED, 	"Invalid node name specified" },
-
-	/* node_mgr.c/update_node */
-	{ ESLURM_INVALID_NODE_NAME,		"Invalid node name specified" },
-
-	/* step_mgr.c */
 	{ ESLURM_ACCESS_DENIED,			"Access denied" }
 };
 
