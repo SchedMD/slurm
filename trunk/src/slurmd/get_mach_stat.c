@@ -1,6 +1,6 @@
 /*
  * get_mach_stat.c - Get the status of the current machine and return it in the standard 
- *	node configuration format "Name=linux.llnl.gov CPUs=4 ..."
+ *	node configuration format "Name=linux.llnl.gov procs=4 ..."
  * NOTE: Most of these modules are very much system specific. Built on RedHat2.4
  * NOTE: While not currently used by SLURM, this code can also get a nodes OS name 
  *       and CPU speed. See code ifdef'ed out via USE_OS_NAME and USE_CPU_SPEED
@@ -24,216 +24,211 @@
 
 #include "slurm.h"
 
-int Get_CPUs(int *CPUs);
-int Get_Mach_Name(char *Node_Name);
-int Get_Memory(int *RealMemory);
-int Get_TmpDisk(int *TmpDisk);
+int get_procs(uint32_t *procs);
+int get_mach_name(char *node_name);
+int get_memory(uint32_t *real_memory);
+int get_tmp_disk(uint32_t *tmp_disk);
 #ifdef USE_OS_NAME
-int Get_OS_Name(char *OS_Name);
+int get_os_name(char *os_name);
 #endif
 #ifdef USE_CPU_SPEED
-int Get_Speed(float *Speed);
+int get_speed(float *speed);
 #endif
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main(int argc, char * argv[]) {
-    int Error_Code;
-    struct Config_Record This_Node;
-    char NodeName[MAX_NAME_LEN];
+int 
+main(int argc, char * argv[]) 
+{
+	int error_code;
+	struct config_record this_node;
+	char node_name[MAX_NAME_LEN];
 
-    Error_Code = Get_Mach_Name(NodeName);
-    if (Error_Code != 0) exit(1);    /* The show is all over without a node name */
+	error_code = get_mach_name(node_name);
+	if (error_code != 0) 
+		exit(1);    /* The show is all over without a node name */
 
-    Error_Code += Get_CPUs(&This_Node.CPUs);
-    Error_Code += Get_Memory(&This_Node.RealMemory);
-    Error_Code += Get_TmpDisk(&This_Node.TmpDisk);
+	error_code += get_procs(&this_node.cpus);
+	error_code += get_memory(&this_node.real_memory);
+	error_code += get_tmp_disk(&this_node.tmp_disk);
 
-    printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d\n", 
-	NodeName, This_Node.CPUs, This_Node.RealMemory, This_Node.TmpDisk);
-    if (Error_Code != 0) printf("Get_Mach_Stat Errors encountered, Error_Code=%d\n", Error_Code);
-    exit (Error_Code);
-} /* main */
+	printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d\n", 
+		node_name, this_node.cpus, this_node.real_memory, 
+		this_node.tmp_disk);
+	if (error_code != 0) 
+		printf("get_mach_stat error_code=%d encountered\n", error_code);
+	exit (error_code);
+}
 #endif
 
 
 /*
- * Get_CPUs - Return the count of CPUs on this system 
- * Input: CPUs - buffer for the CPU count
- * Output: CPUs - filled in with CPU count, "1" if error
+ * get_procs - Return the count of procs on this system 
+ * Input: procs - buffer for the CPU count
+ * Output: procs - filled in with CPU count, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_CPUs(int *CPUs) {
-    int My_CPU_Tally;
+int 
+get_procs(uint32_t *procs) 
+{
+	int my_proc_tally;
 
-    *CPUs = 1;
-    My_CPU_Tally = (int)sysconf(_SC_NPROCESSORS_ONLN);
-    if (My_CPU_Tally < 1) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
-#else
-	syslog(LOG_ALERT, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
-#endif
-	return EINVAL;
-    } /* if */
+	*procs = 1;
+	my_proc_tally = (int)sysconf(_SC_NPROCESSORS_ONLN);
+	if (my_proc_tally < 1) {
+		error ("get_procs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
+		return EINVAL;
+	} 
 
-    *CPUs = My_CPU_Tally;
-    return 0;
-} /* Get_CPUs */
+	*procs = my_proc_tally;
+	return 0;
+}
 
 
 #ifdef USE_OS_NAME
 /*
- * Get_OS_Name - Return the operating system name and version 
- * Input: OS_Name - buffer for the OS name, must be at least MAX_OS_LEN characters
- * Output: OS_Name - filled in with OS name, "UNKNOWN" if error
+ * get_os_name - Return the operating system name and version 
+ * Input: os_name - buffer for the OS name, must be at least MAX_OS_LEN characters
+ * Output: os_name - filled in with OS name, "UNKNOWN" if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_OS_Name(char *OS_Name) {
-    int Error_Code;
-    struct utsname Sys_Info;
+int 
+get_os_name(char *os_name) 
+{
+	int error_code;
+	struct utsname sys_info;
 
-    strcpy(OS_Name, "UNKNOWN");
-    Error_Code = uname(&Sys_Info);
-    if (Error_Code != 0) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_OS_Name: uname error %d\n", Error_Code);
-#else
-	syslog(LOG_WARNING, "Get_OS_Name: uname error %d\n", Error_Code);
-#endif
-	return Error_Code;
-    } /* if */
+	strcpy(os_name, "UNKNOWN");
+	error_code = uname(&sys_info);
+	if (error_code != 0) {
+		error ("get_os_name: uname error %d\n", error_code);
+		return error_code;
+	} 
 
-    if ((strlen(Sys_Info.sysname) + strlen(Sys_Info.release) + 2) >= MAX_OS_LEN) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_OS_Name: OS name too long\n");
-#else
-	syslog(LOG_ALERT, "Get_OS_Name: OS name too long\n");
-#endif
-	return Error_Code;
-    } /* if */
+	if ((strlen(sys_info.sysname) + strlen(sys_info.release) + 2) >= 
+		MAX_OS_LEN) {
+		error ("get_os_name: OS name too long\n");
+		return error_code;
+	} 
 
-    strcpy(OS_Name, Sys_Info.sysname);
-    strcat(OS_Name, ".");
-    strcat(OS_Name, Sys_Info.release);
-    return 0;
-} /* Get_OS_Name */
+	strcpy(os_name, sys_info.sysname);
+	strcat(os_name, ".");
+	strcat(os_name, sys_info.release);
+	return 0;
+}
 #endif
 
 
 /*
- * Get_Mach_Name - Return the name of this node 
- * Input: Node_Name - buffer for the node name, must be at least MAX_NAME_LEN characters
- * Output: Node_Name - filled in with node name
+ * get_mach_name - Return the name of this node 
+ * Input: node_name - buffer for the node name, must be at least MAX_NAME_LEN characters
+ * Output: node_name - filled in with node name
  *         return code - 0 if no error, otherwise errno
  */
-int Get_Mach_Name(char *Node_Name) {
-    int Error_Code;
+int 
+get_mach_name(char *node_name) 
+{
+    int error_code;
 
-    Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
-    if (Error_Code != 0) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_Mach_Name: gethostname error %d\n", Error_Code);
-#else
-	syslog(LOG_ALERT, "Get_Mach_Name: gethostname error %d\n", Error_Code);
-#endif
-    } /* if */
+    error_code = gethostname(node_name, MAX_NAME_LEN);
+    if (error_code != 0)
+	error ("get_mach_name: gethostname error %d\n", error_code);
 
-    return Error_Code;
-} /* Get_Mach_Name */
+    return error_code;
+}
 
 
 /*
- * Get_Memory - Return the count of CPUs on this system 
- * Input: RealMemory - buffer for the Real Memory size
- * Output: RealMemory - the Real Memory size in MB, "1" if error
+ * get_memory - Return the count of procs on this system 
+ * Input: real_memory - buffer for the Real Memory size
+ * Output: real_memory - the Real Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_Memory(int *RealMemory) {
-    long pages;
+int
+get_memory(uint32_t *real_memory)
+{
+	long pages;
 
-    *RealMemory = 1;
-    pages = sysconf(_SC_PHYS_PAGES);
-    if (pages < 1) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_Memory: error running sysconf(_SC_PHYS_PAGES)\n");
-#else
-	syslog(LOG_ALERT, "Get_Memory: error running sysconf(_SC_PHYS_PAGES)\n");
-#endif
-	return EINVAL;
-    } /* if */
+	*real_memory = 1;
+	pages = sysconf(_SC_PHYS_PAGES);
+	if (pages < 1) {
+		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)\n");
+		return EINVAL;
+	} 
 
-    *RealMemory = (int)((float)pages * getpagesize() / 1048576.0); /* Megabytes of memory */
-    return 0;
+	*real_memory = (int)((float)pages * getpagesize() / 
+			1048576.0); /* Megabytes of memory */
+	return 0;
 }
 
 #ifdef USE_CPU_SPEED
 /*
- * Get_Speed - Return the speed of CPUs on this system (MHz clock)
- * Input: CPUs - buffer for the CPU speed
- * Output: CPUs - filled in with CPU speed, "1.0" if error
+ * get_speed - Return the speed of procs on this system (MHz clock)
+ * Input: procs - buffer for the CPU speed
+ * Output: procs - filled in with CPU speed, "1.0" if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_Speed(float *Speed) {
-    char buffer[128];
-    FILE *CPU_Info_File;
-    char *buf_ptr1, *buf_ptr2;
+int 
+get_speed(float *speed) 
+{
+	char buffer[128];
+	FILE *cpu_info_file;
+	char *buf_ptr1, *buf_ptr2;
 
-    *Speed = 1.0;
-    CPU_Info_File = fopen("/proc/cpuinfo", "r");
-    if (CPU_Info_File == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
-#else
-	syslog(LOG_ALERT, "Get_Speed: error %d opening /proc/cpuinfo\n", errno);
-#endif
-	return errno;
-    } /* if */
+	*speed = 1.0;
+	cpu_info_file = fopen("/proc/cpuinfo", "r");
+	if (cpu_info_file == NULL) {
+		error ("get_speed: error %d opening /proc/cpuinfo\n", errno);
+		return errno;
+	} 
 
-    while (fgets(buffer, sizeof(buffer), CPU_Info_File) != NULL) {
-	if ((buf_ptr1=strstr(buffer, "cpu MHz")) != NULL) {
-	    buf_ptr1 += 7;
-	    buf_ptr2 = strstr(buf_ptr1, ":");
-	    if (buf_ptr2 != NULL) buf_ptr1=buf_ptr2+1;
-	    *Speed = (float)strtod(buf_ptr1, (char **)NULL);
-	} /* if */
-    } /* while */
+	while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
+		if ((buf_ptr1 = strstr(buffer, "cpu MHz")) != NULL)
+			continue;
+		buf_ptr1 += 7;
+		buf_ptr2 = strstr(buf_ptr1, ":");
+		if (buf_ptr2 != NULL) 
+			buf_ptr1 = buf_ptr2 + 1;
+		*speed = (float) strtod (buf_ptr1, (char **)NULL);
+		break;
+	} 
 
-    fclose(CPU_Info_File);
-    return 0;
-} /* Get_Speed */
+	fclose(cpu_info_file);
+	return 0;
+} 
+
 #endif
 
 
 /*
- * Get_TmpDisk - Return the total size of /tmp file system on 
+ * get_tmp_disk - Return the total size of /tmp file system on 
  *    this system 
- * Input: TmpDisk - buffer for the disk space size
- * Output: TmpDisk - filled in with disk space size in MB, zero if error
+ * Input: tmp_disk - buffer for the disk space size
+ * Output: tmp_disk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_TmpDisk(int *TmpDisk) {
-    struct statfs Stat_Buf;
-    long   Total_Size;
-    int Error_Code, i;
-    float Page_Size;
+int 
+get_tmp_disk(uint32_t *tmp_disk) 
+{
+	struct statfs stat_buf;
+	long   total_size;
+	int error_code;
+	float page_size;
 
-    Error_Code = 0;
-    *TmpDisk = 0;
-    Total_Size = 0;
-    Page_Size = (getpagesize() / 1048576.0); /* Megabytes per page */
+	error_code = 0;
+	*tmp_disk = 0;
+	total_size = 0;
+	page_size = (getpagesize() / 1048576.0); /* Megabytes per page */
 
-    if (statfs(TMP_FS, &Stat_Buf) == 0) {
-	Total_Size = (long)Stat_Buf.f_blocks;
-    } else if (errno != ENOENT) {
-	Error_Code = errno;
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, TMP_FS);
-#else
-	syslog(LOG_ALERT, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, TMP_FS);
-#endif
-    } /* else */
+	if (statfs(TMP_FS, &stat_buf) == 0) {
+		total_size = (long)stat_buf.f_blocks;
+	}
+	else if (errno != ENOENT) {
+		error_code = errno;
+		error ("get_tmp_disk: error %d executing statfs on %s\n", 
+			errno, TMP_FS);
+	}
 
-    *TmpDisk += (long)(Total_Size * Page_Size);
-    return Error_Code;
-} /* Get_TmpDisk */
+	*tmp_disk += (long)(total_size * page_size);
+	return error_code;
+}
