@@ -13,4 +13,5 @@ EXTRA_DIST = \
 	html/programmer.guide.html \
 	html/plugins.html \
 	html/authplugins.html \
-	html/slurm.png 
+	html/slurm.png \
+	$(html_DATA)
