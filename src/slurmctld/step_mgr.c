@@ -327,6 +327,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	    (job_ptr->job_state == JOB_TIMEOUT) ||
 	    (job_ptr->job_state == JOB_STAGE_OUT))
 		return ESLURM_ALREADY_DONE;
+	job_ptr->time_last_active = time(NULL);
 
 #ifdef HAVE_LIBELAN3
 	if (step_specs->task_dist == SLURM_DIST_CYCLIC)

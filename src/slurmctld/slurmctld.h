@@ -174,7 +174,7 @@ extern time_t last_step_update;	*//* time of last update to job steps */
 
 extern int job_count;			/* number of jobs in the system */
 
-/* job_details - specification of a job's constraints */
+/* job_details - specification of a job's constraints, can be purged upon resource allocation */
 struct job_details {
 	uint32_t magic;			/* magic cookie to test data integrity */
 	uint16_t batch_flag;		/* 1 if batch job (with script) */
@@ -186,7 +186,6 @@ struct job_details {
 	char *features;			/* required features */
 	uint16_t shared;		/* 1 if more than one job can execute on a node */
 	uint16_t contiguous;		/* requires contiguous nodes, 1=true, 0=false */
-	uint16_t kill_on_node_fail;	/* 1 if job should be killed on on failure */
 	uint32_t min_procs;		/* minimum processors per node, MB */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
@@ -206,11 +205,13 @@ struct job_record {
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint32_t user_id;		/* user the job runs as */
 	enum job_states job_state;	/* state of the job */
+	uint16_t kill_on_node_fail;	/* 1 if job should be killed on on failure */
 	char *nodes;			/* comma delimited list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job */
 	uint32_t time_limit;		/* maximum run time in minutes or INFINITE */
-	time_t start_time;		/* time execution begins, actual or expected*/
+	time_t start_time;		/* time execution begins, actual or expected */
 	time_t end_time;		/* time of termination, actual or expected */
+	time_t time_last_active;	/* time of last job activity */
 	uint32_t priority;		/* relative priority of the job */
 	struct job_details *details;	/* job details (set until job terminates) */
 	uint16_t num_cpu_groups;	/* element count in arrays cpus_per_node and cpu_count_reps */
