@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) 
+INCLUDES = -I$(top_srcdir)
 
 #to build the executable
 # bin_PROGRAMS = partition_allocator
@@ -20,15 +20,13 @@ INCLUDES = -I$(top_srcdir)
 lib_LTLIBRARIES = libpartition_allocator.la 
 libpartition_allocator_la_SOURCES =    \
 	partition_allocator.c partition_allocator.h
-# 	graph_solver.c graph_solver.h\
-#         graph_structs.c	graph_structs.h
 
 libpartition_allocator_la_LIBADD  =  \
 	$(top_builddir)/src/common/libcommon.la -lpthread \
 	$(top_builddir)/src/api/libslurm.la
 
 libpartition_allocator_la_LDFLAGS        = \
-	$(LIB_LDFLAGS)  -lm    
+	$(LIB_LDFLAGS) -lm    
 
 libpartition_allocator_la_DEPENDENCIES  = \
 	$(top_builddir)/src/common/libcommon.la 
