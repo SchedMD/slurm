@@ -25,7 +25,7 @@ if [ -f /etc/sysconfig/slurm ] ; then
     . /etc/sysconfig/slurm
 else
     SLURMCTLD_OPTIONS="-c"
-    SLURMD_OPTIONS="-c"
+    SLURMD_OPTIONS=""
 fi
 
 [ -f /etc/slurm/slurm.conf ] || exit 1
