@@ -28,7 +28,6 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			pack.c		\
 			xerrno.c	\
 			hostlist.c	\
-			nodelist.c	\
 			slurm_protocol_api.c	\
 			slurm_protocol_pack.c	\
 			slurm_protocol_util.c	\
@@ -50,7 +49,6 @@ noinst_HEADERS = 	xmalloc.h 	\
 			pack.h		\
 			xerrno.h	\
 			hostlist.h	\
-			nodelist.h	\
 			slurm_protocol_api.h	\
 			slurm_protocol_pack.h	\
 			slurm_protocol_util.h	\
