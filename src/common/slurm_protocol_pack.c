@@ -1347,6 +1347,7 @@ void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , void *
 {
 	pack32 ( msg -> return_code , buffer , length ) ;
 	packstr ( msg -> node_name , buffer , length ) ;
+	pack32 ( msg -> srun_node_id , buffer , length ) ;
 }
 
 int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
@@ -1363,6 +1364,7 @@ int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , 
 
 	unpack32 ( & msg -> return_code , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> node_name , & uint16_tmp , buffer , length ) ;
+	unpack32 ( & msg -> srun_node_id , buffer , length ) ;
 	*msg_ptr = msg ;
 	return 0 ;
 }
@@ -1372,6 +1374,7 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** 
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
 	pack32 ( msg -> uid , buffer , length ) ;
+	pack32 ( msg -> srun_node_id , buffer , length ) ;
 	pack_job_credential ( msg -> credential , buffer , length ) ;
 	pack32 ( msg -> tasks_to_launch , buffer , length ) ;
 	packstring_array ( msg -> env , msg -> envc , buffer , length ) ;
@@ -1401,6 +1404,7 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , vo
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
 	unpack32 ( & msg -> uid , buffer , length ) ;
+	unpack32 ( & msg -> srun_node_id , buffer , length ) ;
 	unpack_job_credential( & msg -> credential ,  buffer , length ) ;
 	unpack32 ( & msg -> tasks_to_launch , buffer , length ) ;
 	unpackstring_array ( & msg -> env , & msg -> envc , buffer , length ) ;

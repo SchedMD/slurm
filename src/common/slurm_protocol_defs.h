@@ -415,6 +415,7 @@ typedef struct launch_tasks_request_msg
 	uint32_t job_id ;
 	uint32_t job_step_id ;
 	uint32_t uid ;
+	uint32_t srun_node_id ;
 	slurm_job_credential_t* credential;
 	uint32_t tasks_to_launch ;
 	uint16_t envc ;
@@ -434,6 +435,7 @@ typedef struct launch_tasks_response_msg
 {
 	uint32_t return_code;
 	char * node_name ;
+	uint32_t srun_node_id ;
 } launch_tasks_response_msg_t ;
 
 typedef struct task_ext_msg
