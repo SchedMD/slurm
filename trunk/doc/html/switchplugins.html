@@ -189,7 +189,8 @@ node's switch state into a buffer for network transmission.</p>
 node's switch state record.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer onto
 which the switch state information is appended.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
+<p style="margin-left:.2in"><b>Returns</b>: 
+The number of bytes written should be returned if successful. On failure,
 the plugin should return SLURM_ERROR and set the errno to an appropriate value
 to indicate the reason for failure.</p>
 
@@ -281,7 +282,8 @@ switch credential into a buffer for network transmission.</p>
 switch credential.<br>
 <span class="commandline"> buffer</span>&nbsp; &nbsp;&nbsp;(input/output) buffer onto 
 which the credential's contents are appended.</p>
-<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+<p style="margin-left:.2in"><b>Returns</b>: 
+The number of bytes written should be returned if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
