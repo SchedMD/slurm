@@ -1,0 +1,328 @@
+.TH SINFO "1" "July 2003" "sinfo 0.2" "Slurm components"
+
+.SH "NAME"
+sinfo \- Used to view information about Slurm nodes and partitions.
+
+.SH "SYNOPSIS"
+\fBsinfo\fR [\fIOPTIONS\fR...] 
+.SH "DESCRIPTION"
+\fBsinfo\fR is used to view partition and node information for a 
+system running SLURM. 
+
+.SH "OPTIONS"
+.TP
+\fB\-?\fR, \fB\-\-help\fR
+Print a help message describing the usage of \fBsinfo\fR.
+.TP
+\fB\-e\fR, \fB\-\-exact\fR
+If set, do not group node information on multiple nodes unless their 
+configurations to be reported are identical. Otherwise cpu count, 
+memory size, and disk space for nodes will be listed with the minimum 
+value followed by a "+" for nodes with the same partition and state 
+(e.g., "250+").
+.TP
+\fB\-h\fR, \fB\-\-noheader\fR
+Do not print a header on the output.
+.TP
+\fB\-i <seconds>\fR , \fB\-\-iterate=<seconds>\fR
+Print the state on a periodic basis. 
+Sleep for the indicated number of seconds between reports.
+.TP
+\fB\-l\fR , \fB\-\-long\fR
+Print more detailed information. 
+This is ignored if the \fB\-\-format\fR option is specified.
+.TP
+\fB\-n <nodes>\fR , \fB\-\-nodes=<nodes>\fR
+Print information only about the specified node(s). 
+Multiple nodes may be comma separated or expressed using a 
+node range expression.
+For example "linux[00-07]" would indicate eight nodes, "linux00" 
+through "linux07".
+.TP
+\fB\-N\fR , \fB\-\-Node\fR
+Print information in a node-oriented format.
+The default is to print information in a partition-oriented format.
+This is ignored if the \fB\-\-format\fR option is specified.
+.TP
+\fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
+Specify the information to be displayed.  
+The default format is "%9P %5a %.9l %.5D %6t %N".
+If the \fB\-\-summarize\fR option is specified, the default 
+format is "%9P %5a %.9l %15F %N".
+If the \fB\-\-long\fR option is specified, the default format is 
+"%9P %5a %.9l %.8s %4r %5h %10g %.5D %11T %N". 
+If the \fB\-\-Node\fR option is specified, the default format is 
+"%#N %.5D %9P %6t". 
+If the \fB\-\-Node\fR and \fB\-\-long\fR options are both specified, 
+the default format is "%#N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f %R".
+In the above two formats the value of "#" represents the maximum 
+length of an node list to be printed.
+
+The field specifications available include: 
+.br
+\fB%a\fR State/availability of a partition
+.br
+\fB%A\fR Number of nodes by state in the format "allocated/idle". 
+Do not use this with a node state option ("%t" or "%T") or 
+the different node states will be placed on separate lines.
+.br
+\fB%c\fR Number of CPUs per node
+.br
+\fB%d\fR Size of temporary disk space per node in megabytes
+.br
+\fB%D\fR Number of nodes
+.br
+\fB%f\fR Features associated with the nodes
+.br
+\fB%F\fR Number of nodes by state in the format "allocated/idle/other/total". 
+Do not use this with a node state option ("%t" or "%T") or 
+the different node states will be placed on separate lines.
+.br
+\fB%g\fR Groups which may use the nodes
+.br
+\fB%h\fR Jobs may share nodes, "yes", "no", or "force"
+.br
+\fB%l\fR Maximum time for any job in the format "days:hours:minutes:seconds"
+.br
+\fB%m\fR Size of memory per node in megabytes
+.br
+\fB%N\fR List of node names
+.br
+\fB%P\fR Partition name
+.br
+\fB%r\fR Only user root may initiate jobs, "yes" or "no"
+.br
+\fB%R\fR The reason a node is unavailable (down, drained, or draining states)
+.br
+\fB%s\fR Maximum job size in nodes
+.br
+\fB%t\fR State of nodes, compact form
+.br
+\fB%T\fR State of nodes, extended form
+.br
+\fB%w\fR Scheduling weight of the nodes
+.br
+\fB%.<*>\fR right justification of the field
+.br 
+\fB%<Number><*>\fR size of field
+.TP
+\fB\-s\fR , \fB\-\-summarize\fR
+List only a partition state summary with no node state details.
+This is ignored if the \fB\-\-format\fR option is specified.
+.TP
+\fB\-S <sort_list>\fR , \fB\-\-sort=<sort_list>\fR
+Specification of the order in which records should be reported.
+This uses the same field specifciation as the <output_format>.
+Multiple sorts may be performed by listing multiple sort fields 
+separated by commas.
+The field specifications may be preceeded by "+" or "-" for 
+assending (default) and desending order respectively. 
+For example, a sort value of "P,-m" requests that records be 
+printed in order of increasing partition name and within a 
+partition by decreasing memory size.
+The default value of sort is "P,-t" (increasing partition name 
+then decreasing node state).
+If the "--Node" option is selected, the default sort value is 
+"N" (increasing node name). 
+.TP
+\fB\-t <state>\fR , \fB\-\-states=<states>\fR
+List nodes only having the given state(s).
+Multiple states may be comma separated and the comparison is case 
+insensitive. 
+Possible values include: ALLOC, ALLOCATED, COMP, 
+COMPLETING, DOWN, DRAIN, DRAINED, DRAINING, IDLE, UNK, and UNKNOWN.
+A "*" suffix may be appended to any of these states to search for 
+nodes in the specified state which are not responding. 
+By default nodes in the specified state are reported whether they are 
+responding or not.
+.TP
+\fB\-p <partition>\fR, \fB\-\-partition=<partition>\fR
+Print information only about the specified partition.  
+.TP
+\fB\-\-usage\fR
+Dipaly brief description of commands and options.
+.TP
+\fB\-v\fR , \fB\-\-verbose\fR
+Provide detailed event logging through program execution.
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
+
+.SH "OUTPUT"
+.TP
+\fBAVAIL\fR
+Partition state, \fBup\fR or \fBdown\fR.
+.TP
+\fBCPUS\fR
+Count of CPUs (processors) on these nodes.
+.TP
+\fBGROUPS\fR
+Resource allocations in this partition are restricted to the named groups.
+\fBall\fR indicates that all groups may use this partition.
+.TP
+\fBJOB_SIZE\fR
+Minimum and maximum node count that can be allocated to any user job. 
+A single number indicates the minimum and maximum node count are the 
+same.
+\fBinfinite\fR is used to identify partitions without a maximum node count.
+.TP
+\fBTIMELIMIT\fR
+Maximum time limit for any user job in days:hours:minutes:seconds.
+\fBinfinite\fR is used to identify partitions without a job time limit.
+.TP
+\fBMEMORY\fR
+Size of real memory in megabytes on these nodes.
+.TP
+\fBNODELIST\fR
+Names of nodes associated with this configuration/partition.
+.TP
+\fBNODES\fR
+Count of nodes with this particular configuration.
+.TP
+\fBNODES(A/I)\fR
+Count of nodes with this particular configuration by node 
+state in the form "available/idle".
+.TP
+\fBNODES(A/I/O/T)\fR
+Count of nodes with this particular configuration by node
+state in the form "available/idle/other/total".
+.TP
+\fBPARTITION\fR
+Name of a partition. 
+Note that the suffix "*" identifies the default partition.
+.TP
+\fBROOT\fR
+Is the ability to allocate resources in this partition restricted to 
+user root, \fByes\fR or \fBno\fR.
+.TP
+\fBSHARE\fR
+Will jobs allocated resources in this partition share those resources.
+\fBno\fR indicates resources are never shared. 
+\fBforce\fR indicates resources are always available to be shared.
+\fByes\fR indicates resource may be shared or not per job's resource 
+allocation.
+.TP
+\fBSTATE\fR
+State of the nodes. Note that the suffix "*" identifies nodes 
+that are presently not responding.
+.TP
+\fBTMP_DISK\fR
+Size of temporary disk space in megabytes on these nodes.
+
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBsinfo\fR options may be set via environment variables. These 
+environment variables, along with their corresponding options, are listed 
+below. (Note: Commandline options will always override these settings.)
+.TP 20
+SINFO_FORMAT
+\fB\-o <output_format>, \-\-format=<output_format>\fR
+.TP
+SINFO_PARTITION
+\fB\-p <partition>, \-\-partition=<partition>\fR
+.TP
+SINFO_SORT
+\fB\-S <sort>, \-\-sort=<sort>\fR
+
+.SH "EXAMPLES"
+.eo
+Report basic node and partition configurations:
+.br
+> sinfo
+.br
+PARTITION AVAIL TIMELIMIT NODES STATE  NODELIST
+.br
+batch     up     infinite     2 alloc  adev[8-9]
+.br
+batch     up     infinite     6 idle   adev[10-15]
+.br
+debug*    up        30:00     8 idle   adev[0-7]
+.br
+ 
+.br
+Report partition summary information:
+.br
+> sinfo -s
+.br
+PARTITION AVAIL TIMELIMIT NODES(A/I/O/T) NODELIST
+.br
+batch     up     infinite 2/6/0/8        adev[8-15]
+.br
+debug*    up        30:00 0/8/0/8        adev[0-7]
+.br
+ 
+.br
+Report more complete information about the partition debug:
+.br
+> sinfo --long --partition=debug
+.br
+PARTITION AVAIL TIMELIMIT JOB_SIZE ROOT SHARE GROUPS NODES STATE NODELIST
+.br
+debug*    up        30:00        8 no   no    all        8 idle  dev[0-7]
+.br
+
+.br
+Report only those nodes that are in state DRAINED:
+.br
+> sinfo --states=drained
+.br
+PARTITION AVAIL NODES TIMELIMIT STATE  NODELIST
+.br
+debug*    up        2     30:00 drain  adev[6-7]
+.br
+
+.br
+Report node-oriented information with details and exact matches:
+.br
+> sinfo -Nel
+.br
+NODELIST    NODES PARTITION STATE  CPUS MEMORY TMP_DISK WEIGHT FEATURES REASON
+.br
+adev[0-1]       2 debug*    idle      2   3448    38536     16 (null)   (null)
+.br
+adev[2,4-7]     5 debug*    idle      2   3384    38536     16 (null)   (null)
+.br
+adev3           1 debug*    idle      2   3394    38536     16 (null)   (null)
+.br
+adev[8-9]       2 batch     allocated 2    246    82306     16 (null)   (null)
+.br
+adev[10-15]     6 batch     idle      2    246    82306     16 (null)   (null)
+.br
+
+.br
+Report only down, drained and draining nodes and their reason field:
+.br
+> sinfo --states=down,drained,draining --sort=N --format="%12N %9T %R"
+.br
+NODELIST     STATE     REASON
+.br
+dev[12,18]   DRAINED   power supply, ETA Dec25
+.br
+dev45        DOWN*     (null)
+.br
+dev123       DRAINED   memory, ETA Nov24
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBscontrol\fR(1), \fBsqueue\fR(1), 
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
