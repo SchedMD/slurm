@@ -194,6 +194,8 @@ int main(int argc, char *argv[])
 			fatal("chdir to %s error %m",
 			      slurmctld_conf.state_save_location);
 		error_code = daemon(0, 0);
+		log_alter(log_opts, LOG_DAEMON, 
+			  slurmctld_conf.slurmctld_logfile);
 		if (error_code)
 			error("daemon error %d", error_code);
 	}
