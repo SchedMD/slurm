@@ -14,33 +14,49 @@
  */
 
 #include <time.h>
+#include "list.h"
 
 #define MAX_NAME_LEN 32
 #define MAX_OS_LEN 20
 #define MAX_PARTITION 32
 #define MAX_PART_LEN 16
 
-#define DEFAULT_NODE_SPEC_CONF  "/usr/local/SLURM/NodeSpecConf"
-#define DEFAULT_PARTITION_CONF  "/usr/local/SLURM/PartitionConf"
-#define DEFAULT_MASTER_DAEMON   "/usr/local/SLURM/Slurmd.Master"
-#define DEFAULT_CONTROL_DAEMON  "/usr/local/SLURM/Slurmd.Control"
-#define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd.Server"
-#define DEFAULT_TMP_FS		"/tmp"
-#define DEFAULT_CONTROLLER_TIMEOUT 300
-#define DEFAULT_SERVER_TIMEOUT  300
+#define BACKUP_INTERVAL		60
+#define BACKUP_LOCATION		"/usr/local/SLURM/Slurm.state"
+#define CONTROL_DAEMON  	"/usr/local/SLURM/Slurmd.Control"
+#define CONTROLLER_TIMEOUT 	300
+#define EPILOG			""
+#define HASH_BASE		10
+#define HEARTBEAT_INTERVAL	60
+#define INIT_PROGRAM		""
+#define MASTER_DAEMON   	"/usr/local/SLURM/Slurmd.Master"
+#define PROLOG			""
+#define SERVER_DAEMON   	"/usr/local/SLURM/Slurmd.Server"
+#define SERVER_TIMEOUT  	300
+#define SLURM_CONF		"/etc/SLURM.conf"
+#define TMP_FS			"/tmp"
 
-char *Administrators;		/* List of SLURM administrators */
 char *ControlMachine;		/* Name of computer acting as SLURM controller */
 char *BackupController;		/* Name of computer acting as SLURM backup controller */
-char *NodeSpecConf;		/* Location of SLURM node configuration file */
-char *PartitionConf;		/* Location of SLURM partition configuration file */
-char *InitProgram;		/* Location of MasterDaemon prolog, execute first and need exit code of zero */
-char *MasterDaemon;		/* Location of daemon to start other SLURM daemons */
-char *ControlDaemon;		/* Location of daemon executing on SLURM  controller */
-char *ServerDaemon;		/* Location of daemon executing on SLURM compute servers */
-int  ControllerTimeout;		/* How long to wait for ControlDeamon response to ping */
-int  ServerTimeout;		/* How long to wait for ServerDaemon to respond to ping */
 int  Node_Count;		/* Number of nodes in SLURM database */
+
+/* NOTE: Change JOB_STRUCT_VERSION value whenever the contents of "struct Job_Record" change */
+#define JOB_STRUCT_VERSION 1
+struct Job_Record {
+    int Job_Id;
+    int User_Id;
+    int MaxTime;		/* -1 if unlimited */
+};
+
+/* NOTE: Change CONFIG_STRUCT_VERSION value whenever the contents of "struct Config_Record" change */
+#define CONFIG_STRUCT_VERSION 1
+struct Config_Record {
+    int CPUs;				/* Count of CPUs running on the node */
+    int RealMemory;			/* Megabytes of real memory on the node */
+    long TmpDisk;			/* Megabytes of total storage in TMP_FS file system */
+    char *Feature;			/* Arbitrary list of features associated with a node */
+};
+List Config_List;			/* List of Config_Record entries */
 
 /* Last entry must be "END" */
 enum Node_State {
@@ -51,21 +67,19 @@ enum Node_State {
 	STATE_DRAINED, 		/* Node idle and not to be allocated future work */
 	STATE_DRAINING,		/* Node in use, but not to be allocated future work */
 	STATE_END };		/* LAST ENTRY IN TABLE */
+char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
 
 /* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define NODE_STRUCT_VERSION 1
+time_t Last_Node_Update;		/* Time of last update to Node Records */
 struct Node_Record {
-    char Name[MAX_NAME_LEN];
-    char OS[MAX_OS_LEN];
-    int CPUs;
-    float Speed;
-    int RealMemory;
-    int VirtualMemory;
-    long TmpDisk;
-    unsigned Partition:MAX_PARTITION;	/* Bit Mask */
-    enum Node_State NodeState;
-    time_t LastResponse;
+    char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
+    enum Node_State NodeState;		/* State of the node */
+    time_t LastResponse;		/* Last response from the node */
+    struct Config_Record *Config_Ptr;	/* Configuration specification for this node */
 };
+struct Node_Record *Node_Record_Table_Ptr;	/* Location of the node records */
+int	Node_Record_Count;		/* Count of records in the Node Record Table */
 
 /* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define PART_STRUCT_VERSION 1
@@ -82,18 +96,13 @@ struct Part_Record {
 };
 
 /* 
- * Dump_Node_Records - Raw dump of NODE_STRUCT_VERSION value and all Node_Record structures 
- * Input: File_Name - Name of the file to be created and written to
+ * Create_Node_Record - Create a node record
+ * Input: None
+ * Output: Error_Code is set to zero if no error, errno otherwise
+ *         Returns a pointer to the record or NULL if error
+ * NOTE The record's values are initialized to those of Default_Record
  */
-int Dump_Node_Records (char *File_Name);
-
-/* 
- * Dump_Part_Records - Raw dump of PART_STRUCT_VERSION value and all Part_Record structures 
- * Input: File_Name - Name of the file to be created and have Part_Record written to 
- *        File_Name_UserList - Name of the file to be created and have AllowUsers 
- *                             and DenyUsers written to 
- */
-int Dump_Part_Records (char *File_Name, char *File_Name_UserList);
+struct Node_Record *Create_Node_Record(int *Error_Code);
 
 /* 
  * Find_Node_Record - Find a record for node with specified name,
@@ -103,109 +112,30 @@ int Dump_Part_Records (char *File_Name, char *File_Name_UserList);
 struct Node_Record *Find_Node_Record(char *name);
 
 /* 
- * Find_Valid_Parts - Determine which partitions the job specification can execute on
- * Input: Specification - Standard configuration file input line
- *        Partition - Location into which the bit-map of valid partitions is placed
- * Output: Partition is filled in
- *         Returns 0 if satisfactory, errno otherwise
+ * Init_SLURM_Conf - Initialize the SLURM configuration values and data structures. 
+ * This should be called once at startup of SLURM daemons.
  */
-int Find_Valid_Parts (char *Specification, unsigned *Partition);
+int Init_SLURM_Conf();
 
 /* 
- * Init_SLURM_Conf - Initialize the SLURM configuration values. This should be called 
- * before ever calling Read_SLURM_Conf.
+ * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
+ * generate multiple node names as needed.
+ * Input: NodeName - Node name to parse
+ * Output: Format - sprintf format for generating names
+ *         Start_Inx - First index to used
+ *         End_Inx - Last index value to use
+ *         Count_Inx - Number of index values to use (will be zero if none)
+ *         return 0 if no error, error code otherwise
+ * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
  */
-void Init_SLURM_Conf();
+int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
 
 /*
- * Read_SLURM_Conf - Load the overall SLURM configuration from the specified file 
+ * Read_SLURM_Conf - Load the SLURM configuration from the specified file 
  * Call Init_SLURM_Conf before ever calling Read_SLURM_Conf.  
  * Read_SLURM_Conf can be called more than once if so desired.
- * Input: File_Name - Name of the file containing overall SLURM configuration information
- * Output: return - 0 if no error, otherwise an error code
- */
-int Read_Node_Spec_Conf (char *File_Name);
-
-/*
- * Read_Part_Spec_Conf - Load the partition specification information from the specified file 
- * NOTE: Call this routine must be called at SLURM Controller daemon startup
- * Input: File_Name - Name of the file containing node specification
- * Output: return - 0 if no error, otherwise errno
- */
-int Read_Part_Spec_Conf (char *File_Name);
-
-/*
- * Read_SLURM_Conf - Load the overall SLURM configuration from the specified file 
- * Input: File_Name - Name of the file containing overall SLURM configuration information
+ * Input: File_Name - Name of the file containing SLURM configuration information
  * Output: return - 0 if no error, otherwise an error code
  */
 int Read_SLURM_Conf (char *File_Name);
 
-/*
- * Show_Node_Record - Dump the record for the specified node
- * Input: Node_Name - Name of the node for which data is requested
- *        Node_Record - Location into which the information is written
- *        Buf_Size - Size of Node_Record in bytes
- * Output: Node_Record is filled in
- *         return - 0 if no error, otherwise errno
- */
-int Show_Node_Record (char *Node_Name, char *Node_Record, int Buf_Size);
-
-/*
- * Show_Part_Record - Dump the record for the specified node
- * Input: Part_Name - Name of the node for which data is requested
- *        Part_Record - Location into which the information is written
- *        Buf_Size - Size of Node_Record in bytes
- * Output: Part_Record is filled in
- *         return - 0 if no error, otherwise errno
- */
-int Show_Part_Record (char *Part_Name, char *Part_Record, int Buf_Size);
-
-/*
- * Update_Node_Spec_Conf - Update the configuration for the given node, create record as needed 
- *	NOTE: To delete a record, specify CPUs=0 in the configuration
- * Input: Specification - Standard configuration file input line
- * Output: return - 0 if no error, otherwise errno
- */
-int Update_Node_Spec_Conf (char *Specification);
-
-/*
- * Update_Part_Spec_Conf - Update the configuration for the given partition, create record as needed 
- *	NOTE: To delete a record, specify State=DELETE in the configuration
- * Input: Specification - Standard configuration file input line
- * Output: return - 0 if no error, otherwise errno
- */
-int Update_Part_Spec_Conf (char *Specification);
-
-/* 
- * Validate_Node_Spec - Determine if the supplied node specification satisfies 
- *	the node record specification (all values at least as high). Note we 
- *	ignore partition and the OS level strings are just run through strcmp
- * Output: Returns 0 if satisfactory, errno otherwise
- */
-int Validate_Node_Spec (char *Specification);
-
-/*
- * Will_Job_Run - Determine if the given job specification can be initiated now
- * Input: Job_Spec - Specifications for the job
- * Output: Returns node list, NULL if can not be initiated
- *         Error_Code indicates type of error
- *
- * NOTE: The value returned MUST be freed to avoid memory leak
- */
-char *Will_Job_Run(char *Specification, int *Error_Code);
-
-/*
- * Write_Node_Spec_Conf - Dump the node specification information into the specified file 
- * Input: File_Name - Name of the file containing node specification
- *        Full_Dump - Full node record dump if equal to zero, can be used for restore on daemon failure
- * Output: return - 0 if no error, otherwise an error code
- */
-int Write_Node_Spec_Conf (char *File_Name, int Full_Dump);
-
-/*
- * Write_Part_Spec_Conf - Dump the partition specification information into the specified file 
- * Input: File_Name - Name of the file containing node specification
- * Output: return - 0 if no error, otherwise an error code
- */
-int Write_Part_Spec_Conf (char *File_Name);
