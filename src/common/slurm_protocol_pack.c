@@ -598,7 +598,7 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 
 }
 
-/* unpack_msg
+/* unpack_job_desc
  * unpacks a job_desc struct
  * header 	- the body structure to unpack
  * buf_ptr	- destination of the pack, note buffer will be incremented by underlying unpack routines
