@@ -192,9 +192,11 @@ _get_job_info(srun_step_t *s)
 	int             i, rc = -1;
 	job_info_msg_t *resp = NULL;
 	job_info_t     *job  = NULL;
-	old_job_alloc_msg_t alloc_req;
-	resource_allocation_response_msg_t *alloc_resp = NULL;
 	hostlist_t      hl;
+#ifdef HAVE_BGL
+	old_job_alloc_msg_t                 alloc_req;
+	resource_allocation_response_msg_t *alloc_resp = NULL;
+#endif
 
 	s->nodes = NULL;
 
@@ -237,6 +239,7 @@ _get_job_info(srun_step_t *s)
 
 	hostlist_destroy(hl);
 
+#ifdef HAVE_BGL
 	/* now get actual node name for systems using front-end node */
 	alloc_req.job_id = s->jobid;
 	alloc_req.uid    = getuid();
@@ -248,6 +251,7 @@ _get_job_info(srun_step_t *s)
 			s->nodes, 128);
 		slurm_free_resource_allocation_response_msg(alloc_resp);
 	}
+#endif
 
   done:
 	if (resp)
