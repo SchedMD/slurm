@@ -329,7 +329,7 @@ static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx)
  */
 static void *_wdog(void *args)
 {
-	int fail_cnt, no_resp_cnt, retry_cnt = 0;
+	int fail_cnt, no_resp_cnt, retry_cnt;
 	bool work_done;
 	int i, delay, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
@@ -347,6 +347,7 @@ static void *_wdog(void *args)
 		work_done   = true;	/* assume all threads complete */
 		fail_cnt    = 0;	/* assume no threads failures */
 		no_resp_cnt = 0;	/* assume all threads respond */
+		retry_cnt   = 0;	/* assume no required retries */
 
 		sleep(WDOG_POLL);
 
@@ -638,6 +639,11 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			thread_ptr[i].node_name, MAX_NAME_LEN);
 		if ((++j) == count)
 			break;
+	}
+	if (count != j) {
+		error("agent: Retry count (%d) != actual count (%d)", 
+			count, j);
+		agent_arg_ptr->node_count = j;
 	}
 
 	/* add the requeust to a list */
