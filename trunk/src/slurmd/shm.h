@@ -95,9 +95,10 @@ struct job_step {
 
 /* 
  * Attach to and initialize slurmd shared memory segment
+ * startup (IN) - validate shared memory contents if true
  * Returns -1 and sets errno on failure.
  */
-int shm_init(void);
+int shm_init(bool startup);
 
 /*
  * Release slurmd shared memory segment. Deallocates segment if no

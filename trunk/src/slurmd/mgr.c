@@ -399,7 +399,7 @@ _job_mgr(slurmd_job_t *job)
 
 	debug3("Entered job_mgr");
 
-	if (shm_init() < 0)
+	if (shm_init(false) < 0)
 		goto fail0;
 
 	if (job_update_shm(job) < 0) {
