@@ -31,8 +31,10 @@
 #include <src/api/slurm.h>
 #include <testsuite/dejagnu.h>
 
+void report_results(resource_allocation_response_msg_t* resp_msg);
+
 /* main is used here for testing purposes only */
-	int 
+int 
 main (int argc, char *argv[])
 {
 	int error_code, job_count, max_jobs;
@@ -60,18 +62,17 @@ main (int argc, char *argv[])
 	job_mesg. time_limit = 200;
 	job_mesg. num_procs = 1000;
 	job_mesg. num_nodes = 400;
+job_mesg. num_nodes = 4096;
 	job_mesg. user_id = 1500;
 
 
 	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 	if (error_code)
 		printf ("allocate error %d\n", error_code);
-	else {
-		printf ("allocate nodes %s to job %u\n", resp_msg->node_list, resp_msg->job_id);
-	}
-	job_count = 1;
+	else
+		report_results(resp_msg);
 
-	for ( ; job_count <max_jobs;  job_count++) {
+	for (job_count = 1 ; job_count <max_jobs;  job_count++) {
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1;
 		job_mesg. groups = ("students,employee\0");
@@ -87,6 +88,8 @@ main (int argc, char *argv[])
 		job_mesg. time_limit = 200;
 		job_mesg. num_procs = 4000;
 		job_mesg. user_id = 1500;
+/* job_mesg. num_nodes = 4096; */
+job_mesg. contiguous = 0;
 
 		/* the string also had Immediate */
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
@@ -94,10 +97,8 @@ main (int argc, char *argv[])
 			printf ("allocate error %d\n", error_code);
 			break;
 		}
-		else {
-			printf ("allocate nodes %s to job %u\n", 
-				resp_msg->node_list, resp_msg->job_id);
-		}
+		else 
+			report_results(resp_msg);
 	}
 
 	for ( ; job_count <max_jobs;  job_count++) {
@@ -111,10 +112,8 @@ main (int argc, char *argv[])
 			printf ("allocate error %d\n", error_code);
 			break;
 		}
-		else {
-			printf ("allocate nodes %s to job %u\n", 
-				resp_msg->node_list, resp_msg->job_id);
-		}
+		else 
+			report_results(resp_msg);
 	}
 
 	for ( ; job_count <max_jobs;  job_count++) {
@@ -128,11 +127,27 @@ main (int argc, char *argv[])
 			printf ("allocate error %d\n", error_code);
 			break;
 		}
-		else {
-			printf ("allocate nodes %s to job %u\n", 
-				resp_msg->node_list, resp_msg->job_id);
-		}
+		else 
+			report_results(resp_msg);
 	}
 
 	return (0);
+}
+
+/* report results of successful job allocation */
+void
+report_results(resource_allocation_response_msg_t* resp_msg)
+{
+	int i;
+
+	printf ("allocate nodes %s to job %u\n", resp_msg->node_list, resp_msg->job_id);
+	if (resp_msg->num_cpu_groups > 0) {
+		printf ("processor counts: ");
+		for (i=0; i<resp_msg->num_cpu_groups; i++) {
+			if (i > 0)
+				printf(", ");
+			printf ("%u(x%u)", resp_msg->cpus_per_node[i], resp_msg->cpu_count_reps[i]);
+		}
+		printf ("\n");
+	}
 }

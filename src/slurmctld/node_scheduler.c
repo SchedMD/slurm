@@ -31,6 +31,8 @@ struct node_set {		/* set of nodes with same configuration */
 	bitstr_t *my_bitmap;
 };
 
+void build_node_details (bitstr_t *node_bitmap, 
+		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t **cpu_count_reps);
 int pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 		    int req_cpus, int consecutive);
 int pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
@@ -625,7 +627,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 						contiguous);
 			if ((pick_code == 0) && (max_nodes != INFINITE)
 			    && (bit_set_count (avail_bitmap) > max_nodes)) {
-				info ("pick_best_nodes: too many nodes selected %u of %u",
+				info ("pick_best_nodes: too many nodes selected %u partition maximum is %u",
 					bit_set_count (avail_bitmap), max_nodes);
 				error_code = EINVAL;
 				break;
@@ -851,9 +853,10 @@ select_nodes (struct job_record *job_ptr, int test_only)
 
 	/* assign the nodes and stage_in the job */
 	bitmap2node_name (req_bitmap, &(job_ptr->nodes));
-	build_node_list (req_bitmap, 
-		&job_ptr->details->node_list, 
-		&job_ptr->details->total_procs);
+	build_node_details (req_bitmap, 
+		&(job_ptr->num_cpu_groups),
+		&(job_ptr->cpus_per_node),
+		&(job_ptr->cpu_count_reps));
 	allocate_nodes (req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
 	req_bitmap = NULL;
@@ -882,6 +885,59 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	return error_code;
 }
 
+
+/*
+ * build_node_details - given a bitmap, report the number of cpus per node and their distribution
+ * input: bitstr_t *node_bitmap - the map of nodes
+ * output: num_cpu_groups - element count in arrays cpus_per_node and cpu_count_reps
+ *	cpus_per_node - array of cpus per node allocated
+ *	cpu_count_reps - array of consecutive nodes with same cpu count
+ * NOTE: the arrays cpus_per_node and cpu_count_reps must be xfreed by the caller
+ */
+void 
+build_node_details (bitstr_t *node_bitmap, 
+		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t **cpu_count_reps)
+{
+	int array_size, array_pos, i;
+	int first_bit, last_bit;
+
+	*num_cpu_groups = 0;
+	if (node_bitmap == NULL) 
+		return;
+
+	first_bit = bit_ffs(node_bitmap);
+	last_bit  = bit_fls(node_bitmap);
+	array_pos = -1;
+
+	/* assume relatively homogeneous array for array allocations */
+	/* we can grow or shrink the arrays as needed */
+	array_size = (last_bit - first_bit) / 100 + 2;
+	cpus_per_node[0]  = xmalloc (sizeof(uint32_t *) * array_size);
+	cpu_count_reps[0] = xmalloc (sizeof(uint32_t *) * array_size);
+
+	for (i = first_bit; i <= last_bit; i++) {
+		if (bit_test (node_bitmap, i) != 1)
+			continue;
+		if ((array_pos == -1) ||
+		    (cpus_per_node[0][array_pos] != node_record_table_ptr[i].cpus)) {
+			array_pos++;
+			if (array_pos >= array_size) { /* grow arrays */
+				array_size *= 2;
+				xrealloc (cpus_per_node[0],  (sizeof(uint32_t *) * array_size));
+				xrealloc (cpu_count_reps[0], (sizeof(uint32_t *) * array_size));
+			}
+			cpus_per_node [0][array_pos] = node_record_table_ptr[i].cpus;
+			cpu_count_reps[0][array_pos] = 1;
+		}
+		else {
+			cpu_count_reps[0][array_pos]++;
+		}
+	}
+	array_size = array_pos + 1;
+	*num_cpu_groups = array_size;
+	xrealloc (cpus_per_node[0],  (sizeof(uint32_t *) * array_size));
+	xrealloc (cpu_count_reps[0], (sizeof(uint32_t *) * array_size));
+}
 
 /*
  * valid_features - determine if the requested features are satisfied by those available

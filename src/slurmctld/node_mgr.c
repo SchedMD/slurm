@@ -347,57 +347,6 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 
 
 /*
- * build_node_list - build a node_list for a job including processor 
-  *	count on the node (e.g. "lx01[4],lx02[4],...")
- *	task distributions on the nodes
- * input: bitmap - bitmap of nodes to use
- *	node_list - place to store node list
- *	total_procs - place to store count of total processors allocated
- * output: node_list - comma separated list of nodes on which the tasks 
- *		are to be initiated
- *	total_procs - count of total processors allocated
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the storage at node_list must be xfreed by the caller
- */
-void 
-build_node_list (bitstr_t *bitmap, char **node_list, uint32_t *total_procs)
-{
-	int i, node_list_size;
-	int sum_procs;
-	char tmp_str[MAX_NAME_LEN+10];
-
-	*total_procs = 0;
-	node_list[0] = NULL;
-	node_list_size = 0;
-	if (bitmap == NULL)
-		fatal ("build_node_list: bitmap is NULL");
-
-	node_list[0] = xmalloc (BUF_SIZE);
-	strcpy (node_list[0], "");
-
-	sum_procs = 0;
- 	for (i = 0; i < node_record_count; i++) {
-		if (bit_test (bitmap, i) != 1)
-			continue;
-		sprintf (tmp_str, "%s[%d]", 
-			node_record_table_ptr[i].name,
-			node_record_table_ptr[i].cpus);
-		if (node_list_size <
-		    (strlen (node_list[0]) + (MAX_NAME_LEN+10))) {
-			node_list_size += BUF_SIZE;
-			xrealloc (node_list[0], node_list_size);
-		}
-		if (sum_procs > 0)
-			strcat (node_list[0], ",");
-		strcat (node_list[0], node_record_table_ptr[i].name);
-		sum_procs += node_record_table_ptr[i].cpus;
-	}
-	*total_procs = sum_procs;
-	xrealloc (node_list[0], strlen (node_list[0]) + 1);
-}
-
-
-/*
  * create_config_record - create a config_record entry and set is values to the defaults.
  * output: returns pointer to the config_record
  * global: default_config_record - default configuration values

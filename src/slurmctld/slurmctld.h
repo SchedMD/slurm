@@ -1,17 +1,28 @@
-/* 
- * slurmctld.h - definitions for slurmcltd use
- *
- * NOTE: the job, node, and partition specifications are all of the 
- * same basic format:
- * if the first character of a line is "#" then it is a comment.
- * place all information for a single node, partition, or job on a 
- *    single line. 
- * space delimit collection of keywords and values and separate
- *    the keyword from value with an equal sign (e.g. "cpus=3"). 
- * list entries should be comma separated (e.g. "nodes=lx01,lx02").
- * 
- * see the slurm administrator guide for more details.
- */
+/*****************************************************************************\
+ * slurmctld.h - definitions of functions and structures for slurmcltd use
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifndef _HAVE_SLURM_H
 #define _HAVE_SLURM_H
@@ -129,6 +140,7 @@ extern time_t last_step_update;	/* time of last update to job steps */
 
 extern int job_count;			/* number of jobs in the system */
 
+/* job_details - specification of a job's constraints, not required after initiation */
 struct job_details {
 	uint32_t magic;			/* magic cookie to test data integrity */
 	uint32_t num_procs;		/* minimum number of processors */
@@ -145,7 +157,6 @@ struct job_details {
 	char *job_script;		/* name of job script to execute */
 	uint16_t procs_per_task;	/* processors required per task */
 	uint32_t total_procs;		/* total number of allocated processors, for accounting */
-	char *node_list;		/* comma separated assigned node list (by task) */
 	time_t submit_time;		/* time of submission */
 };
 
@@ -165,6 +176,9 @@ struct job_record {
 	uint32_t priority;		/* relative priority of the job */
 	struct job_details *details;	/* job details (set until job terminates) */
 	uint16_t next_step_id;		/* next step id to be used */
+	uint16_t num_cpu_groups;	/* element count in arrays cpus_per_node and cpu_count_reps */
+	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
+	uint32_t *cpu_count_reps;	/* array of consecutive nodes with same cpu count */
 };
 
 struct 	step_record {
@@ -215,21 +229,6 @@ extern void bitmap2node_name (bitstr_t *bitmap, char **node_list);
  * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
  */
 extern enum task_dist block_or_cycle (char *in_string);
-
-/*
- * build_node_list - build a node_list for a job including processor 
- *	count on the node (e.g. "lx01[4],lx02[4],...")
- * input: bitmap - bitmap of nodes to use
- *	node_list - place to store node list
- *	total_procs - place to store count of total processors allocated
- * output: node_list - comma separated list of nodes on which the tasks 
- *		are to be initiated
- *	total_procs - count of total processors allocated
- * global: node_record_table_ptr - pointer to global node table
- * NOTE: the storage at node_list must be xfreed by the caller
- */
-extern void  build_node_list (bitstr_t *bitmap, char **node_list, 
-	uint32_t *total_procs);
 
 /*
  * count_cpus - report how many cpus are associated with the identified nodes 
@@ -421,23 +420,9 @@ extern int init_slurm_conf ();
 
 extern int  is_key_valid (void * key);
 
-/*
- * job_allocate - parse the suppied job specification, create job_records for it, 
- *	and allocate nodes for it. if the job can not be immediately allocated 
- *	nodes, EAGAIN will be returned
- * input: job_specs - job specifications
- *	new_job_id - location for storing new job's id
- *	node_list - location for storing new job's allocated nodes
- * output: new_job_id - the job's ID
- *	node_list - list of nodes allocated to the job
- *	returns 0 on success, EINVAL if specification is invalid, 
- *		EAGAIN if higher priority jobs exist
- * globals: job_list - pointer to global job list 
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
- * NOTE: the calling program must xfree the memory pointed to by node_list
- */
-extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, int immediate, int will_run);
+extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
+	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
+	int immediate, int will_run);
 
 /* 
  * job_cancel - cancel the specified job

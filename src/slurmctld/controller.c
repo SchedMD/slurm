@@ -194,7 +194,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_update_partition ( msg ) ;
 			break;
 		default:
-			error ("slurmctld_req: invalid request msg type %d\n", msg-> msg_type);
+			error ("invalid request msg type %d\n", msg-> msg_type);
 			slurm_send_rc_msg ( msg , EINVAL );
 			break;
 	}
@@ -216,7 +216,7 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	/* check to see if build_data has changed */	
 	if ( last_time_msg -> last_update >= init_time )
 	{
-		info ("slurmctld_req: dump_build, no change, time=%ld", 
+		info ("dump_build, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -230,7 +230,7 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 		response_msg . data = & build_tbl ;
 
 		/* send message */
-		info ("slurmctld_req: dump_build time=%ld", (long) (clock () - start_time));
+		info ("dump_build time=%ld", (long) (clock () - start_time));
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
 	}
 }
@@ -250,7 +250,7 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 
 	if ( last_time_msg -> last_update >= last_job_update )
 	{
-		info ("slurmctld_req: dump_job, no change, time=%ld", 
+		info ("dump_job, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -266,7 +266,7 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("slurmctld_req: dump_job, size=%d, time=%ld", 
+		info ("dump_job, size=%d, time=%ld", 
 		      dump_size, (long) (clock () - start_time));
 		if (dump)
 			xfree (dump);
@@ -287,7 +287,7 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 
 	if ( last_time_msg -> last_update >= last_node_update )
 	{
-		info ("slurmctld_req: dump_node, no change, time=%ld", 
+		info ("dump_node, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -303,7 +303,7 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("slurmctld_req: dump_node, size=%d, time=%ld", 
+		info ("dump_node, size=%d, time=%ld", 
 		      dump_size, (long) (clock () - start_time));
 		if (dump)
 			xfree (dump);
@@ -324,7 +324,7 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 
 	if ( last_time_msg -> last_update >= last_part_update )
 	{
-		info ("slurmctld_req: dump_part, no change, time=%ld", 
+		info ("dump_part, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -340,7 +340,7 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("slurmctld_req: dump_part, size=%d, time=%ld", 
+		info ("dump_part, size=%d, time=%ld", 
 		      dump_size, (long) (clock () - start_time));
 		if (dump)
 			xfree (dump);
@@ -363,13 +363,13 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		info ("slurmctld_req: job_cancel error %d for %u, time=%ld",
+		info ("job_cancel error %d for %u, time=%ld",
 			error_code, job_id_msg->job_id, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: job_cancel success for %u, time=%ld",
+		info ("job_cancel success for %u, time=%ld",
 			job_id_msg->job_id, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
@@ -393,14 +393,14 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: update error %d on job id %u, time=%ld",
+		error ("update error %d on job id %u, time=%ld",
 				error_code, job_desc_msg->job_id, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: updated job id %u, time=%ld",
+		info ("updated job id %u, time=%ld",
 				job_desc_msg->job_id, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
@@ -426,14 +426,14 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: update error %d on node %s, time=%ld",
+		error ("update error %d on node %s, time=%ld",
 				error_code, update_node_msg_ptr->node_names, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: updated node %s, time=%ld",
+		info ("updated node %s, time=%ld",
 				update_node_msg_ptr->node_names, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
@@ -459,13 +459,13 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: update error %d on partition %s, time=%ld",
+		error ("update error %d on partition %s, time=%ld",
 				error_code, part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: updated partition %s, time=%ld",
+		info ("updated partition %s, time=%ld",
 				part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
@@ -500,13 +500,13 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		info ("slurmctld_req: job_submit error %d, time=%ld",
+		info ("job_submit error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: job_submit success for id=%u, time=%ld",
+		info ("job_submit success for id=%u, time=%ld",
 				job_id, (long) (clock () - start_time));
 		/* send job_ID */
 		submit_msg . job_id = job_id ;
@@ -526,26 +526,29 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	clock_t start_time;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 	char * node_list_ptr = NULL;
-	int job_id ;
+	uint16_t num_cpu_groups = 0;
+	uint32_t * cpus_per_node = NULL, * cpu_count_reps = NULL;
+	uint32_t job_id ;
 	resource_allocation_response_msg_t alloc_msg ;
 
 	start_time = clock ();
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-	error_code = job_allocate(job_desc_msg, 
-			&job_id, &node_list_ptr, immediate , false );
+	error_code = job_allocate(job_desc_msg, &job_id, 
+			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
+			immediate , false );
 
 	/* return result */
 	if (error_code)
 	{
-		info ("slurmctld_req: error %d allocating resources, time=%ld",
+		info ("error %d allocating resources, time=%ld",
 				error_code,  (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: allocated nodes %s, JobId=%u, time=%ld",
+		info ("allocated nodes %s, JobId=%u, time=%ld",
 				node_list_ptr , job_id , 	
 				(long) (clock () - start_time));
 		
@@ -553,13 +556,15 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 
 		alloc_msg . job_id = job_id ;
 		alloc_msg . node_list = node_list_ptr ;
-		alloc_msg.num_cpu_groups = 0;
-		response_msg . msg_type = ( immediate ) ? RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : RESPONSE_RESOURCE_ALLOCATION ;
+		alloc_msg . num_cpu_groups = num_cpu_groups;
+		alloc_msg . cpus_per_node  = cpus_per_node;
+		alloc_msg . cpu_count_reps = cpu_count_reps;
+		response_msg . msg_type = ( immediate ) ? 
+				RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : RESPONSE_RESOURCE_ALLOCATION ;
 		response_msg . data =  & alloc_msg ;
 
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
 	}
-	xfree ( node_list_ptr );
 }
 
 /* slurm_rpc_job_will_run - determine if job with given configuration can be initiated now */
@@ -568,32 +573,33 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
+	uint16_t num_cpu_groups = 0;
+	uint32_t * cpus_per_node = NULL, * cpu_count_reps = NULL;
 	uint32_t job_id ;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
-	char * node_name_ptr = NULL;
+	char * node_list_ptr = NULL;
 
 	start_time = clock ();
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-	error_code = job_allocate(job_desc_msg,
-			&job_id, &node_name_ptr, false , true );
+	error_code = job_allocate(job_desc_msg, &job_id, 
+			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
+			false , true );
 	
 	/* return result */
 	if (error_code)
 	{
-		info ("slurmctld_req: job_will_run error %d, time=%ld",
+		info ("job_will_run error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: job_will_run success for , time=%ld",
+		info ("job_will_run success for , time=%ld",
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	xfree ( node_name_ptr ) ;
-
 }
 
 /* slurm_rpc_reconfigure_controller - re-initialize controller from configuration files */
@@ -615,13 +621,13 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: reconfigure error %d, time=%ld",
+		error ("reconfigure error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
+		info ("reconfigure completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
@@ -654,13 +660,13 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: validate_node_specs error %d for %s, time=%ld",
+		error ("validate_node_specs error %d for %s, time=%ld",
 			error_code, node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: validate_node_specs for %s, time=%ld",
+		info ("validate_node_specs for %s, time=%ld",
 			node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
