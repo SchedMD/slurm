@@ -595,5 +595,6 @@ char *node_state_string_compact(enum node_states inx)
 		"DG",
 		"END"
 	};
+	inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
 	return node_state_string[inx];
 }
