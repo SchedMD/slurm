@@ -32,12 +32,14 @@ SBINDIR=/usr/sbin
 if [ -f /etc/rc.status ]; then
    . /etc/rc.status
    SUSE=1
+   STARTPROC=startproc
 
    rc_reset
 else
    [ -f /etc/rc.d/init.d/functions ] || exit 0
    . /etc/rc.d/init.d/functions
    SUSE=0
+   STARTPROC=daemon
 
    function rc_status() {
       RETVAL=$?
@@ -64,7 +66,7 @@ export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
 start() {
     echo -n "starting $1: " 
     unset HOME MAIL USER USERNAME 
-    daemon $SBINDIR/$1 $2
+    $STARTPROC $SBINDIR/$1 $2
     rc_status -v
     echo
     touch /var/lock/subsys/slurm
