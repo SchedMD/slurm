@@ -1,23 +1,41 @@
 # This file is to be processed with autoconf to generate a configure script
 
-# XXX generate PROJECT and VERSION automatically at some point
-AC_INIT([slurm],[0.1])
-# AC_PREREQ(2.52)
-AC_CONFIG_SRCDIR([src/api/slurm.h])
+AC_INIT
+AC_PREREQ(2.52)
+AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR(auxdir)
 AC_CANONICAL_TARGET([])
 
 # determine project/version 
-# PROJECT="slurm"
-#AC_DEFINE_UNQUOTED(PROJECT, "$PROJECT", [Define the project's name.])
-#AC_SUBST(PROJECT)
-# VERSION="0.1"
-#AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
-#AC_SUBST(VERSION)
+# XXX generate VERSION information automatically at some point
+SLURM_MAJOR=0
+SLURM_MINOR=1
+SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR"
+
+VERSION=$SLURM_VERSION
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
+AC_SUBST(VERSION)
 
 dnl Automake stuff.
+AM_INIT_AUTOMAKE(slurm, $VERSION)
 AM_CONFIG_HEADER(config.h)
-AM_INIT_AUTOMAKE(AC_PACKAGE_NAME, AC_PACKAGE_VERSION)
+
+AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION", [slurm version number])
+AC_SUBST(SLURM_VERSION)
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", [slurm major version number])
+AC_SUBST(SLURM_MAJOR)
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", [slurm minor version number])
+AC_SUBST(SLURM_MINOR)
+
+dnl Set SLURM_CONFIG_FILE in config.h
+topsrcdir=`cd $srcdir && pwd`
+AH_TEMPLATE(SLURM_CONFIG_FILE, [slurm config file location])
+if test "x${sysconfdir}" = 'x${prefix}/etc'; then
+  dnl XXX for testing phase only, use /etc in srcdir: 
+  AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "${topsrcdir}/etc/slurm.conf", []) 
+else
+  AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "${sysconfdir}/slurm.conf", [])
+fi
 
 # check for debug compilation of slurm modules:
 AC_MSG_CHECKING(whether debug compilation of modules is enabled)
@@ -32,10 +50,10 @@ AC_ARG_ENABLE(debug,
 )
 AC_MSG_RESULT(${with_slurm_debug=no})
 if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith}"
+  CFLAGS="${CFLAGS--g -Wall -Wpointer-arith}"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith}"
+  CFLAGS="${CFLAGS--g -Wall -Wpointer-arith}"
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
 #
@@ -54,7 +72,6 @@ AC_ARG_WITH(elan,
 AC_MSG_RESULT(${elan=no})
 AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
 
-  
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
