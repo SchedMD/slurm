@@ -74,12 +74,14 @@ AC_DEFUN([X_AC_SLURM_WITH_SSL], [
   		# Basic test to check for compatible version and correct linking
   		AC_TRY_RUN(
   			[
-  #include <string.h>
+  #include <stdlib.h>
   #include <openssl/rand.h>
+  #define SIZE 8
   int main(void) 
   {
-  	char a[2048];
-  	memset(a, 0, sizeof(a));
+  	int a[SIZE], i;
+	for (i=0; i<SIZE; i++)
+		a[i] = rand();
   	RAND_add(a, sizeof(a), sizeof(a));
   	return(RAND_status() <= 0);
   }
