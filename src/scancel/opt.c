@@ -265,24 +265,28 @@ static void _opt_args(int argc, char **argv)
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int option_index;
 	static struct option long_options[] = {
-		{"help",        no_argument,       0, '?'},
+		{"help",        no_argument,       0, 'H'},
+		{"usage",       no_argument,       0, 'H'},
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
 		{"partition",   required_argument, 0, 'p'},
 		{"signal",      required_argument, 0, 's'},
 		{"state",       required_argument, 0, 't'},
-		{"usage",       no_argument,       0, '?'},
 		{"user",        required_argument, 0, 'u'},
 		{"verbose",     no_argument,       0, 'v'},
 		{"version",     no_argument,       0, 'V'}
 	};
 
-	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init("scancel", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "in:p:s:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "Hin:p:s:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
+				_usage();
+				exit(1);
+				break;
+			case (int)'H':
 				_usage();
 				exit(0);
 				break;
@@ -439,5 +443,5 @@ static void _usage(void)
 	printf("  -v, --verbose                   verbosity level\n");
 	printf("  -V, --version                   output version information and exit\n");
 	printf("\nHelp options:\n");
-	printf("  -?, --help, --usage             show this help message\n");
+	printf("  -H, --help, --usage             show this help message\n");
 }
