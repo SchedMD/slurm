@@ -42,12 +42,12 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_pack.h>
 
+#include <src/srun/io.h>
 #include <src/srun/job.h>
 #include <src/srun/net.h>
 #include <src/srun/opt.h>
 
 #define IO_BUFSIZ	2048
-#define IO_DONE		-9	/* signify that eof has been recvd on stream */
 
 /* fd_info struct used in poll() loop to map fds back to task number,
  * appropriate output type (stdout/err), and original fd
@@ -142,8 +142,8 @@ _io_thr_poll(void *job_arg)
 	_set_iofds_nonblocking(job);
 
 	for (i = 0; i < opt.nprocs; i++) {
-		job->out[i] = -1; 
-		job->err[i] = -1;
+		job->out[i] = WAITING_FOR_IO; 
+		job->err[i] = WAITING_FOR_IO;
 	}
 
 	for (i = 0; i < job->niofds; i++) {
@@ -216,8 +216,8 @@ _io_thr_poll(void *job_arg)
 	}
 }
 
-	static void 
-*_io_thr_select(void *job_arg)
+static void 
+* _io_thr_select(void *job_arg)
 {
 	job_t *job = (job_t *) job_arg;
 	fd_set rset, wset;
