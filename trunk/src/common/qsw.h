@@ -26,6 +26,9 @@
 
 #include <stdio.h>
 #include <sys/types.h>
+#include <elan3/elan3.h>
+#include <elan3/elanvp.h>
+
 #include <src/common/bitstring.h>
 #include <src/common/pack.h>
 
@@ -38,6 +41,7 @@ typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
 
 #define QSW_LIBSTATE_PACK_MAX	12
 #define QSW_JOBINFO_PACK_MAX	120
+#define QSW_MAX_TASKS		ELAN_MAX_VPS
 #define QSW_PACK_SIZE		(4 * (2+4+1+8+ELAN_BITMAPSIZE))
 
 int		qsw_alloc_libstate(qsw_libstate_t *lsp);
