@@ -426,7 +426,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: squeue [options]\n");
+	printf("Usage: scancel [options]\n");
 	printf("  -h, --noheader                  no headers on output\n");
 	printf("  -i, --iterate=seconds           specify an interation period\n");
 	printf("  -j, --jobs                      comma separated list of jobs to view,\n");
