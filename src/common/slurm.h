@@ -50,9 +50,10 @@ struct Config_Record {
     int CPUs;			/* Count of CPUs running on the node */
     int RealMemory;		/* Megabytes of real memory on the node */
     int TmpDisk;		/* Megabytes of total storage in TMP_FS file system */
+    int Weight;			/* Arbitrary priority of node for scheduling work on */
     char *Feature;		/* Arbitrary list of features associated with a node */
     char *Nodes;		/* Names of nodes in partition configuration record */
-    char *NodeBitMap;		/* Bitmap of nodes in configuration record */
+    unsigned *NodeBitMap;	/* Bitmap of nodes in configuration record */
 };
 List Config_List;		/* List of Config_Record entries */
 
@@ -81,8 +82,8 @@ struct Node_Record {
 struct Node_Record *Node_Record_Table_Ptr;	/* Location of the node records */
 int	Node_Record_Count;		/* Count of records in the Node Record Table */
 int	*Hash_Table;			/* Table of hashed indicies into Node_Record */
-char 	*Up_NodeBitMap;			/* Bitmap of nodes are UP */
-char 	*Idle_NodeBitMap;		/* Bitmap of nodes are IDLE */
+unsigned *Up_NodeBitMap;		/* Bitmap of nodes are UP */
+unsigned *Idle_NodeBitMap;		/* Bitmap of nodes are IDLE */
 
 /* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define PART_STRUCT_VERSION 1
@@ -90,11 +91,13 @@ struct Part_Record {
     char Name[MAX_NAME_LEN];	/* Name of the partition */
     int MaxTime;		/* -1 if unlimited */
     int MaxNodes;		/* -1 if unlimited */
+    int TotalNodes;		/* Total number of nodes in the partition */
+    int TotalCPUs;		/* Total number of CPUs in the partition */
     char *Nodes;		/* Names of nodes in partition */
     char *AllowGroups;		/* NULL indicates ALL */
-    unsigned Interactive:1;	/* 1 if interactive (non-queued) jobs may run here */
+    unsigned Key:1;		/* 1 if SLURM distributed key is required for use of partition */
     unsigned StateUp:1;		/* 1 if state is UP */
-    char *NodeBitMap;		/* Bitmap of nodes in partition */
+    unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
 };
 List Part_List;			/* List of Part_Record entries */
 char Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
