@@ -109,7 +109,6 @@ int main(int argc, char *argv[])
 	char node_name[MAX_NAME_LEN];
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	sigset_t set;
-	struct rlimit rlim;
 
 	/*
 	 * Establish initial configuration
@@ -119,15 +118,6 @@ int main(int argc, char *argv[])
 	slurmctld_pid = getpid();
 	_parse_commandline(argc, argv, &slurmctld_conf);
 	init_locks();
-
-	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
-		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_NOFILE, &rlim);
-	}
-	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
-		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_CORE, &rlim);
-	}
 
 	/* Get SlurmctldPidFile for _kill_old_slurmctld */
 	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf))) {
@@ -274,17 +264,28 @@ int main(int argc, char *argv[])
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
-	init_slurm_conf(&slurmctld_conf);
-	xfree(slurmctld_conf.slurm_conf);
+	free_slurm_conf(&slurmctld_conf);
+	slurm_auth_fini();
 #endif
 	log_fini();
 
 	return SLURM_SUCCESS;
 }
 
-/* initialization of common slurmctld configuration parameters */
+/* initialization of common slurmctld configuration */
 static void  _init_config(void)
 {
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		(void) setrlimit(RLIMIT_NOFILE, &rlim);
+	}
+	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		(void) setrlimit(RLIMIT_CORE, &rlim);
+	}
+
 	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
 	slurmctld_config.resume_backup  = false;
 	slurmctld_config.server_thread_count = 0;
