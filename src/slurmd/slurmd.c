@@ -88,8 +88,8 @@ int main (int argc, char *argv[])
 	shmem_seg = get_shmem ( ) ;
 	init_shmem ( shmem_seg ) ;
 
-	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
-		fatal ("slurmd: errno %d from gethostname", errno);
+	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
+		fatal ("slurmd: errno %d from getnodename", errno);
 
 	/* send registration message to slurmctld*/
 	send_node_registration_status_msg ( ) ;
@@ -127,9 +127,9 @@ int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t 
 	int error_code ;
 	char node_name[MAX_NAME_LEN];
 
-	/* get hostname */
-	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) )
-		fatal ("slurmd: errno %d from gethostname", errno);
+	/* get nodename */
+	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) )
+		fatal ("slurmd: errno %d from getnodename", errno);
 
 	/* fill in data structure */
 	node_reg_msg -> timestamp = time ( NULL ) ;
@@ -267,9 +267,9 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 
 	slurm_print_launch_task_msg ( task_desc ) ;
 
-	/* get hostname */
-	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) )
-		fatal ("slurmd: errno %d from gethostname", errno);
+	/* get nodename */
+	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) )
+		fatal ("slurmd: errno %d from getnodename", errno);
 
 	start_time = clock ();
 	info ("slurmd_req: launch tasks message received");
