@@ -7,6 +7,7 @@
 
 #include <src/slurmd/circular_buffer.h>
 
+#define BUFFER_FULL_DUMP_SIZE 4096 
 #define INITIAL_BUFFER_SIZE 8192
 #define INCREMENTAL_BUFFER_SIZE 8192
 #define MAX_BUFFER_SIZE ( ( 8192 * 10 ) )
@@ -49,7 +50,7 @@ int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 
 void print_circular_buffer ( circular_buffer_t * buf )
 {
-	info ( "" ) ;
+	info ( "--" ) ;
 	info ( "buffer  %X", buf -> buffer ) ;
 	info ( "start   %X", buf -> start ) ;
 	info ( "end     %X", buf -> end ) ;
@@ -150,6 +151,8 @@ int cir_buf_write_update ( circular_buffer_t * buf , unsigned int size )
 			if ( buf->head == buf-> start ) /* CASE head == start */
 			{
 				/* buffer full*/
+				buf -> write_size -= size ;
+				buf -> read_size += size ;
 				expand_buffer ( buf ) ;
 			}
 			else
@@ -173,6 +176,8 @@ int cir_buf_write_update ( circular_buffer_t * buf , unsigned int size )
 	else if ( buf->tail == buf->head ) /* CASE head == tail */
 	{
 		/* buffer full*/
+		buf -> write_size -= size ;
+		buf -> read_size += size ;
 		expand_buffer ( buf ) ;
 	}
 
@@ -216,7 +221,9 @@ static int assert_checks_2 ( circular_buffer_t * buf )
 static int assert_checks ( circular_buffer_t * buf )
 {
 	/* sanity checks */
-
+	/* insures that dump data when MAX_BUFFER_SIZE is full will work correctly */
+	assert ( BUFFER_FULL_DUMP_SIZE <= INITIAL_BUFFER_SIZE / 2 ) ;
+	
 	assert ( buf != NULL ) ; /* buf struct is not null */
 	assert ( buf-> start == buf -> buffer ); /* stat hasn't moved */
 	assert ( ( buf -> start ) < ( buf -> end ) ); /* buf_end is after start */
@@ -239,7 +246,7 @@ static int shrink_buffer ( circular_buffer_t * buf )
 
 	if ( buf->buf_size == INITIAL_BUFFER_SIZE )
 	{
-		info ( "circular buffer at minimum" ) ;
+	/*	info ( "circular buffer at minimum" ) ; */
 
 		buf -> head = buf -> start ;
 		buf -> tail = buf -> start ;
@@ -275,12 +282,38 @@ static int expand_buffer ( circular_buffer_t * buf )
 	int data_size ;
 	int data_size_blk1 ;
 	int data_size_blk2 ;
+	
+/*	info ( "EXPANDING BUFFER" ) ; */
+	/*print_circular_buffer ( buf ) ; */
 
 	if ( buf->buf_size == MAX_BUFFER_SIZE )
 	{
-		info ( "circular buffer maxed, dumping INCREMENTAL_BUFFER_SIZE of data");
-		/* dump data */
-
+		/*print_circular_buffer ( buf ) ; */
+		/*info ( "circular buffer maxed, dumping BUFFER_FULL_DUMP_SIZE of data"); */
+		if ( buf->tail - buf->start >= BUFFER_FULL_DUMP_SIZE )
+		{
+			buf-> tail = buf->tail - BUFFER_FULL_DUMP_SIZE ;
+			buf -> write_size = BUFFER_FULL_DUMP_SIZE ;
+			if ( buf->tail > buf->head ) /* CASE tail after head */
+			{
+				buf -> read_size -= BUFFER_FULL_DUMP_SIZE ;
+			}
+			else /*if ( buf->tail < buf->head ) */ /* CASE tail befpre head */
+			{
+				/* read_size stays the same */
+			}
+			/*adjust read and write size */
+		}
+		else
+		{
+			int datasize_blk1 =  buf -> tail - buf -> start ;
+			int datasize_blk2 = BUFFER_FULL_DUMP_SIZE - datasize_blk1 ;
+			buf -> tail = buf -> end - datasize_blk2 ;
+			buf -> write_size = datasize_blk2 ;
+			buf -> read_size = buf -> tail - buf -> head ;
+		}
+		/*print_circular_buffer ( buf ) ; */
+		return SLURM_SUCCESS ;
 	}
 
 	if ( buf->tail > buf->head )
