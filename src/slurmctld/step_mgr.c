@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <time.h>
@@ -34,24 +34,27 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #include <string.h>
+#include <unistd.h>
 
 #ifdef HAVE_LIBELAN3
-#  include <src/common/qsw.h>
+#  include "src/common/qsw.h"
 #endif
 
-#include <src/common/bitstring.h>
-#include <src/common/slurm_errno.h>
-#include <src/slurmctld/locks.h>
-#include <src/slurmctld/slurmctld.h>
+#include "src/common/bitstring.h"
+#include "src/common/slurm_errno.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
-bitstr_t * pick_step_nodes (struct job_record  *job_ptr, 
-				step_specs *step_spec );
+static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
+static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
+				    step_specs *step_spec );
 
 /* 
  * create_step_record - create an empty step_record for the specified job.
- * input: job_ptr - pointer to job table entry to have step record added
- * output: returns a pointer to the record or NULL if error
+ * IN job_ptr - pointer to job table entry to have step record added
+ * RET a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
 struct step_record * 
@@ -76,8 +79,7 @@ create_step_record (struct job_record *job_ptr)
 
 /* 
  * delete_all_step_records - delete all step record for specified job_ptr
- * input: job_ptr - pointer to job table entry to have step record added
- * output: return 0 on success, errno otherwise
+ * IN job_ptr - pointer to job table entry to have step record added
  */
 void 
 delete_all_step_records (struct job_record *job_ptr) 
@@ -105,10 +107,10 @@ delete_all_step_records (struct job_record *job_ptr)
 
 /* 
  * delete_step_record - delete record for job step for specified job_ptr 
-*	and step_id
- * input: job_ptr - pointer to job table entry to have step record removed
- *	step_id - id of the desired job step
- * output: return 0 on success, errno otherwise
+ *	and step_id
+ * IN job_ptr - pointer to job table entry to have step record removed
+ * IN step_id - id of the desired job step
+ * RET 0 on success, errno otherwise
  */
 int 
 delete_step_record (struct job_record *job_ptr, uint32_t step_id) 
@@ -141,17 +143,20 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 }
 
 
-/* dump_step_desc - dump the incoming step initiate request message */
+/*
+ * dump_step_desc - dump the incoming step initiate request message
+ * IN step_spec - job step request specification from RPC
+ */
 void
 dump_step_desc(step_specs *step_spec)
 {
 	if (step_spec == NULL) 
 		return;
 
-	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u\n", 
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u", 
 		step_spec->user_id, step_spec->job_id, 
 		step_spec->node_count, step_spec->cpu_count);
-	debug3("   relative=%u task_dist=%u node_list=%s\n", 
+	debug3("   relative=%u task_dist=%u node_list=%s", 
 		step_spec->relative, step_spec->task_dist, 
 		step_spec->node_list);
 }
@@ -160,9 +165,9 @@ dump_step_desc(step_specs *step_spec)
 /* 
  * find_step_record - return a pointer to the step record with the given 
  *	job_id and step_id
- * input: job_ptr - pointer to job table entry to have step record added
- *	step_id - id of the desired job step
- * output: pointer to the job step's record, NULL on error
+ * IN job_ptr - pointer to job table entry to have step record added
+ * IN step_id - id of the desired job step
+ * RET pointer to the job step's record, NULL on error
  */
 struct step_record *
 find_step_record(struct job_record *job_ptr, uint16_t step_id) 
@@ -188,14 +193,110 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 
 
 /* 
- * pick_step_nodes - select nodes for a job step that satify its requirements
+ * job_step_cancel - cancel the specified job step
+ * IN job_id - id of the job to be cancelled
+ * IN step_id - id of the job step to be cancelled
+ * IN uid - user id of user issuing the RPC
+ * RET 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+int job_step_cancel(uint32_t job_id, uint32_t step_id, uid_t uid)
+{
+	struct job_record *job_ptr;
+	int error_code;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+
+		error("job_step_cancel: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_COMPLETE) ||
+	    (job_ptr->job_state == JOB_TIMEOUT))
+		return ESLURM_ALREADY_DONE;
+
+	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+		error("Security violation, JOB_CANCEL RPC from uid %d",
+		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+	if (job_ptr->job_state == JOB_RUNNING) {
+		last_job_update = time(NULL);
+		error_code = delete_step_record(job_ptr, step_id);
+		if (error_code == ENOENT) {
+			info("job_step_cancel step %u.%u not found",
+			     job_id, step_id);
+			return ESLURM_ALREADY_DONE;
+		}
+
+		job_ptr->time_last_active = time(NULL);
+		return SLURM_SUCCESS;
+	}
+
+	info("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
+	     job_id, step_id, job_state_string(job_ptr->job_state));
+	return ESLURM_TRANSITION_STATE_NO_UPDATE;
+
+}
+
+
+/* 
+ * job_step_complete - note normal completion the specified job step
+ * IN job_id - id of the job to be completed
+ * IN step_id - id of the job step to be completed
+ * IN uid - user id of user issuing the RPC
+ * RET 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid)
+{
+	struct job_record *job_ptr;
+	int error_code;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info("job_step_complete: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_COMPLETE) ||
+	    (job_ptr->job_state == JOB_TIMEOUT))
+		return ESLURM_ALREADY_DONE;
+
+	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
+		error("Security violation, JOB_COMPLETE RPC from uid %d",
+		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+	last_job_update = time(NULL);
+	error_code = delete_step_record(job_ptr, step_id);
+	if (error_code == ENOENT) {
+		info("job_step_complete step %u.%u not found", job_id,
+		     step_id);
+		return ESLURM_ALREADY_DONE;
+	}
+	return SLURM_SUCCESS;
+}
+
+
+/* 
+ * _pick_step_nodes - select nodes for a job step that satify its requirements
  *	we satify the super-set of constraints.
+ * IN job_ptr - pointer to job to have new step started
+ * IN step_spec - job step specification
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
  * NOTE: returned bitmap must be freed by the caller using bit_free()
  */
-bitstr_t *
-pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
+static bitstr_t *
+_pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 
 	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
@@ -213,17 +314,17 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		error_code = node_name2bitmap (step_spec->node_list, 
 						&nodes_picked);
 		if (error_code) {
-			info ("pick_step_nodes: invalid node list %s", 
+			info ("_pick_step_nodes: invalid node list %s", 
 				step_spec->node_list);
 			goto cleanup;
 		}
 		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
-			info ("pick_step_nodes: requested nodes %s not part of job %u",
+			info ("_pick_step_nodes: requested nodes %s not part of job %u",
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
 		if (bit_super_set (nodes_picked, up_node_bitmap) == 0) {
-			info ("pick_step_nodes: some requested node %s is/are down",
+			info ("_pick_step_nodes: some requested node %s is/are down",
 				step_spec->node_list);
 			goto cleanup;
 		}
@@ -235,7 +336,7 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		relative_nodes = 
 			bit_pick_cnt (nodes_avail, step_spec->relative);
 		if (relative_nodes == NULL) {
-			info ("pick_step_nodes: Invalid relative value (%u) for job %u",
+			info ("_pick_step_nodes: Invalid relative value (%u) for job %u",
 				step_spec->relative, job_ptr->job_id);
 			goto cleanup;
 		}
@@ -310,9 +411,9 @@ cleanup:
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
  *	accoding to the step_specs.
- * input: step_specs - job step specifications
- * output: SUCCESS: returns a pointer to the step_record
- * 		FAILURE: sets slurm_srrno appropriately and returns
+ * IN step_specs - job step specifications
+ * OUT new_step_record - pointer to the new step_record (NULL on error)
+ * RET - 0 or error code
  * NOTE: don't free the returned step_record because that is managed through
  * 	the job.
  */
@@ -349,7 +450,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 		return ESLURM_BAD_DIST;
 #endif
 
-	nodeset = pick_step_nodes (job_ptr, step_specs );
+	nodeset = _pick_step_nodes (job_ptr, step_specs );
 
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
@@ -401,30 +502,101 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	return SLURM_SUCCESS;
 }
 
-/* 
- * step_count - return a count of steps associated with a specific job
- * input: job_ptr - pointer to job table entry to have step record added
- * output: returns count of job steps
+/* Pack the data for a specific job step record
+ * IN step - pointer to a job step record
+ * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-int
-step_count (struct job_record *job_ptr) 
+static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 {
-	int step_count = 0;
-	ListIterator step_record_iterator;
-	struct step_record *step_record_point;
+	char *node_list;
 
-	if (job_ptr == NULL)
-		return step_count;
+	if (step->node_bitmap)
+		node_list = bitmap2node_name(step->node_bitmap);
+	else {
+		node_list = xmalloc(1);
+		node_list[0] = '\0';
+	}
 
-	step_record_iterator = list_iterator_create (job_ptr->step_list);		
-
-	while ((step_record_point = (struct step_record *) 
-				list_next (step_record_iterator))) {
-		step_count++;
-	}		
-
-	list_iterator_destroy (step_record_iterator);
-	return step_count;
+	pack_job_step_info_members(step->job_ptr->job_id,
+				   step->step_id,
+				   step->job_ptr->user_id,
+				   step->start_time,
+				   step->job_ptr->partition,
+				   node_list, buffer);
+	xfree(node_list);
 }
 
+/* 
+ * pack_ctld_job_step_info_response_msg - packs job step info
+ * IN - job_id and step_id - zero for all
+ * OUT buffer - location to store data, pointers automatically advanced 
+ * RET - 0 or error code
+ * NOTE: MUST free_buf buffer
+ */
+int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
+				         uint32_t step_id, Buf buffer)
+{
+	ListIterator job_record_iterator;
+	ListIterator step_record_iterator;
+	int error_code = 0;
+	uint32_t steps_packed = 0, tmp_offset;
+	struct step_record *step_ptr;
+	struct job_record *job_ptr;
 
+	pack_time(last_job_update, buffer);
+	pack32(steps_packed, buffer);	/* steps_packed placeholder */
+
+	if (job_id == 0) {
+		/* Return all steps for all jobs */
+		job_record_iterator = list_iterator_create(job_list);
+		while ((job_ptr =
+			(struct job_record *)
+			list_next(job_record_iterator))) {
+			step_record_iterator =
+			    list_iterator_create(job_ptr->step_list);
+			while ((step_ptr =
+				(struct step_record *)
+				list_next(step_record_iterator))) {
+				_pack_ctld_job_step_info(step_ptr, buffer);
+				steps_packed++;
+			}
+			list_iterator_destroy(step_record_iterator);
+		}
+		list_iterator_destroy(job_record_iterator);
+
+	} else if (step_id == 0) {
+		/* Return all steps for specific job_id */
+		job_ptr = find_job_record(job_id);
+		if (job_ptr) {
+			step_record_iterator =
+			    list_iterator_create(job_ptr->step_list);
+			while ((step_ptr =
+				(struct step_record *)
+				list_next(step_record_iterator))) {
+				_pack_ctld_job_step_info(step_ptr, buffer);
+				steps_packed++;
+			}
+			list_iterator_destroy(step_record_iterator);
+		} else
+			error_code = ESLURM_INVALID_JOB_ID;
+	} else {
+		/* Return  step with give step_id/job_id */
+		job_ptr = find_job_record(job_id);
+		step_ptr = find_step_record(job_ptr, step_id);
+		if (step_ptr == NULL)
+			error_code = ESLURM_INVALID_JOB_ID;
+		else {
+			_pack_ctld_job_step_info(step_ptr, buffer);
+			steps_packed++;
+		}
+	}
+
+	/* put the real record count in the message body header */
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack_time(last_job_update, buffer);
+	pack32(steps_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	return error_code;
+}

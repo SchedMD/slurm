@@ -28,7 +28,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <ctype.h>
@@ -41,44 +41,54 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include <src/common/hostlist.h>
-#include <src/common/pack.h>
-#include <src/common/xstring.h>
-#include <src/slurmctld/agent.h>
-#include <src/slurmctld/locks.h>
-#include <src/slurmctld/slurmctld.h>
+#include "src/common/hostlist.h"
+#include "src/common/pack.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/agent.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 	4096
 
+/* Global variables */
 List config_list = NULL;		/* list of config_record entries */
-struct node_record *node_record_table_ptr = NULL;	/* location of the node records */
-int *hash_table = NULL;			/* table of hashed indicies into node_record */
+struct node_record *node_record_table_ptr = NULL;	/* node records */
+int *hash_table = NULL;			/* table of hashed indexes into 
+					 * node_record */
 struct config_record default_config_record;
 struct node_record default_node_record;
-time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation or deletion */
-time_t last_node_update = (time_t) NULL;	/* time of last update to node records */
-
+time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation 
+						 * or deletion */
+time_t last_node_update = (time_t) NULL;	/* time of last update to 
+						 * node records */
 bitstr_t *up_node_bitmap = NULL;	/* bitmap of nodes are up */
 bitstr_t *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
 
-int	delete_config_record ();
-void	dump_hash ();
-void 	dump_node_state (struct node_record *dump_node_ptr, Buf buffer);
-int	hash_index (char *name);
-void 	pack_node (struct node_record *dump_node_ptr, Buf buffer);
-void	split_node_name (char *name, char *prefix, char *suffix, int *index, int *digits);
+
+static int	_delete_config_record (void);
+static void 	_dump_node_state (struct node_record *dump_node_ptr, 
+				  Buf buffer);
+static int	_hash_index (char *name);
+static void 	_list_delete_config (void *config_entry);
+static int	_list_find_config (void *config_entry, void *key);
+static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
+static void	_split_node_name (char *name, char *prefix, char *suffix, 
+					int *index, int *digits);
+
+#if DEBUG_SYSTEM
+static void	_dump_hash (void);
+#endif
 
 
 /*
- * bitmap2node_name - given a bitmap, build a list of comma separated node names.
- *	names may include regular expressions (e.g. "lx[01-10]")
- * input: bitmap - bitmap pointer
- * output: returns pointer to node list or NULL on error 
+ * bitmap2node_name - given a bitmap, build a list of comma separated node 
+ *	names. names may include regular expressions (e.g. "lx[01-10]")
+ * IN bitmap - bitmap pointer
+ * RET pointer to node list or NULL on error 
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-char *  
-bitmap2node_name (bitstr_t *bitmap) 
+char * bitmap2node_name (bitstr_t *bitmap) 
 {
 	char *node_list_ptr;
 	int node_list_size, i;
@@ -106,7 +116,7 @@ bitmap2node_name (bitstr_t *bitmap)
 		}
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		split_node_name (node_record_table_ptr[i].name, prefix,
+		_split_node_name (node_record_table_ptr[i].name, prefix,
 				 suffix, &index, &last_digits);
 		if ((index == (last_index + 1)) &&	/* next in sequence */
 		    (strcmp (last_prefix, prefix) == 0) &&
@@ -175,16 +185,16 @@ bitmap2node_name (bitstr_t *bitmap)
 
 
 /*
- * create_config_record - create a config_record entry and set is values to the defaults.
- *	each config record corresponds to a line in the slurm.conf file and typically 
- *	describes the configuration of a large number of nodes
- * output: returns pointer to the config_record
+ * create_config_record - create a config_record entry and set is values to 
+ *	the defaults. each config record corresponds to a line in the  
+ *	slurm.conf file and typically describes the configuration of a 
+ *	large number of nodes
+ * RET pointer to the config_record
  * global: default_config_record - default configuration values
- * NOTE: memory allocated will remain in existence until delete_config_record() is called 
- *	to deletet all configuration records
+ * NOTE: memory allocated will remain in existence until 
+ *	_delete_config_record() is called to delete all configuration records
  */
-struct config_record * 
-create_config_record (void) 
+struct config_record * create_config_record (void) 
 {
 	struct config_record *config_point;
 
@@ -211,7 +221,7 @@ create_config_record (void)
 		config_point->feature = (char *) NULL;
 
 	if (list_append(config_list, config_point) == NULL)
-		fatal ("create_config_record: unable to allocate memory\n");
+		fatal ("create_config_record: unable to allocate memory");
 
 	return config_point;
 }
@@ -219,14 +229,14 @@ create_config_record (void)
 
 /* 
  * create_node_record - create a node record and set its values to defaults
- * input: config_point - pointer to node's configuration information
- *        node_name - name of the node
- * output: returns a pointer to the record or NULL if error
+ * IN config_point - pointer to node's configuration information
+ * IN node_name - name of the node
+ * RET pointer to the record or NULL if error
  * global: default_node_record - default node values
- * NOTE: the record's values are initialized to those of default_node_record, node_name and 
- *	config_point's cpus, real_memory, and tmp_disk values
- * NOTE: allocates memory at node_record_table_ptr that must be xfreed when the 
- *	global node table is no longer required
+ * NOTE: the record's values are initialized to those of default_node_record, 
+ *	node_name and config_point's cpus, real_memory, and tmp_disk values
+ * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
+ *	the global node table is no longer required
  */
 struct node_record * 
 create_node_record (struct config_record *config_point, char *node_name) 
@@ -240,15 +250,20 @@ create_node_record (struct config_record *config_point, char *node_name)
 	if (node_name == NULL) 
 		fatal ("create_node_record: node_name is NULL");
 	if (strlen (node_name) >= MAX_NAME_LEN)
-		fatal ("create_node_record: node_name too long: %s", node_name);
+		fatal ("create_node_record: node_name too long: %s", 
+		       node_name);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
 	old_buffer_size = (node_record_count) * sizeof (struct node_record);
-	old_buffer_size = ((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	new_buffer_size = (node_record_count + 1) * sizeof (struct node_record);
-	new_buffer_size = ((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
+	old_buffer_size = 
+		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
+	new_buffer_size = 
+		(node_record_count + 1) * sizeof (struct node_record);
+	new_buffer_size = 
+		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	if (node_record_count == 0)
-		node_record_table_ptr = (struct node_record *) xmalloc (new_buffer_size);
+		node_record_table_ptr = 
+			(struct node_record *) xmalloc (new_buffer_size);
 	else if (old_buffer_size != new_buffer_size)
 		xrealloc (node_record_table_ptr, new_buffer_size);
 
@@ -269,15 +284,14 @@ create_node_record (struct config_record *config_point, char *node_name)
 
 
 /*
- * delete_config_record - delete all configuration records
- * output: returns 0 if no error, errno otherwise
+ * _delete_config_record - delete all configuration records
+ * RET 0 if no error, errno otherwise
  * global: config_list - list of all configuration records
  */
-int 
-delete_config_record () 
+static int _delete_config_record (void) 
 {
 	last_node_update = time (NULL);
-	(void) list_delete_all (config_list, &list_find_config,
+	(void) list_delete_all (config_list, &_list_find_config,
 				"universal_key");
 	return SLURM_SUCCESS;
 }
@@ -287,19 +301,19 @@ delete_config_record ()
  * delete_node_record - delete the node record for a node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to NODE_STATE_DOWN
- * input: name - name of the desired node
- * output: return SLURM_SUCCESS on success, errno otherwise
+ * IN name - name of the desired node
+ * RET 0 on success, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
  */
-int 
-delete_node_record (char *name) 
+int delete_node_record (char *name) 
 {
 	struct node_record *node_record_point;	/* pointer to node_record */
 
 	last_node_update = time (NULL);
 	node_record_point = find_node_record (name);
 	if (node_record_point == (struct node_record *) NULL) {
-		error ("delete_node_record: attempt to delete non-existent node %s", name);
+		error("delete_node_record: can't delete non-existent node %s", 
+		      name);
 		return ENOENT;
 	}  
 
@@ -315,36 +329,14 @@ delete_node_record (char *name)
 }
 
 
-/* 
- * dump_hash - print the hash_table contents, used for debugging or analysis of hash technique 
- * global: node_record_table_ptr - pointer to global node table
- *         hash_table - table of hash indecies
- */
-void 
-dump_hash () 
-{
-	int i, inx;
-
-	if (hash_table == NULL)
-		return;
-	for (i = 0; i < node_record_count; i++) {
-		inx = hash_table[i];
-		if ((inx >= node_record_count) ||
-		    (strlen (node_record_table_ptr[inx].name) == 0))
-			continue;
-		debug ("hash:%d:%s", i, node_record_table_ptr[inx].name);
-	}
-}
-
-
 /* dump_all_node_state - save the state of all nodes to file */
-int
-dump_all_node_state ( void )
+int dump_all_node_state ( void )
 {
 	int error_code = 0, inx, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read config and node */
-	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, 
+						NO_LOCK };
 	Buf buffer = init_buf(BUF_SIZE*16);
 
 	/* write header: time */
@@ -354,10 +346,11 @@ dump_all_node_state ( void )
 	lock_slurmctld (node_read_lock);
 	for (inx = 0; inx < node_record_count; inx++) {
 		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
-		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
+		    (node_record_table_ptr[inx].config_ptr->magic != 
+							CONFIG_MAGIC))
 			fatal ("dump_all_node_state: data integrity is bad");
 
-		dump_node_state (&node_record_table_ptr[inx], buffer);
+		_dump_node_state (&node_record_table_ptr[inx], buffer);
 	}
 	unlock_slurmctld (node_read_lock);
 
@@ -371,13 +364,16 @@ dump_all_node_state ( void )
 	lock_state_files ();
 	log_fd = creat (new_file, 0600);
 	if (log_fd == 0) {
-		error ("Can't save state, error creating file %s %m", new_file);
+		error ("Can't save state, error creating file %s %m", 
+		       new_file);
 		error_code = errno;
 	}
 	else {
-		if (write (log_fd, get_buf_data(buffer), get_buf_offset(buffer)) != 
+		if (write (log_fd, get_buf_data(buffer), 
+		           get_buf_offset(buffer)) != 
 					get_buf_offset(buffer)) {
-			error ("Can't save state, error writing file %s %m", new_file);
+			error ("Can't save state, error writing file %s %m", 
+			       new_file);
 			error_code = errno;
 		}
 		close (log_fd);
@@ -401,12 +397,12 @@ dump_all_node_state ( void )
 }
 
 /*
- * dump_node_state - dump the state of a specific node to a buffer
- * dump_node_ptr (I) - pointer to node for which information is requested
- * buffer (I/O) - location to store data, pointers automatically advanced
+ * _dump_node_state - dump the state of a specific node to a buffer
+ * IN dump_node_ptr - pointer to node for which information is requested
+ * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-void 
-dump_node_state (struct node_record *dump_node_ptr, Buf buffer) 
+static void 
+_dump_node_state (struct node_record *dump_node_ptr, Buf buffer) 
 {
 	packstr (dump_node_ptr->name, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
@@ -416,11 +412,11 @@ dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 }
 
 /*
- * load_node_state - load the node state from file, recover from slurmctld restart.
- *	execute this after loading the configuration file data.
+ * load_node_state - load the node state from file, recover from slurmctld 
+ *	restart. execute this after loading the configuration file data.
+ *	data goes into common storage
  */
-int
-load_node_state ( void )
+int load_node_state ( void )
 {
 	char *node_name, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0;
@@ -443,7 +439,9 @@ load_node_state ( void )
 	else {
 		data_allocated = BUF_SIZE;
 		data = xmalloc(data_allocated);
-		while ((data_read = read (state_fd, &data[data_size], BUF_SIZE)) == BUF_SIZE) {
+		while ((data_read = 
+			   read (state_fd, &data[data_size], BUF_SIZE)) == 
+					BUF_SIZE) {
 			data_size += data_read;
 			data_allocated += BUF_SIZE;
 			xrealloc(data, data_allocated);
@@ -468,7 +466,8 @@ load_node_state ( void )
 
 		/* validity test as possible */
 		if ((cpus == 0) || 
-		    ((node_state & (~NODE_STATE_NO_RESPOND)) >= NODE_STATE_END)) {
+		    ((node_state & (~NODE_STATE_NO_RESPOND)) >= 
+							NODE_STATE_END)) {
 			error ("Invalid data for node %s: cpus=%u, state=%u",
 				node_name, cpus, node_state);
 			error ("No more node data will be processed from the checkpoint file");
@@ -488,7 +487,8 @@ load_node_state ( void )
 			node_ptr->tmp_disk = tmp_disk;
 			node_ptr->last_response = time (NULL);
 		} else {
-			error ("Node %s has vanished from configuration", node_name);
+			error ("Node %s has vanished from configuration", 
+			       node_name);
 		}
 		if (node_name)
 			xfree (node_name);
@@ -498,7 +498,7 @@ load_node_state ( void )
 	return error_code;
 
 unpack_error:
-	error ("Incomplete node data checkpoint file.  State not completely restored");
+	error ("Incomplete node data checkpoint file. Incomplete restore.");
 	free_buf (buffer);
 	return EFAULT;
 }
@@ -517,14 +517,16 @@ find_node_record (char *name)
 
 	/* try to find in hash table first */
 	if (hash_table) {
-		i = hash_index (name);
+		i = _hash_index (name);
 		if ( (i <= node_record_count) &&
 		     ((inx = hash_table[i]) <= node_record_count ) &&
-		     (strncmp ((node_record_table_ptr[inx]).name, name, MAX_NAME_LEN) == 0) )
+		     (strncmp ((node_record_table_ptr[inx]).name, name, 
+		                MAX_NAME_LEN) == 0) )
 			return (node_record_table_ptr + inx);
-		debug ("find_node_record: hash table lookup failure for %s", name);
+		debug ("find_node_record: hash table lookup failure for %s", 
+		       name);
 #if DEBUG_SYSTEM
-		dump_hash ();
+		_dump_hash ();
 #endif
 	}
 
@@ -542,15 +544,13 @@ find_node_record (char *name)
 
 
 /* 
- * hash_index - return a hash table index for the given node name 
- * this code is optimized for names containing a base-ten suffix (e.g. "lx04")
- * input: the node's name
- * output: return code is the hash table index
+ * _hash_index - return a hash table index for the given node name 
+ * IN name = the node's name
+ * RET the hash table index
  * global: hash_table - table of hash indexes
  *	slurmctld_conf.hash_base - numbering base for sequence numbers
  */
-int 
-hash_index (char *name) 
+static int _hash_index (char *name) 
 {
 	int i, inx, tmp;
 
@@ -564,7 +564,8 @@ hash_index (char *name)
 			if (tmp == 0)
 				break;	/* end if string */
 			if ((tmp >= (int) '0') && (tmp <= (int) '9'))
-				inx = (inx * slurmctld_conf.hash_base) + (tmp - (int) '0');
+				inx = (inx * slurmctld_conf.hash_base) + 
+				      (tmp - (int) '0');
 		}
 	}
 
@@ -574,7 +575,8 @@ hash_index (char *name)
 			if (tmp == 0)
 				break;	/* end if string */
 			if ((tmp >= (int) '0') && (tmp <= (int) '7'))
-				inx = (inx * slurmctld_conf.hash_base) + (tmp - (int) '0');
+				inx = (inx * slurmctld_conf.hash_base) + 
+				      (tmp - (int) '0');
 		}
 	}
 
@@ -583,14 +585,17 @@ hash_index (char *name)
 			tmp = (int) name[i];
 			if (tmp == 0)
 				break;	/* end if string */
-			if ((tmp >= (int) '0') && (tmp <= (int) '9')) {	/* value 0-9 */
+			if ((tmp >= (int) '0') && (tmp <= (int) '9')) {	
+				/* value 0-9 */
 				tmp -= (int) '0';
 				}
-			else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {	/* value 10-35 */
+			else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {
+				/* value 10-35 */
 				tmp -= (int) 'a';
 				tmp += 10;
 			}
-			else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {	/* value 10-35 */
+			else if ((tmp >= (int) 'a') && (tmp <= (int) 'z')) {
+				/* value 10-35 */
 				tmp -= (int) 'a';
 				tmp += 10;
 			}
@@ -608,16 +613,16 @@ hash_index (char *name)
 
 /* 
  * init_node_conf - initialize the node configuration tables and values. 
- *	this should be called before creating any node or configuration entries.
- * output: return value - 0 if no error, otherwise an error code
+ *	this should be called before creating any node or configuration 
+ *	entries.
+ * RET 0 if no error, otherwise an error code
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
  *         default_config_record - default values for configuration records
  *         hash_table - table of hash indecies
  *         last_node_update - time of last node table update
  */
-int 
-init_node_conf () 
+int init_node_conf (void) 
 {
 	last_node_update = time (NULL);
 
@@ -654,9 +659,9 @@ init_node_conf ()
 	default_config_record.node_bitmap = (bitstr_t *) NULL;
 
 	if (config_list)	/* delete defunct configuration entries */
-		(void) delete_config_record ();
+		(void) _delete_config_record ();
 	else
-		config_list = list_create (&list_delete_config);
+		config_list = list_create (&_list_delete_config);
 
 	if (config_list == NULL)
 		fatal ("init_node_conf: list_create can not allocate memory");
@@ -664,10 +669,9 @@ init_node_conf ()
 }
 
 
-/* list_compare_config - compare two entry from the config list based upon weight, 
- * see list.h for documentation */
-int 
-list_compare_config (void *config_entry1, void *config_entry2) 
+/* list_compare_config - compare two entry from the config list based upon 
+ *	weight, see common/list.h for documentation */
+int list_compare_config (void *config_entry1, void *config_entry2) 
 {
 	int weight1, weight2;
 	weight1 = ((struct config_record *) config_entry1)->weight;
@@ -676,11 +680,12 @@ list_compare_config (void *config_entry1, void *config_entry2)
 }
 
 
-/* list_delete_config - delete an entry from the config list, see list.h for documentation */
-void 
-list_delete_config (void *config_entry) 
+/* _list_delete_config - delete an entry from the config list, 
+ *	see list.h for documentation */
+static void _list_delete_config (void *config_entry) 
 {
-	struct config_record *config_record_point;	/* pointer to config_record */
+	struct config_record *config_record_point;
+
 	config_record_point = (struct config_record *) config_entry;
 	if (config_record_point->feature)
 		xfree (config_record_point->feature);
@@ -692,10 +697,13 @@ list_delete_config (void *config_entry)
 }
 
 
-/* list_find_config - find an entry in the config list, see list.h for documentation 
- * key is partition name or "universal_key" for all config */
-int 
-list_find_config (void *config_entry, void *key) 
+/* 
+ * _list_find_config - find an entry in the config list, see list.h for   
+ *	documentation 
+ * IN key - is "universal_key" for all config
+ * RET 1 if key == "universal_key", 0 otherwise
+ */
+static int _list_find_config (void *config_entry, void *key) 
 {
 	if (strcmp (key, "universal_key") == 0)
 		return 1;
@@ -704,16 +712,15 @@ list_find_config (void *config_entry, void *key)
 
 
 /*
- * node_name2bitmap - given a node name regular expression, build a bitmap representation
- * input: node_names - list of nodes
- *        bitmap - place to put bitmap pointer
- * output: bitmap - set to bitmap or NULL on error 
- *         returns 0 if no error, otherwise EINVAL or enomem
+ * node_name2bitmap - given a node name regular expression, build a bitmap 
+ *	representation
+ * IN node_names - list of nodes
+ * OUT bitmap - set to bitmap or NULL on error 
+ * RET 0 if no error, otherwise EINVAL or enomem
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree memory at bitmap when no longer required
  */
-int 
-node_name2bitmap (char *node_names, bitstr_t **bitmap) 
+int node_name2bitmap (char *node_names, bitstr_t **bitmap) 
 {
 	struct node_record *node_record_point;
 	char *this_node_name;
@@ -742,14 +749,16 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_record_point = find_node_record (this_node_name);
 		if (node_record_point == NULL) {
-			error ("node_name2bitmap: invalid node specified %s",this_node_name);
+			error ("node_name2bitmap: invalid node specified %s",
+			       this_node_name);
 			hostlist_destroy (host_list);
 			bit_free (my_bitmap);
 			free (this_node_name);
 			return EINVAL;
 		}
 		bit_set (my_bitmap,
-			    (bitoff_t) (node_record_point - node_record_table_ptr));
+			 (bitoff_t) (node_record_point - 
+			             node_record_table_ptr));
 		free (this_node_name);
 	}
 
@@ -760,22 +769,18 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 
 
 /* 
- * pack_all_node - dump all configuration and node information for all nodes in 
- *	machine independent form (for network transmission)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
+ * pack_all_node - dump all configuration and node information for all nodes  
+ *	in machine independent form (for network transmission)
+ * OUT buffer_ptr - pointer to the stored data
+ * OUT buffer_size - set to size of the buffer in bytes
+ * IN/OUT update_time - dump new data only if partition records updated since 
+ *	time specified, otherwise return empty buffer, set to time partition 
+ *	records last updated
  * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
- * NOTE: change slurm_load_node() in api/node_info.c whenever the data format changes
+ * NOTE: the caller must xfree the buffer at *buffer_ptr
+ * NOTE: change slurm_load_node() in api/node_info.c when data format changes
  */
-void 
-pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	int inx;
 	uint32_t nodes_packed, tmp_offset;
@@ -796,10 +801,11 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	/* write node records */
 	for (inx = 0; inx < node_record_count; inx++) {
 		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
-		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
+		    (node_record_table_ptr[inx].config_ptr->magic != 
+							CONFIG_MAGIC))
 			fatal ("pack_all_node: data integrity is bad");
 
-		pack_node(&node_record_table_ptr[inx], buffer);
+		_pack_node(&node_record_table_ptr[inx], buffer);
 		nodes_packed ++ ;
 	}
 
@@ -815,24 +821,24 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 
 
 /* 
- * pack_node - dump all configuration information about a specific node in 
+ * _pack_node - dump all configuration information about a specific node in 
  *	machine independent form (for network transmission)
- * dump_node_ptr (I) - pointer to node for which information is requested
- * buffer (I/O) - buffer in which data is place, pointers automatically updated
- * NOTE: if you make any changes here be sure to make the corresponding changes to 
- *	load_node_config in api/node_info.c
+ * IN dump_node_ptr - pointer to node for which information is requested
+ * IN/OUT buffer - buffer where data is placed, pointers automatically updated
+ * NOTE: if you make any changes here be sure to make the corresponding 
+ *	changes to load_node_config in api/node_info.c
  */
-void 
-pack_node (struct node_record *dump_node_ptr, Buf buffer) 
+static void _pack_node (struct node_record *dump_node_ptr, Buf buffer) 
 {
 	packstr (dump_node_ptr->name, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
-	if (slurmctld_conf.fast_schedule) {	/* Only data from config_record used for scheduling */
+	if (slurmctld_conf.fast_schedule) {	
+		/* Only data from config_record used for scheduling */
 		pack32  (dump_node_ptr->config_ptr->cpus, buffer);
 		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
-	}
-	else {			/* Individual node data used for scheduling */
+	} else {	
+		/* Individual node data used for scheduling */
 		pack32  (dump_node_ptr->cpus, buffer);
 		pack32  (dump_node_ptr->real_memory, buffer);
 		pack32  (dump_node_ptr->tmp_disk, buffer);
@@ -847,18 +853,15 @@ pack_node (struct node_record *dump_node_ptr, Buf buffer)
 
 
 /* 
- * rehash - build a hash table of the node_record entries. this is a large hash table 
- * to permit the immediate finding of a record based only upon its name without regards 
- * to the number. there should be no need for a search. the algorithm is optimized for 
- * node names with a base-ten sequence number suffix. if you have a large cluster and 
- * use a different naming convention, this function and/or the hash_index function 
- * should be re-written.
+ * rehash - build a hash table of the node_record entries. this is a large 
+ *	hash table to permit the immediate finding of a record based only 
+ *	upon its name without regards to their number. there should be no 
+ *	need for a search. 
  * global: node_record_table_ptr - pointer to global node table
  *         hash_table - table of hash indecies
- * NOTE: allocates memory for hash_table
+ * NOTE: manages memory for hash_table
  */
-void 
-rehash () 
+void rehash (void) 
 {
 	int i, inx;
 
@@ -868,7 +871,7 @@ rehash ()
 	for (i = 0; i < node_record_count; i++) {
 		if (strlen (node_record_table_ptr[i].name) == 0)
 			continue;
-		inx = hash_index (node_record_table_ptr[i].name);
+		inx = _hash_index (node_record_table_ptr[i].name);
 		hash_table[inx] = i;
 	}
 
@@ -876,9 +879,9 @@ rehash ()
 }
 
 
-/* set_slurmd_addr - establish the slurm_addr for the slurmd on each node */
-void 
-set_slurmd_addr (void) 
+/* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
+ *	Uses common data structures. */
+void set_slurmd_addr (void) 
 {
 	int i;
 
@@ -909,16 +912,15 @@ set_slurmd_addr (void)
 
 
 /* 
- * split_node_name - split a node name into prefix, suffix, index value, and digit count
- * input: name - the node name to parse
- *        prefix, suffix, index, digits - location into which to store node name's constituents
- * output: prefix, suffix, index - the node name's constituents 
- *         index - index, defaults to NO_VAL
- *         digits - number of digits in the index, defaults to NO_VAL
+ * _split_node_name - split a node name into prefix, suffix, index value, 
+ *	and digit count
+ * IN name - the node name to parse
+ * OUT prefix, suffix, index - the node name's constituents 
+ * OUT index - index, defaults to NO_VAL
+ * OUT digits - number of digits in the index, defaults to NO_VAL
  */
-void 
-split_node_name (char *name, char *prefix, char *suffix, int *index,
-		 int *digits) 
+static void _split_node_name (char *name, char *prefix, char *suffix, 
+				int *index, int *digits) 
 {
 	int i;
 	char tmp[2];
@@ -952,10 +954,11 @@ split_node_name (char *name, char *prefix, char *suffix, int *index,
 
 /* 
  * update_node - update the configuration data for one or more nodes
+ * IN update_node_msg - update node request
+ * RET 0 or error code
  * global: node_record_table_ptr - pointer to global node table
  */
-int 
-update_node ( update_node_msg_t * update_node_msg ) 
+int update_node ( update_node_msg_t * update_node_msg ) 
 {
 	int error_code = 0, state_val, node_inx;
 	char  *this_node_name ;
@@ -963,15 +966,17 @@ update_node ( update_node_msg_t * update_node_msg )
 	hostlist_t host_list;
 
 	if (update_node_msg -> node_names == NULL ) {
-		error ("update_node: invalid node name  %s\n", 
+		error ("update_node: invalid node name  %s", 
 		       update_node_msg -> node_names );
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	state_val = update_node_msg -> node_state ; 
 	
-	if ( (host_list = hostlist_create (update_node_msg -> node_names)) == NULL) {
-		error ("hostlist_create error on %s: %m", update_node_msg -> node_names);
+	if ( (host_list = hostlist_create (update_node_msg -> node_names))
+								 == NULL) {
+		error ("hostlist_create error on %s: %m", 
+		       update_node_msg -> node_names);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
@@ -980,7 +985,7 @@ update_node ( update_node_msg_t * update_node_msg )
 		node_record_point = find_node_record (this_node_name);
 		node_inx = node_record_point - node_record_table_ptr;
 		if (node_record_point == NULL) {
-			error ("update_node: node name %s does not exist, can not be updated", 
+			error ("update_node: node %s does not exist, can't be updated", 
 				this_node_name);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			free (this_node_name);
@@ -1005,7 +1010,8 @@ update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (idle_node_bitmap, node_inx);
 			}
 			else if (state_val == NODE_STATE_DRAINED) {
-				if (bit_test (idle_node_bitmap, node_inx) == false)
+				if (bit_test (idle_node_bitmap, node_inx) == 
+									false)
 					state_val = NODE_STATE_DRAINING;
 				bit_clear (up_node_bitmap, node_inx);
 			}
@@ -1017,7 +1023,8 @@ update_node ( update_node_msg_t * update_node_msg )
 				bit_clear (up_node_bitmap, node_inx);
 			}
 			else {
-				error ("Invalid node state specified %d", state_val);
+				error ("Invalid node state specified %d", 
+				       state_val);
 			}
 
 			node_record_point->node_state = state_val;
@@ -1035,16 +1042,17 @@ update_node ( update_node_msg_t * update_node_msg )
 /*
  * validate_node_specs - validate the node's specifications as valid, 
  *   if not set state to down, in any case update last_response
- * input: node_name - name of the node
- *        cpus - number of cpus measured
- *        real_memory - mega_bytes of real_memory measured
- *        tmp_disk - mega_bytes of tmp_disk measured
- * output: returns 0 if no error, ENOENT if no such node, EINVAL if values too low
+ * IN node_name - name of the node
+ * IN cpus - number of cpus measured
+ * IN real_memory - mega_bytes of real_memory measured
+ * IN tmp_disk - mega_bytes of tmp_disk measured
+ * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * global: node_record_table_ptr - pointer to global node table
  */
 int 
 validate_node_specs (char *node_name, uint32_t cpus, 
-			uint32_t real_memory, uint32_t tmp_disk, uint32_t job_count) {
+			uint32_t real_memory, uint32_t tmp_disk, 
+			uint32_t job_count) {
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
@@ -1059,21 +1067,25 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	error_code = 0;
 
 	if (cpus < config_ptr->cpus) {
-		error ("validate_node_specs: node %s has low cpu count %u", node_name, cpus);
+		error ("validate_node_specs: node %s has low cpu count %u", 
+		       node_name, cpus);
 		error_code = EINVAL;
 	}
 	node_ptr->cpus = cpus;
 	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr))		
-		node_ptr->partition_ptr->total_cpus += (cpus - config_ptr->cpus);
+		node_ptr->partition_ptr->total_cpus += 
+						(cpus - config_ptr->cpus);
 
 	if (real_memory < config_ptr->real_memory) {
-		error ("validate_node_specs: node %s has low real_memory size %u", node_name, real_memory);
+		error ("validate_node_specs: node %s has low real_memory size %u", 
+		       node_name, real_memory);
 		error_code = EINVAL;
 	}
 	node_ptr->real_memory = real_memory;
 
 	if (tmp_disk < config_ptr->tmp_disk) {
-		error ("validate_node_specs: node %s has low tmp_disk size %u", node_name, tmp_disk);
+		error ("validate_node_specs: node %s has low tmp_disk size %u",
+		       node_name, tmp_disk);
 		error_code = EINVAL;
 	}
 	node_ptr->tmp_disk = tmp_disk;
@@ -1086,12 +1098,14 @@ validate_node_specs (char *node_name, uint32_t cpus,
 
 	}
 	else {
-		info ("validate_node_specs: node %s has registered", node_name);
+		info ("validate_node_specs: node %s has registered", 
+		      node_name);
 		node_ptr->cpus = cpus;
 		node_ptr->real_memory = real_memory;
 		node_ptr->tmp_disk = tmp_disk;
 #ifdef 		HAVE_LIBELAN3
-		/* Every node in a given partition must have the same processor count at present */
+		/* Every node in a given partition must have the same 
+		 * processor count at present */
 		if ((slurmctld_conf.fast_schedule == 0) &&
 		    (node_ptr->config_ptr->cpus != cpus)) {
 			error ("Node %s has processor count inconsistent with rest of partition",
@@ -1118,27 +1132,31 @@ validate_node_specs (char *node_name, uint32_t cpus,
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
 			else
 				node_ptr->node_state = NODE_STATE_IDLE;
-			info ("validate_node_specs: node %s returned to service", node_name);
+			info ("validate_node_specs: node %s returned to service", 
+			      node_name);
 			resp_state = 1;	/* just started responding */
 		}
 
 		if (node_ptr->node_state == NODE_STATE_IDLE) {
-			bit_set (idle_node_bitmap, (node_ptr - node_record_table_ptr));
+			bit_set (idle_node_bitmap, 
+			         (node_ptr - node_record_table_ptr));
 			if (resp_state)	{
-				/* Node just started responding, do all pending RPCs now */
+				/* Node just started responding, 
+				 * do all pending RPCs now */
 				retry_pending (node_name);
 			}
 		}
 		if (node_ptr->node_state != NODE_STATE_DOWN)
-			bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
+			bit_set (up_node_bitmap, 
+			         (node_ptr - node_record_table_ptr));
 	}
 
 	return error_code;
 }
 
-/* node_did_resp - record that the specified node is responding */
-void 
-node_did_resp (char *name)
+/* node_did_resp - record that the specified node is responding
+ * IN name - name of the node */
+void node_did_resp (char *name)
 {
 	struct node_record *node_ptr;
 	int node_inx;
@@ -1160,7 +1178,8 @@ node_did_resp (char *name)
 	if (node_ptr->node_state == NODE_STATE_IDLE) {
 		bit_set (idle_node_bitmap, node_inx);
 		if (resp_state)	{
-			/* Node just started responding, do all its pending RPCs now */
+			/* Node just started responding, 
+			 * do all its pending RPCs now */
 			retry_pending (name);
 		}
 	}
@@ -1169,9 +1188,9 @@ node_did_resp (char *name)
 	return;
 }
 
-/* node_not_resp - record that the specified node is not responding */
-void 
-node_not_resp (char *name)
+/* node_not_resp - record that the specified node is not responding 
+ * IN name - name of the node */
+void node_not_resp (char *name)
 {
 	struct node_record *node_ptr;
 	int i;
@@ -1196,8 +1215,7 @@ node_not_resp (char *name)
 
 /* ping_nodes - check that all nodes and daemons are alive,  
  *	get nodes in UNKNOWN state to register */
-void 
-ping_nodes (void)
+void ping_nodes (void)
 {
 	int i, pos, age;
 	time_t now;
@@ -1239,21 +1257,26 @@ ping_nodes (void)
 			bit_clear (up_node_bitmap, i);
 			bit_clear (idle_node_bitmap, i);
 			node_record_table_ptr[i].node_state = NODE_STATE_DOWN;
-			kill_running_job_by_node_name (node_record_table_ptr[i].name);
+			kill_running_job_by_node_name (
+					node_record_table_ptr[i].name);
 			continue;
 		}
 
 		if (base_state == NODE_STATE_UNKNOWN) {
-			debug3 ("attempt to register %s now", node_record_table_ptr[i].name);
-			if ((reg_agent_args->node_count+1) > reg_buf_rec_size) {
+			debug3 ("attempt to register %s now", 
+			        node_record_table_ptr[i].name);
+			if ((reg_agent_args->node_count+1) > 
+						reg_buf_rec_size) {
 				reg_buf_rec_size += 32;
 				xrealloc ((reg_agent_args->slurm_addr), 
-				          (sizeof (struct sockaddr_in) * reg_buf_rec_size));
+				          (sizeof (struct sockaddr_in) * 
+					  reg_buf_rec_size));
 				xrealloc ((reg_agent_args->node_names), 
 				          (MAX_NAME_LEN * reg_buf_rec_size));
 			}
-			reg_agent_args->slurm_addr[reg_agent_args->node_count] = 
-						node_record_table_ptr[i].slurm_addr;
+			reg_agent_args->slurm_addr[
+					reg_agent_args->node_count] = 
+					node_record_table_ptr[i].slurm_addr;
 			pos = MAX_NAME_LEN * reg_agent_args->node_count;
 			strncpy (&reg_agent_args->node_names[pos],
 			         node_record_table_ptr[i].name, MAX_NAME_LEN);
@@ -1265,12 +1288,13 @@ ping_nodes (void)
 		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
 			ping_buf_rec_size += 32;
 			xrealloc ((ping_agent_args->slurm_addr), 
-			          (sizeof (struct sockaddr_in) * ping_buf_rec_size));
+			          (sizeof (struct sockaddr_in) * 
+				  ping_buf_rec_size));
 			xrealloc ((ping_agent_args->node_names), 
 			          (MAX_NAME_LEN * ping_buf_rec_size));
 		}
 		ping_agent_args->slurm_addr[ping_agent_args->node_count] = 
-						node_record_table_ptr[i].slurm_addr;
+					node_record_table_ptr[i].slurm_addr;
 		pos = MAX_NAME_LEN * ping_agent_args->node_count;
 		strncpy (&ping_agent_args->node_names[pos],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
@@ -1284,18 +1308,21 @@ ping_nodes (void)
 		debug ("Spawning ping agent");
 		if (pthread_attr_init (&ping_attr_agent))
 			fatal ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&ping_attr_agent, PTHREAD_CREATE_DETACHED))
+		if (pthread_attr_setdetachstate (&ping_attr_agent, 
+						PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&ping_attr_agent, PTHREAD_SCOPE_SYSTEM))
+		if (pthread_attr_setscope (&ping_attr_agent, 
+						PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
 		if (pthread_create (&ping_thread_agent, &ping_attr_agent, 
 					agent, (void *)ping_agent_args)) {
 			error ("pthread_create error %m");
 			sleep (1); /* sleep and try once more */
-			if (pthread_create (&ping_thread_agent, &ping_attr_agent, 
-						agent, (void *)ping_agent_args))
+			if (pthread_create (&ping_thread_agent, 
+					    &ping_attr_agent, 
+					    agent, (void *)ping_agent_args))
 				fatal ("pthread_create error %m");
 		}
 	}
@@ -1306,25 +1333,31 @@ ping_nodes (void)
 		debug ("Spawning node registration agent");
 		if (pthread_attr_init (&reg_attr_agent))
 			fatal ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&reg_attr_agent, PTHREAD_CREATE_DETACHED))
+		if (pthread_attr_setdetachstate (&reg_attr_agent, 
+						 PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&reg_attr_agent, PTHREAD_SCOPE_SYSTEM))
+		if (pthread_attr_setscope (&reg_attr_agent, 
+					   PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
 		if (pthread_create (&reg_thread_agent, &reg_attr_agent, 
 					agent, (void *)reg_agent_args)) {
 			error ("pthread_create error %m");
 			sleep (1); /* sleep and try once more */
-			if (pthread_create (&reg_thread_agent, &reg_attr_agent, 
-						agent, (void *)reg_agent_args))
+			if (pthread_create (&reg_thread_agent, 
+					    &reg_attr_agent,
+					    agent, (void *)reg_agent_args))
 				fatal ("pthread_create error %m");
 		}
 	}
 }
 
-/* find_first_node_record - find a record for first node in the bitmap */
-extern struct node_record *
+/*
+ * find_first_node_record - find a record for first node in the bitmap
+ * IN node_bitmap
+ */
+struct node_record *
 find_first_node_record (bitstr_t *node_bitmap)
 {
 	int inx;
@@ -1340,4 +1373,28 @@ find_first_node_record (bitstr_t *node_bitmap)
 	else
 		return &node_record_table_ptr[inx];
 }
+
+#if DEBUG_SYSTEM
+/* 
+ * _dump_hash - print the hash_table contents, used for debugging or
+ *	analysis of hash technique 
+ * global: node_record_table_ptr - pointer to global node table
+ *         hash_table - table of hash indecies
+ */
+static void _dump_hash (void) 
+{
+	int i, inx;
+
+	if (hash_table == NULL)
+		return;
+	for (i = 0; i < node_record_count; i++) {
+		inx = hash_table[i];
+		if ((inx >= node_record_count) ||
+		    (strlen (node_record_table_ptr[inx].name) == 0))
+			continue;
+		debug ("hash:%d:%s", i, node_record_table_ptr[inx].name);
+	}
+}
+#endif
+
 
