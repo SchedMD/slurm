@@ -28,9 +28,9 @@
 #include <pwd.h>
 #include <sys/types.h>
 
-#include <src/common/xstring.h>
-#include <src/popt/popt.h>
-#include <src/squeue/squeue.h>
+#include "src/common/xstring.h"
+#include "src/popt/popt.h"
+#include "src/squeue/squeue.h"
 
 #define __DEBUG 0
 
@@ -49,15 +49,17 @@
 #define OPT_SORT   	0x0d
 
 /* FUNCTIONS */
-static List build_job_list( char* str );
-static List build_part_list( char* str );
-static List build_state_list( char* str );
-static List build_step_list( char* str );
-static List build_user_list( char* str );
-static int  parse_state( char* str, enum job_states* states );
-static void parse_token( char *token, char *field, int *field_size, bool *right_justify);
-static int  parse_format( char* );
-static void print_options( void );
+static List _build_job_list( char* str );
+static List _build_part_list( char* str );
+static List _build_state_list( char* str );
+static List _build_all_states_list( void );
+static List _build_step_list( char* str );
+static List _build_user_list( char* str );
+static int  _parse_state( char* str, enum job_states* states );
+static void _parse_token( char *token, char *field, int *field_size, 
+                          bool *right_justify);
+static int  _parse_format( char* );
+static void _print_options( void );
 
 /*
  * parse_command_line
@@ -65,8 +67,6 @@ static void print_options( void );
 int
 parse_command_line( int argc, char* argv[] )
 {
-	/* { long-option, short-option, argument type, variable address, option tag, docstr, argstr } */
-
 	poptContext context;
 	char next_opt, curr_opt;
 	int rc = 0;
@@ -74,13 +74,17 @@ parse_command_line( int argc, char* argv[] )
 	/* Declare the Options */
 	static const struct poptOption options[] = 
 	{
+		/* { long-option, short-option, argument type, 
+		 *    variable address, option tag, docstr, argstr } */
+
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE,
-			 "specify an interation period", "seconds"},
+			"specify an interation period", "seconds"},
 		{"jobs", 'j', POPT_ARG_NONE, &params.job_flag, OPT_JOBS_NONE, 
 			"comma separated list of jobs to view, default is all", 
 			"job_id"},
-		{"steps", 's', POPT_ARG_NONE, &params.step_flag, OPT_STEPS_NONE, 
-			"comma separated list of job steps to view, default is all" , 
+		{"steps", 's', POPT_ARG_NONE, &params.step_flag, 
+			OPT_STEPS_NONE, 
+			"comma separated list of job steps to view, default is all",
 			"job_step"},
 		{"long", 'l', POPT_ARG_NONE, &params.long_list, OPT_LONG, 
 			"long report", NULL},
@@ -90,7 +94,8 @@ parse_command_line( int argc, char* argv[] )
 			"comma seperated list of states to view", "states"},
 		{"partitions", 'p', POPT_ARG_STRING, 
 			&params.partitions, OPT_PARTITIONS,
-			"comma separated list of partitions to view", "partitions"},
+			"comma separated list of partitions to view", 
+			"partitions"},
 		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
 			"format specification", "format"},
 		{"user", 'u', POPT_ARG_STRING, &params.users, OPT_USERS,
@@ -118,23 +123,27 @@ parse_command_line( int argc, char* argv[] )
 		switch ( curr_opt )
 		{
 			case OPT_JOBS_NONE:
-				if ( (opt_arg = poptGetArg( context )) != NULL )
+				if ( (opt_arg = poptGetArg(context)) != NULL )
 					params.jobs = (char*)opt_arg;
-				params.job_list = build_job_list( params.jobs );
+				params.job_list = _build_job_list(params.jobs);
 				break;	
 			case OPT_STEPS_NONE:
 				if ( (opt_arg = poptGetArg( context )) != NULL )
 					params.steps = (char*)opt_arg;
-				params.step_list = build_step_list( params.steps );
+				params.step_list = 
+					_build_step_list( params.steps );
 				break;	
 			case OPT_STATES:
-				params.state_list = build_state_list( params.states );
+				params.state_list = 
+					_build_state_list( params.states );
 				break;	
 			case OPT_PARTITIONS:
-				params.part_list = build_part_list( params.partitions );
+				params.part_list = 
+					_build_part_list( params.partitions );
 				break;	
 			case OPT_USERS:
-				params.user_list = build_user_list( params.users );
+				params.user_list = 
+					_build_user_list( params.users );
 				break;
 			case OPT_VERBOSE:
 				params.verbose = true;
@@ -162,25 +171,28 @@ parse_command_line( int argc, char* argv[] )
 		bad_opt = poptBadOption( context, POPT_BADOPTION_NOALIAS );
 		fprintf( stderr, "bad argument %s: %s\n", bad_opt, 
 				poptStrerror(next_opt) );
-		fprintf( stderr, "Try \"%s --help\" for more information\n", argv[0] );
+		fprintf( stderr, "Try \"%s --help\" for more information\n", 
+		         argv[0] );
 		exit( 1 );
 	}
 
 	if ( params.format )
-		parse_format( params.format );
+		_parse_format( params.format );
 
 	if ( params.verbose )
-		print_options();
+		_print_options();
 
 	return rc;
 }
 
 /*
- * parse_state - parse state information
- * input - char* comma seperated list of states
+ * _parse_state - convert state name string to numeric value
+ * IN str - state name
+ * OUT states - enum job_states value corresponding to str
+ * RET 0 or error code
  */
-int
-parse_state( char* str, enum job_states* states )
+static int
+_parse_state( char* str, enum job_states* states )
 {	
 	int i;
 	char *state_names;
@@ -207,8 +219,8 @@ parse_state( char* str, enum job_states* states )
 	return SLURM_ERROR;
 }
 
-int 
-parse_format( char* format )
+static int 
+_parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
@@ -229,71 +241,135 @@ parse_format( char* format )
 
 	params.format_list = list_create( NULL );
 	token = strtok_r( tmp_format, "%", &tmp_char);
+	if (token && (format[0] != '%'))	/* toss header */
+		token = strtok_r( NULL, "%", &tmp_char );
 	while (token) {
-		parse_token( token, field, &field_size, &right_justify);
+		_parse_token( token, field, &field_size, &right_justify);
 
 		if (params.step_flag) {
 			if      (field[0] == 'i')
-				step_format_add_id( params.format_list, field_size, right_justify );
+				step_format_add_id( params.format_list, 
+				                    field_size, right_justify );
 			else if (field[0] == 'N')
-				step_format_add_nodes( params.format_list, field_size, right_justify );
+				step_format_add_nodes( params.format_list, 
+				                       field_size, 
+				                       right_justify );
 			else if (field[0] == 'P')
-				step_format_add_partition( params.format_list, field_size, right_justify );
+				step_format_add_partition( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else if (field[0] == 'S')
-				step_format_add_start_time( params.format_list, field_size, right_justify );
+				step_format_add_start_time( params.format_list, 
+				                            field_size, 
+				                            right_justify );
 			else if (field[0] == 'U')
-				step_format_add_user_id( params.format_list, field_size, right_justify );
+				step_format_add_user_id( params.format_list, 
+				                         field_size, 
+				                         right_justify );
 			else if (field[0] == 'u')
-				step_format_add_user_name( params.format_list, field_size, right_justify );
+				step_format_add_user_name( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else
-				fprintf( stderr, "Invalid job step format specification: %c\n", field[0] );
+				fprintf( 
+				   stderr, 
+				   "Invalid job step format specification: %c\n",
+				   field[0] );
 		} else {
 			if      (field[0] == 'b')
-				job_format_add_start_time( params.format_list, field_size, right_justify );
+				job_format_add_start_time( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else if (field[0] == 'c')
-				job_format_add_min_procs( params.format_list, field_size, right_justify );
+				job_format_add_min_procs( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else if (field[0] == 'C')
-				job_format_add_num_procs( params.format_list, field_size, right_justify );
+				job_format_add_num_procs( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else if (field[0] == 'd')
-				job_format_add_min_tmp_disk( params.format_list, field_size, right_justify );
+				job_format_add_min_tmp_disk( params.format_list, 
+				                             field_size, 
+				                             right_justify );
 			else if (field[0] == 'e')
-				job_format_add_end_time( params.format_list, field_size, right_justify );
+				job_format_add_end_time( params.format_list, 
+				                         field_size, 
+				                         right_justify );
 			else if (field[0] == 'f')
-				job_format_add_features( params.format_list, field_size, right_justify );
+				job_format_add_features( params.format_list, 
+				                         field_size, 
+				                         right_justify );
 			else if (field[0] == 'h')
-				job_format_add_shared( params.format_list, field_size, right_justify );
+				job_format_add_shared( params.format_list, 
+				                       field_size, 
+				                       right_justify );
 			else if (field[0] == 'i')
-				job_format_add_job_id( params.format_list, field_size, right_justify );
+				job_format_add_job_id( params.format_list, 
+				                       field_size, 
+				                       right_justify );
 			else if (field[0] == 'j')
-				job_format_add_name( params.format_list, field_size, right_justify );
+				job_format_add_name( params.format_list, 
+				                     field_size, 
+				                     right_justify );
 			else if (field[0] == 'l')
-				job_format_add_time_limit( params.format_list, field_size, right_justify );
+				job_format_add_time_limit( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else if (field[0] == 'm')
-				job_format_add_min_memory( params.format_list, field_size, right_justify );
+				job_format_add_min_memory( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else if (field[0] == 'n')
-				job_format_add_req_nodes( params.format_list, field_size, right_justify );
+				job_format_add_req_nodes( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else if (field[0] == 'N')
-				job_format_add_nodes( params.format_list, field_size, right_justify );
+				job_format_add_nodes( params.format_list, 
+				                      field_size, 
+				                      right_justify );
 			else if (field[0] == 'o')
-				job_format_add_num_nodes( params.format_list, field_size, right_justify );
+				job_format_add_num_nodes( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else if (field[0] == 'O')
-				job_format_add_contiguous( params.format_list, field_size, right_justify );
+				job_format_add_contiguous( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else if (field[0] == 'p')
-				job_format_add_priority( params.format_list, field_size, right_justify );
+				job_format_add_priority( params.format_list, 
+				                         field_size, 
+				                         right_justify );
 			else if (field[0] == 'P')
-				job_format_add_partition( params.format_list, field_size, right_justify );
+				job_format_add_partition( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else if (field[0] == 'S')
-				job_format_add_start_time( params.format_list, field_size, right_justify );
+				job_format_add_start_time( params.format_list, 
+				                           field_size, 
+				                           right_justify );
 			else if (field[0] == 't')
-				job_format_add_job_state( params.format_list, field_size, right_justify );
+				job_format_add_job_state_compact( 
+							params.format_list, 
+							field_size, 
+							right_justify );
 			else if (field[0] == 'T')
-				job_format_add_job_state_compact( params.format_list, field_size, right_justify );
+				job_format_add_job_state( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else if (field[0] == 'U')
-				job_format_add_user_id( params.format_list, field_size, right_justify );
+				job_format_add_user_id( params.format_list, 
+				                        field_size, 
+				                        right_justify );
 			else if (field[0] == 'u')
-				job_format_add_user_name( params.format_list, field_size, right_justify );
+				job_format_add_user_name( params.format_list, 
+				                          field_size, 
+				                          right_justify );
 			else 
-				fprintf( stderr, "Invalid job format specification: %c\n", field[0] );
+				fprintf( 
+				   stderr, 
+				   "Invalid job format specification: %c\n", 
+				   field[0] );
 		}
 		token = strtok_r( NULL, "%", &tmp_char);
 	}
@@ -302,8 +378,8 @@ parse_format( char* format )
 	return SLURM_SUCCESS;
 }
 
-void
-parse_token( char *token, char *field, int *field_size, bool *right_justify)
+static void
+_parse_token( char *token, char *field, int *field_size, bool *right_justify)
 {
 	int i = 0;
 
@@ -322,13 +398,14 @@ parse_token( char *token, char *field, int *field_size, bool *right_justify)
 	field[0] = token[i++];
 
 	if (token[i] != '\0') {
-		fprintf( stderr, "Invalid format specification: %s\n", token);
-		exit( 1 );
+		fprintf( stderr, 
+		         "Extraneous format specification '%s' ignored\n", 
+		         &token[i]);
 	}
 }
 
-void
-print_options()
+static void
+_print_options()
 {
 #if	__DEBUG
 	ListIterator iterator;
@@ -405,7 +482,7 @@ print_options()
 
 
 static List 
-build_job_list( char* str )
+_build_job_list( char* str )
 {
 	List my_list;
 	char *job, *tmp_char, *my_job_list;
@@ -434,8 +511,13 @@ build_job_list( char* str )
 	return my_list;
 }
 
+/*
+ * _build_part_list- build a list of partition names
+ * IN str - comma separated list of partition names
+ * RET List of partition names
+ */
 static List 
-build_part_list( char* str )
+_build_part_list( char* str )
 {
 	List my_list;
 	char *part, *tmp_char, *my_part_list;
@@ -456,8 +538,13 @@ build_part_list( char* str )
 	return my_list;
 }
 
+/*
+ * _build_state_list - build a list of node states
+ * IN str - comma separated list of node states
+ * RET List of enum job_states values
+ */
 static List 
-build_state_list( char* str )
+_build_state_list( char* str )
 {
 	List my_list;
 	char *state, *tmp_char, *my_state_list;
@@ -466,6 +553,9 @@ build_state_list( char* str )
 
 	if ( str == NULL)
 		return NULL;
+	if ( strcasecmp( str, "all" ) == 0 )
+		return _build_all_states_list ();
+
 	my_list = list_create( NULL );
 	i = strlen( str );
 	my_state_list = xmalloc( i+1 );
@@ -474,7 +564,7 @@ build_state_list( char* str )
 	while (state) 
 	{
 		state_id = xmalloc( sizeof( enum job_states ) );
-		if ( parse_state( state, state_id ) != SLURM_SUCCESS )
+		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
 		{
 			exit( 1 );
 		}
@@ -485,8 +575,29 @@ build_state_list( char* str )
 
 }
 
+/*
+ * _build_all_states_list - build a list containing all possible node states
+ * RET List of enum job_states values
+ */
 static List 
-build_step_list( char* str )
+_build_all_states_list( void )
+{
+	List my_list;
+	int i;
+	enum job_states * state_id;
+
+	my_list = list_create( NULL );
+	for (i = 0; i<JOB_END; i++) {
+		state_id = xmalloc( sizeof( enum job_states ) );
+		*state_id = ( enum job_states ) i;
+		list_append( my_list, state_id );
+	}
+	return my_list;
+
+}
+
+static List 
+_build_step_list( char* str )
 {
 	List my_list;
 	char *step, *tmp_char, *tmps_char, *my_step_list;
@@ -507,7 +618,8 @@ build_step_list( char* str )
 		step_name = strtok_r( NULL, ".", &tmps_char );
 		i = strtol( job_name, (char **) NULL, 10 );
 		if (step_name == NULL) {
-			fprintf( stderr, "Invalid job_step id: %s.??\n", job_name );
+			fprintf( stderr, "Invalid job_step id: %s.??\n", 
+			         job_name );
 			exit( 1 );
 		}
 		j = strtol( step_name, (char **) NULL, 10 );
@@ -526,7 +638,7 @@ build_step_list( char* str )
 }
 
 static List 
-build_user_list( char* str )
+_build_user_list( char* str )
 {
 	List my_list;
 	char *user, *tmp_char, *my_user_list;

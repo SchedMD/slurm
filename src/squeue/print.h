@@ -24,12 +24,11 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <src/api/slurm.h>
-#include <src/common/list.h>
-
 #ifndef _SQUEUE_PRINT_H_
 #define _SQUEUE_PRINT_H_
 
+#include "src/api/slurm.h"
+#include "src/common/list.h"
 
 #define FORMAT_STRING_SIZE 32
 
@@ -37,31 +36,31 @@
  * Format Structures
  *****************************************************************************/
 typedef struct job_format {
-	int (*function)(job_info_t*,int,bool);
+	int (*function) (job_info_t *, int, bool);
 	uint32_t width;
 	bool right_justify;
 } job_format_t;
 
 typedef struct step_format {
-	int (*function)(job_step_info_t*,int,bool);
+	int (*function) (job_step_info_t *, int, bool);
 	uint32_t width;
 	bool right_justify;
 } step_format_t;
 
-int print_jobs_list( List jobs, List format );
-int print_steps_list( List steps, List format );
+int print_jobs_list(List jobs, List format);
+int print_steps_list(List steps, List format);
 
-int print_jobs_array( job_info_t* jobs, int size, List format );
-int print_steps_array( job_step_info_t* steps, int size, List format );
+int print_jobs_array(job_info_t * jobs, int size, List format);
+int print_steps_array(job_step_info_t * steps, int size, List format);
 
-int print_job_from_format( job_info_t* job, List list );
-int print_step_from_format( job_step_info_t* job_step, List list );
+int print_job_from_format(job_info_t * job, List list);
+int print_step_from_format(job_step_info_t * job_step, List list);
 
 /*****************************************************************************
  * Job Line Format Options
  *****************************************************************************/
-int job_format_add_function ( List list, int width, bool right_justify, 
-		int (*function)(job_info_t*,int,bool) );
+int job_format_add_function(List list, int width, bool right_justify,
+			    int (*function) (job_info_t *, int, bool));
 
 #define job_format_add_job_id(list,wid,right) \
 		job_format_add_function(list,wid,right,_print_job_job_id)
@@ -76,9 +75,11 @@ int job_format_add_function ( List list, int width, bool right_justify,
 #define job_format_add_job_state(list,wid,right) \
 		job_format_add_function(list,wid,right,_print_job_job_state)
 #define job_format_add_job_state_compact(list,wid,right) \
-		job_format_add_function(list,wid,right,_print_job_job_state_compact)
-#define job_format_add_time_limit(list,wid,right) \
-		job_format_add_function(list,wid,right,_print_job_time_limit)
+		job_format_add_function(list,wid,right,  \
+		                        _print_job_job_state_compact)
+#define job_format_add_time_limit(list,wid,right)	\
+		job_format_add_function(list,wid,right,	\
+		                        _print_job_time_limit)
 #define job_format_add_start_time(list,wid,right) \
 		job_format_add_function(list,wid,right,_print_job_start_time)
 #define job_format_add_end_time(list,wid,right) \
@@ -115,36 +116,40 @@ int job_format_add_function ( List list, int width, bool right_justify,
 /*****************************************************************************
  * Job Line Print Functions
  *****************************************************************************/
-int _print_job_job_id( job_info_t* job, int width, bool right_justify );    
-int _print_job_partition( job_info_t* job, int width, bool right_justify );
-int _print_job_name( job_info_t* job, int width, bool right_justify );
-int _print_job_user_id( job_info_t* job, int width, bool right_justify );
-int _print_job_user_name( job_info_t* job, int width, bool right_justify );
-int _print_job_job_state( job_info_t* job, int width, bool right_justify );
-int _print_job_job_state_compact( job_info_t* job, int width, bool right_justify );
-int _print_job_time_limit( job_info_t* job, int width, bool right_justify );
-int _print_job_start_time( job_info_t* job, int width, bool right_justify );
-int _print_job_end_time( job_info_t* job, int width, bool right_justify );
-int _print_job_priority( job_info_t* job, int width, bool right_justify );
-int _print_job_nodes( job_info_t* job, int width, bool right_justify );
-int _print_job_node_inx( job_info_t* job, int width, bool right_justify );
-int _print_job_partition( job_info_t* job, int width, bool right_justify );
-int _print_job_num_procs( job_info_t* job, int width, bool right_justify );
-int _print_job_num_nodes( job_info_t* job, int width, bool right_justify );
-int _print_job_shared( job_info_t* job, int width, bool right_justify );
-int _print_job_contiguous( job_info_t* job, int width, bool right_justify );
-int _print_job_min_procs( job_info_t* job, int width, bool right_justify );
-int _print_job_min_memory( job_info_t* job, int width, bool right_justify );
-int _print_job_min_tmp_disk( job_info_t* job, int width, bool right_justify );
-int _print_job_req_nodes( job_info_t* job, int width, bool right_justify );
-int _print_job_req_node_inx( job_info_t* job, int width, bool right_justify );
-int _print_job_features( job_info_t* job, int width, bool right_justify );
+int _print_job_job_id(job_info_t * job, int width, bool right_justify);
+int _print_job_partition(job_info_t * job, int width, bool right_justify);
+int _print_job_name(job_info_t * job, int width, bool right_justify);
+int _print_job_user_id(job_info_t * job, int width, bool right_justify);
+int _print_job_user_name(job_info_t * job, int width, bool right_justify);
+int _print_job_job_state(job_info_t * job, int width, bool right_justify);
+int _print_job_job_state_compact(job_info_t * job, int width,
+				 bool right_justify);
+int _print_job_time_limit(job_info_t * job, int width, bool right_justify);
+int _print_job_start_time(job_info_t * job, int width, bool right_justify);
+int _print_job_end_time(job_info_t * job, int width, bool right_justify);
+int _print_job_priority(job_info_t * job, int width, bool right_justify);
+int _print_job_nodes(job_info_t * job, int width, bool right_justify);
+int _print_job_node_inx(job_info_t * job, int width, bool right_justify);
+int _print_job_partition(job_info_t * job, int width, bool right_justify);
+int _print_job_num_procs(job_info_t * job, int width, bool right_justify);
+int _print_job_num_nodes(job_info_t * job, int width, bool right_justify);
+int _print_job_shared(job_info_t * job, int width, bool right_justify);
+int _print_job_contiguous(job_info_t * job, int width, bool right_justify);
+int _print_job_min_procs(job_info_t * job, int width, bool right_justify);
+int _print_job_min_memory(job_info_t * job, int width, bool right_justify);
+int _print_job_min_tmp_disk(job_info_t * job, int width,
+			    bool right_justify);
+int _print_job_req_nodes(job_info_t * job, int width, bool right_justify);
+int _print_job_req_node_inx(job_info_t * job, int width,
+			    bool right_justify);
+int _print_job_features(job_info_t * job, int width, bool right_justify);
 
 /*****************************************************************************
  * Step Print Format Functions
  *****************************************************************************/
-int step_format_add_function ( List list, int width, bool right_justify, 
-		int (*function)(job_step_info_t*,int,bool) );
+int step_format_add_function(List list, int width, bool right_justify,
+			     int (*function) (job_step_info_t *, int,
+					      bool));
 
 #define step_format_add_id(list,wid,right) \
 		step_format_add_function(list,wid,right,_print_step_id)
@@ -162,12 +167,17 @@ int step_format_add_function ( List list, int width, bool right_justify,
 /*****************************************************************************
  * Step Line Print Functions
  *****************************************************************************/
-int _print_step_id( job_step_info_t* step, int width, bool right_justify );
-int _print_step_partition( job_step_info_t* step, int width, bool right_justify );
-int _print_step_user_id( job_step_info_t* step, int width, bool right_justify );
-int _print_step_user_name( job_step_info_t* step, int width, bool right_justify );
-int _print_step_start_time( job_step_info_t* step, int width, bool right_justify );
-int _print_step_nodes( job_step_info_t* step, int width, bool right_justify );
+int _print_step_id(job_step_info_t * step, int width, bool right_justify);
+int _print_step_partition(job_step_info_t * step, int width,
+			  bool right_justify);
+int _print_step_user_id(job_step_info_t * step, int width,
+			bool right_justify);
+int _print_step_user_name(job_step_info_t * step, int width,
+			  bool right_justify);
+int _print_step_start_time(job_step_info_t * step, int width,
+			   bool right_justify);
+int _print_step_nodes(job_step_info_t * step, int width,
+		      bool right_justify);
 
 /*****************************************************************************
  * Job Sort Functions
@@ -183,11 +193,11 @@ int _print_step_nodes( job_step_info_t* step, int width, bool right_justify );
 #define sort_job_by_user(list) \
 		list_sort(list,_sort_job_by_user)
 
-int _sort_job_by_id( void* void1, void* void2 );
-int _sort_job_by_priority( void* void1, void* void2 );
-int _sort_job_by_partition( void* void1, void* void2 );
-int _sort_job_by_state( void* void1, void* void2 );
-int _sort_job_by_user( void* void1, void* void2 );
+int _sort_job_by_id(void *void1, void *void2);
+int _sort_job_by_priority(void *void1, void *void2);
+int _sort_job_by_partition(void *void1, void *void2);
+int _sort_job_by_state(void *void1, void *void2);
+int _sort_job_by_user(void *void1, void *void2);
 
 /*****************************************************************************
  * Step Sort Functions
@@ -199,8 +209,8 @@ int _sort_job_by_user( void* void1, void* void2 );
 #define sort_step_by_user(list) \
 		list_sort(list,_sort_step_by_user)
 
-int _sort_step_by_id( void* void1, void* void2 );
-int _sort_step_by_partition( void* void1, void* void2 );
-int _sort_step_by_user(  void* void1, void* void2 );
+int _sort_step_by_id(void *void1, void *void2);
+int _sort_step_by_partition(void *void1, void *void2);
+int _sort_step_by_user(void *void1, void *void2);
 
 #endif

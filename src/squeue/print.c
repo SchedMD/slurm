@@ -31,250 +31,237 @@
 #include <pwd.h>
 #include <sys/types.h>
 
-#include <src/common/list.h>
-#include <src/common/hostlist.h>
-#include <src/common/xmalloc.h>
+#include "src/common/list.h"
+#include "src/common/hostlist.h"
+#include "src/common/xmalloc.h"
+#include "src/squeue/print.h"
+#include "src/squeue/squeue.h"
 
-#include <src/squeue/print.h>
-#include <src/squeue/squeue.h>
-
-static int filter_job( job_info_t * job );
-static int filter_step( job_step_info_t * step );
+static int _filter_job(job_info_t * job);
+static int _filter_step(job_step_info_t * step);
 
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
-int print_jobs( List jobs, List format )
+int print_jobs(List jobs, List format)
 {
-	if ( list_count( jobs ) > 0 )
-	{
-		job_info_t* job = NULL;
-		ListIterator i = list_iterator_create( jobs );
+	if (list_count(jobs) > 0) {
+		job_info_t *job = NULL;
+		ListIterator i = list_iterator_create(jobs);
 
-		print_job_from_format( NULL, format );
-		while ( ( job = (job_info_t*)list_next(i) ) != NULL )
-		{
-			print_job_from_format( job, format );
+		print_job_from_format(NULL, format);
+		while ((job = (job_info_t *) list_next(i)) != NULL) {
+			print_job_from_format(job, format);
 		}
-	}
-	else 
+	} else
 		printf("No jobs found in system\n");
-	
+
 	return SLURM_SUCCESS;
 }
 
-int print_steps( List steps, List format )
+int print_steps(List steps, List format)
 {
-	if ( list_count( steps ) > 0 )
-	{
-		job_step_info_t* step = NULL;
-		ListIterator i = list_iterator_create( steps );
+	if (list_count(steps) > 0) {
+		job_step_info_t *step = NULL;
+		ListIterator i = list_iterator_create(steps);
 
-		print_step_from_format( NULL, format );
-		while ( ( step = (job_step_info_t*)list_next(i) ) != NULL )
-		{
-			print_step_from_format( step, format );
+		print_step_from_format(NULL, format);
+		while ((step = (job_step_info_t *) list_next(i)) != NULL) {
+			print_step_from_format(step, format);
 		}
-	}
-	else 
-		printf("No job steps found in system\n" );
-	
+	} else
+		printf("No job steps found in system\n");
+
 	return SLURM_SUCCESS;
 }
 
-int print_jobs_array( job_info_t* jobs, int size, List format )
+int print_jobs_array(job_info_t * jobs, int size, List format)
 {
-	if ( size > 0 )
-	{
+	if (size > 0) {
 		int i = 0;
 		List job_list;
 		ListIterator job_iterator;
 		job_info_t *job_ptr;
 
-		job_list = list_create( NULL );
-		print_job_from_format( NULL, format );
+		job_list = list_create(NULL);
+		print_job_from_format(NULL, format);
 
 		/* Filter out the jobs of interest */
-		for (; i<size; i++) {
-			if (filter_job( &jobs[i] ))
+		for (; i < size; i++) {
+			if (_filter_job(&jobs[i]))
 				continue;
-			list_append( job_list, (void *)&jobs[i] );
+			list_append(job_list, (void *) &jobs[i]);
 		}
 
 		/* Sort the jobs */
 		if (params.sort == NULL) {
-			params.sort = xmalloc( 6 );
-			strcat( params.sort, "P,t,p"); /* Partition, state, priority */
+			params.sort = xmalloc(6);
+			/* Partition, state, priority */
+			strcat(params.sort, "P,t,p");
 		}
-		for (i=strlen( params.sort ); i>=0; i--) {
+		for (i = strlen(params.sort); i >= 0; i--) {
 			if (params.sort[i] == ',')
 				continue;
 			else if (params.sort[i] == 'i')
-				sort_job_by_job_id( job_list );
+				sort_job_by_job_id(job_list);
 			else if (params.sort[i] == 'p')
-				sort_job_by_priority( job_list );
+				sort_job_by_priority(job_list);
 			else if (params.sort[i] == 'P')
-				sort_job_by_partition( job_list );
-			else if ((params.sort[i] == 't') || (params.sort[i] == 'T'))
-				sort_job_by_state( job_list );
-			else if ((params.sort[i] == 'u') || (params.sort[i] == 'U'))
-				sort_job_by_user( job_list );
+				sort_job_by_partition(job_list);
+			else if ((params.sort[i] == 't')
+				 || (params.sort[i] == 'T'))
+				sort_job_by_state(job_list);
+			else if ((params.sort[i] == 'u')
+				 || (params.sort[i] == 'U'))
+				sort_job_by_user(job_list);
 		}
 
 		/* Print the jobs of interest */
-		job_iterator = list_iterator_create( job_list );
-		while ( (job_ptr = list_next( job_iterator )) ) {
-			print_job_from_format( job_ptr, format );
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr = list_next(job_iterator))) {
+			print_job_from_format(job_ptr, format);
 		}
-		list_iterator_destroy( job_iterator );
-		list_destroy( job_list );
-	}
-	else 
-		printf("No jobs found in system\n" );
-	
+		list_iterator_destroy(job_iterator);
+		list_destroy(job_list);
+	} else
+		printf("No jobs found in system\n");
+
 	return SLURM_SUCCESS;
 }
 
-int print_steps_array( job_step_info_t* steps, int size, List format )
+int print_steps_array(job_step_info_t * steps, int size, List format)
 {
 
-	if ( size > 0 )
-	{
-		int i=0;
+	if (size > 0) {
+		int i = 0;
 		List step_list;
 		ListIterator step_iterator;
 		job_step_info_t *step_ptr;
 
-		step_list = list_create( NULL );
-		print_step_from_format( NULL, format );
+		step_list = list_create(NULL);
+		print_step_from_format(NULL, format);
 
 		/* Filter out the jobs of interest */
-		for (; i<size; i++) {
-			if (filter_step( &steps[i] ))
+		for (; i < size; i++) {
+			if (_filter_step(&steps[i]))
 				continue;
-			list_append( step_list, (void *)&steps[i] );
+			list_append(step_list, (void *) &steps[i]);
 		}
 
 		/* Sort the job steps */
 		if (params.sort == NULL) {
-			params.sort = xmalloc( 4 );
-			strcat( params.sort, "P,i"); /* Partition, id */
+			params.sort = xmalloc(4);
+			strcat(params.sort, "P,i");	/* Partition, id */
 		}
-		for (i=strlen( params.sort ); i>=0; i--) {
+		for (i = strlen(params.sort); i >= 0; i--) {
 			if (params.sort[i] == ',')
 				continue;
 			else if (params.sort[i] == 'i')
-				sort_step_by_job_step_id( step_list );
+				sort_step_by_job_step_id(step_list);
 			else if (params.sort[i] == 'P')
-				sort_step_by_partition( step_list );
-			else if ((params.sort[i] == 'u') || (params.sort[i] == 'U'))
-				sort_step_by_user( step_list );
+				sort_step_by_partition(step_list);
+			else if ((params.sort[i] == 'u')
+				 || (params.sort[i] == 'U'))
+				sort_step_by_user(step_list);
 		}
 
 		/* Print the steps of interest */
-		step_iterator = list_iterator_create( step_list );
-		while ( (step_ptr = list_next( step_iterator )) ) {
-			print_step_from_format( step_ptr, format );
+		step_iterator = list_iterator_create(step_list);
+		while ((step_ptr = list_next(step_iterator))) {
+			print_step_from_format(step_ptr, format);
 		}
-		list_iterator_destroy( step_iterator );
-		list_destroy( step_list );
-	}
-	else 
-		printf("No job steps found in system\n" );
-	
+		list_iterator_destroy(step_iterator);
+		list_destroy(step_list);
+	} else
+		printf("No job steps found in system\n");
+
 	return SLURM_SUCCESS;
 }
 
-int
-_print_str( char* str, int width, bool right, bool cut_output )
+int _print_str(char *str, int width, bool right, bool cut_output)
 {
 	char format[64];
 	int printed = 0;
 
-	if ( right == true && width != 0 )
-		snprintf( format, 64, "%%%ds", width );
-	else if ( width != 0 )
-		snprintf( format, 64, "%%.%ds", width );
-	else
-	{
+	if (right == true && width != 0)
+		snprintf(format, 64, "%%%ds", width);
+	else if (width != 0)
+		snprintf(format, 64, "%%.%ds", width);
+	else {
 		format[0] = '%';
 		format[1] = 's';
-		format[2] = '\0';	}
-
-	if ( (width == 0) || (cut_output == false) )
-	{
-		if ( ( printed = printf( format, str ) ) < 0  )
-			return printed;
+		format[2] = '\0';
 	}
-	else
-	{
-		char temp[width+1];
-		snprintf( temp, width+1, format, str );
-		if ( ( printed = printf( temp ) ) < 0  )
+
+	if ((width == 0) || (cut_output == false)) {
+		if ((printed = printf(format, str)) < 0)
+			return printed;
+	} else {
+		char temp[width + 1];
+		snprintf(temp, width + 1, format, str);
+		if ((printed = printf(temp)) < 0)
 			return printed;
 	}
 
-	while ( printed++ < width )
+	while (printed++ < width)
 		printf(" ");
 
 	return printed;
 }
 
-int
-_print_nodes( char *nodes, int width, bool right, bool cut )
-{	
+int _print_nodes(char *nodes, int width, bool right, bool cut)
+{
 	hostlist_t hl = hostlist_create(nodes);
 	char buf[1024];
 	int retval;
 	hostlist_ranged_string(hl, 1024, buf);
-	retval = _print_str( buf, width, right, false );
+	retval = _print_str(buf, width, right, false);
 	hostlist_destroy(hl);
 	return retval;
 }
 
 
-int
-_print_int( int number, int width, bool right, bool cut_output )
+int _print_int(int number, int width, bool right, bool cut_output)
 {
 	char buf[32];
 
-	snprintf( buf, 32, "%d", number );
-	return _print_str( buf, width, right, cut_output );
+	snprintf(buf, 32, "%d", number);
+	return _print_str(buf, width, right, cut_output);
 }
 
 
-int
-_create_format( char* buffer, const char* type, int width, bool right )
+int _create_format(char *buffer, const char *type, int width, bool right)
 {
-	if ( snprintf( buffer, FORMAT_STRING_SIZE, (right ? " %%-%d.%d%s": "%%%d.%d%s " ),
-			width, width - 1, type ) == -1 )
+	if (snprintf
+	    (buffer, FORMAT_STRING_SIZE,
+	     (right ? " %%-%d.%d%s" : "%%%d.%d%s "), width, width - 1,
+	     type) == -1)
 		return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }
 
-int
-_print_time( time_t t, int level, int width, bool right )
+int _print_time(time_t t, int level, int width, bool right)
 {
 	struct tm time;
 	char str[FORMAT_STRING_SIZE];
-	
+
 	if (t) {
-		localtime_r( &t, &time );
-	
-		switch ( level )
-		{
-			case 1:
-			case 2:
-			default:
-				snprintf(str, FORMAT_STRING_SIZE, "%2.2u/%2.2u-%2.2u:%2.2u", 
-					(time.tm_mon+1), time.tm_mday, 
-					time.tm_hour, time.tm_min);
+		localtime_r(&t, &time);
+
+		switch (level) {
+		case 1:
+		case 2:
+		default:
+			snprintf(str, FORMAT_STRING_SIZE,
+				 "%2.2u/%2.2u-%2.2u:%2.2u",
+				 (time.tm_mon + 1), time.tm_mday,
+				 time.tm_hour, time.tm_min);
 			break;
 		}
 
-		_print_str( str, width, right, true );
+		_print_str(str, width, right, true);
 	} else
-		_print_str( "N/A", width, right, true );
+		_print_str("N/A", width, right, true);
 
 	return SLURM_SUCCESS;
 }
@@ -282,328 +269,305 @@ _print_time( time_t t, int level, int width, bool right )
 /*****************************************************************************
  * Job Print Functions
  *****************************************************************************/
-int 
-print_job_from_format( job_info_t* job,  List list )
+int print_job_from_format(job_info_t * job, List list)
 {
-	ListIterator i = list_iterator_create( list );
-	job_format_t* current;
+	ListIterator i = list_iterator_create(list);
+	job_format_t *current;
 
-	while ( (current = (job_format_t*) list_next(i)) != NULL)
-	{
-		if ( current->function( job, current->width, current->right_justify ) 
-				!= SLURM_SUCCESS )
+	while ((current = (job_format_t *) list_next(i)) != NULL) {
+		if (current->
+		    function(job, current->width, current->right_justify)
+		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
-		printf( " " );
+		printf(" ");
 	}
-	printf( "\n" );
+	printf("\n");
 	return SLURM_SUCCESS;
 }
 
 int
-job_format_add_function ( List list, int width, bool right,
-		int (*function)(job_info_t*,int,bool) )
+job_format_add_function(List list, int width, bool right,
+			int (*function) (job_info_t *, int, bool))
 {
-	job_format_t* tmp = (job_format_t*) xmalloc(sizeof(job_format_t));	
+	job_format_t *tmp = (job_format_t *) xmalloc(sizeof(job_format_t));
 	tmp->function = function;
 	tmp->width = width;
 	tmp->right_justify = right;
 
-	if (list_append( list, tmp ) == NULL)
-		fprintf (stderr, "Memory exhausted\n");
+	if (list_append(list, tmp) == NULL)
+		fprintf(stderr, "Memory exhausted\n");
 	return SLURM_SUCCESS;
 }
 
 
-int
-_print_job_job_id( job_info_t* job, int width, bool right )
+int _print_job_job_id(job_info_t * job, int width, bool right)
 {
 	char id[FORMAT_STRING_SIZE];
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "JobId", width, right, true );
-	else
-	{
-		snprintf( id, FORMAT_STRING_SIZE, "%u", job->job_id );
-		_print_str( id, width, right, true );
-	}
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_partition( job_info_t* job, int width, bool right )
-{
-	char id[FORMAT_STRING_SIZE];
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Partition", width, right, true );
-	else
-	{
-		snprintf( id, FORMAT_STRING_SIZE, "%s", job->partition );
-		_print_str( id, width, right, true );
-	}
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_name( job_info_t* job, int width, bool right )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Name", width, right, true );
-	else 
-		_print_str( job->name, width, right, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_user_id( job_info_t* job, int width, bool right )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "User", width, right, true );
-	else
-		_print_int( job->user_id, width, right, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_user_name( job_info_t* job, int width, bool right )
-{
-	struct passwd* user_info = NULL;
-
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "User", width, right, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("JobId", width, right, true);
 	else {
-		user_info = getpwuid( (uid_t) job->user_id );
-		if ( user_info && user_info->pw_name[0] )
-			_print_str( user_info->pw_name, width, right, true );
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
+		_print_str(id, width, right, true);
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_partition(job_info_t * job, int width, bool right)
+{
+	char id[FORMAT_STRING_SIZE];
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Partition", width, right, true);
+	else {
+		snprintf(id, FORMAT_STRING_SIZE, "%s", job->partition);
+		_print_str(id, width, right, true);
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_job_name(job_info_t * job, int width, bool right)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Name", width, right, true);
+	else
+		_print_str(job->name, width, right, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_user_id(job_info_t * job, int width, bool right)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("User", width, right, true);
+	else
+		_print_int(job->user_id, width, right, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_user_name(job_info_t * job, int width, bool right)
+{
+	struct passwd *user_info = NULL;
+
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("User", width, right, true);
+	else {
+		user_info = getpwuid((uid_t) job->user_id);
+		if (user_info && user_info->pw_name[0])
+			_print_str(user_info->pw_name, width, right, true);
 		else
-			_print_int( job->user_id, width, right, true );
+			_print_int(job->user_id, width, right, true);
 	}
 	return SLURM_SUCCESS;
-	}
+}
 
-int
-_print_job_job_state( job_info_t* job, int width, bool right )
+int _print_job_job_state(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "State", width, right, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("State", width, right, true);
 	else
-		_print_str( job_state_string( job->job_state ), width, right, true );
+		_print_str(job_state_string(job->job_state), width, right,
+			   true);
 
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_job_state_compact( job_info_t* job, int width, bool right )
+int _print_job_job_state_compact(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "St", width, right, true);
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("St", width, right, true);
 	else
-		_print_str( job_state_string_compact( job->job_state ), width, right, true );
+		_print_str(job_state_string_compact(job->job_state), width,
+			   right, true);
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_time_limit( job_info_t* job, int width, bool right )
+int _print_job_time_limit(job_info_t * job, int width, bool right)
 {
 	char time[FORMAT_STRING_SIZE];
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "TimeLimit", width, right, true );
-	else
-	{
-		snprintf( time, FORMAT_STRING_SIZE, "%d:%2.2d:%2.2d", 
-					job->time_limit/(60*24), 
-					(job->time_limit/60) %24 , 
-					job->time_limit % 60 ) ;
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("TimeLimit", width, right, true);
+	else {
+		/* format is "hours:minutes" */
+		snprintf(time, FORMAT_STRING_SIZE, "%d:%2.2d",
+			 job->time_limit / 60,
+			 job->time_limit % 60);
 
-		_print_str( time, width, right, true );
+		_print_str(time, width, right, true);
 	}
 
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_start_time( job_info_t* job, int width, bool right )
+int _print_job_start_time(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "StartTime", width, right, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("StartTime", width, right, true);
 	else
-		_print_time( job->start_time, 0, width, right );
+		_print_time(job->start_time, 0, width, right);
 
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_end_time( job_info_t* job, int width, bool right )
+int _print_job_end_time(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "EndTime", width, right, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("EndTime", width, right, true);
 	else
-		_print_time( job->end_time, 0, width, right );
+		_print_time(job->end_time, 0, width, right);
 
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_priority( job_info_t* job, int width, bool right)
+int _print_job_priority(job_info_t * job, int width, bool right)
 {
 	char temp[FORMAT_STRING_SIZE];
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Prio", width, right, true );
-	else
-	{
-		sprintf(temp, "%d", job->priority );
-		_print_str( temp, width, right, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Priority", width, right, true);
+	else {
+		float prio = (float) job->priority / 
+		             (float) ((uint32_t) 0xffffffff);
+		sprintf(temp, "%f", prio);
+		_print_str(temp, width, right, true);
 	}
 
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_nodes( job_info_t* job, int width, bool right )
+int _print_job_nodes(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Nodes", width, right, false );
-	else 
-		_print_nodes( job->nodes, width, right, false );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Nodes", width, right, false);
+	else
+		_print_nodes(job->nodes, width, right, false);
 
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_node_inx( job_info_t* job, int width, bool right )
+int _print_job_node_inx(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NodeByIndex", width, right, true );
-	else
-	{
-		int* current = job->node_inx;
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("NodeByIndex", width, right, true);
+	else {
+		int *current = job->node_inx;
 		int curr_width = 0;
-		while ( *current != -1 && curr_width < width )
-		{
-			curr_width += _print_int( *current, width, right, true );
+		while (*current != -1 && curr_width < width) {
+			curr_width +=
+			    _print_int(*current, width, right, true);
 			printf(",");
 		}
-		while (curr_width < width )
+		while (curr_width < width)
 			curr_width += printf(" ");
 	}
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_num_procs( job_info_t* job, int width, bool right )
+int _print_job_num_procs(job_info_t * job, int width, bool right)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NumProcs", width, right, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("NumProcs", width, right, true);
 	else
-		_print_int( job->num_procs, width, right, true );
+		_print_int(job->num_procs, width, right, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_num_nodes(job_info_t * job, int width, bool right_justify)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("NumNodes", width, right_justify, true);
+	else
+		_print_int(job->num_nodes, width, right_justify, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_shared(job_info_t * job, int width, bool right_justify)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Shared", width, right_justify, true);
+	else
+		_print_int(job->shared, width, right_justify, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_contiguous(job_info_t * job, int width, bool right_justify)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Contiguous", width, right_justify, true);
+	else
+		_print_int(job->contiguous, width, right_justify, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_procs(job_info_t * job, int width, bool right_justify)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MinProcs", width, right_justify, true);
+	else
+		_print_int(job->min_procs, width, right_justify, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_min_memory(job_info_t * job, int width, bool right_justify)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MinMemory", width, right_justify, true);
+	else
+		_print_int(job->min_memory, width, right_justify, true);
 
 	return SLURM_SUCCESS;
 }
 
 int
-_print_job_num_nodes( job_info_t* job, int width, bool right_justify )
+_print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "NumNodes", width, right_justify, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("MinTmpDisk", width, right_justify, true);
 	else
-		_print_int( job->num_nodes, width, right_justify, true );
+		_print_int(job->min_tmp_disk, width, right_justify, true);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_job_req_nodes(job_info_t * job, int width, bool right_justify)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ReqNodes", width, right_justify, true);
+	else
+		_print_nodes(job->req_nodes, width, right_justify, true);
 
 	return SLURM_SUCCESS;
 }
 
 int
-_print_job_shared( job_info_t* job, int width, bool right_justify )
+_print_job_req_node_inx(job_info_t * job, int width, bool right_justify)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Shared", width, right_justify, true );
-	else
-		_print_int( job->shared, width, right_justify, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_contiguous( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Contiguous", width, right_justify, true );
-	else
-		_print_int( job->contiguous, width, right_justify, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_min_procs( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "MinProcs", width, right_justify, true );
-	else
-		_print_int( job->min_procs, width, right_justify, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_min_memory( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "MinMemory", width, right_justify, true );
-	else
-		_print_int( job->min_memory, width, right_justify, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_min_tmp_disk( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "MinTmpDisk", width, right_justify, true );
-	else
-		_print_int( job->min_tmp_disk, width, right_justify, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_req_nodes( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "ReqNodes", width, right_justify, true );
-	else
-		_print_nodes( job->req_nodes, width, right_justify, true );
-
-	return SLURM_SUCCESS;
-}
-
-int
-_print_job_req_node_inx( job_info_t* job, int width, bool right_justify )
-{
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "ReqNodesByInx", width, right_justify, true );
-	else
-	{
-		int* current = job->req_node_inx;
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ReqNodesByInx", width, right_justify, true);
+	else {
+		int *current = job->req_node_inx;
 		int curr_width = 0;
-		while ( *current != -1 && curr_width < width )
-		{
-			curr_width += _print_int( *current, width, right_justify, true );
+		while (*current != -1 && curr_width < width) {
+			curr_width +=
+			    _print_int(*current, width, right_justify,
+				       true);
 			printf(",");
 		}
-		while (curr_width < width )
+		while (curr_width < width)
 			curr_width += printf(" ");
 	}
 	return SLURM_SUCCESS;
 }
 
-int
-_print_job_features( job_info_t* job, int width, bool right_justify )
+int _print_job_features(job_info_t * job, int width, bool right_justify)
 {
-	if ( job == NULL ) /* Print the Header instead */
-		_print_str( "Features", width, right_justify, true );
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("Features", width, right_justify, true);
 	else
-		_print_str( job->features, width, right_justify, true );
+		_print_str(job->features, width, right_justify, true);
 
 	return SLURM_SUCCESS;
 }
@@ -612,115 +576,115 @@ _print_job_features( job_info_t* job, int width, bool right_justify )
 /*****************************************************************************
  * Job Step  Print Functions
  *****************************************************************************/
-int 
-print_step_from_format( job_step_info_t* job_step, List list )
+int print_step_from_format(job_step_info_t * job_step, List list)
 {
-	ListIterator i = list_iterator_create( list );
-	step_format_t* current;
+	ListIterator i = list_iterator_create(list);
+	step_format_t *current;
 
-	while ( (current = (step_format_t*) list_next(i)) != NULL)
-	{
-		if ( current->function( job_step, current->width, current->right_justify )
-				!= SLURM_SUCCESS )
+	while ((current = (step_format_t *) list_next(i)) != NULL) {
+		if (current->
+		    function(job_step, current->width,
+			     current->right_justify)
+		    != SLURM_SUCCESS)
 			return SLURM_ERROR;
-		printf( " " );
-		
+		printf(" ");
+
 	}
-	printf( "\n" );
+	printf("\n");
 	return SLURM_SUCCESS;
 }
 
 int
-step_format_add_function ( List list, int width, bool right_justify, 
-		int (*function)(job_step_info_t*,int,bool) )
+step_format_add_function(List list, int width, bool right_justify,
+			 int (*function) (job_step_info_t *, int, bool))
 {
-	step_format_t* tmp = (step_format_t*) xmalloc(sizeof(step_format_t));	
+	step_format_t *tmp =
+	    (step_format_t *) xmalloc(sizeof(step_format_t));
 	tmp->function = function;
 	tmp->width = width;
 	tmp->right_justify = right_justify;
 
 	/* FIXME: Check for error */
-	list_append( list, tmp );
+	list_append(list, tmp);
 	return SLURM_SUCCESS;
 }
 
-int _print_step_id( job_step_info_t* step, int width, bool right )
+int _print_step_id(job_step_info_t * step, int width, bool right)
 {
 	char id[FORMAT_STRING_SIZE];
 
-	if ( step == NULL ) /* Print the Header instead */
-		_print_str( "StepId", width, right, true );
-	else
-	{
-		snprintf( id, FORMAT_STRING_SIZE, "%u.%u", step->job_id, step->step_id );
-		_print_str( id, width, right, true );
-	}
-	return SLURM_SUCCESS;
-}
-
-int _print_step_partition( job_step_info_t* step, int width, bool right )
-{
-	char id[FORMAT_STRING_SIZE];
-
-	if ( step == NULL ) /* Print the Header instead */
-		_print_str( "Partition", width, right, true );
-	else
-	{
-		snprintf( id, FORMAT_STRING_SIZE, "%s", step->partition );
-		_print_str( id, width, right, true );
-	}
-	return SLURM_SUCCESS;
-}
-
-int _print_step_user_id( job_step_info_t* step, int width, bool right )
-{
-	if ( step == NULL ) /* Print the Header instead */
-		_print_str( "User", width, right, true );
-	else
-		_print_int( step->user_id, width, right, true );
-
-	return SLURM_SUCCESS;
-}
-
-int _print_step_user_name( job_step_info_t* step, int width, bool right )
-{
-	struct passwd* user_info = NULL;
-
-	if ( step == NULL ) /* Print the Header instead */
-		_print_str( "User", width, right, true );
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("StepId", width, right, true);
 	else {
-		user_info = getpwuid( (uid_t) step->user_id );
-		if ( user_info && user_info->pw_name[0] )
-			_print_str( user_info->pw_name, width, right, true );
-		else
-			_print_int( step->user_id, width, right, true );
+		snprintf(id, FORMAT_STRING_SIZE, "%u.%u", step->job_id,
+			 step->step_id);
+		_print_str(id, width, right, true);
 	}
 	return SLURM_SUCCESS;
 }
 
-int _print_step_start_time( job_step_info_t* step, int width, bool right )
+int _print_step_partition(job_step_info_t * step, int width, bool right)
 {
-	if ( step == NULL ) /* Print the Header instead */
-		_print_str( "StartTime", width, right, true );
+	char id[FORMAT_STRING_SIZE];
+
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("Partition", width, right, true);
+	else {
+		snprintf(id, FORMAT_STRING_SIZE, "%s", step->partition);
+		_print_str(id, width, right, true);
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_step_user_id(job_step_info_t * step, int width, bool right)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("User", width, right, true);
 	else
-		_print_time( step->start_time, 0, width, right );
+		_print_int(step->user_id, width, right, true);
 
 	return SLURM_SUCCESS;
-	}
+}
 
-int _print_step_nodes( job_step_info_t* step, int width, bool right )
+int _print_step_user_name(job_step_info_t * step, int width, bool right)
 {
-	if ( step == NULL ) /* Print the Header instead */
-		_print_str( "Nodes", width, right, false );
+	struct passwd *user_info = NULL;
+
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("User", width, right, true);
+	else {
+		user_info = getpwuid((uid_t) step->user_id);
+		if (user_info && user_info->pw_name[0])
+			_print_str(user_info->pw_name, width, right, true);
+		else
+			_print_int(step->user_id, width, right, true);
+	}
+	return SLURM_SUCCESS;
+}
+
+int _print_step_start_time(job_step_info_t * step, int width, bool right)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("StartTime", width, right, true);
 	else
-		_print_nodes( step->nodes, width, right, false );
+		_print_time(step->start_time, 0, width, right);
+
+	return SLURM_SUCCESS;
+}
+
+int _print_step_nodes(job_step_info_t * step, int width, bool right)
+{
+	if (step == NULL)	/* Print the Header instead */
+		_print_str("Nodes", width, right, false);
+	else
+		_print_nodes(step->nodes, width, right, false);
 
 	return SLURM_SUCCESS;
 }
 
 /* filter job records per input specifications, 
  * returns 1 if job should be filter out (not printed) */
-static int filter_job( job_info_t * job )
+static int _filter_job(job_info_t * job)
 {
 	int filter;
 	ListIterator iterator;
@@ -730,60 +694,60 @@ static int filter_job( job_info_t * job )
 
 	if (params.job_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.job_list );
-		while ( (job_id = list_next( iterator )) ) {
+		iterator = list_iterator_create(params.job_list);
+		while ((job_id = list_next(iterator))) {
 			if (*job_id == job->job_id) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 1;
 	}
 
 	if (params.part_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.part_list );
-		while ( (part = list_next( iterator )) ) {
-			if (strcmp (part, job->partition) == 0) {
+		iterator = list_iterator_create(params.part_list);
+		while ((part = list_next(iterator))) {
+			if (strcmp(part, job->partition) == 0) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 2;
 	}
 
 	if (params.state_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.state_list );
-		while ( (state_id = list_next( iterator )) ) {
+		iterator = list_iterator_create(params.state_list);
+		while ((state_id = list_next(iterator))) {
 			if (*state_id == job->job_state) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 3;
 	} else {
 		if ((job->job_state != JOB_PENDING) &&
-		    (job->job_state != JOB_RUNNING)) 
+		    (job->job_state != JOB_RUNNING))
 			return 4;
 	}
 
 	if (params.user_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.user_list );
-		while ( (user = list_next( iterator )) ) {
+		iterator = list_iterator_create(params.user_list);
+		while ((user = list_next(iterator))) {
 			if (*user == job->user_id) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 5;
 	}
@@ -793,7 +757,7 @@ static int filter_job( job_info_t * job )
 
 /* filter step records per input specifications, 
  * returns 1 if step should be filter out (not printed) */
-static int filter_step( job_step_info_t * step )
+static int _filter_step(job_step_info_t * step)
 {
 	int filter;
 	ListIterator iterator;
@@ -803,57 +767,57 @@ static int filter_step( job_step_info_t * step )
 
 	if (params.job_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.job_list );
-		while ( (job_id = list_next( iterator )) ) {
+		iterator = list_iterator_create(params.job_list);
+		while ((job_id = list_next(iterator))) {
 			if (*job_id == step->job_id) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 1;
 	}
 
 	if (params.part_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.part_list );
-		while ( (part = list_next( iterator )) ) {
-			if (strcmp (part, step->partition) == 0) {
+		iterator = list_iterator_create(params.part_list);
+		while ((part = list_next(iterator))) {
+			if (strcmp(part, step->partition) == 0) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 2;
 	}
 
 	if (params.step_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.step_list );
-		while ( (job_step_id = list_next( iterator )) ) {
-			if ((job_step_id->job_id  == step->job_id) &&
+		iterator = list_iterator_create(params.step_list);
+		while ((job_step_id = list_next(iterator))) {
+			if ((job_step_id->job_id == step->job_id) &&
 			    (job_step_id->step_id == step->step_id)) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 3;
 	}
 
 	if (params.user_list) {
 		filter = 1;
-		iterator = list_iterator_create( params.user_list );
-		while ( (user = list_next( iterator )) ) {
+		iterator = list_iterator_create(params.user_list);
+		while ((user = list_next(iterator))) {
 			if (*user == step->user_id) {
 				filter = 0;
 				break;
 			}
 		}
-		list_iterator_destroy( iterator );
+		list_iterator_destroy(iterator);
 		if (filter == 1)
 			return 5;
 	}
@@ -865,44 +829,44 @@ static int filter_step( job_step_info_t * step )
  * Job Sort Functions
  *****************************************************************************/
 /* sort lower to higher */
-int _sort_job_by_id( void* void1, void* void2 )
+int _sort_job_by_id(void *void1, void *void2)
 {
-	job_info_t* job1 = (job_info_t*) void1;
-	job_info_t* job2 = (job_info_t*) void2;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
 
 	return job1->job_id - job2->job_id;
 }
 
 /* sort higher to lower */
-int _sort_job_by_priority( void* void1, void* void2 )
+int _sort_job_by_priority(void *void1, void *void2)
 {
-	job_info_t* job1 = (job_info_t*) void1;
-	job_info_t* job2 = (job_info_t*) void2;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
 
 	return (job2->priority - job1->priority);
 }
 
-int _sort_job_by_partition( void* void1, void* void2 )
+int _sort_job_by_partition(void *void1, void *void2)
 {
-	job_info_t* job1 = (job_info_t*) void1;
-	job_info_t* job2 = (job_info_t*) void2;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
 
-	return strcmp( job1->partition, job2->partition);
+	return strcmp(job1->partition, job2->partition);
 }
 
-int _sort_job_by_state( void* void1, void* void2 )
+int _sort_job_by_state(void *void1, void *void2)
 {
-	job_info_t* job1 = (job_info_t*) void1;
-	job_info_t* job2 = (job_info_t*) void2;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
 
 	return (job1->job_state - job2->job_state);
 }
 
 /* sort lower to higher */
-int _sort_job_by_user( void* void1, void* void2 )
+int _sort_job_by_user(void *void1, void *void2)
 {
-	job_info_t* job1 = (job_info_t*) void1;
-	job_info_t* job2 = (job_info_t*) void2;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
 
 	return (job1->user_id - job2->user_id);
 }
@@ -911,11 +875,11 @@ int _sort_job_by_user( void* void1, void* void2 )
  * Step Sort Functions
  *****************************************************************************/
 /* sort lower to higher */
-int _sort_step_by_id( void* void1, void* void2 )
+int _sort_step_by_id(void *void1, void *void2)
 {
 	int i;
-	job_step_info_t* step1 = (job_step_info_t*) void1;
-	job_step_info_t* step2 = (job_step_info_t*) void2;
+	job_step_info_t *step1 = (job_step_info_t *) void1;
+	job_step_info_t *step2 = (job_step_info_t *) void2;
 
 	i = step1->job_id - step2->job_id;
 	if (i == 0)
@@ -924,19 +888,19 @@ int _sort_step_by_id( void* void1, void* void2 )
 		return i;
 }
 
-int _sort_step_by_partition( void* void1, void* void2 )
+int _sort_step_by_partition(void *void1, void *void2)
 {
-	job_step_info_t* step1 = (job_step_info_t*) void1;
-	job_step_info_t* step2 = (job_step_info_t*) void2;
+	job_step_info_t *step1 = (job_step_info_t *) void1;
+	job_step_info_t *step2 = (job_step_info_t *) void2;
 
-	return strcmp( step1->partition, step2->partition);
+	return strcmp(step1->partition, step2->partition);
 }
 
 /* sort lower to higher */
-int _sort_step_by_user( void* void1, void* void2 )
+int _sort_step_by_user(void *void1, void *void2)
 {
-	job_step_info_t* step1 = (job_step_info_t*) void1;
-	job_step_info_t* step2 = (job_step_info_t*) void2;
+	job_step_info_t *step1 = (job_step_info_t *) void1;
+	job_step_info_t *step2 = (job_step_info_t *) void2;
 
 	return (step1->user_id - step2->user_id);
 }
