@@ -283,7 +283,7 @@ static int _check_pending_threads(thd_t *thd, int count)
 
 	for (i = 0; i < count; i++) {
 		thd_t *tp = &thd[i];
-		if ((tp->state == DSH_ACTIVE) && ((now - tp->tstart) >= 2) ) {
+		if ((tp->state == DSH_ACTIVE) && ((now - tp->tstart) >= 10) ) {
 			debug2("sending SIGALRM to thread %lu", 
 				(unsigned long) tp->thread);
 			/*

@@ -37,7 +37,6 @@ srun_SOURCES = \
 
 convenience_libs =  \
 	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/common/libhostlist.la \
 	$(top_builddir)/src/common/libeio.la      \
 	$(top_builddir)/src/api/libslurm.la
 

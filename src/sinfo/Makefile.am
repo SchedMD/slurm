@@ -9,7 +9,6 @@ bin_PROGRAMS = sinfo
 
 sinfo_LDADD =					  \
 	$(top_builddir)/src/common/libcommon.la   \
-	$(top_builddir)/src/common/libhostlist.la \
 	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = sinfo.h print.h

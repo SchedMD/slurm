@@ -6,15 +6,14 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
 if WITH_ELAN
-elan_sources = qsw.c qsw.h
+elan_sources = qsw.c qsw.h elanhosts.c elanhosts.h
 else
 elan_sources = 
 endif
 
-noinst_LTLIBRARIES = 	\
-	libcommon.la 	\
-	libdaemonize.la \
-	libhostlist.la	\
+noinst_LTLIBRARIES = 			\
+	libcommon.la 			\
+	libdaemonize.la 		\
 	libeio.la  	
 
 
@@ -56,24 +55,21 @@ libcommon_la_SOURCES = 			\
 	slurm_jobcomp.c slurm_jobcomp.h	\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
+	hostlist.c hostlist.h		\
 	$(elan_sources) 
 
-libdaemonize_la_SOURCES =  \
-	daemonize.c        \
-	daemonize.h        \
+libdaemonize_la_SOURCES =  		\
+	daemonize.c       	 	\
+	daemonize.h        		\
 	fd.c fd.h
 
-
-libhostlist_la_SOURCES   = \
-	hostlist.c hostlist.h
-
-libeio_la_SOURCES = 	   \
-	eio.c eio.h	   \
+libeio_la_SOURCES = 	   		\
+	eio.c eio.h	   		\
 	io_hdr.c io_hdr.h
 
-
-EXTRA_libcommon_la_SOURCES = \
-	qsw.c qsw.h
+EXTRA_libcommon_la_SOURCES =    	\
+	qsw.c qsw.h          		\
+	elanhosts.c elanhosts.h
 
 libcommon_la_LIBADD   = $(SSL_LIBS) $(ELAN_LIBS) -ldl
 libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)	

@@ -47,6 +47,7 @@
 #include <limits.h>	/* INT_MAX */
 #include <stdio.h>
 
+
 #if HAVE_LIBELANCTRL
 # include <elan/elanctrl.h>
 # include <elan/capability.h>
@@ -81,6 +82,9 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/elanhosts.h"
+#include "src/common/xassert.h"
+#include "src/common/strlcpy.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
 #include "src/common/pack.h"
@@ -149,6 +153,7 @@ struct qsw_jobinfo {
  */
 static qsw_libstate_t qsw_internal_state = NULL;
 static pthread_mutex_t qsw_lock = PTHREAD_MUTEX_INITIALIZER;
+static elanhost_config_t elanconf = NULL;
 
 
 /*
@@ -821,6 +826,7 @@ qsw_setcap(qsw_jobinfo_t jobinfo, int procnum)
 	return 0;
 }
 
+
 /*
  * Return the local elan address (for rail 0) or -1 on failure.
  */
@@ -854,44 +860,64 @@ qsw_getnodeid(void)
 
 }
 
-/*
- * XXX - note qsw_getnodeid_byhost and qsw_gethost_bynodeid:
- * Eventually provide an autoconf option to look up mappings from a flat
- * file, or use the slurm.conf.  For now, assume that all QsNet systems
- * conform to RMS's hostname requirements.  They are:
- * 1) all hostnames with an elan adapter have a numerical suffix that 
- *    corresponds to the elanid.
- * 2) numerical suffixes never have leading zeros
- * 3) all hostnames without an elan adapter have a single character suffix.
- */
+static int 
+_read_elanhost_config (void)
+{
+	int rc;
+
+	if (!(elanconf = elanhost_config_create ()))
+		return (-1);
+
+	if ((rc = elanhost_config_read (elanconf, NULL)) < 0) {
+		error ("Unable to read Elan config: %s", 
+		       elanhost_config_err (elanconf));
+		elanhost_config_destroy (elanconf);
+		elanconf = NULL;
+		return (-1);
+	}
+
+	return (0);
+}
+
+int
+qsw_maxnodeid(void)
+{
+	int maxid = -1;
+
+	_lock_qsw();
+	if (!elanconf && (_read_elanhost_config() < 0))
+		goto done;
+
+	maxid = elanhost_config_maxid (elanconf);
+
+    done:
+	_unlock_qsw();
+	return maxid;
+}
 
 /*
  * Given a hostname, return the elanid or -1 on error.  
- * XXX - assumes RMS style hostnames (see above)
+ *  Initializes the elanconfig from the default /etc/elanhosts
+ *  config file.
  */
 int
 qsw_getnodeid_byhost(char *host)
 {
-	char *p, *q, tmp[8];
 	int id = -1;
 
-	/* position p over last character to scan */
-	if ((p = strchr(host, '.')))
-		p--;
-	else
-		p = host + strlen(host) - 1;
+	if (host == NULL)
+		return (-1);
 
-	/* copy numerical suffix to tmp */
-	tmp[sizeof(tmp) - 1] = '\0';
-	q = &tmp[sizeof(tmp) - 2];
-	while (q >= tmp && p >= host && isdigit(*p))
-		*q-- = *p--;
+	_lock_qsw();
+	if (!elanconf && (_read_elanhost_config() < 0))
+		goto done;
 
-	if (q < &tmp[sizeof(tmp) - 2])
-		id = atoi(q + 1);
+	xassert (elanconf != NULL);
 
-	if (id == -1)
-		slurm_seterrno(EGETNODEID_BYHOST);
+	id = elanhost_host2elanid (elanconf, host);
+
+    done:
+	_unlock_qsw();
 	return id;
 }
 
@@ -903,36 +929,25 @@ qsw_getnodeid_byhost(char *host)
 int
 qsw_gethost_bynodeid(char *buf, int len, int id)
 {
-	char name[MAXHOSTNAMELEN];
-	char *domainname;
-	char *p;
-	int res;
+	int rc = -1;
+	char *hostp;
 
-	if (id == -1)
-		slurm_seterrno_ret(EGETHOST_BYNODEID);
+	if (id < 0) slurm_seterrno_ret(EGETHOST_BYNODEID);
 
-	/* use the local hostname to determine 'base' name */
-	if (gethostname(name, MAXHOSTNAMELEN) < 0)
-		return -1; /* sets errno */
-	if ((domainname = strchr(name, '.')))		
-		*domainname++ = '\0';		/* save domainname for later */
+	_lock_qsw();
+	if (!elanconf && (_read_elanhost_config() < 0))
+		goto done;
 
-	/* extract the 'base' name */
-	if (qsw_getnodeid_byhost(name) == -1)	/* no numerical suffix */
-		name[strlen(name) - 1] = '\0';	/*   assume one char suffix */
-	else {					/* numerical suffix */
-		p = name + strlen(name) - 1;
-		while (p >= name && isdigit(*p))
-			*p-- = '\0';
+	if (!(hostp = elanhost_elanid2host (elanconf, ELANHOST_EIP, id))) {
+		slurm_seterrno (EGETHOST_BYNODEID);
+		goto done;
 	}
+	
+	rc = strlcpy (buf, hostp, len);
 
-	/* construct the new name from the id and the 'base' name. */
-	if (domainname)
-		res = snprintf(buf, len, "%s%d.%s", name, id, domainname);
-	else
-		res = snprintf(buf, len, "%s%d", name, id);
-
-	return res;
+    done:
+	_unlock_qsw();
+	return (rc);
 }
 
 /*

@@ -9,7 +9,7 @@ sbin_PROGRAMS = slurmd
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
 if WITH_ELAN
-interconnect_sources = elan_interconnect.c elanhosts.c elanhosts.h
+interconnect_sources = elan_interconnect.c 
 else
 interconnect_sources = no_interconnect.c
 endif
@@ -17,7 +17,6 @@ endif
 slurmd_LDADD = 					   \
         $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libhostlist.la  \
 	$(top_builddir)/src/common/libeio.la       \
 	$(SSL_LIBS) 
 
@@ -46,8 +45,7 @@ slurmd_LDFLAGS = -export-dynamic
 
 EXTRA_slurmd_SOURCES = \
 	no_interconnect.c 	\
-	elan_interconnect.c	\
-	elanhosts.c elanhosts.h
+	elan_interconnect.c	
 
 force:
 $(slurmd_LDADD) : force

@@ -45,18 +45,17 @@
 #include "src/common/hostlist.h"
 #include "src/common/qsw.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/elanhosts.h"
 
 #include "src/slurmd/interconnect.h"
 #include "src/slurmd/setenvpf.h"
-#include "src/slurmd/elanhosts.h"
 
 #ifdef HAVE_LIBELAN3
-#  include <elan3/elan3.h>
+#include <elan3/elan3.h>
 /*
  * Static prototypes for network error resolver creation:
  */
-static int   set_elan_ids(elanhost_config_t ec);
-static int   load_neterr_data(void);
+static int   set_elan_ids(void);
 static void *neterr_thr(void *arg);
 
 static int             neterr_retval = 0;
@@ -87,7 +86,7 @@ int interconnect_node_init(void)
 	/*
 	 *  Load neterr elanid/hostname values into kernel 
 	 */
-	if (load_neterr_data() < 0)
+	if (set_elan_ids() < 0)
 		return SLURM_FAILURE;
 
 	if ((err = pthread_attr_init(&attr)))
@@ -166,30 +165,6 @@ static void *neterr_thr(void *arg)
 
 	return NULL;
 }
-
-/*
- *  Parse an ElanId config file and load elanid,hostname pairs
- *   into the kernel.
- */
-static int 
-load_neterr_data(void)
-{
-	elanhost_config_t ec = elanhost_config_create();
-	int rc;
-
-	if ((rc = elanhost_config_read(ec, NULL)) < 0) {
-		error("unable to read elan config: %s", 
-		      elanhost_config_err(ec));
-		goto done;
-	}
-
-	rc = set_elan_ids(ec);
-	elanhost_config_destroy(ec);
-
-    done:
-	return rc < 0 ? SLURM_FAILURE :  SLURM_SUCCESS;
-}
-
 #endif /* HAVE_LIBELAN3 */
 
 
@@ -328,13 +303,13 @@ interconnect_attach(slurmd_job_t *job, int procid)
 #if HAVE_LIBELAN3
 
 static int
-set_elan_ids(elanhost_config_t ec)
+set_elan_ids(void)
 {
 	int i;
 
-	for (i = 0; i <= elanhost_config_maxid(ec); i++) {
-		char *host = elanhost_elanid2host(ec, ELANHOST_EIP, i);
-		if (host == NULL)
+	for (i = 0; i <= qsw_maxnodeid(); i++) {
+		char host[256]; 
+		if (qsw_gethost_bynodeid(host, 256, i) < 0)
 			continue;
 			
 		if (elan3_load_neterr_svc(i, host) < 0)

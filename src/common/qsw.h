@@ -87,6 +87,9 @@ int 		qsw_setcap(qsw_jobinfo_t jobinfo, int procnum);
 int		qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum); 
 		/* was qsw_signal_job */
 
+		/* return max ElanID in configuration */
+int             qsw_maxnodeid(void);
+
 int		qsw_getnodeid(void);
 int		qsw_getnodeid_byhost(char *host);
 int		qsw_gethost_bynodeid(char *host, int len, int elanid);
