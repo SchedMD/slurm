@@ -355,6 +355,8 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	get_procs(&msg->cpus);
 	get_memory(&msg->real_memory_size);
 	get_tmp_disk(&msg->temporary_disk_space, conf->cf.tmp_fs);
+	debug3("Procs=%u RealMemory=%u, TmpDisk=%u", msg->cpus, 
+	       msg->real_memory_size, msg->temporary_disk_space);
 
 	steps          = shm_get_steps();
 	msg->job_count = list_count(steps);
