@@ -104,12 +104,13 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 
 	/* ignore SIGPIPE so that send can return a error code if the other side closes the socket */
 	signal(SIGPIPE, SIG_IGN);
-	
+
 	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
-	
+
 	if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) != sizeof ( uint32_t ) )
 	{
 		info ( "Error sending length of datagram" ) ;
+		signal(SIGPIPE, SIG_DFL);
 		return SLURM_PROTOCOL_ERROR ;
 	}
 
@@ -117,9 +118,11 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	if ( send_len != size )
 	{
 		info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
+		signal(SIGPIPE, SIG_DFL);
 		return SLURM_PROTOCOL_ERROR ;
 	}
 
+	signal(SIGPIPE, SIG_DFL);
 	return send_len ;
 }
 

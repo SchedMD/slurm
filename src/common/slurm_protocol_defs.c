@@ -266,7 +266,7 @@ void slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg )
 
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 {
-	job_desc_msg -> contiguous = SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;
+	job_desc_msg -> contiguous = (uint16_t) SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;
 	job_desc_msg -> dist = SLURM_JOB_DESC_DEFAULT_DIST ;
 	job_desc_msg -> features = SLURM_JOB_DESC_DEFAULT_FEATURES ;
 	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
@@ -281,7 +281,7 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
         job_desc_msg -> procs_per_task = SLURM_JOB_DESC_DEFAULT_PROCS_PER_TASK ;
 	job_desc_msg -> req_nodes = SLURM_JOB_DESC_DEFAULT_REQ_NODES ;
 	job_desc_msg -> job_script = SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT ;
-	job_desc_msg -> shared = SLURM_JOB_DESC_DEFAULT_SHARED ;
+	job_desc_msg -> shared = (uint16_t) SLURM_JOB_DESC_DEFAULT_SHARED ;
 	job_desc_msg -> time_limit = SLURM_JOB_DESC_DEFAULT_TIME_LIMIT ;
 	job_desc_msg -> num_procs = SLURM_JOB_DESC_DEFAULT_NUM_PROCS ;
 	job_desc_msg -> num_nodes = SLURM_JOB_DESC_DEFAULT_NUM_NODES ;
