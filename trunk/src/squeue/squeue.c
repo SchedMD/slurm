@@ -24,8 +24,15 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#ifdef HAVE_TERMCAP_H
+#  include <termcap.h>
+#endif
+
 #include <sys/ioctl.h>
-#include <termcap.h>
 #include <termios.h>
 
 #include "src/common/xstring.h"
