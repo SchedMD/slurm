@@ -1028,14 +1028,14 @@ void build_node_details(struct job_record *job_ptr)
 				job_ptr->cpu_count_reps[cpu_inx]++;
 
 		} else {
-			error("Invalid node %s in job_id %u",
+			error("Invalid node %s in JobId=%u",
 			      this_node_name, job_ptr->job_id);
 		}
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
 	if (job_ptr->node_cnt != node_inx) {
-		error("Node count mismatch for job_id %u (%u,%u)",
+		error("Node count mismatch for JobId=%u (%u,%u)",
 		      job_ptr->job_id, job_ptr->node_cnt, node_inx);
 		job_ptr->node_cnt = node_inx;
 	}
