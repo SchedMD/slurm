@@ -108,19 +108,17 @@ launch(void *arg)
 		task_ids[i] = (uint32_t *) xmalloc(job->ntask[i]*sizeof(uint32_t));
 	taskid = 0;
 	if (opt.distribution == SRUN_DIST_BLOCK) {
-		for (i = 0; i < job->nhosts; i++) {
-			for (j = 0; j < job->ntask[i]; j++)
+		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
+			for (j=0; ((j<job->ntask[i]) && (taskid<opt.nprocs)); j++) {
 				task_ids[i][j] = taskid++;
+			}
 		}
 	} else {	/*  (opt.distribution == SRUN_DIST_CYCLIC) */
-		for (k=0; ; k++) {	/* cycle counter */
-			int last_taskid = taskid;
-			for (i = 0; i < job->nhosts; i++) {
+		for (k=0; (taskid<opt.nprocs); k++) {	/* cycle counter */
+			for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
 				if (k < job->ntask[i])
 					task_ids[i][k] = taskid++;
 			}
-			if (taskid == last_taskid)
-				break;
 		}
 	}
 
