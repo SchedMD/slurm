@@ -37,16 +37,19 @@
 #define ESLURM_NODES_BUSY				-2016
 #define ESLURM_INVALID_JOB_ID				-2017
 #define ESLURM_INVALID_NODE_NAMES			-2018
-#define ESLURM_INVALID_PARTITION			-2019
+#define ESLURM_INVALID_PARTITION_NAME			-2019
 #define ESLURM_TRANSISTION_STATE_NO_UPDATE		-2020
 #define ESLURM_ALREADY_DONE				-2021
 
 /* partition_mgr.c/update_part */
-#define ESLURM_INVALID_PARTITION_NAME			-2101
-#define ESLURM_INVALID_NODE_NAME_SPECIFIED		-2102
+#define ESLURM_INVALID_NODE_NAME_SPECIFIED		-2101
 
 /* node_mgr.c/update_node */
 #define ESLURM_INVALID_NODE_NAME			-2201
+#define ESLURM_ACCESS_DENIED				-2202
+
+/* step_mgr.c */
+#define ESLURM_ACCESS_DENIED				-2301
 
 /* look up an errno value */
 extern char * slurm_strerror(int errnum);
