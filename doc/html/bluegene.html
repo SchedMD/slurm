@@ -91,8 +91,13 @@ maximum node count. The <i>--ntasks</i> option continues to be supported.
 See the srun man pages for details. </p>
 
 <p>To reiterate: srun is used to submit a job script, but mpirun is used to launch the parallel tasks. 
+<b>It is highly recommended that the srun <i>--batch</i> option be used to submit a script.</b> 
+While the srun <i>--allocate</i> option may be used to create an interactive SLURM job, 
+it will be the responsibility of the user to insure that the <i>bglblock</i> 
+is ready for use before initiating any mpirun commands. 
+SLURM will assume this responsibility for batch jobs. 
 The script that you submit to SLURM can contain multiple invocations of mpirun as
-well as any desired commands for pre- and post-processing. 
+well as any desired commands for pre- and post-processing.
 The mpirun command will get its <i>bglblock</i> or BGL partition information from the
 <i>BGL_PARTITION_ID</i> as set by SLURM. A sample script is shown below.
 <pre>
