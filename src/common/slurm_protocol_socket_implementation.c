@@ -712,7 +712,6 @@ extern int _slurm_fcntl(int fd, int cmd, ... )
 extern int _slurm_vfcntl(int fd, int cmd, va_list va )
 {
 	long arg ;
-	struct flock *lock ;
 
 	switch ( cmd )
 	{
