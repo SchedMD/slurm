@@ -41,12 +41,11 @@
  * xmalloc() extending *envp if necessary.
  *
  * envp		Pointer to environment array allocated with xmalloc()
- * envc		Pointer to current count of environment vars
  * fmt		printf style format (e.g. "SLURM_NPROCS=%d")
  *
  */    
 int
-setenvpf(char ***envp, int *envc, const char *fmt, ...)
+setenvpf(char ***envp, const char *fmt, ...)
 {
 	va_list ap;
 	char buf[BUFSIZ];
@@ -54,8 +53,6 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 	char **ep  = env;
 	int    cnt = 0;
 		
-	xassert(env[*envc] == NULL);
-	
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
@@ -70,11 +67,10 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 	env[cnt]   = NULL;
 
 	*envp = env;
-	*envc = cnt;
 
-	xassert(strcmp(env[(*envc) - 1], buf) == 0);
+	xassert(strcmp(env[cnt - 1], buf) == 0);
 
-	return *envc;
+	return cnt;
 }
 
 /*

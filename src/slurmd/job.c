@@ -50,7 +50,7 @@
 #include "src/slurmd/slurmd.h"
 
 static char ** _array_copy(int n, char **src);
-static void _array_free(int n, char ***array);
+static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
 static void _job_init_task_info(slurmd_job_t *job, uint32_t *gids);
 
@@ -123,8 +123,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;
 
-	job->envc    = msg->envc;
-	job->env     = _array_copy(job->envc, msg->env);
+	job->env     = _array_copy(msg->envc, msg->env);
 	job->argc    = msg->argc;
 	job->argv    = _array_copy(job->argc, msg->argv);
 
@@ -201,8 +200,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->uid     = (uid_t)msg->uid;
 	job->cwd     = xstrdup(msg->work_dir);
 
-	job->envc    = msg->envc;
-	job->env     = _array_copy(job->envc, msg->environment);
+	job->env     = _array_copy(msg->envc, msg->environment);
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 	job->sruns   = list_create((ListDelF) _srun_info_destructor);
 
@@ -295,8 +293,8 @@ job_destroy(slurmd_job_t *job)
 {
 	int i;
 
-	_array_free(job->envc, &job->env);
-	_array_free(job->argc, &job->argv);
+	_array_free(&job->env);
+	_array_free(&job->argv);
 
 	_pwd_destroy(job->pwd);
 
@@ -319,10 +317,11 @@ _array_copy(int n, char **src)
 }
 
 static void
-_array_free(int n, char ***array)
+_array_free(char ***array)
 {
-	while (--n >= 0)
-		xfree(*array[n]);
+	int i = 0;
+	while ((*array)[i] != NULL) 
+		xfree((*array)[i++]);
 	xfree(*array);
 	*array = NULL;
 }

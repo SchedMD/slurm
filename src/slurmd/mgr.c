@@ -156,6 +156,8 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
 
+	job_destroy(job);
+
 	return SLURM_SUCCESS;
 }
 
@@ -235,8 +237,6 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
 	if (cpid == 0) {
 		char *argv[4];
 		char **env;
-		int envc = 0;
-
 
 		env = xmalloc(sizeof(char *));
 
@@ -244,8 +244,8 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
 		argv[1] = NULL;
 
 		env[0]  = NULL;
-		setenvpf(&env, &envc, "SLURM_JOBID=%u", jobid);
-		setenvpf(&env, &envc, "SLURM_UID=%u",   uid);
+		setenvpf(&env, "SLURM_JOBID=%u", jobid);
+		setenvpf(&env, "SLURM_UID=%u",   uid);
 
 		execve(path, argv, env);
 		error("help! %m");
@@ -871,21 +871,16 @@ static int
 _setup_batch_env(slurmd_job_t *job, char *nodes)
 {
 	char       buf[1024];
-	int        envc;
 	hostlist_t hl = hostlist_create(nodes);
 
 	if (!hl)
 		return SLURM_ERROR;
 
-	envc = (int)job->envc;
-
 	hostlist_ranged_string(hl, 1024, buf);
-	setenvpf(&job->env, &envc, "SLURM_JOBID=%u",    job->jobid);
-	setenvpf(&job->env, &envc, "SLURM_NNODES=%u",   hostlist_count(hl));
-	setenvpf(&job->env, &envc, "SLURM_NODELIST=%s", buf);
+	setenvpf(&job->env, "SLURM_JOBID=%u",    job->jobid);
+	setenvpf(&job->env, "SLURM_NNODES=%u",   hostlist_count(hl));
+	setenvpf(&job->env, "SLURM_NODELIST=%s", buf);
 	hostlist_destroy(hl);
-
-	job->envc = envc;
 
 	return 0;
 }

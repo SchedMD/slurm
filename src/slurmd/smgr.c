@@ -485,21 +485,18 @@ _local_taskid(slurmd_job_t *job, pid_t pid)
 static int
 _setup_env(slurmd_job_t *job, int taskid)
 {
-	int cnt = (int) job->envc;
 	task_info_t *t = job->task[taskid];
 
-	if (setenvpf(&job->env, &cnt, "SLURM_JOBID=%d",  job->jobid)  < 0)
+	if (setenvpf(&job->env, "SLURM_JOBID=%d",  job->jobid)  < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NODEID=%d", job->nodeid) < 0)
+	if (setenvpf(&job->env, "SLURM_NODEID=%d", job->nodeid) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_PROCID=%d", t->gid     ) < 0)
+	if (setenvpf(&job->env, "SLURM_PROCID=%d", t->gid     ) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NNODES=%d", job->nnodes) < 0)
+	if (setenvpf(&job->env, "SLURM_NNODES=%d", job->nnodes) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NPROCS=%d", job->nprocs) < 0)
+	if (setenvpf(&job->env, "SLURM_NPROCS=%d", job->nprocs) < 0)
 		return -1;
-
-	job->envc = (uint16_t) cnt;
 
 	return SLURM_SUCCESS;
 }

@@ -274,7 +274,6 @@ int
 interconnect_attach(slurmd_job_t *job, int procid)
 {
 	int nodeid, nnodes, nprocs; 
-	int cnt  = job->envc;
 	int rank = job->task[procid]->gid; 
 
 	nodeid = job->nodeid;
@@ -289,19 +288,16 @@ interconnect_attach(slurmd_job_t *job, int procid)
 		return SLURM_ERROR;
 	}
 
-	if (setenvpf(&job->env, &cnt, "RMS_RANK=%d",   rank       ) < 0)
+	if (setenvpf(&job->env, "RMS_RANK=%d",   rank       ) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "RMS_NODEID=%d", job->nodeid) < 0)
+	if (setenvpf(&job->env, "RMS_NODEID=%d", job->nodeid) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "RMS_PROCID=%d", rank       ) < 0)
+	if (setenvpf(&job->env, "RMS_PROCID=%d", rank       ) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "RMS_NNODES=%d", job->nnodes) < 0)
+	if (setenvpf(&job->env, "RMS_NNODES=%d", job->nnodes) < 0)
 		return -1;
-	if (setenvpf(&job->env, &cnt, "RMS_NPROCS=%d", job->nprocs) < 0)
+	if (setenvpf(&job->env, "RMS_NPROCS=%d", job->nprocs) < 0)
 		return -1;
-
-	job->envc = (uint16_t) cnt;
-
 
 	return SLURM_SUCCESS;
 }
