@@ -22,7 +22,7 @@ int main ( int argc , char * argv[] )
 	unsigned int length_io ;
 		
 	/* init address sturctures */
-	slurm_set_addr_uint ( & worker_address , 7001 , 0x7f000001 ) ;
+	slurm_set_addr_uint ( & worker_address , 7001 , SLURM_INADDR_ANY ) ;
 	/* open and listen on socket */
 	worker_socket = slurm_open_msg_conn ( & worker_address ) ;
 
