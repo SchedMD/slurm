@@ -318,7 +318,6 @@ static int _parse_node_spec(char *in_line)
 		}
 		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
 			FREE_NULL(node_name);
-			node_name = NULL;
 			if (cpus_val != NO_VAL)
 				default_config_record.cpus = cpus_val;
 			if (real_memory_val != NO_VAL)
@@ -449,7 +448,7 @@ static int _parse_part_spec(char *in_line)
 	if (strlen(partition_name) >= MAX_NAME_LEN) {
 		error("_parse_part_spec: partition name %s too long",
 		      partition_name);
-		FREE_NULL(partition_name);
+		xfree(partition_name);
 		return EINVAL;
 	}
 
@@ -531,7 +530,7 @@ static int _parse_part_spec(char *in_line)
 	}
 
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {
-		FREE_NULL(partition_name);
+		xfree(partition_name);
 		if (max_time_val != NO_VAL)
 			default_part.max_time = max_time_val;
 		if (max_nodes_val != NO_VAL)
@@ -590,7 +589,7 @@ static int _parse_part_spec(char *in_line)
 	if (nodes) {
 		FREE_NULL(part_record_point->nodes);
 		if (strcmp(nodes, "localhost") == 0) {
-			FREE_NULL(nodes);
+			xfree(nodes);
 			nodes = xmalloc(128);
 			if (nodes == NULL)
 				fatal("memory allocation failure");
@@ -599,7 +598,7 @@ static int _parse_part_spec(char *in_line)
 		part_record_point->nodes = nodes;
 		nodes = NULL;
 	}
-	FREE_NULL(partition_name);
+	xfree(partition_name);
 	return 0;
 
       cleanup:
@@ -748,7 +747,7 @@ int read_slurm_conf(int recover)
 				node_record_point->node_state =
 				    old_node_table_ptr[i].node_state;
 		}
-		FREE_NULL(old_node_table_ptr);
+		xfree(old_node_table_ptr);
 	}
 	set_slurmd_addr();
 
