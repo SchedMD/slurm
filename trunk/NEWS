@@ -3,8 +3,6 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.6
 ========================
--- In smap, Admin can get the Rack/midplane id from an XYZ input and vice versa.  
-   
 
 * Changes in SLURM 0.4.5
 ========================
@@ -18,6 +16,8 @@ documents those changes that are of interest to users and admins.
     that partition's state is DOWN (rather than just abort it).
  -- Add prolog/epilog for bluegene to code base (moved from mpirun in CVS)
  -- Add prolog, epilog and bluegene.conf.example to bluegene RPM
+ -- In smap, Admin can get the Rack/midplane id from an XYZ input and vice versa.
+ -- Add smap line-oriented output capability.
 
 * Changes in SLURM 0.4.4
 ========================
