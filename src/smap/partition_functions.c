@@ -68,9 +68,7 @@ static void _print_header_part(void);
 static int  _print_text_part(partition_info_t * part_ptr, 
 		db2_block_info_t *db2_info_ptr);
 static void _read_part_db2(void);
-#ifdef HAVE_BGL_FILES
 static int _print_rest(void *object, void *arg);
-#endif
 
 void get_part(void)
 {
@@ -186,7 +184,7 @@ void get_part(void)
 	}
 
 	/* Report any BGL Blocks not in a SLURM partition */
-	if (params.display == BGLPART) {
+	if (block_list && params.display == BGLPART) {
 		list_for_each(block_list, _print_rest, &count);
 	}
 
@@ -441,7 +439,7 @@ static int _clear_printed_flag(void *object, void *arg)
 	block_ptr->printed = false;
 	return SLURM_SUCCESS;
 }
-
+#endif
 static int _print_rest(void *object, void *arg)
 {
 	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
@@ -476,7 +474,7 @@ static int _print_rest(void *object, void *arg)
 	_print_text_part(&part, block_ptr);
 	return SLURM_SUCCESS;
 }
-
+#ifdef HAVE_BGL_FILES
 static int _post_block_read(void *object, void *arg)
 {
 	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
