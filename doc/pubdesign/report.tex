@@ -1,16 +1,28 @@
 \maketitle
 
-%\begin{abstract}
-%Abstract here.
-%\end{abstract}
+\begin{abstract}
+Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable batch system for Linux clusters of 
+thousands of nodes.  Components include machine status, partition
+management, job management, and scheduling modules.  The design also 
+includes a scalable, general-purpose communication infrastructure.
+Development will take place in three phases:  Phase I results in a solid
+infrastructure;  Phase II produces a functional but limited batch capability
+suitable for production deployment; and Phase III addresses the limitations
+of Phase III and prepares for open source release in conjunction with 
+Livermore's Distributed Production Control System (DPCS), a metabatch and
+resource management system.
+\end{abstract}
 
-%\begin{figure}
+\vspace{0.25in}
+
 \begin{center}
 \epsfig{file=slurm.eps,width=4in}
 \end{center}
-%\end{figure}
 
 \newpage
+
+
 
 \section{Overview}
 
@@ -37,6 +49,11 @@ standards and reuse existing open source code. No kernel modifications will be
 required for basic functionality, although expanded capabilities might be
 provided with minor kernel modifications (e.g. gang scheduling). 
 
+\begin{figure}
+\epsfig{file=LCM.arch.ps,width=6in}
+\caption{SLURM Architecture}
+\label{arch}
+\end{figure}
 The design below calls for the designation of a single computer for control of
 the cluster with automatic fail-over to a backup computer. A common user home
 directory across all nodes of the cluster is assumed. We assume the nodes will
@@ -78,13 +95,7 @@ switch management daemons, but with DPCS' central manager on a distinct (AIX)
 computer. Phase three will provide complete job scheduling and management
 capabilities including: DPCS' central manager on Linux,.
 
-\begin{figure}
-\begin{center}
-\epsfig{file=LCM.arch.ps,width=6in}
-\caption{SLURM Architecture}
-\end{center}
-\label{arch}
-\end{figure}
+
 
 \section{Machine Status}
 
@@ -199,8 +210,8 @@ time-slicing or  gang scheduling). The core functions to be supported include:
 \item Initiate job\footnote{There are considerable issues regarding allocation 
 of resources (nodes) to jobs and then associating the  allocation to the job 
 as well as relinquishing the allocation at job termination that we need to 
-discuss. - Bob Wood}\footnote{Need partition, CPU count, task count, optional 
-node list, etc.  - Gregg Hommes}
+discuss. - Bob Wood; Need partition, CPU count, task count, optional node 
+list, etc.  - Gregg Hommes}
 \item Will job run query (test if "Initiate job" request would succeed)
 \item Status job (including node list, memory and CPU use data)
 \item Signal job for termination (following DPCS model of explicit application
@@ -232,27 +243,24 @@ logins, disable logins, terminate "orphan" processes, etc.).
 \section{Infrastructure: Communications Library}
 
 \begin{figure}
-\begin{center}
 \epsfig{file=LCM.communicate.ps,width=6in}
-\caption{Sample communications with fanout of 2}
-\end{center}
-\label{comm}
+\caption{Sample communications with fanout = 2}
+\label{communicate}
 \end{figure}
-
 Optimal communications performance will depend upon hierarchical communications
 patterned after DPCS and GangLL work. The SLURM control machine will generate a
 list of nodes for each communication. The message will then be sent to one of
 the nodes. 
 The daemon on that node receiving the message will divide the node list into
 two or more new lists of similar size and retransmit the message to one node on
-each list. Figure~\ref{comm} shows the communications for a fan-out of two.
-Acknowledgements will optionally be sent for the messages to confirm receipt
-with a third message to commit the action. Our design permits the control
-machine to delegate one or more compute machine daemons as responsible for
-fault-tolerance, collection of acknowledgement messages, and the commit
+each list. Figure~\ref{communicate} shows the communications for a fan-out of 
+two.  Acknowledgements will optionally be sent for the messages to confirm 
+receipt with a third message to commit the action. Our design permits the 
+control machine to delegate one or more compute machine daemons as responsible 
+for fault-tolerance, collection of acknowledgement messages, and the commit
 decision. This design minimizes the control machine overhead for performance
 reasons. This design also offers excellent scalability and fault 
-tolerance\footnote{Arguments to the communications request include:
+tolerance.\footnote{Arguments to the communications request include:
 \begin{itemize}
 \item Request ID
 \item Request (command or acknowledgement or commit)
@@ -267,8 +275,6 @@ tolerance\footnote{Arguments to the communications request include:
 Security will be provided by the use of reserved ports, which must be opened by
 root-level processes. SLURM daemons will open these ports and all user requests
 will be processed through those daemons. 
-
-Figure~\ref{comm}: Sample communications with fan-out of 2
 
 \section{Infrastructure: Other}
 
