@@ -97,6 +97,7 @@ delete_all_step_records (struct job_record *job_ptr)
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		list_remove (step_iterator);
 		switch_free_jobinfo(step_ptr->switch_job);
+		checkpoint_free_jobinfo(step_ptr->check_job);
 		xfree(step_ptr->host);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -130,6 +131,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 		if (step_ptr->step_id == step_id) {
 			list_remove (step_iterator);
 			switch_free_jobinfo (step_ptr->switch_job);
+			checkpoint_free_jobinfo (step_ptr->check_job);
 			xfree(step_ptr->host);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -545,6 +547,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		delete_step_record (job_ptr, step_ptr->step_id);
 		return ESLURM_INTERCONNECT_FAILURE;
 	}
+	if (checkpoint_alloc_jobinfo (&step_ptr->check_job) < 0)
+		fatal ("step_create: checkpoint_alloc_jobinfo error");
 
 	*new_step_record = step_ptr;
 	return SLURM_SUCCESS;
@@ -691,16 +695,17 @@ bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
 
 /*
  * job_step_checkpoint - perform some checkpoint operation
- * IN op - the operation to be performed
+ * IN op - the operation to be performed (see enum check_opts)
+ * IN data - operation-specific data
  * IN job_id - id of the job
  * IN step_id - id of the job step, NO_VAL indicates all steps of the indicated job
  * IN uid - user id of the user issuing the RPC
  * IN conn_fd - file descriptor on which to send reply
  * RET 0 on success, otherwise ESLURM error code
  */
-extern int job_step_checkpoint(enum check_opts op,
-		uint32_t job_id, uint32_t step_id, uid_t uid, 
-		slurm_fd conn_fd)
+extern int job_step_checkpoint(uint16_t op, uint16_t data, 
+		uint32_t job_id, uint32_t step_id, 
+		uid_t uid, slurm_fd conn_fd)
 {
 	int rc = SLURM_SUCCESS;
 	struct job_record *job_ptr;
@@ -721,7 +726,7 @@ extern int job_step_checkpoint(enum check_opts op,
 		if (op == CHECK_ERROR) {
 			rc = _job_step_ckpt_error(step_ptr, conn_fd);
 		} else {
-			rc = g_slurm_checkpoint_op(op, step_ptr);
+			rc = checkpoint_op(op, data, (void *)step_ptr);
 			last_job_update = time(NULL);
 		}
 	}
@@ -740,7 +745,7 @@ extern int job_step_checkpoint(enum check_opts op,
 				error_reply = true;
 				break;
 			} else {
-				update_rc = g_slurm_checkpoint_op(op, step_ptr);
+				update_rc = checkpoint_op(op, data, (void *)step_ptr);
 				rc = MAX(rc, update_rc);
 			}
 		}
@@ -758,12 +763,12 @@ extern int job_step_checkpoint(enum check_opts op,
 static int _job_step_ckpt_error(struct step_record *step_ptr, slurm_fd conn_fd)
 {
 	int rc;
-	uint32_t ckpt_errno;
+	uint16_t ckpt_errno;
 	char *ckpt_strerror;
 	slurm_msg_t resp_msg;
 	checkpoint_resp_msg_t resp_data;
 
-	rc = g_slurm_checkpoint_error(step_ptr, &ckpt_errno, &ckpt_strerror);
+	rc = checkpoint_error((void *)step_ptr, &ckpt_errno, &ckpt_strerror);
 	if (rc)
 		return rc;
 

@@ -2844,6 +2844,7 @@ _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer)
 	xassert ( msg != NULL );
 
 	pack16 ( msg -> op,      buffer ) ;
+	pack16 ( msg -> data,    buffer ) ;
 	pack32 ( msg -> job_id,  buffer ) ;
 	pack32 ( msg -> step_id, buffer ) ;
 }
@@ -2858,6 +2859,7 @@ _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer)
 	*msg_ptr = msg ;
 
 	safe_unpack16 ( & msg -> op ,      buffer ) ;
+	safe_unpack16 ( & msg -> data ,    buffer ) ;
 	safe_unpack32 ( & msg -> job_id  , buffer ) ;
 	safe_unpack32 ( & msg -> step_id , buffer ) ;
 	return SLURM_SUCCESS;
@@ -2873,7 +2875,7 @@ _pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer)
 {
 	xassert ( msg != NULL );
 
-	pack32 ( msg -> ckpt_errno,  buffer ) ;
+	pack16 ( msg -> ckpt_errno,  buffer ) ;
 	packstr ( msg -> ckpt_strerror, buffer ) ;
 }
 
@@ -2887,7 +2889,7 @@ _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer)
 	msg = xmalloc ( sizeof (checkpoint_resp_msg_t) ) ;
 	*msg_ptr = msg ;
 
-	safe_unpack32 ( & msg -> ckpt_errno , buffer ) ;
+	safe_unpack16 ( & msg -> ckpt_errno , buffer ) ;
 	safe_unpackstr_xmalloc ( & msg -> ckpt_strerror, & uint16_tmp , buffer ) ;
 	return SLURM_SUCCESS;
 

@@ -1,0 +1,19 @@
+# $Id$
+# Makefile for checkpoint/aix plugin
+
+AUTOMAKE_OPTIONS = foreign
+
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic 
+
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+
+# AIXcheckpoint plugin.
+if HAVE_AIX
+pkglib_LTLIBRARIES = checkpoint_aix.la
+checkpoint_aix_la_SOURCES = checkpoint_aix.c
+checkpoint_aix_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+checkpoint_aix_la_LIBADD  = $(top_builddir)/src/common/libcommon.la   \
+			$(top_builddir)/src/api/libslurm.la
+else
+EXTRA_checkpoint_aix_la_SOURCES =  checkpoint_aix.c
+endif

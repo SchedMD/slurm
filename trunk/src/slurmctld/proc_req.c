@@ -1686,16 +1686,45 @@ inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 	uid_t uid;
+	char *op;
 
 	START_TIMER;
-	debug2("Processing RPC: REQUEST_CHECKPOINT");
+	switch (ckpt_ptr->op) {
+		case CHECK_COMPLETE:
+			op = "disable";
+			break;
+		case CHECK_CREATE:
+			op = "disable";
+			break;
+		case CHECK_DISABLE:
+			op = "disable";
+			break;
+		case CHECK_ENABLE:
+			op = "enable";
+			break;
+		case CHECK_ERROR:
+			op = "disable";
+			break;
+		case CHECK_FAILED:
+			op = "disable";
+			break;
+		case CHECK_RESUME:
+			op = "disable";
+			break;
+		case CHECK_VACATE:
+			op = "disable";
+			break;
+		default:
+			op = "unknown operation";
+	}
+	debug2("Processing RPC: REQUEST_CHECKPOINT %s", op);
 	uid = g_slurm_auth_get_uid(msg->cred);
 
 	/* do RPC call */
 	lock_slurmctld(job_write_lock);
-	error_code = job_step_checkpoint(ckpt_ptr->op,
-			ckpt_ptr->job_id, ckpt_ptr->step_id, uid,
-			msg->conn_fd);
+	error_code = job_step_checkpoint(ckpt_ptr->op, 
+			ckpt_ptr->data, ckpt_ptr->job_id, 
+			ckpt_ptr->step_id, uid, msg->conn_fd);
 	unlock_slurmctld(job_write_lock);
 	END_TIMER;
 

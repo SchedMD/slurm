@@ -67,6 +67,7 @@
 #include "src/common/xstring.h"
 
 #define	BUF_SIZE        1024
+#define CKPT_WAIT 600
 #define OPT_LONG_HIDE	0x102
 #define MAX_NAME_LEN      64
 #define	MAX_INPUT_FIELDS 128
@@ -1855,7 +1856,7 @@ static int _checkpoint(char *op, char *job_step_id_str)
 	int rc = SLURM_SUCCESS;
 	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
 	char *next_str;
-	uint32_t ckpt_errno;
+	uint16_t ckpt_errno;
 	char *ckpt_strerror = NULL;
 
 	if (job_step_id_str) {
@@ -1875,16 +1876,16 @@ static int _checkpoint(char *op, char *job_step_id_str)
 	}
 
 	if (strncasecmp(op, "disable", 3) == 0)
-		rc = slurm_checkpoint (CHECK_DISABLE, job_id, step_id);
+		rc = slurm_checkpoint_disable (job_id, step_id);
 	else if (strncasecmp(op, "enable", 2) == 0)
-		rc = slurm_checkpoint (CHECK_ENABLE, job_id, step_id);
+		rc = slurm_checkpoint_enable (job_id, step_id);
 
 	else if (strncasecmp(op, "create", 2) == 0)
-		rc = slurm_checkpoint (CHECK_CREATE, job_id, step_id);
+		rc = slurm_checkpoint_create (job_id, step_id, CKPT_WAIT);
 	else if (strncasecmp(op, "vacate", 2) == 0)
-		rc = slurm_checkpoint (CHECK_VACATE, job_id, step_id);
+		rc = slurm_checkpoint_vacate (job_id, step_id, CKPT_WAIT);
 	else if (strncasecmp(op, "resume", 2) == 0)
-		rc = slurm_checkpoint (CHECK_RESUME, job_id, step_id);
+		rc = slurm_checkpoint_resume (job_id, step_id);
 
 	else if (strncasecmp(op, "error", 2) == 0) {
 		rc = slurm_checkpoint_error (job_id, step_id, 

@@ -35,16 +35,18 @@
 #include "src/common/slurm_protocol_api.h"
 
 static int _handle_rc_msg(slurm_msg_t *msg);
-
+static int _checkpoint_op (uint16_t op, uint16_t data,
+		uint32_t job_id, uint32_t step_id);
 /*
- * slurm_checkpoint - perform some checkpoint operation for some job step
+ * _checkpoint_op - perform some checkpoint operation for some job step
  * IN op      - operation to perform
+ * IN data   - operation-specific data
  * IN job_id  - job on which to perform operation
  * IN step_id - job step on which to perform operation
  * RET 0 or a slurm error code
  */
-extern int slurm_checkpoint ( enum check_opts op, uint32_t job_id,
-                uint32_t step_id)
+static int _checkpoint_op (uint16_t op, uint16_t data,
+		uint32_t job_id, uint32_t step_id)
 {
 	int rc;
 	slurm_msg_t msg;
@@ -69,6 +71,94 @@ extern int slurm_checkpoint ( enum check_opts op, uint32_t job_id,
 }
 
 /*
+ * slurm_checkpoint_disable - disable checkpoint requests for some job step
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_disable (uint32_t job_id, uint32_t step_id)
+{
+	return _checkpoint_op (CHECK_DISABLE, 0, job_id, step_id);
+}
+
+
+/*
+ * slurm_checkpoint_enable - enable checkpoint requests for some job step
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_enable (uint32_t job_id, uint32_t step_id)
+{
+	return _checkpoint_op (CHECK_ENABLE, 0, job_id, step_id);
+}
+
+/*
+ * slurm_checkpoint_create - initiate a checkpoint requests for some job step.
+ *	the job will continue execution after the checkpoint operation completes
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * IN max_wait - maximum wait for operation to complete, in seconds
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_create (uint32_t job_id, uint32_t step_id, 
+		uint16_t max_wait)
+{
+	return _checkpoint_op (CHECK_CREATE, max_wait, job_id, step_id);
+}
+
+/*
+ * slurm_checkpoint_vacate - initiate a checkpoint requests for some job step.
+ *	the job will terminate after the checkpoint operation completes
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * IN max_wait - maximum wait for operation to complete, in seconds
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_vacate (uint32_t job_id, uint32_t step_id, 
+		uint16_t max_wait)
+{
+	return _checkpoint_op (CHECK_VACATE, max_wait, job_id, step_id);
+}
+
+/*
+ * slurm_checkpoint_resume - resume execution of a checkpointed job step.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_resume (uint32_t job_id, uint32_t step_id)
+{
+	return _checkpoint_op (CHECK_RESUME, 0, job_id, step_id);
+}
+
+/*
+ * slurm_checkpoint_complete - note the successful completion of a job step's 
+ *	checkpoint operation.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_complete (uint32_t job_id, uint32_t step_id)
+{
+	return _checkpoint_op (CHECK_COMPLETE, 0, job_id, step_id);
+}
+
+/*
+ * slurm_checkpoint_failed - note the unsuccessful completion of a job step's 
+ *	checkpoint operation.
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * IN ckpt_errno - plugin-specific error code indicative of the failure type
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_failed (uint32_t job_id, uint32_t step_id, 
+		uint16_t ckpt_errno)
+{
+	return _checkpoint_op (CHECK_FAILED, ckpt_errno, job_id, step_id);
+}
+
+/*
  * slurm_checkpoint_error - gather error information for the last checkpoint operation 
  * for some job step
  * IN job_id  - job on which to perform operation
@@ -81,7 +171,7 @@ extern int slurm_checkpoint ( enum check_opts op, uint32_t job_id,
  * RET 0 or a slurm error code
  */
 extern int slurm_checkpoint_error ( uint32_t job_id, uint32_t step_id, 
-		uint32_t *ckpt_errno, char **ckpt_strerror)
+		uint16_t *ckpt_errno, char **ckpt_strerror)
 {
 	int rc;
 	slurm_msg_t msg;

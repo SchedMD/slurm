@@ -13,7 +13,9 @@ documents those changes that are of interest to users and admins.
     allocation requests which are refused due to completing job (formerly 
     returned ESLURM_NOT_TOP_PRIORITY)
  -- Modified job completion logging plugin calling sequence.
- 
+ -- Added much of the infrastructure required for system checkpoint
+    (APIs, RPCs, and NULL plugin)
+
 * Changes in SLURM 0.3.5
 ========================
  -- Fix "SLURM_RLIMIT_* not found in environment" error message when

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  checkpoint_none.c - NO-OP slurm checkpoint plugin.
+ *  checkpoint_aix.c - AIX slurm checkpoint plugin.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -39,7 +39,15 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
+
+struct check_job_info {
+	uint16_t ckpt_errno;
+	uint16_t disabled;
+};
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -69,8 +77,8 @@
  * as 100 or 1000.  Various SLURM versions will likely require a certain
  * minimum versions for their plugins as the checkpoint API matures.
  */
-const char plugin_name[]       	= "Checkpoint NONE plugin";
-const char plugin_type[]       	= "checkpoint/none";
+const char plugin_name[]       	= "Checkpoint AIX plugin";
+const char plugin_type[]       	= "checkpoint/aix";
 const uint32_t plugin_version	= 90;
 
 /*
@@ -81,6 +89,7 @@ int init ( void )
 {
 	return SLURM_SUCCESS;
 }
+
 
 int fini ( void )
 {
@@ -94,19 +103,45 @@ int fini ( void )
 extern int slurm_ckpt_op ( uint16_t op, uint16_t data,
 		struct step_record * step_ptr )
 {
-	return ESLURM_NOT_SUPPORTED;
+	int rc = SLURM_SUCCESS;
+
+	switch (op) {
+		case CHECK_COMPLETE:
+			step_ptr->check_job->ckpt_errno = 0;
+			if (step_ptr->check_job->vacate)
+			break;
+		case CHECK_DISABLE:
+			step_ptr->check_job->disabled = 1;
+			break;
+		case CHECK_ENABLE:
+			step_ptr->check_job->disabled = 0;
+			break;
+		case CHECK_FAILED:
+			step_ptr->check_job->ckpt_errno = data;
+			break;
+		case CHECK_CREATE:
+		case CHECK_VACATE:
+		case CHECK_RESUME:
+			rc = ESLURM_NOT_SUPPORTED;
+			break;
+		default:
+			error("Invalid checkpoint operation: %d", op);
+			rc = EINVAL;
+	}
+
+	return rc;
 }
 
 extern int slurm_ckpt_error ( struct step_record * step_ptr, 
 		uint32_t *ckpt_errno, char **ckpt_strerror)
 {
 	if (ckpt_errno)
-		*ckpt_errno = ESLURM_NOT_SUPPORTED;
+		*ckpt_errno = step_ptr->check_job->ckpt_errno;
 	else
 		return EINVAL;
 
 	if (ckpt_strerror)
-		*ckpt_strerror = "This system does not support checkpointing";
+		*ckpt_strerror = "TBD";
 	else
 		return EINVAL;
 
@@ -115,20 +150,32 @@ extern int slurm_ckpt_error ( struct step_record * step_ptr,
 
 extern int slurm_ckpt_alloc_job(check_jobinfo_t *jobinfo)
 {
+	*jobinfo = (check_jobinfo_t) xmalloc(sizeof(check_jobinfo_t));
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_free_job(check_jobinfo_t jobinfo)
 {
+	xfree(jobinfo);
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_pack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
+	pack16(job_info->ckpt_errno, buffer);
+	pack16(job_info->disabled, buffer);
+
 	return SLURM_SUCCESS;
 }
 
 extern int slurm_ckpt_unpack_job(check_jobinfo_t jobinfo, Buf buffer)
 {
-	return SLURM_SUCCESS;
+	safe_unpack16(&jobinfo->ckpt_errno, buffer);
+	safe_unpack16(&jobinfo->disabled, buffer);
+
+	return SLURM_SUCCESS; 
+
+    unpack_error:
+	return SLURM_ERROR;
 }
+
