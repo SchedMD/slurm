@@ -13,14 +13,21 @@ squeue \- Used to view information of jobs located in the scheduling queue.
 .TP
 OPTIONS
 .TP
-\fB-?\fR, \fB--help\fR
+\fB\-?\fR, \fB\-\-help\fR
 Print a help message describing the usage of \fBsqueue\fR.
 .TP
-\fB-o\fR, \fB--format\fR
-Specify the information to be displayed.  At present, field 
-sizes and justification are not processed, only the fields to 
-be displayed and their relative location. The field specifications 
-available include: 
+\fB\-o\fR, \fB\-\-format\fR
+Specify the information to be displayed.  
+The default format for jobs is "%.10i%9P%8u%2t%.9l%.9p%#N", where "#" limits 
+output to the window size.
+If the \fB\-\-long\fR option is specified, the default job format is 
+"%.10i%9P%8u%8T%.9ll%.9p%11S%11e%N".
+The default format for job steps is "%.10i%9P%8u%11S%#N", where "#" limits 
+output to the window size. 
+If the \fB\-\-long\fR option is specified, the default job step format 
+is "%.10i%9P%8u%11S%N".
+
+The field specifications available include: 
 .br
 \fB%b\fR Time at which the job began execution
 .br
@@ -30,7 +37,8 @@ available include:
 .br
 \fB%d\fR Minimum size of temporary disk space (in MB) requested by the job
 .br
-\fB%e\fR Time at which the job ended or is expected to end (based upon its time limit)
+\fB%e\fR Time at which the job ended or is expected to end (based upon its time
+limit)
 .br
 \fB%f\fR Features required by the job
 .br
@@ -52,7 +60,7 @@ available include:
 .br
 \fB%O\fR Are contiguous nodes required by the job
 .br
-\fB%p\fR Priority of the job
+\fB%p\fR Priority of the job (converted to a floating point number between 0.0 and 1.0
 .br
 \fB%P\fR Partition of the job or job step
 .br
@@ -70,46 +78,48 @@ available include:
 .br 
 \fB%<Number><*>\fR size of field
 .TP
-\fB-v\fR
+\fB\-v\fR
 Display all job information.
 .TP
-\fB-i\fR, \fB--iterate\fR
+\fB\-i\fR, \fB\-\-iterate\fR
 Repeatedly gathter and report the requested information at the interval
 specified (in seconds).
 .TP
-\fB-j\fR, \fB--jobs\fR
+\fB\-j\fR, \fB\-\-jobs\fR
 Specify the jobs to view.  This takes a comma seperated list of jobs to view.
 Defaults to all jobs.
 .TP
-\fB-s\fR, \fB--job-steps\fR
+\fB\-s\fR, \fB\-\-job-steps\fR
 Specify the job steps to view.  This takes a comma seperated list of job steps
 to view in the format "job_id.step_id". Defaults to all job steps.
 .TP
-\fB-l\fR, \fB--long\fR
+\fB\-l\fR, \fB\-\-long\fR
 Report more of the available information for the selected jobs or job steps, 
 subject to any constraints specified.
 .TP
-\fB-p\fR, \fB--partition\fR
+\fB\-p\fR, \fB\-\-partition\fR
 Specify the partitions of the jobs or steps to view. Accepts a comma separated 
 list of partition names.
 .TP
-\fB-S\fR, \fB--sort\fR
+\fB\-S\fR, \fB\-\-sort\fR
 Specifies the sorting order of job's or job step's records for printing. 
 Accepts a comma separated list of field identifiers using the single letter 
-codes used for output formatting. For example, "--sort=P,U" will sort the
+codes used for output formatting. For example, "\-\-sort=P,U" will sort the
 records by partition name then by user id. 
 The default sorting order for jobs is job state then priority. 
 The default sorting order for job steps is partition name.
 Note that sorting is not supported for all fields at this time.
 .TP
-\fB-t\fR, \fB--states\fR
+\fB\-t\fR, \fB\-\-states\fR
 Specify the states of jobs to view.  Accepts a comma separated list of
-state names. If no state is specified, pending and running jobs are reported.
+state names or "all". If "all" is specified then jobs of all states will be 
+reported. If no state is specified, pending and running jobs are reported.
 .TP
-\fB-u\fR, \fB--users\fR
-Specifies a comma separated list of users whose jobs or job steps are to be reported.
+\fB\-u\fR, \fB\-\-users\fR
+Specifies a comma separated list of users whose jobs or job steps are to be
+reported.
 .TP
-\fB-v\fR, \fB--verbose\fR
+\fB\-v\fR, \fB\-\-verbose\fR
 Report details of squeues actions.
 
 
@@ -162,5 +172,6 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
-\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3),
+\fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3)
