@@ -110,6 +110,8 @@ test1.37   Confirm that node sharing flags are respected  (--nodelist and
 test1.38   Test srun handling of SIGINT to get task status or kill the job
            (--quit-on-interrupt option).
 test1.39   Test of linux light-weight core files.
+test1.40   Test of stand-alone srun resource allocation (--uid and --no-shell
+           options).
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
