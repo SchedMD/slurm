@@ -713,7 +713,8 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	/*
 	 * Check to see if any processes are still around
 	 */
-	if ((nsteps > 0) && _job_still_running(req->job_id)) {
+	if ((nsteps > 0) && _job_still_running(req->job_id)
+	&&  (conf->cf.kill_wait > 1)) {
 		verbose( "Job %u: waiting %d secs for SIGKILL", 
 			 req->job_id, conf->cf.kill_wait       );
 		sleep (conf->cf.kill_wait - 1);
@@ -964,6 +965,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	kill_job_msg_t *req    = msg->data;
 	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
 	int             nsteps = 0;
+	int		delay;
 
 	/* 
 	 * check that requesting user ID is the SLURM UID
@@ -1032,7 +1034,8 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 *  Check for corpses
 	 */
-	if ( !_pause_for_job_completion (req->job_id, 5)
+	delay = MAX(conf->cf.kill_wait, 5);
+	if ( !_pause_for_job_completion (req->job_id, delay)
 	   && _kill_all_active_steps(req->job_id, SIGKILL, true) ) {
 		/*
 		 *  Block until all user processes are complete.

@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.0-pre5
 =============================
+ -- select/bluegene plugin confirms db.properties file in $sysconfdir
+    and copies it to StateSaveLocation (slurmctld's working directory)
+ -- slurmd to always give jobs KillWait time between SIGTERM and SIGKILL
+    at termination
 
 * Changes in SLURM 0.4.0-pre4
 =============================
