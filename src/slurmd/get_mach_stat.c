@@ -173,8 +173,8 @@ get_memory(uint32_t *real_memory)
 		return EINVAL;
 	} 
 
-	*real_memory = (int)((float)pages * getpagesize() / 
-			1048576.0); /* Megabytes of memory */
+	*real_memory = (int)((float)pages * (sysconf(_SC_PAGE_SIZE) / 
+			1048576.0)); /* Megabytes of memory */
 	return 0;
 }
 
@@ -238,7 +238,7 @@ get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs)
 	error_code = 0;
 	*tmp_disk = 0;
 	total_size = 0;
-	page_size = (getpagesize() / 1048576.0); /* Megabytes per page */
+	page_size = (sysconf(_SC_PAGE_SIZE) / 1048576.0); /* MG per page */
 
 	if (tmp_fs_name == NULL)
 		tmp_fs_name = "/tmp";

@@ -887,7 +887,7 @@ _shm_attach()
 
 	if (shmi.shm_segsz != sizeof(slurmd_shm_t)) {
 		error("size for shm segment id %d is %dK, expected %dK",
-		      shmid, (shmi.shm_segsz/1024), 
+		      shmid, (int)(shmi.shm_segsz/1024), 
 		      (sizeof(slurmd_shm_t)/1024));
 		error("You probably need to run with `-c' "
 			"or just delete old segment.");
