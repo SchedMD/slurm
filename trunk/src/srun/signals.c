@@ -134,9 +134,8 @@ void
 fwd_signal(job_t *job, int signo)
 {
 	int i;
-	slurm_msg_t *req_array_ptr;
+	slurm_msg_t *req;
 	kill_tasks_msg_t msg;
-
 
 	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
 		slurm_mutex_lock(&job->state_mutex);
@@ -151,7 +150,7 @@ fwd_signal(job_t *job, int signo)
 	msg.job_step_id = job->stepid;
 	msg.signal      = (uint32_t) signo;
 
-	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
+	req = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
 
 	for (i = 0; i < job->nhosts; i++) {
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
@@ -162,16 +161,16 @@ fwd_signal(job_t *job, int signo)
 		if (job_active_tasks_on_host(job, i) == 0)
 			continue;
 
-		req_array_ptr[i].msg_type = REQUEST_KILL_TASKS;
-		req_array_ptr[i].data = &msg;
-		memcpy( &req_array_ptr[i].address, 
+		req[i].msg_type = REQUEST_KILL_TASKS;
+		req[i].data     = &msg;
+		memcpy( &req[i].address, 
 		        &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
-	_p_fwd_signal(req_array_ptr, job);
+	_p_fwd_signal(req, job);
 
 	debug2("All tasks have been signalled");
-	xfree(req_array_ptr);
+	xfree(req);
 }
 
 
@@ -268,15 +267,15 @@ _sig_thr(void *arg)
 }
 
 /* _p_fwd_signal - parallel (multi-threaded) task signaller */
-static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
+static void _p_fwd_signal(slurm_msg_t *req, job_t *job)
 {
 	int i;
-	task_info_t *task_info_ptr;
-	thd_t *thread_ptr;
+	task_info_t *tinfo;
+	thd_t *thd;
 
-	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
+	thd = xmalloc(job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
-		if (req_array_ptr[i].msg_type == 0)
+		if (req[i].msg_type == 0)
 			continue;	/* inactive task */
 
 		slurm_mutex_lock(&active_mutex);
@@ -286,28 +285,26 @@ static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 		active++;
 		slurm_mutex_unlock(&active_mutex);
 
-		task_info_ptr = (task_info_t *)xmalloc(sizeof(task_info_t));
-		task_info_ptr->req_ptr  = &req_array_ptr[i];
-		task_info_ptr->job_ptr  = job;
-		task_info_ptr->host_inx = i;
+		tinfo = (task_info_t *)xmalloc(sizeof(task_info_t));
+		tinfo->req_ptr  = &req[i];
+		tinfo->job_ptr  = job;
+		tinfo->host_inx = i;
 
-		if (pthread_attr_init (&thread_ptr[i].attr))
-			error ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, 
-		                                 PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
+		if ((errno = pthread_attr_init(&thd[i].attr)))
+			error("pthread_attr_init failed");
+
+		if (pthread_attr_setdetachstate(&thd[i].attr, 
+		                                PTHREAD_CREATE_DETACHED))
+			error ("pthread_attr_setdetachstate failed");
+
 #ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&thread_ptr[i].attr, 
-		                           PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
+		if (pthread_attr_setscope(&thd[i].attr, PTHREAD_SCOPE_SYSTEM))
+			error ("pthread_attr_setscope failed");
 #endif
-		while ( pthread_create (&thread_ptr[i].thread, 
-		                        &thread_ptr[i].attr, 
-		                        _p_signal_task, 
-		                        (void *) task_info_ptr) ) {
-			error ("pthread_create error %m");
-			/* just run it under this thread */
-			_p_signal_task((void *) task_info_ptr);
+		if (pthread_create( &thd[i].thread, &thd[i].attr, 
+			            _p_signal_task, (void *) tinfo )) {
+			error ("pthread_create failed");
+			_p_signal_task((void *) tinfo);
 		}
 	}
 
@@ -317,33 +314,32 @@ static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 		pthread_cond_wait(&active_cond, &active_mutex);
 	}
 	slurm_mutex_unlock(&active_mutex);
-	xfree(thread_ptr);
+	xfree(thd);
 }
 
 /* _p_signal_task - parallelized signal of a specific task */
 static void * _p_signal_task(void *args)
 {
+	int          rc   = SLURM_SUCCESS;
 	task_info_t *info = (task_info_t *)args;
 	slurm_msg_t *req  = info->req_ptr;
 	job_t       *job  = info->job_ptr;
-	int     host_inx  = info->host_inx;
-	slurm_msg_t resp;
+	char        *host = job->host[info->host_inx];
 
-	debug3("sending signal to host %s", job->host[host_inx]);
-	if (slurm_send_recv_node_msg(req, &resp) < 0)  /* Has timeout */
-		error("signal %s: %m", job->host[host_inx]);
-	else {
-		return_code_msg_t *rc = resp.data;
-		if (rc->return_code != 0) {
-			error("%s: Unable to fwd signal: %s",
-			       job->host[host_inx], 
-			       slurm_strerror(rc->return_code)); 	       
-		}
-
-		if (resp.msg_type == RESPONSE_SLURM_RC)
-			slurm_free_return_code_msg(resp.data);
+	debug3("sending signal to host %s", host);
+	if (slurm_send_recv_rc_msg(req, &rc) < 0) { 
+		error("%s: signal: %m", host);
+		goto done;
 	}
 
+	/*
+	 *  Report error unless it is "Invalid job id" which 
+	 *    probably just means the tasks exited in the meanwhile.
+	 */
+	if ((rc != 0) && (rc != ESLURM_INVALID_JOB_ID)) 
+		error("%s: signal: %s", host, slurm_strerror(rc));
+
+    done:
 	slurm_mutex_lock(&active_mutex);
 	active--;
 	pthread_cond_signal(&active_cond);

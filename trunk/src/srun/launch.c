@@ -206,8 +206,8 @@ launch(void *arg)
 	xfree(req_array_ptr);
 
 	if (fail_launch_cnt) {
-		error("%d task launch requests failed, terminating job step", 
-		      fail_launch_cnt);
+		error("%d launch request%s failed, terminating job step", 
+		      fail_launch_cnt, fail_launch_cnt > 1 ? "s" : "");
 		job->rc = 124;
 		job_kill(job);
 	} else {
@@ -253,6 +253,8 @@ static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 					   PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
+		job->ltimeout = time(NULL) + opt.max_launch_time;
+
 		if ( pthread_create (	&thread_ptr[i].thread, 
 		                        &thread_ptr[i].attr, 
 		                        _p_launch_task, 

@@ -238,6 +238,10 @@ struct poptOption runTable[] = {
 	{"wait", 'W', POPT_ARG_INT, &opt.max_wait, OPT_WAIT,
 	 "seconds to wait after first task ends before killing job",
 	 "sec"},
+	{"max-launch-time", '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
+	  &opt.max_launch_time, 0, NULL, NULL },
+	{"max-exit-timeout", '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
+	  &opt.max_exit_timeout, 0, NULL, NULL },
 	POPT_TABLEEND
 };
 
@@ -581,15 +585,17 @@ static void _opt_default()
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
 
 	/* constraint default (-1 is no constraint) */
-	opt.mincpus	= -1;
-	opt.realmem	= -1;
-	opt.tmpdisk	= -1;
+	opt.mincpus	    = -1;
+	opt.realmem	    = -1;
+	opt.tmpdisk	    = -1;
 
-	opt.hold	= false;
-	opt.constraints	= NULL;
-	opt.contiguous	= false;
-	opt.nodelist	= NULL;
-	opt.exc_nodes	= NULL;
+	opt.hold	    = false;
+	opt.constraints	    = NULL;
+	opt.contiguous	    = false;
+	opt.nodelist	    = NULL;
+	opt.exc_nodes	    = NULL;
+	opt.max_launch_time = 60; /* 60 seconds to launch job             */
+	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 
 	mode	= MODE_NORMAL;
 
@@ -1006,6 +1012,12 @@ _opt_verify(poptContext optctx)
 		      "-u (--unbuffered)");
 		exit(1);
 	}
+
+	/*
+	 * --wait always overrides hidden max_exit_timeout
+	 */
+	if (opt.max_wait)
+		opt.max_exit_timeout = opt.max_wait;
 
 	return verified;
 }
