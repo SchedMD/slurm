@@ -469,17 +469,20 @@ _step_req_destroy(job_step_create_request_msg_t *r)
 	}
 }
 
-void
+int
 create_job_step(job_t *job)
 {
 	job_step_create_request_msg_t  *req  = NULL;
 	job_step_create_response_msg_t *resp = NULL;
 
-	if (!(req = _step_req_create(job))) 
-		fatal ("Unable to allocate step request message");
-
-	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) 
-		fatal ("Unable to create job step: %m");
+	if (!(req = _step_req_create(job))) { 
+		error ("Unable to allocate step request message");
+		return -1;
+	}
+	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) { 
+		error ("Unable to create job step: %m");
+		return -1;
+	}
 
 	job->stepid  = resp->job_step_id;
 	job->cred    = resp->cred;
@@ -490,5 +493,6 @@ create_job_step(job_t *job)
 	job_update_io_fnames(job);
 
 	_step_req_destroy(req);
+	return 0;
 }
 

@@ -74,8 +74,10 @@ uint32_t jobid_from_env(void);
 /*
  * Create a job step given the job information stored in 'j'
  * After returning, 'j' is filled in with information for job step.
+ *
+ * Returns -1 if job step creation failure, 0 otherwise
  */
-void create_job_step(job_t *j);
+int create_job_step(job_t *j);
 
 
 #endif /* !_HAVE_ALLOCATE_H */

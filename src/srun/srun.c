@@ -155,7 +155,8 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp); 
 		job->old_job = true;
 		sig_setup_sigmask();
-		create_job_step(job);
+		if (create_job_step(job) < 0)
+			exit(1);
 		slurm_free_resource_allocation_response_msg(resp);
 
 	} else if (opt.allocate) {
@@ -191,7 +192,10 @@ int srun(int ac, char **av)
 			_print_job_information(resp);
 
 		job = job_create_allocation(resp); 
-		create_job_step(job);
+		if (create_job_step(job) < 0) {
+			job_destroy(job, 0);
+			exit(1);
+		}
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
