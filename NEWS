@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+
+* Changes in SLURM 0.3.7
+========================
+ -- Fixes required for TotalView operability under RHEL3.0
+    (Reported by Dong Ahn <dahn@llnl.gov>)
+   - Do not create detached threads when running under parallel debugger.
+   - Handle EINTR from sigwait().
+
 * Changes in SLURM 0.3.6
 ========================
  -- Fixes for reported problems:
