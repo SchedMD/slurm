@@ -267,6 +267,7 @@ void slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg )
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 {
 	job_desc_msg -> contiguous = SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;
+	job_desc_msg -> dist = SLURM_JOB_DESC_DEFAULT_DIST ;
 	job_desc_msg -> features = SLURM_JOB_DESC_DEFAULT_FEATURES ;
 	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
 	job_desc_msg -> job_id = SLURM_JOB_DESC_DEFAULT_JOB_ID ; /* will be set by api */
