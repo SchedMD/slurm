@@ -511,6 +511,7 @@ static int
 _setup_env(slurmd_job_t *job, int taskid)
 {
 	task_info_t *t = job->task[taskid];
+	char *tmpdir;
 
 	if (setenvpf(&job->env, "SLURM_NODEID",       "%d", job->nodeid) < 0)
 		return -1;
@@ -518,6 +519,13 @@ _setup_env(slurmd_job_t *job, int taskid)
 		return -1;
 	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gid     ) < 0)
 		return -1;
+	if ((tmpdir = getenv("TMPDIR"))) {
+		int rc = mkdir(tmpdir, 0700);
+		if ((rc < 0) && (errno != EEXIST)) {
+			error("can not make TMPDIR %s: %m", tmpdir);
+			return -1;
+		}
+	}
 
 	return SLURM_SUCCESS;
 }
