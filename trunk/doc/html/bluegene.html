@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="28 September 2004">
+<meta name="LLNLRandRdate" content="29 September 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -151,12 +151,17 @@ That one slurmd daemon represents communications channel for every base partitio
 You can use the scontrol command to drain individual nodes as desired and 
 return them to service. </p>
 
-<p>The slurm.conf (configuration) file needs to have the value of InactiveLimit 
+<p>The slurm.conf (configuration) file needs to have the value of <i>InactiveLimit</i>
 set to zero or not specified (it defaults to a value of zero). 
 This is because there are no job steps and we don't want to purge jobs prematurely.
-The value of SelectType must be set to "select/bluegene" in order to have 
+The value of <i>SelectType</i> must be set to "select/bluegene" in order to have 
 node selection performed using a system aware of the system's topography 
-and interfaces. </p>
+and interfaces. 
+The value of <i>SchedulerType</i> should be set to "sched/builtin".
+Since jobs with different geometries or other characteristics do not interfere 
+with each other's scheduling, backfill scheduling is not presently meaningful.
+SLURM's builtin scheduler on Blue Gene will sort pending jobs and then attempt 
+to schedule all of them in priority order. </p>
 
 <p>SLURM node and partition descriptions should make use of the 
 <a href="#naming">naming</a> conventions described above. For example,
@@ -176,7 +181,7 @@ fail due to lack of memory. </p>
 Blue Gene job partitions available to execute jobs. 
 (<b>NOTE:</b> Blue Gene job partitions are unrelated to SLURM partitions.)
 Jobs must then execute in one of these pre-defined Blue Gene job partitions. 
-This is known as <i>static partitioning</i>.
+This is known as <i>static partitioning</i>. 
 Each of these Blue Gene job partitions is explicitly configured with
 either a mesh or torus interconnect and either coprocessor or virtual 
 c-node usage.
@@ -200,7 +205,7 @@ rebooting of c-nodes and I/O nodes.</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 28 September 2004</p></td>
+Last modified 29 September 2004</p></td>
 </tr>
 </table>
 </td>
