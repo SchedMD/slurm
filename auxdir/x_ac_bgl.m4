@@ -50,5 +50,6 @@ AC_DEFUN([X_AC_BGL],
       ac_with_readline="no"
       AC_DEFINE(HAVE_BGL, 1, [Define to 1 if running on Blue Gene L system])
       AC_DEFINE(HAVE_FRONT_END, 1, [Define to 1 if running slurmd on front-end only])
+      LDFLAGS="$LDFLAGS -L/usr/lib -L/usr/lib64"
    fi
 ])
