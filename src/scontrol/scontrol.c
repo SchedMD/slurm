@@ -285,9 +285,10 @@ print_job (char * job_id_str)
  * print_node - print the specified node's information
  * input: node_name - NULL to print all node information
  *	  node_ptr - pointer to node table of information
- * NOTE: call this only after executing load_node, called from print_node_list
- * NOTE: To avoid linear searches, we remember the location of the last name
-match
+ * NOTE: call this only after executing load_node, called from 
+ *	print_node_list
+ * NOTE: To avoid linear searches, we remember the location of the 
+ *	last name match
  */
 void
 print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
@@ -322,10 +323,10 @@ print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 
 
 /*
- * print_node_list - print information about the supplied node list (or regular
-expression)
- * input: node_list - print information about the supplied node list (or regular
-expression)
+ * print_node_list - print information about the supplied node list (or 
+ *	regular expression)
+ * input: node_list - print information about the supplied node list 
+ *	(or regular expression)
  */
 void
 print_node_list (char *node_list) 
@@ -405,7 +406,7 @@ print_part (char *partition_name)
 
 	if (old_part_info_ptr) {
 		error_code = slurm_load_partitions (old_part_info_ptr->last_update,
-&part_info_ptr);
+						    &part_info_ptr);
 		if (error_code == 0) {
 			slurm_free_partition_info_msg (old_part_info_ptr);
 		}
@@ -455,8 +456,8 @@ print_part (char *partition_name)
 
 /*
  * print_step - print the specified job step's information
- * input: job_step_id_str - job step's id or NULL to print information about all
-job steps
+ * input: job_step_id_str - job step's id or NULL to print information
+ *	about all job steps
  */
 void 
 print_step (char *job_step_id_str)
@@ -570,7 +571,8 @@ process_command (int argc, char *argv[])
 	}
 	else if (strncasecmp (argv[0], "reconfigure", 7) == 0) {
 		if (argc > 2)
-			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
+			fprintf (stderr, "too many arguments for keyword:%s\n",
+			         argv[0]);
 		error_code = slurm_reconfigure ();
 		if ((error_code != 0) && (quiet_flag != 1))
 			slurm_perror ("slurm_reconfigure error");
@@ -579,11 +581,15 @@ process_command (int argc, char *argv[])
 	else if (strcasecmp (argv[0], "show") == 0) {
 		if (argc > 3) {
 			if (quiet_flag != 1)
-				fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
+				fprintf(stderr, 
+				        "too many arguments for keyword:%s\n", 
+				        argv[0]);
 		}
 		else if (argc < 2) {
 			if (quiet_flag != 1)
-				fprintf (stderr, "too few arguments for keyword:%s\n", argv[0]);
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
 		}
 		else if (strncasecmp (argv[1], "config", 3) == 0) {
 			if (argc > 2)
@@ -625,7 +631,8 @@ process_command (int argc, char *argv[])
 	else if (strncasecmp (argv[0], "shutdown", 5) == 0) {
 		if (argc > 2)
 			fprintf (stderr,
-				 "too many arguments for keyword:%s\n", argv[0]);
+				 "too many arguments for keyword:%s\n", 
+				 argv[0]);
 		error_code = slurm_shutdown (0);
 		if ((error_code != 0) && (quiet_flag != 1))
 			slurm_perror ("slurm_shutdown error");
@@ -694,8 +701,8 @@ update_it (int argc, char *argv[])
 	
 	if (i >= argc) {	
 		printf("No valid entity in update command\n");
-		printf("Input line must include \"NodeName\", \"PartitionName\", or
-\"JobId\"\n");
+		printf("Input line must include \"NodeName\", ");
+		printf("\"PartitionName\", or \"JobId\"\n");
 	}
 	else if (error_code) {
 		slurm_perror ("slurm_update error");
@@ -720,21 +727,37 @@ update_job (int argc, char *argv[])
 
 	for (i=0; i<argc; i++) {
 		if (strncasecmp(argv[i], "JobId=", 6) == 0)
-			job_msg.job_id = (uint32_t) strtol(&argv[i][6], (char **) NULL, 10);
+			job_msg.job_id = 
+				(uint32_t) strtol(&argv[i][6], 
+						 (char **) NULL, 10);
 		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0)
-			job_msg.time_limit = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
+			job_msg.time_limit = 
+				(uint32_t) strtol(&argv[i][10], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "Priority=", 9) == 0)
-			job_msg.priority = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+			job_msg.priority = 
+				(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0)
-			job_msg.num_procs = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+			job_msg.num_procs = 
+				(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "ReqNodes=", 9) == 0)
-			job_msg.num_nodes = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+			job_msg.num_nodes = 
+				(uint32_t) strtol(&argv[i][9],
+						 (char **) NULL, 10);
 		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0)
-			job_msg.min_procs = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+			job_msg.min_procs = 
+				(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0)
-			job_msg.min_memory = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
+			job_msg.min_memory = 
+				(uint32_t) strtol(&argv[i][10], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0)
-			job_msg.min_tmp_disk = (uint32_t) strtol(&argv[i][11], (char **) NULL, 10);
+			job_msg.min_tmp_disk = 
+				(uint32_t) strtol(&argv[i][11], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "Partition=", 10) == 0)
 			job_msg.partition = &argv[i][10];
 		else if (strncasecmp(argv[i], "Name=", 5) == 0)
@@ -745,7 +768,9 @@ update_job (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][7], "NO") == 0)
 				job_msg.shared = 0;
 			else
-				job_msg.shared = (uint16_t) strtol(&argv[i][7], (char **) NULL, 10);
+				job_msg.shared = 
+					(uint16_t) strtol(&argv[i][7], 
+							(char **) NULL, 10);
 		}
 		else if (strncasecmp(argv[i], "Contiguous=", 11) == 0) {
 			if (strcasecmp(&argv[i][11], "YES") == 0)
@@ -753,7 +778,9 @@ update_job (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][11], "NO") == 0)
 				job_msg.contiguous = 0;
 			else
-				job_msg.contiguous = (uint16_t) strtol(&argv[i][11], (char **) NULL, 10);
+				job_msg.contiguous = 
+					(uint16_t) strtol(&argv[i][11], 
+							(char **) NULL, 10);
 		}
 		else if (strncasecmp(argv[i], "ReqNodeList=", 12) == 0)
 			job_msg.req_nodes = &argv[i][12];
@@ -795,16 +822,20 @@ update_node (int argc, char *argv[])
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			state_val = (uint16_t) NO_VAL;
 			for (j = 0; j <= NODE_STATE_END; j++) {
-				if (strcmp (node_state_string(j), "END") == 0) {
-					fprintf (stderr, "Invalid input: %s\n", argv[i]);
-					fprintf (stderr, "Request aborted\n Valid states are:");
+				if (strcmp(node_state_string(j),"END") == 0) {
+					fprintf(stderr, "Invalid input: %s\n", 
+						argv[i]);
+					fprintf (stderr, 
+						 "Request aborted\n Valid states are:");
 					for (k = 0; k <= NODE_STATE_END; k++) {
-						fprintf (stderr, "%s ", node_state_string(k));
+						fprintf (stderr, "%s ", 
+						         node_state_string(k));
 					}
 					fprintf (stderr, "\n");
 					return 0;
 				}
-				if (strcasecmp (node_state_string(j), &argv[i][6]) == 0) {
+				if (strcasecmp (node_state_string(j), 
+				                &argv[i][6]) == 0) {
 					state_val = (uint16_t) j;
 					break;
 				}
@@ -847,21 +878,27 @@ update_part (int argc, char *argv[])
 			if (strcasecmp(&argv[i][8],"INFINITE") == 0)
 				part_msg.max_time = INFINITE;
 			else
-				part_msg.max_time = (uint32_t) strtol(&argv[i][8], (char **) NULL, 10);
+				part_msg.max_time = 
+					(uint32_t) strtol(&argv[i][8], 
+						(char **) NULL, 10);
 		}
 		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0)
 			if (strcasecmp(&argv[i][9],"INFINITE") == 0)
 				part_msg.max_nodes = INFINITE;
 			else
-				part_msg.max_nodes = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+				part_msg.max_nodes = 
+					(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "Default=", 8) == 0) {
 			if (strcasecmp(&argv[i][8], "NO") == 0)
 				part_msg.default_part = 0;
 			else if (strcasecmp(&argv[i][8], "YES") == 0)
 				part_msg.default_part = 1;
 			else {
-				fprintf (stderr, "Invalid input: %s\n", argv[i]);
-				fprintf (stderr, "Acceptable Default values are YES and NO\n");
+				fprintf (stderr, "Invalid input: %s\n", 
+					 argv[i]);
+				fprintf (stderr, 
+				         "Acceptable Default values are YES and NO\n");
 				return 0;
 			}
 		}
@@ -871,8 +908,10 @@ update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][9], "YES") == 0)
 				part_msg.root_only = 1;
 			else {
-				fprintf (stderr, "Invalid input: %s\n", argv[i]);
-				fprintf (stderr, "Acceptable RootOnly values are YES and NO\n");
+				fprintf (stderr, "Invalid input: %s\n", 
+					 argv[i]);
+				fprintf (stderr, 
+				         "Acceptable RootOnly values are YES and NO\n");
 				return 0;
 			}
 		}
@@ -884,8 +923,10 @@ update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][7], "FORCE") == 0)
 				part_msg.shared = SHARED_FORCE;
 			else {
-				fprintf (stderr, "Invalid input: %s\n", argv[i]);
-				fprintf (stderr, "Acceptable Shared values are YES, NO and FORCE\n");
+				fprintf (stderr, "Invalid input: %s\n", 
+					 argv[i]);
+				fprintf (stderr, 
+				         "Acceptable Shared values are YES, NO and FORCE\n");
 				return 0;
 			}
 		}
@@ -895,8 +936,10 @@ update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][6], "UP") == 0)
 				part_msg.state_up = 1;
 			else {
-				fprintf (stderr, "Invalid input: %s\n", argv[i]);
-				fprintf (stderr, "Acceptable State values are UP and DOWN\n");
+				fprintf (stderr, "Invalid input: %s\n", 
+					 argv[i]);
+				fprintf (stderr, 
+				         "Acceptable State values are UP and DOWN\n");
 				return 0;
 			}
 		}
@@ -923,42 +966,28 @@ usage () {
 	printf ("scontrol [-q | -v] [<COMMAND>]\n");
 	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
 	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
-	printf ("  <keyword> may be omitted from the execute line and scontrol will
-execute in interactive\n");
-	printf ("    mode. It will process commands as entered until explicitly
-terminated.\n");
+	printf ("  <keyword> may be omitted from the execute line and scontrol will execute in interactive\n");
+	printf ("    mode. It will process commands as entered until explicitly terminated.\n");
 	printf ("    Valid <COMMAND> values are:\n");
-	printf ("     abort                    shutdown slurm controller immediately
-generating a core file.\n");
+	printf ("     abort                    shutdown slurm controller immediately generating a core file.\n");
 	printf ("     exit                     terminate this command.\n");
 	printf ("     help                     print this description of use.\n");
-	printf ("     quiet                    print no messages other than error
-messages.\n");
+	printf ("     quiet                    print no messages other than error messages.\n");
 	printf ("     quit                     terminate this command.\n");
 	printf ("     reconfigure              re-read configuration files.\n");
-	printf ("     show <ENTITY> [<ID>]     display state of identified entity,
-default is all records.\n");
+	printf ("     show <ENTITY> [<ID>]     display state of identified entity, default is all records.\n");
 	printf ("     shutdown                 shutdown slurm controller.\n");
-	printf ("     update <SPECIFICATIONS>  update job, node, or partition
-configuration.\n");
+	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
 	printf ("     !!                       Repeat the last command entered.\n");
-	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or
-\"step\".\n");
-	printf ("  <ID> may be a configuration parametername , job id, node name,
-partition name or job step id.\n");
-	printf ("     Node names mayspecified using simple regular expressions, (e.g.
-\"lx[10-20]\").\n");
-	printf ("     The job step id is the job id followed by a period and the step
-id.\n");
-	printf ("  <SPECIFICATIONS> are specified in the same format as the
-configuration file. You may\n");
-	printf ("     wish to use the \"show\" keyword then use its output as input for
-the update keyword,\n");
+	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or \"step\".\n");
+	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
+	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
+	printf ("     The job step id is the job id followed by a period and the step id.\n");
+	printf ("  <SPECIFICATIONS> are specified in the same format as the configuration file. You may\n");
+	printf ("     wish to use the \"show\" keyword then use its output as input for the update keyword,\n");
 	printf ("     editing as needed.\n");
-	printf ("  All commands and options are case-insensitive, although node names
-and partition\n");
-	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are
-distinct).\n");
+	printf ("  All commands and options are case-insensitive, although node names and partition\n");
+	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are distinct).\n");
 }
