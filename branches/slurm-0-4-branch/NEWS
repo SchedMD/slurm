@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.16
+========================
+ -- Added error checking to a bunch of Bridge API calls and more 
+    gracefully handle failure modes.
+ -- Made smap more robust for more jobs.
+
 * Changes in SLURM 0.4.15
 ========================
  -- Added error checking to a bunch of Bridge API calls and more 
