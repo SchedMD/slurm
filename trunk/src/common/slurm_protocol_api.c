@@ -163,15 +163,11 @@ void slurm_api_clear_config(void)
 }
 
 /* update internal configuration data structure as needed.
- * exit with lock set */
+ *	exit with lock set */
 static inline void _lock_update_config()
 {
-        slurm_mutex_lock(&config_lock);
-        if (slurmctld_conf.slurmd_port == 0) {  /* ==0 if config unread */
-                slurm_mutex_unlock(&config_lock);
-                slurm_api_set_default_config();
-                slurm_mutex_lock(&config_lock);
-        }
+	slurm_api_set_default_config();
+	slurm_mutex_lock(&config_lock);
 }
 
 /* slurm_get_plugin_dir
