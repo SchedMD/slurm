@@ -168,39 +168,23 @@ AC_DEFINE_UNQUOTED(SLURMD_PORT, "$slurmdport",
 AC_SUBST(SLURMD_PORT)
 
 
-dnl Set SLURM_CONFIG_FILE in config.h
+dnl Set SLURM_CONFIG_DIR in config.h
 dnl
-AC_MSG_CHECKING(for slurm config file location)
+AC_MSG_CHECKING(for slurm config dir location)
 AC_ARG_WITH(slurm-conf,
-  AC_HELP_STRING([--with-slurm-conf=FILE],
-      [set slurm config file location]),
+  AC_HELP_STRING([--with-slurm-conf=DIR],
+      [set slurm config dir location]),
     [ if test -n "$withval" -a "$withval" != yes -a "$withval" != no; then
         slurmconf="$withval"
       fi
     ]
 )
 topsrcdir=`cd $srcdir && pwd`
-AC_MSG_RESULT(${slurmconf=${topsrcdir}/etc/slurm.conf})
-AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$slurmconf", 
+AC_MSG_RESULT(${slurmconf=${topsrcdir}/etc})
+AC_DEFINE_UNQUOTED(SLURM_CONFIG_DIR, "$slurmconf", 
+                   [Define Default slurm config dir])
+AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$slurmconf/slurm.conf", 
                    [Define Default slurm config file location])
-
-
-
-dnl check for whether to include authd support
-dnl
-AC_MSG_CHECKING(whether to include authd support)
-AC_ARG_WITH(authd,
-  AC_HELP_STRING([--with-authd],[compile with authd support]),
-  [ case "${withval}" in
-      yes) authd=yes ;;
-      no)  authd=no ;;
-      *) AC_MSG_ERROR([bad value ${enableval} for --with-authd]) ;;
-    esac
-  ]
-)
-AC_MSG_RESULT(${authd=no})
-AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
-
 
 
 dnl check for whether to include Elan support
@@ -340,6 +324,36 @@ fi
 LIBS="$saved_LIBS"
 CPPFLAGS="$saved_CPPFLAGS"
 LDFLAGS="$saved_LDFLAGS"
+
+dnl check for whether to include authd support
+dnl
+AC_MSG_CHECKING([Whether to include authd support])
+authd=no
+AC_ARG_WITH(authd,
+  AC_HELP_STRING([--with-authd],[compile with authd support]),
+  [ authd=yes
+    AUTHD_CFLAGS=""
+    AUTHD_LIBS="-lauth -le"
+    AC_DEFINE(HAVE_AUTHD, 1, [Define if you are running authd])
+  ]
+)
+AC_MSG_RESULT(${authd=no})
+if test x$authd = xyes; then
+   savedLIBS="$LIBS"
+   savedCFLAGS="$CFLAGS"
+   LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
+   CFLAGS="$SSL_CPPFLAGS $CFLAGS $AUTHD_CFLAGS"
+   AC_CHECK_LIB(auth, auth_init_credentials, [], 
+                AC_MSG_ERROR([Cannot find libauth!]))
+   AC_DEFINE(HAVE_AUTHD, 1, [Define if you have Brent Chun's authd])
+   LIBS="$savedLIBS"
+   CFLAGS="$savedCFLAGS"
+   AC_SUBST(AUTHD_LIBS)
+   AC_SUBST(AUTHD_CFLAGS)
+fi
+AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
+
+
 
 
 dnl All slurm Makefiles:
