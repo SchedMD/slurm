@@ -82,13 +82,12 @@ The node configuration specifies the following information:
 <a name="NodeExp">A simple real expression may optionally be used to specify ranges 
 of nodes to avoid building a configuration file with thousands 
 of entries. The real expression can contain one  
-pair of square brackets optionally followed by "o", "x" 
-or "X" for octal, lower case hexadecimal or upper case 
-hexadecimal respectively (the default is decimal) followed by 
+pair of square brackets optionally followed by "o"
+for octal (the default is decimal) followed by 
 a number followed by a "-" followed by another number. 
 SLURM considers every number in the specified range to 
 identify a valid node. Some possible NodeName values include:
-"solo", "lx[00-64]", "linux[0-64]", "slurm[o00-77]" and "cluster[x00-ff]".</a> 
+"solo", "lx[00-64]", "linux[0-64]", and "slurm[o00-77]".</a> 
 If the NodeName is "DEFAULT", the values specified 
 with that record will apply to subsequent node specifications   
 unless explicitly set to other values in that node record or 
@@ -194,9 +193,9 @@ not required.
 SLURM uses a hash table in order to locate table entries rapidly. 
 Each table entry can be directly accessed without any searching
 if the name contains a sequence number suffix. SLURM can be built 
-with the HASH_BASE set at build time to indicate the hashing mechanism. 
-Possible contains values are "16", "10" and "8" for names containing 
-hexadecimal, decimal, and octal sequence numbers respectively
+with the HASH_BASE set at build time to indicate the hashing algorithm. 
+Possible contains values are "10" and "8" for names containing 
+decimal and octal sequence numbers respectively
 or "0" which processes mixed alpha-numeric without sequence numbers. 
 If you use a naming convention lacking a sequence number, it may be 
 desirable to review the hashing function Hash_Index in the 
@@ -386,7 +385,7 @@ By default there is no epilog program.
 Each table entry can be directly accessed without any searching
 if the name contains a sequence number suffix. SLURM can be built 
 with the HASH_BASE set to indicate the hashing mechanism. Possible 
-values are "16", "10", and "8" for names containing hexadecimal, 
+values are "10" and "8" for names containing  
 decimal and octal sequence numbers respectively
 or "0" which processes mixed alpha-numeric without sequence numbers. 
 If you use a naming convention lacking a sequence number, it may be 

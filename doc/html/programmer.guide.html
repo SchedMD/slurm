@@ -93,7 +93,7 @@ locating node records quickly, uses a hash table. Several
 different hashing schemes are supported based upon the node name. 
 Each table entry can be directly accessed without any searching
 if the name contains a sequence number suffix. SLURM can be built 
-with the HASH_BASE set to indicate the hashing mechanism. Possible 
+with the HASH_BASE set to indicate the hashing algorithm. Possible 
 values are "10" and "8" for names containing decimal or octal sequence numbers 
 or "0" which processes mixed alpha-numeric without sequence numbers. 
 HASH_BASE is defined in the Mach_Stat_Mgr.c module. 
@@ -574,11 +574,14 @@ or trying to start jobs in priority order.</li>
 <li>Deadlines: MCR to be built in July 2002, accepted August 2002.</li>
 <li>SLURM needs to use switch for timely distribution of executable and 
 stdin files.</li>
+<li>Get_Mach_Stat.c is quite system dependent. We probably want to 
+construct multiple file names containing the system name (e.g. 
+Get_Mach_Stat.aix.c, Get_Mach_Stat.linux.c, etc.) and build accordingly.
 </ul>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified February 6, 2002</p>
+<p>Last Modified February 7, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
