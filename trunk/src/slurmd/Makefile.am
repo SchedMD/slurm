@@ -39,8 +39,8 @@ slurmd_SOURCES = get_mach_stat.c \
 # need to create a rule to build each binary from an object file with _d suffix
 # as these will have been compiled with -DDEBUG_MODULE
 #
-get_mach_stat : get_mach_stat_d.o
-read_proc     : read_proc_d.o
+get_mach_stat$(EXEEXT) : get_mach_stat_d.o
+read_proc$(EXEEXT)     : read_proc_d.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
