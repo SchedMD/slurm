@@ -71,6 +71,7 @@ static void 	_dump_node_state (struct node_record *dump_node_ptr,
 static int	_hash_index (char *name);
 static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
+static void 	_make_node_down(struct node_record *node_ptr);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
 static void	_split_node_name (char *name, char *prefix, char *suffix, 
 					int *index, int *digits);
@@ -324,8 +325,7 @@ int delete_node_record (char *name)
 			node_record_point->cpus;
 	}
 	strcpy (node_record_point->name, "");
-	node_record_point->node_state = NODE_STATE_DOWN;
-	last_bitmap_update = time (NULL);
+	_make_node_down(node_record_point);
 	return SLURM_SUCCESS;
 }
 
@@ -481,10 +481,10 @@ int load_all_node_state ( void )
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);
 		if (node_ptr) {
-			node_ptr->node_state = node_state;
-			node_ptr->cpus = cpus;
-			node_ptr->real_memory = real_memory;
-			node_ptr->tmp_disk = tmp_disk;
+			node_ptr->node_state    = node_state;
+			node_ptr->cpus          = cpus;
+			node_ptr->real_memory   = real_memory;
+			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
 		} else {
 			error ("Node %s has vanished from configuration", 
@@ -1215,8 +1215,6 @@ void node_not_resp (char *name)
 void set_node_down (char *name)
 {
 	struct node_record *node_ptr;
-	int node_inx;
-	uint16_t resp_state;
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
@@ -1224,13 +1222,7 @@ void set_node_down (char *name)
 		return;
 	}
 
-	node_inx = node_ptr - node_record_table_ptr;
-	last_node_update = time (NULL);
-	/* preserve NODE_STATE_NO_RESPOND flag if set */
-	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	node_ptr->node_state = NODE_STATE_DOWN | resp_state;
-	bit_clear (up_node_bitmap,   node_inx);
-	bit_clear (idle_node_bitmap, node_inx);
+	_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
 
 	return;
@@ -1277,10 +1269,7 @@ void ping_nodes (void)
 		    (base_state != NODE_STATE_DOWN)) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_record_table_ptr[i].name);
-			last_node_update = time (NULL);
-			bit_clear (up_node_bitmap, i);
-			bit_clear (idle_node_bitmap, i);
-			node_record_table_ptr[i].node_state = NODE_STATE_DOWN;
+			_make_node_down(&node_record_table_ptr[i]);
 			kill_running_job_by_node_name (
 					node_record_table_ptr[i].name, false);
 			continue;
@@ -1519,6 +1508,20 @@ void make_node_comp(struct node_record *node_ptr)
 	}
 }
 
+/* _make_node_down - flag specified node as down */
+static void _make_node_down(struct node_record *node_ptr)
+{
+	int inx = node_ptr - node_record_table_ptr;
+	uint16_t no_resp_flag;
+
+	last_node_update = time (NULL);
+	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	node_ptr->node_state = NODE_STATE_DOWN | no_resp_flag;
+	node_ptr->job_cnt = 0;
+	bit_clear (up_node_bitmap, inx);
+	bit_clear (idle_node_bitmap, inx);
+}
+
 /* make_node_idle - flag specified node as having completed a job */
 void make_node_idle(struct node_record *node_ptr)
 {
@@ -1527,7 +1530,6 @@ void make_node_idle(struct node_record *node_ptr)
 
 	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
-	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED)) {
