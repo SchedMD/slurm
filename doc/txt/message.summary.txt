@@ -10,35 +10,45 @@ Command(s):	Get job information, separate commands for
           	accounting, node, partition, job step and build info
 Client:   	squeue and scontrol commands, plus DPCS from API, any node in cluster
 Server: 	slurmctld
-Input:  	time-stamp, version
+Input:  	time-stamp, version, user id
+		flags	: might be useful for filtering data sent, e.g. just this user's jobs 
 Output: 	error code, version, time-stamp, record count, array of records
-Notes:  	
+Notes:  	most information generally available, some might be restricted by user id
+
+
+Command(s):	Get key
+Client:  	API call (used by DPCS)
+Server: 	slurmctld
+Input:  	uid (must be root)
+Output: 	key
+Notes:   	used to control access to some partitions. for example, any user 
+		can run jobs in the "batch" partition, but only when initiated by 
+		a batch controller (e.g. DPCS). this prevents users from running 
+		jobs outside of the queue structure
+
 
 Command(s):	Allocate 
 Client:   	srun or slurm api call
 Server: 	slurmctld 
-Input:		username/uid,nnodes,ntasks,cpus_per_task,distribution
-		optional: partition,time_limit,constraints,features 
-		flags   : wait_for_resources 
-Output: 	jobid, return code, error code, node list, ncpus/node
+Input:		username/uid,nnodes,ntasks, group
+		optional: partition,time_limit,constraints,features,node list, key
+		flags   : wait_for_resources, test only (don't allocate resources, 
+		          just reply whether or not allocate would have succeeded, 
+		          used by DPCS)
+Output: 	jobid, return code, error code, node list, ncpus for *each* node in list
 Notes:  	allocate resources to a ``job''
+
 
 Command(s):	Submit
 Client:   	srun or slurm api call
 Server: 	slurmctld
 Input:  	Allocate input + script path, environment, cwd 
                 optional: partition, time_limit, constraints, features, 
-		          I/O location, signal handling
+		          I/O location, signal handling, key
 		flags:
 Output: 	jobid, return code, error code
 Notes:  	submit a batch job to the slurm queue
 
-Command(s):	will job run inquiry
-Client:   	slurm api call (e.g. DPCS)
-Server: 	slurmctld
-Input:  	like Allocate 
-Output: 	error code, version, job_id, node list
-Notes:  	
 
 Command(s):	Run Job Step	
 Client:   	srun or slurm api call
@@ -53,6 +63,7 @@ Notes:  	run a set of parallel tasks under an allocated job
  		allocate resources if jobid < MIN_JOBID, otherwise assume 
 		resources are already available
 
+
 Command(s):	Job Resource Request
 Client:   	srun, scancel 
 Server: 	slurmctld
@@ -60,7 +71,8 @@ Input:  	stepid
 Output: 	return code, error code, node list, ncpus/node, credentials
 Notes:  	obtain a new set of credentials for a job. Needed for
  		at least `srun --attach`
-		
+	
+	
 Command(s):	Run Job Request
 Client:   	srun or slurmctld
 Server: 	slurmd
@@ -78,6 +90,7 @@ Input:  	uid, jobid or stepid, signal no.
 Output: 	return code
 Notes:  	
 
+
 Command(s):	Kill Job Request
 Client:   	srun or slurmctld (possibly scancel)
 Server: 	slurmd
@@ -85,6 +98,7 @@ Input:  	uid, jobid or stepid
 Output: 	return code
 Notes:  	explicitly kill job as opposed to implicit job kill
 		with a signal job request.
+
 
 Command(s):	Job Attach Request
 Client:   	srun
@@ -95,6 +109,7 @@ Output: 	return code, error code,
 Notes:  	srun process ``attaches'' to a currently running job. This
 		request is used for srun recovery, or by a user who wants
 		to interactively reattach to a batch job.
+
 
 Command(s):	Cancel job or allocation
 Client:   	scancel user command, plus DPCS from API, any node in cluster
@@ -142,7 +157,7 @@ Client:   	DPCS API
 Server: 	slurmd daemon on the same node as DPCS API is executed
 Input:  	process id
 Output: 	SLURM job id
-Notes:  	until SLURM accounting is funcational, DPCS needs help figuring 
+Notes:  	until SLURM accounting is fully funcational, DPCS needs help figuring 
 		out what processes are associated with each job
 
 
