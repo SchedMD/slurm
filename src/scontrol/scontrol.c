@@ -26,12 +26,13 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -48,11 +49,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#include <src/api/slurm.h>
-#include <src/common/hostlist.h>
-#include <src/common/log.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/xmalloc.h>
+#include "src/api/slurm.h"
+#include "src/common/hostlist.h"
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
 #define	BUF_SIZE 1024
 #define	MAX_INPUT_FIELDS 128
@@ -62,24 +63,25 @@ static int exit_flag;			/* program to terminate if =1 */
 static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
 static int input_words;			/* number of words of input permitted */
 
-int	get_command (int *argc, char *argv[]);
-void	print_config (char *config_param);
-void	print_job (char * job_id_str);
-void	print_node (char *node_name, node_info_msg_t *node_info_ptr);
-void	print_node_list (char *node_list);
-void	print_part (char *partition_name);
-void	print_step (char *job_step_id_str);
-int	process_command (int argc, char *argv[]);
-void	update_it (int argc, char *argv[]);
-int	update_job (int argc, char *argv[]);
-int	update_node (int argc, char *argv[]);
-int	update_part (int argc, char *argv[]);
-void	usage ();
+static int	_get_command (int *argc, char *argv[]);
+static void	_pid2jid(pid_t job_pid);
+static void	_print_config (char *config_param);
+static void	_print_job (char * job_id_str);
+static void	_print_node (char *node_name, node_info_msg_t *node_info_ptr);
+static void	_print_node_list (char *node_list);
+static void	_print_part (char *partition_name);
+static void	_print_step (char *job_step_id_str);
+static int	_process_command (int argc, char *argv[]);
+static void	_update_it (int argc, char *argv[]);
+static int	_update_job (int argc, char *argv[]);
+static int	_update_node (int argc, char *argv[]);
+static int	_update_part (int argc, char *argv[]);
+static void	_usage ();
 
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code = 0, i, input_field_count;
+	int error_code = SLURM_SUCCESS, i, input_field_count;
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -89,14 +91,14 @@ main (int argc, char *argv[])
 	quiet_flag = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but let's continue anyway */
+	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
 		input_words = argc;
 	else
 		input_words = 128;
 	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
 	for (i = 1; i < argc; i++) {
 		if (strncmp (argv[i], "-help", 2) == 0)
-			usage ();
+			_usage ();
 		else if (strcmp (argv[i], "-q") == 0)
 			quiet_flag = 1;
 		else if (strcmp (argv[i], "quiet") == 0)
@@ -112,15 +114,15 @@ main (int argc, char *argv[])
 	if (input_field_count)
 		exit_flag = 1;
 	else
-		error_code = get_command (&input_field_count, input_fields);
+		error_code = _get_command (&input_field_count, input_fields);
 
-	while (error_code == 0) {
-		error_code = process_command (input_field_count, input_fields);
-		if (error_code != 0)
+	while (error_code == SLURM_SUCCESS) {
+		error_code = _process_command (input_field_count, input_fields);
+		if (error_code)
 			break;
 		if (exit_flag == 1)
 			break;
-		error_code = get_command (&input_field_count, input_fields);
+		error_code = _get_command (&input_field_count, input_fields);
 	}			
 
 	exit (error_code);
@@ -128,12 +130,12 @@ main (int argc, char *argv[])
 
 
 /*
- * get_command - get a command from the user
- * input: argc - location to store count of arguments
- *        argv - location to store the argument list
+ * _get_command - get a command from the user
+ * OUT argc - location to store count of arguments
+ * OUT argv - location to store the argument list
  */
-int 
-get_command (int *argc, char **argv) 
+static int 
+_get_command (int *argc, char **argv) 
 {
 	char *in_line;
 	static char *last_in_line = NULL;
@@ -163,14 +165,16 @@ get_command (int *argc, char **argv)
 			break;
 		if (isspace ((int) in_line[i]))
 			continue;
-		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* really bogus input line */
-			fprintf (stderr, "%s: can not process over %d words as configured\n",
+		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* bogus input line */
+			fprintf (stderr, 
+				 "%s: can not process over %d words\n",
 				 command_name, input_words);
 			return E2BIG;
 		}		
 		argv[(*argc)++] = &in_line[i];
 		for (i++; i < in_line_size; i++) {
-			if ((in_line[i] != '\0') && (!isspace ((int) in_line[i])))
+			if ((in_line[i] != '\0') && 
+			    (!isspace ((int) in_line[i])))
 				continue;
 			in_line[i] = (char) NULL;
 			break;
@@ -181,30 +185,52 @@ get_command (int *argc, char **argv)
 
 
 /* 
- * print_config - print the specified configuration parameter and value 
- * input: config_param - NULL to print all parameters and values
+ * _pid2jid - given a local process id, print the corresponding slurm job id
+ * IN job_pid - the local process id of interest
  */
-void 
-print_config (char *config_param)
+static void
+_pid2jid(pid_t job_pid)
+{
+	int error_code;
+	uint32_t job_id;
+
+	error_code = slurm_pid2jobid (job_pid, &job_id);
+	if (error_code == SLURM_SUCCESS)
+		printf("Slurm job id: %u\n", job_id);
+	else if (quiet_flag != 1)
+		slurm_perror ("slurm_pid2jobid error");
+	return;
+}
+
+
+
+/* 
+ * _print_config - print the specified configuration parameter and value 
+ * IN config_param - NULL to print all parameters and values
+ */
+static void 
+_print_config (char *config_param)
 {
 	int error_code;
 	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
 	slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr = NULL;
 
 	if (old_slurm_ctl_conf_ptr) {
-		error_code = slurm_load_ctl_conf (old_slurm_ctl_conf_ptr->last_update,
+		error_code = slurm_load_ctl_conf (
+				old_slurm_ctl_conf_ptr->last_update,
 			 &slurm_ctl_conf_ptr);
-		if (error_code == 0)
+		if (error_code == SLURM_SUCCESS)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
-			error_code = 0;
+			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
 				printf ("slurm_load_ctl_conf no change in data\n");
 		}
 	}
 	else
-		error_code = slurm_load_ctl_conf ((time_t) NULL, &slurm_ctl_conf_ptr);
+		error_code = slurm_load_ctl_conf ((time_t) NULL, 
+						  &slurm_ctl_conf_ptr);
 
 	if (error_code) {
 		if (quiet_flag != 1)
@@ -218,13 +244,13 @@ print_config (char *config_param)
 
 
 /*
- * print_job - print the specified job's information
- * input: job_id - job's id or NULL to print information about all jobs
+ * _print_job - print the specified job's information
+ * IN job_id - job's id or NULL to print information about all jobs
  */
-void 
-print_job (char * job_id_str) 
+static void 
+_print_job (char * job_id_str) 
 {
-	int error_code, i, print_cnt = 0;
+	int error_code = SLURM_SUCCESS, i, print_cnt = 0;
 	uint32_t job_id = 0;
 	static job_info_msg_t *old_job_buffer_ptr = NULL;
 	job_info_msg_t * job_buffer_ptr = NULL;
@@ -233,11 +259,11 @@ print_job (char * job_id_str)
 	if (old_job_buffer_ptr) {
 		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
 					&job_buffer_ptr);
-		if (error_code == 0)
+		if (error_code == SLURM_SUCCESS)
 			slurm_free_job_info_msg (old_job_buffer_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			job_buffer_ptr = old_job_buffer_ptr;
-			error_code = 0;
+			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
  				printf ("slurm_free_job_info no change in data\n");
 		}
@@ -254,7 +280,8 @@ print_job (char * job_id_str)
 	
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&job_buffer_ptr->last_update, time_str);
+		make_time_str ((time_t *)&job_buffer_ptr->last_update, 
+				time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, job_buffer_ptr->record_count);
 	}
@@ -282,16 +309,16 @@ print_job (char * job_id_str)
 
 
 /*
- * print_node - print the specified node's information
- * input: node_name - NULL to print all node information
- *	  node_ptr - pointer to node table of information
+ * _print_node - print the specified node's information
+ * IN node_name - NULL to print all node information
+ * IN node_ptr - pointer to node table of information
  * NOTE: call this only after executing load_node, called from 
- *	print_node_list
+ *	_print_node_list
  * NOTE: To avoid linear searches, we remember the location of the 
  *	last name match
  */
-void
-print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
+static void
+_print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
 {
 	int i, j, print_cnt = 0;
 	static int last_inx = 0;
@@ -299,13 +326,15 @@ print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 	for (j = 0; j < node_buffer_ptr->record_count; j++) {
 		if (node_name) {
 			i = (j + last_inx) % node_buffer_ptr->record_count;
-			if (strcmp (node_name, node_buffer_ptr->node_array[i].name) != 0)
+			if (strcmp (node_name, 
+				    node_buffer_ptr->node_array[i].name))
 				continue;
 		}
 		else
 			i = j;
 		print_cnt++;
-		slurm_print_node_table (stdout, & node_buffer_ptr->node_array[i]);
+		slurm_print_node_table (stdout, 
+					& node_buffer_ptr->node_array[i]);
 
 		if (node_name) {
 			last_inx = i;
@@ -323,13 +352,13 @@ print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 
 
 /*
- * print_node_list - print information about the supplied node list (or 
+ * _print_node_list - print information about the supplied node list (or 
  *	regular expression)
- * input: node_list - print information about the supplied node list 
+ * IN node_list - print information about the supplied node list 
  *	(or regular expression)
  */
-void
-print_node_list (char *node_list) 
+static void
+_print_node_list (char *node_list) 
 {
 	static node_info_msg_t *old_node_info_ptr = NULL;
 	node_info_msg_t *node_info_ptr = NULL;
@@ -340,11 +369,11 @@ print_node_list (char *node_list)
 	if (old_node_info_ptr) {
 		error_code = slurm_load_node (old_node_info_ptr->last_update, 
 			&node_info_ptr);
-		if (error_code == 0)
+		if (error_code == SLURM_SUCCESS)
 			slurm_free_node_info_msg (old_node_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			node_info_ptr = old_node_info_ptr;
-			error_code = 0;
+			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
 				printf ("slurm_free_job_info no change in data\n");
 		}
@@ -368,12 +397,12 @@ print_node_list (char *node_list)
 	}
 
 	if (node_list == NULL) {
-		print_node (NULL, node_info_ptr);
+		_print_node (NULL, node_info_ptr);
 	}
 	else {
 		if ( (host_list = hostlist_create (node_list)) ) {
-			while ( (this_node_name = hostlist_shift (host_list)) ) {
-				print_node (this_node_name, node_info_ptr);
+			while ((this_node_name = hostlist_shift (host_list))) {
+				_print_node (this_node_name, node_info_ptr);
 				free (this_node_name);
 			}
 
@@ -381,9 +410,13 @@ print_node_list (char *node_list)
 		}
 		else if (quiet_flag != 1) {
 			if (errno == EINVAL)
-				fprintf (stderr, "unable to parse node list %s\n", node_list);
+				fprintf (stderr, 
+					 "unable to parse node list %s\n", 
+					 node_list);
 			else if (errno == ERANGE)
-				fprintf (stderr, "too many nodes in supplied range %s\n", node_list);
+				fprintf (stderr, 
+					 "too many nodes in supplied range %s\n", 
+					 node_list);
 			else
 				perror ("error parsing node list");
 		}
@@ -393,11 +426,11 @@ print_node_list (char *node_list)
 
 
 /*
- * print_part - print the specified partition's information
- * input: partition_name - NULL to print information about all partition 
+ * _print_part - print the specified partition's information
+ * IN partition_name - NULL to print information about all partition 
  */
-void 
-print_part (char *partition_name) 
+static void 
+_print_part (char *partition_name) 
 {
 	int error_code, i, print_cnt = 0;
 	static partition_info_msg_t *old_part_info_ptr = NULL;
@@ -405,20 +438,22 @@ print_part (char *partition_name)
 	partition_info_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
-		error_code = slurm_load_partitions (old_part_info_ptr->last_update,
-						    &part_info_ptr);
-		if (error_code == 0) {
+		error_code = slurm_load_partitions (
+						old_part_info_ptr->last_update,
+						&part_info_ptr);
+		if (error_code == SLURM_SUCCESS) {
 			slurm_free_partition_info_msg (old_part_info_ptr);
 		}
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
-			error_code = 0;
+			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
 				printf ("slurm_load_part no change in data\n");
 		}
 	}
 	else
-		error_code = slurm_load_partitions ((time_t) NULL, &part_info_ptr);
+		error_code = slurm_load_partitions ((time_t) NULL, 
+						    &part_info_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_partitions error");
@@ -455,12 +490,12 @@ print_part (char *partition_name)
 
 
 /*
- * print_step - print the specified job step's information
- * input: job_step_id_str - job step's id or NULL to print information
+ * _print_step - print the specified job step's information
+ * IN job_step_id_str - job step's id or NULL to print information
  *	about all job steps
  */
-void 
-print_step (char *job_step_id_str)
+static void 
+_print_step (char *job_step_id_str)
 {
 	int error_code, i;
 	uint32_t job_id = 0, step_id = 0;
@@ -478,20 +513,23 @@ print_step (char *job_step_id_str)
 
 	if ((old_job_step_info_ptr) &&
 	    (last_job_id == job_id) && (last_step_id == step_id)) {
-		error_code = slurm_get_job_steps ( old_job_step_info_ptr->last_update,
+		error_code = slurm_get_job_steps ( 
+					old_job_step_info_ptr->last_update,
 					job_id, step_id, &job_step_info_ptr);
-		if (error_code == 0)
-			slurm_free_job_step_info_response_msg (old_job_step_info_ptr);
+		if (error_code == SLURM_SUCCESS)
+			slurm_free_job_step_info_response_msg (
+					old_job_step_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			job_step_info_ptr = old_job_step_info_ptr;
-			error_code = 0;
+			error_code = SLURM_SUCCESS;
 			if (quiet_flag == -1)
 				printf ("slurm_get_job_steps no change in data\n");
 		}
 	}
 	else {
 		if (old_job_step_info_ptr)
-			slurm_free_job_step_info_response_msg (old_job_step_info_ptr);
+			slurm_free_job_step_info_response_msg (
+					old_job_step_info_ptr);
 		error_code = slurm_get_job_steps ( (time_t) 0, 
 					job_id, step_id, &job_step_info_ptr);
 	}
@@ -508,7 +546,8 @@ print_step (char *job_step_id_str)
 
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&job_step_info_ptr->last_update, time_str);
+		make_time_str ((time_t *)&job_step_info_ptr->last_update, 
+			       time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, job_step_info_ptr->job_step_count);
 	}
@@ -528,13 +567,13 @@ print_step (char *job_step_id_str)
 
 
 /*
- * process_command - process the user's command
- * input: argc - count of arguments
- *        argv - the arguments
- * ourput: return code is 0 or errno (only for errors fatal to scontrol)
+ * _process_command - process the user's command
+ * IN argc - count of arguments
+ * IN argv - the arguments
+ * RET 0 or errno (only for errors fatal to scontrol)
  */
-int
-process_command (int argc, char *argv[]) 
+static int
+_process_command (int argc, char *argv[]) 
 {
 	int error_code;
 
@@ -545,27 +584,42 @@ process_command (int argc, char *argv[])
 	else if (strncasecmp (argv[0], "abort", 5) == 0) {
 		if (argc > 2)
 			fprintf (stderr,
-				 "too many arguments for keyword:%s\n", argv[0]);
+				 "too many arguments for keyword:%s\n", 
+				 argv[0]);
 		error_code = slurm_shutdown (1);
-		if ((error_code != 0) && (quiet_flag != 1))
+		if (error_code && (quiet_flag != 1))
 			slurm_perror ("slurm_shutdown error");
 	}
 	else if ((strcasecmp (argv[0], "exit") == 0) ||
 	         (strcasecmp (argv[0], "quit") == 0)) {
 		if (argc > 1)
-			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
+			fprintf (stderr, 
+				 "too many arguments for keyword:%s\n", 
+				 argv[0]);
 		exit_flag = 1;
 
 	}
 	else if (strcasecmp (argv[0], "help") == 0) {
 		if (argc > 1)
-			fprintf (stderr, "too many arguments for keyword:%s\n",argv[0]);
-		usage ();
+			fprintf (stderr, 
+				 "too many arguments for keyword:%s\n",argv[0]);
+		_usage ();
+
+	}
+	else if (strcasecmp (argv[0], "pid2jid") == 0) {
+		if (argc > 2)
+			fprintf (stderr, "too many arguments for keyword:%s\n", 
+				 argv[0]);
+		else if (argc < 2)
+			_usage ();
+		else
+			_pid2jid ((pid_t) atol (argv[1]) );
 
 	}
 	else if (strcasecmp (argv[0], "quiet") == 0) {
 		if (argc > 1)
-			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
+			fprintf (stderr, "too many arguments for keyword:%s\n", 
+				 argv[0]);
 		quiet_flag = 1;
 
 	}
@@ -574,7 +628,7 @@ process_command (int argc, char *argv[])
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 			         argv[0]);
 		error_code = slurm_reconfigure ();
-		if ((error_code != 0) && (quiet_flag != 1))
+		if (error_code && (quiet_flag != 1))
 			slurm_perror ("slurm_reconfigure error");
 
 	}
@@ -593,33 +647,33 @@ process_command (int argc, char *argv[])
 		}
 		else if (strncasecmp (argv[1], "config", 3) == 0) {
 			if (argc > 2)
-				print_config (argv[2]);
+				_print_config (argv[2]);
 			else
-				print_config (NULL);
+				_print_config (NULL);
 		}
 		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
 			if (argc > 2)
-				print_job (argv[2]);
+				_print_job (argv[2]);
 			else
-				print_job (NULL);
+				_print_job (NULL);
 		}
 		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
 			if (argc > 2)
-				print_node_list (argv[2]);
+				_print_node_list (argv[2]);
 			else
-				print_node_list (NULL);
+				_print_node_list (NULL);
 		}
 		else if (strncasecmp (argv[1], "partitions", 3) == 0) {
 			if (argc > 2)
-				print_part (argv[2]);
+				_print_part (argv[2]);
 			else
-				print_part (NULL);
+				_print_part (NULL);
 		}
 		else if (strncasecmp (argv[1], "steps", 4) == 0) {
 			if (argc > 2)
-				print_step (argv[2]);
+				_print_step (argv[2]);
 			else
-				print_step (NULL);
+				_print_step (NULL);
 		}
 		else if (quiet_flag != 1) {
 			fprintf (stderr,
@@ -634,7 +688,7 @@ process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
 		error_code = slurm_shutdown (0);
-		if ((error_code != 0) && (quiet_flag != 1))
+		if (error_code && (quiet_flag != 1))
 			slurm_perror ("slurm_shutdown error");
 	}
 	else if (strcasecmp (argv[0], "update") == 0) {
@@ -643,7 +697,7 @@ process_command (int argc, char *argv[])
 				 argv[0]);
 			return 0;
 		}		
-		update_it ((argc - 1), &argv[1]);
+		_update_it ((argc - 1), &argv[1]);
 
 	}
 	else if (strcasecmp (argv[0], "verbose") == 0) {
@@ -672,29 +726,28 @@ process_command (int argc, char *argv[])
 
 
 /* 
- * update_it - update the slurm configuration per the supplied arguments 
- * input: argc - count of arguments
- *        argv - list of arguments
- * output: returns 0 if no slurm error, errno otherwise
+ * _update_it - update the slurm configuration per the supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise
  */
-void
-update_it (int argc, char *argv[]) 
+static void
+_update_it (int argc, char *argv[]) 
 {
-	int error_code, i;
+	int error_code = SLURM_SUCCESS, i;
 
-	error_code = 0;
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
 		if (strncasecmp (argv[i], "NodeName=", 9) == 0) {
-			error_code = update_node (argc, argv);
+			error_code = _update_node (argc, argv);
 			break;
 		}
 		else if (strncasecmp (argv[i], "PartitionName=", 14) == 0) {
-			error_code = update_part (argc, argv);
+			error_code = _update_part (argc, argv);
 			break;
 		}
 		else if (strncasecmp (argv[i], "JobId=", 6) == 0) {
-			error_code = update_job (argc, argv);
+			error_code = _update_job (argc, argv);
 			break;
 		}
 	}
@@ -710,19 +763,18 @@ update_it (int argc, char *argv[])
 }
 
 /* 
- * update_job - update the slurm job configuration per the supplied arguments 
- * input: argc - count of arguments
- *        argv - list of arguments
- * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
+ * _update_job - update the slurm job configuration per the supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
  *			error message and returns 0
  */
-int
-update_job (int argc, char *argv[]) 
+static int
+_update_job (int argc, char *argv[]) 
 {
-	int error_code, i;
+	int i;
 	job_desc_msg_t job_msg;
 
-	error_code = 0;
 	slurm_init_job_desc_msg (&job_msg);	
 
 	for (i=0; i<argc; i++) {
@@ -800,20 +852,19 @@ update_job (int argc, char *argv[])
 }
 
 /* 
- * update_node - update the slurm node configuration per the supplied arguments 
- * input: argc - count of arguments
- *        argv - list of arguments
- * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
+ * _update_node - update the slurm node configuration per the supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
  *			error message and returns 0
  */
-int
-update_node (int argc, char *argv[]) 
+static int
+_update_node (int argc, char *argv[]) 
 {
-	int error_code, i, j, k;
+	int i, j, k;
 	uint16_t state_val;
 	update_node_msg_t node_msg;
 
-	error_code = 0;
 	node_msg.node_names = NULL;
 	node_msg.node_state = (uint16_t) NO_VAL;
 	for (i=0; i<argc; i++) {
@@ -856,20 +907,19 @@ update_node (int argc, char *argv[])
 }
 
 /* 
- * update_part - update the slurm partition configuration per the supplied
-arguments 
- * input: argc - count of arguments
- *        argv - list of arguments
- * output: returns 0 if no slurm error, errno otherwise. parsing error prints 
+ * _update_part - update the slurm partition configuration per the 
+ *	supplied arguments 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
  *			error message and returns 0
  */
-int
-update_part (int argc, char *argv[]) 
+static int
+_update_part (int argc, char *argv[]) 
 {
-	int error_code, i;
+	int i;
 	update_part_msg_t part_msg;
 
-	error_code = 0;
 	slurm_init_part_desc_msg ( &part_msg );
 	for (i=0; i<argc; i++) {
 		if (strncasecmp(argv[i], "PartitionName=", 14) == 0)
@@ -960,9 +1010,9 @@ update_part (int argc, char *argv[])
 		return 0;
 }
 
-/* usage - show the valid scontrol commands */
+/* _usage - show the valid scontrol commands */
 void
-usage () {
+_usage () {
 	printf ("scontrol [-q | -v] [<COMMAND>]\n");
 	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
 	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
@@ -972,6 +1022,7 @@ usage () {
 	printf ("     abort                    shutdown slurm controller immediately generating a core file.\n");
 	printf ("     exit                     terminate this command.\n");
 	printf ("     help                     print this description of use.\n");
+	printf ("     pid2jid <process_id>     return slurm job id for given pid.\n");
 	printf ("     quiet                    print no messages other than error messages.\n");
 	printf ("     quit                     terminate this command.\n");
 	printf ("     reconfigure              re-read configuration files.\n");
@@ -980,6 +1031,7 @@ usage () {
 	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
+	printf ("     pid2jid <process_id>     return slurm job id for given pid.\n");
 	printf ("     !!                       Repeat the last command entered.\n");
 	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or \"step\".\n");
 	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
