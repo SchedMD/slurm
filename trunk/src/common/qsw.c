@@ -523,7 +523,8 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 
 			for (j = 0; j < task_cnt; j++) {
 				if (cyclic_alloc)
-					bit = (i-cap->LowNode) + (j*nnodes);
+					bit = (i-cap->LowNode) + ( j * 
+					 (cap->HighNode - cap->LowNode + 1));
 				else
 					bit = ((i-cap->LowNode)
 					       * max_procs_per_node) + j;
