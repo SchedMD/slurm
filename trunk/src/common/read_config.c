@@ -31,7 +31,6 @@
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
-#include <netdb.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -757,12 +756,6 @@ report_leftover (char *in_line, int line_num)
  *
  * IN/OUT ctl_conf_ptr - a configuration as loaded by read_slurm_conf_ctl
  *
- * NOTE: default slurmctld and slurmd ports are built thus:
- *	if SLURMCTLD_PORT/SLURMD_PORT are set then
- *		get the port number based upon a look-up in /etc/services
- *		if the lookup fails then translate SLURMCTLD_PORT/SLURMD_PORT 
- *		into a number
- *	These port numbers are overridden if set in the configuration file
  * NOTE: a backup_controller or control_machine of "localhost" are over-written
  *	with this machine's name.
  * NOTE: if backup_addr is NULL, it is over-written by backup_controller
@@ -877,7 +870,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 			xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
 
 	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmctld_port = SLURMCTLD_PORT;
+		ctl_conf_ptr->slurmctld_port = strtol(SLURMCTLD_PORT,
+				 (char **)NULL, 10);
 
 	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
 		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
@@ -891,7 +885,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 
 	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
+		ctl_conf_ptr->slurmd_port = strtol(SLURMD_PORT, 
+				(char **)NULL, 10);
 
 	if (ctl_conf_ptr->slurmd_spooldir == NULL)
 		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
