@@ -2698,7 +2698,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	}
 	node_inx = node_ptr - node_record_table_ptr;
 
-	/* Ensure that jobs running are really supposed to be there */
+	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < *job_count; i++) {
 		job_ptr = find_job_record(job_id_ptr[i]);
 		if (job_ptr == NULL) {
@@ -2753,8 +2753,11 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 
 	if (jobs_on_node != *job_count) {
-		error("resetting job_count on node %s to %d", 
-		      node_name, jobs_on_node);
+		/* slurmd will not know of a job unless the job has
+		 * steps active at registration time, so this is not 
+		 * an error condition */
+		info("resetting job_count on node %s from %d to %d", 
+		     node_name, *job_count, jobs_on_node);
 		*job_count = jobs_on_node;
 	}
 
