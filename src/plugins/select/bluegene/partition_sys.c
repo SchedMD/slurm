@@ -89,6 +89,8 @@ static void _print_list(List list)
  */
 static void _pre_allocate(bgl_record_t *bgl_record)
 {
+	int psets = (PSETS_PER_BP * bgl_record->bp_count);
+
 	rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   
 		bluegene_blrts);
 	rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   
@@ -101,6 +103,7 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 		&bgl_record->conn_type);
 	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
 		&bgl_record->node_use);
+	rm_set_data(bgl_record->bgl_part, RM_PartitionPsetNum, &psets); 
 	rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, USER_NAME);
 }
 
