@@ -188,6 +188,7 @@ system). The default value is "/tmp/slurmd".
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
 to respond before configuring that node's state to DOWN. 
 The default value is 300 seconds.
+A value of zero indicates the node should never be set DOWN if not respnding.
 .TP
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the slurm controller, 
