@@ -72,8 +72,8 @@ int slurm_update_partition ( partition_desc_msg_t * desc_msg )
 	return_code_msg_t * rc_msg ;
 
 	/* send request message */
-
-	request_msg . data = NULL ; 
+	request_msg . msg_type = REQUEST_UPDATE_PARTITION ;
+	request_msg . data = desc_msg ; 
 
 	if ( ( rc = slurm_send_recv_controller_msg ( & request_msg , & response_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;
