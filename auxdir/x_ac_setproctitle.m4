@@ -40,7 +40,7 @@ case "$host" in
 esac
 
 AC_MSG_CHECKING([for __progname])
-AC_TRY_COMPILE([#include <stdio.h>], 
+AC_TRY_LINK([#include <stdio.h>], 
   [extern char *__progname; puts(__progname);],
   [ac_have__progname=yes]
 )
