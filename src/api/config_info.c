@@ -1,5 +1,5 @@
 /* 
- * partition_info.c - get the partition information of slurm
+ * build_info.c - get the build information of slurm
  * see slurm.h for documentation on external functions and data structures
  *
  * author: moe jette, jette@llnl.gov

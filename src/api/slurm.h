@@ -71,24 +71,6 @@ struct job_buffer {
 	struct job_table *job_table_ptr;
 };
 
-struct node_table {
-	char *name;		/* name of the node. a null name indicates defunct node */
-	uint16_t node_state;	/* state of the node, see node_states */
-	uint32_t cpus;		/* count of processors running on the node */
-	uint32_t real_memory;	/* megabytes of real memory on the node */
-	uint32_t tmp_disk;	/* megabytes of total disk in TMP_FS */
-	uint32_t weight;	/* desirability of use */
-	char *partition;	/* partition name */ 
-	char *features;		/* features associated with the node */ 
-};
-
-struct node_buffer {
-	time_t last_update;	/* time of last buffer update */
-	uint32_t node_count;	/* count of entries in node_table */
-	void *raw_buffer_ptr;	/* raw network buffer info */
-	struct node_table *node_table_ptr;
-};
-
 struct part_table {
 	char *name;		/* name of the partition */
 	uint32_t max_time;	/* minutes or INFINITE */
@@ -158,26 +140,33 @@ extern void slurm_print_build_info ( FILE * out, struct build_table * build_tabl
 
 /*
  * slurm_free_job_info - free the job information buffer (if allocated)
- * NOTE: buffer is loaded by load_job.
+ * NOTE: buffer is loaded by slurm_load_job.
  */
 extern void slurm_free_job_info (job_info_msg_t * job_buffer_ptr);
-
-/*
- * slurm_print_job_table - prints the job table object (if allocated)
- */
-extern void slurm_print_job_table ( job_table_t * job_ptr );
-
-/* 
- * slurm_print_build_info - prints the build information buffer (if allocated)
- * NOTE: buffer is loaded by slurm_load_job_info .
- */
-extern void slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr ) ;
 
 /*
  * slurm_free_node_info - free the node information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_node.
  */
-extern void slurm_free_node_info (struct node_buffer *node_buffer_ptr);
+extern void slurm_free_node_info (node_info_msg_t * node_buffer_ptr);
+
+/* 
+ * slurm_print_job_info_msg - prints the job information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_job_info .
+ */
+extern void slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr ) ;
+
+/* slurm_print_job_table - prints the job table object (if allocated) */
+extern void slurm_print_job_table ( job_table_t * job_ptr );
+
+/* 
+ * slurm_print_node_info_msg - prints the node information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_node_info .
+ */
+extern void slurm_print_node_info_msg ( node_info_msg_t * node_info_msg_ptr ) ;
+
+/* slurm_print_node_table - prints the node table object (if allocated) */
+extern void slurm_print_node_table (node_table_t * node_ptr );
 
 /*
  * slurm_free_part_info - free the partition information buffer (if allocated)
@@ -201,33 +190,11 @@ extern int slurm_load_build (time_t update_time,
 	struct build_table **build_table_ptr);
 
 
-/*
- * slurm_load_job - load the supplied job information buffer for use by info 
- *	gathering APIs if job records have changed since the time specified. 
- * input: update_time - time of last update
- *	job_buffer_ptr - place to park job_buffer pointer
- * output: job_buffer_ptr - pointer to allocated job_buffer
- *	returns -1 if no update since update_time, 
- *		0 if update with no error, 
- *		EINVAL if the buffer (version or otherwise) is invalid, 
- *		ENOMEM if malloc failure
- * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
- */
-extern int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_ptr);
+/* slurm_load_job - load the supplied job information buffer if changed */
+extern int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr);
 
-/*
- * slurm_load_node - load the supplied node information buffer for use by info 
- *	gathering APIs if node records have changed since the time specified. 
- * input: update_time - time of last update
- *	node_buffer_ptr - place to park node_buffer pointer
- * output: node_buffer_ptr - pointer to allocated node_buffer
- *	returns -1 if no update since update_time, 
- *		0 if update with no error, 
- *		EINVAL if the buffer (version or otherwise) is invalid, 
- *		ENOMEM if malloc failure
- * NOTE: the allocated memory at node_buffer_ptr freed by slurm_free_node_info.
- */
-extern int slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr);
+/* slurm_load_node - load the supplied node information buffer if changed */
+extern int slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr);
 
 /*
  * slurm_load_part - load the supplied partition information buffer for use by info 

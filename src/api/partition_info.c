@@ -19,9 +19,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
-#include "pack.h"
-#include "nodelist.h"
+#include <src/api/slurm.h>
+#include <src/common/nodelist.h>
+#include <src/common/pack.h>
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
