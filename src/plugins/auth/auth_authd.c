@@ -288,11 +288,12 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	if ( ( cred == NULL ) || ( buf == NULL ) ) return;
 
 	/*
-	 * Marshall the plugin type for runtime sanity check.
+	 * Marshall the plugin type and version for runtime sanity check.
 	 * Add the terminating zero so we get it for free at the
 	 * other end.
 	 */
 	packmem( (char *) plugin_type, strlen( plugin_type ) + 1, buf );
+	pack32( plugin_version, buf );
 	
 	pack32( cred->cred.uid, buf );
 	pack32( cred->cred.gid, buf );
@@ -306,6 +307,7 @@ int
 slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 {
 	uint16_t sig_size; /* ignored */
+	uint32_t version;	
 	char *data;
 
 	if ( ( cred == NULL) || ( buf == NULL ) )
@@ -317,6 +319,7 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 		error( "authd plugin: authentication mismatch, got %s", data );
 		return SLURM_ERROR;
 	}
+	unpack32( &version, buf );
 	
 	unpack32( &cred->cred.uid, buf );
 	unpack32( &cred->cred.gid, buf );

@@ -237,6 +237,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	 * type so that it can be sanity-checked at the receiving end.
 	 */
 	packmem( (char *) plugin_type, strlen( plugin_type ) + 1, buf );
+	pack32( plugin_version, buf );
 	/*
 	 * Pack the data values.
 	 */
@@ -253,6 +254,7 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 {
 	char *tmpstr;
 	int32_t tmpint;
+	uint32_t version;
 	uint16_t size;
 	
 	if ( ( cred == NULL ) || ( buf == NULL ) ) {
@@ -272,6 +274,7 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 		error( "plugin expected 'auth/none' and got '%s'", tmpstr );
 		return SLURM_ERROR;
 	}
+	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) return SLURM_ERROR;
 
 	/*
 	 * We do it the hard way because we don't know anything about the

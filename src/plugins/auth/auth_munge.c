@@ -264,6 +264,7 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	 * type so that it can be sanity-checked at the receiving end.
 	 */
 	packstr( (char *) plugin_type, buf );
+	pack32( plugin_version, buf );
 	/*
 	 * Pack the data.
 	 */
@@ -278,8 +279,9 @@ int
 slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 {
 	char    *type;
-	char    *m;
+	char    *m;	
 	uint16_t size;
+	uint32_t version;
 	
 	if ((cred == NULL) || (buf == NULL)) {
 		error("malformed slurm_auth_unpack call in auth/munge plugin");
@@ -298,6 +300,9 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 		error( "plugin expected 'auth/munge' and got '%s'", type );
 		return SLURM_ERROR;
 	}
+	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
+		return SLURM_ERROR;
+	}	
 
 	if (unpackmem_ptr(&m, &size, buf) < 0) {
 		error("error retrieving munge cred in auth/munge plugin");
