@@ -12,7 +12,7 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
+#define DEBUG_MODULE 0
 #define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
