@@ -52,7 +52,7 @@
 /* printf-style error function -- redefine to your project's error 
  * reporting facility. Should take args like _err(char *, ...)
  */
-#define _err(fmt, args...) 	fprintf(stderr, fmt, ## args)
+#define _err(fmt, args...) 	_log_msg(fmt, ## args)
 
 /* number of elements to allocate when extending the hostlist array */
 #define HOSTLIST_CHUNK	16
@@ -162,6 +162,7 @@ struct hostlist_iterator {
 
 /* ------[ static function prototypes ]------ */
 
+static void   _log_msg(int level, const char *format, ...);
 static char * _next_tok(char *, char **);
 static int    _zero_padded(unsigned long, int);
 static int    _width_equiv(unsigned long, int *, unsigned long, int *);
@@ -267,6 +268,22 @@ static int hostset_find_host(hostset_t, char *);
 /* ------[ Function Definitions ]------ */
 
 /* ----[ general utility functions ]---- */
+
+/*
+ *  Writes message described by the 'format' string to syslog.
+ */
+static void
+_log_msg(int level, const char *format, ...)
+{
+    va_list args;
+
+    openlog("pam_slurm", LOG_CONS | LOG_PID, LOG_AUTHPRIV);
+    va_start(args, format);
+    vsyslog(level, format, args);
+    va_end(args);
+    closelog();
+    return;
+}
 
 /* 
  * Helper function for host list string parsing routines 

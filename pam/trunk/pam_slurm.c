@@ -60,11 +60,6 @@ struct _options {
     const char *msg_suffix;
 };
 
-struct _range {
-    int lo;
-    int hi;
-};
-
 
 static void _log_msg(int level, const char *format, ...);
 static void _parse_args(struct _options *opts, int argc, const char **argv);
