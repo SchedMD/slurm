@@ -376,7 +376,7 @@ _reap_task(slurmd_job_t *job)
 	if ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > (pid_t) 0) 
 		return _send_exit_status(job, pid, status);
 
-	if (pid < 0)
+	if ((pid < 0) && (errno != ECHILD))
 		error  ("waitpid: %m");
 	else
 		debug2 ("waitpid(-1, WNOHANG) returned 0");
