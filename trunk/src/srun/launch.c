@@ -206,10 +206,19 @@ launch(void *arg)
 	xfree(req_array_ptr);
 
 	if (fail_launch_cnt) {
-		error("%d launch request%s failed, terminating job step", 
-		      fail_launch_cnt, fail_launch_cnt > 1 ? "s" : "");
-		job->rc = 124;
-		job_kill(job);
+		job_state_t jstate;
+
+		slurm_mutex_lock(&job->state_mutex);
+		jstate = job->state;
+		slurm_mutex_unlock(&job->state_mutex);
+
+		if (jstate < SRUN_JOB_TERMINATED) {
+			error("%d launch request%s failed", 
+			      fail_launch_cnt, fail_launch_cnt > 1 ? "s" : "");
+			job->rc = 124;
+			job_kill(job);
+		}
+
 	} else {
 		debug("All task launch requests sent");
 		update_job_state(job, SRUN_JOB_STARTING);
@@ -224,6 +233,11 @@ static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 	int i;
 	task_info_t *task_info_ptr;
 	thd_t *thread_ptr;
+
+	/*
+	 * Set job timeout to maximum launch time + current time
+	 */
+	job->ltimeout = time(NULL) + opt.max_launch_time;
 
 	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
@@ -253,7 +267,6 @@ static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 					   PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
-		job->ltimeout = time(NULL) + opt.max_launch_time;
 
 		if ( pthread_create (	&thread_ptr[i].thread, 
 		                        &thread_ptr[i].attr, 
@@ -277,12 +290,16 @@ static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 static int
 _send_msg_rc(slurm_msg_t *msg)
 {
-	int rc = 0;
+	int rc     = 0;
+	int errnum = 0;
 
-       	if ((rc = slurm_send_recv_rc_msg(msg, &rc, 0)) < 0) 
+       	if ((rc = slurm_send_recv_rc_msg(msg, &errnum, 0)) < 0) 
 		return SLURM_ERROR;
 
-	slurm_seterrno_ret (rc);
+	if (errnum != 0)
+		slurm_seterrno_ret (errnum);
+
+	return SLURM_SUCCESS;
 }
 
 static void
@@ -321,7 +338,7 @@ static void * _p_launch_task(void *arg)
 	        _print_launch_msg(msg, job->host[nodeid]);
 
     again:
-	if  (_send_msg_rc(req) < 0) {	/* Has timeout */
+	if (_send_msg_rc(req) < 0) {	/* Has timeout */
 
 		error("launch error on %s: %m", job->host[nodeid]);
 		if ((errno != ETIMEDOUT) && retry--) {
