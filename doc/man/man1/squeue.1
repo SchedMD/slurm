@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "October 2003" "squeue 0.3" "Slurm components"
+.TH SQUEUE "1" "January 2004" "squeue 0.3" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -95,9 +95,12 @@ between 0.0 and 1.0
 .br
 \fB%S\fR Start time of the job or job step
 .br
-\fB%t\fR Job state, compact form
+\fB%t\fR Job state, compact form:
+PD (pending), R (running), CG (completing), CD (completed), F (failed),
+TO (timeout), and NF (node failure).
 .br
-\fB%T\fR Job state, extended form
+\fB%T\fR Job state, extended form: 
+PENDING, RUNNING, COMPLETING, COMPLETED, FAILED, TIMEOUT, and NODE_FAIL.
 .br
 \fB%u\fR User name
 .br
