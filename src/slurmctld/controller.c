@@ -73,6 +73,7 @@ void * service_connection ( void * arg );
 void usage (char *prog_name);
 
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
+inline static void slurm_rpc_allocate_and_run ( slurm_msg_t * msg );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
@@ -394,6 +395,10 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION :
 			slurm_rpc_allocate_resources ( msg, true ) ;
+			slurm_free_job_desc_msg ( msg -> data ) ;
+			break;
+		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP :
+			slurm_rpc_allocate_and_run ( msg );
 			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_JOB_WILL_RUN :
@@ -959,6 +964,78 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
 	}
 }
+
+/* slurm_rpc_allocate_and_run: process RPC to allocate resources for a job and
+ *	initiate a job step */
+void
+slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
+{
+        /* init */
+        int error_code;
+        slurm_msg_t response_msg ;
+        clock_t start_time;
+        job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+        char * node_list_ptr = NULL;
+        uint16_t num_cpu_groups = 0;
+        uint32_t * cpus_per_node = NULL, * cpu_count_reps = NULL;
+        uint32_t job_id ;
+        resource_allocation_and_run_response_msg_t alloc_msg ;
+	struct step_record* step_rec; 
+	job_step_create_request_msg_t req_step_msg;
+
+        start_time = clock ();
+
+        /* do RPC call */
+        dump_job_desc (job_desc_msg);
+        error_code = job_allocate(job_desc_msg, &job_id,
+                        &node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps,
+                        true , false, true );
+
+        /* return result */
+        if (error_code) {
+                info ("slurm_rpc_allocate_and_run error %d allocating resources, time=%ld",
+                        error_code,  (long) (clock () - start_time));
+                slurm_send_rc_msg ( msg , error_code );
+		return;
+	}
+
+	req_step_msg . job_id = job_id;
+	req_step_msg . user_id = job_desc_msg -> user_id;
+	req_step_msg . node_count = INFINITE;
+	error_code = step_create ( &req_step_msg, &step_rec );
+	/* note: no need to free step_rec, pointer to global job step record */
+	if ( step_rec == NULL ) {
+		info ("slurm_rpc_allocate_and_run error %d creating job step, , time=%ld",
+			error_code,  (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else {
+		/* FIXME Needs to be fixed to really work with a credential */
+		slurm_job_credential_t cred = { 1,1,"test",start_time, "signature"} ;
+
+		info ("slurm_rpc_allocate_and_run allocated nodes %s to JobId=%u, time=%ld",
+                        node_list_ptr , job_id , (long) (clock () - start_time));
+
+		/* send job_ID  and node_name_ptr */
+                alloc_msg . job_id = job_id ;
+	        alloc_msg . node_list = node_list_ptr ;
+	        alloc_msg . num_cpu_groups = num_cpu_groups;
+	        alloc_msg . cpus_per_node  = cpus_per_node;
+	        alloc_msg . cpu_count_reps = cpu_count_reps;
+		alloc_msg . job_step_id = step_rec->step_id;
+		alloc_msg . credentials = &cred;
+#ifdef HAVE_LIBELAN3
+	        /* FIXME */
+#endif
+	        response_msg . msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
+                response_msg . data =  & alloc_msg ;
+
+		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
+	
+		schedule ();
+	}
+}
+
 
 /* slurm_rpc_job_will_run - process RPC to determine if job with given configuration can be initiated */
 void slurm_rpc_job_will_run ( slurm_msg_t * msg )
