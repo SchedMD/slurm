@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -40,17 +40,17 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-int get_procs(uint32_t *procs);
-int get_mach_name(char *node_name);
-int get_memory(uint32_t *real_memory);
-int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
+extern int get_procs(uint32_t *procs);
+extern int get_mach_name(char *node_name);
+extern int get_memory(uint32_t *real_memory);
+extern int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
 
 #ifdef USE_OS_NAME
-int get_os_name(char *os_name);
+extern int get_os_name(char *os_name);
 #endif
 
 #ifdef USE_CPU_SPEED
-int get_speed(float *speed);
+extern int get_speed(float *speed);
 #endif
 
 #endif	/* _GET_MACH_STAT_H */
