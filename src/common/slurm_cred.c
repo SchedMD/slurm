@@ -993,7 +993,7 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (!rc) {
 		ERR_load_crypto_strings();
-		error("Credential signature check error: %s", _ssl_error());
+		info("Credential signature check: %s", _ssl_error());
 		rc = SLURM_ERROR;
 	} else
 		rc = SLURM_SUCCESS;
