@@ -28,4 +28,8 @@ AC_DEFUN([X_AC_NCURSES],
          NCURSES="-lcurses"
       fi
    done
+
+   if test -z "$have_ncurses_ar" ; then
+      AC_MSG_ERROR([Can not find curses or ncurses library.])
+   fi
 ])
