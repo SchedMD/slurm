@@ -159,8 +159,8 @@ strong_alias(hostset_within,		slurm_hostset_within);
 /* We allocate space for three digits, 
  * each with values 0 to 9 even if they are not all used */
 bool axis[10][10][10];
-long axis_min_x, axis_min_y, axis_min_z;
-long axis_max_x, axis_max_y, axis_max_z;
+int axis_min_x, axis_min_y, axis_min_z;
+int axis_max_x, axis_max_y, axis_max_z;
 
 
 static void _clear_grid(void);
@@ -2200,16 +2200,18 @@ _clear_grid(void)
 static void
 _set_grid(unsigned long start, unsigned long end)
 {
-	unsigned long x1, y1, z1, x2, y2, z2;
-	unsigned long temp, temp1, temp2;
+	int pt1 = (int) start;
+	int pt2 = (int) end;
+	int x1, y1, z1, x2, y2, z2;
+	int temp, temp1, temp2;
   
-	x1 = (start / 100) % 10;
-	y1 = (start / 10) % 10;
-	z1 = start % 10;
+	x1 = (pt1 / 100) % 10;
+	y1 = (pt1 / 10) % 10;
+	z1 = pt1 % 10;
 
-	x2 = (end / 100) % 10;
-	y2 = (end / 10) % 10;
-	z2 = end % 10;
+	x2 = (pt2 / 100) % 10;
+	y2 = (pt2 / 10) % 10;
+	z2 = pt2 % 10;
  
 	axis_min_x = MIN(axis_min_x, x1);
 	axis_min_y = MIN(axis_min_y, y1);
@@ -2231,7 +2233,7 @@ _set_grid(unsigned long start, unsigned long end)
 static bool
 _test_box(void)
 {
-	long temp, temp1, temp2;
+	int temp, temp1, temp2;
 
 	if ((axis_min_x > axis_max_x) 
 	||  (axis_min_y > axis_max_y)
@@ -2267,7 +2269,7 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	if (!_test_box())
 		goto notbox;
 
-	len += snprintf(buf, n, "%s[%ld%ld%ldx%ld%ld%ld]", 
+	len += snprintf(buf, n, "%s[%d%d%dx%d%d%d]", 
 		hl->hr[0]->prefix,
 		axis_min_x, axis_min_y, axis_min_z,
 		axis_max_x, axis_max_y, axis_max_z);
