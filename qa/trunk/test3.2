@@ -42,6 +42,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -78,15 +79,15 @@ expect {
 		set access_err 0
 		set err_msg1 $expect_out(1,string)
 		set err_msg2 $expect_out(2,string)
-		if {[string compare $err_msg1 "Invalid"]} {
+		if {[string compare $err_msg1 "Invalid"] == 0} {
 			set access_err 1
 		}
-		if {[string compare $err_msg2 "user"]} {
+		if {[string compare $err_msg2 "user"] == 0} {
 			set access_err 1
 		}
 		if {$access_err == 1} {
-			send_user "\nFAILURE: scontrol update error\n"
-			set exit_code 1
+			send_user "\nWARNING: user not authorized to change slurm state\n"
+			exit $exit_code
 		} else {
 			set authorized 0
 		}
@@ -97,6 +98,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -114,6 +116,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$authorized == 1} {
@@ -141,6 +144,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -155,6 +159,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
