@@ -50,6 +50,8 @@ int kill_all_tasks ( ) ;
  */
 int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg ) ;
 
+void * task_exec_thread ( void * arg ) ;
+
 typedef struct task_start
 {
 	/*task control thread id*/

@@ -28,7 +28,6 @@ int kill_task ( task_t * task , int signal ) ;
 
 int interconnect_init ( launch_tasks_request_msg_t * launch_msg );
 int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg );
-void * task_exec_thread ( void * arg ) ;
 int send_task_exit_msg ( int task_return_code , task_start_t * task_start ) ;
 int interconnect_set_capabilities ( task_start_t * task_start ) ;
 
@@ -45,7 +44,6 @@ int interconnect_set_capabilities ( task_start_t * task_start ) ;
 int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 {
 	int i ;
-	int rc ;
 	int session_id ;
 	
 	/* shmem work - see slurmd.c shmem_seg this is probably not needed*/
@@ -84,26 +82,16 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 		task_start[i] -> local_task_id = i ; 
 		task_start[i] -> io_streams_dest = launch_msg -> streams ; 
 
-		if ( pthread_create ( & task_start[i]->pthread_id , NULL , task_exec_thread , ( void * ) task_start[i] ) )
-			goto kill_threads;
+		if ( launch_task ( task_start[i] ) )
+			goto kill_tasks_label ;
 	}
 	
 	/* wait for all the launched threads to finish */
-	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
-	{
-		rc = pthread_join( task_start[i]->pthread_id , NULL )  ;
-		debug3 ( "fan_out_task_launch: thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
-	}
+	wait_for_tasks ( launch_msg , task_start ) ;
 	goto return_label;
-
 	
-	kill_threads:
-	/*
-	for (  i-- ; i >= 0  ; i -- )
-	{
-		rc = pthread_kill ( task_start[i]->pthread_id , SIGKILL ) ;
-	}
-	*/
+	kill_tasks_label:
+	// kill_launched_tasks ( launch_msg , task_start , i ) ;
 	return_label:
 		/* can't release if this is the same process as the main daemon ie threads
 		 * this is needed if we use forks
