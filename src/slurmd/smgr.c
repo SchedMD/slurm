@@ -49,6 +49,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/log.h"
+#include "src/common/fd.h"
 #include "src/common/xsignal.h"
 
 #include "src/slurmd/smgr.h"
@@ -64,9 +65,11 @@ static void  _session_mgr(slurmd_job_t *job);
 static int   _exec_all_tasks(slurmd_job_t *job);
 static void  _exec_task(slurmd_job_t *job, int i);
 static int   _become_user(slurmd_job_t *job);
+static int   _block_smgr_signals(void);
+static int   _child_exited(void);
 static void  _wait_for_all_tasks(slurmd_job_t *job);
-static int   _send_exit_status(slurmd_job_t *job, int fd, int id, int status);
-static int   _writen(int fd, void *buf, size_t nbytes);
+static int   _local_taskid(slurmd_job_t *job, pid_t pid);
+static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status);
 static int   _unblock_all_signals(void);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static int   _setup_env(slurmd_job_t *job, int taskid);
@@ -176,7 +179,7 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 	}
 }
 
-	static int
+static int
 _become_user(slurmd_job_t *job)
 {
 	if (setgid(job->pwd->pw_gid) < 0) {
@@ -197,16 +200,6 @@ _become_user(slurmd_job_t *job)
 	return 0;
 }	
 
-
-static sig_atomic_t got_sigchld = 0;
-
-static void
-_chld_handler(int signo)
-{
-	got_sigchld = 1;
-}
-
-
 /* Execute N tasks and send pids back to job manager process.
  */ 
 static int
@@ -218,7 +211,7 @@ _exec_all_tasks(slurmd_job_t *job)
 	xassert(job != NULL);
 	xassert(fd >= 0);
 
-	xsignal(SIGCHLD, _chld_handler);
+	_block_smgr_signals();
 
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid = fork();
@@ -238,7 +231,7 @@ _exec_all_tasks(slurmd_job_t *job)
 		/* 
 		 * Send pid to job manager
 		 */
-		if (_writen(fd, (char *)&pid, sizeof(pid_t)) < 0) {
+		if (fd_write_n(fd, (char *)&pid, sizeof(pid_t)) < 0) {
 			error("unable to update task pid!: %m");
 			return SLURM_ERROR;
 		}
@@ -292,41 +285,63 @@ _exec_task(slurmd_job_t *job, int i)
 }
 
 
-static sig_atomic_t timelimit_exceeded = 0;
-static void
-_xcpu_handler()
+/*
+ *  Block a set of signals so that session manager process
+ *   is not killed.
+ */
+static int
+_block_smgr_signals(void)
 {
-	timelimit_exceeded = 1;
+	int      e;
+	sigset_t set;
+
+	if (sigemptyset(&set) < 0)
+		error("sigemptyset: %m");
+	if (sigaddset(&set, SIGCHLD) < 0)
+		error("sigaddset(SIGCHLD): %m");
+	if (sigaddset(&set, SIGTERM) < 0)
+		error("sigaddset(SIGTERM): %m");
+	if (sigaddset(&set, SIGINT) < 0)
+		error("sigaddset(SIGINT): %m");
+	if (sigaddset(&set, SIGXCPU) < 0)
+		error("sigaddset(SIGXCPU): %m");
+
+	if ((e = pthread_sigmask(SIG_BLOCK, &set, NULL)) < 0)
+		error("pthread_sigmask: %s", slurm_strerror(e));
+
+	return e ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
+
 /*
- *  Empty SIGTERM and SIGINT handler so session manager is not
- *    killed by attempts to terminate job.
+ *  Call sigwait on the set of signals already blocked in this
+ *   process, and only return (true) on reciept of SIGCHLD;
  */
-static void
-_term_handler()
-{ }
-
-static void
-_block_on_sigchld(void)
+static int
+_child_exited(void)
 {
-    again:
-	if (got_sigchld) 
-		goto done;
+	int      sig;
+	sigset_t set;
 
-	poll(NULL, 0, -1);
-	if (errno != EINTR) {
-		error("poll (waiting on sigchld): %m");
-		goto again;
-	}
-	if (timelimit_exceeded)
-		error("job exceeded timelimit");
-	if (!got_sigchld)
-		goto again;
+	/*
+	 *  Get current mask of blocked signals
+	 */
+	xsignal_save_mask(&set);
 
-    done:
-	got_sigchld = 0;
-	return;
+	do {
+		sigwait(&set, &sig);
+		switch (sig) {
+		case SIGXCPU: 
+			error("job exceeded timelimit"); 
+		case SIGCHLD: 
+			break;
+		default: 
+			debug("slurmd got signal %d", sig); break;
+			break;
+		}
+	} while (sig != SIGCHLD);
+
+	return 1;
 }
 
 /*
@@ -342,19 +357,9 @@ _reap_task(slurmd_job_t *job)
 {
 	pid_t pid;
 	int   status = 0;
-	int   i      = 0;
-	int   fd     = job->fdpair[1];
 
-
-	if ((pid = waitpid(-1, &status, WNOHANG)) > (pid_t) 0) {
-		for (i = 0; i < job->ntasks; i++) {
-			if (job->task[i]->pid == pid) {
-				_send_exit_status(job, fd, i, status);
-				return 1;
-			}
-		}
-		return 0;
-	} 
+	if ((pid = waitpid(-1, &status, WNOHANG)) > (pid_t) 0) 
+		return _send_exit_status(job, pid, status);
 
 	if (pid == (pid_t) 0)
 		return 0;
@@ -368,11 +373,9 @@ _reap_task(slurmd_job_t *job)
 		 *  waitpid() may return "No child processes." if
 		 *   a debugger has attached and is tracing all tasks.
 		 *   (gnats:217)
+		 *
+		 *   Note: This should be a non-issue due to _child_exited.
 		 */
-		break;
-	case EINTR:
-		if (timelimit_exceeded)
-			error("job exceeded timelimit");
 		break;
 	default:
 		error("waitpid: %m");
@@ -392,40 +395,73 @@ _wait_for_all_tasks(slurmd_job_t *job)
 {
 	int active = job->ntasks;
 
-	xsignal(SIGXCPU, _xcpu_handler);
-	xsignal(SIGTERM, _term_handler);
-	xsignal(SIGINT,  _term_handler);
-
 	/*
 	 *  While there are still active tasks, block waiting
 	 *   for SIGCHLD, then reap as many children as possible.
 	 */
 
-	while (active > 0) {
-		_block_on_sigchld();
-		while (_reap_task(job)) active--;
-	}
+	while ((active > 0) && _child_exited()) 
+		while (_reap_task(job) && --active) {;}
 
 	return;
 }
 
-static int 
-_send_exit_status(slurmd_job_t *job, int fd, int tid, int status)
+static int
+_wid(int n)
 {
-	exit_status_t e;
-	int           len;
-
-	e.taskid = tid;
-	e.status = status;
-
-	len = _writen(fd, &e, sizeof(e));
-
-	debug("task %d (pid %ld) exited with status 0x%04x", 
-	      tid, job->task[tid]->pid, status);
-
-	return len;
+	int width = 1;
+	n--;
+	while (n /= 10) width++;
+	return width;
 }
 
+/*
+ *  Send exit status for local pid `pid' to slurmd manager process.
+ *    Returns 1 if pid corresponds to a local taskid, 0 otherwise.
+ *
+ */ 
+static int 
+_send_exit_status(slurmd_job_t *job, pid_t pid, int status)
+{
+	exit_status_t e;
+	int           retry = 1;
+	int           rc  = 0;
+	int           len = sizeof(e);
+	int           fd  = job->fdpair[1];
+
+	if ((e.taskid = _local_taskid(job, pid)) < 0)
+		return 0;
+	e.status = status;
+
+	verbose("task %*d (%ld) exited status 0x%04x %M", 
+	        _wid(job->ntasks), e.taskid, pid, status);
+
+	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
+
+	if (rc < len) 
+		error("failed to send task %d exit msg: rc=%d: %s",
+		      e.taskid, rc, (rc < 0 ? slurm_strerror(errno) : "")); 
+	/* 
+	 * Return 1 on failure to notify slurm mgr -- this will
+	 *  allow current process to be aware that the task exited anyway
+	 */
+	return 1;
+}
+
+/*
+ *  Returns local taskid corresponding to `pid' or SLURM_ERROR
+ *    if no local task has pid.
+ */
+static int
+_local_taskid(slurmd_job_t *job, pid_t pid)
+{
+	int i;
+	for (i = 0; i < job->ntasks; i++) {
+		if (job->task[i]->pid == pid) 
+			return i;
+	}
+	return SLURM_ERROR;
+}
 
 static int
 _setup_env(slurmd_job_t *job, int taskid)
@@ -491,27 +527,6 @@ _pdebug_stop_current(slurmd_job_t *job)
 #endif
 }
 
-
-static int
-_writen(int fd, void *buf, size_t nbytes)
-{
-	int    n     = 0;
-	char  *pbuf  = (char *) buf;
-	size_t nleft = nbytes;
-
-	while (nleft > 0) {
-		if ((n = write(fd, (void *) pbuf, nleft)) >= 0) {
-			pbuf+=n;
-			nleft-=n;
-		} else if (errno == EINTR)
-			continue;
-		else {
-			debug("write: %m");
-			break;
-		}
-	}
-	return(n);
-}
 
 static int
 _unblock_all_signals(void)
