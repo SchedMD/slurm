@@ -22,7 +22,7 @@ bin_PROGRAMS = slurmd
 
 noinst_PROGRAMS = $(test_modules)
 
-LDADD = $(top_srcdir)/src/api/libslurmapi.a $(top_srcdir)/src/common/libcommon.a
+LDADD = $(top_srcdir)/src/common/libcommon.la
 
 slurmd_SOURCES = get_mach_stat.c \
                  read_proc.c

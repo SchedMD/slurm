@@ -15,16 +15,15 @@ else
 elan_sources = 
 endif
 
-noinst_LIBRARIES = 	libcommon.a
+noinst_LTLIBRARIES = 	libcommon.la
 
-libcommon_a_SOURCES = 	xmalloc.c 	\
+libcommon_la_SOURCES = 	xmalloc.c 	\
 		      	xassert.c	\
 		      	xstring.c	\
 		      	strlcpy.c	\
 			list.c  	\
 		      	log.c		\
 			safeopen.c	\
-		      	bits_bytes.c	\
 			bitstring.c     \
 			pack.c		\
 			slurm_protocol_api.c	\
@@ -41,17 +40,14 @@ noinst_HEADERS = 	xmalloc.h 	\
 		 	log.h 		\
 			safeopen.h	\
 		 	strlcpy.h	\
-		 	slurm.h 	\
-		 	slurmlib.h	\
 			bitstring.h     \
-			bits_bytes.h    \
 			pack.h		\
 			slurm_protocol_api.h	\
 			slurm_protocol_pack.h	\
 			slurm_protocol_util.h	\
 			qsw.h	
 
-EXTRA_libcommon_a_SOURCES =		\
+EXTRA_libcommon_la_SOURCES =		\
 			qsw.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
