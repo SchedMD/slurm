@@ -12,7 +12,8 @@ source ./globals
 set test_id      "9.8"
 set exit_code    0
 set file_in      "test$test_id.input"
-set job_cnt      400
+set job_cnt      10
+set task_cnt     80
 
 print_header $test_id
 
@@ -21,8 +22,14 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"           >$file_in
-exec echo "$srun $bin_sleep 120" >>$file_in
+exec echo "#!$bin_bash"              >$file_in
+exec echo "inx=0"                   >>$file_in
+exec echo "while \[ \$inx -le $task_cnt ]" >>$file_in
+exec echo "do"                      >>$file_in
+exec echo "$srun $bin_sleep 120 &"  >>$file_in
+exec echo "inx=\$((inx+1))"         >>$file_in
+exec echo "done"                    >>$file_in
+exec echo "$srun $bin_sleep 120 "   >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
