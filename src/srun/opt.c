@@ -46,6 +46,7 @@
 
 #include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
@@ -584,7 +585,7 @@ static void _opt_default()
 	opt.allocate	= false;
 	opt.attach	= NULL;
 	opt.join	= false;
-	opt.max_wait	= 0;
+	opt.max_wait	= slurm_get_wait_time();
 
 	_verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
