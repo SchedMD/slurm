@@ -7,16 +7,22 @@
 
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
+
 /* for accpet commands */
 #define SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG 128
+
 /* used in interface methods */
 #define SLURM_PROTOCOL_FUNCTION_NOT_IMPLEMENTED -2 
+
 /* max slurm message send and receive buffer size
-this may need to be increased to 350k-512k */
+ * this may need to be increased to 350k-512k */
 #define SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE (512*1024)
+
 /* slurm protocol header defines */ 
 #define SLURM_PROTOCOL_VERSION 1
-#define SLURM_PROTOCOL_NO_FLAGS 0 /* used in the header to set flags to empty */
+
+/* used to set flags to empty */
+#define SLURM_PROTOCOL_NO_FLAGS 0 
 
 #if MONGO_IMPLEMENTATION
 #  include <src/common/slurm_protocol_mongo_common.h>
