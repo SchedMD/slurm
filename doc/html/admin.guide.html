@@ -139,10 +139,8 @@ The default value is 1.
 <p>
 Only the NodeName must be supplied in the configuration file; all other 
 items are optional.
-Other configuration information can be gathered through communications 
-with the SLURM Daemon, slurmd actually running on each node.
-Alternately, you can explicitly establish baseline values in the 
-configuration file. 
+It is advisable to establish baseline node configurations in the configuration 
+file, especially if the cluster is heterogeneous.
 Nodes which register to the system with less than the configured resources 
 (e.g. too little memory), will be placed in the "DOWN" state to 
 avoid scheduling jobs on them. 
@@ -150,16 +148,18 @@ The resources checked at node registration time are: CPUs,
 RealMemory and TmpDisk. 
 The default values for each node can be specified with a record in which 
 "NodeName" is "DEFAULT". 
-The "NodeName="  specification must be placed on every line 
-describing the configuration of that node(s). 
-When a NodeName specification exists on two or more separate lines 
-in the configuration, only values specified in the second 
-or subsequent lines will be set (SLURM will not re-apply default values).
-All required information can typically be placed on a single line.
-The field descriptors above are case sensitive. 
 The default entry values will apply only to lines following it in the 
 configuration file and the default values can be reset multiple times 
 in the configuration file with multiple entries where "NodeName=DEFAULT".
+The "NodeName="  specification must be placed on every line 
+describing the configuration of nodes. 
+Each nodes configuration must be specified on a single line 
+rather than having the various values established on multiple lines. 
+In fact, it is generally possible <i>and desirable</i> to define the 
+configurations of all nodes in only a few lines.
+This convension permits significant optimization in the scheduling 
+of larger clusters. 
+The field descriptors above are case sensitive. 
 In order to support the concept of jobs requiring consecutive nodes
 on some architectures, 
 node specifications should be place in this file in consecutive order.
@@ -219,10 +219,10 @@ without this optimization.
 A sample SLURM configuration file (node information only) follows.
 <pre>
 # Node specifications
-NodeName=DEFAULT   CPUs=16 RealMemory=2048 TmpDisk=16384
-NodeName=lx[01-02] State=DRAINED
-NodeName=lx[03-16]
-NodeName=lx[17-32] CPUs=32 RealMemory=4096 Feature=1200MHz,VizTools
+NodeName=DEFAULT       TmpDisk=16384
+NodeName=lx[0001-0002] State=DRAINED
+NodeName=lx[0003-0016] CPUs=16 RealMemory=2048 
+NodeName=lx[0017-8096] CPUs=32 RealMemory=4096 Feature=1200MHz,VizTools
 </pre>
 <p>
 The partition configuration permits you to establish different job 
@@ -242,6 +242,14 @@ specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 
+<dt>Interactive
+<dd>Specifies if interactive jobs (executed immediately and not 
+queued) may execute in this partition. 
+See the <a href="user.guide.html">SLURM User's Guide</a> for more 
+information about interactive and batch (queued) jobs.
+Possible values are "YES" and "NO". 
+The default value is "YES".
+
 <dt>MaxNodes
 <dd>Maximum count of nodes which may be allocated to any single job,
 The default value is "UNLIMITED", which is represented internally as -1.
@@ -260,28 +268,6 @@ but have no resources (possibly on a temporary basis).
 <dt>PartitionName
 <dd>Name by which the partition may be referenced (e.g. "Interactive"). 
 This name can be specified by users when submitting jobs.
-
-<dt>RootKey
-<dd>If this keyword is set, the job must be submitted with a 
-valid "Key=value" specified. 
-Valid key values are provided to user <b>root</b> upon request. 
-This mechanism can be used to restrict access to a partition. 
-For example, a batch system might execute as root, acquire 
-a key via the SLURM API, then set its user ID to that of a 
-non-privileged user and initiate his job. 
-The user's job has no special privileges other than access 
-to the partition.
-The non-privileged user would not be able to submit jobs 
-directly to this partition for lack of a key.
-Issued keys will remain valid for a single use only.
-Possible values are "YES" and "NO". 
-The default value is "NO".
-
-<dt>Shared
-<dd>Specify if more than one job may execute on each node in 
-a partition simultaneously. Possible values are 
-"YES" and "NO". The default value is "NO". 
-If nodes are shared, job performance will vary.
 
 <dt>State
 <dd>State of partition or availability for use.  Possible values 
@@ -312,9 +298,10 @@ The job may specify a particular PartitionName, if so desired,
 or use the system's default partition.
 <pre>
 # Partition specifications
-PartitionName=batch MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] RootKey=YES
-PartitionName=debug MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default=YES
-PartitionName=class MaxNodes=1  MaxTime=10        Nodes=lx[31-32] AllowGroups=students
+PartitionName=DEFAULT Interactive=YES
+PartitionName=batch   MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] Interactive=NO
+PartitionName=debug   MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default=YES
+PartitionName=class   MaxNodes=1  MaxTime=10        Nodes=lx[31-32] AllowGroups=students
 </pre>
 <p>
 APIs and an administrative tool can be used to alter the SLRUM 
@@ -332,6 +319,9 @@ at the end of this document.
 The job configuration format specified below is used by the 
 slurm_admin administration tool to modify job state information: 
 <dl>
+
+<dt>Group
+<dd>Comma separated list of group names to which the user belongs.
 
 <dt>Number
 <dd>Unique number by which the job can be referenced. This value 
@@ -355,9 +345,6 @@ This value may not be changed by slurm_admin.
 
 <dt>User
 <dd>Name of the user executing this job.
-
-<dt>Group
-<dd>Comma separated list of group names to which the user belongs.
 
 </dl>
 
@@ -535,8 +522,9 @@ NodeName=lx[01-02] State=DRAINED
 NodeName=lx[03-16] Feature=CoolDebugger
 #
 # Default partition specification
-PartitionName=batch MaxCpus=128 MaxTime=240 Nodes=lx[10-30] RootKey=YES
-PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default=YES Shared=YES
+PartitionName=DEFAULT Interactive=YES
+PartitionName=batch MaxCpus=128 MaxTime=240 Nodes=lx[10-30] Interactive=NO
+PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default=YES
 PartitionName=class MaxCpus=16  MaxTime=10  Nodes=lx[31-32] AllowGroups=students
 </pre>
 
@@ -555,8 +543,8 @@ Remove node lx30 from service, removing jobs as needed:
   # slurm_admin
   slurm_admin: update NodeName=lx30 State=DRAINING
   slurm_admin: show job
-  ID=1234 Name=Simulation MaxTime=100 Nodes=lx[29-30] State=RUNNING User=grondo
-  ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx20,lx23 State=RUNNING User=grondo
+  ID=1234 Name=Simulation MaxTime=100 Nodes=lx[29-30] State=RUNNING User=smith
+  ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx20,lx23 State=RUNNING User=smith
   slurm_admin: update job ID=1234 State=ENDING
   slurm_admin: show job 1234
   Job 1234 not found
@@ -567,7 +555,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified February 15, 2002</p>
+<p>Last Modified February 20, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
