@@ -90,7 +90,7 @@ typedef struct thd {
 } thd_t;
 
 static pthread_mutex_t thread_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t thread_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t thread_cond   = PTHREAD_COND_INITIALIZER;
 static uint32_t threads_active = 0;	/* currently active threads */
 
 #if _DEBUG
@@ -142,6 +142,10 @@ slurm_step_ctx_create (job_step_create_request_msg_t *step_req)
 	rc->step_resp	= step_resp;
 	rc->alloc_resp	= alloc_resp;
 
+	rc->hl		= hostlist_create(rc->step_resp->node_list);
+	rc->nhosts	= hostlist_count(rc->hl);
+	(void) _task_layout(rc);
+
 	return rc;
 }
 
@@ -156,6 +160,7 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 	va_list ap;
 	int rc = SLURM_SUCCESS;
 	uint32_t node_inx;
+	uint32_t *step_id_ptr;
 	uint32_t **array_pptr = (uint32_t **) NULL;
 
 	if ((ctx == NULL) ||
@@ -166,6 +171,10 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 
 	va_start(ap, ctx_key);
 	switch (ctx_key) {
+		case SLURM_STEP_CTX_STEPID:
+			step_id_ptr = (uint32_t *) va_arg(ap, void *);
+			*step_id_ptr = ctx->step_resp->job_step_id;
+			break;
 		case SLURM_STEP_CTX_TASKS:
 			array_pptr = (uint32_t **) va_arg(ap, void *);
 			*array_pptr = ctx->tasks;
@@ -433,7 +442,7 @@ static int _sock_bind_wild(int sockfd)
 /* validate the context of ctx, set default values as needed */
 static int _validate_ctx(slurm_step_ctx ctx)
 {
-	int rc;
+	int rc = SLURM_SUCCESS;
 
 	if (ctx->cwd == NULL) {
 		ctx->cwd = xmalloc(MAXPATHLEN);
@@ -445,14 +454,10 @@ static int _validate_ctx(slurm_step_ctx ctx)
 	}
 
 	if (ctx->env_set == 0) {
-		ctx->envc = _envcount(environ);
-		ctx->env = environ;
+		ctx->envc	= _envcount(environ);
+		ctx->env	= environ;
+		ctx->env_set	= 1;
 	}
-
-	ctx->hl = hostlist_create(ctx->step_resp->node_list);
-	ctx->nhosts = hostlist_count(ctx->hl);
-
-	rc =_task_layout(ctx);
 
 #if _DEBUG
 	_dump_ctx(ctx);
@@ -465,6 +470,9 @@ static int _validate_ctx(slurm_step_ctx ctx)
 static int _task_layout(slurm_step_ctx ctx)
 {
 	int cpu_cnt = 0, cpu_inx = 0, i;
+
+	if (ctx->cpus)	/* layout already completed */
+		return SLURM_SUCCESS;
 
 	ctx->cpus  = xmalloc(sizeof(uint32_t) * ctx->nhosts);
 	ctx->tasks = xmalloc(sizeof(uint32_t) * ctx->nhosts);
