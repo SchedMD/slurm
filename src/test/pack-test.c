@@ -14,6 +14,17 @@
 #include <src/common/pack.h>
 #include <src/common/xmalloc.h>
 
+/* Test for failure: 
+ */
+#define TEST(_tst, _msg) do {			\
+	if (_tst) {				\
+		printf("%s\n", _msg);   	\
+		failed++;			\
+	} else					\
+		passed++;			\
+} while (0)
+	
+
 int main (int argc, char *argv[])
 {
 	int passed = 0;
@@ -35,51 +46,37 @@ int main (int argc, char *argv[])
         packstr(testbytes, &bufp, &len_buf);
         packstr(teststring, &bufp, &len_buf);
 	packstr(nullstr, &bufp, &len_buf);
+	packstr("literal", &bufp, &len_buf);
+	packstr("", &bufp, &len_buf);
         printf("wrote %d bytes\n", len_buf);
 
         bufp = buffer;
         len_buf = sizeof(buffer);
         unpack16(&out16, &bufp, &len_buf);
-
-        if (out16 != test16) {
-                printf("un/pack16 failed\n");
-		failed++;
-	} else
-		passed++;
+	TEST(out16 != test16, "un/pack16 failed");
 
         unpack32(&out32, &bufp, &len_buf);
-
-        if (out32 != test32) {
-                printf("un/pack32 failed\n");
-		failed++;
-	} else
-		passed++;
+        TEST(out32 != test32, "un/pack32 failed");
 
         unpackstr_ptr(&outbytes, &byte_cnt, &bufp, &len_buf);
-
-        if (strcmp(testbytes, outbytes) != 0) {
-                printf("un/packstr_ptr failed\n");
-		failed++;
-	} else
-		passed++;
+        TEST(strcmp(testbytes, outbytes) != 0, "un/packstr_ptr failed");
 
         unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
-
-        if (strcmp(teststring, outstring) != 0) {
-                printf("un/packstr_xmalloc failed\n");
-		failed++;
-	} else {
-		passed++;
-		xfree(outstring);
-	}
+        TEST(strcmp(teststring, outstring) != 0, "un/packstr_xmalloc failed");
+	xfree(outstring);
 
 	unpackstr_xmalloc(&nullstr, &byte_cnt, &bufp, &len_buf);
+	TEST(nullstr != NULL, "un/packstr of null string failed.");
 
-	if (nullstr != NULL) {
-		printf("un/packstr of null string failed\n");
-		failed++;
-	} else 
-		passed++;
+	unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
+	TEST(strcmp("literal", outstring) != 0, 
+	     "un/packstr of string literal failed");
+	xfree(outstring);
+
+	unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
+	TEST(strcmp("", outstring) != 0, "un/packstr of string \"\" failed");
+	xfree(outstring);
+
 
         printf("%d tests passed, %d failed.\n", passed, failed);
 
