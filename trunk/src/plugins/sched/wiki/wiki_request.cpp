@@ -255,6 +255,12 @@ wiki_request_t::compose_response( wiki_request_t	*request,
 				str += ";";
 			}
 			break;
+		case 't':
+			str += field_str;
+			str += "=";
+			str += (*(time_t *) val);
+			str += ";";
+			break;
 		case 'i':
 			if ( (*(int16_t *) val) != NO_VAL ) {
 				str += field_str;

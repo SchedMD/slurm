@@ -68,10 +68,12 @@ typedef sched_obj_list_t (*sched_objlist_fn_t)( void );
 
 /*
  * Retrieve a pointer to a function that will, when called with an
- * object index, return the value of the named field in the opaque
- * object structure.  This accessor is guaranteed to be valid for the
- * time in which the plugin is loaded and so can be dereferenced once
- * at plugin load time.
+ * object index, return a poiner to the value of the named field in
+ * the opaque object structure.  This accessor is guaranteed to be
+ * valid for the time in which the plugin is loaded and so can be
+ * dereferenced once at plugin load time.  The return value is always
+ * to be interpreted as a pointer, regardless of the size of the
+ * pointed-to type.
  *
  * field (in) - the name of the field whose accessor is to be returned.
  *
@@ -85,6 +87,34 @@ typedef sched_obj_list_t (*sched_objlist_fn_t)( void );
  * placed a value identifying the data type of the returned value.
  * "type" may be NULL.  Returns NULL if no accessor can be provided
  * for the named field.
+ *
+ * The values placed into "type", if addressable, are ASCII-encoded
+ * characters with the following meanings:
+ *
+ * 'e' - An enumeration encoded as a string.  This is for data that is
+ * stored internally in SLURM as a C enum, but which for version skew
+ * reasons we do not want to transmit in its underyling numerical
+ * representation.  The strings used are defined below in conjunction
+ * with the objects and fields to which they apply.
+ *
+ * 's' - A string value that should probably be passed to the
+ * scheduler without further interpretation.
+ *
+ * 'S' - A string value that may require interpretation by the plugin
+ * prior to passing it to the scheduler.  This includes strings that
+ * have embedded delimetersor other structure.  The difference between
+ * 's' and 'S' is fairly arbitrary and merely serves as a hint to the
+ * plugin about the format of the returned string.
+ *
+ * 't' - A value of type "time_t" as defined on the SLURM controller.
+ *
+ * 'i' - A 16-bit signed integer.
+ *
+ * 'I' - A 32-bit signed integer.
+ *
+ * 'u' - A 16-bit unsigned integer.
+ *
+ * 'U' - a 32-bit unsigned integer.
  *
  * TESTED: 16 May 2003
  */

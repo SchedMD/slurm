@@ -438,21 +438,25 @@ sched_get_job_id( sched_obj_list_t job_data,
 		  int32_t idx,
 		  char *type )
 {
+	void *cache;
+	char str[ 16 ];
+	
 	/*
 	 * This is the primary key for the job record which means that
 	 * consolidated plugin code will want this as a string and not
 	 * an integer.
 	 */
 
-	/*
-	 * XXX - put this in the cache
-	 */
-	static char str[ 16 ];
 	if ( type ) *type = 's';
-	sprintf( str,
+	if ( ( cache = sched_obj_cache_entry_find( job_data,
+						   "job_id" ) ) != NULL )
+		return cache;
+	snprintf( str, 16,
 		 "%u",
 		 ( (struct job_record *)job_data->data )[ idx ].job_id );
-	return (void *) str;
+	cache = xstrdup( str );
+	sched_obj_cache_entry_add( job_data, "job_id", cache );
+	return cache;
 }
 
 /* ************************************************************************ */
@@ -475,7 +479,7 @@ sched_get_job_last_active( sched_obj_list_t job_data,
 			   int32_t idx,
 			   char *type )
 {
-	if ( type ) *type = 'U';
+	if ( type ) *type = 't';
 	return (void *) &( (struct job_record *)job_data->data )[ idx ].time_last_active;
 }
 
@@ -523,23 +527,26 @@ sched_get_job_time_limit( sched_obj_list_t job_data,
 			  int32_t idx,
 			  char *type )
 {
-	uint32_t limit;
+	time_t *cache;
 	
-	if ( type ) *type = 'U';
+	if ( type ) *type = 't';
 
-	/*
-	 * XXX - put this in the cache
-	 */
-	limit = ( (struct job_record *)job_data->data )[ idx ].time_limit;
+	if ( ( cache = sched_obj_cache_entry_find( job_data, "time_limit" ) ) != NULL )
+		return cache;
+	cache = xmalloc( sizeof( time_t ) );
+	*cache = ( (struct job_record *)job_data->data )[ idx ].time_limit;
 	
-	switch ( limit ) {
+	switch ( *cache ) {
 	case NO_VAL:
-		return (void *) &zero_32;
 	case INFINITE:
-		return (void *) &zero_32;
+		*cache = (time_t) 0;
+		break;
 	default:
-		return (void *) ( limit * 60 );   // seconds, not mins.
+		*cache *= 60;   // seconds, not mins.
+		break;
 	}
+	sched_obj_cache_entry_add( job_data, "time_limit", cache );
+	return cache;
 }
 
 /* ************************************************************************ */
@@ -569,7 +576,7 @@ sched_get_job_submit_time( sched_obj_list_t job_data,
 			   char *type )
 {
 	struct job_details *det = ( (struct job_record *)job_data->data )[ idx ].details;
-	if ( type ) *type = 'U';
+	if ( type ) *type = 't';
 	if ( det ) {
 		return (void *) &det->submit_time;
 	} else {
@@ -585,7 +592,7 @@ sched_get_job_start_time( sched_obj_list_t job_data,
 			  int32_t idx,
 			  char *type )
 {
-	if ( type ) *type = 'U';
+	if ( type ) *type = 't';
 	return (void *) &( (struct job_record *)job_data->data )[ idx ].start_time;
 }
 
@@ -597,7 +604,7 @@ sched_get_job_end_time( sched_obj_list_t job_data,
 			int32_t idx,
 			char *type )
 {
-	if ( type ) *type = 'U';
+	if ( type ) *type = 't';
 	return (void *) &( (struct job_record *)job_data->data )[ idx ].end_time;
 }
 
@@ -921,7 +928,7 @@ sched_get_node_mod_time( sched_obj_list_t node_data,
 			 int32_t idx,
 			 char *type )
 {
-	if ( type ) *type = 'U';
+	if ( type ) *type = 't';
 	return (void *) &( (struct node_record *) node_data->data )[ idx ].last_response;
 }
 
