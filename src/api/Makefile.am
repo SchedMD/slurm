@@ -34,6 +34,7 @@ libslurm_la_SOURCES =    \
 	config_info.c    \
 	init_msg.c       \
 	job_info.c       \
+	job_info.h       \
 	job_step_info.c  \
 	node_info.c      \
 	partition_info.c \
