@@ -130,7 +130,7 @@ if echo "$RELEASE" | grep -e "pre0" -e "UNSTABLE"; then
    if test "$RELEASE" = "UNSTABLE"; then
       DATE=`date +"%Y%m%d%H%M"`
    else
-      DATE=`echo $RELEASE | cut -d'.'-f3`
+      DATE=`echo $RELEASE | cut -d. -f3`
    fi
    SLURM_RELEASE="unstable cvs build $DATE" 
    SLURM_VERSION="$MAJOR.$MINOR ($SLURM_RELEASE)"
