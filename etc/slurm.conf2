@@ -4,7 +4,7 @@
 # Date: 11/06/2001
 #
 ControlMachine=linux
-BackupController=blue199.pacific.llnl.gov
+BackupController=lx01
 #
 # Node Configurations
 #
