@@ -79,6 +79,9 @@ libslurm.sym :
 #
 # Note: automake 1.5 will complain about these...
 #
+
+maintests      : allocate cancel job_info node_info partition_info  reconfigure submit update_config
+
 allocate       : allocate_d.o
 build_info     : build_info_d.o
 cancel         : cancel_d.o
