@@ -663,6 +663,13 @@ _accept_io_stream(job_t *job, int i)
 		debug3("Accepted IO connection: ip=%s sd=%d", buf, sd); 
 
 		/*
+		 * On AIX the new socket [sd] seems to inherit the O_NONBLOCK
+		 * flag from the listening socket [fd], so we need to explicitly
+		 * set it back to blocking mode.
+		 */
+		fd_set_blocking(sd);
+
+		/*
 		 * Read IO header and update job structure appropriately
 		 */
 		if (_read_io_header(sd, job, buf) < 0)
