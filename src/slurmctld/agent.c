@@ -430,7 +430,8 @@ static void *_wdog(void *args)
 	lock_slurmctld(node_write_lock);
 	for (i = 0; i < agent_ptr->thread_count; i++) {
 		if (thread_ptr[i].state == DSH_FAILED)
-			set_node_down(thread_ptr[i].node_name);
+			set_node_down(thread_ptr[i].node_name, 
+			              "Prolog/epilog failure");
 		if ((thread_ptr[i].state == DSH_DONE) ||
 		    (thread_ptr[i].state == DSH_JOB_HUNG))
 			node_did_resp(thread_ptr[i].node_name);

@@ -936,8 +936,9 @@ extern int select_nodes (struct job_record *job_ptr, bool test_only);
  * set_node_down - make the specified node's state DOWN if possible
  *	(not in a DRAIN state), kill jobs as needed 
  * IN name - name of the node 
+ * IN reason - why the node is DOWN
  */
-extern void set_node_down (char *name);
+extern void set_node_down (char *name, char *reason);
 
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */

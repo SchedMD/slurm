@@ -93,10 +93,10 @@ inline static void  _update_cred_key(void);
 
 /*
  * diff_tv_str - build a string showing the time difference between two times
- * tv1 IN - start of event
- * tv2 IN - end of event
- * tv_str OUT - place to put delta time in format "usec=%ld"
- * len_tv_str IN - size of tv_str in bytes
+ * IN tv1 - start of event
+ * IN tv2 - end of event
+ * OUT tv_str - place to put delta time in format "usec=%ld"
+ * IN len_tv_str - size of tv_str in bytes
  */
 inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
 		char *tv_str, int len_tv_str)
@@ -109,7 +109,7 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 
 /*
  * slurmctld_req  - Process an individual RPC request
- * IN/OUT - the request message, data associated with the message is freed
+ * IN/OUT msg - the request message, data associated with the message is freed
  */
 void slurmctld_req (slurm_msg_t * msg)
 {
