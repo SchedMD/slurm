@@ -7,7 +7,10 @@
  */
 #include <dirent.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <syslog.h>
 
@@ -18,6 +21,7 @@
 #define DEBUG_SYSTEM 1
 
 
+int Parse_Proc_Stat(char* Proc_Stat);
 int Read_Proc();
 
 #if DEBUG_MODULE
@@ -38,14 +42,50 @@ main(int argc, char * argv[]) {
 	exit(1);
     } /* if */
 
-/*     while (...) {
-	if ((argc == 1) || (uid == pid->uid))
-	    printf("uid=%d, sid=%d, cmd=%s, rss=%d, CPU=%d\n", ...
-    } */
-
     exit(0);
 } /* main */
 #endif
+
+/* Parse_Proc_Stat - Break out all of a process' information from the stat file */
+int Parse_Proc_Stat(char* Proc_Stat) {
+    int Pid, PPid, PGrp, Session, TTY, TPGID;
+    char Cmd[16], State[1];
+    long unsigned Flags, Min_Flt, CMin_Flt, Maj_Flt, CMaj_Flt, UTime, STime;
+    long CuTime, CsTime, Priority, Nice, Timeout, It_Real_Value;
+    long unsigned Start_Time, VSize;
+    long RSS;
+    long unsigned RSS_RLim, Start_Code, End_Code, Start_Stack, KStk_Esp, KStk_Eip;
+    long unsigned WChan, NSwap, CnSwap;
+    int  LProc;
+    int num;
+    char *str_ptr;
+    
+    str_ptr = (char *)strrchr(Proc_Stat, ')');		/* split into "PID (cmd" and "<rest>" */
+    *str_ptr = '\0';			/* replace trailing ')' with NUL */
+    /* parse these two strings separately, skipping the leading "(". */
+    memset(Cmd, 0, sizeof(Cmd));
+    sscanf(Proc_Stat, "%d (%15c", &Pid, Cmd);   /* comm[16] in kernel */
+    num = sscanf(str_ptr + 2,			/* skip space after ')' too */
+       "%c "
+       "%d %d %d %d %d "
+       "%lu %lu %lu %lu %lu %lu %lu "
+       "%ld %ld %ld %ld %ld %ld "
+       "%lu %lu "
+       "%ld "
+       "%lu %lu %lu %lu %lu %lu "
+       "%*s %*s %*s %*s " /* discard, no RT signals & Linux 2.1 used hex */
+       "%lu %lu %lu %*d %d",
+       &State,
+       &PPid, &PGrp, &Session, &TTY, &TPGID,
+       &Flags, &Min_Flt, &CMin_Flt, &Maj_Flt, &CMaj_Flt, &UTime, &STime, 
+       &CuTime, &CsTime, &Priority, &Nice, &Timeout, &It_Real_Value,
+       &Start_Time, &VSize,
+       &RSS,
+       &RSS_RLim, &Start_Code, &End_Code, &Start_Stack, &KStk_Esp, &KStk_Eip,
+/*     &Signal, &Blocked, &SigIgnore, &SigCatch,   */ /* can't use */
+       &WChan, &NSwap, &CnSwap /* , &Exit_Signal  */, &LProc);
+printf("%d %s\n",Pid, Cmd);
+} /* Parse_Proc_Stat */
 
 /* 
  * Read_Proc - Read into a table key information about every process on the system
@@ -55,8 +95,20 @@ main(int argc, char * argv[]) {
 int Read_Proc() {
     DIR *Proc_FS;
     struct dirent *Proc_Ent;
+    int Proc_FD, Proc_Stat_Size, n;
+    char Proc_Name[22], *Proc_Stat;
 
     /* Initialization */
+    Proc_Stat_Size = BUF_SIZE;
+    Proc_Stat = (char *)malloc(Proc_Stat_Size);
+    if (Proc_Stat == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Read_Proc: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Read_Proc: unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
     Proc_FS = opendir("/proc");
     if (Proc_FS == NULL) {
 #if DEBUG_SYSTEM
@@ -70,49 +122,41 @@ int Read_Proc() {
     while ((Proc_Ent = readdir(Proc_FS)) != (struct dirent *)NULL) {
 	if (Proc_Ent->d_name[0] < '0') continue;	/* Not "real" process ID */
 	if (Proc_Ent->d_name[0] > '9') continue;	/* Not "real" process ID */
-printf("%s\n",Proc_Ent->d_name);
+	if (strlen(Proc_Ent->d_name) > 10) {
+	    /* If you see this, make Proc_Name longer and change this value */
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Read_Proc: process ID number too long\n");
+#else
+	    syslog(LOG_ERR, "Read_Proc: oprocess ID number too long\n");
+#endif  
+	    continue;
+	} /* if */
+	sprintf(Proc_Name, "/proc/%s/stat", Proc_Ent->d_name);
+	Proc_FD = open(Proc_Name, O_RDONLY, 0);
+	if (Proc_FD == -1) continue;  /* process is now gone */
+	while ((n = read(Proc_FD, Proc_Stat, Proc_Stat_Size)) > 0) {
+	    if (n < (Proc_Stat_Size-1)) break;
+	    Proc_Stat_Size += BUF_SIZE;
+	    Proc_Stat = (char *)malloc(Proc_Stat_Size);
+	    if (Proc_Stat == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Read_Proc: unable to allocate memory\n");
+#else
+		syslog(LOG_ALERT, "Read_Proc: unable to allocate memory\n");
+#endif
+		close(Proc_FD);
+		closedir(Proc_FS);
+		return ENOMEM;
+	    } /* if */
+	    if (lseek(Proc_FD, (off_t) 0, SEEK_SET) != 0) break;
+	} /* while */
+	close(Proc_Name);
+	if (n <= 0) continue;
+	Parse_Proc_Stat(Proc_Stat);
     } /* while */
 
     /* Termination */
+    free(Proc_Stat);
     closedir(Proc_FS);
 } /* Read_Proc */
 
-
-void stat2proc(char* S, proc_t* P) {
-    int num;
-    char* tmp = strrchr(S, ')');	/* split into "PID (cmd" and "<rest>" */
-    *tmp = '\0';			/* replace trailing ')' with NUL */
-    /* parse these two strings separately, skipping the leading "(". */
-    memset(P->cmd, 0, sizeof P->cmd);	/* clear even though *P xcalloc'd ?! */
-    sscanf(S, "%d (%15c", &P->pid, P->cmd);   /* comm[16] in kernel */
-    num = sscanf(tmp + 2,			/* skip space after ')' too */
-       "%c "
-       "%d %d %d %d %d "
-       "%lu %lu %lu %lu %lu %lu %lu "
-       "%ld %ld %ld %ld %ld %ld "
-       "%lu %lu "
-       "%ld "
-       "%lu %lu %lu %lu %lu %lu "
-       "%*s %*s %*s %*s " /* discard, no RT signals & Linux 2.1 used hex */
-       "%lu %lu %lu %*d %d",
-       &P->state,
-       &P->ppid, &P->pgrp, &P->session, &P->tty, &P->tpgid,
-       &P->flags, &P->min_flt, &P->cmin_flt, &P->maj_flt, &P->cmaj_flt, &P->utime, &P->stime,
-       &P->cutime, &P->cstime, &P->priority, &P->nice, &P->timeout, &P->it_real_value,
-       &P->start_time, &P->vsize,
-       &P->rss,
-       &P->rss_rlim, &P->start_code, &P->end_code, &P->start_stack, &P->kstk_esp, &P->kstk_eip,
-/*     P->signal, P->blocked, P->sigignore, P->sigcatch,   */ /* can't use */
-       &P->wchan, &P->nswap, &P->cnswap /* , &P->exit_signal  */, &P->lproc);
-/* TODO: add &P->exit_signal support here, perhaps to identify Linux threads */
-    
-/*    fprintf(stderr, "stat2proc converted %d fields.\n",num); */
-    if (P->tty == 0)
-	P->tty = -1;  /* the old notty val, update elsewhere bef. moving to 0 */
-    if (linux_version_code < LINUX_VERSION(1,3,39)) {
-	P->priority = 2*15 - P->priority;	/* map old meanings to new */
-	P->nice = 15 - P->nice;
-    }
-    if (linux_version_code < LINUX_VERSION(1,1,30) && P->tty != -1)
-	P->tty = 4*0x100 + P->tty;		/* when tty wasn't full devno */
-}
