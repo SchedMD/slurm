@@ -828,5 +828,5 @@ static void _usage(void)
 	printf("  -v, --verbose                   verbosity level\n");
 	printf("  -V, --version                   output version information and exit\n");
 	printf("\nHelp options:\n");
-	printf("  -?, --help, --usage             show this help message\n");
+	printf("  -H, --help, --usage             show this help message\n");
 }
