@@ -24,7 +24,18 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#include <stdio.h>
+#include <string.h>
+#include <slurm/slurm.h>
+
+#include "src/common/log.h"
+#include "src/slurmctld/proc_req.h"
 #include "bluegene.h"
+#include "partition_sys.h"
 
 #define BUFSIZE 4096
 
@@ -199,7 +210,7 @@ extern void test_down_nodes(void)
 
 /* Test for switches that are DOWN in BlueGene database, 
  * when found DRAIN them in SLURM and configure their base partition DOWN */
-void test_down_switches(void)
+extern void test_down_switches(void)
 {
 #ifdef HAVE_BGL_FILES
 	int switch_num, i, rc;
