@@ -297,6 +297,8 @@ static bool _match_part_data(sinfo_data_t *sinfo_ptr,
 {
 	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
 		return true;
+	if ((part_ptr == NULL) || (sinfo_ptr->part_info == NULL))
+		return false;
 
 	if (params.match_flags.avail_flag &&
 	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
