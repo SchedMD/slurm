@@ -636,11 +636,24 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
-		if ((error_code == SLURM_SUCCESS) && 
-		    (!runable_ever || !runable_avail) &&
+		if ((!runable_ever || !runable_avail) &&
 		    (total_nodes >= min_nodes) && (total_cpus >= req_cpus) &&
 		    ((*req_bitmap == NULL) ||
 		     (bit_super_set(*req_bitmap, total_bitmap)))) {
+			if (!runable_avail) {
+				FREE_NULL_BITMAP(avail_bitmap);
+				avail_bitmap = bit_copy(total_bitmap);
+				bit_and(avail_bitmap, avail_node_bitmap);
+				pick_code = _pick_best_quadrics(
+							avail_bitmap, 
+							*req_bitmap, min_nodes,
+							max_nodes, req_cpus, 
+							contiguous);
+				if (pick_code == SLURM_SUCCESS) {
+					runable_avail = true;
+					runable_ever  = true;
+				}
+			}
 			if (!runable_ever) {
 				pick_code = _pick_best_quadrics(
 							total_bitmap, 
@@ -649,20 +662,6 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							contiguous);
 				if (pick_code == SLURM_SUCCESS)
 					runable_ever = true;
-				if ((pick_code == SLURM_SUCCESS) &&
-				    (!runable_avail) &&
-					(bit_super_set(total_bitmap, avail_node_bitmap)))
-					runable_avail = true;
-			}
-			if (!runable_avail) {
-				bit_and(total_bitmap, avail_node_bitmap);
-				pick_code = _pick_best_quadrics(
-							total_bitmap, 
-							*req_bitmap, min_nodes,
-							max_nodes, req_cpus, 
-							contiguous);
-				if (pick_code == SLURM_SUCCESS)
-					runable_avail = true;
 			}
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
