@@ -153,6 +153,11 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	_job_init_task_info(job, msg->global_task_ids);
 
+	if (pipe(job->fdpair) < 0) {
+		error("pipe: %m");
+		return NULL;
+	}
+
 	return job;
 }
 
@@ -208,6 +213,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	 * argv will be filled in later
 	 */
 	job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
+
+	if (pipe(job->fdpair) < 0) {
+		error("pipe: %m");
+		return NULL;
+	}
 
 	_job_init_task_info(job, &global_taskid);
 

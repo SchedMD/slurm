@@ -426,11 +426,13 @@ _read_config()
 
 	path_pubkey = xstrdup(conf->cf.job_credential_public_certificate);
 
+	if (!conf->logfile)
+		conf->logfile = xstrdup(conf->cf.slurmd_logfile);
+
 	_free_and_set(&conf->epilog,   xstrdup(conf->cf.epilog));
 	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
-	_free_and_set(&conf->logfile,  xstrdup(conf->cf.slurmd_logfile));
 	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
 		      

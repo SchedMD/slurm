@@ -73,7 +73,7 @@ struct task {
 	int global_id;  /* global task id             			*/
 	pid_t pid;	/* pid of user process        			*/
 	pid_t ppid;	/* parent pid of user process 			*/
-	pid_t mpid;	/* manager pid of this task   			*/
+
 	/* reverse pointer back to controlling job step */
 	job_step_t *job_step;
 	task_t *next;	/* next task in this job step			*/
@@ -83,20 +83,23 @@ struct job_step {
 	uid_t      uid;
 	uint32_t   jobid;		
 	uint32_t   stepid;
-	uint32_t   sw_id;	/* Switch/Interconnect specific id  */
-	int        ntasks;	/* number of tasks in this job	    */
-	pid_t      sid;		/* Job session id 		    */
-	char       exec_name[MAXPATHLEN]; /* Executable's pathname */
+	uint32_t   sw_id;	/* Switch/Interconnect specific id       */
+	int        ntasks;	/* number of tasks in this job	         */
+	pid_t      mpid;        /* Job manager pid                       */
+	pid_t      sid;		/* Job session id (smgr pid) 	         */
 
-	int        io_update;	/* srun address has been updated    */
-	slurm_addr respaddr;	/* Addr to send messages to srun on */
-	slurm_addr ioaddr;	/* Addr to connect to initialize IO */
-	srun_key_t key;		/* last key from srun client	    */
+                                /* Executable's pathname                 */
+	char       exec_name[MAXPATHLEN]; 
+
+	int        io_update;	/* srun address has been updated         */
+	slurm_addr respaddr;	/* Addr to send messages to srun on      */
+	slurm_addr ioaddr;	/* Addr to connect to initialize IO      */
+	srun_key_t key;		/* last key from srun client	         */
 
 
-	job_state_t state;	/* Job step status 		    */
-	time_t      timelimit;	/* job time limit		    */
-	task_t     *task_list;	/* list of this step's tasks        */
+	job_state_t state;	/* Job step status 		         */
+	time_t      timelimit;	/* job time limit		         */
+	task_t     *task_list;	/* list of this step's tasks             */
 };
 
 
@@ -202,6 +205,11 @@ int shm_add_task(uint32_t jobid, uint32_t stepid, task_t *task);
  *  update job step session id
  */
 int shm_update_step_sid(uint32_t jobid, uint32_t stepid, int sid);
+
+/* 
+ * update job step "manager" pid
+ */
+int shm_update_step_mpid(uint32_t jobid, uint32_t stepid, int mpid);
 
 
 /*

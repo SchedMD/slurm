@@ -1,10 +1,10 @@
 /*****************************************************************************\
- *  no_interconnect.c - Manage user task communications without an high-speed
- *	interconnect
+ * src/slurmd/smgr.h - session manager functions for slurmd
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -21,56 +21,44 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <src/slurmd/interconnect.h>
-#include <src/slurmd/setenvpf.h>
+#ifndef _SMGR_H
+#define _SMGR_H
 
-int interconnect_preinit (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 
-int interconnect_init (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
+#include <slurm/slurm_errno.h>
 
-int interconnect_attach (slurmd_job_t *job, int taskid) 
-{
-	return SLURM_SUCCESS;
-}
+#if HAVE_SYS_TYPES_H
+#  include <sys/types.h>
+#endif /* HAVE_SYS_TYPES_H */
+
+#include "src/slurmd/job.h"
 
 /*
- * Set env variables needed for this interconnect
+ * Task exit code information
  */
-int interconnect_env (slurmd_job_t *job, int taskid)
-{
-	int cnt = job->envc;
-	task_info_t *t = job->task[taskid];
-
-	if (setenvpf(&job->env, &cnt, "SLURM_NODEID=%d", job->nodeid) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_PROCID=%d", t->gid     ) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NNODES=%d", job->nnodes) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NPROCS=%d", job->nprocs) < 0)
-		return -1;
-
-	return SLURM_SUCCESS;
-}
-
-int interconnect_fini (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
-
-int interconnect_postfini (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
+typedef struct exit_status {
+	int taskid;
+	int status;
+} exit_status_t;
 
 
+/*
+ * Create the session manager process, which starts a new session
+ * and runs as the UID of the job owner. The session manager process
+ * will wait for all tasks in the job to exit (sending task exit messages
+ * as appropriate), and then exit itself.
+ *
+ * If the smgr process is successfully created, the pid of the new 
+ * process is returned. On error, (pid_t) -1 is returned.
+ *
+ */
+pid_t smgr_create(slurmd_job_t *job);
+
+#endif /* !_SMGR_H */

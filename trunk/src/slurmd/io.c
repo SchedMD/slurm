@@ -445,6 +445,8 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	io_obj_t *obj  = NULL;
 	int       sock = -1;
 
+	debug3("in io_add_connecting");
+
 	if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
 		error("connect io: %m");
 		/* XXX retry or silently fail? 
@@ -469,6 +471,8 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	}
 
 	list_append(job->objs, (void *)obj);
+
+	debug3("Now handling %d IO objects", list_count(job->objs));
 
 	return SLURM_SUCCESS;
 }
@@ -501,7 +505,7 @@ _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 	}
 
 	if (!list_find_first(t->srun_list, (ListFindF) find_obj, s)) {
-		debug("appending new client to srun_list for task %d", t->gid);
+		debug3("appending new client to srun_list for task %d", t->gid);
 		list_append(t->srun_list, (void *) s);
 	}
 
@@ -543,7 +547,9 @@ io_prepare_clients(slurmd_job_t *job)
 			return SLURM_FAILURE;
 
 		/* kick IO thread */
-		pthread_kill(job->ioid, SIGHUP);
+		debug3("sending sighup to io thread id %ld", job->ioid);
+		if (pthread_kill(job->ioid, SIGHUP) < 0)
+			error("pthread_kill: %m");
 	}
 
 	return SLURM_SUCCESS;

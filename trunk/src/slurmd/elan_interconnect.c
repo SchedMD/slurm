@@ -46,19 +46,12 @@
 #include "src/slurmd/shm.h"
 
 static int 
-_wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
+_wait_and_destroy_prg(qsw_jobinfo_t qsw_job)
 {
 	int i = 0;
 	int sleeptime = 1;
 
-	debug3("waiting to destory program description...");
-  again:
-	if (waitpid(pid, NULL, 0) < 0) {
-		if (errno == EINTR)
-			goto again;
-		error("waitpid: %m");
-		exit(1);
-	}
+	debug3("going to destory program description...");
 
 	while(qsw_prgdestroy(qsw_job) < 0) {
 		i++;
@@ -78,8 +71,12 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 	}
 
 	debug("destroyed program description");
+	return SLURM_SUCCESS;
+}
 
-	exit(0);
+int
+interconnect_preinit(slurmd_job_t *job)
+{
 	return SLURM_SUCCESS;
 }
 
@@ -89,27 +86,11 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 int 
 interconnect_init(slurmd_job_t *job)
 {
-	pid_t pid;
-
-	/* Process 1: */
-	switch ((pid = fork())) 
-	{
-		case -1:
-			error ("elan_interconnect_prepare fork(): %m");
-			return SLURM_ERROR ;
-		case 0: /* child falls thru */
-			break;
-		default: /* parent */
-			_wait_and_destroy_prg(job->qsw_job, pid);
-			/*NOTREACHED*/
-	}
-
-	/* Process 2: */
-	debug("calling qsw_prog_init from process %ld", getpid());
+	debug2("calling interconnect_init from process %ld", getpid());
 	if (qsw_prog_init(job->qsw_job, job->uid) < 0) {
 		error ("elan interconnect_init: qsw_prog_init: %m");
 		/* we may lose the following info if not logging to stderr */
-		qsw_print_jobinfo(stderr, job->qsw_job);
+		qsw_print_jobinfo(log_fp(), job->qsw_job);
 		return SLURM_ERROR;
 	}
 	
@@ -119,8 +100,17 @@ interconnect_init(slurmd_job_t *job)
 int 
 interconnect_fini(slurmd_job_t *job)
 {
+	qsw_prog_fini(job->qsw_job); 
 	return SLURM_SUCCESS;
 }
+
+int
+interconnect_postfini(slurmd_job_t *job)
+{
+	_wait_and_destroy_prg(job->qsw_job);
+	return SLURM_SUCCESS;
+}
+
 int 
 interconnect_attach(slurmd_job_t *job, int procid)
 {

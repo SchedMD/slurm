@@ -1,10 +1,9 @@
 /*****************************************************************************\
- *  no_interconnect.c - Manage user task communications without an high-speed
- *	interconnect
+ * src/slurmd/ulimits.h - functions to set user resource limits in slurmd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -21,56 +20,19 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <src/slurmd/interconnect.h>
-#include <src/slurmd/setenvpf.h>
+#ifndef _SLURMD_ULIMITS_H
+#define _SLURMD_ULIMITS_H
 
-int interconnect_preinit (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
-
-int interconnect_init (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
-
-int interconnect_attach (slurmd_job_t *job, int taskid) 
-{
-	return SLURM_SUCCESS;
-}
+#include "src/slurmd/job.h"
 
 /*
- * Set env variables needed for this interconnect
+ * Set user resource limits as defined by SLURM_RLIMIT* environment
+ * variables contained in job->env
  */
-int interconnect_env (slurmd_job_t *job, int taskid)
-{
-	int cnt = job->envc;
-	task_info_t *t = job->task[taskid];
+int set_user_limits(slurmd_job_t *job);
 
-	if (setenvpf(&job->env, &cnt, "SLURM_NODEID=%d", job->nodeid) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_PROCID=%d", t->gid     ) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NNODES=%d", job->nnodes) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NPROCS=%d", job->nprocs) < 0)
-		return -1;
-
-	return SLURM_SUCCESS;
-}
-
-int interconnect_fini (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
-
-int interconnect_postfini (slurmd_job_t *job)
-{
-	return SLURM_SUCCESS;
-}
-
-
+#endif /* !_SLURMD_ULIMITS_H */

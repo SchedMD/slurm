@@ -57,90 +57,577 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
+#include "src/slurmd/mgr.h"
+
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/setenvpf.h"
-#include "src/slurmd/mgr.h"
+#include "src/slurmd/smgr.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/interconnect.h"
 
-static int  _run_job(slurmd_job_t *job);
-static int  _exec_all_tasks(slurmd_job_t *job);
-static void _task_exec(slurmd_job_t *job, int i);
+
+/* 
+ * Map session manager exit status to slurm errno:
+ * Keep in sync with smgr.c exit codes.
+ */
+static int exit_errno[] = 
+{       0, 
+	ESLURM_INTERCONNECT_FAILURE, 
+	ESLURMD_SET_UID_OR_GID_ERROR,
+	ESLURMD_SET_SID_ERROR,
+	ESCRIPT_CHDIR_FAILED,
+	-1,
+	ESLURMD_EXECVE_FAILED
+};
+
+#define MAX_SMGR_EXIT_STATUS 6
+
+
+
+/* 
+ * Prototypes
+ */
+
+/* 
+ * Job manager related prototypes
+ */
+static int  _job_mgr(slurmd_job_t *job);
+static int  _setup_io(slurmd_job_t *job);
 static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
-static int  _become_user(slurmd_job_t *job);
-static int  _unblock_all_signals(void);
 static int  _block_most_signals(void);
-static int  _send_exit_msg(int rc, task_info_t *t);
-static int  _complete_job(slurmd_job_t *job, int rc, int status);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
-static void _wait_for_all_tasks(slurmd_job_t *job);
 static void _slurmd_job_log_init(slurmd_job_t *job);
+static int  _update_shm_task_info(slurmd_job_t *job);
+static int  _readn(int fd, void *buf, size_t nbytes);
+static int  _create_job_session(slurmd_job_t *job);
+static int  _wait_for_task_exit(slurmd_job_t *job);
+static int  _wait_for_session(slurmd_job_t *job);
+static void _wait_for_io(slurmd_job_t *job);
+static void _handle_attach_req(slurmd_job_t *job);
+static int  _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status);
 
-static void
-_setargs(slurmd_job_t *job, char **argv, int argc)
-{
-	int i;
-	size_t len = 0;
-	char *arg  = NULL;
+static void _setargs(slurmd_job_t *job, char **argv, int argc);
 
-	for (i = 0; i < argc; i++) 
-		len += strlen(argv[i]) + 1;
+/*
+ * Batch job mangement prototypes:
+ */
+static char * _make_batch_dir(slurmd_job_t *job);
+static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
+static int    _setup_batch_env(slurmd_job_t *job, char *nodes);
+static int    _complete_job(slurmd_job_t *job, int err, int status);
 
-	if (job->stepid == NO_VAL)
-		xstrfmtcat(arg, "[%d]", job->jobid);
-	else
-		xstrfmtcat(arg, "[%d.%d]", job->jobid, job->stepid); 
 
-	if (len < (strlen(arg) + 7))
-		goto done;
+/* SIGHUP (empty) signal handler
+ */
+static void _hup_handler(int sig) {;}
 
-	memset(argv[0], 0, len);
-	strncpy(argv[0], "slurmd", 6);
-	strncpy((*argv)+7, arg, strlen(arg));
-
-    done:
-	xfree(arg);
-	return;
-}
-
-/* Launch a job step on this node
+/*
+ * Launch an job step on the current node
  */
 int
 mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 {
-	slurmd_job_t *job;
+	slurmd_job_t *job = NULL;
 	char buf[256];
 
 	snprintf(buf, sizeof(buf), "[%d.%d]", msg->job_id, msg->job_step_id);
 	log_set_fpfx(buf);
 
-	/* New process, so we must reinit shm */
-	if (shm_init() < 0)  
-		goto error;
-
 	if (!(job = job_create(msg, cli)))
-		goto error;
+		return SLURM_ERROR;
 
 	_setargs(job, *conf->argv, *conf->argc);
 
-	verbose("running job step %d.%d for %s", 
-		job->jobid, job->stepid, job->pwd->pw_name);
+	if (_job_mgr(job) < 0)
+		return SLURM_ERROR;
 
-	/* Run job's tasks and wait for all tasks to exit.
-	 */
-	if (_run_job(job) < 0) 
-		goto error;
-
-	debug2("%ld returned from slurmd_run_job()", getpid());
-	shm_fini();
-	return(SLURM_SUCCESS);
-  error:
-	shm_fini();
-	return(SLURM_ERROR);
+	return SLURM_SUCCESS;
 }
 
+/*
+ * Launch a batch job script on the current node
+ */
+int
+mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
+{
+	int           rc     = 0;
+	int           status = 0;
+	slurmd_job_t *job;
+	char         *batchdir;
+	char         buf[256];
+
+	snprintf(buf, sizeof(buf), "[%d]", msg->job_id);
+	log_set_fpfx(buf);
+
+	if (!(job = job_batch_job_create(msg))) 
+		goto cleanup;
+
+	_setargs(job, *conf->argv, *conf->argc);
+
+	if ((batchdir = _make_batch_dir(job)) == NULL) 
+		goto cleanup1;
+
+	xfree(job->argv[0]);
+
+	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
+		goto cleanup2;
+
+	if ((rc = _setup_batch_env(job, msg->nodes)) < 0)
+		goto cleanup2;
+
+	status = _job_mgr(job);
+		
+   cleanup2:
+	if (job->argv[0] && (unlink(job->argv[0]) < 0))
+		error("unlink(%s): %m", job->argv[0]);
+   cleanup1:
+	if (batchdir && (rmdir(batchdir) < 0))
+		error("rmdir(%s): %m",  batchdir);
+	xfree(batchdir);
+   cleanup :
+	verbose("job %d completed with slurm_rc = %d, job_rc = %d", 
+		job->jobid, rc, status);
+	_complete_job(job, rc, status);
+	return 0; 
+}
+
+
+
+/*
+ * Run a prolog or epilog script.
+ * returns -1 on failure. 
+ *
+ */
+int 
+run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
+{
+	int status;
+	pid_t cpid;
+	char *name = prolog ? "prolog" : "epilog";
+
+	if (path == NULL || path[0] == '\0')
+		return 0;
+
+	debug("[job %d] attempting to run %s [%s]", jobid, name, path);
+
+	if (access(path, R_OK | X_OK) < 0) {
+		debug("Not running %s [%s]: %m", name, path);
+		return 0;
+	}
+
+	if ((cpid = fork()) < 0) {
+		error ("executing %s: fork: %m", name);
+		return -1;
+	}
+	if (cpid == 0) {
+		char *argv[4];
+		char **env;
+		int envc = 0;
+
+
+		env = xmalloc(sizeof(char *));
+
+		argv[0] = xstrdup(path);
+		argv[1] = NULL;
+
+		env[0]  = NULL;
+		setenvpf(&env, &envc, "SLURM_JOBID=%u", jobid);
+		setenvpf(&env, &envc, "SLURM_UID=%u",   uid);
+
+		execve(path, argv, env);
+		error("help! %m");
+		exit(127);
+	}
+
+	do {
+		if (waitpid(cpid, &status, 0) < 0) {
+			if (errno != EINTR)
+				return -1;
+		} else
+			return status;
+	} while(1);
+
+	/* NOTREACHED */
+}
+
+
+static int
+_setup_io(slurmd_job_t *job)
+{
+	int            rc   = 0;
+	struct passwd *spwd = NULL;
+
+	/* 
+	 * Save current UID/GID
+	 */
+	if (!(spwd = getpwuid(geteuid()))) {
+		error("getpwuid: %m");
+		return ESLURMD_IO_ERROR;
+	}
+
+	if (io_spawn_handler(job) < 0)
+		return ESLURMD_IO_ERROR;
+
+	/*
+	 * Initialize log facility to copy errors back to srun
+	 */
+	_slurmd_job_log_init(job);
+
+	/*
+	 * Temporarily drop permissions, initialize IO clients
+	 * (open files/connections for IO, etc), then reclaim privileges.
+	 */
+	if (_drop_privileges(job->pwd) < 0)
+		return ESLURMD_SET_UID_OR_GID_ERROR;
+
+	rc = io_prepare_clients(job);
+
+	if (_reclaim_privileges(spwd) < 0)
+		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
+
+	if (rc < 0) 
+		return ESLURMD_IO_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+
+/*
+ * Send task exit message for n tasks. tid is the list of _local_
+ * task ids that have exited
+ */
+static int
+_send_exit_msg(slurmd_job_t *job, int tid[], int n, int status)
+{
+	int             j;
+	slurm_msg_t     resp;
+	task_exit_msg_t msg;
+	uint32_t        gid[n];
+	ListIterator    i       = NULL;
+	srun_info_t    *srun    = NULL;
+
+	debug3("sending task exit msg for %d tasks", n);
+
+	for (j = 0; j < n; j++)
+		gid[j] = job->task[tid[j]]->gid;
+
+	msg.task_id_list = gid;
+	msg.num_tasks    = n;
+	msg.return_code  = status;
+	resp.data        = &msg;
+	resp.msg_type    = MESSAGE_TASK_EXIT;
+
+	/*
+	 * XXX: Should srun_list be associated with each task?
+	 */
+	i = list_iterator_create(job->task[tid[0]]->srun_list);
+	while ((srun = list_next(i))) {
+		resp.address = srun->resp_addr;
+		if (resp.address.sin_family != 0)
+			slurm_send_only_node_msg(&resp);
+	}
+	list_iterator_destroy(i);
+
+	return SLURM_SUCCESS;
+}
+
+
+/* 
+ * Executes the functions of the slurmd job manager process,
+ * which runs as root and performs shared memory and interconnect
+ * initialization, etc.
+ *
+ * Returns 0 if job ran and completed successfully.
+ * Returns errno if job startup failed.
+ *
+ */
+static int 
+_job_mgr(slurmd_job_t *job)
+{
+	int rc = 0;
+
+	debug3("Entered job_mgr");
+
+	if (shm_init() < 0)
+		goto fail0;
+
+	job_update_shm(job);
+
+	if (!job->batch && (interconnect_preinit(job) < 0)) {
+		rc = ESLURM_INTERCONNECT_FAILURE;
+		goto fail1;
+	}
+
+	_block_most_signals();
+
+	if ((rc = _setup_io(job))) 
+		goto fail1;
+
+	xsignal(SIGHUP, _hup_handler);
+
+	/*
+	 * Create slurmd session manager and read task pids from pipe
+	 */
+	if ((rc = _create_job_session(job))) {
+		/* 
+		 * Get exit code from session manager
+		 */
+		if (rc < 0)
+			rc = _wait_for_session(job);
+		goto fail2;
+	}
+
+	/*
+	 * Send job launch response with list of pids
+	 */
+	if (!job->batch)
+		_send_launch_resp(job, 0);
+
+	/*
+	 * Wait for all tasks to exit
+	 */
+	_wait_for_task_exit(job);
+
+	/* wait for session to terminate, 
+	 * then clean up
+	 */
+	_wait_for_session(job);
+
+    fail2:
+	/*
+	 * Wait for io thread to complete
+	 */
+	_wait_for_io(job);
+
+	if (!job->batch && (interconnect_postfini(job) < 0))
+		error("interconnect_postfini: %m");
+    fail1:
+	job_delete_shm(job);
+	shm_fini();
+    fail0:
+	/* If interactive job startup was abnormal, 
+	 * be sure to notify client.
+	 */
+	if ((rc != 0) && !job->batch) 
+		_send_launch_resp(job, rc);
+
+	return(rc);
+}
+
+/*
+ * update task information from "job" into shared memory
+ */
+static int 
+_update_shm_task_info(slurmd_job_t *job)
+{
+	int retval = SLURM_SUCCESS;
+	int i;
+	
+	for (i = 0; i < job->ntasks; i++) {
+		task_t t;
+
+		t.id        = i;
+		t.global_id = job->task[i]->gid;
+		t.pid       = job->task[i]->pid;
+		t.ppid      = job->smgr_pid;
+
+		if (shm_add_task(job->jobid, job->stepid, &t) < 0) {
+			error("shm_add_task: %m");
+			retval = SLURM_ERROR;
+		}
+	}
+
+	return retval;
+}
+
+static int 
+_readn(int fd, void *buf, size_t nbytes)
+{
+	int    n     = 0;
+	char  *pbuf  = (char *) buf;
+	size_t nleft = nbytes;
+
+	while (nleft > 0) {
+		if ((n = read(fd, (void *) pbuf, nleft)) > 0) {
+			pbuf+=n;
+			nleft-=n;
+		} else if (n == 0)	/* EOF */
+			break;
+		else if (errno == EINTR)
+			break;
+		else {
+			debug("read: %m");
+			break;
+		}
+	}
+	return(n);
+}
+
+
+static int
+_create_job_session(slurmd_job_t *job)
+{
+	int   i;
+	int   rc = 0;
+	int   fd = job->fdpair[0];
+	pid_t spid;   
+
+	if ((spid = smgr_create(job)) < (pid_t) 0) {
+		error("Unable to create session manager: %m");
+		return ESLURMD_FORK_FAILED;
+	}
+
+	job->jmgr_pid = getpid();
+	if (shm_update_step_mpid(job->jobid, job->stepid, getpid()) < 0)
+		error("shm_update_step_mpid: %m");
+
+	job->smgr_pid = spid;
+	if (shm_update_step_sid(job->jobid, job->stepid, spid) < 0)
+		error("shm_update_step_sid: %m");
+
+	/*
+	 * Read information from session manager slurmd
+	 */
+	for (i = 0; i < job->ntasks; i++) {
+		pid_t *pidptr = &job->task[i]->pid;
+
+		if ((rc = _readn(fd, (void *) pidptr, sizeof(pid_t))) < 0) 
+			error("Error obtaining task information: %m");
+
+		if (rc == 0) /* EOF, smgr must've died */
+			goto error;
+	}
+
+	_update_shm_task_info(job);
+
+	return SLURM_SUCCESS;
+
+    error:
+	rc = _wait_for_session(job);
+	return rc;
+}
+
+static int 
+_handle_task_exit(slurmd_job_t *job)
+{
+	int len;
+	int tid[1];
+	exit_status_t e;
+
+	if ((len = _readn(job->fdpair[0], &e, sizeof(e))) < 0) {
+		error("read from session mgr: %m");
+		return SLURM_ERROR;
+	}
+
+	if (len == 0) /* EOF */
+		return len;
+
+	tid[0] = e.taskid;
+
+	debug2("global task %d exited with status %d", tid[0], e.status);
+
+	_send_exit_msg(job, tid, 1, e.status);
+
+	return SLURM_SUCCESS;
+}
+
+/*
+ * Wait for tasks to exit by reading task exit codes from slurmd
+ * session manager pipe. On EOF or when waiting == 0, the job is 
+ * complete
+ */
+static int
+_wait_for_task_exit(slurmd_job_t *job)
+{
+	int           rc      = 0;
+	int           waiting = job->ntasks;
+	struct pollfd pfd[1]; 
+
+	pfd[0].fd     = job->fdpair[0];
+	pfd[0].events = POLLIN;
+
+	while (waiting > 0) {
+		int revents;
+
+		if ((rc = poll(pfd, 1, -1)) < 0) {
+			if (errno == EINTR) {
+				_handle_attach_req(job);
+				continue;
+			}
+		}
+
+		revents = pfd[0].revents;
+
+		if (revents & POLLNVAL)
+			return SLURM_ERROR;
+
+		if (   (revents & POLLERR) 
+		    || (revents & POLLHUP) ) { 
+			/* 
+			 * smgr exited. XXX: Needs work
+			 */
+			while (waiting && (_handle_task_exit(job) == 0)) {
+				waiting--;
+			}
+			if (waiting != 0)
+				return SLURM_ERROR;
+			else
+				return SLURM_SUCCESS;
+		}
+
+		if ((revents & POLLIN) 
+		    && (_handle_task_exit(job) == SLURM_SUCCESS))
+			waiting--;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+
+/*
+ * read task exit status from slurmd session manager process,
+ * then wait for session manager to terminate
+ */
+static int
+_wait_for_session(slurmd_job_t *job)
+{
+	int           status = -1;
+	pid_t         pid;
+
+	while ((pid = waitpid(job->smgr_pid, &status, 0)) < (pid_t) 0) {
+		if (errno == EINTR) 
+			_handle_attach_req(job);
+		else {
+			error("waitpid: %m");
+			break;
+		}
+	}
+
+	status = WEXITSTATUS(status);
+
+	return (status < MAX_SMGR_EXIT_STATUS) ? exit_errno[status] : status;
+}
+
+/*
+ * Wait for IO
+ */
+static void
+_wait_for_io(slurmd_job_t *job)
+{
+	debug("Waiting for IO");
+	io_close_all(job);
+
+	/*
+	 * Wait until IO thread exits
+	 */
+	pthread_join(job->ioid, NULL);
+
+	return;
+}
+
+	
 static char *
 _make_batch_dir(slurmd_job_t *job)
 {
@@ -235,148 +722,34 @@ _setup_batch_env(slurmd_job_t *job, char *nodes)
 }
 
 
-int
-mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
-{
-	int           rc     = 0;
-	int           status = 0;
-	slurmd_job_t *job;
-	char         *batchdir;
-	char         buf[256];
+static void
+_send_launch_resp(slurmd_job_t *job, int rc)
+{	
+	int i;
+	slurm_msg_t resp_msg;
+	launch_tasks_response_msg_t resp;
+	srun_info_t *srun = list_peek(job->sruns);
 
-	snprintf(buf, sizeof(buf), "[%d]", msg->job_id);
-	log_set_fpfx(buf);
+	debug("Sending launch resp rc=%d", rc);
 
-	/* New process, so must reinit shm */
-	if ((rc = shm_init()) < 0) 
-		goto cleanup1;
+        resp_msg.address      = srun->resp_addr;
+	resp_msg.data         = &resp;
+	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
 
-	if (!(job = job_batch_job_create(msg))) 
-		goto cleanup2;
+	resp.node_name        = conf->hostname;
+	resp.srun_node_id     = job->nodeid;
+	resp.return_code      = rc;
+	resp.count_of_pids    = job->ntasks;
 
-	/*
-	 * This is now done in _run_job() 
-	 */
-	/* job_update_shm(job); */
+	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
+	for (i = 0; i < job->ntasks; i++) 
+		resp.local_pids[i] = job->task[i]->pid;  
 
-	_setargs(job, *conf->argv, *conf->argc);
+	slurm_send_only_node_msg(&resp_msg);
 
-	if ((batchdir = _make_batch_dir(job)) == NULL) 
-		goto cleanup2;
-
-	xfree(job->argv[0]);
-
-	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
-		goto cleanup3;
-
-	if ((rc = _setup_batch_env(job, msg->nodes)) < 0)
-		goto cleanup;
-
-	status = _run_job(job);
-		
-   cleanup:
-	if (job->argv[0] && (unlink(job->argv[0]) < 0))
-		error("unlink(%s): %m", job->argv[0]);
-   cleanup3:
-	if (batchdir && (rmdir(batchdir) < 0))
-		error("rmdir(%s): %m",  batchdir);
-	xfree(batchdir);
-   cleanup2:
-	shm_delete_step(job->jobid, job->stepid);
-	shm_fini();
-   cleanup1:
-	verbose("job %d completed with slurm_rc = %d, job_rc = %d", 
-		job->jobid, rc, status);
-	_complete_job(job, rc, status);
-	return 0; 
+	xfree(resp.local_pids);
 }
 
-/* Instance of a slurmd "job" or job step:
- * We run:
- *  interconnect_prepare()       : prepare node for interconnect (if any)
- *  interconnect_init()          : initialize interconnect on node
- *  fork() N tasks --> wait() --> interconnect_fini()
- *   \
- *    `--> interconnect_attach() : attach each proc to interconnect
- *         interconnect_env()    : setup child environment 
- *         exec()
- */
-static int
-_run_job(slurmd_job_t *job)
-{
-	int            rc   = SLURM_SUCCESS;
-	struct passwd *spwd = getpwuid(geteuid());
-
-	_block_most_signals();
-
-	/* Insert job info into shared memory */
-	job_update_shm(job);
-
-	if (!job->batch && interconnect_init(job) == SLURM_ERROR) {
-		error("interconnect_init: %m");
-		rc = errno;
-		goto fail;
-	}
-
-	if ((rc = io_spawn_handler(job)) < 0) {
-		rc = ESLURMD_IO_ERROR;
-		goto fail1;
-	}
-
-	/* connect job stderr to this node's task 0 stderr so
-	 * user recieves error messages on stderr
-	 */
-	_slurmd_job_log_init(job);
-
-	/*
-	 * Temporarily drop permissions 
-	 */
-	if ((rc = _drop_privileges(job->pwd)) < 0) {
-		rc = ESLURMD_SET_UID_OR_GID_ERROR;
-		goto fail2;
-	}
-
-	/* Open input/output files and/or connections back to client
-	 */
-	rc = io_prepare_clients(job);
-
-	if (_reclaim_privileges(spwd) < 0) 
-		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
-
-
-	if (rc < 0) {
-		rc = ESLURMD_IO_ERROR;
-		goto fail2;
-	}
-
-	rc = _exec_all_tasks(job);
-	if (!job->batch)
-		_send_launch_resp(job, rc);
-	_wait_for_all_tasks(job);
-
-	debug2("all tasks exited, waiting on IO");
-	io_close_all(job);
-	pthread_join(job->ioid, NULL);
-	debug2("IO complete");
-
-	if (!job->batch)
-		interconnect_fini(job); /* ignore errors        */
-	job_delete_shm(job);            /* again, ignore errors */
-	verbose("job completed, rc = %d", rc);
-	return rc;
-
-fail2:
-	io_close_all(job);
-	pthread_join(job->ioid, NULL);
-fail1:
-	if (!job->batch)
-		interconnect_fini(job);
-fail:
-	job_delete_shm(job);
-	if (!job->batch)
-		_send_launch_resp(job, rc);
-	return rc;
-}
 
 static int
 _complete_job(slurmd_job_t *job, int err, int status)
@@ -434,6 +807,8 @@ _complete_job(slurmd_job_t *job, int err, int status)
 	return SLURM_SUCCESS;
 }
 
+
+
 static void
 _handle_attach_req(slurmd_job_t *job)
 {
@@ -456,37 +831,6 @@ _handle_attach_req(slurmd_job_t *job)
 	io_new_clients(job);
 }
 
-static void
-_hup_handler(int sig) {;}
-
-static void
-_wait_for_all_tasks(slurmd_job_t *job)
-{
-	int waiting = job->ntasks;
-	int i;
-
-	xsignal(SIGHUP, _hup_handler);
-
-	while (waiting > 0) {
-		int status;
-		pid_t pid = waitpid(0, &status, 0);
-		if ((pid < (pid_t) 0)) {
-			if (errno == EINTR) {
-				_handle_attach_req(job);
-				continue;
-			}
-			error("waitpid: %m");
-			/* job_cleanup() */
-		}
-		for (i = 0; i < job->ntasks; i++) {
-			if (job->task[i]->pid == pid) {
-				_send_exit_msg(status, job->task[i]);
-				waiting--;
-			}
-		}
-	}
-	return;
-}
 
 static int
 _drop_privileges(struct passwd *pwd)
@@ -542,204 +886,6 @@ _reclaim_privileges(struct passwd *pwd)
 }
 
 
-
-
-
-static int
-_become_user(slurmd_job_t *job)
-{
-	if (setgid(job->pwd->pw_gid) < 0) {
-		error("setgid: %m");
-		return -1;
-	}
-
-	if (initgroups(job->pwd->pw_name, job->pwd->pw_gid) < 0) {
-		;
-		/* error("initgroups: %m"); */
-	}
-
-	if (setuid(job->pwd->pw_uid) < 0) {
-		error("setuid: %m");
-		return -1;
-	}
-
-	return 0;
-}
-
-static void
-_task_exec(slurmd_job_t *job, int i)
-{
-	int rc;
-	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-
-	io_prepare_child(job->task[i]);
-
-	/* 
-	 * Reinitialize slurm log facility to send errors back to client 
-	 */
-	log_init("slurmd", opts, 0, NULL); 
-
-	if ((rc = _become_user(job)) < 0) 
-		exit(rc);
-
-	if (_unblock_all_signals() == SLURM_ERROR) {
-		error("unable to unblock signals");
-		exit(1);
-	}
-
-	/* attach to interconnect */
-	if (!job->batch && (interconnect_attach(job, i) < 0)) {
-		error("interconnect attach failed: %m");
-		exit(1);
-	}
-
-	if (!job->batch && (interconnect_env(job, i) < 0)) {
-		error("interconnect_env: %m");
-	}
-
-	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to `%s': %m: going to /tmp instead",
-				job->cwd); 
-		if (chdir("/tmp") < 0) {
-			error("couldn't chdir to /tmp either. dying.");
-			exit(1);
-		}
-	}
-
-#ifdef HAVE_TOTALVIEW
-	/* Stop the tasks on exec for TotalView to connect */
-	if ((job->task_flags & TASK_TOTALVIEW_DEBUG) &&
-	    (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1))
-		error("ptrace: %m");
-#endif
-
-	/* exec the cmdline */
-	execve(job->argv[0], job->argv, job->env);
-
-	/* error and clean up if execve() returns:
-	 */
-	error("execve(): %s: %m", job->argv[0]); 
-	exit(errno);
-}
-
-static int
-_exec_all_tasks(slurmd_job_t *job)
-{
-	pid_t sid;
-	int i;
-
-	debug3("%ld entered _launch_tasks", getpid());
-
-	xsignal(SIGPIPE, SIG_IGN);
-
-	if ((sid = setsid()) < (pid_t) 0) {
-		error("setsid: %m");
-	}
-
-	_block_most_signals();
-
-	if (shm_update_step_sid(job->jobid, job->stepid, sid) < 0)
-		error("shm_update_step_sid: %m");
-	
-	debug2("invoking %d tasks", job->ntasks);
-
-	for (i = 0; i < job->ntasks; i++) {
-		task_t t;
-		debug2("going to fork task %d", i);
-		t.id = i;
-		t.global_id = job->task[i]->gid;
-		t.ppid      = getpid();
-
-		if ((t.pid = fork()) < 0) {
-			error("fork: %m");
-			return 1;
-			/* job_cleanup() */
-		} else if (t.pid == 0)   /* child */
-			break;
-
-		/* Parent continues loop: */
-
-		job->task[i]->pid = t.pid;
-
-		debug2("%ld: forked child process %ld for task %d", 
-				getpid(), (long) t.pid, i);  
-		debug2("going to add task %d to shm", i);
-		if (shm_add_task(job->jobid, job->stepid, &t) < 0)
-			error("shm_add_task: %m");
-		debug2("task %d added to shm", i);
-#ifdef HAVE_TOTALVIEW
-		/* If task to be debugged, wait for it to stop via
-		 * child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
-		 * ptrace(PTRACE_DETACH). This requires a kernel patch,
- 		 * which you probably already have in place for TotalView:
- 		 * http://hypermail.idiosynkrasia.net/linux-kernel/
-		 *	archived/2001/week51/1193.html */
-		if (job->task_flags & TASK_TOTALVIEW_DEBUG) {
-			int status;
-			waitpid(t.pid, &status, WUNTRACED);
-			if (kill(t.pid, SIGSTOP))
-				error("kill %ld: %m", (long) t.pid);
-			if (ptrace(PTRACE_DETACH, (long) t.pid, NULL, NULL))
-				error("ptrace %ld: %m", (long) t.pid);
-		}
-#endif
-
-	}
-
-	if (i == job->ntasks) 
-		return 0; /* _wait_for_all_tasks(job); */
-	else
-		_task_exec(job, i);
-
-	debug3("All tasks exited");
-	return 0;
-}
-
-static int 
-_send_exit_msg(int rc, task_info_t *t)
-{
-	slurm_msg_t     resp;
-	task_exit_msg_t msg;
-	uint32_t task_id_list[1];
-	ListIterator i;
-	srun_info_t *srun;
-
-	debug3("sending task exit msg for %d", t->gid);
-
-	/* FIXME:XXX: attempt to combine task IDs in single message */
-	task_id_list[0]  = t->gid;
-	msg.task_id_list = task_id_list;
-	msg.num_tasks    = 1;
-       	msg.return_code  = rc;
-	resp.data        = &msg;
-	resp.msg_type    = MESSAGE_TASK_EXIT;
-
-	i = list_iterator_create(t->srun_list);
-	while ((srun = list_next(i))) {
-		resp.address = srun->resp_addr;
-		if (resp.address.sin_family != 0)
-			slurm_send_only_node_msg(&resp);
-	}
-	list_iterator_destroy(i);
-
-	return SLURM_SUCCESS;
-}
-
-static int
-_unblock_all_signals(void)
-{
-	sigset_t set;
-	if (sigfillset(&set)) {
-		error("sigfillset: %m");
-		return SLURM_ERROR;
-	}
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL)) {
-		error("sigprocmask: %m");
-		return SLURM_ERROR;
-	}
-	return SLURM_SUCCESS;
-}
-
 static int
 _block_most_signals(void)
 {
@@ -762,33 +908,6 @@ _block_most_signals(void)
 	return SLURM_SUCCESS;
 }
 
-static void
-_send_launch_resp(slurmd_job_t *job, int rc)
-{	
-	int i;
-	slurm_msg_t resp_msg;
-	launch_tasks_response_msg_t resp;
-	srun_info_t *srun = list_peek(job->sruns);
-
-	debug("Sending launch resp rc=%d", rc);
-
-        resp_msg.address      = srun->resp_addr;
-	resp_msg.data         = &resp;
-	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
-
-	resp.node_name        = conf->hostname;
-	resp.srun_node_id     = job->nodeid;
-	resp.return_code      = rc;
-	resp.count_of_pids    = job->ntasks;
-
-	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
-	for (i = 0; i < job->ntasks; i++) 
-		resp.local_pids[i] = job->task[i]->pid;  
-
-	slurm_send_only_node_msg(&resp_msg);
-
-	xfree(resp.local_pids);
-}
 
 static void
 _slurmd_job_log_init(slurmd_job_t *job) 
@@ -819,54 +938,36 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_init(argv0, conf->log_opts, 0, NULL);
 }
 
-int 
-run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
+
+/*
+ * Attempt to change the cmdline argument list for slurmd
+ * to denote the job/job step that this process is managing.
+ */
+static void
+_setargs(slurmd_job_t *job, char **argv, int argc)
 {
-	int status;
-	pid_t cpid;
-	char *name = prolog ? "prolog" : "epilog";
+	int i;
+	size_t len = 0;
+	char *arg  = NULL;
 
-	if (path == NULL || path[0] == '\0')
-		return 0;
+	for (i = 0; i < argc; i++) 
+		len += strlen(argv[i]) + 1;
 
-	debug("[job %d] attempting to run %s [%s]", jobid, name, path);
+	if (job->stepid == NO_VAL)
+		xstrfmtcat(arg, "[%d]", job->jobid);
+	else
+		xstrfmtcat(arg, "[%d.%d]", job->jobid, job->stepid); 
 
-	if (access(path, R_OK | X_OK) < 0) {
-		debug("Not running %s [%s]: %m", name, path);
-		return 0;
-	}
+	if (len < (strlen(arg) + 7))
+		goto done;
 
-	if ((cpid = fork()) < 0) {
-		error ("executing %s: fork: %m", name);
-		return -1;
-	}
-	if (cpid == 0) {
-		char *argv[4];
-		char **env;
-		int envc = 0;
+	memset(argv[0], 0, len);
+	strncpy(argv[0], "slurmd", 6);
+	strncpy((*argv)+7, arg, strlen(arg));
 
-
-		env = xmalloc(sizeof(char *));
-
-		argv[0] = xstrdup(path);
-		argv[1] = NULL;
-
-		env[0]  = NULL;
-		setenvpf(&env, &envc, "SLURM_JOBID=%u", jobid);
-		setenvpf(&env, &envc, "SLURM_UID=%u",   uid);
-
-		execve(path, argv, env);
-		error("help! %m");
-		exit(127);
-	}
-
-	do {
-		if (waitpid(cpid, &status, 0) < 0) {
-			if (errno != EINTR)
-				return -1;
-		} else
-			return status;
-	} while(1);
-
-	/* NOTREACHED */
+    done:
+	xfree(arg);
+	return;
 }
+
+

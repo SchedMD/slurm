@@ -27,6 +27,7 @@ common_sources = 	        \
 	slurmd.c slurmd.h       \
 	req.c req.h		\
 	mgr.c mgr.h		\
+	smgr.c smgr.h		\
 	get_mach_stat.c         \
 	get_mach_stat.h		\
 	read_proc.c 	        \
@@ -35,6 +36,7 @@ common_sources = 	        \
 	semaphore.c semaphore.h	\
 	shm.c shm.h		\
 	fname.c fname.h		\
+	ulimits.c ulimits.h     \
 	setenvpf.c setenvpf.h   \
 	interconnect.h
 

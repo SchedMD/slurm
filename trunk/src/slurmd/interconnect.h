@@ -32,23 +32,74 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/slurmd/job.h"
 
+/*
+ * Notes:
+ *
+ * Interconnect functions are run within slurmd in the following way:
+ * (Diagram courtesy of Jim Garlick [see qsw.c] )
+ *
+ *  Process 1 (root)        Process 2 (root, user)  |  Process 3 (user task)
+ *                                                  |
+ *  interconnect_preinit                            |
+ *  fork ------------------ interconnect_init       |
+ *  waitpid                 setuid, chdir, etc.     |
+ *                          fork N procs -----------+--- interconnect_attach
+ *                          wait all                |    interconnect_env
+ *                                                  |    exec mpi process
+ *                          interconnect_fini*      |
+ *   interconnect_postfini                          |    
+ *                                                  |
+ *
+ * [ *Note: interconnect_fini() is run as the uid of the job owner, not root ]
+ */
+
+
+/*
+ * Prepare node for job. 
+ *
+ * pre is run as root in the first slurmd process, the so called job
+ * manager. This function can be used to perform any initialization
+ * that needs to be performed in the same process as interconnect_fini()
+ * 
+ */
+int interconnect_preinit(slurmd_job_t *job);
+
 /* 
- * initialize interconnect on node
+ * initialize interconnect on node. This function is run from the 
+ * 2nd slurmd process (some interconnect implementations may require
+ * interconnect init functions to be executed from a separate process
+ * than the process executing initerconnect_fini() [e.g. QsNet])
+ *
  */
 int interconnect_init(slurmd_job_t *job);
 
 /*
- * finalize and detach from interconnect on node
+ * This function is run from the same process as interconnect_init()
+ * after all job tasks have exited. It is *not* run as root, because
+ * the process in question has already setuid to the job owner.
+ *
  */
 int interconnect_fini(slurmd_job_t *job);
 
+/*
+ * Finalize interconnect on node.
+ *
+ * This function is run from the initial slurmd process (same process
+ * as interconnect_preinit()), and is run as root. Any cleanup routines
+ * that need to be run with root privileges should be run from this
+ * function.
+ */
+int interconnect_postfini(slurmd_job_t *job);
+
 /* 
  * attach process to interconnect
+ *
  */
 int interconnect_attach(slurmd_job_t *job, int taskid);
 
 /*
  * Set environment variables needed.
+ *
  */
 int interconnect_env(slurmd_job_t *job, int taskid);
 
