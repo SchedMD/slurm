@@ -226,13 +226,11 @@ srun(int ac, char **av)
 	/* Tell slurmctld that job is done */
 	job_destroy(job, 0);
 
-	unblock_all_signals();
-
 	/* kill msg server thread */
 	pthread_kill(job->jtid,  SIGTERM);
 
 	/* kill signal thread */
-	pthread_kill(job->sigid, SIGKILL);
+	pthread_kill(job->sigid, SIGTERM);
 
 	log_fini();
 
