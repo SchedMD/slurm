@@ -25,6 +25,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,31 +36,30 @@
 #include <ctype.h>
 #include <errno.h>
 
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
+#include "src/common/log.h"
+#include "src/common/xmalloc.h"
 
 #define BUF_SIZE 1024
 #define SEPCHARS " \n\t"
 
-int  load_string (char **destination, char *keyword, char *in_line) ;
-int  load_long (long *destination, char *keyword, char *in_line) ;
-int  load_integer (int *destination, char *keyword, char *in_line) ;
-int  load_float (float *destination, char *keyword, char *in_line) ;
-void remove_quotes (char **destination) ;
+static int  _load_string  (char **destination, char *keyword, char *in_line) ;
+static int  _load_long (long *destination, char *keyword, char *in_line) ;
+static int  _load_integer (int *destination, char *keyword, char *in_line) ;
+static int  _load_float (float *destination, char *keyword, char *in_line) ;
+static void _remove_quotes (char **destination) ;
 
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs
- *	only the keywords supplied will be searched for. the supplied specification
- *	is altered, overwriting the keyword and value pairs with spaces.
- * input: spec - pointer to the string of specifications
- *	sets of three values (as many sets as required): keyword, type, value 
- *	keyword - string with the keyword to search for including equal sign 
+ *	only the keywords supplied will be searched for. the supplied 
+ *	specification is altered, overwriting the keyword and value pairs 
+ *	with spaces.
+ * spec - pointer to the string of specifications, sets of three values 
+ *	(as many sets as required): keyword, type, value 
+ * IN keyword - string with the keyword to search for including equal sign 
  *		(e.g. "name=")
- *	type - char with value 'd' for int, 'f' for float, 's' for string
- *	value - pointer to storage location for value (char **) for type 's'
- * output: spec - everything read is overwritten by speces
- *	value - set to read value (unchanged if keyword not found)
- *	return - 0 if no error, otherwise errno code
+ * IN type - char with value 'd'==int, 'f'==float, 's'==string, 'l'==long
+ * IN/OUT value - pointer to storage location for value (char **) for type 's'
+ * RET 0 if no error, otherwise errno code
  * NOTE: terminate with a keyword value of "END"
  * NOTE: values of type (char *) are xfreed if non-NULL. caller must xfree any 
  *	returned value
@@ -80,19 +83,19 @@ slurm_parser (char *spec, ...)
 		switch (type) {
 		case 'd':
 			int_ptr = va_arg(ap, int *);
-			error_code = load_integer(int_ptr, keyword, spec);
+			error_code = _load_integer(int_ptr, keyword, spec);
 			break;
 		case 'f':
 			float_ptr = va_arg(ap, float *);
-			error_code = load_float(float_ptr, keyword, spec);
+			error_code = _load_float(float_ptr, keyword, spec);
 			break;
 		case 'l':
 			long_ptr = va_arg(ap, long *);
-			error_code = load_long(long_ptr, keyword, spec);
+			error_code = _load_long(long_ptr, keyword, spec);
 			break;
 		case 's':
 			str_ptr = va_arg(ap, char **);
-			error_code = load_string(str_ptr, keyword, spec);
+			error_code = _load_string (str_ptr, keyword, spec);
 			break;
 		default:
 			fatal ("parse_spec: invalid type %c", type);
@@ -104,16 +107,17 @@ slurm_parser (char *spec, ...)
 
 
 /*
- * load_float - parse a string for a keyword, value pair, and load the float value
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
+ * _load_float - parse a string for a keyword, value pair, and load the float 
+ *	value
+ * IN keyword - string to search for
+ * IN/OUT in_line - string to search for keyword, the keyword and value 
+ *	(if present) are overwritten by spaces
+ * OUT destination - set to value, no change if value not found
+ * RET 0 if no error, otherwise an error code
  * NOTE: in_line is overwritten, do not use a constant
  */
-int 
-load_float (float *destination, char *keyword, char *in_line) 
+static int 
+_load_float (float *destination, char *keyword, char *in_line) 
 {
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
@@ -124,7 +128,8 @@ load_float (float *destination, char *keyword, char *in_line)
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
 		if ((scratch[0] < '0') && (scratch[0] > '9')) {
-			error ("load_float: bad value for keyword %s\n", keyword);
+			error ("_load_float: bad value for keyword %s", 
+			       keyword);
 			return EINVAL;
 		}
 		str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
@@ -139,19 +144,18 @@ load_float (float *destination, char *keyword, char *in_line)
 
 
 /*
- * load_integer - parse a string for a keyword, value pair, and load the integer value
- * input: *destination - location into which result is stored
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found, 
- *             set to 1 if keyword found without value, 
- *             set to -1 if keyword followed by "unlimited"
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
- * NOTE: in_line is overwritten, do not use a constant
+ * _load_integer - parse a string for a keyword, value pair, and load the 
+ *	integer value
+ * OUT destination - location into which result is stored
+ *	set to 1 if keyword found without value, 
+ *	set to -1 if keyword followed by "unlimited"
+ * IN keyword - string to search for
+ * IN/OUT in_line - string to search for keyword, the keyword and value 
+ *	(if present) are overwritten by spaces
+ * RET 0 if no error, otherwise an error code
  */
-int 
-load_integer (int *destination, char *keyword, char *in_line) 
+static int 
+_load_integer (int *destination, char *keyword, char *in_line) 
 {
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
@@ -162,22 +166,25 @@ load_integer (int *destination, char *keyword, char *in_line)
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
 		if ((scratch[0] == (char) NULL) || 
-		    (isspace ((int) scratch[0]))) {	/* keyword with no value set */
+		    (isspace ((int) scratch[0]))) {
+			/* keyword with no value set */
 			*destination = 1;
 			str_len2 = 0;
 		}
 		else {
-			str_ptr2 =
-				(char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
+			str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, 
+			                              &str_ptr3);
 			str_len2 = strlen (str_ptr2);
 			if (strcmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1;
-			else if ((str_ptr2[0] >= '0') && (str_ptr2[0] <= '9')) {
-				*destination =
-					(int) strtol (scratch, (char **) NULL, 10);
+			else if ((str_ptr2[0] >= '0') && 
+			         (str_ptr2[0] <= '9')) {
+				*destination = (int) strtol (scratch, 
+				                             (char **) NULL, 
+				                             10);
 			}
 			else {
-				error ("load_integer: bad value for keyword %s\n",
+				error ("_load_integer: bad value for keyword %s",
 					keyword);
 				return EINVAL;
 			}
@@ -192,19 +199,20 @@ load_integer (int *destination, char *keyword, char *in_line)
 
 
 /*
- * load_long - parse a string for a keyword, value pair, and load the long value
- * input: *destination - location into which result is stored
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found, 
- *             set to 1 if keyword found without value, 
- *             set to -1 if keyword followed by "unlimited"
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
+ * _load_long - parse a string for a keyword, value pair, and load the 
+ *	long value
+ * IN/OUT destination - location into which result is stored, set to value, 
+ *	no change if value not found, 
+ *      set to 1 if keyword found without value, 
+ *      set to -1 if keyword followed by "unlimited"
+ * IN keyword - string to search for
+ * IN/OUR in_line - string to search for keyword, the keyword and value 
+ *	(if present) are overwritten by spaces
+ * RET 0 if no error, otherwise an error code
  * NOTE: in_line is overwritten, do not use a constant
  */
-int 
-load_long (long *destination, char *keyword, char *in_line) 
+static int 
+_load_long (long *destination, char *keyword, char *in_line) 
 {
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
@@ -215,21 +223,24 @@ load_long (long *destination, char *keyword, char *in_line)
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
 		if ((scratch[0] == (char) NULL) || 
-		    (isspace ((int) scratch[0]))) {	/* keyword with no value set */
+		    (isspace ((int) scratch[0]))) {	
+			/* keyword with no value set */
 			*destination = 1;
 			str_len2 = 0;
 		}
 		else {
-			str_ptr2 =
-				(char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
+			str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, 
+			                              &str_ptr3);
 			str_len2 = strlen (str_ptr2);
 			if (strcmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1L;
-			else if ((str_ptr2[0] >= '0') && (str_ptr2[0] <= '9')) {
-				*destination = strtol (scratch, (char **) NULL, 10);
+			else if ((str_ptr2[0] >= '0') && 
+			         (str_ptr2[0] <= '9')) {
+				*destination = strtol (scratch, 
+				                       (char **) NULL, 10);
 			}
 			else {
-				error ("load_long: bad value for keyword %s\n",
+				error ("_load_long: bad value for keyword %s",
 					keyword);
 				return EINVAL;
 			}
@@ -244,20 +255,21 @@ load_long (long *destination, char *keyword, char *in_line)
 
 
 /*
- * load_string - parse a string for a keyword, value pair, and load the char value
- * input: *destination - location into which result is stored
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found, 
- *	     if *destination had previous value, that memory location is automatically freed
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
+ * _load_string  - parse a string for a keyword, value pair, and load the 
+ *	char value
+ * IN/OUT destination - location into which result is stored, set to value, 
+ *	no change if value not found, if destination had previous value, 
+ *	that memory location is automatically freed
+ * IN keyword - string to search for
+ * IN/OUT in_line - string to search for keyword, the keyword and value 
+ *	(if present) are overwritten by spaces
+ * RET 0 if no error, otherwise an error code
  * NOTE: destination must be free when no longer required
  * NOTE: if destination is non-NULL at function call time, it will be freed 
  * NOTE: in_line is overwritten, do not use a constant
  */
 int 
-load_string (char **destination, char *keyword, char *in_line) 
+_load_string  (char **destination, char *keyword, char *in_line) 
 {
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
@@ -268,8 +280,10 @@ load_string (char **destination, char *keyword, char *in_line)
 		str_len1 = strlen (keyword);
 		strcpy (scratch, str_ptr1 + str_len1);
 		if ((scratch[0] == (char) NULL) || 
-		    (isspace ((int) scratch[0]))) {	/* keyword with no value set */
-			info ("load_string: keyword %s lacks value\n", keyword);
+		    (isspace ((int) scratch[0]))) {	
+			/* keyword with no value set */
+			info ("_load_string : keyword %s lacks value", 
+			      keyword);
 			return EINVAL;
 		}
 		str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
@@ -282,13 +296,14 @@ load_string (char **destination, char *keyword, char *in_line)
 			str_ptr1[i] = ' ';
 		}
 		if (destination[0][0] == '"')
-			remove_quotes (destination) ;
+			_remove_quotes (destination) ;
 	}
 	return 0;
 }
 
-void
-remove_quotes (char **destination)
+/* give a string starting and ending with '"', remove the quotes */
+static void
+_remove_quotes (char **destination)
 {
 	int i;
 

@@ -29,7 +29,7 @@
 #define _PACK_INCLUDED
 
 #if HAVE_CONFIG_H
-#include <config.h>
+#  include "config.h"
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
 #else  /* !HAVE_INTTYPES_H */
