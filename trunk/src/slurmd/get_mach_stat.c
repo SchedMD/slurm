@@ -22,8 +22,9 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
-#include <src/slurmd/get_mach_stat.h>
+#include <src/common/hostlist.h>
 #include <src/common/log.h>
+#include <src/slurmd/get_mach_stat.h>
 
 #define MAX_NAME_LEN 1024
 #define TMP_FS "/tmp"
@@ -123,9 +124,9 @@ get_mach_name(char *node_name)
 {
     int error_code;
 
-    error_code = gethostname(node_name, MAX_NAME_LEN);
+    error_code = getnodename(node_name, MAX_NAME_LEN);
     if (error_code != 0)
-	error ("get_mach_name: gethostname error %d\n", error_code);
+	error ("get_mach_name: getnodename error %d\n", error_code);
 
     return error_code;
 }

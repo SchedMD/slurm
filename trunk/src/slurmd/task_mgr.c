@@ -178,7 +178,7 @@ int forward_io ( task_start_t * task_arg )
 				task_arg -> launch_msg -> global_task_ids[task_arg -> 
 				local_task_id ] , SLURM_IO_STREAM_INOUT 
 				) ;
-		pack_io_stream_header ( & io_header , & buf_ptr , & size ) ;
+		pack_io_stream_header ( & io_header , (void **) & buf_ptr , & size ) ;
 		slurm_write_stream (  task_arg->sockets[STDIN_OUT_SOCK] , buffer , buf_size - size ) ;
 	}
 	
@@ -200,7 +200,7 @@ int forward_io ( task_start_t * task_arg )
 				task_arg -> launch_msg -> global_task_ids[task_arg -> local_task_id ] , 
 				SLURM_IO_STREAM_SIGERR 
 				) ;
-		pack_io_stream_header ( & io_header , & buf_ptr , & size ) ;
+		pack_io_stream_header ( & io_header , (void **) & buf_ptr , & size ) ;
 		slurm_write_stream (  task_arg->sockets[SIG_STDERR_SOCK] , buffer , buf_size - size ) ;
 	}
 	

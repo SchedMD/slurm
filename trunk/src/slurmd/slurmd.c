@@ -33,6 +33,7 @@
 #include <time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <src/common/hostlist.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
 #include <src/common/list.h>
