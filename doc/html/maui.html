@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="12 January 2004">
+<meta name="LLNLRandRdate" content="8 July 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -89,6 +89,11 @@ also set a polling interval with
 RMPOLLINTERVAL  00:00:20
 </pre>
 I like Maui to poll SLURM quite often -- in this case every 20 seconds.
+Note that a job submitted to an idle cluster will not be initiated until
+the Maui daemon polls SLURM and decides to make it run, so the value of 
+RMPOLLINTERVAL should be set to a value appropriate for your site 
+considering both the desired system responsiveness and the overhead of 
+executing Maui daemons too frequently.
 
 The sample SLURM configuration file contains a schedule section that
 looks like this:
@@ -126,7 +131,7 @@ always be a compiled-in feature.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified March 12, 2004</p></td>
+Last modified July 8, 2004</p></td>
 </tr>
 </table>
 </td>
