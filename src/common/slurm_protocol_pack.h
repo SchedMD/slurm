@@ -51,7 +51,9 @@ int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * 
 void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buffer , int * buffer_size );
 int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size );
 
-void pack_job_info_msg ( slurm_msg_t * msg , void ** buffer , int * buffer_size );
+void pack_buffer_msg ( slurm_msg_t * msg , void ** buffer , int * buffer_size );
+#define pack_job_info_msg(msg,buf_ptr,buffer_size) pack_buffer_msg(msg,buf_ptr,buffer_size)
+#define pack_job_step_info_msg(msg,buf_ptr,buffer_size) pack_buffer_msg(msg,buf_ptr,buffer_size)
 int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buffer , int * buffer_size );
 int unpack_job_info ( job_info_t ** job , void ** buf_ptr , int * buffer_size );
 
@@ -81,8 +83,18 @@ int unpack_node_info_members ( node_info_t * node , void ** buf_ptr , int * buff
 void pack_cancel_job_msg ( job_id_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
 
-void pack_cancel_job_step_msg ( job_step_id_msg_t * msg , void ** buffer , uint32_t * length );
-int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+/* job_step_id functions */
+void pack_job_step_id ( job_step_id_t * msg , void ** buffer , uint32_t * length );
+int unpack_job_step_id ( job_step_id_t ** msg_ptr , void ** buffer , uint32_t * length );
+/* job_step_id Macros for typedefs */
+#define pack_cancel_job_step_msg(msg,buffer,length) pack_job_step_id(msg,buffer,length )
+#define unpack_cancel_job_step_msg(msg_ptr,buffer,length) unpack_job_step_id(msg_ptr,buffer,length)
+#define pack_job_step_id_msg(msg,buffer,length) pack_job_step_id(msg,buffer,length )
+#define unpack_job_step_id_msg(msg_ptr,buffer,length) unpack_job_step_id(msg_ptr,buffer,length)
+#define pack_job_step_info_request_msg(msg,buffer,length) pack_job_step_id(msg,buffer,length )
+#define unpack_job_step_info_request_msg(msg_ptr,buffer,length) unpack_job_step_id(msg_ptr,buffer,length)
+#define pack_job_info_request_msg(msg,buffer,length) pack_job_step_id(msg,buffer,length )
+#define unpack_job_info_request_msg(msg_ptr,buffer,length) unpack_job_step_id(msg_ptr,buffer,length)
 
 int unpack_job_step_info ( job_step_info_t ** step , void ** buf_ptr , int * buffer_size );
 int unpack_job_step_info_members ( job_step_info_t * step , void ** buf_ptr , int * buffer_size );
