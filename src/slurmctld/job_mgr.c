@@ -58,8 +58,10 @@
 #include <src/common/credential_utils.h>
 slurm_ssl_key_ctx_t sign_ctx ;
 
+#define DETAILS_FLAG 0xdddd
 #define MAX_STR_PACK 128
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
+#define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 100000;
 
 #define job_hash_inx(job_id)	(job_id % MAX_JOB_COUNT)
@@ -286,8 +288,8 @@ dump_all_job_state ( void )
 	int buffer_needed;
 	void *buf_ptr;
 	char *old_file, *new_file, *reg_file;
-	/* Locks: Read config and node */
-	slurmctld_lock_t job_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+	/* Locks: Read config and job */
+	slurmctld_lock_t job_read_lock = { READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
 
@@ -395,7 +397,7 @@ dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	if (detail_ptr) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
-		pack16  ((uint16_t) 0xdddd, buf_ptr, buf_len);	/* details flag */
+		pack16  ((uint16_t) DETAILS_FLAG, buf_ptr, buf_len);
 		dump_job_details_state (detail_ptr, buf_ptr, buf_len); 
 	}
 	else
@@ -411,7 +413,7 @@ dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 			break;
 		}
 #endif
-		pack16  ((uint16_t) 0xbbbb, buf_ptr, buf_len);	/* step flag */
+		pack16  ((uint16_t) STEP_FLAG, buf_ptr, buf_len);
 		dump_job_step_state (step_record_ptr, buf_ptr, buf_len);
 	};
 	list_iterator_destroy (step_record_iterator);
@@ -604,7 +606,7 @@ load_job_state ( void )
 			goto cleanup;
 		}
 
-		if (details == 0xdddd ) {
+		if (details == DETAILS_FLAG ) {
 			unpack_job_credential (&credential_ptr , &buf_ptr, &buffer_size);
 
 			safe_unpack32 (&num_procs, &buf_ptr, &buffer_size);
@@ -683,7 +685,7 @@ load_job_state ( void )
 		if (job_id_sequence <= job_id)
 			job_id_sequence = job_id + 1;
 
-		if (details == 0xdddd ) {
+		if (details == DETAILS_FLAG ) {
 			job_ptr->details->num_procs = num_procs;
 			job_ptr->details->num_nodes = num_nodes;
 			job_ptr->details->shared = shared;
@@ -705,7 +707,7 @@ load_job_state ( void )
 		}
 
 		safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
-		while ((step_flag == 0xbbbb) && (buffer_size > (2 * sizeof (uint32_t)))) {
+		while ((step_flag == STEP_FLAG) && (buffer_size > (2 * sizeof (uint32_t)))) {
 			struct step_record *step_ptr;
 			uint16_t step_id, cyclic_alloc;
 			uint32_t start_time;
@@ -1750,8 +1752,10 @@ list_delete_job (void *job_entry)
 		xfree (job_record_point->nodes);
 	if (job_record_point->node_bitmap)
 		bit_free (job_record_point->node_bitmap);
-	if (job_record_point->step_list)
+	if (job_record_point->step_list) {
 		delete_all_step_records (job_record_point);
+		list_destroy (job_record_point->step_list);
+	}
 	job_count--;
 	xfree(job_record_point);
 }

@@ -92,8 +92,6 @@ delete_all_step_records (struct job_record *job_ptr)
 	}		
 
 	list_iterator_destroy (step_record_iterator);
-	list_destroy (job_ptr->step_list);
-	job_ptr->step_list = NULL;
 }
 
 
