@@ -1,4 +1,4 @@
-.TH SLURMD "8" "October 2002" "slurmd 0.1" "Slurm components"
+.TH SLURMD "8" "March 2004" "slurmd 0.3" "Slurm components"
 .SH "NAME"
 slurmd \- The compute node daemon for SLURM.
 .SH "SYNOPSIS"
@@ -17,25 +17,14 @@ abnormally.
 \fB-D\fR
 Run slurmd in the foreground. Error and debug messages will be copied to stderr.
 .TP
-\fB-v\fR
-Verbose operation. Multiple -v's increase verbosity.
-.TP
 \fB-h\fR
 Help; print a brief summary of command options.
-.TP
-\fB-f <file>\fR
-Read configuration from the specified file.
 .TP
 \fB-L <file>\fR
 Write log messages to the specified file.
 .TP
-.SH "NOTES"
-It may be useful to experiment with different \fBslurmd\fR specific 
-configuration parameters using a distinct configuration file. However, 
-this special configuration file will not be recognized by \fBslurmctld\fR 
-or the Slurm programs. If you desire changing communication ports, 
-the location of the temporary file system, or other parameters used 
-by other Slurm components, change the common configuration file.
+\fB-v\fR
+Verbose operation. Multiple -v's increase verbosity.
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
