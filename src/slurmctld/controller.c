@@ -911,13 +911,11 @@ static void _slurm_rpc_job_step_cancel(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, NO_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_CANCEL_JOB_STEP");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
-#endif
 	lock_slurmctld(job_write_lock);
 
 	/* do RPC call */
@@ -927,7 +925,9 @@ static void _slurm_rpc_job_step_cancel(slurm_msg_t * msg)
 
 		/* return result */
 		if (error_code) {
-			info("_slurm_rpc_job_step_cancel error %d for %u, time=%ld", error_code, job_step_id_msg->job_id, (long) (clock() - start_time));
+			info("_slurm_rpc_job_step_cancel error %d for %u, time=%ld", 
+			     error_code, job_step_id_msg->job_id, 
+			     (long) (clock() - start_time));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
 			info(
@@ -981,15 +981,13 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, NO_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 	bool job_requeue = false;
 
 	/* init */
 	start_time = clock();
 	debug("Processing RPC: REQUEST_COMPLETE_JOB_STEP");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
-#endif
 	lock_slurmctld(job_write_lock);
 	/* do RPC call */
 	/* First set node down as needed on fatal error */
@@ -998,13 +996,11 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 			complete_job_step_msg->job_id, 
 		        complete_job_step_msg->node_name, 
 	                slurm_strerror (complete_job_step_msg->slurm_rc));
-#ifdef	HAVE_AUTHD
 		if ((uid != 0) && (uid != getuid())) {
 			error_code = ESLURM_USER_ID_MISSING;
 			error("Security violation, uid %u can't set node down",
 		  	      (unsigned int) uid);
 		}
-#endif
 		if (error_code == SLURM_SUCCESS) {
 			update_node_msg_t update_node_msg;
 			update_node_msg.node_names = 
@@ -1019,7 +1015,8 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 	/* Mark job and/or job step complete */
 	if (complete_job_step_msg->job_step_id == NO_VAL) {
 		error_code = job_complete(complete_job_step_msg->job_id, 
-		                          uid, job_requeue);
+		                          uid, job_requeue, 
+		                          complete_job_step_msg->job_rc);
 		unlock_slurmctld(job_write_lock);
 
 		/* return result */
@@ -1135,7 +1132,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		READ_LOCK, READ_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_UPDATE_JOB");
@@ -1143,9 +1140,7 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 	unlock_slurmctld(job_write_lock);
 
 	/* do RPC call */
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
-#endif
 	error_code = update_job(job_desc_msg, uid);
 
 	/* return result */
@@ -1179,20 +1174,16 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK,
 		WRITE_LOCK, NO_LOCK
 	};
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_UPDATE_NODE");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, UPDATE_NODE RPC from uid %u",
 		      (unsigned int) uid);
 	}
-#endif
 
 	if (error_code == 0) {
 		/* do RPC call */
@@ -1234,13 +1225,10 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK,
 		READ_LOCK, WRITE_LOCK
 	};
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_UPDATE_PARTITION");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
 		error_code = ESLURM_USER_ID_MISSING;
@@ -1248,7 +1236,6 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		    "Security violation, UPDATE_PARTITION RPC from uid %u",
 		    (unsigned int) uid);
 	}
-#endif
 
 	if (error_code == 0) {
 		/* do RPC call */
@@ -1265,7 +1252,8 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		info("_slurm_rpc_update_partition complete for partition %s, time=%ld", part_desc_ptr->name, (long) (clock() - start_time));
+		info("_slurm_rpc_update_partition complete for partition %s, time=%ld", 
+		     part_desc_ptr->name, (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
@@ -1289,14 +1277,13 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		READ_LOCK, READ_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_SUBMIT_BATCH_JOB");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0) && (uid != getuid())) {
@@ -1304,7 +1291,6 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		error("Security violation, SUBMIT_JOB from uid %u",
 		      (unsigned int) uid);
 	}
-#endif
 	if (error_code == 0) {
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, &job_id,
@@ -1352,20 +1338,18 @@ void _slurm_rpc_allocate_resources(slurm_msg_t * msg, uint8_t immediate)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, READ_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 	uint16_t node_cnt;
 	slurm_addr *node_addr;
 
 	start_time = clock();
 	if (immediate)
-		debug
-		    ("Processing RPC: REQUEST_IMMEDIATE_RESOURCE_ALLOCATION");
+		debug("Processing RPC: REQUEST_IMMEDIATE_RESOURCE_ALLOCATION");
 	else
 		debug("Processing RPC: REQUEST_RESOURCE_ALLOCATION");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0) && (uid != getuid())) {
@@ -1373,7 +1357,6 @@ void _slurm_rpc_allocate_resources(slurm_msg_t * msg, uint8_t immediate)
 		error("Security violation, RESOURCE_ALLOCATE from uid %u",
 		      (unsigned int) uid);
 	}
-#endif
 	if (error_code == 0) {
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, &job_id,
@@ -1434,7 +1417,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, READ_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 	uint16_t node_cnt;
 	slurm_addr *node_addr;
 
@@ -1443,7 +1426,6 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0) && (uid != getuid())) {
@@ -1452,7 +1434,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		    ("Security violation, ALLOCATE_AND_RUN RPC from uid %u",
 		     (unsigned int) uid);
 	}
-#endif
+	
 	if (error_code == 0) {
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, &job_id,
@@ -1531,22 +1513,18 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 	};
 	uint16_t node_cnt;
 	slurm_addr *node_addr;
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_OLD_JOB_RESOURCE_ALLOCATION");
 
 	/* do RPC call */
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != job_desc_msg->uid) && (uid != 0) && (uid != getuid())) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation, RESOURCE_ALLOCATE from uid %u",
 		      (unsigned int) uid);
 	}
-#endif
 	if (error_code == 0) {
 		lock_slurmctld(job_read_lock);
 		error_code = old_job_info(job_desc_msg->uid,
@@ -1603,14 +1581,13 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		READ_LOCK, READ_LOCK
 	};
-	uid_t uid = 0;
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_JOB_WILL_RUN");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0) && (uid != getuid())) {
@@ -1618,7 +1595,6 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 		error("Security violation, JOB_WILL_RUN RPC from uid %u",
 		      (unsigned int) uid);
 	}
-#endif
 
 	if (error_code == 0) {
 		lock_slurmctld(job_write_lock);
@@ -1647,18 +1623,14 @@ static void _slurm_rpc_ping(slurm_msg_t * msg)
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
 		error("Security violation, PING RPC from uid %u",
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
-#endif
 
 	/* return result */
 	slurm_send_rc_msg(msg, error_code);
@@ -1676,20 +1648,16 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
 		WRITE_LOCK, WRITE_LOCK
 	};
-#ifdef HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_RECONFIGURE");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
 		error("Security violation, RECONFIGURE RPC from uid %u",
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
-#endif
 
 	/* do RPC call */
 	if (error_code == 0) {
@@ -1729,8 +1697,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	int error_code = 0, i;
 	uint16_t core_arg = 0;
 	shutdown_msg_t *shutdown_msg = (shutdown_msg_t *) msg->data;
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
+	uid_t uid;
 
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
@@ -1738,7 +1705,6 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
-#endif
 	if (error_code);
 	else if (msg->msg_type == REQUEST_CONTROL) {
 		info("Performing RPC: REQUEST_CONTROL");
@@ -1780,8 +1746,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 {
 	int error_code = 0;
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
+	uid_t uid;
 
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
@@ -1790,7 +1755,6 @@ static void _slurm_rpc_shutdown_controller_immediate(slurm_msg_t * msg)
 		     (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
-#endif
 
 	/* do RPC call */
 	/* No op: just used to knock loose accept RPC thread */
@@ -1815,14 +1779,11 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		READ_LOCK, NO_LOCK
 	};
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: REQUEST_JOB_STEP_CREATE");
 	dump_step_desc(req_step_msg);
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != req_step_msg->user_id) &&
 	    (uid != 0) && (uid != getuid())) {
@@ -1831,7 +1792,6 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		    ("Security violation, JOB_STEP_CREATE RPC from uid %u",
 		     (unsigned int) uid);
 	}
-#endif
 
 	if (error_code == 0) {
 		/* issue the RPC */
@@ -1885,20 +1845,16 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, NO_LOCK
 	};
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
-#endif
+	uid_t uid;
 
 	start_time = clock();
 	debug("Processing RPC: MESSAGE_NODE_REGISTRATION_STATUS");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
 		error_code = ESLURM_USER_ID_MISSING;
 		error("Security violation,  NODE_REGISTER RPC from uid %u",
 		      (unsigned int) uid);
 	}
-#endif
 	if (error_code == 0) {
 		/* do RPC call */
 		lock_slurmctld(job_write_lock);
@@ -2268,8 +2224,7 @@ void *background_rpc_mgr(void *no_data)
 int background_process_msg(slurm_msg_t * msg)
 {
 	int error_code = 0;
-#ifdef	HAVE_AUTHD
-	uid_t uid = 0;
+	uid_t uid;
 
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
@@ -2277,7 +2232,6 @@ int background_process_msg(slurm_msg_t * msg)
 		      (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
-#endif
 
 	if (error_code == 0) {
 		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE) {

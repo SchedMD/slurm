@@ -375,8 +375,18 @@ extern int job_cancel (uint32_t job_id, uid_t uid);
 /* job_step_cancel - cancel the specified job step */
 extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
 
-/* job_complete - note the completion the specified job */
-extern int job_complete (uint32_t job_id, uid_t uid, bool requeue);
+/* 
+ * job_complete - note the normal termination the specified job
+ * IN job_id - id of the job which completed
+ * IN uid - user id of user issuing the RPC
+ * IN requeue - job should be run again if possible
+ * IN job_return_code - job's return code, if set then set state to JOB_FAILED
+ * RET - 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int job_complete (uint32_t job_id, uid_t uid, bool requeue, 
+	uint32_t job_return_code);
 
 /* job_step_complete - note the completion the specified job step*/
 extern int job_step_complete (uint32_t job_id, uint32_t job_step_id, uid_t uid);
