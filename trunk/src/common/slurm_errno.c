@@ -82,6 +82,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 	{ ESLURM_INTERCONNECT_FAILURE,		"Error configuring interconnect" },
+	{ ESLURM_BAD_DIST,			"Task distribution specification invalid" },
 
 	/* Quadrics Elan routine error codes */
 	{ ENOSLURM,             "Out of slurm" }, /* oh no! */
