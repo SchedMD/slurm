@@ -1,0 +1,122 @@
+SLURM Overlord Daemon
+November 7, 2001
+By Moe Jette
+
+
+Abstract
+
+The purpose of SLURM's overlord daemon is to initiate other 
+SLURM daemons and keep them running.
+
+
+Overlord Daemon
+
+The configuration of the overlord daemon will be specified by 
+a configuration file, which will be available on every node 
+in the cluster (it could be in NFS or there could be copies 
+on each local disk for improved performance). 
+The location of this file will be provided by the symbolic link at 
+"/etc/SLURM.cfg".
+There will be default values for most parameters if not specified. 
+Lines in the configuration file having "#" in column one will be 
+considered comments.
+Parameters used by the overlord daemon include:
+ControlMachine    The fully qualified name of the machine where control 
+                  functions operate
+OverlordDaemon    The qualified pathname of the file containing the Overlord 
+                  Daemon (default "/usr/local/SLURM/OverlordDaemon")
+OverlordPort      The port to be used for the Overlord Daemon communications. 
+                  Should be privileged port (acquired only by user root).
+OverlordDebug     A list of debug flags separated by commas (default is 
+                  minimal logging, example "init,msg")
+MachStatusManager The qualified pathname of the file containing the Machine 
+                  Status Manager (default "/usr/local/SLURM/MachStatusManager")
+MachStatusDaemon  The qualified pathname of the file containing the Machine 
+                  Status Daemon (default "/usr/local/SLURM/MachStatusDaemon")
+Only one parameter should be specified per line with the parameter's name, 
+an equal sign, and the value. 
+White space is ignored.
+A sample SlurmConf file is included at the end of this document.
+
+The operation of MSM will be as follows:
+ 1. Read the SlurmConf file and confirm its integrity, log results
+2A. If executing host is ControlMachine, then initiate MachStatusManager
+    and log the event.
+2B. If executing host is not ControlMachine, then initiate MachStatusDaemon
+    and log the event.
+ 3. If any initiated daemons terminates, re-initiate it and log the event.
+ 4. Accept (and propogate as required) requests from user root to stop, 
+    start, and restart sub-ordinate daemons
+NOTE: Other daemons to be started will be added in the future
+
+An API will be provided to request that the Overlord daemon stop, start, 
+and restart sub-ordinate daemons. We will provide a simple command-line interface to the OverlordDaemon utilizing the API described above. 
+It will be able to operate on individual nodes or sets of nodes.
+
+
+Notes
+
+It would be simple for the Overlord daemon to execute an arbitrary 
+program. This would provide a highly scalable tool for system administrators. 
+Is this of value? Should we deal with STDIN, STDOUT, and STDERR? If 
+so, this will result in the implementation of much infrastructure 
+required for user job initiation.
+
+We need to discuss fault-tolerance, which requires the communications 
+library design work.
+
+
+Sample SlurmConf
+
+# 
+# Example SlurmConf
+# Author: John Doe
+# Date: 11/07/2001
+#
+ControlMachine    = lx_control.llnl.gov
+CollectorNodes    = lx01.llnl.gov, lx02.llnl.gov
+NodeSpecConf      = /usr/local/SLURM/NodeSpecConf
+#
+OverlordDaemon    = /usr/local/SLURM/OverlordDaemon
+OverlordPort      = 611
+OverlordDebug     = init,msg
+#
+MachStatusManager = /usr/local/SLURM/MachStatusManager
+MachStatusDaemon  = /usr/local/SLURM/MachStatusDaemon
+MachStatusPort    = 612
+MachStatusDebug   = init,msg
+#
+HeartBeatInterval = 300
+HeartBeatTimeout  = 600
+
+
+Dependencies
+
+The Communications Library is required.
+The Logging Library may be required depending upon design decisions.
+
+
+Module Testing
+
+Test Overlord Daemon with various file location names including invalid names 
+(see OverlordDaemon, MachStatusManager, and MachStatusDaemon).
+Test Overlord Daemon with various port numbers including invalid values 
+(see OverlordPort).
+Test Overlord Daemon with debug options including invalid values 
+(see OverlordDebug).
+Review logs from above tests.
+
+
+Integration and System Testing
+
+Test Overlord Daemon fault-tolerance with nodes being dropped.
+Test Overlord Daemon starting, stopping and restarting various collections 
+of nodes.
+Test Overlord Daemon's ability to restart MachStatusManager and MachStatusDaemon
+automatically after their failure.
+Test Overlord Daemon with debug options including invalid values 
+(see OverlordDebug).
+Test Overlord Daemon API with all options both from a privileged port 
+and a non-previlged port (non-root user).
+
+Test Overlord Daemon Tool, all options in various combinations per man pages.
