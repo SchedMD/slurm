@@ -657,6 +657,12 @@ _task_exec(slurmd_job_t *job, int i, bool batch)
 		}
 	}
 
+#ifdef HAVE_TOTALVIEW
+	/* Stop the tasks on exec for TotalView to connect */
+	if ((job->task_flags & TASK_TOTALVIEW_DEBUG) &&
+	    (ptrace(PTRACE_TRACEME, 0, NULL, NULL) == -1))
+		error("ptrace: %m");
+#endif
 
 	/* exec the cmdline */
 	execve(job->argv[0], job->argv, job->env);

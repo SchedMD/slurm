@@ -106,6 +106,7 @@ typedef struct slurmd_job {
 	List           objs; 
 	List 	       sruns;
 	pthread_t      ioid;
+	uint16_t       task_flags;
 } slurmd_job_t;
 
 

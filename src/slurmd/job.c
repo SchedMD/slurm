@@ -121,6 +121,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->debug   = msg->slurmd_debug;
 
 	job->timelimit   = msg->credential->expiration_time;
+	job->task_flags  = msg->task_flags;
 
 	job->envc    = msg->envc;
 	job->env     = _array_copy(job->envc, msg->env);
