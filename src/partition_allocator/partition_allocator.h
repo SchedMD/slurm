@@ -44,6 +44,13 @@ extern bool _initialized;
 
 typedef struct {
 	int geometry[PA_SYSTEM_DIMENSIONS];
+	int dim;
+	int in; 
+	int out;
+} pa_path_switch_t; 
+
+typedef struct {
+	int geometry[PA_SYSTEM_DIMENSIONS];
 	int size; 
 	int conn_type;
 	int rotate_count;
@@ -60,6 +67,7 @@ typedef struct
 
 	/* target label */
 	int node_tar[PA_SYSTEM_DIMENSIONS];
+	int used;
 	
 	
 } pa_connection_t;
@@ -73,7 +81,8 @@ typedef struct
  */
 typedef struct
 {
-	pa_connection_t wire[NUM_PORTS_PER_NODE];
+	pa_connection_t int_wire[NUM_PORTS_PER_NODE];
+	pa_connection_t ext_wire[NUM_PORTS_PER_NODE];
 
 } pa_switch_t;
 
@@ -164,7 +173,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request, List* results);
+int allocate_part(pa_request_t* pa_request);
 
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
@@ -189,6 +198,7 @@ char* get_conf_result_str(List pa_node_list);
 
 int _create_config_even(pa_node_t ***grid);
 void _switch_config(pa_node_t* source, pa_node_t* target, int dim, int port_src, int port_tar);
-void _set_up_ports(int dim, int count, pa_node_t* source, pa_node_t* target_1, pa_node_t* target_2, pa_node_t* target_first, pa_node_t* target_second);
+void _set_external_wires(int dim, int count, pa_node_t* source, pa_node_t* target_1, pa_node_t* target_2, pa_node_t* target_first, pa_node_t* target_second);
+int _set_internal_wires(List *nodes, int size);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */
