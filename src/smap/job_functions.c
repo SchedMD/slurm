@@ -135,9 +135,11 @@ static void _print_header_job(void)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "PARTITION");
 		pa_system_ptr->xcord += 10;
+#if HAVE_BGL
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "BGL_BLOCK");
 		pa_system_ptr->xcord += 10;
+#endif
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "USER");
 		pa_system_ptr->xcord += 9;
@@ -161,7 +163,9 @@ static void _print_header_job(void)
 		printf("ID\t");
 		printf("JOBID\t");
 		printf("PARTITION\t");
+#if HAVE_BGL
 		printf("BGL_BLOCK\t");
+#endif
 		printf("USER\t");
 		printf("NAME\t");
 		printf("ST\t");
@@ -191,6 +195,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.10s", job_ptr->partition);
 		pa_system_ptr->xcord += 10;
+#if HAVE_BGL
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.10s", 
 			  select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
@@ -198,8 +203,10 @@ static int _print_text_job(job_info_t * job_ptr)
 						  sizeof(time_buf), 
 						  SELECT_PRINT_BGL_ID));
 		pa_system_ptr->xcord += 10;
+#endif
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "%.8s", uid_to_string((uid_t) job_ptr->user_id));
+			  pa_system_ptr->xcord, "%.8s", 
+			  uid_to_string((uid_t) job_ptr->user_id));
 		pa_system_ptr->xcord += 9;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.9s", job_ptr->name);
@@ -249,11 +256,13 @@ static int _print_text_job(job_info_t * job_ptr)
 		printf("%c\t", job_ptr->num_procs);
 		printf("%d\t", job_ptr->job_id);
 		printf("%s\t", job_ptr->partition);
+#if HAVE_BGL
 		printf("%s\t", 
 		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
 					       time_buf, 
 					       sizeof(time_buf), 
 					       SELECT_PRINT_BGL_ID));
+#endif
 		printf("%s\t", uid_to_string((uid_t) job_ptr->user_id));
 		printf("%s\t", job_ptr->name);
 		printf("%s\t",
