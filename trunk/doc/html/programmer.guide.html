@@ -39,29 +39,34 @@ processes as needed.
 Figure 1: SLURM components
 
 <h2>Code Modules</h2>
-<b>Controller.c</b> Primary SLURM daemon to execute on control machine.
-<p>
-<b>Get_Mach_Stat.c</b> gets the machine's status and configuration. 
+<dl>
+<dt>Controller.c
+<dd> Primary SLURM daemon to execute on control machine. 
+It manages the Partition Manager, Node Manager, and Job Manager threads.
+<dt>Get_Mach_Stat.c
+<dd>Module gets the machine's status and configuration. 
 This includes: operating system version, size of real memory, size 
 of virtual memory, size of /tmp disk storage, number of processors, 
-and speed of processors.
-<p>
-<b>list.c</b> is a general purpose list manager. One can define a 
-list, add and delete entries, search for entries, etc.
-<p>
-<b>list.h</b> contains definitions for list.c and documentation for 
-its functions.
-<p>
-<b>Mach_Stat_Mgr.c</b> reads, writes, records, updates, and otherwise 
+and speed of processors. This is a module of the Job Shepherd component.
+<dt>list.c
+<dd>Module is a general purpose list manager. One can define a 
+list, add and delete entries, search for entries, etc. This module 
+is used by multiple SLURM components.
+<dt>list.h
+<dd>Module contains definitions for list.c and documentation for its functions.
+<dt>Mach_Stat_Mgr.c
+<dd>Module reads, writes, records, updates, and otherwise 
 manages the state information for all nodes (machines) in the 
-cluster managed by SLURM.
-<p>
-<b>Partition_Mgr.c</b> reads, writes, records, updates, and otherwise 
+cluster managed by SLURM. This module performs much of the Node Manager 
+component functionality.
+<dt>Partition_Mgr.c
+<dd>Module reads, writes, records, updates, and otherwise 
 manages the state information associated with partitions in the 
-cluster managed by SLURM.
-<p>
-<b>Slurm_Admin.c</b> administration tool for reading, writing, and 
+cluster managed by SLURM. This module is the Partition Manager component.
+<dt>Slurm_Admin.c
+<dd> administration tool for reading, writing, and 
 updating SLURM configuration.
+</dl>
 
 <h2>Design Issues</h2>
 Most modules are constructed with a some simple, built-in tests. 
@@ -102,7 +107,7 @@ higher-level scheduler will insure that no job suffers from starvation.</li>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified January 4, 2002</p>
+<p>Last Modified January 8, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
