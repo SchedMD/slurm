@@ -143,7 +143,7 @@ _session_mgr(slurmd_job_t *job)
 	 * Call interconnect_init() before becoming user
 	 */
 	if (!job->batch && (interconnect_init(job) < 0)) {
-		error("interconnect_init: %m");
+		/* error("interconnect_init: %m"); already logged */
 		exit(1);
 	}
 
