@@ -156,11 +156,9 @@ shm_fini(void)
 
 	debug3("%ld calling shm_fini() (attached by %ld)", 
 		getpid(), attach_pid);
-	/* xassert(attach_pid == getpid()); */
 
-	/* if ((attach_pid == getpid()) && (--slurmd_shm->users == 0))
-         *		destroy = 1;
-	 */
+	debug("[%ld] shm_fini: shm_users = %d", getpid(), slurmd_shm->users); 
+
 	if (--slurmd_shm->users == 0)
 		destroy = 1;
 
@@ -191,7 +189,7 @@ shm_cleanup(void)
 	char *s;
 
 	if ((s = _create_ipc_name(SHM_LOCKNAME))) {
-		verbose("request to destroy shm lock `%s'", s);
+		info("request to destroy shm lock `%s'", s);
 		if (sem_unlink(s) < 0)
 			error("sem_unlink: %m");
 		xfree(s);
