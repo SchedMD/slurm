@@ -26,6 +26,7 @@
 
 extern "C" {
 # include "src/common/log.h"
+# include "src/common/macros.h"
 }
 
 #include "agent.h"
@@ -69,7 +70,7 @@ agent_t::start( void )
 {
 	pthread_attr_t attr;
 
-	pthread_attr_init( &attr );
+	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	return pthread_create( &m_thread,
 			       &attr,

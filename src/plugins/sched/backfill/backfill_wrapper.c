@@ -32,6 +32,7 @@
 
 #include "src/common/plugin.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "backfill.h"
 
 const char		plugin_name[]	= "SLURM Backfill Scheduler plugin";
@@ -61,7 +62,7 @@ int init( void )
 		return SLURM_ERROR;
 	}
 
-	pthread_attr_init( &attr );
+	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	pthread_create( &backfill_thread, NULL, backfill_agent, NULL);
 	thread_running = true;
