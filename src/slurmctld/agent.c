@@ -66,6 +66,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -252,26 +253,21 @@ void *agent(void *args)
 /* Basic validity test of agent argument */
 static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 {
-	if (agent_arg_ptr == NULL)
-		fatal("agent NULL argument");
+	xassert(agent_arg_ptr);
+	xassert(agent_arg_ptr->slurm_addr);
+	xassert(agent_arg_ptr->node_names);
+	xassert((agent_arg_ptr->msg_type == REQUEST_KILL_JOB) ||
+		(agent_arg_ptr->msg_type == REQUEST_KILL_TIMELIMIT) || 
+		(agent_arg_ptr->msg_type == REQUEST_UPDATE_JOB_TIME) ||
+		(agent_arg_ptr->msg_type == REQUEST_KILL_TASKS) || 
+		(agent_arg_ptr->msg_type == REQUEST_PING) || 
+		(agent_arg_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) || 
+		(agent_arg_ptr->msg_type == REQUEST_SHUTDOWN) || 
+		(agent_arg_ptr->msg_type == REQUEST_RECONFIGURE) || 
+		(agent_arg_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS));
+
 	if (agent_arg_ptr->node_count == 0)
 		return SLURM_FAILURE;	/* no messages to be sent */
-	if (agent_arg_ptr->slurm_addr == NULL)
-		fatal("agent passed NULL address list");
-	if (agent_arg_ptr->node_names == NULL)
-		fatal("agent passed NULL node name list");
-	if ((agent_arg_ptr->msg_type != REQUEST_KILL_JOB) &&
-	    (agent_arg_ptr->msg_type != REQUEST_KILL_TIMELIMIT) && 
-	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) && 
-	    (agent_arg_ptr->msg_type != REQUEST_KILL_TASKS) && 
-	    (agent_arg_ptr->msg_type != REQUEST_PING) && 
-	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH) &&
-	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
-	    (agent_arg_ptr->msg_type != REQUEST_RECONFIGURE) &&
-	    (agent_arg_ptr->msg_type != REQUEST_UPDATE_JOB_TIME))
-		/* Add appropriate free msg type to agent() as needed */
-		fatal("agent passed invalid message type %d",
-		      agent_arg_ptr->msg_type);
 	return SLURM_SUCCESS;
 }
 
