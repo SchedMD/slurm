@@ -196,12 +196,14 @@ int main(int argc, char *argv[])
 		case JOBS:
 			get_job();
 			break;
+#if HAVE_BGL
 		case COMMANDS:
 			get_command();
 			break;
 		case BGLPART:
 			get_bgl_part();
 			break;
+#endif
 		default:
 			get_slurm_part();
 			break;
@@ -284,10 +286,6 @@ static int _get_option()
 
 	ch = getch();
 	switch (ch) {
-	case 'b':
-		params.display = BGLPART;
-		return 1;
-		break;
 	case 's':
 		params.display = SLURMPART;
 		return 1;
@@ -296,10 +294,16 @@ static int _get_option()
 		params.display = JOBS;
 		return 1;
 		break;
+#if HAVE_BGL
+	case 'b':
+		params.display = BGLPART;
+		return 1;
+		break;
 	case 'c':
 		params.display = COMMANDS;
 		return 1;
 		break;
+#endif
 	case 'u':
 	case KEY_UP:
 		line_cnt--;
@@ -354,7 +358,6 @@ static void *_resize_handler(int sig)
 		      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 		exit(0);
 	}
-	int tempwidth = width;
         
 	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
 	max_display = pa_system_ptr->grid_win->_maxy*
@@ -379,12 +382,14 @@ static void *_resize_handler(int sig)
 	case JOBS:
 		get_job();
 		break;
+#if HAVE_BGL
 	case COMMANDS:
 		get_command();
 		break;
 	case BGLPART:
 		get_bgl_part();
 		break;
+#endif
 	default:
 		get_slurm_part();
 		break;
