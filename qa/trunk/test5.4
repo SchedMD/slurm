@@ -23,7 +23,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"          >$file_in
-exec echo "$srun $bin_sleep 60" >>$file_in
+exec echo "$srun $bin_sleep 90" >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -177,7 +177,7 @@ if {$have_job_ids == 1} {
 # Wait for the job step to appear
 #
 
-spawn $squeue --iterate=2 --steps
+spawn $squeue --iterate=5 --steps
 set step_id    "$job_id1.0"
 set iteration  0
 set step_found 0
@@ -189,14 +189,6 @@ expect {
 		exp_continue
 	}
 	-re "PARTITION" {
-		incr iteration
-		if {$iteration >= 3} {
-			set squeue_pid [exp_pid]
-			exec $bin_kill -TERM $squeue_pid
-		}
-		exp_continue
-	}
-	-re "No job steps found in system" {
 		incr iteration
 		if {$iteration >= 3} {
 			set squeue_pid [exp_pid]
