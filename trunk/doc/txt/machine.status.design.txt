@@ -31,14 +31,13 @@ There will be default values for most parameters if not specified.
 Lines in the configuration file having "#" in column one will be 
 considered comments.
 Parameters used by the machine status include:
-ControlMachine    The fully qualified name of the machine where control 
-                  functions operate
+ControlMachine    The name of the machine where control functions operate
 CollectorNodes    Comma separated list of nodes which can server to 
                   collect messages and combine the data so as to 
                   reduce network traffic (Note: This design feature is unique  
                   to SLURM and DPCS, it offers vastly improved scalability, 
-                  default is none, specify comma separated list of fully 
-                  qualified node names as desired)
+                  default is none, specify comma separated list of node 
+                  names as desired)
 NodeSpecConf      Fully qualified pathname of the file containing node 
                   configuration information as described below (default 
                   "/usr/local/SLURM/NodeSpecConf")
@@ -65,7 +64,7 @@ A sample SlurmConf file is included at the end of this document.
 
 
 MSM will maintain the following information about each node:
- 1 Name           Fully qualified pathname of a node (e.g. "lx12.llnl.gov")
+ 1 Name           Name of a node as returned by uname (e.g. "lx12")
  2 OS             Operating System name and level (output of the command
                   "/bin/uname -s -r | /bin/sed 's/ //g'")
  3 CPUs           Number of processors (e.g. "2")
@@ -228,8 +227,8 @@ Sample SlurmConf
 # Author: John Doe
 # Date: 11/06/2001
 #
-ControlMachine    = lx_control.llnl.gov
-CollectorNodes    = lx01.llnl.gov,lx02.llnl.gov
+ControlMachine    = lx_control
+CollectorNodes    = lx01,lx02
 NodeSpecConf      = /usr/local/SLURM/NodeSpecConf
 PartitionConf     = /usr/local/SLURM/PartitionConf
 #
@@ -251,12 +250,12 @@ Sample NodeSpecConf
 #
 Name=DEFAULT OS=RedHat4.3 CPUs=2 Speed=1.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=1
 #
-Name=lx01.llnl.gov
-Name=lx02.llnl.gov
-Name=lx03.llnl.gov Speed=1.5 RealMemory=3072 Partition=1,2
-Name=lx04.llnl.gov CPUs=1 Speed=1.3 Partition=1,3
-Name=lx05.llnl.gov
-Name=lx06.llnl.gov
+Name=lx01
+Name=lx02
+Name=lx03 Speed=1.5 RealMemory=3072 Partition=1,2
+Name=lx04 CPUs=1 Speed=1.3 Partition=1,3
+Name=lx05
+Name=lx06
 
 
 Dependencies
