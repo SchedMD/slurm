@@ -66,18 +66,17 @@ if {[wait_for_job $job_id "RUNNING"] != 0} {
 	send_user "\nFAILURE: waiting for job to start running\n"
 	exit 1
 }
-
-exec $bin_sleep 2
+sleep 5
 spawn $scancel --batch -s INT $job_id
 expect {
 	eof {
 		wait
 	}
 }
-exec $bin_sleep 2
+sleep 2
 
 #
-# Confirm that job still exists
+# Confirm that job step still exists
 #
 set found_step 0
 spawn $squeue --steps
