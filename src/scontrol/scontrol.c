@@ -1093,7 +1093,7 @@ _update_part (int argc, char *argv[])
 		if (strncasecmp(argv[i], "PartitionName=", 14) == 0)
 			part_msg.name = &argv[i][14];
 		else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
-			if (strcasecmp(&argv[i][8],"INFINITE") == 0)
+			if (strcasecmp(&argv[i][8],"UNLIMITED") == 0)
 				part_msg.max_time = INFINITE;
 			else
 				part_msg.max_time = 
@@ -1101,7 +1101,7 @@ _update_part (int argc, char *argv[])
 						(char **) NULL, 10);
 		}
 		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0)
-			if (strcasecmp(&argv[i][9],"INFINITE") == 0)
+			if (strcasecmp(&argv[i][9],"UNLIMITED") == 0)
 				part_msg.max_nodes = INFINITE;
 			else
 				part_msg.max_nodes = 

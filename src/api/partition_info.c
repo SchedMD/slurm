@@ -71,11 +71,11 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 
 	fprintf ( out, "PartitionName=%s ", part_ptr->name);
 	if (part_ptr->max_time == INFINITE)
-		fprintf ( out, "MaxTime=INFINITE ");
+		fprintf ( out, "MaxTime=UNLIMITED ");
 	else
 		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
 	if (part_ptr->max_nodes == INFINITE)
-		fprintf ( out, "MaxNodes=INFINITE ");
+		fprintf ( out, "MaxNodes=UNLIMITED ");
 	else
 		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
 	fprintf ( out, "TotalNodes=%u ", part_ptr->total_nodes);
