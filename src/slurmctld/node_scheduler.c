@@ -818,7 +818,7 @@ static int _build_node_list(struct job_record *job_ptr,
 	struct config_record *config_ptr;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	ListIterator config_record_iterator;
-	int tmp_feature, check_node_config;
+	int tmp_feature, check_node_config, config_filter = 0;
 	struct job_details *detail_ptr = job_ptr->details;
 	bitstr_t *exc_node_mask = NULL;
 
@@ -842,14 +842,19 @@ static int _build_node_list(struct job_record *job_ptr,
 		if (tmp_feature == 0)
 			continue;
 
+		if ((detail_ptr->min_procs  > config_ptr->cpus       ) || 
+		    (detail_ptr->min_memory > config_ptr->real_memory) || 
+		    (detail_ptr->min_tmp_disk > config_ptr->tmp_disk))
+			config_filter = 1;
+
 		/* since nodes can register with more resources than defined */
 		/* in the configuration, we want to use those higher values */
 		/* for scheduling, but only as needed (slower) */
-		if (slurmctld_conf.fast_schedule)
+		if (slurmctld_conf.fast_schedule) {
+			if (config_filter)
+				continue;
 			check_node_config = 0;
-		else if ((detail_ptr->min_procs  > config_ptr->cpus       ) || 
-			 (detail_ptr->min_memory > config_ptr->real_memory) || 
-			 (detail_ptr->min_tmp_disk > config_ptr->tmp_disk)) {
+		} else if (config_filter) {
 			check_node_config = 1;
 		} else
 			check_node_config = 0;
