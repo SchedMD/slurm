@@ -29,6 +29,9 @@
 #endif
 
 #include <errno.h>
+#include <stdio.h> 
+#include <stdlib.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
@@ -52,12 +55,19 @@
 #define PTHREAD_IMPL
 
 /* global variables */
+typedef struct slurmd_config
+{
+	log_options_t log_opts ;
+	char * slurm_conf ;
+} slurmd_config_t ;
+
 
 time_t init_time;
 slurmd_shmem_t * shmem_seg ;
 char hostname[MAX_NAME_LEN] ;
 slurm_ssl_key_ctx_t verify_ctx ;
 List credential_state_list ;
+slurmd_config_t slurmd_conf ;
 
 /* function prototypes */
 static void slurmd_req ( slurm_msg_t * msg );
@@ -73,6 +83,7 @@ inline static int fill_in_node_registration_status_msg ( slurm_node_registration
 static void * service_connection ( void * arg ) ;
 inline int slurmd_init ( ) ;
 inline int slurmd_destroy ( ) ;
+static int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_config ) ;
 
 typedef struct connection_arg
 {
@@ -83,10 +94,14 @@ int main (int argc, char *argv[])
 {
 	int error_code ;
 	char node_name[MAX_NAME_LEN];
-	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	log_options_t log_opts_def = LOG_OPTS_STDERR_ONLY ;
+
 	init_time = time (NULL);
-	opts.stderr_level = LOG_LEVEL_DEBUG3;
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	slurmd_conf . log_opts = log_opts_def ;
+
+
+	parse_commandline_args ( argc, argv, & slurmd_conf ) ;
+	log_init(argv[0], slurmd_conf . log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 /*
 	if ( ( error_code = init_slurm_conf () ) ) 
@@ -458,3 +473,121 @@ void slurm_rpc_slurmd_template ( slurm_msg_t * msg )
 
 }
 
+void usage (char *prog_name)
+{
+	printf ("%s [OPTIONS]\n", prog_name);
+	printf ("  -e <errlev>  Set stderr logging to the specified level\n");
+	printf ("  -f <file>    Use specified configuration file name\n");
+	printf ("  -h           Print a help message describing usage\n");
+	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
+	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
+	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
+}
+
+int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_config )
+{
+	int c;
+	int digit_optind = 0;
+	int errlev;
+	opterr = 0;
+
+	while (1) 
+	{
+		int this_option_optind = optind ? optind : 1;
+		int option_index = 0;
+		static struct option long_options[] = 
+		{
+			{"add", 1, 0, 0},
+			{"append", 0, 0, 0},
+			{"delete", 1, 0, 0},
+			{"verbose", 0, 0, 0},
+			{"create", 1, 0, 'c'},
+			{"file", 1, 0, 0},
+			{0, 0, 0, 0}
+		};
+
+		c = getopt_long (argc, argv, "ehfls:d:012", long_options, &option_index);
+		if (c == -1)
+			break;
+
+
+		switch (c) 
+		{
+			case 'e':
+				errlev = strtol (optarg, (char **) NULL, 10);
+				if ((errlev < LOG_LEVEL_QUIET) ||
+						(errlev > LOG_LEVEL_DEBUG3)) {
+					fprintf (stderr, "invalid errlev argument\n");
+					usage (argv[0]);
+					exit (1);
+				}
+				slurmd_config -> log_opts . stderr_level = errlev;
+				break;
+			case 'h':
+				usage (argv[0]);
+				exit (0);
+				break;
+			case 'f':
+				slurmd_config -> slurm_conf = optarg;
+				printf("slurmctrld.slurm_conf = %s\n", slurmd_config -> slurm_conf );
+				break;
+			case 'l':
+				errlev = strtol (optarg, (char **) NULL, 10);
+				if ((errlev < LOG_LEVEL_QUIET) ||
+						(errlev > LOG_LEVEL_DEBUG3)) {
+					fprintf (stderr, "invalid errlev argument\n");
+					usage (argv[0]);
+					exit (1);
+				}
+				slurmd_config -> log_opts . logfile_level = errlev;
+				break;
+			case 's':
+				errlev = strtol (optarg, (char **) NULL, 10);
+				if ((errlev < LOG_LEVEL_QUIET) ||
+						(errlev > LOG_LEVEL_DEBUG3)) {
+					fprintf (stderr, "invalid errlev argument\n");
+					usage (argv[0]);
+					exit (1);
+				}
+				slurmd_config -> log_opts . syslog_level = errlev;
+				break;
+			case 0:
+				info ("option %s", long_options[option_index].name);
+				if (optarg)
+				{
+					info (" with arg %s", optarg);
+				}
+				break;
+
+			case '0':
+			case '1':
+			case '2':
+				if (digit_optind != 0 && digit_optind != this_option_optind)
+				{
+					info ("digits occur in two different argv-elements.");
+				}
+				digit_optind = this_option_optind;
+				info ("option %c\n", c);
+				break;
+			case '?':
+				info ("?? getopt returned character code 0%o ??", c);
+				break;
+
+			default:
+				info ("?? getopt returned character code 0%o ??", c);
+				usage (argv[0]);
+				exit (1);
+				break;
+		}
+
+		if (optind < argc) {
+			printf ("non-option ARGV-elements: ");
+			while (optind < argc)
+			{
+				printf ("%s ", argv[optind++]);
+			}
+			printf ("\n");
+		}
+	}
+	return SLURM_SUCCESS ;
+}

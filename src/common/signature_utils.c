@@ -38,6 +38,7 @@ int slurm_init_signer ( slurm_ssl_key_ctx_t * ctx , char * path )
 	{
 		local_errno = errno ;
 		error ( "can't open credential sign key file '%s' : %m" , path ) ;
+		return SLURM_ERROR ;
 	};
 	ctx -> key . private = PEM_read_PrivateKey ( key_file, NULL , NULL , NULL ) ;
 	fclose ( key_file ) ;
@@ -59,6 +60,7 @@ int slurm_init_verifier ( slurm_ssl_key_ctx_t * ctx , char * path )
 	{
 		local_errno = errno ;
 		error ( "can'topen certificate file '%s' : %m " , path ) ;
+		return SLURM_ERROR ;
 	};
 	
 	x509 = PEM_read_X509 ( cert_file, NULL , NULL , NULL ) ;
