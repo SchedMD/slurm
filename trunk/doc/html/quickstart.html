@@ -388,8 +388,7 @@ SLURM_CONFIG_FILE = /etc/slurm/slurm.conf
 StateSaveLocation = /usr/local/tmp/slurm/adev
 TmpFS             = /tmp
 
-Slurmctld(primary)   at adevi is UP
-Slurmctld(secondary) at adevj is UP
+Slurmctld(primary/backup) at adevi/adevj are UP/UP
 </pre>
 <p>
 Shutdown all SLURM daemons on all nodes.
@@ -399,7 +398,7 @@ adev0: scontrol shutdown
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/quick.start.guide.html
-<p>Last Modified March 21, 2003</p>
+<p>Last Modified March 24, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
