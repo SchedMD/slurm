@@ -17,11 +17,15 @@ print_header $test_id
 
 #
 # Submit a slurm job that will bogus executable
-# Set debug level to 4 (above default value of 2, net is 6)
+# Set debug level to 3 (above default value of 2, net is 5)
 #
 set timeout $max_job_delay
 spawn $srun -N1 -d4 -t1 /invalid_executable  
 expect {
+	-re "debug " {
+		set debug_level 5
+		exp_continue
+	}
 	-re "debug2" {
 		set debug_level 6
 		exp_continue
@@ -38,7 +42,7 @@ expect {
 	}
 }
 
-if {$debug_level != 6} {
+if {$debug_level != 5} {
 	send_user "\nFAILURE: Did not log at proper debug level\n"
 	set exit_code 1
 }
