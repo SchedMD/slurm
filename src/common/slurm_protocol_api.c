@@ -783,11 +783,28 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp,
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
         slurm_fd fd = -1;
+	int rc;
 
-        if ((fd = slurm_open_controller_conn()) < 0) 
+	if ((fd = slurm_open_controller_conn()) < 0)
                 return SLURM_SOCKET_ERROR;
 
-        return _send_and_recv_msg(fd, req, resp, 0);
+        rc =_send_and_recv_msg(fd, req, resp, 0);
+	/* If the backup controller is in the process of assuming 
+	 * control, we sleep and retry later */
+	if ((rc == SLURM_SUCCESS) &&
+	    (resp->msg_type == RESPONSE_SLURM_RC) &&
+	    ((((return_code_msg_t *) resp->data)->return_code) ==
+	     ESLURM_IN_STANDBY_MODE) &&
+	    (slurmctld_conf.backup_controller)) {
+		debug("Neither primary nor backup controller responding, sleep and retry");
+		slurm_free_return_code_msg(resp->data);
+		sleep(slurmctld_conf.slurmctld_timeout + 
+		      slurmctld_conf.heartbeat_interval);
+		if ((fd = slurm_open_controller_conn()) < 0) 
+                	return SLURM_SOCKET_ERROR;
+		rc =_send_and_recv_msg(fd, req, resp, 0);
+	}
+	return rc;
 }
 
 /* slurm_send_recv_node_msg
