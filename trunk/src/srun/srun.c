@@ -681,7 +681,7 @@ static int _set_rlimit_env(void)
 
 
 	for (r = rlimit_vars; r->var; r++) {
-		long cur;
+		unsigned long cur;
 
 		if (getrlimit (r->res, rlim) < 0) {
 			error ("getrlimit (%s): %m", r->var);
@@ -689,16 +689,16 @@ static int _set_rlimit_env(void)
 			continue;
 		}
 		
-		cur = (long) rlim->rlim_cur;
+		cur = (unsigned long) rlim->rlim_cur;
 
-		if (setenvf ("SLURM_RLIMIT_%s=%ld", r->var, cur) < 0) {
+		if (setenvf ("SLURM_RLIMIT_%s=%lu", r->var, cur) < 0) {
 			error ("unable to set RLIMIT_%s in environment",
 			       r->var);
 			rc = SLURM_FAILURE;
 			continue;
 		}
 
-		debug ("propagating RLIMIT_%s=%ld", r->var, cur);
+		debug ("propagating RLIMIT_%s=%lu", r->var, cur);
 	}
 
 	/* 
