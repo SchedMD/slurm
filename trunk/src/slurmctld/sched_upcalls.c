@@ -315,10 +315,11 @@ sched_get_job_list( void )
 	struct job_record *to, *from;
 	int32_t i;
 	sched_obj_list_t objlist;
+	/* read lock on job info, no other locks needed */
 	slurmctld_lock_t job_read_lock = { 
                 NO_LOCK,
-		NO_LOCK,
 		READ_LOCK,
+		NO_LOCK,
 		NO_LOCK
 	};
 
@@ -962,10 +963,12 @@ sched_set_nodelist( const uint32_t job_id, char *nodes )
 	struct job_record *job;
 	struct job_details *det;
 	int rc = SLURM_ERROR;
+
+	/* Write lock on job info, read lock on node info */
 	slurmctld_lock_t job_write_lock = { 
                 NO_LOCK,
 		WRITE_LOCK,
-		WRITE_LOCK,
+		READ_LOCK,
 		NO_LOCK
 	};
 
@@ -1022,6 +1025,7 @@ sched_start_job( const uint32_t job_id, uint32_t new_prio )
 	int rc;
 	time_t now = time( NULL );
 	
+	/* write lock on job info, no other locks needed */
 	slurmctld_lock_t job_write_lock = { 
                 NO_LOCK,
 		WRITE_LOCK,
@@ -1057,8 +1061,9 @@ sched_cancel_job( const uint32_t job_id )
 {
 	int rc = SLURM_SUCCESS;
 	
+	/* Lock on job data, no other locks needed */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	/*
 	 * The nice way to do things would be to send SIGTERM, wait for
