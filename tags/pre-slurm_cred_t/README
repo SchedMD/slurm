@@ -1,0 +1,76 @@
+TO BUILD:
+  > cd slurm
+  > ./autogen.sh
+  > ./configure [OPTIONS]
+  > make
+  > make install  <or> make rpm tag=Head
+
+  OPTIONS:
+     "--enable-debug" to run the daemons in debug mode (more validity 
+             checking and writes core files, useful for getting things
+             running)
+     "--prefix=" to specify a directory into which the slurm files are 
+             to be installed
+     "--sysconfdir=" to specify the directory into which the 
+             slurm.conf file is placed
+     "--with-elan" to support a Quadics Elan3 interconnect, defaults 
+             to IP interconnect
+     "--with-totalview" to support the Etnus TotalView debugger
+
+TO TEST:
+  You will need to construct a valid configuration file for your machine.
+  To run on a single host, you can probably use the file in
+    "etc/slurm.conf.localhost" with minimal modifications.  
+  For a cluster, you should build something based upon "etc/slurm.conf.dev". 
+  Be sure to update "SlurmUser", "JobCredentialPrivateKey" and 
+    "JobCredentialPublicCertificate". There are usable keys in
+    "src/slurmd/private.key" and "src/slurmd/public.cert". New keys 
+    can be built using the following commands:
+    "openssl genrsa -out <name of private key> 1024"
+    "openssl rsa -in <name of private key> -pubout -out <name of public key>"
+  See "doc/man/man5/slurm.conf.5" for help in building this.
+
+  Initiate "slurmctld" on the control machine (it can run without root 
+     permissions, see SlurmUser in slurm.conf). For testing purposes you 
+     probably want to use several options: "-D" keep in foreground, "-c" 
+     clear state from previous executions, and possibly "-v" for verbose 
+     messages (more v's for more verbosity). For example: 
+     "slurmctld -D -c -vvvvv" (specify pathname as needed).
+  Initiate "slurmd" on each compute server (it needs to run as root for 
+     production, but can run as a normal user for testing - it will report 
+     errors on the initgroups, seteuid, and setegid functions if not run 
+     as root, but if everything is run as the same user most functionality
+     is OK). For testing purposes you probably want to use several options: 
+     "-D" keep in foreground, "-c" clear state from previous executions, 
+     and possibly "-v" for verbose messages (more v's for more verbosity). 
+     For example "slurmd -D -c -vvvvv". If using pdsh (parallel distributed 
+     shell) to initiate slurmd on every node, the execute line would be 
+     "pdsh -a "slurmd -D -c -vvvvv"" (specify pathname as needed).
+  Run jobs using the "srun" command.
+  Get system status using "sinfo" and "squeue".
+  Terminate jobs using "scancel".
+  Get and set system configuration information using "scontrol".
+  Man pages for all of these daemons and commands are available. 
+
+  There DejaGnu scripts to exercise various APIs and tools.
+
+NOTES:
+  You should have autoconf version 2.52 or higher (see "autoconf -V").
+
+  There is no authentication of communications between commands and 
+     daemons without the the authd daemon in operation. For more 
+     information, see "http://www.theether.org/authd/".
+
+
+STATUS (As of 3/4/2002): 
+  Most functionality is in place and working.
+  Performance is good (under 5 seconds to run 1900 tasks of "/bin/hostname"
+      over 950 nodes). 
+  Fault-tolerance is good.
+  Support for additional hardware and software is planned in future releases
+      (IA64, RedHat 8.1, Myrinet, IBM Blue Gene).
+  Support for job suspend/resume and checkpoint/restart is planned for 
+      future releases.
+  Send feedback to Morris Jette <jette1@llnl.gov> or Mark Grondona
+      <grondona1@llnl.gov>.
+
