@@ -555,13 +555,19 @@ _create_job_session(slurmd_job_t *job)
 		return ESLURMD_FORK_FAILED;
 	}
 
+	/*
+	 * If the created job terminates immediately, the shared memory
+	 * record can be purged before we canset the mpid and sid below.
+	 * This does not truly indicate an error condition, but a rare 
+	 * timing anomaly. Thus we log the event using debug()
+	 */
 	job->jmgr_pid = getpid();
 	if (shm_update_step_mpid(job->jobid, job->stepid, getpid()) < 0)
-		error("shm_update_step_mpid: %m");
+		debug("shm_update_step_mpid: %m");
 
 	job->smgr_pid = spid;
 	if (shm_update_step_sid(job->jobid, job->stepid, spid) < 0)
-		error("shm_update_step_sid: %m");
+		debug("shm_update_step_sid: %m");
 
 	/*
 	 * Read information from session manager slurmd
