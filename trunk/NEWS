@@ -1,8 +1,8 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.0.0-pre11 (not tagged yet)
-================================
+* Changes in SLURM 0.3.0
+========================
  -- Support for AIX added (a few bugs do remain).
  -- Fix memory leak in slurmctld, slurm_cred_create().
  -- On ELF systems, export BNR_* functions from SLURM API. 
