@@ -57,6 +57,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <src/common/list.h>
 #include <src/common/log.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xmalloc.h>
@@ -86,9 +87,10 @@ typedef struct agent_info {
 	pthread_cond_t	thread_cond;		/* agent specific condition */
 	uint32_t	thread_count;		/* number of threads records */
 	uint32_t	threads_active;		/* count of currently active threads */
+	uint16_t	retry;			/* if set, keep trying */
 	thd_t 		*thread_struct;		/* thread structures */
 	slurm_msg_type_t msg_type;		/* RPC to be issued */
-	void		*msg_args;		/* RPC data to be used */
+	void		**msg_args_pptr;	/* RPC data to be used */
 } agent_info_t;
 
 typedef struct task_info {
@@ -101,9 +103,14 @@ typedef struct task_info {
 } task_info_t;
 
 static void alarm_handler(int dummy);
+static void queue_agent_retry (agent_info_t *agent_info_ptr, int count);
 static void *thread_per_node_rpc (void *args);
 static void *wdog (void *args);
 static void xsignal(int signal, void (*handler)(int));
+
+/* retry RPC data structures */
+pthread_mutex_t	retry_mutex = PTHREAD_MUTEX_INITIALIZER;
+List retry_list = NULL;		/* agent_arg_t list for retry */
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel across a set 
@@ -143,11 +150,12 @@ agent (void *args)
 	if (pthread_cond_init (&agent_info_ptr->thread_cond, NULL))
 		fatal ("pthread_cond_init error %m");
 	agent_info_ptr->thread_count = agent_arg_ptr->addr_count;
+	agent_info_ptr->retry = agent_arg_ptr->retry;
 	agent_info_ptr->threads_active = 0;
 	thread_ptr = xmalloc (agent_arg_ptr->addr_count * sizeof (thd_t));
 	agent_info_ptr->thread_struct = thread_ptr;
 	agent_info_ptr->msg_type = agent_arg_ptr->msg_type;
-	agent_info_ptr->msg_args = agent_arg_ptr->msg_args;
+	agent_info_ptr->msg_args_pptr = &agent_arg_ptr->msg_args;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
 		thread_ptr[i].state = DSH_NEW;
 		thread_ptr[i].slurm_addr = agent_arg_ptr->slurm_addr[i];
@@ -191,7 +199,7 @@ agent (void *args)
 		task_specific_ptr->threads_active_ptr	= &agent_info_ptr->threads_active;
 		task_specific_ptr->thread_struct_ptr	= &thread_ptr[i];
 		task_specific_ptr->msg_type		= agent_info_ptr->msg_type;
-		task_specific_ptr->msg_args_ptr		= &agent_info_ptr->msg_args;
+		task_specific_ptr->msg_args_ptr		= *agent_info_ptr->msg_args_pptr;
 
 		if (pthread_attr_init (&thread_ptr[i].attr))
 			fatal ("pthread_attr_init error %m");
@@ -223,7 +231,7 @@ agent (void *args)
 	/* wait for termination of remaining threads */
 	pthread_join (thread_wdog, NULL);
 
-cleanup:
+cleanup:	
 #if AGENT_IS_THREAD
 	if (agent_arg_ptr) {
 		if (agent_arg_ptr->slurm_addr)
@@ -235,6 +243,7 @@ cleanup:
 		xfree (agent_arg_ptr);
 	}
 #endif
+	
 	if (agent_info_ptr) {
 		if (agent_info_ptr->thread_struct)
 			xfree (agent_info_ptr->thread_struct);
@@ -321,7 +330,10 @@ wdog (void *args)
 
 		xfree (slurm_names);
 #endif
+		if (agent_ptr->retry)
+			queue_agent_retry (agent_ptr, fail_cnt);
 	}
+
 #if AGENT_IS_THREAD
 	/* Update last_response on responding nodes */
 	lock_slurmctld (node_write_lock);
@@ -475,3 +487,83 @@ static void alarm_handler(int dummy)
 {
 }
 
+
+/* queue_agent_retry - Queue any failed RPCs for later replay */
+void 
+queue_agent_retry (agent_info_t *agent_info_ptr, int count)
+{
+	agent_arg_t *agent_arg_ptr;
+	thd_t *thread_ptr = agent_info_ptr->thread_struct;
+	int i, j;
+
+	if (count == 0)
+		return;
+
+	/* build agent argument with just the RPCs to retry */
+	agent_arg_ptr = xmalloc (sizeof (agent_arg_t));
+	agent_arg_ptr -> addr_count = count;
+	agent_arg_ptr -> retry = 1;
+	agent_arg_ptr -> slurm_addr = xmalloc (sizeof (struct sockaddr_in) * count);
+	agent_arg_ptr -> node_names = xmalloc (MAX_NAME_LEN * count);
+	agent_arg_ptr -> msg_type = agent_info_ptr -> msg_type;
+	agent_arg_ptr -> msg_args = *(agent_info_ptr -> msg_args_pptr);	
+	*(agent_info_ptr -> msg_args_pptr) = NULL;
+
+	j = 0;
+	for (i=0; i<agent_info_ptr->thread_count; i++) {
+		if (thread_ptr[i].state != DSH_FAILED)
+			continue;
+		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
+		strncpy(&agent_arg_ptr->node_names[j*MAX_NAME_LEN], 
+			thread_ptr[i].node_name, MAX_NAME_LEN);
+		if ((++j) == count)
+			break;
+	}
+
+	/* add the requeust to a list */
+	pthread_mutex_lock (&retry_mutex);
+	if (retry_list == NULL) {
+		retry_list = list_create (NULL);
+		if (retry_list == NULL)
+			fatal ("list_create failed");
+	}
+	if (list_enqueue (retry_list, (void *)agent_arg_ptr) == 0)
+		fatal ("list_append failed");
+	pthread_mutex_unlock (&retry_mutex);
+}
+
+/* Agent for retrying RPCs */
+void *
+agent_retry (void *args)
+{
+	agent_arg_t *agent_arg_ptr = NULL;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+
+	pthread_mutex_lock (&retry_mutex);
+	if (retry_list)
+		agent_arg_ptr = (agent_arg_t *) list_dequeue (retry_list);
+	pthread_mutex_unlock (&retry_mutex);
+
+	if (agent_arg_ptr) {
+		debug3 ("Spawning RPC retry agent");
+		if (pthread_attr_init (&attr_agent))
+			fatal ("pthread_attr_init error %m");
+		if (pthread_attr_setdetachstate (&attr_agent, PTHREAD_CREATE_DETACHED))
+			error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		if (pthread_attr_setscope (&attr_agent, PTHREAD_SCOPE_SYSTEM))
+			error ("pthread_attr_setscope error %m");
+#endif
+		if (pthread_create (&thread_agent, &attr_agent, 
+					agent, (void *)agent_arg_ptr)) {
+			error ("pthread_create error %m");
+			sleep (1); /* sleep and try once more */
+			if (pthread_create (&thread_agent, &attr_agent, 
+						agent, (void *)agent_arg_ptr))
+				fatal ("pthread_create error %m");
+		}
+	}
+
+	return NULL;
+}
