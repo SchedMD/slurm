@@ -214,7 +214,7 @@ cancel_jobs (void)
 static void
 _cancel_job_id (uint32_t job_id, uint16_t signal)
 {
-	int error_code, i;
+	int error_code = SLURM_SUCCESS, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		verbose("Killing job %u", job_id);
@@ -234,7 +234,7 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 static void
 _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
-	int error_code, i;
+	int error_code = SLURM_SUCCESS, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		verbose("Killing step %u.%u", job_id, step_id);
