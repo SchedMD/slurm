@@ -424,6 +424,9 @@ static void _default_sigaction(int sig)
 		error("sigaction(%d): %m", sig);
 		return;
 	}
+	if (act.sa_handler != SIG_IGN)
+		return;
+
 	act.sa_handler = SIG_DFL;
 	if (sigaction(sig, &act, NULL))
 		error("sigaction(%d): %m", sig);
