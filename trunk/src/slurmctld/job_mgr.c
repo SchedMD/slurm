@@ -395,6 +395,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	/* Dump basic job info */
 	pack32(dump_job_ptr->job_id, buffer);
 	pack32(dump_job_ptr->user_id, buffer);
+	pack32(dump_job_ptr->group_id, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
@@ -438,7 +439,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 /* Unpack a job's state information from a buffer */
 static int _load_job_state(Buf buffer)
 {
-	uint32_t job_id, user_id, time_limit, priority, alloc_sid;
+	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
@@ -450,6 +451,7 @@ static int _load_job_state(Buf buffer)
 
 	safe_unpack32(&job_id, buffer);
 	safe_unpack32(&user_id, buffer);
+	safe_unpack32(&group_id, buffer);
 	safe_unpack32(&time_limit, buffer);
 	safe_unpack32(&priority, buffer);
 	safe_unpack32(&alloc_sid, buffer);
@@ -521,6 +523,7 @@ static int _load_job_state(Buf buffer)
 	}
 
 	job_ptr->user_id      = user_id;
+	job_ptr->group_id     = group_id;
 	job_ptr->time_limit   = time_limit;
 	job_ptr->priority     = priority;
 	job_ptr->alloc_sid    = alloc_sid;
