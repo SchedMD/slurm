@@ -174,7 +174,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	return;
 }
 
-
 /*
  * parse_config_spec - parse the overall configuration specifications, update  
  *	values
@@ -199,21 +198,21 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int sched_port = -1;
 	int slurmctld_debug = -1, slurmd_debug = -1;
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
+	int slurmctld_port = -1, slurmd_port = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prolog = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
-	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
-	char *slurmd_logfile = NULL, *slurmd_port = NULL;
+	char *slurmctld_logfile = NULL;
+	char *slurmd_logfile = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
 	char *plugindir = NULL, *auth_type = NULL, *switch_type = NULL;
 	char *job_comp_loc = NULL, *job_comp_type = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
 	long first_job_id = -1;
-	struct servent *servent;
 
 	error_code = slurm_parser (in_line,
 		"AuthType=", 's', &auth_type,
@@ -245,12 +244,12 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmctldDebug=", 'd', &slurmctld_debug,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
 		"SlurmctldPidFile=", 's', &slurmctld_pidfile,
-		"SlurmctldPort=", 's', &slurmctld_port,
+		"SlurmctldPort=", 'd', &slurmctld_port,
 		"SlurmctldTimeout=", 'd', &slurmctld_timeout,
 		"SlurmdDebug=", 'd', &slurmd_debug,
 		"SlurmdLogFile=", 's', &slurmd_logfile,
 		"SlurmdPidFile=",  's', &slurmd_pidfile,
-		"SlurmdPort=", 's', &slurmd_port,
+		"SlurmdPort=", 'd', &slurmd_port,
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location,
@@ -475,17 +474,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmctld_logfile = slurmctld_logfile;
 	}
 
-	if ( slurmctld_port ) {
+	if ( slurmctld_port != -1) {
 		if ( ctl_conf_ptr->slurmctld_port != (uint32_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmctldPort");
-		servent = getservbyname (slurmctld_port, NULL);
-		if (servent)
-			ctl_conf_ptr->slurmctld_port = servent -> s_port;
-		else
-			ctl_conf_ptr->slurmctld_port = strtol (slurmctld_port, 
-							(char **) NULL, 10);
-		endservent ();
-		xfree(slurmctld_port);
+		else if (slurmctld_port < 0)
+			error ("Bad value for SlurmctldPort: %d", 
+			       slurmctld_port);
+		else 
+			ctl_conf_ptr->slurmctld_port = slurmctld_port;
 	}
 
 	if ( slurmctld_timeout != -1) {
@@ -508,17 +504,13 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_logfile = slurmd_logfile;
 	}
 
-	if ( slurmd_port ) {
+	if ( slurmd_port != -1) {
 		if ( ctl_conf_ptr->slurmd_port != (uint32_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "SlurmdPort");
-		servent = getservbyname (slurmd_port, NULL);
-		if (servent)
-			ctl_conf_ptr->slurmd_port = servent -> s_port;
+		else if (slurmd_port < 0)
+			error ("Bad value for SlurmdPort: %d", slurmd_port);
 		else
-			ctl_conf_ptr->slurmd_port = strtol (slurmd_port,  
-							(char **) NULL, 10);
-		endservent ();
-		xfree(slurmd_port);
+			ctl_conf_ptr->slurmd_port = slurmd_port;
 	}
 
 	if ( slurmd_spooldir ) {
@@ -779,8 +771,6 @@ report_leftover (char *in_line, int line_num)
 void
 validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 {
-	struct servent *servent;
-
 	if ((ctl_conf_ptr->backup_controller != NULL) &&
 	    (strcmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
 		xfree (ctl_conf_ptr->backup_controller);
@@ -886,15 +876,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmctld_pidfile =
 			xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
 
-	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) {
-		servent = getservbyname (SLURMCTLD_PORT, NULL);
-		if (servent)
-			ctl_conf_ptr->slurmctld_port = servent -> s_port;
-		else
-			ctl_conf_ptr->slurmctld_port = strtol (SLURMCTLD_PORT,
-					(char **) NULL, 10);
-		endservent ();
-	}
+	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) 
+		ctl_conf_ptr->slurmctld_port = SLURMCTLD_PORT;
 
 	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
 		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
@@ -907,15 +890,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->slurmd_pidfile == NULL)
 		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 
-	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) {
-		servent = getservbyname (SLURMD_PORT, NULL);
-		if (servent)
-			ctl_conf_ptr->slurmd_port = servent -> s_port;
-		else
-			ctl_conf_ptr->slurmd_port = strtol (SLURMCTLD_PORT,
-					(char **) NULL, 10);
-		endservent ();
-	}
+	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
+		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
 
 	if (ctl_conf_ptr->slurmd_spooldir == NULL)
 		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
