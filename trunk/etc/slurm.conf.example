@@ -137,6 +137,25 @@
 # AuthType=auth/none
 
 #
+# o Define the job completion logging mechanism to be used
+#
+# "jobcomp/none"    : no job logging, the default
+# "jobcomp/filetxt" : log job record to a text file
+#
+# JobCompType=jobcomp/filetxt
+
+
+#
+# o Defile location where job completion logs are to be written
+#   Interpretation of the parameter is dependent upon the logging 
+#   mechanism used (specified by the JobCompType parameter). For
+#   "JobCompType=jobcomp/filetxt" the value of JobCompLoc should 
+#   be the fully qualified pathname of a file into which text 
+#   records are appended.
+#
+# JobCompLoc = /var/log/slurm.job.log
+
+#
 # o Define the places to look for SLURM plugins.  This is a
 #   colon-separated list of directories, just like the PATH
 #   environment variable.

@@ -445,6 +445,14 @@ extern void delete_all_step_records (struct job_record *job_ptr);
  */
 extern void  delete_job_details (struct job_record *job_entry);
 
+/*
+ * delete_partition - delete the specified partition (actually leave 
+ *	the entry, just flag it as defunct)
+ * IN job_specs - job specification from RPC
+ * RET 0 on success, errno otherwise
+ */
+extern int delete_partition(delete_part_msg_t *part_desc_ptr);
+
 /* 
  * delete_step_record - delete record for job step for specified job_ptr 
  *	and step_id
@@ -616,6 +624,9 @@ extern int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	     int immediate, int will_run, int allocate, uid_t submit_uid,
 	     uint16_t * node_cnt, slurm_addr ** node_addr);
 
+/* log the completion of the specified job */
+extern void job_completion_logger(struct job_record  *job_ptr);
+
 /*
  * job_epilog_complete - Note the completion of the epilog script for a 
  *	given job
@@ -708,6 +719,14 @@ extern int job_step_signal(uint32_t job_id, uint32_t step_id,
 extern void job_time_limit (void);
 
 /*
+ * kill_job_by_part_name - Given a partition name, deallocate resource for 
+ *	its jobs and kill them 
+ * IN part_name - name of a partition
+ * RET number of killed jobs
+ */
+extern int kill_job_by_part_name(char *part_name);
+
+/*
  * kill_running_job_by_node_name - Given a node name, deallocate jobs 
  *	from the node or kill them 
  * IN node_name - name of a node
@@ -715,7 +734,6 @@ extern void job_time_limit (void);
  * RET number of killed jobs
  */
 extern int kill_running_job_by_node_name(char *node_name, bool step_test);
-
 
 /* list_compare_config - compare two entry from the config list based upon 
  *	weight, see common/list.h for documentation */
@@ -871,14 +889,14 @@ extern void pack_job (struct job_record *dump_job_ptr, Buf buffer);
 /* 
  * pack_part - dump all configuration information about a specific partition 
  *	in machine independent form (for network transmission)
- * IN dump_part_ptr - pointer to partition for which information is requested
+ * IN part_ptr - pointer to partition for which information is requested
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
  * global: default_part_loc - pointer to the default partition
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	changes to load_part_config in api/partition_info.c
  */
-extern void pack_part (struct part_record *part_record_point, Buf buffer);
+extern void pack_part (struct part_record *part_ptr, Buf buffer);
 
 /* part_fini - free all memory associated with partition records */
 void part_fini (void);

@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "July 2003" "scontrol 0.2" "Slurm components"
+.TH SCONTROL "1" "October 2003" "scontrol 0.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -46,7 +46,12 @@ Instruct the Slurm controller to terminate immediately and generate a core file.
 \fIcompleting\fP
 Display all jobs in a COMPLETING state along with associated nodes in either a 
 COMPLETING or DOWN state.
-..TP
+.TP
+\fIdelete\fP \fISPECIFICATION\fP
+Delete the entry with the specified \fISPECIFICATION\fP.
+The only supported \fISPECIFICATION\fP presently is of the form
+\fIPartitionName=<name>\fP.
+.TP
 \fIexit\fP
 Terminate the execution of scontrol.
 .TP
@@ -194,7 +199,7 @@ SLURM will automatically set it to the appropriate value of either
 The "NoResp" state will only set the "NoResp" flag for a node without
 changing its underlying state.
 .TP
-\fBSPECIFICATIONS FOR UPDATE COMMAND, PARTITIONS\fR
+\fBSPECIFICATIONS FOR UPDATE AND DELETE COMMANDS, PARTITIONS\fR
 .TP
 \fIAllowGroups\fP=<name>
 Identify the user groups which may use this partition. Multiple groups 
@@ -291,8 +296,11 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1), 
-\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_delete_partition\fR(3),
+\fBslurm_load_ctl_conf\fR(3), 
+\fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
-\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
+\fBslurm_update_partition\fR(3),
 \fBslurm.conf\fR(5)

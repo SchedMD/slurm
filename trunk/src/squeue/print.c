@@ -672,6 +672,18 @@ int _print_job_req_nodes(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_exc_nodes(job_info_t * job, int width, bool right_justify, 
+			 char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("EXC_NODES", width, right_justify, true);
+	else
+		_print_nodes(job->exc_nodes, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
 int
 _print_job_req_node_inx(job_info_t * job, int width, bool right_justify, 
 			char* suffix)
@@ -680,6 +692,29 @@ _print_job_req_node_inx(job_info_t * job, int width, bool right_justify,
 		_print_str("REQ_NODES_BY_INX", width, right_justify, true);
 	else {
 		int *current = job->req_node_inx;
+		int curr_width = 0;
+		while (*current != -1 && curr_width < width) {
+			curr_width +=
+			    _print_int(*current, width, right_justify,
+				       true);
+			printf(",");
+		}
+		while (curr_width < width)
+			curr_width += printf(" ");
+	}
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int
+_print_job_exc_node_inx(job_info_t * job, int width, bool right_justify, 
+			char* suffix)
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("EXC_NODES_BY_INX", width, right_justify, true);
+	else {
+		int *current = job->exc_node_inx;
 		int curr_width = 0;
 		while (*current != -1 && curr_width < width) {
 			curr_width +=

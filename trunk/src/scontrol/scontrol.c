@@ -72,6 +72,7 @@ static int input_words;	/* number of words of input permitted */
 static int one_liner;	/* one record per line if =1 */
 static int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
+static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
 static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr);
@@ -506,7 +507,8 @@ _print_config (char *config_param, bool ping_only)
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 		fprintf(stdout, "\n"); 
 	}
-	_ping_slurmctld ( slurm_ctl_conf_ptr );
+	if (slurm_ctl_conf_ptr)
+		_ping_slurmctld (slurm_ctl_conf_ptr);
 }
 
 /* Report if slurmctld daemons are responding */
@@ -1172,6 +1174,15 @@ _process_command (int argc, char *argv[])
 		}		
 		_update_it ((argc - 1), &argv[1]);
 	}
+	else if (strncasecmp (argv[0], "delete", 1) == 0) {
+		if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr, "too few arguments for %s keyword\n",
+				 argv[0]);
+			return 0;
+		}
+		_delete_it ((argc - 1), &argv[1]);
+	}
 	else if (strncasecmp (argv[0], "verbose", 4) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
@@ -1198,17 +1209,40 @@ _process_command (int argc, char *argv[])
 	return 0;
 }
 
+/* 
+ * _delete_it - delete the slurm the specified slurm entity 
+ * IN argc - count of arguments
+ * IN argv - list of arguments
+ */
+static void
+_delete_it (int argc, char *argv[]) 
+{
+	delete_part_msg_t part_msg;
+
+	/* First identify the entity type to delete */
+	if (strncasecmp (argv[0], "PartitionName=", 14) == 0) {
+		part_msg.name = argv[0] + 14;
+		if (slurm_delete_partition(&part_msg)) {
+			char errmsg[64];
+			snprintf(errmsg, 64, "delete_partition %s", argv[0]);
+			slurm_perror(errmsg);
+		}
+	} else {
+		exit_code = 1;
+		fprintf(stderr, "Invalid deletion entity: %s", argv[1]);
+	}
+}
+
 
 /* 
  * _update_it - update the slurm configuration per the supplied arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
- * RET 0 if no slurm error, errno otherwise
  */
 static void
 _update_it (int argc, char *argv[]) 
 {
-	int error_code = SLURM_SUCCESS, i;
+	int i, error_code = SLURM_SUCCESS;
 
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
@@ -1228,9 +1262,9 @@ _update_it (int argc, char *argv[])
 	
 	if (i >= argc) {
 		exit_code = 1;
-		printf("No valid entity in update command\n");
-		printf("Input line must include \"NodeName\", ");
-		printf("\"PartitionName\", or \"JobId\"\n");
+		fprintf(stderr, "No valid entity in update command\n");
+		fprintf(stderr, "Input line must include \"NodeName\", ");
+		fprintf(stderr, "\"PartitionName\", or \"JobId\"\n");
 	}
 	else if (error_code) {
 		exit_code = 1;
@@ -1557,6 +1591,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               generating a core file.                      \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
+     delete <SPECIFICATIONS>  delete the specified partition, kill its jobs\n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      oneliner                 report output one record per line.           \n\

@@ -32,6 +32,10 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -50,6 +54,7 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
@@ -150,7 +155,9 @@ int main(int argc, char *argv[])
 
 	/* 
 	 * Need to create pidfile here in case we setuid() below
-	 * (init_pidfile() exits if it can't initialize pid file)
+	 * (init_pidfile() exits if it can't initialize pid file).
+	 * On Linux we also need to make this setuid job explicitly
+	 * able to write a core dump.
 	 */
 	_init_pidfile();
 
@@ -160,6 +167,13 @@ int main(int argc, char *argv[])
 		error("setuid(%d): %m", slurmctld_conf.slurm_user_id);
 		exit(1);
 	}
+
+#ifndef NDEBUG
+#  ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#  endif /* PR_SET_DUMPABLE */
+#endif   /* !NDEBUG         */
 
 	/* 
 	 * Create StateSaveLocation directory if necessary, and chdir() to it.
@@ -289,6 +303,7 @@ int main(int argc, char *argv[])
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	free_slurm_conf(&slurmctld_conf);
 	slurm_auth_fini();
+	g_slurm_jobcomp_fini();
 #endif
 	log_fini();
 
@@ -482,8 +497,11 @@ static void *_service_connection(void *arg)
 	msg = xmalloc(sizeof(slurm_msg_t));
 
 	if (slurm_receive_msg(newsockfd, msg, 0) < 0) {
-		/* likely indicates sender killed after opening connection */
-		info("_service_connection/slurm_receive_msg %m");
+		if (slurm_get_errno() == SLURM_PROTOCOL_VERSION_ERROR) {
+			msg->conn_fd = newsockfd;
+			slurm_send_rc_msg(msg, SLURM_PROTOCOL_VERSION_ERROR);
+		} else
+			info("_service_connection/slurm_receive_msg %m");
 	} else {
 		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
 			return_code = (void *) "fini";

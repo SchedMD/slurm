@@ -143,6 +143,8 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->control_addr);
 		xfree(config_ptr->control_machine);
 		xfree(config_ptr->epilog);
+		xfree(config_ptr->job_comp_loc);
+		xfree(config_ptr->job_comp_type);
 		xfree(config_ptr->job_credential_private_key);
 		xfree(config_ptr->job_credential_public_certificate);
 		xfree(config_ptr->plugindir);

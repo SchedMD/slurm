@@ -195,6 +195,7 @@ int schedule(void)
 			job_ptr->start_time = job_ptr->end_time =
 			    time(NULL);
 			delete_job_details(job_ptr);
+			job_completion_logger(job_ptr);
 		}
 	}
 

@@ -93,6 +93,7 @@ typedef enum {
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
 	REQUEST_UPDATE_PARTITION,
+	REQUEST_DELETE_PARTITION,
 
 	REQUEST_RESOURCE_ALLOCATION = 4001,
 	RESPONSE_RESOURCE_ALLOCATION,
@@ -385,6 +386,7 @@ void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 void inline slurm_free_update_node_msg(update_node_msg_t * msg);
 void inline slurm_free_update_part_msg(update_part_msg_t * msg);
+void inline slurm_free_delete_part_msg(delete_part_msg_t * msg);
 void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t * msg);
 void inline slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t *

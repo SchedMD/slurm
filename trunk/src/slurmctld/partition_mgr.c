@@ -58,9 +58,9 @@ char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 struct part_record *default_part_loc = NULL; /* default partition location */
 time_t last_part_update;	/* time of last update to partition records */
 
-static int    _build_part_bitmap(struct part_record *part_record_point);
+static int    _build_part_bitmap(struct part_record *part_ptr);
 static int    _delete_part_record(char *name);
-static void   _dump_part_state(struct part_record *part_record_point,
+static void   _dump_part_state(struct part_record *part_ptr,
 			       Buf buffer);
 static uid_t *_get_groups_members(char *group_names);
 static uid_t *_get_group_members(char *group_name);
@@ -73,68 +73,66 @@ static int    _uid_list_size(uid_t * uid_list_ptr);
  * _build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap 
  *	for the specified partition, also reset the partition pointers in 
  *	the node back to this partition.
- * IN part_record_point - pointer to the partition
+ * IN part_ptr - pointer to the partition
  * RET 0 if no error, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: this does not report nodes defined in more than one partition. this   
  *	is checked only upon reading the configuration file, not on an update
  */
-static int _build_part_bitmap(struct part_record *part_record_point)
+static int _build_part_bitmap(struct part_record *part_ptr)
 {
 	int i, update_nodes;
 	char *this_node_name;
 	bitstr_t *old_bitmap;
-	struct node_record *node_record_point;	/* pointer to node_record */
+	struct node_record *node_ptr;	/* pointer to node_record */
 	hostlist_t host_list;
 
-	part_record_point->total_cpus = 0;
-	part_record_point->total_nodes = 0;
+	part_ptr->total_cpus = 0;
+	part_ptr->total_nodes = 0;
 
-	if (part_record_point->node_bitmap == NULL) {
-		part_record_point->node_bitmap =
-		    (bitstr_t *) bit_alloc(node_record_count);
-		if (part_record_point->node_bitmap == NULL)
+	if (part_ptr->node_bitmap == NULL) {
+		part_ptr->node_bitmap = 
+			(bitstr_t *) bit_alloc(node_record_count);
+		if (part_ptr->node_bitmap == NULL)
 			fatal("bit_alloc memory allocation failure");
 		old_bitmap = NULL;
 	} else {
-		old_bitmap = bit_copy(part_record_point->node_bitmap);
-		bit_nclear(part_record_point->node_bitmap, 0,
+		old_bitmap = bit_copy(part_ptr->node_bitmap);
+		bit_nclear(part_ptr->node_bitmap, 0,
 			   node_record_count - 1);
 	}
 
-	if (part_record_point->nodes == NULL) {	/* no nodes in partition */
+	if (part_ptr->nodes == NULL) {	/* no nodes in partition */
 		FREE_NULL_BITMAP(old_bitmap);
 		return 0;
 	}
 
-	if ((host_list =
-	     hostlist_create(part_record_point->nodes)) == NULL) {
+	if ((host_list = hostlist_create(part_ptr->nodes)) == NULL) {
 		FREE_NULL_BITMAP(old_bitmap);
 		error("hostlist_create error on %s, %m",
-		      part_record_point->nodes);
+		      part_ptr->nodes);
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	while ((this_node_name = hostlist_shift(host_list))) {
-		node_record_point = find_node_record(this_node_name);
-		if (node_record_point == NULL) {
-			error
-			    ("_build_part_bitmap: invalid node specified %s",
-			     this_node_name);
+		node_ptr = find_node_record(this_node_name);
+		if (node_ptr == NULL) {
+			error("_build_part_bitmap: invalid node name %s",
+				this_node_name);
 			free(this_node_name);
 			FREE_NULL_BITMAP(old_bitmap);
 			hostlist_destroy(host_list);
 			return ESLURM_INVALID_NODE_NAME;
 		}
-		part_record_point->total_nodes++;
-		part_record_point->total_cpus += node_record_point->cpus;
-		node_record_point->partition_ptr = part_record_point;
+		part_ptr->total_nodes++;
+		part_ptr->total_cpus += node_ptr->cpus;
+		node_ptr->partition_ptr = part_ptr;
 		if (old_bitmap)
 			bit_clear(old_bitmap,
-				  (int) (node_record_point -
+				  (int) (node_ptr -
 					 node_record_table_ptr));
-		bit_set(part_record_point->node_bitmap,
-			(int) (node_record_point - node_record_table_ptr));
+		bit_set(part_ptr->node_bitmap,
+			(int) (node_ptr - node_record_table_ptr));
 		free(this_node_name);
 	}
 	hostlist_destroy(host_list);
@@ -160,9 +158,7 @@ static int _build_part_bitmap(struct part_record *part_record_point)
 /* 
  * create_part_record - create a partition record
  * RET a pointer to the record or NULL if error
- * global: default_part - default partition parameters
- *         part_list - global partition list
- * NOTE: the record's values are initialized to those of default_part
+ * global: part_list - global partition list
  * NOTE: allocates memory that should be xfreed with _delete_part_record
  */
 struct part_record *create_part_record(void)
@@ -174,17 +170,15 @@ struct part_record *create_part_record(void)
 	part_ptr =
 	    (struct part_record *) xmalloc(sizeof(struct part_record));
 
-	strcpy(part_ptr->name, "DEFAULT");
-	part_ptr->max_time    = default_part.max_time;
-	part_ptr->max_nodes   = default_part.max_nodes;
-	part_ptr->min_nodes   = default_part.min_nodes;
-	part_ptr->root_only   = default_part.root_only;
-	part_ptr->state_up    = default_part.state_up;
-	part_ptr->shared      = default_part.shared;
-	part_ptr->total_nodes = default_part.total_nodes;
-	part_ptr->total_cpus  = default_part.total_cpus;
-	part_ptr->node_bitmap = NULL;
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
+	strcpy(part_ptr->name, "DEFAULT");
+	part_ptr->max_time     = default_part.max_time;
+	part_ptr->max_nodes    = default_part.max_nodes;
+	part_ptr->min_nodes    = default_part.min_nodes;
+	part_ptr->root_only    = default_part.root_only;
+	part_ptr->state_up     = default_part.state_up;
+	part_ptr->shared       = default_part.shared;
+	part_ptr->node_bitmap  = NULL;
 
 	if (default_part.allow_groups)
 		part_ptr->allow_groups = xstrdup(default_part.allow_groups);
@@ -233,7 +227,7 @@ static int _delete_part_record(char *name)
 int dump_all_part_state(void)
 {
 	ListIterator part_record_iterator;
-	struct part_record *part_record_point;
+	struct part_record *part_ptr;
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */
@@ -247,10 +241,10 @@ int dump_all_part_state(void)
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
 	part_record_iterator = list_iterator_create(part_list);
-	while ((part_record_point =
+	while ((part_ptr =
 		(struct part_record *) list_next(part_record_iterator))) {
-		xassert (part_record_point->magic == PART_MAGIC);
-		_dump_part_state(part_record_point, buffer);
+		xassert (part_ptr->magic == PART_MAGIC);
+		_dump_part_state(part_ptr, buffer);
 	}
 	list_iterator_destroy(part_record_iterator);
 	unlock_slurmctld(part_read_lock);
@@ -269,13 +263,18 @@ int dump_all_part_state(void)
 		      new_file);
 		error_code = errno;
 	} else {
-		if (write
-		    (log_fd, get_buf_data(buffer),
-		     get_buf_offset(buffer)) != get_buf_offset(buffer)) {
-			error
-			    ("Can't save state, error writing file %s, %m",
-			     new_file);
-			error_code = errno;
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
 		}
 		close(log_fd);
 	}
@@ -299,31 +298,32 @@ int dump_all_part_state(void)
 
 /*
  * _dump_part_state - dump the state of a specific partition to a buffer
- * IN part_record_point - pointer to partition for which information 
+ * IN part_ptr - pointer to partition for which information 
  *	is requested
  * IN/OUT buffer - location to store data, pointers automatically advanced
  */
-static void _dump_part_state(struct part_record *part_record_point, Buf buffer)
+static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
 
-	if (default_part_loc == part_record_point)
+	xassert(part_ptr);
+	if (default_part_loc == part_ptr)
 		default_part_flag = 1;
 	else
 		default_part_flag = 0;
 
-	packstr(part_record_point->name, buffer);
-	pack32(part_record_point->max_time, buffer);
-	pack32(part_record_point->max_nodes, buffer);
-	pack32(part_record_point->min_nodes, buffer);
+	packstr(part_ptr->name, buffer);
+	pack32(part_ptr->max_time, buffer);
+	pack32(part_ptr->max_nodes, buffer);
+	pack32(part_ptr->min_nodes, buffer);
 
 	pack16(default_part_flag, buffer);
-	pack16((uint16_t) part_record_point->root_only, buffer);
-	pack16((uint16_t) part_record_point->shared, buffer);
+	pack16(part_ptr->root_only, buffer);
+	pack16(part_ptr->shared, buffer);
 
-	pack16((uint16_t) part_record_point->state_up, buffer);
-	packstr(part_record_point->allow_groups, buffer);
-	packstr(part_record_point->nodes, buffer);
+	pack16(part_ptr->state_up, buffer);
+	packstr(part_ptr->allow_groups, buffer);
+	packstr(part_ptr->nodes, buffer);
 }
 
 /*
@@ -409,7 +409,7 @@ int load_all_part_state(void)
 			part_ptr->max_nodes = max_nodes;
 			part_ptr->min_nodes = min_nodes;
 			if (def_part_flag) {
-				strcpy(default_part_name, part_name);
+				strncpy(default_part_name, part_name, MAX_NAME_LEN);
 				default_part_loc = part_ptr;
 			}
 			part_ptr->root_only = root_only;
@@ -497,20 +497,20 @@ int init_part_conf(void)
  */
 static void _list_delete_part(void *part_entry)
 {
-	struct part_record *part_record_point;	/* pointer to part_record */
+	struct part_record *part_ptr;
 	int i;
 
-	part_record_point = (struct part_record *) part_entry;
+	part_ptr = (struct part_record *) part_entry;
 	for (i = 0; i < node_record_count; i++) {
 		if (node_record_table_ptr[i].partition_ptr !=
-		    part_record_point)
+		    part_ptr)
 			continue;
 		node_record_table_ptr[i].partition_ptr = NULL;
 	}
-	xfree(part_record_point->allow_groups);
-	xfree(part_record_point->allow_uids);
-	xfree(part_record_point->nodes);
-	FREE_NULL_BITMAP(part_record_point->node_bitmap);
+	xfree(part_ptr->allow_groups);
+	xfree(part_ptr->allow_uids);
+	xfree(part_ptr->nodes);
+	FREE_NULL_BITMAP(part_ptr->node_bitmap);
 	xfree(part_entry);
 }
 
@@ -548,7 +548,7 @@ void
 pack_all_part(char **buffer_ptr, int *buffer_size)
 {
 	ListIterator part_record_iterator;
-	struct part_record *part_record_point;
+	struct part_record *part_ptr;
 	int parts_packed, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
@@ -565,11 +565,11 @@ pack_all_part(char **buffer_ptr, int *buffer_size)
 
 	/* write individual partition records */
 	part_record_iterator = list_iterator_create(part_list);
-	while ((part_record_point =
+	while ((part_ptr =
 		(struct part_record *) list_next(part_record_iterator))) {
-		xassert (part_record_point->magic == PART_MAGIC);
+		xassert (part_ptr->magic == PART_MAGIC);
 
-		pack_part(part_record_point, buffer);
+		pack_part(part_ptr, buffer);
 		parts_packed++;
 	}
 
@@ -589,40 +589,40 @@ pack_all_part(char **buffer_ptr, int *buffer_size)
 /* 
  * pack_part - dump all configuration information about a specific partition 
  *	in machine independent form (for network transmission)
- * IN dump_part_ptr - pointer to partition for which information is requested
+ * IN part_ptr - pointer to partition for which information is requested
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
  * global: default_part_loc - pointer to the default partition
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	changes to load_part_config in api/partition_info.c
  */
-void pack_part(struct part_record *part_record_point, Buf buffer)
+void pack_part(struct part_record *part_ptr, Buf buffer)
 {
 	uint16_t default_part_flag;
 	char node_inx_ptr[BUF_SIZE];
 
-	if (default_part_loc == part_record_point)
+	if (default_part_loc == part_ptr)
 		default_part_flag = 1;
 	else
 		default_part_flag = 0;
 
-	packstr(part_record_point->name, buffer);
-	pack32(part_record_point->max_time, buffer);
-	pack32(part_record_point->max_nodes, buffer);
-	pack32(part_record_point->min_nodes, buffer);
-	pack32(part_record_point->total_nodes, buffer);
+	packstr(part_ptr->name, buffer);
+	pack32(part_ptr->max_time, buffer);
+	pack32(part_ptr->max_nodes, buffer);
+	pack32(part_ptr->min_nodes, buffer);
+	pack32(part_ptr->total_nodes, buffer);
 
-	pack32(part_record_point->total_cpus, buffer);
+	pack32(part_ptr->total_cpus, buffer);
 	pack16(default_part_flag, buffer);
-	pack16((uint16_t) part_record_point->root_only, buffer);
-	pack16((uint16_t) part_record_point->shared, buffer);
+	pack16(part_ptr->root_only, buffer);
+	pack16(part_ptr->shared, buffer);
 
-	pack16((uint16_t) part_record_point->state_up, buffer);
-	packstr(part_record_point->allow_groups, buffer);
-	packstr(part_record_point->nodes, buffer);
-	if (part_record_point->node_bitmap) {
+	pack16(part_ptr->state_up, buffer);
+	packstr(part_ptr->allow_groups, buffer);
+	packstr(part_ptr->nodes, buffer);
+	if (part_ptr->node_bitmap) {
 		bit_fmt(node_inx_ptr, BUF_SIZE,
-			part_record_point->node_bitmap);
+			part_ptr->node_bitmap);
 		packstr(node_inx_ptr, buffer);
 	} else
 		packstr("", buffer);
@@ -701,7 +701,7 @@ int update_part(update_part_msg_t * part_desc)
 	    (strcmp(default_part_name, part_desc->name) != 0)) {
 		info("update_part: changing default partition from %s to %s", 
 		     default_part_name, part_desc->name);
-		strcpy(default_part_name, part_desc->name);
+		strncpy(default_part_name, part_desc->name, MAX_NAME_LEN);
 		default_part_loc = part_ptr;
 	}
 
@@ -771,7 +771,7 @@ void load_part_uid_allow_list(int force)
 	static time_t last_update_time;
 	time_t temp_time;
 	ListIterator part_record_iterator;
-	struct part_record *part_record_point;
+	struct part_record *part_ptr;
 
 	temp_time = _get_group_tlm();
 	if ((force == 0) && (temp_time == last_update_time))
@@ -781,11 +781,11 @@ void load_part_uid_allow_list(int force)
 	last_part_update = time(NULL);
 
 	part_record_iterator = list_iterator_create(part_list);
-	while ((part_record_point =
+	while ((part_ptr =
 		(struct part_record *) list_next(part_record_iterator))) {
-		xfree(part_record_point->allow_uids);
-		part_record_point->allow_uids =
-		    _get_groups_members(part_record_point->allow_groups);
+		xfree(part_ptr->allow_uids);
+		part_ptr->allow_uids =
+			_get_groups_members(part_ptr->allow_groups);
 	}
 	list_iterator_destroy(part_record_iterator);
 }
@@ -928,4 +928,24 @@ void part_fini (void)
 		part_list = NULL;
 	}
 	default_part_loc = (struct part_record *) NULL;
+}
+
+/*
+ * delete_partition - delete the specified partition (actually leave 
+ *	the entry, just flag it as defunct)
+ * IN job_specs - job specification from RPC
+ */
+extern int delete_partition(delete_part_msg_t *part_desc_ptr)
+{
+	struct part_record *part_ptr;
+
+	part_ptr = find_part_record (part_desc_ptr->name);
+	if (part_ptr == NULL)	/* No such partition */
+		return ESLURM_INVALID_PARTITION_NAME;
+
+	(void) kill_job_by_part_name(part_desc_ptr->name);
+	list_delete_all(part_list, list_find_part, part_desc_ptr->name);
+	last_part_update = time(NULL);
+
+	return SLURM_SUCCESS;
 }

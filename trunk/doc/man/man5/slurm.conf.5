@@ -98,6 +98,19 @@ no active job steps) before it is terminated. This prevents forgotten
 jobs to be purged in a timely fashion without waiting for their time 
 limit to be reached. The default value is unlimited (zero). 
 .TP
+\fBJobCompLoc\fR
+Define the location where job completion records are to be logged. 
+The interpretation of this value depends upon the logging mechanism 
+specified by the \fBJobCompType\fR parameter. 
+.TP
+\fBJobCompType\fR
+Define the job completion logging mechanism type.
+Acceptable values at present include "jobcomp/none" and "jobcomp/filetxt".
+The default value is "jobcomp/none", which means that upon job completion 
+the record of the job is purged from the system. 
+The value "jobcomp/filetxt" indicates that a record of the job should be 
+written to a text file specified by the \fBJobCompLoc\fR parameter.
+.TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for 
 authentication by Slurm daemons.
@@ -470,6 +483,10 @@ HashBase=10
 HeartbeatInterval=60
 .br
 InactiveLimit=120
+.br
+JobCompType=jobcomp/filetxt
+.br
+JobCompLoc=/var/log/slurm.job.log
 .br
 KillWait=30
 .br

@@ -74,6 +74,10 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->heartbeat_interval);
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
+	fprintf(out, "JobCompLoc        = %s\n", 
+		slurm_ctl_conf_ptr->job_comp_loc);
+	fprintf(out, "JobCompType       = %s\n", 
+		slurm_ctl_conf_ptr->job_comp_type);
 	fprintf(out, "JobCredPrivateKey = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_private_key);
 	fprintf(out, "JobCredPublicKey  = %s\n", 

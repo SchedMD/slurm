@@ -86,6 +86,9 @@ static int _unpack_node_info_members(node_info_t * node, Buf buffer);
 static void _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer);
 static int _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer);
 
+static void _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer);
+static int _unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer);
+
 static void _pack_job_step_create_request_msg(job_step_create_request_msg_t
 					      * msg, Buf buffer);
 static int
@@ -324,6 +327,10 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_update_partition_msg((update_part_msg_t *) msg->
 					    data, buffer);
 		 break;
+	 case REQUEST_DELETE_PARTITION:
+		 _pack_delete_partition_msg((delete_part_msg_t *) msg->
+					    data, buffer);
+		 break;
 	 case REQUEST_REATTACH_TASKS:
 		 _pack_reattach_tasks_request_msg(
 			(reattach_tasks_request_msg_t *) msg->data, buffer);
@@ -527,6 +534,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 break;
 	 case REQUEST_UPDATE_PARTITION:
 		 rc = _unpack_update_partition_msg((update_part_msg_t **) &
+						   (msg->data), buffer);
+		 break;
+	 case REQUEST_DELETE_PARTITION:
+		 rc = _unpack_delete_partition_msg((delete_part_msg_t **) &
 						   (msg->data), buffer);
 		 break;
 	 case REQUEST_LAUNCH_TASKS:
@@ -1066,6 +1077,35 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 }
 
 static void
+_pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer)
+{
+	assert(msg != NULL);
+
+	packstr(msg->name,         buffer);
+}
+
+static int
+_unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	delete_part_msg_t *tmp_ptr;
+
+	assert(msg != NULL);
+
+	/* alloc memory for structure */
+	tmp_ptr = xmalloc(sizeof(delete_part_msg_t));
+	*msg = tmp_ptr;
+
+	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint16_tmp, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(tmp_ptr->name);
+	xfree(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+static void
 _pack_job_step_create_request_msg(job_step_create_request_msg_t
 				  * msg, Buf buffer)
 {
@@ -1514,6 +1554,14 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->req_node_inx = bitfmt2int(node_inx_str);
 		xfree(node_inx_str);
 	}
+	safe_unpackstr_xmalloc(&job->exc_nodes, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&node_inx_str, &uint16_tmp, buffer);
+	if (node_inx_str == NULL)
+		job->exc_node_inx = bitfmt2int("");
+	else {
+		job->exc_node_inx = bitfmt2int(node_inx_str);
+		xfree(node_inx_str);
+	}
 	safe_unpackstr_xmalloc(&job->features, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
@@ -1522,6 +1570,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	xfree(job->partition);
 	xfree(job->name);
 	xfree(job->req_nodes);
+	xfree(job->exc_nodes);
 	xfree(job->features);
 	return SLURM_ERROR;
 }
@@ -1541,6 +1590,8 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->hash_base, buffer);
 	pack16(build_ptr->heartbeat_interval, buffer);
 	pack16(build_ptr->inactive_limit, buffer);
+	packstr(build_ptr->job_comp_loc, buffer);
+	packstr(build_ptr->job_comp_type, buffer);
 	pack16(build_ptr->kill_wait, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
 	pack16(build_ptr->min_job_age, buffer);
@@ -1596,6 +1647,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->hash_base, buffer);
 	safe_unpack16(&build_ptr->heartbeat_interval, buffer);
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
@@ -1641,6 +1694,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->control_addr);
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->epilog);
+	xfree(build_ptr->job_comp_loc);
+	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->plugindir);
 	xfree(build_ptr->prioritize);
 	xfree(build_ptr->prolog);

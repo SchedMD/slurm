@@ -75,6 +75,17 @@ slurm_update_partition ( update_part_msg_t * part_msg )
 	return _slurm_update ((void *) part_msg, REQUEST_UPDATE_PARTITION);
 }
 
+/*
+ * slurm_delete_partition - issue RPC to delete a partition, only usable 
+ *	by user root
+ * IN part_msg - description of partition updates
+ * RET 0 on success or slurm error code
+ */
+int 
+slurm_delete_partition ( delete_part_msg_t * part_msg ) 
+{
+	return _slurm_update ((void *) part_msg, REQUEST_DELETE_PARTITION);
+}
 
 /* _slurm_update - issue RPC for all update requests */
 static int 
