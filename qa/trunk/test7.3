@@ -120,7 +120,6 @@ expect {
 		send_user "\nFAILURE: spawn_task not responding\n"
 		exec $scancel --quiet $job_id
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
