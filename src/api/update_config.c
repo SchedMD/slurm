@@ -21,7 +21,7 @@
  * output: returns 0 on success, errno otherwise
  */
 int
-slurm_update_config (char *spec) {
+slurm_update_node (char *spec) {
         int msg_size ;
         int rc ;
         slurm_fd sockfd ;
@@ -48,6 +48,33 @@ slurm_update_config (char *spec) {
                 return SLURM_SOCKET_ERROR ;
         /* shutdown message connection */
         if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
+
+        switch ( response_msg . msg_type )
+        {
+                case RESPONSE_SLURM_RC:
+                        rc_msg = ( return_code_msg_t * ) response_msg . data ;
+                        return (int) rc_msg->return_code ;
+                        break ;
+                default:
+                        return SLURM_UNEXPECTED_MSG_ERROR ;
+                        break ;
+        }
+
+        return SLURM_SUCCESS ;
+}
+
+int slurm_update_partition (char *spec) {
+	int rc ;
+        slurm_msg_t request_msg ;
+        slurm_msg_t response_msg ;
+	return_code_msg_t * rc_msg ;
+
+        /* send request message */
+
+        request_msg . data = NULL ; 
+
+        if ( ( rc = slurm_send_recv_controller_msg ( & request_msg , & response_msg ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
         switch ( response_msg . msg_type )
