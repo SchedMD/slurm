@@ -18,6 +18,12 @@
 #include <src/common/bitstring.h>
 #include <src/common/qsw.h>
 #include <src/common/slurm_errno.h>
+#include <src/common/macros.h>
+
+/* Boolean option to pack/unpack jobinfo struct
+ * (good test for qsw pack routines)
+ */
+bool pack_jobinfo = false;
 
 /*
  * Set a variable in the callers environment.  Args are printf style.
@@ -163,7 +169,7 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 void
 usage(void)
 {
-	printf("Usage: runqsw [-u uid] [-i elanid] [-n nprocs] exec args\n");
+	printf("Usage: runqsw [-p] [-u uid] [-i elanid] [-n nprocs] exec args\n");
 	exit(1);
 }
 
@@ -171,7 +177,7 @@ int
 main(int argc, char *argv[])
 {
 	extern char *optarg;
-	qsw_jobinfo_t job;
+	qsw_jobinfo_t job, j;
 	int c;
 	int nprocs = 0;
 	int nodeid = -1;
@@ -182,7 +188,7 @@ main(int argc, char *argv[])
 	/*
 	 * Handle arguments.
 	 */
-	while ((c = getopt(argc, argv, "i:u:n:")) != EOF) {
+	while ((c = getopt(argc, argv, "pi:u:n:")) != EOF) {
 		switch (c) {
 			case 'n':
 				nprocs = atoi(optarg);
@@ -192,6 +198,9 @@ main(int argc, char *argv[])
 				break;
 			case 'i':
 				nodeid = atoi(optarg);
+				break;
+			case 'p':
+				pack_jobinfo = true;
 				break;
 			default:
 				usage();
@@ -227,10 +236,28 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
+	/*
+	 * pack and unpack job if requested
+	 * print jobinfo struct regardless.
+	 */
+	qsw_print_jobinfo(stderr, job);
+	if (pack_jobinfo) {
+		int len;
+		char buftmp[8192];
+	        char *buf = buftmp;
+		qsw_pack_jobinfo(job, (void **) &buf, &len);
+		qsw_alloc_jobinfo(&j);
+		buf = buftmp;
+		qsw_unpack_jobinfo(j, (void **) &buf, &len);
+		qsw_print_jobinfo(stderr, j);
+	} else 
+		j = job;
+
+
 	/* 
 	 * Now execute the parallel job like slurmd will.
 	 */
-	slurmd(job, uid, nodeid, nprocs, cmdbuf);
+	slurmd(j, uid, nodeid, nprocs, cmdbuf);
 
 	/*
 	 * Free the 'job' information.
