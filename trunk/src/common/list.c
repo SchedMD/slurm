@@ -826,11 +826,17 @@ list_reinit_mutexes (void)
 {
 	list_mutex_init(&list_free_lock);
 }
-void list_install_atfork_handlers (void)
+
+void list_install_fork_handlers (void)
 {
 	int err;
 	if ((err = pthread_atfork(NULL, NULL, &list_reinit_mutexes)))
 		lsd_fatal_error(__FILE__, __LINE__, "list atfork install");
+	return;
+}
+#else
+void list_install_fork_handlers (void)
+{
 	return;
 }
 #endif

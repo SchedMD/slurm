@@ -181,7 +181,7 @@ main (int argc, char *argv[])
 	xsignal(SIGHUP,  &_hup_handler );
 
 	_install_fork_handlers();
-	list_install_atfork_handlers();
+	list_install_fork_handlers();
 
 	_msg_engine();
 
