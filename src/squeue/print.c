@@ -430,7 +430,7 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 			   char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("TIME", width, false, true);
+		_print_str("TIME", width, right, true);
 	else
 		_print_secs(job_time_used(job), width, right, false);
 	if (suffix)
@@ -456,7 +456,7 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 			  char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("START", width, false, true);
+		_print_str("START", width, right, true);
 	else
 		_print_time(job->start_time, 0, width, right);
 	if (suffix)
@@ -467,7 +467,7 @@ int _print_job_time_start(job_info_t * job, int width, bool right,
 int _print_job_time_end(job_info_t * job, int width, bool right, char* suffix)
 {
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("END", width, false, true);
+		_print_str("END", width, right, true);
 	else if ((job->time_limit == INFINITE) &&
 		 (job->end_time > time(NULL)))
 		_print_str("NONE", width, right, true);
