@@ -97,7 +97,7 @@ typedef struct {
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\
-	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
+	{ 1, LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO }
 
 #define LOG_OPTS_SYSLOG_DEFAULT	\
 	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET }  
