@@ -83,8 +83,14 @@ daemon(int nochdir, int noclose)
 
 }
 
+/*
+ * Read and return pid stored in pidfile.
+ * Returns 0 if file doesn't exist or pid cannot be read.
+ * If pidfd != NULL, the file will be kept open and the fd
+ * returned.
+ */
 pid_t
-read_pidfile(const char *pidfile)
+read_pidfile(const char *pidfile, int *pidfd)
 {
 	int fd;
 	FILE *fp = NULL;
@@ -112,6 +118,11 @@ read_pidfile(const char *pidfile)
 	if (lpid != (pid_t) pid) 
 		fatal ("pidfile locked by %ld but contains pid=%ld",
 				(long) lpid, pid);
+
+	if (pidfd != NULL)
+		*pidfd = fd;
+	else 
+		(void) close(fd); /* Ignore errors */
 
 	return (lpid);
 }

@@ -179,7 +179,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	if (log->opt.syslog_level > LOG_LEVEL_QUIET)
 		log->facility = fac;
 
-	if (logfile && log->opt.logfile_level > LOG_LEVEL_QUIET) {
+	if (logfile && (log->opt.logfile_level > LOG_LEVEL_QUIET)) {
 		FILE *fp; 
 
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);

@@ -186,7 +186,8 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int      rc;
+	int      retval = 0;
+	int      rc     = 0;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
@@ -199,9 +200,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	if ((super_user == false) && (req_uid != req->uid)) {
 		error("Security violation, launch task RCP from uid %u",
 		      (unsigned int) req_uid);
-		rc = ESLURM_USER_ID_MISSING;	/* or invalid user */
-		slurm_send_rc_msg(msg, rc);
-		return;
+		retval = ESLURM_USER_ID_MISSING;	/* or invalid user */
+		goto done;
 	}
 
 	slurm_get_addr(cli, &port, host, sizeof(host));
@@ -216,21 +216,23 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 			       conf->cred_state_list);
 
 	if ((rc != SLURM_SUCCESS) && (super_user == false)) {
+		retval = errno;
 		error("Invalid credential from %ld@%s", req_uid, host);
-		slurm_send_rc_msg(msg, rc);
-		return;
+		goto done;
 	}
 
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
 		error("[job %d] prolog failed", req->job_id);
-		slurm_send_rc_msg(msg, ESLURMD_PROLOG_FAILED);
-		return;
+		retval = ESLURMD_PROLOG_FAILED;
+		goto done;
 	}
 
-	rc = _launch_tasks(req, cli);
+	if (_launch_tasks(req, cli) < 0)
+		retval = errno;
 
-	slurm_send_rc_msg(msg, rc);
+    done:
+	slurm_send_rc_msg(msg, retval);
 }
 
 

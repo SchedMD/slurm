@@ -66,7 +66,7 @@
 #  define MAXHOSTNAMELEN	64
 #endif
 
-#define DEFAULT_SPOOLDIR	"/tmp"
+#define DEFAULT_SPOOLDIR	"/tmp/slurmd"
 #define DEFAULT_PIDFILE		"/var/run/slurmd.pid"
 
 typedef struct connection {
@@ -136,12 +136,13 @@ main (int argc, char *argv[])
 	_print_conf();
 
 	_kill_old_slurmd();
+	_create_msg_socket();
+
+	conf->pid = getpid();
 	create_pidfile(conf->pidfile);
 
 	info("%s started on %T", xbasename(argv[0]));
 
-	_create_msg_socket();
-	conf->pid = getpid();
 
 	if (_slurmd_init() < 0)
 		exit(1);
@@ -217,11 +218,12 @@ _wait_for_all_threads()
 	ListIterator i;
 	pthread_t *ptid;
 
-	debug("Cancelling %d running threads", list_count(conf->threads));
+	debug("Waiting for %d running threads", list_count(conf->threads));
 
 	i = list_iterator_create(conf->threads);
 	while ((ptid = list_next(i))) {
-		pthread_cancel(*ptid);
+		pthread_join(*ptid, NULL);
+		debug2("thread %d finished", *ptid);
 	}
 	list_iterator_destroy(i);
 }
@@ -452,6 +454,7 @@ _init_conf()
 	conf->prolog    = NULL;
 	conf->port      =  0;
 	conf->daemonize =  1;
+	conf->shm_cleanup =  0;
 	conf->lfd       = -1;
 	conf->log_opts  = lopts;
 	conf->pidfile   = xstrdup(DEFAULT_PIDFILE);
@@ -486,7 +489,7 @@ _process_cmdline(int ac, char **av)
 			conf->logfile = xstrdup(optarg);
 			break;
 		case 'c':
-			shm_cleanup();
+			conf->shm_cleanup = 1;
 			break;
 		default:
 			_usage(c);
@@ -529,6 +532,8 @@ _slurmd_init()
 	slurm_init_verifier(&conf->vctx, conf->pubkey);
 	_restore_cred_state(&conf->cred_state_list); 
 	conf->threads = list_create((ListDelF) _tid_free);
+	if (conf->shm_cleanup)
+		shm_cleanup();
 	if (shm_init() < 0)
 		return SLURM_FAILURE;
 	return SLURM_SUCCESS;
@@ -680,11 +685,18 @@ _set_slurmd_spooldir(void)
 static void
 _kill_old_slurmd(void)
 {
-	pid_t oldpid = read_pidfile(conf->pidfile);
+	int fd;
+	pid_t oldpid = read_pidfile(conf->pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
 		info ("killing old slurmd[%ld]", (long) oldpid);
 		kill(oldpid, SIGTERM);
-		sleep(2);
+
+		/* 
+		 * Wait for previous daemon to terminate
+		 */
+		if (fd_get_readw_lock(fd) < 0) 
+			fatal ("unable to wait for readw lock: %m");
+		(void) close(fd); /* Ignore errors */ 
 	}
 }
 

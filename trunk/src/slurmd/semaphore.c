@@ -48,6 +48,8 @@
 #include <stdio.h>
 #include "semaphore.h"
 
+#include "../common/log.h"
+
 
 #define MAX_TRIES 3
 
@@ -157,6 +159,7 @@ sem_t * sem_open(const char *name, int oflag, ...)
         }
     }
 
+
     /* Open (presumably) existing semaphore.  Either O_CREAT was not specified,
      *   or O_CREAT was specified w/o O_EXCL and the semaphore already exists.
      */
@@ -239,13 +242,15 @@ int sem_unlink(const char *name)
     if ((key = ftok(name, 1)) == -1) {
         return(-1);
     }
-    if (unlink(name) == -1) {
-        return(-1);
-    }
     if ((semid = semget(key, 0, 0)) == -1) {
-        return(-1);
+        goto done;
     }
     if (semctl(semid, 0, IPC_RMID) == -1) {
+	goto done;
+    }
+
+   done:
+    if (unlink(name) == -1) {
         return(-1);
     }
     return(0);
@@ -262,7 +267,7 @@ int sem_wait(sem_t *sem)
     }
     op.sem_num = 0;
     op.sem_op = -1;
-    op.sem_flg = 0;
+    op.sem_flg = SEM_UNDO;
     if (semop(sem->id, &op, 1) == -1) {
         return(-1);
     }
