@@ -1,0 +1,83 @@
+.TH SLURMD "1" "August 2002" "slurmctld 0.1" "Slurm components"
+.SH "NAME"
+slurmd \- The compute node daemon of Slurm.
+.SH "SYNOPSIS"
+\fBslurmd\fR [\fIOPTIONS\fR...]
+.SH "DESCRIPTION"
+\fBslurmld\fR is the compute node daemon of Slurm. It monitors all tasks running
+on the compute node , accepts work (tasks), launched tasks, and kill running tasks 
+upon request.
+.TP
+OPTIONS
+.TP
+\fB-d\fR
+Execute \fBslurmctld\fR as a daemon (in the background) with logging to syslog.
+.TP
+\fB-e <errlev>\fR
+Set stderr logging to the specified level..TP
+\fB-h\fR
+Help; print a brief summary of command options.
+.TP
+\fB-f <file>\fR
+Read configuration from the specified file.
+.TP
+\fB-l <errlev>\fR
+Set logfile logging to the specified level.
+.TP
+\fB-L <file>\fR
+Write log messages to the specified file.
+.TP
+\fB-s <errlev>\fR
+Set syslog logging to the specified level.
+.TP
+ARGUMENTS
+.TP
+\fIerrlev\fP
+The level of error to be reported, an integer value between 0 and 7. 
+Larger numbers result in more logging information. The numbers represent 
+the following levels of logging:
+.br
+\fB0\fR
+No logging of any events
+.br
+\fB1\fR
+Log fatal errors only
+.br
+\fB2\fR
+Log all errors
+.br
+\fB3\fR
+Log informational messages
+.br
+\fB4\fR
+Verbose logging of informational message
+.br
+\fB5,6,7\fR
+Log highly detailed debugging messages
+.TP
+\fB<file>\fR
+Pathname of a configuration or log file to use.
+.SH "NOTES"
+It may be useful to experiment with different \fBslurmd\fR specific 
+configuration parameters using a distinct configuration file. However, 
+this special configuration file will not be recognized by \fBslurmctld\fR 
+or the Slurm programs. If you desire changing communication ports, 
+the location of the temporary file system, or other parameters used 
+by other Slurm components, change the common configuration file.
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
