@@ -130,6 +130,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man5/*
 %{_mandir}/man8/*
 %dir /etc/slurm
+%dir %{_libdir}/slurm
+%dir %{_libdir}/slurm/src
 %config(noreplace) /etc/rc.d/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
 #############################################################################
