@@ -177,10 +177,15 @@ NodeName=mcr[0-1151]  NodeAddr=emcr[0-1151]
 #
 PartitionName=DEFAULT State=UP    
 PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
-PartitionName=pbatch Nodes=mcr[192-1151] </pre> <p>You will should create unique job credential keys for your site 
-using the program <a href="http://www.openssl.org/">openssl</a>. An example of 
-how to do this is shown below. Specify file names that match the values of JobCredentialPrivateKey 
-and JobCredentialPublicCertificate in your configuration file. The JobCredentialPrivateKey 
+PartitionName=pbatch Nodes=mcr[192-1151]
+</pre> 
+<h3>Security</h3>
+<p>You will should create unique job credential keys for your site
+using the program <a href="http://www.openssl.org/">openssl</a>. 
+<b>You must use openssl and not ssh-genkey to construct these keys.</b>
+An example of how to do this is shown below. Specify file names that 
+match the values of JobCredentialPrivateKey and JobCredentialPublicCertificate 
+in your configuration file. The JobCredentialPrivateKey 
 file must be readable only by SlurmUser. The JobCredentialPublicCertificate file 
 must be readable by all users. </p>
 <p class="commandline" style="margin-left:.2in">openssl genrsa -out /usr/local/etc/slurm.key 
