@@ -898,10 +898,6 @@ static void _opt_args(int ac, char **av)
 		bool search_cwd = (opt.batch || opt.allocate);
 		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
-		if (search_cwd)
-			debug("searching cwd first");
-
-		info("going to search path");
 		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
