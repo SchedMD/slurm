@@ -94,6 +94,12 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->prolog);
 	fprintf(out, "ReturnToService   = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
+	fprintf(out, "SchedAuth         = %s\n",
+		slurm_ctl_conf_ptr->schedauth);
+	fprintf(out, "SchedPort         = %u\n",
+		slurm_ctl_conf_ptr->schedport);
+	fprintf(out, "SchedType         = %s\n",
+		slurm_ctl_conf_ptr->schedtype);
 	fprintf(out, "SlurmUser         = %s(%u)\n", 
 		slurm_ctl_conf_ptr->slurm_user_name,
 		slurm_ctl_conf_ptr->slurm_user_id);

@@ -256,6 +256,9 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->plugindir           = slurmctld_conf.plugindir;
 	conf_ptr->prolog              = slurmctld_conf.prolog;
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
+	conf_ptr->schedauth           = slurmctld_conf.schedauth;
+	conf_ptr->schedport           = slurmctld_conf.schedport;
+	conf_ptr->schedtype           = slurmctld_conf.schedtype;
 	conf_ptr->slurm_user_id       = slurmctld_conf.slurm_user_id;
 	conf_ptr->slurm_user_name     = slurmctld_conf.slurm_user_name;
 	conf_ptr->slurmctld_debug     = slurmctld_conf.slurmctld_debug;
