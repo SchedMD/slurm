@@ -37,6 +37,8 @@
 #  endif
 #endif
 
+#include <unistd.h>
+
 #include <slurm/slurm_errno.h>
 
 #include "src/common/list.h"
@@ -175,28 +177,22 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 		if (part_state == RM_PARTITION_FREE)
 			break;
-#ifdef USE_BGL_FILES
 		if ((i == 0)
 		&&  ((rc = pm_destroy_partition(bgl_part_id)) != STATUS_OK)) {
 			error("pm_destroy_partition(%s): %s", bgl_part_id, 
 				bgl_err_str(rc));
 			return rc;
 		}
-#else
-		error("Could not free partition %s", bgl_part_id);
-		return STATUS_OK;	/* just continue the job */
-#endif
 	}
 
 	if (part_state != RM_PARTITION_FREE) {
 		error("Could not free partition %s", bgl_part_id);
 		return INTERNAL_ERROR;
 	}
-#ifdef USE_BGL_FILES
 	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK)
 		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
 			bgl_err_str(rc));
-#endif
+
 	return rc;
 }
 
@@ -207,8 +203,8 @@ extern void _start_agent(bgl_update_t *bgl_update_ptr)
 			uid_to_string(bgl_update_ptr->uid)) != STATUS_OK) {
 		error("Could not change partition owner to start jobid=%u",
 			bgl_update_ptr->job_id);
-		sleep(1);	/* wait for the slurmd to begin the 
-				 * batch script, this is a no-op if 
+		sleep(1);	/* wait for the slurmd to begin the batch 
+				 * script, slurm_fail_job() is a no-op if 
 				 * issued prior to the script initiation */
 		(void) slurm_fail_job(bgl_update_ptr->job_id);
 	}
@@ -217,7 +213,7 @@ extern void _start_agent(bgl_update_t *bgl_update_ptr)
 /* Perform job termination work */
 static void _term_agent(bgl_update_t *bgl_update_ptr)
 {
-	int jobs, rc;
+	int i, jobs, rc;
 	rm_job_list_t *job_list;
 	int live_states;
 
@@ -232,22 +228,21 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		jobs = 0;
 	}
 
-#ifdef USE_BGL_FILES
 	for (i=0; i<jobs; i++) {
-		rm_elemment_t job_elem;
+		rm_element_t *job_elem;
 		pm_partition_id_t part_id;
 		db_job_id_t job_id;
 		if (i) {
-			if ((rc = rm_get_data(job_list, RM_JobListNextPart, 
+			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
 					&job_elem)) != STATUS_OK) {
-				error("rm_get_data(RM_JobListNextPart): %s", 
+				error("rm_get_data(RM_JobListNextJob): %s", 
 					bgl_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = rm_get_data(job_list, RM_JobListFirstPart, 
+			if ((rc = rm_get_data(job_list, RM_JobListFirstJob, 
 					&job_elem)) != STATUS_OK) {
-				error("rm_get_data(RM_JobListFirstPart): %s"
+				error("rm_get_data(RM_JobListFirstJob): %s",
 					bgl_err_str(rc));
 				continue;
 			}
@@ -258,6 +253,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				bgl_err_str(rc));
 			continue;
 		}
+
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
@@ -268,7 +264,6 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		}
 		(void) _remove_job(job_id);
 	}
-#endif
 
 	/* Change the block's owner */
 	_set_part_owner(bgl_update_ptr->bgl_part_id, "");
@@ -303,29 +298,32 @@ static void *_part_agent(void *args)
  * terminating a job */
 static void _part_op(bgl_update_t *bgl_update_ptr)
 {
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	int retries;
+
 	slurm_mutex_lock(&agent_cnt_mutex);
 	if (list_enqueue(bgl_update_list, bgl_update_ptr) == NULL)
 		fatal("malloc failure in _part_op/list_enqueue");
-	if (agent_cnt == 0) {
-		/* spawn an agent */
-		pthread_attr_t attr_agent;
-		pthread_t thread_agent;
-		int retries = 0;
-		agent_cnt = 1;
-		slurm_attr_init(&attr_agent);
-		if (pthread_attr_setdetachstate(&attr_agent, 
-				PTHREAD_CREATE_JOINABLE))
-			error("pthread_attr_setdetachstate error %m");
-
-		while (pthread_create(&thread_agent, &attr_agent, _part_agent,
-				NULL)) {
-			error("pthread_create error %m");
-			if (++retries > MAX_PTHREAD_RETRIES)
-				fatal("Can't create pthread");
-			sleep(1);       /* sleep and retry */
-		}
+	if (agent_cnt > 0) {	/* already running an agent */
+		slurm_mutex_unlock(&agent_cnt_mutex);
+		return;
 	}
+	agent_cnt = 1;
 	slurm_mutex_unlock(&agent_cnt_mutex);
+
+	/* spawn an agent */
+	slurm_attr_init(&attr_agent);
+	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_JOINABLE))
+		error("pthread_attr_setdetachstate error %m");
+
+	retries = 0;
+	while (pthread_create(&thread_agent, &attr_agent, _part_agent, NULL)) {
+		error("pthread_create error %m");
+		if (++retries > MAX_PTHREAD_RETRIES)
+			fatal("Can't create pthread");
+		usleep(1000);	/* sleep and retry */
+	}
 }
 #endif
 
