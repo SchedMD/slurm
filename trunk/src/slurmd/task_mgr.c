@@ -156,7 +156,7 @@ void *task_exec_thread(void *arg)
 		interconnect_env(&launch_msg->env, &launch_msg->envc, 
 				 launch_msg->srun_node_id,
 				 launch_msg->nnodes,
-				 task_start->local_task_id,
+				 launch_msg->global_task_ids[task_start->local_task_id],
 				 launch_msg->nprocs);
 
 		/* setup std stream pipes */
@@ -215,8 +215,11 @@ void *task_exec_thread(void *arg)
 		 * deadlock can occur if you mess with it - ask me how I know :)
 		 */
 
+		debug3("calling setup_parent_pipes");
 		/* 1   */ setup_parent_pipes(task_start->pipes);
+		debug3("calling forward_io");
 		/* 1.5 */ forward_io(arg);
+		debug3("calling waitpid(%ld)", cpid);
 		/* 2   */ waitpid(cpid, &task_return_code, 0);
 		/* 3   */ wait_on_io_threads(task_start);
 

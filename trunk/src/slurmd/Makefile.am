@@ -20,7 +20,7 @@ noinst_LTLIBRARIES = libelan_interconnect.la \
 		libno_interconnect.la \
 		libforked_io.la  \
 		libthreaded_io.la \
-		libnb_io.la \
+		libnbio.la \
 		libforked.la \
 		libthreaded.la
 
@@ -30,8 +30,8 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(SSL_LIBS)
 
 slurmd_LDADD = $(process_lib) $(io_lib) $(LDADD) $(interconnect_lib)
-slurmd_nbio_LDADD = $(process_lib) libnb_io.la $(LDADD) $(interconnect_lib)
-slurmd_fork_nbio_LDADD = libforked.la libnb_io.la $(LDADD) $(interconnect_lib)
+slurmd_nbio_LDADD = $(process_lib) libnbio.la $(LDADD) $(interconnect_lib)
+slurmd_fork_nbio_LDADD = libforked.la libnbio.la $(LDADD) $(interconnect_lib)
 	
 common_sources = slurmd.c \
 		get_mach_stat.c \
@@ -56,7 +56,7 @@ libthreaded_la_SOURCES = threaded_ctrl.c
 libforked_io_la_SOURCES = forked_io.c reconnect_utils.c io_threads.c 
 libthreaded_io_la_SOURCES = threaded_io.c reconnect_utils.c io_threads.c 
 
-libnb_io_la_SOURCES =  nb_io.c nbio.c reconnect_utils.c
+libnbio_la_SOURCES =  nbio.c reconnect_utils.c
 
 libelan_interconnect_la_SOURCES =  elan_interconnect.c
 libno_interconnect_la_SOURCES =  no_interconnect.c 
