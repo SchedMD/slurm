@@ -391,10 +391,10 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 		case REQUEST_JOB_STEP_CREATE:
 			unpack_job_step_create_request_msg(( job_step_create_request_msg_t ** ) &msg -> data , buffer ) ;	
 			break;
-			default :
-				debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
-				return EINVAL ;
-				break;
+		default :
+			debug ( "No unpack method for msg type %i",  msg -> msg_type ) ;
+			return EINVAL ;
+			break;
 		
 	}
 	return 0 ;
