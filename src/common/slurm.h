@@ -646,6 +646,15 @@ extern int read_SLURM_CONF (char *file_name);
  */
 extern void report_leftover (char *in_line, int line_num);
 
+/* 
+ * schedule - attempt to schedule all pending jobs
+ *	pending jobs for each partition will be scheduled in priority  
+ *	order until a request fails
+ * global: job_list - global list of job records
+ *	last_job_update - time of last update to job table
+ */
+void schedule();
+
 /*
  * select_nodes - select and allocate nodes to a specific job
  * input: job_ptr - pointer to the job record
