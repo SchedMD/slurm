@@ -43,6 +43,10 @@ typedef enum { test1, test2
 #define RESPONSE_JOB_RESOURCE			4052
 #define REQUEST_JOB_ATTACH			4061
 #define RESPONSE_JOB_ATTACH			4062
+#define REQUEST_IMMEDIATE_RESOURCE_ALLOCATION	4071
+#define RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION	4072
+#define REQUEST_WILL_JOB_RUN	 		4081
+#define RESPONSE_WILL_JOB_RUN			4082
 #define MESSAGE_REVOKE_JOB_CREDENTIAL		4901
 
 #define REQUEST_BUILD_INFO			3011
@@ -58,7 +62,7 @@ typedef enum { test1, test2
 #define REQUEST_ACCTING_INFO			3061
 #define RESPONSE_ACCOUNTING_INFO		3062
 #define REQUEST_GET_JOB_STEP_INFO		3071
-#define RESPONSE_GET_JOB_STEP_INFO		4072
+#define RESPONSE_GET_JOB_STEP_INFO		3072
 
 #define REQUEST_CREATE_JOB_STEP			5001
 #define RESPONSE_CREATE_JOB_STEP		5002
@@ -120,6 +124,12 @@ typedef struct slurm_node_registration_status_msg
 	uint32_t real_memory_size ;
  	uint32_t temporary_disk_space ;
 } node_registration_status_msg_t ;
+
+typedef struct slurm_job_allocation_response_msg
+{
+	uint32_t job_id;
+	char* node_list;
+} job_allocation_response_msg_t ;
 
 typedef struct job_desc_msg {    /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
@@ -283,7 +293,11 @@ void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 /* stuct init functions */
 #define SLURM_JOB_DESC_NONCONTIGUOUS		0
 #define SLURM_JOB_DESC_CONTIGUOUS		1 
-#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	SLURM_JOB_DESC_NONCONTIGUOUS		
+#define SLURM_JOB_DESC_SHARED			1	
+#define SLURM_JOB_DESC_NOT_SHARED		0
+#define SLURM_JOB_DESC_FORCED_SHARED		2
+
+#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	SLURM_JOB_DESC_NONCONTIGUOUS
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
 #define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	
@@ -296,9 +310,6 @@ void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 #define SLURM_JOB_DESC_DEFAULT_PRIORITY		NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
-#define SLURM_JOB_DESC_SHARED			1	
-#define SLURM_JOB_DESC_NOT_SHARED		0
-#define SLURM_JOB_DESC_FORCED_SHARED		2
 #define SLURM_JOB_DESC_DEFAULT_SHARED	 	SLURM_JOB_DESC_NOT_SHARED	
 #define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL

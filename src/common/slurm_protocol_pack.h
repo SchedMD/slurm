@@ -57,4 +57,8 @@ void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size
 int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buffer_size ) ;
 int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size ) ;
 int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size ) ;
+
+void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, char ** buffer , uint32_t * length ) ;
+
+int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , char ** buffer , uint32_t * length ) ;
 #endif
