@@ -67,7 +67,7 @@ main (int argc, char *argv[])
 
 /*
  * slurm_free_node_info - free the node information buffer (if allocated)
- * NOTE: buffer is loaded by load_node.
+ * NOTE: buffer is loaded by slurm_load_node.
  */
 void
 slurm_free_node_info (struct node_buffer *node_buffer_ptr)
@@ -101,6 +101,7 @@ slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr)
 	void *buf_ptr;
 	struct sockaddr_in serv_addr;
 	uint32_t uint32_tmp, uint32_time;
+	uint16_t uint16_tmp;
 	struct node_table *node;
 
 	*node_buffer_ptr = NULL;
@@ -156,7 +157,7 @@ slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr)
 	unpack32 (&uint32_tmp, &buf_ptr, &buffer_size);
 	if (uint32_tmp != NODE_STRUCT_VERSION) {
 		free (buffer);
-		return -2;
+		return EINVAL;
 	}
 	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
 
@@ -168,14 +169,16 @@ slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr)
 			free (buffer);
 			return ENOMEM;
 		}
-		unpackstr_ptr (&node[i].name, &uint32_tmp, &buf_ptr, &buffer_size);
+		unpackstr_ptr (&node[i].name, &uint16_tmp, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].node_state, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].cpus, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].real_memory, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].tmp_disk, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].weight, &buf_ptr, &buffer_size);
-		unpackstr_ptr (&node[i].features, &uint32_tmp, &buf_ptr, &buffer_size);
-		unpackstr_ptr (&node[i].partition, &uint32_tmp, &buf_ptr, &buffer_size);
+		unpackstr_ptr (&node[i].features, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&node[i].partition, &uint16_tmp,
+			&buf_ptr, &buffer_size);
 	}
 
 	*node_buffer_ptr = malloc (sizeof (struct node_buffer));

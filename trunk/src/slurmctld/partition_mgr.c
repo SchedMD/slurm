@@ -477,7 +477,7 @@ int
 pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
 {
 	uint16_t default_part_flag;
-	uint32_t group_size, name_size, node_size;
+	uint16_t group_size, name_size, node_size;
 
 	if (part_record_point->name)
 		name_size = strlen(part_record_point->name) + 1;

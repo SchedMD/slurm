@@ -963,7 +963,7 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 {
 	int state;
 	char *partition = NULL;
-	uint32_t feature_size, name_size, partition_size;
+	uint16_t feature_size, name_size, partition_size;
 
 	state = dump_node_ptr->node_state;
 	if (state < 0)

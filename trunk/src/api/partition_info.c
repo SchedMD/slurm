@@ -98,6 +98,7 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 	char request_msg[64], *buffer;
 	void *buf_ptr;
 	struct sockaddr_in serv_addr;
+	uint16_t uint16_tmp;
 	uint32_t uint32_tmp, uint32_time;
 	struct part_table *part;
 
@@ -154,7 +155,7 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 	unpack32 (&uint32_tmp, &buf_ptr, &buffer_size);
 	if (uint32_tmp != PART_STRUCT_VERSION) {
 		free (buffer);
-		return -2;
+		return EINVAL;
 	}
 	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
 
@@ -166,7 +167,8 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 			free (buffer);
 			return ENOMEM;
 		}
-		unpackstr_ptr (&part[i].name, &uint32_tmp, &buf_ptr, &buffer_size);
+		unpackstr_ptr (&part[i].name, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
 		unpack32  (&part[i].max_time, &buf_ptr, &buffer_size);
 		unpack32  (&part[i].max_nodes, &buf_ptr, &buffer_size);
 		unpack32  (&part[i].total_nodes, &buf_ptr, &buffer_size);
@@ -175,8 +177,10 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 		unpack16  (&part[i].key, &buf_ptr, &buffer_size);
 		unpack16  (&part[i].shared, &buf_ptr, &buffer_size);
 		unpack16  (&part[i].state_up, &buf_ptr, &buffer_size);
-		unpackstr_ptr (&part[i].allow_groups, &uint32_tmp, &buf_ptr, &buffer_size);
-		unpackstr_ptr (&part[i].nodes, &uint32_tmp, &buf_ptr, &buffer_size);
+		unpackstr_ptr (&part[i].allow_groups, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&part[i].nodes, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
 	}
 
 	*part_buffer_ptr = malloc (sizeof (struct part_buffer));
