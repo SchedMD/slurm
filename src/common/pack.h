@@ -202,8 +202,34 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 		goto unpack_error;			\
 } while (0)
 
-#define safe_packstr		                        \
-        packstr
+#define safe_pack_bit_fmt(bitmap,max_len,buf) do {	\
+	assert(buf->magic == BUF_MAGIC);		\
+	assert(max_len <= 0xffff);			\
+	if (bitmap) {					\
+		char _tmp_str[max_len];			\
+		uint32_t _size;				\
+		bit_fmt(_tmp_str,max_len,bitmap);	\
+		_size = strlen(_tmp_str)+1;		\
+		packmem(_tmp_str,(uint16_t)_size,buf);	\
+	} else						\
+		packmem(NULL,(uint16_t)0,buf);		\
+} while (0)				
+
+#define safe_packstr(str,max_len,buf) do {		\
+	uint32_t _size;					\
+	assert(buf->magic == BUF_MAGIC);		\
+	assert(max_len <= 0xffff);			\
+	_size = (str ? strlen(str)+1 : 0);		\
+	assert(_size == 0 || str != NULL);		\
+	if (_size <= max_len)				\
+		packmem(str,(uint16_t)_size,buf);	\
+	else {						\
+		char tmp_str[max_len];			\
+		strncpy(tmp_str, str, max_len-1);	\
+		tmp_str[max_len - 1] = (char) NULL;	\
+		packmem(tmp_str,(uint16_t)max_len,buf);	\
+	}						\
+} while (0)				
 
 #define packstr(str,buf) do {				\
 	uint32_t _size;					\
