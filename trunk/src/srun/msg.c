@@ -74,7 +74,8 @@ static void	_launch_handler(job_t *job, slurm_msg_t *resp);
 static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
 static char *	_taskid2hostname(int task_id, job_t * job);
-static void     _print_pid_list(const char *host, int ntasks, uint32_t *pid);
+static void     _print_pid_list(const char *host, int ntasks, 
+				uint32_t *pid, char *executable_name);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -188,7 +189,7 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 				msg->local_pids );
 #endif
 		_print_pid_list( msg->node_name, msg->count_of_pids, 
-				 msg->local_pids );
+				 msg->local_pids, remote_argv[0] );
 
 	} else {
 		error("launch resp from %s has bad task_id %d",
@@ -328,7 +329,8 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 	}
 	_build_tv_list(job, resp->node_name, resp->ntasks, resp->local_pids);
 #endif
-	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids);
+	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids, 
+			resp->executable_name);
 
 	update_running_tasks(job, resp->srun_node_id);
 
@@ -571,7 +573,8 @@ msg_thr_create(job_t *job)
 }
  
 static void
-_print_pid_list(const char *host, int ntasks, uint32_t *pid)
+_print_pid_list(const char *host, int ntasks, uint32_t *pid, 
+		char *executable_name)
 {
 	if (_verbose) {
 		int i;
@@ -584,7 +587,8 @@ _print_pid_list(const char *host, int ntasks, uint32_t *pid)
 		}
 
 		hostlist_ranged_string(pids, sizeof(buf), buf);
-		verbose("%s: %s", host, buf);
+		verbose("command:%s host:%s %s", 
+			executable_name, host, buf);
 	}
 }
 
