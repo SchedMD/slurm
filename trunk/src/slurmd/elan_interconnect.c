@@ -107,6 +107,8 @@ int interconnect_node_init(void)
 	if (err)
 		error("pthread_attr_setdetachstate: %s", slurm_strerror(err));
 
+	slurm_mutex_lock(&neterr_mutex);
+
 	if ((err = pthread_create(&neterr_tid, &attr, neterr_thr, NULL)))
 		return SLURM_FAILURE;
 
@@ -114,7 +116,6 @@ int interconnect_node_init(void)
 	 *  Wait for successful startup of neterr thread before
 	 *   returning control to slurmd.
 	 */
-	slurm_mutex_lock(&neterr_mutex);
 	pthread_cond_wait(&neterr_cond, &neterr_mutex);
 	pthread_mutex_unlock(&neterr_mutex);
 
@@ -219,12 +220,11 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job)
 	int i = 0;
 	int sleeptime = 1;
 
-	debug("going to destory program description...");
+	debug("going to destroy program description...");
 
-	while((qsw_prgdestroy(qsw_job) < 0) && (errno != EEXIST_PRGDESTROY)) {
+	while((qsw_prgdestroy(qsw_job) < 0) && (errno == ECHILD_PRGDESTROY)) {
+		debug("qsw_prgdestroy: %m");
 		i++;
-		if (errno != ECHILD_PRGDESTROY)
-			error("qsw_prgdestroy: %m");
 		if (i == 1) {
 			debug("sending SIGTERM to remaining tasks");
 			qsw_prgsignal(qsw_job, SIGTERM);
