@@ -28,9 +28,9 @@ main (int argc, char *argv[])
 	job_mesg. num_nodes = 1;
 	job_mesg. user_id = 1500;
 	job_mesg. script = "/bin/hostname\n/bin/date\n";
-	job_mesg. stderr = "/tmp/slurm.stderr";
-	job_mesg. stdin = "/tmp/slurm.stdin";
-	job_mesg. stdout = "/tmp/slurm.stdout";
+	job_mesg. err = "/tmp/slurm.stderr";
+	job_mesg. in = "/tmp/slurm.stdin";
+	job_mesg. out = "/tmp/slurm.stdout";
 	job_mesg. work_dir = "/tmp\0";
 	job_mesg. env_size = 2;
 	env[0] = "SLURM_ENV_0=looking_good";
