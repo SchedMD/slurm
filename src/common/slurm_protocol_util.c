@@ -35,5 +35,5 @@ void set_slurm_addr_hton ( slurm_addr * slurm_address , uint16_t port , uint32_t
 {
 	slurm_address -> family = AF_SLURM ;
 	slurm_address -> port = htons ( port ) ;
-	slurm_address -> address = htons ( ip_address ) ;
+	slurm_address -> address = htonl ( ip_address ) ;
 }

@@ -71,7 +71,7 @@ uint32_t _slurm_listen_stream ( slurm_addr * slurm_address )
 		connection_fd = rc ;
 	}
 
-	rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_address ) ) ;
+	rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
 		if ( debug )
@@ -134,7 +134,7 @@ uint32_t _slurm_open_stream ( slurm_addr * slurm_address )
 		connection_fd = rc ;
 	}
 
-	rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_address ) ) ;
+	rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
 		if ( debug )
