@@ -20,7 +20,7 @@ INCLUDES = -I$(top_srcdir)
 #
 # If any interfaces have been removed, set age = 0
 #
-current = 1
+current = 2
 rev     = 0
 age     = 0
 
@@ -28,6 +28,7 @@ lib_LTLIBRARIES = libslurm.la
 
 libslurm_la_SOURCES =    \
 	allocate.c       \
+	bnr.c            \
 	cancel.c         \
 	complete.c       \
 	config_info.c    \

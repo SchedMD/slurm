@@ -20,6 +20,7 @@ EXTRA_DIST =			\
 	META
 	
 pkginclude_HEADERS =		\
+	slurm/bnr.h		\
 	slurm/slurm.h 		\
 	slurm/slurm_errno.h
 
