@@ -5,13 +5,13 @@
 AUTOMAKE_OPTIONS = foreign
 CLEANFILES = core.*
 
-INCLUDES = $(SSL_CPPFLAGS)
+INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
 bin_PROGRAMS = slurmctld
 
-LDADD = $(top_srcdir)/src/common/libcommon.la    \
-	$(top_srcdir)/src/common/libcred.la      \
-	$(top_srcdir)/src/common/libdaemonize.la 
+LDADD = $(top_builddir)/src/common/libcommon.la    \
+	$(top_builddir)/src/common/libcred.la      \
+	$(top_builddir)/src/common/libdaemonize.la 
 
 
 slurmctld_SOURCES = 	\

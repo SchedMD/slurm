@@ -331,7 +331,8 @@ int
 load_part_state ( void )
 {
 	char *part_name, *allow_groups, *nodes, *state_file, *data;
-	uint32_t time, max_time, max_nodes;
+	uint32_t max_time, max_nodes;
+	time_t time;
 	uint16_t name_len, def_part_flag, root_only, shared, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0;

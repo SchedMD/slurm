@@ -11,6 +11,6 @@ noinst_PROGRAMS = cancel-tst \
 		update_config-tst
 		
 
-INCLUDES = -I$(top_srcdir)/src/common
-LDADD   = $(top_srcdir)/src/common/libcommon.la \
-		$(top_srcdir)/src/api/libslurm.la
+INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common 
+LDADD    = $(top_builddir)/src/common/libcommon.la \
+	   $(top_builddir)/src/api/libslurm.la

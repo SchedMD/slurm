@@ -165,11 +165,11 @@ void slurm_auth_pack_credentials( slurm_auth_t cred, Buf buffer)
 {
 	uint16_t chunk_size = sizeof( signature );
   
-	pack32( cred->creds.uid, buffer );
-	pack32( cred->creds.gid, buffer );
-	pack32( cred->creds.valid_from, buffer );
-	pack32( cred->creds.valid_to, buffer );
-	packmem( cred->sig.data, chunk_size, buffer );
+	pack32   ( cred->creds.uid,            buffer );
+	pack32   ( cred->creds.gid,            buffer );
+	pack_time( cred->creds.valid_from,     buffer );
+	pack_time( cred->creds.valid_to,       buffer );
+	packmem  ( cred->sig.data, chunk_size, buffer );
 }
 
 
@@ -180,11 +180,11 @@ void slurm_auth_unpack_credentials( slurm_auth_t *credp, Buf buffer)
 	slurm_auth_t cred;
 
 	cred = slurm_auth_alloc_credentials();
-	unpack32( &cred->creds.uid, buffer );
-	unpack32( &cred->creds.gid, buffer );
-	unpack32( (uint32_t *) &cred->creds.valid_from, buffer );
-	unpack32( (uint32_t *) &cred->creds.valid_to, buffer );
-	unpackmem_ptr( &data, &dummy, buffer );
+	unpack32     ( &cred->creds.uid,        buffer );
+	unpack32     ( &cred->creds.gid,        buffer );
+	unpack_time  ( &cred->creds.valid_from, buffer );
+	unpack_time  ( &cred->creds.valid_to,   buffer );
+	unpackmem_ptr( &data, &dummy,           buffer );
 	memcpy( cred->sig.data, data, sizeof( signature ) );
 	*credp = cred;
 	return;

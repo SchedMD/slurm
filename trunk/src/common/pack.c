@@ -4,7 +4,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>, Moe Jette <jette1@llnl.gov>, et. al.
+ *  Written by Jim Garlick <garlick@llnl.gov>, 
+ *             Moe Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -26,29 +27,31 @@
 \****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h> 
+#  include <config.h>
 #endif
 #include <stdlib.h>
 #include <errno.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <time.h>
+#include <inttypes.h>
 
 #include <src/common/pack.h>
-#include <src/common/xmalloc.h>	
+#include <src/common/xmalloc.h>
+#include <src/common/macros.h>
 
 #define BUF_SIZE 4096
 
 
 /* Basic buffer management routines */
 /* create_buf - create a buffer with the supplied contents, contents must be xalloc'ed */
-Buf	
-create_buf (char *data, int size)
+Buf create_buf(char *data, int size)
 {
 	Buf my_buf;
 
-	my_buf = xmalloc (sizeof (struct slurm_buf));
-	my_buf->magic     = BUF_MAGIC;
-	my_buf->size      = size;
+	my_buf = xmalloc(sizeof(struct slurm_buf));
+	my_buf->magic = BUF_MAGIC;
+	my_buf->size = size;
 	my_buf->processed = 0;
 	my_buf->head = data;
 
@@ -56,40 +59,65 @@ create_buf (char *data, int size)
 }
 
 /* free_buf - release memory associated with a given buffer */
-void	
-free_buf (Buf my_buf)
+void free_buf(Buf my_buf)
 {
-	assert (my_buf->magic == BUF_MAGIC);
+	assert(my_buf->magic == BUF_MAGIC);
 	if (my_buf->head)
-		xfree (my_buf->head);
-	xfree (my_buf);
+		xfree(my_buf->head);
+	xfree(my_buf);
 }
 
 /* init_buf - create an empty buffer of the given size */
-Buf	
-init_buf (int size)
+Buf init_buf(int size)
 {
 	Buf my_buf;
 
-	my_buf = xmalloc (sizeof (struct slurm_buf));
-	my_buf->magic     = BUF_MAGIC;
-	my_buf->size      = size;
+	my_buf = xmalloc(sizeof(struct slurm_buf));
+	my_buf->magic = BUF_MAGIC;
+	my_buf->size = size;
 	my_buf->processed = 0;
-	my_buf->head = xmalloc (size);
+	my_buf->head = xmalloc(size);
 
 	return my_buf;
 }
 
 /* xfer_buf_data - return a pointer to the buffer's data and release the buffer's structure */
-void	*
-xfer_buf_data(Buf my_buf)
+void *xfer_buf_data(Buf my_buf)
 {
 	void *data_ptr;
 
-	assert (my_buf->magic == BUF_MAGIC);
+	assert(my_buf->magic == BUF_MAGIC);
 	data_ptr = (void *) my_buf->head;
-	xfree (my_buf);
+	xfree(my_buf);
 	return data_ptr;
+}
+
+/*
+ * Given a time_t in host byte order, promote it to int64_t, convert to
+ * network byte order, store in buffer and adjust buffer acc'd'ngly
+ */
+void 
+pack_time(time_t val, Buf buffer)
+{
+	int64_t n64 = HTON_int64((int64_t) val);
+
+	if (remaining_buf(buffer) < sizeof(n64)) {
+		buffer->size += BUF_SIZE;
+		xrealloc(buffer->head, buffer->size);
+	}
+
+	memcpy(&buffer->head[buffer->processed], &n64, sizeof(n64));
+	buffer->processed += sizeof(n64);
+}
+
+void 
+unpack_time(time_t * valp, Buf buffer)
+{
+	int64_t n64;
+	assert(remaining_buf(buffer) >= sizeof(n64));
+	memcpy(&n64, &buffer->head[buffer->processed], sizeof(n64));
+	buffer->processed += sizeof(n64);
+	*valp = (time_t) NTOH_int64(n64);
 }
 
 
@@ -97,14 +125,13 @@ xfer_buf_data(Buf my_buf)
  * Given a 32-bit integer in host byte order, convert to network byte order
  * store in buffer, and adjust buffer counters.
  */
-void
-_pack32(uint32_t val, Buf buffer)
+void _pack32(uint32_t val, Buf buffer)
 {
 	uint32_t nl = htonl(val);
 
 	if (remaining_buf(buffer) < sizeof(nl)) {
 		buffer->size += BUF_SIZE;
-		xrealloc (buffer->head, buffer->size);
+		xrealloc(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &nl, sizeof(nl));
@@ -115,11 +142,10 @@ _pack32(uint32_t val, Buf buffer)
  * Given a buffer containing a network byte order 32-bit integer,
  * store a host integer at 'valp', and adjust buffer counters.
  */
-void
-_unpack32(uint32_t *valp, Buf buffer)
+void _unpack32(uint32_t * valp, Buf buffer)
 {
 	uint32_t nl;
-	assert (remaining_buf(buffer) >= sizeof(nl));
+	assert(remaining_buf(buffer) >= sizeof(nl));
 
 	memcpy(&nl, &buffer->head[buffer->processed], sizeof(nl));
 	*valp = ntohl(nl);
@@ -127,45 +153,42 @@ _unpack32(uint32_t *valp, Buf buffer)
 }
 
 /* Given a *uint32_t, it will pack an array of size_val */
-void
-_pack32array(uint32_t *valp, uint16_t size_val, Buf buffer)
+void _pack32array(uint32_t * valp, uint16_t size_val, Buf buffer)
 {
-	int i=0;
+	int i = 0;
 
-	_pack16( size_val, buffer );
+	_pack16(size_val, buffer);
 
-	for ( i=0; i < size_val; i++ ) {
-		_pack32( *(valp + i ), buffer );
+	for (i = 0; i < size_val; i++) {
+		_pack32(*(valp + i), buffer);
 	}
 }
 
 /* Given a int ptr, it will unpack an array of size_val
  */
-void
-_unpack32array( uint32_t **valp, uint16_t* size_val, Buf buffer)
+void _unpack32array(uint32_t ** valp, uint16_t * size_val, Buf buffer)
 {
-	int i=0;
+	int i = 0;
 
-	_unpack16( size_val, buffer );
-	*valp = xmalloc( (*size_val) * sizeof( uint32_t ) );
+	_unpack16(size_val, buffer);
+	*valp = xmalloc((*size_val) * sizeof(uint32_t));
 
-	for ( i=0; i < *size_val; i++ ) {
-		_unpack32( (*valp) + i , buffer ); 
+	for (i = 0; i < *size_val; i++) {
+		_unpack32((*valp) + i, buffer);
 	}
-}	
+}
 
 /*
  * Given a 16-bit integer in host byte order, convert to network byte order,
  * store in buffer and adjust buffer counters.
  */
-void
-_pack16(uint16_t val, Buf buffer)
+void _pack16(uint16_t val, Buf buffer)
 {
 	uint16_t ns = htons(val);
 
 	if (remaining_buf(buffer) < sizeof(ns)) {
 		buffer->size += BUF_SIZE;
-		xrealloc (buffer->head, buffer->size);
+		xrealloc(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
@@ -176,11 +199,10 @@ _pack16(uint16_t val, Buf buffer)
  * Given a buffer containing a network byte order 16-bit integer,
  * store a host integer at 'valp', and adjust buffer counters.
  */
-void
-_unpack16(uint16_t *valp, Buf buffer)
+void _unpack16(uint16_t * valp, Buf buffer)
 {
 	uint16_t ns;
-	assert (remaining_buf(buffer) >= sizeof(ns));
+	assert(remaining_buf(buffer) >= sizeof(ns));
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*valp = ntohs(ns);
@@ -191,12 +213,11 @@ _unpack16(uint16_t *valp, Buf buffer)
  * Given a 8-bit integer in host byte order, convert to network byte order
  * store in buffer, and adjust buffer counters.
  */
-void
-_pack8(uint8_t val, Buf buffer)
+void _pack8(uint8_t val, Buf buffer)
 {
 	if (remaining_buf(buffer) < sizeof(uint8_t)) {
 		buffer->size += BUF_SIZE;
-		xrealloc (buffer->head, buffer->size);
+		xrealloc(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &val, sizeof(uint8_t));
@@ -207,10 +228,9 @@ _pack8(uint8_t val, Buf buffer)
  * Given a buffer containing a network byte order 8-bit integer,
  * store a host integer at 'valp', and adjust buffer counters.
  */
-void
-_unpack8(uint8_t *valp, Buf buffer)
+void _unpack8(uint8_t * valp, Buf buffer)
 {
-	assert (remaining_buf(buffer) >= sizeof(uint8_t));
+	assert(remaining_buf(buffer) >= sizeof(uint8_t));
 
 	memcpy(valp, &buffer->head[buffer->processed], sizeof(uint8_t));
 	buffer->processed += sizeof(uint8_t);
@@ -221,14 +241,13 @@ _unpack8(uint8_t *valp, Buf buffer)
  * size_val to network byte order and store at buffer followed by 
  * the data at valp. Adjust buffer counters.
  */
-void
-_packmem(char *valp, uint16_t size_val, Buf buffer)
+void _packmem(char *valp, uint16_t size_val, Buf buffer)
 {
 	uint16_t ns = htons(size_val);
 
-	if (remaining_buf(buffer) < (sizeof(ns)+size_val)) {
-		buffer->size      += (size_val + BUF_SIZE);
-		xrealloc (buffer->head, buffer->size);
+	if (remaining_buf(buffer) < (sizeof(ns) + size_val)) {
+		buffer->size += (size_val + BUF_SIZE);
+		xrealloc(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
@@ -249,27 +268,25 @@ _packmem(char *valp, uint16_t size_val, Buf buffer)
  * NOTE: valp is set to point into the buffer bufp, a copy of 
  *	the data is not made
  */
-void
-_unpackmem_ptr(char **valp, uint16_t *size_valp, Buf buffer)
+void _unpackmem_ptr(char **valp, uint16_t * size_valp, Buf buffer)
 {
 	uint16_t ns;
 
-	assert (remaining_buf(buffer) >= sizeof(ns));
+	assert(remaining_buf(buffer) >= sizeof(ns));
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohs(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
-		assert (remaining_buf(buffer) >= *size_valp);
+		assert(remaining_buf(buffer) >= *size_valp);
 		*valp = &buffer->head[buffer->processed];
 		buffer->processed += *size_valp;
-	}
-	else
+	} else
 		*valp = NULL;
 
 }
-	
+
 
 /*
  * Given a buffer containing a network byte order 16-bit integer,
@@ -279,23 +296,21 @@ _unpackmem_ptr(char **valp, uint16_t *size_valp, Buf buffer)
  * NOTE: The caller is responsible for the management of valp and 
  * insuring it has sufficient size
  */
-void
-_unpackmem(char *valp, uint16_t *size_valp, Buf buffer)
+void _unpackmem(char *valp, uint16_t * size_valp, Buf buffer)
 {
 	uint16_t ns;
 
-	assert (remaining_buf(buffer) >= sizeof(ns));
+	assert(remaining_buf(buffer) >= sizeof(ns));
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohs(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
-		assert (remaining_buf(buffer) >= *size_valp);
-		memcpy ( valp, &buffer->head[buffer->processed], *size_valp);
+		assert(remaining_buf(buffer) >= *size_valp);
+		memcpy(valp, &buffer->head[buffer->processed], *size_valp);
 		buffer->processed += *size_valp;
-	}
-	else
+	} else
 		*valp = 0;
 }
 
@@ -308,24 +323,23 @@ _unpackmem(char *valp, uint16_t *size_valp, Buf buffer)
  *	the caller is responsible for calling xfree() on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
-void
-_unpackmem_xmalloc(char **valp, uint16_t *size_valp, Buf buffer)
+void _unpackmem_xmalloc(char **valp, uint16_t * size_valp, Buf buffer)
 {
 	uint16_t ns;
 
-	assert (remaining_buf(buffer) >= sizeof(ns));
+	assert(remaining_buf(buffer) >= sizeof(ns));
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohs(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
-		assert (remaining_buf(buffer) >= *size_valp);
+		assert(remaining_buf(buffer) >= *size_valp);
 		*valp = xmalloc(*size_valp);
-		memcpy (*valp, &buffer->head[buffer->processed], *size_valp);
+		memcpy(*valp, &buffer->head[buffer->processed],
+		       *size_valp);
 		buffer->processed += *size_valp;
-	}
-	else
+	} else
 		*valp = NULL;
 
 }
@@ -339,24 +353,23 @@ _unpackmem_xmalloc(char **valp, uint16_t *size_valp, Buf buffer)
  *	the caller is responsible for calling free() on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
-void
-_unpackmem_malloc(char **valp, uint16_t *size_valp, Buf buffer)
+void _unpackmem_malloc(char **valp, uint16_t * size_valp, Buf buffer)
 {
 	uint16_t ns;
 
-	assert (remaining_buf(buffer) >= sizeof(ns));
+	assert(remaining_buf(buffer) >= sizeof(ns));
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohs(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
-		assert (remaining_buf(buffer) >= *size_valp);
+		assert(remaining_buf(buffer) >= *size_valp);
 		*valp = malloc(*size_valp);
-		memcpy (*valp, &buffer->head[buffer->processed], *size_valp);
+		memcpy(*valp, &buffer->head[buffer->processed],
+		       *size_valp);
 		buffer->processed += *size_valp;
-	}
-	else
+	} else
 		*valp = NULL;
 
 }
@@ -366,23 +379,21 @@ _unpackmem_malloc(char **valp, uint16_t *size_valp, Buf buffer)
  * convert size_val to network byte order and store in the buffer followed by 
  * the data at valp. Adjust buffer counters. 
  */
-void
-_packstrarray(char **valp, uint16_t size_val, Buf buffer)
+void _packstrarray(char **valp, uint16_t size_val, Buf buffer)
 {
-	int i ;
+	int i;
 	uint16_t ns = htons(size_val);
 
 	if (remaining_buf(buffer) < sizeof(ns)) {
-		buffer->size      += BUF_SIZE;
-		xrealloc (buffer->head, buffer->size);
+		buffer->size += BUF_SIZE;
+		xrealloc(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], &ns, sizeof(ns));
 	buffer->processed += sizeof(ns);
 
-	for ( i = 0 ; i < size_val ; i ++ )
-	{
-		packstr(valp[i],buffer) ;
+	for (i = 0; i < size_val; i++) {
+		packstr(valp[i], buffer);
 	}
 
 }
@@ -395,29 +406,27 @@ _packstrarray(char **valp, uint16_t size_val, Buf buffer)
  *	the caller is responsible for calling xfree on *valp
  *	if non-NULL (set to NULL on zero size buffer value)
  */
-void
-_unpackstrarray (char ***valp, uint16_t *size_valp, Buf buffer)
+void _unpackstrarray(char ***valp, uint16_t * size_valp, Buf buffer)
 {
-	int i ;
+	int i;
 	uint16_t ns;
 	uint16_t uint16_tmp;
 
-	assert (remaining_buf(buffer) >= sizeof(ns));
+	assert(remaining_buf(buffer) >= sizeof(ns));
 
 	memcpy(&ns, &buffer->head[buffer->processed], sizeof(ns));
 	*size_valp = ntohs(ns);
 	buffer->processed += sizeof(ns);
 
 	if (*size_valp > 0) {
-		*valp = xmalloc(sizeof ( char * ) * ( *size_valp + 1 ) ) ;
-		for ( i = 0 ; i < *size_valp ; i ++ )
-		{
-			unpackstr_xmalloc ( & (*valp)[i] , & uint16_tmp , buffer ) ;
+		*valp = xmalloc(sizeof(char *) * (*size_valp + 1));
+		for (i = 0; i < *size_valp; i++) {
+			unpackstr_xmalloc(&(*valp)[i], &uint16_tmp,
+					  buffer);
 		}
-		(*valp)[i] = NULL ;	/* NULL terminated array so that execle */
-					/*    can detect end of array */
-	}
-	else
+		(*valp)[i] = NULL;	/* NULL terminated array so that execle */
+		/*    can detect end of array */
+	} else
 		*valp = NULL;
 
 }
@@ -426,12 +435,11 @@ _unpackstrarray (char ***valp, uint16_t *size_valp, Buf buffer)
  * Given a pointer to memory (valp), size (size_val), and buffer,
  * store the memory contents into the buffer 
  */
-void
-_packmem_array(char *valp, uint32_t size_val, Buf buffer)
+void _packmem_array(char *valp, uint32_t size_val, Buf buffer)
 {
 	if (remaining_buf(buffer) < size_val) {
-		buffer->size      += (size_val + BUF_SIZE);
-		xrealloc (buffer->head, buffer->size);
+		buffer->size += (size_val + BUF_SIZE);
+		xrealloc(buffer->head, buffer->size);
 	}
 
 	memcpy(&buffer->head[buffer->processed], valp, size_val);
@@ -442,13 +450,11 @@ _packmem_array(char *valp, uint32_t size_val, Buf buffer)
  * Given a pointer to memory (valp), size (size_val), and buffer,
  * store the buffer contents into memory 
  */
-void
-_unpackmem_array(char *valp, uint32_t size_valp, Buf buffer)
+void _unpackmem_array(char *valp, uint32_t size_valp, Buf buffer)
 {
 	if (remaining_buf(buffer) >= size_valp) {
-		memcpy ( valp, &buffer->head[buffer->processed], size_valp);
+		memcpy(valp, &buffer->head[buffer->processed], size_valp);
 		buffer->processed += size_valp;
-	}
-	else
-		*valp = 0 ;
+	} else
+		*valp = 0;
 }

@@ -1,6 +1,11 @@
 
+#include <src/common/slurm_errno.h>
 #include <src/common/log.h>
 
+int bad_func()
+{
+	slurm_seterrno_ret(EINVAL);
+}
 int main(int ac, char **av)
 {
 	/* test elements */
@@ -34,9 +39,26 @@ int main(int ac, char **av)
 
 	info   ("testing unsigned: %u   int: % 08d", u, negi);
 
+	switch (fork()) {
+          case 0:
+		  info("in child %ld", getpid());
+		  log_reinit();
+		  info("in child after log reinit");
+		  exit(0);
+		  break;
+	  case -1:
+		  error("fork: %m");
+		  break;
+	  default:
+		  info("in parent %ld", getpid());
+		  break;
+	}
 	/* for now, this test passes if we make it through without 
 	 * dumping core
 	 */
+
+	if (bad_func() < 0)
+		error("bad_func: %m");
 	return 0;
 }
 	
