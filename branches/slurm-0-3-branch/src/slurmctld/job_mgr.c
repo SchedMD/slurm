@@ -1402,6 +1402,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	kill_tasks_msg->signal      = signal;
 
 	agent_args->msg_args = kill_tasks_msg;
+	agent_args->node_count = 1; /* slurm/477 be sure to update node_count */
 	agent_queue_request(agent_args);
 	return;
 }
