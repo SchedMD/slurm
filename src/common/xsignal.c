@@ -54,6 +54,7 @@ xsignal(int signo, SigFunc *f)
 int 
 xsignal_unblock(int signo)
 {
+	int err;
 	sigset_t set;
 	if (sigemptyset(&set) < 0) {
 		error("sigemptyset: %m");
@@ -64,8 +65,8 @@ xsignal_unblock(int signo)
 		return SLURM_ERROR;
 	}
 
-	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL) < 0) {
-		error("sigprocmask: %m");
+	if ((err = pthread_sigmask(SIG_UNBLOCK, &set, NULL)) < 0) {
+		error("sigprocmask: %s", slurm_strerror(err));
 		return SLURM_ERROR;
 	}
 
@@ -76,8 +77,9 @@ xsignal_unblock(int signo)
 static int
 _sig_setmask(sigset_t *set, sigset_t *oset)
 {
-	if (pthread_sigmask(SIG_SETMASK, set, oset) < 0) {
-		error("pthread_sigmask(SETMASK): %m");
+	int err = pthread_sigmask(SIG_SETMASK, set, oset);
+	if (err) {
+		error("pthread_sigmask(SETMASK): %s", slurm_strerror(err));
 		return SLURM_ERROR;
 	}
 
