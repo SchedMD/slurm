@@ -110,6 +110,7 @@ main (int argc, char *argv[])
 		{"help",     0, 0, 'h'},
 		{"oneliner", 0, 0, 'o'},
 		{"quiet",    0, 0, 'q'},
+		{"usage",    0, 0, 'h'},
 		{"verbose",  0, 0, 'v'},
 		{"version",  0, 0, 'V'},
 	};

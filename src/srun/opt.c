@@ -74,9 +74,7 @@
    char *totalview_jobid;
 #endif
 
-/* generic OPT_ definitions -- mainly for use with env vars 
- * (not to be confused with POPT_* definitions)
- */
+/* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
@@ -84,6 +82,18 @@
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
+
+/* generic getopt_long flags, integers and *not* valid characters */
+#define LONG_OPT_HELP     0x100
+#define LONG_OPT_USAGE    0x101
+#define LONG_OPT_XTO      0x102
+#define LONG_OPT_LAUNCH   0x103
+#define LONG_OPT_TIMEO    0x104
+#define LONG_OPT_JOBID    0x105
+#define LONG_OPT_TMP      0x106
+#define LONG_OPT_MEM      0x107
+#define LONG_OPT_MINCPU   0x108
+#define LONG_OPT_CONT     0x109
 
 /*---- forward declarations of static functions  ----*/
 
@@ -579,13 +589,11 @@ static void _opt_args(int argc, char **argv)
 		{"attach",        required_argument, 0, 'a'},
 		{"allocate",      no_argument,       0, 'A'},
 		{"batch",         no_argument,       0, 'b'},
-		{"jobid",         required_argument, 0, 'B'},
 		{"cpus-per-task", required_argument, 0, 'c'},
 		{"constraint",    required_argument, 0, 'C'},
 		{"slurmd-debug",  required_argument, 0, 'd'},
 		{"chdir",         required_argument, 0, 'D'},
 		{"error",         required_argument, 0, 'e'},
-		{"contiguous",    no_argument,       0, 'g'},
 		{"hold",          no_argument,       0, 'H'},
 		{"input",         required_argument, 0, 'i'},
 		{"immediate",     no_argument,       0, 'I'},
@@ -594,16 +602,13 @@ static void _opt_args(int argc, char **argv)
 		{"no-kill",       no_argument,       0, 'k'},
 		{"label",         no_argument,       0, 'l'},
 		{"distribution",  required_argument, 0, 'm'},
-		{"mem",           required_argument, 0, 'M'},
 		{"ntasks",        required_argument, 0, 'n'},
 		{"nodes",         required_argument, 0, 'N'},
 		{"output",        required_argument, 0, 'o'},
 		{"overcommit",    no_argument,       0, 'O'},
 		{"partition",     required_argument, 0, 'p'},
-		{"mincpus",       required_argument, 0, 'P'},
 		{"relative",      required_argument, 0, 'r'},
 		{"share",         no_argument,       0, 's'},
-		{"tmp",           required_argument, 0, 'S'},
 		{"time",          required_argument, 0, 't'},
 		{"threads",       required_argument, 0, 'T'},
 		{"unbuffered",    no_argument,       0, 'u'},
@@ -614,15 +619,19 @@ static void _opt_args(int argc, char **argv)
 		{"exclude",       required_argument, 0, 'x'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 
-		/* hidden parameters */
-		{"msg-timeout",      required_argument, 0, '0'},
-		{"max-launch-time",  required_argument, 0, '1'},
-		{"max-exit-timeout", required_argument, 0, '2'},
-		{"help",             no_argument,       0, '3'},
-		{"usage",            no_argument,       0, '4'}
+		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
+		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
+		{"mem",              required_argument, 0, LONG_OPT_MEM},
+		{"tmp",              required_argument, 0, LONG_OPT_TMP},
+		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
+		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
+		{"max-launch-time",  required_argument, 0, LONG_OPT_LAUNCH},
+		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
+		{"help",             no_argument,       0, LONG_OPT_HELP},
+		{"usage",            no_argument,       0, LONG_OPT_USAGE}
 	};
-	char *opt_string = "+a:AbB:c:C:d:D:e:gHi:IjJ:klm:M:n:N:"
-		"o:Op:P:r:sS:t:T:uvVw:W:x:Z0:1:2:34";
+	char *opt_string = "+a:Abc:C:d:D:e:Hi:IjJ:klm:n:N:"
+		"o:Op:r:st:T:uvVw:W:x:Z";
 	char **rest = NULL;
 
 	opt.progname = xbasename(argv[0]);
@@ -662,9 +671,6 @@ static void _opt_args(int argc, char **argv)
 				mode = MODE_BATCH;
 				opt.batch = true;
 				break;
-			case (int)'B':
-				opt.jobid = _get_int(optarg, "jobid");
-				break;
 			case (int)'c':
 				opt.cpus_set = true;
 				opt.cpus_per_task = 
@@ -685,9 +691,6 @@ static void _opt_args(int argc, char **argv)
 			case (int)'e':
 				xfree(opt.efname);
 				opt.efname = xstrdup(optarg);
-				break;
-			case (int)'g':
-				opt.contiguous = true;
 				break;
 			case (int)'H':
 				opt.hold = true;
@@ -720,14 +723,6 @@ static void _opt_args(int argc, char **argv)
 					exit(1);
 				}
 				break;
-			case (int)'M':
-				opt.realmem = (int) _to_bytes(optarg);
-				if (opt.realmem < 0) {
-					error("invalid memory constraint %s", 
-						optarg);
-					exit(1);
-				}
-				break;
 			case (int)'n':
 				opt.nprocs_set = true;
 				opt.nprocs = 
@@ -755,22 +750,12 @@ static void _opt_args(int argc, char **argv)
 				xfree(opt.partition);
 				opt.partition = xstrdup(optarg);
 				break;
-			case (int)'P':
-				opt.mincpus = _get_int(optarg, "mincpus");
-				break;
 			case (int)'r':
 				xfree(opt.relative);
 				opt.relative = xstrdup(optarg);
 				break;
 			case (int)'s':
 				opt.share = true;
-				break;
-			case (int)'S':
-				opt.tmpdisk = _to_bytes(optarg);
-				if (opt.tmpdisk < 0) {
-					error("invalid tmp value %s", optarg);
-					exit(1);
-				}
 				break;
 			case (int)'t':
 				opt.time_limit = _get_int(optarg, "time");
@@ -807,22 +792,46 @@ static void _opt_args(int argc, char **argv)
 			case (int)'Z':
 				opt.no_alloc = true;
 				break;
-			case (int)'0':
+			case LONG_OPT_CONT:
+				opt.contiguous = true;
+				break;
+			case LONG_OPT_MINCPU:
+				opt.mincpus = _get_int(optarg, "mincpus");
+				break;
+			case LONG_OPT_MEM:
+				opt.realmem = (int) _to_bytes(optarg);
+				if (opt.realmem < 0) {
+					error("invalid memory constraint %s", 
+						optarg);
+					exit(1);
+				}
+				break;
+			case LONG_OPT_TMP:
+				opt.tmpdisk = _to_bytes(optarg);
+				if (opt.tmpdisk < 0) {
+					error("invalid tmp value %s", optarg);
+					exit(1);
+				}
+				break;
+			case LONG_OPT_JOBID:
+				opt.jobid = _get_int(optarg, "jobid");
+				break;
+			case LONG_OPT_TIMEO:
 				opt.msg_timeout = 
 					_get_int(optarg, "msg-timeout");
 				break;
-			case (int)'1':
+			case LONG_OPT_LAUNCH:
 				opt.max_launch_time = 
-					_get_int(optarg, "max_launch-time");
+					_get_int(optarg, "max-launch-time");
 				break;
-			case (int)'2':
+			case LONG_OPT_XTO:
 				opt.max_exit_timeout = 
 					_get_int(optarg, "max-exit-timeout");
 				break;
-			case (int)'3':
+			case LONG_OPT_HELP:
 				_help();
 				exit(0);
-			case (int) '4':
+			case LONG_OPT_USAGE:
 				_usage();
 				exit(0);
 		}
@@ -1193,7 +1202,7 @@ static void _help(void)
 	printf("  -m, --distribution=type       distribution method for processes\n");
 	printf("                                (type = block|cyclic)\n");
 	printf("  -J, --job-name=jobname        name of job\n");
-	printf("  -B, --jobid=id                run under already allocated job\n");
+	printf("  --jobid=id                    run under already allocated job\n");
 	printf("  -b, --batch                   submit as batch job for later execution\n");
 	printf("  -v, --verbose                 verbose operation (multiple -v's\n");
 	printf("                                increase verbosity)\n");
@@ -1211,11 +1220,11 @@ static void _help(void)
  	printf("                                forwarding of signals and stdin\n");
 
 	printf("\nConstraint options:\n");
-	printf("  -P, --mincpus=n               minimum number of cpus per node\n");
-	printf("  -M, --mem=MB                  minimum amount of real memory\n");
- 	printf("  -S, --tmp=MB                  minimum amount of temporary disk\n");
+	printf("  --mincpus=n                   minimum number of cpus per node\n");
+	printf("  --mem=MB                      minimum amount of real memory\n");
+ 	printf("  --tmp=MB                      minimum amount of temporary disk\n");
 	printf("  -C, --constraint=list         specify a list of constraints\n");
-	printf("  -g, --contiguous              demand a contiguous range of nodes\n");
+	printf("  --contiguous                  demand a contiguous range of nodes\n");
 	printf("  -w, --nodelist=hosts...       request a specific list of hosts\n");
 	printf("  -x, --exclude=hosts...        exclude a specific list of hosts\n");
 	printf("  -Z, --no-allocate             don't allocate nodes (must supply -w)\n");
