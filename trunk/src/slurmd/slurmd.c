@@ -62,7 +62,7 @@
 #include "src/slurmd/setproctitle.h"
 #include "src/slurmd/get_mach_stat.h"
 
-#define GETOPT_ARGS	"L:f:Dvhc"
+#define GETOPT_ARGS	"L:Dvhc"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -446,7 +446,6 @@ _read_config()
         char *path_pubkey;
 
 	conf->cf.slurm_conf = xstrdup(conf->conffile);
-	slurm_api_set_conf_file(conf->conffile);
 
 	read_slurm_conf_ctl(&conf->cf);
 
@@ -566,9 +565,6 @@ _process_cmdline(int ac, char **av)
 		case 'h':
 			_usage();
 			exit(0);
-			break;
-		case 'f':
-			conf->conffile = xstrdup(optarg);
 			break;
 		case 'L':
 			conf->logfile = xstrdup(optarg);
@@ -806,8 +802,6 @@ static void
 _usage()
 {
 	fprintf(stderr, "Usage: %s [OPTIONS]\n", conf->prog);
-	fprintf(stderr, "  -f file "
-			"\tUse `file' as slurmd config file.\n");
 	fprintf(stderr, "  -L logfile "
 			"\tLog messages to the file `logfile'\n");
 	fprintf(stderr, "  -v      "
