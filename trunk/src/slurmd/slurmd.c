@@ -61,6 +61,7 @@ typedef struct slurmd_config
 {
 	log_options_t log_opts ;
 	char * slurm_conf ;
+	int daemonize ;
 } slurmd_config_t ;
 
 typedef struct connection_arg
@@ -107,10 +108,16 @@ int main (int argc, char *argv[])
 
 	init_time = time (NULL);
 	slurmd_conf . log_opts = log_opts_def ;
+	slurmd_conf . daemonize = false ;
 
 
 	parse_commandline_args ( argc, argv, & slurmd_conf ) ;
 	log_init(argv[0], slurmd_conf . log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+
+	if ( slurmd_conf . daemonize == true )
+	{
+		daemon ( false , true ) ;
+	}
 
 /*
 	if ( ( error_code = init_slurm_conf () ) ) 
@@ -611,6 +618,7 @@ void usage (char *prog_name)
 	printf ("%s [OPTIONS]\n", prog_name);
 	printf ("  -e <errlev>  Set stderr logging to the specified level\n");
 	printf ("  -f <file>    Use specified configuration file name\n");
+	printf ("  -d           daemonize\n");
 	printf ("  -h           Print a help message describing usage\n");
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
@@ -630,16 +638,16 @@ int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_
 		int option_index = 0;
 		static struct option long_options[] = 
 		{
-			{"add", 1, 0, 0},
-			{"append", 0, 0, 0},
-			{"delete", 1, 0, 0},
-			{"verbose", 0, 0, 0},
-			{"create", 1, 0, 'c'},
-			{"file", 1, 0, 0},
+			{"error_level", 1, 0, 'e'},
+			{"help", 0, 0, 'h'},
+			{"daemonize", 0, 0, 'd'},
+			{"config_file", 1, 0, 'f'},
+			{"log_level", 1, 0, 'l'},
+			{"syslog_level", 1, 0, 's'},
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long (argc, argv, "e:hf:l:s:", long_options, &option_index);
+		c = getopt_long (argc, argv, "de:hf:l:s:", long_options, &option_index);
 		if (c == -1)
 			break;
 
@@ -655,6 +663,9 @@ int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_
 					exit (1);
 				}
 				slurmd_config -> log_opts . stderr_level = errlev;
+				break;
+			case 'd':
+				slurmd_config -> daemonize = true ;
 				break;
 			case 'h':
 				usage (argv[0]);

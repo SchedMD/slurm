@@ -22,6 +22,8 @@
 #include <src/slurmd/io.h>
 #include <src/slurmd/pipes.h>
 
+#define RECONNECT_TIMEOUT_SECONDS 1
+#define RECONNECT_TIMEOUT_MICROSECONDS 0
 typedef enum 
 {
 	IN_OUT_FD ,
@@ -88,7 +90,12 @@ void * do_nbio ( void * arg )
 
 	while ( true ) 
 	{
-		int rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , NULL ) ;
+		struct timeval select_timer ;
+		int rc ;
+		select_timer . tv_sec = RECONNECT_TIMEOUT_SECONDS ;
+		select_timer . tv_usec = RECONNECT_TIMEOUT_MICROSECONDS ;
+
+		rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , NULL ) ;
 
 		nbio_set_init ( & nbio_attr , nbio_attr . next_set ) ;
 
