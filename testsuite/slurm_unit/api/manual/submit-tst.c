@@ -27,7 +27,7 @@ main (int argc, char *argv[])
 	job_mesg. time_limit = 100;
 	job_mesg. min_nodes = 1;
 	job_mesg. user_id = 1500;
-	job_mesg. script = "/bin/hostname\n/bin/date\n";
+	job_mesg. script = "#!/bin/csh\n/bin/hostname\n";
 	job_mesg. err = "/tmp/slurm.stderr";
 	job_mesg. in = "/tmp/slurm.stdin";
 	job_mesg. out = "/tmp/slurm.stdout";
