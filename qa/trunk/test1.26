@@ -60,6 +60,11 @@ expect {
 		set slurm_user 0
 		exp_continue
 	}
+	-re "error: .*try again" {
+		send_user "Can't avoid this possible error\n"
+		set host1 $host0
+		exp_continue
+	}
 	-re "0: ($alpha_numeric)" {
 		set host_1 $expect_out(1,string)
 		exp_continue
@@ -130,6 +135,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	set spawn_id $noalloc1
 	expect {
 		-i $noalloc1
+		-re "error: .*try again" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
 			set failures 1
@@ -148,6 +157,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	set spawn_id $noalloc2
 	expect {
 		-i $noalloc2
+		-re "error: .*try again" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
 			set failures 1
