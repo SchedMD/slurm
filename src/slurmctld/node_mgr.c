@@ -1094,7 +1094,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
 		return ENOENT;
-	node_ptr->last_response = last_node_update = time (NULL);
+	node_ptr->last_response = time (NULL);
 
 	config_ptr = node_ptr->config_ptr;
 	error_code = 0;
@@ -1126,18 +1126,21 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	node_ptr->tmp_disk = tmp_disk;
 
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
+		last_node_update = time (NULL);
 		reset_job_priority();
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	}
 	if (error_code) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
+			last_node_update = time (NULL);
 			error ("Setting node %s state to DOWN", node_name);
 			set_node_down(node_name, reason_down);
 		}
 	} else if (status == ESLURMD_PROLOG_FAILED) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
+			last_node_update = time (NULL);
 			error ("Prolog failure on node %s, state to DOWN",
 				node_name);
 			set_node_down(node_name, "Prolog failed");
@@ -1157,6 +1160,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		}
 #endif
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+			last_node_update = time (NULL);
 			reset_job_priority();
 			debug("validate_node_specs: node %s has registered", 
 				node_name);
@@ -1165,13 +1169,18 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			else
 				node_ptr->node_state = NODE_STATE_IDLE;
 		} else if (node_ptr->node_state == NODE_STATE_DRAINING) {
-			if (job_count == 0)
+			if (job_count == 0) {
+				last_node_update = time (NULL);
 				node_ptr->node_state = NODE_STATE_DRAINED;
+			}
 		} else if (node_ptr->node_state == NODE_STATE_DRAINED) {
-			if (job_count != 0)
+			if (job_count != 0) {
+				last_node_update = time (NULL);
 				node_ptr->node_state = NODE_STATE_DRAINING;
+			}
 		} else if ((node_ptr->node_state == NODE_STATE_DOWN) &&
 		           (slurmctld_conf.ret2service == 1)) {
+			last_node_update = time (NULL);
 			if (job_count)
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
 			else
@@ -1182,9 +1191,11 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			reset_job_priority();
 		} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
+			last_node_update = time (NULL);
 			node_ptr->node_state = NODE_STATE_IDLE;
 		} else if ((node_ptr->node_state == NODE_STATE_COMPLETING) &&
 			   (job_count == 0)) {	/* job already done */
+			last_node_update = time (NULL);
 			node_ptr->node_state = NODE_STATE_IDLE;
 		}
 
@@ -1218,18 +1229,21 @@ void node_did_resp (char *name)
 	}
 
 	node_inx = node_ptr - node_record_table_ptr;
-	last_node_update = time (NULL);
 	node_ptr->last_response = time (NULL);
 	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if (resp_state) {
 		info("Node %s now responding", name);
+		last_node_update = time (NULL);
 		reset_job_priority();
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	}
-	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
+	if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+		last_node_update = time (NULL);
 		node_ptr->node_state = NODE_STATE_IDLE;
+	}
 	if ((node_ptr->node_state == NODE_STATE_DOWN) &&
 	    (slurmctld_conf.ret2service == 1)) {
+		last_node_update = time (NULL);
 		node_ptr->node_state = NODE_STATE_IDLE;
 		info("node_did_resp: node %s returned to service", name);
 		xfree(node_ptr->reason);
