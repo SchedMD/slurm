@@ -656,6 +656,8 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 			count, j);
 		agent_arg_ptr->node_count = j;
 	}
+	debug2("Queue RPC msg_type=%u, count=%d for retry", 
+	       agent_arg_ptr->msg_type, j);
 
 	/* add the requeust to a list */
 	slurm_mutex_lock(&retry_mutex);
@@ -747,7 +749,7 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 	if (agent_arg_ptr == NULL)
 		return;
 
-	debug3("Spawning RPC retry agent for msg_type %u", 
+	debug2("Spawning RPC retry agent for msg_type %u", 
 	       agent_arg_ptr->msg_type);
 	if (pthread_attr_init(&attr_agent))
 		fatal("pthread_attr_init error %m");
