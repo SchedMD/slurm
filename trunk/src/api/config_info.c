@@ -70,9 +70,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->heartbeat_interval);
 	fprintf(out, "InactiveLimit     = %u\n", 
 		slurm_ctl_conf_ptr->inactive_limit);
-	fprintf(out, "CredPrivateKey    = %s\n", 
+	fprintf(out, "JobCredPrivateKey = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_private_key);
-	fprintf(out, "CredPubliceKey    = %s\n", 
+	fprintf(out, "JobCredPublicKey  = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
