@@ -818,7 +818,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->job_credential_private_key == NULL)
 		fatal ("JobCredentialPrivateKey not set");
 	if (ctl_conf_ptr->job_credential_public_certificate == NULL)
-		fatal ("JobCredentailPublicCertificate not set");
+		fatal ("JobCredentialPublicCertificate not set");
 
 	if (ctl_conf_ptr->max_job_cnt < 1)
 		fatal ("MaxJobCount=%u, No jobs permitted",
