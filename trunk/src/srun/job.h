@@ -10,6 +10,7 @@
 #include <netinet/in.h>
 
 #include "src/common/macros.h"
+#include "src/common/cbuf.h"
 #include "src/api/slurm.h"
 
 typedef enum {
@@ -67,6 +68,12 @@ typedef struct srun_job {
 
 	int *out;		/* ntask stdout fds */
 	int *err;		/* ntask stderr fds */
+
+	/* XXX Need long term solution here:
+	 * Quickfix: ntask*2 cbufs for buffering job output
+	 */
+	cbuf_t *outbuf;
+	cbuf_t *errbuf;
 
 	pthread_t lid;		/* launch thread id */
 

@@ -33,6 +33,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/cbuf.h"
 
 #include "src/srun/job.h"
 #include "src/srun/opt.h"
@@ -102,8 +103,16 @@ job_create(resource_allocation_response_msg_t *resp)
 	job->ioport = (int *) xmalloc(job->niofds * sizeof(int));
 
 	/* ntask stdout and stderr fds */
-	job->out   = (int *)  xmalloc(opt.nprocs *  sizeof(int));
-	job->err   = (int *)  xmalloc(opt.nprocs *  sizeof(int));
+	job->out    = (int *)  xmalloc(opt.nprocs * sizeof(int));
+	job->err    = (int *)  xmalloc(opt.nprocs * sizeof(int));
+
+	/* ntask cbufs for stdout and stderr */
+	job->outbuf = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
+	job->errbuf = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
+	for (i = 0; i < opt.nprocs; i++) {
+		job->outbuf[i] = cbuf_create(1024, 10240);
+		job->errbuf[i] = cbuf_create(1024, 10240);
+	}
 
 	/* nhost host states */
 	job->host_state = 
