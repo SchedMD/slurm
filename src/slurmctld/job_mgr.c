@@ -318,7 +318,7 @@ int load_all_job_state(void)
 {
 	int data_allocated, data_read = 0, error_code = 0;
 	uint32_t data_size = 0;
-	int state_fd;
+	int state_fd, job_cnt = 0;
 	char *data = NULL, *state_file;
 	Buf buffer;
 	time_t buf_time;
@@ -337,17 +337,21 @@ int load_all_job_state(void)
 		while (1) {
 			data_read = read(state_fd, &data[data_size],
 					HUGE_BUF_SIZE);
-			if ((data_read == -1) && (errno == EINTR))
-				continue;
-			if (data_read == 0)	/* eof */
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+						state_file);
+					break;
+				}
+			} else if (data_read == 0)	/* eof */
 				break;
 			data_size      += data_read;
 			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
 		close(state_fd);
-		if (data_read < 0)
-			error("Error reading file %s: %m", state_file);
 	}
 	xfree(state_file);
 	unlock_state_files();
@@ -362,14 +366,16 @@ int load_all_job_state(void)
 		error_code = _load_job_state(buffer);
 		if (error_code != SLURM_SUCCESS)
 			goto unpack_error;
+		job_cnt++;
 	}
 
 	free_buf(buffer);
+	info("Recovered state of %d jobs", job_cnt);
 	return error_code;
 
       unpack_error:
 	error("Incomplete job data checkpoint file");
-	error("Job state not completely restored");
+	info("State of %d jobs recovered", job_cnt);
 	free_buf(buffer);
 	return SLURM_FAILURE;
 }
@@ -554,6 +560,7 @@ static int _load_job_state(Buf buffer)
 	return SLURM_SUCCESS;
 
       unpack_error:
+	error("Incomplete job data checkpoint file.");
 	xfree(host);
 	xfree(nodes);
 	xfree(partition);

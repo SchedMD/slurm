@@ -397,7 +397,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 extern int load_all_node_state ( bool state_only )
 {
 	char *node_name, *reason = NULL, *data = NULL, *state_file;
-	int data_allocated, data_read = 0, error_code = 0;
+	int data_allocated, data_read = 0, error_code = 0, node_cnt = 0;
 	uint16_t node_state, name_len;
 	uint32_t cpus, real_memory, tmp_disk, data_size = 0;
 	struct node_record *node_ptr;
@@ -419,17 +419,21 @@ extern int load_all_node_state ( bool state_only )
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read (state_fd, &data[data_size], BUF_SIZE);
-			if ((data_read == -1) && (errno == EINTR))
-				 continue;
-			if (data_read == 0)     /* eof */
+			if (data_read < 0) {
+				if (errno == EINTR)
+					continue;
+				else {
+					error ("Read error on %s: %m", 
+						state_file);
+					break;
+				}
+			} else if (data_read == 0)     /* eof */
 				break;
 			data_size      += data_read;
 			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
 		close (state_fd);
-		if (data_read < 0) 
-			error ("Read error on %s, %m", state_file);
 	}
 	xfree (state_file);
 	unlock_state_files ();
@@ -465,6 +469,7 @@ extern int load_all_node_state ( bool state_only )
 			       node_name);
 			xfree(reason);
 		} else if (state_only) {
+			node_cnt++;
 			if ((node_ptr->node_state == NODE_STATE_UNKNOWN) &&
 			    ((node_state == NODE_STATE_DOWN) ||
 			     (node_state == NODE_STATE_DRAINED) ||
@@ -475,6 +480,7 @@ extern int load_all_node_state ( bool state_only )
 			else
 				xfree(reason);
 		} else {
+			node_cnt++;
 			node_ptr->node_state    = node_state;
 			xfree(node_ptr->reason);
 			node_ptr->reason        = reason;
@@ -486,11 +492,13 @@ extern int load_all_node_state ( bool state_only )
 		xfree (node_name);
 	}
 
+	info ("Recovered state of %d nodes", node_cnt);
 	free_buf (buffer);
 	return error_code;
 
 unpack_error:
-	error ("Incomplete node data checkpoint file. Incomplete restore.");
+	error ("Incomplete node data checkpoint file");
+	info("Recovered state of %d nodes", node_cnt);
 	free_buf (buffer);
 	return EFAULT;
 }
