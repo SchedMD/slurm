@@ -64,7 +64,7 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static void _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
-				char *old_auth_type, char *old_job_comp_type,
+				char *old_auth_type, 
 				char *old_sched_type, char *old_switch_type);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -686,7 +686,6 @@ int read_slurm_conf(int recover)
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	char *old_auth_type     = xstrdup(slurmctld_conf.authtype); 
-	char *old_job_comp_type = xstrdup(slurmctld_conf.job_comp_type);
 	char *old_sched_type    = xstrdup(slurmctld_conf.schedtype);
 	char *old_switch_type   = xstrdup(slurmctld_conf.switch_type);
 
@@ -771,7 +770,7 @@ int read_slurm_conf(int recover)
 	fclose(slurm_spec_file);
 
 	_preserve_plugins(&slurmctld_conf, 
-			old_auth_type,  old_job_comp_type, 
+			old_auth_type,  
 			old_sched_type, old_switch_type);
 	validate_config(&slurmctld_conf);
 	update_logging();
@@ -868,18 +867,16 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 }
 
 /*
- * _preserve_plugins - preserve original plugin values over restart.
- *	slurmctld must restart for them to take effect.
+ * _preserve_plugins - either load new plugins (if possible) or preserve 
+ *	original plugin values over restart. slurmctld must restart for some 
+ *	plugin value changes to take effect.
  */
 static void _preserve_plugins(slurm_ctl_conf_t * ctl_conf_ptr, 
-		char *old_auth_type,  char *old_job_comp_type,
+		char *old_auth_type,  
 		char *old_sched_type, char *old_switch_type)
 {
 	xfree(ctl_conf_ptr->authtype);
 	ctl_conf_ptr->authtype = old_auth_type;
-
-	xfree(ctl_conf_ptr->job_comp_type);
-	ctl_conf_ptr->job_comp_type = old_job_comp_type;
 
         xfree(ctl_conf_ptr->schedtype);
         ctl_conf_ptr->schedtype = old_sched_type;
