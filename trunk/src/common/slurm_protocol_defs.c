@@ -292,14 +292,16 @@ char *job_state_string(enum job_states inx)
 	static char *job_state_string[] = {
 		"PENDING",
 		"RUNNING",
-		"COMPLETING",
 		"COMPLETED",
 		"FAILED",
 		"TIMEOUT",
 		"NODE_FAIL",
 		"END"
 	};
-	return job_state_string[inx];
+	if (inx & JOB_COMPLETING)
+		return "COMPLETING";
+	else
+		return job_state_string[inx];
 }
 
 char *job_state_string_compact(enum job_states inx)
@@ -307,13 +309,15 @@ char *job_state_string_compact(enum job_states inx)
 	static char *job_state_string[] = {
 		"PD",
 		"R",
-		"CG",
 		"CD",
 		"F",
 		"TO",
 		"END"
 	};
-	return job_state_string[inx];
+	if (inx & JOB_COMPLETING)
+		return "CG";
+	else
+		return job_state_string[inx];
 }
 
 char *node_state_string(enum node_states inx)
