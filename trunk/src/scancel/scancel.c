@@ -230,9 +230,11 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 	}
 	if (error_code) {
 		error_code = slurm_get_errno();
-		if ((opt.verbose >= 0) || (error_code != ESLURM_ALREADY_DONE ))
+		if ((opt.verbose >= 0) || 
+		    ((error_code != ESLURM_ALREADY_DONE) &&
+		     (error_code != ESLURM_INVALID_JOB_ID)))
 			error("Kill job error on job id %u: %s", 
-			job_id, slurm_strerror(slurm_get_errno()));
+				job_id, slurm_strerror(slurm_get_errno()));
 	}
 }
 
