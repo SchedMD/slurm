@@ -28,7 +28,10 @@
 #endif
 
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <time.h>
+#include <unistd.h>
 #include <slurm/slurm.h>
 
 #include "src/slurmctld/proc_req.h"
@@ -38,20 +41,23 @@
 #include "src/common/node_select.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "bluegene.h"
 #include "partition_sys.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128
+#define DEFAULT_BLUEGENE_SERIAL "BGL"
 #define SLEEP_TIME 60 /* BLUEGENE_PTHREAD checks every 60 secs */
 #define _DEBUG 0
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
+List bgl_conf_list = NULL;              /* list of bgl_conf_record entries */
+char *bluegene_serial = NULL;
 
 /* Global variables */
 List bgl_list = NULL;			/* list of bgl_record entries */
-List bgl_conf_list = NULL;		/* list of bgl_conf_record entries */
 
 #define SWAP(a,b,t)	\
 _STMT_START {	\
@@ -270,6 +276,20 @@ extern int read_bgl_conf(void)
 	char in_line[BUFSIZE];	/* input line */
 	int i, j, error_code;
 	bgl_conf_record_t *conf_rec;
+	static time_t last_config_update = (time_t) 0;
+	struct stat config_stat;
+
+	/* check if config file has changed */
+	if (!bgl_conf)
+		fatal("bluegene.conf file not defined");
+	if (stat(bgl_conf, &config_stat) < 0)
+		fatal("can't stat bluegene.conf file %s: %m", bgl_conf);
+	if (last_config_update
+	&&  (last_config_update == config_stat.st_mtime)) {
+		debug("bluegene.conf unchanged");
+		return SLURM_SUCCESS;
+	}
+	last_config_update = config_stat.st_mtime; 
 
 	/* initialization */
 	START_TIMER;
@@ -278,9 +298,13 @@ extern int read_bgl_conf(void)
 	if (bgl_spec_file == NULL)
 		fatal("read_bgl_conf error opening file %s, %m",
 		      bgl_conf);
+
 	/* empty the old list before reading new data */
-	while ((conf_rec = list_pop(bgl_conf_list)))
-		_destroy_bgl_conf_record(conf_rec);
+	if (bgl_conf_list) {
+		while ((conf_rec = list_pop(bgl_conf_list)))
+			_destroy_bgl_conf_record(conf_rec);
+	} else
+		bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
 
 	/* process the data file */
 	line_num = 0;
@@ -321,6 +345,9 @@ extern int read_bgl_conf(void)
 	}
 	fclose(bgl_spec_file);
 
+	if (!bluegene_serial)
+		bluegene_serial = xstrdup(DEFAULT_BLUEGENE_SERIAL);
+
 	END_TIMER;
 	debug("read_bgl_conf: finished loading configuration %s", TIME_STR);
 	
@@ -344,19 +371,24 @@ extern int read_bgl_conf(void)
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *node_use = NULL, *conn_type = NULL;
+	char *nodes = NULL, *node_use = NULL, *serial = NULL, *conn_type = NULL;
 	bgl_conf_record_t* new_record;
 
 	error_code = slurm_parser(in_line,
 				"Nodes=", 's', &nodes,
+				"Serial=", 's', &serial,
 				"Type=", 's', &conn_type,
 				"Use=", 's', &node_use,
 				"END");
 
 	if (error_code)
 		goto cleanup;
+	if (serial) {
+		xfree(bluegene_serial);
+		bluegene_serial = serial;
+	}
 	if (!nodes && !node_use && !conn_type)
-		goto cleanup;	/* only comment */
+		goto cleanup;	/* no data */
 	if (!nodes && (node_use || conn_type)) {
 		error("bluegene.conf lacks Nodes value, but has Type or Use value");
 		error_code = SLURM_ERROR;
@@ -537,9 +569,12 @@ extern int init_bgl(void)
 #ifdef HAVE_BGL_FILES
 	int rc;
 	rm_size3D_t bp_size;
+#endif
 
-	/* FIXME: this needs to be read in from conf file. */
-	rc = rm_set_serial("BGL");
+	read_bgl_conf();
+
+#ifdef HAVE_BGL_FILES
+	rc = rm_set_serial(bluegene_serial);
 	if (rc != STATUS_OK){
 		error("init_bgl: rm_set_serial failed, errno=%d", rc);
 		return SLURM_ERROR;
@@ -559,8 +594,6 @@ extern int init_bgl(void)
 	verbose("BlueGene configured with %d x %d x %d base partitions",
 		bp_size.X, bp_size.Y, bp_size.Z);
 #endif
-	/** global variable */
-	bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
 
 	/* for testing purposes */
 	init_bgl_partition_num();
