@@ -321,14 +321,20 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 	if (level <= STDERR_LEVEL) {
 		fflush(stdout);
-		fprintf(stderr, "%s: %s%s\n", log->argv0, pfx, buf);
+		if (buf[strlen(buf) - 1] == '\n')
+			fprintf(stderr, "%s: %s%s", log->argv0, pfx, buf);
+		else
+			fprintf(stderr, "%s: %s%s\n", log->argv0, pfx, buf);
 		fflush(stderr);
 	}
 
 	if (level <= LOGFILE_LEVEL && log->logfp != NULL) {
 		xstrfmtcat(&msgbuf, "[%T] %s%s", pfx, buf);
 
-		fprintf(log->logfp, "%s\n", msgbuf);
+		if (buf[strlen(buf) - 1] == '\n')
+			fprintf(log->logfp, "%s", msgbuf);
+		else
+			fprintf(log->logfp, "%s\n", msgbuf);
 		fflush(log->logfp);
 
 		xfree(msgbuf);
