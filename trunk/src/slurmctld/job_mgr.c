@@ -514,11 +514,11 @@ static int _load_job_state(Buf buffer)
 	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
 	strncpy(job_ptr->name, name, MAX_NAME_LEN);
-	FREE_NULL(name);
+	xfree(name);
 	job_ptr->nodes = nodes;
 	nodes = NULL;	/* reused, nothing left to free */
 	job_ptr->node_bitmap = node_bitmap;
-	FREE_NULL(partition);
+	xfree(partition);
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
 	job_ptr->kill_on_step_done = kill_on_step_done;
 	job_ptr->batch_flag        = batch_flag;
@@ -878,9 +878,9 @@ static void _excise_node_from_job(struct job_record *job_record_ptr,
 	bit_position = node_record_ptr - node_record_table_ptr;
 	bit_clear(job_record_ptr->node_bitmap, bit_position);
 	job_record_ptr->nodes = bitmap2node_name(job_record_ptr->node_bitmap);
-	FREE_NULL(job_record_ptr->cpus_per_node);
-	FREE_NULL(job_record_ptr->cpu_count_reps);
-	FREE_NULL(job_record_ptr->node_addr);
+	xfree(job_record_ptr->cpus_per_node);
+	xfree(job_record_ptr->cpu_count_reps);
+	xfree(job_record_ptr->node_addr);
 
 	/* build_node_details rebuilds everything from node_bitmap */
 	build_node_details(job_record_ptr);
@@ -1979,11 +1979,11 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_record_point);
 
-	FREE_NULL(job_record_point->nodes);
+	xfree(job_record_point->nodes);
 	FREE_NULL_BITMAP(job_record_point->node_bitmap);
-	FREE_NULL(job_record_point->cpus_per_node);
-	FREE_NULL(job_record_point->cpu_count_reps);
-	FREE_NULL(job_record_point->node_addr);
+	xfree(job_record_point->cpus_per_node);
+	xfree(job_record_point->cpu_count_reps);
+	xfree(job_record_point->node_addr);
 	if (job_record_point->step_list) {
 		delete_all_step_records(job_record_point);
 		list_destroy(job_record_point->step_list);

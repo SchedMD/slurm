@@ -291,7 +291,7 @@ static int _parse_node_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		FREE_NULL(state);
+		xfree(state);
 	}
 
 	if (node_addr &&
@@ -479,7 +479,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		FREE_NULL(default_str);
+		xfree(default_str);
 	}
 
 	if (root_str) {
@@ -494,7 +494,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		FREE_NULL(root_str);
+		xfree(root_str);
 	}
 
 	if (shared_str) {
@@ -511,7 +511,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		FREE_NULL(shared_str);
+		xfree(shared_str);
 	}
 
 	if (state_str) {
@@ -526,7 +526,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		FREE_NULL(state_str);
+		xfree(state_str);
 	}
 
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {

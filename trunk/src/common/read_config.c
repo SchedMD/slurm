@@ -53,11 +53,6 @@
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN	32
 #define MULTIPLE_VALUE_MSG "Multiple values for %s, latest one used"
-#define FREE_NULL(_X)			\
-	do {				\
-		if (_X) xfree (_X);	\
-		_X	= NULL; 	\
-	} while (0)
 
 inline static void _normalize_debug_level(uint16_t *level);
 static int  _parse_node_spec (char *in_line);
@@ -72,37 +67,37 @@ void
 init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	ctl_conf_ptr->last_update		= time(NULL);
-	FREE_NULL (ctl_conf_ptr->backup_addr);
-	FREE_NULL (ctl_conf_ptr->backup_controller);
-	FREE_NULL (ctl_conf_ptr->control_addr);
-	FREE_NULL (ctl_conf_ptr->control_machine);
-	FREE_NULL (ctl_conf_ptr->epilog);
+	xfree (ctl_conf_ptr->backup_addr);
+	xfree (ctl_conf_ptr->backup_controller);
+	xfree (ctl_conf_ptr->control_addr);
+	xfree (ctl_conf_ptr->control_machine);
+	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->hash_base			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->heartbeat_interval	= (uint16_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
-	FREE_NULL (ctl_conf_ptr->job_credential_private_key);
-	FREE_NULL (ctl_conf_ptr->job_credential_public_certificate);
+	xfree (ctl_conf_ptr->job_credential_private_key);
+	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
-	FREE_NULL (ctl_conf_ptr->prioritize);
-	FREE_NULL (ctl_conf_ptr->prolog);
+	xfree (ctl_conf_ptr->prioritize);
+	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
-	FREE_NULL (ctl_conf_ptr->slurm_user_name);
+	xfree (ctl_conf_ptr->slurm_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
-	FREE_NULL (ctl_conf_ptr->slurmctld_logfile);
-	FREE_NULL (ctl_conf_ptr->slurmctld_pidfile);
+	xfree (ctl_conf_ptr->slurmctld_logfile);
+	xfree (ctl_conf_ptr->slurmctld_pidfile);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->slurmd_debug		= (uint16_t) NO_VAL; 
-	FREE_NULL (ctl_conf_ptr->slurmd_logfile);
-	FREE_NULL (ctl_conf_ptr->slurmd_pidfile);
+	xfree (ctl_conf_ptr->slurmd_logfile);
+	xfree (ctl_conf_ptr->slurmd_pidfile);
 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
-	FREE_NULL (ctl_conf_ptr->slurmd_spooldir);
+	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
-	FREE_NULL (ctl_conf_ptr->state_save_location);
-	FREE_NULL (ctl_conf_ptr->tmp_fs);
+	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->tmp_fs);
 	return;
 }
 
@@ -643,7 +638,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if ((ctl_conf_ptr->backup_controller == NULL) && 
 	    (ctl_conf_ptr->backup_addr != NULL)) {
 		error ("BackupAddr specified without BackupController");
-		FREE_NULL (ctl_conf_ptr->backup_addr);
+		xfree (ctl_conf_ptr->backup_addr);
 	}
 
 	if (ctl_conf_ptr->control_machine == NULL)
@@ -665,8 +660,8 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	    (strcmp (ctl_conf_ptr->backup_controller, 
 	             ctl_conf_ptr->control_machine) == 0)) {
 		error ("ControlMachine and BackupController identical");
-		FREE_NULL (ctl_conf_ptr->backup_addr);
-		FREE_NULL (ctl_conf_ptr->backup_controller);
+		xfree (ctl_conf_ptr->backup_addr);
+		xfree (ctl_conf_ptr->backup_controller);
 	}
 
 	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) {
