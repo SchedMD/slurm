@@ -100,6 +100,7 @@ slurm_protocol_config_t *slurm_get_api_config()
 
 /* slurm_api_set_conf_file
  *      set slurm configuration file to a non-default value
+ * pathname IN - pathname of slurm configuration file to be used
  */
 extern void  slurm_api_set_conf_file(char *pathname)
 {
