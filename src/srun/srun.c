@@ -551,8 +551,15 @@ _build_script (char *fname, int file_type)
 		int len = buffer ? strlen(buffer) : 0;
 		int size;
 
-		if ((size = cbuf_write_from_fd(cb, fd, -1, NULL)) < 0) 
-			error("Unable to read %s", fname);
+		while ((size = cbuf_write_from_fd(cb, fd, -1, NULL)) > 0) 
+			;
+
+		if (size < 0) {
+			error ("unable to read %s: %m", fname);
+			cbuf_destroy(cb);
+			return NULL;
+		}
+
 		cbuf_write(cb, "\0", 1, NULL);
 
 		xrealloc(buffer, cbuf_used(cb) + len +1);
