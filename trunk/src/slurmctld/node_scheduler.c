@@ -619,11 +619,15 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	uint32_t min_nodes, max_nodes, part_node_limit;
 	int super_user = false;
+	enum job_wait_reason fail_reason;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
 
-	/* insure that partition exists and is up */
+	if ((job_ptr->user_id == 0) || (job_ptr->user_id == getuid()))
+		super_user = true;
+
+	/* identify partition */
 	if (part_ptr == NULL) {
 		part_ptr = find_part_record(job_ptr->partition);
 		xassert(part_ptr);
@@ -633,26 +637,24 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 	}
 
 	/* Confirm that partition is up and has compatible nodes limits */
-	if ((job_ptr->user_id == 0) || (job_ptr->user_id == getuid()))
-		super_user = true;
-	else {
-		enum job_wait_reason fail_reason = WAIT_NO_REASON;
-		if (part_ptr->state_up == 0)
-			fail_reason = WAIT_PART_STATE;
-		else if ((job_ptr->time_limit != NO_VAL) &&
-			 (job_ptr->time_limit > part_ptr->max_time))
-			fail_reason = WAIT_PART_TIME_LIMIT;
-		else if (((job_ptr->details->max_nodes != 0) &&
-		          (job_ptr->details->max_nodes < part_ptr->min_nodes)) ||
-		         (job_ptr->details->min_nodes > part_ptr->max_nodes))
-			 fail_reason = WAIT_PART_NODE_LIMIT;
-		if (fail_reason != WAIT_NO_REASON) {
-			if (detail_ptr)
-				detail_ptr->wait_reason = fail_reason;
-			job_ptr->priority = 1;	/* sys hold, move to end of queue */
-			last_job_update = time(NULL);
-			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		}
+	fail_reason = WAIT_NO_REASON;
+	if (part_ptr->state_up == 0)
+		fail_reason = WAIT_PART_STATE;
+	else if (super_user)
+		;	/* ignore any time or node count limits */
+	else if ((job_ptr->time_limit != NO_VAL) &&
+		 (job_ptr->time_limit > part_ptr->max_time))
+		fail_reason = WAIT_PART_TIME_LIMIT;
+	else if (((job_ptr->details->max_nodes != 0) &&
+	          (job_ptr->details->max_nodes < part_ptr->min_nodes)) ||
+	         (job_ptr->details->min_nodes > part_ptr->max_nodes))
+		 fail_reason = WAIT_PART_NODE_LIMIT;
+	if (fail_reason != WAIT_NO_REASON) {
+		if (detail_ptr)
+			detail_ptr->wait_reason = fail_reason;
+		job_ptr->priority = 1;	/* sys hold, move to end of queue */
+		last_job_update = time(NULL);
+		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
 
 	/* build sets of usable nodes based upon their configuration */
