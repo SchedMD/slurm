@@ -58,6 +58,7 @@
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/req.h"
 #include "src/slurmd/shm.h"
+#include "src/slurmd/setproctitle.h"
 #include "src/slurmd/get_mach_stat.h"
 
 #define GETOPT_ARGS	"L:f:Dvhc"
@@ -130,6 +131,8 @@ main (int argc, char *argv[])
 	conf->argv = &argv;
 	conf->argc = &argc;
 
+	init_setproctitle(argc, argv);
+
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
 	/* 
@@ -154,6 +157,9 @@ main (int argc, char *argv[])
 	debug3("finished daemonize");
 
 	_kill_old_slurmd();
+
+	if (interconnect_node_init() < 0)
+		fatal("Unable to initialize interconnect.");
 
 	_create_msg_socket();
 
@@ -182,8 +188,9 @@ main (int argc, char *argv[])
 
 	_wait_for_all_threads();
 
-	_slurmd_fini();
+	interconnect_node_fini();
 
+	_slurmd_fini();
 
 	return 0;
 }
@@ -785,7 +792,8 @@ _usage()
 			"\tPrint this help message.\n");
 }
 
-/* create spool directory as needed and "cd" to it 
+/* 
+ * create spool directory as needed and "cd" to it 
  */
 static int
 _set_slurmd_spooldir(void)
