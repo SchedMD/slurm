@@ -14,6 +14,8 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+#include <src/common/slurm_protocol_api.h>
+
 #define STDIN_IO_THREAD 0
 #define STDOUT_IO_THREAD 1
 #define STDERR_IO_THREAD 2
