@@ -5,6 +5,7 @@
  * author: moe jette, jette@llnl.gov
  */
 
+#define MAX_ID_LEN	32
 #define MAX_NAME_LEN	16
 #define BUILD_SIZE	128
 #define FEATURE_SIZE	1024

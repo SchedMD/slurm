@@ -27,10 +27,12 @@ int node_record_count = 0;	/* count of records in the node record table */
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
-main (int argc, char *argv[]) {
+main (int argc, char *argv[]) 
+{
 	char in_line[128];
 	char *out_line;
 	int error_code, int_found, i, size;
+	float float_found;
 	char *string_found;
 	char *buffer, *format;
 	int buffer_offset, buffer_size;
@@ -43,7 +45,7 @@ main (int argc, char *argv[]) {
 
 	printf ("testing string manipulation functions...\n");
 	strcpy (in_line,
-		"test1=UNLIMITED test2=1234 test3 left_over test4=my,string");
+		"test1=UNLIMITED test2=1234 test3 left_over test4=my,string test5=12.34");
 
 	error_code = load_integer (&int_found, "test1=", in_line);
 	if (error_code)
@@ -74,6 +76,13 @@ main (int argc, char *argv[]) {
 		printf ("load_string parse error on test4, got :%s:\n",
 			string_found);
 	xfree (string_found);
+
+	error_code = load_float (&float_found, "test5=", in_line);
+	if (error_code)
+		printf ("load_float error on test5\n");
+	if ((float_found - 12.34) > 0.001)
+		printf ("load_float parse error on test5, got %f\n",
+			float_found);
 
 	printf ("NOTE: we expect this to print \"leftover\"\n");
 	report_leftover (in_line, 0);
@@ -116,7 +125,8 @@ main (int argc, char *argv[]) {
 	else {
 		if ((start_inx != 3) || (end_inx != 234))
 			printf ("error: parse_node_name failure\n");
-		printf ("parse_node_name of \"%s\" produces format \"%s\", %d to %d, %d records\n", out_line, format, start_inx, end_inx, count_inx);
+		printf ("parse_node_name of \"%s\" produces format \"%s\", %d to %d, %d records\n", 
+			out_line, format, start_inx, end_inx, count_inx);
 		if (format)
 			xfree (format);
 	}
@@ -124,6 +134,41 @@ main (int argc, char *argv[]) {
 	exit (0);
 }
 #endif
+
+
+/*
+ * load_float - location into which result is stored
+ *        keyword - string to search for
+ *        in_line - string to search for keyword
+ * output: *destination - set to value, no change if value not found
+ *         in_line - the keyword and value (if present) are overwritten by spaces
+ *         return value - 0 if no error, otherwise an error code
+ * NOTE: in_line is overwritten, do not use a constant
+ */
+int 
+load_float (float *destination, char *keyword, char *in_line) 
+{
+	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char *str_ptr1, *str_ptr2, *str_ptr3;
+	int i, str_len1, str_len2;
+
+	str_ptr1 = (char *) strstr (in_line, keyword);
+	if (str_ptr1 != NULL) {
+		str_len1 = strlen (keyword);
+		strcpy (scratch, str_ptr1 + str_len1);
+		if ((scratch[0] < '0') && (scratch[0] > '9')) {
+			error ("load_float: bad value for keyword %s\n", keyword);
+			return EINVAL;
+		}
+		str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
+		str_len2 = strlen (str_ptr2);
+		*destination = (float) strtod (scratch, (char **) NULL);
+		for (i = 0; i < (str_len1 + str_len2); i++) {
+			str_ptr1[i] = ' ';
+		}
+	}
+	return 0;
+}
 
 
 /*
@@ -138,7 +183,9 @@ main (int argc, char *argv[]) {
  *         return value - 0 if no error, otherwise an error code
  * NOTE: in_line is overwritten, do not use a constant
  */
-int load_integer (int *destination, char *keyword, char *in_line) {
+int 
+load_integer (int *destination, char *keyword, char *in_line) 
+{
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
@@ -190,7 +237,9 @@ int load_integer (int *destination, char *keyword, char *in_line) {
  * NOTE: if destination is non-NULL at function call time, it will be freed 
  * NOTE: in_line is overwritten, do not use a constant
  */
-int load_string (char **destination, char *keyword, char *in_line) {
+int 
+load_string (char **destination, char *keyword, char *in_line) 
+{
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
 	int i, str_len1, str_len2;
@@ -230,8 +279,10 @@ int load_string (char **destination, char *keyword, char *in_line) {
  * NOTE: the calling program must execute free(format) when the storage location 
  *       is no longer needed
  */
-int parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
-		 int *count_inx) {
+int 
+parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
+		 int *count_inx) 
+{
 	int base, format_pos, precision, i;
 	char type[1];
 
@@ -335,7 +386,9 @@ int parse_node_name (char *node_name, char **format, int *start_inx, int *end_in
  *         line - set to pointer to the line
  *         returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
  */
-int read_buffer (char *buffer, int *buffer_offset, int buffer_size, char **line) {
+int 
+read_buffer (char *buffer, int *buffer_offset, int buffer_size, char **line) 
+{
 	if ((*buffer_offset) >= buffer_size)
 		return EFAULT;
 	line[0] = &buffer[*buffer_offset];
@@ -354,7 +407,9 @@ int read_buffer (char *buffer, int *buffer_offset, int buffer_size, char **line)
  *        line_num - line number of the configuration file.
  * output: none
  */
-void report_leftover (char *in_line, int line_num) {
+void 
+report_leftover (char *in_line, int line_num) 
+{
 	int bad_index, i;
 
 	bad_index = -1;
@@ -384,7 +439,9 @@ void report_leftover (char *in_line, int line_num) {
  *         buffer_offset - incremented by value_size
  *         returns 0 if no error or errno otherwise 
  */
-int write_buffer (char **buffer, int *buffer_offset, int *buffer_size, char *line) {
+int 
+write_buffer (char **buffer, int *buffer_offset, int *buffer_size, char *line) 
+{
 	int line_size;
 
 	line_size = strlen (line) + 1;
