@@ -10,11 +10,16 @@ interconnect_lib = libno_interconnect.a
 endif
 
 sbin_PROGRAMS = slurmd
-noinst_LIBRARIES = libelan_interconnect.a libno_interconnect.a libforked_io.a  libthreaded_io.a libnbio.a
+noinst_LTLIBRARIES = libelan_interconnect.la \
+		libno_interconnect.la \
+		libforked_io.la  \
+		libthreaded_io.la \
+		libnbio.la \
+		libcredential_utils.la
 
 LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/common/libdaemonize.la \
-	$(SSL_LIBS) libno_interconnect.a
+	$(SSL_LIBS) libno_interconnect.la
 
 
 slurmd_SOURCES = slurmd.c \
@@ -32,10 +37,12 @@ slurmd_SOURCES = slurmd.c \
 		io_threads.c \
 		$(interconnect_lib)
 
-libforked_io_a_SOURCES =  forked_io.c reconnect_utils.c io_threads.c 
-libthreaded_io_a_SOURCES =  threaded_io.c reconnect_utils.c io_threads.c 
-libnbio_a_SOURCES =  threaded_io.c nbio.c reconnect_utils.c
+libforked_io_la_SOURCES =  forked_io.c reconnect_utils.c io_threads.c 
+libthreaded_io_la_SOURCES =  threaded_io.c reconnect_utils.c io_threads.c 
+libnbio_la_SOURCES =  threaded_io.c nbio.c reconnect_utils.c
 
-libelan_interconnect_a_SOURCES =  elan_interconnect.c
-libno_interconnect_a_SOURCES =  no_interconnect.c 
+libelan_interconnect_la_SOURCES =  elan_interconnect.c
+libno_interconnect_la_SOURCES =  no_interconnect.c 
+
+libcredential_utils_la_SOURCES = credential_utils.c signature_utils.c
 
