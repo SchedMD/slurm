@@ -66,7 +66,7 @@
   typedef int      rm_partition_state_t;
 #endif
 
-#define USER_NAME "da"
+#define USER_NAME "nobody"
 
 /* Global variables */
 extern rm_BGL_t *bgl;			/* DB2 pointer */
