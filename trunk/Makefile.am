@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-SUBDIRS    = slurm src testsuite doc
+SUBDIRS    = src testsuite doc
 
 EXTRA_DIST =	\
 	etc/slurm.conf.example	\
@@ -13,12 +13,18 @@ EXTRA_DIST =	\
 	README	\
 	DISCLAIMER	\
 	COPYING	\
- 	META
+ 	META \
+	slurm
+	
+nobase_include_HEADERS =		\
+	slurm/slurm.h 		\
+	slurm/slurm_errno.h
 
 MAINTAINERCLEANFILES = 			\
 	aclocal.m4 config.guess 	\
 	config.h.in config.sub configure install-sh \
 	ltconfig ltmain.sh missing mkinstalldirs \
+	slurm/slurm.h	\
 	stamp-h.in
 
 include $(top_srcdir)/Make-rpm.mk
