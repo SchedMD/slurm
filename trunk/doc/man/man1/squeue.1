@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "June 2003" "squeue 0.1" "Slurm components"
+.TH SQUEUE "1" "July 2003" "squeue 0.1" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -110,13 +110,19 @@ of job steps to view follows without an equal sign (see examples).
 The job step format is "job_id.step_id". Defaults to all job steps.
 .TP
 \fB\-S <sort_list>\fR, \fB\-\-sort=<sort_list>\fR
-Specifies the sorting order of job's or job step's records for printing. 
-Accepts a comma separated list of field identifiers using the single letter 
-codes used for output formatting. For example, "\-\-sort=P,U" will sort the
+Specification of the order in which records should be reported.
+This uses the same field specifciation as the <output_format>.
+Multiple sorts may be performed by listing multiple sort fields 
+separated by commas.
+The field specifications may be preceeded by "+" or "-" for 
+assending (default) and desending order respectively. 
+For example, a sort value of "P,U" will sort the
 records by partition name then by user id. 
-The default sorting order for jobs is job state then priority. 
-The default sorting order for job steps is partition name.
-Note that sorting is not supported for all fields at this time.
+The default value of sort for jobs is "P,t,-p" (increasing partition 
+name then within a given partition by increasing node state and then 
+decreasing priority).
+The default value of sort for job steps is "P,i" (increasing partition 
+name then within a given partition by increasing step id).
 .TP
 \fB\-t <state_list>\fR, \fB\-\-states=<state_list>\fR
 Specify the states of jobs to view.  Accepts a comma separated list of
@@ -165,8 +171,6 @@ the job id followed by the priority with an arbitrary fields size:
 .br
  JOBID PRIORITY
 .br
-----------------
-.br
  65543 99993 
 .br
  65544 99992 
@@ -179,9 +183,7 @@ Print the job steps in the debug partition sorted by user:
 .br
 # squeue -s -p debug -S u
 .br
-  STEPID    PARTITION   USER     TIME_USED NODES
-.br
------------------------------------------------------------
+  STEPID    PARTITION   USER     TIME_USED NODELIST
 .br
  65552.1    debug       alice         0:23 dev[1-4]
 .br
@@ -195,13 +197,11 @@ Print information only about jobs 12345 and 12346:
 .br
 # squeue --jobs 12345,12346
 .br
-  JOBID PARTITION NAME USER   ST TIME_USED #NODES NODES
+  JOBID PARTITION NAME USER   ST TIME_USED NODES NODELIST
 .br
------------------------------------------------------------
+  12345 debug     pwd  david  R       0:21     4 dev[9-12]
 .br
-  12345 debug     pwd  david  R       0:21      4 dev[9-12]
-.br
-  12346 debug     pwd  david  PD      0:00      0
+  12346 debug     pwd  david  PD      0:00     0
 .ec
 
 .eo
@@ -209,9 +209,7 @@ Print information only about job step 65552.1:
 .br
 # squeue --steps 65552.1
 .br
-  STEPID    PARTITION   USER     TIME_USED NODES
-.br
------------------------------------------------------------
+  STEPID    PARTITION   USER     TIME_USED NODELIST
 .br
  65552.1    debug       alice        12:49 dev[1-4]
 .ec
