@@ -36,6 +36,15 @@ the subsequent call to waitpid(). Since the process was already stopped,
 the waitpid() never returns. Perhaps Etnus has implemented a workaround
 for this behavior.
 
+Testing:
+
+The followinbg piece of test code can be used to verify that the proper
+functionality exists in the current kernel:
+
+testptrace.c  <http://linux.llnl.gov/software/kernel/testptrace.c>
+
+This test should succeed when run without any arguments.
+
 ------------------------------------------------------------------------
 
 <http://www.seclists.org/lists/linux-kernel/202/Mar/4490.html>
