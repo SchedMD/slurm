@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
+ -- Fixes for reported problems:
+   - slurm/372: job state descriptions added to squeue man page
  -- Switch plugin added. Add "SwitchType=switch/elan" to slurm.conf for 
     systems with Quadrics Elan3 or Elan4 switches.
  -- Don't tread DOWN nodes with too few CPUs as a fatal error on Elan
