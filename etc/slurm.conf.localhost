@@ -4,13 +4,15 @@
 # Date: 11/06/2001
 # Note: "localhost" is translated by slurmctld to the actual hostname
 #
-ControlMachine=localhost BackupController=localhost
+ControlMachine=localhost
 Epilog="" Prolog=""
 FastSchedule=1
 FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
 InactiveLimit=120
+JobCredentialPrivateKey=private.key
+JobCredentialPublicCertificate=public.cert
 KillWait=30
 Prioritize=/usr/local/maui/priority
 ReturnToService=0
@@ -18,8 +20,6 @@ SlurmctldPort=7002 SlurmdPort=7003
 SlurmctldTimeout=300 SlurmdTimeout=300
 StateSaveLocation=/tmp/slurm.state
 TmpFS=/tmp
-JobCredentialPrivateKey=private.key
-JobCredentialPublicCertificate=public.cert
 #
 # Node Configurations
 #
