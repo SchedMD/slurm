@@ -56,30 +56,34 @@ typedef enum task_state {
 } task_state_t;
 
 typedef struct task_info {
-	pthread_mutex_t mutex;	   /* mutex to protect task state         */
-	task_state_t    state;	   /* task state                          */
-
-	int             id;	   /* local task id                       */
-	uint32_t        gid;	   /* global task id                      */
-	pid_t           pid;	   /* task pid                            */
-	int             pin[2];    /* stdin pipe                          */
-	int             pout[2];   /* stdout pipe                         */
-	int             perr[2];   /* stderr pipe                         */
+	pthread_mutex_t mutex;	   /* mutex to protect task state          */
+	task_state_t    state;	   /* task state                           */
+ 
+	int             id;	   /* local task id                        */
+	uint32_t        gid;	   /* global task id                       */
+	pid_t           pid;	   /* task pid                             */
+	int             pin[2];    /* stdin pipe                           */
+	int             pout[2];   /* stdout pipe                          */
+	int             perr[2];   /* stderr pipe                          */
 	io_obj_t       *in, 
-	               *out,       /* I/O objects used in IO event loop   */
+	               *out,       /* I/O objects used in IO event loop    */
 		       *err;       
-	int             estatus;   /* this task's exit status             */
-	List            srun_list; /* List of srun objs for this task     */
+
+        bool            esent;     /* true if exit status has been sent    */
+	bool            exited;    /* true if task has exited              */
+	int             estatus;   /* this task's exit status              */
+
+	List            srun_list; /* List of srun objs for this task      */
 } task_info_t;
 
 
 typedef struct srun_info {
-	srun_key_t *key;	   /* srun key for IO verification       */
-	slurm_addr resp_addr;	   /* response addr for task exit msg    */
-	slurm_addr ioaddr;         /* Address to connect on for I/O      */
-	char *	   ofname;         /* output file (if any)               */
-	char *	   efname;         /* error file  (if any)	         */
-	char *     ifname;         /* input file  (if any) 		 */
+	srun_key_t *key;	   /* srun key for IO verification         */
+	slurm_addr resp_addr;	   /* response addr for task exit msg      */
+	slurm_addr ioaddr;         /* Address to connect on for I/O        */
+	char *	   ofname;         /* output file (if any)                 */
+	char *	   efname;         /* error file  (if any)	           */
+	char *     ifname;         /* input file  (if any) 		   */
 
 } srun_info_t;
 
