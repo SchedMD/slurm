@@ -798,9 +798,13 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 		safe_unpack32_array((uint32_t **) &
 				    (tmp_ptr->cpus_per_node), &uint32_tmp,
 				    buffer);
+		if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
 		safe_unpack32_array((uint32_t **) &
 				    (tmp_ptr->cpu_count_reps), &uint32_tmp,
 				    buffer);
+		if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
 	} else {
 		tmp_ptr->cpus_per_node = NULL;
 		tmp_ptr->cpu_count_reps = NULL;
@@ -875,9 +879,13 @@ static int
 		safe_unpack32_array((uint32_t **) &
 				    (tmp_ptr->cpus_per_node), 
 				    &uint32_tmp, buffer);
+		if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
 		safe_unpack32_array((uint32_t **) &
 				    (tmp_ptr->cpu_count_reps), 
 				    &uint32_tmp, buffer);
+		if (tmp_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
 	}
 
 	safe_unpack32(&tmp_ptr->job_step_id, buffer);
@@ -1936,6 +1944,8 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpack32(&msg->num_tasks, buffer);
 	safe_unpack32_array(&msg->task_id_list, &uint32_tmp, buffer);
+	if (msg->num_tasks != uint32_tmp)
+		goto unpack_error;
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -1951,7 +1961,9 @@ _pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, Buf buffer)
 	pack32(msg->return_code, buffer);
 	packstr(msg->node_name, buffer);
 	pack32(msg->srun_node_id, buffer);
-	pack32(msg->local_pid, buffer);
+	pack32(msg->count_of_pids, buffer);
+	pack32_array(msg->local_pids,
+		     msg->count_of_pids, buffer);
 }
 
 static int
@@ -1959,6 +1971,7 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 				  msg_ptr, Buf buffer)
 {
 	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	launch_tasks_response_msg_t *msg;
 
 	msg = xmalloc(sizeof(launch_tasks_response_msg_t));
@@ -1967,7 +1980,10 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 	safe_unpack32(&msg->return_code, buffer);
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
-	safe_unpack32(&msg->local_pid, buffer);
+	safe_unpack32(&msg->count_of_pids, buffer);
+	safe_unpack32_array(&msg->local_pids, &uint32_tmp, buffer);
+	if (msg->count_of_pids != uint32_tmp)
+		goto unpack_error;
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -2035,6 +2051,8 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
 	safe_unpack32_array(&msg->global_task_ids, &uint32_tmp, buffer);
+	if (msg->tasks_to_launch != uint32_tmp)
+		goto unpack_error;
 
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&msg->qsw_job);

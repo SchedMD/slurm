@@ -217,6 +217,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	resp.node_name        = conf->hostname;
 	resp.srun_node_id     = req->srun_node_id;
 	resp.return_code      = rc;
+	resp.count_of_pids    = 0;
+	resp.local_pids       = NULL;  /* array type of uint32_t */
 
 	slurm_send_only_node_msg(&resp_msg);
 }
