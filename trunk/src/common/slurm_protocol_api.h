@@ -15,6 +15,7 @@
 #endif  /*  HAVE_CONFIG_H */
 
 #include <sys/types.h>
+#include <stdarg.h>
 
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_util.h>

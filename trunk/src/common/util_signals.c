@@ -3,12 +3,12 @@
 #include <src/common/log.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/util_signals.h> 
-void posix_signal_pipe_ignore ()
+int posix_signal_pipe_ignore ()
 {
-	posix_signal_ignore ( SIGPIPE ) ;
+	return posix_signal_ignore ( SIGPIPE ) ;
 }
 
-void posix_signal_ignore ( int signal )
+int posix_signal_ignore ( int signal )
 {
 	struct sigaction newaction ;
         struct sigaction oldaction ;
@@ -18,7 +18,7 @@ void posix_signal_ignore ( int signal )
 		error ("posix_signal_ignore: sigaction %m errno %d", errno);
 		return SLURM_ERROR ;
 	}
-
+	return SLURM_SUCCESS ;
 }
 
 int unblock_all_signals_pthread ( )

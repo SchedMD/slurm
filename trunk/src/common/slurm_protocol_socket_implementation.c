@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <arpa/inet.h>
 
 #if HAVE_SYS_SOCKET_H
@@ -501,22 +502,36 @@ extern void _slurm_FD_ZERO(fd_set *set)
 	FD_ZERO ( set ) ;
 }
 
-extern int _slurm_fcntl(int fd, int cmd)
+extern int _slurm_fcntl(int fd, int cmd, ... )
 {
-	return fcntl ( fd , cmd ) ;
+	int rc ;
+	va_list va ;
+
+	va_start ( va , cmd ) ;
+	rc =_slurm_vfcntl ( fd , cmd , va ) ;
+	va_end ( va ) ;
+	return rc ;
 }
-/*
-   extern int _slurm_fcntl(int fd, int cmd, long arg)
-   {
-   }
-   extern int _slurm_fcntl(int fd, int cmd, struct flock *lock)
-   {
-   }
-   extern int _slurm_ioctl(int d, int request, ...)
-   {
-   return ioctl ( d , request, ... ) ;
-   }
-   */
+
+extern int _slurm_vfcntl(int fd, int cmd, va_list va )
+{
+	long arg ;
+	struct flock *lock ;
+
+	switch ( cmd )
+	{
+		case F_GETFL :
+			return fcntl ( fd , cmd ) ;
+			break ;
+		case F_SETFL :
+			arg = va_arg ( va , long ) ;
+			return fcntl ( fd , cmd , arg) ;
+			break ;
+		default :
+			return SLURM_PROTOCOL_ERROR ;
+			break ;
+	}
+}
 
 /* sets the fields of a slurm_addr */
 void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )

@@ -39,6 +39,7 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdarg.h>
 
 #include <src/common/slurm_protocol_common.h>
 
@@ -197,10 +198,8 @@ int _slurm_FD_ISSET(int fd, fd_set *set);
 void _slurm_FD_SET(int fd, fd_set *set);
 void _slurm_FD_ZERO(fd_set *set);
 
-extern int _slurm_fcntl(int fd, int cmd);
-/* function overloading problems
-extern int _slurm_fcntl(int fd, int cmd, long arg);
-extern int _slurm_fcntl(int fd, int cmd, struct flock *lock);
-*/
+extern int _slurm_fcntl(int fd, int cmd, ... );
+extern int _slurm_vfcntl(int fd, int cmd, va_list va );
+
 extern int _slurm_ioctl(int d, int request, ...);
 #endif /* !_SLURM_PROTOCOL_INTERFACE_H */
