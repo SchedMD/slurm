@@ -237,6 +237,7 @@ static void *_background_rpc_mgr(void *no_data)
 	debug3("_background_rpc_mgr shutting down");
 	slurm_close_accepted_conn(sockfd);	/* close the main socket */
 	pthread_exit((void *) 0);
+	return NULL;
 }
 
 /* _background_process_msg - process an RPC to the backup_controller */
