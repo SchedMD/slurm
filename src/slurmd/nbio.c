@@ -148,6 +148,7 @@ void * do_nbio ( void * arg )
 
 		set_max_fd ( & nbio_attr ) ;
 
+		print_nbio_sets ( & nbio_attr , nbio_attr . init_set ) ;
 		rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , & nbio_attr . select_timer ) ;
 		debug3 ( "nbio select: rc: %i", rc ) ;
 		print_nbio_sets ( & nbio_attr , nbio_attr . init_set ) ;
@@ -619,7 +620,15 @@ int print_nbio_sets ( nbio_attr_t * nbio_attr , slurm_fd_set * set_ptr )
 	int i ;
 	printf ( "fds ");
 	for ( i=0 ; i < 5 ; i ++ ) printf ( " %i " , nbio_attr -> fd[i] ) ;
-	printf ( "rd  ");
+	printf ( "\n");
+	printf ( " %i %i %i %i %i %i \n", 
+			nbio_attr -> in_cir_buf -> read_size ,
+			nbio_attr -> in_cir_buf -> write_size ,
+			nbio_attr -> out_cir_buf -> read_size ,
+			nbio_attr -> out_cir_buf -> write_size ,
+			nbio_attr -> err_cir_buf -> read_size ,
+			nbio_attr -> err_cir_buf -> write_size
+	       ) ;
 	printf ( "--- 00000000001111111111222222222233\n") ;
 	printf ( "--- 01234567890123456789012345678901\n") ;
 	printf ( "rd  ");
