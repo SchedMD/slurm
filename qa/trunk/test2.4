@@ -1,0 +1,114 @@
+#!/usr/bin/expect
+#
+# Purpose: Test of SLURM functionality
+#          Validate scontrol exit, quit, and !! commands.
+#
+# Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
+#          "FAILURE: ..." otherwise with an explanation of the failure, OR
+#          anything else indicates a failure mode that must be investigated.
+#
+source ./globals
+
+set test_id     "2.4"
+set exit_code   0
+
+print_header $test_id
+
+#
+# Report the slurm daemon status and explicitly exit
+#
+set matches     0
+spawn $scontrol  
+expect {
+	-re "scontrol: " {
+		if {$matches == 0} {
+			send "ping\n"
+		} else {
+			send "exit\n"
+		}
+		exp_continue
+	}
+	-re "Slurmctld.primary/backup" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol ping or exit command failed\n"
+	set exit_code 1
+}
+
+#
+# Report the slurm daemon status and explicitly quit
+#
+set matches     0
+spawn $scontrol  
+expect {
+	-re "scontrol: " {
+		if {$matches == 0} {
+			send "ping\n"
+		} else {
+			send "quit\n"
+		}
+		exp_continue
+	}
+	-re "Slurmctld.primary/backup" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+	}
+}
+if {$matches != 1} {
+	send_user "\nFAILURE: scontrol ping or quit command failed\n"
+	set exit_code 1
+}
+
+#
+# Report the slurm daemon status, repeat via !! command and explicitly quit
+#
+set matches     0
+spawn $scontrol  
+expect {
+	-re "scontrol: " {
+		if {$matches == 0} {
+			send "ping\n"
+		}
+		if {$matches == 1} {
+			send "!!\n"
+		}
+		if {$matches > 1} {
+			send "quit\n"
+		}
+		exp_continue
+	}
+	-re "Slurmctld.primary/backup" {
+		incr matches
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+	}
+}
+if {$matches != 2} {
+	send_user "\nFAILURE: scontrol ping, !!, or quit command failed\n"
+	set exit_code 1
+}
+
+if {$exit_code == 0} {
+	send_user "\nSUCCESS\n"
+}
+exit $exit_code
