@@ -121,6 +121,7 @@ struct node_table {
 	uint32_t tmp_disk;	/* megabytes of total disk in TMP_FS */
 	uint32_t weight;	/* desirability of use */
 	char *partition;	/* partition name */ 
+	char *features;		/* features associated with the node */ 
 };
 
 struct node_buffer {

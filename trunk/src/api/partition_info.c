@@ -188,6 +188,8 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 		}
 		unpackstr_ptr (&part[i].name, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (part[i].name == NULL)
+			part[i].name = "";
 		unpack32  (&part[i].max_time, &buf_ptr, &buffer_size);
 		unpack32  (&part[i].max_nodes, &buf_ptr, &buffer_size);
 		unpack32  (&part[i].total_nodes, &buf_ptr, &buffer_size);
@@ -200,10 +202,16 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 		unpack16  (&part[i].state_up, &buf_ptr, &buffer_size);
 		unpackstr_ptr (&part[i].allow_groups, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (part[i].allow_groups == NULL)
+			part[i].allow_groups = "";
 		unpackstr_ptr (&part[i].nodes, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (part[i].nodes == NULL)
+			part[i].nodes = "";
 		unpackstr_ptr (&node_inx_str, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		if (node_inx_str == NULL)
+			node_inx_str = "";
 		part[i].node_inx = bitfmt2int(node_inx_str);
 	}
 

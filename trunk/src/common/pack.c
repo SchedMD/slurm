@@ -125,7 +125,7 @@ _unpackmem_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*lenp -= *size_valp;
 	}
 	else
-		*valp = "";
+		*valp = NULL;
 
 }
 	
@@ -157,7 +157,7 @@ _unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*lenp -= *size_valp;
 	}
 	else
-		*valp = xmalloc(1);
+		*valp = NULL;
 
 }
 	
