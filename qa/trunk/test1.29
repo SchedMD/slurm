@@ -122,7 +122,7 @@ if {$matches != 4} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
-#        exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+        exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
 
 }
 exit $exit_code
