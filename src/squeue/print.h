@@ -136,14 +136,8 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_account)
 #define job_format_add_dependency(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_dependency)
-#define job_format_add_geometry(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_geometry)
-#define job_format_add_rotate(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_rotate)
-#define job_format_add_conn_type(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_conn_type)
-#define job_format_add_node_use(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_node_use)
+#define job_format_add_select_jobinfo(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_select_jobinfo)
 
 /*****************************************************************************
  * Job Line Print Functions
@@ -216,13 +210,7 @@ int _print_job_account(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 			char* suffix);
-int _print_job_geometry(job_info_t * job, int width, bool right_justify,
-			char* suffix);
-int _print_job_rotate(job_info_t * job, int width, bool right_justify,
-			char* suffix);
-int _print_job_conn_type(job_info_t * job, int width, bool right_justify,
-			char* suffix);
-int _print_job_node_use(job_info_t * job, int width, bool right_justify,
+int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 
 /*****************************************************************************

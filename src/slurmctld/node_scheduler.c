@@ -40,13 +40,14 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/node_select.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/sched_plugin.h"
-#include "src/slurmctld/select_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -92,7 +93,7 @@ static int _valid_features(char *requested, char *available);
  *	node_record_table_ptr - pointer to global node table
  *	last_node_update - last update time of node table
  */
-void allocate_nodes(struct job_record *job_ptr)
+extern void allocate_nodes(struct job_record *job_ptr)
 {
 	int i;
 
@@ -113,7 +114,7 @@ void allocate_nodes(struct job_record *job_ptr)
  * globals: node_record_count - number of nodes configured
  *	node_record_table_ptr - pointer to global node table
  */
-int count_cpus(unsigned *bitmap)
+extern int count_cpus(unsigned *bitmap)
 {
 	int i, sum;
 
@@ -139,7 +140,7 @@ int count_cpus(unsigned *bitmap)
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
-void deallocate_nodes(struct job_record *job_ptr, bool timeout)
+extern void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 {
 	int i;
 	kill_job_msg_t *kill_job;
@@ -177,7 +178,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			job_ptr->node_cnt--;
 		}
 		make_node_comp(node_ptr, job_ptr);
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Only operate on front-end node */
 		if (agent_args->node_count > 0)
 			continue;
 #endif
@@ -385,7 +386,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 	bool runable_ever  = false;	/* Job can ever run */
 	bool runable_avail = false;	/* Job can run with available nodes */
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* no sharing Blue Gene nodes */
 	if (shared) {
 		error("attempt to share Blue Gene nodes ignored");
 		shared = 0;
@@ -599,7 +600,7 @@ _add_node_set_info(struct node_set *node_set_ptr,
  *	   the request, (e.g. best-fit or other criterion)
  *	3) Call allocate_nodes() to perform the actual allocation
  */
-int select_nodes(struct job_record *job_ptr, bool test_only)
+extern int select_nodes(struct job_record *job_ptr, bool test_only)
 {
 	int error_code = SLURM_SUCCESS, i, shared, node_set_size = 0;
 	bitstr_t *select_bitmap = NULL;
@@ -932,7 +933,7 @@ static int _nodes_in_sets(bitstr_t *req_bitmap,
  *	cpu_count_reps, cpus_per_node, node_addr, node_cnt, num_cpu_groups
  * IN job_ptr - pointer to a job record
  */
-void build_node_details(struct job_record *job_ptr)
+extern void build_node_details(struct job_record *job_ptr)
 {
 	hostlist_t host_list = NULL;
 	struct node_record *node_ptr;
@@ -1158,9 +1159,9 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL			/* only do one front-end node */
 		if (agent_args->node_count > 0)
-			continue;	/* only do one front-end node */
+			continue;
 #endif
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 128;

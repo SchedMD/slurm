@@ -37,6 +37,7 @@
 
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/srun/fname.h"
 
@@ -139,9 +140,7 @@ typedef struct srun_job {
 	int   stdinfd;
 	bool *stdin_eof;  /* true if task i processed stdin eof */
 
-#ifdef HAVE_BGL
-	char *bgl_part_id;
-#endif
+	select_jobinfo_t select_jobinfo;
 } job_t;
 
 void    update_job_state(job_t *job, job_state_t newstate);

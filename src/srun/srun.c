@@ -104,7 +104,7 @@ int srun(int ac, char **av)
 {
 	allocation_resp *resp;
 	job_t *job;
-	char *task_cnt;
+	char *task_cnt, *bgl_part_id = NULL;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -216,9 +216,12 @@ int srun(int ac, char **av)
 	setenvf("SLURM_TASKS_PER_NODE=%s", task_cnt = _task_count_string (job));
 	setenvf("SLURM_DISTRIBUTION=%s",
 		format_distribution_t (opt.distribution));
-#ifdef HAVE_BGL
-	setenvf("BGL_PARTITION_ID=%s",    job->bgl_part_id);
-#endif
+
+	if (job->select_jobinfo)
+		select_g_get_jobinfo(job->select_jobinfo, 
+				SELECT_DATA_PART_ID, &bgl_part_id);
+	if (bgl_part_id)
+		setenvf("BGL_PARTITION_ID=%s", bgl_part_id);
 
 	xfree(task_cnt);
 
@@ -611,12 +614,16 @@ _set_batch_script_env(job_t *job)
 		rc = SLURM_FAILURE;
 	}
 
-#ifdef HAVE_BGL
-	if (job && setenvf("BGL_PARTITION_ID=%s", job->bgl_part_id)) {
-		error("Can't set BGL_PARTITION_ID environment variable");
-		rc = SLURM_FAILURE;
+	if (job) {
+		char *bgl_part_id = NULL;
+		select_g_get_jobinfo(job->select_jobinfo, 
+				SELECT_DATA_PART_ID, &bgl_part_id);
+		if (bgl_part_id 
+		&& setenvf("BGL_PARTITION_ID=%s", bgl_part_id)) {
+			error("Can't set BGL_PARTITION_ID environment variable");
+			rc = SLURM_FAILURE;
+		}
 	}
-#endif
 
 	/*
 	 * If no job has been allocated yet, just return. We are

@@ -37,6 +37,7 @@
 #include <stdio.h>
 
 #include "src/common/log.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/switch.h"
@@ -118,6 +119,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	int i;
 
 	if (msg) {
+		select_g_free_jobinfo(&msg->select_jobinfo);
 		xfree(msg->alloc_node);
 		for (i = 0; i < msg->env_size; i++) {
 			xfree(msg->environment[i]);
@@ -165,9 +167,8 @@ void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
 			}
 			xfree(msg->environment);
 		}
-#ifdef HAVE_BGL
-		xfree(msg->bgl_part_id);
-#endif
+
+		select_g_free_jobinfo(&msg->select_jobinfo);
 
 		xfree(msg);
 	}
@@ -184,6 +185,7 @@ void slurm_free_job_info(job_info_t * job)
 void slurm_free_job_info_members(job_info_t * job)
 {
 	if (job) {
+		select_g_free_jobinfo(&job->select_jobinfo);
 		xfree(job->account);
 		xfree(job->nodes);
 		xfree(job->partition);
@@ -463,33 +465,6 @@ char *job_state_string_compact(enum job_states inx)
 		return job_state_string[inx];
 }
 
-
-extern char *job_conn_type_string(uint16_t inx)
-{
-#ifdef HAVE_BGL
-	if (inx == RM_TORUS)
-		return "torus";
-	else if (inx == RM_MESH)
-		return "mesh";
-	else
-		return "nav";
-#else
-	return "n/a";
-#endif
-}
-
-extern char *job_node_use_string(uint16_t inx)
-{
-#ifdef HAVE_BGL
-	if (inx == RM_COPROCESSOR)
-		return "coprocessor";
-	else
-		return "virtual";
-#else
-	return "n/a";
-#endif
-}
-
 char *node_state_string(enum node_states inx)
 {
 	static char *node_state_string[] = {
@@ -560,11 +535,11 @@ void slurm_free_resource_allocation_response_msg (
 				resource_allocation_response_msg_t * msg)
 {
 	if (msg) {
+		select_g_free_jobinfo(&msg->select_jobinfo);
 		xfree(msg->node_list);
 		xfree(msg->cpus_per_node);
 		xfree(msg->cpu_count_reps);
 		xfree(msg->node_addr);
-		xfree(msg->bgl_part_id);
 		xfree(msg);
 	}
 }
@@ -699,7 +674,7 @@ static void _slurm_free_job_info_members(job_info_t * job)
 		xfree(job->req_nodes);
 		xfree(job->features);
 		xfree(job->req_node_inx);
-		xfree(job->bgl_part_id);
+		select_g_free_jobinfo(&job->select_jobinfo);
 	}
 }
 

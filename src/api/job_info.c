@@ -41,6 +41,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/api/job_info.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
@@ -76,7 +77,7 @@ extern void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	int j;
-	char time_str[16];
+	char time_str[16], select_buf[80];
 	struct passwd *user_info = NULL;
 	struct group *group_info = NULL;
 
@@ -219,29 +220,17 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 			break;
 	}
 
-#ifdef HAVE_BGL
-	/****** Line 12 ******/
-	if (one_liner)
-		fprintf ( out, " ");
-	else
-		fprintf ( out, "\n   ");
-	fprintf ( out, "Geometry=%ux%ux%u ",  job_ptr->geometry[0],
-		job_ptr->geometry[1], job_ptr->geometry[2]);
-	fprintf ( out, "Connection=%s ", job_conn_type_string(job_ptr->conn_type));
-	if (job_ptr->rotate)
-		fprintf ( out, "Rotate=yes ");
-	else
-		fprintf ( out, "Rotate=no ");
-	if (one_liner)
-		fprintf ( out, " ");
-	else
-		fprintf ( out, "\n   ");
 
-	/****** Line 13 ******/
-	fprintf ( out, "NodeUse=%s BGL_Part_Id=%s",
-		job_node_use_string(job_ptr->node_use),
-		job_ptr->bgl_part_id);
-#endif
+	/****** Line 12 (optional) ******/
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
+	if (select_buf[0] != '\0') {
+		if (one_liner)
+			fprintf ( out, " ");
+		else
+			fprintf ( out, "\n   ");
+		fprintf( out, "%s", select_buf);
+	}
 
 	fprintf( out, "\n\n");
 }

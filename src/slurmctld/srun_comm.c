@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -30,6 +30,7 @@
 
 #include <string.h>
 
+#include "src/common/node_select.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -89,9 +90,8 @@ extern void srun_allocate (uint32_t job_id)
 				job_ptr->node_cnt);
 		memcpy(msg_arg->node_addr, job_ptr->node_addr,
 				(sizeof(slurm_addr) * job_ptr->node_cnt));
-#ifdef HAVE_BGL
-		msg_arg->bgl_part_id    = xstrdup(job_ptr->bgl_part_id);
-#endif
+		msg_arg->select_jobinfo = select_g_copy_jobinfo(
+				job_ptr->select_jobinfo);
 		msg_arg->error_code	= SLURM_SUCCESS;
 		_srun_agent_launch(addr, job_ptr->host, 
 				RESPONSE_RESOURCE_ALLOCATION, msg_arg);

@@ -35,6 +35,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/log.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
@@ -874,10 +875,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 
 	pack16(msg->node_cnt, buffer);
 	_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
-
-#ifdef HAVE_BGL
-	packstr(msg->bgl_part_id, buffer);
-#endif
+	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
 
 static int
@@ -918,24 +916,24 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	safe_unpack16(&tmp_ptr->node_cnt, buffer);
 	if (tmp_ptr->node_cnt > 0) {
 		if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
-					     &(tmp_ptr->node_cnt), buffer))
+					     &uint16_tmp, buffer))
+			goto unpack_error;
+		if (uint16_tmp != tmp_ptr->node_cnt)
 			goto unpack_error;
 	} else
 		tmp_ptr->node_addr = NULL;
 
-#ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&tmp_ptr->bgl_part_id,  &uint16_tmp, buffer);
-#endif
+	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
+	||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
       unpack_error:
+	select_g_free_jobinfo(&tmp_ptr->select_jobinfo);
 	xfree(tmp_ptr->node_list);
 	xfree(tmp_ptr->cpus_per_node);
 	xfree(tmp_ptr->cpu_count_reps);
-#ifdef HAVE_BGL
-	xfree(tmp_ptr->bgl_part_id);
-#endif
 	xfree(tmp_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;
@@ -998,7 +996,9 @@ static int
 	safe_unpack16(&tmp_ptr->node_cnt, buffer);
 	if (tmp_ptr->node_cnt > 0) {
 		if (_unpack_slurm_addr_array(&(tmp_ptr->node_addr),
-					     &(tmp_ptr->node_cnt), buffer))
+					     &uint16_tmp, buffer))
+			goto unpack_error;
+		if (uint16_tmp != tmp_ptr->node_cnt)
 			goto unpack_error;
 	} else
 		tmp_ptr->node_addr = NULL;
@@ -1643,18 +1643,10 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		xfree(node_inx_str);
 	}
 	safe_unpack32(&job->num_procs, buffer);
-
-#ifdef HAVE_BGL
-{
-	int i;
-	safe_unpackstr_xmalloc(&job->bgl_part_id, &uint16_tmp, buffer);
-	safe_unpack16(&job->conn_type, buffer);
-	safe_unpack16(&job->rotate, buffer);
-	safe_unpack16(&job->node_use, buffer);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		safe_unpack16(&job->geometry[i], buffer);
-}
-#endif
+	
+	if (select_g_alloc_jobinfo(&job->select_jobinfo) 
+	||  select_g_unpack_jobinfo(job->select_jobinfo, buffer))
+		goto unpack_error;
 
 	safe_unpack32(&job->num_nodes, buffer);
 	safe_unpack16(&job->shared, buffer);
@@ -1691,9 +1683,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	xfree(job->req_nodes);
 	xfree(job->exc_nodes);
 	xfree(job->features);
-#ifdef HAVE_BGL
-	xfree(job->bgl_part_id);
-#endif
+	select_g_free_jobinfo(&job->select_jobinfo);
 	return SLURM_ERROR;
 }
 
@@ -1855,6 +1845,8 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
+	select_jobinfo_t jobinfo;
+
 	/* load the data values */
 	pack16(job_desc_ptr->contiguous, buffer);
 	pack16(job_desc_ptr->kill_on_node_fail, buffer);
@@ -1900,15 +1892,18 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack16(job_desc_ptr->port, buffer);
 	packstr(job_desc_ptr->host, buffer);
 
-#ifdef HAVE_BGL
-{	int i;
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		pack16(job_desc_ptr->geometry[i], buffer);		
-	pack16(job_desc_ptr->conn_type, buffer);
-	pack16(job_desc_ptr->rotate, buffer);
-	pack16(job_desc_ptr->node_use, buffer);
-}
-#endif
+	if (select_g_alloc_jobinfo (&jobinfo) == SLURM_SUCCESS) {
+		select_g_set_jobinfo(jobinfo, SELECT_DATA_GEOMETRY, 
+			job_desc_ptr->geometry);
+		select_g_set_jobinfo(jobinfo, SELECT_DATA_CONN_TYPE, 
+			&(job_desc_ptr->conn_type));
+		select_g_set_jobinfo(jobinfo, SELECT_DATA_ROTATE, 
+			&(job_desc_ptr->rotate));
+		select_g_set_jobinfo(jobinfo, SELECT_DATA_NODE_USE, 
+			&(job_desc_ptr->node_use));
+		select_g_pack_jobinfo(jobinfo, buffer);
+		select_g_free_jobinfo(&jobinfo);
+	}
 }
 
 /* _unpack_job_desc_msg
@@ -1972,20 +1967,22 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack16(&job_desc_ptr->port, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->host, &uint16_tmp, buffer);
 
-#ifdef HAVE_BGL
-{
-	int i;
-	for(i=0; i<SYSTEM_DIMENSIONS; i++)
-		safe_unpack16(&(job_desc_ptr->geometry[i]), buffer);
-	safe_unpack16(&job_desc_ptr->conn_type, buffer);
-	safe_unpack16(&job_desc_ptr->rotate, buffer);
-	safe_unpack16(&job_desc_ptr->node_use, buffer);
-}
-#endif
+	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
+	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
+		goto unpack_error;
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_GEOMETRY, job_desc_ptr->geometry);
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_CONN_TYPE, &job_desc_ptr->conn_type);
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_ROTATE, &job_desc_ptr->rotate);
+	select_g_get_jobinfo(job_desc_ptr->select_jobinfo, 
+		SELECT_DATA_NODE_USE, &job_desc_ptr->node_use);
 
 	return SLURM_SUCCESS;
 
       unpack_error:
+	select_g_free_jobinfo(&job_desc_ptr->select_jobinfo);
 	xfree(job_desc_ptr->features);
 	xfree(job_desc_ptr->name);
 	xfree(job_desc_ptr->partition);
@@ -2686,9 +2683,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	pack16(msg->envc, buffer);
 	packstr_array(msg->environment, msg->envc, buffer);
 
-#ifdef HAVE_BGL
-	packstr(msg->bgl_part_id, buffer);
-#endif
+	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
 
 static int
@@ -2739,10 +2734,9 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	safe_unpackstr_array(&launch_msg_ptr->environment,
 			     &launch_msg_ptr->envc, buffer);
 
-#ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&launch_msg_ptr->bgl_part_id, 
-		&uint16_tmp, buffer);
-#endif
+	if (select_g_alloc_jobinfo (&launch_msg_ptr->select_jobinfo)
+	||  select_g_unpack_jobinfo(launch_msg_ptr->select_jobinfo, buffer))
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 
@@ -2755,9 +2749,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	xfree(launch_msg_ptr->out);
 	xfree(launch_msg_ptr->argv);
 	xfree(launch_msg_ptr->environment);
-#ifdef HAVE_BGL
-	xfree(launch_msg_ptr->bgl_part_id);
-#endif
+	select_g_free_jobinfo(&launch_msg_ptr->select_jobinfo);
 	xfree(launch_msg_ptr);
 	*msg = NULL;
 	return SLURM_ERROR;

@@ -43,6 +43,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_jobcomp.h"
@@ -50,10 +51,10 @@
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
-#include "src/slurmctld/select_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -309,7 +310,7 @@ static int _parse_node_spec(char *in_line)
 	struct config_record *config_ptr = NULL;
 	hostlist_t addr_list = NULL, host_list = NULL;
 	char *this_node_name;
-#ifndef HAVE_BGL
+#ifndef HAVE_BGL	/* Fake node addresses for front-end */
 	char *this_node_addr;
 #endif
 
@@ -354,7 +355,7 @@ static int _parse_node_spec(char *in_line)
 		xfree(state);
 	}
 
-#ifndef HAVE_BGL
+#ifndef HAVE_BGL	/* Fake node addresses for front-end */
 	if (node_addr &&
 	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
 		error("hostlist_create error for %s: %m", node_addr);
@@ -436,7 +437,7 @@ static int _parse_node_spec(char *in_line)
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_ptr->node_state = state_val;
 			node_ptr->last_response = (time_t) 0;
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Fake node addresses for front-end */
 			if (node_addr)
 				strncpy(node_ptr->comm_name,
 					node_addr, MAX_NAME_LEN);
@@ -614,7 +615,7 @@ static int _parse_part_spec(char *in_line)
 			goto cleanup;
 		}
 		xfree(shared_str);
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* No shared nodes on Blue Gene */
 		if (shared_val != SHARED_NO) {
 			error("Illegal Shared parameter value for partition %s",
 				partition_name);

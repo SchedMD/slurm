@@ -155,18 +155,17 @@ strong_alias(hostset_within,		slurm_hostset_within);
 /* ----[ Internal Data Structures ]---- */
 
 
-#ifdef HAVE_BGL
-/* We allocate space for three digits, 
- * each with values 0 to 9 even if they are not all used */
-bool axis[10][10][10];
-int axis_min_x, axis_min_y, axis_min_z;
-int axis_max_x, axis_max_y, axis_max_z;
+#ifdef HAVE_BGL		/* logic for block node description */
+   /* We allocate space for three digits, 
+    * each with values 0 to 9 even if they are not all used */
+   bool axis[10][10][10];
+   int axis_min_x, axis_min_y, axis_min_z;
+   int axis_max_x, axis_max_y, axis_max_z;
 
-
-static void _clear_grid(void);
-static void _set_grid(unsigned long start, unsigned long end);
-static bool _test_box(void);
-#endif	/* HAVE_BGL */
+   static void _clear_grid(void);
+   static void _set_grid(unsigned long start, unsigned long end);
+   static bool _test_box(void);
+#endif
 
 /* hostname type: A convenience structure used in parsing single hostnames */
 struct hostname_components {
@@ -2182,7 +2181,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
 	return len;
 }
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* logic for block node description */
 static void
 _clear_grid(void)
 {
@@ -2256,7 +2255,7 @@ _test_box(void)
 
 	return true;
 }
-#endif	/* HAVE_BGL */
+#endif
 
 size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 {
@@ -2267,7 +2266,7 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
   
 	LOCK_HOSTLIST(hl);
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* logic for block node description */
 	if (hl->hr[0]->width != 3)
 		goto notbox;
 	_clear_grid();
@@ -2285,7 +2284,7 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	box = true;
 
   notbox:
-#endif	/* HAVE_BGL */
+#endif
 
 	if (!box) {
 		i=0;

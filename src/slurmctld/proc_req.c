@@ -46,6 +46,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
@@ -414,9 +415,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
 		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
-#ifdef HAVE_BGL
-		alloc_msg.bgl_part_id    = xstrdup(job_ptr->bgl_part_id);
-#endif
+		alloc_msg.select_jobinfo = select_g_copy_jobinfo(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_write_lock);
 
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
@@ -428,9 +427,7 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_addr);
 		xfree(alloc_msg.node_list);
-#ifdef HAVE_BGL
-		xfree(alloc_msg.bgl_part_id);
-#endif
+		select_g_free_jobinfo(&alloc_msg.select_jobinfo);
 		schedule_job_save();	/* has own locks */
 		schedule_node_save();	/* has own locks */
 	} else {	/* allocate error */
@@ -499,7 +496,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 
 	req_step_msg.job_id     = job_ptr->job_id;
 	req_step_msg.user_id    = job_desc_msg->user_id;
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Only run on front-end node */
 	req_step_msg.node_count = 1;
 	req_step_msg.cpu_count  = NO_VAL;
 #else
@@ -962,7 +959,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* only root allowed to run job steps */
 	/* non-super users not permitted to run job steps on BGL */
 	if (!_is_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u",
@@ -1137,7 +1134,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		lock_slurmctld(job_write_lock);
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* operate only on front-end */
 		error_code = validate_nodes_via_front_end(
 					node_reg_stat_msg->job_count,
 					node_reg_stat_msg->job_id,
@@ -1240,15 +1237,14 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = job_ptr->node_cnt;
 		alloc_msg.node_list      = xstrdup(job_ptr->nodes);
 		alloc_msg.num_cpu_groups = job_ptr->num_cpu_groups;
-#ifdef HAVE_BGL
-		alloc_msg.bgl_part_id    = xstrdup(job_ptr->bgl_part_id);
-#endif
+		alloc_msg.select_jobinfo = select_g_copy_jobinfo(job_ptr->select_jobinfo);
 		unlock_slurmctld(job_read_lock);
 
 		response_msg.msg_type    = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data        = &alloc_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		select_g_free_jobinfo(&alloc_msg.select_jobinfo);
 		xfree(alloc_msg.cpu_count_reps);
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_addr);

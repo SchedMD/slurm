@@ -44,12 +44,15 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
@@ -418,18 +421,8 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
-
-#ifdef HAVE_BGL
-{
-	int i;
-	packstr(dump_job_ptr->bgl_part_id, buffer);
-	pack16(dump_job_ptr->conn_type, buffer);
-	pack16(dump_job_ptr->rotate, buffer);
-	pack16(dump_job_ptr->node_use, buffer);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		pack16(dump_job_ptr->geometry[i], buffer);
-}
-#endif
+	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo,
+		buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -461,14 +454,10 @@ static int _load_job_state(Buf buffer)
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *host = NULL, *account = NULL;
-#ifdef HAVE_BGL
-	int i;
-	uint16_t conn_type, node_use, rotate, geometry[SYSTEM_DIMENSIONS];
-	char *bgl_part_id;
-#endif
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
+	select_jobinfo_t select_jobinfo = NULL;
 
 	safe_unpack32(&job_id, buffer);
 	safe_unpack32(&user_id, buffer);
@@ -496,39 +485,11 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 
-#ifdef HAVE_BGL
-	safe_unpackstr_xmalloc(&bgl_part_id, &name_len, buffer);
-	safe_unpack16(&conn_type, buffer);
-	safe_unpack16(&rotate, buffer);
-	safe_unpack16(&node_use, buffer);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		safe_unpack16(&geometry[i], buffer);
-#endif
+	if (select_g_alloc_jobinfo(&select_jobinfo)
+	||  select_g_unpack_jobinfo(select_jobinfo, buffer))
+		goto unpack_error;
 
 	/* validity test as possible */
-#ifdef HAVE_BGL
-	if ((conn_type != RM_MESH)
-	&&  (conn_type != RM_TORUS)
-	&&  (conn_type != RM_NAV)) {
-		error("Invalid data for job %u: conn_type=%u",
-			job_id, conn_type);
-		goto unpack_error;
-	}
-
-	if (rotate > 1) {
-		error("Invalid data for job %u: rotate=%u",
-			job_id, rotate);
-		goto unpack_error;
-	}
-
-	if ((node_use != RM_VIRTUAL)
-	&&  (node_use != RM_COPROCESSOR)) {
-		error("Invalid data for job %u: node_use=%u",
-			job_id, node_use);
-		goto unpack_error;
-	}
-#endif
-
 	if (((job_state & (~JOB_COMPLETING)) >= JOB_END) || 
 	    (batch_flag > 1)) {
 		error("Invalid data for job %u: job_state=%u batch_flag=%u",
@@ -608,14 +569,8 @@ static int _load_job_state(Buf buffer)
 	job_ptr->batch_flag        = batch_flag;
 	job_ptr->port              = port;
 	job_ptr->host              = host;
-#ifdef HAVE_BGL
-	job_ptr->bgl_part_id       = bgl_part_id;
-	job_ptr->conn_type         = conn_type;
-	job_ptr->rotate            = rotate;
-	job_ptr->node_use          = node_use;
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		job_ptr->geometry[i] = geometry[i];
-#endif
+	job_ptr->select_jobinfo = select_jobinfo;
+
 	build_node_details(job_ptr);	/* set: num_cpu_groups, cpus_per_node, 
 					 *	cpu_count_reps, node_cnt, and
 					 *	node_addr */
@@ -638,6 +593,7 @@ static int _load_job_state(Buf buffer)
 	xfree(name);
 	xfree(alloc_node);
 	xfree(account);
+	select_g_free_jobinfo(&select_jobinfo);
 	return SLURM_FAILURE;
 }
 
@@ -1055,6 +1011,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
 	long kill_on_node_fail, shared, task_dist, immediate, dependency;
+	char buf[100];
 
 	if (job_specs == NULL)
 		return;
@@ -1149,43 +1106,10 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->host, job_specs->port,
 	       dependency, job_specs->account);
 
-#ifdef HAVE_BGL
-{
-	char *conn_type, *rotate, *node_use;
-	int geometry[SYSTEM_DIMENSIONS];
-
-	if (job_specs->conn_type == RM_MESH)
-		conn_type = "MESH";
-	else if (job_specs->conn_type == RM_TORUS)
-		conn_type = "TORUS";
-	else 
-		conn_type = "NAV";
-
-	if (job_specs->rotate == 0)
-		rotate = "NO";
-	else
-		rotate = "YES";
-
-	if (job_specs->node_use == RM_VIRTUAL)
-		node_use = "VIRTUAL";
-	else
-		node_use = "COPROCESSOR";
-
-	if (job_specs->geometry[0] == (uint16_t) NO_VAL) {
-		geometry[0] = -1;
-		geometry[1] = -1;
-		geometry[2] = -1;
-	} else {
-		geometry[0] = job_specs->geometry[0];
-		geometry[1] = job_specs->geometry[1];
-		geometry[2] = job_specs->geometry[2];
-	}
-
-	debug3("   conn_type=%s rotate=%s node_use=%s geometry=%d,%d,%d",
-		conn_type, rotate, node_use,
-		geometry[0], geometry[1], geometry[2]);
-}
-#endif
+	select_g_sprint_jobinfo(job_specs->select_jobinfo, 
+		buf, sizeof(buf), SELECT_PRINT_MIXED);
+	if (buf[0] != '\0')
+		debug3("   %s", buf);
 }
 
 
@@ -1643,7 +1567,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if (job_desc->min_nodes == NO_VAL)
 		job_desc->min_nodes = 1;
-#ifdef SYSTEM_DIMENSIONS
+#if SYSTEM_DIMENSIONS
 	if ((job_desc->geometry[0] != (uint16_t) NO_VAL)
 	&&  (job_desc->geometry[0] != 0)) {
 		int i, tot = 1;
@@ -2154,20 +2078,21 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
-#ifdef HAVE_BGL
-	if (SYSTEM_DIMENSIONS
-	&&  (job_desc->geometry[0] != (uint16_t) NO_VAL)) {
-		int i;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++)
-			job_ptr->geometry[i] = job_desc->geometry[i];
-	}
-	if (job_desc->conn_type != (uint16_t) NO_VAL)
-		job_ptr->conn_type = job_desc->conn_type;
-	if (job_desc->rotate != (uint16_t) NO_VAL)
-		job_ptr->rotate = job_desc->rotate;
-	if (job_desc->node_use != (uint16_t) NO_VAL)
-		job_ptr->node_use = job_desc->node_use;
-#endif
+
+	if (select_g_alloc_jobinfo(&job_ptr->select_jobinfo))
+		return SLURM_ERROR;
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_GEOMETRY, 
+		job_desc->geometry);
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_CONN_TYPE, 
+		&job_desc->conn_type);
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_ROTATE, 
+		&job_desc->rotate);
+	select_g_set_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_NODE_USE, 
+		&job_desc->node_use);
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2353,17 +2278,20 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
-#ifdef HAVE_BGL 
+
+#if SYSTEM_DIMENSIONS
 	if (job_desc_msg->geometry[0] == (uint16_t) NO_VAL) {
-		int i;	/* geometry doesn't matter */
+		int i;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			job_desc_msg->geometry[i] = 0;
 	}
+#endif
 	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
 		job_desc_msg->conn_type = RM_NAV;  /* try TORUS, then MESH */
+	if (job_desc_msg->node_use == (uint16_t) NO_VAL)
+		job_desc_msg->node_use = RM_COPROCESSOR;
 	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
 		job_desc_msg->rotate = true;    /* default to allow rotate */
-#endif
 
 	return SLURM_SUCCESS;
 }
@@ -2403,9 +2331,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->node_addr);
 	xfree(job_ptr->host);
 	xfree(job_ptr->account);
-#ifdef HAVE_BGL
-	xfree(job_ptr->bgl_part_id);
-#endif
+	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_all_step_records(job_ptr);
 		list_destroy(job_ptr->step_list);
@@ -2556,18 +2482,9 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
 	pack32(dump_job_ptr->num_procs, buffer);
+	
+	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo, buffer);
 
-#ifdef HAVE_BGL
-{
-	int i;
-	packstr(dump_job_ptr->bgl_part_id, buffer);
-	pack16(dump_job_ptr->conn_type, buffer);
-	pack16(dump_job_ptr->rotate, buffer);
-	pack16(dump_job_ptr->node_use, buffer);
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		pack16(dump_job_ptr->geometry[i], buffer);
-}
-#endif
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
 		_pack_job_details(detail_ptr, buffer);
@@ -3142,26 +3059,33 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			job_ptr->dependency = job_specs->dependency;
 	}
 
-#ifdef HAVE_BGL
+#if SYSTEM_DIMENSIONS
 	if (job_specs->geometry[0] != (uint16_t) NO_VAL) {
 		int i, tot = 1;
-		for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
 			tot *= job_specs->geometry[i];
-			job_ptr->geometry[i] = job_specs->geometry[i];
-		}
 		detail_ptr->min_nodes = tot;
 		detail_ptr->max_nodes = tot;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_GEOMETRY,
+			job_specs->geometry);
 	}
+#endif
 
 	if (job_specs->conn_type != (uint16_t) NO_VAL)
-		job_ptr->conn_type = job_specs->conn_type;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_CONN_TYPE,
+			&job_specs->conn_type);
 
 	if (job_specs->rotate != (uint16_t) NO_VAL)
-		job_ptr->rotate = job_specs->rotate;
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_ROTATE,
+			&job_specs->rotate);
 
 	if (job_specs->node_use != (uint16_t) NO_VAL)
-		job_ptr->node_use = job_specs->node_use;
-#endif
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_NODE_USE,
+			&job_specs->node_use);
 
 	return error_code;
 }
@@ -3508,8 +3432,8 @@ _xmit_new_end_time(struct job_record *job_ptr)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->node_count++;
-#ifdef HAVE_BGL
-		break;	/* only do one front-end node */
+#ifdef HAVE_BGL		/* operation only on front-end node */
+		break;
 #endif
 	}
 
@@ -3531,15 +3455,15 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 		uint32_t return_code)
 {
 	struct job_record  *job_ptr = find_job_record(job_id);
-#ifdef HAVE_BGL
-	int i;
-	struct node_record *node_ptr;
-#endif
 
 	if (job_ptr == NULL)
 		return true;
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* only front-end node */
+{
+	int i;
+	struct node_record *node_ptr;
+
 	if (return_code)
 		error("Epilog error on %s, setting DOWN", 
 			job_ptr->nodes);
@@ -3552,6 +3476,7 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 		else
 			make_node_idle(node_ptr, job_ptr);
 	}
+}
 #else
 	if (return_code) {
 		error("Epilog error on %s, setting DOWN", node_name);
