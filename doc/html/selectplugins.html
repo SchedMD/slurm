@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="26 August 2004">
+<meta name="LLNLRandRdate" content="31 August 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -90,6 +90,8 @@ if (<i>select_p_state_restor)</i>() != SLURM_SUCCESS)
 
 slurmctld reads the rest of its configuration and state information
 if (<i>select_p_node_init</i>() != SLURM_SUCCESS)
+   abort
+if (<i>select_p_part_init</i>() != SLURM_SUCCESS)
    abort
 
 wait for job 
@@ -176,6 +178,17 @@ of node data records.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
+<p class="commandline">int select_p_part_init (List part_list);</p>
+<p style="margin-left:.2in"><b>Description</b>: Note the initialization of the partition record data 
+structure. This function is called when the partition records are initially established and again 
+when any partition configurations change. </p>
+<p style="margin-left:.2in"><b>Arguments</b>:
+<span class="commandline"> part_list</span>&nbsp;&nbsp;&nbsp;(input) list of partition 
+record entries. Note that some of these partitions may have no associated nodes. Also 
+consider that nodes can be removed from one partition and added to a different partition.</p>
+<p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
+the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h4>Job-Specific Node Selection Functions</h4>
@@ -257,7 +270,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 26 August 2004</p></td>
+Last modified 31 August 2004</p></td>
 </tr>
 </table>
 </td>

@@ -39,6 +39,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/slurmctld/slurmctld.h"
 
@@ -117,6 +118,12 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	error("select/bluegene plugin not yet functional");
 	return SLURM_ERROR;
+}
+
+
+extern int select_p_part_init(List part_list)
+{
+	return SLURM_SUCCESS;
 }
 
 /*

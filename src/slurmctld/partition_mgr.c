@@ -48,6 +48,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/select_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -810,8 +811,11 @@ int update_part(update_part_msg_t * part_desc)
 		}
 	}
 
-	if (error_code == SLURM_SUCCESS)
+	if (error_code == SLURM_SUCCESS) {
 		reset_job_priority();	/* free jobs */
+		if (select_g_part_init(part_list) != SLURM_SUCCESS )
+			error("failed to update node selection plugin state");
+	}
 
 	return error_code;
 }

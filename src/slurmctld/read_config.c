@@ -885,7 +885,11 @@ int read_slurm_conf(int recover)
 #endif
 	if (select_g_node_init(node_record_table_ptr, node_record_count)
 			!= SLURM_SUCCESS ) {
-		error("failed to restore node selection plugin state");
+		error("failed to initialize node selection plugin state");
+		abort();
+	}
+	if (select_g_part_init(part_list) != SLURM_SUCCESS ) {
+		error("failed to initialize node selection plugin state");
 		abort();
 	}
 	(void) _sync_nodes_to_comp_job(); /* must follow select_g_node_init() */
