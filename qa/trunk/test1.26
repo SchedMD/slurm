@@ -84,12 +84,12 @@ expect {
 	}
 	-re "error: .*try again" {
 		send_user "Can't avoid this possible error\n"
-		set host1 $host0
+		set host_1 $host_0
 		exp_continue
 	}
 	-re "error: .*already in shared memory" {
 		send_user "Can't avoid this possible error\n"
-		set host1 $host0
+		set host_1 $host_0
 		exp_continue
 	}
 	-re "error: .*exit code 1" {
