@@ -100,7 +100,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		if (_rpc_ping(msg, cli) == SLURM_SUCCESS) {
 			/* Then initiate a separate node registration */
 			slurm_free_node_registration_status_msg(msg->data);
-			send_registration_msg();
+			send_registration_msg(SLURM_SUCCESS);
 		}
 		break;
 	case REQUEST_PING:
@@ -235,6 +235,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_send_rc_msg(msg, retval);
 	if ((rc == SLURM_SUCCESS) && (retval == SLURM_SUCCESS))
 		save_cred_state(conf->cred_state_list);
+	if (retval == ESLURMD_PROLOG_FAILED)
+		send_registration_msg(retval);	/* slurmctld to make node DOWN */
 }
 
 

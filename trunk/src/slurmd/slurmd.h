@@ -85,9 +85,10 @@ typedef struct slurmd_config {
 
 slurmd_conf_t * conf;
 
-/* Send node registration message to controller
+/* Send node registration message with status to controller
+ * IN status - same values slurm error codes (for node shutdown)
  */
-extern int send_registration_msg(void);
+extern int send_registration_msg(uint32_t status);
 
 /*
  * save_cred_state - save the current credential list to a file
