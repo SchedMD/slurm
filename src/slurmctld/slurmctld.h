@@ -89,7 +89,7 @@
 /* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite 
  * any RPC activity. This will catch any state transisions that may 
  * have otherwise been missed */
-#define	PERIODIC_SCHEDULE	30
+#define	PERIODIC_SCHEDULE	60
 
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
@@ -628,6 +628,14 @@ extern bool job_epilog_complete(uint32_t job_id, char *node_name,
 
 /* job_fini - free all memory associated with job records */
 extern void job_fini (void);
+
+/*
+ * job_is_completing - Determine if jobs are in the process of completing.
+ * RET - True of any job is in the process of completing
+ * NOTE: This function can reduce resource fragmentation, which is a 
+ * critical issue on Elan interconnect based systems.
+ */
+extern bool job_is_completing(void);
 
 /* 
  * job_signal - signal the specified job
