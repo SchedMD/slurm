@@ -16,7 +16,9 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/slurmd/circular_buffer.o \
 	$(top_srcdir)/src/slurmd/credential_utils.o \
 	$(top_srcdir)/src/slurmd/signature_utils.o \
-	$(top_srcdir)/src/slurmd/io.o \
+	$(top_srcdir)/src/slurmd/threaded_io.o \
+	$(top_srcdir)/src/slurmd/reconnect_utils.o \
+	$(top_srcdir)/src/slurmd/io_threads.o \
 	$(top_srcdir)/src/slurmd/pipes.o \
 	$(SSL_LIBS) \
 	$(interconnect_lib)
