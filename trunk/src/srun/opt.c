@@ -1333,6 +1333,27 @@ print_commandline()
 	return xstrdup(buf);
 }
 
+static char *
+print_geometry()
+{
+	int i;
+	char buf[32], *rc = NULL;
+
+	if ((SYSTEM_DIMENSIONS == 0)
+	||  (opt.geometry[0] < 0))
+		return NULL;
+
+	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+		if (i > 0)
+			snprintf(buf, sizeof(buf), "x%u", opt.geometry[i]);
+		else
+			snprintf(buf, sizeof(buf), "%u", opt.geometry[i]);
+		xstrcat(rc, buf);
+	}
+
+	return rc;
+}
+
 #define tf_(b) (b == true) ? "true" : "false"
 
 static void _opt_list()
@@ -1379,6 +1400,17 @@ static void _opt_list()
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
+	if (opt.conn_type >= 0)
+		info("conn_type      : %u", opt.conn_type);
+	str = print_geometry();
+	info("geometry       : %s", str);
+	xfree(str);
+	if (opt.node_use >= 0)
+		info("node_use       : %u", opt.node_use);
+	if (opt.no_rotate)
+		info("rotate         : no");
+	else
+		info("rotate         : yes");
 	str = print_commandline();
 	info("remote command : `%s'", str);
 	xfree(str);
