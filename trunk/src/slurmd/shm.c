@@ -415,7 +415,7 @@ shm_delete_step(uint32_t jobid, uint32_t stepid)
 		_shm_unlock();
 		slurm_seterrno_ret(ESRCH);
 	}
-	debug3("shm: found step %d.%d at %d", jobid, stepid, i);
+	debug3("shm: found step %u.%u at %d", jobid, stepid, i);
 	_shm_clear_step(&slurmd_shm->step[i]); 
 	_shm_unlock();
 	return 0;
@@ -471,7 +471,7 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 		}
 
 		if (kill(t->pid, signo) < 0) {
-			error ("kill %d.%d task %d pid %ld: %m", 
+			error ("kill %u.%u task %d pid %ld: %m", 
 			       jobid, stepid, t->id, (long)t->pid);
 			retval = errno;
 		}
@@ -784,7 +784,7 @@ shm_add_task(uint32_t jobid, uint32_t stepid, task_t *task)
 	} 
 	s = &slurmd_shm->step[i];
 
-	debug3("adding task %d to step %d.%d", task->id, jobid, stepid);
+	debug3("adding task %d to step %u.%u", task->id, jobid, stepid);
 
 	if (_shm_find_task_in_step(s, task->id)) {
 		_shm_unlock();
