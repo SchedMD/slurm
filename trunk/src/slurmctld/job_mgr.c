@@ -2615,7 +2615,7 @@ _signal_job_on_node(uint32_t job_id, uint16_t step_id, int signum,
 	memcpy(agent_info->slurm_addr, 
 	       &node_ptr->slurm_addr, sizeof(slurm_addr));
 	agent_info->node_names	= xmalloc(MAX_NAME_LEN);
-	strncpy(agent_info->node_names, node_ptr->comm_name, MAX_NAME_LEN);
+	strncpy(agent_info->node_names, node_ptr->name, MAX_NAME_LEN);
 	agent_info->msg_type	= REQUEST_KILL_TASKS;
 	agent_info->msg_args	= signal_req;
 
