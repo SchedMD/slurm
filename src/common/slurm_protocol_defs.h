@@ -331,6 +331,11 @@ typedef struct batch_job_launch_msg {
 				 *   name=value pairs, one per line */
 } batch_job_launch_msg_t;
 
+typedef struct batch_launch_response_msg {
+	uint32_t job_id;
+	uint32_t sid;		/* session id of master batch job */
+} batch_launch_response_msg_t;
+
 typedef struct job_id_request_msg {
 	uint32_t job_pid;	/* local process_id of a job */
 } job_id_request_msg_t;
@@ -403,6 +408,8 @@ slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
 
 void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
 void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
+
+void inline slurm_free_batch_resp_msg(batch_launch_response_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
