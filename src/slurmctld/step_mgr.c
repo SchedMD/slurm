@@ -281,7 +281,6 @@ int
 pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len) 
 {
 	char node_inx_ptr[BUF_SIZE];
-	int len;
 
 	if (dump_step_ptr->job_ptr)
 		pack32 (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
@@ -325,7 +324,7 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 int
 step_create (struct step_specs *step_specs)
 {
-	int error_code, nprocs;
+	int error_code;
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 #ifdef HAVE_LIBELAN3
