@@ -132,16 +132,19 @@ main(int argc, char * argv[]) {
 
 	/* JobSubmit:  Submit job to execute */
 	} else if (strncmp("JobSubmit",   In_Line,  9) == 0) {	
+	    printf("\n\nJob submitted for execution\n");
 	    continue;
 /* TBD */
 
 	/* JobWillRun:   Will job run if submitted */
 	} else if (strncmp("JobWillRun",  In_Line, 10) == 0) {	
+	    printf("\n\nTesting if job could run\n");
 	    continue;
 /* TBD */
 
 	/* NodeConfig: Process node configuration state on check-in */
 	} else if ((strncmp("NodeConfig",  In_Line, 10) == 0) && Msg_From_Root()) {
+	    printf("\n\nNode check-in: %s\n", In_Line);
 	    Start_Time = clock();
 	    NodeName = NULL;
 	    Error_Code  = Load_String (&NodeName,   "NodeName=",   In_Line);

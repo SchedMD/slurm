@@ -377,6 +377,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
     Config_Point->Weight = Default_Config_Record.Weight;
     Config_Point->Nodes = NULL;
     Config_Point->NodeBitMap = NULL;
+    Config_Point->Magic = CONFIG_MAGIC;
     if (Default_Config_Record.Feature) {
 	Config_Point->Feature = (char *)malloc(strlen(Default_Config_Record.Feature)+1);
 	if (Config_Point->Feature == (char *)NULL) {
@@ -468,6 +469,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Co
     Node_Record_Point->CPUs 		= Config_Point->CPUs;
     Node_Record_Point->RealMemory  	= Config_Point->RealMemory;
     Node_Record_Point->TmpDisk  	= Config_Point->TmpDisk;
+    Node_Record_Point->Magic    	= NODE_MAGIC;
     Last_BitMap_Update = time(NULL);
     return Node_Record_Point;
 } /* Create_Node_Record */
@@ -575,6 +577,16 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     /* Write node records */
     for (inx=0; inx<Node_Record_Count; inx++) {
+ 	if ((Node_Record_Table_Ptr[inx].Magic != NODE_MAGIC) ||
+	    (Node_Record_Table_Ptr[inx].Config_Ptr->Magic != CONFIG_MAGIC)) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Dump_Node: Data integrity is bad\n");
+#else
+	    syslog(LOG_ALERT, "Dump_Node: Data integrity is bad\n");
+#endif
+ 	    exit(EINVAL);
+ 	} /* if */
+
 	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeName", 
 		Node_Record_Table_Ptr[inx].Name, 
 		sizeof(Node_Record_Table_Ptr[inx].Name))) goto cleanup;

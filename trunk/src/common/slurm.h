@@ -48,10 +48,13 @@ struct Job_Record {
     int MaxTime;		/* -1 if unlimited */
 };
 
-/* NOTE: Change CONFIG_STRUCT_VERSION value whenever the contents of 
+/* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of 
  * "struct Config_Record" or "struct Node_Record" change with respect to the API structures */
-#define CONFIG_STRUCT_VERSION 1
+#define NODE_STRUCT_VERSION 1
+#define CONFIG_MAGIC 'C'
+#define NODE_MAGIC   'N'
 struct Config_Record {
+    char Magic;			/* Magic cookie to test data integrity */
     int CPUs;			/* Count of CPUs running on the node */
     int RealMemory;		/* Megabytes of real memory on the node */
     int TmpDisk;		/* Megabytes of total storage in TMP_FS file system */
@@ -81,6 +84,7 @@ extern char *Node_State_String[];
 extern time_t Last_BitMap_Update;	/* Time of last node creation or deletion */
 extern time_t Last_Node_Update;		/* Time of last update to Node Records */
 struct Node_Record {
+    char Magic;				/* Magic cookie to test data integrity */
     char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
     int NodeState;			/* State of the node, see Node_State above, negative if down */
     time_t LastResponse;		/* Last response from the node */
@@ -101,8 +105,10 @@ extern struct 	Node_Record Default_Node_Record;
 /* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" 
  * change with respect to the API structures */
 #define PART_STRUCT_VERSION 1
+#define PART_MAGIC 'P'
 extern time_t Last_Part_Update;		/* Time of last update to Part Records */
 struct Part_Record {
+    char Magic;			/* Magic cookie to test data integrity */
     char Name[MAX_NAME_LEN];	/* Name of the partition */
     int MaxTime;		/* -1 if unlimited */
     int MaxNodes;		/* -1 if unlimited */
@@ -379,12 +385,14 @@ extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *E
  *        Buffer_Size - Byte size of Buffer
  *        Tag - Unique identification for information
  *        Value - Pointer to value to be loaded with POINTER TO ARRAY, NOT THE VALUE
- * Output: Buffer_Offset - Incremented by Value_Size
+ *        Size - Size of Value in bytes
+ * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
  *         Value - Set to the buffer contents or location
+ *         Size - Set to the byte size of Value
  *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
  */
-extern int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
-		char *Tag, void **Value);
+int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
+		char *Tag, void **Value, int* Size);
 
 /*
  * Read_SLURM_Conf - Load the SLURM configuration from the specified file 
