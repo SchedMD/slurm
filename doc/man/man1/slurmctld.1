@@ -13,8 +13,11 @@ server fails.
 OPTIONS
 .TP
 \fB-d\fR
-Execute \fBslurmctld\fR as a daemon. By default \fBslurmctld\fR stays in 
-the foreground and prints log messages to stdout.
+Execute \fBslurmctld\fR as a daemon (in the background) with logging to syslog.
+.TP
+\fB-D\fR
+Debug mode. Execute \fBslurmctld\fR in the foreground with logging to stdout. 
+(Current default).
 .TP
 \fB-e <errlev>\fR
 Set stderr logging to the specified level..TP
