@@ -471,8 +471,9 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
-#ifdef HAVE_BGL
-	/* non-super users not permitted to run job steps on BGL */
+#ifdef HAVE_FRONT_END
+	/* Non-super users not permitted to run job steps on front-end.
+	 * A single slurmd can not handle a heavy load. */
 	if (!_is_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u", 
 			(unsigned int) uid);
@@ -496,7 +497,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 
 	req_step_msg.job_id     = job_ptr->job_id;
 	req_step_msg.user_id    = job_desc_msg->user_id;
-#ifdef HAVE_BGL		/* Only run on front-end node */
+#ifdef HAVE_FRONT_END		/* Execute only on front-end */
 	req_step_msg.node_count = 1;
 	req_step_msg.cpu_count  = NO_VAL;
 #else
@@ -959,8 +960,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		return;
 	}
 
-#ifdef HAVE_BGL		/* only root allowed to run job steps */
-	/* non-super users not permitted to run job steps on BGL */
+#ifdef HAVE_FRONT_END
+	/* Non-super users not permitted to run job steps on front-end.
+	 * A single slurmd can not handle a heavy load. */
 	if (!_is_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u",
 			(unsigned int) uid);
@@ -1134,7 +1136,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		/* do RPC call */
 		lock_slurmctld(job_write_lock);
-#ifdef HAVE_BGL		/* operate only on front-end */
+#ifdef HAVE_FRONT_END		/* Operates only on front-end */
 		error_code = validate_nodes_via_front_end(
 					node_reg_stat_msg->job_count,
 					node_reg_stat_msg->job_id,

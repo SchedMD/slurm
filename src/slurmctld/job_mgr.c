@@ -3428,7 +3428,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->node_count++;
-#ifdef HAVE_BGL		/* operation only on front-end node */
+#ifdef HAVE_FRONT_END		/* operate only on front-end node */
 		break;
 #endif
 	}
@@ -3455,7 +3455,7 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if (job_ptr == NULL)
 		return true;
 
-#ifdef HAVE_BGL		/* only front-end node */
+#ifdef HAVE_FRONT_END		/* operate only on front-end node */
 {
 	int i;
 	struct node_record *node_ptr;

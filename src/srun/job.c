@@ -476,7 +476,7 @@ _job_create_internal(allocation_info_t *info)
 
 	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);
-#ifdef HAVE_BGL		/* Run only on front-end */
+#ifdef HAVE_FRONT_END
 	/* All jobs execute through front-end on Blue Gene/L.
 	 * Normally we would not permit execution of job steps, 
 	 * but can fake it by just allocating all tasks to 

@@ -283,7 +283,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->node_count++;
-#ifdef HAVE_BGL			/* only do the one front-end node */
+#ifdef HAVE_FRONT_END		/* Operate only on front-end */
 		break;
 #endif
 	}

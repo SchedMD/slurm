@@ -310,7 +310,7 @@ static int _parse_node_spec(char *in_line)
 	struct config_record *config_ptr = NULL;
 	hostlist_t addr_list = NULL, host_list = NULL;
 	char *this_node_name;
-#ifndef HAVE_BGL	/* Fake node addresses for front-end */
+#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
 	char *this_node_addr;
 #endif
 
@@ -355,7 +355,7 @@ static int _parse_node_spec(char *in_line)
 		xfree(state);
 	}
 
-#ifndef HAVE_BGL	/* Fake node addresses for front-end */
+#ifndef HAVE_FRONT_END	/* Fake node addresses for front-end */
 	if (node_addr &&
 	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
 		error("hostlist_create error for %s: %m", node_addr);
@@ -437,7 +437,7 @@ static int _parse_node_spec(char *in_line)
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_ptr->node_state = state_val;
 			node_ptr->last_response = (time_t) 0;
-#ifdef HAVE_BGL		/* Fake node addresses for front-end */
+#ifdef HAVE_FRONT_END	/* Fake node addresses for front-end */
 			if (node_addr)
 				strncpy(node_ptr->comm_name,
 					node_addr, MAX_NAME_LEN);
