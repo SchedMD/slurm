@@ -93,14 +93,17 @@ static void  _run_job_script(job_t *job);
 static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
 
-
 #ifdef HAVE_LIBELAN3
 #  include "src/common/qsw.h"
    static void _qsw_standalone(job_t *job);
 #endif
 
-int
-srun(int ac, char **av)
+
+#if HAVE_TOTALVIEW
+int srun(int ac, char **av)
+#else
+int main(int ac, char **av)
+#endif  /* HAVE_TOTALVIEW */
 {
 	allocation_resp *resp;
 	job_t *job;
