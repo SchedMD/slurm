@@ -1,11 +1,12 @@
 /* 
- * Node_Mgr.c - Manage the node records of SLURM
+ * node_mgr.c - Manage the node records of SLURM
  * See slurm.h for documentation on external functions and data structures
  *
  * Author: Moe Jette, jette@llnl.gov
  */
 
 #define DEBUG_SYSTEM 1
+#define PROTOTYPE_API 1
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -19,7 +20,7 @@
 #include "list.h"
 #include "slurm.h"
 
-#define NODE_BUF_SIZE 	1024
+#define BUF_SIZE 	1024
 #define SEPCHARS 	" \n\t"
 
 List 	Config_List = NULL;		/* List of Config_Record entries */
@@ -38,6 +39,16 @@ void	Dump_Hash();
 int 	Hash_Index(char *name);
 void 	Rehash();
 
+#if PROTOTYPE_API
+char *Node_API_Buffer = NULL;
+int  Node_API_Buffer_Size = 0;
+
+int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
+int Load_Node(char *Buffer, int Buffer_Size);
+int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs, 
+	int *RealMemory, int *TmpDisk, int *Weight, char **Features);
+#endif
+
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
@@ -48,9 +59,16 @@ main(int argc, char * argv[]) {
     struct Node_Record *Node_Ptr;
     char *Format;
     int Start_Inx, End_Inx, Count_Inx;
+    char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
+    char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
+    int State, CPUs, RealMemory, TmpDisk, Weight;
+    char *Features;
+    char *Dump;
+    int Dump_Size;
+    time_t Update_Time;
 
     /* Bitmap tests */
-    Node_Record_Count = 123;
+    Node_Record_Count = 97;
     size = (Node_Record_Count + 7) / 8;
     Map1 = malloc(size);
     memset(Map1, 0, size);
@@ -65,13 +83,13 @@ main(int argc, char * argv[]) {
     Map3 = BitMapCopy(Map1);
     BitMapClear(Map2, 23);
     BitMapOR(Map3, Map2);
-    if (BitMapValue(Map3, 23) != 1) printf("BitMap Error 1\n");
-    if (BitMapValue(Map3, 71) != 1) printf("BitMap Error 2\n");
-    if (BitMapValue(Map3, 93) != 0) printf("BitMap Error 3\n");
+    if (BitMapValue(Map3, 23) != 1) printf("ERROR: BitMap Error 1\n");
+    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMap Error 2\n");
+    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMap Error 3\n");
     BitMapAND(Map3, Map2);
-    if (BitMapValue(Map3, 23) != 0) printf("BitMap Error 4\n");
-    if (BitMapValue(Map3, 71) != 1) printf("BitMap Error 5\n");
-    if (BitMapValue(Map3, 93) != 0) printf("BitMap Error 6\n");
+    if (BitMapValue(Map3, 23) != 0) printf("ERROR: BitMap Error 4\n");
+    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMap Error 5\n");
+    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMap Error 6\n");
     Out_Line = BitMapPrint(Map3);
     printf("BitMapPrint #3 shows %s\n", Out_Line);
     free(Out_Line);
@@ -79,51 +97,91 @@ main(int argc, char * argv[]) {
 
     /* Now check out configuration and node structure functions */
     Error_Code = Init_Node_Conf();
-    if (Error_Code) printf("Init_Node_Conf error %d\n", Error_Code);
-    Default_Config_Record.Weight = 345;
+    if (Error_Code) printf("ERROR: Init_Node_Conf error %d\n", Error_Code);
+    Default_Config_Record.CPUs       = 12;
+    Default_Config_Record.RealMemory = 345;
+    Default_Config_Record.TmpDisk    = 67;
+    Default_Config_Record.Weight     = 89;
     Default_Node_Record.LastResponse = (time_t)678;
 
     Config_Ptr = Create_Config_Record(&Error_Code);
-    if (Error_Code) printf("Create_Config_Record error %d\n", Error_Code);
-    if (Config_Ptr->Weight != 345) printf("Config defaults not set\n");
+    if (Error_Code) printf("ERROR: Create_Config_Record error %d\n", Error_Code);
+    if (Config_Ptr->CPUs != 12)        printf("ERROR: Config default CPUs not set\n");
+    if (Config_Ptr->RealMemory != 345) printf("ERROR: Config default RealMemory not set\n");
+    if (Config_Ptr->TmpDisk != 67)     printf("ERROR: Config default TmpDisk not set\n");
+    if (Config_Ptr->Weight != 89)      printf("ERROR: Config default Weight not set\n");
+    Config_Ptr->Feature = "for_lx01";
     Node_Ptr   = Create_Node_Record(&Error_Code);
-    if (Error_Code) printf("Create_Node_Record error %d\n", Error_Code);
+    if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
     strcpy(Node_Ptr->Name, "lx01");
+    Node_Ptr->Config_Ptr = Config_Ptr;
     Node_Ptr   = Create_Node_Record(&Error_Code);
-    if (Error_Code) printf("Create_Node_Record error %d\n", Error_Code);
+    if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
     strcpy(Node_Ptr->Name, "lx02");
+    Node_Ptr->Config_Ptr = NULL;
     Node_Ptr   = Create_Node_Record(&Error_Code);
-    if (Error_Code) printf("Create_Node_Record error %d\n", Error_Code);
+    if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
+    Config_Ptr = Create_Config_Record(&Error_Code);
+    Config_Ptr->CPUs = 543;
+    Config_Ptr->Feature = "for_lx03";
     strcpy(Node_Ptr->Name, "lx03");
-    if (Node_Ptr->LastResponse != (time_t)678) printf("Node defaults not set\n");
+    if (Node_Ptr->LastResponse != (time_t)678) printf("ERROR: Node default LastResponse not set\n");
+    Node_Ptr->Config_Ptr = Config_Ptr;
+    Update_Time = (time_t)0;
+    Error_Code = Dump_Node(&Dump, &Dump_Size, &Update_Time);
+    if (Error_Code) printf("ERROR: Dump_Node error %d\n", Error_Code);
+
     Rehash();
     Dump_Hash();
     Node_Ptr   = Find_Node_Record("lx02");
     if (Node_Ptr == 0) 
-	printf("Find_Node_Record failure 1\n");
+	printf("ERROR: Find_Node_Record failure 1\n");
     else if (strcmp(Node_Ptr->Name, "lx02") != 0)
-	printf("Find_Node_Record failure 2\n");
+	printf("ERROR: Find_Node_Record failure 2\n");
     else if (Node_Ptr->LastResponse != (time_t)678) 
-	printf("Node defaults not set\n");
+	printf("ERROR: Node default LastResponse not set\n");
     printf("NOTE: We expect Delete_Node_Record to report not finding a record for lx04\n");
     Error_Code = Delete_Node_Record("lx04");
-    if (Error_Code != ENOENT) printf("Delete_Node_Record failure 1\n");
+    if (Error_Code != ENOENT) printf("ERROR: Delete_Node_Record failure 1\n");
     Error_Code = Delete_Node_Record("lx02");
-    if (Error_Code != 0) printf("Delete_Node_Record failure 2\n");
+    if (Error_Code != 0) printf("ERROR: Delete_Node_Record failure 2\n");
     printf("NOTE: We expect Find_Node_Record to report not finding a record for lx02\n");
     Node_Ptr   = Find_Node_Record("lx02");
-    if (Node_Ptr != 0) printf("Find_Node_Record failure 3\n");
+    if (Node_Ptr != 0) printf("ERROR: Find_Node_Record failure 3\n");
 
     /* Check node name parsing */
     Out_Line = "linux[003-234]";
     Error_Code = Parse_Node_Name(Out_Line, &Format, &Start_Inx, &End_Inx, &Count_Inx);
     if (Error_Code != 0) 
-	printf("Parse_Node_Name error %d\n", Error_Code);
+	printf("ERROR: Parse_Node_Name error %d\n", Error_Code);
     else {
+	if ((Start_Inx != 3) || (End_Inx != 234)) printf("ERROR: Parse_Node_Name failure\n");
 	printf("Parse_Node_Name of \"%s\" produces format \"%s\", %d to %d, %d records\n", 
 	    Out_Line, Format, Start_Inx, End_Inx, Count_Inx);
 	free(Format);
     } /* else */
+
+#if PROTOTYPE_API
+    Error_Code = Load_Node(Dump, Dump_Size);
+    if (Error_Code) printf("Load_Node error %d\n", Error_Code);
+    strcpy(Req_Name, "");	/* Start at beginning of partition list */
+    while (1) {
+	Error_Code = Load_Node_Name(Req_Name, Next_Name, &State, 
+		&CPUs, &RealMemory, &TmpDisk, &Weight, &Features);
+	if (Error_Code != 0)  {
+	    printf("Load_Node_Name error %d\n", Error_Code);
+	    break;
+	} /* if */
+
+	printf("Found node Name=%s, State=%d, CPUs=%d, RealMemory=%d, TmpDisk=%d, ", 
+	    Req_Name, State, CPUs, RealMemory, TmpDisk);
+	printf("Weight=%d, Features=%s\n", Weight, Features);
+
+	if (strlen(Next_Name) == 0) break;
+	strcpy(Req_Name, Next_Name);
+    } /* while */
+#endif
+    free(Dump);
 
     exit(0);
 } /* main */
@@ -171,7 +229,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
     int i, size;
     unsigned *Output;
 
-    size = (Node_Record_Count + 7) / 8;
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
     Output = malloc(size);
     if (Output == NULL) {
 #if DEBUG_SYSTEM
@@ -182,7 +240,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 	return NULL;
     } /* if */
 
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    size /= sizeof(unsigned);			/* Count of unsigned's */
     for (i=0; i<size; i++) {
 	Output[i] = BitMap[i];
     } /* for (i */
@@ -217,7 +275,7 @@ char *BitMapPrint(unsigned *BitMap) {
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
     nibbles = (Node_Record_Count + 3) / 4;
-    Output = (char *)malloc((sizeof(unsigned)*size*2)+3);
+    Output = (char *)malloc(nibbles+3);
     if (Output == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "BitMapPrint: unable to allocate memory\n");
@@ -229,8 +287,8 @@ char *BitMapPrint(unsigned *BitMap) {
 
     strcpy(Output, "0x");
     k = 0;
-    for (i=0; i<size; i++) {
-	for (j=((sizeof(unsigned)*8)-4); j>=0; j-=4) {
+    for (i=0; i<size; i++) {				/* Each unsigned */
+	for (j=((sizeof(unsigned)*8)-4); j>=0; j-=4) {	/* Each nibble */
 	    sprintf(temp_str, "%x", ((BitMap[i]>>j)&0xf));
 	    strcat(Output, temp_str);
 	    k++;
@@ -290,6 +348,7 @@ int BitMapValue(unsigned *BitMap, int Position) {
 struct Config_Record *Create_Config_Record(int *Error_Code) {
     struct Config_Record *Config_Point;
 
+    Last_Node_Update = time(NULL);
     Config_Point = (struct Config_Record *)malloc(sizeof(struct Config_Record));
     if (Config_Point == (struct Config_Record *)NULL) {
 #if DEBUG_SYSTEM
@@ -307,9 +366,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
     Config_Point->TmpDisk = Default_Config_Record.TmpDisk;
     Config_Point->Weight = Default_Config_Record.Weight;
     Config_Point->NodeBitMap = NULL;
-    if (Default_Config_Record.Feature == (char *)NULL)
-	Config_Point->Feature = (char *)NULL;
-    else {
+    if (Default_Config_Record.Feature) {
 	Config_Point->Feature = (char *)malloc(strlen(Default_Config_Record.Feature)+1);
 	if (Config_Point->Feature == (char *)NULL) {
 #if DEBUG_SYSTEM
@@ -322,7 +379,8 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 	    return (struct Config_Record *)NULL;
 	} /* if */
 	strcpy(Config_Point->Feature, Default_Config_Record.Feature);
-    } /* else */
+    } else
+	Config_Point->Feature = (char *)NULL;
 
     if (list_append(Config_List, Config_Point) == NULL) {
 #if DEBUG_SYSTEM
@@ -330,7 +388,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
-	if (Config_Point->Feature != (char *)NULL) free(Config_Point->Feature);
+	if (Config_Point->Feature) free(Config_Point->Feature);
 	free(Config_Point);
 	*Error_Code = ENOMEM;
 	return (struct Config_Record *)NULL;
@@ -351,12 +409,13 @@ struct Node_Record *Create_Node_Record(int *Error_Code) {
     int Old_Buffer_Size, New_Buffer_Size;
 
     *Error_Code = 0;
+    Last_Node_Update = time(NULL);
 
     /* Round up the buffer size to reduce overhead of realloc */
     Old_Buffer_Size = (Node_Record_Count) * sizeof(struct Node_Record);
-    Old_Buffer_Size = ((int)((Old_Buffer_Size / NODE_BUF_SIZE) + 1)) * NODE_BUF_SIZE;
+    Old_Buffer_Size = ((int)((Old_Buffer_Size / BUF_SIZE) + 1)) * BUF_SIZE;
     New_Buffer_Size = (Node_Record_Count+1) * sizeof(struct Node_Record);
-    New_Buffer_Size = ((int)((New_Buffer_Size / NODE_BUF_SIZE) + 1)) * NODE_BUF_SIZE;
+    New_Buffer_Size = ((int)((New_Buffer_Size / BUF_SIZE) + 1)) * BUF_SIZE;
     if (Node_Record_Count == 0)
 	Node_Record_Table_Ptr = (struct Node_Record *)malloc(New_Buffer_Size);
     else if (Old_Buffer_Size != New_Buffer_Size)
@@ -390,6 +449,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code) {
 int Delete_Node_Record(char *name) {
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
 
+    Last_Node_Update = time(NULL);
     Node_Record_Point = Find_Node_Record(name);
     if (Node_Record_Point == (struct Node_Record *)NULL) {
 #if DEBUG_MODULE
@@ -419,6 +479,190 @@ void Dump_Hash() {
 
 
 /* 
+ * Dump_Node - Dump all configuration and node information to a buffer
+ * Input: Buffer_Ptr - Location into which a pointer to the data is to be stored.
+ *                     The data buffer is actually allocated by Dump_Node and the 
+ *                     calling function must free the storage.
+ *         Buffer_Size - Location into which the size of the created buffer is in bytes
+ *         Update_Time - Dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * Output: Buffer_Ptr - The pointer is set to the allocated buffer.
+ *         Buffer_Size - Set to size of the buffer in bytes
+ *         Update_Time - set to time partition records last updated
+ *         Returns 0 if no error, errno otherwise
+ * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: This is a prototype for a function to ship data partition to an API.
+ */
+int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
+    ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
+    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
+    char *Buffer, *Buffer_Loc;
+    int Buffer_Allocated, i, inx, Record_Size;
+    struct Config_Specs {
+	struct Config_Record *Config_Record_Point;
+    };
+    struct Config_Specs *Config_Spec_List = NULL;
+    int Config_Spec_List_Cnt = 0;
+
+    Buffer_Ptr[0] = NULL;
+    *Buffer_Size = 0;
+    if (*Update_Time == Last_Node_Update) return 0;
+
+    Config_Record_Iterator = list_iterator_create(Config_List);
+    if (Config_Record_Iterator == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Dump_Node: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Dump_Node: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
+    Buffer_Allocated = BUF_SIZE;
+    Buffer = malloc(Buffer_Allocated);
+    if (Buffer == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Dump_Node: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
+#endif
+	list_iterator_destroy(Config_Record_Iterator);
+	return ENOMEM;
+    } /* if */
+
+    /* Write haeader, version and time */
+    Buffer_Loc = Buffer;
+    i = CONFIG_STRUCT_VERSION;
+    memcpy(Buffer_Loc, &i, sizeof(i)); 
+    Buffer_Loc += sizeof(i);
+    memcpy(Buffer_Loc, &Last_Node_Update, sizeof(Last_Node_Update));
+    Buffer_Loc += sizeof(Last_Part_Update);
+
+    /* Write configuration records */
+    while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
+	Record_Size = (7 * sizeof(int));
+	if (Config_Record_Point->Feature) Record_Size+=strlen(Config_Record_Point->Feature)+1;
+
+	if ((Buffer_Loc-Buffer+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
+	    Buffer_Allocated += (Record_Size + BUF_SIZE);
+	    Buffer = realloc(Buffer, Buffer_Allocated);
+	    if (Buffer == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Dump_Node: unable to allocate memory\n");
+#else
+		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
+#endif
+		list_iterator_destroy(Config_Record_Iterator);
+		return ENOMEM;
+	    } /* if */
+	} /* if */
+
+	if (Config_Spec_List_Cnt == 0) 
+	    Config_Spec_List = malloc(sizeof(struct Config_Specs));
+	else
+	    Config_Spec_List = realloc(Config_Spec_List, 
+		(Config_Spec_List_Cnt+1)*sizeof(struct Config_Specs));
+	if (Config_Spec_List == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Dump_Node: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
+#endif
+	    list_iterator_destroy(Config_Record_Iterator);
+	    return ENOMEM;
+	} /* if */
+	Config_Spec_List[Config_Spec_List_Cnt++].Config_Record_Point = Config_Record_Point;
+
+	memcpy(Buffer_Loc, &Config_Record_Point->CPUs, sizeof(Config_Record_Point->CPUs)); 
+	Buffer_Loc += sizeof(Config_Record_Point->CPUs);
+
+	memcpy(Buffer_Loc, &Config_Record_Point->RealMemory, 
+		sizeof(Config_Record_Point->RealMemory)); 
+	Buffer_Loc += sizeof(Config_Record_Point->RealMemory);
+
+	memcpy(Buffer_Loc, &Config_Record_Point->TmpDisk, sizeof(Config_Record_Point->TmpDisk)); 
+	Buffer_Loc += sizeof(Config_Record_Point->TmpDisk);
+
+	memcpy(Buffer_Loc, &Config_Record_Point->Weight, sizeof(Config_Record_Point->Weight)); 
+	Buffer_Loc += sizeof(Config_Record_Point->Weight);
+
+	if (Config_Record_Point->Feature) {
+	    i = strlen(Config_Record_Point->Feature) + 1;
+	    memcpy(Buffer_Loc, &i, sizeof(i)); 
+	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer_Loc, Config_Record_Point->Feature, i); 
+	    Buffer_Loc += i;
+	} else {
+	    i = 0;
+	    memcpy(Buffer_Loc, &i, sizeof(i)); 
+	    Buffer_Loc += sizeof(i);
+	} /* else */
+
+    } /* while */
+    list_iterator_destroy(Config_Record_Iterator);
+
+    /* Mark end of configuration data , looks like CPUs = -1 */
+    i = -1;
+    memcpy(Buffer_Loc, &i, sizeof(i)); 
+    Buffer_Loc += sizeof(i);
+
+
+    /* Write node records */
+    for (inx=0; inx<Node_Record_Count; inx++) {
+	if (strlen((Node_Record_Table_Ptr+inx)->Name) == 0) continue;
+	Record_Size = MAX_NAME_LEN + 2 * sizeof(int);
+	if ((Buffer_Loc-Buffer+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
+	    Buffer_Allocated += (Record_Size + BUF_SIZE);
+	    Buffer = realloc(Buffer, Buffer_Allocated);
+	    if (Buffer == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Dump_Node: unable to allocate memory\n");
+#else
+		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
+#endif
+		return ENOMEM;
+	    } /* if */
+	} /* if */
+
+	memcpy(Buffer_Loc, (Node_Record_Table_Ptr+inx)->Name, 
+		sizeof((Node_Record_Table_Ptr+inx)->Name)); 
+	Buffer_Loc += sizeof((Node_Record_Table_Ptr+inx)->Name);
+
+	i = (int)(Node_Record_Table_Ptr+inx)->NodeState;
+	memcpy(Buffer_Loc, &i, sizeof(i)); 
+	Buffer_Loc += sizeof(i);
+
+	for (i=0; i<Config_Spec_List_Cnt; i++) {
+	    if (Config_Spec_List[i].Config_Record_Point ==
+		(Node_Record_Table_Ptr+inx)->Config_Ptr) break;
+	} /* for (i */
+	if (i < Config_Spec_List_Cnt) 
+	    i++;
+	else
+	    i = 0;
+	memcpy(Buffer_Loc, &i, sizeof(i)); 
+	Buffer_Loc += sizeof(i);
+
+    } /* for (inx */
+
+    Buffer = realloc(Buffer, (int)(Buffer_Loc - Buffer));
+    if (Buffer == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Dump_Node: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
+    Buffer_Ptr[0] = Buffer;
+    *Buffer_Size = (int)(Buffer_Loc - Buffer);
+    *Update_Time = Last_Node_Update;
+    return 0;
+} /* Dump_Node */
+
+
+/* 
  * Find_Node_Record - Find a record for node with specified name,
  * Input: name - name of the desired node 
  * Output: return pointer to node record or NULL if not found
@@ -428,7 +672,7 @@ struct Node_Record *Find_Node_Record(char *name) {
     int i;
 
     /* Try to find in hash table first */
-    if (Hash_Table != NULL) {
+    if (Hash_Table) {
 	i = Hash_Index(name);
         if (strcmp((Node_Record_Table_Ptr+Hash_Table[i])->Name, name) == 0) 
 		return (Node_Record_Table_Ptr+Hash_Table[i]);
@@ -440,7 +684,7 @@ struct Node_Record *Find_Node_Record(char *name) {
     } /* if */
 
 #if DEBUG_SYSTEM
-    if (Hash_Table != NULL) {
+    if (Hash_Table) {
 	printf("Sequential search for %s\n", name);
 	Dump_Hash();
     } /* if */
@@ -519,6 +763,7 @@ int Hash_Index(char *name) {
  */
 int Init_Node_Conf() {
 
+    Last_Node_Update = time(NULL);
     strcpy(Default_Node_Record.Name, "DEFAULT");
     Default_Node_Record.NodeState    = STATE_UNKNOWN;
     Default_Node_Record.LastResponse = (time_t)0;
@@ -532,7 +777,7 @@ int Init_Node_Conf() {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Init_Node_Conf: executed more than once\n");
 #else
-	syslog(LOG_ERR, "Init_Node_Conf: executed more than once\n");
+	syslog(LOG_WARNING, "Init_Node_Conf: executed more than once\n");
 #endif
     } /* if */
 
@@ -587,7 +832,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 	if (NodeName[i] == '\\') {
 	    if (NodeName[++i] == (char)NULL) break;
 	    Format[0][Format_Pos++] = NodeName[i++];
-	} else if (NodeName[i] == '[') {
+	} else if (NodeName[i] == '[') {		/* '[' preceeding number range */
 	    if (NodeName[++i] == (char)NULL) break;
 	    if (Base != 0) {
 #if DEBUG_SYSTEM
@@ -612,7 +857,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 		    Precision++;
 		    continue;
 		} /* if */
-		if (NodeName[i] == '-') {
+		if (NodeName[i] == '-') {		/* '-' between numbers */
 		    i++;
 		    break;
 		} /* if */
@@ -631,7 +876,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 		    *End_Inx = ((*End_Inx) * Base) + (int)(NodeName[i++] - '0');
 		    continue;
 		} /* if */
-		if (NodeName[i] == ']') {
+		if (NodeName[i] == ']') {		/* ']' terminating number range */ 
 		    i++;
 		    break;
 		} /* if */
@@ -672,10 +917,7 @@ void Rehash() {
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
     int i, inx;
 
-    if (Hash_Table ==  (int *)NULL)
-	Hash_Table = (int *)malloc(sizeof(int) * Node_Record_Count);
-    else
-	Hash_Table = (int *)realloc(Hash_Table, (sizeof(int) * Node_Record_Count));
+    Hash_Table = (int *)realloc(Hash_Table, (sizeof(int) * Node_Record_Count));
 
     if (Hash_Table == NULL) {
 #if DEBUG_SYSTEM
@@ -696,3 +938,166 @@ void Rehash() {
 } /* Rehash */
 
 
+#if PROTOTYPE_API
+/*
+ * Load_Node - Load the supplied node information buffer for use by info gathering APIs
+ * Input: Buffer - Pointer to node information buffer
+ *        Buffer_Size - size of Buffer
+ * Output: Returns 0 if no error, EINVAL if the buffer is invalid
+ */
+int Load_Node(char *Buffer, int Buffer_Size) {
+    int Version;
+
+    if (Buffer_Size < 2*sizeof(int)) return EINVAL;	/* Too small to be legitimate */
+
+    memcpy(&Version, Buffer, sizeof(Version));
+    if (Version != CONFIG_STRUCT_VERSION) return EINVAL;	/* Incompatable versions */
+
+    Node_API_Buffer = Buffer;
+    Node_API_Buffer_Size = Buffer_Size;
+    return 0;
+} /* Load_Node */
+
+
+/* 
+ * Load_Node_Name - Load the state information about the named node
+ * Input: Req_Name - Name of the node for which information is requested
+ *		     if "", then get info for the first node in list
+ *        Next_Name - Location into which the name of the next node is 
+ *                   stored, "" if no more
+ *        State, etc. - Pointers into which the information is to be stored
+ * Output: Req_Name - The node's name is stored here
+ *         Next_Name - The name of the next node in the list is stored here
+ *         State, etc. - The node's state information
+ *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+ */
+int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs, 
+	int *RealMemory, int *TmpDisk, int *Weight, char **Features) {
+    int i, Config_Num, Version;
+    time_t Update_Time;
+    char *Buffer_Loc;
+    struct Config_Record *Read_Config_List = NULL;
+    int Read_Config_List_Cnt = 0;
+    struct Node_Record My_Node_Entry;
+
+    /* Load buffer's header */
+    Buffer_Loc = Node_API_Buffer;
+    memcpy(&Version, Buffer_Loc, sizeof(Version));
+    Buffer_Loc += sizeof(Version);
+    memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
+    Buffer_Loc += sizeof(Update_Time);
+
+    /* Load the configuration records */
+    while ((Buffer_Loc+(sizeof(int)*5)) <= 
+	   (Node_API_Buffer+Node_API_Buffer_Size)) {	
+	if (Read_Config_List_Cnt)
+	    Read_Config_List = realloc(Read_Config_List, 
+		sizeof(struct Config_Record) * (Read_Config_List_Cnt+1));
+	else
+	    Read_Config_List = malloc(sizeof(struct Config_Record));
+	if (Read_Config_List == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Load_Node_Name: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Load_Node_Name: unable to allocate memory\n");
+#endif
+	    return ENOMEM;
+	} /* if */
+
+	/* Load all info for next configuration */
+	memcpy(&Read_Config_List[Read_Config_List_Cnt].CPUs, Buffer_Loc, 
+		sizeof(Read_Config_List[Read_Config_List_Cnt].CPUs)); 
+	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].CPUs);
+	if (Read_Config_List[Read_Config_List_Cnt].CPUs == -1) break; /* End of config recs */
+
+	memcpy(&Read_Config_List[Read_Config_List_Cnt].RealMemory, Buffer_Loc, 
+		sizeof(Read_Config_List[Read_Config_List_Cnt].RealMemory)); 
+	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].RealMemory);
+
+	memcpy(&Read_Config_List[Read_Config_List_Cnt].TmpDisk, Buffer_Loc, 
+		sizeof(Read_Config_List[Read_Config_List_Cnt].TmpDisk)); 
+	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].TmpDisk);
+
+	memcpy(&Read_Config_List[Read_Config_List_Cnt].Weight, Buffer_Loc, 
+		sizeof(Read_Config_List[Read_Config_List_Cnt].Weight)); 
+	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].Weight);
+
+	memcpy(&i, Buffer_Loc, sizeof(i)); 
+	Buffer_Loc += sizeof(i);
+	if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Load_Node_Name: malformed buffer\n");
+#else
+	    syslog(LOG_ERR, "Load_Node_Name: malformed buffer\n");
+#endif
+	    return EINVAL;
+	} /* if */
+	if (i)
+	    Read_Config_List[Read_Config_List_Cnt].Feature = Buffer_Loc;
+	else
+	    Read_Config_List[Read_Config_List_Cnt].Feature = NULL;
+	Buffer_Loc += i;
+
+#if 0
+	printf("CPUs=%d, ", Read_Config_List[Read_Config_List_Cnt].CPUs);
+	printf("RealMemory=%d, ", Read_Config_List[Read_Config_List_Cnt].RealMemory);
+	printf("TmpDisk=%d, ", Read_Config_List[Read_Config_List_Cnt].TmpDisk);
+	printf("Weight=%d, ", Read_Config_List[Read_Config_List_Cnt].Weight);
+	printf("Feature=%s\n", Read_Config_List[Read_Config_List_Cnt].Feature);
+#endif
+	Read_Config_List_Cnt++;
+    } /* while */
+
+    /* Load and scan the node records */
+    while ((Buffer_Loc+sizeof(My_Node_Entry.Name)+(sizeof(int)*2)) <= 
+	   (Node_API_Buffer+Node_API_Buffer_Size)) {	
+	memcpy(&My_Node_Entry.Name, Buffer_Loc, sizeof(My_Node_Entry.Name)); 
+	Buffer_Loc += sizeof(My_Node_Entry.Name);
+	if (strlen(Req_Name) == 0) strcpy(Req_Name, My_Node_Entry.Name);
+
+	memcpy(&My_Node_Entry.NodeState, Buffer_Loc, sizeof(My_Node_Entry.NodeState)); 
+	Buffer_Loc += sizeof(My_Node_Entry.NodeState);
+
+	memcpy(&Config_Num, Buffer_Loc, sizeof(Config_Num)); 
+	Buffer_Loc += sizeof(Config_Num);
+
+#if 0
+	printf("Name=%s, ", My_Node_Entry.Name);
+	printf("NodeState=%d, ", My_Node_Entry.NodeState);
+	printf("Config_Num=%d\n", Config_Num);
+#endif
+
+	if (strcmp(My_Node_Entry.Name, Req_Name) != 0) continue;
+	*State = My_Node_Entry.NodeState;
+	if (Config_Num == 0) {
+	    *CPUs 	= 0;
+	    *RealMemory	= 0;
+	    *TmpDisk	= 0;
+	    *Weight	= 0;
+	    Features[0]	= NULL;
+	} else {
+	    Config_Num--;
+	    *CPUs 	= Read_Config_List[Config_Num].CPUs;
+	    *RealMemory	= Read_Config_List[Config_Num].RealMemory;
+	    *TmpDisk	= Read_Config_List[Config_Num].TmpDisk;
+	    *Weight	= Read_Config_List[Config_Num].Weight;
+	    Features[0]	= Read_Config_List[Config_Num].Feature;
+	} /* else */
+	if ((Buffer_Loc+sizeof(My_Node_Entry.Name)) <=
+	    (Node_API_Buffer+Node_API_Buffer_Size)) 
+	    memcpy(Next_Name, Buffer_Loc, sizeof(My_Node_Entry.Name));
+	else
+	    strcpy(Next_Name, "");
+
+	if (Read_Config_List) free(Read_Config_List);
+	return 0;
+    } /* while */
+    free(Read_Config_List);
+#if DEBUG_SYSTEM
+    fprintf(stderr, "Load_Node_Name: Could not locate node %s\n", Req_Name);
+#else
+    syslog(LOG_ERR, "Load_Node_Name: Could not locate node %s\n", Req_Name);
+#endif
+    return ENOENT;
+} /* Load_Node_Name */
+#endif

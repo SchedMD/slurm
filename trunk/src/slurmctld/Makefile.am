@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = Controller Node_Mgr Partition_Mgr Read_Config 
+test_modules = controller node_mgr partition_mgr read_config 
 else
 test_modules = 
 endif
@@ -21,19 +21,19 @@ noinst_PROGRAMS = $(test_modules)
 
 LDADD = $(top_srcdir)/src/common/libcommon.a
 
-slurmctld_SOURCES = Controller.c \
-		    Node_Mgr.c \
-		    Partition_Mgr.c \
-		    Read_Config.c 
+slurmctld_SOURCES = controller.c \
+		    node_mgr.c \
+		    partition_mgr.c \
+		    read_config.c 
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
 # place of the rules that follow.
 
-#Controller_CFLAGS    = -DDEBUG_MODULE $(AM_CFLAGS)
-#Mach_Stat_Mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
-#Partition_Mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
-#Read_Config_CFLAGS   = -DDEBUG_MODULE $(AM_CFLAGS)
+#controller_CFLAGS    = -DDEBUG_MODULE $(AM_CFLAGS)
+#node_mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
+#partition_mgr_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
+#read_config_CFLAGS   = -DDEBUG_MODULE $(AM_CFLAGS)
 
 # debug modules to built as binaries:
 #
@@ -42,10 +42,10 @@ slurmctld_SOURCES = Controller.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-Read_Config   : Read_Config_d.o Node_Mgr.o Partition_Mgr.o
-Controller    : Controller_d.o
-Node_Mgr      : Node_Mgr_d.o
-Partition_Mgr : Partition_Mgr_d.o
+read_config   : read_config_d.o node_mgr.o partition_mgr.o
+controller    : controller_d.o
+node_mgr      : node_mgr_d.o
+partition_mgr : partition_mgr_d.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)

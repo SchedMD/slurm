@@ -1,5 +1,5 @@
 /* 
- * Partition_Mgr.c - Manage the partition information of SLURM
+ * partition_mgr.c - Manage the partition information of SLURM
  * See slurm.h for documentation on external functions and data structures
  *
  * Author: Moe Jette, jette@llnl.gov
@@ -31,7 +31,7 @@ time_t	Last_Part_Update;			/* Time of last update to Part Records */
 
 #if PROTOTYPE_API
 char *Part_API_Buffer = NULL;
-int  Part_API_Buffer_Size;
+int  Part_API_Buffer_Size = 0;
 
 int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
 int Load_Part(char *Buffer, int Buffer_Size);
@@ -122,7 +122,7 @@ main(int argc, char * argv[]) {
 	    &TotalNodes, &TotalCPUs, &Key, &StateUp, 
 	    &Nodes, &AllowGroups, &NodeBitMap, &BitMapSize);
 	if (Error_Code != 0)  {
-	    printf("Load_Part_Next error %d\n", Error_Code);
+	    printf("Load_Part_Name error %d\n", Error_Code);
 	    break;
 	} /* if */
 	if (MaxTime != 223344) 
@@ -283,7 +283,6 @@ int Delete_Part_Record(char *name) {
 
 /* 
  * Dump_Part - Dump all partition information to a buffer
- * NOTE: This is a prototype for a function to ship data partition to an API.
  * Input: Buffer_Ptr - Location into which a pointer to the data is to be stored.
  *                     The data buffer is actually allocated by Dump_Part and the 
  *                     calling function must free the storage.
@@ -294,6 +293,8 @@ int Delete_Part_Record(char *name) {
  *         Buffer_Size - Set to size of the buffer in bytes
  *         Update_Time - set to time partition records last updated
  *         Returns 0 if no error, errno otherwise
+ * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: This is a prototype for a function to ship data partition to an API.
  */
 int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
@@ -436,6 +437,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     return 0;
 } /* Dump_Part */
 
+
 /* 
  * Find_Part_Record - Find a record for node with specified name,
  * Input: name - name of the desired node 
@@ -520,9 +522,14 @@ int Load_Part(char *Buffer, int Buffer_Size) {
 
 /* 
  * Load_Part_Name - Load the state information about the named partition
- * Input: Name - Name of the partition for which information is requested
+ * Input: Req_Name - Name of the partition for which information is requested
+ *		     if "", then get info for the first partition in list
+ *        Next_Name - Location into which the name of the next partition is 
+ *                   stored, "" if no more
  *        MaxTime, etc. - Pointers into which the information is to be stored
- * Output: MaxTime, etc. - The partition's state information
+ * Output: Req_Name - The partition's name is stored here
+ *         Next_Name - The name of the next partition in the list is stored here
+ *         MaxTime, etc. - The partition's state information
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
  */
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
@@ -541,7 +548,7 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
     memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
     Buffer_Loc += sizeof(Update_Time);
 
-    while (Buffer_Loc < (Part_API_Buffer+Part_API_Buffer_Size+sizeof(int)*9)) {	
+    while ((Buffer_Loc+(sizeof(int)*9)) <= (Part_API_Buffer+Part_API_Buffer_Size)) {	
 	/* Load all info for next partition */
 	memcpy(My_Part.Name, Buffer_Loc, sizeof(My_Part.Name)); 
 	Buffer_Loc += sizeof(My_Part.Name);
