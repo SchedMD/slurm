@@ -1,5 +1,6 @@
 /****************************************************************************\
  *  launch.c - initiate the user job's tasks.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -273,11 +274,12 @@ static int
 _send_msg_rc(slurm_msg_t *msg)
 {
 	slurm_msg_t        resp;
-	return_code_msg_t *rcmsg = NULL;
-	int                rc    = 0;
+	return_code_msg_t *rcmsg   = NULL;
+	int                errcode = 0;
+	int		   rc      = 0;
 
        	if ((rc = slurm_send_recv_node_msg(msg, &resp)) < 0)
-		slurm_seterrno_ret (rc);
+		return rc;
 
 	switch (resp.msg_type) {
 	case RESPONSE_SLURM_RC:

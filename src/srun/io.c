@@ -1,5 +1,6 @@
 /****************************************************************************\
  *  io.c - process stdin, stdout, and stderr for parallel jobs.
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -174,10 +175,16 @@ static void
 _flush_io(job_t *job)
 {
 	int i;
-	int len;
 
 	debug3("flushing all io");
 	for (i = 0; i < opt.nprocs; i++) {
+		/* 
+		 * Ensure remaining output is written
+		 */
+		if (cbuf_used(job->outbuf[i]))
+			cbuf_write(job->outbuf[i], "\n", 1, NULL);
+		if (cbuf_used(job->errbuf[i]))
+			cbuf_write(job->errbuf[i], "\n", 1, NULL);
 
 		_do_output(job->outbuf[i], job->outstream, i);
 		if (job->out[i] != IO_DONE)
@@ -186,11 +193,6 @@ _flush_io(job_t *job)
 		_do_output(job->errbuf[i], job->errstream, i);
 		if (job->err[i] != IO_DONE)
 			_close_stream(&job->err[i], stderr, i);
-
-		if ((len = cbuf_used(job->outbuf[i])))
-			error ("Unable to print %d bytes output data", len);
-		if ((len = cbuf_used(job->outbuf[i])))
-			error ("Unable to print %d bytes output data", len);
 	}
 }
 
@@ -679,6 +681,8 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 	int dropped = 0;
 
 	if ((len = cbuf_write_from_fd(buf, *fd, -1, &dropped)) <= 0) {
+		if (errno == EAGAIN)
+			return len;
 		if ((len != 0)) 
 			error("Error task %d IO: %m", tasknum);
 		_close_stream(fd, out, tasknum);
