@@ -212,7 +212,7 @@ static void
 _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
-	int      rc;
+	int      rc = SLURM_SUCCESS;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
