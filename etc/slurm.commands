@@ -1,14 +1,14 @@
 DumpNode   LastUpdate=1234
-Allocate   JobName=Job01 TotalNodes=400 ReqNodes=lx[3000-3003] Partition=batch Key=1234
-Allocate   JobName=Job02 TotalNodes=400 Partition=batch Key=1234
+JobSubmit  JobName=Job01 User=1500 TotalNodes=400 ReqNodes=lx[3000-3003] Partition=batch Key=1234
+JobSubmit  JobName=Job02 User=1500 TotalNodes=400 Partition=batch Key=1234
 Update     NodeName=lx3000,lx3003 State=DRAINING
-Allocate   JobName=Job03 TotalNodes=500 Partition=batch Key=1234
-Allocate   JobName=Job04 TotalNodes=600 Partition=batch Key=1234
-Allocate   JobName=Job05 TotalNodes=4000 Partition=batch Key=1234
-Allocate   JobName=Job06 TotalNodes=1000 Partition=batch Key=1234
-Allocate   JobName=Job07 TotalProcs=3000 Partition=batch Key=1234
-Allocate   JobName=Job08 MinProcs=30 TotalProcs=60 Partition=batch Key=1234
-Allocate   JobName=Job08 TotalNodes=2 TotalProcs=128 Partition=batch Key=1234
+JobSubmit  JobName=Job03 User=1500 TotalNodes=500 Partition=batch Key=1234
+JobSubmit  JobName=Job04 User=1500 TotalNodes=600 Partition=batch Key=1234
+JobSubmit  JobName=Job05 User=1500 TotalNodes=4000 Partition=batch Key=1234
+JobSubmit  JobName=Job06 User=1500 TotalNodes=1000 Partition=batch Key=1234
+JobSubmit  JobName=Job07 User=1500 TotalProcs=3000 Partition=batch Key=1234
+JobSubmit  JobName=Job08 User=1500 MinProcs=30 TotalProcs=60 Partition=batch Key=1234
+JobSubmit  JobName=Job09 User=1500 TotalNodes=2 TotalProcs=128 Partition=batch Key=1234
 Update     PartitionName=class AllowGroups=students,teachers MaxTime=20 MaxNodes=4
 Update     PartitionName=debug State=DOWN
 Update     PartitionName=batch Key=NO Nodes=lx[0100-9999]
