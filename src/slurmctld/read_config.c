@@ -699,7 +699,6 @@ static int _parse_part_spec(char *in_line)
 		allow_groups = NULL;
 	}
 	if (nodes) {
-		xfree(part_ptr->nodes);
 		if (strcmp(nodes, "localhost") == 0) {
 			xfree(nodes);
 			nodes = xmalloc(128);
@@ -707,8 +706,14 @@ static int _parse_part_spec(char *in_line)
 				fatal ("memory allocation failure");
 			getnodename(nodes, 128);
 		}
-		part_ptr->nodes = nodes;
-		nodes = NULL;
+		if (part_ptr->nodes) {
+			xstrcat(part_ptr->nodes, ",");
+			xstrcat(part_ptr->nodes, nodes);
+			xfree(nodes);
+		} else {
+			part_ptr->nodes = nodes;
+			nodes = NULL;
+		}
 	}
 	xfree(partition_name);
 	return 0;
