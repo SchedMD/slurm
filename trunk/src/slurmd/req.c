@@ -160,59 +160,54 @@ _close_fds(void)
 }
 
 static int
-_launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
-{	
+_fork_new_slurmd(void)
+{
 	pid_t pid;
-	int rc;
 	
 	switch ((pid = fork())) {
 		case -1:
-			error("launch_tasks: fork: %m");
+			error("fork: %m");
 			return SLURM_ERROR;
 			break;
-		case 0: /* child runs job */
+		case 0: /* child continues */
 			slurm_shutdown_msg_engine(conf->lfd);
 			slurm_cred_ctx_destroy(conf->vctx);
-			rc = mgr_launch_batch_job(req, cli);
-			exit(rc);
+			_close_fds();
+			/*
+			 *  Reopen logfile by calling log_alter() without
+			 *    changing log options
+			 */   
+			log_alter(conf->log_opts, 0, conf->logfile);
+			return 0;
 			/* NOTREACHED */
 			break;
 		default:
-			debug("created process %ld for job %u",
-					(long) pid, req->job_id);
 			break;
 	}
 
-	return SLURM_SUCCESS;
+	return pid;
+}
 
+static int
+_launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
+{	
+	int retval;
+	
+	if ((retval = _fork_new_slurmd()) == 0) 
+		exit (mgr_launch_batch_job(req, cli));
+
+	return retval;
 }
 
 static int
 _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 {
-	pid_t pid;
-	int rc;
+	int retval;
 
-	switch ((pid = fork())) {
-		case -1:
-			error("launch_tasks: fork: %m");
-			return SLURM_ERROR;
-			break;
-		case 0: /* child runs job */
-			slurm_shutdown_msg_engine(conf->lfd);
-			slurm_cred_ctx_destroy(conf->vctx);
-			_close_fds();
-			rc = mgr_launch_tasks(req, cli);
-			exit(rc);
-			/* NOTREACHED */
-			break;
-		default:
-			debug("created process %ld for job %u.%u",
-			      (long) pid, req->job_id, req->job_step_id);
-			break;
-	}
+	if ((retval = _fork_new_slurmd()) == 0)
+		exit (mgr_launch_tasks(req, cli));
 
-	return SLURM_SUCCESS;
+	return retval;
 }
 				                                            
 static int
