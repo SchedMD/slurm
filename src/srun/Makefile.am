@@ -50,7 +50,7 @@ install-exec-local:
 	umask 022; \
 	if [ -x /usr/lib/rpm/debugedit ]; then \
 	  srcdir=`cd $(top_srcdir) && pwd`; \
-	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir)/src \
+	  /usr/lib/rpm/debugedit -b $$srcdir -d $(pkglibdir) \
 	                         $(DESTDIR)$(bindir)/srun; fi; \
 	$(INSTALL) -D -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
 	                       $(DESTDIR)$(pkglibdir)/src/srun/srun.wrapper.c
