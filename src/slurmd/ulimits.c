@@ -52,17 +52,35 @@ struct userlim {
  */
 static struct userlim ulims[] =
 	{
+#ifdef RLIMIT_CPU
+          { "SLURM_RLIMIT_CPU"   , RLIMIT_CPU   },
+#endif
+#ifdef RLIMIT_FSIZE
+          { "SLURM_RLIMIT_FSIZE" , RLIMIT_FSIZE },
+#endif
+#ifdef RLIMIT_DATA
+          { "SLURM_RLIMIT_DATA"  , RLIMIT_DATA  },
+#endif
+#ifdef RLIMIT_STACK
+          { "SLURM_RLIMIT_STACK" , RLIMIT_STACK },
+#endif
 #ifdef RLIMIT_CORE
           { "SLURM_RLIMIT_CORE"  , RLIMIT_CORE  },
 #endif
-#ifdef RLIMIT_FSIZE
-	  { "SLURM_RLIMIT_FSIZE" , RLIMIT_FSIZE },
+#ifdef RLIMIT_RSS
+          { "SLURM_RLIMIT_RSS"   , RLIMIT_RSS  },
 #endif
 #ifdef RLIMIT_NPROC
 	  { "SLURM_RLIMIT_NPROC" , RLIMIT_NPROC },
 #endif
 #ifdef RLIMIT_NOFILE
 	  { "SLURM_RLIMIT_NOFILE", RLIMIT_NOFILE},
+#endif
+#ifdef RLIMIT_MEMLOCK
+	  { "SLURM_RLIMIT_MEMLOCK", RLIMIT_MEMLOCK },
+#endif
+#ifdef RLIMIT_AS
+	  { "SLURM_RLIMIT_AS"    , RLIMIT_AS    },
 #endif
 	  { NULL, 0 } 
 	};
