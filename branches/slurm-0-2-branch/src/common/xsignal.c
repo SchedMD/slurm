@@ -91,6 +91,7 @@ xsignal_sigset_create(int sigarray[], sigset_t *setp)
 int
 xsignal_save_mask(sigset_t *set)
 {
+	sigemptyset(set);
 	return _sigmask(SIG_SETMASK, NULL, set);
 }
 
