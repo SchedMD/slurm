@@ -343,11 +343,11 @@ void report_task_status(job_t *job)
 				break;
 		}
 		if (first_task == last_task)
-			printf("task:%d state:%s\n", first_task, 
-			       _task_state_name(current_state));
+			info("task:%d state:%s\n", first_task, 
+			     _task_state_name(current_state));
 		else
-			printf("tasks:%d-%d state:%s\n", first_task,  
-			       last_task, _task_state_name(current_state));
+			info("tasks:%d-%d state:%s\n", first_task,  
+			     last_task, _task_state_name(current_state));
 		i = last_task;
 	}
 }

@@ -312,9 +312,9 @@ _print_launch_msg(launch_tasks_request_msg_t *msg, char * hostname)
 		}
 	}
 
-	printf("launching %u.%u on host %s, %u tasks: %s\n", 
-		msg->job_id, msg->job_step_id, hostname, 
-		msg->tasks_to_launch, task_list);
+	info("launching %u.%u on host %s, %u tasks: %s", 
+	     msg->job_id, msg->job_step_id, hostname, 
+	     msg->tasks_to_launch, task_list);
 
 	debug3("uid:%ld cwd:%s %d",
 		(long) msg->uid, msg->cwd, msg->srun_node_id);

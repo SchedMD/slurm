@@ -161,7 +161,7 @@ main(int ac, char **av)
 			exit (1);
 		exit (0);
 	} else if (opt.no_alloc) {
-		printf("do not allocate resources\n");
+		info("do not allocate resources");
 		job = job_create(NULL); 
 #ifdef HAVE_LIBELAN3
 		_qsw_standalone(job);
@@ -175,7 +175,7 @@ main(int ac, char **av)
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
 		job = job_create(resp); 
-		if (_debug)
+		if (_verbose || _debug)
 			_print_job_information(resp);
 		_run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
@@ -185,7 +185,7 @@ main(int ac, char **av)
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
-		if (_debug)
+		if (_verbose || _debug)
 			_print_job_information(resp);
 
 		job = job_create(resp); 
@@ -487,13 +487,23 @@ static void
 _print_job_information(allocation_resp *resp)
 {
 	int i;
-	printf("jobid %d: `%s', cpu counts: ", resp->job_id, resp->node_list);
+	char tmp_str[10], job_details[4096];
+
+	sprintf(job_details, "jobid %d: `%s', cpu counts: ", 
+	        resp->job_id, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
-		printf("%u(x%u), ", resp->cpus_per_node[i], 
-		       resp->cpu_count_reps[i]);
+		sprintf(tmp_str, ",%u(x%u)", resp->cpus_per_node[i], 
+		        resp->cpu_count_reps[i]);
+		if (i == 0)
+			strcat(job_details, &tmp_str[1]);
+		else if ((strlen(tmp_str) + strlen(job_details)) < 
+		         sizeof(job_details))
+			strcat(job_details, tmp_str);
+		else
+			break;
 	}
-	printf("\n");
+	info("%s",job_details);
 }
 
 static void
@@ -528,13 +538,13 @@ _sig_thr(void *arg)
 		switch (signo) {
 		  case SIGINT:
 			if ((time(NULL) - last_intr) > 1) {
-				printf("interrupt (one more within 1 sec to abort)\n");
+				info("interrupt (one more within 1 sec to abort)");
 				report_task_status(job);
 				last_intr = time(NULL);
 			 } else  { /* second Ctrl-C in half as many seconds */
 				   /* terminate job */
 				if (job->state != SRUN_JOB_OVERDONE) {
-					printf("sending Ctrl-C to job\n");
+					info("sending Ctrl-C to job");
 					last_intr = time(NULL);
 					_fwd_signal(job, signo);
 				} else {
@@ -766,7 +776,7 @@ _run_batch_job(void)
 
 	
 	if (rc == 0) {
-		printf ("jobid %u\n",resp->job_id);
+		info("jobid %u",resp->job_id);
 		slurm_free_submit_response_response_msg (resp);
 	}
 	xfree (job_script);
