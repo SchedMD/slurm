@@ -1236,7 +1236,7 @@ _write(io_obj_t *obj, List objs)
 		return 0;
 	}
 
-	while ((n = cbuf_read_to_fd(io->buf, obj->fd, 1)) < 0) {
+	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
 		switch (errno) {
 		case EAGAIN:
 			return 0; 
@@ -1383,6 +1383,8 @@ _task_read(io_obj_t *obj, List objs)
 	xassert(t->magic == IO_MAGIC);
 	xassert((t->type == TASK_STDOUT) || (t->type == TASK_STDERR));
 	xassert(_validate_io_list(objs));
+
+	len = _max_readable (t, len);
 
    again:
 	if ((n = read(obj->fd, (void *) buf, len)) < 0) {
