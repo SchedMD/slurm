@@ -51,7 +51,7 @@ to a "standby" mode when the ControlMachine becomes available once again.
 While not essential, it is highly recommended that you specify a backup 
 controller.
 </dl>
-Any text after "#" until the old of the line in the configuration file 
+Any text after "#" until the end of the line in the configuration file 
 will be considered a comment. 
 If you need to use "#" in a value within the configuration file, proceed 
 it with backslash "\").
@@ -234,8 +234,8 @@ A sample SLURM configuration file (node information only) follows.
 # Node specifications
 NodeName=DEFAULT       TmpDisk=16384
 NodeName=lx[0001-0002] State=DRAINED
-NodeName=lx[0003-0016] CPUs=16 RealMemory=2048 
-NodeName=lx[0017-8096] CPUs=32 RealMemory=4096 Feature=1200MHz,VizTools
+NodeName=lx[0003-0016] CPUs=16 RealMemory=2048 Weight=16
+NodeName=lx[0017-8096] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz,VizTools
 </pre>
 <p>
 The partition configuration permits you to establish different job 
@@ -263,7 +263,7 @@ after one use or expiration.
 The key may be used to deligate control of partitions to external 
 schedulers.
 Possible values are "YES" and "NO". 
-The default value is "YES".
+The default value is "NO".
 
 <dt>MaxNodes
 <dd>Maximum count of nodes which may be allocated to any single job,
@@ -313,8 +313,8 @@ The job may specify a particular PartitionName, if so desired,
 or use the system's default partition.
 <pre>
 # Partition specifications
-PartitionName=DEFAULT Interactive=YES
-PartitionName=batch   MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] Interactive=NO
+PartitionName=DEFAULT Key=NO
+PartitionName=batch   MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] Key=YES
 PartitionName=debug   MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default=YES
 PartitionName=class   MaxNodes=1  MaxTime=10        Nodes=lx[31-32] AllowGroups=students
 </pre>
@@ -335,24 +335,53 @@ The job configuration format specified below is used by the
 slurm_admin administration tool to modify job state information: 
 <dl>
 
+<dt>Contiguous
+<dd>If this keyword is present, the nodes allocated to the job must 
+be contiguous.
+
+<dt>CPUCount
+<dd>Minimum total number of CPUs to be allocated to the job.
+
+<dt>Features
+<dd>Required features of nodes to be allocated to this job. 
+Features may be combined using "|" for OR, "&amp;" for and, and 
+parenthesis. For example, "Features=((1000MHz|1200MHz)&amp;CoolTool)".
+
 <dt>Group
 <dd>Comma separated list of group names to which the user belongs.
+
+<dt>Key
+<dd>Key granted to user root for optional access control to partitions.
+<dt>Name
+<dd>Name by which the job may be referenced (e.g. "Simulation"). 
+This name can be specified by users when submitting their jobs.
+
+<dt>NodeCount
+<dd>Minimum total number of nodes to be allocated to the job.
 
 <dt>Number
 <dd>Unique number by which the job can be referenced. This value 
 may not be changed by slurm_admin.
 
-<dt>Name
-<dd>Name by which the job may be referenced (e.g. "Simulation"). 
-This name can be specified by users when submitting their jobs.
-
 <dt>MaxTime
 <dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
 value is represented internally as -1.
 
+<dt>MinCPUs
+<dd>Minimum number of CPUs per node.
+
+<dt>MinRealMemory
+<dd>Minimum number of megabytes of real memory per node.
+
+<dt>MinTmpDisk
+<dd>Minimum number of megabytes of temporary disk storage per node.
+
 <dt>Nodes
 <dd>Comma separated list of nodes which are allocated to the job. 
 This value may not be changed by slurm_admin.
+
+<dt>Partition
+<dd>Name of the partition in which this job should execute.
 
 <dt>State
 <dd>State of the job.  Possible values are "PENDING", "STARTING", 
@@ -491,15 +520,6 @@ state of one entity record, specify either its ID number
 Options are of the same format as the configuration file. 
 This command can only be issued by user <b>root</b>.
 
-<dt>upload [&lt;NodeName&gt;]
-<dd>Upload into the SLURM node configuration table actual configuration 
-as actually reported by SERVER_DAEMON on each node (memory, CPU count, temporary disk, etc.).
-This could be used to establish a baseline configuration rather than 
-entering the configurations manually into a file. 
-By default information from all nodes is uploaded. 
-NodeName may be specified using a real expression. 
-This command can only be issued by user <b>root</b>.
-
 <dt>verbose
 <dd>Enable detailed logging of slurm_admin execution state information.
 
@@ -545,15 +565,6 @@ PartitionName=class MaxCpus=16  MaxTime=10  Nodes=lx[31-32] AllowGroups=students
 
 <a name="SampleAdmin"><h2>Sample slurm_admin Execution</h2></a>
 <pre>
-Upload actual node configurations to review:
-  # slurm_admin
-  slurm_admin: upload
-  slurm_admin: write node baseline_node_config
-  slurm_admin: reconfigure
-  slurm_admin: quit
-  # cat baseline_node_config
-  .....
-
 Remove node lx30 from service, removing jobs as needed:
   # slurm_admin
   slurm_admin: update NodeName=lx30 State=DRAINING
@@ -570,7 +581,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified February 21, 2002</p>
+<p>Last Modified March 5, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
