@@ -1082,7 +1082,7 @@ _init_pidfile(void)
 	uid_t uid     = slurmctld_conf.slurm_user_id;
 
 	if (strcmp(slurmctld_conf.slurmctld_pidfile,
-	           slurmctld_conf.slurmctld_pidfile) == 0)
+	           slurmctld_conf.slurmd_pidfile) == 0)
 		error("SlurmctldPid == SlurmdPid, use different names");
 
 	if ((fd = create_pidfile(slurmctld_conf.slurmctld_pidfile)) < 0)
