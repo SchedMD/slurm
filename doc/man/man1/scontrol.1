@@ -53,10 +53,13 @@ Print no warning or informational messages, only fatal error messages.
 Terminate the execution of scontrol.
 .TP
 \fIreconfigure\fP
-Instruct the Slurm controller to re-read its configuration file. 
-This mechanism would be used to register the physical addition or removal of 
-nodes from the cluster or recognize the change of a node's configuration, 
-such as the addition of memory or processors. Running jobs continue execution.
+Instruct all Slurm daemons to re-read the configuration file. 
+This mechanism would be used to modify configuration parameters (Epilog, 
+Prolog, SlurmctldLogFile, SlurmdLogFile, etc.) register the physical 
+addition or removal of nodes from the cluster or recognize the change 
+of a node's configuration, such as the addition of memory or processors. 
+The Slurm controller (slurmctld) forwards the request all other daemons 
+(slurmd daemon on each compute node). Running jobs continue execution.
 .TP
 \fIshow\fP \fIENTITY\fP \fIID\fP
 Display the state of the specified entity with the specified identification.
@@ -72,7 +75,9 @@ element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 By default, all elements of the entity type specified are printed.
 .TP
 \fIshutdown\fP
-Instruct the Slurm controller to save its current state and terminate.
+Instruct all Slurm daemons to save current state and terminate.
+The Slurm controller (slurmctld) forwards the request all other daemons 
+(slurmd daemon on each compute node). 
 .TP
 \fIupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.
