@@ -102,6 +102,9 @@ sig_setup_sigmask(void)
 	sigaddset(&sigset, SIGTSTP);
 	sigaddset(&sigset, SIGSTOP);
 	sigaddset(&sigset, SIGCONT);
+	sigaddset(&sigset, SIGALRM);
+	sigaddset(&sigset, SIGUSR1);
+	sigaddset(&sigset, SIGUSR2);
 
 	if ((err = pthread_sigmask(SIG_BLOCK, &sigset, NULL)) != 0) {
 		error("pthread_sigmask: %s", slurm_strerror(err));
@@ -137,6 +140,9 @@ fwd_signal(job_t *job, int signo)
 	int i;
 	slurm_msg_t *req;
 	kill_tasks_msg_t msg;
+	static pthread_mutex_t sig_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+	slurm_mutex_lock(&sig_mutex);
 
 	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
 		slurm_mutex_lock(&job->state_mutex);
@@ -172,6 +178,7 @@ fwd_signal(job_t *job, int signo)
 
 	debug2("All tasks have been signalled");
 	xfree(req);
+	slurm_mutex_unlock(&sig_mutex);
 }
 
 
@@ -219,7 +226,8 @@ _sig_thr_setup(sigset_t *set)
 	sigaddset(set, SIGQUIT);
 	sigaddset(set, SIGTSTP);
 	sigaddset(set, SIGSTOP);
-	sigaddset(set, SIGCONT);
+	sigaddset(set, SIGUSR1);
+	sigaddset(set, SIGUSR2);
 }
 
 /* simple signal handling thread */
@@ -256,6 +264,7 @@ _sig_thr(void *arg)
 			job_force_termination(job);
 			break;
 		  default:
+			fwd_signal(job, signo);
 			break;
 		}
 	}
