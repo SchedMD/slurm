@@ -48,7 +48,7 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
-#include <src/slurmd/credential_utils.h>
+#include <src/common/credential_utils.h>
 slurm_ssl_key_ctx_t sign_ctx ;
 
 #define BUF_SIZE 1024

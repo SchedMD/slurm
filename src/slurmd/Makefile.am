@@ -14,11 +14,11 @@ noinst_LTLIBRARIES = libelan_interconnect.la \
 		libno_interconnect.la \
 		libforked_io.la  \
 		libthreaded_io.la \
-		libnbio.la \
-		libcredential_utils.la
+		libnbio.la
 
 LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/common/libdaemonize.la \
+	$(top_srcdir)/src/common/libcred.la \
 	$(SSL_LIBS) libno_interconnect.la
 
 
@@ -28,8 +28,6 @@ slurmd_SOURCES = slurmd.c \
 		task_mgr.c \
 		shmem_struct.c \
 		circular_buffer.c \
-		credential_utils.c \
-		signature_utils.c \
 		threaded_io.c \
 		pipes.c \
 		locks.c \
@@ -44,5 +42,4 @@ libnbio_la_SOURCES =  threaded_io.c nbio.c reconnect_utils.c
 libelan_interconnect_la_SOURCES =  elan_interconnect.c
 libno_interconnect_la_SOURCES =  no_interconnect.c 
 
-libcredential_utils_la_SOURCES = credential_utils.c signature_utils.c
 

@@ -11,7 +11,7 @@
 
 #include <src/common/list.h>
 #include <src/common/slurm_protocol_api.h>
-#include <src/slurmd/signature_utils.h>
+#include <src/common/signature_utils.h>
 
 typedef struct credential_state
 {

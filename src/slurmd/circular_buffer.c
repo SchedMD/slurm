@@ -379,3 +379,125 @@ static int expand_buffer ( circular_buffer_t * buf )
 
 	return SLURM_SUCCESS ;
 }
+
+int cir_buf_get_line ( circular_buffer_t * buf , cir_buf_line_t * line )
+{
+	char * tmp_head ;
+	size_t tmp_length = 0 ;
+	size_t tmp_length2 = 0 ;
+
+	/* stage one */
+	line -> line[0] = buf -> head ;
+	tmp_head = buf -> head ;
+	
+	while ( true)
+	{
+		/* max line length for transmit reached */	
+		if ( tmp_length >= line -> max_line_length )
+		{
+			info ( "Max line length reached during cir_buf_get_line " ) ;
+			line -> line_count = 1 ;
+			line -> line_length[0] = tmp_length ;
+			return SLURM_SUCCESS ;
+		}
+		
+		/* physical end of buffer reached need to wrap */
+		if ( tmp_head >= buf -> end )
+		{
+			info ( "End of buffer reached during cir_buf_get_line first stage" ) ;
+			line -> line_length[0] = tmp_length ;
+			break ;
+		}
+
+		/* logical end of data reached, we are done, no more data in buffer */
+		if ( tmp_head == buf -> tail )
+		{
+			info ( "End of  reached during cir_buf_get_line" ) ;
+			line -> line_count = 1 ;
+			line -> line_length[0] = tmp_length ;
+			return SLURM_SUCCESS ;
+		}
+
+		/* new line found */
+		if ( *tmp_head == '\n' )
+		{
+			info ( "New line character found in " ) ;
+			line -> line_count = 1 ;
+			line -> line_length[0] = tmp_length + 1;
+			return SLURM_SUCCESS ;
+		}
+		
+		tmp_head ++ ;
+		tmp_length ++ ;
+	}
+	
+	/* stage one */
+	line -> line[1] = buf -> start ;
+	tmp_head = buf -> start ;
+
+	while ( true)
+	{
+		/* max line length for transmit reached */	
+		if ( tmp_length >= line -> max_line_length )
+		{
+			info ( "Max line length reached during cir_buf_get_line " ) ;
+			line -> line_count = 2 ;
+			line -> line_length[1] = tmp_length2 ;
+			return SLURM_SUCCESS ;
+		}
+		
+		/* physical end of buffer reached this shouldn't happen in stage two */
+		if ( tmp_head >= buf -> end )
+		{
+			info ( "VERY BAD - End of buffer reached during cir_buf_get_line second stage" ) ;
+			line -> line_length[1] = tmp_length2 ;
+			break ;
+		}
+
+		/* new line found */
+		if ( *tmp_head == '\n' )
+		{
+			info ( "New line character found in " ) ;
+			line -> line_count = 1 ;
+			line -> line_length[0] = tmp_length + 1;
+			return SLURM_SUCCESS ;
+		}
+		if ( tmp_head == buf -> tail )
+		{
+			info ( "End of data reached during cir_buf_get_line" ) ;
+			line -> line_count = 2 ;
+			line -> line_length[1] = tmp_length2 ;
+			return SLURM_SUCCESS ;
+		}
+		/* new line found */
+		if ( *tmp_head == '\n' )
+		{
+			info ( "New line character found in " ) ;
+			line -> line_count = 1 ;
+			line -> line_length[0] = tmp_length2 + 1;
+			return SLURM_SUCCESS ;
+		}
+
+		tmp_head ++ ;
+		tmp_length ++ ;
+		tmp_length2 ++ ;
+	}
+	
+	return SLURM_SUCCESS ;
+}
+
+int cir_buf_update_line ( circular_buffer_t * buf , cir_buf_line_t * line )
+{
+	int i ;
+	if ( line -> line_count > 2 )
+	{
+		info ( " VERY BAD line -> line_count is too big %i ", line -> line_count ) ;
+		return SLURM_ERROR ;
+	}
+	for ( i = 0 ; i < line -> line_count ; i ++ )
+	{
+		cir_buf_write_update ( buf , line -> line_length[i] ) ;
+	}
+	return SLURM_SUCCESS ;
+}
+

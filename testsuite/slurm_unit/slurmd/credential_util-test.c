@@ -1,7 +1,7 @@
 #include <string.h> 
 
 #include <src/common/log.h>
-#include <src/slurmd/credential_utils.h>
+#include <src/common/credential_utils.h>
 
 int main ( int argc , char * argv[] ) 
 {

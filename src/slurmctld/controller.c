@@ -50,7 +50,7 @@
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
-#include <src/slurmd/credential_utils.h>
+#include <src/common/credential_utils.h>
 
 #define BUF_SIZE 1024
 #define MAX_SERVER_THREAD_COUNT 20

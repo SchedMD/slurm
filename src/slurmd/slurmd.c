@@ -49,8 +49,8 @@
 #include <src/slurmd/slurmd.h> 
 #include <src/slurmd/task_mgr.h> 
 #include <src/slurmd/shmem_struct.h> 
-#include <src/slurmd/signature_utils.h> 
-#include <src/slurmd/credential_utils.h> 
+#include <src/common/signature_utils.h> 
+#include <src/common/credential_utils.h> 
 
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN 1024
