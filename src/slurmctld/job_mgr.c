@@ -32,11 +32,12 @@ static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
-void list_delete_job (void *job_entry);
-int list_find_job_id (void *job_entry, void *key);
-int list_find_job_old (void *job_entry, void *key);
-void set_job_id (struct job_record *job_ptr);
-void set_job_prio (struct job_record *job_ptr);
+void	list_delete_job (void *job_entry);
+int	list_find_job_id (void *job_entry, void *key);
+int	list_find_job_old (void *job_entry, void *key);
+void	set_job_id (struct job_record *job_ptr);
+void	set_job_prio (struct job_record *job_ptr);
+int	top_priority (struct job_record *job_ptr);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -315,26 +316,43 @@ init_job_conf ()
 int
 job_allocate (char *job_specs, uint32_t *new_job_id, char **node_list)
 {
-	int error_code, i;
+	int error_code, i, immediate, will_run;
 	struct job_record *job_ptr;
 
 	node_list[0] = NULL;
 
-	error_code = job_create (job_specs, new_job_id, 1, &job_ptr);
-	if (error_code)
+	immediate = will_run = 0;
+	(void) load_integer (&immediate, "Immediate", job_specs);
+	(void) load_integer (&will_run,  "WillRun",   job_specs);
+
+	error_code = job_create (job_specs, new_job_id, 1, will_run, &job_ptr);
+	if (error_code || will_run)
 		return error_code;
 	if (job_ptr == NULL)
 		fatal ("job_allocate: allocated job %u lacks record", 
 			new_job_id);
-
-/*	if (top_priority(new_job_id) != 0)
-		return EAGAIN; */
-	error_code = select_nodes(job_ptr);
-	if (error_code)
-		return error_code;
 	last_job_update = time (NULL);
-	i = strlen(job_ptr->nodes) + 1;
-	node_list[0] = xmalloc(i);
+
+	if (immediate == 0) {
+		node_list[0] = xmalloc (10);
+		strcpy(node_list[0], "queued");
+		return 0;
+	}
+
+	if (top_priority(job_ptr) != 0) {
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->end_time  = 0;
+		return EAGAIN; 
+	}
+
+	error_code = select_nodes(job_ptr);
+	if (error_code) {
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->end_time  = 0;
+		return EAGAIN; 
+	}
+
+	node_list[0] = xmalloc (strlen(job_ptr->nodes) + 1);
 	strcpy(node_list[0], job_ptr->nodes);
 	return 0;
 }
@@ -391,6 +409,7 @@ job_cancel (uint32_t job_id)
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
  *	allocate - if set, job allocation only (no script required)
+ *	will_run - if set then test only, don't create a job entry
  *	job_rec_ptr - pointer to the job (if not passed a NULL)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
@@ -399,7 +418,7 @@ job_cancel (uint32_t job_id)
  */
 int
 job_create (char *job_specs, uint32_t *new_job_id, int allocate, 
-	    struct job_record **job_rec_ptr)
+	    int will_run, struct job_record **job_rec_ptr)
 {
 	char *req_features, *req_node_list, *job_name, *req_group;
 	char *req_partition, *script;
@@ -573,7 +592,13 @@ job_create (char *job_specs, uint32_t *new_job_id, int allocate,
 			 req_nodes, part_ptr->name, i);
 		error_code = EINVAL;
 		goto cleanup;
-	}			
+	}
+
+	if (will_run) {
+		error_code = 0;
+		goto cleanup;
+	}
+	
 	if (part_ptr->shared == 2)	/* shared=force */
 		shared = 1;
 	else if ((shared != 1) || (part_ptr->shared == 0)) /* user or partition want no sharing */
@@ -1182,6 +1207,40 @@ set_job_prio (struct job_record *job_ptr)
 	    (job_ptr->magic != JOB_MAGIC)) 
 		fatal ("set_job_prio: invalid job_ptr");
 	job_ptr->priority = default_prio--;
+}
+
+
+/* 
+ * top_priority - determine if any other job for this partition has a higher priority
+ *	than specified job
+ * input: job_ptr - pointer to selected partition
+ * output: returns 1 if selected job has highest priority, 0 otherwise
+ */
+int
+top_priority (struct job_record *job_ptr) {
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
+	int top;
+
+	top = 1;	/* assume top priority until found otherwise */
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_record_point = 
+		(struct job_record *) list_next (job_record_iterator))) {
+		if (job_record_point->magic != JOB_MAGIC)
+			fatal ("top_priority: job integrity is bad");
+		if (job_record_point == job_ptr)
+			continue;
+		if (job_record_point->job_state == JOB_PENDING)
+			continue;
+		if (job_record_point->priority >  job_ptr->priority &&
+		    job_record_point->part_ptr == job_ptr->part_ptr) {
+			top = 0;
+			break;
+		}
+	}		
+
+	list_iterator_destroy (job_record_iterator);
+	return top;
 }
 
 

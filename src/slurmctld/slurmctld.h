@@ -454,13 +454,15 @@ extern int job_cancel (uint32_t job_id);
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
  *	allocate - if set, job allocation only (no script required)
+ *	will_run - if set then test only, don't create a job entry
  *	job_rec_ptr - pointer to the job (if not passed a NULL)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
+ *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
 extern int job_create (char *job_specs, uint32_t *new_job_id, int allocate, 
-	    struct job_record **job_rec_ptr);
+	    int will_run, struct job_record **job_rec_ptr);
 
 /* job_lock - lock the job information */
 extern void job_lock ();
