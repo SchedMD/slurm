@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "July 2003" "squeue 0.1" "Slurm components"
+.TH SQUEUE "1" "August 2003" "squeue 0.2" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -49,7 +49,8 @@ The field specifications available include:
 .br
 \fB%d\fR Minimum size of temporary disk space (in MB) requested by the job
 .br
-\fB%D\fR Number of nodes allocated to the job
+\fB%D\fR Number of nodes allocated to the job or the minimum number of nodes 
+required by a pending job
 .br
 \fB%e\fR Time at which the job ended or is expected to end (based upon its time
 limit)
@@ -201,7 +202,7 @@ Print information only about jobs 12345 and 12346:
 .br
  12345     debug job1 dave  R      0:21     4 dev[9-12]
 .br
- 12346     debug job2 dave PD      0:00     0
+ 12346     debug job2 dave PD      0:00     8
 .ec
 
 .eo
