@@ -29,6 +29,18 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
+#define X 8
+#define Y 4
+#define Z 4
+#define NumofProc 128
+typedef struct {
+  char letter;
+  int color;
+}axis;
+
+axis Axis[X][Y][Z];
+axis FillInValue[NumofProc];
+int GridCount;
 /* Notes:
  *
  * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
@@ -75,6 +87,8 @@ typedef struct hostlist_iterator * hostlist_iterator_t;
 
 /* ----[ hostlist creation and destruction ]---- */
 
+//int set_grid(hostlist_t hl, int count);
+int set_grid(int start, int end, int count);
 /*
  * hostlist_create(): 
  *
