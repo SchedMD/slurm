@@ -24,6 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <grp.h>
 #include <pwd.h>
 #include <sys/types.h>
 
@@ -36,6 +37,8 @@
 
 static bool reverse_order;
 
+static int _sort_job_by_group_id(void *void1, void *void2);
+static int _sort_job_by_group_name(void *void1, void *void2);
 static int _sort_job_by_id(void *void1, void *void2);
 static int _sort_job_by_name(void *void1, void *void2);
 static int _sort_job_by_state(void *void1, void *void2);
@@ -91,6 +94,10 @@ void sort_job_list(List job_list)
 			list_sort(job_list, _sort_job_by_time_end);
 		else if (params.sort[i] == 'f')
 			;	/* sort_job_by_featuers */
+		else if (params.sort[i] == 'g')
+			list_sort(job_list, _sort_job_by_group_name);
+		else if (params.sort[i] == 'G')
+			list_sort(job_list, _sort_job_by_group_id);
 		else if (params.sort[i] == 'h')
 			;	/* sort_job_by_shared */
 		else if (params.sort[i] == 'i')
@@ -160,6 +167,38 @@ void sort_step_list(List step_list)
 /*****************************************************************************
  * Local Job Sort Functions
  *****************************************************************************/
+static int _sort_job_by_group_id(void *void1, void *void2)
+{
+	int diff;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
+
+	diff = job1->group_id - job2->group_id;
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
+static int _sort_job_by_group_name(void *void1, void *void2)
+{
+	int diff;
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
+	struct group *group_info = NULL;
+	char *name1 = "", *name2 = "";
+
+	if ((group_info = getgrgid((gid_t) job1->group_id)))
+		name1 = group_info->gr_name;
+	if ((group_info = getgrgid((gid_t) job2->group_id)))
+		name2 = group_info->gr_name;
+	diff = strcmp(name1, name2);
+
+	if (reverse_order)
+		diff = -diff;
+	return diff;
+}
+
 static int _sort_job_by_id(void *void1, void *void2)
 {
 	int diff;
@@ -375,6 +414,7 @@ static int _sort_job_by_priority(void *void1, void *void2)
 		diff = -diff;
 	return diff;
 }
+
 static int _sort_job_by_user_id(void *void1, void *void2)
 {
 	int diff;
