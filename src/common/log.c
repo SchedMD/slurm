@@ -839,7 +839,7 @@ fatal_cleanup(void)
 			cup = &cu->next;
 			continue;
 		}
-		debug("Calling cleanup 0x%lx(0x%lx)",
+		debug("Calling cleanup 0x%x(0x%x)",
 		      (u_long) cu->proc, (u_long) cu->context);
 		(*cu->proc) (cu->context);
 		*cup = cu->next;
@@ -849,7 +849,7 @@ fatal_cleanup(void)
 		cu = *cup;
 		if (cu->thread_id != 0)
 			continue;
-		debug("Calling cleanup 0x%lx(0x%lx)",
+		debug("Calling cleanup 0x%x(0x%x)",
 		      (u_long) cu->proc, (u_long) cu->context);
 		(*cu->proc) (cu->context);
 	}
