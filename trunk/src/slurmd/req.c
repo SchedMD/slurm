@@ -186,8 +186,8 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 static void 
 _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int      retval = 0;
-	int      rc     = 0;
+	int      retval = SLURM_SUCCESS;
+	int      rc     = SLURM_SUCCESS;
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
@@ -233,6 +233,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
     done:
 	slurm_send_rc_msg(msg, retval);
+	if ((rc == SLURM_SUCCESS) && (retval == SLURM_SUCCESS))
+		save_cred_state(conf->cred_state_list);
 }
 
 
