@@ -1502,9 +1502,13 @@ void make_node_comp(struct node_record *node_ptr)
 		       node_ptr->name, 
 		       node_state_string((enum node_states)
 					 node_ptr->node_state));
-	} else {
+	} else if (!no_resp_flag) {
 		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
 		xfree(node_ptr->reason);
+	} else if ( (base_state == NODE_STATE_ALLOCATED) &&
+		    (node_ptr->run_job_cnt == 0) ) {
+		bit_set(idle_node_bitmap, inx);
+		node_ptr->node_state = NODE_STATE_IDLE | no_resp_flag;
 	}
 }
 
