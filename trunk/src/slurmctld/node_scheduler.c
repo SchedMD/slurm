@@ -43,8 +43,9 @@ int
 main (int argc, char *argv[]) 
 {
 	int error_code, error_count = 0, line_num, i;
+	uint16_t job_id;
 	FILE *command_file;
-	char in_line[BUF_SIZE], *job_id, *node_list;
+	char in_line[BUF_SIZE], *node_list;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	clock_t start_time;
 
@@ -120,7 +121,7 @@ main (int argc, char *argv[])
 	printf ("\n");
 	while (fgets (in_line, BUF_SIZE, command_file)) {
 		start_time = clock ();
-		job_id = node_list = NULL;
+		node_list = NULL;
 		if (in_line[strlen (in_line) - 1] == '\n')
 			in_line[strlen (in_line) - 1] = (char) NULL;
 		line_num++;
@@ -141,8 +142,6 @@ main (int argc, char *argv[])
 			}
 			printf ("for job: %s\n  nodes selected %s\n",
 				in_line, node_list);
-			if (job_id)
-				xfree (job_id);
 			if (node_list)
 				xfree (node_list);
 		}
@@ -711,7 +710,7 @@ select_nodes (struct job_record *job_ptr)
 		req_bitmap = bit_copy (job_ptr->details->req_node_bitmap);
 	part_ptr = find_part_record(job_ptr->partition);
 	if (part_ptr == NULL)
-		fatal("select_nodes: invalid partition name %s for job %s", 
+		fatal("select_nodes: invalid partition name %s for job %u", 
 			job_ptr->partition, job_ptr->job_id);
 	node_set_index = 0;
 	node_set_size = 0;

@@ -299,6 +299,9 @@ init_slurm_conf () {
 	if ((error_code = init_job_conf ()))
 		return error_code;
 
+	if ((error_code = init_step_conf ()))
+		return error_code;
+
 	return 0;
 }
 

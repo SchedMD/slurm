@@ -62,7 +62,7 @@ build_job_queue (struct job_queue **job_queue)
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("prio_order_job: data integrity is bad");
 		if (job_buffer_size <= job_queue_size) {
-			job_buffer_size += 20;
+			job_buffer_size += 50;
 			xrealloc(my_job_queue, job_buffer_size * 
 				sizeof (struct job_queue));
 		}
@@ -90,7 +90,7 @@ schedule()
 	struct job_queue *job_queue;
 	int i, j, error_code, failed_part_cnt, job_queue_size;
 	struct job_record *job_ptr;
-	char *failed_parts;
+	struct part_record **failed_parts;
 
 	job_queue_size = build_job_queue (&job_queue);
 	if (job_queue_size == 0)
@@ -102,17 +102,15 @@ schedule()
 	for (i=0; i<job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
 		for (j=0; j<failed_part_cnt; j++) {
-			if (strncmp(&failed_parts[i*MAX_NAME_LEN],  
-			    job_ptr->partition, MAX_NAME_LEN) == 0)
+			if (failed_parts[j] == job_ptr->part_ptr)
 				break;
 		}
 		if (j < failed_part_cnt) continue;
 		error_code = select_nodes(job_ptr);
 		if (error_code == EAGAIN) {
-			xrealloc(failed_parts, (failed_part_cnt+1)*MAX_NAME_LEN);
-			strncpy(&failed_parts[failed_part_cnt*MAX_NAME_LEN], 
-				job_ptr->partition, MAX_NAME_LEN);
-			failed_part_cnt++;
+			xrealloc(failed_parts, 
+			         (failed_part_cnt+1)*sizeof(struct part_record *));
+			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
 		}
 		else if (error_code == EINVAL) {
 			last_job_update = time (NULL);
@@ -122,10 +120,11 @@ schedule()
 		}
 		else {			/* job initiated */
 			last_job_update = time (NULL);
-			info ("schedule: job_id %s on nodes %s", 
+			info ("schedule: job_id %u on nodes %s", 
 			      job_ptr->job_id, job_ptr->nodes);
 		}
 	}
+
 	if (failed_parts)
 		xfree(failed_parts);
 	if (job_queue)
