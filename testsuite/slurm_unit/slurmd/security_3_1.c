@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
 	launch_msg.argc		= 0;
 	launch_msg.argv		= NULL;
 	launch_msg.script	= "/bin/hostname\n";
+	launch_msg.envc 	= 0;
 	launch_msg.environment 	= NULL;
 
 	if (_send_launch_msg(&launch_msg) == SLURM_SUCCESS)
@@ -106,14 +107,14 @@ static int _report_results(slurm_msg_t *response_msg_ptr)
 	return_code_msg_t *slurm_rc_msg_ptr;
 
 	if (response_msg_ptr->msg_type != RESPONSE_SLURM_RC) {
-		fprintf(stderr, "Wrong response type: %u", 
+		fprintf(stderr, "Wrong response type: %u\n", 
 			response_msg_ptr->msg_type);
 		return SLURM_ERROR;
 	}
 
 	slurm_rc_msg_ptr = (return_code_msg_t *) response_msg_ptr->data;
 	if (slurm_rc_msg_ptr->return_code != ESLURM_USER_ID_MISSING) {
-		fprintf(stderr, "Wrong response code: %u", 
+		fprintf(stderr, "Wrong response code: %u\n", 
 			slurm_rc_msg_ptr->return_code);
 		return SLURM_ERROR;
 	}
