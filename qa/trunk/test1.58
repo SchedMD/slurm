@@ -108,6 +108,8 @@ if {[wait_for_file $file_out] == 0} {
 		send_user "\nFAILURE: mpi_ping test failed to complete\n"
 		set exit_code 1
 	}
+} else {
+	set exit_code 1
 }
 
 if {$exit_code == 0} {
