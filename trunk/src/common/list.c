@@ -466,9 +466,9 @@ void list_iterator_destroy(ListIterator i)
             break;
         }
     }
-    assert(i->magic = ITER_DESTROYED);		/* clear magic via assert abuse */
-    list_iterator_free(i);
     list_mutex_unlock(&i->list->mutex);
+    assert(i->magic = ITER_DESTROYED);	/* clear magic via assert abuse */
+    list_iterator_free(i);
     return;
 }
 
