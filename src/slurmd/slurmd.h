@@ -87,6 +87,13 @@ slurmd_conf_t * conf;
 
 /* Send node registration message to controller
  */
-int send_registration_msg(void);
+extern int send_registration_msg(void);
+
+/*
+ * save_cred_state - save the current credential list to a file
+ * IN list - list of credentials
+ * RET int - zero or error code
+ */
+extern int save_cred_state(List list);
 
 #endif /* !_SLURMD_H */

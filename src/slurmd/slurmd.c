@@ -99,12 +99,12 @@ static void       _list_recovered_creds(List list);
 static void       _reconfigure();
 static void       _restore_cred_state(List *list);
 static void       _wait_for_all_threads();
-static void       _save_cred_state(List list);
 static void       _set_slurmd_spooldir(void);
 static void       _usage();
 static void       _handle_connection(slurm_fd fd, slurm_addr *client);
 static void      *_service_connection(void *);
-static void       _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void       _fill_registration_msg(
+				slurm_node_registration_status_msg_t *);
 static void       _update_logging(void);
 
 static slurm_ctl_conf_t slurmctld_conf;
@@ -602,39 +602,64 @@ static int
 _slurmd_fini()
 {
 	list_destroy(conf->threads);
-	_save_cred_state(conf->cred_state_list);
+	save_cred_state(conf->cred_state_list);
 	slurm_destroy_ssl_key_ctx(&conf->vctx);
 	slurm_ssl_destroy();
 	shm_fini();
 	return SLURM_SUCCESS;
 }
 
-static void
-_save_cred_state(List list)
+/*
+ * save_cred_state - save the current credential list to a file
+ * IN list - list of credentials
+ * RET int - zero or error code
+ */
+int save_cred_state(List list)
 {
-	char *file_name;
-	int cred_fd;
+	char *old_file, *new_file, *reg_file;
+	int cred_fd = 0, error_code = SLURM_SUCCESS;
 	Buf buffer = NULL;
+	static pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-	file_name = xstrdup(conf->spooldir);
-	xstrcat(file_name, "/cred_state");
-	cred_fd = creat(file_name, 0600);
+	old_file = xstrdup(conf->spooldir);
+	xstrcat(old_file, "/cred_state.old");
+	reg_file = xstrdup(conf->spooldir);
+	xstrcat(reg_file, "/cred_state");
+	new_file = xstrdup(conf->spooldir);
+	xstrcat(new_file, "/cred_state.new");
+
+	slurm_mutex_lock(&state_mutex);
+	cred_fd = creat(new_file, 0600);
 	if (cred_fd == 0) {
-		error("creat %s error %m", file_name);
+		error("creat %s error %m", new_file);
+		error_code = errno;
 		goto cleanup;
 	}
 	buffer = init_buf(1024);
 	pack_credential_list(list, buffer);
-	if (write(cred_fd, get_buf_data(buffer), get_buf_offset(buffer)) != 
-	    get_buf_offset(buffer))
-		error("write %s error %m", file_name);
-	close(cred_fd);
+	if (write(cred_fd, get_buf_data(buffer), 
+		  get_buf_offset(buffer)) != get_buf_offset(buffer)) {
+		error("write %s error %m", new_file);
+		(void) unlink(new_file);
+		error_code = errno;
+		goto cleanup;
+	}
+	(void) unlink(old_file);
+	(void) link(reg_file, old_file);
+	(void) unlink(reg_file);
+	(void) link(new_file, reg_file);
+	(void) unlink(new_file);
 
       cleanup:
-	xfree(file_name);
+	slurm_mutex_unlock(&state_mutex);
+	xfree(old_file);
+	xfree(reg_file);
+	xfree(new_file);
 	if (buffer)
 		free_buf(buffer);
-	destroy_credential_state_list(list);
+	if (cred_fd)
+		close(cred_fd);
+	return error_code;
 }
 
 static void
