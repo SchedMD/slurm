@@ -778,7 +778,7 @@ void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer )
 	pack32( cred->job_id, buffer ) ;
 	pack16( (uint16_t) cred->user_id, buffer ) ;
 	packstr( cred->node_list, buffer ) ;
-	pack32( cred->expiration_time, buffer ) ;	
+	pack_time( cred->expiration_time, buffer ) ;	
 	for ( i = 0; i < sizeof( cred->signature ); i++ ) /* this is a fixed size array */
 		pack8( cred->signature[i], buffer ); 
 }
@@ -793,11 +793,24 @@ int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer )
 	if (tmp_ptr == NULL) 
 		return ENOMEM;
 
+	if (remaining_buf(buffer) < sizeof(uint32_t))
+		return EINVAL;
 	unpack32( &(tmp_ptr->job_id), buffer ) ;
+
+	if (remaining_buf(buffer) < sizeof(uint16_t))
+		return EINVAL;
 	unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer ) ;
+
+	if (remaining_buf(buffer) < sizeof(uint16_t))
+		return EINVAL;
 	unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  buffer ) ;
-	unpack32( (uint32_t*) &(tmp_ptr->expiration_time), buffer ) ;	/* What are we going to do about time_t ? */
+
+	if (remaining_buf(buffer) < sizeof(time_t))
+		return EINVAL;
+	unpack_time( &(tmp_ptr->expiration_time), buffer ) ;
 	
+	if (remaining_buf(buffer) < sizeof(tmp_ptr->signature))
+		return EINVAL;
 	for ( i = 0; i < sizeof( tmp_ptr->signature ); i++ ) /* this is a fixed size array */
 		unpack8( (uint8_t*)(tmp_ptr->signature + i), buffer ); 
 	
