@@ -368,113 +368,86 @@ Execute slurm_free_part_info to release the memory allocated by slurm_load_part.
 <h2>Examples of API Use</h2>
 
 <pre>
-#include &lt;config.h&gt;
 #include &lt;stdio.h&gt;
-#include "slurmlib.h"
+#include &lt;slurm.h&gt;
 
 int
 main (int argc, char *argv[]) 
 {
 	int error_code, i, j, k;
-	struct build_buffer *build_buffer_ptr = NULL;
-	struct build_table  *build_table_ptr = NULL;
-	struct job_buffer *job_buffer_ptr = NULL;
-	struct job_table *job_ptr = NULL;
-	struct node_buffer *node_buffer_ptr = NULL;
-	struct node_table *node_ptr = NULL;
-	struct part_buffer *part_buffer_ptr = NULL;
-	struct part_table *part_ptr = NULL;
+	slurm_ctl_conf_info_msg_t * conf_info_msg_ptr = NULL;
+	job_info_msg_t * job_info_msg_ptr = NULL;
+	node_info_msg_t *node_info_ptr = NULL;
+	partition_info_msg_t *part_info_ptr = NULL;
 
 
-	/* get and dump some build information */
-	error_code = slurm_load_build ((time_t) NULL, &build_buffer_ptr);
-	if (error_code) {
-		printf ("slurm_load_build error %d\n", error_code);
+	/* get and dump some configuration information */
+	if ( slurm_load_ctl_conf ((time_t) NULL, &conf_info_msg_ptr ) ) {
+		printf ("slurm_load_ctl_conf errno %d\n", errno);
 		exit (1);
 	}
 
-	build_table_ptr = build_buffer_ptr->build_table_ptr;
-	printf("backup_interval	= %u\n", build_table_ptr->backup_interval);
-	printf("backup_location	= %s\n", build_table_ptr->backup_location);
-	slurm_free_build_info (build_buffer_ptr);
+	printf ("control_machine	= %s\n", slurm_ctl_conf_ptr->control_machine);
+	printf ("server_timeout	= %u\n", slurm_ctl_conf_ptr->server_timeout);
+	slurm_free_ctl_conf (conf_info_msg_ptr);
 
 
 	/* get and dump some job information */
-	error_code = slurm_load_job ((time_t) NULL, &job_buffer_ptr);
-	if (error_code) {
-		printf ("slurm_load_job error %d\n", error_code);
-		exit (error_code);
+	if ( slurm_load_jobs ((time_t) NULL, &job_buffer_ptr) ) {
+		printf ("slurm_load_jobs errno %d\n", errno);
+		exit (1);
 	}
 
-	printf("Jobs updated at %lx, record count %d\n",
-		job_buffer_ptr->last_update, job_buffer_ptr->job_count);
-	job_ptr = job_buffer_ptr->job_table_ptr;
+	printf ("Jobs updated at %lx, record count %d\n",
+		job_buffer_ptr->last_update, job_buffer_ptr->record_count);
 
-	for (i = 0; i < job_buffer_ptr->job_count; i++) {
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		printf ("JobId=%u UserId=%u\n", 
-			job_ptr[i].job_id, job_ptr[i].user_id);
+			job_buffer_ptr->job_array[i].job_id, job_buffer_ptr->job_array[i].user_id);
 	}			
 	slurm_free_job_info (job_buffer_ptr);
 
 
 	/* get and dump some node information */
-	error_code = slurm_load_node ((time_t) NULL, &node_buffer_ptr);
-	if (error_code) {
-		printf ("slurm_load_node error %d\n", error_code);
-		exit (error_code);
+	if ( slurm_load_node ((time_t) NULL, &node_buffer_ptr) ) {
+		printf ("slurm_load_node errno %d\n", errno);
+		exit (1);
 	}
 	
-	node_ptr = node_buffer_ptr->node_table_ptr;
 	for (i = 0; i < node_buffer_ptr->node_count; i++) {
 		printf ("NodeName=%s CPUs=%u\n", 
-			node_ptr[i].name, node_ptr[i].cpus);
+			node_buffer_ptr->node_array[i].name, 
+			node_buffer_ptr->node_array[i].cpus);
 	}			
 
 
 	/* get and dump some partition information */
-	/* note that we use the node information loaded above */
+	/* note that we use the node information loaded above and */
 	/* we assume the node table entries have not changed since */
-	/* loaded above (only updated on slurmctld reconfiguration) */
-	error_code = slurm_load_part ((time_t) NULL, &part_buffer_ptr);
-	if (error_code) {
-		printf ("slurm_load_part error %d\n", error_code);
-		exit (error_code);
+	if ( slurm_load_partitions ((time_t) NULL, &part_buffer_ptr) ) {
+		printf ("slurm_load_part errno %d\n", errno);
+		exit (1);
 	}
 	printf("Partitions updated at %lx, record count %d\n",
-		part_buffer_ptr->last_update, part_buffer_ptr->part_count);
-	part_ptr = part_buffer_ptr->part_table_ptr;
+		part_buffer_ptr->last_update, part_buffer_ptr->record_count);
 
-	for (i = 0; i < part_buffer_ptr->part_count; i++) {
-		printf ("PartitionName=%s MaxTime=%u ", 
-			part_ptr[i].name, part_ptr[i].max_time);
-		printf ("Nodes=%s AllowGroups=%s\n", 
-			part_ptr[i].nodes, part_ptr[i].allow_groups);
-		printf ("   NodeIndecies=");
-		for (j = 0; part_ptr[i].node_inx; j++) {
-			if (j > 0)
-				printf(",%d", part_ptr[i].node_inx[j]);
-			else
-				printf("%d", part_ptr[i].node_inx[j]);
-			if (part_ptr[i].node_inx[j] == -1)
+	for (i = 0; i < part_buffer_ptr->record_count; i++) {
+		printf ("PartitionName=%s MaxTime=%u Nodes=%s:", 
+			part_info_ptr->partition_array[i].name, 
+			part_info_ptr->partition_array[i].max_time,
+			part_info_ptr->partition_array[i].nodes );
+		for (j = 0; part_info_ptr->partition_array[i].node_inx; j+=2) {
+			if (part_info_ptr->partition_array[i].node_inx[j] == -1)
 				break;
-		}
-		printf("\n   NodeList=");
-		for (j = 0; part_ptr[i].node_inx; j+=2) {
-			if (part_ptr[i].node_inx[j] == -1)
-				break;
-			for (k = part_ptr[i].node_inx[j];
-			     k <= part_ptr[i].node_inx[j+1]; k++) {
-				if (k > node_buffer_ptr->node_count) {
-					printf ("Node index out of sync\n");
-					break;
-				}
-				printf("%s,", node_ptr[k].name);
+			for (k = part_info_ptr->partition_array[i].node_inx[j];
+			     k <= part_info_ptr->partition_array[i].node_inx[j+1]; k++) {
+				printf ("%s ", node_buffer_ptr->node_array[k].name);
 			}
 		}
 		printf("\n\n");
 	}
 	slurm_free_node_info (node_buffer_ptr);
-	slurm_free_part_info (part_buffer_ptr);
+	slurm_free_partition_info (part_buffer_ptr);
 	exit (0);
 }
 </pre>
