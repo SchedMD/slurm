@@ -84,12 +84,13 @@ static void	_ping_slurmctld(slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr);
 static void	_print_completing (void);
 static void	_print_completing_job(job_info_t *job_ptr, 
 				node_info_msg_t *node_info_msg);
-static void	_print_config (char *config_param, bool ping_only);
+static void	_print_config (char *config_param);
 static void     _print_daemons (void);
 static void	_print_job (char * job_id_str);
 static void	_print_node (char *node_name, node_info_msg_t *node_info_ptr);
 static void	_print_node_list (char *node_list);
 static void	_print_part (char *partition_name);
+static void	_print_ping (void);
 static void	_print_step (char *job_step_id_str);
 static void     _print_version( void );
 static int	_process_command (int argc, char *argv[]);
@@ -479,10 +480,9 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 /* 
  * _print_config - print the specified configuration parameter and value 
  * IN config_param - NULL to print all parameters and values
- * IN ping_only - just ping slurmctld daemons
  */
 static void 
-_print_config (char *config_param, bool ping_only)
+_print_config (char *config_param)
 {
 	int error_code;
 	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
@@ -514,12 +514,28 @@ _print_config (char *config_param, bool ping_only)
 		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
 
 
-	if ((error_code == SLURM_SUCCESS) && !ping_only) {
+	if (error_code == SLURM_SUCCESS) {
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 		fprintf(stdout, "\n"); 
 	}
 	if (slurm_ctl_conf_ptr)
 		_ping_slurmctld (slurm_ctl_conf_ptr);
+}
+
+/* Print state of controllers only */
+static void
+_print_ping (void)
+{
+	static slurm_ctl_conf_info_msg_t  *slurm_conf_ptr = NULL;
+
+	if (slurm_conf_ptr == NULL) {
+		slurm_conf_ptr = xmalloc(sizeof(slurm_ctl_conf_info_msg_t));
+		init_slurm_conf(slurm_conf_ptr);
+		read_slurm_conf_ctl(slurm_conf_ptr);
+		validate_config(slurm_conf_ptr);
+	}
+
+	_ping_slurmctld (slurm_conf_ptr);
 }
 
 /* Report if slurmctld daemons are responding */
@@ -1065,7 +1081,7 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n",
 				 argv[0]);
 		}
-		_print_config (NULL, true);
+		_print_ping ();
 	}
 	else if (strncasecmp (argv[0], "quiet", 4) == 0) {
 		if (argc > 1) {
@@ -1114,9 +1130,9 @@ _process_command (int argc, char *argv[])
 		}
 		else if (strncasecmp (argv[1], "config", 3) == 0) {
 			if (argc > 2)
-				_print_config (argv[2], false);
+				_print_config (argv[2]);
 			else
-				_print_config (NULL, false);
+				_print_config (NULL);
 		}
 		else if (strncasecmp (argv[1], "daemons", 3) == 0) {
 			if (argc > 2) {
