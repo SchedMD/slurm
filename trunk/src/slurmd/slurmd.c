@@ -742,7 +742,7 @@ _set_slurmd_spooldir(void)
 	 * running as a daemon
 	 */
 	if (conf->daemonize && chdir(conf->spooldir) < 0) {
-		fatal("chdir(%s): %m", conf->spooldir);
+		error("chdir(%s): %m", conf->spooldir);
 		return SLURM_ERROR;
 	}
 
