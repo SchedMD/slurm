@@ -287,12 +287,13 @@ init_slurm_conf () {
 		backup_controller = NULL;
 	}
 
-	error_code = init_node_conf ();
-	if (error_code)
+	if (error_code = init_node_conf ())
 		return error_code;
 
-	error_code = init_part_conf ();
-	if (error_code)
+	if (error_code = init_part_conf ())
+		return error_code;
+
+	if (error_code = init_job_conf ())
 		return error_code;
 
 	return 0;

@@ -424,28 +424,76 @@ init_job_conf ()
 
 
 /*
- * job_create - parse the suppied job specification and create job_records for it
+ * job_allocate - parse the suppied job specification, create job_records for it, 
+ *	and allocate nodes for it. if the job can not be immediately allocated 
+ *	nodes, EAGAIN will be returned
  * input: job_specs - job specifications
- * output: returns 0 on success, EINVAL if specification is invalid
+ *	new_job_id - location for storing new job's id
+ *	node_list - location for storing new job's allocated nodes
+ * output: new_job_id - the job's ID
+ *	node_list - list of nodes allocated to the job
+ *	returns 0 on success, EINVAL if specification is invalid, 
+ *		EAGAIN if higher priority jobs exist
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
+ * NOTE: the calling program must xfree the memory pointed to by new_job_id 
+ *	and node_list
  */
 int
-job_create (char *job_specs)
+job_allocate (char *job_specs, char **new_job_id, char **node_list)
+{
+	int error_code, i;
+	struct job_record *job_ptr;
+
+	new_job_id[0] = node_list[0] = NULL;
+
+	error_code = job_create (job_specs, new_job_id);
+	if (error_code)
+		return error_code;
+	job_ptr = find_job_record(new_job_id[0]);
+	if (job_ptr == NULL)
+		fatal ("job_allocate allocated job %s lacks record", 
+			new_job_id[0]);
+
+/*	if (top_priority(new_job_id[0]) != 0)
+		return EAGAIN; */
+	error_code = select_nodes(job_ptr);
+	if (error_code)
+		return error_code;
+	i = strlen(job_ptr->nodes) + 1;
+	node_list[0] = xmalloc(i);
+	strcpy(node_list[0], job_ptr->nodes);
+	return 0;
+}
+
+
+/*
+ * job_create - parse the suppied job specification and create job_records for it
+ * input: job_specs - job specifications
+ *	new_job_id - location for storing new job's id
+ * output: new_job_id - the job's ID
+ *	returns 0 on success, EINVAL if specification is invalid
+ * globals: job_list - pointer to global job list 
+ *	list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
+ * NOTE: the calling program must xfree the memory pointed to by new_job_id
+ */
+int
+job_create (char *job_specs, char **new_job_id)
 {
 	char *req_features, *req_node_list, *job_name, *req_group;
 	char *req_partition, *script, *out_line, *job_id;
 	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
 	int i, min_tmp_disk, time_limit, procs_per_task, user_id;
 	int error_code, cpu_tally, dist, node_tally, key, shared;
-	char *job_script;
 	struct part_record *part_ptr;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	float priority;
 	bitstr_t *req_bitmap;
 
+	new_job_id[0] = NULL;
 	req_features = req_node_list = job_name = req_group = NULL;
 	job_id = req_partition = script = NULL;
 	req_bitmap = NULL;
@@ -478,17 +526,22 @@ job_create (char *job_specs)
 		error_code = EINVAL;
 		goto cleanup;
 	}			
+	if (job_id && (strlen(job_id) >= MAX_ID_LEN)) {
+		info ("job_create: JobId specified is too long");
+		error_code = EINVAL;
+		goto cleanup;
+	}
 	if (user_id == NO_VAL) {
-		info ("job_create: job failed to User");
+		info ("job_create: job failed to specify User");
 		error_code = EINVAL;
 		goto cleanup;
 	}	
 	if (contiguous == NO_VAL)
 		contiguous = 0;		/* default not contiguous */
 	if (req_cpus == NO_VAL)
-		req_cpus = 0;		/* default no cpu count requirements */
+		req_cpus = 1;		/* default cpu count of 1 */
 	if (req_nodes == NO_VAL)
-		req_nodes = 0;		/* default no node count requirements */
+		req_nodes = 1;		/* default node count of 1 */
 	if (min_cpus == NO_VAL)
 		min_cpus = 1;		/* default is 1 processor per node */
 	if (min_memory == NO_VAL)
@@ -513,6 +566,7 @@ job_create (char *job_specs)
 			error_code = EINVAL;
 			goto cleanup;
 		}		
+		xfree (req_partition);
 	}
 	else {
 		if (default_part_loc == NULL) {
@@ -567,6 +621,7 @@ job_create (char *job_specs)
 		if (i > req_nodes)
 			req_nodes = i;
 		bit_free (req_bitmap);
+		req_bitmap = NULL;
 	}			
 	if (req_cpus > part_ptr->total_cpus) {
 		info ("select_nodes: too many cpus (%d) requested of partition %s(%d)",
@@ -594,6 +649,7 @@ job_create (char *job_specs)
 	if ((job_ptr == NULL) || error_code)
 		goto cleanup;
 
+	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
 	if (job_id) {
 		strncpy (job_ptr->job_id, job_id, MAX_ID_LEN);
 		xfree (job_id);
@@ -605,7 +661,6 @@ job_create (char *job_specs)
 		strncpy (job_ptr->name, job_name, MAX_NAME_LEN);
 		xfree (job_name);
 	}
-	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
 	job_ptr->user_id = (uid_t) user_id;
 	job_ptr->job_state = JOB_PENDING;
 	job_ptr->time_limit = time_limit;
@@ -617,7 +672,7 @@ job_create (char *job_specs)
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = req_cpus;
 	detail_ptr->num_nodes = req_nodes;
-	if (req_nodes)
+	if (req_node_list)
 		detail_ptr->nodes = req_node_list;
 	if (req_features)
 		detail_ptr->features = req_features;
@@ -634,6 +689,8 @@ job_create (char *job_specs)
 	/* job_ptr->end_time		*leave as NULL pointer for now */
 	/* detail_ptr->total_procs	*leave as NULL pointer for now */
 
+	new_job_id[0] = xmalloc(strlen(job_ptr->job_id) + 1);
+	strcpy(new_job_id[0], job_ptr->job_id);
 	return 0;
 
       cleanup:
@@ -883,10 +940,16 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		xfree (req_group[0]);
 	if (req_partition[0])
 		xfree (req_partition[0]);
+	if (script[0])
+		xfree (script[0]);
+	if (contiguous_str)
+		xfree (contiguous_str);
+	if (dist_str)
+		xfree (dist_str);
 	if (shared_str)
 		xfree (shared_str);
 	req_features[0] = req_node_list[0] = req_group[0] = NULL;
-	req_partition[0] = job_name[0] = script[0] = NULL;
+	job_id[0] = req_partition[0] = job_name[0] = script[0] = NULL;
 }
 
 
@@ -921,6 +984,8 @@ set_job_id (struct job_record *job_ptr)
 	if ((job_ptr == NULL) || 
 	    (job_ptr->magic != JOB_MAGIC)) 
 		fatal ("set_job_id: invalid job_ptr");
+	if ((job_ptr->partition == NULL) || (strlen(job_ptr->partition) == 0))
+		fatal ("set_job_id: partition not set");
 	while (1) {
 		if (job_ptr->partition)
 			sprintf(new_id, "%s.%d", job_ptr->partition, id_sequence++);

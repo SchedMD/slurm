@@ -106,7 +106,7 @@ main (int argc, char *argv[])
 	if (error_code)
 		printf ("ERROR: update_part error %d\n", error_code);
 
-	part_ptr = list_find_first (part_list, &list_find_part, "batch");
+	part_ptr = find_part_record ("batch");
 	if (part_ptr == NULL)
 		printf ("ERROR: list_find failure\n");
 	if (part_ptr->max_time != 34)
@@ -423,6 +423,18 @@ dump_part (struct part_record *part_record_point, char *out_line, int out_line_s
 		 part_record_point->total_cpus);
 
 	return 0;
+}
+
+
+/* 
+ * find_part_record - find a record for partition with specified name,
+ * input: name - name of the desired partition 
+ * output: return pointer to node partition or null if not found
+ * global: part_list - global partition list
+ */
+struct part_record *
+find_part_record (char *name){
+	return list_find_first (part_list, &list_find_part, name);
 }
 
 
