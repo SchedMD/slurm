@@ -40,12 +40,12 @@
 #  include <strings.h>
 #endif
 
-#include <src/common/log.h>
-#include <src/common/macros.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xstring.h>
-#include <src/scancel/scancel.h>
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/scancel/scancel.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
