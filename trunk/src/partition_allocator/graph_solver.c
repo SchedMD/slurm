@@ -29,6 +29,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include "slurm.h"
 #include "graph_solver.h"
 #include "src/common/xstring.h"
 
@@ -44,6 +45,8 @@ _STMT_START {		\
 	(a) = (b);	\
 	(b) = (t);	\
 } _STMT_END
+
+long count;
 
 // #define PRINT_RESULTS
 // #define DEBUG_PRINT_RESULTS
@@ -89,11 +92,11 @@ int _find_all_switch_permutations(node_t* node, int* plus_ports,
 /** */
 int _find_all_paths(int* plus_ports, List minus_ports_list,
 		    List current_nodes, List current_configs,
-		    List part_config_list);
+		    List conf_result_list);
 		    
 /** */
 void _find_all_paths_aux(List* connection_list, List current_port_conf,
-			 List part_config_list);
+			 List conf_result_list);
 			 
 /** */
 void _connect_switch(switch_t* my_switch, int* plus_ports, int* minus_ports);
@@ -120,13 +123,14 @@ void _init_local_partition(List result_partitions);
 /** */
 void _print_all_connections();
 /** */
-void _print_results(List result_partitions, List current_port_conf);
+// void _print_results(List result_partitions, List current_port_conf);
+void _print_results(List conf_result_list);
 /** */
-void _insert_results(List part_config_list, List result_partitions, List current_port_conf);
+void _insert_results(List conf_result_list, List result_partitions, List current_port_conf);
 
 /** configure up the system to get ready for partitioning*/
 // int init_system(system_t* sys)
-int init_system(List port_config_list, int num_nodes)
+int gs_init(List port_config_list, int num_nodes)
 {
 	ListIterator itr;
 	int i;
@@ -136,6 +140,7 @@ int init_system(List port_config_list, int num_nodes)
 	connection_t *conn; 
 	switch_config_t* switch_config;
 
+	count = 0;
 #ifdef PERM_DEBUG
 	__permutations = 0;
 #endif
@@ -190,6 +195,12 @@ int init_system(List port_config_list, int num_nodes)
 	return SUCCESS;
 }
 
+/* deletes the graph structs */
+void gs_fini(List port_config_list)
+{
+	delete_system();
+}
+
 /** */
 void new_conf_result(conf_result_t** conf_result, conf_data_t* conf_data)
 {
@@ -218,25 +229,46 @@ void print_conf_result(conf_result_t* conf_result)
 		return;
 	}
 
-	printf("conf_result: \n");
-	printf("  port_conf: ");
-	print_port_conf_list(conf_result->port_conf_list);
-
 	num_part = conf_result->conf_data->num_partitions;
-	printf("  conf_data: ");
+	printf("NumPartitions=%d ", num_part);
+	printf("PartitionSizes=");
 	for (i=0; i<num_part; i++){
 		printf("%d", conf_result->conf_data->partition_sizes[i]);
-		printf("(");
-		for (j=0; j<conf_result->conf_data->partition_sizes[i]; j++){
-			printf("%d", conf_result->conf_data->node_id[i][j]);
-		}
-		printf(")");
-
-		printf(" %s", convert_conn_type(conf_result->conf_data->partition_type[i]));
 		if (i != (num_part - 1)){
-			printf(", ");
+			printf(",");
+		} else {
+			printf(" ");
 		}
 	}
+
+	printf("PartitionTypes=");
+	for (i=0; i<num_part; i++){
+		printf("%d", conf_result->conf_data->partition_type[i]);
+		if (i != (num_part - 1)){
+			printf(",");
+		} else {
+			printf(" ");
+		}
+	}
+
+	printf("NodeIDs=");
+	for (i=0; i<num_part; i++){
+		for (j=0; j<conf_result->conf_data->partition_sizes[i]; j++){
+			printf("%d", conf_result->conf_data->node_id[i][j]);
+			if (j != (conf_result->conf_data->partition_sizes[i] - 1)){
+				printf("/");
+			}
+		}
+		
+		if (i != (num_part - 1)){
+			printf(",");
+		} else {
+			printf(" ");
+		}
+	}
+
+	printf("PortConfig=");
+	print_port_conf_list(conf_result->port_conf_list);
 	printf("\n");
 }
 
@@ -309,10 +341,10 @@ void delete_port_conf(void * object)
  * 
  * IN - sys: 
  * 
- * OUT - part_config_list: results of the graph search for
+ * OUT - conf_result_list: results of the graph search for
  * the given configuration, as set by init_system();
  */
-int find_all_tori(List part_config_list)
+int find_all_tori(List conf_result_list)
 {
 	List switches_copy = NULL, minus_ports_list = NULL;
 	int *plus_ports = NULL;
@@ -326,15 +358,13 @@ int find_all_tori(List part_config_list)
 	list_copy(global_sys->switch_list, &switches_copy);
 	/**
 	 * find all the toroidal paths in the system, and insert
-	 * results into part_config_list
+	 * results into conf_result_list
 	 */
-#ifdef PRINT_RESULTS
-	printf("(size/type)\t\t: Y(N) X(N) Y(N-1) X(N-1) ... Y(1) X(1) \n");
-#endif
+
 	current_configs = list_create(delete_port_conf);
 	_find_all_paths(plus_ports, minus_ports_list,
 			switches_copy, current_configs,
-			part_config_list);
+			conf_result_list);
 	
 	list_destroy(current_configs);
 	list_destroy(switches_copy);
@@ -347,6 +377,10 @@ int find_all_tori(List part_config_list)
 	 * to indicate in the output file an actual successful finish.
 	 printf("ALL DONE\n");
 	 */
+
+	// 999
+	// printf("number of distinct configs %ld\n", count);
+	_print_results(conf_result_list);
 
 	return SUCCESS;
 }
@@ -363,7 +397,7 @@ int find_all_tori(List part_config_list)
  */
 int _find_all_paths(int* plus_ports, List minus_ports_list,
 		    List current_switches, List current_configs,
-		    List part_config_list)
+		    List conf_result_list)
 {
 	ListIterator list_itr;
 	int* minus_ports = NULL;
@@ -391,11 +425,11 @@ int _find_all_paths(int* plus_ports, List minus_ports_list,
 		if (list_count(current_switches) == 0){
 			// print_port_conf_list(current_configs);
 			list_copy(global_sys->connection_list, &connection_list_copy);
-			_find_all_paths_aux(&connection_list_copy, current_configs, part_config_list);
+			_find_all_paths_aux(&connection_list_copy, current_configs, conf_result_list);
 			list_destroy(connection_list_copy);
 		} else {
 			_find_all_paths(plus_ports, minus_ports_list, current_switches,
-					current_configs, part_config_list);
+					current_configs, conf_result_list);
 		}
 		port_conf = list_pop(current_configs);
 		delete_port_conf(port_conf);
@@ -419,7 +453,7 @@ int _find_all_paths(int* plus_ports, List minus_ports_list,
  * 
  */
 void _find_all_paths_aux(List* connection_list, List current_port_conf, 
-			 List part_config_list)
+			 List conf_result_list)
 {
 	connection_t* conn;
 
@@ -461,7 +495,6 @@ void _find_all_paths_aux(List* connection_list, List current_port_conf,
 	 * on each iteration.  If the indeterminate connections do not
 	 * decrease, that indicates that the algorithm has found all
 	 * partitions, and hence we are done.
-	 * 
 	 * 
 	 * 
 	 * NOTE: one way to make each iteration best case: 
@@ -567,35 +600,13 @@ void _find_all_paths_aux(List* connection_list, List current_port_conf,
 	}
  done:
 
-#ifdef DEBUG_PRINT_RESULTS
-
-	printf("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n");
- 	// printf("* found number of partitions <%d>\n", list_count(global_sys->partition_list));
-	printf("* found number of partitions <%d>\n", list_count(result_partitions));
-	printf("* * * * * * * * * * * * * * * * * * * * * * * * * * * * * \n");
-	// itr = list_iterator_create(global_sys->partition_list);
-	itr = list_iterator_create(result_partitions);
-	while(part = (partition_t*) list_next(itr)){
-		printf("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
-		print_partition(part);
-	}
-	list_iterator_destroy(itr);
-
-	printf("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
-	printf("- number of iterations for this set of connections: <%d>\n", num_itr);
-	printf("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
-#endif /* DEBUG_PRINT_RESULTS */
-
-#ifdef PRINT_RESULTS
-	_print_results(result_partitions, current_port_conf);
-#endif
-	_insert_results(part_config_list, result_partitions, current_port_conf);
+	_insert_results(conf_result_list, result_partitions, current_port_conf);
 
 	list_destroy(result_partitions);
 	_reset_sys();
 }
 
-void _insert_results(List part_config_list, List result_partitions, List current_port_conf)
+void _insert_results(List conf_result_list, List result_partitions, List current_port_conf)
 {
 	int part_size;
 	bool has_large_part=false, found_torus=false, p1_all_toroidal = true;
@@ -615,24 +626,30 @@ void _insert_results(List part_config_list, List result_partitions, List current
 		part_size = list_count(part->node_list);
 		if (part_size >= LARGE_PART){
 			has_large_part = true;
-			if (part->conn_type == TORUS){
+			if (part->conn_type == RM_TORUS){
 				found_torus = true;
 			}
 		}
-		if (part_size == 1 && part->conn_type != TORUS){
+		if (part_size == 1 && part->conn_type != RM_TORUS){
 			p1_all_toroidal = false;
 			break;
 		}
 	}
 	list_iterator_destroy(itr);
 	
-	if (has_large_part && found_torus && p1_all_toroidal){
+	// if ((has_large_part && found_torus && p1_all_toroidal) || part_size == list_count(global_sys->node_list)){
+	if ((has_large_part && p1_all_toroidal) || part_size == list_count(global_sys->node_list)){
+		// if (has_large_part && found_torus && p1_all_toroidal){
 		conf_data_t* conf_data;
 		conf_result_t* conf_result;
 		port_conf_t* port_conf, *port_conf_copy;
 		ListIterator node_itr;
 		int i;
 		node_t* node;
+
+		// 999
+		// debugging to count the number of real entries
+		count++;
 
 		new_conf_data(&conf_data, list_count(result_partitions));
 
@@ -669,8 +686,8 @@ void _insert_results(List part_config_list, List result_partitions, List current
 		}			
 		list_iterator_destroy(itr);
 
-		list_push(part_config_list, conf_result);
-	}
+		list_push(conf_result_list, conf_result);
+	} 
 }
 
 /**
@@ -694,40 +711,14 @@ void sort_node_id(int* node_id, int size)
 }
 
 /** print out the results of the search */
-void _print_results(List result_partitions, List current_port_conf){
-	int part_size;
-	bool has_large_part=false, found_torus=false;
+void _print_results(List conf_result_list){
 	ListIterator itr;
-	partition_t* part;
-
-	/* check to see if this set has partitions greater than or
-	 * equal to LARGE_PART size partitions, and that we at least
-	 * have one toroidal partition (otherwise, it's worthless to
-	 * print out.
-	 */
-	itr = list_iterator_create(result_partitions);
-	while((part = (partition_t*) list_next(itr))){
-		part_size = list_count(part->node_list);
-		if (part_size >= LARGE_PART){
-			has_large_part = true;
-			if (part->conn_type == TORUS){
-				found_torus = true;
-			}
-		}
+	conf_result_t* conf_result;
+	itr = list_iterator_create(conf_result_list);
+	while((conf_result = (conf_result_t*) list_next(itr))){
+		print_conf_result(conf_result);
 	}
 	list_iterator_destroy(itr);
-
-	if (has_large_part && found_torus){
-		itr = list_iterator_create(result_partitions);
-		while((part = (partition_t*) list_next(itr))){
-			printf("%d/%s ", list_count(part->node_list),
-			       convert_conn_type(part->conn_type));
-			
-		}			
-		list_iterator_destroy(itr);
-		printf("\t: ");
-		print_port_conf_list(current_port_conf);
-	}
 }
 
 /* reset the sys structures */
@@ -927,15 +918,26 @@ void print_port_conf_list(List port_configs)
 {
 	port_conf_t* port_conf;
 	ListIterator itr = list_iterator_create(port_configs);
-
-	while((port_conf = (port_conf_t*) list_next(itr))){
-		printf("%d%d%d ",
+	char* plus_ports = xstrdup("035");
+	
+	port_conf = (port_conf_t*) list_next(itr);
+	while(port_conf != NULL){
+		printf("%s/", plus_ports);
+		printf("%d%d%d",
 		       port_conf->minus_ports[0], 
 		       port_conf->minus_ports[1], 
 		       port_conf->minus_ports[2]);
+
+		port_conf = (port_conf_t*) list_next(itr);
+		if (port_conf != NULL){
+			printf(",");
+		} else {
+			printf(" ");
+		}
 	}
-	printf("\n");
 	list_iterator_destroy(itr);
+
+	xfree(plus_ports);
 }
 
 /** */
@@ -1231,20 +1233,6 @@ int _find_all_port_permutations(int** plus_ports, List* minus_int_list)
 
 	*minus_int_list = list_create(delete_gen);
 
-	/* 999 debugging stuff: reduced set of configs */
-	/*
-	minus_ports = (int*) xmalloc(sizeof(int) * string_size);
-	minus_ports[0] = 1;
-	minus_ports[1] = 4;
-	minus_ports[2] = 2;
-	list_append(*minus_int_list, minus_ports);
-
-	minus_ports = (int*) xmalloc(sizeof(int) * string_size);
-	minus_ports[0] = 4;
-	minus_ports[1] = 1;
-	minus_ports[2] = 2;
-	list_append(*minus_int_list, minus_ports);
-	*/
 	ListIterator itr;
 	char* minus_string;
 	itr = list_iterator_create(minus_str_list);
@@ -1412,76 +1400,6 @@ void list_copy(List A, List* B)
 }
 
 /** 
- * tests that lists point to the same object, but each hold separate
- * address references.
- */
-void _test_list_copy(List A)
-{
-	List B;
-	List C;
-	list_copy(A, &B);
-	list_copy(A, &C);
-	node_t* node;
-	ListIterator itr;
-
-	/** DEBUGING */
-	printf("copy1 nodes: (before) [ ");
-	itr = list_iterator_create(B);
-	while ((node = (node_t*) list_next(itr))) {
-		printf("%d ", node->id);
-	}
-	list_iterator_destroy(itr);
-	printf("]\n");
-
-	/** do some stuff to it..*/
-	list_pop(B);
-	list_pop(B);
-
-	printf("copy1 nodes: (after) [ ");
-	itr = list_iterator_create(B);
-	while ((node = (node_t*) list_next(itr))) {
-		printf("%d ", node->id);
-	}
-	list_iterator_destroy(itr);
-	printf("]\n");
-
-	/** see if that affects the orig */
-	printf("orig nodes: [ ");
-	itr = list_iterator_create(A);
-	while ((node = (node_t*) list_next(itr))) {
-		printf("%d ", node->id);
-	}
-	list_iterator_destroy(itr);
-	printf("]\n");
-
-	/** now we try changing one, and that should change the other */
-	node = (node_t*)list_pop(C);
-	node->id = 5;
-	list_push(C, node);
-
-	/** DEBUGING */
-	printf("copy2 nodes: [ ");
-	itr = list_iterator_create(C);
-	while ((node = (node_t*) list_next(itr))) {
-		printf("%d ", node->id);
-	}
-	list_iterator_destroy(itr);
-	printf("]\n");
-
-	/** see if that affects the orig */
-	printf("orig nodes: [ ");
-	itr = list_iterator_create(A);
-	while ((node = (node_t*) list_next(itr))) {
-		printf("%d ", node->id);
-	}
-	list_iterator_destroy(itr);
-	printf("]\n");
-
-	list_destroy(B);
-	list_destroy(C);
-}
-
-/** 
  * Comparator used for sorting connections by label
  * 
  * returns: -1: A internal && B external 0: A equal to B 1: A ext && B int
@@ -1513,7 +1431,7 @@ void _init_local_partition(List result_partitions)
 	part_itr = list_iterator_create(global_sys->partition_list);
 	while ((old_part = (partition_t*) list_next(part_itr))){
 		copy_partition(old_part, &new_part);
-		new_part->conn_type = TORUS;
+		new_part->conn_type = RM_TORUS;
 		list_append(result_partitions, new_part);
 	}
 	list_iterator_destroy(part_itr);
@@ -1683,7 +1601,7 @@ void create_config_8_1d(List configs)
 	
 	/** 
 	 * remember that connections are bidirectional, so we only
-	 * have a connection between nodes once
+	 * have one connection between nodes
 	 */
 	/* top row, horizontal connections */
 	new_switch_config(&conf, NO_VAL, X, 0, 3, 2, 4);
@@ -1704,7 +1622,7 @@ void create_config_8_1d(List configs)
 	/* 1st column, vertical connections */
 	new_switch_config(&conf, NO_VAL, X, 0, 2, 1, 5);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 1, 2, 0, 5);
+	new_switch_config(&conf, NO_VAL, X, 1, 3, 0, 4);
 	list_append(configs, conf);
 
 	/* 2nd column, vertical connections */
@@ -1720,7 +1638,7 @@ void create_config_8_1d(List configs)
 	list_append(configs, conf);
 
 	/* 4th column, vertical connections */
-	new_switch_config(&conf, NO_VAL, X, 6, 2, 7, 5);
+	new_switch_config(&conf, NO_VAL, X, 6, 3, 7, 4);
 	list_append(configs, conf);
 	new_switch_config(&conf, NO_VAL, X, 7, 2, 6, 5);
 	list_append(configs, conf);

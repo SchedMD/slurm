@@ -1,21 +1,27 @@
+- see why 8 1d takes so long
 
-- touch projections
+- read wiring into bluegene plugin
+- read static config from file
+- pass filename of wiring to system
 
-- add undo buffer
-  > redo create_pa_system, delete_pa_system and do copy_pa_system
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+done - pa_init() resets system
 
-- be able to translate out the geometry
-- add trace of coordinates into structures
+done - add undo buffer
+done   > redo create_pa_system, delete_pa_system and do copy_pa_system
 
-- use symmetry of wiring to reduce size of problem.
+done - input/output of 
+  > static wiring
+done > mark certain nodes as down
 
-- add table to store results
+unneeded- add table to store results
   > partition sizes, geometery, coordinates?, torus/non-torus
 
-- add functionality to query table
-- input/output of 
-  > static wiring
-  > mark certain nodes as down
+done - touch projections
+done - be able to translate out the geometry
+done - add trace of coordinates into structures
+unneeded - use symmetry of wiring to reduce size of problem.
+unneeded- add functionality to query table
 
 done- add permutations of switch with only 2 or 1 wire(s).
 done- add complexity of another dimension.
@@ -29,5 +35,3 @@ done - switch to smarter graph checking (flexing) implementation.
 done - if merging, remember to change all the internal connections
 of the node to be the new label (ID)
 
-not done- sort by continguous, early nodes: too difficult for now, the nodes could be out of order, and 
-I don't want to sort.
