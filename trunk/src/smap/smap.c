@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  smap.c - Report overall state the system
+ *  smap.c - -*- linux-c -*- Report overall state the system
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -28,699 +28,544 @@
 #include "src/common/xstring.h"
 #include "src/common/macros.h"
 #include "src/smap/smap.h"
-#include "src/smap/print.h"
-#include "src/smap/printjob.h"
 
 /********************
  * Global Variables *
  ********************/
 struct smap_parameters params;
 int quiet_flag = 0;
-int max_line_size;
 int xcord = 1;
 int ycord = 1;
 WINDOW *grid_win;
 WINDOW *text_win;
+time_t now;
+axis grid[X][Y][Z];
+axis fill_in_value[num_of_proc];
 
 /************
  * Functions *
  ************/
 static void _init_window(WINDOW * win);
-static void _init_grid( void );
-static void _print_grid( void );
-static void  _init_grid( void );
-static int  _get_window_width( void );
-static void _print_job (void);
-static int  _build_smap_data(List smap_list, 
-		partition_info_msg_t *partition_msg,
-		node_info_msg_t *node_msg);
-static void _create_smap(List smap_list, partition_info_t* part_ptr, 
-		uint16_t part_inx, node_info_t *node_ptr);
-static bool _filter_out(node_info_t *node_ptr);
-static void _smap_list_delete(void *data);
-static partition_info_t *_find_part(char *part_name, 
-		partition_info_msg_t *partition_msg, uint16_t *part_inx);
-static bool _match_node_data(smap_data_t *smap_ptr, 
-                             node_info_t *node_ptr);
-static bool _match_part_data(smap_data_t *smap_ptr, 
-                             partition_info_t* part_ptr);
-static int  _query_server(partition_info_msg_t ** part_pptr,
-		node_info_msg_t ** node_pptr);
-static void _sort_hostlist(List smap_list);
-static int  _strcmp(char *data1, char *data2);
-static void _update_smap(smap_data_t *smap_ptr, 
-		partition_info_t* part_ptr, node_info_t *node_ptr);
+static void _init_grid(void);
+static void _print_grid(void);
+static void _init_grid(void);
+static void _get_job(void);
+static void _get_part(void);
+static int _print_job(job_info_t * job_ptr);
+static int _print_part(partition_info_t * part_ptr);
+void print_date(void);
+void print_header_part(void);
+void print_header_job(void);
+int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
+		 int endz, int count);
+int set_grid(int start, int end, int count);
 
 int main(int argc, char *argv[])
 {
-  log_options_t opts = LOG_OPTS_STDERR_ONLY;
-  partition_info_msg_t *partition_msg = NULL;
-  node_info_msg_t *node_msg = NULL;
-  List smap_list = NULL;
-  
-  char ch;
-  
-  int height = Y*Z+Y*2;
-  int width = X*2;
-  int startx = 0;
-  int starty = 0;
-  int end = 0;
-  int i;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
-  log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
-  parse_command_line(argc, argv);
-  max_line_size = _get_window_width( );
-  initscr();
-  raw();
-  keypad(stdscr,TRUE);
-  noecho();
-  cbreak();
-  curs_set(1);
-  nodelay(stdscr, TRUE);
-  start_color();
-  
-  grid_win = newwin(height, width, starty, startx);
-  box(grid_win,0,0);
-  
-  startx = width;
-  width = COLS - width;  
-  height = LINES;
-  text_win = newwin(height, width, starty, startx);
-  box(text_win,0,0);
-  
-  while (!end) {
-    ch = getch();
-    switch(ch)
-      {
-      case 'q':
-      case '\n':
-	endwin();
-	exit(0);
-	break;
-      }  
-    
-    GridCount=0;
-    _init_grid();
-    _init_window(text_win);
-    xcord = 1;
-    ycord = 1;
-    if ( params.iterate && (params.verbose || params.long_output ))
-      print_date();
-    
-    switch(params.Display) 
-      {
-      case JOBS:
-	_print_job( );
-	break;
-      case SLURMPART:
-	if (_query_server(&partition_msg, &node_msg) != 0)
-	  exit(1);
-	smap_list = list_create(_smap_list_delete);
-	_build_smap_data(smap_list, partition_msg, node_msg);
-	sort_smap_list(smap_list);
-	print_smap_list(smap_list);
-	break;
-      case BGLPART:
-	if (_query_server(&partition_msg, &node_msg) != 0)
-	  exit(1);
-	break;
-      }
-    
-    _print_grid();
-    box(text_win,0,0);
-    box(grid_win,0,0);
-    wrefresh(text_win);
-    wrefresh(grid_win);
-    //sleep(5);
-    if (params.iterate) {
-      if(params.Display>JOBS)
-	list_destroy(smap_list);
-      for(i=0;i<params.iterate;i++)
-	{
-	  sleep(1);
-	  ch = getch();
-	  switch(ch)
-	    {
-	    case 'q':
-	    case '\n':
-	      endwin();
-	      exit(0);
-	      break;
-	    }  
+	char ch;
+
+	int height = Y * Z + Y * 2;
+	int width = X * 2;
+	int startx = 0;
+	int starty = 0;
+	int end = 0;
+	int i;
+
+	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
+	parse_command_line(argc, argv);
+	initscr();
+	raw();
+	keypad(stdscr, TRUE);
+	noecho();
+	cbreak();
+	curs_set(1);
+	nodelay(stdscr, TRUE);
+	start_color();
+
+	grid_win = newwin(height, width, starty, startx);
+	box(grid_win, 0, 0);
+
+	startx = width;
+	width = COLS - width;
+	height = LINES;
+	text_win = newwin(height, width, starty, startx);
+	box(text_win, 0, 0);
+
+	while (!end) {
+		ch = getch();
+		switch (ch) {
+		case 'b':
+			params.display = BGLPART;
+			break;
+		case 's':
+			params.display = SLURMPART;
+			break;
+		case 'j':
+			params.display = JOBS;
+			break;
+		case 'q':
+		case '\n':
+			endwin();
+			exit(0);
+			break;
+		}
+	      redraw:
+		_init_grid();
+		_init_window(text_win);
+		xcord = 1;
+		ycord = 1;
+		//if (params.iterate && params.long_output)
+		print_date();
+		switch (params.display) {
+		case JOBS:
+			_get_job();
+			break;
+		default:
+			_get_part();
+			break;
+		}
+
+		_print_grid();
+		box(text_win, 0, 0);
+		box(grid_win, 0, 0);
+		wrefresh(text_win);
+		wrefresh(grid_win);
+		//sleep(5);
+		if (params.iterate) {
+			for (i = 0; i < params.iterate; i++) {
+				sleep(1);
+				ch = getch();
+				switch (ch) {
+				case 'b':
+					params.display = BGLPART;
+					goto redraw;
+					break;
+				case 's':
+					params.display = SLURMPART;
+					goto redraw;
+					break;
+				case 'j':
+					params.display = JOBS;
+					goto redraw;
+					break;
+				case 'q':
+				case '\n':
+					endwin();
+					exit(0);
+					break;
+				}
+			}
+		} else
+			break;
 	}
-    } else
-      break;
-    
-    
-  }
-  
-  nodelay(stdscr, FALSE);
-  getch();
-  endwin();
-    
-  exit(0);
+
+	nodelay(stdscr, FALSE);
+	getch();
+	endwin();
+
+	exit(0);
+}
+
+void print_date(void)
+{
+	now = time(NULL);
+	mvwprintw(text_win, ycord, xcord, "%s", ctime(&now));
+	ycord++;
+}
+
+void print_header_part(void)
+{
+	mvwprintw(text_win, ycord, xcord, "IDENT");
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "PARTITION");
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "AVAIL");
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "TIMELIMIT");
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "NODES");
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "NODELIST");
+	xcord = 1;
+	ycord++;
+}
+void print_header_job(void)
+{
+	mvwprintw(text_win, ycord, xcord, "IDENT");
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "JOBID");
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "PARTITION");
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "USER");
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "NAME");
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "STATE");
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "TIME");
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "NODES");
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "NODELIST");
+	xcord = 1;
+	ycord++;
+
+}
+
+static void _get_job()
+{
+	int error_code = -1, i, j, count = 0;
+
+	job_info_msg_t *job_info_ptr = NULL;
+	job_info_t job;
+
+	error_code = slurm_load_jobs((time_t) NULL, &job_info_ptr, 0);
+	if (error_code) {
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_jobs error");
+		return;
+	}
+	if (job_info_ptr->record_count && !params.no_header)
+		print_header_job();
+	for (i = 0; i < job_info_ptr->record_count; i++) {
+		job = job_info_ptr->job_array[i];
+		if (job.node_inx[0] != -1) {
+			job.num_nodes = 0;
+			j = 0;
+			while (job.node_inx[j] >= 0) {
+				job.num_nodes +=
+				    (job.node_inx[j + 1] + 1) -
+				    job.node_inx[j];
+				set_grid(job.node_inx[j],
+					 job.node_inx[j + 1], count);
+				j += 2;
+			}
+			job.num_procs = (int) fill_in_value[count].letter;
+			wattron(text_win,
+				COLOR_PAIR(fill_in_value[count].color));
+			_print_job(&job);
+			wattroff(text_win,
+				 COLOR_PAIR(fill_in_value[count].color));
+			count++;
+		}
+	}
+	return;
+}
+
+static void _get_part(void)
+{
+	int error_code, i, j, count = 0;
+	partition_info_msg_t *part_info_ptr;
+	partition_info_t part;
+	char node_entry[13];
+	int start, startx, starty, startz, endx, endy, endz;
+	error_code =
+	    slurm_load_partitions((time_t) NULL, &part_info_ptr, 0);
+	if (error_code) {
+		if (quiet_flag != 1)
+			slurm_perror("slurm_load_partitions error");
+		return;
+	}
+
+	if (part_info_ptr->record_count && !params.no_header)
+		print_header_part();
+	for (i = 0; i < part_info_ptr->record_count; i++) {
+		j = 0;
+		part = part_info_ptr->partition_array[i];
+
+		if (params.display == BGLPART) {
+			memset(node_entry, 0, 13);
+			memcpy(node_entry, part.nodes, 12);
+			part.allow_groups = node_entry;
+			while (part.nodes[j] != '\0') {
+				if (part.nodes[j] == '[') {
+					j++;
+					start = atoi(part.nodes + j);
+					startx = start / 100;
+					starty = (start % 100) / 10;
+					startz = (start % 10);
+					j += 4;
+					start = atoi(part.nodes + j);
+					endx = start / 100;
+					endy = (start % 100) / 10;
+					endz = (start % 10);
+					j += 5;
+
+					part.total_nodes =
+					    set_grid_bgl(startx, starty,
+							 startz, endx,
+							 endy, endz,
+							 count);
+					part.root_only =
+					    (int) fill_in_value[count].
+					    letter;
+					wattron(text_win,
+						COLOR_PAIR(fill_in_value
+							   [count].color));
+					_print_part(&part);
+					wattroff(text_win,
+						 COLOR_PAIR(fill_in_value
+							    [count].
+							    color));
+					count++;
+					memset(node_entry, 0, 13);
+					memcpy(node_entry, part.nodes + j,
+					       12);
+					part.allow_groups = node_entry;
+
+				}
+				j++;
+			}
+		} else {
+			while (part.node_inx[j] >= 0) {
+
+				set_grid(part.node_inx[j],
+					 part.node_inx[j + 1], count);
+				j += 2;
+
+				part.root_only =
+				    (int) fill_in_value[count].letter;
+				wattron(text_win,
+					COLOR_PAIR(fill_in_value[count].
+						   color));
+				_print_part(&part);
+				wattroff(text_win,
+					 COLOR_PAIR(fill_in_value[count].
+						    color));
+				count++;
+			}
+		}
+	}
+
+	return;
+}
+
+static int _print_job(job_info_t * job_ptr)
+{
+	time_t time;
+	int printed = 0;
+	int tempxcord;
+	int prefixlen;
+	int i = 0;
+	int width = 0;
+	struct passwd *user = NULL;
+	long days, hours, minutes, seconds;
+
+	mvwprintw(text_win, ycord, xcord, "%c", job_ptr->num_procs);
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "%d", job_ptr->job_id);
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "%s", job_ptr->partition);
+	xcord += 12;
+	user = getpwuid((uid_t) job_ptr->user_id);
+	mvwprintw(text_win, ycord, xcord, "%s", user->pw_name);
+	xcord += 10;
+	mvwprintw(text_win, ycord, xcord, "%s", job_ptr->name);
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "%s",
+		  job_state_string(job_ptr->job_state));
+	xcord += 10;
+	time = now - job_ptr->start_time;
+
+	seconds = time % 60;
+	minutes = (time / 60) % 60;
+	hours = (time / 3600) % 24;
+	days = time / 86400;
+
+	if (days)
+		mvwprintw(text_win, ycord, xcord,
+			  "%ld:%2.2ld:%2.2ld:%2.2ld", days, hours, minutes,
+			  seconds);
+	else if (hours)
+		mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld:%2.2ld",
+			  hours, minutes, seconds);
+	else
+		mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld", minutes,
+			  seconds);
+
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "%d", job_ptr->num_nodes);
+	xcord += 8;
+	tempxcord = xcord;
+	width = text_win->_maxx - xcord;
+	while (job_ptr->nodes[i] != '\0') {
+		if ((printed =
+		     mvwaddch(text_win, ycord, xcord,
+			      job_ptr->nodes[i])) < 0)
+			return printed;
+		xcord++;
+		width = text_win->_maxx - xcord;
+		if (job_ptr->nodes[i] == '[')
+			prefixlen = i + 1;
+		else if (job_ptr->nodes[i] == ',' && (width - 9) <= 0) {
+			ycord++;
+			xcord = tempxcord + prefixlen;
+		}
+		i++;
+	}
+
+	xcord = 1;
+	ycord++;
+	return printed;
+}
+
+static int _print_part(partition_info_t * part_ptr)
+{
+	int printed = 0;
+	int tempxcord;
+	int prefixlen;
+	int i = 0;
+	int width = 0;
+	char *nodes;
+
+	mvwprintw(text_win, ycord, xcord, "%c", part_ptr->root_only);
+	xcord += 8;
+	mvwprintw(text_win, ycord, xcord, "%s", part_ptr->name);
+	xcord += 12;
+	if (part_ptr->state_up)
+		mvwprintw(text_win, ycord, xcord, "UP");
+	else
+		mvwprintw(text_win, ycord, xcord, "DOWN");
+	xcord += 10;
+	if (part_ptr->max_time == INFINITE)
+		mvwprintw(text_win, ycord, xcord, "UNLIMITED");
+	else
+		mvwprintw(text_win, ycord, xcord, "%u",
+			  part_ptr->max_time);
+
+	xcord += 12;
+	mvwprintw(text_win, ycord, xcord, "%d", part_ptr->total_nodes);
+	xcord += 8;
+
+	tempxcord = xcord;
+	width = text_win->_maxx - xcord;
+	if (params.display == BGLPART)
+		nodes = part_ptr->allow_groups;
+	else
+		nodes = part_ptr->nodes;
+	while (nodes[i] != '\0') {
+		if ((printed =
+		     mvwaddch(text_win, ycord, xcord, nodes[i])) < 0)
+			return printed;
+		xcord++;
+		width = text_win->_maxx - xcord;
+		if (nodes[i] == '[')
+			prefixlen = i + 1;
+		else if (nodes[i] == ',' && (width - 9) <= 0) {
+			ycord++;
+			xcord = tempxcord + prefixlen;
+		}
+		i++;
+	}
+
+	xcord = 1;
+	ycord++;
+
+	return printed;
+}
+
+int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
+		 int endz, int count)
+{
+	int x, y, z;
+	int i = 0;
+	for (x = startx; x <= endx; x++)
+		for (y = starty; y <= endy; y++)
+			for (z = startz; z <= endz; z++) {
+				grid[x][y][z].letter =
+				    fill_in_value[count].letter;
+				grid[x][y][z].color =
+				    fill_in_value[count].color;
+				i++;
+			}
+
+	return i;
+}
+
+int set_grid(int start, int end, int count)
+{
+	int x, y, z;
+	for (y = Y - 1; y >= 0; y--)
+		for (z = 0; z < Z; z++)
+			for (x = 0; x < X; x++) {
+				if (grid[x][y][z].indecies >= start
+				    && grid[x][y][z].indecies <= end) {
+					grid[x][y][z].letter =
+					    fill_in_value[count].letter;
+					grid[x][y][z].color =
+					    fill_in_value[count].color;
+				}
+			}
+
+	return 1;
 }
 
 /* _init_window - clear window */
 static void _init_window(WINDOW * win)
 {
-  int x,y;
-  for(x=1;x<win->_maxx;x++)
-    for(y=1;y<ycord;y++)
-      mvwaddch(win,y,x,' ');
-  return;
+	int x, y;
+	for (x = 1; x < win->_maxx; x++)
+		for (y = 1; y < ycord; y++)
+			mvwaddch(win, y, x, ' ');
+	return;
 }
+
 /* _init_grid - set values of every grid point */
-static void _init_grid( void )
+static void _init_grid(void)
 {
-  int x,y,z;
-  for(x=0;x<X;x++)
-    for(y=0;y<Y;y++)
-      for(z=0;z<Z;z++)
-	{
-	  Axis[x][y][z].color = 7;
-	  Axis[x][y][z].letter = '.';
+	int x, y, z, i = 0;
+	for (x = 0; x < X; x++)
+		for (y = 0; y < Y; y++)
+			for (z = 0; z < Z; z++) {
+				grid[x][y][z].color = 7;
+				grid[x][y][z].letter = '.';
+				grid[x][y][z].indecies = i++;
+			}
+	y = 65;
+	z = 0;
+	for (x = 0; x < num_of_proc; x++) {
+		fill_in_value[x].letter = y;
+		z = z % 7;
+		if (z == 0)
+			z = 1;
+		fill_in_value[x].color = z;
+		z++;
+		y++;
 	}
-  y=65;
-  z=0;
-  for(x=0;x<NumofProc;x++)
-    {      
-      FillInValue[x].letter = y;
-      z = z%7;
-      if(z==0)
-	z=1;
-      FillInValue[x].color = z;
-      z++;
-      y++;
-    }  
-  return;
+	return;
 }
 
 /* _print_grid - print values of every grid point */
-static void _print_grid( void )
+static void _print_grid(void)
 {
-  int x,y,z,offset=Z;
-  int xcord, ycord=2;
-  for(y=Y-1;y>=0;y--)
-    {
-      offset=Z+1;
-      for(z=0;z<Z;z++)
-	{
-	  xcord=offset;
-	  
-	  for(x=0;x<X;x++)
-	    {
-	      init_pair(Axis[x][y][z].color, Axis[x][y][z].color, COLOR_BLACK);
-	      wattron(grid_win,COLOR_PAIR(Axis[x][y][z].color));
-	      //printf("%d%d%d %c",x,y,z,Axis[x][y][z].letter);
-	      mvwprintw(grid_win,ycord,xcord,"%c",Axis[x][y][z].letter);
-	      wattroff(grid_win,COLOR_PAIR(Axis[x][y][z].color));
-	      xcord++;
-	    }
-	  ycord++;
-	  offset--;      
-	}
-      ycord++;
-    }
-  return;
-}
-/* get_window_width - return the size of the window STDOUT goes to */
-static int  
-_get_window_width( void )
-{
-	int width = 80;
+	int x, y, z, i = 0, offset = Z;
+	int grid_xcord, grid_ycord = 2;
+	for (y = Y - 1; y >= 0; y--) {
+		offset = Z + 1;
+		for (z = 0; z < Z; z++) {
+			grid_xcord = offset;
 
-#ifdef TIOCGSIZE
-	struct ttysize win;
-	if (ioctl (STDOUT_FILENO, TIOCGSIZE, &win) == 0)
-		width = win.ts_cols;
-#elif defined TIOCGWINSZ
-	struct winsize win;
-	if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &win) == 0)
-		width = win.ws_col;
-#else
-	const char *s;
-	s = getenv("COLUMNS");
-	if (s)
-		width = strtol(s,NULL,10);
-#endif
-	return width;
-}
-
-
-/* _print_job - print the specified job's information */
-static void 
-_print_job ( void ) 
-{
-  static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
-  int error_code;
-  uint16_t show_flags = 0;
-  
-  if (params.all_flag)
-    show_flags |= SHOW_ALL;
-  
-  if (old_job_ptr) {
-    error_code = slurm_load_jobs (old_job_ptr->last_update, 
-				  &new_job_ptr, show_flags);
-    if (error_code ==  SLURM_SUCCESS)
-      slurm_free_job_info_msg( old_job_ptr );
-    else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-      error_code = SLURM_SUCCESS;
-      new_job_ptr = old_job_ptr;
-    }
-  }
-  else
-    error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr,
-				  show_flags);
-  if (error_code) {
-    slurm_perror ("slurm_load_jobs error");
-    return;
-  }
-  old_job_ptr = new_job_ptr;
-  
-  if (quiet_flag == -1)
-    printf ("last_update_time=%ld\n", 
-	    (long) new_job_ptr->last_update);
-  
-  if (params.format_list == NULL)
-    parse_format_jobs(params.format);
-  print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , 
-		    params.format_list ) ;
-  return;
-}
-
-
-/*
- * _query_server - download the current server state
- * part_pptr IN/OUT - partition information message
- * node_pptr IN/OUT - node information message 
- * RET zero or error code
- */
-static int
-_query_server(partition_info_msg_t ** part_pptr,
-	      node_info_msg_t ** node_pptr)
-{
-  static partition_info_msg_t *old_part_ptr = NULL, *new_part_ptr;
-  static node_info_msg_t *old_node_ptr = NULL, *new_node_ptr;
-  int error_code;
-  uint16_t show_flags = 0;
-  
-  if (params.all_flag)
-    show_flags |= SHOW_ALL;
-  
-  if (old_part_ptr) {
-    error_code = slurm_load_partitions(old_part_ptr->last_update,
-				       &new_part_ptr, show_flags);
-    if (error_code == SLURM_SUCCESS)
-      slurm_free_partition_info_msg(old_part_ptr);
-    else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-      error_code = SLURM_SUCCESS;
-      new_part_ptr = old_part_ptr;
-    }
-  } else
-    error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr,
-				       show_flags);
-  if (error_code) {
-    slurm_perror("slurm_load_part");
-    return error_code;
-  }
-  
-  old_part_ptr = new_part_ptr;
-  *part_pptr = new_part_ptr;
-  
-  if (old_node_ptr) {
-    error_code = slurm_load_node(old_node_ptr->last_update,
-				 &new_node_ptr, show_flags);
-    if (error_code == SLURM_SUCCESS)
-      slurm_free_node_info_msg(old_node_ptr);
-    else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
-      error_code = SLURM_SUCCESS;
-      new_node_ptr = old_node_ptr;
-    }
-  } else
-    error_code = slurm_load_node((time_t) NULL, &new_node_ptr,
-				 show_flags);
-  if (error_code) {
-    slurm_perror("slurm_load_node");
-    return error_code;
-  }
-  old_node_ptr = new_node_ptr;
-  *node_pptr = new_node_ptr;
-  
-  return SLURM_SUCCESS;
-}
-
-/*
- * _build_smap_data - make a smap_data entry for each unique node 
- *	configuration and add it to the smap_list for later printing.
- * smap_list IN/OUT - list of unique smap_dataa records to report
- * partition_msg IN - partition info message
- * node_msg IN - node info message
- * RET zero or error code 
- */
-static int _build_smap_data(List smap_list, 
-		partition_info_msg_t *partition_msg, node_info_msg_t *node_msg)
-{
-	node_info_t *node_ptr;
-	partition_info_t* part_ptr;
-	ListIterator i;
-	int j;
-	uint16_t part_inx;
-
-	/* by default every partition is shown, even if no nodes */
-	if ((!params.node_flag) && params.match_flags.partition_flag) {
-	  part_ptr = partition_msg->partition_array;
-	  for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
-	    if ((!params.partition) || 
-		(_strcmp(params.partition, part_ptr->name) == 0))
-	      _create_smap(smap_list, part_ptr, 
-			     (uint16_t) j, NULL);
-	  }
-	}
-
-	/* make smap_list entries for each node */
-	for (j=0; j<node_msg->record_count; j++) {
-		smap_data_t *smap_ptr;
-		node_ptr = &(node_msg->node_array[j]);
-
-		if (params.filtering && _filter_out(node_ptr))
-			continue;
-
-		part_ptr = _find_part(node_ptr->partition, partition_msg, 
-				&part_inx);
-		if ( ! part_ptr )
-			continue;
-		i = list_iterator_create(smap_list);
-		/* test if node can be added to existing smap_data entry */
-		while ((smap_ptr = list_next(i))) {
-			if (!_match_part_data(smap_ptr, part_ptr))
-				continue;
-			if (smap_ptr->nodes_tot &&
-			    (!_match_node_data(smap_ptr, node_ptr)))
-				continue;
-
-			/* This node has the same configuration as this 
-			 * smap_data, just add to this record */
-			_update_smap(smap_ptr, part_ptr, node_ptr);
-			break;
-		}
-	
-		/* no match, create new smap_data entry */
-		if (smap_ptr == NULL)
-			_create_smap(smap_list, part_ptr, part_inx, node_ptr);
-		list_iterator_destroy(i);
-	}
-
-	_sort_hostlist(smap_list);
-	return SLURM_SUCCESS;
-}
-
-/*
- * _filter_out - Determine if the specified node should be filtered out or 
- *	reported.
- * node_ptr IN - node to consider filtering out
- * RET - true if node should not be reported, false otherwise
- */
-static bool _filter_out(node_info_t *node_ptr)
-{
-	static hostlist_t host_list = NULL;
-
-	if (params.partition && 
-	    _strcmp(node_ptr->partition, params.partition))
-		return true;
-
-	if (params.nodes) {
-		if (host_list == NULL)
-			host_list = hostlist_create(params.nodes);
-		if (hostlist_find (host_list, node_ptr->name) == -1)
-			return true;
-	}
-
-	if ( (params.dead_nodes) &&
-	     (!(node_ptr->node_state & NODE_STATE_NO_RESPOND)) )
-		return true;
-
-	if ( (params.responding_nodes) &&
-	     (node_ptr->node_state & NODE_STATE_NO_RESPOND) )
-		return true;
-
-	if (params.state_list) {
-		int *node_state;
-		bool match = false;
-		ListIterator iterator;
-		iterator = list_iterator_create(params.state_list);
-		while ((node_state = list_next(iterator))) {
-			if ( (node_ptr->node_state == *node_state) || 
-					((node_ptr->node_state & 
-					 (~NODE_STATE_NO_RESPOND)) == 
-					 *node_state) ) {
-				match = true;
-				break;
+			for (x = 0; x < X; x++) {
+				init_pair(grid[x][y][z].color,
+					  grid[x][y][z].color,
+					  COLOR_BLACK);
+				wattron(grid_win,
+					COLOR_PAIR(grid[x][y][z].color));
+				//printf("%d%d%d %c",x,y,z,grid[x][y][z].letter);
+				mvwprintw(grid_win, grid_ycord, grid_xcord,
+					  "%c", grid[x][y][z].letter);
+				wattroff(grid_win,
+					 COLOR_PAIR(grid[x][y][z].color));
+				grid_xcord++;
+				i++;
 			}
+			grid_ycord++;
+			offset--;
 		}
-		list_iterator_destroy(iterator);
-		if (!match)
-			return true;
+		grid_ycord++;
 	}
-
-	return false;
+	return;
 }
-
-static void _sort_hostlist(List smap_list)
-{
-	ListIterator i;
-	smap_data_t *smap_ptr;
-
-	i = list_iterator_create(smap_list);
-	while ((smap_ptr = list_next(i)))
-		hostlist_sort(smap_ptr->nodes);
-	list_iterator_destroy(i);
-}
-
-static bool _match_node_data(smap_data_t *smap_ptr, 
-                             node_info_t *node_ptr)
-{
-	if (smap_ptr->nodes &&
-	    params.match_flags.features_flag &&
-	    (_strcmp(node_ptr->features, smap_ptr->features)))
-		return false;
-
-	if (smap_ptr->nodes &&
-	    params.match_flags.reason_flag &&
-	    (_strcmp(node_ptr->reason, smap_ptr->reason)))
-		return false;
-
-	if (params.match_flags.state_flag &&
-	    (node_ptr->node_state != smap_ptr->node_state))
-		return false;
-
-	/* If no need to exactly match sizes, just return here 
-	 * otherwise check cpus, disk, memory and weigth individually */
-	if (!params.exact_match)
-		return true;
-	if (params.match_flags.cpus_flag &&
-	    (node_ptr->cpus        != smap_ptr->min_cpus))
-		return false;
-	if (params.match_flags.disk_flag &&
-	    (node_ptr->tmp_disk    != smap_ptr->min_disk))
-		return false;
-	if (params.match_flags.memory_flag &&
-	    (node_ptr->real_memory != smap_ptr->min_mem))
-		return false;
-	if (params.match_flags.weight_flag &&
-	    (node_ptr->weight      != smap_ptr->min_weight))
-		return false;
-
-	return true;
-}
-
-static bool _match_part_data(smap_data_t *smap_ptr, 
-                             partition_info_t* part_ptr)
-{
-	if (part_ptr == smap_ptr->part_info) /* identical partition */
-		return true;
-	if ((part_ptr == NULL) || (smap_ptr->part_info == NULL))
-		return false;
-
-	if (params.match_flags.avail_flag &&
-	    (part_ptr->state_up != smap_ptr->part_info->state_up))
-		return false;
-			
-	if (params.match_flags.groups_flag &&
-	    (_strcmp(part_ptr->allow_groups, 
-	             smap_ptr->part_info->allow_groups)))
-		return false;
-
-	if (params.match_flags.job_size_flag &&
-	    (part_ptr->min_nodes != smap_ptr->part_info->min_nodes))
-		return false;
-
-	if (params.match_flags.job_size_flag &&
-	    (part_ptr->max_nodes != smap_ptr->part_info->max_nodes))
-		return false;
-
-	if (params.match_flags.max_time_flag &&
-	    (part_ptr->max_time != smap_ptr->part_info->max_time))
-		return false;
-
-	if (params.match_flags.partition_flag &&
-	    (_strcmp(part_ptr->name, smap_ptr->part_info->name)))
-		return false;
-
-	if (params.match_flags.root_flag &&
-	    (part_ptr->root_only != smap_ptr->part_info->root_only))
-		return false;
-
-	if (params.match_flags.share_flag &&
-	    (part_ptr->shared != smap_ptr->part_info->shared))
-		return false;
-
-	return true;
-}
-
-static void _update_smap(smap_data_t *smap_ptr, partition_info_t* part_ptr, 
-		node_info_t *node_ptr)
-{
-	if (smap_ptr->nodes_tot == 0) {	/* first node added */
-		smap_ptr->node_state = node_ptr->node_state;
-		smap_ptr->features   = node_ptr->features;
-		smap_ptr->reason     = node_ptr->reason;
-		smap_ptr->min_cpus   = node_ptr->cpus;
-		smap_ptr->max_cpus   = node_ptr->cpus;
-		smap_ptr->min_disk   = node_ptr->tmp_disk;
-		smap_ptr->max_disk   = node_ptr->tmp_disk;
-		smap_ptr->min_mem    = node_ptr->real_memory;
-		smap_ptr->max_mem    = node_ptr->real_memory;
-		smap_ptr->min_weight = node_ptr->weight;
-		smap_ptr->max_weight = node_ptr->weight;
-	} else {
-		if (smap_ptr->min_cpus > node_ptr->cpus)
-			smap_ptr->min_cpus = node_ptr->cpus;
-		if (smap_ptr->max_cpus < node_ptr->cpus)
-			smap_ptr->max_cpus = node_ptr->cpus;
-
-		if (smap_ptr->min_disk > node_ptr->tmp_disk)
-			smap_ptr->min_disk = node_ptr->tmp_disk;
-		if (smap_ptr->max_disk < node_ptr->tmp_disk)
-			smap_ptr->max_disk = node_ptr->tmp_disk;
-
-		if (smap_ptr->min_mem > node_ptr->real_memory)
-			smap_ptr->min_mem = node_ptr->real_memory;
-		if (smap_ptr->max_mem < node_ptr->real_memory)
-			smap_ptr->max_mem = node_ptr->real_memory;
-
-		if (smap_ptr->min_weight> node_ptr->weight)
-			smap_ptr->min_weight = node_ptr->weight;
-		if (smap_ptr->max_weight < node_ptr->weight)
-			smap_ptr->max_weight = node_ptr->weight;
-	}
-
-	if ((node_ptr->node_state == NODE_STATE_ALLOCATED) ||
-	    (node_ptr->node_state == NODE_STATE_COMPLETING))
-		smap_ptr->nodes_alloc++;
-	else if (node_ptr->node_state == NODE_STATE_IDLE)
-		smap_ptr->nodes_idle++;
-	else 
-		smap_ptr->nodes_other++;
-	smap_ptr->nodes_tot++;
-
-	hostlist_push(smap_ptr->nodes, node_ptr->name);
-}
-
-/* 
- * _create_smap - create an smap record for the given node and partition
- * smap_list IN/OUT - table of accumulated smap records
- * part_ptr IN       - pointer to partition record to add
- * part_inx IN       - index of partition record (0-origin)
- * node_ptr IN       - pointer to node record to add
- */
-static void _create_smap(List smap_list, partition_info_t* part_ptr, 
-		uint16_t part_inx, node_info_t *node_ptr)
-{
-	smap_data_t *smap_ptr;
-
-	/* create an entry */
-	smap_ptr = xmalloc(sizeof(smap_data_t));
-
-	smap_ptr->part_info = part_ptr;
-
-	if (node_ptr) {
-		smap_ptr->node_state = node_ptr->node_state;
-		if ((node_ptr->node_state == NODE_STATE_ALLOCATED) ||
-		    (node_ptr->node_state == NODE_STATE_COMPLETING))
-			smap_ptr->nodes_alloc++;
-		else if (node_ptr->node_state == NODE_STATE_IDLE)
-			smap_ptr->nodes_idle++;
-		else 
-			smap_ptr->nodes_other++;
-		smap_ptr->nodes_tot++;
-
-		smap_ptr->min_cpus = node_ptr->cpus;
-		smap_ptr->max_cpus = node_ptr->cpus;
-
-		smap_ptr->min_disk = node_ptr->tmp_disk;
-		smap_ptr->max_disk = node_ptr->tmp_disk;
-
-		smap_ptr->min_mem = node_ptr->real_memory;
-		smap_ptr->max_mem = node_ptr->real_memory;
-
-		smap_ptr->min_weight = node_ptr->weight;
-		smap_ptr->max_weight = node_ptr->weight;
-
-		smap_ptr->features = node_ptr->features;
-		smap_ptr->reason   = node_ptr->reason;
-
-		smap_ptr->nodes = hostlist_create(node_ptr->name);
-
-		smap_ptr->part_inx = part_inx;
-	} else {
-		smap_ptr->nodes = hostlist_create("");
-	}
-
-	list_append(smap_list, smap_ptr);
-}
-
-/* 
- * _find_part - find a partition by name
- * part_name IN     - name of partition to locate
- * partition_msg IN - partition information message from API
- * part_inx OUT     - index of the partition within the table (0-origin)
- */
-static partition_info_t *_find_part(char *part_name, 
-			partition_info_msg_t *partition_msg, 
-			uint16_t *part_inx) 
-{
-	int i;
-	for (i=0; i<partition_msg->record_count; i++) {
-		if (_strcmp(part_name, 
-		            partition_msg->partition_array[i].name))
-			continue;
-		*part_inx = i;
-		return &(partition_msg->partition_array[i]);
-	}
-
-	*part_inx = 0;	/* not correct, but better than random data */
-	return NULL;
-}
-
-static void _smap_list_delete(void *data)
-{
-	smap_data_t *smap_ptr = data;
-
-	xfree(smap_ptr->features);
-	hostlist_destroy(smap_ptr->nodes);
-	xfree(smap_ptr);
-}
-
-/* like strcmp, but works with NULL pointers */
-static int _strcmp(char *data1, char *data2) 
-{
-	static char null_str[] = "(null)";
-
-	if (data1 == NULL)
-		data1 = null_str;
-	if (data2 == NULL)
-		data2 = null_str;
-	return strcmp(data1, data2);
-}
-

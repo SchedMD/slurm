@@ -12,8 +12,8 @@ smap_LDADD =					  \
 	$(top_builddir)/src/common/libcommon.la   \
 	$(top_builddir)/src/api/libslurm.la
 
-noinst_HEADERS = smap.h print.h printjob.h
-smap_SOURCES = smap.c opts.c print.c printjob.c sort.c sortjob.c
+noinst_HEADERS = smap.h 
+smap_SOURCES = smap.c opts.c
 
 force:
 $(smap_LDADD) : force
