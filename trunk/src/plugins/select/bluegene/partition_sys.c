@@ -183,7 +183,9 @@ int read_bgl_partitions()
 	rm_partition_t *part_ptr;
 	char node_name_tmp[7], *owner_name;
 	bgl_record_t *bgl_record;
-#if USE_BGL_FILE
+#ifndef USE_BGL_FILE
+	int *coord;
+	char *bp_id;
 	int part_number, lowest_part=300;
 	char part_name[7];
 #endif
@@ -192,7 +194,11 @@ int read_bgl_partitions()
 	   system to return correct location information
 	*/
 	return 1;
-#if USE_BGL_FILES
+#ifndef USE_BGL_FILES
+	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
+		error("rm_set_serial(): %d\n", rc);
+		return SLURM_ERROR;
+	}			
 	for(part_number=101; part_number<lowest_part; part_number++) {
 		memset(part_name,0,7);
 		sprintf(part_name, "RMP%d", part_number);
@@ -242,18 +248,11 @@ int read_bgl_partitions()
 			}
 			debug("bp_id is %s\n",part_id);
 
-			
-			if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc))
-			    != STATUS_OK) {
-				error("rm_get_data(RM_BPLoc): %s",
-				      bgl_err_str(rm_rc));
-				rc = SLURM_ERROR;
-				break;
-			}
+			coord = find_bp_loc(bp_id);
 			
 			sprintf(node_name_tmp, "bgl%d%d%d", 
-				bp_loc.X, bp_loc.Y, bp_loc.Z);
-
+				coord[X], coord[Y], coord[Z]);
+		
 			debug("adding %s to partition %s\n",node_name_tmp,part_name);
 
 			hostlist_push(bgl_record->hostlist, node_name_tmp);

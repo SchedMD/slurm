@@ -55,7 +55,7 @@ extern int set_grid(int start, int end, int count)
 	return 1;
 }
 
-extern int set_grid_bgl(int *start, int *end, int count)
+extern int set_grid_bgl(int *start, int *end, int count, int set)
 {
 	int x, y, z;
 	int i = 0;
@@ -67,16 +67,20 @@ extern int set_grid_bgl(int *start, int *end, int count)
 	assert(start[Z] >= 0);
 	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
+	assert(set >= 0);
+	assert(set <= 2);
 
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
-				pa_system_ptr->grid[x][y][z].letter = 
-					pa_system_ptr->
-					fill_in_value[count].letter;
-				pa_system_ptr->grid[x][y][z].color = 
-					pa_system_ptr->
-					fill_in_value[count].color;
+				if(!set) {
+					pa_system_ptr->grid[x][y][z].letter = 
+						pa_system_ptr->
+						fill_in_value[count].letter;
+					pa_system_ptr->grid[x][y][z].color = 
+						pa_system_ptr->
+						fill_in_value[count].color;
+				}
 				i++;
 			}
 		}

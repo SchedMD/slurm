@@ -421,7 +421,7 @@ extern int create_static_partitions(List part_list)
 	set_bgl_part(bgl_record->bgl_part_list, 
 		     bgl_record->bp_count, 
 		     bgl_record->conn_type);
-	bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 	configure_partition(bgl_record);
 	print_bgl_record(bgl_record);
 
@@ -440,7 +440,7 @@ extern int create_static_partitions(List part_list)
 			
 	found_record->conn_type = bgl_record->conn_type;
 	found_record->bitmap = bgl_record->bitmap;
-	found_record->node_use = SELECT_COPROCESSOR_MODE;
+	found_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 	configure_partition(found_record);
 	print_bgl_record(found_record);
 

@@ -41,7 +41,6 @@
 #include "src/partition_allocator/partition_allocator.h"
 
 #ifdef HAVE_BGL_FILES
-# include "src/partition_allocator/tv.h"
 # include "rm_api.h"
 
 #else

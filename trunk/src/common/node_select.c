@@ -621,35 +621,38 @@ extern char *select_g_sprint_jobinfo(select_jobinfo_t jobinfo,
 	}
 
 	switch (mode) {
-		case SELECT_PRINT_HEAD:
-			snprintf(buf, size,
-				"CONNECT ROTATE NODE_USE GEOMETRY PART_ID");
-			break;
-		case SELECT_PRINT_DATA:
-			snprintf(buf, size, 
-				"%7.7s %6.6s %8.8s    %ux%ux%u %7s",
-				_job_conn_type_string(jobinfo->conn_type),
-				_job_rotate_string(jobinfo->rotate),
-				_job_node_use_string(jobinfo->node_use),
-				geometry[0], geometry[1], geometry[2],
-				jobinfo->bgl_part_id);
-			break;
-		case SELECT_PRINT_MIXED:
-			snprintf(buf, size, 
-				"Connection=%s Rotate=%s NodeUse=%s "
-				"Geometry=%ux%ux%u Part_ID=%s",
-				_job_conn_type_string(jobinfo->conn_type),
-				_job_rotate_string(jobinfo->rotate),
-				_job_node_use_string(jobinfo->node_use),
-				geometry[0], geometry[1], geometry[2],
-				jobinfo->bgl_part_id);
-			break;
-		default:
-			error("select_g_sprint_jobinfo: bad mode %d", mode);
-			if (size > 0)
-				buf[0] = '\0';
+	case SELECT_PRINT_HEAD:
+		snprintf(buf, size,
+			 "CONNECT ROTATE NODE_USE GEOMETRY PART_ID");
+		break;
+	case SELECT_PRINT_DATA:
+		snprintf(buf, size, 
+			 "%7.7s %6.6s %8.8s    %ux%ux%u %7s",
+			 _job_conn_type_string(jobinfo->conn_type),
+			 _job_rotate_string(jobinfo->rotate),
+			 _job_node_use_string(jobinfo->node_use),
+			 geometry[0], geometry[1], geometry[2],
+			 jobinfo->bgl_part_id);
+		break;
+	case SELECT_PRINT_MIXED:
+		snprintf(buf, size, 
+			 "Connection=%s Rotate=%s NodeUse=%s "
+			 "Geometry=%ux%ux%u Part_ID=%s",
+			 _job_conn_type_string(jobinfo->conn_type),
+			 _job_rotate_string(jobinfo->rotate),
+			 _job_node_use_string(jobinfo->node_use),
+			 geometry[0], geometry[1], geometry[2],
+			 jobinfo->bgl_part_id);
+		break;
+	case SELECT_PRINT_BGL_ID:
+		return jobinfo->bgl_part_id;
+		break;
+	default:
+		error("select_g_sprint_jobinfo: bad mode %d", mode);
+		if (size > 0)
+			buf[0] = '\0';
 	}
-
+	
 	return buf;
 }
 

@@ -26,6 +26,14 @@ all modes except for 'configure mode' user can type 'quit' to exit just
 configure mode.  Typing 'exit' will end the configuration mode and exit smap.
 Note that unallocated nodes are indicated by a '.' and DOWN or DRAINED 
 nodes by a '#'.
+\fB\-R <RACK_MIDPLANE_ID/XYZ>\fR, \fB\-\-resolve=<RACK_MIDPLANE_ID/XYZ>\fR
+Returns the XYZ coords for a Rack/Midplane id or vice-versa.
+
+To get the XYZ coord for a Rack/Midplane id input -R R101 where 10 is the rack
+and 1 is the midplane.  
+
+To get the Rack/Midplane id from a XYZ coord input -R 101 where X=1 Y=1 Z=1 with
+no leading 'R'.  
 .RS
 .TP 15
 .I "j"
@@ -43,6 +51,9 @@ Displays current node states and allows users to configure the system.
 .TP
 \fB\-h\fR, \fB\-\-noheader\fR
 Do not print a header on the output.
+.TP
+\fB\-c\fR, \fB\-\-commandline\fR
+Print output to the commandline, no curses.
 .TP
 \fB\-i <seconds>\fR , \fB\-\-iterate=<seconds>\fR
 Print the state on a periodic basis. 
@@ -173,6 +184,17 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 	
 .TP
 \fBINPUT COMMANDS\fR
+.TP
+.I \fresolce <RACK_MIDPLANE_ID/XYZ>\fR
+Returns the XYZ coords for a Rack/Midplane id or vice-versa.
+
+To get the XYZ coord for a Rack/Midplane id input -R R101 where 10 is the rack
+and 1 is the midplane.  
+
+To get the Rack/Midplane id from a XYZ coord input -R 101 where X=1 Y=1 Z=1 with
+no leading 'R'.  
+
+.RS
 .TP
 .I \fBcreate <size> <options>\fR
 Submit request for partition creation. The size may be specified either 

@@ -44,6 +44,8 @@ void parse_command_line(int argc, char *argv[])
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
 		{"version", no_argument, 0, 'V'},
+		{"commandline", no_argument, 0, 'c'},
+		{"resolve", required_argument, 0, 'R'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
 		{"hide", no_argument, 0, OPT_LONG_HIDE},
@@ -51,7 +53,7 @@ void parse_command_line(int argc, char *argv[])
 	};
 
 	while ((opt_char =
-		getopt_long(argc, argv, "D:hi:V",
+		getopt_long(argc, argv, "D:hi:VcR:",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
@@ -84,6 +86,13 @@ void parse_command_line(int argc, char *argv[])
 		case (int) 'V':
 			_print_version();
 			exit(0);
+		case (int) 'c':
+			params.commandline = TRUE;
+			break;
+		case (int) 'R':
+			params.commandline = TRUE;
+			params.partition = strdup(optarg);
+			break;
 		case (int) OPT_LONG_HELP:
 			_help();
 			exit(0);
@@ -155,6 +164,9 @@ Usage: smap [OPTIONS]\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
   -V, --version              output version information and exit\n\
+  -c, --commandline          output written with straight to the commandline.\n\
+  -R, --resolve              resolve an XYZ coord from a Rack/Midplane id or vice versa.\n\
+                             (i.e. -R R101 for R/M input -R 101 for XYZ).\n\
 \nHelp options:\n\
   --help                     show this help message\n\
   --usage                    display brief usage message\n");

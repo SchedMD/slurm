@@ -240,7 +240,8 @@ int new_pa_request(pa_request_t* pa_request)
 			pa_request->geometry[X] = 1;
 			pa_request->geometry[Y] = geo[X] * geo[Y];
 			pa_request->geometry[Z] = geo[Z];	
-			_append_geo(pa_request->geometry, pa_request->elongate_geos, pa_request->rotate);		
+			_append_geo(pa_request->geometry, pa_request->elongate_geos, pa_request->rotate);
+
 		}
 		if((geo[X]*geo[Z]) <= DIM_SIZE[Y]) {
 			pa_request->geometry[X] = 1;
@@ -711,6 +712,10 @@ void init_grid(node_info_msg_t * node_info_ptr)
 		
 		pa_system_ptr->fill_in_value[x].color = z;
 		z++;
+		
+		init_pair(pa_system_ptr->fill_in_value[x].color,
+			  pa_system_ptr->fill_in_value[x].color,
+			  COLOR_BLACK);
 	}
 	return;
 }
@@ -724,10 +729,35 @@ int *find_bp_loc(char* bp_id)
 	while ((bp_map = list_next(itr)) != NULL)
 		if (!strcmp(bp_map->bp_id, bp_id)) 
 			break;	/* we found it */
-		
+	
 	list_iterator_destroy(itr);
 	if(bp_map != NULL)
 		return bp_map->coord;
+	else
+		return NULL;
+}
+
+char *find_bp_rack_mid(char* xyz)
+{
+	pa_bp_map_t *bp_map;
+	ListIterator itr;
+	int number;
+	int coord[PA_SYSTEM_DIMENSIONS];
+
+	number = atoi(&xyz[X]);
+	coord[X] = number / 100;
+	coord[Y] = (number % 100) / 10;
+	coord[Z] = (number % 10);
+	itr = list_iterator_create(bp_map_list);
+	while ((bp_map = list_next(itr)) != NULL)
+		if (bp_map->coord[X] == coord[X] &&
+		    bp_map->coord[Y] == coord[Y] &&
+		    bp_map->coord[Z] == coord[Z]) 
+			break;	/* we found it */
+		
+	list_iterator_destroy(itr);
+	if(bp_map != NULL)
+		return bp_map->bp_id;
 	else
 		return NULL;
 }
@@ -737,8 +767,6 @@ static void _bp_map_list_del(void *object)
 	pa_bp_map_t *bp_map = (pa_bp_map_t *)object;
 	
 	if (bp_map) {
-		xfree(bp_map->bp_id);
-		
 		xfree(bp_map);		
 	}
 }
@@ -758,7 +786,7 @@ static void _set_bp_map(void)
 	bp_map_list = list_create(_bp_map_list_del);
 
 	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
-		fprintf(stderr, "Missing DB2INSTANCE or VWSPATH env var.\n"
+		error("Missing DB2INSTANCE or VWSPATH env var.\n"
 			"Execute 'db2profile'\n");
 		return;
 	}
@@ -773,7 +801,6 @@ static void _set_bp_map(void)
 		return;
 	}
 	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
-		//fprintf(stderr, "rm_get_data(RM_BPNum): %s\n", bgl_err_str(rc));
 		bp_num = 0;
 	}
 
@@ -782,41 +809,37 @@ static void _set_bp_map(void)
 		if (i) {
 			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp))
 			    != STATUS_OK) {
-				/* fprintf(stderr, "rm_get_data(RM_NextBP): %s\n", */
-/* 					bgl_err_str(rc)); */
 				break;
 			}
 		} else {
 			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp))
 			    != STATUS_OK) {
-				/* fprintf(stderr, "rm_get_data(RM_FirstBP): %s\n", */
-/* 					bgl_err_str(rc)); */
 				break;
 			}
 		}
 		
 		bp_map = (pa_bp_map_t *) xmalloc(sizeof(pa_bp_map_t));
-		list_push(bp_map_list, bp_map);
 		
 		if ((rc = rm_get_data(my_bp, RM_BPID, &bp_id))
 		    != STATUS_OK) {
-			/* fprintf(stderr, "rm_get_data(RM_BPLoc): %s\n", */
-/* 				bgl_err_str(rc)); */
 			continue;
 		}
-		bp_map->bp_id = strdup(bp_id);
 		
 		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc))
 		    != STATUS_OK) {
-			/* fprintf(stderr, "rm_get_data(RM_BPLoc): %s\n", */
-/* 				bgl_err_str(rc)); */
+			xfree(bp_map);
 			continue;
 		}
+		
+		bp_map->bp_id = strdup(bp_id);
 		bp_map->coord[X] = bp_loc.X;
 		bp_map->coord[Y] = bp_loc.Y;
 		bp_map->coord[Z] = bp_loc.Z;
+		
+		list_push(bp_map_list, bp_map);
+		
 	}
-	
+	rm_free_BGL(bgl);
 #else
 	return;
 #endif
