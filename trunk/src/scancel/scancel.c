@@ -184,7 +184,7 @@ _cancel_jobs (void)
 				break;
 			}
 			if (i >= job_buffer_ptr->record_count)
-				fprintf (stderr, "Job %u not found", 
+				fprintf (stderr, "Job %u not found\n", 
 				         opt.job_id[j]);
 		}
 
