@@ -38,7 +38,8 @@ job_create(resource_allocation_response_msg_t *resp)
 		hl = hostlist_create(opt.nodelist);
 		job->jobid = 1;
 		ncpu = 1;
-		opt.nprocs = hostlist_count(hl);
+		if (opt.nprocs <= 0)
+			opt.nprocs = hostlist_count(hl);
 	}
 
 
