@@ -36,6 +36,7 @@
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_HASH_BASE           10
 #define DEFAULT_HEARTBEAT_INTERVAL  60
+/* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_COMP_TYPE      "jobcomp/none"
 #define DEFAULT_KILL_WAIT           30
