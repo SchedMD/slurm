@@ -119,12 +119,13 @@ AC_ARG_ENABLE(debug,
     esac
   ]
 )
+
 AC_MSG_RESULT(${with_slurm_debug=no})
 if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="${CFLAGS--g -Wall -Wpointer-arith}"
+  CFLAGS="-g -Wall -Wpointer-arith"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="${CFLAGS--g -Wall -Wpointer-arith}"
+  CFLAGS="-g -Wall -Wpointer-arith"
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
 
