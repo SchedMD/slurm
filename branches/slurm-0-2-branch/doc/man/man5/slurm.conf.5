@@ -205,10 +205,15 @@ on the same nodes or the values of \fBSlurmctldPort\fR and \fBSlurmdPort\fR
 must be different.
 .TP
 \fBSlurmdSpoolDir\fR
-Fully qualified pathname of a file into which the \fBslurmd\fR daemon's state 
-information is written. This must be a common pathname for all nodes, but 
-should represent a file which is local to each node (reference a local file
-system). The default value is "/tmp/slurmd".
+Fully qualified pathname of a directory into which the \fBslurmd\fR
+daemon's state information and batch job script information are written. This
+must be a common pathname for all nodes, but should represent a directory which
+is local to each node (reference a local file system). The default value
+is "/var/spool/slurmd." \fBNOTE\fR: This directory is also used to store \fBslurmd\fR's
+shared memory lockfile, and \fBshould not be changed\fR unless the system
+is being cleanly restarted. If the location of \fBSlurmdSpoolDir\fR is
+changed and \fBslurmd\fR is restarted, the new daemon will attach to a
+different shared memory region and lose track of any running jobs.
 .TP
 \fBSlurmdTimeout\fR
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
@@ -228,7 +233,7 @@ Fully qualified pathname of the file system available to user jobs for
 temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR space. 
 The default value is "/tmp".
 .TP
-\fBWaitTimefR
+\fBWaitTime\fR
 Specifies how many seconds the srun command should by default wait after 
 the first task terminates before terminating all remaining tasks. The 
 "--wait" option on the srun command line overrides this value. 

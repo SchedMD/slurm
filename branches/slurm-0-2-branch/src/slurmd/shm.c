@@ -117,7 +117,8 @@ typedef struct shmem_struct {
  * static variables: 
  * */
 static sem_t        *shm_lock;
-static char         *lockname;
+static char         *lockname; 
+static char         *lockdir;
 static slurmd_shm_t *slurmd_shm;
 static int           shmid;
 static pid_t         attach_pid = (pid_t) 0;
@@ -193,22 +194,25 @@ shm_fini(void)
 	/* detach segment from local memory */
 	if (shmdt(slurmd_shm) < 0) {
 		error("shmdt: %m");
-		return -1;
+		goto error;
 	}
 
 	slurmd_shm = NULL;
 
 	if (destroy && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
 		error("shmctl: %m");
-		return -1;
+		goto error;
 	}
 	_shm_unlock();
 	if (destroy && (_shm_unlink_lock() < 0)) {
 		error("_shm_unlink_lock: %m");
-		return -1;
+		goto error;
 	}
 
 	return 0;
+
+    error:
+	return -1;
 }
 
 void
@@ -218,8 +222,13 @@ shm_cleanup(void)
 	key_t key;
 	int id = -1;
 
-	info("request to destroy shm lock [%s]", SHM_LOCKNAME);
+	if (!lockdir)
+		lockdir = xstrdup(conf->spooldir);
+
 	if ((s = _create_ipc_name(SHM_LOCKNAME))) {
+
+		info("request to destroy shm lock [%s]", s);
+
 		key = ftok(s, 1);
 		if (sem_unlink(s) < 0)
 			error("sem_unlink: %m");
@@ -304,25 +313,24 @@ _is_valid_ipc_name(const char *name)
 	return(1);
 }
 
+/*
+ *  Create IPC name by appending `name' to slurmd spooldir
+ *   setting. 
+ */
 static char *
 _create_ipc_name(const char *name)
 {
 	char *dst = NULL, *dir = NULL, *slash = NULL;
 	int rc;
 
+	xassert (lockdir != NULL);
+
 	if ((rc = _is_valid_ipc_name(name)) != 1)
 		fatal("invalid ipc name: `%s' %d", name, rc);
 	else if (!(dst = xmalloc(PATH_MAX)))
 		fatal("memory allocation failure");
 
-#if defined(POSIX_IPC_PREFIX) && defined(HAVE_POSIX_SEMS)
-	dir = POSIX_IPC_PREFIX;
-#else
-	if (  !(dir = conf->spooldir) 
-	   && !(strlen(dir)) 
-	   && !(dir = getenv("TMPDIR"))) 
-		dir = "/tmp";
-#endif /* POSIX_IPC_PREFIX */
+	dir = lockdir;
 
 	slash = (dir[strlen(dir) - 1] == '/') ? "" : "/";
 
@@ -1086,6 +1094,15 @@ _shm_lock_and_initialize()
 	/*
 	 * Create locked semaphore (initial value == 0)
 	 */
+
+	/* 
+	 * Init lockdir to slurmd spooldir. 
+	 * Make sure it does not change for this instance of slurmd,
+	 *  even if spooldir does.
+	 */
+	if (!lockdir)
+		lockdir = xstrdup(conf->spooldir);
+
 	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0);
 	debug3("slurmd lockfile is \"%s\"", lockname);
 

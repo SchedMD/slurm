@@ -647,6 +647,14 @@ _slurmd_init()
 	if (_restore_cred_state(conf->vctx))
 		return SLURM_FAILURE;
 
+	/* 
+	 * Create slurmd spool directory if necessary.
+	 */
+	if (_set_slurmd_spooldir() < 0) {
+		error("Unable to initialize slurmd spooldir");
+		return SLURM_FAILURE;
+	}
+
 	/*
 	 * Cleanup shared memory if so configured
 	 */
@@ -662,17 +670,13 @@ _slurmd_init()
 
 	/*
 	 * Initialize slurmd shared memory
+	 *  This *must* be called after _set_slurmd_spooldir()
+	 *  since the default location of the slurmd lockfile is
+	 *  _in_ the spooldir.
+	 *
 	 */
 	if (shm_init(true) < 0)
 		return SLURM_FAILURE;
-
-	/* 
-	 * Create slurmd spool directory if necessary.
-	 */
-	if (_set_slurmd_spooldir() < 0) {
-		error("Unable to initialize slurmd spooldir");
-		return SLURM_FAILURE;
-	}
 
 	if (conf->daemonize && (chdir("/tmp") < 0)) {
 		error("Unable to chdir to /tmp");
@@ -691,8 +695,8 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 	int cred_fd, data_allocated, data_read = 0;
 	Buf buffer = NULL;
 
-	if ((mkdir(conf->spooldir, 0755) < 0) && 
-	    (errno != EEXIST)) {
+	if ( (mkdir(conf->spooldir, 0755) < 0) 
+	   && (errno != EEXIST) ) {
 		error("mkdir(%s): %m", conf->spooldir);
 		return SLURM_ERROR;
 	}
