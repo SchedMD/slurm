@@ -231,8 +231,8 @@ bit_fls(bitstr_t *b)
 	_assert_bitstr_valid(b);
 
 	bit = _bitstr_bits(b) - 1;	/* zero origin */
-	while (bit >= 0 && 
-		(bit % (sizeof(bitstr_t)*8)) != (sizeof(bitstr_t)*8-1)) {
+	while (bit >= 0 && 		/* test partitial words */
+		(_bit_word(bit) == _bit_word(bit + 1))) {
 		if (bit_test(b, bit)) {
 			value = bit;
 			break;
@@ -240,7 +240,7 @@ bit_fls(bitstr_t *b)
 		bit--;
 	}
 
-	while (bit >= 0 && value == -1) {
+	while (bit >= 0 && value == -1) {	/* test whole words */
 		word = _bit_word(bit);
 
 		if (b[word] == 0) {
@@ -343,13 +343,13 @@ bit_copy(bitstr_t *b)
 
 	_assert_bitstr_valid(b);
 
-	new = (bitstr_t *)calloc(_bitstr_words(_bitstr_bits(b)), sizeof(bitstr_t));
+	new = (bitstr_t *)malloc(_bitstr_words(_bitstr_bits(b)) * sizeof(bitstr_t));
 	if (new) {
 		_bitstr_magic(new) = BITSTR_MAGIC;
 		_bitstr_bits(new)  = _bitstr_bits(b);
 
-		for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
-			new[_bit_word(bit)] = b[_bit_word(bit)];
+		memcpy(&new[_bit_word(0)], 
+		       &b[_bit_word(0)], _bitstr_bits(b)/8);
 	}
 
 	return new;
