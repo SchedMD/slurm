@@ -1,0 +1,12 @@
+ChangeLog for the "external" latex document report.tex, llnl.tex.
+
+Wed Feb 13 04:23:26 PST 2002 garlick
+	Added Mark Grondona to authors.
+
+	Added references to SQMX, GNU Queue, and Clubmask systems
+	(not fleshed out).
+
+	Removed open source claim for Condor per Tim Mattson's email
+	Jan 11, 2002.
+
+	Commented out "Enjoy SLURM" picture.
