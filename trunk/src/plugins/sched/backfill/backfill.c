@@ -62,8 +62,8 @@ typedef struct node_space_map {
 
 /*********************** local variables *********************/
 static bool altered_job = false;
-static bool run_now     = false;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t  thread_cond       = PTHREAD_COND_INITIALIZER;
 
 static List pend_job_list = NULL;
 static List run_job_list  = NULL;
@@ -155,7 +155,7 @@ backfill_agent(void *args)
 		READ_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	while (1) {
-		sleep(SLEEP_TIME);	/* don't run continuously */
+		sleep(SLEEP_TIME);      /* don't run continuously */
 		if (!_more_work())
 			continue;
 
@@ -194,22 +194,16 @@ backfill_agent(void *args)
 extern void
 run_backfill (void)
 {
-	pthread_mutex_lock( &thread_flag_mutex );
-	run_now = true;
-	pthread_mutex_unlock( &thread_flag_mutex );
+	pthread_cond_signal( &thread_cond );
 }
 
 static bool
 _more_work (void)
 {
-	bool result = false;
-
 	pthread_mutex_lock( &thread_flag_mutex );
-	if (run_now)
-		result = true;
-	run_now = false;
+	pthread_cond_wait( &thread_cond, &thread_flag_mutex );
 	pthread_mutex_unlock( &thread_flag_mutex );
-	return result;
+	return true;
 }
 
 /* Report if any changes occured to job, node or partition information */
