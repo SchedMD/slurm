@@ -343,10 +343,8 @@ int slurm_receive_msg(slurm_fd fd, slurm_msg_t * msg, int timeout)
          *  length and allocate space on the heap for a buffer containing
          *  the message. 
          */
-        if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) {
-                error("recvfrom_timeout: %m");
+        if (_slurm_msg_recvfrom_timeout(fd, &buf, &buflen, 0, timeout) < 0) 
                 return SLURM_ERROR;
-        }
 
 #if        _DEBUG
          _print_data (buftemp,rc);
