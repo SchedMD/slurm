@@ -359,16 +359,16 @@ int _print_nodes_t(sinfo_data_t * sinfo_data, int width,
 	return SLURM_SUCCESS;
 }
 
-int _print_nodes_at(sinfo_data_t * sinfo_data, int width,
+int _print_nodes_ai(sinfo_data_t * sinfo_data, int width,
 			bool right_justify, char *suffix)
 {
 	char id[FORMAT_STRING_SIZE];
 	if (sinfo_data) {
 		snprintf(id, FORMAT_STRING_SIZE, "%u/%u", 
-		         sinfo_data->nodes_alloc, sinfo_data->nodes_tot);
+		         sinfo_data->nodes_alloc, sinfo_data->nodes_idle);
 		_print_str(id, width, right_justify, true);
 	} else
-		_print_str("NODES(A/T)", width, right_justify, true);
+		_print_str("NODES(A/I)", width, right_justify, true);
 
 	if (suffix)
 		printf("%s", suffix);

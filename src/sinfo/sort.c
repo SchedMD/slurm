@@ -44,7 +44,7 @@ static int _sort_by_job_size(void *void1, void *void2);
 static int _sort_by_max_time(void *void1, void *void2);
 static int _sort_by_memory(void *void1, void *void2);
 static int _sort_by_node_list(void *void1, void *void2);
-static int _sort_by_nodes_at(void *void1, void *void2);
+static int _sort_by_nodes_ai(void *void1, void *void2);
 static int _sort_by_nodes(void *void1, void *void2);
 static int _sort_by_partition(void *void1, void *void2);
 static int _sort_by_reason(void *void1, void *void2);
@@ -77,7 +77,7 @@ void sort_sinfo_list(List sinfo_list)
 		if      (params.sort[i] == 'a')
 				list_sort(sinfo_list, _sort_by_avail);
 		else if (params.sort[i] == 'A')
-				list_sort(sinfo_list, _sort_by_nodes_at);
+				list_sort(sinfo_list, _sort_by_nodes_ai);
 		else if (params.sort[i] == 'c')
 				list_sort(sinfo_list, _sort_by_cpus);
 		else if (params.sort[i] == 'd')
@@ -87,7 +87,7 @@ void sort_sinfo_list(List sinfo_list)
 		else if (params.sort[i] == 'f')
 				list_sort(sinfo_list, _sort_by_features);
 		else if (params.sort[i] == 'F')
-				list_sort(sinfo_list, _sort_by_nodes_at);
+				list_sort(sinfo_list, _sort_by_nodes_ai);
 		else if (params.sort[i] == 'g')
 				list_sort(sinfo_list, _sort_by_groups);
 		else if (params.sort[i] == 'h')
@@ -308,7 +308,7 @@ static int _sort_by_node_list(void *void1, void *void2)
 	return diff;
 }
 
-static int _sort_by_nodes_at(void *void1, void *void2)
+static int _sort_by_nodes_ai(void *void1, void *void2)
 {
 	int diff;
 	sinfo_data_t *sinfo1 = (sinfo_data_t *) void1;
