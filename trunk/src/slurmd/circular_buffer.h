@@ -15,6 +15,15 @@ typedef struct circular_buffer
 	unsigned int incremental_size ; /* incremental buffer size */
 } circular_buffer_t ;
 
+typedef struct cir_buf_line
+{
+	char * line[2] ;
+	size_t line_length[2] ;
+	size_t line_count ;
+	size_t max_line_length ;
+}
+cir_buf_line_t ;
+
 /* init_circular_buffer2
  * allocated buffer structure and sets default parameter according to passed parameters
  * OUT buf_ptr		- the allocate buffer 
@@ -55,4 +64,8 @@ int cir_buf_read_update ( circular_buffer_t * buf , unsigned int size ) ;
  * IN size 		- size of the write 
  */
 int cir_buf_write_update ( circular_buffer_t * buf , unsigned int size ) ;
+
+int cir_buf_get_line ( circular_buffer_t * buf , cir_buf_line_t * line ) ;
+
+int cir_buf_update_line ( circular_buffer_t * buf , cir_buf_line_t * line ) ;
 #endif

@@ -11,8 +11,8 @@
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_api.h>
-#include <src/slurmd/credential_utils.h>
-#include <src/slurmd/signature_utils.h>
+#include <src/common/credential_utils.h>
+#include <src/common/signature_utils.h>
 
 
 int slurm_ssl_init ( )
