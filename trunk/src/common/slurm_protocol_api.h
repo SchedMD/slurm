@@ -27,10 +27,11 @@ uint32_t slurm_close_stream ( slurm_fd open_fd ) ;
 
 /* Low level routines */
 /* message functions */
-/* junk
- * uint32_t slurm_message_send_server ( slurm_fd open_fd ,  slurm_message_type_t message_type , char * buffer , size_t buflen ) ;
- * uint32_t slurm_message_send_node( slurm_fd open_fd , slurm_addr slurm_address , slurm_message_type_t message_type , char * buffer , size_t buflen) ;
- */
+
+uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_type_t * message_type , char * data_buffer , size_t buf_len ) ;
+uint32_t slurm_send_server_buffer ( slurm_fd open_fd , slurm_message_type_t message_type , char * data_buffer , size_t buf_len ) ;
+uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_message_type_t message_type , char * data_buffer , size_t buf_len ) ;
+
 uint32_t slurm_send_server_message ( slurm_fd open_fd , slurm_message_type_t message_type , slurm_message_t const * message ) ;
 uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * slurm_address , slurm_message_type_t message_type , slurm_message_t const * message ) ;
 #endif
