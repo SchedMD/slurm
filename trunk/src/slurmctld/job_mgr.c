@@ -1338,15 +1338,14 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
 	/* can this user access this partition */
 	if ((part_ptr->root_only) && (submit_uid != 0)) {
-		error
-		    ("_job_create: non-root job submission to partition %s by uid %u",
-		     part_ptr->name, (unsigned int) submit_uid);
+		info("_job_create: uid %u access to partition %s denied, %s",
+		     (unsigned int) submit_uid, part_ptr->name, "not root");
 		error_code = ESLURM_ACCESS_DENIED;
 		return error_code;
 	}
 	if (validate_group(part_ptr, submit_uid) == 0) {
-		info("_job_create: job lacks group required of partition %s, uid %u", 
-		     part_ptr->name, (unsigned int) submit_uid);
+		info("_job_create: uid %u access to partition %s denied, %s",
+		     (unsigned int) submit_uid, part_ptr->name, "bad group");
 		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 		return error_code;
 	}
@@ -1356,8 +1355,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
 	/* insure that selected nodes are in this partition */
 	if (job_desc->req_nodes) {
-		error_code =
-		    node_name2bitmap(job_desc->req_nodes, &req_bitmap);
+		error_code = node_name2bitmap(job_desc->req_nodes, 
+					      &req_bitmap);
 		if (error_code == EINVAL) {
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup;
@@ -1371,8 +1370,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		if (bit_super_set(req_bitmap, part_ptr->node_bitmap) != 1) {
 			info("_job_create: requested nodes %s not in partition %s", 
 			     job_desc->req_nodes, part_ptr->name);
-			error_code =
-			    ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
+			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
 		}
 		i = count_cpus(req_bitmap);
@@ -1383,8 +1381,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 			job_desc->min_nodes = i;
 	}
 	if (job_desc->exc_nodes) {
-		error_code =
-		    node_name2bitmap(job_desc->exc_nodes, &exc_bitmap);
+		error_code = node_name2bitmap(job_desc->exc_nodes, 
+					      &exc_bitmap);
 		if (error_code == EINVAL) {
 			error_code = ESLURM_INVALID_NODE_NAME;
 			goto cleanup;
@@ -1408,9 +1406,9 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		job_desc->min_nodes = 1;
 	if (job_desc->max_nodes == NO_VAL)
 		job_desc->max_nodes = 0;
-	if (job_desc->min_nodes > part_ptr->total_cpus) {
+	if (job_desc->num_procs > part_ptr->total_cpus) {
 		info("Job requested too many cpus (%d) of partition %s(%d)", 
-		     job_desc->min_nodes, part_ptr->name, 
+		     job_desc->num_procs, part_ptr->name, 
 		     part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
@@ -1429,7 +1427,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	if (job_desc->max_nodes && 
 	    (job_desc->max_nodes < job_desc->min_nodes)) {
 		info("Job's max_nodes < min_nodes");
-		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
+		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
 	if (job_desc->max_nodes > part_ptr->max_nodes) 
