@@ -75,7 +75,8 @@ int wait_on_io_threads ( task_start_t * task_start )
 	pthread_join ( task_start->io_pthread_id[STDOUT_FILENO] , NULL ) ;
 	info ( "outexit" ) ;
 	/*pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;*/
-	pthread_cancel (  task_start->io_pthread_id[STDIN_FILENO] );
+	pthread_cancel ( task_start->io_pthread_id[STDIN_FILENO] );
+	pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;
 	info ( "inexit" ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	return SLURM_SUCCESS ;
