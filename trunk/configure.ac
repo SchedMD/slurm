@@ -166,7 +166,7 @@ AC_ARG_WITH(elan,
 AC_MSG_RESULT(${elan=no})
 AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
 HAVE_ELAN=0
-if test $with_elan; then
+if test "$with_elan" = "yes"; then
   savedLIBS="$LIBS"
   AC_CHECK_LIB(elan3, elan3_create,
     [], 
