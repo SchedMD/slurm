@@ -45,10 +45,12 @@ libslurm_la_SOURCES =    \
 
 common_dir = $(top_builddir)/src/common
 
-libslurm_la_LIBADD        = $(common_dir)/libcommon.la
-libslurm_la_LDFLAGS       = -export-symbols $(srcdir)/libslurm.sym \
-                            -version-info $(current):$(rev):$(age)
-libslurm_la_DEPENDENCIES  = $(srcdir)/libslurm.sym $(libslurm_la_LIBADD)
+libslurm_la_LIBADD         = $(common_dir)/libcommon.la -lpthread
+
+libslurm_la_LDFLAGS        = -export-symbols $(srcdir)/libslurm.sym \
+		             -version-info $(current):$(rev):$(age)
+
+libslurm_la_DEPENDENCIES  = $(srcdir)/libslurm.sym $(common_dir)/libcommon.la
 
 force:
 $(libslurm_la_LIBADD) : force

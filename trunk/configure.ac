@@ -1,3 +1,4 @@
+# $Id$
 # This file is to be processed with autoconf to generate a configure script
 
 dnl Prologue
@@ -25,22 +26,33 @@ AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
 
 SLURM_MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", [Define the project's major version.])
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", 
+                   [Define the project's major version.])
 AC_SUBST(SLURM_MAJOR)
 
 SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", [Define the project's minor version.])
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", 
+                   [Define the project's minor version.])
 AC_SUBST(SLURM_MINOR)
 
-#SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR"
+SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MICRO", 
+                   [Define the project's minor version.])
+AC_SUBST(SLURM_MINOR)
 
-#VERSION=$SLURM_VERSION
-#AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
-#AC_SUBST(VERSION)
 
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_SUBST(RELEASE)
+
+SLURM_RELEASE="`echo $RELEASE | sed -n 's/^.*\.//p'`"
+
+# Define the version string
+SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO$SLURM_RELEASE"
+AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION", 
+		   [Define the project's version string.])
+AC_SUBST(SLURM_VERSION)
+
 
 dnl Initialize Automake
 dnl

@@ -883,7 +883,7 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}		
-		printf ("%s Version %s\n", command_name, VERSION);
+		printf ("%s (%s %s)\n", command_name, PACKAGE, SLURM_VERSION);
 
 	}
 	else

@@ -7,16 +7,16 @@ SUBDIRS    = src testsuite doc
 EXTRA_DIST =	\
 	etc/slurm.conf.example	\
 	etc/init.d.slurm	\
-	autogen.sh	\
-	Make-rpm.mk	\
-	slurm.spec	\
-	README	\
-	DISCLAIMER	\
-	COPYING	\
- 	META \
-	slurm
+	autogen.sh		\
+	Make-rpm.mk		\
+	slurm.spec		\
+	README			\
+	DISCLAIMER		\
+	COPYING			\
+ 	META
 	
-nobase_include_HEADERS =		\
+slurmincludedir=$(includedir)/slurm
+slurminclude_HEADERS =	\
 	slurm/slurm.h 		\
 	slurm/slurm_errno.h
 

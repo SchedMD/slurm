@@ -357,7 +357,7 @@ int initialize_and_process_args(int argc, char *argv[])
 
 static void _print_version(void)
 {
-	printf("%s %s\n", PACKAGE, VERSION);
+	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 /*

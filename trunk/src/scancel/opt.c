@@ -90,7 +90,7 @@ struct poptOption options[] = {
 	 "name of job's owner", "name"},
         {"verbose", 'v', 0, 0, OPT_VERBOSE,
 	 "verbose operation (multiple -v's increase verbosity)", },
-	{"Version", 'V', POPT_ARG_NONE, NULL, OPT_VERSION,
+	{"version", 'V', POPT_ARG_NONE, NULL, OPT_VERSION,
 	 "report the current version", },
 	POPT_AUTOHELP
 	POPT_TABLEEND
@@ -231,7 +231,7 @@ static uint16_t xlate_signal_name(const char *signal_name)
 
 static void print_version (void)
 {
-	printf("%s %s\n", PACKAGE, VERSION);
+	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 /*
