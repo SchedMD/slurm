@@ -31,12 +31,15 @@
 
 #include <string.h>
 #include <pthread.h>
+#include <sys/stat.h>
 #include <sys/time.h>
+#include <sys/types.h>
 #include <sys/param.h>
 #include <sys/resource.h>
 #include <unistd.h>
 
 #include <src/common/log.h>
+#include <src/common/read_config.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
 #include <src/common/slurm_protocol_api.h>
@@ -57,6 +60,10 @@
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
 #endif
+
+#ifndef MAX
+#  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
+#endif /* !MAX */
 
 typedef struct connection {
 	slurm_fd fd;
@@ -85,9 +92,11 @@ static void       _read_config();
 static void       _usage();
 static void       _handle_connection(slurm_fd fd, slurm_addr *client);
 static void      *_service_connection(void *);
+static void       _setdir(void);
+static int        _mkdir2 (char * path, int modes);
+static void       _fill_registration_msg(slurm_node_registration_status_msg_t *);
 
-static void _fill_registration_msg(slurm_node_registration_status_msg_t *);
-
+static slurm_ctl_conf_t slurmctld_conf;
 
 int 
 main (int argc, char *argv[])
@@ -101,7 +110,7 @@ main (int argc, char *argv[])
 
 	if (conf->daemonize) {
 		daemon(0,0);
-		chdir("/tmp");
+		_setdir();
 	}
 
 	conf->pid = getpid();
@@ -268,7 +277,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	get_procs(&msg->cpus);
 	get_memory(&msg->real_memory_size);
-	get_tmp_disk(&msg->temporary_disk_space);
+	get_tmp_disk(&msg->temporary_disk_space, slurmctld_conf.tmp_fs);
 
 	steps          = shm_get_steps();
 	msg->job_count = list_count(steps);
@@ -307,71 +316,40 @@ _free_and_set(char **confvar, char *newval)
 static void
 _read_config()
 {
-	int   rc, i, j;
-	int   line = 0;
-	char  in[BUFSIZ];
-	char *epilog, *prolog, *tmpfs, *savedir, *pubkey;
-	FILE *fp;
+	read_slurm_conf_ctl (&slurmctld_conf);
 
-	epilog = prolog = tmpfs = savedir = pubkey = NULL;
-
-	if ((fp = fopen(conf->conffile, "r")) == NULL) {
-		error("Unable to open config file `%s': %m", conf->conffile); 
-		exit(1);
-	}
-	
-	line = 0;
-	while ((fgets(in, BUFSIZ, fp))) {
-		line++;
-		if (strlen(in) == BUFSIZ - 1) {
-			info("Warning: %s:line %d may be too long",
-					conf->conffile, line);
+	/* If a parameter was set on the execute line, don't reset it from the config file */
+	if (conf->conffile == NULL)
+		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf );
+	if ((conf->logfile == NULL) && (slurmctld_conf.slurmd_logfile)) {
+		conf->log_opts.logfile_level = MAX (conf->log_opts.logfile_level, 
+							conf->log_opts.stderr_level);
+		conf->log_opts.logfile_level = MAX (conf->log_opts.logfile_level, 
+							conf->log_opts.syslog_level);
+		if (conf->daemonize) {
+			info ("Routing all log messages to %s", slurmctld_conf.slurmd_logfile);
+			conf->log_opts.stderr_level  = LOG_LEVEL_QUIET;
+			conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
 		}
-
-		/* XXX this needs work, but it is how the rest of
-		 * slurm reads config file so we keep it the same
-		 * for now
-		 */
-		for (i = 0; i < BUFSIZ; i++) {
-			if (in[i] == (char) NULL)
-				break;
-			if (in[i] != '#')
-				continue;
-			if ((i > 0) && (in[i - 1] == '\\')) {    
-				for (j = i; j < BUFSIZ; j++) {
-					in[j - 1] = in[j];
-				}
-				continue;
-			}
-			in[i] = '\0';
-			break;
-		}
-
-		rc = slurm_parser(in,
-		     "Epilog=",                         's', &epilog,
-		     "Prolog=",                         's', &prolog,
-		     "TmpFS=",                          's', &tmpfs,
-		     "JobCredentialPublicCertificate=", 's', &pubkey,
-		     "StateSaveLocation=",              's', &savedir,
-		     "HeartbeatInterval=",              'd', &conf->hbeat,
-		     "SlurmdPort=",                     'd', &conf->port,
-		     "END");
+		_free_and_set(&conf->logfile,    slurmctld_conf.slurmd_logfile );
+		log_init(conf->prog, conf->log_opts, LOG_DAEMON, conf->logfile);
 	}
 
-	debug3("Epilog = `%s'",       epilog );
-	_free_and_set(&conf->epilog,  epilog );
-	debug3("Prolog = `%s'",       prolog );
-	_free_and_set(&conf->prolog,  prolog );
-	debug3("TmpFS = `%s'",        tmpfs  );
-	_free_and_set(&conf->tmpfs,   tmpfs  );
-	debug3("Public Cert = `%s'",  pubkey );
-	_free_and_set(&conf->pubkey,  pubkey );
-	debug3("Save dir = `%s'",     savedir);
-	_free_and_set(&conf->savedir, savedir);
+	conf->port          =            slurmctld_conf.slurmd_port;
+	_free_and_set(&conf->epilog,     slurmctld_conf.epilog );
+	_free_and_set(&conf->prolog,     slurmctld_conf.prolog );
+	_free_and_set(&conf->tmpfs,      slurmctld_conf.tmp_fs );
+	_free_and_set(&conf->pubkey,     slurmctld_conf.job_credential_public_certificate );
+	_free_and_set(&conf->savedir,    slurmctld_conf.slurmd_spooldir);
 
-	if (fclose(fp) < 0) {
-		error("Closing slurm log file `%s': %m", conf->conffile);
-	}
+	debug3("Confile     = `%s'",     conf->conffile );
+	debug3("Epilog      = `%s'",     conf->epilog );
+	debug3("Logfile     = `%s'",     conf->logfile );
+	debug3("Port        = %u",       conf->port);
+	debug3("Prolog      = `%s'",     conf->prolog );
+	debug3("TmpFS       = `%s'",     conf->tmpfs );
+	debug3("Public Cert = `%s'",     conf->pubkey );
+	debug3("Spool Dir   = `%s'",     conf->savedir );
 }
 
 static void 
@@ -391,14 +369,13 @@ _init_conf()
 		exit(1);
 	}
 	conf->hostname = xstrdup(host);
-	if (slurm_api_set_default_config() < 0)
-		error("Unable to get slurmd listen port");
-	conf->conffile  = xstrdup(SLURM_CONFIG_FILE);
-	conf->port      = slurm_get_slurmd_port();
+	conf->conffile  = NULL;
+	conf->epilog    = NULL;
+	conf->logfile   = NULL;
+	conf->port      = 0;
 	conf->savedir	= NULL;
 	conf->pubkey    = NULL;
 	conf->prolog    = NULL;
-	conf->epilog    = NULL;
 	conf->daemonize =  0;
 	conf->lfd       = -1;
 	conf->log_opts  = lopts;
@@ -415,7 +392,7 @@ _process_cmdline(int ac, char **av)
 	while ((c = getopt(ac, av, GETOPT_ARGS)) > 0) {
 		switch (c) {
 		case 'D': 
-			conf->daemonize = 0;
+			conf->daemonize = 1;
 			break;
 		case 'v':
 			conf->log_opts.stderr_level++;
@@ -522,3 +499,47 @@ _usage()
 	fprintf(stderr, "  -h      "
 			"\tPrint this help message.\n");
 }
+
+/* create spool directory as needed and "cd" to it */
+static void       
+_setdir(void)
+{
+	struct stat sbuf;
+
+	if (conf->savedir) {
+		if (stat (conf->savedir, &sbuf) == -1) {
+			if (_mkdir2(conf->savedir, 0700))
+				error ("mkdir2 on %s error %m", conf->savedir);
+			_free_and_set(&conf->savedir, xstrdup("/tmp") );
+		}
+	} else {
+		_free_and_set(&conf->savedir, xstrdup("/tmp") );
+	}
+	chdir(conf->savedir);
+}
+
+/* _mkdir2 - create a directory, does system call if root, runs mkdir otherwise */
+static int 
+_mkdir2 (char * path, int modes) 
+{
+	char *cmd;
+	int error_code;
+
+	if (getuid() == 0) {
+		if (mknod (path, S_IFDIR | modes, 0))
+			return errno;
+	}
+
+	else {
+		cmd = xstrdup ("/bin/mkdir ");
+		xstrcat (cmd, path);
+		error_code = system (cmd);
+		xfree (cmd);
+		if (error_code)
+			return error_code;
+		(void) chmod (path, modes);
+	}
+
+	return SLURM_SUCCESS;
+}
+

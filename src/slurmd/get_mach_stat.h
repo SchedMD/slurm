@@ -43,7 +43,7 @@
 int get_procs(uint32_t *procs);
 int get_mach_name(char *node_name);
 int get_memory(uint32_t *real_memory);
-int get_tmp_disk(uint32_t *tmp_disk);
+int get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs);
 
 #ifdef USE_OS_NAME
 int get_os_name(char *os_name);
