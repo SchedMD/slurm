@@ -174,8 +174,10 @@ void ping_nodes (void)
 			continue;
 		}
 
-		if (node_ptr->last_response == (time_t)0)
+		if (node_ptr->last_response == (time_t)0) {
+			no_resp_flag = 1;
 			node_ptr->last_response = slurmctld_conf.last_update;
+		}
 
 		/* Request a node registration if its state is UNKNOWN or 
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping, 

@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Modify security_2_2 test to function with release 0.3
  -- Fix broken rpm build when libslurm not already installed.
  -- New slurmd option -M to mlock() slurmd process into memory.
+ -- Fix node processing if state change requested via scontrol 
+    prior to initial node registration.
  
 * Changes in SLURM 0.3.0
 ========================
