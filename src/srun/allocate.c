@@ -68,21 +68,14 @@ allocate_nodes(void)
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create();
 
-	/* 
-	 *  Save old signal mask for this thread
-	 */
-	if ((rc = pthread_sigmask(SIG_BLOCK, NULL, &oset)) != 0) {
-		error("pthread_sigmask: %s", slurm_strerror(rc));
-		return NULL;
-	}
-
-	xsignal_unblock(SIGQUIT);
-	xsignal_unblock(SIGINT);
-	xsignal_unblock(SIGTERM);
-
 	oquitf = xsignal(SIGQUIT, _intr_handler);
 	ointf  = xsignal(SIGINT,  _intr_handler);
 	otermf = xsignal(SIGTERM, _intr_handler);
+
+	xsignal_save_mask(&oset);
+	xsignal_unblock(SIGQUIT);
+	xsignal_unblock(SIGINT);
+	xsignal_unblock(SIGTERM);
 
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
 		if (destroy_job)
@@ -96,9 +89,7 @@ allocate_nodes(void)
 	}
 
     done:
-	if ((rc = pthread_sigmask(SIG_BLOCK, &oset, NULL)) != 0) 
-		error("Unable to restore signal mask: %s", slurm_strerror(rc));
-
+	xsignal_restore_mask(&oset);
 	xsignal(SIGINT,  ointf);
 	xsignal(SIGTERM, otermf);
 	xsignal(SIGQUIT, oquitf);

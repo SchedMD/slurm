@@ -240,6 +240,7 @@ static int _check_pending_threads(thd_t *thd, int count)
 	for (i = 0; i < count; i++) {
 		if ((thd[i].state == DSH_ACTIVE) 
 		    && ((now - thd[i].tstart) >= 2) ) 
+			verbose("sending SIGALRM to thread %d", thd[i].thread);
 			pthread_kill(thd[i].thread, SIGALRM);
 	}
 
@@ -305,8 +306,12 @@ static void _p_launch(slurm_msg_t *req, job_t *job)
 	thd_t *thd;
 	int rc = 0;
 	SigFunc *oldh;
+	sigset_t set;
 
 	oldh = xsignal(SIGALRM, (SigFunc *) _alrm_handler);
+	xsignal_save_mask(&set);
+	xsignal_unblock(SIGALRM);
+
 	/*
 	 * Set job timeout to maximum launch time + current time
 	 */
@@ -341,6 +346,7 @@ static void _p_launch(slurm_msg_t *req, job_t *job)
 		_wait_on_active(thd, job);
 	pthread_mutex_unlock(&active_mutex);
 
+	xsignal_restore_mask(&set);
 	xsignal(SIGALRM, oldh);
 
 	xfree(thd);
