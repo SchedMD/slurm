@@ -97,18 +97,20 @@ static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
 static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
-static void  _run_job_script(job_t *job);
+static int   _run_job_script(job_t *job);
 static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
 static char *_task_count_string(job_t *job);
 static void  _switch_standalone(job_t *job);
 static int   _become_user (void);
+static int   _print_script_exit_status(const char *argv0, int status);
 
 int srun(int ac, char **av)
 {
 	allocation_resp *resp;
 	job_t *job;
 	char *task_cnt, *bgl_part_id = NULL;
+	int exitcode = 0;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -186,11 +188,11 @@ int srun(int ac, char **av)
 		job = job_create_allocation(resp); 
 		if (msg_thr_create(job) < 0)
 			job_fatal(job, "Unable to create msg thread");
-		_run_job_script(job);
-		job_destroy(job, 0);
+		exitcode = _run_job_script(job);
+		job_destroy(job,exitcode);
 
 		debug ("Spawned srun shell terminated");
-		exit (0);
+		exit (exitcode);
 
 	} else if (mode == MODE_ATTACH) {
 		reattach();
@@ -788,14 +790,15 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
-static void
+static int
 _print_script_exit_status(const char *argv0, int status)
 {
 	char *corestr = "";
+	int exitcode = 0;
 
 	if (status == 0) {
 		verbose("%s: Done", argv0);
-		return;
+		return exitcode;
 	}
 
 #ifdef WCOREDUMP
@@ -803,23 +806,24 @@ _print_script_exit_status(const char *argv0, int status)
 		corestr = " (core dumped)";
 #endif
 
-	if (WIFSIGNALED(status))
+	if (WIFSIGNALED(status)) {
 		error("%s: %s%s", argv0, sigstr(status), corestr);
-	else
+		return WTERMSIG(status) + 128;
+	}
+	if (WEXITSTATUS(status))
 		error("%s: Exit %d", argv0, WEXITSTATUS(status));
-
-	return;
+	return WEXITSTATUS(status);
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
-static void _run_job_script (job_t *job)
+static int _run_job_script (job_t *job)
 {
-	int   status;
+	int   status, exitcode;
 	pid_t cpid;
 	char **argv = (remote_argv[0] ? remote_argv : NULL);
 
 	if (_set_batch_script_env(job) < 0) 
-		return;
+		return 1;
 
 	if (!argv) {
 		/*
@@ -856,13 +860,12 @@ static void _run_job_script (job_t *job)
 		error("waitpid: %m");
 	}
 
-	_print_script_exit_status(xbasename(argv[0]), status); 
+	exitcode = _print_script_exit_status(xbasename(argv[0]), status); 
 
 	if (unsetenv("SLURM_JOBID")) {
 		error("Unable to clear SLURM_JOBID environment variable");
-		return;
 	}
-
+	return exitcode;
 }
 
 static int _become_user (void)
