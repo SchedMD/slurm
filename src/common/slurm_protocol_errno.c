@@ -25,7 +25,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ SLURM_NO_CHANGE_IN_DATA, 		"Data has not changed since time specified" },
 
 	/* job_mgr.c/job_create */
-	{ ESLURM_INVALID_PARTITION_SPECIFIED, 	"Invalid partition name specified" },
+	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
 	{ ESLURM_DEFAULT_PARTITION_NOT_SET, 	"System default partition not set" },
 	{ ESLURM_JOB_MISSING_PARTITION_KEY, 	"Key must be specified to use this partition" },
 	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,	"User's group not permitted to use this partition" },
@@ -43,7 +43,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_NODES_BUSY,			"Requested nodes are busy" },
 	{ ESLURM_INVALID_JOB_ID,		"Invalid job id specified" },
 	{ ESLURM_INVALID_NODE_NAME,		"Invalid node name specified" },
-	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 
