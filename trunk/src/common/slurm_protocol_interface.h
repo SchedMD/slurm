@@ -173,7 +173,7 @@ extern int _slurm_shutdown (int __fd, int __how) ;
 extern int _slurm_close (int __fd ) ;
 
 extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
-extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask);
+/* extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask); */
 
 void _slurm_FD_CLR(int fd, fd_set *set);
 int _slurm_FD_ISSET(int fd, fd_set *set);
