@@ -58,6 +58,11 @@ file must be accessible to the ControlMachine and BackupController.
 <dd>Fully qualified pathname of the file containing partition configuration 
 information as described below (the default value is  "/usr/local/SLURM/PartitionConf").
 This file must be accessible to the ControlMachine and BackupController.
+<dt>MasterDaemon
+<dd>The fully qualified pathname of the file containing the SLURM daemon
+to execute on all machines, execute InitProgram then execute ControlDaemon 
+and/or ServerDaemon (the default value is "/usr/local/SLURM/Slurmd.Master").
+This file must be accessible to all machines.
 <dt>InitProgram
 <dd>This program must execute and return an exit code of zero before the 
 ControlDaemon or ServerDaemon enter into service. This would normally be 
@@ -70,8 +75,16 @@ to execute on the ControlMachine (the default value is "/usr/local/SLURM/Slurmd.
 This file must be accessible to the ControlMachine and BackupController.
 <dt>ServerDaemon
 <dd>The fully qualified pathname of the file containing the SLURM daemon
-to execute on every compute server node (the default value is "/usr/local/SLURM/Slurmd").
+to execute on every compute server node (the default value is "/usr/local/SLURM/Slurmd.Server").
 This file must be accessible to every SLURM compute server.
+<dt>ControllerTimeout
+<dd>How long to wait for the ControllerDaemon to respond before assuming it 
+has failed and starting the BackupController. The default value is 300 
+and the units are seconds.
+<dt>ServerTimeout
+<dd>How long to wait for the ServerDaemon to respond before assuming it 
+has failed and declaring the node DOWN and terminating any job running on 
+it. The default value is 300 and the units are seconds.
 </dl>
 
 <p>
@@ -361,8 +374,12 @@ BackupController=lx02
 NodeSpecConf=/usr/local/SLURM/NodeSpecConf
 PartitionConf=/usr/local/SLURM/PartitionConf
 #
+MasterDaemon=/usr/local/SLURM/Slurmd.Master"
+InitProgram=/usr/local/SLURM/Slurmd.Prolog"
 ControlDaemon=/usr/local/SLURM/Slurmd.Control"
-ServerDaemon=/usr/local/SLURM/Slurmd"
+ServerDaemon=/usr/local/SLURM/Slurmd.Server"
+ControllerTimeout=120
+ServerTimeout=90
 </pre>
 
 
