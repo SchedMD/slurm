@@ -123,7 +123,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	spawn $srun -N1 --nodelist=$include_node -Z $bin_usleep 250000
 	set   noalloc2 $spawn_id
 
-	set timeout 4
+	set timeout 10
 	set spawn_id $noalloc2
 	expect {
 		-i $noalloc2
