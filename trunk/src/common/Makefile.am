@@ -47,6 +47,10 @@ libcommon_la_SOURCES = 	\
 	$(elan_sources) \
         $(auth_sources)
 
+include_HEADERS =	\
+	hostlist.h	\
+	slurm_errno.h
+
 noinst_HEADERS = 	\
 	xmalloc.h 	\
 	xassert.h 	\
@@ -62,7 +66,6 @@ noinst_HEADERS = 	\
 	strlcpy.h	\
 	bitstring.h     \
 	pack.h		\
-	hostlist.h	\
 	parse_spec.h	\
 	plugin.h	\
 	read_config.h	\
@@ -75,7 +78,6 @@ noinst_HEADERS = 	\
 	slurm_protocol_socket_common.h	\
 	slurm_protocol_mongo_common.h	\
 	slurm_protocol_interface.h	\
-	slurm_errno.h	\
 	util-net.h	\
 	qsw.h			
 
