@@ -106,10 +106,6 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		_rpc_shutdown(msg, cli);
 		slurm_free_shutdown_msg(msg->data);
 		break;
-	case REQUEST_SHUTDOWN_IMMEDIATE:
-		_rpc_shutdown(msg, cli);
-		/* No body to free */
-		break;
 	case REQUEST_RECONFIGURE:
 		_rpc_reconfig(msg, cli);
 		/* No body to free */
@@ -357,12 +353,13 @@ _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
 	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 
-	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0))
 		error("Security violation, shutdown RPC from uid %u",
 		      (unsigned int) req_uid);
-		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);	/* uid bad */
-	} else
+	else
 		kill(conf->pid, SIGTERM);
+
+	/* Never return a message, slurmctld does not expect one */
 }
 
 static int
