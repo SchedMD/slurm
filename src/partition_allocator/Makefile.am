@@ -5,16 +5,16 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir) 
 
-#bin_PROGRAMS = partition_allocator
+bin_PROGRAMS = partition_allocator
 
-#partition_allocator_SOURCES = partition_allocator.c partition_allocator.h \
-#                       graph_solver.c graph_solver.h \
-#                       graph_structs.c graph_structs.h 
+partition_allocator_SOURCES = partition_allocator.c partition_allocator.h \
+                       graph_solver.c graph_solver.h \
+                       graph_structs.c graph_structs.h 
 
-#partition_allocator_LDADD = \
-#	$(top_builddir)/src/common/libcommon.la 
+partition_allocator_LDADD = \
+	$(top_builddir)/src/common/libcommon.la 
 
-#partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
+partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
 
 #making a .la
