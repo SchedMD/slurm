@@ -496,7 +496,7 @@ static int _excise_block(List block_list, pm_partition_id_t bgl_part_id,
 	bgl_record_t *block;
 	xassert(iter);
 
-	while (block = list_next(iter)) {
+	while ((block = list_next(iter))) {
 		if (strcmp(block->bgl_part_id, bgl_part_id))
 			continue;
 		if (strcmp(block->nodes, nodes))	/* changed bglblock */

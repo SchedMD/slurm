@@ -41,6 +41,7 @@ List bgl_curr_part_list = NULL;  	/* current bgl partitions */
 List bgl_found_part_list = NULL;  	/* found bgl partitions */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL;
+char *change_numpsets = NULL;
 bool agent_fini = false;
 
 /* some local functions */
@@ -332,6 +333,7 @@ extern int create_static_partitions(List part_list)
 	}
 	list_iterator_destroy(itr);
 	
+
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		itr_found = list_iterator_create(bgl_found_part_list);
@@ -343,12 +345,91 @@ extern int create_static_partitions(List part_list)
 		list_iterator_destroy(itr_found);
 		if(found_record == NULL) {
 #ifdef HAVE_BGL_FILES
+			bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 			configure_partition(bgl_record);
 #endif
 			print_bgl_record(bgl_record);
+#ifdef HAVE_BGL_FILES
+			/* Here we are adding some partitions manually because of the way
+			   We want to run the system.  This will need to be changed for 
+			   the real system because this is not going to work in the real
+			   deal.
+			*/
+			
+			found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
+			list_push(bgl_list, found_record);
+			
+			found_record->bgl_part_list = bgl_record->bgl_part_list;			
+			found_record->hostlist = bgl_record->hostlist;
+			found_record->nodes = strdup(bgl_record->nodes);
+			//found_record->owner_name = strdup(bgl_record->owner_name);
+			//found_record->bgl_part = bgl_record->bgl_part;
+			found_record->bp_count = bgl_record->bp_count;
+			found_record->switch_count = bgl_record->switch_count;
+			found_record->geo[X] = bgl_record->geo[X];
+			found_record->geo[Y] = bgl_record->geo[Y];
+			found_record->geo[Z] = bgl_record->geo[Z];
+			
+			found_record->conn_type = bgl_record->conn_type;
+			found_record->bitmap = bgl_record->bitmap;
+			bgl_record->node_use = SELECT_COPROCESSOR_MODE;
+			configure_partition(found_record);
+			/*********************************************************/
+			print_bgl_record(found_record);
+#endif
 		}
 	}
 	list_iterator_destroy(itr);
+
+	/* Here we are adding some partitions manually because of the way
+	   We want to run the system.  This will need to be changed for 
+	   the real system because this is not going to work in the real
+	   deal.
+	*/
+	
+#ifdef HAVE_BGL_FILES
+	reset_pa_system();
+
+	bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
+	list_push(bgl_list, bgl_record);
+	
+	bgl_record->bgl_part_list = list_create(NULL);			
+	bgl_record->hostlist = hostlist_create(NULL);
+	bgl_record->nodes = xmalloc(sizeof(char)*13);
+	memset(bgl_record->nodes, 0, 13);
+	sprintf(bgl_record->nodes, "bgl[000x%d%d%d]", DIM_SIZE[X]-1,  DIM_SIZE[Y]-1, DIM_SIZE[Z]-1);
+       	printf("%s\n",bgl_record->nodes);
+	_process_nodes(bgl_record);
+	
+	bgl_record->conn_type = SELECT_TORUS;
+	
+	set_bgl_part(bgl_record->bgl_part_list, 
+		     bgl_record->bp_count, 
+		     bgl_record->conn_type);
+	bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+	configure_partition(bgl_record);
+
+	found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
+	list_push(bgl_list, found_record);
+			
+	found_record->bgl_part_list = bgl_record->bgl_part_list;			
+	found_record->hostlist = bgl_record->hostlist;
+	found_record->nodes = strdup(bgl_record->nodes);
+	//found_record->bgl_part = bgl_record->bgl_part;
+	found_record->bp_count = bgl_record->bp_count;
+	found_record->switch_count = bgl_record->switch_count;
+	found_record->geo[X] = bgl_record->geo[X];
+	found_record->geo[Y] = bgl_record->geo[Y];
+	found_record->geo[Z] = bgl_record->geo[Z];
+			
+	found_record->conn_type = bgl_record->conn_type;
+	found_record->bitmap = bgl_record->bitmap;
+	found_record->node_use = SELECT_COPROCESSOR_MODE;
+	configure_partition(found_record);
+	print_bgl_record(found_record);
+#endif
+	/*********************************************************/
+
 	rc = SLURM_SUCCESS;
 	
 	return rc;
@@ -575,7 +656,7 @@ static int _delete_old_partitions(void)
 				info("Above error is ok. "
 					"Partition %s doesn't exist.",
 					part_name);
-				break;
+				//break;
 			}
 			rm_remove_partition(part_name);
 			//sleep(3);
@@ -697,6 +778,8 @@ extern int read_bgl_conf(void)
 		fatal("MloaderImage not configured in bluegene.conf");
 	if (!bluegene_ramdisk)
 		fatal("RamDiskImage not configured in bluegene.conf");
+	if (!change_numpsets)
+		fatal("change_numpsets not configured in bluegene.conf");
 
 	/* Check to see if the configs we have are correct */
 	if (!_validate_config_nodes()) { 
@@ -744,19 +827,21 @@ static void _strip_13_10(char *word)
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *conn_type = NULL, *node_use = NULL;
+	char *nodes = NULL, *conn_type = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
+	char *change = NULL;
 	bgl_record_t* bgl_record;
 	
 	error_code = slurm_parser(in_line,
 				"BlrtsImage=", 's', &blrts_image,
 				"LinuxImage=", 's', &linux_image,
 				"MloaderImage=", 's', &mloader_image,
+				"ChangeNumpsets=", 's', &change,
 				"Nodes=", 's', &nodes,
 				"RamDiskImage=", 's', &ramdisk_image,
 				"Type=", 's', &conn_type,
-				"Use=", 's', &node_use,
+				  //"Use=", 's', &node_use,
 				"END");
 
 	if (error_code)
@@ -783,11 +868,17 @@ static int _parse_bgl_spec(char *in_line)
 		bluegene_ramdisk = ramdisk_image;
 		ramdisk_image = NULL;	/* nothing left to xfree */
 	}
+	if (change) {
+		xfree(change_numpsets);
+		_strip_13_10(change);
+		change_numpsets = change;
+		change = NULL;	/* nothing left to xfree */
+	}
 
 	/* Process node information */
-	if (!nodes && !node_use && !conn_type)
+	if (!nodes && !conn_type)
 		goto cleanup;	/* no data */
-	if (!nodes && (node_use || conn_type)) {
+	if (!nodes && conn_type) {
 		error("bluegene.conf lacks Nodes value, but has "
 			"Type or Use value");
 		error_code = SLURM_ERROR;
@@ -816,15 +907,15 @@ static int _parse_bgl_spec(char *in_line)
 	if (conn_type)
 		xfree(conn_type);	/* pointer moved, nothing left to xfree */
 	
-	if (node_use)
-		_strip_13_10(node_use);
-	if (!node_use || !strcasecmp(node_use,"COPROCESSOR"))
-		bgl_record->node_use = SELECT_COPROCESSOR_MODE;
-	else
-		bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+/* 	if (node_use) */
+/* 		_strip_13_10(node_use); */
+/* 	if (!node_use || !strcasecmp(node_use,"COPROCESSOR")) */
+/* 		bgl_record->node_use = SELECT_COPROCESSOR_MODE; */
+/* 	else */
+/* 		bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE; */
 	
-	if (node_use)
-		xfree(node_use);	/* pointer moved, nothing left to xfree */
+/* 	if (node_use) */
+/* 		xfree(node_use);	/\* pointer moved, nothing left to xfree *\/ */
 	
 	
 #if _DEBUG
