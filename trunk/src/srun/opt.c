@@ -173,10 +173,10 @@ struct poptOption constraintTable[] = {
  * above
  */
 struct poptOption runTable[] = {
-	{"ntasks", 'n', POPT_ARG_INT, &opt.nprocs, OPT_NPROCS,
+	{"ntasks", 'n', POPT_ARG_INT, 0, OPT_NPROCS,
 	 "number of tasks to run",
 	 "ntasks"},
-	{"cpus-per-task", 'c', POPT_ARG_INT, &opt.cpus_per_task, OPT_CPUS,
+	{"cpus-per-task", 'c', POPT_ARG_INT, 0, OPT_CPUS,
 	 "number of cpus required per task",
 	 "ncpus"},
 	{"nodes", 'N', POPT_ARG_STRING, 0, OPT_NODES,
@@ -297,6 +297,9 @@ static bool _opt_verify(poptContext);
 
 /* return command name from its full path name */
 static char * _base_name(char* command);
+
+/* Get a decimal integer from arg */
+static int _get_int(const char *arg, const char *what);
 
 #ifdef HAVE_TOTALVIEW
    static bool _under_totalview(void);
@@ -715,6 +718,29 @@ _process_env_var(env_vars_t *e, const char *val)
 	}
 }
 
+/*
+ *  Get a decimal integer from arg.
+ *
+ *  Returns the integer on success, exits program on failure.
+ * 
+ */
+static int
+_get_int(const char *arg, const char *what)
+{
+	char *p;
+	long int result = strtol(arg, &p, 10);
+
+	if (*p != '\0') {
+		error ("Invalid numeric value \"%s\" for %s.", arg, what);
+		exit(1);
+	}
+
+	if (result > INT_MAX) {
+		error ("Numeric argument (%ld) to big for %s.", result, what);
+	}
+
+	return (int) result;
+}
 
 /*
  * _opt_args() : set options via commandline args and popt
@@ -806,8 +832,8 @@ static void _opt_args(int ac, char **av)
 		case OPT_DISTRIB:
 			opt.distribution = _verify_dist_type(arg);
 			if (opt.distribution == SRUN_DIST_UNKNOWN) {
-				error("Error: distribution type `%s' " 
-				       "is not recognized", arg);
+				error("distribution type `%s' " 
+				      "is not recognized", arg);
 				poptPrintUsage(optctx, stderr, 0);
 				exit(1);
 			}
@@ -815,10 +841,12 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_NPROCS:
 			opt.nprocs_set = true;
+			opt.nprocs = _get_int(arg, "number of tasks");
 			break;
 
 		case OPT_CPUS:
 			opt.cpus_set = true;
+			opt.cpus_per_task = _get_int(arg, "cpus per task");
 			break;
 
 		case OPT_NODES:
