@@ -146,26 +146,9 @@ AC_SUBST(SLURMD_PORT)
 
 dnl Set SLURM_CONFIG_DIR in config.h
 dnl
-AC_MSG_CHECKING(for slurm config dir location)
-AC_ARG_WITH(slurm-conf,
-  AC_HELP_STRING([--with-slurm-conf=DIR],
-      [set slurm config dir location]),
-    [ if test -n "$withval" -a "$withval" != yes -a "$withval" != no; then
-        slurmconf="$withval"
-      fi
-    ]
-)
-
-#
-# FIXME: default config dir is in srcdir
-#        during development. Needs to be
-#        moved to $prefix/etc!!
-#
-topsrcdir=`cd $srcdir && pwd`
-AC_MSG_RESULT(${slurmconf=${topsrcdir}/etc})
-AC_DEFINE_UNQUOTED(SLURM_CONFIG_DIR, "$slurmconf", 
+AC_DEFINE_UNQUOTED(SLURM_CONFIG_DIR, "$sysconfdir", 
                    [Define Default slurm config dir])
-AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$slurmconf/slurm.conf", 
+AC_DEFINE_UNQUOTED(SLURM_CONFIG_FILE, "$sysconfdir/slurm.conf", 
                    [Define Default slurm config file location])
 
 
