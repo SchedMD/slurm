@@ -155,8 +155,8 @@ the job with appropriate constraints.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> job_ptr</span>&nbsp; &nbsp;&nbsp;(input) pointer 
 to the job being considered for scheduling. Data in this job record may safely be read.
-Data of particular interst include <i>details->contiguous</i>(set if allocated nodes 
-should be contiguous) <i>num_procs</i> (minimum processors in allocation) and 
+Data of particular interst include <i>details->contiguous</i> (set if allocated nodes 
+should be contiguous), <i>num_procs</i> (minimum processors in allocation) and 
 <i>details->req_node_bitmap</i> (specific required nodes).<br>
 <span class="commandline"> bitmap</span>&nbsp; &nbsp;&nbsp;(input/output) 
 bits representing nodes which might be allocated to the job are set on input.
