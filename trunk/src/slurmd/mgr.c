@@ -62,6 +62,7 @@
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/setenvpf.h"
+#include "src/slurmd/setproctitle.h"
 #include "src/slurmd/smgr.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/shm.h"
@@ -112,7 +113,9 @@ static int  _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status);
 static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 
-static void _setargs(slurmd_job_t *job, char **argv, int argc);
+static void _setargs(slurmd_job_t *job);
+
+static void _random_sleep(slurmd_job_t *job);
 
 /*
  * Batch job mangement prototypes:
@@ -140,7 +143,7 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 
 	_set_job_log_prefix(job);
 
-	_setargs(job, *conf->argv, *conf->argc);
+	_setargs(job);
 
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
@@ -164,7 +167,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 
 	_set_job_log_prefix(job);
 
-	_setargs(job, *conf->argv, *conf->argc);
+	_setargs(job);
 
 	if ((batchdir = _make_batch_dir(job)) == NULL) 
 		goto cleanup1;
@@ -308,6 +311,18 @@ _setup_io(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+static void
+_random_sleep(slurmd_job_t *job)
+{
+	long int delay = 0;
+	long int max   = (3 * job->nnodes); 
+
+	srand48((long int) (job->jobid + job->nodeid));
+
+	delay = lrand48() % ( max + 1 );
+	debug3("delaying %dms", delay);
+	poll(NULL, 0, delay);
+}
 
 /*
  * Send task exit message for n tasks. tid is the list of _global_
@@ -328,6 +343,13 @@ _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status)
 	msg.return_code  = status;
 	resp.data        = &msg;
 	resp.msg_type    = MESSAGE_TASK_EXIT;
+
+	/*
+	 *  XXX Hack for TCP timeouts on exit of large, synchronized
+	 *  jobs. Delay a random amount if job->nnodes > 100
+	 */
+	if (job->nnodes > 100) 
+		_random_sleep(job);
 
 	/*
 	 * XXX: Should srun_list be associated with each task?
@@ -418,14 +440,24 @@ _job_mgr(slurmd_job_t *job)
 
 	job_update_state(job, SLURMD_JOB_ENDING);
     fail2:
+
+	/*
+	 *  First call interconnect_postfini() - In at least one case,
+	 *    this will clean up any straggling processes. If this call
+	 *    is moved behind wait_for_io(), we may block waiting for IO
+	 *    on a hung process.
+	 */
+	if (!job->batch && (interconnect_postfini(job) < 0))
+		error("interconnect_postfini: %m");
+
 	/*
 	 * Wait for io thread to complete
 	 */
 	_wait_for_io(job);
+
+
 	job_update_state(job, SLURMD_JOB_COMPLETE);
 
-	if (!job->batch && (interconnect_postfini(job) < 0))
-		error("interconnect_postfini: %m");
     fail1:
 	job_delete_shm(job);
 	shm_fini();
@@ -1040,11 +1072,20 @@ _slurmd_job_log_init(slurmd_job_t *job)
 
 
 
+static void
+_setargs(slurmd_job_t *job)
+{
+	if (job->stepid == NO_VAL)
+		setproctitle("%s [%d]", "slurmd", job->jobid);
+	else
+		setproctitle("%s %d.%d", "slurmd", job->jobid, job->stepid); 
+}
 
 /*
  * Attempt to change the cmdline argument list for slurmd
  * to denote the job/job step that this process is managing.
  */
+#if 0
 static void
 _setargs(slurmd_job_t *job, char **argv, int argc)
 {
@@ -1071,5 +1112,6 @@ _setargs(slurmd_job_t *job, char **argv, int argc)
 	xfree(arg);
 	return;
 }
+#endif
 
 
