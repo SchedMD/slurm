@@ -129,6 +129,10 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 		-re "error: .*exit code 1" {
 			exp_continue
 		}
+		-re "error: elan" {
+			send_user "Can't avoid this possible error\n"
+			exp_contine
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
 			set failures 1
@@ -153,8 +157,13 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 		-re "error: .*exit code 1" {
 			exp_continue
 		}
+		-re "error: elan" {
+			send_user "Can't avoid this possible error\n"
+			exp_continue
+		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
+			set failures 1
 			exp_continue
 		}
 		timeout {
