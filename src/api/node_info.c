@@ -44,49 +44,6 @@
 #include "slurm.h"
 #include <src/common/slurm_protocol_api.h>
 
-#if DEBUG_MODULE
-/* main is used here for testing purposes only */
-int
-main (int argc, char *argv[]) 
-{
-	static time_t last_update_time = (time_t) NULL;
-	int error_code, i;
-	node_info_msg_t * node_info_msg_ptr = NULL;
-	node_table_t * node_ptr;
-
-	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr);
-	if (error_code) {
-		printf ("slurm_load_node error %d\n", error_code);
-		exit (error_code);
-	}
-	node_ptr = node_info_msg_ptr -> node_array ;
-
-	/* print everything only on smaller clusters */
-	if (node_info_msg_ptr-> record_count <= 100)
-			slurm_print_node_info_msg ( node_info_msg_ptr ) ;
-
-	else {
-		printf("Nodes updated at %d, record count %d\n",
-			node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
-
-		for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
-		{
-			/* to limit output we print only the first 10 entries, 
-			 * last 1 entry, and every 200th entry */
-			if ((i < 10) || (i % 200 == 0) || 
-			    ((i + 1)  == node_info_msg_ptr-> record_count)) {
-				slurm_print_node_table ( & node_ptr[i] ) ;
-			}
-			else if ((i==10) || (i % 200 == 1))
-				printf ("skipping...\n");
-		}
-	}
-
-	slurm_free_node_info ( node_info_msg_ptr ) ;
-	exit (0);
-}
-#endif
-
 /* print the entire node_info_msg */
 void 
 slurm_print_node_info_msg ( node_info_msg_t * node_info_msg_ptr )

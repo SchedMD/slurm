@@ -30,7 +30,8 @@ libslurm_la_SOURCES =    \
 	partition_info.c \
 	submit.c         \
 	reconfigure.c    \
-	update_config.c  
+	update_config.c  \
+	cancel.c
 
 common_dir = $(top_srcdir)/src/common
 

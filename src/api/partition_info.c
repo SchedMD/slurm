@@ -16,28 +16,6 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-int
-main (int argc, char *argv[]) 
-{
-	static time_t last_update_time = (time_t) NULL;
-	int error_code ;
-	partition_info_msg_t * part_info_ptr = NULL;
-
-	error_code = slurm_load_partitions (last_update_time, &part_info_ptr);
-	if (error_code) {
-		printf ("slurm_load_part error %d\n", error_code);
-		exit (error_code);
-	}
-
-	printf("Updated at %lx, record count %d\n",
-		(time_t) part_info_ptr->last_update, part_info_ptr->record_count);
-	slurm_print_partition_info ( part_info_ptr ) ;
-	slurm_free_partition_info (part_info_ptr);
-	exit (0);
-}
-#endif
 
 void slurm_print_partition_info ( partition_info_msg_t * part_info_ptr )
 {
