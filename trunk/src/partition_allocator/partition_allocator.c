@@ -974,7 +974,7 @@ void print_pa_request(struct pa_request* pa_request)
  * 
  * return: success or error of the intialization.
  */
-void partition_allocator_init()
+void pa_init()
 {
 	int i;
 	List switch_config_list;
@@ -1027,7 +1027,7 @@ void partition_allocator_init()
 /** 
  * destroy all the internal (global) data structs.
  */
-void partition_allocator_fini()
+void pa_fini()
 {
 	int i;
 
@@ -1094,7 +1094,7 @@ int allocate_part(pa_request_t* pa_request, List* results)
 int main(int argc, char** argv)
 {
 	
-	partition_allocator_init();
+	pa_init();
 
 	/*
 	ListIterator itr;
@@ -1145,6 +1145,6 @@ int main(int argc, char** argv)
 
 	delete_pa_request(request);
 	
-	partition_allocator_fini();
+	pa_fini();
 	return 0;
 }

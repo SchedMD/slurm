@@ -88,11 +88,11 @@ void print_pa_request(struct pa_request* pa_request);
  * 
  * return: success or error of the intialization.
  */
-void partition_allocator_init();
+void pa_init();
 /** 
  * destroy all the internal (global) data structs.
  */
-void partition_allocator_fini();
+void pa_fini();
 
 /** 
  * set the node in the internal configuration as unusable
