@@ -38,6 +38,7 @@ amtest="
     exit 1 if (\$5 < $AMPATCH); 
 }"
 
+
 (automake --version 2>&1 | perl -n0e "$amtest" ) || {
     echo
     echo "Error: You must have \`automake' version $AMMAJOR.$AMMINOR-p$AMPATCH or greater"
@@ -62,7 +63,8 @@ if test $DIE -eq 1; then
     exit 1
 fi
 
-
+echo "running libtoolize --automake --copy ..."
+libtoolize --automake --copy
 echo "running aclocal $ACLOCAL_FLAGS ... "
 aclocal $ACLOCAL_FLAGS
 echo "running autoheader ... "
