@@ -556,17 +556,19 @@ extern int slurm_job_will_run PARAMS((
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
- * IN job_id - the job's id
- * IN signal - signal number
+ * IN job_id     - the job's id
+ * IN signal     - signal number
+ * IN batch_flag - 1 to signal batch shell only, otherwise 0
  * RET 0 on success or slurm error code
  */
-extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal));
+extern int slurm_kill_job PARAMS((uint32_t job_id, uint16_t signal, 
+			uint16_t batch_flag));
 
 /*
  * slurm_kill_job_step - send the specified signal to an existing job step
- * IN job_id - the job's id
+ * IN job_id  - the job's id
  * IN step_id - the job step's id
- * IN signal - signal number
+ * IN signal  - signal number
  * RET 0 on success or slurm error code
  */
 extern int slurm_kill_job_step PARAMS((uint32_t job_id, uint32_t step_id, 

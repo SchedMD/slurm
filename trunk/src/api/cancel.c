@@ -35,24 +35,49 @@
 
 #include <slurm/slurm.h>
 
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
- * IN job_id - the job's id
- * IN signal - signal number
+ * IN job_id     - the job's id
+ * IN signal     - signal number
+ * IN batch_flag - 1 to signal batch shell only, otherwise 0
  * RET 0 on success or slurm error code
  */
 int 
-slurm_kill_job ( uint32_t job_id, uint16_t signal )
+slurm_kill_job ( uint32_t job_id, uint16_t signal, uint16_t batch_flag )
 {
-	return slurm_kill_job_step ( job_id, NO_VAL, signal );
+	int rc;
+	slurm_msg_t msg;
+	job_step_kill_msg_t req;
+
+	/* 
+	 * Request message:
+	 */
+	req.job_id      = job_id;
+	req.job_step_id = NO_VAL;
+	req.signal      = signal;
+	req.batch_flag  = (uint16_t) batch_flag;
+	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
+	msg.data        = &req;
+
+	if (slurm_send_recv_controller_rc_msg(&msg, &rc) < 0)
+		return SLURM_FAILURE;
+
+	if (rc)
+		slurm_seterrno_ret(rc);
+
+	return SLURM_SUCCESS;
 }
 
 /*
- *  Kill a job step with job id "job_id" and step id "step_id", optionally
- *    sending the processes in the job step a signal "signal"
- *
+ * Kill a job step with job id "job_id" and step id "step_id", optionally
+ *	sending the processes in the job step a signal "signal"
+ * IN job_id     - the job's id
+ * IN step_id    - the job step's id
+ * IN signal     - signal number
+ * RET 0 on success or slurm error code
  */
 int 
 slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
@@ -67,6 +92,7 @@ slurm_kill_job_step (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	req.job_id      = job_id;
 	req.job_step_id = step_id;
 	req.signal      = signal;
+	req.batch_flag	= false;
 	msg.msg_type    = REQUEST_CANCEL_JOB_STEP;
         msg.data        = &req;
 

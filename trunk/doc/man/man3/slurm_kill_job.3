@@ -9,7 +9,9 @@ int \fBslurm_kill_job\fR (
 .br 
 	uint32_t \fIjob_id\fP,
 .br 
-	uint16_t \fIsignal\fP
+	uint16_t \fIsignal\fP,
+.br
+	uint16_t \fIbatch_flag\fP
 .br 
 );
 .LP
@@ -24,6 +26,9 @@ int \fBslurm_kill_job_step\fR (
 );
 .SH "ARGUMENTS"
 .LP 
+.TB
+\fIbatch_flag\fP
+If non-zero then signal only the batch job shell.
 .TP 
 \fIjob_id\fP
 Slurm job id number.
@@ -35,7 +40,8 @@ Slurm job step id number.
 Signal to be sent to the job or job step.
 .SH "DESCRIPTION"
 .LP 
-\fBslurm_kill_job\fR Request that a signal be sent to all steps of the specified job. 
+\fBslurm_kill_job\fR Request that a signal be sent to either the batch job shell 
+(if \fIbatch_flag\fP is non-zero) or all steps of the specified job. 
 If the job is pending and the signal is SIGKILL, the job will be terminated immediately.
 This function may only be successfully executed by the job's owner or user root.
 .LP 
@@ -51,6 +57,8 @@ On success, zero is returned. On error, -1 is returned, and Slurm error code is 
 \fBESLURM_DEFAULT_PARTITION_NOT_SET\fR the system lacks a valid default partition.
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
+.LP
+\fBESLURM_JOB_SCRIPT_MISSING\fR the \fIbatch_flag\fP was set for a non-batch job.
 .LP
 \fBESLURM_ALREADY_DONE\fR the specified job has already completed and can not be modified. 
 .LP

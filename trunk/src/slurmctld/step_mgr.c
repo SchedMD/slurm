@@ -251,13 +251,14 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
  */
 void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 {
-	int i, retries = 0;
+	int i;
 	kill_tasks_msg_t *kill_tasks_msg;
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int buf_rec_size = 0;
 
+	xassert(step_ptr);
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type = REQUEST_KILL_TASKS;
 	agent_args->retry = 1;
@@ -295,19 +296,16 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 	debug2("Spawning signal agent");
 	if (pthread_attr_init(&attr_agent))
 		fatal("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate
-	    (&attr_agent, PTHREAD_CREATE_DETACHED))
+	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	while (pthread_create(&thread_agent, &attr_agent, agent, 
+	if (pthread_create(&thread_agent, &attr_agent, agent, 
 			(void *) agent_args)) {
 		error("pthread_create error %m");
-		if (++retries > MAX_RETRIES)
-			fatal("Can't create pthread");
-		sleep(1);	/* sleep and try again */
+		agent_queue_request(agent_args);
 	}
 	return;
 }

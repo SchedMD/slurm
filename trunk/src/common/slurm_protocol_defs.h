@@ -187,6 +187,7 @@ typedef struct job_step_kill_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
 	uint16_t signal;
+	uint16_t batch_flag;
 } job_step_kill_msg_t;
 
 typedef struct job_id_msg {
