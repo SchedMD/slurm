@@ -327,7 +327,7 @@ static void * _p_signal_task(void *args)
 	char        *host = job->host[info->host_inx];
 
 	debug3("sending signal to host %s", host);
-	if (slurm_send_recv_rc_msg(req, &rc) < 0) { 
+	if (slurm_send_recv_rc_msg(req, &rc, 0) < 0) { 
 		error("%s: signal: %m", host);
 		goto done;
 	}

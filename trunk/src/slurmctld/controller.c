@@ -470,15 +470,13 @@ static void *_slurmctld_rpc_mgr(void *no_data)
  */
 static void *_service_connection(void *arg)
 {
-	int error_code;
 	slurm_fd newsockfd = ((connection_arg_t *) arg)->newsockfd;
 	slurm_msg_t *msg = NULL;
 	void *return_code = NULL;
 
 	msg = xmalloc(sizeof(slurm_msg_t));
 
-	if ((error_code = slurm_receive_msg(newsockfd, msg))
-	    == SLURM_SOCKET_ERROR) {
+	if (slurm_receive_msg(newsockfd, msg, 0) < 0) {
 		error("slurm_receive_msg (_service_connection) error %m");
 	} else {
 		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
@@ -2307,8 +2305,7 @@ static void *_background_rpc_mgr(void *no_data)
 
 		msg = xmalloc(sizeof(slurm_msg_t));
 		msg->conn_fd = newsockfd;
-		if (slurm_receive_msg(newsockfd, msg)
-		    == SLURM_SOCKET_ERROR)
+		if (slurm_receive_msg(newsockfd, msg, 0) < 0)
 			error("slurm_receive_msg error %m");
 		else {
 			error_code = _background_process_msg(msg);
@@ -2365,66 +2362,30 @@ static int _background_process_msg(slurm_msg_t * msg)
  * RET 0 if no error */
 static int _ping_controller(void)
 {
-	int rc, msg_size;
-	slurm_fd sockfd;
-	slurm_msg_t request_msg;
-	slurm_msg_t response_msg;
-	return_code_msg_t *slurm_rc_msg;
-	slurm_addr primary_addr;
+	int rc;
+	slurm_msg_t req;
 
 	debug3("pinging slurmctld at %s", slurmctld_conf.control_addr);
-	/* init message connection for message communication with
-	 * primary controller */
-	slurm_set_addr(&primary_addr, slurmctld_conf.slurmctld_port,
-		       slurmctld_conf.control_addr);
-	if ((sockfd = slurm_open_msg_conn(&primary_addr))
-	    == SLURM_SOCKET_ERROR) {
-		error("_ping_controller/slurm_open_msg_conn: %m");
-		return SLURM_SOCKET_ERROR;
-	}
 
-	/* send request message */
-	request_msg.msg_type = REQUEST_PING;
+	/* 
+	 *  Set address of controller to ping
+	 */
+	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port, 
+	               slurmctld_conf.control_addr);
 
-	if ((rc = slurm_send_node_msg(sockfd, &request_msg))
-	    == SLURM_SOCKET_ERROR) {
+
+	req.msg_type = REQUEST_PING;
+
+	if (slurm_send_recv_rc_msg(&req, &rc, 0) < 0) {
 		error("_ping_controller/slurm_send_node_msg error: %m");
-		return SLURM_SOCKET_ERROR;
+		return SLURM_ERROR;
 	}
 
-	/* receive message */
-	if ((msg_size = slurm_receive_msg(sockfd, &response_msg))
-	    == SLURM_SOCKET_ERROR) {
-		error("_ping_controller/slurm_receive_msg error: %m");
-		return SLURM_SOCKET_ERROR;
-	}
-
-	/* shutdown message connection */
-	if ((rc = slurm_shutdown_msg_conn(sockfd))
-	    == SLURM_SOCKET_ERROR) {
-		error("_ping_controller/slurm_shutdown_msg_conn error: %m");
-		return SLURM_SOCKET_ERROR;
-	}
-
-	if (msg_size)
-		return msg_size;
-
-	switch (response_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		slurm_rc_msg = (return_code_msg_t *) response_msg.data;
-		rc = slurm_rc_msg->return_code;
-		slurm_free_return_code_msg(slurm_rc_msg);
-		if (rc) {
-			error("_ping_controller/response error %d", rc);
-			return SLURM_PROTOCOL_ERROR;
-		}
-		break;
-	default:
-		error("_ping_controller/unexpected message type %d",
-		      response_msg.msg_type);
+	if (rc) {
+		error("_ping_controller/response error %d", rc);
 		return SLURM_PROTOCOL_ERROR;
-		break;
 	}
+
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
@@ -2436,77 +2397,27 @@ static int _ping_controller(void)
 int shutdown_backup_controller(void)
 {
 	int rc;
-	int msg_size;
-	slurm_fd sockfd;
-	slurm_msg_t request_msg;
-	slurm_msg_t response_msg;
-	return_code_msg_t *slurm_rc_msg;
-	slurm_addr secondary_addr;
+	slurm_msg_t req;
 
 	if ((slurmctld_conf.backup_addr == NULL) ||
 	    (strlen(slurmctld_conf.backup_addr) == 0))
 		return SLURM_PROTOCOL_SUCCESS;
 
-	/* init message connection for message communication with 
-	 * primary controller */
-	slurm_set_addr(&secondary_addr, slurmctld_conf.slurmctld_port,
+	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.backup_addr);
-	if ((sockfd = slurm_open_msg_conn(&secondary_addr))
-	    == SLURM_SOCKET_ERROR) {
-		error
-		    ("shutdown_backup_controller/slurm_open_msg_conn: %m");
-		return SLURM_SOCKET_ERROR;
-	}
 
 	/* send request message */
-	request_msg.msg_type = REQUEST_CONTROL;
-	request_msg.data = NULL;
+	req.msg_type = REQUEST_CONTROL;
+	req.data = NULL;
 
-	if ((rc = slurm_send_node_msg(sockfd, &request_msg))
-	    == SLURM_SOCKET_ERROR) {
-		error
-		    ("shutdown_backup_controller/slurm_send_node_msg error: %m");
+	if (slurm_send_recv_rc_msg(&req, &rc, 0) < 0) {
+		error("shutdown_backup:send/recv: %m");
 		return SLURM_SOCKET_ERROR;
 	}
 
-	/* receive message */
-	if ((msg_size = slurm_receive_msg(sockfd, &response_msg))
-	    == SLURM_SOCKET_ERROR) {
-		error
-		    ("shutdown_backup_controller/slurm_receive_msg error: %m");
-		return SLURM_SOCKET_ERROR;
-	}
-
-	/* shutdown message connection */
-	if ((rc = slurm_shutdown_msg_conn(sockfd))
-	    == SLURM_SOCKET_ERROR) {
-		error
-		    ("shutdown_backup_controller/slurm_shutdown_msg_conn error: %m");
-		return SLURM_SOCKET_ERROR;
-	}
-
-	if (msg_size)
-		return msg_size;
-
-	switch (response_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		slurm_rc_msg = (return_code_msg_t *) response_msg.data;
-		rc = slurm_rc_msg->return_code;
-		slurm_free_return_code_msg(slurm_rc_msg);
-		if (rc) {
-			error
-			    ("shutdown_backup_controller/response error %d",
-			     rc);
-			return SLURM_PROTOCOL_ERROR;
-		} else
-			info("BackupController told to shutdown");
-		break;
-	default:
-		error
-		    ("shutdown_backup_controller/unexpected message type %d",
-		     response_msg.msg_type);
-		return SLURM_PROTOCOL_ERROR;
-		break;
+	if (rc) {
+		error("shutdown_backup: %s", slurm_strerror(rc));
+		return SLURM_ERROR;
 	}
 
 	/* FIXME: Ideally the REQUEST_CONTROL RPC does not return until all   
@@ -2515,6 +2426,7 @@ int shutdown_backup_controller(void)
 	 * so the state save should occur right away). We sleep for a while   
 	 * here and give the backup controller time to shutdown */
 	sleep(2);
+
 	return SLURM_PROTOCOL_SUCCESS;
 }
 

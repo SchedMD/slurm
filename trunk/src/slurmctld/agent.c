@@ -65,10 +65,11 @@
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
-#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xsignal.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/common/slurm_protocol_api.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 
@@ -125,7 +126,6 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr);
 static void *_thread_per_node_rpc(void *args);
 static int   _valid_agent_arg(agent_arg_t *agent_arg_ptr);
 static void *_wdog(void *args);
-static void _xsignal(int signal, void (*handler) (int));
 
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List retry_list = NULL;		/* agent_arg_t list for retry */
@@ -150,6 +150,8 @@ void *agent(void *args)
 	/* basic argument value tests */
 	if (_valid_agent_arg(agent_arg_ptr))
 		goto cleanup;
+
+	xsignal(SIGALRM, _alarm_handler);
 
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
@@ -355,9 +357,12 @@ static void *_wdog(void *args)
 				work_done = false;
 				delay = difftime(time(NULL),
 						 thread_ptr[i].time);
-				if (delay >= COMMAND_TIMEOUT)
+				if (delay >= COMMAND_TIMEOUT) {
+					debug3("thd %d timed out\n", 
+					       thread_ptr[i].thread);
 					pthread_kill(thread_ptr[i].thread,
 						     SIGALRM);
+				}
 				break;
 			case DSH_NEW:
 				work_done = false;
@@ -465,99 +470,44 @@ static void *_wdog(void *args)
  */
 static void *_thread_per_node_rpc(void *args)
 {
-	int msg_size = 0;
-	int rc;
-	slurm_fd sockfd;
-	slurm_msg_t request_msg;
-	slurm_msg_t *response_msg = xmalloc(sizeof(slurm_msg_t));
-	return_code_msg_t *slurm_rc_msg;
+	int rc = SLURM_SUCCESS;
+	int timeout = 0;
+	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
 	state_t thread_state = DSH_NO_RESP;
-	sigset_t set;
+
 #if AGENT_IS_THREAD
 	struct node_record *node_ptr;
 	/* Locks: Write write node */
 	slurmctld_lock_t node_write_lock =
 	    { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 #endif
+	xassert(args != NULL);
 
-	/* set up SIGALRM handler */
-	if (sigemptyset(&set))
-		error("sigemptyset error: %m");
-	if (sigaddset(&set, SIGALRM))
-		error("sigaddset error on SIGALRM: %m");
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL) != 0)
-		fatal("sigprocmask error: %m");
-	_xsignal(SIGALRM, _alarm_handler);
-
-	if (args == NULL)
-		fatal("_thread_per_node_rpc has NULL argument");
 	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
 	thread_ptr->time = time(NULL);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
-	/* init message connection for message communication */
-	if ((sockfd = slurm_open_msg_conn(&thread_ptr->slurm_addr))
-	    == SLURM_SOCKET_ERROR) {
-		error(
-		    "_thread_per_node_rpc/slurm_open_msg_conn to host %s: %m",
-		    thread_ptr->node_name);
-		goto cleanup;
-	}
-
 	/* send request message */
-	request_msg.msg_type = task_ptr->msg_type;
-	request_msg.data = task_ptr->msg_args_ptr;
-	if ((rc = slurm_send_node_msg(sockfd, &request_msg))
-	    == SLURM_SOCKET_ERROR) {
-		error(
-		    "_thread_per_node_rpc/slurm_send_node_msg to host %s: %m",
-		    thread_ptr->node_name);
+	msg.address  = thread_ptr->slurm_addr;
+	msg.msg_type = task_ptr->msg_type;
+	msg.data     = task_ptr->msg_args_ptr;
+
+	if (task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) 
+		timeout = slurmctld_conf.kill_wait;
+
+	if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
+		error("agent: %s: %m", thread_ptr->node_name);
 		goto cleanup;
 	}
 
-
-	if (task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) {
-		int kill_wait;
-#if AGENT_IS_THREAD
-		kill_wait = slurmctld_conf.kill_wait;
-#else
-		fatal("get kill_wait from elsewhere");
-#endif
-		slurm_mutex_lock(task_ptr->thread_mutex_ptr);
-		thread_ptr->time = time(NULL) + kill_wait;
-		slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
-		sleep(kill_wait);
-	}
-
-	/* receive message as needed (most message types) */
-	if (task_ptr->get_reply && 
-	    ((msg_size = slurm_receive_msg(sockfd, response_msg))
-	     == SLURM_SOCKET_ERROR)) {
-		error(
-		    "_thread_per_node_rpc/slurm_receive_msg host=%s msg=%u, error=%m",
-		    thread_ptr->node_name, task_ptr->msg_type);
-		goto cleanup;
-	}
-
-	/* shutdown message connection */
-	if ((rc = slurm_shutdown_msg_conn(sockfd)) == SLURM_SOCKET_ERROR) {
-		error(
-		    "_thread_per_node_rpc/slurm_shutdown_msg_conn to host %s: %m",
-		    thread_ptr->node_name);
-		goto cleanup;
-	}
 	if (!task_ptr->get_reply) {
 		thread_state = DSH_DONE;
 		goto cleanup;
 	}
-	if (msg_size) {
-		error("_thread_per_node_rpc/msg_size to host %s error %d", 
-		      thread_ptr->node_name, msg_size);
-		goto cleanup;
-	}
+
 
 #if AGENT_IS_THREAD
 	/* SPECIAL CASE: Immediately mark node as IDLE on job kill reply */
@@ -578,39 +528,31 @@ static void *_thread_per_node_rpc(void *args)
 	}
 #endif
 
-	switch (response_msg->msg_type) {
-	case RESPONSE_SLURM_RC:
-		slurm_rc_msg = (return_code_msg_t *) response_msg->data;
-		rc = slurm_rc_msg->return_code;
-		slurm_free_return_code_msg(slurm_rc_msg);
-		if (rc == SLURM_SUCCESS) {
-			debug3("agent processed RPC to node %s",
-			       thread_ptr->node_name);
-			thread_state = DSH_DONE;
-		} else if (rc == ESLURMD_EPILOG_FAILED) {
-			error("Epilog failure on host %s, setting DOWN",
-			      thread_ptr->node_name);
-			thread_state = DSH_FAILED;
-		} else if (rc == ESLURMD_PROLOG_FAILED) {
-			error("Prolog failure on host %s, setting DOWN",
-			      thread_ptr->node_name);
-			thread_state = DSH_FAILED;
-		} else if (rc == ESLURM_INVALID_JOB_ID) {
-			/* Not indicative of a real error */
-			debug2("agent processed RPC to node %s, error %s",
-			       thread_ptr->node_name, "Invalid Job Id");
-			thread_state = DSH_DONE;
-		} else {
-			error("agent error from host %s: %s",
-			      thread_ptr->node_name,
-			      slurm_strerror(rc));	/* Don't use %m */
-			thread_state = DSH_DONE;
-		}
+	switch (rc) {
+	case SLURM_SUCCESS:
+		debug3("agent processed RPC to node %s", thread_ptr->node_name);
+		thread_state = DSH_DONE;
 		break;
+	case ESLURMD_EPILOG_FAILED:
+		error("Epilog failure on host %s, setting DOWN", 
+		      thread_ptr->node_name);
+		thread_state = DSH_FAILED;
+		break;
+	case ESLURMD_PROLOG_FAILED:
+		error("Prolog failure on host %s, setting DOWN",
+		      thread_ptr->node_name);
+		thread_state = DSH_FAILED;
+		break;
+	case ESLURM_INVALID_JOB_ID: /* Not indicative of a real error */
+		debug2("agent processed RPC to node %s, error %s",
+		       thread_ptr->node_name, "Invalid Job Id");
+		thread_state = DSH_DONE;
+		break;
+
 	default:
-		error("agent reply from host %s, bad msg_type %d",
-		      thread_ptr->node_name, response_msg->msg_type);
-		break;
+		error("agent error from host %s: %s", 
+		      thread_ptr->node_name, slurm_strerror(rc));
+		thread_state = DSH_DONE;
 	}
 
       cleanup:
@@ -623,24 +565,8 @@ static void *_thread_per_node_rpc(void *args)
 	pthread_cond_signal(task_ptr->thread_cond_ptr);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
-	slurm_free_msg(response_msg);
 	xfree(args);
 	return (void *) NULL;
-}
-
-/*
- * Emulate signal() but with BSD semantics (i.e. don't restore signal to
- *	SIGDFL prior to executing handler).
- */
-static void _xsignal(int signal, void (*handler) (int))
-{
-	struct sigaction sa, old_sa;
-
-	sa.sa_handler = handler;
-	sigemptyset(&sa.sa_mask);
-	sigaddset(&sa.sa_mask, signal);
-	sa.sa_flags = 0;
-	sigaction(signal, &sa, &old_sa);
 }
 
 /*

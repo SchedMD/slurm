@@ -236,6 +236,10 @@ _io_thr_init(job_t *job, struct pollfd *fds)
 
 	xassert(job != NULL);
 
+	/*
+	 * XXX: Handle job->ofname/efname == IO_ONE
+	 */
+
 	_set_iofds_nonblocking(job);
 
 	if (job->ofname->type == IO_ALL)
@@ -262,8 +266,6 @@ _io_thr_init(job_t *job, struct pollfd *fds)
 
 	for (i = 0; i < job->niofds; i++) 
 		_poll_set_rd(fds[i], job->iofd[i]);
-
-
 }
 
 static void

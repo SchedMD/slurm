@@ -524,7 +524,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 
 	msg = xmalloc(sizeof(*msg));
   again:
-	if (slurm_receive_msg(fd, msg) == SLURM_SOCKET_ERROR) {
+	if (slurm_receive_msg(fd, msg, 0) < 0) {
 		if (errno == EINTR)
 			goto again;
 		error("slurm_receive_msg[%s]: %m", host);
