@@ -1182,7 +1182,7 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response )
 	/* do RPC call */
 /* must be user root */
 	if (shutdown_time)
-		debug3 ("slurm_rpc_shutdown_controller again");
+		debug3 ("slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
 	else {
 		kill (slurmctld_pid, SIGTERM);	/* tell master to clean-up */
 		info ("slurm_rpc_shutdown_controller completed successfully");
