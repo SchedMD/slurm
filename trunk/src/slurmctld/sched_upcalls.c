@@ -570,7 +570,7 @@ sched_get_job_num_tasks( sched_obj_list_t job_data,
 	static uint16_t one = 1;
 	struct job_details *det = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( type ) *type = 'u';
-	if ( det ) {
+	if ( det && det->req_tasks && ( det->req_tasks != NO_VAL ) ) {
 		return (void *) &det->req_tasks;
 	} else {
 		return (void *) &one;
@@ -1090,7 +1090,7 @@ sched_cancel_job( const uint32_t job_id )
 	 */
 	debug3( "Scheduler plugin requested cancellation of job %u", job_id );
 	lock_slurmctld( job_write_lock );
-	rc = job_signal( job_id, SIGKILL, 0, getuid() );
+	rc = job_signal( job_id, SIGKILL, getuid() );
 	unlock_slurmctld( job_write_lock );
 
 	return rc;
