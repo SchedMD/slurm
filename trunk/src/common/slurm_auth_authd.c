@@ -112,8 +112,8 @@ slurm_auth_activate_credentials( slurm_auth_t cred, time_t ttl )
 {
 	int rc;
 	/* Initialize credentials with our user and group IDs. */
-	cred->creds.uid = getuid();
-	cred->creds.gid = getgid();
+	cred->creds.uid = geteuid();
+	cred->creds.gid = getegid();
   
 	/* Set the valid time interval. */
 	cred->creds.valid_from = time( NULL );
@@ -121,7 +121,7 @@ slurm_auth_activate_credentials( slurm_auth_t cred, time_t ttl )
 
 	/* Sign the credentials. */
 	if ((rc = slurm_sign_auth_credentials(cred)) < 0) 
-		return SLURM_FAILURE;
+		return rc;
 		
 	return SLURM_SUCCESS;
 }
@@ -200,6 +200,7 @@ static int
 slurm_sign_auth_credentials( slurm_auth_t cred )
 {
 #ifdef HAVE_AUTHD
+	assert(cred != NULL);
 	return auth_get_signature(&cred->creds, &cred->sig);
 #else
 	return SLURM_SUCCESS;

@@ -115,12 +115,22 @@ int shm_fini(void);
 void shm_cleanup(void);
 
 /*
- * Returns a list of job_step_t's currently recorded in shared memory. Presumably,
- * these job steps are still running or have abnormally terminated. 
+ * Returns a list of job_step_t's currently recorded 
+ * in shared memory. Presumably, these job steps are 
+ * still running or have abnormally terminated. 
  *
  * Caller must free the resulting list with list_destroy()
  */
 List shm_get_steps(void);
+
+/* 
+ * Try to determine whether the step {jobid,stepid} is still
+ * running on this node. (i.e., check for sid and all pids)
+ *
+ * Returns false if job step sid and at least one pid do
+ * not exist
+ */
+bool shm_step_still_running(uint32_t jobid, uint32_t stepid);
 
 /*
  * Insert a new step into shared memory, the step passed in by address

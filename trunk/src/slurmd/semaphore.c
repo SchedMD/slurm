@@ -181,6 +181,7 @@ sem_t * sem_open(const char *name, int oflag, ...)
 #endif /* HAVE_BROKEN_SEM_OTIME */
 
     semarg.buf = &seminfo;
+    seminfo.sem_otime = 0;
     for (i=0; i<MAX_TRIES; i++) {
         if (semctl(semid, 0, IPC_STAT, semarg) == -1) {
             goto err;

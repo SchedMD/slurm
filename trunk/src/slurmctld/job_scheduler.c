@@ -217,17 +217,17 @@ launch_job (struct job_record *job_ptr)
 
 	/* Initialization of data structures */
 	launch_msg_ptr = (batch_job_launch_msg_t *) xmalloc (sizeof (batch_job_launch_msg_t));
-	launch_msg_ptr -> job_id = job_ptr -> job_id;
-	launch_msg_ptr -> user_id = job_ptr -> user_id;
-	launch_msg_ptr -> nodes = xstrdup (job_ptr -> nodes);
-	launch_msg_ptr -> err = xstrdup (job_ptr -> details -> err);
-	launch_msg_ptr -> in  = xstrdup (job_ptr -> details -> in);
-	launch_msg_ptr -> out = xstrdup (job_ptr -> details -> out);
+	launch_msg_ptr -> job_id   = job_ptr -> job_id;
+	launch_msg_ptr -> uid      = job_ptr -> user_id;
+	launch_msg_ptr -> nodes    = xstrdup (job_ptr -> nodes);
+	launch_msg_ptr -> err      = xstrdup (job_ptr -> details -> err);
+	launch_msg_ptr -> in       = xstrdup (job_ptr -> details -> in);
+	launch_msg_ptr -> out      = xstrdup (job_ptr -> details -> out);
 	launch_msg_ptr -> work_dir = xstrdup (job_ptr -> details -> work_dir);
 	launch_msg_ptr -> argc = 0;	/* FIXME */
 	launch_msg_ptr -> argv = NULL;	/* FIXME */
 	launch_msg_ptr -> script = get_job_script (job_ptr);
-	launch_msg_ptr -> environment = get_job_env (job_ptr, &launch_msg_ptr -> env_size);
+	launch_msg_ptr -> environment = get_job_env (job_ptr, &launch_msg_ptr -> envc);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc (sizeof (agent_arg_t));
 	agent_arg_ptr -> node_count = 1;

@@ -48,6 +48,7 @@
 #endif
 
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
+static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_revoke_credential(slurm_msg_t *, slurm_addr *);
 static void _rpc_ping(slurm_msg_t *, slurm_addr *);
@@ -57,6 +58,10 @@ void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
 	switch(msg->msg_type) {
+	case REQUEST_BATCH_JOB_LAUNCH:
+		_rpc_batch_job(msg, cli);
+		slurm_free_job_launch_msg(msg->data);
+		break;
 	case REQUEST_LAUNCH_TASKS:
 		_rpc_launch_tasks(msg, cli);
 		slurm_free_launch_tasks_request_msg(msg->data);
@@ -97,9 +102,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 static int
-_launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
-{
+_launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
+{	
 	pid_t pid;
+	int rc;
 
 	switch ((pid = fork())) {
 		case -1:
@@ -113,7 +119,41 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			slurm_destroy_ssl_key_ctx(&conf->vctx);
 			slurm_ssl_destroy();
 			log_reinit();
-			mgr_launch_tasks(req, cli);
+			rc = mgr_launch_batch_job(req, cli);
+			exit(rc);
+			/* NOTREACHED */
+			break;
+		default:
+			verbose("created process %ld for job %d",
+					pid, req->job_id);
+			break;
+	}
+
+	return SLURM_SUCCESS;
+
+}
+
+static int
+_launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
+{
+	pid_t pid;
+	int rc;
+
+	switch ((pid = fork())) {
+		case -1:
+			error("launch_tasks: fork: %m");
+			return SLURM_ERROR;
+			break;
+		case 0: /* child runs job */
+			slurm_shutdown_msg_engine(conf->lfd);
+			list_destroy(conf->threads);
+			destroy_credential_state_list(conf->cred_state_list);
+			slurm_destroy_ssl_key_ctx(&conf->vctx);
+			slurm_ssl_destroy();
+			log_reinit();
+			rc = mgr_launch_tasks(req, cli);
+			exit(rc);
+			/* NOTREACHED */
 			break;
 		default:
 			verbose("created process %ld for job %d.%d",
@@ -141,8 +181,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	req_uid = slurm_auth_uid(msg->cred);
 	req_gid = slurm_auth_gid(msg->cred);
 
-	verbose("launch tasks request from uid %ld @%s:%d", 
-		req_uid, host, port);
+	verbose("launch tasks request from %ld@%s", req_uid, host, port);
 
 	rc = verify_credential(&conf->vctx, 
 			       req->credential, 
@@ -151,8 +190,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	if ((rc == SLURM_SUCCESS) && (req_uid == req->uid))
 		rc = _launch_tasks(req, cli);
 	else {
-		verbose("Invalid credential from %s:%d, launching job anyway", 
-		     host, port);
+		verbose("Invalid credential from %ld@%s, launching job anyway", 
+		        req_uid, host);
 		rc = _launch_tasks(req, cli);
 	}
 
@@ -169,6 +208,35 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_send_only_node_msg(&resp_msg);
 }
 
+static void
+_rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
+{
+	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
+	int      rc;
+	uint16_t port;
+	char     host[MAXHOSTNAMELEN];
+	uid_t    req_uid;
+	gid_t    req_gid;
+
+	slurm_get_addr(cli, &port, host, sizeof(host));
+	req_uid = slurm_auth_uid(msg->cred);
+	req_gid = slurm_auth_gid(msg->cred);
+
+	verbose("req_uid = %ld, req->uid = %ld", req_uid, req->uid);
+
+	if ((req_uid != 0) && (req_uid != (uid_t)req->uid)) {
+		rc = EPERM;
+		goto done;
+	}
+
+	verbose("batch launch request from %ld@%s", req_uid, host, port);
+
+	if (_launch_batch_job(req, cli) < 0)
+		rc = SLURM_FAILURE;
+
+  done:
+	slurm_send_rc_msg(msg, rc);
+}
 
 static void
 _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
@@ -200,6 +268,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	}
 
 	shm_free_step(step);
+
 	rc = shm_signal_step(req->job_id, req->job_step_id, req->signal);
 
   done:

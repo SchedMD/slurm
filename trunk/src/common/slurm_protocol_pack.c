@@ -1818,7 +1818,7 @@ pack_batch_job_launch ( batch_job_launch_msg_t* msg , Buf buffer )
 	assert ( msg != NULL );
 
 	pack32 ( msg -> job_id, buffer ) ;
-	pack32 ( msg -> user_id, buffer ) ;
+	pack32 ( msg -> uid, buffer ) ;
 
 	packstr ( msg -> nodes, buffer ) ;
 	packstr ( msg -> script, buffer ) ;
@@ -1831,8 +1831,8 @@ pack_batch_job_launch ( batch_job_launch_msg_t* msg , Buf buffer )
 	pack16 ( msg -> argc, buffer ) ;
 	packstr_array (msg -> argv, msg -> argc, buffer);
 
-	pack16 ( msg -> env_size, buffer ) ;
-	packstr_array (msg -> environment, msg -> env_size, buffer);
+	pack16 ( msg -> envc, buffer ) ;
+	packstr_array (msg -> environment, msg -> envc, buffer);
 }
 
 int 
@@ -1846,7 +1846,7 @@ unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer )
 	*msg = launch_msg_ptr ;
 
 	safe_unpack32 ( & launch_msg_ptr -> job_id, buffer ) ;
-	safe_unpack32 ( & launch_msg_ptr -> user_id, buffer ) ;
+	safe_unpack32 ( & launch_msg_ptr -> uid, buffer ) ;
 
 	safe_unpackstr_xmalloc ( & launch_msg_ptr -> nodes, & uint16_tmp , buffer ) ;
 	safe_unpackstr_xmalloc ( & launch_msg_ptr -> script, & uint16_tmp , buffer ) ;
@@ -1859,8 +1859,8 @@ unpack_batch_job_launch( batch_job_launch_msg_t** msg , Buf buffer )
 	safe_unpack16 ( & launch_msg_ptr -> argc, buffer ) ;
 	safe_unpackstr_array (& launch_msg_ptr -> argv, &launch_msg_ptr -> argc, buffer);
 
-	safe_unpack16 ( & launch_msg_ptr -> env_size, buffer ) ;
-	safe_unpackstr_array (& launch_msg_ptr -> environment, &launch_msg_ptr -> env_size, buffer);
+	safe_unpack16 ( & launch_msg_ptr -> envc, buffer ) ;
+	safe_unpackstr_array (& launch_msg_ptr -> environment, &launch_msg_ptr -> envc, buffer);
 
 	return SLURM_SUCCESS;
 

@@ -247,7 +247,7 @@ typedef struct launch_tasks_request_msg {
 
 typedef struct launch_tasks_response_msg {
 	uint32_t return_code;
-	char *node_name;
+	char    *node_name;
 	uint32_t srun_node_id;
 	uint32_t local_pid;
 } launch_tasks_response_msg_t;
@@ -281,18 +281,19 @@ typedef struct reattach_tasks_streams_msg {
 
 typedef struct batch_job_launch_msg {
 	uint32_t job_id;
-	uint32_t user_id;
-	char *nodes;		/* comma delimited list of nodes allocated to job_step */
+	uint32_t uid;
+	uint32_t nprocs;	/* number of tasks in this job         */
+	char *nodes;		/* list of nodes allocated to job_step */
 	char *script;		/* the actual job script, default NONE */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
-	char *work_dir;		/* fully qualified pathname of working directory */
+	char *work_dir;		/* full pathname of working directory */
 	uint16_t argc;
 	char **argv;
-	uint16_t env_size;	/* element count in environment */
+	uint16_t envc;	        /* element count in environment */
 	char **environment;	/* environment variables to set for job, 
-				   *   name=value pairs, one per line */
+				 *   name=value pairs, one per line */
 } batch_job_launch_msg_t;
 
 /****************************************************************************

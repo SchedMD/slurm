@@ -37,18 +37,6 @@
 /* Launch a job step on this node
  */
 int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client);
-
-/* Instance of a slurmd "job" or job step:
- * We run:
- *  interconnect_prepare()       : prepare node for interconnect (if any)
- *  interconnect_init()          : initialize interconnect on node
- *  fork() N tasks --> wait() --> interconnect_fini()
- *   \
- *    `--> interconnect_attach() : attach each proc to interconnect
- *         interconnect_env()    : setup child environment 
- *         exec()
- */
-void slurmd_run_job(slurmd_job_t *job);
-void job_launch_tasks(slurmd_job_t *job);
+int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
 
 #endif

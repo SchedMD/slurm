@@ -226,6 +226,7 @@ main(int ac, char **av)
 	}
 
 	pthread_attr_init(&attr);
+	pthread_attr_setstacksize(&attr, 16384);
 
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	/* spawn msg server thread */
@@ -234,6 +235,7 @@ main(int ac, char **av)
 	debug("Started msg server thread (%d)\n", job->jtid);
 
 	pthread_attr_init(&ioattr);
+	pthread_attr_setstacksize(&ioattr, 16384);
 	/* spawn io server thread */
 	if ((errno = pthread_create(&job->ioid, &ioattr, &io_thr, (void *) job)))
 		fatal("Unable to create io thread. %m\n");
@@ -270,16 +272,7 @@ main(int ac, char **av)
 	pthread_cancel(job->sigid);
 
 	/* wait for  stdio */
-	n = 0;
-	for (i = 0; i < opt.nprocs; i++) {
-		if ((job->err[i] < 0) && (job->out[i] < 0))
-			n++;
-	}
-
-	if (n < opt.nprocs)
-		pthread_join(job->ioid, NULL);
-	else
-		pthread_kill(job->ioid, SIGTERM);
+	pthread_join(job->ioid, NULL);
 
 	if (old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);

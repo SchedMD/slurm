@@ -77,7 +77,6 @@ static void makespace(char **str, int needed)
 /* 
  * Concatenate str2 onto str1, expanding str1 as needed.
  *   str1 (IN/OUT)	target string (pointer to in case of expansion)
- *   size (IN/OUT)	size of str1 (pointer to in case of expansion)
  *   str2 (IN)		source string
  */
 void _xstrcat(char **str1, const char *str2)

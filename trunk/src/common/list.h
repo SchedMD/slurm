@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  $Id: list.h,v 1.6 2001/12/15 14:33:49 dun Exp $
+ *  $Id: list.h,v 1.11 2002/09/15 05:40:22 dun Exp $
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -29,9 +29,9 @@
 #define _LIST_H
 
 
-/***********\
-**  Notes  **
-\***********/
+/***********
+ *  Notes  *
+ ***********/
 
 /*  When a memory allocation request fails, the list returns out_of_memory().
  *  By default, this is a macro definition that returns NULL; this macro may
@@ -41,9 +41,9 @@
  */
 
 
-/****************\
-**  Data Types  **
-\****************/
+/****************
+ *  Data Types  *
+ ****************/
 
 typedef struct list * List;
 /*
@@ -76,9 +76,9 @@ typedef int (*ListFindF)(void *x, void *key);
  */
 
 
-/*******************************\
-**  General-Purpose Functions  **
-\*******************************/
+/*******************************
+ *  General-Purpose Functions  *
+ *******************************/
 
 List list_create(ListDelF f);
 /*
@@ -108,9 +108,9 @@ int list_count(List l);
  */
 
 
-/***************************\
-**  List Access Functions  **
-\***************************/
+/***************************
+ *  List Access Functions  *
+ ***************************/
 
 void * list_append(List l, void *x);
 /*
@@ -151,9 +151,9 @@ void list_sort(List l, ListCmpF f);
  */
 
 
-/****************************\
-**  Stack Access Functions  **
-\****************************/
+/****************************
+ *  Stack Access Functions  *
+ ****************************/
 
 void * list_push(List l, void *x);
 /*
@@ -175,9 +175,9 @@ void * list_peek(List l);
  */
 
 
-/****************************\
-**  Queue Access Functions  **
-\****************************/
+/****************************
+ *  Queue Access Functions  *
+ ****************************/
 
 void * list_enqueue(List l, void *x);
 /*
@@ -192,9 +192,9 @@ void * list_dequeue(List l);
  */
 
 
-/*****************************\
-**  List Iterator Functions  **
-\*****************************/
+/*****************************
+ *  List Iterator Functions  *
+ *****************************/
 
 ListIterator list_iterator_create(List l);
 /*

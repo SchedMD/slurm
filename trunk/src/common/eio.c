@@ -31,6 +31,7 @@
 #include <errno.h>
 
 #include <src/common/xmalloc.h>
+#include <src/common/xassert.h>
 #include <src/common/log.h>
 #include <src/common/list.h>
 #include <src/common/eio.h>
@@ -57,15 +58,16 @@ _poll_loop_internal(List objs)
 	int            retval = 0;
 	struct pollfd *pollfds;
 	io_obj_t     **map;
-	unsigned int   n, maxnfds = 0, nfds = 0;
+	unsigned int   maxnfds = 0, nfds = 0;
+	unsigned int   n = 0;
 
 	for (;;) {
 
 		/* Alloc memory for pfds and map if needed */                  
 		if (maxnfds < (n = list_count(objs))) {
 			maxnfds = n;
-			xrealloc(pollfds, maxnfds*sizeof(*pollfds));
-			xrealloc(map,     maxnfds*sizeof(*map));
+			xrealloc(pollfds, maxnfds*sizeof(struct pollfd));
+			xrealloc(map,     maxnfds*sizeof(io_obj_t *   ));
 			/* 
 			 * Note: xrealloc() also handles initial malloc 
 			 */
@@ -125,23 +127,23 @@ _poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
 	unsigned int  nfds = 0;
 	bool          readable, writable;
 
-	while ((obj = (io_obj_t *) list_next(i))) {
+	while ((obj = list_next(i))) {
 		writable = _is_writable(obj);
 		readable = _is_readable(obj);
 		if (writable && readable) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLOUT | POLLIN;
-			map[nfds] = obj;
+			map[nfds]         = obj;
 			nfds++;
 		} else if (readable) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLIN;
-			map[nfds] = obj;
+			map[nfds]         = obj;
 			nfds++;
 		} else if (writable) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLOUT;
-			map[nfds] = obj;
+			map[nfds]         = obj;
 			nfds++;
 		}
 	}

@@ -41,6 +41,9 @@
 #endif				/*  HAVE_CONFIG_H */
 
 #include <src/common/log.h>
+#include <src/common/list.h>
+#include <src/common/slurm_protocol_api.h>
+#include <src/common/signature_utils.h>
 
 /*
  * Global config type
@@ -51,7 +54,7 @@ typedef struct slurmd_config {
 	char         *hostname;		/* local hostname		   */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
-	char         *savedir;		/* SaveStateLocation	           */
+	char         *spooldir;		/* SlurmdSpoolDir	           */
 	char         *nodename;		/* this node's hostname            */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */

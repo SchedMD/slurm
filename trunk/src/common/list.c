@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  $Id: list.c,v 1.15 2001/12/15 14:33:49 dun Exp $
+ *  $Id: list.c,v 1.24 2002/11/04 22:58:07 dun Exp $
  *****************************************************************************
  *  Copyright (C) 2001-2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -44,9 +44,9 @@
 #include "list.h"
 
 
-/*******************\
-**  Out of Memory  **
-\*******************/
+/*******************
+ *  Out of Memory  *
+ *******************/
 
 #ifdef WITH_OOMF
 #  undef out_of_memory
@@ -55,111 +55,109 @@
 #  ifndef out_of_memory
 #    define out_of_memory() (NULL)
 #  endif /* !out_of_memory */
-#endif /* WITH_OOMF */
+#endif /* !WITH_OOMF */
 
 
-/***************\
-**  Constants  **
-\***************/
+/***************
+ *  Constants  *
+ ***************/
 
-#define LIST_ALLOC	10
-#define LIST_MAGIC 	0xDEADBEEF
-#define LIST_DESTROYED	0xDEEDDEED
-#define ITER_MAGIC	0x1EAD1EEF
-#define ITER_DESTROYED	0x1EED1EED
+#define LIST_ALLOC 32
+#define LIST_MAGIC 0xDEADBEEF
 
-/****************\
-**  Data Types  **
-\****************/
+
+/****************
+ *  Data Types  *
+ ****************/
 
 struct listNode {
-    void                 *data;		/* node's data                        */
-    struct listNode      *next;		/* next node in list                  */
+    void                 *data;         /* node's data                       */
+    struct listNode      *next;         /* next node in list                 */
 };
 
 struct listIterator {
-    struct list          *list;		/* the list being iterated            */
-    struct listNode      *pos;		/* the next node to be iterated       */
-    struct listNode     **prev;		/* addr of 'next' ptr to prev It node */
-    struct listIterator  *iNext;	/* iterator chain for list_destroy()  */
+    struct list          *list;         /* the list being iterated           */
+    struct listNode      *pos;          /* the next node to be iterated      */
+    struct listNode     **prev;         /* addr of 'next' ptr to prv It node */
+    struct listIterator  *iNext;        /* iterator chain for list_destroy() */
 #ifndef NDEBUG
-    unsigned int          magic;	/* sentinel for asserting validity    */
-#endif /* NDEBUG */
+    unsigned int          magic;        /* sentinel for asserting validity   */
+#endif /* !NDEBUG */
 };
 
 struct list {
-    struct listNode      *head;		/* head of the list                   */
-    struct listNode     **tail;		/* addr of last node's 'next' ptr     */
-    struct listIterator  *iNext;	/* iterator chain for list_destroy()  */
-    ListDelF              fDel;		/* function to delete node data       */
-    int                   count;	/* number of nodes in list            */
+    struct listNode      *head;         /* head of the list                  */
+    struct listNode     **tail;         /* addr of last node's 'next' ptr    */
+    struct listIterator  *iNext;        /* iterator chain for list_destroy() */
+    ListDelF              fDel;         /* function to delete node data      */
+    int                   count;        /* number of nodes in list           */
 #ifdef WITH_PTHREADS
-    pthread_mutex_t       mutex;	/* mutex to protect access to list    */
+    pthread_mutex_t       mutex;        /* mutex to protect access to list   */
 #endif /* WITH_PTHREADS */
 #ifndef NDEBUG
-    unsigned int          magic;	/* sentinel for asserting validity    */
-#endif /* NDEBUG */
+    unsigned int          magic;        /* sentinel for asserting validity   */
+#endif /* !NDEBUG */
 };
 
 typedef struct listNode * ListNode;
 
 
-/****************\
-**  Prototypes  **
-\****************/
+/****************
+ *  Prototypes  *
+ ****************/
 
 static void * list_node_create(List l, ListNode *pp, void *x);
 static void * list_node_destroy(List l, ListNode *pp);
 static List list_alloc(void);
-static ListNode list_node_alloc(void);
-static ListIterator list_iterator_alloc(void);
 static void list_free(List l);
+static ListNode list_node_alloc(void);
 static void list_node_free(ListNode p);
+static ListIterator list_iterator_alloc(void);
 static void list_iterator_free(ListIterator i);
+static void * list_alloc_aux(int size, void *pfreelist);
+static void list_free_aux(void *x, void *pfreelist);
 
 
-/***************\
-**  Variables  **
-\***************/
+/***************
+ *  Variables  *
+ ***************/
 
-static List freeLists = NULL;
-static ListNode freeListNodes = NULL;
-static ListIterator freeListIterators = NULL;
+static List list_free_lists = NULL;
+static ListNode list_free_nodes = NULL;
+static ListIterator list_free_iterators = NULL;
 #ifdef WITH_PTHREADS
-static pthread_mutex_t freeListsLock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t freeListNodesLock = PTHREAD_MUTEX_INITIALIZER;
-static pthread_mutex_t freeListIteratorsLock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t list_free_lock = PTHREAD_MUTEX_INITIALIZER;
 #endif /* WITH_PTHREADS */
 
 
-/************\
-**  Macros  **
-\************/
+/************
+ *  Macros  *
+ ************/
 
 #ifdef WITH_PTHREADS
 
-#  define list_mutex_init(mutex)                                               \
-     do {                                                                      \
-         if ((errno = pthread_mutex_init(mutex, NULL)) != 0)                   \
-             perror("ERROR: pthread_mutex_init() failed"), exit(1);            \
+#  define list_mutex_init(mutex)                                              \
+     do {                                                                     \
+         if ((errno = pthread_mutex_init(mutex, NULL)) != 0)                  \
+             perror("ERROR: pthread_mutex_init() failed"), exit(1);           \
      } while (0)
 
-#  define list_mutex_lock(mutex)                                               \
-     do {                                                                      \
-         if ((errno = pthread_mutex_lock(mutex)) != 0)                         \
-             perror("ERROR: pthread_mutex_lock() failed"), exit(1);            \
+#  define list_mutex_lock(mutex)                                              \
+     do {                                                                     \
+         if ((errno = pthread_mutex_lock(mutex)) != 0)                        \
+             perror("ERROR: pthread_mutex_lock() failed"), exit(1);           \
      } while (0)
 
-#  define list_mutex_unlock(mutex)                                             \
-     do {                                                                      \
-         if ((errno = pthread_mutex_unlock(mutex)) != 0)                       \
-             perror("ERROR: pthread_mutex_unlock() failed"), exit(1);          \
+#  define list_mutex_unlock(mutex)                                            \
+     do {                                                                     \
+         if ((errno = pthread_mutex_unlock(mutex)) != 0)                      \
+             perror("ERROR: pthread_mutex_unlock() failed"), exit(1);         \
      } while (0)
 
-#  define list_mutex_destroy(mutex)                                            \
-     do {                                                                      \
-         if ((errno = pthread_mutex_destroy(mutex)) != 0)                      \
-             perror("ERROR: pthread_mutex_destroy() failed"), exit(1);         \
+#  define list_mutex_destroy(mutex)                                           \
+     do {                                                                     \
+         if ((errno = pthread_mutex_destroy(mutex)) != 0)                     \
+             perror("ERROR: pthread_mutex_destroy() failed"), exit(1);        \
      } while (0)
 
 #else /* !WITH_PTHREADS */
@@ -169,12 +167,12 @@ static pthread_mutex_t freeListIteratorsLock = PTHREAD_MUTEX_INITIALIZER;
 #  define list_mutex_unlock(mutex)
 #  define list_mutex_destroy(mutex)
 
-#endif /* WITH_PTHREADS */
+#endif /* !WITH_PTHREADS */
 
 
-/***************\
-**  Functions  **
-\***************/
+/***************
+ *  Functions  *
+ ***************/
 
 List list_create(ListDelF f)
 {
@@ -188,7 +186,7 @@ List list_create(ListDelF f)
     l->fDel = f;
     l->count = 0;
     list_mutex_init(&l->mutex);
-    assert(l->magic = LIST_MAGIC);	/* set magic via assert abuse */
+    assert(l->magic = LIST_MAGIC);      /* set magic via assert abuse */
     return(l);
 }
 
@@ -203,9 +201,9 @@ void list_destroy(List l)
     assert(l->magic == LIST_MAGIC);
     i = l->iNext;
     while (i) {
-        assert(i->magic == ITER_MAGIC);
+        assert(i->magic == LIST_MAGIC);
         iTmp = i->iNext;
-        assert(i->magic = LIST_DESTROYED);	/* clear magic via assert abuse */
+        assert(i->magic = 1);           /* clear magic via assert abuse */
         list_iterator_free(i);
         i = iTmp;
     }
@@ -217,7 +215,7 @@ void list_destroy(List l)
         list_node_free(p);
         p = pTmp;
     }
-    assert(l->magic = LIST_DESTROYED);		/* clear magic via assert abuse */
+    assert(l->magic = 1);               /* clear magic via assert abuse */
     list_mutex_unlock(&l->mutex);
     list_mutex_destroy(&l->mutex);
     list_free(l);
@@ -363,7 +361,7 @@ void list_sort(List l, ListCmpF f)
         l->tail = pp;
 
         for (i=l->iNext; i; i=i->iNext) {
-            assert(i->magic == ITER_MAGIC);
+            assert(i->magic == LIST_MAGIC);
             i->pos = i->list->head;
             i->prev = &i->list->head;
         }
@@ -454,8 +452,8 @@ ListIterator list_iterator_create(List l)
     i->prev = &l->head;
     i->iNext = l->iNext;
     l->iNext = i;
+    assert(i->magic = LIST_MAGIC);      /* set magic via assert abuse */
     list_mutex_unlock(&l->mutex);
-    assert(i->magic = ITER_MAGIC);	/* set magic via assert abuse */
     return(i);
 }
 
@@ -463,7 +461,7 @@ ListIterator list_iterator_create(List l)
 void list_iterator_reset(ListIterator i)
 {
     assert(i != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     i->pos = i->list->head;
@@ -478,18 +476,18 @@ void list_iterator_destroy(ListIterator i)
     ListIterator *pi;
 
     assert(i != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     for (pi=&i->list->iNext; *pi; pi=&(*pi)->iNext) {
-        assert((*pi)->magic == ITER_MAGIC);
+        assert((*pi)->magic == LIST_MAGIC);
         if (*pi == i) {
             *pi = (*pi)->iNext;
             break;
         }
     }
     list_mutex_unlock(&i->list->mutex);
-    assert(i->magic = ITER_DESTROYED);	/* clear magic via assert abuse */
+    assert(i->magic = 1);               /* clear magic via assert abuse */
     list_iterator_free(i);
     return;
 }
@@ -500,7 +498,7 @@ void * list_next(ListIterator i)
     ListNode p;
 
     assert(i != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     if ((p = i->pos))
@@ -518,7 +516,7 @@ void * list_insert(ListIterator i, void *x)
 
     assert(i != NULL);
     assert(x != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     v = list_node_create(i->list, i->prev, x);
@@ -534,7 +532,7 @@ void * list_find(ListIterator i, ListFindF f, void *key)
     assert(i != NULL);
     assert(f != NULL);
     assert(key != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     while ((v=list_next(i)) && !f(v,key)) {;}
     return(v);
 }
@@ -545,7 +543,7 @@ void * list_remove(ListIterator i)
     void *v = NULL;
 
     assert(i != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     list_mutex_lock(&i->list->mutex);
     assert(i->list->magic == LIST_MAGIC);
     if (*i->prev != i->pos)
@@ -560,7 +558,7 @@ int list_delete(ListIterator i)
     void *v;
 
     assert(i != NULL);
-    assert(i->magic == ITER_MAGIC);
+    assert(i->magic == LIST_MAGIC);
     if ((v = list_remove(i))) {
         if (i->list->fDel)
             i->list->fDel(v);
@@ -592,7 +590,7 @@ static void * list_node_create(List l, ListNode *pp, void *x)
     *pp = p;
     l->count++;
     for (i=l->iNext; i; i=i->iNext) {
-        assert(i->magic == ITER_MAGIC);
+        assert(i->magic == LIST_MAGIC);
         if (i->prev == pp)
             i->prev = &p->next;
         else if (i->pos == p->next)
@@ -625,7 +623,7 @@ static void * list_node_destroy(List l, ListNode *pp)
         l->tail = pp;
     l->count--;
     for (i=l->iNext; i; i=i->iNext) {
-        assert(i->magic == ITER_MAGIC);
+        assert(i->magic == LIST_MAGIC);
         if (i->pos == p)
             i->pos = p->next, i->prev = pp;
         else if (i->prev == &p->next)
@@ -639,95 +637,82 @@ static void * list_node_destroy(List l, ListNode *pp)
 
 static List list_alloc(void)
 {
-    List l;
-    List last;
-
-    list_mutex_lock(&freeListsLock);
-    if (!freeLists) {
-        freeLists = malloc(LIST_ALLOC * sizeof(struct list));
-        if (freeLists) {
-            last = freeLists + LIST_ALLOC - 1;
-            for (l=freeLists; l<last; l++)
-                l->iNext = (ListIterator) (l + 1);
-            last->iNext = NULL;
-        }
-    }
-    if ((l = freeLists))
-        freeLists = (List) freeLists->iNext;
-    list_mutex_unlock(&freeListsLock);
-    return(l);
-}
-
-
-static ListNode list_node_alloc(void)
-{
-    ListNode p;
-    ListNode last;
-
-    list_mutex_lock(&freeListNodesLock);
-    if (!freeListNodes) {
-        freeListNodes = malloc(LIST_ALLOC * sizeof(struct listNode));
-        if (freeListNodes) {
-            last = freeListNodes + LIST_ALLOC - 1;
-            for (p=freeListNodes; p<last; p++)
-                p->next = p + 1;
-            last->next = NULL;
-        }
-    }
-    if ((p = freeListNodes))
-        freeListNodes = freeListNodes->next;
-    list_mutex_unlock(&freeListNodesLock);
-    return(p);
-}
-
-
-static ListIterator list_iterator_alloc(void)
-{
-    ListIterator i;
-    ListIterator last;
-
-    list_mutex_lock(&freeListIteratorsLock);
-    if (!freeListIterators) {
-        freeListIterators = malloc(LIST_ALLOC * sizeof(struct listIterator));
-        if (freeListIterators) {
-            last = freeListIterators + LIST_ALLOC - 1;
-            for (i=freeListIterators; i<last; i++)
-                i->iNext = i + 1;
-            last->iNext = NULL;
-        }
-    }
-    if ((i = freeListIterators))
-        freeListIterators = freeListIterators->iNext;
-    list_mutex_unlock(&freeListIteratorsLock);
-    return(i);
+    return(list_alloc_aux(sizeof(struct list), &list_free_lists));
 }
 
 
 static void list_free(List l)
 {
-    list_mutex_lock(&freeListsLock);
-    l->iNext = (ListIterator) freeLists;
-    freeLists = l;
-    list_mutex_unlock(&freeListsLock);
-    return;
+    return(list_free_aux(l, &list_free_lists));
+}
+
+
+static ListNode list_node_alloc(void)
+{
+    return(list_alloc_aux(sizeof(struct listNode), &list_free_nodes));
 }
 
 
 static void list_node_free(ListNode p)
 {
-    list_mutex_lock(&freeListNodesLock);
-    p->next = freeListNodes;
-    freeListNodes = p;
-    list_mutex_unlock(&freeListNodesLock);
-    return;
+    return(list_free_aux(p, &list_free_nodes));
+}
+
+
+static ListIterator list_iterator_alloc(void)
+{
+    return(list_alloc_aux(sizeof(struct listIterator), &list_free_iterators));
 }
 
 
 static void list_iterator_free(ListIterator i)
 {
-    list_mutex_lock(&freeListIteratorsLock);
-    i->iNext = freeListIterators;
-    freeListIterators = i;
-    list_mutex_unlock(&freeListIteratorsLock);
+    return(list_free_aux(i, &list_free_iterators));
+}
+
+
+static void * list_alloc_aux(int size, void *pfreelist)
+{
+/*  Allocates an object from the specified freelist (*pfreelist).
+ *  Memory is added to the freelist in chunks of size LIST_ALLOC.
+ *  Returns a ptr to the object, or NULL if the memory request fails.
+ */
+    void **px;
+    void **pfree = pfreelist;
+    void **plast;
+
+    assert(size >= sizeof(void *));
+    assert(pfreelist != NULL);
+    assert(LIST_ALLOC > 0);
+    list_mutex_lock(&list_free_lock);
+    if (!*pfree) {
+        if ((*pfree = malloc(LIST_ALLOC * size))) {
+            px = *pfree;
+            plast = *pfree + ((LIST_ALLOC - 1) * size);
+            while (px < plast)
+                *px = (char *) px + size, px = *px;
+            *plast = NULL;
+        }
+    }
+    if ((px = *pfree))
+        *pfree = *px;
+    list_mutex_unlock(&list_free_lock);
+    return(px);
+}
+
+
+static void list_free_aux(void *x, void *pfreelist)
+{
+/*  Frees the object (x), returning it to the specified freelist (*pfreelist).
+ */
+    void **px = x;
+    void **pfree = pfreelist;
+
+    assert(x != NULL);
+    assert(pfreelist != NULL);
+    list_mutex_lock(&list_free_lock);
+    *px = *pfree;
+    *pfree = px;
+    list_mutex_unlock(&list_free_lock);
     return;
 }

@@ -51,6 +51,8 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#define __USE_XOPEN_EXTENDED
+#include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -68,6 +70,7 @@
 #include <src/slurmd/semaphore.h>
 
 #define MAX_JOB_STEPS	16
+#define MAX_BATCH_JOBS	128
 #define MAX_TASKS	1024
 
 #define SHM_LOCKNAME	"/.slurm.lock"
@@ -93,10 +96,10 @@
 #define _soff(__p)  (job_step_t *) _offset(__p)
 
 typedef struct shmem_struct {
-	int         version;
-	int         users;	
-	job_step_t  step[MAX_JOB_STEPS];
-	task_t      task[MAX_TASKS];
+	int          version;
+	int          users;	
+	job_step_t   step[MAX_JOB_STEPS];
+	task_t       task[MAX_TASKS];
 } slurmd_shm_t;
 
 
@@ -150,7 +153,8 @@ shm_fini(void)
 	xassert(slurmd_shm != NULL);
 	_shm_lock();
 
-	debug2("%ld calling shm_fini() on %ld", getpid(), attach_pid);
+	debug3("%ld calling shm_fini() (attached by %ld)", 
+		getpid(), attach_pid);
 	xassert(attach_pid == getpid());
 
 	if ((attach_pid == getpid()) && (--slurmd_shm->users == 0))
@@ -206,6 +210,32 @@ shm_get_steps(void)
 	}
 	_shm_unlock();
 	return l;
+}
+
+bool
+shm_step_still_running(uint32_t jobid, uint32_t stepid)
+{
+	bool        retval = false;
+	int         i;
+	job_step_t *s;
+	task_t     *t;
+
+	xassert(slurmd_shm != NULL);
+
+	_shm_lock();
+	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
+		s = &slurmd_shm->step[i];
+		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
+			/* If at least one task still remains, consider
+			 * the job running
+			 */
+			if (getsid(t->pid) == s->sid)
+				retval = true;
+		}	
+	} 
+	_shm_unlock();
+
+	return retval;
 }
 
 static int
@@ -370,6 +400,8 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		s = &slurmd_shm->step[i];
 		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
+			if (getsid(t->pid) != s->sid)
+				continue;
 			if (t->pid > 0 && kill(t->pid, signo) < 0) {
 				error("kill %d.%d task %d pid %ld: %m", 
 				      jobid, stepid, t->id, (long)t->pid);
@@ -834,7 +866,7 @@ _shm_lock_and_initialize()
 		return SLURM_SUCCESS;
 	}
 
-	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, S_IRUSR|S_IWUSR, 0);
+	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0);
 	if (shm_lock != SEM_FAILED) /* lock didn't exist. Create shmem      */
 		return _shm_new();
 	else                        /* lock exists. Attach to shared memory */
