@@ -41,6 +41,14 @@ set task_cnt     10
 print_header $test_id
 
 #
+# A single slurmd can't handle a large task count without 
+# running out of memory and pthreads
+#
+if {[test_front_end] != 0} {
+	set task_cnt 2
+}
+
+#
 # Initiate $task_cnt parallel tasks
 #
 for {set inx 0} {$inx < $task_cnt} {incr inx} {
