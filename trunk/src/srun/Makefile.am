@@ -67,3 +67,9 @@ srun.wrapper.o: srun.wrapper.c
 
 CLEANFILES = \
 	srun.wrapper.s
+
+install-exec-local:
+	if test -n "$(SRUN_WRAPPER_OBJ)"; then \
+	  $(INSTALL) -D -m 644 $(top_srcdir)/src/srun/srun.wrapper.c \
+	                       $(pkglibdir)/src; \
+	fi
