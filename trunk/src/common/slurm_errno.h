@@ -1,11 +1,11 @@
 /*****************************************************************************\
  *  slurm_errno.h - error codes and functions for slurm
-  * This implementation relies on "overloading" the libc errno by 
+ * This implementation relies on "overloading" the libc errno by 
  *  partitioning its domain into system (<1000) and SLURM (>=1000) values.
  *  SLURM API functions should call slurm_seterrno() to set errno to a value.
  *  API users should call slurm_strerror() to convert all errno values to
  *  their description strings.
-******************************************************************************
+ ******************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Kevin Tew <tew1@llnl.gov>, Jim Garlick <garlick@llnl.gov>, et. al.

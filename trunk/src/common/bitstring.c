@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * bitstring.c - bitmap manipulation functions
+ *  bitstring.c - bitmap manipulation functions
  *****************************************************************************
  *  See comments about origin, limitations, and internal structure in 
  *  bitstring.h.
