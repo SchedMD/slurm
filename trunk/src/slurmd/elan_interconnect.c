@@ -28,6 +28,7 @@
 #include <src/slurmd/setenvpf.h>
 
 
+
 /* exported module funtion to launch tasks */
 /*launch_tasks should really be named launch_job_step*/
 int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
@@ -69,9 +70,8 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 				sleep (1);
 				i++ ;
 
-				if (rms_prginfo( launch_msg -> qsw_job, sizeof(pids)/sizeof(pid_t), pids, &npids) < 0) {
+				if (rms_prginfo( launch_msg -> qsw_job -> j_prognum , sizeof(pids)/sizeof(pid_t), pids, &npids) < 0) {
 					perror("rms_prginfo");
-					exit(1);
 				}
 				printf("pids");
 				for (i = 0; i < npids; i++)
