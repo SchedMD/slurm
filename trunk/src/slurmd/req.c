@@ -383,8 +383,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	slurmd_get_addr(cli, &port, host, sizeof(host));
-	info("launch task %u.%u request from %u@%s", req->job_id, 
-	     req->job_step_id, req->uid, host);
+	info("launch task %u.%u request from %u.%u@%s", req->job_id, 
+	     req->job_step_id, req->uid, req->gid, host);
 
 #ifndef HAVE_BGL
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
@@ -901,10 +901,10 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids));
-	resp.gids       = xmalloc(step->ntasks * sizeof(*resp.local_pids));
+	resp.gtids      = xmalloc(step->ntasks * sizeof(*resp.local_pids));
 	resp.ntasks     = step->ntasks;
 	for (t = step->task_list, i = 0; t; t = t->next, i++) {
-		resp.gids[t->id] = t->global_id;
+		resp.gtids[t->id] = t->global_id;
 		resp.local_pids[t->id] = t->pid;
 	}
 	resp.executable_name  = xstrdup(step->exec_name);
@@ -921,7 +921,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	slurm_send_only_node_msg(&resp_msg);
 
-	xfree(resp.gids);
+	xfree(resp.gtids);
 	xfree(resp.local_pids);
 
 }

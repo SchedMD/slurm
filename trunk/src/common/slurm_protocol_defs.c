@@ -364,7 +364,7 @@ void slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t *msg)
 		xfree(msg->node_name);
 		xfree(msg->executable_name);
 		xfree(msg->local_pids);
-		xfree(msg->gids);
+		xfree(msg->gtids);
 		xfree(msg);
 	}
 }

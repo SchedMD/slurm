@@ -445,6 +445,7 @@ static void _opt_default()
 	} else
 		error("who are you?");
 
+	opt.gid = getgid();
 
 	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
 		fatal("getcwd failed: %m");
@@ -1227,6 +1228,9 @@ static bool _opt_verify(void)
 	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
 		opt.uid = opt.euid;
 
+	if ((opt.egid != (gid_t) -1) && (opt.egid != opt.gid)) 
+		opt.gid = opt.egid;
+
 	if (opt.noshell && !opt.allocate) {
 		error ("--no-shell only valid with -A (--allocate)");
 		verified = false;
@@ -1385,6 +1389,7 @@ static void _opt_list()
 
 	info("user           : `%s'", opt.user);
 	info("uid            : %ld", (long) opt.uid);
+	info("gid            : %ld", (long) opt.gid);
 	info("cwd            : %s", opt.cwd);
 	info("nprocs         : %d", opt.nprocs);
 	info("cpus_per_task  : %d", opt.cpus_per_task);

@@ -34,6 +34,8 @@
 #endif
 
 #include <signal.h>
+#include <sys/types.h>
+#include <grp.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
@@ -52,7 +54,7 @@
 static char ** _array_copy(int n, char **src);
 static void _array_free(char ***array);
 static void _srun_info_destructor(void *arg);
-static void _job_init_task_info(slurmd_job_t *job, uint32_t *gids);
+static void _job_init_task_info(slurmd_job_t *job, uint32_t *gtid);
 
 static struct passwd *
 _pwd_create(uid_t uid)
@@ -89,6 +91,41 @@ _pwd_destroy(struct passwd *pwd)
 	xfree(pwd);
 }
 
+/* returns 0 if invalid gid, otherwise returns 1 */
+int
+_valid_gid(struct passwd *pwd, gid_t *gid)
+{
+	struct group *grp;
+	int i;
+	
+	if (!pwd) return 0;
+       	if (pwd->pw_gid == *gid) return 1;
+
+	grp = getgrgid(*gid);
+	if (!grp) {
+	       	error("gid %ld not found on system", (long)(*gid));
+		return 0;
+	}
+
+	for (i = 0; grp->gr_mem[i]; i++) {
+	       	if (strcmp(pwd->pw_name,grp->gr_mem[i]) == 0) {
+		       	return 1;
+	       	}
+	}
+	
+	/* root user may have launched this job for this user, but 
+	 * root did not explicitly set the gid. This would set the
+	 * gid to 0. In this case we should set the appropriate
+	 * default gid for the user (from the passwd struct).
+	 */
+	if (*gid == 0) {
+		*gid = pwd->pw_gid;
+		return 1;
+	}
+	error("uid %ld is not a member of gid %ld",
+		(long)pwd->pw_uid, (long)(*gid));
+	return 0;
+}
 
 /* create a slurmd job structure from a launch tasks message */
 slurmd_job_t * 
@@ -109,13 +146,18 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
 		return NULL;
 	}
+	if (!_valid_gid(pwd, &(msg->gid))) {
+		slurm_seterrno (ESLURMD_GID_NOT_FOUND);
+		_pwd_destroy(pwd);
+		return NULL;
+	}
 	job = xmalloc(sizeof(*job));
 
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->job_step_id;
 	job->uid     = (uid_t) msg->uid;
 	job->pwd     = pwd;
-	job->gid     = job->pwd->pw_gid;
+	job->gid     = (gid_t) msg->gid;
 	job->nprocs  = msg->nprocs;
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = msg->srun_node_id;
@@ -263,6 +305,11 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
 		return NULL;
 	}
+	if (!_valid_gid(pwd, &(msg->gid))) {
+		slurm_seterrno (ESLURMD_GID_NOT_FOUND);
+		_pwd_destroy(pwd);
+		return NULL;
+	}
 
 	job->pwd     = pwd;
 	job->ntasks  = 1; 
@@ -271,7 +318,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->batch   = true;
 
 	job->uid     = (uid_t) msg->uid;
-	job->gid     = job->pwd->pw_gid;
+	job->gid     = (gid_t) msg->gid;
 	job->cwd     = xstrdup(msg->work_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
@@ -312,7 +359,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 }
 
 static void
-_job_init_task_info(slurmd_job_t *job, uint32_t *gid)
+_job_init_task_info(slurmd_job_t *job, uint32_t *gtid)
 {
 	int          i;
 	int          n = job->ntasks;
@@ -320,7 +367,7 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gid)
 	job->task = (task_info_t **) xmalloc(n * sizeof(task_info_t *));
 
 	for (i = 0; i < n; i++){
-		job->task[i] = task_info_create(i, gid[i]);
+		job->task[i] = task_info_create(i, gtid[i]);
 		/* "srun" info is attached to task in 
 		 * io_add_connecting
 		 */
@@ -470,7 +517,7 @@ task_info_create(int taskid, int gtaskid)
 	slurm_mutex_lock(&t->mutex);
 	t->state     = SLURMD_TASK_INIT;
 	t->id        = taskid;
-	t->gid	     = gtaskid;
+	t->gtid	     = gtaskid;
 	t->pid       = (pid_t) -1;
 	t->pin[0]    = -1;
 	t->pin[1]    = -1;

@@ -372,15 +372,11 @@ job_desc_msg_create_from_opts (char *script)
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
 	j->dependency     = opt.dependency;
+	 j->group_id      = opt.gid;
 	if (opt.network)
 		j->network = xstrdup(opt.network);
 	if (opt.account)
 		j->account = xstrdup(opt.account);
-
-	if (opt.egid == (gid_t) -1)
-		j->group_id = getgid ();
-	else
-		j->group_id = opt.egid;
 
 	if (opt.hold)
 		j->priority     = 0;

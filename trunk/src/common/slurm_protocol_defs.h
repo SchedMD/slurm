@@ -250,6 +250,7 @@ typedef struct launch_tasks_request_msg {
 	uint32_t  nnodes;	/* number of nodes in this job step       */
 	uint32_t  nprocs;	/* number of processes in this job step   */
 	uint32_t  uid;
+	uint32_t  gid;
 	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
 	uint32_t  tasks_to_launch;
 	uint16_t  envc;
@@ -351,13 +352,14 @@ typedef struct reattach_tasks_response_msg {
 	uint32_t  return_code;
 	uint32_t  srun_node_id;
 	uint32_t  ntasks;       /* number of tasks on this node     */
-	uint32_t *gids;         /* Global task id assignments       */
+	uint32_t *gtids;         /* Global task id assignments       */
 	uint32_t *local_pids;   /* list of process ids on this node */
 } reattach_tasks_response_msg_t;
 
 typedef struct batch_job_launch_msg {
 	uint32_t job_id;
 	uint32_t uid;
+	uint32_t gid;
 	uint32_t nprocs;	/* number of tasks in this job         */
 	uint16_t num_cpu_groups;/* elements in below cpu arrays */
 	uint32_t *cpus_per_node;/* cpus per node */

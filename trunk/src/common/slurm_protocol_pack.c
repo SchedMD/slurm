@@ -2168,7 +2168,7 @@ _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 	pack32(msg->return_code,  buffer);
 	pack32(msg->srun_node_id, buffer);
 	pack32(msg->ntasks,       buffer);
-	pack32_array(msg->gids,       msg->ntasks, buffer);
+	pack32_array(msg->gtids,      msg->ntasks, buffer);
 	pack32_array(msg->local_pids, msg->ntasks, buffer);
 }
 
@@ -2188,7 +2188,7 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 	safe_unpack32(&msg->return_code,  buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
 	safe_unpack32(&msg->ntasks,       buffer);
-	safe_unpack32_array(&msg->gids,       &ntasks, buffer);
+	safe_unpack32_array(&msg->gtids,      &ntasks, buffer);
 	safe_unpack32_array(&msg->local_pids, &ntasks, buffer);
 	if (msg->ntasks != ntasks)
 		goto unpack_error;
@@ -2284,6 +2284,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32(msg->nnodes, buffer);
 	pack32(msg->nprocs, buffer);
 	pack32(msg->uid, buffer);
+	pack32(msg->gid, buffer);
 	pack32(msg->srun_node_id, buffer);
 	slurm_cred_pack(msg->cred, buffer);
 	pack32(msg->tasks_to_launch, buffer);
@@ -2320,6 +2321,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack32(&msg->nnodes, buffer);
 	safe_unpack32(&msg->nprocs, buffer);
 	safe_unpack32(&msg->uid, buffer);
+	safe_unpack32(&msg->gid, buffer);
 	safe_unpack32(&msg->srun_node_id, buffer);
 	if (!(msg->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
@@ -2384,7 +2386,7 @@ _unpack_spawn_task_request_msg(spawn_task_request_msg_t **
 	spawn_task_request_msg_t *msg;
 
 	xassert(msg_ptr != NULL);
-	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
+	msg = xmalloc(sizeof(spawn_task_request_msg_t));
 	*msg_ptr = msg;
 
 	safe_unpack32(&msg->job_id, buffer);
@@ -2695,6 +2697,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	pack32(msg->job_id, buffer);
 	pack32(msg->uid, buffer);
+	pack32(msg->gid, buffer);
 	pack32(msg->nprocs, buffer);
 
 	pack16(msg->num_cpu_groups, buffer);
@@ -2731,6 +2734,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 
 	safe_unpack32(&launch_msg_ptr->job_id, buffer);
 	safe_unpack32(&launch_msg_ptr->uid, buffer);
+	safe_unpack32(&launch_msg_ptr->gid, buffer);
 	safe_unpack32(&launch_msg_ptr->nprocs, buffer);
 
 	safe_unpack16(&launch_msg_ptr->num_cpu_groups, buffer);
