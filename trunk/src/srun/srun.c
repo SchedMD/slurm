@@ -831,7 +831,7 @@ void run_job_script (uint32_t job_id)
 		if (shell == NULL)
 			shell = get_shell ();	/* user's default shell */
 		new_argv = (char **) xmalloc ((remote_argc + 2) * sizeof(char *));
-		new_argv[0] = strdup (shell);
+		new_argv[0] = xstrdup (shell);
 		for (i=0; i<remote_argc; i++)
 			new_argv[i+1] = remote_argv[i];
 		xfree (remote_argv);
