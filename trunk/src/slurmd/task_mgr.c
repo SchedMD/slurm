@@ -224,6 +224,7 @@ void * stdin_io_pipe_thread ( void * arg )
 				case EBADF:
 				case EPIPE:
 				case ECONNREFUSED:
+				case ECONNRESET:
 				case ENOTCONN:
 					break ;
 				default:
@@ -268,7 +269,7 @@ void * stdin_io_pipe_thread ( void * arg )
 	pthread_exit ( NULL ) ;
 }
 
-#define RECONNECT_RETRY_TIME 10
+#define RECONNECT_RETRY_TIME 1
 void * stdout_io_pipe_thread ( void * arg )
 {
 	task_start_t * io_arg = ( task_start_t * ) arg ;
@@ -306,7 +307,7 @@ void * stdout_io_pipe_thread ( void * arg )
 		/* debug */
 		//write ( 1 ,  buffer , bytes_read ) ;
 		//write ( 1 , cir_buf->head , cir_buf->read_size ) ;
-		info ( "%i stdout bytes read", bytes_read ) ;
+		//info ( "%i stdout bytes read", bytes_read ) ;
 		/* debug */
 		/* reconnect code */
 		if ( attempt_reconnect )
@@ -319,10 +320,14 @@ void * stdout_io_pipe_thread ( void * arg )
 				{
 					local_errno = errno ;	
 					info ( "error reconnecting socket to srun to pipe stdout errno %i" , local_errno ) ;
+					last_reconnect_try = time ( NULL ) ;
 					continue ;
 				}
 				attempt_reconnect = false ;
-				last_reconnect_try = time ( NULL ) ;
+			}
+			else
+			{
+				continue ;
 			}
 		}
 		/* write out socket code */
@@ -336,6 +341,7 @@ void * stdout_io_pipe_thread ( void * arg )
 				case EBADF:
 				case EPIPE:
 				case ECONNREFUSED:
+				case ECONNRESET:
 				case ENOTCONN:
 					attempt_reconnect = true ;
 					slurm_close_stream ( io_arg->sockets[STDIN_OUT_SOCK] ) ;
@@ -388,7 +394,7 @@ void * stderr_io_pipe_thread ( void * arg )
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
 		//write ( 2 ,  buffer , bytes_read ) ;
-		info ( "%i stderr bytes read", bytes_read ) ;
+		//info ( "%i stderr bytes read", bytes_read ) ;
 		//write ( 2 , cir_buf->head , cir_buf->read_size ) ;
 		/* debug */
 		/* reconnect code */
@@ -402,10 +408,14 @@ void * stderr_io_pipe_thread ( void * arg )
 				{
 					local_errno = errno ;	
 					info ( "error reconnecting socket to srun to pipe stderr errno %i" , local_errno ) ;
+					last_reconnect_try = time ( NULL ) ;
 					continue ;
 				}
 				attempt_reconnect = false ;
-				last_reconnect_try = time ( NULL ) ;
+			}
+			else
+			{
+				continue ;
 			}
 		}
 		/* write out socket code */
@@ -419,6 +429,7 @@ void * stderr_io_pipe_thread ( void * arg )
 				case EBADF:
 				case EPIPE:
 				case ECONNREFUSED:
+				case ECONNRESET:
 				case ENOTCONN:
 					attempt_reconnect = true ;
 					slurm_close_stream ( io_arg->sockets[SIG_STDERR_SOCK] ) ;
