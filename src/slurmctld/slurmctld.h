@@ -55,6 +55,24 @@
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
 
+#define safe_unpack16(valp,bufp,lenp) {			\
+        if (*(lenp) < sizeof(*(valp)))			\
+		break;					\
+	unpack16(valp,bufp,lenp);			\
+}
+
+#define safe_unpack32(valp,bufp,lenp) {			\
+        if (*(lenp) < sizeof(*(valp)))			\
+		break;					\
+	unpack32(valp,bufp,lenp);			\
+}
+
+#define safe_unpackstr_xmalloc(valp,size_valp,bufp,lenp) { \
+       if (*(lenp) < sizeof(uint16_t))			\
+		break;					\
+	unpackmem_xmalloc(valp,size_valp,bufp,lenp);	\
+}
+
 extern slurm_ctl_conf_t slurmctld_conf;
 
 #define MAX_NAME_LEN	32
