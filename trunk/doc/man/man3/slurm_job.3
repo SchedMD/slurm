@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "September 2002" "Morris Jette" "Slurm job management calls"
+.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm job management calls"
 .SH "NAME"
 .LP 
 \fBslurm_job\fR \- Slurm job management calls
@@ -13,6 +13,14 @@ int \fBslurm_allocate_resources\fR (
 	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP, 
 .br
 	int \fIimmediate\fP
+.br 
+);
+.LP 
+int \fBslurm_confirm_allocation\fR (
+.br 
+	old_job_alloc_msg_t *\fIold_job_desc_msg_ptr\fP,
+.br 
+	resource_allocation_response_msg_t **\fIslurm_alloc_msg_pptr\fP
 .br 
 );
 .LP
@@ -112,6 +120,10 @@ on the data structure's contents.
 \fIjob_id\fP
 Slurm job id number.
 .TP 
+\fIold_job_desc_msg_ptr\fP
+Specifies the pointer to a description of an existing job. See slurm.h for full details 
+on the data structure's contents. 
+.TP 
 \fIslurm_alloc_msg_pptr\fP
 Specifies the double pointer to the structure to be created and filled with a 
 description of the created resource allocation (job): job ID, list of allocated nodes, 
@@ -162,6 +174,10 @@ executed by the job's owner or user root.
 .LP 
 \fBslurm_complete_job_step\fR Note the termination of a job step. This function may only 
 be successfully executed by the job's owner or user root.
+.LP 
+\fBslurm_confirm_allocation\fR Return detailed information on a specific existing job 
+allocation.  This function may only be successfully executed by the job's owner or user 
+root.
 .LP
 \fBslurm_free_job_step_create_response_msg\fR Release the storage generated in response 
 to a call of the function \fBslurm_job_step_create\fR.
