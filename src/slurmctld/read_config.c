@@ -997,6 +997,8 @@ static void _validate_node_proc_count(void)
 
 			if (slurmctld_conf.fast_schedule)
 				node_size = node_ptr->config_ptr->cpus;
+			else if (node_ptr->cpus < node_ptr->config_ptr->cpus)
+				continue;	/* node too small, will be DOWN */
 			else if ((node_ptr->node_state & (~NODE_STATE_NO_RESPOND))
 			     == NODE_STATE_DOWN)
 				continue;
