@@ -897,6 +897,8 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
+	save_cred_state(conf->vctx);
+
 	if (_run_epilog(req->job_id, req->job_uid) != 0) {
 		error ("[job %u] epilog failed", req->job_id);
 		rc = ESLURMD_EPILOG_FAILED;
