@@ -132,6 +132,7 @@ agent (void *args)
 	if (agent_arg_ptr->node_names == NULL)
 		fatal ("agent passed NULL node name list");
 	if ((agent_arg_ptr->msg_type != REQUEST_REVOKE_JOB_CREDENTIAL) &&
+	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) &&
 	    (agent_arg_ptr->msg_type != REQUEST_PING))
 		fatal ("agent passed invalid message type %d", agent_arg_ptr->msg_type);
 
