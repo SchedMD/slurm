@@ -433,11 +433,13 @@ extern int create_static_partitions(List part_list)
 	found_record->node_use = SELECT_COPROCESSOR_MODE;
 	configure_partition(found_record);
 	print_bgl_record(found_record);
-#endif
-	/*********************************************************/
+
 no_total:
 	rc = SLURM_SUCCESS;
 	list_iterator_destroy(itr);
+#endif
+        /*********************************************************/
+
 	return rc;
 }
 
