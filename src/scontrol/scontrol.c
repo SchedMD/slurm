@@ -1,7 +1,29 @@
-/*
+/*****************************************************************************\
  * scontrol - administration tool for slurm. 
  * provides interface to read, write, update, and configurations.
- */
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by moe jette <jette1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -31,7 +53,7 @@
 #include <src/common/xmalloc.h>
 
 #define	BUF_SIZE 1024
-#define	max_input_fields 128
+#define	MAX_INPUT_FIELDS 128
 
 static char *command_name;
 static int exit_flag;			/* program to terminate if =1 */
@@ -67,7 +89,7 @@ main (int argc, char *argv[])
 	quiet_flag = 0;
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	if (argc > max_input_fields)	/* bogus input, but let's continue anyway */
+	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but let's continue anyway */
 		input_words = argc;
 	else
 		input_words = 128;
@@ -183,7 +205,7 @@ get_command (int *argc, char **argv)
 	for (i = 0; i < in_line_pos; i++) {
 		if (isspace ((int) in_line[i]))
 			continue;
-		if (((*argc) + 1) > max_input_fields) {	/* really bogus input line */
+		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* really bogus input line */
 			fprintf (stderr, "%s: over %d fields in line: %s\n",
 				 command_name, input_words, in_line);
 			return E2BIG;
@@ -216,7 +238,7 @@ print_build (char *build_param)
 			 &slurm_ctl_conf_ptr);
 		if (error_code == 0)
 			slurm_free_ctl_conf(old_slurm_ctl_conf_ptr);
-		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			slurm_ctl_conf_ptr = old_slurm_ctl_conf_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -229,7 +251,7 @@ print_build (char *build_param)
 	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_ctl_conf error %d %s\n",
-				error_code, slurm_strerror(error_code));
+				errno, slurm_strerror(errno));
 		return;
 	}
 	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
@@ -309,7 +331,7 @@ print_build (char *build_param)
 void 
 print_job (char * job_id_str) 
 {
-	int error_code, i;
+	int error_code, i, print_cnt = 0;
 	uint32_t job_id = 0;
 	static job_info_msg_t *old_job_buffer_ptr = NULL;
 	job_info_msg_t * job_buffer_ptr = NULL;
@@ -320,7 +342,7 @@ print_job (char * job_id_str)
 					&job_buffer_ptr);
 		if (error_code == 0)
 			slurm_free_job_info (old_job_buffer_ptr);
-		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			job_buffer_ptr = old_job_buffer_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -332,7 +354,7 @@ print_job (char * job_id_str)
 	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_job error %d %s\n", 
-				error_code, slurm_strerror(error_code));
+				errno, slurm_strerror(errno));
 		return;
 	}
 	else if (error_code == 0)
@@ -348,9 +370,17 @@ print_job (char * job_id_str)
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_id_str && job_id != job_ptr[i].job_id) 
 			continue;
+		print_cnt++;
 		slurm_print_job_table (stdout, & job_ptr[i] ) ;
 		if (job_id_str)
 			break;
+	}
+
+	if ((print_cnt == 0) && (quiet_flag != 1)) {
+		if (job_buffer_ptr->record_count)
+			printf ("Job %u not found\n", job_id);
+		else
+			printf ("No jobs in the system\n");
 	}
 }
 
@@ -365,7 +395,7 @@ print_job (char * job_id_str)
 void
 print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
 {
-	int i, j;
+	int i, j, print_cnt = 0;
 	static int last_inx = 0;
 
 	for (j = 0; j < node_buffer_ptr->record_count; j++) {
@@ -376,6 +406,7 @@ print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 		}
 		else
 			i = j;
+		print_cnt++;
 		slurm_print_node_table (stdout, & node_buffer_ptr->node_array[i]);
 
 		if (node_name) {
@@ -384,6 +415,12 @@ print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 		}
 	}
 
+	if ((print_cnt == 0) && (quiet_flag != 1)) {
+		if (node_buffer_ptr->record_count)
+			printf ("Node %s not found\n", node_name);
+		else
+			printf ("No nodes in the system\n");
+	}
 }
 
 
@@ -406,7 +443,7 @@ print_node_list (char *node_list)
 			&node_info_ptr);
 		if (error_code == 0)
 			slurm_free_node_info (old_node_info_ptr);
-		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			node_info_ptr = old_node_info_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -419,7 +456,7 @@ print_node_list (char *node_list)
 	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_node error %d %s\n", 
-				error_code, slurm_strerror(error_code));
+				errno, slurm_strerror(errno));
 		return;
 	}
 	else if (error_code == 0)
@@ -489,10 +526,10 @@ print_node_list (char *node_list)
 void 
 print_part (char *partition_name) 
 {
-	int error_code, i;
+	int error_code, i, print_cnt = 0;
 	static partition_info_msg_t *old_part_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	partition_table_msg_t *part_ptr = NULL;
+	partition_table_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
 		error_code = slurm_load_partitions (old_part_info_ptr->last_update, 
@@ -500,7 +537,7 @@ print_part (char *partition_name)
 		if (error_code == 0) {
 			slurm_free_partition_info (old_part_info_ptr);
 		}
-		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
+		else if (errno == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
 			error_code = 0;
 			if (quiet_flag == -1)
@@ -512,7 +549,7 @@ print_part (char *partition_name)
 	if (error_code > 0) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_part error %d %s\n", 
-				error_code, slurm_strerror(error_code));
+				errno, slurm_strerror(errno));
 		return;
 	}
 	else
@@ -526,9 +563,17 @@ print_part (char *partition_name)
 		if (partition_name && 
 		    strcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
+		print_cnt++;
 		slurm_print_partition_table (stdout, & part_ptr[i] ) ;
 		if (partition_name)
 			break;
+	}
+
+	if ((print_cnt == 0) && (quiet_flag != 1)) {
+		if (part_info_ptr->record_count)
+			printf ("Partition %s not found\n", partition_name);
+		else
+			printf ("No partitions in the system\n");
 	}
 }
 
@@ -693,7 +738,7 @@ update_it (int argc, char *argv[])
 	}
 	else if (error_code) {
 		printf ("slurm_update error %d %s\n", 
-			error_code, slurm_strerror(error_code));
+			errno, slurm_strerror(errno));
 	}
 	return error_code;
 }
@@ -827,15 +872,7 @@ update_part (int argc, char *argv[])
 	update_part_msg_t part_msg;
 
 	error_code = 0;
-	part_msg.name		= NULL;
-	part_msg.max_time	= (uint32_t) NO_VAL;
-	part_msg.max_nodes	= (uint32_t) NO_VAL;
-	part_msg.default_part	= (uint16_t) NO_VAL;
-	part_msg.key		= (uint16_t) NO_VAL;
-	part_msg.shared		= (uint16_t) NO_VAL;
-	part_msg.state_up	= (uint16_t) NO_VAL;
-	part_msg.nodes		= NULL;
-	part_msg.allow_groups	= NULL;
+	slurm_init_part_desc_msg ( &part_msg );
 	for (i=0; i<argc; i++) {
 		if (strncmp_i(argv[i], "PartitionName=", 14) == 0)
 			part_msg.name = &argv[i][14];

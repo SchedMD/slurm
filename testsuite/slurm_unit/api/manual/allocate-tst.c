@@ -67,7 +67,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 	if (error_code)
-		printf ("allocate error %d\n", error_code);
+		printf ("allocate error %d\n", errno);
 	else
 		report_results(resp_msg);
 
@@ -91,7 +91,7 @@ main (int argc, char *argv[])
 		/* the string also had Immediate */
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
 		if (error_code) {
-			printf ("allocate error %d\n", error_code);
+			printf ("allocate error %d\n", errno);
 			break;
 		}
 		else 
@@ -106,7 +106,7 @@ main (int argc, char *argv[])
 
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
 		if (error_code) {
-			printf ("allocate error %d\n", error_code);
+			printf ("allocate error %d\n", errno);
 			break;
 		}
 		else 
@@ -121,7 +121,7 @@ main (int argc, char *argv[])
 
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 		if (error_code) {
-			printf ("allocate error %d\n", error_code);
+			printf ("allocate error %d\n", errno);
 			break;
 		}
 		else 

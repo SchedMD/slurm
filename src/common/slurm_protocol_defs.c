@@ -326,6 +326,19 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 	job_desc_msg -> user_id = SLURM_JOB_DESC_DEFAULT_USER_ID ;
 }
 
+void slurm_init_part_desc_msg ( update_part_msg_t * update_part_msg )
+{
+	update_part_msg -> name 	= NULL;
+	update_part_msg -> nodes 	= NULL;
+	update_part_msg -> allow_groups	= NULL;
+	update_part_msg -> max_time	= (uint32_t) NO_VAL;
+	update_part_msg -> max_nodes	= (uint32_t) NO_VAL;
+	update_part_msg -> default_part	= (uint16_t) NO_VAL;
+	update_part_msg -> key		= (uint16_t) NO_VAL;
+	update_part_msg -> shared	= (uint16_t) NO_VAL;
+	update_part_msg -> state_up	= (uint16_t) NO_VAL;
+}
+
 char *
 job_state_string(uint16_t inx) 
 {

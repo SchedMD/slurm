@@ -436,5 +436,6 @@ extern char *node_state_string(uint16_t inx);
 #define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg ) ;
+void slurm_init_part_desc_msg ( update_part_msg_t * update_part_msg ) ;
 
 #endif

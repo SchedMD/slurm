@@ -16,7 +16,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_load_jobs (last_update_time, &job_info_msg_ptr);
 	if (error_code) {
-		printf ("slurm_load_jobs error %d\n", error_code);
+		printf ("slurm_load_jobs error %d\n", errno);
 		return (error_code);
 	}
 

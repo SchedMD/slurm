@@ -15,6 +15,8 @@ main (int argc, char *argv[]) {
 	update_node_msg_t	node_update1 ;
 	update_node_msg_t	node_update2 ;
 
+	slurm_init_part_desc_msg ( &part_update1 );
+	slurm_init_part_desc_msg ( &part_update2 );
 	part_update1 . name = "batch" ;
 	part_update2 . name = "batch" ;
 	part_update1 . state_up = false ;
@@ -27,18 +29,21 @@ main (int argc, char *argv[]) {
 
 	error_code = slurm_update_partition ( &part_update1);
 	if (error_code)
-		printf ("error %d for part_update1\n", error_code);
+		printf ("error %d for part_update1\n", errno);
+
 	error_code = slurm_update_partition ( &part_update2);
 	if (error_code)
-		printf ("error %d for part_update2\n", error_code);
+		printf ("error %d for part_update2\n", errno);
+
 	error_code = slurm_update_node ( &node_update1);
 	if (error_code)
-		printf ("error %d for node_update1\n", error_code);
+		printf ("error %d for node_update1\n", errno);
+
 	error_code = slurm_update_node ( &node_update2);
 	if (error_code)
-		printf ("error %d for node_update2\n", error_code);
+		printf ("error %d for node_update2\n", errno);
 
-	return (error_code);
+	return (errno);
 }
 
 

@@ -20,9 +20,9 @@ main (int argc, char *argv[])
 
 	for (i=1; i<argc; i++) {
 		error_code = slurm_cancel_job ((uint32_t) atoi(argv[i]));
-		if (error_code != 0)
+		if (error_code)
 			printf ("slurm_cancel error %d for job %s\n", 
-				error_code, argv[i]);
+				errno, argv[i]);
 	}
 
 	return (error_code);
