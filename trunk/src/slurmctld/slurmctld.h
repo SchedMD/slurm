@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -620,6 +620,13 @@ extern void job_fini (void);
  */
 extern bool job_is_completing(void);
 
+/*
+ * job_fail - terminate a job due to initiation failure
+ * IN job_id - id of the job to be killed
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_fail(uint32_t job_id);
+
 /* 
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
@@ -1028,14 +1035,6 @@ extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
  * RET 0 or error code
  */
 extern int slurmctld_shutdown(void);
-
-/*
- * slurm_drain_nodes - process a request to drain a list of nodes
- * node_list IN - list of nodes to drain
- * reason IN - reason to drain the nodes
- * RET SLURM_SUCCESS or error code
- */
-extern int slurm_drain_nodes(char *node_list, char *reason);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
