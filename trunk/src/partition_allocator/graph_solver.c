@@ -46,8 +46,6 @@ _STMT_START {		\
 	(b) = (t);	\
 } _STMT_END
 
-long count;
-
 // #define PRINT_RESULTS
 // #define DEBUG_PRINT_RESULTS
 // #define DEBUG
@@ -140,7 +138,6 @@ int gs_init(List port_config_list, int num_nodes)
 	connection_t *conn; 
 	switch_config_t* switch_config;
 
-	count = 0;
 #ifdef PERM_DEBUG
 	__permutations = 0;
 #endif
@@ -378,8 +375,6 @@ int find_all_tori(List conf_result_list)
 	 printf("ALL DONE\n");
 	 */
 
-	// 999
-	// printf("number of distinct configs %ld\n", count);
 	_print_results(conf_result_list);
 
 	return SUCCESS;
@@ -646,10 +641,6 @@ void _insert_results(List conf_result_list, List result_partitions, List current
 		ListIterator node_itr;
 		int i;
 		node_t* node;
-
-		// 999
-		// debugging to count the number of real entries
-		count++;
 
 		new_conf_data(&conf_data, list_count(result_partitions));
 
@@ -918,11 +909,13 @@ void print_port_conf_list(List port_configs)
 {
 	port_conf_t* port_conf;
 	ListIterator itr = list_iterator_create(port_configs);
-	char* plus_ports = xstrdup("035");
 	
 	port_conf = (port_conf_t*) list_next(itr);
 	while(port_conf != NULL){
-		printf("%s/", plus_ports);
+		printf("%d%d%d/",
+		       port_conf->plus_ports[0],
+		       port_conf->plus_ports[1], 
+		       port_conf->plus_ports[2]);
 		printf("%d%d%d",
 		       port_conf->minus_ports[0], 
 		       port_conf->minus_ports[1], 
@@ -936,8 +929,6 @@ void print_port_conf_list(List port_configs)
 		}
 	}
 	list_iterator_destroy(itr);
-
-	xfree(plus_ports);
 }
 
 /** */
@@ -1203,6 +1194,7 @@ int _find_all_port_permutations(int** plus_ports, List* minus_int_list)
 	/** FIXME: this should be input from the config file */
 	plus_ports_str = xstrdup("035");
 	minus_ports_str = xstrdup("124");
+	// minus_ports_str = xstrdup("412");
 
 	/** we assume that the num of plus ports = minus ports, which
 	 * may be incorrect */
@@ -1612,11 +1604,11 @@ void create_config_8_1d(List configs)
 	list_append(configs, conf);
 
 	/* bottom row, horizontal connections */
-	new_switch_config(&conf, NO_VAL, X, 1, 3, 3, 4);
+	new_switch_config(&conf, NO_VAL, X, 1, 4, 3, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 3, 3, 5, 4);
+	new_switch_config(&conf, NO_VAL, X, 3, 4, 5, 3);
 	list_append(configs, conf);
-	new_switch_config(&conf, NO_VAL, X, 5, 3, 7, 4);
+	new_switch_config(&conf, NO_VAL, X, 5, 4, 7, 3);
 	list_append(configs, conf);
 
 	/* 1st column, vertical connections */
