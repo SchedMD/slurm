@@ -33,14 +33,23 @@
 #include <dlfcn.h>	/* don't know if there's an autoconf for this. */
 
 #include "src/common/plugin.h"
+#include <slurm/slurm_errno.h>
 
 
 plugin_handle_t
 plugin_load_from_file( const char *fq_path )
 {
 	plugin_handle_t plug;
-
-	/* Try to open the shared object. */
+	int (*init)( void );
+	
+	/*
+	 * Try to open the shared object.  We have a choice of trying to
+	 * resolve all the symbols (in both directions) now or when the
+	 * symbols are first dereferenced and used.  While it's slower to
+	 * do it this way, it's a lot easier to debug.  If you get an
+	 * error somewhere down the line, you're likely to think it's
+	 * some condition that happened then instead of way back here.
+	 */
 	plug = dlopen( fq_path, RTLD_NOW );
 	if ( plug == NULL ) {
 		return PLUGIN_INVALID_HANDLE;
@@ -50,9 +59,21 @@ plugin_load_from_file( const char *fq_path )
 	if ( ( dlsym( plug, PLUGIN_NAME ) == NULL ) ||
 	     ( dlsym( plug, PLUGIN_TYPE ) == NULL ) ||
 	     ( dlsym( plug, PLUGIN_VERSION ) == NULL ) ) {
+		/* slurm_seterrno( SLURM_PLUGIN_SYMBOLS ); */
 		return PLUGIN_INVALID_HANDLE;
 	}
 
+	/*
+	 * Now call its init() function, if present.  If the function
+	 * returns nonzero, unload the plugin and signal an error.
+	 */
+	if ( ( init = dlsym( plug, "init" ) ) != NULL ) {
+		if ( (*init)() != 0 ) {
+			(void) dlclose( plug );
+			return PLUGIN_INVALID_HANDLE;
+		}
+	}
+	
 	return plug;
 }
 
@@ -66,7 +87,14 @@ plugin_load_from_file( const char *fq_path )
 void
 plugin_unload( plugin_handle_t plug )
 {
-	if ( plug != PLUGIN_INVALID_HANDLE ) (void) dlclose( plug );
+	void (*fini)(void);
+	
+	if ( plug != PLUGIN_INVALID_HANDLE ) {
+		if ( ( fini = dlsym( plug, "fini" ) ) != NULL ) {
+			(*fini)();
+		}
+		(void) dlclose( plug );
+	}
 }
 
 
