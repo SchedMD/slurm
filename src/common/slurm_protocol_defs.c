@@ -559,7 +559,10 @@ char *node_state_string(enum node_states inx)
 		"DRAINING",
 		"END"
 	};
-	return node_state_string[inx];
+	if (inx & NODE_STATE_NO_RESPOND)
+		return node_state_string[NODE_STATE_DOWN];
+	else
+		return node_state_string[inx];
 }
 
 char *node_state_string_compact(enum node_states inx)
