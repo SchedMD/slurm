@@ -32,7 +32,7 @@
 % http://www.springer.de/comp/lncs/authors.html
 
 
-\documentclass[10pt,onecolumn,times]{llncs}
+\documentclass[10pt,onecolumn,times]{../common/llncs}
 
 \usepackage{verbatim,moreverb}
 \usepackage{float}
@@ -225,7 +225,7 @@ pending jobs via the API.
 \subsection{Architecture}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/arch.eps,scale=0.20}}
+\centerline{\epsfig{file=../figures/arch2.eps,scale=0.20}}
 \caption{\small SLURM Architecture}
 \label{arch}
 \end{figure}
@@ -251,7 +251,7 @@ allocated to the job, or several job steps may independently use a
 portion of the allocation.
 
 \begin{figure}[tcb]
-\centerline{\epsfig{file=figures/entities.eps,scale=0.5}}
+\centerline{\epsfig{file=../figures/entities.eps,scale=0.5}}
 \caption{\small SLURM Entities: Nodes, Partitions, Jobs, and Job Steps.}
 \label{entities}
 \end{figure}
@@ -265,7 +265,7 @@ allocation.  That job might initiate additional job step(s) to utilize
 the remaining nodes of its allocation.
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/slurm-arch.eps,scale=0.5}}
+\centerline{\epsfig{file=../figures/slurm-arch.eps,scale=0.5}}
 \caption{SLURM Architecture - Subsystems}
 \label{archdetail}
 \end{figure}
@@ -1198,7 +1198,7 @@ a job is allocated to the requesting user, under which the user may
 manually run job steps via a script or in a sub-shell spawned by \srun .
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/connections.eps,scale=0.3}}
+\centerline{\epsfig{file=../figures/connections.eps,scale=0.3}}
 \caption{\small Job initiation connections overview. 1. \srun\ connects to 
          \slurmctld\ requesting resources. 2. \slurmctld\ issues a response,
 	 with list of nodes and job credential. 3. \srun\ opens a listen
@@ -1222,7 +1222,7 @@ initiation modes are described in more detail below.
 \subsection{Interactive job initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/interactive-job-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/interactive-job-init.eps,scale=0.5} }
 \caption{\small Interactive job initiation. \srun\ simultaneously allocates
 	 nodes and a job step from \slurmctld\ then sends a run request to all
 	 \slurmd 's in job. Dashed arrows indicate a periodic request that
@@ -1282,7 +1282,7 @@ epilog ran successfully, the nodes are returned to the partition.
 \subsection{Queued (batch) job initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/queued-job-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/queued-job-init.eps,scale=0.5} }
 \caption{\small Queued job initiation. 
          \slurmctld\ initiates the user's job as a batch script on one node. 
 	 Batch script contains an \srun\ call which initiates parallel tasks 
@@ -1321,7 +1321,7 @@ of the epilog, the nodes are returned to the partition.
 \subsection{Allocate mode initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=figures/allocate-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/allocate-init.eps,scale=0.5} }
 \caption{\small Job initiation in allocate mode. Resources are allocated and
          \srun\ spawns a shell with access to the resources. When user runs 
 	 an \srun\ from within the shell, the a job step is initiated under
@@ -1391,7 +1391,7 @@ nodes to the partition as they succcessfully complete the epilog.
 \section{Results}
 
 \begin{figure}[htb]
-\centerline{\epsfig{file=figures/times.eps}}
+\centerline{\epsfig{file=../figures/times.eps}}
 \caption{Time to execute /bin/hostname with various node counts}
 \label{timing}
 \end{figure}

@@ -9,12 +9,12 @@
 # 'info "GNU make"': "Using variables": "Automatic" also lists a few more.
 
 REPORT = report
-JSSPP  = jsspp
 
-TEX = llnlCoverPage.tex $(JSSPP).tex $(REPORT).tex 
+TEX = ../common/llnlCoverPage.tex $(REPORT).tex 
 
-FIGDIR = figures
-FIGS = $(FIGDIR)/arch.eps \
+FIGDIR = ../figures
+FIGS = $(FIGDIR)/arch2.eps \
+       $(FIGDIR)/arch.eps \
        $(FIGDIR)/slurm-arch.eps \
        $(FIGDIR)/entities.eps \
        $(FIGDIR)/connections.eps \
@@ -24,7 +24,7 @@ FIGS = $(FIGDIR)/arch.eps \
 
 PLOTS = $(FIGDIR)/times.eps 
 
-BIB = project.bib
+BIB = ../common/project.bib
 
 %.eps: %.dia
 	dia --nosplash -e $@ $< 
@@ -39,25 +39,19 @@ BIB = project.bib
 %.pdf: %.dvi
 	dvipdf $< $@ 
 
-all: $(JSSPP).ps $(REPORT).ps 
+all: $(REPORT).ps 
 
-$(JSSPP).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
-	rm -f *.log *.aux *.blg *.bbl
-	latex $(JSSPP)
-	bibtex $(JSSPP)
-	latex $(JSSPP)
-	latex $(JSSPP)
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
-	latex report
-	bibtex report
-	latex report
-	latex report
+	(TEXINPUTS=.:../common::; export TEXINPUTS; \
+	 BIBINPUTS=$$TEXINPUTS  ; export BIBINPUTS; \
+	 latex $(REPORT); bibtex $(REPORT); latex $(REPORT) \
+	 latex $(REPORT) )
 
 view: $(REPORT).ps
 	ghostview $(REPORT) &
 
 clean: 
-	rm -f *~ *.dvi *.log *.aux $(JSSPP).ps $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
+	rm -f *~ *.dvi *.log *.aux $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
 	      
