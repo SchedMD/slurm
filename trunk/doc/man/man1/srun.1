@@ -87,11 +87,12 @@ will not allocate more than one process per cpu. By specifying
 \fB\-\-overcommit\fR you are explicitly allowing more than one process
 per cpu. However no more than \fBMAX_TASKS_PER_NODE\fR tasks are 
 permitted to execute per node.
-.TP
-\fB\-P\fR, \fB\-\-priority\fR=\fIprio\fR
-Specify the priority at which the job should execute. This may 
-only be used to set the priority of a job to zero (which places 
-the job in a held state) unless the request is issued by user root.
+./"NOTE: Do not document feature until user release mechanism is available.
+./".TP
+./"-P, --priority=prio
+./"Sepcify the priority at which the job should execute. This may
+./"only be used to set the priority of a job to zero (which places 
+./"the job in a held state) unless the request is issued by user root.
 .TP
 \fB\-T\fR, \fB\-\-threads\fR=\fInthreads\fR
 Request that 
