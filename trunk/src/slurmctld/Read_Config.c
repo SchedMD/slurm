@@ -20,7 +20,9 @@
 #define NODE_BUF_SIZE 1024
 #define SEPCHARS " \n\t"
 
+void 	BitMapAND(unsigned *BitMap1, unsigned *BitMap2);
 void 	BitMapClear(unsigned *BitMap, int Position);
+void 	BitMapOR(unsigned *BitMap1, unsigned *BitMap2);
 char 	*BitMapPrint(unsigned *BitMap);
 void 	BitMapSet(unsigned *BitMap, int Position);
 int 	BitMapValue(unsigned *BitMap, int Position);
@@ -81,10 +83,14 @@ main(int argc, char * argv[]) {
 	printf("RealMemory=%d ",    (Node_Record_Table_Ptr+i)->Config_Ptr->RealMemory);
 	printf("TmpDisk=%d ",       (Node_Record_Table_Ptr+i)->Config_Ptr->TmpDisk);
 	printf("Weight=%d ",        (Node_Record_Table_Ptr+i)->Config_Ptr->Weight);
-	printf("Feature=%s",        (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
-	printf("\n");
+	printf("Feature=%s\n",        (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
     } /* for */
-    printf("\n");
+    BitMap = BitMapPrint(Up_NodeBitMap);
+    printf("\nUp_NodeBitMap  =%s\n", BitMap);
+    free(BitMap);
+    BitMap = BitMapPrint(Idle_NodeBitMap);
+    printf("Idle_NodeBitMap=%s\n\n", BitMap);
+    free(BitMap);
 
     printf("Default_Part_Name=%s\n", Default_Part_Name);
     found = 0;
@@ -103,6 +109,8 @@ main(int argc, char * argv[]) {
 	printf("Key=%d ",               Part_Ptr->Key);
 	printf("StateUp=%d ",           Part_Ptr->StateUp);
 	printf("Nodes=%s ",             Part_Ptr->Nodes);
+	printf("TotalNodes=%d ",        Part_Ptr->TotalNodes);
+	printf("TotalCPUs=%d ",         Part_Ptr->TotalCPUs);
 	printf("AllowGroups=%s  ",      Part_Ptr->AllowGroups);
 	BitMap = BitMapPrint(Part_Ptr->NodeBitMap);
 	printf("NodeBitMap=%s\n",	BitMap);
@@ -112,6 +120,22 @@ main(int argc, char * argv[]) {
     exit(0);
 } /* main */
 #endif
+
+
+
+/*
+ * BitMapAND - AND two bitmaps together
+ * Input: BitMap1 and BitMap2 - The bitmaps to AND
+ * Output: BitMap1 is set to the value of BitMap1 & BitMap2
+ */
+void BitMapAND(unsigned *BitMap1, unsigned *BitMap2) {
+    int i, size;
+
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    for (i=0; i<size; i++) {
+	BitMap1[i] &= BitMap2[i];
+    } /* for (i */
+} /* BitMapAND */
 
 
 /*
@@ -131,16 +155,61 @@ void BitMapClear(unsigned *BitMap, int Position) {
 
 
 /*
+ * BitMapCopy - AND two bitmaps together
+ * Input: BitMap - The bitmap create a copy of
+ * Output: Returns pointer to copy of BitMap or NULL if error (no memory)
+ *   The returned value MUST BE FREED by the calling routine
+ */
+unsigned * BitMapCopy(unsigned *BitMap) {
+    int i, size;
+    unsigned *Output;
+
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    size *= sizeof(unsigned);
+    Output = malloc(size);
+    if (Output == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "BitMapCopy: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n")
+#endif
+	return NULL;
+    } /* if */
+
+    for (i=0; i<size; i++) {
+	Output[i] &= BitMap[i];
+    } /* for (i */
+    return Output;
+} /* BitMapCopy */
+
+
+/*
+ * BitMapOR - OR two bitmaps together
+ * Input: BitMap1 and BitMap2 - The bitmaps to OR
+ * Output: BitMap1 is set to the value of BitMap1 | BitMap2
+ */
+void BitMapOR(unsigned *BitMap1, unsigned *BitMap2) {
+    int i, size;
+
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    for (i=0; i<size; i++) {
+	BitMap1[i] |= BitMap2[i];
+    } /* for (i */
+} /* BitMapOR */
+
+
+/*
  * BitMapPrint - Convert the specified bitmap into a printable hexadecimal string
  * Input: BitMap - The bit map to print
  * Output: Returns a string
  * NOTE: The returned string must be freed by the calling program
  */
 char *BitMapPrint(unsigned *BitMap) {
-    int i, j, size;
+    int i, j, k, size, nibbles;
     char *Output, temp_str[2];
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    nibbles = (Node_Record_Count + 3) / 4;
     Output = (char *)malloc((sizeof(unsigned)*size*2)+3);
     if (Output == NULL) {
 #if DEBUG_SYSTEM
@@ -152,10 +221,13 @@ char *BitMapPrint(unsigned *BitMap) {
     } /* if */
 
     strcpy(Output, "0x");
+    k = 0;
     for (i=0; i<size; i++) {
 	for (j=((sizeof(unsigned)*8)-4); j>=0; j-=4) {
 	    sprintf(temp_str, "%x", ((BitMap[i]>>j)&0xf));
 	    strcat(Output, temp_str);
+	    k++;
+	    if (k == nibbles) return Output;
 	} /* for (j */
     } /* for (i */
     return Output;
@@ -202,6 +274,7 @@ int BitMapValue(unsigned *BitMap, int Position) {
 /*
  * Build_BitMaps - Build node bitmaps to define which nodes are in which 
  *    1) Partition  2) Configuration record  3) UP state  4) IDLE state
+ *    Also sets values of TotalNodes and TotalCPUs for every partition.
  * Output: Returns 0 if no error, errno otherwise
  */
 int Build_BitMaps() {
@@ -216,7 +289,9 @@ int Build_BitMaps() {
     int Start_Inx, End_Inx, Count_Inx;
     char *str_ptr1, *str_ptr2;
 
-    size = (Node_Record_Count + 7) / 8;	/* Bytes in bitmap */
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
+		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
+    size *= 8;				/* Bytes in bitmap */
 
     /* Scan all nodes and identify which are UP and IDLE */
     if (Idle_NodeBitMap) free(Idle_NodeBitMap);
@@ -346,8 +421,11 @@ int Build_BitMaps() {
 			This_Node_Name);
 		syslog(LOG_ERR, "Build_BitMaps: Only the first partition's specification is honored\n");
 #endif
-	    } /* if */
-	    BitMapSet(Part_Record_Point->NodeBitMap, j);
+	    } else {
+		BitMapSet(Part_Record_Point->NodeBitMap, j);
+		Part_Record_Point->TotalNodes++;
+		Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
+	    } /* else */
 	} /* for */
     } /* while */
     BitMapSet(AllPart_NodeBitMap, j);
@@ -484,6 +562,8 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
     Part_Record_Point->MaxNodes    = Default_Part.MaxNodes;
     Part_Record_Point->Key         = Default_Part.Key;
     Part_Record_Point->StateUp     = Default_Part.StateUp;
+    Part_Record_Point->TotalNodes  = 0;
+    Part_Record_Point->TotalCPUs   = 0;
     Part_Record_Point->NodeBitMap  = NULL;
 
     if (Default_Part.AllowGroups == (char *)NULL)
@@ -1393,7 +1473,7 @@ void Rehash() {
 #endif
 	return;
     } /* if */
-    bzero(Hash_Table, (sizeof(int *) * Node_Record_Count));
+    memset(Hash_Table, 0, (sizeof(int *) * Node_Record_Count));
 
     for (i=0; i<Node_Record_Count; i++) {
 	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;
