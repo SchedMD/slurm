@@ -122,7 +122,7 @@ job_create(resource_allocation_response_msg_t *resp)
 
 	for(i = 0; i < job->nhosts; i++) {
 		job->host[i]  = hostlist_shift(hl);
-
+		/* job->host_state[i] = SRUN_HOST_INIT;  *implicitly set */
 
 		/* actual task counts and layouts performed in launch() */
 		/* job->ntask[i] = 0; */
