@@ -764,7 +764,8 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	int i;
 	assert(msg != NULL);
 
-	pack32(msg->timestamp, buffer);
+	pack_time(msg->timestamp, buffer);
+	pack32(msg->status, buffer);
 	packstr(msg->node_name, buffer);
 	pack32(msg->cpus, buffer);
 	pack32(msg->real_memory_size, buffer);
@@ -792,8 +793,9 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	*msg = node_reg_ptr;
 
 	/* unpack timestamp of snapshot */
-	safe_unpack32(&node_reg_ptr->timestamp, buffer);
+	safe_unpack_time(&node_reg_ptr->timestamp, buffer);
 	/* load the data values */
+	safe_unpack32(&node_reg_ptr->status, buffer);
 	safe_unpackstr_xmalloc(&node_reg_ptr->node_name, &uint16_tmp, buffer);
 	safe_unpack32(&node_reg_ptr->cpus, buffer);
 	safe_unpack32(&node_reg_ptr->real_memory_size, buffer);

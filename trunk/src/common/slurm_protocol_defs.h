@@ -355,7 +355,7 @@ typedef struct job_id_response_msg {
  * Slurm API Message Types
 \*****************************************************************************/
 typedef struct slurm_node_registration_status_msg {
-	uint32_t timestamp;
+	time_t timestamp;
 	char *node_name;
 	uint32_t cpus;
 	uint32_t real_memory_size;
@@ -363,6 +363,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
 	uint16_t *step_id;	/* IDs of running job steps (if any) */
+	uint32_t status;	/* node status code, same as return codes */
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
