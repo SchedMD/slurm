@@ -480,8 +480,9 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 {
 	int rc = SLURM_SUCCESS;
+	msg -> data = NULL;	/* Initialize to no data for now */
 
-	switch ( msg-> msg_type )
+	switch ( msg -> msg_type )
 	{
 		case REQUEST_BUILD_INFO :
 		case REQUEST_NODE_INFO :
