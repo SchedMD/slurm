@@ -3,7 +3,7 @@
  * See slurm.h for documentation on external functions and data structures
  *
  * NOTE: DEBUG_MODULE of read_config requires that it be loaded with 
- *       partition_mgr and node_mgr
+ *       bits_bytes, partition_mgr, and node_mgr
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -25,13 +25,9 @@
 
 #define BUF_SIZE 1024
 #define NO_VAL (-99)
-#define SEPCHARS " \n\t"
 
-int 	Load_Integer(int *destination, char *keyword, char *In_Line);
-int 	Load_String(char **destination, char *keyword, char *In_Line);
 int 	Parse_Node_Spec(char *In_Line);
 int 	Parse_Part_Spec(char *In_Line);
-void	Report_Leftover(char *In_Line, int Line_Num);
 
 char *BackupController = NULL;
 char *ControlMachine  = NULL;
@@ -120,11 +116,7 @@ main(int argc, char * argv[]) {
 	Error_Code = Init_SLURM_Conf();
 	if (Error_Code != 0) exit(Error_Code);
 
-	if (argc == 2) 
-	    Error_Code = Read_SLURM_Conf(argv[1]);
-	else
-	    Error_Code = Read_SLURM_Conf(SLURM_CONF);
-
+	Error_Code = Read_SLURM_Conf(argv[1]);
 	if (Error_Code) {
 	    printf("Error %d from Read_SLURM_Conf\n", Error_Code);
 	    exit(1);
@@ -343,103 +335,6 @@ int Init_SLURM_Conf() {
 
     return 0;
 } /* Init_SLURM_Conf */
-
-
-/*
- * Load_Integer - Parse a string for a keyword, value pair  
- * Input: *destination - Location into which result is stored
- *        keyword - String to search for
- *        In_Line - String to search for keyword
- * Output: *destination - set to value, No change if value not found, 
- *             Set to 1 if keyword found without value, 
- *             Set to -1 if keyword followed by "UNLIMITED"
- *         In_Line - The keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
- */
-int Load_Integer(int *destination, char *keyword, char *In_Line) {
-    char Scratch[BUF_SIZE];	/* Scratch area for parsing the input line */
-    char *str_ptr1, *str_ptr2, *str_ptr3;
-    int i, str_len1, str_len2;
-
-    str_ptr1 = (char *)strstr(In_Line, keyword);
-    if (str_ptr1 != NULL) {
-	str_len1 = strlen(keyword);
-	strcpy(Scratch, str_ptr1+str_len1);
-	if (isspace((int)Scratch[0])) { /* Keyword with no value set */
-	    *destination = 1;
-	    str_len2 = 0;
-	} else {
-	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
-	    str_len2 = strlen(str_ptr2);
-	    if (strcmp(str_ptr2, "UNLIMITED") == 0)
-		*destination = -1;
-	    else if ((str_ptr2[0] >= '0') && (str_ptr2[0] <= '9')) 
-		*destination = (int) strtol(Scratch, (char **)NULL, 10);
-	    else {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Load_Integer: bad value for keyword %s\n", keyword);
-#else
-		syslog(LOG_ERR, "Load_Integer: bad value for keyword %s\n", keyword);
-#endif
-		return EINVAL;	
-	    } /* else */
-	} /* else */
-
-	for (i=0; i<(str_len1+str_len2); i++) {
-	    str_ptr1[i] = ' ';
-	} /* for */
-    } /* if */
-    return 0;
-} /* Load_Integer */
-
-
-/*
- * Load_String - Parse a string for a keyword, value pair  
- * Input: *destination - Location into which result is stored
- *        keyword - String to search for
- *        In_Line - String to search for keyword
- * Output: *destination - set to value, No change if value not found, 
- *	     if *destination had previous value, that memory location is automatically freed
- *         In_Line - The keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
- * NOTE: destination must be free when no longer required
- */
-int Load_String(char **destination, char *keyword, char *In_Line) {
-    char Scratch[BUF_SIZE];	/* Scratch area for parsing the input line */
-    char *str_ptr1, *str_ptr2, *str_ptr3;
-    int i, str_len1, str_len2;
-
-    str_ptr1 = (char *)strstr(In_Line, keyword);
-    if (str_ptr1 != NULL) {
-	str_len1 = strlen(keyword);
-	strcpy(Scratch, str_ptr1+str_len1);
-	if (isspace((int)Scratch[0])) { /* No value set */
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_String: keyword %s lacks value\n", keyword);
-#else
-	    syslog(LOG_ERR, "Load_String: keyword %s lacks value\n", keyword);
-#endif
-	    return EINVAL;
-	} /* if */
-	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
-	str_len2 = strlen(str_ptr2);
-	if (destination[0] != NULL) free(destination[0]);
-	destination[0] = (char *)malloc(str_len2+1);
-	if (destination[0] == NULL) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_String: unable to allocate memory\n");
-#else
-	    syslog(LOG_ALERT, "Load_String: unable to allocate memory\n");
-#endif
-	    return ENOMEM;
-	} /* if */
-	strcpy(destination[0], str_ptr2);
-	for (i=0; i<(str_len1+str_len2); i++) {
-	    str_ptr1[i] = ' ';
-	} /* for */
-    } /* if */
-    return 0;
-} /* Load_String */
 
 
 /* 
@@ -829,33 +724,3 @@ int Read_SLURM_Conf (char *File_Name) {
 
     return 0;
 } /* Read_SLURM_Conf */
-
-
-/* 
- * Report_Leftover - Report any un-parsed (non-whitespace) characters on the
- * configuration input line.
- * Input: In_Line - What is left of the configuration input line.
- *        Line_Num - Line number of the configuration file.
- * Output: NONE
- */
-void Report_Leftover(char *In_Line, int Line_Num) {
-    int Bad_Index, i;
-
-    Bad_Index = -1;
-    for (i=0; i<strlen(In_Line); i++) {
-	if (In_Line[i] == '\n') In_Line[i]=' ';
-	if (isspace((int)In_Line[i])) continue;
-	Bad_Index=i;
-	break;
-    } /* if */
-
-    if (Bad_Index == -1) return;
-#if DEBUG_SYSTEM
-    fprintf(stderr, "Report_Leftover: Ignored input on line %d of configuration: %s\n", 
-	Line_Num, &In_Line[Bad_Index]);
-#else
-    syslog(LOG_ERR, "Report_Leftover: Ignored input on line %d of configuration: %s\n", 
-	Line_Num, &In_Line[Bad_Index]);
-#endif
-    return;
-} /* Report_Leftover */
