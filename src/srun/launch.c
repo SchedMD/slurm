@@ -48,7 +48,7 @@ extern char **environ;
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
 static int             active = 0;
-static int timeout;
+static int             timeout = 0;
 */
 
 

@@ -291,7 +291,7 @@ static void
 	return (void *)(0);
 }
 
-	void *
+void *
 io_thr(void *arg)
 {
 	return _io_thr_poll(arg);
