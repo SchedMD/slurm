@@ -989,7 +989,7 @@ static void _validate_node_proc_count(void)
 				part_size = node_size;
 			else if (part_size != node_size)
 				fatal
-				    ("Partition %s has inconsisent processor count",
+				    ("Partition %s has inconsistent processor count",
 				     part_record_point->name);
 		}
 	}
