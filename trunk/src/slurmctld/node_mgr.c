@@ -1113,6 +1113,9 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			info ("validate_node_specs: node %s returned to service", 
 			      node_name);
 			resp_state = 1;	/* just started responding */
+		} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
+			   (job_count == 0)) {
+			node_ptr->node_state = NODE_STATE_IDLE; /* job vanished */
 		}
 
 		if (node_ptr->node_state == NODE_STATE_IDLE) {
