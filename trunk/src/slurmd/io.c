@@ -258,7 +258,8 @@ io_spawn_handler(slurmd_job_t *job)
 	slurm_attr_init(&attr);
 	xassert(_validate_io_list(job->objs));
 
-	pthread_create(&job->ioid, &attr, &_io_thr, (void *)job);
+	if (pthread_create(&job->ioid, &attr, &_io_thr, (void *)job) != 0)
+		fatal("pthread_create: %m");
 	
 	fatal_add_cleanup(&_fatal_cleanup, (void *) job);
 
