@@ -278,9 +278,9 @@ extern void select_p_pack_all_partitions(char **buffer_ptr, int *buffer_size)
 
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-		pack_partition(bgl_record, buffer);	
+		//pack_partition(bgl_record, buffer);
 		partitions_packed++;
-	}	
+	}
 	list_iterator_destroy(itr);
 
 	tmp_offset = get_buf_offset(buffer);
@@ -297,7 +297,7 @@ extern void select_p_unpack_all_partitions(char **buffer_ptr, int *buffer_size)
 	bgl_record_t *bgl_record;
 	int partitions_packed, i;
 	Buf buffer;
-	time_t now;	
+	time_t now;
 	
 	safe_unpack32(&partitions_packed, buffer);
 	safe_unpack_time(&now, buffer);
@@ -305,7 +305,7 @@ extern void select_p_unpack_all_partitions(char **buffer_ptr, int *buffer_size)
 unpack_error:
 	if(bgl_list) {
 		while ((bgl_record = list_pop(bgl_list)) != NULL) {
-			destroy_bgl_record(bgl_record);		
+			destroy_bgl_record(bgl_record);
 		}
 	} else {
 		bgl_list = list_create(destroy_bgl_record);
@@ -314,7 +314,7 @@ unpack_error:
 	for(i=0;i<partitions_packed;i++) {
 		bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_list, bgl_record);
-		unpack_partition(bgl_record, buffer);	
-	}	
+		//unpack_partition(bgl_record, buffer);
+	}
 }
 

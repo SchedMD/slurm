@@ -155,7 +155,7 @@ static int _wait_part_ready(char *part_name, uint32_t user_id)
 				bgl_err_str(rc));
 			is_ready = -1;
 		}
-		
+		//debug("state of Part %s is %d",name, state);
 		if ((rc = rm_get_data(part_ptr, RM_PartitionUserName, 
 				&name)) != STATUS_OK) {
 			error("rm_get_data(RM_PartitionUserName): %s",

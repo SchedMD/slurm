@@ -135,15 +135,19 @@ static int _remove_job(db_job_id_t job_id)
 		if ((rc = rm_free_job(job_rec)) != STATUS_OK)
 			error("rm_free_job: %s", bgl_err_str(rc));
 
-		//debug("job %d is in state %d", job_id, job_state);
-		/* Cancel or remove the job */
-		if(job_state != RM_JOB_TERMINATED
-		   && job_state != RM_JOB_KILLED
-		   && job_state != RM_JOB_DYING) {
+		debug("job %d is in state %d", job_id, job_state);
+		
+		/* check the state and process accordingly */
+		if(job_state == RM_JOB_TERMINATED)
+			return STATUS_OK;
+		else if(job_state == RM_JOB_DYING)
+			continue;
+		else {
 			(void) jm_signal_job(job_id, SIGKILL);
-			(void) jm_cancel_job(job_id);
+			rc = jm_cancel_job(job_id);
 		}
-		rc = rm_remove_job(job_id);
+		/* it doesn't appear that this does anything. */
+		//rc = rm_remove_job(job_id);
 
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
@@ -741,8 +745,7 @@ extern int sync_jobs(List job_list)
 				job_ptr->job_id);
 			good_block = false;
 		} else if (_excise_block(block_list, bgl_update_ptr->
-				bgl_part_id, job_ptr->nodes) 
-				!= SLURM_SUCCESS) {
+					 bgl_part_id, job_ptr->nodes) != SLURM_SUCCESS) {
 			error("Kill job %u belongs to defunct bglblock %s",
 			      job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 			good_block = false;
@@ -754,12 +757,12 @@ extern int sync_jobs(List job_list)
 			continue;
 		}
 
-		info("Queue sync of job %u in BGL partition %s",
+		debug3("Queue sync of job %u in BGL partition %s",
 			job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 		bgl_update_ptr->op = SYNC_OP;
 		bgl_update_ptr->uid = job_ptr->user_id;
 		bgl_update_ptr->job_id = job_ptr->job_id;
-		_sync_agent(bgl_update_ptr);
+		_part_op(bgl_update_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
@@ -771,6 +774,7 @@ extern int sync_jobs(List job_list)
 		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 		bgl_update_ptr->op = TERM_OP;
 		bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
+		//_part_op(bgl_update_ptr);
 		_term_agent(bgl_update_ptr);
 	}
 	list_iterator_destroy(block_iterator);

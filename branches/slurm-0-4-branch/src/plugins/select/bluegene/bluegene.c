@@ -371,7 +371,13 @@ extern int create_static_partitions(List part_list)
        	itr = list_iterator_create(bgl_found_part_list);
 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
 		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
-			goto no_total;	/* don't reboot this one */
+			goto no_total;	/* don't create total already there */
+		}
+	}
+	itr = list_iterator_create(bgl_list);
+	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		if (!strcmp(bgl_record->nodes, found_record->nodes)) {
+			goto no_total;	/* don't create total already defined */
 		}
 	}
 	list_iterator_destroy(itr);
@@ -386,9 +392,9 @@ extern int create_static_partitions(List part_list)
 		     bgl_record->bp_count, 
 		     bgl_record->conn_type);
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
-	print_bgl_record(bgl_record);
 	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
 		return rc;
+	print_bgl_record(bgl_record);
 	
 	found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, found_record);
@@ -411,7 +417,7 @@ extern int create_static_partitions(List part_list)
 	print_bgl_record(found_record);
 	
 no_total:
-	
+
 	rc = SLURM_SUCCESS;
 #ifdef _PRINT_PARTS_AND_EXIT
  	itr = list_iterator_create(bgl_list);
