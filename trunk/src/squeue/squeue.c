@@ -265,7 +265,7 @@ print_job_steps( uint32_t job_id, uint16_t step_id )
 
 	List format = list_create( NULL );
 
-	step_format_add_id( format, 12, true );
+	step_format_add_id( format, 18, true );
 	step_format_add_user_id( format, 8, true );
 	step_format_add_start_time( format, 12, true );
 	step_format_add_nodes( format, 20, true );
