@@ -312,7 +312,8 @@ wdog (void *args)
 		xfree (slurm_addr);
 #endif
 	}
-	debug ("agent maximum delay %d seconds", max_delay);
+	if (max_delay)
+		debug ("agent maximum delay %d seconds", max_delay);
 
 	pthread_mutex_unlock (&agent_ptr->thread_mutex);
 	return (void *) NULL;
