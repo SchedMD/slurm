@@ -23,6 +23,7 @@ libcommon_a_SOURCES = 	xmalloc.c 	\
 		      	strlcpy.c	\
 			list.c  	\
 		      	log.c		\
+			safeopen.c	\
 		      	bits_bytes.c	\
 			bitstring.c     \
 			pack.c		\
@@ -34,6 +35,7 @@ noinst_HEADERS = 	xmalloc.h 	\
 			macros.h	\
 		 	list.h 		\
 		 	log.h 		\
+			safeopen.h	\
 		 	strlcpy.h	\
 		 	slurm.h 	\
 		 	slurmlib.h	\
