@@ -102,6 +102,7 @@ static void _job_timed_out(struct job_record *job_ptr);
 static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		        int allocate, int will_run,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
+static void _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr);
 static void _list_delete_job(void *job_entry);
 static int  _list_find_job_id(void *job_entry, void *key);
 static int  _list_find_job_old(void *job_entry, void *key);
@@ -118,8 +119,6 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
-static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
-				int signum, struct node_record *node_ptr);
 static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
@@ -2729,8 +2728,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on node %s",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
-			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
-					    SIGKILL, node_ptr);
+			_kill_job_on_node(job_id_ptr[i], node_ptr);
 			/* We may well have pending purge job RPC to send 
 			 * slurmd, which would synchronize this */
 		}
@@ -2744,9 +2742,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				error
 				    ("Registered job %u.u on wrong node %s ",
 				     job_id_ptr[i], step_id_ptr[i], node_name);
-				_signal_job_on_node(job_id_ptr[i],
-						    step_id_ptr[i],
-						    SIGKILL, node_ptr);
+				_kill_job_on_node(job_id_ptr[i], node_ptr);
 			}
 		}
 
@@ -2758,8 +2754,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			last_job_update = time(NULL);
 			job_ptr->end_time = time(NULL);
 			delete_job_details(job_ptr);
-			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
-					    SIGKILL, node_ptr);
+			_kill_job_on_node(job_id_ptr[i], node_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -2768,8 +2763,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			     job_id_ptr[i], step_id_ptr[i], 
 			     job_state_string(job_ptr->job_state),
 			     node_name);
-			_signal_job_on_node(job_id_ptr[i], step_id_ptr[i],
-					    SIGKILL, node_ptr);
+			_kill_job_on_node(job_id_ptr[i], node_ptr);
 			/* We may well have pending purge job RPC to send 
 			 * slurmd, which would synchronize this */
 		}
@@ -2789,22 +2783,17 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	return;
 }
 
-/* _signal_job_on_node - send specific signal to specific job_id, step_id 
- *	and node_name */
+/* _kill_job_on_node - Kill the specific job_id on a specific node */
 static void
-_signal_job_on_node(uint32_t job_id, uint16_t step_id, int signum,
-		    struct node_record *node_ptr)
+_kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 {
 	agent_arg_t *agent_info;
-	kill_tasks_msg_t *signal_req;
+	kill_job_msg_t *kill_req;
 
-	debug("Sending %d signal to job %u.%u on node %s",
-	      signum, job_id, step_id, node_ptr->name);
+	debug("Killing job %u on node %s", job_id, node_ptr->name);
 
-	signal_req = xmalloc(sizeof(kill_tasks_msg_t));
-	signal_req->job_id	= job_id;
-	signal_req->job_step_id	= step_id;
-	signal_req->signal	= signum;
+	kill_req = xmalloc(sizeof(kill_job_msg_t));
+	kill_req->job_id	= job_id;
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
@@ -2814,8 +2803,8 @@ _signal_job_on_node(uint32_t job_id, uint16_t step_id, int signum,
 	       &node_ptr->slurm_addr, sizeof(slurm_addr));
 	agent_info->node_names	= xmalloc(MAX_NAME_LEN);
 	strncpy(agent_info->node_names, node_ptr->name, MAX_NAME_LEN);
-	agent_info->msg_type	= REQUEST_KILL_TASKS;
-	agent_info->msg_args	= signal_req;
+	agent_info->msg_type	= REQUEST_KILL_JOB;
+	agent_info->msg_args	= kill_req;
 
 	_spawn_signal_agent(agent_info);
 }
