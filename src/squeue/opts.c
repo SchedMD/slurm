@@ -60,6 +60,7 @@ static List  _build_all_states_list( void );
 static List  _build_step_list( char* str );
 static List  _build_user_list( char* str );
 static char *_get_prefix(char *token);
+static int   _max_procs_per_node(void);
 static int   _parse_state( char* str, enum job_states* states );
 static void  _parse_token( char *token, char *field, int *field_size, 
                            bool *right_justify, char **suffix);
@@ -217,10 +218,31 @@ parse_command_line( int argc, char* argv[] )
 		params.user_list = _build_user_list( params.users );
 	}
 
+	params.max_procs = _max_procs_per_node();
+
 	if ( params.verbose )
 		_print_options();
 
 	return rc;
+}
+
+/* Return the maximum number of processors for any node in the cluster */
+static int   _max_procs_per_node(void)
+{
+	int error_code, max_procs = 1;
+	node_info_msg_t *node_info_ptr = NULL;
+
+	error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
+	if (error_code == SLURM_SUCCESS) {
+		int i;
+		node_info_t *node_ptr = node_info_ptr->node_array;
+		for (i=0; i<node_info_ptr->record_count; i++) {
+			max_procs = MAX(max_procs, node_ptr[i].cpus);
+		}
+		slurm_free_node_info_msg (node_info_ptr);
+	}
+
+	return max_procs;
 }
 
 /*
@@ -550,6 +572,7 @@ _print_options()
 	printf( "iterate    = %d\n", params.iterate );
 	printf( "job_flag   = %d\n", params.job_flag );
 	printf( "jobs       = %s\n", params.jobs );
+	printf( "max_procs  = %d\n", params.max_procs ) ;
 	printf( "partitions = %s\n", params.partitions ) ;
 	printf( "sort       = %s\n", params.sort ) ;
 	printf( "states     = %s\n", params.states ) ;

@@ -31,8 +31,9 @@
 #include <pwd.h>
 #include <sys/types.h>
 
-#include "src/common/list.h"
 #include "src/common/hostlist.h"
+#include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/squeue/print.h"
@@ -40,6 +41,7 @@
 
 static int _filter_job(job_info_t * job);
 static int _filter_step(job_step_info_t * step);
+static int _get_node_cnt(job_info_t * job);
 static int _print_str(char *str, int width, bool right, bool cut_output);
 
 /*****************************************************************************
@@ -542,15 +544,32 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("NODES", width, right_justify, true);
-	else {
-		int *current = job->node_inx, node_cnt = 0;
-		for ( ; *current != -1; current +=2)
-			node_cnt += current[1] - current[0] + 1;
-		_print_int(node_cnt, width, right_justify, true);
-	}
+	else
+		_print_int(_get_node_cnt(job), width, right_justify, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
+}
+
+int _get_node_cnt(job_info_t * job)
+{
+	int node_cnt = 0;
+	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
+
+	if (base_job_state == JOB_PENDING) {
+		int *current = job->req_node_inx, round;
+		for ( ; *current != -1; current +=2)
+			node_cnt += current[1] - current[0] + 1;
+		node_cnt = MAX(node_cnt, job->num_nodes);
+		round  = job->num_procs + params.max_procs - 1;
+		round /= params.max_procs;	/* round up */
+		node_cnt = MAX(node_cnt, round);
+	} else {
+		int *current = job->node_inx;
+		for ( ; *current != -1; current +=2)
+			node_cnt += current[1] - current[0] + 1;
+	}
+	return node_cnt;
 }
 
 int _print_job_shared(job_info_t * job, int width, bool right_justify, 
@@ -663,7 +682,7 @@ int _print_job_features(job_info_t * job, int width, bool right_justify,
 
 
 /*****************************************************************************
- * Job Step  Print Functions
+ * Job Step Print Functions
  *****************************************************************************/
 int print_step_from_format(job_step_info_t * job_step, List list)
 {
