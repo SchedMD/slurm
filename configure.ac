@@ -200,6 +200,12 @@ AC_ARG_WITH(slurm-conf,
       fi
     ]
 )
+
+#
+# FIXME: default config dir is in srcdir
+#        during development. Needs to be
+#        moved to $prefix/etc!!
+#
 topsrcdir=`cd $srcdir && pwd`
 AC_MSG_RESULT(${slurmconf=${topsrcdir}/etc})
 AC_DEFINE_UNQUOTED(SLURM_CONFIG_DIR, "$slurmconf", 
@@ -402,8 +408,11 @@ fi
 AM_CONDITIONAL(WITH_TOTALVIEW, test "x$with_totalview" = "xyes")
 
 
+dnl Add LSD-Tools defines:
+AC_DEFINE(WITH_LSD_FATAL_ERROR_FUNC, 1, [Have definition of lsd_fatal_error()])
+AC_DEFINE(WITH_LSD_NOMEM_ERROR_FUNC, 1, [Have definition of lsd_nomem_error()])
+
 dnl All slurm Makefiles:
-dnl need to add squeue and scancel when they're there
 
 AC_CONFIG_FILES([Makefile 
                  src/Makefile 
