@@ -187,11 +187,15 @@ struct job_record *create_job_record(int *error_code)
  */
 void delete_job_details(struct job_record *job_entry)
 {
+	int i;
+
 	if (job_entry->details == NULL)
 		return;
 
 	_delete_job_desc_files(job_entry->job_id);
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
+	for (i=0; i<job_entry->details->argc; i++)
+		xfree(job_entry->details->argv[i]);
 	xfree(job_entry->details->argv);
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->exc_nodes);
@@ -594,6 +598,8 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	packstr(detail_ptr->in,        buffer);
 	packstr(detail_ptr->out,       buffer);
 	packstr(detail_ptr->work_dir,  buffer);
+
+	packstr_array(detail_ptr->argv, detail_ptr->argc, buffer);
 }
 
 /* _load_job_details - Unpack a job details information from buffer */
@@ -601,11 +607,13 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 {
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
+	char **argv = (char **) NULL;
 	bitstr_t *req_node_bitmap = NULL, *exc_node_bitmap = NULL;
 	uint32_t num_procs, min_nodes, max_nodes, min_procs;
-	uint16_t shared, contiguous, name_len;
+	uint16_t argc = 0, shared, contiguous, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
 	time_t submit_time;
+	int i;
 
 	/* unpack the job's details from the buffer */
 	safe_unpack32(&num_procs, buffer);
@@ -630,6 +638,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&out, &name_len, buffer);
 	safe_unpackstr_xmalloc(&work_dir, &name_len, buffer);
 
+	safe_unpackstr_array(&argv, &argc, buffer);
+
 	/* validity test as possible */
 	if ((shared > 1) || (contiguous > 1)) {
 		error("Invalid data for job %u: shared=%u contiguous=%u",
@@ -647,6 +657,7 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 		goto unpack_error;
 	}
 
+
 	/* free any left-over detail data */
 	xfree(job_ptr->details->req_nodes);
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
@@ -657,6 +668,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(job_ptr->details->in);
 	xfree(job_ptr->details->out);
 	xfree(job_ptr->details->work_dir);
+	for (i=0; i<job_ptr->details->argc; i++)
+		xfree(job_ptr->details->argv[i]);
+	xfree(job_ptr->details->argv);
 
 	/* now put the details into the job record */
 	job_ptr->details->num_procs = num_procs;
@@ -678,6 +692,8 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	job_ptr->details->in = in;
 	job_ptr->details->out = out;
 	job_ptr->details->work_dir = work_dir;
+	job_ptr->details->argc = argc;
+	job_ptr->details->argv = argv;
 
 	return SLURM_SUCCESS;
 
@@ -691,6 +707,9 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(in);
 	xfree(out);
 	xfree(work_dir);
+/*	for (i=0; i<argc; i++) 
+		xfree(argv[i]);  Don't trust this on unpack error */
+	xfree(argv);
 	return SLURM_FAILURE;
 }
 
