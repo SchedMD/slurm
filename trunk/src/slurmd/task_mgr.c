@@ -319,3 +319,18 @@ int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
 	}
 	return error_code ;
 }
+
+void pthread_fork_before ( void )
+{
+}
+
+void pthread_fork_parent_after ( void )
+{
+}
+
+void pthread_fork_child_after ( void )
+{
+	log_options_t log_opts_def = LOG_OPTS_STDERR_ONLY ;
+	log_init( "slurmd", log_opts_def, SYSLOG_FACILITY_DAEMON, NULL);
+}
+
