@@ -53,6 +53,12 @@ set timeout $max_job_delay
 spawn $srun -t1 $file_prog_get
 expect {
 	-re "FAILURE" {
+		send_user "\nFAILURE: some error occured\n"
+		set exit_code 1
+		exp_continue
+	}
+	-re "error" {
+		send_user "\nFAILURE: some error occured\n"
 		set exit_code 1
 		exp_continue
 	}
