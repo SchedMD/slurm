@@ -928,7 +928,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
-	long kill_on_node_fail, shared;
+	long kill_on_node_fail, shared, task_dist;
 
 	if (job_specs == NULL)
 		return;
@@ -977,8 +977,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld",
 	       time_limit, priority, contiguous, shared);
 
-	debug3("   kill_on_node_fail=%ld task_dist=%u script=%.40s...",
-	       kill_on_node_fail, job_specs->task_dist, job_specs->script);
+	task_dist =
+	    (job_specs->task_dist !=
+	     (uint16_t) NO_VAL) ? job_specs->task_dist : -1;
+	debug3("   kill_on_node_fail=%ld task_dist=%ld script=%.40s...",
+	       kill_on_node_fail, task_dist, job_specs->script);
 
 	if (job_specs->env_size == 1)
 		debug3("   environment=\"%s\"", job_specs->environment[0]);
