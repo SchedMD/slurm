@@ -1220,69 +1220,30 @@ split_node_name (char *name, char *prefix, char *suffix, int *index,
  * NOTE: the contents of spec are overwritten by white space
  */
 int 
-update_node (char *node_names, char *spec) 
+update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int bad_index, error_code, i, node_count;
-	char  *node_list, *state;
+	int error_code;
+	int i;
+	int node_count;
+	char  *node_list ;
 	int state_val;
 	struct node_record *node_record_point;
 
-	if (strcmp (node_names, "DEFAULT") == 0) {
-		error ("update_node: invalid node name  %s\n", node_names);
+	if (update_node_msg -> node_names == NULL ) {
+		error ("update_node: invalid node name  %s\n", update_node_msg -> node_names );
 		return EINVAL;
 	}
 
 	state_val = NO_VAL;
-	state = NULL;
-	error_code = slurm_parser (spec,
-		"State=", 's', &state, 
-		"END");
-	if (error_code)
-		return error_code;
-	if (state != NULL) {
-		for (i = 0; i <= STATE_END; i++) {
-			if (strcmp (node_state_string[i], "END") == 0)
-				break;
-			if (strcmp (node_state_string[i], state) == 0) {
-				state_val = i;
-				break;
-			}
-		}
-		if (state_val == NO_VAL) {
-			error ("update_node: invalid state %s for node_name %s",
-				state, node_names);
-			xfree (state);
-			return EINVAL;
-		}
-		xfree (state);
-	}
-
-	/* check for anything else (unparsed) in the specification */
-	bad_index = -1;
-	for (i = 0; i < strlen (spec); i++) {
-		if (spec[i] == '\n')
-			spec[i] = ' ';
-		if (isspace ((int) spec[i]))
-			continue;
-		bad_index = i;
-		break;
-	}
-
-	if (bad_index != -1) {
-		error ("update_node: ignored node %s update specification: %s",
-			node_names, &spec[bad_index]);
-		return EINVAL;
-	}
-
-	error_code = node_name2list(node_names, &node_list, &node_count);
+	
+	error_code = node_name2list( update_node_msg -> node_names, &node_list, &node_count);
 	if (error_code)
 		return error_code;
 
 	for (i = 0; i < node_count; i++) {
 		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
 		if (node_record_point == NULL) {
-			error ("update_node: node name %s does not exist, can not be updated",
-				&node_list[i*MAX_NAME_LEN]);
+			error ("update_node: node name %s does not exist, can not be updated", &node_list[i*MAX_NAME_LEN]);
 			error_code = EINVAL;
 			break;
 		}

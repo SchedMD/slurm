@@ -61,4 +61,8 @@ int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer
 void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, void ** buffer , uint32_t * length ) ;
 
 int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , void ** buffer , uint32_t * length ) ;
+
+void pack_update_node_msg ( update_node_msg_t * msg, void ** buffer , uint32_t * length ) ;
+
+int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_t * length ) ;
 #endif

@@ -804,7 +804,7 @@ extern int update_job (uint32_t job_id, char *spec);
  *        spec - the updates to the node's specification 
  * output:  return - 0 if no error, otherwise an error code
  */
-extern int update_node (char *node_names, char *spec);
+extern int update_node ( update_node_msg_t * update_node_msg )  ;
 
 /* 
  * update_part - update a partition's configuration data
