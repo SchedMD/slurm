@@ -10,5 +10,6 @@ LDADD = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/api/libslurm.la \
 		$(POPT_LIBS)
 
-squeue_SOURCES = squeue.c print.c
+squeue_HEADERS = squeue.h print.h
+squeue_SOURCES = squeue.c print.c opts.c 
 

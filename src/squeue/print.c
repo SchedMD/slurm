@@ -12,6 +12,77 @@
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
+int print_jobs( List jobs, List format )
+{
+	if ( list_count( jobs ) > 0 )
+	{
+		job_info_t* job = NULL;
+		ListIterator i = list_iterator_create( jobs );
+
+		print_job_from_format( NULL, format );
+		while ( ( job = (job_info_t*)list_next(i) ) != NULL )
+		{
+			print_job_from_format( job, format );
+		}
+	}
+	else printf("No jobs found in system" );
+	
+	return SLURM_SUCCESS;
+}
+
+int print_steps( List steps, List format )
+{
+	if ( list_count( steps ) > 0 )
+	{
+		job_step_info_t* step = NULL;
+		ListIterator i = list_iterator_create( steps );
+
+		print_step_from_format( NULL, format );
+		while ( ( step = (job_step_info_t*)list_next(i) ) != NULL )
+		{
+			print_step_from_format( step, format );
+		}
+	}
+	else printf("No job steps found in system" );
+	
+	return SLURM_SUCCESS;
+}
+
+int print_jobs_array( job_info_t* jobs, int size, List format )
+{
+	if ( size > 0 )
+	{
+		int i = 0;
+		print_job_from_format( NULL, format );
+		for (; i<size; i++)
+		{
+			print_job_from_format( &jobs[i], format );
+		}
+	}
+	else printf("No jobs found in system" );
+	
+	return SLURM_SUCCESS;
+}
+
+int print_steps_array( job_step_info_t* steps, int size, List format )
+{
+
+	if ( size > 0 )
+	{
+		int i=0;
+
+		print_step_from_format( NULL, format );
+		for (; i<size; i++ )
+		{
+			print_step_from_format( &steps[i], format );
+		}
+	}
+	else printf("No job steps found in system" );
+	
+	return SLURM_SUCCESS;
+}
+
+
 int
 _create_format( char* buffer, const char* type, int width, bool left_justify )
 {
@@ -35,7 +106,7 @@ _print_time( time_t t, int level, int width, bool left_justify )
 		case 1:
 		case 2:
 		default:
-			snprintf(str, FORMAT_STRING_SIZE, "%.2u-%.2u %.2u:%.2u:%.2u", time.tm_mon ,time.tm_mday ,time.tm_hour, time.tm_min, time.tm_sec);
+			snprintf(str, FORMAT_STRING_SIZE, "%.2u-%.2u-%.2u:%.2u", time.tm_mon ,time.tm_mday ,time.tm_hour, time.tm_min);
 			break;
 	}
 	if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
@@ -50,7 +121,7 @@ _print_time( time_t t, int level, int width, bool left_justify )
  * Job Print Functions
  *****************************************************************************/
 int 
-print_jobs_from_list( List list, job_info_t* job  )
+print_job_from_format( job_info_t* job,  List list )
 {
 	ListIterator i = list_iterator_create( list );
 	job_format_t* current;
@@ -171,6 +242,25 @@ _print_job_job_state( job_info_t* job, int width, bool left_justify )
 }
 
 int
+_print_job_job_state_compact( job_info_t* job, int width, bool left_justify )
+{
+	char format[FORMAT_STRING_SIZE];
+	if ( job == NULL ) /* Print the Header instead */
+	{
+		if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
+			return SLURM_ERROR;
+		printf( format, "ST" );
+		return SLURM_SUCCESS;
+	}
+
+	if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
+		return SLURM_ERROR;
+	printf( format, job_state_string_compact( job->job_state ) );
+
+	return SLURM_SUCCESS;
+}
+
+int
 _print_job_time_limit( job_info_t* job, int width, bool left_justify )
 {
 	char format[FORMAT_STRING_SIZE];
@@ -179,7 +269,7 @@ _print_job_time_limit( job_info_t* job, int width, bool left_justify )
 	{
 		if ( _create_format( format, "s", MAX(width,9), left_justify ) == SLURM_ERROR )
 			return SLURM_ERROR;
-		printf( format, "TIME_LIMIT" );
+		printf( format, "WC" );
 		return SLURM_SUCCESS;
 	}
 
@@ -201,7 +291,7 @@ _print_job_start_time( job_info_t* job, int width, bool left_justify )
 	{
 		if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
 			return SLURM_ERROR;
-		printf( format, "START_TIME" );
+		printf( format, "START" );
 		return SLURM_SUCCESS;
 	}
 	_print_time( job->start_time, 0, width, left_justify );
@@ -216,10 +306,10 @@ _print_job_end_time( job_info_t* job, int width, bool left_justify )
 	{
 		if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
 			return SLURM_ERROR;
-		printf( format, "END_TIME" );
+		printf( format, "END" );
 		return SLURM_SUCCESS;
 	}
-	_print_time( job->start_time, 0, width, left_justify );
+	_print_time( job->end_time, 0, width, left_justify );
 	return SLURM_SUCCESS;
 }
 
@@ -227,17 +317,19 @@ int
 _print_job_priority( job_info_t* job, int width, bool left_justify )
 {
 	char format[FORMAT_STRING_SIZE];
+	char temp[FORMAT_STRING_SIZE];
 	if ( job == NULL ) /* Print the Header instead */
 	{
 		if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
 			return SLURM_ERROR;
-		printf( format, "PRIORITY" );
+		printf( format, "PRI" );
 		return SLURM_SUCCESS;
 	}
 
-	if ( _create_format( format, "d", width, left_justify ) == SLURM_ERROR )
+	if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
 		return SLURM_ERROR;
-	printf( format, job->priority );
+	sprintf(temp, "%d", job->priority );
+	printf( format, temp );
 
 
 	return SLURM_SUCCESS;
@@ -507,7 +599,7 @@ _print_job_features( job_info_t* job, int width, bool left_justify )
  * Job Step  Print Functions
  *****************************************************************************/
 int 
-print_steps_from_list( List list, job_step_info_t* job_step  )
+print_step_from_format( job_step_info_t* job_step, List list )
 {
 	ListIterator i = list_iterator_create( list );
 	step_format_t* current;
@@ -545,7 +637,7 @@ int _print_step_id( job_step_info_t* step, int width, bool left_justify )
 	{
 		if ( _create_format( format, "s", width, left_justify ) == SLURM_ERROR )
 			return SLURM_ERROR;
-		printf( format, "Features" );
+		printf( format, "ID" );
 		return SLURM_SUCCESS;
 	}
 
