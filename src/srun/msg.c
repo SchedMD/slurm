@@ -86,6 +86,26 @@ static char *	_taskid2hostname(int task_id, job_t * job);
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
 
+#ifdef HAVE_TOTALVIEW
+static void 
+_build_tv_list(launch_tasks_response_msg_t *msg)
+{
+	MPIR_PROCDESC * tv_tasks;
+	int i;
+
+	if (!opt.totalview)
+		return;
+
+	for (i=0; i<msg->count_of_pids; i++) {
+		tv_tasks = &MPIR_proctable[MPIR_proctable_size++];
+		tv_tasks->host_name = msg->node_name;
+		tv_tasks->executable_name = opt.progname;
+		tv_tasks->pid = msg->local_pid[i];
+	}
+	msg->node_name = NULL;	/* nothing to free */
+}
+#endif
+
 static void
 _launch_handler(job_t *job, slurm_msg_t *resp)
 {
@@ -106,15 +126,7 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 			job->host_state[msg->srun_node_id] = 
 				SRUN_HOST_REPLIED;
 #ifdef HAVE_TOTALVIEW
-			if (opt.totalview) {
-				MPIR_PROCDESC * tv_tasks;
-				tv_tasks = 
-					&MPIR_proctable[MPIR_proctable_size++];
-				tv_tasks->host_name = msg->node_name;
-				msg->node_name = NULL;	/* nothing to free */
-				tv_tasks->executable_name = opt.progname;
-				tv_tasks->pid = msg->local_pid;
-			}
+			_build_tv_list(msg);
 #endif
 		} else
 			error("launch resp from %s has bad task_id %d",

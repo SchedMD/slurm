@@ -221,6 +221,8 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 	if (msg) {
 		if (msg->node_name)
 			xfree(msg->node_name);
+		if (msg->local_pids)
+			xfree(msg->local_pids);
 		xfree(msg);
 	}
 }
