@@ -649,14 +649,15 @@ static void _read_part_db2(void)
 	//block_t *block_ptr;
 	char *user_name;
 	
-	if (bgl) {
-		/* if we have a single base partition, we can't 
-		 * run rm_bgl_free, so just read the data once 
-		 * and never free it. There is also no sense in
-		 * processing it again either. */
-		list_for_each(block_list, _clear_printed_flag, NULL);
-		return;
-	} else {
+	/* if (bgl) { */
+/* 		/\* if we have a single base partition, we can't  */
+/* 		 * run rm_bgl_free, so just read the data once  */
+/* 		 * and never free it. There is also no sense in */
+/* 		 * processing it again either. *\/ */
+/* 		printf("suck again\n"); */
+/* 		list_for_each(block_list, _clear_printed_flag, NULL); */
+/* 		return; */
+/* 	} else { */
 		if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
 			fprintf(stderr, "Missing DB2INSTANCE or VWSPATH env var.\n"
 				"Execute 'db2profile'\n");
@@ -672,7 +673,7 @@ static void _read_part_db2(void)
 			error("rm_get_BGL(): %s\n", bgl_err_str(rc));
 			return;
 		}
-	}
+		//}
 
 	if (block_list) {
 		/* clear the old list */
@@ -800,7 +801,7 @@ static void _read_part_db2(void)
 	/* perform post-processing for each bluegene partition */
 	list_for_each(block_list, _post_block_read, NULL);
 
-	slurm_rm_free_BGL(bgl);
+	rm_free_BGL(bgl);
 #endif
 }
 

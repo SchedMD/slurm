@@ -294,8 +294,8 @@ static int _alter_allocation(char *com, List allocated_partitions)
 static int _copy_allocation(char *com, List allocated_partitions)
 {
 	ListIterator results_i;
-	allocated_part_t *allocated_part;
-	allocated_part_t *temp_part;
+	allocated_part_t *allocated_part = NULL;
+	allocated_part_t *temp_part = NULL;
 	pa_request_t *request; 
 	
 	int i=0;
@@ -307,7 +307,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	while(com[i-1]!=' ' && i<=len) {
 		i++;
 	}
-				
+	
 	if(i<=len) {
 		if(com[i]>='0' && com[i]<='9')
 			count = atoi(com+i);
@@ -323,7 +323,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 			}
 		}
 	}
-	
+
 	results_i = list_iterator_create(allocated_partitions);
 	while((allocated_part = list_next(results_i)) != NULL) {		
 		temp_part = allocated_part;
@@ -339,10 +339,9 @@ static int _copy_allocation(char *com, List allocated_partitions)
 	if(!allocated_part) {
 		memset(error_string,0,255);
 		sprintf(error_string, "Could not find requested record to copy");
-		xfree(request);
 		return 0;
 	}
-
+	
 	for(i=0;i<count;i++) {
 		request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 		
