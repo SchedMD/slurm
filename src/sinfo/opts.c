@@ -34,7 +34,10 @@
 #define OPT_FORMAT    	0x05
 #define OPT_VERBOSE   	0x06
 
+int parse_state( char* str, enum node_states* states );
+
 extern struct sinfo_parameters params;
+char *temp_state;
 
 /*
  * parse_command_line
@@ -51,7 +54,7 @@ parse_command_line( int argc, char* argv[] )
 	/* Declare the Options */
 	static const struct poptOption options[] = 
 	{
-		{"state", 't', POPT_ARG_STRING, &params.state, OPT_NODE_STATE, "specify the what state of nodes to view", "NODE_STATE"},
+		{"state", 't', POPT_ARG_STRING, &temp_state, OPT_NODE_STATE, "specify the what state of nodes to view", "NODE_STATE"},
 		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag, OPT_PARTITION,"show partition information and optionally specify a specific partition", "PARTITION"},
 		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE, "specify a specific node", "NODE"},
 		{"long", 'l', POPT_ARG_NONE, &params.long_output, OPT_FORMAT, "long output - displays more information", NULL},
@@ -88,10 +91,13 @@ parse_command_line( int argc, char* argv[] )
 				}
 				break;
 			case OPT_NODE_STATE:
-				if ( params.state[0] == '-' ) 
 				{
-					fprintf(stderr, "%s: %s\n", argv[0], poptStrerror(POPT_ERROR_NOARG));
-					exit (1);
+					params.state_flag = true;
+					if ( parse_state( temp_state, &params.state ) == SLURM_ERROR )
+					{
+						fprintf(stderr, "%s: %s is an invalid node state\n", argv[0], temp_state);
+						exit (1);
+					}
 				}
 				break;	
 				
@@ -130,6 +136,14 @@ parse_state( char* str, enum node_states* states )
 {	
 	/* FIXME - this will eventually return an array of enums
 	 */
+	printf("parse_state: str = %s\n", str );
+
+	printf("%s\n", node_state_string( NODE_STATE_DOWN ) );
+	printf("%s\n", node_state_string( NODE_STATE_UNKNOWN ) );
+	printf("%s\n", node_state_string( NODE_STATE_IDLE ) );
+	printf("%s\n", node_state_string( NODE_STATE_ALLOCATED ) );
+	printf("%s\n", node_state_string( NODE_STATE_DRAINED ) );
+	printf("%s\n", node_state_string( NODE_STATE_DRAINING ) );
 
 	if ( strcasecmp( str, node_state_string( NODE_STATE_DOWN )) == 0 )
 		*states = NODE_STATE_DOWN;
@@ -152,13 +166,13 @@ void
 print_options()
 {
 	printf( "-----------------------------\n" );
-	printf( "partition(%s) = %s\n", (params.partition_flag ? "true" : "false"), params.partition ) ;
+	printf( "partition(%s) = %s\n", (params.partition_flag ? "true" : "false"), params.partition );
 	printf( "node(%s) = %s\n", (params.node_flag ? "true" : "false"),params.node );
-	printf( "state = %s\n",  params.state );
+	printf( "state = %s\n",  node_state_string( params.state ) );
 	printf( "summarize = %s\n", params.summarize ? "true" : "false" );
 	printf( "verbose = %d\n", params.verbose );
 	printf( "long output = %s\n",  params.long_output ? "true" : "false" );
-	printf( "-----------------------------\n\n\n" );
+	printf( "-----------------------------\n\n" );
 } ;
 
 
