@@ -210,7 +210,7 @@ typedef struct
 	uint32_t job_id;
 	uid_t user_id;
 	char* node_list;
-	time_t experation_time;	
+	time_t expiration_time;	
 	char signature[SLURM_SSL_SIGNATURE_LENGTH]; /* What are we going to do here? */
 } slurm_job_credential_t;
 

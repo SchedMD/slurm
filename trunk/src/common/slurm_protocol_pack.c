@@ -682,7 +682,7 @@ void pack_job_credential ( slurm_job_credential_t* cred , void ** buffer , uint3
 	pack32( cred->job_id, buffer, length ) ;
 	pack16( (uint16_t) cred->user_id, buffer, length ) ;
 	packstr( cred->node_list, buffer, length ) ;
-	pack32( cred->experation_time, buffer, length ) ;	
+	pack32( cred->expiration_time, buffer, length ) ;	
 	for ( i = 0; i < sizeof( cred->signature ); i++ ) /* this is a fixed size array */
 		pack8( cred->signature[i], buffer, length ); 
 }
@@ -700,7 +700,7 @@ int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint3
 	unpack32( &(tmp_ptr->job_id), buffer, length ) ;
 	unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer, length ) ;
 	unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  ( void ** ) buffer , length ) ;
-	unpack32( (uint32_t*) &(tmp_ptr->experation_time), buffer, length ) ;	/* What are we going to do about time_t ? */
+	unpack32( (uint32_t*) &(tmp_ptr->expiration_time), buffer, length ) ;	/* What are we going to do about time_t ? */
 	
 	for ( i = 0; i < sizeof( tmp_ptr->signature ); i++ ) /* this is a fixed size array */
 		unpack8( (uint8_t*)(tmp_ptr->signature + i), buffer, length ); 
