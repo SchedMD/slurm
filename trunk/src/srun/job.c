@@ -78,7 +78,8 @@ job_create(resource_allocation_response_msg_t *resp)
 	job->nhosts = hostlist_count(hl);
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
-	job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * sizeof(slurm_addr));
+	job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * 
+						sizeof(slurm_addr));
 	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int) );
 	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int) );
 
@@ -116,7 +117,8 @@ job_create(resource_allocation_response_msg_t *resp)
 	pthread_mutex_init(&job->task_mutex, NULL);
 
 	ntask = opt.nprocs;
-	tph   = (ntask+job->nhosts-1) / job->nhosts; /* tasks per host, round up */
+	tph = (ntask+job->nhosts-1) / 
+				job->nhosts; /* tasks per host, round up */
 
 	for(i = 0; i < job->nhosts; i++) {
 		job->host[i]  = hostlist_shift(hl);
@@ -133,7 +135,8 @@ job_create(resource_allocation_response_msg_t *resp)
 				cpu_cnt = 0;
 			}
 			memcpy(&job->slurmd_addr[i], 
-			       &resp->node_addr[i], sizeof(job->slurmd_addr[i]));
+			       &resp->node_addr[i], 
+			       sizeof(job->slurmd_addr[i]));
 		} else {
 			job->cpus[i] = tph;
 			slurm_set_addr (&job->slurmd_addr[i], 

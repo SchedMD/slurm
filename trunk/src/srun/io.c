@@ -64,16 +64,16 @@ typedef struct fd_info {
 
 time_t time_last_io;
 
-static void _accept_io_stream(job_t *job, int i);
-static int  _do_task_output_poll(fd_info_t *info);
-static int  _handle_pollerr(fd_info_t *info);
-static int  _close_stream(int *fd, FILE *out, int tasknum);
-static int  _do_task_output(int *fd, FILE *out, int tasknum);
-static void _bcast_stdin(int fd, job_t *job);	
-static ssize_t _readx(int fd, char *buf, size_t maxbytes);
-static ssize_t _readn(int fd, void *buf, size_t nbytes);
-static char * _next_line(char **str);
-static int _validate_header(slurm_io_stream_header_t *hdr, job_t *job);
+static void	_accept_io_stream(job_t *job, int i);
+static void	_bcast_stdin(int fd, job_t *job);	
+static int	_close_stream(int *fd, FILE *out, int tasknum);
+static int	_do_task_output(int *fd, FILE *out, int tasknum);
+static int 	_do_task_output_poll(fd_info_t *info);
+static int	_handle_pollerr(fd_info_t *info);
+static char *	_next_line(char **str);
+static ssize_t	_readn(int fd, void *buf, size_t nbytes);
+static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
+static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do { 	\
 	(_pfd).fd = _fd;		\
@@ -129,7 +129,7 @@ _io_thr_poll(void *job_arg)
 	int numfds = (opt.nprocs*2) + job->niofds + 2;
 	fd_info_t map[numfds];	/* map fd in pollfd array to fd info */
 	int i, rc;
-	bool no_io_msg_sent = false;
+	static bool no_io_msg_sent = false;
 
 	xassert(job != NULL);
 
@@ -149,6 +149,7 @@ _io_thr_poll(void *job_arg)
 		_poll_set_rd(fds[i], job->iofd[i]);
 	}
 	_poll_set_rd(fds[i], STDIN_FILENO);
+	time_last_io = time(NULL);
 
 	while (1) {
 		int eofcnt = 0;
@@ -171,14 +172,14 @@ _io_thr_poll(void *job_arg)
 				nfds++;
 			}
 
-			if ((job->out[i] == IO_DONE) 
-			   && (job->err[i] == IO_DONE))
+			if ((job->out[i] == IO_DONE) && 
+			    (job->err[i] == IO_DONE))
 				eofcnt++;
 		}
 
 		debug3("eofcnt == %d", eofcnt);
 
-		/* exit if we have received eof on all streams */
+		/* exit if we have received EOF on all streams */
 		if (eofcnt == opt.nprocs)
 			pthread_exit(0);
 
@@ -188,13 +189,13 @@ _io_thr_poll(void *job_arg)
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
 				else if (no_io_msg_sent)
-					continue;
+					;
 				else if (i > MAX_IO_WAIT_SEC) {
 					info("Warning: No I/O in %d seconds",
 					     MAX_IO_WAIT_SEC);
 					no_io_msg_sent = true; 
-					continue;
 				}
+				continue;
 			}
 
 			switch(errno) {
@@ -225,13 +226,15 @@ _io_thr_poll(void *job_arg)
 		if (_poll_rd_isset(fds[i++]))
 			_bcast_stdin(STDIN_FILENO, job);
 
-		for (; i < nfds; i++) {
+		for ( ; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
 			xassert(!(revents & POLLNVAL));
-			if (revents & POLLERR || revents & POLLHUP)
+			if ((revents & POLLERR) || 
+			    (revents & POLLHUP) ||
+			    (revents & POLLNVAL))
 				_handle_pollerr(&map[i]);
 
-			if (revents & POLLIN && *map[i].fd > 0) 
+			if ((revents & POLLIN) && (*map[i].fd > 0)) 
 				_do_task_output_poll(&map[i]);
 		}
 	}
@@ -293,7 +296,7 @@ _accept_io_stream(job_t *job, int i)
 			return;
 		}
 		free_buf(buffer); /* NOTE: this frees msgbuf */
-		if (_validate_header(&hdr, job))
+		if (_validate_header(&hdr, job))	/* check key */
 			return;
 
 
@@ -301,21 +304,18 @@ _accept_io_stream(job_t *job, int i)
 		 * sends along some control information
 		 */
 
-		/* Do I even need this? */
-		fd_set_nonblocking(sd);
-
 		if ((hdr.task_id < 0) || (hdr.task_id >= opt.nprocs)) {
 			error ("Invalid task_id %d from %s",
 			       hdr.task_id, buf);
 			continue;
 		}
 
+		fd_set_nonblocking(sd);
 		if (hdr.type == SLURM_IO_STREAM_INOUT)
 			job->out[hdr.task_id] = sd;
 		else
 			job->err[hdr.task_id] = sd;
 
-		/* FIXME: Need to check key */
 		verbose("accepted %s connection from %s task %ld, sd=%d", 
 				(hdr.type ? "stderr" : "stdout"), 
 				buf, hdr.task_id, sd                   );
@@ -331,7 +331,7 @@ _close_stream(int *fd, FILE *out, int tasknum)
 			out == stdout ? "stdout" : "stderr");
 	fflush(out);
 	retval = shutdown(*fd, SHUT_RDWR);
-	if (retval >= 0 || errno != EBADF) 
+	if ((retval >= 0) || (errno != EBADF)) 
 		close(*fd);
 	*fd = IO_DONE;
 	return retval;
@@ -370,7 +370,8 @@ _readx(int fd, char *buf, size_t maxbytes)
 	if ((n = read(fd, (void *) buf, maxbytes)) < 0) {
 		if (errno == EINTR)
 			goto again;
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+		if ((errno == EAGAIN) || 
+		    (errno == EWOULDBLOCK))
 			return 0;
 		error("readx fd %d: %m", fd, n);
 		return -1; /* shutdown socket, cleanup. */
