@@ -78,6 +78,11 @@ enum node_states {
 };
 #define NODE_STATE_NO_RESPOND (0x8000)
 
+enum task_dist_states {
+	SLURM_DIST_CYCLIC,	/* distribute tasks one per node, round robin */
+	SLURM_DIST_BLOCK	/* distribute tasks filling node by node */
+};
+
 /* last entry must be JOB_END, keep in sync with job_state_string    	*/
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
@@ -234,6 +239,7 @@ typedef struct job_step_specs {
 	uint32_t node_count;
 	uint32_t cpu_count;
 	uint16_t relative;
+	uint16_t task_dist;	/* see task_dist_states for values */
 	char *node_list;
 } job_step_specs_t;
 
