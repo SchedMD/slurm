@@ -299,7 +299,8 @@ This name can be specified by users when submitting jobs.
 time on each node. Shared nodes will offer unpredictable performance 
 for application programs, but can provide higher system utilization 
 and responsiveness than otherwise possible. 
-Possible values are "YES" and "NO". The default value is "NO".
+Possible values are "FORCE", "YES", and "NO". 
+The default value is "NO".
 
 <dt>State
 <dd>State of partition or availability for use.  Possible values 
@@ -357,8 +358,10 @@ be contiguous.
 <dt>Features
 <dd>Required features of nodes to be allocated to this job. 
 Features may be combined using "|" for OR, "&amp;" for AND,  
-parenthesis and square brackets. 
-For example, "Features=((1000MHz|1200MHz)&amp;CoolTool)".
+and square brackets. 
+For example, "Features=1000MHz|1200MHz&amp;CoolTool)".
+The feature list is processes left to right except for 
+the grouping by brackets.
 Square brackets are used to identify alternate features, 
 but ones that must apply to every node allocated to the job. 
 For example, some clusters are configured with more than 
@@ -368,7 +371,7 @@ The application may not care which parallel file system
 is used, but all nodes allocated to it must be in the
 subset of nodes assessing a single parallel file system. 
 This might be specified with a specification of 
-"Features=[PFS1|PFS2|PFS3|PFS3]".
+"Features=[PFS1|PFS2|PFS3|PFS4]".
 
 <dt>Group
 <dd>Comma separated list of group names to which the user belongs.
@@ -616,7 +619,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified March 15, 2002</p>
+<p>Last Modified March 19, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
