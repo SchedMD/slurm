@@ -1,12 +1,33 @@
-/*
- * get_mach_stat.c - Get the status of the current machine and return it in the standard 
- *	node configuration format "Name=linux.llnl.gov procs=4 ..."
- * NOTE: Most of these modules are very much system specific. Built on RedHat2.4
- * NOTE: While not currently used by SLURM, this code can also get a nodes OS name 
- *       and CPU speed. See code ifdef'ed out via USE_OS_NAME and USE_CPU_SPEED
+/*****************************************************************************\
+ *  get_mach_stat.c - Get the status of the current machine 
  *
- * Author: Moe Jette, jette@llnl.gov
- */
+ *  NOTE: Some of these functions are system dependent. Built on RedHat2.4
+ *  NOTE: While not currently used by SLURM, this code can also get a nodes
+ *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and 
+ *       USE_CPU_SPEED
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by moe jette <jette1@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -24,10 +45,13 @@
 
 #include <src/common/hostlist.h>
 #include <src/common/log.h>
+#include <src/common/parse_spec.h>
+#include <src/slurmctld/slurmctld.h>
 #include <src/slurmd/get_mach_stat.h>
 
-#define MAX_NAME_LEN 1024
-#define TMP_FS "/tmp"
+#define BUF_SIZE 1024
+
+char *get_tmp_fs_name (void);
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -208,21 +232,87 @@ get_tmp_disk(uint32_t *tmp_disk)
 	long   total_size;
 	int error_code;
 	float page_size;
+	static char *tmp_fs_name = NULL;
 
 	error_code = 0;
 	*tmp_disk = 0;
 	total_size = 0;
 	page_size = (getpagesize() / 1048576.0); /* Megabytes per page */
 
-	if (statfs(TMP_FS, &stat_buf) == 0) {
+	if (tmp_fs_name == NULL)
+		tmp_fs_name = get_tmp_fs_name ();
+
+	if (statfs(tmp_fs_name, &stat_buf) == 0) {
 		total_size = (long)stat_buf.f_blocks;
 	}
 	else if (errno != ENOENT) {
 		error_code = errno;
 		error ("get_tmp_disk: error %d executing statfs on %s\n", 
-			errno, TMP_FS);
+			errno, tmp_fs_name);
 	}
 
 	*tmp_disk += (long)(total_size * page_size);
 	return error_code;
+}
+
+
+/* Get temporary file system's name from TmpFS in config file */
+char *
+get_tmp_fs_name (void)
+{
+	FILE *slurm_spec_file;
+	char in_line[BUF_SIZE];	/* input line */
+	char *dir = NULL;
+	int i, j, error_code, line_num = 0;
+
+        slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	if (slurm_spec_file == NULL) {
+		error ( "state_save_location error %d opening file %s: %m",
+			errno, SLURM_CONFIG_FILE);
+		return NULL ;
+	}
+
+	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		line_num++;
+		if (strlen (in_line) >= (BUF_SIZE - 1)) {
+			error ("state_save_location line %d, of input file %s too long\n",
+				 line_num, SLURM_CONFIG_FILE);
+			fclose (slurm_spec_file);
+			return NULL;
+		}		
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		for (i = 0; i < BUF_SIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
+				for (j = i; j < BUF_SIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}	
+				continue;
+			}	
+			in_line[i] = (char) NULL;
+			break;
+		}		
+
+		/* parse what is left */
+		/* overall slurm configuration parameters */
+		error_code = slurm_parser(in_line,
+			"TmpFS=", 's', &dir, 
+			"END");
+		if (error_code) {
+			error ("error parsing configuration file input line %d", line_num);
+			fclose (slurm_spec_file);
+			return NULL;
+		}		
+
+		if ( dir ) {
+			fclose (slurm_spec_file);
+			return dir;	
+		}
+	}			
+	return DEFAULT_TMP_FS;
 }
