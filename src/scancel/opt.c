@@ -456,14 +456,6 @@ opt_verify(void)
 		}
 	}
 
-	if ((opt.user_id) &&
-	    (opt.user_id != getuid()) &&
-	    (opt.user_id != geteuid())) {
-		error ("You are not authorized to delete jobs of user %u",
-			opt.user_id);
-		exit (1);
-	}
-
 	if ((opt.job_name == NULL) &&
 	    (opt.partition == NULL) &&
 	    (opt.state == JOB_END) &&
