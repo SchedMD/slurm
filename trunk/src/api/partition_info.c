@@ -21,6 +21,7 @@
 
 #include "slurmlib.h"
 #include "pack.h"
+#include "bits_bytes.h"
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -28,7 +29,7 @@ int
 main (int argc, char *argv[]) 
 {
 	static time_t last_update_time = (time_t) NULL;
-	int error_code, i;
+	int error_code, i, j;
 	struct part_buffer *part_buffer_ptr = NULL;
 	struct part_table *part_ptr;
 
@@ -49,13 +50,23 @@ main (int argc, char *argv[])
 				part_ptr[i].max_nodes, part_ptr[i].total_nodes);
 			printf ("TotalCPUs=%u Key=%u\n", 
 				part_ptr[i].total_cpus, part_ptr[i].key);
-			printf ("     Default=%u ", 
+			printf ("   Default=%u ", 
 				part_ptr[i].default_part);
 			printf ("Shared=%u StateUp=%u ", 
 				part_ptr[i].shared, part_ptr[i].state_up);
 			printf ("Nodes=%s AllowGroups=%s\n", 
 				part_ptr[i].nodes, part_ptr[i].allow_groups);
-	}			
+			printf ("   NodeIndecies=");
+			for (j = 0; part_ptr[i].node_inx; j++) {
+				if (j > 0)
+					printf(",%d", part_ptr[i].node_inx[j]);
+				else
+					printf("%d", part_ptr[i].node_inx[j]);
+				if (part_ptr[i].node_inx[j] == -1)
+					break;
+			}
+			printf("\n\n");
+	}
 	slurm_free_part_info (part_buffer_ptr);
 	exit (0);
 }
@@ -69,12 +80,20 @@ main (int argc, char *argv[])
 void
 slurm_free_part_info (struct part_buffer *part_buffer_ptr)
 {
+	int i;
+
 	if (part_buffer_ptr == NULL)
 		return;
 	if (part_buffer_ptr->raw_buffer_ptr)
 		free (part_buffer_ptr->raw_buffer_ptr);
-	if (part_buffer_ptr->part_table_ptr)
+	if (part_buffer_ptr->part_table_ptr) {
+		for (i = 0; i < part_buffer_ptr->part_count; i++) {
+			if (part_buffer_ptr->part_table_ptr[i].node_inx == NULL)
+				continue;
+			free (part_buffer_ptr->part_table_ptr[i].node_inx);
+		}
 		free (part_buffer_ptr->part_table_ptr);
+	}
 }
 
 
@@ -95,7 +114,7 @@ int
 slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 {
 	int buffer_offset, buffer_size, in_size, i, sockfd;
-	char request_msg[64], *buffer;
+	char request_msg[64], *buffer, *node_inx_str;
 	void *buf_ptr;
 	struct sockaddr_in serv_addr;
 	uint16_t uint16_tmp;
@@ -172,21 +191,33 @@ slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr)
 		unpack32  (&part[i].max_time, &buf_ptr, &buffer_size);
 		unpack32  (&part[i].max_nodes, &buf_ptr, &buffer_size);
 		unpack32  (&part[i].total_nodes, &buf_ptr, &buffer_size);
+
 		unpack32  (&part[i].total_cpus, &buf_ptr, &buffer_size);
 		unpack16  (&part[i].default_part, &buf_ptr, &buffer_size);
 		unpack16  (&part[i].key, &buf_ptr, &buffer_size);
 		unpack16  (&part[i].shared, &buf_ptr, &buffer_size);
+
 		unpack16  (&part[i].state_up, &buf_ptr, &buffer_size);
 		unpackstr_ptr (&part[i].allow_groups, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
 		unpackstr_ptr (&part[i].nodes, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&node_inx_str, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		part[i].node_inx = bitfmt2int(node_inx_str);
 	}
 
 	*part_buffer_ptr = malloc (sizeof (struct part_buffer));
 	if (*part_buffer_ptr == NULL) {
 		free (buffer);
-		free (part);
+		if (part) {
+			int j;
+			for (j = 0; j < i; j++) {
+				if (part[j].node_inx)
+					free (part[j].node_inx);
+			}
+			free (part);
+		}
 		return ENOMEM;
 	}
 	(*part_buffer_ptr)->last_update = (time_t) uint32_time;

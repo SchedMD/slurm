@@ -23,6 +23,7 @@
 
 #include "pack.h"
 #include "slurmlib.h"
+#include "bits_bytes.h"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -30,7 +31,7 @@ int
 main (int argc, char *argv[]) 
 {
 	static time_t last_update_time = (time_t) NULL;
-	int error_code, i;
+	int error_code, i, j;
 	struct job_buffer *job_buffer_ptr = NULL;
 	struct job_table *job_ptr;
 
@@ -52,11 +53,22 @@ main (int argc, char *argv[])
 			printf ("Priority=%u Partition=%s\n", 
 				job_ptr[i].priority, job_ptr[i].partition);
 
-			printf ("   Name=%s Nodes=%s ", 
+			printf ("   Name=%s NodeList=%s ", 
 				job_ptr[i].name, job_ptr[i].nodes);
 			printf ("StartTime=%x EndTime=%x\n", 
 				(uint32_t) job_ptr[i].start_time, 
 				(uint32_t) job_ptr[i].end_time);
+
+			printf ("   NodeListIndecies=");
+			for (j = 0; job_ptr[i].node_inx; j++) {
+				if (j > 0)
+					printf(",%d", job_ptr[i].node_inx[j]);
+				else
+					printf("%d", job_ptr[i].node_inx[j]);
+				if (job_ptr[i].node_inx[j] == -1)
+					break;
+			}
+			printf("\n");
 
 			printf ("   ReqProcs=%u ReqNodes=%u ",
 				job_ptr[i].num_procs, job_ptr[i].num_nodes);
@@ -65,13 +77,23 @@ main (int argc, char *argv[])
 
 			printf ("   MinProcs=%u MinMemory=%u ",
 				job_ptr[i].min_procs, job_ptr[i].min_memory);
-			printf ("MinTmpDisk=%u TotalProcs=%u\n",
-				job_ptr[i].min_tmp_disk, job_ptr[i].total_procs);
+			printf ("MinTmpDisk=%u\n",
+				job_ptr[i].min_tmp_disk);
 
-			printf ("   ReqNodes=%s Features=%s ",
+			printf ("   ReqNodeList=%s Features=%s ",
 				job_ptr[i].req_nodes, job_ptr[i].features);
-			printf ("JobScript=%s\n\n",
+			printf ("JobScript=%s\n",
 				job_ptr[i].job_script);
+			printf ("   ReqNodeListIndecies=");
+			for (j = 0; job_ptr[i].req_node_inx; j++) {
+				if (j > 0)
+					printf(",%d", job_ptr[i].req_node_inx[j]);
+				else
+					printf("%d", job_ptr[i].req_node_inx[j]);
+				if (job_ptr[i].req_node_inx[j] == -1)
+					break;
+			}
+			printf("\n\n");
 
 	}			
 	slurm_free_job_info (job_buffer_ptr);
@@ -87,12 +109,21 @@ main (int argc, char *argv[])
 void
 slurm_free_job_info (struct job_buffer *job_buffer_ptr)
 {
+	int i;
+
 	if (job_buffer_ptr == NULL)
 		return;
 	if (job_buffer_ptr->raw_buffer_ptr)
 		free (job_buffer_ptr->raw_buffer_ptr);
-	if (job_buffer_ptr->job_table_ptr)
+	if (job_buffer_ptr->job_table_ptr) {
+		for (i = 0; i < job_buffer_ptr->job_count; i++) {
+			if (job_buffer_ptr->job_table_ptr[i].node_inx)
+				free (job_buffer_ptr->job_table_ptr[i].node_inx);
+			if (job_buffer_ptr->job_table_ptr[i].req_node_inx)
+				free (job_buffer_ptr->job_table_ptr[i].req_node_inx);
+		}
 		free (job_buffer_ptr->job_table_ptr);
+	}
 }
 
 
@@ -112,7 +143,7 @@ int
 slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 {
 	int buffer_offset, buffer_size, in_size, i, sockfd;
-	char request_msg[64], *buffer;
+	char request_msg[64], *buffer,*node_inx_str;
 	void *buf_ptr;
 	struct sockaddr_in serv_addr;
 	uint16_t uint16_tmp;
@@ -202,6 +233,9 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 			&buf_ptr, &buffer_size);
 		unpackstr_ptr (&job[i].name, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&node_inx_str, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		job[i].node_inx = bitfmt2int(node_inx_str);
 
 		unpack32  (&job[i].num_procs, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].num_nodes, &buf_ptr, &buffer_size);
@@ -211,10 +245,12 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 		unpack32  (&job[i].min_procs, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].min_memory, &buf_ptr, &buffer_size);
 		unpack32  (&job[i].min_tmp_disk, &buf_ptr, &buffer_size);
-		unpack32  (&job[i].total_procs, &buf_ptr, &buffer_size);
 
 		unpackstr_ptr (&job[i].req_nodes, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&node_inx_str, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		job[i].req_node_inx = bitfmt2int(node_inx_str);
 		unpackstr_ptr (&job[i].features, &uint16_tmp, 
 			&buf_ptr, &buffer_size);
 		unpackstr_ptr (&job[i].job_script, &uint16_tmp, 
@@ -224,7 +260,14 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 	*job_buffer_ptr = malloc (sizeof (struct job_buffer));
 	if (*job_buffer_ptr == NULL) {
 		free (buffer);
-		free (job);
+		if (job) {
+			int j;
+			for (j = 0; j < i; j++) {
+				if (job[j].node_inx)
+					free (job[j].node_inx);
+			}
+			free (job);
+		}
 		return ENOMEM;
 	}
 	(*job_buffer_ptr)->last_update = (time_t) uint32_time;
