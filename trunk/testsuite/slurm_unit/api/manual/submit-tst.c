@@ -19,7 +19,6 @@ main (int argc, char *argv[])
 	job_mesg. contiguous = 1; 
 	job_mesg. groups = ("students,employee");
 	job_mesg. name = ("job01");
-	job_mesg. partition_key = NULL;
 	job_mesg. min_procs = 4;
 	job_mesg. min_memory = 1024;
 	job_mesg. min_tmp_disk = 2034;
@@ -61,7 +60,6 @@ main (int argc, char *argv[])
 		job_mesg. contiguous = 1; 
 		job_mesg. groups = ("students,employee");
 		job_mesg. name = ("job02+");
-		job_mesg. partition_key = NULL;
 		job_mesg. min_procs = 4;
 		job_mesg. min_memory = 1024 + i;
 		job_mesg. min_tmp_disk = 2034 + i;

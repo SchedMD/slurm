@@ -34,7 +34,6 @@ main( int argc, char* argv[])
 	job_mesg. contiguous = get_tf_resp( "contiguous", 0 );
 	job_mesg. groups = get_string_resp( "groups", "students,employee\0");
 	job_mesg. name = get_string_resp( "job_name", "job01\0");
-	job_mesg. partition_key = get_string_resp( "partition_key", "1234" );
 	job_mesg. min_procs = get_int_resp( "min_procs", 4 );
 	job_mesg. min_memory = get_int_resp( "min_memory", 1024);
 	job_mesg. min_tmp_disk = get_int_resp( "min_tmp_disk", 2034 );
