@@ -16,7 +16,7 @@ int main ( int argc , char* argv[] )
 	gids[1] = 9999 ;
 	
 	credential . node_list = "TESTING" ;
-	slurm_set_addr_char ( & slurmd_addr , 7002 , "localhost" ) ;
+	slurm_set_addr_char ( & slurmd_addr , 7003 , "localhost" ) ;
 
 	request_msg . msg_type = REQUEST_LAUNCH_TASKS ;
 	request_msg . data = & launch_tasks_msg ;

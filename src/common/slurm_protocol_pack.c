@@ -157,6 +157,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case REQUEST_LAUNCH_TASKS :
 			pack_launch_tasks_request_msg ( ( launch_tasks_request_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
+			break ;
 		case RESPONSE_LAUNCH_TASKS :
 			pack_launch_tasks_response_msg ( ( launch_tasks_response_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
@@ -291,6 +292,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_LAUNCH_TASKS :
 			unpack_launch_tasks_request_msg ( ( launch_tasks_request_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
+			break ;
 		case RESPONSE_LAUNCH_TASKS :
 			unpack_launch_tasks_response_msg ( ( launch_tasks_response_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
