@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
  -- If slurmd can't respond to ping (e.g. paging is keeping it from 
     responding in a timely fashion) then send a registration RPC
     to slurmctld
+ -- Add "slurm_" prefix to slurm's hostlist_ function man pages.
 
 * Changes in SLURM 0.3.1
 ========================
