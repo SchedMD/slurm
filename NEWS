@@ -4,28 +4,29 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.3.0-pre1
 =============================
  -- Fixes for reported problems:
-   - slurm/252: Slurmctld pings srun and kills defunct jobs. Remove 
-     slurm_tv_clean deamon, which has been rendered defunct
-   - slurm/253: Retry connect failure with new port from slurmd/io.c
-   - slurm/317: Operate properly when no default partition is set
-   - slurm/319: Socket errors on multiple simultaneous job launches
-     fixed
-   - slurm/321: Fix slurmd shared memory synchronization error
- -- New scontrol command and RPC added to delete a partition
- -- Srun has new options --uid and--gid
+   - slurm/252: "jobs left orphaned when using TotalView:" SLURM controller 
+     now pings srun and kills defunct jobs.
+   - slurm/253: "srun fails to accept new IO connection." 
+   - slurm/317: "Lack of default partition in config file causes errors." 
+   - slurm/319: Socket errors on multiple simultaneous job launches fixed
+   - slurm/321: slurmd shared memory synchronization error.
+ -- Removed slurm_tv_clean daemon which has been obsoleted by slurm/252 fix.
+ -- New scontrol command ``delete'' and RPC added to delete a partition
  -- Squeue can now print and sort by group id/name
- -- Scancel has new option --quiet to not report an error if a job 
+ -- Scancel has new option -q,--quiet to not report an error if a job 
     is already complete 
- -- Add the excluded node list to job information reported
+ -- Add the excluded node list to job information reported.
  -- RPC version mis-match now properly handled
- -- Dump job completion information to a text file via plugin
- -- Scontrol was losing a digit in job priority specification
+ -- New job completion plugin interface added for logging completed jobs.
+ -- Fixed lost digit in scontrol job priority specification.
  -- Remove restriction in the number of consecutive node sets (no longer
     needed after DPCS upgrade)
- -- Incomplete state save write now properly handled
- -- Slurmd setrlimit error message changed for greater clarity
- -- Slurmctld performs load-leveling across shared nodes
- -- New user function added slurm_get_end_time for user jobs
+ -- Incomplete state save write now properly handled.
+ -- Modified slurmd setrlimit error for greater clarity.
+ -- Slurmctld performs load-leveling across shared nodes.
+ -- New user function added slurm_get_end_time for user jobs.
+ -- Always compile srun with stabs debug section when TotalView support 
+    is requested.
 
 * Changes in SLURM 0.2.21
 =========================
