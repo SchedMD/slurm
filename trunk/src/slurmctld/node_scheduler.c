@@ -1311,7 +1311,6 @@ extern void re_kill_job(struct job_record *job_ptr)
 	agent_args->msg_type = REQUEST_KILL_JOB;
 	agent_args->retry = 0;
 	kill_job = xmalloc(sizeof(kill_job_msg_t));
-	last_node_update = time(NULL);
 	kill_job->job_id = job_ptr->job_id;
 	kill_job->job_uid = job_ptr->user_id;
 
@@ -1326,6 +1325,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			if ((--job_ptr->node_cnt) == 0) {
+				last_node_update = time(NULL);
 				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 			}
