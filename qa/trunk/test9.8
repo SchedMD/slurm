@@ -79,6 +79,9 @@ exec $scancel --quiet --user $user_name
 exec $bin_sleep 10
 spawn $squeue --noheader --user $user_name
 expect {
+	-re "$user_name *CG" {
+		exp_continue
+	}
 	-re "$user_name" {
 		send_user "\nFAILURE: jobs not all gone\n"
 		set exit_code 1
