@@ -26,7 +26,8 @@
 #include "nodelist.h"
 
 #include <src/common/slurm_protocol_api.h>
-void slurm_print_job_table (struct job_table * job_ptr );
+void slurm_print_job_table ( job_table_t * job_ptr );
+void slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr ) ;
 int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size ) ;
 
 #if DEBUG_MODULE
@@ -35,23 +36,23 @@ int
 main (int argc, char *argv[]) 
 {
 	static time_t last_update_time = (time_t) NULL;
-	int error_code, i, j;
-	struct job_buffer *job_buffer_ptr = NULL;
-	struct job_table *job_ptr = NULL;
+	int error_code;
+	job_info_msg_t ** job_info_msg_ptr = NULL;
+	job_table_t *job_ptr = NULL;
 
-	error_code = slurm_load_job (last_update_time, &job_buffer_ptr);
+	error_code = slurm_load_job (last_update_time, job_info_msg_ptr);
 	if (error_code) {
 		printf ("slurm_load_job error %d\n", error_code);
 		exit (error_code);
 	}
 
 	printf("Jobs updated at %lx, record count %d\n",
-		job_buffer_ptr->last_update, job_buffer_ptr->job_count);
-	job_ptr = job_buffer_ptr->job_table_ptr;
+		(*job_info_msg_ptr) ->last_update, (*job_info_msg_ptr)->record_count);
+	job_ptr = (*job_info_msg_ptr)->job_array;
 
-	slurm_print_job_info ( job_ptr ) ;
+	slurm_print_job_info_msg ( (*job_info_msg_ptr) ) ;
 
-	slurm_free_job_info (job_buffer_ptr);
+	slurm_free_job_info ( (*job_info_msg_ptr) ) ;
 	exit (0);
 }
 #endif
@@ -68,7 +69,7 @@ slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr )
 }
 
 void
-slurm_print_job_table (struct job_table * job_ptr )
+slurm_print_job_table (job_table_t * job_ptr )
 {
 	int j;
 	printf ("JobId=%u UserId=%u ", job_ptr->job_id, job_ptr->user_id);
@@ -110,27 +111,6 @@ slurm_print_job_table (struct job_table * job_ptr )
  * slurm_free_job_info - free the job information buffer (if allocated)
  * NOTE: buffer is loaded by load_job.
  */
-void
-slurm_free_job_table (job_table_t * job)
-{
-}
-
-void
-slurm_free_job_info (job_info_msg_t * job_info_ptr)
-{
-	int i;
-	if (job_info_ptr)
-	{
-		if (job_info_ptr -> job_array ) {
-			for (i = 0; i < job_info_ptr-> record_count; i++) {
-				slurm_free_job_table ( & (job_info_ptr -> job_array[i] ) ) ;
-			}
-		}
-		free (job_info_ptr);
-	}
-}
-
-
 /*
  * slurm_load_job - load the supplied job information buffer for use by info 
  *	gathering APIs if job records have changed since the time specified. 
@@ -144,7 +124,7 @@ slurm_free_job_info (job_info_msg_t * job_info_ptr)
  * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
  */
 int
-slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
+slurm_load_job (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 {
         int msg_size ;
         int rc ;
@@ -152,6 +132,7 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
         slurm_msg_t request_msg ;
         slurm_msg_t response_msg ;
         last_update_msg_t last_time_msg ;
+	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
@@ -174,10 +155,11 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
 
 	switch ( response_msg . msg_type )
 	{
-		case REQUEST_JOB_INFO:
-        		/** *build_table_ptr = ( build_table_t * ) response_msg . data ; */
+		case RESPONSE_JOB_INFO:
+        		 *job_info_msg_pptr = ( job_info_msg_t * ) response_msg . data ;
 			break ;
 		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
 			break ;
 		default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;

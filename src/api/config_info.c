@@ -74,23 +74,6 @@ void slurm_print_build_info ( build_info_msg_t * build_table_ptr )
 	printf("TMP_FS		= %s\n", build_table_ptr->tmp_fs);
 }
 
-void slurm_free_build_info ( struct build_table * build_ptr )
-{
-	if ( build_ptr == NULL )
-		return ;
-	free ( build_ptr->backup_location ) ;
-	free ( build_ptr->backup_machine ) ;
-	free ( build_ptr->control_daemon ) ;
-	free ( build_ptr->control_machine ) ;
-	free ( build_ptr->epilog ) ;
-	free ( build_ptr->init_program ) ;
-	free ( build_ptr->prolog ) ;
-	free ( build_ptr->server_daemon ) ;
-	free ( build_ptr->slurm_conf ) ;
-	free ( build_ptr->tmp_fs ) ;
-	free ( build_ptr ) ;
-}
-
 int
 slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
 {
