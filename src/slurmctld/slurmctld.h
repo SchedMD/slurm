@@ -890,6 +890,13 @@ extern void set_node_down (char *name);
 extern void set_slurmd_addr (void);
 
 /*
+ * Tell the backup_controller to relinquish control, primary control_machine 
+ *	has resumed operation
+ * RET 0 or an error code 
+ */
+extern int shutdown_backup_controller(void);
+
+/*
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
  * IN signal - signal to send
@@ -936,6 +943,11 @@ extern int sync_job_files(void);
  *	last_job_update - time of last job table update
  */
 extern int update_job (job_desc_msg_t * job_specs, uid_t uid);
+
+
+/* Reset slurmctld logging based upon configuration parameters
+ * uses common slurmctld_conf data structure */
+extern void update_logging(void);
 
 /* 
  * update_node - update the configuration data for one or more nodes

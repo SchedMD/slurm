@@ -123,7 +123,6 @@ inline static int   _report_locks_set(void);
 static void         _run_backup(void);
 inline static void  _save_all_state(void);
 static void *       _service_connection(void *arg);
-static int          _shutdown_backup_controller(void);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
@@ -153,7 +152,6 @@ static void         _init_pidfile(void);
 inline static int   _slurmctld_shutdown(void);
 static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
-inline static void  _update_logging(void);
 inline static void  _usage(char *prog_name);
 
 typedef struct connection_arg {
@@ -190,11 +188,14 @@ int main(int argc, char *argv[])
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_NOFILE, &rlim);
 	}
+	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
+		rlim.rlim_cur = RLIM_INFINITY;
+		setrlimit(RLIMIT_CORE, &rlim);
+	}
 
 	if ((error_code = read_slurm_conf(recover)))
 		fatal("read_slurm_conf error %d reading %s",
 		      error_code, SLURM_CONFIG_FILE);
-	_update_logging();
 	
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
@@ -252,7 +253,7 @@ int main(int argc, char *argv[])
 		else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
 			  == 0))
-			(void) _shutdown_backup_controller();
+			debug3("Running primary controller");
 		else {
 			error
 			    ("this host (%s) not valid controller (%s or %s)",
@@ -356,7 +357,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 				error("read_slurm_conf error %s",
 				      slurm_strerror(error_code));
 			else {
-				_update_logging();
+				update_logging();
 				_update_cred_key();
 			}
 			break;
@@ -1733,7 +1734,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		unlock_slurmctld(config_write_lock);
 	}
 	if (error_code == SLURM_SUCCESS) {  /* Stuff to do after unlock */
-		_update_logging();
+		update_logging();
 		_update_cred_key();
 		if (daemonize) {
 			if (chdir(slurmctld_conf.state_save_location))
@@ -2427,11 +2428,12 @@ static int _ping_controller(void)
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
-/* Tell the backup_controller to relinquish control, primary control_machine 
+/*
+ * Tell the backup_controller to relinquish control, primary control_machine 
  *	has resumed operation
  * RET 0 or an error code 
  */
-static int _shutdown_backup_controller(void)
+int shutdown_backup_controller(void)
 {
 	int rc;
 	int msg_size;
@@ -2452,7 +2454,7 @@ static int _shutdown_backup_controller(void)
 	if ((sockfd = slurm_open_msg_conn(&secondary_addr))
 	    == SLURM_SOCKET_ERROR) {
 		error
-		    ("_shutdown_backup_controller/slurm_open_msg_conn: %m");
+		    ("shutdown_backup_controller/slurm_open_msg_conn: %m");
 		return SLURM_SOCKET_ERROR;
 	}
 
@@ -2463,7 +2465,7 @@ static int _shutdown_backup_controller(void)
 	if ((rc = slurm_send_node_msg(sockfd, &request_msg))
 	    == SLURM_SOCKET_ERROR) {
 		error
-		    ("_shutdown_backup_controller/slurm_send_node_msg error: %m");
+		    ("shutdown_backup_controller/slurm_send_node_msg error: %m");
 		return SLURM_SOCKET_ERROR;
 	}
 
@@ -2471,7 +2473,7 @@ static int _shutdown_backup_controller(void)
 	if ((msg_size = slurm_receive_msg(sockfd, &response_msg))
 	    == SLURM_SOCKET_ERROR) {
 		error
-		    ("_shutdown_backup_controller/slurm_receive_msg error: %m");
+		    ("shutdown_backup_controller/slurm_receive_msg error: %m");
 		return SLURM_SOCKET_ERROR;
 	}
 
@@ -2479,7 +2481,7 @@ static int _shutdown_backup_controller(void)
 	if ((rc = slurm_shutdown_msg_conn(sockfd))
 	    == SLURM_SOCKET_ERROR) {
 		error
-		    ("_shutdown_backup_controller/slurm_shutdown_msg_conn error: %m");
+		    ("shutdown_backup_controller/slurm_shutdown_msg_conn error: %m");
 		return SLURM_SOCKET_ERROR;
 	}
 
@@ -2493,7 +2495,7 @@ static int _shutdown_backup_controller(void)
 		slurm_free_return_code_msg(slurm_rc_msg);
 		if (rc) {
 			error
-			    ("_shutdown_backup_controller/response error %d",
+			    ("shutdown_backup_controller/response error %d",
 			     rc);
 			return SLURM_PROTOCOL_ERROR;
 		} else
@@ -2501,7 +2503,7 @@ static int _shutdown_backup_controller(void)
 		break;
 	default:
 		error
-		    ("_shutdown_backup_controller/unexpected message type %d",
+		    ("shutdown_backup_controller/unexpected message type %d",
 		     response_msg.msg_type);
 		return SLURM_PROTOCOL_ERROR;
 		break;
@@ -2523,8 +2525,9 @@ static void _update_cred_key(void)
 				  slurmctld_conf.job_credential_private_key);
 }
 
-/* Reset slurmctld logging based upon configuration parameters */
-static void _update_logging(void) 
+/* Reset slurmctld logging based upon configuration parameters
+ * uses common slurmctld_conf data structure */
+void update_logging(void) 
 {
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
