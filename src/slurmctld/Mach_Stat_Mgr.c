@@ -24,7 +24,7 @@ struct Node_Record  *Duplicate_Record(char *name);
 int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
-	int *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
+	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
 	enum Node_State *NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse);
 void	Pool_String_To_Value (char *pool, unsigned int *Pool_Value, int *Error_Code);
 void 	Pool_Value_To_String(unsigned int pool, char *Pool_String, int Pool_String_size, char *node_name);
@@ -133,7 +133,7 @@ struct Node_Record *Duplicate_Record(char *name) {
 int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
-	int *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
+	long *My_TmpDisk, int *Set_TmpDisk, unsigned int *My_Pool, int *Set_Pool, 
 	enum Node_State *My_NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse) {
     char Scratch[BUF_SIZE];
     char *str_ptr1, *str_ptr2;
@@ -203,7 +203,7 @@ int Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
 	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
-	*My_TmpDisk = (int) strtol(str_ptr2, (char **)NULL, 10);
+	*My_TmpDisk = strtol(str_ptr2, (char **)NULL, 10);
 	*Set_TmpDisk = 1;
     } /* if */
 
@@ -326,7 +326,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
     float My_Speed;
     int My_RealMemory;
     int My_VirtualMemory;
-    int My_TmpDisk;
+    long My_TmpDisk;
     unsigned int My_Pool;
     enum Node_State My_NodeState;
     time_t My_LastResponse;
@@ -351,7 +351,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
     Default_Record.Speed = 1.0;
     Default_Record.RealMemory = 0;
     Default_Record.VirtualMemory = 0;
-    Default_Record.TmpDisk = 0;
+    Default_Record.TmpDisk = 0L;
     Default_Record.Pool = 0;
     Default_Record.NodeState= STATE_UNKNOWN;
     Default_Record.LastResponse = 0;
@@ -472,7 +472,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 /*    strftime(Out_Time, sizeof(Out_Time), "%a%d%b@%H:%M:%S", Node_Time); */
     sprintf(Out_Time, "%ld", Node_Record_Point->LastResponse);
     if (sprintf(Node_Record, 
-	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%d Pool=%s State=%s LastResponse=%s",
+	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Pool=%s State=%s LastResponse=%s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
 	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Pool,
@@ -496,7 +496,7 @@ int Update_Node_Spec_Conf (char *Specification) {
     float My_Speed;
     int My_RealMemory;
     int My_VirtualMemory;
-    int My_TmpDisk;
+    long My_TmpDisk;
     unsigned int My_Pool;
     enum Node_State My_State;
     time_t My_LastResponse;
@@ -547,7 +547,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 	Node_Record_Point->Speed = 1.0;
 	Node_Record_Point->RealMemory = 0;
 	Node_Record_Point->VirtualMemory = 0;
-	Node_Record_Point->TmpDisk = 0;
+	Node_Record_Point->TmpDisk = 0L;
 	Node_Record_Point->Pool = 1;
 	Node_Record_Point->NodeState = STATE_UNKNOWN;
 	Node_Record_Point->LastResponse = 0;
@@ -590,7 +590,7 @@ int Validate_Node_Spec (char *Specification) {
     float My_Speed;
     int My_RealMemory;
     int My_VirtualMemory;
-    int My_TmpDisk;
+    long My_TmpDisk;
     unsigned My_Pool;
     enum Node_State My_NodeState;
     time_t My_LastResponse;
@@ -679,7 +679,7 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
 	    strcpy(Out_Buf, "\n"); 
 	} /* else */
         if (fprintf(Node_Spec_File, 
-	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%d Pool=%s %s",
+	  "Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld Pool=%s %s",
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
 	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Line, Out_Buf) <= 0) {

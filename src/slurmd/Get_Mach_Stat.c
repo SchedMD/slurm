@@ -1,7 +1,7 @@
 /*
  * Get_Mach_Stat - Get the status of the current machine and return it in the standard 
  *	node configuration format "Name=linux.llnl.gov CPUs=4 ..."
- * NOTE: The following modules are system specific: Get_CPUs, Get_Speed, Get_Memory, Get_Disk
+ * NOTE: Most of these modules are very much system specific. Built on RedHat2.4
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -13,6 +13,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <sys/vfs.h>
 
 #include "Mach_Stat_Mgr.h"
 
@@ -23,7 +24,7 @@ int Get_OS_Name(char *OS_Name);
 int Get_Mach_Name(char *Node_Name);
 int Get_Memory(int *RealMemory, int *VirtualMemory);
 int Get_Speed(float *Speed);
-int Get_TmpDisk(int *TmpDisk);
+int Get_TmpDisk(long *TmpDisk);
 
 #ifdef DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -40,7 +41,7 @@ main(int argc, char * argv[]) {
     Error_Code += Get_Memory(&This_Node.RealMemory, &This_Node.VirtualMemory);
     Error_Code += Get_TmpDisk(&This_Node.TmpDisk);
 
-    printf("Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%d\n", 
+    printf("Name=%s OS=%s CPUs=%d Speed=%f RealMemory=%d VirtualMemory=%d TmpDisk=%ld\n", 
 	This_Node.Name, This_Node.OS, This_Node.CPUs, This_Node.Speed, This_Node.RealMemory, 
 	This_Node.VirtualMemory, This_Node.TmpDisk);
     if (Error_Code != 0) printf("Get_Mach_Stat Errors encountered, Error_Code=%d\n", Error_Code);
@@ -54,7 +55,32 @@ main(int argc, char * argv[]) {
  *         return code - 0 if no error, otherwise errno
  */
 int Get_CPUs(int *CPUs) {
+    char buffer[128];
+    FILE *CPU_Info_File;
+    char *buf_ptr;
+    int My_CPU_Tally;
+
     *CPUs = 1;
+    CPU_Info_File = fopen("/proc/stat", "r");
+    if (CPU_Info_File == NULL) {
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Get_CPUs: error %d opening /proc/stat\n", errno);
+#else
+	syslog(LOG_ERR, "Get_CPUs: error %d opening /proc/stat\n", errno);
+#endif
+	return errno;
+    } /* if */
+
+    My_CPU_Tally = 0;
+    while (fgets(buffer, sizeof(buffer), CPU_Info_File) != NULL) {
+	if ((buf_ptr=strstr(buffer, "cpu")) != NULL) {
+	    buf_ptr += 3;
+	    if ((buf_ptr[0] >= '0') && (buf_ptr[0] <= '9')) My_CPU_Tally++;
+	} /* if */
+    } /* while */
+    if (My_CPU_Tally > *CPUs) *CPUs=My_CPU_Tally;
+
+    fclose(CPU_Info_File);
     return 0;
 }
 
@@ -207,16 +233,53 @@ int Get_Speed(float *Speed) {
 } /* Get_Speed */
 
 /*
- * Get_TmpDisk - Return the total size of /var/tmp and /tmp on this system 
+ * Get_TmpDisk - Return the total size of /var/tmp and /tmp file systems on 
+ *    this system (NOTE: Goal is to only counts if separate file system, but 
+ *    without distinct file system IDs, this is not assured)
  * Input: TmpDisk - buffer for the disk space size
- * Output: TmpDisk - filled in with disk space size in MB, "1" if error
+ * Output: TmpDisk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
-int Get_TmpDisk(int *TmpDisk) {
-    size_t Page_Size;
+int Get_TmpDisk(long *TmpDisk) {
+    struct statfs Stat_Buf;
+    char  *FS_Name[] = {"/", "/tmp", "/var", "/var/tmp"};
+    fsid_t FS_Fsid[4];
+    long   FS_Size[4];
+    long   Total_Size;
+    int Error_Code, i;
+    float Page_Size;
 
-    *TmpDisk = 1;
-    Page_Size = getpagesize();
-/* Get code from DF command */
-    return 0;
+    Error_Code = 0;
+    *TmpDisk = 0;
+    Total_Size = 0;
+    Page_Size = (getpagesize() / 1048576.0); /* Megabytes per page */
+
+    for (i=0; i<4; i++) {
+	if (statfs(FS_Name[i], &Stat_Buf) == 0) {
+	    FS_Fsid[i] = Stat_Buf.f_fsid;
+	    FS_Size[i] = (long)Stat_Buf.f_blocks;
+	} else if (errno == ENOENT) {
+	    FS_Size[i] = 0;
+	} else {
+	    Error_Code = errno;
+#ifdef DEBUG_MODULE
+	    fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, FS_Name[i]);
+#else
+	    syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, FS_Name[i]);
+#endif
+	} /* else */
+    } /* for */
+
+    /* Determine if /tmp is distinct file system, comparing FS_Fsid would be best if it worked */
+    if (FS_Size[0] != FS_Size[1]) {
+	Total_Size += FS_Size[1];
+    } /* if */
+
+    /* Determine if /var/tmp is distinct file system, comparing FS_Fsid would be best if it worked */
+    if ((FS_Size[1] != FS_Size[3]) && (FS_Size[2] != FS_Size[3])) {
+	Total_Size += FS_Size[3];
+    } /* if */
+
+    *TmpDisk += (long)(Total_Size * Page_Size);
+    return Error_Code;
 } /* Get_TmpDisk */
