@@ -360,8 +360,8 @@ static void *_wdog(void *args)
 			case DSH_ACTIVE:
 				work_done = false;
 				if (thread_ptr[i].end_time <= now) {
-					debug3("thd %d timed out\n", 
-					       thread_ptr[i].thread);
+					debug3("agent thread %lu timed out\n", 
+					       (unsigned long) thread_ptr[i].thread);
 					pthread_kill(thread_ptr[i].thread,
 						     SIGALRM);
 				}
