@@ -102,7 +102,6 @@ struct sinfo_parameters {
 	bool exact_match;
 	bool filtering;
 	bool long_output;
-	bool line_wrap;
 	bool no_header;
 	bool node_field_flag;
 	bool node_flag;
