@@ -20,7 +20,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include "slurm.h"
+#include "slurmctld.h"
 #include "list.h"
 
 #define BUF_SIZE 1024
@@ -30,6 +30,7 @@ int parse_part_spec (char *in_line);
 
 char *backup_controller = NULL;
 char *control_machine = NULL;
+int node_record_count = 0;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -147,6 +148,34 @@ main (int argc, char *argv[]) {
 	exit (0);
 }
 #endif
+
+
+/* 
+ * report_leftover - report any un-parsed (non-whitespace) characters on the
+ * configuration input line.
+ * input: in_line - what is left of the configuration input line.
+ *        line_num - line number of the configuration file.
+ * output: none
+ */
+static void
+report_leftover (char *in_line, int line_num)
+{
+	int bad_index, i;
+
+	bad_index = -1;
+	for (i = 0; i < strlen (in_line); i++) {
+		if (isspace ((int) in_line[i]) || (in_line[i] == '\n'))
+			continue;
+		bad_index = i;
+		break;
+	}
+
+	if (bad_index == -1)
+		return;
+	error ("report_leftover: ignored input on line %d of configuration: %s",
+			line_num, &in_line[bad_index]);
+	return;
+}
 
 
 /*
