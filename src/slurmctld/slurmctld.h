@@ -75,7 +75,7 @@
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
 /* Maximum parallel threads to service incoming RPCs */
-#define MAX_SERVER_THREADS 50
+#define MAX_SERVER_THREADS 60
 
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
 #define	PERIODIC_CHECKPOINT	300
