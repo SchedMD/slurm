@@ -1,8 +1,9 @@
 AUTOMAKE_OPTIONS = foreign
 
-noinst_PROGRAMS = job_mgr-test
+noinst_PROGRAMS = job_mgr-test job_step-test
 
 INCLUDES = -I$(top_srcdir)/src/common
+job_step_test_LDADD = $(top_srcdir)/src/common/libcommon.la
 LDADD   = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/slurmctld/job_scheduler.o \
 		$(top_srcdir)/src/slurmctld/node_scheduler.o \
@@ -13,3 +14,4 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/slurmctld/parse_spec.o  \
 		$(top_srcdir)/src/slurmctld/read_config.o \
 		$(top_srcdir)/src/api/libslurm.la
+
