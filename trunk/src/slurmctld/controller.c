@@ -148,8 +148,8 @@ int main(int argc, char *argv[])
 
 	/* Get SlurmctldPidFile for _kill_old_slurmctld */
 	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf)))
-		fatal("read_slurm_conf_ctl reading %s: %m",
-		      SLURM_CONFIG_FILE);
+		fatal("read_slurm_conf_ctl reading %s: %s",
+		      SLURM_CONFIG_FILE, slurm_strerror(error_code));
 	update_logging();
 	_kill_old_slurmctld();
 
@@ -229,9 +229,9 @@ int main(int argc, char *argv[])
 			(void) _shutdown_backup_controller(SHUTDOWN_WAIT);
 			/* Now recover the remaining state information */
 			if ((error_code = read_slurm_conf(recover))) {
-				error("read_slurm_conf reading %s: %m",
-					SLURM_CONFIG_FILE);
-				abort();
+				fatal("read_slurm_conf reading %s: %s",
+					SLURM_CONFIG_FILE,
+					slurm_strerror(error_code));
 			}
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
