@@ -17,6 +17,7 @@ job_cancel_LDADD = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/api/libslurm.la
 
 LDADD   = $(top_srcdir)/src/common/libcommon.la \
+		$(top_srcdir)/src/slurmctld/agent.o \
 		$(top_srcdir)/src/slurmctld/job_scheduler.o \
 		$(top_srcdir)/src/slurmctld/node_scheduler.o \
 		$(top_srcdir)/src/slurmctld/partition_mgr.o \
