@@ -63,6 +63,7 @@ inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_cancel ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_step_complete ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
@@ -210,6 +211,10 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_CANCEL_JOB_STEP:
 			slurm_rpc_job_step_cancel ( msg ) ;
+			slurm_free_job_step_id_msg ( msg -> data ) ;
+			break;
+		case REQUEST_COMPLETE_JOB_STEP:
+			slurm_rpc_job_step_complete ( msg ) ;
 			slurm_free_job_step_id_msg ( msg -> data ) ;
 			break;
 		case REQUEST_SUBMIT_BATCH_JOB: 
@@ -437,6 +442,59 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 		else
 		{
 			info ("slurm_rpc_job_step_cancel success for %u.%u, time=%ld",
+				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
+				(long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		}
+	}
+
+	schedule();
+}
+
+/* slurm_rpc_job_step_complete - process RPC to note the completion an entire job or 
+ *	an individual job step */
+void 
+slurm_rpc_job_step_complete ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	job_step_id_msg_t * job_step_id_msg = ( job_step_id_msg_t * ) msg-> data ;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	if (job_step_id_msg->job_step_id == NO_VAL) {
+		error_code = job_complete ( job_step_id_msg->job_id );
+
+		/* return result */
+		if (error_code)
+		{
+			info ("slurm_rpc_job_step_complete error %d for %u, time=%ld",
+				error_code, job_step_id_msg->job_id, (long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , error_code );
+		}
+		else
+		{
+			info ("slurm_rpc_job_step_complete success for JobId=%u, time=%ld",
+				job_step_id_msg->job_id, (long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		}
+	}
+	else {
+		error_code = job_step_complete (  job_step_id_msg->job_id , 
+						job_step_id_msg->job_step_id);
+		/* return result */
+		if (error_code)
+		{
+			info ("slurm_rpc_job_step_complete error %d for %u.%u, time=%ld", error_code, 
+				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
+				(long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , error_code );
+		}
+		else
+		{
+			info ("slurm_rpc_job_step_complete success for %u.%u, time=%ld",
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );

@@ -298,6 +298,12 @@ extern int job_cancel (uint32_t job_id);
 /* job_step_cancel - cancel the specified job step */
 extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id);
 
+/* job_complete - note the completion the specified job */
+extern int job_complete (uint32_t job_id);
+
+/* job_step_complete - note the completion the specified job step*/
+extern int job_step_complete (uint32_t job_id, uint32_t job_step_id);
+
 /* job_create - create a job table record for the supplied specifications */
 extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
 	    int will_run, struct job_record **job_rec_ptr);

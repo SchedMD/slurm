@@ -1,6 +1,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 noinst_PROGRAMS = cancel-tst \
+		complete-tst \
 		allocate-tst \
 		job_info-tst \
 		node_info-tst \

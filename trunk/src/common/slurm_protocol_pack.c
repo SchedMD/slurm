@@ -163,6 +163,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 
 		case REQUEST_CANCEL_JOB_STEP :
+		case REQUEST_COMPLETE_JOB_STEP :
 			pack_cancel_job_step_msg ( ( job_step_id_msg_t * ) msg->data , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
@@ -172,6 +173,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_RECONFIGURE :
 		case RESPONSE_CANCEL_JOB_STEP :
+		case RESPONSE_COMPLETE_JOB_STEP :
 		case RESPONSE_SIGNAL_JOB :
 		case RESPONSE_SIGNAL_JOB_STEP :
 			break ;
@@ -297,6 +299,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
+		case REQUEST_COMPLETE_JOB_STEP :
 			unpack_cancel_job_step_msg ( ( job_step_id_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
@@ -306,6 +309,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_RECONFIGURE :
 		case RESPONSE_CANCEL_JOB_STEP :
+		case RESPONSE_COMPLETE_JOB_STEP :
 		case RESPONSE_SIGNAL_JOB :
 		case RESPONSE_SIGNAL_JOB_STEP :
 			break ;

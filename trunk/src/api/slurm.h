@@ -19,6 +19,9 @@ extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_al
 extern int slurm_cancel_job (uint32_t job_id);
 extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);
 
+extern int slurm_complete_job (uint32_t job_id);
+extern int slurm_complete_job_step (uint32_t job_id, uint32_t step_id);
+
 
 /***************************
  * slurm_ctl_conf.c
