@@ -971,7 +971,16 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 				       spec, record)){
 		return SLURM_ERROR;
 	} else {
-		; // now we place the part_id into the env of the script to run 
+		/* now we place the part_id into the env of the script to run */
+		// FIXME, create a fake bgl part id string
+		char* fake_bgl_part_id;
+		/* since the bgl_part_id is a number, (most likely single digit), 
+		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
+		 */
+		fake_bgl_part_id = (char*) xmalloc(sizeof(char)*7);
+		sprintf(fake_bgl_part_id, "LLNL_%d\0", record->bgl_part_id);
+		job_ptr->bgl_part_id = xstrdup(fake_bgl_part_id);
+		xfree(fake_bgl_part_id);
 	}
 
 	/** we should do the BGL stuff here like, init BGL job stuff... */
