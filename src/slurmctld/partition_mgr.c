@@ -103,15 +103,13 @@ static int _build_part_bitmap(struct part_record *part_record_point)
 	}
 
 	if (part_record_point->nodes == NULL) {	/* no nodes in partition */
-		if (old_bitmap)	/* leave with empty bitmap */
-			bit_free(old_bitmap);
+		FREE_NULL_BITMAP(old_bitmap);
 		return 0;
 	}
 
 	if ((host_list =
 	     hostlist_create(part_record_point->nodes)) == NULL) {
-		if (old_bitmap)
-			bit_free(old_bitmap);
+		FREE_NULL_BITMAP(old_bitmap);
 		error("hostlist_create error on %s, %m",
 		      part_record_point->nodes);
 		return ESLURM_INVALID_NODE_NAME;
@@ -124,8 +122,7 @@ static int _build_part_bitmap(struct part_record *part_record_point)
 			    ("_build_part_bitmap: invalid node specified %s",
 			     this_node_name);
 			free(this_node_name);
-			if (old_bitmap)
-				bit_free(old_bitmap);
+			FREE_NULL_BITMAP(old_bitmap);
 			hostlist_destroy(host_list);
 			return ESLURM_INVALID_NODE_NAME;
 		}
