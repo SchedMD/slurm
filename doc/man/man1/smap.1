@@ -20,10 +20,12 @@ Print a brief message listing the \fBsmap\fR options.
 .TP
 \fB\-D <option>\fR, \fB\-\-display=<option>\fR
 sets the display mode for smap. Showing revelant information about specific 
-views and displaying a corresponding 3 dimentional node chart. While in any 
+views and displaying a corresponding node chart. While in any 
 display a user can switch by typing a different view letter.  This is true in
 all modes except for 'configure mode' user can type 'quit' to exit just 
 configure mode.  Typing 'exit' will end the configuration mode and exit smap.
+Note that unallocated nodes are indicated by a '.' and DOWN or DRAINED 
+nodes by a '#'.
 .RS
 .TP 15
 .I "j"
@@ -57,10 +59,16 @@ Print version information and exit.
 \fBAVAIL\fR
 Partition state: \fBup\fR or \fBdown\fR.
 .TP
+\fBID\fR
+Key to identify the nodes associated with this entity in the node chart.
+.TP
 \fBTIMELIMIT\fR
 Maximum time limit for any user job in
 days:hours:minutes:seconds.  \fBinfinite\fR is used to identify
-partitions without a job time limit.
+jobs or partitions without a job time limit.
+.TP
+\fBNAME\fR
+Name of the job.
 .TP
 \fBNODELIST\fR
 Names of nodes associated with this configuration/partition.
@@ -68,10 +76,15 @@ Names of nodes associated with this configuration/partition.
 \fBNODES\fR
 Count of nodes with this particular configuration.
 .TP
-.TP
 \fBPARTITION\fR
 Name of a partition.  Note that the suffix "*" identifies the
 default partition.
+.TP
+\fBST\fR
+State of a job in compact form. Possible states include:
+PD (pending), R (running), CG (completing),  CD  (completed), 
+F (failed), TO (timeout), and NF (node failure). See 
+\fBJOB STATE CODES\fR section below for more information.
 .TP
 \fBSTATE\fR
 State of the nodes. Possible states include: down, unknown,
@@ -79,7 +92,54 @@ idle, allocated, drained, draining, completing and their
 abbreviated forms: down, unk, idle, alloc, drain, drng, and
 comp respectively.  Note that the suffix "*" identifies nodes
 that are presently not responding.
-.TP
+See \fBNODE STATE CODES\fR section below for more information.
+
+.SH "TOPOGRAPHY INFORMATION"
+.PP
+The node chart is designed to indicate relative locations of 
+the nodes. 
+On most Linux clusters this will represent a one-dimensional 
+array of nodes. Larger clusters will utilize multiple as needed 
+with right side of one line being logically followed by the 
+left side of the next line.
+.PP
+On Blue Gene systems, the node chart will indicate the three 
+dimensional topography of the system.
+The X dimension will increase from left to right on a given line.
+The Y dimension will increase in planes from bottom to top.
+The Z dimension will increase within a plane from the back 
+line to the front line of a plane.
+Note the example below:
+.nf
+
+ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
+a  12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
+b  12346 debug    chris  sim3 R  12:34   16 bgl[420x533]
+c  12350 debug    danny  job3 R   0:12    8 bgl[622x733]
+d  12356 debug    dan    colu R  18:05   16 bgl[600x731]
+e  12378 debug    joseph asx4 R   0:34    4 bgl[612x713]
+
+   a a a a b b d d
+  a a a a b b d d
+ a a a a b b c c
+a a a a b b c c
+
+   a a a a b b d d
+  a a a a b b d d
+ a a a a b b c c
+a a a a b b c c
+
+   a a a a . . d d
+  a a a a . . d d
+ a a a a . . e e              Y
+a a a a . . e e               |
+                              |
+   a a a a . . d d            0----X
+  a a a a . . d d            /
+ a a a a . . . .            /
+a a a a . . . #            Z
+
+.fi
 
 .SH "NODE STATE CODES"
 .PP
@@ -131,12 +191,36 @@ UNKNOWN
 The SLURM controller has just started and the node's state
 has not yet been determined.
 
-
-.nf
-
-
-.fi
-.ec
+.SH "JOB STATE CODES"
+Jobs typically pass through several states in the course of their
+execution.
+The typical states are PENDING, RUNNING, COMPLETING, and COMPLETED.
+An explanation of each state follows.
+.TP 20
+CA  CANCELLED
+Job was explicitly cancelled by the user or system administrator.
+The job may or may not have been initiated.
+.TP
+CD  COMPLETED
+Job has terminated all processes on all nodes.
+.TP
+CG  COMPLETING
+Job is in the process of completing. Some processes on some nodes may still be active.
+.TP
+F   FAILED
+Job terminated with non-zero exit code or other failure condition.
+.TP
+NF  NODE_FAIL
+Job terminated due to failure of one or more allocated nodes.
+.TP
+PD  PENDING
+Job is awaiting resource allocation.
+.TP
+R   RUNNING
+Job currently has an allocation.
+.TP
+TO  TIMEOUT
+Job terminated upon reaching its time limit.
 
 .SH "COPYING"
 Copyright (C) 2004 The Regents of the University of California.
@@ -156,7 +240,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
-\fBscontrol\fR(1), \fBsqueue\fR(1), 
+\fBscontrol\fR(1), fBsinfo\fR(1), \fBsqueue\fR(1), 
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
