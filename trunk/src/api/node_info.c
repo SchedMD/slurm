@@ -81,7 +81,7 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr, int one_liner )
 	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
 		node_ptr->name, node_state_string(node_ptr->node_state), 
 		node_ptr->cpus);
-	fprintf ( out, "RealMemory=%u TmpDisk=%u ", 
+	fprintf ( out, "RealMemory=%u TmpDisk=%u", 
 		node_ptr->real_memory, node_ptr->tmp_disk);
 	if (one_liner)
 		fprintf ( out, " ");
