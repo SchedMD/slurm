@@ -25,16 +25,16 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #if HAVE_POPT_H
 #  include <popt.h>
 #else
-#  include <src/popt/popt.h>
+#  include "src/popt/popt.h"
 #endif
 
-#include <src/sinfo/sinfo.h>
+#include "src/sinfo/sinfo.h"
 
 #define OPT_SUMMARIZE 	0x01
 #define OPT_NODE_STATE 	0x02
@@ -44,7 +44,7 @@
 #define OPT_VERBOSE   	0x06
 #define OPT_ITERATE   	0x07
 
-int parse_state( char* str, enum node_states* states );
+static int _parse_state(char *str, enum node_states *states);
 
 extern struct sinfo_parameters params;
 char *temp_state;
@@ -52,133 +52,147 @@ char *temp_state;
 /*
  * parse_command_line
  */
-int
-parse_command_line( int argc, char* argv[] )
+int parse_command_line(int argc, char *argv[])
 {
-	/* { long-option, short-option, argument type, variable address, option tag, docstr, argstr } */
+	/* { long-option, short-option, argument type, variable address, 
+	   option tag, docstr, argstr } */
 
 	poptContext context;
 	int next_opt, curr_opt;
 	int rc = 0;
 
 	/* Declare the Options */
-	static const struct poptOption options[] = 
-	{
-		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE, "specify an interation period", "seconds"},
-		{"state", 't', POPT_ARG_STRING, &temp_state, OPT_NODE_STATE, "specify the what state of nodes to view", "node_state"},
-		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag, OPT_PARTITION,"show partition information and optionally specify a specific partition", "PARTITION"},
-		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE, "specify a specific node", "NODE"},
-		{"long", 'l', POPT_ARG_NONE, &params.long_output, OPT_FORMAT, "long output - displays more information", NULL},
-		{"summarize", 's', POPT_ARG_NONE, &params.summarize, OPT_VERBOSE, "summarize partitition information, do not show individual nodes", NULL},
-		{"verbose", 'v', POPT_ARG_NONE, &params.verbose, OPT_VERBOSE, "verbosity level", "level"},
-		POPT_AUTOHELP 
-		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end the list */
+	static const struct poptOption options[] = {
+		{"iterate", 'i', POPT_ARG_INT, &params.iterate,
+		 OPT_ITERATE, "specify an interation period", "seconds"},
+		{"state", 't', POPT_ARG_STRING, &temp_state,
+		 OPT_NODE_STATE, "specify the what state of nodes to view",
+		 "node_state"},
+		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag,
+		 OPT_PARTITION,
+		 "show partition information and optionally specify a specific partition",
+		 "PARTITION"},
+		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE,
+		 "specify a specific node", "NODE"},
+		{"long", 'l', POPT_ARG_NONE, &params.long_output,
+		 OPT_FORMAT, "long output - displays more information",
+		 NULL},
+		{"summarize", 's', POPT_ARG_NONE, &params.summarize,
+		 OPT_VERBOSE,
+		 "summarize partitition information, do not show individual nodes",
+		 NULL},
+		{"verbose", 'v', POPT_ARG_NONE, &params.verbose,
+		 OPT_VERBOSE, "verbosity level", "level"},
+		POPT_AUTOHELP {NULL, '\0', 0, NULL, 0, NULL, NULL} /* end */
 	};
 
 	/* Initial the popt contexts */
-	context = poptGetContext("sinfo", argc, (const char**)argv, 
-				options, POPT_CONTEXT_POSIXMEHARDER);
+	context = poptGetContext("sinfo", argc, (const char **) argv,
+				 options, POPT_CONTEXT_POSIXMEHARDER);
 
 	poptSetOtherOptionHelp(context, "[-lns]");
 
 	next_opt = poptGetNextOpt(context);
 
-	while ( next_opt > -1  )
-	{
-		const char* opt_arg = NULL;
+	while (next_opt > -1) {
+		const char *opt_arg = NULL;
 		curr_opt = next_opt;
 		next_opt = poptGetNextOpt(context);
 
-		switch ( curr_opt )
-		{
-			case OPT_PARTITION:
-				if ( (opt_arg = poptGetArg( context )) != NULL )
-				{
-					params.partition = (char *) opt_arg;
-				}
-				break;	
-				
-			case OPT_NODE:
-				if ( (opt_arg = poptGetArg( context )) != NULL )
-				{
-					params.node = (char *) opt_arg;
-				}
-				break;
-			case OPT_NODE_STATE:
-				{
-					params.state_flag = true;
-					if ( parse_state( temp_state, &params.state ) == SLURM_ERROR )
-					{
-						fprintf(stderr, "%s: %s is an invalid node state\n", argv[0], temp_state);
-						exit (1);
-					}
-				}
-				break;	
-				
-			default:
-			break;	
-		}
-		if ( (opt_arg = poptGetArg( context )) != NULL )
-		{
-			fprintf(stderr, "%s: %s \"%s\"\n", argv[0], poptStrerror(POPT_ERROR_BADOPT), opt_arg);
-			exit (1);
-		}
-		if ( curr_opt < 0 )
-		{
-			fprintf(stderr, "%s: \"%s\" %s\n", argv[0], poptBadOption(context, POPT_BADOPTION_NOALIAS), poptStrerror(next_opt));
+		switch (curr_opt) {
+		case OPT_PARTITION:
+			if ((opt_arg = poptGetArg(context)) != NULL) {
+				params.partition = (char *) opt_arg;
+			}
+			break;
 
-			exit (1);
+		case OPT_NODE:
+			if ((opt_arg = poptGetArg(context)) != NULL) {
+				params.node = (char *) opt_arg;
+			}
+			break;
+		case OPT_NODE_STATE:
+			{
+				params.state_flag = true;
+				if (_parse_state(temp_state, &params.state)
+				    == SLURM_ERROR) {
+					fprintf(stderr,
+						"%s: %s is an invalid node state\n",
+						argv[0], temp_state);
+					exit(1);
+				}
+			}
+			break;
+
+		default:
+			break;
 		}
-	
+		if ((opt_arg = poptGetArg(context)) != NULL) {
+			fprintf(stderr, "%s: %s \"%s\"\n", argv[0],
+				poptStrerror(POPT_ERROR_BADOPT), opt_arg);
+			exit(1);
+		}
+		if (curr_opt < 0) {
+			fprintf(stderr, "%s: \"%s\" %s\n", argv[0],
+				poptBadOption(context,
+					      POPT_BADOPTION_NOALIAS),
+				poptStrerror(next_opt));
+
+			exit(1);
+		}
+
 	}
-	if ( next_opt < -1 )
-	{
+	if (next_opt < -1) {
 		const char *bad_opt;
-		bad_opt = poptBadOption( context, POPT_BADOPTION_NOALIAS );
-		fprintf( stderr, "bad argument %s: %s\n", bad_opt,
-				poptStrerror(next_opt) );
-		fprintf( stderr, "Try \"%s --help\" for more information\n", argv[0] );
-		exit( 1 );
+		bad_opt = poptBadOption(context, POPT_BADOPTION_NOALIAS);
+		fprintf(stderr, "bad argument %s: %s\n", bad_opt,
+			poptStrerror(next_opt));
+		fprintf(stderr, "Try \"%s --help\" for more information\n",
+			argv[0]);
+		exit(1);
 	}
 
-	if ( params.verbose )
+	if (params.verbose)
 		print_options();
 	return rc;
 }
 
 /*
- * parse_state - parse state information
- * input - char* comma seperated list of states
+ * _parse_state - parse state information
+ * IN str - name of a job states
+ * OUT states - numeric equivalent sjob state
+ * RET 0 or error code
  */
-int
-parse_state( char* str, enum node_states* states )
-{	
+static int _parse_state(char *str, enum node_states *states)
+{
 	int i;
 
 	for (i = 0; i <= NODE_STATE_END; i++) {
-		if (strcasecmp (node_state_string(i), "END") == 0)
+		if (strcasecmp(node_state_string(i), "END") == 0)
 			break;
 
-		if (strcasecmp (node_state_string(i), str) == 0) {
+		if (strcasecmp(node_state_string(i), str) == 0) {
 			*states = i;
 			return SLURM_SUCCESS;
-		}	
-	}	
+		}
+	}
 	return SLURM_ERROR;
 }
 
-void 
-print_options()
+/* print the parameters specified */
+void print_options()
 {
-	printf( "-----------------------------\n" );
-	printf( "partition(%s) = %s\n", (params.partition_flag ? "true" : "false"), params.partition );
-	printf( "node(%s) = %s\n", (params.node_flag ? "true" : "false"), params.node );
-	printf( "state(%s) = %s\n",  (params.state_flag ? "true" : "false"), 
-				node_state_string( params.state ) );
-	printf( "summarize = %s\n", params.summarize ? "true" : "false" );
-	printf( "verbose = %d\n", params.verbose );
-	printf( "long output = %s\n",  params.long_output ? "true" : "false" );
-	printf( "-----------------------------\n\n" );
-} ;
-
-
+	printf("-----------------------------\n");
+	printf("partition(%s) = %s\n",
+	       (params.partition_flag ? "true" : "false"),
+	       params.partition);
+	printf("node(%s) = %s\n", (params.node_flag ? "true" : "false"),
+	       params.node);
+	printf("state(%s) = %s\n", (params.state_flag ? "true" : "false"),
+	       node_state_string(params.state));
+	printf("summarize = %s\n", params.summarize ? "true" : "false");
+	printf("verbose = %d\n", params.verbose);
+	printf("long output = %s\n",
+	       params.long_output ? "true" : "false");
+	printf("-----------------------------\n\n");
+};
