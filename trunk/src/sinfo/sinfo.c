@@ -149,7 +149,7 @@ _query_server(partition_info_msg_t ** part_pptr,
 
 /*
  * _build_sinfo_data - make a sinfo_data entry for each unique node 
- * configuration and add it to the sinfo_list for later printing.
+ *	configuration and add it to the sinfo_list for later printing.
  * sinfo_list IN/OUT - list of unique sinfo_dataa records to report
  * partition_msg IN - partition info message
  * node_msg IN - node info message
@@ -236,11 +236,12 @@ static bool _filter_out(node_info_t *node_ptr)
 		ListIterator iterator;
 		iterator = list_iterator_create(params.state_list);
 		while ((node_state = list_next(iterator))) {
-			if ((node_ptr->node_state == *node_state) || 
-				((node_ptr->node_state & (~NODE_STATE_NO_RESPOND)) == 
-				     *node_state)) {
-					match = true;
-					break;
+			if ( (node_ptr->node_state == *node_state) || 
+					((node_ptr->node_state & 
+					 (~NODE_STATE_NO_RESPOND)) == 
+					 *node_state) ) {
+				match = true;
+				break;
 			}
 		}
 		list_iterator_destroy(iterator);
@@ -280,16 +281,20 @@ static bool _match_node_data(sinfo_data_t *sinfo_ptr,
 		return false;
 
 	/* If no need to exactly match sizes, just return here 
-	 * otherwise check cpu count, memory, disk, etc. */
+	 * otherwise check cpus, disk, memory and weigth individually */
 	if (!params.exact_match)
 		return true;
-	if (node_ptr->cpus        != sinfo_ptr->min_cpus)
+	if (params.match_flags.cpus_flag &&
+	    (node_ptr->cpus        != sinfo_ptr->min_cpus))
 		return false;
-	if (node_ptr->tmp_disk    != sinfo_ptr->min_disk)
+	if (params.match_flags.disk_flag &&
+	    (node_ptr->tmp_disk    != sinfo_ptr->min_disk))
 		return false;
-	if (node_ptr->real_memory != sinfo_ptr->min_mem)
+	if (params.match_flags.memory_flag &&
+	    (node_ptr->real_memory != sinfo_ptr->min_mem))
 		return false;
-	if (node_ptr->weight      != sinfo_ptr->min_weight)
+	if (params.match_flags.weight_flag &&
+	    (node_ptr->weight      != sinfo_ptr->min_weight))
 		return false;
 
 	return true;

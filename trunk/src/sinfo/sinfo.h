@@ -86,15 +86,19 @@ typedef struct {
  * combined into a single sinfo_data entry based upon output format */
 struct sinfo_match_flags {
 	bool avail_flag;
+	bool cpus_flag;
+	bool disk_flag;
 	bool features_flag;
 	bool groups_flag;
 	bool job_size_flag;
 	bool max_time_flag;
+	bool memory_flag;
 	bool partition_flag;
 	bool reason_flag;
 	bool root_flag;
 	bool share_flag;
 	bool state_flag;
+	bool weight_flag;
 };
 
 /* Input parameters */
