@@ -42,6 +42,7 @@
 static int _filter_job(job_info_t * job);
 static int _filter_step(job_step_info_t * step);
 static int _get_node_cnt(job_info_t * job);
+int _nodes_in_list(char *node_list);
 static int _print_str(char *str, int width, bool right, bool cut_output);
 
 /*****************************************************************************
@@ -553,23 +554,26 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 
 int _get_node_cnt(job_info_t * job)
 {
-	int node_cnt = 0;
+	int node_cnt = 0, round;
 	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
 
 	if (base_job_state == JOB_PENDING) {
-		int *current = job->req_node_inx, round;
-		for ( ; *current != -1; current +=2)
-			node_cnt += current[1] - current[0] + 1;
+		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
 		round  = job->num_procs + params.max_procs - 1;
 		round /= params.max_procs;	/* round up */
 		node_cnt = MAX(node_cnt, round);
-	} else {
-		int *current = job->node_inx;
-		for ( ; *current != -1; current +=2)
-			node_cnt += current[1] - current[0] + 1;
-	}
+	} else
+		node_cnt = _nodes_in_list(job->nodes);
 	return node_cnt;
+}
+
+int _nodes_in_list(char *node_list)
+{
+	hostset_t host_set = hostset_create(node_list);
+	int count = hostset_count(host_set);
+	hostset_destroy(host_set);
+	return count;
 }
 
 int _print_job_shared(job_info_t * job, int width, bool right_justify, 
