@@ -302,12 +302,6 @@ extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id);
 extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
 	    int will_run, struct job_record **job_rec_ptr);
 
-/* job_lock - lock the job information */
-extern void job_lock ();
-
-/* job_unlock - unlock the job information */
-extern void job_unlock ();
-
 /* list_compare_config - compare two entry from the config list based upon weight */
 extern int list_compare_config (void *config_entry1, void *config_entry2);
 
@@ -329,12 +323,6 @@ extern int  match_feature (char *seek, char *available);
 
 /* match_group - determine if the user is a member of any groups permitted to use this partition */
 extern int match_group (char *allow_groups, char *user_groups);
-
-/* node_lock - lock the node and configuration information */
-extern void node_lock ();
-
-/* node_unlock - unlock the node and configuration information */
-extern void node_unlock ();
 
 /* node_name2bitmap - given a node name regular expression, build a bitmap representation */
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
@@ -389,12 +377,6 @@ extern void pack_part (struct part_record *part_record_point, void **buf_ptr, in
  *	machine independent form (for network transmission)
  */
 extern void pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
-
-/* part_lock - lock the partition information */
-extern void part_lock ();
-
-/* part_unlock - unlock the partition information */
-extern void part_unlock ();
 
 /*
  * purge_old_job - purge old job records. if memory space is needed. 

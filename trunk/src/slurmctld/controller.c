@@ -42,6 +42,7 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/macros.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
@@ -88,6 +89,7 @@ main (int argc, char *argv[])
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	init_ctld_conf ( &slurmctld_conf );
+	init_locks ( );
 	parse_commandline ( argc, argv, &slurmctld_conf );
 
 	if ( ( error_code = read_slurm_conf ()) ) 
@@ -806,6 +808,10 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 void
 fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld (config_read_lock);
 	conf_ptr->last_update		= slurmctld_conf.last_update ;
 	conf_ptr->backup_controller   	= slurmctld_conf.backup_controller ;
 	conf_ptr->control_machine    	= slurmctld_conf.control_machine ;
@@ -823,6 +829,8 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->slurm_conf       	= slurmctld_conf.slurm_conf ;
 	conf_ptr->state_save_location   = slurmctld_conf.state_save_location ;
 	conf_ptr->tmp_fs            	= slurmctld_conf.tmp_fs ;
+
+	unlock_slurmctld (config_read_lock);
 }
 
 /* Variables for commandline passing using getopt */

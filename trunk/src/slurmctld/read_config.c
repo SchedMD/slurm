@@ -40,14 +40,15 @@
 #include <src/common/list.h>
 #include <src/common/macros.h>
 #include <src/common/parse_spec.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
 
-int init_slurm_conf ();
-int parse_config_spec (char *in_line);
-int parse_node_spec (char *in_line);
-int parse_part_spec (char *in_line);
+int	init_slurm_conf ();
+int	parse_config_spec (char *in_line);
+int	parse_node_spec (char *in_line);
+int	parse_part_spec (char *in_line);
 
 static char highest_node_name[MAX_NAME_LEN] = "";
 int node_record_count = 0;
@@ -811,11 +812,16 @@ read_slurm_conf ( ) {
 	int line_num;		/* line number in input file */
 	char in_line[BUF_SIZE];	/* input line */
 	int i, j, error_code;
+	/* Locks: Write configuration, write job, write node, write partition */
+	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	/* initialization */
+	lock_slurmctld (config_write_lock);
 	start_time = clock ();
-	if ( (error_code = init_slurm_conf ()) )
+	if ( (error_code = init_slurm_conf ()) ) {
+		unlock_slurmctld (config_write_lock);
 		return error_code;
+	}
 
 	slurm_spec_file = fopen (slurmctld_conf.slurm_conf, "r");
 	if (slurm_spec_file == NULL)
@@ -832,6 +838,7 @@ read_slurm_conf ( ) {
 			error ("read_slurm_conf line %d, of input file %s too long\n",
 				 line_num, slurmctld_conf.slurm_conf);
 			fclose (slurm_spec_file);
+			unlock_slurmctld (config_write_lock);
 			return E2BIG;
 			break;
 		}		
@@ -858,18 +865,21 @@ read_slurm_conf ( ) {
 		/* overall configuration parameters */
 		if ((error_code = parse_config_spec (in_line))) {
 			fclose (slurm_spec_file);
+			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}
 
 		/* node configuration parameters */
 		if ((error_code = parse_node_spec (in_line))) {
 			fclose (slurm_spec_file);
+			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}		
 
 		/* partition configuration parameters */
 		if ((error_code = parse_part_spec (in_line))) {
 			fclose (slurm_spec_file);
+			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}		
 
@@ -884,27 +894,33 @@ read_slurm_conf ( ) {
 
 	if (slurmctld_conf.control_machine == NULL) {
 		fatal ("read_slurm_conf: control_machine value not specified.");
+		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}			
 
 	if (default_part_loc == NULL) {
 		error ("read_slurm_conf: default partition not set.");
+		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}	
 
 	if (node_record_count < 1) {
 		error ("read_slurm_conf: no nodes configured.");
+		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}	
 		
 	rehash ();
-	if ((error_code = build_bitmaps ()))
+	if ((error_code = build_bitmaps ())) {
+		unlock_slurmctld (config_write_lock);
 		return error_code;
+	}
 	list_sort (config_list, &list_compare_config);
 
 	slurmctld_conf.last_update = time (NULL) ;
 	info ("read_slurm_conf: finished loading configuration, time=%ld",
 		(long) (clock () - start_time));
 
+	unlock_slurmctld (config_write_lock);
 	return SLURM_SUCCESS;
 }
