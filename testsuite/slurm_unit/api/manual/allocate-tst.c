@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * allocate-tst.c - exercise the SLURM allocate API
+ *  allocate-tst.c - exercise the SLURM allocate API
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
