@@ -28,11 +28,8 @@
 #define _HAVE_SCANCEL_H
 
 #if HAVE_CONFIG_H
-#include "config.h"
+#  include "config.h"
 #endif
-
-#include <src/common/macros.h>	/* true and false */
-#include <src/common/slurm_protocol_defs.h>
 
 typedef struct scancel_options {
 

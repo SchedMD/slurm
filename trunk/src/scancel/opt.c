@@ -41,6 +41,7 @@
 #endif
 
 #include <src/common/log.h>
+#include <src/common/macros.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
