@@ -323,6 +323,9 @@ extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int all
 /* job_time_limit - enforce job time limits */
 extern void job_time_limit (void);
 
+/* list_append_list - Appends the elements of from list onto the to list */
+extern void list_append_list( List to, List from );
+	
 /* list_compare_config - compare two entry from the config list based upon weight */
 extern int list_compare_config (void *config_entry1, void *config_entry2);
 
@@ -362,6 +365,16 @@ extern void pack_all_jobs (char **buffer_ptr, int *buffer_size,
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
+/* pack_ctld_job_step_info_reponse_msg - packs a job_step_info_response message
+ * IN - steps - a list of steps to send
+ * NOTE: This xmallocs memory for the buffer, so the user must use xfree on it.
+ */
+extern void pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer_size );
+
+/* pack_ctld_job_step_info - packs a job_step_info_t from a step_record
+ */
+extern void pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len);
+	
 /* 
  * pack_all_part - dump all partition information for all partitions in 
  *	machine independent form (for network transmission)
