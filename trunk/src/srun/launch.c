@@ -114,14 +114,16 @@ launch(void *arg)
 	/* Build task id list for each host */
 	task_ids = (uint32_t **) xmalloc(job->nhosts * sizeof(uint32_t *));
 	for (i = 0; i < job->nhosts; i++)
-		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i]*sizeof(uint32_t));
+		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i] * 
+							sizeof(uint32_t));
 	if (opt.distribution == SRUN_DIST_BLOCK)
 		_dist_block(job, task_ids);
 	else 
 		_dist_cyclic(job, task_ids);
 
 	msg_array_ptr = (launch_tasks_request_msg_t *) 
-			xmalloc(sizeof(launch_tasks_request_msg_t) * job->nhosts);
+			xmalloc(sizeof(launch_tasks_request_msg_t) * 
+							job->nhosts);
 	req_array_ptr = (slurm_msg_t *) 
 			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
 	my_envc = envcount(environ);
@@ -161,7 +163,8 @@ launch(void *arg)
 
 #ifdef HAVE_LIBELAN3
 		r->qsw_job = job->qsw_job;
-#endif 
+#endif
+
 #ifdef HAVE_TOTALVIEW
 		if (opt.totalview)
 			r->task_flags &= TASK_TOTALVIEW_DEBUG;
@@ -171,7 +174,7 @@ launch(void *arg)
 
 	p_launch(req_array_ptr, job);
 
-	debug("All tasks have been launched");
+	debug("All task launch requests sent");
 	update_job_state(job, SRUN_JOB_STARTING);
 
 	for (i = 0; i < job->nhosts; i++)
@@ -211,13 +214,15 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 
 		if (pthread_attr_init (&thread_ptr[i].attr))
 			fatal ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, PTHREAD_CREATE_DETACHED))
+		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, 
+						 PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&thread_ptr[i].attr, PTHREAD_SCOPE_SYSTEM))
+		if (pthread_attr_setscope (&thread_ptr[i].attr, 
+					   PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
-		if ( pthread_create (&thread_ptr[i].thread, 
+		if ( pthread_create (	&thread_ptr[i].thread, 
 		                        &thread_ptr[i].attr, 
 		                        p_launch_task, 
 		                        (void *) task_info_ptr) ) {
@@ -241,13 +246,14 @@ static void * p_launch_task(void *args)
 {
 	task_info_t *task_info_ptr = (task_info_t *)args;
 	slurm_msg_t *req_ptr = task_info_ptr->req_ptr;
-	launch_tasks_request_msg_t *msg_ptr = (launch_tasks_request_msg_t *) req_ptr->data;
+	launch_tasks_request_msg_t *msg_ptr = 
+				(launch_tasks_request_msg_t *) req_ptr->data;
 	job_t *job_ptr = task_info_ptr->job_ptr;
 	int host_inx = msg_ptr->srun_node_id;
 
 	debug3("launching on host %s", job_ptr->host[host_inx]);
         print_launch_msg(msg_ptr);
-	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Already handles timeout */
+	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
 		error("launch %s: %m", job_ptr->host[host_inx]);
 		job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
 	}
@@ -263,15 +269,11 @@ static void * p_launch_task(void *args)
 
 static void print_launch_msg(launch_tasks_request_msg_t *msg)
 {
-	char buf[4096];
-	int len = 0;
-
-	len = snprintf(buf, 4096, "%d.%d uid:%ld n:%ld `%s' %d [%d-%d]",
-			msg->job_id, msg->job_step_id, (long) msg->uid, 
-			(long) msg->tasks_to_launch, msg->cwd, 
-			msg->srun_node_id, msg->global_task_ids[0],
-			msg->global_task_ids[msg->tasks_to_launch-1]);
-	debug3("%s", buf);
+	debug3("%d.%d uid:%ld n:%ld `%s' %d [%d-%d]",
+		msg->job_id, msg->job_step_id, (long) msg->uid, 
+		(long) msg->tasks_to_launch, msg->cwd, 
+		msg->srun_node_id, msg->global_task_ids[0],
+		msg->global_task_ids[msg->tasks_to_launch-1]);
 }
 
 static int

@@ -1,4 +1,4 @@
-/****************************************************************************\
+/*****************************************************************************\
  *  srun.c - user interface to allocate resources, submit jobs, and execute 
  *	parallel jobs.
  *****************************************************************************
@@ -143,7 +143,7 @@ main(int ac, char **av)
 		setrlimit(RLIMIT_NOFILE, &rlim);
 	}
 
-	/* reinit log with new verbosity
+	/* reinit log with new verbosity (if changed by command line)
 	 */
 	if (_verbose || _debug) {
 		if (_verbose) 
@@ -231,7 +231,8 @@ main(int ac, char **av)
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	/* spawn msg server thread */
-	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, (void *) job)))
+	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, 
+	                            (void *) job)))
 		fatal("Unable to create message thread. %m\n");
 	debug("Started msg server thread (%d)\n", job->jtid);
 
@@ -334,8 +335,8 @@ allocate_nodes(void)
 	retries = 0;
 	while ((rc = slurm_allocate_resources(&job, &resp, opt.immediate))
 					== SLURM_FAILURE) {
-		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
-		    (retries < MAX_RETRIES)) {
+		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) 
+		    && (retries < MAX_RETRIES)) {
 			if (retries == 0)
 				error ("Slurm controller not responding, sleeping and retrying");
 			else
@@ -344,7 +345,8 @@ allocate_nodes(void)
 			sleep (++retries);
 		}
 		else {
-			error("Unable to allocate resources: %s", slurm_strerror(errno));
+			error("Unable to allocate resources: %s", 
+			      slurm_strerror(errno));
 			return NULL;
 		}			
 	}
@@ -362,7 +364,8 @@ allocate_nodes(void)
 		slurm_free_resource_allocation_response_msg (resp);
 		sleep (2);
 		/* Keep polling until the job is allocated resources */
-		while (slurm_confirm_allocation(&old_job, &resp) == SLURM_FAILURE) {
+		while (slurm_confirm_allocation(&old_job, &resp) == 
+							SLURM_FAILURE) {
 			if (slurm_get_errno() == ESLURM_JOB_PENDING)
 				sleep (10);
 			else {
@@ -387,7 +390,7 @@ sig_kill_alloc(int signum)
 		slurm_complete_job (job_id, 0, 0);
 		exit (0);
 	} else if (signum < 0)
-		job_id = (uint32_t) (0 - signum);	/* kluge to pass the job id */
+		job_id = (uint32_t) (0 - signum); /* kluge to pass job id */
 	else
 		fatal ("sig_kill_alloc called with invalid argument", signum);
 
@@ -470,7 +473,8 @@ print_job_information(allocation_resp *resp)
 	printf("jobid %d: `%s', cpu counts: ", resp->job_id, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
-		printf("%u(x%u), ", resp->cpus_per_node[i], resp->cpu_count_reps[i]);
+		printf("%u(x%u), ", resp->cpus_per_node[i], 
+		       resp->cpu_count_reps[i]);
 	}
 	printf("\n");
 }
@@ -596,10 +600,12 @@ static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 
 		if (pthread_attr_init (&thread_ptr[i].attr))
 			fatal ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, PTHREAD_CREATE_DETACHED))
+		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, 
+		                                 PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&thread_ptr[i].attr, PTHREAD_SCOPE_SYSTEM))
+		if (pthread_attr_setscope (&thread_ptr[i].attr, 
+		                           PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
 		while ( pthread_create (&thread_ptr[i].thread, 
@@ -631,7 +637,7 @@ static void * p_signal_task(void *args)
 	slurm_msg_t resp;
 
 	debug3("sending signal to host %s", job_ptr->host[host_inx]);
-	if (slurm_send_recv_node_msg(req_ptr, &resp) < 0)  /* Has has timeout */
+	if (slurm_send_recv_node_msg(req_ptr, &resp) < 0)  /* Has timeout */
 		error("signal %s: %m", job_ptr->host[host_inx]);
 	else if (resp.msg_type == RESPONSE_SLURM_RC)
 		slurm_free_return_code_msg(resp.data);
@@ -717,8 +723,8 @@ run_batch_job(void)
 
 	retries = 0;
 	while ((rc = slurm_submit_batch_job(&job, &resp)) == SLURM_FAILURE) {
-		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
-		    (retries < MAX_RETRIES)) {
+		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) 
+		    && (retries < MAX_RETRIES)) {
 			if (retries == 0)
 				error ("Slurm controller not responding, "
 						"sleeping and retrying");
@@ -873,7 +879,8 @@ existing_allocation( void )
 		return NULL;
 	jobid_uint = (uint32_t) strtoul( jobid_str, &end_ptr, 10 );
 	if (end_ptr[0] != '\0') {
-		error( "Invalid SLURM_JOBID environment variable: %s", jobid_str );
+		error( "Invalid SLURM_JOBID environment variable: %s", 
+		       jobid_str );
 		exit( 1 );
 	}
 
@@ -938,7 +945,8 @@ void run_job_script (uint32_t jobid)
 		(void) is_file_text (remote_argv[0], &shell);
 		if (shell == NULL)
 			shell = get_shell ();	/* user's default shell */
-		new_argv = (char **) xmalloc ((remote_argc + 2) * sizeof(char *));
+		new_argv = (char **) xmalloc ((remote_argc + 2) * 
+						sizeof(char *));
 		new_argv[0] = xstrdup (shell);
 		for (i=0; i<remote_argc; i++)
 			new_argv[i+1] = remote_argv[i];
@@ -948,14 +956,16 @@ void run_job_script (uint32_t jobid)
 	} else {
 		shell = get_shell ();	/* user's default shell */
 		remote_argc = 1;
-		remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
+		remote_argv = (char **) xmalloc((remote_argc + 1) * 
+						sizeof(char *));
 		remote_argv[0] = strdup (shell);
-		remote_argv[1] = NULL;	/* End of argv's (for possible execv) */
+		remote_argv[1] = NULL;	/* End of argv's (for execv) */
 	}
 
 	/* spawn the shell with arguments (if any) */
 	if (_verbose || _debug)
 		info ("Spawning srun shell %s", shell);
+
 	switch ( (child = fork()) ) {
 		case -1:
 			fatal("Fork error %m");
