@@ -24,7 +24,8 @@ Repeatedly gather and report the requested information at the interval
 specified (in seconds).
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR
-Specify the jobs to view.  This takes a comma separated list of jobs to view.
+Specify the jobs to view.  This flag indicates that a comma separated list 
+of jobs to view follows without an equal sign (see examples).
 Defaults to all jobs.
 .TP
 \fB\-l\fR, \fB\-\-long\fR
@@ -102,8 +103,9 @@ Specify the partitions of the jobs or steps to view. Accepts a comma separated
 list of partition names.
 .TP
 \fB\-s\fR, \fB\-\-steps\fR
-Specify the job steps to view.  This takes a comma separated list of job steps
-to view in the format "job_id.step_id". Defaults to all job steps.
+Specify the job steps to view.  This flag indicates that a comma separated list 
+of job steps to view follows without an equal sign (see examples).
+The job step format is "job_id.step_id". Defaults to all job steps.
 .TP
 \fB\-S\fR, \fB\-\-sort\fR
 Specifies the sorting order of job's or job step's records for printing. 
@@ -160,6 +162,32 @@ Print the job steps in the debug partition sorted by user:
  65562.2    debug       bob       10/14-11:54   dev22
 .br
  65550.1    debug       candice   10/14-11:18   dev[6-12]
+.ec
+
+.eo
+Print information only about jobs 12345 and 12346:
+.br
+# squeue --jobs 12345,12346
+.br
+  JOBID PARTITION NAME  USER   ST TIME_LIM PRIO NODES
+.br
+-----------------------------------------------------------
+.br
+  12345 debug     pwd   david  R        30 0.98 dev[9-12]
+.br
+  12346 debug     pwd   david  PD  NOT_SET 0.00
+.ec
+
+.eo
+Print information only about job step 65552.1:
+.br
+# squeue --steps 65552.1
+.br
+ STEPID     PARTITION   USER      START_TIME    NODES
+.br
+-----------------------------------------------------------
+.br
+ 65552.1    debug       alice     10/14-11:02   dev[1-4]
 .ec
 
 .SH "COPYING"
