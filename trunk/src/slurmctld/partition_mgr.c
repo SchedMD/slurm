@@ -175,10 +175,11 @@ main(int argc, char * argv[]) {
  */
 int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
     int Start_Inx, End_Inx, Count_Inx;
-    int i, j, size;
-    char *str_ptr1, *str_ptr2, *Format, This_Node_Name[MAX_NAME_LEN];
+    int i, j, Error_Code, size;
+    char *str_ptr1, *str_ptr2, *Format, *My_Node_List, This_Node_Name[BUF_SIZE];
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
 
+    Format = My_Node_List = NULL;
     Part_Record_Point->TotalCPUs  = 0;
     Part_Record_Point->TotalNodes = 0;
     
@@ -198,25 +199,59 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
     } /* if */
     memset(Part_Record_Point->NodeBitMap, 0, size);
 
-    Parse_Node_Name(Part_Record_Point->Nodes, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-    for (i=Start_Inx; i<=End_Inx; i++) {
-	if (Count_Inx == 0) {	/* Deal with comma separated node names here */
-	    if (i == Start_Inx)
-		str_ptr2 = strtok_r(Format, ",", &str_ptr1);
+    if (Part_Record_Point->Nodes == NULL) return 0;
+    My_Node_List = malloc(strlen(Part_Record_Point->Nodes)+1);
+    if (My_Node_List == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Build_Part_BitMap: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
+    str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
+    while (str_ptr2) {	/* Break apart by comma separators */
+	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	if (Error_Code) {
+	    free(My_Node_List);
+	    return EINVAL;
+	} /* if */
+	if (strlen(Format) >= sizeof(This_Node_Name)) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Build_Part_BitMap: Node name specification too long: %s\n", Format);
+#else
+	    syslog(LOG_ERR, "Build_Part_BitMap: Node name specification too long: %s\n", Format);
+#endif
+	    free(My_Node_List);
+	    free(Format);
+	    return EINVAL;
+	} /* if */
+	for (i=Start_Inx; i<=End_Inx; i++) {
+	    if (Count_Inx == 0) 
+		strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
 	    else
-		str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
-	    if (str_ptr2 == NULL) break;
-	    End_Inx++;
-	    strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
-	} else
-	    sprintf(This_Node_Name, Format, i);
-	Node_Record_Point = Find_Node_Record(This_Node_Name);
-	if (Node_Record_Point == NULL) continue;
-	j = Node_Record_Point - Node_Record_Table_Ptr;
-	BitMapSet(Part_Record_Point->NodeBitMap, j);
-	Part_Record_Point->TotalNodes++;
-	Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
-    } /* for */
+		sprintf(This_Node_Name, Format, i);
+	    Node_Record_Point = Find_Node_Record(This_Node_Name);
+	    if (Node_Record_Point == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Build_Part_BitMap: Invalid node specified %s\n", This_Node_Name);
+#else
+		syslog(LOG_ERR, "Build_Part_BitMap: Invalid node specified %s\n", This_Node_Name);
+#endif
+		free(My_Node_List);
+		free(Format);
+		return EINVAL;
+	    } /* if */
+	    BitMapSet(Part_Record_Point->NodeBitMap, 
+			(int)(Node_Record_Point - Node_Record_Table_Ptr));
+	    Part_Record_Point->TotalNodes++;
+	    Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
+	} /* for */
+	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
+    } /* while */
+
+    if(My_Node_List) free(My_Node_List);
     if(Format) free(Format);
     return 0;
 } /* Build_Part_BitMap */
