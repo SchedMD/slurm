@@ -2832,7 +2832,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 					job_ptr->time_last_active = now;
 			} else {
 				error
-				    ("Registered job %u.u on wrong node %s ",
+				    ("Registered job %u.%u on wrong node %s ",
 				     job_id_ptr[i], step_id_ptr[i], node_name);
 				_kill_job_on_node(job_id_ptr[i], node_ptr);
 			}
