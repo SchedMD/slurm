@@ -16,20 +16,22 @@ fi
 
 exit_code=0
 inx=1
+log="test9.7.$$.output"
+touch $log
 while [ $inx -le $iterations ]
 do
-	echo "########## LOOP $inx ########## "
-	sinfo
+	echo "########## LOOP $inx ########## " >>$log 2>&1
+	sinfo                                   >>$log 2>&1
 	if [ $? -ne 0 ]; then
 		exit_code=$?
 	fi
 	sleep $sleep_time
-	srun -N1-$inx -c1 -l hostname
+	srun -N1-$inx -c1 -l hostname           >>$log 2>&1
 	if [ $? -ne 0 ]; then
 		exit_code=$?
 	fi
 	sleep $sleep_time
-	squeue
+	squeue                                  >>$log 2>&1
 	if [ $? -ne 0 ]; then
 		exit_code=$?
 	fi
@@ -37,5 +39,9 @@ do
 	inx=$((inx+1))
 done
 
+if [ $exit_code -ne 0 ]; then
+	cat $log
+fi
+rm $log
 echo "########## EXIT_CODE $exit_code ########## "
 exit $exit_code
