@@ -954,8 +954,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld",
 	       time_limit, priority, contiguous, shared);
 
-	debug3("   kill_on_node_fail=%ld script=%.40s...",
-	       kill_on_node_fail, job_specs->script);
+	debug3("   kill_on_node_fail=%ld task_dist=%u script=%.40s...",
+	       kill_on_node_fail, job_specs->task_dist, job_specs->script);
 
 	if (job_specs->env_size == 1)
 		debug3("   environment=\"%s\"", job_specs->environment[0]);

@@ -1681,6 +1681,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	pack16(job_desc_ptr->immediate, buffer);
 	pack16(job_desc_ptr->shared, buffer);
+	pack16(job_desc_ptr->task_dist, buffer);
 	pack32(job_desc_ptr->time_limit, buffer);
 
 	pack32(job_desc_ptr->num_procs, buffer);
@@ -1732,6 +1733,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpack16(&job_desc_ptr->immediate, buffer);
 	safe_unpack16(&job_desc_ptr->shared, buffer);
+	safe_unpack16(&job_desc_ptr->task_dist, buffer);
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
