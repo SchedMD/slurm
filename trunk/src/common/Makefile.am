@@ -18,7 +18,6 @@ endif
 
 noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la libcred.la 
 
-
 libcommon_la_SOURCES = 	\
 	xmalloc.c 	\
 	xassert.c	\

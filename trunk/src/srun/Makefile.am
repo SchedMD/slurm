@@ -18,3 +18,8 @@ srun_SOURCES = srun.c opt.c env.c opt.h env.h job.c job.h net.c net.h \
 srun_LDADD = $(top_builddir)/src/common/libcommon.la \
 	     $(top_builddir)/src/api/libslurm.la \
 	     $(POPT_LIBS) 
+
+force:
+
+$(srun_LDADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

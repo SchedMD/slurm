@@ -34,12 +34,3 @@ libslurm_la_LIBADD        = $(common_dir)/libcommon.la
 libslurm_la_LDFLAGS       = -export-symbols $(srcdir)/libslurm.sym
 libslurm_la_DEPENDENCIES  = $(srcdir)/libslurm.sym $(libslurm_la_LIBADD)
 
-
-# hack to allow building .lo objects from other directories
-../*/*.lo : %.lo : %.c
-	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
-#$(filter %.lo, $(libslurm_la_LIBADD)) : %.lo : %.c
-#	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
-	
-#$(filter %.la, $(libslurm_la_LIBADD)) : %.la : 
-#	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`

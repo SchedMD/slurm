@@ -6,3 +6,6 @@ AUTOMAKE_OPTIONS = dejagnu
 SUBDIRS = slurm_unit
 
 noinst_HEADERS = dejagnu.h
+
+DISTCLEANFILES = \
+	slurm.sum slurm.log

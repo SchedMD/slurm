@@ -1,10 +1,10 @@
 
-#SUBDIRS = man1  man3  man5  man8 
 
-man1_MANS = man1/scancel.1
-	man1/scontrol.1 \
-	man1/sinfo.1 \
-	man1/squeue.1 \
+man1_MANS =            \
+	man1/scancel.1 \
+	man1/scontrol.1\
+	man1/sinfo.1   \
+	man1/squeue.1  \
 	man1/srun.1 
 
 man3_MANS = man3/hostlist_create.3 \
@@ -58,4 +58,4 @@ man5_MANS = man5/slurm.conf.5
 man8_MANS = man8/slurmctld.8 \
 	man8/slurmd.8
 
-#EXTRA_DIST = $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS) 
+EXTRA_DIST = $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS) 
