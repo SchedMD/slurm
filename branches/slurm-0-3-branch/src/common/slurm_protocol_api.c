@@ -902,6 +902,9 @@ int slurm_send_rc_msg(slurm_msg_t *msg, int rc)
 {
         slurm_msg_t resp_msg;
         return_code_msg_t rc_msg;
+        
+        if (msg->conn_fd < 0)
+                return (ENOTCONN);
 
         rc_msg.return_code = rc;
 
