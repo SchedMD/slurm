@@ -362,6 +362,9 @@ file only its "State" and "Reason" fields may be reset.
 This may be useful to record the state of nodes which are temporarily 
 in a DOWN or DRAINED state without altering permanent configuration 
 information as shown in the example.
+A job step's tasks are allocated to nodes in order the nodes appear 
+in the configuration file. There is presently no capability within 
+SLURM to arbitarily order a job step's tasks.
 The node configuration specifies the following information: 
 .TP
 \fBNodeName\fR
