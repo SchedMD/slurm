@@ -186,7 +186,7 @@ proc wait_for_file { file_name } {
 # Proc: wait_for_job
 #
 # Purpose:  Wait for a previously submitted SLURM job to reach 
-# the desired state
+# the desired state, exponential back-off 1 to 10 seconds
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -204,16 +204,7 @@ proc wait_for_job { job_id state } {
 	global scontrol
 	set is_done     0
 	set is_running  0
-
-# Sleep between tests for for ($max_job_delay / 10) seconds with 
-#  minimum value of 1 seconds and maximum of 10 seconds
-	set sleep_time  [expr $max_job_delay / 10]
-	if { $sleep_time == 0 } {
-		set sleep_time  1
-	} 
-	if { $sleep_time > 10 } {
-		set sleep_time  10
-	} 
+	set sleep_time  1
 
 	while { 1 == 1 } {
 		spawn -noecho $scontrol -o show job $job_id
@@ -261,5 +252,9 @@ proc wait_for_job { job_id state } {
 		}
 
 		sleep $sleep_time
+		set sleep_time  [expr $sleep_time * 2]
+		if { $sleep_time > 10 } {
+			set sleep_time 10
+		}
 	}
 }
