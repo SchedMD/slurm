@@ -464,24 +464,20 @@ int setup_child_pipes ( int * pipes )
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 {
 	int error_code = SLURM_SUCCESS ;
-
+	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
+	job_step_t * job_step_ptr = find_job_step ( shmem_ptr , kill_task_msg -> job_id , kill_task_msg -> job_step_id ) ;
+	task_t * task_ptr = job_step_ptr -> head_task ;
+	while ( task_ptr != NULL )
+	{
+		kill_task ( task_ptr ) ;
+		task_ptr = task_ptr -> next ;
+	}
 	return error_code ;
 }
 
 
 int kill_task ( task_t * task )
 {
-	return SLURM_SUCCESS ;
-}
-
-int setup_task_env  (task_start_t * task_start )
-{
-	int i ;
-	for ( i = 0 ; i < task_start -> launch_msg -> envc ; i ++ )
-	{
-		char * env_var = xmalloc ( strlen (  task_start -> launch_msg -> env[i] ) ) ;
-		memcpy ( env_var , task_start -> launch_msg -> env[i] , strlen (  task_start -> launch_msg -> env[i] ) ) ;
-		putenv ( env_var ) ;
-	}
+	kill ( task -> task_start . exec_pid , SIGKILL ) ;
 	return SLURM_SUCCESS ;
 }

@@ -195,3 +195,22 @@ int find_job_id_for_session ( slurmd_shmem_t * shmem , int session_id )
 	info ( "No job_id found for session_id %i", session_id );
 	return SLURM_FAILURE ; 
 }
+
+void * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
+{
+	int i ;
+	pthread_mutex_lock ( & shmem -> mutex ) ;
+	for ( i=0 ; i < MAX_JOB_STEPS ; i ++ )
+        {
+		if (shmem -> job_steps[i].used == false 
+				&& shmem -> job_steps[i].job_id == job_id 
+				&& shmem -> job_steps[i].job_step_id == job_step_id 
+			)
+		{
+			pthread_mutex_unlock ( & shmem -> mutex ) ;
+			return & shmem -> job_steps[i] ;
+		} 
+        }
+	pthread_mutex_unlock ( & shmem -> mutex ) ;
+	return (void * ) SLURM_ERROR ;
+}
