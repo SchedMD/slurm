@@ -163,6 +163,12 @@ int slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 int slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid);
 
 /*
+ * Report if a all credentials for a give job id have been 
+ * revoked (i.e. has the job been killed)
+ */
+bool slurm_cred_revoked(slurm_cred_ctx_t ctx, uint32_t jobid);
+
+/*
  * Begin expiration period for the revocation of credentials
  *  for job id jobid. This should be run after slurm_cred_revoke()
  *  This function is used because we may want to revoke credentials

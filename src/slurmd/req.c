@@ -522,6 +522,12 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	} 
 
+	/*
+	 * Insert jobid into credential context to denote that
+	 * we've now "seen" an instance of the job
+	 */
+	slurm_cred_insert_jobid(conf->vctx, req->job_id);
+
 	/* 
 	 * Run job prolog on this node
 	 */
@@ -543,16 +549,19 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		rc = ESLURMD_PROLOG_FAILED;
 		goto done;
 	} 
+
+	/* Since job could have been killed while the prolog was 
+	 * running (especially on BlueGene, which can wait  minutes
+	 * for partition booting). Test if the credential has since
+	 * been revoked and exit as needed. */
+	if (slurm_cred_revoked(conf->vctx, req->job_id)) {
+		info("Job %u already killed, do not launch tasks",  
+			req->job_id);
+		goto done;
+	}
 	
-	/*
-	 * Insert jobid into credential context to denote that
-	 * we've now "seen" an instance of the job
-	 */
 	slurm_mutex_lock(&launch_mutex);
-	slurm_cred_insert_jobid(conf->vctx, req->job_id);
-
 	info("Launching batch job %u for UID %d", req->job_id, req->uid);
-
 	rc = _launch_batch_job(req, cli);
 	slurm_mutex_unlock(&launch_mutex);
 

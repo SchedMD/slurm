@@ -1072,6 +1072,14 @@ static char * timestr (const time_t *tp, char *buf, size_t n)
 	return (buf);
 }
 
+extern bool
+slurm_cred_revoked(slurm_cred_ctx_t ctx, uint32_t jobid)
+{
+	job_state_t  *j = _find_job_state(ctx, jobid);
+	if (j && j->revoked)
+		return true;
+	return false;
+}
 
 static bool
 _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
