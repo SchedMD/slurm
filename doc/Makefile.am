@@ -7,6 +7,7 @@ htmldir = ${prefix}/share/doc/@PACKAGE@-@VERSION@/html
 html_DATA = \
 	html/arch.gif \
 	html/authplugins.html \
+	html/bluegene.html \
 	html/coding_style.pdf \
 	html/documentation.html \
 	html/download.html \
