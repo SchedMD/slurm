@@ -325,6 +325,7 @@ char *job_state_string_compact(enum job_states inx)
 		"CD",
 		"F",
 		"TO",
+		"NF",
 		"END"
 	};
 	if (inx & JOB_COMPLETING)
