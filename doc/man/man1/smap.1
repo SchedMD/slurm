@@ -215,15 +215,24 @@ exp: \fBc A 8\fR this will request 8 copies of partition A.
 
 .TP
 .I "DELETE"
-Delete last partition created.
+Delete last partition created. (Also can use REMOVE, or DROP)
 
 .nf
 exp: \fBdelete\fR this will delete last partition created.
 .fi
 
 .TP
+.I "SAVE"
+Save system into a bluegene.conf file into the path of the user.
+
+.nf
+exp: \fBsave\fR this will save system into a bluegene.conf.timestamp file.
+exp: \fBsave mybluegenefile.conf\fR this will save system into a file named mybluegenefile.conf file.
+.fi
+
+.TP
 .I "CLEAR ALL"
-Clear all partitions created.
+Clear all partitions created. (Also can use CLEAR)
 
 .nf
 exp: \fBclear all\fR this will clear the entire system.
