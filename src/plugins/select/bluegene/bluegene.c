@@ -154,6 +154,7 @@ void _process_config()
 		 * parse request will fill up the partition_t's
 		 * bl_coord, tr_coord, dimensions, and size
 		 */
+		request_result = NULL;
 		if (_parse_request(bgl_part->nodes, &request_result) || request_result == NULL){
 			error("_process_config: error parsing request %s", bgl_part->nodes);
 		} else {
@@ -584,7 +585,7 @@ int _parse_request(char* request_string, partition_t** request_result)
 		goto cleanup;
 	
 	debug("incoming request %s", request_string);
-	(*request_result) = (partition_t*) xmalloc(sizeof(partition_t));
+	*request_result = (partition_t*) xmalloc(sizeof(partition_t));
 	if (!(*request_result)) {
 		error("parse_request: not enough memory for request");
 		goto cleanup;
