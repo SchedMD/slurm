@@ -628,7 +628,6 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	else
 		set_job_prio (job_ptr);
 
-
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->num_nodes = job_desc->num_nodes;
@@ -638,15 +637,22 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup ( job_desc->features );
-
-	detail_ptr->shared = job_desc->shared;
-	detail_ptr->contiguous = job_desc->contiguous;
-	detail_ptr->min_procs = job_desc->min_procs;
-	detail_ptr->min_memory = job_desc->min_memory;
-	detail_ptr->min_tmp_disk = job_desc->min_tmp_disk;
-	detail_ptr->dist = (enum task_dist) job_desc->dist;
-	detail_ptr->job_script = xstrdup ( job_desc->job_script);
-	detail_ptr->procs_per_task = job_desc->procs_per_task;
+	if (job_desc->shared != NO_VAL)
+		detail_ptr->shared = job_desc->shared;
+	if (job_desc->contiguous != NO_VAL)
+		detail_ptr->contiguous = job_desc->contiguous;
+	if (job_desc->min_procs != NO_VAL)
+		detail_ptr->min_procs = job_desc->min_procs;
+	if (job_desc->min_memory != NO_VAL)
+		detail_ptr->min_memory = job_desc->min_memory;
+	if (job_desc->min_tmp_disk != NO_VAL)
+		detail_ptr->min_tmp_disk = job_desc->min_tmp_disk;
+	if (job_desc->dist != NO_VAL)
+		detail_ptr->dist = (enum task_dist) job_desc->dist;
+	if (job_desc->procs_per_task != NO_VAL)
+		detail_ptr->procs_per_task = job_desc->procs_per_task;
+	if (job_desc->job_script)
+		detail_ptr->job_script = xstrdup ( job_desc->job_script );
 	/* job_ptr->nodes		*leave as NULL pointer for now */
 	/* job_ptr->start_time		*leave as NULL pointer for now */
 	/* job_ptr->end_time		*leave as NULL pointer for now */
@@ -656,7 +662,10 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	return 0;
 }
 
-int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
+/* validate_job_desc - validate that a job descriptor for job submit or 
+ *	allocate has valid data, set values to defaults as required */
+int 
+validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 {
 	if ((job_desc_msg->num_procs == NO_VAL) && (job_desc_msg->num_nodes == NO_VAL) && 
 			(job_desc_msg->req_nodes == NULL)) {
