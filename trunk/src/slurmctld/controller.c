@@ -331,9 +331,6 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
-	if (select_g_state_save(slurmctld_conf.state_save_location))
-		error("Failed to save node select plugin state");
-
 #if MEM_LEAK_TEST
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
