@@ -84,8 +84,16 @@ dnl
 AC_FUNC_MALLOC
 AC_FUNC_STRERROR_R
 AC_CHECK_FUNCS(strerror mtrace)
-AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [], 
-               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
+
+dnl AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [], 
+dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
+
+ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
+AC_DEFINE_UNQUOTED(WITH_PTHREADS, "$HAVE_PTHREAD", [Define if you have pthreads])
+AC_SUBST(WITH_PTHREADS)
+LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
+CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
+LIBS="$PTHREAD_LIBS $LIBS"
 
 AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
 AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
