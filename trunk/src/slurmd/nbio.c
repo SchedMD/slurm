@@ -552,6 +552,7 @@ int reconnect (  nbio_attr_t * nbio_attr )
 		slurm_close_stream ( nbio_attr -> fd [IN_OUT_FD] ) ;
 		if ( connect_io_stream ( nbio_attr -> task_start , STDIN_OUT_SOCK ) > 0 )
 		{
+			slurm_set_stream_non_blocking ( nbio_attr -> fd [IN_OUT_FD] ) ;
 			nbio_attr -> reconnect_flags[IN_OUT_FD] = CONNECTED ;
 		}
 	}
@@ -560,6 +561,7 @@ int reconnect (  nbio_attr_t * nbio_attr )
 		slurm_close_stream ( nbio_attr -> fd [SIG_ERR_FD] ) ;
 		if ( connect_io_stream ( nbio_attr -> task_start , SIG_STDERR_SOCK ) > 0 )
 		{
+			slurm_set_stream_non_blocking ( nbio_attr -> fd [SIG_ERR_FD] ) ;
 			nbio_attr -> reconnect_flags[SIG_ERR_FD] = CONNECTED ;
 		}
 	}
