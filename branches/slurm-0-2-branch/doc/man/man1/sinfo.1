@@ -1,4 +1,4 @@
-.TH SINFO "1" "October 2003" "sinfo 0.2" "Slurm components"
+.TH SINFO "1" "February 2004" "sinfo 0.2" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information about Slurm nodes and partitions.
@@ -208,6 +208,52 @@ that are presently not responding.
 .TP
 \fBTMP_DISK\fR
 Size of temporary disk space in megabytes on these nodes.
+
+.SH "NODE STATE CODES"
+.PP
+Node state codes are shorted as required for the field size.
+If the node state code is followed by "*", this indicates the node
+is presently not responding and will not be allocated any new work.
+If the node remains non-responsive, it will be placed in the \fBDOWN\fR
+state.
+.TP 12
+ALLOCATED
+The node has been allocated to one or more jobs.
+.TP
+COMPLETING
+One or more jobs have been allocated this node and are in the process
+of COMPLETING. This node state will be left when all of the job's
+processes have terminated and the SLURM epilog program (if any) has
+terminated. See the \fBEpilog\fR parameter description in the
+\fBslurm.conf\fR man page for more information.
+.TP
+DOWN
+The node is unavailable for use. SLURM can automatically place nodes
+in this state if some failure occurs. System administrators may also
+explicitly place nodes in this state. If a node resumes normal operation,
+SLURM can automatically return it to service. See the \fBReturnToService\fR
+and \fBSlurmdTimeout\fR parameter descriptions in the \fBslurm.conf\fR(5)
+man page for more information.
+.TP
+DRAINED
+The node is unavailable for use per system administrator request.
+See the \fBupdate node\fR command in the \fBscontrol\fR(1) man page
+or the \fBslurm.conf\fR(5) man page for more information.
+.TP
+DRAINING
+The node is currently executing a job, but will not be allocated to
+additional jobs. The node state will be changed to state \fBDRAINED\fR
+when the last job on it completes. Nodes enter this state per system
+administrator request. See the \fBupdate node\fR command in the
+\fBscontrol\fR(1) man page or the \fBslurm.conf\fR(5) man page for
+more information.
+.TP
+IDLE
+The node is not allocated to any jobs and is available for use.
+.TP
+UNKNOWN
+The SLURM controller has just started and the node's state has not
+yet been determined.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

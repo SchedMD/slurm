@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "October 2003" "squeue 0.2" "Slurm components"
+.TH SQUEUE "1" "February 2004" "squeue 0.2" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -147,6 +147,26 @@ Report details of squeues actions.
 .TP
 \fB\-V\fR , \fB\-\-version\fR
 Print version information and exit.
+
+.SH "JOB STATE CODES"
+.TP 17
+CD  COMPLETED
+Job has terminated all processes on all nodes.
+.TP
+CG  COMPLETING
+Job is in the process of completing. Some processes on some nodes may still be active.
+.TP
+F   FAILED
+Job terminated with non-zero exit code or other failure condition.
+.TP
+NF  NODE_FAIL
+Job terminated due to failure of one or more allocated nodes.
+.TP
+PD  PENDING
+Job is awaiting resource allocation.
+.TP
+TO  TIMEOUT
+Job terminated upon reaching its time limit.
 
 .SH "ENVIRONMENT VARIABLES"
 .PP

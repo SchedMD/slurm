@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
  -- Improved error message from srun when jobid set in environment is
     no longer running.
  -- Export only required symbols from libslurm.so. 
+ -- Added job and node state descriptions to the squeue and sinfo man pages
 
 * Changes in SLURM 0.2.22
 =========================
