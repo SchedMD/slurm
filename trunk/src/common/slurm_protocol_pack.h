@@ -1,7 +1,7 @@
 #ifndef _SLURM_PROTOCOL_PACK_H
 #define _SLURM_PROTOCOL_PACK_H
 #include <stdint.h>
-#include "slurm_protocol_defs.h"
+#include <src/common/slurm_protocol_defs.h>
 #include <linux/types.h>
 
 /* Pack / Unpack methods for slurm protocol header */

@@ -1,11 +1,18 @@
 #ifndef _SLURM_PROTOCOL_COMMON_H
 #define _SLURM_PROTOCOL_COMMON_H
 
+#define AF_SLURM AF_INET
+
 /* LINUX SPECIFIC */
 /* this is the slurm equivalent of the operating system file descriptor, which in linux is just an int */
 typedef uint32_t slurm_fd ;
 /* this is the slurm equivalent of the BSD sockets sockaddr */
-typedef struct sockaddr_in slurm_addr ;
+
+typedef struct {
+	int16_t family ;
+	uint16_t port ;
+	uint32_t address ;
+} slurm_addr ;
 
 
 /* SLURM datatypes */

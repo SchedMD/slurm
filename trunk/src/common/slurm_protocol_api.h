@@ -3,7 +3,7 @@
 
 #include <sys/time.h>
 #include <stdint.h>
-#include "slurm_protocol_common.h"
+#include <src/common/slurm_protocol_common.h>
 
 /* high level routines */
 /* message functions */

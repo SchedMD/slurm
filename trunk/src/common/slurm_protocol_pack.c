@@ -1,5 +1,5 @@
-#include "slurm_protocol_pack.h"
-#include "pack.h"
+#include <slurm_protocol_pack.h>
+#include <src/common/pack.h>
 #include <stdio.h>
 
 extern int debug ;

@@ -1,13 +1,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "slurm_protocol_interface.h"
-#include "slurm_protocol_defs.h"
-#include "slurm_protocol_api.h"
-#include "slurm_protocol_common.h"
-#include "slurm_protocol_pack.h"
-#include "slurm_protocol_util.h"
-#include "xmalloc.h"
+#include <src/common/slurm_protocol_interface.h>
+#include <src/common/slurm_protocol_defs.h>
+#include <src/common/slurm_protocol_api.h>
+#include <src/common/slurm_protocol_common.h>
+#include <src/common/slurm_protocol_pack.h>
+#include <src/common/slurm_protocol_util.h>
+#include <src/common/xmalloc.h>
 
 
 uint32_t debug = false ;
