@@ -1,5 +1,5 @@
 /****************************************************************************\
- *  job.c - job data structure createion functions
+ *  job.c - job data structure creation functions
  *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
