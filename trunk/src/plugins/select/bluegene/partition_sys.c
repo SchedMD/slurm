@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>
+ *  Written by Dan Phung <phung4@llnl.gov> and Danny Auble <da@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -40,9 +40,6 @@
 List bgl_sys_free = NULL;
 /* global system = list of allocated partitions */
 List bgl_sys_allocated = NULL;
-
-/* Global variables */
-List bgl_init_part_list = NULL;	/* Initial bgl partition state */
 
 /* static void _init_sys(partition_t*); */
 
@@ -893,42 +890,36 @@ int read_bgl_partitions()
 	char node_name_tmp[16], *owner_name;
 	bgl_record_t *bgl_part_ptr;
 
-	if (!bgl_init_part_list)
-		bgl_init_part_list = list_create(_part_list_del);
+	if (!bgl_curr_part_list)
+		bgl_curr_part_list = list_create(_part_list_del);
 
 	if ((rm_rc = rm_get_data(bgl, RM_BPNum, &bp_cnt)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rm_rc));
 		rc = SLURM_ERROR;
 		bp_cnt = 0;
 	}
-	for (i=0; i<bp_cnt; i++) {
-		if (i) {
-			if ((rm_rc = rm_get_data(bgl, RM_NextBP, &bp_ptr))
-					!= STATUS_OK) {
-				error("rm_get_data(RM_NextBP): %s",
-					bgl_err_str(rm_rc));
-				rc = SLURM_ERROR;
-				break;
-			}
-		} else {
-			if ((rm_rc = rm_get_data(bgl, RM_FirstBP, &bp_ptr))
-					!= STATUS_OK) {
-				error("rm_get_data(RM_FirstBP): %s",
-					bgl_err_str(rm_rc));
-				rc = SLURM_ERROR;
-				break;
-			}
-		}
-		if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc))
+	
+        if ((rm_rc = rm_get_data(bgl, RM_FirstBP, &bp_ptr))
+            != STATUS_OK) {
+                error("rm_get_data(RM_FirstBP): %s",
+                      bgl_err_str(rm_rc));
+                rc = SLURM_ERROR;
+                break;
+        }
+	
+        for (i=0; i<bp_cnt; i++) {
+
+
+/*		if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc))
 				!= STATUS_OK) {
 			error("rm_get_data(RM_BPLoc): %s",
 				bgl_err_str(rm_rc));
 			rc = SLURM_ERROR;
 			break;
-		}
+                        }
 		sprintf(node_name_tmp, "bgl%d%d%d",
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		if ((rm_rc = rm_get_data(bp_ptr, RM_BPPartID, &part_id))
+*/		if ((rm_rc = rm_get_data(bp_ptr, RM_BPPartID, &part_id))
 				!= STATUS_OK) {
 			error("rm_get_data(RM_BPPartID: %s",
 				bgl_err_str(rm_rc));
@@ -937,19 +928,22 @@ int read_bgl_partitions()
 		}
 
 		if (!part_id || (part_id[0] == '\0')) {
-#if 1
-			/* this is a problem on the 128 c-node system */
-			part_id = "LLNL_128_16";
+                        error("no part_id exiting");
+			rc = SLURM_ERROR;
+			break; 
+//#if 1
+//			/* this is a problem on the 128 c-node system */
+//			part_id = "LLNL_128_16";
 			
-#else
-			info("Node %s in blue gene partition NONE",
-				node_name_tmp);
-			continue;
-#endif
+//#else
+//			info("Node %s in blue gene partition NONE",
+//				node_name_tmp);
+//			continue;
+//#endif
 		}
-		info("Node:%s in BglBlock:%s", node_name_tmp, part_id);
+		//info("Node:%s in BglBlock:%s", node_name_tmp, part_id);
 
-		bgl_part_ptr = list_find_first(bgl_init_part_list,
+		bgl_part_ptr = list_find_first(bgl_curr_part_list,
 			_part_list_find, part_id);
 		if (!bgl_part_ptr) {
 			/* New BGL partition record */
@@ -961,9 +955,14 @@ int read_bgl_partitions()
 				continue;
 			}
 			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
-			list_push(bgl_init_part_list, bgl_part_ptr);
-			bgl_part_ptr->bgl_part_id = xstrdup(part_id);
-			if ((rm_rc = rm_get_data(part_ptr,
+			list_push(bgl_curr_part_list, bgl_part_ptr);
+			
+                        bgl_part_ptr->bgl_part_id = xstrdup(part_id);
+			
+                        // need to get the 000x000 range for nodes
+                        // also need to get coords
+
+                        if ((rm_rc = rm_get_data(part_ptr,
 					RM_PartitionConnection,
 					&bgl_part_ptr->conn_type))
 					!= STATUS_OK) {
@@ -978,11 +977,12 @@ int read_bgl_partitions()
 			}
 			if ((rm_rc = rm_get_data(part_ptr, 
 						 RM_PartitionUserName,
-						 &owner_name)) != STATUS_OK) {
+						 &bgl_part_ptr->owner_name))
+                            != STATUS_OK) {
 				error("rm_get_data(RM_PartitionUserName): %s",
 				      bgl_err_str(rm_rc));
-			} else
-				bgl_part_ptr->owner_name = xstrdup(owner_name);
+			} 
+
 			info("BglBlock:%s Conn:%s Use:%s Owner:%s", part_id, 
 			     convert_conn_type(bgl_part_ptr->conn_type),
 			     convert_node_use(bgl_part_ptr->node_use), 
@@ -993,13 +993,23 @@ int read_bgl_partitions()
 				error("rm_free_partition(): %s",
 					bgl_err_str(rm_rc));
 			}
-		}
+		
 
-		bgl_part_ptr->bp_count++;
+                        //find the correct api for this and switch count
+                        //bgl_part_ptr->bp_count++;
+                }
+                if ((rm_rc = rm_get_data(bgl, RM_NextBP, &bp_ptr))
+					!= STATUS_OK) {
+				error("rm_get_data(RM_NextBP): %s",
+					bgl_err_str(rm_rc));
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
 	}
 
 	/* perform post-processing for each bluegene partition */
-	list_for_each(bgl_init_part_list, _post_bgl_init_read, NULL);
+	list_for_each(bgl_curr_part_list, _post_bgl_init_read, NULL);
 	return rc;
 }
 
