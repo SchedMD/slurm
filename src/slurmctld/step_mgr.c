@@ -348,7 +348,7 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 
 	/* if user specifies step needs a specific processor count and  */
-	/* all nodeshave the same processor count, just translate this to */
+	/* all nodes have the same processor count, just translate this to */
 	/* a node count */
 	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
 		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) 
