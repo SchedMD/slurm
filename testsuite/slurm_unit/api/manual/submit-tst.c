@@ -39,6 +39,7 @@ main (int argc, char *argv[])
 	}
 	else
 		printf ("job %u submitted\n", resp_msg->job_id);
+	slurm_free_submit_response_response_msg ( resp_msg );
 
 	if (argc > 1) 
 		count = atoi (argv[1]);
@@ -70,6 +71,7 @@ main (int argc, char *argv[])
 		else {
 			printf ("job %u submitted\n", resp_msg->job_id);
 		}
+		slurm_free_submit_response_response_msg ( resp_msg );
 	}
 
 	exit (error_code);
