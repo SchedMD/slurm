@@ -7,7 +7,8 @@ SUBDIRS    = src testsuite doc
 EXTRA_DIST =             		\
 	etc/slurm.conf.localhost 	\
 	autogen.sh      		\
-        Make-rpm.mk
+        Make-rpm.mk slurm.spec		\
+	META
 
 MAINTAINERCLEANFILES = 			\
 	aclocal.m4 config.guess 	\
