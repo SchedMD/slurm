@@ -127,7 +127,6 @@ int srun(int ac, char **av)
 
 	if (!opt.allocate)
 		(void) _set_rlimit_env();
-
 	/* Set up slurmctld message handler */
 	slurmctld_msg_init();
 

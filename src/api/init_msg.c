@@ -79,6 +79,9 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->work_dir    = NULL;
 	job_desc_msg->host        = NULL;
 	job_desc_msg->port        = 0;
+	job_desc_msg->geometry[0] = NO_VAL;
+	job_desc_msg->type        = NO_VAL;
+	job_desc_msg->rotate      = NO_VAL;
 }
 
 /*

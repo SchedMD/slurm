@@ -92,6 +92,7 @@
 #define LONG_OPT_CORE	  0x10e
 #define LONG_OPT_NOSHELL  0x10f
 #define LONG_OPT_DEBUG_TS 0x110
+#define LONG_OPT_TYPE	  0x111
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
@@ -422,6 +423,10 @@ static void _opt_default()
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
+	opt.geometry	    = NULL;
+	opt.rotate	    = (uint16_t) NO_VAL;
+	opt.type	    = NULL;
+
 	opt.euid	    = (uid_t) -1;
 	opt.egid	    = (gid_t) -1;
 	
@@ -629,6 +634,9 @@ static void _opt_args(int argc, char **argv)
 		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
 		{"no-allocate",   no_argument,       0, 'Z'},
+		{"geometry",	  required_argument, 0, 'g'}, 
+		{"rotate",	  required_argument, 0, 'R'}, 
+		{"conn-type",	  required_argument, 0, LONG_OPT_TYPE},
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
@@ -650,7 +658,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:Hi:IjJ:klm:n:N:"
-		"o:Op:P:Qr:st:T:uU:vVw:W:x:Zq";
+		"o:Op:P:Qr:st:T:uU:vVw:W:x:Zqg:R:";
 	char **rest = NULL;
 
 	opt.progname = xbasename(argv[0]);
@@ -710,6 +718,10 @@ static void _opt_args(int argc, char **argv)
 		case (int)'e':
 			xfree(opt.efname);
 			opt.efname = xstrdup(optarg);
+			break;
+		case (int)'g':
+			xfree(opt.geometry);
+			opt.geometry = xstrdup(optarg);
 			break;
 		case (int)'H':
 			opt.hold = true;
@@ -781,6 +793,9 @@ static void _opt_args(int argc, char **argv)
 		case (int)'r':
 			xfree(opt.relative);
 			opt.relative = xstrdup(optarg);
+			break;
+		case (int)'R':
+			opt.rotate = _get_int(optarg, "rotate");
 			break;
 		case (int)'s':
 			opt.share = true;
@@ -898,6 +913,10 @@ static void _opt_args(int argc, char **argv)
 		case LONG_OPT_USAGE:
 			_usage();
 			exit(0);
+		case LONG_OPT_TYPE:
+			xfree(opt.type);
+			opt.type = xstrdup(optarg);
+			break;
 		}
 	}
 
@@ -1077,6 +1096,60 @@ static bool _opt_verify(void)
 
 	if (opt.noshell && !opt.allocate) {
 		error ("--no-shell only valid with -A (--allocate)");
+		verified = false;
+	}
+
+	/* 
+	 * -geometry must be less than or equal to SYSTEM_DIMENSIONS
+	 */
+	if (opt.geometry != NULL){
+	  char* delimiter = ",x", *next_ptr;
+	  char* geometry_str = xstrdup(opt.geometry);
+	  char* token = strtok_r(geometry_str, delimiter, &next_ptr);
+	  
+	  /* X-dimension */
+	  if (!token || atoi(token) > X_DIMENSION){
+		  error("_opt_verify: specified geometry not enough dimensions or X dimension too big");
+		  verified = false;
+	  }
+	  geometry_str = next_ptr;
+	  token = strtok_r(geometry_str, delimiter, &next_ptr);
+	  
+	  /* Y-dimension */
+	  if (!token || atoi(token) > Y_DIMENSION){
+		  error("_opt_verify: specified geometry not enough dimensions or Y dimension too big");
+		  verified = false;
+	  }
+	  geometry_str = next_ptr;
+	  token = strtok_r(geometry_str, delimiter, &next_ptr);
+
+	  /* Z-dimension */
+	  if (!token || atoi(token) > Z_DIMENSION){
+		  error("_opt_verify: specified geometry not enough dimensions or Z dimension too big");
+		  verified = false;
+	  }
+	  geometry_str = next_ptr;
+	  token = strtok_r(geometry_str, delimiter, &next_ptr);
+
+	  /* if we've read through SYSTEM_DIMENSIONS, and still have
+	     more tokens, then we have too many */
+	  if (token != NULL) {
+		  error("_opt_verify: specified geometry exceeds number of dimensions in system.");
+		  verified = false;
+	  }
+	}
+	
+	if (opt.type && 
+	    strcasecmp(opt.type,"MESH") &&
+	    strcasecmp(opt.type,"TORUS") &&
+	    strcasecmp(opt.type,"NAV")){
+		error("_opt_verify: specified conn-type \"%s\" invalid.", opt.type);
+		verified = false;
+	}
+
+	if (opt.rotate != true && opt.rotate != false){
+		error("_opt_verify: rotate <%d> must be either %d or %d for false or true, respectively.",
+		      opt.rotate, false, true);
 		verified = false;
 	}
 
@@ -1338,6 +1411,13 @@ static void _help(void)
 "      --usage                 display brief usage message\n"
 "\n"
 "Other options:\n"
-"  -V, --version               output version information and exit\n");
+"  -V, --version               output version information and exit\n"
+"\n"
+"BGL related options:\n"
+"  -g, --geometry              geometry constraints of the job.\n"
+"  -R, --rotate                allow geometry rotation (default=true)\n"
+"      --conn-type             constraint on type of connection (Mesh/Torus).\n"
+"                              If not set, then tries to fit Torus else Mesh.\n"
+);
 
 }

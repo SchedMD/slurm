@@ -370,6 +370,52 @@ job_desc_msg_create_from_opts (char *script)
 
 	if (opt.hold)
 		j->priority     = 0;
+
+	if (opt.geometry) {
+		char* token, *delimiter = ",x", *next_ptr;
+		int i;
+		char* geometry_tmp = xstrdup(opt.geometry);
+		char* original_ptr = geometry_tmp;
+		token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+		for (i=0; i<SYSTEM_DIMENSIONS; i++){
+			
+			/* this shouldn't happen, as we've checked 
+			 * this before, but the error checking done here is simply for
+			 * redundancy */
+			if (token == NULL){
+				error("_opt_verify: not enough dimensions specified in geometry.\n");
+				/* FIXME: we shouldn't ever get this far...
+				 * so if we break here, that means we have too many
+				 * dimensions in the job, which was supposed to be
+				 * caught before in _opt_verify, so... */
+				break;
+			}
+			j->geometry[i]    = atoi(token);
+			geometry_tmp = next_ptr;
+			token = strtok_r(geometry_tmp, delimiter, &next_ptr);
+		}
+		if (original_ptr)
+			xfree(original_ptr);
+	} else {
+		j->geometry[0] = NO_VAL;
+	}
+
+	if (opt.type){
+		if (!strcasecmp(opt.type,"TORUS")) {
+			j->type = RM_TORUS;
+		} else if (!strcasecmp(opt.type,"NAV")) {
+			j->type = RM_NAV;
+		} else {
+			j->type = RM_MESH;
+		}
+	} else {
+		j->type = NO_VAL;
+	}
+	if (opt.rotate)
+		j->rotate = opt.rotate;
+	else
+		j->rotate = NO_VAL;
+
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
 	if (opt.mincpus > -1)
@@ -396,6 +442,19 @@ job_desc_msg_create_from_opts (char *script)
 		j->host = xstrdup(slurmctld_comm_addr.hostname);
 	else
 		j->host = NULL;
+
+	debug("srun phung: job request:");
+	debug("\tgeometry %d %d %d", j->geometry[0],j->geometry[1],j->geometry[2]);
+	if (j->type == 0) {
+		debug("\ttype RM_MESH");
+	} else if (j->type == 1) {
+		debug("\ttype RM_TORUS");
+	} else {
+		debug("\ttype RM_NAV");
+	}
+	debug("\trotate %d", j->rotate);
+	debug("\tmin_nodes %d", j->min_nodes);
+	debug("\tmax_nodes %d", j->max_nodes);
 
 	if (script) {
 		/*
