@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  bgl_job.h - header for blue gene job management functions. 
+ *  bgl_job_place.h - header for blue gene job placement (e.g. base partition 
+ *  selection) functions. 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -23,8 +24,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _BGL_JOB_H_
-#define _BGL_JOB_H_
+#ifndef _BGL_JOB_PLACE_H_
+#define _BGL_JOB_PLACE_H_
+
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * Try to find resources for a given job request
@@ -38,4 +41,4 @@
 extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
 	       int min_nodes, int max_nodes);
 
-#endif /* _BGL_JOB_H_ */
+#endif /* _BGL_JOB_PLACE_H_ */

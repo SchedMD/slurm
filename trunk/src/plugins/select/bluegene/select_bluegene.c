@@ -49,7 +49,8 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
-#include "bgl_job.h"
+#include "bgl_job_place.h"
+#include "bgl_job_run.h"
 #include "bluegene.h"
 
 /*
@@ -274,12 +275,10 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_init(struct job_record *job_ptr)
 {
-	/* no-op for static partitions */
-	return SLURM_SUCCESS;
+	return start_job(job_ptr);
 }
 
 extern int select_p_job_fini(struct job_record *job_ptr)
 {
-	/* no-op for static partitions */
-	return SLURM_SUCCESS;
+	return term_job(job_ptr);
 }

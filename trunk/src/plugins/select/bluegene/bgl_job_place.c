@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  bgl_job.c - blue gene job management functions. 
+ *  bgl_job_place.c - blue gene job placement (e.g. base partition selection)
+ *  functions. 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
