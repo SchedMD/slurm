@@ -93,11 +93,11 @@
 % Abstract itself - 10pt
 \noindent\normalsize
 The Blue Gene/L (BGL) system is a highly scalable computer developed 
-by IBM for Lawrence Livermore National Laboratory (LLNL). 
+by IBM and deployed Lawrence Livermore National Laboratory (LLNL). 
 The current system has over 131,000 processors interconnected by a 
 three-dimensional toroidal network with complex rules for managing 
 the network and allocating resources to jobs.
-We selected SLURM (Simple Linux Utility for Resource Management ) to 
+SLURM (Simple Linux Utility for Resource Management ) was selected to 
 fulfull this role. 
 SLURM is an open source, fault-tolerant, and highly scalable cluster 
 management and job scheduling system in widespread use on Linux clusters.
@@ -119,10 +119,11 @@ management for BGL and preliminary performance results.
 
 \section{Overview}
 
-The Blue Gene/L system offers a unique cell-based design in which 
-the capacity can be expanded without introducing bottlenecks.
+The BlueGene/L (BGL) system offers a unique cell-based design in which 
+the capacity can be expanded without introducing bottlenecks 
+\cite{BlueGeneWeb,BlueGeneL2002}.
 The Blue Gene/L system delivered to LLNL consists of 
-131,072 processors and 16TB of memory.  
+131,072 processors and 33TB of memory \cite{BlueGene2002}.  
 The peak computational rate will exceed 360 TeraFLOPs.
 
 Simple Linux Utility for Resource Management (SLURM)\footnote{A tip of 
@@ -130,14 +131,14 @@ the hat to Matt Groening and creators of {\em Futurama},
 where Slurm is the most popular carbonated beverage in the universe.} 
 is a resource management system suitable for use on both small and 
 very large clusters. 
-SLURM was jointly developed by Lawrence Livermore National Laboratory
-(LLNL) and Linux NetworX. 
+SLURM was developed by Lawrence Livermore National Laboratory
+(LLNL), Linux NetworX and HP. 
 It has been deployed on hundreds of Linux clusters world-wide and has 
 proven both highly reliable and highly scalalble.
 
 \section{Architecture of Blue Gene/L}
 
-The basic building-blocks of Blue Gene/L are c-nodes. 
+The basic building-blocks of BGL are c-nodes. 
 Each c-node consists
 of two processors based upon the PowerPC 550GX, 512 MB of memory 
 and support for five separate networks on a single chip.
@@ -147,7 +148,7 @@ Alternately, both processors may be used for computations.
 These c-nodes are subsequently grouped into base partitions, each consisting 
 of 512 c-nodes in an eight by eight by eight array with the same 
 network support.
-The Blue Gene/L system delivered to LLNL consists of 128 base 
+The BGL system delivered to LLNL consists of 128 base 
 partitions organized in an eight by four by four array.
 The minimal resource allocation unit for applications is one 
 base partition so that at most 128 simultaneous jobs may execute. 
@@ -156,7 +157,7 @@ The c-nodes execute a custom micro-kernel.
 System calls that can not directly be processed by the c-node 
 micro-kernel are routed to one of the systems I/O nodes. 
 There are 1024 I/O nodes running the Linux operating system, 
-each of which services the requests from 64 c-nodes.
+each of which service the requests from 64 c-nodes.
 
 Three distinct communications networks are supported: 
 a three-dimensional torus with direct nearest-neighbor connections;
@@ -166,15 +167,21 @@ The torus network connects each node to
 its nearest neighbors in the X, Y and Z directions for a 
 total of six of these connections for each node. 
 
+Only parallel user applications execute on the c-node. 
+BGL has eight front-end nodes for other user tasks. 
+Users can login to the front-end nodes, compile and 
+launch parallel applications. Front-end nodes can also
+be used for pre- and post-processing of data files.
 
-Service node, Front-end-node.
+BGL system administrative functions are performed on a 
+computer known as the service node, which also maintains 
+a DB2 database used for many BGL management functions.
 
-Mesh vs. Torus.
-Wiring rules.
+TO DO: Mesh vs. Torus.  Wiring rules.
 
-Overhead of starting a new job (e.g. reboot nodes).
-Etc.
-Be careful not to use non-public information (don't use 
+TO DO: Overhead of starting a new job (e.g. reboot nodes).
+
+NOTE: Be careful not to use non-public information (don't use 
 information directly from the "IBM Confidential" documents).
 
 \section{Architecture of SLURM}
@@ -182,7 +189,7 @@ information directly from the "IBM Confidential" documents).
 Only a brief description of SLURM architecture and implemenation is provided 
 here. 
 A more thorough treatment of the SLURM design and implementation is 
-available \cite{SLURM2002}.
+available from several sources \cite{SLURM2003,SlurmWeb}.
 
 Several SLURM features make it well suited to serve as a resource manager 
 for Blue Gene/L.
@@ -190,7 +197,7 @@ for Blue Gene/L.
 \begin{itemize}
 
 \item {\tt Scalability}: 
-The SLURM daemons are multi-threaded with independent read and write 
+The SLURM daemons are highly parallel  with independent read and write 
 locks on the various data structures. 
 SLURM presently manages several Linux clusters with over 1000 nodes 
 and executes full-system parallel jobs on these systems in a few seconds.
@@ -204,7 +211,7 @@ permits a variety of different infrastructures to be easily supported.
 The SLURM configuration file specifies which set of plugin modules 
 should be used. 
 For example, plugins are used for interfacing with different authentication 
-mechanisms and node interconnects.
+mechanisms and interconnects.
 
 \item {\tt Fault Tolerance}: SLURM can handle a variety of failure
 modes without terminating workloads, including crashes of the node
@@ -310,27 +317,24 @@ identifies the directory in which to find the plugin.
 
 \section {Blue Gene/L Specific Resource Management Issues}
 
-Several issues needed to be addressed for SLURM to support BGL:
-pseudo-nodes representing the base partitions, topology, 
-\slurmd\ executing only on the front-end-node, 
-BGL wiring issues and use of the BGL-specific APIs.
-BGL wiring issues are extensive and addressed in a separate section.
-
 Since a BGL base partition is the minimum allocation unit for a job, 
 it was natural to consider each one as an independent SLURM node. 
 This meant SLURM would manage a very reasonable 128 nodes 
 rather than tens of thousands of individual c-nodes.
-The \slurmd\ daemon was designed to execute on each SLURM 
-nodes to monitor the status of that node, launch job steps, etc. 
+The \slurmd\ daemon was originally designed to execute on each 
+SLURM node to monitor the status of that node, launch job steps, etc. 
 Unfortunately BGL prohibited the execute of SLURM daemons within 
 the base partitions on any of the c-nodes. 
-SLIURM forced to execute one \slurmd\ for the entire BGL system 
-on a front-end node.
+SLURM was compelled to execute \slurmd\ on one or more 
+front-end nodes.
 In addition,  the typical Unix mechanism used to interact with a 
-compute host do not function with BGL base partitions. 
+compute host (e.g. getting memory size or processor count) do not 
+function normally with BGL base partitions. 
 This issue was addressed by adding a SLURM parameter to 
 indicate when it is running with a front-end node, in which case 
 there is assumed to be a single \slurmd\ for the entire system. 
+We anticipate changing this in the future to support multiple 
+\slurmd\ daemons on the front-end nodes.
 
 SLURM was originally designed to address a one-dimensional topology
 and this impacted a variety of areas from naming convensions to 
@@ -342,7 +346,7 @@ SLURM addresses this by using regular expressions to indicate
 ranges of node names. 
 For example, "linux[0-1023]" was used to represent 1024 nodes 
 with names having a prefix of "linux" and a numeric suffic ranging 
-from "0" to "1023". 
+from "0" to "1023" (e.g. "linux0" through "linux1023"). 
 The most reasonable way to name the BGL nodes seemed to be 
 using a three digit suffix, but rather than indicate a monotonically 
 increasing number, each digit would represent the base partition's 
@@ -391,8 +395,7 @@ opaque data type.
 Since these new data types are unused on non-BGL systems, the 
 functions to manage them perform no work. 
 Other computers with other topology requiremens will be able to 
-take advantage of this plugin infrastructure as well with minimal 
-effort.
+take advantage of this plugin infrastructure with minimal effort.
 
 In order to provide users with a clear view of the BGL topology, a new 
 tools was developed.
@@ -426,10 +429,6 @@ a script.
 The job will initiate its parallel tasks through the use of {\em mpirun}.
 {\em mpirun} uses BGL-specific APIs to launch and manage the 
 tasks. 
-An additional benefit of this architecture is that the single \slurmd\ 
-for the entire system is relieved of job step management, which 
-could involve a significant amount of overhead for a computer 
-of BGL's size. 
 We disabled SLURM's job step support for normal users to 
 mitigate the possible impact of users inadvertently attempting 
 to initiate job steps through SLURM.
