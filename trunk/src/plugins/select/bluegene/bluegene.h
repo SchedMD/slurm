@@ -74,7 +74,7 @@ enum part_lifecycle {DYNAMIC, STATIC};
 typedef struct bgl_record {
 	char* slurm_part_id;		/* ID specified by admins	*/
 	char * owner_name;		/* Owner of partition		*/
-	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
+	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
 	char* nodes;			/* String of nodes in partition */
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
 	hostlist_t hostlist;		/* expanded form of hosts */
@@ -95,12 +95,6 @@ typedef struct bgl_conf_record {
 	rm_partition_mode_t node_use;
 } bgl_conf_record_t;
 
-/* 
- * Read and process the bluegene.conf configuration file so to interpret what 
- * partitions are static/dynamic, torus/mesh, etc.
- */
-extern int read_bgl_conf(void);
-
 /* Initialize all plugin variables */
 extern int init_bgl(void);
 
@@ -115,6 +109,12 @@ extern void fini_bgl(void);
  * RET - success of fitting all configurations
  */
 extern int create_static_partitions(List part_list);
+
+/*
+ * Read and process the bluegene.conf configuration file so to interpret what
+ * partitions are static/dynamic, torus/mesh, etc.
+ */
+extern int read_bgl_conf(void);
 
 /* sort a list of bgl_records by size (node count) */
 extern void sort_bgl_record_inc_size(List records);

@@ -48,7 +48,7 @@ typedef struct partition {
 	ushort dimensions[SYSTEM_DIMENSIONS]; /* X,Y,Z dimensions */
 	void* bgl_record_ptr;		/* pointer to referring bgl_record */
 	int size;
-	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
+	pm_partition_id_t bgl_part_id;	/* ID returned from MMCS	*/
 	ushort conn_type;	/* Type=Mesh/Torus/NAV		*/
 	ushort node_use;	/* Use=Virtual/Coprocessor	*/
 } partition_t;
@@ -72,7 +72,7 @@ extern void sort_partitions_by_dec_size(List partitions);
 extern void init_bgl_partition_num(void);
 
 /*
- * Download from CMCS the initial BGL partition information
+ * Download from MMCS the initial BGL partition information
  */
 extern int read_bgl_partitions(void);
 
