@@ -545,16 +545,16 @@ _parse_part_spec (char *in_line)
 {
 	int error_code;
 	char *allow_groups = NULL, *default_str = NULL;
-	char *partition = NULL, *root_str = NULL;
+	char *partition = NULL, *max_time_str = NULL, *root_str = NULL;
 	char *nodes = NULL, *shared_str = NULL, *state_str = NULL;
-	int max_time_val, max_nodes_val, min_nodes_val;
+	int max_nodes_val, min_nodes_val;
 
 	error_code = slurm_parser (in_line,
 		"AllowGroups=", 's', &allow_groups, 
 		"Default=", 's', &default_str, 
 		"PartitionName=", 's', &partition, 
 		"RootOnly=", 's', &root_str, 
-		"MaxTime=", 'd', &max_time_val, 
+		"MaxTime=", 's', &max_time_str, 
 		"MaxNodes=", 'd', &max_nodes_val, 
 		"MinNodes=", 'd', &min_nodes_val, 
 		"Nodes=", 's', &nodes, 
@@ -562,18 +562,16 @@ _parse_part_spec (char *in_line)
 		"State=", 's', &state_str, 
 		"END");
 
-	if (error_code)
-		return error_code;
-
 	xfree(allow_groups);
 	xfree(default_str);
 	xfree(partition);
+	xfree(max_time_str);
 	xfree(root_str);
 	xfree(nodes);
 	xfree(shared_str);
 	xfree(state_str);
 
-	return 0;
+	return error_code;
 }
 
 /*
