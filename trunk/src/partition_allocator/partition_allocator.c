@@ -29,11 +29,9 @@
 #include "graph_solver.h"
 #include <math.h>
 
-// #define AUBLE_STUB
-#define DEBUG_PA
-
-#define BIG_MAX 9999;
 int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {4,4,4};
+
+struct pa_node*** _pa_system_list;
 
 /**
  * These lists hold the partition data and corresponding
@@ -265,7 +263,7 @@ int _get_part_config(List switch_config_list, List part_config_list)
 {
 	int num_nodes = 4;
 	int rc = 1;
-	if(init_system(switch_config_list, num_nodes)){
+	if (init_system(switch_config_list, num_nodes)){
 		printf("error initializing system\n");
 		goto cleanup;
 	}
@@ -978,7 +976,7 @@ void print_pa_request(struct pa_request* pa_request)
  */
 void partition_allocator_init()
 {
-	int i, num_nodes;
+	int i;
 	List switch_config_list;
 
 	_conf_result_list = (List*) xmalloc(sizeof(List) * PA_SYSTEM_DIMENSIONS);
@@ -987,7 +985,6 @@ void partition_allocator_init()
 		_conf_result_list[i] = list_create(delete_conf_result);
 	}
 
-	num_nodes = 4;
 	/** 
 	 * hard code in configuration until we can read it from a file 
 	 */
@@ -995,15 +992,33 @@ void partition_allocator_init()
 	 * in case they change
 	 */
 
-	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-		switch_config_list = list_create(delete_gen);
-		create_config_4_1d(switch_config_list);
-		if (_get_part_config(switch_config_list, _conf_result_list[i])){
-			printf("Error getting configuration\n");
-			exit(0);
-		}
-		list_destroy(switch_config_list);
+	/* create the X configuration (8 nodes) */
+	switch_config_list = list_create(delete_gen);
+	create_config_8_1d(switch_config_list);
+	if (_get_part_config(switch_config_list, _conf_result_list[X])){
+		printf("Error getting configuration\n");
+		exit(0);
 	}
+	list_destroy(switch_config_list);
+
+	/* create the Y configuration (4 nodes) */
+	switch_config_list = list_create(delete_gen);
+	create_config_4_1d(switch_config_list);
+	if (_get_part_config(switch_config_list, _conf_result_list[Y])){
+		printf("Error getting configuration\n");
+		exit(0);
+	}
+	list_destroy(switch_config_list);
+
+	/* create the Z configuration (4 nodes) */
+	switch_config_list = list_create(delete_gen);
+	create_config_4_1d(switch_config_list);
+	if (_get_part_config(switch_config_list, _conf_result_list[Z])){
+		printf("Error getting configuration\n");
+		exit(0);
+	}
+	list_destroy(switch_config_list);
+
 
 	_create_pa_system();
 	_initialized = true;
@@ -1071,47 +1086,7 @@ int allocate_part(pa_request_t* pa_request, List* results)
 	print_pa_request(pa_request);
 #endif
 
-#ifndef AUBLE_STUB
 	_find_first_match(pa_request, results);
-#else
-	/* for danny, to stub out the allocate_part function
-	 * fills out a request for a 3x2x1 partition
-	 */
-
-	int* coord;
-	*results = list_create(delete_gen);
-
-	/* node 000 */
-	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
-	coord[0] = 0; coord[1] = 0; coord[2] = 0;
-	list_append(*results, coord);
-
-	/* node 100 */
-	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
-	coord[0] = 1; coord[1] = 0; coord[2] = 0;
-	list_append(*results, coord);
-
-	/* node 200 */
-	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
-	coord[0] = 2; coord[1] = 0; coord[2] = 0;
-	list_append(*results, coord);
-
-	/* node 010 */
-	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
-	coord[0] = 0; coord[1] = 1; coord[2] = 0;
-	list_append(*results, coord);
-
-	/* node 110 */
-	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
-	coord[0] = 1; coord[1] = 1; coord[2] = 0;
-	list_append(*results, coord);
-
-	/* node 210 */
-	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
-	coord[0] = 2; coord[1] = 1; coord[2] = 0;
-	list_append(*results, coord);
-#endif
-	
 	return 1;
 }
 
