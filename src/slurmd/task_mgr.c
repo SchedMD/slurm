@@ -4,6 +4,7 @@
 #include <grp.h>
 #include <sys/wait.h>
 #include <errno.h>
+#include <string.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <src/common/log.h>
@@ -139,9 +140,12 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 int forward_io ( task_start_t * task_arg ) 
 {
 	pthread_attr_t pthread_attr ;
+	struct sigaction newaction ;
+        struct sigaction oldaction ;
 	int local_errno;
+	newaction . sa_handler = SIG_IGN ;
 #define STDIN_OUT_SOCK 0
-#define SIG_STDERR_SOCK 0
+#define SIG_STDERR_SOCK 1 
 	/* open stdout & stderr sockets */
 	if ( ( task_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( task_arg -> inout_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
@@ -156,6 +160,8 @@ int forward_io ( task_start_t * task_arg )
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 		pthread_exit ( 0 ) ;
 	}
+	
+	sigaction(SIGPIPE, &newaction, &oldaction); /* ignore tty input */
 	
 	/* spawn io pipe threads */
 	pthread_attr_init( & pthread_attr ) ;
@@ -187,18 +193,22 @@ void * stdin_io_pipe_thread ( void * arg )
 	task_start_t * io_arg = ( task_start_t * ) arg ;
 	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
-	int sock_bytes_written ;
+	int bytes_written ;
+	struct sigaction newaction ;
+        struct sigaction oldaction ;
+	newaction . sa_handler = SIG_IGN ;
+	sigaction(SIGPIPE, &newaction, &oldaction); /* ignore tty input */
 	
 	while ( true )
 	{
-		if ( ( sock_bytes_written = slurm_read_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) == SLURM_PROTOCOL_ERROR )
 		{
-			info ( "error sending stdout stream for task %i", 1 ) ;
+			info ( "error reading stdin stream for task %i", 1 ) ;
 			pthread_exit ( NULL ) ; 
 		}
-		if ( ( bytes_read = write ( io_arg->pipes[CHILD_IN_WR] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , buffer , bytes_read ) ) <= 0 )
 		{
-			info ( "error reading stdout stream for task %i", 1 ) ;
+			info ( "error sending stdin stream for task %i", 1 ) ;
 			pthread_exit ( NULL ) ;
 		}
 	}
@@ -211,6 +221,10 @@ void * stdout_io_pipe_thread ( void * arg )
 	int bytes_read ;
 	int sock_bytes_written ;
 	int local_errno ;
+	struct sigaction newaction ;
+        struct sigaction oldaction ;
+	newaction . sa_handler = SIG_IGN ;
+	sigaction(SIGPIPE, &newaction, &oldaction); /* ignore tty input */
 	
 	while ( true )
 	{

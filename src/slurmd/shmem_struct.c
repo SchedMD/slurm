@@ -9,7 +9,8 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/slurmd/shmem_struct.h>
 
-
+extern int errno ;
+static int shmem_gid ;
 #define OCTAL_RW_PERMISSIONS 0666
 
 /* function prototypes */
@@ -23,21 +24,22 @@ static int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_
  */
 void * get_shmem ( )
 {
-	int shmem_id ;
 	void * shmem_addr ;
 	int key ;
 	key = ftok ( ".", 'a' );
 	assert ( key != SLURM_ERROR );
-	shmem_id = shmget ( key , sizeof ( slurmd_shmem_t ) , IPC_CREAT | OCTAL_RW_PERMISSIONS ); 
-	assert ( shmem_id != SLURM_ERROR ) ;
-	shmem_addr = shmat ( shmem_id , NULL , 0 ) ;
+	shmem_gid = shmget ( key , sizeof ( slurmd_shmem_t ) , IPC_CREAT | OCTAL_RW_PERMISSIONS ); 
+	info ( "shmget id = %i , errno = %i ", shmem_gid, errno );
+	assert ( shmem_gid != SLURM_ERROR ) ;
+	shmem_addr = shmat ( shmem_gid , NULL , 0 ) ;
 	assert ( shmem_addr != (void * ) SLURM_ERROR ) ;
 	return shmem_addr ;
 }
 
 int rel_shmem ( void * shmem_addr ) 
 {
-	return shmdt( shmem_addr ) ;
+	shmdt( shmem_addr ) ;
+	return shmctl ( shmem_gid , IPC_RMID , NULL ) ;
 }
 
 /* initializes the shared memory segment, this should only be called once by the master slurmd 
