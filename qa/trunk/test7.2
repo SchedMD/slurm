@@ -69,7 +69,7 @@ exec $bin_chmod 700 $file_prog_get
 # Spawn a job to test BNR functionality
 #
 set timeout $max_job_delay
-spawn $srun -t1 $file_prog_get
+spawn $srun -N1 -n1 -O -t1 $file_prog_get
 expect {
 	-re "FAILURE" {
 		send_user "\nFAILURE: some error occured\n"
