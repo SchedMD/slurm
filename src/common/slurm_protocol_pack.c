@@ -1640,6 +1640,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpack32(&job->min_procs, buffer);
 	safe_unpack32(&job->min_memory, buffer);
 	safe_unpack32(&job->min_tmp_disk, buffer);
+	safe_unpack16(&job->wait_reason, buffer);
 
 	safe_unpackstr_xmalloc(&job->req_nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint16_tmp, buffer);

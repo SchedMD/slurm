@@ -1178,9 +1178,11 @@ void rehash_jobs(void)
  * OUT node_list - list of nodes allocated to the job
  * OUT node_cnt - number of allocated nodes
  * OUT node_addr - slurm_addr's for the allocated nodes
- * RET 0 or an error code
+ * RET 0 or an error code. If the job would only be able to execute with 
+ *	some change in partition configuration then 
+ *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts  
- *	 of 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4}
+ *	of 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4}
  *	and cpu_count_reps={4,2,2}
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
@@ -1500,7 +1502,9 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
  * IN will_run - job is not to be created, test of validity only
  * OUT new_job_id - the job's ID
  * OUT job_pptr - pointer to the job (NULL on error)
- * RET 0 on success, otherwise ESLURM error code
+ * RET 0 on success, otherwise ESLURM error code. If the job would only be
+ *	able to execute with some change in partition configuration then
+ *	ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE is returned
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -1512,6 +1516,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		       struct job_record **job_pptr, uid_t submit_uid)
 {
 	int error_code = SLURM_SUCCESS, i;
+	struct job_details *detail_ptr;
+	enum job_wait_reason fail_reason;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
@@ -1669,6 +1675,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
+	detail_ptr = (*job_pptr)->details;
+	fail_reason= WAIT_NO_REASON;
 	if ((job_desc->user_id == 0) ||
 	    (job_desc->user_id == slurmctld_conf.slurm_user_id))
 		super_user = true;
@@ -1677,21 +1685,25 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		info("Job %u requested too many nodes (%d) of "
 			"partition %s(%d)", *new_job_id, job_desc->min_nodes, 
 			part_ptr->name, part_ptr->max_nodes);
-		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((!super_user) &&
 	           (job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
 		info("Job %u requested too few nodes (%d) of partition %s(%d)",
 		     *new_job_id, job_desc->max_nodes, 
 		     part_ptr->name, part_ptr->min_nodes);
-		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if (part_ptr->state_up == 0) {
 		info("Job %u requested down partition %s", 
 		     *new_job_id, part_ptr->name);
-		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		fail_reason = WAIT_PART_STATE;
 	}
-	if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
-		(*job_pptr)->priority = 1;	/* Move to end of queue */
+	if (fail_reason != WAIT_NO_REASON) {
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		(*job_pptr)->priority = 1;      /* Move to end of queue */
+		 if (detail_ptr)
+			detail_ptr->wait_reason = fail_reason;
+	}
 
       cleanup:
 	FREE_NULL_BITMAP(req_bitmap);
@@ -2494,6 +2506,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) detail_ptr->min_procs, buffer);
 		pack32((uint32_t) detail_ptr->min_memory, buffer);
 		pack32((uint32_t) detail_ptr->min_tmp_disk, buffer);
+		pack16((uint16_t) detail_ptr->wait_reason, buffer);
 
 		packstr(detail_ptr->req_nodes, buffer);
 		pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
@@ -2511,6 +2524,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
+		pack16((uint16_t) 0, buffer);
 
 		packstr(NULL, buffer);
 		packstr(NULL, buffer);
@@ -2748,30 +2762,38 @@ void reset_job_priority(void)
  */
 static bool _top_priority(struct job_record *job_ptr)
 {
-	ListIterator job_iterator;
-	struct job_record *job_ptr2;
+	struct job_details *detail_ptr = job_ptr->details;
 	bool top;
 
-	if (job_ptr->priority == 0)	/* held */
-		return false;
+	if (job_ptr->priority == 0)	/* user held */
+		top = false;
+	else {
+		ListIterator job_iterator;
+		struct job_record *job_ptr2;
 
-	top = true;		/* assume top priority until found otherwise */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr2 = (struct job_record *) list_next(job_iterator))) {
-		if (job_ptr2 == job_ptr)
-			continue;
-		if (job_ptr2->job_state != JOB_PENDING)
-			continue;
-		if (!job_independent(job_ptr2))
-			continue;
-		if ((job_ptr2->priority >  job_ptr->priority) &&
-		    (job_ptr2->part_ptr == job_ptr->part_ptr)) {
-			top = false;
-			break;
+		top = true;	/* assume top priority until found otherwise */
+		job_iterator = list_iterator_create(job_list);
+		while ((job_ptr2 = (struct job_record *) 
+				list_next(job_iterator))) {
+			if (job_ptr2 == job_ptr)
+				continue;
+			if (job_ptr2->job_state != JOB_PENDING)
+				continue;
+			if (!job_independent(job_ptr2))
+				continue;
+			if ((job_ptr2->priority >  job_ptr->priority) &&
+			    (job_ptr2->part_ptr == job_ptr->part_ptr)) {
+				top = false;
+				break;
+			}
 		}
+		list_iterator_destroy(job_iterator);
 	}
 
-	list_iterator_destroy(job_iterator);
+	if ((!top) &&			/* not top prio and */ 
+	    (job_ptr->priority != 1) && /* not system hold */
+	    (detail_ptr))
+		detail_ptr->wait_reason = WAIT_PRIORITY;
 	return top;
 }
 
@@ -3458,6 +3480,7 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 extern bool job_independent(struct job_record *job_ptr)
 {
 	struct job_record *dep_ptr;
+	struct job_details *detail_ptr = job_ptr->details;
 
 	if (job_ptr->dependency == 0)
 		return true;
@@ -3469,6 +3492,9 @@ extern bool job_independent(struct job_record *job_ptr)
 	if (((dep_ptr->job_state & JOB_COMPLETING) == 0) &&
 	    (dep_ptr->job_state >= JOB_COMPLETE))
 		return true;
+
+	if (detail_ptr)
+		detail_ptr->wait_reason = WAIT_DEPENDENCY;
 	return false;	/* job exists and incomplete */
 }
 

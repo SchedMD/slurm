@@ -409,6 +409,21 @@ void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 	}
 }
 
+/* Given a job's reason for waiting, return a descriptive string */
+extern char *job_reason_string(enum job_wait_reason inx)
+{
+	static char *job_reason_string[] = {
+		"None",	/* WAIT_NO_REASON */
+		"Priority",
+		"Dependency",
+		"Resources",
+		"PartitionNodeLimit",
+		"PartitionTimeLimit",
+		"PartitionDown"
+	};
+	return job_reason_string[inx];
+}
+
 char *job_state_string(enum job_states inx)
 {
 	static char *job_state_string[] = {

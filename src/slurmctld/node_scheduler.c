@@ -852,6 +852,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 {
 	int error_code = SLURM_SUCCESS, i, shared, node_set_size = 0;
 	bitstr_t *req_bitmap = NULL;
+	struct job_details *detail_ptr = job_ptr->details;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
 	uint32_t min_nodes, max_nodes, part_node_limit;
@@ -872,16 +873,24 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	/* Confirm that partition is up and has compatible nodes limits */
 	if ((job_ptr->user_id == 0) || (job_ptr->user_id == getuid()))
 		super_user = true;
-	else if (
-	    (part_ptr->state_up == 0) ||
-	    ((job_ptr->time_limit != NO_VAL) &&
-	     (job_ptr->time_limit > part_ptr->max_time)) ||
-	    ((job_ptr->details->max_nodes != 0) &&	/* no node limit */
-	     (job_ptr->details->max_nodes < part_ptr->min_nodes)) ||
-	    (job_ptr->details->min_nodes > part_ptr->max_nodes)) {
-		job_ptr->priority = 1;	/* move to end of queue */
-		last_job_update = time(NULL);
-		return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+	else {
+		enum job_wait_reason fail_reason = WAIT_NO_REASON;
+		if (part_ptr->state_up == 0)
+			fail_reason = WAIT_PART_STATE;
+		else if ((job_ptr->time_limit != NO_VAL) &&
+			 (job_ptr->time_limit > part_ptr->max_time))
+			fail_reason = WAIT_PART_TIME_LIMIT;
+		else if (((job_ptr->details->max_nodes != 0) &&
+		          (job_ptr->details->max_nodes < part_ptr->min_nodes)) ||
+		         (job_ptr->details->min_nodes > part_ptr->max_nodes))
+			 fail_reason = WAIT_PART_NODE_LIMIT;
+		if (fail_reason != WAIT_NO_REASON) {
+			if (detail_ptr)
+				detail_ptr->wait_reason = fail_reason;
+			job_ptr->priority = 1;	/* sys hold, move to end of queue */
+			last_job_update = time(NULL);
+			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+		}
 	}
 
 	/* build sets of usable nodes based upon their configuration */
@@ -932,7 +941,11 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 				      job_ptr->details->contiguous, 
 				      shared, part_node_limit);
 	if (error_code) {
+		if (detail_ptr)
+			detail_ptr->wait_reason = WAIT_RESOUCES;
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
+			/* Required nodes are down or 
+			 * too many nodes requested */
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
 			job_ptr->priority = 1;	/* Move to end of queue */
@@ -948,6 +961,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	}
 
 	/* assign the nodes and stage_in the job */
+	if (detail_ptr)
+		detail_ptr->wait_reason = WAIT_NO_REASON;
 	job_ptr->nodes = bitmap2node_name(req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
 	job_ptr->details->shared = shared;

@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Don't strip binaries, breaks parallel debuggers
  -- Fix bug in Munge authentication retry logic
  -- Change srun handling of interupts to work properly with TotalView
+ -- Added "reason" field to job info showing why a job is waiting to run
 
 * Changes in SLURM 0.3.7
 ========================
