@@ -334,6 +334,14 @@ slurm_auth_init( void )
         return retval;
 }
 
+void
+slurm_auth_fini( void )
+{
+	if ( g_context )
+		slurm_auth_context_destroy( g_context );
+
+	free_slurm_conf( &conf );
+}
 
 /*
  * Static bindings for the global authentication context.  The test
