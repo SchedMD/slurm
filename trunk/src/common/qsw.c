@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  qsw.c - Library routines for initiating jobs on QsNet. *****************************************************************************
+ *  qsw.c - Library routines for initiating jobs on QsNet. 
+ *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>
@@ -146,37 +147,37 @@ qsw_free_libstate(qsw_libstate_t ls)
  * Pack libstate structure in a format that can be shipped over the
  * network and unpacked on a different architecture.
  *   ls (IN)		libstate structure to be packed
- *   data (OUT)		where to store packed data
- *   len (IN)		max size of data 
+ *   data (IN/OUT)	where to store packed data
+ *   len (IN/OUT)	max size of data 
  *   RETURN		#bytes unused in 'data'
  */
 int
-qsw_pack_libstate(qsw_libstate_t ls, void *data, int len)
+qsw_pack_libstate(qsw_libstate_t ls, void **data, int *len)
 {
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
 
-	pack32(ls->ls_magic, &data, &len);
-	pack32(ls->ls_prognum, &data, &len);
-	pack32(ls->ls_hwcontext, &data, &len);
+	pack32(ls->ls_magic, data, len);
+	pack32(ls->ls_prognum, data, len);
+	pack32(ls->ls_hwcontext, data, len);
 
 	return len;
 }
 
 /*
  * Unpack libstate packed by qsw_pack_libstate.
- *   ls (IN/OUT)	where to store libstate strucutre
- *   data (OUT)		where to store packed data
- *   len (IN)		max size of data 
+ *   ls (IN/OUT)	where to put libstate structure
+ *   data (IN/OUT)	where to get packed data
+ *   len (IN/OUT)	max size of data 
  *   RETURN		#bytes unused or -1 on error (sets errno)
  */
 int
-qsw_unpack_libstate(qsw_libstate_t ls, void *data, int len)
+qsw_unpack_libstate(qsw_libstate_t ls, void **data, int *len)
 {
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
 
-	unpack32(&ls->ls_magic, &data, &len);
-	unpack32(&ls->ls_prognum, &data, &len);
-	unpack32(&ls->ls_hwcontext, &data, &len);
+	unpack32(&ls->ls_magic, data, len);
+	unpack32(&ls->ls_prognum, data, len);
+	unpack32(&ls->ls_hwcontext, data, len);
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
