@@ -1227,8 +1227,9 @@ list of allocated nodes, job step credential, etc.  if the request is granted,
 \srun\ then initializes a listen port for stdio connections and connects
 to the {\tt slurmd}s on the allocated nodes requesting that the remote
 processes be initiated. The {\tt slurmd}s begin execution of the tasks and
-connect back to \srun\ for stdout and stderr. This process and other
-initiation modes are described in more detail below.
+connect back to \srun\ for stdout and stderr. This process is described 
+in more detail below. Details of the batch and allocate modes of operation 
+are not presented due to space constraints.
 
 \subsection{Interactive Job Initiation}
 
@@ -1289,118 +1290,6 @@ When the \slurmctld\ receives notification that \srun\ no longer needs
 the allocated nodes, it issues a request for the epilog to be run on
 each of the {\tt slurmd}s in the allocation. As {\tt slurmd}s report that the
 epilog ran successfully, the nodes are returned to the partition.
-
-\subsection{Queued (Batch) Job Initiation}
-
-\begin{figure}[tb]
-\centerline{\epsfig{file=../figures/queued-job-init.eps,scale=0.5} }
-\caption{\small Queued job initiation. 
-         \slurmctld\ initiates the user's job as a batch script on one node. 
-	 Batch script contains an \srun\ call that initiates parallel tasks 
-	 after instantiating job step with controller. The shaded region is 
-	 a compressed representation and is shown in more detail in the 
-	 interactive diagram (Figure~\ref{init-interactive})}
-\label{init-batch}
-\end{figure}
-
-Figure~\ref{init-batch} shows the initiation of a queued job in
-SLURM.  The user invokes \srun\ in batch mode by supplying the {\tt --batch}
-option to \srun . Once user options are processed, \srun\ sends a batch
-job request to \slurmctld\ that identifies the stdin, stdout and stderr file 
-names for the job, current working directory, environment, requested 
-number of nodes, etc. 
-The \slurmctld\ queues the request in its priority-ordered queue.
-
-Once the resources are available and the job has a high enough priority, \linebreak
-\slurmctld\ allocates the resources to the job and contacts the first node
-of the allocation requesting that the user job be started. In this case,
-the job may either be another invocation of \srun\ or a job script
-including invocations of \srun . The \slurmd\ on
-the remote node responds to the run request, initiating the job manager,
-session manager, and user script. An \srun\ executed from within the script
-detects that it has access to an allocation and initiates a job step on
-some or all of the nodes within the job.
-
-Once the job step is complete, the \srun\ in the job script notifies
-the \slurmctld\, and terminates. The job script continues executing and
-may initiate further job steps. Once the job script completes, the task
-thread running the job script collects the exit status and sends a task
-exit message to the \slurmctld . The \slurmctld\ notes that the job
-is complete and requests that the job epilog be run on all nodes that
-were allocated.  As the {\tt slurmd}s respond with successful completion
-of the epilog, the nodes are returned to the partition.
-
-\subsection{Allocate Mode Initiation}
-
-\begin{figure}[tb]
-\centerline{\epsfig{file=../figures/allocate-init.eps,scale=0.5} }
-\caption{\small Job initiation in allocate mode. Resources are allocated and
-         \srun\ spawns a shell with access to the resources. When user runs 
-	 an \srun\ from within the shell, the a job step is initiated under
-	 the allocation}
-\label{init-allocate}
-\end{figure}
-
-In allocate mode, the user wishes to allocate a job and interactively run
-job steps under that allocation. The process of initiation in this mode
-is shown in Figure~\ref{init-allocate}. The invoked \srun\ sends
-an allocate request to \slurmctld , which, if resources are available,
-responds with a list of nodes allocated, job id, etc. The \srun\ process
-spawns a shell on the user's terminal with access to the allocation,
-then waits for the shell to exit (at which time the job is considered
-complete).
-
-An \srun\ initiated within the allocate sub-shell recognizes that
-it is running under an allocation and therefore already within a
-job. Provided with no other arguments, \srun\ started in this manner
-initiates a job step on all nodes within the current job. 
-
-% Maybe later: 
-%
-% However, the user may select a subset of these nodes implicitly by using
-% the \srun\ {\tt --nodes} option, or explicitly by specifying a relative
-% nodelist ( {\tt --nodelist=[0-5]} ).
-
-An \srun\ executed from the sub-shell reads the environment and user
-options, then notifies the controller that it is starting a job step under
-the current job. The \slurmctld\ registers the job step and responds
-with a job step credential. \srun\ then initiates the job step using the same
-general method as for interactive job initiation.
-
-When the user exits the allocate sub-shell, the original \srun\ receives
-exit status, notifies \slurmctld\ that the job is complete, and exits.
-The controller runs the epilog on each of the allocated nodes, returning
-nodes to the partition as they successfully complete the epilog.
-
-%
-% Information in this section seems like it should be some place else
-% (Some of it is incorrect as well)
-% -mark
-%
-%\section{Infrastructure}
-%
-%The state of \slurmctld\ is written periodically to disk for fault
-%tolerance.  SLURM daemons are initiated via {\tt inittab} using the {\tt
-%respawn} option to insure their continuous execution.  If the control
-%machine itself becomes inoperative, its functions can easily be moved in
-%an automated fashion to another node. In fact, the computers designated
-
-%as both primary and backup control machine can easily be relocated as
-%needed without loss of the workload by changing the configuration file
-%and restarting all SLURM daemons.
-%
-%The {\tt syslog} tools are used for logging purposes and take advantage
-
-%of the severity level parameter.
-%
-%Direct use of the Elan interconnect is provided a version of MPI developed
-%and supported by Quadrics. SLURM supports this version of MPI with no
-%modifications.
-%
-%SLURM supports the TotalView debugger\cite{Etnus2002}.  This requires
-%\srun\ to not only maintain a list of nodes used by each job step, but
-%also a list of process ids on each node corresponding the application's
-%tasks.
 
 \section{Results}
 
