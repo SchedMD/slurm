@@ -242,7 +242,8 @@
 #    "FastSchedule"     : if set to `1' consider the configuration of nodes
 #                         to be exactly that set in the config file. Otherwise,
 #                         consider configuration of nodes to that which is
-#                         reported by the node's slurmd. 
+#                         reported by the node's slurmd. A FastSchedule value of
+#                         zero will result in significantly slower scheduling.
 #
 #    "FirstJobId"       : Number of the first assigned job id.
 #
