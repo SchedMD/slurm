@@ -89,7 +89,7 @@ dnl AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [],
 dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
 
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
-AC_DEFINE_UNQUOTED(WITH_PTHREADS, "$HAVE_PTHREAD", [Define if you have pthreads])
+AC_DEFINE_UNQUOTED(WITH_PTHREADS, $HAVE_PTHREAD, [Define if you have pthreads])
 AC_SUBST(WITH_PTHREADS)
 LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
 CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
