@@ -143,7 +143,7 @@ extern void debug(const char *fmt, ...);
  * essentially wires up the system
  */
 
-int partition_sys(List requests)
+extern int partition_sys(List requests)
 {
 
 	ListIterator itr;
@@ -191,7 +191,7 @@ int partition_sys(List requests)
  * IN - requests: List <partition_t*> to wire up.
  * 
  */
-int _create_bgl_partitions(List requests)
+static int _create_bgl_partitions(List requests)
 {
 	partition_t* cur_partition;	
 	ListIterator itr;
@@ -362,7 +362,7 @@ static int _break_up_partition(List sys, partition_t* partition_to_break,
 	return 0;
 }
 
-void print_partition(partition_t* part)
+extern void print_partition(partition_t* part)
 {
 	if (part == NULL)
 		return;
@@ -377,7 +377,7 @@ void print_partition(partition_t* part)
 	debug("\tbgl_record_ptr addr: %d", part->bgl_record_ptr);
 }
 
-void copy_partition(partition_t* src, partition_t* dest)
+extern void copy_partition(partition_t* src, partition_t* dest)
 {
 	int i;
 
@@ -395,7 +395,7 @@ void copy_partition(partition_t* src, partition_t* dest)
 /** 
  * returns 0 for equals, 1 for not equals
  */
-int is_partition_not_equals(partition_t* A, partition_t* B)
+extern int is_partition_not_equals(partition_t* A, partition_t* B)
 {
 	if (A == NULL || B == NULL)
 		return 1;
@@ -410,7 +410,7 @@ int is_partition_not_equals(partition_t* A, partition_t* B)
 /** 
  * return - the int array's size
  */
-int int_array_size(uint16_t* part_geometry){
+extern int int_array_size(uint16_t* part_geometry){
 	int size = 1;
 	int i;
   
@@ -427,7 +427,7 @@ int int_array_size(uint16_t* part_geometry){
 /** 
  * print out a list
  */
-void print_list(List list)
+extern void print_list(List list)
 {
 	int* stuff = NULL, i = 0;
 	ListIterator itr;
@@ -458,7 +458,7 @@ void print_list(List list)
 /** 
  * print out list of the system partitions
  */
-void print_sys_list(List list)
+extern void print_sys_list(List list)
 {
 	ListIterator itr;
 	int i, part_count=0;
@@ -500,7 +500,7 @@ void print_sys_list(List list)
 /** 
  * sort the configurations by decreasing size
  */
-void sort_int_array_by_dec_size(List configs){
+extern void sort_int_array_by_dec_size(List configs){
 	if (configs == NULL)
 		return;
 	list_sort(configs, (ListCmpF) _int_array_cmpf);
@@ -514,7 +514,7 @@ void sort_int_array_by_dec_size(List configs){
  * Note: return values are "reversed" so that we can have the list
  * sorted in decreasing order (largest to smallest)
  */
-int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b)
+static int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b)
 {
 	int vol_a, vol_b;
 
@@ -537,9 +537,9 @@ int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b)
  * returns 0 for success, 1 for failure
  */
 #ifdef _RM_API_H__
-int configure_switches(rm_partition_t* partition, partition_t* partition)
+extern int configure_switches(rm_partition_t* partition, partition_t* partition)
 #else
-int configure_switches(partition_t* partition)
+extern int configure_switches(partition_t* partition)
 #endif
 {
 	bgl_record_t* bgl_rec;
@@ -705,7 +705,7 @@ int configure_switches(partition_t* partition)
  * find if the cur_part fits the same dimensions as the given request
  * return 0 for affirmative (correct dimension), and 1 for negative (not correct dimension)
  */
-int is_not_correct_dimension(uint16_t* cur_part, uint16_t* request)
+extern int is_not_correct_dimension(uint16_t* cur_part, uint16_t* request)
 {
 	int i, j;
 	int cur_part_tmp[SYSTEM_DIMENSIONS];
@@ -748,7 +748,7 @@ int is_not_correct_dimension(uint16_t* cur_part, uint16_t* request)
 	}
 }
 
-int factorial(int numb)
+extern int factorial(int numb)
 {
 	int i, fact = 1;
 	for (i=numb; i > 0; i++)
@@ -759,7 +759,7 @@ int factorial(int numb)
 /** 
  * return the index
  */
-int max_dim_index(int* array)
+extern int max_dim_index(int* array)
 {
 	int i, max = -1, max_index = 0;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -778,7 +778,7 @@ int max_dim_index(int* array)
  * 
  * note: this is for 3d only!
  */
-void rotate_part(const uint16_t* config, uint16_t** new_config)
+extern void rotate_part(const uint16_t* config, uint16_t** new_config)
 {
 	if (config == NULL)
 		return;
@@ -833,7 +833,7 @@ void rotate_part(const uint16_t* config, uint16_t** new_config)
  * this should really go out and get BGL specific information
  * 
  */
-void _init_sys(partition_t *part)
+static void _init_sys(partition_t *part)
 {
 	/* initialize the system wide partition */
 	bgl_sys_free = list_create((ListDelF) _int_array_destroy);
@@ -841,13 +841,13 @@ void _init_sys(partition_t *part)
 	part->bl_coord[0] = 0;
 	part->bl_coord[1] = 0;
 	part->bl_coord[2] = 0;
-	part->tr_coord[0] = 7;
-	part->tr_coord[1] = 3;
-	part->tr_coord[2] = 3;
-	part->dimensions[0] = 8;
-	part->dimensions[1] = 4;
-	part->dimensions[2] = 4;
-	part->size = 128;
+	part->tr_coord[0] = (X_DIMENSION - 1);
+	part->tr_coord[1] = (Y_DIMENSION - 1);
+	part->tr_coord[2] = (Z_DIMENSION - 1);
+	part->dimensions[0] = X_DIMENSION;
+	part->dimensions[1] = Y_DIMENSION;
+	part->dimensions[2] = Z_DIMENSION;
+	part->size =  X_DIMENSION * Y_DIMENSION * Z_DIMENSION;
 
 	/** ??? FIXME, I get a segfault if I have the list_create before the use of bgl_sys_free (swapping
 	 * the following two statements.  WHY???
@@ -868,7 +868,7 @@ static void _int_array_destroy(void* object)
 /** 
  * initialize the BGL partition in the resource manager 
  */
-void pre_allocate(rm_partition_t *my_part, rm_connection_type_t *part_conn)
+extern void pre_allocate(rm_partition_t *my_part, rm_connection_type_t *part_conn)
 {
 	rm_new_partition(&my_part); //here we go... new partition to be added
 	rm_set_data(my_part,RM_PartitionMloaderImg, BGL_MLOADER_IMAGE);
@@ -881,7 +881,7 @@ void pre_allocate(rm_partition_t *my_part, rm_connection_type_t *part_conn)
 /** 
  * add the partition record to the DB and boot it up!
  */
-int post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
+extern int post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 {
 	int rc;
 	rm_partition_state_t state;
@@ -919,7 +919,7 @@ int post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 /** 
  * get switch of the BP of these coordinates
  */
-int get_switch(int* cur_coord, List switch_list)
+extern int get_switch(int* cur_coord, List switch_list)
 {
 	int switch_num, i;
 	rm_BP_t * bp;
@@ -979,7 +979,7 @@ int get_switch(int* cur_coord, List switch_list)
 /** 
  * to be used by list object to destroy the array elements
  */
-void rm_switch_t_destroy(void* object)
+extern void rm_switch_t_destroy(void* object)
 {
 	/** FIXME, find out how to destroy one of these */
 	xfree(object);
@@ -1103,13 +1103,13 @@ static List _get_bgl_sys_free()
 }
 
 #ifdef _UNIT_TESTS_
-void debug(const char *fmt, ...)
+extern void debug(const char *fmt, ...)
 {
 	printf(fmt, ...);
 }
 #endif
 
-void init_bgl_partition_num()
+extern void init_bgl_partition_num()
 {
 	BGL_PARTITION_NUMBER = 0;
 }

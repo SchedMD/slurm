@@ -39,6 +39,7 @@
 #define BUFSIZE 4096
 #define BITSIZE 128
 #define SLEEP_TIME 60 /* BLUEGENE_PTHREAD checks every 60 secs */
+#define _DEBUG 0
 
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
 
@@ -86,10 +87,12 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
 extern int create_static_partitions(List part_list)
 {
 	/** purge the old list.  Later on, it may be more efficient just to amend the list */
-	if (bgl_list){
-		list_destroy(bgl_list);
-	} 
-	bgl_list = list_create(_destroy_bgl_record);
+	if (bgl_list) {
+		bgl_record_t *record;
+		while ((record = list_pop(bgl_list)))
+			_destroy_bgl_record(record);
+	} else
+		bgl_list = list_create(_destroy_bgl_record);
 
 	/** copy the slurm conf partition info, this will fill in bgl_list */
 	if (_copy_slurm_partition_list(part_list)){
@@ -97,8 +100,8 @@ extern int create_static_partitions(List part_list)
 	}
 
 	_process_config();
-	/* after reading in the configuration, we have a list of partition requests (List <int*>)
-	 * that we can use to partition up the system
+	/* after reading in the configuration, we have a list of partition 
+	 * requests (List <int*>) that we can use to partition up the system
 	 */
 	_wire_bgl_partitions();
 
@@ -146,7 +149,7 @@ static void _process_config()
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_part = (bgl_record_t*) list_next(itr))) {
 		/** 
-		 * parse request will fill up the partition_t's
+		 * _parse_request() will fill up the partition_t's
 		 * bl_coord, tr_coord, dimensions, and size
 		 */
 		request_result = NULL;
@@ -176,7 +179,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	bgl_record_t* bgl_record;
 	ListIterator itr;
 	char* cur_nodes, *delimiter=",", *nodes_tmp, *next_ptr, *orig_ptr;
-	int err, rc;
+	int rc = SLURM_SUCCESS;
 
 	itr = list_iterator_create(slurm_part_list);
 	/** 
@@ -184,28 +187,22 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	 * nodes specified in the slurm_part_list, but if not
 	 * found, _find_part_type will default to RM_MESH
 	 */
-	rc = SLURM_SUCCESS;
 	while ((slurm_part = (struct part_record *) list_next(itr))) {
+		/* no need to create record for slurm partition without nodes*/
+		if ((slurm_part->nodes == NULL)
+		|| (slurm_part->nodes[0] == '\0'))
+			continue;
 		nodes_tmp = xstrdup(slurm_part->nodes);
 		orig_ptr = nodes_tmp;
 
 		cur_nodes = strtok_r(nodes_tmp, delimiter, &next_ptr);
-		/** debugging info */
-		/*
-		{
-			debug("current slurm nodes to parse <%s>", slurm_part->nodes);
-			 debug("slurm_part->node_bitmap");
-			 _print_bitmap(slurm_part->node_bitmap);
-		}
-		*/
-		// debug("received token");
-		// debug("received token <%s>", cur_nodes);
+		debug3("_copy_slurm_partition_list parse:%s, token[0]:%s", 
+			slurm_part->nodes, cur_nodes);
 		/** 
 		 * for each of the slurm partitions, there may be
 		 * several bgl partitions, so we need to find how to
 		 * wire each of those bgl partitions.
 		 */
-		err = 0;
 		while(cur_nodes != NULL){
 			bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 			bgl_record->nodes = xstrdup(cur_nodes);
@@ -216,7 +213,11 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 			bgl_record->hostlist = hostlist_create(cur_nodes);
 			bgl_record->size = hostlist_count(bgl_record->hostlist);
 			if (node_name2bitmap(cur_nodes, false, &(bgl_record->bitmap))){
-				error("unable to convert nodes %s to bitmap", cur_nodes);
+				error("_copy_slurm_partition_list unable to convert nodes "
+					"%s to bitmap", cur_nodes);
+				_destroy_bgl_record(bgl_record);
+				rc = SLURM_ERROR;
+				goto cleanup;
 			}
 			
 			if (slurm_part->min_nodes == slurm_part->max_nodes && 
@@ -224,16 +225,11 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 				bgl_record->part_lifecycle = STATIC;
 			else 
 				bgl_record->part_lifecycle = DYNAMIC;
-			// print_bgl_record(bgl_record);
+			print_bgl_record(bgl_record);
 			list_push(bgl_list, bgl_record);
 			
 			nodes_tmp = next_ptr;
 			cur_nodes = strtok_r(nodes_tmp, delimiter, &next_ptr);
-			if (err) {
-				rc = SLURM_ERROR;
-				goto cleanup;
-			}
-
 		} /* end while(cur_nodes) */
 
 	cleanup:
@@ -252,6 +248,7 @@ extern int read_bgl_conf()
 	int line_num;		/* line number in input file */
 	char in_line[BUFSIZE];	/* input line */
 	int i, j, error_code;
+	bgl_conf_record_t *conf_rec;
 
 	/* initialization */
 	START_TIMER;
@@ -260,6 +257,9 @@ extern int read_bgl_conf()
 	if (bgl_spec_file == NULL)
 		fatal("read_bgl_conf error opening file %s, %m",
 		      bgl_conf);
+	/* empty the old list before reading new data */
+	while ((conf_rec = list_pop(bgl_conf_list)))
+		_destroy_bgl_conf_record(conf_rec);
 
 	/* process the data file */
 	line_num = 0;
@@ -304,8 +304,7 @@ extern int read_bgl_conf()
 	fclose(bgl_spec_file);
 
 	END_TIMER;
-	debug("select_bluegene _read_bgl_conf: finished loading configuration %s",
-	      TIME_STR);
+	debug("read_bgl_conf: finished loading configuration %s", TIME_STR);
 	
 	return error_code;
 }
@@ -376,7 +375,8 @@ static void _destroy_bgl_record(void* object)
 		xfree(this_record->nodes);
 		xfree(this_record->slurm_part_id);
 		xfree(this_record->part_type);
-		hostlist_destroy(this_record->hostlist);
+		if (this_record->hostlist)
+			hostlist_destroy(this_record->hostlist);
 		if (this_record->bitmap)
 			bit_free(this_record->bitmap);
 #ifdef _RM_API_H__
@@ -441,7 +441,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 
 	if (!request_string)
 		return SLURM_ERROR;
-	
+
 	debug("incoming request %s", request_string);
 	*request_result = (partition_t*) xmalloc(sizeof(partition_t));
 
@@ -526,33 +526,35 @@ extern void print_bgl_record(bgl_record_t* record)
 		return;
 	}
 
-	debug(" bgl_record:");
-	debug(" \tslurm_part_id: %s", record->slurm_part_id);
+#if _DEBUG
+	info(" bgl_record: ");
+	info("\tslurm_part_id: %s", record->slurm_part_id);
 	if (record->bgl_part_id)
-		debug(" \tbgl_part_id: %d", *(record->bgl_part_id));
-	debug(" \tnodes: %s", record->nodes);
-	// debug(" size: %d", record->size);
-	debug(" \tlifecycle: %s", convert_lifecycle(record->part_lifecycle));
-	debug(" \tpart_type: %s", convert_part_type(record->part_type));
+		info("\tbgl_part_id: %d", *(record->bgl_part_id));
+	info("\tnodes: %s", record->nodes);
+	info("\tsize: %d", record->size);
+	info("\tlifecycle: %s", convert_lifecycle(record->part_lifecycle));
+	info("\tpart_type: %s", convert_part_type(record->part_type));
 
 	if (record->hostlist){
 		char buffer[BUFSIZE];
 		hostlist_ranged_string(record->hostlist, BUFSIZE, buffer);
-		debug(" \thostlist %s", buffer);
+		info("\thostlist %s", buffer);
 	}
 
 	if (record->alloc_part){
-		debug(" \talloc_part:");
+		info("\talloc_part:");
 		print_partition(record->alloc_part);
 	} else {
-		debug(" \talloc_part: NULL");
+		info("\talloc_part: NULL");
 	}
 
 	if (record->bitmap){
 		char bitstring[BITSIZE];
 		bit_fmt(bitstring, BITSIZE, record->bitmap);
-		debug("\tbitmap: %s", bitstring);
+		info("\tbitmap: %s", bitstring);
 	}
+#endif
 }
 
 extern char* convert_lifecycle(lifecycle_type_t lifecycle)
@@ -965,7 +967,7 @@ bluegene_agent(void *args)
 		_update_bgl_node_bitmap();
 		gettimeofday(&tv2, NULL);
 		_diff_tv_str(&tv1, &tv2, tv_str, 20);
-#if DEBUG
+#if _DEBUG
 		info("Bluegene status update: completed, %s", tv_str);
 #endif
 		sleep(SLEEP_TIME);      /* don't run continuously */
