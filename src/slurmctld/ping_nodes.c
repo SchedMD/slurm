@@ -109,7 +109,7 @@ void ping_nodes (void)
 	static int offset = 0;	/* mutex via node table write lock on entry */
 	int i, pos, age, retries = 0;
 	time_t now;
-	uint16_t base_state;
+	uint16_t base_state, no_resp_flag;
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
 	char host_str[64];
@@ -138,27 +138,27 @@ void ping_nodes (void)
 		offset = 0;
 
 	for (i = 0; i < node_record_count; i++) {
-		base_state = node_record_table_ptr[i].node_state & 
-				(~NODE_STATE_NO_RESPOND);
-		age = difftime (now, node_record_table_ptr[i].last_response);
+		struct node_record *node_ptr = &node_record_table_ptr[i];
+
+		age = difftime (now, node_ptr->last_response);
 		if (age < slurmctld_conf.heartbeat_interval)
 			continue;
 
-		if ((node_record_table_ptr[i].last_response != (time_t)0) &&
+		base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND;
+		if ((node_ptr->last_response != (time_t)0) &&
 		    (slurmctld_conf.slurmd_timeout != 0) &&
 		    (age >= slurmctld_conf.slurmd_timeout) &&
 		    ((base_state != NODE_STATE_DOWN) &&
 		     (base_state != NODE_STATE_DRAINED))) {
 			error ("Node %s not responding, setting DOWN", 
-			       node_record_table_ptr[i].name);
-			set_node_down(node_record_table_ptr[i].name, 
-					"Not responding");
+			       node_ptr->name);
+			set_node_down(node_ptr->name, "Not responding");
 			continue;
 		}
 
-		if (node_record_table_ptr[i].last_response == (time_t)0)
-			node_record_table_ptr[i].last_response = 
-						slurmctld_conf.last_update;
+		if (node_ptr->last_response == (time_t)0)
+			node_ptr->last_response = slurmctld_conf.last_update;
 
 		/* Request a node registration if its state is UNKNOWN or 
 		 * on a periodic basis (about every MAX_REG_FREQUENCY ping, 
@@ -166,10 +166,9 @@ void ping_nodes (void)
 		 * counter and gets updated configuration information 
 		 * once in a while). We limit these requests since they 
 		 * can generate a flood of incomming RPCs. */
-		if ((base_state == NODE_STATE_UNKNOWN) || 
+		if ((base_state == NODE_STATE_UNKNOWN) || no_resp_flag ||
 		    ((i >= offset) && (i < (offset + MAX_REG_THREADS)))) {
-			(void) hostlist_push_host(reg_hostlist, 
-					node_record_table_ptr[i].name);
+			(void) hostlist_push_host(reg_hostlist, node_ptr->name);
 			if ((reg_agent_args->node_count+1) > 
 						reg_buf_rec_size) {
 				reg_buf_rec_size += 32;
@@ -179,18 +178,16 @@ void ping_nodes (void)
 				xrealloc ((reg_agent_args->node_names), 
 				          (MAX_NAME_LEN * reg_buf_rec_size));
 			}
-			reg_agent_args->slurm_addr[
-					reg_agent_args->node_count] = 
-					node_record_table_ptr[i].slurm_addr;
+			reg_agent_args->slurm_addr[reg_agent_args->node_count] = 
+					node_ptr->slurm_addr;
 			pos = MAX_NAME_LEN * reg_agent_args->node_count;
 			strncpy (&reg_agent_args->node_names[pos],
-			         node_record_table_ptr[i].name, MAX_NAME_LEN);
+			         node_ptr->name, MAX_NAME_LEN);
 			reg_agent_args->node_count++;
 			continue;
 		}
 
-		(void) hostlist_push_host(ping_hostlist, 
-				node_record_table_ptr[i].name);
+		(void) hostlist_push_host(ping_hostlist, node_ptr->name);
 		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
 			ping_buf_rec_size += 32;
 			xrealloc ((ping_agent_args->slurm_addr), 
@@ -200,10 +197,10 @@ void ping_nodes (void)
 			          (MAX_NAME_LEN * ping_buf_rec_size));
 		}
 		ping_agent_args->slurm_addr[ping_agent_args->node_count] = 
-					node_record_table_ptr[i].slurm_addr;
+					node_ptr->slurm_addr;
 		pos = MAX_NAME_LEN * ping_agent_args->node_count;
 		strncpy (&ping_agent_args->node_names[pos],
-		         node_record_table_ptr[i].name, MAX_NAME_LEN);
+		         node_ptr->name, MAX_NAME_LEN);
 		ping_agent_args->node_count++;
 
 	}
