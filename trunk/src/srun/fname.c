@@ -41,13 +41,13 @@ fname_create(job_t *job, char *format)
 	if ((format == NULL)
 	    || (strncasecmp(format, "all", (size_t) 3) == 0)
 	    || (strncmp(format, "-", (size_t) 1) == 0)       ) {
-		fname->type = IO_ALL;
-		fname->name = NULL;
+		/* fname->type = IO_ALL; */
+		/* fname->name = NULL; */
 		return fname;
 	}
 
 	if (strncasecmp(format, "none", (size_t) 4) == 0) {
-		fname->type = IO_NONE;
+		/* fname->type = IO_ALL; */
 		fname->name = "/dev/null";
 		return fname;
 	}
