@@ -408,6 +408,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					     msg->data, buffer);
 		 break;
 
+	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_REVOKE_JOB_CREDENTIAL:
 		 _pack_revoke_credential_msg((revoke_credential_msg_t *)
 					     msg->data, buffer);
@@ -616,6 +617,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						     **) & (msg->data),
 						    buffer);
 		 break;
+	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_REVOKE_JOB_CREDENTIAL:
 		 rc = _unpack_revoke_credential_msg(
 					(revoke_credential_msg_t **)

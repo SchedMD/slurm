@@ -138,6 +138,7 @@ typedef enum {
 	REQUEST_KILL_TASKS,
 	REQUEST_REATTACH_TASKS,
 	RESPONSE_REATTACH_TASKS,
+	REQUEST_KILL_TIMELIMIT,
 
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
@@ -370,6 +371,8 @@ void inline slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg);
 	slurm_free_job_step_id(msg)
 #define slurm_free_job_info_request_msg(msg) \
 	slurm_free_job_step_id(msg)
+#define	slurm_free_timelimit_msg(msg) \
+	slurm_free_revoke_credential_msg(msg)
 
 void inline slurm_free_shutdown_msg(shutdown_msg_t * msg);
 
