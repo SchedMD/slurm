@@ -254,7 +254,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->max_job_cnt         = slurmctld_conf.max_job_cnt;
 	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
 	conf_ptr->plugindir           = slurmctld_conf.plugindir;
-	conf_ptr->prioritize          = slurmctld_conf.prioritize;
 	conf_ptr->prolog              = slurmctld_conf.prolog;
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
 	conf_ptr->slurm_user_id       = slurmctld_conf.slurm_user_id;

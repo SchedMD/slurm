@@ -90,8 +90,6 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->min_job_age);
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
-	fprintf(out, "Prioritize        = %s\n", 
-		slurm_ctl_conf_ptr->prioritize);
 	fprintf(out, "Prolog            = %s\n", 
 		slurm_ctl_conf_ptr->prolog);
 	fprintf(out, "ReturnToService   = %u\n", 
