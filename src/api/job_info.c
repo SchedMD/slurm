@@ -73,14 +73,17 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	int j;
 	char time_str[16];
 
-	fprintf ( out, "JobId=%u UserId=%u Name=%s ", 
-		job_ptr->job_id, job_ptr->user_id, job_ptr->name);
-	fprintf ( out, "JobState=%s TimeLimit=%u\n", 
-		job_state_string(job_ptr->job_state), job_ptr->time_limit);
+	fprintf ( out, "JobId=%u UserId=%u ", 
+		  job_ptr->job_id, job_ptr->user_id);
+	fprintf ( out, "Name=%s JobState=%s\n", 
+		  job_ptr->name, job_state_string(job_ptr->job_state));
 
-	fprintf ( out, "   Priority=%u Partition=%s BatchFlag:Sid=%u:%u\n", 
-		job_ptr->priority, job_ptr->partition, 
-		job_ptr->batch_flag, job_ptr->batch_sid);
+	fprintf ( out, "   Priority=%u Partition=%s BatchFlag=%u\n", 
+		  job_ptr->priority, job_ptr->partition, job_ptr->batch_flag);
+
+	fprintf ( out, "   AllocNode:Sid=%s:%u TimeLimit=%u\n", 
+		  job_ptr->alloc_node, job_ptr->alloc_sid, 
+		  job_ptr->time_limit);
 
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "   StartTime=%s ", time_str);
