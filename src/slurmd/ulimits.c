@@ -110,7 +110,8 @@ _set_limit(char **env, struct userlim *u)
 		r.rlim_cur = (val == -1L) ? RLIM_INFINITY : (rlim_t) val;
 
 		if (setrlimit(u->resource, &r) < 0)
-			error("setrlimit(%s,%ld): %m", name, (long)r.rlim_cur);
+			error("Can't propagate %s of %ld from submit host: %m",
+				name, (long)r.rlim_cur);	
 	}
 
 	unsetenvp(env, u->var); 
