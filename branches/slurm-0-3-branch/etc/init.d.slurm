@@ -16,6 +16,11 @@
 
 # $Id$
 
+BINDIR=/usr/bin
+CONFDIR=/etc/slurm
+LIBDIR=/usr/lib
+SBINDIR=/usr/sbin
+
 # Source function library.
 [ -f /etc/rc.d/init.d/functions ] || exit 0
 . /etc/rc.d/init.d/functions
@@ -28,14 +33,17 @@ else
     SLURMD_OPTIONS=""
 fi
 
-[ -f /etc/slurm/slurm.conf ] || exit 1
+[ -f $CONFDIR/slurm.conf ] || exit 1
+
+# setup library paths for slurm and munge support
+export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
 
 RETVAL=0
 
 start() {
     echo -n "starting $1: " 
     unset HOME MAIL USER USERNAME 
-    daemon /usr/sbin/$1 $2
+    daemon $SBINDIR/$1 $2
     RETVAL=$?
     echo
     touch /var/lock/subsys/slurm
@@ -52,7 +60,7 @@ stop() {
 }
 
 startall() {
-    for prog in `scontrol show daemons`; do 
+    for prog in `$BINDIR/scontrol show daemons`; do 
         optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
         start $prog ${!optvar} 
     done
@@ -68,7 +76,7 @@ slurmstatus() {
     local rpid
     local pidfile
 
-    pidfile=`grep -i ${base}pid /etc/slurm/slurm.conf | grep -v '^ *#'`
+    pidfile=`grep -i ${base}pid $CONFDIR/slurm.conf | grep -v '^ *#'`
     if [ $? = 0 ]; then
         pidfile=${pidfile##*=}
         pidfile=${pidfile%#*}
@@ -123,33 +131,34 @@ case "$1" in
         startall
         ;;
     stop)
-	for prog in `scontrol show daemons`; do
+	for prog in `$BINDIR/scontrol show daemons`; do
 	    stop $prog
 	done
         ;;
     status)
-	for prog in `scontrol show daemons`; do
+	for prog in `$BINDIR/scontrol show daemons`; do
 	   slurmstatus $prog
 	done
         ;;
     restart)
-        $0 stop && $0 start
+        $0 stop
+	$0 start
         ;;
     condrestart)
         if [ -f /var/lock/subsys/slurm ]; then
-            for prog in `scontrol show daemons`; do
+            for prog in `$BINDIR/scontrol show daemons`; do
                  stop $prog
                  start $prog
             done
         fi
         ;;
     reconfig)
-	for prog in `scontrol show daemons`; do
+	for prog in `$BINDIR/scontrol show daemons`; do
 	    killproc $prog -HUP
 	done
 	;;
     test)
-	for prog in `scontrol show daemons`; do   
+	for prog in `$BINDIR/scontrol show daemons`; do   
 	    echo "$prog runs here"
 	done
 	;;
