@@ -177,12 +177,7 @@ main(int ac, char **av)
 	}
 	pthread_mutex_unlock(&job->state_mutex);
 
-	/* job is now overdone, blow this popsicle stand  */
-
-	if (!opt.no_alloc) {
-		debug("cancelling job %d", job->jobid);
-		slurm_complete_job(job->jobid);
-	}
+	/* job is now overdone, clean up  */
 
 	/* kill launch thread */
 	pthread_kill(job->lid, SIGTERM);
