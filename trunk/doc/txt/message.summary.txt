@@ -201,6 +201,16 @@ Input:  	job id, time limit, priority, uid (must be root or owner
 Output: 	exit code
 Notes:  	Only request from the job's owner and user root are accepted.
 
+
+Command(s):	Run epilog
+Client:   	slurmctld
+Server: 	slurmd
+Input:  	job_id
+Output: 	error code
+Notes:  	On termination of a job (not the job step), slurmctld tells
+		slurmd to execute its epilog program (if any). 
+
+
 ----TEMPLATE----
 Command(s):	
 Client:   	
