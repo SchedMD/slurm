@@ -5,5 +5,5 @@
 ##
   Meta:         1
   Name:         pam_slurm
-  Version:	1.0
-  Release:      2
+  Version:	1.1
+  Release:      1
