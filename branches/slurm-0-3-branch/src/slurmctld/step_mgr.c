@@ -377,11 +377,6 @@ _pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 				step_spec->node_list, job_ptr->job_id);
 			goto cleanup;
 		}
-		if (bit_super_set (nodes_picked, avail_node_bitmap) == 0) {
-			info ("_pick_step_nodes: some requested node %s down",
-				step_spec->node_list);
-			goto cleanup;
-		}
 	}
 	else if (step_spec->relative) {
 		/* Remove first (step_spec->relative) nodes from  
