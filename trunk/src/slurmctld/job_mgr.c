@@ -849,6 +849,7 @@ int kill_running_job_by_node_name(char *node_name)
 			job_record_point->job_state = JOB_NODE_FAIL;
 			job_record_point->end_time = time(NULL);
 			deallocate_nodes(job_record_point);
+			delete_all_step_records(job_record_point);
 			delete_job_details(job_record_point);
 		} else {
 			/* Remove node from this job's list */
