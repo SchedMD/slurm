@@ -63,7 +63,7 @@ extern void connect_switch_B(rm_BGL_t *bgl, rm_partition_t *my_part,
  *    \__|__|__/
  *       3  4
  */
-extenn void connect_switch_C(rm_BGL_t *bgl, rm_partition_t *my_part, 
+extern void connect_switch_C(rm_BGL_t *bgl, rm_partition_t *my_part, 
 				rm_switch_t *my_switch, int first);
 
 /**
@@ -115,7 +115,7 @@ extern void connect_switch_F(rm_BGL_t *bgl, rm_partition_t *my_part,
  *    \__|__|__/
  *       3  4
  */
-extern void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch);
+void connect_next(rm_partition_t *my_part, rm_switch_t *my_switch);
 
 /**
  * connect the given switch up to the previous node
