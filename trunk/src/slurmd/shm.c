@@ -364,6 +364,8 @@ shm_insert_step(job_step_t *step)
 	_shm_lock();
 	if (_shm_find_step(step->jobid, step->stepid) >= 0) {
 		_shm_unlock();
+		error("shm_insert_step duplicate StepId=%u.%u",
+		      step->jobid, step->stepid);
 		slurm_seterrno_ret(EEXIST);
 	}
 
