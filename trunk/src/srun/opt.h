@@ -33,8 +33,8 @@ typedef enum {false, true} bool;
 /* global variables relating to user options */
 char **remote_argv;
 int remote_argc;
-int debug;
-int verbose;
+int _debug;
+int _verbose;
 
 /* mutually exclusive modes for srun */
 enum modes {
