@@ -50,7 +50,7 @@
 
 #include "src/common/macros.h" /* true and false */
 
-#define MAX_THREADS	10
+#define MAX_THREADS	64
 #define MAX_USERNAME	9
 
 /* global variables relating to user options */
@@ -158,9 +158,8 @@ opt_t opt;
  * (if new constraints are added above, might want to add them to this
  *  macro or move this to a function if it gets a little complicated)
  */
-#define constraints_given() opt.mincpus > 0 || opt.realmem > 0 ||\
-                            opt.tmpdisk > 0 ||\
-			    opt.contiguous  || opt.nodelist != NULL
+#define constraints_given() opt.mincpus != -1 || opt.realmem != -1 ||\
+                            opt.tmpdisk != -1 || opt.contiguous   
 
 /* process options:
  * 1. set defaults

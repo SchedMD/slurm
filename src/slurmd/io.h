@@ -40,6 +40,13 @@
 int io_spawn_handler(slurmd_job_t *job);
 
 /*
+ * Create a set of new connecting clients for the running job
+ * Grabs the latest srun object off the job's list of attached 
+ * sruns, and duplicates stdout/err to this new client.
+ */
+int io_new_clients(slurmd_job_t *job);
+
+/*
  * Frees memory associated with the given IO object
  */
 void io_obj_destroy(io_obj_t *obj);

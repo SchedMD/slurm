@@ -377,6 +377,28 @@ _complete_job(slurmd_job_t *job, int err, int status)
 	return SLURM_SUCCESS;
 }
 
+static void
+_handle_attach_req(slurmd_job_t *job)
+{
+	srun_info_t *srun;
+
+	debug("handling attach request for %d.%d", job->jobid, job->stepid);
+
+	srun       = xmalloc(sizeof(*srun));
+	srun->key  = xmalloc(sizeof(*srun->key));
+
+	if (shm_step_addrs( job->jobid, job->stepid, 
+			    &srun->ioaddr, &srun->resp_addr,
+			    srun->key ) < 0) {
+		error("Unable to update client addrs from shm: %m");
+		return;
+	}
+
+	list_prepend(job->sruns, (void *) srun);
+
+	io_new_clients(job);
+}
+
 static int
 _run_batch_job(slurmd_job_t *job)
 {
@@ -440,9 +462,10 @@ _run_batch_job(slurmd_job_t *job)
 	}
 
 	while ((pid = waitpid(0, &status, 0)) < 0 && (pid != t.pid)) {
-		if ((pid > 0) || (errno == EINTR))
+		if ((pid < 0) && (errno == EINTR)) {
+			_handle_attach_req(job);
 			continue;
-		else
+		} else if (pid < 0)
 			error("waitpid: %m");
 	}
 
@@ -456,17 +479,22 @@ _run_batch_job(slurmd_job_t *job)
 }
 
 static void
+_hup_handler(int sig) {;}
+
+static void
 _wait_for_all_tasks(slurmd_job_t *job)
 {
 	int waiting = job->ntasks;
 	int i;
+
+	xsignal(SIGHUP, _hup_handler);
 
 	while (waiting > 0) {
 		int status;
 		pid_t pid = waitpid(0, &status, 0);
 		if ((pid < (pid_t) 0)) {
 			if (errno == EINTR)
-				continue;
+				_handle_attach_req(job);
 			job_error(job, "waitpid: %m");
 			/* job_cleanup() */
 		}
