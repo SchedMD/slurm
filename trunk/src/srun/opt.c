@@ -103,7 +103,7 @@
 #define LONG_OPT_MPI      0x10c
 #define LONG_OPT_CORE	  0x10e
 #define LONG_OPT_NOSHELL  0x10f
-
+#define LONG_OPT_DEBUG_TS 0x110
 /*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
@@ -651,6 +651,7 @@ static void _opt_args(int argc, char **argv)
 		{"max-exit-timeout", required_argument, 0, LONG_OPT_XTO},
 		{"uid",              required_argument, 0, LONG_OPT_UID},
 		{"gid",              required_argument, 0, LONG_OPT_GID},
+		{"debugger-test",    no_argument,       0, LONG_OPT_DEBUG_TS},
 		{"help",             no_argument,       0, LONG_OPT_HELP},
 		{"usage",            no_argument,       0, LONG_OPT_USAGE},
 		{NULL,               0,                 0, 0}
@@ -881,6 +882,16 @@ static void _opt_args(int argc, char **argv)
 			opt.egid = gid_from_string (optarg);
 			if (opt.egid == (gid_t) -1)
 				fatal ("--gid=\"%s\" invalid", optarg);
+			break;
+		case LONG_OPT_DEBUG_TS:
+			opt.debugger_test    = true;
+			/* make other parameters look like debugger 
+			 * is really attached */
+			opt.parallel_debug   = true;
+			MPIR_being_debugged  = 1;
+			opt.max_launch_time = 120;
+			opt.max_threads     = 1;
+			opt.msg_timeout     = 15;
 			break;
 		case LONG_OPT_HELP:
 			_help();

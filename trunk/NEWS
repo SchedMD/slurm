@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
  -- Fix sinfo -R, --list-reasons to list all relevant node states.
  -- Fix slurmctld to honor srun's node configuration specifications 
     with FastSchedule==0 configuration.
+ -- Added srun option --debugger-test to confirm that slurm's debugger 
+    infrastructure is operational.
  -- Removed debugging hacks for srun.wrapper.c. Temporarily use 
     RPM's debugedit utility if available for similar effect.
 
