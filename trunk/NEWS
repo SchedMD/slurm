@@ -5,6 +5,7 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Srun wakes immeditely upon resource allocation (via new RPC) 
     rather than polling.
+ -- Deamons log current version number at startup
 
 * Changes in SLURM 0.3.1
 ========================

@@ -161,7 +161,7 @@ main (int argc, char *argv[])
 	 */
 	if (conf->daemonize) 
 		daemon(1,1);
-
+	info("slurmd version %s started", SLURM_VERSION);
 	debug3("finished daemonize");
 
 	_kill_old_slurmd();
