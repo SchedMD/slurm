@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
    - slurm/477: Signal of batch job script (scancel -b) fixed
    - slurm/481: Permit clearing of AllowGroups field for a partition
    - slurm/482: Adjust Elan base context number to match RMS range
+   - slurm/489: Job completion logger was writing NULL to text file
  -- Preserve job's requested processor count info after job is initiated 
     (for viewing by squeue and scontrol)
  -- srun cancels created job if job step creation fails
