@@ -124,8 +124,8 @@ struct sinfo_parameters {
 
 extern struct sinfo_parameters params;
 
-int  parse_command_line( int argc, char* argv[] );
-int  parse_state( char* str, uint16_t* states );
-void sort_sinfo_list( List sinfo_list );
+extern void parse_command_line( int argc, char* argv[] );
+extern int  parse_state( char* str, uint16_t* states );
+extern void sort_sinfo_list( List sinfo_list );
 
 #endif

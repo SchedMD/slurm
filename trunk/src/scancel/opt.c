@@ -24,12 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_POPT_H
-#include <popt.h>
-#else
-#include <src/popt/popt.h>
-#endif
-
+#include <getopt.h>
 #include <pwd.h>
 #include <signal.h>
 #include <stdlib.h>
@@ -47,54 +42,7 @@
 #include <src/common/xstring.h>
 #include <src/scancel/scancel.h>
 
-#define __DEBUG 0
-
 #define SIZE(a) (sizeof(a)/sizeof(a[0]))
-
-/*---[ popt definitions ]------------------------------------------------*/
-
-/* generic OPT_ definitions -- mainly for use with env vars 
- * (not to be confused with POPT_* definitions)
- */
-#define OPT_NONE	0x00
-#define OPT_INT		0x01
-#define OPT_STRING	0x02
-
-/* specific options, used with popt (and env var processing) */
-#define OPT_INTERACTIVE	0x03
-#define OPT_NAME	0x04
-#define OPT_PARTITION	0x05
-#define OPT_STATE	0x06
-#define OPT_USER	0x07
-#define OPT_VERBOSE	0x08
-#define OPT_VERSION	0x09
-#define OPT_SIGNAL	0x0a
-
-
-#ifndef POPT_TABLEEND
-#  define POPT_TABLEEND { NULL, '\0', 0, 0, 0, NULL, NULL }
-#endif
-
-struct poptOption options[] = {
-	{"interactive", 'i', POPT_ARG_NONE, NULL, OPT_INTERACTIVE,
-	 "confirm each job cancelation", },
-	{"name", 'n', POPT_ARG_STRING, NULL, OPT_NAME,
-	 "name of job", "name"},
-	{"partition", 'p', POPT_ARG_STRING, NULL, OPT_PARTITION,
-	 "name of job's partition", "name"},
-	{"signal", 's', POPT_ARG_STRING, NULL, OPT_SIGNAL,
-	 "signal name or number", "name | integer"},
-	{"state", 't', POPT_ARG_STRING, NULL, OPT_STATE,
-	 "name of job's state", "PENDING | RUNNING"},
-	{"user", 'u', POPT_ARG_STRING, NULL, OPT_USER,
-	 "name of job's owner", "name"},
-        {"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE,
-	 "verbose operation (multiple -v's increase verbosity)", },
-	{"version", 'V', POPT_ARG_NONE, NULL, OPT_VERSION,
-	 "report the current version", },
-	POPT_AUTOHELP
-	POPT_TABLEEND
-};
 
 struct signv {
 	char *name;
@@ -123,61 +71,55 @@ struct signv {
  */
 
 /* 
- * fill in default options 
- */
-static void opt_default(void);
+ * fill in default options  */
+static void _opt_default(void);
 
-/* set options based upon env vars 
- */
-static void opt_env(void);
+/* set options based upon env vars  */
+static void _opt_env(void);
 
-/* set options based upon commandline args
- */
-static void opt_args(int, char **);
+/* set options based upon commandline args */
+static void _opt_args(int, char **);
 
-/* verify options sanity 
- */
-static bool opt_verify(void);
+/* verify options sanity  */
+static bool _opt_verify(void);
 
-static void print_version (void);
+static void _print_version (void);
 
-/* translate job state name to number
- */
-static enum job_states xlate_state_name(const char *state_name);
+static void _xlate_job_step_ids(char **rest);
 
-/* translate name name to number
- */
-static uint16_t xlate_signal_name(const char *signal_name);
+/* translate job state name to number */
+static enum job_states _xlate_state_name(const char *state_name);
 
-/* list known options and their settings 
- */
-#if	__DEBUG
-static void opt_list(void);
-#endif
+/* translate name name to number */
+static uint16_t _xlate_signal_name(const char *signal_name);
 
-static void xlate_job_step_ids(const char **rest);
+/* list known options and their settings */
+static void _opt_list(void);
+
+static void _usage(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
 int initialize_and_process_args(int argc, char *argv[])
 {
 	/* initialize option defaults */
-	opt_default();
+	_opt_default();
 
 	/* initialize options with env vars */
-	opt_env();
+	_opt_env();
 
 	/* initialize options with argv */
-	opt_args(argc, argv);
+	_opt_args(argc, argv);
 
-#if	__DEBUG
-	opt_list();
-#endif
+	if (opt.verbose > 2)
+		_opt_list();
+
 	return 1;
 
 }
 
-static enum job_states xlate_state_name(const char *state_name)
+static enum job_states 
+_xlate_state_name(const char *state_name)
 {
 	enum job_states i;
 	char *state_names;
@@ -209,7 +151,7 @@ static enum job_states xlate_state_name(const char *state_name)
 }
 
 
-static uint16_t xlate_signal_name(const char *signal_name)
+static uint16_t _xlate_signal_name(const char *signal_name)
 {
 	uint16_t sig_num;
 	char *end_ptr, *sig_names;
@@ -237,7 +179,7 @@ static uint16_t xlate_signal_name(const char *signal_name)
 	exit(1);
 }
 
-static void print_version (void)
+static void _print_version (void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
@@ -245,7 +187,7 @@ static void print_version (void)
 /*
  * opt_default(): used by initialize_and_process_args to set defaults
  */
-static void opt_default()
+static void _opt_default()
 {
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
@@ -263,7 +205,7 @@ static void opt_default()
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void opt_env()
+static void _opt_env()
 {
 	char *val;
 
@@ -317,88 +259,72 @@ static void opt_env()
 /*
  * opt_args() : set options via commandline args and popt
  */
-static void opt_args(int ac, char **av)
+static void _opt_args(int argc, char **argv)
 {
-	int rc;
-	const char **rest;
-	const char *arg;
-	poptContext optctx;
+	int opt_char;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	int option_index;
+	static struct option long_options[] = {
+		{"help",        no_argument,       0, '?'},
+		{"interactive", no_argument,       0, 'i'},
+		{"name",        required_argument, 0, 'n'},
+		{"partition",   required_argument, 0, 'p'},
+		{"signal",      required_argument, 0, 's'},
+		{"state",       required_argument, 0, 't'},
+		{"usage",       no_argument,       0, '?'},
+		{"user",        required_argument, 0, 'u'},
+		{"verbose",     no_argument,       0, 'v'},
+		{"version",     no_argument,       0, 'V'}
+	};
 
-	optctx = poptGetContext("scancel", ac, (const char **) av, options,
-				POPT_CONTEXT_POSIXMEHARDER);
+	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	poptSetOtherOptionHelp(optctx, "[OPTIONS] [job_id.step_id]");
-
-	poptReadDefaultConfig(optctx, 0);
-
-	/* first pass through args to see if attach or allocate mode
-	 * are set
-	 */
-	while ((rc = poptGetNextOpt(optctx)) > 0) {
-		arg = poptGetOptArg(optctx);
-
-		switch (rc) {
-		case OPT_INTERACTIVE:
-			opt.interactive = true;
-			break;
-
-		case OPT_NAME:
-			opt.job_name = xstrdup(arg);
-			break;
-
-		case OPT_PARTITION:
-			opt.partition = xstrdup(arg);
-			break;
-
-		case OPT_SIGNAL:
-			opt.signal = xlate_signal_name(arg);
-			break;
-
-		case OPT_STATE:
-			opt.state = xlate_state_name(arg);
-			break;
-
-		case OPT_USER:
-			opt.user_name = xstrdup(arg);
-			break;
-
-		case OPT_VERBOSE:
-			opt.verbose++;
-			break;
-
-		case OPT_VERSION:
-			print_version();
-			exit(0);
-			break;
-
-		default:
-			break;
-			/* do nothing */
+	while((opt_char = getopt_long(argc, argv, "in:p:s:t:u:vV",
+			long_options, &option_index)) != -1) {
+		switch (opt_char) {
+			case (int)'?':
+				_usage();
+				exit(0);
+				break;
+			case (int)'i':
+				opt.interactive = true;
+				break;
+			case (int)'n':
+				opt.job_name = xstrdup(optarg);
+				break;
+			case (int)'p':
+				opt.partition = xstrdup(optarg);
+				break;
+			case (int)'s':
+				opt.signal = _xlate_signal_name(optarg);
+				break;
+			case (int)'t':
+				opt.state = _xlate_state_name(optarg);
+				break;
+			case (int)'u':
+				opt.user_name = xstrdup(optarg);
+				break;
+			case (int)'v':
+				opt.verbose++;
+				break;
+			case (int)'V':
+				_print_version();
+				exit(0);
+				break;
 		}
 	}
 
-	if (rc < -1) {
-		const char *bad_opt;
-		bad_opt = poptBadOption(optctx, POPT_BADOPTION_NOALIAS);
-		error("bad argument %s: %s", bad_opt, poptStrerror(rc));
-		error("Try \"scancel --help\" for more information\n");
-		exit(1);
+	if (optind < argc) {
+		char **rest = argv + optind;
+		_xlate_job_step_ids(rest);
 	}
 
-	rest = poptGetArgs(optctx);
-	xlate_job_step_ids(rest);
-
-	if (!opt_verify()) {
-		poptPrintUsage(optctx, stderr, 0);
+	if (!_opt_verify())
 		exit(1);
-	}
-
-	poptFreeContext(optctx);
-
 }
 
 static void
-xlate_job_step_ids(const char **rest)
+_xlate_job_step_ids(char **rest)
 {
 	int i;
 	long tmp_l;
@@ -445,7 +371,7 @@ xlate_job_step_ids(const char **rest)
  *
  */
 static bool
-opt_verify(void)
+_opt_verify(void)
 {
 	bool verified = true;
 	struct passwd *passwd_ptr;
@@ -453,7 +379,7 @@ opt_verify(void)
 	if (opt.user_name) {	/* translate to user_id */
 		passwd_ptr = getpwnam (opt.user_name);
 		if (passwd_ptr == NULL) {
-			error ("Invalid user name: %s", opt.user_name);
+			error("Invalid user name: %s", opt.user_name);
 			return false;
 		} else {
 			opt.user_id = passwd_ptr->pw_uid;
@@ -464,18 +390,17 @@ opt_verify(void)
 	    (opt.partition == NULL) &&
 	    (opt.state == JOB_END) &&
 	    (opt.user_name == NULL) &&
-	    (opt.job_cnt == 0))
+	    (opt.job_cnt == 0)) {
+		error("No job identification provided");
 		verified = false;	/* no job specification */
+	}
 
 	return verified;
 }
 
-#if	__DEBUG
-
 #define tf_(b) (b == true) ? "true" : "false"
 
-static void 
-opt_list(void)
+static void _opt_list(void)
 {
 	int i;
 
@@ -493,5 +418,26 @@ opt_list(void)
 	}
 }
 
-#endif				/* __DEBUG */
-
+static void _usage(void)
+{
+	printf("Usage: squeue [options]\n");
+	printf("  -h, --noheader                  no headers on output\n");
+	printf("  -i, --iterate=seconds           specify an interation period\n");
+	printf("  -j, --jobs                      comma separated list of jobs to view,\n");
+	printf("                                  default is all\n");
+	printf("  -l, --long                      long report\n");
+	printf("  -o, --format=format             format specification\n");
+	printf("  -p, --partitions=partitions     comma separated list of partitions to view,\n");
+	printf("                                  default is all partitions\n");
+	printf("  -s, --steps                     comma separated list of job steps to view,\n");
+	printf("                                  default is all\n");
+	printf("  -S, --sort=fields               comma seperated list of fields to sort on\n");
+	printf("  -t, --states=states             comma seperated list of states to view,\n");
+	printf("                                  default is pending and running,\n");
+	printf("                                  '--states=all' reports on all states\n");
+	printf("  -u, --user=user_name            comma separated list of users to view\n");
+	printf("  -v, --verbose                   verbosity level\n");
+	printf("  -V, --version                   output version information and exit\n");
+	printf("\nHelp options:\n");
+	printf("  -?, --help, --usage             show this help message\n");
+}
