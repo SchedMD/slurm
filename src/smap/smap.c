@@ -78,15 +78,25 @@ int main(int argc, char *argv[])
   node_info_msg_t *node_msg = NULL;
   List smap_list = NULL;
   
+  char ch;
+  
   int height = Y*Z+Y*2;
   int width = X*2;
   int startx = 0;
   int starty = 0;
-  
+  int end = 0;
+  int i;
+
   log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
   parse_command_line(argc, argv);
   max_line_size = _get_window_width( );
   initscr();
+  raw();
+  keypad(stdscr,TRUE);
+  noecho();
+  cbreak();
+  curs_set(1);
+  nodelay(stdscr, TRUE);
   start_color();
   
   grid_win = newwin(height, width, starty, startx);
@@ -98,7 +108,17 @@ int main(int argc, char *argv[])
   text_win = newwin(height, width, starty, startx);
   box(text_win,0,0);
   
-  while (1) {
+  while (!end) {
+    ch = getch();
+    switch(ch)
+      {
+      case 'q':
+      case '\n':
+	endwin();
+	exit(0);
+	break;
+      }  
+    
     GridCount=0;
     _init_grid();
     _init_window(text_win);
@@ -128,20 +148,35 @@ int main(int argc, char *argv[])
     
     _print_grid();
     box(text_win,0,0);
+    box(grid_win,0,0);
     wrefresh(text_win);
     wrefresh(grid_win);
+    //sleep(5);
     if (params.iterate) {
       if(params.Display>JOBS)
 	list_destroy(smap_list);
-      sleep(params.iterate);
+      for(i=0;i<params.iterate;i++)
+	{
+	  sleep(1);
+	  ch = getch();
+	  switch(ch)
+	    {
+	    case 'q':
+	    case '\n':
+	      endwin();
+	      exit(0);
+	      break;
+	    }  
+	}
     } else
       break;
     
     
   }
   
+  nodelay(stdscr, FALSE);
   getch();
-  //endwin();
+  endwin();
     
   exit(0);
 }
