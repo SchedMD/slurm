@@ -37,7 +37,7 @@ dnl
 
 dnl Checks for header files.
 dnl
-AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
+AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h \
 		 )
@@ -89,8 +89,6 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
 AC_SLURM_SEMAPHORE
-AC_SLURM_USE_INCLUDED_POPT
-
 
 dnl checks for system services.
 dnl
@@ -303,7 +301,6 @@ AC_CONFIG_FILES([Makefile
 		 src/Makefile 
 		 src/api/Makefile 
 		 src/common/Makefile 
-		 src/popt/Makefile 
 		 src/srun/Makefile 
 		 src/slurmd/Makefile 
 		 src/slurmctld/Makefile 

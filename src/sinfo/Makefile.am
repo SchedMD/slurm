@@ -4,14 +4,13 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = $(POPT_INCLUDES) -I$(top_srcdir)
+INCLUDES = -I$(top_srcdir)
 bin_PROGRAMS = sinfo
 
 sinfo_LDADD =					  \
 	$(top_builddir)/src/common/libcommon.la   \
 	$(top_builddir)/src/common/libhostlist.la \
-	$(top_builddir)/src/api/libslurm.la 	  \
-	$(POPT_LIBS)
+	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = sinfo.h print.h
 sinfo_SOURCES = sinfo.c opts.c print.c sort.c

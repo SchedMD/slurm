@@ -72,25 +72,6 @@ AC_DEFUN([AC_SLURM_SEMAPHORE],
 ])dnl AC_SLURM_SEMAPHORE
 
 dnl
-dnl AC_SLURM_USE_INCLUDED_POPT
-dnl
-AC_DEFUN([AC_SLURM_USE_INCLUDED_POPT],
-[
-  AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
-  AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
-  if test $got_popt = no; then
-      AC_MSG_RESULT([using included popt package...])
-      POPT_LIBS="\$(top_builddir)/src/popt/libpopt.a"
-      POPT_INCLUDES="-I\$(top_srcdir)/src/popt"
-  else
-      POPT_LIBS="-lpopt"
-  fi
-  AC_SUBST(POPT_LIBS)
-  AC_SUBST(POPT_INCLUDES)
-
-])
-
-dnl
 dnl Perform checks related to setproctitle() emulation
 dnl
 AC_DEFUN([AC_SLURM_SETPROCTITLE],

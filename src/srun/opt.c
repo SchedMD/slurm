@@ -35,6 +35,11 @@
 #  include <strings.h>
 #endif
 
+#ifndef _GNU_SOURCE
+#  define _GNU_SOURCE
+#endif
+
+#include <getopt.h>
 #include <stdarg.h>		/* va_start   */
 #include <stdlib.h>		/* getenv     */
 #include <pwd.h>		/* getpwuid   */
@@ -66,11 +71,8 @@
    int MPIR_being_debugged;
    int MPIR_i_am_starter;
    int MPIR_acquired_pre_main;
+   char *totalview_jobid;
 #endif
-
-#define __DEBUG 0
-
-/*---[ popt definitions ]------------------------------------------------*/
 
 /* generic OPT_ definitions -- mainly for use with env vars 
  * (not to be confused with POPT_* definitions)
@@ -78,264 +80,57 @@
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
 #define OPT_STRING      0x02
-
-/* specific options, used with popt (and env var processing) */
-#define OPT_NPROCS      0x03
-#define OPT_CPUS        0x04
+#define OPT_DEBUG       0x03
+#define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
-#define OPT_PARTITION   0x06
-#define OPT_BASENODE    0x07
-#define OPT_DISTRIB     0x08
-#define OPT_OUTPUT      0x09
-#define OPT_INPUT       0x0a
-#define OPT_ERROR       0x0b
-#define OPT_CORE        0x0c
-#define OPT_VERBOSE     0x0d
-#define OPT_DEBUG       0x0e
-#define OPT_ALLOCATE    0x0f
-#define OPT_ATTACH      0x10
-#define OPT_CONST       0x11
-#define OPT_VERSION     0x12
-#define OPT_JOIN        0x13
-#define OPT_STEAL       0x14
-#define OPT_CHDIR       0x15
-#define OPT_BATCH       0x16
-#define OPT_TIME        0x17
-#define OPT_THREADS     0x18
-#define OPT_WAIT	0x19
-#define OPT_OVERCOMMIT	0x1a
-#define OPT_HOLD	0x1b
-#define OPT_RELATIVE    0x1c
-#define OPT_JOBID       0x1d
-#define OPT_NO_KILL	0x1e
-#define OPT_SHARE	0x1f
-#define OPT_LABELIO	0x20
-#define OPT_UNBUFFERED	0x21
+#define OPT_OVERCOMMIT  0x06
 
-/* constraint type options */
-#define OPT_MINCPUS     0x50
-#define OPT_REALMEM     0x51
-#define OPT_VIRTMEM     0x52
-#define OPT_TMPDISK     0x53
-#define OPT_CONTIG      0x54
-#define OPT_NODELIST    0x55
-#define OPT_CONSTRAINT  0x56
-#define OPT_NO_ALLOC	0x57
-#define OPT_EXC_NODES	0x58
-
-#ifndef POPT_TABLEEND
-#  define POPT_TABLEEND { NULL, '\0', 0, 0, 0, NULL, NULL }
-#endif
-
-/* options related to attach mode only */
-struct poptOption attachTable[] = {
-	{"attach", 'a', POPT_ARG_STRING, &opt.attach, OPT_ATTACH,
-	 "attach to running job with job id = id",
-	 "id"},
-	{"join", 'j', POPT_ARG_NONE, NULL, OPT_JOIN,
-	 "When used with --attach, allow forwarding of signals and stdin",
-	},
-	POPT_TABLEEND
-};
-
-/* options directly related to allocate-only mode */
-struct poptOption allocateTable[] = {
-	{"allocate", 'A', POPT_ARG_NONE, NULL, OPT_ALLOCATE,
-	 "allocate resources and spawn a shell",
-	 },
-	POPT_TABLEEND
-};
-
-/* define constraint options here */
-struct poptOption constraintTable[] = {
-	{"mincpus", '\0', POPT_ARG_INT, &opt.mincpus, OPT_MINCPUS,
-	 "minimum number of cpus per node",
-	 "n"},
-	{"mem", '\0', POPT_ARG_STRING, NULL, OPT_REALMEM,
-	 "minimum amount of real memory",
-	 "MB"},
-	{"tmp", '\0', POPT_ARG_STRING, NULL, OPT_TMPDISK,
-	 "minimum amount of temp disk",
-	 "MB"},
-	{"constraint", 'C', POPT_ARG_STRING, &opt.constraints,
-	 OPT_CONSTRAINT, "specify a list of constraints",
-	 "list"},
-	{"contiguous", '\0', POPT_ARG_NONE, NULL, OPT_CONTIG,
-	 "demand a contiguous range of nodes",
-	 },
-	{"nodelist", 'w', POPT_ARG_STRING, &opt.nodelist, OPT_NODELIST,
-	 "request a specific list of hosts",
-	 "hosts..."},
-	{"exclude", 'x', POPT_ARG_STRING, &opt.exc_nodes, OPT_EXC_NODES,
-	 "exclude a specific list of hosts",
-	 "hosts..."},
-	{"no-allocate", 'Z', POPT_ARG_NONE, NULL, OPT_NO_ALLOC,
-	 "don't allocate nodes (must supply -w)",
-	},
-	POPT_TABLEEND
-};
-
-
-/* options that affect parallel runs (may or may not apply to modes
- * above
- */
-struct poptOption runTable[] = {
-	{"ntasks", 'n', POPT_ARG_INT, 0, OPT_NPROCS,
-	 "number of tasks to run",
-	 "ntasks"},
-	{"cpus-per-task", 'c', POPT_ARG_INT, 0, OPT_CPUS,
-	 "number of cpus required per task",
-	 "ncpus"},
-	{"nodes", 'N', POPT_ARG_STRING, 0, OPT_NODES,
-	 "number of nodes on which to run (nnodes = min[-max])",
-	 "nnodes"},
-	{"relative", 'r', POPT_ARG_STRING, &opt.relative, OPT_RELATIVE,
-	 "run job step relative to node n of allocation",
-	 "n"},
-	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
-	 "partition requested",
-	 "partition"},
-	{"hold", 'H', POPT_ARG_NONE, NULL, OPT_HOLD,
-	 "submit job in held state",
-	 },
-	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
-	 "time limit",
-	 "minutes"},
-	{"chdir", 'D', POPT_ARG_STRING, NULL, OPT_CHDIR,
-	 "change current working directory of remote procs",
-	 "path"},
-	{"immediate", 'I', POPT_ARG_NONE, &opt.immediate, 0,
-	 "exit if resources are not immediately available",
-	 },
-	{"overcommit", 'O', POPT_ARG_NONE, NULL, OPT_OVERCOMMIT,
-	 "overcommit resources",
-	 },
-	{"no-kill", 'k', POPT_ARG_NONE, NULL, OPT_NO_KILL,
-	 "do not kill job on node failure",
-	 },
-	{"share", 's', POPT_ARG_NONE, NULL, OPT_SHARE,
-	 "share node with other jobs",
-	 },
-	{"label", 'l', POPT_ARG_NONE, NULL, OPT_LABELIO,
-	 "prepend task number to lines of stdout/err",
-	 },
-	{"unbuffered", 'u',  POPT_ARG_NONE, NULL, OPT_UNBUFFERED,
-	 "do not line-buffer stdout/err",
-	},
-	{"distribution", 'm', POPT_ARG_STRING, 0, OPT_DISTRIB,
-	 "distribution method for processes (type = block|cyclic)",
-	 "type"},
-	{"job-name", 'J', POPT_ARG_STRING, &opt.job_name, 0,
-	 "name of job",
-	 "jobname"},
-	{"jobid", '\0',   POPT_ARG_INT, NULL, OPT_JOBID, 
-         "run under already allocated job", "id" },
-	{"output", 'o', POPT_ARG_STRING, 0, OPT_OUTPUT,
-	 "location of stdout redirection",
-	 "out"},
-	{"input", 'i', POPT_ARG_STRING, 0, OPT_INPUT,
-	 "location of stdin redirection",
-	 "in"},
-	{"error", 'e', POPT_ARG_STRING, 0, OPT_ERROR,
-	 "location of stderr redirection",
-	 "err"},
-	{"batch", 'b', POPT_ARG_NONE, NULL, OPT_BATCH,
-	 "submit as batch job for later execution",
-	 "err"},
-        {"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE,
-	 "verbose operation (multiple -v's increase verbosity)", },
-        {"slurmd-debug", 'd', POPT_ARG_INT, &opt.slurmd_debug, OPT_DEBUG,
-	 "slurmd debug level", "value"},
-	{"threads", 'T', POPT_ARG_INT, &opt.max_threads, OPT_THREADS,
-	 "set srun launch fanout",
-	 "threads"},
-	{"wait", 'W', POPT_ARG_INT, &opt.max_wait, OPT_WAIT,
-	 "seconds to wait after first task ends before killing job",
-	 "sec"},
-	{"max-launch-time",  '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
-	  &opt.max_launch_time,  0, NULL, NULL },
-	{"max-exit-timeout", '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
-	  &opt.max_exit_timeout, 0, NULL, NULL },
-	{"msg-timeout",      '\0', POPT_ARG_INT | POPT_ARGFLAG_DOC_HIDDEN, 
-	  &opt.msg_timeout,      0, NULL, NULL },
-	POPT_TABLEEND
-};
-
-/* table of "other" options (just version information for now) */
-struct poptOption otherTable[] = {
-	{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
-	 "output version information and exit"},
-	POPT_TABLEEND
-};
-
-/* full option table: */
-struct poptOption options[] = {
-	{NULL, '\0', POPT_ARG_INCLUDE_TABLE, &runTable, 0,
-	 "Parallel run options:", NULL},
-	{NULL, '\0', POPT_ARG_INCLUDE_TABLE, &allocateTable, 0,
-	 "Allocate only:", NULL},
-	{NULL, '\0', POPT_ARG_INCLUDE_TABLE, &attachTable, 0,
-	 "Attach to running job:", NULL},
-	{NULL, '\0', POPT_ARG_INCLUDE_TABLE, &constraintTable, 0,
-	 "Constraint options:"},
-	POPT_AUTOHELP 
-	{NULL, '\0', POPT_ARG_INCLUDE_TABLE, &otherTable, 0,
-	 "Other options:", NULL},
-	POPT_TABLEEND
-};
-
-/*---[ end popt definitions ]---------------------------------------------*/
-/* forward declarations of static functions 
- *
- */
+/*---- forward declarations of static functions  ----*/
 
 typedef struct env_vars env_vars_t;
-
-/* 
- * fill in default options 
- */
-static void _opt_default(void);
-
-/* set options based upon env vars 
- */
-static void _opt_env(void);
-static void _process_env_var(env_vars_t *e, const char *val);
-
-/* set options based upon commandline args
- */
-static void _opt_args(int, char **);
-
-/* verify options sanity 
- */
-static bool _opt_verify(poptContext);
 
 /* return command name from its full path name */
 static char * _base_name(char* command);
 
+static List  _create_path_list(void);
+
 /* Get a decimal integer from arg */
-static int _get_int(const char *arg, const char *what);
+static int  _get_int(const char *arg, const char *what);
+
+static void  _help(void);
+
+/* set options based upon commandline args */
+static void _opt_args(int, char **);
+
+/* fill in default options  */
+static void _opt_default(void);
+
+/* set options based upon env vars  */
+static void _opt_env(void);
+
+/* list known options and their settings  */
+static void  _opt_list(void);
+
+/* verify options sanity  */
+static bool _opt_verify(void);
+
+static void  _print_version(void);
+
+static void _process_env_var(env_vars_t *e, const char *val);
+
+/* search PATH for command returns full path */
+static char *_search_path(char *, bool, int);
+
+static long  _to_bytes(const char *arg);
 
 #ifdef HAVE_TOTALVIEW
    static bool _under_totalview(void);
 #endif
 
-/* list known options and their settings 
- */
-#if	__DEBUG
-static void _opt_list(void);
-#endif
-
-/* search PATH for command 
- * returns full path
- */
-static char * _search_path(char *, bool, int);
-
-static void _print_version(void);
-static bool _valid_node_list(char **node_list_pptr);
-static enum distribution_t _verify_dist_type(const char *arg);
-static bool _verify_node_count(const char *arg, int *min, int *max);
-static long _to_bytes(const char *arg);
-static List _create_path_list(void);
+static void  _usage(void);
+static bool  _valid_node_list(char **node_list_pptr);
+static enum  distribution_t _verify_dist_type(const char *arg);
+static bool  _verify_node_count(const char *arg, int *min, int *max);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -350,9 +145,9 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	_opt_args(argc, argv);
 
-#if	__DEBUG
-	_opt_list();
-#endif
+	if (_verbose > 2)
+		_opt_list();
+
 	return 1;
 
 }
@@ -776,223 +571,276 @@ _get_int(const char *arg, const char *what)
 /*
  * _opt_args() : set options via commandline args and popt
  */
-static void _opt_args(int ac, char **av)
+static void _opt_args(int argc, char **argv)
 {
-	int rc;
-	int i;
-	const char **rest;
-	const char *arg;
-	char *fullpath;
-	poptContext optctx;
+	int opt_char, i;
+	int option_index;
+	static struct option long_options[] = {
+		{"attach",        required_argument, 0, 'a'},
+		{"allocate",      no_argument,       0, 'A'},
+		{"batch",         no_argument,       0, 'b'},
+		{"jobid",         required_argument, 0, 'B'},
+		{"cpus-per-task", required_argument, 0, 'c'},
+		{"constraint",    required_argument, 0, 'C'},
+		{"slurmd-debug",  required_argument, 0, 'd'},
+		{"chdir",         required_argument, 0, 'D'},
+		{"error",         required_argument, 0, 'e'},
+		{"contiguous",    no_argument,       0, 'g'},
+		{"hold",          no_argument,       0, 'H'},
+		{"input",         required_argument, 0, 'i'},
+		{"immediate",     no_argument,       0, 'I'},
+		{"join",          no_argument,       0, 'j'},
+		{"job-name",      required_argument, 0, 'J'},
+		{"no-kill",       no_argument,       0, 'k'},
+		{"label",         no_argument,       0, 'l'},
+		{"distribution",  required_argument, 0, 'm'},
+		{"mem",           required_argument, 0, 'M'},
+		{"ntasks",        required_argument, 0, 'n'},
+		{"nodes",         required_argument, 0, 'N'},
+		{"output",        required_argument, 0, 'o'},
+		{"overcommit",    no_argument,       0, 'O'},
+		{"partition",     required_argument, 0, 'p'},
+		{"mincpus",       required_argument, 0, 'P'},
+		{"relative",      required_argument, 0, 'r'},
+		{"share",         no_argument,       0, 's'},
+		{"tmp",           required_argument, 0, 'S'},
+		{"time",          required_argument, 0, 't'},
+		{"threads",       required_argument, 0, 'T'},
+		{"unbuffered",    no_argument,       0, 'u'},
+		{"verbose",       no_argument,       0, 'v'},
+		{"version",       no_argument,       0, 'V'},
+		{"nodelist",      required_argument, 0, 'w'},
+		{"wait",          required_argument, 0, 'W'},
+		{"exclude",       required_argument, 0, 'x'},
+		{"no-allocate",   no_argument,       0, 'Z'},
 
-	opt.progname = xbasename(av[0]);
+		/* hidden parameters */
+		{"msg-timeout",      required_argument, 0, '0'},
+		{"max-launch-time",  required_argument, 0, '1'},
+		{"max-exit-timeout", required_argument, 0, '2'},
+		{"help",             no_argument,       0, '3'},
+		{"usage",            no_argument,       0, '4'}
+	};
+	char *opt_string = "+a:AbB:c:C:d:D:e:gHi:IjJ:klm:M:n:N:"
+		"o:Op:P:r:sS:t:T:uvVw:W:x:Z0:1:2:34";
+	char **rest = NULL;
 
-	optctx = poptGetContext("srun", ac, (const char **) av, options,
-				POPT_CONTEXT_POSIXMEHARDER);
-	poptSetOtherOptionHelp(optctx, "[OPTIONS...] executable [args...]");
-	poptReadDefaultConfig(optctx, 0);
+	opt.progname = xbasename(argv[0]);
 
-	/* first pass through args to see if attach or allocate mode
-	 * are set
-	 */
-	while ((rc = poptGetNextOpt(optctx)) > 0) {
-		arg = poptGetOptArg(optctx);
-
-		switch (rc) {
-		case OPT_VERSION:
-			_print_version();
-			exit(0);
-			break;
-
-		case OPT_ATTACH:
-			if (opt.allocate || opt.batch) {
-				error("can only specify one mode: "
-				      "allocate, attach or batch.");
+	while((opt_char = getopt_long(argc, argv, opt_string,
+			long_options, &option_index)) != -1) {
+		switch (opt_char) {
+			case (int)'?':
+				fprintf(stderr, "Try \"srun --help\" for more "
+					"information\n");
 				exit(1);
-			}
-			mode = MODE_ATTACH;
-			opt.attach = strdup(arg);
-			break;
-
-		case OPT_ALLOCATE:
-			if (opt.attach || opt.batch) {
-				error("can only specify one mode: "
-				      "allocate, attach or batch.");
-				exit(1);
-			}
-			mode = MODE_ALLOCATE;
-			opt.allocate = true;
-			break;
-
-		case OPT_BATCH:
-			if (opt.allocate || opt.attach) {
-				error("can only specify one mode: "
-				      "allocate, attach or batch.");
-				exit(1);
-			}
-			mode = MODE_BATCH;
-			opt.batch = true;
-			break;
-
-		default:
-			break;
-			/* do nothing */
+				break;
+			case (int)'a':
+				if (opt.allocate || opt.batch) {
+					error("can only specify one mode: "
+					      "allocate, attach or batch.");
+					exit(1);
+				}
+				mode = MODE_ATTACH;
+				opt.attach = strdup(optarg);
+				break;
+			case (int)'A':
+				if (opt.attach || opt.batch) {
+					error("can only specify one mode: "
+				   	   "allocate, attach or batch.");
+					exit(1);
+				}
+				mode = MODE_ALLOCATE;
+				opt.allocate = true;
+				break;
+			case (int)'b':
+				if (opt.allocate || opt.attach) {
+					error("can only specify one mode: "
+					      "allocate, attach or batch.");
+					exit(1);
+				}
+				mode = MODE_BATCH;
+				opt.batch = true;
+				break;
+			case (int)'B':
+				opt.jobid = _get_int(optarg, "jobid");
+				break;
+			case (int)'c':
+				opt.cpus_set = true;
+				opt.cpus_per_task = 
+					_get_int(optarg, "cpus-per-task");
+				break;
+			case (int)'C':
+				xfree(opt.constraints);
+				opt.constraints = xstrdup(optarg);
+				break;
+			case (int)'d':
+				opt.slurmd_debug = 
+					_get_int(optarg, "slurmd-debug");
+				break;
+			case (int)'D':
+				xfree(opt.cwd);
+				opt.cwd = xstrdup(optarg);
+				break;
+			case (int)'e':
+				xfree(opt.efname);
+				opt.efname = xstrdup(optarg);
+				break;
+			case (int)'g':
+				opt.contiguous = true;
+				break;
+			case (int)'H':
+				opt.hold = true;
+				break;
+			case (int)'i':
+				xfree(opt.ifname);
+				opt.ifname = xstrdup(optarg);
+				break;
+			case (int)'I':
+				opt.immediate = true;
+				break;
+			case (int)'j':
+				opt.join = true;
+				break;
+			case (int)'J':
+				xfree(opt.job_name);
+				opt.job_name = xstrdup(optarg);
+				break;
+			case (int)'k':
+				opt.no_kill = true;
+				break;
+			case (int)'l':
+				opt.labelio = true;
+				break;
+			case (int)'m':
+				opt.distribution = _verify_dist_type(optarg);
+				if (opt.distribution == SRUN_DIST_UNKNOWN) {
+					error("distribution type `%s' " 
+				  	    "is not recognized", optarg);
+					exit(1);
+				}
+				break;
+			case (int)'M':
+				opt.realmem = (int) _to_bytes(optarg);
+				if (opt.realmem < 0) {
+					error("invalid memory constraint %s", 
+						optarg);
+					exit(1);
+				}
+				break;
+			case (int)'n':
+				opt.nprocs_set = true;
+				opt.nprocs = 
+					_get_int(optarg, "number of tasks");
+				break;
+			case (int)'N':
+				opt.nodes_set = 
+					_verify_node_count(optarg, 
+						&opt.min_nodes,
+						&opt.max_nodes);
+				if (opt.nodes_set == false) {
+					error("invalid node count `%s'", 
+						optarg);
+					exit(1);
+				}
+				break;
+			case (int)'o':
+				xfree(opt.ofname);
+				opt.ofname = xstrdup(optarg);
+				break;
+			case (int)'O':
+				opt.overcommit = true;
+				break;
+			case (int)'p':
+				xfree(opt.partition);
+				opt.partition = xstrdup(optarg);
+				break;
+			case (int)'P':
+				opt.mincpus = _get_int(optarg, "mincpus");
+				break;
+			case (int)'r':
+				xfree(opt.relative);
+				opt.relative = xstrdup(optarg);
+				break;
+			case (int)'s':
+				opt.share = true;
+				break;
+			case (int)'S':
+				opt.tmpdisk = _to_bytes(optarg);
+				if (opt.tmpdisk < 0) {
+					error("invalid tmp value %s", optarg);
+					exit(1);
+				}
+				break;
+			case (int)'t':
+				opt.time_limit = _get_int(optarg, "time");
+				break;
+			case (int)'T':
+				opt.max_threads = 
+					_get_int(optarg, "max_threads");
+				break;
+			case (int)'u':
+				opt.unbuffered = true;
+				break;
+			case (int)'v':
+				_verbose++;
+				break;
+			case (int)'V':
+				_print_version();
+				exit(0);
+				break;
+			case (int)'w':
+				xfree(opt.nodelist);
+				opt.nodelist = xstrdup(optarg);
+				if (!_valid_node_list(&opt.nodelist))
+					exit(1);
+				break;
+			case (int)'W':
+				opt.max_wait = _get_int(optarg, "wait");
+				break;
+			case (int)'x':
+				xfree(opt.exc_nodes);
+				opt.exc_nodes = xstrdup(optarg);
+				if (!_valid_node_list(&opt.exc_nodes))
+					exit(1);
+				break;
+			case (int)'Z':
+				opt.no_alloc = true;
+				break;
+			case (int)'0':
+				opt.msg_timeout = 
+					_get_int(optarg, "msg-timeout");
+				break;
+			case (int)'1':
+				opt.max_launch_time = 
+					_get_int(optarg, "max_launch-time");
+				break;
+			case (int)'2':
+				opt.max_exit_timeout = 
+					_get_int(optarg, "max-exit-timeout");
+				break;
+			case (int)'3':
+				_help();
+				exit(0);
+			case (int) '4':
+				_usage();
+				exit(0);
 		}
 	}
 
-	poptResetContext(optctx);
-
-	while ((rc = poptGetNextOpt(optctx)) > 0) {
-		arg = poptGetOptArg(optctx);
-
-		switch (rc) {
-		case OPT_VERBOSE:
-			_verbose++;
-			break;
-
-		case OPT_OUTPUT:
-			opt.ofname = xstrdup(arg);
-			break;
-
-		case OPT_INPUT:
-			opt.ifname = xstrdup(arg);
-			break;
-
-		case OPT_ERROR:
-			opt.efname = xstrdup(arg);
-			break;
-
-		case OPT_JOIN:
-			opt.join = true;
-			break;
-
-		case OPT_HOLD:
-			opt.hold = true;
-			break;
-
-		case OPT_OVERCOMMIT:
-			opt.overcommit = true;
-			break;
-
-		case OPT_NO_KILL:
-			opt.no_kill = true;
-			break;
-
-		case OPT_SHARE:
-			opt.share = true;
-			break;
-
-		case OPT_LABELIO:
-			opt.labelio = true;
-			break;
-
-		case OPT_UNBUFFERED:
-			opt.unbuffered = true;
-			break;
-
-		case OPT_DISTRIB:
-			opt.distribution = _verify_dist_type(arg);
-			if (opt.distribution == SRUN_DIST_UNKNOWN) {
-				error("distribution type `%s' " 
-				      "is not recognized", arg);
-				poptPrintUsage(optctx, stderr, 0);
-				exit(1);
-			}
-			break;
-
-		case OPT_NPROCS:
-			opt.nprocs_set = true;
-			opt.nprocs = _get_int(arg, "number of tasks");
-			break;
-
-		case OPT_CPUS:
-			opt.cpus_set = true;
-			opt.cpus_per_task = _get_int(arg, "cpus per task");
-			break;
-
-		case OPT_NODES:
-			opt.nodes_set = 
-				_verify_node_count(arg, &opt.min_nodes, 
-						   &opt.max_nodes);
-			if (opt.nodes_set == false) {
-				argerror
-				    ("Error: invalid node count `%s'", arg);
-				poptPrintUsage(optctx, stderr, 0);
-				exit(1);
-			}
-			break;
-
-		case OPT_JOBID:
-			opt.jobid = _get_int(arg, "jobid");
-			break;
-
-		case OPT_REALMEM:
-			opt.realmem = (int) _to_bytes(arg);
-			if (opt.realmem < 0) {
-				error("invalid memory constraint %s", arg);
-				exit(1);
-			}
-			break;
-
-		case OPT_CONTIG:
-			opt.contiguous = true;
-			break;
-
-		case OPT_NO_ALLOC:
-			opt.no_alloc = true;
-			break;
-
-		case OPT_TMPDISK:
-			opt.tmpdisk = _to_bytes(arg);
-			if (opt.tmpdisk < 0) {
-				error("invalid tmp disk constraint %s", arg);
-				exit(1);
-			}
-			break;
-
-		case OPT_CHDIR:
-			xfree(opt.cwd);
-			opt.cwd = xstrdup(arg);
-			break;
-
-		case OPT_NODELIST:
-			if (!_valid_node_list(&opt.nodelist))
-				exit(1);
-			break;
-
-		case OPT_EXC_NODES:
-			if (!_valid_node_list(&opt.exc_nodes))
-				exit(1);
-			break;
-
-		default:
-			break;
-			/* do nothing */
-		}
-	}
-
-	if (rc < -1) {
-		const char *bad_opt;
-		bad_opt = poptBadOption(optctx, POPT_BADOPTION_NOALIAS);
-		error("bad argument %s: %s", bad_opt, poptStrerror(rc));
-		error("Try \"srun --help\" for more information\n");
-		exit(1);
-	}
-
-	rest = poptGetArgs(optctx);
 	remote_argc = 0;
-
-	if (rest != NULL) {
+	if (optind < argc) {
+		rest = argv + optind;
 		while (rest[remote_argc] != NULL)
 			remote_argc++;
 	}
-
 	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
 	for (i = 0; i < remote_argc; i++)
 		remote_argv[i] = xstrdup(rest[i]);
 	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (remote_argc > 0) {
+		char *fullpath;
 		char *cmd       = remote_argv[0];
 		bool search_cwd = (opt.batch || opt.allocate);
 		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
@@ -1003,20 +851,15 @@ static void _opt_args(int ac, char **av)
 		} 
 	}
 
-	if (!_opt_verify(optctx)) {
-		poptPrintUsage(optctx, stderr, 0);
+	if (!_opt_verify())
 		exit(1);
-	}
-
-	poptFreeContext(optctx);
 }
 
 /* 
  * _opt_verify : perform some post option processing verification
  *
  */
-static bool
-_opt_verify(poptContext optctx)
+static bool _opt_verify(void)
 {
 	bool verified = true;
 
@@ -1215,8 +1058,6 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
 	return fullpath;
 }
 
-#if	__DEBUG
-
 /* helper function for printing options
  * 
  * warning: returns pointer to memory allocated on the stack.
@@ -1263,8 +1104,7 @@ print_commandline()
 
 #define tf_(b) (b == true) ? "true" : "false"
 
-static 
-void _opt_list()
+static void _opt_list()
 {
 	char *str;
 
@@ -1304,7 +1144,6 @@ void _opt_list()
 	xfree(str);
 
 }
-#endif				/* __DEBUG */
 
 #ifdef HAVE_TOTALVIEW
 /* Determine if srun is under the control of a TotalView debugger or not */
@@ -1313,3 +1152,79 @@ static bool _under_totalview(void)
 	return (MPIR_being_debugged != 0);
 }
 #endif
+
+static void _usage(void)
+{
+	printf("Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n");
+	printf("            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n");
+	printf("            [-D path] [--immediate] [--overcommit] [--no-kill]\n");
+	printf("            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n");
+	printf("            [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n");
+	printf("            [-T threads] [-W sec] [--attach] [--join] [--contiguous]\n");
+	printf("            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] \n");
+	printf("            [-w hosts...] [-x hosts...] [--usage] [OPTIONS...] \n");
+ 	printf("            executable [args...]\n");
+}
+
+static void _help(void)
+{
+	printf("Usage: srun [OPTIONS...] executable [args...]");
+	printf("\nParallel run options:\n");
+	printf("  -n, --ntasks=ntasks           number of tasks to run\n");
+	printf("  -N, --nodes=nnodes            number of nodes on which to run\n");
+	printf("                                (nnodes = min[-max])\n");
+	printf("  -i, --input=in                location of stdin redirection\n");
+	printf("  -o, --output=out              location of stdout redirection\n");
+	printf("  -e, --error=err               location of stderr redirection\n");
+	printf("  -c, --cpus-per-task=ncpus     number of cpus required per task\n");
+
+	printf("  -r, --relative=n              run job step relative to node n of allocation\n");
+	printf("  -p, --partition=partition     partition requested\n");
+	printf("  -H, --hold                    submit job in held state\n");
+	printf("  -t, --time=minutes            time limit\n");
+	printf("  -D, --chdir=path              change current working directory of\n");
+	printf("                                remote processes\n");
+	printf("  -I, --immediate               exit if resources are not immediately available\n");
+	printf("  -O, --overcommit              overcommit resources\n");
+	printf("  -k, --no-kill                 do not kill job on node failure\n");
+	printf("  -s, --share                   share nodes with other jobs\n");
+	printf("  -l, --label                   prepend task number to lines of stdout/err\n");
+	printf("  -u, --unbuffered              do not line-buffer stdout/err\n");
+	printf("  -m, --distribution=type       distribution method for processes\n");
+	printf("                                (type = block|cyclic)\n");
+	printf("  -J, --job-name=jobname        name of job\n");
+	printf("  -B, --jobid=id                run under already allocated job\n");
+	printf("  -b, --batch                   submit as batch job for later execution\n");
+	printf("  -v, --verbose                 verbose operation (multiple -v's\n");
+	printf("                                increase verbosity)\n");
+ 	printf("  -d, --slurmd-debug=value      slurmd debug level\n");
+	printf("  -T, --threads=threads         set srun launch fanout\n");
+	printf("  -W, --wait=sec                seconds to wait after first task ends\n");
+ 	printf("                                before killing job\n");
+
+	printf("\nAllocate only:\n");
+	printf("  -A, --allocate                allocate resources and spawn a shell\n");
+
+	printf("\nAttach to running job:\n");
+	printf("  -a, --attach=jobid            attach to running job with specified id\n");
+	printf("  -j, --join                    when used with --attach, allow\n");
+ 	printf("                                forwarding of signals and stdin\n");
+
+	printf("\nConstraint options:\n");
+	printf("  -P, --mincpus=n               minimum number of cpus per node\n");
+	printf("  -M, --mem=MB                  minimum amount of real memory\n");
+ 	printf("  -S, --tmp=MB                  minimum amount of temporary disk\n");
+	printf("  -C, --constraint=list         specify a list of constraints\n");
+	printf("  -g, --contiguous              demand a contiguous range of nodes\n");
+	printf("  -w, --nodelist=hosts...       request a specific list of hosts\n");
+	printf("  -x, --exclude=hosts...        exclude a specific list of hosts\n");
+	printf("  -Z, --no-allocate             don't allocate nodes (must supply -w)\n");
+
+	printf("\nHelp options:\n");
+	printf("  --help                        show this help message\n");
+ 	printf("  --usage                       display brief usage message\n");
+
+	printf("\nOther options:\n");
+	printf("  -V, --version                 output version information and exit\n");
+
+}

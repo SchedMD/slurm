@@ -21,9 +21,9 @@ clusters managed by SLURM.
 .TP
 parallel run options
 .TP
-\fB\-n\fR, \fB\-\-nprocs\fR=\fInprocs\fR
+\fB\-n\fR, \fB\-\-ntasks\fR=\fIntasks\fR
 Specify the number of processes to run. Request that \fBsrun\fR
-allocate \fInprocs\fR processes. Specification of the number of 
+allocate \fIntasks\fR processes. Specification of the number of 
 processes per node may be achieved with the \fB\-c\fR and \fB\-N\fR
 options. The default is one process per node unless \fB\-c\fR 
 explicitly specifies otherwise.
@@ -74,7 +74,7 @@ time limit. When the time limit is reached, the job's processes are sent
 SIGTERM followed by SIGKILL. The interval between signals is specified by 
 the SLURM configuration parameter \fBKillWait\fR.
 .TP
-\fB\-\-chdir\fR=\fIpath\fR
+\fB\-D\fR, \fB\-\-chdir\fR=\fIpath\fR
 have the remote processes do a chdir to \fIpath\fR before beginning
 execution. The default is to chdir to the current working directory
 of the \fBsrun\fR process.
@@ -151,7 +151,7 @@ Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
 is the supplied \fBexecutable\fR program's name.
 .TP
-\fB--jobid\fR=\fIid\fR
+\fB\-B\fR, \fB--jobid\fR=\fIid\fR
 Initiate a job step under an already allocated job with job id \fIid\fR.
 Using this option will cause \fBsrun\fR to behave exactly as if the
 SLURM_JOBID environment variable was set.
@@ -242,16 +242,13 @@ sessions with the specified job and allow stdin and signals to be propagated.
 Constraint Options. The following options all put constraints on the nodes
 that may be considered for the job:
 .TP
-\fB\-\-mincpus\fR=\fIn\fR
+\fB\-P\fR, \fB\-\-mincpus\fR=\fIn\fR
 Specify minimum number of cpus per node.
 .TP
-\fB\-\-mem\fR=\fIMB\fR
+\fB\-M\fR, \fB\-\-mem\fR=\fIMB\fR
 Specify a minimum amount of real memory.
 .TP
-\fB\-\-vmem\fR=\fIMB\fR
-Specify a minimum amount of virtual memory.
-.TP
-\fB\-\-tmp\fR=\fIMB\fR
+\fB\-S\fR, \fB\-\-tmp\fR=\fIMB\fR
 Specify a minimum amount of temporary disk space.
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=\fIlist\fR
@@ -266,8 +263,8 @@ in which case all nodes have must have at least one of the listed
 features (i.e. the features are ORed together). 
 If no nodes have the requested features, then the job will be rejected 
 by the slurm job manager.
-.TP
-\fB\-\-contiguous\fR
+TP
+\fB\-g\fR, \fB\-\-contiguous\fR
 Demand a contiguous range of nodes. The default is "yes". Specify
 --contiguous=no if a contiguous range of nodes is not a constraint.
 .TP
@@ -286,7 +283,7 @@ if it contains a "/"character.
 .PP
 Help options
 .TP
--?, \fB\-\-help\fR
+\fB\-\-help\fR
 Show this help message
 .TP
 \fB\-\-usage\fR
@@ -529,7 +526,7 @@ SLURM_NNODES
 \fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)
 .TP
 SLURM_NPROCS
-\fB\-n, \-\-nprocs\fR=\fIn\fR
+\fB\-n, \-\-ntasks\fR=\fIn\fR
 .TP
 SLURM_OVERCOMMIT
 \fB\-o, \-\-overcommit\fR
@@ -725,7 +722,7 @@ rm $PROCFILE
 If the number of processors per node allocated to a job is not evenly 
 divisible by the value of \fBcpus\-per\-node\fR, tasks may be initiated 
 on nodes lacking a sufficient number of processors for the desired parallelism. 
-For example, if \fBcpus\-per\-node\fR is three, \fBnprocs\fR is four and 
+For example, if \fBcpus\-per\-node\fR is three, \fBntasks\fR is four and 
 the job is allocated three nodes each with four processors. The requisite 
 12 processors have been allocated, but there is no way for the job to 
 initiate four tasks with each of them having exclusive access to three 

@@ -34,20 +34,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-/*
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#include <getopt.h>
-*/
-
-#if HAVE_POPT_H
-#  include <popt.h>
-#else
-#  include "src/popt/popt.h"
-#endif
-
 #include "src/common/macros.h" /* true and false */
 
 #define MAX_THREADS	64
