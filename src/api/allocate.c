@@ -31,8 +31,10 @@ main(int argc, char * argv[]) {
 	&NodeList);
     if (Error_Code) 
 	printf("Allocate error %d\n", Error_Code);
-    else
+    else {
 	printf("Allocate nodes %s\n", NodeList);
+	free(NodeList);
+    } /* else */
 
     while (1) {
 	Error_Code = Allocate(
@@ -41,8 +43,10 @@ main(int argc, char * argv[]) {
 	if (Error_Code) {
 	    printf("Allocate error %d\n", Error_Code);
 	    break;
-	} else
+	} else {
 	    printf("Allocate nodes %s\n", NodeList);
+	    free(NodeList);
+	} /* else */
     } /* while */
 
     while (1) {
@@ -52,8 +56,10 @@ main(int argc, char * argv[]) {
 	if (Error_Code) {
 	    printf("Allocate error %d\n", Error_Code);
 	    break;
-	} else
+	} else {
 	    printf("Allocate nodes %s\n", NodeList);
+	    free(NodeList);
+	} /* else */
     } /* while */
 
     exit(0);
@@ -68,7 +74,7 @@ main(int argc, char * argv[]) {
  * Output: NodeList - List of allocated nodes
  *         Returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
- * NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
+ * NOTE: Acceptable specifications include: JobName=<name>, NodeList=<list>, 
  *	Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
  *	TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
  *	MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
