@@ -43,12 +43,13 @@ Development package for SLURM.  This package includes the header files and stati
 %endif
 
 
-./configure --prefix=%{_prefix} --with-slurm-conf=/etc/slurm $WITHELAN $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
+%configure --with-slurm-conf=/etc/slurm $WITHELAN $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
 make
 
 %install
 
 %makeinstall
+install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -63,14 +64,12 @@ rm -rf $RPM_BUILD_ROOT
 %attr(4755, root, root) %{_bindir}/squeue
 %attr(4755, root, root) %{_bindir}/srun 
 %attr(4755, root, root) %{_sbindir}/slurmcltd
-%attr(4755, root, root) /etc/init.d/slurmctld
 %attr(4755, root, root) %{_sbindir}/slurmd
-%attr(4755, root, root) /etc/init.d/slurmd
+%attr(4755, root, root) /etc/init.d/slurm
 %{_libdir}/*.so
 %{_mandir}/man1/*
-%{_mandir}/man5/slurm.conf.5
-%{_mandir}/man8/slurmd.8
-%{_mandir}/man8/slurmctld.8
+%{_mandir}/man5/*
+%{_mandir}/man8/*
 
 %files devel
 %defattr(-,root,root)
