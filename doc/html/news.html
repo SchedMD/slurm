@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="26 August 2004">
+<meta name="LLNLRandRdate" content="11 October 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -73,28 +73,38 @@ For a complete list of enhancements in SLURM version 0.3, please see the NEWS
 file with the code distribution.</p>
 
 <h3>Major Updates in SLURM Version 0.4</h3>
-<p>We expect to make SLURM Version 0.4 available in December 2004. 
+<p>We expect to make SLURM Version 0.4 available in Deccember 2004. 
 Major enhancements include: 
 <ul>
 <li>Support for <a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
 <li>Support for the IBM AIX operating system.</li>
-<li>Support for the IBM Federation switch.</li>
 <li>Support for the IBM 
 <a href="http://www.research.ibm.com/bluegene/">IBM BlueGene</a> system.</li>
-<li>Checkpoint plugin added with support for IBM system checkpoint.</li>
-<li>I/O streams for all tasks on a node are transmitted through one pair of sockets 
-instead of distinct sockets for each task. This improves performance and scalability.</li>
 <li>Support for dependent jobs.</li>
 <li>Support for job account numbers.</li>
+<li>Add "reason"  field to show what pending jobs are waiting for.</li>
+<li>New graphical user interface, smap.</li>
+</ul>
+
+<h3>Major Updates in SLURM Version 0.5</h3>
+<p>We expect to make SLURM Version 0.5 available in June 2005.
+Major enhancements include:
+<ul>
+<li>Add support for <a href="http://www.myri.com/scs/">MPICH-GM</a> 
+(<a href="http:www.myri.com/">Myricom's</a> version of MPI).</li>
+<li>Support for the IBM Federation switch.</li>
+<li>Checkpoint plugin added with support for IBM system checkpoint.</li>
+<li>I/O streams for all tasks on a node are transmitted through one pair of sockets
+instead of distinct sockets for each task. This improves performance and scalability.</li>
 <li>Support for task communication/synchronization primitives.</li>
 </ul>
-<h3>Major Updates in SLURM Version 0.5 and beyond</h3>
+
+<h3>Major Updates in SLURM Version 0.6 and beyond</h3>
 <p> Detailed plans for release dates and contents of future SLURM releases have 
 not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activies. Future development plans includes:
 <ul>
-<li>Support for the IBM Federation switch.</li>
 <li>Support of various MPI types via a plugin mechanism.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Manage consumable resources on a per-node (e.g,. memory, disk space) 
@@ -103,7 +113,6 @@ and system-wide basis (e.g., licenses).</li>
 <li>Enforce CPU and memory limits by job.</li>
 <li>Perform job accounting (record resource utilization).</li>
 <li>Add support for InfiniBand switch.</li>
-<li>Develop graphical user interfaces.</li>
 <li>Support <b>srun</b> options within shell script.</li>
 <li>Optionally notify users via email of job state changes.</li>
 <li>Convert state save functions to plugins for use of various databases.</li>
@@ -115,7 +124,7 @@ and system-wide basis (e.g., licenses).</li>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 26 August 2004</p></td>
+Last modified 11 October 2004</p></td>
 </tr>
 </table>
 </td>
