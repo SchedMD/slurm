@@ -452,11 +452,13 @@ size_t slurm_read_stream_timeout  ( slurm_fd open_fd , char * buffer , size_t si
 
 size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
+	struct timeval * SLURM_MESSGE_TIMEOUT_SEC = & SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
 	return _slurm_send_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ;
 }
 
 size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
+	struct timeval * SLURM_MESSGE_TIMEOUT_SEC = & SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
 	return _slurm_recv_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ;
 }
 
@@ -674,6 +676,10 @@ int slurm_send_recv_node_msg ( slurm_msg_t * request_msg , slurm_msg_t * respons
                 return SLURM_SOCKET_ERROR ;
 
         return SLURM_SUCCESS ;
+
+slurm_send_recv_node_msg_error:
+	slurm_close_stream ( sockfd ) ;
+	 return SLURM_SOCKET_ERROR ;
 }
 
 int slurm_send_only_controller_msg ( slurm_msg_t * request_msg )
