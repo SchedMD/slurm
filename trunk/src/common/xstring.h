@@ -28,7 +28,7 @@
 #ifndef _XSTRING_H
 #define _XSTRING_H	1
 
-#include <src/common/macros.h>
+#include "src/common/macros.h"
 
 #define xstrcat(__p, __q)		_xstrcat(&(__p), __q)
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
