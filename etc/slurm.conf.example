@@ -59,7 +59,7 @@
 #
 # Example:
 # 
-# SlurmdSpoolDir=/tmp/slurmd	# default: "/var/spool/slurm"
+# SlurmdSpoolDir=/var/tmp/slurmd	# default: "/tmp/slurmd"
 
 
 #
