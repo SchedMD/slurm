@@ -168,6 +168,7 @@ enum ctx_keys {
 	SLURM_STEP_CTX_ARGS,	/* set argument count and values */
 	SLURM_STEP_CTX_CHDIR,	/* set directory to run from */
 	SLURM_STEP_CTX_ENV,	/* set environment variable count and values */
+	SLURM_STEP_CTX_STEPID,	/* get the created job step id */
 	SLURM_STEP_CTX_TASKS,	/* get array of task count on each node */
 	SLURM_STEP_CTX_TID	/* get array of task IDs for specified node */
 };
