@@ -51,7 +51,6 @@
 #include "src/api/slurm.h"
 
 #include "src/common/log.h"
-#include "src/common/read_config.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -238,12 +237,14 @@ main(int ac, char **av)
 
 	pthread_attr_init(&ioattr);
 	/* spawn io server thread */
-	if ((errno = pthread_create(&job->ioid, &ioattr, &io_thr, (void *) job)))
+	if ((errno = pthread_create(&job->ioid, &ioattr, &io_thr, 
+	                            (void *) job)))
 		fatal("Unable to create io thread. %m\n");
 	debug("Started IO server thread (%d)\n", job->ioid);
 
 	/* spawn signal thread */
-	if ((errno = pthread_create(&job->sigid, &attr, &sig_thr, (void *) job)))
+	if ((errno = pthread_create(&job->sigid, &attr, &sig_thr, 
+	                            (void *) job)))
 		fatal("Unable to create signals thread. %m");
 	debug("Started signals thread (%d)", job->sigid);
 
