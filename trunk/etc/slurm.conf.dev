@@ -4,12 +4,15 @@
 # Date: 11/06/2001
 # Note: "localhost" is translated by slurmctld to the actual hostname
 #
-ControlMachine=dev0 BackupController=dev0
+ControlMachine=dev0   ControlAddr=edev0 
+BackupController=dev1 BackupAddr=edev1
 Epilog="" Prolog=""
 FastSchedule=1
 FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
+JobCredentialPrivateKey=private.key
+JobCredentialPublicCertificate=public.cert
 InactiveLimit=120
 KillWait=30
 Prioritize=/usr/local/maui/priority
@@ -18,13 +21,11 @@ SlurmctldPort=7002 SlurmdPort=7003
 SlurmctldTimeout=300 SlurmdTimeout=300
 StateSaveLocation=/tmp/slurm.state
 TmpFS=/tmp
-JobCredentialPrivateKey=private.key
-JobCredentialPublicCertificate=public.cert
 #
 # Node Configurations
 #
 NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
-NodeName=dev[0-25] Weight=16
+NodeName=dev[0-25] NodeAddr=edev[0-25] Weight=16
 #
 # Partition Configurations
 #
