@@ -722,6 +722,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 
 	/* Confirm that partition is up and has compatible nodes limits */
 	if ((part_ptr->state_up == 0) ||
+	    ((job_ptr->time_limit != NO_VAL) &&
+	     (job_ptr->time_limit > part_ptr->max_time)) ||
 	    ((job_ptr->details->max_nodes != 0) &&	/* no node limit */
 	     (job_ptr->details->max_nodes < part_ptr->min_nodes)) ||
 	    (job_ptr->details->min_nodes > part_ptr->max_nodes))
@@ -787,6 +789,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	req_bitmap = NULL;
 	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
+	if (job_ptr->time_limit == NO_VAL)
+		job_ptr->time_limit = part_ptr->max_time;
 	if (job_ptr->time_limit == INFINITE)
 		job_ptr->end_time = job_ptr->start_time + 
 				    (365 * 24 * 60 * 60); /* secs in year */
