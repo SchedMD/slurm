@@ -417,29 +417,25 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	char * part_name = NULL;
-
+	partition_desc_t * part_desc = (partition_desc_t * ) msg-> data ;
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = update_part (part_name, msg ); /* skip "Update" */
+	error_code = update_part ( part_desc ); /* skip "Update" */
 
 	/* return result */
 	if (error_code)
 	{
 		error ("slurmctld_req: update error %d on partition %s, time=%ld",
-				error_code, part_name, (long) (clock () - start_time));
+				error_code, part_desc->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
 		info ("slurmctld_req: updated partition %s, time=%ld",
-				part_name, (long) (clock () - start_time));
+				part_desc->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	if (part_name)
-		xfree (part_name);
-
 }
 
 /* JobSubmit - submit a job to the slurm queue */

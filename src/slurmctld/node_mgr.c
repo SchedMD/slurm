@@ -1234,7 +1234,7 @@ update_node ( update_node_msg_t * update_node_msg )
 		return EINVAL;
 	}
 
-	state_val = NO_VAL;
+	state_val = update_node_msg -> node_state ; 
 	
 	error_code = node_name2list( update_node_msg -> node_names, &node_list, &node_count);
 	if (error_code)
