@@ -320,24 +320,19 @@ _service_connection(void *arg)
 	conn_t *con = (conn_t *) arg;
 	slurm_msg_t *msg = xmalloc(sizeof(*msg));
 
-	if ((rc = slurm_receive_msg(con->fd, msg, 0)) < 0) {
-		error("slurm_receive_msg: %m");
-		goto done;
-	} else {
-		msg->conn_fd = con->fd;
-		slurmd_req(msg, con->cli_addr);
-	}
-
-	/* 
-	 * Check to see if fd already closed
+	/* set msg connection fd to accepted fd. This allows 
+ 	 *  possibility for slurmd_req () to close accepted connection
 	 */
-	if (msg->conn_fd < 0) 
-		goto done;
+	msg->conn_fd = con->fd;
 
-	if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+	if ((rc = slurm_receive_msg(con->fd, msg, 0)) < 0) 
+		error("slurm_receive_msg: %m");
+	else 
+		slurmd_req(msg, con->cli_addr);
+
+	if ((msg->conn_fd >= 0) && slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", con->fd);
 
-    done:
 	xfree(con->cli_addr);
 	xfree(con);
 	slurm_free_msg(msg);
