@@ -249,11 +249,12 @@ main(int ac, char **av)
 	/* wait for  stdio */
 	n = 0;
 	for (i = 0; i < opt.nprocs; i++) {
-		if (job->out[i] == -1)
-			job->out[i] = -9;
-		if (job->err[i] == -1)
-			job->err[i] = -9;
-		if (job->err[i] == -9 && job->out[i] == -9)
+		if (job->out[i] == WAITING_FOR_IO)
+			job->out[i] = IO_DONE;
+		if (job->err[i] == WAITING_FOR_IO)
+			job->err[i] = IO_DONE;
+		if ((job->err[i] == IO_DONE) && 
+		    (job->out[i] == IO_DONE))
 			n++;
 	}
 	if (n < opt.nprocs)
