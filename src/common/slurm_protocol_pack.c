@@ -213,10 +213,6 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_RUN_JOB_STEP:
 			break ;
-		case REQUEST_GET_KEY :
-			break ;
-		case RESPONSE_GET_KEY :
-			break ;
 		case MESSAGE_TASK_EXIT :
 			pack_task_exit_msg ( ( task_exit_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
 			break ;
@@ -361,10 +357,6 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_RUN_JOB_STEP :
 			break ;
 		case RESPONSE_RUN_JOB_STEP:
-			break ;
-		case REQUEST_GET_KEY :
-			break ;
-		case RESPONSE_GET_KEY :
 			break ;
 		case MESSAGE_TASK_EXIT :
 			unpack_task_exit_msg ( ( task_exit_msg_t ** ) & (msg->data )  , ( void ** ) buffer , buf_len ) ;
@@ -653,7 +645,7 @@ pack_update_partition_msg ( update_part_msg_t * msg , void ** buffer, uint32_t *
 	pack32 ( msg -> max_time, ( void ** ) buffer , length ) ;
 	pack32 ( msg -> max_nodes, ( void ** ) buffer , length ) ;
 	pack16 ( msg -> default_part, ( void ** ) buffer , length ) ;
-	pack16 ( msg -> key, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> root_only, ( void ** ) buffer , length ) ;
 	pack16 ( msg -> shared, ( void ** ) buffer , length ) ;
 	pack16 ( msg -> state_up, ( void ** ) buffer , length ) ;
 	packstr ( msg -> nodes, ( void ** ) buffer , length ) ;
@@ -677,7 +669,7 @@ unpack_update_partition_msg ( update_part_msg_t ** msg , void ** buffer, uint32_
 	unpack32 ( &tmp_ptr -> max_time, ( void ** ) buffer , length ) ;
 	unpack32 ( &tmp_ptr -> max_nodes, ( void ** ) buffer , length ) ;
 	unpack16 ( &tmp_ptr -> default_part, ( void ** ) buffer , length ) ;
-	unpack16 ( &tmp_ptr -> key, ( void ** ) buffer , length ) ;
+	unpack16 ( &tmp_ptr -> root_only, ( void ** ) buffer , length ) ;
 	unpack16 ( &tmp_ptr -> shared, ( void ** ) buffer , length ) ;
 	unpack16 ( &tmp_ptr -> state_up, ( void ** ) buffer , length ) ;
 	unpackstr_xmalloc ( &tmp_ptr -> nodes, &uint16_tmp,  ( void ** ) buffer , length ) ;
@@ -902,7 +894,7 @@ int unpack_partition_info_members ( partition_info_t * part , void ** buf_ptr , 
 
 	unpack32  (&part->total_cpus, buf_ptr, buffer_size);
 	unpack16  (&part->default_part, buf_ptr, buffer_size);
-	unpack16  (&part->key, buf_ptr, buffer_size);
+	unpack16  (&part->root_only, buf_ptr, buffer_size);
 	unpack16  (&part->shared, buf_ptr, buffer_size);
 
 	unpack16  (&part->state_up, buf_ptr, buffer_size);
@@ -1100,9 +1092,7 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void *
 	/* alloc memory for structure */	
 	build_ptr = xmalloc ( sizeof ( slurm_ctl_conf_t ) ) ;
 	if (build_ptr == NULL) 
-	{
 		return ENOMEM;
-	}
 
 	/* load the data values */
 	/* unpack timestamp of snapshot */
@@ -1141,14 +1131,6 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 	packstr (job_desc_ptr->groups, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->job_id, buf_ptr, buffer_size);
 	packstr (job_desc_ptr->name, buf_ptr, buffer_size);
-	if (job_desc_ptr->partition_key)
-		packmem (job_desc_ptr->partition_key, 32, buf_ptr, buffer_size);
-	else {
-		char *no_key;
-		no_key = xmalloc (32);
-		packmem (no_key, 32, buf_ptr, buffer_size);
-		xfree (no_key);
-	}
 	
 	pack32 (job_desc_ptr->min_procs, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->min_memory, buf_ptr, buffer_size);
@@ -1202,8 +1184,6 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 	unpackstr_xmalloc (&job_desc_ptr->groups, &uint16_tmp, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->job_id, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job_desc_ptr->name, &uint16_tmp, buf_ptr, buffer_size);
-	unpackmem_xmalloc ( ( char ** ) &job_desc_ptr->partition_key, &uint16_tmp, 
-				buf_ptr, buffer_size);
 	
 	unpack32 (&job_desc_ptr->min_procs, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->min_memory, buf_ptr, buffer_size);

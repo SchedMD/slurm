@@ -259,7 +259,7 @@ create_part_record (void)
 	strcpy (part_record_point->name, "DEFAULT");
 	part_record_point->max_time = default_part.max_time;
 	part_record_point->max_nodes = default_part.max_nodes;
-	part_record_point->key = default_part.key;
+	part_record_point->root_only = default_part.root_only;
 	part_record_point->state_up = default_part.state_up;
 	part_record_point->shared = default_part.shared;
 	part_record_point->total_nodes = default_part.total_nodes;
@@ -345,7 +345,7 @@ init_part_conf ()
 	default_part.allow_groups = (char *) NULL;
 	default_part.max_time = INFINITE;
 	default_part.max_nodes = INFINITE;
-	default_part.key = 0;
+	default_part.root_only = 0;
 	default_part.state_up = 1;
 	default_part.shared = SHARED_NO;
 	default_part.total_nodes = 0;
@@ -534,7 +534,7 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 
 	pack32  (part_record_point->total_cpus, buf_ptr, buf_len);
 	pack16  (default_part_flag, buf_ptr, buf_len);
-	pack16  ((uint16_t)part_record_point->key, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->root_only, buf_ptr, buf_len);
 	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
 
 	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
@@ -592,10 +592,10 @@ update_part (update_part_msg_t * part_desc )
 		part_ptr->max_nodes = part_desc->max_nodes;
 	}			
 
-	if (part_desc->key != (uint16_t) NO_VAL) {
-		info ("update_part: setting key to %d for partition %s",
-				part_desc->key, part_desc->name);
-		part_ptr->key = part_desc->key;
+	if (part_desc->root_only != (uint16_t) NO_VAL) {
+		info ("update_part: setting root_only to %d for partition %s",
+				part_desc->root_only, part_desc->name);
+		part_ptr->root_only = part_desc->root_only;
 	}			
 
 	if (part_desc->state_up != (uint16_t) NO_VAL) {

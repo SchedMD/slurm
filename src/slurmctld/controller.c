@@ -59,6 +59,9 @@ time_t shutdown_time = (time_t)0;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 int server_thread_count = 0;
 pid_t slurmctld_pid;
+pthread_t thread_id_bg = (pthread_t)0;
+pthread_t thread_id_main = (pthread_t)0;
+pthread_t thread_id_rpc = (pthread_t)0;
 
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
@@ -68,6 +71,7 @@ void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
 void report_locks_set ( void );
 void *slurmctld_background ( void * no_data );
+void slurmctld_cleanup (void *context);
 void *slurmctld_rpc_mgr( void * no_data );
 int slurm_shutdown ( void );
 void * service_connection ( void * arg );
@@ -104,7 +108,6 @@ main (int argc, char *argv[])
 	int sig ;
 	int error_code;
 	char node_name[MAX_NAME_LEN];
-	pthread_t thread_id_bg, thread_id_rpc;
 	pthread_attr_t thread_attr_bg, thread_attr_rpc;
 	sigset_t set;
 
@@ -112,6 +115,8 @@ main (int argc, char *argv[])
 	 * Establish initial configuration
 	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	thread_id_main = pthread_self();
+	fatal_add_cleanup_job (slurmctld_cleanup, NULL);
 
 	slurmctld_pid = getpid ( );
 	init_ctld_conf ( &slurmctld_conf );
@@ -408,7 +413,7 @@ slurmctld_req ( slurm_msg_t * msg )
 {
 	
 	switch ( msg->msg_type )
-	{	
+	{
 		case REQUEST_BUILD_INFO:
 			slurm_rpc_dump_build ( msg ) ;
 			slurm_free_last_update_msg ( msg -> data ) ;
@@ -1453,4 +1458,20 @@ usage (char *prog_name)
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
+}
+
+/* slurmctld_cleanup - fatal error occured, kill all tasks */
+void 
+slurmctld_cleanup (void *context)
+{
+	pthread_t my_thread_id = pthread_self();
+
+	if (thread_id_bg &&  (thread_id_bg  != my_thread_id))
+		pthread_kill (thread_id_bg, SIGKILL);
+
+	if (thread_id_rpc && (thread_id_rpc != my_thread_id))
+		pthread_kill (thread_id_rpc, SIGKILL);
+
+	if (thread_id_main && (thread_id_main != my_thread_id))
+		pthread_kill  (thread_id_main, SIGKILL);
 }

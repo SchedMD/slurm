@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * job_mgr.c - manage the job information of slurm
+ *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), job_count, time stamp 
  *	(last_job_update), and hash table (job_hash, job_hash_over, max_hash_over)
  *****************************************************************************
@@ -367,9 +367,7 @@ init_job_conf ()
 
 
 /*
- * job_allocate - create job_records for the suppied job specification and allocate 
- *	nodes for it. if "immediate" is set and the job can not be immediately allocated 
- *	nodes, EAGAIN will be returned
+ * job_allocate - create job_records for the suppied job specification and allocate nodes for it.
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
  *	node_list - location for storing new job's allocated nodes
@@ -377,6 +375,9 @@ init_job_conf ()
  *	cpus_per_node - location to store pointer to array of numbers of cpus on each node allocated
  *	cpu_count_reps - location to store pointer to array of numbers of consecutive nodes having
  *				 same cpu count
+ *	immediate - if set then either initiate the job immediately or fail
+ *	will_run - don't initiate the job if set, just test if it could run now or later
+ *	allocate - resource allocation request if set, not a full job
  * output: new_job_id - the job's ID
  *	num_cpu_groups - number of cpu groups (elements in cpus_per_node and cpu_count_reps)
  *	cpus_per_node - pointer to array of numbers of cpus on each node allocate
@@ -417,26 +418,19 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
 	int immediate, int will_run, int allocate)
 {
-	int error_code;
+	int error_code, test_only;
 	struct job_record *job_ptr;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	lock_slurmctld (job_write_lock);
 	error_code = job_create (job_specs, new_job_id, allocate, will_run, &job_ptr);
-	if (error_code || will_run || (allocate == 0)) {
+	if (error_code) {
 		unlock_slurmctld (job_write_lock);
 		return error_code;
 	}
 	if (job_ptr == NULL)
 		fatal ("job_allocate: allocated job %u lacks record", new_job_id);
-
-	/* Some of these pointers are NULL on submit (e.g. allocate == 0) */
-	/* Exit above to avoid use of invalid pointer */
-	*num_cpu_groups = 0;
-	node_list[0] = NULL;
-	cpus_per_node[0] = cpu_count_reps[0] = NULL;
-	last_job_update = time (NULL);
 
 	if (immediate && top_priority(job_ptr) != 1) {
 		job_ptr->job_state = JOB_FAILED;
@@ -445,7 +439,16 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 		return ESLURM_NOT_TOP_PRIORITY; 
 	}
 
-	error_code = select_nodes(job_ptr, will_run);
+	test_only = will_run || (allocate == 0);
+	if (test_only == 0) {
+		/* Some of these pointers are NULL on submit (e.g. allocate == 0) */
+		*num_cpu_groups = 0;
+		node_list[0] = NULL;
+		cpus_per_node[0] = cpu_count_reps[0] = NULL;
+		last_job_update = time (NULL);
+	}
+
+	error_code = select_nodes(job_ptr, test_only);
 	if (error_code == ESLURM_NODES_BUSY) {
 		if (immediate) {
 			job_ptr->job_state = JOB_FAILED;
@@ -469,10 +472,12 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 		job_ptr->end_time  = 0;
 	}
 
-	node_list[0]      = job_ptr->nodes;
-	*num_cpu_groups   = job_ptr->num_cpu_groups;
-	cpus_per_node[0]  = job_ptr->cpus_per_node;
-	cpu_count_reps[0] = job_ptr->cpu_count_reps;
+	if (test_only == 0) {
+		node_list[0]      = job_ptr->nodes;
+		*num_cpu_groups   = job_ptr->num_cpu_groups;
+		cpus_per_node[0]  = job_ptr->cpus_per_node;
+		cpu_count_reps[0] = job_ptr->cpu_count_reps;
+	}
 	unlock_slurmctld (job_write_lock);
 	return 0;
 }
@@ -639,10 +644,9 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 
 
 	/* can this user access this partition */
-	if (part_ptr->key && (is_key_valid (job_desc->partition_key) == 0)) {
-		info ("job_create: job lacks key required of partition %s",
-				part_ptr->name);
-		error_code = ESLURM_JOB_MISSING_PARTITION_KEY ;
+	if (part_ptr->root_only && 0 /* confirm submit uid too */ ) {
+		info ("job_create: non-root job submission to partition %s", part_ptr->name);
+		error_code = ESLURM_ACCESS_DENIED ;
 		return error_code;
 	}			
 	if (match_group (part_ptr->allow_groups, job_desc->groups) == 0) {
@@ -689,7 +693,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		else
 			i = part_ptr->total_nodes;
 		info ("job_create: too many nodes (%d) requested of partition %s(%d)",
-				job_desc->req_nodes, part_ptr->name, i);
+				job_desc->num_nodes, part_ptr->name, i);
 		error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 		goto cleanup;
 	}
@@ -934,7 +938,7 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 	job_ptr->user_id = (uid_t) job_desc->user_id;
 	job_ptr->job_state = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
-	if (is_key_valid (job_desc->partition_key) && (job_desc->priority != NO_VAL))
+	if ((job_desc->priority != NO_VAL) /* also check that submit UID is root */)
 		job_ptr->priority = job_desc->priority;
 	else
 		set_job_prio (job_ptr);

@@ -91,8 +91,6 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 			xfree ( msg->groups ) ;
 		if ( msg->name )
 			xfree ( msg->name ) ;
-		if ( msg->partition_key )
-			xfree ( msg->partition_key ) ;
 		if ( msg->partition )
 			xfree ( msg->partition ) ;
 		if ( msg->req_nodes )
@@ -468,7 +466,6 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
 	job_desc_msg -> job_id = SLURM_JOB_DESC_DEFAULT_JOB_ID ; /* will be set by api */
 	job_desc_msg -> name = SLURM_JOB_DESC_DEFAULT_JOB_NAME  ;
-	job_desc_msg -> partition_key = SLURM_JOB_DESC_DEFAULT_PARITION_KEY ;
 	job_desc_msg -> min_procs = SLURM_JOB_DESC_DEFAULT_MIN_PROCS ;
 	job_desc_msg -> min_memory = SLURM_JOB_DESC_DEFAULT_MIN_MEMORY ;
 	job_desc_msg -> min_tmp_disk = SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK ;
@@ -495,7 +492,7 @@ void slurm_init_part_desc_msg ( update_part_msg_t * update_part_msg )
 	update_part_msg -> max_time	= (uint32_t) NO_VAL;
 	update_part_msg -> max_nodes	= (uint32_t) NO_VAL;
 	update_part_msg -> default_part	= (uint16_t) NO_VAL;
-	update_part_msg -> key		= (uint16_t) NO_VAL;
+	update_part_msg -> root_only	= (uint16_t) NO_VAL;
 	update_part_msg -> shared	= (uint16_t) NO_VAL;
 	update_part_msg -> state_up	= (uint16_t) NO_VAL;
 }

@@ -157,10 +157,6 @@ typedef enum {
 	REQUEST_KILL_TASKS,
 	REQUEST_REATTACH_TASKS_STREAMS,
 	RESPONSE_REATTACH_TASKS_STREAMS,
-		
-	/*DPCS get key to sign submissions*/
-	REQUEST_GET_KEY = 7001,
-	RESPONSE_GET_KEY,
 
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
@@ -247,7 +243,6 @@ typedef struct job_descriptor
 				 * can only be set if user is root */
 	uint32_t job_id;        /* job ID, default set by SLURM */
 	char *name;             /* name of the job, default "" */
-	void *partition_key;    /* root key to submit job, format TBD, default NONE */
 	uint32_t min_procs;     /* minimum processors required per node, default=0 */
 	uint32_t min_memory;    /* minimum real memory required per node, default=0 */
 	uint32_t min_tmp_disk;  /* minimum temporary disk required per node, default=0 */
@@ -323,7 +318,7 @@ typedef struct partition_info {
         uint32_t total_nodes;   /* total number of nodes in the partition */
         uint32_t total_cpus;    /* total number of cpus in the partition */
         uint16_t default_part;  /* 1 if this is default partition */
-        uint16_t key;           /* 1 if slurm distributed key is required for use  */
+        uint16_t root_only;     /* 1 if allocate/submit RPC must come for user root */
         uint16_t shared;        /* 1 if job can share nodes, 2 if job must share nodes */
         uint16_t state_up;      /* 1 if state is up, 0 if down */
         char *nodes;            /* comma delimited list names of nodes in partition */
@@ -589,7 +584,6 @@ extern char *node_state_string(uint16_t inx);
 #define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	
 #define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
-#define SLURM_JOB_DESC_DEFAULT_PARITION_KEY	NULL
 #define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	NO_VAL	
 #define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	NO_VAL	
