@@ -80,10 +80,20 @@ static int    _envcount(char **env);
 static void
 _dist_block(job_t *job)
 {
-	int i, j, taskid = 0;
-	for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-		for (j=0; (((j*opt.cpus_per_task)<job->cpus[i]) && 
-					(taskid<opt.nprocs)); j++) {
+	int i, min_tpn, max_tpn, fullnodes, taskid = 0;
+
+	fullnodes = opt.nprocs % job->nhosts;
+	min_tpn   = max_tpn = opt.nprocs / job->nhosts;
+
+	if (fullnodes) 
+		max_tpn++;
+
+	for (i=0; i < job->nhosts; i++) {
+		int j, task_cnt;
+
+		task_cnt = i < fullnodes ? max_tpn : min_tpn;
+
+		for (j = 0; j < task_cnt; j++) {
 			job->hostid[taskid] = i;
 			job->tids[i][j]     = taskid++;
 			job->ntask[i]++;
