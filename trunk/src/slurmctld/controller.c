@@ -370,6 +370,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 {
 	int sig;
 	int error_code;
+	int sig_array[] = {SIGINT, SIGTERM, SIGHUP, SIGABRT, 0};
 	sigset_t set;
 	/* Locks: Read configuration */
 	slurmctld_lock_t config_read_lock = { 
@@ -396,7 +397,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 	_default_sigaction(SIGABRT);
 
 	while (1) {
-		xsignal_sigset_create(controller_sigarray, &set);
+		xsignal_sigset_create(sig_array, &set);
 		sigwait(&set, &sig);
 		switch (sig) {
 		case SIGINT:	/* kill -2  or <CTRL-C> */
