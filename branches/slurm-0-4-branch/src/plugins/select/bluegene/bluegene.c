@@ -863,15 +863,15 @@ static int _parse_bgl_spec(char *in_line)
 	char *nodes = NULL, *conn_type = NULL, *node_use = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
-	char *pset_num=NULL, *api_verb=NULL;
+	int pset_num=8, api_verb=0;
 	bgl_record_t *bgl_record, *found_record;
 	
 	error_code = slurm_parser(in_line,
 				  "BlrtsImage=", 's', &blrts_image,
 				  "LinuxImage=", 's', &linux_image,
 				  "MloaderImage=", 's', &mloader_image,
-				  "Numpsets=", 's', &pset_num,
-				  "BridgeAPIVerbose=", 's', &api_verb,
+				  "Numpsets=", 'd', pset_num,
+				  "BridgeAPIVerbose=", 'd', api_verb,
 				  "Nodes=", 's', &nodes,
 				  "RamDiskImage=", 's', &ramdisk_image,
 				  "Type=", 's', &conn_type,
@@ -902,19 +902,16 @@ static int _parse_bgl_spec(char *in_line)
 		bluegene_ramdisk = ramdisk_image;
 		ramdisk_image = NULL;	/* nothing left to xfree */
 	}
-	if (pset_num) {
-		_strip_13_10(pset_num);
-		numpsets = atoi(pset_num);
-		xfree(pset_num);
+	if (pset_num!=8) {
+		numpsets = pset_num;
+		
 	}
 	if(api_verb) {
 		if(fp)
 			fclose(fp);
 		fp = fopen("/var/log/slurm/bridgeapi.log","a");
 		
-		_strip_13_10(api_verb);
-		setSayMessageParams(fp, atoi(api_verb));
-		xfree(api_verb);
+		setSayMessageParams(fp, api_verb);
 		
 	}
 	/* Process node information */
