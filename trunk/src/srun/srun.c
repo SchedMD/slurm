@@ -51,6 +51,7 @@
 #include <src/api/slurm.h>
 
 #include <src/common/log.h>
+#include <src/common/read_config.h>
 #include <src/common/xstring.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xsignal.h>
@@ -135,12 +136,10 @@ main(int ac, char **av)
 	 * verify some basic values
 	 */
 	initialize_and_process_args(ac, av);
-	if (read_slurm_port_config() < 0)
-		error("read_slurm_port_config: %s", slurm_strerror(errno));
 
-	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
+	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
-		setrlimit(RLIMIT_NOFILE,&rlim);
+		setrlimit(RLIMIT_NOFILE, &rlim);
 	}
 
 	/* reinit log with new verbosity
