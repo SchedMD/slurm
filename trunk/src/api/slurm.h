@@ -22,6 +22,8 @@
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 
+#include <src/common/slurm_protocol_defs.h>
+
 /* last entry must be JOB_END	*/
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
@@ -157,7 +159,7 @@ extern void slurm_print_build_info ( struct build_table * build_table_ptr ) ;
  * slurm_free_job_info - free the job information buffer (if allocated)
  * NOTE: buffer is loaded by load_job.
  */
-extern void slurm_free_job_info (struct job_buffer *job_buffer_ptr);
+extern void slurm_free_job_info (job_info_msg_t * job_buffer_ptr);
 
 /*
  * slurm_free_node_info - free the node information buffer (if allocated)

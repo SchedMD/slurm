@@ -27,6 +27,7 @@
 
 #include <src/common/slurm_protocol_api.h>
 void slurm_print_job_table (struct job_table * job_ptr );
+int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size ) ;
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -56,7 +57,7 @@ main (int argc, char *argv[])
 #endif
 
 void 
-slurm_print_job_info ( job_info_msg_t * job_info_msg_ptr )
+slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr )
 {
 	int i;
 	job_table_t * job_ptr = job_info_msg_ptr -> job_array ;
@@ -110,22 +111,22 @@ slurm_print_job_table (struct job_table * job_ptr )
  * NOTE: buffer is loaded by load_job.
  */
 void
-slurm_free_job_info (struct job_buffer *job_buffer_ptr)
+slurm_free_job_table (job_table_t * job)
+{
+}
+
+void
+slurm_free_job_info (job_info_msg_t * job_info_ptr)
 {
 	int i;
-
-	if (job_buffer_ptr == NULL)
-		return;
-	if (job_buffer_ptr->raw_buffer_ptr)
-		free (job_buffer_ptr->raw_buffer_ptr);
-	if (job_buffer_ptr->job_table_ptr) {
-		for (i = 0; i < job_buffer_ptr->job_count; i++) {
-			if (job_buffer_ptr->job_table_ptr[i].node_inx)
-				free (job_buffer_ptr->job_table_ptr[i].node_inx);
-			if (job_buffer_ptr->job_table_ptr[i].req_node_inx)
-				free (job_buffer_ptr->job_table_ptr[i].req_node_inx);
+	if (job_info_ptr)
+	{
+		if (job_info_ptr -> job_array ) {
+			for (i = 0; i < job_info_ptr-> record_count; i++) {
+				slurm_free_job_table ( & (job_info_ptr -> job_array[i] ) ) ;
+			}
 		}
-		free (job_buffer_ptr->job_table_ptr);
+		free (job_info_ptr);
 	}
 }
 
@@ -186,123 +187,93 @@ slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
         return SLURM_SUCCESS ;
 }
 
-
-
-
-
-
-
-int unpack_job_info_buffer ( job_info_msg_t * msg )
+int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
 {
-	int buffer_offset ;
-	int buffer_size;
-	int in_size;
 	int uint32_record_count ;
 	int i;
-	char *buffer,*node_inx_str;
-	void *buf_ptr;
-	uint16_t uint16_tmp;
-	uint32_t uint32_time;
-	uint32_t uint32_tmp;
-	struct job_table *job;
-	char ** job_buffer_ptr ;
+	job_table_t *job;
+	
+	*msg = malloc ( sizeof ( job_info_msg_t ) );
+	if ( *msg == NULL )
+		return ENOMEM ;
 
-
-
-
-
-
-
-	*job_buffer_ptr = NULL;
-	buffer_size = buffer_offset + in_size;
-	buffer = realloc (buffer, buffer_size);
-	if (buffer == NULL)
-		return ENOMEM;
-	if (strcmp (buffer, "nochange") == 0) {
-		free (buffer);
-		return -1;
-	}
 
 	/* load buffer's header (data structure version and time) */
-	buf_ptr = buffer;
-	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
-	unpack32 (&uint32_record_count, &buf_ptr, &buffer_size);
+	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
+	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
+
+	job = (*msg) -> job_array = malloc ( sizeof ( job_table_t ) * uint32_record_count ) ;
 
 	/* load individual job info */
 	job = NULL;
 	for (i = 0; buffer_size > 0; i++) {
-		job = realloc (job, sizeof(struct job_table) * (i+1));
-		if (job == NULL) {
-			free (buffer);
-			return ENOMEM;
-		}
-		unpack32  (&job[i].job_id, &buf_ptr, &buffer_size);
-		unpack32  (&job[i].user_id, &buf_ptr, &buffer_size);
-		unpack16  (&job[i].job_state, &buf_ptr, &buffer_size);
-		unpack32  (&job[i].time_limit, &buf_ptr, &buffer_size);
+	unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
 
-		unpack32  (&uint32_tmp, &buf_ptr, &buffer_size);
-		job[i].start_time = (time_t) uint32_tmp;
-		unpack32  (&uint32_tmp, &buf_ptr, &buffer_size);
-		job[i].end_time = (time_t) uint32_tmp;
-		unpack32  (&job[i].priority, &buf_ptr, &buffer_size);
-
-		unpackstr_ptr (&job[i].nodes, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (job[i].nodes == NULL)
-			job[i].nodes = "";
-		unpackstr_ptr (&job[i].partition, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (job[i].partition == NULL)
-			job[i].partition = "";
-		unpackstr_ptr (&job[i].name, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (job[i].name == NULL)
-			job[i].name = "";
-		unpackstr_ptr (&node_inx_str, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (node_inx_str == NULL)
-			node_inx_str = "";
-		job[i].node_inx = bitfmt2int(node_inx_str);
-
-		unpack32  (&job[i].num_procs, &buf_ptr, &buffer_size);
-		unpack32  (&job[i].num_nodes, &buf_ptr, &buffer_size);
-		unpack16  (&job[i].shared, &buf_ptr, &buffer_size);
-		unpack16  (&job[i].contiguous, &buf_ptr, &buffer_size);
-
-		unpack32  (&job[i].min_procs, &buf_ptr, &buffer_size);
-		unpack32  (&job[i].min_memory, &buf_ptr, &buffer_size);
-		unpack32  (&job[i].min_tmp_disk, &buf_ptr, &buffer_size);
-
-		unpackstr_ptr (&job[i].req_nodes, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (job[i].req_nodes == NULL)
-			job[i].req_nodes = "";
-		unpackstr_ptr (&node_inx_str, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (node_inx_str == NULL)
-			node_inx_str = "";
-		job[i].req_node_inx = bitfmt2int(node_inx_str);
-		unpackstr_ptr (&job[i].features, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (job[i].features == NULL)
-			job[i].features = "";
-		unpackstr_ptr (&job[i].job_script, &uint16_tmp, &buf_ptr, &buffer_size);
-		if (job[i].job_script == NULL)
-			job[i].job_script = "";
 	}
-
-	*job_buffer_ptr = malloc (sizeof (struct job_buffer));
-	if (*job_buffer_ptr == NULL) {
-		free (buffer);
-		if (job) {
-			int j;
-			for (j = 0; j < i; j++) {
-				if (job[j].node_inx)
-					free (job[j].node_inx);
-			}
-			free (job);
-		}
-		return ENOMEM;
-	}
-	/*
-	(*job_buffer_ptr)->last_update = (time_t) uint32_time;
-	(*job_buffer_ptr)->job_count = i;
-	(*job_buffer_ptr)->raw_buffer_ptr = buffer;
-	(*job_buffer_ptr)->job_table_ptr = job;
-	*/
 	return 0;
+}
+
+int unpack_job_table_msg ( job_table_msg_t ** msg , void ** buf_ptr , int * buffer_size )
+{
+	*msg = malloc ( sizeof ( job_table_t ) ) ;
+	if ( *msg == NULL )
+		return ENOMEM ;
+	unpack_job_table ( *msg , buf_ptr , buffer_size ) ;
+	return 0 ;
+}
+
+int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
+{
+	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
+	char * node_inx_str;
+
+	unpack32  (&job->job_id, buf_ptr, buffer_size);
+	unpack32  (&job->user_id, buf_ptr, buffer_size);
+	unpack16  (&job->job_state, buf_ptr, buffer_size);
+	unpack32  (&job->time_limit, buf_ptr, buffer_size);
+
+	unpack32  (&uint32_tmp, buf_ptr, buffer_size);
+	job->start_time = (time_t) uint32_tmp;
+	unpack32  (&uint32_tmp, buf_ptr, buffer_size);
+	job->end_time = (time_t) uint32_tmp;
+	unpack32  (&job->priority, buf_ptr, buffer_size);
+
+	unpackstr_ptr_malloc (&job->nodes, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->nodes == NULL)
+		job->nodes = "";
+	unpackstr_ptr_malloc (&job->partition, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->partition == NULL)
+		job->partition = "";
+	unpackstr_ptr_malloc (&job->name, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->name == NULL)
+		job->name = "";
+	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
+	if (node_inx_str == NULL)
+		node_inx_str = "";
+	job->node_inx = bitfmt2int(node_inx_str);
+
+	unpack32  (&job->num_procs, buf_ptr, buffer_size);
+	unpack32  (&job->num_nodes, buf_ptr, buffer_size);
+	unpack16  (&job->shared, buf_ptr, buffer_size);
+	unpack16  (&job->contiguous, buf_ptr, buffer_size);
+
+	unpack32  (&job->min_procs, buf_ptr, buffer_size);
+	unpack32  (&job->min_memory, buf_ptr, buffer_size);
+	unpack32  (&job->min_tmp_disk, buf_ptr, buffer_size);
+
+	unpackstr_ptr_malloc (&job->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->req_nodes == NULL)
+		job->req_nodes = "";
+	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
+	if (node_inx_str == NULL)
+		node_inx_str = "";
+	job->req_node_inx = bitfmt2int(node_inx_str);
+	unpackstr_ptr_malloc (&job->features, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->features == NULL)
+		job->features = "";
+	unpackstr_ptr_malloc (&job->job_script, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->job_script == NULL)
+		job->job_script = "";
+	return 0 ;
 }
