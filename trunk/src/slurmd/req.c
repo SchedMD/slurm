@@ -954,6 +954,9 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 			if (kill(-s->sid, sig) < 0)
 				error("kill jid %d sid %d: %m",
 				      s->jobid, s->sid);
+			if (kill(-s->task_list->pid, sig) < 0)
+				error("kill jid %d pgrp %d: %m",
+					s->jobid, s->task_list->pid);
 		}
 	}
 	list_destroy(steps);

@@ -298,7 +298,7 @@ _exec_all_tasks(slurmd_job_t *job)
 		 */
 		verbose ("task %lu (%lu) started %M", 
 			(unsigned long) job->task[i]->gid, 
-			(unsigned long) pid); 
+			(unsigned long) pid);
 
 		/* 
 		 * Send pid to job manager
@@ -328,6 +328,13 @@ _exec_task(slurmd_job_t *job, int i)
 		error("unable to unblock signals");
 		exit(1);
 	}
+
+	/*
+	 * Move this process into new pgrp within this session.
+	 */
+	if (setpgid (0, i ? job->task[0]->pid : 0) < 0)
+		error ("Unable to put task %d into pgrp %ld: %m",
+			i, job->task[0]->pid);
 
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
