@@ -22,7 +22,7 @@ print_header $test_id
 # Initiate $task_cnt parallel tasks
 #
 for {set inx 0} {$inx < $task_cnt} {incr inx} {
-	spawn $file_script $sleep_time $interations
+	spawn $file_script $sinfo $srun $squeue $sleep_time $interations
 	set task_id($inx) $spawn_id
 }
 
