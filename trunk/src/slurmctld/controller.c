@@ -58,7 +58,9 @@ inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
-
+inline static void slurm_rpc_allocate_resources_immediately ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 int 
 main (int argc, char *argv[]) 
 {
@@ -144,7 +146,17 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_dump_partitions ( msg ) ;
 			slurm_free_last_update_msg ( msg -> data ) ;
 			break;
-		case REQUEST_RESOURCE_ALLOCATION:
+		case REQUEST_RESOURCE_ALLOCATION :
+			slurm_rpc_allocate_resources ( msg ) ;
+			slurm_free_job_desc_msg ( msg -> data ) ;
+			break;
+		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION :
+			slurm_rpc_allocate_resources_immediately ( msg -> data ) ;
+			slurm_free_job_desc_msg ( msg -> data ) ;
+			break;
+		case REQUEST_JOB_WILL_RUN :
+			slurm_rpc_job_will_run ( msg -> data ) ;
+			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_CANCEL_JOB:
 			slurm_rpc_job_cancel ( msg ) ;
@@ -533,7 +545,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 }
 
 /* JobWillRun - determine if job with given configuration can be initiated now */
-void slurm_rpc_allocate_job_immediately ( slurm_msg_t * msg )
+void slurm_rpc_allocate_resources_immediately ( slurm_msg_t * msg )
 {
 	/* init */
 	int error_code;
