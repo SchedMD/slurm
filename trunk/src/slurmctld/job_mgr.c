@@ -1347,7 +1347,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
 		last_job_update		= now;
-		job_ptr->job_state	= JOB_FAILED;
+		job_ptr->job_state	= JOB_CANCELLED;
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		delete_job_details(job_ptr);
@@ -1362,7 +1362,7 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			job_ptr->time_last_active	= now;
 			job_ptr->end_time		= now;
 			last_job_update			= now;
-			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
+			job_ptr->job_state = JOB_CANCELLED | JOB_COMPLETING;
 			deallocate_nodes(job_ptr, false);
 			job_completion_logger(job_ptr);
 		} else if (batch_flag) {

@@ -157,7 +157,7 @@ TO (timeout), and NF (node failure).
 .TP
 \fB%T\fR 
 Job state, extended form: 
-PENDING, RUNNING, COMPLETING, COMPLETED, FAILED, TIMEOUT, and NODE_FAIL.
+PENDING, RUNNING, CANCELLED, COMPLETING, COMPLETED, FAILED, TIMEOUT, and NODE_FAIL.
 .TP
 \fB%u\fR 
 User name
@@ -207,8 +207,9 @@ Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be 
 reported. If no state is specified then pending, running, and completing
 jobs are reported. Valid states (in both extended and compact form) include:
-pending (pd), running (r), completing (cg), completed (cd), failed (f),
-timeout (to), and node_fail (nf).
+PENDING (PD), RUNNING (R), COMPLETING (CG), COMPLETED (CD), CANCELLED (CA),
+FAILED (F), TIMEOUT (TO), and NODE_FAIL (NF). Note the \fB<state_list>\fR
+supplied is case insensitve ("pd" and "PD" work the same).
 .TP
 \fB\-u <user_list>\fR, \fB\-\-user=<user_list>\fR
 Specifies a comma separated list of users whose jobs or job steps are to be
@@ -222,6 +223,10 @@ Print version information and exit.
 
 .SH "JOB STATE CODES"
 .TP 17
+CA  CANCELLED
+Job was explicitly cancelled by the user or system administrator.
+The job may or may not have been initiated.
+.TP
 CD  COMPLETED
 Job has terminated all processes on all nodes.
 .TP
@@ -335,7 +340,7 @@ WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
-\fBscontrol\fR(1), \fBsinfo\fR(1),
+\fBscancel\fR(1), \fBscontrol\fR(1), \fBsinfo\fR(1),
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3),
 \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3)
