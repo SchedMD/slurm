@@ -242,6 +242,12 @@ int shm_step_addrs(uint32_t jobid, uint32_t stepid,
 
 
 /* 
+ * update job timelimit for all steps associated with the specified jobid
+ */
+int shm_update_job_timelimit(uint32_t jobid, time_t newlim);
+
+
+/* 
  * update job step timelimit
  */
 int shm_update_step_timelimit(uint32_t jobid, uint32_t stepid, time_t newlim);
