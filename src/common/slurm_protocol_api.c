@@ -25,82 +25,104 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 /* GLOBAL INCLUDES */
+#include <errno.h>
+#include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <stdio.h>
 
 /* PROJECT INCLUDES */
-#include <src/common/pack.h>
-#include <src/common/parse_spec.h>
-#include <src/common/read_config.h>
-#include <src/common/slurm_protocol_interface.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/slurm_protocol_common.h>
-#include <src/common/slurm_protocol_pack.h>
-#include <src/common/slurm_protocol_util.h>
-#include <src/common/slurm_auth.h>
-#include <src/common/xmalloc.h>
-#include <src/common/log.h>
+#include "src/common/pack.h"
+#include "src/common/parse_spec.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_interface.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_common.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/wrapper.h"
+#include "src/common/xmalloc.h"
+#include "src/common/log.h"
 
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
 #define CREDENTIAL_TTL_SEC 5
+#define _DEBUG	0
 
 /* STATIC VARIABLES */
+static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
 static slurm_protocol_config_t proto_conf_default;
 static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 static slurm_ctl_conf_t slurmctld_conf;
 
-/************************/
-/*** API init functions */
-/************************/
-void print_data(char *data, int len)
+/**********************************************************************\
+ * protocol configuration functions                
+\**********************************************************************/
+
+#if _DEBUG
+static void _print_data(char *data, int len)
 {
 	int i;
-	for (i=0; i<len; i++) {
-		if ((i%10 == 0) && (i != 0))
-			printf ("\n");
-		printf ("%2.2x ", ((int)data[i] & 0xff));
+	for (i = 0; i < len; i++) {
+		if ((i % 10 == 0) && (i != 0))
+			printf("\n");
+		printf("%2.2x ", ((int) data[i] & 0xff));
 		if (i >= 200)
 			break;
 	}
-	printf ("\n\n");
-
+	printf("\n\n");
 }
+#endif
 
+/* slurm_set_api_config
+ * sets the slurm_protocol_config object
+ * NOT THREAD SAFE
+ * IN protocol_conf		-  slurm_protocol_config object
+ */
 int slurm_set_api_config(slurm_protocol_config_t * protocol_conf)
 {
 	proto_conf = protocol_conf;
 	return SLURM_SUCCESS;
 }
 
+/* slurm_get_api_config
+ * returns a pointer to the current slurm_protocol_config object
+ * RET slurm_protocol_config_t	- current slurm_protocol_config object
+ */
 slurm_protocol_config_t *slurm_get_api_config()
 {
 	return proto_conf;
 }
 
+/* slurm_api_set_default_config
+ *	called by the send_controller_msg function to insure that at least 
+ *	the compiled in default slurm_protocol_config object is initialized
+ * RET int 		- return code
+ */
 int slurm_api_set_default_config()
 {
+	x_pthread_mutex_lock(&config_lock);
 	if ((slurmctld_conf.control_addr != NULL) &&
-	    (slurmctld_conf.slurmctld_port != 0))
+	    (slurmctld_conf.slurmctld_port != 0)) {
+		x_pthread_mutex_unlock(&config_lock);
 		return SLURM_SUCCESS;
+	}
 
-	read_slurm_conf_ctl (&slurmctld_conf);
+	read_slurm_conf_ctl(&slurmctld_conf);
 	if ((slurmctld_conf.control_addr == NULL) ||
 	    (slurmctld_conf.slurmctld_port == 0))
-		fatal ("Unable to establish control machine or port");
+		fatal("Unable to establish control machine or port");
 
 	slurm_set_addr(&proto_conf_default.primary_controller,
 		       slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.control_addr);
 	if (proto_conf_default.primary_controller.sin_port == 0)
-		fatal ("Unable to establish control machine address");
+		fatal("Unable to establish control machine address");
 
 	if (slurmctld_conf.backup_addr) {
 		slurm_set_addr(&proto_conf_default.secondary_controller,
@@ -109,29 +131,43 @@ int slurm_api_set_default_config()
 	}
 	proto_conf = &proto_conf_default;
 
+	x_pthread_mutex_unlock(&config_lock);
 	return SLURM_SUCCESS;
 }
 
-/************************/
-/***** msg functions */
-/************************/
+/* slurm_get_slurmd_port
+ * returns slurmd port from slurmctld_conf object
+ * RET short int	- slurmd port
+ */
+short int slurm_get_slurmd_port()
+{
+	if (slurmctld_conf.slurmd_port == 0)
+		slurm_api_set_default_config();
+
+	return slurmctld_conf.slurmd_port;
+}
+
+/**********************************************************************\
+ * general message management functions used by slurmctld, slurmd
+\**********************************************************************/
 
 /* In the socket implementation it creates a socket, binds to it, and 
  *	listens for connections.
- * slurm_address 	- for now it is really just a sockaddr_in
- * slurm_fd		- file descriptor of the connection created
+ * IN port		- port to bind the msg server to
+ * RET slurm_fd		- file descriptor of the connection created
  */
 slurm_fd slurm_init_msg_engine_port(uint16_t port)
 {
 	slurm_addr slurm_address;
+
 	slurm_set_addr_any(&slurm_address, port);
 	return _slurm_init_msg_engine(&slurm_address);
 }
 
 /* In the socket implementation it creates a socket, binds to it, and 
  *	listens for connections.
- * slurm_address 	- for now it is really just a sockaddr_in
- * slurm_fd		- file descriptor of the connection created
+ * IN slurm_address 	- slurm_addr to bind the msg server to 
+ * RET slurm_fd		- file descriptor of the connection created
  */
 slurm_fd slurm_init_msg_engine(slurm_addr * slurm_address)
 {
@@ -139,29 +175,34 @@ slurm_fd slurm_init_msg_engine(slurm_addr * slurm_address)
 }
 
 /* just calls close on an established msg connection
- * open_fd		- an open file descriptor
- * int 			- the return code
+ * IN open_fd	- an open file descriptor to close
+ * RET int	- the return code
  */
 int slurm_shutdown_msg_engine(slurm_fd open_fd)
 {
 	return _slurm_close(open_fd);
 }
 
-/* just calls close on an established msg connection
- * open_fd		- an open file descriptor
- * int			- the return code
+/* just calls close on an established msg connection to close
+ * IN open_fd	- an open file descriptor to close
+ * RET int	- the return code
  */
 int slurm_shutdown_msg_conn(slurm_fd open_fd)
 {
 	return _slurm_close(open_fd);
 }
 
-/* In the bsd implementation it creates a SOCK_STREAM socket and calls 
- *	connect on it
- * a SOCK_DGRAM socket called with connect is defined to only receive 
- *	messages from the address/port pair argument of the connect call
- * slurm_address 	- for now it is really just a sockaddr_in
- * int			- the return code
+/**********************************************************************\
+ * msg connection establishment functions used by msg clients
+\**********************************************************************/
+
+/* In the bsd socket implementation it creates a SOCK_STREAM socket  
+ *	and calls connect on it a SOCK_DGRAM socket called with connect   
+ *	is defined to only receive messages from the address/port pair  
+ *	argument of the connect call slurm_address - for now it is  
+ *	really just a sockaddr_in
+ * IN slurm_address 	- slurm_addr of the connection destination
+ * RET slurm_fd		- file descriptor of the connection created
  */
 slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 {
@@ -170,11 +211,12 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 
 /* calls connect to make a connection-less datagram connection to the 
  *	primary or secondary slurmctld message engine
- * int			- the return code
+ * RET slurm_fd	- file descriptor of the connection created
  */
 slurm_fd slurm_open_controller_conn()
 {
 	slurm_fd connection_fd;
+
 	slurm_api_set_default_config();
 	/* try to send to primary first then secondary */
 	if ((connection_fd =
@@ -184,35 +226,41 @@ slurm_fd slurm_open_controller_conn()
 
 		if ((slurmctld_conf.backup_controller) &&
 		    ((connection_fd =
-		      slurm_open_msg_conn(&proto_conf->secondary_controller)) 
-							== SLURM_SOCKET_ERROR))
-			debug ("Open connection to secondary controller failed: %m");
+		      slurm_open_msg_conn(&proto_conf->
+					  secondary_controller))
+		     == SLURM_SOCKET_ERROR))
+			debug
+			    ("Open connection to secondary controller failed: %m");
 	}
 	return connection_fd;
 }
 
-/* calls connect to make a connection-less datagram connection to the primary 
- *	or secondary slurmctld message engine
- * dest 	- controller to contact, 1=primary, 2=secondary
- * int		- the return code
+/* calls connect to make a connection-less datagram connection to the 
+ *	primary or secondary slurmctld message engine
+ * RET slurm_fd	- file descriptor of the connection created
+ * IN dest 	- controller to contact, primary or secondary
  */
-slurm_fd slurm_open_controller_conn_spec (enum controller_id dest)
+slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 {
 	slurm_fd connection_fd;
 	slurm_api_set_default_config();
 
 	if (dest == PRIMARY_CONTROLLER) {
 		if ((connection_fd =
-		     slurm_open_msg_conn(&proto_conf->primary_controller)) ==
+		     slurm_open_msg_conn(&proto_conf->
+					 primary_controller)) ==
 		    SLURM_SOCKET_ERROR)
-			debug("Open connection to primary controller failed: %m");
+			debug
+			    ("Open connection to primary controller failed: %m");
 	} else if (slurmctld_conf.backup_controller) {
 		if ((connection_fd =
-		     slurm_open_msg_conn(&proto_conf->secondary_controller)) ==
+		     slurm_open_msg_conn(&proto_conf->
+					 secondary_controller)) ==
 		    SLURM_SOCKET_ERROR)
-			debug("Open connection to secondary controller failed: %m");
+			debug
+			    ("Open connection to secondary controller failed: %m");
 	} else {
-		debug ("No secondary controller to contact");
+		debug("No secondary controller to contact");
 		connection_fd = SLURM_SOCKET_ERROR;
 	}
 
@@ -220,10 +268,9 @@ slurm_fd slurm_open_controller_conn_spec (enum controller_id dest)
 }
 
 /* In the bsd implmentation maps directly to a accept call 
- * In the mongo it returns the open_fd and is essentially a no-op function call
- * open_fd		- file descriptor to accept connection on
- * slurm_address 	- for now it is really just a sockaddr_in
- * int			- the return code
+ * IN open_fd		- file descriptor to accept connection on
+ * OUT slurm_address 	- slurm_addr of the accepted connection
+ * RET slurm_fd		- file descriptor of the connection created
  */
 slurm_fd slurm_accept_msg_conn(slurm_fd open_fd,
 			       slurm_addr * slurm_address)
@@ -231,22 +278,26 @@ slurm_fd slurm_accept_msg_conn(slurm_fd open_fd,
 	return _slurm_accept_msg_conn(open_fd, slurm_address);
 }
 
-/* In the bsd implmentation maps directly to a close call, to close the socket 
- *	that was accepted
- * open_fd		- file descriptor to accept connection on
- * int			- the return code
+/* In the bsd implmentation maps directly to a close call, to close 
+ *	the socket that was accepted
+ * IN open_fd		- an open file descriptor to close
+ * RET int		- the return code
  */
 int slurm_close_accepted_conn(slurm_fd open_fd)
 {
 	return _slurm_close_accepted_conn(open_fd);
 }
 
-/***** recv msg functions */
+/**********************************************************************\
+ * receive message functions
+\**********************************************************************/
+
 /*
- * NOTE: memory is allocated for the returned msg and must be freed 
- * open_fd		- file descriptor to receive msg on
- * msg			- a slurm msg struct
- * int			- size of msg received in bytes before being unpacked
+ * NOTE: memory is allocated for the returned msg and must be freed at 
+ *	some point using the slurm_free_functions
+ * IN open_fd 		- file descriptor to receive msg on
+ * OUT msg 		- a slurm_msg struct to be filled in by the function
+ * RET int		- size of msg received in bytes before being unpacked
  */
 int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 {
@@ -256,17 +307,19 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	slurm_auth_t creds;
 	Buf buffer;
 
-	buftemp = xmalloc (SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE);
-	if ((rc = _slurm_msg_recvfrom( open_fd, buftemp, 
-				       SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE,
-				       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				       &(msg)->address)) 
-						== SLURM_SOCKET_ERROR) {
+	buftemp = xmalloc(SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE);
+	if ((rc = _slurm_msg_recvfrom(open_fd, buftemp,
+				      SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE,
+				      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				      &(msg)->address))
+	    == SLURM_SOCKET_ERROR) {
 		xfree(buftemp);
 		return rc;
 	}
-	/* print_data (buftemp,rc); */
-	buffer = create_buf (buftemp, rc);
+#if	_DEBUG
+	 _print_data (buftemp,rc);
+#endif
+	buffer = create_buf(buftemp, rc);
 
 	/* unpack header */
 	unpack_header(&header, buffer);
@@ -276,7 +329,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	}
 
 	/* unpack cred */
-	if (slurm_auth_unpack_credentials( &creds, buffer ) ) {
+	if (slurm_auth_unpack_credentials(&creds, buffer)) {
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
@@ -289,7 +342,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	msg->cred_type = header.cred_type;
 	msg->cred_size = header.cred_length;
-	msg->cred = (void *)creds;
+	msg->cred = (void *) creds;
 
 	/* unpack msg body */
 	msg->msg_type = header.msg_type;
@@ -299,18 +352,22 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
 
-	free_buf (buffer);
+	free_buf(buffer);
 	return rc;
 }
 
-/***** send msg functions */
-/* sends a slurm_protocol msg to the slurmctld based on location information 
- *	retrieved from the slurmd.conf. if unable to contant the primary 
- *	slurmctld attempts will be made to contact the backup controller
+/**********************************************************************\
+ * send message functions
+\**********************************************************************/
+
+/* sends a slurm_protocol msg to the slurmctld based on location 
+ *	information retrieved from the slurmd.conf. if unable to contant 
+ *	the primary slurmctld attempts will be made to contact the backup 
+ *	controller
  * 
- * open_fd		- file descriptor to send msg on
- * msg			- a slurm msg struct
- * int			- size of msg sent in bytes
+ * IN open_fd	- file descriptor to send msg on
+ * IN msg	- a slurm msg struct to be sent
+ * RET int	- size of msg sent in bytes
  */
 int slurm_send_controller_msg(slurm_fd open_fd, slurm_msg_t * msg)
 {
@@ -320,18 +377,19 @@ int slurm_send_controller_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	if ((rc = slurm_send_node_msg(open_fd, msg)) == SLURM_SOCKET_ERROR) {
 		debug("Send message to primary controller failed: %m");
 		msg->address = proto_conf->secondary_controller;
-		if ((rc = slurm_send_node_msg(open_fd, msg)) 
-						== SLURM_SOCKET_ERROR)
-			debug ("Send messge to secondary controller failed: %m");
+		if ((rc = slurm_send_node_msg(open_fd, msg))
+		    == SLURM_SOCKET_ERROR)
+			debug
+			    ("Send messge to secondary controller failed: %m");
 	}
 	return rc;
 }
 
 /* sends a message to an arbitrary node
  *
- * open_fd		- file descriptor to send msg on
- * msg			- a slurm msg struct
- * int			- size of msg sent in bytes
+ * IN open_fd		- file descriptor to send msg on
+ * IN msg		- a slurm msg struct to be sent
+ * RET int		- size of msg sent in bytes
  */
 int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 {
@@ -346,15 +404,17 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* initialize header */
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
-	if ((rc = slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC)) 
-			!= SLURM_SUCCESS) {
+	if ((rc =
+	     slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC))
+	    != SLURM_SUCCESS) {
 		/* Should probably do something more meaningful. */
-		error("init_header: failed to sign client credentials rc=%d",
-		      rc);
+		error
+		    ("init_header: failed to sign client credentials rc=%d",
+		     rc);
 	}
 
 	/* pack header */
-	buffer = init_buf (0);
+	buffer = init_buf(0);
 	pack_header(&header, buffer);
 
 	/* pack creds */
@@ -377,51 +437,68 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	set_buf_offset(buffer, tmp_len);
 
 	/* send msg */
-	/* print_data (get_buf_data(buffer),get_buf_offset(buffer)); */
-	if ((rc = _slurm_msg_sendto(open_fd, get_buf_data(buffer), 
-			       get_buf_offset(buffer), 
-			       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-			       &msg->address)) == SLURM_SOCKET_ERROR)
+#if	_DEBUG
+	_print_data (get_buf_data(buffer),get_buf_offset(buffer));
+#endif
+	if ((rc = _slurm_msg_sendto(open_fd, get_buf_data(buffer),
+				    get_buf_offset(buffer),
+				    SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				    &msg->address)) == SLURM_SOCKET_ERROR)
 		error("Error sending msg socket: %m");
 
-	free_buf (buffer);
+	free_buf(buffer);
 	return rc;
 }
 
-/************************/
-/***** stream functions */
-/************************/
+/**********************************************************************\
+ * stream functions
+\**********************************************************************/
+
+/* slurm_listen_stream
+ * opens a stream server and listens on it
+ * IN slurm_address 	- slurm_addr to bind the server stream to
+ * RET slurm_fd		- file descriptor of the stream created
+ */
 slurm_fd slurm_listen_stream(slurm_addr * slurm_address)
 {
 	return _slurm_listen_stream(slurm_address);
 }
 
+/* slurm_accept_stream
+ * accepts a incomming stream connection on a stream server slurm_fd 
+ * IN open_fd		- file descriptor to accept connection on
+ * OUT slurm_address 	- slurm_addr of the accepted connection
+ * RET slurm_fd		- file descriptor of the accepted connection 
+ */
 slurm_fd slurm_accept_stream(slurm_fd open_fd, slurm_addr * slurm_address)
 {
 	return _slurm_accept_stream(open_fd, slurm_address);
 }
 
+/* slurm_open_stream
+ * opens a client connection to stream server
+ * IN slurm_address 	- slurm_addr of the connection destination
+ * RET slurm_fd         - file descriptor of the connection created
+ */
 slurm_fd slurm_open_stream(slurm_addr * slurm_address)
 {
 	return _slurm_open_stream(slurm_address);
 }
 
-size_t slurm_write_stream_timeout_tv(slurm_fd open_fd, char *buffer,
-				     size_t size, int timeout)
+/* slurm_write_stream
+ * writes a buffer out a stream file descriptor
+ * IN open_fd		- file descriptor to write on
+ * IN buffer		- buffer to send
+ * IN size		- size of buffer send
+ * IN timeout		- how long to wait in milliseconds
+ * RET size_t		- bytes sent , or -1 on errror
+ */
+size_t slurm_write_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
 	return _slurm_send_timeout(open_fd, buffer, size,
 				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   timeout);
+				   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
 }
-
-size_t slurm_read_stream_timeout_tv(slurm_fd open_fd, char *buffer,
-				    size_t size, int timeout)
-{
-	return _slurm_recv_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   timeout);
-}
-
 size_t slurm_write_stream_timeout(slurm_fd open_fd, char *buffer,
 				  size_t size, int timeout)
 {
@@ -430,6 +507,20 @@ size_t slurm_write_stream_timeout(slurm_fd open_fd, char *buffer,
 				   timeout);
 }
 
+/* slurm_read_stream
+ * read into buffer grom a stream file descriptor
+ * IN open_fd		- file descriptor to read from
+ * OUT buffer	- buffer to receive into
+ * IN size		- size of buffer
+ * IN timeout		- how long to wait in milliseconds
+ * RET size_t		- bytes read , or -1 on errror
+ */
+size_t slurm_read_stream(slurm_fd open_fd, char *buffer, size_t size)
+{
+	return _slurm_recv_timeout(open_fd, buffer, size,
+				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
+}
 size_t slurm_read_stream_timeout(slurm_fd open_fd, char *buffer,
 				 size_t size, int timeout)
 {
@@ -438,185 +529,177 @@ size_t slurm_read_stream_timeout(slurm_fd open_fd, char *buffer,
 				   timeout);
 }
 
-size_t slurm_write_stream(slurm_fd open_fd, char *buffer, size_t size)
-{
-	return _slurm_send_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
-}
-
-size_t slurm_read_stream(slurm_fd open_fd, char *buffer, size_t size)
-{
-	return _slurm_recv_timeout(open_fd, buffer, size,
-				   SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
-}
-
-/*
-size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
-{
-	int rc ;
-	while ( true )
-	{
-		if ( ( rc = _slurm_send ( open_fd , buffer , size , 
-				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) 
-				== SLURM_PROTOCOL_ERROR )
-		{
-			if ( errno == EINTR )
-				continue ;
-			else
-				return rc ;
-		}
-		else
-			return rc ;
-	}
-}
-
-size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
-{
-	int rc ;
-	while ( true )
-	{
-		if (( rc = _slurm_recv ( open_fd , buffer , size , 
-				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) 
-				== SLURM_PROTOCOL_ERROR )
-		{
-			if ( errno == EINTR )
-				continue ;
-			else
-				return rc ;
-		}
-		else
-			return rc ;
-	}
-}
-*/
-
+/* slurm_get_stream_addr
+ * esentially a encapsilated get_sockname  
+ * IN open_fd 		- file descriptor to retreive slurm_addr for
+ * OUT address		- address that open_fd to bound to
+ */
 int slurm_get_stream_addr(slurm_fd open_fd, slurm_addr * address)
 {
 	return _slurm_get_stream_addr(open_fd, address);
 }
 
+/* slurm_close_stream
+ * closes either a server or client stream file_descriptor
+ * IN open_fd	- an open file descriptor to close
+ * RET int	- the return code
+ */
 int slurm_close_stream(slurm_fd open_fd)
 {
 	return _slurm_close_stream(open_fd);
 }
 
-int slurm_select(int n, slurm_fd_set * readfds, slurm_fd_set * writefds,
-		 slurm_fd_set * exceptfds, struct timeval *timeout)
-{
-	return _slurm_select(n, readfds, writefds, exceptfds, timeout);
-}
-
-void slurm_FD_CLR(slurm_fd fd, slurm_fd_set * set)
-{
-	return _slurm_FD_CLR(fd, set);
-}
-
-int slurm_FD_ISSET(slurm_fd fd, slurm_fd_set * set)
-{
-	return _slurm_FD_ISSET(fd, set);
-}
-
-void slurm_FD_SET(slurm_fd fd, slurm_fd_set * set)
-{
-	return _slurm_FD_SET(fd, set);
-}
-
-void slurm_FD_ZERO(slurm_fd_set * set)
-{
-	return _slurm_FD_ZERO(set);
-}
-
-int slurm_fcntl(slurm_fd fd, int cmd, ...)
-{
-	va_list va;
-	int rc;
-
-	va_start(va, cmd);
-	rc = _slurm_vfcntl(fd, cmd, va);
-	va_end(va);
-
-	return rc;
-}
-
+/* make an open slurm connection blocking or non-blocking
+ *	(i.e. wait or do not wait for i/o completion )
+ * IN open_fd	- an open file descriptor to change the effect
+ * RET int	- the return code
+ */
 int slurm_set_stream_non_blocking(slurm_fd open_fd)
 {
 	return _slurm_set_stream_non_blocking(open_fd);
 }
-
 int slurm_set_stream_blocking(slurm_fd open_fd)
 {
 	return _slurm_set_stream_blocking(open_fd);
 }
 
-/************************/
-/***** slurm addr functions */
-/************************/
-/* sets/gets the fields of a slurm_addr */
+/**********************************************************************\
+ * address conversion and management functions
+\**********************************************************************/
+
+/* slurm_set_addr_uint
+ * initializes the slurm_address with the supplied port and ip_address
+ * OUT slurm_address	- slurm_addr to be filled in
+ * IN port		- port in host order
+ * IN ip_address	- ipv4 address in uint32 host order form
+ */
 void slurm_set_addr_uint(slurm_addr * slurm_address, uint16_t port,
 			 uint32_t ip_address)
 {
 	_slurm_set_addr_uint(slurm_address, port, ip_address);
 }
 
+/* slurm_set_addr_any
+ * initialized the slurm_address with the supplied port on INADDR_ANY
+ * OUT slurm_address	- slurm_addr to be filled in
+ * IN port		- port in host order
+ */
 void slurm_set_addr_any(slurm_addr * slurm_address, uint16_t port)
 {
 	_slurm_set_addr_uint(slurm_address, port, SLURM_INADDR_ANY);
 }
 
+/* slurm_set_addr
+ * initializes the slurm_address with the supplied port and ip_address
+ * OUT slurm_address	- slurm_addr to be filled in
+ * IN port		- port in host order
+ * IN host		- hostname or dns name 
+ */
 void slurm_set_addr(slurm_addr * slurm_address, uint16_t port, char *host)
 {
 	_slurm_set_addr(slurm_address, port, host);
 }
 
-void reset_slurm_addr ( slurm_addr * slurm_address , slurm_addr new_address )
+/* reset_slurm_addr
+ * resets the address field of a slurm_addr, port and family unchanged
+ * OUT slurm_address	- slurm_addr to be reset in
+ * IN new_address	- source of address to write into slurm_address
+ */
+void reset_slurm_addr(slurm_addr * slurm_address, slurm_addr new_address)
 {
-	_reset_slurm_addr ( slurm_address , new_address );
+	_reset_slurm_addr(slurm_address, new_address);
 }
 
+/* slurm_set_addr_char
+ * initializes the slurm_address with the supplied port and host
+ * OUT slurm_address	- slurm_addr to be filled in
+ * IN port		- port in host order
+ * IN host		- hostname or dns name 
+ */
 void slurm_set_addr_char(slurm_addr * slurm_address, uint16_t port,
 			 char *host)
 {
 	_slurm_set_addr_char(slurm_address, port, host);
 }
 
+/* slurm_get_addr 
+ * given a slurm_address it returns to port and hostname
+ * IN slurm_address	- slurm_addr to be queried
+ * OUT port		- port number
+ * OUT host		- hostname
+ * IN buf_len		- length of hostname buffer
+ */
 void slurm_get_addr(slurm_addr * slurm_address, uint16_t * port,
 		    char *host, unsigned int buf_len)
 {
 	_slurm_get_addr(slurm_address, port, host, buf_len);
 }
 
+/* slurm_get_peer_addr
+ * get the slurm address of the peer connection, similar to getpeeraddr
+ * IN fd		- an open connection
+ * OUT slurm_address	- place to park the peer's slurm_addr
+ */
 int slurm_get_peer_addr(slurm_fd fd, slurm_addr * slurm_address)
 {
 	struct sockaddr name;
-	socklen_t namelen = (socklen_t) sizeof (struct sockaddr);
+	socklen_t namelen = (socklen_t) sizeof(struct sockaddr);
 	int rc;
 
-	if ( (rc = _slurm_getpeername((int) fd, &name, &namelen)) )
+	if ((rc = _slurm_getpeername((int) fd, &name, &namelen)))
 		return rc;
-	memcpy (slurm_address, &name, sizeof (slurm_addr));
+	memcpy(slurm_address, &name, sizeof(slurm_addr));
 	return 0;
 }
 
+/* slurm_print_slurm_addr
+ * prints a slurm_addr into a buf
+ * IN address		- slurm_addr to print
+ * IN buf		- space for string representation of slurm_addr
+ * IN n			- max number of bytes to write (including NUL)
+ */void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)
+{
+	_slurm_print_slurm_addr(address, buf, n);
+}
+
+/**********************************************************************\
+ * slurm_addr pack routines
+\**********************************************************************/
+
+/* slurm_pack_slurm_addr
+ * packs a slurm_addr into a buffer to serialization transport
+ * IN slurm_address	- slurm_addr to pack
+ * IN/OUT buffer	- buffer to pack the slurm_addr into
+ */
 void slurm_pack_slurm_addr(slurm_addr * slurm_address, Buf buffer)
 {
 	_slurm_pack_slurm_addr(slurm_address, buffer);
 }
 
-int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address, Buf buffer)
+/* slurm_pack_slurm_addr
+ * unpacks a buffer into a slurm_addr after serialization transport
+ * OUT slurm_address	- slurm_addr to unpack to
+ * IN/OUT buffer	- buffer to upack the slurm_addr from
+ * returns 		- SLURM error code
+ */
+int slurm_unpack_slurm_addr_no_alloc(slurm_addr * slurm_address,
+				     Buf buffer)
 {
 	return _slurm_unpack_slurm_addr_no_alloc(slurm_address, buffer);
 }
 
-void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)
-{
-	_slurm_print_slurm_addr(address, buf, n);
-}
+/**********************************************************************\
+ * simplified communication routines 
+ * They open a connection do work then close the connection all within 
+ * the function
+\**********************************************************************/
 
-/*******************************************/
-/***** slurm send highlevel msg  functions */
-/*******************************************/
+/* slurm_send_rc_msg
+ * given the original request message this function sends a 
+ *	slurm_return_code message back to the client that made the request
+ * IN request_msg	- slurm_msg the request msg
+ * IN rc 		- the return_code to send back to the client
+ */
 void slurm_send_rc_msg(slurm_msg_t * request_msg, int rc)
 {
 	slurm_msg_t response_msg;
@@ -633,6 +716,13 @@ void slurm_send_rc_msg(slurm_msg_t * request_msg, int rc)
 	slurm_send_node_msg(request_msg->conn_fd, &response_msg);
 }
 
+/* slurm_send_recv_controller_msg
+ * opens a connection to the controller, sends the controller a message, 
+ * listens for the response, then closes the connection
+ * IN request_msg	- slurm_msg request
+ * OUT response_msg	- slurm_msg response
+ * RET int 		- return code
+ */
 int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 				   slurm_msg_t * response_msg)
 {
@@ -672,6 +762,13 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	return SLURM_SUCCESS;
 }
 
+/* slurm_send_recv_node_msg
+ * opens a connection to node, sends the node a message, listens 
+ * for the response, then closes the connection
+ * IN request_msg	- slurm_msg request
+ * OUT response_msg	- slurm_msg response
+ * RET int 		- return code
+ */
 int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 			     slurm_msg_t * response_msg)
 {
@@ -713,6 +810,12 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 
 }
 
+/* slurm_send_only_controller_msg
+ * opens a connection to the controller, sends the controller a 
+ * message then, closes the connection
+ * IN request_msg	- slurm_msg request
+ * RET int 		- return code
+ */
 int slurm_send_only_controller_msg(slurm_msg_t * request_msg)
 {
 	int rc;
@@ -725,9 +828,9 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg)
 
 	/* send request message */
 	if ((rc =
-	     slurm_send_controller_msg(	sockfd,
-					request_msg)) ==
-	    				SLURM_SOCKET_ERROR) {
+	     slurm_send_controller_msg(sockfd,
+				       request_msg)) ==
+	    SLURM_SOCKET_ERROR) {
 		error_code = 1;
 		goto slurm_send_only_controller_msg_cleanup;
 	}
@@ -743,6 +846,12 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg)
 
 }
 
+/* slurm_send_only_controller_msg
+ * opens a connection to the controller, sends the controller a 
+ * message then, closes the connection
+ * IN request_msg	- slurm_msg request
+ * RET int 		- return code
+ */
 int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 {
 	int rc;
@@ -751,7 +860,7 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 
 	/* init message connection for communication with controller */
 	if ((sockfd = slurm_open_msg_conn(&request_msg->address)) ==
-	     SLURM_SOCKET_ERROR)
+	    SLURM_SOCKET_ERROR)
 		return SLURM_SOCKET_ERROR;
 
 	/* send request message */
@@ -770,16 +879,9 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 	return SLURM_SUCCESS;
 }
 
-short int slurm_get_slurmd_port()
-{
-	if (slurmctld_conf.slurmd_port == 0)
-		slurm_api_set_default_config ();
-
-	return slurmctld_conf.slurmd_port;
-}
-
+/* Slurm message functions */
 void slurm_free_msg(slurm_msg_t * msg)
 {
-	slurm_auth_free_credentials((slurm_auth_t)msg->cred);
+	slurm_auth_free_credentials((slurm_auth_t) msg->cred);
 	xfree(msg);
 }
