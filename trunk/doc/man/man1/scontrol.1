@@ -220,6 +220,26 @@ Set the job's ability to share nodes with other jobs. Possible values are
 \fITimeLimit\fP=<minutes>
 Set the job's time limit to the specified value.
 .TP
+\fIConnection\fP=<type>
+Reset the node connection type.
+Possible values on Blue Gene are "MESH", "TORUS" and "NAV" 
+(mesh else torus).
+.TP
+\fIGeometry\fP=<geo>
+Reset the required job geometry.
+On Blue Gene the value should be three digits separated by 
+"x" or ",". The digits represent the allocation size in 
+X, Y and Z dimentions (e.g. "2x3x4").
+.TP
+\fINodeUse\fP=<use>
+Reset the mode of node use.
+Possible values on Blue Gene are "VIRTUAL" and "COPROCESSOR".
+.TP
+\fIRotate\fP=<yes|no>
+Permit the job's geometry to be rotated.
+Possible values are "YES" and "NO".
+
+.TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, NODES\fR
 .TP
 \fINodeName\fP=<name>
