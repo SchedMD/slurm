@@ -39,5 +39,6 @@ typedef struct task_start
 	launch_tasks_msg_t * 	launch_msg;
 	int			pipes[6];
 	int			sockets[2];
+	int			local_task_id;
 } task_start_t ;
 #endif

@@ -36,6 +36,8 @@ typedef struct slurmd_shmem
 
 void * get_shmem ( );
 void init_shmem ( slurmd_shmem_t * shmem );
+int rel_shmem ( void * shmem_addr );
+
 void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) ;
 void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) ;
 

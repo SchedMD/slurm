@@ -88,6 +88,9 @@ int main (int argc, char *argv[])
 	send_node_registration_status_msg ( ) ;
 
 	slurmd_msg_engine ( NULL ) ;
+
+	/*slurm_msg_engine is a infinite io loop, but just in case we get back here */
+	rel_shmem ( shmem_seg ) ;
 	return SLURM_SUCCESS ;
 }
 
@@ -155,7 +158,7 @@ int slurmd_msg_engine ( void * args )
 		error ("slurmd: error %d setting detach thread state", error_code ) ;
 	}
 #endif
-	while (1) 
+	while (true) 
 	{
 		/* accept needed for stream implementation 
 		 * is a no-op in mongo implementation that just passes sockfd to newsockfd
