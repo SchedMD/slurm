@@ -45,14 +45,17 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 {
 	switch ( msg -> msg_type )
 	{
-		case REQUEST_BUILD_INFO:
+		case REQUEST_BUILD_INFO :
+		case REQUEST_JOB_INFO :
+		case REQUEST_JOB_STEP_INFO :
+		case REQUEST_NODE_INFO :
+		case REQUEST_PARTITION_INFO :
+		case REQUEST_ACCTING_INFO :
 			pack_last_update ( ( last_update_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break;
 		case RESPONSE_BUILD_INFO:
 			pack_build_info ( ( build_info_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
-			break;
-		case RESPONSE_BUILD_INFO_RC:
-			break;
+			break ;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
 		case MESSAGE_NODE_REGISRATION_STATUS :
@@ -81,7 +84,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_SIGNAL_JOB :
 		case RESPONSE_SIGNAL_JOB_STEP :
 			break ;
-		case REQUEST_JOB_INFO :
+		case RESPONSE_JOB_INFO :
 			break ;
 		case REQUEST_JOB_ATTACH :
 			break ;
@@ -130,13 +133,16 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 {
 	switch ( msg-> msg_type )
 	{
-		case REQUEST_BUILD_INFO:
+		case REQUEST_BUILD_INFO :
+		case REQUEST_JOB_INFO :
+		case REQUEST_JOB_STEP_INFO :
+		case REQUEST_NODE_INFO :
+		case REQUEST_PARTITION_INFO :
+		case REQUEST_ACCTING_INFO :
 			unpack_last_update ( ( last_update_msg_t **) &(msg -> data)  , ( void ** ) buffer , buf_len ) ;
 			break;
 		case RESPONSE_BUILD_INFO:
 			unpack_build_info ( ( build_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
-			break;
-		case RESPONSE_BUILD_INFO_RC:
 			break;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
@@ -165,8 +171,6 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_CANCEL_JOB_STEP :
 		case RESPONSE_SIGNAL_JOB :
 		case RESPONSE_SIGNAL_JOB_STEP :
-			break ;
-		case REQUEST_JOB_INFO :
 			break ;
 		case REQUEST_JOB_ATTACH :
 			break ;
