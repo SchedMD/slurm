@@ -65,15 +65,12 @@ void init_header(header_t * header, slurm_msg_type_t msg_type,
 }
 
 /*
- * update_header - update a message header with the credential and message len
+ * update_header - update a message header with the message len
  * OUT header - the message header to update
- * IN cred_length - credential length
  * IN msg_length - length of message to be send 
  */
-void update_header(header_t * header, uint32_t cred_length,
-		   uint32_t msg_length)
+void update_header(header_t * header, uint32_t msg_length)
 {
-	header->cred_length = cred_length;
 	header->body_length = msg_length;
 }
 

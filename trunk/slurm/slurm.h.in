@@ -388,6 +388,8 @@ typedef struct slurm_ctl_conf {
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *state_save_location;/* pathname of slurmctld state save
 				 * directory */
+	char *plugindir;	/* pathname to plugins */
+	char *authtype;		/* authentication type */
 	char *tmp_fs;		/* pathname of temporary file system */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;/* path to public certificate*/

@@ -31,6 +31,8 @@ slurmctld_SOURCES = 	\
 	read_config.c	\
 	step_mgr.c
 
+slurmctld_LDFLAGS = -export-dynamic
+
 force:
 $(slurmctld_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

@@ -1,9 +1,9 @@
 # $Id$
 
 if USE_INCLUDED_POPT
-SUBDIRS = popt common api slurmctld slurmd srun scontrol scancel squeue sinfo
+SUBDIRS = popt common api slurmctld slurmd srun scontrol scancel squeue sinfo plugins
 else
-SUBDIRS = common api slurmctld slurmd srun scontrol scancel squeue sinfo
+SUBDIRS = common api slurmctld slurmd srun scontrol scancel squeue sinfo plugins
 endif
 
 # make sure popt gets distributed:

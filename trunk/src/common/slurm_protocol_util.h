@@ -87,13 +87,12 @@ init_io_stream_header(slurm_io_stream_header_t * header, char *key,
                       uint32_t task_id, uint16_t type);
 
 /*
- * update_header - update a message header with the credential and message len
+ * update_header - update a message header with the message len
  * OUT header - the message header to update
- * IN cred_length - credential length
  * IN msg_length - length of message to be send 
  */
 extern void 
-update_header(header_t * header, uint32_t cred_length, uint32_t msg_length);
+update_header(header_t * header, uint32_t msg_length);
 
 /*
  * read an i/o stream header from the supplied slurm stream

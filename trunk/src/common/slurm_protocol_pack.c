@@ -209,9 +209,6 @@ pack_header(header_t * header, Buf buffer)
 {
 	pack16(header->version, buffer);
 	pack16(header->flags, buffer);
-	pack16((uint16_t) header->cred_type, buffer);
-
-	pack32(header->cred_length, buffer);
 	pack16((uint16_t) header->msg_type, buffer);
 	pack32(header->body_length, buffer);
 }
@@ -230,10 +227,6 @@ unpack_header(header_t * header, Buf buffer)
 
 	safe_unpack16(&header->version, buffer);
 	safe_unpack16(&header->flags, buffer);
-	safe_unpack16(&tmp, buffer);
-	header->cred_type = (slurm_credential_type_t) tmp;
-
-	safe_unpack32(&header->cred_length, buffer);
 	safe_unpack16(&tmp, buffer);
 	header->msg_type = (slurm_msg_type_t) tmp;
 	safe_unpack32(&header->body_length, buffer);
