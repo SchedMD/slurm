@@ -236,7 +236,6 @@ io_spawn_handler(slurmd_job_t *job)
 	 */
 	if (_io_prepare_clients(job) < 0)
 		return SLURM_FAILURE;
-
 		
 	return 0;
 }
@@ -260,10 +259,9 @@ _xclose(int fd)
 static void
 _io_finalize(task_info_t *t)
 {
-	struct io_info *in = t->in->arg;
+	struct io_info *in  = t->in->arg;
 	ListIterator i;
 	struct io_info *io;
-
 
 	if (_xclose(t->pin[0] ) < 0)
 		error("close(stdin) : %m");
@@ -272,9 +270,8 @@ _io_finalize(task_info_t *t)
 	if (_xclose(t->perr[1]) < 0)
 		error("close(stderr): %m");
 
-	in->disconnected = 1;
-	/* close stdin objs
-	 */
+	in->disconnected  = 1;
+
 	if (!in->writers)
 		return;
 
@@ -446,6 +443,9 @@ _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 		_io_add_connecting(j, t, s, CLIENT_STDIN);
 	}
 
+	if (!list_find_first(t->srun_list, (ListFindF) find_obj, s))
+		list_append(t->srun_list, (void *) s);
+
 	return SLURM_SUCCESS;
 }
 
@@ -464,7 +464,8 @@ _io_prepare_clients(slurmd_job_t *job)
 	xassert(srun != NULL);
 
 	slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
-	debug2("connecting IO back to %s:%d", host, ntohs(port));
+	if (port)
+		debug2("connecting IO back to %s:%d", host, ntohs(port));
 
 	/* Connect stdin/out/err to either a remote srun or
 	 * local file

@@ -52,6 +52,43 @@ static void _array_free(int n, char ***array);
 static void _srun_info_destructor(void *arg);
 static void _job_init_task_info(slurmd_job_t *job, uint32_t *gids);
 
+static struct passwd *
+_pwd_create(uid_t uid)
+{
+	struct passwd *pwd = xmalloc(sizeof(*pwd));
+	struct passwd *ppwd = getpwuid(uid);
+
+	if (!ppwd) {
+		xfree(pwd);
+		return NULL;
+	}
+
+	pwd->pw_name   = xstrdup(ppwd->pw_name);
+	pwd->pw_passwd = xstrdup(ppwd->pw_passwd);
+	pwd->pw_gecos  = xstrdup(ppwd->pw_gecos);
+	pwd->pw_shell  = xstrdup(ppwd->pw_shell);
+	pwd->pw_dir    = xstrdup(ppwd->pw_dir);
+	pwd->pw_uid    = ppwd->pw_uid;
+	pwd->pw_gid    = ppwd->pw_gid;
+
+	return pwd;
+}
+
+static void
+_pwd_destroy(struct passwd *pwd)
+{
+	if (!pwd)
+		return;
+
+	xfree(pwd->pw_name);
+	xfree(pwd->pw_passwd);
+	xfree(pwd->pw_gecos);
+	xfree(pwd->pw_shell);
+	xfree(pwd->pw_dir);
+	xfree(pwd);
+
+}
+
 
 /* create a slurmd job structure from a launch tasks message */
 slurmd_job_t * 
@@ -67,7 +104,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	debug3("entering job_create");
 
-	if ((pwd = getpwuid((uid_t)msg->uid)) < 0) {
+	if ((pwd = _pwd_create((uid_t)msg->uid)) < 0) {
 		error("uid %ld not found on system", msg->uid);
 		return NULL;
 	}
@@ -124,12 +161,9 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 static char *
 _mkfilename(slurmd_job_t *job, const char *name)
 {
-	char buf[256];
-
-	if (name == NULL) {
-		snprintf(buf, 256, "%s/job%u.out", job->cwd, job->jobid);
-		return xstrdup(buf);
-	} else
+	if (name == NULL) 
+		return fname_create(job, "job%j.out", 0);
+	else
 		return fname_create(job, name, 0);
 }
 
@@ -139,9 +173,9 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	struct passwd *pwd;
 	slurmd_job_t *job = xmalloc(sizeof(*job));
 	srun_info_t  *srun = NULL;
-	uint32_t      gid = 0;
+	uint32_t      global_taskid = 0;
 
-	if ((pwd = getpwuid((uid_t)msg->uid)) < 0) {
+	if ((pwd = _pwd_create((uid_t)msg->uid)) < 0) {
 		error("uid %ld not found on system", msg->uid);
 		return NULL;
 	}
@@ -172,7 +206,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	 */
 	job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
 
-	_job_init_task_info(job, &gid);
+	_job_init_task_info(job, &global_taskid);
 
 	return job;
 }
@@ -188,8 +222,9 @@ _job_init_task_info(slurmd_job_t *job, uint32_t *gid)
 
 	for (i = 0; i < n; i++){
 		job->task[i] = task_info_create(i, gid[i]);
-		if (srun != NULL) 
-			list_append(job->task[i]->srun_list, (void *)srun);
+		/* "srun" info is attached to task in 
+		 * io_add_connecting
+		 */
 	}
 }
 
@@ -240,6 +275,8 @@ job_destroy(slurmd_job_t *job)
 
 	_array_free(job->envc, &job->env);
 	_array_free(job->argc, &job->argv);
+
+	_pwd_destroy(job->pwd);
 
 	for (i = 0; i < job->ntasks; i++)
 		task_info_destroy(job->task[i]);
