@@ -89,9 +89,10 @@ test1.54   Test of cpus-per-task option on a single node (--cpus-per-task
            option).
 test1.55   Test of partition specification on job submission (--partition  
            option).
+test1.56   Confirm node selection from within a job step on existing allocation
+           (--nodelist and --exclude options).
 UNTESTED   TotalView interaction validation. Expect has limited X Window 
            support.
-UNTESTED   confirm -x and -w from within a job step on existing allocation.
 
 
 test2.#    Testing of scontrol options (to be run as unprivileged user). 
