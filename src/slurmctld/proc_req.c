@@ -108,6 +108,8 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
+	if (delta_t > 1000000)
+		error("Note very large time: %s",tv_str); 
 }
 
 /*
@@ -381,13 +383,22 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 			job_id, node_list_ptr, TIME_STR);
 
 		/* send job_ID  and node_name_ptr */
-		alloc_msg.cpu_count_reps = cpu_count_reps;
-		alloc_msg.cpus_per_node  = cpus_per_node;
+		alloc_msg.cpu_count_reps = xmalloc(sizeof(uint32_t) *
+				num_cpu_groups);
+		memcpy(alloc_msg.cpu_count_reps, cpu_count_reps,
+				(sizeof(uint32_t) * num_cpu_groups));
+		alloc_msg.cpus_per_node  = xmalloc(sizeof(uint32_t) *
+				num_cpu_groups);
+		memcpy(alloc_msg.cpus_per_node, cpus_per_node,
+				(sizeof(uint32_t) * num_cpu_groups));
 		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_id;
-		alloc_msg.node_addr      = node_addr;
+		alloc_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
+				node_cnt);
+		memcpy(alloc_msg.node_addr, node_addr, 
+				(sizeof(slurm_addr) * node_cnt));
 		alloc_msg.node_cnt       = node_cnt;
-		alloc_msg.node_list      = node_list_ptr;
+		alloc_msg.node_list      = xstrdup(node_list_ptr);
 		alloc_msg.num_cpu_groups = num_cpu_groups;
 		unlock_slurmctld(job_write_lock);
 
@@ -396,6 +407,10 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_id);
+		xfree(alloc_msg.cpu_count_reps);
+		xfree(alloc_msg.cpus_per_node);
+		xfree(alloc_msg.node_addr);
+		xfree(alloc_msg.node_list);
 		(void) dump_all_job_state();
 	} else {	/* allocate error */
 		if (do_unlock)
@@ -706,7 +721,8 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	/* Functions below provide their own locking */
 	if (run_scheduler) {
 		(void) schedule();
-		save_all_state();
+		(void) dump_all_node_state();
+		(void) dump_all_job_state();
 	}
 
 	/* NOTE: RPC has no response */
@@ -1136,6 +1152,7 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 	uint16_t node_cnt;
 	slurm_addr *node_addr;
 	uid_t uid;
+	bool do_unlock = false;
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_OLD_JOB_RESOURCE_ALLOCATION");
@@ -1148,18 +1165,20 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 		      (unsigned int) uid);
 	}
 	if (error_code == SLURM_SUCCESS) {
+		do_unlock = true;
 		lock_slurmctld(job_read_lock);
 		error_code = old_job_info(job_desc_msg->uid,
 					  job_desc_msg->job_id,
 					  &node_list_ptr, &num_cpu_groups,
 					  &cpus_per_node, &cpu_count_reps,
 					  &node_cnt, &node_addr);
-		unlock_slurmctld(job_read_lock);
 		END_TIMER;
 	}
 
 	/* return result */
 	if (error_code) {
+		if (do_unlock)
+			unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_old_job_alloc: JobId=%u, uid=%u: %s",
 			job_desc_msg->job_id, job_desc_msg->uid, 
 			slurm_strerror(error_code));
@@ -1169,18 +1188,33 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 			job_desc_msg->job_id, node_list_ptr, TIME_STR);
 
 		/* send job_ID  and node_name_ptr */
-
+		alloc_msg.cpu_count_reps = xmalloc(sizeof(uint32_t) *
+				num_cpu_groups);
+		memcpy(alloc_msg.cpu_count_reps, cpu_count_reps,
+				(sizeof(uint32_t) * num_cpu_groups));
+		alloc_msg.cpus_per_node  = xmalloc(sizeof(uint32_t) *
+				num_cpu_groups);
+		memcpy(alloc_msg.cpus_per_node, cpus_per_node,
+				(sizeof(uint32_t) * num_cpu_groups));
+		alloc_msg.error_code     = error_code;
 		alloc_msg.job_id         = job_desc_msg->job_id;
-		alloc_msg.node_list      = node_list_ptr;
-		alloc_msg.num_cpu_groups = num_cpu_groups;
-		alloc_msg.cpus_per_node  = cpus_per_node;
-		alloc_msg.cpu_count_reps = cpu_count_reps;
+		alloc_msg.node_addr      = xmalloc(sizeof(slurm_addr) *
+				node_cnt);
+		memcpy(alloc_msg.node_addr, node_addr,
+				(sizeof(slurm_addr) * node_cnt));
 		alloc_msg.node_cnt       = node_cnt;
-		alloc_msg.node_addr      = node_addr;
+		alloc_msg.node_list      = xstrdup(node_list_ptr);
+		alloc_msg.num_cpu_groups = num_cpu_groups;
+		unlock_slurmctld(job_read_lock);
+
 		response_msg.msg_type    = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data        = &alloc_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		xfree(alloc_msg.cpu_count_reps);
+		xfree(alloc_msg.cpus_per_node);
+		xfree(alloc_msg.node_addr);
+		xfree(alloc_msg.node_list);
 	}
 }
 
