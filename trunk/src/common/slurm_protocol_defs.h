@@ -82,12 +82,11 @@ enum task_dist_states {
 	SLURM_DIST_BLOCK	/* distribute tasks filling node by node */
 };
 
-/* last entry must be JOB_END, keep in sync with job_state_string    	*/
+/* last entry must be JOB_END
+ * NOTE: keep in sync with job_state_string and job_state_string_compact */
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
-	JOB_STAGE_IN,		/* allocated resources, not yet running */
 	JOB_RUNNING,		/* allocated resources and executing */
-	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
 	JOB_COMPLETE,		/* completed execution successfully, nodes released */
 	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
 	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */

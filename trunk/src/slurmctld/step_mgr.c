@@ -324,8 +324,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 
 	if ((job_ptr->job_state == JOB_COMPLETE) || 
 	    (job_ptr->job_state == JOB_FAILED) ||
-	    (job_ptr->job_state == JOB_TIMEOUT) ||
-	    (job_ptr->job_state == JOB_STAGE_OUT))
+	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
 	job_ptr->time_last_active = time(NULL);
 

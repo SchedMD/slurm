@@ -760,9 +760,7 @@ find_running_job_by_node_name (char *node_name)
 
 	job_record_iterator = list_iterator_create (job_list);		
 	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
-		if ( (job_record_point->job_state != JOB_STAGE_IN) && 
-		     (job_record_point->job_state != JOB_RUNNING) && 
-		     (job_record_point->job_state != JOB_STAGE_OUT) )
+		if (job_record_point->job_state != JOB_RUNNING) 
 			continue;	/* job not active */
 		if (bit_test (job_record_point->node_bitmap, bit_position))
 			break;		/* found job here */
@@ -792,9 +790,7 @@ kill_running_job_by_node_name (char *node_name)
 
 	job_record_iterator = list_iterator_create (job_list);		
 	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
-		if ( (job_record_point->job_state != JOB_STAGE_IN) && 
-		     (job_record_point->job_state != JOB_RUNNING) && 
-		     (job_record_point->job_state != JOB_STAGE_OUT) )
+		if (job_record_point->job_state != JOB_RUNNING) 
 			continue;	/* job not active */
 		if (bit_test (job_record_point->node_bitmap, bit_position) == 0)
 			continue;	/* job not on this node */
@@ -1046,9 +1042,7 @@ job_cancel (uint32_t job_id, uid_t uid)
 		return SLURM_SUCCESS;
 	}
 
-	if ((job_ptr->job_state == JOB_STAGE_IN) || 
-	    (job_ptr->job_state == JOB_RUNNING) ||
-	    (job_ptr->job_state == JOB_STAGE_OUT)) {
+	if (job_ptr->job_state == JOB_RUNNING) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time = time(NULL);
@@ -1094,9 +1088,7 @@ job_complete (uint32_t job_id, uid_t uid)
 	}
 
 	if ((job_ptr->job_state == JOB_PENDING) || 
-	    (job_ptr->job_state == JOB_STAGE_IN) ||
-	    (job_ptr->job_state == JOB_RUNNING) ||
-	    (job_ptr->job_state == JOB_STAGE_OUT)) {
+	    (job_ptr->job_state == JOB_RUNNING)) {
 		deallocate_nodes (job_ptr);
 		verbose ("job_complete for job id %u successful", job_id);
 	} 
@@ -1687,9 +1679,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id, uid_t uid)
 		return ESLURM_USER_ID_MISSING;
 	}
 
-	if ((job_ptr->job_state == JOB_STAGE_IN) || 
-	    (job_ptr->job_state == JOB_RUNNING) ||
-	    (job_ptr->job_state == JOB_STAGE_OUT)) {
+	if (job_ptr->job_state == JOB_RUNNING) {
 		last_job_update = time (NULL);
 		error_code = delete_step_record (job_ptr, step_id);
 		if (error_code == ENOENT) {
@@ -2125,9 +2115,7 @@ reset_job_bitmaps ()
 		if (job_record_point->nodes) {
 			node_name2bitmap (job_record_point->nodes,
 					&job_record_point->node_bitmap);
-			if ( (job_record_point->job_state == JOB_STAGE_IN) ||
-			     (job_record_point->job_state == JOB_RUNNING) ||
-			     (job_record_point->job_state == JOB_STAGE_OUT) )
+			if (job_record_point->job_state == JOB_RUNNING)
 				allocate_nodes ( job_record_point->node_bitmap ) ;
 
 		}
@@ -2485,9 +2473,7 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 			 * which would synchronize this */
 		}
 
-		else if ( (job_ptr->job_state == JOB_STAGE_IN) ||
-		     (job_ptr->job_state == JOB_RUNNING) ||
-		     (job_ptr->job_state == JOB_STAGE_OUT) ) {
+		else if (job_ptr->job_state == JOB_RUNNING) {
 			if ( bit_test (job_ptr->node_bitmap, node_inx))
 				debug3 ("Registered job_id %u on node %s ", 
 				       job_id_ptr[i], node_name);  /* All is well */
@@ -2549,8 +2535,7 @@ old_job_info (uint32_t uid, uint32_t job_id, char **node_list,
 		return ESLURM_ACCESS_DENIED;
 	if (job_ptr->job_state == JOB_PENDING) 
 		return ESLURM_JOB_PENDING;
-	if ((job_ptr->job_state != JOB_STAGE_IN) && 
-	    (job_ptr->job_state != JOB_RUNNING))
+	if (job_ptr->job_state != JOB_RUNNING)
 		return ESLURM_ALREADY_DONE;
 
 	node_list[0]      = job_ptr->nodes;

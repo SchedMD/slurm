@@ -756,9 +756,7 @@ static int filter_job( job_info_t * job )
 			return 3;
 	} else {
 		if ((job->job_state != JOB_PENDING) &&
-		    (job->job_state != JOB_STAGE_IN) && 
-		    (job->job_state != JOB_RUNNING) && 
-		    (job->job_state != JOB_STAGE_OUT)) 
+		    (job->job_state != JOB_RUNNING)) 
 			return 4;
 	}
 
