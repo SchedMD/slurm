@@ -1097,7 +1097,7 @@ extern int read_bgl_partitions(void)
 			continue;
 #endif
 		}
-		info("Node %s in BglBlock %s", node_name_tmp, part_id);
+		info("Node:%s in BglBlock:%s", node_name_tmp, part_id);
 
 		bgl_part_ptr = list_find_first(bgl_init_part_list, 
 			_part_list_find, part_id);
@@ -1127,6 +1127,9 @@ extern int read_bgl_partitions(void)
 				error("rm_get_data(RM_PartitionMode): %s",
 					bgl_err_str(rm_rc));
 			}
+			info("BglBlock:%s Conn:%s Use:%s", part_id, 
+				convert_conn_type(bgl_part_ptr->conn_type),
+				convert_node_use(bgl_part_ptr->node_use));
 			bgl_part_ptr->part_lifecycle = STATIC;
 			if ((rm_rc = rm_free_partition(part_ptr)) 
 						!= STATUS_OK) {
