@@ -135,8 +135,8 @@ read_pidfile(const char *pidfile, int *pidfd)
 	}
 
 	if (lpid != (pid_t) pid) 
-		fatal ("pidfile locked by %ld but contains pid=%ld",
-		       (long) lpid, (long) pid);
+		fatal ("pidfile locked by %lu but contains pid=%lu",
+		       (unsigned long) lpid, (unsigned long) pid);
 
 	if (pidfd != NULL)
 		*pidfd = fd;
@@ -166,7 +166,7 @@ create_pidfile(const char *pidfile)
 		goto error;
 	}
 
-	if (fprintf(fp, "%d\n", (int) getpid()) == EOF) {
+	if (fprintf(fp, "%lu\n", (unsigned long) getpid()) == EOF) {
 		error("Unable to write to pidfile `%s': %m", pidfile);
 		goto error;
 	}
