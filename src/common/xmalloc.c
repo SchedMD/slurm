@@ -5,7 +5,7 @@
 ** Mark Grondona <mgrondona@llnl.gov>
 ** 
 ** Started with Jim Garlick's xmalloc and tied into slurm log facility.
-** Also added ability to print file, line, and function of call.
+** Also added ability to print file, line, and function of caller.
 */
 
 #if HAVE_CONFIG_H
@@ -35,6 +35,7 @@
 static void malloc_assert_failed(char *, const char *, int, 
         const char *, const char *); 
 
+
 #define xmalloc_assert(expr, _file, _line, _func)  _STMT_START {    \
         (expr) ? ((void)(0)) :                                      \
         malloc_assert_failed(__STRING(expr), _file, _line, _func,   \
@@ -56,9 +57,34 @@ void *_xmalloc(size_t size, const char *file, int line, const char *func)
 	p = (int *)malloc(size + 2*sizeof(int));
 	MALLOC_UNLOCK();
 	if (!p) {
+		/* don't call log functions here, we're probably OOM 
+		 */
 		fprintf(stderr, "%s:%d: %s: xmalloc(%d) failed\n", 
 				file, line, func, (int)size);
 		exit(1);
+	}
+	p[0] = XMALLOC_MAGIC;	/* add "secret" magic cookie */
+	p[1] = size;		/* store size in buffer */
+
+	new = &p[2];
+	memset(new, 0, size);
+	return new;
+}
+
+/*
+ * same as above, except return NULL on malloc failure instead of exiting
+ */
+void *_try_xmalloc(size_t size, const char *file, int line, const char *func)
+{	
+	void *new;
+	int *p;
+
+	xmalloc_assert(size > 0 && size <= INT_MAX, file, line, func);
+	MALLOC_LOCK();
+	p = (int *)malloc(size + 2*sizeof(int));
+	MALLOC_UNLOCK();
+	if (!p) {
+		return NULL;
 	}
 	p[0] = XMALLOC_MAGIC;	/* add "secret" magic cookie */
 	p[1] = size;		/* store size in buffer */
@@ -132,7 +158,7 @@ void _xfree(void **item, const char *file, int line, const char *func)
 static void malloc_assert_failed(char *expr, const char *file, 
 		                 int line, const char *caller, const char *func)
 {
-	fatal("malloc error: %s:%d: %s() caused assertion (%s) to fail in %s()",
-	      file, line, caller, expr, func);
+	fatal("%s() Error: from %s:%d: %s(): Assertion (%s) failed",
+	      func, file, line, caller, expr);
 	abort();
 }
