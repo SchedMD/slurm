@@ -27,6 +27,10 @@ typedef enum {false, true} bool;
 #define TRUE	true
 #endif
 
+#ifndef MAX
+#define MAX(a,b) ((a) > (b) ? (a) : (b))	
+#endif
+
 /* 
 ** define __CURRENT_FUNC__ macro for returning current function 
 */
