@@ -161,6 +161,7 @@ int
 shm_fini(void)
 {
 	int destroy = 0;
+	int i;
 	xassert(slurmd_shm != NULL);
 	_shm_lock();
 
@@ -169,6 +170,13 @@ shm_fini(void)
 
 	debug("[%ld] shm_fini: shm_users = %d", 
 	      (long) getpid(), slurmd_shm->users); 
+
+	for (i = 0; i < MAX_JOB_STEPS; i++) {
+		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
+			job_step_t *s = &slurmd_shm->step[i];
+			info ("Used shm slot: %d %d\n", s->jobid, s->stepid); 
+		}
+	}
 
 	if (--slurmd_shm->users == 0)
 		destroy = 1;
@@ -423,24 +431,39 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	task_t     *t;
 
 	_shm_lock();
-	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
-		s = &slurmd_shm->step[i];
-		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
-			pid_t sid = getsid(t->pid);
+	if ((i = _shm_find_step(jobid, stepid)) < 0) {
+		retval = EINVAL;
+		goto done;
+	}
 
-			if ((sid < (pid_t) 0) || (sid != s->sid))
-				continue;
+	s = &slurmd_shm->step[i];
 
-			if (t->pid > 0 && kill(t->pid, signo) < 0) {
-				error("kill %d.%d task %d pid %ld: %m", 
-				      jobid, stepid, t->id, (long)t->pid);
-				retval = errno;
-			}
+	if (stepid != NO_VAL)
+		debug2 ("signal %d for %u.%u (sid: %ld)", 
+	  	        signal, jobid, stepid, (long) s->sid);
+	else
+		debug2 ("signal %d for %u (sid: %ld)", 
+		        signal, jobid, (long) s->sid);
 
-		}	
-	} else
-		retval = ESRCH;
+	for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
+		pid_t sid = getsid(t->pid);
 
+		if ((sid <= (pid_t) 0) || (sid != s->sid))
+			continue;
+
+		if (t->pid <= (pid_t) 0) {
+			debug ("job %u.%u: Bad pid value %ld", 
+			       jobid, stepid, t->pid);
+			continue;
+		}
+
+		if (kill(t->pid, signo) < 0) {
+			error ("kill %d.%d task %d pid %ld: %m", 
+			       jobid, stepid, t->id, (long)t->pid);
+			retval = errno;
+		}
+	}
+done:
 	_shm_unlock();
 	if (retval > 0)
 		slurm_seterrno_ret(retval);
