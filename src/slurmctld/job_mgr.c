@@ -24,7 +24,7 @@ List job_list = NULL;			/* job_record list */
 time_t last_job_update;			/* time of last update to job records */
 static pthread_mutex_t job_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for job info */
 char *job_state_string[] =
-	{ "PENDING", "STATE_IN", "RUNNING", "STAGE_OUT", "COMPLETED", "END" };
+	{ "PENDING", "STAGE_IN", "RUNNING", "STAGE_OUT", "COMPLETED", "FAILED", "TIME_OUT", "END" };
 
 int dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, 
 	int detail);
@@ -490,14 +490,14 @@ job_cancel (char * job_id)
 		return EINVAL;
 	}
 	if (job_ptr->job_state == JOB_PENDING) {
-		job_ptr->job_state = JOB_END;
+		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		info ("job_cancel of pending job %s", job_id);
 		return 0;
 	}
 
 	if (job_ptr->job_state == JOB_STAGE_IN) {
-		job_ptr->job_state = JOB_END;
+		job_ptr->job_state = JOB_FAILED;
 		error_code = node_name2bitmap (job_ptr->nodes, &req_bitmap);
 		if (error_code == EINVAL)
 			fatal ("invalid node list for job %s", job_id);

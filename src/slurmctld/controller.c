@@ -219,7 +219,7 @@ dump_build (char **buffer_ptr, int *buffer_size)
  */
 void
 slurmctld_req (int sockfd) {
-	int error_code, in_size, i;
+	int error_code, detail, in_size, i;
 	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
 	int cpus, real_memory, tmp_disk;
 	char *job_id_ptr, *node_name_ptr, *part_name, *time_stamp;
@@ -285,6 +285,46 @@ slurmctld_req (int sockfd) {
 			xfree (dump);
 	}
 
+	/* DumpJob - dump the job state information */
+	else if (strncmp ("DumpJob", in_line, 7) == 0) {
+		time_stamp = NULL;
+		error_code =
+			load_string (&time_stamp, "LastUpdate=", in_line);
+		if (time_stamp) {
+			last_update = strtol (time_stamp, (char **) NULL, 10);
+			xfree (time_stamp);
+		}
+		else
+			last_update = (time_t) 0;
+		if (in_line[7] == 'L')
+			detail = 1;
+		else
+			detail = 0;
+		error_code = dump_all_job (&dump, &dump_size, 
+					   &last_update, detail);
+		if (error_code)
+			info ("slurmctld_req: dump_all_job error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
+		else
+			info ("slurmctld_req: dump_all_job returning %d bytes, time=%ld",
+				 dump_size, (long) (clock () - start_time));
+		if (dump_size == 0)
+			send (sockfd, "nochange", 9, 0);
+		else if (error_code == 0) {
+			dump_loc = 0;
+			while (dump_size > 0) {
+				i = send (sockfd, &dump[dump_loc], dump_size,
+					  0);
+				dump_loc += i;
+				dump_size -= i;
+			}	
+		}
+		else
+			send (sockfd, "EINVAL", 7, 0);
+		if (dump)
+			xfree (dump);
+	}
+
 	/* DumpNode - dump the node configurations */
 	else if (strncmp ("DumpNode", in_line, 8) == 0) {
 		time_stamp = NULL;
@@ -298,10 +338,10 @@ slurmctld_req (int sockfd) {
 			last_update = (time_t) 0;
 		error_code = dump_all_node (&dump, &dump_size, &last_update);
 		if (error_code)
-			info ("slurmctld_req: dump_node error %d, time=%ld",
+			info ("slurmctld_req: dump_all_node error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: dump_node returning %d bytes, time=%ld",
+			info ("slurmctld_req: dump_all_node returning %d bytes, time=%ld",
 				 dump_size, (long) (clock () - start_time));
 		if (dump_size == 0)
 			send (sockfd, "nochange", 9, 0);
