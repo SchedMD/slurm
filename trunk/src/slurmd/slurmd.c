@@ -200,7 +200,7 @@ main (int argc, char *argv[])
 
 	info("%s started on %T", xbasename(argv[0]));
 
-        if (send_registration_msg(SLURM_SUCCESS) < 0) 
+        if (send_registration_msg(SLURM_SUCCESS, true) < 0) 
 		error("Unable to register with slurm controller");
 
 	_install_fork_handlers();
@@ -355,13 +355,14 @@ _service_connection(void *arg)
 }
 
 int
-send_registration_msg(uint32_t status)
+send_registration_msg(uint32_t status, bool startup)
 {
 	int retval = SLURM_SUCCESS;
 	slurm_msg_t req;
 	slurm_msg_t resp;
 	slurm_node_registration_status_msg_t *msg = xmalloc (sizeof (*msg));
 
+	msg->startup = (uint16_t) startup;
 	_fill_registration_msg(msg);
 	msg->status  = status;
 
@@ -397,10 +398,12 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	debug3("Procs=%u RealMemory=%u, TmpDisk=%u", msg->cpus, 
 	       msg->real_memory_size, msg->temporary_disk_space);
 
-	if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
-		error("switch_g_alloc_node_info: %m");
-	if (switch_g_build_node_info(msg->switch_nodeinfo))
-		error("switch_g_build_node_info: %m");
+	if (msg->startup) {
+		if (switch_g_alloc_node_info(&msg->switch_nodeinfo))
+			error("switch_g_alloc_node_info: %m");
+		if (switch_g_build_node_info(msg->switch_nodeinfo))
+			error("switch_g_build_node_info: %m");
+	}
 
 	steps          = shm_get_steps();
 	msg->job_count = list_count(steps);
