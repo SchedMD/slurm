@@ -419,21 +419,22 @@ which cleans up the job.
 
 \section{Controller Design}
 
-
-The controller includes the following subsystems:
+The controller will be modular and multi-threaded. 
+Independent read and write locks will be provided for the various data 
+structures for scalability. 
+The controller  will include the following subsystems:
 
 \begin{itemize}
-\item {\em Machine and job status}: Monitor and record the state of each 
-job and node in the cluster.
+\item {\em Partition management}: Monitor and record the state of each 
+node in the cluster.
+Group these nodes into disjoint sets called {\em partitions} with various 
+job limits and access controls.
+The partition manager also allocates nodes to jobs based upon 
+node and partition states and configurations. 
 
-\item {\em Partition management}: Distinct functionality or capabilities 
-are associated with different sets of nodes in the cluster.  Each such set 
-of nodes is considered a partition. 
-
-\item {\em Job management}: Accept, initiate, delete and otherwise manage 
-the state of all jobs in the system.
-
-\item {\em Scheduling}: Decide when and where to initiate pending jobs.
+\item {\em Job management}: Accept, initiate, monitor, delete and otherwise 
+manage the state of all jobs in the system. This includes the prioritization 
+of pending work.
 
 \item {\em Switch management}: Perform any interconnect-related 
 monitoring and control needed to run a parallel job.
@@ -442,61 +443,30 @@ monitoring and control needed to run a parallel job.
 
 Each of these subsystems is described in detail below.
 
-\subsection{Machine Status}
+\subsection{Partition Management}
 
-One SLURM daemon will be required on each node in the cluster.
-One module of that daemon will monitor its state.
-While existing tools can be combined for machine status and management, such an
-arrangement lacks the scalability required for the support of thousands of
-nodes. We believe this poses serious problems in the management of large Linux
-clusters and feel compelled to address this issue. 
-
-We recognize the severe impact system daemons can have on performance of
-parallel jobs, so the compute and memory resources consumed by this daemon
-should be minimized. In phase three, we intend for this service to also monitor
-basic job state information. In phase four, this will be expanded to include 
-job accounting information. Providing all functions
-within a single daemon will minimize system overhead. Node information that we
-intend to monitor includes:
+The partition manager will monitor the sate of nodes and allocate 
+these resources to jobs selected by the Job Manager. 
+Node information that we intend to monitor includes:
 
 \begin{itemize}
 \item Count of processors on the node
 \item Size of real memory on the node
 \item Size of temporary disk storage
-\item Partition serving
 \item State of node (RUN, IDLE, DRAIN, etc.)
-\item Cumulative CPU use (by jobs, kernel and daemons)
-\item Real memory use (by jobs, kernel and daemons)
-\item Virtual memory use (by jobs, kernel and daemons)
 \end{itemize}
 
-The SLURM administrator could specify, at a minimum ,a list of system node 
-names using a regular expression. 
-If he requires more than one partition, that information should also be specified. 
-He may also specify the mimimanl node configuration values which are acceptable 
-(CPU count, real memory size, etc.). 
-This information is readily available through system calls and reading the
-process table. The commands \textit{top} and \textit{df} 
-currently collect the above data are available as models for SLURM development. 
+The SLURM administrator could at a minimum specify a list of system node 
+names using a regular expression (e.g. "NodeName=linux[001-512] CPUs=4 
+RealMemory=1024 TmpDisk=4096"). 
+This would be considered the minimal node configuration values which are 
+acceptable for the node to enter into service.
 
-The current SLURM design only supports the allocation of entire nodes to 
-jobs. Our customers at LLNL have expressed the opinion that sharing of 
-nodes can severely reduce their job's performance and even reliability. 
-This is due to contention for shared resources such as local disk space, 
-real memory, virtual memory and processor cycles. The proper support of 
-shared resources, including the enforcement of limits on these resources, 
-entails a substantial amount of additional effort. Given such a cost to 
-benefit situation at LLNL, we have decided to not support shared nodes. 
-However, we have designed SLURM so as to not preclude the addition of 
-such a capability at a later time if so desired.
-
-\subsection{Partition Management}
-
-Partition management will be used to identify groups of nodes to be used for
+The partition manager will identify groups of nodes to be used for
 execution of user jobs. Data to be associated with a partition will include:
 \begin{itemize}
 \item Name
-\item Access permitted, under direct user (e.g. INTERACTIVE) or system (e.g. BATCH QUEUE) control
+\item Access controlled by key granted to key (so support external schedulers)
 \item List of associated nodes
 \item State of partition (UP or DOWN)
 \item Maximum time limit for any job
@@ -508,38 +478,39 @@ It will be possible to alter this data in real-time in order to effect the
 scheduling of pending jobs (currently executing jobs would continue). Unlike some
 other parallel job management systems, we believe this information can be
 confined to the SLURM control machine for better scalability. It would be used
-by the Job Manager and Machine Status Manager, which exist only on the control
-machine. An API to manage the partitions would be developed first, followed by
-a simple command-line tool utilizing the API.
+by the Job Manager (and possibly an external scheduler), which either exist only 
+on the control machine or communicate only with the control machine. An API to 
+manage this information would be developed first, followed by a simple command-line 
+tool utilizing the API.
 
-\subsection{Switch Manager}
+The partition manager will allocate nodes to pending jobs upon request by 
+the job manager. 
+The current SLURM design only supports the allocation of entire nodes to 
+jobs. Our customers at LLNL have expressed the opinion that sharing of 
+nodes can severely reduce their job's performance and even reliability. 
+This is due to contention for shared resources such as local disk space, 
+real memory, virtual memory and processor cycles. The proper support of 
+shared resources, including the enforcement of limits on these resources, 
+entails a substantial amount of additional effort. Given such a cost to 
+benefit situation at LLNL, we have decided to not support shared nodes. 
+However, we have designed SLURM so as to not preclude the addition of 
+such a capability at a later time if so desired.
+Future enhancements could include constraining jobs to a specific CPU count 
+or memory size within a node, which could be used to space-share the node.
 
-The switch manager would be responsible for allocating switch channels and assigning 
-them to user jobs. The switch channels would be de-allocated upon job termination. 
-The slurmd (on each compute node) would provide user jobs with the authentication 
-required for switch use as directed by the switch manager. Switch health monitoring tools will 
-also be implemented in phase two. It may be desirable for the SLURM daemons to use the
-switch directly for communications, particularly for the movement of a large 
-executable and/or standard input file. This option will be investigated in phase
-three. 
+\subsection{Job Manager}
 
-\subsection{Job Management}
-
-Jobs will be allocated entire nodes. Node sharing on a temporal basis (e.g.
-time-slicing or  gang scheduling) will not be supported in the initial SLURM 
-release either, although may be in the future. The core functions to be supported 
-by the job manager include:
+The core functions to be supported by the job manager include:
 \begin{itemize}
-\item Initiate job\footnote{There are considerable issues regarding allocation 
-of resources (nodes) to jobs and then associating the  allocation to the job 
-as well as relinquishing the allocation at job termination that we need to 
-discuss. - Bob Wood}
+\item Queue job request
+\item Order job queue (under control of external scheduler)
+\item Initiate job
 \item Will job run query (test if "Initiate job" request would succeed)
 \item Status job (including node list, memory and CPU use data)
 \item Signal job for termination (following DPCS model of explicit application
 registration)
 \item Terminate job (remove all processes)
-\item Preempt/resume job 
+\item Preempt/resume job  (future)
 \item Checkpoint/restart job (future)
 \item Change node count of running job (could fail if insufficient resources are 
 available, future)
@@ -547,28 +518,8 @@ available, future)
 
 Submitted jobs can specify desired partition, CPU count, node count, task 
 count, task distribution pattern (round-robin or sequential within a node), 
-and (optionally) an explicit list of nodes. The submitted job will be 
-identified as being initiated under direct user (e.g. INTERACTIVE) or system 
-(e.g. BATCH QUEUE) control, and by virtue of this can be constrained 
-to specific partitions. 
-
-Since scheduling decisions are being provided by the scheduling component,
-there is no concept of submitting a job to be queued in the initial SLURM design. 
-The concept of gang scheduling, or time-slicing for parallel jobs, is supported by the preempt and
-resume functions. Automatic time-sharing of parallel jobs will not be
-supported. Automatic time-sharing of parallel jobs will not be
-supported. Explicit node selection will be optionally specified as part of the
-will job run and initiate job functions. An API for all functions would be
-developed initially, followed by a  command-line tool utilizing the API. Future
-enhancements could include constraining jobs to a specific CPU count or memory
-size within a node, which could be used to space-share the node.
-
-System specific scripts can be executed prior to the initiation of a user job
-and after the termination of a user job (e.g. prolog and epilog). These scripts
-can be used to establish an appropriate environment for the user (e.g. permit
-logins, disable logins, terminate "orphan" processes, etc.). 
-
-\subsection{Scheduling}
+and (optionally) an explicit list of nodes. The submitted job may have an 
+associated key, and by virtue of this can be granted access to specific partitions. 
 
 We propose that SLURM implement a very simple scheduling algorithm, 
 namely First-in First-out (FIFO) with backfill. Backfill scheduling 
@@ -602,6 +553,24 @@ command-line and web interfaces with Kerberos authentication and authorization.
 We are not contemplating making this database software available through SLURM,
 but might consider writing this data to an open source database if so desired.
 
+System specific scripts can be executed prior to the initiation of a user job
+and after the termination of a user job (e.g. prolog and epilog). These scripts
+can be used to establish an appropriate environment for the user (e.g. permit
+logins, disable logins, terminate "orphan" processes, etc.). 
+An API for all functions would be developed initially, followed by a  
+command-line tool utilizing the API. 
+
+\subsection{Switch Manager}
+
+The switch manager would be responsible for allocating switch channels and assigning 
+them to user jobs. The switch channels would be de-allocated upon job termination. 
+The slurmd (on each compute node) would provide user jobs with the authentication 
+required for switch use as directed by the switch manager. Switch health monitoring tools will 
+also be implemented in phase two. It may be desirable for the SLURM daemons to use the
+switch directly for communications, particularly for the movement of a large 
+executable and/or standard input file. This option will be investigated in phase
+three. 
+
 \section{Slurmd}
 
 Slurmd is a multi-threaded daemon for managing user job and 
@@ -620,7 +589,7 @@ Differences in resource utilization values from process table
 snapshot to snapshot will be accumulated. Slurmd will 
 insure these accumulated values are not decremented if resource 
 consumption for a user happens to decrease from snapshot to 
-snapshot, this would simply reflect the termination of some 
+snapshot, which would simply reflect the termination of some 
 processes.
 Both the memory high-water marks will be recorded and the 
 integral of memory consumption (e.g. megabyte-hours).
@@ -646,8 +615,9 @@ ID, and then initiate the job as requested. It will
 record to disk the SLURM job ID, session ID, process ID associated 
 with each task, and user associated with the job. 
 In the event of slurmd failure, this information will 
-be recovered from disk in order to signal or terminate 
-the job as needed.
+be recovered from disk in order to identify a specific 
+job. This  job identity will be used in communications 
+with the SLURM controller.
 
 \marginpar{We discussed a general purpose signal delivery. 
 What purpose does this serve? --MJ}
@@ -780,9 +750,6 @@ DPCS Controller on Linux           & 0.5 FTE months \\
 \section{Glossary}
 
 \begin{description}
-\item[Condor]	A parallel job manager designed primarily to harness the 
-		resources from desktop computers during non-working hours, 
-		developed by the University of Wisconsin at Madison
 \item[DCE]	Distributed Computing Environment
 \item[DFS]	Distributed File System (part of DCE)
 \item[DPCS]	Distributed Production Control System, a meta-batch system 
@@ -795,9 +762,6 @@ DPCS Controller on Linux           & 0.5 FTE months \\
 \item[LLNL]	Lawrence Livermore National Laboratory
 \item[NQS]	Network Queuing System (a batch system)
 \item[OSCAR]	Open Source Cluster Application Resource
-\item[PBS]	Portable Batch System
-\item[RMS]	Resource Management System, Quadrics' parallel job management 
-		system
 \end{description}
 
 \newpage
