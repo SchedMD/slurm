@@ -125,10 +125,10 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
+	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_STEP_INFO:
 		*resp = (job_step_info_response_msg_t *) resp_msg.data;
-		slurm_free_cred(resp_msg.cred);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;

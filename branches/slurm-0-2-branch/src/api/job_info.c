@@ -219,10 +219,10 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		return SLURM_ERROR;
 
+	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
 		*resp = (job_info_msg_t *)resp_msg.data;
-		slurm_free_cred(resp_msg.cred);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
@@ -267,6 +267,7 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	if (slurm_send_recv_node_msg(&req_msg, &resp_msg, 0) < 0)
 		return SLURM_ERROR;
 
+	slurm_free_cred(resp_msg.cred);
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_ID:
 		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;
