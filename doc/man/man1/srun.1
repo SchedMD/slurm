@@ -365,7 +365,15 @@ to this same task.
 .B srun
 will redirect stdout and/or stderr to the named file from all tasks.
 stdin will be redirected from the named file and broadcast to all
-tasks in the job.
+tasks in the job.  If the job is submitted in batch mode using the
+.B -b
+or
+.B --batch
+option, \fIfilename\fR refers to a path on each of the nodes on which
+the job runs.  Otherwise \fIfilename\fR refers to a path on the host
+that runs \fBsrun\fR.  Depending on the cluster's file system layout,
+this may result in the output appearing in different places depending
+on whether the job is run in batch mode.
 .TP
 format string
 .B srun 
