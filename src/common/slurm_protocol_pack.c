@@ -800,10 +800,8 @@ void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_
 	packstr ( msg -> env , buffer , length ) ;
 	packstr ( msg -> cwd , buffer , length ) ;
 	packstr ( msg -> cmd_line , buffer , length ) ;
-	/*stdin location*/
-	/*stdout location*/
-	/*stderr location*/
-	/*task completion location*/
+	pack_slurm_addr_array ( msg -> streams , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
+	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
 }
 
 int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
@@ -827,10 +825,8 @@ int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , u
 	unpackstr_xmalloc ( & msg -> env , & uint16_tmp , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cwd , & uint16_tmp , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cmd_line , & uint16_tmp , buffer , length ) ;
-	/*stdin location*/
-	/*stdout location*/
-	/*stderr location*/
-	/*task completion location*/
+	unpack_slurm_addr_array ( & msg -> streams , & uint16_tmp , buffer , length ) ;
+	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
 	*msg_ptr = msg ;
 	return 0 ;
 }

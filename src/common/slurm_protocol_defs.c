@@ -243,12 +243,12 @@ void slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg )
 			xfree ( msg -> cwd );
 		if ( msg -> cmd_line )
 			xfree ( msg -> cmd_line );
+		if ( msg -> streams )
+			xfree ( msg -> streams );
+		if ( msg -> global_task_ids )
+			xfree ( msg -> global_task_ids );
 		xfree ( msg ) ;
 	}
-	/*stdin location*/
-	/*stdout location*/
-	/*stderr location*/
-	/*task completion location*/
 } 
 
 void slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg )
