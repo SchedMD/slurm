@@ -1,0 +1,14 @@
+#!/usr/bin/perl
+
+open OUT, ">>test.out" ;
+print OUT "TESTING\n" ;
+print OUT "TESTING\n" ;
+print OUT "TESTING\n" ;
+print OUT "TESTING\n" ;
+print OUT "TESTING\n" ;
+print OUT "TESTING\n" ;
+close OUT ;
+sleep ( 1000000 ) ;
+open OUT, ">>test.out" ;
+print OUT "NOTESTING\n" ;
+print OUT "NOTESTING\n" ;
