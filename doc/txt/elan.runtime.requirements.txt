@@ -84,7 +84,7 @@ cap.UserKey	This is a 128-bit secret key, unique to the program.  A rogue
 		user who knows this key could "dummy up" a capability on
 		one of the nodes running the program and perform remote DMA's
 		into the address space of the program's processes.  The key
-		generated in some non-deterministic way, such as an MD5 
+		is generated in some non-deterministic way, such as an MD5 
 		algorithm seeded by /dev/random.  Values are assigned in
 		32-bit blocks by addressing cap.UserKey.Values[0-3].
 
@@ -103,7 +103,7 @@ cap.HighNode	Set to the upper bound of the range of nodes assigned to
 		the parallel program.
 
 cap.Bitmap	The bitmap includes a bit for each possible process in the
-		program program in the LowNode - HighNode range.  If there are
+		program in the LowNode - HighNode range.  If there are
 		two tasks per node, bits zero and one represent the two tasks
 		on LowNode; two and three the two tasks on LowNode+1, etc..
 		the BT_SET macro is used to set the bits in the bitmap.
@@ -131,7 +131,8 @@ index (assigned in rms_prgaddcap() and this process's context number index,
 relative to the LowContext - HighContext range in the capability.
 The MPI runtime will subsequently call rms_ncaps() and rms_getcap() to 
 retrieve the capability for presentation to elan3_attach().
-Each process sets several environment variables:
+Each process also sets several environment variables that are referenced by
+the elan/MPI runtime:
 
 RMS_NNODES	Set to the number of nodes assigned to the program.
 
@@ -190,6 +191,10 @@ How does execution of TotalView impact this design?
 RMS includes a network error fixup facility.  This is a big kludge which
 works around hardware failures, such as pulling the Elan cable out when a job
 is running.  Do we need this?
+
+RMS can generate backtraces when a program terminates abnormally.
+It also handles "elan exceptions".  Investigate and determine if we should
+also do this.
 
 
 Module Testing
