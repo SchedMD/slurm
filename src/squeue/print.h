@@ -86,10 +86,12 @@ int job_format_add_function(List list, int width, bool right_justify,
 #define job_format_add_time_limit(list,wid,right,suffix)	\
 	job_format_add_function(list,wid,right,suffix,	\
 	                        _print_job_time_limit)
-#define job_format_add_start_time(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_start_time)
-#define job_format_add_end_time(list,wid,right,suffix) \
-	job_format_add_function(list,wid,right,suffix,_print_job_end_time)
+#define job_format_add_time_used(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_time_used)
+#define job_format_add_time_start(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_time_start)
+#define job_format_add_time_end(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_time_end)
 #define job_format_add_priority(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_priority)
 #define job_format_add_nodes(list,wid,right,suffix) \
@@ -138,9 +140,11 @@ int _print_job_job_state_compact(job_info_t * job, int width,
 			bool right_justify, char* suffix);
 int _print_job_time_limit(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
-int _print_job_start_time(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_used(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
-int _print_job_end_time(job_info_t * job, int width, bool right_justify, 
+int _print_job_time_start(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_time_end(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_priority(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
@@ -188,8 +192,10 @@ int step_format_add_function(List list, int width, bool right_justify,
 	step_format_add_function(list,wid,right,suffix,_print_step_user_id)
 #define step_format_add_user_name(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_user_name)
-#define step_format_add_start_time(list,wid,right,suffix) \
-	step_format_add_function(list,wid,right,suffix,_print_step_start_time)
+#define step_format_add_time_start(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_time_start)
+#define step_format_add_time_used(list,wid,right,suffix) \
+	step_format_add_function(list,wid,right,suffix,_print_step_time_used)
 #define step_format_add_nodes(list,wid,right,suffix) \
 	step_format_add_function(list,wid,right,suffix,_print_step_nodes)
 
@@ -206,7 +212,9 @@ int _print_step_user_id(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_user_name(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
-int _print_step_start_time(job_step_info_t * step, int width,
+int _print_step_time_start(job_step_info_t * step, int width,
+			bool right_justify, char *suffix);
+int _print_step_time_used(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);
 int _print_step_nodes(job_step_info_t * step, int width,
 			bool right_justify, char *suffix);

@@ -274,6 +274,11 @@ _parse_format( char* format )
 				step_format_add_id( params.format_list, 
 				                    field_size, 
 						    right_justify, suffix );
+			else if (field[0] == 'M')
+				step_format_add_time_used( params.format_list, 
+				                            field_size, 
+				                            right_justify, 
+				                            suffix );
 			else if (field[0] == 'N')
 				step_format_add_nodes( params.format_list, 
 				                       field_size, 
@@ -284,7 +289,7 @@ _parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else if (field[0] == 'S')
-				step_format_add_start_time( params.format_list, 
+				step_format_add_time_start( params.format_list, 
 				                            field_size, 
 				                            right_justify, 
 				                            suffix );
@@ -305,7 +310,7 @@ _parse_format( char* format )
 				   field[0] );
 		} else {
 			if      (field[0] == 'b')
-				job_format_add_start_time( params.format_list, 
+				job_format_add_time_start( params.format_list, 
 				                           field_size, 
 				                           right_justify, 
 				                           suffix  );
@@ -320,12 +325,18 @@ _parse_format( char* format )
 				                          right_justify, 
 				                          suffix  );
 			else if (field[0] == 'd')
-				job_format_add_min_tmp_disk( params.format_list, 
-				                             field_size, 
-				                             right_justify, 
-				                             suffix  );
+				job_format_add_min_tmp_disk( 
+				                          params.format_list,
+				                          field_size, 
+				                          right_justify, 
+				                          suffix  );
+			else if (field[0] == 'D')
+				job_format_add_num_nodes( params.format_list,
+				                          field_size, 
+				                          right_justify, 
+				                          suffix  );
 			else if (field[0] == 'e')
-				job_format_add_end_time( params.format_list, 
+				job_format_add_time_end( params.format_list, 
 				                         field_size, 
 				                         right_justify, 
 				                         suffix );
@@ -358,6 +369,11 @@ _parse_format( char* format )
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
+			else if (field[0] == 'M')
+				job_format_add_time_used( params.format_list, 
+				                          field_size, 
+				                          right_justify, 
+				                          suffix );
 			else if (field[0] == 'n')
 				job_format_add_req_nodes( params.format_list, 
 				                          field_size, 
@@ -388,7 +404,7 @@ _parse_format( char* format )
 				                          right_justify, 
 				                          suffix );
 			else if (field[0] == 'S')
-				job_format_add_start_time( params.format_list, 
+				job_format_add_time_start( params.format_list, 
 				                           field_size, 
 				                           right_justify, 
 				                           suffix );
