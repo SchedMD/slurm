@@ -862,6 +862,22 @@ Job steps have associated with them specific nodes (some or all of those
 associated with the job), tasks, and a task distribution (cyclic or 
 block) over the nodes. 
 
+The management of job steps is considered a component of the job 
+manager. Supported job step functions include:
+\begin{itemize}
+\item Register Job Step
+\item Get Job Step Information
+\item Run Job Step Request
+\item Signal Job Step
+\end{itemize}
+Job step information includes task distribution (cyclic or block) 
+across the allocated nodes, processors required per task, list of 
+nodes (entire set or subset of those allocated to the job), and a 
+credential used to bind communications between the tasks across 
+the interconnect. The \slurmctld\ will construct this credential, 
+distribute it the the relevent \slurmd\ deaemons, and send it to 
+the \srun\ initiating the job step.
+
 %\subsection{Switch Manager}
 %
 %The switch manager would be responsible for allocating switch channels and
