@@ -117,7 +117,7 @@ expect {
 		set found 1
 		exp_continue
 	}
-	-re "AllowGroups=.null" {
+	-re "AllowGroups=ALL" {
 		set allow 1
 		exp_continue
 	}
@@ -201,7 +201,7 @@ expect {
 set found 0
 spawn $scontrol show part $part_name
 expect {
-	-re "AllowGroups=.null" {
+	-re "AllowGroups=ALL" {
 		set found 1
 		exp_continue
 	}
