@@ -12,9 +12,10 @@ thousands of nodes.  Components include machine status, partition
 management, job management, and scheduling modules.  The design also 
 includes a scalable, general-purpose communication infrastructure.
 SLURM requires no kernel modifications and is relatively self-contained. 
-There is a "master" or "control" machine, which orchestrates SLURM 
-activies. There are also compute servers on which applications 
-execute, which can number in the thousands.
+There is a "control" machine, which orchestrates SLURM activies. A "backup 
+controller" is also desirable to assume control functions in the event 
+of a failure in the control machine. There are also compute servers on 
+which applications execute, which can number in the thousands.
 
 <h2>Configuration</h2>
 There are three SLURM configuration files that you need to establish: 
@@ -31,14 +32,16 @@ various groups (or partitions) of nodes.
 The overall SLURM configuration is provided by the file "/etc/SLURM.conf".
 This file identifies names for administrator names, time limits, configuration 
 file names, key resource names, etc. This file or a copy of it must execute 
-on each computer under SLURM management. The following paramters may be specified:
+on every computer under SLURM management. The following paramters may be specified:
 <dl>
 <dt>Administrators
 <dd>A comma list of users permitted to execute SLURM administrative commands 
-(the default value is "root").
+(the default value is "root"). 
+
 <dt>ControlMachine
 <dd>The name of the machine where SLURM control functions are executed 
 (e.g. "lx01"). This value must be specified.
+
 <dt>BackupController
 <dd>The name of the machine where SLURM control functions are to be 
 executed in the event that ControlMachine fails (e.g. "lx02"). This node
@@ -47,44 +50,110 @@ as a controller only upon the failure of ControlMachine and will revert
 to a "standby" mode when the ControlMachine becomes available once again. 
 While not essential, it is highly recommended that you specify a backup 
 controller.
-<dt>ControllerTimeout
-<dd>The number of seconds the BackupController should allow the ControlMachine
-to respond before assuming responsibilities for control functions. 
+
 <dt>NodeSpecConf
 <dd>Fully qualified pathname of the file containing node configuration information 
 as described below (the default value is "/usr/local/SLURM/NodeSpecConf"). This 
 file must be accessible to the ControlMachine and BackupController.
+
 <dt>PartitionConf
 <dd>Fully qualified pathname of the file containing partition configuration 
 information as described below (the default value is  "/usr/local/SLURM/PartitionConf").
 This file must be accessible to the ControlMachine and BackupController.
+
 <dt>MasterDaemon
 <dd>The fully qualified pathname of the file containing the SLURM daemon
 to execute on all machines, execute InitProgram then execute ControlDaemon 
 and/or ServerDaemon (the default value is "/usr/local/SLURM/Slurmd.Master").
-This file must be accessible to all machines.
+This file must be accessible to all machines. <i>Do we want to use this model 
+or create different RC configuration file for the different machine types?</i>
+
 <dt>InitProgram
 <dd>This program must execute and return an exit code of zero before the 
 ControlDaemon or ServerDaemon enter into service. This would normally be 
 used to insure that the computer is fully ready for executing user jobs. 
 It may, for example, wait until every required file system has been mounted.
 By default there is no initialization program.
+
 <dt>ControlDaemon
 <dd>The fully qualified pathname of the file containing the SLURM daemon
 to execute on the ControlMachine (the default value is "/usr/local/SLURM/Slurmd.Control").
 This file must be accessible to the ControlMachine and BackupController.
+
 <dt>ServerDaemon
 <dd>The fully qualified pathname of the file containing the SLURM daemon
 to execute on every compute server node (the default value is "/usr/local/SLURM/Slurmd.Server").
 This file must be accessible to every SLURM compute server.
+
+dt>Prolog
+<dd>This program is executed on each node allocated to a job prior to its initiation. 
+By default no prolog is executed. 
+
+<dt>Epilog
+<dd>This program is executed on each node allocated to a job after its termination. 
+This can be used to remove temporary files created by the job or other clean-up.
+By default no epilog is executed. 
+
+<dt>HeartbeatInterval
+<dd>How frequently the ServerDaemon should report its state to the ControllerDaemon. 
+Also, how frequently the ControllerDaemon should report its state to the BackupController. 
+The default value is 60 and the units are seconds.
+
 <dt>ControllerTimeout
 <dd>How long to wait for the ControllerDaemon to respond before assuming it 
 has failed and starting the BackupController. The default value is 300 
 and the units are seconds.
+
 <dt>ServerTimeout
 <dd>How long to wait for the ServerDaemon to respond before assuming it 
 has failed and declaring the node DOWN and terminating any job running on 
 it. The default value is 300 and the units are seconds.
+
+<dt>PrimaryBackupInterval
+<dd>How log to wait between making primary SLURM state saves. The default 
+value is -1 (not taken) and the units are seconds.
+
+<dt>SecondaryBackupInterval
+<dd>How log to wait between making secondary SLURM state saves. The default 
+value is -1 (not taken) and the units are seconds.
+
+<dt>PrimaryNodeBackup
+<dd>The fully qualified pathname of the file where the primary SLURM node 
+state information is saved. There is no default value. The file should 
+be accessible to at least the ControlMachine and (ideally) also the BackupController.
+Ideally the primary and secondary backup files will be made to distinct file 
+systems and/or devices for greater fault tolerance. 
+This is a text file that may be viewed and/or modified as required.
+
+<dt>SecondaryNodeBackup
+<dd>The fully qualified pathname of the file where the secondary SLURM node 
+state information is saved. There is no default value. The file should 
+be accessible to at least the ControlMachine and (ideally) also the BackupController.
+This is a text file that may be viewed and/or modified as required.
+
+<dt>PrimaryPartitionBackup
+<dd>The fully qualified pathname of the file where the primary SLURM partition 
+state information is saved. There is no default value. The file should 
+be accessible to at least the ControlMachine and (ideally) also the BackupController.
+This is a text file that may be viewed and/or modified as required.
+
+<dt>SecondaryPartitionBackup
+<dd>The fully qualified pathname of the file where the secondary SLURM partition 
+state information is saved. There is no default value. The file should 
+be accessible to at least the ControlMachine and (ideally) also the BackupController.
+This is a text file that may be viewed and/or modified as required.
+
+<dt>PrimaryJobBackup
+<dd>The fully qualified pathname of the file where the primary SLURM job 
+state information is saved. There is no default value. The file should 
+be accessible to at least the ControlMachine and (ideally) also the BackupController.
+This is a text file that may be viewed and/or modified as required.
+
+<dt>SecondaryJobBackup
+<dd>The fully qualified pathname of the file where the secondary SLURM job 
+state information is saved. There is no default value. The file should 
+be accessible to at least the ControlMachine and (ideally) also the BackupController.
+This is a text file that may be viewed and/or modified as required.
 </dl>
 
 <p>
@@ -105,10 +174,18 @@ in a heterogeneous environment and users are able to specify resource
 requirements to achieve the desired scheduling characteristics. 
 Note that some of these values are not appropriate for you to 
 set and this will be described in detail below.
+This file must be accessible to both the ControlMachine and 
+BackupController.
 The node configuration file contains the following information: 
 <dl>
+
 <dt>Name
 <dd>Name of a node as returned by hostname (e.g. "lx12").
+
+<dt>IP
+<dd>The IP addess of the node to be used for communications 
+(e.g. "123.4.56.789").
+
 <dt>Partition
 <dd>List of partition numbers this node belongs to, partition numbers 
 range from 0 to 31 and are specified with comma separators (e.g. "1,3").
@@ -116,32 +193,46 @@ This can be altered by resetting MAX_PARTITION in the slurm.h file
 before building. In no case should this value exceed the number of 
 bits in an integer on the computer as a bit-mask is used to record 
 partition information. The default partition value is zero.
+
 <dt>OS
 <dd>Operating System name and level (output of the command
 "/bin/uname -s -r | /bin/sed 's/ /./g'", e.g. "Linux.2.4.7-10"). 
 The default value is "UNKNOWN"
+
 <dt>CPUs
 <dd>Number of processors on the node (e.g. "2"). The default 
 value is 1.
+
 <dt>Speed
 <dd>Relative speed of these processors. Units can be an arbitrary 
 floating point number, but MHz value is recommended (e.g. "863.8").
 The default value is 1.
+
 <dt>RealMemory
 <dd>Size of real memory on the node in MegaBytes (e.g. "2048").
 The default value is 1.
+
 <dt>VirtualMemory
 <dd>Size of virtual memory on the node in MegaBytes (e.g. "4096").
 The default value is 1.
+
 <dt>TmpDisk
 <dd>Total size of temporary disk storage on "/tmp" in MegaBytes 
 (e.g. "16384"). Note this does not indicate the amount of free 
 space available to the user on the node, only the total file 
-The default value is 1.
-system size. 
+system size. The system administration should insure this file 
+system is purged as needed so that user jobs have access to 
+most of this space. The default value is 1.
+
+<dt>FreeDisk
+<dd>The amount of unallocated space on "/tmp" in MegaBytes 
+(e.g. "16384"). <i>I can't imaging this being of much use, 
+especially if purging is performed in a reasonable fashion. Comments?</i>
+
 <dt>LastResponse
 <dd>Time of last contact from node, format is time_t as returned 
 by the "time" function. The default value is 0.
+
 <dt>State
 <dd>State of the node with respect to the initiation of user jobs. 
 Acceptable values are "UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", 
@@ -185,14 +276,50 @@ in the configuration file with multiple entries where "Name=DEFAULT".
 In order to support the concept of jobs requiring consecutive nodes, 
 nodes should be place in this file in consecutive order.
 The size of each line in the file is limited to 1024 characters.
-A <a href="#SampleNode">sample node configuration file</a> is included at the end of this document.
+A <a href="#SampleNode">sample node configuration file</a> is 
+included at the end of this document.
+<p>
+The job states have the following meanings:
+<dl>
+<dt>UNKNOWN
+<dd>Default initial node state upon startup of SLURM.
+An attempt will be made to contact the node and get current state information.
+
+<dt>IDLE
+<dd>The node is idle and available for use.
+
+<dt>BUSY
+<dd>The node has been allocated work (a user job) and is processing it. 
+SLURM is designed to allocate whole nodes to a job. Multiple parallel 
+jobs are not initiated on individual nodes. 
+
+<dt>DOWN
+<dd>The node is unavailable for use. It has been configured as not being 
+under SLURM control or failed to respond to system state inquiries or has 
+explicitly removed itself from service due to a failure. This state 
+typically indicates some problem requiring administrator intervention.
+
+<dt>DRAINING
+<dd>The node has been unavailble for new work by explicit administrator 
+intervention. It is processing some work at present and will enter state
+"DRAINED" when that work has been completed. This might be used to 
+prepare some nodes for maintenance work.
+
+<dt>DRAINED
+<dd>The node is idle, but not available for use. Since this state is 
+entered by explicit administrator request, additional administator 
+intervention is typically not required.
+</dl>
 <p>
 SLURM uses a hash table in order to locate table entries rapidly. 
 Each table entry can be directly accessed without any searching
-if the name contains a base-ten sequence number suffix. If you 
-use a different naming convention, it may be desirable to modify 
-the hashing functions Hash_Index and Rehash in the Mach_Stat_Mgr.c 
-module as appropriate. This is especially important in clusters having 
+if the name contains a sequence number suffix. SLURM can be built 
+with the HASH_MODE set to indicate the hashing mechanism. Possible 
+values are "DECIMAL" and "OCTAL" for names containing sequence numbers 
+or "OTHER" which processes mixed alpha-numeric without sequence numbers. 
+If you use a naming convention lacking a sequence number, it may be 
+desirable to review the hashing functions Hash_Index and Rehash in the 
+Mach_Stat_Mgr.c module. This is especially important in clusters having 
 large numbers of nodes. Non-numeric information in the name is 
 ignored (if desired, they could differ for each node). The sequence 
 numbers can start at zero, one, or any other desired number, but 
@@ -207,31 +334,40 @@ without this optimization.
 <h3>Partition Configuration</h3>
 The partition configuration permits you to establish different job 
 limits or access lists for various groups (or partitions) of nodes. 
-Nodes may be in more than one partition. The partiton configuration 
-file contains the following information: 
+Nodes may be in more than one partition. This configuration file 
+must be accessible to the SLURM controller and backup controller
+machines. The partiton configuration file contains the following 
+information: 
 <dl>
 <dt>Name
 <dd>Name by which the partition may be referenced (e.g. "Interactive"). 
 This name can be used by users when submitting their jobs.
+
 <dt>Number
 <dd>Unique number by which the partition can be referenced. This is 
 used in the node configuration file.
+
 <dt>JobType
 <dd>Job types which may execute in the partition. Possible values 
 are "BATCH", "INTERACTIVE", and "ALL". The default value is "ALL".
+
 <dt>MaxTime
 <dd>Maximum wall-time limit for any job in minutes. The default 
 value is "UNLIMITED", which is represented internally as -1.
+
 <dt>MaxCpus
 <dd>Maximum count of CPUs which may be allocated to any single job,
 The default value is "UNLIMITED", which is represented internally as -1.
+
 <dt>State
 <dd>State of partition or availability for use.  Possible values 
 are "UP" or "DOWN". The default value is "UP".
+
 <dt>AllowUsers
 <dd>Names of user who may use the partition, separated by commas. 
 The default value is "ALL". If AllowUsers is specified, then 
 the value of DenyUsers will be ignored.
+
 <dt>DenyUsers
 <dd>Names of user who may not use the partition, separated by commas.
 The  default value is "NONE".
@@ -266,23 +402,30 @@ The job configuration format specified below is used for the SLURM daemons
 to save state information. The format specified below is also used by the 
 slurm_admin administration tool to modify job state information: 
 <dl>
+
 <dt>Number
 <dd>Unique number by which the job can be referenced. This value 
 may not be changed by slurm_admin.
+
 <dt>Name
 <dd>Name by which the job may be referenced (e.g. "Simulation"). 
 This name can be specified by users when submitting their jobs.
+
 <dt>JobType
 <dd>Permitted job types values are "BATCH" and "INTERACTIVE". 
+
 <dt>MaxTime
 <dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
 value is represented internally as -1.
+
 <dt>Nodes
 <dd>Comma separated list of nodes which are allocated to the job. 
 This value may not be changed by slurm_admin.
+
 <dt>State
 <dd>State of the job.  Possible values are "PENDING", "STARTING", 
 "RUNNING", and "ENDING". 
+
 <dt>User
 <dd>Name of the user executing this job.
 </dl>
@@ -369,12 +512,15 @@ Entity must be "job", "node", or "partition".
 </dl>
 
 <h2>Miscellaneous</h2>
-It is advisable to start the ControlMachine before any other 
-of the cluster's nodes.
-There is no necessity for synchronized clocks on the nodes.
-The hierarchical communications provides excellent scalability.
-Fault-tolerance will be built through mechanisms to save 
-and restore the database using local and global file systems. 
+There is no necessity for synchronized clocks on the nodes. 
+Events occur either in real-time based upon message traffic 
+or based upon changes in the time on a node. However, synchronized 
+clocks will permit easier analysis of SLURM logs from multiple 
+nodes.
+<p>
+SLURM uses the syslog function to record events. It uses a 
+range of importance levels for these messages. Be certain
+that your system's syslog functionality is operational.
 
 <a name="SampleOver"><h2>Sample SLURM Configuration File</h2></a>
 <pre>
@@ -409,9 +555,9 @@ ServerTimeout=90
 #
 Name=DEFAULT OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 State=IDLE
 #
-# lx01-lx02 for login and control functions only, node state is DOWN for SLURM initiated jobs
-Name=lx01 State=DOWN
-Name=lx02 State=DOWN
+# lx01-lx02 for login and control functions only, node state is DRAINED for SLURM initiated jobs
+Name=lx01 State=DRAINED
+Name=lx02 State=DRAINED
 #
 # lx03-lx09 for partitions 1 (debug) and 3 (super)
 Name=DEFAULT Partition=1,3
@@ -494,7 +640,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
-<p>Last Modified January 23, 2002</p>
+<p>Last Modified January 25, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
