@@ -998,7 +998,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 		if ((update_node_msg -> reason) && 
 		    (update_node_msg -> reason[0])) {
 			xfree(node_ptr->reason);
-			xstrcat(node_ptr->reason, update_node_msg->reason);
+			node_ptr->reason = xstrdup(update_node_msg->reason);
 			info ("update_node: node %s reason set to: %s",
 				this_node_name, node_ptr->reason);
 		}

@@ -393,11 +393,18 @@ static int _parse_node_spec(char *in_line)
 			} else
 				strncpy(node_ptr->comm_name, 
 				        node_ptr->name, MAX_NAME_LEN);
-			xstrcat(node_ptr->reason, reason);
+			node_ptr->reason = xstrdup(reason);
 		} else {
 			error
-			    ("_parse_node_spec: reconfiguration for node %s ignored",
+			    ("_parse_node_spec: reconfiguration for node %s",
 			     this_node_name);
+			if ((state_val != NO_VAL) &&
+			    (state_val != NODE_STATE_UNKNOWN))
+				node_ptr->node_state = state_val;
+			if (reason) {
+				xfree(node_ptr->reason);
+				node_ptr->reason = xstrdup(reason);
+			}
 		}
 		free(this_node_name);
 	}
