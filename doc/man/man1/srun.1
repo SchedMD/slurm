@@ -458,6 +458,17 @@ total number of processes in the current job
 SLURM_NODELIST
 list of nodes that the slurm job is executing on.
 
+.SH "SIGNALS AND ESCAPE SEQUENCES"
+Signals sent to the \fBsrun\fR command are automatically forwarded to 
+the tasks it is controlling with a few exceptions. The escape sequence
+\fB<control-c>\fR will report the state of all tasks associated with 
+the \fBsrun\fR command. If \fB<control-c>\fR is entered twice within 
+one second, then the associated SIGINT signal will be sent to all tasks.
+
+The escape sequence \fB<control-z>\fR is presently ignored. Our intent 
+is for this put the \fBsrun\fR command into a mode where various special 
+actions may be invoked.
+
 .SH "MPI SUPPORT"
 On computers with a Quadrics interconnect, \fBsrun\fR directly supports 
 the Quadrics version of MPI without modification. Applications build 
@@ -479,10 +490,35 @@ executing the command \fBsrun /bin/hostname\fR and writing its standard
 output to the desired file. Execute \fBmpirun \-\-help\fR for more options.
 
 .SH "EXAMPLES"
-.eo
+This simple example demonstrates the execution of the command \fBhostname\fR
+in eight tasks. At least eight processors will be allocated to the job 
+(the same as the task count) on however many nodes are required to satify 
+the request. The output of each task will be preceeded with its task number.
+.br
+> srun \-n8 \-l hostname
+
+This example demonstrates how one might submit a script for later 
+execution (batch mode). The script will be initiated when resources 
+are available and no higher priority job is pending for the same 
+partition. The script will execute on 4 nodes with one task per node 
+implicit. Note that the script executes on one node. For the script 
+to utilize all allocated nodes, it must execute the \fBsrun\fR command 
+or an MPI program.
+.br
+> cat my_script
+.br
+#!/bin/csh
+.br
+date
+.br
+srun \-l hostname
+.br
+> srun \-N4 \-b my_script
+
+
 This example demonstrates how one executes a simple MPICH job
-in the event that it has not been configurated to automatically 
-set the required parameters (again, this is the worst cases scenario). 
+in the event that MPICH has not been configurated to automatically 
+set the required parameters (this is the worst cases scenario). 
 We use \fBsrun\fR to build a list of machines (nodes) to be used by 
 \fBmpirun\fR in its required format. A sample command line and 
 the script to be executed follow.
@@ -492,19 +528,16 @@ the script to be executed follow.
 .br
 srun /bin/hostname >nodes
 .br
-mpirun -np $SLURM_NPROCS -machinefile nodes /bin/hostname
+mpirun \-np $SLURM_NPROCS \-machinefile nodes /bin/hostname
 .br
 rm node_list
 .br
-> srun -N2 -n4 my_script
-.ec
+> srun \-N2 \-n4 my_script
 
-.eo
 If MPICH is configured to directly use SLURM, the execute line is 
 the much simpler:
 .br
-> mpirun -np 4 /bin/hostname
-.ec
+> mpirun \-np 4 /bin/hostname
 
 .SH "BUGS"
 If the number of processors per node allocated to a job is not evenly 
