@@ -1739,13 +1739,14 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	/* job_ptr->end_time            *leave as NULL pointer for now */
 	/* detail_ptr->total_procs      *leave as NULL pointer for now */
 
-	/* job credential */
+	/* initialize job credential */
 	detail_ptr->credential.job_id = job_ptr->job_id;
 	detail_ptr->credential.user_id = job_ptr->user_id;
 	detail_ptr->credential.node_list = xstrdup(job_ptr->nodes);
 	detail_ptr->credential.expiration_time = job_ptr->end_time;
 	if (sign_credential(&sign_ctx, &detail_ptr->credential)) {
-
+		error("Error building credential for job_id %u: %m",
+		      job_ptr->job_id);
 	}
 
 	*job_rec_ptr = job_ptr;
