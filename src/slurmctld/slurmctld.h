@@ -382,7 +382,7 @@ extern struct job_record * create_job_record (int *error_code);
 
 /* 
  * create_node_record - create a node record and set its values to defaults
- * IN config_point - pointer to node's configuration information
+ * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
  * global: default_node_record - default node values
@@ -392,7 +392,7 @@ extern struct job_record * create_job_record (int *error_code);
  *	the global node table is no longer required
  */
 extern struct node_record *create_node_record (struct config_record
-					       *config_point,
+					       *config_ptr,
 					       char *node_name);
 
 /* 

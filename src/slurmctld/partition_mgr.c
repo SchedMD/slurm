@@ -126,7 +126,10 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 			return ESLURM_INVALID_NODE_NAME;
 		}
 		part_ptr->total_nodes++;
-		part_ptr->total_cpus += node_ptr->cpus;
+		if (slurmctld_conf.fast_schedule)
+			part_ptr->total_cpus += node_ptr->config_ptr->cpus;
+		else
+			part_ptr->total_cpus += node_ptr->cpus;
 		node_ptr->partition_ptr = part_ptr;
 		if (old_bitmap)
 			bit_clear(old_bitmap,
@@ -227,7 +230,7 @@ static int _delete_part_record(char *name)
 /* dump_all_part_state - save the state of all partitions to file */
 int dump_all_part_state(void)
 {
-	ListIterator part_record_iterator;
+	ListIterator part_iterator;
 	struct part_record *part_ptr;
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
@@ -243,13 +246,12 @@ int dump_all_part_state(void)
 
 	/* write partition records to buffer */
 	lock_slurmctld(part_read_lock);
-	part_record_iterator = list_iterator_create(part_list);
-	while ((part_ptr =
-		(struct part_record *) list_next(part_record_iterator))) {
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 		_dump_part_state(part_ptr, buffer);
 	}
-	list_iterator_destroy(part_record_iterator);
+	list_iterator_destroy(part_iterator);
 	unlock_slurmctld(part_read_lock);
 
 	/* write the buffer to file */
@@ -554,7 +556,7 @@ int list_find_part(void *part_entry, void *key)
 void
 pack_all_part(char **buffer_ptr, int *buffer_size)
 {
-	ListIterator part_record_iterator;
+	ListIterator part_iterator;
 	struct part_record *part_ptr;
 	int parts_packed, tmp_offset;
 	Buf buffer;
@@ -571,16 +573,15 @@ pack_all_part(char **buffer_ptr, int *buffer_size)
 	pack_time(now, buffer);
 
 	/* write individual partition records */
-	part_record_iterator = list_iterator_create(part_list);
-	while ((part_ptr =
-		(struct part_record *) list_next(part_record_iterator))) {
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
 
 		pack_part(part_ptr, buffer);
 		parts_packed++;
 	}
 
-	list_iterator_destroy(part_record_iterator);
+	list_iterator_destroy(part_iterator);
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
@@ -777,7 +778,7 @@ void load_part_uid_allow_list(int force)
 {
 	static time_t last_update_time;
 	time_t temp_time;
-	ListIterator part_record_iterator;
+	ListIterator part_iterator;
 	struct part_record *part_ptr;
 
 	temp_time = _get_group_tlm();
@@ -787,14 +788,13 @@ void load_part_uid_allow_list(int force)
 	last_update_time = temp_time;
 	last_part_update = time(NULL);
 
-	part_record_iterator = list_iterator_create(part_list);
-	while ((part_ptr =
-		(struct part_record *) list_next(part_record_iterator))) {
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xfree(part_ptr->allow_uids);
 		part_ptr->allow_uids =
 			_get_groups_members(part_ptr->allow_groups);
 	}
-	list_iterator_destroy(part_record_iterator);
+	list_iterator_destroy(part_iterator);
 }
 
 

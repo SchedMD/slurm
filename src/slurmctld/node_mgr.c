@@ -232,23 +232,23 @@ struct config_record * create_config_record (void)
 
 /* 
  * create_node_record - create a node record and set its values to defaults
- * IN config_point - pointer to node's configuration information
+ * IN config_ptr - pointer to node's configuration information
  * IN node_name - name of the node
  * RET pointer to the record or NULL if error
  * global: default_node_record - default node values
  * NOTE: the record's values are initialized to those of default_node_record, 
- *	node_name and config_point's cpus, real_memory, and tmp_disk values
+ *	node_name and config_ptr's cpus, real_memory, and tmp_disk values
  * NOTE: allocates memory at node_record_table_ptr that must be xfreed when  
  *	the global node table is no longer required
  */
 struct node_record * 
-create_node_record (struct config_record *config_point, char *node_name) 
+create_node_record (struct config_record *config_ptr, char *node_name) 
 {
-	struct node_record *node_record_point;
+	struct node_record *node_ptr;
 	int old_buffer_size, new_buffer_size;
 
 	last_node_update = time (NULL);
-	xassert(config_point);
+	xassert(config_ptr);
 	xassert(node_name); 
 	xassert(strlen (node_name) < MAX_NAME_LEN);
 
@@ -266,19 +266,19 @@ create_node_record (struct config_record *config_point, char *node_name)
 	else if (old_buffer_size != new_buffer_size)
 		xrealloc (node_record_table_ptr, new_buffer_size);
 
-	node_record_point = node_record_table_ptr + (node_record_count++);
-	strcpy (node_record_point->name, node_name);
-	node_record_point->node_state = default_node_record.node_state;
-	node_record_point->last_response = default_node_record.last_response;
-	node_record_point->config_ptr = config_point;
-	node_record_point->partition_ptr = NULL;
+	node_ptr = node_record_table_ptr + (node_record_count++);
+	strcpy (node_ptr->name, node_name);
+	node_ptr->node_state = default_node_record.node_state;
+	node_ptr->last_response = default_node_record.last_response;
+	node_ptr->config_ptr = config_ptr;
+	node_ptr->partition_ptr = NULL;
 	/* these values will be overwritten when the node actually registers */
-	node_record_point->cpus = config_point->cpus;
-	node_record_point->real_memory = config_point->real_memory;
-	node_record_point->tmp_disk = config_point->tmp_disk;
-	xassert (node_record_point->magic = NODE_MAGIC)  /* set value */;
+	node_ptr->cpus = config_ptr->cpus;
+	node_ptr->real_memory = config_ptr->real_memory;
+	node_ptr->tmp_disk = config_ptr->tmp_disk;
+	xassert (node_ptr->magic = NODE_MAGIC)  /* set value */;
 	last_bitmap_update = time (NULL);
-	return node_record_point;
+	return node_ptr;
 }
 
 
@@ -1110,11 +1110,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		error_code  = EINVAL;
 		reason_down = "Low CPUs";
 	}
-	node_ptr->cpus = cpus;
-	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr) &&
+	if ((node_ptr->cpus != cpus) && (node_ptr->partition_ptr) &&
 	    (slurmctld_conf.fast_schedule == 0))
-		node_ptr->partition_ptr->total_cpus += 
-						(cpus - config_ptr->cpus);
+		node_ptr->partition_ptr->total_cpus += (cpus - node_ptr->cpus);
+	node_ptr->cpus = cpus;
 
 	if (real_memory < config_ptr->real_memory) {
 		error ("Node %s has low real_memory size %u", 
@@ -1139,7 +1138,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	if (error_code) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
-		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
+		    (node_ptr->node_state != NODE_STATE_DRAINED)  &&
+		    (node_ptr->node_state != NODE_STATE_DOWN)) {
 			last_node_update = time (NULL);
 			error ("Setting node %s state to DOWN", node_name);
 			set_node_down(node_name, reason_down);
@@ -1251,7 +1251,9 @@ void node_did_resp (char *name)
 		node_ptr->node_state = NODE_STATE_IDLE;
 	}
 	if ((node_ptr->node_state == NODE_STATE_DOWN) &&
-	    (slurmctld_conf.ret2service == 1)) {
+	    (slurmctld_conf.ret2service == 1) &&
+	    (node_ptr->reason != NULL) && 
+	    (strcmp(node_ptr->reason, "Not responding") == 0)) {
 		last_node_update = time (NULL);
 		node_ptr->node_state = NODE_STATE_IDLE;
 		info("node_did_resp: node %s returned to service", name);

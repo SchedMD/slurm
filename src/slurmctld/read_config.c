@@ -220,7 +220,11 @@ static int _build_bitmaps(void)
 				bit_set(part_ptr->node_bitmap, j);
 				bit_set(all_part_node_bitmap, j);
 				part_ptr->total_nodes++;
-				part_ptr->total_cpus += node_ptr->cpus;
+				if (slurmctld_conf.fast_schedule)
+					part_ptr->total_cpus += 
+						node_ptr->config_ptr->cpus;
+				else
+					part_ptr->total_cpus += node_ptr->cpus;
 				node_ptr->partition_ptr = part_ptr;
 			}
 			free(this_node_name);
@@ -979,14 +983,13 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
  * at present, this function insure it */
 static void _validate_node_proc_count(void)
 {
-	ListIterator part_record_iterator;
+	ListIterator part_iterator;
 	struct part_record *part_ptr;
 	struct node_record *node_ptr;
 	int first_bit, last_bit, i, node_size, part_size;
 
-	part_record_iterator = list_iterator_create(part_list);
-	while ((part_ptr =
-		(struct part_record *) list_next(part_record_iterator))) {
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		first_bit = bit_ffs(part_ptr->node_bitmap);
 		last_bit = bit_fls(part_ptr->node_bitmap);
 		part_size = -1;
@@ -1012,7 +1015,7 @@ static void _validate_node_proc_count(void)
 					"processor count", part_ptr->name);
 		}
 	}
-	list_iterator_destroy(part_record_iterator);
+	list_iterator_destroy(part_iterator);
 }
 #endif
 
