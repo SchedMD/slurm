@@ -12,6 +12,7 @@ EXTRA_DIST = \
     x_ac_debug.m4 \
     x_ac_elan.m4 \
     x_ac_gpl_licensed.m4 \
+    x_ac_ptrace.m4 \
     x_ac_readline.m4 \
     x_ac_setproctitle.m4 \
     x_ac_slurm_ssl.m4 
