@@ -46,26 +46,11 @@ static int _get_node_cnt(job_info_t * job);
 int _nodes_in_list(char *node_list);
 static int _print_str(char *str, int width, bool right, bool cut_output);
 
+static int _adjust_completing (job_info_t *j, hostlist_t *compptr);
+
 /*****************************************************************************
  * Global Print Functions
  *****************************************************************************/
-int print_jobs(List jobs, List format)
-{
-	if (!params.no_header)
-		print_job_from_format(NULL, format);
-
-	if (list_count(jobs) > 0) {
-		job_info_t *job = NULL;
-		ListIterator i = list_iterator_create(jobs);
-
-		while ((job = (job_info_t *) list_next(i)) != NULL) {
-			print_job_from_format(job, format);
-		}
-		list_iterator_destroy(i);
-	}
-
-	return SLURM_SUCCESS;
-}
 
 int print_steps(List steps, List format)
 {
@@ -86,11 +71,10 @@ int print_steps(List steps, List format)
 int print_jobs_array(job_info_t * jobs, int size, List format)
 {
 	int i = 0;
-	List job_list;
-	ListIterator job_iterator;
-	job_info_t *job_ptr;
+	List l;
+	hostlist_t comp = NULL;
 
-	job_list = list_create(NULL);
+	l = list_create(NULL);
 	if (!params.no_header)
 		print_job_from_format(NULL, format);
 
@@ -98,18 +82,22 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 	for (; i < size; i++) {
 		if (_filter_job(&jobs[i]))
 			continue;
-		list_append(job_list, (void *) &jobs[i]);
+		list_append(l, (void *) &jobs[i]);
 	}
 
-	sort_job_list(job_list);
+
+	/* 
+	 * Adjust nodelists for any completing jobs
+	 */
+	sort_jobs_by_start_time (l);
+	list_for_each (l, (ListForF) _adjust_completing, (void *) &comp);
+	if (comp) hostlist_destroy (comp);
+
+	sort_job_list (l);
 
 	/* Print the jobs of interest */
-	job_iterator = list_iterator_create(job_list);
-	while ((job_ptr = list_next(job_iterator))) {
-		print_job_from_format(job_ptr, format);
-	}
-	list_iterator_destroy(job_iterator);
-	list_destroy(job_list);
+	list_for_each (l, (ListForF) print_job_from_format, (void *) format);
+	list_destroy (l);
 
 	return SLURM_SUCCESS;
 }
@@ -526,6 +514,7 @@ int _print_job_nodes(job_info_t * job, int width, bool right, char* suffix)
 		_print_str("NODELIST", width, right, false);
 	else
 		_print_nodes(job->nodes, width, right, false);
+
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -578,9 +567,10 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 int _get_node_cnt(job_info_t * job)
 {
 	int node_cnt = 0, round;
+	bool completing = job->job_state & JOB_COMPLETING;
 	uint16_t base_job_state = job->job_state & (~JOB_COMPLETING);
 
-	if (base_job_state == JOB_PENDING) {
+	if (base_job_state == JOB_PENDING || completing) {
 		node_cnt = _nodes_in_list(job->req_nodes);
 		node_cnt = MAX(node_cnt, job->num_nodes);
 		round  = job->num_procs + params.max_procs - 1;
@@ -1050,3 +1040,68 @@ static int _filter_step(job_step_info_t * step)
 
 	return 0;
 }
+
+static hostlist_t _completing_nodelist (void)
+{
+	hostlist_t hl;
+	node_info_msg_t *ni;
+	int i;
+	
+	if (slurm_load_node (0, &ni) < 0) {
+		error ("Unable to load node information: %m");
+		return (NULL);
+	}
+
+	if (!(hl = hostlist_create (NULL)))
+		return (NULL);
+
+	for (i = 0; i < ni->record_count; i++) {
+		node_info_t *n = ni->node_array + i;
+		uint16_t state = n->node_state ^ NODE_STATE_NO_RESPOND;
+		if (state == NODE_STATE_COMPLETING) 
+			hostlist_push_host (hl, n->name);
+	}
+
+	slurm_free_node_info_msg (ni);
+
+	return (hl);
+}
+
+static int _adjust_completing (job_info_t *j, hostlist_t *compp)
+{
+	hostlist_t hl = NULL; 
+	hostlist_iterator_t i = NULL;
+	char buf[8192];
+	char *host = NULL;
+
+	if (!(j->job_state & JOB_COMPLETING))
+		return (0);
+
+	if (*compp == NULL) 
+		*compp = _completing_nodelist ();
+
+	hl = hostlist_create (j->nodes);
+	i = hostlist_iterator_create (hl);
+
+	j->num_nodes = hostlist_count (hl);
+
+	while ((host = hostlist_next (i))) {
+		/* 
+		 * Delete completing nodes as they are encountered 
+		 * (a completing node is only assigned to one completing job)
+		 */
+		if (hostlist_delete_host (*compp, host) == 0) 
+			hostlist_remove (i);
+		free (host);
+	}
+	hostlist_iterator_destroy (i);
+
+
+	hostlist_ranged_string (hl, 8192, buf);
+	xfree (j->nodes);
+	j->nodes = xstrdup (buf); 
+
+	return (0);
+}
+
+

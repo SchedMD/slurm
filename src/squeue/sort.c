@@ -133,6 +133,13 @@ void sort_job_list(List job_list)
 	}
 }
 
+void sort_jobs_by_start_time (List jobs)
+{
+	reverse_order = true;
+	list_sort (jobs, _sort_job_by_time_start);
+	return;
+}
+
 void sort_step_list(List step_list)
 {
 	int i;
