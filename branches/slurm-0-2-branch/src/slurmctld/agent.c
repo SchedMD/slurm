@@ -364,7 +364,7 @@ static void *_wdog(void *args)
 					       (unsigned long) thread_ptr[i].thread);
 					if (pthread_kill(thread_ptr[i].thread,
 						     SIGALRM) == ESRCH)
-						thread_ptr[i].state = DSH_FAILED;
+						thread_ptr[i].state = DSH_NO_RESP;
 				}
 				break;
 			case DSH_NEW:
@@ -522,7 +522,7 @@ static void *_thread_per_node_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
+	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
 			_comm_err(thread_ptr->node_name);
@@ -613,14 +613,13 @@ static void *_thread_per_node_rpc(void *args)
 }
 
 /*
- * SIGALRM handler.  We are really interested in interrupting hung communictions 
+ * SIGALRM handler.  We are really interested in interrupting hung communictions
  * and causing them to return EINTR. Multiple interupts might be required.
  */
 static void _alarm_handler(int dummy)
 {
 	xsignal(SIGALRM, _alarm_handler);
 }
-
 
 /*
  * _queue_agent_retry - Queue any failed RPCs for later replay

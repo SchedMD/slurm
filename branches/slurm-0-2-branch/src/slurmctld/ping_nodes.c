@@ -107,8 +107,9 @@ void ping_end (void)
 void ping_nodes (void)
 {
 	static int offset = 0;	/* mutex via node table write lock on entry */
-	int i, pos, age, retries = 0;
-	time_t now;
+	int i, pos, retries = 0;
+	time_t now, still_live_time, node_dead_time;
+	static time_t last_ping_time = (time_t) 0;
 	uint16_t base_state, no_resp_flag;
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
@@ -130,7 +131,24 @@ void ping_nodes (void)
 	reg_agent_args = xmalloc (sizeof (agent_arg_t));
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
+
+	/*
+	 * If there are a large number of down nodes, the node ping
+	 * can take a long time to complete: 
+	 *  ping_time = down_nodes * agent_timeout / agent_parallelism
+	 *  ping_time = down_nodes * 10_seconds / 10
+	 *  ping_time = down_nodes (seconds)
+	 * Because of this, we extend the SlurmdTimeout by the 
+	 * time needed to complete a ping of all nodes.
+	 */
 	now = time (NULL);
+	if ( (slurmctld_conf.slurmd_timeout == 0) || 
+	     (last_ping_time == (time_t) 0) )
+		node_dead_time = (time_t) 0;
+	else
+		node_dead_time = last_ping_time - slurmctld_conf.slurmd_timeout;
+	still_live_time = now - slurmctld_conf.heartbeat_interval;
+	last_ping_time  = now;
 
 	offset += MAX_REG_THREADS;
 	if ((offset > node_record_count) && 
@@ -140,16 +158,15 @@ void ping_nodes (void)
 	for (i = 0; i < node_record_count; i++) {
 		struct node_record *node_ptr = &node_record_table_ptr[i];
 
-		age = difftime (now, node_ptr->last_response);
-		if (age < slurmctld_conf.heartbeat_interval)
+		if (node_ptr->last_response >= still_live_time)
 			continue;
 
 		base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 		no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND;
 		if ((node_ptr->last_response != (time_t)0) &&
-		    (slurmctld_conf.slurmd_timeout != 0) &&
-		    (age >= slurmctld_conf.slurmd_timeout) &&
+		    (node_ptr->last_response <= node_dead_time) &&
 		    ((base_state != NODE_STATE_DOWN) &&
+		     (base_state != NODE_STATE_COMPLETING) &&
 		     (base_state != NODE_STATE_DRAINED))) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_ptr->name);
