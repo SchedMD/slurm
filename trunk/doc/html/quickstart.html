@@ -58,6 +58,7 @@ Figure 2: SLURM entities
 
 Man pages exist for all SLURM daemons, commands, and API functions.
 The command option "--help" also provides a brief summary of options.
+Note that the command options are all case insensitive.
 <p>
 <b>srun</b> is used to submit a job for execution, allocate resources, 
 attach to an existing allocation, or initiate job steps. 
@@ -268,6 +269,7 @@ PartitionName=pbatch Nodes=mcr[192-1151]
 scontrol can be used to print all system information and 
 modify most of it. Only a few examples are shown below.
 Please see the scontrol man page for full details.
+The commands and options are all case insensitive.
 <p>
 Print detailed state of all jobs in the system.
 <pre>
@@ -305,12 +307,19 @@ scontrol: update JobId=477 Priority=0
 </pre>
 <p>
 Print the state of node <i>adev13</i> and drain it.
+Return it to service later.
 <pre>
 adev0: scontrol
 scontrol: show node adev13
 NodeName=adev13 State=ALLOCATED CPUs=2 RealMemory=3448 TmpDisk=32000
    Weight=16 Partition=debug Features=(null) 
 scontrol: update NodeName=adev13 State=DRAINING
+scontrol: show node adev13
+NodeName=adev13 State=DRAINING CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null) 
+scontrol: quit
+<i>Later</i>
+adev0: scontrol update NodeName=adev13 State=IDLE
 </pre>
 <p>
 Reconfigure all slurm daemons on all nodes. 
