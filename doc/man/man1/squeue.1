@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "March 2003" "squeue 0.1" "Slurm components"
+.TH SQUEUE "1" "May 2003" "squeue 0.1" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -33,14 +33,14 @@ subject to any constraints specified.
 .TP
 \fB\-o\fR, \fB\-\-format\fR
 Specify the information to be displayed.  
-The default format for jobs is "%.7i%9P%8j%8u%2t%.7l%.4p%#N", where "#" 
+The default format for jobs is "%.7i %9P %8j %8u %2t %.8l %.4p %#N", where "#" 
 represents a number limiting output to the window size.
 If the \fB\-\-long\fR option is specified, the default job format is 
-"%.7i%9P%8j%8u%8T%.7l%.10p%11S%11e%N".
-The default format for job steps is "%.10i%9P%8u%11S%#N", where "#" 
+"%.7i %9P %8j %8u %8T %.8l %.10p %11S %11e %N".
+The default format for job steps is "%.10i %9P %8u %11S %#N", where "#" 
 represents a number limiting output to the window size.
 If the \fB\-\-long\fR option is specified, the default job step format 
-is "%.10i%9P%8u%11S%N".
+is "%.10i %9P %8u %11S %N".
 
 The field specifications available include: 
 .br
@@ -63,7 +63,8 @@ limit)
 .br
 \fB%j\fR Job name
 .br
-\fB%l\fR Time limit of the job (in minutes)
+\fB%l\fR Time limit of the job (in minutes). The value may be "NOT_SET" 
+if not yet established or "UNLIMITED" for no limit.
 .br
 \fB%m\fR Minimum size of memory (in MB) requested by the job
 .br
@@ -129,12 +130,14 @@ Report details of squeues actions.
 .SH "EXAMPLES"
 .eo
 Print the jobs scheduled in the debug partition and in the 
-completed state in the format with six right justified digits for 
+COMPLETED state in the format with six right justified digits for 
 the job id followed by the priority with an arbitrary fields size:
 .br
-# squeue -p debug -t C -o "%.6i%p"
+# squeue -p debug -t COMPLETED -o "%.6i %p"
 .br
- JobId Prio 
+ JOBID PRIORITY
+.br
+----------------
 .br
  65543 99993 
 .br
@@ -148,7 +151,9 @@ Print the job steps in the debug partition sorted by user:
 .br
 # squeue -s -p debug -S u
 .br
- StepId     Partition   User      StartTime     Nodes
+ STEPID     PARTITION   USER      START_TIME    NODES
+.br
+-----------------------------------------------------------
 .br
  65552.1    debug       alice     10/14-11:02   dev[1-4]
 .br
