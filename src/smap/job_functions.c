@@ -35,7 +35,7 @@ extern void get_job(void)
 {
 	int error_code = -1, i, j, recs, count = 0;
 
-	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr;
+	static job_info_msg_t *job_info_ptr = NULL, *new_job_ptr = NULL;
 	job_info_t job;
 
 	if (job_info_ptr) {
@@ -92,11 +92,12 @@ extern void get_job(void)
 				 COLOR_PAIR(pa_system_ptr->
 					    fill_in_value[count].color));
 			count++;
-		} else {
-			job.num_nodes = job.req_nodes;
+		} else if((job.job_state == JOB_PENDING)) {
+
+			//job.num_nodes = job.req_nodes;
 			job.nodes = "(Resources)";
-			    (int) pa_system_ptr->fill_in_value[count].
-			    letter;
+			job.num_procs = (int) pa_system_ptr->fill_in_value[count].
+				letter;
 			wattron(pa_system_ptr->text_win,
 				COLOR_PAIR(pa_system_ptr->
 					   fill_in_value[count].color));
@@ -105,6 +106,7 @@ extern void get_job(void)
 				 COLOR_PAIR(pa_system_ptr->
 					    fill_in_value[count].color));
 			count++;	
+			
 		}
 		
 	}
