@@ -66,6 +66,7 @@ int server_thread_count = 0;
 pid_t slurmctld_pid;
 pthread_t thread_id_bg = (pthread_t)0;
 pthread_t thread_id_main = (pthread_t)0;
+pthread_t thread_id_sig = (pthread_t)0;
 pthread_t thread_id_rpc = (pthread_t)0;
 extern slurm_ssl_key_ctx_t sign_ctx ;
 int daemonize = DEFAULT_DAEMONIZE;
@@ -79,8 +80,8 @@ void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
 inline int report_locks_set ( void );
 inline static void save_all_state ( void );
-static void sigabort_handler (int signum);
 void *slurmctld_background ( void * no_data );
+void *slurmctld_signal_hand ( void * no_data );
 static void slurmctld_cleanup (void *context);
 void *slurmctld_rpc_mgr( void * no_data );
 int slurm_shutdown ( void );
@@ -115,12 +116,10 @@ typedef struct connection_arg
 int 
 main (int argc, char *argv[]) 
 {
-	int sig ;
 	int error_code;
 	char node_name[MAX_NAME_LEN];
-	pthread_attr_t thread_attr_bg, thread_attr_rpc;
+	pthread_attr_t thread_attr_bg, thread_attr_sig, thread_attr_rpc;
 	sigset_t set;
-	struct sigaction action, old_action;
 
 	/*
 	 * Establish initial configuration
@@ -135,14 +134,14 @@ main (int argc, char *argv[])
 	if (daemonize) {
 		error_code = daemon (0, 0);
 		if (error_code)
-			error ("daemon errno %d", errno);
+			error ("daemon error %d", error_code);
 	}
 	init_locks ( );
 
 	if ( ( error_code = read_slurm_conf (recover)) ) 
 		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
-		fatal ("getnodename errno %d", error_code);
+		fatal ("getnodename error %d", error_code);
 
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
 	     strcmp (node_name, slurmctld_conf.backup_controller) &&
@@ -154,87 +153,96 @@ main (int argc, char *argv[])
 
 	/* init ssl job credential stuff */
         slurm_ssl_init ( ) ;
-	slurm_init_signer ( & sign_ctx , slurmctld_conf . job_credential_private_key ) ;
+	slurm_init_signer ( &sign_ctx, slurmctld_conf.job_credential_private_key ) ;
 		
-	/* block all signals for now */
-	if (sigfillset (&set))
-		error ("sigfillset errno %d", errno);
-	if (pthread_sigmask (SIG_BLOCK, &set, NULL))
+	/* block most signals in all threads */
+	sigfillset (&set);
+	sigdelset (&set, SIGQUIT);
+	sigdelset (&set, SIGILL);
+	sigdelset (&set, SIGABRT);
+	sigdelset (&set, SIGSEGV);
+	sigdelset (&set, SIGFPE);
+	sigdelset (&set, SIGPIPE);
+	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
+		fatal("sigprocmask: %m");
 
-	/* create special handler for SIGABRT (failed asserts) */
-	if (sigemptyset (&set))
-		error ("sigemptyset errno %d", errno);
-	action.sa_handler = &sigabort_handler;
-	action.sa_mask = set;
-	action.sa_flags = 0;
-	sigaction (SIGABRT, &action, NULL);
-		error ("pthread_sigmask errno %d", errno);
+	/*
+	 * create attached thread signal handling
+	 */
+	if (pthread_attr_init (&thread_attr_sig))
+		fatal ("thread_attr_sig %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM);
+#endif
+	if (pthread_create ( &thread_id_sig, &thread_attr_sig, slurmctld_signal_hand, NULL))
+		fatal ("pthread_create %m");
 
-	/* create attached thread for background activities */
+	/*
+	 * create attached thread for background activities
+	 */
 	if (pthread_attr_init (&thread_attr_bg))
-		fatal ("pthread_attr_init errno %d", errno);
+		fatal ("pthread_attr_init %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
 	pthread_attr_setscope (&thread_attr_bg, PTHREAD_SCOPE_SYSTEM);
 #endif
 	if (pthread_create ( &thread_id_bg, &thread_attr_bg, slurmctld_background, NULL))
-		fatal ("pthread_create errno %d", errno);
+		fatal ("pthread_create %m");
 
-	/* create attached thread to process RPCs */
+	/*
+	 * create attached thread to process RPCs
+	 */
 	pthread_mutex_lock(&thread_count_lock);
 	server_thread_count++;
 	pthread_mutex_unlock(&thread_count_lock);
 	if (pthread_attr_init (&thread_attr_rpc))
-		fatal ("pthread_attr_init errno %d", errno);
+		fatal ("pthread_attr_init error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
 	pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM);
 #endif
 	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
-		fatal ("pthread_create errno %d", errno);
+		fatal ("pthread_create error %m");
 
-	/* just watch for select signals */
-	if (sigemptyset (&set))
-		error ("sigemptyset errno %d", errno);
-	if (sigaddset (&set, SIGHUP))
-		error ("sigaddset errno %d on SIGHUP", errno);
-	if (sigaddset (&set, SIGINT))
-		error ("sigaddset errno %d on SIGINT", errno);
-	if (sigaddset (&set, SIGTERM))
-		error ("sigaddset errno %d on SIGTERM", errno);
+	/* main terminates here - all work goes through above threads including 
+	 * signal processing given the way pthreads work in linux, other 
+	 * systems might find it advisable to handle signals in here instead */
+	pthread_exit ((void *)0);
+}
+
+/* slurmctld_signal_hand - Process daemon-wide signals */
+void *
+slurmctld_signal_hand ( void * no_data ) 
+{
+	int sig ;
+	int error_code;
+	sigset_t set;
+
 	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	debug3 ("main pid = %u", getpid ());
+	info ("Send signals to slurmctld_signal_hand, pid = %u", getpid ());
+
+	/* watch for any signals */
+	sigfillset (&set);
 
 	while (1) {
-		if ( (error_code = sigwait (&set, &sig)) )
-			error ("sigwait errno %d", error_code);
-
+		sigwait (&set, &sig);
 		switch (sig) {
 			case SIGINT:	/* kill -2  or <CTRL-C> */
 			case SIGTERM:	/* kill -15 */
-				action.sa_handler = SIG_IGN;
-				sigaction (SIGABRT, &action, &old_action);
-				if (old_action.sa_handler == SIG_IGN) {
-					info ("Cleaning up job threads on abort\n");
-					slurmctld_cleanup (NULL);
-					/* pthread_exit (NULL);	NOTE: This can leave threads */
-					exit (1);	/* Abnormal termination */
-				}
-				else {
-					info ("Terminate signal (SIGINT or SIGTERM) received\n");
-					shutdown_time = time (NULL);
-					/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
-					slurm_shutdown ();
-					/* ssl clean up */
-					slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
-					slurm_ssl_destroy ( ) ;
+				info ("Terminate signal (SIGINT or SIGTERM) received\n");
+				shutdown_time = time (NULL);
+				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+				slurm_shutdown ();
+				/* ssl clean up */
+				slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
+				slurm_ssl_destroy ( ) ;
 
-					pthread_join (thread_id_rpc, NULL);
-					/* thread_id_bg waits for all RPCs to complete */
-					pthread_join (thread_id_bg, NULL);
-					exit (0);	/* Normal termination */
-				}
+				pthread_join (thread_id_rpc, NULL);
+				/* thread_id_bg waits for all RPCs to complete */
+				pthread_join (thread_id_bg, NULL);
+				pthread_exit ((void *)0);	/* Normal termination */
 				break;
 			case SIGHUP:	/* kill -1 */
 				info ("Reconfigure signal (SIGHUP) received\n");
@@ -242,12 +250,18 @@ main (int argc, char *argv[])
 				if (error_code)
 					error ("read_slurm_conf error %d", error_code);
 				break;
+			case SIGQUIT:	/* general abort signals */
+			case SIGILL:
+			case SIGABRT:
+			case SIGFPE:
+			case SIGSEGV:
+			case SIGPIPE:
+				pthread_exit ((void *) 0);
+				break;
 			default:
 				error ("Invalid signal (%d) received\n", sig);
 		}
 	}
-
-	pthread_exit ((void *)0);
 
 }
 
@@ -269,9 +283,9 @@ slurmctld_rpc_mgr ( void * no_data )
 
 	/* threads to process individual RPC's are detached */
 	if (pthread_attr_init (&thread_attr_rpc_req))
-		fatal ("pthread_attr_init errno %m %d", errno);
+		fatal ("pthread_attr_init %m");
 	if (pthread_attr_setdetachstate (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
-		fatal ("pthread_attr_setdetachstate errno %m %d", errno);
+		fatal ("pthread_attr_setdetachstate %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
 	/* we want 1:1 threads if there is a choice */
 	pthread_attr_setscope (&thread_attr_rpc_req, PTHREAD_SCOPE_SYSTEM);
@@ -280,7 +294,7 @@ slurmctld_rpc_mgr ( void * no_data )
 	/* initialize port for RPCs */
 	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
 			== SLURM_SOCKET_ERROR )
-		fatal ("slurm_init_msg_engine_port error %m %d \n", errno);
+		fatal ("slurm_init_msg_engine_port error %m");
 
 	/*
 	 * Procss incoming RPCs indefinitely
@@ -293,7 +307,7 @@ slurmctld_rpc_mgr ( void * no_data )
 		 */
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
-			error ("slurm_accept_msg_conn error %m %d", errno) ;
+			error ("slurm_accept_msg_conn error %m") ;
 			continue ;
 		}
 		conn_arg -> newsockfd = newsockfd ;
@@ -307,7 +321,7 @@ slurmctld_rpc_mgr ( void * no_data )
 		else if (shutdown_time)
 			no_thread = 1;
 		else if (pthread_create ( &thread_id_rpc_req, &thread_attr_rpc_req, service_connection, (void *) conn_arg )) {
-			error ("pthread_create errno %m %d", errno);
+			error ("pthread_create error %m");
 			no_thread = 1;
 		}
 		else
@@ -339,7 +353,7 @@ void * service_connection ( void * arg )
 
 	if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
-		error ("slurm_receive_msg error %d", errno);
+		error ("slurm_receive_msg error %m");
 		slurm_free_msg ( msg ) ;
 	}
 	else {
@@ -1214,9 +1228,14 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response )
 /* must be user root */
 	if (shutdown_time)
 		debug3 ("slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
-	else {
-		kill (slurmctld_pid, SIGTERM);	/* tell master to clean-up */
+	else if (thread_id_sig) {
+		pthread_kill (thread_id_sig, SIGTERM);	/* tell master to clean-up */
 		info ("slurm_rpc_shutdown_controller completed successfully");
+	} else {
+		error ("thread_id_sig undefined, doing shutdown the hard way");
+		shutdown_time = time (NULL);
+		/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+		slurm_shutdown ();
 	}
 
 	if (response) {
@@ -1522,22 +1541,9 @@ slurmctld_cleanup (void *context)
 	if (thread_id_rpc && (thread_id_rpc != my_thread_id))
 		(void) pthread_cancel (thread_id_rpc);
 
+	if (thread_id_sig && (thread_id_sig != my_thread_id))
+		(void) pthread_cancel (thread_id_sig);
+
 	if (thread_id_main && (thread_id_main != my_thread_id))
 		(void) pthread_cancel (thread_id_main);
 }
-
-/* sigabort_handler - abort just occured, kill everything immediately */
-static void
-sigabort_handler (int signum)
-{
-	struct sigaction action;
-
-	if (signum == SIGABRT) {
-		info ("Abort signal from thread %d being processed", pthread_self ());
-		action.sa_handler = SIG_IGN;
-		sigaction (SIGABRT, &action, NULL);
-		pthread_kill (thread_id_main, SIGTERM); /* have main thread clean up everything */
-		return; 		/* return needed to dump core */
-	}
-}
-
