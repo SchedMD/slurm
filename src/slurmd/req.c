@@ -245,7 +245,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	if ((rc == SLURM_SUCCESS) && (retval == SLURM_SUCCESS))
 		save_cred_state(conf->cred_state_list);
 	if (retval == ESLURMD_PROLOG_FAILED)
-		send_registration_msg(retval);	/* slurmctld to make node DOWN */
+		send_registration_msg(retval);	/* slurmctld makes node DOWN */
 }
 
 
@@ -479,6 +479,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	resp.node_name        = conf->hostname;
 	resp.srun_node_id     = req->srun_node_id;
 	resp.return_code      = rc;
+	resp.executable_name  ="TBD"; /* job->argv[0]; */
 
 	slurm_send_only_node_msg(&resp_msg);
 
