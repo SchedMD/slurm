@@ -1532,11 +1532,11 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 #ifdef HAVE_LIBELAN3
 		alloc_msg.qsw_job = step_rec->qsw_job;
 #endif
+		unlock_slurmctld(job_write_lock);
 		response_msg.msg_type =
 		    RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
 		response_msg.data = &alloc_msg;
 
-		unlock_slurmctld(job_write_lock);
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		(void) dump_all_job_state();	/* Has its own locks */
 	}
