@@ -59,6 +59,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE	  1024	/* Temporary buffer size */
@@ -684,8 +685,11 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 			epilog_msg->job_id, epilog_msg->node_name,
 			TIME_STR);
 
-	if (run_scheduler)
-		schedule();		/* has own locks */
+	/* Functions below provide their own locking */
+	if (run_scheduler) {
+		(void) schedule();
+		save_all_state();
+	}
 
 	/* NOTE: RPC has no response */
 }
@@ -729,7 +733,6 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 			/* Below function provides its own locking */
 			(void) dump_all_job_state();
-
 		}
 	} else {
 		error_code = job_step_signal(job_step_kill_msg->job_id,
@@ -1085,7 +1088,6 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		debug2("_slurm_rpc_node_registration complete for %s %s",
 			node_reg_stat_msg->node_name, TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		schedule();	/* has own locks */
 	}
 }
 
@@ -1277,6 +1279,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		if (slurmctld_config.server_thread_count > 1)
 			error("shutting down with server_thread_count=%d",
 				slurmctld_config.server_thread_count);
+		save_all_state();
 	}
 	slurm_send_rc_msg(msg, error_code);
 	if ((error_code == SLURM_SUCCESS) && core_arg)
