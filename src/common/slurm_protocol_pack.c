@@ -68,20 +68,22 @@ void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 
 void pack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , uint32_t * length )
 {
+	uint16_t tmp=SLURM_SSL_SIGNATURE_LENGTH;
+	
 	assert ( msg != NULL );
 
 	pack16( msg->version, buffer, length ) ;
-	packmem( msg->key, SLURM_SSL_SIGNATURE_LENGTH , buffer, length ) ; 
+	packmem_array( msg->key, tmp, buffer, length ) ; 
 	pack32( msg->task_id, buffer, length ) ;	
 	pack16( msg->type, buffer, length ) ;
 }
 
 void unpack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer , uint32_t * length )
 {
-	uint16_t uint16_tmp;
+	uint16_t tmp=SLURM_SSL_SIGNATURE_LENGTH;
 	
 	unpack16( & msg->version, buffer, length ) ;
-	unpackmem( msg->key, & uint16_tmp , buffer , length ) ; 
+	unpackmem_array( msg->key, tmp , buffer , length ) ; 
 	unpack32( & msg->task_id, buffer, length ) ;	
 	unpack16( & msg->type, buffer, length ) ;
 }

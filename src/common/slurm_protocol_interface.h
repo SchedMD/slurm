@@ -90,6 +90,7 @@ extern void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , 
 extern void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 extern void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 extern void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
+extern void _slurm_print_slurm_addr ( FILE * stream , slurm_addr * address ) ;
 
 /*****************************/
 /* slurm addr pack functions */

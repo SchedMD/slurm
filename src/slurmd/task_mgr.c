@@ -483,6 +483,9 @@ void * task_exec_thread ( void * arg )
 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
+	
+	setup_parent_pipes ( task_start->pipes ) ;
+	forward_io ( arg ) ;
 
 #define FORK_ERROR -1
 #define CHILD_PROCCESS 0
@@ -542,8 +545,6 @@ void * task_exec_thread ( void * arg )
 			
 		default: /*parent proccess */
 			task_start->exec_pid = cpid ;
-			setup_parent_pipes ( task_start->pipes ) ;
-			forward_io ( arg ) ;
 			waitpid ( cpid , NULL , 0 ) ;
 	}
 	return ( void * ) SLURM_SUCCESS ;
@@ -658,3 +659,5 @@ int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
 	}
 	return error_code ;
 }
+
+

@@ -5,6 +5,7 @@
 #include <sys/shm.h>
 #include <string.h>
 
+#include <src/common/slurm_errno.h>
 #include <src/common/log.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/slurmd/shmem_struct.h>
@@ -29,7 +30,7 @@ void * get_shmem ( )
 	key = ftok ( ".", 'a' );
 	assert ( key != SLURM_ERROR );
 	shmem_gid = shmget ( key , sizeof ( slurmd_shmem_t ) , IPC_CREAT | OCTAL_RW_PERMISSIONS ); 
-	info ( "shmget id = %i , errno = %i ", shmem_gid, errno );
+	debug ( "shmget id = %i , errno = %i ", shmem_gid, errno );
 	assert ( shmem_gid != SLURM_ERROR ) ;
 	shmem_addr = shmat ( shmem_gid , NULL , 0 ) ;
 	assert ( shmem_addr != (void * ) SLURM_ERROR ) ;
@@ -92,7 +93,9 @@ job_step_t * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step
 		} 
         }
 	pthread_mutex_unlock ( & shmem -> mutex ) ;
-	fatal ( "No available job_step slots in shmem segment");
+	error ( "No available job_step slots in shmem segment");
+	slurm_seterrno ( ESLURMD_NO_AVAILABLE_JOB_STEP_SLOTS_IN_SHMEM ) ;
+	/*return ( NULL ) ;*/
 	return (void * ) SLURM_ERROR ;
 }
 
@@ -120,7 +123,9 @@ task_t * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step )
 		} 
 	}
 	pthread_mutex_unlock ( & shmem -> mutex ) ;
-	fatal ( "No available task slots in shmem segment");
+	error ( "No available task slots in shmem segment");
+	slurm_seterrno ( ESLURMD_NO_AVAILABLE_TASK_SLOTS_IN_SHMEM ) ;
+	/*return ( NULL ) ;*/
 	return (void * ) SLURM_ERROR ;
 }
 
@@ -192,7 +197,7 @@ int find_job_id_for_session ( slurmd_shmem_t * shmem , int session_id )
 		} 
         }
 	pthread_mutex_unlock ( & shmem -> mutex ) ;
-	info ( "No job_id found for session_id %i", session_id );
+	debug ( "No job_id found for session_id %i", session_id );
 	return SLURM_FAILURE ; 
 }
 

@@ -292,6 +292,12 @@ void inline slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , c
  * IN buf_len		- length of hostname buffer
  */
 void inline slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
+/* slurm_print_slurm_addr
+ * prints a slurm_addr to a stream
+ * IN stream		- FILE * stream
+ * IN address		- slurm_addr to print
+ */
+void inline slurm_print_slurm_addr ( FILE * stream , slurm_addr * address ) ;
 
 /**********************************************************************/
 /* slurm_addr pack routines*/ 
