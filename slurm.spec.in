@@ -16,6 +16,9 @@ URL: http://www.llnl.gov/linux/slurm
 Requires: popt 
 Requires: openssl >= 0.9.6
 
+# Don't let rpm complain with unpackaged files:
+%define _unapackaged_files_terminate_build 0
+
 #
 # If "--with debug" is set compile with --enable-debug 
 #  and do not strip binaries
@@ -106,9 +109,6 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
-
-rm $RPM_BUILD_ROOT/usr/lib/slurm/*.a 
-rm $RPM_BUILD_ROOT/usr/lib/slurm/*.la
 
 #############################################################################
 
@@ -204,6 +204,8 @@ fi
 
 
 %changelog
+* Fri Oct 10 2003 Mark Grondona <mgrondona@llnl.gov>
+- set _unpackaged_files_terminate_build to off
 * Wed Sep 17 2003 Mark Grondona <mgrondona@llnl.gov>
 - reenable chkconfig --add on install and --del on uninstall
 * Wed Aug 13 2003 Mark Grondona <mgrondona@llnl.gov>
