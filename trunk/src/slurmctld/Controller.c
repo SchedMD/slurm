@@ -20,7 +20,7 @@
 
 int OS_Comp(char *OS_1, char *OS_2);
 int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS, 
-	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
+	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed, int *My_Contiguous,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
 	long *My_TmpDisk, int *Set_TmpDisk, int *My_MaxTime, int *Set_MaxTime,  
 	int *My_CpuCount, int *Set_CpuCount, int *My_NodeCount, int *Set_NodeCount);
@@ -122,7 +122,7 @@ int OS_Comp(char *OS_1, char *OS_2) {
  * Output: 0 if no error, error code otherwise
  */
 int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS, 
-	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
+	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed, int *My_Contiguous,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
 	long *My_TmpDisk, int *Set_TmpDisk, int *My_MaxTime, int *Set_MaxTime, 
 	int *My_CpuCount, int *Set_CpuCount, int *My_NodeCount, int *Set_NodeCount) {
@@ -135,6 +135,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     My_OS[0]           = (char)NULL;
     *Set_CPUs          = 0;
     *Set_Speed         = 0;
+    *My_Contiguous     = 0;
     *Set_RealMemory    = 0;
     *Set_VirtualMemory = 0;
     *Set_TmpDisk       = 0;
@@ -185,6 +186,11 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
 	    free(Scratch);
 	    return EINVAL;
 	} /* else */
+    } /* if */
+
+    str_ptr1 = (char *)strstr(Specification, "Continguous=TRUE");
+    if (str_ptr1 != NULL) {
+	*My_Contiguous = 1;
     } /* if */
 
     str_ptr1 = (char *)strstr(Specification, "MinCpus=");
@@ -266,7 +272,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
     char *Node_List;
     char My_Name[MAX_NAME_LEN];
     char My_OS[MAX_OS_LEN];
-    int My_CPUs, My_RealMemory, My_VirtualMemory, My_MaxTime;
+    int My_CPUs, My_Contiguous, My_RealMemory, My_VirtualMemory, My_MaxTime;
     int My_CpuCount, My_NodeCount;
     long My_TmpDisk;
     float My_Speed;
@@ -280,7 +286,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
     struct Node_Record  *Node_Record_Point;
 
     *Error_Code =  Parse_Job_Spec(Specification, My_Name, My_OS, 
-	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed,
+	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed, &My_Contiguous,
 	&My_RealMemory, &Set_RealMemory, &My_VirtualMemory, &Set_VirtualMemory, 
 	&My_TmpDisk, &Set_TmpDisk, &My_MaxTime, &Set_MaxTime,  
 	&My_CpuCount, &Set_CpuCount, &My_NodeCount, &Set_NodeCount);
@@ -417,7 +423,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    return (char *)NULL;
 	} /* if */
 
-	CPU_Tally = 0;
+	CPU_Tally  = 0;
 	Node_Tally = 0;
 	while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	    if (((strlen(My_OS) != 0) && (OS_Comp(My_OS, Node_Record_Point->OS) < 0)) || 
@@ -427,7 +433,15 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	        ((Set_RealMemory != 0) && (My_RealMemory > Node_Record_Point->RealMemory)) ||
 	        ((Set_VirtualMemory != 0) && (My_VirtualMemory > Node_Record_Point->VirtualMemory)) ||
 	        ((Set_TmpDisk != 0) && (My_TmpDisk > Node_Record_Point->TmpDisk)) ||
-	        (Node_Record_Point->NodeState != STATE_IDLE)) continue;
+	        (Node_Record_Point->NodeState != STATE_IDLE)) {
+
+		if (My_Contiguous != 0) {
+		    Scratch[0] = (char)NULL;
+		    CPU_Tally  = 0;
+		    Node_Tally = 0;
+		} /* if */
+		continue;
+	    } /* if */
 
 	    /* Node is usable */
 	    if ((strlen(Scratch)+strlen(Node_Record_Point->Name)+1) >= Node_List_Size) {
@@ -443,7 +457,6 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 		    *Error_Code =  ENOMEM;
 		    return (char *)NULL;
 		} /* if */
-
 	    } /* if */
 	    if (strlen(Scratch) > 0) strcat(Scratch, ",");
 	    strcat(Scratch, Node_Record_Point->Name);
@@ -453,7 +466,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
 	    list_iterator_destroy(Node_Record_Iterator);
 	    Scratch = realloc(Scratch, strlen(Scratch)+1);
-	   return Scratch;
+	    return Scratch;
 	} /* while */
 
 	list_iterator_destroy(Node_Record_Iterator);

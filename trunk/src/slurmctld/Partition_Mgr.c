@@ -669,7 +669,17 @@ int Read_Part_Spec_Conf (char *File_Name) {
     Default_Record.MaxCpus = -1;
     Default_Record.AllowUsers = NULL;
     Default_Record.DenyUsers = NULL;
-    Part_Record_List = list_create(NULL);
+    if (Part_Record_List == NULL) {
+	Part_Record_List = list_create(NULL);
+	if (Part_Record_List == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Read_Part_Spec_Conf: list_append can not allocate memory\n");
+#else
+	    syslog(LOG_ERR, "Read_Part_Spec_Conf: list_append can not allocate memory\n");
+#endif
+	    return ENOMEM;
+	} /* if */
+    } /* if */
 
     /* Process the data file */
     Line_Num = 0;
