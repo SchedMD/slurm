@@ -76,7 +76,7 @@ main (int argc, char *argv[])
 			printf ("skipping...\n");
 	}
 
-	//slurm_free_node_info ( node_info_msg_ptr ) ;
+	slurm_free_node_info ( node_info_msg_ptr ) ;
 	exit (0);
 }
 #endif
