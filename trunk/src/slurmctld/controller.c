@@ -140,6 +140,7 @@ static void         _slurmctld_req(slurm_msg_t * msg);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 inline static int   _slurmctld_shutdown(void);
 static void *       _slurmctld_signal_hand(void *no_data);
+inline static void  _update_logging(void);
 inline static void  _usage(char *prog_name);
 
 typedef struct connection_arg {
@@ -164,11 +165,6 @@ int main(int argc, char *argv[])
 	slurmctld_pid = getpid();
 	slurmctld_conf.slurm_conf = xstrdup(SLURM_CONFIG_FILE);
 	_parse_commandline(argc, argv, &slurmctld_conf);
-	if (daemonize) {
-		error_code = daemon(0, 0);
-		if (error_code)
-			error("daemon error %d", error_code);
-	}
 	init_locks();
 
 	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
@@ -179,36 +175,27 @@ int main(int argc, char *argv[])
 	if ((error_code = read_slurm_conf(recover)))
 		fatal("read_slurm_conf error %d reading %s",
 		      error_code, SLURM_CONFIG_FILE);
+	_update_logging();
 
 	if (slurmctld_conf.state_save_location)
 		(void) mkdir(slurmctld_conf.state_save_location, 0700);
 
 	if (slurmctld_conf.slurm_user_id && 
-	    (slurmctld_conf.slurm_user_id != getuid()))
+	    (slurmctld_conf.slurm_user_id != getuid())) {
 		error("Slurmctld not running as user %s",
 		      slurmctld_conf.slurm_user_name);
-
-	if (slurmctld_conf.slurmctld_logfile && daemonize) {
-		info("Routing all log messages to %s",
-		     slurmctld_conf.slurmctld_logfile);
-		log_opts.logfile_level = MAX(log_opts.logfile_level,
-					     log_opts.stderr_level);
-		log_opts.logfile_level = MAX(log_opts.logfile_level,
-					     log_opts.syslog_level);
-		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		log_opts.syslog_level = LOG_LEVEL_QUIET;
+		if (getuid() != 0)
+			fatal("Not user root either, the show is over");
 	}
-
-	if (slurmctld_conf.slurmctld_logfile) {
-		log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
-			 slurmctld_conf.slurmctld_logfile);
-	}
-
 	if (daemonize) {
 		if (chdir(slurmctld_conf.state_save_location))
 			fatal("chdir to %s error %m",
 			      slurmctld_conf.state_save_location);
+		error_code = daemon(0, 0);
+		if (error_code)
+			error("daemon error %d", error_code);
 	}
+
 	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
 		fatal("getnodename error %d", error_code);
 
@@ -1706,7 +1693,9 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		if (error_code == 0)
 			reset_job_bitmaps();
 		unlock_slurmctld(config_write_lock);
-
+	}
+	if (error_code == 0) {	/* Stuff to do after unlock */
+		_update_logging();
 		if (daemonize) {
 			if (chdir(slurmctld_conf.state_save_location))
 				fatal("chdir to %s error %m",
@@ -1722,7 +1711,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info(
-		   "_slurm_rpc_reconfigure_controller completed successfully, time=%ld", 
+		   "_slurm_rpc_reconfigure_controller completed, time=%ld", 
 		   (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		schedule();
@@ -1976,39 +1965,41 @@ static int _slurmctld_shutdown(void)
  */
 void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
-	conf_ptr->last_update = time(NULL);
-	conf_ptr->backup_addr = slurmctld_conf.backup_addr;
-	conf_ptr->backup_controller = slurmctld_conf.backup_controller;
-	conf_ptr->control_addr = slurmctld_conf.control_addr;
-	conf_ptr->control_machine = slurmctld_conf.control_machine;
-	conf_ptr->epilog = slurmctld_conf.epilog;
-	conf_ptr->fast_schedule = slurmctld_conf.fast_schedule;
-	conf_ptr->first_job_id = slurmctld_conf.first_job_id;
-	conf_ptr->hash_base = slurmctld_conf.hash_base;
-	conf_ptr->heartbeat_interval = slurmctld_conf.heartbeat_interval;
-	conf_ptr->inactive_limit = slurmctld_conf.inactive_limit;
+	conf_ptr->last_update         = time(NULL);
+	conf_ptr->backup_addr         = slurmctld_conf.backup_addr;
+	conf_ptr->backup_controller   = slurmctld_conf.backup_controller;
+	conf_ptr->control_addr        = slurmctld_conf.control_addr;
+	conf_ptr->control_machine     = slurmctld_conf.control_machine;
+	conf_ptr->epilog              = slurmctld_conf.epilog;
+	conf_ptr->fast_schedule       = slurmctld_conf.fast_schedule;
+	conf_ptr->first_job_id        = slurmctld_conf.first_job_id;
+	conf_ptr->hash_base           = slurmctld_conf.hash_base;
+	conf_ptr->heartbeat_interval  = slurmctld_conf.heartbeat_interval;
+	conf_ptr->inactive_limit      = slurmctld_conf.inactive_limit;
 	conf_ptr->job_credential_private_key = 
 			slurmctld_conf.job_credential_private_key;
 	conf_ptr->job_credential_public_certificate = 
 			slurmctld_conf.job_credential_public_certificate;
-	conf_ptr->kill_wait = slurmctld_conf.kill_wait;
-	conf_ptr->prioritize = slurmctld_conf.prioritize;
-	conf_ptr->prolog = slurmctld_conf.prolog;
-	conf_ptr->ret2service = slurmctld_conf.ret2service;
-	conf_ptr->slurm_user_id = slurmctld_conf.slurm_user_id;
-	conf_ptr->slurm_user_name = slurmctld_conf.slurm_user_name;
-	conf_ptr->slurmctld_logfile = slurmctld_conf.slurmctld_logfile;
-	conf_ptr->slurmctld_pidfile = slurmctld_conf.slurmctld_pidfile;
-	conf_ptr->slurmctld_port = slurmctld_conf.slurmctld_port;
-	conf_ptr->slurmctld_timeout = slurmctld_conf.slurmctld_timeout;
-	conf_ptr->slurmd_logfile = slurmctld_conf.slurmd_logfile;
-	conf_ptr->slurmd_pidfile = slurmctld_conf.slurmd_pidfile;
-	conf_ptr->slurmd_port = slurmctld_conf.slurmd_port;
-	conf_ptr->slurmd_spooldir = slurmctld_conf.slurmd_spooldir;
-	conf_ptr->slurmd_timeout = slurmctld_conf.slurmd_timeout;
-	conf_ptr->slurm_conf = slurmctld_conf.slurm_conf;
+	conf_ptr->kill_wait           = slurmctld_conf.kill_wait;
+	conf_ptr->prioritize          = slurmctld_conf.prioritize;
+	conf_ptr->prolog              = slurmctld_conf.prolog;
+	conf_ptr->ret2service         = slurmctld_conf.ret2service;
+	conf_ptr->slurm_user_id       = slurmctld_conf.slurm_user_id;
+	conf_ptr->slurm_user_name     = slurmctld_conf.slurm_user_name;
+	conf_ptr->slurmctld_debug     = slurmctld_conf.slurmctld_debug;
+	conf_ptr->slurmctld_logfile   = slurmctld_conf.slurmctld_logfile;
+	conf_ptr->slurmctld_pidfile   = slurmctld_conf.slurmctld_pidfile;
+	conf_ptr->slurmctld_port      = slurmctld_conf.slurmctld_port;
+	conf_ptr->slurmctld_timeout   = slurmctld_conf.slurmctld_timeout;
+	conf_ptr->slurmd_debug        = slurmctld_conf.slurmd_debug;
+	conf_ptr->slurmd_logfile      = slurmctld_conf.slurmd_logfile;
+	conf_ptr->slurmd_pidfile      = slurmctld_conf.slurmd_pidfile;
+	conf_ptr->slurmd_port         = slurmctld_conf.slurmd_port;
+	conf_ptr->slurmd_spooldir     = slurmctld_conf.slurmd_spooldir;
+	conf_ptr->slurmd_timeout      = slurmctld_conf.slurmd_timeout;
+	conf_ptr->slurm_conf          = slurmctld_conf.slurm_conf;
 	conf_ptr->state_save_location = slurmctld_conf.state_save_location;
-	conf_ptr->tmp_fs = slurmctld_conf.tmp_fs;
+	conf_ptr->tmp_fs              = slurmctld_conf.tmp_fs;
 	return;
 }
 
@@ -2026,7 +2017,6 @@ static void _parse_commandline(int argc, char *argv[],
 			       slurm_ctl_conf_t * conf_ptr)
 {
 	int c = 0;
-	char *log_file = NULL;
 
 	opterr = 0;
 	while ((c = getopt(argc, argv, "cdDf:hL:rv")) != -1)
@@ -2048,28 +2038,22 @@ static void _parse_commandline(int argc, char *argv[],
 			exit(0);
 			break;
 		case 'L':
-			log_file = xstrdup(optarg);
+			slurmctld_conf.slurmctld_logfile = xstrdup(optarg);
 			break;
 		case 'r':
 			recover = 1;
 			break;
 		case 'v':
-			log_opts.stderr_level++;
-			log_opts.logfile_level++;
-			log_opts.syslog_level++;
+			if (slurmctld_conf.slurmctld_debug)
+				slurmctld_conf.slurmctld_debug++;
+			else 
+				slurmctld_conf.slurmctld_debug = 
+				    LOG_LEVEL_VERBOSE;
 			break;
 		default:
 			_usage(argv[0]);
 			exit(1);
 		}
-
-	if (daemonize) {
-		log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (log_file)
-			log_opts.syslog_level = LOG_LEVEL_QUIET;
-	}
-
-	log_alter(log_opts, LOG_DAEMON, log_file);
 }
 
 /* _usage - print a message describing the command line arguments of 
@@ -2461,4 +2445,21 @@ static int _shutdown_backup_controller(void)
 	 * here and give the backup controller time to shutdown */
 	sleep(2);
 	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/* Reset slurmctld logging based upon configuration parameters */
+static void _update_logging(void) 
+{
+	if (slurmctld_conf.slurmctld_debug != (uint16_t) NO_VAL) {
+		log_opts.stderr_level  = slurmctld_conf.slurmctld_debug;
+		log_opts.logfile_level = slurmctld_conf.slurmctld_debug;
+		log_opts.syslog_level  = slurmctld_conf.slurmctld_debug;
+	}
+	if (daemonize) {
+		log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (slurmctld_conf.slurmctld_logfile)
+			log_opts.syslog_level = LOG_LEVEL_QUIET;
+	}
+	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
+		  slurmctld_conf.slurmctld_logfile);
 }
