@@ -251,6 +251,7 @@ struct job_table {
 	char *job_script;	/* pathname of required script */
 };
 typedef struct job_table job_table_t ;
+typedef struct job_table job_table_msg_t ;
 
 typedef struct job_info_msg {
 	uint32_t last_update;
