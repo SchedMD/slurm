@@ -22,15 +22,21 @@ be abbreviated to the extent that the specification is unique.
 .TP
 \fBOPTIONS\fR
 .TP
-\fB-h\fR
+\fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
 .TP
-\fB-q\fR
+\fB\-o\fR, \fB\-\-oneliner\fR
+Print information one line per record.
+.TP
+\fB\-q\fR, \fB\-\-quiet\fR
 Print no warning or informational messages, only fatal error messages.
 .TP
-\fB-v\fR
+\fB-v\fR, \fB\-\-verbose\fR
 Print detailed event logging. This includes time-stamps on data structures, 
 record counts, etc.
+.TP
+\fB\-V\fR , \fB\-\-version\fR
+Print version information and exit.
 .TP
 \fBCOMMANDS\fR
 .TP
@@ -46,6 +52,9 @@ Terminate the execution of scontrol.
 .TP
 \fIhelp\fP
 Display a description of scontrol options and commands.
+.TP
+\fIoneliner\fP
+Print information one line per record.
 .TP
 \fIpid2jid\fP \fIPROC_ID\fP
 Print the Slurm job id corresponding to the supplied process id, \fIPROC_ID\fP,
