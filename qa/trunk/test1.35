@@ -27,20 +27,20 @@ print_header $test_id
 # Build input script file
 #
 exec $bin_rm -f $file_in $file_out $file_err
-exec echo "#!$bin_bash"           >$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$srun $bin_sleep 5 &" >>$file_in
-exec echo "$bin_sleep 2"         >>$file_in
-exec echo "$squeue -s"           >>$file_in
-exec echo "wait"                 >>$file_in
+exec echo "#!$bin_bash"            >$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$srun $bin_sleep 15 &" >>$file_in
+exec echo "$bin_sleep 4"          >>$file_in
+exec echo "$squeue -s"            >>$file_in
+exec echo "wait"                  >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
