@@ -225,6 +225,7 @@ _msg_engine()
 		/*
 		 *  Otherwise, accept() failed.
 		 */
+		xfree (cli);
 		if (errno == EINTR) {
 			if (_reconfig) {
 				verbose("got reconfigure request");
