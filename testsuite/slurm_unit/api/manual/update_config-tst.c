@@ -24,8 +24,8 @@ main (int argc, char *argv[]) {
 
 	node_update1 . node_names = "lx1234" ;
 	node_update2 . node_names = "lx1234" ;
-	node_update1 . node_state = false ;
-	node_update2 . node_state = true ; 
+	node_update1 . node_state = NODE_STATE_DRAINING ;
+	node_update2 . node_state = NODE_STATE_IDLE ; 
 
 	error_code = slurm_update_partition ( &part_update1);
 	if (error_code)
