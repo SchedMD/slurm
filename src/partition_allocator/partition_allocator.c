@@ -870,7 +870,7 @@ static int _check_for_options(pa_request_t* pa_request)
 
 	int temp;
 	int set=0;
-	int *geo;
+	int *geo = NULL;
 	ListIterator itr;
 
 	if(pa_request->rotate) {

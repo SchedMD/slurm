@@ -71,7 +71,7 @@ static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 	rm_connection_t conn;
 	int j;
 	int conn_num=0;
-	int port;
+	int port = 0;
 	
 	itr = list_iterator_create(bgl_switch->conn_list);
 	while((bgl_conn = list_next(itr)) != NULL) {
