@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "August 2002" "squeue 0.1" "Slurm components"
+.TH SCONTROL "1" "October 2002" "squeue 0.1" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -12,82 +12,113 @@ squeue \- Used to view information of jobs located in the scheduling queue.
 .TP
 OPTIONS
 .TP
-\fB-?\fR, \fB--help\fR
+\fB-?\fR, \fB-n\fR, \fB--help\fR
 Print a help message describing the usage of \fBsqueue\fR.
 .TP
-\fB-j\fR, \fB--job\fR
-Specify the jobs to view.  This takes a comma seperated list of jobs to view.
-.TP
-\fB-s\fR, \fB--job-steps\fR
-View job step information, not job information.
-.TP
-\fB-t\fR, \fB--state\fR
-Specify the state of jobs to view, or if no state is specified, entries are 
-sorted according to state information.  This option is ignored if the \fB-j\fR
-option is used.
-.TP
-\fB-p\fR, \fB--partition\fR
-Specify the partition of the jobs to view, or if no partition is specified,
-entries are sorted according to partitions.  This option is ignored if the 
-\fB-j\fR option is used.
-.TP
 \fB-o\fR, \fB--format\fR
-Specify the format and job information displayed.  This format closely resembles
-printf, where:
-
-\fB%i\fR job id
+Specify the information to be displayed.  At present, field 
+sizes and justification are not processed, only the fields to 
+be displayed and their relative location. The field specifications 
+available include: 
 .br
-\fB%n\fR job name
+\fB%b\fR Time at which the job began execution
 .br
-\fB%u\fR user
+\fB%c\fR Minimum number of CPUs (processors) requested by the job
 .br
-\fB%P\fR partition
+\fB%C\fR Number of CPUs (processors) allocated to the job or job step
 .br
-\fB%s\fR job state compact form
+\fB%d\fR Minimum size of temporary disk space (in MB) requested by the job
 .br
-\fB%S\fR job state extended form
+\fB%e\fR Time at which the job ended or is expected to end (based upon its time limit)
 .br
-\fB%l\fR time limit / wall clock
+\fB%f\fR Features required by the job
 .br
-\fB%t\fR start time
+\fB%h\fR Can the nodes allocated to the job be shared with other jobs
 .br
-\fB%e\fR end time
+\fB%i\fR Job or job step id
 .br
-\fB%p\fR priority
+\fB%j\fR Job name
 .br
-\fB%c\fR number of cpus
+\fB%l\fR Time limit of the job (in minutes)
 .br
-\fB%n\fR number of nodes
+\fB%m\fR Minimum size of memory (in MB) requested by the job
 .br
-\fB%h\fR nodes are shared?
+\fB%n\fR List of node names explicity requested by the job
 .br
-\fB%h\fR nodes are contiguous
+\fB%N\fR List of nodes allocated to the job or job step
 .br
-\fB%f\fR features
+\fB%o\fR Number of nodes required by the job
 .br
-\fB%N\fR list of nodes
+\fB%O\fR Are contiguous nodes required by the job
 .br
-\fB%R\fR list of requested nodes
+\fB%p\fR Priority of the job
 .br
-\fB%mc\fR minimum cpus 
+\fB%P\fR Partition of the job or job step
 .br
-\fB%mm\fR minimum memory
+\fB%S\fR Start time of the job or job step
 .br
-\fB%md\fR minimum temporary disk space
+\fB%t\fR Job state, compact form
+.br
+\fB%T\fR Job state, extended form
+.br
+\fB%U\fR User id
+.br
+\fB%u\fR User name
 .br
 \fB%.<*>\fR right justification of the field
 .br 
 \fB%<Number><*>\fR size of field
 .TP
 \fB-v\fR
-Display all job information.  
+Display all job information.
+.TP
+\fB-i\fR, \fB--iterate\fR
+Repeatedly gathter and report the requested information at the interval
+specified (in seconds).
+.TP
+\fB-j\fR, \fB--jobs\fR
+Specify the jobs to view.  This takes a comma seperated list of jobs to view.
+Defaults to all jobs.
+.TP
+\fB-s\fR, \fB--job-steps\fR
+Specify the job steps to view.  This takes a comma seperated list of job steps
+to view in the format "job_id.step_id". Defaults to all job steps.
+.TP
+\fB-l\fR, \fB--long\fR
+Report more of the available information for the selected jobs or job steps, 
+subject to any constraints specified.
+.TP
+\fB-p\fR, \fB--partition\fR
+Specify the partitions of the jobs or steps to view. Accepts a comma separated 
+list of partition names.
+.TP
+\fB-S\fR, \fB--sort\fR
+Specifies the sorting order of job's or job step's records for printing. 
+Accepts a comma separated list of field identifiers using the single letter 
+codes used for output formatting. For example, "--sort=P,U" will sort the
+records by partition name then by user id. 
+The default sorting order for jobs is job state then priority. 
+The default sorting order for job steps is partition name.
+Note that sorting is not supported for all fields at this time.
+.TP
+\fB-t\fR, \fB--states\fR
+Specify the states of jobs to view.  Accepts a comma separated list of
+state names. If no state is specified, pending and running jobs are reported.
+.TP
+\fB-u\fR, \fB--users\fR
+Specifies a comma separated list of users whose jobs or job steps are to be reported.
+.TP
+\fB-v\fR, \fB--verbose\fR
+Report details of squeues actions.
+
+
 .SH "EXAMPLE"
 .eo
 squeue -f '%i%.10n%20N'
 .br
 would print the jobs in the following format:
 PUT THE EXAMPLE HERE...
-.br 
+.br
 Figure out how to format the example...
 .br 
 .ec
@@ -111,6 +142,4 @@ FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
 .SH "SEE ALSO"
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
-\fBslurm_load_partitions\fR(3), 
-\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
-\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
+\fBslurm_load_partitions\fR(3)
