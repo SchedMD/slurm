@@ -2285,8 +2285,10 @@ static void *_background_rpc_mgr(void *no_data)
 	/* initialize port for RPCs */
 	if ((sockfd =
 	     slurm_init_msg_engine_port(slurmctld_conf.slurmctld_port))
-	    == SLURM_SOCKET_ERROR)
-		fatal("slurm_init_msg_engine_port error %m");
+	    == SLURM_SOCKET_ERROR) {
+		error("slurm_init_msg_engine_port error %m");
+		exit(1);
+	}
 
 	/*
 	 * Procss incoming RPCs indefinitely
