@@ -741,9 +741,9 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = _nodes_in_sets(job_ptr->details->req_node_bitmap, 
 					    node_set_ptr, node_set_size);
 		if (error_code) {
-			info("No nodes satify requirements for job %u",
+			info("No nodes satify requirements for JobId=%u",
 			     job_ptr->job_id);
-			return error_code;
+			goto cleanup;
 		}
 		req_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
 	}
