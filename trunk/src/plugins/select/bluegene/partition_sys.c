@@ -213,8 +213,6 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	system(command);
 
 	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &bgl_record->bgl_part_id);
-	bgl_record->nodes = xstrdup(bgl_record->nodes);
-		
 	bgl_record->node_use = bgl_record->node_use;
 	bgl_record->conn_type = bgl_record->conn_type;
 	list_push(bgl_list, bgl_record);

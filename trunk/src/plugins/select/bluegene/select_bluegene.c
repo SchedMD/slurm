@@ -227,7 +227,9 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request.
+ *	identify the nodes which "best" satify the request. The specified 
+ *	nodes may be DOWN or BUSY at the time of this test as may be used 
+ *	to deterime if a job could ever run.
  * IN job_ptr - pointer to job being scheduled
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set

@@ -95,6 +95,7 @@ typedef struct bgl_record {
 	List bgl_part_list;
 	int bp_count;
 	int switch_count;
+	bitstr_t *bitmap;
 } bgl_record_t;
 
 typedef struct {
@@ -128,17 +129,12 @@ typedef struct {
 
 /* bluegene.c */
 /**********************************************/
-/* 
- * Read and process the bluegene.conf configuration file so to interpret what 
- * partitions are static/dynamic, torus/mesh, etc.
- */
-int read_bgl_conf(void);
 
 /* Initialize all plugin variables */
-int init_bgl(void);
+extern int init_bgl(void);
 
 /* Purge all plugin variables */
-void fini_bgl(void);
+extern void fini_bgl(void);
 
 /*
  * create_static_partitions - create the static partitions that will be used
