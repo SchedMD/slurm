@@ -1,9 +1,31 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.2.22 (IN PROGRESS
-=========================
- -- scontrol getting more digits in job priority specification.
+* Changes in SLURM 0.3.0-pre1
+=============================
+ -- Fixes for reported problems:
+   - slurm/252: Slurmctld pings srun and kills defunct jobs. Remove 
+     slurm_tv_clean deamon, which has been rendered defunct
+   - slurm/253: Retry connect failure with new port from slurmd/io.c
+   - slurm/317: Operate properly when no default partition is set
+   - slurm/319: Socket errors on multiple simultaneous job launches
+     fixed
+   - slurm/321: Fix slurmd shared memory synchronization error
+ -- New scontrol command and RPC added to delete a partition
+ -- Srun has new options --uid and--gid
+ -- Squeue can now print and sort by group id/name
+ -- Scancel has new option --quiet to not report an error if a job 
+    is already complete 
+ -- Add the excluded node list to job information reported
+ -- RPC version mis-match now properly handled
+ -- Dump job completion information to a text file via plugin
+ -- Scontrol was losing a digit in job priority specification
+ -- Remove restriction in the number of consecutive node sets (no longer
+    needed after DPCS upgrade)
+ -- Incomplete state save write now properly handled
+ -- Slurmd setrlimit error message changed for greater clarity
+ -- Slurmctld performs load-leveling across shared nodes
+ -- New user function added slurm_get_end_time for user jobs
 
 * Changes in SLURM 0.2.21
 =========================
