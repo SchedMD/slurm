@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "January 2003" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "March 2003" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -16,13 +16,22 @@ The size of each line in the file is limited to 1024 characters.
 .LP
 The overall configuration parameters available include:
 .TP
+\fBAuthType\fR
+Define the authentication method for communcations between SLURM 
+components. 
+Acceptable values at present include "auth/none" and "auth/authd".
+The default value is "auth/none", which means the UID included in 
+communication messages is not verified. 
+"auth/authd" indicates that Brett Chun's authd is to be used (see
+"http://www.theether.org/authd/" for more information).
+.TP
 \fBBackupAddr\fR
 Name that \fBBackupController\fR should be referred to in 
 establishing a communications path. This name will 
 be used as an argument to the gethostbyname() function for 
 identification. For example, "elx0000" might be used to designate 
 the ethernet address for node "lx0000". 
-ByBy default the \fBBackupAddr\fR will be identical in value to 
+By default the \fBBackupAddr\fR will be identical in value to 
 \fBBackupController\fR.
 .TP
 \fBBackupController\fR
@@ -100,6 +109,12 @@ SIGTERM and SIGKILL signals upon reaching its time limit.
 If the job fails to terminate gracefully 
 in the interval specified, it will be forcably terminated. 
 The default value is 30 seconds.
+.TP
+\fBPluginDir\fR
+Identifies the places in which to look for SLURM plugins. 
+This is a colon-separated list of directories, like the PATH 
+environment variable. 
+The default value is "/usr/local/lib".
 .TP
 \fBPrioritize\fR
 Fully qualified pathname of a program to execute in order to establish 
@@ -390,6 +405,10 @@ ControlMachine=dev0 ControlAddr=edev0
 .br
 BackupController=dev1 BackupAddr=edev1
 .br
+#
+.br
+AuthType=auth/authd
+.br
 Epilog=/usr/local/slurm/epilog 
 .br
 Prolog=/usr/local/slurm/prolog
@@ -405,6 +424,8 @@ HeartbeatInterval=60
 InactiveLimit=120
 .br
 KillWait=30
+.br
+PluginDir=/usr/local/lib:/usr/local/slurm/lib
 .br
 Prioritize=/usr/local/maui/priority
 .br
