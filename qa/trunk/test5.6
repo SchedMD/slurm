@@ -195,7 +195,7 @@ expect {
 # started its job steps. Check the squeue job step filter option
 #
 wait_for_job $job_id1 "RUNNING"
-exec $bin_sleep 2
+sleep 5
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.0 
 expect {
