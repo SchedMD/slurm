@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm job completion calls"
+.TH "Slurm API" "3" "November 2002" "Morris Jette" "Slurm job completion calls"
 .SH "NAME"
 slurm_complete_job, slurm_complete_job_step \- Slurm job completion calls
 .SH "SYNTAX"
@@ -7,7 +7,11 @@ slurm_complete_job, slurm_complete_job_step \- Slurm job completion calls
 .LP
 int \fBslurm_complete_job\fR (
 .br 
-	uint32_t \fIjob_id\fP
+	uint32_t \fIjob_id\fP, 
+.br
+	uint32_t \fIjob_return_code\fP,
+.br
+	uint32_t \fIsystem_return_code\fP
 .br 
 );
 .LP
@@ -15,7 +19,11 @@ int \fBslurm_complete_job_step\fR (
 .br 
 	uint32_t \fIjob_id\fP,
 .br 
-	uint32_t \fIjob_step_id\fP
+	uint32_t \fIjob_step_id\fP,
+.br
+	uint32_t \fIjob_return_code\fP,
+.br
+	uint32_t \fIsystem_return_code\fP
 .br 
 );
 .SH "ARGUMENTS"
@@ -26,6 +34,12 @@ Slurm job id number.
 .TP
 \fIjob_step_id\fp
 Slurm job step id number.
+.TP 
+\fIjob_return_code\fP
+Highest exit code of any task of the user's application. A non-zero value is considered as an indication of job failure.
+.TP 
+\fIsystem_return_code\fP
+Highest exit code of any system daemon executing the user's application. A non-zero value is considered as an indication of failure, such as error setting the job's session ID, error creating a log file, etc.
 .SH "DESCRIPTION"
 .LP 
 \fBslurm_complete_job\fR Note the termination of a job. This function may only be 
