@@ -45,7 +45,7 @@ main(int argc, char * argv[]) {
 
     if (argc > 3) {
 	printf("Usage: %s <in_file> <cnt>\n", argv[0]);
-	exit(0);
+	exit(1);
     } /* if */
 
     Error_Code = Init_SLURM_Conf();
@@ -171,7 +171,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
     memset(Idle_NodeBitMap, 0, size);
     memset(Up_NodeBitMap, 0, size);
@@ -184,7 +184,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
     while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
 	if (Config_Record_Point->NodeBitMap) free(Config_Record_Point->NodeBitMap);
@@ -195,7 +195,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	memset(Config_Record_Point->NodeBitMap, 0, size);
     } /* while */
@@ -218,7 +218,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
     memset(AllPart_NodeBitMap, 0, size);
     Part_Record_Iterator = list_iterator_create(Part_List);
@@ -228,7 +228,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
 	if (Part_Record_Point->NodeBitMap) free(Part_Record_Point->NodeBitMap);
@@ -239,7 +239,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	memset(Part_Record_Point->NodeBitMap, 0, size);
 
@@ -253,7 +253,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	strcpy(My_Node_List, Part_Record_Point->Nodes);
 	str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);

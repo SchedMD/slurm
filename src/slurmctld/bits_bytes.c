@@ -160,7 +160,7 @@ void BitMapAND(unsigned *BitMap1, unsigned *BitMap2) {
 #else
 	syslog(LOG_ALERT, "BitMapAND: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -186,7 +186,7 @@ void BitMapClear(unsigned *BitMap, int Position) {
 #else
 	syslog(LOG_ALERT, "BitMapClear: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     val  = Position / (sizeof(unsigned)*8);
@@ -213,7 +213,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapCopy: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
@@ -224,7 +224,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     (void) memcpy(Output, BitMap, size);
@@ -237,10 +237,9 @@ unsigned *BitMapCopy(unsigned *BitMap) {
  * Input: BitMap - The bit map to get count from
  * Output: Returns the count of set bits
  * NOTE: This routine adapted from Linux 2.4.9 <linux/bitops.h>.
- * NOTE: This routine works only when sizeof(unsigned int) is a multiple of 4
  */
 int BitMapCount(unsigned *BitMap) {
-    int count, quad_byte, size, word, res;
+    int count, byte, size, word, res;
     unsigned scan;
 
     if (BitMap == NULL) {
@@ -249,22 +248,41 @@ int BitMapCount(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapCount: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     count = 0;
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
     size /= sizeof(unsigned);			/* Count of unsigned's */
     for (word=0; word<size; word++) {
-	for (quad_byte=0; quad_byte<(sizeof(unsigned)*8); quad_byte+=32) {
-	    scan = BitMap[word] >> ((sizeof(unsigned)*8)-32-quad_byte);
-	    res = (scan & 0x55555555) + ((scan >> 1)  & 0x55555555);
+	if (sizeof(unsigned) == 4) {
+	    res = (BitMap[word] & 0x55555555) + ((BitMap[word] >> 1)  & 0x55555555);
 	    res = (res  & 0x33333333) + ((res  >> 2)  & 0x33333333);
 	    res = (res  & 0x0F0F0F0F) + ((res  >> 4)  & 0x0F0F0F0F);
 	    res = (res  & 0x00FF00FF) + ((res  >> 8)  & 0x00FF00FF);
 	    res = (res  & 0x0000FFFF) + ((res  >> 16) & 0x0000FFFF);
 	    count += res;
-	} /* for (quad_byte */
+	else if (sizeof(unsigned) == 8) {
+	    res = (BitMap[word] & 0x5555555555555555) + ((BitMap[word] >> 1) & 0x5555555555555555);
+	    res = (res & 0x3333333333333333) + ((res >> 2)  & 0x3333333333333333);
+	    res = (res & 0x0F0F0F0F0F0F0F0F) + ((res >> 4)  & 0x0F0F0F0F0F0F0F0F);
+	    res = (res & 0x00FF00FF00FF00FF) + ((res >> 8)  & 0x00FF00FF00FF00FF);
+	    res = (res & 0x0000FFFF0000FFFF) + ((res >> 16) & 0x0000FFFF0000FFFF);
+	    res = (res & 0x00000000FFFFFFFF) + ((res >> 32) & 0x00000000FFFFFFFF);
+	    count += res;
+	} else {
+	    for (byte=0; byte<(sizeof(unsigned)*8); byte+=8) {
+		scan = BitMap[word] >> ((sizeof(unsigned)*8)-8-byte);
+		if (scan & 0x01) count++;
+		if (scan & 0x02) count++;
+		if (scan & 0x04) count++;
+		if (scan & 0x08) count++;
+		if (scan & 0x10) count++;
+		if (scan & 0x20) count++;
+		if (scan & 0x40) count++;
+		if (scan & 0x80) count++;
+	    } /* for (byte */
+	} /* else */
     } /* for (word */
     return count;
 } /* BitMapCount */
@@ -287,7 +305,7 @@ void BitMapFill(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapFill: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     first = last = position = gap = -1;
@@ -334,7 +352,7 @@ int BitMapIsSuper(unsigned *BitMap1, unsigned *BitMap2) {
 #else
 	syslog(LOG_ALERT, "BitMapOR: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -359,7 +377,7 @@ void BitMapOR(unsigned *BitMap1, unsigned *BitMap2) {
 #else
 	syslog(LOG_ALERT, "BitMapOR: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -385,7 +403,7 @@ char *BitMapPrint(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapPrint: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
@@ -397,7 +415,7 @@ char *BitMapPrint(unsigned *BitMap) {
 #else
 	syslog(LOG_ALERT, "BitMapPrint: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     strcpy(Output, "0x");
@@ -430,7 +448,7 @@ void BitMapSet(unsigned *BitMap, int Position) {
 #else
 	syslog(LOG_ALERT, "BitMapSet: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     val  = Position / (sizeof(unsigned)*8);
@@ -457,7 +475,7 @@ int BitMapValue(unsigned *BitMap, int Position) {
 #else
 	syslog(LOG_ALERT, "BitMapValue: BitMap pointer is NULL\n");
 #endif
-	exit(EFAULT);
+	abort();
     } /* if */
 
     val  = Position / (sizeof(unsigned)*8);
@@ -563,7 +581,7 @@ int Load_String(char **destination, char *keyword, char *In_Line) {
 #else
 	    syslog(LOG_ALERT, "Load_String: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	strcpy(destination[0], str_ptr2);
 	for (i=0; i<(str_len1+str_len2); i++) {
@@ -750,7 +768,7 @@ int Write_Value(char **Buffer, int *Buffer_Offset, int *Buffer_Size,
 #else
 	    syslog(LOG_ALERT, "Write_Value: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
     } /* if */
 

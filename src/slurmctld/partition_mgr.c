@@ -200,7 +200,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 #else
 	    syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	Old_BitMap = NULL;
     } else
@@ -219,7 +219,7 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 	syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
 #endif
 	if (Old_BitMap) free(Old_BitMap);
-	exit(ENOMEM);
+	abort();
     } /* if */
     strcpy(My_Node_List, Part_Record_Point->Nodes);
 
@@ -303,7 +303,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     strcpy(Part_Record_Point->Name, "DEFAULT");
@@ -325,7 +325,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	strcpy(Part_Record_Point->AllowGroups, Default_Part.AllowGroups);
     } else
@@ -339,7 +339,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	    exit(ENOMEM);
+	    abort();
 	} /* if */
 	strcpy(Part_Record_Point->Nodes, Default_Part.Nodes);
     } else
@@ -351,7 +351,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     return Part_Record_Point;
@@ -417,7 +417,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	syslog(LOG_ALERT, "Dump_Part: list_iterator_create unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     /* Write haeader, version and time */
@@ -439,7 +439,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	    syslog(LOG_ALERT, "Dump_Part: Data integrity is bad\n");
 #endif
-	    exit(EINVAL);
+	    abort();
 	} /* if */
 
 	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartName", 
@@ -502,7 +502,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	syslog(LOG_ALERT, "Dump_Part: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     Buffer_Ptr[0] = Buffer;
@@ -552,7 +552,7 @@ int Init_Part_Conf() {
 #else
 	syslog(LOG_ALERT, "Init_Part_Conf: list_create can not allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
 
     strcpy(Default_Part_Name, "");
