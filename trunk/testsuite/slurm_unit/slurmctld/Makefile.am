@@ -43,7 +43,7 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 #		$(top_builddir)/src/api/libslurm.la
 
 LDADD  = $(top_builddir)/src/common/libcommon.la \
-		$(top_builddir)/src/api/libslurm.la
+		$(top_builddir)/src/api/libslurm.la \
 		$(SSL_LIBS)
 #		$(top_builddir)/src/common/libhostlist.la	\
 #		$(top_builddir)/src/slurmctld/agent.o \
@@ -55,7 +55,7 @@ LDADD  = $(top_builddir)/src/common/libcommon.la \
 #		$(top_builddir)/src/slurmctld/node_mgr.o \
 #		$(top_builddir)/src/slurmctld/locks.o \
 #		$(top_builddir)/src/slurmctld/read_config.o \
-#		$(top_builddir)/src/common/parse_spec.o  \
+#		$(top_builddir)/src/common/parse_spec.o  
 
 force :
 $(LDADD) : force
