@@ -56,4 +56,7 @@ extern void *agent_retry (void *args);
 /* retry_pending - retry all pending RPCs for the given node name */
 extern void retry_pending (char *node_name);
 
+/* agent_purge - purge all pending RPC requests */
+extern void agent_purge (void);
+
 #endif /* !_AGENT_H */

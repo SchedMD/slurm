@@ -57,6 +57,7 @@
 #define DEFAULT_DAEMONIZE 0
 #define DEFAULT_RECOVER 0
 #define MAX_SERVER_THREAD_COUNT 20
+#define MEM_LEAK_TEST 0
 
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = { 1, LOG_LEVEL_INFO,  LOG_LEVEL_INFO, LOG_LEVEL_QUIET } ;
@@ -470,6 +471,25 @@ slurmctld_background ( void * no_data )
 
 	}
 	debug3 ("slurmctld_background shutting down");
+
+#if	MEM_LEAK_TEST
+	/* This should purge all allocated memory,	*\
+	\*	Anything left over represents a leak.	*/
+	if (job_list)
+		list_destroy (job_list);
+
+	if (part_list)
+		list_destroy (part_list);
+
+	if (config_list)
+		list_destroy (config_list);
+	if (node_record_table_ptr)
+		xfree (node_record_table_ptr);
+	if (hash_table)
+		xfree (hash_table);
+
+	agent_purge ();
+#endif
 	return NULL;
 }
 
