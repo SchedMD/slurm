@@ -91,12 +91,6 @@ int main(int argc, char *argv[])
 	nodelay(stdscr, TRUE);
 	start_color();
 	
-	//if(can_change_color()) {
-		printf("hey\n");
-		init_color(3, 3, 200, 50);
-		printf("hey\n");
-		//}
-	
 	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
 	box(pa_system_ptr->grid_win, 0, 0);
 

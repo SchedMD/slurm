@@ -73,7 +73,7 @@ void get_part(void)
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 		error_code = rm_get_partition(part.name, &rm_part_ptr);
 		if (error_code) {
 			info("rm_get_partition %s errno=%d",
