@@ -89,7 +89,8 @@ parse_command_line( int argc, char* argv[] )
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				fprintf(stderr, "Try \"squeue --help\" for more information\n");
+				fprintf(stderr, "Try \"squeue --help\" "
+						"for more information\n");
 				exit(1);
 			case (int)'h':
 				params.no_header = true;
@@ -97,9 +98,7 @@ parse_command_line( int argc, char* argv[] )
 			case (int) 'i':
 				params.iterate= atoi(optarg);
 				if (params.iterate <= 0) {
-					fprintf(stderr, 
-						"Error: --iterate=%s",
-						optarg);
+					error ("--iterate=%s\n", optarg);
 					exit(1);
 				}
 				break;
@@ -167,13 +166,14 @@ parse_command_line( int argc, char* argv[] )
 			params.step_list = _build_step_list(params.steps);
 		}
 		if (optind < argc) {
-			fprintf(stderr, "Unrecognized option: %s",argv[optind]);
+			error("Unrecognized option: %s",argv[optind]);
+			_usage();
 			exit(1);
 		}
 	}
 
 	if ( params.job_flag && params.step_flag) {
-		fprintf(stderr, "Incompatable options --jobs and --steps\n");
+		error("Incompatable options --jobs and --steps\n");
 		exit(1);
 	}
 
@@ -256,7 +256,7 @@ _parse_state( char* str, enum job_states* states )
 		return SLURM_SUCCESS;
 	}	
 
-	fprintf (stderr, "Invalid job state specified: %s\n", str);
+	error ("Invalid job state specified: %s", str);
 	state_names = xstrdup(job_state_string(0));
 	for (i=1; i<JOB_END; i++) {
 		xstrcat(state_names, ",");
@@ -264,7 +264,7 @@ _parse_state( char* str, enum job_states* states )
 	}
 	xstrcat(state_names, ",");
 	xstrcat(state_names, job_state_string(JOB_COMPLETING));
-	fprintf (stderr, "Valid job states include: %s\n", state_names);
+	error ("Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	return SLURM_ERROR;
 }
@@ -284,7 +284,7 @@ extern int parse_format( char* format )
 	char field[1];
 
 	if (format == NULL) {
-		fprintf( stderr, "Format option lacks specification\n" );
+		error ("Format option lacks specification.");
 		exit( 1 );
 	}
 
@@ -343,10 +343,8 @@ extern int parse_format( char* format )
 				                           right_justify, 
 				                           suffix );
 			else
-				fprintf( 
-				   stderr, 
-				   "Invalid job step format specification: %c\n",
-				   field[0] );
+				error ("Invalid job step format specification: %c",
+				       field[0] );
 		} else {
 			if      (field[0] == 'b')
 				job_format_add_time_start( params.format_list, 
@@ -469,10 +467,8 @@ extern int parse_format( char* format )
 				                          right_justify, 
 				                          suffix );
 			else 
-				fprintf( 
-				   stderr, 
-				   "Invalid job format specification: %c\n", 
-				   field[0] );
+				error( "Invalid job format specification: %c", 
+				       field[0] );
 		}
 		token = strtok_r( NULL, "%", &tmp_char);
 	}
@@ -635,7 +631,7 @@ _build_job_list( char* str )
 	{
 		i = strtol( job, (char **) NULL, 10 );
 		if (i <= 0) {
-			fprintf( stderr, "Invalid job id: %s\n", job );
+			error( "Invalid job id: %s", job );
 			exit( 1 );
 		}
 		job_id = xmalloc( sizeof( uint32_t ) );
@@ -753,13 +749,13 @@ _build_step_list( char* str )
 		step_name = strtok_r( NULL, ".", &tmps_char );
 		i = strtol( job_name, (char **) NULL, 10 );
 		if (step_name == NULL) {
-			fprintf( stderr, "Invalid job_step id: %s.??\n", 
+			error ( "Invalid job_step id: %s.??", 
 			         job_name );
 			exit( 1 );
 		}
 		j = strtol( step_name, (char **) NULL, 10 );
 		if ((i <= 0) || (j < 0)) {
-			fprintf( stderr, "Invalid job_step id: %s.%s\n", 
+			error( "Invalid job_step id: %s.%s", 
 				job_name, step_name );
 			exit( 1 );
 		}
@@ -794,7 +790,7 @@ _build_user_list( char* str )
 	{
 		passwd_ptr = getpwnam( user );
 		if (passwd_ptr == NULL)
-			fprintf( stderr, "Invalid user: %s\n", user);
+			error( "Invalid user: %s\n", user);
 		else {
 			uid = xmalloc( sizeof( uint32_t ));
 			*uid = passwd_ptr->pw_uid;
