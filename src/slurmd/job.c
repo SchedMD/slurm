@@ -104,7 +104,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	debug3("entering job_create");
 
-	if ((pwd = _pwd_create((uid_t)msg->uid)) < 0) {
+	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
 		return NULL;
 	}
@@ -188,7 +188,7 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	srun_info_t  *srun = NULL;
 	uint32_t      global_taskid = 0;
 
-	if ((pwd = _pwd_create((uid_t)msg->uid)) < 0) {
+	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
 		error("uid %ld not found on system", (long) msg->uid);
 		return NULL;
 	}
