@@ -108,6 +108,10 @@ int Delete_Part_Record(char *name) {
     Error_Code = ENOENT;	/* default until found */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
 	if (strcmp(Part_Record_Point->Name, name) == 0) {
+	    if (Part_Record_Point->AllowUsers != (char *)NULL) 
+		free(Part_Record_Point->AllowUsers);
+	    if (Part_Record_Point->DenyUsers != (char *)NULL) 
+		free(Part_Record_Point->DenyUsers);
 	    (void) list_remove(Part_Record_Iterator);
 	    free(Part_Record_Point);
 	    Error_Code = 0;
@@ -461,6 +465,8 @@ int Find_Valid_Parts (char *Specification, unsigned *Parition) {
 /* 
  * Parse_Part_Spec - Parse the partition input specification, return values and set flags
  * Output: 0 if no error, error code otherwise
+ * NOTE: My_AllowUsers and My_DenyUsers are pointers to allocated memory that should be 
+ *       freed when no longer required
  */
 int Parse_Part_Spec(char *Specification, char *My_Name,  
 	int *My_Number, int *Set_Number, unsigned *My_Batch, int *Set_Batch,
@@ -771,9 +777,11 @@ int Read_Part_Spec_Conf (char *File_Name) {
 	    if (Set_MaxTime != 0)      Part_Record_Point->MaxTime=My_MaxTime;
 	    if (Set_MaxCpus != 0)      Part_Record_Point->MaxCpus=My_MaxCpus;
 	    if (My_AllowUsers != NULL) {
+		if (Part_Record_Point->AllowUsers != (char *)NULL) 
+			free(Part_Record_Point->AllowUsers);
 		Part_Record_Point->AllowUsers = My_AllowUsers;
 	    } else if (Default_Record.AllowUsers == NULL) {
-		Part_Record_Point->AllowUsers = Default_Record.AllowUsers;
+		Part_Record_Point->AllowUsers = (char *)NULL;
 	    } else {
 		int list_size;
 		char *user_list;
@@ -792,9 +800,11 @@ int Read_Part_Spec_Conf (char *File_Name) {
 		Part_Record_Point->AllowUsers = user_list;
 	    } /* else */
 	    if (My_DenyUsers != NULL) {
+		if (Part_Record_Point->DenyUsers != (char *)NULL) 
+			free(Part_Record_Point->DenyUsers);
 		Part_Record_Point->DenyUsers = My_DenyUsers;
 	    } else if (Default_Record.DenyUsers == NULL) {
-		Part_Record_Point->DenyUsers = Default_Record.AllowUsers;
+		Part_Record_Point->DenyUsers = (char *)NULL;
 	    } else {
 		int list_size;
 		char *user_list;
