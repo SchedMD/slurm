@@ -70,9 +70,6 @@ struct config_record {
 };
 extern List config_list;	/* list of config_record entries */
 
-/* last entry must be "end", keep in sync with node_states */
-extern char *node_state_string[];
-
 extern time_t last_bitmap_update;	/* time of last node creation or deletion */
 extern time_t last_node_update;		/* time of last update to node records */
 struct node_record {
@@ -119,9 +116,6 @@ extern struct part_record *default_part_loc;	/* location of default partition */
 /* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
 extern time_t last_job_update;	/* time of last update to part records */
 extern time_t last_step_update;	/* time of last update to job steps */
-
-/* last entry must be "end", keep in sync with node_state */
-extern char *job_state_string[];
 
 /* Don't accept more jobs once there are MAX_JOB_COUNT in the system */
 /* Purge OK for jobs over MIN_JOB_AGE seconds old (since completion) */

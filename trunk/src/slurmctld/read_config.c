@@ -256,10 +256,10 @@ build_bitmaps () {
 	for (i = 0; i < node_record_count; i++) {
 		if (strlen (node_record_table_ptr[i].name) == 0)
 			continue;	/* defunct */
-		if (node_record_table_ptr[i].node_state == STATE_IDLE)
+		if (node_record_table_ptr[i].node_state == NODE_STATE_IDLE)
 			bit_set (idle_node_bitmap, i);
-		if ((node_record_table_ptr[i].node_state != STATE_DOWN) &&
-		    ((node_record_table_ptr[i].node_state & STATE_NO_RESPOND) == 0))
+		if ((node_record_table_ptr[i].node_state != NODE_STATE_DOWN) &&
+		    ((node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND) == 0))
 			bit_set (up_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set (node_record_table_ptr[i].config_ptr->node_bitmap, i);
@@ -387,10 +387,10 @@ parse_node_spec (char *in_line) {
 
 	if (state != NULL) {
 		state_val = NO_VAL;
-		for (i = 0; i <= STATE_END; i++) {
-			if (strcmp (node_state_string[i], "END") == 0)
+		for (i = 0; i <= NODE_STATE_END; i++) {
+			if (strcmp (node_state_string(i), "END") == 0)
 				break;
-			if (strcmp (node_state_string[i], state) == 0) {
+			if (strcmp (node_state_string(i), state) == 0) {
 				state_val = i;
 				break;
 			}	

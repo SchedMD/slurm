@@ -24,6 +24,7 @@
 #include "slurmctld.h"
 
 #define BUF_SIZE 1024
+#define STEP_STRUCT_VERSION 1
 
 List step_list = NULL;			/* job_step list */
 static pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for step info */

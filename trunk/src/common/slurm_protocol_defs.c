@@ -289,3 +289,47 @@ void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
 	job_desc_msg -> num_nodes = SLURM_JOB_DESC_DEFAULT_NUM_NODES ;
 	job_desc_msg -> user_id = SLURM_JOB_DESC_DEFAULT_USER_ID ;
 }
+
+char *
+job_dist_string(uint16_t inx) 
+{
+	static char *job_dist_string[] = {
+		"BLOCK", 
+		"CYCLE" 
+	};
+	return job_dist_string[inx];
+}
+
+char *
+job_state_string(uint16_t inx) 
+{
+	static char *job_state_string[] = {
+		"PENDING", 
+		"STAGE_IN", 
+		"RUNNING", 
+		"STAGE_OUT", 
+		"COMPLETE", 
+		"FAILED", 
+		"TIMEOUT", 
+		"END" 
+	};
+	return job_state_string[inx];
+}
+
+char *
+node_state_string(uint16_t inx) 
+{
+	static char *node_state_string[] = {
+		"DOWN", 
+		"UNKNOWN", 
+		"IDLE", 
+		"ALLOCATED", 
+		"STAGE_IN", 
+		"RUNNING", 
+		"STAGE_OUT", 
+		"DRAINED", 
+		"DRAINING", 
+		"END" 
+	};
+	return node_state_string[inx];
+}
