@@ -70,8 +70,8 @@ List bgl_sys_free = NULL;
 List bgl_sys_allocated = NULL;
 
 void _init_sys(partition_t*);
-int _is_not_equals_all_coord(uint16_t* A, uint16_t* B);
-int _is_not_equals_some_coord(uint16_t* A, uint16_t* B);
+int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b);
+int _is_not_equals_some_coord(uint16_t* rec_A, uint16_t* rec_b);
 
 #ifdef _RM_API_H__
 /** 
@@ -84,39 +84,39 @@ int _is_not_equals_some_coord(uint16_t* A, uint16_t* B);
  * OUT - bp: will point to BP at location loc
  * OUT - rc: error code (0 = success)
  */
-int _get_bp(rm_element_t *bp, rm_location_t *loc);
-int _check_bp_status(rm_location_t *loc);
-void _pre_allocate(rm_partition_t* my_part, rm_connection_type_t* part_conn);
-int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id);
-int _get_switch(partition_t* partition, List switch_list);
-int _get_bp_by_location(int* cur_coord, rm_BP_t* BP);
-void _rm_switch_t_destroy(void* object);
+static int _get_bp(rm_element_t *bp, rm_location_t *loc);
+static int _check_bp_status(rm_location_t *loc);
+static void _pre_allocate(rm_partition_t* my_part, rm_connection_type_t* part_conn);
+static int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id);
+static int _get_switch(partition_t* partition, List switch_list);
+static int _get_bp_by_location(int* cur_coord, rm_BP_t* bp);
+static void _rm_switch_t_destroy(void* object);
 
 #else
-int _create_bgl_partitions(List requests);
+static int _create_bgl_partitions(List requests);
 
 #endif
 
-int _break_up_partition(List sys, partition_t* partition_to_break, int index);
-int _fit_request(List sys, List allocated, uint16_t* request);
+static int _break_up_partition(List sys, partition_t* partition_to_break, int index);
+static int _fit_request(List sys, List allocated, uint16_t* request);
 
-void _int_array_destroy(void* object);
-int _int_array_cmpf(uint16_t* A, uint16_t* B);
+static void _int_array_destroy(void* object);
+static int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
 
-int _partition_cmpf_inc(struct partition* A, struct partition* B);
-int _partition_cmpf_dec(struct partition* A, struct partition* B);
+static int _partition_cmpf_inc(struct partition* rec_a, struct partition* rec_b);
+static int _partition_cmpf_dec(struct partition* rec_a, struct partition* rec_b);
 
 #ifdef _RM_API_H__
-void _preallocate(rm_BGL_t* bgl, rm_partition_t* my_part, 
+static void _preallocate(rm_BGL_t* bgl, rm_partition_t* my_part, 
  		 char* username, rm_connection_type_t* part_conn);
-int _postallocate(rm_BGL_t *bgl, rm_partition_t *my_part, 
+static int _postallocate(rm_BGL_t *bgl, rm_partition_t *my_part, 
 		 pm_partition_id_t *part_id);
 #endif
 
-List _get_bgl_sys_free();
-List _get_bgl_sys_allocated();
+static List _get_bgl_sys_free();
+static List _get_bgl_sys_allocated();
 #ifdef _UNIT_TESTS_
-void debug(const char *fmt, ...);
+extern void debug(const char *fmt, ...);
 #endif
 
 
@@ -332,11 +332,6 @@ int _break_up_partition(List sys, partition_t* partition_to_break, int index)
 	first_part = (partition_t*) xmalloc(sizeof(partition_t));
 	second_part = (partition_t*) xmalloc(sizeof(partition_t));
 
-	if (!first_part || !second_part){
-		error("_break_up_partition: not enough memory to break up partitions");
-		return 1;
-	}
-
 	copy_partition(partition_to_break, first_part);
 	copy_partition(partition_to_break, second_part);
 
@@ -512,23 +507,23 @@ void sort_int_array_by_dec_size(List configs){
 /** 
  * Comparator used for sorting int arrays
  * 
- * returns: -1: A greater than B 0: A equal to B 1: A less than B
+ * returns: -1: rec_a > rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  * 
  * Note: return values are "reversed" so that we can have the list
  * sorted in decreasing order (largest to smallest)
  */
-int _int_array_cmpf(uint16_t* A, uint16_t* B)
+int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b)
 {
-	int volA, volB;
+	int vol_a, vol_b;
 
-	if (A == NULL || B == NULL)
+	if (rec_a == NULL || rec_b == NULL)
 		return -9;
 
-	volA = int_array_size(A);
-	volB = int_array_size(B);
-	if (volA > volB)
+	vol_a = int_array_size(rec_a);
+	vol_b = int_array_size(rec_b);
+	if (vol_a > vol_b)
 		return -1;
-	else if (volA < volB)
+	else if (vol_a < vol_b)
 		return 1;
 	else 
 		return 0;
@@ -685,10 +680,7 @@ int configure_switches(partition_t* partition)
 	} /* end of cur_coord[1]*/
 
 	bgl_part_id = (pm_partition_id_t*) xmalloc(sizeof(pm_partition_id_t));
-	if (!bgl_part_id){
-		error("_configure_switches: not enough memory for bgl_part_id");
-		return SLURM_ERROR;
-	}
+
 #ifdef _RM_API_H__
 	post_allocate(bgl_part, bgl_part_id);
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
@@ -995,7 +987,7 @@ void rm_switch_t_destroy(void* object)
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
-int get_bp_by_location(int* cur_coord, rm_BP_t* BP)
+int get_bp_by_location(int* cur_coord, rm_BP_t* bp)
 {
 	int BP_num;
 	rm_location_t* loc;
@@ -1003,14 +995,14 @@ int get_bp_by_location(int* cur_coord, rm_BP_t* BP)
 	rm_get_data(bgl, RM_BPNum, &bp_num);
 	rm_get_data(bgl, RM_FirstBP, &BP);	
 	for (i=0; i<BP_num; i++){
-		rm_get_data(BP, RM_BPLoc, &loc);
+		rm_get_data(bp, RM_BPLoc, &loc);
 		if (loc.X == cur_coord[0] && loc.Y == cur_coord[1] && loc.Z == cur_coord[2])
 			return SLURM_SUCCESS;
 
-		rm_get_data(bgl, RM_NextBP, &BP);	
+		rm_get_data(bgl, RM_NextBP, &bp);	
 	}
 
-	error("get_bp_by_location: could not find specified BP.");
+	error("get_bp_by_location: could not find specified bp.");
 	return SLURM_ERROR;
 }
 #endif
@@ -1020,11 +1012,11 @@ int get_bp_by_location(int* cur_coord, rm_BP_t* BP)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _is_not_equals_some_coord(uint16_t* A, uint16_t* B)
+int _is_not_equals_some_coord(uint16_t* rec_a, uint16_t* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
-		if (A[i] == B[i])
+		if (rec_a[i] == rec_b[i])
 			return 0;
 	}
 	return 1;
@@ -1035,11 +1027,11 @@ int _is_not_equals_some_coord(uint16_t* A, uint16_t* B)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _is_not_equals_all_coord(uint16_t* A, uint16_t* B)
+int _is_not_equals_all_coord(uint16_t* rec_a, uint16_t* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
-		if (A[i] != B[i])
+		if (rec_a[i] != rec_b[i])
 			return 1;
 	}
 	return 0;
@@ -1067,14 +1059,14 @@ void sort_partitions_by_dec_size(List parts){
 /** 
  * Comparator used for sorting partitions smallest to largest
  * 
- * returns: -1: A greater than B 0: A equal to B 1: A less than B
+ * returns: -1: rec_a  < rec_b    0: rec_a == rec_b   1: rec_a > rec_b
  * 
  */
-int _partition_cmpf_inc(struct partition* A, struct partition* B)
+int _partition_cmpf_inc(struct partition* rec_a, struct partition* rec_b)
 {
-	if (A->size < B->size)
+	if (rec_a->size < rec_b->size)
 		return -1;
-	else if (A->size > B->size)
+	else if (rec_a->size > rec_b->size)
 		return 1;
 	else 
 		return 0;
@@ -1083,14 +1075,14 @@ int _partition_cmpf_inc(struct partition* A, struct partition* B)
 /** 
  * Comparator used for sorting partitions largest to smallest
  * 
- * returns: -1: A greater than B 0: A equal to B 1: A less than B
+ * returns: -1: rec_a > rec_b    0: rec_a == rec_b   1: rec_a < rec_b
  * 
  */
-int _partition_cmpf_dec(struct partition* A, struct partition* B)
+int _partition_cmpf_dec(struct partition* rec_a, struct partition* rec_b)
 {
-	if (A->size > B->size)
+	if (rec_a->size > rec_b->size)
 		return -1;
-	else if (A->size < B->size)
+	else if (rec_a->size < rec_b->size)
 		return 1;
 	else 
 		return 0;
