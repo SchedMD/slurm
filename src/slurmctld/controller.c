@@ -341,6 +341,10 @@ static void  _init_config(void)
 		rlim.rlim_cur = rlim.rlim_max;
 		(void) setrlimit(RLIMIT_STACK, &rlim);
 	}
+	if (getrlimit(RLIMIT_DATA, &rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		(void) setrlimit(RLIMIT_DATA, &rlim);
+	}
 
 	slurmctld_config.daemonize      = DEFAULT_DAEMONIZE;
 	slurmctld_config.resume_backup  = false;

@@ -51,6 +51,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
+#define HUGE_BUF_SIZE (16 * 1024)
 
 /* Global variables */
 struct part_record default_part;	/* default configuration values */
@@ -240,7 +241,7 @@ int dump_all_part_state(void)
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock =
 	    { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-	Buf buffer = init_buf(BUF_SIZE * 16);
+	Buf buffer = init_buf(HUGE_BUF_SIZE);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -368,10 +369,11 @@ int load_all_part_state(void)
 		     state_file);
 		error_code = ENOENT;
 	} else {
-		data_allocated = BUF_SIZE;
+		data_allocated = HUGE_BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while (1) {
-			data_read = read(state_fd, &data[data_size], BUF_SIZE);
+			data_read = read(state_fd, &data[data_size], 
+					HUGE_BUF_SIZE);
 			if (data_read < 0) {
 				if  (errno == EINTR)
 					continue;
@@ -616,7 +618,7 @@ extern void pack_all_part(char **buffer_ptr, int *buffer_size,
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE * 16);
+	buffer = init_buf(HUGE_BUF_SIZE);
 
 	/* write haeader: version and time */
 	parts_packed = 0;

@@ -176,7 +176,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			job_ptr->node_cnt--;
 		}
 		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 32;
+			buf_rec_size += 128;
 			xrealloc((agent_args->slurm_addr),
 				 (sizeof(struct sockaddr_in) *
 				  buf_rec_size));
@@ -1353,7 +1353,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
 		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 32;
+			buf_rec_size += 128;
 			xrealloc((agent_args->slurm_addr),
 				 (sizeof(struct sockaddr_in) * buf_rec_size));
 			xrealloc((agent_args->node_names),
