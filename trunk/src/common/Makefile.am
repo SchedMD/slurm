@@ -77,4 +77,4 @@ libeio_la_SOURCES = 	   		\
 	io_hdr.c io_hdr.h
 
 libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
-libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)
+libcommon_la_LDFLAGS  = $(LIB_LDFLAGS) $(SSL_LDFLAGS)

@@ -15,5 +15,6 @@ sched_backfill_la_SOURCES = backfill_wrapper.c	\
 			backfill.c	\
 			backfill.h
 
-sched_backfill_la_LDFLAGS = $(PLUGIN_FLAGS)
-#sched_backfill_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+sched_backfill_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_backfill_la_LIBADD = $(top_builddir)/src/common/libcommon.la   \
+			$(top_builddir)/src/api/libslurm.la

@@ -13,5 +13,6 @@ pkglib_LTLIBRARIES = sched_builtin.la
 
 sched_builtin_la_SOURCES = builtin_wrapper.c
 
-sched_builtin_la_LDFLAGS = $(PLUGIN_FLAGS)
-sched_builtin_la_LIBADD = $(top_builddir)/src/api/libslurm.la
+sched_builtin_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_builtin_la_LIBADD = $(top_builddir)/src/common/libcommon.la   \
+			$(top_builddir)/src/api/libslurm.la

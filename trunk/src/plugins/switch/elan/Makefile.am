@@ -24,8 +24,10 @@ switch_elan_la_SOURCES =        \
 # Add libslurm to switch_elan to provide some symbols that are not
 #  available in slurmctld (slurm_setenvpf)
 
-switch_elan_la_LIBADD  = $(ELAN_LIBS)  $(top_builddir)/src/api/libslurm.la
-switch_elan_la_LDFLAGS = $(PLUGIN_FLAGS)
+switch_elan_la_LIBADD  = $(ELAN_LIBS)  \
+			$(top_builddir)/src/common/libcommon.la   \
+			$(top_builddir)/src/api/libslurm.la
+switch_elan_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 else
 EXTRA_switch_elan_la_SOURCES =  \

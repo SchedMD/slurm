@@ -39,5 +39,7 @@ sched_wiki_la_SOURCES =	../agent.cpp		\
 			wiki_status.cpp		\
 			wiki_wrapper.cpp
 
-sched_wiki_la_LDFLAGS = $(PLUGIN_FLAGS)
-sched_wiki_la_LIBADD = $(top_builddir)/src/api/libslurm.la -lstdc++
+sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+sched_wiki_la_LIBADD = -lstdc++ \
+			$(top_builddir)/src/common/libcommon.la   \
+			$(top_builddir)/src/api/libslurm.la
