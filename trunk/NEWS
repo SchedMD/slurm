@@ -9,6 +9,9 @@ documents those changes that are of interest to users and admins.
     and node state recovered are out of sync.
  -- Added jobcomp/script plugin (execute script on job completion, 
     from Nathan Huff, North Dakota State University).
+ -- Added new error code ESLURM_FRAGMENTED for immediate resource 
+    allocation requests which are refused due to completing job (formerly 
+    returned ESLURM_NOT_TOP_PRIORITY)
  
 * Changes in SLURM 0.3.5
 ========================
