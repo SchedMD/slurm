@@ -40,8 +40,7 @@
 
 #define BUF_SIZE 1024
 
-bitstr_t * pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
-		 char *node_list, char *relative_node_list);
+bitstr_t * pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec );
 
 /* 
  * create_step_record - create an empty step_record for the specified job.
@@ -249,12 +248,12 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
  * pick_step_nodes - select nodes for a job step that satify its requirements
  *	we satify the super-set of constraints.
  * global: node_record_table_ptr - pointer to global node table
- * NOTE: returns all of a job's nodes if min_nodes == INFINITE
+ * NOTE: returns all of a job's nodes if step_spec->node_count == INFINITE
  * NOTE: returned bitmap must be freed by the caller using bit_free()
  */
 bitstr_t *
-pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
-		 char *node_list, char *relative_node_list) {
+pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
+
 	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
 
@@ -263,41 +262,43 @@ pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus,
 	
 	nodes_avail = bit_copy(job_ptr->node_bitmap);
 
-	if (min_nodes == INFINITE)	/* return all available nodes */
+	if ( step_spec->node_count == INFINITE)	/* return all available nodes */
 		return nodes_avail;
 
-	if (node_list) {
-		error_code = node_name2bitmap (node_list, &nodes_picked);
-		if (error_code) {
-			info ("pick_step_nodes: invalid node list %s", node_list);
-			goto cleanup;
-		}
-		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
-			info ("pick_step_nodes: requested nodes %s not part of job %u",
-				node_list, job_ptr->job_id);
-			goto cleanup;
+	if (step_spec->node_list) {
+		if ( step_spec->relative ) {
+			/* FIXME need to resolve format of relative_node_list */
+			info ("pick_step_nodes: relative_node_list not yet supported");
+
+		} 
+		else {
+			error_code = node_name2bitmap (step_spec->node_list, &nodes_picked);
+			if (error_code) {
+				info ("pick_step_nodes: invalid node list %s", step_spec->node_list);
+				goto cleanup;
+			}
+			if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
+				info ("pick_step_nodes: requested nodes %s not part of job %u",
+					step_spec->node_list, job_ptr->job_id);
+				goto cleanup;
+			}
 		}
 	}
 	else
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 
-	if (relative_node_list) {
-/* need to resolve format of relative_node_list */
-		info ("pick_step_nodes: relative_node_list not yet supported");
-	}
-
 	/* if user specifies step needs a specific processor count and all nodes */
 	/* have the same processor count, just translate this to a node count */
-	if (min_cpus && (job_ptr->num_cpu_groups == 1)) {
-		i = (min_cpus + (job_ptr->cpus_per_node[0] - 1) ) / job_ptr->cpus_per_node[0];
-		min_nodes = (i > min_nodes) ? i : min_nodes;
-		min_cpus = 0;
+	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
+		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) / job_ptr->cpus_per_node[0];
+		step_spec->node_count = (i > step_spec->node_count) ? i : step_spec->node_count ;
+		step_spec->cpu_count = 0;
 	}
 
-	if (min_nodes) {
+	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
-		if (min_nodes > nodes_picked_cnt) {
-			node_tmp = bit_pick_cnt(nodes_avail, (min_nodes - nodes_picked_cnt));
+		if (step_spec->node_count > nodes_picked_cnt) {
+			node_tmp = bit_pick_cnt(nodes_avail, (step_spec->node_count - nodes_picked_cnt));
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
@@ -305,13 +306,13 @@ pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus,
 			bit_and (nodes_avail, node_tmp);
 			bit_free (node_tmp);
 			node_tmp = NULL;
-			nodes_picked_cnt = min_nodes;
+			nodes_picked_cnt = step_spec->node_count;
 		}
 	}
 
-	if (min_cpus) {
+	if (step_spec->cpu_count) {
 		cpus_picked_cnt = count_cpus(nodes_picked);
-		if (min_cpus > cpus_picked_cnt) {
+		if (step_spec->cpu_count > cpus_picked_cnt) {
 			int first_bit, last_bit;
 			first_bit = bit_ffs(nodes_avail);
 			last_bit  = bit_fls(nodes_avail);
@@ -320,10 +321,10 @@ pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus,
 					continue;
 				bit_set (nodes_picked, i);
 				cpus_picked_cnt += node_record_table_ptr[i].cpus;
-				if (cpus_picked_cnt >= min_cpus)
+				if (cpus_picked_cnt >= step_spec->cpu_count)
 					break;
 			}
-			if (min_cpus > cpus_picked_cnt)
+			if (step_spec->cpu_count > cpus_picked_cnt)
 				goto cleanup;
 		}
 	}
@@ -342,14 +343,16 @@ cleanup:
 
 
 /*
- * step_create - parse the suppied job step specification and create step_records for it
+ * step_create - creates a step_record in step_specs->job_id, sets up the
+ *	accoding to the step_specs.
  * input: step_specs - job step specifications
- * output: returns 0 on success, EINVAL if specification is invalid
- * globals: step_list - pointer to global job step list 
- * NOTE: the calling program must xfree the memory pointed to by new_job_id
+ * output: SUCCESS: returns a pointer to the step_record
+ * 		FAILURE: sets slurm_srrno appropriately and returns
+ * NOTE: don't free the returned step_record because that is managed through
+ * 	the job.
  */
 int
-step_create (struct step_specs *step_specs)
+step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
@@ -360,21 +363,26 @@ step_create (struct step_specs *step_specs)
 #endif
 
 	job_ptr = find_job_record (step_specs->job_id);
-	if (job_ptr == NULL)
-		return ESLURM_INVALID_JOB_ID;
+	if (job_ptr == NULL) 
+		return ESLURM_INVALID_JOB_ID ;
+
 	if (step_specs->user_id != job_ptr->user_id &&
-	    step_specs->user_id != 0)
-		return ESLURM_ACCESS_DENIED;
+	    	step_specs->user_id != 0) 
+		return ESLURM_ACCESS_DENIED ;
 
-	nodeset = pick_step_nodes (job_ptr, step_specs->min_nodes, step_specs->min_cpus, 
-		step_specs->node_list, step_specs->relative_node_list);
+	nodeset = pick_step_nodes (job_ptr, step_specs );
+
 	if (nodeset == NULL)
-		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
 
+	/* FIXME need to set the error codes and define them 
+	 * probably shouldn't exit w/ a fatal... 
+	 */
 	step_ptr = create_step_record (job_ptr);
 	if (step_ptr == NULL)
 		fatal ("create_step_record failed with no memory");
 
+	/* set the step_record values */
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->node_bitmap = nodeset;
 
@@ -396,5 +404,7 @@ step_create (struct step_specs *step_specs)
 		fatal ("step_create: qsw_setup_jobinfo error");
 	bit_free (nodeset);
 #endif
-	return 0;
+
+	*new_step_record = step_ptr;
+	return SLURM_SUCCESS;
 }
