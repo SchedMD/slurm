@@ -53,25 +53,26 @@ void
 _pack32array(uint32_t *valp, uint16_t size_val, void **bufp, int *lenp)
 {
 	int i=0;
-	uint16_t nl = htons(size_val);
-	_pack16( nl, bufp, lenp );
+
+	_pack16( size_val, bufp, lenp );
 
 	for ( i=0; i < size_val; i++ ) {
 		_pack32( *(valp + i ), bufp, lenp );
 	}
 }
 
-/* Given a int ptr, it will pack an array of size_val
+/* Given a int ptr, it will unpack an array of size_val
  */
 void
 _unpack32array( uint32_t **valp, uint16_t* size_val, void **bufp, int *lenp)
 {
 	int i=0;
+
 	_unpack16( size_val, bufp, lenp );
-	valp = xmalloc( (*size_val) * sizeof( uint32_t ) );
-	
+	*valp = xmalloc( (*size_val) * sizeof( uint32_t ) );
+
 	for ( i=0; i < *size_val; i++ ) {
-		_unpack32( (*valp) + i , bufp, lenp );
+		_unpack32( (*valp) + i , bufp, lenp ); 
 	}
 }	
 
