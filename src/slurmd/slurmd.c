@@ -29,6 +29,7 @@
 #  include "config.h"
 #endif
 
+#include <fcntl.h>
 #include <string.h>
 #include <pthread.h>
 #include <sys/stat.h>
@@ -38,7 +39,9 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
+#include "src/common/list.h"
 #include "src/common/log.h"
+#include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -92,8 +95,11 @@ static void       _init_conf();
 static void       _print_conf();
 static void       _read_config();
 static void 	  _kill_old_slurmd();
+static void       _list_recovered_creds(List list);
 static void       _reconfigure();
+static void       _restore_cred_state(List *list);
 static void       _wait_for_all_threads();
+static void       _save_cred_state(List list);
 static void       _set_slurmd_spooldir(void);
 static void       _usage();
 static void       _handle_connection(slurm_fd fd, slurm_addr *client);
@@ -520,22 +526,98 @@ _slurmd_init()
 
 	slurm_ssl_init();
 	slurm_init_verifier(&conf->vctx, conf->pubkey);
-	initialize_credential_state_list(&conf->cred_state_list);
+	_restore_cred_state(&conf->cred_state_list);
 	conf->threads = list_create((ListDelF) _tid_free);
 	if (shm_init() < 0)
 		return SLURM_FAILURE;
 	return SLURM_SUCCESS;
 }
 
+static void
+_restore_cred_state(List *list)
+{
+	char *file_name, *data = NULL;
+	uint32_t data_size = 0;
+	int cred_fd, data_allocated, data_read = 0;
+	Buf buffer = NULL;
+
+	initialize_credential_state_list(list);
+
+	file_name = xstrdup(conf->spooldir);
+	xstrcat(file_name, "/cred_state");
+	cred_fd = open(file_name, O_RDONLY);
+	if (cred_fd < 0) {
+		error("open %s error %m", file_name);
+		goto cleanup;
+	}
+
+	data_allocated = 1024;
+	data = xmalloc(data_allocated);
+	while ((data_read = read(cred_fd, &data[data_size], 1024)) == 1024) {
+		data_size += data_read;
+		data_allocated += 1024;
+		xrealloc(data, data_allocated);
+	}
+	data_size += data_read;
+	close(cred_fd);
+	buffer = create_buf(data, data_size);
+	unpack_credential_list(*list, buffer);
+	_list_recovered_creds(*list);
+
+      cleanup:
+	xfree(file_name);
+	free_buf(buffer);
+}
+
+static void _list_recovered_creds(List list)
+{
+	ListIterator iterator;
+	credential_state_t *credential_state_ptr;
+
+	iterator = list_iterator_create(list);
+	while ((credential_state_ptr = list_next(iterator)))
+		info("Recovered cred for job_id %u",
+		     credential_state_ptr->job_id);
+	list_iterator_destroy(iterator);
+}
+
 static int
 _slurmd_fini()
 {
 	list_destroy(conf->threads);
-	destroy_credential_state_list(conf->cred_state_list);
+	_save_cred_state(conf->cred_state_list);
 	slurm_destroy_ssl_key_ctx(&conf->vctx);
 	slurm_ssl_destroy();
 	shm_fini();
 	return SLURM_SUCCESS;
+}
+
+static void
+_save_cred_state(List list)
+{
+	char *file_name;
+	int cred_fd;
+	Buf buffer = NULL;
+
+	file_name = xstrdup(conf->spooldir);
+	xstrcat(file_name, "/cred_state");
+	cred_fd = creat(file_name, 0600);
+	if (cred_fd == 0) {
+		error("creat %s error %m", file_name);
+		goto cleanup;
+	}
+	buffer = init_buf(1024);
+	pack_credential_list(list, buffer);
+	if (write(cred_fd, get_buf_data(buffer), get_buf_offset(buffer)) != 
+	    get_buf_offset(buffer))
+		error("write %s error %m", file_name);
+	close(cred_fd);
+
+      cleanup:
+	xfree(file_name);
+	if (buffer)
+		free_buf(buffer);
+	destroy_credential_state_list(list);
 }
 
 static void
