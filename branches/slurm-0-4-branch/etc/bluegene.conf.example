@@ -15,7 +15,7 @@ BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts
 LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
-#ChangeNumpsets=/etc/slurm/change_numpsets
+Numpsets=8
 
 #
 # Define the static partitions (bglblocks)

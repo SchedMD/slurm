@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.9
+========================
+ -- setpnum works now, have to include this in bluegene.conf
+
 * Changes in SLURM 0.4.8
 ========================
  -- Changed the prolog and the epilog to use the env var MPIRUN_PARTITION
