@@ -485,6 +485,27 @@ void _print_options( void )
 	printf("sort        = %s\n", params.sort);
 	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
 	printf("verbose     = %d\n", params.verbose);
+	printf("-----------------------------\n");
+	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
+			"true" : "false");
+	printf("features_flag   = %s\n", params.match_flags.features_flag ?
+			"true" : "false");
+	printf("groups_flag     = %s\n", params.match_flags.groups_flag ?
+					"true" : "false");
+	printf("job_size_flag   = %s\n", params.match_flags.job_size_flag ?
+					"true" : "false");
+	printf("max_time_flag   = %s\n", params.match_flags.max_time_flag ?
+					"true" : "false");
+	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
+			"true" : "false");
+	printf("reason_flag     = %s\n", params.match_flags.reason_flag ?
+			"true" : "false");
+	printf("root_flag       = %s\n", params.match_flags.root_flag ?
+			"true" : "false");
+	printf("share_flag      = %s\n", params.match_flags.share_flag ?
+			"true" : "false");
+	printf("state_flag      = %s\n", params.match_flags.state_flag ?
+			"true" : "false");
 	printf("-----------------------------\n\n");
 }
 
