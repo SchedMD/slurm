@@ -316,12 +316,11 @@ void * task_exec_thread ( void * arg )
 			
 			/* set session id */
 
-			/* setup requested env */
-			//setup_task_env ( task_arg ) ;
-
 			/* run bash and cmdline */
 			chdir ( launch_msg->cwd ) ;
-			execl ( "/bin/bash" , "bash" , "-c" , launch_msg->cmd_line );
+			execl ( "/bin/sh", launch_msg->cmd_line );
+
+			//execle ( "/bin/sh", launch_msg->cmd_line , launch_msg->env );
 			_exit ( SLURM_SUCCESS ) ;
 			
 		default: /*parent proccess */
