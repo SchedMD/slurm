@@ -140,7 +140,7 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 		}
 		-re "error: elan" {
 			send_user "Can't avoid this possible error\n"
-			exp_contine
+			exp_continue
 		}
 		-re "error:" {
 			send_user "\nFAILURE: some error happened\n"
