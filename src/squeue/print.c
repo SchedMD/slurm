@@ -877,7 +877,9 @@ static int _filter_job(job_info_t * job)
 		filter = 1;
 		iterator = list_iterator_create(params.state_list);
 		while ((state_id = list_next(iterator))) {
-			if (*state_id == job->job_state) {
+			if ((*state_id == job->job_state) ||
+			    ((*state_id == JOB_COMPLETING) && 
+			     (*state_id & job->job_state))) {
 				filter = 0;
 				break;
 			}
@@ -887,7 +889,8 @@ static int _filter_job(job_info_t * job)
 			return 3;
 	} else {
 		if ((job->job_state != JOB_PENDING) &&
-		    (job->job_state != JOB_RUNNING))
+		    (job->job_state != JOB_RUNNING) &&
+		    ((job->job_state & JOB_COMPLETING) == 0))
 			return 4;
 	}
 
