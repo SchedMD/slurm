@@ -349,6 +349,9 @@ extern int delete_part_record (char *name);
  */
 extern int delete_step_record (uint32_t job_id, uint16_t step_id);
 
+/* dump_job_desc - dump the incoming job submit request message */
+void dump_job_desc(job_desc_msg_t * job_specs);
+
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
  * input: job_id - requested job's id

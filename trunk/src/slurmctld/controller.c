@@ -37,9 +37,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
-#include "slurmctld.h"
-#include "pack.h"
+#include <src/common/pack.h>
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/macros.h>
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
 
@@ -87,11 +88,10 @@ main (int argc, char *argv[])
 		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmctld: errno %d from gethostname", errno);
-#if MOE_DEBUG
+
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  strcmp (node_name, slurmctld_conf.backup_machine) )
 	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
 			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_machine);
-#endif
 	
 	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
 		fatal ("slurmctld: error starting message engine \n", errno);
@@ -437,6 +437,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
+	dump_job_desc(job_desc_msg);
 	error_code = job_create(job_desc_msg, &job_id, 0, 0, &job_rec_ptr);
 
 	/* return result */
@@ -474,6 +475,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	start_time = clock ();
 
 	/* do RPC call */
+	dump_job_desc(job_desc_msg);
 	error_code = job_allocate(job_desc_msg, 
 			&job_id, &node_list_ptr, immediate , false );
 
@@ -516,6 +518,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
+	dump_job_desc(job_desc_msg);
 	error_code = job_allocate(job_desc_msg,
 			&job_id, &node_name_ptr, false , true );
 	
