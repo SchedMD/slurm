@@ -1497,9 +1497,11 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		return;
 	}
 
-	req_step_msg.job_id = job_id;
-	req_step_msg.user_id = job_desc_msg->user_id;
+	req_step_msg.job_id     = job_id;
+	req_step_msg.user_id    = job_desc_msg->user_id;
 	req_step_msg.node_count = INFINITE;
+	req_step_msg.cpu_count  = job_desc_msg->num_procs;
+	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
 	error_code = step_create(&req_step_msg, &step_rec);
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {

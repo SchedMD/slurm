@@ -1076,6 +1076,8 @@ _pack_job_step_create_request_msg(job_step_create_request_msg_t
 	pack32(msg->user_id, buffer);
 	pack32(msg->node_count, buffer);
 	pack32(msg->cpu_count, buffer);
+	pack32(msg->num_tasks, buffer);
+
 	pack16(msg->relative, buffer);
 	pack16(msg->task_dist, buffer);
 	packstr(msg->node_list, buffer);
@@ -1097,6 +1099,8 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	safe_unpack32(&(tmp_ptr->user_id), buffer);
 	safe_unpack32(&(tmp_ptr->node_count), buffer);
 	safe_unpack32(&(tmp_ptr->cpu_count), buffer);
+	safe_unpack32(&(tmp_ptr->num_tasks), buffer);
+
 	safe_unpack16(&(tmp_ptr->relative), buffer);
 	safe_unpack16(&(tmp_ptr->task_dist), buffer);
 	safe_unpackstr_xmalloc(&(tmp_ptr->node_list), &uint16_tmp, buffer);
@@ -1337,12 +1341,15 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
  */
 void
 pack_job_step_info_members(uint32_t job_id, uint16_t step_id,
-			   uint32_t user_id, time_t start_time,
-			   char *partition, char *nodes, Buf buffer)
+			   uint32_t user_id, uint32_t num_tasks,
+			   time_t start_time, char *partition, 
+			   char *nodes, Buf buffer)
 {
 	pack32(job_id, buffer);
 	pack16(step_id, buffer);
 	pack32(user_id, buffer);
+	pack32(num_tasks, buffer);
+
 	pack_time(start_time, buffer);
 	packstr(partition, buffer);
 	packstr(nodes, buffer);
@@ -1361,6 +1368,7 @@ pack_job_step_info(job_step_info_t * step, Buf buffer)
 	pack_job_step_info_members(step->job_id,
 				   step->step_id,
 				   step->user_id,
+				   step->num_tasks,
 				   step->start_time,
 				   step->partition, step->nodes, buffer);
 }
@@ -1379,6 +1387,8 @@ _unpack_job_step_info_members(job_step_info_t * step, Buf buffer)
 	safe_unpack32(&step->job_id, buffer);
 	safe_unpack16(&step->step_id, buffer);
 	safe_unpack32(&step->user_id, buffer);
+	safe_unpack32(&step->num_tasks, buffer);
+
 	safe_unpack_time(&step->start_time, buffer);
 	safe_unpackstr_xmalloc(&step->partition, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&step->nodes, &uint16_tmp, buffer);
@@ -1674,6 +1684,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	pack32(job_desc_ptr->num_procs, buffer);
 	pack32(job_desc_ptr->num_nodes, buffer);
+	pack32(job_desc_ptr->num_tasks, buffer);
 	pack32(job_desc_ptr->user_id, buffer);
 
 }
@@ -1723,6 +1734,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
 	safe_unpack32(&job_desc_ptr->num_nodes, buffer);
+	safe_unpack32(&job_desc_ptr->num_tasks, buffer);
 	safe_unpack32(&job_desc_ptr->user_id, buffer);
 
 	return SLURM_SUCCESS;
