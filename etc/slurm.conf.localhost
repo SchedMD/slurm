@@ -19,7 +19,7 @@ TmpFS=/tmp
 #
 # Node Configurations
 #
-NodeName=DEFAULT TmpDisk=8096 State=IDLE
+NodeName=DEFAULT TmpDisk=512 State=IDLE
 NodeName=localhost Procs=1 RealMemory=128 Weight=16
 #
 # Partition Configurations
