@@ -204,8 +204,8 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 
         while (sent < size) {
                 if ((timeout -= _tot_wait(&tstart)) <= 0) {
-			info("_slurm_send_timeout at %d of %d, timeout",
-			     sent, size);
+			debug("_slurm_send_timeout at %d of %d, timeout",
+				sent, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
 			sent = SLURM_ERROR;
 			goto done;
@@ -214,9 +214,9 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			if ((rc == 0) || (errno == EINTR)) 
  				continue;
 			else {
-				info("_slurm_send_timeout at %d of %d, "
-				     "poll error: %s",
-				     sent, size, strerror(errno));
+				debug("_slurm_send_timeout at %d of %d, "
+					"poll error: %s",
+					sent, size, strerror(errno));
 				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				sent = SLURM_ERROR;
 				goto done;
@@ -227,17 +227,17 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
  			if (errno == EINTR)
 				continue;
 			else {
-				info("_slurm_send_timeout at %d of %d, "
-				      "send error: %s",
-				      sent, size, strerror(errno));
+				debug("_slurm_send_timeout at %d of %d, "
+					"send error: %s",
+					sent, size, strerror(errno));
  				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				sent = SLURM_ERROR;
 				goto done;
 			}
                 }
                 if (rc == 0) {
-				info("_slurm_send_timeout at %d of %d, "
-				     "sent zero bytes", sent, size);
+				debug("_slurm_send_timeout at %d of %d, "
+					"sent zero bytes", sent, size);
                         slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
                         sent = SLURM_ERROR;
                         goto done;
@@ -280,8 +280,8 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
         while (recvlen < size) {
 
                 if ((timeout -= _tot_wait(&tstart)) < 0) {
-				info("_slurm_recv_timeout at %d of %d, timeout",
-				     recvlen, size);
+				debug("_slurm_recv_timeout at %d of %d, timeout",
+					recvlen, size);
                         slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
                         recvlen = SLURM_ERROR;
                         goto done;
@@ -291,9 +291,9 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                         if ((errno == EINTR) || (rc == 0))
                                 continue;
                         else {
-					info("_slurm_recv_timeout at %d of %d, "
-					     "poll error: %s",
-					     recvlen, size, strerror(errno));
+					debug("_slurm_recv_timeout at %d of %d, "
+						"poll error: %s",
+						recvlen, size, strerror(errno));
  					slurm_seterrno(
 						SLURM_COMMUNICATIONS_RECEIVE_ERROR);
  					recvlen = SLURM_ERROR; 
@@ -305,9 +305,9 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                         if (errno == EINTR)
                                 continue;
                         else {
-					info("_slurm_recv_timeout at %d of %d, "
-					     "recv error: %s",
-					     recvlen, size, strerror(errno));
+					debug("_slurm_recv_timeout at %d of %d, "
+						"recv error: %s",
+						recvlen, size, strerror(errno));
 					slurm_seterrno(
 						SLURM_COMMUNICATIONS_RECEIVE_ERROR);
 					recvlen = SLURM_ERROR; 
@@ -315,8 +315,8 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                         }
                 }
                 if (rc == 0) {
-			info("_slurm_recv_timeout at %d of %d, "
-			     "recv zero bytes", recvlen, size);
+			debug("_slurm_recv_timeout at %d of %d, "
+				"recv zero bytes", recvlen, size);
 			slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
 			recvlen = SLURM_ERROR;
 			goto done;
