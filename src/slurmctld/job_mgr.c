@@ -148,8 +148,8 @@ static void _xmit_new_end_time(struct job_record *job_ptr);
  */
 struct job_record *create_job_record(int *error_code)
 {
-	struct job_record *job_record_point;
-	struct job_details *job_details_point;
+	struct job_record  *job_ptr;
+	struct job_details *detail_ptr;
 
 	if (job_count >= slurmctld_conf.max_job_cnt) {
 		error("create_job_record: job_count exceeds limit");
@@ -161,24 +161,22 @@ struct job_record *create_job_record(int *error_code)
 	*error_code = 0;
 	last_job_update = time(NULL);
 
-	job_record_point =
-	    (struct job_record *) xmalloc(sizeof(struct job_record));
-	job_details_point =
-	    (struct job_details *) xmalloc(sizeof(struct job_details));
+	job_ptr    = (struct job_record *) xmalloc(sizeof(struct job_record));
+	detail_ptr = (struct job_details *)xmalloc(sizeof(struct job_details));
 
-	xassert (job_record_point->magic = JOB_MAGIC); /* sets value */
-	job_record_point->details = job_details_point;
-	job_record_point->step_list = list_create(NULL);
-	if (job_record_point->step_list == NULL)
+	xassert (job_ptr->magic = JOB_MAGIC); /* sets value */
+	job_ptr->details = detail_ptr;
+	job_ptr->step_list = list_create(NULL);
+	if (job_ptr->step_list == NULL)
 		fatal("memory allocation failure");
 
-	xassert (job_details_point->magic = DETAILS_MAGIC); /* set value */
-	job_details_point->submit_time = time(NULL);
+	xassert (detail_ptr->magic = DETAILS_MAGIC); /* set value */
+	detail_ptr->submit_time = time(NULL);
 
-	if (list_append(job_list, job_record_point) == 0)
+	if (list_append(job_list, job_ptr) == 0)
 		fatal("list_append memory allocation failure");
 
-	return job_record_point;
+	return job_ptr;
 }
 
 
@@ -247,8 +245,8 @@ int dump_all_job_state(void)
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock =
 	    { READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
 	Buf buffer = init_buf(BUF_SIZE * 16);
 	DEF_TIMERS;
 
@@ -258,14 +256,13 @@ int dump_all_job_state(void)
 
 	/* write individual job records */
 	lock_slurmctld(job_read_lock);
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_record_point =
-		(struct job_record *) list_next(job_record_iterator))) {
-		xassert (job_record_point->magic == JOB_MAGIC);
-		_dump_job_state(job_record_point, buffer);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		xassert (job_ptr->magic == JOB_MAGIC);
+		_dump_job_state(job_ptr, buffer);
 	}
 	unlock_slurmctld(job_read_lock);
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 
 	/* write the buffer to file */
 	old_file = xstrdup(slurmctld_conf.state_save_location);
@@ -387,7 +384,7 @@ int load_all_job_state(void)
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 {
 	struct job_details *detail_ptr;
-	ListIterator step_record_iterator;
+	ListIterator step_iterator;
 	struct step_record *step_ptr;
 
 	/* Dump basic job info */
@@ -423,14 +420,13 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 		pack16((uint16_t) 0, buffer);	/* no details flag */
 
 	/* Dump job steps */
-	step_record_iterator =
-	    list_iterator_create(dump_job_ptr->step_list);
+	step_iterator = list_iterator_create(dump_job_ptr->step_list);
 	while ((step_ptr = (struct step_record *) 
-				list_next(step_record_iterator))) {
+				list_next(step_iterator))) {
 		pack16((uint16_t) STEP_FLAG, buffer);
 		_dump_job_step_state(step_ptr, buffer);
 	}
-	list_iterator_destroy(step_record_iterator);
+	list_iterator_destroy(step_iterator);
 	pack16((uint16_t) 0, buffer);	/* no step flag */
 }
 
@@ -857,27 +853,26 @@ struct job_record *find_job_record(uint32_t job_id)
  */
 struct job_record *find_running_job_by_node_name(char *node_name)
 {
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
-	struct node_record *node_record_point;
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
+	struct node_record *node_ptr;
 	int bit_position;
 
-	node_record_point = find_node_record(node_name);
-	if (node_record_point == NULL)	/* No such node */
+	node_ptr = find_node_record(node_name);
+	if (node_ptr == NULL)	/* No such node */
 		return NULL;
-	bit_position = node_record_point - node_record_table_ptr;
+	bit_position = node_ptr - node_record_table_ptr;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_record_point =
-		(struct job_record *) list_next(job_record_iterator))) {
-		if (job_record_point->job_state != JOB_RUNNING)
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr->job_state != JOB_RUNNING)
 			continue;	/* job not active */
-		if (bit_test(job_record_point->node_bitmap, bit_position))
+		if (bit_test(job_ptr->node_bitmap, bit_position))
 			break;	/* found job here */
 	}
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 
-	return job_record_point;
+	return job_ptr;
 }
 
 /*
@@ -889,7 +884,7 @@ struct job_record *find_running_job_by_node_name(char *node_name)
  */
 extern int kill_job_by_part_name(char *part_name)
 {
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	struct job_record  *job_ptr;
 	struct part_record *part_ptr;
 	int job_count = 0;
@@ -898,9 +893,8 @@ extern int kill_job_by_part_name(char *part_name)
 	if (part_ptr == NULL)	/* No such partition */
 		return 0;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		(struct job_record *) list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->part_ptr != part_ptr)
 			continue;
 		job_ptr->part_ptr = NULL;
@@ -917,7 +911,7 @@ extern int kill_job_by_part_name(char *part_name)
 		}
 
 	}
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 
 	if (job_count)
 		last_job_update = time(NULL);
@@ -933,7 +927,7 @@ extern int kill_job_by_part_name(char *part_name)
  */
 int kill_running_job_by_node_name(char *node_name, bool step_test)
 {
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	struct node_record *node_ptr;
 	int bit_position;
@@ -944,9 +938,8 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 		return 0;
 	bit_position = node_ptr - node_record_table_ptr;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		(struct job_record *) list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap == NULL) ||
 		    (!bit_test(job_ptr->node_bitmap, bit_position)))
 			continue;	/* job not on this node */
@@ -992,7 +985,7 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 		}
 
 	}
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 	if (job_count)
 		last_job_update = time(NULL);
 
@@ -1347,16 +1340,16 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
 			else
 				return ESLURM_JOB_SCRIPT_MISSING;
 		} else {
-			ListIterator step_record_iterator;
+			ListIterator step_iterator;
 			struct step_record *step_ptr;
 
-			step_record_iterator = 
+			step_iterator = 
 				list_iterator_create (job_ptr->step_list);
 			while ((step_ptr = (struct step_record *)
-					list_next (step_record_iterator))) {
+					list_next (step_iterator))) {
 				signal_step_tasks(step_ptr, signal);
 			}
-			list_iterator_destroy (step_record_iterator);
+			list_iterator_destroy (step_iterator);
 		}
 		verbose("job_signal %u of running job %u successful", 
 			signal, job_id);
@@ -2523,16 +2516,15 @@ static int _purge_job_record(uint32_t job_id)
  */
 void reset_job_bitmaps(void)
 {
-	ListIterator job_record_iterator;
-	struct job_record *job_ptr;
+	ListIterator job_iterator;
+	struct job_record  *job_ptr;
 	struct part_record *part_ptr;
 	bool job_fail = false;
 
 	xassert(job_list);
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		(struct job_record *) list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
 		job_fail = false;
 		part_ptr = list_find_first(part_list, &list_find_part,
@@ -2578,7 +2570,7 @@ void reset_job_bitmaps(void)
 		}
 	}
 
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 	last_job_update = time(NULL);
 }
 
@@ -2610,12 +2602,11 @@ static int _reset_detail_bitmaps(struct job_record *job_ptr)
 
 static void _reset_step_bitmaps(struct job_record *job_ptr)
 {
-	ListIterator step_record_iterator;
+	ListIterator step_iterator;
 	struct step_record *step_ptr;
 
-	step_record_iterator = list_iterator_create (job_ptr->step_list);
-	while ((step_ptr = (struct step_record *) 
-			   list_next (step_record_iterator))) {
+	step_iterator = list_iterator_create (job_ptr->step_list);
+	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if ((step_ptr->step_node_list) && 		
 		    (node_name2bitmap(step_ptr->step_node_list, 
 			      &step_ptr->step_node_bitmap))) {
@@ -2626,7 +2617,7 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 		}
 	}		
 
-	list_iterator_destroy (step_record_iterator);
+	list_iterator_destroy (step_iterator);
 	return;
 }
 
@@ -2710,30 +2701,28 @@ void reset_job_priority(void)
  */
 static bool _top_priority(struct job_record *job_ptr)
 {
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
+	ListIterator job_iterator;
+	struct job_record *job_ptr2;
 	bool top;
 
 	if (job_ptr->priority == 0)	/* held */
 		return false;
 
 	top = true;		/* assume top priority until found otherwise */
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_record_point =
-		(struct job_record *) list_next(job_record_iterator))) {
-		xassert (job_record_point->magic == JOB_MAGIC);
-		if (job_record_point == job_ptr)
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr2 = (struct job_record *) list_next(job_iterator))) {
+		if (job_ptr2 == job_ptr)
 			continue;
-		if (job_record_point->job_state != JOB_PENDING)
+		if (job_ptr2->job_state != JOB_PENDING)
 			continue;
-		if ((job_record_point->priority > job_ptr->priority) &&
-		    (job_record_point->part_ptr == job_ptr->part_ptr)) {
+		if ((job_ptr2->priority >  job_ptr->priority) &&
+		    (job_ptr2->part_ptr == job_ptr->part_ptr)) {
 			top = false;
 			break;
 		}
 	}
 
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 	return top;
 }
 
@@ -3091,12 +3080,11 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
  * node_inx, but is not (i.e. its time_last_active != now) */
 static void _purge_lost_batch_jobs(int node_inx, time_t now)
 {
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	struct job_record *job_ptr;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		    (struct job_record *) list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->job_state != JOB_RUNNING) ||
 		    (job_ptr->batch_flag == 0)          ||
 		    (job_ptr->time_last_active == now)  ||
@@ -3107,7 +3095,7 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 			job_ptr->job_id);
 		job_complete(job_ptr->job_id, 0, false, 0);
 	}
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 }
 
 /*
@@ -3240,13 +3228,12 @@ static void _get_batch_job_dir_ids(List batch_dirs)
  *	remove it the list (of directories to be deleted) */
 static void _validate_job_files(List batch_dirs)
 {
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	struct job_record *job_ptr;
 	int del_cnt;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		    (struct job_record *) list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (!job_ptr->batch_flag)
 			continue;
 		if (IS_JOB_FINISHED(job_ptr))
@@ -3263,7 +3250,7 @@ static void _validate_job_files(List batch_dirs)
 			job_completion_logger(job_ptr);
 		}
 	}
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 }
 
 /* List matching function, see common/list.h */

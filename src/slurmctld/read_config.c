@@ -859,12 +859,11 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr,
 static int _sync_nodes_to_jobs(void)
 {
 	struct job_record *job_ptr;
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	int update_cnt = 0;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) 
-			  list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->node_bitmap == NULL)
 			continue;
 
@@ -883,12 +882,11 @@ static int _sync_nodes_to_jobs(void)
 static int _sync_nodes_to_comp_job(void)
 {
 	struct job_record *job_ptr;
-	ListIterator job_record_iterator;
+	ListIterator job_iterator;
 	int update_cnt = 0;
 
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr = (struct job_record *) 
-			  list_next(job_record_iterator))) {
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->node_bitmap) &&
 		    (job_ptr->job_state & JOB_COMPLETING)) {
 			update_cnt++;
