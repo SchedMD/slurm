@@ -87,12 +87,14 @@ set host_0      ""
 set host_1      ""
 send "$srun -l $bin_hostname\n"
 expect {
-	-re "0: ($alpha_numeric)" {
-		set host_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set host_1 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		set host_inx $expect_out(1,string)
+		if {$host_inx == 0} {
+			set host_0 $expect_out(2,string)
+		} 
+		if {$host_inx == 1} {
+			set host_1 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	"$prompt" {
@@ -324,12 +326,14 @@ set test_0      ""
 set test_1      ""
 send "$srun -l -N1-1 -n2 -O $bin_hostname\n"
 expect {
-	-re "0: ($alpha_numeric)" {
-		set test_0 $expect_out(1,string)
-		exp_continue
-	}
-	-re "1: ($alpha_numeric)" {
-		set test_1 $expect_out(1,string)
+	-re "($number): ($alpha_numeric)" {
+		set host_inx $expect_out(1,string)
+		if {$host_inx == 0} {
+			set test_0 $expect_out(2,string)
+		}
+		if {$host_inx == 1} {
+			set test_1 $expect_out(2,string)
+		}
 		exp_continue
 	}
 	"$prompt" {
