@@ -102,9 +102,24 @@ considered adjacent in the computer.
 <dd>Number of processors on the node (e.g. "2"). The default 
 value is 1.
 
+<dt>Feature
+<dd>A comma delimited list of arbitrary strings indicative of some 
+characteristic associated with the node. 
+There is no value associated with a feature at this time, a node 
+either has a feature or it does not.  
+If desired a feature may contain a numeric component indicating, 
+for example, processor speed. 
+By default a node has no features.
 <dt>RealMemory
 <dd>Size of real memory on the node in MegaBytes (e.g. "2048").
 The default value is 1.
+
+<dt>State
+<dd>State of the node with respect to the initiation of user jobs. 
+Acceptable values are "UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", 
+"DRAINING". For example, the SLURM control machine may very well 
+not be used for initiation of user jobs and its state could thus 
+be set to "DRAINED". The default value is "UNKNOWN".
 
 <dt>TmpDisk
 <dd>Total size of temporary disk storage in TMP_FS in MegaBytes 
@@ -120,21 +135,6 @@ The PROLOG and/or EPILOG programs (specified at build time) might
 be used to insure the file system is kept clean. 
 The default value is 1.
 
-<dt>State
-<dd>State of the node with respect to the initiation of user jobs. 
-Acceptable values are "UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", 
-"DRAINING". For example, the SLURM control machine may very well 
-not be used for initiation of user jobs and its state could thus 
-be set to "DRAINED". The default value is "UNKNOWN".
-
-<dt>Feature
-<dd>A comma delimited list of arbitrary strings indicative of some 
-characteristic associated with the node. 
-There is no value associated with a feature at this time, a node 
-either has a feature or it does not.  
-If desired a feature may contain a numeric component indicating, 
-for example, processor speed. 
-By default a node has no features.
 </dl>
 <p>
 Only the NodeName must be supplied in the configuration file; all other 
@@ -167,13 +167,6 @@ The size of each line in the file is limited to 1024 characters.
 <p>
 The node states have the following meanings:
 <dl>
-<dt>UNKNOWN
-<dd>Default initial node state upon startup of SLURM.
-An attempt will be made to contact the node and acquire current state information.
-
-<dt>IDLE
-<dd>The node is idle and available for use.
-
 <dt>BUSY
 <dd>The node has been allocated work (one or more user jobs) and is 
 processing it. 
@@ -184,18 +177,26 @@ DOWN or failed to respond to system state inquiries or has
 explicitly removed itself from service due to a failure. This state 
 typically indicates some problem requiring administrator intervention.
 
-<dt>DRAINING
-<dd>The node has been made unavailable for new work by explicit administrator 
-intervention. It is processing some work at present and will enter state
-"DRAINED" when that work has been completed. This might be used to 
-prepare some nodes for maintenance work.
-
 <dt>DRAINED
 <dd>The node is idle, but not available for use. The state of a node 
 will automatically change from DRAINING to DRAINED when user job(s) executing 
 on that node terminate. Since this state is entered by explicit 
 administrator request, additional SLURM administrator intervention is typically 
 not required.
+
+<dt>DRAINING
+<dd>The node has been made unavailable for new work by explicit administrator 
+intervention. It is processing some work at present and will enter state
+"DRAINED" when that work has been completed. This might be used to 
+prepare some nodes for maintenance work.
+
+<dt>IDLE
+<dd>The node is idle and available for use.
+
+<dt>UNKNOWN
+<dd>Default initial node state upon startup of SLURM.
+An attempt will be made to contact the node and acquire current state information.
+
 </dl>
 <p>
 SLURM uses a hash table in order to locate table entries rapidly. 
@@ -235,17 +236,19 @@ If at least one group associated with the user submitting the
 job is in AllowGroups, he will be permitted to use this partition.
 The default value is "ALL". 
 
-<dt>MaxTime
-<dd>Maximum wall-time limit for any job in minutes. The default 
-value is "UNLIMITED", which is represented internally as -1.
-
 <dt>Default
 <dd>If this keyword is set, jobs submitted without a partition 
 specification will utilize this partition.
+Possible values are "YES" and "NO". 
+The default value is "NO".
 
 <dt>MaxNodes
 <dd>Maximum count of nodes which may be allocated to any single job,
 The default value is "UNLIMITED", which is represented internally as -1.
+
+<dt>MaxTime
+<dd>Maximum wall-time limit for any job in minutes. The default 
+value is "UNLIMITED", which is represented internally as -1.
 
 <dt>Nodes
 <dd>Comma separated list of nodes which are associated with this 
@@ -271,6 +274,8 @@ to the partition.
 The non-privileged user would not be able to submit jobs 
 directly to this partition for lack of a key.
 Issued keys will remain valid for a single use only.
+Possible values are "YES" and "NO". 
+The default value is "NO".
 
 <dt>Shared
 <dd>Specify if more than one job may execute on each node in 
@@ -307,8 +312,8 @@ The job may specify a particular PartitionName, if so desired,
 or use the system's default partition.
 <pre>
 # Partition specifications
-PartitionName=batch MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] RootKey
-PartitionName=debug MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default
+PartitionName=batch MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] RootKey=YES
+PartitionName=debug MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default=YES
 PartitionName=class MaxNodes=1  MaxTime=10        Nodes=lx[31-32] AllowGroups=students
 </pre>
 <p>
@@ -530,8 +535,8 @@ NodeName=lx[01-02] State=DRAINED
 NodeName=lx[03-16] Feature=CoolDebugger
 #
 # Default partition specification
-PartitionName=batch MaxCpus=128 MaxTime=240 Nodes=lx[10-30] RootKey
-PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default Shared=YES
+PartitionName=batch MaxCpus=128 MaxTime=240 Nodes=lx[10-30] RootKey=YES
+PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default=YES Shared=YES
 PartitionName=class MaxCpus=16  MaxTime=10  Nodes=lx[31-32] AllowGroups=students
 </pre>
 
@@ -562,7 +567,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified February 12, 2002</p>
+<p>Last Modified February 15, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
