@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
- *  $LSDId: hostlist.c,v 1.9 2003/09/19 21:37:33 grondo Exp $
+ *  $LSDId: hostlist.c,v 1.13 2003/10/01 16:40:44 grondo Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -959,11 +959,11 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
     if (hr->singlehost || n == 0)
         return 0;
 
-    len += snprintf(buf, n, "%0*lu", hr->width, hr->lo);
+    len = snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 
-    if ((len >= 0) && (hr->lo < hr->hi)) {
+    if ((len >= 0) && (len < n) && (hr->lo < hr->hi)) {
         int len2 = snprintf(buf+len, n-len, "-%0*lu", hr->width, hr->hi);
-        if (len2 < 0)
+        if (len2 < 0) 
             len = -1;
         else
             len += len2;
@@ -2038,6 +2038,9 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
     int bracket_needed = _is_bracket_needed(hl, i);
 
     len = snprintf(buf, n, "%s", hr[i]->prefix);
+
+    if ((len < 0) || (len > n))
+        return -1;
 
     if (bracket_needed && len < n && len >= 0)
         buf[len++] = '[';
