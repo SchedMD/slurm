@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "May 2004" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "June 2004" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -108,10 +108,13 @@ The interval, in seconds, a job or job step is permitted to be inactive
 before it is terminated. A job or job step is considered inactive if 
 the associated srun command is not responding to slurm daemons. This 
 could be due to the termination of the srun command or the program 
-being is a stopped state. This limit permits defunct jobs to be purged 
-in a timely fashion without waiting for their time limit to be reached.
+being is a stopped state. A batch job is considered inactive if it 
+has no active job steps (e.g. periods of pre- and post-processing).
+This limit permits defunct jobs to be purged in a timely fashion 
+without waiting for their time limit to be reached.
 This value should reflect the possibility that the srun command may
-stopped a debugger. The default value is unlimited (zero). 
+stopped by a debugger or considerable time could be required for batch 
+job pre- and post-processing. The default value is unlimited (zero). 
 .TP
 \fBJobCompLoc\fR
 Define the location where job completion records are to be logged. 
