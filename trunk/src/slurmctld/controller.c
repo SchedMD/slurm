@@ -364,14 +364,14 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		info ("slurmctld_req: job_cancel error %d, time=%ld",
-				error_code, (long) (clock () - start_time));
+		info ("slurmctld_req: job_cancel error %d for %u, time=%ld",
+			error_code, job_id_msg->job_id, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: job_cancel success for %d, time=%ld",
-				job_id_msg->job_id, (long) (clock () - start_time));
+		info ("slurmctld_req: job_cancel success for %u, time=%ld",
+			job_id_msg->job_id, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 

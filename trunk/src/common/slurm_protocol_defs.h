@@ -195,6 +195,11 @@ typedef struct job_id_msg {
 	uint32_t job_id;
 } job_id_msg_t ;
 
+typedef struct job_step_id_msg {
+	uint32_t job_id;
+	uint32_t job_step_id ;
+} job_step_id_msg_t ;
+
 typedef struct slurm_update_node_msg
 {
 	char * node_names ;
