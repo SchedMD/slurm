@@ -94,6 +94,9 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->argv    = _array_copy(job->argc, msg->argv);
 
 	job->cwd     = xstrdup(msg->cwd);
+	job->ofname  = xstrdup(msg->ofname);
+	job->efname  = msg->efname ? xstrdup(msg->efname) : job->ofname;
+	job->ifname  = xstrdup(msg->ifname);
 
 #ifdef HAVE_LIBELAN3
 	job->qsw_job = msg->qsw_job;
@@ -177,10 +180,10 @@ static char *
 _task_filename_create(const char *basename, int i, int width)
 {
 	int  len = basename ? strlen(basename) : 0;
-	char buf[len+width+1];
+	char buf[len+width+16];
 	if (basename == NULL)
 		return NULL;
-	snprintf(buf, len+width, "%s%*u", basename, width, i);
+	snprintf(buf, len+width+16, "%s%0*d", basename, width, i);
 	return xstrdup(buf);
 }
 
@@ -200,9 +203,9 @@ _job_init_task_info(slurmd_job_t *job, launch_tasks_request_msg_t *msg)
 		task_info_t *t = job->task[i] = task_info_create(i, gid[i]);
 		if (srun != NULL) 
 			list_append(t->srun_list, (void *)srun);
-		t->ofname = _task_filename_create(job->ofname, i, wid);
-		t->efname = _task_filename_create(job->efname, i, wid);
-		t->ifname = _task_filename_create(job->ifname, i, wid);
+		t->ofname = _task_filename_create(job->ofname, t->gid, wid);
+		t->efname = _task_filename_create(job->efname, t->gid, wid);
+		t->ifname = _task_filename_create(job->ifname, t->gid, wid);
 	}
 }
 
