@@ -36,6 +36,8 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define SRUN_LAUNCH_MSG 0
+
 /* Launch the srun request. Note that retry is always zero since 
  * we don't want to clog the system up with messages destined for 
  * defunct srun processes 
@@ -61,6 +63,7 @@ static void _srun_agent_launch(slurm_addr *addr, char *host,
  */
 extern void srun_allocate (uint32_t job_id)
 {
+#if SRUN_LAUNCH_MSG
 	struct job_record *job_ptr = find_job_record (job_id);
 
 	xassert(job_ptr);
@@ -91,6 +94,7 @@ extern void srun_allocate (uint32_t job_id)
 		_srun_agent_launch(addr, job_ptr->host, 
 				RESPONSE_RESOURCE_ALLOCATION, msg_arg);
 	}
+# endif
 }
 
 /*
