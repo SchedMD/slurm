@@ -70,6 +70,7 @@
 #define USER_NAME "nobody"
 
 /* Global variables */
+extern rm_BGL_t *bgl;
 extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
@@ -181,5 +182,6 @@ extern int read_bgl_partitions(void);
 /* bgl_switch_connections.c */
 /*****************************************************/
 extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
+extern int bgl_free_partition(pm_partition_id_t part_id);
 
 #endif /* _BLUEGENE_H_ */

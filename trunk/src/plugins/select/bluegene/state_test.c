@@ -136,29 +136,29 @@ extern void test_down_nodes(void)
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
-	rm_BGL_t *bgl;
+	rm_BGL_t *bgl_new;
 
-	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+	if ((rc = rm_get_BGL(&bgl_new)) != STATUS_OK) {
 		error("rm_get_BGL(): %s", bgl_err_str(rc));
 		return;
 	}
 
 	debug("Running test_down_nodes");
 	down_node_list[0] = '\0';
-	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
+	if ((rc = rm_get_data(bgl_new, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 		bp_num = 0;
 	}
 	for (i=0; i<bp_num; i++) {
 		if (i) {
-			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp)) 
+			if ((rc = rm_get_data(bgl_new, RM_NextBP, &my_bp)) 
 					!= STATUS_OK) {
 				error("rm_get_data(RM_NextBP): %s", 
 					bgl_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp)) 
+			if ((rc = rm_get_data(bgl_new, RM_FirstBP, &my_bp)) 
 					!= STATUS_OK) {
 				error("rm_get_data(RM_FirstBP): %s", 
 					bgl_err_str(rc));
@@ -191,7 +191,7 @@ extern void test_down_nodes(void)
 		} else
 			error("down_node_list overflow");
 	}
-	rm_free_BGL(bgl);
+	rm_free_BGL(bgl_new);
 
 	if (down_node_list[0]) {
 		char reason[128];

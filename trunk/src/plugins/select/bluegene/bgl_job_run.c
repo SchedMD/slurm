@@ -191,7 +191,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 		info("Clearing partition %s owner", bgl_part_id);
 
 
-#ifdef HAVE_BGL_FILES
+#ifdef USE_BGL_FILES
 
 // FIX: the else clause in this is wrong.
 
@@ -279,7 +279,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
  */
 static int _boot_part(pm_partition_id_t bgl_part_id)
 {
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 /* Due to various system problems, we do not want to boot BGL
  * partitions when each job is started, but only at slurmctld 
  * startup on an as needed basis. */
@@ -350,6 +350,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		rm_element_t *job_elem;
 		pm_partition_id_t part_id;
 		db_job_id_t job_id;
+	
 		if (i) {
 			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
 					&job_elem)) != STATUS_OK) {
@@ -371,7 +372,10 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				bgl_err_str(rc));
 			continue;
 		}
-
+		
+		//set partition to a free state
+		bgl_free_partition(part_id);
+		
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))

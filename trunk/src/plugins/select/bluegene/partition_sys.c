@@ -129,20 +129,20 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	rm_free_partition(bgl_record->bgl_part);
 
 	/* Initiate boot of the partition */
-	debug("Booting Partition %s", bgl_record->bgl_part_id);
-	rc = pm_create_partition(bgl_record->bgl_part_id);
-	if (rc != STATUS_OK) {
-		error("Error booting_partition partition");
-		return(-1);
-	}
+	/* debug("Booting Partition %s", bgl_record->bgl_part_id); */
+/* 	rc = pm_create_partition(bgl_record->bgl_part_id); */
+/* 	if (rc != STATUS_OK) { */
+/* 		error("Error booting_partition partition"); */
+/* 		return(-1); */
+/* 	} */
 
-	/* Wait for Partition to be booted */
-	rc = rm_get_partition(bgl_record->bgl_part_id, &bgl_record->bgl_part);
-	if (rc != STATUS_OK) {
-		error("Error in GetPartition");
-		return(-1);
-	}
-	rm_free_partition(bgl_record->bgl_part);
+/* 	/\* Wait for Partition to be booted *\/ */
+/* 	rc = rm_get_partition(bgl_record->bgl_part_id, &bgl_record->bgl_part); */
+/* 	if (rc != STATUS_OK) { */
+/* 		error("Error in GetPartition"); */
+/* 		return(-1); */
+/* 	} */
+/* 	rm_free_partition(bgl_record->bgl_part); */
 
 	fflush(stdout);
 
