@@ -100,8 +100,6 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 			xfree(msg->environment);
 		if (msg->features)
 			xfree(msg->features);
-		if (msg->groups)
-			xfree(msg->groups);
 		if (msg->name)
 			xfree(msg->name);
 		if (msg->partition)
@@ -486,7 +484,6 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->env_size    = SLURM_JOB_DESC_DEFAULT_ENV_SIZE;
 	job_desc_msg->features    = SLURM_JOB_DESC_DEFAULT_FEATURES;
 
-	job_desc_msg->groups      = SLURM_JOB_DESC_DEFAULT_GROUPS;	
 	job_desc_msg->job_id      = SLURM_JOB_DESC_DEFAULT_JOB_ID;
 
 	job_desc_msg->name        = SLURM_JOB_DESC_DEFAULT_JOB_NAME;

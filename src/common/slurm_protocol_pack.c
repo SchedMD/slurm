@@ -1130,7 +1130,6 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 
 	pack16 (job_desc_ptr->contiguous, buf_ptr, buffer_size);
 	packstr (job_desc_ptr->features, buf_ptr, buffer_size);
-	packstr (job_desc_ptr->groups, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->job_id, buf_ptr, buffer_size);
 	packstr (job_desc_ptr->name, buf_ptr, buffer_size);
 	
@@ -1183,7 +1182,6 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 
 	unpack16 (&job_desc_ptr->contiguous, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job_desc_ptr->features, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_xmalloc (&job_desc_ptr->groups, &uint16_tmp, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->job_id, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job_desc_ptr->name, &uint16_tmp, buf_ptr, buffer_size);
 	
