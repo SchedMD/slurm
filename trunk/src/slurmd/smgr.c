@@ -482,20 +482,17 @@ _local_taskid(slurmd_job_t *job, pid_t pid)
 	return SLURM_ERROR;
 }
 
+/*
+ *  Set task-specific environment variables
+ */
 static int
 _setup_env(slurmd_job_t *job, int taskid)
 {
 	task_info_t *t = job->task[taskid];
 
-	if (setenvpf(&job->env, "SLURM_JOBID=%d",  job->jobid)  < 0)
-		return -1;
 	if (setenvpf(&job->env, "SLURM_NODEID=%d", job->nodeid) < 0)
 		return -1;
 	if (setenvpf(&job->env, "SLURM_PROCID=%d", t->gid     ) < 0)
-		return -1;
-	if (setenvpf(&job->env, "SLURM_NNODES=%d", job->nnodes) < 0)
-		return -1;
-	if (setenvpf(&job->env, "SLURM_NPROCS=%d", job->nprocs) < 0)
 		return -1;
 
 	return SLURM_SUCCESS;
