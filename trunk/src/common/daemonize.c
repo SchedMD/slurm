@@ -46,7 +46,7 @@ closeall(int fd)
 /* detach and go into background.
  * caller is responsible for umasks
  *
- * if chdir   != 0, will do a chdir to /
+ * if nochdir == 0, will do a chdir to /
  * if noclose == 0, will close all FDs
  */
 int
