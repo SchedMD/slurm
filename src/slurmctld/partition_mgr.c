@@ -379,13 +379,24 @@ load_part_state ( void )
 		safe_unpackstr_xmalloc (&allow_groups, &name_len, buffer);
 		safe_unpackstr_xmalloc (&nodes, &name_len, buffer);
 
+		/* validity test as possible */
+		if ((def_part_flag > 1) || 
+		    (root_only > 1) || 
+		    (shared > SHARED_FORCE) || 
+		    (state_up > 1)) {
+			error ("Invalid data for partition %s: def_part_flag=%u, root_only=%u, shared=%u, state_up=%u",
+				part_name, def_part_flag, root_only, shared, state_up);
+			error ("No more partition data will be processed from the checkpoint file");
+			if (part_name)
+				xfree (part_name);
+			error_code = EINVAL;
+			break;		
+		}
+
 		/* find record and perform update */
 		part_ptr = list_find_first (part_list, &list_find_part, part_name);
 
-		if (part_ptr == NULL) {
-			info ("load_part_state: partition %s removed from configuration file.", part_name);
-		}
-		else {
+		if (part_ptr) {
 			part_ptr->max_time = max_time;
 			part_ptr->max_nodes = max_nodes;
 			if (def_part_flag) {
@@ -401,7 +412,10 @@ load_part_state ( void )
 			if (part_ptr->nodes)
 				xfree (part_ptr->nodes);
 			part_ptr->nodes = nodes;
-		}		
+		} else {
+			info ("load_part_state: partition %s removed from configuration file.", 
+				part_name);
+		}
 
 		if (part_name)
 			xfree (part_name);
@@ -409,6 +423,11 @@ load_part_state ( void )
 
 	free_buf (buffer);
 	return error_code;
+
+unpack_error:
+	error ("Incomplete partition data checkpoint file.  State not completely restored");
+	free_buf (buffer);
+	return EFAULT;
 }
 
 /* 
