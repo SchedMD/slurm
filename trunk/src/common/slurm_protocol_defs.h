@@ -277,4 +277,8 @@ void inline slurm_free_partition_table_msg ( partition_table_t * part ) ;
 void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
 void inline slurm_free_node_table_msg ( node_table_t * node ) ;
+
+/* stuct init functions */
+void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg ) ;
+
 #endif
