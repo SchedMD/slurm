@@ -272,14 +272,7 @@ int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, char *job_name
 		 * Wait for the script to finish and get the exit status
 		 * Not sure if this is a good idea.  Might want to just return.
 		 */
-info ("waiting");
-#if 0
-		while (waitpid(pid, &ret_value, WNOHANG) == 0)
-			usleep(100000);
-#else
 		waitpid(pid, &ret_value, 0);
-#endif
-info("done wait");
 		xfree(envp);
 		debug3("Exiting slurm_jobcomp_log_record");
 		if (WIFEXITED(ret_value) && !WEXITSTATUS(ret_value)) {
