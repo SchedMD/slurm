@@ -499,7 +499,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 
 		alloc_msg . job_id = job_id ;
 		alloc_msg . node_list = node_list_ptr ;
-
+		alloc_msg.num_cpu_groups = 0;
 		response_msg . msg_type = ( immediate ) ? RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : RESPONSE_RESOURCE_ALLOCATION ;
 		response_msg . data =  & alloc_msg ;
 
