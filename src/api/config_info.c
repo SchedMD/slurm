@@ -49,7 +49,7 @@ void slurm_print_ctl_conf ( FILE* out,
 		return ;
 
 	make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, time_str);
-	fprintf(out, "Configuration updated at %s\n", time_str);
+	fprintf(out, "Configuration data as of %s\n", time_str);
 	fprintf(out, "BackupAddr        = %s\n", 
 		slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController  = %s\n", 

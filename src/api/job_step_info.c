@@ -52,7 +52,7 @@ slurm_print_job_step_info_msg ( FILE* out,
 
 	make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, 
 			time_str);
-	fprintf( out, "Job steps updated at %s, record count %d\n",
+	fprintf( out, "Job step data as of %s, record count %d\n",
 		time_str, job_step_info_msg_ptr->job_step_count);
 
 	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++) 
