@@ -153,11 +153,16 @@ Weight is an integer value with a default value of 1.
 <p>
 Only the NodeName must be supplied in the configuration file; all other 
 items are optional.
-It is advisable to establish baseline node configurations in the configuration 
-file, especially if the cluster is heterogeneous.
+It is advisable to establish baseline node configurations in 
+the configuration file, especially if the cluster is heterogeneous. 
 Nodes which register to the system with less than the configured resources 
 (e.g. too little memory), will be placed in the "DOWN" state to 
 avoid scheduling jobs on them. 
+Establishing baseline configurations will also speed SLURM's 
+scheduling process by permitting it to compare job requirements 
+against these (relatively few) configuration parameters and 
+possibly avoid having to perform checks job requirements 
+against every individual node's configuration.
 The resources checked at node registration time are: CPUs, 
 RealMemory and TmpDisk. 
 While baseline values for each of these can be established 
@@ -407,6 +412,10 @@ may not be changed by slurm_admin.
 <dd>State of the job.  Possible values are "PENDING", "STARTING", 
 "RUNNING", and "ENDING". 
 
+<dt>Shared
+<dd>Job can share nodes with other jobs. Possible values are 1
+and 0 for YES and NO respectively.
+
 <dt>User
 <dd>Name of the user executing this job.
 
@@ -607,7 +616,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified March 13, 2002</p>
+<p>Last Modified March 15, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
