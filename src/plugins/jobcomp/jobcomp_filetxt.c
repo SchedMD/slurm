@@ -28,13 +28,19 @@
 #   include "config.h"
 #endif
 
+#if HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <pwd.h>
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 #include <string.h>
-#include <stdint.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>

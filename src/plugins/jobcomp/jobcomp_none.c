@@ -24,7 +24,17 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <stdint.h>
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
+
 #include <stdio.h>
 #include <slurm/slurm_errno.h>
 
