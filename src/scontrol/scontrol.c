@@ -95,21 +95,18 @@ main (int argc, char *argv[])
 		input_words = 128;
 	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
 	for (i = 1; i < argc; i++) {
-		if (strcmp (argv[i], "-q") == 0) {
+		if (strncmp (argv[i], "-help", 2) == 0)
+			usage ();
+		else if (strcmp (argv[i], "-q") == 0)
 			quiet_flag = 1;
-		}
-		else if (strcmp (argv[i], "quiet") == 0) {
+		else if (strcmp (argv[i], "quiet") == 0)
 			quiet_flag = 1;
-		}
-		else if (strcmp (argv[i], "-v") == 0) {
+		else if (strcmp (argv[i], "-v") == 0)
 			quiet_flag = -1;
-		}
-		else if (strcmp (argv[i], "verbose") == 0) {
+		else if (strcmp (argv[i], "verbose") == 0)
 			quiet_flag = -1;
-		}
-		else {
+		else
 			input_fields[input_field_count++] = argv[i];
-		}		
 	}			
 
 	if (input_field_count)
@@ -951,26 +948,26 @@ update_part (int argc, char *argv[])
 /* usage - show the valid scontrol commands */
 void
 usage () {
-	printf ("scontrol [-q | -v] [<keyword>]\n");
+	printf ("scontrol [-q | -v] [<COMMAND>]\n");
 	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
 	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
 	printf ("  <keyword> may be omitted from the execute line and scontrol will execute in interactive\n");
-	printf ("    mode to process multiple keywords (i.e. commands). otherwise, it will execute\n");
-	printf ("    that command and terminate. Valid <keyword> values are:\n");
+	printf ("    mode. It will process commands as entered until explicitly terminated.\n");
+	printf ("    Valid <COMMAND> values are:\n");
 	printf ("     exit                     terminate this command.\n");
 	printf ("     help                     print this description of use.\n");
 	printf ("     quiet                    print no messages other than error messages.\n");
 	printf ("     quit                     terminate this command.\n");
 	printf ("     reconfigure              re-read configuration files.\n");
-	printf ("     show <entity> [<id>]     display state of identified entity, default is all records.\n");
-	printf ("     update <options>         update job, node, or partition configuration.\n");
+	printf ("     show <ENTITY> [<ID>]     display state of identified entity, default is all records.\n");
+	printf ("     update <SPECIFICATIONS>   update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
-	printf ("  <entity> may be \"build\", \"job\", \"node\", or \"partition\".\n");
-	printf ("  <id> may be a build parameter, job id, node name or partition name. Node names may\n");
+	printf ("  <ENTITY> may be \"build\", \"job\", \"node\", or \"partition\".\n");
+	printf ("  <ID> may be a build parameter, job id, node name or partition name. Node names may\n");
 	printf ("     specified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
-	printf ("  <options> are specified in the same format as the configuration file. You may wish\n");
-	printf ("     to use the \"show\" keyword then use its output as input for the update keyword,\n");
+	printf ("  <SPECIFICATIONS> are specified in the same format as the configuration file. You may\n");
+	printf ("     wish to use the \"show\" keyword then use its output as input for the update keyword,\n");
 	printf ("     editing as needed.\n");
 	printf ("  All commands and options are case-insensitive, although node names and partition\n");
 	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are distinct).\n");
