@@ -19,7 +19,6 @@ JobCredentialPrivateKey=private.key
 JobCredentialPublicCertificate=public.cert
 KillWait=30
 #PluginDir=/var/tmp/slurm/lib/slurm
-#Prioritize=/usr/local/maui/priority
 #Prolog=/admin/sbin/slurm.prolog
 ReturnToService=0
 SlurmUser=jette

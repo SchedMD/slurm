@@ -105,7 +105,6 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->plugindir);
-	xfree (ctl_conf_ptr->prioritize);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
@@ -148,7 +147,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->max_job_cnt		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
-	xfree (ctl_conf_ptr->prioritize);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
@@ -196,7 +194,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
-	char *prioritize = NULL, *prolog = NULL;
+	char *prolog = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
@@ -230,7 +228,6 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"MaxJobCount=", 'd', &max_job_cnt,
 		"MinJobAge=", 'd', &min_job_age,
 		"PluginDir=", 's', &plugindir,
-		"Prioritize=", 's', &prioritize,
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
 		"SlurmUser=", 's', &slurm_user,
@@ -393,14 +390,6 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->plugindir = plugindir;
 	}
 	
-	if ( prioritize ) {
-		if ( ctl_conf_ptr->prioritize ) {
-			error (MULTIPLE_VALUE_MSG, "Prioritize");
-			xfree (ctl_conf_ptr->prioritize);
-		}
-		ctl_conf_ptr->prioritize = prioritize;
-	}
-
 	if ( prolog ) {
 		if ( ctl_conf_ptr->prolog ) {
 			error (MULTIPLE_VALUE_MSG, "Prolog");

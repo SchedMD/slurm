@@ -388,8 +388,6 @@ typedef struct slurm_ctl_conf {
 	uint16_t min_job_age;	/* COMPLETED jobs over this age (secs) 
 	                         * purged from in memory records */
 	char *plugindir;	/* pathname to plugins */
-	char *prioritize;	/* pathname of program to set initial job 
-				 * priority */
 	char *prolog;		/* pathname of job prolog */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */ 

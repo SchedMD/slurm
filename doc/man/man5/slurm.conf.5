@@ -154,12 +154,6 @@ This is a colon-separated list of directories, like the PATH
 environment variable. 
 The default value is "/usr/local/lib/slurm".
 .TP
-\fBPrioritize\fR
-Fully qualified pathname of a program to execute in order to establish 
-the initial priority of a newly submitted job. By default there is no 
-prioritization program and each job gets a priority lower than that of 
-any existing jobs.
-.TP
 \fBProlog\fR
 Fully qualified pathname of a script to execute as user root on every 
 node when a user's job begins execution (e.g. "/usr/local/slurm/prolog"). 
@@ -502,8 +496,6 @@ MaxJobCount=10000
 MinJobAge=3600
 .br
 PluginDir=/usr/local/lib:/usr/local/slurm/lib
-.br
-Prioritize=/usr/local/maui/priority
 .br
 ReturnToService=0
 .br

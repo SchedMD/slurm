@@ -1633,7 +1633,6 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->max_job_cnt, buffer);
 	pack16(build_ptr->min_job_age, buffer);
 	packstr(build_ptr->plugindir, buffer);
-	packstr(build_ptr->prioritize, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->ret2service, buffer);
 	pack16(build_ptr->slurm_user_id, buffer);
@@ -1690,7 +1689,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&build_ptr->prioritize, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
 	safe_unpack16(&build_ptr->slurm_user_id, buffer);
@@ -1734,7 +1732,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	xfree(build_ptr->job_comp_loc);
 	xfree(build_ptr->job_comp_type);
 	xfree(build_ptr->plugindir);
-	xfree(build_ptr->prioritize);
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->slurmctld_logfile);
 	xfree(build_ptr->slurmctld_pidfile);
