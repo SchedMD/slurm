@@ -101,7 +101,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	job_t *job;
 	allocation_info_t *info = xmalloc(sizeof(*info));
 
-	info->nodelist       = resp->node_list;
+	info->nodelist       = _normalize_hostlist(resp->node_list);
 	info->nnodes	     = resp->node_cnt;
 	info->jobid          = resp->job_id;
 	info->stepid         = NO_VAL;
@@ -112,6 +112,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 
 	job = _job_create_internal(info);
 
+	xfree(info->nodelist);
 	xfree(info);
 
 	return (job);
@@ -775,4 +776,17 @@ _job_resp_cpus(uint32_t *cpus_per_node, uint32_t *cpu_count_reps, int node)
 		if (node < total)
 			return cpus_per_node[inx];
 	}
+}
+
+
+static char *
+_normalize_hostlist(const char *hostlist)
+{
+	hostlist_t hl = hostlist_create(hostlist);
+	char buf[4096];
+
+	if (!hl ||  (hostlist_ranged_string(hl, 4096, buf) < 0))
+		return xstrdup(hostlist);
+
+	return xstrdup(buf);
 }
