@@ -109,6 +109,7 @@ typedef struct srun_options {
 	char *constraints;	/* --constraints=, -C constraint*/
 	bool contiguous;	/* --contiguous			*/
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
+	bool no_alloc;		/* --no-allocate, -Z		*/
 
 } opt_t;
 
