@@ -1209,8 +1209,11 @@ void node_not_resp (char *name, time_t msg_time)
 	return;
 }
 
-/* set_node_down - make the specified node's state DOWN, kill jobs as needed 
- * IN name - name of the node */
+/*
+ * set_node_down - make the specified node's state DOWN if possible
+ *	(not in a DRAIN state), kill jobs as needed 
+ * IN name - name of the node 
+ */
 void set_node_down (char *name)
 {
 	struct node_record *node_ptr;
@@ -1221,7 +1224,9 @@ void set_node_down (char *name)
 		return;
 	}
 
-	_make_node_down(node_ptr);
+	if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
+	    (node_ptr->node_state != NODE_STATE_DRAINED))
+		_make_node_down(node_ptr);
 	(void) kill_running_job_by_node_name(name, false);
 
 	return;
