@@ -1,6 +1,8 @@
 # $Id$
 
-Name: @PROJECT@
+# Note that this package is not relocatable
+
+Name:    @PROJECT@
 Version: @VERSION@
 Release: @RELEASE@
 
@@ -9,22 +11,30 @@ Summary: Simple Linux Utility for Resource Management
 License: GPL 
 Group: System Environment/Base
 Source: %{name}-%{version}-%{release}.tgz
-Requires: readline popt
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
+URL: http://www.llnl.gov/linux/slurm
+Requires: popt 
+Requires: openssl >= 0.9.6
+
+#
+# If "--with debug" is set compile with --enable-debug 
+#  and do not strip binaries
+#
+# (See /usr/share/doc/rpm-*/conditionalbuilds)
+#
+%if %{?_with_debug:1}%{!?_with_debug:0}
+  %define _enable_debug --enable-debug
+  %define __os_install_post /usr/lib/rpm/brp-compress
+%endif
 
 #
 # Defaults are --with-elan --with-totalview
+# (Use --without [elan|totalview] to disable)
 #
 %{!?_with_elan: %{!?_without_elan: %define _with_elan --with-elan}}
 %{!?_with_totalview: %{!?_without_totalview: %define _with_totalview --with-totalview}}
 
 %{?_with_elan:BuildRequires: qsnetlibs}
-
-# 
-# Don't strip installed binaries for now:
-#
-%define __strip ""
-
 
 %package devel
 Summary: Development package for SLURM.
@@ -47,11 +57,10 @@ Group: System Environment/Base
 Requires: slurm munge
 
 %description 
-SLURM is a simple resource management system which manages
-exclusive access to a set of compute resources and distrubutes
-work to those resources. Included in this package are the SLURM
-controller, compute node daemon, and all clients necessary to
-access SLURM functionality.
+SLURM is an open source, fault-tolerant, and highly
+scalable cluster management and job scheduling system for Linux clusters
+containing up to thousands of nodes. Components include machine status,
+partition management, job management, and scheduling modules.
 
 %description devel
 Development package for SLURM.  This package includes the header files
@@ -76,14 +85,24 @@ WITHCONF=--sysconfdir=/etc/slurm
 # for now we build with debugging symbols
 CFLAGS="-g -Wall"
 %configure \
-    --enable-debug                       \
     $PFX_FIX $WITHCONF                   \
+    %{?_enable_debug}                    \
     %{?_with_elan}                       \
     %{?_without_elan}                    \
     %{?_with_totalview}                  \
     %{?_without_totalview}
 
-make
+#
+# The following was stolen from the E17 packages:
+# Build with make -j if SMP is defined in the current environment.
+#
+if [ "$SMP" != "" ]; then
+  (make "MAKE=make -k -j $SMP"; exit 0)
+  make
+else
+  make
+fi
+#############################################################################
 
 %install
 rm -rf "$RPM_BUILD_ROOT"
@@ -170,6 +189,8 @@ fi
 
 
 %changelog
+* Fri Mar 21 2003 Mark Grondona <mgrondona@llnl.gov>
+- allow debug builds when %debug macro is defined
+- other cleanup
 * Sat Jan 26 2003 Joey Ekstrom <jcekstrom@llnl.gov> 
 - Started spec file
--
