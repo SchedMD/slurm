@@ -69,8 +69,7 @@ libcommon_la_SOURCES = 			\
 	malloc.c malloc.h		\
 	$(build_getopt_src)		\
 	$(build_unsetenv_src)		\
-	hostlist.c hostlist.h		\
-	xlator.h
+	hostlist.c hostlist.h
 
 EXTRA_libcommon_la_SOURCES = 	\
 	$(extra_getopt_src)	\
