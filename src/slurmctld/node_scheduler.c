@@ -688,17 +688,21 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	if (job_ptr->magic != JOB_MAGIC)
 		fatal("select_nodes: bad job pointer value");
 
-	/* pick up nodes from the weight ordered configuration list */
-	if (job_ptr->details->req_node_bitmap)	/* insure selected nodes in partition */
-		req_bitmap = bit_copy (job_ptr->details->req_node_bitmap);
+	/* insure that partition exists and is up */
 	part_ptr = find_part_record(job_ptr->partition);
 	if (part_ptr == NULL)
 		fatal("select_nodes: invalid partition name %s for job %u", 
 			job_ptr->partition, job_ptr->job_id);
+	if (part_ptr->state_up == 0)
+		return ESLURM_NODES_BUSY;
+
+	/* pick up nodes from the weight ordered configuration list */
 	node_set_index = 0;
 	node_set_size = 0;
 	node_set_ptr = (struct node_set *) xmalloc (sizeof (struct node_set));
 	node_set_ptr[node_set_size++].my_bitmap = NULL;
+	if (job_ptr->details->req_node_bitmap)	/* insure selected nodes in partition */
+		req_bitmap = bit_copy (job_ptr->details->req_node_bitmap);
 
 	config_record_iterator = list_iterator_create (config_list);
 	if (config_record_iterator == NULL)
