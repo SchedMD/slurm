@@ -1304,7 +1304,6 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 {
 	int error_code = 0;
 	char *dir_name, job_dir[20], *file_name;
-	struct stat sbuf;
 
 	/* Create state_save_location directory */
 	dir_name = xstrdup (slurmctld_conf . state_save_location);
@@ -1312,10 +1311,7 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 	/* Create job_id specific directory */
 	sprintf (job_dir, "/job.%d", job_id);
 	xstrcat (dir_name, job_dir);
-	if (stat (dir_name, &sbuf) == -1) {	/* create job specific directory as needed */
-		if (mkdir2 (dir_name, 0700))
-			error ("mkdir2 on %s error %m", dir_name);
-	}
+	(void) mkdir2 (dir_name, 0700);
 
 	/* Create environment file, and write data to it */
 	file_name = xstrdup (dir_name);
@@ -1339,6 +1335,10 @@ mkdir2 (char * path, int modes)
 {
 	char *cmd;
 	int error_code;
+	struct stat sbuf;
+
+	if (stat (path, &sbuf) == 0)
+		return EEXIST;
 
 	if (getuid() == 0) {
 		if (mknod (path, S_IFDIR | modes, 0))

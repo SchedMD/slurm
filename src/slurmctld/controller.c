@@ -164,6 +164,9 @@ main (int argc, char *argv[])
 		fatal ("read_slurm_conf error %d reading %s", 
 			error_code, SLURM_CONFIG_FILE);
 
+	if (slurmctld_conf.state_save_location)
+		(void) mkdir2 (slurmctld_conf.state_save_location, 0700);
+
 	if (slurmctld_conf.slurmctld_logfile && daemonize) {
 		info ("Routing all log messages to %s", 
 			slurmctld_conf.slurmctld_logfile);
