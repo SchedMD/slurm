@@ -449,7 +449,13 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 		_print_str("TIME_USED", width, false, true);
 	else {
 		char time_str[64];
-		long delta_t = difftime(time(NULL), job->start_time) / 60;
+		long delta_t;
+		if (job->job_state == JOB_PENDING)
+			delta_t = 0;
+		else if (job->job_state == JOB_RUNNING)
+			delta_t = difftime(time(NULL), job->start_time) / 60;
+		else
+			delta_t = difftime(job->end_time, job->start_time) / 60;
 		/* format is "hours:minutes" */
 		snprintf(time_str, FORMAT_STRING_SIZE, "%ld:%2.2ld",
 			 delta_t / 60, delta_t % 60);
