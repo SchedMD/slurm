@@ -47,7 +47,8 @@ dnl Checks for header files.
 dnl
 AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
-                 stdlib.h )
+                 stdlib.h 					 \
+		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
@@ -74,7 +75,12 @@ fi
 
 dnl Checks for types.
 dnl
-
+AC_C_BIGENDIAN
+if test "x$ac_cv_c_bigendian" = "xyes"; then
+  AC_DEFINE(SLURM_BIGENDIAN,1,
+           [Define if your architecture's byteorder is big endian.])
+fi
+  
 
 dnl Checks for compiler characteristics.
 dnl
@@ -91,8 +97,9 @@ dnl AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [],
 dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
 
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
-AC_DEFINE_UNQUOTED(WITH_PTHREADS, $HAVE_PTHREAD, [Define if you have pthreads])
-AC_SUBST(WITH_PTHREADS)
+
+# Always define WITH_PTHREADS if we make it this far
+AC_DEFINE(WITH_PTHREADS,1,[Define if you have pthreads.])
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
@@ -113,7 +120,7 @@ AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
 AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
 if test $got_popt = no; then
     AC_MSG_RESULT([using included popt package...])
-    POPT_LIBS="\$(top_srcdir)/src/popt/libpopt.a"
+    POPT_LIBS="\$(top_builddir)/src/popt/libpopt.a"
     POPT_INCLUDES="-I\$(top_srcdir)/src/popt"
 else
     POPT_LIBS="-lpopt"
@@ -370,8 +377,6 @@ if test x$authd = xyes; then
    AC_SUBST(AUTHD_CFLAGS)
 fi
 AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
-
-
 
 
 dnl All slurm Makefiles:

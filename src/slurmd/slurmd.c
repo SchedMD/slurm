@@ -310,6 +310,8 @@ _read_config()
 	char *epilog, *prolog, *tmpfs, *savedir, *pubkey;
 	FILE *fp;
 
+	epilog = prolog = tmpfs = savedir = pubkey = NULL;
+
 	if ((fp = fopen(conf->conffile, "r")) == NULL) {
 		error("Unable to open config file `%s': %m", conf->conffile); 
 		exit(1);

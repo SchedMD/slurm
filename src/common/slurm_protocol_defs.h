@@ -280,7 +280,7 @@ typedef struct job_descriptor {	/* Job descriptor for submit, allocate, and upda
 } job_descriptor_t;
 
 typedef struct job_step_id {
-	uint32_t last_update;
+	time_t last_update;
 	uint32_t job_id;
 	uint32_t job_step_id;
 } job_step_id_t;
@@ -343,7 +343,7 @@ typedef struct partition_info {
  *****************************************************************************/
 
 struct slurm_ctl_conf {
-	uint32_t last_update;	/* last update time of the build parameters */
+	time_t last_update;	/* last update time of the build parameters */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;	/* name of slurmctld secondary server */
 	char *control_addr;	/* comm path of slurmctld primary server */
@@ -394,7 +394,7 @@ typedef struct job_step_create_response_msg {
 typedef struct job_step_specs job_step_create_request_msg_t;
 
 typedef struct job_step_info_response_msg {
-	uint32_t last_update;
+	time_t last_update;
 	uint32_t job_step_count;
 	job_step_info_t *job_steps;
 } job_step_info_response_msg_t;
@@ -403,13 +403,13 @@ typedef struct job_step_id job_step_id_msg_t;
 typedef struct job_step_id job_info_request_msg_t;
 
 typedef struct job_step_info_request_msg {
-	uint32_t last_update;
+	time_t last_update;
 	uint32_t job_id;
 	uint32_t step_id;
 } job_step_info_request_msg_t;
 
 typedef struct job_info_msg {
-	uint32_t last_update;
+	time_t last_update;
 	uint32_t record_count;
 	job_info_t *job_array;
 } job_info_msg_t;
@@ -426,7 +426,7 @@ typedef struct shutdown_msg {
 } shutdown_msg_t;
 
 typedef struct last_update_msg {
-	uint32_t last_update;
+	time_t last_update;
 } last_update_msg_t;
 
 typedef struct launch_tasks_request_msg {
@@ -465,13 +465,13 @@ typedef struct task_ext_msg {
 } task_exit_msg_t;
 
 typedef struct node_info_msg {
-	uint32_t last_update;
+	time_t last_update;
 	uint32_t record_count;
 	node_info_t *node_array;
 } node_info_msg_t;
 
 typedef struct partition_info_msg {
-	uint32_t last_update;
+	time_t last_update;
 	uint32_t record_count;
 	partition_info_t *partition_array;
 } partition_info_msg_t;

@@ -41,6 +41,8 @@
 #include <stdint.h>
 #endif  /* HAVE_CONFIG_H */
 
+#include <time.h>
+
 #include <assert.h>
 
 #define BUF_MAGIC 0x42554545
@@ -89,11 +91,8 @@ void	_unpackmem_ptr(char **valp, uint16_t *size_valp, Buf buffer);
 void	_unpackmem_xmalloc(char **valp, uint16_t *size_valp, Buf buffer);
 void	_unpackmem_malloc(char **valp, uint16_t *size_valp, Buf buffer);
 
-/* FIXME for IA64 */
-#define pack_time(val,buf)				\
-	pack32((uint32_t)val,buf)
-#define unpack_time(val,buf)				\
-	unpack32((uint32_t *)val,buf)
+void 	pack_time(time_t val, Buf buffer);
+void    unpack_time(time_t *valp, Buf buffer);
 
 #define pack32(val,buf) do {				\
 	assert(sizeof(val) == sizeof(uint32_t)); 	\

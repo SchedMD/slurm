@@ -6,6 +6,8 @@ else
 elan_testprogs =
 endif
 
+INCLUDES = -I$(top_srcdir)
+
 noinst_PROGRAMS = $(elan_testprogs) pack-test log-test stream_server stream_client bitstring-test slurm_protocol_message_client slurm_protocol_message_server
 
-LDADD   = $(top_srcdir)/src/common/libcommon.la
+LDADD   = $(top_builddir)/src/common/libcommon.la

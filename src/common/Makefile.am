@@ -2,12 +2,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-#
-if DEBUG_MODULES
-test_modules = bits_bytes bitstring
-else
-test_modules = 
-endif
+INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
 if WITH_ELAN
 elan_sources = qsw.c
@@ -23,7 +18,6 @@ endif
 
 noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la libcred.la 
 
-CPPFLAGS = $(SSL_CPPFLAGS)
 
 libcommon_la_SOURCES = 	\
 	xmalloc.c 	\
@@ -60,12 +54,14 @@ noinst_HEADERS = 	\
 	log.h 		\
 	eio.h		\
 	cbuf.h		\
+	fd.h		\
 	safeopen.h	\
 	strlcpy.h	\
 	bitstring.h     \
 	pack.h		\
 	hostlist.h	\
 	parse_spec.h	\
+	slurm_auth.h    \
 	slurm_protocol_api.h	\
 	slurm_protocol_pack.h	\
 	slurm_protocol_util.h	\
@@ -78,13 +74,16 @@ noinst_HEADERS = 	\
 	qsw.h			
 
 libdaemonize_la_SOURCES =  \
-	daemonize.c
+	daemonize.c        \
+	daemonize.h
 libcred_la_SOURCES =       \
         credential_utils.c \
-	signature_utils.c 
+	credential_utils.h \
+	signature_utils.c  \
+	signature_utils.h
 
 EXTRA_libcommon_la_SOURCES = \
 	qsw.c
-libcommon_la_LIBADD = $(AUTHD_LIBS) $(SSL_LIBS)
-libcred_la_LIBADD   = $(SSL_LIBS) 
-libcred_la_LDFLAGS  = $(SSL_LDFLAGS)	
+libcommon_la_LIBADD   = $(AUTHD_LIBS) $(SSL_LIBS)
+libcred_la_LIBADD     = $(SSL_LIBS) 
+libcred_la_LDFLAGS    = $(SSL_LDFLAGS)	

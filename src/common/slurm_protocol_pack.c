@@ -979,7 +979,7 @@ int unpack_job_step_info_members ( job_step_info_t * step , Buf buffer )
 	unpack32  (&step->job_id, buffer);
 	unpack16  (&step->step_id, buffer);
 	unpack32  (&step->user_id, buffer);
-	unpack_time  ((uint32_t*)&step->start_time, buffer);
+	unpack_time (&step->start_time, buffer);
 	unpackstr_xmalloc (&step->partition, &uint16_tmp, buffer);
 	unpackstr_xmalloc (&step->nodes, &uint16_tmp, buffer);
 

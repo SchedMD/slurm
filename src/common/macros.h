@@ -31,6 +31,38 @@ typedef enum {false, true} bool;
 #define MAX(a,b) ((a) > (b) ? (a) : (b))	
 #endif
 
+#  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                        \
+        (((uint64_t) (val) &                                               \
+	  (uint64_t) (0x00000000000000ffU)) << 56) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0x000000000000ff00U)) << 40) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0x0000000000ff0000U)) << 24) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0x00000000ff000000U)) <<  8) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0x000000ff00000000U)) >>  8) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0x0000ff0000000000U)) >> 24) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0x00ff000000000000U)) >> 40) |                       \
+	(((uint64_t) (val) &                                               \
+	  (uint64_t) (0xff00000000000000U)) >> 56)))
+
+#if SLURM_BIGENDIAN
+# define HTON_int64(x)	  ((int64_t)  (x))
+# define NTOH_int64(x)	  ((int64_t)  (x))
+# define HTON_uint64(x)	  ((uint64_t) (x))
+# define NTOH_uint64(x)	  ((uint64_t) (x))
+#else
+# define HTON_int64(x)    ((int64_t) UINT64_SWAP_LE_BE (x))
+# define NTOH_int64(x)	  ((int64_t) UINT64_SWAP_LE_BE (x))
+# define HTON_uint64(x)   UINT64_SWAP_LE_BE (x)
+# define NTOH_uint64(x)   UINT64_SWAP_LE_BE (x)
+#endif	/* SLURM_BIGENDIAN */
+
+
+
 /* 
 ** define __CURRENT_FUNC__ macro for returning current function 
 */

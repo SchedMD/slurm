@@ -425,9 +425,10 @@ load_node_state ( void )
 	char *node_name, *data, *state_file;
 	int data_allocated, data_read = 0, error_code = 0;
 	uint16_t node_state, name_len;
-	uint32_t time_stamp, cpus, real_memory, tmp_disk, data_size = 0;
+	uint32_t cpus, real_memory, tmp_disk, data_size = 0;
 	struct node_record *node_ptr;
 	int state_fd;
+	time_t time_stamp;
 	Buf buffer;
 
 	/* read the file */

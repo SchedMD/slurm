@@ -438,10 +438,10 @@ load_job_state ( void )
 	char *data, *state_file;
 	Buf buffer;
 	uint32_t job_id, user_id, time_limit, priority, total_procs;
-	time_t buf_time, start_time, end_time;
+	time_t buf_time, start_time, end_time, submit_time;
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
-	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
+	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk;
 	uint16_t shared, contiguous, kill_on_node_fail, name_len, batch_flag;
 	char *req_nodes = NULL, *features = NULL;
 	char  *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
@@ -649,7 +649,7 @@ load_job_state ( void )
 		while (step_flag == STEP_FLAG) {
 			struct step_record *step_ptr;
 			uint16_t step_id, cyclic_alloc;
-			uint32_t start_time;
+			time_t start_time;
 			char *node_list;
 
 			safe_unpack16 (&step_id, buffer);
