@@ -80,6 +80,10 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_user_name)
 #define job_format_add_user_id(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_user_id)
+#define job_format_add_group_name(list,wid,right,suffix) \
+        job_format_add_function(list,wid,right,suffix,_print_job_group_name)
+#define job_format_add_group_id(list,wid,right,suffix) \
+        job_format_add_function(list,wid,right,suffix,_print_job_group_id)
 #define job_format_add_job_state(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_job_state)
 #define job_format_add_job_state_compact(list,wid,right,suffix) \
@@ -135,6 +139,10 @@ int _print_job_name(job_info_t * job, int width, bool right_justify,
 int _print_job_user_id(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_user_name(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_group_id(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_group_name(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_job_state(job_info_t * job, int width, bool right_justify, 
 			char* suffix);

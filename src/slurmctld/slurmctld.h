@@ -272,6 +272,7 @@ struct job_record {
 	struct part_record *part_ptr;	/* pointer to the partition record */
 	uint16_t batch_flag;		/* 1 if batch job (with script) */
 	uint32_t user_id;		/* user the job runs as */
+	uint32_t group_id;		/* group submitted under */
 	enum job_states job_state;	/* state of the job */
 	uint16_t kill_on_node_fail;	/* 1 if job should be killed on 
 					 * node failure */

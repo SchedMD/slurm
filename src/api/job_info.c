@@ -31,6 +31,7 @@
 
 #include <errno.h>
 #include <pwd.h>
+#include <grp.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -75,6 +76,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	int j;
 	char time_str[16];
 	struct passwd *user_info = NULL;
+	struct group *group_info = NULL;
 
 	/****** Line 1 ******/
 	fprintf ( out, "JobId=%u ", job_ptr->job_id);
@@ -84,6 +86,12 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 			  user_info->pw_name, job_ptr->user_id);
 	else
 		fprintf ( out, "UserId=(%u) ", job_ptr->user_id);
+	group_info = getgrgid( (gid_t) job_ptr->group_id );
+	if ( group_info && group_info->gr_name[ 0 ] )
+		fprintf( out, "GroupId=%s(%u) ",
+			 group_info->gr_name, job_ptr->group_id );
+	else
+		fprintf( out, "GroupId=(%u) ", job_ptr->group_id );
 	fprintf ( out, "Name=%s JobState=%s", 
 		  job_ptr->name, job_state_string(job_ptr->job_state));
 	if (one_liner)

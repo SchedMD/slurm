@@ -1474,6 +1474,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
+	safe_unpack32(&job->group_id, buffer);
 
 	safe_unpack16(&job->job_state,  buffer);
 	safe_unpack16(&job->batch_flag, buffer);
@@ -1704,6 +1705,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack32(job_desc_ptr->max_nodes, buffer);
 	pack32(job_desc_ptr->num_tasks, buffer);
 	pack32(job_desc_ptr->user_id, buffer);
+	pack32(job_desc_ptr->group_id, buffer);
 
 }
 
@@ -1760,6 +1762,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->max_nodes, buffer);
 	safe_unpack32(&job_desc_ptr->num_tasks, buffer);
 	safe_unpack32(&job_desc_ptr->user_id, buffer);
+	safe_unpack32(&job_desc_ptr->group_id, buffer);
 
 	return SLURM_SUCCESS;
 

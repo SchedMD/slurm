@@ -208,6 +208,19 @@ Specify how long to wait after the first task terminates before terminating
 all remaining tasks. The default value is unlimited. This can be useful to 
 insure that a job is terminated in a timely fashion in the event that one 
 or more tasks terminate prematurely.
+.TP
+\fB\-\-uid\fR=\fIuser\fR
+If
+.B srun
+is run as root, submit the job with \fIuser\fR's access permissions.
+\fIuser\fR may be the user name or the numerical user ID.
+.TP
+\fB\-\-gid\fR=\fIgroup\fR
+If
+.B srun
+is run as root, and the \fB\-\-uid\fR option is used, submit the job
+with \fIgroup\fR's group access permissions.  \fIgroup\fR may be the
+group name or the numerical group ID.
 .PP
 Allocate options:
 .TP

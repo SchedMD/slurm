@@ -363,6 +363,7 @@ _run_batch_job(void)
 	job.num_tasks      = opt.nprocs;
 
 	job.user_id        = opt.uid;
+	job.group_id	= getgid();
 
 	if (opt.hold)
 		job.priority 		= 0;
@@ -425,6 +426,10 @@ _get_shell (void)
 	struct passwd *pw_ent_ptr;
 
 	pw_ent_ptr = getpwuid (getuid ());
+	if ( ! pw_ent_ptr ) {
+		pw_ent_ptr = getpwnam( "nobody" );
+		info( "warning - no user information for user %d", getuid() );
+	}
 	return pw_ent_ptr->pw_shell;
 }
 
