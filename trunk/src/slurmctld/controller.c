@@ -139,11 +139,6 @@ int main(int argc, char *argv[])
 	 */
 	_init_pidfile();
 
-	if (switch_state_begin(recover)) {
-		error("switch_state_begin: %m");
-		exit(1);
-	}
-
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
 	    (setuid(slurmctld_conf.slurm_user_id))) {
@@ -212,6 +207,9 @@ int main(int argc, char *argv[])
 			     slurmctld_conf.backup_controller);
 			exit(0);
 		}
+
+		if (switch_state_begin(recover))
+			fatal("switch_state_begin: %m");
 
 		/*
 		 * create attached thread for signal handling
