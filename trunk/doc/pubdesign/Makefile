@@ -10,8 +10,18 @@
 
 REPORT = report
 
+
 TEX = llnl.tex $(REPORT).tex
-FIGS = arch.eps slurm-arch.eps
+
+FIGDIR = figures
+FIGS = arch.eps \
+       slurm-arch.eps \
+       $(FIGDIR)/entities.eps \
+       $(FIGDIR)/connections.eps \
+       $(FIGDIR)/interactive-job-init.eps \
+       $(FIGDIR)/queued-job-init.eps \
+       $(FIGDIR)/allocate-init.eps 
+
 PLOTS = 
 BIB = project.bib
 
@@ -43,3 +53,4 @@ view: $(REPORT).ps
 
 clean: 
 	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl #*.eps #*.gif
+	      
