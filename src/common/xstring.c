@@ -4,8 +4,8 @@
  ******************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona@llnl.gov>, Jim Garlick <garlick@llnl.gov>, 
- *  et. al.
+ *  Written by Mark Grondona <grondona@llnl.gov>, 
+ *	Jim Garlick <garlick@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -39,13 +39,17 @@
 #if 	HAVE_UNISTD_H
 #  include <unistd.h>
 #endif
-#include <pthread.h>
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif
+
 #include <xmalloc.h>
 #include <xstring.h>
 #include <strlcpy.h>
 #include <xassert.h>
 
-#include <src/common/slurm_errno.h>
+#include "src/common/slurm_errno.h"
 
 #define XFGETS_CHUNKSIZE 64
 
