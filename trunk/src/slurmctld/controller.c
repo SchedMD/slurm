@@ -74,9 +74,8 @@
 #endif				/* !MAX */
 
 /* Log to stderr and syslog until becomes a daemon */
-log_options_t log_opts = { 1, LOG_LEVEL_INFO, LOG_LEVEL_INFO,
-	LOG_LEVEL_QUIET
-};
+log_options_t log_opts = 
+   { LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0 };
 
 /* Global variables */
 slurm_ctl_conf_t slurmctld_conf;

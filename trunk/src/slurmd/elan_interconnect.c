@@ -76,6 +76,8 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 		sleep(sleeptime*=2);
 	}
 
+	debug("destroyed program description");
+
 	exit(0);
 	return SLURM_SUCCESS;
 }
@@ -97,7 +99,8 @@ interconnect_init(slurmd_job_t *job)
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
-			return _wait_and_destroy_prg(job->qsw_job, pid);
+			_wait_and_destroy_prg(job->qsw_job, pid);
+			/*NOTREACHED*/
 	}
 
 	/* Process 2: */

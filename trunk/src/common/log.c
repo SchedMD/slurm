@@ -87,7 +87,10 @@
 */
 typedef struct {
 	char *argv0;
-	FILE *logfp;
+	char *fpfx;              /* optional prefix for logfile entries */
+	FILE *logfp;             /* log file pointer                    */
+	cbuf_t buf;              /* stderr data buffer                  */
+	cbuf_t fbuf;             /* logfile data buffer                 */
 	log_facility_t facility;
 	log_options_t opt;
 	unsigned initialized:1;
@@ -97,7 +100,7 @@ typedef struct {
 #ifdef WITH_PTHREADS
   static pthread_mutex_t  log_lock;
 #else
-  static int	log_lock;
+  static int              log_lock;
 #endif /* WITH_PTHREADS */
 static log_t            *log = NULL;
 
@@ -128,6 +131,9 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log = (log_t *)xmalloc(sizeof(log_t));
 		log->logfp = NULL;
 		log->argv0 = NULL;
+		log->buf   = NULL;
+		log->fbuf  = NULL;
+		log->fpfx  = NULL; 
 	}
 
 	if (prog) {
@@ -138,7 +144,20 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->argv0 = xstrdup(default_argv0);
 	}
 
+	if (!log->fpfx)
+		log->fpfx = xstrdup("");
+
 	log->opt = opt;
+
+	if (log->opt.buffered) {
+		log->buf  = cbuf_create(128, 8192);
+		log->fbuf = cbuf_create(128, 8192);
+	} else {
+		if (log->buf) 
+			cbuf_destroy(log->buf);
+		if (log->fbuf)
+			cbuf_destroy(log->fbuf);
+	}
 
 	if (log->opt.syslog_level > LOG_LEVEL_QUIET)
 		log->facility = fac;
@@ -153,7 +172,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			slurm_mutex_unlock(&log_lock);
 			xslurm_strerrorcat(errmsg);
 			fprintf(stderr, 
-			        "%s: log_init(): Unable to open logfile"
+				"%s: log_init(): Unable to open logfile"
 			        "`%s': %s\n", prog, logfile, errmsg);
 			xfree(errmsg);
 			rc = errno;
@@ -181,9 +200,43 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 	return rc;
 }
 
+void log_fini()
+{
+	log_flush();
+	slurm_mutex_lock(&log_lock);
+	if (log->argv0)
+		xfree(log->argv0);
+	if (log->fpfx)
+		xfree(log->argv0);
+	if (log->logfp)
+		fclose(log->logfp);
+	if (log->buf)
+		cbuf_destroy(log->buf);
+	if (log->fbuf)
+		cbuf_destroy(log->fbuf);
+	xfree(log);
+	log = NULL;
+	slurm_mutex_unlock(&log_lock);
+	slurm_mutex_destroy(&log_lock);
+}
+
 void log_reinit()
 {
 	slurm_mutex_init(&log_lock);
+}
+
+void log_set_fpfx(char *prefix)
+{
+	slurm_mutex_lock(&log_lock);
+	if (log->fpfx)
+		xfree(log->fpfx);
+	if (!prefix)
+		log->fpfx = xstrdup("");
+	else {
+		log->fpfx = xstrdup(prefix);
+		xstrcatchar(log->fpfx, ' ');
+	}
+	slurm_mutex_unlock(&log_lock);
 }
 
 /* reinitialize log data structures. Like log_init, but do not init
@@ -337,6 +390,26 @@ static void xlogfmtcat(char **dst, const char *fmt, ...)
 
 }
 
+static void
+_log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...) 
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	if (log->opt.buffered && (cb != NULL)) {
+		char *buf = vxstrfmt(fmt, ap);
+		int   len = strlen(buf);
+		int   dropped;
+		cbuf_write(cb, buf, len, &dropped); 
+		cbuf_read_to_fd(cb, fileno(stream), -1);
+		xfree(buf);
+	} else  {
+		vfprintf(stream, fmt, ap);
+	}
+	va_end(ap);
+
+}
+
 /*
  * log a message at the specified level to facilities that have been 
  * configured to receive messages at that level
@@ -381,7 +454,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 		case LOG_LEVEL_DEBUG:
 			priority = LOG_DEBUG;
-			pfx = "debug:  ";
+			pfx = "debug : ";
 			break;
 
 		case LOG_LEVEL_DEBUG2:
@@ -408,19 +481,22 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	if (level <= log->opt.stderr_level) {
 		fflush(stdout);
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
-			fprintf(stderr, "%s: %s%s", log->argv0, pfx, buf);
+			_log_printf( log->buf, stderr, "%s: %s%s", 
+				     log->argv0, pfx, buf);
 		else
-			fprintf(stderr, "%s: %s%s\n", log->argv0, pfx, buf);
+			_log_printf( log->buf, stderr, "%s: %s%s\n", 
+				     log->argv0, pfx, buf);
 		fflush(stderr);
 	}
 
 	if (level <= log->opt.logfile_level && log->logfp != NULL) {
-		xlogfmtcat(&msgbuf, "[%M] %s%s", pfx, buf);
+		xlogfmtcat(&msgbuf, "[%M] %s%s%s", 
+				    log->fpfx, pfx, buf);
 
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
-			fprintf(log->logfp, "%s", msgbuf);
+			_log_printf(log->fbuf, log->logfp, "%s", msgbuf);
 		else
-			fprintf(log->logfp, "%s\n", msgbuf);
+			_log_printf(log->fbuf, log->logfp, "%s\n", msgbuf);
 		fflush(log->logfp);
 
 		xfree(msgbuf);
@@ -439,6 +515,34 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	slurm_mutex_unlock(&log_lock);
 
 	xfree(buf);
+}
+
+bool
+log_has_data()
+{
+	bool rc = false;
+	slurm_mutex_lock(&log_lock);
+	if (log->opt.buffered)
+		rc =  (cbuf_used(log->buf) > 0);
+	slurm_mutex_unlock(&log_lock);
+	return rc;
+}
+
+void
+log_flush()
+{
+	slurm_mutex_lock(&log_lock);
+
+	if (!log->opt.buffered)
+		goto done;
+
+	if (log->opt.stderr_level) 
+		cbuf_read_to_fd(log->buf, fileno(stderr), -1);
+	else if (log->logfp)
+		cbuf_read_to_fd(log->buf, fileno(log->logfp), -1);
+
+    done:
+	slurm_mutex_unlock(&log_lock);
 }
 
 /* LLNL Software development Toolbox (LSD-Tools)
@@ -468,10 +572,13 @@ void fatal(const char *fmt, ...)
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_FATAL, fmt, ap);
 	va_end(ap);
+	log_flush();
 	fatal_cleanup();
 
-#ifndef  NDEBUG
+#ifndef NDEBUG
 	abort();
+#else
+	exit(1);
 #endif
 }
 
@@ -675,3 +782,4 @@ dump_cleanup_list(void)
 	}
 	slurm_mutex_unlock(&fatal_lock);
 }
+

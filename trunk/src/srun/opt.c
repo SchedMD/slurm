@@ -179,7 +179,7 @@ struct poptOption runTable[] = {
 	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
 	 "time limit",
 	 "minutes"},
-	{"cddir", 'D', POPT_ARG_STRING, NULL, OPT_CDDIR,
+	{"chdir", 'D', POPT_ARG_STRING, NULL, OPT_CDDIR,
 	 "change current working directory of remote procs",
 	 "path"},
 	{"immediate", 'I', POPT_ARG_NONE, &opt.immediate, 0,
@@ -664,7 +664,8 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_ATTACH:
 			if (opt.allocate || opt.batch) {
-				error("can only specify one mode: allocate, attach or batch.");
+				error("can only specify one mode: "
+				      "allocate, attach or batch.");
 				exit(1);
 			}
 			mode = MODE_ATTACH;
@@ -673,7 +674,8 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_ALLOCATE:
 			if (opt.attach || opt.batch) {
-				error("can only specify one mode: allocate, attach or batch.");
+				error("can only specify one mode: "
+				      "allocate, attach or batch.");
 				exit(1);
 			}
 			mode = MODE_ALLOCATE;

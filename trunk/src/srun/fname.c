@@ -80,7 +80,7 @@ fname_create(job_t *job, char *format)
 
 				 fname->type = IO_PER_TASK;
 				 if (wid)
-					 xstrfmtcat(name, "%%");
+					 xstrcatchar(name, '%');
 				 p++;
 				 break;
 

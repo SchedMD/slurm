@@ -106,6 +106,7 @@ typedef struct srun_job {
 } job_t;
 
 void    update_job_state(job_t *job, job_state_t newstate);
+void    job_force_termination(job_t *job);
 
 job_t * job_create_noalloc(void);
 job_t * job_create_allocation(resource_allocation_response_msg_t *resp);

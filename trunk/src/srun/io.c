@@ -167,14 +167,13 @@ _do_output(cbuf_t buf, FILE *out, int tasknum)
 		fflush(out);
 	}
 
-	if ((len = cbuf_used(buf)))
-		error ("Unable to print %d bytes output data", len);
 }
 
 static void
 _flush_io(job_t *job)
 {
 	int i;
+	int len;
 
 	debug3("flushing all io");
 	for (i = 0; i < opt.nprocs; i++) {
@@ -186,6 +185,11 @@ _flush_io(job_t *job)
 		_do_output(job->errbuf[i], job->errstream, i);
 		if (job->err[i] != IO_DONE)
 			_close_stream(&job->err[i], stderr, i);
+
+		if ((len = cbuf_used(job->outbuf[i])))
+			error ("Unable to print %d bytes output data", len);
+		if ((len = cbuf_used(job->outbuf[i])))
+			error ("Unable to print %d bytes output data", len);
 	}
 }
 
@@ -216,11 +220,11 @@ _io_thr_poll(void *job_arg)
 		else
 			out_fd_state = WAITING_FOR_IO;
 
-		if (!job->efname->name)
+		if (!opt.efname)
 			err_fd_state = IO_DONE;
 	}
 
-	if (job->efname->name == IO_ALL && opt.efname) {
+	if ((job->efname->type == IO_ALL) && (err_fd_state != IO_DONE)) {
 		err_fd_state = WAITING_FOR_IO;
 	} else 
 		err_fd_state = IO_DONE;
@@ -237,13 +241,13 @@ _io_thr_poll(void *job_arg)
 		int eofcnt = 0;
 		nfds = job->niofds; /* already have n ioport fds + stdin */
 
-		if (job->stdinfd >= 0) {
+		if ((job->stdinfd >= 0) && !stdin_got_eof) {
 			_poll_set_rd(fds[nfds], job->stdinfd);
 			nfds++;
 		}
 
 		for (i = 0; i < opt.nprocs; i++) {
-			if (job->out[i] > 0) {
+			if (job->out[i] >= 0) {
 				_poll_set_rd(fds[nfds], job->out[i]);
 
 				if ( (cbuf_used(job->inbuf[i]) > 0) 
@@ -257,7 +261,7 @@ _io_thr_poll(void *job_arg)
 				nfds++;
 			}
 
-			if (job->err[i] > 0) {
+			if (job->err[i] >= 0) {
 				_poll_set_rd(fds[nfds], job->err[i]);
 				map[nfds].taskid = i;
 				map[nfds].fd     = &job->err[i];
@@ -317,10 +321,8 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
-		if ((job->stdinfd >= 0)) {
-		       	if (_poll_rd_isset(fds[i]))
-				_bcast_stdin(job->stdinfd, job);
-			if (_poll_hup(fds[i]) || _poll_err(fds[i]))
+		if ((job->stdinfd >= 0) && !stdin_got_eof) {
+		       	if (fds[i].revents)
 				_bcast_stdin(job->stdinfd, job);
 			++i;
 		}
@@ -332,10 +334,10 @@ _io_thr_poll(void *job_arg)
 			if ((revents & POLLERR) || (revents & POLLHUP)) 
 				_handle_pollerr(&map[i]);
 
-			if ((revents & POLLIN) && (*map[i].fd > 0)) 
+			if ((revents & POLLIN) && (*map[i].fd >= 0)) 
 				_do_task_output_poll(&map[i]);
 
-			if ((revents & POLLOUT) && (*map[i].fd > 0))
+			if ((revents & POLLOUT) && (*map[i].fd >= 0))
 				_do_task_input_poll(job, &map[i]);
 		}
 	}
@@ -421,7 +423,7 @@ void report_task_status(job_t *job)
 	for (i = 0; i < opt.nprocs; i++) {
 		int state = job->task_state[i];
 		if ((state == SRUN_TASK_EXITED) 
-		    && ((job->err[i] > 0) || (job->out[i] > 0)))
+		    && ((job->err[i] >= 0) || (job->out[i] >= 0)))
 			state = 4;
 		snprintf(buf, 256, "task%d", i);
 		hostlist_push(hl[state], buf); 
@@ -614,9 +616,16 @@ _accept_io_stream(job_t *job, int i)
 			continue;
 		} 
 
-		slurm_mutex_lock(&job->task_mutex);
-		job->task_state[hdr.task_id] = SRUN_TASK_RUNNING;
-		slurm_mutex_unlock(&job->task_mutex);
+		/*
+		 * IO connection from task may come after task exits,
+		 * in which case, state should be waiting for IO.
+		 * 
+		 * Update to RUNNING now handled in msg.c
+		 *
+		 * slurm_mutex_lock(&job->task_mutex);
+		 * job->task_state[hdr.task_id] = SRUN_TASK_RUNNING;
+		 * slurm_mutex_unlock(&job->task_mutex);
+		 */
 
 		fd_set_nonblocking(sd);
 		if (hdr.type == SLURM_IO_STREAM_INOUT)
@@ -653,6 +662,8 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 	int dropped = 0;
 
 	if ((len = cbuf_write_from_fd(buf, *fd, -1, &dropped)) <= 0) {
+		if ((len != 0)) 
+			error("Error task %d IO: %m", tasknum);
 		_close_stream(fd, out, tasknum);
 		return len;
 	}
@@ -743,7 +754,7 @@ _write_all(job_t *job, cbuf_t cb, char *buf, size_t len, int taskid)
 
     again:
 	n = cbuf_write(cb, buf, len, &dropped);
-	if ((n < len) && (job->out[taskid] > 0)) {
+	if ((n < len) && (job->out[taskid] >= 0)) {
 		error("cbuf_write returned %d", n);
 		_do_task_input(job, taskid);
 		goto again;
@@ -777,7 +788,7 @@ _bcast_stdin(int fd, job_t *job)
 
 	if ((n = _readx(fd, buf, len)) <= 0) {
 		if (n == 0) { /* got EOF */
-			close(job->stdinfd);
+			close(job->stdinfd); 
 			job->stdinfd = IO_DONE;
 			stdin_got_eof = true;
 			return;

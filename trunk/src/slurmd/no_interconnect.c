@@ -28,6 +28,8 @@
 #include <src/slurmd/interconnect.h>
 #include <src/slurmd/setenvpf.h>
 
+#include "src/slurmd/shm.h"
+
 int interconnect_init (slurmd_job_t *job)
 {
 	return SLURM_SUCCESS;

@@ -129,34 +129,4 @@ void job_update_shm(slurmd_job_t *job);
 
 void job_delete_shm(slurmd_job_t *job);
 
-#define job_error(j, fmt, args...)					\
-        do { 								\
-            error("%d.%d: " fmt, (j)->jobid, (j)->stepid, ## args);	\
-	} while (0)
-
-#define job_verbose(j, fmt, args...)					\
-        do { 								\
-            verbose("%d.%d: " fmt, (j)->jobid, (j)->stepid, ## args);	\
-	} while (0)
-
-#define job_debug(j, fmt, args...)					\
-        do { 								\
-            debug("%d.%d: " fmt, (j)->jobid, (j)->stepid, ## args);	\
-	} while (0)
-
-#define job_debug2(j, fmt, args...)					\
-        do { 								\
-            debug2("%d.%d: " fmt, (j)->jobid, (j)->stepid, ## args);	\
-	} while (0)
-
-#define job_debug3(j, fmt, args...)					\
-        do { 								\
-            debug3("%d.%d: " fmt, (j)->jobid, (j)->stepid, ## args);	\
-	} while (0)
-
-#define job_info(j, fmt, args...)					\
-        do { 								\
-            info("%d.%d: " fmt, (j)->jobid, (j)->stepid, ## args);	\
-	} while (0)
-
 #endif /* !_JOB_H */

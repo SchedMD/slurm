@@ -112,6 +112,7 @@ struct io_info {
 static bool   _isa_client(struct io_info *io);
 static bool   _isa_task(struct io_info *io);
 
+static void   _fatal_cleanup(void *);
 static int    _io_init_pipes(task_info_t *t);
 static int    _io_prepare_tasks(slurmd_job_t *);
 static void * _io_thr(void *);
@@ -235,6 +236,8 @@ io_spawn_handler(slurmd_job_t *job)
 
 	pthread_create(&job->ioid, &attr, &_io_thr, (void *)job);
 	
+	fatal_add_cleanup(&_fatal_cleanup, (void *) job);
+
 	return 0;
 }
 
@@ -242,11 +245,11 @@ static int
 _xclose(int fd)
 {
 	int rc;
-	do rc = close(fd);
-	while (rc == -1 && errno == EINTR);
+	do {
+		rc = close(fd);
+	} while (rc == -1 && errno == EINTR);
 	return rc;
 }
-
 
 
 /* 
@@ -309,6 +312,27 @@ io_close_all(slurmd_job_t *job)
 }
 
 static void
+_fatal_cleanup(void *arg)
+{
+	slurmd_job_t   *job = (slurmd_job_t *) arg;
+	ListIterator    i;
+	io_obj_t       *obj;
+	struct io_info *io;
+
+	error("in fatal_cleanup");
+
+	_task_read(job->task[0]->err, job->objs);
+
+	i = list_iterator_create(job->objs);
+	while((obj = list_next(i))) {
+		io = (struct io_info *) obj->arg;
+		if ((*obj->ops->writable)(obj))
+			_write(obj, job->objs);
+	}
+	list_iterator_destroy(i);
+}
+
+static void
 _handle_unprocessed_output(slurmd_job_t *job)
 {
 	int i;
@@ -326,9 +350,8 @@ _handle_unprocessed_output(slurmd_job_t *job)
 			continue;
 
 		if (io->buf && (n = cbuf_used(io->buf)))
-			job_error(job, 
-			  "task %d: %ld bytes of stdout unprocessed", 
-			  io->id, n);
+			error("task %d: %ld bytes of stdout unprocessed", 
+			      io->id, n);
 
 		if (!(readers = ((struct io_info *)t->err->arg)->readers))
 			continue;
@@ -336,7 +359,8 @@ _handle_unprocessed_output(slurmd_job_t *job)
 			continue;
 
 		if (io->buf && (n = cbuf_used(io->buf)))
-			job_error(job, "%ld bytes of stderr unprocessed", n);
+			error("task %d: %ld bytes of stderr unprocessed", 
+			      io->id, n);
 	}
 }
 
@@ -1114,6 +1138,9 @@ _writable(io_obj_t *obj)
 	      && !io->disconnected 
 	      && ((cbuf_used(io->buf) > 0) || io->eof));
 
+	if ((io->type == CLIENT_STDERR) && (io->id == 0))
+		rc = (rc || log_has_data());
+
 	if (rc)
 		debug3("%d %s is writable", io->id, _io_str[io->type]);
 
@@ -1131,6 +1158,9 @@ _write(io_obj_t *obj, List objs)
 
 	if (io->disconnected)
 		return 0;
+
+	if (io->id == 0)
+		log_flush();
 
 	debug3("Need to write %ld bytes to %s %d", 
 		cbuf_used(io->buf), _io_str[io->type], io->id);
