@@ -26,25 +26,24 @@
 \*****************************************************************************/
 
 #include <signal.h>
-#include "src/common/xstring.h"
 #include "src/smap/smap.h"
 
 /********************
  * Global Variables *
  ********************/
 struct smap_parameters params;
+
+smap_info *smap_info_ptr;
+
 int quiet_flag = 0;
-int xcord = 1;
-int ycord = 1;
-int X = 0;
-int Y = 0;
-int Z = 0;
-int num_of_proc = 0;
-int resize_screen = 0;
+
 /************
  * Functions *
  ************/
 int _get_option(void);
+
+typedef void (*sighandler_t) (int);
+
 void *_resize_handler(int sig);
 
 int main(int argc, char *argv[])
@@ -64,6 +63,15 @@ int main(int argc, char *argv[])
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 
+	smap_info_ptr = xmalloc(sizeof(smap_info));
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord = 1;
+	smap_info_ptr->X = 0;
+	smap_info_ptr->Y = 0;
+	smap_info_ptr->Z = 0;
+	smap_info_ptr->num_of_proc = 0;
+	smap_info_ptr->resize_screen = 0;
+
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
@@ -75,37 +83,42 @@ int main(int argc, char *argv[])
 			node_ptr->node_state = NODE_STATE_DRAINED;
 			start = atoi(node_ptr->name + 3);
 			temp = start / 100;
-			if (X < temp)
-				X = temp;
+			if (smap_info_ptr->X < temp)
+				smap_info_ptr->X = temp;
 			temp = (start % 100) / 10;
-			if (Y < temp)
-				Y = temp;
+			if (smap_info_ptr->Y < temp)
+				smap_info_ptr->Y = temp;
 			temp = start % 10;
-			if (Z < temp)
-				Z = temp;
+			if (smap_info_ptr->Z < temp)
+				smap_info_ptr->Z = temp;
 		}
-		X++;
-		Y++;
-		Z++;
-		grid = (axis ***) xmalloc(sizeof(axis **) * X);
-		for (i = 0; i < X; i++) {
-			grid[i] = (axis **) xmalloc(sizeof(axis *) * Y);
-			for (j = 0; j < Y; j++)
-				grid[i][j] =
-				    (axis *) xmalloc(sizeof(axis) * Z);
+		smap_info_ptr->X++;
+		smap_info_ptr->Y++;
+		smap_info_ptr->Z++;
+		smap_info_ptr->grid =
+		    (axis ***) xmalloc(sizeof(axis **) * smap_info_ptr->X);
+		for (i = 0; i < smap_info_ptr->X; i++) {
+			smap_info_ptr->grid[i] =
+			    (axis **) xmalloc(sizeof(axis *) *
+					      smap_info_ptr->Y);
+			for (j = 0; j < smap_info_ptr->Y; j++)
+				smap_info_ptr->grid[i][j] =
+				    (axis *) xmalloc(sizeof(axis) *
+						     smap_info_ptr->Z);
 		}
-		num_of_proc = node_info_ptr->record_count;
+		smap_info_ptr->num_of_proc = node_info_ptr->record_count;
 
-		fill_in_value =
-		    (axis *) xmalloc(sizeof(axis) * num_of_proc);
+		smap_info_ptr->fill_in_value =
+		    (axis *) xmalloc(sizeof(axis) *
+				     smap_info_ptr->num_of_proc);
 
-		height = Y * Z + Y * 2;
-		width = X * 2;
+		height =
+		    smap_info_ptr->Y * smap_info_ptr->Z +
+		    smap_info_ptr->Y * 2;
+		width = smap_info_ptr->X * 2;
 		init_grid(node_info_ptr);
-
-
 	}
-	signal(SIGWINCH, _resize_handler);
+	signal(SIGWINCH, (sighandler_t) _resize_handler);
 #else
 	printf("This will only run on a BGL system right now.\n");
 	exit(0);
@@ -114,8 +127,8 @@ int main(int argc, char *argv[])
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
 		printf
-		    ("Screen is too small make sure the screen is at least %dx%d\n",
-		     84 + width, height);
+		    ("Screen is too small make sure the screen is at least %dx%d\nRight now it is %dx%d\n",
+		     75 + width, height, COLS, LINES);
 		exit(0);
 	}
 	raw();
@@ -126,17 +139,17 @@ int main(int argc, char *argv[])
 	nodelay(stdscr, TRUE);
 	start_color();
 
-	grid_win = newwin(height, width, starty, startx);
-	box(grid_win, 0, 0);
+	smap_info_ptr->grid_win = newwin(height, width, starty, startx);
+	box(smap_info_ptr->grid_win, 0, 0);
 
 	startx = width;
 	COLS -= 2;
 	width = COLS - width;
 	height = LINES;
-	text_win = newwin(height, width, starty, startx);
-	box(text_win, 0, 0);
-	wrefresh(text_win);
-	wrefresh(grid_win);
+	smap_info_ptr->text_win = newwin(height, width, starty, startx);
+	box(smap_info_ptr->text_win, 0, 0);
+	wrefresh(smap_info_ptr->text_win);
+	wrefresh(smap_info_ptr->grid_win);
 
 	while (!end) {
 		_get_option();
@@ -144,10 +157,10 @@ int main(int argc, char *argv[])
 
 
 		init_grid(node_info_ptr);
-		wclear(text_win);
-		//wclear(grid_win);        
-		xcord = 1;
-		ycord = 1;
+		wclear(smap_info_ptr->text_win);
+		//wclear(smap_info_ptr->grid_win);        
+		smap_info_ptr->xcord = 1;
+		smap_info_ptr->ycord = 1;
 
 		print_date();
 		switch (params.display) {
@@ -163,10 +176,10 @@ int main(int argc, char *argv[])
 		}
 
 		print_grid();
-		box(text_win, 0, 0);
-		box(grid_win, 0, 0);
-		wrefresh(text_win);
-		wrefresh(grid_win);
+		box(smap_info_ptr->text_win, 0, 0);
+		box(smap_info_ptr->grid_win, 0, 0);
+		wrefresh(smap_info_ptr->text_win);
+		wrefresh(smap_info_ptr->grid_win);
 
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
@@ -174,8 +187,8 @@ int main(int argc, char *argv[])
 				sleep(1);
 				if (_get_option())
 					goto redraw;
-				else if (resize_screen) {
-					resize_screen = 0;
+				else if (smap_info_ptr->resize_screen) {
+					smap_info_ptr->resize_screen = 0;
 					goto redraw;
 				}
 			}
@@ -186,22 +199,24 @@ int main(int argc, char *argv[])
 	nodelay(stdscr, FALSE);
 	getch();
 	endwin();
-	for (i = 0; i < X; i++) {
-		for (j = 0; j < Y; j++)
-			xfree(grid[i][j]);
-		xfree(grid[i]);
+	for (i = 0; i < smap_info_ptr->X; i++) {
+		for (j = 0; j < smap_info_ptr->Y; j++)
+			xfree(smap_info_ptr->grid[i][j]);
+		xfree(smap_info_ptr->grid[i]);
 	}
-	xfree(grid);
-	xfree(fill_in_value);
+	xfree(smap_info_ptr->grid);
+	xfree(smap_info_ptr->fill_in_value);
 
 	exit(0);
 }
 
 void print_date(void)
 {
-	now = time(NULL);
-	mvwprintw(text_win, ycord, xcord, "%s", ctime(&now));
-	ycord++;
+	smap_info_ptr->now_time = time(NULL);
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%s",
+		  ctime(&smap_info_ptr->now_time));
+	smap_info_ptr->ycord++;
 }
 
 int _get_option(void)
@@ -237,20 +252,27 @@ int _get_option(void)
 
 void *_resize_handler(int sig)
 {
-	int height = Y * Z + Y * 2;
-	int width = X * 2;
-	int startx = 0;
-	int starty = 0;
+	int height =
+	    smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y * 2;
+	int width = smap_info_ptr->X * 2;
 
-	ycord = 1;
-	wclear(grid_win);
-	wclear(text_win);
+	smap_info_ptr->ycord = 1;
+	wclear(smap_info_ptr->grid_win);
+	wclear(smap_info_ptr->text_win);
+
 	endwin();
 	initscr();
+
 	getmaxyx(stdscr, LINES, COLS);
-	wresize(grid_win, height, width);
+
+	delwin(smap_info_ptr->grid_win);
+	smap_info_ptr->grid_win = newwin(height, width, 0, 0);
+
 	width = COLS - width;
-	wresize(text_win, LINES, width);
+	delwin(smap_info_ptr->text_win);
+	smap_info_ptr->text_win =
+	    newwin(LINES, width, 0, smap_info_ptr->X * 2);
+
 	print_date();
 	switch (params.display) {
 	case JOBS:
@@ -265,10 +287,10 @@ void *_resize_handler(int sig)
 	}
 
 	print_grid();
-	box(text_win, 0, 0);
-	box(grid_win, 0, 0);
-	wrefresh(text_win);
-	wrefresh(grid_win);
-	resize_screen = 1;
+	box(smap_info_ptr->text_win, 0, 0);
+	box(smap_info_ptr->grid_win, 0, 0);
+	wrefresh(smap_info_ptr->text_win);
+	wrefresh(smap_info_ptr->grid_win);
+	smap_info_ptr->resize_screen = 1;
 	return NULL;
 }

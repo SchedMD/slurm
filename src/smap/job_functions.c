@@ -53,10 +53,14 @@ void get_job()
 
 	if (error_code)
 		if (quiet_flag != 1) {
-			wclear(text_win);
-			ycord = text_win->_maxy / 2;
-			xcord = text_win->_maxx;
-			mvwprintw(text_win, ycord, 1, "slurm_load_job");
+			wclear(smap_info_ptr->text_win);
+			smap_info_ptr->ycord =
+			    smap_info_ptr->text_win->_maxy / 2;
+			smap_info_ptr->xcord =
+			    smap_info_ptr->text_win->_maxx;
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord, 1,
+				  "slurm_load_job");
 
 			return;
 		}
@@ -76,12 +80,16 @@ void get_job()
 					 job.node_inx[j + 1], count);
 				j += 2;
 			}
-			job.num_procs = (int) fill_in_value[count].letter;
-			wattron(text_win,
-				COLOR_PAIR(fill_in_value[count].color));
+			job.num_procs =
+			    (int) smap_info_ptr->fill_in_value[count].
+			    letter;
+			wattron(smap_info_ptr->text_win,
+				COLOR_PAIR(smap_info_ptr->
+					   fill_in_value[count].color));
 			print_text_job(&job);
-			wattroff(text_win,
-				 COLOR_PAIR(fill_in_value[count].color));
+			wattroff(smap_info_ptr->text_win,
+				 COLOR_PAIR(smap_info_ptr->
+					    fill_in_value[count].color));
 			count++;
 		}
 	}
@@ -91,25 +99,34 @@ void get_job()
 
 void print_header_job(void)
 {
-	mvwprintw(text_win, ycord, xcord, "ID");
-	xcord += 4;
-	mvwprintw(text_win, ycord, xcord, "JOBID");
-	xcord += 7;
-	mvwprintw(text_win, ycord, xcord, "PARTITION");
-	xcord += 11;
-	mvwprintw(text_win, ycord, xcord, "USER");
-	xcord += 8;
-	mvwprintw(text_win, ycord, xcord, "NAME");
-	xcord += 10;
-	mvwprintw(text_win, ycord, xcord, "ST");
-	xcord += 4;
-	mvwprintw(text_win, ycord, xcord, "TIME");
-	xcord += 10;
-	mvwprintw(text_win, ycord, xcord, "NODES");
-	xcord += 7;
-	mvwprintw(text_win, ycord, xcord, "NODELIST");
-	xcord = 1;
-	ycord++;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "ID");
+	smap_info_ptr->xcord += 4;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "JOBID");
+	smap_info_ptr->xcord += 7;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "PARTITION");
+	smap_info_ptr->xcord += 11;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "USER");
+	smap_info_ptr->xcord += 8;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "NAME");
+	smap_info_ptr->xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "ST");
+	smap_info_ptr->xcord += 4;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "TIME");
+	smap_info_ptr->xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "NODES");
+	smap_info_ptr->xcord += 7;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "NODELIST");
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord++;
 
 }
 
@@ -124,21 +141,27 @@ int print_text_job(job_info_t * job_ptr)
 	struct passwd *user = NULL;
 	long days, hours, minutes, seconds;
 
-	mvwprintw(text_win, ycord, xcord, "%c", job_ptr->num_procs);
-	xcord += 4;
-	mvwprintw(text_win, ycord, xcord, "%d", job_ptr->job_id);
-	xcord += 7;
-	mvwprintw(text_win, ycord, xcord, "%s", job_ptr->partition);
-	xcord += 11;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%c", job_ptr->num_procs);
+	smap_info_ptr->xcord += 4;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%d", job_ptr->job_id);
+	smap_info_ptr->xcord += 7;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%s", job_ptr->partition);
+	smap_info_ptr->xcord += 11;
 	user = getpwuid((uid_t) job_ptr->user_id);
-	mvwprintw(text_win, ycord, xcord, "%s", user->pw_name);
-	xcord += 8;
-	mvwprintw(text_win, ycord, xcord, "%s", job_ptr->name);
-	xcord += 10;
-	mvwprintw(text_win, ycord, xcord, "%s",
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%s", user->pw_name);
+	smap_info_ptr->xcord += 8;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%s", job_ptr->name);
+	smap_info_ptr->xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%s",
 		  job_state_string_compact(job_ptr->job_state));
-	xcord += 4;
-	time = now - job_ptr->start_time;
+	smap_info_ptr->xcord += 4;
+	time = smap_info_ptr->now_time - job_ptr->start_time;
 
 	seconds = time % 60;
 	minutes = (time / 60) % 60;
@@ -146,38 +169,43 @@ int print_text_job(job_info_t * job_ptr)
 	days = time / 86400;
 
 	if (days)
-		mvwprintw(text_win, ycord, xcord,
-			  "%ld:%2.2ld:%2.2ld:%2.2ld", days, hours, minutes,
-			  seconds);
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "%ld:%2.2ld:%2.2ld:%2.2ld",
+			  days, hours, minutes, seconds);
 	else if (hours)
-		mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld:%2.2ld",
-			  hours, minutes, seconds);
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "%ld:%2.2ld:%2.2ld", hours,
+			  minutes, seconds);
 	else
-		mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld", minutes,
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			  smap_info_ptr->xcord, "%ld:%2.2ld", minutes,
 			  seconds);
 
-	xcord += 10;
-	mvwprintw(text_win, ycord, xcord, "%d", job_ptr->num_nodes);
-	xcord += 7;
-	tempxcord = xcord;
-	width = text_win->_maxx - xcord;
+	smap_info_ptr->xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%d", job_ptr->num_nodes);
+	smap_info_ptr->xcord += 7;
+	tempxcord = smap_info_ptr->xcord;
+	width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 	while (job_ptr->nodes[i] != '\0') {
 		if ((printed =
-		     mvwaddch(text_win, ycord, xcord,
+		     mvwaddch(smap_info_ptr->text_win,
+			      smap_info_ptr->ycord, smap_info_ptr->xcord,
 			      job_ptr->nodes[i])) < 0)
 			return printed;
-		xcord++;
-		width = text_win->_maxx - xcord;
+		smap_info_ptr->xcord++;
+		width =
+		    smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 		if (job_ptr->nodes[i] == '[')
 			prefixlen = i + 1;
 		else if (job_ptr->nodes[i] == ',' && (width - 9) <= 0) {
-			ycord++;
-			xcord = tempxcord + prefixlen;
+			smap_info_ptr->ycord++;
+			smap_info_ptr->xcord = tempxcord + prefixlen;
 		}
 		i++;
 	}
 
-	xcord = 1;
-	ycord++;
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord++;
 	return printed;
 }

@@ -43,19 +43,22 @@ void get_command(void)
 	int text_height, text_width, text_starty, text_startx, error_code;
 	WINDOW *command_win;
 
-	text_height = text_win->_maxy;	// - text_win->_begy;
-	text_width = text_win->_maxx;	// - text_win->_begx;
-	text_starty = text_win->_begy;
-	text_startx = text_win->_begx;
+	text_height = smap_info_ptr->text_win->_maxy;	// - smap_info_ptr->text_win->_begy;
+	text_width = smap_info_ptr->text_win->_maxx;	// - smap_info_ptr->text_win->_begx;
+	text_starty = smap_info_ptr->text_win->_begy;
+	text_startx = smap_info_ptr->text_win->_begx;
 	command_win =
 	    newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code)
 		if (quiet_flag != 1) {
-			wclear(text_win);
-			ycord = text_win->_maxy / 2;
-			mvwprintw(text_win, ycord, 1, "slurm_load_node");
+			wclear(smap_info_ptr->text_win);
+			smap_info_ptr->ycord =
+			    smap_info_ptr->text_win->_maxy / 2;
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord, 1,
+				  "slurm_load_node");
 			return;
 		}
 	init_grid(node_info_ptr);
@@ -64,10 +67,10 @@ void get_command(void)
 		print_header_command();
 	while (strcmp(com->str, "quit")) {
 		print_grid();
-		box(text_win, 0, 0);
-		box(grid_win, 0, 0);
-		wrefresh(text_win);
-		wrefresh(grid_win);
+		box(smap_info_ptr->text_win, 0, 0);
+		box(smap_info_ptr->grid_win, 0, 0);
+		wrefresh(smap_info_ptr->text_win);
+		wrefresh(smap_info_ptr->grid_win);
 		wclear(command_win);
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
@@ -79,18 +82,26 @@ void get_command(void)
 			endwin();
 			exit(0);
 		} else if (!strncmp(com->str, "resume", 6)) {
-			mvwprintw(text_win, ycord, xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord,
+				  smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "drain", 5)) {
-			mvwprintw(text_win, ycord, xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord,
+				  smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "create", 6)) {
-			mvwprintw(text_win, ycord, xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord,
+				  smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "save", 4)) {
-			mvwprintw(text_win, ycord, xcord, "%s", com->str);
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord,
+				  smap_info_ptr->xcord, "%s", com->str);
 		}
-		ycord++;
-		//wattron(text_win, COLOR_PAIR(fill_in_value[count].color));
+		smap_info_ptr->ycord++;
+		//wattron(smap_info_ptr->text_win, COLOR_PAIR(smap_info_ptr->fill_in_value[count].color));
 		//print_text_command(&com);
-		//wattroff(text_win, COLOR_PAIR(fill_in_value[count].color));
+		//wattroff(smap_info_ptr->text_win, COLOR_PAIR(smap_info_ptr->fill_in_value[count].color));
 		//count++;
 
 	}
@@ -98,9 +109,9 @@ void get_command(void)
 	params.display = 0;
 	noecho();
 	init_grid(node_info_ptr);
-	wclear(text_win);
-	xcord = 1;
-	ycord = 1;
+	wclear(smap_info_ptr->text_win);
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord = 1;
 	print_date();
 	get_job();
 	return;
@@ -108,15 +119,19 @@ void get_command(void)
 
 void print_header_command(void)
 {
-	mvwprintw(text_win, ycord, xcord, "ID");
-	xcord += 5;
-	mvwprintw(text_win, ycord, xcord, "NODE");
-	xcord += 8;
-	mvwprintw(text_win, ycord, xcord, "STATE");
-	xcord += 10;
-	mvwprintw(text_win, ycord, xcord, "REASON");
-	xcord = 1;
-	ycord++;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "ID");
+	smap_info_ptr->xcord += 5;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "NODE");
+	smap_info_ptr->xcord += 8;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "STATE");
+	smap_info_ptr->xcord += 10;
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "REASON");
+	smap_info_ptr->xcord = 1;
+	smap_info_ptr->ycord++;
 
 }
 
@@ -131,20 +146,20 @@ int print_text_command()
 	   struct passwd *user = NULL;
 	   long days, hours, minutes, seconds;
 
-	   mvwprintw(text_win, ycord, xcord, "%c", job_ptr->num_procs);
-	   xcord += 8;
-	   mvwprintw(text_win, ycord, xcord, "%d", job_ptr->job_id);
-	   xcord += 8;
-	   mvwprintw(text_win, ycord, xcord, "%s", job_ptr->partition);
-	   xcord += 12;
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%c", job_ptr->num_procs);
+	   smap_info_ptr->xcord += 8;
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%d", job_ptr->job_id);
+	   smap_info_ptr->xcord += 8;
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", job_ptr->partition);
+	   smap_info_ptr->xcord += 12;
 	   user = getpwuid((uid_t) job_ptr->user_id);
-	   mvwprintw(text_win, ycord, xcord, "%s", user->pw_name);
-	   xcord += 10;
-	   mvwprintw(text_win, ycord, xcord, "%s", job_ptr->name);
-	   xcord += 12;
-	   mvwprintw(text_win, ycord, xcord, "%s",
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", user->pw_name);
+	   smap_info_ptr->xcord += 10;
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", job_ptr->name);
+	   smap_info_ptr->xcord += 12;
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s",
 	   job_state_string(job_ptr->job_state));
-	   xcord += 10;
+	   smap_info_ptr->xcord += 10;
 	   time = now - job_ptr->start_time;
 
 	   seconds = time % 60;
@@ -153,38 +168,38 @@ int print_text_command()
 	   days = time / 86400;
 
 	   if (days)
-	   mvwprintw(text_win, ycord, xcord,
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord,
 	   "%ld:%2.2ld:%2.2ld:%2.2ld", days, hours, minutes,
 	   seconds);
 	   else if (hours)
-	   mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld:%2.2ld",
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%ld:%2.2ld:%2.2ld",
 	   hours, minutes, seconds);
 	   else
-	   mvwprintw(text_win, ycord, xcord, "%ld:%2.2ld", minutes,
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%ld:%2.2ld", minutes,
 	   seconds);
 
-	   xcord += 12;
-	   mvwprintw(text_win, ycord, xcord, "%d", job_ptr->num_nodes);
-	   xcord += 8;
-	   tempxcord = xcord;
-	   width = text_win->_maxx - xcord;
+	   smap_info_ptr->xcord += 12;
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%d", job_ptr->num_nodes);
+	   smap_info_ptr->xcord += 8;
+	   tempxcord = smap_info_ptr->xcord;
+	   width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 	   while (job_ptr->nodes[i] != '\0') {
 	   if ((printed =
-	   mvwaddch(text_win, ycord, xcord,
+	   mvwaddch(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord,
 	   job_ptr->nodes[i])) < 0)
 	   return printed;
-	   xcord++;
-	   width = text_win->_maxx - xcord;
+	   smap_info_ptr->xcord++;
+	   width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 	   if (job_ptr->nodes[i] == '[')
 	   prefixlen = i + 1;
 	   else if (job_ptr->nodes[i] == ',' && (width - 9) <= 0) {
-	   ycord++;
-	   xcord = tempxcord + prefixlen;
+	   smap_info_ptr->ycord++;
+	   smap_info_ptr->xcord = tempxcord + prefixlen;
 	   }
 	   i++;
 	   }
 
-	   xcord = 1;
-	   ycord++;
+	   smap_info_ptr->xcord = 1;
+	   smap_info_ptr->ycord++;
 	   return printed; */
 }
