@@ -7,7 +7,6 @@
 #if     HAVE_CONFIG_H
 #include "config.h"
 #endif
-
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -610,6 +609,97 @@ qsw_getnodeid(void)
 	}
 	return nodeid;
 }
+
+/*
+ * XXX - note qsw_getnodeid_byhost and qsw_gethost_bynodeid:
+ * Eventually provide an autoconf option to look up mappings from a flat
+ * file, or use the slurm.conf.  For now, assume that all QsNet systems
+ * conform to RMS's hostname requirements.  They are:
+ * 1) all hostnames with an elan adapter have a numerical suffix that 
+ *    corresponds to the elanid.
+ * 2) all hostnames without an elan adapter have a single character suffix.
+ */
+
+/*
+ * Given a hostname, return the elanid or -1 on error.  
+ * XXX - assumes RMS style hostnames (see above)
+ */
+int
+qsw_getnodeid_byhost(char *host)
+{
+	char *p, *q, tmp[8];
+	int id = -1;
+
+	/* position p over last character to scan */
+	if ((p = strchr(host, '.')))
+		p--;
+	else
+		p = host + strlen(host) - 1;
+
+	/* copy numerical suffix to tmp */
+	tmp[sizeof(tmp) - 1] = '\0';
+	q = &tmp[sizeof(tmp) - 2];
+	while (q >= tmp && p >= host && isdigit(*p))
+		*q-- = *p--;
+
+	if (q < &tmp[sizeof(tmp) - 2])
+	       id = atoi(q + 1);
+
+	return id;
+}
+
+/*
+ * Given an elanid, determine the hostname.  Returns -1 on error or the number
+ * of characters copied on success.  
+ * XXX - assumes RMS style hostnames (see above)
+ */
+int
+qsw_gethost_bynodeid(char *buf, int len, int id)
+{
+	char name[MAXHOSTNAMELEN];
+	char *domainname;
+	char *p;
+	int res;
+
+	/* use the local hostname to determine 'base' name */
+	if (gethostname(name, MAXHOSTNAMELEN) < 0)
+		return -1;
+	if ((domainname = strchr(name, '.')))		
+		*domainname++ = '\0';
+
+	/* 
+	 * Assume RMS-like system where all nodes have a numerical suffix
+	 * (with no leading zero padding) except the node ending in 'i',
+	 * e.g. dev[i,0-25].  If no numerical suffix, just strip the last
+	 * character and take what's left as the base.  Else strip the numbers.
+	 */
+	if (qsw_getnodeid_byhost(name) == -1)
+		name[strlen(name) - 1] = '\0';
+	else {				
+		p = name + strlen(name) - 1;
+		while (p >= name && isdigit(*p))
+			*p-- = '\0';
+	}
+
+	/* construct the new name from the id and the 'base' name. */
+	if (domainname)
+		res = snprintf(buf, len, "%s%d.%s", name, id, domainname);
+	else
+		res = snprintf(buf, len, "%s%d", name, id);
+
+	return res;
+}
+
+/*
+ * Send the specified signal to all members of a program description.
+ * Returns -1 on failure and sets errno.  Ref: rms_prgsignal(3).
+ */
+int
+qsw_signal_job(qsw_jobinfo_t jobinfo, int signum)
+{
+	return rms_prgsignal(jobinfo->j_prognum, signum);
+}
+
 
 #if 0
 #define TRUNC_BITMAP 1

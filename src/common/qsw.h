@@ -41,5 +41,9 @@ void 		qsw_prog_fini(qsw_jobinfo_t jobinfo);
 int 		qsw_attach(qsw_jobinfo_t jobinfo, int procnum);
 
 int		qsw_getnodeid(void);
+int		qsw_getnodeid_byhost(char *host);
+int		qsw_gethost_bynodeid(char *host, int len, int elanid);
+
+int		qsw_signal_job(qsw_jobinfo_t jobinfo, int signum);
 
 #endif /* _QSW_INCLUDED */
