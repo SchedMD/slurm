@@ -28,7 +28,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <ctype.h>
@@ -41,22 +41,23 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+
 #ifdef HAVE_LIBELAN3
-#include <elan3/elan3.h>
-#include <elan3/elanvp.h>
-#include <src/common/qsw.h>
-#define BUF_SIZE (1024 + QSW_PACK_SIZE)
+#  include <elan3/elan3.h>
+#  include <elan3/elanvp.h>
+#  define BUF_SIZE (1024 + QSW_PACK_SIZE)
 #else
-#define BUF_SIZE 1024
+#  define BUF_SIZE 1024
 #endif
 
-#include <src/common/list.h>
-#include <src/common/macros.h>
-#include <src/common/pack.h>
-#include <src/common/slurm_errno.h>
-#include <src/common/xstring.h>
-#include <src/slurmctld/locks.h>
-#include <src/slurmctld/slurmctld.h>
+#include "src/common/list.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_errno.h"
+#include "src/common/xstring.h"
+
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 #include <src/common/credential_utils.h>
 slurm_ssl_key_ctx_t sign_ctx ;
@@ -1085,14 +1086,15 @@ job_cancel (uint32_t job_id, uid_t uid)
 
 /* 
  * job_complete - note the normal termination the specified job
- * input: job_id - id of the job which completed
- *	uid - user id of user issuing the RPC
- * output: returns 0 on success, otherwise ESLURM error code 
+ * IN job_id - id of the job which completed
+ * IN uid - user id of user issuing the RPC
+ * IN requeue - job should be run again if possible
+ * RET - 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int
-job_complete (uint32_t job_id, uid_t uid) 
+job_complete (uint32_t job_id, uid_t uid, bool requeue) 
 {
 	struct job_record *job_ptr;
 
@@ -1109,7 +1111,8 @@ job_complete (uint32_t job_id, uid_t uid)
 
 	if ( (job_ptr->user_id != uid) &&
 	     (uid != 0) && (uid != getuid ()) ) {
-		error ("Security violation, JOB_COMPLETE RPC from uid %d", uid);
+		error ("Security violation, JOB_COMPLETE RPC from uid %d", 
+		       uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -1124,11 +1127,18 @@ job_complete (uint32_t job_id, uid_t uid)
 		       job_id, job_ptr->job_state);
 	}
 
+	if (requeue && 
+	    job_ptr->details && 
+	    job_ptr->details->batch_flag) {
+		job_ptr->job_state = JOB_PENDING;
+		info ("Requeing job %u", job_ptr->job_id);
+	} else {
+		job_ptr->job_state = JOB_COMPLETE;
+		job_ptr->end_time = time(NULL);
+		delete_job_details(job_ptr);
+		delete_all_step_records(job_ptr);
+	}
 	last_job_update = time (NULL);
-	job_ptr->job_state = JOB_COMPLETE;
-	job_ptr->end_time = time(NULL);
-	delete_job_details(job_ptr);
-	delete_all_step_records(job_ptr);
 	return SLURM_SUCCESS;
 }
 
