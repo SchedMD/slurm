@@ -593,9 +593,11 @@ _read_io_header(int fd, job_t *job, char *host)
 	       (hdr.type == SLURM_IO_STDERR ? "stderr" : "stdout"), 
 		host, hdr.taskid, fd                               );
 
+	cbuf_destroy(cb);
 	return SLURM_SUCCESS;
 
     fail:
+	cbuf_destroy(cb);
 	close(fd);
 	return SLURM_ERROR;
 }
