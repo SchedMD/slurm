@@ -113,6 +113,7 @@ void ping_nodes (void)
 	uint16_t base_state, no_resp_flag;
 	hostlist_t ping_hostlist = hostlist_create("");
 	hostlist_t reg_hostlist  = hostlist_create("");
+	hostlist_t down_hostlist = NULL;
 	char host_str[64];
 
 	int ping_buf_rec_size = 0;
@@ -169,8 +170,11 @@ void ping_nodes (void)
 		    ((base_state != NODE_STATE_DOWN) &&
 		     (base_state != NODE_STATE_COMPLETING) &&
 		     (base_state != NODE_STATE_DRAINED))) {
-			error ("Node %s not responding, setting DOWN", 
-			       node_ptr->name);
+			if (down_hostlist)
+				(void) hostlist_push_host(down_hostlist,
+					node_ptr->name);
+			else
+				down_hostlist = hostlist_create(node_ptr->name);
 			set_node_down(node_ptr->name, "Not responding");
 			continue;
 		}
@@ -271,6 +275,13 @@ void ping_nodes (void)
 		}
 	}
 
+	if (down_hostlist) {
+		hostlist_uniq(down_hostlist);
+		hostlist_ranged_string(down_hostlist,
+			sizeof(host_str), host_str);
+		error("Node %s not responding, setting DOWN", host_str);
+		hostlist_destroy(down_hostlist);
+	}
 	hostlist_destroy(ping_hostlist);
 	hostlist_destroy(reg_hostlist);
 }
