@@ -162,6 +162,7 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 	uint32_t node_inx;
 	uint32_t *step_id_ptr;
 	uint32_t **array_pptr = (uint32_t **) NULL;
+	job_step_create_response_msg_t ** step_resp_pptr;
 
 	if ((ctx == NULL) ||
 	    (ctx->magic != STEP_CTX_MAGIC)) {
@@ -189,6 +190,12 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 			}
 			array_pptr = (uint32_t **) va_arg(ap, void *);
 			*array_pptr = ctx->tids[node_inx];
+			break;
+
+		case SLURM_STEP_CTX_RESP:
+			step_resp_pptr = (job_step_create_response_msg_t **) 
+				va_arg(ap, void *);
+			*step_resp_pptr = ctx->step_resp;
 			break;
 
 		default:

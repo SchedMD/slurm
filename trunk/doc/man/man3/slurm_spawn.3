@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "July 2004" "Morris Jette" "Slurm task spawn functions"
+.TH "Slurm API" "3" "March 2005" "Morris Jette" "Slurm task spawn functions"
 .SH "NAME"
 slurm_spawn \- Slurm task spawn functions
 .SH "SYNTAX"
@@ -126,6 +126,10 @@ Sets the environment variable count and values for the executable.
 Accepts two additional arguments, the first of type int and
 the second of type char **. By default the current environment 
 variables are copied to started task's environment.
+.TP
+\fBSLURM_STEP_CTX_RESP\fR
+Get the job step response message.
+Accepts one additional argument of type job_step_create_response_msg_t **.
 .TP
 \fBSLURM_STEP_CTX_STEPID\fR
 Get the step id of the created job step.
