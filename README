@@ -1,13 +1,26 @@
-To build:
+TO BUILD:
 ./autogen.sh
 ./configure
 make
 
-To test:
+
+TO TEST:
 cd src/slurmctld
-./slurmctld		# start the controller
+./slurmctld &		# start the controller
 
 cd ../api
 ./node_info		# get node info
 ./partition_info	# get partition info
 etc...
+
+
+NOTES:
+The machines lx##.llnl.gov have an old version of libtool. 
+	To build there, execute "./autogen.sh" on linux.llnl.gov, 
+	then "./configure" and "make" on lx##.llnl.gov.
+The smurf##.llnl.gov systems have an old version of libtool
+	and gcc in an unusual location. To build there, execute 
+	"./autogen.sh" on linux.llnl.gov. Then prepend 
+	"/opt/freeware/GNUPro/bin/gcc" to your path or configure with
+	"CC=/opt/freeware/GNUPro/bin/gcc ./configure" and 
+	execute "gmake" rather than the AIX "make" program.
