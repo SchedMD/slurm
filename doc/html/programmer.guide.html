@@ -444,6 +444,10 @@ main (int argc, char *argv[])
 				break;
 			for (k = part_ptr[i].node_inx[j];
 			     k <= part_ptr[i].node_inx[j+1]; k++) {
+				if (k > node_buffer_ptr->node_count) {
+					printf ("Node index out of sync\n");
+					break;
+				}
 				printf("%s,", node_ptr[k].name);
 			}
 		}
