@@ -62,14 +62,13 @@ AC_PROG_RANLIB
 
 dnl Checks for libraries
 if test $with_elan; then
-  AC_CHECK_LIB(rms, rms_prgcreate, 
-    [], 
-    [AC_MSG_ERROR([unable to find the RMS library needed for Elan support.])], 
-    "-lelan3"
-  )
   AC_CHECK_LIB(elan3, elan3_create,
+    [], 
+    [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support.])], 
+  )
+  AC_CHECK_LIB(rms, rms_prgcreate, 
     [],
-    [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support])],
+    [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
   )
 fi
 
@@ -77,8 +76,24 @@ dnl Checks for header files.
 AC_CHECK_HEADERS(popt.h mcheck.h values.h)
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
+AC_HEADER_STDC
 
 dnl Checks for structures.
+
+# check to see if glibc's program_invocation_short_name is available:
+AC_MSG_CHECKING([for program_invocation_short_name])
+AC_TRY_LINK([extern char *program_invocation_short_name;], 
+  [char *p; p = program_invocation_short_name; printf("%s\n", p);],
+  [got_program_invocation_short_name=yes],
+  []
+)
+AC_MSG_RESULT(${got_program_invocation_short_name=no})
+if test "x$got_program_invocation_short_name" = "xyes"; then
+  AC_DEFINE(HAVE_PROGRAM_INVOCATION_SHORT_NAME, 1, 
+            [Define if libc sets program_invocation_short_name]
+	   )
+fi
+
 
 dnl Checks for types.
 
