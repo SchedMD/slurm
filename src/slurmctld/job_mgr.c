@@ -616,8 +616,7 @@ load_job_state ( void )
 		job_ptr->nodes = nodes; nodes = NULL;
 		job_ptr->node_bitmap = node_bitmap; node_bitmap = NULL;
 		job_ptr->kill_on_node_fail = kill_on_node_fail;
-		build_node_details (job_ptr->node_bitmap, &job_ptr->num_cpu_groups,
-			&job_ptr->cpus_per_node, &job_ptr->cpu_count_reps);
+		build_node_details (job_ptr);
 
 		if (default_prio >= priority)
 			default_prio = priority - 1;
@@ -961,6 +960,8 @@ init_job_conf ()
  *	cpus_per_node - pointer to array of numbers of cpus on each node allocate
  *	cpu_count_reps - pointer to array of numbers of consecutive nodes having same cpu count
  *	node_list - list of nodes allocated to the job
+ *	node_cnt - number of allocated nodes
+ *	node_addr - slurm_addr's for the allocated nodes
  *	returns 0 on success, EINVAL if specification is invalid, 
  *		EAGAIN if higher priority jobs exist
  * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts of 
@@ -970,31 +971,11 @@ init_job_conf ()
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  */
-
-int
-immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
-		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-		int immediate , int will_run, uid_t submit_uid )
-{
-	return job_allocate (job_specs, new_job_id, node_list, 
-				num_cpu_groups, cpus_per_node, cpu_count_reps, 
-				true , false , true, submit_uid );
-}
-
-int 
-will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
-		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-		int immediate , int will_run, uid_t submit_uid )
-{
-	return job_allocate (job_specs, new_job_id, node_list, 
-				num_cpu_groups, cpus_per_node, cpu_count_reps, 
-				false , true , true, submit_uid );
-}
-
 int 
 job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-	int immediate, int will_run, int allocate, uid_t submit_uid)
+	int immediate, int will_run, int allocate, uid_t submit_uid, 
+		uint16_t *node_cnt, slurm_addr **node_addr )
 {
 	int error_code, test_only;
 	struct job_record *job_ptr;
@@ -1015,13 +996,22 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 	test_only = will_run || (allocate == 0);
 	if (test_only == 0) {
 		/* Some of these pointers are NULL on submit (e.g. allocate == 0) */
-		*num_cpu_groups = 0;
-		node_list[0] = NULL;
-		cpus_per_node[0] = cpu_count_reps[0] = NULL;
+		if (num_cpu_groups)
+			*num_cpu_groups = 0;
+		if (node_list)
+			*node_list      = NULL;
+		if (cpus_per_node)
+			*cpus_per_node  = NULL;
+		if (cpu_count_reps)
+			*cpu_count_reps = NULL;
+		if (node_cnt)
+			*node_cnt       = 0;
+		if (node_addr)
+			*node_addr      = (slurm_addr *) NULL;
 		last_job_update = time (NULL);
 	}
 
-	error_code = select_nodes(job_ptr, test_only);
+	error_code = select_nodes (job_ptr, test_only);
 	if (error_code == ESLURM_NODES_BUSY) {
 		if (immediate) {
 			job_ptr->job_state = JOB_FAILED;
@@ -1044,10 +1034,18 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 	}
 
 	if (test_only == 0) {
-		node_list[0]      = job_ptr->nodes;
-		*num_cpu_groups   = job_ptr->num_cpu_groups;
-		cpus_per_node[0]  = job_ptr->cpus_per_node;
-		cpu_count_reps[0] = job_ptr->cpu_count_reps;
+		if (node_list)
+			*node_list        = job_ptr->nodes;
+		if (num_cpu_groups)
+			*num_cpu_groups   = job_ptr->num_cpu_groups;
+		if (cpus_per_node)
+			*cpus_per_node    = job_ptr->cpus_per_node;
+		if (cpu_count_reps)
+			*cpu_count_reps   = job_ptr->cpu_count_reps;
+		if (node_cnt)
+			*node_cnt         = job_ptr->node_cnt;
+		if (node_addr)
+			*node_addr        = job_ptr->node_addr;
 	}
 	return SLURM_SUCCESS;
 }
@@ -1927,6 +1925,8 @@ list_delete_job (void *job_entry)
 		xfree (job_record_point->nodes);
 	if (job_record_point->node_bitmap)
 		bit_free (job_record_point->node_bitmap);
+	if (job_record_point->node_addr)
+		xfree (job_record_point->node_addr);
 	if (job_record_point->step_list) {
 		delete_all_step_records (job_record_point);
 		list_destroy (job_record_point->step_list);
@@ -2582,7 +2582,8 @@ signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_na
 /* old_job_info - get details about an existing job allocation */
 int
 old_job_info (uint32_t uid, uint32_t job_id, char **node_list, 
-	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps)
+	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps,
+	uint16_t * node_cnt, slurm_addr ** node_addr)
 {
 	struct job_record *job_ptr;
 
@@ -2596,10 +2597,18 @@ old_job_info (uint32_t uid, uint32_t job_id, char **node_list,
 	if (job_ptr->job_state != JOB_RUNNING)
 		return ESLURM_ALREADY_DONE;
 
-	node_list[0]      = job_ptr->nodes;
-	*num_cpu_groups   = job_ptr->num_cpu_groups;
-	cpus_per_node[0]  = job_ptr->cpus_per_node;
-	cpu_count_reps[0] = job_ptr->cpu_count_reps;
+	if (node_list)
+		*node_list        = job_ptr->nodes;
+	if (num_cpu_groups)
+		*num_cpu_groups   = job_ptr->num_cpu_groups;
+	if (cpus_per_node)
+		*cpus_per_node    = job_ptr->cpus_per_node;
+	if (cpu_count_reps)
+		*cpu_count_reps   = job_ptr->cpu_count_reps;
+	if (node_cnt)
+		*node_cnt         = job_ptr->node_cnt;
+	if (node_addr)
+		*node_addr        = job_ptr->node_addr;
 	return SLURM_SUCCESS;
 }
 

@@ -348,6 +348,8 @@ slurm_free_resource_allocation_response_msg
 			xfree(msg->cpus_per_node);
 		if (msg->cpu_count_reps)
 			xfree(msg->cpu_count_reps);
+		if (msg->node_addr)
+			xfree(msg->node_addr);
 		xfree(msg);
 	}
 }
@@ -365,6 +367,8 @@ slurm_free_resource_allocation_and_run_response_msg
 			xfree(msg->cpu_count_reps);
 		if (msg->credentials)
 			xfree(msg->credentials);
+		if (msg->node_addr)
+			xfree(msg->node_addr);
 #		ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo(msg->qsw_job);
 #		endif

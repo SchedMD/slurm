@@ -37,6 +37,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <src/common/hostlist.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/xmalloc.h>
 #include <src/slurmctld/agent.h>
@@ -833,12 +834,9 @@ select_nodes (struct job_record *job_ptr, int test_only)
 
 	/* assign the nodes and stage_in the job */
 	job_ptr->nodes = bitmap2node_name (req_bitmap);
-	build_node_details (req_bitmap, 
-		&(job_ptr->num_cpu_groups),
-		&(job_ptr->cpus_per_node),
-		&(job_ptr->cpu_count_reps));
 	allocate_nodes (req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
+	build_node_details (job_ptr);
 	req_bitmap = NULL;
 	job_ptr->job_state = JOB_RUNNING;
 	job_ptr->start_time = job_ptr->time_last_active = time(NULL);
@@ -865,57 +863,67 @@ select_nodes (struct job_record *job_ptr, int test_only)
 }
 
 
-/*
- * build_node_details - given a bitmap, report the number of cpus per node and their distribution
- * input: bitstr_t *node_bitmap - the map of nodes
- * output: num_cpu_groups - element count in arrays cpus_per_node and cpu_count_reps
- *	cpus_per_node - array of cpus per node allocated
- *	cpu_count_reps - array of consecutive nodes with same cpu count
- * NOTE: the arrays cpus_per_node and cpu_count_reps must be xfreed by the caller
+/* build_node_details - set cpu counts and addresses for allocated nodes
+ * NOTE: the arrays cpus_per_node, cpu_count_reps and node_addr are allocated 
+ * by build_node_details and must be xfreed by the caller
  */
 void 
-build_node_details (bitstr_t *node_bitmap, 
-		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t **cpu_count_reps)
+build_node_details (struct job_record *job_ptr)
 {
-	int array_size, array_pos, i;
-	int first_bit, last_bit;
+	hostlist_t host_list = NULL;
+	struct node_record *node_ptr;
+	char *this_node_name;
+	int node_inx = 0, cpu_inx = -1;
 
-	*num_cpu_groups = 0;
-	if (node_bitmap == NULL) 
+	if ((job_ptr->node_bitmap == NULL) || 
+	    (job_ptr->nodes == NULL)) {
+		/* No nodes allocated, we're done... */
+		job_ptr->num_cpu_groups = 0;
+		job_ptr->node_cnt       = 0;
+		job_ptr->cpus_per_node  = NULL;
+		job_ptr->cpu_count_reps = NULL;
+		job_ptr->node_addr      = NULL;
 		return;
-
-	first_bit = bit_ffs(node_bitmap);
-	last_bit  = bit_fls(node_bitmap);
-	array_pos = -1;
-
-	/* assume relatively homogeneous array for array allocations */
-	/* we can grow or shrink the arrays as needed */
-	array_size = (last_bit - first_bit) / 100 + 2;
-	cpus_per_node[0]  = xmalloc (sizeof(uint32_t *) * array_size);
-	cpu_count_reps[0] = xmalloc (sizeof(uint32_t *) * array_size);
-
-	for (i = first_bit; i <= last_bit; i++) {
-		if (bit_test (node_bitmap, i) != 1)
-			continue;
-		if ((array_pos == -1) ||
-		    (cpus_per_node[0][array_pos] != node_record_table_ptr[i].cpus)) {
-			array_pos++;
-			if (array_pos >= array_size) { /* grow arrays */
-				array_size *= 2;
-				xrealloc (cpus_per_node[0],  (sizeof(uint32_t *) * array_size));
-				xrealloc (cpu_count_reps[0], (sizeof(uint32_t *) * array_size));
-			}
-			cpus_per_node [0][array_pos] = node_record_table_ptr[i].cpus;
-			cpu_count_reps[0][array_pos] = 1;
-		}
-		else {
-			cpu_count_reps[0][array_pos]++;
-		}
 	}
-	array_size = array_pos + 1;
-	*num_cpu_groups = array_size;
-	xrealloc (cpus_per_node[0],  (sizeof(uint32_t *) * array_size));
-	xrealloc (cpu_count_reps[0], (sizeof(uint32_t *) * array_size));
+
+	job_ptr->num_cpu_groups = 0;
+	job_ptr->node_cnt       = bit_set_count (job_ptr->node_bitmap);
+	job_ptr->cpus_per_node  = xmalloc (sizeof(uint32_t *) * job_ptr->node_cnt);
+	job_ptr->cpu_count_reps = xmalloc (sizeof(uint32_t *) * job_ptr->node_cnt);
+	job_ptr->node_addr      = xmalloc (sizeof(slurm_addr) * job_ptr->node_cnt);
+
+	/* Use hostlist here to insure ordering of info matches that of srun */
+	if ( (host_list = hostlist_create (job_ptr->nodes)) == NULL)
+		fatal ("hostlist_create error for %s: %m", job_ptr->nodes);
+
+	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		node_ptr = find_node_record (this_node_name);
+		if (node_ptr) {
+			memcpy (&job_ptr->node_addr[node_inx++],
+			        &node_ptr->slurm_addr,
+				sizeof (slurm_addr));
+			if ((cpu_inx == -1) || 
+			    (job_ptr->cpus_per_node[cpu_inx] != node_ptr->cpus)) {
+				cpu_inx++;
+				job_ptr->cpus_per_node[cpu_inx] = node_ptr->cpus;
+				job_ptr->cpu_count_reps[cpu_inx] = 1;
+			} else
+				job_ptr->cpu_count_reps[cpu_inx]++;
+
+		} else {
+			error ("Invalid node %s in job_id %u", 
+			       this_node_name, job_ptr->job_id);
+		}
+		free (this_node_name);
+	}
+	hostlist_destroy (host_list);
+	if (job_ptr->node_cnt != node_inx) {
+		error ("Node count mismatch for job_id %u", job_ptr->job_id);
+		job_ptr->node_cnt = node_inx;
+	}
+	job_ptr->num_cpu_groups = cpu_inx + 1;
+	xrealloc (job_ptr->cpus_per_node,  sizeof(uint32_t *) * job_ptr->num_cpu_groups);
+	xrealloc (job_ptr->cpu_count_reps, sizeof(uint32_t *) * job_ptr->num_cpu_groups);
 }
 
 /*
