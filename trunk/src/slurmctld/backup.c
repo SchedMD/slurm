@@ -194,7 +194,7 @@ static void *_background_rpc_mgr(void *no_data)
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	debug3("_background_rpc_mgr pid = %u", getpid());
+	debug3("_background_rpc_mgr pid = %lu", (unsigned long) getpid());
 
 	/* initialize port for RPCs */
 	if ((sockfd =
