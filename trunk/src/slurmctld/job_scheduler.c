@@ -106,7 +106,7 @@ schedule()
 				break;
 		}
 		if (j < failed_part_cnt) continue;
-		error_code = select_nodes(job_ptr);
+		error_code = select_nodes(job_ptr, 0);
 		if (error_code == EAGAIN) {
 			xrealloc(failed_parts, 
 			         (failed_part_cnt+1)*sizeof(struct part_record *));

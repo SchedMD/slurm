@@ -677,6 +677,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 /*
  * select_nodes - select and allocate nodes to a specific job
  * input: job_ptr - pointer to the job record
+ *	test_only - do not allocate nodes, just confirm they could be allocated now
  * output: returns 0 on success, EINVAL if not possible to satisfy request, 
  *		or EAGAIN if resources are presently busy
  *	job_ptr->nodes is set to the node list (on success)
@@ -685,7 +686,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
  *	config_list - global list of node configuration info
  */
 int
-select_nodes (struct job_record *job_ptr) 
+select_nodes (struct job_record *job_ptr, int test_only) 
 {
 	int error_code, i, node_set_index, node_set_size = 0;
 	bitstr_t *req_bitmap, *scratch_bitmap;
@@ -847,7 +848,8 @@ select_nodes (struct job_record *job_ptr)
 	build_node_list (req_bitmap, 
 		&job_ptr->details->node_list, 
 		&job_ptr->details->total_procs);
-	allocate_nodes (req_bitmap);
+	if (test_only == 0)
+		allocate_nodes (req_bitmap);
 	job_ptr->node_bitmap = req_bitmap;
 	req_bitmap = NULL;
 	job_ptr->job_state = JOB_STAGE_IN;
