@@ -235,7 +235,7 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	}
 }
 
-/* DumpJob - dump the Job configurations */
+/* slurm_rpc_dump_jobs - dump the descriptors for all jobs */
 void
 slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 {
@@ -482,7 +482,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	schedule();
 }
 
-/* Allocate:  allocate resources for a job */
+/* slurm_rpc_allocate_resources:  allocate resources for a job */
 void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 {
 	/* init */
@@ -520,7 +520,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 		xfree ( alloc_msg );
 }
 
-/* JobWillRun - determine if job with given configuration can be initiated now */
+/* slurm_rpc_job_will_run - determine if job with given configuration can be initiated now */
 void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 {
 	/* init */
@@ -551,7 +551,6 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	}
 
 }
-
 
 /* Reconfigure - re-initialized from configuration files */
 void 
