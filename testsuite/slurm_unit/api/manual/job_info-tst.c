@@ -22,6 +22,6 @@ main (int argc, char *argv[])
 
 	slurm_print_job_info_msg ( stdout, job_info_msg_ptr ) ;
 
-	slurm_free_job_info ( job_info_msg_ptr ) ;
+	slurm_free_job_info_msg ( job_info_msg_ptr ) ;
 	return (0);
 }
