@@ -45,7 +45,7 @@ main (int argc, char *argv[])
 	else
 		count = 5;
 
-	for (i=0; i<count; i++) {
+	for (i=1; i<count; i++) {
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1; 
 		job_mesg. groups = ("students,employee\0");
