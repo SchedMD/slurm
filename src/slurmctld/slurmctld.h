@@ -259,6 +259,9 @@ extern int delete_part_record (char *name);
 /* delete_step_record - delete record for job step for specified job_ptr and step_id */
 extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 
+/* dump_all_job_state - save the state of all jobs to file */
+extern int dump_all_job_state ( void );
+
 /* dump_all_node_state - save the state of all nodes to file */
 extern int dump_all_node_state ( void );
 
@@ -347,6 +350,9 @@ extern void list_delete_part (void *part_entry);
 
 /* list_find_part - find an entry in the partition list */
 extern int list_find_part (void *part_entry, void *key);
+
+/* load_job_state - load the job state from file, recover from slurmctld restart */
+extern int load_job_state ( void );
 
 /* load_node_state - load the node state from file, recover from slurmctld restart */
 extern int load_node_state ( void );

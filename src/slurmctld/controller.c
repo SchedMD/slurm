@@ -53,6 +53,8 @@
 #include <src/common/credential_utils.h>
 
 #define BUF_SIZE 1024
+#define DEFAULT_DAEMONIZE 0
+#define DEFAULT_RECOVER 0
 #define MAX_SERVER_THREAD_COUNT 20
 
 /* Log to stderr and syslog until becomes a daemon */
@@ -66,8 +68,8 @@ pthread_t thread_id_bg = (pthread_t)0;
 pthread_t thread_id_main = (pthread_t)0;
 pthread_t thread_id_rpc = (pthread_t)0;
 extern slurm_ssl_key_ctx_t sign_ctx ;
-int daemonize = 0;
-int recover = 0;
+int daemonize = DEFAULT_DAEMONIZE;
+int recover = DEFAULT_RECOVER;
 
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
@@ -385,6 +387,7 @@ save_all_state ( void )
 	start_time = clock ();
 	dump_all_node_state ( );
 	dump_all_part_state ( );
+	dump_all_job_state ( );
 	info ("save_all_state complete, time=%ld", (long) (clock () - start_time));
 }
 
