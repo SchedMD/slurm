@@ -39,6 +39,7 @@ print_header $test_id
 #
 # Spawn a srun immediate jobs with ever larger node counts
 #
+set timeout 60
 for {set node_cnt 1} {$node_cnt > 0} {set node_cnt [expr $node_cnt * 2]} {
 	spawn $srun --immediate -N$node_cnt -c1 -t2 $bin_hostname
 	expect {
