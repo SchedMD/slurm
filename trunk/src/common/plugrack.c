@@ -491,6 +491,8 @@ plugrack_read_dir( plugrack_t rack,
                 (void) plugrack_add_plugin_path( rack, plugin_type, fq_path );
         }
 
+	closedir( dirp );
+
         return SLURM_SUCCESS;
 }
 
