@@ -1387,10 +1387,10 @@ static int _configure_dims(int *coord, int *start, int *end)
 			/*****************************/
 			
 		} else if(coord[dim]==(end[dim]-1)) {
-			if(dim == Y) {
-				printf("hey I am looking at %d%d%d as a target from %d%d%d\n",target[X],target[Y],target[Z],coord[X],coord[Y],coord[Z]);
+			/* if(dim == Y) { */
+/* 				printf("hey I am looking at %d%d%d as a target from %d%d%d\n",target[X],target[Y],target[Z],coord[X],coord[Y],coord[Z]); */
 				
-			}
+/* 			} */
 			
 			if(!curr_switch->int_wire[0].used) {
 				_find_best_path(curr_switch, 0, target, target, dim, 0);

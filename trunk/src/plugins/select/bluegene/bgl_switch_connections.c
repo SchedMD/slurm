@@ -211,7 +211,7 @@ static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, int source, 
 	list_iterator_destroy(conn_itr);
 	
 	if(bgl_conn == NULL) {
-		bgl_conn = xmalloc(sizeof(bgl_conn));
+		bgl_conn = xmalloc(sizeof(bgl_conn_t));
 		bgl_conn->source = source;
 		bgl_conn->target = port_tar;
 		//printf("adding to dim %d conn %d -> %d\n\n", dim, source, port_tar);
@@ -265,13 +265,16 @@ static int _destroy_bgl_bp_list(List bgl_bp_list)
 		while((bgl_bp = list_pop(bgl_bp_list)) != NULL) {
 			while((bgl_switch = list_pop(bgl_bp->switch_list)) != NULL) {
 				while((bgl_conn = list_pop(bgl_switch->conn_list)) != NULL) {
-					xfree(bgl_conn);
+					if(bgl_conn)
+						xfree(bgl_conn);
 				}
 				list_destroy(bgl_switch->conn_list);
-				xfree(bgl_switch);
+				if(bgl_switch)
+					xfree(bgl_switch);
 			}
 			list_destroy(bgl_bp->switch_list);
-			xfree(bgl_bp);
+			if(bgl_bp)
+				xfree(bgl_bp);
 		}
 		list_destroy(bgl_bp_list);
 	}

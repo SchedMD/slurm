@@ -38,6 +38,7 @@ char* bgl_conf = BLUEGENE_CONFIG_FILE;
 rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
 List bgl_curr_part_list = NULL;  	/* current bgl partitions */
+List bgl_found_part_list = NULL;  	/* found bgl partitions */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL;
 bool agent_fini = false;
@@ -70,12 +71,12 @@ int create_static_partitions(List part_list)
 
 #ifdef HAVE_BGL_FILES
 
-	ListIterator itr, itr_curr;
+	ListIterator itr, itr_curr, itr_found;
 	int number, j=0;
 	int x, y, z;
 	int start[PA_SYSTEM_DIMENSIONS];
 	int end[PA_SYSTEM_DIMENSIONS];
-	bgl_record_t *bgl_record;
+	bgl_record_t *bgl_record, *found_record, *init_record;
 	rm_partition_state_t state;
         
 	pm_partition_id_t part_id[20];
@@ -107,7 +108,7 @@ int create_static_partitions(List part_list)
 /* 	printf("done copying\n"); */
 /* 	_process_config(); */
 
- 	if ((rc = _validate_config_nodes())) { 
+ 	if (!_validate_config_nodes()) { 
 
 	/******************************************************************/
 
@@ -134,56 +135,67 @@ int create_static_partitions(List part_list)
 		part_id[17]="RMP118";
 		part_id[18]="RMP119";
 		part_id[19]="RMP120";
-		bp_num=1;
+		bp_num=5;
 
-		for (i=0; i<bp_num; i++){
+//		for (i=0; i<bp_num; i++){
 
 /* FIXME The next 3 lines are the legitly clear all the allocated partitions out
    done above because IBM is doing wacky things with their partitions so we are unable to 
    clear theirs.  We know these are the basic names that are created. Don't forget to change
    the part_id to a single variable instead of the array when done.*/
 
-//        itr_curr = list_iterator_create(bgl_curr_part_list);
-//        while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
-//                part_id=init_record->bgl_part_id;
-			if ((rc = rm_get_partition(part_id[i], &my_part))
-			    != STATUS_OK) {
-			} else {
+		itr_curr = list_iterator_create(bgl_curr_part_list);
+		while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
+			part_id[i]=init_record->bgl_part_id;
 			
-				rm_get_data(my_part, RM_PartitionUserName, &name);
-				//printf("user name for %s is %s\n",part_id[i],name);
-				//if(!strcmp(name,"")) {
-				printf("destroying %s\n",(char *)part_id[i]);
-				rm_get_data(my_part, RM_PartitionState, &state);
-				if(state != RM_PARTITION_FREE)
-					pm_destroy_partition(part_id[i]);
-			
-				rm_get_data(my_part, RM_PartitionState, &state);
-				while ((state != RM_PARTITION_FREE) 
-				       && (state != RM_PARTITION_ERROR)){
-					printf(".");
-					rc=rm_free_partition(my_part);
-					if(rc!=STATUS_OK){
-						printf("Error freeing partition\n");
-						return(-1);
-					}
-					sleep(3);
-					rc=rm_get_partition(part_id[i],&my_part);
-					if(rc!=STATUS_OK) {
-						printf("Error in GetPartition\n");
-						return(-1);
-					}
-					rm_get_data(my_part, RM_PartitionState, &state);
-					//Free memory allocated to mypart
+			itr_found = list_iterator_create(bgl_found_part_list);
+			while ((found_record = (bgl_record_t*) list_next(itr_found)) != NULL) {
+				if (!strcmp(init_record->bgl_part_id, found_record->bgl_part_id)) {
+					break;	/* don't reboot this one */
 				}
-				rm_remove_partition(part_id[i]);
-				sleep(3);
-				printf("done\n");
-				//}
-				//rm_get_data(bgl, RM_NextBP, &bp);
-			}	
+			}
+			list_iterator_destroy(itr_found);
+			if(found_record == NULL) {
+				if ((rc = rm_get_partition(part_id[i], &my_part))
+				    != STATUS_OK) {
+				} else {
+					
+					rm_get_data(my_part, RM_PartitionUserName, &name);
+					//printf("user name for %s is %s\n",part_id[i],name);
+					//if(!strcmp(name,"")) {
+					printf("destroying %s\n",(char *)part_id[i]);
+					rm_get_data(my_part, RM_PartitionState, &state);
+					if(state != RM_PARTITION_FREE)
+						pm_destroy_partition(part_id[i]);
+			
+					rm_get_data(my_part, RM_PartitionState, &state);
+					while ((state != RM_PARTITION_FREE) 
+					       && (state != RM_PARTITION_ERROR)){
+						printf(".");
+						rc=rm_free_partition(my_part);
+						if(rc!=STATUS_OK){
+							printf("Error freeing partition\n");
+							return(-1);
+						}
+						sleep(3);
+						rc=rm_get_partition(part_id[i],&my_part);
+						if(rc!=STATUS_OK) {
+							printf("Error in GetPartition\n");
+							return(-1);
+						}
+						rm_get_data(my_part, RM_PartitionState, &state);
+						//Free memory allocated to mypart
+					}
+					rm_remove_partition(part_id[i]);
+					sleep(3);
+					printf("done\n");
+					//}
+					//rm_get_data(bgl, RM_NextBP, &bp);
+				}	
+			}
 		}
-	
+		list_iterator_destroy(itr_curr);
+		
 		itr = list_iterator_create(bgl_list);
 		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
 			j=0;
@@ -237,9 +249,17 @@ int create_static_partitions(List part_list)
 		list_iterator_destroy(itr);
 	
 		itr = list_iterator_create(bgl_list);
-		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL)			
-			configure_partition(bgl_record);
-	
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			itr_found = list_iterator_create(bgl_found_part_list);
+			while ((found_record = (bgl_record_t*) list_next(itr_found)) != NULL) {
+				if (!strcmp(bgl_record->nodes, found_record->nodes)) {
+					break;	/* don't reboot this one */
+				}
+			}
+			list_iterator_destroy(itr_found);
+			if(found_record == NULL)
+				configure_partition(bgl_record);
+		}
 		list_iterator_destroy(itr);
 		rc = SLURM_SUCCESS;
  	} 
@@ -287,16 +307,17 @@ int create_static_partitions(List part_list)
 
 static int  _validate_config_nodes(void)
 {
-	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
 	bgl_record_t* record;	/* records from configuration files */
 	bgl_record_t* init_record;	/* records from actual BGL config */
 	ListIterator itr_conf, itr_curr;
-	char nodes[1024];
+	int rc = 1;
 
+	bgl_found_part_list = list_create(NULL);
+			
 	/* read current bgl partition info into bgl_curr_part_list */
-	if ((rc = read_bgl_partitions()))
-		return rc;
+	if (read_bgl_partitions() == SLURM_ERROR)
+		return -1;
 
 	itr_conf = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr_conf))) {
@@ -304,28 +325,31 @@ static int  _validate_config_nodes(void)
         	/* search here */
 		itr_curr = list_iterator_create(bgl_curr_part_list);
 		while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
-//info("%s:%s",nodes, init_record->nodes);
-//info("%d:%d", record->conn_type, init_record->conn_type);
-//info("%d:%d", record->node_use, init_record->node_use);
-			if (strcmp(nodes, init_record->nodes))
+/* 			info("%s:%s",record->nodes, init_record->nodes); */
+/* 			info("%d:%d", record->conn_type, init_record->conn_type); */
+/* 			info("%d:%d", record->node_use, init_record->node_use); */
+			if (strcmp(record->nodes, init_record->nodes)) {
 				continue;	/* wrong nodes */
+			}
+			//info("found %s:%s",record->nodes, init_record->nodes);
 			if ((record->conn_type != init_record->conn_type)
-			||  (record->node_use  != init_record->node_use))
+			    ||  (record->node_use  != init_record->node_use))
 				break;		/* must reconfig this part */
-			record->bgl_part_id = xstrdup(init_record->
-					bgl_part_id);
+			record->bgl_part_id = xstrdup(init_record->bgl_part_id);
 			break;
 		}
+		list_iterator_destroy(itr_curr);
 		if (!record->bgl_part_id) {
-			info("BGL PartitionID:NONE Nodes:%s", nodes);
-			return rc;
+			info("BGL PartitionID:NONE Nodes:%s", record->nodes);
+			rc = 0;
 		} else {
+			list_append(bgl_found_part_list, record);
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
-				record->bgl_part_id, nodes,
+				record->bgl_part_id, record->nodes,
 				convert_conn_type(record->conn_type),
 				convert_node_use(record->node_use));
 		}
-		list_iterator_destroy(itr_curr);
+		
 	}
 	list_iterator_destroy(itr_conf);
 #endif
@@ -836,7 +860,7 @@ extern void print_bgl_record(bgl_record_t* record)
 		return;
 	}
 
-#if _DEBUG
+#if DEBUG
 	info(" bgl_record: ");
 	if (record->bgl_part_id)
 		info("\tbgl_part_id: %s", record->bgl_part_id);
