@@ -244,22 +244,18 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 	bool        retval = false;
 	int         i;
 	job_step_t *s;
-	task_t     *t;
 
 	xassert(slurmd_shm != NULL);
 
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		s = &slurmd_shm->step[i];
-		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
-			/* If at least one task still remains, consider
-			 * the job running
-			 */
-			if ((t->pid > 0) && (getsid(t->pid) == s->sid)) {
-				retval = true;
-				break;
-			}
-		}	
+		/*
+		 *  Check for existence of any processes in the 
+		 *    job step's session:
+		 */
+		if (kill(-s->sid, 0) == 0)
+			retval = true;
 	} 
 	_shm_unlock();
 
