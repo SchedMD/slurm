@@ -25,6 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <signal.h>
 #include "src/common/xstring.h"
 #include "src/smap/smap.h"
 
@@ -39,11 +40,12 @@ int X = 0;
 int Y = 0;
 int Z = 0;
 int num_of_proc = 0;
-
+int resize_screen = 0;
 /************
  * Functions *
  ************/
 int _get_option(void);
+void *_resize_handler(int sig);
 
 int main(int argc, char *argv[])
 {
@@ -102,11 +104,12 @@ int main(int argc, char *argv[])
 
 
 	}
+        signal(SIGWINCH, _resize_handler);
 #else
 	printf("This will only run on a BGL system right now.\n");
 	exit(0);
 #endif
-	initscr();
+        initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
 		printf
@@ -126,6 +129,7 @@ int main(int argc, char *argv[])
 	box(grid_win, 0, 0);
 
 	startx = width;
+        COLS -= 2;
 	width = COLS - width;
 	height = LINES;
 	text_win = newwin(height, width, starty, startx);
@@ -135,9 +139,12 @@ int main(int argc, char *argv[])
 
 	while (!end) {
 		_get_option();
-	      redraw:
-		init_grid(node_info_ptr);
-		clear_window(text_win);
+	      redraw:		
+                
+ 
+                init_grid(node_info_ptr);
+		wclear(text_win);
+                //wclear(grid_win);        
 		xcord = 1;
 		ycord = 1;
 
@@ -162,9 +169,14 @@ int main(int argc, char *argv[])
 
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
-				sleep(1);
-				if (_get_option())
-					goto redraw;
+                          
+                          sleep(1);
+                          if (_get_option())
+                            goto redraw;
+                          else if (resize_screen) {
+                            resize_screen=0;
+                            goto redraw;
+                          }
 			}
 		} else
 			break;
@@ -184,10 +196,18 @@ int main(int argc, char *argv[])
 	exit(0);
 }
 
+void print_date(void)
+{
+	now = time(NULL);
+	mvwprintw(text_win, ycord, xcord, "%s", ctime(&now));
+	ycord++;
+}
+
 int _get_option(void)
 {
 	char ch;
-	ch = getch();
+	
+        ch = getch();
 	switch (ch) {
 	case 'b':
 		params.display = BGLPART;
@@ -214,9 +234,40 @@ int _get_option(void)
 	return 0;
 }
 
-void print_date(void)
+void *_resize_handler(int sig)
 {
-	now = time(NULL);
-	mvwprintw(text_win, ycord, xcord, "%s", ctime(&now));
-	ycord++;
+ 	int height = Y * Z + Y * 2;
+	int width = X * 2;
+	int startx = 0;
+	int starty = 0;
+	
+        ycord=1;
+        wclear(grid_win);
+        wclear(text_win);
+        endwin();
+        initscr();
+        getmaxyx(stdscr,LINES,COLS);
+        wresize(grid_win,height,width);
+        width = COLS - width;
+	wresize(text_win,LINES,width);
+        print_date();
+        switch (params.display) {
+        case JOBS:
+          get_job();
+          break;
+        case COMMANDS:
+          get_command();
+          break;
+        default:
+          get_part();
+          break;
+        }
+        
+        print_grid();
+        box(text_win, 0, 0);
+        box(grid_win, 0, 0);
+        wrefresh(text_win);
+        wrefresh(grid_win);
+        resize_screen=1;
+        return NULL;
 }
