@@ -48,12 +48,10 @@ char *Node_API_Buffer = NULL;
 int  Node_API_Buffer_Size = 0;
 
 int Load_Node(char *Buffer, int Buffer_Size);
-int Load_Node_Config(int Index, int *CPUs, 
+int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs, 
 	int *RealMemory, int *TmpDisk, int *Weight, char **Features,
-	char **Nodes, unsigned **NodeBitMap, int *BitMapSize);
+	char **Partition, enum Node_State *NodeState);
 int Load_Nodes_Idle(unsigned **NodeBitMap, int *BitMap_Size);
-int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs, 
-	int *RealMemory, int *TmpDisk, int *Weight, char **Features);
 int Load_Nodes_Up(unsigned **NodeBitMap, int *BitMap_Size);
 #endif
 
@@ -66,11 +64,12 @@ main(int argc, char * argv[]) {
     unsigned U_Map[2];
     struct Config_Record *Config_Ptr;
     struct Node_Record *Node_Ptr;
-    char *Format;
+    char *Format, *Partition;
     int Start_Inx, End_Inx, Count_Inx;
     char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
     char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
-    int State, CPUs, RealMemory, TmpDisk, Weight;
+    int CPUs, RealMemory, TmpDisk, Weight;
+    enum Node_State State;
     char *Features, *Nodes;
     char *Dump;
     int Dump_Size;
@@ -208,34 +207,19 @@ main(int argc, char * argv[]) {
     if (BitMapSize > 0) printf("Load_Nodes_Idle  BitMap[0]=0x%x, BitMapSize=%d\n", 
 			NodeBitMap[0], BitMapSize);
 
-    for (Start_Inx=0; ; Start_Inx++) {
-	Error_Code = Load_Node_Config(Start_Inx, &CPUs, &RealMemory, &TmpDisk, &Weight, 
-	    &Features, &Nodes, &NodeBitMap, &BitMapSize);
-	if (Error_Code == ENOENT) break;
-	if (Error_Code != 0)  {
-	    printf("Load_Node_Config error %d\n", Error_Code);
-	    break;
-	} /* if */
-
-	printf("Found config CPUs=%d, RealMemory=%d, TmpDisk=%d, ", 
-	    CPUs, RealMemory, TmpDisk);
-	printf("Weight=%d, Features=%s, Nodes=%s\n", Weight, Features, Nodes);
-	if (BitMapSize > 0) 
-	    printf("  BitMap[0]=0x%x, BitMapSize=%d\n", NodeBitMap[0], BitMapSize);
-    } /* for */
-
     strcpy(Req_Name, "");	/* Start at beginning of partition list */
     while (1) {
-	Error_Code = Load_Node_Name(Req_Name, Next_Name, &State, 
-		&CPUs, &RealMemory, &TmpDisk, &Weight, &Features);
+	Error_Code = Load_Node_Config(Req_Name, Next_Name, &CPUs, &RealMemory, &TmpDisk, &Weight, 
+	    &Features, &Partition, &State);
 	if (Error_Code != 0)  {
-	    printf("Load_Node_Name error %d\n", Error_Code);
+	    printf("Load_Node_Config error %d on %s\n", Error_Code, Req_Name);
 	    break;
 	} /* if */
 
-	printf("Found node Name=%s, State=%d, CPUs=%d, RealMemory=%d, TmpDisk=%d, ", 
-	    Req_Name, State, CPUs, RealMemory, TmpDisk);
-	printf("Weight=%d, Features=%s\n", Weight, Features);
+	printf("Found node Name=%s, CPUs=%d, RealMemory=%d, TmpDisk=%d, ", 
+	    Req_Name, CPUs, RealMemory, TmpDisk);
+	printf("State=%s Weight=%d, Features=%s, Partition=%s\n", 
+	    Node_State_String[State], Weight, Features, Partition);
 
 	if (strlen(Next_Name) == 0) break;
 	strcpy(Req_Name, Next_Name);
@@ -560,220 +544,81 @@ void Dump_Hash() {
  * NOTE: This is a prototype for a function to ship data partition to an API.
  */
 int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
-    ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
-    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
     char *Buffer;
-    int Buffer_Offset, Buffer_Allocated, i, inx, Record_Size;
-    struct Config_Specs {
-	struct Config_Record *Config_Record_Point;
-    };
-    struct Config_Specs *Config_Spec_List = NULL;
-    int Config_Spec_List_Cnt = 0;
+    int Buffer_Offset, Buffer_Allocated, My_BitMap_Size, i, inx;
 
     Buffer_Ptr[0] = NULL;
     *Buffer_Size = 0;
+    Buffer = NULL;
+    Buffer_Offset = 0;
+    Buffer_Allocated = 0;
     if (*Update_Time == Last_Node_Update) return 0;
 
-    Config_Record_Iterator = list_iterator_create(Config_List);
-    if (Config_Record_Iterator == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Dump_Node: list_iterator_create unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Dump_Node: list_iterator_create unable to allocate memory\n");
-#endif
-	exit(ENOMEM);
-    } /* if */
-
-    Buffer_Allocated = BUF_SIZE + (Node_Record_Count*2);
-    Buffer = malloc(Buffer_Allocated);
-    if (Buffer == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Dump_Node: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
-#endif
-	list_iterator_destroy(Config_Record_Iterator);
-	exit(ENOMEM);
-    } /* if */
-
     /* Write haeader: version and time */
-    Buffer_Offset = 0;
-    i = CONFIG_STRUCT_VERSION;
-    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-    Buffer_Offset += sizeof(i);
-    memcpy(Buffer+Buffer_Offset, &Last_Node_Update, sizeof(Last_Node_Update));
-    Buffer_Offset += sizeof(Last_Part_Update);
+    i = NODE_STRUCT_VERSION;
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeVersion", 
+	&i, sizeof(i))) goto cleanup;
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpdateTime", 
+	&Last_Node_Update, sizeof(Last_Node_Update))) goto cleanup;
 
     /* Write up and idle node bitmaps */
-    if ((Node_Record_Count > 0) && Up_NodeBitMap){
-	i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-	i *= sizeof(unsigned);
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
-	memcpy(Buffer+Buffer_Offset, Up_NodeBitMap, i); 
-	Buffer_Offset += i;
-    } else {
+    My_BitMap_Size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    My_BitMap_Size *= sizeof(unsigned);
+    if ((Node_Record_Count > 0) && Up_NodeBitMap && Idle_NodeBitMap) {
+	i = My_BitMap_Size;
+    } else
 	i = 0;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
-    } /* else */
-    if ((Node_Record_Count > 0) && Idle_NodeBitMap){
-	i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-	i *= sizeof(unsigned);
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
-	memcpy(Buffer+Buffer_Offset, Idle_NodeBitMap, i); 
-	Buffer_Offset += i;
-    } else {
-	i = 0;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
-    } /* else */
-
-    /* Write configuration records */
-    while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
-	Record_Size = (7 * sizeof(int)) + ((Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8);
-	if (Config_Record_Point->Feature) Record_Size+=strlen(Config_Record_Point->Feature)+1;
-	if (Config_Record_Point->Nodes) Record_Size+=strlen(Config_Record_Point->Nodes)+1;
-
-	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
-	    Buffer_Allocated += (Record_Size + BUF_SIZE);
-	    Buffer = realloc(Buffer, Buffer_Allocated);
-	    if (Buffer == NULL) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Dump_Node: unable to allocate memory\n");
-#else
-		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
-#endif
-		exit(ENOMEM);
-	    } /* if */
-	} /* if */
-
-	if (Config_Spec_List_Cnt == 0) 
-	    Config_Spec_List = malloc(sizeof(struct Config_Specs));
-	else
-	    Config_Spec_List = realloc(Config_Spec_List, 
-		(Config_Spec_List_Cnt+1)*sizeof(struct Config_Specs));
-	if (Config_Spec_List == NULL) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Dump_Node: unable to allocate memory\n");
-#else
-	    syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
-#endif
-	    exit(ENOMEM);
-	} /* if */
-	Config_Spec_List[Config_Spec_List_Cnt++].Config_Record_Point = Config_Record_Point;
-
-	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->CPUs, sizeof(Config_Record_Point->CPUs)); 
-	Buffer_Offset += sizeof(Config_Record_Point->CPUs);
-
-	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->RealMemory, 
-		sizeof(Config_Record_Point->RealMemory)); 
-	Buffer_Offset += sizeof(Config_Record_Point->RealMemory);
-
-	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->TmpDisk, sizeof(Config_Record_Point->TmpDisk)); 
-	Buffer_Offset += sizeof(Config_Record_Point->TmpDisk);
-
-	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->Weight, sizeof(Config_Record_Point->Weight)); 
-	Buffer_Offset += sizeof(Config_Record_Point->Weight);
-
-	if (Config_Record_Point->Feature) {
-	    i = strlen(Config_Record_Point->Feature) + 1;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	    memcpy(Buffer+Buffer_Offset, Config_Record_Point->Feature, i); 
-	    Buffer_Offset += i;
-	} else {
-	    i = 0;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	} /* else */
-
-	if (Config_Record_Point->Nodes) {
-	    i = strlen(Config_Record_Point->Nodes) + 1;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	    memcpy(Buffer+Buffer_Offset, Config_Record_Point->Nodes, i); 
-	    Buffer_Offset += i;
-	} else {
-	    i = 0;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	} /* else */
-
-	if ((Node_Record_Count > 0) && (Config_Record_Point->NodeBitMap)){
-	    i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-	    i *= sizeof(unsigned);
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	    memcpy(Buffer+Buffer_Offset, Config_Record_Point->NodeBitMap, i); 
-	    Buffer_Offset += i;
-	} else {
-	    i = 0;
-	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	    Buffer_Offset += sizeof(i);
-	} /* else */
-
-    } /* while */
-    list_iterator_destroy(Config_Record_Iterator);
-
-    /* Mark end of configuration data , looks like CPUs = -1 */
-    i = -1;
-    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-    Buffer_Offset += sizeof(i);
-
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpBitMap", 
+	Up_NodeBitMap, i)) goto cleanup;
+    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "IdleBitMap", 
+	Idle_NodeBitMap, i)) goto cleanup;
 
     /* Write node records */
     for (inx=0; inx<Node_Record_Count; inx++) {
-	if (strlen(Node_Record_Table_Ptr[inx].Name) == 0) continue;
-	Record_Size = MAX_NAME_LEN + 5 * sizeof(int);
-	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
-	    Buffer_Allocated += (Record_Size + BUF_SIZE);
-	    Buffer = realloc(Buffer, Buffer_Allocated);
-	    if (Buffer == NULL) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Dump_Node: unable to allocate memory\n");
-#else
-		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
-#endif
-		exit(ENOMEM);
-	    } /* if */
-	} /* if */
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeName", 
+		Node_Record_Table_Ptr[inx].Name, 
+		sizeof(Node_Record_Table_Ptr[inx].Name))) goto cleanup;
 
-	memcpy(Buffer+Buffer_Offset, Node_Record_Table_Ptr[inx].Name, 
-		sizeof(Node_Record_Table_Ptr[inx].Name)); 
-	Buffer_Offset += sizeof(Node_Record_Table_Ptr[inx].Name);
+	i = Node_Record_Table_Ptr[inx].NodeState;
+	if (i < 0) i=STATE_DOWN;
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeState", 
+		&i, sizeof(i))) goto cleanup;
 
-	i = (int)Node_Record_Table_Ptr[inx].NodeState;
-	if (i < 0) i = STATE_DOWN;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "CPUs", 
+		&Node_Record_Table_Ptr[inx].CPUs, 
+		sizeof(Node_Record_Table_Ptr[inx].Name))) goto cleanup;
 
-	i = Node_Record_Table_Ptr[inx].CPUs;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "RealMemory", 
+		&Node_Record_Table_Ptr[inx].RealMemory, 
+		sizeof(Node_Record_Table_Ptr[inx].RealMemory))) goto cleanup;
 
-	i = Node_Record_Table_Ptr[inx].RealMemory;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "TmpDisk", 
+		&Node_Record_Table_Ptr[inx].TmpDisk, 
+		sizeof(Node_Record_Table_Ptr[inx].TmpDisk))) goto cleanup;
 
-	i = Node_Record_Table_Ptr[inx].TmpDisk;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
+	if (Node_Record_Table_Ptr[inx].Partition_Ptr) {
+	    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Partition", 
+		&Node_Record_Table_Ptr[inx].Partition_Ptr->Name, 
+		sizeof(Node_Record_Table_Ptr[inx].Partition_Ptr->Name))) goto cleanup;
+	} else {
+	    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Partition", 
+		"", 1)) goto cleanup;
+	} /* else */
 
-	for (i=0; i<Config_Spec_List_Cnt; i++) {
-	    if (Config_Spec_List[i].Config_Record_Point ==
-		Node_Record_Table_Ptr[inx].Config_Ptr) break;
-	} /* for (i */
-	if (i < Config_Spec_List_Cnt) 
-	    i++;
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Weight", 
+		&Node_Record_Table_Ptr[inx].Config_Ptr->Weight, 
+		sizeof(Node_Record_Table_Ptr[inx].Config_Ptr->Weight))) goto cleanup;
+
+	if (Node_Record_Table_Ptr[inx].Config_Ptr->Feature) 
+	    i = strlen(Node_Record_Table_Ptr[inx].Config_Ptr->Feature) + 1;
 	else
 	    i = 0;
-	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
-	Buffer_Offset += sizeof(i);
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "Feature", 
+		Node_Record_Table_Ptr[inx].Config_Ptr->Feature, i)) goto cleanup;
 
+	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "EndNode", 
+		"", 0)) goto cleanup;
     } /* for (inx */
-    free(Config_Spec_List);
 
     Buffer = realloc(Buffer, Buffer_Offset);
     if (Buffer == NULL) {
@@ -789,6 +634,10 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     *Buffer_Size = Buffer_Offset;
     *Update_Time = Last_Node_Update;
     return 0;
+
+cleanup:
+    if (Buffer) free(Buffer);
+    return EINVAL;
 } /* Dump_Node */
 
 
@@ -1214,6 +1063,7 @@ void Rehash() {
 
 } /* Rehash */
 
+
 /* 
  * Split_Node_Name - Split a node name into prefix, suffix, and index value 
  * Input: Name - The node name to parse
@@ -1471,12 +1321,26 @@ int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
  * Output: Returns 0 if no error, EINVAL if the buffer is invalid
  */
 int Load_Node(char *Buffer, int Buffer_Size) {
-    int Version;
+    int Buffer_Offset, Error_Code, Version;
 
-    if (Buffer_Size < (4*sizeof(int))) return EINVAL;	/* Too small to be legitimate */
-
-    memcpy(&Version, Buffer, sizeof(Version));
-    if (Version != CONFIG_STRUCT_VERSION) return EINVAL;	/* Incompatable versions */
+    Buffer_Offset = 0;
+    Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "NodeVersion", &Version);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Load_Node: Node buffer lacks valid header\n");
+#else
+	syslog(LOG_ERR, "Load_Node: Node buffer lacks valid header\n");
+#endif
+	return EINVAL;
+    } /* if */
+    if (Version != NODE_STRUCT_VERSION) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Load_Part: expect version %d, read %d\n", NODE_STRUCT_VERSION, Version);
+#else
+	syslog(LOG_ERR, "Load_Part: expect version %d, read %d\n", NODE_STRUCT_VERSION, Version);
+#endif
+	return EINVAL;
+    } /* if */
 
     Node_API_Buffer = Buffer;
     Node_API_Buffer_Size = Buffer_Size;
@@ -1485,128 +1349,93 @@ int Load_Node(char *Buffer, int Buffer_Size) {
 
 
 /* 
- * Load_Node_Config - Load the state information about configuration at specified inxed
- * Input: Index - zero origin index of the configuration requested
+ * Load_Node_Config - Load the state information about the named node
+ * Input: Req_Name - Name of the node for which information is requested
+ *		     if "", then get info for the first node in list
+ *        Next_Name - Location into which the name of the next node is 
+ *                   stored, "" if no more
  *        CPUs, etc. - Pointers into which the information is to be stored
- * Output: CPUs, etc. - The node's state information
- *         BitMap_Size - Size of BitMap in bytes
+ * Output: Next_Name - Name of the next node in the list
+ *         CPUs, etc. - The node's state information
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+ * NOTE:  Req_Name and Next_Name must have length MAX_NAME_LEN
  */
-int Load_Node_Config(int Index, int *CPUs, 
-	int *RealMemory, int *TmpDisk, int *Weight, char **Features, 
-	char **Nodes, unsigned **NodeBitMap, int *BitMap_Size) {
-    int i, Config_Num, Version;
+int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs, 
+	int *RealMemory, int *TmpDisk, int *Weight, char **Features,
+	char **Partition, enum Node_State *NodeState) {
+    int i, Error_Code, Version, Buffer_Offset, My_Weight;
     time_t Update_Time;
-    char *Buffer_Loc;
-    struct Config_Record Read_Config_List;
-    int Read_Config_List_Cnt = 0;
-    struct Node_Record My_Node_Entry;
-    int My_BitMap_Size;
+    struct Node_Record My_Node;
+    char Next_Name_Value[MAX_NAME_LEN], My_Partition_Name[MAX_NAME_LEN], *My_Feature;
+    unsigned *Up_NodeBitMap, *Idle_NodeBitMap;
 
-    /* Load buffer's header */
-    Buffer_Loc = Node_API_Buffer;
-    memcpy(&Version, Buffer_Loc, sizeof(Version));
-    Buffer_Loc += sizeof(Version);
-    memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
-    Buffer_Loc += sizeof(Update_Time);
+    /* Load buffer's header (data structure version and time) */
+    Buffer_Offset = 0;
+    if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"NodeVersion", &Version)) return Error_Code;
+    if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size,
+		"UpdateTime", &Update_Time)) return Error_Code;
 
     /* Read up and idle node bitmaps */
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += (sizeof(i) + i);
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += (sizeof(i) + i);
+    if (Error_Code = Read_Array(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+	"UpBitMap", (void **)&Up_NodeBitMap, (int*)NULL)) return Error_Code;
+    if (Error_Code = Read_Array(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+	"IdleBitMap", (void **)&Idle_NodeBitMap, (int*)NULL)) return Error_Code;
 
-    /* Load the configuration records */
-    while ((Buffer_Loc+(sizeof(int)*7)) <= 
-	   (Node_API_Buffer+Node_API_Buffer_Size)) {	
+    while (1) {
+	 /* Load all information for next node */
+	Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"NodeName", &My_Node.Name);
+	if (Error_Code == EFAULT) break; /* End of buffer */
+	if (Error_Code) return Error_Code;
+	if (strlen(Req_Name) == 0)  strcpy(Req_Name,My_Node.Name);
 
-	/* Load all info for next configuration */
-	memcpy(&Read_Config_List.CPUs, Buffer_Loc, 
-		sizeof(Read_Config_List.CPUs)); 
-	Buffer_Loc += sizeof(Read_Config_List.CPUs);
-	if (Read_Config_List.CPUs == -1) break; /* End of config recs */
+	if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"NodeState", &i)) return Error_Code;
+	My_Node.NodeState = i;
 
-	memcpy(&Read_Config_List.RealMemory, Buffer_Loc, 
-		sizeof(Read_Config_List.RealMemory)); 
-	Buffer_Loc += sizeof(Read_Config_List.RealMemory);
+	if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"CPUs", &My_Node.CPUs)) return Error_Code;
 
-	memcpy(&Read_Config_List.TmpDisk, Buffer_Loc, 
-		sizeof(Read_Config_List.TmpDisk)); 
-	Buffer_Loc += sizeof(Read_Config_List.TmpDisk);
+	if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"RealMemory", &My_Node.RealMemory)) return Error_Code;
 
-	memcpy(&Read_Config_List.Weight, Buffer_Loc, 
-		sizeof(Read_Config_List.Weight)); 
-	Buffer_Loc += sizeof(Read_Config_List.Weight);
+	if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"TmpDisk", &My_Node.TmpDisk)) return Error_Code;
 
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Config: malformed buffer\n");
-#else
-	    syslog(LOG_ERR, "Load_Node_Config: malformed buffer\n");
-#endif
-	    return EINVAL;
-	} /* if */
-	if (i)
-	    Read_Config_List.Feature = Buffer_Loc;
+	if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"Partition", &My_Partition_Name)) return Error_Code;
+
+	if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"Weight", &My_Weight)) return Error_Code;
+
+	if (Error_Code = Read_Array(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"Feature", (void **)&My_Feature, (int*)NULL)) return Error_Code;
+
+	if (Error_Code = Read_Tag(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"EndNode")) return Error_Code;
+
+	/* Check if this is requested partition */ 
+	if (strcmp(Req_Name, My_Node.Name) != 0) continue;
+
+	/*Load values to be returned */
+	*CPUs = My_Node.CPUs;
+	*RealMemory = My_Node.RealMemory;
+	*TmpDisk = My_Node.TmpDisk;
+	*NodeState = My_Node.NodeState;
+	Partition[0] = My_Partition_Name;
+	*Weight = My_Weight;
+	Features[0] = My_Feature;
+
+	Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"NodeName", &Next_Name_Value);
+	if (Error_Code) 	/* No more records or bad tag */
+	    strcpy(Next_Name, "");
 	else
-	    Read_Config_List.Feature = NULL;
-	Buffer_Loc += i;
-
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Config: malformed buffer\n");
-#else
-	    syslog(LOG_ERR, "Load_Node_Config: malformed buffer\n");
-#endif
-	    return EINVAL;
-	} /* if */
-	if (i)
-	    Read_Config_List.Nodes = Buffer_Loc;
-	else
-	    Read_Config_List.Nodes = NULL;
-	Buffer_Loc += i;
-
-	memcpy(&My_BitMap_Size, Buffer_Loc, sizeof(My_BitMap_Size)); 
-	Buffer_Loc += sizeof(My_BitMap_Size);
-	if ((Buffer_Loc+My_BitMap_Size) > (Node_API_Buffer+Node_API_Buffer_Size)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Config: malformed buffer\n");
-#else
-	    syslog(LOG_ERR, "Load_Node_Config: malformed buffer\n");
-#endif
-	    return EINVAL;
-	} /* if */
-	if (My_BitMap_Size)
-	    Read_Config_List.NodeBitMap = (unsigned *)Buffer_Loc;
-	else
-	    Read_Config_List.NodeBitMap = NULL;
-	Buffer_Loc += My_BitMap_Size;
-
-	if (Read_Config_List_Cnt++ != Index) continue;
-
-	*CPUs 		= Read_Config_List.CPUs;
-	*RealMemory	= Read_Config_List.RealMemory;
-	*TmpDisk	= Read_Config_List.TmpDisk;
-	*Weight		= Read_Config_List.Weight;
-	Features[0]	= Read_Config_List.Feature;
-	Nodes[0]	= Read_Config_List.Nodes;
-	NodeBitMap[0]	= Read_Config_List.NodeBitMap;
-	*BitMap_Size	= My_BitMap_Size;
+	    strcpy(Next_Name, Next_Name_Value);
 	return 0;
     } /* while */
 
-    *CPUs 		= 0;
-    *RealMemory		= 0;
-    *TmpDisk		= 0;
-    *Weight		= 0;
-    Features[0]		= NULL;
-    NodeBitMap[0]	= NULL;
-    *BitMap_Size	= 0;
-    return ENOENT;
 } /* Load_Node_Config */
 
 
@@ -1619,218 +1448,26 @@ int Load_Node_Config(int Index, int *CPUs,
  *         Returns 0 on success or EINVAL if buffer is bad
  */
 int Load_Nodes_Idle(unsigned **NodeBitMap, int *BitMap_Size) {
-    int i, Config_Num, Version;
+    int Error_Code, Version, Buffer_Offset;
     time_t Update_Time;
-    char *Buffer_Loc;
+    unsigned *Up_NodeBitMap, *Idle_NodeBitMap;
 
-    /* Load buffer's header */
-    Buffer_Loc = Node_API_Buffer;
-    memcpy(&Version, Buffer_Loc, sizeof(Version));
-    Buffer_Loc += sizeof(Version);
-    memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
-    Buffer_Loc += sizeof(Update_Time);
+    /* Load buffer's header (data structure version and time) */
+    Buffer_Offset = 0;
+    if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"NodeVersion", &Version)) return Error_Code;
+    if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size,
+		"UpdateTime", &Update_Time)) return Error_Code;
 
     /* Read up and idle node bitmaps */
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += sizeof(i) + i;
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += sizeof(i);
+    if (Error_Code = Read_Array(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+	"UpBitMap", (void **)&Up_NodeBitMap, BitMap_Size)) return Error_Code;
+    if (Error_Code = Read_Array(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+	"IdleBitMap", (void **)&Idle_NodeBitMap, BitMap_Size)) return Error_Code;
 
-    if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) return EINVAL;	
-    NodeBitMap[0] = (unsigned *)Buffer_Loc;
-    *BitMap_Size = i;
+    NodeBitMap[0] = Idle_NodeBitMap;
     return 0;
 } /* Load_Nodes_Idle */
-
-
-/* 
- * Load_Node_Name - Load the state information about the named node
- * Input: Req_Name - Name of the node for which information is requested
- *		     if "", then get info for the first node in list
- *        Next_Name - Location into which the name of the next node is 
- *                   stored, "" if no more
- *        State, etc. - Pointers into which the information is to be stored
- * Output: Req_Name - The node's name is stored here
- *         Next_Name - The name of the next node in the list is stored here
- *         State, etc. - The node's state information
- *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- */
-int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs, 
-	int *RealMemory, int *TmpDisk, int *Weight, char **Features) {
-    int i, Config_Num, Version;
-    time_t Update_Time;
-    char *Buffer_Loc;
-    struct Config_Record *Read_Config_List = NULL;
-    int Read_Config_List_Cnt = 0;
-    struct Node_Record My_Node_Entry;
-
-    /* Load buffer's header */
-    Buffer_Loc = Node_API_Buffer;
-    memcpy(&Version, Buffer_Loc, sizeof(Version));
-    Buffer_Loc += sizeof(Version);
-    memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
-    Buffer_Loc += sizeof(Update_Time);
-
-    /* Read up and idle node bitmaps */
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += sizeof(i) + i;
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += sizeof(i) + i;
-
-    /* Load the configuration records */
-    while ((Buffer_Loc+(sizeof(int)*7)) <= 
-	   (Node_API_Buffer+Node_API_Buffer_Size)) {	
-	if (Read_Config_List_Cnt)
-	    Read_Config_List = realloc(Read_Config_List, 
-		sizeof(struct Config_Record) * (Read_Config_List_Cnt+1));
-	else
-	    Read_Config_List = malloc(sizeof(struct Config_Record));
-	if (Read_Config_List == NULL) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Name: unable to allocate memory\n");
-#else
-	    syslog(LOG_ALERT, "Load_Node_Name: unable to allocate memory\n");
-#endif
-	    return ENOMEM;
-	} /* if */
-
-	/* Load all info for next configuration */
-	memcpy(&Read_Config_List[Read_Config_List_Cnt].CPUs, Buffer_Loc, 
-		sizeof(Read_Config_List[Read_Config_List_Cnt].CPUs)); 
-	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].CPUs);
-	if (Read_Config_List[Read_Config_List_Cnt].CPUs == -1) break; /* End of config recs */
-
-	memcpy(&Read_Config_List[Read_Config_List_Cnt].RealMemory, Buffer_Loc, 
-		sizeof(Read_Config_List[Read_Config_List_Cnt].RealMemory)); 
-	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].RealMemory);
-
-	memcpy(&Read_Config_List[Read_Config_List_Cnt].TmpDisk, Buffer_Loc, 
-		sizeof(Read_Config_List[Read_Config_List_Cnt].TmpDisk)); 
-	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].TmpDisk);
-
-	memcpy(&Read_Config_List[Read_Config_List_Cnt].Weight, Buffer_Loc, 
-		sizeof(Read_Config_List[Read_Config_List_Cnt].Weight)); 
-	Buffer_Loc += sizeof(Read_Config_List[Read_Config_List_Cnt].Weight);
-
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Name: malformed buffer\n");
-#else
-	    syslog(LOG_ERR, "Load_Node_Name: malformed buffer\n");
-#endif
-	    free(Read_Config_List);
-	    return EINVAL;
-	} /* if */
-	if (i)
-	    Read_Config_List[Read_Config_List_Cnt].Feature = Buffer_Loc;
-	else
-	    Read_Config_List[Read_Config_List_Cnt].Feature = NULL;
-	Buffer_Loc += i;
-
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Name: malformed buffer\n");
-#else
-	    syslog(LOG_ERR, "Load_Node_Name: malformed buffer\n");
-#endif
-	    free(Read_Config_List);
-	    return EINVAL;
-	} /* if */
-	/* List of nodes in the configuration is here */
-	Buffer_Loc += i;
-
-	memcpy(&i, Buffer_Loc, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Load_Node_Name: malformed buffer\n");
-#else
-	    syslog(LOG_ERR, "Load_Node_Name: malformed buffer\n");
-#endif
-	    free(Read_Config_List);
-	    return EINVAL;
-	} /* if */
-	/* Bitmap of nodes in the configuration is here */
-	Buffer_Loc += i;
-
-#if 0
-	printf("CPUs=%d, ", Read_Config_List[Read_Config_List_Cnt].CPUs);
-	printf("RealMemory=%d, ", Read_Config_List[Read_Config_List_Cnt].RealMemory);
-	printf("TmpDisk=%d, ", Read_Config_List[Read_Config_List_Cnt].TmpDisk);
-	printf("Weight=%d, ", Read_Config_List[Read_Config_List_Cnt].Weight);
-	printf("Feature=%s\n", Read_Config_List[Read_Config_List_Cnt].Feature);
-#endif
-	Read_Config_List_Cnt++;
-    } /* while */
-
-    /* Load and scan the node records */
-    while ((Buffer_Loc+sizeof(My_Node_Entry.Name)+(sizeof(int)*2)) <= 
-	   (Node_API_Buffer+Node_API_Buffer_Size)) {	
-	memcpy(&My_Node_Entry.Name, Buffer_Loc, sizeof(My_Node_Entry.Name)); 
-	Buffer_Loc += sizeof(My_Node_Entry.Name);
-	if (strlen(Req_Name) == 0) strcpy(Req_Name, My_Node_Entry.Name);
-
-	memcpy(&My_Node_Entry.NodeState, Buffer_Loc, sizeof(My_Node_Entry.NodeState)); 
-	Buffer_Loc += sizeof(My_Node_Entry.NodeState);
-
-	memcpy(&My_Node_Entry.CPUs, Buffer_Loc, sizeof(My_Node_Entry.CPUs)); 
-	Buffer_Loc += sizeof(My_Node_Entry.CPUs);
-
-	memcpy(&My_Node_Entry.RealMemory, Buffer_Loc, sizeof(My_Node_Entry.RealMemory)); 
-	Buffer_Loc += sizeof(My_Node_Entry.RealMemory);
-
-	memcpy(&My_Node_Entry.TmpDisk, Buffer_Loc, sizeof(My_Node_Entry.TmpDisk)); 
-	Buffer_Loc += sizeof(My_Node_Entry.TmpDisk);
-
-	memcpy(&Config_Num, Buffer_Loc, sizeof(Config_Num)); 
-	Buffer_Loc += sizeof(Config_Num);
-
-#if 0
-	printf("Name=%s, ", My_Node_Entry.Name);
-	printf("NodeState=%d, ", My_Node_Entry.NodeState);
-	printf("CPUs=%d, ", My_Node_Entry.CPUs);
-	printf("RealMemory=%d, ", My_Node_Entry.RealMemory);
-	printf("TmpDisk=%d, ", My_Node_Entry.TmpDisk);
-	printf("Config_Num=%d\n", Config_Num);
-#endif
-
-	if (strcmp(My_Node_Entry.Name, Req_Name) != 0) continue;
-	*State = My_Node_Entry.NodeState;
-	if (Config_Num == 0) {
-	    *CPUs 	= My_Node_Entry.CPUs;
-	    *RealMemory	= My_Node_Entry.RealMemory;
-	    *TmpDisk	= My_Node_Entry.TmpDisk;
-	    *Weight	= 0;
-	    Features[0]	= NULL;
-	} else {
-	    Config_Num--;
-	    *CPUs 	= My_Node_Entry.CPUs;
-	    *RealMemory	= My_Node_Entry.RealMemory;
-	    *TmpDisk	= My_Node_Entry.TmpDisk;
-	    *Weight	= Read_Config_List[Config_Num].Weight;
-	    Features[0]	= Read_Config_List[Config_Num].Feature;
-	} /* else */
-	if ((Buffer_Loc+sizeof(My_Node_Entry.Name)) <=
-	    (Node_API_Buffer+Node_API_Buffer_Size)) 
-	    memcpy(Next_Name, Buffer_Loc, sizeof(My_Node_Entry.Name));
-	else
-	    strcpy(Next_Name, "");
-
-	if (Read_Config_List) free(Read_Config_List);
-	return 0;
-    } /* while */
-    if (Read_Config_List) free(Read_Config_List);
-#if DEBUG_SYSTEM
-    fprintf(stderr, "Load_Node_Name: Could not locate node %s\n", Req_Name);
-#else
-    syslog(LOG_ERR, "Load_Node_Name: Could not locate node %s\n", Req_Name);
-#endif
-    return ENOENT;
-} /* Load_Node_Name */
 
 
 /* 
@@ -1842,24 +1479,22 @@ int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs,
  *         Returns 0 on success or EINVAL if buffer is bad
  */
 int Load_Nodes_Up(unsigned **NodeBitMap, int *BitMap_Size) {
-    int i, Config_Num, Version;
+    int Error_Code, Version, Buffer_Offset;
     time_t Update_Time;
-    char *Buffer_Loc;
+    unsigned *Up_NodeBitMap, *Idle_NodeBitMap;
 
-    /* Load buffer's header */
-    Buffer_Loc = Node_API_Buffer;
-    memcpy(&Version, Buffer_Loc, sizeof(Version));
-    Buffer_Loc += sizeof(Version);
-    memcpy(&Update_Time, Buffer_Loc, sizeof(Update_Time));
-    Buffer_Loc += sizeof(Update_Time);
+    /* Load buffer's header (data structure version and time) */
+    Buffer_Offset = 0;
+    if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+		"NodeVersion", &Version)) return Error_Code;
+    if (Error_Code = Read_Value(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size,
+		"UpdateTime", &Update_Time)) return Error_Code;
 
     /* Read up and idle node bitmaps */
-    memcpy(&i, Buffer_Loc, sizeof(i)); 
-    Buffer_Loc += sizeof(i);
+    if (Error_Code = Read_Array(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, 
+	"UpBitMap", (void **)&Up_NodeBitMap, BitMap_Size)) return Error_Code;
 
-    if ((Buffer_Loc+i) > (Node_API_Buffer+Node_API_Buffer_Size)) return EINVAL;	
-    NodeBitMap[0] = (unsigned *)Buffer_Loc;
-    *BitMap_Size = i;
+    NodeBitMap[0] = Up_NodeBitMap;
     return 0;
 } /* Load_Nodes_Up */
 #endif

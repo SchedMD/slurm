@@ -404,7 +404,10 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     Buffer_Ptr[0] = NULL;
     *Buffer_Size = 0;
-    if (*Update_Time == Last_Part_Update) return 0;
+    Buffer = NULL;
+    Buffer_Offset = 0;
+    Buffer_Allocated = 0;
+   if (*Update_Time == Last_Part_Update) return 0;
 
     Part_Record_Iterator = list_iterator_create(Part_List);
     if (Part_Record_Iterator == NULL) {
@@ -416,10 +419,6 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	exit(ENOMEM);
     } /* if */
 
-    Buffer = NULL;
-    Buffer_Offset = 0;
-    Buffer_Allocated = 0;
-
     /* Write haeader, version and time */
     i = PART_STRUCT_VERSION;
     if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartVersion", 
@@ -430,7 +429,6 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     My_BitMap_Size *= sizeof(unsigned);
     if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "BitMapSize", 
 	&My_BitMap_Size, sizeof(My_BitMap_Size))) goto cleanup;
-
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
@@ -504,6 +502,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
 cleanup:
     list_iterator_destroy(Part_Record_Iterator);
+    if (Buffer) free(Buffer);
     return EINVAL;
 } /* Dump_Part */
 
@@ -822,6 +821,7 @@ int Load_Part(char *Buffer, int Buffer_Size) {
  *         MaxTime, etc. - The partition's state information
  *         BitMap_Size - Size of BitMap in bytes
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+ * NOTE:  Req_Name and Next_Name must have length MAX_NAME_LEN
  */
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
 	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
@@ -832,7 +832,7 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
     int My_BitMap_Size;
     char Next_Name_Value[MAX_NAME_LEN];
 
-    /* Load buffer's header */
+    /* Load buffer's header (data structure version and time) */
     Buffer_Offset = 0;
     if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
 		"PartVersion", &Version)) return Error_Code;
@@ -874,13 +874,13 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 	My_Part.Shared = i;
 
 	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"NodeList", (void **)&My_Part.Nodes)) return Error_Code;
+		"NodeList", (void **)&My_Part.Nodes, (int *)NULL)) return Error_Code;
 
 	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"AllowGroups", (void **)&My_Part.AllowGroups)) return Error_Code;
+		"AllowGroups", (void **)&My_Part.AllowGroups, (int *)NULL)) return Error_Code;
 
 	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"NodeBitMap", (void **)&My_Part.NodeBitMap)) return Error_Code;
+		"NodeBitMap", (void **)&My_Part.NodeBitMap, (int *)NULL)) return Error_Code;
 
 	if (Error_Code = Read_Tag(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
 		"EndPart")) return Error_Code;
@@ -906,7 +906,7 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 
 	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
 		"PartName", &Next_Name_Value);
-	if (Error_Code) 	/* No more records or bad tag */
+	if (Error_Code)		/* No more records or bad tag */
 	    strcpy(Next_Name, "");
 	else
 	    strcpy(Next_Name, Next_Name_Value);
