@@ -62,11 +62,13 @@ void set_node_down(int* c);
  * IN - size: requested size of partition
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
+ * IN - connection type of request (TORUS or MESH)
  * OUT - bitmap: bitmap of the partition allocated
  * 
  * return: success or error of request
  */
-int allocate_part_by_size(int size, bool elongate, bitstr_t** bitmap);
+int allocate_part_by_size(int size, bool elongate, int conn_type, 
+			  bitstr_t** bitmap);
 
 /** 
  * Try to allocate a partition of the given geometery.  This function
@@ -75,11 +77,19 @@ int allocate_part_by_size(int size, bool elongate, bitstr_t** bitmap);
  * 
  * IN - size: requested size of partition
  * IN - rotate: if true, allows rotation of partition during fit
+ * IN - connection type of request (TORUS or MESH)
  * OUT - bitmap: bitmap of the partition allocated
  * 
  * return: success or error of request
  */
-int allocate_part_by_geometry(int* geometry, bool rotate, bitstr_t** bitmap);
+int allocate_part_by_geometry(int* geometry, bool rotate, int conn_type,
+			      bitstr_t** bitmap);
+
+/** 
+ * Doh!  Admin made a boo boo.  Note: Undo only has one history
+ * element, so two consecutive undo's will fail.
+ */
+void undo_last_allocatation();
 
 
 #endif /* _PARTITION_ALLOCATOR_H_ */
