@@ -792,7 +792,9 @@ find_running_job_by_node_name (char *node_name)
 }
 
 /* kill_running_job_by_node_name - Given a node name, deallocate that job 
- *	from the node or kill it */
+ *	from the node or kill it 
+ * returns: number of killed jobs
+ */
 int
 kill_running_job_by_node_name (char *node_name)
 {
@@ -800,7 +802,7 @@ kill_running_job_by_node_name (char *node_name)
 	struct job_record *job_record_point;
 	struct node_record *node_record_point;
 	int bit_position;
-	int job_count = 1;
+	int job_count = 0;
 
 	node_record_point = find_node_record (node_name);
 	if (node_record_point == NULL)	/* No such node */
@@ -816,7 +818,7 @@ kill_running_job_by_node_name (char *node_name)
 		if (bit_test (job_record_point->node_bitmap, bit_position) == 0)
 			continue;	/* job not on this node */
 
-		error ("Running job_id %u vanished from node %s",
+		error ("Running job_id %u on failed node node %s",
 			job_record_point->job_id, node_name);
 		job_count++;
 		if ( (job_record_point->details == NULL) || 
@@ -827,6 +829,7 @@ kill_running_job_by_node_name (char *node_name)
 			deallocate_nodes (job_record_point);
 			delete_job_details(job_record_point);
 		}
+
 	}		
 	list_iterator_destroy (job_record_iterator);
 
