@@ -54,6 +54,7 @@ static int  _build_job_queue(struct job_queue **job_queue);
 static void _launch_job(struct job_record *job_ptr);
 static void _sort_job_queue(struct job_queue *job_queue,
 			    int job_queue_size);
+static char **_xduparray(uint16_t size, char ** array);
 
 /* 
  * _build_job_queue - build (non-priority ordered) list of pending jobs
@@ -264,8 +265,9 @@ static void _launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->in = xstrdup(job_ptr->details->in);
 	launch_msg_ptr->out = xstrdup(job_ptr->details->out);
 	launch_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
-	launch_msg_ptr->argc = 0;	/* FIXME */
-	launch_msg_ptr->argv = NULL;	/* FIXME */
+	launch_msg_ptr->argc = job_ptr->details->argc;
+	launch_msg_ptr->argv = _xduparray(job_ptr->details->argc,
+					job_ptr->details->argv);
 	launch_msg_ptr->script = get_job_script(job_ptr);
 	launch_msg_ptr->environment =
 	    get_job_env(job_ptr, &launch_msg_ptr->envc);
@@ -298,4 +300,19 @@ static void _launch_job(struct job_record *job_ptr)
 			fatal("Can't create pthread");
 		sleep(1);	/* sleep and try again */
 	}
+}
+
+static char **
+_xduparray(uint16_t size, char ** array)
+{
+	int i;
+	char ** result;
+
+	if (size == 0)
+		return (char **)NULL;
+
+	result = (char **) xmalloc(sizeof(char *) * size);
+	for (i=0; i<size; i++)
+		result[i] = xstrdup(array[i]);
+	return result;
 }
