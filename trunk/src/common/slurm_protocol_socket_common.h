@@ -18,6 +18,7 @@
 
 #define AF_SLURM AF_INET
 #define SLURM_INADDR_ANY 0x00000000
+#define SLURM_MESSGE_TIMEOUT_SEC 10
 
 /* LINUX SPECIFIC */
 /* this is the slurm equivalent of the operating system file descriptor, which in linux is just an int */
@@ -27,6 +28,7 @@ typedef int32_t slurm_fd ;
 typedef struct sockaddr_in slurm_addr ; 
 /* this is the slurm equivalent of the BSD sockets fd_set */
 typedef fd_set slurm_fd_set ;
+typedef fd_set _slurm_fd_set ;
 /*{
 	int16_t family ;
 	uint16_t port ;
