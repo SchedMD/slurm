@@ -60,6 +60,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/macros.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/xmalloc.h"
@@ -88,10 +89,16 @@
  * These routines must be used to convert a pointer in shared memory
  * back to a "real" pointer in local memory. e.g. t = _taskp(t->next)
  */
-#define _laddr(p)  \
-	((p) ? (((size_t)(p)) + ((size_t)slurmd_shm)) : (size_t)NULL)  
+#define _laddr(p) \
+	(                                                                    \
+	  (p) ? (((unsigned long)(p)) + ((unsigned long)slurmd_shm))         \
+	     : (unsigned long) NULL                                          \
+	)
 #define _offset(p) \
-        ((p) ? (((size_t)(p)) - ((size_t)slurmd_shm)) : (size_t)NULL) 
+	(                                                                    \
+	  (p) ? (((unsigned long)(p)) - ((unsigned long)slurmd_shm))         \
+	     : (unsigned long) NULL                                          \
+	)
 
 #define _taskp(__p) (task_t *)     _laddr(__p)
 #define _toff(__p)  (task_t *)     _offset(__p)
@@ -133,6 +140,7 @@ static void _shm_step_copy(job_step_t *, job_step_t *);
 static void _shm_clear_task(task_t *);
 static void _shm_clear_step(job_step_t *);
 static int  _shm_find_step(uint32_t, uint32_t);
+static bool _shm_sane(void);
 
 static task_t *     _shm_alloc_task(void);
 static task_t *     _shm_find_task_in_step(job_step_t *s, int taskid);
@@ -289,7 +297,6 @@ _create_ipc_name(const char *name)
 #if defined(POSIX_IPC_PREFIX) && defined(HAVE_POSIX_SEMS)
 	dir = POSIX_IPC_PREFIX;
 #else
-	dir = conf->spooldir;
 	if (  !(dir = conf->spooldir) 
 	   && !(strlen(dir)) 
 	   && !(dir = getenv("TMPDIR"))) 
@@ -934,7 +941,7 @@ _shm_reopen()
 
 	debug2("going to reopen slurmd shared memory");
 
-	shm_lock = _sem_open(SHM_LOCKNAME, oflags, 0600, 0);
+	shm_lock = _sem_open(SHM_LOCKNAME, oflags);
 	/*
 	 * If open of shm lock failed, we could be in one of two
 	 * situations:  
@@ -949,34 +956,23 @@ _shm_reopen()
 	 *  exit with a failure
 	 */
 
-	if ((shm_lock == SEM_FAILED)) {
-		if (errno != ENOENT) {
-			error("Unable to initialize semaphore: %m");
-			return SLURM_FAILURE;
-		}
-
-		debug2( "lockfile exists, but semaphore was deleted: "
-		        "reinitializing shm"                          );
+	if ((shm_lock == SEM_FAILED) || (!_shm_sane())) {
+		debug2("Shared memory not in sane state - reinitializing.");
 
 		/*
 		 * Unlink old lockfile, reopen semaphore with create flag,
 		 * and create new shared memory area
 		 */
 		sem_unlink(lockname);
-		shm_lock = _sem_open(SHM_LOCKNAME, oflags|O_CREAT, 0600, 0);
+		shm_lock = _sem_open(SHM_LOCKNAME, oflags|O_CREAT, 0600, 1);
 		if (shm_lock == SEM_FAILED) {
 			error ("reopen of [%s] failed: %m", lockname);
 			return SLURM_ERROR;
 		}
-		_shm_lock();
 		return _shm_new();
 	}
-	
-	if (shm_lock == SEM_FAILED) {
-		error("Unable to initialize semaphore: %m");
-		return SLURM_FAILURE;
-	}
 
+	
 	/* 
 	 * Attach to shared memory region 
 	 * If attach fails, try to create a new shm segment
@@ -985,7 +981,6 @@ _shm_reopen()
 		error("shm_create(): %m");
 		return SLURM_FAILURE;
 	}
-
 
 	/* 
 	 * Lock and unlock semaphore to ensure data is initialized 
@@ -1022,14 +1017,41 @@ _shm_lock_and_initialize()
 		return SLURM_SUCCESS;
 	}
 
+	/*
+	 * Create locked semaphore (initial value == 0)
+	 */
 	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0);
-	debug3("slurmd lockfile is `%s': %m", lockname);
+	debug3("slurmd lockfile is \"%s\"", lockname);
 
 	if (shm_lock != SEM_FAILED) /* lock didn't exist. Create shmem      */
 		return _shm_new();
 	else                        /* lock exists. Attach to shared memory */
 		return _shm_reopen();
 
+}
+
+/*
+ * Check that shared memory is in a clean state
+ *    
+ */
+static bool
+_shm_sane(void)
+{
+	struct stat st;
+	int         val;
+
+	if (stat(lockname, &st) < 0)
+		error("Unable to stat lock file: %m");
+
+	sem_getvalue(shm_lock, &val);
+
+	debug("shm lock val = %d, last accessed at %s", 
+	      val, ctime(&st.st_atime));
+
+	if ((val == 0) && ((time(NULL) - st.st_atime) > 30))
+	     return false;	
+
+	return true;
 }
 
 static void 

@@ -132,40 +132,17 @@ main (int argc, char *argv[])
 
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 
-	/*
-	 * Process commandline arguments first, since one option may be
-	 * an alternate location for the slurm config file.
-	 */
-	_process_cmdline(argc, argv);
-
-	/*
-	 * Read global slurm config file, ovverride necessary values from
-	 * defaults and command line.
-	 *
-	 */
-	_read_config();
-
 	/* 
-	 * Create slurmd spool directory if necessary.
+	 * Run slurmd_init() here in order to report early errors
+	 * (with shared memory and public keyfile)
 	 */
-	if (_set_slurmd_spooldir() < 0) {
-		error("Unable to initialize slurmd spooldir");
-		exit(1);
-	}
-
-	if (conf->daemonize && (chdir("/tmp") < 0)) {
-		error("Unable to chdir to /tmp");
+	if (_slurmd_init() < 0) {
+		error( "slurmd initialization failed" );
 		exit(1);
 	}
 
 	if (conf->daemonize) 
 		daemon(1,0);
-	/* 
-	 * Update location of log messages (syslog, stderr, logfile, etc.)
-	 * and print current configuration (if in debug mode)
-	 */
-	_update_logging();
-	_print_conf();
 
 	_kill_old_slurmd();
 	_create_msg_socket();
@@ -174,11 +151,6 @@ main (int argc, char *argv[])
 	pidfd = create_pidfile(conf->pidfile);
 
 	info("%s started on %T", xbasename(argv[0]));
-
-	if (_slurmd_init() < 0) {
-		error( "slurmd initialization failed" );
-		exit(1);
-	}
 
         if (send_registration_msg(SLURM_SUCCESS) < 0) 
 		error("Unable to register with slurm controller");
@@ -266,6 +238,7 @@ _wait_for_all_threads()
 		pthread_cond_wait(&active_cond, &active_mutex);
 	}
 	slurm_mutex_unlock(&active_mutex);
+	verbose("all threads complete.");
 }
 
 static void
@@ -423,6 +396,9 @@ static void
 _read_config()
 {
         char *path_pubkey;
+
+	conf->cf.slurm_conf = xstrdup(conf->conffile);
+
 	read_slurm_conf_ctl(&conf->cf);
 
 	slurm_mutex_lock(&conf->config_mutex);
@@ -457,26 +433,19 @@ _read_config()
 static void
 _reconfigure(void)
 {
-	slurm_mutex_lock(&conf->config_mutex);
+	_read_config();
 
-	read_slurm_conf_ctl(&conf->cf);
 	_update_logging();
 	_print_conf();
-
-	if (conf->conffile == NULL)
-		_free_and_set(&conf->conffile, conf->cf.slurm_conf);
-
-	conf->slurm_user_id = conf->cf.slurm_user_id;
-	_free_and_set(&conf->epilog, xstrdup(conf->cf.epilog));
-	_free_and_set(&conf->prolog, xstrdup(conf->cf.prolog));
 
 	/*
 	 * Make best effort at changing to new public key
 	 */
-	slurm_cred_ctx_key_update( conf->vctx, 
-                                   conf->cf.job_credential_public_certificate);
+	slurm_cred_ctx_key_update(conf->vctx, conf->pubkey);
 
-	slurm_mutex_unlock(&conf->config_mutex);
+	/*
+	 * XXX: reopen slurmd port?
+	 */
 }
 
 static void
@@ -590,21 +559,67 @@ _slurmd_init()
 {
 	struct rlimit rlim;
 
+	/*
+	 * Process commandline arguments first, since one option may be
+	 * an alternate location for the slurm config file.
+	 */
+	_process_cmdline(*conf->argc, *conf->argv);
+
+	/*
+	 * Read global slurm config file, ovverride necessary values from
+	 * defaults and command line.
+	 *
+	 */
+	_read_config();
+
+	/* 
+	 * Update location of log messages (syslog, stderr, logfile, etc.)
+	 * and print current configuration (if in debug mode)
+	 */
+	_update_logging();
+	_print_conf();
+
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_NOFILE,&rlim);
 	}
 
+	/*
+	 * Create a context for verifying slurm job credentials
+	 */
 	if (!(conf->vctx = slurm_cred_verifier_ctx_create(conf->pubkey)))
 		return SLURM_FAILURE;
 
+	/* 
+	 * Restore any saved revoked credential information
+	 */
 	_restore_cred_state(conf->vctx); 
 
+	/*
+	 * Cleanup shared memory if so configured
+	 */
 	if (conf->shm_cleanup)
 		shm_cleanup();
 
+	/*
+	 * Initialize slurmd shared memory
+	 */
 	if (shm_init() < 0)
 		return SLURM_FAILURE;
+
+	/* 
+	 * Create slurmd spool directory if necessary.
+	 */
+	if (_set_slurmd_spooldir() < 0) {
+		error("Unable to initialize slurmd spooldir");
+		return SLURM_FAILURE;
+	}
+
+	if (conf->daemonize && (chdir("/tmp") < 0)) {
+		error("Unable to chdir to /tmp");
+		return SLURM_FAILURE;
+	}
+
 
 	return SLURM_SUCCESS;
 }
