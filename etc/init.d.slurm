@@ -13,8 +13,15 @@
 #
 # config: /etc/sysconfig/slurm
 #
-
-# $Id$
+### BEGIN INIT INFO
+# Provides:          slurm
+# Required-Start:    $local_fs $syslog $network $named munge
+# Required-Stop:     $local_fs $syslog $network $named munge
+# Default-Start:     3 5
+# Default-Stop:      0 1 2 6
+# Short-Description: slurm daemon management
+# Description:       Start slurm to provide resource management
+### END INIT INFO
 
 BINDIR=/usr/bin
 CONFDIR=/etc/slurm
@@ -22,8 +29,24 @@ LIBDIR=/usr/lib
 SBINDIR=/usr/sbin
 
 # Source function library.
-[ -f /etc/rc.d/init.d/functions ] || exit 0
-. /etc/rc.d/init.d/functions
+if [ -f /etc/rc.status ]; then
+   . /etc/rc.status
+   SUSE=1
+
+   rc_reset
+else
+   [ -f /etc/rc.d/init.d/functions ] || exit 0
+   . /etc/rc.d/init.d/functions
+   SUSE=0
+
+   function rc_status() {
+      RETVAL=$?
+   }
+   function rc_exit () {
+      exit $RETVAL
+   }
+   RETVAL=0
+fi
 
 # Source slurm specific configuration
 if [ -f /etc/sysconfig/slurm ] ; then
@@ -38,25 +61,21 @@ fi
 # setup library paths for slurm and munge support
 export LD_LIBRARY_PATH="$LIBDIR:$LD_LIBRARY_PATH"
 
-RETVAL=0
-
 start() {
     echo -n "starting $1: " 
     unset HOME MAIL USER USERNAME 
     daemon $SBINDIR/$1 $2
-    RETVAL=$?
+    rc_status -v
     echo
     touch /var/lock/subsys/slurm
-    return $RETVAL
 }
 
 stop() { 
     echo -n "stopping $1: "
     killproc $1 -TERM
-    RETVAL=$?
+    rc_status -v
     echo
     rm -f /var/lock/subsys/slurm
-    return $RETVAL
 }
 
 startall() {
@@ -168,4 +187,4 @@ case "$1" in
         ;;
 esac
 
-exit $RETVAL
+rc_exit
