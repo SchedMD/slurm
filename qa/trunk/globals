@@ -8,11 +8,12 @@ global scancel scontrol sinfo squeue srun
 # Specify location of slurm executable files
 # These may be just the command names or full pathnames
 #
-set scancel     "scancel"
-set scontrol    "scontrol"
-set sinfo       "sinfo"
-set squeue      "squeue"
-set srun        "srun"
+set slurm_dir   ""
+set scancel     "${slurm_dir}scancel"
+set scontrol    "${slurm_dir}scontrol"
+set sinfo       "${slurm_dir}sinfo"
+set squeue      "${slurm_dir}squeue"
+set srun        "${slurm_dir}srun"
 
 set mpi_ping	"/usr/lib/mpi-test/mping"
 
@@ -30,8 +31,8 @@ set bin_env	"env"
 set bin_id	"id"
 set bin_hostname "hostname"
 set bin_kill	"kill"
-set bin_killall	"killall"
 set bin_make	"make"
+set bin_pkill	"pkill"
 set bin_ps	"ps"
 set bin_pwd	"pwd"
 set bin_rm	"rm"
@@ -121,18 +122,29 @@ proc get_line_cnt { file_name } {
 #
 # Proc: kill_srun
 #
-# Purpose:  Issue three "killall -q -INT srun" commands
+# Purpose:  Issue three "pkill -INT srun" commands for this user
 #
 # Returns: A non-zero return code indicates a failure.
 #
 ################################################################
 
 proc kill_srun {  } {
-	global bin_killall
+	global bin_id bin_pkill number
 
-	exec $bin_killall -q -INT srun
-	exec $bin_killall -q -INT srun
-	exec $bin_killall -q -INT srun
+	spawn $bin_id -u
+	expect {
+		-re "($number)" {
+			set uid $expect_out(1,string)
+		}
+		eof {
+			wait
+		}
+	}
+
+	exec $bin_pkill -INT -u $uid srun
+	exec $bin_pkill -INT -u $uid srun
+	exec $bin_pkill -INT -u $uid srun
+
 	return 0
 }
 
