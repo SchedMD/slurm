@@ -320,17 +320,25 @@ _service_connection(void *arg)
 
 	if ((rc = slurm_receive_msg(con->fd, msg, 0)) < 0) {
 		error("slurm_receive_msg: %m");
-		slurm_free_msg(msg);
+		goto done;
 	} else {
 		msg->conn_fd = con->fd;
 		slurmd_req(msg, con->cli_addr);
 	}
-	if (slurm_close_accepted_conn(con->fd) < 0)
+
+	/* 
+	 * Check to see if fd already closed
+	 */
+	if (msg->conn_fd < 0) 
+		goto done;
+
+	if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 		error ("close(%d): %m", con->fd);
 
+    done:
 	xfree(con);
+	slurm_free_msg(msg);
 	_decrement_thd_count();
-
 	return NULL;
 }
 
