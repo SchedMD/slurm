@@ -28,7 +28,7 @@
 #define _SLURM_PROTOCOL_INTERFACE_H
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
@@ -61,8 +61,8 @@
 #include <fcntl.h>
 #include <stdarg.h>
 
-#include <src/common/pack.h>
-#include <src/common/slurm_protocol_common.h>
+#include "src/common/pack.h"
+#include "src/common/slurm_protocol_common.h"
 
 #define SLURM_MESSGE_TIMEOUT_MSEC_STATIC 10000
 
@@ -78,6 +78,7 @@ typedef enum slurm_socket_type {
 /*******************************\
  **  MIDDLE LAYER FUNCTIONS  **
  \*******************************/
+
 /* The must have funtions are required to implement a low level plugin 
  * for the slurm protocol the general purpose functions just wrap 
  * standard socket calls, so if the underlying layer implements a 
@@ -90,40 +91,131 @@ typedef enum slurm_socket_type {
 /*****************************/
 /* socket creation functions */
 /*****************************/
+
+/* Create a socket of the specified type
+ * IN type - SLURM_STREAM or SLURM_MESSAGE
+ */
 slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
 
 /*****************/
 /* msg functions */
 /*****************/
+
+/* _slurm_init_msg_engine
+ * In the socket implementation it creates a socket, binds to it, and 
+ *	listens for connections.
+ * IN slurm_address - address to bind to
+ * RET file descriptor
+ */
 slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
+
+/* _slurm_open_msg_conn
+ * In the bsd socket implementation it creates a SOCK_STREAM socket  
+ *	and calls connect on it a SOCK_DGRAM socket called with connect   
+ *	is defined to only receive messages from the address/port pair  
+ *	argument of the connect call slurm_address - for now it is  
+ *	really just a sockaddr_in
+ * IN slurm_address - address to bind to
+ * RET file descriptor
+ */
+
 slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
+
+/* _slurm_msg_recvfrom
+ * Get message over the given connection, default timeout value
+ * IN open_fd - an open file descriptor
+ * OUT buffer - loaded with data
+ * IN size - size of buffer in bytes
+ * IN flags - communication specific flags
+ * RET number of bytes read
+ */
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , 
-			size_t size , 
-			uint32_t flags, slurm_addr * slurm_address ) ;
+			size_t size , uint32_t flags ) ;
+/* _slurm_msg_recvfrom_timeout is identical to _slurm_msg_recvfrom except
+ * IN timeout - maximum time to wait for a message in milliseconds */
 ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , 
-			size_t size , uint32_t flags, 
-			slurm_addr * slurm_address , int timeout) ;
+			size_t size , uint32_t flags, int timeout) ;
+
+/* _slurm_msg_sendto
+ * Send message over the given connection, default timeout value
+ * IN open_fd - an open file descriptor
+ * IN buffer - data to transmit
+ * IN size - size of buffer in bytes
+ * IN flags - communication specific flags
+ * RET number of bytes written
+ */
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , 
-			size_t size , uint32_t flags, 
-			slurm_addr * slurm_address ) ;
+			size_t size , uint32_t flags ) ;
+/* _slurm_msg_sendto_timeout is identical to _slurm_msg_sendto except
+ * IN timeout - maximum time to wait for a message in milliseconds */
 ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , 
-			size_t size , uint32_t flags, 
-			slurm_addr * slurm_address , int timeout ) ;
+			size_t size , uint32_t flags, int timeout ) ;
+
+/* _slurm_accept_msg_conn
+ * In the bsd implmentation maps directly to a accept call 
+ * IN open_fd		- file descriptor to accept connection on
+ * OUT slurm_address 	- slurm_addr of the accepted connection
+ * RET slurm_fd		- file descriptor of the connection created
+ */
 slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd , 
 			slurm_addr * slurm_address ) ;
+
+
+/* _slurm_close_accepted_conn
+ * In the bsd implmentation maps directly to a close call, to close 
+ *	the socket that was accepted
+ * IN open_fd		- an open file descriptor to close
+ * RET int		- the return code
+ */
 int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
 
 /********************/
 /* stream functions */
 /********************/
+
+/* _slurm_listen_stream
+ * opens a stream server and listens on it
+ * IN slurm_address 	- slurm_addr to bind the server stream to
+ * RET slurm_fd		- file descriptor of the stream created
+ */
 slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address ) ;
+
+/* _slurm_accept_stream
+ * accepts a incomming stream connection on a stream server slurm_fd 
+ * IN open_fd		- file descriptor to accept connection on
+ * OUT slurm_address 	- slurm_addr of the accepted connection
+ * RET slurm_fd		- file descriptor of the accepted connection 
+ */
 slurm_fd _slurm_accept_stream ( slurm_fd open_fd , 
 			slurm_addr * slurm_address ) ;
+
+/* _slurm_open_stream
+ * opens a client connection to stream server
+ * IN slurm_address 	- slurm_addr of the connection destination
+ * RET slurm_fd         - file descriptor of the connection created
+ */
 slurm_fd _slurm_open_stream ( slurm_addr * slurm_address ) ;
+
+/* _slurm_get_stream_addr
+ * esentially a encapsilated get_sockname  
+ * IN open_fd 		- file descriptor to retreive slurm_addr for
+ * OUT address		- address that open_fd to bound to
+ */
 extern int _slurm_get_stream_addr ( slurm_fd open_fd , 
 			slurm_addr * address ) ;
+
+/* _slurm_close_stream
+ * closes either a server or client stream file_descriptor
+ * IN open_fd	- an open file descriptor to close
+ * RET int	- the return code
+ */
 extern int _slurm_close_stream ( slurm_fd open_fd ) ;
 
+/* make an open slurm connection blocking or non-blocking
+ *	(i.e. wait or do not wait for i/o completion )
+ * IN open_fd	- an open file descriptor to change the effect
+ * RET int	- the return code
+ */
 extern inline int _slurm_set_stream_non_blocking ( slurm_fd open_fd ) ;
 extern inline int _slurm_set_stream_blocking ( slurm_fd open_fd ) ;
 
@@ -135,17 +227,42 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer ,
 /***************************/
 /* slurm address functions */
 /***************************/
+/* build a slurm address bassed upon ip address and port number
+ * OUT slurm_address - the constructed slurm_address
+ * IN port - port to be used 
+ * IN ip_address - the IP address to connect with
+ */
 extern void _slurm_set_addr_uint ( slurm_addr * slurm_address , 
 			uint16_t port , uint32_t ip_address ) ;
+
+/* resets the address field of a slurm_addr, port and family are unchanged */
 extern void _reset_slurm_addr ( slurm_addr * slurm_address , 
 			slurm_addr new_address );
-extern void _slurm_set_addr ( slurm_addr * slurm_address , 
-			uint16_t port , char * host ) ;
+
+
+/* build a slurm address bassed upon host name and port number
+ * OUT slurm_address - the constructed slurm_address
+ * IN port - port to be used 
+ * IN host - name of host to connect with
+ */
 extern void _slurm_set_addr_char ( slurm_addr * slurm_address , 
 			uint16_t port , char * host ) ;
+
+/* given a slurm_address it returns its port and hostname
+ * IN slurm_address	- slurm_addr to be queried
+ * OUT port		- port number
+ * OUT host		- hostname
+ * IN buf_len		- length of hostname buffer
+ */
 extern void _slurm_get_addr ( slurm_addr * slurm_address , 
 			uint16_t * port , char * host , 
 			uint32_t buf_len ) ;
+
+/* prints a slurm_addr into a buf
+ * IN address		- slurm_addr to print
+ * IN buf		- space for string representation of slurm_addr
+ * IN n			- max number of bytes to write (including NUL)
+ */
 extern void _slurm_print_slurm_addr ( slurm_addr * address, 
 			char *buf, size_t n ) ;
 
@@ -262,18 +379,6 @@ extern int _slurm_setsockopt (int __fd, int __level, int __optname,
  * Returns 0 on success, -1 for errors.  */
 extern int _slurm_shutdown (int __fd, int __how) ;
 extern int _slurm_close (int __fd ) ;
-
-
-/* Non-blocking calls */
-extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, 
-			fd_set *exceptfds, struct timeval *timeout);
-/* extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, 
-			fd_set *exceptfds, const struct timespec *timeout, 
-			sigset_t * sigmask); */
-void _slurm_FD_CLR(int fd, fd_set *set);
-int  _slurm_FD_ISSET(int fd, fd_set *set);
-void _slurm_FD_SET(int fd, fd_set *set);
-void _slurm_FD_ZERO(fd_set *set);
 
 extern int _slurm_fcntl(int fd, int cmd, ... );
 extern int _slurm_vfcntl(int fd, int cmd, va_list va );

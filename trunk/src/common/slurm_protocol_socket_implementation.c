@@ -25,6 +25,10 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
@@ -47,14 +51,11 @@
 #endif
 
 #include "src/common/slurm_protocol_interface.h"
-#include "src/common/slurm_protocol_common.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/log.h"
-#include "src/common/pack.h"
 #include "src/common/util-net.h"
 
 #define TEMP_BUFFER_SIZE 1024
-
 
 /* internal static prototypes */
 /*****************************************************************
@@ -72,7 +73,8 @@ slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address )
 
 /* this should be a no-op that just returns open_fd in a message 
  * implementation */
-slurm_fd _slurm_accept_msg_conn (slurm_fd open_fd ,slurm_addr * slurm_address)
+slurm_fd _slurm_accept_msg_conn (slurm_fd open_fd , 
+                                 slurm_addr * slurm_address)
 {
 	return _slurm_accept_stream ( open_fd , slurm_address ) ;
 }	
@@ -83,16 +85,14 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd )
 }
 
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , 
-				uint32_t flags, slurm_addr * slurm_address )
+				uint32_t flags )
 {
 	return _slurm_msg_recvfrom_timeout ( open_fd , buffer , size , flags , 
-					slurm_address ,
 					SLURM_MESSGE_TIMEOUT_MSEC_STATIC ) ;
 }
 
 ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , 
 					size_t size , uint32_t flags, 
-					slurm_addr * slurm_address ,
 					int timeout)
 {
 	size_t recv_len ;
@@ -235,16 +235,14 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer ,
 }
 
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , 
-				uint32_t flags, slurm_addr * slurm_address )
+				uint32_t flags )
 {
 	return _slurm_msg_sendto_timeout ( open_fd, buffer , size , flags, 
-					slurm_address , 
 					SLURM_MESSGE_TIMEOUT_MSEC_STATIC ) ;
 }
 
 ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , 
-				size_t size , uint32_t flags, 
-				slurm_addr * slurm_address , int timeout )
+				size_t size , uint32_t flags , int timeout )
 {
 	size_t send_len ;
 
@@ -746,32 +744,6 @@ extern int _slurm_close (int __fd )
 	return close ( __fd ) ;
 }
 
-extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, 
-			fd_set *exceptfds, struct timeval *timeout)
-{
-	assert (n <= FD_SETSIZE); /* select data structure overflows */;
-	return select ( n , readfds , writefds , exceptfds , timeout ) ;
-}
-extern void _slurm_FD_CLR(int fd, fd_set *set)
-{
-	assert (fd < FD_SETSIZE); /* select data structure overflows */;
-	FD_CLR ( fd , set ) ;
-}
-extern int _slurm_FD_ISSET(int fd, fd_set *set)
-{
-	assert (fd < FD_SETSIZE); /* select data structure overflows */;
-	return FD_ISSET ( fd , set ) ;
-}
-extern void _slurm_FD_SET(int fd, fd_set *set)
-{
-	assert (fd < FD_SETSIZE); /* select data structure overflows */;
-	FD_SET ( fd , set ) ;
-}
-extern void _slurm_FD_ZERO(fd_set *set)
-{
-	FD_ZERO ( set ) ;
-}
-
 extern int _slurm_fcntl(int fd, int cmd, ... )
 {
 	int rc ;
@@ -817,11 +789,6 @@ void _reset_slurm_addr ( slurm_addr * slurm_address , slurm_addr new_address )
 	slurm_address -> sin_addr.s_addr = new_address.sin_addr.s_addr ;
 }
 
-/* sets the fields of a slurm_addr */
-void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host )
-{
-	_slurm_set_addr_char ( slurm_address , port , host ) ;		
-}
 void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , 
 				char * host )
 {
