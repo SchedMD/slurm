@@ -63,11 +63,11 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-#define BUF_SIZE	1024	/* Temporary buffer size */
-#define DEFAULT_DAEMONIZE 0	/* Run as daemon by default if set */
-#define DEFAULT_RECOVER 0	/* Recover state by default if set */
+#define BUF_SIZE	  1024	/* Temporary buffer size */
+#define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
+#define DEFAULT_RECOVER   1	/* Recover state by default if set */
 #define MAX_SERVER_THREADS 20	/* Max threads to service RPCs */
-#define MEM_LEAK_TEST	0	/* Running memory leak test if set */
+#define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
 
 #ifndef MAX
 #  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
 	/*
 	 * Establish initial configuration
 	 */
-	log_init("slurmctld", log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(argv[0], log_opts, LOG_DAEMON, NULL);
 	thread_id_main = pthread_self();
 
 	slurmctld_pid = getpid();
@@ -2020,90 +2020,82 @@ extern int optind, opterr, optopt;
 static void _parse_commandline(int argc, char *argv[], 
 			       slurm_ctl_conf_t * conf_ptr)
 {
-	int c = 0, errlev;
+	int c = 0;
 	char *log_file = NULL;
 
 	opterr = 0;
-	while ((c = getopt(argc, argv, "dDe:f:hl:L:rs:")) != -1)
+	while ((c = getopt(argc, argv, "cdDf:hL:rv")) != -1)
 		switch (c) {
+		case 'c':
+			recover = 0;
+			break;
 		case 'd':
 			daemonize = 1;
-			log_opts.stderr_level = LOG_LEVEL_QUIET;
 			break;
 		case 'D':
 			daemonize = 0;
 			break;
-		case 'e':
-			errlev = strtol(optarg, (char **) NULL, 10);
-			if ((errlev < LOG_LEVEL_QUIET) ||
-			    (errlev > LOG_LEVEL_DEBUG3)) {
-				error("invalid errlev argument");
-				_usage(argv[0]);
-				exit(1);
-			}
-			log_opts.stderr_level = errlev;
+		case 'f':
+			slurmctld_conf.slurm_conf = xstrdup(optarg);
 			break;
 		case 'h':
 			_usage(argv[0]);
 			exit(0);
 			break;
-		case 'f':
-			slurmctld_conf.slurm_conf = optarg;
-			break;
-		case 'l':
-			errlev = strtol(optarg, (char **) NULL, 10);
-			if ((errlev < LOG_LEVEL_QUIET) ||
-			    (errlev > LOG_LEVEL_DEBUG3)) {
-				error("invalid errlev argument");
-				_usage(argv[0]);
-				exit(1);
-			}
-			log_opts.logfile_level = errlev;
-			break;
 		case 'L':
-			log_file = optarg;
+			log_file = xstrdup(optarg);
 			break;
 		case 'r':
 			recover = 1;
 			break;
-		case 's':
-			errlev = strtol(optarg, (char **) NULL, 10);
-			if ((errlev < LOG_LEVEL_QUIET) ||
-			    (errlev > LOG_LEVEL_DEBUG3)) {
-				error("invalid errlev argument");
-				_usage(argv[0]);
-				exit(1);
-			}
-			log_opts.syslog_level = errlev;
+		case 'v':
+			log_opts.stderr_level++;
+			log_opts.logfile_level++;
+			log_opts.syslog_level++;
 			break;
 		default:
 			_usage(argv[0]);
 			exit(1);
 		}
 
-	log_alter(log_opts, SYSLOG_FACILITY_DAEMON, log_file);
+	if (daemonize) {
+		log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (log_file)
+			log_opts.syslog_level = LOG_LEVEL_QUIET;
+	}
+
+	log_alter(log_opts, LOG_DAEMON, log_file);
 }
 
 /* _usage - print a message describing the command line arguments of 
  *	slurmctld */
 static void _usage(char *prog_name)
 {
-	printf("%s [OPTIONS]\n", prog_name);
-	printf("  -d           Become a daemon\n");
-	printf
-	    ("  -D           Debug mode, do not become a daemon, stay in the foreground\n");
-	printf
-	    ("  -e <errlev>  Set stderr logging to the specified level\n");
-	printf("  -f <file>    Use specified configuration file name\n");
-	printf("  -h           Print this help message\n");
-	printf
-	    ("  -l <errlev>  Set logfile logging to the specified level\n");
-	printf("  -L <file>    Set logfile to the supplied file name\n");
-	printf
-	    ("  -s <errlev>  Set syslog logging to the specified level\n");
-	printf("  -r           Recover state from last checkpoint\n");
-	printf
-	    ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail\n");
+	fprintf(stderr, "Usage: %s [OPTIONS]\n", prog_name);
+#if (DEFAULT_RECOVER != 0)
+	fprintf(stderr, "  -c      "
+			"\tDo not recover state from last checkpoint.\n");
+#endif
+#if (DEFAULT_DAEMONIZE == 0)
+	fprintf(stderr, "  -d      "
+			"\tRun daemon in background.\n");
+#endif
+#if (DEFAULT_DAEMONIZE != 0)
+	fprintf(stderr, "  -D      "
+			"\tRun daemon in foreground.\n");
+#endif
+	fprintf(stderr, "  -f file "
+			"\tUse `file' as slurmctld config file.\n");
+	fprintf(stderr, "  -h      "
+			"\tPrint this help message.\n");
+	fprintf(stderr, "  -L logfile "
+			"\tLog messages to the file `logfile'\n");
+#if (DEFAULT_RECOVER == 0)
+	fprintf(stderr, "  -r      "
+			"\tRecover state from last checkpoint.\n");
+#endif
+	fprintf(stderr, "  -v      "
+			"\tVerbose mode. Multiple -v's increase verbosity.\n");
 }
 
 /* _run_backup - this is the backup controller, it should run in standby 
