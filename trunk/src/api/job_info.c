@@ -38,28 +38,6 @@
 #include "slurm.h"
 #include <src/common/slurm_protocol_api.h>
 
-#if DEBUG_MODULE
-/* main is used here for testing purposes only */
-int 
-main (int argc, char *argv[]) 
-{
-	static time_t last_update_time = (time_t) NULL;
-	int error_code;
-	job_info_msg_t * job_info_msg_ptr = NULL;
-
-	error_code = slurm_load_jobs (last_update_time, &job_info_msg_ptr);
-	if (error_code) {
-		printf ("slurm_load_jobs error %d\n", error_code);
-		exit (error_code);
-	}
-
-	slurm_print_job_info_msg ( job_info_msg_ptr ) ;
-
-	slurm_free_job_info ( job_info_msg_ptr ) ;
-	exit (0);
-}
-#endif
-
 /* print the entire job_info_msg */
 void 
 slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr )

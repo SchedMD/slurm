@@ -16,28 +16,6 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-int 
-main (int argc, char *argv[]) {
-	int i, count, error_code;
-
-	if (argc < 2)
-		count = 1;
-	else
-		count = atoi (argv[1]);
-
-	for (i = 0; i < count; i++) {
-		error_code = slurm_reconfigure ();
-		if (error_code != 0) {
-			printf ("slurm_reconfigure error %d\n", error_code);
-			exit (1);
-		}
-	}
-	exit (0);
-}
-#endif
-
 
 int
 slurm_reconfigure ()
