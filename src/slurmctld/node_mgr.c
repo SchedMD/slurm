@@ -1208,6 +1208,28 @@ void set_node_down (char *name)
 	return;
 }
 
+/*
+ * is_node_down - determine if the specified node's state is DOWN
+ * IN name - name of the node
+ * RET true if node exists and is down, otherwise false 
+ */
+bool is_node_down (char *name)
+{
+	struct node_record *node_ptr;
+	uint16_t base_state;
+
+	node_ptr = find_node_record (name);
+	if (node_ptr == NULL) {
+		error ("is_node_down unable to find node %s", name);
+		return false;
+	}
+
+	base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+	if (base_state == NODE_STATE_DOWN)
+		return true;
+	return false;
+}
+
 /* ping_nodes - check that all nodes and daemons are alive,  
  *	get nodes in UNKNOWN state to register */
 void ping_nodes (void)

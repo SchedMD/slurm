@@ -534,6 +534,13 @@ extern int init_node_conf ();
 extern int init_part_conf (void);
 
 /*
+ * is_node_down - determine if the specified node's state is DOWN
+ * IN name - name of the node
+ * RET true if node exists and is down, otherwise false 
+ */
+extern bool is_node_down (char *name);
+
+/*
  * job_allocate - create job_records for the suppied job specification and 
  *	allocate nodes for it.
  * IN job_specs - job specifications
