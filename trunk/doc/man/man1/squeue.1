@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "September 2004" "squeue 0.4" "Slurm components"
+.TH SQUEUE "1" "March 2005" "squeue 0.5" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -311,22 +311,25 @@ Some \fBsqueue\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed 
 below. (Note: Commandline options will always override these settings.)
 .TP 20
-SQUEUE_ALL
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+.TP
+\fBSQUEUE_ALL\fR
 \fB\-a, \-\-all\fR
 .TP
-SQUEUE_FORMAT
+\fBSQUEUE_FORMAT\fR
 \fB\-o <output_format>, \-\-format=<output_format>\fR
 .TP
-SQUEUE_PARTITION
+\fBSQUEUE_PARTITION\fR
 \fB\-p <part_list>, \-\-partition=<part_list>\fR
 .TP
-SQUEUE_SORT
+\fBSQUEUE_SORT\fR
 \fB\-S <sort_list>, \-\-sort=<sort_list>\fR
 .TP
-SQUEUE_STATES
+\fBSQUEUE_STATES\fR
 \fB\-t <state_list>, \-\-states=<state_list>\fR
 .TP
-SQUEUE_USERS
+\fBSQUEUE_USERS\fR
 \fB\-u <user_list>, \-\-users=<user_list>\fR
 
 .SH "EXAMPLES"

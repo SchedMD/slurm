@@ -1,4 +1,4 @@
-.TH SLURMD "8" "March 2004" "slurmd 0.3" "Slurm components"
+.TH SLURMD "8" "March 2005" "slurmd 0.5" "Slurm components"
 .SH "NAME"
 slurmd \- The compute node daemon for SLURM.
 .SH "SYNOPSIS"
@@ -27,11 +27,33 @@ and slurmd will continue as normal.
 \fB-h\fR
 Help; print a brief summary of command options.
 .TP
+\fB-f <file>\fR
+Read configuration from the specified file. See \fBNOTES\fR below.
+.TP
 \fB-L <file>\fR
 Write log messages to the specified file.
 .TP
 \fB-v\fR
 Verbose operation. Multiple -v's increase verbosity.
+
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables can be used to override settings
+compiled into slurmd.
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.  This is overridden by
+explicitly naming a configuration file on the command line.
+
+.SH "NOTES"
+It may be useful to experiment with different \fBslurmd\fR specific
+configuration parameters using a distinct configuration file
+(e.g. timeouts).  However, this special configuration file will not be
+used by the \fBslurmctld\fR daemon or the Slurm programs, unless you
+specifically tell each of them to use it. If you desire changing
+communication ports, the location of the temporary file system, or
+other parameters used by other Slurm components, change the common
+configuration file, \fBslurm.conf\fR.
+
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -49,6 +71,7 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+
 .SH "FILES"
 .LP
 /etc/slurm.conf

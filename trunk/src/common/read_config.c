@@ -955,8 +955,14 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr, bool slurmd_hosts)
 	assert (ctl_conf_ptr);
 	init_slurm_conf (ctl_conf_ptr);
 
-	if (ctl_conf_ptr->slurm_conf == NULL)
-		ctl_conf_ptr->slurm_conf = xstrdup (SLURM_CONFIG_FILE);
+	if (ctl_conf_ptr->slurm_conf == NULL) {
+		char *val = getenv("SLURM_CONF");
+
+		if (val == NULL) {
+			val = SLURM_CONFIG_FILE;
+		}
+		ctl_conf_ptr->slurm_conf = xstrdup (val);
+	}
 	slurm_spec_file = fopen (ctl_conf_ptr->slurm_conf, "r");
 	if (slurm_spec_file == NULL) {
 		fatal ("read_slurm_conf_ctl error opening file %s, %m", 

@@ -17,6 +17,8 @@ documents those changes that are of interest to users and admins.
     patch from slurm v0.3.11).
  -- "srun -A" modified to return exit code of last command executed
     (Chris Holmes, HP).
+ -- Add support for different slurm.conf files controlled via SLURM_CONF
+    env var (Brian O'Sullivan, pathscale)
 
 * Changes in SLURM 0.4.7
 ========================

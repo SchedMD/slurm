@@ -1,4 +1,4 @@
-.TH SINFO "1" "February 2005" "sinfo 0.4" "Slurm components"
+.TH SINFO "1" "March 2005" "sinfo 0.5" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -338,17 +338,20 @@ be set via environment variables. These environment variables,
 along with their corresponding options, are listed below. (Note:
 Commandline options will always override these settings.)
 .TP 20
-SINFO_ALL
+\fBSINFO_ALL\fR
 \fB\-a, \-\-all\fR
 .TP
-SINFO_FORMAT
+\fBSINFO_FORMAT\fR
 \fB\-o <output_format>, \-\-format=<output_format>\fR
 .TP
-SINFO_PARTITION
+\fBSINFO_PARTITION\fR
 \fB\-p <partition>, \-\-partition=<partition>\fR
 .TP
-SINFO_SORT
+\fBSINFO_SORT\fR
 \fB\-S <sort>, \-\-sort=<sort>\fR
+.TP
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
 
 .SH "EXAMPLES"
 .eo
@@ -432,6 +435,7 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+
 .SH "SEE ALSO"
 \fBscontrol\fR(1), \fBsmap\fR(1), \fBsqueue\fR(1), 
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
