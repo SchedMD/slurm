@@ -242,7 +242,7 @@ int BitMapConsecutive(unsigned *BitMap, int *Position) {
  * NOTE:  The returned value MUST BE FREED by the calling routine
  */
 unsigned *BitMapCopy(unsigned *BitMap) {
-    int i, size;
+    int size;
     unsigned *Output;
 
     if (BitMap == NULL) {
@@ -265,10 +265,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
 	return NULL;
     } /* if */
 
-    size /= sizeof(unsigned);			/* Count of unsigned's */
-    for (i=0; i<size; i++) {
-	Output[i] = BitMap[i];
-    } /* for (i */
+    (void) memcpy(Output, BitMap, size);
     return Output;
 } /* BitMapCopy */
 
@@ -362,7 +359,7 @@ void BitMapFill(unsigned *BitMap) {
 
 
 /*
- * BitMapFit - Identify the nodes which best fit the Request count
+ * BitMapFit - Identify the nodes which best fit the Req_Nodes count
  * Input: BitMap - The bit map to search
  *        Req_Nodes - Number of nodes required
  *        Consecutive - Nodes must be consecutive is 1, otherwise 0
@@ -408,6 +405,8 @@ int BitMapFit(unsigned *BitMap, int Req_Nodes, int Consecutive) {
 		if ((Consec_Count[Consec_Index]++) == 0) 
 			Consec_Start[Consec_Index] = (word * sizeof(unsigned) * 8 + bit);
 		BitMap[word] &= (~mask);
+	    } else if ((Consec_Index == 0) && (Consec_Count[0] == 0)) { 
+		continue;
 	    } else {
 		if (++Consec_Index >= Consec_Size) {
 		    Consec_Size *= 2;
