@@ -440,6 +440,7 @@ static int
 _wid(int n)
 {
 	int width = 1;
+	n--;	/* For zero origin */
 	while (n /= 10)
 		width++;
 	return width;
