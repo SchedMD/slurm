@@ -7,20 +7,18 @@ documents those changes that are of interest to users and admins.
    - slurm/387: Jobs lost and nodes DOWN on slurmctld restart
  -- Nodes no longer transition from COMPLETING to DOWN when not responding.
     Instead, slurmctld either waits for positive verification of job
-	completion, or an administrator must explicitly set the node DOWN.
+    completion, or an administrator must explicitly set the node DOWN.
  -- New srun option `-q, --quit-on-interrupt' enables single Ctrl-C to
     terminate running job.
  -- Improved error message from srun when jobid set in environment is
     no longer running.
- -- Export only required symbols from libslurm.so. 
- -- Added job and node state descriptions to the squeue and sinfo man pages
+ -- Added job and node state descriptions to the squeue(1) and sinfo(1) 
+	man pages.
 
 * Changes in SLURM 0.2.23
 ========================
  -- Fixes for reported problems:
    - slurm/381: Hold jobs requesting more resources than partition limit.
-
-
 
 * Changes in SLURM 0.2.22
 =========================
