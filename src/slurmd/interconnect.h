@@ -109,14 +109,9 @@ int interconnect_postfini(slurmd_job_t *job);
 
 /* 
  * attach process to interconnect
- *
+ * (Called from within the process, so it is appropriate to set 
+ * interconnect specific environment variables here)
  */
 int interconnect_attach(slurmd_job_t *job, int taskid);
-
-/*
- * Set environment variables needed.
- *
- */
-int interconnect_env(slurmd_job_t *job, int taskid);
 
 #endif /* _INTERCONNECT_H */

@@ -48,31 +48,12 @@
 
 #include "src/slurmd/interconnect.h"
 #include "src/slurmd/setenvpf.h"
-#include "src/slurmd/shm.h"
-
-#define ELANID_CONFIG_FILE "/etc/elanhosts"
-
-static char *errstr[] = 
-{ "No error", 
-  "Out of memory!",
-  "Parse error", 
-  "Number of ElanIds specified != number of hosts",
-  NULL
-};
-
-struct elan_info {
-	int   elanid;
-	char *hostname;
-};
+#include "src/slurmd/elanhosts.h"
 
 /*
  * Static prototypes for network error resolver creation:
  */
-static struct elan_info * elan_info_create(int elanid, char *hostname);
-static void  elan_info_destroy(struct elan_info *ei);
-static int   parse_elanid_config(List eil, const char *path);
-static int   parse_elanid_line(List eil, char *buf);
-static int   set_elan_ids(List eil);
+static int   set_elan_ids(elanhost_config_t ec);
 static int   load_neterr_data(void);
 static void *neterr_thr(void *arg);
 
@@ -177,22 +158,20 @@ static void *neterr_thr(void *arg)
 static int 
 load_neterr_data(void)
 {
-	List eil = list_create((ListDelF) elan_info_destroy);
+	elanhost_config_t ec = elanhost_config_create();
+	int rc;
 
-	if (!eil) return SLURM_ERROR;
+	if ((rc = elanhost_config_read(ec, NULL)) < 0) {
+		error("unable to read elan config: %s", 
+		      elanhost_config_err(ec));
+		goto done;
+	}
 
-	if (parse_elanid_config(eil, ELANID_CONFIG_FILE) < 0)
-		goto fail;
+	rc = set_elan_ids(ec);
+	elanhost_config_destroy(ec);
 
-	if (set_elan_ids(eil) < 0)
-		goto fail;
-
-	list_destroy(eil);
-	return SLURM_SUCCESS;
-
-    fail:
-	list_destroy(eil);
-	return SLURM_FAILURE;
+    done:
+	return rc < 0 ? SLURM_FAILURE :  SLURM_SUCCESS;
 }
 
 
@@ -295,6 +274,8 @@ int
 interconnect_attach(slurmd_job_t *job, int procid)
 {
 	int nodeid, nnodes, nprocs; 
+	int cnt  = job->envc;
+	int rank = job->task[procid]->gid; 
 
 	nodeid = job->nodeid;
 	nnodes = job->nnodes;
@@ -307,17 +288,6 @@ interconnect_attach(slurmd_job_t *job, int procid)
 		error("qsw_setcap: %m");
 		return SLURM_ERROR;
 	}
-
-	return SLURM_SUCCESS;
-}
-
-/*
- * Set environment variables needed by QSW MPICH / libelan.
- */
-int interconnect_env(slurmd_job_t *job, int taskid)
-{
-	int cnt  = job->envc;
-	int rank = job->task[taskid]->gid; 
 
 	if (setenvpf(&job->env, &cnt, "RMS_RANK=%d",   rank       ) < 0)
 		return -1;
@@ -332,133 +302,23 @@ int interconnect_env(slurmd_job_t *job, int taskid)
 
 	job->envc = (uint16_t) cnt;
 
-	return 0;
-}
 
-static int 
-parse_elanid_config(List eil, const char *path)
-{
-	char  buf[4096];
-	int   line;
-	FILE *fp;
-
-	if (!(fp = fopen(path, "r"))) {
-		error("failed to open %s",  path);
-		return -1;
-	}
-
-	line = 1;
-	while (fgets(buf, 4096, fp)) {
-		int rc;
-		if ((rc = parse_elanid_line(eil, buf)) < 0) {
-			error("%s: line %d: %s", path, line, errstr[-rc]);
-			return -1;
-		}
-		line++;
-	}
-
-	if (fclose(fp) < 0)
-		error("close(%s): %m", path);
-
-	return 0;
-}
-
-
-/*
- *  Parse one line of elanId list appending results to list "eil"
- *
- *  Returns -1 for parse error, -2 if the number of elanids specified
- *  doesn't equal the number of hosts.
- *
- *  Returns 0 on success
- */
-static int 
-parse_elanid_line(List eil, char *buf)
-{
-	hostlist_t  el, hl;
-	const char *separators = " \t\n";
-	char       *elanids;
-	char       *hosts;
-	char       *sp, *s;
-	int         rc = 0;
-
-	/* 
-	 *  Nullify any comments
-	 */
-	if ((s = strchr(buf, '#')))
-		*s = '\0';
-
-	if (!(elanids = strtok_r(buf, separators, &sp)))
-		return 0;
-
-	if (!(hosts = strtok_r(NULL, separators, &sp)))
-		return -2;
-
-	el = hostlist_create(NULL);
-	hl = hostlist_create(NULL);
-
-	if (!el || !hl) {
-		rc = -1;
-		goto done;
-	}
-
-	if (hostlist_push(el, elanids) != hostlist_push(hl, hosts)) {
-		rc = -3; 
-		goto done;
-	}
-
-	while ((s = hostlist_shift(el))) {
-		char *eptr;
-		int   elanid = (int) strtoul(s, &eptr, 10);
-
-		if (*eptr != '\0') {
-			rc = -2;
-			goto done;
-		}
-
-		free(s);
-		if (!(s = hostlist_shift(hl))) {
-			rc = -1;
-			goto done;
-		}
-
-		list_append(eil, elan_info_create(elanid, s));
-	}
-
-    done:
-	hostlist_destroy(el);
-	hostlist_destroy(hl);
-
-	return rc;
-}
-
-static struct elan_info *
-elan_info_create(int elanid, char *hostname)
-{
-	struct elan_info *ei = (struct elan_info *) malloc(sizeof(*ei));
-	ei->elanid   = elanid;
-	ei->hostname = hostname;
-	return ei;
-}
-
-static void
-elan_info_destroy(struct elan_info *ei)
-{
-	if (ei->hostname)
-		free(ei->hostname);
-	free(ei);
+	return SLURM_SUCCESS;
 }
 
 static int
-set_elan_ids(List eil)
+set_elan_ids(elanhost_config_t ec)
 {
-	struct elan_info *ei;
-	ListIterator      i  = list_iterator_create(eil);
+	int i;
 
-	while ((ei = list_next(i))) {
-		if (elan3_load_neterr_svc(ei->elanid, ei->hostname) < 0)
-			error("elan3_load_neterr_svc(%d, %s): %m", 
-			      ei->elanid, ei->hostname);
+	for (i = 0; i <= elanhost_config_maxid(ec); i++) {
+		char *host = elanhost_elanid2host(ec, ELANHOST_EIP, i);
+		if (host == NULL)
+			continue;
+			
+		if (elan3_load_neterr_svc(i, host) < 0)
+			error("elan3_load_neterr_svc(%d, %s): %m", i, host);
 	}
-	list_iterator_destroy(i);
+
+	return 0;
 }

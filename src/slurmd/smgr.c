@@ -259,9 +259,6 @@ _exec_task(slurmd_job_t *job, int i)
 			exit(1);
 		}
 
-		if (interconnect_env(job, i) < 0)
-			error("error establishing env for interconnect: %m");
-
 		if (_setup_env(job, i) < 0)
 			error("error establishing SLURM env vars: %m");
 
@@ -311,6 +308,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
 	int i  = 0;
 	int id = 0;
 	int fd = job->fdpair[1];
+	pid_t spid = getpid();
 
 	xsignal(SIGXCPU, _xcpu_handler);
 	xsignal(SIGTERM, _term_handler);
@@ -320,7 +318,7 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		int status  = 0;
 		pid_t pid;
 
-		if ((pid = waitpid(0, &status, 0)) < (pid_t) 0) {
+		if ((pid = waitpid(-spid, &status, 0)) < (pid_t) 0) {
 			if (errno == EINTR) {
 				if (timelimit_exceeded)
 					error("job exceeded timelimit");
