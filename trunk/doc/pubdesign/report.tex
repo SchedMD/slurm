@@ -126,7 +126,7 @@ logging mechanism or a back-end database for recording historical state.
 It is expected that SLURM will be deployed in a cluster along side other 
 tools that perform these functions. 
 
-\section{Architecture}
+\subsection{Architecture}
 
 \begin{figure}
 \epsfig{file=arch.eps,width=6in}
@@ -141,7 +141,157 @@ and a four command line utilities: {\tt srun}, {\tt scancel}, {\tt squeue},
 and {\tt slurmadmin}, which can run anywhere in the cluster.
 A scalable communications library ties these components together.
 
-\subsection{Controller}
+Most SLURM state exists in the controller.  The {\tt slurmd} running
+on each compute node can be compared to a remote shell daemon:  it waits 
+for work, executes the work, returns status, then waits for more work.  
+It also asynchronously exchanges node and job status with the controller.  
+It never communicates with other compute nodes and the only job information 
+it has at any given time pertains to the currently executing job, if any.
+
+The {\tt slurmctrld} controller performs a variety of tasks simultaneously:
+
+\begin{itemize}
+\item {\em Machine Status Manager}: Monitor the state of each 
+node in the cluster.  Poll {\tt slurmd}'s for status periodically, and 
+receive state change notifications from {\tt slurmd}'s asynchronously.
+Notify the partition manager when nodes change state.
+{\tt slurmadmin} may be used to set set nodes administratively to 
+{\em up}, {\em down}, or {\em drain} status.
+
+\item {\em Partition Manager}:  Distinct functionality or capabilities 
+are associated with different sets of nodes in the cluster.  Each such set 
+of nodes is considered a partition.  {\tt slurmadmin} may be used to set
+partitions to {\em up}, {\em down}, or {\em drain} status.  The partition 
+manager acts as a resource allocator for the job manager, where the resources 
+are whole nodes.  It also interacts with the machine status manager to 
+maintain an accurate notion of what resources it has available.
+
+\item {\em Scheduler}: The scheduler determines the order of the job queue.
+When jobs are first submitted, they are placed in the queue and the 
+scheduler is called to perform any reordering of the queue dictated by 
+its policy.  The default scheduler implements FIFO with backfill.
+The default may be replaced with an external scheduler which implements
+other policies.  
+
+\item {\em Job Manager}:  The job manager manages the job queue.
+The job manager is awakened whenever there is a change in state that 
+might permit a job to begin running, such as job completion, job submission, 
+partition {\em up} transition, or node {\em up} transition.
+When awakened, the job manager makes one pass through the job queue and
+performs any cleanup associated with completed jobs.
+The job manager then makes a second pass through the job queue and
+starts jobs until a partition manager resource allocation fails.
+On failure, the job manager goes back to sleep.
+
+\item {\em Job Status Manager}:
+The job status manager is closely related to the machine status manager.
+It periodically polls {\tt slurmd}'s on compute nodes that are running jobs 
+and wakes up the job manager when processes stop running on any of the nodes.  
+
+\item {\em Switch Manager}:  The interconnect manager can be configured
+to use Simple Network Monitoring Protocol (SNMP) to record link errors 
+logged by interconnect hardware and to include this information in the status
+of jobs reported to users.  In addition, the partition manager is notified 
+when links change state so it can change the state of the attached compute 
+node.  The interconnect manager configuration is optional;  without one, 
+SLURM simply ignores link errors.
+
+\end{itemize}
+
+\subsection{Example:  Executing a Batch Job}
+
+A user wishes to run a job in batch mode ({\tt srun} will return 
+immediately and the job will execute ``in the background'').  
+The job is a two-node run of {\em mping}, a simple application that measures 
+MPI ping-pong performance.  This run will test message sizes increasing
+in powers of two from one byte to one megabyte.  It will run in the 
+{\em tinymem} partition.
+The user issues the {\tt srun} command from his home directory:
+\begin{verbatim}
+srun --partition tinymem --numnodes 2 --taskspernode 1 mping 1 1048576
+\end{verbatim}
+
+The {\tt srun} command looks at the {\tt /etc/slurm.conf} configuration file
+to determine the host:port of the controller.  It authenticates the user
+to the controller and submits the job request.  The request contains the
+information specified on the {\tt srun} command line, {\tt srun}'s current
+working directory, and {\tt srun}'s complete environment.
+
+The controller consults the partition manager to test whether the job will
+will ever be able to run.  If the user has requested a nonexistant partition,
+more nodes than are configured in the partition, a nonexistant constraint, 
+etc., the partition manager returns an error and the request is discarded.
+The failure is reported to {\tt srun} which tells the user and exits:
+\begin{verbatim}
+srun: not enough nodes configured in partition
+\end{verbatim}
+
+On successful submission, the controller assigns the job a unique 
+{\em batch id}, adds it to the job queue, and returns the batch id to 
+{\tt srun}, which reports this to user and exits:
+
+\begin{verbatim}
+srun: tinymem-42 enqueued
+\end{verbatim}
+The controller calls the scheduler to reorder the batch queue and awakens the 
+job manager.
+The job manager scans for completed jobs, finds none, then tries to run
+jobs starting at the head of the job queue.  It finds {\em tinymem-42}
+and makes a successful request to the partition manager to allocate 
+two nodes from the {\em tinymem} partition: {\em dev6} and {\em dev7}.
+
+The job manager sends a copy of the environment, current working directory,
+command path, command arguments, any information needed to use the 
+interconnect, etc.  
+to the {\tt slurmd}'s running on {\em dev6} and {\em dev7}.  The {\tt slurmd}'s
+set up the environment and execute the command as the submitting user.
+Since no special stdout/stderr handling options
+\footnote{There are multiple options for stdin/stdout/stderr handling.  
+The default is to spool files on the compute nodes and concatenate them when 
+the job completes.}  
+were requested, stdout and stderr of the command will spool to files on the 
+compute nodes:
+
+\begin{verbatim}
+/var/spool/slurm/tinymem-42/stdout.[mpirank]
+/var/spool/slurm/tinymem-42/stderr.[mpirank]
+\end{verbatim}
+
+The job manager notifies the job status manager that a new job is running,
+continues to try to run jobs until it cannot, then sleeps.
+Meanwhile, on {\em dev6}, {\tt /var/spool/slurm/tinymem-42/stdout.0}
+accumulates output:
+
+\begin{verbatim}
+  1 pinged   0:        1 bytes      5.38 uSec     0.19 MB/s                     
+  1 pinged   0:        2 bytes      5.32 uSec     0.38 MB/s                     
+  1 pinged   0:        4 bytes      5.27 uSec     0.76 MB/s                     
+  1 pinged   0:        8 bytes      5.39 uSec     1.48 MB/s                     
+  ...
+  1 pinged   0:  1048576 bytes   4682.97 uSec   223.91 MB/s              
+\end{verbatim}
+
+When the tasks complete, the {\tt slurmd}'s on the two compute nodes notify
+the job status manager, which changes the job status to {\em complete} and 
+awakens the job manager.  The job manager discovers the completed job in
+its first pass through the queue and begins cleanup.
+First it ensures that all tasks have completed by telling the {\tt slurmd}'s
+to terminate the job if it is still running.
+Next it retrieves the stdout/stderr spool files and merges them into a single
+report, which it stores in the user's {\tt srun} directory.
+
+Finally, the job manager frees resources back to the partition manager and
+the job is removed from the job queue.
+
+\subsection{Batch Execution Discussion}
+
+\subsection{Example:  Executing an Interactive Job}
+
+\subsection{Interactive Execution Discussion}
+
+\subsection{Example:  Recovery from Failure}
+
+\section{Controller Design}
 
 \begin{figure}
 \epsfig{file=LCM.arch.eps,width=6in}
@@ -149,8 +299,7 @@ A scalable communications library ties these components together.
 \label{controllerarch}
 \end{figure}
 
-The controller includes the following subsystems, shown in 
-Figure~\ref{controllerarch}:
+The controller includes the following subsystems:
 
 \begin{itemize}
 \item {\em Machine and job status}: Monitor and record the state of each 
@@ -172,7 +321,7 @@ monitoring and control needed to run a parallel job.
 
 Each of these subsystems is described in detail below.
 
-\subsubsection{Machine Status}
+\subsection{Machine Status}
 
 One SLURM daemon will be required on each node in the cluster.
 One module of that daemon will monitor its state.
@@ -236,7 +385,7 @@ required on the control machine to detect and respond to anomalies as well as
 maintain the records. This data collection system is similar to that
 implemented in DPCS. 
 
-\subsubsection{Partition Management}
+\subsection{Partition Management}
 
 Partition management will be used to identify groups of nodes to be used for
 execution of user jobs. Data to be associated with a partition will include:
@@ -255,7 +404,7 @@ by the Job Manager and Machine Status Manager, which exist only on the control
 machine. An API to manage the partitions would be developed first, followed by
 a simple command-line tool utilizing the API.
 
-\subsubsection{Switch Management}
+\subsection{Switch Management}
 
 A daemon on each compute node would be responsible for allocating switch
 channels and assigning them to user jobs. The switch channels would be
@@ -265,7 +414,7 @@ switch directly for communications, particularly for the movement of a large
 executable and/or standard input file. This option will be investigated in phase
 three. 
 
-\subsubsection{Job Management}
+\subsection{Job Management}
 
 Jobs will be allocated entire nodes. Node sharing will be supported only temporally (e.g.
 time-slicing or  gang scheduling). The core functions to be supported include:
@@ -308,7 +457,7 @@ and after the termination of a user job (e.g. prolog and epilog). These scripts
 can be used to establish an appropriate environment for the user (e.g. permit
 logins, disable logins, terminate "orphan" processes, etc.). 
 
-\subsubsection{Scheduling}
+\subsection{Scheduling}
 
 We propose that all scheduling decisions be relegated to DPCS. DPCS has
 sophisticated and flexible scheduling algorithms that suit our needs well and
