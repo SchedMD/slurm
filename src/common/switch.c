@@ -88,7 +88,7 @@ typedef struct slurm_switch_ops {
 	int          (*free_nodeinfo)     ( switch_node_info_t *nodeinfo );
 	char *       (*sprintf_nodeinfo)  ( switch_node_info_t nodeinfo,
 						char *buf, size_t size );
-	int          (*job_complete)      ( switch_jobinfo_t jobinfo,
+	int          (*step_complete)     ( switch_jobinfo_t jobinfo,
 						char *nodelist );
 } slurm_switch_ops_t;
 
@@ -189,7 +189,7 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_unpack_node_info",
 		"switch_p_free_node_info",
 		"switch_p_sprintf_node_info",
-		"switch_p_job_complete"
+		"switch_p_job_step_complete"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -495,11 +495,11 @@ extern char*switch_g_sprintf_node_info(switch_node_info_t switch_node,
 	return (*(g_context->ops.sprintf_nodeinfo))( switch_node, buf, size );
 }
 
-extern int switch_g_job_complete(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
 	char *nodelist)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.job_complete))( jobinfo, nodelist );
+	return (*(g_context->ops.step_complete))( jobinfo, nodelist );
 }

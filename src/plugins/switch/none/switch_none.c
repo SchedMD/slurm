@@ -262,7 +262,7 @@ extern char*switch_p_sprintf_node_info(switch_node_info_t switch_node,
 	return NULL;
 }
 
-extern int switch_p_job_complete(switch_jobinfo_t jobinfo,
+extern int switch_p_job_step_complete(switch_jobinfo_t jobinfo,
 	char *nodelist)
 {
 	return SLURM_SUCCESS;

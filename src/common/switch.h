@@ -147,7 +147,7 @@ extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo,
  * Note that the job step associated with the specified node 
  * has completed execution.
  */
-extern int switch_g_job_complete(switch_jobinfo_t jobinfo,
+extern int switch_g_job_step_complete(switch_jobinfo_t jobinfo,
 	char *nodelist);
 
 /* write job credential string representation to a file

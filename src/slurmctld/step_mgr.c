@@ -132,10 +132,10 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 		if (step_ptr->step_id == step_id) {
 			list_remove (step_iterator);
 /* FIXME: If job step record is preserved after completion, 
- * the switch_g_job_complete() must be called upon completion 
+ * the switch_g_job_step_complete() must be called upon completion 
  * and not upon record purging. Presently both events occur 
  * simultaneously. */
-			switch_g_job_complete(step_ptr->switch_job, 
+			switch_g_job_step_complete(step_ptr->switch_job, 
 				step_ptr->step_node_list);
 			switch_free_jobinfo (step_ptr->switch_job);
 			checkpoint_free_jobinfo (step_ptr->check_job);
