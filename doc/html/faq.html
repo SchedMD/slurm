@@ -9,6 +9,7 @@
 <ol>
 <li><a href="#comp">Why is my job/node in <i>completing</i> state?</a></li>
 <li><a href="#rlimit">Why do I see the error "Can't propagate RLIMIT_..."?</a></li>
+<li><a href="#pending">Why is my job not running?</a></li>
 </ol>
 
 <p>
@@ -43,11 +44,39 @@ hard resource limits on the allocated host, SLURM will be unable to
 propagate the resource limits and print an error of the type shown above. 
 It is recommended that the system administrator establish uniform hard 
 resource limits on all nodes within a cluster to prevent this from occurring.
+<p>
+<a name="pending">
+<b>3. Why is my job not running?</b><br />
+The answer to this question depends upon the scheduler used by SLURM. 
+Executing the command
+<i>scontrol show config | grep SchedulerType</i> will supply this information.
+If the scheduler type is <b>builtin</b>, then jobs will be executed in the 
+order of submission for a given partition.
+Even if resources are available to initiate your job immediately, it will 
+be deferred until no previously submitted job is pending.
+If the scheduler type is <b>backfill</b>, then jobs will generally be 
+executed in the order of submission for a given partition with one 
+exception: later submitted jobs will be initiated early if doing so does 
+not delay the expected execution time of an earlier submitted job. 
+In order for backfill scheduling to be effective, users jobs should specify 
+reasonable time limits. 
+If jobs do not specify time limits then all jobs will receive the same 
+time limit, that associated with the partition, and the ability to backfill 
+schedule jobs will be limited. 
+The backfill scheduler does not alter job specifications of required or 
+excluded nodes, so jobs which specify nodes will substantially reduce 
+the effectiveness of backfill scheduling.
+If the scheduler type is <b>wiki</b>, this represents 
+<a href="http://supercluster.org/maui">The Maui Scheduler</a>. 
+Please refer to its documentation for help.
+For any scheduler, you can check priorities of jobs using the command
+<i>scontrol show job</i>.
+
 <hr>
 <a href="http://www.llnl.gov/disclaimer.html">Privacy and Legal Notice</a>
 <p>URL = http://www.llnl.gov/linux/slurm/faq.html
 <p>UCRL-WEB-TBD
-<p>Last Modified January 8, 2004</p>
+<p>Last Modified January 9, 2004</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
