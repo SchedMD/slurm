@@ -1,14 +1,14 @@
 .TH SCANCEL "1" "January 2003" "scancel 0.1" "Slurm components"
 .SH "NAME"
-scancel \- Used to cancel jobs or job steps that are under the control of Slurm.
+scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
 \fBscancel\fR [\fIOPTIONS\fR...] [\fIjob_id\fR[.\fIstep_id\fR]] [\fIjob_id\fR[.\fIstep_id\fR]...]
 .SH "DESCRIPTION"
-\fBscancel\fR is used to cancel jobs or job steps. An arbitrary number of jobs 
-or job steps may be canceled using job specification used for filtering or a
+\fBscancel\fR is used to signal jobs or job steps. An arbitrary number of jobs 
+or job steps may be signalled using job specification used for filtering or a
 space separated list of specific job and/or job step IDs. A job or job step 
-can only be canceled by the owner of that job or user root. If an attempt is 
-made by an unauthorized user to cancel a job or job step, an error message will 
+can only be signalled by the owner of that job or user root. If an attempt is 
+made by an unauthorized user to signal a job or job step, an error message will 
 be printed and the job will not be canceled. 
 .TP
 OPTIONS
@@ -25,7 +25,10 @@ The name of jobs to be canceled.
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
 The name of the partition from which jobs are to be canceled.
 .TP
-\fB\-s\fR, \fB\-\-state\fR=\fIjob_state_name\fR
+\fB\-s\fR, \fB\-\-signal\fR=\fIsignal_name\fR
+The name or number of the signal to be send. Default value is "KILL".
+.TP
+\fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
 The state of the jobs are to be canceled. \fIjob_state_name\fR may have a value of 
 either "PENDING" or "RUNNING".
 .TP
@@ -51,14 +54,14 @@ all jobs steps associated with the provided job_id will be canceled along
 with the job itself.
 .SH "EXAMPLES"
 .TP
-Cancel steps 1 and 3 of job 1234:
-scancel 1234.1 1234.3
+Send SIGTERM to steps 1 and 3 of job 1234:
+scancel \-\-signal=TERM 1234.1 1234.3
 .TP
 Cancel job 1234 along with all of its steps:
 scancel 1234
 .TP
 Cancel job all pending jobs belonging to user "bob" in partition "debug":
-scancel --state=PENDING --user=bob --partition=debug
+scancel \-\-state=PENDING \-\-user=bob \-\-partition=debug
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
