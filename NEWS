@@ -3,8 +3,12 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.2.6
 =========================
- -- More fixes for handling cleanup of slow terminating jobs.
+ -- Fix for bug in Elan module that results in slurmd hang.
  -- Added completing job state to default list of states to print with squeue.
+
+* Changes in SLURM 0.2.6
+=========================
+ -- More fixes for handling cleanup of slow terminating jobs.
  -- Fixed bug in srun that might leave nodes allocated after a Ctrl-C.
 
 * Changes in SLURM 0.2.5
