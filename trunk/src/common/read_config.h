@@ -84,13 +84,6 @@ extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
 extern int getnodename (char *name, size_t len);
 
 /*
- * Register the given NodeName in the alias table.
- * If node_hostname is NULL, only node_name will be used and
- * no lookup table record is created.
- */
-extern void register_conf_node_aliases(char *node_name, char *node_hostname);
-
-/*
  * get_conf_node_hostname - Return the NodeHostname for given NodeName
  */
 extern char *get_conf_node_hostname(char *node_name);

@@ -154,7 +154,7 @@ static void _push_to_hashtbl(char *node, char *host)
  * If node_hostname is NULL, only node_name will be used and 
  * no lookup table record is created.
  */
-extern void register_conf_node_aliases(char *node_name, char *node_hostname)
+static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 {
 	hostlist_t node_list = NULL, host_list = NULL;
 	char *hn = NULL, *nn;
@@ -841,7 +841,7 @@ _parse_node_spec (char *in_line)
 		return error_code;
 
 	if (node_name) {
-		register_conf_node_aliases(node_name, node_hostname);
+		_register_conf_node_aliases(node_name, node_hostname);
 	}
 
 	xfree(feature);
