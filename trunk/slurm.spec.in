@@ -41,6 +41,11 @@ Summary: Development package for SLURM.
 Group: Development/System
 Requires: slurm
 
+%package doc
+Summary: Extra documentation for SLURM.
+Group: Documentation
+BuildRequires: dia
+
 %package auth-none
 Summary: SLURM auth NULL implementation (no authentication)
 Group: System Environment/Base
@@ -119,9 +124,6 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
-%doc doc/html/quick.start.guide.html
-%doc doc/html/arch.png
-%doc doc/html/entities.png
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
@@ -140,11 +142,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 #############################################################################
 
-%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
+#
+# Docs to come later
+#
+#%files doc
+#%defattr(-,root,root)
+#doc/html/*
+#############################################################################
+
+#%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
 %files auth-none
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_none.so
-%endif
+#%endif
 #############################################################################
 
 %if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
@@ -196,6 +206,9 @@ fi
 
 
 %changelog
+* Wed Mar 26 2003 Mark Grondona <mgrondona@llnl.gov>
+- place docs into subpackage (no extra docs right now)
+- unconditionally build auth-none subpackage
 * Fri Mar 21 2003 Mark Grondona <mgrondona@llnl.gov>
 - allow debug builds when %debug macro is defined
 - other cleanup
