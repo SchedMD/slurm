@@ -1,4 +1,4 @@
-.TH SLURMCTLD "1" "July 2002" "slurmctld 0.1" "Slurm components"
+.TH SLURMCTLD "1" "August 2002" "slurmctld 0.1" "Slurm components"
 .SH "NAME"
 slurmctld \- The central management daemon of Slurm.
 .SH "SYNOPSIS"
@@ -12,9 +12,12 @@ server fails.
 .TP
 OPTIONS
 .TP
-\fB-e <errlev>\fR
-Set stderr logging to the specified level.
+\fB-d\fR
+Execute \fBslurmctld\fR as a daemon. By default \fBslurmctld\fR stays in 
+the foreground and prints log messages to stdout.
 .TP
+\fB-e <errlev>\fR
+Set stderr logging to the specified level..TP
 \fB-h\fR
 Help; print a brief summary of command options.
 .TP
@@ -23,6 +26,9 @@ Read configuration from the specified file.
 .TP
 \fB-l <errlev>\fR
 Set logfile logging to the specified level.
+.TP
+\fB-L <file>\fR
+Write log messages to the specified file.
 .TP
 \fB-s <errlev>\fR
 Set syslog logging to the specified level.
@@ -53,7 +59,7 @@ Verbose logging of informational message
 Log highly detailed debugging messages
 .TP
 \fB<file>\fR
-Pathname of a configuration file to use.
+Pathname of a configuration or log file to use.
 .SH "NOTES"
 It may be useful to experiment with different \fBslurmctld\fR specific 
 configuration parameters using a distinct configuration file. However, 
