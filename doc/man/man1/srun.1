@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "October 2003" "srun 0.2" "slurm components"
+.TH SRUN "1" "December 2003" "srun 0.3" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -38,7 +38,7 @@ Request that \fInnodes\fR nodes be allocated to this job. \fInnodes\fR
 may be either a specific number or a minimum and maximum node count 
 separated by a hyphen (e.g. "\-\-nodes=2\-4"). The partition's node 
 limits supersede those of the job. If a job's node limits are completely 
-outside of the range permitted for it's associated partition, the job 
+outside of the range permitted for its associated partition, the job 
 will be left in a PENDING state. Note that the environment 
 variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
@@ -220,26 +220,22 @@ is run as root, submit the job with \fIuser\fR's access permissions.
 \fIuser\fR may be the user name or the numerical user ID.
 .TP
 \fB\-\-gid\fR=\fIgroup\fR
-If
-.B srun
-is run as root, and the \fB\-\-uid\fR option is used, submit the job
-with \fIgroup\fR's group access permissions.  \fIgroup\fR may be the
-group name or the numerical group ID.
+If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used, 
+submit the job with \fIgroup\fR's group access permissions.  \fIgroup\fR 
+may be the group name or the numerical group ID.
 .PP
 Allocate options:
 .TP
 \fB\-A\fR, \fB\-\-allocate\fR
 allocate resources and spawn a shell. When \fB\-\-allocate\fR is specified to
-.B srun
-, no remote tasks are started. Instead a subshell is started that has access
-to the allocated resources. Multiple jobs can then be run on the same cpus
-from within this subshell. See \fBAllocate Mode\fR below.
+\fBsrun\fR, no remote tasks are started. Instead a subshell is started that 
+has access to the allocated resources. Multiple jobs can then be run on the 
+same cpus from within this subshell. See \fBAllocate Mode\fR below.
 .PP
 Attach to running job:
 .TP
 \fB\-a\fR, \fB\-\-attach\fR=\fIid\fR
-This option will attach
-.B srun
+This option will attach \fBsrun\fR
 to a running job with job id = \fIid\fR. Provided that the calling user
 has access to that running job, stdout and stderr will be redirected to the
 current session and signals received by
@@ -729,7 +725,7 @@ srun -l /bin/hostname | sort -n | awk '{print $2}' > $MACHINEFILE
 # Run using generated Machine file:
 mpirun -np $SLURM_NPROCS -machinefile $MACHINEFILE mpi-app
 
-rm $PROCFILE
+rm $MACHINEFILE
 
 > srun -AN2 -n4 test.sh
 
