@@ -406,7 +406,7 @@ with access to those resources.
 In order to simplify the use of different infrastructures,
 SLURM uses a general purpose plugin mechanism.  A SLURM plugin is a
 dynamically linked code object which is loaded explicitly at run time
-by the SLURM libraries.  A plugin provides a customized implemenation
+by the SLURM libraries.  A plugin provides a customized implementation
 of a well-defined API connected to tasks such as authentication,
 interconnect fabric, task scheduling, etc.  A common set of functions is defined
 for use by all of the different infrastructures of a particular variety.
@@ -469,12 +469,12 @@ source port of a request to ensure that it is less than a certain value,
 and thus only accessible by {\tt root}. The communications over that
 connection are then implicitly trusted.  Since reserved ports are a very
 limited resource and set-uid programs are a possible security concern,
-we have strived to employ a credential based authentication scheme which
+we have employed a credential based authentication scheme which
 does not depend on reserved ports. In this design, a SLURM authentication
-credential is attached to every message and authoratatively verifies the
+credential is attached to every message and authoritatively verifies the
 uid and gid of the message originator. Once recipients of SLURM messages
 verify the validity of the authentication credential, they can use the uid
-and gid from the credential as the authoratative identity of the sender.
+and gid from the credential as the authoritative identity of the sender.
 
 The actual implementation of the SLURM authentication credential is
 relegated to an ``auth'' plugin.  We presently have implemented three
@@ -483,7 +483,7 @@ functional authentication plugins: {\tt authd}~\cite{Authd2002},
 credential and is only suitable for testing and networks where security
 is not a concern. Both the {\tt authd} and Munge implementations employ
 cryptography to generate a credential for the requesting user that
-may then be authoratatively verified on any remote nodes. However, {\tt
+may then be authoritatively verified on any remote nodes. However, {\tt
 authd} assumes a secure network and Munge does not.  Other authentication
 implementations, such as a credential based on Kerberos, should be easy
 to develop using the ``auth'' plugin API.
@@ -1043,7 +1043,7 @@ ID associated with each task, and user associated with the job.  In the
 event of \slurmd\ failure, this information is recovered from disk in
 order to identify active jobs.
 
-When \slurmd\ recieves a job termination request from the SLURM
+When \slurmd\ receives a job termination request from the SLURM
 controller, it sends SIGTERM to all running tasks in the job,
 waits for {\tt KillWait} seconds (as specified in the configuration
 file), then sends SIGKILL. If the processes do not terminate \slurmd\
@@ -1266,7 +1266,7 @@ takes the necessary steps to initiate the user's executable on the node,
 initializing environment, current working directory, and interconnect
 resources if needed.
 
-Each \slurmd\ forks a copy of itself which is resposible for the job
+Each \slurmd\ forks a copy of itself which is responsible for the job
 step on this node. This local ``job manager'' process then creates an
 IO thread which initializes stdout, stdin, and stderr streams for each
 local task and connects these streams to the remote \srun . Meanwhile,
@@ -1367,10 +1367,10 @@ general method as described in the section on interactive job initiation.
 When the user exits the allocate sub-shell, the original \srun\ receives
 exit status, notifies \slurmctld\ that the job is complete, and exits.
 The controller runs the epilog on each of the allocated nodes, returning
-nodes to the partition as they succcessfully complete the epilog.
+nodes to the partition as they successfully complete the epilog.
 
 %
-% Information in this section seems like it should be somplace else
+% Information in this section seems like it should be some place else
 % (Some of it is incorrect as well)
 % -mark
 %
