@@ -20,34 +20,60 @@
 #define __DEJAGNU_H__
 
 #include <stdio.h>
+#include <stdarg.h> 
+#include <string.h>
+
+#define _BUFFER_SIZE_ 512
 
 static int passed;
 static int failed;
 static int untest;
 static int unresolve;
 
+static char buffer[ _BUFFER_SIZE_ ];
+
 inline void
-pass (const char *s) {
+pass (const char* fmt, ... ) {
+	va_list ap;
+	
     passed++;
-    printf ("\tPASSED: %s\n", s);
+	va_start( ap, fmt );
+	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
+	va_end( ap );
+    printf ("\tPASSED: %s\n", buffer );
 }
 
 inline void
-fail (const char *s) {
+fail (const char* fmt, ... ) {
+	va_list ap;
+
     failed++;
-    printf ("\tFAILED: %s\n", s);
+	va_start( ap, fmt );
+	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
+	va_end( ap );
+    printf ("\tFAILED: %s\n", buffer );
 }
 
 inline void
-untested (const char *s) {
+untested (const char* fmt, ... ) {
+	va_list ap;
+
     untest++;
-    printf ("\tUNTESTED: %s\n", s);
+	va_start( ap, fmt );
+	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
+	va_end( ap );
+    printf ("\tUNTESTED: %s\n", buffer );
 }
 
 inline void
-unresolved (const char *s) {
+unresolved (const char* fmt, ... ) {
+	va_list ap;
+
     unresolve++;
-    printf ("\tUNRESOLVED: %s\n", s);
+	va_start( ap, fmt );
+	vsnprintf( buffer, _BUFFER_SIZE_, fmt, ap );
+	va_end( ap );
+    printf ("\tUNRESOLVED: %s\n", buffer );
 }
 
 inline void
