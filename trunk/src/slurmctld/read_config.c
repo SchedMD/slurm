@@ -630,8 +630,6 @@ int read_slurm_conf(int recover)
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	struct node_record *node_record_point;
-	char *old_logfile = slurmctld_conf.slurmctld_logfile;
-	uint16_t old_slurmctld_debug = slurmctld_conf.slurmctld_debug;
 
 	/* initialization */
 	start_time = clock();
@@ -712,15 +710,6 @@ int read_slurm_conf(int recover)
 		report_leftover(in_line, line_num);
 	}
 	fclose(slurm_spec_file);
-
-	/* preserve command line values for logfile and debug level */
-	if (old_logfile) {
-		FREE_NULL(slurmctld_conf.slurmctld_logfile);
-		slurmctld_conf.slurmctld_logfile = old_logfile;
-	}
-	if (old_slurmctld_debug  && 
-	    (slurmctld_conf.slurmctld_debug == (uint16_t)NO_VAL))
-		slurmctld_conf.slurmctld_debug = old_slurmctld_debug;
 
 	validate_config(&slurmctld_conf);
 	_set_config_defaults(&slurmctld_conf);
