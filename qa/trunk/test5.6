@@ -155,7 +155,7 @@ set partition2 ""
 spawn $squeue --format=%P --noheader 
 expect {
 	-re "($alpha_numeric)" {
-		if {![string compare partition1 ""]} {
+		if {![string compare $partition1 ""]} {
 			set partition1 $expect_out(1,string)
 		}
 		if {[string compare $expect_out(1,string) $partition1]} {
@@ -191,10 +191,11 @@ expect {
 }
 
 #
-# Wait long enough to make sure the job step is running and
-# Check the squeue job step filter option
+# Wait long enough to make sure the job step is running and has
+# started its job steps. Check the squeue job step filter option
 #
 wait_for_job $job_id1 "RUNNING"
+exec $bin_sleep 2
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.0 
 expect {
@@ -216,7 +217,8 @@ expect {
 	}
 }
 if {$job_found == 0} {
-	send_user "\nWARNING: squeue failed to locate desired job step\n"
+	send_user "\nFAILURE: squeue failed to locate desired job step\n"
+	set exit_code 1
 }
 
 cancel_job $job_id2
