@@ -190,6 +190,7 @@ shm_cleanup(void)
 {
 	char *s;
 	key_t key;
+	int id = -1;
 
 	if ((s = _create_ipc_name(SHM_LOCKNAME))) {
 		key = ftok(s, 1);
@@ -202,11 +203,9 @@ shm_cleanup(void)
 	/* This seems to be the only way to get a shared memory ID given
 	 *  a key, if you don't already know the size of the region.
 	 */
-	if ((shmid = shmget(key, 1, 0)) < 0) {
-		error ("Unable to get shmid: %m");
-	} 
+	id = shmget(key, 1, 0);
 
-	if ((shmid > 0) && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
+	if ((id > 0) && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
 		error ("Unable to destroy existing shm segment");
 	}
 }
