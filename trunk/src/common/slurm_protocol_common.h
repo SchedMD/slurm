@@ -28,6 +28,10 @@
 #ifndef _SLURM_PROTOCOL_COMMON_H
 #define _SLURM_PROTOCOL_COMMON_H
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <sys/time.h>
 #include <time.h>
 
@@ -46,8 +50,8 @@
  * this may need to be increased to 350k-512k */
 #define SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE (512*1024)
 
-/* slurm protocol header defines */ 
-#define SLURM_PROTOCOL_VERSION 3
+/* slurm protocol header defines, based upon config.h, 16 bits */ 
+#define SLURM_PROTOCOL_VERSION ((SLURM_API_MAJOR << 8) | SLURM_API_AGE)
 
 /* used to set flags to empty */
 #define SLURM_PROTOCOL_NO_FLAGS 0 
