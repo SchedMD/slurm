@@ -318,6 +318,8 @@ _run_batch_job(void)
 
 	job.partition      = opt.partition;
 
+	if (opt.priority > -1)
+		job.priority = opt.priority;
 	if (opt.mincpus > -1)
 		job.min_procs = opt.mincpus;
 	if (opt.realmem > -1)

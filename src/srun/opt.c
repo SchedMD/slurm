@@ -101,6 +101,7 @@
 #define OPT_THREADS     0x18
 #define OPT_WAIT	0x19
 #define OPT_OVERCOMMIT	0x1a
+#define OPT_PRIORITY	0x1b
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -182,6 +183,9 @@ struct poptOption runTable[] = {
 	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
 	 "partition requested",
 	 "partition"},
+	{"priority", 'P', POPT_ARG_INT, &opt.priority, OPT_PRIORITY,
+	 "job priority requested",
+	 "priority"},
 	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
 	 "time limit",
 	 "minutes"},
@@ -577,9 +581,10 @@ static void _opt_default()
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
 
 	/* constraint default (-1 is no constraint) */
-	opt.mincpus = -1;
-	opt.realmem = -1;
-	opt.tmpdisk = -1;
+	opt.priority = -1;
+	opt.mincpus  = -1;
+	opt.realmem  = -1;
+	opt.tmpdisk  = -1;
 
 	opt.constraints = NULL;
 	opt.contiguous = false;

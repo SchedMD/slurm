@@ -130,6 +130,8 @@ int schedule(void)
 	failed_parts = NULL;
 	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
+		if (job_ptr->priority == 0)	/* held */
+			continue;
 		for (j = 0; j < failed_part_cnt; j++) {
 			if (failed_parts[j] == job_ptr->part_ptr)
 				break;

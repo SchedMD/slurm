@@ -1973,7 +1973,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 			_purge_job_record(job_desc_msg->job_id);
 	}
 
-	if (submit_uid != 0)		/* only root can set job priority */
+	if ((submit_uid != 0) &&	/* only root can set job priority */
+	    (job_desc_msg->priority != 0))
 		job_desc_msg->priority = NO_VAL;
 
 	if (job_desc_msg->num_procs == NO_VAL)

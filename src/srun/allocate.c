@@ -235,6 +235,8 @@ job_desc_msg_create(void)
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
 
+	if (opt.priority > -1)
+		j->priority     = opt.priority;
 	if (opt.max_nodes)
 		j->max_nodes    = opt.max_nodes;
 	if (opt.mincpus > -1)
