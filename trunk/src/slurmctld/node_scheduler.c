@@ -809,7 +809,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		info ("select_nodes: no node configurations satisfy requirements procs=%u:mem=%u:disk=%u:feature=%s",
 			job_ptr->details->min_procs, job_ptr->details->min_memory, 
 			job_ptr->details->min_tmp_disk, job_ptr->details->features);
-		error_code = ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
+		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		goto cleanup;
 	}
 	/* eliminate last (incomplete) node_set record */	
@@ -824,7 +824,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 			info ("select_nodes: requested nodes do not satisfy configurations requirements procs=%u:mem=%u:disk=%u:feature=%s",
 			    job_ptr->details->min_procs, job_ptr->details->min_memory, 
 			    job_ptr->details->min_tmp_disk, job_ptr->details->features);
-			error_code = ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
+			error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 			goto cleanup;
 		}		
 	}			
@@ -842,7 +842,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		goto cleanup;
 	}
 	if (error_code == EINVAL) {
-		error_code = ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
+		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info ("select_nodes: no nodes can satisfy job request");
 		goto cleanup;
 	}		

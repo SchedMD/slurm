@@ -464,7 +464,7 @@ job_cancel (uint32_t job_id)
 
 	info ("job_cancel: job %u can't be cancelled from state=%s", 
 			job_id, job_state_string(job_ptr->job_state));
-	return ESLURM_TRANSISTION_STATE_NO_UPDATE;
+	return fBESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
 
@@ -708,7 +708,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 
 	info ("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
 			job_id, step_id, job_state_string(job_ptr->job_state));
-	return ESLURM_TRANSISTION_STATE_NO_UPDATE;
+	return fBESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
 

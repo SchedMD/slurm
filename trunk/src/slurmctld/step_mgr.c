@@ -371,7 +371,7 @@ step_create (struct step_specs *step_specs)
 	nodeset = pick_step_nodes (job_ptr, step_specs->min_nodes, step_specs->min_cpus, 
 		step_specs->node_list, step_specs->relative_node_list);
 	if (nodeset == NULL)
-		return ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
+		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 
 	step_ptr = create_step_record (job_ptr);
 	if (step_ptr == NULL)

@@ -38,14 +38,13 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_USER_ID_MISSING , 		"User id missing" },
 	{ ESLURM_JOB_NAME_TOO_LONG,		"Job name too long" },
 	{ ESLURM_DUPLICATE_JOB_ID , 		"Duplicate job id" },
-	{ ESLURM_INVALID_PROCS_PER_TASK,	"Invalid processors per task specification" },
 	{ ESLURM_NOT_TOP_PRIORITY,		"Immediate execution impossible, higher priority jobs pending" },
-	{ ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE, "Requested node configuration is not available" },
+	{ ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE, "Requested node configuration is not available" },
 	{ ESLURM_NODES_BUSY,			"Requested nodes are busy" },
 	{ ESLURM_INVALID_JOB_ID,		"Invalid job id specified" },
 	{ ESLURM_INVALID_NODE_NAMES,		"Invalid node name specified" },
 	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },
-	{ ESLURM_TRANSISTION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
+	{ fBESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 
 	/* partition_mgr.c/update_part */
