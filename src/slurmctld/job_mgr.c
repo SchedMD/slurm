@@ -65,7 +65,6 @@
 
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
-#define MAX_STR_PACK 1024
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
 #define TOP_PRIORITY 0xffff0000	/* large, but leave headroom for higher */
@@ -577,14 +576,14 @@ void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 	pack32((uint32_t) detail_ptr->min_tmp_disk, buffer);
 	pack_time(detail_ptr->submit_time, buffer);
 
-	safe_packstr(detail_ptr->req_nodes, MAX_STR_PACK, buffer);
-	safe_packstr(detail_ptr->exc_nodes, MAX_STR_PACK, buffer);
-	safe_packstr(detail_ptr->features,  MAX_STR_PACK, buffer);
+	packstr(detail_ptr->req_nodes, buffer);
+	packstr(detail_ptr->exc_nodes, buffer);
+	packstr(detail_ptr->features,  buffer);
 
-	safe_packstr(detail_ptr->err,       MAX_STR_PACK, buffer);
-	safe_packstr(detail_ptr->in,        MAX_STR_PACK, buffer);
-	safe_packstr(detail_ptr->out,       MAX_STR_PACK, buffer);
-	safe_packstr(detail_ptr->work_dir,  MAX_STR_PACK, buffer);
+	packstr(detail_ptr->err,       buffer);
+	packstr(detail_ptr->in,        buffer);
+	packstr(detail_ptr->out,       buffer);
+	packstr(detail_ptr->work_dir,  buffer);
 }
 
 /* _load_job_details - Unpack a job details information from buffer */
@@ -698,7 +697,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack32(step_ptr->num_tasks, buffer);
 	pack_time(step_ptr->start_time, buffer);
 
-	safe_packstr(step_ptr->step_node_list,  MAX_STR_PACK, buffer);
+	packstr(step_ptr->step_node_list,  buffer);
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo(step_ptr->qsw_job, buffer);
 #endif
@@ -2191,8 +2190,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
-	safe_pack_bit_fmt(dump_job_ptr->node_bitmap, 
-			  MAX_STR_PACK, buffer);
+	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
 
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
@@ -2214,10 +2212,9 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) detail_ptr->min_memory, buffer);
 		pack32((uint32_t) detail_ptr->min_tmp_disk, buffer);
 
-		safe_packstr(detail_ptr->req_nodes, MAX_STR_PACK, buffer);
-		safe_pack_bit_fmt(detail_ptr->req_node_bitmap, 
-				  MAX_STR_PACK, buffer);
-		safe_packstr(detail_ptr->features, MAX_STR_PACK, buffer);
+		packstr(detail_ptr->req_nodes, buffer);
+		pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
+		packstr(detail_ptr->features, buffer);
 	} 
 
 	else {
