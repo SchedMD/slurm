@@ -191,7 +191,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	slurm_get_addr(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %ld@%s", req->job_id, 
-	     req->job_step_id, req_uid, host);
+	     req->job_step_id, req->uid, host);
 
 	rc = verify_credential(&conf->vctx, 
 			       req->credential, 
