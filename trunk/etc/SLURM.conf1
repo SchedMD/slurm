@@ -8,10 +8,10 @@ BackupController=blue199.pacific.llnl.gov
 #
 # Node Configurations
 #
-NodeName=DEFAULT CPUs=16 RealMemory=2048 TmpDisk=16384
+NodeName=DEFAULT CPUs=16 RealMemory=2048 TmpDisk=16384 Weight=1
 NodeName=lx001,lx002 State=DRAINED
 NodeName=lx[003-016]
-NodeName=lx[017-032] CPUs=32 RealMemory=4096 Feature=1200MHz
+NodeName=lx[017-032] CPUs=32 RealMemory=4096 Feature=1200MHz Weight=2
 NodeName=DEFAULT TmpDisk=20000
 NodeName=lx[033-040]
 #
@@ -20,5 +20,5 @@ NodeName=lx[033-040]
 PartitionName=DEFAULT MaxTime=30 MaxNodes=2
 PartitionName=login Nodes=lx[001-002] State=DOWN
 PartitionName=debug Nodes=lx[003-006] State=UP    Default=YES
-PartitionName=batch Nodes=lx[007-033] MaxTime=UNLIMITED MaxNodes=8 Interactive=NO
+PartitionName=batch Nodes=lx[007-033] MaxTime=UNLIMITED MaxNodes=8 Key=YES
 PartitionName=class Nodes=lx[034-040] AllowGroups=students

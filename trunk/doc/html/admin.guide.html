@@ -99,8 +99,8 @@ follows the configuration for NodeName=baker they will be
 considered adjacent in the computer.
 
 <dt>CPUs
-<dd>Number of processors on the node (e.g. "2"). The default 
-value is 1.
+<dd>Number of processors on the node (e.g. "2").
+The default value is 1.
 
 <dt>Feature
 <dd>A comma delimited list of arbitrary strings indicative of some 
@@ -134,6 +134,19 @@ most of this space.
 The PROLOG and/or EPILOG programs (specified at build time) might 
 be used to insure the file system is kept clean. 
 The default value is 1.
+
+<dt>Weight
+<dd>The priority of the node for scheduling purposes. 
+All things being equal, jobs will be allocated the nodes with 
+the lowest weight which satisfies their requirements. 
+For example, a heterogeneous collection of nodes might 
+be placed into a single partition. It might be preferable 
+to allocate smaller memory nodes to a job rather than larger 
+memory nodes if either will satisfy its requirements. 
+The units of weight are arbitrary, but larger weights 
+should be assigned to nodes with more CPUs, memory, 
+disk space, higher processor speed, etc.
+Weight is an integer value with a default value of 1.
 
 </dl>
 <p>
@@ -242,11 +255,13 @@ specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 
-<dt>Interactive
-<dd>Specifies if interactive jobs (executed immediately and not 
-queued) may execute in this partition. 
-See the <a href="user.guide.html">SLURM User's Guide</a> for more 
-information about interactive and batch (queued) jobs.
+<dt>Key
+<dd>Specifies if SLURM provided key is required for a job to 
+execute in this partition.
+The key is provided to user root upon request and is invalidated 
+after one use or expiration.
+The key may be used to deligate control of partitions to external 
+schedulers.
 Possible values are "YES" and "NO". 
 The default value is "YES".
 
@@ -555,7 +570,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified February 20, 2002</p>
+<p>Last Modified February 21, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>

@@ -20,10 +20,10 @@
 #define NODE_BUF_SIZE 1024
 #define SEPCHARS " \n\t"
 
-void 	BitMapClear(char *BitMap, int Position);
-char 	*BitMapPrint(char *BitMap);
-void 	BitMapSet(char *BitMap, int Position);
-int 	BitMapValue(char *BitMap, int Position);
+void 	BitMapClear(unsigned *BitMap, int Position);
+char 	*BitMapPrint(unsigned *BitMap);
+void 	BitMapSet(unsigned *BitMap, int Position);
+int 	BitMapValue(unsigned *BitMap, int Position);
 void	Dump_Hash();
 int 	Hash_Index(char *name);
 int 	Load_Integer(int *destination, char *keyword, char *In_Line);
@@ -80,6 +80,7 @@ main(int argc, char * argv[]) {
 	printf("CPUs=%d ",          (Node_Record_Table_Ptr+i)->Config_Ptr->CPUs);
 	printf("RealMemory=%d ",    (Node_Record_Table_Ptr+i)->Config_Ptr->RealMemory);
 	printf("TmpDisk=%d ",       (Node_Record_Table_Ptr+i)->Config_Ptr->TmpDisk);
+	printf("Weight=%d ",        (Node_Record_Table_Ptr+i)->Config_Ptr->Weight);
 	printf("Feature=%s",        (Node_Record_Table_Ptr+i)->Config_Ptr->Feature);
 	printf("\n");
     } /* for */
@@ -99,7 +100,7 @@ main(int argc, char * argv[]) {
 	printf("PartitionName=%s ",     Part_Ptr->Name);
 	printf("MaxTime=%d ",           Part_Ptr->MaxTime);
 	printf("MaxNodes=%d ",          Part_Ptr->MaxNodes);
-	printf("Interactive=%d ",       Part_Ptr->Interactive);
+	printf("Key=%d ",               Part_Ptr->Key);
 	printf("StateUp=%d ",           Part_Ptr->StateUp);
 	printf("Nodes=%s ",             Part_Ptr->Nodes);
 	printf("AllowGroups=%s  ",      Part_Ptr->AllowGroups);
@@ -118,14 +119,14 @@ main(int argc, char * argv[]) {
  * Input: BitMap - The bit map to manipulate
  *        Position - Postition to clear
  */
-void BitMapClear(char *BitMap, int Position) {
-    int byte, bit, mask;
+void BitMapClear(unsigned *BitMap, int Position) {
+    int val, bit, mask;
 
-    byte = Position / 8;
-    bit  = Position % 8;
-    mask = ~(0x80 >> bit);
+    val  = Position / (sizeof(unsigned)*8);
+    bit  = Position % (sizeof(unsigned)*8);
+    mask = ~(0x1 << ((sizeof(unsigned)*8)-1-bit));
 
-    BitMap[byte] &= mask;
+    BitMap[val] &= mask;
 } /* BitMapClear */
 
 
@@ -135,12 +136,12 @@ void BitMapClear(char *BitMap, int Position) {
  * Output: Returns a string
  * NOTE: The returned string must be freed by the calling program
  */
-char *BitMapPrint(char *BitMap) {
-    int i, byte_int, nibble_int, size;
-    char *Output, byte_str[2];
+char *BitMapPrint(unsigned *BitMap) {
+    int i, j, size;
+    char *Output, temp_str[2];
 
-    size = (Node_Record_Count + 7) / 8;
-    Output = (char *)malloc((2*size)+3);
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
+    Output = (char *)malloc((sizeof(unsigned)*size*2)+3);
     if (Output == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "BitMapPrint: unable to allocate memory\n");
@@ -151,22 +152,12 @@ char *BitMapPrint(char *BitMap) {
     } /* if */
 
     strcpy(Output, "0x");
-    byte_str[1] = (char)NULL;
     for (i=0; i<size; i++) {
-	byte_int = BitMap[i];
-	nibble_int = (byte_int >> 4) & 0xf;
-	if ((nibble_int >= 0) && (nibble_int <= 9))
-	    byte_str[0] = '0' + nibble_int;
-	else
-	    byte_str[0] = 'a' + (nibble_int - 10);
-	strcat(Output, byte_str);
-	nibble_int = byte_int & 0xf;
-	if ((nibble_int >= 0) && (nibble_int <= 9))
-	    byte_str[0] = '0' + nibble_int;
-	else
-	    byte_str[0] = 'a' + (nibble_int - 10);
-	strcat(Output, byte_str);
-    } /* for */
+	for (j=((sizeof(unsigned)*8)-4); j>=0; j-=4) {
+	    sprintf(temp_str, "%x", ((BitMap[i]>>j)&0xf));
+	    strcat(Output, temp_str);
+	} /* for (j */
+    } /* for (i */
     return Output;
 } /* BitMapPrint */
 
@@ -176,14 +167,14 @@ char *BitMapPrint(char *BitMap) {
  * Input: BitMap - The bit map to manipulate
  *        Position - Postition to set
  */
-void BitMapSet(char *BitMap, int Position) {
-    int byte, bit, mask;
+void BitMapSet(unsigned *BitMap, int Position) {
+    int val, bit, mask;
 
-    byte = Position / 8;
-    bit  = Position % 8;
-    mask = (0x80 >> bit);
+    val  = Position / (sizeof(unsigned)*8);
+    bit  = Position % (sizeof(unsigned)*8);
+    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
 
-    BitMap[byte] |= mask;
+    BitMap[val] |= mask;
 } /* BitMapSet */
 
 
@@ -193,14 +184,14 @@ void BitMapSet(char *BitMap, int Position) {
  *        Position - Postition to get
  * Output: Returns the value 0 or 1
  */
-int BitMapValue(char *BitMap, int Position) {
-    int byte, bit, mask;
+int BitMapValue(unsigned *BitMap, int Position) {
+    int val, bit, mask;
 
-    byte = Position / 8;
-    bit  = Position % 8;
-    mask = (0x80 >> bit);
+    val  = Position / (sizeof(unsigned)*8);
+    bit  = Position % (sizeof(unsigned)*8);
+    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
 
-    mask &= BitMap[byte];
+    mask &= BitMap[val];
     if (mask == 0)
 	return 0;
     else
@@ -220,7 +211,8 @@ int Build_BitMaps() {
     struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
     struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
-    char *AllPart_NodeBitMap, *Format, This_Node_Name[BUF_SIZE];
+    unsigned *AllPart_NodeBitMap;
+    char *Format, This_Node_Name[BUF_SIZE];
     int Start_Inx, End_Inx, Count_Inx;
     char *str_ptr1, *str_ptr2;
 
@@ -229,8 +221,8 @@ int Build_BitMaps() {
     /* Scan all nodes and identify which are UP and IDLE */
     if (Idle_NodeBitMap) free(Idle_NodeBitMap);
     if (Up_NodeBitMap)   free(Up_NodeBitMap);
-    Idle_NodeBitMap = (char *)malloc(size);
-    Up_NodeBitMap   = (char *)malloc(size);
+    Idle_NodeBitMap = (unsigned *)malloc(size);
+    Up_NodeBitMap   = (unsigned *)malloc(size);
     if ((Idle_NodeBitMap == NULL) || (Up_NodeBitMap == NULL)) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
@@ -259,7 +251,7 @@ int Build_BitMaps() {
     }
     while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
 	if (Config_Record_Point->NodeBitMap) free(Config_Record_Point->NodeBitMap);
-	Config_Record_Point->NodeBitMap = (char *)malloc(size);
+	Config_Record_Point->NodeBitMap = (unsigned *)malloc(size);
 	if (Config_Record_Point->NodeBitMap == NULL) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
@@ -295,7 +287,7 @@ int Build_BitMaps() {
 
 
     /* Scan partition table and identify nodes in each */
-    AllPart_NodeBitMap = (char *)malloc(size);
+    AllPart_NodeBitMap = (unsigned *)malloc(size);
     if (AllPart_NodeBitMap == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
@@ -316,7 +308,7 @@ int Build_BitMaps() {
     } /* if */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
 	if (Part_Record_Point->NodeBitMap) free(Part_Record_Point->NodeBitMap);
-	Part_Record_Point->NodeBitMap = (char *)malloc(size);
+	Part_Record_Point->NodeBitMap = (unsigned *)malloc(size);
 	if (Part_Record_Point->NodeBitMap == NULL) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
@@ -389,6 +381,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
     Config_Point->CPUs = Default_Record.Config.CPUs;
     Config_Point->RealMemory = Default_Record.Config.RealMemory;
     Config_Point->TmpDisk = Default_Record.Config.TmpDisk;
+    Config_Point->Weight = Default_Record.Config.Weight;
     Config_Point->NodeBitMap = NULL;
     if (Default_Record.Config.Feature == (char *)NULL)
 	Config_Point->Feature = (char *)NULL;
@@ -489,7 +482,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
     strcpy(Part_Record_Point->Name, "DEFAULT");
     Part_Record_Point->MaxTime     = Default_Part.MaxTime;
     Part_Record_Point->MaxNodes    = Default_Part.MaxNodes;
-    Part_Record_Point->Interactive = Default_Part.Interactive;
+    Part_Record_Point->Key         = Default_Part.Key;
     Part_Record_Point->StateUp     = Default_Part.StateUp;
     Part_Record_Point->NodeBitMap  = NULL;
 
@@ -742,6 +735,7 @@ int Init_SLURM_Conf() {
     Default_Record.Config.CPUs       = 1;
     Default_Record.Config.RealMemory = 1;
     Default_Record.Config.TmpDisk    = 1;
+    Default_Record.Config.Weight     = 1;
     Default_Record.Config.Feature    = (char *)NULL;
 
     Node_Record_Table_Ptr = (struct Node_Record *)NULL;
@@ -763,7 +757,7 @@ int Init_SLURM_Conf() {
     Default_Part.MaxTime     = -1;
     Default_Part.MaxNodes    = -1;
     Default_Part.Nodes       = (char *)NULL;
-    Default_Part.Interactive = 1;
+    Default_Part.Key         = 1;
     Default_Part.StateUp     = 1;
 
     Part_List = list_create(NULL);
@@ -1001,20 +995,22 @@ int Parse_Node_Spec (char *In_Line) {
     char *NodeName, *State, *Feature, *Format, This_Node_Name[BUF_SIZE];
     int Start_Inx, End_Inx, Count_Inx;
     int Error_Code, i;
-    int State_Val, CPUs_Val, RealMemory_Val, TmpDisk_Val;
+    int State_Val, CPUs_Val, RealMemory_Val, TmpDisk_Val, Weight_Val;
     struct Node_Record *Node_Record_Point;
     struct Config_Record *Config_Point;
     char *str_ptr1, *str_ptr2;
 
     NodeName = State = Feature = (char *)NULL;
     CPUs_Val = RealMemory_Val = State_Val = NO_VAL;
-    TmpDisk_Val = (long)NO_VAL;
+    TmpDisk_Val = NO_VAL;
+    Weight_Val = NO_VAL;
     if (Error_Code=Load_String(&NodeName, "NodeName=", In_Line))      return Error_Code;
     if (NodeName == NULL) return 0;	/* No Node info */
 
     Error_Code += Load_Integer(&CPUs_Val, "CPUs=", In_Line);
     Error_Code += Load_Integer(&RealMemory_Val, "RealMemory=", In_Line);
     Error_Code += Load_Integer(&TmpDisk_Val, "TmpDisk=", In_Line);
+    Error_Code += Load_Integer(&Weight_Val, "Weight=", In_Line);
     if (Error_Code != 0) {
 	free(NodeName);
 	return Error_Code;
@@ -1086,6 +1082,7 @@ int Parse_Node_Spec (char *In_Line) {
 	    if (CPUs_Val != NO_VAL)          Default_Record.Config.CPUs = CPUs_Val;
 	    if (RealMemory_Val != NO_VAL)    Default_Record.Config.RealMemory = RealMemory_Val;
 	    if (TmpDisk_Val != NO_VAL)       Default_Record.Config.TmpDisk = TmpDisk_Val;
+	    if (Weight_Val != NO_VAL)        Default_Record.Config.Weight = Weight_Val;
 	    if (State_Val != NO_VAL)         Default_Record.Node.NodeState = State_Val;
 	    if (Feature != NULL) {
 		if (Default_Record.Config.Feature) free(Default_Record.Config.Feature);
@@ -1104,6 +1101,7 @@ int Parse_Node_Spec (char *In_Line) {
 		if (CPUs_Val != NO_VAL)       Config_Point->CPUs = CPUs_Val;
 		if (RealMemory_Val != NO_VAL) Config_Point->RealMemory = RealMemory_Val;
 		if (TmpDisk_Val != NO_VAL)    Config_Point->TmpDisk = TmpDisk_Val;
+		if (Weight_Val != NO_VAL)     Config_Point->Weight = Weight_Val;
 		if (Feature != NULL) {
 		    if (Config_Point->Feature != NULL) free(Config_Point->Feature);
 		    Config_Point->Feature = Feature;
@@ -1142,12 +1140,12 @@ int Parse_Node_Spec (char *In_Line) {
 int Parse_Part_Spec (char *In_Line) {
     int Line_Num;		/* Line number in input file */
     char *AllowGroups, *Nodes, *PartitionName, *State;
-    int MaxTime_Val, MaxNodes_Val, Interactive_Val, Default_Val, StateUp_Val;
+    int MaxTime_Val, MaxNodes_Val, Key_Val, Default_Val, StateUp_Val;
     int Error_Code, i;
     struct Part_Record *Part_Record_Point;
 
     AllowGroups = Nodes = PartitionName = State = (char *)NULL;
-    MaxTime_Val = MaxNodes_Val = Interactive_Val = Default_Val = NO_VAL;
+    MaxTime_Val = MaxNodes_Val = Key_Val = Default_Val = NO_VAL;
 
     if (Error_Code=Load_String(&PartitionName, "PartitionName=", In_Line))      return Error_Code;
     if (PartitionName == NULL) return 0;	/* No partition info */
@@ -1169,9 +1167,9 @@ int Parse_Part_Spec (char *In_Line) {
     Error_Code += Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
     if (StateUp_Val == 1) StateUp_Val=0;
     Error_Code += Load_Integer(&StateUp_Val,  "State=UP", In_Line);
-    Error_Code += Load_Integer(&Interactive_Val,  "Interactive=NO", In_Line);
-    if (Interactive_Val == 1) Interactive_Val=0;
-    Error_Code += Load_Integer(&Interactive_Val,  "Interactive=YES", In_Line);
+    Error_Code += Load_Integer(&Key_Val,      "Key=NO", In_Line);
+    if (Key_Val == 1) Key_Val=0;
+    Error_Code += Load_Integer(&Key_Val,      "Key=YES", In_Line);
     if (Error_Code != 0) {
 	free(PartitionName);
 	return Error_Code;
@@ -1193,7 +1191,7 @@ int Parse_Part_Spec (char *In_Line) {
     if (strcmp(PartitionName, "DEFAULT") == 0) {
 	if (MaxTime_Val  != NO_VAL)    Default_Part.MaxTime      = MaxTime_Val;
 	if (MaxNodes_Val != NO_VAL)    Default_Part.MaxNodes     = MaxNodes_Val;
-	if (Interactive_Val != NO_VAL) Default_Part.Interactive  = Interactive_Val;
+	if (Key_Val != NO_VAL)         Default_Part.Key          = Key_Val;
 	if (StateUp_Val  != NO_VAL)    Default_Part.StateUp      = StateUp_Val;
 	if (AllowGroups != (char *)NULL) {
 	    if (Default_Part.AllowGroups != (char *)NULL) free(Default_Part.AllowGroups);
@@ -1238,7 +1236,7 @@ int Parse_Part_Spec (char *In_Line) {
     } /* if */
     if (MaxTime_Val  != NO_VAL)    Part_Record_Point->MaxTime      = MaxTime_Val;
     if (MaxNodes_Val != NO_VAL)    Part_Record_Point->MaxNodes     = MaxNodes_Val;
-    if (Interactive_Val  != NO_VAL) Part_Record_Point->Interactive = Interactive_Val;
+    if (Key_Val  != NO_VAL)        Part_Record_Point->Key          = Key_Val;
     if (StateUp_Val  != NO_VAL)    Part_Record_Point->StateUp      = StateUp_Val;
     if (AllowGroups != (char *)NULL) {
 	if (Part_Record_Point->AllowGroups != (char *)NULL) free(Part_Record_Point->AllowGroups);
