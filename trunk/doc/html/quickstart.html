@@ -236,6 +236,9 @@ used for communications. The "e" prefix identifies this as an
 ethernet address at this site. 
 Port numbers to be used for communications are specified as 
 well as various timer values. 
+On DPCS systems set FirstJobId to 65536 or higher. 
+This will permit DPCS to specify a SLURM job id to match its own job id 
+without conflicts from jobs submitted to SLURM by other means.
 <p>
 A description of the nodes and their grouping into non-overlapping 
 partitions is required.
@@ -253,6 +256,7 @@ ControlMachine=mcri   ControlAddr=emcri
 #
 AuthType=auth/authd
 Epilog=/usr/local/slurm/etc/epilog
+FirstJobId=65536
 HeartbeatInterval=30
 PluginDir=/usr/local/slurm/lib/slurm
 Prolog=/usr/local/slurm/etc/prolog
@@ -398,7 +402,7 @@ adev0: scontrol shutdown
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/quick.start.guide.html
-<p>Last Modified March 24, 2003</p>
+<p>Last Modified March 27, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
