@@ -245,23 +245,22 @@ find_job_record(char *job_id)
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
- * this should be called before creating any node or configuration entries.
+ *	this should be called after creating node information, but 
+ *	before creating any job entries.
  * output: return value - 0 if no error, otherwise an error code
- * global: last_node_update - time of last node table update
+ * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
  */
 int 
 init_job_conf () 
 {
-	last_job_update = time (NULL);
-
 	if (job_list == NULL) {
 		job_count = 0;
 		job_list = list_create (&list_delete_job);
+		if (job_list == NULL)
+			fatal ("init_job_conf: list_create can not allocate memory");
 	}
-
-	if (job_list == NULL)
-		fatal ("init_job_conf: list_create can not allocate memory");
+	last_job_update = time (NULL);
 	return 0;
 }
 
@@ -1042,6 +1041,48 @@ purge_old_job (void)
 	i = list_delete_all (job_list, &list_find_job_old, NULL);
 	if (i)
 		info ("purge_old_job: purged %d old job records");
+}
+
+
+/* 
+ * reset_job_bitmaps - reestablish bitmaps for existing jobs. 
+ *	this should be called after rebuilding node information, 
+ *	but before using any job entries.
+ * global: last_job_update - time of last job table update
+ *	job_list - pointer to global job list
+ */
+void 
+reset_job_bitmaps () 
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
+
+	if (job_list == NULL)
+		fatal ("init_job_conf: list_create can not allocate memory");
+
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_record_point = 
+		(struct job_record *) list_next (job_record_iterator))) {
+		if (job_record_point->magic != JOB_MAGIC)
+			fatal ("dump_all_job: job integrity is bad");
+		if (job_record_point->node_bitmap)
+			bit_free(job_record_point->node_bitmap);
+		if (job_record_point->nodes)
+			node_name2bitmap (job_record_point->nodes,
+				&job_record_point->node_bitmap);
+
+		if (job_record_point->details == NULL)
+			continue;
+		if (job_record_point->details->req_node_bitmap)
+			bit_free(job_record_point->details->req_node_bitmap);
+		if (job_record_point->details->req_nodes)
+			node_name2bitmap (job_record_point->details->req_nodes,
+				&job_record_point->details->req_node_bitmap);
+	}
+
+	list_iterator_destroy (job_record_iterator);
+	last_job_update = time (NULL);
+	return 0;
 }
 
 
