@@ -397,7 +397,7 @@ _job_mgr(slurmd_job_t *job)
 {
 	int rc = 0;
 
-	debug3("Entered job_mgr");
+	debug3("Entered job_mgr pid=%lu", (unsigned long) getpid());
 
 	if (shm_init(false) < 0)
 		goto fail0;
