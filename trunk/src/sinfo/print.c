@@ -33,6 +33,7 @@
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/sinfo/print.h"
 #include "src/sinfo/sinfo.h"
 
@@ -395,10 +396,9 @@ int _print_partition(sinfo_data_t * sinfo_data, int width,
 			_print_str("N/A", width, right_justify, true);
 		else {
 			char *tmp;
-			tmp = xmalloc(strlen(sinfo_data->part_info->name)+2);
-			strcpy(tmp, sinfo_data->part_info->name);
+			tmp = xstrdup(sinfo_data->part_info->name);
 			if (sinfo_data->part_info->default_part)
-				strcat(tmp, "*");
+				xstrcat(tmp, "*");
 			_print_str(tmp, width, right_justify, true);
 			xfree(tmp);
 		}
