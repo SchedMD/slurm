@@ -395,7 +395,8 @@ _print_exit_status(job_t *job, hostlist_t hl, char *host, int status)
 	if (WIFSIGNALED(status))
 		(*print) ("%s: %s: %s%s", host, buf, sigstr(status), corestr); 
 	else
-		error ("%s: %s: Exit %d", host, buf, WEXITSTATUS(status));
+		error ("%s: %s: Exited with exit code %d", 
+		       host, buf, WEXITSTATUS(status));
 
 	return;
 }
