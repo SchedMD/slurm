@@ -293,11 +293,12 @@ void inline slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , c
  */
 void inline slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
 /* slurm_print_slurm_addr
- * prints a slurm_addr to a stream
- * IN stream		- FILE * stream
+ * prints a slurm_addr into a buf
  * IN address		- slurm_addr to print
+ * IN buf		- space for string representation of slurm_addr
+ * IN n			- max number of bytes to write (including NUL)
  */
-void inline slurm_print_slurm_addr ( FILE * stream , slurm_addr * address ) ;
+void inline slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n ) ;
 
 /**********************************************************************/
 /* slurm_addr pack routines*/ 

@@ -600,9 +600,9 @@ void slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buf
 	_slurm_unpack_slurm_addr_no_alloc ( slurm_address , buffer , length ) ;
 }
 
-void slurm_print_slurm_addr ( FILE * stream , slurm_addr * address )
+void slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n )
 {
-	_slurm_print_slurm_addr ( stream , address ) ;
+	_slurm_print_slurm_addr ( address, buf, n ) ;
 }
 
 /*******************************************/
