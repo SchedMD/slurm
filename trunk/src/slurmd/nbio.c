@@ -89,7 +89,7 @@ int set_max_fd ( nbio_attr_t * nbio_attr ) ;
 int nbio_cleanup ( nbio_attr_t * nbio_attr ) ;
 int reconnect (  nbio_attr_t * nbio_attr ) ;
 int test_error_conditions (  nbio_attr_t * nbio_attr ) ;
-int print_nbio_sets ( slurm_fd_set set_ptr[] ) ;
+int print_nbio_sets ( nbio_attr_t * nbio_attr , slurm_fd_set * set_ptr ) ;
 
 int init_io_debug ( io_debug_t * io_dbg , task_start_t * task_start , char * name )
 {
@@ -119,6 +119,7 @@ int init_nbio_attr ( nbio_attr_t * nbio_attr , task_start_t * task_start )
 		nbio_attr -> reconnect_flags[i] = RECONNECT ; 
 		nbio_attr -> reconnect_timers[i] = 0 ;
 	}
+	nbio_set_init ( nbio_attr , nbio_attr -> init_set ) ;
 	nbio_attr -> select_timer . tv_sec = RECONNECT_TIMEOUT_SECONDS ;
 	nbio_attr -> select_timer . tv_usec = RECONNECT_TIMEOUT_MICROSECONDS ;
 	return SLURM_SUCCESS ;
@@ -149,7 +150,7 @@ void * do_nbio ( void * arg )
 
 		rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , & nbio_attr . select_timer ) ;
 		debug3 ( "nbio select: rc: %i", rc ) ;
-		print_nbio_sets ( nbio_attr . init_set ) ;
+		print_nbio_sets ( & nbio_attr , nbio_attr . init_set ) ;
 		if ( rc == SLURM_ERROR)
 		{
 			debug3 ( "select errror %m errno: %i", errno ) ;
@@ -209,6 +210,7 @@ void * do_nbio ( void * arg )
 			{
 				error_task_socket (  &nbio_attr , IN_OUT_FD ) ;
 			}
+			else
 			slurm_FD_SET ( nbio_attr . fd [CHILD_IN_WR_FD] , & nbio_attr . next_set [WR_SET] ); 
 		}
 		if ( slurm_FD_ISSET ( nbio_attr . fd [CHILD_OUT_RD_FD] , & nbio_attr . init_set [RD_SET] ) ) 
@@ -217,6 +219,7 @@ void * do_nbio ( void * arg )
 			{
 				error_task_pipe ( & nbio_attr , CHILD_OUT_RD_FD ) ;
 			}
+			else
 			slurm_FD_SET ( nbio_attr . fd [IN_OUT_FD] , & nbio_attr . next_set [WR_SET] ); 
 		}
 		if ( slurm_FD_ISSET ( nbio_attr . fd [CHILD_ERR_RD_FD] , & nbio_attr . init_set [RD_SET] ) ) 
@@ -225,6 +228,7 @@ void * do_nbio ( void * arg )
 			{
 				error_task_pipe ( & nbio_attr , CHILD_ERR_RD_FD ) ;
 			}
+			else
 			slurm_FD_SET ( nbio_attr .  fd [SIG_ERR_FD] , & nbio_attr . next_set [WR_SET] ); 
 		}
 
@@ -235,6 +239,7 @@ void * do_nbio ( void * arg )
 			{
 				error_task_pipe ( & nbio_attr , CHILD_IN_WR_FD ) ;
 			}
+			else
 			slurm_FD_CLR ( nbio_attr . fd [CHILD_IN_WR_FD] , & nbio_attr . next_set [WR_SET] ); 
 		}
 		if ( slurm_FD_ISSET ( nbio_attr . fd [IN_OUT_FD] , & nbio_attr . next_set [WR_SET] ) 
@@ -244,6 +249,7 @@ void * do_nbio ( void * arg )
 			{
 				error_task_socket (  &nbio_attr , IN_OUT_FD ) ;
 			}
+			else
 			slurm_FD_CLR ( nbio_attr . fd [IN_OUT_FD] , & nbio_attr . next_set [WR_SET] ); 
 		}
 		if ( slurm_FD_ISSET ( nbio_attr . fd [SIG_ERR_FD] , & nbio_attr . next_set [WR_SET] ) 
@@ -253,10 +259,18 @@ void * do_nbio ( void * arg )
 			{
 				error_task_socket (  &nbio_attr , SIG_ERR_FD ) ;
 			}
+			else
 			slurm_FD_CLR ( nbio_attr .  fd [SIG_ERR_FD] , & nbio_attr . next_set [WR_SET] ); 
 		}
 
-		memcpy_sets ( nbio_attr . init_set , nbio_attr . next_set ) ;
+		if ( nbio_attr . flush_flag )
+		{
+			nbio_set_init ( & nbio_attr , nbio_attr .  init_set ) ;
+		}
+		else
+		{
+			memcpy_sets ( nbio_attr . init_set , nbio_attr . next_set ) ;
+		}
 	}
 
 	nbio_cleanup ( & nbio_attr ) ;
@@ -297,6 +311,7 @@ int read_task_pipe ( circular_buffer_t * cir_buf, slurm_fd read_fd , io_debug_t 
 	else
 	{
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
+		debug3 ( "read_task_pipe fd: %i bytes_read %i" , read_fd , bytes_read ) ;
 		return SLURM_SUCCESS ;
 	}
 }
@@ -324,6 +339,7 @@ int write_task_pipe ( circular_buffer_t * cir_buf, slurm_fd write_fd , io_debug_
 	else
 	{
 		cir_buf_read_update ( cir_buf , bytes_written ) ;
+		//debug3 ( "write_task_pipe fd: %i bytes_written %i" , write_fd , bytes_written ) ;
 		return SLURM_SUCCESS ;
 	}
 }
@@ -377,6 +393,7 @@ int read_task_socket ( circular_buffer_t * cir_buf, slurm_fd read_fd , io_debug_
 	else
 	{
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
+		//debug3 ( "read_task_socket fd: %i bytes_read %i" , read_fd , bytes_read ) ;
 		return SLURM_SUCCESS ;
 	}
 }
@@ -430,6 +447,7 @@ int write_task_socket ( circular_buffer_t * cir_buf, slurm_fd write_fd , io_debu
 	else
 	{
 		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
+		debug3 ( "write_task_socket fd: %i bytes_written %i" , write_fd , sock_bytes_written ) ;
 		return SLURM_SUCCESS ;
 	}
 }
@@ -508,7 +526,6 @@ int nbio_set_init ( nbio_attr_t * nbio_attr , slurm_fd_set * set_ptr )
 		slurm_FD_SET ( nbio_attr -> fd [IN_OUT_FD] , & set_ptr [ER_SET] ) ;
 		slurm_FD_SET ( nbio_attr -> fd [SIG_ERR_FD] , & set_ptr [ER_SET] ) ;
 	}
-	else
 	{
 		/* read fds */
 		slurm_FD_SET ( nbio_attr -> fd [IN_OUT_FD] , & set_ptr [RD_SET] ) ;
@@ -588,19 +605,23 @@ int test_error_conditions (  nbio_attr_t * nbio_attr )
 	{
 		return SLURM_ERROR ;
 	}
-
+/*
 	if ( waitpid ( nbio_attr -> task_start -> exec_pid , NULL , WNOHANG ) > 0 )
 	{
 		return SLURM_ERROR ;
 	}
+	*/
 	return SLURM_SUCCESS ;
 }
 
-int print_nbio_sets ( slurm_fd_set set_ptr[] ) 
+int print_nbio_sets ( nbio_attr_t * nbio_attr , slurm_fd_set * set_ptr )
 {
 	int i ;
-	info ( "--- 00000000001111111111222222222233") ;
-	info ( "--- 01234567890123456789012345678901") ;
+	printf ( "fds ");
+	for ( i=0 ; i < 5 ; i ++ ) printf ( " %i " , nbio_attr -> fd[i] ) ;
+	printf ( "rd  ");
+	printf ( "--- 00000000001111111111222222222233\n") ;
+	printf ( "--- 01234567890123456789012345678901\n") ;
 	printf ( "rd  ");
 	for ( i=0 ; i < 32 ; i ++ ) printf ( "%i" , slurm_FD_ISSET ( i , & set_ptr[RD_SET] ) ) ;
 	printf ( "\n" ) ;

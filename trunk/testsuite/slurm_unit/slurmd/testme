@@ -1,7 +1,13 @@
 #!/usr/bin/perl
+open OUT, ">test.out" ;
+close OUT ;
 
+for ( $i=0 ; $i < 10 ;  $i++ )
+{
 open OUT, ">test.out" ;
 print OUT `date`;
+print "stdout -- $i \n" ;
+print OUT "stdout -- $i \n" ;
 print "stdout 1 TESTING\n" ;
 print "stdout 2 TESTING\n" ;
 print "stdout 3 TESTING\n" ;
@@ -29,3 +35,4 @@ print OUT "ONOTESTING\n" ;
 print OUT "ONOTESTING\n" ;
 print OUT "ONOTESTING\n" ;
 close OUT ;
+}
