@@ -46,6 +46,7 @@ print_header $test_id
 # Submit a 1 node job to determine the node's CPU count
 #
 set cpu_count      0
+set fat_nodes      0
 set host           ""
 set timeout $max_job_delay
 spawn $srun -N1 --cpus-per-task=1 -l -t1 $bin_hostname  
@@ -53,6 +54,11 @@ expect {
 	-re "$number: ($alpha_numeric)" {
 		set host $expect_out(1,string)
 		incr cpu_count
+		exp_continue
+	}
+	-re "Task count specification invalid" {
+		send_user "\nWARNING: nodes have too many CPUs for test\n"
+		set fat_nodes 1
 		exp_continue
 	}
 	timeout {
@@ -64,6 +70,10 @@ expect {
 	eof {
 		wait
 	}
+}
+# On Blue Gene/L each node has 512 CPUs, more than slurmd can launch
+if {$fat_nodes == 1} {
+	exit 0
 }
 
 #
