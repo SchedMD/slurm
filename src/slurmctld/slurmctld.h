@@ -1021,8 +1021,7 @@ extern void set_slurmd_addr (void);
 extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
 
 /*
- * slurmctld_shutdown - issue RPC to have slurmctld shutdown, knocks
- *	loose an slurm_accept_msg_conn() if we have a thread hung there
+ * slurmctld_shutdown - wake up slurm_rpc_mgr thread via signal
  * RET 0 or error code
  */
 extern int slurmctld_shutdown(void);
