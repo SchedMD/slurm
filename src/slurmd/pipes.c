@@ -44,8 +44,8 @@ int setup_child_pipes ( int * pipes )
 		error ("dup failed on child standard in pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
-	close ( CHILD_IN_RD );
-	close ( CHILD_IN_WR );
+	close ( pipes[CHILD_IN_RD] );
+	close ( pipes[CHILD_IN_WR] );
 
 	/*dup stdout*/
 	//close ( STDOUT_FILENO );
@@ -55,8 +55,8 @@ int setup_child_pipes ( int * pipes )
 		error ("dup failed on child standard out pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
-	close ( CHILD_OUT_RD );
-	close ( CHILD_OUT_WR );
+	close ( pipes[CHILD_OUT_RD] );
+	close ( pipes[CHILD_OUT_WR] );
 
 	/*dup stderr*/
 	//close ( STDERR_FILENO );
@@ -66,7 +66,7 @@ int setup_child_pipes ( int * pipes )
 		error ("dup failed on child standard err pipe, %m errno %i" , local_errno );
 		//return error_code ;
 	}
-	close ( CHILD_ERR_RD );
-	close ( CHILD_ERR_WR );
+	close ( pipes[CHILD_ERR_RD] );
+	close ( pipes[CHILD_ERR_WR] );
 	return error_code ;
 }
