@@ -1007,13 +1007,16 @@ After all processes terminate, slurmd will execute the epilog program
 
 \subsection{scancel}
 
-\scancel\ will prematurely terminate a queued or running job.
+\scancel\ will prematurely terminate a queued or running job or job step.
 If the job is in the queue, it will just be removed.  If the job is
 running, it will be signaled and terminated as described in the \slurmd\
 section of this document.  It will identify the job(s) to be terminated
-through input specification of: SLURM job ID or user name.  If no job
-specification is supplied, the user will be asked for one.  If the user
-name is supplied, all jobs associated with that user will be terminated.
+through input specification of: user name, SLURM job ID and/or job step ID. 
+If no jobspecification is supplied, the user will be asked for one.  
+If the username is supplied, all jobs associated with that user will be terminated. 
+If a job ID is supplied, all job steps associated with the job will be terminated 
+as well as the job and its resource allocation. 
+If a job ID and job step ID are supplied, only that job step will be terminated.
 \scancel\ can only be executed by the job's owner or user root.
 
 \subsection{scontrol}
@@ -1064,7 +1067,8 @@ Nodes=lx[1000-9999] RealMemory=2048-4096 IdleNodes=1234 ...").
 
 \srun\ is the user interface to accessing resources managed by SLURM.
 Users may utilize \srun\ to allocate resources, submit batch jobs, 
-run jobs interactively, and attach to currently running jobs. \srun\ 
+run jobs interactively, attach to currently running jobs or launch 
+a set of parallel tests (job step) for a running job.. \srun\ 
 supports a full range of options to specify job constraints and
 characteristics, for example minimum real memory, temporary disk space,
 and cpus per node, as well as time limits, stdin/stdout/stderr 
@@ -1139,7 +1143,7 @@ first and most simple is {\em interactive} mode, in which stdout and
 stderr are displayed on the user's terminal in real time, and stdin and
 signals may be forwarded from the  terminal transparently to the remote
 tasks. The second is {\em batch} or {queued} mode, in which the job is
-queued until the request for resources can be met, at which time the
+queued until the request for resources can be satisfied, at which time the
 job is run by SLURM as the submitting user. In {\em allocate} mode,
 a job is allocated to the requesting user, under which the user may
 manually run job steps via a script or in a subshell spawned by \srun .
@@ -1238,7 +1242,7 @@ Once the resources are available and the job has a high enough priority,
 \slurmctld\ allocates the resources to the job and contacts the first node 
 of the allocation requesting that the user ``job'' be started. In this case
 the job may either be another invocation of \srun\ or a {\em job script} which
-has multiple invocations of \srun\ within it. The \slurmd\ on the remote
+may have multiple invocations of \srun\ within it. The \slurmd\ on the remote
 node responds to the run request, initiating the job thread, task thread, 
 and user script. An \srun\ executed from within the script detects that it
 has access to an allocation and initiates a job step on some or all of the
