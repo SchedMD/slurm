@@ -1,5 +1,7 @@
+#ifndef _SLURM_H
+#define _SLURM_H
 /* 
- * slurmlib.h - descriptions of slurm APIs
+
  * see slurm.h for documentation on external functions and data structures
  *
  * author: moe jette, jette@llnl.gov
@@ -141,3 +143,5 @@ extern int slurm_reconfigure ();
 extern int slurm_update_job ( job_desc_msg_t * job_msg ) ;
 extern int slurm_update_node ( update_node_msg_t * node_msg ) ;
 extern int slurm_update_partition ( update_part_msg_t * part_msg ) ;
+#endif
+
