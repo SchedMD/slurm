@@ -111,6 +111,7 @@ static int  _load_job_state(Buf buffer);
 static int  _load_step_state(struct job_record *job_ptr, Buf buffer);
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
 static int  _purge_job_record(uint32_t job_id);
+static void _purge_lost_batch_jobs(int node_inx, time_t now);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
 static void _read_data_from_file(char *file_name, char **data);
@@ -2714,6 +2715,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL) {
@@ -2738,6 +2740,9 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				debug3("Registered job %u.%u on node %s ",
 				       job_id_ptr[i], step_id_ptr[i], 
 				       node_name);
+				if ((job_ptr->batch_flag) &&
+				    (node_inx == bit_ffs(job_ptr->node_bitmap)))
+					job_ptr->time_last_active = now;
 			} else {
 				error
 				    ("Registered job %u.u on wrong node %s ",
@@ -2770,17 +2775,43 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	}
 
 	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
+	if (jobs_on_node)
+		_purge_lost_batch_jobs(node_inx, now);
 
 	if (jobs_on_node != *job_count) {
 		/* slurmd will not know of a job unless the job has
 		 * steps active at registration time, so this is not 
-		 * an error condition */
-		info("resetting job_count on node %s from %d to %d", 
+		 * an error condition, slurmd is also reporting steps 
+		 * rather than jobs */
+		debug3("resetting job_count on node %s from %d to %d", 
 		     node_name, *job_count, jobs_on_node);
 		*job_count = jobs_on_node;
 	}
 
 	return;
+}
+
+/* Purge any batch job that should have its script running on node 
+ * node_inx, but is not (i.e. its time_last_active != now) */
+static void _purge_lost_batch_jobs(int node_inx, time_t now)
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_ptr;
+
+	job_record_iterator = list_iterator_create(job_list);
+	while ((job_ptr =
+		    (struct job_record *) list_next(job_record_iterator))) {
+		if ((job_ptr->job_state != JOB_RUNNING) ||
+		    (job_ptr->batch_flag == 0)          ||
+		    (job_ptr->time_last_active == now)  ||
+		    (node_inx != bit_ffs(job_ptr->node_bitmap)))
+			continue;
+
+		info("Master node lost JobId=%u, killing it", 
+			job_ptr->job_id);
+		job_complete(job_ptr->job_id, 0, false, 0);
+	}
+	list_iterator_destroy(job_record_iterator);
 }
 
 /* _kill_job_on_node - Kill the specific job_id on a specific node */

@@ -76,9 +76,9 @@ static int _build_job_queue(struct job_queue **job_queue)
 
 	while ((job_record_point =
 		(struct job_record *) list_next(job_record_iterator))) {
-		if (job_record_point->job_state != JOB_PENDING)
-			continue;
-		if (job_record_point->priority == 0)	/* held */
+		if ((job_record_point->job_state != JOB_PENDING)   ||
+		    (job_record_point->job_state & JOB_COMPLETING) ||
+		    (job_record_point->priority == 0))	/* held */
 			continue;
 		xassert (job_record_point->magic == JOB_MAGIC);
 		if (job_buffer_size <= job_queue_size) {
@@ -154,12 +154,13 @@ int schedule(void)
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
 			last_job_update = time(NULL);
-			info("schedule: job_id %u on nodes %s",
+			info("schedule: JobId=%u NodeList=%s",
 			     job_ptr->job_id, job_ptr->nodes);
-			_launch_job(job_ptr);
+			if (job_ptr->batch_flag)
+				_launch_job(job_ptr);
 			job_cnt++;
 		} else {
-			info("schedule: job_id %u non-runnable, error %m",
+			info("schedule: JobId=%u non-runnable: %m",
 			     job_ptr->job_id);
 			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;
@@ -219,9 +220,6 @@ static void _launch_job(struct job_record *job_ptr)
 	pthread_t thread_agent;
 	int retries = 0;
 
-	if (job_ptr->batch_flag == 0)
-		return;
-
 	node_ptr = find_first_node_record(job_ptr->node_bitmap);
 	if (node_ptr == NULL)
 		return;
@@ -245,7 +243,7 @@ static void _launch_job(struct job_record *job_ptr)
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
-	agent_arg_ptr->retry = 1;
+	agent_arg_ptr->retry = 0;
 	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
 	memcpy(agent_arg_ptr->slurm_addr,
 	       &(node_ptr->slurm_addr), sizeof(struct sockaddr_in));

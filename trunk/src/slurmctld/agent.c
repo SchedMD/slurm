@@ -399,6 +399,14 @@ static void *_wdog(void *args)
 				node_not_resp(thread_ptr[i].node_name,
 				              thread_ptr[i].start_time);
 		}
+		if (agent_ptr->msg_type == REQUEST_BATCH_JOB_LAUNCH) {
+			/* Requeue the request */
+			batch_job_launch_msg_t *launch_msg_ptr = 
+					*agent_ptr->msg_args_pptr;
+			uint32_t job_id = launch_msg_ptr->job_id;
+			info("Non-responding node, requeue JobId=%u", job_id);
+			job_complete(job_id, 0, true, 0);
+		}
 		unlock_slurmctld(node_write_lock);
 #else
 		/* Build a list of all non-responding nodes and send 
@@ -569,7 +577,7 @@ static void *_thread_per_node_rpc(void *args)
 			job_id, slurm_strerror(rc));
 		thread_state = DSH_DONE;
 		lock_slurmctld(job_write_lock);
-		job_signal(job_id, SIGKILL, 0);
+		job_complete(job_id, 0, false, 1);
 		unlock_slurmctld(job_write_lock);
 		goto cleanup;
 	}
