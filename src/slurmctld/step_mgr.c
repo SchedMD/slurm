@@ -165,8 +165,7 @@ find_step_record(struct job_record *job_ptr, uint16_t step_id)
 
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
-	while ((step_record_point = 
-		(struct step_record *) list_next (step_record_iterator))) {
+	while ((step_record_point = (struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id) {
 			break;
 		}

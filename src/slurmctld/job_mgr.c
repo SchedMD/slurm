@@ -78,6 +78,8 @@ int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		bitstr_t *req_bitmap) ;
 void	delete_job_desc_files (uint32_t job_id);
 void 	dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
+void 	dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf_len);
+void 	dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len);
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
@@ -349,7 +351,7 @@ dump_all_job_state ( void )
 }
 
 /*
- * dump_job_state - dump the state of a specific job to a buffer
+ * dump_job_state - dump the state of a specific job, its details, and steps to a buffer
  * input:  dump_job_ptr - pointer to job for which information is requested
  *	buf_ptr - buffer for job information 
  *	buf_len - byte size of buffer
@@ -359,9 +361,11 @@ dump_all_job_state ( void )
 void 
 dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
 {
-	char tmp_str[MAX_STR_PACK];
 	struct job_details *detail_ptr;
+	ListIterator step_record_iterator;
+	struct step_record *step_record_ptr;
 
+	/* Dump basic job info */
 	pack32  (dump_job_ptr->job_id, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
@@ -376,82 +380,129 @@ dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	packstr (dump_job_ptr->partition, buf_ptr, buf_len); 
 	packstr (dump_job_ptr->name, buf_ptr, buf_len);
 
+	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
-
 	if (detail_ptr) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
-		pack16  ((uint16_t) 1, buf_ptr, buf_len);	/* details flag */
-
-		pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
-		pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
-		pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
-
-		pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->submit_time, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->total_procs, buf_ptr, buf_len);
-
-		if ((detail_ptr->req_nodes == NULL) ||
-		    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
-			packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
-
-		if (detail_ptr->features == NULL ||
-				strlen (detail_ptr->features) < MAX_STR_PACK)
-			packstr (detail_ptr->features, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
-
-		if (detail_ptr->stderr == NULL ||
-				strlen (detail_ptr->stderr) < MAX_STR_PACK)
-			packstr (detail_ptr->stderr, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->stderr, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
-
-		if (detail_ptr->stdin == NULL ||
-				strlen (detail_ptr->stdin) < MAX_STR_PACK)
-			packstr (detail_ptr->stdin, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->stdin, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
-
-		if (detail_ptr->stdout == NULL ||
-				strlen (detail_ptr->stdout) < MAX_STR_PACK)
-			packstr (detail_ptr->stdout, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->stdout, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
-
-		if (detail_ptr->work_dir == NULL ||
-				strlen (detail_ptr->work_dir) < MAX_STR_PACK)
-			packstr (detail_ptr->work_dir, buf_ptr, buf_len);
-		else {
-			strncpy(tmp_str, detail_ptr->work_dir, MAX_STR_PACK);
-			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
-		}
-
-		pack_job_credential ( &detail_ptr->credential , buf_ptr , buf_len ) ;
+		pack16  ((uint16_t) 0xdddd, buf_ptr, buf_len);	/* details flag */
+		dump_job_details_state (detail_ptr, buf_ptr, buf_len); 
 	}
 	else
-		pack16  ((uint16_t) 0, buf_ptr, buf_len);
+		pack16  ((uint16_t) 0, buf_ptr, buf_len);	/* no details flag */
+
+	/* Dump job steps */
+	step_record_iterator = list_iterator_create (dump_job_ptr->step_list);		
+	while ((step_record_ptr = (struct step_record *) list_next (step_record_iterator))) {
+		pack16  ((uint16_t) 0xbbbb, buf_ptr, buf_len);	/* step flag */
+		dump_job_step_state (step_record_ptr, buf_ptr, buf_len);
+	};
+	list_iterator_destroy (step_record_iterator);
+	pack16  ((uint16_t) 0, buf_ptr, buf_len);	/* no step flag */
+}
+
+/*
+ * dump_job_details_state - dump the state of a specific job details to a buffer
+ * input:  detail_ptr - pointer to job details for which information is requested
+ *	buf_ptr - buffer for job information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ */
+void 
+dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf_len) 
+{
+	char tmp_str[MAX_STR_PACK];
+
+	pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
+	pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
+	pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
+
+	pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->submit_time, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->total_procs, buf_ptr, buf_len);
+
+	if ((detail_ptr->req_nodes == NULL) ||
+	    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
+		packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	if (detail_ptr->features == NULL ||
+			strlen (detail_ptr->features) < MAX_STR_PACK)
+		packstr (detail_ptr->features, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	if (detail_ptr->stderr == NULL ||
+			strlen (detail_ptr->stderr) < MAX_STR_PACK)
+		packstr (detail_ptr->stderr, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, detail_ptr->stderr, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	if (detail_ptr->stdin == NULL ||
+			strlen (detail_ptr->stdin) < MAX_STR_PACK)
+		packstr (detail_ptr->stdin, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, detail_ptr->stdin, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	if (detail_ptr->stdout == NULL ||
+			strlen (detail_ptr->stdout) < MAX_STR_PACK)
+		packstr (detail_ptr->stdout, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, detail_ptr->stdout, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	if (detail_ptr->work_dir == NULL ||
+			strlen (detail_ptr->work_dir) < MAX_STR_PACK)
+		packstr (detail_ptr->work_dir, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, detail_ptr->work_dir, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	pack_job_credential ( &detail_ptr->credential , buf_ptr , buf_len ) ;
+}
+
+/*
+ * dump_job_step_state - dump the state of a specific job step to a buffer
+ * input:  step_ptr - pointer to job step for which information is requested
+ *	buf_ptr - buffer for job information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ */
+void 
+dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len) 
+{
+	char *node_list;
+
+	pack16  ((uint16_t) step_ptr->step_id, buf_ptr, buf_len);
+	pack32  ((uint32_t) step_ptr->start_time, buf_ptr, buf_len);
+	node_list = bitmap2node_name (step_ptr->node_bitmap);
+	packstr (node_list, buf_ptr, buf_len);
+	xfree (node_list);
+#ifdef HAVE_LIBELAN3
+	qsw_pack_libstate(step_ptr->qsw_job, buf_ptr, buf_len);
+#endif
 }
 
 /*
@@ -477,6 +528,7 @@ load_job_state ( void )
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	bitstr_t *node_bitmap = NULL, *req_node_bitmap = NULL;
+	uint16_t step_flag;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -528,12 +580,13 @@ load_job_state ( void )
 		unpackstr_xmalloc (&name, &name_len, &buf_ptr, &buffer_size);
 
 		unpack16 (&details, &buf_ptr, &buffer_size);
-		if (buffer_size < (11 * sizeof (uint32_t))) {
-			details = 0;	/* no room for details, file truncated */
-			buffer_size = 0;
+		if ((buffer_size < (11 * sizeof (uint32_t))) && details) {
+			/* no room for details */
+			error ("job state file problem on job %u", job_id);
+			goto cleanup;
 		}
 
-		if (details) {
+		if (details == 0xdddd ) {
 			unpack32 (&num_procs, &buf_ptr, &buffer_size);
 			unpack32 (&num_nodes, &buf_ptr, &buffer_size);
 			unpack16 (&shared, &buf_ptr, &buffer_size);
@@ -611,7 +664,7 @@ load_job_state ( void )
 		if (job_id_sequence <= job_id)
 			job_id_sequence = job_id + 1;
 
-		if (details) {
+		if (details == 0xdddd ) {
 			job_ptr->details->num_procs = num_procs;
 			job_ptr->details->num_nodes = num_nodes;
 			job_ptr->details->shared = shared;
@@ -630,6 +683,31 @@ load_job_state ( void )
 			job_ptr->details->work_dir = work_dir; work_dir = NULL;
 			memcpy (&job_ptr->details->credential, credential_ptr, 
 					sizeof (job_ptr->details->credential));
+		}
+
+		unpack16 (&step_flag, &buf_ptr, &buffer_size);
+		while ((step_flag == 0xbbbb) && (buffer_size > (2 * sizeof (uint32_t)))) {
+			struct step_record *step_ptr;
+			uint16_t step_id;
+			uint32_t start_time;
+			char *node_list;
+
+			step_ptr = create_step_record (job_ptr);
+			unpack16 (&step_id, &buf_ptr, &buffer_size);
+			unpack32 (&start_time, &buf_ptr, &buffer_size);
+			step_ptr->step_id = step_id;
+			step_ptr->start_time = start_time;
+
+			unpackstr_xmalloc (&node_list, &name_len, &buf_ptr, &buffer_size);
+			if (node_list) {
+				(void) node_name2bitmap (node_list, &(step_ptr->node_bitmap));
+				xfree (node_list);
+			}
+#ifdef HAVE_LIBELAN3
+			qsw_unpack_libstate(step_ptr->qsw_job, buf_ptr, buf_len);
+#endif
+			info ("recovering job step %u.%u", job_id, step_id);
+			unpack16 (&step_flag, &buf_ptr, &buffer_size);
 		}
 
 cleanup:
