@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.0-pre2
+=============================
+ -- Fixes for reported problems:
+   - slurm/326: Properly clean-up jobs terminating on non-responding nodes
+ -- Move all configuration data structure into common/read_config, scontrol
+    now always shows default values if not specified in slurm.conf file
+ -- Remove the unused "Prioritize" configuration parameter
+
 * Changes in SLURM 0.3.0-pre1
 =============================
  -- Fixes for reported problems:
