@@ -152,6 +152,7 @@ slurmctld_req ( slurm_msg_t * msg )
 		case REQUEST_NODE_REGISRATION_STATUS:
 			break;
 		case REQUEST_RECONFIGURE:
+			slurm_rpc_reconfigure_controller ( msg ) ;
 			break;
 		default:
 			error ("slurmctld_req: invalid request msg type %d\n", msg-> msg_type);
