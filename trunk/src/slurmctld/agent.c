@@ -573,9 +573,10 @@ static void *_thread_per_node_rpc(void *args)
 		      thread_ptr->node_name);
 		thread_state = DSH_FAILED;
 		break;
-	case ESLURM_INVALID_JOB_ID: /* Not indicative of a real error */
-		debug2("agent processed RPC to node %s, error %s",
-		       thread_ptr->node_name, "Invalid Job Id");
+	case ESLURM_INVALID_JOB_ID:  /* Not indicative of a real error */
+	case ESLURMD_JOB_NOTRUNNING: /* Not indicative of a real error */
+		debug2("agent processed RPC to node %s: %s",
+		       thread_ptr->node_name, slurm_strerror(rc));
 		thread_state = DSH_DONE;
 		break;
 	case ESLURMD_KILL_JOB_FAILED:		/* non-killable process */
