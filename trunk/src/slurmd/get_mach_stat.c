@@ -49,9 +49,6 @@
 #include <src/slurmctld/slurmctld.h>
 #include <src/slurmd/get_mach_stat.h>
 
-#define BUF_SIZE 1024
-#define DEFAULT_TMP_FS "/tmp"
-
 char *get_tmp_fs_name (void);
 
 #if DEBUG_MODULE
@@ -69,7 +66,7 @@ main(int argc, char * argv[])
 
 	error_code += get_procs(&this_node.cpus);
 	error_code += get_memory(&this_node.real_memory);
-	error_code += get_tmp_disk(&this_node.tmp_disk);
+	error_code += get_tmp_disk(&this_node.tmp_disk, "/tmp");
 
 	printf("NodeName=%s CPUs=%d RealMemory=%d TmpDisk=%d\n", 
 		node_name, this_node.cpus, this_node.real_memory, 
@@ -220,20 +217,22 @@ get_speed(float *speed)
 
 
 /*
- * get_tmp_disk - Return the total size of /tmp file system on 
+ * get_tmp_disk - Return the total size of temporary file system on 
  *    this system 
  * Input: tmp_disk - buffer for the disk space size
+ *        tmp_fs - pathname of the temporary file system to status, 
+ *	           defaults to "/tmp"
  * Output: tmp_disk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
 int 
-get_tmp_disk(uint32_t *tmp_disk) 
+get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs) 
 {
 	struct statfs stat_buf;
 	long   total_size;
 	int error_code;
 	float page_size;
-	static char *tmp_fs_name = NULL;
+	char *tmp_fs_name = tmp_fs;
 
 	error_code = 0;
 	*tmp_disk = 0;
@@ -241,8 +240,7 @@ get_tmp_disk(uint32_t *tmp_disk)
 	page_size = (getpagesize() / 1048576.0); /* Megabytes per page */
 
 	if (tmp_fs_name == NULL)
-		tmp_fs_name = get_tmp_fs_name ();
-
+		tmp_fs_name = "/tmp";
 	if (statfs(tmp_fs_name, &stat_buf) == 0) {
 		total_size = (long)stat_buf.f_blocks;
 	}
@@ -254,66 +252,4 @@ get_tmp_disk(uint32_t *tmp_disk)
 
 	*tmp_disk += (long)(total_size * page_size);
 	return error_code;
-}
-
-
-/* Get temporary file system's name from TmpFS in config file */
-char *
-get_tmp_fs_name (void)
-{
-	FILE *slurm_spec_file;
-	char in_line[BUF_SIZE];	/* input line */
-	char *dir = NULL;
-	int i, j, error_code, line_num = 0;
-
-        slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
-	if (slurm_spec_file == NULL) {
-		error ( "state_save_location error %d opening file %s: %m",
-			errno, SLURM_CONFIG_FILE);
-		return NULL ;
-	}
-
-	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
-		line_num++;
-		if (strlen (in_line) >= (BUF_SIZE - 1)) {
-			error ("state_save_location line %d, of input file %s too long\n",
-				 line_num, SLURM_CONFIG_FILE);
-			fclose (slurm_spec_file);
-			return NULL;
-		}		
-
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
-		for (i = 0; i < BUF_SIZE; i++) {
-			if (in_line[i] == (char) NULL)
-				break;
-			if (in_line[i] != '#')
-				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
-				for (j = i; j < BUF_SIZE; j++) {
-					in_line[j - 1] = in_line[j];
-				}	
-				continue;
-			}	
-			in_line[i] = (char) NULL;
-			break;
-		}		
-
-		/* parse what is left */
-		/* overall slurm configuration parameters */
-		error_code = slurm_parser(in_line,
-			"TmpFS=", 's', &dir, 
-			"END");
-		if (error_code) {
-			error ("error parsing configuration file input line %d", line_num);
-			fclose (slurm_spec_file);
-			return NULL;
-		}		
-
-		if ( dir ) {
-			fclose (slurm_spec_file);
-			return dir;	
-		}
-	}			
-	return DEFAULT_TMP_FS;
 }
