@@ -149,15 +149,15 @@ extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *excep
 
 extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask);
 
-/* not yet implemented
-_slurm_FD_CLR(int fd, fd_set *set);
-_slurm_FD_ISSET(int fd, fd_set *set);
-_slurm_FD_SET(int fd, fd_set *set);
-_slurm_FD_ZERO(fd_set *set);
+void _slurm_FD_CLR(int fd, fd_set *set);
+void _slurm_FD_ISSET(int fd, fd_set *set);
+void _slurm_FD_SET(int fd, fd_set *set);
+void _slurm_FD_ZERO(fd_set *set);
 extern int _slurm_fcntl(int fd, int cmd);
+/* function overloading problems
 extern int _slurm_fcntl(int fd, int cmd, long arg);
 extern int _slurm_fcntl(int fd, int cmd, struct flock *lock);
+*/
 		     
 extern int _slurm_ioctl(int d, int request, ...);
-*/
 #endif /* !_SLURM_PROTOCOL_INTERFACE_H */
