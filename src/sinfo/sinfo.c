@@ -508,6 +508,12 @@ _find_node_state_summary(List l, node_info_t *ninfo)
 		if ((params.summarize) ||
 		    (ninfo->node_state == current->state))
 			break;
+		/* Since both DRAINED and DRAINING nodes are shown as   
+		 * state "DRAIN" by default, this will combine them */
+		if ((!params.long_output) &&
+		    (strcmp(node_state_string_compact(ninfo->node_state),
+		            node_state_string_compact(current->state)) == 0))
+			break;
 	}
 
 	list_iterator_destroy(i);
