@@ -20,7 +20,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include "slurm.h"
+#include <src/slurmctld/slurmctld.h>
 #define SESSION_RECS 50
 
 int hertz = 0;
