@@ -373,9 +373,6 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 			continue;
 		}
 		
-		//set partition to a free state
-		bgl_free_partition(part_id);
-		
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
