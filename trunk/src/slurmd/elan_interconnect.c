@@ -63,10 +63,12 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) 
 	{
 		slurm_perror("qsw_prog_init");
-		return SLURM_ERROR ;
+		_ext(1) ;
 	}
 	
-	return fan_out_task_launch ( launch_msg ) ;
+	fan_out_task_launch ( launch_msg ) ;
+	_exit(0) ;
+	return SLURM_ERROR ;
 }
 
 int interconnect_set_capabilities ( task_start_t * task_start )
