@@ -303,7 +303,10 @@ static int _wait_on_active(thd_t *thd, job_t *job)
 	return rc;
 }
 
-static void _alrm_handler(int signo) { }
+static void _alrm_handler(int signo) 
+{
+	return;
+}
 
 /* _p_launch - parallel (multi-threaded) task launcher */
 static void _p_launch(slurm_msg_t *req, job_t *job)
