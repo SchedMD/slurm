@@ -189,6 +189,10 @@ _sigterm_handler(int signum)
 static void
 _handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
 {
+	if (opt.quit_on_intr) {
+		job_force_termination(job);
+		pthread_exit (0);
+	}
 
 	if ((time(NULL) - *last_intr) > 1) {
 		info("interrupt (one more within 1 sec to abort)");
