@@ -330,9 +330,9 @@ extern int create_static_partitions(List part_list)
 		if(found_record == NULL) {
 #ifdef HAVE_BGL_FILES
 			//bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-			print_bgl_record(bgl_record);
 			if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
 				return rc;
+			print_bgl_record(bgl_record);
 			
 			/* Here we are adding some partitions manually because of the way
 			   We want to run the system.  This will need to be changed for 
@@ -342,9 +342,9 @@ extern int create_static_partitions(List part_list)
 			bgl_record = (bgl_record_t *) list_next(itr);
 			if(bgl_record == NULL)
 				break;
-			print_bgl_record(bgl_record);
 			if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
 				return rc;
+			print_bgl_record(bgl_record);
 #endif
 		}
 	}
@@ -406,9 +406,9 @@ extern int create_static_partitions(List part_list)
 	found_record->conn_type = bgl_record->conn_type;
 	found_record->bitmap = bgl_record->bitmap;
 	found_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-	print_bgl_record(found_record);
-	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+	if((rc = configure_partition(found_record)) == SLURM_ERROR)
 		return rc;
+	print_bgl_record(found_record);
 	
 no_total:
 	
