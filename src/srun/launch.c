@@ -82,6 +82,7 @@ launch(void *arg)
 		msg.tasks_to_launch = job->ntask[i];
 		msg.global_task_ids = 
 			(uint32_t *) xmalloc(job->ntask[i]*sizeof(uint32_t));
+		msg.srun_node_id = (uint32_t)i;
 
 		for (j = 0; j < job->ntask[i]; j++)
 			msg.global_task_ids[j] = taskid++;

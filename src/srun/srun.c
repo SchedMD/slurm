@@ -180,8 +180,10 @@ main(int ac, char **av)
 
 	pthread_kill(job->lid, SIGTERM);
 	pthread_kill(job->jtid, SIGTERM);
-	pthread_kill(job->ioid, SIGTERM);
 	pthread_kill(job->sigid, SIGTERM);
+	fflush(stderr);
+	fflush(stdout);
+	pthread_kill(job->ioid, SIGTERM);
 
 	exit(0);
 }
@@ -227,7 +229,7 @@ allocate_nodes(void)
 	if (rc == SLURM_FAILURE) {
 		error("Unable to allocate resources: %s", 
 				slurm_strerror(errno));
-		exit(1);
+		return NULL;
 	}
 
 	return resp;
@@ -320,25 +322,33 @@ sig_thr(void *arg)
 {
 	job_t *job = (job_t *)arg;
 	sigset_t set;
+	static time_t last_intr = 0;
 	int signo;
 	struct sigaction action;
 
 
 	while (1) {
 		sigfillset(&set);
-		pthread_sigmask(SIG_UNBLOCK, &set, NULL);
+		pthread_sigmask(SIG_BLOCK, &set, NULL);
 		sigwait(&set, &signo);
 		debug2("recvd signal %d", signo);
 		switch (signo) {
-		  case SIGINT:
-			  fwd_signal(job, SIGINT);
-			  pthread_mutex_lock(&job->state_mutex);
-			  job->state = SRUN_JOB_OVERDONE;
-			  pthread_cond_signal(&job->state_cond);
-			  pthread_mutex_unlock(&job->state_mutex);
-			  break;
 		  case SIGTERM:
 			  pthread_exit(0);
+			  break;
+		  case SIGINT:
+			  if (time(NULL) - last_intr > 1) {
+				  info("sending Ctrl-C to remote tasks");
+				  last_intr = time(NULL);
+				  fwd_signal(job, signo);
+			  } else  { /* second Ctrl-C in half as many seconds */
+				    /* terminate job */
+				  info("forcing termination");
+				  pthread_mutex_lock(&job->state_mutex);
+				  job->state = SRUN_JOB_OVERDONE;
+				  pthread_cond_signal(&job->state_cond);
+				  pthread_mutex_unlock(&job->state_mutex);
+			  }
 			  break;
 		  default:
 			  fwd_signal(job, signo);
@@ -349,14 +359,14 @@ sig_thr(void *arg)
 	pthread_exit(0);
 }
 
-void 
+	void 
 fwd_signal(job_t *job, int signo)
 {
 	int i;
 	slurm_msg_t req;
 	slurm_msg_t resp;
 	kill_tasks_msg_t msg;
-	
+
 	debug("forward signal %d to job", signo);
 
 	req.msg_type = REQUEST_KILL_TASKS;
@@ -368,7 +378,7 @@ fwd_signal(job_t *job, int signo)
 
 	for (i = 0; i < job->nhosts; i++) {
 		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(),
-				    ntohl(job->iaddr[i]));
+				ntohl(job->iaddr[i]));
 		debug("sending kill req to %s", job->host[i]);
 		if (slurm_send_recv_node_msg(&req, &resp) < 0)
 			error("Unable to send signal to host %s", 
