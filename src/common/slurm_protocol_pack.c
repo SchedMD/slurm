@@ -314,7 +314,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_node_info_msg((slurm_msg_t *) msg, buffer);
 		 break;
 	 case MESSAGE_NODE_REGISTRATION_STATUS:
-		 _pack_node_registration_status_msg((slurm_node_registration_status_msg_t *) msg->data, buffer);
+		 _pack_node_registration_status_msg(
+			(slurm_node_registration_status_msg_t *) msg->data, 
+			buffer);
 		 break;
 	 case REQUEST_RESOURCE_ALLOCATION:
 	 case REQUEST_SUBMIT_BATCH_JOB:
@@ -340,8 +342,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_shutdown_msg((shutdown_msg_t *) msg->data, buffer);
 		 break;
 	 case RESPONSE_SUBMIT_BATCH_JOB:
-		 _pack_submit_response_msg((submit_response_msg_t *) msg->
-					   data, buffer);
+		 _pack_submit_response_msg((submit_response_msg_t *) 
+					   msg->data, buffer);
 		 break;
 	 case RESPONSE_RESOURCE_ALLOCATION:
 	 case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION:
@@ -351,7 +353,9 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		      buffer);
 		 break;
 	 case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
-		 _pack_resource_allocation_and_run_response_msg((resource_allocation_and_run_response_msg_t *) msg->data, buffer);
+		 _pack_resource_allocation_and_run_response_msg(
+			(resource_allocation_and_run_response_msg_t *) 
+			msg->data, buffer);
 		 break;
 	 case REQUEST_UPDATE_NODE:
 		 _pack_update_node_msg((update_node_msg_t *) msg->data,
@@ -362,14 +366,17 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 					    data, buffer);
 		 break;
 	 case REQUEST_REATTACH_TASKS:
-		 _pack_reattach_tasks_request_msg((reattach_tasks_request_msg_t *) msg->data, buffer);
+		 _pack_reattach_tasks_request_msg(
+			(reattach_tasks_request_msg_t *) msg->data, buffer);
 		 break;
 	 case RESPONSE_REATTACH_TASKS:
-		 _pack_reattach_tasks_response_msg((reattach_tasks_response_msg_t *) msg->data, buffer);
+		 _pack_reattach_tasks_response_msg(
+			(reattach_tasks_response_msg_t *) msg->data, buffer);
 		 break;
 	 case REQUEST_LAUNCH_TASKS:
-		 _pack_launch_tasks_request_msg((launch_tasks_request_msg_t
-						 *) msg->data, buffer);
+		 _pack_launch_tasks_request_msg(
+				(launch_tasks_request_msg_t *) msg->data, 
+				buffer);
 		 break;
 	 case RESPONSE_LAUNCH_TASKS:
 		 _pack_launch_tasks_response_msg((launch_tasks_response_msg_t
@@ -437,12 +444,14 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 				       buffer);
 		 break;
 	 case RESPONSE_JOB_STEP_CREATE:
-		 _pack_job_step_create_response_msg((job_step_create_response_msg_t *)
-						    msg->data, buffer);
+		 _pack_job_step_create_response_msg(
+				(job_step_create_response_msg_t *)
+				msg->data, buffer);
 		 break;
 	 case REQUEST_JOB_STEP_CREATE:
-		 _pack_job_step_create_request_msg((job_step_create_request_msg_t *)
-						   msg->data, buffer);
+		 _pack_job_step_create_request_msg(
+				(job_step_create_request_msg_t *)
+				msg->data, buffer);
 		 break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
@@ -492,9 +501,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					    (msg->data), buffer);
 		 break;
 	 case MESSAGE_NODE_REGISTRATION_STATUS:
-		 rc = _unpack_node_registration_status_msg((slurm_node_registration_status_msg_t **)
-							   & (msg->data),
-							   buffer);
+		 rc = _unpack_node_registration_status_msg(
+				(slurm_node_registration_status_msg_t **)
+				& (msg->data), buffer);
 		 break;
 	 case REQUEST_RESOURCE_ALLOCATION:
 	 case REQUEST_SUBMIT_BATCH_JOB:
@@ -527,16 +536,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_RESOURCE_ALLOCATION:
 	 case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION:
 	 case RESPONSE_JOB_WILL_RUN:
-		 rc = _unpack_resource_allocation_response_msg((resource_allocation_response_msg_t **)
-							       & (msg->data),
-							       buffer);
+		 rc = _unpack_resource_allocation_response_msg(
+				(resource_allocation_response_msg_t **)
+				& (msg->data), buffer);
 		 break;
 	 case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
-		 rc = _unpack_resource_allocation_and_run_response_msg((resource_allocation_and_run_response_msg_t **)
-								       &
-								       (msg->
-									data),
-								       buffer);
+		 rc = _unpack_resource_allocation_and_run_response_msg(
+				(resource_allocation_and_run_response_msg_t **)
+				&(msg->data), buffer);
 		 break;
 	 case REQUEST_UPDATE_NODE:
 		 rc = _unpack_update_node_msg((update_node_msg_t **) &
@@ -547,27 +554,33 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						   (msg->data), buffer);
 		 break;
 	 case REQUEST_LAUNCH_TASKS:
-		 rc = _unpack_launch_tasks_request_msg((launch_tasks_request_msg_t **)
-						       & (msg->data), buffer);
+		 rc = _unpack_launch_tasks_request_msg(
+					(launch_tasks_request_msg_t **)
+					& (msg->data), buffer);
 		 break;
 	 case RESPONSE_LAUNCH_TASKS:
-		 rc = _unpack_launch_tasks_response_msg((launch_tasks_response_msg_t **)
-							& (msg->data),
-							buffer);
+		 rc = _unpack_launch_tasks_response_msg(
+					(launch_tasks_response_msg_t **)
+					& (msg->data), buffer);
 		 break;
 	 case REQUEST_REATTACH_TASKS:
-		 _unpack_reattach_tasks_request_msg((reattach_tasks_request_msg_t **) & msg->data, buffer);
+		 rc = _unpack_reattach_tasks_request_msg(
+			(reattach_tasks_request_msg_t **) & msg->data, 
+			buffer);
 		 break;
 	 case RESPONSE_REATTACH_TASKS:
-		 _unpack_reattach_tasks_response_msg((reattach_tasks_response_msg_t **) & msg->data, buffer);
+		 rc = _unpack_reattach_tasks_response_msg(
+					(reattach_tasks_response_msg_t **) 
+					& msg->data, buffer);
 		 break;
 	 case REQUEST_KILL_TASKS:
 		 rc = _unpack_cancel_tasks_msg((kill_tasks_msg_t **) &
 					       (msg->data), buffer);
 		 break;
 	 case REQUEST_JOB_STEP_INFO:
-		 rc = _unpack_get_job_step_info_msg((job_step_info_request_msg_t **)
-						    & (msg->data), buffer);
+		 rc = _unpack_get_job_step_info_msg(
+				(job_step_info_request_msg_t **)
+				& (msg->data), buffer);
 		 break;
 		/********  job_step_id_t Messages  ********/
 	 case REQUEST_JOB_INFO:
@@ -581,9 +594,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						    buffer);
 		 break;
 	 case REQUEST_REVOKE_JOB_CREDENTIAL:
-		 rc = _unpack_revoke_credential_msg((revoke_credential_msg_t
-						     **)
-						    & (msg->data), buffer);
+		 rc = _unpack_revoke_credential_msg(
+					(revoke_credential_msg_t **)
+					& (msg->data), buffer);
 		 break;
 	 case REQUEST_SIGNAL_JOB:
 		 break;
@@ -601,8 +614,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_JOB_ATTACH:
 		 break;
 	 case RESPONSE_JOB_STEP_INFO:
-		 _unpack_job_step_info_response_msg((job_step_info_response_msg_t **)
-						    & (msg->data), buffer);
+		 rc = _unpack_job_step_info_response_msg(
+					(job_step_info_response_msg_t **)
+					& (msg->data), buffer);
 		 break;
 	 case REQUEST_JOB_RESOURCE:
 		 break;
@@ -627,14 +641,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 					      & (msg->data), buffer);
 		 break;
 	 case RESPONSE_JOB_STEP_CREATE:
-		 rc = _unpack_job_step_create_response_msg((job_step_create_response_msg_t **)
-							   & msg->data,
-							   buffer);
+		 rc = _unpack_job_step_create_response_msg(
+				(job_step_create_response_msg_t **)
+				& msg->data, buffer);
 		 break;
 	 case REQUEST_JOB_STEP_CREATE:
-		 rc = _unpack_job_step_create_request_msg((job_step_create_request_msg_t **)
-							  & msg->data,
-							  buffer);
+		 rc = _unpack_job_step_create_request_msg(
+					(job_step_create_request_msg_t **)
+					& msg->data, buffer);
 		 break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);

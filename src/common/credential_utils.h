@@ -64,6 +64,11 @@ int initialize_credential_state_list(List * list);
  */
 int destroy_credential_state_list(List list);
 
+/* print_credential
+ * log a credential using info() function
+ */
+void print_credential(slurm_job_credential_t * cred);
+
 /* verify_credential
  * given a credential message and a verify_ctx containing the public key
  * this method verifies the credential and creates the necessary state  
