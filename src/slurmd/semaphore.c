@@ -46,9 +46,9 @@
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <stdio.h>
-#include "semaphore.h"
 
-#include "../common/log.h"
+#include "src/slurmd/semaphore.h"
+#include "src/common/log.h"
 
 
 #define MAX_TRIES 3

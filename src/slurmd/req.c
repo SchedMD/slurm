@@ -53,6 +53,7 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
+
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
@@ -70,6 +71,7 @@ static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
 static void _wait_for_procs(uint32_t job_id, uid_t job_uid);
+
 
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
@@ -144,7 +146,6 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 {	
 	pid_t pid;
 	int rc;
-
 	
 	switch ((pid = fork())) {
 		case -1:
@@ -202,8 +203,20 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 	slurm_cred_arg_t arg;
 	hostset_t        hset = NULL;
 
-	if (slurm_cred_verify(conf->vctx, cred, &arg) < 0)
+	/*
+	 * First call slurm_cred_verify() so that all valid
+	 * credentials are checked
+	 */
+	if ( (slurm_cred_verify(conf->vctx, cred, &arg) < 0)
+	   && (uid != conf->slurm_user_id) )
 		return SLURM_ERROR;
+
+	/*
+	 * If the requesting user is the slurm user, do not perform
+	 * any more validity checks
+	 */
+	if (uid == conf->slurm_user_id)
+		return SLURM_SUCCESS;
 
 	if ((arg.jobid != jobid) || (arg.stepid != stepid)) {
 		error("job credential for %d.%d, expected %d.%d",
@@ -231,6 +244,9 @@ _check_job_credential(slurm_cred_t cred, uint32_t jobid,
 		      arg.jobid, arg.stepid, (long) arg.uid, arg.hostlist);
 		goto fail;
 	}
+
+	hostset_destroy(hset);
+	xfree(arg.hostlist);
 
 	return SLURM_SUCCESS;
 
@@ -273,13 +289,13 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
 		run_prolog = true;
 
-
-	if ( (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) 
-	    && (super_user == false) ) {
+	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
 		retval = errno;
-		error("Invalid credential from %ld@%s: %m", req_uid, host);
+		error("Invalid job credential from %ld@%s: %m", req_uid, host);
 		goto done;
 	}
+
+	xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));
 
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
@@ -439,7 +455,6 @@ _kill_running_session_mgrs(uint32_t jobid, int signum)
 	List         steps = shm_get_steps();
 	ListIterator i     = list_iterator_create(steps);
 	job_step_t  *s     = NULL; 
-	int step_cnt       = 0;  
 
 	while ((s = list_next(i))) {
 		if (s->jobid == jobid) {
@@ -448,7 +463,7 @@ _kill_running_session_mgrs(uint32_t jobid, int signum)
 	}
 	list_destroy(steps);
 
-	return step_cnt;
+	return;
 }
 
 /* For the specified job_id: Send SIGXCPU, reply to slurmctld, 
@@ -770,4 +785,5 @@ _run_epilog(uint32_t jobid, uid_t uid)
 	slurm_mutex_unlock(&conf->config_mutex);
 	return error_code;
 }
+
 

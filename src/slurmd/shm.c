@@ -192,9 +192,9 @@ shm_cleanup(void)
 	key_t key;
 	int id = -1;
 
+	info("request to destroy shm lock [%s]", SHM_LOCKNAME);
 	if ((s = _create_ipc_name(SHM_LOCKNAME))) {
 		key = ftok(s, 1);
-		info("request to destroy shm lock `%s'", s);
 		if (sem_unlink(s) < 0)
 			error("sem_unlink: %m");
 		xfree(s);
@@ -923,24 +923,52 @@ static int
 _shm_reopen()
 {
 	int retval = SLURM_SUCCESS;
+	int oflags = O_EXCL;        /* Try to reopen semaphore first */
 
-	if ((shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0)) 
-	     == SEM_FAILED) {
+	debug2("going to reopen slurmd shared memory");
+
+	shm_lock = _sem_open(SHM_LOCKNAME, oflags, 0600, 0);
+	/*
+	 * If open of shm lock failed, we could be in one of two
+	 * situations:  
+	 *
+	 * 1. The lockfile associated with the semaphore exists,
+	 *    but the semaphore does not exist (errno == ENOENT) 
+	 *    or
+	 * 2. system failure trying to attach to semaphore.
+	 *
+	 *  For 1, we can cleanup the shm lock, then initialize
+	 *  a new shared memory region, but for 2, we need to
+	 *  exit with a failure
+	 */
+
+	if ((shm_lock == SEM_FAILED)) {
 		if (errno != ENOENT) {
 			error("Unable to initialize semaphore: %m");
 			return SLURM_FAILURE;
 		}
-		debug("Lockfile found but semaphore deleted: "
-		      "creating new shm segment");
-		shm_cleanup();
-		if ((shm_lock = _sem_open(SHM_LOCKNAME,O_CREAT|O_EXCL, 
-		     0600, 0)) == SEM_FAILED) {
-			error("Unable to initialize semaphore: %m");
-			return SLURM_FAILURE;
-		}
+
+		debug2( "lockfile exists, but semaphore was deleted: "
+		        "reinitializing shm"                          );
+
+		/*
+		 * Unlink old lockfile, reopen semaphore with create flag,
+		 * and create new shared memory area
+		 */
+		sem_unlink(lockname);
+		shm_lock = _sem_open(SHM_LOCKNAME, oflags|O_CREAT, 0600, 0);
+		return _shm_new();
+	}
+	
+	if (shm_lock == SEM_FAILED) {
+		error("Unable to initialize semaphore: %m");
+		return SLURM_FAILURE;
 	}
 
-	/* Attach to shared memory region */
+	/* 
+	 * Attach to shared memory region 
+	 * If attach fails, try to create a new shm segment
+	 */
 	if ((_shm_attach() < 0) && (_shm_create() < 0)) {
 		error("shm_create(): %m");
 		return SLURM_FAILURE;
@@ -983,7 +1011,8 @@ _shm_lock_and_initialize()
 	}
 
 	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0);
-	debug3("lockname is `%s'", lockname);
+	debug3("slurmd lockfile is `%s': %m", lockname);
+
 	if (shm_lock != SEM_FAILED) /* lock didn't exist. Create shmem      */
 		return _shm_new();
 	else                        /* lock exists. Attach to shared memory */
