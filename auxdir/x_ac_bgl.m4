@@ -67,6 +67,17 @@ nly])
       BGL_INCLUDES="$bgl_includes"
       BGL_LDFLAGS="$bgl_ldflags"
       AC_DEFINE(HAVE_BGL_FILES, 1, [Define to 1 if have Blue Gene files])
+
+      AC_MSG_CHECKING(for BGL serial value)
+      bgl_serial="BGL"
+      AC_ARG_WITH(bgl-serial,
+         AC_HELP_STRING([--with-bgl-serial=NAME],
+            [set bgl serial value [[BGL]]]),
+         [bgl_serial="$withval"]
+      )
+     AC_MSG_RESULT($bgl_serial)
+     AC_DEFINE_UNQUOTED(BGL_SERIAL, "$bgl_serial", 
+        [Define the BGL serial value])
    fi
 
    AC_SUBST(BGL_INCLUDES)
