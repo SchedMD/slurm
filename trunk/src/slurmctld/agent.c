@@ -73,6 +73,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/slurmctld.h"
 
 #if COMMAND_TIMEOUT == 1
 #  define WDOG_POLL 		1	/* secs */
@@ -126,6 +127,7 @@ typedef struct task_info {
 } task_info_t;
 
 static void _alarm_handler(int dummy);
+static inline void _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
 static agent_info_t *_make_agent_info(agent_arg_t *agent_arg_ptr);
 static task_info_t *_make_task_data(agent_info_t *agent_info_ptr, int inx);
@@ -472,6 +474,15 @@ static void *_wdog(void *args)
 	return (void *) NULL;
 }
 
+/* Report a communications error for specified node */
+static inline void _comm_err(char *node_name)
+{
+#if AGENT_IS_THREAD
+	if (is_node_resp (node_name))
+#endif
+		error("agent/send_recv_msg: %s: %m", node_name);
+}
+
 /*
  * _thread_per_node_rpc - thread to issue an RPC on a collection of nodes
  * IN/OUT args - pointer to task_info_t, xfree'd on completion
@@ -520,12 +531,12 @@ static void *_thread_per_node_rpc(void *args)
 
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
-			error("agent: %s: %m", thread_ptr->node_name);
+			_comm_err(thread_ptr->node_name);
 			goto cleanup;
 		}
 	} else {
 		if (slurm_send_only_node_msg(&msg) < 0)
-			error("agent: %s: %m", thread_ptr->node_name);
+			_comm_err(thread_ptr->node_name);
 		else
 			thread_state = DSH_DONE;
 		goto cleanup;

@@ -570,6 +570,13 @@ extern int init_part_conf (void);
 extern bool is_node_down (char *name);
 
 /*
+ * is_node_resp - determine if the specified node's state is responding
+ * IN name - name of the node
+ * RET true if node exists and is responding, otherwise false 
+ */
+extern bool is_node_resp (char *name);
+
+/*
  * job_allocate - create job_records for the suppied job specification and 
  *	allocate nodes for it.
  * IN job_specs - job specifications
