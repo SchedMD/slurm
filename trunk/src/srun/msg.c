@@ -484,6 +484,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 	slurm_addr   cli_addr;
 	char         host[256];
 	short        port;
+	int          timeout = 0;	/* slurm default value */
 
 	if ((fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr)) < 0) {
 		error("Unable to accept connection: %m");
@@ -494,8 +495,14 @@ _accept_msg_connection(job_t *job, int fdnum)
 	debug2("got message connection from %s:%d", host, ntohs(port));
 
 	msg = xmalloc(sizeof(*msg));
+
+	/* multiple jobs (easily induced via no_alloc) sometimes result
+	 * in slow message responses and timeouts. Raise the timeout
+	 * to 5 seconds for no_alloc option only */
+	if (opt.no_alloc)
+		timeout = 5;
   again:
-	if (slurm_receive_msg(fd, msg, 0) < 0) {
+	if (slurm_receive_msg(fd, msg, timeout) < 0) {
 		if (errno == EINTR)
 			goto again;
 		error("slurm_receive_msg[%s]: %m", host);
