@@ -250,6 +250,8 @@ struct job_details {
 					   for accounting */
 	time_t submit_time;		/* time of submission */
 	char *work_dir;			/* pathname of working directory */
+	char **argv;			/* arguments for a batch job script */
+	uint16_t argc;			/* count of argv elements */
 };
 
 struct job_record {

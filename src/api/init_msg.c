@@ -61,6 +61,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->req_nodes   = NULL;
 	job_desc_msg->exc_nodes   = NULL;
 	job_desc_msg->script      = NULL;
+	job_desc_msg->argv        = ((char **) NULL);
+	job_desc_msg->argc        = 0;
 	job_desc_msg->shared      = (uint16_t) NO_VAL;
 	job_desc_msg->task_dist   = (uint16_t) NO_VAL;
 	job_desc_msg->time_limit  = NO_VAL;
@@ -73,6 +75,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->out         = NULL;
 	job_desc_msg->user_id     = NO_VAL;
 	job_desc_msg->work_dir    = NULL;
+	job_desc_msg->host        = NULL;
+	job_desc_msg->port        = 0;
 }
 
 /*

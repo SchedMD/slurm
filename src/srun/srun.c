@@ -384,6 +384,8 @@ _run_batch_job(void)
 		job.env_size++;
 
 	job.script		= job_script;
+	job.argv		= remote_argv;
+	job.argc		= remote_argc;
 	job.err		        = opt.efname;
 	job.in        		= opt.ifname;
 	job.out	        	= opt.ofname;

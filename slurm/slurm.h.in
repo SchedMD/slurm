@@ -186,6 +186,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0, used only by 
 				 * slurm_allocate_resources_and_run() */
 	char *script;		/* the actual job script, default NONE */
+	char **argv;		/* arguments to the script */
+	uint16_t argc;		/* number of arguments to the script */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
 	char *out;		/* pathname of stdout */
