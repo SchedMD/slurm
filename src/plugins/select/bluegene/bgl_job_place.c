@@ -71,6 +71,7 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 			break;
 	}
 }
+
 /*
  * finds the best match for a given job request 
  * 
