@@ -13,6 +13,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
@@ -20,7 +21,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
