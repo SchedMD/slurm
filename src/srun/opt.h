@@ -148,6 +148,8 @@ typedef struct srun_options {
 	char *nodelist;		/* --nodelist=node1,node2,...	*/
 	char *exc_nodes;	/* --exclude=node1,node2,... -x	*/
 	bool no_alloc;		/* --no-allocate, -Z		*/
+	int  max_launch_time;   /* Undocumented                 */
+	int  max_exit_timeout;  /* Undocumented                 */
 
 } opt_t;
 

@@ -365,6 +365,12 @@ _job_create_internal(allocation_info_t *info)
 	job->stepid  = info->stepid;
 	job->old_job = false;
 
+	/* 
+	 *  Initialize Launch and Exit timeout values
+	 */
+	job->ltimeout = 0;
+	job->etimeout = 0;
+
 	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
 	if (info->addrs)
 		memcpy( job->slurmd_addr, info->addrs, 

@@ -1,9 +1,10 @@
 /****************************************************************************\
  *  msg.c - process message traffic between srun and slurm daemons
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
+ *  Written by Mark Grondona <mgrondona@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -62,19 +63,22 @@
 #endif
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
-#define POLL_TIMEOUT_MSEC	500
 
-static time_t time_first_launch = 0;
+static int    tasks_exited     = 0;
+static uid_t  slurm_uid;
 
-static int   tasks_exited = 0;
-static uid_t slurm_uid;
 
+/*
+ *  Static prototypes
+ */
 static void	_accept_msg_connection(job_t *job, int fdnum);
 static void	_confirm_launch_complete(job_t *job);
 static void 	_exit_handler(job_t *job, slurm_msg_t *exit_msg);
 static void	_handle_msg(job_t *job, slurm_msg_t *msg);
 static inline bool _job_msg_done(job_t *job);
 static void	_launch_handler(job_t *job, slurm_msg_t *resp);
+static void     _do_poll_timeout(job_t *job);
+static int      _get_next_timeout(job_t *job);
 static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
@@ -224,10 +228,6 @@ update_failed_tasks(job_t *job, uint32_t nodeid)
 	slurm_mutex_lock(&job->task_mutex);
 	for (i = 0; i < job->ntask[nodeid]; i++) {
 		uint32_t tid = job->tids[nodeid][i];
-		if (job->err[tid] == WAITING_FOR_IO)
-			job->err[tid] = IO_DONE;
-		if (job->out[tid] == WAITING_FOR_IO)
-			job->out[tid] = IO_DONE;
 		job->task_state[tid] = SRUN_TASK_FAILED;
 		tasks_exited++;
 	}
@@ -237,7 +237,6 @@ update_failed_tasks(job_t *job, uint32_t nodeid)
 		debug2("all tasks exited");
 		update_job_state(job, SRUN_JOB_TERMINATED);
 	}
-		
 }
 
 static void
@@ -257,11 +256,15 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
 
+		update_failed_tasks(job, msg->srun_node_id);
+
+		/*
 		if (!opt.no_kill) {
 			job->rc = 124;
-			update_job_state(job, SRUN_JOB_FAILED);
+			update_job_state(job, SRUN_JOB_WAITING_ON_IO);
 		} else 
 			update_failed_tasks(job, msg->srun_node_id);
+		*/
 #ifdef HAVE_TOTALVIEW
 		tv_launch_failure();
 #endif
@@ -289,6 +292,11 @@ _confirm_launch_complete(job_t *job)
 			pthread_exit(0);
 		}
 	}
+
+	/*
+	 *  Reset launch timeout so timer will no longer go off
+	 */
+	job->ltimeout = 0;
 }
 
 static void
@@ -418,6 +426,9 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 	int              i;
 	char             buf[1024];
 
+	if (!job->etimeout && !tasks_exited) 
+		job->etimeout = time(NULL) + opt.max_exit_timeout;
+
 	for (i = 0; i < msg->num_tasks; i++) {
 		uint32_t taskid = msg->task_id_list[i];
 
@@ -504,7 +515,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 	short        port;
 
 	if ((fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr)) < 0) {
-		error("_accept_msg_connection/slurm_accept_msg_conn: %m");
+		error("Unable to accept connection: %m");
 		return;
 	}
 
@@ -516,8 +527,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 	if (slurm_receive_msg(fd, msg) == SLURM_SOCKET_ERROR) {
 		if (errno == EINTR)
 			goto again;
-		error("_accept_msg_connection/slurm_receive_msg(%s): %m",
-				host);
+		error("slurm_receive_msg[%s]: %m", host);
 		xfree(msg);
 	} else {
 
@@ -537,13 +547,83 @@ _set_jfds_nonblocking(job_t *job)
 		fd_set_nonblocking(job->jfd[i]);
 }
 
+/*
+ *  Call poll() with a timeout. (timeout argument is in seconds)
+ */
+static int
+_do_poll(job_t *job, struct pollfd *fds, int timeout)
+{
+	nfds_t nfds = job->njfds;
+	int rc;
+
+	while ((rc = poll(fds, nfds, timeout * 1000)) < 0) {
+		switch (errno) {
+		case EINTR:  continue;
+		case ENOMEM:
+		case EFAULT: fatal("poll: %m");
+		default:     error("poll: %m. Continuing...");
+			     continue;
+		}
+	}
+
+	return rc;
+}
+
+
+/*
+ *  Get the next timeout in seconds from now.
+ */
+static int 
+_get_next_timeout(job_t *job)
+{
+	int timeout = -1;
+
+	if (!job->ltimeout && !job->etimeout)
+		return -1;
+
+	if (!job->ltimeout)
+		timeout = job->etimeout - time(NULL);
+	else if (!job->etimeout)
+		timeout = job->ltimeout - time(NULL);
+	else 
+		timeout = job->ltimeout < job->etimeout ? 
+			  job->ltimeout - time(NULL) : 
+			  job->etimeout - time(NULL);
+
+	return timeout;
+}
+
+/*
+ *  Handle the two poll timeout cases:
+ *    1. Job launch timed out
+ *    2. Exit timeout has expired (either print a message or kill job)
+ */
+static void
+_do_poll_timeout(job_t *job)
+{
+	time_t now = time(NULL);
+
+	if ((job->ltimeout > 0) && (job->ltimeout <= now)) 
+		_confirm_launch_complete(job);
+
+	if ((job->etimeout > 0) && (job->etimeout <= now)) {
+		if (!opt.max_wait)
+			info("Warning: first task terminated %ds ago", 
+			     opt.max_exit_timeout);
+		else {
+			error("First task exited %ds ago", opt.max_wait);
+			report_task_status(job);
+			update_job_state(job, SRUN_JOB_FAILED);
+		}
+		job->etimeout = 0;
+	}
+}
+
 static void 
 _msg_thr_poll(job_t *job)
 {
 	struct pollfd *fds;
-	nfds_t nfds = job->njfds;
-	int i, rc;
-	static bool check_launch_msg_sent = false;
+	int i;
 
 	fds = xmalloc(job->njfds * sizeof(*fds));
 
@@ -551,32 +631,12 @@ _msg_thr_poll(job_t *job)
 
 	for (i = 0; i < job->njfds; i++)
 		_poll_set_rd(fds[i], job->jfd[i]);
-	time_first_launch = time(NULL);
 
 	while (!_job_msg_done(job)) {
-		while ((!_job_msg_done(job)) &&
-		       ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0)) {
-			if (rc == 0) {	/* timeout */
-				if (check_launch_msg_sent)
-					;
-				else if ((time(NULL) - time_first_launch) > 
-				         LAUNCH_WAIT_SEC) {
-					_confirm_launch_complete(job);
-					check_launch_msg_sent = true; 
-				}
-				continue;
-			}
 
-			switch (errno) {
-				case EINTR: continue;
-				case ENOMEM:
-				case EFAULT:
-					fatal("poll: %m");
-					break;
-				default:
-					error("poll: %m. trying again");
-					break;
-			}
+		if (_do_poll(job, fds, _get_next_timeout(job)) == 0) {
+			_do_poll_timeout(job);
+			continue;
 		}
 
 		for (i = 0; i < job->njfds; i++) {
@@ -598,8 +658,11 @@ msg_thr(void *arg)
 	job_t *job = (job_t *) arg;
 
 	debug3("msg thread pid = %ld", (long) getpid());
+
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
+
 	_msg_thr_poll(job);
+
 	return (void *)1;
 }
 

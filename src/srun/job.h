@@ -118,6 +118,9 @@ typedef struct srun_job {
 
 	pthread_t lid;		  /* launch thread id */
 
+	time_t    ltimeout;       /* Time by which all tasks must be running */
+	time_t    etimeout;       /* exit timeout (see opt.max_wait          */
+
 	host_state_t *host_state; /* nhost host states */
 
 	int *tstatus;	          /* ntask exit statii */
