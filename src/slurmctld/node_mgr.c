@@ -1558,11 +1558,6 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	}
 
 	for (i = 0; i < node_record_count; i++) {
-#ifdef HAVE_BGL
-		if (i > 0)
-			break;
-#endif
-
 		if ((kill_agent_args->node_count+1) > kill_buf_rec_size) {
 			kill_buf_rec_size += 64;
 			xrealloc ((kill_agent_args->slurm_addr), 
@@ -1577,7 +1572,9 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		strncpy (&kill_agent_args->node_names[pos],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
 		kill_agent_args->node_count++;
-
+#ifdef HAVE_BGL
+		break;	/* only done one front-end node */
+#endif
 	}
 
 	if (kill_agent_args->node_count == 0)

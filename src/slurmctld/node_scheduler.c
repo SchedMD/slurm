@@ -1408,6 +1408,10 @@ extern void re_kill_job(struct job_record *job_ptr)
 		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 			continue;
 		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
+#ifdef HAVE_BGL
+		if (agent_args->node_count > 0)
+			continue;	/* only do one front-end node */
+#endif
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 128;
 			xrealloc((agent_args->slurm_addr),
