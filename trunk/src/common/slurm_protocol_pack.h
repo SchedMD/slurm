@@ -125,7 +125,7 @@ extern int unpack_msg ( slurm_msg_t * msgi , Buf buffer );
  * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
  */
-void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;
+/* void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;*/
 
 /* unpack_job_credential
  * unpacks a slurm job credential
@@ -134,7 +134,7 @@ void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer ) ;
  *			automatically updated
  * RET 0 or error code
  */
-int unpack_job_credential( slurm_job_credential_t** cred , Buf buffer ) ;
+/* int unpack_job_credential( slurm_job_credential_t** cred , Buf buffer ) ;*/
 
 /* pack_job_step_info
  * packs a slurm job steps info

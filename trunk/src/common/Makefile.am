@@ -60,10 +60,8 @@ libdaemonize_la_SOURCES =  \
 	fd.c fd.h
 
 libcred_la_SOURCES =       \
-	credential_utils.c \
-	credential_utils.h \
-	signature_utils.c  \
-	signature_utils.h
+	slurm_cred.h       \
+	slurm_cred.c       
 
 libhostlist_la_SOURCES   = \
 	hostlist.c hostlist.h

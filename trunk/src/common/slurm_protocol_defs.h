@@ -256,7 +256,7 @@ typedef struct launch_tasks_request_msg {
 
 	int32_t   slurmd_debug; /* remote slurmd debug level */
 
-	slurm_job_credential_t *credential;	/* job credential            */
+	slurm_cred_t cred;	/* job credential            */
 
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context */
@@ -287,7 +287,6 @@ typedef struct revoke_credential_msg {
 	uint32_t job_id;
 	uint32_t job_uid;
 	time_t expiration_time;
-	char signature[SLURM_SSL_SIGNATURE_LENGTH];
 } revoke_credential_msg_t;
 
 typedef struct job_time_msg {
