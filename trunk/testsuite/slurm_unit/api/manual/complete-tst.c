@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <testsuite/dejagnu.h>
+#include "src/api/slurm.h"
+#include "testsuite/dejagnu.h"
 
 /* this program takes as and arguments a list of jobids to note as complete
  */
@@ -19,7 +19,8 @@ main (int argc, char *argv[])
 	}
 
 	for (i=1; i<argc; i++) {
-		error_code = slurm_complete_job ((uint32_t) atoi(argv[i]));
+		error_code = slurm_complete_job ((uint32_t) atoi(argv[i]),
+		                                 0, 0);
 		if (error_code)
 			printf ("slurm_complete_job error %d for job %s\n", 
 				errno, argv[i]);
