@@ -799,6 +799,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 			debug3("JobId=%u not runnable with present config",
 			       job_ptr->job_id);
 			job_ptr->priority = 1;	/* Move to end of queue */
+			last_job_update = time(NULL);
 		}
 		goto cleanup;
 	}
