@@ -24,9 +24,30 @@
 #define SLURMD_IO_MAX_BUFFER_SIZE 4096
 
 /* function prototypes */
+/* launch_tasks
+ * called by the rpc method to initiate task launch
+ * IN launch_msg	- launch task messge
+ * RET int		- return_code
+ */
 int launch_tasks ( launch_tasks_request_msg_t * launch_msg ) ;
+
+/* kill_tasks
+ * called by the rpc method to kill a job_step or set of task launches
+ * IN 			- kill task message
+ * RET int 		- return_code
+ */
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg ) ;
+
+/* kill_all_tasks
+ * kills all the currently running tasks used by shutdown code 
+ * RET 		- return_code
+ */
 int kill_all_tasks ( ) ;
+
+/* reattach_tasks_streams
+ * called by the reattach tasks rpc method to change the shmem task structs to point to a new destination for streams
+ * IN req_msg		- reattach tasks streams message
+ */
 int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg ) ;
 
 typedef struct task_start
