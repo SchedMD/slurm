@@ -56,7 +56,9 @@ common_dir = $(top_builddir)/src/common
 
 libslurm_la_LIBADD         = $(common_dir)/libcommon.la -lpthread
 
-libslurm_la_LDFLAGS        = $(OTHER_FLAGS)
+libslurm_la_LDFLAGS        = \
+	-version-info $(current):$(rev):$(age) \
+	$(OTHER_FLAGS)
 
 libslurm_la_DEPENDENCIES   = libslurm.sym $(common_dir)/libcommon.la
 
