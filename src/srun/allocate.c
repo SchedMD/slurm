@@ -162,6 +162,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 		}
 
 	}
+	info ("job %u has been allocated resources", r->job_id);
 
 	xsignal(SIGINT, SIG_IGN);
 }
