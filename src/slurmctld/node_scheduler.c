@@ -936,7 +936,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 		shared = job_ptr->details->shared;
 
 	error_code = _pick_best_nodes(node_set_ptr, node_set_size,
-				      &req_bitmap, job_ptr->details->num_procs,
+				      &req_bitmap, job_ptr->num_procs,
 				      min_nodes, max_nodes,
 				      job_ptr->details->contiguous, 
 				      shared, part_node_limit);

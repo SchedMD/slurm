@@ -405,6 +405,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->dependency, buffer);
+	pack32(dump_job_ptr->num_procs, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -447,7 +448,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
-	uint32_t dependency;
+	uint32_t dependency, num_procs;
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
@@ -464,6 +465,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&priority, buffer);
 	safe_unpack32(&alloc_sid, buffer);
 	safe_unpack32(&dependency, buffer);
+	safe_unpack32(&num_procs, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -542,6 +544,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
 	job_ptr->dependency   = dependency;
+	job_ptr->num_procs    = num_procs;
 	job_ptr->time_last_active = time(NULL);
 	strncpy(job_ptr->name, name, MAX_NAME_LEN);
 	xfree(name);
@@ -594,7 +597,6 @@ static int _load_job_state(Buf buffer)
  */
 void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	pack32((uint32_t) detail_ptr->num_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_nodes, buffer);
 	pack32((uint32_t) detail_ptr->max_nodes, buffer);
 	pack32((uint32_t) detail_ptr->total_procs, buffer);
@@ -625,14 +627,13 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	char **argv = (char **) NULL;
-	uint32_t num_procs, min_nodes, max_nodes, min_procs;
+	uint32_t min_nodes, max_nodes, min_procs;
 	uint16_t argc = 0, shared, contiguous, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
 	time_t submit_time;
 	int i;
 
 	/* unpack the job's details from the buffer */
-	safe_unpack32(&num_procs, buffer);
 	safe_unpack32(&min_nodes, buffer);
 	safe_unpack32(&max_nodes, buffer);
 	safe_unpack32(&total_procs, buffer);
@@ -677,7 +678,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(job_ptr->details->argv);
 
 	/* now put the details into the job record */
-	job_ptr->details->num_procs = num_procs;
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->max_nodes = max_nodes;
 	job_ptr->details->total_procs = total_procs;
@@ -1581,12 +1581,11 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
 		}
-		i = count_cpus(req_bitmap);
-		if (i > job_desc->num_procs)
-			job_desc->num_procs = i;
 		i = bit_set_count(req_bitmap);
 		if (i > job_desc->min_nodes)
 			job_desc->min_nodes = i;
+		if (i > job_desc->num_procs)
+			job_desc->num_procs = i;
 	}
 	if (job_desc->exc_nodes) {
 		error_code = node_name2bitmap(job_desc->exc_nodes, false,
@@ -2069,12 +2068,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->port = job_desc->port;
 	job_ptr->host = xstrdup(job_desc->host);
 	job_ptr->time_last_active = time(NULL);
+	job_ptr->num_procs = job_desc->num_procs;
 
 	detail_ptr = job_ptr->details;
 	detail_ptr->argc = job_desc->argc;
 	detail_ptr->argv = job_desc->argv;
 	job_desc->argv   = (char **) NULL; /* nothing left */
-	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
 	detail_ptr->req_tasks = job_desc->num_tasks;
@@ -2486,6 +2485,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
+	pack32(dump_job_ptr->num_procs, buffer);
 
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING)
@@ -2498,7 +2498,6 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 {
 	if (detail_ptr) {
-		pack32((uint32_t) detail_ptr->num_procs, buffer);
 		pack32((uint32_t) detail_ptr->min_nodes, buffer);
 		pack16((uint16_t) detail_ptr->shared, buffer);
 		pack16((uint16_t) detail_ptr->contiguous, buffer);
@@ -2516,7 +2515,6 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 	} 
 
 	else {
-		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
 		pack16((uint16_t) 0, buffer);
@@ -2915,10 +2913,10 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		}
 	}
 
-	if (job_specs->num_procs != NO_VAL && detail_ptr) {
-		if (super_user ||
-		    (detail_ptr->num_procs > job_specs->num_procs)) {
-			detail_ptr->num_procs = job_specs->num_procs;
+	if (job_specs->num_procs != NO_VAL) {
+		if (super_user || 
+		    (job_ptr->num_procs > job_specs->num_procs)) {
+			job_ptr->num_procs = job_specs->num_procs;
 			info("update_job: setting num_procs to %u for "
 				"job_id %u", job_specs->num_procs, 
 				job_specs->job_id);
