@@ -407,7 +407,7 @@ int Pick_Best_Nodes(struct Node_Set *Node_Set_Ptr, int Node_Set_Size,
 	Total_Nodes = Total_CPUs = 0;
     } /* else */
 
-    /* We need to pick (more) nodes here */
+    /* Identify how many feature sets we have (e.g. "[FS1|FS2|FS3|FS4]" */
     Max_Feature = Min_Feature = Node_Set_Ptr[0].Feature;
     for (i=1; i<Node_Set_Size; i++) {
 	if (Node_Set_Ptr[i].Feature > Max_Feature) Max_Feature = Node_Set_Ptr[i].Feature;
@@ -416,7 +416,7 @@ int Pick_Best_Nodes(struct Node_Set *Node_Set_Ptr, int Node_Set_Size,
 
 if (Req_CPUs != NO_VAL)	{ printf("CPU requirement for job not yet supported\n"); return EINVAL; }
 if (Req_BitMap[0])	{ printf("Incomplete job NodeList not yet supported\n");return EINVAL; }
-if (Contiguous)		{ printf("Contiguous node allocation for job not yet supported\n"); return EINVAL; }
+if (Contiguous!= NO_VAL){ printf("Contiguous node allocation for job not yet supported\n"); return EINVAL; }
 printf("More work to be done in node selection\n");
 
     for (j=Min_Feature; j<=Max_Feature; j++) {
@@ -432,10 +432,12 @@ printf("More work to be done in node selection\n");
 	    Avail_Nodes += Node_Set_Ptr[i].Nodes;
 	    Avail_CPUs += (Node_Set_Ptr[i].Nodes * Node_Set_Ptr[i].CPUs_Per_Node);
 	    if (Req_Nodes != NO_VAL) {
-		Error_Code = BitMapFit(Avail_BitMap, Req_Nodes);
-		Req_BitMap[0] = Avail_BitMap;
-		free(Total_BitMap);
-		return 0;
+		Error_Code = BitMapFit(Avail_BitMap, Req_Nodes, Contiguous);
+		if (Error_Code == 0) {
+		    Req_BitMap[0] = Avail_BitMap;
+		    free(Total_BitMap);
+		    return 0;
+		} /* if */
 	    } /* if */
 	} /* for (i */
 	memset(Total_BitMap, 0, size);
@@ -728,7 +730,6 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
     Error_Code = Pick_Best_Nodes(Node_Set_Ptr, Node_Set_Size, 
 	&Req_BitMap, Req_CPUs, Req_Nodes, Contiguous, Shared);
     if (Error_Code) goto cleanup;
-
 
     /* Mark the selected nodes as STATE_STAGE_IN */
     Allocate_Nodes(Req_BitMap);

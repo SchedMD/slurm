@@ -26,7 +26,7 @@ int Msg_From_Root(void);
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
-    int Error_Code, Line_Num;
+    int Error_Code, Line_Num, i;
     FILE *Command_File;
     char In_Line[BUF_SIZE], Node_Name[MAX_NAME_LEN];
     int CPUs, RealMemory, TmpDisk;
@@ -52,6 +52,12 @@ main(int argc, char * argv[]) {
 	printf("controller: Error %d from Read_SLURM_Conf\n", Error_Code);
 	exit(Error_Code);
     } /* if */
+
+    /* Mark everything up and idle for testing */
+    for (i=0; i<Node_Record_Count; i++) {
+	BitMapSet(Idle_NodeBitMap, i);
+	BitMapSet(Up_NodeBitMap, i);
+    } /* for */
 
     Error_Code = gethostname(Node_Name, MAX_NAME_LEN);
     if (Error_Code != 0) {
@@ -84,11 +90,11 @@ main(int argc, char * argv[]) {
 	    printf("\n\nAllocate resources for a job\n");
 	    Start_Time = clock();
 	    NodeName = NULL;
-/*	    Error_Code = Allocate_Nodes(&In_Line[8], &NodeName);   Skip over "Allocate" */
+	    Error_Code = Select_Nodes(&In_Line[8], &NodeName);   /* Skip over "Allocate" */
 	    if (Error_Code)
-		printf("Error %d allocating resources for %s\n", &In_Line[8]);
+		printf("Error %d allocating resources for %s", Error_Code, &In_Line[8]);
 	    else 
-		printf("Allocated nodes %s to job %s\n", NodeName, &In_Line[8]);
+		printf("Allocated nodes %s to job %s", NodeName, &In_Line[8]);
 	    if (NodeName) free(NodeName);
 	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
 
