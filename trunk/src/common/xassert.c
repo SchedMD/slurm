@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <src/common/log.h>
+#include "src/common/log.h"
 
 void __xassert_failed(char *expr, const char *file, int line, char *func)
 {
