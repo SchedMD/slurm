@@ -1209,7 +1209,7 @@ mode, a job is allocated to the requesting user, under which the user may
 manually run job steps via a script or in a sub-shell spawned by \srun .
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=../figures/connections.eps,scale=0.3}}
+\centerline{\epsfig{file=../figures/connections.eps,scale=0.35}}
 \caption{\small Job initiation connections overview. 1. \srun\ connects to 
          \slurmctld\ requesting resources. 2. \slurmctld\ issues a response,
 	 with list of nodes and job step credential. 3. \srun\ opens a listen
@@ -1234,7 +1234,7 @@ are not presented due to space constraints.
 \subsection{Interactive Job Initiation}
 
 \begin{figure}[tb]
-\centerline{\epsfig{file=../figures/interactive-job-init.eps,scale=0.5} }
+\centerline{\epsfig{file=../figures/interactive-job-init.eps,scale=0.45} }
 \caption{\small Interactive job initiation. \srun\ simultaneously allocates
 	 nodes and a job step from \slurmctld\ then sends a run request to all
 	 {\tt slurmd}s in job. Dashed arrows indicate a periodic request that
