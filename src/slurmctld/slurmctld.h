@@ -868,6 +868,13 @@ extern int step_create ( step_specs *step_specs,
 			 bool kill_job_when_step_done );
 
 /*
+ * Synchronize the batch job in the system with their files.
+ * All pending batch jobs must have script and environment files
+ * No other jobs should have such files
+ */
+extern int sync_job_files(void);
+
+/*
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC

@@ -32,6 +32,7 @@
 #endif
 
 #include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -107,11 +108,14 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct job_record **job_ptr,
 					 struct part_record *part_ptr,
 					 bitstr_t * req_bitmap);
+static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static void _dump_job_details_state(struct job_details *detail_ptr,
 				    Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer);
+static int  _find_batch_dir(void *x, void *key);
+static void _get_batch_job_dir_ids(List batch_dirs);
 static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		        int allocate, int will_run,
 		        struct job_record **job_rec_ptr, uid_t submit_uid);
@@ -121,6 +125,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer);
 static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
 static void _read_data_from_file(char *file_name, char **data);
+static void _remove_defunct_batch_dirs(List batch_dirs);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
 static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
@@ -128,8 +133,9 @@ static void _signal_job_on_node(uint32_t job_id, uint16_t step_id,
 static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _unload_step_state(struct job_record *job_ptr, Buf buffer);
-static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
+static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate);
+static void _validate_job_files(List batch_dirs);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				     uint16_t size);
@@ -2679,4 +2685,111 @@ old_job_info(uint32_t uid, uint32_t job_id, char **node_list,
 	if (node_addr)
 		*node_addr = job_ptr->node_addr;
 	return SLURM_SUCCESS;
+}
+
+/*
+ * Synchronize the batch job in the system with their files.
+ * All pending batch jobs must have script and environment files
+ * No other jobs should have such files
+ */
+int sync_job_files(void)
+{
+	List batch_dirs;
+
+	batch_dirs = list_create(_del_batch_list_rec);
+	_get_batch_job_dir_ids(batch_dirs);
+	_validate_job_files(batch_dirs);
+	_remove_defunct_batch_dirs(batch_dirs);
+	list_destroy(batch_dirs);
+	return SLURM_SUCCESS;
+}
+
+/* Append to the batch_dirs list the job_id's associated with 
+ *	every batch job directory in existence */
+static void _get_batch_job_dir_ids(List batch_dirs)
+{
+	DIR *f_dir;
+	struct dirent *dir_ent;
+	long long_job_id;
+	uint32_t *job_id_ptr;
+	char *endptr;
+
+	f_dir = opendir(slurmctld_conf.state_save_location);
+	if (!f_dir) {
+		error("opendir(%s): %m", 
+		      slurmctld_conf.state_save_location);
+		return;
+	}
+
+	while ((dir_ent = readdir(f_dir))) {
+		if (strncmp("job.#", dir_ent->d_name, 4))
+			continue;
+		long_job_id = strtol(&dir_ent->d_name[4], &endptr, 10);
+		if ((long_job_id == 0) || (endptr[0] != '\0'))
+			continue;
+		debug3("found batch directory for job_id %ld",long_job_id);
+		job_id_ptr = xmalloc(sizeof(uint32_t));
+		*job_id_ptr = long_job_id;
+		list_append (batch_dirs, job_id_ptr);
+	}
+
+	closedir(f_dir);
+}
+
+/* All pending batch jobs must have a batch_dir entry, 
+ *	otherwise we flag it as FAILED and don't schedule
+ * If the batch_dir entry exists for a batch job, remove it */
+static void _validate_job_files(List batch_dirs)
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_ptr;
+	int del_cnt;
+
+	job_record_iterator = list_iterator_create(job_list);
+	while ((job_ptr =
+		    (struct job_record *) list_next(job_record_iterator))) {
+		if (!job_ptr->batch_flag)
+			continue;
+		if ((job_ptr->job_state != JOB_PENDING) &&
+		    (job_ptr->job_state != JOB_RUNNING))
+			continue;
+		/* Want to keep this job's files */
+		del_cnt = list_delete_all(batch_dirs, _find_batch_dir, 
+					  &(job_ptr->job_id));
+		if ((del_cnt == 0) && (job_ptr->job_state == JOB_PENDING)) {
+			error("Script for job %u lost, state set to FAILED",
+			      job_ptr->job_id);
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->start_time = job_ptr->end_time = time(NULL);
+		}
+	}
+	list_iterator_destroy(job_record_iterator);
+}
+
+/* List matching function, see common/list.h */
+static int _find_batch_dir(void *x, void *key)
+{
+	uint32_t *key1 = x;
+	uint32_t *key2 = key;
+	return (int)(*key1 == *key2);
+}
+/* List entry deletion function, see common/list.h */
+static void _del_batch_list_rec(void *x)
+{
+	xfree(x);
+}
+
+/* Remove all batch_dir entries in the list */
+static void _remove_defunct_batch_dirs(List batch_dirs)
+{
+	ListIterator batch_dir_inx;
+	uint32_t *job_id_ptr;
+
+	batch_dir_inx = list_iterator_create(batch_dirs);
+	while ((job_id_ptr = list_next(batch_dir_inx))) {
+		error("Purging files for defunct batch job %u",
+		      *job_id_ptr);
+		_delete_job_desc_files(*job_id_ptr);
+	}
+	list_iterator_destroy(batch_dir_inx);
 }
