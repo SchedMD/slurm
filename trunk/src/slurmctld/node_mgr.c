@@ -911,7 +911,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			}
 			else if ((state_val == NODE_STATE_DRAINED) ||
 			         (state_val == NODE_STATE_DRAINING)) {
-				if (bit_test (idle_node_bitmap, node_inx))
+				if ((node_ptr->run_job_cnt + node_ptr->comp_job_cnt) == 0)
 					state_val = NODE_STATE_DRAINED;
 				else
 					state_val = NODE_STATE_DRAINING;

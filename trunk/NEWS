@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     distributing large rlimit to jobs.
  -- Add support for slurm_spawn() and associated APIs (needed for IBM 
     SP systems).
+ -- Fix bug in update of node state to DRAINING/DRAINED when update 
+    request occurs prior to initial node registration.
 
 * Changes in SLURM 0.3.4
 ========================
