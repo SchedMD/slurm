@@ -163,6 +163,9 @@ static int  _validate_config_nodes(void)
         	/* search here */
 		itr_init = list_iterator_create(bgl_init_part_list);
 		while ((init_record = (bgl_record_t*) list_next(itr_init))) {
+//info("%s:%s",nodes, init_record->nodes);
+//info("%d:%d", conf_record->conn_type, init_record->conn_type);
+//info("%d:%d", conf_record->node_use, init_record->node_use);
 			if (strcmp(nodes, init_record->nodes))
 				continue;	/* wrong nodes */
 			if ((conf_record->conn_type != init_record->conn_type)
@@ -517,15 +520,15 @@ static int _parse_bgl_spec(char *in_line)
 	new_record->nodes = nodes;
 	nodes = NULL;	/* pointer moved, nothing left to xfree */
 	
-	if (!conn_type || !strcmp(conn_type,"MESH"))
+	if (!conn_type || !strcasecmp(conn_type,"MESH"))
 		new_record->conn_type = SELECT_MESH;
 	else 
 		new_record->conn_type = SELECT_TORUS;
 	
-	if (!node_use || !strcmp(conn_type,"VIRTUAL"))
-		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-	else 
+	if (!node_use || !strcasecmp(conn_type,"COPROCESSOR"))
 		new_record->node_use = SELECT_COPROCESSOR_MODE;
+	else
+		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 	
 	list_push(bgl_conf_list, new_record);
 #if _DEBUG
