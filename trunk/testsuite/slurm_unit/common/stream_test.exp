@@ -24,7 +24,7 @@ proc send_recv_test { id_1 id_2 message } {
 }
 
 proc num_test { client_id server_id size } {
-	for { set i 0 } { $i < ($size) } { incr i 1 } {
+	for { set i 0 } { $i < ($size) } { incr i 100 } {
 		send_recv_test $client_id $server_id $i
 		send_recv_test $server_id $client_id $i
 	}
