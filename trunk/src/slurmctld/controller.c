@@ -123,6 +123,7 @@ inline static int   _report_locks_set(void);
 static void         _run_backup(void);
 inline static void  _save_all_state(void);
 static void *       _service_connection(void *arg);
+static int          _set_slurmctld_state_loc(void);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
@@ -193,9 +194,11 @@ int main(int argc, char *argv[])
 		setrlimit(RLIMIT_CORE, &rlim);
 	}
 
-	if ((error_code = read_slurm_conf(recover)))
-		fatal("read_slurm_conf error %d reading %s",
+	if ((error_code = read_slurm_conf(recover))) {
+		error("read_slurm_conf error %d reading %s",
 		      error_code, SLURM_CONFIG_FILE);
+		exit(1);
+	}
 	
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
@@ -204,11 +207,12 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	if (slurmctld_conf.state_save_location) {
-		(void) mkdir(slurmctld_conf.state_save_location, 0700);
-		if (chdir(slurmctld_conf.state_save_location))
-			fatal("chdir to %s error %m",
-			      slurmctld_conf.state_save_location);
+	/* 
+	 * Create StateSaveLocation directory if necessary, and chdir() to it.
+	 */
+	if (_set_slurmctld_state_loc() < 0) {
+		error("Unable to initialize StateSaveLocation");
+		exit(1);
 	}
 
 	if (daemonize) {
@@ -2570,4 +2574,28 @@ _init_pidfile(void)
 	 * flocks the pidfile.
 	 */
 	close(fd);
+}
+
+/*
+ * create state directory as needed and "cd" to it 
+ */
+static int
+_set_slurmctld_state_loc(void)
+{
+	if ((mkdir(slurmctld_conf.state_save_location, 0755) < 0) && 
+	    (errno != EEXIST)) {
+		error("mkdir(%s): %m", slurmctld_conf.state_save_location);
+		return SLURM_ERROR;
+	}
+
+	/*
+	 * Only chdir() to spool directory if slurmctld will be 
+	 * running as a daemon
+	 */
+	if (daemonize && chdir(slurmctld_conf.state_save_location) < 0) {
+		error("chdir(%s): %m", slurmctld_conf.state_save_location);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
