@@ -1152,16 +1152,21 @@ ping_nodes (void)
 		debug3 ("ping %s now", node_record_table_ptr[i].name);
 		if ((agent_args->addr_count+1) > buf_rec_size) {
 			buf_rec_size += 32;
-			xrealloc ((agent_args->slurm_addr), (sizeof (struct sockaddr_in) * buf_rec_size));
-			xrealloc ((agent_args->node_names), (MAX_NAME_LEN * buf_rec_size));
+			xrealloc ((agent_args->slurm_addr), 
+			          (sizeof (struct sockaddr_in) * buf_rec_size));
+			xrealloc ((agent_args->node_names), 
+			          (MAX_NAME_LEN * buf_rec_size));
 		}
-		agent_args->slurm_addr[agent_args->addr_count] = node_record_table_ptr[i].slurm_addr;
+		agent_args->slurm_addr[agent_args->addr_count] = 
+						node_record_table_ptr[i].slurm_addr;
 		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->addr_count],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->addr_count++;
 
-		if (age >= slurmctld_conf.slurmd_timeout) {
-			error ("node %s not responding", node_record_table_ptr[i].name);
+		if ((age >= slurmctld_conf.slurmd_timeout) &&
+		    (node_record_table_ptr[i].node_state != NODE_STATE_DOWN)) {
+			error ("Node %s not responding, setting DOWN", 
+			       node_record_table_ptr[i].name);
 			last_node_update = time (NULL);
 			bit_clear (up_node_bitmap, i);
 			bit_clear (idle_node_bitmap, i);
@@ -1174,6 +1179,7 @@ ping_nodes (void)
 		xfree (agent_args);
 		return;
 	}
+
 	debug ("Spawning ping agent");
 	if (pthread_attr_init (&attr_agent))
 		fatal ("pthread_attr_init error %m");
