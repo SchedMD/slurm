@@ -40,20 +40,20 @@ void
 slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 {
 	int i;
-	job_table_t * job_ptr = job_info_msg_ptr -> job_array ;
+	job_info_t * job_ptr = job_info_msg_ptr -> job_array ;
 
 	fprintf( out, "Jobs updated at %ld, record count %d\n",
 		(long) job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
 
 	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
 	{
-		slurm_print_job_table ( out, & job_ptr[i] ) ;
+		slurm_print_job_info ( out, & job_ptr[i] ) ;
 	}
 }
 
 /* slurm_print_job_table - output information about a specific Slurm job */
 void
-slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
+slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 {
 	int j;
 
