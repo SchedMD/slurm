@@ -47,6 +47,7 @@
 
 extern slurm_ctl_conf_t slurmctld_conf;
 
+#define MAX_NAME_LEN	32
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
 struct config_record {
