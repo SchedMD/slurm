@@ -230,9 +230,8 @@ extern int parse_node_name (char *node_name, char **format, int *start_inx,
  */
 extern int slurm_reconfigure ();
 
-/* 
- * update_config - request that slurmctld update its configuration per request
- * input: a line containing configuration information per the configuration file format
- * output: returns 0 on success, errno otherwise
+/*
+ * slurm_update_node - updates the node state
  */
-extern int slurm_update_config (char *spec);
+int slurm_update_node ( update_node_msg_t * node_msg )  ;
+int slurm_update_partition ( partition_desc_msg_t * desc_msg ) ;
