@@ -61,7 +61,7 @@ if {[string compare $node_old_state ""] == 0} {
 #
 # Change that node's state
 #
-spawn $scontrol update NodeName=$node_name State=DRAINING  
+spawn $scontrol update NodeName=$node_name State=DRAINING Reason=TESTING
 expect {
 	-re "slurm_update error: ($alpha_numeric) ($alpha_numeric)" {
 		set access_err 0
@@ -98,6 +98,10 @@ expect {
 		set read_state $expect_out(1,string)
 		exp_continue
 	}
+	-re "Reason=($alpha_cap)" {
+		set reason_code $expect_out(1,string)
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
@@ -116,6 +120,17 @@ if {$authorized == 1} {
 
 	if {$state_changed != 1} {
 		send_user "\nFAILURE: scontrol state change error\n"
+		set exit_code 1
+	}
+}
+if {$authorized == 1} {
+	set reason_set 0
+	if {[string compare $reason_code "TESTING"] == 0} {
+		set reason_set 1
+	}
+
+	if {$reason_set != 1} {
+		send_user "\nFAILURE: scontrol reason change error\n"
 		set exit_code 1
 	}
 }
