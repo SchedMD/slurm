@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurmd.c - main server machine daemon for slurm
+ *  slurmd.c - main server machine daemon for slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdio.h> 
 #include <stdlib.h>
+#include <string.h>
 #include <getopt.h>
 #include <stdio.h>
 #include <time.h>
@@ -38,6 +39,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <src/common/hostlist.h>
+#include <src/common/parse_spec.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
 #include <src/common/list.h>
@@ -80,6 +82,7 @@ slurmd_config_t slurmd_conf ;
 pthread_t thread_id_rpc = (pthread_t)0 ;
 
 /* function prototypes */
+static char *public_cert_filename ( );
 static void slurmd_req ( slurm_msg_t * msg );
 static void * slurmd_msg_engine ( void * args ) ;
 inline static int send_node_registration_status_msg ( ) ;
@@ -198,9 +201,56 @@ int slurmd_init ( )
 	shmem_seg = get_shmem ( ) ;
 	init_shmem ( shmem_seg ) ;
 	slurm_ssl_init ( ) ;
-	slurm_init_verifier ( & verify_ctx , "public.cert" ) ;
+	slurm_init_verifier ( & verify_ctx , public_cert_filename () ) ;
 	initialize_credential_state_list ( & credential_state_list ) ;
 	return SLURM_SUCCESS ;
+}
+
+static char *public_cert_filename ( )
+{
+	int i, j, error_code, line_num = 0;
+	FILE *slurm_spec_file;	/* pointer to input data file */
+	char in_line[BUF_SIZE];	/* input line */
+	char *job_credential_public_certificate = NULL;
+
+	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	if (slurm_spec_file == NULL)
+		fatal ("public_cert_filename error %d opening file %s", 
+			errno, SLURM_CONFIG_FILE);
+
+	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		line_num++;
+		if (strlen (in_line) >= (BUF_SIZE - 1)) {
+			fatal ("public_cert_filename line %d, of input file %s too long\n",
+				 line_num, SLURM_CONFIG_FILE);
+		}		
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		for (i = 0; i < BUF_SIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
+				for (j = i; j < BUF_SIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}	
+				continue;
+			}	
+			in_line[i] = (char) NULL;
+			break;
+		}		
+
+		/* parse what is left */
+		error_code = slurm_parser(in_line,
+			"JobCredentialPublicCertificate=", 's', &job_credential_public_certificate,
+			"END");
+		if (error_code || job_credential_public_certificate)
+			break;
+	}			
+	fclose (slurm_spec_file);
+	return job_credential_public_certificate;
 }
 
 int slurmd_destroy ( )
