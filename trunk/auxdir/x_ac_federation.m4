@@ -38,7 +38,7 @@ AC_DEFUN([X_AC_FEDERATION],
       echo "no"
    done
 
-   if test "$ac_have_federation" != "yes" ; then
+   if test "x$ac_have_federation" != "xyes" ; then
       AC_MSG_NOTICE([Cannot support Federation without libntbl])        
    else
       AC_DEFINE(HAVE_LIBNTBL, 1, [define if you have libntbl.])
