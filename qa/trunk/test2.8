@@ -45,6 +45,12 @@ expect {
 	eof {
 	}
 }
+if {$job_id1 == 0} {
+	send_user "\nFAILURE: srun submit failed\n"
+	kill_srun
+	exit 1
+}
+
 spawn $srun --batch --output=/dev/null --error=/dev/null -t5 $file_in
 expect {
 	-re "jobid ($number) submitted" {
@@ -60,6 +66,13 @@ expect {
 	eof {
 	}
 }
+if {$job_id2 == 0} {
+	send_user "\nFAILURE: srun submit failed\n"
+	cancel_job $job_id1
+	kill_srun
+	exit 1
+}
+
 exec $bin_rm -f $file_in
 
 #

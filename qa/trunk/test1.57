@@ -49,6 +49,10 @@ expect {
 		exit 1
 	}
 	eof {
+		send_user "\nFAILURE: srun terminated\n"
+		kill_srun
+		exec $bin_rm -f $file_in
+		exit 1
 	}
 }
 exec $bin_rm -f $file_in
