@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "August 2002" "scontrol 0.1" "Slurm components"
+.TH SCONTROL "1" "September 2002" "scontrol 0.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -33,6 +33,9 @@ record counts, etc.
 .TP
 COMMAND
 .TP
+\fIabort\fP
+Instruct the Slurm controller to terminate immediately and generate a core file.
+.TP
 \fIexit\fP
 Terminate the execution of scontrol.
 .TP
@@ -65,7 +68,7 @@ element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 By default, all elements of the entity type specified are printed.
 .TP
 \fIshutdown\fP
-Instruct the Slurm controller to terminate.
+Instruct the Slurm controller to save its current state and terminate.
 .TP
 \fIupdate\fP \fISPECIFICATION\fP 
 Update job, node or partition configuration per the supplied specification.
