@@ -64,6 +64,7 @@
 #include "src/srun/net.h"
 #include "src/srun/opt.h"
 #include "src/srun/signals.h"
+#include "src/srun/sigstr.h"
 #include "src/srun/reattach.h"
 
 #ifdef HAVE_TOTALVIEW
@@ -648,62 +649,79 @@ static int _set_rlimit_env(void)
 	return rc;
 }
 
+static void
+_print_script_exit_status(const char *argv0, int status)
+{
+	char *corestr = "";
+
+	if (status == 0) {
+		verbose("%s: Done", argv0);
+		return;
+	}
+
+#ifdef WCOREDUMP
+	if (WCOREDUMP(status))
+		corestr = " (core dumped)";
+#endif
+
+	if (WIFSIGNALED(status))
+		error("%s: %s%s", argv0, sigstr(status), corestr);
+	else
+		error("%s: Exit %d", argv0, WEXITSTATUS(status));
+
+	return;
+}
+
 /* allocation option specified, spawn a script and wait for it to exit */
 static void _run_job_script (job_t *job)
 {
-	char *shell = NULL;
-	int   i;
-	pid_t child;
+	int   status;
+	pid_t cpid;
+	char **argv = (remote_argv[0] ? remote_argv : NULL);
 
 	if (_set_batch_script_env(job) < 0) 
 		return;
 
-	/* determine shell from script (if any) or user default */
-	if (remote_argc) {
-		char ** new_argv;
-		(void) _is_file_text (remote_argv[0], &shell);
-		if (shell == NULL)
-			shell = _get_shell ();	/* user's default shell */
-		new_argv = (char **) xmalloc ((remote_argc + 2) * 
-						sizeof(char *));
-		new_argv[0] = xstrdup (shell);
-		for (i=0; i<remote_argc; i++)
-			new_argv[i+1] = remote_argv[i];
-		xfree (remote_argv);
-		remote_argc++;
-		remote_argv = new_argv;
-	} else {
-		shell = _get_shell ();	/* user's default shell */
-		remote_argc = 1;
-		remote_argv = (char **) xmalloc((remote_argc + 1) * 
-						sizeof(char *));
-		remote_argv[0] = xstrdup(shell);
-		remote_argv[1] = NULL;	/* End of argv's (for execv) */
+	if (!argv) {
+		/*
+		 *  If no arguments were supplied, spawn a shell
+		 *    for the user.
+		 */
+		argv = xmalloc(2 * sizeof(char *));
+		argv[0] = _get_shell();
+		argv[1] = NULL;
 	}
 
-	/* spawn the shell with arguments (if any) */
-	if (_verbose)
-		info("Spawning srun shell %s", shell);
+	if ((cpid = fork()) < 0) {
+		error("fork: %m");
+		exit(1);
+	} 
 
-	switch ( (child = fork()) ) {
-		case -1:
-			error("fork:%m");
-		case 0:
-			unblock_all_signals();
-			execv(shell, remote_argv);
-			error("exec: %m");
-			exit(1);
-		default:
-			while ( (i = wait(NULL)) ) {
-				if (i == -1)
-					fatal("wait error %m");
-				if (i == child)
-					break;
-			}
+	if (cpid == 0) { 
+		/*
+		 *  Child.
+		 */
+		unblock_all_signals();
+		execvp(argv[0], argv);
+		exit(1);
 	}
+
+	/* 
+	 *  Parent continues.
+	 */
+
+    again:
+	if (waitpid(cpid, &status, 0) < (pid_t) 0) {
+		if (errno == EINTR)
+			goto again;
+		error("waitpid: %m");
+	}
+
+	_print_script_exit_status(xbasename(argv[0]), status); 
 
 	if (unsetenv("SLURM_JOBID")) {
 		error("Unable to clear SLURM_JOBID environment variable");
 		return;
 	}
+
 }
