@@ -925,8 +925,8 @@ static int _sync_nodes_to_comp_job(void)
 		}
 	}
 	if (update_cnt)
-		info("_sync_nodes_to_jobs updated state of %d nodes",
-		     update_cnt);
+		info("_sync_nodes_to_comp_jobs completing %d jobs",
+			update_cnt);
 	return update_cnt;
 }
 
