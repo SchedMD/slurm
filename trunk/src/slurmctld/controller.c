@@ -1814,6 +1814,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->control_machine    	= NULL ;
 	conf_ptr->epilog           	= NULL ;
 	conf_ptr->fast_schedule     	= 1 ;
+	conf_ptr->first_job_id     	= 1 ;
 	conf_ptr->hash_base         	= 10 ;
 	conf_ptr->heartbeat_interval	= 30;
 	conf_ptr->inactive_limit	= 0;		/* unlimited */
