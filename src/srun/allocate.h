@@ -47,7 +47,7 @@ resource_allocation_response_msg_t * allocate_nodes(void);
  * (see opt.h), if script != NULL then this is a batch job.
  * The resulting memory must be freed with  job_desc_msg_destroy()
  */
-job_desc_msg_t * job_desc_msg_create_from_opts (const char *script);
+job_desc_msg_t * job_desc_msg_create_from_opts (char *script);
 
 /* 
  * Destroy (free memory from) a job_desc_msg_t object allocated with

@@ -37,7 +37,7 @@ setenvf(const char *fmt, ...)
  * Return the number of elements in the environment `env'
  */
 int 
-envcount (const char **env)
+envcount (char **env)
 {
 	int envc = 0;
 	while (env[envc] != NULL)

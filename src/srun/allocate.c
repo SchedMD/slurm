@@ -40,6 +40,7 @@
 #include "src/srun/allocate.h"
 #include "src/srun/msg.h"
 #include "src/srun/opt.h"
+#include "src/srun/env.h"
 #include "src/srun/attach.h"
 
 #define MAX_ALLOC_WAIT 60	/* seconds */
@@ -214,7 +215,7 @@ _intr_handler(int signo)
  * (see opt.h)
  */
 job_desc_msg_t *
-job_desc_msg_create_from_opts (const char *script)
+job_desc_msg_create_from_opts (char *script)
 {
 	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
