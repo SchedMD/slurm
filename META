@@ -1,0 +1,11 @@
+##
+# $Id$
+##
+# Metadata for RPM/TAR makefile targets
+##
+  Meta:		1
+  Name:		slurm
+  Major:		0
+  Minor:		1
+  Version:	0.1
+  Release:	1
