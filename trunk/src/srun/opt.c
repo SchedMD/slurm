@@ -492,6 +492,7 @@ static void _opt_default()
 	opt.max_wait	= slurm_get_wait_time();
 
 	opt.quit_on_intr = false;
+	opt.disable_status = false;
 	opt. test_only   = false;
 
 	opt.quiet = 0;
@@ -576,6 +577,7 @@ env_vars_t env_vars[] = {
   {"SLURM_STDOUTMODE",    OPT_STRING,     &opt.ofname,        NULL           },
   {"SLURM_TIMELIMIT",     OPT_INT,        &opt.time_limit,    NULL           },
   {"SLURM_WAIT",          OPT_INT,        &opt.max_wait,      NULL           },
+  {"SLURM_DISABLE_STATUS",OPT_INT,        &opt.disable_status,NULL           },
   {NULL, 0, NULL, NULL}
 };
 
@@ -751,6 +753,7 @@ static void _opt_args(int argc, char **argv)
 		{"nodelist",      required_argument, 0, 'w'},
 		{"wait",          required_argument, 0, 'W'},
 		{"exclude",       required_argument, 0, 'x'},
+		{"disable-status", no_argument,      0, 'X'},
 		{"no-allocate",   no_argument,       0, 'Z'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
 		{"core",             required_argument, 0, LONG_OPT_CORE},
@@ -774,7 +777,7 @@ static void _opt_args(int argc, char **argv)
 		{NULL,               0,                 0, 0}
 	};
 	char *opt_string = "+a:Abc:C:d:D:e:g:Hi:IjJ:klm:n:N:"
-		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:Z";
+		"o:Op:P:qQr:R:st:T:uU:vVw:W:x:XZ";
 	char **rest = NULL;
 
 	opt.progname = xbasename(argv[0]);
@@ -950,6 +953,9 @@ static void _opt_args(int argc, char **argv)
 			opt.exc_nodes = xstrdup(optarg);
 			if (!_valid_node_list(&opt.exc_nodes))
 				exit(1);
+			break;
+		case (int)'X': 
+			opt.disable_status = true;
 			break;
 		case (int)'Z':
 			opt.no_alloc = true;
@@ -1434,7 +1440,7 @@ static bool _under_parallel_debugger (void)
 static void _usage(void)
 {
  	printf(
-"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n"
+"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err] [-e err]\n"
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
@@ -1482,6 +1488,7 @@ static void _help(void)
 "  -W, --wait=sec              seconds to wait after first task exits\n"
 "                              before killing job\n"
 "  -q, --quit-on-interrupt     quit on single Ctrl-C\n"
+"  -X, --disable-status        Disable Ctrl-C status feature\n"
 "  -v, --verbose               verbose mode (multiple -v's increase verbosity)\n"
 "  -Q, --quiet                 quiet mode (suppress informational messages)\n"
 "  -d, --slurmd-debug=level    slurmd debug level\n"

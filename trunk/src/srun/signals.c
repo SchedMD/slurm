@@ -191,7 +191,7 @@ _handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
 		pthread_exit (0);
 	}
 
-	if ((time(NULL) - *last_intr) > 1) {
+	if (((time(NULL) - *last_intr) > 1) && !opt.disable_status) {
 		info("interrupt (one more within 1 sec to abort)");
 		if (mode != MODE_ATTACH)
 			report_task_status(job);
