@@ -687,7 +687,7 @@ int read_slurm_conf(int recover)
 			break;
 		}
 
-		/* parse what is left, non-commnents */
+		/* parse what is left, non-comments */
 
 		/* overall configuration parameters */
 		if ((error_code =

@@ -560,20 +560,21 @@ static void *_thread_per_node_rpc(void *args)
 	}
 
 #if AGENT_IS_THREAD
-	/* SPECIAL CASE: Immediately mark node as IDLE */
-	if (((task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
-	     (task_ptr->msg_type == REQUEST_KILL_JOB)) &&
-	    (node_ptr = find_node_record(thread_ptr->node_name))) {
-		kill_job_msg_t *kill_job;
-		kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
-		node_ptr = find_node_record(thread_ptr->node_name);
-		debug3("Kill job_id %u on node %s ",
-		       kill_job->job_id, thread_ptr->node_name);
+	/* SPECIAL CASE: Immediately mark node as IDLE on job kill reply */
+	if ((task_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
+	     (task_ptr->msg_type == REQUEST_KILL_JOB)) {
 		lock_slurmctld(node_write_lock);
-		make_node_idle(node_ptr, find_job_record(kill_job->job_id));
+		if ((node_ptr = find_node_record(thread_ptr->node_name))) {
+			kill_job_msg_t *kill_job;
+			kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
+			debug3("Kill job_id %u on node %s ",
+			       kill_job->job_id, thread_ptr->node_name);
+			make_node_idle(node_ptr, 
+				       find_job_record(kill_job->job_id));
+			/* scheduler(); Overhead too high, 
+			 * only do when last node registers */
+		}
 		unlock_slurmctld(node_write_lock);
-		/* scheduler(); Overhead too high, 
-		 * only do when last node registers */
 	}
 #endif
 
