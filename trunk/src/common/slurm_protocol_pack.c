@@ -1719,6 +1719,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack32(job_desc_ptr->priority, buffer);
 
 	packstr(job_desc_ptr->req_nodes, buffer);
+	packstr(job_desc_ptr->exc_nodes, buffer);
 	packstr_array(job_desc_ptr->environment, job_desc_ptr->env_size,
 		      buffer);
 	packstr(job_desc_ptr->script, buffer);
@@ -1734,7 +1735,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack32(job_desc_ptr->time_limit, buffer);
 
 	pack32(job_desc_ptr->num_procs, buffer);
-	pack32(job_desc_ptr->num_nodes, buffer);
+	pack32(job_desc_ptr->min_nodes, buffer);
+	pack32(job_desc_ptr->max_nodes, buffer);
 	pack32(job_desc_ptr->num_tasks, buffer);
 	pack32(job_desc_ptr->user_id, buffer);
 
@@ -1771,6 +1773,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->priority, buffer);
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->req_nodes, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->exc_nodes, &uint16_tmp, buffer);
 	safe_unpackstr_array(&job_desc_ptr->environment,
 			     &job_desc_ptr->env_size, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->script, &uint16_tmp, buffer);
@@ -1786,7 +1789,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->time_limit, buffer);
 
 	safe_unpack32(&job_desc_ptr->num_procs, buffer);
-	safe_unpack32(&job_desc_ptr->num_nodes, buffer);
+	safe_unpack32(&job_desc_ptr->min_nodes, buffer);
+	safe_unpack32(&job_desc_ptr->max_nodes, buffer);
 	safe_unpack32(&job_desc_ptr->num_tasks, buffer);
 	safe_unpack32(&job_desc_ptr->user_id, buffer);
 

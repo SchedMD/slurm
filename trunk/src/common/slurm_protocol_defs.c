@@ -85,6 +85,8 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 			xfree(msg->partition);
 		if (msg->req_nodes)
 			xfree(msg->req_nodes);
+		if (msg->exc_nodes)
+			xfree(msg->exc_nodes);
 		if (msg->script)
 			xfree(msg->script);
 		if (msg->err)
