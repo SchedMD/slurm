@@ -40,6 +40,7 @@
 #include <time.h>
 
 #include "src/common/fd.h"
+#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/slurm_errno.h"
 #include "src/common/slurm_auth.h"

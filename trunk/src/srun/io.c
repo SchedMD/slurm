@@ -38,6 +38,7 @@
 #include <signal.h>
 
 #include "src/common/fd.h"
+#include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
