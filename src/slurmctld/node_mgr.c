@@ -955,6 +955,72 @@ int update_node ( update_node_msg_t * update_node_msg )
 	return error_code;
 }
 
+/* 
+ * drain_nodes - drain one or more nodes, 
+ *  no-op for nodes already drained or draining
+ * IN nodes - nodes to drain
+ * IN reason - reason to drain the nodes
+ * RET SLURM_SUCCESS or error code
+ * global: node_record_table_ptr - pointer to global node table
+ */
+extern int drain_nodes ( char *nodes, char *reason )
+{
+	int error_code = 0, node_inx;
+	struct node_record *node_ptr;
+	char  *this_node_name ;
+	hostlist_t host_list;
+	uint16_t base_state, no_resp_flag, state_val;
+
+	if ((nodes == NULL) || (nodes[0] == '\0')) {
+		error ("drain_nodes: invalid node name  %s", nodes);
+		return ESLURM_INVALID_NODE_NAME;
+	}
+	
+	if ( (host_list = hostlist_create (nodes)) == NULL) {
+		error ("hostlist_create error on %s: %m", nodes);
+		return ESLURM_INVALID_NODE_NAME;
+	}
+
+	last_node_update = time (NULL);
+	while ( (this_node_name = hostlist_shift (host_list)) ) {
+		int err_code = 0;
+		node_ptr = find_node_record (this_node_name);
+		node_inx = node_ptr - node_record_table_ptr;
+		if (node_ptr == NULL) {
+			error ("drain_nodes: node %s does not exist", 
+				this_node_name);
+			error_code = ESLURM_INVALID_NODE_NAME;
+			free (this_node_name);
+			break;
+		}
+
+		base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_ptr->node_state &  NODE_STATE_NO_RESPOND;
+		if ((base_state == NODE_STATE_DRAINED)
+		||  (base_state == NODE_STATE_DRAINING)) {
+			/* state already changed, nothing to do */
+			free (this_node_name);
+			continue;
+		}
+
+		if ((node_ptr->run_job_cnt + node_ptr->comp_job_cnt) == 0)
+			state_val = NODE_STATE_DRAINED;
+		else
+			state_val = NODE_STATE_DRAINING;
+		node_ptr->node_state = state_val | no_resp_flag;
+		bit_clear (avail_node_bitmap, node_inx);
+		info ("drain_nodes: node %s state set to %s",
+			this_node_name, node_state_string(state_val));
+
+		xfree(node_ptr->reason);
+		node_ptr->reason = xstrdup(reason);
+
+		free (this_node_name);
+	}
+
+	hostlist_destroy (host_list);
+	return error_code;
+}
 /* Return true if admin request to change node state from old to new is valid */
 static bool _valid_node_state_change(enum node_states old, enum node_states new)
 {

@@ -431,6 +431,16 @@ extern int delete_partition(delete_part_msg_t *part_desc_ptr);
  */
 extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 
+/* 
+ * drain_nodes - drain one or more nodes, 
+ *  no-op for nodes already drained or draining
+ * IN nodes - nodes to drain
+ * IN reason - reason to drain the nodes
+ * RET SLURM_SUCCESS or error code
+ * global: node_record_table_ptr - pointer to global node table
+ */
+extern int drain_nodes ( char *nodes, char *reason );
+
 /* dump_all_job_state - save the state of all jobs to file
  * RET 0 or error code */
 extern int dump_all_job_state ( void );
