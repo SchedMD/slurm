@@ -20,13 +20,19 @@
 #include <src/common/slurm_protocol_util.h>
 #include <src/common/slurm_protocol_defs.h>
 
+#define SLURM_PORT 7000
+#define PRIMARY_SLURM_CONTROLLER	"pri_slrumctld.llnl.gov"
+#define SECONDARY_SLURM_CONTROLLER	"sec_slrumctld.llnl.gov"
+
 //WHAT ABOUT THESE INCLUDES
 
 /* high level routines */
 /* msg functions */
+slurm_fd slurm_init_msg_engine_port ( uint16_t port ) ;
 slurm_fd slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
 uint32_t slurm_receive_msg ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_t ** msg ) ; 
 uint32_t slurm_shutdown_msg_engine ( slurm_fd open_fd ) ;
+uint32_t slurm_shutdown_msg_conn ( slurm_fd open_fd ) ;
 
 /* send msg functions */
 
@@ -55,6 +61,7 @@ uint32_t slurm_send_node_msg ( slurm_fd open_fd , slurm_addr * slurm_address , s
 
 void slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
 void slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
+void slurm_set_addr_any ( slurm_addr * slurm_address , uint16_t port ) ;
 void slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 void slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
 #endif
