@@ -39,7 +39,6 @@
 #include <src/srun/job.h>
 #include <src/srun/opt.h>
 
-static pthread_mutex_t tasks_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int tasks_exited = 0;
 
 #define _poll_set_rd(_pfd, _fd) do {    \
@@ -70,11 +69,12 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		error("recvd return code %d from %s", msg->return_code,
 				msg->node_name);
 		return;
-	} else {
-		
+	} else {	
+		pthread_mutex_lock(&job->task_mutex);
 		if (msg->srun_node_id >= 0 && msg->srun_node_id < job->nhosts)
 			job->host_state[msg->srun_node_id] = 
 				SRUN_HOST_REPLIED;
+		pthread_mutex_unlock(&job->task_mutex);
 	}
 
 }
@@ -89,9 +89,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 	job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
 	pthread_mutex_unlock(&job->task_mutex);
 
-	pthread_mutex_lock(&tasks_mutex);
 	tasks_exited++;
-	pthread_mutex_unlock(&tasks_mutex);
 	if (tasks_exited == opt.nprocs) {
 		debug2("all tasks exited");
 		update_job_state(job, SRUN_JOB_OVERDONE);
@@ -176,7 +174,7 @@ _msg_thr_poll(job_t *job)
 	for (i = 0; i < job->njfds; i++)
 		_poll_set_rd(fds[i], job->jfd[i]);
 
-	for (;;) {
+	while (1) {
 
 		while (poll(fds, nfds, -1) < 0) {
 			switch (errno) {
@@ -201,6 +199,7 @@ _msg_thr_poll(job_t *job)
 				_accept_msg_connection(job, i);
 		}
 	}
+	xfree(fds);	/* if we were to break out of while loop */
 }
 
 void *
