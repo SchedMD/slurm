@@ -62,7 +62,6 @@ main (int argc, char *argv[])
 	job_mesg. time_limit = 200;
 	job_mesg. num_procs = 1000;
 	job_mesg. num_nodes = 400;
-job_mesg. num_nodes = 4096;
 	job_mesg. user_id = 1500;
 
 
@@ -88,8 +87,6 @@ job_mesg. num_nodes = 4096;
 		job_mesg. time_limit = 200;
 		job_mesg. num_procs = 4000;
 		job_mesg. user_id = 1500;
-/* job_mesg. num_nodes = 4096; */
-job_mesg. contiguous = 0;
 
 		/* the string also had Immediate */
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
