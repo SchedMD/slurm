@@ -353,8 +353,10 @@ static char *_job_node_use_string(uint16_t inx)
 {
 	if (inx == SELECT_COPROCESSOR_MODE)
 		return "coprocessor";
-	else
+	else if (inx == SELECT_VIRTUAL_NODE_MODE)
 		return "virtual";
+	else
+		return "nav";
 }
 
 
@@ -462,7 +464,8 @@ extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
 				*tmp_char = xstrdup(jobinfo->bgl_part_id);
 			break;
 		default:
-			debug("select_g_get_jobinfo data_type %d invalid", data_type);
+			debug("select_g_get_jobinfo data_type %d invalid", 
+				data_type);
 	}
 
 	return rc;

@@ -192,7 +192,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/***********************************************/
 		/* check the node_use specified matches        */
 		/***********************************************/
-		if (node_use != record->node_use) {
+		if ((node_use != record->node_use) 
+		&&  (node_use != SELECT_NAV)) {
 			debug("bgl partition %s node-use not usable", 
 					record->nodes);
 			continue;
