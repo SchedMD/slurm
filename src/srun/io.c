@@ -68,6 +68,7 @@ static void _bcast_stdin(int fd, job_t *job);
 static ssize_t _readx(int fd, char *buf, size_t maxbytes);
 static ssize_t _readn(int fd, void *buf, size_t nbytes);
 static char * _next_line(char **str);
+static int _validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do { 	\
 	(_pfd).fd = _fd;		\
@@ -271,6 +272,9 @@ _accept_io_stream(job_t *job, int i)
 			return;
 		}
 		free_buf(buffer); /* NOTE: this frees msgbuf */
+		if (_validate_header(&hdr, job))
+			return;
+
 
 		/* Assign new fds arbitrarily for now, until slurmd
 		 * sends along some control information
@@ -437,3 +441,30 @@ _bcast_stdin(int fd, job_t *job)
 	return;
 }
 
+static int _validate_header(slurm_io_stream_header_t *hdr, job_t *job)
+{
+	if (hdr->version != SLURM_PROTOCOL_VERSION) {
+		error("Invalid header version, notify administrators");
+		return SLURM_ERROR;
+	}
+
+	if ((hdr->task_id < 0) && (hdr->task_id >= opt.nprocs)) {
+		error("Invalid header client task_id, notify administrators");
+		return SLURM_ERROR;
+	}
+
+	if ((hdr->type != SLURM_IO_STREAM_INOUT) && 
+	    (hdr->type != SLURM_IO_STREAM_SIGERR)) {
+		error("Invalid header client type, notify administrators");
+		return SLURM_ERROR;
+	}
+
+	if (memcmp((void *)job->cred->signature,
+	           (void *)hdr->key, SLURM_SSL_SIGNATURE_LENGTH)) {
+		debug("Invalid header signature, notify administrators");
+	return SLURM_SUCCESS; /* FIXME */
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
