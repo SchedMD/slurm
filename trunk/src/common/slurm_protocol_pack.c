@@ -1,3 +1,28 @@
+/****************************************************************************\
+ * slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -90,11 +115,18 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_JOB_WILL_RUN :
 			pack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
+		case REQUEST_UPDATE_JOB :
+			pack_job_desc ( (job_desc_msg_t * )  msg -> data , 
+				( void ** ) buffer , buf_len )  ;
+			break ;
+			break ;
 		case REQUEST_UPDATE_NODE :
-			pack_update_node_msg ( ( update_node_msg_t * ) msg-> data , ( void ** ) buffer , buf_len ) ;
+			pack_update_node_msg ( ( update_node_msg_t * ) msg-> data , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_PARTITION :
-			pack_update_partition_msg ( ( update_part_msg_t * ) msg->data , ( void ** ) buffer ,  buf_len ) ;
+			pack_update_partition_msg ( ( update_part_msg_t * ) msg->data , 
+				( void ** ) buffer ,  buf_len ) ;
 			break ;
 		case REQUEST_LAUNCH_TASKS :
 			pack_launch_tasks_msg ( ( launch_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
@@ -207,18 +239,25 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_JOB_WILL_RUN :
 			unpack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
+		case REQUEST_UPDATE_JOB :
+			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), 
+				( void ** ) buffer , buf_len ) ;
+			break ;
 		case REQUEST_UPDATE_NODE :
-			unpack_update_node_msg ( ( update_node_msg_t ** ) & ( msg-> data ) , ( void ** ) buffer , buf_len ) ;
-
+			unpack_update_node_msg ( ( update_node_msg_t ** ) & ( msg-> data ) , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_PARTITION :
-			unpack_update_partition_msg ( ( update_part_msg_t ** ) & ( msg->data ) , ( void ** ) buffer ,  buf_len ) ;
+			unpack_update_partition_msg ( ( update_part_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer ,  buf_len ) ;
 			break ;
 		case REQUEST_LAUNCH_TASKS :
-			unpack_launch_tasks_msg ( ( launch_tasks_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
+			unpack_launch_tasks_msg ( ( launch_tasks_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer , buf_len ) ;
 			break ; 
 		case REQUEST_KILL_TASKS :
-			unpack_kill_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
+			unpack_kill_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_CANCEL_JOB :
 			break ;

@@ -38,6 +38,9 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_NOT_TOP_PRIORITY,		"Immediate execution impossible, higher priority jobs pending" },
 	{ ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE, "Requested node configuration is not available" },
 	{ ESLURM_NODES_BUSY,			"Requested nodes are busy" },
+	{ ESLURM_INVALID_JOB_ID,		"Invalid job id specified" },
+	{ ESLURM_INVALID_NODE_NAMES,		"Invalid node name specified" },
+	{ ESLURM_INVALID_PARTITION,		"Invalid partition name specified" },
 
 	/* partition_mgr.c/update_part */
 	{ ESLURM_INVALID_PARTITION_NAME,	"Invalid partition name specified" },

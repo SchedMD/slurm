@@ -1,3 +1,29 @@
+/****************************************************************************\
+ * slurm_protocol_defs.h - definitions used for RPCs
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #ifndef _SLURM_PROTOCOL_DEFS_H
 #define _SLURM_PROTOCOL_DEFS_H
 
@@ -71,6 +97,25 @@ typedef enum { test1, test2
 #define REQUEST_RECONFIGURE			1011
 #define RESPONSE_RECONFIGURE			1012 
 
+#define REQUEST_BUILD_INFO			3011
+#define RESPONSE_BUILD_INFO			3012
+#define REQUEST_JOB_INFO			3021
+#define RESPONSE_JOB_INFO			3022
+#define REQUEST_JOB_STEP_INFO			3031
+#define RESPONSE_JOB_STEP_INFO			3032
+#define REQUEST_NODE_INFO			3041
+#define RESPONSE_NODE_INFO			3042
+#define REQUEST_PARTITION_INFO			3051
+#define RESPONSE_PARTITION_INFO			3052
+#define REQUEST_ACCTING_INFO			3061
+#define RESPONSE_ACCOUNTING_INFO		3062
+#define REQUEST_GET_JOB_STEP_INFO		3071
+#define RESPONSE_GET_JOB_STEP_INFO		3072
+
+#define REQUEST_UPDATE_JOB			3081
+#define REQUEST_UPDATE_NODE			3082
+#define REQUEST_UPDATE_PARTITION		3083
+
 #define REQUEST_RESOURCE_ALLOCATION 		4001
 #define RESPONSE_RESOURCE_ALLOCATION		4002
 #define REQUEST_SUBMIT_BATCH_JOB		4011
@@ -90,24 +135,6 @@ typedef enum { test1, test2
 #define REQUEST_JOB_WILL_RUN	 		4081
 #define RESPONSE_JOB_WILL_RUN			4082
 #define MESSAGE_REVOKE_JOB_CREDENTIAL		4901
-
-#define REQUEST_BUILD_INFO			3011
-#define RESPONSE_BUILD_INFO			3012
-#define REQUEST_JOB_INFO			3021
-#define RESPONSE_JOB_INFO			3022
-#define REQUEST_JOB_STEP_INFO			3031
-#define RESPONSE_JOB_STEP_INFO			3032
-#define REQUEST_NODE_INFO			3041
-#define RESPONSE_NODE_INFO			3042
-#define REQUEST_PARTITION_INFO			3051
-#define RESPONSE_PARTITION_INFO			3052
-#define REQUEST_ACCTING_INFO			3061
-#define RESPONSE_ACCOUNTING_INFO		3062
-#define REQUEST_GET_JOB_STEP_INFO		3071
-#define RESPONSE_GET_JOB_STEP_INFO		3072
-
-#define REQUEST_UPDATE_NODE			3081
-#define REQUEST_UPDATE_PARTITION		3091
 
 #define REQUEST_CREATE_JOB_STEP			5001
 #define RESPONSE_CREATE_JOB_STEP		5002
