@@ -221,6 +221,7 @@ test7.1    Test priorities slurmctld assigns to jobs. Uses srun --hold and
            --batch options.
 test7.2    Test of BNR functions available via API library. 
 test7.3    Test of slurm_spawn API (needed on IBM SP systems).
+test7.4    Test of TotalView operation with SLURM
 
 
 test9.#    System stress testing. Exercises all commands and daemons.
