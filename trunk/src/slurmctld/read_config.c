@@ -54,7 +54,6 @@ main(int argc, char * argv[]) {
     Error_Code = Init_SLURM_Conf();
     if (Error_Code != 0) exit(Error_Code);
 
-    printf("NOTE: We expect a bunch of Find_Node_Record lookup errors for initialization.\n");
     if (argc == 2) 
 	Error_Code = Read_SLURM_Conf(argv[1]);
     else
@@ -112,6 +111,25 @@ main(int argc, char * argv[]) {
 	printf("NodeBitMap=%s\n",	BitMap);
 	if (BitMap) free(BitMap);
     } /* for */
+
+    printf("Let's reinitialize the database 1000 times. Run /bin/ps to get memory size.\n");
+    sleep(10);
+    for (i=0; i<1000; i++) {
+	Error_Code = Init_SLURM_Conf();
+	if (Error_Code != 0) exit(Error_Code);
+
+	if (argc == 2) 
+	    Error_Code = Read_SLURM_Conf(argv[1]);
+	else
+	    Error_Code = Read_SLURM_Conf(SLURM_CONF);
+
+	if (Error_Code) {
+	    printf("Error %d from Read_SLURM_Conf\n", Error_Code);
+	    exit(1);
+	} /* if */
+    } /* for */
+    printf("All done. Run /bin/ps again look for increase in memory size (leakage).\n");
+    sleep(10);
 
     exit(0);
 } /* main */
@@ -217,9 +235,9 @@ int Build_BitMaps() {
 	    j = Node_Record_Point - Node_Record_Table_Ptr;
 	    BitMapSet(Config_Record_Point->NodeBitMap, j);
 	} /* for */
+	if (Format) free(Format);
     } /* while */
     list_iterator_destroy(Config_Record_Iterator);
-
 
     /* Scan partition table and identify nodes in each */
     AllPart_NodeBitMap = (unsigned *)malloc(size);
@@ -285,24 +303,35 @@ int Build_BitMaps() {
 #endif
 	    } else {
 		BitMapSet(Part_Record_Point->NodeBitMap, j);
+		BitMapSet(AllPart_NodeBitMap, j);
 		Part_Record_Point->TotalNodes++;
 		Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
 	    } /* else */
 	} /* for */
+	if(Format) free(Format);
     } /* while */
-    BitMapSet(AllPart_NodeBitMap, j);
+    free(AllPart_NodeBitMap);
     list_iterator_destroy(Part_Record_Iterator);
     return 0;
 } /* Build_BitMaps */
 
 
 /* 
- * Init_SLURM_Conf - Initialize the SLURM configuration values. 
- * This should be called before first calling Read_SLURM_Conf.
+ * Init_SLURM_Conf - Initialize or re-initialize the SLURM configuration  
+ *	values. This should be called before calling Read_SLURM_Conf.  
  * Output: return value - 0 if no error, otherwise an error code
  */
 int Init_SLURM_Conf() {
     int Error_Code;
+
+    if (ControlMachine)   {
+	free(ControlMachine);
+	ControlMachine = NULL;
+    }
+    if (BackupController) {
+ 	free(BackupController);
+	BackupController = NULL;
+    }
 
     Error_Code = Init_Node_Conf();
     if (Error_Code) return Error_Code;
@@ -368,10 +397,10 @@ int Load_Integer(int *destination, char *keyword, char *In_Line) {
  *        keyword - String to search for
  *        In_Line - String to search for keyword
  * Output: *destination - set to value, No change if value not found, 
- *           this memory location must later be freed
  *	     if *destination had previous value, that memory location is automatically freed
  *         In_Line - The keyword and value (if present) are overwritten by spaces
  *         return value - 0 if no error, otherwise an error code
+ * NOTE: destination must be free when no longer required
  */
 int Load_String(char **destination, char *keyword, char *In_Line) {
     char Scratch[BUF_SIZE];	/* Scratch area for parsing the input line */
@@ -503,7 +532,8 @@ int Parse_Node_Spec (char *In_Line) {
 	    Error_Code = EINVAL;
 	    break;
 	} /* if */
-	if (strcmp(This_Node_Name, "DEFAULT") == 0) {
+	if (strcmp(NodeName, "DEFAULT") == 0) {
+	    if (i == Start_Inx)              free(NodeName);
 	    if (CPUs_Val != NO_VAL)          Default_Config_Record.CPUs = CPUs_Val;
 	    if (RealMemory_Val != NO_VAL)    Default_Config_Record.RealMemory = RealMemory_Val;
 	    if (TmpDisk_Val != NO_VAL)       Default_Config_Record.TmpDisk = TmpDisk_Val;
@@ -612,6 +642,7 @@ int Parse_Part_Spec (char *In_Line) {
     } /* if */
 
     if (strcmp(PartitionName, "DEFAULT") == 0) {
+	free(PartitionName);
 	if (MaxTime_Val  != NO_VAL)    Default_Part.MaxTime      = MaxTime_Val;
 	if (MaxNodes_Val != NO_VAL)    Default_Part.MaxNodes     = MaxNodes_Val;
 	if (Key_Val != NO_VAL)         Default_Part.Key          = Key_Val;
@@ -624,7 +655,6 @@ int Parse_Part_Spec (char *In_Line) {
 	    if (Default_Part.Nodes) free(Default_Part.Nodes);
 	    Default_Part.Nodes = Nodes;
 	} /* if */
-	free(PartitionName);
 	return 0;
     } /* if */
 
@@ -719,6 +749,7 @@ int Read_SLURM_Conf (char *File_Name) {
 	    syslog(LOG_ALERT, "Read_SLURM_Conf line %d, of input file %s too long\n", 
 		Line_Num, File_Name);
 #endif
+	    fclose(SLURM_Spec_File);
 	    return E2BIG;
 	    break;
 	} /* if */
@@ -740,37 +771,41 @@ int Read_SLURM_Conf (char *File_Name) {
 
 	/* Parse what is left */
 	/* Overall SLURM configuration parameters */
-	if (Error_Code=Load_String(&ControlMachine, "ControlMachine=", In_Line))     return Error_Code;
-	if (Error_Code=Load_String(&BackupController, "BackupController=", In_Line)) return Error_Code;
+	if (Error_Code=Load_String(&ControlMachine, "ControlMachine=", In_Line)) {
+	    fclose(SLURM_Spec_File);
+	    return Error_Code;
+	} /* if */
+	if (Error_Code=Load_String(&BackupController, "BackupController=", In_Line)) {
+	    fclose(SLURM_Spec_File);
+	    return Error_Code;
+	} /* if */
 
 	/* Node configuration parameters */
-	if (Error_Code=Parse_Node_Spec(In_Line)) return Error_Code;
+	if (Error_Code=Parse_Node_Spec(In_Line)) {
+	    fclose(SLURM_Spec_File);
+	    return Error_Code;
+	} /* if */
 
 	/* Partition configuration parameters */
-	if (Error_Code=Parse_Part_Spec(In_Line)) return Error_Code;
+	if (Error_Code=Parse_Part_Spec(In_Line)) {
+	    fclose(SLURM_Spec_File);
+	    return Error_Code;
+	} /* if */
 
 	/* Report any leftover strings on input line */
 	Report_Leftover(In_Line, Line_Num);
     } /* while */
+    fclose(SLURM_Spec_File);
 
     /* If values not set in configuration file, set defaults */
     if (BackupController == NULL) {
-	BackupController = (char *)malloc(1);
-	if (BackupController == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
+	fprintf(stderr, "Read_SLURM_Conf: BackupController value not specified.\n");
 #else
-	    syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n");
-#endif
-	    return ENOMEM;
-	} /* if */
-	BackupController[0] = (char)NULL;
-#if DEBUG_SYSTEM
-    fprintf(stderr, "Read_SLURM_Conf: BackupController value not specified.\n");
-#else
-    syslog(LOG_WARNING, "Read_SLURM_Conf: BackupController value not specified.\n");
+	syslog(LOG_WARNING, "Read_SLURM_Conf: BackupController value not specified.\n");
 #endif
     } /* if */
+
     if (ControlMachine == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Read_SLURM_Conf: ControlMachine value not specified.\n");

@@ -25,6 +25,7 @@
 #define SEPCHARS " \n\t"
 
 struct	Part_Record Default_Part;		/* Default configuration values */
+List	Part_List = NULL;			/* Partition List */
 char	Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
 struct	Part_Record *Default_Part_Loc = NULL;	/* Location of default partition */
 time_t	Last_Part_Update;			/* Time of last update to Part Records */
@@ -236,7 +237,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
 
 /* 
  * Delete_Part_Record - Delete record for partition with specified name
- * Input: name - name of the desired node 
+ * Input: name - Name of the desired node, Delete all partitions if pointer is NULL 
  * Output: return 0 on success, errno otherwise
  */
 int Delete_Part_Record(char *name) {
@@ -255,9 +256,10 @@ int Delete_Part_Record(char *name) {
     } /* if */
 
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
-	if (strcmp(Part_Record_Point->Name, name) != 0) continue;
+	if (name &&  (strcmp(Part_Record_Point->Name, name) != 0)) continue;
 	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
 	if (Part_Record_Point->Nodes)       free(Part_Record_Point->Nodes);
+	if (Part_Record_Point->NodeBitMap)  free(Part_Record_Point->NodeBitMap);
 	if (list_delete(Part_Record_Iterator) != 1) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Delete_Part_Record: list_delete failure on %s\n", name);
@@ -267,17 +269,23 @@ int Delete_Part_Record(char *name) {
 	    strcpy(Part_Record_Point->Name, "DEFUNCT");
 	} else
 	    free(Part_Record_Point);
-	list_iterator_destroy(Part_Record_Iterator);
-	return 0;
+
+	if (name) {
+	    list_iterator_destroy(Part_Record_Iterator);
+	    return 0;
+	} /* if */
     } /* while */
 
     list_iterator_destroy(Part_Record_Iterator);
+    if (name) {		/* Could not find specific partition name */
 #if DEBUG_SYSTEM
-    fprintf(stderr, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
+	fprintf(stderr, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
 #else
-    syslog(LOG_ERR, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
+	syslog(LOG_ERR, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
 #endif
-    return ENOENT;
+	return ENOENT;
+    } else 
+	return 0;
 } /* Delete_Part_Record */
 
 
@@ -477,13 +485,22 @@ int Init_Part_Conf() {
     Default_Part.AllowGroups = (char *)NULL;
     Default_Part.MaxTime     = -1;
     Default_Part.MaxNodes    = -1;
-    Default_Part.Nodes       = (char *)NULL;
     Default_Part.Key         = 1;
     Default_Part.StateUp     = 1;
     Default_Part.TotalNodes  = 0;
     Default_Part.TotalCPUs   = 0;
+    if (Default_Part.Nodes) free(Default_Part.Nodes);
+    Default_Part.Nodes       = (char *)NULL;
+    if (Default_Part.AllowGroups) free(Default_Part.AllowGroups);
+    Default_Part.AllowGroups = (char *)NULL;
+    if (Default_Part.NodeBitMap) free(Default_Part.NodeBitMap);
+    Default_Part.NodeBitMap  = (unsigned *)NULL;
 
-    Part_List = list_create(NULL);
+    if (Part_List) 	/* Delete defunct partitions */
+	(void)Delete_Part_Record(NULL);
+    else
+	Part_List = list_create(NULL);
+
     if (Part_List == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Init_Part_Conf: list_create can not allocate memory\n");
@@ -492,6 +509,7 @@ int Init_Part_Conf() {
 #endif
 	return ENOMEM;
     } /* if */
+
     strcpy(Default_Part_Name, "");
     Default_Part_Loc = (struct Part_Record *)NULL;
 

@@ -35,6 +35,7 @@ time_t 	Last_Node_Update =(time_t)NULL;	/* Time of last update to Node Records *
 unsigned *Up_NodeBitMap  = NULL;		/* Bitmap of nodes are UP */
 unsigned *Idle_NodeBitMap = NULL;	/* Bitmap of nodes are IDLE */
 
+int	Delete_Config_Record();
 void	Dump_Hash();
 int 	Hash_Index(char *name);
 void 	Rehash();
@@ -85,9 +86,11 @@ main(int argc, char * argv[]) {
     BitMapSet(Map1, 71);
     Out_Line = BitMapPrint(Map1);
     printf("BitMapPrint #1 shows %s\n", Out_Line);
+    free(Out_Line);
     Map2 = BitMapCopy(Map1);
     Out_Line = BitMapPrint(Map2);
     printf("BitMapPrint #2 shows %s\n", Out_Line);
+    free(Out_Line);
     Map3 = BitMapCopy(Map1);
     BitMapClear(Map2, 23);
     BitMapOR(Map3, Map2);
@@ -174,7 +177,7 @@ main(int argc, char * argv[]) {
 	if ((Start_Inx != 3) || (End_Inx != 234)) printf("ERROR: Parse_Node_Name failure\n");
 	printf("Parse_Node_Name of \"%s\" produces format \"%s\", %d to %d, %d records\n", 
 	    Out_Line, Format, Start_Inx, End_Inx, Count_Inx);
-	free(Format);
+	if (Format) free(Format);
     } /* else */
 
 #if PROTOTYPE_API
@@ -275,7 +278,7 @@ void BitMapClear(unsigned *BitMap, int Position) {
  * BitMapCopy - Create a copy of a bitmap
  * Input: BitMap - The bitmap create a copy of
  * Output: Returns pointer to copy of BitMap or NULL if error (no memory)
- *   The returned value MUST BE FREED by the calling routine
+ * NOTE:  The returned value MUST BE FREED by the calling routine
  */
 unsigned *BitMapCopy(unsigned *BitMap) {
     int i, size;
@@ -417,6 +420,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
     Config_Point->RealMemory = Default_Config_Record.RealMemory;
     Config_Point->TmpDisk = Default_Config_Record.TmpDisk;
     Config_Point->Weight = Default_Config_Record.Weight;
+    Config_Point->Nodes = NULL;
     Config_Point->NodeBitMap = NULL;
     if (Default_Config_Record.Feature) {
 	Config_Point->Feature = (char *)malloc(strlen(Default_Config_Record.Feature)+1);
@@ -491,11 +495,49 @@ struct Node_Record *Create_Node_Record(int *Error_Code) {
 } /* Create_Node_Record */
 
 
+/*
+ * Delete_Config_Record - Delete all configuration records
+ * Output: Returns 0 if no error, ENOMEM otberwise
+ */
+int Delete_Config_Record() {
+    ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
+    struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
+
+    Last_Node_Update = time(NULL);
+    Config_Record_Iterator = list_iterator_create(Config_List);
+    if (Config_Record_Iterator == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Delete_Config_Record: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Delete_Config_Record: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+
+    while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
+	if (Config_Record_Point->Feature)     free(Config_Record_Point->Feature);
+	if (Config_Record_Point->Nodes)       free(Config_Record_Point->Nodes);
+	if (Config_Record_Point->NodeBitMap)  free(Config_Record_Point->NodeBitMap);
+	if (list_delete(Config_Record_Iterator) != 1) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Delete_Config_Record: list_delete failure\n");
+#else
+	    syslog(LOG_ALERT, "Delete_Config_Record: list_delete failure\n");
+#endif
+	} else
+	    free(Config_Record_Point);
+    } /* while */
+
+    list_iterator_destroy(Config_Record_Iterator);
+    return 0;
+} /* Delete_Config_Record */
+
+
 /* 
  * Delete_Node_Record - Delete record for node with specified name
  *   To avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to STATE_DOWN
- * Input: name - name of the desired node 
+ * Input: name - Name of the desired node, Delete all nodes if pointer is NULL
  * Output: return 0 on success, errno otherwise
  */
 int Delete_Node_Record(char *name) {
@@ -631,6 +673,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
+		if (Config_Spec_List) free(Config_Spec_List);
 		list_iterator_destroy(Config_Record_Iterator);
 		return ENOMEM;
 	    } /* if */
@@ -647,7 +690,9 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	    syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
+	    free(Buffer);
 	    list_iterator_destroy(Config_Record_Iterator);
+	    free(Config_Spec_List);
 	    return ENOMEM;
 	} /* if */
 	Config_Spec_List[Config_Spec_List_Cnt++].Config_Record_Point = Config_Record_Point;
@@ -724,6 +769,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
+		free(Config_Spec_List);
 		return ENOMEM;
 	    } /* if */
 	} /* if */
@@ -748,6 +794,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	Buffer_Loc += sizeof(i);
 
     } /* for (inx */
+    free(Config_Spec_List);
 
     Buffer = realloc(Buffer, (int)(Buffer_Loc - Buffer));
     if (Buffer == NULL) {
@@ -782,17 +829,11 @@ struct Node_Record *Find_Node_Record(char *name) {
 		return (Node_Record_Table_Ptr+Hash_Table[i]);
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Find_Node_Record: Hash table lookup failure for %s\n", name);
+	Dump_Hash();
 #else
 	syslog(LOG_DEBUG, "Find_Node_Record: Hash table lookup failure for %s\n", name);
 #endif
     } /* if */
-
-#if DEBUG_SYSTEM
-    if (Hash_Table) {
-	printf("Sequential search for %s\n", name);
-	Dump_Hash();
-    } /* if */
-#endif
 
     /* Revert to sequential search */
     for (i=0; i<Node_Record_Count; i++) {
@@ -800,11 +841,13 @@ struct Node_Record *Find_Node_Record(char *name) {
 	return (Node_Record_Table_Ptr+i);
     } /* for */
 
+    if (Hash_Table) {
 #if DEBUG_SYSTEM
-    fprintf(stderr, "Find_Node_Record: Lookup failure for %s\n", name);
+	fprintf(stderr, "Find_Node_Record: Lookup failure for %s\n", name);
 #else
-    syslog(LOG_ERR, "Find_Node_Record: Lookup failure for %s\n", name);
+	syslog(LOG_ERR, "Find_Node_Record: Lookup failure for %s\n", name);
 #endif
+    } /* if */
     return (struct Node_Record *)NULL;
 } /* Find_Node_Record */
 
@@ -866,8 +909,18 @@ int Hash_Index(char *name) {
  * Output: return value - 0 if no error, otherwise an error code
  */
 int Init_Node_Conf() {
-
     Last_Node_Update = time(NULL);
+
+    Node_Record_Count = 0;
+    if (Node_Record_Table_Ptr) {
+	free(Node_Record_Table_Ptr);
+	Node_Record_Table_Ptr = NULL;
+    }
+    if (Hash_Table)  {
+	free(Hash_Table);
+	Hash_Table = NULL;
+    }
+
     strcpy(Default_Node_Record.Name, "DEFAULT");
     Default_Node_Record.NodeState    = STATE_UNKNOWN;
     Default_Node_Record.LastResponse = (time_t)0;
@@ -875,17 +928,18 @@ int Init_Node_Conf() {
     Default_Config_Record.RealMemory = 1;
     Default_Config_Record.TmpDisk    = 1;
     Default_Config_Record.Weight     = 1;
+    if (Default_Config_Record.Feature) free(Default_Config_Record.Feature);
     Default_Config_Record.Feature    = (char *)NULL;
+    if (Default_Config_Record.Nodes) free(Default_Config_Record.Nodes);
+    Default_Config_Record.Nodes      = (char *)NULL;
+    if (Default_Config_Record.NodeBitMap) free(Default_Config_Record.NodeBitMap);
+    Default_Config_Record.NodeBitMap = (unsigned *)NULL;
 
-    if (Config_List) {	/* Second time executed, warning */
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Init_Node_Conf: executed more than once\n");
-#else
-	syslog(LOG_WARNING, "Init_Node_Conf: executed more than once\n");
-#endif
-    } /* if */
+    if (Config_List) 	/* Delete defunct configuration entries */
+	(void)Delete_Config_Record();
+    else
+	Config_List = list_create(NULL);
 
-    Config_List = list_create(NULL);
     if (Config_List == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Init_Node_Conf: list_create can not allocate memory\n");
@@ -1390,7 +1444,7 @@ int Load_Node_Name(char *Req_Name, char *Next_Name, int *State, int *CPUs,
 	if (Read_Config_List) free(Read_Config_List);
 	return 0;
     } /* while */
-    free(Read_Config_List);
+    if (Read_Config_List) free(Read_Config_List);
 #if DEBUG_SYSTEM
     fprintf(stderr, "Load_Node_Name: Could not locate node %s\n", Req_Name);
 #else
