@@ -44,6 +44,7 @@ int query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_ppt
 
 /* Node Functions */
 void display_all_nodes( node_info_msg_t* node_msg );
+void display_node_info_header( void );
 void display_nodes_list( List nodes );
 void display_nodes_list_long( List nodes );
 char* node_name_string_from_list( List nodes, char* buffer );
@@ -75,7 +76,6 @@ main (int argc, char *argv[])
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
-	print_options();
 
 	if ( query_server( &partition_msg, &node_msg ) != 0 )
 		exit (1);
@@ -116,14 +116,19 @@ query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_pptr  )
  *                        DISPLAY NODE INFO FUNCTIONS
  *****************************************************************************/
 static const char display_line[] = "--------------------------------------------------------------------------------\n";
-static const char display_node_format[] = "%15.15s %10.10s %4.4s %7.7s %7.7s %5.5s %10.10s %s";
+int node_sz_name = 15;
+int node_sz_state = 10;
+int node_sz_cpus = 4;
+int node_sz_mem = 7;
+int node_sz_disk = 7;
+int node_sz_weight = 5;
+int node_sz_part = 10;
+int node_sz_features = 0;
 
 void display_all_nodes( node_info_msg_t* node_msg )
 {
-	printf( "%15s %10s %4s %7s %7s %5s %10s %s\n",
-			"Name", "State","CPUS", "MEMORY", "DISK", "WGHT", "PARTITION", "FEATURES");
-	printf( display_line );
 
+	display_node_info_header();
 
 	if ( params.long_output == true || params.node != NULL )
 	{
@@ -154,45 +159,63 @@ void display_all_nodes( node_info_msg_t* node_msg )
 	}
 }
 
+void display_node_info_header()
+{
+	print_str( "NODES", node_sz_name, false );
+	printf(" ");
+	print_str( "STATE", node_sz_state, false);
+	printf(" ");
+	print_str( "CPUS", node_sz_cpus, true);
+	printf(" ");
+	print_str( "MEM", node_sz_mem, true);
+	printf(" ");
+	print_str( "DISK", node_sz_disk, true);
+	printf(" ");
+	print_str( "WGHT", node_sz_weight, true);
+	printf(" ");
+	print_str( "PART", node_sz_part, false );
+	printf(" ");
+	print_str( "FEATURES", node_sz_features, false );
+	printf("\n");
+	printf( display_line );
+}
+
+void display_node_info( node_info_t* node, char* name )
+{
+	print_str( name, node_sz_name, false );
+	printf(" ");
+	print_str( node_state_string( node->node_state ), node_sz_state, false);
+	printf(" ");
+	print_int( node-> cpus, node_sz_cpus, true);
+	printf(" ");
+	print_int( node-> real_memory, node_sz_mem, true);
+	printf(" ");
+	print_int( node-> tmp_disk, node_sz_disk, true);
+	printf(" ");
+	print_int( node-> weight, node_sz_weight, true);
+	printf(" ");
+	print_str( node-> partition, node_sz_part, false );
+	printf(" ");
+	print_str( node-> features, node_sz_features, false );
+	printf("\n");
+}
+
 void
 display_nodes_list( List nodes )
 {
 	/*int console_width = atoi( getenv( "COLUMNS" ) );*/
-	int console_width = 80;
-	char line[BUFSIZ];
-	char format[32];
 	char node_names[32];
 	node_info_t* curr = list_peek( nodes ) ;
 	node_name_string_from_list( nodes, node_names );
 
-
-	snprintf(line, BUFSIZ, display_node_format,
-			node_names,
-			node_state_string( curr->node_state ), 
-			int_to_str( curr-> cpus ),
-			int_to_str( curr-> real_memory ),
-			int_to_str( curr-> tmp_disk ),
-			int_to_str( curr-> weight ),
-			curr-> partition,
-			curr-> features );
-
-	if ( params.line_wrap )
-		printf( "%s\n", line );
-	else
-	{
-		snprintf(format, 32, "%%.%ds\n", MAX(80,console_width) );
-		printf( format, line );
-	}
+	display_node_info( curr, node_names );
 }
 	
 void
 display_nodes_list_long( List nodes )
 {
 	/*int console_width = atoi( getenv( "COLUMNS" ) );*/
-	int console_width = 80;
 	int count = 0;
-	char line[BUFSIZ];
-	char format[32];
 	ListIterator i = list_iterator_create( nodes );
 	node_info_t* curr = NULL ;
 
@@ -200,24 +223,7 @@ display_nodes_list_long( List nodes )
 	{
 		if ( params.partition != NULL && strcmp( params.partition, curr-> partition) )
 			continue;
-
-		snprintf(line, BUFSIZ, display_node_format,
-				curr->name,
-				node_state_string( curr->node_state ), 
-				int_to_str( curr-> cpus ),
-				int_to_str( curr-> real_memory ),
-				int_to_str( curr-> tmp_disk ),
-				int_to_str( curr-> weight ),
-				curr-> partition,
-				curr-> features );
-
-		if ( params.line_wrap )
-			printf( "%s\n", line );
-		else
-		{
-			snprintf(format, 32, "%%.%ds\n", MAX(80,console_width) );
-			printf( format, line );
-		}
+		display_node_info( curr, curr->name );
 		count++;	
 	}
 	printf( "-- %.8s NODES LISTED --\n\n",
@@ -397,7 +403,7 @@ print_partition_header( bool no_name )
 		printf("\t");
 	else
 	{
-		print_str( "NAME", part_sz_part, false ); 
+		print_str( "PARTITION", part_sz_part, false ); 
 		printf(" ");
 	}
 	print_str( "NODES", part_sz_num, true );
@@ -483,12 +489,14 @@ display_all_partition_info_long( List partitions )
 	struct partition_summary* partition ;
 	ListIterator part_i = list_iterator_create( partitions );
 
+	printf("PARTITION INFORMATION\n" );
 	while ( (partition = list_next( part_i ) ) != NULL )
 	{
 		if ( params.partition == NULL || strcmp( partition->info->name, params.partition ) == 0 )
 			display_partition_info_long( partition );
 		printf("\n");
 	}
+	printf( "================================================================================\n" );
 }
 
 void
@@ -563,7 +571,11 @@ print_str( char* str, int width, bool right )
 	else if ( width != 0 )
 		snprintf( format, 64, "%%.%ds", width );
 	else
-		snprintf( format, 64, "%%s", width );
+	{
+		format[0] = '%';
+		format[1] = 's';
+		format[2] = '\0';
+	}
 
 	if ( ( printed = printf( format, str ) ) < 0  )
 		return printed;
@@ -580,8 +592,6 @@ int
 print_int( int number, int width, bool right )
 {
 	char buf[32];
-	char format[64];
-	int printed = 0;
 
 	snprintf( buf, 32, "%d", number );
 	return print_str( buf, width, right );
