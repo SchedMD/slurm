@@ -11,12 +11,13 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common $(BGL_INCLUDES)
 pkglib_LTLIBRARIES = select_bluegene.la
 
 # Blue Gene node selection plugin.
-select_bluegene_la_SOURCES = select_bluegene.c \
-				bgl_job_place.c bgl_job_place.h \
-				bgl_job_run.c bgl_job_run.h \
-				bluegene.c bluegene.h \
-				state_test.c state_test.h \
-				partition_sys.c partition_sys.h
+select_bluegene_la_SOURCES = select_bluegene.c bluegene.h \
+				bgl_job_place.c \
+				bgl_job_run.c \
+				bluegene.c \
+				state_test.c \
+				bgl_switch_connections.c \
+				partition_sys.c 
 
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 

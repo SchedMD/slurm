@@ -24,33 +24,6 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#  if HAVE_STDINT_H
-#    include <stdint.h>
-#  endif
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  endif
-#  if WITH_PTHREADS
-#    include <pthread.h>
-#  endif
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include <slurm/slurm.h>
-#include <slurm/slurm_errno.h>
-
-#include "src/common/slurm_xlator.h"
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/slurmctld/slurmctld.h"
-#include "bgl_job_place.h"
-#include "bgl_job_run.h"
 #include "bluegene.h"
 
 /*
@@ -213,9 +186,13 @@ extern int fini ( void )
  extern int select_p_part_init(List part_list)
 {
 	xassert(part_list);
-	if (read_bgl_conf())
+#ifdef HAVE_BGL
+	if(read_bgl_conf()) {
+		fatal("Error, could not read the file");
 		return SLURM_ERROR;
-
+	}
+#else
+	/*looking for partitions only I created */
 	if (create_static_partitions(part_list)) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
@@ -225,6 +202,7 @@ extern int fini ( void )
 		fatal("Error, could not create the static partitions");
 		return SLURM_ERROR;
 	}
+#endif
 
 	return SLURM_SUCCESS; 
 }
@@ -243,7 +221,9 @@ extern int select_p_state_restore(char *dir_name)
 /* Sync BGL blocks to currently active jobs */
 extern int select_p_job_init(List job_list)
 {
-	return sync_jobs(job_list);
+	/* change back when done testing */
+	//return sync_jobs(job_list);
+	return SLURM_SUCCESS;
 }
 
 /* All initialization is performed by select_p_part_init() */
@@ -254,8 +234,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request. The specified
- *	nodes may be DOWN or BUSY at the time of this test as may be used
+ *	identify the nodes which "best" satify the request. The specified 
+ *	nodes may be DOWN or BUSY at the time of this test as may be used 
  *	to deterime if a job could ever run.
  * IN job_ptr - pointer to job being scheduled
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
@@ -279,10 +259,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	 * as the SLURM partition logic will handle access rights.
 	 */
 
-	if (submit_job(job_ptr, bitmap, min_nodes, max_nodes))
-		return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+	return submit_job(job_ptr, bitmap, min_nodes, max_nodes);
 }
 
 extern int select_p_job_begin(struct job_record *job_ptr)
