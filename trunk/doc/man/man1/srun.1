@@ -144,6 +144,11 @@ Specify a name for the job. The specified name will appear along with
 the job id number when querying running jobs on the system. The default
 is the supplied \fBexecutable\fR program's name.
 .TP
+\fB--jobid\fR=\fIid\fR
+Initiate a job step under an already allocated job with job id \fIid\fR.
+Using this option will cause \fBsrun\fR to behave exactly as if the
+SLURM_JOBID environment variable was set.
+.TP
 \fB\-o\fR, \fB\-\-output\fR=\fImode\fR
 Specify the mode for stdout redirection. By default,
 .B srun
