@@ -20,6 +20,21 @@
 #define MAX_PARTITION 32
 #define MAX_PART_LEN 16
 
+#define DEFAULT_NODE_SPEC_CONF  "/usr/local/SLURM/NodeSpecConf"
+#define DEFAULT_PARTITION_CONF  "/usr/local/SLURM/PartitionConf"
+#define DEFAULT_CONTROL_DAEMON  "/usr/local/SLURM/Slurmd.Control"
+#define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd"
+
+#ifndef SLURM_CONFIG_SET
+extern char *Administrators;
+extern char *ControlMachine;
+extern char *BackupController;
+extern char *NodeSpecConf;
+extern char *PartitionConf;
+extern char *ControlDaemon;
+extern char *ServerDaemon;
+#endif
+
 /* Last entry must be "END" */
 enum Node_State {
 	STATE_UNKNOWN, 		/* Node's initial state, unknown */
@@ -104,6 +119,13 @@ int Read_Node_Spec_Conf (char *File_Name);
  * Output: return - 0 if no error, otherwise errno
  */
 int Read_Part_Spec_Conf (char *File_Name);
+
+/*
+ * Read_SLURM_Conf - Load the overall SLURM configuration from the specified file 
+ * Input: File_Name - Name of the file containing overall SLURM configuration information
+ * Output: return - 0 if no error, otherwise an error code
+ */
+int Read_SLURM_Conf (char *File_Name);
 
 /*
  * Show_Node_Record - Dump the record for the specified node
