@@ -311,6 +311,14 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	opt_args(argc, argv);
 
+	/* validate results */
+	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+		if (opt.nprocs <= opt.nodes)
+			opt.distribution = SRUN_DIST_CYCLIC;
+		else
+			opt.distribution = SRUN_DIST_BLOCK;
+	}
+
 #if	__DEBUG
 	opt_list();
 #endif
@@ -520,7 +528,7 @@ static void opt_default()
 
 	opt.job_name = NULL;
 
-	opt.distribution = SRUN_DIST_BLOCK;
+	opt.distribution = SRUN_DIST_UNKNOWN;
 
 	opt.output = IO_NORMAL;
 	opt.input = IO_NORMAL;
