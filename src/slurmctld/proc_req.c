@@ -61,6 +61,7 @@
 #define BUF_SIZE	  1024	/* Temporary buffer size */
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
+static void         _free_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
 static void         _kill_job_on_msg_fail(uint32_t job_id);
 static int          _make_step_cred(struct step_record *step_rec, 
@@ -214,7 +215,8 @@ void slurmctld_req (slurm_msg_t * msg)
 		slurm_free_delete_part_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
-		error("slurmctld is talking with itself. SlurmctldPort == SlurmdPort");
+		error("slurmctld is talking with itself. "
+			"SlurmctldPort == SlurmdPort");
 		slurm_send_rc_msg(msg, EINVAL);
 		break;
 	default:
@@ -232,56 +234,99 @@ void slurmctld_req (slurm_msg_t * msg)
 void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 {
 	conf_ptr->last_update         = time(NULL);
-	conf_ptr->authtype            = slurmctld_conf.authtype;
-	conf_ptr->backup_addr         = slurmctld_conf.backup_addr;
-	conf_ptr->backup_controller   = slurmctld_conf.backup_controller;
-	conf_ptr->control_addr        = slurmctld_conf.control_addr;
-	conf_ptr->control_machine     = slurmctld_conf.control_machine;
-	conf_ptr->epilog              = slurmctld_conf.epilog;
+	conf_ptr->authtype            = xstrdup(slurmctld_conf.authtype);
+	conf_ptr->backup_addr         = xstrdup(slurmctld_conf.backup_addr);
+	conf_ptr->backup_controller   = xstrdup(slurmctld_conf.
+					backup_controller);
+	conf_ptr->control_addr        = xstrdup(slurmctld_conf.control_addr);
+	conf_ptr->control_machine     = xstrdup(slurmctld_conf.
+					control_machine);
+	conf_ptr->epilog              = xstrdup(slurmctld_conf.epilog);
 	conf_ptr->fast_schedule       = slurmctld_conf.fast_schedule;
 	conf_ptr->first_job_id        = slurmctld_conf.first_job_id;
 	conf_ptr->hash_base           = slurmctld_conf.hash_base;
 	conf_ptr->heartbeat_interval  = slurmctld_conf.heartbeat_interval;
 	conf_ptr->inactive_limit      = slurmctld_conf.inactive_limit;
-	conf_ptr->job_comp_loc        = slurmctld_conf.job_comp_loc;
-	conf_ptr->job_comp_type       = slurmctld_conf.job_comp_type;
-	conf_ptr->job_credential_private_key = 
-			slurmctld_conf.job_credential_private_key;
-	conf_ptr->job_credential_public_certificate = 
-			slurmctld_conf.job_credential_public_certificate;
+	conf_ptr->job_comp_loc        = xstrdup(slurmctld_conf.job_comp_loc);
+	conf_ptr->job_comp_type       = xstrdup(slurmctld_conf.
+					job_comp_type);
+	conf_ptr->job_credential_private_key = xstrdup(slurmctld_conf.
+					job_credential_private_key);
+	conf_ptr->job_credential_public_certificate = xstrdup(slurmctld_conf.
+					job_credential_public_certificate);
 	conf_ptr->kill_wait           = slurmctld_conf.kill_wait;
 	conf_ptr->max_job_cnt         = slurmctld_conf.max_job_cnt;
 	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
-	conf_ptr->plugindir           = slurmctld_conf.plugindir;
-	conf_ptr->prolog              = slurmctld_conf.prolog;
+	conf_ptr->plugindir           = xstrdup(slurmctld_conf.plugindir);
+	conf_ptr->prolog              = xstrdup(slurmctld_conf.prolog);
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
-	conf_ptr->schedauth           = slurmctld_conf.schedauth;
+	conf_ptr->schedauth           = xstrdup(slurmctld_conf.schedauth);
 	conf_ptr->schedport           = slurmctld_conf.schedport;
-	conf_ptr->schedtype           = slurmctld_conf.schedtype;
+	conf_ptr->schedtype           = xstrdup(slurmctld_conf.schedtype);
 	conf_ptr->slurm_user_id       = slurmctld_conf.slurm_user_id;
-	conf_ptr->slurm_user_name     = slurmctld_conf.slurm_user_name;
+	conf_ptr->slurm_user_name     = xstrdup(slurmctld_conf.
+					slurm_user_name);
 	conf_ptr->slurmctld_debug     = slurmctld_conf.slurmctld_debug;
-	conf_ptr->slurmctld_logfile   = slurmctld_conf.slurmctld_logfile;
-	conf_ptr->slurmctld_pidfile   = slurmctld_conf.slurmctld_pidfile;
+	conf_ptr->slurmctld_logfile   = xstrdup(slurmctld_conf.
+					slurmctld_logfile);
+	conf_ptr->slurmctld_pidfile   = xstrdup(slurmctld_conf.
+					slurmctld_pidfile);
 	conf_ptr->slurmctld_port      = slurmctld_conf.slurmctld_port;
 	conf_ptr->slurmctld_timeout   = slurmctld_conf.slurmctld_timeout;
 	conf_ptr->slurmd_debug        = slurmctld_conf.slurmd_debug;
-	conf_ptr->slurmd_logfile      = slurmctld_conf.slurmd_logfile;
-	conf_ptr->slurmd_pidfile      = slurmctld_conf.slurmd_pidfile;
+	conf_ptr->slurmd_logfile      = xstrdup(slurmctld_conf.
+					slurmd_logfile);
+	conf_ptr->slurmd_pidfile      = xstrdup(slurmctld_conf.
+					slurmd_pidfile);
 	conf_ptr->slurmd_port         = slurmctld_conf.slurmd_port;
-	conf_ptr->slurmd_spooldir     = slurmctld_conf.slurmd_spooldir;
+	conf_ptr->slurmd_spooldir     = xstrdup(slurmctld_conf.
+					slurmd_spooldir);
 	conf_ptr->slurmd_timeout      = slurmctld_conf.slurmd_timeout;
-	conf_ptr->slurm_conf          = slurmctld_conf.slurm_conf;
-	conf_ptr->state_save_location = slurmctld_conf.state_save_location;
-	conf_ptr->switch_type         = slurmctld_conf.switch_type;
-	conf_ptr->tmp_fs              = slurmctld_conf.tmp_fs;
+	conf_ptr->slurm_conf          = xstrdup(slurmctld_conf.slurm_conf);
+	conf_ptr->state_save_location = xstrdup(slurmctld_conf.
+					state_save_location);
+	conf_ptr->switch_type         = xstrdup(slurmctld_conf.switch_type);
+	conf_ptr->tmp_fs              = xstrdup(slurmctld_conf.tmp_fs);
 	conf_ptr->wait_time           = slurmctld_conf.wait_time;
 	return;
+}
+
+/* _free_ctld_conf - free memory allocated by _fill_ctld_conf */
+static void _free_ctld_conf(slurm_ctl_conf_t * conf_ptr)
+{
+	xfree(conf_ptr->authtype);
+	xfree(conf_ptr->backup_addr);
+	xfree(conf_ptr->backup_controller);
+	xfree(conf_ptr->control_addr);
+	xfree(conf_ptr->control_machine);
+	xfree(conf_ptr->epilog);
+	xfree(conf_ptr->job_comp_loc);
+	xfree(conf_ptr->job_comp_type);
+	xfree(conf_ptr->job_credential_private_key);
+	xfree(conf_ptr->job_credential_public_certificate);
+	xfree(conf_ptr->plugindir);
+	xfree(conf_ptr->prolog);
+	xfree(conf_ptr->schedauth);
+	xfree(conf_ptr->schedtype);
+	xfree(conf_ptr->slurm_user_name);
+	xfree(conf_ptr->slurmctld_logfile);
+	xfree(conf_ptr->slurmctld_pidfile);
+	xfree(conf_ptr->slurmd_logfile);
+	xfree(conf_ptr->slurmd_pidfile);
+	xfree(conf_ptr->slurmd_spooldir);
+	xfree(conf_ptr->slurm_conf);
+	xfree(conf_ptr->state_save_location);
+	xfree(conf_ptr->switch_type);
+	xfree(conf_ptr->tmp_fs);
 }
 
 /* return true if supplied uid is a super-user: root, self, or SlurmUser */
 static inline bool _is_super_user(uid_t uid)
 {
+	/* READ lock_slurmctld config would be ideal here, but 
+	 * that value should be identical to getuid() anyway.
+	 * privileged calls should be coming from user root too, 
+	 * so we forgo the overhead here. */
 	if ( (uid == 0) || 
 	     (uid == slurmctld_conf.slurm_user_id) ||
 	     (uid == getuid()) )
@@ -340,9 +385,9 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 	uint32_t *cpus_per_node = NULL, *cpu_count_reps = NULL;
 	uint32_t job_id = 0;
 	resource_allocation_response_msg_t alloc_msg;
-	/* Locks: Write job, write node, read partition */
+	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { 
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 	uid_t uid;
 	uint16_t node_cnt = 0;
 	slurm_addr *node_addr = NULL;
@@ -554,6 +599,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		_free_ctld_conf(&config_tbl);
 	}
 }
 
@@ -605,9 +651,9 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	int dump_size;
 	slurm_msg_t response_msg;
 	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
-	/* Locks: Read node */
+	/* Locks: Read config, read node */
 	slurmctld_lock_t node_read_lock = { 
-		NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_INFO");
@@ -732,9 +778,9 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 	DEF_TIMERS;
 	job_step_kill_msg_t *job_step_kill_msg =
 	    (job_step_kill_msg_t *) msg->data;
-	/* Locks: Write job, write node */
+	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t job_write_lock = { 
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid;
 
 	START_TIMER;
@@ -1080,9 +1126,9 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg =
 	    (slurm_node_registration_status_msg_t *) msg->data;
-	/* Locks: Write job and node */
+	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t job_write_lock = { 
-		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid;
 
 	START_TIMER;
@@ -1248,19 +1294,19 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(config_write_lock);
 		error_code = read_slurm_conf(0);
+		if (error_code == SLURM_SUCCESS) {
+			_update_cred_key();
+			if (slurmctld_config.daemonize &&
+			    chdir(slurmctld_conf.state_save_location) < 0) {
+				error("chdir to %s error %m",
+					slurmctld_conf.state_save_location);
+			}
+		}
 		unlock_slurmctld(config_write_lock);
 		if (error_code == SLURM_SUCCESS) {
 			lock_slurmctld(node_read_lock);
 			msg_to_slurmd(REQUEST_RECONFIGURE);
 			unlock_slurmctld(node_read_lock);
-		}
-	}
-	if (error_code == SLURM_SUCCESS) {  /* Stuff to do after unlock */
-		_update_cred_key();
-		if (slurmctld_config.daemonize && 
-		    chdir(slurmctld_conf.state_save_location) < 0) {
-			error("chdir to %s error %m",
-			      slurmctld_conf.state_save_location);
 		}
 	}
 	END_TIMER;
@@ -1523,9 +1569,9 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	update_part_msg_t *part_desc_ptr = (update_part_msg_t *) msg->data;
-	/* Locks: Read node, write partition */
+	/* Locks: Read config, read node, write partition */
 	slurmctld_lock_t part_write_lock = { 
-		NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
 	uid_t uid;
 
 	START_TIMER;
@@ -1611,7 +1657,8 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 	}
 }
 
-/* Reset the job credential key based upon configuration parameters */
+/* Reset the job credential key based upon configuration parameters.
+ * NOTE: READ lock_slurmctld config before entry */
 static void _update_cred_key(void) 
 {
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx, 

@@ -365,15 +365,20 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int sig;
 	int error_code;
 	sigset_t set;
+	/* Locks: Read configuration */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 	/* Locks: Write configuration, job, node, and partition */
-	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
-		WRITE_LOCK, WRITE_LOCK
-	};
+	slurmctld_lock_t config_write_lock = { 
+		WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
+	lock_slurmctld(config_read_lock);
 	create_pidfile(slurmctld_conf.slurmctld_pidfile);
+	unlock_slurmctld(config_read_lock);
+
 	/* Make sure no required signals are ignored (possibly inherited) */
 	_default_sigaction(SIGINT);
 	_default_sigaction(SIGTERM);
@@ -401,13 +406,13 @@ static void *_slurmctld_signal_hand(void *no_data)
 			 */
 			lock_slurmctld(config_write_lock);
 			error_code = read_slurm_conf(0);
-			unlock_slurmctld(config_write_lock);
 			if (error_code)
 				error("read_slurm_conf: %s",
 				      slurm_strerror(error_code));
 			else {
 				_update_cred_key();
 			}
+			unlock_slurmctld(config_write_lock);
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
@@ -448,6 +453,9 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	pthread_attr_t thread_attr_rpc_req;
 	int no_thread;
 	connection_arg_t *conn_arg;
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -467,10 +475,12 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 #endif
 
 	/* initialize port for RPCs */
+	lock_slurmctld(config_read_lock);
 	if ((sockfd = slurm_init_msg_engine_port(slurmctld_conf.
 						 slurmctld_port))
 	    == SLURM_SOCKET_ERROR)
 		fatal("slurm_init_msg_engine_port error %m");
+	unlock_slurmctld(config_read_lock);
 
 	/*
 	 * Process incoming RPCs indefinitely
@@ -604,18 +614,18 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_assert_primary_time;
 	time_t now;
 
-	/* Locks: Read job */
-	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK,
-		NO_LOCK, NO_LOCK
-	};
-	/* Locks: Write job, write node, read partition */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
-		WRITE_LOCK, READ_LOCK
-	};
-	/* Locks: Write node */
-	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK,
-		WRITE_LOCK, NO_LOCK
-	};
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: Read config, read job */
+	slurmctld_lock_t job_read_lock = { 
+		READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+	/* Locks: Read config, write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = { 
+		READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	/* Locks: Read config, write node */
+	slurmctld_lock_t node_write_lock = { 
+		READ_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	/* Locks: Write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
@@ -713,6 +723,7 @@ static void *_slurmctld_background(void *no_data)
 		 * A network or security problem could result in 
 		 * the backup controller assuming control even 
 		 * while the real primary controller is running */
+		lock_slurmctld(config_read_lock);
 		if (slurmctld_conf.slurmctld_timeout   &&
 		    slurmctld_conf.backup_addr         &&
 		    slurmctld_conf.backup_addr[0]      &&
@@ -723,6 +734,7 @@ static void *_slurmctld_background(void *no_data)
 			last_assert_primary_time = now;
 			(void) _shutdown_backup_controller(0);
 		}
+		unlock_slurmctld(config_read_lock);
 
 	}
 	debug3("_slurmctld_background shutting down");
@@ -918,7 +930,8 @@ static void _usage(char *prog_name)
  * Tell the backup_controller to relinquish control, primary control_machine 
  *	has resumed operation
  * wait_time - How long to wait for backup controller to write state, seconds
- * RET 0 or an error code 
+ * RET 0 or an error code
+ * NOTE: READ lock_slurmctld config before entry (or be single-threaded)
  */
 static int _shutdown_backup_controller(int wait_time)
 {
@@ -926,7 +939,7 @@ static int _shutdown_backup_controller(int wait_time)
 	slurm_msg_t req;
 
 	if ((slurmctld_conf.backup_addr == NULL) ||
-	    (strlen(slurmctld_conf.backup_addr) == 0)) {
+	    (slurmctld_conf.backup_addr[0] == '\0')) {
 		debug("No backup controller to shutdown");
 		return SLURM_SUCCESS;
 	}
@@ -960,7 +973,8 @@ static int _shutdown_backup_controller(int wait_time)
 	return SLURM_SUCCESS;
 }
 
-/* Reset the job credential key based upon configuration parameters */
+/* Reset the job credential key based upon configuration parameters
+ * NOTE: READ lock_slurmctld config before entry */
 static void _update_cred_key(void) 
 {
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx, 
@@ -968,7 +982,8 @@ static void _update_cred_key(void)
 }
 
 /* Reset slurmctld logging based upon configuration parameters
- * uses common slurmctld_conf data structure */
+ *   uses common slurmctld_conf data structure
+ * NOTE: READ lock_slurmctld config before entry */
 void update_logging(void) 
 {
 	/* Preserve execute line arguments (if any) */
@@ -997,7 +1012,8 @@ void update_logging(void)
 		  slurmctld_conf.slurmctld_logfile);
 }
 
-/* Kill the currently running slurmctld */
+/* Kill the currently running slurmctld
+ * NOTE: No need to lock the config data since we are still single-threaded */
 static void
 _kill_old_slurmctld(void)
 {
@@ -1016,6 +1032,7 @@ _kill_old_slurmctld(void)
 	}
 }
 
+/* NOTE: No need to lock the config data since we are still single-threaded */
 static void
 _init_pidfile(void)
 {
@@ -1035,7 +1052,8 @@ _init_pidfile(void)
 }
 
 /*
- * create state directory as needed and "cd" to it 
+ * create state directory as needed and "cd" to it
+ * NOTE: No need to lock the config data since we are still single-threaded 
  */
 static int
 _set_slurmctld_state_loc(void)

@@ -257,7 +257,8 @@ int dump_all_job_state(void)
 		xassert (job_ptr->magic == JOB_MAGIC);
 		_dump_job_state(job_ptr, buffer);
 	}
-	unlock_slurmctld(job_read_lock);
+	/* Maintain config lock until we get the state_save_location *\
+	\* unlock_slurmctld(job_read_lock);         - see below      */
 	list_iterator_destroy(job_iterator);
 
 	/* write the buffer to file */
@@ -267,6 +268,8 @@ int dump_all_job_state(void)
 	xstrcat(reg_file, "/job_state");
 	new_file = xstrdup(slurmctld_conf.state_save_location);
 	xstrcat(new_file, "/job_state.new");
+	unlock_slurmctld(job_read_lock);
+
 	lock_state_files();
 	log_fd = creat(new_file, 0600);
 	if (log_fd == 0) {
@@ -1105,7 +1108,9 @@ int init_job_conf(void)
 }
 
 /* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
- * just preserve it */
+ * just preserve it
+ * NOTE: run lock_slurmctld before entry: Read config, write job
+ */
 void rehash_jobs(void)
 {
 	if (job_hash == NULL) {
@@ -1150,7 +1155,8 @@ void rehash_jobs(void)
  *	and cpu_count_reps={4,2,2}
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
+ *	default_part_loc - pointer to default partition
+ * NOTE: lock_slurmctld on entry: Read config Write job, Write node, Read part
  */
 int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		 char **node_list, uint16_t * num_cpu_groups,
@@ -1800,6 +1806,7 @@ static int _write_data_to_file(char *file_name, char *data)
  * IN job_ptr - pointer to job for which data is required
  * OUT env_size - number of elements to read
  * RET point to array of string pointers containing environment variables
+ * NOTE: READ lock_slurmctld config before entry
  */
 char **get_job_env(struct job_record *job_ptr, uint16_t * env_size)
 {
@@ -1819,6 +1826,7 @@ char **get_job_env(struct job_record *job_ptr, uint16_t * env_size)
  * get_job_script - return the script for a given job
  * IN job_ptr - pointer to job for which data is required
  * RET point to string containing job script
+ * NOTE: READ lock_slurmctld config before entry
  */
 char *get_job_script(struct job_record *job_ptr)
 {
@@ -2070,6 +2078,7 @@ static char *_copy_nodelist_no_dup(char *node_list)
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
+ * NOTE: READ lock_slurmctld config before entry
  */
 void job_time_limit(void)
 {
@@ -2453,6 +2462,7 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
  * global: job_list - global job table
  *	last_job_update - time of last job table update
+ * NOTE: READ lock_slurmctld config before entry
  */
 void purge_old_job(void)
 {
@@ -2594,7 +2604,8 @@ static void _reset_step_bitmaps(struct job_record *job_ptr)
 	return;
 }
 
-/* update first assigned job id as needed on reconfigure */
+/* update first assigned job id as needed on reconfigure
+ * NOTE: READ lock_slurmctld config before entry */
 void reset_first_job_id(void)
 {
 	if (job_id_sequence < slurmctld_conf.first_job_id)
@@ -3150,6 +3161,7 @@ old_job_info(uint32_t uid, uint32_t job_id, char **node_list,
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files
+ * NOTE: READ lock_slurmctld config before entry
  */
 int sync_job_files(void)
 {
@@ -3164,7 +3176,9 @@ int sync_job_files(void)
 }
 
 /* Append to the batch_dirs list the job_id's associated with 
- *	every batch job directory in existence */
+ *	every batch job directory in existence
+ * NOTE: READ lock_slurmctld config before entry
+ */
 static void _get_batch_job_dir_ids(List batch_dirs)
 {
 	DIR *f_dir;
@@ -3239,7 +3253,8 @@ static void _del_batch_list_rec(void *x)
 	xfree(x);
 }
 
-/* Remove all batch_dir entries in the list */
+/* Remove all batch_dir entries in the list
+ * NOTE: READ lock_slurmctld config before entry */
 static void _remove_defunct_batch_dirs(List batch_dirs)
 {
 	ListIterator batch_dir_inx;

@@ -139,7 +139,16 @@ static void * sched_get_node_mod_time( 	sched_obj_list_t, int32_t, char * );
 const u_int16_t
 sched_get_port( void )
 {
-	return slurmctld_conf.schedport;
+	u_int16_t port;
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(config_read_lock);
+	port = slurmctld_conf.schedport;
+	unlock_slurmctld(config_read_lock);
+
+	return port;
 }
 
 /* ************************************************************************ */
@@ -148,7 +157,20 @@ sched_get_port( void )
 const char * const
 sched_get_auth( void )
 {
-	return slurmctld_conf.schedauth;
+	static char auth[128];
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { 
+		READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld(config_read_lock);
+	strncpy(auth, slurmctld_conf.schedauth, 128);
+	if (auth[127] != '\0') {
+		auth[127] = '\0';
+		error("slurmctld_conf.schedauth truncated");
+	}
+	unlock_slurmctld(config_read_lock);
+
+	return auth;
 }
 
 /* ************************************************************************ */
@@ -1077,9 +1099,9 @@ sched_cancel_job( const uint32_t job_id )
 {
 	int rc = SLURM_SUCCESS;
 	
-	/* Lock on job data, no other locks needed */
+	/* Locks: Read config, write jobs */
 	slurmctld_lock_t job_write_lock = {
-		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+		READ_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
 	/*
 	 * The nice way to do things would be to send SIGTERM, wait for

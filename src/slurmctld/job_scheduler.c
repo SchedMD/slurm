@@ -141,9 +141,9 @@ int schedule(void)
 	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts;
-	/* Locks: Write job, write node, read partition */
+	/* Locks: Read config, write job, write node, read partition */
 	slurmctld_lock_t job_write_lock =
-	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	lock_slurmctld(job_write_lock);
 	/* Avoid resource fragmentation if important */

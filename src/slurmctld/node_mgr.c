@@ -393,6 +393,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
  *	Data goes into common storage.
  * IN state_only - if true over-write only node state and reason fields
  * RET 0 or error code
+ * NOTE: READ lock_slurmctld config before entry
  */
 extern int load_all_node_state ( bool state_only )
 {
@@ -547,7 +548,8 @@ find_node_record (char *name)
  * _hash_index - return a hash table index for the given node name 
  * IN name = the node's name
  * RET the hash table index
- * global: slurmctld_conf.hash_base - numbering base for sequence numbers
+ * global: slurmctld_conf.hash_base - numbering base for sequence numbers, 
+ * 		if not set (while updating), reverts to sequential search
  */
 static int _hash_index (char *name) 
 {
@@ -765,6 +767,7 @@ extern int node_name2bitmap (char *node_names, bool best_effort,
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
+ * NOTE: READ lock_slurmctld config before entry
  */
 void pack_all_node (char **buffer_ptr, int *buffer_size) 
 {
@@ -810,6 +813,7 @@ void pack_all_node (char **buffer_ptr, int *buffer_size)
  * IN/OUT buffer - buffer where data is placed, pointers automatically updated
  * NOTE: if you make any changes here be sure to make the corresponding 
  *	changes to load_node_config in api/node_info.c
+ * NOTE: READ lock_slurmctld config before entry
  */
 static void _pack_node (struct node_record *dump_node_ptr, Buf buffer) 
 {
@@ -863,14 +867,17 @@ void rehash_node (void)
 }
 
 
-/* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
- *	Uses common data structures. */
+/*
+ * set_slurmd_addr - establish the slurm_addr for the slurmd on each node
+ *	Uses common data structures.
+ * NOTE: READ lock_slurmctld config before entry
+ */
 void set_slurmd_addr (void) 
 {
 	int i;
 
 	for (i = 0; i < node_record_count; i++) {
-		if (strlen (node_record_table_ptr[i].name) == 0)
+		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;
 		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
 				slurmctld_conf.slurmd_port, 
@@ -1095,6 +1102,7 @@ static bool _valid_node_state_change(enum node_states old, enum node_states new)
  * IN status - node status code
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * global: node_record_table_ptr - pointer to global node table
+ * NOTE: READ lock_slurmctld config before entry
  */
 int 
 validate_node_specs (char *node_name, uint32_t cpus, 
@@ -1231,8 +1239,11 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	return error_code;
 }
 
-/* node_did_resp - record that the specified node is responding
- * IN name - name of the node */
+/*
+ * node_did_resp - record that the specified node is responding
+ * IN name - name of the node
+ * NOTE: READ lock_slurmctld config before entry
+ */ 
 void node_did_resp (char *name)
 {
 	struct node_record *node_ptr;
