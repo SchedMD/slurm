@@ -114,9 +114,9 @@ char *slurm_get_jobcomp_type(void);
 
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
- * RET short int	- slurmd port
+ * RET uint16_t	- slurmd port
  */
-short int inline slurm_get_slurmd_port(void);
+uint16_t inline slurm_get_slurmd_port(void);
 
 /* slurm_get_slurm_user_id
  * returns slurmd uid from slurmctld_conf object 
