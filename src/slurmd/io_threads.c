@@ -39,7 +39,7 @@ void * stdin_io_pipe_thread ( void * arg )
 		if ( ( cir_buf->write_size == 0 ) )
 		{
 			debug3 ( "stdin cir_buf->write_size == 0 this shouldn't happen" ) ;
-			continue ;
+			break ;
 		}
 		
 		if ( ( bytes_read = slurm_read_stream ( task_start->sockets[STDIN_OUT_SOCK] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
@@ -130,7 +130,7 @@ void * stdout_io_pipe_thread ( void * arg )
 		if ( ( cir_buf->write_size == 0 ) )
 		{
 			debug3 ( "stdout cir_buf->write_size == 0 this shouldn't happen" ) ;
-			continue ;
+			break ;
 		}	
 
 		/* read stdout code */
@@ -241,7 +241,7 @@ void * stderr_io_pipe_thread ( void * arg )
 		if ( ( cir_buf->write_size == 0 ) )
 		{
 			debug3 ( "stderr cir_buf->write_size == 0 this shouldn't happen" ) ;
-			continue ;
+			break ;
 		}	
 
 		/* read stderr code */
