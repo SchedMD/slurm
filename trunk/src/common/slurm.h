@@ -372,6 +372,20 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap);
  */
 extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
 
+/* 
+ * Read_Array - Read the specified value from the specified buffer
+ * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, read location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information
+ *        Value - Pointer to value to be loaded with POINTER TO ARRAY, NOT THE VALUE
+ * Output: Buffer_Offset - Incremented by Value_Size
+ *         Value - Set to the buffer contents or location
+ *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
+ */
+extern int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
+		char *Tag, void **Value);
+
 /*
  * Read_SLURM_Conf - Load the SLURM configuration from the specified file 
  * Call Init_SLURM_Conf before ever calling Read_SLURM_Conf.  
@@ -380,6 +394,32 @@ extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *E
  * Output: Return - 0 if no error, otherwise an error code
  */
 extern int Read_SLURM_Conf (char *File_Name);
+
+/* 
+ * Read_Tag - Read the specified buffer up to and including the specified tag
+ *            Used to reach end of a record type
+ * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, read location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information
+ * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
+ *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
+ */
+extern int Read_Tag(char *Buffer, int *Buffer_Offset, int Buffer_Size, char *Tag);
+
+/* 
+ * Read_Value - Read the specified value from the specified buffer
+ * Input: Buffer - Pointer to read buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, read location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information
+ *        Value - Pointer to value to be read
+ * Output: Buffer_Offset - Incremented by Value_Size
+ *         Value - Set to the buffer contents or location
+ *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
+ */
+extern int Read_Value(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
+		char *Tag, void *Value);
 
 /* 
  * Report_Leftover - Report any un-parsed (non-whitespace) characters on the
@@ -416,6 +456,22 @@ extern int Update_Part(char *PartitionName, char *Spec);
  *        TmpDisk - MegaBytes of TmpDisk measured
  * Output: Returns 0 if no error, ENOENT if no such node, EINVAL if values too low
  */ 
-extern int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk);
+extern int Validate_Node_Specs(char *NodeName, 
+	int CPUs, int RealMemory, int TmpDisk);
 
+/* 
+ * Write_Value - Write the specified value to the specified buffer, enlarging the buffer as needed
+ * Input: Buffer - Pointer to write buffer, must be allocated by alloc()
+ *        Buffer_Offset - Byte offset in Buffer, write location
+ *        Buffer_Size - Byte size of Buffer
+ *        Tag - Unique identification for information type
+ *        Value - Pointer to value to be writen
+ *        Value_Size - Byte size of Value (may be int, long, etc.)
+ * Output: Buffer - Value is written here, buffer may be relocated by realloc()
+ *         Buffer_Offset - Incremented by Value_Size
+ *         Returns 0 if no error or ENOMEM on realloc failure 
+ */
+extern int Write_Value(char **Buffer, int *Buffer_Offset, int *Buffer_Size, 
+	char *Tag, void *Value, int Value_Size);
+  
 #endif /* !_HAVE_SLURM_H */
