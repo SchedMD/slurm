@@ -444,6 +444,14 @@ _create_job_step(job_t *job)
 	req.num_tasks  = opt.nprocs;
 	req.node_list  = job->nodelist;
 	req.relative   = false;
+
+	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+		if (opt.nprocs <= job->nhosts)
+			opt.distribution = SRUN_DIST_CYCLIC;
+		else
+			opt.distribution = SRUN_DIST_BLOCK;
+	}
+
 	if (opt.distribution == SRUN_DIST_BLOCK)
 		req.task_dist  = SLURM_DIST_BLOCK;
 	else 	/* (opt.distribution == SRUN_DIST_CYCLIC) */
@@ -703,9 +711,14 @@ _run_batch_job(void)
 
 	job.req_nodes      = opt.nodelist;
 
-	job.num_procs      = opt.nprocs * opt.cpus_per_task;
+	if (opt.overcommit)
+		job.num_procs      = opt.nodes;
+	else
+		job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
-	job.num_nodes = opt.nodes;
+	job.num_nodes      = opt.nodes;
+
+	job.num_tasks      = opt.nprocs;
 
 	job.user_id        = opt.uid;
 
@@ -930,11 +943,14 @@ _set_batch_script_env(uint32_t jobid)
 		return -1;
 	}
 
-	dist = opt.distribution == SRUN_DIST_BLOCK ? "block" : "cyclic";
+	if (opt.distribution != SRUN_DIST_UNKNOWN) {
+		dist = (opt.distribution == SRUN_DIST_BLOCK) ? 
+							"block" : "cyclic";
 
-	if (setenvf("SLURM_DISTRIBUTION=%s", dist)) {
-		error("Unable to set SLURM_DISTRIBUTION environment variable");
-		return -1;
+		if (setenvf("SLURM_DISTRIBUTION=%s", dist)) {
+			error("Can't set SLURM_DISTRIBUTION environment variable");
+			return -1;
+		}
 	}
 
 	if ((opt.overcommit) &&
