@@ -100,6 +100,7 @@ main(int argc, char * argv[]) {
 	printf("MaxNodes=%d ",          Part_Ptr->MaxNodes);
 	printf("Key=%d ",               Part_Ptr->Key);
 	printf("StateUp=%d ",           Part_Ptr->StateUp);
+	printf("Shared=%d ",            Part_Ptr->Shared);
 	printf("Nodes=%s ",             Part_Ptr->Nodes);
 	printf("TotalNodes=%d ",        Part_Ptr->TotalNodes);
 	printf("TotalCPUs=%d ",         Part_Ptr->TotalCPUs);
@@ -496,12 +497,12 @@ int Parse_Node_Spec (char *In_Line) {
 int Parse_Part_Spec (char *In_Line) {
     int Line_Num;		/* Line number in input file */
     char *AllowGroups, *Nodes, *PartitionName;
-    int MaxTime_Val, MaxNodes_Val, Key_Val, Default_Val, StateUp_Val;
+    int MaxTime_Val, MaxNodes_Val, Key_Val, Default_Val, StateUp_Val, Shared_Val;
     int Error_Code, i;
     struct Part_Record *Part_Record_Point;
 
     AllowGroups = Nodes = PartitionName = (char *)NULL;
-    MaxTime_Val = MaxNodes_Val = Key_Val = Default_Val = NO_VAL;
+    MaxTime_Val = MaxNodes_Val = Key_Val = Default_Val = StateUp_Val = Shared_Val = NO_VAL;
 
     if (Error_Code=Load_String(&PartitionName, "PartitionName=", In_Line))      return Error_Code;
     if (PartitionName == NULL) return 0;	/* No partition info */
@@ -520,6 +521,9 @@ int Parse_Part_Spec (char *In_Line) {
     if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=NO", In_Line);
     if (Default_Val == 1) Default_Val=0;
     if (Error_Code == 0)  Error_Code = Load_Integer(&Default_Val,  "Default=YES", In_Line);
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=NO", In_Line);
+    if (StateUp_Val == 1) Shared_Val=0;
+    if (Error_Code == 0)  Error_Code = Load_Integer(&Shared_Val,   "Shared=YES", In_Line);
     if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=DOWN", In_Line);
     if (StateUp_Val == 1) StateUp_Val=0;
     if (Error_Code == 0)  Error_Code = Load_Integer(&StateUp_Val,  "State=UP", In_Line);
@@ -550,6 +554,7 @@ int Parse_Part_Spec (char *In_Line) {
 	if (MaxNodes_Val != NO_VAL)    Default_Part.MaxNodes     = MaxNodes_Val;
 	if (Key_Val != NO_VAL)         Default_Part.Key          = Key_Val;
 	if (StateUp_Val  != NO_VAL)    Default_Part.StateUp      = StateUp_Val;
+	if (Shared_Val  != NO_VAL)     Default_Part.Shared       = Shared_Val;
 	if (AllowGroups) {
 	    if (Default_Part.AllowGroups) free(Default_Part.AllowGroups);
 	    Default_Part.AllowGroups = AllowGroups;
@@ -595,6 +600,7 @@ int Parse_Part_Spec (char *In_Line) {
     if (MaxNodes_Val != NO_VAL)    Part_Record_Point->MaxNodes     = MaxNodes_Val;
     if (Key_Val  != NO_VAL)        Part_Record_Point->Key          = Key_Val;
     if (StateUp_Val  != NO_VAL)    Part_Record_Point->StateUp      = StateUp_Val;
+    if (Shared_Val  != NO_VAL)     Part_Record_Point->Shared       = Shared_Val;
     if (AllowGroups) {
 	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
 	Part_Record_Point->AllowGroups = AllowGroups;

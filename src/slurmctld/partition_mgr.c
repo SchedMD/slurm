@@ -42,7 +42,7 @@ int  Part_API_Buffer_Size = 0;
 int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
 int Load_Part(char *Buffer, int Buffer_Size);
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp,
+	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
 	char **Nodes, char **AllowGroups, unsigned **NodeBitMap, int *BitMap_Size);
 #endif
 
@@ -64,9 +64,10 @@ main(int argc, char * argv[]) {
     char *AllowGroups;		/* NULL indicates ALL */
     int Key;    	 	/* 1 if SLURM distributed key is required for use of partition */
     int StateUp;		/* 1 if state is UP */
+    int Shared;			/* 1 if partition can be shared */
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
     int BitMapSize;		/* Bytes in NodeBitMap */
-    char Update_Spec[] = "MaxTime=34 MaxNodes=56 Key=NO State=DOWN";
+    char Update_Spec[] = "MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=YES";
 
     Error_Code = Init_Node_Conf();
     if (Error_Code) printf("Init_Node_Conf error %d\n", Error_Code);
@@ -91,6 +92,7 @@ main(int argc, char * argv[]) {
 	if (Part_Ptr->TotalCPUs != 16)    printf("ERROR: Partition default MaxNodes not set\n");
 	if (Part_Ptr->Key != 1)           printf("ERROR: Partition default Key not set\n");
 	if (Part_Ptr->StateUp != 1)       printf("ERROR: Partition default StateUp not set\n");
+	if (Part_Ptr->Shared != 0)        printf("ERROR: Partition default Shared not set\n");
 	strcpy(Part_Ptr->Name, "Interactive");
 	Part_Ptr->Nodes = "lx[01-04]";
 	Part_Ptr->AllowGroups = "students";
@@ -121,6 +123,7 @@ main(int argc, char * argv[]) {
     if (Part_Ptr->MaxNodes != 56) printf("ERROR: Update_Part MaxNodes not reset\n");
     if (Part_Ptr->Key != 0)       printf("ERROR: Update_Part Key not reset\n");
     if (Part_Ptr->StateUp != 0)   printf("ERROR: Update_Part StateUp not set\n");
+    if (Part_Ptr->Shared != 1)    printf("ERROR: Update_Part Shared not set\n");
 
     Error_Code = Delete_Part_Record("Batch");
     if (Error_Code != 0)  printf("Delete_Part_Record error1 %d\n", Error_Code);
@@ -134,7 +137,7 @@ main(int argc, char * argv[]) {
     strcpy(Req_Name, "");	/* Start at beginning of partition list */
     while (1) {
 	Error_Code = Load_Part_Name(Req_Name, Next_Name, &MaxTime, &MaxNodes, 
-	    &TotalNodes, &TotalCPUs, &Key, &StateUp, 
+	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared,
 	    &Nodes, &AllowGroups, &NodeBitMap, &BitMapSize);
 	if (Error_Code != 0)  {
 	    printf("Load_Part_Name error %d\n", Error_Code);
@@ -151,8 +154,8 @@ main(int argc, char * argv[]) {
 
 	printf("Found partition Name=%s, TotalNodes=%d, Nodes=%s, MaxTime=%d, MaxNodes=%d\n", 
 	    Req_Name, TotalNodes, Nodes, MaxTime, MaxNodes);
-	printf("  TotalNodes=%d, TotalCPUs=%d, Key=%d StateUp=%d, AllowGroups=%s\n", 
-	    TotalNodes, TotalCPUs, Key, StateUp, AllowGroups);
+	printf("  TotalNodes=%d, TotalCPUs=%d, Key=%d StateUp=%d, Shared=%d, AllowGroups=%s\n", 
+	    TotalNodes, TotalCPUs, Key, StateUp, Shared, AllowGroups);
 	if (BitMapSize > 0) 
 	    printf("  BitMap[0]=0x%x, BitMapSize=%d\n", NodeBitMap[0], BitMapSize);
 	if (strlen(Next_Name) == 0) break;
@@ -287,6 +290,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
     Part_Record_Point->MaxNodes    = Default_Part.MaxNodes;
     Part_Record_Point->Key         = Default_Part.Key;
     Part_Record_Point->StateUp     = Default_Part.StateUp;
+    Part_Record_Point->Shared      = Default_Part.Shared;
     Part_Record_Point->TotalNodes  = Default_Part.TotalNodes;
     Part_Record_Point->TotalCPUs   = Default_Part.TotalCPUs;
     Part_Record_Point->NodeBitMap  = NULL;
@@ -465,6 +469,10 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
 	Buffer_Offset += sizeof(i);
 
+	i = (int)Part_Record_Point->Shared;
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
+
 	if (Part_Record_Point->Nodes) {
 	    i = strlen(Part_Record_Point->Nodes) + 1;
 	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
@@ -536,6 +544,7 @@ int Init_Part_Conf() {
     Default_Part.MaxNodes    = -1;
     Default_Part.Key         = 0;
     Default_Part.StateUp     = 1;
+    Default_Part.Shared      = 0;
     Default_Part.TotalNodes  = 0;
     Default_Part.TotalCPUs   = 0;
     if (Default_Part.Nodes) free(Default_Part.Nodes);
@@ -598,7 +607,7 @@ int List_Find_Part(void *Part_Entry, void *key) {
 int Update_Part(char *PartitionName, char *Spec) {
     int Error_Code;
     struct Part_Record *Part_Ptr;
-    int MaxTime_Val, MaxNodes_Val, Key_Val, State_Val, Default_Val;
+    int MaxTime_Val, MaxNodes_Val, Key_Val, State_Val, Shared_Val, Default_Val;
     char *AllowGroups, *Nodes;
     int Bad_Index, i;
 
@@ -642,6 +651,13 @@ int Update_Part(char *PartitionName, char *Spec) {
     if (Error_Code) return Error_Code;
     if (State_Val == 1) State_Val = 0;
     Error_Code = Load_Integer(&State_Val, "State=UP", Spec);
+    if (Error_Code) return Error_Code;
+
+    Shared_Val = NO_VAL;
+    Error_Code = Load_Integer(&Shared_Val, "Shared=NO", Spec);
+    if (Error_Code) return Error_Code;
+    if (Shared_Val == 1) Shared_Val = 0;
+    Error_Code = Load_Integer(&Shared_Val, "Shared=YES", Spec);
     if (Error_Code) return Error_Code;
 
     Default_Val = NO_VAL;
@@ -717,6 +733,17 @@ int Update_Part(char *PartitionName, char *Spec) {
 		    State_Val, PartitionName);
 #endif
 	Part_Ptr->StateUp  = State_Val;
+    }/* if */
+
+    if (Shared_Val    != NO_VAL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Part: setting Shared to %d for partition %s\n", 
+		    Shared_Val, PartitionName);
+#else
+	syslog(LOG_NOTICE, "Update_Part: setting Shared to %d for partition %s\n", 
+		    Shared_Val, PartitionName);
+#endif
+	Part_Ptr->Shared  = Shared_Val;
     }/* if */
 
     if (Default_Val == 1) {
@@ -796,7 +823,7 @@ int Load_Part(char *Buffer, int Buffer_Size) {
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
  */
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp,
+	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
 	char **Nodes, char **AllowGroups, unsigned **NodeBitMap, int *BitMap_Size) {
     int i, Version;
     time_t Update_Time;
@@ -839,6 +866,10 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 
 	memcpy(&i, Buffer_Loc, sizeof(i)); 
 	Buffer_Loc += sizeof(i);
+	My_Part.Shared = i;
+
+	memcpy(&i, Buffer_Loc, sizeof(i)); 
+	Buffer_Loc += sizeof(i);
 	if ((Buffer_Loc+i) > (Part_API_Buffer+Part_API_Buffer_Size)) return EINVAL;
 	if (i)
 	    My_Part.Nodes = Buffer_Loc;
@@ -875,6 +906,7 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 	*TotalCPUs	= My_Part.TotalCPUs;
 	*Key    	= (int)My_Part.Key;
 	*StateUp 	= (int)My_Part.StateUp;
+	*Shared 	= (int)My_Part.Shared;
 	Nodes[0]	= My_Part.Nodes;
 	AllowGroups[0]	= My_Part.AllowGroups;
 	NodeBitMap[0]	= My_Part.NodeBitMap;
