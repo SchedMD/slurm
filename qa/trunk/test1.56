@@ -102,12 +102,12 @@ if {$exit_code != 0} {
 set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_0 $bin_hostname\n"
 expect {
-	"$host_0" {
+	"0: $host_0" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1	
 		exp_continue
 	}
-	"$host_1" {
+	"0: $host_1" {
 		incr matches
 		exp_continue
 	}
@@ -133,11 +133,11 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --exclude=$host_1 $bin_hostname\n"
 expect {
-	"$host_0" {
+	"0: $host_0" {
 		incr matches
 		exp_continue
 	}
-	"$host_1" {
+	"0: $host_1" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1	
 		exp_continue
@@ -164,11 +164,11 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_0 $bin_hostname\n"
 expect {
-	"$host_0" {
+	"0: $host_0" {
 		incr matches
 		exp_continue
 	}
-	"$host_1" {
+	"0: $host_1" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1	
 		exp_continue
@@ -195,12 +195,12 @@ if {$matches == 0} {
 set matches 0
 send "$srun -l -N1 -n1 --nodelist=$host_1 $bin_hostname\n"
 expect {
-	"$host_0" {
+	"0: $host_0" {
 		send_user "\nFAILURE: wrong node responded\n"
 		set exit_code   1	
 		exp_continue
 	}
-	"$host_1" {
+	"0: $host_1" {
 		incr matches
 		exp_continue
 	}
