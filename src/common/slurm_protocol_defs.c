@@ -422,13 +422,14 @@ void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 extern char *job_reason_string(enum job_wait_reason inx)
 {
 	static char *job_reason_string[] = {
-		"None",	/* WAIT_NO_REASON */
-		"Priority",
-		"Dependency",
-		"Resources",
-		"PartitionNodeLimit",
-		"PartitionTimeLimit",
-		"PartitionDown"
+		"None",			/* WAIT_NO_REASON	*/
+		"Priority",		/* WAIT_PRIORITY	*/
+		"Dependency",		/* WAIT_DEPENDENCY	*/
+		"Resources",		/* WAIT_RESOUCES	*/
+		"PartitionNodeLimit",	/* WAIT_PART_NODE_LIMIT	*/
+		"PartitionTimeLimit",	/* WAIT_PART_TIME_LIMIT	*/
+		"PartitionDown",	/* WAIT_PART_STATE	*/
+		"JobHeld"		/* WAIT_HELD		*/
 	};
 	return job_reason_string[inx];
 }
@@ -436,14 +437,14 @@ extern char *job_reason_string(enum job_wait_reason inx)
 char *job_state_string(enum job_states inx)
 {
 	static char *job_state_string[] = {
-		"PENDING",
-		"RUNNING",
-		"COMPLETED",
-		"CANCELLED",
-		"FAILED",
-		"TIMEOUT",
-		"NODE_FAIL",
-		"END"
+		"PENDING",		/* JOB_PENDING		*/
+		"RUNNING",		/* JOB_RUNNING		*/
+		"COMPLETED",		/* JOB_COMPLETE		*/
+		"CANCELLED",		/* JOB_CANCELLED	*/
+		"FAILED",		/* JOB_FAILED		*/
+		"TIMEOUT",		/* JOB_TIMEOUT		*/
+		"NODE_FAIL",		/* JOB_NODE_FAIL	*/
+		"END"			/* JOB_END		*/
 	};
 	if (inx & JOB_COMPLETING)
 		return "COMPLETING";
