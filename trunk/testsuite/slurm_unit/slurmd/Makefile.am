@@ -3,9 +3,9 @@ AUTOMAKE_OPTIONS = foreign
 noinst_PROGRAMS = task_mgr-test circular_buffer-test task_launch-test credential_util-test
 
 if WITH_ELAN
-interconnect_lib = $(top_srcdir)/src/slurmd/libelan_interconnect.a
+interconnect_lib = $(top_srcdir)/src/slurmd/libelan_interconnect.la
 else
-interconnect_lib = $(top_srcdir)/src/slurmd/libno_interconnect.a
+interconnect_lib = $(top_srcdir)/src/slurmd/libno_interconnect.la
 endif
 
 
