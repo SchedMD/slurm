@@ -524,7 +524,7 @@ job_cancel (uint32_t job_id)
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time = time(NULL);
-		deallocate_nodes (job_ptr->node_bitmap);
+		deallocate_nodes (job_ptr);
 		delete_job_details(job_ptr);
 		unlock_slurmctld (job_write_lock);
 		verbose ("job_cancel of running job %u successful", job_id);
@@ -569,7 +569,7 @@ job_complete (uint32_t job_id)
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
 	    (job_ptr->job_state == JOB_RUNNING) ||
 	    (job_ptr->job_state == JOB_STAGE_OUT)) {
-		deallocate_nodes (job_ptr->node_bitmap);
+		deallocate_nodes (job_ptr);
 		verbose ("job_complete for job id %u successful", job_id);
 	} 
 	else {
@@ -1103,7 +1103,7 @@ job_time_limit (void)
 		info ("Time limit exhausted for job_id %u, terminated", job_ptr->job_id);
 		job_ptr->job_state = JOB_TIMEOUT;
 		job_ptr->end_time = time(NULL);
-		deallocate_nodes (job_ptr->node_bitmap);
+		deallocate_nodes (job_ptr);
 		delete_job_details(job_ptr);
 	}		
 

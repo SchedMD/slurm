@@ -914,6 +914,23 @@ rehash ()
 }
 
 
+/* set_slurmd_addr - establish the slurm_addr for the slurmd on each node */
+void 
+set_slurmd_addr (void) 
+{
+	int i;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (strlen (node_record_table_ptr[i].name) == 0)
+			continue;
+		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
+				slurmctld_conf.slurmd_port, node_record_table_ptr[i].name);
+	}
+
+	return;
+}
+
+
 /* 
  * split_node_name - split a node name into prefix, suffix, index value, and digit count
  * input: name - the node name to parse

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * node_scheduler.c - select and allocated nodes to jobs 
+ *  node_scheduler.c - select and allocated nodes to jobs 
  *	Note: there is a global node table (node_record_table_ptr) *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -54,6 +54,7 @@ int pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 int pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 		     bitstr_t **req_bitmap, uint32_t req_cpus, uint32_t req_nodes,
 		     int contiguous, int shared, uint32_t max_nodes);
+void slurm_revoke_job_cred (struct node_record * node_ptr, revoke_credential_msg_t * revoke_job_cred_ptr);
 int valid_features (char *requested, char *available);
 
 #if DEBUG_MODULE
@@ -187,26 +188,78 @@ count_cpus (unsigned *bitmap)
 }
 
 
-/* deallocate_nodes - for a given bitmap, change the state of specified nodes to NODE_STATE_IDLE
+/* deallocate_nodes - for a given job, deallocate its nodes and make their state NODE_STATE_IDLE
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
 void 
-deallocate_nodes (unsigned *bitmap) 
+deallocate_nodes (struct job_record  * job_ptr) 
 {
 	int i;
+	revoke_credential_msg_t revoke_job_cred;
 
 	last_node_update = time (NULL);
+	revoke_job_cred.job_id = job_ptr -> job_id;
+	memset ( (void *)revoke_job_cred.signature, 0, sizeof (revoke_job_cred.signature));
 
 	for (i = 0; i < node_record_count; i++) {
-		if (bit_test (bitmap, i) == 0)
+		if (bit_test (job_ptr->node_bitmap, i) == 0)
 			continue;
+		slurm_revoke_job_cred (&node_record_table_ptr[i], &revoke_job_cred);
 		node_record_table_ptr[i].node_state = NODE_STATE_IDLE;
 		bit_set (idle_node_bitmap, i);
 	}
 	return;
 }
 
+/* slurm_revoke_job_cred - send RPC for slurmd to revoke a credential */
+void
+slurm_revoke_job_cred (struct node_record * node_ptr, revoke_credential_msg_t * revoke_job_cred_ptr)
+{
+	int msg_size ;
+	int rc ;
+	slurm_fd sockfd ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+
+	/* init message connection for message communication with slurmd */
+	if ( ( sockfd = slurm_open_msg_conn (& node_ptr -> slurm_addr) ) == SLURM_SOCKET_ERROR )
+		error ("slurm_revoke_job_cred/slurm_open_msg_conn error for %s", node_ptr->name);
+
+	/* send request message */
+	request_msg . msg_type = REQUEST_REVOKE_JOB_CREDENTIAL ;
+	request_msg . data = revoke_job_cred_ptr ; 
+	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
+		error ("slurm_revoke_job_cred/slurm_send_node_msg error for %s", node_ptr->name);
+
+	/* receive message */
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR )
+		error ("slurm_revoke_job_cred/slurm_receive_msg error for %s", node_ptr->name);
+
+	/* shutdown message connection */
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
+		error ("slurm_revoke_job_cred/slurm_shutdown_msg_conn error for %s", node_ptr->name);
+	if ( msg_size )
+		error ("slurm_revoke_job_cred/msg_size error %d for %s", msg_size, node_ptr->name);
+		return;
+
+	switch ( response_msg . msg_type )
+	{
+		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			rc = slurm_rc_msg->return_code;
+			slurm_free_return_code_msg ( slurm_rc_msg );	
+			if (rc)
+				error ("slurm_revoke_job_cred/rc error %d for %s", rc, node_ptr->name);
+			break ;
+		default:
+				error ("slurm_revoke_job_cred/msg_type error %d for %s",
+				       response_msg.msg_type, node_ptr->name);
+			break ;
+	}
+	return;
+}
 
 /* 
  * is_key_valid - determine if supplied partition key is valid
