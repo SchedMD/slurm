@@ -3,38 +3,35 @@
 %                on
 %            2003-04-08
 %
-
+% This presentation was built using a modified version of the
+% ``prosper'' latex class and `alienglow' style 
+% (See ./tex/prosper.cls and ./tex/PPRlinuxglow.sty)
+%
+% For the "interactive" PDF slides, uncomment the pdf option below
+% to enable overlays. For printed slides, uncomment the ps option.
+% 
 \documentclass[%
 letterpaper,
 pdf,
 %ps,
 %nocolorBG,
-colorBG,
+%colorBG,
 slideColor,
 %slideBW,
 %draft,
-%frames
-%azure
-%contemporain
-%nuancegris
-%troispoints
-%lignesbleues
-%darkblue
 alienglow
-%autumn
 ]{prosper}
 
 \usepackage{epsfig}
 
 %
+% Talk Title, SubTitle, etc.
 %
-%
-
 \title{SLURM}
 \subtitle{The Simple Linux Utility for \\ Resource Management}
 \author{Mark A. Grondona}
 \email{mgrondona@llnl.gov}
-\disclaimer{These slides are for LLNL internal use only}
+\disclaimer{LLNL internal use only}
 
 %
 % PPRalienglow.sty was directly modified to fit the two images below.
@@ -67,8 +64,9 @@ alienglow
 \end{itemize}
 \end{slide}
 
-%%
-%%
+%
+% Prepare a 5 overlay slide using the handy "itemstep" environment
+% 
 \overlays{5}{%
 \begin{slide}{What is SLURM?}
 \begin{itemstep}
@@ -83,8 +81,7 @@ alienglow
 \end{itemstep}
 \end{slide}}
 
-%%
-%%
+%
 \overlays{3}{%
 \begin{slide}{What SLURM is Not}
 \begin{itemstep}
@@ -104,11 +101,13 @@ alienglow
  \item Fault Tolerant
  \item Secure
  \item Open Source
- \item Interconnect Independent
 \end{itemize}
 \end{slide}
 
 %
+% Prepare overlays using the onlySlide* command. Slides 2-5 will
+% show the diagrams entities0-5.eps respectively. The onlySlide*
+% environment deallocates the space taken by the slide contents.
 %
 \overlays{5}{%
 \begin{slide}{SLURM Entities}
@@ -128,8 +127,8 @@ alienglow
  \end{center}
 \end{slide}}
 
-%%
-%%
+%
+%
 \overlays{2}{%
 \begin{slide}{SLURM Architecture}
 \onlySlide*{1}{%
@@ -151,6 +150,9 @@ alienglow
   \onlyInPS{\hfill \epsfig{file=arch.eps,scale=0.3} \hfill}
 \end{slide}}
 
+%
+% Simple use of tabular environment.
+%
 \begin{slide}{User Commands}
 \begin{tabular}{rc}
 {\tt scontrol} & SLURM administration utility \\
@@ -161,6 +163,12 @@ alienglow
 \end{tabular}
 \end{slide}
 
+
+%
+% Use of verbatim environment within a slide.
+% The font size is shrunk to footnotesize and TeX's baselineskip is
+% decreased by 20% because the default monospace font was so darn big.
+%
 \begin{slide}{Simple SLURM Examples}
 \begin{itemize}
 \item Basic interface very similar to RMS
@@ -182,6 +190,8 @@ grondo@dev0 ~ >
 \renewcommand{\baselinestretch}{1.0}
 \end{slide}
 
+%
+%
 \begin{slide}{Simple SLURM Examples}
 \begin{itemize}
 \item Killing an interactive job
@@ -202,6 +212,8 @@ grondo@dev0 ~ >
 \renewcommand{\baselinestretch}{1.0}
 \end{slide}
 
+%
+%
 \begin{slide}{Simple SLURM Examples}
 \begin{itemize}
 \item Killing a queued job
@@ -220,22 +232,25 @@ grondo@dev0 ~ >
 \renewcommand{\baselinestretch}{1.0}
 \end{slide}
 
+%
+%
 \begin{slide}{SLURM and RMS Differences}
 \raggedright
 \begin{itemize}
 \item SLURM infrastructure is much simpler 
   \begin{itemize}
-  \item SLURM uses a simple config file 
+  \item SLURM uses a simple configuration file not database
   \item Initially, no back-end database \\ 
         (future versions of SLURM may have this)
   \end{itemize}
 \item SLURM Open Source and locally developed to fit our needs
-\item SLURM is interconnect independent
 \item Job submission and query will mostly be through DPCS, so no changes
       there
 \end{itemize}
 \end{slide}
 
+%
+%
 \begin{slide}{prun vs. srun}
 \raggedright
 \begin{itemize}
@@ -251,6 +266,7 @@ grondo@dev0 ~ >
 \end{itemize}
 \end{slide}
 
+%
 \begin{slide}{Any Questions?}
 \hfill \hfill \epsfig{file=slurm.eps,scale=0.5} \hfill
 \end{slide}
