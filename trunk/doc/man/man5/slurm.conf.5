@@ -321,6 +321,11 @@ The default value is 1.
 Number of processors on the node (e.g. "2").
 The default value is 1.
 .TP
+\fBReason\fR
+Identifies the reason for a node being in state "DOWN" or "DRAINED" 
+or "DRAINING". Use quotes to enclose a reason having more than one 
+word.
+.TP
 \fBState\fR
 State of the node with respect to the initiation of user jobs. 
 Acceptable values are "BUSY", "DOWN", "DRAINED", "DRAINING", "IDLE", 
@@ -501,6 +506,8 @@ NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000
 NodeName=DEFAULT State=UNKNOWN
 .br
 NodeName=dev[0-25] NodeAddr=edev[0-25] Weight=16
+.br
+NodeName=dev26 State=DOWN Reason="power,ETA=Dec25"
 .br
 #
 .br
