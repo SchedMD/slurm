@@ -512,8 +512,12 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 .TP
 \fBRootOnly\fR
-Specifies if only user ID zero (or user <i>root</i> may 
-initiate jobs in this partition.
+Specifies if only user ID zero (i.e. user \fIroot\fR) may allocate resources 
+in this partition. User root may allocate resources for any other user, 
+but the request must be initiated by user root. 
+This option can be useful for a partition to be managed by some 
+external entity (e.g. a higher\-level job manager) and prevents 
+users from directly using those resources.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 .TP
