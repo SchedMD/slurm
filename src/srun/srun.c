@@ -56,10 +56,11 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
-#include "src/srun/opt.h"
 #include "src/srun/env.h"
+#include "src/srun/io.h"
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
+#include "src/srun/opt.h"
 
 #include "src/srun/net.h"
 #include "src/srun/msg.h"
@@ -100,7 +101,7 @@ static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
 static void		 _sigterm_handler(int signum);
 static void		 _sig_kill_alloc(int signum);
-void *                   _sig_thr(void *arg);
+static void *            _sig_thr(void *arg);
 static char 		*_build_script (char *pathname, int file_type);
 static char 		*_get_shell (void);
 static int 		 _is_file_text (char *fname, char** shell_ptr);
@@ -114,7 +115,7 @@ static int               _set_batch_script_env(uint32_t jobid);
 
 #ifdef HAVE_LIBELAN3
 #  include "src/common/qsw.h"
-   static void qsw_standalone(job_t *job);
+   static void _qsw_standalone(job_t *job);
 #endif
 
 int
@@ -163,7 +164,7 @@ main(int ac, char **av)
 		printf("do not allocate resources\n");
 		job = job_create(NULL); 
 #ifdef HAVE_LIBELAN3
-		qsw_standalone(job);
+		_qsw_standalone(job);
 #endif
 	} else if ( (resp = _existing_allocation()) ) {
 		old_job = true;
@@ -405,7 +406,7 @@ _sig_kill_alloc(int signum)
 
 #ifdef HAVE_LIBELAN3
 static void
-qsw_standalone(job_t *job)
+_qsw_standalone(job_t *job)
 {
 	int i;
 	bitstr_t bit_decl(nodeset, QSW_MAX_TASKS);
@@ -515,30 +516,31 @@ _sig_thr(void *arg)
 		debug2("recvd signal %d", signo);
 		switch (signo) {
 		  case SIGINT:
-			  if (time(NULL) - last_intr > 1) {
-				  if (job->state != SRUN_JOB_OVERDONE) {
-					  info("sending Ctrl-C to job");
-					  last_intr = time(NULL);
-					  _fwd_signal(job, signo);
-				  } else
-					  info("attempting cleanup");
-
-			  } else  { /* second Ctrl-C in half as many seconds */
-				    /* terminate job */
-				  pthread_mutex_lock(&job->state_mutex);
-				  if (job->state != SRUN_JOB_OVERDONE) {
-					  info("forcing termination");
-					  job->state = SRUN_JOB_OVERDONE;
-				  } else 
-					  info("attempting cleanup");
-				  pthread_cond_signal(&job->state_cond);
-				  pthread_mutex_unlock(&job->state_mutex);
-				  suddendeath = true;
-			  }
-			  break;
+			if ((time(NULL) - last_intr) > 1) {
+				report_task_status(job);
+				last_intr = time(NULL);
+			 } else  { /* second Ctrl-C in half as many seconds */
+				   /* terminate job */
+				if (job->state != SRUN_JOB_OVERDONE) {
+					info("sending Ctrl-C to job");
+					last_intr = time(NULL);
+					_fwd_signal(job, signo);
+				} else {
+					pthread_mutex_lock(&job->state_mutex);
+					if (job->state != SRUN_JOB_OVERDONE) {
+						info("forcing termination");
+						job->state = SRUN_JOB_OVERDONE;
+					} else 
+						info("attempting cleanup");
+					pthread_cond_signal(&job->state_cond);
+					pthread_mutex_unlock(&job->state_mutex);
+					suddendeath = true;
+				}
+			}
+			break;
 		  default:
-			  _fwd_signal(job, signo);
-			  break;
+			_fwd_signal(job, signo);
+			break;
 		}
 	}
 

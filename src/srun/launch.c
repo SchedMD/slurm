@@ -265,7 +265,9 @@ static void * p_launch_task(void *args)
 		error("task launch error on %s: %m", job_ptr->host[host_inx]);
 		job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
 		failure = 1;
-	}
+	} else
+		job_ptr->host_state[host_inx] = SRUN_HOST_CONTACTED;
+
 
 	pthread_mutex_lock(&active_mutex);
 	active--;

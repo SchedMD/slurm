@@ -53,9 +53,9 @@
 #include "src/srun/attach.h"
 #endif
 
-#define MAX_MSG_WAIT_SEC  60	/* max msg idle, secs, confirm launches */
+#define MAX_MSG_WAIT_SEC	 60	/* max wait to confirm launches, sec */
 #define POLL_TIMEOUT_MSEC	500
-time_t time_last_msg;
+static time_t time_last_msg;
 
 static int tasks_exited = 0;
 static uint32_t slurm_user_id;
@@ -98,7 +98,8 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		return;
 	} else {	
 		pthread_mutex_lock(&job->task_mutex);
-		if (msg->srun_node_id >= 0 && msg->srun_node_id < job->nhosts) {
+		if ((msg->srun_node_id >= 0) && 
+		    (msg->srun_node_id < job->nhosts)) {
 			job->host_state[msg->srun_node_id] = 
 				SRUN_HOST_REPLIED;
 #ifdef HAVE_TOTALVIEW
@@ -122,7 +123,7 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 
 /* _confirm_launch_complete
  * confirm that all tasks registers a sucessful launch
- * exit on failure */
+ * pthread_exit with job kill on failure */
 static void	
 _confirm_launch_complete(job_t *job)
 {
@@ -153,7 +154,10 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 
 	pthread_mutex_lock(&job->task_mutex);
 	job->tstatus[msg->task_id] = msg->return_code;
-	job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
+	if (msg->return_code)
+		job->task_state[msg->task_id]  = SRUN_TASK_FAILED;
+	else
+		job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
 	pthread_mutex_unlock(&job->task_mutex);
 
 	tasks_exited++;

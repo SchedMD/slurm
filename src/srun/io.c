@@ -62,17 +62,21 @@ typedef struct fd_info {
 	FILE *fp;	/* fp on which to write output		*/
 } fd_info_t;
 
-time_t time_last_io;
+static time_t time_first_done = 0;
+static time_t time_last_io;
 
 static void	_accept_io_stream(job_t *job, int i);
 static void	_bcast_stdin(int fd, job_t *job);	
 static int	_close_stream(int *fd, FILE *out, int tasknum);
+static void	_do_poll_timeout(job_t *job);
 static int	_do_task_output(int *fd, FILE *out, int tasknum);
 static int 	_do_task_output_poll(fd_info_t *info);
 static int	_handle_pollerr(fd_info_t *info);
+static char *	_host_state_name(host_state_t state_inx);
 static char *	_next_line(char **str);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
+static char *	_task_state_name(task_state_t state_inx);
 static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do { 	\
@@ -129,7 +133,6 @@ _io_thr_poll(void *job_arg)
 	int numfds = (opt.nprocs*2) + job->niofds + 2;
 	fd_info_t map[numfds];	/* map fd in pollfd array to fd info */
 	int i, rc;
-	static bool no_io_msg_sent = false;
 
 	xassert(job != NULL);
 
@@ -180,21 +183,17 @@ _io_thr_poll(void *job_arg)
 		debug3("eofcnt == %d", eofcnt);
 
 		/* exit if we have received EOF on all streams */
-		if (eofcnt == opt.nprocs)
-			pthread_exit(0);
+		if (eofcnt) {
+			debug3("eofcnt == %d", eofcnt);
+			if (eofcnt == opt.nprocs)
+				pthread_exit(0);
+			if (time_first_done == 0)
+				time_first_done = time(NULL);
+		}
 
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
-				i = time(NULL)-time_last_io;
-				if (job->state == SRUN_JOB_FAILED)
-					pthread_exit(0);
-				else if (no_io_msg_sent)
-					;
-				else if (i > MAX_IO_WAIT_SEC) {
-					info("Warning: No I/O in %d seconds",
-					     MAX_IO_WAIT_SEC);
-					no_io_msg_sent = true; 
-				}
+				_do_poll_timeout(job);
 				continue;
 			}
 
@@ -240,6 +239,84 @@ _io_thr_poll(void *job_arg)
 	}
 	xfree(fds);
 }
+
+static void _do_poll_timeout (job_t *job)
+{
+	int i, j;
+	static bool no_io_msg_sent = false;
+
+	i = time(NULL) - time_last_io;
+	j = time(NULL) - time_first_done;
+	if (job->state == SRUN_JOB_FAILED)
+		pthread_exit(0);
+	else if (opt.max_wait && (j > opt.max_wait)) {
+		error("First task termination %d seconds ago", i);
+		error("Terminating remaining tasks now");
+		report_job_status(job);
+		update_job_state(job, SRUN_JOB_FAILED);
+		pthread_exit(0);
+	} else if (no_io_msg_sent)
+		;
+	else if (i > MAX_IO_WAIT_SEC) {
+		info("Warning: No I/O in %d seconds", MAX_IO_WAIT_SEC);
+		no_io_msg_sent = true; 
+	}
+}
+
+void report_job_status(job_t *job)
+{
+	int i;
+
+	for (i = 0; i < job->nhosts; i++) {
+		info ("host:%s state:%s", job->host[i], 
+		      _host_state_name(job->host_state[i]));
+	}
+}
+
+static char *_host_state_name(host_state_t state_inx)
+{
+	switch (state_inx) {
+		case SRUN_HOST_INIT:
+			return "initial";
+		case SRUN_HOST_CONTACTED:
+			return "contacted";
+		case SRUN_HOST_UNREACHABLE:
+			return "unreachable";
+		case SRUN_HOST_REPLIED:
+			return "replied";
+		case SRUN_HOST_DONE:		/* FIXME: not set anywhere */
+			return "done";
+		default:
+			return "unknown";
+	}
+}
+
+void report_task_status(job_t *job)
+{
+	int i;
+
+	for (i = 0; i < opt.nprocs; i++) {
+		info ("task:%d state:%s", i, 
+		      _task_state_name(job->task_state[i]));
+	}
+}
+
+static char *_task_state_name(task_state_t state_inx)
+{
+	switch (state_inx) {
+		case SRUN_TASK_INIT:
+			return "initial";
+		case SRUN_TASK_RUNNING:
+			return "running";
+		case SRUN_TASK_FAILED:
+			return "failed";
+		case SRUN_TASK_EXITED:
+			return "exited";
+		default:
+			return "unknown";
+	}
+}
+
 
 void *
 io_thr(void *arg)
@@ -308,7 +385,8 @@ _accept_io_stream(job_t *job, int i)
 			error ("Invalid task_id %d from %s",
 			       hdr.task_id, buf);
 			continue;
-		}
+		} else 
+			job->task_state[hdr.task_id] = SRUN_TASK_RUNNING;
 
 		fd_set_nonblocking(sd);
 		if (hdr.type == SLURM_IO_STREAM_INOUT)
