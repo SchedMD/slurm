@@ -804,61 +804,101 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		fatal ("MaxJobCount=%u, No jobs permitted",
 		       ctl_conf_ptr->max_job_cnt);
 
-	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) {
-		servent = getservbyname (SLURMCTLD_PORT, NULL);
-		if (servent)
-			ctl_conf_ptr->slurmctld_port = servent -> s_port;
-		else
-			ctl_conf_ptr->slurmctld_port = strtol (SLURMCTLD_PORT, 
-							(char **) NULL, 10);
-		endservent ();
-	}
-
-	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) {
-		servent = getservbyname (SLURMD_PORT, NULL);
-		if (servent)
-			ctl_conf_ptr->slurmd_port = servent -> s_port;
-		else
-			ctl_conf_ptr->slurmd_port = strtol (SLURMCTLD_PORT, 
-							(char **) NULL, 10);
-		endservent ();
-	}
-
-	if (ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
-		_normalize_debug_level(&ctl_conf_ptr->slurmctld_debug);
-
-	if (ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
-		_normalize_debug_level(&ctl_conf_ptr->slurmd_debug);
-
-	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
-		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
-
-	if (ctl_conf_ptr->slurmctld_pidfile == NULL)
-		ctl_conf_ptr->slurmctld_pidfile = 
-				xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
-
-	if (ctl_conf_ptr->slurmd_pidfile == NULL)
-		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
-
-	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
-		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
-
 	if (ctl_conf_ptr->authtype == NULL)
 		ctl_conf_ptr->authtype = xstrdup(DEFAULT_AUTH_TYPE);
+
+	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
+		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
+
+	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
+		ctl_conf_ptr->first_job_id = DEFAULT_FIRST_JOB_ID;
+
+	if (ctl_conf_ptr->hash_base == (uint16_t) NO_VAL)
+		ctl_conf_ptr->hash_base = DEFAULT_HASH_BASE;
+
+	if (ctl_conf_ptr->heartbeat_interval == (uint16_t) NO_VAL)
+		ctl_conf_ptr->heartbeat_interval = DEFAULT_HEARTBEAT_INTERVAL;
+
+	if (ctl_conf_ptr->inactive_limit == (uint16_t) NO_VAL)
+		ctl_conf_ptr->inactive_limit = DEFAULT_INACTIVE_LIMIT;
 
 	if (ctl_conf_ptr->job_comp_type == NULL)
 		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
 
+	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
+		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
+
+	if (ctl_conf_ptr->max_job_cnt == (uint16_t) NO_VAL)
+		ctl_conf_ptr->max_job_cnt = DEFAULT_MAX_JOB_COUNT;
+
+	if (ctl_conf_ptr->min_job_age == (uint16_t) NO_VAL)
+		ctl_conf_ptr->min_job_age = DEFAULT_MIN_JOB_AGE;
+
 	if (ctl_conf_ptr->plugindir == NULL)
 		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
+
+	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
+		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;
 
 	if (ctl_conf_ptr->slurm_user_name == NULL) {
 		ctl_conf_ptr->slurm_user_name = xstrdup("root");
 		ctl_conf_ptr->slurm_user_id   = 0;
 	}
 
-	if (ctl_conf_ptr->slurmd_spooldir == NULL) 
+	if (ctl_conf_ptr->slurmctld_debug != (uint16_t) NO_VAL)
+		_normalize_debug_level(&ctl_conf_ptr->slurmctld_debug);
+	else
+		ctl_conf_ptr->slurmctld_debug = LOG_LEVEL_INFO;
+
+	if (ctl_conf_ptr->slurmctld_pidfile == NULL)
+		ctl_conf_ptr->slurmctld_pidfile =
+			xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
+
+	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) {
+		servent = getservbyname (SLURMCTLD_PORT, NULL);
+		if (servent)
+			ctl_conf_ptr->slurmctld_port = servent -> s_port;
+		else
+			ctl_conf_ptr->slurmctld_port = strtol (SLURMCTLD_PORT,
+					(char **) NULL, 10);
+		endservent ();
+	}
+
+	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
+		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
+
+	if (ctl_conf_ptr->slurmd_debug != (uint16_t) NO_VAL)
+		_normalize_debug_level(&ctl_conf_ptr->slurmd_debug);
+	else
+		ctl_conf_ptr->slurmd_debug = LOG_LEVEL_INFO;
+
+	if (ctl_conf_ptr->slurmd_pidfile == NULL)
+		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
+
+	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) {
+		servent = getservbyname (SLURMD_PORT, NULL);
+		if (servent)
+			ctl_conf_ptr->slurmd_port = servent -> s_port;
+		else
+			ctl_conf_ptr->slurmd_port = strtol (SLURMCTLD_PORT,
+					(char **) NULL, 10);
+		endservent ();
+	}
+
+	if (ctl_conf_ptr->slurmd_spooldir == NULL)
 		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
+
+	if (ctl_conf_ptr->slurmd_timeout == (uint16_t) NO_VAL)
+		ctl_conf_ptr->slurmd_timeout = DEFAULT_SLURMD_TIMEOUT;
+
+	if (ctl_conf_ptr->state_save_location == NULL)
+		ctl_conf_ptr->state_save_location = xstrdup(DEFAULT_SAVE_STATE_LOC);
+
+	if (ctl_conf_ptr->tmp_fs == NULL)
+		ctl_conf_ptr->tmp_fs = xstrdup(DEFAULT_TMP_FS);
+
+	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
+		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */
