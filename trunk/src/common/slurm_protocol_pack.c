@@ -74,10 +74,11 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SUBMIT_BATCH_JOB :
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
-		case RESPONSE_RESOURCE_ALLOCATION :
+		case REQUEST_RECONFIGURE :
+			/* Message contains no body/information */
 			break ;
-		case RESPONSE_SUBMIT_BATCH_JOB :
-			break ;
+
+			
 		case REQUEST_CANCEL_JOB :
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
@@ -85,9 +86,6 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SIGNAL_JOB :
 			break ;
 		case REQUEST_SIGNAL_JOB_STEP :
-			break ;
-		case REQUEST_RECONFIGURE :
-			/* Message contains no body/information */
 			break ;
 		case RESPONSE_CANCEL_JOB :
 		case RESPONSE_RECONFIGURE :
@@ -173,10 +171,10 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SUBMIT_BATCH_JOB :
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
-		case RESPONSE_RESOURCE_ALLOCATION :
+		case REQUEST_RECONFIGURE :
+			/* Message contains no body/information */
 			break ;
-		case RESPONSE_SUBMIT_BATCH_JOB :
-			break ;
+
 		case REQUEST_CANCEL_JOB :
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
@@ -184,9 +182,6 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SIGNAL_JOB :
 			break ;
 		case REQUEST_SIGNAL_JOB_STEP :
-			break ;
-		case REQUEST_RECONFIGURE :
-			/* Message contains no body/information */
 			break ;
 		case RESPONSE_CANCEL_JOB :
 		case RESPONSE_RECONFIGURE :
