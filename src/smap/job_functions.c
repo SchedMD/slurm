@@ -70,6 +70,11 @@ extern void get_job(void)
 
 	for (i = 0; i < recs; i++) {
 		job = new_job_ptr->job_array[i];
+
+		if ((job.job_state >= JOB_COMPLETE)
+		||  (job.job_state <  JOB_END))
+			continue;	/* job has completed */
+
 		if (job.node_inx[0] != -1) {
 			job.num_nodes = 0;
 			j = 0;
