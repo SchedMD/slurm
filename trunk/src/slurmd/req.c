@@ -1085,23 +1085,19 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *  If there are currently no active job steps and no
 	 *    configured epilog to run, bypass asynchronous reply and
 	 *    notify slurmctld that we have already completed this
-	 *    request.
+	 *    request. We need to send current switch state on AIX
+	 *    systems, so this bypass can not be used.
 	 */
+#ifndef HAVE_AIX
 	if ((nsteps == 0) && !conf->epilog) {
 		if (msg->conn_fd >= 0)
 			slurm_send_rc_msg(msg, 
 				ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
-#ifdef HAVE_AIX
-		/* On AIX/Federation switch systems, we always have 
-		 * to send a separate epilog complete RPC including 
-		 * current switch state info. */
-		goto done;
-#else
 		_waiter_complete(req->job_id);
 		return;
-#endif
 	}
+#endif
 
 	/*
 	 *  At this point, if connection still open, we send controller
