@@ -1087,7 +1087,9 @@ job_complete (uint32_t job_id)
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
 	    (job_ptr->job_state == JOB_RUNNING) ||
 	    (job_ptr->job_state == JOB_STAGE_OUT)) {
+		unlock_slurmctld (job_write_lock);
 		deallocate_nodes (job_ptr);
+		lock_slurmctld(job_write_lock);
 		verbose ("job_complete for job id %u successful", job_id);
 	} 
 	else {
