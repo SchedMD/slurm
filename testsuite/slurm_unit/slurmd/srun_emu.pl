@@ -18,6 +18,8 @@ if ($pid)
 		print STDOUT $_;
 	}
 	close($sock1);
+	print "CLOSED STD OUT SOCKET" ;
+
 }
 else
 {
@@ -35,4 +37,5 @@ else
 		print STDERR $_;
 	}
 	close($sock2);
+	print "CLOSED STD ERR SOCKET" ;
 }
