@@ -1,11 +1,46 @@
-/* $Id$ */
-
-/* 
-** log facilities for slurm.
-**
-** Mark Grondona <mgrondona@llnl.gov>
-**
-*/
+/*****************************************************************************\
+ *  loc.c - slurm logging facilities
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <mgrondona@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  Much of this code was derived or adapted from the log.c component of 
+ *  openssh which contains the following notices:
+ *****************************************************************************
+ * Author: Tatu Ylonen <ylo@cs.hut.fi>
+ * Copyright (c) 1995 Tatu Ylonen <ylo@cs.hut.fi>, Espoo, Finland
+ *                    All rights reserved
+ *
+ * As far as I am concerned, the code I have written for this software
+ * can be used freely for any purpose.  Any derived versions of this
+ * software must be clearly marked as such, and if the derived work is
+ * incompatible with the protocol description in the RFC file, it must be
+ * called by a name other than "ssh" or "Secure Shell".
+ *****************************************************************************
+ * Copyright (c) 2000 Markus Friedl.  All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ * 1. Redistributions of source code must retain the above copyright
+ *    notice, this list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright
+ *    notice, this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+ * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+ * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+ * IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+ * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+\*****************************************************************************/
 
 /*
 ** MT safe
@@ -367,6 +402,7 @@ void fatal(const char *fmt, ...)
 	va_end(ap);
 
 #ifndef  NDEBUG
+	fatal_cleanup();
 	abort();
 #endif
 }
@@ -423,4 +459,96 @@ void debug3(const char *fmt, ...)
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_DEBUG3, fmt, ap);
 	va_end(ap);
+}
+
+/* Fatal cleanup */
+
+struct fatal_cleanup {
+	pthread_t thread_id;
+	struct fatal_cleanup *next;
+	void (*proc) (void *);
+	void *context;
+};
+
+/* static variables */
+static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;    
+static struct fatal_cleanup *fatal_cleanups = NULL;
+
+/* Registers a cleanup function to be called by fatal() before exiting. */
+void
+fatal_add_cleanup(void (*proc) (void *), void *context)
+{
+	struct fatal_cleanup *cu;
+
+	pthread_mutex_lock(&fatal_lock);
+	cu = xmalloc(sizeof(*cu));
+	cu->thread_id = pthread_self();
+	cu->proc = proc;
+	cu->context = context;
+	cu->next = fatal_cleanups;
+	fatal_cleanups = cu;
+	pthread_mutex_unlock(&fatal_lock);
+}
+
+/* Removes a cleanup frunction to be called at fatal(). */
+void
+fatal_remove_cleanup(void (*proc) (void *context), void *context)
+{
+	struct fatal_cleanup **cup, *cu;
+	pthread_t my_thread_id = pthread_self();
+
+	pthread_mutex_lock(&fatal_lock);
+	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
+		cu = *cup;
+		if (cu->thread_id == my_thread_id &&
+		    cu->proc == proc && 
+		    cu->context == context) {
+			*cup = cu->next;
+			xfree(cu);
+			pthread_mutex_unlock(&fatal_lock);
+			return;
+		}
+	}
+	pthread_mutex_unlock(&fatal_lock);
+	fatal("fatal_remove_cleanup: no such cleanup function: 0x%lx 0x%lx",
+	    (u_long) proc, (u_long) context);
+}
+
+/* Execute cleanup functions */
+void
+fatal_cleanup(void)
+{
+	struct fatal_cleanup **cup, *cu;
+	pthread_t my_thread_id = pthread_self();
+
+	pthread_mutex_lock(&fatal_lock);
+	for (cup = &fatal_cleanups; *cup; ) {
+		cu = *cup;
+		if (cu->thread_id != my_thread_id) {
+			cup = &cu->next;
+			continue;
+		}
+		debug("Calling cleanup 0x%lx(0x%lx)",
+		      (u_long) cu->proc, (u_long) cu->context);
+		(*cu->proc) (cu->context);
+		*cup = cu->next;
+		xfree(cu);
+	}
+	pthread_mutex_unlock(&fatal_lock);
+}
+
+/* Print a list of cleanup frunctions to be called at fatal(). */
+void
+dump_cleanup_list(void)
+{
+	struct fatal_cleanup **cup, *cu;
+
+	pthread_mutex_lock(&fatal_lock);
+	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
+		cu = *cup;
+		info ("loc=%ld thread_id=%ld proc=%ld, context=%ld, next=%ld",
+			(long)cu, (long)cu->thread_id, (long)cu->proc, 
+			(long)cu->context, (long)cu->next);
+	}
+	pthread_mutex_unlock(&fatal_lock);
 }
