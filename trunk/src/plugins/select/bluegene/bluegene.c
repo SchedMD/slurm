@@ -534,10 +534,9 @@ error("DIM=%d, loc=%d i=%d", SYSTEM_DIMENSIONS, loc, i);
 /* Initialize all plugin variables */
 extern int init_bgl(void)
 {
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 	int rc;
 
-#if 0	
 	/* FIXME: this needs to be read in from conf file. */
 	rc = rm_set_serial("BGL");
 	if (rc != STATUS_OK){
@@ -546,6 +545,8 @@ extern int init_bgl(void)
 	}
 #endif
 
+#ifdef USE_BGL_FILES
+/* This requires the existence of "./db.properties" file */
 	rc = rm_get_BGL(&bgl);
 	if (rc != STATUS_OK){
 		error("init_bgl: rm_get_BGL failed, errno=%d", rc);
@@ -557,6 +558,8 @@ extern int init_bgl(void)
 
 	/* for testing purposes */
 	init_bgl_partition_num();
+
+	info("BlueGene plugin loaded successfully");
 
 	return SLURM_SUCCESS;
 }
