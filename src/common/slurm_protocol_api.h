@@ -22,12 +22,17 @@
 #include <src/common/slurm_protocol_errno.h>
 
 
+#define SLURM_PORT 7000
+#define SLURM_PROTOCOL_DEFAULT_PORT 7000
+#define SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER "localhost"
+#define SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER "localhost"
 
 
 /* high level routines */
 /* API init routines */
-int slurm_api_init ( slurm_protocol_config_t * protocol_conf ) ;
-int slurm_api_cleanup ( ) ;
+int inline slurm_api_init ( slurm_protocol_config_t * protocol_conf ) ;
+int inline slurm_api_cleanup ( ) ;
+int inline slurm_api_set_defaults ( ) ;
 
 /* msg functions */
 
