@@ -167,6 +167,21 @@ means that a node will remain in the DOWN state
 until a system administrator explicitly changes its state
 (even if the slurmd daemon registers and resumes communications).
 .TP
+\fBSchedulerAuth\fR
+An authentication token, if any, that must be used in a scheduler 
+communication protocol. The interpreation of this value depends 
+upon the value of \fBSchedulerType\fR.
+.TP
+\fBSchedulerPort\fR
+For polling schedulers, the port number on which slurmctld should 
+listen for connection requests.
+.TP
+\fBSchedulerType\fR
+Identifies the type of scheduler to be used. Acceptable values 
+include "sched/builtin" for the built-in FIFO scheduler and
+"sched/wiki" for the Wiki interface to the Maui Scheduler. 
+The default value is "sched/builtin". 
+.TP
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
 For security purposes, a user other than "root" is recommended.
@@ -498,6 +513,10 @@ MinJobAge=3600
 PluginDir=/usr/local/lib:/usr/local/slurm/lib
 .br
 ReturnToService=0
+.br
+SchedulerType=sched/wiki
+.br
+SchedulerAuth=42 SchedulerPort=7004
 .br
 SlurmctldLogFile=/var/log/slurmctld.log
 .br
