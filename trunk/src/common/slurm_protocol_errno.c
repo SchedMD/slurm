@@ -48,7 +48,11 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_TRANSITION_STATE_NO_UPDATE,	"Job can not be altered now, try again later" },
 	{ ESLURM_ALREADY_DONE,			"Job/step already completed" },
 
-	{ ESLURM_ACCESS_DENIED,			"Access denied" }
+	{ ESLURM_ACCESS_DENIED,			"Access denied" },
+
+	{ SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH,		"Received zero length message" },
+	{ SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH,	"Received message length < 0" },
+	{ SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT,		"Failed to send entire message" }
 };
 
 /* 
