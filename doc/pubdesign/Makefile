@@ -9,9 +9,9 @@
 # 'info "GNU make"': "Using variables": "Automatic" also lists a few more.
 
 REPORT = report
+JSSPP  = jsspp
 
-
-TEX = llnl.tex $(REPORT).tex
+TEX = llnl.tex $(JSSPP).tex $(REPORT).tex
 
 FIGDIR = figures
 FIGS = $(FIGDIR)/arch.eps \
@@ -39,7 +39,10 @@ BIB = project.bib
 %.pdf: %.dvi
 	dvipdf $< $@ 
 
-all: $(REPORT).ps
+all: $(JSSPP).ps $(REPORT).ps 
+
+$(JSSPP).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
+	latex $(JSSPP)
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
@@ -53,5 +56,5 @@ view: $(REPORT).ps
 	ghostview $(REPORT) &
 
 clean: 
-	rm -f *~ *.dvi *.log *.aux report.ps *.blg *.bbl #*.eps #*.gif *.ps
+	rm -f *~ *.dvi *.log *.aux $(JSSPP).ps $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
 	      
