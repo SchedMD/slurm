@@ -69,6 +69,8 @@ static slurm_errtab_t slurm_errtab[] = {
           "I/O stream version number error"                     },
         { SLURM_PROTOCOL_AUTHENTICATION_ERROR,
           "Protocol authentication error"                       },
+        { SLURM_PROTOCOL_INSANE_MSG_LENGTH,
+          "Insane message length"                               },
 
 
 	/* _info.c/communcation layer RESPONSE_SLURM_RC message codes */
@@ -99,7 +101,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_JOB_SCRIPT_MISSING, 
 	  "Job script not specified"				},
 	{ ESLURM_USER_ID_MISSING, 
-	  "User id is missing or invalid"			},
+	  "Invalid user id"					},
 	{ ESLURM_JOB_NAME_TOO_LONG, 
 	  "Job name too long"					},
 	{ ESLURM_DUPLICATE_JOB_ID, 
