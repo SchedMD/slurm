@@ -101,6 +101,7 @@ int Delete_Node_Record(char *name) {
     while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	if (strcmp(Node_Record_Point->Name, name) == 0) {
 	    (void) list_remove(Node_Record_Iterator);
+	    Node_Count--;
 	    free(Node_Record_Point);
 	    Error_Code = 0;
 	    break;
@@ -476,9 +477,9 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	Node_Record_List = list_create(NULL);
 	if (Node_Record_List == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
+	    fprintf(stderr, "Read_Node_Spec_Conf: list_create can not allocate memory\n");
 #else
-	    syslog(LOG_ERR, "Read_Node_Spec_Conf: list_append can not allocate memory\n");
+	    syslog(LOG_ERR, "Read_Node_Spec_Conf: list_create can not allocate memory\n");
 #endif
 	    return ENOMEM;
 	} /* if */
@@ -550,6 +551,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 		    Error_Code =  errno;
 		    break;
 		} /* if */
+		Node_Count++;
 		strcpy(Node_Record_Point->Name, My_Name);
 		strcpy(Node_Record_Point->OS, Default_Record.OS);
 		Node_Record_Point->CPUs          = Default_Record.CPUs;
@@ -748,6 +750,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 	} /* if */
 
 	/* Set defaults */
+	Node_Count++;
 	strcpy(Node_Record_Point->OS, "UNKNOWN");
 	Node_Record_Point->CPUs = 1;
 	Node_Record_Point->Speed = 1.0;
