@@ -16,7 +16,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_load_partitions (last_update_time, &part_info_ptr);
 	if (error_code) {
-		printf ("slurm_load_part error %d\n", errno);
+		slurm_perror ("slurm_load_partitions");
 		return (error_code);
 	}
 

@@ -16,6 +16,7 @@
 static int _getnodename (char *name, size_t len);
 
 /* main is used here for module testing purposes only */
+/* DO NOT RUN AGAINST PRODUCTION NODES, IT CAN MESS UP STATE */
 int
 main (int argc, char *argv[]) {
 	int error_code;
