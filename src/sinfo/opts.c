@@ -83,6 +83,7 @@ extern void parse_command_line(int argc, char *argv[])
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
+				fprintf(stderr, "Try \"sinfo --help\" for more information\n");
 				exit(1);
 				break;
 			case (int)'e':
