@@ -130,7 +130,8 @@ launch(void *arg)
 	else  
 		_dist_cyclic(job);
 
-	msg_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t)*job->nhosts);
+	msg_array_ptr = 
+		xmalloc(sizeof(launch_tasks_request_msg_t)*job->nhosts);
 	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
 	my_envc = _envcount(environ);
 	for (i = 0; i < job->nhosts; i++) {

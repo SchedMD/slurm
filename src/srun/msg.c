@@ -52,7 +52,7 @@
 #include "src/srun/io.h"
 
 #ifdef HAVE_TOTALVIEW
-#include "src/srun/attach.h"
+#  include "src/srun/attach.h"
 #endif
 
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
