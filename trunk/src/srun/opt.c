@@ -893,8 +893,8 @@ static bool _opt_verify(void)
 	bool verified = true;
 	uid_t euid;
 
-	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
-		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
+	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG3)
+		opt.slurmd_debug = LOG_LEVEL_DEBUG3 - LOG_LEVEL_ERROR;
 
 	/*
 	 * If we are root and have been asked to submit as another
