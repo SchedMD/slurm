@@ -494,12 +494,13 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 
-static void
+static int
 _kill_all_active_steps(uint32_t jobid, int sig)
 {
 	List         steps = shm_get_steps();
 	ListIterator i     = list_iterator_create(steps);
-	job_step_t  *s     = NULL;   
+	job_step_t  *s     = NULL; 
+	int step_cnt       = 0;  
 
 	while ((s = list_next(i))) {
 		if (s->jobid == jobid) {
@@ -509,9 +510,11 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 			debug2("sending signal %d to jobid %d (pg:%d)", 
 			       sig, jobid, s->sid);
 			shm_signal_step(jobid, s->stepid, sig); 
+			step_cnt++;
 		}
 	}
 	list_destroy(steps);
+	return step_cnt;
 }
 
 static bool
@@ -538,7 +541,6 @@ static void
 _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 {
 	int   rc;
-	bool  still_running;
 	uid_t req_uid = slurm_auth_uid(msg->cred);
 	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
 
@@ -560,36 +562,27 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 		 * Now kill all steps associated with this job, they are
 		 * no longer allowed to be running
 		 */
-		_kill_all_active_steps(req->job_id, SIGKILL);
-		still_running = _job_still_running(req->job_id);
-		if ((!still_running) && 
-		    (_run_epilog(req->job_id, req->job_uid) != 0)) {
+		if (_kill_all_active_steps(req->job_id, SIGKILL) != 0)
+			_wait_for_procs(req->job_id, req->job_uid);
+		if (_run_epilog(req->job_id, req->job_uid) != 0) {
 			error ("[job %d] epilog failed", req->job_id);
 			rc = ESLURMD_EPILOG_FAILED;
 		}
 		slurm_send_rc_msg(msg, rc);
-
-		/* FIXME: slurmctld has been told of job completion and 
-		 * credential revoke and node state is IDLE, but we still 
-		 * have running processes running */
-		if (still_running)
-			_wait_for_procs(req->job_id, req->job_uid);
 	}
 }
 
 static void
 _wait_for_procs(uint32_t job_id, uid_t job_uid)
 {
+	if (!_job_still_running(job_id))
+		return;
+
 	error("Waiting for job %u to complete", job_id);
 	do {
 		sleep(1);
 	} while (_job_still_running(job_id));
 	debug("Job %u complete", job_id);
-
-	if (_run_epilog(job_id, job_uid) != 0) {
-		error ("[job %d] epilog failed", job_id);
-		/* NEED TO TELL SLURMCTLD OF FAILURE */
-	}
 }
 
 static void 
