@@ -1,4 +1,4 @@
-.TH SINFO "1" "October 2003" "sinfo 0.2" "Slurm components"
+.TH SINFO "1" "November 2003" "sinfo 0.3" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information about Slurm nodes and partitions.
@@ -203,8 +203,10 @@ Will jobs allocated resources in this partition share those resources.
 allocation.
 .TP
 \fBSTATE\fR
-State of the nodes. Note that the suffix "*" identifies nodes 
-that are presently not responding.
+State of the nodes. Possible states include: down, unknown, idle, allocated, 
+drained, draining, completing and their abbreviated forms: down, unk, idle, 
+alloc, drain, drng, and comp respectively. 
+Note that the suffix "*" identifies nodes that are presently not responding.
 .TP
 \fBTMP_DISK\fR
 Size of temporary disk space in megabytes on these nodes.
