@@ -551,47 +551,44 @@ _handle_task_exit(slurmd_job_t *job)
 }
 
 
+/*
+ * Loop once through tasks looking for all tasks that have exited with
+ * the same exit status (and whose statuses have not been sent back to
+ * the client) Aggregrate these tasks into a single task exit message.
+ *
+ */ 
 static int 
 _send_pending_exit_msgs(slurmd_job_t *job)
 {
 	int  i;
-	int  n       = 0;
-	int  nsent   = 0;
-	int  status  = 0;
-	bool gotStatus = false;
+	int  nsent  = 0;
+	int  status = 0;
+	bool set    = false;
 	int  tid[job->ntasks];
-	
+
 	/* 
 	 * Collect all exit codes with the same status into a 
-	 * single message. Count no. of exit codes sent as a 
-	 * side effect.
-	 *
+	 * single message. 
 	 */
 	for (i = 0; i < job->ntasks; i++) {
 		task_info_t *t = job->task[i];
 
-		if (!t->exited)
+		if (!t->exited || t->esent)
 			continue;
 
-		if (t->esent) {
-			nsent++;
-			continue;
-		}
-
-		if (!gotStatus) { 
+		if (!set) { 
 			status = t->estatus;
-			gotStatus = true;
+			set    = true;
 		} else if (status != t->estatus)
 			continue;
 
-		tid[n++] = t->gid;
+		tid[nsent++] = t->gid;
 		t->esent = true;
-		nsent++;
 	}
 
-	if (n) {
-		debug2("Aggregated %d task exit messages", n);
-		_send_exit_msg(job, tid, n, status);
+	if (nsent) {
+		debug2("Aggregated %d task exit messages", nsent);
+		_send_exit_msg(job, tid, nsent, status);
 	}
 
 	return nsent;
@@ -607,8 +604,8 @@ static int
 _wait_for_task_exit(slurmd_job_t *job)
 {
 	int           rc      = 0;
-	int           nsent   = 0;
 	int           timeout = -1;
+	int           waiting = job->ntasks;
 	int           rfd     = job->fdpair[0];
 	struct pollfd pfd[1]; 
 
@@ -618,7 +615,8 @@ _wait_for_task_exit(slurmd_job_t *job)
 	fd_set_nonblocking(rfd);
 
 	do {
-		int revents;
+		int revents = 0;
+		int nsent   = 0;
 
 		if ((rc = poll(pfd, 1, timeout)) < 0) {
 			if (errno == EINTR) {
@@ -634,8 +632,8 @@ _wait_for_task_exit(slurmd_job_t *job)
 		if ((revents & (POLLIN|POLLHUP|POLLERR))) {
 
 		     if ((rc = _handle_task_exit(job)) <= 0) {
-			     if (rc < 0)
-				     error ("Unable to read task exit codes");
+			     if (rc < 0) 
+				     error("Unable to read task exit codes");
 			     goto done;
 		     } 
 
@@ -645,16 +643,20 @@ _wait_for_task_exit(slurmd_job_t *job)
 		     }
 		}
 
-		nsent = _send_pending_exit_msgs(job);
+		/* 
+		 * send all pending task exit messages
+		 */
+		while ((nsent = _send_pending_exit_msgs(job))) 
+			waiting -= rc;
 
 		timeout = -1;
 
-	} while (nsent < job->ntasks);
+	} while (waiting);
 
 	return SLURM_SUCCESS;
 
     done:
-	_send_pending_exit_msgs(job);
+	while (_send_pending_exit_msgs(job)) {;}
 	return SLURM_FAILURE;
 }
 

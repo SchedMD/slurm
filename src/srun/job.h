@@ -66,7 +66,8 @@ typedef enum {
 	SRUN_TASK_RUNNING,
 	SRUN_TASK_FAILED,
 	SRUN_TASK_IO_WAIT,
-	SRUN_TASK_EXITED
+	SRUN_TASK_EXITED,
+	SRUN_TASK_ABNORMAL_EXIT
 } task_state_t;
 
 
@@ -160,5 +161,15 @@ void    job_kill(job_t *job);
  * returns number of active tasks on host with id = hostid.
  */
 int     job_active_tasks_on_host(job_t *job, int hostid);
+
+/*
+ * report current task status
+ */
+void    report_task_status(job_t *job);
+
+/*
+ * report current node status
+ */
+void    report_job_status(job_t *job);
 
 #endif /* !_HAVE_JOB_H */

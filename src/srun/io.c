@@ -81,10 +81,8 @@ static int      _do_task_input(job_t *job, int taskid);
 static int 	_do_task_input_poll(job_t *job, fd_info_t *info);
 static inline bool _io_thr_done(job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
-static char *	_host_state_name(host_state_t state_inx);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
-static char *	_task_state_name(task_state_t state_inx);
 static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do { 	\
@@ -433,31 +431,6 @@ static void _do_poll_timeout (job_t *job)
 	}
 }
 
-void report_job_status(job_t *job)
-{
-	int i;
-
-	for (i = 0; i < job->nhosts; i++) {
-		info ("host:%s state:%s", job->host[i], 
-		      _host_state_name(job->host_state[i]));
-	}
-}
-
-static char *_host_state_name(host_state_t state_inx)
-{
-	switch (state_inx) {
-		case SRUN_HOST_INIT:
-			return "initial";
-		case SRUN_HOST_CONTACTED:
-			return "contacted";
-		case SRUN_HOST_UNREACHABLE:
-			return "unreachable";
-		case SRUN_HOST_REPLIED:
-			return "replied";
-		default:
-			return "unknown";
-	}
-}
 
 static inline bool 
 _io_thr_done(job_t *job)
@@ -467,53 +440,6 @@ _io_thr_done(job_t *job)
 	retval = (job->state >= SRUN_JOB_FORCETERM);
 	slurm_mutex_unlock(&job->state_mutex);
 	return retval;
-}
-
-void report_task_status(job_t *job)
-{
-	int i;
-	char buf[1024];
-	hostlist_t hl[5];
-
-	for (i = 0; i < 5; i++)
-		hl[i] = hostlist_create(NULL);
-
-	for (i = 0; i < opt.nprocs; i++) {
-		int state = job->task_state[i];
-		if ((state == SRUN_TASK_EXITED) 
-		    && ((job->err[i] >= 0) || (job->out[i] >= 0)))
-			state = 4;
-		snprintf(buf, 256, "task%d", i);
-		hostlist_push(hl[state], buf); 
-	}
-
-	for (i = 0; i< 5; i++) {
-		if (hostlist_count(hl[i]) > 0) {
-			hostlist_ranged_string(hl[i], 1024, buf);
-			info("%s: %s", buf, _task_state_name(i));
-		}
-
-		hostlist_destroy(hl[i]);
-	}
-
-}
-
-static char *_task_state_name(task_state_t state_inx)
-{
-	switch (state_inx) {
-		case SRUN_TASK_INIT:
-			return "initializing";
-		case SRUN_TASK_RUNNING:
-			return "running";
-		case SRUN_TASK_FAILED:
-			return "failed";
-		case SRUN_TASK_EXITED:
-			return "exited";
-		case SRUN_TASK_IO_WAIT:
-			return "waiting for io";
-		default:
-			return "unknown";
-	}
 }
 
 static int
@@ -913,7 +839,8 @@ _bcast_stdin(int fd, job_t *job)
 	return;
 }
 
-static int _validate_header(slurm_io_stream_header_t *hdr, job_t *job)
+static 
+int _validate_header(slurm_io_stream_header_t *hdr, job_t *job)
 {
 	if (hdr->version != SLURM_PROTOCOL_VERSION) {
 		error("Invalid header version, notify administrators");
