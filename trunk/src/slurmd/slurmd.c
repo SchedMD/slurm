@@ -411,7 +411,7 @@ void slurm_rpc_revoke_credential ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = expire_credential ( revoke_credential_msg, credential_state_list ) ;
+	error_code = revoke_credential ( revoke_credential_msg, credential_state_list ) ;
 	
 	/* return result */
 	if (error_code)

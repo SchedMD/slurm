@@ -105,7 +105,7 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 	return error_code ;
 }
 
-int expire_credential ( revoke_credential_msg_t * revoke_msg , List list ) 
+int revoke_credential ( revoke_credential_msg_t * revoke_msg , List list ) 
 {
 	time_t now = time ( NULL ) ;
 	ListIterator iterator ;
