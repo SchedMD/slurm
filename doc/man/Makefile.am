@@ -39,6 +39,7 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_get_end_time.3 \
 	man3/slurm_get_errno.3 \
 	man3/slurm_get_job_steps.3 \
+	man3/slurm_get_select_jobinfo.3 \
 	man3/slurm_init_job_desc_msg.3 \
 	man3/slurm_init_part_desc_msg.3 \
 	man3/slurm_job_step_create.3 \
