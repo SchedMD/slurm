@@ -714,9 +714,11 @@ static void _slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_RECONFIGURE:
 		_slurm_rpc_reconfigure_controller(msg);
+		/* No body to free */
 		break;
 	case REQUEST_CONTROL:
 		_slurm_rpc_shutdown_controller(msg);
+		/* No body to free */
 		break;
 	case REQUEST_SHUTDOWN:
 		_slurm_rpc_shutdown_controller(msg);
@@ -724,9 +726,11 @@ static void _slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 		_slurm_rpc_shutdown_controller_immediate(msg);
+		/* No body to free */
 		break;
 	case REQUEST_PING:
 		_slurm_rpc_ping(msg);
+		/* No body to free */
 		break;
 	case REQUEST_UPDATE_JOB:
 		_slurm_rpc_update_job(msg);
@@ -1673,7 +1677,7 @@ static void _slurm_rpc_ping(slurm_msg_t * msg)
 static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 {
 	/* init */
-	int error_code = 0;
+	int error_code = SLURM_SUCCESS;
 	clock_t start_time;
 	/* Locks: Write configuration, job, node and partition */
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
@@ -1691,14 +1695,16 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	}
 
 	/* do RPC call */
-	if (error_code == 0) {
+	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(config_write_lock);
 		error_code = read_slurm_conf(0);
-		if (error_code == 0)
+		if (error_code == SLURM_SUCCESS) {
 			reset_job_bitmaps();
+			msg_to_slurmd(REQUEST_RECONFIGURE);
+		}
 		unlock_slurmctld(config_write_lock);
 	}
-	if (error_code == 0) {	/* Stuff to do after unlock */
+	if (error_code == SLURM_SUCCESS) {  /* Stuff to do after unlock */
 		_update_logging();
 		if (daemonize) {
 			if (chdir(slurmctld_conf.state_save_location))
@@ -1731,6 +1737,10 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	uint16_t core_arg = 0;
 	shutdown_msg_t *shutdown_msg = (shutdown_msg_t *) msg->data;
 	uid_t uid;
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = { NO_LOCK, NO_LOCK,
+		READ_LOCK, NO_LOCK
+	};
 
 	uid = slurm_auth_uid(msg->cred);
 	if ((uid != 0) && (uid != getuid())) {
@@ -1750,14 +1760,18 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	/* do RPC call */
 	if (error_code);
 	else if (core_arg)
-		debug3("performing immeditate shutdown without state save");
+		info("performing immeditate shutdown without state save");
 	else if (shutdown_time)
 		debug3("shutdown RPC issued when already in progress");
 	else if (thread_id_sig) {
-		shutdown_slurmd();
+		lock_slurmctld(node_read_lock);
+		msg_to_slurmd(REQUEST_SHUTDOWN);
+		unlock_slurmctld(node_read_lock);
 		pthread_kill(thread_id_sig, SIGTERM);	/* signal clean-up */
 	} else {
-		shutdown_slurmd();
+		lock_slurmctld(node_read_lock);
+		msg_to_slurmd(REQUEST_SHUTDOWN);
+		unlock_slurmctld(node_read_lock);
 		error("thread_id_sig undefined, doing shutdown the hard way");
 		shutdown_time = time(NULL);
 		/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
