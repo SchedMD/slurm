@@ -78,7 +78,7 @@ extern void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	int j;
-	char time_str[16], select_buf[80];
+	char time_str[16], select_buf[128];
 	struct group *group_info = NULL;
 
 	/****** Line 1 ******/
