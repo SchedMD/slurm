@@ -389,6 +389,7 @@ extern struct node_record *find_node_record (char *name);
  * find_part_record - find a record for partition with specified name,
  * input: name - name of the desired partition 
  * output: return pointer to node partition or null if not found
+ * global: part_list - global partition list
  */
 extern struct part_record *find_part_record (char *name);
 
@@ -423,6 +424,38 @@ extern int init_part_conf ();
  */
 extern int  is_key_valid (int key);
 
+/*
+ * job_allocate - parse the suppied job specification, create job_records for it, 
+ *	and allocate nodes for it. if the job can not be immediately allocated 
+ *	nodes, EAGAIN will be returned
+ * input: job_specs - job specifications
+ *	new_job_id - location for storing new job's id
+ *	node_list - location for storing new job's allocated nodes
+ * output: new_job_id - the job's ID
+ *	node_list - list of nodes allocated to the job
+ *	returns 0 on success, EINVAL if specification is invalid, 
+ *		EAGAIN if higher priority jobs exist
+ * globals: job_list - pointer to global job list 
+ *	list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
+ * NOTE: the calling program must xfree the memory pointed to by new_job_id 
+ *	and node_list
+ */
+extern int job_allocate (char *job_specs, char **new_job_id, char **node_list);
+
+/*
+ * job_create - parse the suppied job specification and create job_records for it
+ * input: job_specs - job specifications
+ *	new_job_id - location for storing new job's id
+ * output: new_job_id - the job's ID
+ *	returns 0 on success, EINVAL if specification is invalid
+ * globals: job_list - pointer to global job list 
+ *	list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
+ * NOTE: the calling program must xfree the memory pointed to by new_job_id
+ */
+extern int job_create (char *job_specs, char **new_job_id);
+
 /* job_lock - lock the job information */
 extern void job_lock ();
 
@@ -433,17 +466,21 @@ extern void job_unlock ();
  * see list.h for documentation */
 extern int list_compare_config (void *config_entry1, void *config_entry2);
 
-/* list_delete_config - delete an entry from the configuration list, see list.h for documentation */
+/* list_delete_config - delete an entry from the configuration list, 
+ *see list.h for documentation */
 extern void list_delete_config (void *config_entry);
 
-/* list_find_config - find an entry in the configuration list, see list.h for documentation 
+/* list_find_config - find an entry in the configuration list, 
+ * see list.h for documentation 
  * key is partition name or "universal_key" for all configuration */
 extern int list_find_config (void *config_entry, void *key);
 
-/* list_delete_part - delete an entry from the partition list, see list.h for documentation */
+/* list_delete_part - delete an entry from the partition list, 
+ * see list.h for documentation */
 extern void list_delete_part (void *part_entry);
 
-/* list_find_part - find an entry in the partition list, see list.h for documentation 
+/* list_find_part - find an entry in the partition list, 
+ * see list.h for documentation 
  * key is partition name or "universal_key" for all partitions */
 extern int list_find_part (void *part_entry, void *key);
 
@@ -592,6 +629,18 @@ extern int read_SLURM_CONF (char *file_name);
  * output: none
  */
 extern void report_leftover (char *in_line, int line_num);
+
+/*
+ * select_nodes - select and allocate nodes to a specific job
+ * input: job_ptr - pointer to the job record
+ * output: returns 0 on success, EINVAL if not possible to satisfy request, 
+ *		or EAGAIN if resources are presently busy
+ *	job_ptr->nodes is set to the node list (on success)
+ * globals: list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
+ *	config_list - global list of node configuration info
+ */
+extern int select_nodes (struct job_record *job_ptr);
 
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs
