@@ -3,12 +3,12 @@ By Mark Grondona
 
 Abstract
 
-Job initiation refers to the process wherein SLURM accepts a request
-from a user for a job to run, along with corresponding constraints,
-and runs this job on N nodes with M tasks per node. In this document,
-Job Initiation will be expanded to include job termination as well. A
-job will be considered terminated when all remote tasks have exited
-and the nodes have been returned to the partition.
+Job initiation refers to the process wherein SLURM accepts a request from
+a user for a job to run, along with corresponding constraints, and runs
+this job on N nodes with M tasks. In this document, Job Initiation will
+be expanded to include job termination as well. A job will be considered
+terminated when all remote tasks have exited and the nodes have been
+made available for another job.
 
 Design constraints include, but are not limited to, the following:
 
@@ -19,6 +19,7 @@ Design constraints include, but are not limited to, the following:
   o reliable signal forwarding
   o configurable stdout and stderr handling with minimal use of sockets 
   o graceful and reliable termination of jobs under all conditions
+  o support for prolog and epilog
   o initialize MPI/switch environments (see also
 	  elan.runtime.requirements.txt)
 
@@ -136,12 +137,16 @@ to generate a job run request and pass this off to the local slurmd and
 job manager. The tool will be very similar to prun and or poe and should
 provide at least the following funtionality:
 
-  o required options (I know, an oxymoron):
+  o required parameters:
   	- number of tasks 
+  	  (in which case tasks will be assigned to nodes as 
+           #tasks/node = NumCpus/node)
 	or
-	- number of nodes and
-	- number of tasks per node
-  o optional options (redundant):
+	- number of nodes or cpus and
+	- number of tasks 
+	  (in which case cpus may be overcommitted, i.e. more than 1 task/cpu)
+
+  o optional parameters:
   	- partition to run in
   	- task distribution method
 	- stdin redirection 
