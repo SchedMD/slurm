@@ -1,5 +1,5 @@
 # $Id$
-# Makefile for auth plugins
+# Makefile for sched/wiki plugins
 
 AUTOMAKE_OPTIONS = foreign
 

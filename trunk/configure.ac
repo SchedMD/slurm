@@ -315,12 +315,20 @@ AC_CONFIG_FILES([Makefile
 		 src/sinfo/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
+		 src/plugins/auth/authd/Makefile
+		 src/plugins/auth/munge/Makefile
+		 src/plugins/auth/none/Makefile
 		 src/plugins/jobcomp/Makefile
+		 src/plugins/jobcomp/filetxt/Makefile
+		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
-		 src/plugins/sched/wiki/Makefile
+		 src/plugins/sched/maui/Makefile
+		 src/plugins/sched/maui/wiki/Makefile
 		 src/plugins/switch/Makefile
+		 src/plugins/switch/elan/Makefile
+		 src/plugins/switch/none/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile
