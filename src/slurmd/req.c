@@ -886,7 +886,8 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 
 	while ((s = list_next(i))) {
 		if (s->jobid != jobid) {
-			debug("Wrong job: s->jobid=%d, jobid=%d",
+			/* multiple jobs expected on shared nodes */
+			debug3("Step from other job: s->jobid=%d, jobid=%d",
 			      s->jobid, jobid);
 			continue;
 		}
@@ -1119,6 +1120,7 @@ static int _waiter_init (uint32_t jobid)
 {
 	if (!waiters)
 		waiters = list_create((ListDelF) _waiter_destroy);
+
 	/* 
 	 *  Exit this thread if another thread is waiting on job
 	 */
