@@ -25,20 +25,22 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 
  *	partitions based upon message as loaded using slurm_load_partitions
+ * IN out - file to write to
+ * IN part_info_ptr - partitions information message pointer
  */
 void slurm_print_partition_info_msg ( FILE* out, 
 		partition_info_msg_t * part_info_ptr )
@@ -60,6 +62,8 @@ void slurm_print_partition_info_msg ( FILE* out,
 /*
  * slurm_print_partition_info - output information about a specific Slurm 
  *	partition based upon message as loaded using slurm_load_partitions
+ * IN out - file to write to
+ * IN part_ptr - an individual partition information record pointer
  */
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 {
@@ -114,6 +118,10 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 /*
  * slurm_load_partitions - issue RPC to get slurm all partition configuration  
  *	information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN partition_info_msg_pptr - place to store a partition configuration 
+ *	pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
 int

@@ -36,7 +36,13 @@
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
 
-/* slurm_complete_job - note the completion of a job and all of its steps */
+/*
+ * slurm_complete_job - note the completion of a job and all of its steps 
+ * IN job_id - the job's id
+ * IN job_return_code - the highest exit code of any task of the job
+ * IN system_return_code - any slurm/system exit code
+ * RET 0 on success or slurm error code
+ */
 int 
 slurm_complete_job ( uint32_t job_id, uint32_t job_return_code,
                      uint32_t system_return_code )
@@ -45,8 +51,14 @@ slurm_complete_job ( uint32_t job_id, uint32_t job_return_code,
 	                                 system_return_code);
 }
 
-/* slurm_complete_job_step - note the completion of a specific job step 
- *	(or all steps if step_id==NO_VAL) */
+/*
+ * slurm_complete_job_step - note the completion of a specific job step 
+ * IN job_id - the job's id
+ * IN step_id - the job step's id or NO_VAL for all of the job's steps
+ * IN job_return_code - the highest exit code of any task of the job
+ * IN system_return_code - any slurm/system exit code
+ * RET 0 on success or slurm error code
+ */
 int 
 slurm_complete_job_step ( uint32_t job_id, uint32_t step_id, 
                           uint32_t job_return_code, 

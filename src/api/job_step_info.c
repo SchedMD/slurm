@@ -39,6 +39,8 @@
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm 
  *	job steps based upon message as loaded using slurm_get_job_steps
+ * IN out - file to write to
+ * IN job_step_info_msg_ptr - job step information message pointer
  */
 void 
 slurm_print_job_step_info_msg ( FILE* out, 
@@ -62,6 +64,8 @@ slurm_print_job_step_info_msg ( FILE* out,
 /*
  * slurm_print_job_step_info - output information about a specific Slurm 
  *	job step based upon message as loaded using slurm_get_job_steps
+ * IN out - file to write to
+ * IN job_ptr - an individual job step information record pointer
  */
 void
 slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
@@ -79,6 +83,12 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
  *	configuration information if changed since update_time.
  *	a job_id value of zero implies all jobs, a step_id value of 
  *	zero implies all steps
+ * IN update_time - time of current configuration data
+ * IN job_id - get information for specific job id, zero for all jobs
+ * IN step_id - get information for specific job step id, zero for all 
+ *	job steps
+ * IN job_info_msg_pptr - place to store a job configuration pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 int
@@ -138,7 +148,8 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 			return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg.data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {

@@ -29,15 +29,15 @@
 #define _SLURM_H
 
 /* FIXME: Need need better way to get configuration info */
-#include <config.h>		/* used for possible HAVE_LIBELAN3 */
+#include "config.h"		/* used for possible HAVE_LIBELAN3 */
 
 #include <stdint.h>		/* for uint16_t, uint32_t definitions */
 #include <stdio.h>		/* for FILE definitions */
 #include <time.h>		/* for time_t definitions */
 
 /* FIXME: Need to park these headers in generally available location */
-#include <src/common/slurm_errno.h>
-#include <src/common/hostlist.h>
+#include "src/common/slurm_errno.h"
+#include "src/common/hostlist.h"
 
 /* Define slurm_addr below to avoid including extraneous slurm headers */
 #ifdef	HAVE_SYS_SOCKET_H
@@ -156,11 +156,12 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *name;		/* name of the job, default "" */
 	uint32_t min_procs;	/* minimum processors per node, default=0 */
 	uint32_t min_memory;	/* minimum real memory per node, default=0 */
-	uint32_t min_tmp_disk;	/* minimum temporary disk per node, default=0 */
+	uint32_t min_tmp_disk;	/* minimum temporary disk per node, 
+				 * default=0 */
 	char *partition;	/* name of requested partition, 
 				 * default in SLURM config */
-	uint32_t priority;	/* relative priority of the job, explicitly only
-				 * for user root */
+	uint32_t priority;	/* relative priority of the job, explicitly 
+				 * set only for user root */
 	char *req_nodes;	/* comma separated list of required nodes
 				 * default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
@@ -169,7 +170,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * partition limit */
 	uint32_t num_procs;	/* total count of processors required, 
 				 * default=0 */
-	uint32_t num_nodes;	/* number of nodes required by job, default=0 */
+	uint32_t num_nodes;	/* number of nodes required by job, 
+				 * default=0 */
 	char *script;		/* the actual job script, default NONE */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
@@ -250,7 +252,8 @@ typedef struct job_step_info_response_msg {
 typedef struct node_info {
 	char *name;		/* node name */
 	uint16_t node_state;	/* see enum node_states */
-	uint32_t cpus;		/* configured count of cpus running on the node */
+	uint32_t cpus;		/* configured count of cpus running on 
+				 * the node */
 	uint32_t real_memory;	/* configured MB of real memory on the node */
 	uint32_t tmp_disk;	/* configured MB of total disk in TMP_FS */
 	uint32_t weight;	/* arbitrary priority of node for scheduling */
@@ -330,18 +333,19 @@ typedef struct slurm_ctl_conf {
 	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
 				 * (only check configuration file, faster) */
 	uint16_t hash_base;	/* base used for hashing node table */
-	uint16_t heartbeat_interval;	/* interval between heartbeats, seconds */
-	uint16_t inactive_limit;	/* seconds of inactivity before a
-				 * non-active resource allocation is released */
+	uint16_t heartbeat_interval; /* interval between heartbeats, seconds */
+	uint16_t inactive_limit;/* seconds of inactivity before a
+				 * inactive resource allocation is released */
 	uint16_t kill_wait;	/* seconds between SIGXCPU to SIGKILL 
 				 * on job termination */
 	char *prioritize;	/* pathname of program to set initial job 
 				 * priority */
 	char *prolog;		/* pathname of job prolog */
-	uint16_t ret2service;	/* 1 return DOWN node to service at registration */ 
+	uint16_t ret2service;	/* 1 return DOWN node to service at 
+				 * registration */ 
 	char *slurmctld_logfile;/* where slurmctld error log gets written */
 	uint32_t slurmctld_port;/* default communications port to slurmctld */
-	uint16_t slurmctld_timeout;	/* seconds that backup controller waits 
+	uint16_t slurmctld_timeout;/* seconds that backup controller waits 
 				 * on non-responding primarly controller */
 	char *slurmd_logfile;	/* where slurmd error log gets written */
 	uint32_t slurmd_port;	/* default communications port to slurmd */
@@ -349,10 +353,11 @@ typedef struct slurm_ctl_conf {
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
 	char *slurm_conf;	/* pathname of slurm config file */
-	char *state_save_location;/* pathname of slurmctld state save directory */
+	char *state_save_location;/* pathname of slurmctld state save
+				 * directory */
 	char *tmp_fs;		/* pathname of temporary file system */
 	char *job_credential_private_key;	/* path to private key */
-	char *job_credential_public_certificate; /* path to public certificate */
+	char *job_credential_public_certificate;/* path to public certificate*/
 } slurm_ctl_conf_t;
 
 typedef struct submit_response_msg {
@@ -370,12 +375,21 @@ typedef struct partition_info update_part_msg_t;
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/
 
-/* slurm_init_job_desc_msg - set default job descriptor values */
+/*
+ * slurm_init_job_desc_msg - initialize job descriptor with 
+ *	default values 
+ * OUT job_desc_msg - user defined job descriptor
+ */
 extern void slurm_init_job_desc_msg (job_desc_msg_t * job_desc_msg);
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
- * NOTE: free the response using slurm_free_resource_allocation_response_msg
+ * IN job_desc_msg - description of resource allocation request
+ * OUT slurm_alloc_msg - response to request
+ * IN immediate - if set then resource allocation must be satisfied 
+ *	immediately or fail
+ * RET 0 on success or slurm error code
+ * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , 
 		resource_allocation_response_msg_t ** job_alloc_resp_msg, 
@@ -384,8 +398,8 @@ extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 /*
  * slurm_free_resource_allocation_response_msg - free slurm resource
  *	allocation response message
- * NOTE: buffer is loaded by either slurm_allocate_resources or 
- *	slurm_confirm_allocation
+ * IN msg - pointer to allocation response message
+ * NOTE: buffer is loaded by slurm_allocate_resources
  */
 extern void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
@@ -393,6 +407,9 @@ extern void slurm_free_resource_allocation_response_msg (
 /*
  * slurm_allocate_resources_and_run - allocate resources for a job request and 
  *	initiate a job step
+ * IN job_desc_msg - description of resource allocation request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the response using 
  *	slurm_free_resource_allocation_and_run_response_msg
  */
@@ -402,6 +419,7 @@ extern int slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg,
 /*
  * slurm_free_resource_allocation_and_run_response_msg - free slurm 
  *	resource allocation and run job step response message
+ * IN msg - pointer to allocation and run job step response message
  * NOTE: buffer is loaded by slurm_allocate_resources_and_run
  */
 extern void slurm_free_resource_allocation_and_run_response_msg ( 
@@ -409,6 +427,9 @@ extern void slurm_free_resource_allocation_and_run_response_msg (
 
 /*
  * slurm_confirm_allocation - confirm an existing resource allocation
+ * IN job_desc_msg - description of existing job request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the response using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg , 
@@ -416,6 +437,9 @@ extern int slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg ,
 
 /*
  * slurm_job_step_create - create a job step for a given job id
+ * IN slurm_step_alloc_req_msg - description of job step request
+ * OUT slurm_step_alloc_resp_msg - response to request
+ * RET 0 on success or slurm error code
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 extern int slurm_job_step_create (
@@ -425,16 +449,18 @@ extern int slurm_job_step_create (
 /*
  * slurm_free_job_step_create_response_msg - free slurm 
  *	job step create response message
+ * IN msg - pointer to job step create response message
  * NOTE: buffer is loaded by slurm_job_step_create
  */
 extern void slurm_free_job_step_create_response_msg ( 
 		job_step_create_response_msg_t *msg);
 
 /*
- * slurm_submit_batch_job - issue RPC to submit a job for later 
- *	execution
- * NOTE: free the response using 
- *	slurm_free_submit_response_response_msg
+ * slurm_submit_batch_job - issue RPC to submit a job for later execution
+ * NOTE: free the response using slurm_free_submit_response_response_msg
+ * IN job_desc_msg - description of batch job request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
  */
 extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
 		submit_response_msg_t ** slurm_alloc_msg );
@@ -442,6 +468,7 @@ extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg,
 /*
  * slurm_free_submit_response_response_msg - free slurm 
  *	job submit response message
+ * IN msg - pointer to job submit response message
  * NOTE: buffer is loaded by slurm_submit_batch_job
  */
 extern void slurm_free_submit_response_response_msg (
@@ -450,7 +477,10 @@ extern void slurm_free_submit_response_response_msg (
 /*
  * slurm_job_will_run - determine if a job would execute immediately if 
  *	submitted now
- * NOTE: free the response using slurm_free_resource_allocation_response_msg
+ * IN job_desc_msg - description of resource allocation request
+ * OUT slurm_alloc_msg - response to request
+ * RET 0 on success or slurm error code
+ * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg , 
 		resource_allocation_response_msg_t ** job_alloc_resp_msg );
@@ -460,10 +490,19 @@ extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
  *	JOB/STEP CANCELATION FUNCTIONS
 \*****************************************************************************/
 
-/* slurm_cancel_job - cancel an existing job and all of its steps */
+/*
+ * slurm_cancel_job - cancel an existing job and all of its steps 
+ * IN job_id - the job's id
+ * RET 0 on success or slurm error code
+ */
 extern int slurm_cancel_job (uint32_t job_id);
 
-/* slurm_cancel_job_step - cancel a specific job step */
+/*
+ * slurm_cancel_job_step - cancel a specific job step
+ * IN job_id - the job's id
+ * IN step_id - the job step's id
+ * RET 0 on success or slurm error code
+ */
 extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);
 
 
@@ -471,11 +510,24 @@ extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);
  *	JOB/STEP COMPLETION FUNCTIONS
 \*****************************************************************************/
 
-/* slurm_complete_job - note the completion of a job and all of its steps */
+/*
+ * slurm_complete_job - note the completion of a job and all of its steps 
+ * IN job_id - the job's id
+ * IN job_return_code - the highest exit code of any task of the job
+ * IN system_return_code - any slurm/system exit code
+ * RET 0 on success or slurm error code
+ */
 extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code,
                                uint32_t system_return_code );
 
-/* slurm_complete_job_step - note the completion of a specific job step */
+/*
+ * slurm_complete_job_step - note the completion of a specific job step 
+ * IN job_id - the job's id
+ * IN step_id - the job step's id or NO_VAL for all of the job's steps
+ * IN job_return_code - the highest exit code of any task of the job
+ * IN system_return_code - any slurm/system exit code
+ * RET 0 on success or slurm error code
+ */
 extern int slurm_complete_job_step (uint32_t job_id, uint32_t step_id, 
                                     uint32_t job_return_code,
                                     uint32_t system_return_code );
@@ -485,12 +537,20 @@ extern int slurm_complete_job_step (uint32_t job_id, uint32_t step_id,
  *	SLURM CONTROL CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
-/* make_time_str - convert time_t to string with "month/date hour:min:sec" */
+/*
+ * make_time_str - convert time_t to string with "month/date hour:min:sec" 
+ * IN time - a time stamp
+ * OUT string - pointer user defined buffer
+ */
 extern void make_time_str (time_t *time, char *string);
 
 /*
  * slurm_load_ctl_conf - issue RPC to get slurm control configuration  
  *	information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN slurm_ctl_conf_ptr - place to store slurm control configuration 
+ *	pointer
+ * RET 0 on success or slurm error code
  * NOTE: free the response using slurm_free_ctl_conf
  */
 extern int slurm_load_ctl_conf (time_t update_time, 
@@ -498,13 +558,16 @@ extern int slurm_load_ctl_conf (time_t update_time,
 
 /*
  * slurm_free_ctl_conf - free slurm control information response message
- * NOTE: buffer is loaded by slurm_load_ctl_conf
+ * IN msg - pointer to slurm control information response message
+ * NOTE: buffer is loaded by slurm_load_jobs
  */
 extern void slurm_free_ctl_conf (slurm_ctl_conf_t* slurm_ctl_conf_ptr);
 
 /*
- * slurm_print_ctl_conf - output the contents of slurm control configuration
+ * slurm_print_ctl_conf - output the contents of slurm control configuration 
  *	message as loaded using slurm_load_ctl_conf
+ * IN out - file to write to
+ * IN slurm_ctl_conf_ptr - slurm control configuration pointer
  */
 extern void slurm_print_ctl_conf ( FILE * out, 
 		slurm_ctl_conf_t* slurm_ctl_conf ) ;
@@ -517,13 +580,17 @@ extern void slurm_print_ctl_conf ( FILE * out,
 /*
  * slurm_load_jobs - issue RPC to get slurm all job configuration  
  *	information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN job_info_msg_pptr - place to store a job configuration pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int slurm_load_jobs (time_t update_time, 
 		job_info_msg_t **job_info_msg_pptr);
 
 /*
- * slurm_free_job_info_msg - free the job information response message
+ * slurm_free_job_info - free the job information response message
+ * IN msg - pointer to job information response message
  * NOTE: buffer is loaded by slurm_load_job.
  */
 extern void slurm_free_job_info_msg (job_info_msg_t * job_buffer_ptr);
@@ -531,6 +598,8 @@ extern void slurm_free_job_info_msg (job_info_msg_t * job_buffer_ptr);
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
  *	jobs based upon message as loaded using slurm_load_jobs
+ * IN out - file to write to
+ * IN job_info_msg_ptr - job information message pointer
  */
 extern void slurm_print_job_info_msg ( FILE * out, 
 		job_info_msg_t * job_info_msg_ptr ) ;
@@ -538,12 +607,16 @@ extern void slurm_print_job_info_msg ( FILE * out,
 /*
  * slurm_print_job_info - output information about a specific Slurm 
  *	job based upon message as loaded using slurm_load_jobs
+ * IN out - file to write to
+ * IN job_ptr - an individual job information record pointer
  */
 extern void slurm_print_job_info ( FILE*, job_info_t * job_ptr );
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request, 
  *	only usable by user root or (for some parameters) the job's owner
+ * IN job_msg - description of job updates
+ * RET 0 on success or slurm error code
  */
 extern int slurm_update_job ( job_desc_msg_t * job_msg ) ;
 
@@ -557,6 +630,12 @@ extern int slurm_update_job ( job_desc_msg_t * job_msg ) ;
  *	configuration information if changed since update_time.
  *	a job_id value of zero implies all jobs, a step_id value of 
  *	zero implies all steps
+ * IN update_time - time of current configuration data
+ * IN job_id - get information for specific job id, zero for all jobs
+ * IN step_id - get information for specific job step id, zero for all 
+ *	job steps
+ * IN job_info_msg_pptr - place to store a job configuration pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_job_step_info_response_msg
  */
 extern int slurm_get_job_steps (time_t update_time, uint32_t job_id, 
@@ -566,6 +645,7 @@ extern int slurm_get_job_steps (time_t update_time, uint32_t job_id,
 /*
  * slurm_free_job_step_info_response_msg - free the job step 
  *	information response message
+ * IN msg - pointer to job step information response message
  * NOTE: buffer is loaded by slurm_get_job_steps.
  */
 extern void slurm_free_job_step_info_response_msg (
@@ -574,6 +654,8 @@ extern void slurm_free_job_step_info_response_msg (
 /*
  * slurm_print_job_step_info_msg - output information about all Slurm 
  *	job steps based upon message as loaded using slurm_get_job_steps
+ * IN out - file to write to
+ * IN job_step_info_msg_ptr - job step information message pointer
  */
 extern void slurm_print_job_step_info_msg ( FILE * out, 
 		job_step_info_response_msg_t * job_step_info_msg_ptr );
@@ -581,8 +663,11 @@ extern void slurm_print_job_step_info_msg ( FILE * out,
 /*
  * slurm_print_job_step_info - output information about a specific Slurm 
  *	job step based upon message as loaded using slurm_get_job_steps
+ * IN out - file to write to
+ * IN job_ptr - an individual job step information record pointer
  */
-extern void slurm_print_job_step_info ( FILE*, job_step_info_t * step_ptr );
+extern void slurm_print_job_step_info ( FILE * out, 
+		job_step_info_t * step_ptr );
 
 
 /*****************************************************************************\
@@ -590,15 +675,19 @@ extern void slurm_print_job_step_info ( FILE*, job_step_info_t * step_ptr );
 \*****************************************************************************/
 
 /*
- * slurm_load_node - issue RPC to get slurm all node configuration  
- *	information if changed since update_time 
+ * slurm_load_node - issue RPC to get slurm all node configuration information 
+ *	if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN node_info_msg_pptr - place to store a node configuration pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
 extern int slurm_load_node (time_t update_time, 
 		node_info_msg_t **node_info_msg_pptr);
 
 /*
- * slurm_free_node_info_msg - free the node message information buffer
+ * slurm_free_node_info - free the node information response message
+ * IN msg - pointer to node information response message
  * NOTE: buffer is loaded by slurm_load_node.
  */
 extern void slurm_free_node_info_msg (node_info_msg_t * node_buffer_ptr);
@@ -606,19 +695,25 @@ extern void slurm_free_node_info_msg (node_info_msg_t * node_buffer_ptr);
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
  *	based upon message as loaded using slurm_load_node
+ * IN out - file to write to
+ * IN node_info_msg_ptr - node information message pointer
  */
 extern void slurm_print_node_info_msg ( FILE * out, 
 		node_info_msg_t * node_info_msg_ptr ) ;
 
 /*
- * slurm_print_node_table - output information about a specific Slurm node
+ * slurm_print_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
+ * IN out - file to write to
+ * IN node_ptr - an individual node information record pointer
  */
 extern void slurm_print_node_table ( FILE * out, node_info_t * node_ptr );
 
 /*
- * slurm_update_node - issue RPC to a nodes's configuration per request, 
+ * slurm_update_node - issue RPC to a node's configuration per request, 
  *	only usable by user root
+ * IN node_msg - description of node updates
+ * RET 0 on success or slurm error code
  */
 extern int slurm_update_node ( update_node_msg_t * node_msg ) ;
 
@@ -627,19 +722,29 @@ extern int slurm_update_node ( update_node_msg_t * node_msg ) ;
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
-/* slurm_init_part_desc_msg - set default partition configuration parameters */
+/* 
+ * slurm_init_part_desc_msg - initialize partition descriptor with 
+ *	default values 
+ * OUT job_desc_msg - user defined partition descriptor
+ */
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg);
 
 /*
- * slurm_load_partitions - issue RPC to get slurm all partition   
- *	configuration information if changed since update_time 
+ * slurm_load_partitions - issue RPC to get slurm all partition configuration  
+ *	information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN partition_info_msg_pptr - place to store a partition configuration 
+ *	pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_partition_info_msg
  */
 extern int slurm_load_partitions (time_t update_time, 
 		partition_info_msg_t **part_buffer_ptr);
 
 /*
- * slurm_free_partition_info_msg - free the partition information buffer
+ * slurm_free_partition_info_msg - free the partition information 
+ *	response message
+ * IN msg - pointer to partition information response message
  * NOTE: buffer is loaded by slurm_load_partitions
  */
 extern void slurm_free_partition_info_msg ( partition_info_msg_t * part_info_ptr);
@@ -647,6 +752,8 @@ extern void slurm_free_partition_info_msg ( partition_info_msg_t * part_info_ptr
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 
  *	partitions based upon message as loaded using slurm_load_partitions
+ * IN out - file to write to
+ * IN part_info_ptr - partitions information message pointer
  */
 extern void slurm_print_partition_info_msg ( FILE * out, 
 		partition_info_msg_t * part_info_ptr ) ;
@@ -654,6 +761,8 @@ extern void slurm_print_partition_info_msg ( FILE * out,
 /*
  * slurm_print_partition_info - output information about a specific Slurm 
  *	partition based upon message as loaded using slurm_load_partitions
+ * IN out - file to write to
+ * IN part_ptr - an individual partition information record pointer
  */
 extern void slurm_print_partition_info ( FILE *out , 
 		partition_info_t * part_ptr ) ;
@@ -661,6 +770,8 @@ extern void slurm_print_partition_info ( FILE *out ,
 /*
  * slurm_update_partition - issue RPC to a partition's configuration per  
  *	request, only usable by user root
+ * IN part_msg - description of partition updates
+ * RET 0 on success or slurm error code
  */
 extern int slurm_update_partition ( update_part_msg_t * part_msg ) ;
 
@@ -671,7 +782,8 @@ extern int slurm_update_partition ( update_part_msg_t * part_msg ) ;
 
 /*
  * slurm_reconfigure - issue RPC to have Slurm controller (slurmctld)
- * reload its configuration file 
+ *	reload its configuration file 
+ * RET 0 or a slurm error code
  */
 extern int slurm_reconfigure ( void );
 
@@ -679,7 +791,8 @@ extern int slurm_reconfigure ( void );
  * slurm_shutdown - issue RPC to have Slurm controller (slurmctld)
  *	cease operations, both the primary and backup controller 
  *	are shutdown.
- * core(I) - controller generates a core file if set
+ * IN core - controller generates a core file if set
+ * RET 0 or a slurm error code
  */
 extern int slurm_shutdown (uint16_t core);
 

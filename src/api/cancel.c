@@ -25,24 +25,33 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
-/* slurm_cancel_job - cancel an existing job and all of its steps */
+/*
+ * slurm_cancel_job - cancel an existing job and all of its steps 
+ * IN job_id - the job's id
+ * RET 0 on success or slurm error code
+ */
 int 
 slurm_cancel_job ( uint32_t job_id )
 {
 	return slurm_cancel_job_step ( job_id, NO_VAL);
 }
 
-/* slurm_cancel_job_step - cancel a specific job step */
+/*
+ * slurm_cancel_job_step - cancel a specific job step
+ * IN job_id - the job's id
+ * IN step_id - the job step's id
+ * RET 0 on success or slurm error code
+ */
 int 
 slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
 {

@@ -25,15 +25,20 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
+/*
+ * slurm_init_job_desc_msg - initialize job descriptor with 
+ *	default values 
+ * OUT job_desc_msg - user defined job descriptor
+ */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	job_desc_msg->contiguous =
@@ -63,6 +68,11 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->work_dir    = SLURM_JOB_DESC_DEFAULT_WORKING_DIR;
 }
 
+/*
+ * slurm_init_part_desc_msg - initialize partition descriptor with 
+ *	default values 
+ * OUT job_desc_msg - user defined partition descriptor
+ */
 void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 {
 	update_part_msg->name 		= NULL;

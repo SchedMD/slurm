@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -33,12 +33,14 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
  *	jobs based upon message as loaded using slurm_load_jobs
+ * IN out - file to write to
+ * IN job_info_msg_ptr - job information message pointer
  */
 void 
 slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
@@ -60,6 +62,8 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 /*
  * slurm_print_job_info - output information about a specific Slurm 
  *	job based upon message as loaded using slurm_load_jobs
+ * IN out - file to write to
+ * IN job_ptr - an individual job information record pointer
  */
 void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
@@ -111,7 +115,11 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	fprintf( out, "\n\n");
 }
 
-/* make_time_str - convert time_t to string with "month/date hour:min:sec" */
+/*
+ * make_time_str - convert time_t to string with "month/date hour:min:sec" 
+ * IN time - a time stamp
+ * OUT string - pointer user defined buffer
+ */
 void
 make_time_str (time_t *time, char *string)
 {
@@ -127,6 +135,9 @@ make_time_str (time_t *time, char *string)
 /*
  * slurm_load_jobs - issue RPC to get slurm all job configuration  
  *	information if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN job_info_msg_pptr - place to store a job configuration pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_job_info_msg
  */
 int

@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -37,12 +37,14 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
  *	based upon message as loaded using slurm_load_node
+ * IN out - file to write to
+ * IN node_info_msg_ptr - node information message pointer
  */
 void 
 slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr )
@@ -65,6 +67,8 @@ slurm_print_node_info_msg ( FILE * out, node_info_msg_t * node_info_msg_ptr )
 /*
  * slurm_print_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
+ * IN out - file to write to
+ * IN node_ptr - an individual node information record pointer
  */
 void
 slurm_print_node_table ( FILE * out, node_info_t * node_ptr )
@@ -82,6 +86,9 @@ slurm_print_node_table ( FILE * out, node_info_t * node_ptr )
 /*
  * slurm_load_node - issue RPC to get slurm all node configuration information 
  *	if changed since update_time 
+ * IN update_time - time of current configuration data
+ * IN node_info_msg_pptr - place to store a node configuration pointer
+ * RET 0 or a slurm error code
  * NOTE: free the response using slurm_free_node_info_msg
  */
 int

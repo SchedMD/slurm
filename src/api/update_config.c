@@ -25,20 +25,23 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+
+#include "src/api/slurm.h"
+#include "src/common/slurm_protocol_api.h"
 
 static int _slurm_update (void * data, slurm_msg_type_t msg_type);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request, 
  *	only usable by user root or (for some parameters) the job's owner
+ * IN job_msg - description of job updates
+ * RET 0 on success or slurm error code
  */
 int 
 slurm_update_job ( job_desc_msg_t * job_msg ) 
@@ -47,8 +50,10 @@ slurm_update_job ( job_desc_msg_t * job_msg )
 }
 
 /*
- * slurm_update_node - issue RPC to a nodes's configuration per request, 
+ * slurm_update_node - issue RPC to a node's configuration per request, 
  *	only usable by user root
+ * IN node_msg - description of node updates
+ * RET 0 on success or slurm error code
  */
 int 
 slurm_update_node ( update_node_msg_t * node_msg ) 
@@ -59,6 +64,8 @@ slurm_update_node ( update_node_msg_t * node_msg )
 /*
  * slurm_update_partition - issue RPC to a partition's configuration per  
  *	request, only usable by user root
+ * IN part_msg - description of partition updates
+ * RET 0 on success or slurm error code
  */
 int 
 slurm_update_partition ( update_part_msg_t * part_msg ) 
@@ -68,7 +75,7 @@ slurm_update_partition ( update_part_msg_t * part_msg )
 
 
 /* _slurm_update - issue RPC for all update requests */
-int 
+static int 
 _slurm_update (void * data, slurm_msg_type_t msg_type)
 {
 	int msg_size;
@@ -113,7 +120,8 @@ _slurm_update (void * data, slurm_msg_type_t msg_type)
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t *) response_msg.data ;
+			slurm_rc_msg = 
+				( return_code_msg_t *) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
