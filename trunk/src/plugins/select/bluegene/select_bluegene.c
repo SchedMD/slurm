@@ -176,9 +176,9 @@ static void _cancel_thread (pthread_t thread_id)
 {
 	int i;
 
-	for (i=0; i<4; i++) {
+	for (i=0; i<8; i++) {
 		if (pthread_cancel(thread_id))
-			return;
+			return;		/* pthread now gone */
 		usleep(1000);
 	}
 	error("Could not kill bluegene select pthread");
@@ -204,18 +204,16 @@ extern int fini ( void )
  * node selection API.
  */
 
-/** 
- * this is called periodically by slurmctld when 
- * - new nodes are added 
- * - new configuration file is loaded
+/*
+ * Called by slurmctld when a new configuration file is loaded
+ * or scontrol is used to change partition configuration
  */
-extern int select_p_part_init(List part_list)
+ extern int select_p_part_init(List part_list)
 {
 	xassert(part_list);
 	if (read_bgl_conf())
 		return SLURM_ERROR;
 
-	/* create_static_partitions */
 	if (create_static_partitions(part_list)) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
@@ -229,22 +227,20 @@ extern int select_p_part_init(List part_list)
 	return SLURM_SUCCESS; 
 }
 
+/* We rely upon DB2 to save and restore BlueGene state */
 extern int select_p_state_save(char *dir_name)
 {
-	/* no-op for static partitions */
 	return SLURM_SUCCESS;
 }
 
 extern int select_p_state_restore(char *dir_name)
 {
-	/* no-op for static partitions */
 	return SLURM_SUCCESS;
 }
 
+/* All initialization is performed by select_p_part_init() */
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
-	/* This is a no-op.
-	 * All initialization is performed by select_p_part_init() */
 	return SLURM_SUCCESS;
 }
 

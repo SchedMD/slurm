@@ -41,11 +41,6 @@
 #  include "bgl_switch_connections.h"
 #endif
 
-/****************************/
-/*   for testing purposes   */
-uint16_t bgl_partition_number;
-/****************************/
-
 #ifdef _UNIT_TEST_
   extern void * lsd_fatal_error(char *file, int line, char *mesg){}
   extern void * lsd_nomem_error(char *file, int line, char *mesg){}
@@ -1030,11 +1025,6 @@ extern void debug(const char *fmt, ...)
 }
 #endif
 
-extern void init_bgl_partition_num(void)
-{
-	bgl_partition_number = 0;
-}
-
 /*
  * Download from CMCS the initial BGL partition information
  */
@@ -1133,6 +1123,10 @@ static void _part_list_del(void *object)
 		xfree(part_ptr->bgl_part_id);
 		xfree(part_ptr->nodes);
 		xfree(part_ptr->slurm_part_id);
+		if (part_ptr->bitmap) {
+			bit_free(part_ptr->bitmap);
+			part_ptr->bitmap = NULL;
+		}
 		if (part_ptr->hostlist)
 			hostlist_destroy(part_ptr->hostlist);
 		xfree(part_ptr);
