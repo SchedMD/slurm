@@ -196,8 +196,6 @@ void _create_pa_system(pa_system_t* target_pa_system, List source_list[PA_SYSTEM
 {
 	int i, x, y, z;
 	
-	target_pa_system = xmalloc(sizeof(pa_system_t));
-
 	target_pa_system->grid = (pa_node_t***) xmalloc(sizeof(pa_node_t**) * DIM_SIZE[X]);
 	for (x=0; x<DIM_SIZE[X]; x++) {
 		target_pa_system->grid[x] = (pa_node_t**) xmalloc(sizeof(pa_node_t*) * DIM_SIZE[Y]);
@@ -519,21 +517,18 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 	int cur_dim=0, cur_node_id, k=0, x=0, y=0, z=0;
 	int found_count[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 	bool match_found, request_filled = false;
-	int* geometry = pa_request->geometry;
-
-
-	*results = list_create(NULL);
-
+	int *geometry = pa_request->geometry;
+	
 	for (z=0; z<DIM_SIZE[Z]; z++){ 
 	for (y=0; y<DIM_SIZE[Y]; y++){ 
 	for (x=0; x<DIM_SIZE[X]; x++){
 		cur_dim = X;
 		cur_node_id = x;
+		
 
 		if (found_count[cur_dim] != geometry[cur_dim]){
 			pa_node_t* pa_node = &_pa_system_ptr->grid[x][y][z];
-			// printf("address of pa_node %d%d%d(%s) 0x%p\n",
-			// x,y,z, convert_dim(cur_dim), pa_node);
+			printf("address of pa_node %d%d%d(%s) 0x%p\n", x,y,z, convert_dim(cur_dim), pa_node);
 			match_found = _check_pa_node(pa_node);
 			if (match_found){
 				/* now we recursively snake down the remaining dimensions 
@@ -545,15 +540,15 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 					/* insert the pa_node_t* into the List of results */
 					_insert_result(*results, pa_node);
 #ifdef DEBUG_PA
-					// printf("_find_first_match: found match for %s = %d%d%d\n",
-					// convert_dim(cur_dim), x,y,z); 
+					 printf("_find_first_match: found match for %s = %d%d%d\n",
+						convert_dim(cur_dim), x,y,z); 
 #endif
 						
 					found_count[cur_dim]++;
 					if (found_count[cur_dim] == geometry[cur_dim]){
 #ifdef DEBUG_PA
-						// printf("_find_first_match: found full match for %s dimension\n", 
-						// convert_dim(cur_dim));
+						printf("_find_first_match: found full match for %s dimension\n", 
+						       convert_dim(cur_dim));
 #endif
 						request_filled = true;
 						goto done;
@@ -571,7 +566,7 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 				}
 			} 
 		}
-
+		
 		/* check whether we're done */
 		bool all_found = true;
 		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
@@ -1098,7 +1093,6 @@ int new_pa_request(pa_request_t* pa_request,
 	float sz=1;
 	int checked[7];
 	
-	pa_request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 	/* size will be overided by geometry size if given */
 	if (geometry[0] != -1){
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
@@ -1207,7 +1201,7 @@ endit:
 	pa_request->rotate = rotate;
 	pa_request->elongate = elongate;
 	pa_request->force_contig = force_contig;
-
+	
 	return 1;
 }
 
@@ -1216,7 +1210,6 @@ endit:
  */
 void delete_pa_request(pa_request_t *pa_request)
 {
-	xfree(pa_request->geometry);
 	xfree(pa_request);
 }
 
@@ -1326,6 +1319,7 @@ void pa_init()
 /* 		list_destroy(switch_config_list); */
 /* 	} */
 
+	_pa_system_ptr = xmalloc(sizeof(pa_system_t));
 
 	_create_pa_system(_pa_system_ptr, _conf_result_list);
 	_pa_system_list = list_create(_delete_pa_system);
@@ -1457,7 +1451,6 @@ char* get_conf_result_str(List pa_node_list)
 	pa_node_t* pa_node;
 	conf_result_t* conf_result;
 	port_conf_t* port_conf;
-
 	result_str = xstrdup("NodeIDs=");
 
 	pan_itr = list_iterator_create(pa_node_list);
@@ -1474,7 +1467,7 @@ char* get_conf_result_str(List pa_node_list)
 		}
 	}
 
-
+	
 	_xstrcat(&result_str, " PortConfigs=");
 	list_iterator_reset(pan_itr);
 	while((pa_node = (pa_node_t*) list_next(pan_itr))){
@@ -1505,34 +1498,32 @@ char* get_conf_result_str(List pa_node_list)
 		}
 	}
 	list_iterator_destroy(pan_itr);
-	
+	printf("Str result = %s",result_str);
 	return result_str;
 }
 
 /** */
 int main(int argc, char** argv)
 {
-	int geo[3];
+	int geo[3] = {-1,-1,-1};
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = true;
 	List results;
-	pa_request_t* request; 
+	pa_request_t *request; 
 	time_t start, end;
+
+	request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
+	results = list_create(NULL);
 
 	if (argc == 4){
 		int i;
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 			geo[i] = atoi(argv[i+1]);
 		}
-		printf("allocating by geometry: %d %d %d\n", geo[0], geo[1], geo[2]);
 		new_pa_request(request, geo, -1, rotate, elongate, force_contig, RM_TORUS);
 	} else if (argc == 2) {
-		int size;
-		size = atoi(argv[1]);
-		geo[0] = -1;
-		printf("allocating by size: %d\n", size);
-		new_pa_request(request, geo, size, rotate, elongate, force_contig, RM_TORUS);
+		new_pa_request(request, geo, atoi(argv[1]), rotate, elongate, force_contig, RM_TORUS);
 	} else {
 		printf(" usage: partition_allocator dimX dimY dimZ\n");
 		printf("    or: partition_allocator size\n");
@@ -1540,7 +1531,7 @@ int main(int argc, char** argv)
 		exit(0);
 	}
 
-	
+	//printf("geometry: %d %d %d size = %d\n", request->geometry[0], request->geometry[1], request->geometry[2], request->size);
 	time(&start);
 	pa_init();
 	time(&end);
@@ -1574,6 +1565,7 @@ int main(int argc, char** argv)
 		char* result = get_conf_result_str(results);
 		printf("results: %s\n", result);
 		xfree(result);
+		printf("results: %s\n", result);
 		list_destroy(results);
 		// _print_results(results);
 	} else {

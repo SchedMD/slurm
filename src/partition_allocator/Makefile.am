@@ -1,11 +1,11 @@
 # $Id$
 # Makefile.am for graph_solver
 
-# AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign
 
-# INCLUDES = -I$(top_srcdir) 
+INCLUDES = -I$(top_srcdir) 
 
-# # to build the executable
+# to build the executable
 # bin_PROGRAMS = partition_allocator
 
 # partition_allocator_SOURCES = partition_allocator.c partition_allocator.h \
