@@ -20,6 +20,7 @@ AC_DEFUN([X_AC_AIX],
             CMD_LDFLAGS="$LDFLAGS -Wl,-bgcbypass:1000" # keep all common functions
             LIB_LDFLAGS="$LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
             SO_LDFLAGS=" $LDFLAGS -Wl,-G -Wl,-bnoentry -Wl,-bexpfull"
+            CFLAGS="-maix32 $CFLAGS"
             ac_have_aix="yes"
             ac_with_readline="no"
             AC_DEFINE(HAVE_AIX, 1, [Define to 1 for AIX operating system])
