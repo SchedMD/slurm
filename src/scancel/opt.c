@@ -264,7 +264,6 @@ static void _opt_env()
 static void _opt_args(int argc, char **argv)
 {
 	int opt_char;
-	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int option_index;
 	static struct option long_options[] = {
 		{"help",        no_argument,       0, 'H'},
@@ -278,8 +277,6 @@ static void _opt_args(int argc, char **argv)
 		{"verbose",     no_argument,       0, 'v'},
 		{"version",     no_argument,       0, 'V'}
 	};
-
-	log_init("scancel", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "Hin:p:s:t:u:vV",
 			long_options, &option_index)) != -1) {

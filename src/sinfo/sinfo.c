@@ -24,6 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include "src/common/xstring.h"
 #include "src/common/macros.h"
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
@@ -63,7 +64,7 @@ int main(int argc, char *argv[])
 	node_info_msg_t *node_msg = NULL;
 	List sinfo_list = NULL;
 
-	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 
 	while (1) {
