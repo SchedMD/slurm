@@ -25,7 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <pthread.h>
@@ -33,15 +33,15 @@
 #include <string.h>
 #include <sys/param.h>
 
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/credential_utils.h>
-#include <src/common/slurm_auth.h>
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
+#include "src/common/credential_utils.h"
+#include "src/common/log.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
-#include <src/slurmd/slurmd.h>
-#include <src/slurmd/shm.h>
-#include <src/slurmd/mgr.h>
+#include "src/slurmd/slurmd.h"
+#include "src/slurmd/shm.h"
+#include "src/slurmd/mgr.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -51,7 +51,8 @@ static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_revoke_credential(slurm_msg_t *, slurm_addr *);
-static void _rpc_ping(slurm_msg_t *, slurm_addr *);
+static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
+static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 
 void
@@ -76,19 +77,19 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		break;
 	case REQUEST_SHUTDOWN:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
-		kill(conf->pid, SIGTERM);
+		_rpc_shutdown(msg, cli);
 		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent) */
-		_rpc_ping(msg, cli);
-		/* Then initiate a separate node registration */
-		slurm_free_node_registration_status_msg(msg->data);
-		send_registration_msg();
+		if (_rpc_ping(msg, cli) == SLURM_SUCCESS) {
+			/* Then initiate a separate node registration */
+			slurm_free_node_registration_status_msg(msg->data);
+			send_registration_msg();
+		}
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg, cli);
-		/* XXX: Is there a slurm_free_blahblah* for this one? */
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -172,14 +173,12 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
-	gid_t    req_gid;
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
 	launch_tasks_request_msg_t *req = msg->data;
 
 	slurm_get_addr(cli, &port, host, sizeof(host));
 	req_uid = slurm_auth_uid(msg->cred);
-	req_gid = slurm_auth_gid(msg->cred);
 
 	info("launch tasks request from %ld@%s", req_uid, host);
 
@@ -213,33 +212,50 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 {
 	batch_job_launch_msg_t *req = (batch_job_launch_msg_t *)msg->data;
 	int      rc = SLURM_SUCCESS;
-	uint16_t port;
-	char     host[MAXHOSTNAMELEN];
-	uid_t    req_uid;
-	gid_t    req_gid;
+	uid_t    req_uid = slurm_auth_uid(msg->cred);
 
-	slurm_get_addr(cli, &port, host, sizeof(host));
-	req_uid = slurm_auth_uid(msg->cred);
-	req_gid = slurm_auth_gid(msg->cred);
-
-	if ((req_uid != 0) && (req_uid != (uid_t)req->uid)) {
-		rc = EPERM;
-		goto done;
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+		error("Security violation, batch launch RPC from uid %u",
+		      (unsigned int) req_uid);
+		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
+	} else {
+		info("Launching batch job %u for UID %d",
+			req->job_id, req->uid);
+		if (_launch_batch_job(req, cli) < 0)
+			rc = SLURM_FAILURE;
 	}
 
-	info("batch launch request from %ld@%s", req_uid, host);
-
-	if (_launch_batch_job(req, cli) < 0)
-		rc = SLURM_FAILURE;
-
-  done:
 	slurm_send_rc_msg(msg, rc);
 }
 
 static void
+_rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr)
+{
+	uid_t req_uid = slurm_auth_uid(msg->cred);
+
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+		error("Security violation, shutdown RPC from uid %u",
+		      (unsigned int) req_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);	/* uid bad */
+	} else
+		kill(conf->pid, SIGTERM);
+}
+
+static int
 _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
-	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	int               rc = SLURM_SUCCESS;
+	uid_t req_uid = slurm_auth_uid(msg->cred);
+
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+		error("Security violation, ping RPC from uid %u",
+		      (unsigned int) req_uid);
+		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
+	}
+
+	/* return result */
+	slurm_send_rc_msg(msg, rc);
+	return rc;
 }
 
 static void
@@ -261,7 +277,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	if ((req_uid != step->uid) && (req_uid != 0)) {
 	       debug("kill req from uid %ld for job %d.%d owned by uid %ld",
 		     req_uid, step->jobid, step->stepid, step->uid);	       
-	       rc = EPERM;
+	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	       goto done;
 	}
 
@@ -297,11 +313,10 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t req_uid = slurm_auth_uid(msg->cred);
 	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
 
-	if ((req_uid != 0) && (req_uid != getuid())) {
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
 		rc = ESLURM_USER_ID_MISSING;
-		error
-		    ("Security violation, uid %u can't set node down",
-		     (unsigned int) req_uid);
+		error("Security violation, uid %u can't revoke credentials",
+		      (unsigned int) req_uid);
 	} else {
 		rc = revoke_credential(req, conf->cred_state_list);
 

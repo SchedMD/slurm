@@ -30,7 +30,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -43,11 +43,11 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
-#include <src/common/hostlist.h>
-#include <src/common/log.h>
-#include <src/common/parse_spec.h>
-#include <src/slurmctld/slurmctld.h>
-#include <src/slurmd/get_mach_stat.h>
+#include "src/common/hostlist.h"
+#include "src/common/log.h"
+#include "src/common/parse_spec.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/slurmd/get_mach_stat.h"
 
 char *get_tmp_fs_name (void);
 

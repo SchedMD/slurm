@@ -29,8 +29,8 @@
 #ifndef _INTERCONNECT_H_
 #define _INTERCONNECT_H_
 
-#include <src/common/slurm_protocol_api.h>
-#include <src/slurmd/job.h>
+#include "src/common/slurm_protocol_api.h"
+#include "src/slurmd/job.h"
 
 /* 
  * initialize interconnect on node

@@ -28,7 +28,7 @@
 #define _GET_MACH_STAT_H
 #define _SLURMD_H
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
