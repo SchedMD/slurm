@@ -217,6 +217,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	_run_batch_job(job);
 		
    cleanup:
+	_complete_job(job);
 	shm_fini();
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
