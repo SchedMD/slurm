@@ -60,6 +60,7 @@ strong_alias(bit_fmt,		slurm_bit_fmt);
 strong_alias(bit_fls,		slurm_bit_fls);
 strong_alias(bit_fill_gaps,	slurm_bit_fill_gaps);
 strong_alias(bit_super_set,	slurm_bit_super_set);
+strong_alias(bit_equal,		slurm_bit_equal);
 strong_alias(bit_copy,		slurm_bit_copy);
 strong_alias(bit_pick_cnt,	slurm_bit_pick_cnt);
 strong_alias(bitfmt2int,	slurm_bitfmt2int);
@@ -361,6 +362,30 @@ bit_super_set(bitstr_t *b1, bitstr_t *b2)  {
 
 	return 1;
 }
+
+/*
+ * return 1 if b1 and b2 are identical, 0 otherwise
+ */
+extern int
+bit_equal(bitstr_t *b1, bitstr_t *b2)
+{
+	bitoff_t bit;
+
+	_assert_bitstr_valid(b1);
+	_assert_bitstr_valid(b2);
+
+	if (_bitstr_bits(b1) != _bitstr_bits(b2))
+		return 0;
+
+	for (bit = 0; bit < _bitstr_bits(b1); bit += sizeof(bitstr_t)*8) {
+		if (b1[_bit_word(bit)] != b2[_bit_word(bit)])
+			return 0;
+	}
+
+	return 1;
+}
+
+
 
 /*
  * b1 &= b2
