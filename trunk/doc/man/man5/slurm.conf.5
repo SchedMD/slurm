@@ -241,10 +241,10 @@ The node configuration specifies the following information:
 \fBNodeName\fR
 Name of a node as returned by the hostname command, 
 without the full domain name (e.g. "lx0012"). 
-A simple regular expression may optionally 
+A simple node range expression may optionally 
 be used to specify ranges 
 of nodes to avoid building a configuration file with large numbers 
-of entries. The regular expression can contain one  
+of entries. The node range expression can contain one  
 pair of square brackets with a sequence of comma separated 
 numbers and/or ranges of numbers separated by a "-"
 (e.g. "linux[0-64,128]", or "lx[15,18,32-33]"). 
@@ -272,13 +272,13 @@ Name that a node should be referred to in establishing
 a communications path. This name will be used as an 
 argument to the gethostbyname() function for identification. 
 For example, "elx0012" might be used to designate 
-the ethernet address for node "lx0012". A simple regular 
+the ethernet address for node "lx0012". A simple node range 
 expression may optionally be used to specify ranges 
-of nodes. The regular expression can contain one  
+of nodes. The node range expression can contain one  
 pair of square brackets with a sequence of comma separated 
 numbers and/or ranges of numbers separated by a "-"
 (e.g. "elinux[0-64,128]"). 
-If a regular express is used to designate multiple nodes, 
+If a node range expression is used to designate multiple nodes, 
 they must exactly match the entries in the \fBNodeName\fR
 (e.g. "NodeName=lx[0-7] NodeAddr="elx[0-7]"). 
 By default the \fBNodeAddr\fR will be identical in value to 
@@ -374,7 +374,7 @@ The default value is 1.
 \fBNodes\fR
 Comma separated list of nodes which are associated with this 
 partition. Node names may be specified using the 
-regular expression syntax described above. A blank list of nodes 
+node range expression syntax described above. A blank list of nodes 
 (i.e. "Nodes= ") can be used if one wants a partition to exist, 
 but have no resources (possibly on a temporary basis).
 .TP

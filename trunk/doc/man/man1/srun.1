@@ -8,6 +8,9 @@ srun \- run parallel jobs
 [\fIOPTIONS\fR...] \fIexecutable \fR[\fIargs\fR...]
 .br
 .B srun
+\-\-batch [\fIOPTIONS\fR...] job_script
+.br
+.B srun
 \-\-allocate [\fIOPTIONS\fR...] [job_script]
 .br
 .B srun
@@ -405,13 +408,46 @@ session of \fBsrun\fR had started the job. (stdin, however, cannot
 be forwarded to the job).
 .PP
 There are two ways to reattach to a running job. The default method
-is to steal any current connections to the job. In this case, the
-\fBsrun\fR process currently managing the job will be terminated, and
-control will be relegated to the caller. To allow the current
-\fBsrun\fR to continue managing the running job, the \fB\-j\fB
-(\fB\-\-join\fR) option may be specified. When joining with the
-running job, stdout and stderr are duplicated to the new \fBsrun\fR
-session, but signals are not forwarded to the remote job.
+is to attach to the current job read-only. In this case, 
+stdout and stderr are duplicated to the attaching \fBsrun\fR, but
+signals are not forwarded to the remote processes (A single 
+Ctrl-C will detach this read-only \fBsrun\fR from the job). If
+the \fB-j\fR (\fB\-\-join\fR) option is is also specified, 
+\fBsrun\fR "joins" the running job, and is able to forward signals
+and acts for the most part much like the \fBsrun\fR process that
+initiated the job. 
+.PP 
+Attaching to running batch jobs is also supported, if the batch 
+job is being managed by SLURM (That is, a script submitted with
+\fBsrun \-b\fR). The stdout and stderr from the \fIbatch script\fR
+will then be copied to the attaching \fBsrun\fR, and if \fB-j\fR
+is also specified, signals will be sent to the batch script.
+This feature provides a good method for determining the status 
+of a running \fBsrun\fR within a batch script. For example, 
+consider attaching to a running batch job with jobid 483:
+.br
+
+.br
+> srun --join --attach 483
+.br
+
+.br
+After pressing Ctrl-C twice within one second, SIGINT is forwarded
+to the batch job script, and the running srun reports its status:
+.br
+
+.br
+attach[483]: interrupt (one more within 1 sec to abort)
+.br
+attach[483]: sending Ctrl-C to job
+.br
+srun: interrupt (one more within 1 sec to abort)
+.br
+srun: task[0-15]: running
+.br
+
+.br
+showing that all 16 tasks in the current job step are running.
 .PP
 Node and CPU selection options do not make sense when specifying 
 \fB\-\-attach\fR, and it is an error to use \fB-n\fR, \fB-c\fR, 

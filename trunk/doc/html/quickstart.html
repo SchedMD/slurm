@@ -140,7 +140,7 @@ adev0: srun -n4 -l /bin/hostname
 <p>
 Submit the script <i>my.script</i> for later execution (<i>-b</i>).
 Explicitly use the nodes adev9 and adev10  (<i>-w "adev[9-10]"</i>, 
-note the use of a regular expression). 
+note the use of a node range expression). 
 One processor per task will be used by default
 The output will appear in the file <i>my.stdout</i> (<i>-o my.stdout</i>).
 By default, one task will be initiated per processor on the nodes. 
@@ -239,11 +239,11 @@ well as various timer values.
 <p>
 A description of the nodes and their grouping into non-overlapping 
 partitions is required.
-Partition and node specifications use regular expressions to 
+Partition and node specifications use node range expressions to 
 identify nodes in a concise fashion. 
 This configuration file defines a 1154 node cluster for SLURM, but 
 might be used for a much larger cluster by just changing a 
-few regular expressions.
+few node range expressions.
 
 <pre>
 # 

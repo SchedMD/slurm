@@ -73,7 +73,7 @@ Display the state of the specified entity with the specified identification.
 entity: the configuration parameter name, job ID, node name, partition name, 
 or job step ID for entities \fIconfig\fP, \fIjob\fP, \fInode\fP, \fIpartition\fP, 
 and \fIstep\fP respectively. 
-Multiple node names may be specified using simple regular expressions 
+Multiple node names may be specified using simple node range expressions 
 (e.g. "lx[10-20]"). All other \fIID\fP values must identify a single 
 element. The job step ID is of the form "job_id.step_id", (e.g. "1234.1").
 By default, all elements of the entity type specified are printed.
@@ -140,7 +140,7 @@ Set the job's priority to the specified value.
 .TP
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
-simple regular expressions (e.g. "lx[10-20]"). 
+simple node range expressions (e.g. "lx[10-20]"). 
 .TP
 \fIReqNodes\fP=<count>
 Set the job's count of required nodes to the specified value.
@@ -159,7 +159,7 @@ Set the job's time limit to the specified value.
 .TP
 \fINodeName\fP=<name>
 Identify the node(s) to be updated. Multiple node names may be specified using 
-simple regular expressions (e.g. "lx[10-20]"). This specification is required.
+simple node range expressions (e.g. "lx[10-20]"). This specification is required.
 .TP
 \fIState\fP=<state>
 Identify the state to be assigned to the node. Possible values are  "NoResp", 
@@ -182,7 +182,7 @@ identify a partition to use. Possible values are"YES" and "NO".
 .TP
 \fINodes\fP=<name>
 Identify the node(s) to be associated with this partition. Multiple node names 
-may be specified using simple regular expressions (e.g. "lx[10-20]"). 
+may be specified using simple node range expressions (e.g. "lx[10-20]"). 
 Note that jobs may only be associated with one partition at any time.
 .TP
 \fIPartitionName\fP=<name>
