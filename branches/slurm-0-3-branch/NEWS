@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Create new allocation as needed for debugger in case old allocation
     has been purged
+ -- Fix bug in scheduling jobs when a processor count is specified 
+    and FastSchedule=0 and the cluster is heterogeneous.
 
 * Changes in SLURM 0.3.7
 ========================

@@ -704,10 +704,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			    (!bit_super_set(*req_bitmap, avail_bitmap)))
 				continue;
 			if ((avail_nodes  < min_nodes) ||
-			    (avail_cpus   < req_cpus) ||
 			    ((max_nodes   > min_nodes) && 
 			     (avail_nodes < max_nodes)))
 				continue;	/* Keep accumulating nodes */
+			if (slurmctld_conf.fast_schedule
+			&& (avail_cpus   < req_cpus))
+				continue;	/* Keep accumulating CPUs */
 
 			if (shared)
 				pick_code = _pick_best_load(avail_bitmap, 
@@ -755,7 +757,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
 		if ((!runable_ever || !runable_avail) &&
-		    (total_nodes >= min_nodes) && (total_cpus >= req_cpus) &&
+		    (total_nodes >= min_nodes) && 
 		    ((*req_bitmap == NULL) ||
 		     (bit_super_set(*req_bitmap, total_bitmap)))) {
 			if (!runable_avail) {
