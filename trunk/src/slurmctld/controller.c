@@ -383,7 +383,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			break ;
 		case REQUEST_JOB_INFO:
 			slurm_rpc_dump_jobs ( msg ) ;
-			slurm_free_last_update_msg ( msg -> data ) ;
+			slurm_free_job_info_request_msg ( msg -> data ) ;
 			break;
 		case REQUEST_PARTITION_INFO:
 			slurm_rpc_dump_partitions ( msg ) ;
@@ -440,6 +440,10 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_job_step_create( msg ) ;	
 			slurm_free_job_step_create_request_msg( msg->data );
 			break;
+		case REQUEST_JOB_STEP_INFO:
+			slurm_rpc_job_step_get_info ( msg );
+			slurm_free_job_step_info_request_msg( msg -> data );
+			break;
 		case REQUEST_UPDATE_PARTITION:
 			slurm_rpc_update_partition ( msg ) ;
 			slurm_free_update_part_msg ( msg -> data ) ;
@@ -493,7 +497,7 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg ;
-	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
+	job_info_request_msg_t * last_time_msg = ( job_info_request_msg_t * ) msg-> data ;
 	time_t last_update = last_time_msg -> last_update ;
 	
 	start_time = clock ();

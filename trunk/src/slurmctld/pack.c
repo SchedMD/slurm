@@ -22,7 +22,7 @@
  *  
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
- *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *  60 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -82,27 +82,38 @@ pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len
 			);
 }
 
-void
-pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer_size )
+/* pack_ctld_job_step_info_reponse_msg - packs the message
+ * IN - List of steps to pack
+ * OUT - packed buffer NOTE- MUST xfree buffer
+ * return - buffer length - number of bytes in buffer
+ */
+
+int
+pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer_length )
 {
 	ListIterator iterator = list_iterator_create( steps );
 	struct step_record* current_step = NULL;		
-	int current_size = 0;
-	void* current = buffer_base;
+	int buffer_size = BUF_SIZE * REALLOC_MULTIPLIER;
+	int current_size = buffer_size;
+	void* current = NULL;
+	time_t current_time = time(NULL);
+	uint32_t list_size = list_count(steps);
+	current = *buffer_base = xmalloc( buffer_size );
 
-	*buffer_size = BUF_SIZE * REALLOC_MULTIPLIER;
-	*buffer_base = xmalloc( *buffer_size );
 
-
-	pack32( (uint32_t)time(NULL), &current, &current_size ); /* FIXME What am I really suppose to put as the time?*/
-	pack32( (uint32_t)list_count(steps), &current, &current_size );
+	pack32( current_time, &current, &current_size ); /* FIXME What am I really suppose to put as the time?*/
+	debug("job_step_count = %d\n");
+	pack32( list_size , &current, &current_size );
 	/* Pack the Steps */
 	while( ( current_step = (struct step_record*)list_next( iterator ) ) != NULL )
 	{
 		pack_ctld_job_step_info( current_step, &current, &current_size ); 
-		buffer_realloc( buffer_base, &current, buffer_size, &current_size );
+		buffer_realloc( buffer_base, &current, &buffer_size, &current_size );
 	}
-	
+
+	if ( buffer_length != NULL )
+		*buffer_length = buffer_size - current_size;
+	return 	*buffer_length;
 }
 
 
