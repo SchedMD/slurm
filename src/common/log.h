@@ -79,6 +79,7 @@ typedef struct {
  *
  * rc = log_init(argv[0], logopts, SYSLOG_FACILITY_DAEMON, NULL);
  *
+ * log function automatically takes the basename() of argv0.
  */
 int log_init(char *argv0, log_options_t opts, 
               log_facility_t fac, char *logfile);
