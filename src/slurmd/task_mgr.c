@@ -261,7 +261,7 @@ int kill_all_tasks ( )
 		} 
 	}
 	pthread_mutex_unlock ( & shmem -> mutex ) ;
-	return SLURM_SUCCESS ; 
+	return error_code ; 
 
 }
 
