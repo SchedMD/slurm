@@ -26,7 +26,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.la
 
 slurmd_SOURCES = get_mach_stat.c \
                  read_proc.c \
-		 controller.c
+		 slurmd.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
