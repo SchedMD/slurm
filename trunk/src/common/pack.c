@@ -162,11 +162,11 @@ int unpack32(uint32_t * valp, Buf buffer)
 }
 
 /* Given a *uint32_t, it will pack an array of size_val */
-void pack32_array(uint32_t * valp, uint16_t size_val, Buf buffer)
+void pack32_array(uint32_t * valp, uint32_t size_val, Buf buffer)
 {
-	int i = 0;
+	uint32_t i = 0;
 
-	pack16(size_val, buffer);
+	pack32(size_val, buffer);
 
 	for (i = 0; i < size_val; i++) {
 		pack32(*(valp + i), buffer);
@@ -175,11 +175,11 @@ void pack32_array(uint32_t * valp, uint16_t size_val, Buf buffer)
 
 /* Given a int ptr, it will unpack an array of size_val
  */
-int unpack32_array(uint32_t ** valp, uint16_t * size_val, Buf buffer)
+int unpack32_array(uint32_t ** valp, uint32_t * size_val, Buf buffer)
 {
-	int i = 0;
+	uint32_t i = 0;
 
-	if (unpack16(size_val, buffer))
+	if (unpack32(size_val, buffer))
 		return SLURM_ERROR;
 
 	*valp = xmalloc((*size_val) * sizeof(uint32_t));

@@ -158,10 +158,8 @@ void slurm_free_job_info_members(job_info_t * job)
 	}
 }
 
-
-void
-slurm_free_node_registration_status_msg
-(slurm_node_registration_status_msg_t * msg)
+void slurm_free_node_registration_status_msg
+	(slurm_node_registration_status_msg_t * msg)
 {
 	if (msg) {
 		if (msg->node_name)
@@ -237,6 +235,8 @@ void slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg)
 void slurm_free_task_exit_msg(task_exit_msg_t * msg)
 {
 	if (msg) {
+		if (msg->task_id_list)
+			xfree(msg->task_id_list);
 		xfree(msg);
 	}
 }

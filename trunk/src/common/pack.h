@@ -78,8 +78,8 @@ int	unpack16(uint16_t *valp, Buf buffer);
 void	pack8(uint8_t val, Buf buffer);
 int	unpack8(uint8_t *valp, Buf buffer);
 
-void	pack32_array(uint32_t *valp, uint16_t size_val, Buf buffer);
-int	unpack32_array( uint32_t **valp, uint16_t* size_val, Buf buffer);
+void	pack32_array(uint32_t *valp, uint32_t size_val, Buf buffer);
+int	unpack32_array( uint32_t **valp, uint32_t* size_val, Buf buffer);
 
 void	packmem(char *valp, uint16_t size_val, Buf buffer);
 int	unpackmem(char *valp, uint16_t *size_valp, Buf buffer);
@@ -157,7 +157,7 @@ int	unpackmem_array(char *valp, uint32_t size_valp, Buf buffer);
 
 #define safe_unpack32_array(valp,size_valp,buf) do {	\
 	assert(valp != NULL);				\
-	assert(sizeof(*size_valp) == sizeof(uint16_t)); \
+	assert(sizeof(*size_valp) == sizeof(uint32_t)); \
 	assert(buf->magic == BUF_MAGIC);		\
 	if (unpack32_array(valp,size_valp,buf))		\
 		goto unpack_error;			\

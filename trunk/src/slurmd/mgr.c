@@ -658,13 +658,17 @@ _send_exit_msg(int rc, task_info_t *t)
 {
 	slurm_msg_t     resp;
 	task_exit_msg_t msg;
+	uint32_t task_id_list[1];
 	ListIterator i;
 	srun_info_t *srun;
 
-       	msg.return_code = rc;
-	msg.task_id     = t->gid;
-	resp.data       = &msg;
-	resp.msg_type   = MESSAGE_TASK_EXIT;
+	/* FIXME:XXX: attempt to combine task IDs in single message */
+	task_id_list[0]  = t->gid;
+	msg.task_id_list = task_id_list;
+	msg.num_tasks    = 1;
+       	msg.return_code  = rc;
+	resp.data        = &msg;
+	resp.msg_type    = MESSAGE_TASK_EXIT;
 
 	i = list_iterator_create(t->srun_list);
 	while ((srun = list_next(i))) {
