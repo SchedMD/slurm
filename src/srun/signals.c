@@ -200,14 +200,15 @@ _handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
 		/* terminate job */
 		if (job->state < SRUN_JOB_FORCETERM) {
 
+			if ((time(NULL) - *last_intr_sent) < 1) {
+				job_force_termination(job);
+				pthread_exit(0);
+			}
+
 			info("sending Ctrl-C to job");
-			*last_intr = time(NULL);
+			*last_intr_sent = time(NULL);
 			fwd_signal(job, SIGINT);
 
-			if ((time(NULL) - *last_intr_sent) < 1)
-				job_force_termination(job);
-			else
-				*last_intr_sent = time(NULL);
 		} else {
 			job_force_termination(job);
 		}
