@@ -85,7 +85,8 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg,
         switch ( response_msg . msg_type )
         {
                 case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -95,7 +96,8 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg,
 			break ;
 		case RESPONSE_SUBMIT_BATCH_JOB:
                         *slurm_alloc_msg = 
-				( submit_response_msg_t * ) response_msg . data ;
+				( submit_response_msg_t * ) 
+				response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break;
                 default:

@@ -118,8 +118,9 @@ make_time_str (time_t *time, char *string)
 	struct tm time_tm;
 
 	localtime_r (time, &time_tm);
-	sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", (time_tm.tm_mon+1), 
-		time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+	sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", 
+		(time_tm.tm_mon+1), time_tm.tm_mday, 
+		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
 }
 
 
@@ -140,7 +141,8 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -174,11 +176,13 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_JOB_INFO:
-			*job_info_msg_pptr = (job_info_msg_t *) response_msg.data ;
+			*job_info_msg_pptr = 
+				(job_info_msg_t *) response_msg.data ;
 			return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = (return_code_msg_t *) response_msg.data ;
+			slurm_rc_msg = 
+				(return_code_msg_t *) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {

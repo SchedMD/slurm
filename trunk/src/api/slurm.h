@@ -42,14 +42,32 @@
 extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , 
 		resource_allocation_response_msg_t ** job_alloc_resp_msg, 
 		int immediate ) ;
+
+/*
+ * slurm_free_resource_allocation_response_msg - free slurm resource
+ *	allocation response message
+ * NOTE: buffer is loaded by either slurm_allocate_resources or 
+ *	slurm_confirm_allocation
+ */
+extern void slurm_free_resource_allocation_response_msg (
+		resource_allocation_response_msg_t * msg);
+
 /*
  * slurm_allocate_resources_and_run - allocate resources for a job request and 
  *	initiate a job step
  * NOTE: free the response using 
  *	slurm_free_resource_allocation_and_run_response_msg
  */
-extern int slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg , 			
+extern int slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg,
 		resource_allocation_and_run_response_msg_t ** slurm_alloc_msg );
+
+/*
+ * slurm_free_resource_allocation_and_run_response_msg - free slurm 
+ *	resource allocation and run job step response message
+ * NOTE: buffer is loaded by slurm_allocate_resources_and_run
+ */
+extern void slurm_free_resource_allocation_and_run_response_msg ( 
+		resource_allocation_and_run_response_msg_t * msg);
 
 /*
  * slurm_confirm_allocation - confirm an existing resource allocation
@@ -67,11 +85,29 @@ extern int slurm_job_step_create (
 		job_step_create_response_msg_t ** slurm_step_alloc_resp_msg );
 
 /*
- * slurm_submit_batch_job - issue RPC to submit a job for later execution
- * NOTE: free the response using slurm_free_submit_response_response_msg
+ * slurm_free_job_step_create_response_msg - free slurm 
+ *	job step create response message
+ * NOTE: buffer is loaded by slurm_job_step_create
+ */
+extern void slurm_free_job_step_create_response_msg ( 
+		job_step_create_response_msg_t *msg);
+
+/*
+ * slurm_submit_batch_job - issue RPC to submit a job for later 
+ *	execution
+ * NOTE: free the response using 
+ *	slurm_free_submit_response_response_msg
  */
 extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
-					submit_response_msg_t ** slurm_alloc_msg );
+		submit_response_msg_t ** slurm_alloc_msg );
+
+/*
+ * slurm_free_submit_response_response_msg - free slurm 
+ *	job submit response message
+ * NOTE: buffer is loaded by slurm_submit_batch_job
+ */
+extern void slurm_free_submit_response_response_msg (
+		submit_response_msg_t *msg);
 
 /*
  * slurm_job_will_run - determine if a job would execute immediately if 
@@ -120,6 +156,12 @@ extern int slurm_load_ctl_conf (time_t update_time,
 		slurm_ctl_conf_t  **slurm_ctl_conf_ptr);
 
 /*
+ * slurm_free_ctl_conf - free slurm control information response message
+ * NOTE: buffer is loaded by slurm_load_ctl_conf
+ */
+extern void slurm_free_ctl_conf (slurm_ctl_conf_t* slurm_ctl_conf_ptr);
+
+/*
  * slurm_print_ctl_conf - output the contents of slurm control configuration
  *	message as loaded using slurm_load_ctl_conf
  */
@@ -138,6 +180,12 @@ extern void slurm_print_ctl_conf ( FILE * out,
  */
 extern int slurm_load_jobs (time_t update_time, 
 		job_info_msg_t **job_info_msg_pptr);
+
+/*
+ * slurm_free_job_info - free the job information response message
+ * NOTE: buffer is loaded by slurm_load_job.
+ */
+extern void slurm_free_job_info_msg (job_info_msg_t * job_buffer_ptr);
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
@@ -175,6 +223,14 @@ extern int slurm_get_job_steps (time_t update_time, uint32_t job_id,
 		job_step_info_response_msg_t **step_response_pptr);
 
 /*
+ * slurm_free_job_step_info_response_msg - free the job step 
+ *	information response message
+ * NOTE: buffer is loaded by slurm_get_job_steps.
+ */
+extern void slurm_free_job_step_info_response_msg (
+		job_step_info_response_msg_t * msg);
+
+/*
  * slurm_print_job_step_info_msg - output information about all Slurm 
  *	job steps based upon message as loaded using slurm_get_job_steps
  */
@@ -199,6 +255,12 @@ extern void slurm_print_job_step_info ( FILE*, job_step_info_t * step_ptr );
  */
 extern int slurm_load_node (time_t update_time, 
 		node_info_msg_t **node_info_msg_pptr);
+
+/*
+ * slurm_free_node_info_msg - free the node message information buffer
+ * NOTE: buffer is loaded by slurm_load_node.
+ */
+extern void slurm_free_node_info_msg (node_info_msg_t * node_buffer_ptr);
 
 /*
  * slurm_print_node_info_msg - output information about all Slurm nodes
@@ -231,6 +293,12 @@ extern int slurm_update_node ( update_node_msg_t * node_msg ) ;
  */
 extern int slurm_load_partitions (time_t update_time, 
 		partition_info_msg_t **part_buffer_ptr);
+
+/*
+ * slurm_free_partition_info_msg - free the partition information buffer
+ * NOTE: buffer is loaded by slurm_load_partitions
+ */
+extern void slurm_free_partition_info_msg ( partition_info_msg_t * part_info_ptr);
 
 /*
  * slurm_print_partition_info_msg - output information about all Slurm 
@@ -270,33 +338,6 @@ extern int slurm_reconfigure ( void );
  * core(I) - controller generates a core file if set
  */
 extern int slurm_shutdown (uint16_t core);
-
-
-
-
-
-
-
-
-extern void slurm_free_ctl_conf ( slurm_ctl_conf_t* slurm_ctl_conf_ptr);
-
-/*
- * slurm_free_job_info - free the job information buffer (if allocated)
- * NOTE: buffer is loaded by slurm_load_job.
- */
-extern void slurm_free_job_info_msg (job_info_msg_t * job_buffer_ptr);
-
-/*
- * slurm_free_node_info - free the node information buffer (if allocated)
- * NOTE: buffer is loaded by slurm_load_node.
- */
-extern void slurm_free_node_info_msg (node_info_msg_t * node_buffer_ptr);
-
-/*
- * slurm_free_part_info - free the partition information buffer (if allocated)
- * NOTE: buffer is loaded by load_part.
- */
-extern void slurm_free_partition_info_msg ( partition_info_msg_t * part_info_ptr);
 
 #endif
 

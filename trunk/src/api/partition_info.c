@@ -165,11 +165,13 @@ slurm_load_partitions (time_t update_time,
 	{
 		case RESPONSE_PARTITION_INFO:
         		*partition_info_msg_pptr = 
-				( partition_info_msg_t * ) response_msg . data ;
+				( partition_info_msg_t * ) 
+				response_msg . data ;
 			return SLURM_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {

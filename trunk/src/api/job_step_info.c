@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>, Joey Ekstrom <ekstrom1@llnl.gov> et. al.
+ *  Written by Moe Jette <jette1@llnl.gov>, Joey Ekstrom <ekstrom1@llnl.gov> 
+ *	et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -132,7 +133,8 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id,
 	{
 		case RESPONSE_JOB_STEP_INFO:
 			*step_response_pptr = 
-				(job_step_info_response_msg_t *) response_msg.data ;
+				(job_step_info_response_msg_t *) 
+				response_msg.data ;
 			return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:

@@ -131,11 +131,13 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_NODE_INFO:
-        		*node_info_msg_pptr = ( node_info_msg_t * ) response_msg . data ;
+        		*node_info_msg_pptr = 
+				( node_info_msg_t * ) response_msg . data ;
 		        return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
