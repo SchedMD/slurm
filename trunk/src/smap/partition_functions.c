@@ -190,18 +190,25 @@ int print_text_part(partition_info_t * part_ptr)
 		nodes = part_ptr->nodes;
 	prefixlen = i;
 	while (nodes[i] != '\0') {
-		if ((printed =
-		     mvwaddch(text_win, ycord, xcord, nodes[i])) < 0)
-			return printed;
-		xcord++;
 		width = text_win->_maxx - xcord;
-		if (nodes[i] == '[' && nodes[i - 1] == ',')
+		
+                if (!prefixlen && nodes[i] == '[' && nodes[i - 1] == ',')
 			prefixlen = i + 1;
-		else if (nodes[i] == ',' && (width - 9) <= 0) {
+		
+                if (nodes[i-1] == ',' && (width - 10) <= 0) {
 			ycord++;
 			xcord = tempxcord + prefixlen;
-		}
-		i++;
+		} else if(xcord>text_win->_maxx) {
+                	ycord++;
+			xcord = tempxcord + prefixlen;
+                }
+                
+                  
+		if ((printed =  mvwaddch(text_win, ycord, xcord, nodes[i])) < 0)
+                  return printed;
+		xcord++;
+		
+                i++;
 	}
 
 	xcord = 1;
