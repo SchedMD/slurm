@@ -509,7 +509,7 @@ find_node_record (char *name)
 		     (strncmp ((node_record_table_ptr[inx]).name, name, 
 		                MAX_NAME_LEN) == 0) )
 			return (node_record_table_ptr + inx);
-		debug ("find_node_record: hash table lookup failure for %s", 
+		debug2("find_node_record: hash table lookup failure for %s", 
 		       name);
 #if DEBUG_SYSTEM
 		_dump_hash ();
