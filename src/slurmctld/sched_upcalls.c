@@ -90,6 +90,7 @@ struct sched_obj_cache_entry
  * default or missing values.
  */
 static int32_t zero_32 = 0;
+static time_t unspecified_time = (time_t) NO_VAL;
 
 static struct job_details *copy_job_details( struct job_details *from );
 static void free_job_details( struct job_details *doomed );
@@ -593,8 +594,13 @@ sched_get_job_start_time( sched_obj_list_t job_data,
 			  int32_t idx,
 			  char *type )
 {
+	time_t start = ( (struct job_record *)job_data->data )[ idx ].start_time;
 	if ( type ) *type = 't';
-	return (void *) &( (struct job_record *)job_data->data )[ idx ].start_time;
+
+	if ( start != (time_t) 0 )
+		return (void *) &( (struct job_record *)job_data->data )[ idx ].start_time;
+	else
+		return (void *) &unspecified_time;
 }
 
 /* ************************************************************************ */
