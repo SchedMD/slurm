@@ -25,7 +25,7 @@ auth_none_la_LDFLAGS = $(PLUGIN_FLAGS)
 # Authd authentication plugin -- requires libauth
 auth_authd_la_SOURCES = auth_authd.c
 auth_authd_la_LDFLAGS = $(PLUGIN_FLAGS) 
-auth_authd_la_LIBADD =   -lauth 
+auth_authd_la_LIBADD =   -lauth  -le
 
 # Munge authentication plugin
 auth_munge_la_SOURCES = auth_munge.c

@@ -26,11 +26,6 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if HAVE_SSL
-#    include <openssl/rsa.h>
-#    include <openssl/pem.h>
-#    include <openssl/err.h>
-#  endif /* HAVE_SSL*/
 #  if STDC_HEADERS
 #    include <stdio.h>
 #    include <string.h>
@@ -42,22 +37,12 @@
 #  include <stdio.h>
 #  include <unistd.h>
 #  include <string.h>
-#  include <openssl/rsa.h>
-#  include <openssl/pem.h>
-#  include <openssl/err.h>
 #  include <auth.h>
 #endif /* HAVE_CONFIG_H */
 
 #include <pwd.h>
 #include <grp.h>
 #include <auth.h>
-#include <openssl/rsa.h>
-#include <openssl/pem.h>
-#include <openssl/err.h>
-
-/* Need these regardless of how main SLURM transport is abstracted. */
-#include <sys/socket.h>
-#include <sys/un.h>
 
 #ifndef UNIX_PATH_MAX
 #define UNIX_PATH_MAX 108  /* Cribbed from linux/un.h */
@@ -102,142 +87,6 @@ enum {
 	SLURM_AUTH_EXPIRED
 };
 
-/*
- * These come from /usr/include/auth.h which should be installed
- * as part of the authd installation.
- */
-static char *cli_path = AUTH_SOCK_PATH;
-static char *svr_path = AUTHD_SOCK_PATH;
-static char *pub_key_file = AUTH_PUB_KEY;
-
-/*
- * Write bytes reliably to a file descriptor.
- */
-static int
-write_bytes( int fd, char *buf, size_t size )
-{
-	ssize_t bytes_remaining, bytes_written;
-	char *ptr;
-
-	bytes_remaining = size;
-	ptr = buf;
-	while ( bytes_remaining > 0 ) {
-		bytes_written = write( fd, ptr, size );
-		if ( bytes_written < 0 ) return -1;
-		bytes_remaining -= bytes_written;
-		ptr += bytes_written;
-	}
-	return 0;
-}
-
-/*
- * Read bytes reliably from a file descriptor.
- */
-static int
-read_bytes( int fd, char *buf, size_t size )
-{
-	ssize_t bytes_remaining, bytes_read;
-	char *ptr;
-
-	bytes_remaining = size;
-	ptr = buf;
-	while ( bytes_remaining > 0 ) {
-		bytes_read = read( fd, ptr, size );
-		if ( bytes_read < 0 ) return -1;
-		bytes_remaining -= bytes_read;
-		ptr += bytes_read;
-	}
-	return 0;
-}
-
-/*
- * These two cribbed from auth.c in the authd distribution.  They would
- * normally be available in the authd library, but the library relies on
- * Brent Chun's enormous and irrelevant convenience library, and we only
- * need to make one call to that library here.  So we inline the code
- * from his library and sever the dependency.
- */
-static int
-slurm_auth_get_signature( credentials *cred, signature *sig )
-{
-	int sock;
-	char cli_name[ UNIX_PATH_MAX ];
-	struct sockaddr_un cli_addr;
-	struct sockaddr_un svr_addr;
-	socklen_t addr_len = sizeof( struct sockaddr_un );
-
-	if ( ( sock = socket( AF_UNIX, SOCK_STREAM, 0 ) ) < 0 ) {
-		return -1;
-	}
-
-	cli_addr.sun_family = AF_UNIX;	
-	memset( cli_addr.sun_path, 0, UNIX_PATH_MAX );
-	sprintf( cli_name, cli_path, getpid() );
-	strcpy( &cli_addr.sun_path[ 1 ], cli_name );
-	if ( bind( sock, (struct sockaddr *) &cli_addr, addr_len ) < 0 ) {
-		error( "authd plugin: cannot bind socket to authd" );
-		close( sock );
-		return -1;
-	}
-
-	svr_addr.sun_family = AF_UNIX;
-	memset( svr_addr.sun_path, 0, UNIX_PATH_MAX );
-	strcpy( &svr_addr.sun_path[ 1 ], svr_path );
-	if ( connect( sock, (struct sockaddr *) &svr_addr, addr_len ) < 0 ) {
-		error( "suthd plugin: cannot connect to authd" );
-		close( sock );
-		return -1;
-	}
-	
-	if ( write_bytes( sock, (char *) cred, sizeof( credentials ) ) < 0 ) {
-		error( "authd plugin: cannot write to authd" );
-		close( sock );
-		return -1;
-	}
-	if ( read_bytes( sock, (char *) sig, sizeof( signature ) ) < 0 ) {
-		error( "authd plugin: cannot read from authd" );
-		close( sock );
-		return -1;
-	}
-	close( sock );
-	return 0;	
-}
-
-static int
-slurm_auth_verify_signature( credentials *cred, signature *sig )
-{
-	int rc_error = 0;
-	RSA *pub_key = NULL;
-	FILE *f = NULL;
-
-	if ( ( f = fopen( pub_key_file, "r" ) ) == NULL ) {		
-		rc_error = -1;
-		error( "authd plugin: cannot open public key file %s", pub_key_file );
-		goto cleanup;
-	}
-
-	if ( ( pub_key = PEM_read_RSA_PUBKEY( f, NULL, NULL, NULL ) ) == NULL ) {
-		error( "authd plugin: cannot read RSA public key" );
-		rc_error = -1;
-		goto cleanup;
-	}
-
-	ERR_load_crypto_strings();
-	if ( RSA_verify( 0,
-					 (unsigned char *) cred, sizeof( credentials ),
-					 sig->data, AUTH_RSA_SIGLEN,
-					 pub_key ) == 0 ) {
-		rc_error = -1;
-		error( "authd plugin: cannot verify signature" );
-		goto cleanup;
-	}
-
- cleanup:
-	if ( pub_key != NULL ) RSA_free( pub_key );
-	if ( f != NULL ) fclose( f );
-	return rc_error;
-}
-
 
 int init( void )
 {
@@ -263,6 +112,7 @@ slurm_auth_credential_t *
 slurm_auth_create( void *argv[] )
 {
 	int ttl;	
+	int rc;
 	slurm_auth_credential_t *cred;
 
 	if ( argv == NULL ) {
@@ -296,7 +146,8 @@ slurm_auth_create( void *argv[] )
 	cred->cred.valid_to = cred->cred.valid_from + ttl;
 
 	/* Sign the credential. */
-	if ( slurm_auth_get_signature( &cred->cred, &cred->sig ) < 0 ) {
+	auth_init_credentials (&cred->cred, ttl);
+	if ((rc = auth_get_signature( &cred->cred, &cred->sig )) < 0 ) {
 		plugin_errno = SLURM_AUTH_INVALID;
 		xfree( cred );
 		return NULL;
@@ -326,9 +177,8 @@ slurm_auth_verify( slurm_auth_credential_t *cred, void *argv[] )
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
-	
-	rc = slurm_auth_verify_signature( &cred->cred, &cred->sig );
-	if ( rc < 0 ) {
+
+	if ((rc = auth_verify_signature( &cred->cred, &cred->sig )) < 0) {
 		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_ERROR;
 	}
