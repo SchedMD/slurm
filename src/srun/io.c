@@ -78,7 +78,7 @@ static inline bool _io_thr_done(job_t *job);
 static int	_handle_pollerr(fd_info_t *info);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
 static int      _read_io_header(int fd, job_t *job, char *host);
-
+static void     _terminate_node_io(int node_inx, job_t *job);
 #define _poll_set_rd(_pfd, _fd) do { 	\
 	(_pfd).fd = _fd;		\
 	(_pfd).events = POLLIN; 	\
@@ -820,5 +820,48 @@ _bcast_stdin(int fd, job_t *job)
 	}
 
 	return;
+}
+
+/*
+ * io_node_fail - Some nodes have failed.  Identify affected I/O streams.
+ * Flag them as done and signal the I/O thread.
+ */
+extern int 
+io_node_fail(char *nodelist, job_t *job)
+{
+	hostlist_t fail_list = hostlist_create(nodelist);
+	char *node_name;
+	int node_inx;
+
+	if (!fail_list) {
+		error("Invalid node list `%s' specified", nodelist);
+		return SLURM_ERROR;
+ 	}
+
+	while ( (node_name = hostlist_shift(fail_list)) ) {
+		for (node_inx=0; node_inx<job->nhosts; node_inx++) {
+			if (strcmp(node_name, job->host[node_inx]))
+				continue;
+			_terminate_node_io(node_inx, job);
+			break;
+		}
+	}
+
+	pthread_kill(job->ioid,  SIGHUP);
+	hostlist_destroy(fail_list);
+	return SLURM_SUCCESS;
+}
+
+static void
+_terminate_node_io(int node_inx, job_t *job)
+{
+	int i;
+
+	for (i=0; i<opt.nprocs; i++) {
+		if (job->hostid[i] != node_inx)
+			continue;
+		job->out[i] = IO_DONE;
+		job->err[i] = IO_DONE;
+	}
 }
 
