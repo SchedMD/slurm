@@ -230,7 +230,7 @@ int allocate_part(pa_request_t* pa_request, List results);
  * Admin wants to remove a previous allocation.
  * will allow Admin to delete a previous allocation retrival by letter code.
  */
-int remove_part(List nodes);
+int remove_part(List nodes, int new_count);
 
 /** 
  * Admin wants to change something about a previous allocation. 
@@ -245,7 +245,7 @@ int alter_part(List nodes, int conn_type);
  * be redone to make sure correct path will be used in the real system
  *
  */
-int redo_part(List nodes, int conn_type);
+int redo_part(List nodes, int conn_type, int new_count);
 
 void init_grid(node_info_msg_t *node_info_ptr);
 
