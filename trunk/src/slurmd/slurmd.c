@@ -88,6 +88,7 @@ inline static int send_node_registration_status_msg();
 
 inline static void slurm_rpc_kill_tasks(slurm_msg_t * msg);
 inline static void slurm_rpc_launch_tasks(slurm_msg_t * msg);
+inline static void slurm_rpc_ping(slurm_msg_t * msg);
 inline static void slurm_rpc_reattach_tasks_streams(slurm_msg_t * msg);
 inline static void slurm_rpc_revoke_credential(slurm_msg_t * msg);
 inline static void slurmd_rpc_shutdown_slurmd(slurm_msg_t * msg);
@@ -425,6 +426,9 @@ void slurmd_req(slurm_msg_t * msg)
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 		slurmd_rpc_shutdown_slurmd(msg);
 		break;
+	case REQUEST_PING:
+		slurm_rpc_ping(msg);
+		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
 		      msg->msg_type);
@@ -480,6 +484,12 @@ void slurm_rpc_launch_tasks(slurm_msg_t * msg)
 		slurm_send_only_node_msg(&resp_msg);
 		launch_tasks(task_desc);
 	}
+}
+
+/* Just respond to ping */
+void slurm_rpc_ping(slurm_msg_t * msg)
+{
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
 }
 
 /* Kills Launched Tasks */
