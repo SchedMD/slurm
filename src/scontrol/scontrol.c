@@ -974,7 +974,13 @@ _process_command (int argc, char *argv[])
 				 "too many arguments for keyword:%s\n",
 				 argv[0]);
 		_usage ();
-
+	}
+	else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
+		if (argc > 1)
+			fprintf (stderr, 
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
+		one_liner = 1;
 	}
 	else if (strncasecmp (argv[0], "pid2jid", 3) == 0) {
 		if (argc > 2)
