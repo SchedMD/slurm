@@ -880,13 +880,6 @@ _opt_verify(poptContext optctx)
 		verified = false;
 	}
 
-	if (opt.distribution == SRUN_DIST_UNKNOWN) {
-		if (opt.nprocs <= opt.nodes)
-			opt.distribution = SRUN_DIST_CYCLIC;
-		else
-			opt.distribution = SRUN_DIST_BLOCK;
-	}
-
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
