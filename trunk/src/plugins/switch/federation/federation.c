@@ -898,8 +898,9 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	safe_unpack32(&magic, buf);
 	if(magic != FED_NODEINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_FEDNODEINFO);
-	size = FED_HOSTLEN;
 	unpackmem(name, &size, buf);
+	if(size != FED_HOSTLEN)
+		goto unpack_error;
 	_lock();
 	tmp_n =_alloc_node(fed_state, name);
 	_unlock();
@@ -910,8 +911,9 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	safe_unpack32(&tmp_n->adapter_count, buf);
 	for(i = 0; i < tmp_n->adapter_count; i++) {
 		tmp_a = tmp_n->adapter_list + i;
-		size = FED_ADAPTERLEN;
 		unpackmem(tmp_a->name, &size, buf);
+		if(size != FED_ADAPTERLEN)
+			goto unpack_error;
 		safe_unpack16(&tmp_a->lid, buf);
 		safe_unpack16(&tmp_a->network_id, buf);
 		safe_unpack32(&tmp_a->max_winmem, buf);
@@ -945,6 +947,9 @@ fed_unpack_nodeinfo(fed_nodeinfo_t *n, Buf buf)
 	return SLURM_SUCCESS;
 	
 unpack_error:
+	/* FIX ME!  Add code here to free allocated memory */
+	if(tmp_w)
+		free(tmp_w);
 	slurm_seterrno_ret(EUNPACK);
 }
 
@@ -1228,6 +1233,8 @@ fed_unpack_jobinfo(fed_jobinfo_t *j, Buf buf)
 	assert(j->magic == FED_JOBINFO_MAGIC);
 	safe_unpack16(&j->job_key, buf);
 	unpackmem(j->job_desc, &size, buf);
+	if(size != DESCLEN)
+		goto unpack_error;
 	safe_unpack32(&j->window_memory, buf);
 	safe_unpack32(&j->table_size, buf);
 	tmp = (NTBL **)malloc(sizeof(NTBL *) * j->table_size);
