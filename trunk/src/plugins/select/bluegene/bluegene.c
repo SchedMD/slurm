@@ -56,9 +56,10 @@ _STMT_START {	\
 
  /** some local functions */
 static int  _copy_slurm_partition_list(List slurm_part_list);
-static int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_bitmap,
-			       int min_nodes, int max_nodes,
-			       int spec, bgl_record_t** found_bgl_record);
+static int _find_best_partition_match(struct job_record* job_ptr, 
+				bitstr_t* slurm_part_bitmap,
+				int min_nodes, int max_nodes,
+				int spec, bgl_record_t** found_bgl_record);
 static int _parse_request(char* request_string, partition_t** request);
 static int _wire_bgl_partitions(void);
 static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
@@ -698,7 +699,18 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		 * SLURM partition not available to this job.
 		 */
 		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
-			debug("bgl partition %s has nodes not usable by this job", 
+			debug("bgl partition %s has nodes not usable by this "
+				"job", record->nodes);
+			continue;
+		}
+
+		/*
+		 * Insure that any required nodes are in this BGL partition
+		 */
+		if (job_ptr->details->req_node_bitmap
+		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
+				record->bitmap))) {
+			info("bgl partition %s lacks required nodes",
 				record->nodes);
 			continue;
 		}
