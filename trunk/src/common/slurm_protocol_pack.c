@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include <src/common/slurm_protocol_pack.h>
+#include <src/common/slurm_protocol_api.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
 #include <src/common/nodelist.h>
@@ -884,3 +885,27 @@ void unpack_ ( ** msg_ptr , void ** buffer , uint32_t * length )
 }
 */
 
+void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, void ** buffer , int * length )
+{
+	int i=0;
+	uint16_t nl = htons(size_val);
+	_pack16( nl, buffer, length);
+
+	for ( i=0; i < size_val; i++ ) 
+	{
+		slurm_pack_slurm_addr ( slurm_address + i , buffer , length ) ;
+	}
+	
+}
+
+void unpack_slurm_addr_array ( slurm_addr ** slurm_address , uint16_t * size_val , void ** buffer , int * length )
+{
+	int i=0;
+	_unpack16( size_val, buffer , length );
+	slurm_address = xmalloc( (*size_val) * sizeof( slurm_addr ) );
+
+	for ( i=0; i < *size_val; i++ ) 
+	{
+		slurm_unpack_slurm_addr_no_alloc ( (*slurm_address) + i , buffer , length );
+	}
+}
