@@ -7,12 +7,12 @@
 #include <openssl/pem.h>
 #include <openssl/ssl.h>
 
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
-#include <src/common/slurm_errno.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/credential_utils.h>
-#include <src/common/signature_utils.h>
+#include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "src/common/slurm_errno.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/credential_utils.h"
+#include "src/common/signature_utils.h"
 
 
 int slurm_ssl_init()
@@ -49,6 +49,7 @@ int slurm_init_signer(slurm_ssl_key_ctx_t * ctx, char *path)
 	}
 	return SLURM_SUCCESS;
 }
+
 int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 {
 	int local_errno;
