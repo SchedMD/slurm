@@ -8,7 +8,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -54,8 +54,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmd/get_mach_stat.h"
 
-char *get_tmp_fs_name (void);
-
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
 int 
@@ -89,7 +87,7 @@ main(int argc, char * argv[])
  * Output: procs - filled in with CPU count, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-int 
+extern int 
 get_procs(uint32_t *procs) 
 {
 	int my_proc_tally;
@@ -113,7 +111,7 @@ get_procs(uint32_t *procs)
  * Output: os_name - filled in with OS name, "UNKNOWN" if error
  *         return code - 0 if no error, otherwise errno
  */
-int 
+extern int 
 get_os_name(char *os_name) 
 {
 	int error_code;
@@ -146,7 +144,7 @@ get_os_name(char *os_name)
  * Output: node_name - filled in with node name
  *         return code - 0 if no error, otherwise errno
  */
-int 
+extern int 
 get_mach_name(char *node_name) 
 {
     int error_code;
@@ -165,7 +163,7 @@ get_mach_name(char *node_name)
  * Output: real_memory - the Real Memory size in MB, "1" if error
  *         return code - 0 if no error, otherwise errno
  */
-int
+extern int
 get_memory(uint32_t *real_memory)
 {
 	long pages;
@@ -198,7 +196,7 @@ get_memory(uint32_t *real_memory)
  * Output: procs - filled in with CPU speed, "1.0" if error
  *         return code - 0 if no error, otherwise errno
  */
-int 
+extern int 
 get_speed(float *speed) 
 {
 	char buffer[128];
@@ -239,7 +237,7 @@ get_speed(float *speed)
  * Output: tmp_disk - filled in with disk space size in MB, zero if error
  *         return code - 0 if no error, otherwise errno
  */
-int 
+extern int 
 get_tmp_disk(uint32_t *tmp_disk, char *tmp_fs) 
 {
 	struct statfs stat_buf;
