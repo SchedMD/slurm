@@ -7,7 +7,7 @@ CLEANFILES = core.*
 
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
-bin_PROGRAMS = slurmctld
+sbin_PROGRAMS = slurmctld
 
 LDADD = $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libcred.la      \
