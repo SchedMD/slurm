@@ -65,8 +65,10 @@
 int max_delay = MIN_DELAY;
 int cur_delay = 0; 
 
+#ifdef HAVE_BGL_FILES
 static int _wait_part_ready(char *part_name);
 static int _wait_part_owner(char *part_name, int user_id);
+#endif
 
 /* Pack all relevent information about a partition */
 extern void pack_partition(bgl_record_t *bgl_record, Buf buffer)
@@ -106,9 +108,10 @@ unpack_error:
  */
 extern int part_ready(struct job_record *job_ptr)
 {
+
+#ifdef HAVE_BGL_FILES
 	int rc1 = 0, rc2 = 0;
 	
-#ifdef HAVE_BGL_FILES
 	
 	/* bgl_update_ptr->uid = job_ptr->user_id; */
 /* 	bgl_update_ptr->job_id = job_ptr->job_id; */
@@ -128,13 +131,14 @@ extern int part_ready(struct job_record *job_ptr)
 	return 0;
 }
 
+#ifdef HAVE_BGL_FILES
 static int _wait_part_ready(char *part_name)
 {
+	int is_ready = 0;
 	int j, rc, num_parts;
 	rm_partition_t *part_ptr;
 	rm_partition_state_t state;
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	int is_ready = 0;
 	char *name;
 	rm_partition_list_t *part_list;
 
@@ -205,7 +209,6 @@ static int _wait_part_ready(char *part_name)
 		error("rm_free_partition_list(): %s\n",
 			bgl_err_str(rc));
 	}
-
 	return is_ready;
 			
 }
@@ -214,11 +217,11 @@ static int _wait_part_ready(char *part_name)
  * have long delays */
 static int _wait_part_owner(char *part_name, int user_id)
 {
+	int is_ready = 0;
 	int j, rc, num_parts;
 	rm_partition_t *part_ptr;
 	char *name;
 	struct passwd *pw_ent;
-	int is_ready = 0;
 	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
 	rm_partition_list_t *part_list;
 	
@@ -293,6 +296,6 @@ static int _wait_part_owner(char *part_name, int user_id)
 		error("rm_free_partition_list(): %s\n",
 			bgl_err_str(rc));
 	}
-
 	return is_ready;
 }
+#endif
