@@ -637,7 +637,7 @@ static void *_slurmctld_background(void *no_data)
 			purge_old_job();	/* remove defunct job recs */
 			unlock_slurmctld(job_write_lock);
 			if (schedule())
-				last_checkpoint_time = 0;  /* force save */
+				last_checkpoint_time = 0;  /* force state save */
 		}
 
 		if (difftime(now, last_checkpoint_time) >=
