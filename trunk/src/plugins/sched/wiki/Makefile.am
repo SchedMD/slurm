@@ -11,20 +11,32 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
 pkglib_LTLIBRARIES = sched_wiki.la
 
-sched_wiki_la_SOURCES =	../agent.cpp \
-			../courier.cpp \
-			../dstring.cpp \
-			../prefix_courier.cpp \
-			../receptionist.cpp \
-			wiki_canceljob.cpp \
-			wiki_command.cpp \
-			wiki_mailbag.cpp \
-			wiki_message.cpp \
-			wiki_parser.cpp \
-			wiki_request.cpp \
-			wiki_response.cpp \
-			wiki_startjob.cpp \
-			wiki_status.cpp \
+sched_wiki_la_SOURCES =	../agent.cpp		\
+			../agent.h		\
+			../comparator.h		\
+			../condition.h		\
+			../courier.cpp		\
+			../courier.h		\
+			../dstring.cpp		\
+			../dstring.h		\
+			../mailbag.h		\
+			../message.h		\
+			../prefix_courier.cpp	\
+			../prefix_courier.h	\
+			../receptionist.cpp	\
+			../receptionist.h	\
+			wiki_canceljob.cpp	\
+			wiki_command.cpp	\
+			wiki_mailbag.cpp	\
+			wiki_mailbag.h		\
+			wiki_message.cpp	\
+			wiki_message.h		\
+			wiki_parser.cpp		\
+			wiki_parser.h		\
+			wiki_request.cpp	\
+			wiki_response.cpp	\
+			wiki_startjob.cpp	\
+			wiki_status.cpp		\
 			wiki_wrapper.cpp
 
 sched_wiki_la_LDFLAGS = $(PLUGIN_FLAGS)
