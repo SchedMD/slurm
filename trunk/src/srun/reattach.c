@@ -48,6 +48,7 @@
 #include "src/srun/opt.h"
 #include "src/srun/io.h"
 #include "src/srun/msg.h"
+#include "src/srun/signals.h"
 
 
 /* number of active threads */
@@ -293,6 +294,8 @@ _attach_to_job(job_t *job)
 	req = xmalloc(job->nhosts * sizeof(*req));
 	msg = xmalloc(job->nhosts * sizeof(*msg));
 
+
+
 	debug("Going to attach to job %d.%d", job->jobid, job->stepid);
 
 	for (i = 0; i < job->nhosts; i++) {
@@ -418,28 +421,14 @@ p_reattach_task(void *arg)
 }
 
 
-/* 
-static sig_atomic_t interrupt = 0;
-
-static void
-_int_handler(int signum)
-{
-	interrupt = 1;
-}
-*/
-
-static void
-_term_handler(int sig)
-{
-	pthread_exit(0);
-}
-
 static void 
 _complete_job(job_t *job)
 {
-	if (job->stepid != NO_VAL)
-		slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
-	slurm_complete_job(job->jobid, 0, 0);
+	if (opt.join) {
+		if (job->stepid != NO_VAL)
+			slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
+		slurm_complete_job(job->jobid, 0, 0);
+	}
 }
 
 int reattach()
@@ -459,7 +448,8 @@ int reattach()
 
 	_get_attach_info(s);
 
-	opt.ifname = "none";
+	if (!opt.join)
+		opt.ifname = "none";
 
 	if ((opt.nodelist = s->nodes) == NULL) 
 		exit(1);
@@ -473,6 +463,9 @@ int reattach()
 	job->jobid  = s->jobid;
 	job->stepid = s->stepid;
 
+	if (opt.join)
+		sig_setup_sigmask();
+
 	if (msg_thr_create(job) < 0) {
 		error("Unable to create msg thread: %m");
 		exit(1);
@@ -483,13 +476,16 @@ int reattach()
 		exit(1);
 	}
 
-	_attach_to_job(job);
+	if (opt.join && sig_thr_create(job) < 0) {
+		error("Unable to create signals thread: %m");
+	}
 
-	xsignal(SIGTERM, &_term_handler);
+	_attach_to_job(job);
 
 	slurm_mutex_lock(&job->state_mutex);
 	while (   (job->state != SRUN_JOB_OVERDONE)
-	       && (job->state != SRUN_JOB_FAILED  ))
+	       && (job->state != SRUN_JOB_FAILED  )
+	       && (job->state != SRUN_JOB_DETACHED) )
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 	slurm_mutex_unlock(&job->state_mutex);
 
@@ -500,7 +496,7 @@ int reattach()
 	pthread_kill(job->jtid, SIGTERM);
 	pthread_join(job->ioid, NULL);
 
-	_complete_job(job);
+	/* _complete_job(job); */
 	
 	exit(0);
 }

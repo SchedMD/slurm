@@ -122,6 +122,9 @@ struct poptOption attachTable[] = {
 	{"attach", 'a', POPT_ARG_STRING, &opt.attach, OPT_ATTACH,
 	 "attach to running job with job id = id",
 	 "id"},
+	{"join", 'j', POPT_ARG_NONE, &opt.join, OPT_JOIN,
+	 "When used with --attach, allow forwarding of signals and stdin",
+	},
 	POPT_TABLEEND
 };
 

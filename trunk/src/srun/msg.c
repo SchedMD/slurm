@@ -314,8 +314,12 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 		}
 	}
 
+	update_running_tasks(job, resp->srun_node_id);
+
+	/* 
 	if (job->stepid == NO_VAL)
 		update_job_state(job, SRUN_JOB_OVERDONE);
+		*/
 
 }
 

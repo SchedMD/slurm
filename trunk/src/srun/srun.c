@@ -60,6 +60,7 @@
 #include "src/srun/io.h"
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
+#include "src/srun/signals.h"
 #include "src/srun/reattach.h"
 #include "src/srun/opt.h"
 
@@ -80,24 +81,6 @@ typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
 #define	TYPE_TEXT	1
 #define	TYPE_SCRIPT	2
 
-/* number of active threads */
-static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
-static int             active = 0;
-
-typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
-
-typedef struct thd {
-        pthread_t	thread;			/* thread ID */
-        pthread_attr_t	attr;			/* thread attributes */
-        state_t		state;      		/* thread state */
-} thd_t;
-
-typedef struct task_info {
-	slurm_msg_t *req_ptr;
-	job_t *job_ptr;
-	int host_inx;
-} task_info_t;
 
 /*
  * forward declaration of static funcs
@@ -105,18 +88,13 @@ typedef struct task_info {
 static allocation_resp	*_allocate_nodes(void);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
-static void		 _sigterm_handler(int signum);
 static void		 _sig_kill_alloc(int signum);
-static void *            _sig_thr(void *arg);
 static char 		*_build_script (char *pathname, int file_type);
 static char 		*_get_shell (void);
 static int 		 _is_file_text (char *fname, char** shell_ptr);
 static int		 _run_batch_job (void);
 static allocation_resp	*_existing_allocation(void);
 static void		 _run_job_script(uint32_t jobid);
-static void 		 _fwd_signal(job_t *job, int signo);
-static void 		 _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
-static void 		*_p_signal_task(void *args);
 static int               _set_batch_script_env(uint32_t jobid);
 
 #define die(msg, args...) do { \
@@ -132,11 +110,8 @@ static int               _set_batch_script_env(uint32_t jobid);
 int
 srun(int ac, char **av)
 {
-	sigset_t sigset;
 	allocation_resp *resp;
 	job_t *job;
-	pthread_attr_t attr;
-	struct sigaction action;
 	bool old_job = false;
 	struct rlimit rlim;
 
@@ -210,19 +185,9 @@ srun(int ac, char **av)
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
-	/* block most signals in all threads, except sigterm */
-	sigemptyset(&sigset);
-	sigaddset(&sigset, SIGINT);
-	sigaddset(&sigset, SIGQUIT);
-	sigaddset(&sigset, SIGTSTP);
-	sigaddset(&sigset, SIGSTOP);
-	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
-		die("sigprocmask: %m");
-	action.sa_handler = &_sigterm_handler;
-	action.sa_flags   = 0;
-	sigaction(SIGTERM, &action, NULL);
-
 	/* job structure should now be filled in */
+
+	sig_setup_sigmask();
 
 	if (msg_thr_create(job) < 0)
 		die("Unable to create msg thread");
@@ -230,18 +195,11 @@ srun(int ac, char **av)
 	if (io_thr_create(job) < 0) 
 		die("failed to initialize IO");
 
-	pthread_attr_init(&attr);
-	/* spawn signal thread */
-	if ((errno = pthread_create(&job->sigid, &attr, &_sig_thr, 
-	                            (void *) job)) != 0)
-		die("Unable to create signal thread. %m");
-	debug("Started signals thread (%d)", job->sigid);
+	if (sig_thr_create(job) < 0)
+		die("Unable to create signals thread: %m");
 
-
-	/* launch jobs */
-	if ((errno = pthread_create(&job->lid, &attr, &launch, (void *) job)))
-		die("Unable to create launch thread. %m");
-	debug("Started launch thread (%d)", job->lid);
+	if (launch_thr_create(job) < 0)
+		die("Unable to create launch thread: %m");
 
 	/* wait for job to terminate */
 	pthread_mutex_lock(&job->state_mutex);
@@ -255,7 +213,7 @@ srun(int ac, char **av)
 	/* job is now overdone, clean up  */
 	if (job->state == SRUN_JOB_FAILED) {
 		info("sending SIGINT to job");
-		_fwd_signal(job, SIGINT);
+		fwd_signal(job, SIGINT);
 	}
 
 	/* kill launch thread */
@@ -490,202 +448,6 @@ _print_job_information(allocation_resp *resp)
 	info("%s",job_details);
 }
 
-
-static void
-_sigterm_handler(int signum)
-{
-	if (signum == SIGTERM) {
-		pthread_exit(0);
-	}
-}
-
-static void
-_handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
-{
-
-	if ((time(NULL) - *last_intr) > 1) {
-		info("interrupt (one more within 1 sec to abort)");
-		report_task_status(job);
-		*last_intr = time(NULL);
-	} else  { /* second Ctrl-C in half as many seconds */
-
-		/* terminate job */
-		if (job->state != SRUN_JOB_OVERDONE) {
-
-			info("sending Ctrl-C to job");
-			*last_intr = time(NULL);
-			_fwd_signal(job, SIGINT);
-
-			if ((time(NULL) - *last_intr_sent) < 1)
-				job_force_termination(job);
-			else
-				*last_intr_sent = time(NULL);
-		} else {
-			job_force_termination(job);
-		}
-	}
-}
-
-static void
-_sig_thr_setup(sigset_t *set)
-{
-	int rc;
-
-	sigemptyset(set);
-	sigaddset(set, SIGINT);
-	sigaddset(set, SIGQUIT);
-	sigaddset(set, SIGTSTP);
-	sigaddset(set, SIGSTOP);
-	if ((rc = pthread_sigmask(SIG_BLOCK, set, NULL)) != 0)
-		error ("pthread_sigmask: %s", slurm_strerror(rc));
-}
-
-
-/* simple signal handling thread */
-static void *
-_sig_thr(void *arg)
-{
-	job_t *job = (job_t *)arg;
-	sigset_t set;
-	time_t last_intr      = 0;
-	time_t last_intr_sent = 0;
-	int signo;
-
-	while (1) {
-
-		_sig_thr_setup(&set);
-
-		sigwait(&set, &signo);
-		debug2("recvd signal %d", signo);
-		switch (signo) {
-		  case SIGINT:
-			  _handle_intr(job, &last_intr, &last_intr_sent);
-			  break;
-		  case SIGSTOP:
-		  case SIGTSTP:
-			debug3("Ignoring SIGSTOP");
-			break;
-		  case SIGQUIT:
-			info("Quit");
-			job_force_termination(job);
-			break;
-		  default:
-			break;
-		}
-	}
-
-	pthread_exit(0);
-}
-
-static void 
-_fwd_signal(job_t *job, int signo)
-{
-	int i;
-	slurm_msg_t *req_array_ptr;
-	kill_tasks_msg_t msg;
-
-	debug("forward signal %d to job", signo);
-
-	/* common to all tasks */
-	msg.job_id      = job->jobid;
-	msg.job_step_id = job->stepid;
-	msg.signal      = (uint32_t) signo;
-
-	req_array_ptr = (slurm_msg_t *) 
-			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
-	for (i = 0; i < job->nhosts; i++) {
-		if (job->host_state[i] != SRUN_HOST_REPLIED) {
-			debug2("%s has not yet replied\n", job->host[i]);
-			continue;
-		}
-
-		req_array_ptr[i].msg_type = REQUEST_KILL_TASKS;
-		req_array_ptr[i].data = &msg;
-		memcpy(&req_array_ptr[i].address, 
-		       &job->slurmd_addr[i], sizeof(slurm_addr));
-	}
-
-	_p_fwd_signal(req_array_ptr, job);
-
-	debug("All tasks have been signalled");
-	xfree(req_array_ptr);
-}
-
-/* _p_fwd_signal - parallel (multi-threaded) task signaller */
-static void _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
-{
-	int i;
-	task_info_t *task_info_ptr;
-	thd_t *thread_ptr;
-
-	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
-	for (i = 0; i < job->nhosts; i++) {
-		if (req_array_ptr[i].msg_type == 0)
-			continue;	/* inactive task */
-
-		pthread_mutex_lock(&active_mutex);
-		while (active >= opt.max_threads) {
-			pthread_cond_wait(&active_cond, &active_mutex);
-		}
-		active++;
-		pthread_mutex_unlock(&active_mutex);
-
-		task_info_ptr = (task_info_t *)xmalloc(sizeof(task_info_t));
-		task_info_ptr->req_ptr  = &req_array_ptr[i];
-		task_info_ptr->job_ptr  = job;
-		task_info_ptr->host_inx = i;
-
-		if (pthread_attr_init (&thread_ptr[i].attr))
-			error ("pthread_attr_init error %m");
-		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, 
-		                                 PTHREAD_CREATE_DETACHED))
-			error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&thread_ptr[i].attr, 
-		                           PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
-#endif
-		while ( pthread_create (&thread_ptr[i].thread, 
-		                        &thread_ptr[i].attr, 
-		                        _p_signal_task, 
-		                        (void *) task_info_ptr) ) {
-			error ("pthread_create error %m");
-			/* just run it under this thread */
-			_p_signal_task((void *) task_info_ptr);
-		}
-	}
-
-
-	pthread_mutex_lock(&active_mutex);
-	while (active > 0) {
-		pthread_cond_wait(&active_cond, &active_mutex);
-	}
-	pthread_mutex_unlock(&active_mutex);
-	xfree(thread_ptr);
-}
-
-/* _p_signal_task - parallelized signal of a specific task */
-static void * _p_signal_task(void *args)
-{
-	task_info_t *task_info_ptr = (task_info_t *)args;
-	slurm_msg_t *req_ptr = task_info_ptr->req_ptr;
-	job_t *job_ptr = task_info_ptr->job_ptr;
-	int host_inx = task_info_ptr->host_inx;
-	slurm_msg_t resp;
-
-	debug3("sending signal to host %s", job_ptr->host[host_inx]);
-	if (slurm_send_recv_node_msg(req_ptr, &resp) < 0)  /* Has timeout */
-		error("signal %s: %m", job_ptr->host[host_inx]);
-	else if (resp.msg_type == RESPONSE_SLURM_RC)
-		slurm_free_return_code_msg(resp.data);
-
-	pthread_mutex_lock(&active_mutex);
-	active--;
-	pthread_cond_signal(&active_cond);
-	pthread_mutex_unlock(&active_mutex);
-	xfree(args);
-	return NULL;
-}
 
 /* submit a batch job and return error code */
 static int

@@ -271,21 +271,27 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
 		debug("kill for nonexistent job %d.%d requested",
 				req->job_id, req->job_step_id);
-		rc = EEXIST;
+		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	} 
 
 	req_uid = slurm_auth_uid(msg->cred);
 	if ((req_uid != step->uid) && (req_uid != 0)) {
 	       debug("kill req from uid %ld for job %d.%d owned by uid %ld",
-		     req_uid, step->jobid, step->stepid, step->uid);	       
+		     req_uid, req->job_id, req->job_step_id, step->uid);       
 	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	       goto done;
 	}
 
+	verbose("Successful request to send signal %d to %d", 
+		req->signal, req->job_id, req->job_step_id);
+
+	if (killpg(step->sid, req->signal) < 0)
+		rc = errno;
 	shm_free_step(step);
 
-	rc = shm_signal_step(req->job_id, req->job_step_id, req->signal);
+
+	/* rc = shm_signal_step(req->job_id, req->job_step_id, req->signal); */
 
   done:
 	slurm_send_rc_msg(msg, rc);

@@ -458,6 +458,8 @@ _run_batch_job(slurmd_job_t *job)
 	pid_t  sid, pid;
 	struct passwd *spwd = getpwuid(getuid());
 
+	_block_most_signals();
+
 	if ((rc = io_spawn_handler(job)) < 0) {
 		return ESLURMD_IO_ERROR;
 	}
@@ -510,10 +512,10 @@ _run_batch_job(slurmd_job_t *job)
 	}
 
 	while ((pid = waitpid(0, &status, 0)) < 0 && (pid != t.pid)) {
-		if ((pid < 0) && (errno == EINTR)) {
+		if (errno == EINTR) {
 			_handle_attach_req(job);
 			continue;
-		} else if (pid < 0)
+		} else 
 			error("waitpid: %m");
 	}
 
@@ -541,8 +543,10 @@ _wait_for_all_tasks(slurmd_job_t *job)
 		int status;
 		pid_t pid = waitpid(0, &status, 0);
 		if ((pid < (pid_t) 0)) {
-			if (errno == EINTR)
+			if (errno == EINTR) {
 				_handle_attach_req(job);
+				continue;
+			}
 			error("waitpid: %m");
 			/* job_cleanup() */
 		}

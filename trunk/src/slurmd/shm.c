@@ -452,6 +452,7 @@ shm_get_step(uint32_t jobid, uint32_t stepid)
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) 
 		s = _shm_copy_step(&slurmd_shm->step[i]);
 	_shm_unlock();
+	xassert(!s || ((s->stepid == stepid) && (s->jobid == jobid)));
 	return s;
 }
 
