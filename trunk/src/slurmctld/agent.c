@@ -362,8 +362,9 @@ static void *_wdog(void *args)
 				if (thread_ptr[i].end_time <= now) {
 					debug3("agent thread %lu timed out\n", 
 					       (unsigned long) thread_ptr[i].thread);
-					pthread_kill(thread_ptr[i].thread,
-						     SIGALRM);
+					if (pthread_kill(thread_ptr[i].thread,
+						     SIGALRM) == ESRCH)
+						thread_ptr[i].state = DSH_FAILED;
 				}
 				break;
 			case DSH_NEW:
@@ -612,12 +613,12 @@ static void *_thread_per_node_rpc(void *args)
 }
 
 /*
- * SIGALRM handler.  This is just a stub because we are really interested
- * in interrupting connect() in k4cmd/rcmd or select() in rsh() below and
- * causing them to return EINTR.
+ * SIGALRM handler.  We are really interested in interrupting hung communictions 
+ * and causing them to return EINTR. Multiple interupts might be required.
  */
 static void _alarm_handler(int dummy)
 {
+	xsignal(SIGALRM, _alarm_handler);
 }
 
 
