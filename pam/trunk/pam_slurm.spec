@@ -43,4 +43,4 @@ rm -rf "$RPM_BUILD_ROOT"
 %doc COPYING
 %doc DISCLAIMER
 %doc README
-/lib/security/pam_slurm.so
+%{_lib}/security/pam_slurm.so
