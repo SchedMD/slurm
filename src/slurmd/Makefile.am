@@ -32,7 +32,7 @@ slurmd_SOURCES = 	        	\
 	proctrack.c proctrack.h		\
 	setproctitle.c setproctitle.h
 
-slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(FEDERATION_LDFLAGS)
 
 force:
 $(slurmd_LDADD) : force
