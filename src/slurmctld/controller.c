@@ -238,7 +238,7 @@ int main(int argc, char *argv[])
 			_run_backup();
 		else if (strcmp(node_name, slurmctld_conf.control_machine))
 			fatal
-			    ("this machine (%s) is not the primary (%s) or backup (%s) controller",
+			    ("this host (%s) not valid controller (%s or %s)",
 			     node_name, slurmctld_conf.control_machine,
 			     slurmctld_conf.backup_controller);
 		else		/* primary tells secondary to shutdown */
