@@ -1,3 +1,149 @@
+dnl##***************************************************************************
+dnl## $Id$
+dnl##***************************************************************************
+dnl#  AUTHOR:
+dnl#    Chris Dunlap <cdunlap@llnl.gov>
+dnl#
+dnl#  SYNOPSIS:
+dnl#    AC_GPL_LICENSED
+dnl#
+dnl#  DESCRIPTION:
+dnl#  Acknowledge being licensed under terms of the GNU General Public License.
+dnl*****************************************************************************
+
+AC_DEFUN([AC_GPL_LICENSED],
+[
+  AC_DEFINE([GPL_LICENSED], 1,
+    [Define to 1 if licensed under terms of the GNU General Public License.]
+  )
+])
+
+
+dnl
+dnl Check for program_invocation_short_name
+dnl
+AC_DEFUN([AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME],
+[
+  AC_MSG_CHECKING([for program_invocation_short_name])
+
+  AC_TRY_LINK([extern char *program_invocation_short_name;],
+    [char *p; p = program_invocation_short_name; printf("%s\n", p);],
+    [got_program_invocation_short_name=yes],
+    []
+  )
+
+  AC_MSG_RESULT(${got_program_invocation_short_name=no})
+
+  if test "x$got_program_invocation_short_name" = "xyes"; then
+    AC_DEFINE(HAVE_PROGRAM_INVOCATION_SHORT_NAME, 1,
+              [Define if libc sets program_invocation_short_name]
+             )
+  fi
+])dnl AC_PROG_INVOCATION_NAME
+
+dnl
+dnl Check for Bigendian arch and set SLURM_BIGENDIAN acc'dngly
+dnl
+AC_DEFUN([AC_SLURM_BIGENDIAN],
+[
+  AC_C_BIGENDIAN
+  if test "x$ac_cv_c_bigendian" = "xyes"; then
+    AC_DEFINE(SLURM_BIGENDIAN,1,
+             [Define if your architecture's byteorder is big endian.])
+  fi
+])dnl AC_SLURM_BIGENDIAN
+
+dnl
+dnl AC_SLURM_SEMAPHORE
+dnl
+AC_DEFUN([AC_SLURM_SEMAPHORE],
+[
+  SEMAPHORE_SOURCES=""
+  SEMAPHORE_LIBS=""
+  AC_CHECK_LIB(
+    posix4,
+    sem_open,
+    [SEMAPHORE_LIBS="-lposix4";
+     AC_DEFINE(HAVE_POSIX_SEMS, 1, [Define if you have Posix semaphores.])],
+    [SEMAPHORE_SOURCES="semaphore.c"]
+  )
+  AC_SUBST(SEMAPHORE_SOURCES)
+  AC_SUBST(SEMAPHORE_LIBS)
+])dnl AC_SLURM_SEMAPHORE
+
+dnl
+dnl AC_SLURM_USE_INCLUDED_POPT
+dnl
+AC_DEFUN([AC_SLURM_USE_INCLUDED_POPT],
+[
+  AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
+  AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
+  if test $got_popt = no; then
+      AC_MSG_RESULT([using included popt package...])
+      POPT_LIBS="\$(top_builddir)/src/popt/libpopt.a"
+      POPT_INCLUDES="-I\$(top_srcdir)/src/popt"
+  else
+      POPT_LIBS="-lpopt"
+  fi
+  AC_SUBST(POPT_LIBS)
+  AC_SUBST(POPT_INCLUDES)
+
+])
+
+dnl
+dnl
+dnl
+dnl Perform SLURM Project version setup
+AC_DEFUN([AC_SLURM_VERSION],
+[
+#
+# Determine project/version from META file.
+#  These are substituted into the Makefile and config.h.
+#
+PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\w*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(PROJECT, "$PROJECT", [Define the project's name.])
+AC_SUBST(PROJECT)
+
+# Automake desires "PACKAGE" variable instead of PROJECT
+PACKAGE=$PROJECT
+
+# rpm make target needs Version in META, not major and minor version nubmers
+VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\w*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
+AC_SUBST(VERSION)
+
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", 
+                   [Define the project's major version.])
+AC_SUBST(SLURM_MAJOR)
+
+SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\w*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR",
+                   [Define the project's minor version.])
+AC_SUBST(SLURM_MINOR)
+
+SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\w*).*/\1/i' $srcdir/META` "
+AC_DEFINE_UNQUOTED(SLURM_MICRO, "$SLURM_MICRO",
+                   [Define the project's minor version.])
+AC_SUBST(SLURM_MINOR)
+
+
+RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\w*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
+AC_SUBST(RELEASE)
+
+SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
+
+# Define the version string
+SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO-$SLURM_RELEASE"
+
+# If this is a prerelease or CVS snapshot, append the release
+test $SLURM_RELEASE != "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
+
+AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION",
+                   [Define the project's version string.])
+AC_SUBST(SLURM_VERSION)
+]) dnl AC_SLURM_VERSION
+ 
 dnl @synopsis ACX_PTHREAD([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
 dnl
 dnl This macro figures out how to build C programs using POSIX
@@ -224,3 +370,125 @@ else
 fi
 AC_LANG_RESTORE
 ])dnl ACX_PTHREAD
+
+
+dnl
+dnl AC_SLURM_WITH_SSL([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
+dnl
+AC_DEFUN([AC_SLURM_WITH_SSL], [
+
+ac_slurm_with_ssl=no
+ssl_default_dirs="/usr/local/openssl /usr/lib/openssl    \
+                  /usr/local/ssl /usr/lib/ssl /usr/local \
+		  /usr/pkg /opt /opt/openssl"
+
+AC_SUBST(SSL_LDFLAGS)
+AC_SUBST(SSL_LIBS)
+AC_SUBST(SSL_CPPFLAGS)
+
+SSL_LIBS="-lcrypto"
+
+AC_ARG_WITH(ssl-dir,
+	[  --with-ssl=[PATH]     Specify path to OpenSSL installation ],
+	[ tryssldir=$withval ]
+)
+
+saved_LIBS="$LIBS"
+saved_LDFLAGS="$LDFLAGS"
+saved_CPPFLAGS="$CPPFLAGS"
+if test "x$prefix" != "xNONE" ; then
+	tryssldir="$tryssldir $prefix"
+fi
+
+AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
+	for ssldir in $tryssldir "" $ssl_default_dirs; do 
+		CPPFLAGS="$saved_CPPFLAGS"
+		LDFLAGS="$saved_LDFLAGS"
+		LIBS="$saved_LIBS $SSL_LIBS"
+		
+		# Skip directories if they don't exist
+		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
+			continue;
+		fi
+		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+			# Try to use $ssldir/lib if it exists, otherwise 
+			# $ssldir
+			if test -d "$ssldir/lib" ; then
+				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
+				if test ! -z "$need_dash_r" ; then
+					LDFLAGS="-R$ssldir/lib $LDFLAGS"
+				fi
+			else
+				LDFLAGS="-L$ssldir $saved_LDFLAGS"
+				if test ! -z "$need_dash_r" ; then
+					LDFLAGS="-R$ssldir $LDFLAGS"
+				fi
+			fi
+			# Try to use $ssldir/include if it exists, otherwise 
+			# $ssldir
+			if test -d "$ssldir/include" ; then
+				CPPFLAGS="-I$ssldir/include $saved_CPPFLAGS"
+			else
+				CPPFLAGS="-I$ssldir $saved_CPPFLAGS"
+			fi
+		fi
+
+		# Basic test to check for compatible version and correct linking
+		AC_TRY_RUN(
+			[
+#include <string.h>
+#include <openssl/rand.h>
+int main(void) 
+{
+	char a[2048];
+	memset(a, 0, sizeof(a));
+	RAND_add(a, sizeof(a), sizeof(a));
+	return(RAND_status() <= 0);
+}
+			],
+			[
+				found_crypto=1
+				break;
+			], []
+		)
+
+		if test ! -z "$found_crypto" ; then
+			break;
+		fi
+	done
+
+	if test -z "$found_crypto" ; then
+		AC_MSG_ERROR([Could not find working OpenSSL library, please install or check config.log])	
+	fi
+	if test -z "$ssldir" ; then
+		ssldir="(system)"
+	fi
+
+	ac_cv_openssldir=$ssldir
+])
+
+if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+	dnl Need to recover ssldir - test above runs in subshell
+	ssldir=$ac_cv_openssldir
+	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+		# Try to use $ssldir/lib if it exists, otherwise 
+		# $ssldir
+		if test -d "$ssldir/lib" ; then
+			SSL_LDFLAGS="-L$ssldir/lib"
+		else
+			SSL_LDFLAGS="-L$ssldir"
+		fi
+		# Try to use $ssldir/include if it exists, otherwise 
+		# $ssldir
+		if test -d "$ssldir/include" ; then
+			SSL_CPPFLAGS="-I$ssldir/include"
+		else
+			SSL_CPPFLAGS="-I$ssldir"
+		fi
+	fi
+fi
+LIBS="$saved_LIBS"
+CPPFLAGS="$saved_CPPFLAGS"
+LDFLAGS="$saved_LDFLAGS"
+
+])dnl AC_SLURM_WITH_SSL

@@ -396,9 +396,10 @@ static void _do_poll_timeout (job_t *job)
 
 
 	for (i = 0; ((i < opt.nprocs) && (time_first_done == 0)); i++) {
-		if ((job->task_state[i] == SRUN_TASK_FAILED) || 
-		    (job->task_state[i] == SRUN_TASK_EXITED))
+		if (job->task_state[i] >= SRUN_TASK_FAILED) {
 			time_first_done = time(NULL);
+			break;
+		}
 	}
 
 	for (i = 0; i < opt.nprocs; i++) {
@@ -416,9 +417,7 @@ static void _do_poll_timeout (job_t *job)
 	if (job->state == SRUN_JOB_FAILED) {
 		debug3("job failed, exiting IO thread");
 		pthread_exit(0);
-	} else if (time_first_done && opt.max_wait && 
-		 (age >= opt.max_wait)
-		) {
+	} else if (time_first_done && opt.max_wait && (age >= opt.max_wait)) {
 		error("First task terminated %d seconds ago", age);
 		error("Terminating remaining tasks now");
 		report_task_status(job);

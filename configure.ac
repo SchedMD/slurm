@@ -9,53 +9,12 @@ AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR(auxdir)
 AC_CANONICAL_TARGET([])
 
+AC_GPL_LICENSED
+
 #
 # Determine project/version from META file.
-# These are substituted into the Makefile and config.h.
-#
-PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(PROJECT, "$PROJECT", [Define the project's name.])
-AC_SUBST(PROJECT)
-
-# Automake desires "PACKAGE" variable instead of PROJECT
-PACKAGE=$PROJECT
-
-# rpm make target needs Version in META, not major and minor version nubmers
-VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
-AC_SUBST(VERSION)
-
-SLURM_MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", 
-                   [Define the project's major version.])
-AC_SUBST(SLURM_MAJOR)
-
-SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", 
-                   [Define the project's minor version.])
-AC_SUBST(SLURM_MINOR)
-
-SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_MICRO, "$SLURM_MICRO", 
-                   [Define the project's minor version.])
-AC_SUBST(SLURM_MINOR)
-
-
-RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
-AC_SUBST(RELEASE)
-
-SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
-
-# Define the version string
-SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO-$SLURM_RELEASE"
-
-# If this is a prerelease or CVS snapshot, append the release
-test $SLURM_RELEASE != "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
-
-AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION", 
-		   [Define the project's version string.])
-AC_SUBST(SLURM_VERSION)
+# Sets PACKAGE, VERSION, SLURM_VERSION
+AC_SLURM_VERSION
 
 
 dnl Initialize Automake
@@ -91,27 +50,12 @@ dnl
 
 dnl check to see if glibc's program_invocation_short_name is available:
 dnl
-AC_MSG_CHECKING([for program_invocation_short_name])
-AC_TRY_LINK([extern char *program_invocation_short_name;], 
-  [char *p; p = program_invocation_short_name; printf("%s\n", p);],
-  [got_program_invocation_short_name=yes],
-  []
-)
-AC_MSG_RESULT(${got_program_invocation_short_name=no})
-if test "x$got_program_invocation_short_name" = "xyes"; then
-  AC_DEFINE(HAVE_PROGRAM_INVOCATION_SHORT_NAME, 1, 
-            [Define if libc sets program_invocation_short_name]
-	   )
-fi
+AC_SLURM_PROGRAM_INVOCATION_SHORT_NAME
 
 
 dnl Checks for types.
 dnl
-AC_C_BIGENDIAN
-if test "x$ac_cv_c_bigendian" = "xyes"; then
-  AC_DEFINE(SLURM_BIGENDIAN,1,
-           [Define if your architecture's byteorder is big endian.])
-fi
+AC_SLURM_BIGENDIAN
   
 
 dnl Checks for compiler characteristics.
@@ -127,10 +71,6 @@ AC_CHECK_FUNCS([strerror, mtrace, strsignal])
 
 AC_CHECK_DECLS([strsignal, sys_siglist])
 
-
-dnl AC_SEARCH_LIBS([pthread_create], [pthread c_r cr], [], 
-dnl               [AC_MSG_ERROR([Error: Cannot find the pthread library])])
-
 ACX_PTHREAD([], AC_MSG_ERROR([Error: Cannot figure out how to use pthreads!]))
 
 # Always define WITH_PTHREADS if we make it this far
@@ -139,29 +79,8 @@ LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
-SEMAPHORE_SOURCES=""
-SEMAPHORE_LIBS=""
-AC_CHECK_LIB(
-  posix4, 
-  sem_open, 
-  [SEMAPHORE_LIBS="-lposix4";
-   AC_DEFINE(HAVE_POSIX_SEMS, 1, [Define if you have Posix semaphores.])],
-  [SEMAPHORE_SOURCES="semaphore.c"]
-)
-AC_SUBST(SEMAPHORE_SOURCES)
-AC_SUBST(SEMAPHORE_LIBS)
-
-AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
-AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
-if test $got_popt = no; then
-    AC_MSG_RESULT([using included popt package...])
-    POPT_LIBS="\$(top_builddir)/src/popt/libpopt.a"
-    POPT_INCLUDES="-I\$(top_srcdir)/src/popt"
-else
-    POPT_LIBS="-lpopt"
-fi
-AC_SUBST(POPT_LIBS)
-AC_SUBST(POPT_INCLUDES)
+AC_SLURM_SEMAPHORE
+AC_SLURM_USE_INCLUDED_POPT
 
 dnl checks for system services.
 dnl
@@ -305,143 +224,32 @@ AC_SUBST(READLINE_LIBS)
 
 dnl OpenSSL location (taken from openssh configure.ac)
 dnl
-AC_SUBST(SSL_LDFLAGS)
-AC_SUBST(SSL_LIBS)
-AC_SUBST(SSL_CPPFLAGS)
-SSL_LIBS="-lcrypto"
-AC_ARG_WITH(ssl-dir,
-	[  --with-ssl-dir=PATH     Specify path to OpenSSL installation ],
-	[
-		if test "x$withval" != "xno" ; then
-			tryssldir=$withval
-		fi
-	]
-)
+AC_SLURM_WITH_SSL
 
-saved_LIBS="$LIBS"
-saved_LDFLAGS="$LDFLAGS"
-saved_CPPFLAGS="$CPPFLAGS"
-if test "x$prefix" != "xNONE" ; then
-	tryssldir="$tryssldir $prefix"
-fi
-AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
-	for ssldir in $tryssldir "" /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl ; do
-		CPPFLAGS="$saved_CPPFLAGS"
-		LDFLAGS="$saved_LDFLAGS"
-		LIBS="$saved_LIBS $SSL_LIBS"
-		
-		# Skip directories if they don't exist
-		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
-			continue;
-		fi
-		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
-			# Try to use $ssldir/lib if it exists, otherwise 
-			# $ssldir
-			if test -d "$ssldir/lib" ; then
-				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
-				if test ! -z "$need_dash_r" ; then
-					LDFLAGS="-R$ssldir/lib $LDFLAGS"
-				fi
-			else
-				LDFLAGS="-L$ssldir $saved_LDFLAGS"
-				if test ! -z "$need_dash_r" ; then
-					LDFLAGS="-R$ssldir $LDFLAGS"
-				fi
-			fi
-			# Try to use $ssldir/include if it exists, otherwise 
-			# $ssldir
-			if test -d "$ssldir/include" ; then
-				CPPFLAGS="-I$ssldir/include $saved_CPPFLAGS"
-			else
-				CPPFLAGS="-I$ssldir $saved_CPPFLAGS"
-			fi
-		fi
 
-		# Basic test to check for compatible version and correct linking
-		AC_TRY_RUN(
-			[
-#include <string.h>
-#include <openssl/rand.h>
-int main(void) 
-{
-	char a[2048];
-	memset(a, 0, sizeof(a));
-	RAND_add(a, sizeof(a), sizeof(a));
-	return(RAND_status() <= 0);
-}
-			],
-			[
-				found_crypto=1
-				break;
-			], []
-		)
-
-		if test ! -z "$found_crypto" ; then
-			break;
-		fi
-	done
-
-	if test -z "$found_crypto" ; then
-		AC_MSG_ERROR([Could not find working OpenSSL library, please install or check config.log])	
-	fi
-	if test -z "$ssldir" ; then
-		ssldir="(system)"
-	fi
-
-	ac_cv_openssldir=$ssldir
-])
-
-if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
-	dnl Need to recover ssldir - test above runs in subshell
-	ssldir=$ac_cv_openssldir
-	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
-		# Try to use $ssldir/lib if it exists, otherwise 
-		# $ssldir
-		if test -d "$ssldir/lib" ; then
-			SSL_LDFLAGS="-L$ssldir/lib"
-		else
-			SSL_LDFLAGS="-L$ssldir"
-		fi
-		# Try to use $ssldir/include if it exists, otherwise 
-		# $ssldir
-		if test -d "$ssldir/include" ; then
-			SSL_CPPFLAGS="-I$ssldir/include"
-		else
-			SSL_CPPFLAGS="-I$ssldir"
-		fi
-	fi
-fi
-LIBS="$saved_LIBS"
-CPPFLAGS="$saved_CPPFLAGS"
-LDFLAGS="$saved_LDFLAGS"
-
-dnl check for whether to include authd support
 dnl
-AC_MSG_CHECKING([Whether to include authd support])
-authd=no
-AC_ARG_WITH(authd,
-  AC_HELP_STRING([--with-authd],[compile with authd support]),
-  [ authd=yes
-    AUTHD_CFLAGS=""
-    AUTHD_LIBS="-lauth -le"
-    AC_DEFINE(HAVE_AUTHD, 1, [Define if you are running authd])
-  ]
-)
-AC_MSG_RESULT(${authd=no})
-if test x$authd = xyes; then
-   savedLIBS="$LIBS"
-   savedCFLAGS="$CFLAGS"
-   LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
-   CFLAGS="$SSL_CPPFLAGS $CFLAGS $AUTHD_CFLAGS"
-   AC_CHECK_LIB(auth, auth_init_credentials, [], 
-                AC_MSG_ERROR([Cannot find libauth!]))
-   AC_DEFINE(HAVE_AUTHD, 1, [Define if you have Brent Chun's authd])
-   LIBS="$savedLIBS"
-   CFLAGS="$savedCFLAGS"
-   AC_SUBST(AUTHD_LIBS)
-   AC_SUBST(AUTHD_CFLAGS)
-fi
-AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
+dnl Check for compilation of SLURM auth modules:
+dnl
+MUNGE_LIBS="-lmunge"
+savedLIBS="$LIBS"
+LIBS="$MUNGE_LIBS $LIBS"
+AC_CHECK_LIB(munge, munge_encode, [have_munge=yes], [have_munge=no])
+LIBS="$savedLIBS"
+AC_SUBST(MUNGE_LIBS)
+AM_CONDITIONAL(WITH_MUNGE, test "x$have_munge" = "xyes")
+
+AUTHD_CFLAGS=""
+AUTHD_LIBS="-lauth"
+savedLIBS="$LIBS"
+savedCFLAGS="$CFLAGS"
+LIBS="$SSL_LIBS $AUTHD_LIBS $LIBS"
+CFLAGS="$SSL_CPPFLAGS $CFLAGS $AUTHD_CFLAGS"
+AC_CHECK_LIB(auth, auth_init_credentials, [have_authd=yes], [have_authd=no])
+LIBS="$savedLIBS"
+CFLAGS="$savedCFLAGS"
+AC_SUBST(AUTHD_LIBS)
+AC_SUBST(AUTHD_CFLAGS)
+AM_CONDITIONAL(WITH_AUTHD, test "x$have_authd" = "xyes")
 
 
 dnl check for whether to include TotalView support
