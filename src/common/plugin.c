@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <dlfcn.h>        /* don't know if there's an autoconf for this. */
+#include <string.h>
 
 #include "src/common/plugin.h"
 #include <slurm/slurm_errno.h>
