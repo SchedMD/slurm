@@ -45,8 +45,10 @@ all: $(REPORT).ps
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
 	(TEXINPUTS=.:../common::; export TEXINPUTS; \
-	 BIBINPUTS=$$TEXINPUTS  ; export BIBINPUTS; \
-	 latex $(REPORT); bibtex $(REPORT); latex $(REPORT) \
+	 BIBINPUTS=.:../common::; export BIBINPUTS; \
+	 latex $(REPORT); \
+	 bibtex $(REPORT); \
+	 latex $(REPORT); \
 	 latex $(REPORT) )
 
 view: $(REPORT).ps
