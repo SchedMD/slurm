@@ -49,6 +49,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/daemonize.h"
+#include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -113,6 +114,8 @@ static int          _background_process_msg(slurm_msg_t * msg);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
+static void         _init_pidfile(void);
+static void         _kill_old_slurmctld(void);
 static int          _make_step_cred(struct step_record *step_rec, 
 				    slurm_cred_t *slurm_cred);
 static void         _parse_commandline(int argc, char *argv[], 
@@ -148,7 +151,6 @@ inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 static void *       _slurmctld_background(void *no_data);
 static void         _slurmctld_req(slurm_msg_t * msg);
 static void *       _slurmctld_rpc_mgr(void *no_data);
-static void         _init_pidfile(void);
 inline static int   _slurmctld_shutdown(void);
 static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_cred_key(void);
@@ -174,7 +176,6 @@ int main(int argc, char *argv[])
 	thread_id_main = pthread_self();
 
 	slurmctld_pid = getpid();
-	slurmctld_conf.slurm_conf = xstrdup(SLURM_CONFIG_FILE);
 	_parse_commandline(argc, argv, &slurmctld_conf);
 	init_locks();
 
@@ -187,22 +188,29 @@ int main(int argc, char *argv[])
 		setrlimit(RLIMIT_CORE, &rlim);
 	}
 
-	if ((error_code = read_slurm_conf(recover))) {
-		error("read_slurm_conf error %d reading %s",
+	/* Get SlurmctldPidFile  for _kill_old_slurmctld */
+	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf))) {
+		error("read_slurm_conf_ctl error %d reading %s",
 		      error_code, SLURM_CONFIG_FILE);
 		exit(1);
 	}
-
-	if (switch_state_begin(recover)) {
-		error("switch_state_begin: %m");
+	_kill_old_slurmctld();
+	/* Now recover the remaining state information */
+	if ((error_code = read_slurm_conf(recover))) {
+		error("read_slurm_conf reading %s: %m",
+		      error_code, SLURM_CONFIG_FILE);
 		exit(1);
 	}
-
 	/* 
 	 * Need to create pidfile here in case we setuid() below
 	 * (init_pidfile() exits if it can't initialize pid file)
 	 */
 	_init_pidfile();
+
+	if (switch_state_begin(recover)) {
+		error("switch_state_begin: %m");
+		exit(1);
+	}
 
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
@@ -310,6 +318,10 @@ int main(int argc, char *argv[])
 		if (resume_backup == false)
 			break;
 	}
+
+	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
+		error("Unable to remove pidfile '%s': %m",
+		      slurmctld_conf.slurmctld_pidfile);
 
 #if	MEM_LEAK_TEST
 	/* This should purge all allocated memory,   *\
@@ -2215,6 +2227,9 @@ static void _run_backup(void)
 	if (shutdown_time != 0) {
 		pthread_join(thread_id_sig, NULL);
 		info("BackupController terminating");
+		if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
+			error("Unable to remove pidfile '%s': %m",
+		     	 slurmctld_conf.slurmctld_pidfile);
 		log_fini();
 		exit(0);
 	}
@@ -2479,18 +2494,36 @@ void update_logging(void)
 		  slurmctld_conf.slurmctld_logfile);
 }
 
-static void 
+/* Kill the currently running slurmctld */
+static void
+_kill_old_slurmctld(void)
+{
+	int fd;
+	pid_t oldpid = read_pidfile(slurmctld_conf.slurmctld_pidfile, &fd);
+	if (oldpid != (pid_t) 0) {
+		info ("killing old slurmctld[%ld]", (long) oldpid);
+		kill(oldpid, SIGTERM);
+
+		/* 
+		 * Wait for previous daemon to terminate
+		 */
+		if (fd_get_readw_lock(fd) < 0) 
+			fatal ("unable to wait for readw lock: %m");
+		(void) close(fd); /* Ignore errors */ 
+	}
+}
+
+static void
 _init_pidfile(void)
 {
-	int   fd      = -1;
+	int   fd;
 	uid_t uid     = slurmctld_conf.slurm_user_id;
 
-	if ((fd = create_pidfile(slurmctld_conf.slurmctld_pidfile)) < 0) 
+	if ((fd = create_pidfile(slurmctld_conf.slurmctld_pidfile)) < 0)
 		return;
 
 	if (uid && (fchown(fd, uid, -1) < 0))
 		error ("Unable to reset owner of pidfile: %m");
-
 	/*
 	 * Close fd here, otherwise we'll deadlock since create_pidfile()
 	 * flocks the pidfile.
