@@ -322,8 +322,7 @@ _allocate_nodes(void)
 
 	job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
-	if (opt.nodes > -1)
-		job.num_nodes = opt.nodes;
+	job.num_nodes = opt.nodes;
 
 	job.user_id        = opt.uid;
 
@@ -697,8 +696,7 @@ _run_batch_job(void)
 
 	job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
-	if (opt.nodes > -1)
-		job.num_nodes = opt.nodes;
+	job.num_nodes = opt.nodes;
 
 	job.user_id        = opt.uid;
 
@@ -927,6 +925,12 @@ _set_batch_script_env(uint32_t jobid)
 
 	if (setenvf("SLURM_DISTRIBUTION=%s", dist)) {
 		error("Unable to set SLURM_DISTRIBUTION environment variable");
+		return -1;
+	}
+
+	if ((opt.overcommit) &&
+	    (setenvf("SLURM_OVERCOMMIT=1"))) {
+		error("Unable to set SLURM_OVERCOMMIT environment variable");
 		return -1;
 	}
 
