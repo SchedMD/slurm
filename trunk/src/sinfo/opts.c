@@ -44,6 +44,7 @@
 static List  _build_state_list( char* str );
 static List  _build_all_states_list( void );
 static char *_get_prefix(char *token);
+static void  _help( void );
 static int   _parse_format( char* );
 static int   _parse_state(char *str, uint16_t *states);
 static void  _parse_token( char *token, char *field, int *field_size, 
@@ -63,8 +64,6 @@ extern void parse_command_line(int argc, char *argv[])
 	static struct option long_options[] = {
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
-		{"help",      no_argument,       0, 'H'},
-		{"usage",     no_argument,       0, 'H'},
 		{"iterate",   required_argument, 0, 'i'},
 		{"long",      no_argument,       0, 'l'},
 		{"nodes",     required_argument, 0, 'n'},
@@ -75,14 +74,15 @@ extern void parse_command_line(int argc, char *argv[])
 		{"sort",      required_argument, 0, 'S'},
 		{"states",    required_argument, 0, 't'},
 		{"verbose",   no_argument,       0, 'v'},
-		{"version",   no_argument,       0, 'V'}
+		{"version",   no_argument,       0, 'V'},
+		{"help",      no_argument,       0, '1'},
+		{"usage",     no_argument,       0, '2'}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "ehHi:ln:No:p:sS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "ehi:ln:No:p:sS:t:vV12",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
-				_usage();
 				exit(1);
 				break;
 			case (int)'e':
@@ -90,10 +90,6 @@ extern void parse_command_line(int argc, char *argv[])
 				break;
 			case (int)'h':
 				params.no_header = true;
-				break;
-			case (int) 'H':
-				_usage();
-				exit(0);
 				break;
 			case (int) 'i':
 				params.iterate= atoi(optarg);
@@ -135,6 +131,12 @@ extern void parse_command_line(int argc, char *argv[])
 				break;
 			case (int) 'V':
 				_print_version();
+				exit(0);
+			case (int) '1':
+				_help();
+				exit(0);
+			case (int) '2':
+				_usage();
 				exit(0);
 		}
 	}
@@ -514,6 +516,12 @@ static void _print_version(void)
 
 static void _usage( void )
 {
+	printf("Usage sinfo [-i seconds] [-t node_state] [-p PARTITION] [-n NODES]\n");
+	printf("            [-S fields] [-o format] [--usage] [-elNsv]\n");
+}
+
+static void _help( void )
+{
 	printf("Usage: sinfo [options]\n");
 	printf("  -e, --exact                   group nodes only on exact match of\n");
 	printf("                                configuration\n");
@@ -530,5 +538,6 @@ static void _usage( void )
 	printf("  -v, --verbose                 verbosity level\n");
 	printf("  -V, --version                 output version information and exit\n");
 	printf("\nHelp options:\n");
-	printf("  -H, --help, --usage           show this help message\n");
+	printf("  --help                        show this help message\n");
+	printf("  --usage                       display brief usage message\n");
 }
