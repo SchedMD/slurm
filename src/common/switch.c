@@ -430,7 +430,7 @@ extern int switch_get_errno(void)
 extern char *switch_strerror(int errnum)
 {
 	if ( switch_init() < 0 )
-		return SLURM_ERROR;
+		return NULL;
 
 	return (*(g_context->ops.switch_strerror))( errnum );
 }
