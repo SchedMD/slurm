@@ -1249,7 +1249,6 @@ void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer )
 	packstr (build_ptr->prioritize, buffer);
 	packstr (build_ptr->prolog, buffer);
 	pack16 (build_ptr->ret2service, buffer);
-error("logfile=%s",build_ptr->slurmctld_logfile);
 	packstr (build_ptr->slurmctld_logfile, buffer);
 	pack16 (build_ptr->slurmctld_timeout, buffer);
 	packstr (build_ptr->slurmd_logfile, buffer);
@@ -1288,7 +1287,6 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, Buf bu
 	safe_unpackstr_xmalloc (&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16 (&build_ptr->ret2service, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurmctld_logfile, &uint16_tmp, buffer);
-error("logfile=%s",build_ptr->slurmctld_logfile);
 	safe_unpack16 (&build_ptr->slurmctld_timeout, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurmd_logfile, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurmd_spooldir, &uint16_tmp, buffer);

@@ -1861,7 +1861,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->prioritize        	= NULL ;
 	conf_ptr->prolog            	= NULL ;
 	conf_ptr->ret2service           = 0 ;
-	conf_ptr->slurmctld_logfile   	= xstrdup ("test") ; /* FIXME to NULL */
+	conf_ptr->slurmctld_logfile   	= NULL ;
 	conf_ptr->slurmctld_timeout   	= 300 ;
 	conf_ptr->slurmd_logfile   	= NULL ;
 	conf_ptr->slurmd_spooldir   	= NULL ;
