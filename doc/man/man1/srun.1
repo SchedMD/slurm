@@ -73,7 +73,7 @@ time limit. When the time limit is reached, the job's processes are sent
 SIGTERM followed by SIGKILL. The interval between signals is specified by 
 the SLURM configuration parameter \fBKillWait\fR.
 .TP
-\fB\-\-cddir\fR=\fIpath\fR
+\fB\-\-chdir\fR=\fIpath\fR
 have the remote processes do a chdir to \fIpath\fR before beginning
 execution. The default is to chdir to the current working directory
 of the \fBsrun\fR process.
@@ -300,7 +300,7 @@ will terminate if resources are not immediately available.
 When initiating remote processes
 .B srun
 will propagate the current working directory, unless
-\fB\-\-cddir\fR=\fIpath\fR is specified, in which case \fIpath\fR will
+\fB\-\-chdir\fR=\fIpath\fR is specified, in which case \fIpath\fR will
 become the working directory for the remote processes.
 .PP
 The \fB-n\fB, \fB-c\fR, and \fB-N\fR options control how CPUs  and

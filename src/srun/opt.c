@@ -98,7 +98,7 @@
 #define OPT_VERSION     0x12
 #define OPT_JOIN        0x13
 #define OPT_STEAL       0x14
-#define OPT_CDDIR       0x15
+#define OPT_CHDIR       0x15
 #define OPT_BATCH       0x16
 #define OPT_TIME        0x17
 #define OPT_THREADS     0x18
@@ -196,7 +196,7 @@ struct poptOption runTable[] = {
 	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
 	 "time limit",
 	 "minutes"},
-	{"chdir", 'D', POPT_ARG_STRING, NULL, OPT_CDDIR,
+	{"chdir", 'D', POPT_ARG_STRING, NULL, OPT_CHDIR,
 	 "change current working directory of remote procs",
 	 "path"},
 	{"immediate", 'I', POPT_ARG_NONE, &opt.immediate, 0,
@@ -882,7 +882,7 @@ static void _opt_args(int ac, char **av)
 			}
 			break;
 
-		case OPT_CDDIR:
+		case OPT_CHDIR:
 			xfree(opt.cwd);
 			opt.cwd = xstrdup(arg);
 			break;
