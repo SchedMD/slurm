@@ -116,8 +116,8 @@ int slurm_api_set_default_config()
 /***** msg functions */
 /************************/
 
-/* In the socket implementation it creates a socket, binds to it, and listens for connections.
- * In the mongo implemenetation is should just create a mongo socket , binds and return.
+/* In the socket implementation it creates a socket, binds to it, and 
+ *	listens for connections.
  * slurm_address 	- for now it is really just a sockaddr_in
  * slurm_fd		- file descriptor of the connection created
  */
@@ -128,8 +128,8 @@ slurm_fd slurm_init_msg_engine_port(uint16_t port)
 	return _slurm_init_msg_engine(&slurm_address);
 }
 
-/* In the socket implementation it creates a socket, binds to it, and listens for connections.
- * In the mongo implemenetation is should just create a mongo socket , bind and return.
+/* In the socket implementation it creates a socket, binds to it, and 
+ *	listens for connections.
  * slurm_address 	- for now it is really just a sockaddr_in
  * slurm_fd		- file descriptor of the connection created
  */
@@ -156,9 +156,10 @@ int slurm_shutdown_msg_conn(slurm_fd open_fd)
 	return _slurm_close(open_fd);
 }
 
-/* In the bsd implementation it creates a SOCK_STREAM socket and calls connect on it
- * In the mongo implementation it creates a SOCK_DGRAM socket and calls connect on it
- * a SOCK_DGRAM socket called with connect is defined to only receive messages from the address/port pair argument of the connect call
+/* In the bsd implementation it creates a SOCK_STREAM socket and calls 
+ *	connect on it
+ * a SOCK_DGRAM socket called with connect is defined to only receive 
+ *	messages from the address/port pair argument of the connect call
  * slurm_address 	- for now it is really just a sockaddr_in
  * int			- the return code
  */
@@ -167,7 +168,8 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 	return _slurm_open_msg_conn(slurm_address);
 }
 
-/* calls connect to make a connection-less datagram connection to the primary or secondary slurmctld message engine
+/* calls connect to make a connection-less datagram connection to the 
+ *	primary or secondary slurmctld message engine
  * int			- the return code
  */
 slurm_fd slurm_open_controller_conn()
@@ -182,14 +184,15 @@ slurm_fd slurm_open_controller_conn()
 
 		if ((slurmctld_conf.backup_controller) &&
 		    ((connection_fd =
-		      slurm_open_msg_conn(&proto_conf->secondary_controller)) == 
-								SLURM_SOCKET_ERROR))
+		      slurm_open_msg_conn(&proto_conf->secondary_controller)) 
+							== SLURM_SOCKET_ERROR))
 			debug ("Open connection to secondary controller failed: %m");
 	}
 	return connection_fd;
 }
 
-/* calls connect to make a connection-less datagram connection to the primary or secondary slurmctld message engine
+/* calls connect to make a connection-less datagram connection to the primary 
+ *	or secondary slurmctld message engine
  * dest 	- controller to contact, 1=primary, 2=secondary
  * int		- the return code
  */
@@ -228,8 +231,8 @@ slurm_fd slurm_accept_msg_conn(slurm_fd open_fd,
 	return _slurm_accept_msg_conn(open_fd, slurm_address);
 }
 
-/* In the bsd implmentation maps directly to a close call, to close the socket that was accepted
- * In the mongo it is a no-op (  slurm_shutdown_msg_engine should be called to close the mongo socket since there is no "accept" phase for datagrams
+/* In the bsd implmentation maps directly to a close call, to close the socket 
+ *	that was accepted
  * open_fd		- file descriptor to accept connection on
  * int			- the return code
  */
@@ -240,7 +243,7 @@ int slurm_close_accepted_conn(slurm_fd open_fd)
 
 /***** recv msg functions */
 /*
- * note that a memory is allocated for the returned msg and must be freed at some point 
+ * NOTE: memory is allocated for the returned msg and must be freed 
  * open_fd		- file descriptor to receive msg on
  * msg			- a slurm msg struct
  * int			- size of msg received in bytes before being unpacked
@@ -254,9 +257,11 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	Buf buffer;
 
 	buftemp = xmalloc (SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE);
-	if ((rc = _slurm_msg_recvfrom( open_fd, buftemp, SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE,
+	if ((rc = _slurm_msg_recvfrom( open_fd, buftemp, 
+				       SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE,
 				       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				       &(msg)->address)) == SLURM_SOCKET_ERROR) {
+				       &(msg)->address)) 
+						== SLURM_SOCKET_ERROR) {
 		xfree(buftemp);
 		return rc;
 	}
@@ -299,8 +304,9 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 }
 
 /***** send msg functions */
-/* sends a slurm_protocol msg to the slurmctld based on location information retrieved from the slurmd.conf
- * if unable to contant the primary slurmctld attempts will be made to contact the backup controller
+/* sends a slurm_protocol msg to the slurmctld based on location information 
+ *	retrieved from the slurmd.conf. if unable to contant the primary 
+ *	slurmctld attempts will be made to contact the backup controller
  * 
  * open_fd		- file descriptor to send msg on
  * msg			- a slurm msg struct
@@ -314,7 +320,8 @@ int slurm_send_controller_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	if ((rc = slurm_send_node_msg(open_fd, msg)) == SLURM_SOCKET_ERROR) {
 		debug("Send message to primary controller failed: %m");
 		msg->address = proto_conf->secondary_controller;
-		if ((rc = slurm_send_node_msg(open_fd, msg)) == SLURM_SOCKET_ERROR)
+		if ((rc = slurm_send_node_msg(open_fd, msg)) 
+						== SLURM_SOCKET_ERROR)
 			debug ("Send messge to secondary controller failed: %m");
 	}
 	return rc;
@@ -342,8 +349,8 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	if ((rc = slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC)) 
 			!= SLURM_SUCCESS) {
 		/* Should probably do something more meaningful. */
-		error("init_header: failed to sign client credentials rc=%d\n",
-				rc);
+		error("init_header: failed to sign client credentials rc=%d",
+		      rc);
 	}
 
 	/* pack header */
@@ -451,7 +458,9 @@ size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
 	int rc ;
 	while ( true )
 	{
-		if ( ( rc = _slurm_send ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( rc = _slurm_send ( open_fd , buffer , size , 
+				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) 
+				== SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno == EINTR )
 				continue ;
@@ -468,7 +477,9 @@ size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
 	int rc ;
 	while ( true )
 	{
-		if (( rc = _slurm_recv ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		if (( rc = _slurm_recv ( open_fd , buffer , size , 
+				SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) 
+				== SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno == EINTR )
 				continue ;
@@ -630,7 +641,7 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	slurm_fd sockfd;
 	int error_code = 0;
 
-	/* init message connection for message communication with controller */
+	/* init message connection for communication with controller */
 	if ((sockfd = slurm_open_controller_conn()) == SLURM_SOCKET_ERROR)
 		return SLURM_SOCKET_ERROR;
 
@@ -669,7 +680,7 @@ int slurm_send_recv_node_msg(slurm_msg_t * request_msg,
 	slurm_fd sockfd;
 	int error_code = 0;
 
-	/* init message connection for message communication with controller */
+	/* init message connection for communication with controller */
 	if ((sockfd =
 	     slurm_open_msg_conn(&request_msg->address)) ==
 	    SLURM_SOCKET_ERROR)
@@ -708,15 +719,15 @@ int slurm_send_only_controller_msg(slurm_msg_t * request_msg)
 	slurm_fd sockfd;
 	int error_code = 0;
 
-	/* init message connection for message communication with controller */
+	/* init message connection for communication with controller */
 	if ((sockfd = slurm_open_controller_conn()) == SLURM_SOCKET_ERROR)
 		return SLURM_SOCKET_ERROR;
 
 	/* send request message */
 	if ((rc =
-	     slurm_send_controller_msg(sockfd,
-				       request_msg)) ==
-	    SLURM_SOCKET_ERROR) {
+	     slurm_send_controller_msg(	sockfd,
+					request_msg)) ==
+	    				SLURM_SOCKET_ERROR) {
 		error_code = 1;
 		goto slurm_send_only_controller_msg_cleanup;
 	}
@@ -738,8 +749,9 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 	slurm_fd sockfd;
 	int error_code = 0;
 
-	/* init message connection for message communication with controller */
-	if ((sockfd = slurm_open_msg_conn(&request_msg->address)) < 0)
+	/* init message connection for communication with controller */
+	if ((sockfd = slurm_open_msg_conn(&request_msg->address)) ==
+	     SLURM_SOCKET_ERROR)
 		return SLURM_SOCKET_ERROR;
 
 	/* send request message */
