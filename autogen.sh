@@ -17,6 +17,12 @@ echo "running automake --add-missing ... "
 automake --add-missing
 echo "running autoconf ... "
 autoconf
-echo "removing stale config.status and config.log"
-rm -f config.status config.log
+if [ -e config.status ]; then
+  echo "removing stale config.status."
+  rm -f config.status 
+fi
+if [ -e config.log    ]; then
+  echo "removing old config.log."
+  rm -f config.log
+fi
 echo "now run ./configure to configure slurm for your environment."
