@@ -748,7 +748,7 @@ int validate_group(struct part_record *part_ptr, uid_t submit_uid)
 
 	if (part_ptr->allow_groups == NULL)
 		return 1;	/* all users allowed */
-	if ((submit_uid == 0) || (submit_uid = getuid()))
+	if ((submit_uid == 0) || (submit_uid == getuid()))
 		return 1;	/* super-user can run anywhere */
 
 	if (part_ptr->allow_uids == NULL)
