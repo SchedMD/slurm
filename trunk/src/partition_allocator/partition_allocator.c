@@ -1242,7 +1242,7 @@ void pa_init()
 
 	/* see if we can load in the filenames from the env */
 
-	filenames[X] = "Y_dim_torus.conf";
+	filenames[X] = "X_alt_dim_torus.conf";
 	filenames[Y] = "Y_dim_torus.conf";
 	filenames[Z] = "Z_dim_torus.conf";
 
