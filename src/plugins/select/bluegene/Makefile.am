@@ -13,8 +13,7 @@ pkglib_LTLIBRARIES = select_bluegene.la
 # Blue Gene node selection plugin.
 select_bluegene_la_SOURCES = select_bluegene.c \
 				bluegene.c bluegene.h \
-				partition_sys.c partition_sys.h \
-				rm_api.h
+				partition_sys.c partition_sys.h
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) 
 
 if HAVE_AIX
