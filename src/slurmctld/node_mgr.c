@@ -1273,6 +1273,10 @@ void ping_nodes (void)
 			continue;
 		}
 
+		if (node_record_table_ptr[i].last_response == (time_t)0)
+			node_record_table_ptr[i].last_response = 
+						slurmctld_conf.last_update;
+
 		if (base_state == NODE_STATE_UNKNOWN) {
 			debug3 ("attempt to register %s now", 
 			        node_record_table_ptr[i].name);
@@ -1296,8 +1300,6 @@ void ping_nodes (void)
 		}
 
 		debug3 ("ping %s now", node_record_table_ptr[i].name);
-		if (node_record_table_ptr[i].last_response == (time_t)0)
-			node_record_table_ptr[i].last_response = now;
 
 		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
 			ping_buf_rec_size += 32;
