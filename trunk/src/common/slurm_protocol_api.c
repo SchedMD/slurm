@@ -19,7 +19,6 @@
 /* #DEFINES */
 
 /* STATIC VARIABLES */
-/* default 
 static slurm_protocol_config_t proto_conf_default ;
 static slurm_protocol_config_t * proto_conf = & proto_conf_default ;
 
