@@ -43,6 +43,7 @@
 #include <stdarg.h>
 #include <arpa/inet.h>
 #include <sys/param.h>
+#include <stdlib.h>
 
 #if HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
@@ -111,7 +112,7 @@ ssize_t _slurm_msg_recvfrom(slurm_fd fd, char **pbuf, size_t *lenp,
                             uint32_t flags)
 {
         return _slurm_msg_recvfrom_timeout(fd, pbuf, lenp, flags, 
-                                           SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
+                                           SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
 }
 
 ssize_t _slurm_msg_recvfrom_timeout(slurm_fd fd, char **pbuf, size_t *lenp, 
@@ -151,7 +152,7 @@ ssize_t _slurm_msg_sendto(slurm_fd fd, char *buffer, size_t size,
                           uint32_t flags)
 {
         return _slurm_msg_sendto_timeout( fd, buffer, size, flags, 
-                                          SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
+                                          SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
 }
 
 ssize_t _slurm_msg_sendto_timeout(slurm_fd fd, char *buffer, size_t size, 

@@ -64,7 +64,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_common.h"
 
-#define SLURM_MESSGE_TIMEOUT_MSEC_STATIC 2000
+#define SLURM_MESSAGE_TIMEOUT_MSEC_STATIC 5000
 
 /****************\
  **  Data Types  **

@@ -558,7 +558,7 @@ size_t slurm_write_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
         return _slurm_send_timeout(open_fd, buffer, size,
                                    SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-                                   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
+                                   SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
 }
 size_t slurm_write_stream_timeout(slurm_fd open_fd, char *buffer,
                                   size_t size, int timeout)
@@ -580,7 +580,7 @@ size_t slurm_read_stream(slurm_fd open_fd, char *buffer, size_t size)
 {
         return _slurm_recv_timeout(open_fd, buffer, size,
                                    SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-                                   SLURM_MESSGE_TIMEOUT_MSEC_STATIC);
+                                   SLURM_MESSAGE_TIMEOUT_MSEC_STATIC);
 }
 size_t slurm_read_stream_timeout(slurm_fd open_fd, char *buffer,
                                  size_t size, int timeout)
