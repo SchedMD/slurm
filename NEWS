@@ -8,6 +8,8 @@ documents those changes that are of interest to users and admins.
     to fail with libelan errors. This will be removed after DPCS is updated.
  -- Fix bug in popt use, was failing in some versions of Linux.
  -- Resend KILL_JOB messages as needed to clear COMPLETING jobs.
+ -- Install dummy SIGCHLD handler in slurmd to fix problem on NPTL systems
+    where slurmd was not notified of terminated tasks.
 
 * Changes in SLURM 0.2.19
 =========================
