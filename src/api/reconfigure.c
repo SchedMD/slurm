@@ -10,9 +10,11 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+#include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
-#include "slurm.h"
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -26,9 +28,9 @@ main (int argc, char *argv[]) {
 		count = atoi (argv[1]);
 
 	for (i = 0; i < count; i++) {
-		error_code = reconfigure ();
+		error_code = slurm_reconfigure ();
 		if (error_code != 0) {
-			printf ("reconfigure error %d\n", error_code);
+			printf ("slurm_reconfigure error %d\n", error_code);
 			exit (1);
 		}
 	}
@@ -51,17 +53,16 @@ slurm_reconfigure ()
 	if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
 
-
 	/* send request message */
 	request_msg . msg_type = REQUEST_RECONFIGURE ;
 
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
 
-
 	/* receive message */
 	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
+
 	/* shutdown message connection */
 	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
