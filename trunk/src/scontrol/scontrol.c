@@ -886,9 +886,11 @@ _print_step (char *job_step_id_str)
 		}
 	}
 	else {
-		if (old_job_step_info_ptr)
+		if (old_job_step_info_ptr) {
 			slurm_free_job_step_info_response_msg (
 					old_job_step_info_ptr);
+			old_job_step_info_ptr = NULL;
+		}
 		error_code = slurm_get_job_steps ( (time_t) 0, 
 					job_id, step_id, &job_step_info_ptr);
 	}
