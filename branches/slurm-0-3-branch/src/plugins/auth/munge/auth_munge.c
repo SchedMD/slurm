@@ -545,22 +545,9 @@ _print_cred_info(munge_info_t *mi)
 
 	if (mi->encoded > 0)
 		info ("ENCODED: %s", ctime_r(&mi->encoded, buf));
+
 	if (mi->decoded > 0)
 		info ("DECODED: %s", ctime_r(&mi->decoded, buf));
-
-	if (  (mi->cipher > MUNGE_CIPHER_NONE) 
-	   && (mi->cipher < MUNGE_CIPHER_LAST_ENTRY) )
-		info ("CIPHER:  %s", munge_cipher_strings[mi->cipher]);
-
-	if (  (mi->mac > MUNGE_MAC_NONE) 
-	   && (mi->mac < MUNGE_MAC_LAST_ENTRY) ) {
-		info ("MAC:     %s", munge_mac_strings[mi->mac]);
-		/*
-		 *  Only print ZIP if MAC is valid.
-		 *   (because ZIP == NONE could be valid)
-		 */
-		info ("ZIP:     %s", munge_zip_strings[mi->zip]);
-	}
 }
 
 
