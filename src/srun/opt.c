@@ -55,6 +55,9 @@
 #ifdef HAVE_TOTALVIEW
 #  include "src/srun/attach.h"
 
+/*
+ *  Instantiate extern variables from attach.h
+ */
    MPIR_PROCDESC *MPIR_proctable;
    int MPIR_proctable_size;
    VOLATILE int MPIR_debug_state;
@@ -62,7 +65,6 @@
    int MPIR_being_debugged;
    int MPIR_i_am_starter;
    int MPIR_acquired_pre_main;
-   int MPIR_debug_gate;
 #endif
 
 #define __DEBUG 0

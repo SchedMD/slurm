@@ -73,7 +73,6 @@ extern int          MPIR_being_debugged; /* Cause extra info on internal state
 /* SLURM specific declarations */
 extern int MPIR_i_am_starter;
 extern int MPIR_acquired_pre_main;
-extern int MPIR_debug_gate;
 
 extern void MPIR_Breakpoint(void);
 extern void tv_launch_failure(void);
