@@ -43,6 +43,8 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
+#define MAX_RETRIES 10
+
 struct job_queue {
 	int priority;
 	struct job_record *job_ptr;
@@ -215,6 +217,7 @@ static void _launch_job(struct job_record *job_ptr)
 	struct node_record *node_ptr;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
+	int retries = 0;
 
 	if (job_ptr->batch_flag == 0)
 		return;
@@ -261,12 +264,11 @@ static void _launch_job(struct job_record *job_ptr)
 	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create(&thread_agent, &attr_agent,
+	while (pthread_create(&thread_agent, &attr_agent,
 			   agent, (void *) agent_arg_ptr)) {
 		error("pthread_create error %m");
-		sleep(1);	/* sleep and try once more */
-		if (pthread_create(&thread_agent, &attr_agent,
-				   agent, (void *) agent_arg_ptr))
-			fatal("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and try again */
 	}
 }

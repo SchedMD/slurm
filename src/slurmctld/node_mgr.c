@@ -51,6 +51,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 	4096
+#define MAX_RETRIES 10
 
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
@@ -1261,7 +1262,7 @@ bool is_node_down (char *name)
  *	get nodes in UNKNOWN state to register */
 void ping_nodes (void)
 {
-	int i, pos, age;
+	int i, pos, age, retries = 0;
 	time_t now;
 	uint16_t base_state;
 	bool force_reg;
@@ -1368,14 +1369,12 @@ void ping_nodes (void)
 						PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
-		if (pthread_create (&ping_thread_agent, &ping_attr_agent, 
+		while (pthread_create (&ping_thread_agent, &ping_attr_agent, 
 					agent, (void *)ping_agent_args)) {
 			error ("pthread_create error %m");
-			sleep (1); /* sleep and try once more */
-			if (pthread_create (&ping_thread_agent, 
-					    &ping_attr_agent, 
-					    agent, (void *)ping_agent_args))
-				fatal ("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep (1); /* sleep and try again */
 		}
 	}
 
@@ -1393,14 +1392,12 @@ void ping_nodes (void)
 					   PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
-		if (pthread_create (&reg_thread_agent, &reg_attr_agent, 
+		while (pthread_create (&reg_thread_agent, &reg_attr_agent, 
 					agent, (void *)reg_agent_args)) {
 			error ("pthread_create error %m");
-			sleep (1); /* sleep and try once more */
-			if (pthread_create (&reg_thread_agent, 
-					    &reg_attr_agent,
-					    agent, (void *)reg_agent_args))
-				fatal ("pthread_create error %m");
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep (1); /* sleep and try again */
 		}
 	}
 }

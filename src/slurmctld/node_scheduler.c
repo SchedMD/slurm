@@ -46,6 +46,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
+#define MAX_RETRIES 10
 
 struct node_set {		/* set of nodes with same configuration */
 	uint32_t cpus_per_node;
@@ -134,12 +135,13 @@ int count_cpus(unsigned *bitmap)
  */
 void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 {
-	int i;
+	int i, retries = 0;
 	kill_job_msg_t *kill_job;
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int buf_rec_size = 0, down_node_cnt = 0;
+
 	if (job_ptr == NULL)
 		fatal ("job_ptr == NULL");
 	if (job_ptr->details == NULL)
@@ -203,14 +205,12 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
 		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create
-	    (&thread_agent, &attr_agent, agent, (void *) agent_args)) {
+	while (pthread_create(&thread_agent, &attr_agent, agent, 
+			(void *) agent_args)) {
 		error("pthread_create error %m");
-		sleep(1);	/* sleep and try once more */
-		if (pthread_create
-		    (&thread_agent, &attr_agent, agent,
-		     (void *) agent_args))
-			fatal("pthread_create error %m");
+		if (++retries > MAX_RETRIES)
+			fatal("Can't create pthread");
+		sleep(1);	/* sleep and try again */
 	}
 	return;
 }
