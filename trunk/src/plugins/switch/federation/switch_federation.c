@@ -431,6 +431,8 @@ int switch_p_job_fini (switch_jobinfo_t jobinfo)
 int switch_p_job_postfini(switch_jobinfo_t jobinfo, uid_t pgid, 
 				uint32_t job_id, uint32_t step_id)
 {
+	int err;
+
 	/*
 	 *  Kill all processes in the job's session
 	 */
@@ -442,7 +444,9 @@ int switch_p_job_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
 		debug("Job %u.%u: Bad pid valud %lu", job_id, 
 		      step_id, (unsigned long) pgid);
 
-	fed_unload_table((fed_jobinfo_t *)jobinfo);
+	err = fed_unload_table((fed_jobinfo_t *)jobinfo);
+	if(err != SLURM_SUCCESS)
+		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
 }
