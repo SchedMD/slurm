@@ -47,6 +47,8 @@
 #  include <unistd.h>
 #endif 
 
+#include <sys/param.h>		/* MAXPATHLEN */
+
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/list.h"
 
@@ -84,6 +86,7 @@ struct job_step {
 	uint32_t   sw_id;	/* Switch/Interconnect specific id  */
 	int        ntasks;	/* number of tasks in this job	    */
 	pid_t      sid;		/* Job session id 		    */
+	char       exec_name[MAXPATHLEN]; /* Executable's pathname */
 
 	int        io_update;	/* srun address has been updated    */
 	slurm_addr respaddr;	/* Addr to send messages to srun on */

@@ -38,6 +38,7 @@
 #include "src/common/log.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 
 #include "src/slurmd/slurmd.h"
@@ -470,6 +471,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		resp.gids[t->id] = t->global_id;
 		resp.local_pids[t->id] = t->pid;
 	}
+	resp.executable_name  = xstrdup(step->exec_name);
 
 	shm_free_step(step);
 
@@ -480,12 +482,11 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	resp.node_name        = conf->hostname;
 	resp.srun_node_id     = req->srun_node_id;
 	resp.return_code      = rc;
-	resp.executable_name  ="TBD"; /* job->argv[0]; */
 
 	slurm_send_only_node_msg(&resp_msg);
 
-	FREE_NULL(resp.gids);
-	FREE_NULL(resp.local_pids);
+	xfree(resp.gids);
+	xfree(resp.local_pids);
 
 }
 

@@ -46,6 +46,7 @@
 #include "src/slurmd/shm.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/fname.h"
+#include "src/slurmd/slurmd.h"
 
 static char ** _array_copy(int n, char **src);
 static void _array_free(int n, char ***array);
@@ -389,7 +390,7 @@ job_update_shm(slurmd_job_t *job)
 	s.stepid    = job->stepid;
 	s.ntasks    = job->ntasks;
 	s.timelimit = job->timelimit;
-
+	strncpy(s.exec_name, job->argv[0], MAXPATHLEN);
 	s.sw_id     = 0;
 
 	if (shm_insert_step(&s) < 0)
