@@ -11,67 +11,30 @@
 
 #include <errno.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <syslog.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-
-#include "pack.h"
-
-#include "slurm.h"
 #include <src/common/slurm_protocol_api.h>
-#define SLURM_PORT 7000 
 
-/* prototypes */
-
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-int
-main (int argc, char *argv[]) 
-{
-	static time_t last_update_time = (time_t) NULL;
-	int error_code;
-	struct build_table  *build_table_ptr = NULL;
-
-	error_code = slurm_load_build (last_update_time, &build_table_ptr);
-	if (error_code) {
-		printf ("slurm_load_build error %d\n", error_code);
-		exit (1);
-	}
-	
-	slurm_print_build_info ( build_table_ptr );
-	
-	slurm_free_build_info ( build_table_ptr );
-
-	exit (0);
-}
-#endif
-
-void slurm_print_build_info ( build_info_msg_t * build_table_ptr )
+void slurm_print_build_info ( FILE* out, build_info_msg_t * build_table_ptr )
 {
 	if ( build_table_ptr == NULL )
 		return ;
-	printf("Build updated at %lx\n", build_table_ptr->last_update);
-	printf("BACKUP_INTERVAL	= %u\n", build_table_ptr->backup_interval);
-	printf("BACKUP_LOCATION	= %s\n", build_table_ptr->backup_location);
-	printf("BACKUP_MACHINE	= %s\n", build_table_ptr->backup_machine);
-	printf("CONTROL_DAEMON	= %s\n", build_table_ptr->control_daemon);
-	printf("CONTROL_MACHINE	= %s\n", build_table_ptr->control_machine);
-	printf("EPILOG		= %s\n", build_table_ptr->epilog);
-	printf("FAST_SCHEDULE	= %u\n", build_table_ptr->fast_schedule);
-	printf("HASH_BASE	= %u\n", build_table_ptr->hash_base);
-	printf("HEARTBEAT_INTERVAL	= %u\n", build_table_ptr->heartbeat_interval);
-	printf("INIT_PROGRAM	= %s\n", build_table_ptr->init_program);
-	printf("KILL_WAIT	= %u\n", build_table_ptr->kill_wait);
-	printf("PRIORITIZE	= %s\n", build_table_ptr->prioritize);
-	printf("PROLOG		= %s\n", build_table_ptr->prolog);
-	printf("SERVER_DAEMON	= %s\n", build_table_ptr->server_daemon);
-	printf("SERVER_TIMEOUT	= %u\n", build_table_ptr->server_timeout);
-	printf("SLURM_CONF	= %s\n", build_table_ptr->slurm_conf);
-	printf("TMP_FS		= %s\n", build_table_ptr->tmp_fs);
+	fprintf(out, "Build updated at %lx\n", (time_t)build_table_ptr->last_update);
+	fprintf(out, "BACKUP_INTERVAL	= %u\n", build_table_ptr->backup_interval);
+	fprintf(out, "BACKUP_LOCATION	= %s\n", build_table_ptr->backup_location);
+	fprintf(out, "BACKUP_MACHINE	= %s\n", build_table_ptr->backup_machine);
+	fprintf(out, "CONTROL_DAEMON	= %s\n", build_table_ptr->control_daemon);
+	fprintf(out, "CONTROL_MACHINE	= %s\n", build_table_ptr->control_machine);
+	fprintf(out, "EPILOG		= %s\n", build_table_ptr->epilog);
+	fprintf(out, "FAST_SCHEDULE	= %u\n", build_table_ptr->fast_schedule);
+	fprintf(out, "HASH_BASE	= %u\n", build_table_ptr->hash_base);
+	fprintf(out, "HEARTBEAT_INTERVAL	= %u\n", build_table_ptr->heartbeat_interval);
+	fprintf(out, "INIT_PROGRAM	= %s\n", build_table_ptr->init_program);
+	fprintf(out, "KILL_WAIT	= %u\n", build_table_ptr->kill_wait);
+	fprintf(out, "PRIORITIZE	= %s\n", build_table_ptr->prioritize);
+	fprintf(out, "PROLOG		= %s\n", build_table_ptr->prolog);
+	fprintf(out, "SERVER_DAEMON	= %s\n", build_table_ptr->server_daemon);
+	fprintf(out, "SERVER_TIMEOUT	= %u\n", build_table_ptr->server_timeout);
+	fprintf(out, "SLURM_CONF	= %s\n", build_table_ptr->slurm_conf);
+	fprintf(out, "TMP_FS		= %s\n", build_table_ptr->tmp_fs);
 }
 
 int

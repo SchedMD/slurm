@@ -23,6 +23,7 @@
 #define	INFINITE (0xffffffff)
 
 #include <src/common/slurm_protocol_defs.h>
+#include <stdio.h>
 
 /* last entry must be JOB_END	*/
 enum job_states {
@@ -153,7 +154,7 @@ extern void slurm_free_build_info (struct build_table *build_table_ptr);
  * slurm_pritn_build_info - prints the build information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_build.
  */
-extern void slurm_print_build_info ( struct build_table * build_table_ptr ) ;
+extern void slurm_print_build_info ( FILE * out, struct build_table * build_table_ptr ) ;
 
 /*
  * slurm_free_job_info - free the job information buffer (if allocated)
