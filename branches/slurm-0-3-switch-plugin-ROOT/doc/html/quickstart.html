@@ -1,0 +1,499 @@
+<html>
+<head>
+<title>SLURM Quick Start Guide</title>
+</head>
+<body>
+<h1>SLURM Quick Start Guide</h1>
+
+<h2>Overview</h2>
+
+The Simple Linux Utility for Resource Management (SLURM) is an open
+source, fault-tolerant, and highly scalable cluster management and job
+scheduling system for Linux clusters large and small.  SLURM requires
+no kernel modifications for it operation and is relatively self-contained.
+
+As a cluster resource manager, SLURM has three key functions.  First,
+it allocates exclusive and/or non-exclusive access to resources (compute
+nodes) to users for some duration of time so they can perform work.
+Second, it provides a framework for starting, executing, and monitoring
+work (normally a parallel job) on the set of allocated nodes.  Finally,
+it arbitrates conflicting requests for resources by managing a queue of
+pending work.
+
+<h2>Architecture</h2>
+
+As depicted in Figure 1, SLURM consists of a <b>slurmd</b> daemon
+running on each compute node, a central <b>slurmctld</b> daemon running on
+a management node (with optional fail-over twin), and five command line
+utilities: <b>srun</b>, <b>scancel</b>, <b>sinfo</b>, <b>squeue</b>, and 
+<b>scontrol</b>, which can run anywhere in the cluster. 
+<p align=center>
+<img src="arch.png">
+<p align=center>
+Figure 1: SLURM components
+</p>
+<p>
+The entities managed by these SLURM daemons are shown in Figure 2 
+and include 
+<b>nodes</b>, the compute resource in SLURM, 
+<b>partitions</b>, which group nodes into logical disjoint sets,  
+<b>jobs</b>, or allocations of resources assigned to a user for a 
+specified amount of time, and 
+<b>job steps</b>, which are sets of (possibly parallel) tasks within a job.  
+Priority-ordered jobs are allocated nodes within a partition until the 
+resources (nodes) within that partition are exhausted. 
+Once a job is assigned a set of nodes, the user is able to initiate
+parallel work in the form of job steps in any configuration within the
+allocation. For instance a single job step may be started which utilizes
+all nodes allocated to the job, or several job steps may independently 
+use a portion of the allocation.
+<p align=center>
+<img src="entities.png">
+<p align=center>
+Figure 2: SLURM entities
+</p>
+
+<h2>Commands</h2>
+
+Man pages exist for all SLURM daemons, commands, and API functions.
+The command option "--help" also provides a brief summary of options.
+Note that the command options are all case insensitive.
+<p>
+<b>srun</b> is used to submit a job for execution, allocate resources, 
+attach to an existing allocation, or initiate job steps. 
+Jobs can be submitted for immediate or later execution (e.g. batch).
+srun has a wide variety of options to specify resource requirements 
+including: minimum and maximum node count, processor count, specific 
+nodes to use or not use, and specific node characteristics (so much 
+memory, disk space, certain required features, etc). 
+Besides securing a resource allocation, srun is used to initiate
+job steps.
+These job steps can execute sequentially or in parallel on independent 
+or shared nodes within the job's node allocation.
+<p>
+<b>scancel</b> is used to cancel a pending or running job or job step. 
+It can also be used to send an arbitrary signal to all processes 
+associated with a running job or job step.
+<p>
+<b>scontrol</b> is the administrative tool used to view and/or modify 
+SLURM state. 
+Note that many scontrol commands can only be executed as user root.
+<p>
+<b>sinfo</b> reports the state of partitions and nodes managed by SLURM.
+It has a wide variety of filtering, sorting, and formatting options. 
+<p>
+<b>squeue</b> reports the state of jobs or job steps. 
+It has a wide variety of filtering, sorting, and formatting options. 
+By default, it reports the running jobs in priority order and then the 
+pending jobs in priority order.
+
+<h2>Daemons</h2>
+
+<b>slurmctld</b> is sometimes called the <i>controller</i> daemon. 
+It orchestrates SLURM activities including: queuing of job, 
+monitoring node state, and allocating resources (nodes) to jobs. 
+There is an optional backup controller that automatically assumes 
+control in the event the primary controller fails. 
+The primary controller resumes control whenever 
+it is restored to service. The controller saves its state to disk 
+whenever there is a change. This state can be recovered by the controller 
+at startup time. <b>slurmctld</b> would typically execute as a 
+special user specifically for this purpose (not user root). 
+State changes are saved so that jobs and other state can be 
+preserved when slurmctld moves or is restarted.
+<p>
+The <b>slurmd</b> daemon executes on every compute node.
+It resembles a remote shell daemon to export control to SLURM.
+Since slurmd initiates and manages user jobs, it must execute as 
+the user root.
+<p>
+<b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup time 
+per the SLURM configuration.
+
+<h2>Examples</h2>
+
+Execute <i>/bin/hostname</i> on four nodes (<i>-N4</i>). 
+Include task numbers on the output (<i>-l</i>).
+The default partition will be used. 
+One task per node will be used by default.
+<pre>
+adev0: srun -N4 -l /bin/hostname
+0: adev9
+1: adev10
+2: adev11
+3: adev12
+</pre>
+<p>
+Execute <i>/bin/hostname</i> in four tasks (<i>-n4</i>). 
+Include task numbers on the output (<i>-l</i>).
+The default partition will be used. 
+One processor per task will be used by default 
+(note that we don't specify a node count).
+<pre>
+adev0: srun -n4 -l /bin/hostname
+0: adev9
+1: adev9
+2: adev10
+3: adev10
+</pre>
+<p>
+Submit the script <i>my.script</i> for later execution (<i>-b</i>).
+Explicitly use the nodes adev9 and adev10  (<i>-w "adev[9-10]"</i>, 
+note the use of a node range expression). 
+One processor per task will be used by default
+The output will appear in the file <i>my.stdout</i> (<i>-o my.stdout</i>).
+By default, one task will be initiated per processor on the nodes. 
+Note that <i>my.script</i> contains the command <i>/bin/hostname</i>
+which executed on the first node in the allocation (where the script 
+runs) plus two job steps 
+initiated using the <i>srun</i> command and executed sequentially.
+<pre>
+adev0: cat my.script
+#!/bin/sh
+/bin/hostname
+srun -l /bin/hostname
+srun -l /bin/pwd
+
+adev0: srun -w "adev[9-10]" -o my.stdout -b my.script
+srun: jobid 469 submitted
+
+adev0: cat my.stdout
+adev9
+0: adev9
+1: adev9
+2: adev10
+3: adev10
+0: /home/jette
+1: /home/jette
+2: /home/jette
+3: /home/jette
+</pre>
+<p>
+Submit a job, get its status and cancel it.
+<pre>
+adev0: srun -b my.sleeper
+srun: jobid 473 submitted
+
+adev0: squeue
+  JobId Partition Name     User     St TimeLim Prio Nodes                        
+    473 batch     my.sleep jette    R  UNLIMIT 0.99 adev9 
+                       
+adev0: scancel 473
+
+adev0: squeue
+  JobId Partition Name     User     St TimeLim Prio Nodes            
+</pre>
+<p>
+Get the SLURM partition and node status.
+<pre>
+adev0: sinfo
+PARTITION  NODES STATE     CPUS    MEMORY    TMP_DISK NODES
+--------------------------------------------------------------------------------
+debug          8 IDLE         2      3448       82306 adev[0-7]
+batch          1 DOWN         2      3448       82306 adev8
+               7 IDLE         2 3448-3458       82306 adev[9-15]
+</pre>
+
+<h2>SLURM Administration</h2>
+
+The remaining information provides basic SLURM administration information. 
+Individuals only interested in making use of SLURM need not read 
+read further.
+
+<h3>Infrastructure</h3>
+
+All communications between SLURM components are authenticated. 
+The authentication infrastructure used is specified in the SLURM 
+configuration file and options include: 
+<a href="http://www.theether.org/authd/">authd</a>, munged and none.
+<p>
+Quadrics MPI works directly with SLURM on systems having Quadrics 
+interconnects. For non-Quadrcis interconnect systems,
+<a href="http://www.lam-mpi.org/">LAM/MPI </a> is the preferred 
+MPI infrastructure. LAM/MPI uses the command <i>lamboot</i> to 
+initiate job-specific daemons on each node using SLURM's 
+<i>srun</i> command. This places all MPI processes in a 
+process-tree under the control of the <b>slurmd</b> daemon.
+LAM/MPI version 7.0.4 or higher contains support for SLURM.
+<p>
+SLURM uses the syslog function to record events. It uses a 
+range of importance levels for these messages. Be certain
+that your system's syslog functionality is operational.
+<p>
+There is no necessity for synchronized clocks on the nodes. 
+Events occur either in real-time based upon message traffic. 
+However, synchronized clocks will permit easier analysis of 
+SLURM logs from multiple nodes.
+
+
+<h3>Building and Installing</h3>
+
+Basic instructions to build and install SLURM are shown below.
+See the <i>INSTALL</i> file for more details. 
+
+<ol>
+<li>cd to the directory containign the SLURM source and type 
+<i>./configure</i> with appropriate options.
+<li>Type <i>make</i> to compile SLURM
+<li> Type <i>make install</i> to install the programs, documentation, 
+libaries, header files, etc.
+</ol>
+
+The most commonly used arguments to the <i>configure</i> command include:
+<dl>
+<dt>--enable-debug
+<dd>Enable debugging of individual modules
+<dt>--prefix=<i>PREFIX</i>
+<dd>Install architecture-independent files in PREFIX, default 
+value is <i>/usr/local</i>
+<dt>--sysconfdir=<i>DIR</i>
+<dd>Specify location of SLURM configuration file
+<dt>--with-elan
+<dd>Ccompile with support for the Quadrics Elan switch (see
+<a href="http://www.quadrics.com">http://www.quadrics.com</a>)
+<dt>--with-totalview
+<dd>compile with support for the TotalView debugger (see 
+<a href="http://www.etnus.com/">http://www.etnus.com</a>)
+</dl>
+
+
+<h3>Configuration</h3>
+
+The SLURM configuration file includes a wide variety of
+parameters.  A full description of the parameters is included in the
+<i>slurm.conf</i> man page.  Rather than duplicate that information,
+a sample configuration file is shown below.  Any text following a
+"#" is considered a comment.  The keywords in the file are not case
+sensitive, although the argument typically is (e.g. "SlurmUser=slurm"
+might be specified as "slurmuser=slurm").  The control machine, like
+all other machine specifications can include both the host name and
+the name used for communications.  In this case, the host's name is
+"mcri" and the name "emcri" is used for communications. The "e" prefix
+identifies this as an ethernet address at this site.  Port numbers to be
+used for communications are specified as well as various timer values.
+On DPCS systems set FirstJobId to 65536 or higher.  This will permit
+DPCS to specify a SLURM job id to match its own job id without conflicts
+from jobs submitted to SLURM by other means.  
+<p> A description of the
+nodes and their grouping into non-overlapping partitions is required.
+Partition and node specifications use node range expressions to identify
+nodes in a concise fashion.  This configuration file defines a 1154 node
+cluster for SLURM, but might be used for a much larger cluster by just
+changing a few node range expressions.
+
+<pre>
+# 
+# Sample /etc/slurm.conf for mcr.llnl.gov
+#
+ControlMachine=mcri   ControlAddr=emcri 
+#
+AuthType=auth/authd
+Epilog=/usr/local/slurm/etc/epilog
+FastSchedule=1
+JobCompLoc=/var/tmp/jette/slurm.job.log
+JobCompType=jobcomp/filetxt
+JobCredPrivateKey=/usr/local/etc/slurm.key
+JobCredPublicKey=/usr/local/etc/slurm.cert
+PluginDir=/usr/local/slurm/lib/slurm
+Prolog=/usr/local/slurm/etc/prolog
+SchedulerType=sched/backfill
+SlurmUser=slurm
+SlurmctldPort=7002
+SlurmctldTimeout=300
+SlurmdPort=7003
+SlurmdSpoolDir=/var/tmp/slurmd.spool
+SlurmdTimeout=300
+StateSaveLocation=/tmp/slurm.state
+#
+# Node Configurations
+#
+NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
+NodeName=mcr[0-1151]  NodeAddr=emcr[0-1151]
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT State=UP    
+PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
+PartitionName=pbatch Nodes=mcr[192-1151] 
+</pre>
+
+<p>
+You will should create unique job credential keys for your site using 
+the program <a href="http://www.openssl.org">openssl</a>. 
+An example of how to do this is shown below. 
+Specify file names that match the values of JobCredentialPrivateKey and 
+JobCredentialPublicCertificate in your configuration file.
+The JobCredentialPrivateKey file must be readable only by SlurmUser.
+The JobCredentialPublicCertificate file must be readable by all users.
+<pre>
+openssl genrsa -out /usr/local/etc/slurm.key 1024
+openssl rsa -in /usr/local/etc/slurm.key -pubout -out /usr/local/etc/slurm.cert
+</pre>
+
+<p>
+SLURM does not use reserved ports to authenticate communication
+between components. You will need to have at least one "auth"
+plugin. Currently, only three authentication plugins are supported:
+<i>auth/none</i>, <i>auth/authd</i>, and <i>auth/munge</i>. 
+The <i>auth/none</i> plugin is built and used by default, but either 
+Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris
+Dunlap's Munge should be installed in order to get properly authenticated
+communications.  The configure script in the top-level directory of this
+distribution will determine which authentication plugins may be built. 
+The configuration file specifies which of the available plugins will 
+be utilized.
+<p>
+A Portable Authentication Manager (PAM) module is available for SLURM 
+that can prevent a user from accessing a node which he has not been 
+allocated, if that mode of operation is desired.
+
+<h3>Starting the Daemons</h3>
+
+For testing purposes you may want to start by just running 
+slurmctld and slurmd on one node. By default, they execute 
+in the background. Use the "-D" option for each daemon to 
+execute them in the foreground and logging will be done to 
+your terminal. The "-v" option will log events in more detail 
+with more v's increasing the level of detail (e.g. "-vvvvvv").
+You can use one window to execute "slurmctld -D -vvvvvv", 
+a second window to execute "slurmd -D -vvvvv", and a third 
+window to execute commands such as "srun -N1 /bin/hostname" 
+to confirm basic functionality.
+<p>
+A thorough battery of tests written in the "expect" language
+are also available. 
+
+<h3>Administration Examples</h3>
+
+scontrol can be used to print all system information and 
+modify most of it. Only a few examples are shown below.
+Please see the scontrol man page for full details.
+The commands and options are all case insensitive.
+<p>
+Print detailed state of all jobs in the system.
+<pre>
+adev0: scontrol
+scontrol: show job
+JobId=475 UserId=bob(6885) Name=sleep JobState=COMPLETED
+   Priority=4294901286 Partition=batch BatchFlag=0
+   AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
+   StartTime=03/19-12:53:41 EndTime=03/19-12:53:59
+   NodeList=adev8 NodeListIndecies=-1
+   ReqProcs=0 MinNodes=0 Shared=0 Contiguous=0
+   MinProcs=0 MinMemory=0 Features=(null) MinTmpDisk=0
+   ReqNodeList=(null) ReqNodeListIndecies=-1
+
+JobId=476 UserId=bob(6885) Name=sleep JobState=RUNNING
+   Priority=4294901285 Partition=batch BatchFlag=0
+   AllocNode:Sid=adevi:21432 TimeLimit=UNLIMITED
+   StartTime=03/19-12:54:01 EndTime=NONE
+   NodeList=adev8 NodeListIndecies=8,8,-1
+   ReqProcs=0 MinNodes=0 Shared=0 Contiguous=0
+   MinProcs=0 MinMemory=0 Features=(null) MinTmpDisk=0
+   ReqNodeList=(null) ReqNodeListIndecies=-1
+</pre>
+<p>
+Print the detailed state of job 477 and change its priority to zero. 
+A priority of zero prevents a job from being initiated (it is held
+in <i>pending</i> state).
+<pre>
+adev0: scontrol
+scontrol: show job 477
+JobId=477 UserId=bob(6885) Name=sleep JobState=PENDING
+   Priority=4294901286 Partition=batch BatchFlag=0
+   <i>more data removed....</i>
+scontrol: update JobId=477 Priority=0
+</pre>
+<p>
+Print the state of node <i>adev13</i> and drain it.
+To drain a node specify a new state of "DRAIN", "DRAINED", or "DRAINING".
+SLURM will automatically set it to the appropriate value of either "DRAINING"
+or "DRAINED" depending if the node is allocated or not.
+Return it to service later.
+<pre>
+adev0: scontrol
+scontrol: show node adev13
+NodeName=adev13 State=ALLOCATED CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null) 
+scontrol: update NodeName=adev13 State=DRAIN
+scontrol: show node adev13
+NodeName=adev13 State=DRAINING CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null) 
+scontrol: quit
+<i>Later</i>
+adev0: scontrol 
+scontrol: show node adev13
+NodeName=adev13 State=DRAINED CPUs=2 RealMemory=3448 TmpDisk=32000
+   Weight=16 Partition=debug Features=(null) 
+scontrol: update NodeName=adev13 State=IDLE
+</pre>
+<p>
+Reconfigure all slurm daemons on all nodes. 
+This should be done after changing the SLURM configuration file.
+<pre>
+adev0: scontrol reconfig
+</pre>
+<p>
+Print the current slurm configuration. 
+This also reports if the priarmy and secondary controllers (slurmctld 
+daemons) are responding. 
+To just see the state of the controllers, use the command "ping".
+<pre>
+adev0: scontrol show config
+Configuration data as of 03/19-13:04:12
+AuthType          = auth/munge
+BackupAddr        = eadevj
+BackupController  = adevj
+ControlAddr       = eadevi
+ControlMachine    = adevi
+Epilog            = (null)
+FastSchedule      = 1
+FirstJobId        = 1
+NodeHashBase      = 10
+HeartbeatInterval = 60
+InactiveLimit     = 0
+JobCompLoc        = /var/tmp/jette/slurm.job.log
+JobCompType       = jobcomp/filetxt
+JobCredPrivateKey = /etc/slurm/slurm.key
+JobCredPublicKey  = /etc/slurm/slurm.cert
+KillWait          = 30
+MaxJobCnt         = 2000
+MinJobAge         = 300
+PluginDir         = /usr/lib/slurm
+Prolog            = (null)
+ReturnToService   = 1
+SchedulerAuth     = (null)
+SchedulerPort     = 65534
+SchedulerType     = sched/backfill
+SlurmUser         = slurm(97)
+SlurmctldDebug    = 4
+SlurmctldLogFile  = /tmp/slurmctld.log
+SlurmctldPidFile  = /tmp/slurmctld.pid
+SlurmctldPort     = 7002 
+SlurmctldTimeout  = 300
+SlurmdDebug       = 65534
+SlurmdLogFile     = /tmp/slurmd.log
+SlurmdPidFile     = /tmp/slurmd.pid
+SlurmdPort        = 7003
+SlurmdSpoolDir    = /tmp/slurmd
+SlurmdTimeout     = 300
+SLURM_CONFIG_FILE = /etc/slurm/slurm.conf
+StateSaveLocation = /usr/local/tmp/slurm/adev
+TmpFS             = /tmp
+WaitTime          = 0
+
+Slurmctld(primary/backup) at adevi/adevj are UP/UP
+</pre>
+<p>
+Shutdown all SLURM daemons on all nodes.
+<pre>
+adev0: scontrol shutdown
+</pre>
+
+<hr>
+URL = http://www-lc.llnl.gov/dctg-lc/slurm/quick.start.guide.html
+<p>Last Modified December 9, 2003</p>
+<address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
+slurm-dev@lists.llnl.gov</a></address>
+</body>
+</html>
