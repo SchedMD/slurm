@@ -100,7 +100,7 @@ AC_DEFUN([AC_SLURM_VERSION],
 # Determine project/version from META file.
 #  These are substituted into the Makefile and config.h.
 #
-PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\w*).*/\1/i' $srcdir/META`"
+PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(PROJECT, "$PROJECT", [Define the project's name.])
 AC_SUBST(PROJECT)
 
@@ -108,40 +108,32 @@ AC_SUBST(PROJECT)
 PACKAGE=$PROJECT
 
 # rpm make target needs Version in META, not major and minor version nubmers
-VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\w*).*/\1/i' $srcdir/META`"
+VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
 
+MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
+MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
+MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
+RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
+SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
+SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO-$SLURM_RELEASE"
+test $SLURM_RELEASE != "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
 AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", 
                    [Define the project's major version.])
-AC_SUBST(SLURM_MAJOR)
-
-SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\w*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR",
                    [Define the project's minor version.])
-AC_SUBST(SLURM_MINOR)
-
-SLURM_MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\w*).*/\1/i' $srcdir/META` "
 AC_DEFINE_UNQUOTED(SLURM_MICRO, "$SLURM_MICRO",
                    [Define the project's minor version.])
-AC_SUBST(SLURM_MINOR)
-
-
-RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\w*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
-AC_SUBST(RELEASE)
-
-SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
-
-# Define the version string
-SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR.$SLURM_MICRO-$SLURM_RELEASE"
-
-# If this is a prerelease or CVS snapshot, append the release
-test $SLURM_RELEASE != "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
-
 AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION",
                    [Define the project's version string.])
+AC_SUBST(SLURM_MAJOR)
+AC_SUBST(SLURM_MINOR)
+AC_SUBST(SLURM_MICRO)
+AC_SUBST(RELEASE)
 AC_SUBST(SLURM_VERSION)
+
 ]) dnl AC_SLURM_VERSION
  
 dnl @synopsis ACX_PTHREAD([ACTION-IF-FOUND[, ACTION-IF-NOT-FOUND]])
