@@ -2357,16 +2357,16 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 	for (i=0; i<job_count; i++) {
 		job_ptr = find_job_record (job_id_ptr[i]);
 		if (job_ptr == NULL) {
+			/* FIXME: In the future try to let job run */
 			error ("Orphan job_id %u reported on node %s", 
 			       job_id_ptr[i], node_name);
 			signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
 						SIGKILL, node_name);
 			/* We may well have pending purge job RPC to send slurmd,
 			 * which would synchronize this */
-			continue;
 		}
 
-		if ( (job_ptr->job_state == JOB_STAGE_IN) ||
+		else if ( (job_ptr->job_state == JOB_STAGE_IN) ||
 		     (job_ptr->job_state == JOB_RUNNING) ||
 		     (job_ptr->job_state == JOB_STAGE_OUT) ) {
 			if ( bit_test (job_ptr->node_bitmap, node_inx))
@@ -2379,9 +2379,8 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 							SIGKILL, node_name);
 			}
 		}
-			continue;
 
-		if (job_ptr->job_state == JOB_PENDING) {
+		else if (job_ptr->job_state == JOB_PENDING) {
 			/* FIXME: In the future try to let job run */
 			error ("REGISTERED PENDING JOB_ID %u ON NODE %s ", 
 			       job_id_ptr[i], node_name);   /* Very bad */
@@ -2391,17 +2390,17 @@ validate_jobs_on_node ( char *node_name, uint32_t job_count,
 			delete_job_details(job_ptr);
 			signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
 						SIGKILL, node_name);
-			continue;
 		}
 
-		/* else job is supposed to be done */
-		error ("Registered job_id %u in state %s on node %s ", 
-			job_id_ptr[i], 
-		        job_state_string (job_ptr->job_state), node_name);
+		else {	/* else job is supposed to be done */
+			error ("Registered job_id %u in state %s on node %s ", 
+				job_id_ptr[i], 
+			        job_state_string (job_ptr->job_state), node_name);
 			signal_job_on_node (job_id_ptr[i], step_id_ptr[i], 
 						SIGKILL, node_name);
-		/* We may well have pending purge job RPC to send slurmd,
-		 * which would synchronize this */
+			/* We may well have pending purge job RPC to send slurmd,
+			 * which would synchronize this */
+		}
 	}
 	return;
 }
@@ -2411,5 +2410,7 @@ void
 signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_name)
 {
 	/* FIXME: add code to send RPC to specified node */
+	debug ("Signal %d send to job %u.%u on node %s",
+		signum, job_id, step_id, node_name);
 	error ("CODE DEVELOPMENT NEEDED HERE");
 }
