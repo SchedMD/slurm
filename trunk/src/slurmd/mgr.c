@@ -33,6 +33,10 @@
 #  include <sys/types.h>
 #endif
 
+#if HAVE_SYS_PRCTL_H
+#  include <sys/prctl.h>
+#endif
+
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/param.h>
@@ -314,6 +318,13 @@ _setup_io(slurmd_job_t *job)
 	if (_reclaim_privileges(spwd) < 0)
 		error("sete{u/g}id(%lu/%lu): %m", 
 		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
+
+#ifndef NDEBUG
+#  ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#  endif /* PR_SET_DUMPABLE */
+#endif   /* !NDEBUG         */
 
 	if (rc < 0) 
 		return ESLURMD_IO_ERROR;
