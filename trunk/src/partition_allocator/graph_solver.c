@@ -239,6 +239,18 @@ void print_conf_result(conf_result_t* conf_result)
 	printf("\n");
 }
 
+void print_conf_result_list(List conf_result_list)
+{
+	ListIterator itr;
+	conf_result_t* conf_result;
+
+	itr = list_iterator_create(conf_result_list);
+	while((conf_result = (conf_result_t*) list_next(itr) )){
+		print_conf_result(conf_result);
+	}
+	list_iterator_destroy(itr);
+}
+
 /** */
 void new_conf_data(conf_data_t** conf_data, int num_partitions)
 {

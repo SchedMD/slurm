@@ -1,3 +1,5 @@
+- touch projections
+
 - add undo buffer
   > redo create_pa_system, delete_pa_system and do copy_pa_system
 
@@ -25,3 +27,6 @@ done - switch to smarter graph checking (flexing) implementation.
 
 done - if merging, remember to change all the internal connections
 of the node to be the new label (ID)
+
+not done- sort by continguous, early nodes: too difficult for now, the nodes could be out of order, and 
+I don't want to sort.
