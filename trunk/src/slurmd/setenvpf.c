@@ -31,6 +31,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include <src/common/xmalloc.h>
 #include <src/common/xassert.h>
