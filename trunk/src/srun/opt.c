@@ -1,7 +1,28 @@
-/* $Id$                 */
-
-/* opt.c                                                                 */
-/* options processing for srun                                           */
+/*****************************************************************************\
+ *  opt.c - options processing for srun
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <grondona1@llnl.gov>, et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #if HAVE_CONFIG_H
 #  include <config.h>
@@ -32,7 +53,7 @@
 #include "env.h"
 
 
-#define __DEBUG
+#define __DEBUG 0
 
 /*---[ popt definitions ]------------------------------------------------*/
 
@@ -63,6 +84,7 @@
 #define OPT_JOIN        0x13
 #define OPT_STEAL       0x14
 #define OPT_CDDIR       0x15
+#define OPT_BATCH       0x16
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -164,6 +186,9 @@ struct poptOption runTable[] = {
 	 "in"},
 	{"error", 'e', POPT_ARG_STRING, 0, OPT_ERROR,
 	 "location of stderr redirection",
+	 "err"},
+	{"batch", 'b', POPT_ARG_NONE, &opt.batch, OPT_BATCH,
+	 "submit as batch job for later execution",
 	 "err"},
         {"verbose", 'v', 0, 0, OPT_VERBOSE,
 	 "verbose operation (multiple -v's increase verbosity)", },
@@ -271,7 +296,7 @@ int initialize_and_process_args(int argc, char *argv[])
 	/* initialize options with argv */
 	opt_args(argc, argv);
 
-#ifdef __DEBUG
+#if	__DEBUG
 	opt_list();
 #endif
 	return 1;
@@ -471,6 +496,7 @@ static void opt_default()
 
 	opt.labelio = false;
 	opt.overcommit = false;
+	opt.batch = false;
 
 	opt.immediate = false;
 
@@ -614,8 +640,8 @@ static void opt_args(int ac, char **av)
 			break;
 
 		case OPT_ATTACH:
-			if (opt.allocate) {
-				error("cannot specify both allocate and attach.");
+			if (opt.allocate || opt.batch) {
+				error("can only specify one mode: allocate, attach or batch.");
 				exit(1);
 			}
 			mode = MODE_ATTACH;
@@ -623,11 +649,19 @@ static void opt_args(int ac, char **av)
 			break;
 
 		case OPT_ALLOCATE:
-			if (opt.attach != NULL) {
-				error("cannot specify both allocate and attach.");
+			if (opt.attach || opt.batch) {
+				error("can only specify one mode: allocate, attach or batch.");
 				exit(1);
 			}
 			mode = MODE_ALLOCATE;
+			break;
+
+		case OPT_BATCH:
+			if (opt.allocate || opt.attach) {
+				error("can only specify one mode: allocate, attach or batch.");
+				exit(1);
+			}
+			mode = MODE_BATCH;
 			break;
 
 		default:
@@ -911,7 +945,7 @@ search_path(char *cmd)
 	return NULL;
 }
 
-#ifdef __DEBUG
+#if	__DEBUG
 
 /* generate meaningful output message based on io type and "filename" */
 char *print_io_t_with_filename(enum io_t type, char *filename)
@@ -990,39 +1024,40 @@ void opt_list()
 {
 	char *str;
 
-	debug2("defined options for program `%s'", opt.progname);
-	debug2("------------ ---------------------");
+	info("defined options for program `%s'", opt.progname);
+	info("------------ ---------------------");
 
-	debug2("user        : `%s'", opt.user);
-	debug2("uid         : %ld", (long) opt.uid);
-	debug2("cwd         : %s", opt.cwd);
-	debug2("nprocs      : %d", opt.nprocs);
-	debug2("cpus/proc   : %d", opt.cpus);
-	debug2("nodes       : %d", opt.nodes);
-	debug2("total cpus  : %d", opt.nprocs * opt.cpus);
-	debug2("partition   : %s",
+	info("user        : `%s'", opt.user);
+	info("uid         : %ld", (long) opt.uid);
+	info("cwd         : %s", opt.cwd);
+	info("nprocs      : %d", opt.nprocs);
+	info("cpus/proc   : %d", opt.cpus);
+	info("nodes       : %d", opt.nodes);
+	info("total cpus  : %d", opt.nprocs * opt.cpus);
+	info("partition   : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
-	debug2("job name    : `%s'", opt.job_name);
-	debug2("distribution: %s", format_distribution_t(opt.distribution));
-	debug2("output      : %s",
+	info("job name    : `%s'", opt.job_name);
+	info("distribution: %s", format_distribution_t(opt.distribution));
+	info("output      : %s",
 	     print_io_t_with_filename(opt.output, opt.ofname));
-	debug2("error       : %s",
+	info("error       : %s",
 	     print_io_t_with_filename(opt.error, opt.efname));
-	debug2("input       : %s",
+	info("input       : %s",
 	     print_io_t_with_filename(opt.input, opt.ifname));
-	debug2("core format : %s", opt.core_format);
-	debug2("verbose     : %d", _verbose);
-	debug2("debug       : %d", _debug);
-	debug2("immediate   : %s", tf_(opt.immediate));
-	debug2("label output: %s", tf_(opt.labelio));
-	debug2("allocate    : %s", tf_(opt.allocate));
-	debug2("attach      : `%s'", opt.attach);
-	debug2("overcommit  : %s", tf_(opt.overcommit));
+	info("core format : %s", opt.core_format);
+	info("verbose     : %d", _verbose);
+	info("debug       : %d", _debug);
+	info("immediate   : %s", tf_(opt.immediate));
+	info("label output: %s", tf_(opt.labelio));
+	info("allocate    : %s", tf_(opt.allocate));
+	info("attach      : `%s'", opt.attach);
+	info("overcommit  : %s", tf_(opt.overcommit));
+	info("batch       : %s", tf_(opt.batch));
 	str = print_constraints();
-	debug2("constraints : %s", str);
+	info("constraints : %s", str);
 	xfree(str);
 	str = print_commandline();
-	debug2("remote command : `%s'", str);
+	info("remote command : `%s'", str);
 	xfree(str);
 
 }
