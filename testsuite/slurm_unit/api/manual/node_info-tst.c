@@ -14,7 +14,7 @@ main (int argc, char *argv[])
 	int error_code, i;
 	node_info_msg_t * node_info_msg_ptr = NULL;
 
-	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr);
+	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr, 1);
 	if (error_code) {
 		slurm_perror ("last_update_time");
 		return (error_code);
