@@ -112,8 +112,9 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 
 	job->jobid   = msg->job_id;
 	job->stepid  = msg->job_step_id;
-	job->uid     = msg->uid;
+	job->uid     = (uid_t) msg->uid;
 	job->pwd     = pwd;
+	job->gid     = job->pwd->pw_gid;
 	job->nprocs  = msg->nprocs;
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = msg->srun_node_id;
@@ -198,7 +199,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->stepid  = NO_VAL;
 	job->batch   = true;
 
-	job->uid     = (uid_t)msg->uid;
+	job->uid     = (uid_t) msg->uid;
+	job->gid     = job->pwd->pw_gid;
 	job->cwd     = xstrdup(msg->work_dir);
 
 	job->env     = _array_copy(msg->envc, msg->environment);
