@@ -71,6 +71,7 @@ static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
+void 	add_job_hash (struct job_record *job_ptr);
 int 	copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id ) ;
 int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
 		struct job_record ** job_ptr , struct part_record *part_ptr, 
@@ -391,6 +392,7 @@ dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
 		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
 		pack32  ((uint32_t) detail_ptr->submit_time, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->total_procs, buf_ptr, buf_len);
 
 		if ((detail_ptr->req_nodes == NULL) ||
 		    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
@@ -464,17 +466,17 @@ load_job_state ( void )
 	int state_fd;
 	char *buffer, *state_file;
 	void *buf_ptr;
-	uint32_t job_id, user_id, time_limit, priority, start_time, end_time;
+	uint32_t job_id, user_id, time_limit, priority, total_procs, start_time, end_time;
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
 	uint16_t shared, contiguous, name_len;
 	char *req_nodes = NULL, *features = NULL;
 	char  *stderr = NULL, *stdin = NULL, *stdout = NULL, *work_dir = NULL;
-	slurm_job_credential_t *credential_ptr;
+	slurm_job_credential_t *credential_ptr = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
-	bitstr_t *node_bitmap = NULL ;
+	bitstr_t *node_bitmap = NULL, *req_node_bitmap = NULL;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -495,6 +497,7 @@ load_job_state ( void )
 			xrealloc(buffer, buffer_allocated);
 			buf_ptr = (void *) (buffer + buffer_size);
 		}
+		buf_ptr = (void *) buffer;
 		buffer_size += buffer_used;
 		close (state_fd);
 		if (buffer_used < 0) 
@@ -525,8 +528,8 @@ load_job_state ( void )
 		unpackstr_xmalloc (&name, &name_len, &buf_ptr, &buffer_size);
 
 		unpack16 (&details, &buf_ptr, &buffer_size);
-		if (buffer_size < (10 *sizeof (uint32_t))) {
-			details = 0;	/* no room for data, file truncated */
+		if (buffer_size < (11 * sizeof (uint32_t))) {
+			details = 0;	/* no room for details, file truncated */
 			buffer_size = 0;
 		}
 
@@ -540,6 +543,7 @@ load_job_state ( void )
 			unpack32 (&min_memory, &buf_ptr, &buffer_size);
 			unpack32 (&min_tmp_disk, &buf_ptr, &buffer_size);
 			unpack32 (&submit_time, &buf_ptr, &buffer_size);
+			unpack32 (&total_procs, &buf_ptr, &buffer_size);
 
 			unpackstr_xmalloc (&req_nodes, &name_len, &buf_ptr, &buffer_size);
 			unpackstr_xmalloc (&features, &name_len, &buf_ptr, &buffer_size);
@@ -550,13 +554,23 @@ load_job_state ( void )
 			unpack_job_credential ( &credential_ptr , &buf_ptr, &buffer_size);
 		}
 
-		error_code = node_name2bitmap (nodes, &node_bitmap);
-		if (error_code) {
-			error ("load_job_state: invalid nodes (%s) for job_id %u",
+		if (nodes) {
+			error_code = node_name2bitmap (nodes, &node_bitmap);
+			if (error_code) {
+				error ("load_job_state: invalid nodes (%s) for job_id %u",
 					nodes, job_id);
-			goto cleanup;
+				goto cleanup;
+			}
 		}
-		
+		if (req_nodes) {
+			error_code = node_name2bitmap (req_nodes, &req_node_bitmap);
+			if (error_code) {
+				error ("load_job_state: invalid req_nodes (%s) for job_id %u",
+					req_nodes, job_id);
+				goto cleanup;
+			}
+		}
+	
 		job_ptr = find_job_record (job_id);
 		if (job_ptr == NULL) {
 			part_ptr = list_find_first (part_list, &list_find_part, partition);
@@ -575,6 +589,8 @@ load_job_state ( void )
 			job_ptr->job_id = job_id;
 			strncpy (job_ptr->partition, partition, MAX_NAME_LEN);
 			job_ptr->part_ptr = part_ptr;
+			add_job_hash (job_ptr);
+			info ("recovering job id %u", job_id);
 		}
 
 		job_ptr->user_id = user_id;
@@ -587,29 +603,98 @@ load_job_state ( void )
 		strncpy (job_ptr->name, name, MAX_NAME_LEN);
 		job_ptr->nodes = nodes; nodes = NULL;
 		job_ptr->node_bitmap = node_bitmap; node_bitmap = NULL;
+		build_node_details (job_ptr->node_bitmap, &job_ptr->num_cpu_groups,
+			&job_ptr->cpus_per_node, &job_ptr->cpu_count_reps);
 
 		if (default_prio >= priority)
 			default_prio = priority - 1;
 		if (job_id_sequence <= job_id)
 			job_id_sequence = job_id + 1;
 
+		if (details) {
+			job_ptr->details->num_procs = num_procs;
+			job_ptr->details->num_nodes = num_nodes;
+			job_ptr->details->shared = shared;
+			job_ptr->details->contiguous = contiguous;
+			job_ptr->details->min_procs = min_procs;
+			job_ptr->details->min_memory = min_memory;
+			job_ptr->details->min_tmp_disk = min_tmp_disk;
+			job_ptr->details->submit_time = submit_time;
+			job_ptr->details->total_procs = total_procs;
+			job_ptr->details->req_nodes = req_nodes; req_nodes = NULL;
+			job_ptr->details->req_node_bitmap = req_node_bitmap; req_node_bitmap = NULL;
+			job_ptr->details->features = features; features = NULL;
+			job_ptr->details->stderr = stderr; stderr = NULL;
+			job_ptr->details->stdin = stdin; stdin = NULL;
+			job_ptr->details->stdout = stdout; stdout = NULL;
+			job_ptr->details->work_dir = work_dir; work_dir = NULL;
+			memcpy (&job_ptr->details->credential, credential_ptr, 
+					sizeof (job_ptr->details->credential));
+		}
+
 cleanup:
-		if (name)
+		if (name) {
 			xfree (name);
-		if (nodes)
-			xfree (nodes);
-		if (partition)
-			xfree (partition);
-		if (node_bitmap)
-			bit_free (node_bitmap);
+			name = NULL; 
+		}
+		if (nodes) {
+			xfree (nodes); 
+			nodes = NULL; 
+		}
+		if (partition) {
+			xfree (partition); 
+			partition = NULL;
+		}
+		if (node_bitmap) {
+			bit_free (node_bitmap); 
+			node_bitmap = NULL; 
+		}
+		if (req_nodes) {
+			xfree (req_nodes); 
+			req_nodes = NULL; 
+		}
+		if (req_node_bitmap) {
+			bit_free (req_node_bitmap); 
+			req_node_bitmap = NULL; 
+		}
+		if (features) {
+			xfree (features); 
+			features = NULL; 
+		}
+		if (stderr) {
+			xfree (stderr); 
+			stderr = NULL; 
+		}
+		if (stdin) {
+			xfree (stdin); 
+			stdin = NULL; 
+		}
+		if (stdout) {
+			xfree (stdout);	
+			stdout = NULL; 
+		}
+		if (work_dir) {
+			xfree (work_dir); 
+			work_dir = NULL; 
+		}
+		if (credential_ptr) {
+			xfree (credential_ptr); 
+			credential_ptr = NULL; 
+		}
 	}
-/*  
-also to restore: *node_bitmap, *detail, num_cpu_groups, *cpus_per_node; 
-also to restore: *cpu_count_reps; step_list;
-to restore for job details: *req_node_bitmap; total_procs;
-*/
 	return error_code;
 }
+
+/* add_job_hash - add a job hash entry for given job record, job_id must already be set */
+void 	
+add_job_hash (struct job_record *job_ptr) 
+{
+	if (job_hash[job_hash_inx (job_ptr->job_id)]) 
+		job_hash_over[max_hash_over++] = job_ptr;
+	else
+		job_hash[job_hash_inx (job_ptr->job_id)] = job_ptr;
+}
+
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -1275,10 +1360,7 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		job_ptr->job_id = job_desc->job_id;
 	else
 		set_job_id(job_ptr);
-	if (job_hash[job_hash_inx (job_ptr->job_id)]) 
-		job_hash_over[max_hash_over++] = job_ptr;
-	else
-		job_hash[job_hash_inx (job_ptr->job_id)] = job_ptr;
+	add_job_hash (job_ptr);
 
 	if (job_desc->name) {
 		strncpy (job_ptr->name, job_desc->name , sizeof (job_ptr->name)) ;

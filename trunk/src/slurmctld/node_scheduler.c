@@ -48,8 +48,6 @@ struct node_set {		/* set of nodes with same configuration */
 	bitstr_t *my_bitmap;
 };
 
-void build_node_details (bitstr_t *node_bitmap, 
-		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t **cpu_count_reps);
 int pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 		    int req_cpus, int consecutive);
 int pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
