@@ -74,7 +74,7 @@ main (int argc, char *argv[])
 		else if (strcmp (argv[pos], "-i") == 0) 
 			interactive = 1;
 		else if (strcmp (argv[pos], "-v") == 0) 
-			printf ("Version 0.1\n");
+			printf ("Version %s\n", VERSION);
 		else {
 			fprintf (stderr, "Invalid option %s\n", argv[pos]);
 			exit (1);
