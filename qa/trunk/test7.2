@@ -43,7 +43,7 @@ print_header $test_id
 # Delete left-over program and rebuild it.
 #
 exec $bin_rm -f $file_prog_get
-exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -L${slurm_dir}/lib -lslurm
+exec $bin_cc ${file_prog_get}.c -g -pthread -o $file_prog_get -I${slurm_dir}/include -Wl,--rpath=${slurm_dir}/lib -L${slurm_dir}/lib -lslurm
 exec $bin_chmod 700 $file_prog_get
 
 #
