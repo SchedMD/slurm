@@ -25,7 +25,8 @@
 #include <unistd.h>
 
 #include <src/api/slurm.h>
-#include <src/common/slurm_protocol_defs.h>
+#include <src/common/nodelist.h>
+#include <src/common/slurm_protocol_api.h>
 
 #define	BUF_SIZE 1024
 #define	max_input_fields 128
@@ -197,8 +198,8 @@ void
 print_build (char *build_param)
 {
 	int error_code;
-	static struct build_table *old_build_table_ptr= NULL;
-	struct build_table  *build_table_ptr = NULL;
+	static build_info_msg_t *old_build_table_ptr= NULL;
+	build_info_msg_t  *build_table_ptr = NULL;
 
 	if (old_build_table_ptr) {
 		error_code = slurm_load_build (old_build_table_ptr->last_update,
@@ -290,9 +291,9 @@ print_job (char * job_id_str)
 {
 	int error_code, i;
 	uint32_t job_id = 0;
-	static struct job_buffer *old_job_buffer_ptr = NULL;
-	struct job_buffer *job_buffer_ptr = NULL;
-	struct job_table *job_ptr = NULL;
+	static job_info_msg_t *old_job_buffer_ptr = NULL;
+	job_info_msg_t * job_buffer_ptr = NULL;
+	job_table_t *job_ptr = NULL;
 
 	if (old_job_buffer_ptr) {
 		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
@@ -311,7 +312,8 @@ print_job (char * job_id_str)
 	}
 	else if (error_code == 0)
 		old_job_buffer_ptr = job_buffer_ptr;
-printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
+	
+	printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
 
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
@@ -319,12 +321,12 @@ printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
 	if (job_id_str)
 		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
 
-	job_ptr = job_buffer_ptr->job_table_ptr;
-	for (i = 0; i < job_buffer_ptr->job_count; i++) {
-		if (job_id_str && 
-		    job_id != job_ptr[i].job_id) 
+	job_ptr = job_buffer_ptr->job_array ;
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		if (job_id_str && job_id != job_ptr[i].job_id) 
 			continue;
-
+		slurm_print_job_table ( & job_ptr[i] ) ;
+/*
 		printf ("JobId=%u UserId=%u ", 
 			job_ptr[i].job_id, job_ptr[i].user_id);
 		printf ("JobState=%u TimeLimit=%u ", 
@@ -351,7 +353,7 @@ printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
 			job_ptr[i].req_nodes, job_ptr[i].features);
 		printf ("JobScript=%s\n\n",
 			job_ptr[i].job_script);
-
+*/
 		if (job_id_str)
 			break;
 	}
