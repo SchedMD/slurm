@@ -94,105 +94,105 @@ extern void parse_command_line(int argc, char *argv[])
 	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
-			case (int)'?':
-				fprintf(stderr, "Try \"sinfo --help\" for more information\n");
+		case (int)'?':
+			fprintf(stderr, "Try \"sinfo --help\" for more information\n");
+			exit(1);
+			break;
+		case (int)'d':
+			params.dead_nodes = true;
+			break;
+		case (int)'e':
+			params.exact_match = true;
+			break;
+		case (int)'h':
+			params.no_header = true;
+			break;
+		case (int) 'i':
+			params.iterate= atoi(optarg);
+			if (params.iterate <= 0) {
+				error ("Error: --iterate=%s");
 				exit(1);
-				break;
-			case (int)'d':
-				params.dead_nodes = true;
-				break;
-			case (int)'e':
-				params.exact_match = true;
-				break;
-			case (int)'h':
-				params.no_header = true;
-				break;
-			case (int) 'i':
-				params.iterate= atoi(optarg);
-				if (params.iterate <= 0) {
-					fprintf(stderr, 
-						"Error: --iterate=%s",
-						optarg);
-					exit(1);
-				}
-				break;
-			case (int) 'l':
-				params.long_output = true;
-				break;
-			case (int) 'n':
-				params.nodes= xstrdup(optarg);
-				break;
-			case (int) 'N':
-				params.node_flag = true;
-				break;
-			case (int) 'o':
-				params.format = xstrdup(optarg);
-				break;
-			case (int) 'p':
-				params.partition = xstrdup(optarg);
-				break;
-			case (int) 'r':
-				params.responding_nodes = true;
-				break;
-			case (int) 'R':
-				params.list_reasons = true;
-				params.format = "%35R %N";
-				break;
-			case (int) 's':
-				params.summarize = true;
-				break;
-			case (int) 'S':
-				params.sort = xstrdup(optarg);
-				break;
-			case (int) 't':
-				params.states = xstrdup(optarg);
-				params.state_list = 
-					_build_state_list(params.states);
-				break;
-			case (int) 'v':
-				params.verbose++;
-				break;
-			case (int) 'V':
-				_print_version();
-				exit(0);
-			case (int) OPT_LONG_HELP:
-				_help();
-				exit(0);
-			case (int) OPT_LONG_USAGE:
-				_usage();
-				exit(0);
+			}
+			break;
+		case (int) 'l':
+			params.long_output = true;
+			break;
+		case (int) 'n':
+			params.nodes= xstrdup(optarg);
+			break;
+		case (int) 'N':
+			params.node_flag = true;
+			break;
+		case (int) 'o':
+			params.format = xstrdup(optarg);
+			break;
+		case (int) 'p':
+			params.partition = xstrdup(optarg);
+			break;
+		case (int) 'r':
+			params.responding_nodes = true;
+			break;
+		case (int) 'R':
+			params.list_reasons = true;
+			break;
+		case (int) 's':
+			params.summarize = true;
+			break;
+		case (int) 'S':
+			params.sort = xstrdup(optarg);
+			break;
+		case (int) 't':
+			params.states = xstrdup(optarg);
+			params.state_list = 
+				_build_state_list(params.states);
+			break;
+		case (int) 'v':
+			params.verbose++;
+			break;
+		case (int) 'V':
+			_print_version();
+			exit(0);
+		case (int) OPT_LONG_HELP:
+			_help();
+			exit(0);
+		case (int) OPT_LONG_USAGE:
+			_usage();
+			exit(0);
 		}
 	}
 
-	if ( ( params.format == NULL ) && 
-	     ( env_val = getenv("SINFO_FORMAT") ) )
-		params.format = xstrdup(env_val);
 
 	if ( ( params.partition == NULL ) && 
-	     ( env_val = getenv("SINFO_PARTITION") ) )
+			( env_val = getenv("SINFO_PARTITION") ) )
 		params.partition = xstrdup(env_val);
 
 	if ( ( params.partition == NULL ) && 
-	     ( env_val = getenv("SINFO_SORT") ) )
+			( env_val = getenv("SINFO_SORT") ) )
 		params.sort = xstrdup(env_val);
 
 	if ( params.format == NULL ) {
-		if ( params.summarize ) 
+		if ( params.summarize ) {
 			params.format = "%9P %.5a %.9l %.15F  %N";
-		else if ( params.node_flag ) {
+
+		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
-			if ( params.long_output ) {
-				params.format = "%N %.5D %.9P %.11T %.4c "
-					        "%.6m %.8d %.6w %.8f %20R";
-			} else {
-				params.format = "%N %.5D %.9P %6t";
-			}
+			params.format = params.long_output ?
+			  "%N %.5D %.9P %.11T %.4c %.6m %.8d %.6w %.8f %20R" :
+			  "%N %.5D %.9P %6t";
+
+		} else if (params.list_reasons) {
+			params.format = params.long_output ?  
+			  "%35R %6t %N" : 
+			  "%35R %N";
+
+		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
+			params.format = xstrdup(env_val);
+
 		} else {
-			if ( params.long_output )
-				params.format = "%9P %.5a %.9l %.8s %.4r %.5h "
-					        "%.10g %.5D %.11T %N";
-			else
-				params.format = "%9P %.5a %.9l %.5D %.6t %N";
+
+			params.format = params.long_output ? 
+			  "%9P %.5a %.9l %.8s %.4r %.5h %.10g %.5D %.11T %N" :
+			  "%9P %.5a %.9l %.5D %.6t %N";
 		}
 	}
 	_parse_format( params.format );
@@ -203,7 +203,7 @@ extern void parse_command_line(int argc, char *argv[])
 	}
 
 	if (params.dead_nodes || params.nodes || params.partition || 
-	   		params.responding_nodes ||params.state_list)
+			params.responding_nodes ||params.state_list)
 		params.filtering = true;
 
 	if (params.verbose)
