@@ -64,7 +64,8 @@ main (int argc, char *argv[])
 	}
 	else pass( "update_job");
 
-	error_code = pack_all_jobs (&dump, &dump_size, &update_time);
+	error_code = 0;
+       	pack_all_jobs (&dump, &dump_size, &update_time);
 	if (error_code)
 		fail ("dump_all_job error %d", error_code);
 	else pass( "dump_all_job");
