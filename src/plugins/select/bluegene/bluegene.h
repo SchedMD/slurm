@@ -1,10 +1,7 @@
-#ifndef _BLUEGENE_H_
-#define _BLUEGENE_H_
-
 /*****************************************************************************\
  *  bluegene.h - header for bgl node allocation plugin. 
  *****************************************************************************
- *  Copyright (C) 2003 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov>
  *  
@@ -26,18 +23,23 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include "src/common/bitstring.h"
-#include "src/slurmctld/slurmctld.h"
-#ifndef _HOSTLIST_H
-#include "src/common/hostlist.h"
+#ifndef _BLUEGENE_H_
+#define _BLUEGENE_H_
+
+#if HAVE_CONFIG_H
+#  include "config.h"
 #endif
+
+#include "src/common/bitstring.h"
+#include "src/common/hostlist.h"
+#include "src/slurmctld/slurmctld.h"
 
 // #include "rm_api.h"
 #ifndef _RM_API_H__
-typedef uint16_t pm_partition_id_t;
-typedef uint16_t rm_partition_t;
+  typedef uint16_t pm_partition_id_t;
+  typedef uint16_t rm_partition_t;
 #else 
-rm_BGL_t *bgl;
+  rm_BGL_t *bgl;
 #endif
 
 List slurm_part_list;			/* cached copy of slurm's part_list */
@@ -72,25 +74,25 @@ typedef struct bgl_conf_record{
  * static, dynamic, etc.
  * 
  */
-int read_bgl_conf();
+extern int read_bgl_conf();
 /** */
-int init_bgl();
+extern int init_bgl();
 
-int create_static_partitions();
+extern int create_static_partitions();
 /** */
-int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
+extern int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
 	       int min_nodes, int max_nodes);
 /** */
-void sort_bgl_record_inc_size(List records);
+extern void sort_bgl_record_inc_size(List records);
 /** */
-void sort_bgl_record_dec_size(List records);
+extern void sort_bgl_record_dec_size(List records);
 
 /** */
-void print_bgl_record(bgl_record_t* record);
+extern void print_bgl_record(bgl_record_t* record);
 /** */
-char* convert_lifecycle(lifecycle_type_t lifecycle);
+extern char* convert_lifecycle(lifecycle_type_t lifecycle);
 /** */
-char* convert_part_type(rm_partition_t* pt);
+extern char* convert_part_type(rm_partition_t* pt);
 
 /* bluegene_agent - detached thread periodically updates status of bluegene nodes */
 extern void *bluegene_agent(void *args);
