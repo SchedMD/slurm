@@ -36,7 +36,7 @@ Requires: openssl >= 0.9.6
 # Note: The default value should be 0 for legacy compatibility.
 # This was added due to a bug in Suse Linux. For a good reference, see
 # http://slforums.typo3-factory.net/index.php?showtopic=11378
-%_unpackaged_files_terminate_build      0
+%define _unpackaged_files_terminate_build      0
 
 %package devel
 Summary: Development package for SLURM.
