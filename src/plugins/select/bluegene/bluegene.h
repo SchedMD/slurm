@@ -57,14 +57,14 @@
 #endif
 
 /* Global variables */
-rm_BGL_t *bgl;
+extern rm_BGL_t *bgl;
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bgl_record {
 	char* slurm_part_id;		/* ID specified by admins	*/
-	pm_partition_id_t* bgl_part_id;	/* ID returned from CMCS	*/
+	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
 	char* nodes;			/* String of nodes in partition */
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
 	hostlist_t hostlist;		/* expanded form of hosts */

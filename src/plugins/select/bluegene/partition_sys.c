@@ -32,6 +32,8 @@
 #include <unistd.h>
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 #include "partition_sys.h"
 #include "bluegene.h"
 
@@ -55,7 +57,10 @@ List bgl_sys_free = NULL;
 /* global system = list of allocated partitions */
 List bgl_sys_allocated = NULL;
 
-void _init_sys(partition_t*);
+/* Initial bgl partition state information */
+List bgl_init_part_list = NULL;
+
+static void _init_sys(partition_t*);
 
 #ifdef USE_BGL_FILES
    char *BGL_MLOADER_IMAGE = "/bgl/edi/build/bglsys/bin/mmcs-mloader.rts";
@@ -85,14 +90,20 @@ void _init_sys(partition_t*);
    int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp);
 #endif
 
-int _create_bgl_partitions(List requests);
+static int  _create_bgl_partitions(List requests);
 
-int _break_up_partition(List sys, partition_t* partition_to_break, 
+static int  _break_up_partition(List sys, partition_t* partition_to_break, 
 		int index);
-int _fit_request(List sys, List allocated, uint16_t* request);
+static int  _fit_request(List sys, List allocated, uint16_t* request);
 
-void _int_array_destroy(void* object);
-int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
+static void _int_array_destroy(void* object);
+static int  _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
+
+#ifdef HAVE_BGL_FILES
+static void _part_list_del(void *object);
+static int  _part_list_find(void *object, void *key);
+static int  _post_bgl_init_read(void *object, void *arg);
+#endif
 
 #ifdef _UNIT_TESTS_
   extern void debug(const char *fmt, ...);
@@ -108,8 +119,8 @@ int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
  * 
  * example usage: admin wants to partition system as such: 4x4x4,
  * 2x4x4, 2x4x4 to do this, we would run partition_sys three times with
- * the config as {4,2,2} (X-direction), then {4,4,4}(for Y) and
- * finally {4,4,4}( for Z).
+ * the config as {4,2,2} (X-direction), then {4,4,4} (for Y) and
+ * finally {4,4,4} (for Z).
  * 
  * we should really just have all the config stuff in one struct
  * and then have each element in the configs be of type part_config
@@ -122,8 +133,7 @@ int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b);
  * SIDE EFFECT: calls BGL CMCS API that changes the DB2 and
  * essentially wires up the system
  */
-
-int partition_sys(List requests)
+extern int partition_sys(List requests)
 {
 
 	ListIterator itr;
@@ -171,7 +181,7 @@ int partition_sys(List requests)
  * IN - requests: List <partition_t*> to wire up.
  * 
  */
-int _create_bgl_partitions(List requests)
+static int _create_bgl_partitions(List requests)
 {
 	partition_t* cur_partition;	
 	ListIterator itr;
@@ -197,7 +207,7 @@ int _create_bgl_partitions(List requests)
  * we assume that the partitioning done before hand
  * 
  */
- int _fit_request(List sys, List allocated, uint16_t* request)
+static int _fit_request(List sys, List allocated, uint16_t* request)
 {
 	int i, rc = 1;
 	uint16_t* new_request = NULL;
@@ -296,7 +306,7 @@ int _create_bgl_partitions(List requests)
  * odd number sizes, and dimensions will kill this!!!
  * 
  */
- int _break_up_partition(List sys, partition_t* partition_to_break, 
+static int _break_up_partition(List sys, partition_t* partition_to_break, 
 		int index)
 {
 	/* the two new partitions to create */
@@ -496,7 +506,7 @@ void sort_int_array_by_dec_size(List configs)
  * Note: return values are "reversed" so that we can have the list
  * sorted in decreasing order (largest to smallest)
  */
- int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b)
+static int _int_array_cmpf(uint16_t* rec_a, uint16_t* rec_b)
 {
 	int vol_a, vol_b;
 
@@ -522,7 +532,7 @@ extern int configure_switches(partition_t* partition)
 {
 	bgl_record_t* bgl_rec;
 	int cur_coord[SYSTEM_DIMENSIONS]; 
-	pm_partition_id_t* bgl_part_id;
+	pm_partition_id_t bgl_part_id;
 	List switch_list;
 	ListIterator itr;
 #ifdef USE_BGL_FILES
@@ -663,20 +673,18 @@ extern int configure_switches(partition_t* partition)
 		} /* end of cur_coord[1]*/
 	} /* end of cur_coord[1]*/
 
-	bgl_part_id = (pm_partition_id_t*) xmalloc(sizeof(pm_partition_id_t));
-
 #ifdef USE_BGL_FILES
-	_post_allocate(bgl_part, bgl_part_id);
+	_post_allocate(bgl_part, &bgl_part_id);
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
-	bgl_rec->bgl_part_id = bgl_part_id;
-	partition->bgl_part_id = bgl_part_id;
+	bgl_rec->bgl_part_id   = xstrdup(bgl_part_id);
+	partition->bgl_part_id = xstrdup(bgl_part_id);
 
 #else 
 
-	*bgl_part_id = "LLNL_128_16";
+	bgl_part_id = "LLNL_128_16";
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
-	bgl_rec->bgl_part_id   = bgl_part_id;
-	partition->bgl_part_id = bgl_part_id;
+	bgl_rec->bgl_part_id   = xstrdup(bgl_part_id);
+	partition->bgl_part_id = xstrdup(bgl_part_id);
 
 #endif
 	return SLURM_SUCCESS;
@@ -814,7 +822,7 @@ void rotate_part(const uint16_t* config, uint16_t** new_config)
  * this should really go out and get BGL specific information
  * 
  */
-void _init_sys(partition_t *part)
+static void _init_sys(partition_t *part)
 {
 	/* initialize the system wide partition */
 	bgl_sys_free = list_create((ListDelF) _int_array_destroy);
@@ -840,7 +848,7 @@ void _init_sys(partition_t *part)
 /** 
  * to be used by list object to destroy the array elements
  */
- void _int_array_destroy(void* object)
+static void _int_array_destroy(void* object)
 {
 	xfree(object);
 }
@@ -849,7 +857,7 @@ void _init_sys(partition_t *part)
 /** 
  * initialize the BGL partition in the resource manager 
  */
-void _pre_allocate(rm_partition_t *my_part, 
+static void _pre_allocate(rm_partition_t *my_part, 
 		   rm_connection_type_t part_conn)
 {
 	rm_new_partition(&my_part); /* new partition to be added */
@@ -863,7 +871,7 @@ void _pre_allocate(rm_partition_t *my_part,
 /** 
  * add the partition record to the DB and boot it up!
  */
-int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
+static int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 {
 	int rc;
 	rm_partition_state_t state;
@@ -878,7 +886,7 @@ int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 	/* Get back the new partition id */
 	rm_get_data(my_part, RM_PartitionID, &part_id);
 
-	//Initiate boot of the partition
+	/* Initiate boot of the partition */
 	debug("Booting Partition %s", part_id);
 	rc = pm_create_partition(*part_id);
 	if (rc != STATUS_OK) {
@@ -902,7 +910,7 @@ int _post_allocate(rm_partition_t *my_part, pm_partition_id_t *part_id)
 /** 
  * get switch of the BP of these coordinates
  */
-int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list)
+static int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list)
 {
 	int switch_num, i;
 	rm_BP_t * bp;
@@ -968,7 +976,7 @@ void rm_switch_t_destroy(void* object)
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
  */
-int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
+static int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
 {
 	int i, bp_num;
 	rm_location_t loc;
@@ -995,7 +1003,7 @@ int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _is_not_equals_some_coord(int* rec_a, int* rec_b)
+static int _is_not_equals_some_coord(int* rec_a, int* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -1010,7 +1018,7 @@ int _is_not_equals_some_coord(int* rec_a, int* rec_b)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _is_not_equals_all_coord(int* rec_a, int* rec_b)
+static int _is_not_equals_all_coord(int* rec_a, int* rec_b)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -1032,4 +1040,128 @@ extern void init_bgl_partition_num(void)
 {
 	bgl_partition_number = 0;
 }
+
+/*
+ * Download from CMCS the initial BGL partition information
+ */
+extern int read_bgl_partitions(void)
+{
+	int rc = SLURM_SUCCESS;
+
+#ifdef HAVE_BGL_FILES
+	int bp_cnt, i;
+	rm_element_t *bp_ptr;
+	rm_location_t bp_loc;
+	pm_partition_id_t part_id;
+	rm_partition_t *part_ptr;
+	char node_name_tmp[16];
+	bgl_record_t *bgl_part_ptr;
+
+	rm_get_data(bgl, RM_BPNum, &bp_cnt);
+	for (i=0; i<bp_cnt; i++) {
+		if (i)
+			rm_get_data(bgl, RM_NextBP, &bp_ptr);
+		else
+			rm_get_data(bgl, RM_FirstBP, &bp_ptr);
+
+		rm_get_data(bp_ptr, RM_BPLoc, &bp_loc);
+		sprintf(node_name_tmp, "bgl%d%d%d", 
+			bp_loc.X, bp_loc.Y, bp_loc.Z);
+		rm_get_data(bp_ptr, RM_BPPartID, &part_id);
+
+/* FIXME: part_id not returned on LLNL_128_16 system */
+part_id = "LLNL_128_16";
+		if (!part_id || (part_id[0] == '\0')) {
+			info("Node %s in blue gene partition NONE",
+				node_name_tmp);
+			continue;
+		}
+		if (!bgl_init_part_list)
+			bgl_init_part_list = list_create(_part_list_del);
+
+		bgl_part_ptr = list_find_first(bgl_init_part_list, _part_list_find, 
+			part_id);
+		if (!bgl_part_ptr) {
+			/* New BGL partition record */
+			rc = rm_get_partition(part_id, &part_ptr);
+			if (rc) {
+				info("rm_get_partition %s errno=%d",
+					part_id, rc);
+				continue;
+			}
+			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
+			list_push(bgl_init_part_list, bgl_part_ptr);
+			bgl_part_ptr->bgl_part_id = xstrdup(part_id);
+			bgl_part_ptr->hostlist = hostlist_create(node_name_tmp);
+			rm_get_data(part_ptr, RM_PartitionConnection,
+				&bgl_part_ptr->conn_type);
+			rm_get_data(part_ptr, RM_PartitionMode,
+				&bgl_part_ptr->node_use);
+			bgl_part_ptr->part_lifecycle = STATIC;
+			rm_free_partition(part_ptr);
+		} else {
+			/* Add node name to existing BGL partition record */
+			hostlist_push(bgl_part_ptr->hostlist, node_name_tmp);
+		}
+
+		(bgl_part_ptr->size)++;
+	}
+
+	/* perform post-processing for each bluegene partition */
+	list_for_each(bgl_init_part_list, _post_bgl_init_read, NULL);
+#endif
+	return rc;
+}
+
+#ifdef HAVE_BGL_FILES
+static int _post_bgl_init_read(void *object, void *arg)
+{
+	bgl_record_t *bgl_part_ptr = (bgl_record_t *) object;
+	int i = 32;
+
+	bgl_part_ptr->nodes = xmalloc(i);
+	while (hostlist_ranged_string(bgl_part_ptr->hostlist, i,
+			bgl_part_ptr->nodes) < 0) {
+		i *= 2;
+		xrealloc(bgl_part_ptr->nodes, i);
+	}
+
+bgl_part_ptr->slurm_part_id = xstrdup("TBD");
+	
+	print_bgl_record(bgl_part_ptr);
+
+	return SLURM_SUCCESS;
+}
+
+static void _part_list_del(void *object)
+{
+	bgl_record_t *part_ptr = (bgl_record_t *) object;
+
+	if (part_ptr) {
+		xfree(part_ptr->bgl_part_id);
+		xfree(part_ptr->nodes);
+		xfree(part_ptr->slurm_part_id);
+		if (part_ptr->hostlist)
+			hostlist_destroy(part_ptr->hostlist);
+		xfree(part_ptr);
+	}
+}
+
+static int  _part_list_find(void *object, void *key)
+{
+	bgl_record_t *part_ptr = (bgl_record_t *) object;
+	pm_partition_id_t part_id = (pm_partition_id_t) key;
+
+	if (!part_ptr->bgl_part_id) {
+		error("_part_list_find: bgl_part_id == NULL");
+		return -1;
+	}
+	if (!part_id) {
+		error("_part_list_find: part_id == NULL");
+		return -1;
+	}
+
+	return strcmp(part_ptr->bgl_part_id, part_id);
+}
+#endif
 
