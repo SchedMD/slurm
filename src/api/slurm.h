@@ -28,6 +28,28 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
+/* FIXME: REMOVE ASAP */
+#if HAVE_CONFIG_H
+#  include <config.h>
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  else
+#    if HAVE_STDINT_H
+#      include <stdint.h>
+#    endif
+#  endif			/* HAVE_INTTYPES_H */
+#  ifdef HAVE_LIBELAN3
+#    include <src/common/qsw.h>
+#  endif
+#else				/* !HAVE_CONFIG_H */
+#  include <inttypes.h>
+#endif				/*  HAVE_CONFIG_H */
+
+#include <src/common/macros.h>
+#include <src/common/xassert.h>
+#include <src/common/slurm_protocol_common.h>
+
+
 #include <stdio.h>			/* for FILE definitions */
 #include <time.h>			/* for time_t definitions */
 
