@@ -277,6 +277,19 @@ _fd_info_init(fd_info_t *info, int taskid, int *pfd, FILE *fp, cbuf_t buf)
 	info->buf    = buf;
 }
 
+static int
+_stdin_buffer_space (job_t *job)
+{
+	int i, nfree, len = 0;
+	for (i = 0; i < opt.nprocs; i++) {
+		if ((nfree = cbuf_free (job->inbuf[i])) == 0)
+			return (0);
+		if ((len == 0) || (nfree < len))
+			len = nfree;
+	}
+	return (len);
+}
+
 static nfds_t
 _setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
 {
@@ -284,7 +297,7 @@ _setup_pollfds(job_t *job, struct pollfd *fds, fd_info_t *map)
 	int i;
 	nfds_t nfds = job->niofds; /* already have n ioport fds + stdin */
 
-	if ((job->stdinfd >= 0) && stdin_open) {
+	if ((job->stdinfd >= 0) && stdin_open && _stdin_buffer_space(job)) {
 		_poll_set_rd(fds[nfds], job->stdinfd);
 		nfds++;
 	}
@@ -386,9 +399,11 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
-		if ((job->stdinfd >= 0) && stdin_open) {
-		       	if (fds[i].revents)
-				_bcast_stdin(job->stdinfd, job);
+		if (  (fds[i].fd == job->stdinfd) 
+                   && (job->stdinfd >= 0) 
+                   && stdin_open 
+                   && fds[i].revents ) {
+			_bcast_stdin(job->stdinfd, job);
 			++i;
 		}
 
