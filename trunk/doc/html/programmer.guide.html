@@ -123,7 +123,7 @@ to 0 and for DEBUG_SYSTEM set to 1.
 Many of these modules have been built and tested on a variety of 
 Unix computers including Redhat's Linux, IBM's AIX, Sun's Solaris, 
 and Compaq's Tru-64. The only module at this time which is operating 
-system dependent is Get_Mach_Stat.c.
+system dependent is get_mach_stat.c.
 <p>
 The node selection logic allocates nodes to jobs in a fashion which 
 makes most sense for a Quadrics switch interconnect. It allocates 
@@ -142,134 +142,137 @@ and 4 node sets rather than use the smaller sets).
 All functions described below can be issued from any node in the SLURM cluster. 
 
 <dl>
-<dt>int Allocate(char *Spec, char **NodeList);
+<dt>int slurm_allocate(char *spec, char **node_list);
 <dd>Allocate nodes for a job with supplied contraints. 
-<dd>Input: Spec - Specification of the job's constraints;
-<dd>NodeList - Place into which a node list pointer can be placed;
-<dd>Output: NodeList - List of allocated nodes;
+<dd>Input: spec - Specification of the job's constraints;
+<dd>node_list - Place into which a node list pointer can be placed;
+<dd>Output: node_list - List of allocated nodes;
 <dd>Returns 0 if no error, EINVAL if the request is invalid, 
 EAGAIN if the request can not be satisfied at present;
 <dd>NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
 Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
 TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
 MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
-<dd>NOTE: The calling function must free the allocated storage at NodeList[0]
+<dd>NOTE: The calling function must free the allocated storage at node_list[0]
 
-<dt>void Free_Build_Info(void);
+<dt>void slurm_free_build_info(void);
 <dd>Free the build information buffer (if allocated).
-<dd>NOTE: Buffer is loaded by Load_Build and used by Load_Build_Name.
+<dd>NOTE: Buffer is loaded by slurm_load_build and used by slurm_load_build_name.
 
-<dt>void Free_Node_Info(void);
+<dt>void free_node_info(void);
 <dd>Free the node information buffer (if allocated)
-<dd>NOTE: Buffer is loaded by Load_Node and used by Load_Node_Name.
+<dd>NOTE: Buffer is loaded by load_node and used by load_node_name.
 
-<dt>void Free_Part_Info(void);
+<dt>void free_part_info(void);
 <dd>Free the partition information buffer (if allocated)
-<dd>NOTE: Buffer is loaded by Load_Part and used by Load_Part_Name.
+<dd>NOTE: Buffer is loaded by load_part and used by load_part_name.
 
-<dt>int Get_Job_Info(TBD);
+<dt>int get_job_info(TBD);
 <dd>Function to be defined.
 
-<dt>int Get_Key(? *key);
+<dt>int get_key(? *key);
 <dd>Load into the location key the value of an authorization key. 
 <dd>To be defined.
 
-<dt>int Kill_Job(int Job_Id);
+<dt>int kill_job(int job_id);
 <dd>Terminate the specified SLURM job. 
 <dd>TBD.
 
-<dt>int Load_Build(void);
+<dt>int slurm_load_build(void);
 <dd>Update the build information buffer for use by info gathering APIs
 <dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure.
-<dd>NOTE: Buffer is used by Load_Build_Name and freed by Free_Build_Info.
+<dd>NOTE: Buffer is used by slurm_load_build_name and freed by slurm_free_build_info.
+<dd>See the SLURM administrator guide for valid names.
 
-<dt>int Load_Build_Name(char *Req_Name, char *Next_Name, char *Value);
+<dt>int slurm_load_build_name(char *req_name, char *next_name, char *value);
 <dd>Load the state information about the named build parameter
-<dd>Input: Req_Name - Name of the parameter for which information is requested
+<dd>Input: req_name - Name of the parameter for which information is requested
 if "", then get info for the first parameter in list
-<dd>Next_Name - Location into which the name of the next parameter is 
+<dd>next_name - Location into which the name of the next parameter is 
 stored, "" if no more
-<dd>Value - Pointer to location into which the information is to be stored
-<dd>Output: Req_Name - The parameter's name is stored here
-<dd>Next_Name - The name of the next parameter in the list is stored here
-<dd>Value - The parameter's state information
+<dd>value - Pointer to location into which the information is to be stored
+<dd>Output: req_name - The parameter's name is stored here
+<dd>next_name - The name of the next parameter in the list is stored here
+<dd>value - The parameter's state information
 <dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
-<dd>NOTE:  Req_Name, Next_Name, and Value must be declared by caller with have 
+<dd>NOTE:  req_name, next_name, and Value must be declared by caller with have 
 length BUILD_SIZE or larger
-<dd>NOTE: Buffer is loaded by Load_Build and freed by Free_Build_Info.
+<dd>NOTE: Buffer is loaded by slurm_load_build and freed by slurm_free_build_info.
+<dd>See the <a href="administration.guide>SLURM administrator guide<a> 
+for valid names.
 
-<dt>int Load_Node(time_t *Last_Update_Time);
+<dt>int load_node(time_t *last_update_time);
 <dd>Load the supplied node information buffer for use by info gathering APIs if
 node records have changed since the time specified. 
 <dd>Input: Buffer - Pointer to node information buffer
 <dd>Buffer_Size - size of Buffer
 <dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
-<dd>NOTE: Buffer is loaded by Load_Node and freed by Free_Node_Info.
+<dd>NOTE: Buffer is loaded by load_node and freed by Free_Node_Info.
 
-<dt>int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs, 
-int *RealMemory, int *TmpDisk, int *Weight, char *Features,
-char *Partition, char *NodeState);
+<dt>int load_node_Config(char *req_name, char *next_name, int *cpus, 
+int *real_memory, int *tmp_disk, int *weight, char *features,
+char *partition, char *node_state);
 <dd>Load the state information about the named node
-<dd>Input: Req_Name - Name of the node for which information is requested
+<dd>Input: req_name - Name of the node for which information is requested
 if "", then get info for the first node in list
-<dd>Next_Name - Location into which the name of the next node is 
+<dd>next_name - Location into which the name of the next node is 
 stored, "" if no more
-<dd>CPUs, etc. - Pointers into which the information is to be stored
-<dd>Output: Next_Name - Name of the next node in the list
-<dd>CPUs, etc. - The node's state information
+<dd>cpus, etc. - Pointers into which the information is to be stored
+<dd>Output: next_name - Name of the next node in the list
+<dd>cpus, etc. - The node's state information
 <dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
-<dd>NOTE:  Req_Name, Next_Name, Partition, and NodeState must be declared by the 
+<dd>NOTE:  req_name, next_name, Partition, and NodeState must be declared by the 
 caller and have length MAX_NAME_LEN or larger.
 Features must be declared by the caller and have length FEATURE_SIZE or larger
-<dd>NOTE: Buffer is loaded by Load_Node and freed by Free_Node_Info.
+<dd>NOTE: Buffer is loaded by load_node and freed by Free_Node_Info.
 
-<dt>int Load_Part(time_t *Last_Update_Time);
+<dt>int load_part(time_t *last_update_time);
 <dd>Update the partition information buffer for use by info gathering APIs if 
 partition records have changed since the time specified. 
-<dd>Input: Last_Update_Time - Pointer to time of last buffer
-<dd>Output: Last_Update_Time - Time reset if buffer is updated
+<dd>Input: last_update_time - Pointer to time of last buffer
+<dd>Output: last_update_time - Time reset if buffer is updated
 <dd>Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
-<dd>NOTE: Buffer is used by Load_Part_Name and free by Free_Part_Info.
+<dd>NOTE: Buffer is used by load_part_name and free by Free_Part_Info.
 
-<dt>int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared, int *Default,
-char *Nodes, char *AllowGroups);
+<dt>int load_part_name(char *req_name, char *next_name, int *max_time, int *max_nodes, 
+int *total_nodes, int *total_cpus, int *key, int *state_up, int *shared, int *default,
+char *nodes, char *allow_groups);
 <dd>Load the state information about the named partition
-<dd>Input: Req_Name - Name of the partition for which information is requested
+<dd>Input: req_name - Name of the partition for which information is requested
 if "", then get info for the first partition in list
-<dd>Next_Name - Location into which the name of the next partition is 
+<dd>next_name - Location into which the name of the next partition is 
 stored, "" if no more
-<dd>MaxTime, etc. - Pointers into which the information is to be stored
-<dd>Output: Req_Name - The partition's name is stored here
-<dd>Next_Name - The name of the next partition in the list is stored here
-<dd>MaxTime, etc. - The partition's state information
+<dd>max_time, etc. - Pointers into which the information is to be stored
+<dd>Output: req_name - The partition's name is stored here
+<dd>next_name - The name of the next partition in the list is stored here
+<dd>max_time, etc. - The partition's state information
 <dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
-<dd>NOTE:  Req_Name and Next_Name must be declared by caller with have length MAX_NAME_LEN or larger.
+<dd>NOTE:  req_name and next_name must be declared by caller with have length MAX_NAME_LEN or larger.
 <dd>Nodes and AllowGroups must be declared by caller with length of FEATURE_SIZE or larger.
-<dd>NOTE: Buffer is loaded by Load_Part and free by Free_Part_Info.
+<dd>NOTE: Buffer is loaded by load_part and free by Free_Part_Info.
 
-<dt>int Reconfigure(void);
+<dt>int reconfigure(void);
 <dd>Request that slurmctld re-read the configuration files
 Output: Returns 0 on success, errno otherwise
 
-<dt>int Run_Job(char *Job_Spec);
-<dd>Initiate the job with the specification Job_Spec.
+<dt>int run_job(char *job_spec);
+<dd>Initiate the job with the specification job_spec.
 <dd>TBD.
 
-<dt>int Signal_Job(int Job_Id, int Signal);
+<dt>int signal_job(int job_id, int signal);
 <dd>Send the specified signal to the specified SLURM job. 
 <dd>TBD.
 
-<dt>int Transfer_Resources(pid_t Pid, int Job_Id);
+<dt>int transfer_resources(pid_t pid, int job_id);
 <dd>Transfer the ownership of resources associated with the specified 
 <dd>TBD.
 
-<dt>int Update(char *Spec);
+<dt>int update(char *spec);
 <dd>Request that slurmctld update its configuration per request
 <dd>Input: A line containing configuration information per the configuration file format
 <dd>Output: Returns 0 on success, errno otherwise
 
-<dt>int Will_Job_Run(char *Job_Spec);
+<dt>int will_job_run(char *job_spec);
 <dd>TBD.
 </dl>
 
