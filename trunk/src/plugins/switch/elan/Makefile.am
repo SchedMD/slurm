@@ -19,7 +19,6 @@ if HAVE_ELAN
 # Quadrics elan3 or elan4 switch plugin.
 switch_elan_la_SOURCES =        \
 	switch_elan.c		\
-	elanhosts.c elanhosts.h	\
 	qsw.c qsw.h
 
 # Add libslurm to switch_elan to provide some symbols that are not

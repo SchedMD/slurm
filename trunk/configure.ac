@@ -180,35 +180,9 @@ AC_SUBST(SLURMD_PORT)
 
 dnl check for whether to include Elan support
 dnl
-AC_MSG_CHECKING(whether to include Elan support)
-savedLIBS="$LIBS"
-AC_CHECK_LIB([elanctrl], [elanctrl_open], 
-             [ have_elanctrl=yes
-               have_elan=yes
-               ELAN_LIBS="-lelanctrl"
-               AC_DEFINE(HAVE_LIBELANCTRL, 1, 
-                         [define if you have libelanctrl.]) ], 
-             [ have_elanctrl=no ]
-)
-AC_CHECK_LIB([elan3], [elan3_create], 
-             [ have_elan3=yes
-               have_elan=yes
-               ELAN_LIBS="-lelan3"
-               AC_DEFINE(HAVE_LIBELAN3, 1, 
-                         [define if you have libelan3.]) ], 
-             [ have_elan3=no ]
-  )
-AM_CONDITIONAL(HAVE_ELAN, test "x$have_elan" = "xyes")
-if test "x$have_elan" = "xyes"; then
-  AC_DEFINE(HAVE_ELAN, 1, [Define to enable Elan support.])
-  AC_CHECK_LIB(rmscall, rms_prgcreate, 
-    [ELAN_LIBS="$ELAN_LIBS -lrmscall"],
-    [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
-  )
-fi
-LIBS="$savedLIBS" 
+AC_ELAN
+AM_CONDITIONAL(HAVE_ELAN, test "x$ac_have_elan" = "xyes")
 AC_SUBST(HAVE_ELAN)
-AC_SUBST(ELAN_LIBS)
 
 dnl Check for whether to include readline support
 dnl 
