@@ -376,9 +376,9 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 {
 	packstr (dump_node_ptr->name, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
-	pack32  (dump_node_ptr->config_ptr->cpus, buffer);
-	pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
-	pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
+	pack32  (dump_node_ptr->cpus, buffer);
+	pack32  (dump_node_ptr->real_memory, buffer);
+	pack32  (dump_node_ptr->tmp_disk, buffer);
 }
 
 /*
