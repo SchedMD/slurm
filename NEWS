@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 ===============================
  -- Add support for getting node's real memory size on AIX
  -- Sinfo sort partitions in slurm.conf order, new sort option ("#P")
+ -- Document how to gracefully change plugin values
+ -- Slurmctld does not attempt to recover jobs when the switch plugin 
+    value changes (decision reached when any job's switch state recovery 
+    fails)
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
