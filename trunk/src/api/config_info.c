@@ -48,12 +48,10 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
         last_update_msg_t last_time_msg ; 
 	return_code_msg_t * rc_msg ;
 	
-	/* init message connection for message communication with controller */
-	
+	/* init message connection for message communication with controller */	
 	if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
 
-	
 	/* send request message */
 	last_time_msg . last_update = update_time ;
 	request_msg . msg_type = REQUEST_BUILD_INFO ;
