@@ -430,11 +430,11 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	pthread_t thread_agent;
 	int retries;
 
+	slurm_mutex_lock(&agent_cnt_mutex);
 	if ((bgl_update_list == NULL)
 	&&  ((bgl_update_list = list_create(_bgl_list_del)) == NULL))
 		fatal("malloc failure in start_job/list_create");
 
-	slurm_mutex_lock(&agent_cnt_mutex);
 	if (list_enqueue(bgl_update_list, bgl_update_ptr) == NULL)
 		fatal("malloc failure in _part_op/list_enqueue");
 	if (agent_cnt > 0) {	/* already running an agent */
@@ -527,19 +527,15 @@ extern int start_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
-	pm_partition_id_t bgl_part_id;
-	bgl_update_t *bgl_update_ptr;
+	bgl_update_t *bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 
-	select_g_get_jobinfo(job_ptr->select_jobinfo, 
-		SELECT_DATA_PART_ID, &bgl_part_id);
-	info("Queue start of job %u in BGL partition %s", 
-		job_ptr->job_id, bgl_part_id);
-
-	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = START_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
-	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
+	info("Queue start of job %u in BGL partition %s",
+		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
@@ -584,20 +580,15 @@ int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
-	pm_partition_id_t bgl_part_id;
-	bgl_update_t *bgl_update_ptr;
+	bgl_update_t *bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 
-	/* Identify the BGL block */
-	select_g_get_jobinfo(job_ptr->select_jobinfo,
-		SELECT_DATA_PART_ID, &bgl_part_id);
-	info("Queue termination of job %u in BGL partition %s",
-		job_ptr->job_id, bgl_part_id);
-
-	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
-	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
+	info("Queue termination of job %u in BGL partition %s",
+		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
@@ -613,7 +604,6 @@ extern int sync_jobs(List job_list)
 #ifdef HAVE_BGL_FILES
 	ListIterator job_iterator, block_iterator;
 	struct job_record  *job_ptr;
-	pm_partition_id_t bgl_part_id;
 	List block_list = _get_all_blocks();
 	bgl_update_t *bgl_update_ptr;
 
@@ -622,24 +612,26 @@ extern int sync_jobs(List job_list)
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
-		select_g_get_jobinfo(job_ptr->select_jobinfo,
-			SELECT_DATA_PART_ID, &bgl_part_id);
 
-		if (_excise_block(block_list, bgl_part_id, job_ptr->nodes)
-				!= SLURM_SUCCESS) {
+		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+		select_g_get_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
+
+		if (_excise_block(block_list, bgl_update_ptr->bgl_part_id, 
+				job_ptr->nodes) != SLURM_SUCCESS) {
 			error("Kill job %u belongs to defunct bglblock %s",
-				job_ptr->job_id, bgl_part_id);
+				job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 			job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+			xfree(bgl_update_ptr);
+			xfree(bgl_update_ptr->bgl_part_id);
 			continue;
 		}
 
 		debug3("Queue sync of job %u in BGL partition %s",
-			job_ptr->job_id, bgl_part_id);
-		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+			job_ptr->job_id, bgl_update_ptr->bgl_part_id);
 		bgl_update_ptr->op = SYNC_OP;
 		bgl_update_ptr->uid = job_ptr->user_id;
 		bgl_update_ptr->job_id = job_ptr->job_id;
-		bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 		_part_op(bgl_update_ptr);
 	}
 	list_iterator_destroy(job_iterator);
