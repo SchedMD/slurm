@@ -104,7 +104,7 @@ get_plugin_dir( void )
 		read_slurm_conf_ctl( &conf );
 	}
 	if ( conf.plugindir == NULL ) {
-		conf.plugindir = xstrdup( "/usr/local/lib" );
+		conf.plugindir = xstrdup( SLURM_PLUGIN_PATH );
 	}
 	slurm_mutex_unlock( &config_lock );
 	

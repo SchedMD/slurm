@@ -218,6 +218,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job epilog failed"			        	},
 	{ ESLURMD_SESSION_KILLED,
 	  "Session manager killed"		        	},
+	{ ESLURMD_TOOMANYSTEPS,
+	  "Too many job steps on node"		        	},
+	{ ESLURMD_STEP_EXISTS,
+	  "Job step already in shared memory"	        	},
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

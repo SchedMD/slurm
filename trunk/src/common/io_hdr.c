@@ -34,6 +34,7 @@
 
 #define IO_HDR_VERSION 0xa001
 
+/*
 static void
 _print_data(char *data, int datalen)
 {
@@ -46,6 +47,7 @@ _print_data(char *data, int datalen)
 
 	info("data: %s", buf);
 }
+*/
 
 
 static void

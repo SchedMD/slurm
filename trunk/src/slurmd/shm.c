@@ -278,7 +278,7 @@ _is_valid_ipc_name(const char *name)
 static char *
 _create_ipc_name(const char *name)
 {
-	char *dst, *dir, *slash;
+	char *dst = NULL, *dir = NULL, *slash = NULL;
 	int rc;
 
 	if ((rc = _is_valid_ipc_name(name)) != 1)
@@ -419,11 +419,10 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		s = &slurmd_shm->step[i];
 		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
+			pid_t sid = getsid(t->pid);
 
-			if (getsid(t->pid) != s->sid) {
-				error ("Task pid is not in my session!");
+			if ((sid < (pid_t) 0) || (sid != s->sid))
 				continue;
-			}
 
 			if (t->pid > 0 && kill(t->pid, signo) < 0) {
 				error("kill %d.%d task %d pid %ld: %m", 

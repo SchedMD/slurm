@@ -422,7 +422,7 @@ task_info_destroy(task_info_t *t)
 	xfree(t);
 }
 
-void
+int
 job_update_shm(slurmd_job_t *job)
 {
 	job_step_t s;
@@ -436,13 +436,15 @@ job_update_shm(slurmd_job_t *job)
 	s.sw_id     = 0;
 	s.io_update = false;
 
-	if (shm_insert_step(&s) < 0)
-		error("Updating shm with new step info: %m");
+	if (shm_insert_step(&s) < 0) 
+		return SLURM_ERROR;
 
 	if (job->stepid == NO_VAL)
 		debug("updated shm with job %d", job->jobid);
 	else
 		debug("updated shm with step %d.%d", job->jobid, job->stepid);
+
+	return SLURM_SUCCESS;
 }
 
 void 

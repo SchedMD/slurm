@@ -362,7 +362,13 @@ _job_mgr(slurmd_job_t *job)
 	if (shm_init() < 0)
 		goto fail0;
 
-	job_update_shm(job);
+	if (job_update_shm(job) < 0) {
+		if (errno == ENOSPC) 
+			rc = ESLURMD_TOOMANYSTEPS;
+		else if (errno == EEXIST)
+			rc = ESLURMD_STEP_EXISTS;
+		goto fail0;
+	}
 
 	if (!job->batch && (interconnect_preinit(job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;

@@ -171,6 +171,7 @@ slurm_auth_free( slurm_auth_credential_t *cred )
 	 */
 	if (cred->m_str) free(cred->m_str);
 	xfree(cred);
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -381,6 +382,7 @@ slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 	fprintf(fp, "BEGIN SLURM MUNGE AUTHENTICATION CREDENTIAL\n" );
 	fprintf(fp, "%s\n", cred->m_str );
 	fprintf(fp, "END SLURM MUNGE AUTHENTICATION CREDENTIAL\n" );
+	return SLURM_SUCCESS;
 }
 
 int
