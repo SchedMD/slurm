@@ -59,7 +59,7 @@ int slurm_init_verifier ( slurm_ssl_key_ctx_t * ctx , char * path )
 	if ( ( cert_file = fopen ( path , "r" ) ) == NULL )
 	{
 		local_errno = errno ;
-		error ( "can'topen certificate file '%s' : %m " , path ) ;
+		error ( "can't open certificate file '%s' : %m " , path ) ;
 		return SLURM_ERROR ;
 	};
 	
