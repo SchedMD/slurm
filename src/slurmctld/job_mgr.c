@@ -20,6 +20,7 @@
 #include "slurmctld.h"
 #include "xstring.h"
 #include <src/common/slurm_protocol_errno.h>
+#include <src/common/macros.h>
 
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
@@ -287,6 +288,33 @@ find_job_record(uint32_t job_id)
 	}
 
 	return NULL;
+}
+
+
+/* dump_job_desc - dump the incoming job submit request message */
+void
+dump_job_desc(job_desc_msg_t * job_specs)
+{
+	if (job_specs == NULL) 
+		return;
+
+	debug3("JobDesc: user_id=%u job_id=%u partition=%s, name=%s\n",
+		job_specs->user_id, job_specs->job_id, 
+		job_specs->partition, job_specs->name);
+	debug3("    min_procs=%u min_memory=%u min_tmp_disk=%u features=%s\n",
+		job_specs->min_procs, job_specs->min_memory, 
+		job_specs->min_tmp_disk, job_specs->features);
+	debug3("    num_procs=%u num_nodes=%u req_nodes=%s\n", 
+		job_specs->num_procs, job_specs->num_nodes, 
+		job_specs->req_nodes);
+	debug3("    time_limit=%u contiguous=%u priority=%u shared=%u\n", 
+		job_specs->time_limit, job_specs->contiguous,
+		job_specs->priority, job_specs->shared);
+	debug3("    dist=%u procs_per_task=%u job_script=%s groups=%s\n", 
+		job_specs->dist, job_specs->procs_per_task,
+		job_specs->job_script, job_specs->groups);
+/*	debug3("    partition_key=%?\n", job_specs->partition_key); */
+
 }
 
 
