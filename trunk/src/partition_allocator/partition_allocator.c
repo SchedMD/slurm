@@ -308,28 +308,25 @@ int _find_first_match(pa_request_t* pa_request, List* results)
 
 			if (found_count[cur_dim] != geometry[cur_dim]){
 				pa_node_t* pa_node = &(_pa_system[x][y][z]);
-				if (pa_node->conf_result_list == NULL){
-					printf("conf_result_list is NULL\n");
-				}
-				printf("address of pa_node %d%d%d %s 0x%p\n", 
+				printf("address of pa_node %d%d%d %s 0x%p\n",
 				       x,y,z, convert_dim(cur_dim), &(_pa_system[x][y][z]));
 				match_found = _check_pa_node(&(_pa_system[x][y][z]),
 							     geometry[cur_dim],
-							     conn_type, force_contig,
+						     conn_type, force_contig,
 							     cur_dim, current_node_id);
-				
 				if (match_found){
+					
 					/* insert the pa_node_t* into the List of results */
 					list_append(*results, &(_pa_system[x][y][z]));
 #ifdef DEBUG_PA
 					printf("_find_first_match: found match for %s = %d%d%d\n",
 					       convert_dim(cur_dim), x,y,z); 
 #endif
-
+					
 					found_count[cur_dim]++;
 					if (found_count[cur_dim] == geometry[cur_dim]){
 #ifdef DEBUG_PA
-						printf("_find_first_match: found full match for %s dimension\n", convert_dim(cur_dim));
+					printf("_find_first_match: found full match for %s dimension\n", convert_dim(cur_dim));
 #endif
 					}
 				} 
@@ -831,10 +828,45 @@ int allocate_part(pa_request_t* pa_request, List* results)
 	}
 
 	print_pa_request(pa_request);
-	_find_first_match(pa_request, results);
+	// _find_first_match(pa_request, results);
 
-	if (!results)
-		xfree(results);
+
+	/* for danny, to stub out the allocate_part function
+	 * fills out a request for a 3x2x1 partition
+	 */
+	int* coord;
+	*results = list_create(delete_gen);
+
+	/* node 000 */
+	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
+	coord[0] = 0; coord[1] = 0; coord[2] = 0;
+	list_append(*results, coord);
+
+	/* node 100 */
+	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
+	coord[0] = 1; coord[1] = 0; coord[2] = 0;
+	list_append(*results, coord);
+
+	/* node 200 */
+	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
+	coord[0] = 2; coord[1] = 0; coord[2] = 0;
+	list_append(*results, coord);
+
+	/* node 010 */
+	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
+	coord[0] = 0; coord[1] = 1; coord[2] = 0;
+	list_append(*results, coord);
+
+	/* node 110 */
+	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
+	coord[0] = 1; coord[1] = 1; coord[2] = 0;
+	list_append(*results, coord);
+
+	/* node 210 */
+	coord = (int*) xmalloc(sizeof(int)*PA_SYSTEM_DIMENSIONS);
+	coord[0] = 2; coord[1] = 1; coord[2] = 0;
+	list_append(*results, coord);
+	
 	return 0;
 }
 
