@@ -21,6 +21,8 @@
 #include <time.h>
 #include "list.h"
 #include "slurmlib.h"
+#include "log.h"
+#include "xmalloc.h"
 
 #define DEBUG_SYSTEM 1
 
@@ -144,7 +146,8 @@ extern char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 extern struct part_record *default_part_loc;	/* location of default partition */
 
 /*
- * bitmap2node_name - given a bitmap, build a node list representation
+ * bitmap2node_name - given a bitmap, build a node name list representation using 
+ * 	regular expressions
  * input: bitmap - bitmap pointer
  *        node_list - place to put node list
  * output: node_list - set to node list or null on error 
@@ -282,10 +285,10 @@ extern int delete_node_record (char *name);
 extern int delete_part_record (char *name);
 
 /* 
- * dump_node - dump all configuration and node information to a buffer
+ * dump_all_node - dump all configuration and node information to a buffer
  * input: buffer_ptr - location into which a pointer to the data is to be stored.
  *                     the data buffer is actually allocated by dump_node and the 
- *                     calling function must free the storage.
+ *                     calling function must xfree the storage.
  *         buffer_size - location into which the size of the created buffer is in bytes
  *         update_time - dump new data only if partition records updated since time 
  *                       specified, otherwise return empty buffer
@@ -293,17 +296,16 @@ extern int delete_part_record (char *name);
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
  *         returns 0 if no error, errno otherwise
- * NOTE: in this prototype, the buffer at *buffer_ptr must be freed by the caller
- * NOTE: this is a prototype for a function to ship data partition to an api.
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
  */
-extern int dump_node (char **buffer_ptr, int *buffer_size,
-		      time_t * update_time);
+extern int  dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
- * dump_part - dump all partition information to a buffer
+ * dump_all_part - dump all partition information to a buffer
  * input: buffer_ptr - location into which a pointer to the data is to be stored.
  *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must free the storage.
+ *                     calling function must xfree the storage.
  *         buffer_size - location into which the size of the created buffer is in bytes
  *         update_time - dump new data only if partition records updated since time 
  *                       specified, otherwise return empty buffer
@@ -311,11 +313,34 @@ extern int dump_node (char **buffer_ptr, int *buffer_size,
  *         buffer_size - set to size of the buffer in bytes
  *         update_time - set to time partition records last updated
  *         returns 0 if no error, errno otherwise
- * NOTE: in this prototype, the buffer at *buffer_ptr must be freed by the caller
- * NOTE: this is a prototype for a function to ship data partition to an api.
+ * global: part_list - global list of partition records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  */
-extern int dump_part (char **buffer_ptr, int *buffer_size,
-		      time_t * update_time);
+extern int  dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
+
+/* 
+ * dump_node - dump all configuration information about a specific node to a buffer
+ * input:  dump_node_ptr - pointer to node for which information is requested
+ *         out_line - buffer for node information 
+ *         out_line_size - byte size of out_line
+ * output: out_line - set to node information values
+ *         return 0 if no error, 1 if out_line buffer too small
+ * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
+ *       and make the corresponding changes to load_node_config in api/node_info.c
+ */
+extern int  dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size);
+
+/* 
+ * dump_part - dump all configuration information about a specific partition to a buffer
+ * input:  dump_part_ptr - pointer to partition for which information is requested
+ *         out_line - buffer for partition information 
+ *         out_line_size - byte size of out_line
+ * output: out_line - set to partition information values
+ *         return 0 if no error, 1 if out_line buffer too small
+ * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
+ *       and make the corresponding changes to load_part_config in api/partition_info.c
+ */
+extern int dump_part (struct part_record *part_record_point, char *out_line, int out_line_size);
 
 /* 
  * find_node_record - find a record for node with specified name,
@@ -400,14 +425,27 @@ extern void node_lock ();
 extern void node_unlock ();
 
 /*
- * node_name2bitmap - given a node list, build a bitmap representation
- * input: node_list - list of nodes
+ * node_name2bitmap - given a node name regular expression, build a bitmap representation
+ * input: node_names - list of nodes
  *        bitmap - place to put bitmap pointer
  * output: bitmap - set to bitmap or null on error 
  *         returns 0 if no error, otherwise einval or enomem
  * NOTE: the caller must free memory at bitmap when no longer required
  */
-extern int node_name2bitmap (char *node_list, unsigned **bitmap);
+extern int node_name2bitmap (char *node_names, unsigned **bitmap);
+
+/* 
+ * node_name2list - given a node name regular expression, build an 
+ *	array of node names
+ * input: node_names - list of nodes
+ *	  node_list - location into which the list is placed
+ *        node_count - location into which a node count is passed
+ * output: node_list - an array of node names, each of size MAX_NAME_LEN
+ *         node_count - the number of entries in node_list
+ *         returns 0 if no error, otherwise EINVAL or enomem
+ * NOTE: the caller must xfree memory at node_list when no longer required iff no error
+ */
+extern int  node_name2list (char *node_names, char **node_list, int *node_count);
 
 /* part_lock - lock the partition information */
 extern void part_lock ();
@@ -447,12 +485,12 @@ extern int read_SLURM_CONF (char *file_name);
 extern void report_leftover (char *in_line, int line_num);
 
 /* 
- * update_node - update a node configuration data
- * input: node_name - node name specification (can include real expression)
+ * update_node - update the configuration data for one or more nodes
+ * input: node_names - node names, may contain regular expression
  *        spec - the updates to the node's specification 
  * output:  return - 0 if no error, otherwise an error code
  */
-extern int update_node (char *node_name, char *spec);
+extern int update_node (char *node_names, char *spec);
 
 /* 
  * update_part - update a partition's configuration data

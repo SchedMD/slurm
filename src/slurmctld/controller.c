@@ -36,110 +36,58 @@ main (int argc, char *argv[]) {
 	char node_name[MAX_NAME_LEN];
 
 	error_code = init_slurm_conf ();
-	if (error_code) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "slurmctld: init_slurm_conf error %d\n",
-			 error_code);
-#else
-		syslog (LOG_ALERT, "slurmctld: init_slurm_conf error %d\n",
-			error_code);
-#endif
-		abort ();
-	}			
+	if (error_code)
+		fatal ("slurmctld: init_slurm_conf error %d", error_code);
 
 	error_code = read_slurm_conf (SLURM_CONF);
-	if (error_code) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "slurmctld: error %d from read_slurm_conf reading %s\n",
+	if (error_code)
+		fatal ("slurmctld: error %d from read_slurm_conf reading %s",
 			 error_code, SLURM_CONF);
-#else
-		syslog (LOG_ALERT,
-			"slurmctld: error %d from read_slurm_conf reading %s\n",
-			error_code, SLURM_CONF);
-#endif
-		abort ();
-	}			
 
 	error_code = gethostname (node_name, MAX_NAME_LEN);
-	if (error_code != 0) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "slurmctld: error %d from gethostname\n",
-			 error_code);
-#else
-		syslog (LOG_ALERT, "slurmctld: error %d from gethostname\n",
-			error_code);
-#endif
-		abort ();
-	}			
-	if (strcmp (node_name, control_machine) != 0) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "slurmctld: this machine (%s) is not the primary control machine (%s)\n",
+	if (error_code != 0) 
+		fatal ("slurmctld: error %d from gethostname", error_code);
+	
+	if (strcmp (node_name, control_machine) != 0)
+		fatal ("slurmctld: this machine (%s) is not the primary control machine (%s)",
 			 node_name, control_machine);
-#else
-		syslog (LOG_ERR,
-			"slurmctld: this machine (%s) is not the primary control machine (%s)\n",
-			node_name, control_machine);
-#endif
-		exit (1);
-	}			
 
-	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "slurmctld: error %d from socket\n", errno);
-#else
-		syslog (LOG_ALERT, "slurmctld: error %d from socket\n",
-			errno);
-#endif
-		abort ();
-	}			
+	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0) 
+		fatal ("slurmctld: error %d from socket", errno);
+
 	memset (&serv_addr, 0, sizeof (serv_addr));
 	serv_addr.sin_family = PF_INET;
 	serv_addr.sin_addr.s_addr = htonl (INADDR_ANY);
 	serv_addr.sin_port = htons (SLURMCTLD_PORT);
-	if (bind (sockfd, (struct sockaddr *) &serv_addr, sizeof (serv_addr))
-	    < 0) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "slurmctld: error %d from bind\n", errno);
-#else
-		syslog (LOG_ALERT, "slurmctld: error %d from bind\n", errno);
-#endif
-		abort ();
-	}			
+	if (bind (sockfd, (struct sockaddr *) &serv_addr, sizeof (serv_addr)) < 0)
+		fatal ("slurmctld: error %d from bind\n", errno);
+		
 	listen (sockfd, 5);
 	while (1) {
 		cli_len = sizeof (cli_addr);
 		if ((newsockfd =
 		     accept (sockfd, (struct sockaddr *) &cli_addr,
-			     &cli_len)) < 0) {
-#if DEBUG_SYSTEM
-			fprintf (stderr, "slurmctld: error %d from accept\n",
-				 errno);
-#else
-			syslog (LOG_ALERT,
-				"slurmctld: error %d from accept\n", errno);
-#endif
-			abort ();
-		}		
+			     &cli_len)) < 0)
+			fatal ("slurmctld: error %d from accept", errno);
 
 /* convert to pthread, tbd */
 		slurmctld_req (newsockfd);	/* process the request */
-		close (newsockfd);	/* close the new socket */
+		close (newsockfd);		/* close the new socket */
 
 	}			
-}				/* main */
+}
+
 
 /* 
  * dump_build - dump all build parameters to a buffer
  * input: buffer_ptr - location into which a pointer to the data is to be stored.
  *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must free the storage.
+ *                     calling function must xfree the storage.
  *         buffer_size - location into which the size of the created buffer is in bytes
  * output: buffer_ptr - the pointer is set to the allocated buffer.
  *         buffer_size - set to size of the buffer in bytes
  *         returns 0 if no error, errno otherwise
- * NOTE: the buffer at *buffer_ptr must be freed by the caller
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: if you make any changes here be sure to increment the value of BUILD_STRUCT_VERSION
  *       and make the corresponding changes to load_build_name in api/build_info.c
  */
@@ -246,15 +194,7 @@ dump_build (char **buffer_ptr, int *buffer_size)
 	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
 		goto cleanup;
 
-	buffer = realloc (buffer, buffer_offset);
-	if (buffer == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "dump_build: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT, "dump_build: unable to allocate memory\n");
-#endif
-		abort ();
-	}			
+	xrealloc (buffer, buffer_offset);
 
 	buffer_ptr[0] = buffer;
 	*buffer_size = buffer_offset;
@@ -262,7 +202,7 @@ dump_build (char **buffer_ptr, int *buffer_size)
 
       cleanup:
 	if (buffer)
-		free (buffer);
+		xfree (buffer);
 	return EINVAL;
 }
 
@@ -289,18 +229,13 @@ slurmctld_req (int sockfd) {
 		start_time = clock ();
 		node_name_ptr = NULL;
 		error_code = select_nodes (&in_line[8], &node_name_ptr);  /* skip "Allocate" */
-#if DEBUG_SYSTEM
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: error %d allocating resources for %s, ",
-				 error_code, &in_line[8]);
+			info ("slurmctld_req: error %d allocating resources for %s, time=%ld",
+				 error_code, &in_line[8], (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: allocated nodes %s to job %s, ",
-				 node_name_ptr, &in_line[8]);
-		fprintf (stderr, "time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: allocated nodes %s to job %s, time=%ld",
+				 node_name_ptr, &in_line[8], (long) (clock () - start_time));
+
 		if (error_code == 0)
 			send (sockfd, node_name_ptr, strlen (node_name_ptr) + 1, 0);
 		else if (error_code == EAGAIN)
@@ -309,28 +244,23 @@ slurmctld_req (int sockfd) {
 			send (sockfd, "EINVAL", 7, 0);
 
 		if (node_name_ptr)
-			free (node_name_ptr);
+			xfree (node_name_ptr);
 	}
+
+	/* DumpBuild - dump the SLURM build parameters */
 	else if (strncmp ("DumpBuild", in_line, 9) == 0) {
 		start_time = clock ();
 		error_code = dump_build (&dump, &dump_size);
-#if DEBUG_SYSTEM
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: dump_build error %d, ",
-				 error_code);
+			info ("slurmctld_req: dump_build error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: dump_build returning %d bytes, ",
-				 dump_size);
-		fprintf (stderr, "time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: dump_build returning %d bytes, time=%ld",
+				 dump_size, (long) (clock () - start_time));
 		if (error_code == 0) {
 			dump_loc = 0;
 			while (dump_size > 0) {
-				i = send (sockfd, &dump[dump_loc], dump_size,
-					  0);
+				i = send (sockfd, &dump[dump_loc], dump_size, 0);
 				dump_loc += i;
 				dump_size -= i;
 			}	
@@ -338,8 +268,10 @@ slurmctld_req (int sockfd) {
 		else
 			send (sockfd, "EINVAL", 7, 0);
 		if (dump)
-			free (dump);
+			xfree (dump);
 	}
+
+	/* DumpNode - dump the node configurations */
 	else if (strncmp ("DumpNode", in_line, 8) == 0) {
 		start_time = clock ();
 		time_stamp = NULL;
@@ -347,23 +279,17 @@ slurmctld_req (int sockfd) {
 			load_string (&time_stamp, "LastUpdate=", in_line);
 		if (time_stamp) {
 			last_update = strtol (time_stamp, (char **) NULL, 10);
-			free (time_stamp);
+			xfree (time_stamp);
 		}
 		else
 			last_update = (time_t) 0;
-		error_code = dump_node (&dump, &dump_size, &last_update);
-#if DEBUG_SYSTEM
+		error_code = dump_all_node (&dump, &dump_size, &last_update);
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: dump_node error %d, ",
-				 error_code);
+			info ("slurmctld_req: dump_node error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: dump_node returning %d bytes, ",
-				 dump_size);
-		fprintf (stderr, "time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: dump_node returning %d bytes, time=%ld",
+				 dump_size, (long) (clock () - start_time));
 		if (dump_size == 0)
 			send (sockfd, "nochange", 9, 0);
 		else if (error_code == 0) {
@@ -378,8 +304,10 @@ slurmctld_req (int sockfd) {
 		else
 			send (sockfd, "EINVAL", 7, 0);
 		if (dump)
-			free (dump);
+			xfree (dump);
 	}
+
+	/* DumpPart - dump the partition configurations */
 	else if (strncmp ("DumpPart", in_line, 8) == 0) {
 		start_time = clock ();
 		time_stamp = NULL;
@@ -387,23 +315,17 @@ slurmctld_req (int sockfd) {
 			load_string (&time_stamp, "LastUpdate=", in_line);
 		if (time_stamp) {
 			last_update = strtol (time_stamp, (char **) NULL, 10);
-			free (time_stamp);
+			xfree (time_stamp);
 		}
 		else
 			last_update = (time_t) 0;
-		error_code = dump_part (&dump, &dump_size, &last_update);
-#if DEBUG_SYSTEM
+		error_code = dump_all_part (&dump, &dump_size, &last_update);
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: dump_part error %d, ",
-				 error_code);
+			info ("slurmctld_req: dump_part error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: dump_part returning %d bytes, ",
-				 dump_size);
-		fprintf (stderr, "time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: dump_part returning %d bytes, time=%ld",
+				 dump_size, (long) (clock () - start_time));
 		if (dump_size == 0)
 			send (sockfd, "nochange", 9, 0);
 		else if (error_code == 0) {
@@ -418,50 +340,47 @@ slurmctld_req (int sockfd) {
 		else
 			send (sockfd, "EINVAL", 7, 0);
 		if (dump)
-			free (dump);
+			xfree (dump);
 	}
+
+	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
 		start_time = clock ();
 		time_stamp = NULL;
 		error_code = EINVAL;
-#if DEBUG_SYSTEM
 		if (error_code)
-			fprintf (stderr, "slurmctld_req: job_submit error %d",
-				 error_code);
+			info ("slurmctld_req: job_submit error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: job_submit success for %s",
-				 &in_line[10]);
+			info ("slurmctld_req: job_submit success for %s, time=%ld",
+				 &in_line[10], (long) (clock () - start_time));
 		fprintf (stderr, "job_submit time = %ld usec\n",
 			 (long) (clock () - start_time));
-#endif
 		if (error_code == 0)
 			send (sockfd, dump, dump_size, 0);
 		else
 			send (sockfd, "EINVAL", 7, 0);
 	}
 
+	/* JobWillRun - determine if job with given configuration can be initiated now */
 	else if (strncmp ("JobWillRun", in_line, 10) == 0) {
 		start_time = clock ();
 		time_stamp = NULL;
 		error_code = EINVAL;
-#if DEBUG_SYSTEM
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: job_will_run error %d",
-				 error_code);
+			info ("slurmctld_req: job_will_run error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: job_will_run success for %s",
-				 &in_line[10]);
-		fprintf (stderr, "job_will_run time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: job_will_run success for %s, time=%ld",
+				 &in_line[10], (long) (clock () - start_time));
 		if (error_code == 0)
 			send (sockfd, dump, dump_size, 0);
 		else
 			send (sockfd, "EINVAL", 7, 0);
 	}
+
+	/* NodeConfig - determine if a node's actual configuration satisfies the
+	 * configured specification */
 	else if (strncmp ("NodeConfig", in_line, 10) == 0) {
 		start_time = clock ();
 		time_stamp = NULL;
@@ -484,44 +403,39 @@ slurmctld_req (int sockfd) {
 			error_code =
 				validate_node_specs (node_name_ptr, cpus,
 						     real_memory, tmp_disk);
-#if DEBUG_SYSTEM
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: node_config error %d for %s",
-				 error_code, node_name_ptr);
+			error ("slurmctld_req: node_config error %d for %s, time=%ld",
+				 error_code, node_name_ptr, (long) (clock () - start_time));
 		else
-			fprintf (stderr, "slurmctld_req: node_config for %s",
-				 node_name_ptr);
-		fprintf (stderr, "node_config time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: node_config for %s, time=%ld",
+				 node_name_ptr, (long) (clock () - start_time));
 		if (error_code == 0)
 			send (sockfd, dump, dump_size, 0);
 		else
 			send (sockfd, "EINVAL", 7, 0);
 		if (node_name_ptr)
-			free (node_name_ptr);
+			xfree (node_name_ptr);
 	}
+
+	/* Reconfigure - re-initialized from configuration files */
 	else if (strncmp ("Reconfigure", in_line, 11) == 0) {
 		start_time = clock ();
 		time_stamp = NULL;
 		error_code = init_slurm_conf ();
 		if (error_code == 0)
 			error_code = read_slurm_conf (SLURM_CONF);
-#if DEBUG_SYSTEM
+
 		if (error_code)
-			fprintf (stderr,
-				 "slurmctld_req: reconfigure error %d, ",
-				 error_code);
+			error ("slurmctld_req: reconfigure error %d, time=%ld",
+				 error_code, (long) (clock () - start_time));
 		else
-			fprintf (stderr,
-				 "slurmctld_req: reconfigure completed successfully, ");
-		fprintf (stderr, "time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
+			info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
+				(long) (clock () - start_time));
 		sprintf (in_line, "%d", error_code);
 		send (sockfd, in_line, strlen (in_line) + 1, 0);
 	}
+
+	/* Update - modify node or partition configuration */
 	else if (strncmp ("Update", in_line, 6) == 0) {
 		start_time = clock ();
 		node_name_ptr = part_name = NULL;
@@ -536,52 +450,37 @@ slurmctld_req (int sockfd) {
 			else
 				error_code = EINVAL;
 		}		
-#if DEBUG_SYSTEM
 		if (error_code) {
 			if (node_name_ptr)
-				fprintf (stderr,
-					 "slurmctld_req: update error %d on node %s, ",
-					 error_code, node_name_ptr);
+				error ("slurmctld_req: update error %d on node %s, time=%ld",
+					 error_code, node_name_ptr, (long) (clock () - start_time));
 			else if (part_name)
-				fprintf (stderr,
-					 "slurmctld_req: update error %d on partition %s, ",
-					 error_code, part_name);
+				error ("slurmctld_req: update error %d on partition %s, time=%ld",
+					 error_code, part_name, (long) (clock () - start_time));
 			else
-				fprintf (stderr,
-					 "slurmctld_req: update error %d on request %s, ",
-					 error_code, in_line);
+				error ("slurmctld_req: update error %d on request %s, time=%ld",
+					 error_code, in_line, (long) (clock () - start_time));
 
 		}
 		else {
 			if (node_name_ptr)
-				fprintf (stderr,
-					 "slurmctld_req: updated node %s, ",
-					 node_name_ptr);
+				info ("slurmctld_req: updated node %s, time=%ld",
+					 node_name_ptr, (long) (clock () - start_time));
 			else
-				fprintf (stderr,
-					 "slurmctld_req: updated partition %s, ",
-					 part_name);
+				info ("slurmctld_req: updated partition %s, time=%ld",
+					 part_name, (long) (clock () - start_time));
 		}		
-		fprintf (stderr, "time = %ld usec\n",
-			 (long) (clock () - start_time));
-#endif
 		sprintf (in_line, "%d", error_code);
 		send (sockfd, in_line, strlen (in_line) + 1, 0);
 
 		if (node_name_ptr)
-			free (node_name_ptr);
+			xfree (node_name_ptr);
 		if (part_name)
-			free (part_name);
+			xfree (part_name);
 
 	}
 	else {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "slurmctld_req: invalid request %s\n",
-			 in_line);
-#else
-		syslog (LOG_WARNING, "slurmctld_req: invalid request %s\n",
-			in_line);
-#endif
+		error ("slurmctld_req: invalid request %s\n", in_line);
 		send (sockfd, "EINVAL", 7, 0);
 	}			
 	return;

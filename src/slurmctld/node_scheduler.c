@@ -38,7 +38,7 @@ int parse_job_specs (char *job_specs, char **req_features,
 		     char **req_partition, int *contiguous, int *req_cpus,
 		     int *req_nodes, int *min_cpus, int *min_memory,
 		     int *min_tmp_disk, int *key, int *shared);
-int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
+int pick_best_quadrics (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 		    int req_cpus, int consecutive);
 int pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 		     unsigned **req_bitmap, int req_cpus, int req_nodes,
@@ -76,7 +76,7 @@ main (int argc, char *argv[]) {
 	for (i = 0; i < node_record_count; i++) {
 		bitmap_set (idle_node_bitmap, i);
 		bitmap_set (up_node_bitmap, i);
-	}			/* for */
+	}
 
 
 	command_file = fopen (argv[2], "r");
@@ -125,7 +125,7 @@ main (int argc, char *argv[]) {
 				printf ("ERROR: ");
 			printf ("for job: %s\n  nodes selected %s\n\n",
 				in_line, node_list);
-			free (node_list);
+			xfree (node_list);
 		}		
 	}			
 }
@@ -133,8 +133,12 @@ main (int argc, char *argv[]) {
 
 
 /* for a given bitmap, change the state of specified nodes to stage_in */
-/* this is a simple prototype for testing */
-void allocate_nodes (unsigned *bitmap) {
+/* this is a simple prototype for testing 
+ * globals: node_record_count - number of nodes in the system
+ *	node_record_table_ptr - pointer to global node table
+ */
+void 
+allocate_nodes (unsigned *bitmap) {
 	int i;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -142,7 +146,7 @@ void allocate_nodes (unsigned *bitmap) {
 			continue;
 		node_record_table_ptr[i].node_state = STATE_STAGE_IN;
 		bitmap_clear (idle_node_bitmap, i);
-	}			/* for */
+	}
 	return;
 }
 
@@ -151,8 +155,11 @@ void allocate_nodes (unsigned *bitmap) {
  * count_cpus - report how many cpus are associated with the identified nodes 
  * input: bitmap - a node bitmap
  * output: returns a cpu count
+ * globals: node_record_count - number of nodes configured
+ *	node_record_table_ptr - pointer to global node table
  */
-int count_cpus (unsigned *bitmap) {
+int 
+count_cpus (unsigned *bitmap) {
 	int i, sum;
 
 	sum = 0;
@@ -160,7 +167,7 @@ int count_cpus (unsigned *bitmap) {
 		if (bitmap_value (bitmap, i) != 1)
 			continue;
 		sum += node_record_table_ptr[i].cpus;
-	}			/* for */
+	}
 	return sum;
 }
 
@@ -171,7 +178,8 @@ int count_cpus (unsigned *bitmap) {
  * output: returns 1 if key is valid, 0 otherwise
  * NOTE: this is only a placeholder for a future function
  */
-int is_key_valid (int key) {
+int 
+is_key_valid (int key) {
 	if (key == NO_VAL)
 		return 0;
 	return 1;
@@ -184,7 +192,8 @@ int is_key_valid (int key) {
  *        available - comma separated list of features
  * output: returns 1 if found, 0 otherwise
  */
-int match_feature (char *seek, char *available) {
+int 
+match_feature (char *seek, char *available) {
 	char *tmp_available, *str_ptr3, *str_ptr4;
 	int found;
 
@@ -193,17 +202,7 @@ int match_feature (char *seek, char *available) {
 	if (available == NULL)
 		return 0;	/* nothing to find */
 
-	tmp_available = malloc (strlen (available) + 1);
-	if (tmp_available == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "match_feature: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"match_feature: unable to allocate memory\n");
-#endif
-		return 1;	/* assume good for now */
-	}			
+	tmp_available = xmalloc (strlen (available) + 1);
 	strcpy (tmp_available, available);
 
 	found = 0;
@@ -214,9 +213,9 @@ int match_feature (char *seek, char *available) {
 			break;
 		}		
 		str_ptr3 = (char *) strtok_r (NULL, ",", &str_ptr4);
-	}			/* while (str_ptr3) */
+	}
 
-	free (tmp_available);
+	xfree (tmp_available);
 	return found;
 }
 
@@ -228,7 +227,8 @@ int match_feature (char *seek, char *available) {
  *        user_groups - comma delimited list of groups the user belongs to
  * output: returns 1 if user is member, 0 otherwise
  */
-int match_group (char *allow_groups, char *user_groups) {
+int
+match_group (char *allow_groups, char *user_groups) {
 	char *tmp_allow_group, *str_ptr1, *str_ptr2;
 	char *tmp_user_group, *str_ptr3, *str_ptr4;
 
@@ -238,29 +238,10 @@ int match_group (char *allow_groups, char *user_groups) {
 	if (user_groups == NULL)
 		return 0;	/* empty group list */
 
-	tmp_allow_group = malloc (strlen (allow_groups) + 1);
-	if (tmp_allow_group == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "match_group: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"match_group: unable to allocate memory\n");
-#endif
-		return 1;	/* assume good for now */
-	}			
+	tmp_allow_group = xmalloc (strlen (allow_groups) + 1);
 	strcpy (tmp_allow_group, allow_groups);
 
-	tmp_user_group = malloc (strlen (user_groups) + 1);
-	if (tmp_user_group == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "match_group: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"match_group: unable to allocate memory\n");
-#endif
-		free (tmp_allow_group);
-		return 1;	/* assume good for now */
-	}			
+	tmp_user_group = xmalloc (strlen (user_groups) + 1);
 
 	str_ptr1 = (char *) strtok_r (tmp_allow_group, ",", &str_ptr2);
 	while (str_ptr1) {
@@ -268,16 +249,16 @@ int match_group (char *allow_groups, char *user_groups) {
 		str_ptr3 = (char *) strtok_r (tmp_user_group, ",", &str_ptr4);
 		while (str_ptr3) {
 			if (strcmp (str_ptr1, str_ptr3) == 0) {	/* we have a match */
-				free (tmp_allow_group);
-				free (tmp_user_group);
+				xfree (tmp_allow_group);
+				xfree (tmp_user_group);
 				return 1;
 			}	
 			str_ptr3 = (char *) strtok_r (NULL, ",", &str_ptr4);
 		}	
 		str_ptr1 = (char *) strtok_r (NULL, ",", &str_ptr2);
 	}		
-	free (tmp_allow_group);
-	free (tmp_user_group);
+	xfree (tmp_allow_group);
+	xfree (tmp_user_group);
 	return 0;		/* no match */
 }
 
@@ -288,10 +269,11 @@ int match_group (char *allow_groups, char *user_groups) {
  *        req_features, etc. - pointers to storage for the specifications
  * output: req_features, etc. - the job's specifications
  *         returns 0 if no error, errno otherwise
- * NOTE: the calling function must free memory at req_features[0], req_node_list[0],
+ * NOTE: the calling function must xfree memory at req_features[0], req_node_list[0],
  *	job_name[0], req_group[0], and req_partition[0]
  */
-int parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
+int 
+parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		 char **job_name, char **req_group, char **req_partition,
 		 int *contiguous, int *req_cpus, int *req_nodes,
 		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
@@ -305,17 +287,7 @@ int parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		*min_tmp_disk = NO_VAL;
 	*key = *shared = NO_VAL;
 
-	temp_specs = malloc (strlen (job_specs) + 1);
-	if (temp_specs == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "parse_job_specs: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"parse_job_specs: unable to allocate memory\n");
-#endif
-		abort ();
-	}			
+	temp_specs = xmalloc (strlen (job_specs) + 1);
 	strcpy (temp_specs, job_specs);
 
 	error_code = load_string (job_name, "JobName=", temp_specs);
@@ -379,40 +351,37 @@ int parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 	}			
 
 	if (bad_index != -1) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "parse_job_specs: bad job specification input: %s\n",
+		error ("parse_job_specs: bad job specification input: %s",
 			 &temp_specs[bad_index]);
-#else
-		syslog (LOG_ERR,
-			"parse_job_specs: bad job specification input: %s\n",
-			&temp_specs[bad_index]);
-#endif
 		error_code = EINVAL;
 	}			
 
-	free (temp_specs);
+	xfree (temp_specs);
 	return error_code;
 
       cleanup:
-	free (temp_specs);
+	xfree (temp_specs);
 	if (req_features[0])
-		free (req_features[0]);
+		xfree (req_features[0]);
 	if (req_node_list[0])
-		free (req_node_list[0]);
+		xfree (req_node_list[0]);
 	if (req_group[0])
-		free (req_group[0]);
+		xfree (req_group[0]);
 	if (req_partition[0])
-		free (req_partition[0]);
+		xfree (req_partition[0]);
 	if (job_name[0])
-		free (job_name[0]);
+		xfree (job_name[0]);
 	req_features[0] = req_node_list[0] = req_group[0] = req_partition[0] =
 		job_name[0] = NULL;
 }
 
 
 /*
- * pick_best_cpus - identify the nodes which best fit the req_nodes and req_cpus counts
+ * pick_best_quadrics - identify the nodes which best fit the req_nodes and req_cpus counts
+ *	for a system with Quadrics elan interconnect.
+ * 	"best" is defined as either single set of consecutive nodes satisfying 
+ *	the request and leaving the minimum number of unused nodes OR 
+ *	the fewest number of consecutive node sets
  * input: bitmap - the bit map to search
  *        req_bitmap - the bit map of nodes that must be selected, if not NULL these 
  *                     have already been confirmed to be in the input bitmap
@@ -421,9 +390,12 @@ int parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
  *        consecutive - nodes must be consecutive is 1, otherwise 0
  * output: bitmap - nodes not required to satisfy the request are cleared, other left set
  *         returns zero on success, EINVAL otherwise
+ * globals: node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
  * NOTE: bitmap must be a superset of req_nodes at function call time
  */
-int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
+int
+pick_best_quadrics (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 		int req_cpus, int consecutive) {
 	int i, index, error_code, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this consecutive set of nodes */
@@ -436,36 +408,17 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 	int best_fit_nodes, best_fit_cpus, best_fit_req, best_fit_location,
 		best_fit_sufficient;
 
-	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "pick_best_cpus: bitmap pointer is NULL\n");
-#else
-		syslog (LOG_ALERT,
-			"pick_best_cpus: bitmap pointer is NULL\n");
-#endif
-		abort ();
-	}			
+	if (bitmap == NULL)
+		fatal ("pick_best_quadrics: bitmap pointer is NULL\n");
 
 	error_code = EINVAL;	/* default is no fit */
 	consec_index = 0;
 	consec_size = 50;	/* start allocation for 50 sets of consecutive nodes */
-	consec_cpus = malloc (sizeof (int) * consec_size);
-	consec_nodes = malloc (sizeof (int) * consec_size);
-	consec_start = malloc (sizeof (int) * consec_size);
-	consec_end = malloc (sizeof (int) * consec_size);
-	consec_req = malloc (sizeof (int) * consec_size);
-	if ((consec_cpus == NULL) || (consec_nodes == NULL) ||
-	    (consec_start == NULL) || (consec_end == NULL)
-	    || (consec_req == NULL)) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "pick_best_cpus: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"pick_best_cpus: unable to allocate memory\n");
-#endif
-		goto cleanup;
-	}			
+	consec_cpus = xmalloc (sizeof (int) * consec_size);
+	consec_nodes = xmalloc (sizeof (int) * consec_size);
+	consec_start = xmalloc (sizeof (int) * consec_size);
+	consec_end = xmalloc (sizeof (int) * consec_size);
+	consec_req = xmalloc (sizeof (int) * consec_size);
 
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
@@ -477,8 +430,8 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 				consec_start[consec_index] = index;
 			i = node_record_table_ptr[index].cpus;
 			if (req_bitmap && bitmap_value (req_bitmap, index)) {
-				if (consec_req[consec_index] == -1)
-					consec_req[consec_index] = index;	/* first required node in set */
+				if (consec_req[consec_index] == -1) /* first required node in set */
+					consec_req[consec_index] = index; 
 				rem_cpus -= i;	/* reduce count of additional resources required */
 				rem_nodes--;	/* reduce count of additional resources required */
 			}
@@ -496,35 +449,11 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 			consec_end[consec_index] = index - 1;
 			if (++consec_index >= consec_size) {
 				consec_size *= 2;
-				consec_cpus =
-					realloc (consec_cpus,
-						 sizeof (int) * consec_size);
-				consec_nodes =
-					realloc (consec_nodes,
-						 sizeof (int) * consec_size);
-				consec_start =
-					realloc (consec_start,
-						 sizeof (int) * consec_size);
-				consec_end =
-					realloc (consec_end,
-						 sizeof (int) * consec_size);
-				consec_req =
-					realloc (consec_req,
-						 sizeof (int) * consec_size);
-				if ((consec_cpus == NULL)
-				    || (consec_nodes == NULL)
-				    || (consec_start == NULL)
-				    || (consec_end == NULL)
-				    || (consec_req == NULL)) {
-#if DEBUG_SYSTEM
-					fprintf (stderr,
-						 "pick_best_cpus: unable to allocate memory\n");
-#else
-					syslog (LOG_ALERT,
-						"pick_best_cpus: unable to allocate memory\n");
-#endif
-					goto cleanup;
-				}	
+				xrealloc (consec_cpus,  sizeof (int) * consec_size);
+				xrealloc (consec_nodes, sizeof (int) * consec_size);
+				xrealloc (consec_start, sizeof (int) * consec_size);
+				xrealloc (consec_end,   sizeof (int) * consec_size);
+				xrealloc (consec_req,   sizeof (int) * consec_size);
 			}	
 			consec_cpus[consec_index] = 0;
 			consec_nodes[consec_index] = 0;
@@ -535,17 +464,19 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 		consec_end[consec_index++] = index - 1;
 
 #if DEBUG_SYSTEM > 1
-	printf ("rem_cpus=%d, rem_nodes=%d\n", rem_cpus, rem_nodes);
+	info ("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
 	for (i = 0; i < consec_index; i++) {
-		printf ("start=%s, end=%s, nodes=%d, cpus=%d",
-			node_record_table_ptr[consec_start[i]].name,
-			node_record_table_ptr[consec_end[i]].name,
-			consec_nodes[i], consec_cpus[i]);
 		if (consec_req[i] != -1)
-			printf (", req=%s\n",
+			info ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
+				node_record_table_ptr[consec_start[i]].name,
+				node_record_table_ptr[consec_end[i]].name,
+				consec_nodes[i], consec_cpus[i],
 				node_record_table_ptr[consec_req[i]].name);
 		else
-			printf ("\n");
+			info ("start=%s, end=%s, nodes=%d, cpus=%d",
+				node_record_table_ptr[consec_start[i]].name,
+				node_record_table_ptr[consec_end[i]].name,
+				consec_nodes[i], consec_cpus[i]);
 	}			
 #endif
 
@@ -569,7 +500,7 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 				best_fit_req = consec_req[i];
 				best_fit_sufficient = sufficient;
 			}	
-		}		/* for */
+		}
 		if (best_fit_nodes == 0)
 			break;
 		if (consecutive
@@ -586,7 +517,7 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 				bitmap_set (bitmap, i);
 				rem_nodes--;
 				rem_cpus -= node_record_table_ptr[i].cpus;
-			}	/* for */
+			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
 				if ((rem_nodes <= 0) && (rem_cpus <= 0))
@@ -595,7 +526,7 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 				bitmap_set (bitmap, i);
 				rem_nodes--;
 				rem_cpus -= node_record_table_ptr[i].cpus;
-			}	/* for */
+			}
 		}
 		else {
 			for (i = consec_start[best_fit_location];
@@ -607,7 +538,7 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 				bitmap_set (bitmap, i);
 				rem_nodes--;
 				rem_cpus -= node_record_table_ptr[i].cpus;
-			}	/* for */
+			}
 		}		
 		if ((rem_nodes <= 0) && (rem_cpus <= 0)) {
 			error_code = 0;
@@ -619,15 +550,15 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
 
       cleanup:
 	if (consec_cpus)
-		free (consec_cpus);
+		xfree (consec_cpus);
 	if (consec_nodes)
-		free (consec_nodes);
+		xfree (consec_nodes);
 	if (consec_start)
-		free (consec_start);
+		xfree (consec_start);
 	if (consec_end)
-		free (consec_end);
+		xfree (consec_end);
 	if (consec_req)
-		free (consec_req);
+		xfree (consec_req);
 	return error_code;
 }
 
@@ -646,7 +577,7 @@ int pick_best_cpus (unsigned *bitmap, unsigned *req_bitmap, int req_nodes,
  * output: req_bitmap - pointer to bitmap of selected nodes
  *         returns 0 on success, EAGAIN if request can not be satisfied now, 
  *		EINVAL if request can never be satisfied (insufficient contiguous nodes)
- * NOTE: the caller must free memory pointed to by req_bitmap
+ * NOTE: the caller must xfree memory pointed to by req_bitmap
  */
 int
 pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
@@ -698,7 +629,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			max_feature = node_set_ptr[i].feature;
 		if (node_set_ptr[i].feature < min_feature)
 			min_feature = node_set_ptr[i].feature;
-	}			/* for */
+	}
 
 	runable = 0;		/* assume not runable until otherwise demonstrated */
 	for (j = min_feature; j <= max_feature; j++) {
@@ -716,7 +647,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 							     my_bitmap);
 					if (total_bitmap == NULL) {	/* no memory */
 						if (avail_bitmap)
-							free (avail_bitmap);
+							xfree (avail_bitmap);
 						return EAGAIN;
 					}	
 					total_set = 1;
@@ -742,7 +673,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 						     my_bitmap);
 				if (avail_bitmap == NULL) {	/* no memory */
 					if (total_bitmap)
-						free (total_bitmap);
+						xfree (total_bitmap);
 					return EAGAIN;
 				}	
 				avail_set = 1;
@@ -760,7 +691,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			if (avail_cpus < req_cpus)
 				continue;
 			error_code =
-				pick_best_cpus (avail_bitmap, req_bitmap[0],
+				pick_best_quadrics (avail_bitmap, req_bitmap[0],
 						req_nodes, req_cpus,
 						contiguous);
 			if ((error_code == 0) && (max_nodes != -1)
@@ -770,13 +701,13 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			}	
 			if (error_code == 0) {
 				if (total_bitmap)
-					free (total_bitmap);
+					xfree (total_bitmap);
 				if (req_bitmap[0])
-					free (req_bitmap[0]);
+					xfree (req_bitmap[0]);
 				req_bitmap[0] = avail_bitmap;
 				return 0;
 			}	
-		}		/* for (i */
+		}
 		if ((error_code == 0) && (runable == 0) &&
 		    (total_nodes > req_nodes) && (total_cpus > req_cpus) &&
 		    ((req_bitmap[0] == NULL)
@@ -784,7 +715,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 		    && ((max_nodes == -1) || (req_nodes <= max_nodes))) {
 			/* determine if job could possibly run (if configured nodes all available) */
 			error_code =
-				pick_best_cpus (total_bitmap, req_bitmap[0],
+				pick_best_quadrics (total_bitmap, req_bitmap[0],
 						req_nodes, req_cpus,
 						contiguous);
 			if ((error_code == 0) && (max_nodes != -1)
@@ -794,13 +725,13 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				runable = 1;
 		}		
 		if (avail_bitmap)
-			free (avail_bitmap);
+			xfree (avail_bitmap);
 		if (total_bitmap)
-			free (total_bitmap);
+			xfree (total_bitmap);
 		avail_bitmap = total_bitmap = NULL;
 		if (error_code != 0)
 			break;
-	}			/* for (j */
+	}
 
 	if (runable == 0)
 		error_code = EINVAL;
@@ -817,7 +748,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
  * output: node_list - list of allocated nodes
  *         returns 0 on success, EINVAL if not possible to satisfy request, 
  *		or EAGAIN if resources are presently busy
- * NOTE: the calling program must free the memory pointed to by node_list
+ * NOTE: the calling program must xfree the memory pointed to by node_list
  */
 int
 select_nodes (char *job_specs, char **node_list) {
@@ -856,24 +787,11 @@ select_nodes (char *job_specs, char **node_list) {
 				 &shared);
 	if (error_code != 0) {
 		error_code = EINVAL;	/* permanent error, invalid parsing */
-#if DEBUG_SYSTEM
-		fprintf (stderr, "select_nodes: parsing failure on %s\n",
-			 job_specs);
-#else
-		syslog (LOG_NOTICE, "select_nodes: parsing failure on %s\n",
-			job_specs);
-#endif
+		error ("select_nodes: parsing failure on %s", job_specs);
 		goto cleanup;
 	}			
-	if ((req_cpus == NO_VAL) && (req_nodes == NO_VAL)
-	    && (req_node_list == NULL)) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: job failed to specify node_list, cpu or node count\n");
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: job failed to specify node_list, cpu or node count\n");
-#endif
+	if ((req_cpus == NO_VAL) && (req_nodes == NO_VAL) && (req_node_list == NULL)) {
+		info ("select_nodes: job failed to specify node_list, cpu or node count");
 		error_code = EINVAL;
 		goto cleanup;
 	}			
@@ -891,28 +809,15 @@ select_nodes (char *job_specs, char **node_list) {
 			list_find_first (part_list, &list_find_part,
 					 req_partition);
 		if (part_ptr == NULL) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "select_nodes: invalid partition specified: %s\n",
+			info ("select_nodes: invalid partition specified: %s",
 				 req_partition);
-#else
-			syslog (LOG_NOTICE,
-				"select_nodes: invalid partition specified: %s\n",
-				req_partition);
-#endif
 			error_code = EINVAL;
 			goto cleanup;
 		}		
 	}
 	else {
 		if (default_part_loc == NULL) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "select_nodes: default partition not set.\n");
-#else
-			syslog (LOG_ERR,
-				"select_nodes: default partition not set.\n");
-#endif
+			error ("select_nodes: default partition not set.");
 			error_code = EINVAL;
 			goto cleanup;
 		}		
@@ -922,28 +827,14 @@ select_nodes (char *job_specs, char **node_list) {
 
 	/* can this user access this partition */
 	if (part_ptr->key && (is_key_valid (key) == 0)) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: job lacks key required of partition %s\n",
+		info ("select_nodes: job lacks key required of partition %s",
 			 part_ptr->name);
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: job lacks key required of partition %s\n",
-			part_ptr->name);
-#endif
 		error_code = EINVAL;
 		goto cleanup;
 	}			
 	if (match_group (part_ptr->allow_groups, req_group) == 0) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: job lacks group required of partition %s\n",
+		info ("select_nodes: job lacks group required of partition %s\n",
 			 part_ptr->name);
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: job lacks group required of partition %s\n",
-			part_ptr->name);
-#endif
 		error_code = EINVAL;
 		goto cleanup;
 	}			
@@ -961,15 +852,8 @@ select_nodes (char *job_specs, char **node_list) {
 		if (contiguous == 1)
 			bitmap_fill (req_bitmap);
 		if (bitmap_is_super (req_bitmap, part_ptr->node_bitmap) != 1) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "select_nodes: requested nodes %s not in partition %s\n",
-				 req_node_list, part_ptr->name);
-#else
-			syslog (LOG_NOTICE,
-				"select_nodes: requested nodes %s not in partition %s\n",
+			info ("select_nodes: requested nodes %s not in partition %s\n",
 				req_node_list, part_ptr->name);
-#endif
 			error_code = EINVAL;
 			goto cleanup;
 		}		
@@ -981,15 +865,8 @@ select_nodes (char *job_specs, char **node_list) {
 			req_nodes = i;
 	}			
 	if (req_cpus > part_ptr->total_cpus) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: too many cpus (%d) requested of partition %s(%d)\n",
-			 req_cpus, part_ptr->name, part_ptr->total_cpus);
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: too many cpus (%d) requested of partition %s(%d)\n",
+		info ("select_nodes: too many cpus (%d) requested of partition %s(%d)\n",
 			req_cpus, part_ptr->name, part_ptr->total_cpus);
-#endif
 		error_code = EINVAL;
 		goto cleanup;
 	}			
@@ -999,49 +876,26 @@ select_nodes (char *job_specs, char **node_list) {
 			i = part_ptr->max_nodes;
 		else
 			i = part_ptr->total_nodes;
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: too many nodes (%d) requested of partition %s(%d)\n",
+		info ("select_nodes: too many nodes (%d) requested of partition %s(%d)",
 			 req_nodes, part_ptr->name, i);
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: too many nodes (%d) requested of partition %s(%d)\n",
-			req_nodes, part_ptr->name, i);
-#endif
 		error_code = EINVAL;
 		goto cleanup;
 	}			
 	if (part_ptr->shared == 2)	/* shared=force */
 		shared = 1;
-	else if ((shared != 1) || (part_ptr->shared == 0))	/* user or partition want no sharing */
+	else if ((shared != 1) || (part_ptr->shared == 0)) /* user or partition want no sharing */
 		shared = 0;
 
 
 	/* pick up nodes from the weight ordered configuration list */
 	node_set_index = 0;
 	node_set_size = 0;
-	node_set_ptr = (struct node_set *) malloc (sizeof (struct node_set));
-	if (node_set_ptr == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "select_nodes: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"select_nodes: unable to allocate memory\n");
-#endif
-		error_code = EAGAIN;
-		goto cleanup;
-	}			
+	node_set_ptr = (struct node_set *) xmalloc (sizeof (struct node_set));
 	node_set_ptr[node_set_size++].my_bitmap = NULL;
 
 	config_record_iterator = list_iterator_create (config_list);
 	if (config_record_iterator == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: ListIterator_create unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"select_nodes: ListIterator_create unable to allocate memory\n");
-#endif
+		fatal ("select_nodes: ListIterator_create unable to allocate memory");
 		error_code = EAGAIN;
 		goto cleanup;
 	}			
@@ -1095,10 +949,10 @@ select_nodes (char *job_specs, char **node_list) {
 				if ((--node_set_ptr[node_set_index].nodes) ==
 				    0)
 					break;
-			}	/* for */
+			}
 		}		
 		if (node_set_ptr[node_set_index].nodes == 0) {
-			free (node_set_ptr[node_set_index].my_bitmap);
+			xfree (node_set_ptr[node_set_index].my_bitmap);
 			node_set_ptr[node_set_index].my_bitmap = NULL;
 			continue;
 		}		
@@ -1124,62 +978,30 @@ select_nodes (char *job_specs, char **node_list) {
 			config_record_point->weight;
 		node_set_ptr[node_set_index].feature = tmp_feature;
 #if DEBUG_MODULE > 1
-		printf ("found %d usable nodes from configuration with %s\n",
+		info ("found %d usable nodes from configuration with %s",
 			node_set_ptr[node_set_index].nodes,
 			config_record_point->nodes);
 #endif
 		node_set_index++;
-		node_set_ptr = (struct node_set *) realloc (node_set_ptr,
-							    sizeof (struct
-								    node_set)
-							    *
-							    (node_set_index +
-							     1));
-		if (node_set_ptr == 0) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "select_nodes: unable to allocate memory\n");
-#else
-			syslog (LOG_ALERT,
-				"select_nodes: unable to allocate memory\n");
-#endif
-			error_code = EAGAIN;	/* no memory */
-			goto cleanup;
-		}		
+		xrealloc (node_set_ptr, sizeof (struct node_set) * (node_set_index + 1));
 		node_set_ptr[node_set_size++].my_bitmap = NULL;
 	}			
 	if (node_set_index == 0) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: no node configurations satisfy requirements %d:%d:%d:%s\n",
+		info ("select_nodes: no node configurations satisfy requirements %d:%d:%d:%s",
 			 min_cpus, min_memory, min_tmp_disk, req_features);
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: no node configurations satisfy requirements %d:%d:%d:%s\n",
-			min_cpus, min_memory, min_tmp_disk, req_features);
-#endif
 		error_code = EINVAL;
 		goto cleanup;
 	}			
 	if (node_set_ptr[node_set_index].my_bitmap)
-		free (node_set_ptr[node_set_index].my_bitmap);
+		xfree (node_set_ptr[node_set_index].my_bitmap);
 	node_set_ptr[node_set_index].my_bitmap = NULL;
 	node_set_size = node_set_index;
 
 	if (req_bitmap) {
 		if ((scratch_bitmap == NULL)
 		    || (bitmap_is_super (req_bitmap, scratch_bitmap) != 1)) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "select_nodes: requested nodes do not satisfy configurations requirements %d:%d:%d:%s\n",
-				 min_cpus, min_memory, min_tmp_disk,
-				 req_features);
-#else
-			syslog (LOG_NOTICE,
-				"select_nodes: requested nodes do not satisfy configurations requirements %d:%d:%d:%s\n",
-				min_cpus, min_memory, min_tmp_disk,
-				req_features);
-#endif
+			info ("select_nodes: requested nodes do not satisfy configurations requirements %d:%d:%d:%s",
+				 min_cpus, min_memory, min_tmp_disk, req_features);
 			error_code = EINVAL;
 			goto cleanup;
 		}		
@@ -1194,13 +1016,7 @@ select_nodes (char *job_specs, char **node_list) {
 	if (error_code == EAGAIN)
 		goto cleanup;
 	if (error_code == EINVAL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "select_nodes: no nodes can satisfy job request\n");
-#else
-		syslog (LOG_NOTICE,
-			"select_nodes: no nodes can satisfy job request\n");
-#endif
+		info ("select_nodes: no nodes can satisfy job request");
 		goto cleanup;
 	}			
 
@@ -1208,32 +1024,32 @@ select_nodes (char *job_specs, char **node_list) {
 	allocate_nodes (req_bitmap);
 	error_code = bitmap2node_name (req_bitmap, node_list);
 	if (error_code)
-		printf ("bitmap2node_name error %d\n", error_code);
+		error ("bitmap2node_name error %d", error_code);
 
 
       cleanup:
 	part_unlock ();
 	node_unlock ();
 	if (req_features)
-		free (req_features);
+		xfree (req_features);
 	if (req_node_list)
-		free (req_node_list);
+		xfree (req_node_list);
 	if (job_name)
-		free (job_name);
+		xfree (job_name);
 	if (req_group)
-		free (req_group);
+		xfree (req_group);
 	if (req_partition)
-		free (req_partition);
+		xfree (req_partition);
 	if (req_bitmap)
-		free (req_bitmap);
+		xfree (req_bitmap);
 	if (scratch_bitmap)
-		free (scratch_bitmap);
+		xfree (scratch_bitmap);
 	if (node_set_ptr) {
 		for (i = 0; i < node_set_size; i++) {
 			if (node_set_ptr[i].my_bitmap)
-				free (node_set_ptr[i].my_bitmap);
-		}		/* for */
-		free (node_set_ptr);
+				xfree (node_set_ptr[i].my_bitmap);
+		}
+		xfree (node_set_ptr);
 	}			
 	if (config_record_iterator)
 		list_iterator_destroy (config_record_iterator);
@@ -1262,17 +1078,7 @@ valid_features (char *requested, char *available) {
 	if (available == NULL)
 		return 0;	/* no features */
 
-	tmp_requested = malloc (strlen (requested) + 1);
-	if (tmp_requested == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "valid_features: unable to allocate memory\n");
-#else
-		syslog (LOG_ALERT,
-			"valid_features: unable to allocate memory\n");
-#endif
-		return 1;	/* assume good for now */
-	}			
+	tmp_requested = xmalloc (strlen (requested) + 1);
 	strcpy (tmp_requested, requested);
 
 	bracket = option = position = 0;
@@ -1285,22 +1091,14 @@ valid_features (char *requested, char *available) {
 			found = match_feature (str_ptr1, available);
 			if (last_op == 1)	/* and */
 				result &= found;
-			else	/* or */
+			else			/* or */
 				result |= found;
 			break;
 		}		
 
 		if (tmp_requested[i] == '&') {
 			if (bracket != 0) {
-#if DEBUG_SYSTEM
-				fprintf (stderr,
-					 "valid_features: parsing failure 1 on %s\n",
-					 requested);
-#else
-				syslog (LOG_NOTICE,
-					"valid_features: parsing failure 1 on %s\n",
-					requested);
-#endif
+				info ("valid_features: parsing failure 1 on %s", requested);
 				result = 0;
 				break;
 			}	
@@ -1363,24 +1161,17 @@ valid_features (char *requested, char *available) {
 				break;
 			}
 			else {
-#if DEBUG_SYSTEM
-				fprintf (stderr,
-					 "valid_features: parsing failure 2 on %s\n",
+				error ("valid_features: parsing failure 2 on %s",
 					 requested);
-#else
-				syslog (LOG_NOTICE,
-					"valid_features: parsing failure 2 on %s\n",
-					requested);
-#endif
 				result = 0;
 				break;
 			}	
 			bracket = 0;
 		}		
-	}			/* for */
+	}
 
 	if (position)
 		result *= option;
-	free (tmp_requested);
+	xfree (tmp_requested);
 	return result;
 }
