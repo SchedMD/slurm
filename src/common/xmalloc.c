@@ -104,7 +104,7 @@ void *_try_xmalloc(size_t size, const char *file, int line, const char *func)
  *   item (IN/OUT)	double-pointer to allocated space
  *   newsize (IN)	requested size
  */
-void _xrealloc(void **item, size_t newsize, 
+void * _xrealloc(void **item, size_t newsize, 
 	       const char *file, int line, const char *func)
 {
 	int *p = NULL;
@@ -142,7 +142,7 @@ void _xrealloc(void **item, size_t newsize,
 
 	p[1] = (int)newsize;
 	*item = &p[2];
-	return;
+	return *item;
 
   error:
 	fprintf(stderr, "%s:%d: %s: xrealloc(%d) failed\n", 
