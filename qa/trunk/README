@@ -140,7 +140,7 @@ test5.1    Confirm squeue usage option works (--usage option).
 test5.2    Confirm squeue help option works (--help option).
 test5.3    Test squeue iteration (--iterate option).
 test5.4    Test squeue formating options (--noheader, --format and --step 
-           options).
+           options and SQUEUE_FORMAT environment variable).
 test5.5    Test squeue sorting (--sort option).
 test5.6    Test squeue filtering (--jobs, --states, --steps and --user option).
 test5.7    Confirm that squeue verbose option works (--verbose option).
