@@ -1177,9 +1177,10 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
-		last_job_update = now;
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		last_job_update		= now;
+		job_ptr->job_state	= JOB_FAILED;
+		job_ptr->start_time	= now;
+		job_ptr->end_time	= now;
 		delete_job_details(job_ptr);
 		verbose("job_signal of pending job %u successful", job_id);
 		return SLURM_SUCCESS;
@@ -1188,24 +1189,24 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 	if (job_ptr->job_state == JOB_RUNNING) {
 		ListIterator step_record_iterator;
 		struct step_record *step_ptr;
-		int step_cnt = 0;
 
 		step_record_iterator = 
 				list_iterator_create (job_ptr->step_list);		
 		while ((step_ptr = (struct step_record *)
 					list_next (step_record_iterator))) {
 			signal_step_tasks(step_ptr, signal);
-			step_cnt++;
 		}
 		list_iterator_destroy (step_record_iterator);
 
 		if (signal == SIGKILL) {
-			job_ptr->time_last_active   = now;
-			last_job_update = now;
+			job_ptr->time_last_active	= now;
+			job_ptr->end_time		= now;
+			last_job_update			= now;
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 			deallocate_nodes(job_ptr, false);
 		}
-		verbose("job_signal of running job %u successful", job_id);
+		verbose("job_signal %u of running job %u successful", 
+			signal, job_id);
 		return SLURM_SUCCESS;
 	}
 
