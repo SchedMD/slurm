@@ -22,6 +22,7 @@
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
 
+int max_job_id = 0;			/* highest job id, for quicker searches */
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
 time_t last_job_update;			/* time of last update to job records */
@@ -44,7 +45,8 @@ main (int argc, char *argv[])
 	time_t update_time = (time_t) NULL;
 	struct job_record * job_rec;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	char *dump, tmp_id[50];
+	char *dump;
+	uint16_t tmp_id;
 	char update_spec[] = "TimeLimit=1234 Priority=123";
 
 	printf("initialize the database and create a few jobs\n");
@@ -66,9 +68,9 @@ main (int argc, char *argv[])
 	strcpy (job_rec->details->job_script, "/bin/hostname");
 	job_rec->details->num_nodes = 1;
 	job_rec->details->num_procs = 1;
-	set_job_id(job_rec);
-	set_job_prio(job_rec);
-	strcpy (tmp_id, job_rec->job_id);
+	set_job_id (job_rec);
+	set_job_prio (job_rec);
+	tmp_id = job_rec->job_id;
 
 	for (i=1; i<=4; i++) {
 		job_rec = create_job_record (&error_code);
@@ -108,7 +110,7 @@ main (int argc, char *argv[])
 		error_count++;
 	}
 	else
-		printf ("found job %s, script=%s\n", 
+		printf ("found job %u, script=%s\n", 
 			job_rec->job_id, job_rec->details->job_script);
 
 	error_code = delete_job_record (tmp_id);
@@ -208,15 +210,15 @@ delete_job_details (struct job_record *job_entry)
  *	last_job_update - time of last job table update
  */
 int 
-delete_job_record (char *job_id) 
+delete_job_record (uint16_t job_id) 
 {
 	int i;
 
 	last_job_update = time (NULL);
 
-	i = list_delete_all (job_list, &list_find_job_id, job_id);
+	i = list_delete_all (job_list, &list_find_job_id, &job_id);
 	if (i == 0) {
-		error ("delete_job_record: attempt to delete non-existent job %s", 
+		error ("delete_job_record: attempt to delete non-existent job %u", 
 			job_id);
 		return ENOENT;
 	}  
@@ -232,11 +234,14 @@ delete_job_record (char *job_id)
  * global: job_list - global job list pointer
  */
 struct job_record *
-find_job_record(char *job_id) 
+find_job_record(uint16_t job_id) 
 {
 	struct job_record *job_ptr;
 
-	job_ptr = list_find_first (job_list, &list_find_job_id, job_id);
+	if (job_id > max_job_id)
+		return NULL;
+
+	job_ptr = list_find_first (job_list, &list_find_job_id, &job_id);
 	if ((job_ptr != NULL) && (job_ptr->magic != JOB_MAGIC))
 		fatal ("job_list invalid");
 	return job_ptr;
@@ -280,26 +285,25 @@ init_job_conf ()
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  *	last_job_update - time of last job table update
- * NOTE: the calling program must xfree the memory pointed to by new_job_id 
- *	and node_list
+ * NOTE: the calling program must xfree the memory pointed to by node_list
  */
 int
-job_allocate (char *job_specs, char **new_job_id, char **node_list)
+job_allocate (char *job_specs, uint16_t *new_job_id, char **node_list)
 {
 	int error_code, i;
 	struct job_record *job_ptr;
 
-	new_job_id[0] = node_list[0] = NULL;
+	node_list[0] = NULL;
 
 	error_code = job_create (job_specs, new_job_id, 1);
 	if (error_code)
 		return error_code;
-	job_ptr = find_job_record (new_job_id[0]);
+	job_ptr = find_job_record (*new_job_id);
 	if (job_ptr == NULL)
-		fatal ("job_allocate allocated job %s lacks record", 
-			new_job_id[0]);
+		fatal ("job_allocate allocated job %u lacks record", 
+			new_job_id);
 
-/*	if (top_priority(new_job_id[0]) != 0)
+/*	if (top_priority(new_job_id) != 0)
 		return EAGAIN; */
 	error_code = select_nodes(job_ptr);
 	if (error_code)
@@ -321,13 +325,13 @@ job_allocate (char *job_specs, char **new_job_id, char **node_list)
  *	last_job_update - time of last job table update
  */
 int
-job_cancel (char * job_id) 
+job_cancel (uint16_t job_id) 
 {
 	struct job_record *job_ptr;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		info ("job_cancel: invalid job id %s", job_id);
+		info ("job_cancel: invalid job id %u", job_id);
 		return EINVAL;
 	}
 	if (job_ptr->job_state == JOB_PENDING) {
@@ -335,7 +339,7 @@ job_cancel (char * job_id)
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
-		info ("job_cancel of pending job %s successful", job_id);
+		info ("job_cancel of pending job %u successful", job_id);
 		return 0;
 	}
 
@@ -344,11 +348,11 @@ job_cancel (char * job_id)
 		job_ptr->job_state = JOB_FAILED;
 		deallocate_nodes (job_ptr->node_bitmap);
 		delete_job_details(job_ptr);
-		info ("job_cancel of job %s successful", job_id);
+		info ("job_cancel of job %u successful", job_id);
 		return 0;
 	} 
 
-	info ("job_cancel: job %s can't be cancelled from state=%s", 
+	info ("job_cancel: job %u can't be cancelled from state=%s", 
 		job_id, job_state_string[job_ptr->job_state]);
 	return EAGAIN;
 
@@ -365,27 +369,25 @@ job_cancel (char * job_id)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
- * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
 int
-job_create (char *job_specs, char **new_job_id, int allocate)
+job_create (char *job_specs, uint16_t *new_job_id, int allocate)
 {
 	char *req_features, *req_node_list, *job_name, *req_group;
-	char *req_partition, *script, *job_id;
+	char *req_partition, *script;
 	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
 	int i, min_tmp_disk, time_limit, procs_per_task, user_id;
-	int error_code, dist, key, shared;
+	int error_code, dist, job_id, key, shared;
 	struct part_record *part_ptr;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	int priority;
 	bitstr_t *req_bitmap;
 
-	new_job_id[0] = NULL;
 	req_features = req_node_list = job_name = req_group = NULL;
-	job_id = req_partition = script = NULL;
+	req_partition = script = NULL;
 	req_bitmap = NULL;
-	contiguous = dist = req_cpus = req_nodes = min_cpus = NO_VAL;
+	contiguous = dist = job_id = req_cpus = req_nodes = min_cpus = NO_VAL;
 	min_memory = min_tmp_disk = time_limit = procs_per_task = NO_VAL;
 	key = shared = user_id = NO_VAL;
 	priority = NO_VAL;
@@ -414,11 +416,6 @@ job_create (char *job_specs, char **new_job_id, int allocate)
 		error_code = EINVAL;
 		goto cleanup;
 	}			
-	if (job_id && (strlen(job_id) >= MAX_ID_LEN)) {
-		info ("job_create: JobId specified %s is too long", job_id);
-		error_code = EINVAL;
-		goto cleanup;
-	}
 	if (user_id == NO_VAL) {
 		info ("job_create: job failed to specify User");
 		error_code = EINVAL;
@@ -431,6 +428,12 @@ job_create (char *job_specs, char **new_job_id, int allocate)
 	}	
 	if (contiguous == NO_VAL)
 		contiguous = 0;		/* default not contiguous */
+	if (job_id != NO_VAL && 
+	    find_job_record ((uint16_t) job_id)) {
+		info  ("job_create: Duplicate job id %d", job_id);
+		error_code = EINVAL;
+		goto cleanup;
+	}
 	if (req_cpus == NO_VAL)
 		req_cpus = 1;		/* default cpu count of 1 */
 	if (req_nodes == NO_VAL)
@@ -551,13 +554,13 @@ job_create (char *job_specs, char **new_job_id, int allocate)
 		goto cleanup;
 
 	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
-	if (job_id) {
-		strncpy (job_ptr->job_id, job_id, MAX_ID_LEN);
-		xfree (job_id);
-		job_id = NULL;
-	}
+	job_ptr->part_ptr = part_ptr;
+	if (job_id != NO_VAL)
+		job_ptr->job_id = (uint16_t) job_id;
 	else
 		set_job_id(job_ptr);
+	if (job_ptr->job_id > max_job_id)
+		max_job_id = job_ptr->job_id;
 	if (job_name) {
 		strcpy (job_ptr->name, job_name);
 		xfree (job_name);
@@ -593,13 +596,10 @@ job_create (char *job_specs, char **new_job_id, int allocate)
 	/* job_ptr->end_time		*leave as NULL pointer for now */
 	/* detail_ptr->total_procs	*leave as NULL pointer for now */
 
-	new_job_id[0] = xmalloc(strlen(job_ptr->job_id) + 1);
-	strcpy(new_job_id[0], job_ptr->job_id);
+	*new_job_id = job_ptr->job_id;
 	return 0;
 
       cleanup:
-	if (job_id)
-		xfree (job_id);
 	if (job_name)
 		xfree (job_name);
 	if (req_bitmap)
@@ -681,8 +681,10 @@ list_delete_job (void *job_entry)
 int 
 list_find_job_id (void *job_entry, void *key) 
 {
-	if (strncmp (((struct job_record *) job_entry)->job_id, 
-	    (char *) key, MAX_ID_LEN) == 0)
+	if (*((uint16_t *) key) > max_job_id)
+		return 0;
+
+	if (((struct job_record *) job_entry)->job_id == *((uint16_t *) key))
 		return 1;
 	return 0;
 }
@@ -737,7 +739,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	if (*update_time == last_part_update)
+	if (*update_time == last_job_update)
 		return 0;
 
 	buffer_allocated = (BUF_SIZE*16);
@@ -799,7 +801,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	char tmp_str[MAX_STR_PACK];
 	struct job_details *detail_ptr;
 
-	packstr (dump_job_ptr->job_id, buf_ptr, buf_len);
+	pack16  (dump_job_ptr->job_id, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
 	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
@@ -903,18 +905,18 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		 int *contiguous, int *req_cpus, int *req_nodes,
 		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
 		 int *shared, int *dist, char **script, int *time_limit, 
-		 int *procs_per_task, char **job_id, int *priority, 
+		 int *procs_per_task, int *job_id, int *priority, 
 		 int *user_id) {
 	int bad_index, error_code, i;
 	char *temp_specs, *contiguous_str, *dist_str, *shared_str;
 
 	req_features[0] = req_node_list[0] = req_group[0] = NULL;
-	req_partition[0] = job_name[0] = script[0] = job_id[0] = NULL;
+	req_partition[0] = job_name[0] = script[0] = NULL;
 	contiguous_str = shared_str = dist_str = NULL;
 	*contiguous = *req_cpus = *req_nodes = *min_cpus = NO_VAL;
 	*min_memory = *min_tmp_disk = *time_limit = NO_VAL;
 	*dist = *key = *shared = *procs_per_task = *user_id = NO_VAL;
-	*priority = NO_VAL;
+	*job_id = *priority = NO_VAL;
 
 	temp_specs = xmalloc (strlen (job_specs) + 1);
 	strcpy (temp_specs, job_specs);
@@ -924,7 +926,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		"Distribution=", 's', &dist_str, 
 		"Features=", 's', req_features, 
 		"Groups=", 's', req_group, 
-		"JobId=", 's', job_id, 
+		"JobId=", 'd', job_id, 
 		"JobName=", 's', job_name, 
 		"Key=", 'd', key, 
 		"MinProcs=", 'd', min_cpus, 
@@ -1002,8 +1004,6 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 	xfree (temp_specs);
 	if (contiguous_str)
 		xfree (contiguous_str);
-	if (job_id[0])
-		xfree (job_id[0]);
 	if (job_name[0])
 		xfree (job_name[0]);
 	if (req_features[0])
@@ -1023,7 +1023,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 	if (shared_str)
 		xfree (shared_str);
 	req_features[0] = req_node_list[0] = req_group[0] = NULL;
-	job_id[0] = req_partition[0] = job_name[0] = script[0] = NULL;
+	req_partition[0] = job_name[0] = script[0] = NULL;
 	return error_code;
 }
 
@@ -1096,8 +1096,8 @@ reset_job_bitmaps ()
 void
 set_job_id (struct job_record *job_ptr)
 {
-	static int id_sequence = 0;
-	char new_id[MAX_NAME_LEN+20];
+	static uint16_t id_sequence = 0;
+	uint16_t new_id;
 
 	if ((job_ptr == NULL) || 
 	    (job_ptr->magic != JOB_MAGIC)) 
@@ -1105,12 +1105,10 @@ set_job_id (struct job_record *job_ptr)
 	if ((job_ptr->partition == NULL) || (strlen(job_ptr->partition) == 0))
 		fatal ("set_job_id: partition not set");
 	while (1) {
-		if (job_ptr->partition)
-			sprintf(new_id, "%s.%d", job_ptr->partition, id_sequence++);
-		else
-			sprintf(new_id, "nopart.%d", id_sequence++);
+		new_id = id_sequence++;
 		if (find_job_record(new_id) == NULL) {
-			strncpy(job_ptr->job_id, new_id, MAX_ID_LEN);
+			job_ptr->job_id = new_id;
+			max_job_id = new_id;
 			break;
 		}
 	}
@@ -1145,20 +1143,15 @@ set_job_prio (struct job_record *job_ptr)
  * NOTE: only the job's priority and time_limt may be changed
  */
 int 
-update_job (char *job_id, char *spec) 
+update_job (uint16_t job_id, char *spec) 
 {
 	int bad_index, error_code, i, time_limit;
 	int prio;
 	struct job_record *job_ptr;
 
-	if (strlen (job_id) >= MAX_ID_LEN) {
-		error ("update_job: invalid job_id  %s", job_id);
-		return EINVAL;
-	}			
-
-	job_ptr = list_find_first (job_list, &list_find_job_id, job_id);
+	job_ptr = list_find_first (job_list, &list_find_job_id, &job_id);
 	if (job_ptr == NULL) {
-		error ("update_job: job_id %s does not exist.", job_id);
+		error ("update_job: job_id %u does not exist.", job_id);
 		return ENOENT;
 	}			
 
@@ -1183,20 +1176,20 @@ update_job (char *job_id, char *spec)
 	}			
 
 	if (bad_index != -1) {
-		error ("update_job: ignored job_id %s update specification: %s",
+		error ("update_job: ignored job_id %u update specification: %s",
 			job_id, &spec[bad_index]);
 		return EINVAL;
 	}			
 
 	if (time_limit != NO_VAL) {
 		job_ptr->time_limit = time_limit;
-		info ("update_job: setting time_limit to %d for job_id %s",
+		info ("update_job: setting time_limit to %d for job_id %u",
 			time_limit, job_id);
 	}
 
 	if (prio != NO_VAL) {
 		job_ptr->priority = prio;
-		info ("update_job: setting priority to %f for job_id %s",
+		info ("update_job: setting priority to %f for job_id %u",
 			(double) prio, job_id);
 	}
 

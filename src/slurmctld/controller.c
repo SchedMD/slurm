@@ -166,7 +166,8 @@ slurmctld_req (int sockfd) {
 	int error_code, in_size, i;
 	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
 	int cpus, real_memory, tmp_disk;
-	char *job_id_ptr, *node_name_ptr, *part_name, *time_stamp;
+	char *node_name_ptr, *part_name, *time_stamp;
+	uint16_t job_id;
 	time_t last_update;
 	clock_t start_time;
 	char *dump;
@@ -179,19 +180,19 @@ slurmctld_req (int sockfd) {
 	if (strncmp ("Allocate", in_line, 8) == 0) {
 		node_name_ptr = NULL;
 		error_code = job_allocate(&in_line[8], 	/* skip "Allocate" */
-			&job_id_ptr, &node_name_ptr);
+			&job_id, &node_name_ptr);
 		if (error_code)
 			info ("slurmctld_req: error %d allocating resources for %s, time=%ld",
 				 error_code, &in_line[8], (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: allocated nodes %s to %s, JobId=%s, time=%ld",
-				 node_name_ptr, &in_line[8], job_id_ptr, 
+			info ("slurmctld_req: allocated nodes %s to %s, JobId=%u, time=%ld",
+				 node_name_ptr, &in_line[8], job_id, 
 				(long) (clock () - start_time));
 
 		if (error_code == 0) {
-			i = strlen(node_name_ptr) + strlen (job_id_ptr) + 2;
+			i = strlen(node_name_ptr) + 12;
 			dump = xmalloc(i);
-			sprintf(dump, "%s %s", node_name_ptr, job_id_ptr);
+			sprintf(dump, "%s %u", node_name_ptr, job_id);
 			send (sockfd, dump, i, 0);
 			xfree(dump);
 		}
@@ -200,8 +201,6 @@ slurmctld_req (int sockfd) {
 		else
 			send (sockfd, "EINVAL", 7, 0);
 
-		if (job_id_ptr)
-			xfree (job_id_ptr);
 		if (node_name_ptr)
 			xfree (node_name_ptr);
 	}
@@ -349,8 +348,8 @@ slurmctld_req (int sockfd) {
 
 	/* JobCancel - cancel a slurm job or reservation */
 	else if (strncmp ("JobCancel", in_line, 9) == 0) {
-		time_stamp = NULL;
-		error_code = job_cancel(&in_line[10]);
+		job_id = (uint16_t) atoi (&in_line[10]);
+		error_code = job_cancel (job_id);
 		if (error_code)
 			info ("slurmctld_req: job_cancel error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
@@ -365,27 +364,27 @@ slurmctld_req (int sockfd) {
 
 	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
-		time_stamp = NULL;
-		error_code = job_create(&in_line[9], &job_id_ptr, 0);	/* skip "JobSubmit" */
+		error_code = job_create(&in_line[9], &job_id, 0);	/* skip "JobSubmit" */
 		if (error_code)
 			info ("slurmctld_req: job_submit error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: job_submit success for %s, id=%s, time=%ld",
-				 &in_line[9], job_id_ptr, 
+			info ("slurmctld_req: job_submit success for %s, id=%u, time=%ld",
+				 &in_line[9], job_id, 
 				(long) (clock () - start_time));
-		if (error_code == 0)
-			send (sockfd, job_id_ptr, strlen(job_id_ptr) + 1, 0);
+		if (error_code == 0) {
+			dump = xmalloc(12);
+			sprintf(dump, "%u", job_id);
+			send (sockfd, dump, strlen(dump) + 1, 0);
+			xfree (dump);
+		}
 		else
 			send (sockfd, "EINVAL", 7, 0);
-		if (job_id_ptr)
-			xfree (job_id_ptr);
 		schedule();
 	}
 
 	/* JobWillRun - determine if job with given configuration can be initiated now */
 	else if (strncmp ("JobWillRun", in_line, 10) == 0) {
-		time_stamp = NULL;
 		error_code = EINVAL;
 		if (error_code)
 			info ("slurmctld_req: job_will_run error %d, time=%ld",
@@ -402,7 +401,6 @@ slurmctld_req (int sockfd) {
 	/* NodeConfig - determine if a node's actual configuration satisfies the
 	 * configured specification */
 	else if (strncmp ("NodeConfig", in_line, 10) == 0) {
-		time_stamp = NULL;
 		node_name_ptr = NULL;
 		cpus = real_memory = tmp_disk = NO_VAL;
 		error_code = load_string (&node_name_ptr, "NodeName=", in_line);
@@ -438,7 +436,6 @@ slurmctld_req (int sockfd) {
 
 	/* Reconfigure - re-initialized from configuration files */
 	else if (strncmp ("Reconfigure", in_line, 11) == 0) {
-		time_stamp = NULL;
 		error_code = init_slurm_conf ();
 		if (error_code == 0)
 			error_code = read_slurm_conf (SLURM_CONF);

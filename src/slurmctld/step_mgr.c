@@ -107,7 +107,7 @@ create_step_record (int *error_code)
  * global: step_list - global step list
  */
 int 
-delete_step_record (char *job_id, uint16_t step_id) 
+delete_step_record (uint16_t job_id, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
@@ -119,7 +119,7 @@ delete_step_record (char *job_id, uint16_t step_id)
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id &&
-		    strcmp(step_record_point->job_ptr->job_id, job_id) == 0) {
+		    step_record_point->job_ptr->job_id == job_id) {
 			if (step_record_point->magic != STEP_MAGIC)
 				fatal ("invalid step data\n");
 			list_remove (step_record_iterator);
@@ -147,7 +147,7 @@ delete_step_record (char *job_id, uint16_t step_id)
  * global: step_list - global step list
  */
 struct step_record *
-find_step_record(char *job_id, uint16_t step_id) 
+find_step_record(uint16_t job_id, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
@@ -158,7 +158,7 @@ find_step_record(char *job_id, uint16_t step_id)
 		(struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id &&
 		    step_record_point->job_ptr &&
-		    strcmp(step_record_point->job_ptr->job_id, job_id) == 0) {
+		    step_record_point->job_ptr->job_id == job_id) {
 			if (step_record_point->magic != STEP_MAGIC)
 				fatal ("invalid step data\n");
 			break;
@@ -279,9 +279,9 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 	char node_inx_ptr[BUF_SIZE];
 
 	if (dump_step_ptr->job_ptr)
-		packstr (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
+		pack16 (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
 	else
-		packstr ("", buf_ptr, buf_len);
+		pack16 (0, buf_ptr, buf_len);
 
 	pack16  (dump_step_ptr->step_id, buf_ptr, buf_len);
 	pack16  (dump_step_ptr->dist, buf_ptr, buf_len);
@@ -318,7 +318,7 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
 int
-step_create (char *step_specs, char **new_job_id, int allocate)
+step_create (char *step_specs, uint16_t *new_job_id, int allocate)
 {
 	return EINVAL;
 }
