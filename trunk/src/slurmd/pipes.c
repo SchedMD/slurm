@@ -25,15 +25,15 @@ int init_parent_pipes ( int * pipes )
 	/* open pipes to be used in dup after fork */
 	if( ( rc = pipe ( & pipes[CHILD_IN_PIPE] ) ) ) 
 	{
-		return ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ;
+		slurm_seterrno_ret ( ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ) ;
 	}
 	if( ( rc = pipe ( & pipes[CHILD_OUT_PIPE] ) ) ) 
 	{
-		return ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ;
+		slurm_seterrno_ret ( ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ) ;
 	}
 	if( ( rc = pipe ( & pipes[CHILD_ERR_PIPE] ) ) ) 
 	{
-		return ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ;
+		slurm_seterrno_ret ( ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN ) ;
 	}
 	return SLURM_SUCCESS ;
 }
