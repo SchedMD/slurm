@@ -18,7 +18,6 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define NO_VAL   -99
 #define SEPCHARS " \n\t"
 
 struct part_record default_part;	/* default configuration values */
@@ -72,40 +71,31 @@ main (int argc, char *argv[])
 	node_record_count = 8;
 
 	printf ("create some partitions and test defaults\n");
-	part_ptr = create_part_record (&error_code);
-	if (error_code)
-		printf ("create_part_record error %d\n", error_code);
-	else {
-		if (part_ptr->max_time != 223344)
-			printf ("ERROR: partition default max_time not set\n");
-		if (part_ptr->max_nodes != 556677)
-			printf ("ERROR: partition default max_nodes not set\n");
-		if (part_ptr->total_nodes != 4)
-			printf ("ERROR: partition default total_nodes not set\n");
-		if (part_ptr->total_cpus != 16)
-			printf ("ERROR: partition default max_nodes not set\n");
-		if (part_ptr->key != 1)
-			printf ("ERROR: partition default key not set\n");
-		if (part_ptr->state_up != 1)
-			printf ("ERROR: partition default state_up not set\n");
-		if (part_ptr->shared != 0)
-			printf ("ERROR: partition default shared not set\n");
-		strcpy (part_ptr->name, "interactive");
-		part_ptr->nodes = "lx[01-04]";
-		part_ptr->allow_groups = "students";
-		part_ptr->node_bitmap = (bitstr_t *) bit_alloc(20);
-		bit_nset(part_ptr->node_bitmap, 2, 5);
-	}			
-	part_ptr = create_part_record (&error_code);
-	if (error_code)
-		printf ("create_part_record error %d\n", error_code);
-	else
-		strcpy (part_ptr->name, "batch");
-	part_ptr = create_part_record (&error_code);
-	if (error_code)
-		printf ("ERROR: create_part_record error %d\n", error_code);
-	else
-		strcpy (part_ptr->name, "class");
+	part_ptr = create_part_record ();
+	if (part_ptr->max_time != 223344)
+		printf ("ERROR: partition default max_time not set\n");
+	if (part_ptr->max_nodes != 556677)
+		printf ("ERROR: partition default max_nodes not set\n");
+	if (part_ptr->total_nodes != 4)
+		printf ("ERROR: partition default total_nodes not set\n");
+	if (part_ptr->total_cpus != 16)
+		printf ("ERROR: partition default max_nodes not set\n");
+	if (part_ptr->key != 1)
+		printf ("ERROR: partition default key not set\n");
+	if (part_ptr->state_up != 1)
+		printf ("ERROR: partition default state_up not set\n");
+	if (part_ptr->shared != 0)
+		printf ("ERROR: partition default shared not set\n");
+	strcpy (part_ptr->name, "interactive");
+	part_ptr->nodes = "lx[01-04]";
+	part_ptr->allow_groups = "students";
+	part_ptr->node_bitmap = (bitstr_t *) bit_alloc(20);
+	bit_nset(part_ptr->node_bitmap, 2, 5);
+
+	part_ptr = create_part_record ();
+	strcpy (part_ptr->name, "batch");
+	part_ptr = create_part_record ();
+	strcpy (part_ptr->name, "class");
 
 	update_time = (time_t) 0;
 	error_code = dump_all_part (&dump, &dump_size, &update_time);
@@ -222,19 +212,16 @@ int build_part_bitmap (struct part_record *part_record_point)
 
 /* 
  * create_part_record - create a partition record
- * input: error_code - location to store error value in
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or NULL if error
+ * output: returns a pointer to the record or NULL if error
  * global: default_part - default partition parameters
  *         part_list - global partition list
  * NOTE: the record's values are initialized to those of default_part
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
-struct part_record * create_part_record (int *error_code) 
+struct part_record * create_part_record (void) 
 {
 	struct part_record *part_record_point;
 
-	*error_code = 0;
 	last_part_update = time (NULL);
 
 	part_record_point =
@@ -573,7 +560,7 @@ update_part (char *partition_name, char *spec)
 	int error_code;
 	struct part_record *part_ptr;
 	int max_time_val, max_nodes_val, key_val, state_val, shared_val, default_val;
-	char *allow_groups, *nodes;
+	char *allow_groups, *default_str, *key_str, *nodes, *shared_str, *state_str;
 	int bad_index, i;
 
 	if ((strcmp (partition_name, "DEFAULT") == 0) ||
@@ -587,72 +574,80 @@ update_part (char *partition_name, char *spec)
 	if (part_ptr == NULL) {
 		error ("update_part: partition %s does not exist, being created.",
 			partition_name);
-		part_ptr = create_part_record (&error_code);
-		if (error_code)
-			return error_code;
+		part_ptr = create_part_record ();
 		strcpy(part_ptr->name, partition_name);
 	}			
 
-	max_time_val = NO_VAL;
-	error_code = load_integer (&max_time_val, "MaxTime=", spec);
-	if (error_code)
-		return error_code;
+	default_val = key_val = max_time_val = max_nodes_val = NO_VAL;
+	shared_val = state_val = NO_VAL;
+	allow_groups = default_str = key_str = nodes = shared_str = NULL;
+	state_str = NULL;
+	error_code = slurm_parser(spec,
+		"AllowGroups=", 's', &allow_groups, 
+		"Default=", 's', &default_str, 
+		"Key=", 's', &key_str, 
+		"MaxTime=", 'd', &max_time_val, 
+		"MaxNodes=", 'd', &max_nodes_val, 
+		"Nodes=", 's', &nodes, 
+		"Shared=", 's', &shared_str, 
+		"State=", 's', &state_str, 
+		"END");
 
-	max_nodes_val = NO_VAL;
-	error_code = load_integer (&max_nodes_val, "MaxNodes=", spec);
 	if (error_code)
-		return error_code;
+		goto cleanup;
 
-	key_val = NO_VAL;
-	error_code = load_integer (&key_val, "Key=NO", spec);
-	if (error_code)
-		return error_code;
-	if (key_val == 1)
-		key_val = 0;
-	error_code = load_integer (&key_val, "Key=YES", spec);
-	if (error_code)
-		return error_code;
+	if (default_str) {
+		if (strcmp(default_str, "YES") == 0)
+			default_val = 1;
+		else if (strcmp(default_str, "NO") == 0)
+			default_val = 0;
+		else {
+			error ("update_part: ignored partition %s update, bad state %s",
+			    partition_name, default_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+	}
 
-	state_val = NO_VAL;
-	error_code = load_integer (&state_val, "State=DOWN", spec);
-	if (error_code)
-		return error_code;
-	if (state_val == 1)
-		state_val = 0;
-	error_code = load_integer (&state_val, "State=UP", spec);
-	if (error_code)
-		return error_code;
+	if (key_str) {
+		if (strcmp(key_str, "YES") == 0)
+			key_val = 1;
+		else if (strcmp(key_str, "NO") == 0)
+			key_val = 0;
+		else {
+			error ("update_part: ignored partition %s update, bad key %s",
+			    partition_name, key_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+	}
 
-	shared_val = NO_VAL;
-	error_code = load_integer (&shared_val, "Shared=NO", spec);
-	if (error_code)
-		return error_code;
-	if (shared_val == 1)
-		shared_val = 0;
-	error_code = load_integer (&shared_val, "Shared=FORCE", spec);
-	if (error_code)
-		return error_code;
-	if (shared_val == 1)
-		shared_val = 2;
-	error_code = load_integer (&shared_val, "Shared=YES", spec);
-	if (error_code)
-		return error_code;
+	if (shared_str) {
+		if (strcmp(shared_str, "YES") == 0)
+			shared_val = 1;
+		else if (strcmp(shared_str, "NO") == 0)
+			shared_val = 0;
+		else if (strcmp(shared_str, "FORCE") == 0)
+			shared_val = 2;
+		else {
+			error ("update_part: ignored partition %s update, bad shared %s",
+			    partition_name, shared_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+	}
 
-	default_val = NO_VAL;
-	error_code = load_integer (&default_val, "Default=YES", spec);
-	if (error_code)
-		return error_code;
-
-	allow_groups = NULL;
-	error_code = load_string (&allow_groups, "AllowGroups=", spec);
-	if (error_code)
-		return error_code;
-
-	nodes = NULL;
-	error_code = load_string (&nodes, "Nodes=", spec);
-	if (error_code) {
-		if (allow_groups) xfree(allow_groups);
-		return error_code;
+	if (state_str) {
+		if (strcmp(state_str, "UP") == 0)
+			state_val = 1;
+		else if (strcmp(state_str, "DOWN") == 0)
+			state_val = 0;
+		else {
+			error ("update_part: ignored partition %s update, bad state %s",
+			    partition_name, state_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
 	}
 
 	bad_index = -1;
@@ -730,6 +725,20 @@ update_part (char *partition_name, char *spec)
 		if (error_code)
 			return error_code;
 	}			
+	return error_code;
 
+      cleanup:
+	if (allow_groups)
+		xfree(allow_groups);
+	if (default_str)
+		xfree(default_str);
+	if (key_str)
+		xfree(key_str);
+	if (nodes)
+		xfree(nodes);
+	if (shared_str)
+		xfree(shared_str);
+	if (state_str)
+		xfree(state_str);
 	return error_code;
 }
