@@ -1435,9 +1435,8 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request)
+int allocate_part(pa_request_t* pa_request, List *results)
 {
-	List results;
 
 	if (!_initialized){
 		printf("allocate_part Error, configuration not initialized, call init_configuration first\n");
@@ -1448,20 +1447,17 @@ int allocate_part(pa_request_t* pa_request)
 		printf("allocate_part Error, request not initialized\n");
 		return 0;
 	}
-	results = list_create(NULL);
 	
 #ifdef DEBUG_PA
 	print_pa_request(pa_request);
 #endif
 
 	// _backup_pa_system();
-	if (_find_match(pa_request, &results)){
+	if (_find_match(pa_request, results)){
 		//printf("hey I am returning 1\n");
-		list_destroy(results);
 		return 1;
 	} else {
 		//printf("hey I am returning 0\n");
-		list_destroy(results);
 		return 0;
 	}
 }
@@ -1878,7 +1874,8 @@ int main(int argc, char** argv)
 	bool force_contig = true;
 	pa_request_t *request; 
 	time_t start, end;
-	
+	List results;
+
 	request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 		
 	//printf("geometry: %d %d %d size = %d\n", request->geometry[0], request->geometry[1], request->geometry[2], request->size);
@@ -1887,13 +1884,14 @@ int main(int argc, char** argv)
 	time(&end);
 	printf("init: %ld\n", (end-start));
 
-	
+	results = list_create(NULL);
 	geo[0] = 3;
 	geo[1] = 1;
 	geo[2] = 1;	
 	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
-	allocate_part(request);
-
+	allocate_part(request, &results);
+	list_destroy(results);
+			
 	// time(&start);
 	pa_fini();
 	// time(&end);

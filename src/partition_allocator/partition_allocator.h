@@ -173,7 +173,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request);
+int allocate_part(pa_request_t* pa_request, List* results);
 
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
