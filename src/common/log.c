@@ -55,6 +55,11 @@ typedef struct {
 static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;    
 static log_t            *log = NULL;
 
+/* use the gcc argv0 pointer for early messages if it is available */
+#if defined (__GNUC__)
+  extern char *program_invocation_short_name;
+#endif
+
 #define SYSLOG_LEVEL    log->opt.syslog_level
 #define STDERR_LEVEL    log->opt.stderr_level
 #define LOGFILE_LEVEL   log->opt.logfile_level
@@ -231,10 +236,15 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	pthread_mutex_lock(&log_lock);
 
 	if (!LOG_INITIALIZED) {
+#if defined(__GNUC__)
+		char *argv0 = program_invocation_short_name;
+#else
+		char *argv0 = "";
+#endif
 		log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
 		pthread_mutex_unlock(&log_lock);
-		log_init("", opts, 0, NULL);
+		log_init(argv0, opts, 0, NULL);
 		pthread_mutex_lock(&log_lock);
 
 	}
