@@ -85,13 +85,14 @@ pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, int *buf_len
 	xfree (node_list);
 }
 
-/* pack_ctld_job_step_info_reponse_msg - packs the message
+/* pack_ctld_job_step_info_response_msg - packs the message
  * IN - job_id and step_id - zero for all
  * OUT - packed buffer and length NOTE- MUST xfree buffer
  * return - error code
  */
 int
-pack_ctld_job_step_info_reponse_msg (void** buffer_base, int* buffer_length, uint32_t job_id, uint32_t step_id )
+pack_ctld_job_step_info_response_msg (void** buffer_base, int* buffer_length, 
+					uint32_t job_id, uint32_t step_id )
 {
 	ListIterator job_record_iterator;
 	ListIterator step_record_iterator;

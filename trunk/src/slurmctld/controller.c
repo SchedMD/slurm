@@ -924,7 +924,7 @@ slurm_rpc_job_step_get_info ( slurm_msg_t * msg )
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	}
 	else {
-		error_code = pack_ctld_job_step_info_reponse_msg (&resp_buffer, 
+		error_code = pack_ctld_job_step_info_response_msg (&resp_buffer, 
 					&resp_buffer_size, 
 					request->job_id, request->step_id);
 		unlock_slurmctld (job_read_lock);
