@@ -75,7 +75,7 @@ void init_shmem ( slurmd_shmem_t * shmem )
  * the function dies on a fatal log call if the array is full
  */
 
-void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
+job_step_t * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
 {
 	int i ;
 	pthread_mutex_lock ( & shmem -> mutex ) ;
@@ -104,7 +104,7 @@ void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id )
  * the function dies on a fatal log call if the array is full
  */
 
-void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) 
+task_t * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) 
 {
 	int i ;
 	pthread_mutex_lock ( & shmem -> mutex ) ;
@@ -196,7 +196,7 @@ int find_job_id_for_session ( slurmd_shmem_t * shmem , int session_id )
 	return SLURM_FAILURE ; 
 }
 
-void * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
+job_step_t * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
 {
 	int i ;
 	pthread_mutex_lock ( & shmem -> mutex ) ;
@@ -212,5 +212,18 @@ void * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id )
 		} 
         }
 	pthread_mutex_unlock ( & shmem -> mutex ) ;
+	return (void * ) SLURM_ERROR ;
+}
+
+task_t * find_task ( job_step_t * job_step_ptr, int task_id )
+{
+	task_t * task_ptr = job_step_ptr -> head_task ;
+	while ( task_ptr != NULL )
+	{
+		if (task_ptr->task_id == task_id )
+		{
+			return task_ptr ;
+		}
+	}
 	return (void * ) SLURM_ERROR ;
 }

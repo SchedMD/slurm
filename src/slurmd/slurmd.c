@@ -259,13 +259,13 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: reconfigure error %d, time=%ld",
+		error ("slurmd_req: launch tasks error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
+		info ("slurmd_req: launch tasks completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
@@ -288,42 +288,69 @@ void slurm_rpc_kill_tasks ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: reconfigure error %d, time=%ld",
+		error ("slurmd_req: kill tasks error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
+		info ("slurmd_req: kill tasks completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 }
 
-void slurm_rpc_slurmd_example ( slurm_msg_t * msg )
+void slurm_rpc_reattach_tasks_streams ( slurm_msg_t * msg )
 {
 	/* init */
 	int error_code = SLURM_SUCCESS;
 	clock_t start_time;
+	reattach_tasks_streams_msg_t * reattach_tasks_steams_msg = ( reattach_tasks_streams_msg_t * ) msg->data ;
 
 	start_time = clock ();
 
 	/* do RPC call */
-	/*error_code = init_slurm_conf ();
-	if (error_code == 0)
-		error_code = read_slurm_conf (SLURM_CONF);
-	reset_job_bitmaps ();
-	*/
+	error_code = reattach_tasks_streams ( reattach_tasks_steams_msg );
+	
 	/* return result */
 	if (error_code)
 	{
-		error ("slurmctld_req: reconfigure error %d, time=%ld",
+		error ("slurmd_req: reattach streams error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
+		info ("slurmd_req: reattach_streams completed successfully, time=%ld", 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+
+}
+
+void slurm_rpc_slurmd_template ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code = SLURM_SUCCESS;
+	clock_t start_time;
+	/*_msg_t * _msg = ( _msg_t * ) msg->data ; */
+
+	start_time = clock ();
+
+	/* do RPC call */
+	
+	/*error_code = init_slurm_conf (); */
+	
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmd_req:  error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmd_req:  completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}

@@ -15,6 +15,7 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/util_signals.h>
+
 #include <src/slurmd/task_mgr.h>
 #include <src/slurmd/shmem_struct.h>
 
@@ -430,7 +431,7 @@ int setup_child_pipes ( int * pipes )
 	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_IN_RD] , STDIN_FILENO ) ) ) 
 	{
 		local_errno = errno ;
-		info ("dup failed on child standard in pipe, errno %i" , local_errno );
+		error ("dup failed on child standard in pipe, errno %i" , local_errno );
 		//return error_code ;
 	}
 	close ( CHILD_IN_RD );
@@ -441,7 +442,7 @@ int setup_child_pipes ( int * pipes )
 	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_OUT_WR] , STDOUT_FILENO ) ) ) 
 	{
 		local_errno = errno ;
-		info ("dup failed on child standard out pipe, errno %i" , local_errno );
+		error ("dup failed on child standard out pipe, errno %i" , local_errno );
 		//return error_code ;
 	}
 	close ( CHILD_OUT_RD );
@@ -452,7 +453,7 @@ int setup_child_pipes ( int * pipes )
 	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_ERR_WR] , STDERR_FILENO ) ) ) 
 	{
 		local_errno = errno ;
-		info ("dup failed on child standard err pipe, errno %i" , local_errno );
+		error ("dup failed on child standard err pipe, errno %i" , local_errno );
 		//return error_code ;
 	}
 	close ( CHILD_ERR_RD );
@@ -480,4 +481,27 @@ int kill_task ( task_t * task )
 {
 	kill ( task -> task_start . exec_pid , SIGKILL ) ;
 	return SLURM_SUCCESS ;
+}
+
+int reattach_tasks_streams ( reattach_tasks_streams_msg_t * req_msg )
+{
+	int i;
+	int error_code = SLURM_SUCCESS ;
+	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
+	job_step_t * job_step_ptr = find_job_step ( shmem_ptr , req_msg->job_id , req_msg->job_step_id ) ;
+
+	for ( i = 0  ; i < req_msg->tasks_to_reattach ; i ++ )
+	{
+		task_t * task = find_task ( job_step_ptr , req_msg->global_task_ids[i] ) ;
+		if ( task != NULL )
+		{
+			task -> task_start . inout_dest = * ( req_msg -> streams + ( i * 2 ) ) ;
+			task -> task_start . err_dest = * ( req_msg -> streams + ( i * 2 ) + 1 ) ;
+		}
+		else
+		{
+			error ( "task id not found job_id %i job_step_id %i global_task_id %i" , req_msg->job_id , req_msg->job_step_id , req_msg->global_task_ids[i] ) ;
+		}
+	}
+	return error_code ;
 }
