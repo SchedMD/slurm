@@ -800,8 +800,8 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp,
  * opens a connection to the controller, sends the controller a message, 
  * listens for the response, then closes the connection
  * IN request_msg        - slurm_msg request
- * OUT response_msg        - slurm_msg response
- * RET int                 - return code
+ * OUT response_msg      - slurm_msg response
+ * RET int               - return code
  */
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
@@ -820,8 +820,10 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 	    (resp->msg_type == RESPONSE_SLURM_RC) &&
 	    ((((return_code_msg_t *) resp->data)->return_code) ==
 	     ESLURM_IN_STANDBY_MODE) &&
+	    (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) &&
 	    (slurmctld_conf.backup_controller)) {
-		debug("Neither primary nor backup controller responding, sleep and retry");
+		debug("Neither primary nor backup controller responding, "
+		      "sleep and retry");
 		slurm_free_return_code_msg(resp->data);
 		sleep(slurmctld_conf.slurmctld_timeout + 
 		      slurmctld_conf.heartbeat_interval);
