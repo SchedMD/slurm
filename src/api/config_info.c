@@ -46,7 +46,6 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 	fprintf(out, "FAST_SCHEDULE	= %u\n", slurm_ctl_conf_ptr->fast_schedule);
 	fprintf(out, "HASH_BASE	= %u\n", slurm_ctl_conf_ptr->hash_base);
 	fprintf(out, "HEARTBEAT_INTERVAL	= %u\n", slurm_ctl_conf_ptr->heartbeat_interval);
-	fprintf(out, "INIT_PROGRAM	= %s\n", slurm_ctl_conf_ptr->init_program);
 	fprintf(out, "KILL_WAIT	= %u\n", slurm_ctl_conf_ptr->kill_wait);
 	fprintf(out, "PRIORITIZE	= %s\n", slurm_ctl_conf_ptr->prioritize);
 	fprintf(out, "PROLOG		= %s\n", slurm_ctl_conf_ptr->prolog);

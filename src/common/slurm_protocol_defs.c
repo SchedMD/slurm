@@ -63,8 +63,6 @@ void slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 			xfree ( build_ptr->control_machine ) ;
 		if ( build_ptr->epilog )
 			xfree ( build_ptr->epilog ) ;
-		if ( build_ptr->init_program )
-			xfree ( build_ptr->init_program ) ;
 		if ( build_ptr->prioritize )
 			xfree ( build_ptr->prioritize ) ;
 		if ( build_ptr->prolog )
