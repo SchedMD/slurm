@@ -77,6 +77,9 @@
 /*****************************************************************************\
  *  GENERAL CONFIGURATION parameters and data structures
 \*****************************************************************************/
+/* Maximum parallel threads to service incomming RPCs */
+#define MAX_SERVER_THREADS 20
+
 /* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
 #define	PERIODIC_CHECKPOINT	300
 
@@ -609,8 +612,19 @@ extern int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	     int immediate, int will_run, int allocate, uid_t submit_uid,
 	     uint16_t * node_cnt, slurm_addr ** node_addr);
 
+/*
+ * job_epilog_complete - Note the completion of the epilog script for a 
+ *	given job
+ * IN job_id      - id of the job for which the epilog was executed
+ * IN node_name   - name of the node on which the epilog was executed
+ * IN return_code - return code from epilog script
+ * RET true if job is COMPLETED, otherwise false
+ */
+extern bool job_epilog_complete(uint32_t job_id, char *node_name, 
+		uint32_t return_code);
+
 /* job_fini - free all memory associated with job records */
-void job_fini (void);
+extern void job_fini (void);
 
 /* 
  * job_signal - signal the specified job

@@ -68,7 +68,6 @@
 #define DEFAULT_RECOVER   1	/* Recover state by default if set */
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
 				 * check-in before we ping them */
-#define MAX_SERVER_THREADS 20	/* Max threads to service RPCs */
 #define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
 
 
@@ -407,7 +406,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 		fatal("slurm_init_msg_engine_port error %m");
 
 	/*
-	 * Procss incoming RPCs indefinitely
+	 * Process incoming RPCs indefinitely
 	 */
 	while (1) {
 		conn_arg = xmalloc(sizeof(connection_arg_t));
@@ -511,8 +510,8 @@ static void *_slurmctld_background(void *no_data)
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, READ_LOCK
 	};
-	/* Locks: Write job, write node */
-	slurmctld_lock_t node_write_lock = { NO_LOCK, WRITE_LOCK,
+	/* Locks: Write node */
+	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK,
 		WRITE_LOCK, NO_LOCK
 	};
 	/* Locks: Write partition */
@@ -571,8 +570,13 @@ static void *_slurmctld_background(void *no_data)
 		}
 
 		if (difftime(now, last_rpc_retry_time) >= RPC_RETRY_INTERVAL) {
-			last_rpc_retry_time = now;
-			agent_retry(NULL);
+			if (agent_retry(NULL) <= 5) {
+				/* FIXME: Make this timer based */
+				/* if there are more than a few requests, 
+				 * don't reset the timer, re-issue one 
+				 * request per loop */
+				last_rpc_retry_time = now;
+			}
 		}
 
 		if (difftime(now, last_group_time) >= PERIODIC_GROUP_CHECK) {

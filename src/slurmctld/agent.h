@@ -58,11 +58,17 @@ typedef struct agent_arg {
 extern void *agent (void *args);
 
 /*
+ * agent_queue_request - put a request on the queue for later execution
+ * IN agent_arg_ptr - the request to enqueue
+ */
+extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
+
+/*
  * agent_retry - Agent for retrying pending RPCs (top one on the queue), 
  * IN args - unused
- * RET always NULL (function format just for use as pthread)
+ * RET count of queued requests
  */
-extern void *agent_retry (void *args);
+extern int agent_retry (void *args);
 
 /* retry_pending - retry all pending RPCs for the given node name
  * IN node_name - name of a node to executing pending RPCs for */

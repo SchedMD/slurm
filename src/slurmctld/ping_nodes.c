@@ -40,7 +40,11 @@
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
 
+/* Attempt to fork a thread at most MAX_RETRIES times before aborting */
 #define MAX_RETRIES 10
+
+/* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
+#define MAX_REG_FREQUENCY 20
 
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
@@ -98,10 +102,10 @@ void ping_end (void)
  */
 void ping_nodes (void)
 {
+	static int offset = 0;	/* mutex via node table write lock on entry */
 	int i, pos, age, retries = 0;
 	time_t now;
 	uint16_t base_state;
-	bool force_reg;
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
@@ -120,7 +124,11 @@ void ping_nodes (void)
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
 	now = time (NULL);
-	force_reg = ((now % 17) == 0);
+
+	offset += MAX_SERVER_THREADS;
+	if ((offset > node_record_count) && 
+	    (offset >= (MAX_SERVER_THREADS * MAX_REG_FREQUENCY)))
+		offset = 0;
 
 	for (i = 0; i < node_record_count; i++) {
 		base_state = node_record_table_ptr[i].node_state & 
@@ -146,12 +154,14 @@ void ping_nodes (void)
 			node_record_table_ptr[i].last_response = 
 						slurmctld_conf.last_update;
 
-		/* Request a node registration if its state is UNKNOWN or DOWN 
-		 * and periodically otherwise (about every 17th ping, this 
-		 * mechanism avoids an additional timer or counter and gets 
-		 * updated configuration information once in a while) */
+		/* Request a node registration if its state is UNKNOWN or 
+		 * on a periodic basis (about every MAX_REG_FREQUENCY ping, 
+		 * this mechanism avoids an additional (per node) timer or 
+		 * counter and gets updated configuration information 
+		 * once in a while). We limit these requests since they 
+		 * can generate a flood of incomming RPCs. */
 		if ((base_state == NODE_STATE_UNKNOWN) || 
-		    (base_state == NODE_STATE_DOWN   ) || force_reg) {
+		    ((i >= offset) && (i < (offset + MAX_SERVER_THREADS)))) {
 			debug3 ("attempt to register %s now", 
 			        node_record_table_ptr[i].name);
 			if ((reg_agent_args->node_count+1) > 

@@ -74,6 +74,7 @@ inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
+inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
@@ -139,6 +140,10 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_PARTITION_INFO:
 		_slurm_rpc_dump_partitions(msg);
 		slurm_free_last_update_msg(msg->data);
+		break;
+	case MESSAGE_EPILOG_COMPLETE:
+		_slurm_rpc_epilog_complete(msg);
+		slurm_free_epilog_complete_msg(msg->data);
 		break;
 	case REQUEST_CANCEL_JOB_STEP:
 		_slurm_rpc_job_step_kill(msg);
@@ -639,6 +644,50 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 		xfree(dump);
 	}
+}
+
+/* _slurm_rpc_epilog_complete - process RPC noting the completion of 
+ * the epilog denoting the completion of a job it its entirety */
+static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
+{
+	DEF_TIMERS;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { 
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	uid_t uid;
+	epilog_complete_msg_t *epilog_msg = 
+		(epilog_complete_msg_t *) msg->data;
+	bool run_scheduler = false;
+
+	START_TIMER;
+	debug2("Processing RPC: MESSAGE_EPILOG_COMPLETE");
+	uid = g_slurm_auth_get_uid(msg->cred);
+	if (!_is_super_user(uid)) {
+		error("Security violation, EPILOG_COMPLETE RPC from uid=%u",
+		      (unsigned int) uid);
+		return;
+	}
+
+	lock_slurmctld(job_write_lock);
+	if (job_epilog_complete(epilog_msg->job_id, epilog_msg->node_name, 
+	                        epilog_msg->return_code))
+		run_scheduler = true;
+	unlock_slurmctld(job_write_lock);
+	END_TIMER;
+
+	if (epilog_msg->return_code)
+		error("_slurm_rpc_epilog_complete JobId=%u Node=%s Err=%s %s",
+			epilog_msg->job_id, epilog_msg->node_name,
+			slurm_strerror(epilog_msg->return_code), TIME_STR);
+	else
+		debug2("_slurm_rpc_epilog_complete JobId=%u Node=%s %s",
+			epilog_msg->job_id, epilog_msg->node_name,
+			TIME_STR);
+
+	if (run_scheduler)
+		schedule();		/* has own locks */
+
+	/* NOTE: RPC has no response */
 }
 
 /* _slurm_rpc_job_step_kill - process RPC to cancel an entire job or 

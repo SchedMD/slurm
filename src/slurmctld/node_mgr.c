@@ -1416,7 +1416,8 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		if (pthread_create (&kill_thread_agent, &kill_attr_agent, 
 					agent, (void *)kill_agent_args)) {
 			error ("pthread_create error %m");
-			agent((void *)kill_agent_args);	/* do inline */
+			/* Queue the request for later processing */
+			agent_queue_request(kill_agent_args);
 		}
 	}
 }
@@ -1490,6 +1491,7 @@ void make_node_idle(struct node_record *node_ptr,
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag, base_state;
 
+	xassert(node_ptr);
 	if ((job_ptr) &&			/* Specific job completed */
 	    (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
 		last_job_update = time (NULL);
