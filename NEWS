@@ -1,6 +1,18 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.20
+=========================
+ -- Temporarily prevent DPCS from allocating jobs with more than eight 
+    sets of consecutive nodes. This was likely causing user applications 
+    to fail with libelan errors. This will be removed after DPCS is updated.
+ -- Fix bug in popt use, was failing in some versions of Linux.
+ -- Resend KILL_JOB messages as needed to clear COMPLETING jobs.
+
+* Changes in SLURM 0.2.19
+=========================
+ -- Memory corruption bug fixed, it was causing slurmctld to seg-fault
+
 * Changes in SLURM 0.2.18
 =========================
  -- Fixes for reported problems:
