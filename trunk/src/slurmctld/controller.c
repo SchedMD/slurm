@@ -821,7 +821,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 	/* check to see if configuration data has changed */
 	if ((last_time_msg->last_update - 1) >= slurmctld_conf.last_update) {
 		unlock_slurmctld(config_read_lock);
-		info("_slurm_rpc_dump_conf, no change, time=%ld",
+		verbose("_slurm_rpc_dump_conf, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
@@ -834,7 +834,7 @@ static void _slurm_rpc_dump_conf(slurm_msg_t * msg)
 		response_msg.data = &config_tbl;
 
 		/* send message */
-		info("_slurm_rpc_dump_conf time=%ld",
+		verbose("_slurm_rpc_dump_conf time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
 	}
@@ -859,7 +859,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 
 	if ((last_time_msg->last_update - 1) >= last_job_update) {
 		unlock_slurmctld(job_read_lock);
-		info("_slurm_rpc_dump_jobs, no change, time=%ld",
+		verbose("_slurm_rpc_dump_jobs, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
@@ -874,7 +874,7 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		info("_slurm_rpc_dump_jobs, size=%d, time=%ld",
+		verbose("_slurm_rpc_dump_jobs, size=%d, time=%ld",
 		     dump_size, (long) (clock() - start_time));
 		xfree(dump);
 	}
@@ -898,7 +898,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 
 	if ((last_time_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
-		info("_slurm_rpc_dump_nodes, no change, time=%ld",
+		verbose("_slurm_rpc_dump_nodes, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
@@ -913,7 +913,7 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		info("_slurm_rpc_dump_nodes, size=%d, time=%ld",
+		verbose("_slurm_rpc_dump_nodes, size=%d, time=%ld",
 		     dump_size, (long) (clock() - start_time));
 		xfree(dump);
 	}
@@ -937,7 +937,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 
 	if ((last_time_msg->last_update - 1) >= last_part_update) {
 		unlock_slurmctld(part_read_lock);
-		info("_slurm_rpc_dump_partitions, no change, time=%ld",
+		verbose("_slurm_rpc_dump_partitions, no change, time=%ld",
 		     (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
@@ -952,7 +952,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 
 		/* send message */
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		info("_slurm_rpc_dump_partitions, size=%d, time=%ld",
+		verbose("_slurm_rpc_dump_partitions, size=%d, time=%ld",
 		     dump_size, (long) (clock() - start_time));
 		xfree(dump);
 	}
@@ -1155,7 +1155,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 
 	if ((request->last_update - 1) >= last_job_update) {
 		unlock_slurmctld(job_read_lock);
-		info("_slurm_rpc_job_step_get_info, no change, time=%ld",
+		verbose("_slurm_rpc_job_step_get_info, no change, time=%ld",
 		     (long) (clock() - start_time));
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
@@ -1185,7 +1185,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	else {
 		slurm_msg_t response_msg;
 
-		info("_slurm_rpc_job_step_get_info, size=%d, time=%ld",
+		verbose("_slurm_rpc_job_step_get_info, size=%d, time=%ld",
 		     resp_buffer_size, (long) (clock() - start_time));
 		response_msg.address = msg->address;
 		response_msg.msg_type = RESPONSE_JOB_STEP_INFO;
@@ -1628,7 +1628,7 @@ static void _slurm_rpc_old_job_alloc(slurm_msg_t * msg)
 		   slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		info(
+		verbose(
 		   "_slurm_rpc_old_job_alloc job=%u has nodes %s, time=%ld", 
 		   job_desc_msg->job_id, node_list_ptr, 
 		   (long) (clock() - start_time));
