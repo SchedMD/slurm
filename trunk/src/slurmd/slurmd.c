@@ -551,6 +551,8 @@ int slurmd_shutdown ()
 	return_code_msg_t * slurm_rc_msg ;
 	slurm_addr slurmd_addr ;
 
+	kill_all_tasks ( ) ;
+
 	/* init message connection for message communication with controller */
 	slurm_set_addr_char ( & slurmd_addr , slurm_get_slurmd_port ( ) , "localhost" ) ;
 
