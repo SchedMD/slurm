@@ -30,6 +30,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -972,3 +973,113 @@ static void _validate_node_proc_count(void)
 	list_iterator_destroy(part_record_iterator);
 }
 #endif
+
+/*
+ * switch_state_begin - Recover or initialize switch state
+ * IN recover - If set, recover switch state as previously saved
+ * RET 0 if no error, otherwise an error code
+ */ 
+int switch_state_begin(int recover)
+{
+	int error_code = SLURM_SUCCESS;
+#ifdef HAVE_LIBELAN3
+	qsw_libstate_t old_state = NULL;
+	Buf buffer = NULL;
+	char *qsw_state_file = NULL, *data = NULL;
+	int state_fd, data_allocated, data_read= 0, data_size = 0;
+
+	if (recover) {
+		/* Read state from file into buffer */
+		qsw_state_file = xstrdup (slurmctld_conf.state_save_location);
+		xstrcat (qsw_state_file, "/qsw_state");
+		state_fd = open (qsw_state_file, O_RDONLY);
+		if (state_fd >= 0) {
+			data_allocated = BUF_SIZE;
+			data = xmalloc(data_allocated);
+			while ((data_read = 
+					read (state_fd, &data[data_size], 
+					BUF_SIZE)) == BUF_SIZE) {
+				data_size += data_read;
+				data_allocated += BUF_SIZE;
+				xrealloc(data, data_allocated);
+			}
+			data_size += data_read;
+			if (data_read < 0) {
+				error ("Read error on %s, %m", qsw_state_file);
+				error_code = SLURM_ERROR;
+				data_size = 0;
+			}
+			close (state_fd);
+		} else
+			info("No %s file to recover QSW state from", 
+				qsw_state_file);
+		xfree(qsw_state_file);
+
+		if ((error_code == SLURM_SUCCESS) && data_size) {
+			if (qsw_alloc_libstate(&old_state)) {
+				error_code = SLURM_ERROR;
+			} else {
+				buffer = create_buf (data, data_size);
+				if (qsw_unpack_libstate(old_state, buffer) < 0)
+					error_code = errno;
+			}
+		}
+		if (buffer)
+			free_buf(buffer);
+		else if (data)
+			xfree(data);
+
+	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = qsw_init(old_state);
+	if (old_state)
+		qsw_free_libstate(old_state);
+#endif				/* HAVE_LIBELAN3 */
+	return error_code;
+}
+
+/*
+ * switch_state_fini - save switch state and shutdown switch
+ * RET 0 if no error, otherwise an error code
+ */ 
+int switch_state_fini(void)
+{
+	int error_code = SLURM_SUCCESS;
+#ifdef HAVE_LIBELAN3
+	qsw_libstate_t old_state = NULL;
+	Buf buffer = NULL;
+	char *qsw_state_file = NULL;
+	int state_fd;
+
+	if (qsw_alloc_libstate(&old_state))
+		return errno;
+	qsw_fini(old_state);
+	buffer = init_buf(1024);
+	error_code = qsw_pack_libstate(old_state, buffer);
+	qsw_state_file = xstrdup (slurmctld_conf.state_save_location);
+	xstrcat (qsw_state_file, "/qsw_state");
+	(void) unlink (qsw_state_file);
+	state_fd = creat (qsw_state_file, 0600);
+	if (state_fd == 0) {
+		error ("Can't save state, error creating file %s %m", 
+		       qsw_state_file);
+		error_code = errno;
+	}
+	else {
+		if (write (state_fd, get_buf_data(buffer), 
+				get_buf_offset(buffer)) != 
+				get_buf_offset(buffer)) {
+			error ("Can't save state, error writing file %s %m", 
+			       qsw_state_file);
+			error_code = errno;
+		}
+		close (state_fd);
+	}
+	xfree (qsw_state_file);
+	if (buffer)
+		free_buf(buffer);
+	if (old_state)
+		qsw_free_libstate(old_state);
+#endif				/* HAVE_LIBELAN3 */
+	return error_code;
+}
