@@ -28,30 +28,13 @@
 #  include "config.h"
 #endif
 
-#if HAVE_POPT_H
-#  include <popt.h>
-#else
-#  include "src/popt/popt.h"
-#endif
-
+#include <getopt.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "src/common/xstring.h"
 #include "src/sinfo/print.h"
 #include "src/sinfo/sinfo.h"
-
-#define OPT_NODE_STATE 	0x02
-#define OPT_PARTITION	0x03
-#define OPT_NODE     	0x04
-#define OPT_NODES     	0x05
-#define OPT_FORMAT    	0x06
-#define OPT_VERBOSE   	0x07
-#define OPT_ITERATE   	0x08
-#define OPT_EXACT   	0x09
-#define OPT_LONG    	0x0a
-#define OPT_SHORT  	0x0b
-#define OPT_NO_HEAD   	0x0c
-#define OPT_VERSION     0x0d
-#define OPT_SORT    	0x0e
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -63,104 +46,92 @@ static void  _parse_token( char *token, char *field, int *field_size,
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
 static void  _print_version( void );
+static void  _usage( void );
 
 /*
- * parse_command_line
+ * parse_command_line, fill in params data structure with data
  */
-int parse_command_line(int argc, char *argv[])
+extern void parse_command_line(int argc, char *argv[])
 {
-	/* { long-option, short-option, argument type, variable address, 
-	   option tag, docstr, argstr } */
-
-	poptContext context;
-	int curr_opt;
-	int rc = 0;
 	char *env_val = NULL;
-
-	/* Declare the Options */
-	static const struct poptOption options[] = {
-		{"exact", 'e', POPT_ARG_NONE, NULL, OPT_EXACT,
-			"group nodes only on exact match of configuration",
-			NULL},
-		{"iterate", 'i', POPT_ARG_INT, &params.iterate,
-			OPT_ITERATE, "specify an interation period", 
-			"seconds"},
-		{"states", 't', POPT_ARG_STRING, &params.states,
-			OPT_NODE_STATE, 
-			"specify the what states of nodes to view",
-			"node_state"},
-		{"partition", 'p', POPT_ARG_STRING, &params.partition,
-			OPT_PARTITION, "report on specific partition", 
-			"PARTITION"},
-		{"nodes", 'n', POPT_ARG_STRING, &params.nodes, OPT_NODES,
-			"report on specific node(s)", "NODES"},
-		{"Node", 'N', POPT_ARG_NONE, NULL, OPT_NODE,
-			"Node-centric format", NULL},
-		{"long", 'l', POPT_ARG_NONE, NULL, OPT_LONG, 
-			"long output - displays more information",
-			NULL},
-		{"sort", 'S', POPT_ARG_STRING, &params.sort, OPT_SORT,
-			"comma seperated list of fields to sort on", "fields"},
-		{"summarize", 's', POPT_ARG_NONE, NULL, OPT_SHORT,
-			"report state summary only", NULL},
-		{"verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE, 
-			"verbosity level", "level"},
-		{"noheader", 'h', POPT_ARG_NONE, NULL, OPT_NO_HEAD, 
-			"no headers on output", NULL},
-		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
-			"format specification", "format"},
-		{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
-			"output version information and exit", NULL},
-		POPT_AUTOHELP 
-		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end */
+	int opt_char;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	int option_index;
+	static struct option long_options[] = {
+		{"help",      no_argument,       0, '?'},
+		{"exact",     no_argument,       0, 'e'},
+		{"noheader",  no_argument,       0, 'h'},
+		{"iterate",   required_argument, 0, 'i'},
+		{"long",      no_argument,       0, 'l'},
+		{"nodes",     required_argument, 0, 'n'},
+		{"Node",      no_argument,       0, 'N'},
+		{"format",    required_argument, 0, 'o'},
+		{"partition", required_argument, 0, 'p'},
+		{"summarize", no_argument,       0, 's'},
+		{"sort",      required_argument, 0, 'S'},
+		{"states",    required_argument, 0, 't'},
+		{"usage",     no_argument,       0, '?'},
+		{"verbose",   no_argument,       0, 'v'},
+		{"version",   no_argument,       0, 'V'}
 	};
 
-	/* Initial the popt contexts */
-	context = poptGetContext("sinfo", argc, (const char **) argv,
-				 options, POPT_CONTEXT_POSIXMEHARDER);
+	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	poptSetOtherOptionHelp(context, "[-elNsv]");
-
-	while ((curr_opt = poptGetNextOpt(context)) > 0) {
-		switch ( curr_opt )
-		{
-			case OPT_EXACT:
+	while((opt_char = getopt_long(argc, argv, "ehi:ln:No:p:sS:t:vV",
+			long_options, &option_index)) != -1) {
+		switch (opt_char) {
+			case (int)'?':
+				_usage();
+				exit(0);
+				break;
+			case (int)'e':
 				params.exact_match = true;
 				break;
-			case OPT_NODE_STATE:
-				params.state_list = _build_state_list( params.states );
-				break;
-			case OPT_NODE:
-				params.node_flag = true;
-				break;
-			case OPT_LONG:
-				params.long_output = true;
-				break;
-			case OPT_SHORT:
-				params.summarize = true;
-				break;
-			case OPT_VERBOSE:
-				params.verbose++;
-				break;
-			case OPT_NO_HEAD:
+			case (int)'h':
 				params.no_header = true;
 				break;
-			case OPT_VERSION:
+			case (int) 'i':
+				params.iterate= atoi(optarg);
+				if (params.iterate <= 0) {
+					fprintf(stderr, 
+						"Error: --iterate=%s",
+						optarg);
+					exit(1);
+				}
+				break;
+			case (int) 'l':
+				params.long_output = true;
+				break;
+			case (int) 'n':
+				params.nodes= xstrdup(optarg);
+				break;
+			case (int) 'N':
+				params.node_flag = true;
+				break;
+			case (int) 'o':
+				params.format = xstrdup(optarg);
+				break;
+			case (int) 'p':
+				params.partition = xstrdup(optarg);
+				break;
+			case (int) 's':
+				params.summarize = true;
+				break;
+			case (int) 'S':
+				params.sort = xstrdup(optarg);
+				break;
+			case (int) 't':
+				params.states = xstrdup(optarg);
+				params.state_list = 
+					_build_state_list(params.states);
+				break;
+			case (int) 'v':
+				params.verbose++;
+				break;
+			case (int) 'V':
 				_print_version();
 				exit(0);
-				break;	
-			default:
-				break;	
 		}
-	}
-	if (curr_opt < -1) {
-		const char *bad_opt;
-		bad_opt = poptBadOption(context, POPT_BADOPTION_NOALIAS);
-		fprintf(stderr, "bad argument %s: %s\n", bad_opt,
-			poptStrerror(curr_opt));
-		fprintf(stderr, "Try \"%s --help\" for more information\n",
-			argv[0]);
-		exit(1);
 	}
 
 	if ( ( params.format == NULL ) && 
@@ -201,7 +172,6 @@ int parse_command_line(int argc, char *argv[])
 
 	if (params.verbose)
 		_print_options();
-	return rc;
 }
 
 /*
@@ -537,3 +507,23 @@ static void _print_version(void)
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
+static void _usage( void )
+{
+	printf("Usage: sinfo [options]\n");
+	printf("  -e, --exact                   group nodes only on exact match of\n");
+	printf("                                configuration\n");
+	printf("  -h, --noheader                no headers on output\n");
+	printf("  -i, --iterate=seconds         specify an interation period\n");
+	printf("  -l, --long                    long output - displays more information\n");
+	printf("  -n, --nodes=NODES             report on specific node(s)\n");
+	printf("  -N, --Node                    Node-centric format\n");
+	printf("  -o, --format=format           format specification\n");
+	printf("  -p, --partition=PARTITION     report on specific partition\n");
+	printf("  -s, --summarize               report state summary only\n");
+	printf("  -S, --sort=fields             comma seperated list of fields to sort on\n");
+	printf("  -t, --states=node_state       specify the what states of nodes to view\n");
+	printf("  -v, --verbose                 verbosity level\n");
+	printf("  -V, --version                 output version information and exit\n");
+	printf("\nHelp options:\n");
+	printf("  -?, --help, --usage           show this help message\n");
+}
