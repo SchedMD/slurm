@@ -75,10 +75,23 @@ _find_name_in_env(char **env, const char *name)
 static char **
 _extend_env(char ***envp)
 {
+	char **ep;
 	size_t newcnt = (xsize (*envp) / sizeof (char *)) + 1;
+
 	*envp = xrealloc (*envp, newcnt * sizeof (char *));
+
 	(*envp)[newcnt - 1] = NULL;
-	return (&((*envp)[newcnt - 2]));
+	ep = &((*envp)[newcnt - 2]);
+
+	/* 
+	 *  Find last non-NULL entry
+	 */
+	while (*ep == NULL)
+		--ep;
+
+	info ("resized to %d, last = %s", newcnt, *ep);
+
+	return (++ep);
 }
 
 int 
@@ -131,5 +144,22 @@ unsetenvp(char **env, const char *name)
 		++ep;
 	}
 	return;
+}
+
+char *
+getenvp(char **env, const char *name)
+{
+	size_t len = strlen(name);
+	char **ep;
+
+	if ((env == NULL) || (env[0] == '\0'))
+		return (NULL);
+
+	ep = _find_name_in_env (env, name);
+
+	if (*ep != NULL)
+		return (&(*ep)[len+1]);
+
+	return NULL;
 }
 

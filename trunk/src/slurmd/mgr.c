@@ -61,6 +61,7 @@
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
+#include "src/common/util-net.h"
 
 #include "src/slurmd/mgr.h"
 
@@ -126,6 +127,7 @@ static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 
 static void _setargs(slurmd_job_t *job);
+static void _set_launch_ip_in_env(slurmd_job_t *, slurm_addr *cli);
 
 static void _random_sleep(slurmd_job_t *job);
 
@@ -156,6 +158,8 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 	_set_job_log_prefix(job);
 
 	_setargs(job);
+
+	_set_launch_ip_in_env(job, cli);
 
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
@@ -1088,6 +1092,26 @@ _setargs(slurmd_job_t *job)
 	else
 		setproctitle("[%u.%u]", job->jobid, job->stepid); 
 
+	return;
+}
+
+static void
+_set_launch_ip_in_env(slurmd_job_t *job, slurm_addr *cli)
+{
+	char *p;
+	char addrbuf[INET_ADDRSTRLEN];
+
+	slurm_print_slurm_addr (cli, addrbuf, INET_ADDRSTRLEN);
+
+	/* 
+	 *  XXX: Eventually, need a function for slurm_addrs that
+	 *   returns just the IP address (not addr:port)
+	 */   
+
+	if ((p = strchr (addrbuf, ':')) != NULL)
+		*p = '\0';
+
+	setenvpf (&job->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
 	return;
 }
 

@@ -62,7 +62,6 @@ static struct userlim ulims[] =
  * Prototypes:
  *
  */
-static char * _getenvp(char **env, const char *name);
 static long   _get_env_val(char **env, const char *name);
 static int    _set_limit(char **env, struct userlim *ulim);
 
@@ -130,7 +129,7 @@ _get_env_val(char **env, const char *name)
 	xassert(env  != NULL);
 	xassert(name != NULL);
 
-	if(!(val = _getenvp(env, name))) 
+	if(!(val = getenvp(env, name))) 
 		return -2L;
 
 	retval = strtol(val, &p, 10);
@@ -141,23 +140,6 @@ _get_env_val(char **env, const char *name)
 	}
 
 	return retval;
-}
-
-static char *
-_getenvp(char **env, const char *name)
-{
-	size_t len = strlen(name);
-	char **ep;
-
-	if ((env == NULL) || (env[0] == '\0'))
-		return NULL;
-
-	for (ep = env; *ep != NULL; ++ep) {
-		if (!strncmp(*ep, name, len) && ((*ep)[len] == '=')) 
-			return &(*ep)[len+1];
-	}
-
-	return NULL;
 }
 
 
