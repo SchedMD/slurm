@@ -43,9 +43,6 @@
 
 #ifdef HAVE_ELAN
 #  include "src/common/qsw.h"
-#  define BUF_SIZE (1024 + QSW_PACK_SIZE)
-#else
-#  define BUF_SIZE 1024
 #endif
 
 #include <slurm/slurm_errno.h>
@@ -62,7 +59,9 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 
+#define BUF_SIZE 1024
 #define DETAILS_FLAG 0xdddd
+#define HUGE_BUF_SIZE (1024*16)
 #define MAX_RETRIES  10
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
@@ -247,7 +246,7 @@ int dump_all_job_state(void)
 	    { READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	Buf buffer = init_buf(BUF_SIZE * 16);
+	Buf buffer = init_buf(HUGE_BUF_SIZE);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -336,16 +335,19 @@ int load_all_job_state(void)
 		info("No job state file (%s) to recover", state_file);
 		error_code = ENOENT;
 	} else {
-		data_allocated = BUF_SIZE;
+		data_allocated = HUGE_BUF_SIZE;
 		data = xmalloc(data_allocated);
-		while ((data_read =
-			read(state_fd, &data[data_size],
-			     BUF_SIZE)) == BUF_SIZE) {
-			data_size += data_read;
-			data_allocated += BUF_SIZE;
+		while (1) {
+			data_read = read(state_fd, &data[data_size],
+					HUGE_BUF_SIZE);
+			if ((data_read == -1) && (errno == EINTR))
+				continue;
+			if (data_read == 0)	/* eof */
+				break;
+			data_size      += data_read;
+			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
-		data_size += data_read;
 		close(state_fd);
 		if (data_read < 0)
 			error("Error reading file %s: %m", state_file);
@@ -2337,7 +2339,7 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE * 16);
+	buffer = init_buf(HUGE_BUF_SIZE);
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
@@ -2348,7 +2350,6 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
-
 		pack_job(job_ptr, buffer);
 		jobs_packed++;
 	}
