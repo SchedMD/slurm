@@ -254,7 +254,7 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 		 *  Check for existence of any processes in the 
 		 *    job step's session:
 		 */
-		if (kill(-s->sid, 0) == 0)
+		if ((s->sid >= 0) && (kill(-s->sid, 0) == 0))
 			retval = true;
 	} 
 	_shm_unlock();
