@@ -92,6 +92,7 @@ _sig_thr_done(job_t *job)
 int 
 sig_setup_sigmask(void)
 {
+	int err;
 	sigset_t sigset;
 
 	/* block most signals in all threads, except sigterm */
@@ -102,8 +103,8 @@ sig_setup_sigmask(void)
 	sigaddset(&sigset, SIGSTOP);
 	sigaddset(&sigset, SIGCONT);
 
-	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0) {
-		error("sigprocmask: %m");
+	if ((err = pthread_sigmask(SIG_BLOCK, &sigset, NULL)) != 0) {
+		error("pthread_sigmask: %s", slurm_strerror(err));
 		return SLURM_ERROR;
 	}
 
@@ -213,16 +214,12 @@ _handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
 static void
 _sig_thr_setup(sigset_t *set)
 {
-	int rc;
-
 	sigemptyset(set);
 	sigaddset(set, SIGINT);
 	sigaddset(set, SIGQUIT);
 	sigaddset(set, SIGTSTP);
 	sigaddset(set, SIGSTOP);
 	sigaddset(set, SIGCONT);
-	if ((rc = pthread_sigmask(SIG_BLOCK, set, NULL)) != 0)
-		error ("pthread_sigmask: %s", slurm_strerror(rc));
 }
 
 /* simple signal handling thread */

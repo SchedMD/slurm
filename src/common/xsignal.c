@@ -64,7 +64,7 @@ xsignal_unblock(int signo)
 		return SLURM_ERROR;
 	}
 
-	if (sigprocmask(SIG_UNBLOCK, &set, NULL) < 0) {
+	if (pthread_sigmask(SIG_UNBLOCK, &set, NULL) < 0) {
 		error("sigprocmask: %m");
 		return SLURM_ERROR;
 	}
