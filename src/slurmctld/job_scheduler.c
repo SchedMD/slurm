@@ -178,11 +178,26 @@ int schedule(void)
 			continue;
 		error_code = select_nodes(job_ptr, false);
 		if (error_code == ESLURM_NODES_BUSY) {
+#ifndef HAVE_BGL	/* keep trying to schedule jobs in partition */
+			/* While we use static partitiioning on Blue Gene, 
+			 * each job can be scheduled independently without 
+			 * impacting other jobs with different characteristics
+			 * (e.g. node-use [virtual or coprocessor] or conn-type
+			 * [mesh, torus, or nav]). Because of this we sort and 
+			 * then try to schedule every pending job. This does 
+			 * increase the overhead of this job scheduling cycle, 
+			 * but the only way to effectively avoid this is to 
+			 * define each SLURM partition as containing a 
+			 * single Blue Gene job partition type (e.g. 
+			 * group all Blue Gene job partitions of type 
+			 * 2x2x2 coprocessor mesh into a single SLURM
+			 * partition, say "co-mesh-222") */
 			xrealloc(failed_parts,
 				 (failed_part_cnt + 1) * 
 				 sizeof(struct part_record *));
 			failed_parts[failed_part_cnt++] =
 			    job_ptr->part_ptr;
+#endif
 		} else if (error_code == SLURM_SUCCESS) {	
 			/* job initiated */
 			last_job_update = time(NULL);
