@@ -62,6 +62,7 @@ void init_header(header_t * header, slurm_msg_type_t msg_type,
 	header->version = SLURM_PROTOCOL_VERSION;
 	header->flags = flags;
 	header->msg_type = msg_type;
+	header->body_length = 0;	/* over-written later */
 }
 
 /*

@@ -103,8 +103,12 @@ CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
 case "$host" in
-  *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl -Wl,-bexpall " ;;
+  *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl -Wl,-bexpall"
+            CMD_LDFLAGS="-Wl,-bgcbypass:1000" # keep all common functions 
+            AC_DEFINE(USE_ALIAS, 0, [Define slurm_ prefix function aliases for plusins]) ;;
+  *)        AC_DEFINE(USE_ALIAS, 1, [Define slurm_ prefix function aliases for plugins]) ;;
 esac
+AC_SUBST(CMD_LDFLAGS)
 
 AC_SLURM_SEMAPHORE
 

@@ -809,17 +809,22 @@ void _add_job_hash(struct job_record *job_ptr)
 struct job_record *find_job_record(uint32_t job_id)
 {
 	int i;
+	struct job_record *job_ptr;
 
 	/* First try to find via hash table */
-	if (job_hash[JOB_HASH_INX(job_id)] &&
-	    job_hash[JOB_HASH_INX(job_id)]->job_id == job_id)
-		return job_hash[JOB_HASH_INX(job_id)];
+	job_ptr = job_hash[JOB_HASH_INX(job_id)];
+	if (job_ptr && (job_ptr->job_id == job_id)) {
+		xassert (job_ptr->magic == JOB_MAGIC);
+		return job_ptr;
+	}
 
 	/* linear search of overflow hash table overflow */
 	for (i = 0; i < max_hash_over; i++) {
-		if (job_hash_over[i] != NULL &&
-		    job_hash_over[i]->job_id == job_id)
-			return job_hash_over[i];
+		job_ptr = job_hash_over[i];
+		if (job_ptr && (job_ptr->job_id == job_id)) {
+			xassert (job_ptr->magic == JOB_MAGIC);
+			return job_ptr;
+		}
 	}
 
 	return NULL;
@@ -1044,8 +1049,12 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 			(long) job_specs->kill_on_node_fail : -1L;
 	task_dist = (job_specs->task_dist != (uint16_t) NO_VAL) ? 
 			(long) job_specs->task_dist : -1L;
-	debug3("   kill_on_node_fail=%ld task_dist=%ld script=%.40s...",
-	       kill_on_node_fail, task_dist, job_specs->script);
+	if (job_specs->script)	/* log has problem with string len & null */
+		debug3("   kill_on_node_fail=%ld task_dist=%ld script=%.40s...",
+			kill_on_node_fail, task_dist, job_specs->script);
+	else
+		debug3("   kill_on_node_fail=%ld task_dist=%ld script=%s",
+			kill_on_node_fail, task_dist, job_specs->script);
 
 	if (job_specs->argc == 1)
 		debug3("   argv=\"%s\"", 

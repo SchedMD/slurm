@@ -252,7 +252,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			goto done;
                 }
                 if ((rc = poll(&ufds, 1, timeout)) <= 0) {
-			if ((rc == 0) || (errno == EINTR)) 
+			if ((rc == 0) || (errno == EINTR) || (errno == EAGAIN)) 
  				continue;
 			else {
 				debug("_slurm_send_timeout at %d of %d, "
@@ -329,7 +329,7 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                 }
 
                 if ((rc = poll(&ufds, 1, timeout)) <= 0) {
-                        if ((errno == EINTR) || (rc == 0))
+                        if ((errno == EINTR) || (errno == EAGAIN) || (rc == 0))
                                 continue;
                         else {
 				debug("_slurm_recv_timeout at %d of %d, "

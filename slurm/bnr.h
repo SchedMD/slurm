@@ -13,11 +13,11 @@ typedef int BNR_gid;
 #define BNR_SUCCESS 0
 #define BNR_ERROR   1
 
-int BNR_Init(BNR_gid *mygid);
-int BNR_Put(BNR_gid gid, char *attr, char *val);
-int BNR_Fence(BNR_gid gid);
-int BNR_Get(BNR_gid  gid, char *attr, char *val);
-int BNR_Finalize();
-int BNR_Rank(BNR_gid group, int *myrank);
-int BNR_Nprocs(BNR_gid group, int *nprocs);
+extern int BNR_Init(BNR_gid *mygid);
+extern int BNR_Put(BNR_gid gid, char *attr, char *val);
+extern int BNR_Fence(BNR_gid gid);
+extern int BNR_Get(BNR_gid  gid, char *attr, char *val);
+extern int BNR_Finalize();
+extern int BNR_Rank(BNR_gid group, int *myrank);
+extern int BNR_Nprocs(BNR_gid group, int *nprocs);
 

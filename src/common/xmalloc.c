@@ -264,7 +264,7 @@ void slurm_xfree(void **item, const char *file, int line, const char *func)
 static void malloc_assert_failed(char *expr, const char *file, 
 		                 int line, const char *caller, const char *func)
 {
-	fatal("%s() Error: from %s:%d: %s(): Assertion (%s) failed",
+	error("%s() Error: from %s:%d: %s(): Assertion (%s) failed",
 	      func, file, line, caller, expr);
 	abort();
 }

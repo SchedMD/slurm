@@ -52,6 +52,7 @@
 #include "src/common/io_hdr.h"
 #include "src/common/cbuf.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/fd.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
@@ -254,13 +255,7 @@ io_spawn_handler(slurmd_job_t *job)
 	if (_io_prepare_tasks(job) < 0)
 		return SLURM_FAILURE;
 
-	if ((errno = pthread_attr_init(&attr)) != 0)
-		error("pthread_attr_init: %m");
-
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if ((errno = pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM)) != 0)
-		error("pthread_attr_setscope: %m");
-#endif 
+	slurm_attr_init(&attr);
 	xassert(_validate_io_list(job->objs));
 
 	pthread_create(&job->ioid, &attr, &_io_thr, (void *)job);
@@ -1412,7 +1407,8 @@ _task_error(io_obj_t *obj, List objs)
 
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
 		error ("getsockopt: %m");
-	_update_error_state(t, E_POLL, err);
+	else
+		_update_error_state(t, E_POLL, err);
 	_obj_close(obj, objs);
 	return -1;
 }
@@ -1525,8 +1521,7 @@ _client_error(io_obj_t *obj, List objs)
 
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
 		error ("getsockopt: %m");
-
-	if (err != ECONNRESET) /* Do not log connection resets */
+	else if (err != ECONNRESET) /* Do not log connection resets */
 		_update_error_state(io, E_POLL, err);
 
 	return 0;
@@ -1578,7 +1573,13 @@ _update_error_state(struct io_info *io, enum error_type type, int err)
 {
 	xassert(io != NULL);
 	xassert(io->magic == IO_MAGIC);
-	xassert(err > 0);
+
+	/* getsockopt(,,SO_ERROR,&err,) returns err value of -1
+	 *	under AIX under some circumstances */
+	if (err <= 0) {
+	       	error("Unspecified I/O error <task %d>", io->id);
+		return 0;
+	}
 
 	if (  (io->err.e_type == type)
 	   && (io->err.e_last == err ) ) {

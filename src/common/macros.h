@@ -192,17 +192,47 @@ typedef enum {false, true} bool;
          }                                                                    \
      } _STMT_END
 
+#  ifdef PTHREAD_SCOPE_SYSTEM
+#  define slurm_attr_init(attr)                                               \
+     _STMT_START {                                                            \
+	if (pthread_attr_init(attr))                                          \
+		fatal("pthread_attr_init: %m");                               \
+	/* we want 1:1 threads if there is a choice */                        \
+	if (pthread_attr_setscope(attr, PTHREAD_SCOPE_SYSTEM))                \
+		error("pthread_attr_setscope: %m");                           \
+	if (pthread_attr_setstacksize(attr, 1024*1024))                       \
+		error("pthread_attr_setstacksize: %m");                       \
+     } _STMT_END
+#  else
+#  define slurm_attr_init(attr)                                               \
+     _STMT_START {                                                            \
+        if (pthread_attr_init(attr))                                          \
+                fatal("pthread_attr_init: %m");                               \
+        if (pthread_attr_setstacksize(attr, 1024*1024))                       \
+                error("pthread_attr_setstacksize: %m");                       \
+     } _STMT_END
+#  endif
+
 #else /* !WITH_PTHREADS */
 
 #  define slurm_mutex_init(mutex)
 #  define slurm_mutex_destroy(mutex)
 #  define slurm_mutex_lock(mutex)
 #  define slurm_mutex_unlock(mutex)
+#  define slurm_attr_init(attr)
 
 #endif /* WITH_PTHREADS */
 
 #ifndef strong_alias
-#  define strong_alias(name, aliasname) \
-   extern __typeof (name) aliasname __attribute ((alias (#name)))
+#  if USE_ALIAS
+#    define strong_alias(name, aliasname) \
+     extern __typeof (name) aliasname __attribute ((alias (#name)))
+#  else
+     /* dummy function definition,
+      * confirm "aliasname" is free and waste "name" */
+#    define strong_alias(name, aliasname) \
+     extern void aliasname(int name)
+#  endif
 #endif
+
 #endif /* !_MACROS_H */

@@ -610,12 +610,19 @@ static int
 _do_poll(job_t *job, struct pollfd *fds, int timeout)
 {
 	nfds_t nfds = (job->njfds + 1);
-	int rc;
+	int rc, to;
 
-	while ((rc = poll(fds, nfds, timeout * 1000)) < 0) {
+	if (timeout > 0)
+		to = timeout * 1000;
+	else
+		to = timeout;
+
+	while ((rc = poll(fds, nfds, to)) < 0) {
 		switch (errno) {
+		case EAGAIN:
 		case EINTR:  continue;
 		case ENOMEM:
+		case EINVAL:
 		case EFAULT: fatal("poll: %m");
 		default:     error("poll: %m. Continuing...");
 			     continue;

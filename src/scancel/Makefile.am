@@ -14,6 +14,8 @@ scancel_LDADD = 					\
 noinst_HEADERS  = scancel.h
 scancel_SOURCES = scancel.c opt.c
 
+scancel_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
 force:
 $(scancel_LDADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

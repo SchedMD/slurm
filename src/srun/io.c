@@ -122,7 +122,7 @@ _handle_pollerr(fd_info_t *info)
 	if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&err, &size) < 0)
 		error("_handle_error_poll: getsockopt: %m");
 
-	if (err)
+	if (err > 0)
 		debug3("%d: poll error on fd %d: %s", 
 			info->taskid, fd, slurm_strerror(err));
 	else
@@ -557,7 +557,7 @@ _read_io_header(int fd, job_t *job, char *host)
 	io_hdr_t hdr;
 
 	if (cbuf_write_from_fd(cb, fd, size, NULL) < 0) {
-		error ("Bad stream header read: %m");
+		error ("Bad stream header write: %m");
 		goto fail;
 	}
 

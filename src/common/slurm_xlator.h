@@ -10,7 +10,7 @@
  *
  *  All SLURM functions referenced from the switch and auth plugins should
  *  have aliases established. Functions not referenced from the plugins 
- *  need not be aliased.  
+ *  need not be aliased.
  *
  *  To use this header file:
  *  1. In the module containing the exported function code, establish an 
@@ -24,6 +24,8 @@
  *     and remove other slurm header files (they should all be in this header).
  *     This logic will have the plugin link only to the function names with 
  *     the "slurm_" prefix.
+ *
+ *  NOTE: Not all operating systems support this function aliasing (e.g. AIX). 
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -50,6 +52,12 @@
 
 #ifndef __SLURM_XLATOR_H__
 #define __SLURM_XLATOR_H__
+
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if USE_ALIAS
 
 /* arg_desc.[ch] functions*/
 #define	arg_count		slurm_arg_count
@@ -232,6 +240,8 @@
 #define	_xmemcat		slurm_xmemcat
 #define	xstrdup			slurm_xstrdup
 #define	xbasename		slurm_xbasename
+
+#endif /* USE_ALIAS */
 
 /* Include the function definitions after redefining their names. */
 #include "src/common/arg_desc.h"

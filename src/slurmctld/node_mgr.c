@@ -42,6 +42,7 @@
 #include <fcntl.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
@@ -111,7 +112,6 @@ char * bitmap2node_name (bitstr_t *bitmap)
 	hostlist_uniq(hl);
 	hostlist_ranged_string(hl, 8192, buf);
 	hostlist_destroy(hl);
-
 	return xstrdup(buf);
 }
 
@@ -1362,16 +1362,10 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 		xfree (kill_agent_args);
 	else {
 		debug ("Spawning agent msg_type=%d", msg_type);
-		if (pthread_attr_init (&kill_attr_agent))
-			fatal ("pthread_attr_init error %m");
+		slurm_attr_init (&kill_attr_agent);
 		if (pthread_attr_setdetachstate (&kill_attr_agent, 
 						PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&kill_attr_agent, 
-						PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
-#endif
 		while (pthread_create (&kill_thread_agent, &kill_attr_agent, 
 					agent, (void *)kill_agent_args)) {
 			error ("pthread_create error %m");

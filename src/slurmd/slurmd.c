@@ -287,12 +287,7 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 	arg->fd       = fd;
 	arg->cli_addr = cli;
 
-	if ((rc = pthread_attr_init(&attr)) != 0) {
-		error("pthread_attr_init: %s", slurm_strerror(rc));
-		xfree(arg);
-		return;
-	}
-
+	slurm_attr_init(&attr);
 	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if (rc != 0) {
 		errno = rc;
