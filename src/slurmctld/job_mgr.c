@@ -2452,6 +2452,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
 	bitstr_t *req_bitmap = NULL;
+	time_t now = time(NULL);
 
 	job_ptr = find_job_record(job_specs->job_id);
 	if (job_ptr == NULL) {
@@ -2468,9 +2469,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	detail_ptr = job_ptr->details;
-	last_job_update = time(NULL);
+	last_job_update = now;
 
-	if (job_specs->time_limit != NO_VAL) {
+	if ((job_specs->time_limit != NO_VAL) && (!IS_JOB_FINISHED(job_ptr))) {
 		if (super_user ||
 		    (job_ptr->time_limit > job_specs->time_limit)) {
 			job_ptr->time_limit = job_specs->time_limit;
@@ -2480,6 +2481,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			else
 				job_ptr->end_time = job_ptr->start_time +
 						    (job_ptr->time_limit * 60);
+			if (job_ptr->end_time < now)
+				job_ptr->end_time = now;
 			if ((job_ptr->job_state == JOB_RUNNING) &&
 			    (list_is_empty(job_ptr->step_list) == 0))
 				_xmit_new_end_time(job_ptr);
