@@ -449,13 +449,19 @@ bit_clear_count(bitstr_t *b)
 char *
 bit_fmt(char *str, int len, bitstr_t *b)
 {
-	int count = 0, ret;
+	int count = 0, ret, word;
 	bitoff_t start, bit;
 
 	_assert_bitstr_valid(b);
 	assert(len > 0);
 	*str = '\0';
-	for (bit = 0; bit < _bitstr_bits(b); bit++) {
+	for (bit = 0; bit < _bitstr_bits(b); ) {
+		word = _bit_word(bit);
+		if (b[word] == 0) {
+			bit += sizeof(bitstr_t)*8;
+			continue;
+		}
+
 		if (bit_test(b, bit)) {
 			count++;
 			start = bit;
@@ -469,6 +475,7 @@ bit_fmt(char *str, int len, bitstr_t *b)
 						BITSTR_RANGE_FMT, start, bit);
 			assert(ret != -1);
 		}
+		bit++;
 	}
 	if (count > 0)
 		str[strlen(str) - 1] = '\0'; 	/* zap trailing comma */

@@ -38,6 +38,7 @@ noinst_HEADERS = 	xmalloc.h 	\
 		 	slurm.h 	\
 		 	slurmlib.h	\
 			bitstring.h     \
+			bits_bytes.h    \
 			pack.h		\
 			qsw.h	
 

@@ -175,6 +175,32 @@ create_job_record (int *error_code)
 
 
 /* 
+ * delete_job_details - delete a job's detail record and clear it's pointer
+ * input: job_entry - pointer to job_record to clear the record of
+ */
+void 
+delete_job_details (struct job_record *job_entry)
+{
+	if (job_entry->details == NULL) 
+		return;
+
+	if (job_entry->details->magic != DETAILS_MAGIC)
+		fatal ("list_delete_job: passed invalid job details pointer");
+	if (job_entry->details->job_script)
+		xfree(job_entry->details->job_script);
+	if (job_entry->details->req_nodes)
+		xfree(job_entry->details->req_nodes);
+	if (job_entry->details->req_node_bitmap)
+		bit_free(job_entry->details->req_node_bitmap);
+	if (job_entry->details->node_list)
+		xfree(job_entry->details->node_list);
+	if (job_entry->details->features)
+		xfree(job_entry->details->features);
+	xfree(job_entry->details);
+	job_entry->details = NULL;
+}
+
+/* 
  * delete_job_record - delete record for job with specified job_id
  * input: job_id - job_id of the desired job
  * output: return 0 on success, errno otherwise
@@ -299,8 +325,6 @@ int
 job_cancel (char * job_id) 
 {
 	struct job_record *job_ptr;
-	bitstr_t *req_bitmap;
-	int error_code;
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
@@ -311,18 +335,16 @@ job_cancel (char * job_id)
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
-		info ("job_cancel of pending job %s", job_id);
+		delete_job_details(job_ptr);
+		info ("job_cancel of pending job %s successful", job_id);
 		return 0;
 	}
 
 	if (job_ptr->job_state == JOB_STAGE_IN) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
-		error_code = node_name2bitmap (job_ptr->nodes, &req_bitmap);
-		if (error_code == EINVAL)
-			fatal ("invalid node list for job %s", job_id);
-		deallocate_nodes (req_bitmap);
-		bit_free (req_bitmap);
+		deallocate_nodes (job_ptr->node_bitmap);
+		delete_job_details(job_ptr);
 		info ("job_cancel of job %s successful", job_id);
 		return 0;
 	} 
@@ -393,12 +415,17 @@ job_create (char *job_specs, char **new_job_id)
 		goto cleanup;
 	}			
 	if (job_id && (strlen(job_id) >= MAX_ID_LEN)) {
-		info ("job_create: JobId specified is too long");
+		info ("job_create: JobId specified %s is too long", job_id);
 		error_code = EINVAL;
 		goto cleanup;
 	}
 	if (user_id == NO_VAL) {
 		info ("job_create: job failed to specify User");
+		error_code = EINVAL;
+		goto cleanup;
+	}	
+	if (job_name && strlen(job_name) > MAX_NAME_LEN) {
+		info ("job_create: job name %s too long", job_name);
 		error_code = EINVAL;
 		goto cleanup;
 	}	
@@ -423,6 +450,7 @@ job_create (char *job_specs, char **new_job_id)
 		error_code = EINVAL;
 		goto cleanup;
 	}
+
 	if (min_cpus == NO_VAL)
 		min_cpus = 1;		/* default is 1 processor per node */
 	if (min_cpus < procs_per_task) {
@@ -495,8 +523,6 @@ job_create (char *job_specs, char **new_job_id)
 		i = bit_set_count (req_bitmap);
 		if (i > req_nodes)
 			req_nodes = i;
-		bit_free (req_bitmap);
-		req_bitmap = NULL;
 	}			
 	if (req_cpus > part_ptr->total_cpus) {
 		info ("job_create: too many cpus (%d) requested of partition %s(%d)",
@@ -533,7 +559,7 @@ job_create (char *job_specs, char **new_job_id)
 	else
 		set_job_id(job_ptr);
 	if (job_name) {
-		strncpy (job_ptr->name, job_name, MAX_NAME_LEN);
+		strcpy (job_ptr->name, job_name);
 		xfree (job_name);
 	}
 	job_ptr->user_id = (uid_t) user_id;
@@ -547,8 +573,11 @@ job_create (char *job_specs, char **new_job_id)
 	detail_ptr = job_ptr->details;
 	detail_ptr->num_procs = req_cpus;
 	detail_ptr->num_nodes = req_nodes;
-	if (req_node_list)
-		detail_ptr->nodes = req_node_list;
+	if (req_node_list) {
+		detail_ptr->req_nodes = req_node_list;
+		detail_ptr->req_node_bitmap = req_bitmap;
+
+	}
 	if (req_features)
 		detail_ptr->features = req_features;
 	detail_ptr->shared = shared;
@@ -618,8 +647,7 @@ job_unlock ()
 /* 
  * list_delete_job - delete a job record and its corresponding job_details,
  *	see common/list.h for documentation
- * input: job_record_point - pointer to job_record to delete
- * output: returns 0 on success, errno otherwise
+ * input: job_entry - pointer to job_record to delete
  * global: job_list - pointer to global job list
  *	job_count - count of job list entries
  */
@@ -634,22 +662,12 @@ list_delete_job (void *job_entry)
 	if (job_record_point->magic != JOB_MAGIC)
 		fatal ("list_delete_job: passed invalid job pointer");
 
-	if (job_record_point->details) {
-		if (job_record_point->details->magic != DETAILS_MAGIC)
-			fatal ("list_delete_job: passed invalid job details pointer");
-		if (job_record_point->details->job_script)
-			xfree(job_record_point->details->job_script);
-		if (job_record_point->details->nodes)
-			xfree(job_record_point->details->nodes);
-		if (job_record_point->details->node_list)
-			xfree(job_record_point->details->node_list);
-		if (job_record_point->details->features)
-			xfree(job_record_point->details->features);
-		xfree(job_record_point->details);
-	}
+	delete_job_details (job_record_point);
 
 	if (job_record_point->nodes)
 		xfree(job_record_point->nodes);
+	if (job_record_point->node_bitmap)
+		bit_free(job_record_point->node_bitmap);
 	job_count--;
 	xfree(job_record_point);
 }
@@ -772,6 +790,8 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	return 0 if no error, 1 if buffer too small
  * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ * NOTE: the caller must insure that the buffer is sufficiently large to hold 
+ *	 the data being written (space remaining at leas BUF_SIZE)
  */
 int 
 pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
@@ -779,14 +799,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	char tmp_str[MAX_STR_PACK];
 	struct job_details *detail_ptr;
 
-	if (dump_job_ptr->job_id == NULL ||
-	    strlen (dump_job_ptr->job_id) < MAX_STR_PACK)
-		packstr (dump_job_ptr->job_id, buf_ptr, buf_len);
-	else {
-		strncpy(tmp_str, dump_job_ptr->job_id, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
-	}
+	packstr (dump_job_ptr->job_id, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
 	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
@@ -797,17 +810,18 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 
 	packstr (dump_job_ptr->nodes, buf_ptr, buf_len);
 	packstr (dump_job_ptr->partition, buf_ptr, buf_len);
-	if (dump_job_ptr->name == NULL || 
-	    strlen (dump_job_ptr->name) < MAX_STR_PACK)
-		packstr (dump_job_ptr->name, buf_ptr, buf_len);
-	else {
-		strncpy(tmp_str, dump_job_ptr->name, MAX_STR_PACK);
-		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+	packstr (dump_job_ptr->name, buf_ptr, buf_len);
+	if (dump_job_ptr->node_bitmap) {
+		(void) bit_fmt(tmp_str, MAX_STR_PACK, 
+			dump_job_ptr->node_bitmap);
 		packstr (tmp_str, buf_ptr, buf_len);
 	}
+	else 
+		packstr (NULL, buf_ptr, buf_len);
 
 	detail_ptr = dump_job_ptr->details;
-	if (detail_ptr) {
+	if (detail_ptr && 
+	    dump_job_ptr->job_state == JOB_PENDING) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
 		pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
@@ -818,16 +832,24 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
 		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
 		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->total_procs, buf_ptr, buf_len);
 
-		if (detail_ptr->nodes == NULL ||
-		    strlen (detail_ptr->nodes) < MAX_STR_PACK)
-			packstr (detail_ptr->nodes, buf_ptr, buf_len);
+		if (detail_ptr->req_nodes == NULL ||
+		    strlen (detail_ptr->req_nodes) < MAX_STR_PACK)
+			packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
 		else {
-			strncpy(tmp_str, detail_ptr->nodes, MAX_STR_PACK);
+			strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
 			tmp_str[MAX_STR_PACK-1] = (char) NULL;
 			packstr (tmp_str, buf_ptr, buf_len);
 		}
+
+		if (detail_ptr->req_node_bitmap) {
+			(void) bit_fmt(tmp_str, MAX_STR_PACK, 
+				detail_ptr->req_node_bitmap);
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+		else 
+			packstr (NULL, buf_ptr, buf_len);
+
 		if (detail_ptr->features == NULL ||
 		    strlen (detail_ptr->features) < MAX_STR_PACK)
 			packstr (detail_ptr->features, buf_ptr, buf_len);
@@ -836,6 +858,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 			tmp_str[MAX_STR_PACK-1] = (char) NULL;
 			packstr (tmp_str, buf_ptr, buf_len);
 		}
+
 		if (detail_ptr->job_script == NULL ||
 		    strlen (detail_ptr->job_script) < MAX_STR_PACK)
 			packstr (detail_ptr->job_script, buf_ptr, buf_len);
@@ -854,8 +877,8 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		pack32  ((uint32_t) 0, buf_ptr, buf_len);
 		pack32  ((uint32_t) 0, buf_ptr, buf_len);
 		pack32  ((uint32_t) 0, buf_ptr, buf_len);
-		pack32  ((uint32_t) 0, buf_ptr, buf_len);
 
+		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);
 		packstr (NULL, buf_ptr, buf_len);

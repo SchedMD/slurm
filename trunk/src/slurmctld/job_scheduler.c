@@ -26,6 +26,7 @@ void sort_job_queue (struct job_queue *job_queue, int job_queue_size);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int 
 main (int argc, char *argv[]) 
 {
 	printf("No test functions presently available\n");
@@ -117,6 +118,7 @@ schedule()
 			last_job_update = time (NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			delete_job_details(job_ptr);
 		}
 		else {			/* job initiated */
 			last_job_update = time (NULL);
