@@ -24,7 +24,7 @@
  *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
  *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>
  *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
- *	Priority=<float> ProcsPerTask=<count> ReqNodes=<node_list>
+ *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
@@ -127,7 +127,7 @@ extern int load_node (time_t * last_update_time);
 extern int load_job_config (char *req_name, char *next_name, char *job_name,
 		char *partition, int *user_id, char *job_state, 
 		char *node_list, int *time_limit, time_t *start_time, 
-		time_t *end_time, float *priority);
+		time_t *end_time, int *priority);
 
 /* 
  * load_node_config - load the state information about the named node

@@ -37,7 +37,7 @@ main (int argc, char *argv[]) {
 	char job_state[MAX_NAME_LEN], node_list[FEATURE_SIZE];
 	int time_limit, user_id;
 	time_t start_time, end_time;
-	float priority;
+	int priority;
 
 	error_code = load_job (&last_update_time);
 	if (error_code)
@@ -60,7 +60,7 @@ main (int argc, char *argv[]) {
 				req_name, job_name, partition);
 			printf ("user_id=%d job_state=%s node_list=%s ", 
 				user_id, job_state, node_list);
-			printf ("time_limit=%d priority=%f ", 
+			printf ("time_limit=%d priority=%d ", 
 				time_limit, priority);
 			printf ("start_time=%lx end_time=%lx\n", 
 				(long)start_time, (long)end_time);
@@ -212,7 +212,7 @@ int
 load_job_config (char *req_name, char *next_name, char *job_name,
 		char *partition, int *user_id, char *job_state, 
 		char *node_list, int *time_limit, time_t *start_time, 
-		time_t *end_time, float *priority)
+		time_t *end_time, int *priority)
 
 {
 	int i, error_code, version, buffer_offset, my_user_id;

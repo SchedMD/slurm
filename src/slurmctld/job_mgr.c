@@ -43,7 +43,7 @@ main (int argc, char *argv[])
 	struct job_record * job_rec;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	char *dump, tmp_id[50];
-	char update_spec[] = "TimeLimit=1234 Priority=123.45";
+	char update_spec[] = "TimeLimit=1234 Priority=123";
 
 	printf("initialize the database and create a few jobs\n");
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -543,7 +543,7 @@ job_create (char *job_specs, char **new_job_id)
 	struct part_record *part_ptr;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
-	float priority;
+	int priority;
 	bitstr_t *req_bitmap;
 
 	new_job_id[0] = NULL;
@@ -553,7 +553,7 @@ job_create (char *job_specs, char **new_job_id)
 	contiguous = dist = req_cpus = req_nodes = min_cpus = NO_VAL;
 	min_memory = min_tmp_disk = time_limit = procs_per_task = NO_VAL;
 	key = shared = user_id = NO_VAL;
-	priority = (float) NO_VAL;
+	priority = NO_VAL;
 
 	/* setup and basic parsing */
 	error_code =
@@ -726,7 +726,7 @@ job_create (char *job_specs, char **new_job_id)
 	job_ptr->user_id = (uid_t) user_id;
 	job_ptr->job_state = JOB_PENDING;
 	job_ptr->time_limit = time_limit;
-	if (key && is_key_valid (key) && ((priority - NO_VAL) > 0.01))
+	if (key && is_key_valid (key) && (priority != NO_VAL))
 		job_ptr->priority = priority;
 	else
 		set_job_prio (job_ptr);
@@ -893,7 +893,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		 int *contiguous, int *req_cpus, int *req_nodes,
 		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
 		 int *shared, int *dist, char **script, int *time_limit, 
-		 int *procs_per_task, char **job_id, float *priority, 
+		 int *procs_per_task, char **job_id, int *priority, 
 		 int *user_id) {
 	int bad_index, error_code, i;
 	char *temp_specs, *contiguous_str, *dist_str, *shared_str;
@@ -904,7 +904,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 	*contiguous = *req_cpus = *req_nodes = *min_cpus = NO_VAL;
 	*min_memory = *min_tmp_disk = *time_limit = NO_VAL;
 	*dist = *key = *shared = *procs_per_task = *user_id = NO_VAL;
-	*priority = (float) NO_VAL;
+	*priority = NO_VAL;
 
 	temp_specs = xmalloc (strlen (job_specs) + 1);
 	strcpy (temp_specs, job_specs);
@@ -921,7 +921,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		"MinRealMemory=", 'd', min_memory, 
 		"MinTmpDisk=", 'd', min_tmp_disk, 
 		"Partition=", 's', req_partition, 
-		"Priority=", 'f', priority, 
+		"Priority=", 'd', priority, 
 		"ProcsPerTask=", 'd', procs_per_task, 
 		"ReqNodes=", 's', req_node_list, 
 		"Script=", 's', script, 
@@ -1071,13 +1071,12 @@ set_job_id (struct job_record *job_ptr)
 void
 set_job_prio (struct job_record *job_ptr)
 {
-	static float default_prio = 1.000;
+	static int default_prio = 100000;
 
 	if ((job_ptr == NULL) || 
 	    (job_ptr->magic != JOB_MAGIC)) 
 		fatal ("set_job_prio: invalid job_ptr");
-	job_ptr->priority = default_prio;
-	default_prio -= 0.00001;
+	job_ptr->priority = default_prio--;
 }
 
 
@@ -1095,7 +1094,7 @@ int
 update_job (char *job_id, char *spec) 
 {
 	int bad_index, error_code, i, time_limit;
-	float prio;
+	int prio;
 	struct job_record *job_ptr;
 
 	if (strlen (job_id) >= MAX_ID_LEN) {
@@ -1114,8 +1113,8 @@ update_job (char *job_id, char *spec)
 	if (error_code)
 		return error_code;
 
-	prio = (float) NO_VAL;
-	error_code = load_float (&prio, "Priority=", spec);
+	prio = NO_VAL;
+	error_code = load_integer (&prio, "Priority=", spec);
 	if (error_code)
 		return error_code;
 
@@ -1141,7 +1140,7 @@ update_job (char *job_id, char *spec)
 			time_limit, job_id);
 	}
 
-	if ((prio - NO_VAL) > 0.01) {	/* avoid reset from round-off */
+	if (prio != NO_VAL) {
 		job_ptr->priority = prio;
 		info ("update_job: setting priority to %f for job_id %s",
 			(double) prio, job_id);

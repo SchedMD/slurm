@@ -79,9 +79,8 @@ enum node_states {
 	STATE_DOWN,		/* node is not responding */
 	STATE_UNKNOWN,		/* node's initial state, unknown */
 	STATE_IDLE,		/* node idle and available for use */
-	STATE_STAGE_IN,		/* node has been allocated to a job, which has not yet begun execution */
-	STATE_BUSY,		/* node allocated to a job and that job is actively running */
-	STATE_STAGE_OUT,	/* node has been allocated to a job, which has completed execution */
+	STATE_STAGE_IN,		/* node has been allocated, job not yet running */
+	STATE_BUSY,		/* node has been allocated, job currently */
 	STATE_DRAINED,		/* node idle and not to be allocated future work */
 	STATE_DRAINING,		/* node in use, but not to be allocated future work */
 	STATE_END		/* last entry in table */
@@ -118,15 +117,15 @@ extern time_t last_part_update;	/* time of last update to part records */
 struct part_record {
 	unsigned magic;		/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];/* name of the partition */
-	int max_time;		/* -1 if unlimited */
-	int max_nodes;		/* -1 if unlimited */
+	int max_time;		/* minutes, -1 if unlimited */
+	int max_nodes;		/* per job, -1 if unlimited */
 	int total_nodes;	/* total number of nodes in the partition */
 	int total_cpus;		/* total number of cpus in the partition */
 	unsigned key:1;		/* 1 if slurm distributed key is required for use of partition */
 	unsigned shared:2;	/* 1 if more than one job can execute on a node, 2 if required */
 	unsigned state_up:1;	/* 1 if state is up, 0 if down */
-	char *nodes;		/* names of nodes in partition */
-	char *allow_groups;	/* null indicates all */
+	char *nodes;		/* comma delimited list names of nodes in partition */
+	char *allow_groups;	/* comma delimited list of groups, null indicates all */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 };
 extern List part_list;		/* list of part_record entries */
@@ -136,8 +135,8 @@ extern struct part_record *default_part_loc;	/* location of default partition */
 
 /* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
 #define JOB_STRUCT_VERSION 1
-#define JOB_STRUCT_FORMAT1 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f\n"
-#define JOB_STRUCT_FORMAT2 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%f TotalProcs=%d TotalNodes=%d ReqNodes=%s Features=%s Shared=%d Contiguous=%d MinProcs=%d MinMemory=%d MinTmpDisk=%d Distribution=%d Script=%s ProcsPerTask=%d TotalProcs=%d\n"
+#define JOB_STRUCT_FORMAT1 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%d\n"
+#define JOB_STRUCT_FORMAT2 "JobId=%s Partition=%s JobName=%s UID=%d Nodes=%s State=%s TimeLimit=%d StartTime=%lx EndTime=%lx Priority=%d TotalProcs=%d TotalNodes=%d ReqNodes=%s Features=%s Shared=%d Contiguous=%d MinProcs=%d MinMemory=%d MinTmpDisk=%d Distribution=%d Script=%s ProcsPerTask=%d TotalProcs=%d\n"
 extern time_t last_job_update;	/* time of last update to part records */
 enum job_states {
 	JOB_PENDING,		/* queued waiting for initiation */
@@ -191,11 +190,11 @@ struct job_record {
 	char partition[MAX_NAME_LEN];	/* name of the partition */
 	uid_t user_id;			/* user the job runs as */
 	enum job_states job_state;	/* state of the job */
-	char *nodes;			/* list of nodes allocated to the job */
-	int time_limit;			/* maximum run time in minutes */
+	char *nodes;			/* comma delimited list of nodes allocated to job */
+	int time_limit;			/* maximum run time in minutes, -1 if unlimited */
 	time_t start_time;		/* time execution begins, actual or expected*/
 	time_t end_time;		/* time of termination, actual or expected */
-	float priority;			/* relative priority of the job */
+	int priority;			/* relative priority of the job */
 	struct job_details *details;	/* job details (set until job terminates) */
 };
 
@@ -620,7 +619,7 @@ extern int parse_job_specs (char *job_specs, char **req_features, char **req_nod
 		 int *contiguous, int *req_cpus, int *req_nodes,
 		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
 		 int *shared, int *dist, char **script, int *time_limit, 
-		 int *procs_per_task, char **job_id, float *priority, 
+		 int *procs_per_task, char **job_id, int *priority, 
 		 int *user_id);
 
 /* part_lock - lock the partition information */
