@@ -172,7 +172,7 @@ _io_thr_poll(void *job_arg)
 				nfds++;
 			}
 
-			if (job->out[i] == IO_DONE && job->err[i] == IO_DONE)
+			if ((job->out[i] == IO_DONE) && (job->err[i] == IO_DONE))
 				eofcnt++;
 		}
 
@@ -313,10 +313,12 @@ _accept_io_stream(job_t *job, int i)
 		while ((sd = accept(job->iofd[i], &addr, (socklen_t *)&size)) < 0) {
 			if (errno == EINTR)
 				continue;
-			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+			if ((errno == EAGAIN) || 
+			    (errno == ECONNABORTED) || 
+			    (errno == EWOULDBLOCK)) {
+				debug("Stream connection refused: %m");
 				return;
-			if (errno == ECONNABORTED)
-				return;
+			}
 			error("Unable to accept new connection: %m\n");
 		}
 
