@@ -43,6 +43,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/select_plugin.h"
@@ -544,12 +545,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 	/* The job is not able to start right now, return a 
 	 * value indicating when the job can start */
+	if (!runable_avail)
+		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	if (!runable_ever) {
 		error_code = ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		info("_pick_best_nodes: job never runnable");
 	}
-	if (!runable_avail)
-		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
+
 	if (error_code == SLURM_SUCCESS)
 		error_code = ESLURM_NODES_BUSY;
 	return error_code;
