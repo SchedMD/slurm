@@ -499,14 +499,14 @@ int _get_part_config(int num_nodes, List switch_config_list, List config_result_
 	/* first we find the partition configurations for the separate
 	 * dimensions
 	 */
-	if (find_all_tori(config_result_list)){
-		printf("error finding all tori\n");
-		goto cleanup;
-	}
+	/* if (find_all_tori(config_result_list)){ */
+/* 		printf("error finding all tori\n"); */
+/* 		goto cleanup; */
+/* 	} */
 	rc = 0;
 
  cleanup:
-	gs_fini();
+	//gs_fini();
 	return rc;
 }
 
@@ -1408,7 +1408,7 @@ void print_pa_request(pa_request_t* pa_request)
 void pa_init()
 {
 	int i;
-	
+	List switch_config_list;
 #ifdef DEBUG_PA
 	printf("pa_init()\n");
 #endif
@@ -1443,6 +1443,7 @@ void pa_init()
 /* 		time(&end); */
 /* 		printf("loading file time: %ld\n", (end-start)); */
 /* 	} else { */
+	
 /* 		switch_config_list = list_create(delete_gen); */
 /* 		create_config_8_1d(switch_config_list); */
 /* 		if (_get_part_config(8, switch_config_list, _conf_result_list[X])){ */
@@ -1479,8 +1480,10 @@ void pa_init()
 /* 	} */
 
 	_pa_system_ptr = xmalloc(sizeof(pa_system_t));
-
+		
 	_create_pa_system(_pa_system_ptr, _conf_result_list);
+	_create_config_even(_pa_system_ptr->grid);
+	
 	_pa_system_list = list_create(_delete_pa_system);
 	_initialized = true;
 	
@@ -1663,6 +1666,112 @@ char* get_conf_result_str(List pa_node_list)
 }
 
 /** */
+int _create_config_even(pa_node_t ***grid)
+{
+	int x, y ,z;
+	pa_node_t *source, *target_1, *target_2, *target_first, *target_second;
+	for(x=0;x<DIM_SIZE[X];x++) {
+		for(y=0;y<DIM_SIZE[Y];y++) {
+			for(z=0;z<DIM_SIZE[Z];z++) {
+				source = &grid[x][y][z];
+				
+				if(x<(DIM_SIZE[X]-1))
+					target_1 = &grid[x+1][y][z];
+				else
+					target_1 = NULL;
+				if(x<(DIM_SIZE[X]-2))
+					target_2 = &grid[x+2][y][z];
+				else
+					target_2 = NULL;
+				target_first = &grid[0][y][z];
+				target_second = &grid[1][y][z];
+				_set_up_ports(X, x, source, target_1, target_2, target_first, target_second);
+				
+				if(y<(DIM_SIZE[Y]-1))
+					target_1 = &grid[x][y+1][z];
+				else
+					target_1 = NULL;
+				if(y<(DIM_SIZE[Y]-2))
+					target_2 = &grid[x][y+2][z];
+				else
+					target_2 = NULL;
+				target_first = &grid[x][0][z];
+				target_second = &grid[x][1][z];
+				_set_up_ports(Y, y, source, target_1, target_2, target_first, target_second);
+
+				if(z<(DIM_SIZE[Z]-1))
+					target_1 = &grid[x][y][z+1];
+				else
+					target_1 = NULL;
+				if(z<(DIM_SIZE[Z]-2))
+					target_2 = &grid[x][y][z+2];
+				else
+					target_2 = NULL;
+				target_first = &grid[x][y][0];
+				target_second = &grid[x][y][1];
+				_set_up_ports(Z, z, source, target_1, target_2, target_first, target_second);
+			}
+		}
+	}
+	return 1;
+}
+void _switch_config(pa_node_t* source, pa_node_t* target, int dim, int port_src, int port_tar)
+{
+	pa_switch_t* config = &source->axis_switch[dim];
+	pa_switch_t* config_tar = &target->axis_switch[dim];
+	int i;
+	for(i=0;i<PA_SYSTEM_DIMENSIONS;i++) {
+		config->wire[port_src].node_tar[i] = target->coord[i];
+		config_tar->wire[port_tar].node_tar[i] = source->coord[i];
+	}
+	config->wire[port_src].port_tar = port_tar;
+	config_tar->wire[port_tar].port_tar = port_src;
+}
+
+void _set_up_ports(int dim, int count, pa_node_t* source, pa_node_t* target_1, pa_node_t* target_2, pa_node_t* target_first, pa_node_t* target_second)
+{
+	_switch_config(source, source, dim, 0, 0);
+	_switch_config(source, source, dim, 1, 1);
+	if(count==0) {
+		/* First Node */
+		/* 4->3 of next */
+		_switch_config(source, target_1, dim, 4, 3);
+		/* 2->5 of next */
+		_switch_config(source, target_1, dim, 2, 5);
+		/* 3->4 of next even */
+		_switch_config(source, target_2, dim, 3, 4);
+	} else if(!(count%2)) {
+		if(count<DIM_SIZE[dim]-2) {
+			/* Not Last Even Node */
+			/* 3->4 of next even */
+			_switch_config(source, target_2, dim, 3, 4);
+			/* 2->5 of next */
+			_switch_config(source, target_1, dim, 2, 5);
+			/* 5->2 of next */
+			_switch_config(source, target_1, dim, 5, 2);
+		} else {
+			/* Last Even Node */
+			/* 3->4 of next */
+			_switch_config(source, target_1, dim, 3, 4);
+			/* 5->2 of next */
+			_switch_config(source, target_1, dim, 5, 2);
+			/* 2->5 of first */
+			_switch_config(source, target_first, dim, 2, 5);
+		}
+	} else {
+		if(count<DIM_SIZE[dim]-2) {
+			/* Not Last Odd Node */
+			/* 4->3 of next odd */
+			_switch_config(source, target_2, dim, 4, 3);
+		} else {
+			/* Last Odd Node */
+			/* 5->2 of second */
+			_switch_config(source, target_second, dim, 5, 2);
+		}	
+	}	
+}
+				
+/** */
 int main(int argc, char** argv)
 {
 	int geo[3] = {-1,-1,-1};
@@ -1682,6 +1791,19 @@ int main(int argc, char** argv)
 	pa_init();
 	time(&end);
 	printf("init: %ld\n", (end-start));
+/* 	int x,y,z,i; */
+/* 	pa_connection_t info; */
+/* 	printf("Wires\n"); */
+/* 	for(x=0;x<1;x++) { */
+/* 		for(y=0;y<DIM_SIZE[Y];y++) { */
+/* 			for(z=0;z<1;z++) { */
+/* 				for(i=0;i<NUM_PORTS_PER_NODE;i++) { */
+/* 					info = _pa_system_ptr->grid[x][y][z].axis_switch[Y].wire[i]; */
+/* 					printf("%d%d%d %d -> %d%d%d %d\n",x,y,z,i,info.node_tar[X],info.node_tar[Y],info.node_tar[Z],info.port_tar); */
+/* 				} */
+/* 			} */
+/* 		} */
+/* 	} */
 	/*
 	  int dead_node1[3] = {0,0,0};
 	  int dead_node2[3] = {1,0,0};
@@ -1750,6 +1872,7 @@ int main(int argc, char** argv)
 	// printf("fini: %ld\n", (end-start));
 
 	delete_pa_request(request);
-
+	gs_fini();
+	
 	return 0;
 }

@@ -181,15 +181,11 @@ typedef struct switch_config
 
 	/* dimension */
 	dimension_t dim;
-
-	/* node labels */
-	Label node_src; // source
-	Label node_tar; // target
-
-	/* ports */ 
+	int *node_src; // source
+	int *node_tar; // target
 	int port_src;
 	int port_tar;
-	
+
 } switch_config_t;
 
 /** 
@@ -286,7 +282,7 @@ void delete_gen(void* object);
 char* convert_dim(dimension_t dim);
 
 /**  */
-void new_switch_config(switch_config_t** config, Label id, dimension_t dim, 
+void new_switch_config(switch_config_t* config, Label id, dimension_t dim, 
 	       Label node_src, int port_src, 
 	       Label node_tar, int port_tar);
 /** */

@@ -116,6 +116,7 @@ void gs_fini();
 /* */
 void sort_node_id(int* node_id, int size);
 
+/* any size */
 /** 3x3x1 */
 void create_config_9_2d(List switch_config_list);
 /** 2x2x2 */

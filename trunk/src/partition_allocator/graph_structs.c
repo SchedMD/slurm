@@ -907,18 +907,17 @@ void delete_gen(void* object)
 	xfree(object);
 }
 
-void new_switch_config(switch_config_t** config, Label id, dimension_t dim, 
+void new_switch_config(switch_config_t* config, Label id, dimension_t dim, 
 		       Label node_src, int port_src, 
 		       Label node_tar, int port_tar)
 {
-	(*config) = (switch_config_t*) xmalloc(sizeof(switch_config_t));
-
-	(*config)->id = id;
-	(*config)->dim = dim;
-	(*config)->node_src = node_src;
-	(*config)->port_src = port_src;
-	(*config)->node_tar = node_tar;
-	(*config)->port_tar = port_tar;
+	
+	config->id = id;
+	config->dim = dim;
+	config->node_src = node_src;
+	config->port_src = port_src;
+	config->node_tar = node_tar;
+	config->port_tar = port_tar;
 }
 
 void delete_switch_config(void* object)
