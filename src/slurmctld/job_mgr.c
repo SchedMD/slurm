@@ -1041,7 +1041,7 @@ job_cancel (uint32_t job_id, int uid)
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0)) {
-		error ("Bogus JOB_CANCEL RPC from uid %d", uid);
+		error ("Security violation, JOB_CANCEL RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -1096,7 +1096,7 @@ job_complete (uint32_t job_id, int uid)
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0)) {
-		error ("Bogus JOB_COMPLETE RPC from uid %d", uid);
+		error ("Security violation, JOB_COMPLETE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -1541,7 +1541,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id, int uid)
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0)) {
-		error ("Bogus JOB_CANCEL RPC from uid %d", uid);
+		error ("Security violation, JOB_CANCEL RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -1590,7 +1590,7 @@ job_step_complete (uint32_t job_id, uint32_t step_id, int uid)
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0)) {
-		error ("Bogus JOB_COMPLETE RPC from uid %d", uid);
+		error ("Security violation, JOB_COMPLETE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
 
@@ -2087,14 +2087,15 @@ top_priority (struct job_record *job_ptr) {
 
 /*
  * update_job - update a job's parameters per the supplied specifications
- * output: returns 0 on success, otherwise an error code from common/slurm_errno.h
+ * input: uid - uid of user issuing RPC
+ * output: returns an error code from common/slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */
 int 
-update_job (job_desc_msg_t * job_specs) 
+update_job (job_desc_msg_t * job_specs, int uid) 
 {
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
@@ -2104,110 +2105,198 @@ update_job (job_desc_msg_t * job_specs)
 	if (job_ptr == NULL) {
 		error ("update_job: job_id %u does not exist.", job_specs -> job_id);
 		return ESLURM_INVALID_JOB_ID;
-	}			
+	}
+	if ((job_ptr->user_id != uid) && (uid != 0)) {
+		error ("Security violation, JOB_UPDATE RPC from uid %d", uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
 	detail_ptr = job_ptr->details;
 	last_job_update = time (NULL);
 
 	if (job_specs -> time_limit != NO_VAL) {
-		job_ptr -> time_limit = job_specs -> time_limit;
-		job_ptr -> end_time = job_ptr -> start_time + (job_ptr -> time_limit * 60);
-		info ("update_job: setting time_limit to %u for job_id %u",
+		if ((uid == 0) ||
+		    (job_ptr -> time_limit > job_specs -> time_limit)) {
+			job_ptr -> time_limit = job_specs -> time_limit;
+			job_ptr -> end_time = job_ptr -> start_time + (job_ptr -> time_limit * 60);
+			info ("update_job: setting time_limit to %u for job_id %u",
 				job_specs -> time_limit, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase time limit for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> priority != NO_VAL) {
-		job_ptr -> priority = job_specs -> priority;
-		info ("update_job: setting priority to %u for job_id %u",
+		if ((uid == 0) ||
+		    (job_ptr -> priority > job_specs -> priority)) {
+			job_ptr -> priority = job_specs -> priority;
+			info ("update_job: setting priority to %u for job_id %u",
 				job_specs -> priority, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase priority for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> min_procs != NO_VAL && detail_ptr) {
-		detail_ptr -> min_procs = job_specs -> min_procs;
-		info ("update_job: setting min_procs to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> min_procs > job_specs -> min_procs)) {
+			detail_ptr -> min_procs = job_specs -> min_procs;
+			info ("update_job: setting min_procs to %u for job_id %u",
 				job_specs -> min_procs, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase min_procs for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> min_memory != NO_VAL && detail_ptr) {
-		detail_ptr -> min_memory = job_specs -> min_memory;
-		info ("update_job: setting min_memory to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> min_memory > job_specs -> min_memory)) {
+			detail_ptr -> min_memory = job_specs -> min_memory;
+			info ("update_job: setting min_memory to %u for job_id %u",
 				job_specs -> min_memory, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase min_memory for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> min_tmp_disk != NO_VAL && detail_ptr) {
-		detail_ptr -> min_tmp_disk = job_specs -> min_tmp_disk;
-		info ("update_job: setting min_tmp_disk to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> min_tmp_disk > job_specs -> min_tmp_disk)) {
+			detail_ptr -> min_tmp_disk = job_specs -> min_tmp_disk;
+			info ("update_job: setting min_tmp_disk to %u for job_id %u",
 				job_specs -> min_tmp_disk, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase min_tmp_disk for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> num_procs != NO_VAL && detail_ptr) {
-		detail_ptr -> num_procs = job_specs -> num_procs;
-		info ("update_job: setting num_procs to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> num_procs > job_specs -> num_procs)) {
+			detail_ptr -> num_procs = job_specs -> num_procs;
+			info ("update_job: setting num_procs to %u for job_id %u",
 				job_specs -> num_procs, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase num_procs for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> num_nodes != NO_VAL && detail_ptr) {
-		detail_ptr -> num_nodes = job_specs -> num_nodes;
-		info ("update_job: setting num_nodes to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> num_nodes > job_specs -> num_nodes)) {
+			detail_ptr -> num_nodes = job_specs -> num_nodes;
+			info ("update_job: setting num_nodes to %u for job_id %u",
 				job_specs -> num_nodes, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to increase num_nodes for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> shared != (uint16_t) NO_VAL && detail_ptr) {
-		detail_ptr -> shared = job_specs -> shared;
-		info ("update_job: setting shared to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> shared > job_specs -> shared)) {
+			detail_ptr -> shared = job_specs -> shared;
+			info ("update_job: setting shared to %u for job_id %u",
 				job_specs -> shared, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to remove sharing for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> contiguous != (uint16_t) NO_VAL && detail_ptr) {
-		detail_ptr -> contiguous = job_specs -> contiguous;
-		info ("update_job: setting contiguous to %u for job_id %u",
+		if ((uid == 0) ||
+		    (detail_ptr -> contiguous > job_specs -> contiguous)) {
+			detail_ptr -> contiguous = job_specs -> contiguous;
+			info ("update_job: setting contiguous to %u for job_id %u",
 				job_specs -> contiguous, job_specs -> job_id);
+		}
+		else {
+			error ("Attempt to add contiguous for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> features && detail_ptr) {
-		if (detail_ptr -> features)
-			xfree (detail_ptr -> features);
-		detail_ptr -> features = job_specs -> features;
-		info ("update_job: setting features to %s for job_id %u",
+		if (uid == 0) {
+			if (detail_ptr -> features)
+				xfree (detail_ptr -> features);
+			detail_ptr -> features = job_specs -> features;
+			info ("update_job: setting features to %s for job_id %u",
 				job_specs -> features, job_specs -> job_id);
-		job_specs -> features = NULL;
+			job_specs -> features = NULL;
+		}
+		else {
+			error ("Attempt to change features for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> name) {
 		strncpy(job_ptr -> name, job_specs -> name, MAX_NAME_LEN);
 		info ("update_job: setting name to %s for job_id %u",
 				job_specs -> name, job_specs -> job_id);
-		job_specs -> name = NULL;
 	}
 
 	if (job_specs -> partition) {
 		tmp_part_ptr = find_part_record (job_specs -> partition);
 		if (tmp_part_ptr == NULL)
-			return ESLURM_INVALID_PARTITION_NAME;
-		strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
-		job_ptr -> part_ptr = tmp_part_ptr;
-		info ("update_job: setting partition to %s for job_id %u",
+			error_code =  ESLURM_INVALID_PARTITION_NAME;
+		if ((uid == 0) && (tmp_part_ptr)) {
+			strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
+			job_ptr -> part_ptr = tmp_part_ptr;
+			info ("update_job: setting partition to %s for job_id %u",
 				job_specs -> partition, job_specs -> job_id);
-		job_specs -> partition = NULL;
+			job_specs -> partition = NULL;
+		}
+		else {
+			error ("Attempt to change partition for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
 	if (job_specs -> req_nodes && detail_ptr) {
-		error_code = node_name2bitmap (job_specs->req_nodes, &req_bitmap);
-		if (error_code == EINVAL) {
-			if ( req_bitmap )
-				bit_free (req_bitmap);
-			return ESLURM_INVALID_NODE_NAME;
+		if (uid == 0) {
+			if (node_name2bitmap (job_specs->req_nodes, &req_bitmap)) {
+				error ("Invalid node list specified for job_update: %s", 
+					job_specs->req_nodes);
+				if ( req_bitmap )
+					bit_free (req_bitmap);
+				req_bitmap = NULL;
+				error_code = ESLURM_INVALID_NODE_NAME;
+			}
+			if (req_bitmap) {
+				if (detail_ptr -> req_nodes)
+					xfree (detail_ptr -> req_nodes);
+				detail_ptr -> req_nodes = job_specs -> req_nodes;
+				if (detail_ptr->req_node_bitmap)
+					bit_free (detail_ptr->req_node_bitmap);
+				detail_ptr->req_node_bitmap = req_bitmap;
+				info ("update_job: setting req_nodes to %s for job_id %u",
+					job_specs -> req_nodes, job_specs -> job_id);
+				job_specs -> req_nodes = NULL;
+			}
 		}
-
-		if (detail_ptr -> req_nodes)
-			xfree (detail_ptr -> req_nodes);
-		detail_ptr -> req_nodes = job_specs -> req_nodes;
-		if (detail_ptr->req_node_bitmap)
-			bit_free (detail_ptr->req_node_bitmap);
-		detail_ptr->req_node_bitmap = req_bitmap;
-		info ("update_job: setting req_nodes to %s for job_id %u",
-				job_specs -> req_nodes, job_specs -> job_id);
-		job_specs -> req_nodes = NULL;
+		else {
+			error ("Attempt to change req_nodes for job %u", job_specs -> job_id);
+			error_code = ESLURM_ACCESS_DENIED;
+		}
 	}
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return error_code;
 }

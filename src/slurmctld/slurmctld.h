@@ -490,7 +490,7 @@ extern void step_unlock (void);
 extern int sync_nodes_to_jobs (void);
 
 /* update_job - update a job's parameters per the supplied specification */
-extern int update_job (job_desc_msg_t * job_specs);
+extern int update_job (job_desc_msg_t * job_specs, int uid);
 
 /* update_node - update the configuration data for one or more nodes per the supplied specification */
 extern int update_node ( update_node_msg_t * update_node_msg )  ;
