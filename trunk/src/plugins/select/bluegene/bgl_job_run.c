@@ -384,6 +384,9 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		(void) _remove_job(job_id);
 	}
 
+	/* Free the partition */
+	bgl_free_partition(bgl_update_ptr->bgl_part_id);
+
 	/* Change the block's owner */
 	_set_part_owner(bgl_update_ptr->bgl_part_id, USER_NAME);
 
