@@ -85,6 +85,12 @@ struct sched_obj_cache_entry
 	void *data;
 };
 
+/*
+ * These constants give accessors something to point to for customary
+ * default or missing values.
+ */
+static int32_t zero_32 = 0;
+
 static struct job_details *copy_job_details( struct job_details *from );
 static void free_job_details( struct job_details *doomed );
 
@@ -432,11 +438,15 @@ sched_get_job_id( sched_obj_list_t job_data,
 		  int32_t idx,
 		  char *type )
 {
-	// *
-	// This is the primary key for the job record which means that
-	// consolidated plugin code will want this as a string and not
-	// an integer.
-	// *
+	/*
+	 * This is the primary key for the job record which means that
+	 * consolidated plugin code will want this as a string and not
+	 * an integer.
+	 */
+
+	/*
+	 * XXX - put this in the cache
+	 */
 	static char str[ 16 ];
 	if ( type ) *type = 's';
 	sprintf( str,
@@ -465,8 +475,8 @@ sched_get_job_last_active( sched_obj_list_t job_data,
 			   int32_t idx,
 			   char *type )
 {
-	if ( type ) *type = 'u';
-	return (void *) ( (struct job_record *)job_data->data )[ idx ].time_last_active;
+	if ( type ) *type = 'U';
+	return (void *) &( (struct job_record *)job_data->data )[ idx ].time_last_active;
 }
 
 /* ************************************************************************ */
@@ -515,15 +525,18 @@ sched_get_job_time_limit( sched_obj_list_t job_data,
 {
 	uint32_t limit;
 	
-	if ( type ) *type = 'u';
+	if ( type ) *type = 'U';
 
+	/*
+	 * XXX - put this in the cache
+	 */
 	limit = ( (struct job_record *)job_data->data )[ idx ].time_limit;
 	
 	switch ( limit ) {
 	case NO_VAL:
-		return (void *) 0;
+		return (void *) &zero_32;
 	case INFINITE:
-		return (void *) 0;
+		return (void *) &zero_32;
 	default:
 		return (void *) ( limit * 60 );   // seconds, not mins.
 	}
@@ -537,12 +550,13 @@ sched_get_job_num_tasks( sched_obj_list_t job_data,
 			 int32_t idx,
 			 char *type )
 {
+	static uint16_t one = 1;
 	struct job_details *det = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( type ) *type = 'u';
 	if ( det ) {
-		return (void *) det->req_tasks;
+		return (void *) &det->req_tasks;
 	} else {
-		return (void *) 1;
+		return (void *) &one;
 	}
 }
 
@@ -555,11 +569,11 @@ sched_get_job_submit_time( sched_obj_list_t job_data,
 			   char *type )
 {
 	struct job_details *det = ( (struct job_record *)job_data->data )[ idx ].details;
-	if ( type ) *type = 'u';
+	if ( type ) *type = 'U';
 	if ( det ) {
-		return (void *) det->submit_time;
+		return (void *) &det->submit_time;
 	} else {
-		return (void *) 0;
+		return (void *) &zero_32;
 	}
 }
 
@@ -571,8 +585,8 @@ sched_get_job_start_time( sched_obj_list_t job_data,
 			  int32_t idx,
 			  char *type )
 {
-	if ( type ) *type = 'u';
-	return (void *) ( (struct job_record *)job_data->data )[ idx ].start_time;
+	if ( type ) *type = 'U';
+	return (void *) &( (struct job_record *)job_data->data )[ idx ].start_time;
 }
 
 /* ************************************************************************ */
@@ -583,8 +597,8 @@ sched_get_job_end_time( sched_obj_list_t job_data,
 			int32_t idx,
 			char *type )
 {
-	if ( type ) *type = 'u';
-	return (void *) ( (struct job_record *)job_data->data )[ idx ].end_time;
+	if ( type ) *type = 'U';
+	return (void *) &( (struct job_record *)job_data->data )[ idx ].end_time;
 }
 
 /* ************************************************************************ */
@@ -676,12 +690,13 @@ sched_get_job_min_nodes( sched_obj_list_t job_data,
 {
 	struct job_details *details;
 	
-	if ( type ) *type = 'u';
+	if ( type ) *type = 'U';
 	details = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( details && details->min_nodes ) {
-		return (void *) details->min_nodes;
+		return (void *) &details->min_nodes;
+	} else {
+		return (void *) &zero_32;
 	}
-	return 0;
 }
 
 /* ************************************************************************ */
@@ -706,12 +721,13 @@ sched_get_job_min_memory( sched_obj_list_t job_data,
 {
 	struct job_details *details;
 	
-	if ( type ) *type = 'u';
+	if ( type ) *type = 'U';
 	details = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( details ) {
-		return (void *) details->min_memory;
+		return (void *) &details->min_memory;
+	} else {
+		return (void *) &zero_32;
 	}
-	return 0;
 
 }
 
@@ -725,12 +741,13 @@ sched_get_job_min_disk( sched_obj_list_t job_data,
 {
 	struct job_details *details;
 	
-	if ( type ) *type = 'u';
+	if ( type ) *type = 'U';
 	details = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( details ) {
-		return (void *) details->min_tmp_disk;
+		return (void *) &details->min_tmp_disk;
+	} else {
+		return (void *) &zero_32;
 	}
-	return 0;
 
 }
 
@@ -856,8 +873,8 @@ sched_get_node_num_cpus( sched_obj_list_t node_data,
 			 int32_t idx,
 			 char *type )
 {
-	if ( type ) *type = 'u';
-	return (void *) ( (struct node_record *) node_data->data )[ idx ].cpus;
+	if ( type ) *type = 'U';
+	return (void *) &( (struct node_record *) node_data->data )[ idx ].cpus;
 }
 
 /* ************************************************************************ */
@@ -868,8 +885,8 @@ sched_get_node_real_mem( sched_obj_list_t node_data,
 			 int32_t idx,
 			 char *type )
 {
-	if ( type ) *type = 'u';
-	return (void *) ( (struct node_record *) node_data->data )[ idx ].real_memory;
+	if ( type ) *type = 'U';
+	return (void *) &( (struct node_record *) node_data->data )[ idx ].real_memory;
 }
 
 /* ************************************************************************ */
@@ -880,8 +897,8 @@ sched_get_node_tmp_disk( sched_obj_list_t node_data,
 			 int32_t idx,
 			 char *type )
 {
-	if ( type ) *type = 'u';
-	return (void *) ( (struct node_record *) node_data->data )[ idx ].tmp_disk;
+	if ( type ) *type = 'U';
+	return (void *) &( (struct node_record *) node_data->data )[ idx ].tmp_disk;
 }
 
 /* ************************************************************************ */
@@ -904,7 +921,7 @@ sched_get_node_mod_time( sched_obj_list_t node_data,
 			 int32_t idx,
 			 char *type )
 {
-	if ( type ) *type = 'u';
+	if ( type ) *type = 'U';
 	return (void *) &( (struct node_record *) node_data->data )[ idx ].last_response;
 }
 

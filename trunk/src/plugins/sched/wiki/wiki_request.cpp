@@ -256,18 +256,35 @@ wiki_request_t::compose_response( wiki_request_t	*request,
 			}
 			break;
 		case 'i':
-			if ( val != (void *) NO_VAL ) {
+			if ( (*(int16_t *) val) != NO_VAL ) {
 				str += field_str;
 				str += "=";
-				str += (int32_t) val;
+				str += (*(int16_t *) val);
 				str += ";";
 			}
 			break;
-		case 'u':
-			if ( val != (void *) NO_VAL ) {
+		case 'I':
+			if ( (*(int32_t *) val) != NO_VAL ) {
 				str += field_str;
 				str += "=";
-				str += (uint32_t) val;
+				str += (*(int32_t *) val);
+				str += ";";
+			}
+			break;
+			
+		case 'u':
+			if ( (*(uint16_t *) val) != NO_VAL ) {
+				str += field_str;
+				str += "=";
+				str += (*(uint16_t *) val);
+				str += ";";
+			}
+			break;
+		case 'U':
+			if ( (*(uint32_t *) val) != NO_VAL ) {
+				str += field_str;
+				str += "=";
+				str += (*(uint32_t *) val);
 				str += ";";
 			}
 			break;
