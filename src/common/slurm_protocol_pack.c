@@ -902,7 +902,6 @@ void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
 	pack32 ( msg -> uid , buffer , length ) ;
-	pack32 ( msg -> gid , buffer , length ) ;
 	packstr ( msg -> credentials , buffer , length ) ;
 	pack32 ( msg -> tasks_to_launch , buffer , length ) ;
 	packstring_array ( msg -> env , msg -> envc , buffer , length ) ;
@@ -927,7 +926,6 @@ int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , u
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
 	unpack32 ( & msg -> uid , buffer , length ) ;
-	unpack32 ( & msg -> gid , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> credentials , & uint16_tmp , buffer , length ) ;
 	unpack32 ( & msg -> tasks_to_launch , buffer , length ) ;
 	unpackstring_array ( & msg -> env , & msg -> envc , buffer , length ) ;
@@ -943,6 +941,7 @@ void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t 
 {
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
+	pack32 ( msg -> signal , buffer , length ) ;
 }
 
 int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
@@ -958,6 +957,7 @@ int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uin
 
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
+	unpack32 ( & msg -> signal , buffer , length ) ;
 	*msg_ptr = msg ;
 	return 0 ;
 }

@@ -220,7 +220,6 @@ typedef struct launch_tasks_msg
 	uint32_t job_id ;
 	uint32_t job_step_id ;
 	uint32_t uid ;
-	uint32_t gid ;
 	char * credentials ;
 	uint32_t tasks_to_launch ;
 	uint16_t envc ;
@@ -235,6 +234,7 @@ typedef struct kill_tasks_msg
 {
 	uint32_t job_id ;
 	uint32_t job_step_id ;
+	uint32_t signal ;
 } kill_tasks_msg_t ;
 
 

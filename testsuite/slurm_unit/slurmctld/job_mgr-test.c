@@ -14,7 +14,7 @@ main (int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	char *dump;
 	uint16_t tmp_id;
-	char update_spec[] = "TimeLimit=1234 Priority=123";
+	//char update_spec[] = "TimeLimit=1234 Priority=123";
 
 	note("This is BullShit");
 
@@ -59,7 +59,7 @@ main (int argc, char *argv[])
 		set_job_prio (job_rec);
 	}
 
-	error_code = update_job (tmp_id, update_spec);
+	//error_code = update_job (tmp_id, update_spec);
 	if (error_code) {
 		fail ("update_job");
 	}

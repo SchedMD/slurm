@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
+#include <pwd.h>
+#include <grp.h>
 #include <sys/wait.h>
 #include <errno.h>
 #include <unistd.h>
@@ -37,7 +39,6 @@ global variables
 
 /* prototypes */
 void slurm_free_task ( void * _task ) ;
-void * iowatch_launch_thread ( void * arg ) ;
 int kill_task ( task_t * task ) ;
 int interconnect_init ( launch_tasks_msg_t * launch_msg );
 int fan_out_task_launch ( launch_tasks_msg_t * launch_msg );
@@ -56,8 +57,8 @@ int setup_task_env  (task_start_t * task_start ) ;
  *launch_tasks()
  *	interconnect_init()
  *		fan_out_task_launch() (pthread_create)
- *			iowatch_launch_thread() (pthread_create)
- *				task_exec_thread() (pthread_create)
+ *			task_exec_thread() (fork) for task exec
+ *			task_exec_thread() (pthread_create) for io piping 
  ******************************************************************/			
 
 /* exported module funtion to launch tasks */
@@ -78,6 +79,7 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 {
 	int i ;
 	int rc ;
+	int session_id ;
 	
 	/* shmem work - see slurmd.c shmem_seg this is probably not needed*/
 	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
@@ -92,15 +94,26 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 	 * launched*/
 	task_start_t * task_start[launch_msg->tasks_to_launch];
 
+	if ( ( session_id = setsid () ) == SLURM_ERROR )
+	{
+		info ( "set sid failed" );	
+	}
+	curr_job_step -> session_id = session_id ;
+
 		
 	/* launch requested number of threads */
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
 		curr_task = alloc_task ( shmem_ptr , curr_job_step );
 		task_start[i] = & curr_task -> task_start ;
+		
+		/* fill in task_start struct */
 		task_start[i] -> launch_msg = launch_msg ;
+		task_start[i] -> local_task_id = i ; 
+		task_start[i] -> inout_dest = *( launch_msg -> streams + ( i * 2 )  ) ; 
+		task_start[i] -> err_dest = *( launch_msg -> streams + ( i * 2 ) + 1 ) ; 
 
-		if ( pthread_create ( & task_start[i]->pthread_id , NULL , iowatch_launch_thread , ( void * ) task_start[i] ) )
+		if ( pthread_create ( & task_start[i]->pthread_id , NULL , task_exec_thread , ( void * ) task_start[i] ) )
 			goto kill_threads;
 	}
 	
@@ -123,31 +136,21 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 	return SLURM_SUCCESS ;
 }
 
-void * iowatch_launch_thread ( void * arg ) 
-{
-	task_start_t * task_start = ( task_start_t * ) arg ;
-
-	/* create pipes to read child stdin, stdout, sterr */
-	init_parent_pipes ( task_start->pipes ) ;
-	return task_exec_thread ( arg ) ;
-}
-
 int forward_io ( task_start_t * task_arg ) 
 {
 	pthread_attr_t pthread_attr ;
-	slurm_addr * dest_out_addr = task_arg -> launch_msg -> streams ;
-	slurm_addr * dest_err_addr = task_arg -> launch_msg -> streams + 1 ;
 	int local_errno;
-
+#define STDIN_OUT_SOCK 0
+#define SIG_STDERR_SOCK 0
 	/* open stdout & stderr sockets */
-	if ( ( task_arg->sockets[0] = slurm_open_stream ( dest_out_addr ) ) == SLURM_PROTOCOL_ERROR )
+	if ( ( task_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( task_arg -> inout_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 		pthread_exit ( 0 ) ;
 	}
 	
-	if ( ( task_arg->sockets[1] = slurm_open_stream ( dest_err_addr ) ) == SLURM_PROTOCOL_ERROR )
+	if ( ( task_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( task_arg -> err_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
@@ -217,6 +220,7 @@ void * stdout_io_pipe_thread ( void * arg )
 			info ( "error reading stdout stream for task %i , errno %i", 1 , local_errno ) ;
 			pthread_exit ( NULL ) ;
 		}
+		write ( 1 ,  buffer , bytes_read ) ;
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
@@ -259,7 +263,14 @@ void * task_exec_thread ( void * arg )
 	int * pipes = task_start->pipes ;
 	int rc ;
 	int cpid ;
+	struct passwd * pwd ;
+	struct sigaction newaction ;
+        struct sigaction oldaction ;
 
+	newaction . sa_handler = SIG_IGN ;
+		 
+	/* create pipes to read child stdin, stdout, sterr */
+	init_parent_pipes ( task_start->pipes ) ;
 
 #define FORK_ERROR -1
 #define CHILD_PROCCESS 0
@@ -267,19 +278,43 @@ void * task_exec_thread ( void * arg )
 	{
 		case FORK_ERROR:
 			break ;
-		case CHILD_PROCCESS:
 
-			signal(SIGTTOU, SIG_IGN); // ignore tty output
-			signal(SIGTTIN, SIG_IGN); // ignore tty input
-			signal(SIGTSTP, SIG_IGN); // ignore user
+		case CHILD_PROCCESS:
+			sigaction(SIGTTOU, &newaction, &oldaction); /* ignore tty output */
+			sigaction(SIGTTIN, &newaction, &oldaction); /* ignore tty input */
+			sigaction(SIGTSTP, &newaction, &oldaction); /* ignore user */
+			
 			/* setup std stream pipes */
 			setup_child_pipes ( pipes ) ;
 
-			rc ++ ;
+			/* get passwd file info */
+			if ( ( pwd = getpwuid ( launch_msg->uid ) ) == NULL )
+			{
+				info ( "user id not found in passwd file" ) ;
+				_exit ( SLURM_FAILURE ) ;
+			}
+			
 			/* setuid and gid*/
-			//if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) ;
-
-			//if ( ( rc = setgid ( launch_msg->gid ) ) == SLURM_ERROR ) ;
+			if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) 
+			{
+				info ( "set user id failed " ) ;
+				_exit ( SLURM_FAILURE ) ;
+			}
+			
+			if ( ( rc = setgid ( pwd -> pw_gid ) ) == SLURM_ERROR )
+			{
+				info ( "set group id failed " ) ;
+				_exit ( SLURM_FAILURE ) ;
+			}
+			
+			/* initgroups */
+			if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
+			{
+				info ( "init groups failed " ) ;
+				_exit ( SLURM_FAILURE ) ;
+			}
+			
+			/* set session id */
 
 			/* setup requested env */
 			//setup_task_env ( task_arg ) ;
@@ -288,7 +323,9 @@ void * task_exec_thread ( void * arg )
 			chdir ( launch_msg->cwd ) ;
 			execl ( "/bin/bash" , "bash" , "-c" , launch_msg->cmd_line );
 			_exit ( SLURM_SUCCESS ) ;
+			
 		default: /*parent proccess */
+			task_start->exec_pid = cpid ;
 			setup_parent_pipes ( task_start->pipes ) ;
 			forward_io ( arg ) ;
 			waitpid ( cpid , NULL , 0 ) ;

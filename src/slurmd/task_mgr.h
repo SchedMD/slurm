@@ -31,7 +31,7 @@ typedef struct task_start
 	pthread_t		pthread_id;
 	int 			thread_return;
 	/*actual exec thread id*/
-	pthread_t		exec_pthread_id;
+	int			exec_pid;
 	int 			exec_thread_return;
 	/*io threads ids*/
 	pthread_t		io_pthread_id[SLURMD_NUMBER_OF_IO_THREADS];
@@ -40,5 +40,8 @@ typedef struct task_start
 	int			pipes[6];
 	int			sockets[2];
 	int			local_task_id;
+	char 			addr_update;
+	slurm_addr		inout_dest;
+	slurm_addr		err_dest;
 } task_start_t ;
 #endif
