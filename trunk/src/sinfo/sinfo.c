@@ -247,8 +247,8 @@ static const char display_line[] =
 int node_sz_name     = 15;
 int node_sz_state    = 6;
 int node_sz_cpus     = 4;
-int node_sz_mem      = 6;
-int node_sz_disk     = 8;
+int node_sz_mem      = 9;
+int node_sz_disk     = 11;
 int node_sz_weight   = 6;
 int node_sz_part     = 10;
 int node_sz_features = 0;
@@ -547,8 +547,8 @@ int part_sz_part  = 10;
 int part_sz_num   = 5;
 int part_sz_state = 6;
 int part_sz_cpus  = 4;
-int part_sz_mem   = 6;
-int part_sz_disk  = 8;
+int part_sz_mem   = 9;
+int part_sz_disk  = 11;
 int part_sz_nodes = 0;
 
 static void _print_partition_header(bool no_name)
@@ -713,7 +713,6 @@ int _print_str(char *str, int width, bool right)
 		format[1] = 's';
 		format[2] = '\0';
 	}
-
 	if ((printed = printf(format, str)) < 0)
 		return printed;
 
