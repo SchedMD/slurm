@@ -495,6 +495,12 @@ _wait_for_all_tasks(slurmd_job_t *job)
 static int
 _drop_privileges(struct passwd *pwd)
 {
+	/*
+	 * No need to drop privileges if we're not running as root
+	 */
+	if (getuid() != (uid_t) 0)
+		return SLURM_SUCCESS;
+
 	if (setegid(pwd->pw_gid) < 0) {
 		error("setegid: %m");
 		return -1;
@@ -515,6 +521,12 @@ _drop_privileges(struct passwd *pwd)
 static int
 _reclaim_privileges(struct passwd *pwd)
 {
+	/* 
+	 * No need to reclaim privileges if our uid == pwd->pw_uid
+	 */
+	if (getuid() == pwd->pw_uid)
+		return SLURM_SUCCESS;
+
 	if (seteuid(pwd->pw_uid) < 0) {
 		error("seteuid: %m");
 		return -1;
