@@ -287,14 +287,13 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	char *buffer = buftemp;
 	header_t header;
 	int rc;
-	slurm_auth_credentials_t *client_cred;
+	slurm_auth_t creds;
 	unsigned int unpack_len;
 	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE;
 
-	if ((rc =
-	     _slurm_msg_recvfrom(open_fd, buffer, receive_len,
-				 SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				 &(msg)->address)) == SLURM_SOCKET_ERROR) {
+	if ((rc = _slurm_msg_recvfrom( open_fd, buffer, receive_len,
+				       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
+				       &(msg)->address)) == SLURM_SOCKET_ERROR) {
 		debug("Error receiving msg socket: %m");
 		return rc;
 	}
@@ -302,34 +301,30 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	/* unpack header */
 	unpack_len = rc;
 	unpack_header(&header, &buffer, &unpack_len);
-	if ((rc = check_header_version(&header)) < 0) {
+	if ((rc = check_header_version(&header)) < 0) 
 		return rc;
-	}
 
 	/* unpack cred */
 	if (header.cred_length <= unpack_len) {
-		slurm_auth_unpack_credentials(&client_cred,
-					      (void **) &buffer,
-					      &unpack_len);
-	} else {
+		slurm_auth_unpack_credentials( &creds, (void **) &buffer,
+					       &unpack_len );
+	} else 
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
-	}
 
 	/* verify credentials */
-	if ((rc = slurm_auth_verify_credentials(client_cred)) != SLURM_SUCCESS)
+	if ((rc = slurm_auth_verify_credentials(creds)) != SLURM_SUCCESS)
 		slurm_seterrno_ret(rc);
 
 	msg->cred_type = header.cred_type;
 	msg->cred_size = header.cred_length;
-	msg->cred = client_cred;
+	msg->cred = creds;
 
 	/* unpack msg body */
 	msg->msg_type = header.msg_type;
-	if (header.body_length <= unpack_len) {
+	if (header.body_length <= unpack_len) 
 		unpack_msg(msg, &buffer, &unpack_len);
-	} else {
+	else 
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
-	}
 
 	return rc;
 }
@@ -370,17 +365,17 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE];
 	char *buffer = buf_temp;
 	header_t header;
-	slurm_auth_credentials_t client_cred;
 	int rc;
 	unsigned int pack_len;
 	unsigned int cred_len = 0;
 	unsigned int msg_len = 0;
 	unsigned int tmp_len = 0;
+	slurm_auth_t creds = slurm_auth_alloc_credentials();
 
 	/* initheader */
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
 
-	if (slurm_auth_activate_credentials(&client_cred, CREDENTIAL_TTL_SEC) 
+	if (slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC) 
 			!= SLURM_SUCCESS) {
 		/* Should probably do something more meaningful. */
 		error("init_header: failed to sign client credentials\n");
@@ -392,8 +387,8 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* pack msg */
 	tmp_len = pack_len;
-	slurm_auth_pack_credentials(&client_cred, (void **) &buffer,
-				    &pack_len);
+	slurm_auth_pack_credentials(creds, (void **) &buffer, &pack_len);
+	slurm_auth_free_credentials(creds);
 	cred_len = tmp_len - pack_len;
 
 	/* pack msg */
@@ -416,6 +411,7 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 			       pack_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 			       &msg->address)) == SLURM_SOCKET_ERROR)
 		debug("Error sending msg socket: %m");
+
 	return rc;
 }
 
