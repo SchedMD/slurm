@@ -10,21 +10,31 @@
 int
 main (int argc, char *argv[]) {
 	int error_code;
-	char part_update1[] = "PartitionName=batch State=DOWN";
-	char part_update2[] = "PartitionName=batch State=UP";
-	char node_update1[] = "NodeName=lx1234 State=DOWN";
-	char node_update2[] = "NodeName=lx1234 State=IDLE";
+	partition_desc_msg_t part_update1 ;
+	partition_desc_msg_t part_update2 ;
+	update_node_msg_t	node_update1 ;
+	update_node_msg_t	node_update2 ;
 
-	error_code = slurm_update_config (part_update1);
+	part_update1 . name = "batch" ;
+	part_update2 . name = "batch" ;
+	part_update1 . state_up = false ;
+	part_update2 . state_up = true ; 
+
+	node_update1 . node_names = "lx1234" ;
+	node_update2 . node_names = "lx1234" ;
+	node_update1 . node_state = false ;
+	node_update2 . node_state = true ; 
+
+	error_code = slurm_update_partition ( &part_update1);
 	if (error_code)
 		printf ("error %d for part_update1\n", error_code);
-	error_code = slurm_update_config (part_update2);
+	error_code = slurm_update_partition ( &part_update2);
 	if (error_code)
 		printf ("error %d for part_update2\n", error_code);
-	error_code = slurm_update_config (node_update1);
+	error_code = slurm_update_node ( &node_update1);
 	if (error_code)
 		printf ("error %d for node_update1\n", error_code);
-	error_code = slurm_update_config (node_update2);
+	error_code = slurm_update_node ( &node_update2);
 	if (error_code)
 		printf ("error %d for node_update2\n", error_code);
 
