@@ -52,11 +52,11 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
+#include "src/common/qsw.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_errno.h"
 #include "src/common/slurm_protocol_api.h"
-#include "src/common/macros.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/agent.h"
@@ -1521,7 +1521,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		alloc_msg.credentials    =
 			    &step_rec->job_ptr->details->credential;
 #ifdef HAVE_LIBELAN3
-		alloc_msg.qsw_job = step_rec->qsw_job;
+		alloc_msg.qsw_job = qsw_copy_jobinfo(step_rec->qsw_job);
 #endif
 		unlock_slurmctld(job_write_lock);
 		response_msg.msg_type =
@@ -1529,6 +1529,9 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		response_msg.data = &alloc_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+#ifdef HAVE_LIBELAN3
+		qsw_free_jobinfo(alloc_msg.qsw_job);
+#endif
 		(void) dump_all_job_state();	/* Has its own locks */
 	}
 }
@@ -1864,7 +1867,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		    &step_rec->job_ptr->details->credential;
 
 #ifdef HAVE_LIBELAN3
-		job_step_resp.qsw_job = step_rec->qsw_job;
+		job_step_resp.qsw_job =  qsw_copy_jobinfo(step_rec->qsw_job);
 #endif
 		unlock_slurmctld(job_write_lock);
 		resp.address = msg->address;
@@ -1873,6 +1876,9 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		xfree(job_step_resp.node_list);
+#ifdef HAVE_LIBELAN3
+		qsw_free_jobinfo(job_step_resp.qsw_job);
+#endif
 		(void) dump_all_job_state();	/* Sets own locks */
 	}
 }
