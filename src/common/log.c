@@ -125,7 +125,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			xfree(log->argv0);
 		log->argv0 = xstrdup(xbasename(prog));
 	} else if (!log->argv0) {
-		log->argv0 = default_argv0;
+		log->argv0 = xstrdup(default_argv0);
 	}
 
 	log->opt = opt;
