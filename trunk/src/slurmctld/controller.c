@@ -166,9 +166,13 @@ main(int argc, char * argv[]) {
 	} else if ((strncmp("Reconfigure", In_Line, 11) == 0) && Msg_From_Root()) {
 	    printf("\n\nReconfigure per operator command\n");
 	    Start_Time = clock();
+	    Node_Lock();
+	    Part_Lock();
 	    Error_Code = Init_SLURM_Conf();
 	    if (Error_Code != 0) exit(Error_Code);
 	    Error_Code = Read_SLURM_Conf(argv[1]);
+	    Part_Unlock();
+	    Node_Unlock();
 	    if (Error_Code) printf("Error %d from Read_SLURM_Conf\n", Error_Code);
 	    printf("Time = %ld usec\n", (long)(clock() - Start_Time));
 
