@@ -49,7 +49,9 @@
 #include <unistd.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/log.h"
 #include "src/common/macros.h"
+#include "src/common/xmalloc.h"
 
 /*
  * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -126,6 +128,7 @@ strong_alias(hostset_within,		slurm_hostset_within);
  */
 #define out_of_memory(mesg)                                                  \
     do {                                                                     \
+        fatal("malloc failure");                                             \
         errno = ENOMEM;                                                      \
         return(lsd_nomem_error(__FILE__, __LINE__, mesg));                   \
     } while (0)
