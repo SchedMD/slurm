@@ -53,7 +53,7 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
 /*
  * Select the "best" nodes for given job from those available
  */
-extern int select_g_job_test(struct job_record *job_ptr, bitstr_t bitmap,
+extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	int min_nodes, int max_nodes);
 
 /*

@@ -212,6 +212,19 @@ char *slurm_get_auth_type(void)
         return auth_type;
 }
 
+/* slurm_get_fast_schedule
+ * returns the value of fast_schedule in slurmctld_conf object
+ */
+extern uint16_t slurm_get_fast_schedule(void)
+{
+	uint16_t fast_val;
+
+        _lock_update_config();
+        fast_val = slurmctld_conf.fast_schedule;
+        slurm_mutex_unlock(&config_lock);
+        return fast_val;
+}
+
 /* slurm_set_auth_type
  * set the authentication type in slurmctld_conf object
  * used for security testing purposes

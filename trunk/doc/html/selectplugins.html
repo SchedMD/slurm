@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="25 August 2004">
+<meta name="LLNLRandRdate" content="26 August 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -62,7 +62,9 @@ them. It is intended as a resource to programmers wishing to write their own SLU
 node selection plugins. This is version 0 of the API.</p>
 
 <p>SLURM node selection plugins are SLURM plugins that implement the SLURM node selection
-API described herein. They must conform to the SLURM Plugin API with the following 
+API described herein. They are intended to provide a mechanism for both selecting 
+nodes for pending jobs and performing any system-specific tasks for job launch or 
+termination. The plugins must conform to the SLURM Plugin API with the following 
 specifications:</p>
 <p><span class="commandline">const char plugin_type[]</span><br>
 The major type must be &quot;select.&quot; The minor type can be any recognizable 
@@ -178,7 +180,7 @@ the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <h4>Job-Specific Node Selection Functions</h4>
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
-bitstr_t bitmap, int min_nodes, int max_nodes);</p>
+bitstr_t *bitmap, int min_nodes, int max_nodes);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement 
 specification and a set of nodes which might  be used to satisfy the request, identify 
 the nodes which "best" satify the request. Note that nodes being considered for allocation 
@@ -255,7 +257,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 25 August 2004</p></td>
+Last modified 26 August 2004</p></td>
 </tr>
 </table>
 </td>

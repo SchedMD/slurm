@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="17 August 2004">
+<meta name="LLNLRandRdate" content="26 August 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -150,24 +150,34 @@ nodes in the slurm.conf configuration file. SLURM presently lacks the ability
 to arbitrarily order tasks across nodes.</p> 
 
 <h4>Scheduler support</h4>
-<p>SLURM's default scheduler is FIFO (First-In First-Out). A backfill scheduler 
+<p>The scheduler used by SLURM is controled by the <b>SchedType</b> configuration 
+parameter. This is meant to control the relative importance of pending jobs.
+SLURM's default scheduler is FIFO (First-In First-Out). A backfill scheduler 
 plugin is also available. Backfill scheduling will initiate a lower-priority job 
 if doing so does not delay the expected initiation time of higher priority jobs; 
 essentially using smaller jobs to fill holes in the resource allocation plan. 
-<a href="http://supercluster.org/maui">The Maui Scheduler</a> offers sophisticated 
-scheduling algorithms to control SLURM's workload. Motivated users can even develop 
-their own scheduler plugin if so desired. </p>
-<p>SLURM uses the syslog function to record events. It uses a range of importance 
-levels for these messages. Be certain that your system's syslog functionality 
-is operational. 
-</p>
+SLURM also supports a plugin for use of <a href="http://supercluster.org/maui">
+The Maui Scheduler</a>, which offers sophisticated scheduling algorithms. 
+Motivated users can even develop their own scheduler plugin if so desired. </p>
+
+<p>SLURM also has a plugin to control the node selection algorithm for jobs.
+This is controlled by the <b>SelectType</b> configuration parameter.
+The two available options are <i>linear</i>, to support a flat interconnect, 
+and <i>bluegene</i> to support Blue Gene systems with a three-dimensional 
+topography.</p>
+
+<h4>Logging</h4>
+<p>SLURM uses the syslog function to record events. It uses a range of importance
+levels for these messages. Be certain that your system's syslog functionality
+is operational. </p>
+
 <h4>Corefile format</h4>
 <p>SLURM is designed to support generating a variety of core file formats for 
 application codes that fail (see the <i>--core</i> option of the <i>srun</i>
 command).  As of now, SLURM only supports a locally developed lightweight
 corefile library which has not yet been released to the public. It is 
-expected that this library will be available in the near future.
-</p>
+expected that this library will be available in the near future. </p>
+
 <h4>Parallel debugger support</h4>
 <p>SLURM exports information for parallel debuggers using the specification
 detailed  <a href=http://www-unix.mcs.anl.gov/mpi/mpi-debug/mpich-attach.txt>here</a>.
@@ -177,7 +187,7 @@ and support is unconditionally compiled into SLURM code.
 <p>We use a patched version of TotalView that looks for a "totalview_jobid" 
 symbol in <b>srun</b> that it then uses (configurably) to perform a bulk 
 launch of the <b>tvdsvr</b> daemons via a subsequent <b>srun</b>. Otherwise
-it is diffuclt to get TotalView to use <b>srun</b> for a bulk launch, since 
+it is difficult to get TotalView to use <b>srun</b> for a bulk launch, since 
 <b>srun</b> will be unable to determine for which job it is launching tasks.
 </p>
 <p>Another solution would be to run TotalView within an existing <b>srun</b>
@@ -186,6 +196,7 @@ could be set to ensure only a single task per node. This functions properly
 because the SLRUM_JOBID environment variable is set in the allocation shell 
 environment.
 </p>
+
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Configuration</h3>
@@ -213,7 +224,8 @@ minimum configuration values will be considered DOWN and not scheduled.</p>
 # 
 # Sample /etc/slurm.conf for mcr.llnl.gov
 #
-ControlMachine=mcri   ControlAddr=emcri 
+ControlMachine=mcri   ControlAddr=emcri
+BackupMachine=mcrj    BackupAddr=emcrj 
 #
 AuthType=auth/munge
 Epilog=/usr/local/slurm/etc/epilog
@@ -225,6 +237,7 @@ JobCredentialPublicCertificate=/usr/local/etc/slurm.cert
 PluginDir=/usr/local/slurm/lib/slurm
 Prolog=/usr/local/slurm/etc/prolog
 SchedulerType=sched/backfill
+SelectType=select/linear
 SlurmUser=slurm
 SlurmctldPort=7002
 SlurmctldTimeout=300
@@ -237,7 +250,7 @@ SwitchType=switch/elan
 # Node Configurations
 #
 NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
-NodeName=mcr[0-1151]  NodeAddr=emcr[0-1151]
+NodeName=mcr[0-1151] NodeAddr=emcr[0-1151]
 #
 # Partition Configurations
 #
@@ -432,7 +445,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 17 August 2004</p></td>
+Last modified 26 August 2004</p></td>
 </tr>
 </table>
 </td>

@@ -115,13 +115,33 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 		return SLURM_ERROR;
 	}
 
-	return SLURM_SUCCESS;
+	error("select/bluegene plugin not yet functional");
+	return SLURM_ERROR;
 }
 
-extern int select_p_job_test(struct job_record *job_ptr, bitstr_t bitmap, 
+/*
+ * select_p_job_test - Given a specification of scheduling requirements, 
+ *	identify the nodes which "best" satify the request.
+ * 	"best" is defined as either single set of consecutive nodes satisfying 
+ *	the request and leaving the minimum number of unused nodes OR 
+ *	the fewest number of consecutive node sets
+ * IN job_ptr - pointer to job being scheduled
+ * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
+ *	satisfy the request are cleared, other left set
+ * IN min_nodes - minimum count of nodes
+ * IN max_nodes - maximum count of nodes (0==don't care)
+ * RET zero on success, EINVAL otherwise
+ * globals (passed via select_p_node_init): 
+ *	node_record_count - count of nodes configured
+ *	node_record_table_ptr - pointer to global node table
+ * NOTE: bitmap must be a superset of req_nodes at the time that 
+ *	select_p_job_test is called
+ */
+extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 		int min_nodes, int max_nodes)
 {
-	return SLURM_SUCCESS;
+	error("select/bluegene plugin not yet functional");
+	return SLURM_ERROR;
 }
 
 extern int select_p_job_init(struct job_record *job_ptr)
