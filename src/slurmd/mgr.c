@@ -1033,6 +1033,9 @@ _block_most_signals(void)
 	sigaddset(&set, SIGTSTP);
 	sigaddset(&set, SIGQUIT);
 	sigaddset(&set, SIGPIPE);
+	sigaddset(&set, SIGUSR1);
+	sigaddset(&set, SIGUSR2);
+	sigaddset(&set, SIGALRM);
 	if (sigprocmask(SIG_BLOCK, &set, NULL) < 0) {
 		error("sigprocmask: %m");
 		return SLURM_ERROR;
