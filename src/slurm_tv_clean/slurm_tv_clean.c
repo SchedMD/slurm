@@ -104,8 +104,8 @@ static void _kill_old_tv_clean(void);
 static int  _load_jobs (job_info_msg_t ** job_buffer_pptr);
 static void _mark_all_jobs_inactive(List job_list);
 static int  _parse_command_line(int argc, char *argv[]);
-static void _parse_proc_stat(char* proc_stat, char **proc_cmd, int *proc_ppid, 
-		int *proc_sid);
+static void _parse_proc_stat(char* proc_stat, char **proc_cmd, 
+		pid_t *proc_ppid, pid_t *proc_sid);
 static void _print_version(void);
 static int  _read_procs(List srun_list, List tv_list);
 static void _sig_handler(int sig_num);
@@ -312,7 +312,7 @@ static int _read_procs(List srun_list, List tv_list)
 	struct stat stat_buf;
 	uid_t  proc_uid;
 	char  *proc_cmd;
-	int    proc_pid, proc_ppid, proc_sid;
+	pid_t proc_pid, proc_ppid, proc_sid;
 
 	/* Initialization */
 	if (proc_stat_size == 0) {
@@ -334,7 +334,7 @@ static int _read_procs(List srun_list, List tv_list)
 		proc_pid = strtol(proc_ent->d_name, &end_ptr, 10);
 		if (end_ptr[0] != '\0')
 			continue;	/* invalid pid */
-		sprintf (proc_name, "/proc/%d/stat", proc_pid);
+		sprintf (proc_name, "/proc/%lu/stat", (unsigned long) proc_pid);
 		proc_fd = open (proc_name, O_RDONLY, 0);
 		if (proc_fd == -1) 
 			continue;  /* process is now gone */
@@ -357,9 +357,9 @@ static int _read_procs(List srun_list, List tv_list)
 			xfree(proc_cmd);	/* don't save */
 			continue;
 		}
-		debug("Found proc cmd=%s, pid=%d, ppid=%d, sid=%d, uid=%d",
-			proc_cmd, proc_pid, proc_ppid, 
-			proc_sid, proc_uid);
+		debug("Found proc cmd=%s, pid=%lu, ppid=%lu, sid=%lu, uid=%lu",
+			proc_cmd, (unsigned long) proc_pid, (unsigned long) proc_ppid, 
+			(unsigned long) proc_sid, (unsigned long) proc_uid);
 		proc_ptr = xmalloc(sizeof(proc_rec_t));
 		proc_ptr->pid  = proc_pid;
 		proc_ptr->ppid = proc_ppid;
@@ -386,10 +386,10 @@ static int _read_procs(List srun_list, List tv_list)
  *		written
  * OUT proc_sid - Location into which the process' session ID is written
  */
-static void _parse_proc_stat(char* proc_stat, char **proc_cmd, int *proc_ppid, 
-		int *proc_sid)
+static void _parse_proc_stat(char* proc_stat, char **proc_cmd, 
+	pid_t *proc_ppid, pid_t *proc_sid)
 {
-	int pid, ppid, pgrp, sid, tty, tpgid;
+	unsigned long pid, ppid, pgrp, sid, tty, tpgid;
 	char *cmd, state[1];
 	long unsigned flags, min_flt, cmin_flt, maj_flt, cmaj_flt;
 	long unsigned utime, stime;
@@ -407,10 +407,10 @@ static void _parse_proc_stat(char* proc_stat, char **proc_cmd, int *proc_ppid,
 	*str_ptr = '\0';		/* replace trailing ')' with NULL */
 	/* parse these two strings separately, skipping the leading "(". */
 	cmd = xmalloc(16);
-	sscanf (proc_stat, "%d (%15c", &pid, cmd);   /* comm[16] in kernel */
+	sscanf (proc_stat, "%lu (%15c", &pid, cmd);   /* comm[16] in kernel */
 	num = sscanf(str_ptr + 2,		/* skip space after ')' too */
 		"%c "
-		"%d %d %d %d %d "
+		"%lu %lu %lu %lu %lu "
 		"%lu %lu %lu %lu %lu %lu %lu "
 		"%ld %ld %ld %ld %ld %ld "
 		"%lu %lu "
@@ -558,8 +558,9 @@ static int _kill_job(job_rec_t *job_ptr)
 	/* search for matching node/sid/uid/start_time */
 	job_id = _find_unique_job_id(job_ptr, job_info_msg_ptr);
 	if (job_id == 0) {
-		error("No unique slurm job for uid=%u sid=%u, possible orphan",
-			job_ptr->job_uid, job_ptr->job_sid);
+		error("No unique slurm job for uid=%lu sid=%lu, possible orphan",
+			(unsigned long) job_ptr->job_uid, 
+			(unsigned long) job_ptr->job_sid);
 		return 0;
 	}
 
@@ -567,15 +568,18 @@ static int _kill_job(job_rec_t *job_ptr)
 	if (slurm_kill_job(job_id, SIGKILL)) {
 		int rc = slurm_get_errno();
 		if (rc == ESLURM_ALREADY_DONE)
-			info("Slurm job %u for uid=%u sid=%u already done", 
-			     job_id, job_ptr->job_uid, job_ptr->job_sid);
+			info("Slurm job %u for uid=%lu sid=%lu already done", 
+				job_id, (unsigned long) job_ptr->job_uid, 
+				(unsigned long) job_ptr->job_sid);
 		else
-			error("slurm_kill_job job_id=%u uid=%u sid=%u: %s",
-			      job_id, job_ptr->job_uid, job_ptr->job_sid,
-			      slurm_strerror(rc));
+			error("slurm_kill_job job_id=%lu uid=%lu sid=%lu: %s",
+				job_id, (unsigned long) job_ptr->job_uid, 
+				(unsigned long) job_ptr->job_sid,
+				slurm_strerror(rc));
 	} else
-		info("Killed slurm job %u for uid=%u sid=%u", job_id, 
-		     job_ptr->job_uid, job_ptr->job_sid);
+		info("Killed slurm job %u for uid=%lu sid=%lu", job_id, 
+			(unsigned long) job_ptr->job_uid, 
+			(unsigned long) job_ptr->job_sid);
 
 	return 0;	/* don't bother retrying */
 }
