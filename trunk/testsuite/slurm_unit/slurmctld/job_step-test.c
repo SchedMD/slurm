@@ -47,7 +47,7 @@ main( int argc, char* argv[])
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 200;
 	job_mesg. num_procs = 1000;
-	job_mesg. num_nodes = 400;
+	job_mesg. min_nodes = 400;
 	job_mesg. user_id = 1500;
 	job_mesg. immediate = 0;
 

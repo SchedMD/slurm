@@ -94,8 +94,9 @@ static char 		*_get_shell (void);
 static int 		 _is_file_text (char *fname, char** shell_ptr);
 static int		 _run_batch_job (void);
 static allocation_resp	*_existing_allocation(void);
-static void		 _run_job_script(uint32_t jobid);
-static int               _set_batch_script_env(uint32_t jobid);
+static void		 _run_job_script(uint32_t jobid, uint32_t node_cnt);
+static int               _set_batch_script_env(uint32_t jobid, 
+					       uint32_t node_cnt);
 
 #define die(msg, args...) do { \
 	  error(msg, ##args);  \
@@ -168,7 +169,7 @@ srun(int ac, char **av)
 		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp); 
-		_run_job_script(resp->job_id);
+		_run_job_script(resp->job_id, resp->node_cnt);
 		slurm_complete_job(resp->job_id, 0, 0);
 
 		debug ("Spawned srun shell terminated");
@@ -269,8 +270,10 @@ _allocate_nodes(void)
 	job.immediate      = opt.immediate;
 	job.name           = opt.job_name;
 	job.req_nodes      = opt.nodelist;
+	job.exc_nodes      = opt.exc_nodes;
 	job.partition      = opt.partition;
-	job.num_nodes      = opt.nodes;
+	job.min_nodes      = opt.min_nodes;
+	job.max_nodes      = opt.max_nodes;
 	job.num_tasks      = opt.nprocs;
 	job.user_id        = opt.uid;
 	if (opt.mincpus > -1)
@@ -281,7 +284,7 @@ _allocate_nodes(void)
 		job.min_tmp_disk = opt.tmpdisk;
 
 	if (opt.overcommit)
-		job.num_procs      = opt.nodes;
+		job.num_procs      = opt.min_nodes;
 	else
 		job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
@@ -493,13 +496,15 @@ _run_batch_job(void)
 		job.min_tmp_disk = opt.tmpdisk;
 
 	job.req_nodes      = opt.nodelist;
+	job.exc_nodes      = opt.exc_nodes;
 
 	if (opt.overcommit)
-		job.num_procs      = opt.nodes;
+		job.num_procs      = opt.min_nodes;
 	else
 		job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
-	job.num_nodes      = opt.nodes;
+	job.min_nodes      = opt.min_nodes;
+	job.max_nodes      = opt.max_nodes;
 
 	job.num_tasks      = opt.nprocs;
 
@@ -512,7 +517,7 @@ _run_batch_job(void)
 	if (opt.share)
 		job.shared		= 1;
 
-	_set_batch_script_env(0);
+	_set_batch_script_env(0, 0);
 	job.environment		= environ;
 
 	job.env_size            = 0;
@@ -702,20 +707,24 @@ _existing_allocation( void )
 }
 
 static int
-_set_batch_script_env(uint32_t jobid)
+_set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
 {
 	char *dist = NULL;
 
 	if (jobid > 0) {
 		if (setenvf("SLURM_JOBID=%u", jobid)) {
-			error("Unable to set SLURM_JOBID env var");
+			error("Unable to set SLURM_JOBID environment");
 			return -1;
 		}
 	}
 
-	if (setenvf("SLURM_NNODES=%u", opt.nodes)) {
-		error("Unable to set SLURM_NNODES environment variable");
-		return -1;
+	if (node_cnt > 0) {
+		if (setenvf("SLURM_NNODES=%u", node_cnt)) {
+			error("Unable to set SLURM_NNODES environment");
+			return -1;
+		}
+		if (!opt.nprocs_set)
+			opt.nprocs = node_cnt;
 	}
 
 	if (setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
@@ -749,13 +758,13 @@ _set_batch_script_env(uint32_t jobid)
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
-static void _run_job_script (uint32_t jobid)
+static void _run_job_script (uint32_t jobid, uint32_t node_cnt)
 {
 	char *shell = NULL;
 	int   i;
 	pid_t child;
 
-	if (_set_batch_script_env(jobid) < 0) 
+	if (_set_batch_script_env(jobid, node_cnt) < 0) 
 		return;
 
 	/* determine shell from script (if any) or user default */

@@ -111,7 +111,7 @@
 #define OPT_NODELIST    0x55
 #define OPT_CONSTRAINT  0x56
 #define OPT_NO_ALLOC	0x57
-
+#define OPT_EXC_NODES	0x58
 
 #ifndef POPT_TABLEEND
 #  define POPT_TABLEEND { NULL, '\0', 0, 0, 0, NULL, NULL }
@@ -156,6 +156,9 @@ struct poptOption constraintTable[] = {
 	{"nodelist", 'w', POPT_ARG_STRING, &opt.nodelist, OPT_NODELIST,
 	 "request a specific list of hosts",
 	 "host1,host2,..."},
+	{"exclude", 'x', POPT_ARG_STRING, &opt.exc_nodes, OPT_EXC_NODES,
+	 "request a specific list of hosts be excluded from the allocation",
+	 "host1,host2,..."},
 	{"no-allocate", 'Z', POPT_ARG_NONE, &opt.no_alloc, OPT_NO_ALLOC,
 	 "don't allocate nodes (must supply -w)",
 	},
@@ -173,8 +176,8 @@ struct poptOption runTable[] = {
 	{"cpus-per-task", 'c', POPT_ARG_INT, &opt.cpus_per_task, OPT_CPUS,
 	 "number of cpus required per task",
 	 "ncpus"},
-	{"nodes", 'N', POPT_ARG_INT, &opt.nodes, OPT_NODES,
-	 "number of nodes on which to run",
+	{"nodes", 'N', POPT_ARG_STRING, 0, OPT_NODES,
+	 "number of nodes on which to run (nnodes = count|min-max)",
 	 "nnodes"},
 	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
 	 "partition requested",
@@ -279,7 +282,7 @@ env_vars_t env_vars[] = {
 	{"SLURMD_DEBUG", OPT_INT, &opt.slurmd_debug, NULL}, 
 	{"SLURM_NPROCS", OPT_INT, &opt.nprocs, &opt.nprocs_set},
 	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set},
-	{"SLURM_NNODES", OPT_INT, &opt.nodes, &opt.nodes_set},
+	{"SLURM_NNODES", OPT_NODES, NULL, NULL},
 	{"SLURM_OVERCOMMIT", OPT_OVERCOMMIT, NULL, NULL},
 	{"SLURM_PARTITION", OPT_STRING, &opt.partition, NULL},
 	{"SLURM_DISTRIBUTION", OPT_DISTRIB, NULL, NULL},
@@ -328,7 +331,9 @@ static char * _search_path(char *);
 static char * _find_file_path (char *fname);
 
 static void _print_version(void);
+static bool _valid_node_list(char **node_list_pptr);
 static enum distribution_t _verify_dist_type(const char *arg);
+static bool _verify_node_count(const char *arg, int *min, int *max);
 static long _to_bytes(const char *arg);
 static List _create_path_list(void);
 
@@ -357,6 +362,45 @@ static void _print_version(void)
 	printf("%s %s\n", PACKAGE, VERSION);
 }
 
+/*
+ * If the node list supplied is a file name, translate that into 
+ *	a list of nodes, we orphan the data pointed to
+ * RET true if the node list is a valid one
+ */
+static bool _valid_node_list(char **node_list_pptr)
+{
+	FILE *fd;
+	char *node_list;
+	int c;
+	bool last_space;
+
+	if (strchr(*node_list_pptr, '/') == NULL)
+		return true;	/* not a file name */
+
+	fd = fopen(*node_list_pptr, "r");
+	if (fd == NULL) {
+		error ("Unable to open file %s: %m", *node_list_pptr);
+		return false;
+	}
+
+	node_list = xstrdup("");
+	last_space = false;
+	while ((c = fgetc(fd)) != EOF) {
+		if (isspace(c)) {
+			last_space = true;
+			continue;
+		}
+		if (last_space && (node_list[0] != '\0'))
+			xstrcatchar(node_list, ',');
+		last_space = false;
+		xstrcatchar(node_list, (char)c);
+	}
+	(void) fclose(fd);
+
+/* 	free(*node_list_pptr);	orphanned */
+	*node_list_pptr = node_list;
+	return true;
+}
 
 /* 
  * verify that a distribution type in arg is of a known form
@@ -372,6 +416,36 @@ static enum distribution_t _verify_dist_type(const char *arg)
 		result = SRUN_DIST_BLOCK;
 
 	return result;
+}
+
+/* 
+ * verify that a node count in arg is of a known form (count or min-max)
+ * OUT min, max specified minimum and maximum node counts
+ * RET true if valid
+ */
+static bool 
+_verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
+{
+	char *end_ptr;
+	int val1, val2;
+
+	val1 = strtol(arg, &end_ptr, 10);
+	if (end_ptr[0] == '\0') {
+		*min_nodes = *max_nodes = val1;
+		return true;
+	}
+
+	if (end_ptr[0] != '-')
+		return false;
+
+	val2 = strtol(&end_ptr[1], &end_ptr, 10);
+	if (end_ptr[0] == '\0') {
+		*min_nodes = val1;
+		*max_nodes = val2;
+		return true;
+	} else
+		return false;
+
 }
 
 /* return command name from its full path name */
@@ -492,7 +566,8 @@ static void _opt_default()
 	opt.nprocs_set = false;
 	opt.cpus_per_task = 1;
 	opt.cpus_set = false;
-	opt.nodes = 1;
+	opt.min_nodes = 1;
+	opt.max_nodes = 1;
 	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
@@ -535,6 +610,7 @@ static void _opt_default()
 	opt.constraints = NULL;
 	opt.contiguous = false;
 	opt.nodelist = NULL;
+	opt.exc_nodes = NULL;
 
 	mode = MODE_NORMAL;
 
@@ -612,6 +688,18 @@ static void _opt_env()
 					} else
 						opt.distribution = dt;
 
+				}
+				break;
+
+			case OPT_NODES:
+				opt.nodes_set = 
+					_verify_node_count(val, 
+						   &opt.min_nodes, 
+						   &opt.max_nodes);
+				if (opt.nodes_set == false) {
+					error("\"%s=%s\" -- invalid node count."
+						     " ignoring...",
+						     e->var, val);
 				}
 				break;
 
@@ -740,7 +828,15 @@ static void _opt_args(int ac, char **av)
 			break;
 
 		case OPT_NODES:
-			opt.nodes_set = true;
+			opt.nodes_set = 
+				_verify_node_count(arg, &opt.min_nodes, 
+						   &opt.max_nodes);
+			if (opt.nodes_set == false) {
+				argerror
+				    ("Error: invalid node count `%s'", arg);
+				poptPrintUsage(optctx, stderr, 0);
+				exit(1);
+			}
 			break;
 
 		case OPT_REALMEM:
@@ -762,6 +858,16 @@ static void _opt_args(int ac, char **av)
 		case OPT_CDDIR:
 			free(opt.cwd);
 			opt.cwd = strdup(arg);
+			break;
+
+		case OPT_NODELIST:
+			if (!_valid_node_list(&opt.nodelist))
+				exit(1);
+			break;
+
+		case OPT_EXC_NODES:
+			if (!_valid_node_list(&opt.exc_nodes))
+				exit(1);
 			break;
 
 		default:
@@ -826,6 +932,11 @@ _opt_verify(poptContext optctx)
 		verified = false;
 	}
 
+	if (opt.no_alloc && opt.exc_nodes) {
+		error("can not specify --exclude list with -Z, --no-allocate.");
+		verified = false;
+	}
+
 	if (opt.mincpus < opt.cpus_per_task)
 		opt.mincpus = opt.cpus_per_task;
 
@@ -872,25 +983,26 @@ _opt_verify(poptContext optctx)
 			verified = false;
 		}
 
-		if (opt.nodes <= 0) {
-			error("%s: invalid number of nodes (-N %d)\n",
-				opt.progname, opt.nodes);
+		if ((opt.min_nodes <= 0) || (opt.max_nodes <= 0)) {
+			error("%s: invalid number of nodes (-N %d-%d)\n",
+			      opt.progname, opt.min_nodes, opt.max_nodes);
 			verified = false;
 		}
 
 		/* massage the numbers */
 		if (opt.nodes_set && !opt.nprocs_set) {
 			/* 1 proc / node default */
-			opt.nprocs = opt.nodes;
+			opt.nprocs = opt.min_nodes;
 
 		} else if (opt.nodes_set && opt.nprocs_set) {
 
-			/* make sure # of procs >= nodes */
-			if (opt.nprocs < opt.nodes) {
+			/* make sure # of procs >= min_nodes */
+			if (opt.nprocs < opt.min_nodes) {
 				error("Warning: can't run %d processes on %d " 
 				      "nodes, setting nnodes to %d", 
-				      opt.nprocs, opt.nodes, opt.nprocs);
-				opt.nodes = opt.nprocs;
+				      opt.nprocs, opt.min_nodes, 
+				      opt.min_nodes);
+				opt.min_nodes = opt.max_nodes = opt.nprocs;
 			}
 
 		} /* else if (opt.nprocs_set && !opt.nodes_set) */
@@ -1040,30 +1152,30 @@ _find_file_path (char *fname)
  */
 static char *print_constraints()
 {
-	char buf[256];
-
-	buf[0] = '\0';
+	char *buf = xstrdup("");
 
 	if (opt.mincpus > 0)
-		snprintf(buf, 256, "mincpus=%d", opt.mincpus);
+		xstrfmtcat(buf, "mincpus=%d ", opt.mincpus);
 
 	if (opt.realmem > 0)
-		snprintf(buf, 256, "%s mem=%dM", buf, opt.realmem);
+		xstrfmtcat(buf, "mem=%dM ", opt.realmem);
 
 	if (opt.tmpdisk > 0)
-		snprintf(buf, 256, "%s tmp=%ldM", buf, opt.tmpdisk);
+		xstrfmtcat(buf, "tmp=%ld ", opt.tmpdisk);
 
 	if (opt.contiguous == true)
-		snprintf(buf, 256, "%s contiguous", buf);
+		xstrcat(buf, "contiguous ");
 
 	if (opt.nodelist != NULL)
-		snprintf(buf, 256, "%s nodelist=%s", buf, opt.nodelist);
+		xstrfmtcat(buf, "nodelist=%s ", opt.nodelist);
+
+	if (opt.exc_nodes != NULL)
+		xstrfmtcat(buf, "exclude=%s ", opt.exc_nodes);
 
 	if (opt.constraints != NULL)
-		snprintf(buf, 256, "%s constraints=`%s'", buf,
-			 opt.constraints);
+		xstrfmtcat(buf, "constraints=`%s' ", opt.constraints);
 
-	return xstrdup(buf);
+	return buf;
 }
 
 static char * 
@@ -1093,7 +1205,7 @@ void _opt_list()
 	info("cwd            : %s", opt.cwd);
 	info("nprocs         : %d", opt.nprocs);
 	info("cpus_per_task  : %d", opt.cpus_per_task);
-	info("nodes          : %d", opt.nodes);
+	info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
