@@ -29,8 +29,10 @@
 static char *command_name;
 struct squeue_parameters params;
 int quiet_flag=0;
-void print_job (char * job_id_str);
-void print_job_steps( uint32_t job_id, uint16_t step_id );
+
+void print_date( void );
+void print_job (void);
+void print_job_steps( void );
 void usage ();
 
 int 
@@ -46,10 +48,13 @@ main (int argc, char *argv[])
 	
 	while (1) 
 	{
+		if ( params.iterate && (params.verbose || params.long_list) )
+			print_date ();
+
 		if ( params.step_flag )
-			print_job_steps( 0, 0 );
+			print_job_steps( );
 		else 
-			print_job( NULL );
+			print_job( );
 
 		if ( params.iterate ) {
 			printf( "\n");
@@ -65,13 +70,12 @@ main (int argc, char *argv[])
 
 /*
  * print_job - print the specified job's information
- * input: job_id - job's id or NULL to print information about all jobs
  */
 void 
-print_job (char * job_id_str) 
+print_job ( void ) 
 {
-	uint32_t job_id = 0;
-	static job_info_msg_t * job_buffer_ptr = NULL;
+	static job_info_msg_t * old_job_ptr = NULL, * new_job_ptr;
+	int error_code;
 
 	List format = list_create( NULL );
 	job_format_add_job_id( format, 12, false );	
@@ -84,45 +88,72 @@ print_job (char * job_id_str)
 	job_format_add_priority( format, 6, false );	
 	job_format_add_nodes( format, 16, false );	
 
-	if (job_buffer_ptr == NULL) {
-		if ( (slurm_load_jobs ((time_t) NULL, &job_buffer_ptr) ) ) {
-			if (quiet_flag != 1)
-				slurm_perror ("slurm_load_jobs error:");
-			return;
+	if (old_job_ptr) {
+		error_code = slurm_load_jobs (old_job_ptr->last_update, &new_job_ptr);
+		if (error_code ==  SLURM_SUCCESS)
+			slurm_free_job_info_msg( old_job_ptr );
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_job_ptr = old_job_ptr;
 		}
 	}
+	else
+		error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr);
+	if (error_code) {
+		slurm_perror ("slurm_load_jobs error:");
+		return;
+	}
+	old_job_ptr = new_job_ptr;
 	
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
+		printf ("last_update_time=%ld\n", (long) new_job_ptr->last_update);
 
-	if (job_id_str)
-		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
-
-	print_jobs_array( job_buffer_ptr->job_array, job_buffer_ptr->record_count , format) ;
-
+	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , format) ;
+	list_destroy( format );
+	return;
 }
 
 
 void
-print_job_steps( uint32_t job_id, uint16_t step_id )
+print_job_steps( void )
 {
-	int rc = SLURM_SUCCESS;
-	static job_step_info_response_msg_t * step_msg = NULL;
-
+	int error_code;
+	static job_step_info_response_msg_t * old_step_ptr = NULL, * new_step_ptr;
 
 	List format = list_create( NULL );
-
 	step_format_add_id( format, 18, true );
 	step_format_add_user_id( format, 8, true );
 	step_format_add_start_time( format, 12, true );
 	step_format_add_nodes( format, 20, true );
 	
-	if ( ( rc = slurm_get_job_steps( (time_t) NULL, job_id, step_id, &step_msg ) ) != SLURM_SUCCESS )
-	{
-		slurm_perror( "slurm_get_job_steps failed");
+	if (old_step_ptr) {
+		error_code = slurm_get_job_steps (old_step_ptr->last_update, 0, 0, &new_step_ptr);
+		if (error_code ==  SLURM_SUCCESS)
+			slurm_free_job_step_info_response_msg( old_step_ptr );
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_step_ptr = old_step_ptr;
+		}
+	}
+	else
+		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, &new_step_ptr);
+	if (error_code) {
+		slurm_perror ("slurm_get_job_steps error:");
 		return;
 	}
+	old_step_ptr = new_step_ptr;
 
-	print_steps_array( step_msg->job_steps ,step_msg->job_step_count , format );	
+	print_steps_array( new_step_ptr->job_steps ,new_step_ptr->job_step_count , format );	
+	list_destroy( format );
+	return;
 }
 
+
+void 
+print_date( void )
+{
+	time_t now;
+
+	now = time( NULL );
+	printf("%s", ctime( &now ));
+}
