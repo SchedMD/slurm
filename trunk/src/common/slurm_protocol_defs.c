@@ -172,7 +172,6 @@ static void _free_all_job_info(job_info_msg_t *msg)
 
 void slurm_free_job_info_msg(job_info_msg_t * msg)
 {
-	int i;
 	if (msg) {
 		if (msg->job_array) {
 			_free_all_job_info(msg);
@@ -262,7 +261,6 @@ static void _free_all_node_info(node_info_msg_t *msg)
 
 void slurm_free_node_info_msg(node_info_msg_t * msg)
 {
-	int i;
 	if (msg) {
 		if (msg->node_array) {
 			_free_all_node_info(msg);
