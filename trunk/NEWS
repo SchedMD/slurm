@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
    - slurm/300: Possibly killing wrong job on slurmd restart
    - slurm/312: Freeing non-allocated memory and killing slurmd
  -- Assorted changes to support RedHat Enterprise Linux 3.0 and IA64
+ -- Initial Elan4 and libelanctrl support (--with-elan).
  -- Slurmctld was sometimes inappropriately setting a job's priority 
     to 1 when a node was down (even if up nodes could be used for the 
     job when a running job completes)
@@ -17,7 +18,7 @@ documents those changes that are of interest to users and admins.
     variable for `%J' expansion in TV bulk launch string.
  -- Fix several locking bugs in slurmd IO layer.
  -- Throttle back repetitious error messages in slurmd to avoid filling
- -- Initial Elan4 and libelanctrl support (--with-elan).
+    log files.
  
 
 * Changes in SLURM 0.2.20
