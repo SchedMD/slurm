@@ -6,6 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) 
 
 if WITH_TOTALVIEW
+TVFLAGS = -g -gstabs
 SRUN_WRAPPER_OBJ = srun.wrapper.o
 endif
 
@@ -40,6 +41,10 @@ convenience_libs =  \
 	$(top_builddir)/src/common/libeio.la      \
 	$(top_builddir)/src/api/libslurm.la
 
+srun_CFLAGS = \
+	$(CFLAGS) \
+	$(TVFLAGS)
+
 srun_LDADD = \
 	$(SRUN_WRAPPER_OBJ) \
 	$(convenience_libs)
@@ -53,16 +58,17 @@ $(convenience_libs) : force
 
 srun.wrapper.o: srun.wrapper.c
 	if echo $(CC) | grep gcc; then \
-          $(CC) -S -g $(CFLAGS) $(CPPFLAGS) \
-                $(top_srcdir)/src/srun/srun.wrapper.c; \
-          dir1=`cd $(top_srcdir) && pwd`;  dir2=$(pkglibdir)/src; \
-	  perl -i -ple "s|$$dir1/src/srun|$$dir2|g;" srun.wrapper.s; \
-	  perl -i -ple "s|\".*/srun.wrapper.c|\"srun.wrapper.c|g;" \
-                       srun.wrapper.s; \
-	  $(CC) -c -g $(CFLAGS) $(CPPFLAGS) srun.wrapper.s; \
+          destdir=$(pkglibdir)/src;    \
+          cdir=`cd $(top_srcdir)/src/srun && pwd`; \
+          src=$$cdir/srun.wrapper.c;   \
+          cp $$src .; \
+          $(CC) -S -g $(CFLAGS) $(CPPFLAGS) $$src; \
+	  perl -i -ple "s|$$cdir|$$destdir|g;" srun.wrapper.s; \
+          $(COMPILE) -c srun.wrapper.s; \
 	else \
-	  $(COMPILE) srun.wrapper.c; \
+	  $(COMPILE) -c $(top_srcdir)/src/srun/srun.wrapper.c; \
 	fi
+
 
 CLEANFILES = \
 	srun.wrapper.s
