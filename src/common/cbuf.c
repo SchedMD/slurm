@@ -39,7 +39,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include "cbuf.h"
+#include "src/common/cbuf.h"
 
 
 /*********************
