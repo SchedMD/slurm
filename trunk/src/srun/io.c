@@ -612,7 +612,7 @@ _accept_io_stream(job_t *job, int i)
 		int sd;
 		struct sockaddr addr;
 		struct sockaddr_in *sin;
-		int size = sizeof(addr);
+		socklen_t size = sizeof(addr);
 		char buf[INET_ADDRSTRLEN];
 
 		/* 

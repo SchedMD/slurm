@@ -252,6 +252,7 @@ _sig_thr(void *arg)
 	}
 
 	pthread_exit(0);
+	return NULL;
 }
 
 /* _p_fwd_signal - parallel (multi-threaded) task signaller */
