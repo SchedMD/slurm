@@ -24,6 +24,7 @@ The default value is "auth/none", which means the UID included in
 communication messages is not verified. 
 "auth/authd" indicates that Brett Chun's authd is to be used (see
 "http://www.theether.org/authd/" for more information).
+Slurmctld must be restarted for a change in this value to take effect.
 .TP
 \fBBackupAddr\fR
 Name that \fBBackupController\fR should be referred to in 
@@ -114,6 +115,7 @@ The default value is "jobcomp/none", which means that upon job completion
 the record of the job is purged from the system. 
 The value "jobcomp/filetxt" indicates that a record of the job should be 
 written to a text file specified by the \fBJobCompLoc\fR parameter.
+Slurmctld must be restared for a change in this value to take effect.
 .TP
 \fBJobCredentialPrivateKey\fR
 Fully qualified pathname of a file containing a private key used for 
