@@ -363,12 +363,12 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		jobs = 0;
 	} else if (jobs > 128)
 		fatal("Active job count (%d) invalid, restart DB2", jobs);
-
+		
 	for (i=0; i<jobs; i++) {
 		rm_element_t *job_elem;
 		pm_partition_id_t part_id;
 		db_job_id_t job_id;
-	
+		
 		if (i) {
 			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
 					&job_elem)) != STATUS_OK) {
@@ -384,10 +384,14 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				continue;
 			}
 		}
+		if(!job_elem) {
+			error("No Job Elem breaking out job count = %d\n", jobs);
+			break;
+		}
 		if ((rc = rm_get_data(job_elem, RM_JobPartitionID, &part_id))
 				!= STATUS_OK) {
-			error("rm_get_data(RM_JobPartitionID): %s", 
-				bgl_err_str(rc));
+			error("rm_get_data(RM_JobPartitionID) %s: %s", 
+				part_id, bgl_err_str(rc));
 			continue;
 		}
 

@@ -51,6 +51,7 @@ enum {X, Y, Z};
 
 /* */
 enum {MESH, TORUS};
+enum {COPROCESSOR, VIRTUAL};
 
 /** 
  * structure that holds switch path information for finding the wiring 
@@ -90,10 +91,10 @@ typedef struct {
 	int conn_type;
 	int rotate_count;
 	int elongate_count;
+	int node_use;
 	bool rotate;
 	bool elongate; 
 	bool force_contig;
-	bool co_proc;
 	List elongate_geos;
 } pa_request_t; 
 

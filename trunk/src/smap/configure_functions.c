@@ -104,7 +104,8 @@ static int _create_allocation(char *com, List allocated_partitions)
 	request->rotate = false;
 	request->elongate = false;
 	request->force_contig = false;
-	
+	request->node_use = -1;
+
 	while(i<len) {
 		
 		while(com[i-1]!=' ' && i<len) {
@@ -342,6 +343,7 @@ static int _copy_allocation(char *com, List allocated_partitions)
 		request->geometry[Z] = allocated_part->request->geometry[Z];
 		request->size = allocated_part->request->size;
 		request->conn_type=allocated_part->request->conn_type;
+		request->node_use=allocated_part->request->node_use;
 		request->rotate =allocated_part->request->rotate;
 		request->elongate = allocated_part->request->elongate;
 		request->force_contig = allocated_part->request->force_contig;
@@ -384,6 +386,7 @@ static int _save_allocation(char *com, List allocated_partitions)
 	char save_string[255];
 	FILE *file_ptr;
 	char *conn_type;
+	char *mode_type;
 
 	ListIterator results_i;		
 	
@@ -418,10 +421,21 @@ static int _save_allocation(char *com, List allocated_partitions)
 			else
 				conn_type = "MESH";
 			
-			sprintf(save_string, "Nodes=bgl[%s] Type=%s\n", 
-				allocated_part->request->save_name, 
-				conn_type);
+			if(allocated_part->request->node_use != -1) {
+				if(allocated_part->request->node_use == COPROCESSOR)
+					mode_type = "COPROCESSOR";
+				else
+					mode_type = "VIRTUAL";
 			
+				sprintf(save_string, "Nodes=bgl[%s] Type=%s Use=%s\n", 
+					allocated_part->request->save_name, 
+					conn_type, mode_type);
+			} else {
+				sprintf(save_string, "Nodes=bgl[%s] Type=%s\n", 
+					allocated_part->request->save_name, 
+					conn_type);
+			}
+
 			fputs (save_string,file_ptr);
 		}
 		fclose (file_ptr);
@@ -481,12 +495,18 @@ static void _print_text_command(allocated_part_t *allocated_part)
 			  pa_system_ptr->xcord, "MESH");	
 	pa_system_ptr->xcord += 7;
 				
-	if(allocated_part->request->co_proc) 
+	if(allocated_part->request->node_use != -1) {
+		if(allocated_part->request->node_use == COPROCESSOR) 
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "coproc");
+		else
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "virtual");
+	} else {
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "coproc");
-	else
-		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "virtual");	
+			  pa_system_ptr->xcord, "both");	
+	}
+	
 	pa_system_ptr->xcord += 9;
 				
 	if(allocated_part->request->force_contig)
