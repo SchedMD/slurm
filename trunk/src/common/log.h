@@ -46,7 +46,8 @@
 #define _LOG_H
 
 #include <syslog.h> 	
-#include "macros.h"
+#include <stdio.h>
+#include <src/common/macros.h>
 
 /* supported syslog facilities and levels */
 typedef enum {
@@ -135,6 +136,11 @@ int log_reinit(void);
  * This function may be called multiple times.
  */
 int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
+
+/* grab the FILE * of the current logfile (or stderr if not logging to
+ * a file)
+ */
+FILE *log_fp(void);
 
 /* 
  * the following log a message to the log facility at the appropriate level:
