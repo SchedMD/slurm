@@ -656,6 +656,10 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 #endif
+	if ((msg_type == REQUEST_KILL_TASKS) && (rc == ESRCH)) {
+		/* process is already dead, not a real error */
+		rc = SLURM_SUCCESS;
+	}
 
 	switch (rc) {
 	case SLURM_SUCCESS:
