@@ -33,6 +33,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/log.h"
+#include "src/common/fd.h"
 #include "src/common/xassert.h"
 
 /* closeall FDs >= a specified value */
@@ -82,9 +83,45 @@ daemon(int nochdir, int noclose)
 
 }
 
+pid_t
+read_pidfile(const char *pidfile)
+{
+	int fd;
+	FILE *fp = NULL;
+	unsigned long pid;
+	pid_t         lpid;
+
+	if ((fd = open(pidfile, O_RDONLY)) < 0) {
+		debug ("unable to open old pid file: %m");
+		return ((pid_t) 0);
+	}
+
+	if (!(fp = fdopen(fd, "r")) && (errno != ENOENT)) 
+		fatal ("Unable to access old pidfile at `%s': %m", pidfile);
+
+	if (fscanf(fp, "%lu", &pid) < 1) {
+		error ("Possible corrupt pidfile `%s'", pidfile);
+		return ((pid_t) 0);
+	}
+
+	if ((lpid = fd_is_read_lock_blocked(fd)) == (pid_t) 0) {
+		verbose ("pidfile not locked, assuming no running slurmd");
+		return (lpid);
+	}
+
+	if (lpid != (pid_t) pid) 
+		fatal ("pidfile locked by %ld but contains pid=%ld",
+				(long) lpid, pid);
+
+	return (lpid);
+}
+
+
+
 int
 create_pidfile(const char *pidfile)
 {
+	int fd;
 	FILE *fp;
 
 	xassert(pidfile != NULL);
@@ -94,15 +131,26 @@ create_pidfile(const char *pidfile)
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;
 	}
+
+	if (fd_get_write_lock(fileno(fp)) < 0) {
+		error ("Unable to lock pidfile `%s': %m", pidfile);
+		goto error;
+	}
+
 	if (fprintf(fp, "%d\n", (int) getpid()) == EOF) {
 		error("Unable to write to pidfile `%s': %m", pidfile);
 		goto error;
 	}
-	if (fclose(fp) == EOF) {
-		error("Unable to close pidfile `%s': %m", pidfile);
-		goto error;
-	}
 
+	fflush(fp);
+
+	
+	/*
+	 * if (fclose(fp) == EOF) {
+         *	error("Unable to close pidfile `%s': %m", pidfile);
+         *	goto error;
+         *}
+	 */
 	return 0;
 
   error:

@@ -41,4 +41,10 @@ int daemon(int nochdir, int noclose);
  */
 int create_pidfile(char *pidfilename);
 
+/*
+ * Attempt to read an old pid from the configured pidfile
+ * Returns 0 if no pidfile exists (No running process)
+ */
+pid_t read_pidfile(char *pidfilename);
+
 #endif /* !_HAVE_DAEMONIZE_H */
