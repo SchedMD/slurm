@@ -18,7 +18,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
