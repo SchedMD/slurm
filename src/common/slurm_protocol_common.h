@@ -18,8 +18,6 @@ this may need to be increased to 350k-512k */
 #define SLURM_PROTOCOL_VERSION 1
 #define SLURM_PROTOCOL_NO_FLAGS 0 /* used in the header to set flags to empty */
 
-extern struct timeval * SLURM_MESSGE_TIMEOUT_SEC ;
-
 #if MONGO_IMPLEMENTATION
 #  include <src/common/slurm_protocol_mongo_common.h>
 #else
