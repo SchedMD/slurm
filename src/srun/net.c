@@ -68,7 +68,7 @@ int net_stream_listen(int *fd, int *port)
 {
 	int rc, val;
 
-	if ((*fd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+	if ((*fd = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
 		return -1;
 
 	val = 1;

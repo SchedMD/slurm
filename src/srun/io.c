@@ -61,7 +61,6 @@ typedef struct fd_info {
 static void _accept_io_stream(job_t *job, int i);
 static int  _do_task_output_poll(fd_info_t *info);
 static int  _handle_pollerr(fd_info_t *info);
-static int  _shutdown_fd_poll(fd_info_t *info);
 static int  _close_stream(int *fd, FILE *out, int tasknum);
 static int  _do_task_output(int *fd, FILE *out, int tasknum);
 static void _bcast_stdin(int fd, job_t *job);	
@@ -87,12 +86,6 @@ static int
 _do_task_output_poll(fd_info_t *info)
 {
 	return _do_task_output(info->fd, info->fp, info->taskid);
-}
-
-static int 
-_shutdown_fd_poll(fd_info_t *info)
-{
-	return _close_stream(info->fd, info->fp, info->taskid);
 }
 
 static int
@@ -218,78 +211,6 @@ _io_thr_poll(void *job_arg)
 		}
 	}
 	xfree(fds);
-}
-
-static void 
-* _io_thr_select(void *job_arg)
-{
-	job_t *job = (job_t *) job_arg;
-	fd_set rset, wset;
-	int maxfd;
-	int i, m;
-	struct timeval tv;
-
-	xassert(job != NULL);
-
-	_set_iofds_nonblocking(job);
-
-	for (i = 0; i < opt.nprocs; i++) {
-		job->out[i] = WAITING_FOR_IO; 
-		job->err[i] = WAITING_FOR_IO;
-	}
-
-	while (1) {
-		unsigned long eofcnt = 0;
-
-		FD_ZERO(&rset);
-		FD_ZERO(&wset);
-
-		FD_SET(STDIN_FILENO, &rset);
-		maxfd = MAX(job->iofd[0], STDIN_FILENO);
-		for (i = 0; i < job->niofds; i++) {
-			FD_SET(job->iofd[i], &rset);
-			maxfd = MAX(maxfd, job->iofd[i]);
-		}
-
-		for (i = 0; i < opt.nprocs; i++) {
-			maxfd = MAX(maxfd, job->out[i]);
-			maxfd = MAX(maxfd, job->err[i]);
-			if (job->out[i] > 0) 
-				FD_SET(job->out[i], &rset);
-			if (job->err[i] > 0) 
-				FD_SET(job->err[i], &rset);
-			if (job->out[i] == IO_DONE && job->err[i] == IO_DONE)
-				eofcnt++;
-		}
-
-		/* exit if we have received eof on all streams */
-		if (eofcnt == opt.nprocs)
-			pthread_exit(0);
-
-		tv.tv_sec  = 0;
-		tv.tv_usec = 500;
-		while ((m = select(maxfd+1, &rset, NULL, NULL, &tv)) < 0) {
-			if (errno != EINTR)
-				fatal("Unable to handle I/O: %m", errno);
-		}	
-
-		for (i = 0; i < job->niofds; i++) {
-			if (FD_ISSET(job->iofd[i], &rset)) 
-				_accept_io_stream(job, i);
-		}
-
-		for (i = 0; i < opt.nprocs; i++) {
-			if (job->err[i] > 0 && FD_ISSET(job->err[i], &rset)) 
-				_do_task_output(&job->err[i], stderr, i);
-			if (job->out[i] > 0 && FD_ISSET(job->out[i], &rset)) 
-				_do_task_output(&job->out[i], stdout, i);
-		}
-
-		if (FD_ISSET(STDIN_FILENO, &rset))
-			_bcast_stdin(STDIN_FILENO, job);
-	}
-
-	return (void *)(0);
 }
 
 void *

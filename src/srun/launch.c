@@ -151,7 +151,6 @@ launch(void *arg)
 
 static void print_launch_msg(launch_tasks_request_msg_t *msg)
 {
-	int i;
 	char buf[4096];
 	int len = 0;
 
