@@ -130,7 +130,8 @@ main (int argc, char *argv[])
 		error_code = _get_command (&input_field_count, input_fields);
 
 	while (error_code == SLURM_SUCCESS) {
-		error_code = _process_command (input_field_count, input_fields);
+		error_code = _process_command (input_field_count, 
+					       input_fields);
 		if (error_code)
 			break;
 		if (exit_flag == 1)
@@ -585,7 +586,8 @@ _print_node_list (char *node_list)
 
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&node_info_ptr->last_update, time_str);
+		make_time_str ((time_t *)&node_info_ptr->last_update, 
+			       time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, node_info_ptr->record_count);
 	}
@@ -658,7 +660,8 @@ _print_part (char *partition_name)
 
 	if (quiet_flag == -1) {
 		char time_str[16];
-		make_time_str ((time_t *)&part_info_ptr->last_update, time_str);
+		make_time_str ((time_t *)&part_info_ptr->last_update, 
+			       time_str);
 		printf ("last_update_time=%s, records=%d\n", 
 			time_str, part_info_ptr->record_count);
 	}
@@ -796,7 +799,8 @@ _process_command (int argc, char *argv[])
 	else if (strcasecmp (argv[0], "help") == 0) {
 		if (argc > 1)
 			fprintf (stderr, 
-				 "too many arguments for keyword:%s\n",argv[0]);
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
 		_usage ();
 
 	}
@@ -1060,7 +1064,8 @@ _update_job (int argc, char *argv[])
 }
 
 /* 
- * _update_node - update the slurm node configuration per the supplied arguments 
+ * _update_node - update the slurm node configuration per the supplied
+ *	arguments 
  * IN argc - count of arguments
  * IN argv - list of arguments
  * RET 0 if no slurm error, errno otherwise. parsing error prints 
