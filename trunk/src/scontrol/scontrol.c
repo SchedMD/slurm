@@ -71,8 +71,6 @@ void	print_node_list (char *node_list);
 void	print_part (char *partition_name);
 void	print_step (char *job_step_id_str);
 int	process_command (int argc, char *argv[]);
-int	strcmp_i (const char *s1, const char *s2);
-int	strncmp_i (const char *s1, const char *s2, int len);
 void	update_it (int argc, char *argv[]);
 int	update_job (int argc, char *argv[]);
 int	update_node (int argc, char *argv[]);
@@ -544,26 +542,26 @@ process_command (int argc, char *argv[])
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
 	}
-	else if ((strcmp_i (argv[0], "exit") == 0) ||
-	    (strcmp_i (argv[0], "quit") == 0)) {
+	else if ((strcasecmp (argv[0], "exit") == 0) ||
+	         (strcasecmp (argv[0], "quit") == 0)) {
 		if (argc > 1)
 			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		exit_flag = 1;
 
 	}
-	else if (strcmp_i (argv[0], "help") == 0) {
+	else if (strcasecmp (argv[0], "help") == 0) {
 		if (argc > 1)
 			fprintf (stderr, "too many arguments for keyword:%s\n",argv[0]);
 		usage ();
 
 	}
-	else if (strcmp_i (argv[0], "quiet") == 0) {
+	else if (strcasecmp (argv[0], "quiet") == 0) {
 		if (argc > 1)
 			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		quiet_flag = 1;
 
 	}
-	else if (strncmp_i (argv[0], "reconfigure", 7) == 0) {
+	else if (strncasecmp (argv[0], "reconfigure", 7) == 0) {
 		if (argc > 2)
 			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		error_code = slurm_reconfigure ();
@@ -571,7 +569,7 @@ process_command (int argc, char *argv[])
 			fprintf (stderr, "error %d from reconfigure\n", error_code);
 
 	}
-	else if (strcmp_i (argv[0], "show") == 0) {
+	else if (strcasecmp (argv[0], "show") == 0) {
 		if (argc > 3) {
 			if (quiet_flag != 1)
 				fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
@@ -580,31 +578,31 @@ process_command (int argc, char *argv[])
 			if (quiet_flag != 1)
 				fprintf (stderr, "too few arguments for keyword:%s\n", argv[0]);
 		}
-		else if (strncmp_i (argv[1], "config", 3) == 0) {
+		else if (strncasecmp (argv[1], "config", 3) == 0) {
 			if (argc > 2)
 				print_config (argv[2]);
 			else
 				print_config (NULL);
 		}
-		else if (strncmp_i (argv[1], "jobs", 3) == 0) {
+		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
 			if (argc > 2)
 				print_job (argv[2]);
 			else
 				print_job (NULL);
 		}
-		else if (strncmp_i (argv[1], "nodes", 3) == 0) {
+		else if (strncasecmp (argv[1], "nodes", 3) == 0) {
 			if (argc > 2)
 				print_node_list (argv[2]);
 			else
 				print_node_list (NULL);
 		}
-		else if (strncmp_i (argv[1], "partitions", 3) == 0) {
+		else if (strncasecmp (argv[1], "partitions", 3) == 0) {
 			if (argc > 2)
 				print_part (argv[2]);
 			else
 				print_part (NULL);
 		}
-		else if (strncmp_i (argv[1], "steps", 4) == 0) {
+		else if (strncasecmp (argv[1], "steps", 4) == 0) {
 			if (argc > 2)
 				print_step (argv[2]);
 			else
@@ -617,7 +615,7 @@ process_command (int argc, char *argv[])
 		}		
 
 	}
-	else if (strncmp_i (argv[0], "shutdown", 5) == 0) {
+	else if (strncasecmp (argv[0], "shutdown", 5) == 0) {
 		if (argc > 2)
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n", argv[0]);
@@ -626,7 +624,7 @@ process_command (int argc, char *argv[])
 			fprintf (stderr, "error %d from shutdown\n", error_code);
 
 	}
-	else if (strcmp_i (argv[0], "update") == 0) {
+	else if (strcasecmp (argv[0], "update") == 0) {
 		if (argc < 2) {
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
@@ -635,7 +633,7 @@ process_command (int argc, char *argv[])
 		update_it ((argc - 1), &argv[1]);
 
 	}
-	else if (strcmp_i (argv[0], "verbose") == 0) {
+	else if (strcasecmp (argv[0], "verbose") == 0) {
 		if (argc > 1) {
 			fprintf (stderr,
 				 "too many arguments for %s keyword\n",
@@ -644,7 +642,7 @@ process_command (int argc, char *argv[])
 		quiet_flag = -1;
 
 	}
-	else if (strcmp_i (argv[0], "version") == 0) {
+	else if (strcasecmp (argv[0], "version") == 0) {
 		if (argc > 1) {
 			fprintf (stderr,
 				 "too many arguments for %s keyword\n",
@@ -674,15 +672,15 @@ update_it (int argc, char *argv[])
 	error_code = 0;
 	/* First identify the entity to update */
 	for (i=0; i<argc; i++) {
-		if (strncmp_i (argv[i], "NodeName=", 9) == 0) {
+		if (strncasecmp (argv[i], "NodeName=", 9) == 0) {
 			error_code = update_node (argc, argv);
 			break;
 		}
-		else if (strncmp_i (argv[i], "PartitionName=", 14) == 0) {
+		else if (strncasecmp (argv[i], "PartitionName=", 14) == 0) {
 			error_code = update_part (argc, argv);
 			break;
 		}
-		else if (strncmp_i (argv[i], "JobId=", 6) == 0) {
+		else if (strncasecmp (argv[i], "JobId=", 6) == 0) {
 			error_code = update_job (argc, argv);
 			break;
 		}
@@ -714,45 +712,45 @@ update_job (int argc, char *argv[])
 	slurm_init_job_desc_msg (&job_msg);	
 
 	for (i=0; i<argc; i++) {
-		if (strncmp_i(argv[i], "JobId=", 6) == 0)
+		if (strncasecmp(argv[i], "JobId=", 6) == 0)
 			job_msg.job_id = (uint32_t) strtol(&argv[i][6], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "TimeLimit=", 10) == 0)
+		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0)
 			job_msg.time_limit = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "Priority=", 9) == 0)
+		else if (strncasecmp(argv[i], "Priority=", 9) == 0)
 			job_msg.priority = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "ReqProcs=", 9) == 0)
+		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0)
 			job_msg.num_procs = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "ReqNodes=", 9) == 0)
+		else if (strncasecmp(argv[i], "ReqNodes=", 9) == 0)
 			job_msg.num_nodes = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "MinProcs=", 9) == 0)
+		else if (strncasecmp(argv[i], "MinProcs=", 9) == 0)
 			job_msg.min_procs = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "MinMemory=", 10) == 0)
+		else if (strncasecmp(argv[i], "MinMemory=", 10) == 0)
 			job_msg.min_memory = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "MinTmpDisk=", 11) == 0)
+		else if (strncasecmp(argv[i], "MinTmpDisk=", 11) == 0)
 			job_msg.min_tmp_disk = (uint32_t) strtol(&argv[i][11], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "Partition=", 10) == 0)
+		else if (strncasecmp(argv[i], "Partition=", 10) == 0)
 			job_msg.partition = &argv[i][10];
-		else if (strncmp_i(argv[i], "Name=", 5) == 0)
+		else if (strncasecmp(argv[i], "Name=", 5) == 0)
 			job_msg.name = &argv[i][5];
-		else if (strncmp_i(argv[i], "Shared=", 7) == 0) {
-			if (strcmp_i(&argv[i][7], "YES") == 0)
+		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
+			if (strcasecmp(&argv[i][7], "YES") == 0)
 				job_msg.shared = 1;
-			else if (strcmp_i(&argv[i][7], "NO") == 0)
+			else if (strcasecmp(&argv[i][7], "NO") == 0)
 				job_msg.shared = 0;
 			else
 				job_msg.shared = (uint16_t) strtol(&argv[i][7], (char **) NULL, 10);
 		}
-		else if (strncmp_i(argv[i], "Contiguous=", 11) == 0) {
-			if (strcmp_i(&argv[i][11], "YES") == 0)
+		else if (strncasecmp(argv[i], "Contiguous=", 11) == 0) {
+			if (strcasecmp(&argv[i][11], "YES") == 0)
 				job_msg.contiguous = 1;
-			else if (strcmp_i(&argv[i][11], "NO") == 0)
+			else if (strcasecmp(&argv[i][11], "NO") == 0)
 				job_msg.contiguous = 0;
 			else
 				job_msg.contiguous = (uint16_t) strtol(&argv[i][11], (char **) NULL, 10);
 		}
-		else if (strncmp_i(argv[i], "ReqNodeList=", 12) == 0)
+		else if (strncasecmp(argv[i], "ReqNodeList=", 12) == 0)
 			job_msg.req_nodes = &argv[i][12];
-		else if (strncmp_i(argv[i], "Features=", 9) == 0)
+		else if (strncasecmp(argv[i], "Features=", 9) == 0)
 			job_msg.features = &argv[i][9];
 		else {
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
@@ -785,9 +783,9 @@ update_node (int argc, char *argv[])
 	node_msg.node_names = NULL;
 	node_msg.node_state = (uint16_t) NO_VAL;
 	for (i=0; i<argc; i++) {
-		if (strncmp_i(argv[i], "NodeName=", 9) == 0)
+		if (strncasecmp(argv[i], "NodeName=", 9) == 0)
 			node_msg.node_names = &argv[i][9];
-		else if (strncmp_i(argv[i], "State=", 6) == 0) {
+		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			state_val = (uint16_t) NO_VAL;
 			for (j = 0; j <= NODE_STATE_END; j++) {
 				if (strcmp (node_state_string(j), "END") == 0) {
@@ -799,7 +797,7 @@ update_node (int argc, char *argv[])
 					fprintf (stderr, "\n");
 					return 0;
 				}
-				if (strcmp_i (node_state_string(j), &argv[i][6]) == 0) {
+				if (strcasecmp (node_state_string(j), &argv[i][6]) == 0) {
 					state_val = (uint16_t) j;
 					break;
 				}
@@ -835,23 +833,23 @@ update_part (int argc, char *argv[])
 	error_code = 0;
 	slurm_init_part_desc_msg ( &part_msg );
 	for (i=0; i<argc; i++) {
-		if (strncmp_i(argv[i], "PartitionName=", 14) == 0)
+		if (strncasecmp(argv[i], "PartitionName=", 14) == 0)
 			part_msg.name = &argv[i][14];
-		else if (strncmp_i(argv[i], "MaxTime=", 8) == 0) {
-			if (strcmp_i(&argv[i][8],"INFINITE") == 0)
+		else if (strncasecmp(argv[i], "MaxTime=", 8) == 0) {
+			if (strcasecmp(&argv[i][8],"INFINITE") == 0)
 				part_msg.max_time = INFINITE;
 			else
 				part_msg.max_time = (uint32_t) strtol(&argv[i][8], (char **) NULL, 10);
 		}
-		else if (strncmp_i(argv[i], "MaxNodes=", 9) == 0)
-			if (strcmp_i(&argv[i][9],"INFINITE") == 0)
+		else if (strncasecmp(argv[i], "MaxNodes=", 9) == 0)
+			if (strcasecmp(&argv[i][9],"INFINITE") == 0)
 				part_msg.max_nodes = INFINITE;
 			else
 				part_msg.max_nodes = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
-		else if (strncmp_i(argv[i], "Default=", 8) == 0) {
-			if (strcmp_i(&argv[i][8], "NO") == 0)
+		else if (strncasecmp(argv[i], "Default=", 8) == 0) {
+			if (strcasecmp(&argv[i][8], "NO") == 0)
 				part_msg.default_part = 0;
-			else if (strcmp_i(&argv[i][8], "YES") == 0)
+			else if (strcasecmp(&argv[i][8], "YES") == 0)
 				part_msg.default_part = 1;
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
@@ -859,10 +857,10 @@ update_part (int argc, char *argv[])
 				return 0;
 			}
 		}
-		else if (strncmp_i(argv[i], "RootOnly=", 4) == 0) {
-			if (strcmp_i(&argv[i][9], "NO") == 0)
+		else if (strncasecmp(argv[i], "RootOnly=", 4) == 0) {
+			if (strcasecmp(&argv[i][9], "NO") == 0)
 				part_msg.root_only = 0;
-			else if (strcmp_i(&argv[i][9], "YES") == 0)
+			else if (strcasecmp(&argv[i][9], "YES") == 0)
 				part_msg.root_only = 1;
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
@@ -870,12 +868,12 @@ update_part (int argc, char *argv[])
 				return 0;
 			}
 		}
-		else if (strncmp_i(argv[i], "Shared=", 7) == 0) {
-			if (strcmp_i(&argv[i][7], "NO") == 0)
+		else if (strncasecmp(argv[i], "Shared=", 7) == 0) {
+			if (strcasecmp(&argv[i][7], "NO") == 0)
 				part_msg.shared = SHARED_NO;
-			else if (strcmp_i(&argv[i][7], "YES") == 0)
+			else if (strcasecmp(&argv[i][7], "YES") == 0)
 				part_msg.shared = SHARED_YES;
-			else if (strcmp_i(&argv[i][7], "FORCE") == 0)
+			else if (strcasecmp(&argv[i][7], "FORCE") == 0)
 				part_msg.shared = SHARED_FORCE;
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
@@ -883,10 +881,10 @@ update_part (int argc, char *argv[])
 				return 0;
 			}
 		}
-		else if (strncmp_i(argv[i], "State=", 6) == 0) {
-			if (strcmp_i(&argv[i][6], "DOWN") == 0)
+		else if (strncasecmp(argv[i], "State=", 6) == 0) {
+			if (strcasecmp(&argv[i][6], "DOWN") == 0)
 				part_msg.state_up = 0;
-			else if (strcmp_i(&argv[i][6], "UP") == 0)
+			else if (strcasecmp(&argv[i][6], "UP") == 0)
 				part_msg.state_up = 1;
 			else {
 				fprintf (stderr, "Invalid input: %s\n", argv[i]);
@@ -894,9 +892,9 @@ update_part (int argc, char *argv[])
 				return 0;
 			}
 		}
-		else if (strncmp_i(argv[i], "Nodes=", 6) == 0)
+		else if (strncasecmp(argv[i], "Nodes=", 6) == 0)
 			part_msg.nodes = &argv[i][6];
-		else if (strncmp_i(argv[i], "AllowGroups=", 12) == 0)
+		else if (strncasecmp(argv[i], "AllowGroups=", 12) == 0)
 			part_msg.allow_groups = &argv[i][12];
 		else {
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
@@ -940,61 +938,4 @@ usage () {
 	printf ("     editing as needed.\n");
 	printf ("  All commands and options are case-insensitive, although node names and partition\n");
 	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are distinct).\n");
-}
-
-/* strcmp_i - case insensitive version of strcmp */
-int 
-strcmp_i (const char *s1, const char *s2)
-{
-	int i;
-	int c1, c2;
-
-	for (i=0; ; i++) {
-		if (isupper(s1[i]))
-			c1 = tolower(s1[i]);
-		else
-			c1 = s1[i];
-
-		if (isupper(s2[i]))
-			c2 = tolower(s2[i]);
-		else
-			c2 = s2[i];
-
-		if (c1 == c2) {
-			if (c1 == '\0')
-				return 0;
-			continue;
-		}
-		else
-			return 1;
-	}
-}
-
-/* strncmp_i - case insensitive version of strncmp */
-int 
-strncmp_i (const char *s1, const char *s2, int len)
-{
-	int i;
-	int c1, c2;
-
-	for (i=0; i<len; i++) {
-		if (isupper(s1[i]))
-			c1 = tolower(s1[i]);
-		else
-			c1 = s1[i];
-
-		if (isupper(s2[i]))
-			c2 = tolower(s2[i]);
-		else
-			c2 = s2[i];
-
-		if (c1 == c2) {
-			if (c1 == '\0')
-				return 0;
-			continue;
-		}
-		else
-			return 1;
-	}
-	return 0;
 }
