@@ -33,8 +33,8 @@ int main (int argc, char *argv[])
         char buffer[1024];
         void *bufp;
         int len_buf = 0;
-        uint16_t test16 = 1234, out16;
-        uint32_t test32 = 5678, out32, byte_cnt;
+        uint16_t test16 = 1234, out16, byte_cnt;
+        uint32_t test32 = 5678, out32;
         char testbytes[] = "TEST BYTES", *outbytes;
 	char teststring[] = "TEST STRING",  *outstring = NULL;
 	char *nullstr = NULL;
