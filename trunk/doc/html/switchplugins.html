@@ -216,6 +216,19 @@ a node's switch state record.</p>
 &nbsp;&nbsp;(intput) an existing node switch state record.</p>
 <p style="margin-left:.2in"><b>Returns</b>: None</p>
 
+<p class="commandline">char * switch_sprintf_node_info (switch_node_info_t switch_node, 
+char *buf, size_t size);</p>
+<p style="margin-left:.2in"><b>Description</b>: Print the contents of a node's switch state 
+record to a buffer.</p>
+<p style="margin-left:.2in"><b>Arguments</b>:<br>
+<span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input) a 
+node's switch state record.<br>
+<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) size 
+of buf in bytes.<br>
+<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) point to 
+buffer into which the switch state record is to be written.</p>
+<p style="margin-left:.2in"><b>Returns</b>: Location of buffer, same as <i>buf</i>.</p>
+
 <p class="commandline">int switch_job_complete (switch_jobinfo_t switch_job, 
 char *nodelist);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note that the job step associated 
