@@ -33,7 +33,26 @@
 #include "src/slurmd/job.h"
 
 /*
- * Notes:
+ * Setup node for interconnect use.
+ *
+ * This function is run from the top level slurmd only once per
+ * slurmd run. It may be used, for instance, to perform some one-time
+ * interconnect setup or spawn an error handling thread.
+ *
+ */
+int interconnect_node_init(void);
+
+/*
+ * Finalize interconnect on node. 
+ *
+ * This function is called once as slurmd exits (slurmd will wait for
+ * this function to return before continuing the exit process)
+ */
+int interconnect_node_fini(void);
+
+
+/*
+ * Notes on job related interconnect functions:
  *
  * Interconnect functions are run within slurmd in the following way:
  * (Diagram courtesy of Jim Garlick [see qsw.c] )
@@ -44,16 +63,13 @@
  *  fork ------------------ interconnect_init       |
  *  waitpid                 setuid, chdir, etc.     |
  *                          fork N procs -----------+--- interconnect_attach
- *                          wait all                |    interconnect_env
- *                                                  |    exec mpi process
+ *                          wait all                |    exec mpi process
  *                          interconnect_fini*      |
- *   interconnect_postfini                          |    
+ *  interconnect_postfini                           |    
  *                                                  |
  *
  * [ *Note: interconnect_fini() is run as the uid of the job owner, not root ]
  */
-
-
 /*
  * Prepare node for job. 
  *
@@ -65,7 +81,7 @@
 int interconnect_preinit(slurmd_job_t *job);
 
 /* 
- * initialize interconnect on node. This function is run from the 
+ * initialize interconnect on node for job. This function is run from the 
  * 2nd slurmd process (some interconnect implementations may require
  * interconnect init functions to be executed from a separate process
  * than the process executing initerconnect_fini() [e.g. QsNet])
