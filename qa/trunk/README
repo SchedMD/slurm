@@ -175,6 +175,7 @@ test6.10   Validate scancel user and partition filters, delete all remaining
            jobs (--partition and --user options).
 test6.11   Validate scancel quiet option, no warning if job gone 
            (--quiet option).
+test6.12   Test scancel signal to batch script (--batch option)
 
 
 test7.#    Testing of slurmctld functionality.
