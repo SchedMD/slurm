@@ -45,9 +45,14 @@
 /* #define USE_BGL_FILES 1 */ 
 
 #else
+  enum rm_connection_type {RM_MESH, RM_TORUS, RM_NAV};
+  enum rm_partition_mode {RM_PARTITION_COPROCESSOR_MODE,
+		RM_PARTITION_VIRTUAL_NODE_MODE};
+
   typedef char *   pm_partition_id_t;
+  typedef enum rm_connection_type rm_connection_type_t;
+  typedef enum rm_partition_mode rm_partition_mode_t;
   typedef uint16_t rm_partition_t;
-  typedef uint16_t rm_partition_mode_t;
   typedef char *   rm_BGL_t;
 #endif
 
