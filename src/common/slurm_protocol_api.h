@@ -333,4 +333,7 @@ int slurm_send_only_node_msg ( slurm_msg_t * request_msg ) ;
  * RET int 		- return code
  */
 int slurm_send_only_node_msg ( slurm_msg_t * request_msg ) ;
+
+/* Slurm message functions */
+void slurm_free_msg ( slurm_msg_t * msg ) ;
 #endif

@@ -32,7 +32,6 @@ slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address )
 
 slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address )
 {
-/*	return _slurm_listen_stream ( slurm_address ) ; */
 	return _slurm_open_stream ( slurm_address ) ;
 }
 
@@ -116,7 +115,6 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	newaction . sa_handler = SIG_IGN ;
 
 	/* ignore SIGPIPE so that send can return a error code if the other side closes the socket */
-	//signal(SIGPIPE, SIG_IGN);
 	sigaction(SIGPIPE, &newaction , & oldaction );
 
 	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
@@ -158,14 +156,14 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 			else
 			{
 				error ( "Error in _slurm_send" ) ;
-				signal(SIGPIPE, SIG_DFL);
+				sigaction(SIGPIPE, &oldaction , &newaction);
 				return SLURM_PROTOCOL_ERROR ;
 			}
 		}
 		else if ( send_len != size )
 		{
 			info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
-			signal(SIGPIPE, SIG_DFL);
+			sigaction(SIGPIPE, &oldaction , &newaction);
 			return SLURM_PROTOCOL_ERROR ;
 		}
 		else
@@ -174,7 +172,6 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 		}
 	}
 
-	//signal(SIGPIPE, SIG_DFL);
 	sigaction(SIGPIPE, &oldaction , & newaction );
 	return send_len ;
 }

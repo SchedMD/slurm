@@ -650,3 +650,8 @@ short int slurm_get_slurmd_port ( )
 {
 	return slurmctld_conf . slurmctld_port ;
 }
+
+void slurm_free_msg ( slurm_msg_t * msg )
+{
+	        xfree ( msg ) ;
+}
