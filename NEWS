@@ -4,11 +4,14 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.4.7
 ========================
  -- Remove some BGL specific headers that IBM now distributes.
+ -- Change autogen.sh to deal with problems running autoconf on one
+    system and configure on another with different software versions.
 
 * Changes in SLURM 0.4.6
 ========================
  -- smap now works on non-BGL systems.
- -- took tv.h out of partition_allocator so it would work withn driver 080 from IBM.
+ -- took tv.h out of partition_allocator so it would work withn driver 080 
+    from IBM.
  -- updated slurmd signal handling to prevent possible user killing of daemon.
 
 * Changes in SLURM 0.4.5
