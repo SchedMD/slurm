@@ -78,9 +78,10 @@ Command(s):	Job Step Resource Request
 Client:   	srun, scancel 
 Server: 	slurmctld
 Input:  	job_id, step_id, uid
-Output: 	return code, error code, node list, ncpus/node, credentials
-Notes:  	obtain a new set of credentials for a job. Needed for
- 		at least `srun --attach`, uid must match that of job_id
+Output: 	return code, error code, node list, ncpus/node(?)
+Notes:  	Obtain the list of resources assigned to a currently executing 
+                job step. Needed by at least `srun --attach`, and scancel.
+		uid must match that of job_id
 	
 	
 Command(s):	Run Job Step Request
