@@ -302,12 +302,15 @@ static int _parse_node_spec(char *in_line)
 {
 	char *node_addr = NULL, *node_name = NULL, *state = NULL;
 	char *feature = NULL, *reason = NULL;
-	char *this_node_addr, *this_node_name;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
 	struct node_record   *node_ptr;
 	struct config_record *config_ptr = NULL;
 	hostlist_t addr_list = NULL, host_list = NULL;
+	char *this_node_name;
+#ifndef HAVE_BGL
+	char *this_node_addr;
+#endif
 
 	node_addr = node_name = state = feature = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
@@ -350,12 +353,14 @@ static int _parse_node_spec(char *in_line)
 		xfree(state);
 	}
 
+#ifndef HAVE_BGL
 	if (node_addr &&
 	    ((addr_list = hostlist_create(node_addr)) == NULL)) {
 		error("hostlist_create error for %s: %m", node_addr);
 		error_code = errno;
 		goto cleanup;
 	}
+#endif
 
 	if ((host_list = hostlist_create(node_name)) == NULL) {
 		error("hostlist_create error for %s: %m", node_name);
@@ -378,7 +383,7 @@ static int _parse_node_spec(char *in_line)
 				default_config_record.cpus = cpus_val;
 			if (real_memory_val != NO_VAL)
 				default_config_record.real_memory =
-				 		   real_memory_val;
+						real_memory_val;
 			if (tmp_disk_val != NO_VAL)
 				default_config_record.tmp_disk =
 						    tmp_disk_val;
@@ -430,6 +435,14 @@ static int _parse_node_spec(char *in_line)
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_ptr->node_state = state_val;
 			node_ptr->last_response = (time_t) 0;
+#ifdef HAVE_BGL
+			if (node_addr)
+				strncpy(node_ptr->comm_name,
+					node_addr, MAX_NAME_LEN);
+			else
+				strncpy(node_ptr->comm_name,
+					node_ptr->name, MAX_NAME_LEN);
+#else
 			if (node_addr)
 				this_node_addr = hostlist_shift(addr_list);
 			else
@@ -441,6 +454,7 @@ static int _parse_node_spec(char *in_line)
 			} else
 				strncpy(node_ptr->comm_name, 
 				        node_ptr->name, MAX_NAME_LEN);
+#endif
 			node_ptr->reason = xstrdup(reason);
 		} else {
 			error
