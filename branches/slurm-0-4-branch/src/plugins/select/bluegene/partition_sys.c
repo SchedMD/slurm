@@ -101,7 +101,7 @@ static void _pre_allocate(bgl_record_t *bgl_record)
 		&bgl_record->conn_type);
 	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
 		&bgl_record->node_use);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionPsetPerBP, &numpsets); 
+	rm_set_data(bgl_record->bgl_part, RM_PartitionPsetsPerBP, &numpsets); 
 	rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, USER_NAME);
 }
 
