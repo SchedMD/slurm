@@ -283,6 +283,9 @@ static void opt_args(int, char **);
  */
 static bool opt_verify(poptContext, bool, bool, bool);
 
+/* return command name from its full path name */
+static char * base_name(char* command);
+
 /* list known options and their settings 
  */
 #if	__DEBUG
@@ -363,6 +366,27 @@ static enum distribution_t verify_dist_type(const char *arg)
 		result = SRUN_DIST_BLOCK;
 
 	return result;
+}
+
+/* return command name from its full path name */
+char * base_name(char* command)
+{
+	char *char_ptr, *name;
+	int i;
+
+	if (command == NULL)
+		return NULL;
+
+	char_ptr = strrchr(command, (int)'/');
+	if (char_ptr == NULL)
+		char_ptr = command;
+	else
+		char_ptr++;
+
+	i = strlen(char_ptr);
+	name = xmalloc(i+1);
+	strcpy(name, char_ptr);
+	return name;
 }
 
 /*
@@ -493,7 +517,7 @@ static void opt_default()
 	opt.time_limit = -1;
 	opt.partition = NULL;
 
-	opt.job_name = "";
+	opt.job_name = NULL;
 
 	opt.distribution = SRUN_DIST_BLOCK;
 
@@ -823,6 +847,9 @@ opt_verify(poptContext optctx,
 		verified = false;
 	}
 
+	if ((opt.job_name == NULL) && (remote_argc > 0))
+		opt.job_name = base_name(remote_argv[0]);
+
 	if (mode == MODE_ATTACH) {	/* attach to a running job */
 		if (nodes_set || cpus_set || procs_set) {
 			error("do not specific a node allocation "
@@ -1030,7 +1057,6 @@ print_commandline()
 		snprintf(buf, 256,  "%s", remote_argv[i]);
 	return xstrdup(buf);
 }
-
 
 #define tf_(b) (b == true) ? "true" : "false"
 
