@@ -382,13 +382,6 @@ extern void pack_ctld_job_step_info( struct  step_record* step, void **buf_ptr, 
 extern void pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
- * pack_all_step - dump all job step information for all steps in 
- *	machine independent form (for network transmission)
- * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
- */
-extern void pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time);
-
-/* 
  * pack_job - dump all configuration information about a specific job in 
  *	machine independent form (for network transmission)
  */
@@ -404,12 +397,6 @@ extern void pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *b
  *	machine independent form (for network transmission)
  */
 extern void pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
-
-/* 
- * pack_step - dump state information about a specific job step in 
- *	machine independent form (for network transmission)
- */
-extern void pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
 
 /*
  * purge_old_job - purge old job records. if memory space is needed. 
