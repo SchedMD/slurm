@@ -133,7 +133,7 @@ test4.7    Confirm that sinfo verbose option works (--verbose option).
 test4.8    Check sinfo output without header (--noheader option).
 test4.9    Check sinfo formating options (--format option and SINFO_FORMAT
            environment variable).
-
+test4.10   Confirm that sinfo reports a proper version number (--version option).
 
 test5.#    Testing of squeue options.
 =====================================
@@ -145,6 +145,8 @@ test5.4    Test squeue formating options (--noheader, --format and --step
 test5.5    Test squeue sorting (--sort option).
 test5.6    Test squeue filtering (--jobs, --states, --steps and --user option).
 test5.7    Confirm that squeue verbose option works (--verbose option).
+test5.8    Confirm that squeue reports a proper version number (--version 
+           option).
 
 
 test6.#    Testing of scancel options. 
