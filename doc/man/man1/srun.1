@@ -30,7 +30,7 @@ explicitly specifies otherwise.
 .TP
 \fB\-c\fR, \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
-useful if the job will be multithreaded and requires more than one cpu
+useful if the job is multithreaded and requires more than one cpu
 per task for optimal performance. The default is one cpu per process.
 .TP
 \fB\-N\fR, \fB\-\-nodes\fR=\fInnodes\fR
@@ -209,25 +209,25 @@ Constraint Options. The following options all put constraints on the nodes
 that may be considered for the job:
 .TP
 \fB\-\-mincpus\fR=\fIn\fR
-Specify minimum number of cpus per node
+Specify minimum number of cpus per node.
 .TP
 \fB\-\-mem\fR=\fIMB\fR
-Specify a minimum amount of real memory
+Specify a minimum amount of real memory.
 .TP
 \fB\-\-vmem\fR=\fIMB\fR
-Specify a minimum amount of virtual memory
+Specify a minimum amount of virtual memory.
 .TP
 \fB\-\-tmp\fR=\fIMB\fR
-Specify a minimum amount of temporary disk space
+Specify a minimum amount of temporary disk space.
 .TP
 \fB\-C\fR, \fB\-\-constraint\fR=\fIlist\fR
-specify a list of constraints. The \fIlist\fR of constraints is
+Specify a list of constraints. The \fIlist\fR of constraints is
 a comma separated list of features that have been assigned to the
 nodes by the slurm administrator. If no nodes have the requested
 feature, then the job will be rejected by the slurm job manager.
 .TP
 \fB\-\-contiguous\fR
-demand a contiguous range of nodes. The default is on. Specify
+Demand a contiguous range of nodes. The default is "yes". Specify
 --contiguous=no if a contiguous range of nodes is not a constraint.
 .TP
 \fB\-w\fR, \fB\-\-nodelist\fR=\fIhost1,host2,...\fR or \fIfilename\fR
