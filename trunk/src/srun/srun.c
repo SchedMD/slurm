@@ -279,6 +279,13 @@ allocate_nodes(void)
 
 	job.user_id        = opt.uid;
 
+	if (opt.fail_kill)
+ 		job.kill_on_node_fail	= 0;
+	if (opt.time_limit > -1)
+		job.time_limit		= opt.time_limit;
+	if (opt.share)
+		job.shared		= 1;
+
 	retries = 0;
 	while ((rc = slurm_allocate_resources(&job, &resp, opt.immediate))
 					== SLURM_FAILURE) {
@@ -528,9 +535,13 @@ run_batch_job(void)
 
 	job.user_id        = opt.uid;
 
-/* 	job.kill_on_node_fail	= int; FIXME */
-/*	job.time_limit		= int; FIXME */
-/*	job.shared		= int; FIXME */
+	if (opt.fail_kill)
+ 		job.kill_on_node_fail	= 0;
+	if (opt.time_limit > -1)
+		job.time_limit		= opt.time_limit;
+	if (opt.share)
+		job.shared		= 1;
+
 	job.environment		= environ;
 	for (i=0; ; i++) {
 		if (environ[i] == NULL) {
@@ -709,6 +720,7 @@ build_script (char *fname, int file_type)
 		shell = get_shell();
 		strcpy (buffer, "#!");
 		strcat (buffer, shell);
+		strcat (buffer, "\n");
 		buf_used = strlen(buffer);
 	}
 
