@@ -48,6 +48,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
@@ -68,6 +69,7 @@ for {set task_id 0} {$task_id < $task_cnt} {incr task_id} {
 			exp_continue
 		}
 		eof {
+			wait
 		}
 	}
 }
@@ -81,11 +83,17 @@ if {$file_cnt != $task_cnt} {
 # file name and confirm it is created
 #
 set job_id   0
+set srun_exit 0
 spawn $srun --error=$file_err_j --output=/dev/null -N1 -n$task_cnt -O -v -t1 $bin_sleep aaa 
 expect {
 	-re "jobid ($number).*" {
 		set job_id $expect_out(1,string)
 		exp_continue
+	}
+	-re "exit code 1" {
+		send_user "This error is expected, no worries\n"
+		set srun_exit 1
+		exp_continue;
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
@@ -94,12 +102,18 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: job initiation failed\n"
 	set exit_code 1
 }
+if {$srun_exit == 0} {
+	send_user "\nFAILURE: exit code failed to indicate an error\n"
+	set exit_code 1
+}
+
 set file_err_j_glob  "test$test_id.$job_id.error"
 set file_cnt    0
 spawn $bin_rm -i $file_err_j_glob
@@ -110,6 +124,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$file_cnt != 1} {
@@ -135,6 +150,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
@@ -155,6 +171,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$file_cnt != 1} {
@@ -180,6 +197,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
@@ -203,6 +221,7 @@ for {set node_id 0} {$node_id < 2} {incr node_id} {
 				exp_continue
 			}
 			eof {
+				wait
 			}
 		}
 	}
@@ -237,6 +256,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
@@ -267,6 +287,7 @@ for {set step_id 0} {$step_id < 3} {incr step_id} {
 				exp_continue
 			}
 			eof {
+				wait
 			}
 		}
 	}
