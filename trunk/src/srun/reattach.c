@@ -195,7 +195,7 @@ _get_job_info(srun_step_t *s)
 
 	s->nodes = NULL;
 
-	if (slurm_load_jobs((time_t) 0, &resp) < 0) {
+	if (slurm_load_jobs((time_t) 0, &resp, 1) < 0) {
 		error("Unable to load jobs: %m");
 		goto done;
 	}
@@ -247,7 +247,7 @@ _get_step_info(srun_step_t *s)
 
 	xassert(s->stepid != NO_VAL);
 
-	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp) < 0) {
+	if (slurm_get_job_steps((time_t) 0, s->jobid, s->stepid, &resp, 1) < 0) {
 		error("Unable to get step information for %d.%d: %m", 
 		      s->jobid, s->stepid);
 		goto done;

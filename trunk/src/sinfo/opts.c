@@ -48,6 +48,7 @@
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
 #define OPT_LONG_USAGE 0x101
+#define OPT_LONG_HIDE	0x102
 
 /* FUNCTIONS */
 static List  _build_state_list( char* str );
@@ -71,6 +72,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"all",         no_argument,       0, 'a'},
 		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
@@ -89,15 +91,27 @@ extern void parse_command_line(int argc, char *argv[])
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
 		{"usage",     no_argument,       0, OPT_LONG_USAGE},
+		{"hide",     no_argument, 0, OPT_LONG_HIDE},
 		{NULL,        0,                 0, 0}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rRsS:t:vV",
+	if (getenv("SINFO_ALL"))
+		params.all_flag = true;
+	if ( ( env_val = getenv("SINFO_PARTITION") ) )
+		params.partition = xstrdup(env_val);
+	if ( ( env_val = getenv("SINFO_SORT") ) )
+		params.sort = xstrdup(env_val);
+
+
+	while((opt_char = getopt_long(argc, argv, "adehi:ln:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int)'?':
 			fprintf(stderr, "Try \"sinfo --help\" for more information\n");
 			exit(1);
+			break;
+		case (int)'a':
+			params.all_flag = true;
 			break;
 		case (int)'d':
 			params.dead_nodes = true;
@@ -128,6 +142,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.format = xstrdup(optarg);
 			break;
 		case (int) 'p':
+			xfree(params.partition);
 			params.partition = xstrdup(optarg);
 			break;
 		case (int) 'r':
@@ -140,6 +155,7 @@ extern void parse_command_line(int argc, char *argv[])
 			params.summarize = true;
 			break;
 		case (int) 'S':
+			xfree(params.sort);
 			params.sort = xstrdup(optarg);
 			break;
 		case (int) 't':
@@ -159,17 +175,11 @@ extern void parse_command_line(int argc, char *argv[])
 		case (int) OPT_LONG_USAGE:
 			_usage();
 			exit(0);
+		case OPT_LONG_HIDE:
+			params.all_flag = false;
+			break;
 		}
 	}
-
-
-	if ( ( params.partition == NULL ) && 
-			( env_val = getenv("SINFO_PARTITION") ) )
-		params.partition = xstrdup(env_val);
-
-	if ( ( params.partition == NULL ) && 
-			( env_val = getenv("SINFO_SORT") ) )
-		params.sort = xstrdup(env_val);
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) {
@@ -190,7 +200,6 @@ extern void parse_command_line(int argc, char *argv[])
 			params.format = xstrdup(env_val);
 
 		} else {
-
 			params.format = params.long_output ? 
 			  "%9P %.5a %.9l %.8s %.4r %.5h %.10g %.5D %.11T %N" :
 			  "%9P %.5a %.9l %.5D %.6t %N";
@@ -530,6 +539,7 @@ void _print_options( void )
 	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
 	printf("verbose     = %d\n", params.verbose);
 	printf("-----------------------------\n");
+	printf("all_flag        = %s\n", params.all_flag ? "true" : "false");
 	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
 			"true" : "false");
 	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
@@ -570,7 +580,7 @@ static void _print_version(void)
 static void _usage( void )
 {
 	printf("\
-Usage: sinfo [-delNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
+Usage: sinfo [-adelNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
              [-S fields] [-o format] \n");
 }
 
@@ -578,9 +588,12 @@ static void _help( void )
 {
 	printf ("\
 Usage: sinfo [OPTIONS]\n\
+  -a, --all                  show all partitions (including hidden and those\n\
+                             not accessible)\n\
   -d, --dead                 show only non-responding nodes\n\
   -e, --exact                group nodes only on exact match of configuration\n\
   -h, --noheader             no headers on output\n\
+  -hide                      do not show hidden or non-accessible partitions\n\
   -i, --iterate=seconds      specify an interation period\n\
   -l, --long                 long output - displays more information\n\
   -n, --nodes=NODES          report on specific node(s)\n\

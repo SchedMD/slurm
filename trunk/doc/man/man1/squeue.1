@@ -13,8 +13,18 @@ squeue \- view information about jobs located in the SLURM scheduling queue.
 .TP
 OPTIONS
 .TP
+\fB\-\-all\fR,
+Display information about jobs and job steps in all partions. 
+This causes information to be displayed about partitions that are configured as 
+hidden and partitions that are unavailable to user's group.
+.TP
 \fB\-\-help\fR
 Print a help message describing all options \fBsqueue\fR.
+.TP
+\fB\-\-hide\fR
+Do not display information about jobs and job steps in all partions. By default, 
+information about partitions that are configured as hidden or are not available 
+to the user's group will not be displayed (i.e. this is the default behavior).
 .TP
 \fB\-\-usage\fR
 Print a brief help message listing the \fBsqueue\fR options.
@@ -229,6 +239,9 @@ Some \fBsqueue\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed 
 below. (Note: Commandline options will always override these settings.)
 .TP 20
+SQUEUE_ALL
+\fB\-a, \-\-all\fR
+.TP
 SQUEUE_FORMAT
 \fB\-o <output_format>, \-\-format=<output_format>\fR
 .TP

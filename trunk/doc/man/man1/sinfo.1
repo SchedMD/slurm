@@ -1,4 +1,4 @@
-.TH SINFO "1" "March 2004" "sinfo 0.3" "Slurm components"
+.TH SINFO "1" "April 2004" "sinfo 0.3" "Slurm components"
 
 .SH "NAME"
 sinfo \- view information about SLURM nodes and partitions.
@@ -11,8 +11,18 @@ system running SLURM.
 
 .SH "OPTIONS"
 .TP
+\fB\-\-all\fR,
+Display information about all partions. This causes information to be 
+displayed about partitions that are configured as hidden and partitions that
+are unavailable to user's group.
+.TP
 \fB\-\-help\fR,
 Print a message describing all \fBsinfo\fR options.
+.TP
+\fB\-\-hide\fR
+Do not display information about hidden partitions. By default, partitions 
+that are configured as hidden or are not available to the user's group 
+will not be displayed (i.e. this is the default behavior).
 .TP
 \fB\-\-usage\fR
 Print a brief message listing the \fBsinfo\fR options.
@@ -323,11 +333,16 @@ UNKNOWN
 The SLURM controller has just started and the node's state
 has not yet been determined.
 
-.SH "ENVIRONMENT VARIABLES" .PP Some \fBsinfo\fR options may
+.SH "ENVIRONMENT VARIABLES" 
+.PP 
+Some \fBsinfo\fR options may
 be set via environment variables. These environment variables,
 along with their corresponding options, are listed below. (Note:
 Commandline options will always override these settings.)
 .TP 20
+SINFO_ALL
+\fB\-a, \-\-all\fR
+.TP
 SINFO_FORMAT
 \fB\-o <output_format>, \-\-format=<output_format>\fR
 .TP

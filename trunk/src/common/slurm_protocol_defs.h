@@ -175,11 +175,6 @@ typedef struct slurm_msg {
 /*****************************************************************************\
  * Slurm Protocol Data Structures
 \*****************************************************************************/
-typedef struct job_step_id {
-	time_t last_update;
-	uint32_t job_id;
-	uint32_t job_step_id;
-} job_step_id_t;
 
 typedef struct job_step_kill_msg {
 	uint32_t job_id;
@@ -193,13 +188,28 @@ typedef struct job_id_msg {
 } job_id_msg_t;
 
 typedef struct job_step_id job_step_id_msg_t;
-typedef struct job_step_id job_info_request_msg_t;
+
+typedef struct job_info_request_msg {
+	time_t last_update;
+	uint16_t show_all;
+} job_info_request_msg_t;
 
 typedef struct job_step_info_request_msg {
 	time_t last_update;
 	uint32_t job_id;
 	uint32_t step_id;
+	uint16_t show_all;
 } job_step_info_request_msg_t;
+
+typedef struct node_info_request_msg {
+	time_t last_update;
+	uint16_t show_all;
+} node_info_request_msg_t;
+
+typedef struct part_info_request_msg {
+	time_t last_update;
+	uint16_t show_all;
+} part_info_request_msg_t;
 
 typedef struct complete_job_step_msg {
 	uint32_t job_id;
@@ -373,15 +383,15 @@ typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
 /* free message functions */
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
-void inline slurm_free_job_step_id(job_step_id_t * msg);
 void inline slurm_free_old_job_alloc_msg(old_job_alloc_msg_t * msg);
+void inline slurm_free_job_info_request_msg(job_info_request_msg_t *msg);
+void inline slurm_free_job_step_info_request_msg(
+		job_step_info_request_msg_t *msg);
+void inline slurm_free_node_info_request_msg(
+		node_info_request_msg_t *msg);
+void inline slurm_free_part_info_request_msg(
+		part_info_request_msg_t *msg);
 
-#define slurm_free_job_step_id_msg(msg) \
-	slurm_free_job_step_id((job_step_id_t*)(msg))
-#define slurm_free_job_step_info_request_msg(msg) \
-	slurm_free_job_step_id(msg)
-#define slurm_free_job_info_request_msg(msg) \
-	slurm_free_job_step_id(msg)
 #define	slurm_free_timelimit_msg(msg) \
 	slurm_free_kill_job_msg(msg)
 

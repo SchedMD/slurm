@@ -192,6 +192,7 @@ extern struct node_record default_node_record;
 struct part_record {
 	uint32_t magic;		/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];/* name of the partition */
+	uint16_t hidden;	/* 1 if hidden by default */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t min_nodes;	/* per job */
@@ -838,49 +839,64 @@ extern int old_job_info (uint32_t uid, uint32_t job_id, char **node_list,
 	uint32_t ** cpu_count_reps,
 	uint16_t * node_cnt, slurm_addr ** node_addr);
 
+
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_all - display all partitions if set
+ * IN uid - uid of user making request (for partition filtering)
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
  *	whenever the data format changes
  */
-extern void pack_all_jobs (char **buffer_ptr, int *buffer_size);
+extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
+		uint16_t show_all, uid_t uid);
 
 /* 
  * pack_all_node - dump all configuration and node information for all nodes  
  *	in machine independent form (for network transmission)
  * OUT buffer_ptr - pointer to the stored data
  * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_all - display all partitions if set
+ * IN uid - uid of user making request (for partition filtering)
  * global: node_record_table_ptr - pointer to global node table
  * NOTE: the caller must xfree the buffer at *buffer_ptr
  * NOTE: change slurm_load_node() in api/node_info.c when data format changes
+ * NOTE: READ lock_slurmctld config before entry
  */
-extern void pack_all_node (char **buffer_ptr, int *buffer_size);
+extern void pack_all_node (char **buffer_ptr, int *buffer_size,
+		uint16_t show_all, uid_t uid);
 
 /* 
  * pack_ctld_job_step_info_response_msg - packs job step info
- * IN - job_id and step_id - zero for all
+ * IN job_id - specific id or zero for all
+ * IN step_id - specific id or zero for all
+ * IN uid - user issuing request
+ * IN show_all - don't report data for hidden partitions unless set
  * OUT buffer - location to store data, pointers automatically advanced 
  * RET - 0 or error code
  * NOTE: MUST free_buf buffer
  */
-extern int pack_ctld_job_step_info_response_msg ( uint32_t job_id, 
-					uint32_t step_id, Buf buffer );
+extern int pack_ctld_job_step_info_response_msg(uint32_t job_id, 
+			uint32_t step_id, uid_t uid, 
+			uint16_t show_all, Buf buffer);
 
 /* 
  * pack_all_part - dump all partition information for all partitions in 
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_all - display all partitions if set
+ * IN uid - uid of user making request (for partition filtering)
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
-extern void pack_all_part (char **buffer_ptr, int *buffer_size);
+extern void pack_all_part(char **buffer_ptr, int *buffer_size, 
+		uint16_t show_all, uid_t uid);
 
 /* 
  * pack_job - dump all configuration information about a specific job in 
@@ -904,6 +920,14 @@ extern void pack_job (struct job_record *dump_job_ptr, Buf buffer);
  *	changes to load_part_config in api/partition_info.c
  */
 extern void pack_part (struct part_record *part_ptr, Buf buffer);
+
+/* part_filter_clear - Clear the partition's hidden flag based upon a user's
+ * group access. This must follow a call to part_filter_set() */
+extern void part_filter_clear(void);
+
+/* part_filter_set - Set the partition's hidden flag based upon a user's 
+ * group access. This must be followed by a call to part_filter_clear() */
+extern void part_filter_set(uid_t uid);
 
 /* part_fini - free all memory associated with partition records */
 void part_fini (void);

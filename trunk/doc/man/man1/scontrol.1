@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "October 2003" "scontrol 0.3" "Slurm components"
+.TH SCONTROL "1" "April 2004" "scontrol 0.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -22,8 +22,18 @@ be abbreviated to the extent that the specification is unique.
 .TP
 \fBOPTIONS\fR
 .TP
+\fB\-a\fR, \fB\-\-all\fR
+Show all partitiion, their jobs and jobs steps. This causes information to be 
+displayed about partitions that are configured as hidden and partitions that
+are unavailable to user's group.
+.TP
 \fB\-h\fR, \fB\-\-help\fR
 Print a help message describing the usage of scontrol.
+.TP
+\fB\-\-hide\fR
+Do not display information about hidden partitions, their jobs and job steps. 
+By default, neither partitions that are configured as hidden nor those partitions 
+unavailable to user's group will be displayed (i.e. this is the default behavior).
 .TP
 \fB\-o\fR, \fB\-\-oneliner\fR
 Print information one line per record.
@@ -39,6 +49,11 @@ record counts, etc.
 Print version information and exit.
 .TP
 \fBCOMMANDS\fR
+.TP
+\fIall\fP
+Show all partitiion, their jobs and jobs steps. This causes information to be 
+displayed about partitions that are configured as hidden and partitions that
+are unavailable to user's group.
 .TP
 \fIabort\fP
 Instruct the Slurm controller to terminate immediately and generate a core file.
@@ -57,6 +72,11 @@ Terminate the execution of scontrol.
 .TP
 \fIhelp\fP
 Display a description of scontrol options and commands.
+.TP
+\fIhide\fP
+Do not display partitiion, job or jobs step information for partitions that are 
+configured as hidden or partitions that are unavailable to the user's group. 
+This is the default behavior.
 .TP
 \fIoneliner\fP
 Print information one line per record.
@@ -209,6 +229,12 @@ may be specified in a comma separated list.
 Specify if this partition is to be used by jobs which do not explicitly 
 identify a partition to use. Possible values are"YES" and "NO".
 .TP
+\fIHidden\fP=<yes|no>
+Specify if the partition and its jobs should be hidden from view. 
+Hidden partitions will by default not be reported by SLURM APIs 
+or commands. 
+Possible values are"YES" and "NO".
+.TP
 \fINodes\fP=<name>
 Identify the node(s) to be associated with this partition. Multiple node names 
 may be specified using simple node range expressions (e.g. "lx[10-20]"). 
@@ -240,6 +266,15 @@ in the partition. Specify a number or "INFINITE".
 \fIMinNodes\fP=<count>
 Set the minimum number of nodes which will be allocated to any single job 
 in the partition. 
+.SH "ENVIRONMENT VARIABLES" 
+.PP 
+Some \fBscontrol\fR options may
+be set via environment variables. These environment variables,
+along with their corresponding options, are listed below. (Note:
+Commandline options will always override these settings.)
+.TP 20
+SCONTROL_ALL
+\fB\-a, \-\-all\fR
 .SH "EXAMPLE"
 .eo
 .br 
@@ -247,11 +282,13 @@ in the partition.
 .br 
 scontrol: show part class
 .br 
-PartitionName=class MaxTime=30 MaxNodes=2 TotalNodes=10
+PartitionName=class TotalNodes=10 TotalCPUs=20 RootOnly=NO
 .br 
-   TotalCPUs=160 RootOnly=NO Default=NO Shared=NO State=UP
+   Default=NO Shared=NO State=UP MaxTime=30 Hidden=NO
 .br
-   Nodes=lx[0031-0040] AllowGroups=students
+   MinNodes=1 MaxNodes=2 AllowGroups=students
+.br
+   Nodes=lx[0031-0040] NodeIndecies=31,40,-1
 .br 
 scontrol: update PartitionName=class MaxTime=99 MaxNodes=4
 .br 

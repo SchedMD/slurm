@@ -237,11 +237,13 @@ slurm_make_time_str (time_t *time, char *string)
  *	information if changed since update_time 
  * IN update_time - time of current configuration data
  * IN job_info_msg_pptr - place to store a job configuration pointer
+ * IN show_all - if set then report even "hidden" partitions
  * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
 extern int
-slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
+slurm_load_jobs (time_t update_time, job_info_msg_t **resp,
+		uint16_t show_all)
 {
 	int rc;
 	slurm_msg_t resp_msg;
@@ -249,6 +251,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
 	job_info_request_msg_t req;
 
 	req.last_update  = update_time;
+	req.show_all = show_all;
 	req_msg.msg_type = REQUEST_JOB_INFO;
 	req_msg.data     = &req;
 
@@ -336,7 +339,7 @@ slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
 	job_info_msg_t *jinfo;
 	job_info_t *job_ptr;
 
-	if ((error_code = slurm_load_jobs ((time_t) NULL, &jinfo)))
+	if ((error_code = slurm_load_jobs ((time_t) NULL, &jinfo, 1)))
 		return error_code;
 
 	error_code = SLURM_ERROR;	/* error until job found */

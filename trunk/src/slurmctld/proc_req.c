@@ -137,11 +137,11 @@ void slurmctld_req (slurm_msg_t * msg)
 		break;
 	case REQUEST_NODE_INFO:
 		_slurm_rpc_dump_nodes(msg);
-		slurm_free_last_update_msg(msg->data);
+		slurm_free_node_info_request_msg(msg->data);
 		break;
 	case REQUEST_PARTITION_INFO:
 		_slurm_rpc_dump_partitions(msg);
-		slurm_free_last_update_msg(msg->data);
+		slurm_free_part_info_request_msg(msg->data);
 		break;
 	case MESSAGE_EPILOG_COMPLETE:
 		_slurm_rpc_epilog_complete(msg);
@@ -613,22 +613,24 @@ static void _slurm_rpc_dump_jobs(slurm_msg_t * msg)
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg;
-	job_info_request_msg_t *last_time_msg =
+	job_info_request_msg_t *job_info_request_msg =
 	    (job_info_request_msg_t *) msg->data;
-	/* Locks: Read job */
+	/* Locks: Read job, write node (for hiding) */
 	slurmctld_lock_t job_read_lock = { 
-		NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+		NO_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_INFO");
 	lock_slurmctld(job_read_lock);
 
-	if ((last_time_msg->last_update - 1) >= last_job_update) {
+	if ((job_info_request_msg->last_update - 1) >= last_job_update) {
 		unlock_slurmctld(job_read_lock);
 		debug2("_slurm_rpc_dump_jobs, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_jobs(&dump, &dump_size);
+		pack_all_jobs(&dump, &dump_size, 
+				job_info_request_msg->show_all, 
+				g_slurm_auth_get_uid(msg->cred));
 		unlock_slurmctld(job_read_lock);
 		END_TIMER;
 		debug2("_slurm_rpc_dump_jobs, size=%d %s",
@@ -653,21 +655,23 @@ static void _slurm_rpc_dump_nodes(slurm_msg_t * msg)
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg;
-	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
-	/* Locks: Read config, read node */
+	node_info_request_msg_t *node_req_msg = 
+			(node_info_request_msg_t *) msg->data;
+	/* Locks: Read config, read node, write node (for hiding) */
 	slurmctld_lock_t node_read_lock = { 
-		READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
+		READ_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_NODE_INFO");
 	lock_slurmctld(node_read_lock);
 
-	if ((last_time_msg->last_update - 1) >= last_node_update) {
+	if ((node_req_msg->last_update - 1) >= last_node_update) {
 		unlock_slurmctld(node_read_lock);
 		debug2("_slurm_rpc_dump_nodes, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_node(&dump, &dump_size);
+		pack_all_node(&dump, &dump_size, node_req_msg->show_all, 
+				g_slurm_auth_get_uid(msg->cred));
 		unlock_slurmctld(node_read_lock);
 		END_TIMER;
 		debug2("_slurm_rpc_dump_nodes, size=%d %s",
@@ -692,7 +696,7 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	char *dump;
 	int dump_size;
 	slurm_msg_t response_msg;
-	last_update_msg_t *last_time_msg = (last_update_msg_t *) msg->data;
+	part_info_request_msg_t  *part_req_msg = (part_info_request_msg_t  *) msg->data;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock = { 
 		NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
@@ -701,12 +705,13 @@ static void _slurm_rpc_dump_partitions(slurm_msg_t * msg)
 	debug2("Processing RPC: REQUEST_PARTITION_INFO");
 	lock_slurmctld(part_read_lock);
 
-	if ((last_time_msg->last_update - 1) >= last_part_update) {
+	if ((part_req_msg->last_update - 1) >= last_part_update) {
 		unlock_slurmctld(part_read_lock);
 		debug2("_slurm_rpc_dump_partitions, no change");
 		slurm_send_rc_msg(msg, SLURM_NO_CHANGE_IN_DATA);
 	} else {
-		pack_all_part(&dump, &dump_size);
+		pack_all_part(&dump, &dump_size, part_req_msg->show_all, 
+				g_slurm_auth_get_uid(msg->cred));
 		unlock_slurmctld(part_read_lock);
 		END_TIMER;
 		debug2("_slurm_rpc_dump_partitions, size=%d %s",
@@ -1019,10 +1024,9 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	job_step_info_request_msg_t *request =
 	    (job_step_info_request_msg_t *) msg->data;
-	/* Locks: Read job */
-	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK,
-		NO_LOCK, NO_LOCK
-	};
+	/* Locks: Read job, write partition (for filtering) */
+	slurmctld_lock_t job_read_lock = { 
+		NO_LOCK, READ_LOCK, NO_LOCK, WRITE_LOCK };
 
 	START_TIMER;
 	debug2("Processing RPC: REQUEST_JOB_STEP_INFO");
@@ -1033,12 +1037,11 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		debug2("_slurm_rpc_job_step_get_info, no change");
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	} else {
-		Buf buffer;
-		buffer = init_buf(BUF_SIZE);
-		error_code =
-		    pack_ctld_job_step_info_response_msg(request->job_id,
-							 request->step_id,
-							 buffer);
+		Buf buffer = init_buf(BUF_SIZE);
+		uid_t uid = g_slurm_auth_get_uid(msg->cred);
+		error_code = pack_ctld_job_step_info_response_msg(
+				request->job_id, request->step_id, 
+				uid, request->show_all, buffer);
 		unlock_slurmctld(job_read_lock);
 		END_TIMER;
 		if (error_code) {

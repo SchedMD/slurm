@@ -104,6 +104,7 @@ struct sinfo_match_flags {
 
 /* Input parameters */
 struct sinfo_parameters {
+	bool all_flag;
 	bool dead_nodes;
 	bool exact_match;
 	bool filtering;

@@ -468,10 +468,10 @@ static int _parse_part_spec(char *in_line)
 {
 	char *allow_groups = NULL, *nodes = NULL, *partition_name = NULL;
 	char *max_time_str = NULL, *default_str = NULL, *root_str = NULL;
-	char *shared_str = NULL, *state_str = NULL;
+	char *shared_str = NULL, *state_str = NULL, *hidden_str = NULL;
 	int max_time_val = NO_VAL, max_nodes_val = NO_VAL;
 	int min_nodes_val = NO_VAL, root_val = NO_VAL, default_val = NO_VAL;
-	int state_val = NO_VAL, shared_val = NO_VAL;
+	int hidden_val = NO_VAL, state_val = NO_VAL, shared_val = NO_VAL;
 	int error_code;
 	struct part_record *part_ptr;
 
@@ -493,6 +493,7 @@ static int _parse_part_spec(char *in_line)
 	error_code = slurm_parser(in_line,
 				  "AllowGroups=", 's', &allow_groups,
 				  "Default=", 's', &default_str,
+				  "Hidden=", 's', &hidden_str,
 				  "RootOnly=", 's', &root_str,
 				  "MaxTime=", 's', &max_time_str,
 				  "MaxNodes=", 'd', &max_nodes_val,
@@ -510,12 +511,26 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(default_str, "NO") == 0)
 			default_val = 0;
 		else {
-			error("update_part: ignored partition %s update, "
+			error("_parse_part_spec: ignored partition %s update, "
 				"bad state %s", partition_name, default_str);
 			error_code = EINVAL;
 			goto cleanup;
 		}
 		xfree(default_str);
+	}
+
+	if (hidden_str) {
+		if (strcasecmp(hidden_str, "YES") == 0)
+			hidden_val = 1;
+		else if (strcasecmp(hidden_str, "NO") == 0)
+			hidden_val = 0;
+		else {
+			error("_parse_part_spec: ignored partition %s update, "
+				"bad key %s", partition_name, hidden_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+		xfree(hidden_str);
 	}
 
 	if (root_str) {
@@ -524,7 +539,7 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(root_str, "NO") == 0)
 			root_val = 0;
 		else {
-			error("update_part: ignored partition %s update, "
+			error("_parse_part_spec ignored partition %s update, "
 				"bad key %s", partition_name, root_str);
 			error_code = EINVAL;
 			goto cleanup;
@@ -555,7 +570,7 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(shared_str, "FORCE") == 0)
 			shared_val = SHARED_FORCE;
 		else {
-			error("update_part: ignored partition %s update, "
+			error("_parse_part_spec ignored partition %s update, "
 				"bad shared %s", partition_name, shared_str);
 			error_code = EINVAL;
 			goto cleanup;
@@ -569,7 +584,7 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(state_str, "DOWN") == 0)
 			state_val = 0;
 		else {
-			error("update_part: ignored partition %s update, "
+			error("_parse_part_spec ignored partition %s update, "
 				"bad state %s", partition_name, state_str);
 			error_code = EINVAL;
 			goto cleanup;
@@ -579,6 +594,8 @@ static int _parse_part_spec(char *in_line)
 
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {
 		xfree(partition_name);
+		if (hidden_val != NO_VAL)
+			default_part.hidden  = hidden_val;
 		if (max_time_val != NO_VAL)
 			default_part.max_time  = max_time_val;
 		if (max_nodes_val != NO_VAL)
@@ -620,6 +637,8 @@ static int _parse_part_spec(char *in_line)
 		strcpy(default_part_name, partition_name);
 		default_part_loc = part_ptr;
 	}
+	if (hidden_val != NO_VAL)
+		part_ptr->hidden  = hidden_val;
 	if (max_time_val != NO_VAL)
 		part_ptr->max_time  = max_time_val;
 	if (max_nodes_val != NO_VAL)
@@ -655,6 +674,7 @@ static int _parse_part_spec(char *in_line)
       cleanup:
 	xfree(allow_groups);
 	xfree(default_str);
+	xfree(hidden_str);
 	xfree(max_time_str);
 	xfree(root_str);
 	xfree(nodes);

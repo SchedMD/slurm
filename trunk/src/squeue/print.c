@@ -1050,7 +1050,10 @@ static int _adjust_completing (job_info_t *job_ptr, node_info_msg_t **ni)
 	if (!(job_ptr->job_state & JOB_COMPLETING))
 		return (0);
 
-	if ((*ni == NULL) && (slurm_load_node (0, ni) < 0)) {
+	/* NOTE: We want to load all nodes (show_all flag set) 
+	 * so that node index values from the job records are 
+	 * valid for cross-referencing */
+	if ((*ni == NULL) && (slurm_load_node (0, ni, 1) < 0)) {
 		error ("Unable the load node information: %m");
 		return (0);
 	}

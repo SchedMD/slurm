@@ -176,6 +176,7 @@ struct part_record *create_part_record(void)
 
 	xassert (part_ptr->magic = PART_MAGIC);  /* set value */
 	strcpy(part_ptr->name, "DEFAULT");
+	part_ptr->hidden    = default_part.hidden;
 	part_ptr->max_time     = default_part.max_time;
 	part_ptr->max_nodes    = default_part.max_nodes;
 	part_ptr->min_nodes    = default_part.min_nodes;
@@ -328,6 +329,7 @@ static void _dump_part_state(struct part_record *part_ptr, Buf buffer)
 	pack32(part_ptr->min_nodes, buffer);
 
 	pack16(default_part_flag, buffer);
+	pack16(part_ptr->hidden, buffer);
 	pack16(part_ptr->root_only, buffer);
 	pack16(part_ptr->shared, buffer);
 
@@ -347,7 +349,7 @@ int load_all_part_state(void)
 	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
 	uint32_t max_time, max_nodes, min_nodes;
 	time_t time;
-	uint16_t name_len, def_part_flag, root_only, shared, state_up;
+	uint16_t name_len, def_part_flag, hidden, root_only, shared, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0;
 	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
@@ -395,20 +397,23 @@ int load_all_part_state(void)
 		safe_unpack32(&max_time, buffer);
 		safe_unpack32(&max_nodes, buffer);
 		safe_unpack32(&min_nodes, buffer);
+
 		safe_unpack16(&def_part_flag, buffer);
+		safe_unpack16(&hidden, buffer);
 		safe_unpack16(&root_only, buffer);
 		safe_unpack16(&shared, buffer);
+
 		safe_unpack16(&state_up, buffer);
 		safe_unpackstr_xmalloc(&allow_groups, &name_len, buffer);
 		safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 
 		/* validity test as possible */
 		if ((def_part_flag > 1) ||
-		    (root_only > 1) ||
+		    (root_only > 1) || (hidden > 1) ||
 		    (shared > SHARED_FORCE) || (state_up > 1)) {
 			error("Invalid data for partition %s: def_part_flag=%u, "
-				"root_only=%u, shared=%u, state_up=%u",
-				part_name, def_part_flag, root_only, shared,
+				"hidden=%u root_only=%u, shared=%u, state_up=%u",
+				part_name, def_part_flag, hidden, root_only, shared,
 				state_up);
 			error("No more partition data will be processed from "
 				"the checkpoint file");
@@ -423,6 +428,7 @@ int load_all_part_state(void)
 
 		if (part_ptr) {
 			part_cnt++;
+			part_ptr->hidden = hidden;
 			part_ptr->max_time  = max_time;
 			part_ptr->max_nodes = max_nodes;
 			part_ptr->min_nodes = min_nodes;
@@ -481,6 +487,7 @@ int init_part_conf(void)
 	last_part_update = time(NULL);
 
 	strcpy(default_part.name, "DEFAULT");
+	default_part.hidden      = 0;
 	default_part.max_time    = INFINITE;
 	default_part.max_nodes   = INFINITE;
 	default_part.min_nodes   = 1;
@@ -553,18 +560,50 @@ int list_find_part(void *part_entry, void *key)
 	return 0;
 }
 
+/* part_filter_set - Set the partition's hidden flag based upon a user's 
+ * group access. This must be followed by a call to part_filter_clear() */
+extern void part_filter_set(uid_t uid)
+{
+	struct part_record *part_ptr;
+	ListIterator part_iterator;
+
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		if (part_ptr->hidden)
+			continue;
+		if (validate_group (part_ptr, uid) == 0)
+			part_ptr->hidden |= 0x8000;
+	}
+	list_iterator_destroy(part_iterator);
+}
+
+/* part_filter_clear - Clear the partition's hidden flag based upon a user's
+ * group access. This must follow a call to part_filter_set() */
+extern void part_filter_clear(void)
+{
+	struct part_record *part_ptr;
+	ListIterator part_iterator;
+
+	part_iterator = list_iterator_create(part_list);
+	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
+		part_ptr->hidden &= 0x7fff;
+	}
+	list_iterator_destroy(part_iterator);
+}
 
 /* 
  * pack_all_part - dump all partition information for all partitions in 
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_all - display all partitions if set
+ * IN uid - uid of user making request (for partition filtering)
  * global: part_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change slurm_load_part() in api/part_info.c if data format changes
  */
-void
-pack_all_part(char **buffer_ptr, int *buffer_size)
+extern void pack_all_part(char **buffer_ptr, int *buffer_size, 
+		uint16_t show_all, uid_t uid)
 {
 	ListIterator part_iterator;
 	struct part_record *part_ptr;
@@ -586,11 +625,12 @@ pack_all_part(char **buffer_ptr, int *buffer_size)
 	part_iterator = list_iterator_create(part_list);
 	while ((part_ptr = (struct part_record *) list_next(part_iterator))) {
 		xassert (part_ptr->magic == PART_MAGIC);
-
+		if ((show_all == 0) &&
+		    ((part_ptr->hidden) || (validate_group (part_ptr, uid) == 0)))
+			continue;
 		pack_part(part_ptr, buffer);
 		parts_packed++;
 	}
-
 	list_iterator_destroy(part_iterator);
 
 	/* put the real record count in the message body header */
@@ -632,6 +672,7 @@ void pack_part(struct part_record *part_ptr, Buf buffer)
 
 	pack32(part_ptr->total_cpus, buffer);
 	pack16(default_part_flag, buffer);
+	pack16(part_ptr->hidden, buffer);
 	pack16(part_ptr->root_only, buffer);
 	pack16(part_ptr->shared, buffer);
 
@@ -678,6 +719,13 @@ int update_part(update_part_msg_t * part_desc)
 	}
 
 	last_part_update = time(NULL);
+
+	if (part_desc->hidden != (uint16_t) NO_VAL) {
+		info("update_part: setting hidden to %d for partition %s", 
+		     part_desc->hidden, part_desc->name);
+		part_ptr->hidden = part_desc->hidden;
+	}
+
 	if (part_desc->max_time != NO_VAL) {
 		info("update_part: setting max_time to %d for partition %s", 
 		     part_desc->max_time, part_desc->name);

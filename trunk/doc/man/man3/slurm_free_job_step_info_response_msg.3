@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm job step information functions"
+.TH "Slurm API" "3" "April 2004" "Morris Jette" "Slurm job step information functions"
 .SH "NAME"
 \fBslurm_free_job_step_info_response_msg, slurm_get_job_steps,
 slurm_print_job_step_info, slurm_print_job_step_info_msg
@@ -23,7 +23,9 @@ void \fBslurm_get_job_steps\fR (
 .br
 	uint32_t \fIstep_id\fP, 
 .br
-	job_step_info_response_msg_t **\fIjob_step_info_msg_pptr\fP
+	job_step_info_response_msg_t **\fIjob_step_info_msg_pptr\fP,
+.br
+	uint16_t \fIshow_all\fP
 .br 
 );
 .LP 
@@ -72,6 +74,12 @@ Print one record per line if non-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.
+.TP 
+\fIshow_all\fP
+Report information about job steps in all partitions if non-zero.
+Information about job steps in partitions that are configured as 
+hidden and partitions that the user's group is unable to utilize 
+are not reported by default.
 .TP
 \fIstep_id\fP
 Specifies a slurm job step ID. A value of zero implies all job steps.
@@ -128,7 +136,7 @@ int main (int argc, char *argv[])
 .br
 	if ( slurm_get_job_steps ((time_t) NULL, 0, 0,
 .br
-	                          &step_info_ptr) ) {
+	                          &step_info_ptr, 1) ) {
 .br
 		slurm_perror ("slurm_get_job_steps error");
 .br
@@ -175,6 +183,11 @@ int main (int argc, char *argv[])
 	exit (0);
 .br 
 }
+
+.SH "NOTE"
+Some data structures contain index values to cross-reference each other. 
+If the \fIshow_all\fP argument is not set when getting this data, these index 
+values will be invalid.
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.

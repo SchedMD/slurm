@@ -614,7 +614,7 @@ static int
 _parse_part_spec (char *in_line) 
 {
 	int error_code;
-	char *allow_groups = NULL, *default_str = NULL;
+	char *allow_groups = NULL, *default_str = NULL, *hidden_str = NULL;
 	char *partition = NULL, *max_time_str = NULL, *root_str = NULL;
 	char *nodes = NULL, *shared_str = NULL, *state_str = NULL;
 	int max_nodes_val, min_nodes_val;
@@ -622,6 +622,7 @@ _parse_part_spec (char *in_line)
 	error_code = slurm_parser (in_line,
 		"AllowGroups=", 's', &allow_groups, 
 		"Default=", 's', &default_str, 
+		"Hidden=", 's', &hidden_str,
 		"PartitionName=", 's', &partition, 
 		"RootOnly=", 's', &root_str, 
 		"MaxTime=", 's', &max_time_str, 
@@ -634,6 +635,7 @@ _parse_part_spec (char *in_line)
 
 	xfree(allow_groups);
 	xfree(default_str);
+	xfree(hidden_str);
 	xfree(partition);
 	xfree(max_time_str);
 	xfree(root_str);

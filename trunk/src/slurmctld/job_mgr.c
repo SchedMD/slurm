@@ -2327,13 +2327,15 @@ static int _list_find_job_old(void *job_entry, void *key)
  *	machine independent form (for network transmission)
  * OUT buffer_ptr - the pointer is set to the allocated buffer.
  * OUT buffer_size - set to size of the buffer in bytes
+ * IN show_all - display all partitions if set
+ * IN uid - uid of user making request (for partition filtering)
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
  * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c 
  *	whenever the data format changes
  */
-void
-pack_all_jobs(char **buffer_ptr, int *buffer_size)
+extern void pack_all_jobs(char **buffer_ptr, int *buffer_size,
+		uint16_t show_all, uid_t uid)
 {
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
@@ -2352,13 +2354,19 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
 	pack_time(now, buffer);
 
 	/* write individual job records */
+	part_filter_set(uid);
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+
+		if ((show_all == 0) && (job_ptr->part_ptr) && 
+		    (job_ptr->part_ptr->hidden))
+			continue;
+
 		pack_job(job_ptr, buffer);
 		jobs_packed++;
 	}
-
+	part_filter_clear();
 	list_iterator_destroy(job_iterator);
 
 	/* put the real record count in the message body header */
