@@ -52,7 +52,8 @@ main(int argc, char * argv[]) {
     if (Error_Code != 0) {
 	fprintf(stderr, "Read_SLURM_Conf: gethostname error %d\n", Error_Code);
     } /* if */
-    if ((strcmp(Node_Name,ControlMachine) != 0) && (strcmp(Node_Name,BackupController) != 0)) {
+    if ((strcmp(Node_Name, ControlMachine) != 0) && 
+        (strcmp(Node_Name, BackupController) != 0)) {
 	printf("This machine (%s) is not a valid control machine (%s or %s)\n", 
 		Node_Name, ControlMachine, BackupController);
 	exit(1);
@@ -299,7 +300,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
     char *Scratch, *Node_List_Ptr, *str_ptr1, *str_ptr2, *Fail_Mode;
     int Node_Tally, CPU_Tally;
 
-    int Node_List_Size;
+    int Node_List_Size, inx;
     struct Node_Record  *Node_Record_Point;
 
     *Error_Code =  Parse_Job_Spec(Specification, My_Name, My_OS, 
@@ -414,10 +415,13 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 
     } else if ((Set_NodeCount != 0) || (Set_CpuCount != 0)) {
 	ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
+	struct Node_Record **Node_List_Pos;
+	int *Node_List_Index;
+	int *Node_List_CPUs;
+	int Node_List_Count, Best_Fit_CPUs, Best_Fit_Index, List_Head;
 
-	Node_List_Size = BUF_SIZE;
-	Scratch = malloc(Node_List_Size);
-	if (Scratch == NULL) {
+	Node_List_Pos = (struct Node_Record **)malloc(Node_Count * sizeof(void *));
+	if (Node_List_Pos == NULL) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
 #else
@@ -426,22 +430,53 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    *Error_Code =  ENOMEM;
 	    return (char *)NULL;
 	} /* if */
-	Scratch[0] = (char)NULL;
+
+
+	Node_List_Index = (int *)malloc(Node_Count * sizeof(int *));
+	if (Node_List_Index == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
+#else
+	    syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
+#endif
+	    *Error_Code =  ENOMEM;
+	    free(Node_List_Pos);
+	    return (char *)NULL;
+	} /* if */
+
+
+	Node_List_CPUs = (int *)malloc(Node_Count * sizeof(int *));
+	if (Node_List_CPUs == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
+#else
+	    syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
+#endif
+	    *Error_Code =  ENOMEM;
+	    free(Node_List_Pos);
+	    free(Node_List_Index);
+	    return (char *)NULL;
+	} /* if */
+
+	Node_List_Count = 0;
 
 	Node_Record_Iterator = list_iterator_create(Node_Record_List);
 	if (Node_Record_Iterator == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
+	    fprintf(stderr, "Will_Job_Run: list_iterator_create unable to allocate memory\n");
 #else
-	    syslog(LOG_ERR, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
+	    syslog(LOG_ERR, "Will_Job_Run: list_iterator_create unable to allocate memory\n");
 #endif
-	    free(Scratch);
+	    free(Node_List_Pos);
+	    free(Node_List_Index);
+	    free(Node_List_CPUs);
 	    *Error_Code = EINVAL;
 	    return (char *)NULL;
 	} /* if */
 
-	CPU_Tally  = 0;
-	Node_Tally = 0;
+	/* Identify the acceptable nodes */
+	inx = 0;
+	Node_List_Count = 0;
 	while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	    if (((strlen(My_OS) != 0) && (OS_Comp(My_OS, Node_Record_Point->OS) < 0)) || 
 	        ((Partition & Node_Record_Point->Partition) == 0) ||
@@ -451,46 +486,167 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	        ((Set_VirtualMemory != 0) && (My_VirtualMemory > Node_Record_Point->VirtualMemory)) ||
 	        ((Set_TmpDisk != 0) && (My_TmpDisk > Node_Record_Point->TmpDisk)) ||
 	        (Node_Record_Point->NodeState != STATE_IDLE)) {
-
-		if (My_Contiguous != 0) {
-		    Scratch[0] = (char)NULL;
-		    CPU_Tally  = 0;
-		    Node_Tally = 0;
-		} /* if */
-		continue;
-	    } /* if */
-
-	    /* Node is usable */
-	    if ((strlen(Scratch)+strlen(Node_Record_Point->Name)+1) >= Node_List_Size) {
-		Scratch = realloc(Scratch, Node_List_Size+BUF_SIZE);
-		if (Scratch == NULL) {
-#if DEBUG_SYSTEM
-		    fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
-#else
-		    syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
-#endif
-		    list_iterator_destroy(Node_Record_Iterator);
-		    free(Scratch);
-		    *Error_Code =  ENOMEM;
-		    return (char *)NULL;
-		} /* if */
-	    } /* if */
-	    if (strlen(Scratch) > 0) strcat(Scratch, ",");
-	    strcat(Scratch, Node_Record_Point->Name);
-	    CPU_Tally += Node_Record_Point->CPUs;
-	    Node_Tally++;
-	    if ((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) continue;
-	    if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
-	    list_iterator_destroy(Node_Record_Iterator);
-	    Scratch = realloc(Scratch, strlen(Scratch)+1);
-	    return Scratch;
+		inx++;
+	    } else {	/* Node is usable */
+		Node_List_Pos[Node_List_Count]   = Node_Record_Point;
+		Node_List_Index[Node_List_Count] = inx++;
+		Node_List_CPUs[Node_List_Count]  = Node_Record_Point->CPUs;
+		Node_List_Count++;
+	    } /* else */
 	} /* while */
-
 	list_iterator_destroy(Node_Record_Iterator);
-	free(Scratch);
-	*Error_Code =  EBUSY;
-	return (char *)NULL;
 
+	/* Now pick "best" set of acceptable nodes */
+	CPU_Tally = 0;
+	Node_Tally = 0;
+	Best_Fit_CPUs = 0;
+	for (inx=0; inx<Node_List_Count; inx++) {
+	    if (inx == 0) {
+		List_Head = inx;
+		CPU_Tally = Node_List_CPUs[List_Head];
+		Node_Tally = 1;
+	    } else if (Node_List_Index[inx-1] == (Node_List_Index[inx]-1)) {
+		CPU_Tally += Node_List_CPUs[inx];
+		Node_Tally++;
+		if (((inx+1) >= Node_List_Count) &&
+		    (My_Contiguous   != 0) && 
+		    (((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) ||
+		     ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)))) continue;
+		if (((inx+1) >= Node_List_Count) &&
+		    ((Set_CpuCount  == 0) || (CPU_Tally  >= My_CpuCount )) &&
+		    ((Set_NodeCount == 0) || (Node_Tally >= My_NodeCount)) &&
+		    ((Best_Fit_CPUs == 0) || (CPU_Tally <= Best_Fit_CPUs))) {  /* New best fit */
+		    Best_Fit_CPUs = CPU_Tally;
+		    Best_Fit_Index = List_Head;
+		} /* if */
+	    } else { 	/*no longer contiguous */
+		if ((My_Contiguous   != 0) && 
+		    (((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) ||
+		     ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)))) {
+		    /* Can't use last set of nodes, start search over */
+		    List_Head = inx;
+		    CPU_Tally = Node_List_CPUs[List_Head];
+		    Node_Tally = 1;
+		    continue;
+		} /* if */
+		if (((Set_CpuCount  == 0) || (CPU_Tally  >= My_CpuCount )) &&
+		    ((Set_NodeCount == 0) || (Node_Tally >= My_NodeCount)) &&
+		    ((Best_Fit_CPUs == 0) || (CPU_Tally <= Best_Fit_CPUs))) {  /* New best fit */
+		    Best_Fit_CPUs = CPU_Tally;
+		    Best_Fit_Index = List_Head;
+		} /* if */
+		List_Head = inx;
+		CPU_Tally = Node_List_CPUs[List_Head];
+		Node_Tally = 1;
+	    } /* else */
+	} /* for */
+
+	/* Build node list string from selection */
+	if (Best_Fit_CPUs != 0) {
+	    Node_List_Size = BUF_SIZE;
+	    Scratch = malloc(Node_List_Size);
+	    if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
+#else
+		syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
+#endif
+		free(Node_List_Pos);
+		free(Node_List_Index);
+		free(Node_List_CPUs);
+		*Error_Code =  ENOMEM;
+		return (char *)NULL;
+	    } /* if */
+	    Scratch[0] = (char)NULL;
+	    CPU_Tally = 0;
+	    Node_Tally = 0;
+	    for (inx=Best_Fit_Index; inx<Node_List_Count; inx++) {
+		if ((strlen(Scratch)+strlen(Node_List_Pos[inx]->Name)+1) >= Node_List_Size) {
+		    Scratch = realloc(Scratch, Node_List_Size+BUF_SIZE);
+		    if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+			fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
+#else
+			syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
+#endif
+			list_iterator_destroy(Node_Record_Iterator);
+			free(Scratch);
+			free(Node_List_Pos);
+			free(Node_List_Index);
+			free(Node_List_CPUs);
+			*Error_Code =  ENOMEM;
+			return (char *)NULL;
+		    } /* if */
+		} /* if */
+		if (strlen(Scratch) > 0) strcat(Scratch, ",");
+		strcat(Scratch, Node_List_Pos[inx]->Name);
+		CPU_Tally += Node_List_Pos[inx]->CPUs;
+		Node_Tally++;
+		if ((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) continue;
+		if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
+		free(Node_List_Pos);
+		free(Node_List_Index);
+		free(Node_List_CPUs);
+		Scratch = realloc(Scratch, strlen(Scratch)+1);
+		return Scratch;
+	    } /* for */
+
+	} else {	/* Select arbitrary nodes */
+	    Node_List_Size = BUF_SIZE;
+	    Scratch = malloc(Node_List_Size);
+	    if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
+#else
+		syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
+#endif
+		free(Node_List_Pos);
+		free(Node_List_Index);
+		free(Node_List_CPUs);
+		*Error_Code =  ENOMEM;
+		return (char *)NULL;
+	    } /* if */
+	    Scratch[0] = (char)NULL;
+	    CPU_Tally = 0;
+	    Node_Tally = 0;
+	    for (inx=0; inx<Node_List_Count; inx++) {
+		if ((strlen(Scratch)+strlen(Node_List_Pos[inx]->Name)+1) >= Node_List_Size) {
+		    Scratch = realloc(Scratch, Node_List_Size+BUF_SIZE);
+		    if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+			fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
+#else
+			syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
+#endif
+			list_iterator_destroy(Node_Record_Iterator);
+			free(Scratch);
+			free(Node_List_Pos);
+			free(Node_List_Index);
+			free(Node_List_CPUs);
+			*Error_Code =  ENOMEM;
+			return (char *)NULL;
+		    } /* if */
+		} /* if */
+		if (strlen(Scratch) > 0) strcat(Scratch, ",");
+		strcat(Scratch, Node_List_Pos[inx]->Name);
+		CPU_Tally += Node_List_Pos[inx]->CPUs;
+		Node_Tally++;
+		if ((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) continue;
+		if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
+		free(Node_List_Pos);
+		free(Node_List_Index);
+		free(Node_List_CPUs);
+		Scratch = realloc(Scratch, strlen(Scratch)+1);
+		return Scratch;
+	    } /* for */
+	    /* No joy, clean house */
+	    free(Scratch);
+	    free(Node_List_Pos);
+	    free(Node_List_Index);
+	    free(Node_List_CPUs);
+	    *Error_Code =  EBUSY;
+	    return (char *)NULL;
+	} /* else */
     } else {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Will_Job_Run: No NodeList, CpuCount, or NodeCount specified\n");
