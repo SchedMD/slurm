@@ -887,7 +887,7 @@ int read_bgl_partitions()
 	rm_location_t bp_loc;
 	pm_partition_id_t part_id;
 	rm_partition_t *part_ptr;
-	char node_name_tmp[16], *owner_name;
+	//char bp_name[4], *owner_name;
 	bgl_record_t *bgl_part_ptr;
 
 	if (!bgl_curr_part_list)
@@ -904,25 +904,25 @@ int read_bgl_partitions()
                 error("rm_get_data(RM_FirstBP): %s",
                       bgl_err_str(rm_rc));
                 rc = SLURM_ERROR;
-                break;
+                return rc;
         }
 	
         for (i=0; i<bp_cnt; i++) {
 
-
-/*		if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc))
-				!= STATUS_OK) {
+		if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc))
+		    != STATUS_OK) {
 			error("rm_get_data(RM_BPLoc): %s",
-				bgl_err_str(rm_rc));
+			      bgl_err_str(rm_rc));
 			rc = SLURM_ERROR;
 			break;
-                        }
-		sprintf(node_name_tmp, "bgl%d%d%d",
-			bp_loc.X, bp_loc.Y, bp_loc.Z);
-*/		if ((rm_rc = rm_get_data(bp_ptr, RM_BPPartID, &part_id))
-				!= STATUS_OK) {
+		}
+		/* sprintf(bp_name, "%d%d%d", */
+/* 			bp_loc.X, bp_loc.Y, bp_loc.Z); */
+
+		if ((rm_rc = rm_get_data(bp_ptr, RM_BPPartID, &part_id))
+		    != STATUS_OK) {
 			error("rm_get_data(RM_BPPartID: %s",
-				bgl_err_str(rm_rc));
+			      bgl_err_str(rm_rc));
 			rc = SLURM_ERROR;
 			break;
 		}
@@ -931,31 +931,25 @@ int read_bgl_partitions()
                         error("no part_id exiting");
 			rc = SLURM_ERROR;
 			break; 
-//#if 1
-//			/* this is a problem on the 128 c-node system */
-//			part_id = "LLNL_128_16";
-			
-//#else
-//			info("Node %s in blue gene partition NONE",
-//				node_name_tmp);
-//			continue;
-//#endif
 		}
 		//info("Node:%s in BglBlock:%s", node_name_tmp, part_id);
 
 		bgl_part_ptr = list_find_first(bgl_curr_part_list,
-			_part_list_find, part_id);
+					       _part_list_find, part_id);
 		if (!bgl_part_ptr) {
 			/* New BGL partition record */
 			if ((rm_rc = rm_get_partition(part_id, &part_ptr))
-					!= STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_partition(%s): %s",
-					part_id, bgl_err_str(rm_rc));
+				      part_id, bgl_err_str(rm_rc));
 				rc = SLURM_ERROR;
 				continue;
 			}
 			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
 			list_push(bgl_curr_part_list, bgl_part_ptr);
+
+			bgl_part_ptr->bgl_part_list = list_create(NULL);
+			list_append(bgl_part_ptr->bgl_part_list, &pa_system_ptr->grid[bp_loc.X][bp_loc.Y][bp_loc.Z]);
 			
                         bgl_part_ptr->bgl_part_id = xstrdup(part_id);
 			
@@ -963,17 +957,17 @@ int read_bgl_partitions()
                         // also need to get coords
 
                         if ((rm_rc = rm_get_data(part_ptr,
-					RM_PartitionConnection,
-					&bgl_part_ptr->conn_type))
-					!= STATUS_OK) {
+						 RM_PartitionConnection,
+						 &bgl_part_ptr->conn_type))
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartitionConnection): %s",
-					bgl_err_str(rm_rc));
+				      bgl_err_str(rm_rc));
 			}
 			if ((rm_rc = rm_get_data(part_ptr, RM_PartitionMode,
-					&bgl_part_ptr->node_use))
-					!= STATUS_OK) {
+						 &bgl_part_ptr->node_use))
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartitionMode): %s",
-					bgl_err_str(rm_rc));
+				      bgl_err_str(rm_rc));
 			}
 			if ((rm_rc = rm_get_data(part_ptr, 
 						 RM_PartitionUserName,
@@ -982,29 +976,48 @@ int read_bgl_partitions()
 				error("rm_get_data(RM_PartitionUserName): %s",
 				      bgl_err_str(rm_rc));
 			} 
+			
+			if ((rm_rc = rm_get_data(part_ptr, 
+						 RM_PartitionBPNum,
+						 &bgl_part_ptr->bp_count))
+                            != STATUS_OK) {
+				error("rm_get_data(RM_PartitionUserName): %s",
+				      bgl_err_str(rm_rc));
+			} 
+
+			if ((rm_rc = rm_get_data(part_ptr, 
+						 RM_PartitionSwitchNum,
+						 &bgl_part_ptr->switch_count))
+                            != STATUS_OK) {
+				error("rm_get_data(RM_PartitionUserName): %s",
+				      bgl_err_str(rm_rc));
+			} 
 
 			info("BglBlock:%s Conn:%s Use:%s Owner:%s", part_id, 
 			     convert_conn_type(bgl_part_ptr->conn_type),
 			     convert_node_use(bgl_part_ptr->node_use), 
-			     owner_name);
+			     bgl_part_ptr->owner_name);
 			bgl_part_ptr->part_lifecycle = STATIC;
+			
+
 			if ((rm_rc = rm_free_partition(part_ptr))
-						!= STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_free_partition(): %s",
-					bgl_err_str(rm_rc));
+				      bgl_err_str(rm_rc));
 			}
 		
 
-                        //find the correct api for this and switch count
-                        //bgl_part_ptr->bp_count++;
-                }
+                } else {
+			list_append(bgl_part_ptr->bgl_part_list, 
+				    &pa_system_ptr->grid[bp_loc.X][bp_loc.Y][bp_loc.Z]);			
+		}
+
                 if ((rm_rc = rm_get_data(bgl, RM_NextBP, &bp_ptr))
-					!= STATUS_OK) {
-				error("rm_get_data(RM_NextBP): %s",
-					bgl_err_str(rm_rc));
-				rc = SLURM_ERROR;
-				break;
-			}
+		    != STATUS_OK) {
+			error("rm_get_data(RM_NextBP): %s",
+			      bgl_err_str(rm_rc));
+			rc = SLURM_ERROR;
+			break;
 		}
 	}
 
@@ -1016,17 +1029,27 @@ int read_bgl_partitions()
 /* #ifdef HAVE_BGL_FILES */
 static int _post_bgl_init_read(void *object, void *arg)
 {
-	/* bgl_record_t *bgl_part_ptr = (bgl_record_t *) object; */
-/* 	int i = 1024; */
-
-/* 	bgl_part_ptr->nodes = xmalloc(i); */
-/* 	while (hostlist_ranged_string(bgl_part_ptr->hostlist, i, */
-/* 			bgl_part_ptr->nodes) < 0) { */
-/* 		i *= 2; */
-/* 		xrealloc(bgl_part_ptr->nodes, i); */
-/* 	} */
-
-/* 	print_bgl_record(bgl_part_ptr); */
+	bgl_record_t *bgl_record = (bgl_record_t *) object;
+	pa_node_t* pa_node;
+	char name[10];
+	int start[PA_SYSTEM_DIMENSIONS] = {0}, end[PA_SYSTEM_DIMENSIONS] = {0};
+	int dim;
+	ListIterator itr;
+	
+	itr = list_iterator_create(bgl_record->bgl_part_list);
+	while ((pa_node = (pa_node_t *) list_next(itr)) != NULL) {
+		for(dim=0; dim<PA_SYSTEM_DIMENSIONS; dim++) {
+			if(pa_node->coord[dim] < start[dim])
+				start[dim] = pa_node->coord[dim];
+			if(pa_node->coord[dim] > end[dim])
+				end[dim] = pa_node->coord[dim];
+		}	
+	}
+	sprintf(name, "bgl%d%d%dx%d%d%d",  
+		start[X], start[Y], start[Z],
+		end[X], end[Y], end[Z]);
+	bgl_record->nodes = xstrdup(name);
+	print_bgl_record(bgl_record);
 
 	return SLURM_SUCCESS;
 }

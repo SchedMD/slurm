@@ -69,8 +69,7 @@ int create_static_partitions(List part_list)
 	int rc = SLURM_SUCCESS;
 
 #ifdef HAVE_BGL_FILES
-/* FIXME: we really do want to validate configuration here in any case,
- * I just took this out on a temporary basis */
+
 	ListIterator itr, itr_curr;
 	int number, j=0;
 	int x, y, z;
@@ -82,7 +81,6 @@ int create_static_partitions(List part_list)
 	pm_partition_id_t part_id[20];
 	rm_partition_t *my_part;
 	int i;
-	rm_BP_t * bp;
 	int bp_num;
 	char *name;
 	
@@ -116,129 +114,137 @@ int create_static_partitions(List part_list)
 
 		/* If not, delete all existing partitions and jobs then
 		 * configure from scratch */
-	part_id[0]="RMP101";
-	part_id[1]="RMP102";
-	part_id[2]="RMP103";
-	part_id[3]="RMP104";
-	part_id[4]="RMP105";
-	part_id[5]="RMP106";
-	part_id[6]="RMP107";
-	part_id[7]="RMP108";
-	part_id[8]="RMP109";
-	part_id[9]="RMP110";
-	part_id[10]="RMP111";
-	part_id[11]="RMP112";
-	part_id[12]="RMP113";
-	part_id[13]="RMP114";
-	part_id[14]="RMP115";
-	part_id[15]="RMP116";
-	part_id[16]="RMP117";
-	part_id[17]="RMP118";
-	part_id[18]="RMP119";
-	part_id[19]="RMP120";
-	bp_num=1;
+		part_id[0]="RMP101";
+		part_id[1]="RMP102";
+		part_id[2]="RMP103";
+		part_id[3]="RMP104";
+		part_id[4]="RMP105";
+		part_id[5]="RMP106";
+		part_id[6]="RMP107";
+		part_id[7]="RMP108";
+		part_id[8]="RMP109";
+		part_id[9]="RMP110";
+		part_id[10]="RMP111";
+		part_id[11]="RMP112";
+		part_id[12]="RMP113";
+		part_id[13]="RMP114";
+		part_id[14]="RMP115";
+		part_id[15]="RMP116";
+		part_id[16]="RMP117";
+		part_id[17]="RMP118";
+		part_id[18]="RMP119";
+		part_id[19]="RMP120";
+		bp_num=1;
 
-	for (i=0; i<bp_num; i++){
+		for (i=0; i<bp_num; i++){
+
+/* FIXME The next 3 lines are the legitly clear all the allocated partitions out
+   done above because IBM is doing wacky things with their partitions so we are unable to 
+   clear theirs.  We know these are the basic names that are created. Don't forget to change
+   the part_id to a single variable instead of the array when done.*/
+
 //        itr_curr = list_iterator_create(bgl_curr_part_list);
 //        while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
 //                part_id=init_record->bgl_part_id;
-		if ((rc = rm_get_partition(part_id[i], &my_part))
-		    != STATUS_OK) {
-		} else {
+			if ((rc = rm_get_partition(part_id[i], &my_part))
+			    != STATUS_OK) {
+			} else {
 			
-			rm_get_data(my_part, RM_PartitionUserName, &name);
-			//printf("user name for %s is %s\n",part_id[i],name);
-			//if(!strcmp(name,"")) {
-			printf("destroying %s\n",(char *)part_id[i]);
-			rm_get_data(my_part, RM_PartitionState, &state);
-			if(state != RM_PARTITION_FREE)
-				pm_destroy_partition(part_id[i]);
-			
-			rm_get_data(my_part, RM_PartitionState, &state);
-			while ((state != RM_PARTITION_FREE) 
-			       && (state != RM_PARTITION_ERROR)){
-				printf(".");
-				rc=rm_free_partition(my_part);
-				if(rc!=STATUS_OK){
-					printf("Error freeing partition\n");
-					return(-1);
-				}
-				sleep(3);
-				rc=rm_get_partition(part_id[i],&my_part);
-				if(rc!=STATUS_OK) {
-					printf("Error in GetPartition\n");
-					return(-1);
-				}
+				rm_get_data(my_part, RM_PartitionUserName, &name);
+				//printf("user name for %s is %s\n",part_id[i],name);
+				//if(!strcmp(name,"")) {
+				printf("destroying %s\n",(char *)part_id[i]);
 				rm_get_data(my_part, RM_PartitionState, &state);
-				//Free memory allocated to mypart
-			}
-			rm_remove_partition(part_id[i]);
-			sleep(3);
-			printf("done\n");
-			//}
-			//rm_get_data(bgl, RM_NextBP, &bp);
-		}	
-	}
-	
-	itr = list_iterator_create(bgl_list);
-	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
-		j=0;
-		while (bgl_record->nodes[j] != '\0') {
-			if ((bgl_record->nodes[j]   == '[')
-			    &&  (bgl_record->nodes[j+4] == 'x')
-			    &&  (bgl_record->nodes[j+8] == ']')) {
-				j++;
-				number = atoi(bgl_record->nodes + j);
-				start[X] = number / 100;
-				start[Y] = (number % 100) / 10;
-				start[Z] = (number % 10);
-				j += 4;
-				number = atoi(bgl_record->nodes + j);
-				end[X] = number / 100;
-				end[Y] = (number % 100) / 10;
-				end[Z] = (number % 10);
-				j += 5;
-			}
-			j++;
+				if(state != RM_PARTITION_FREE)
+					pm_destroy_partition(part_id[i]);
+			
+				rm_get_data(my_part, RM_PartitionState, &state);
+				while ((state != RM_PARTITION_FREE) 
+				       && (state != RM_PARTITION_ERROR)){
+					printf(".");
+					rc=rm_free_partition(my_part);
+					if(rc!=STATUS_OK){
+						printf("Error freeing partition\n");
+						return(-1);
+					}
+					sleep(3);
+					rc=rm_get_partition(part_id[i],&my_part);
+					if(rc!=STATUS_OK) {
+						printf("Error in GetPartition\n");
+						return(-1);
+					}
+					rm_get_data(my_part, RM_PartitionState, &state);
+					//Free memory allocated to mypart
+				}
+				rm_remove_partition(part_id[i]);
+				sleep(3);
+				printf("done\n");
+				//}
+				//rm_get_data(bgl, RM_NextBP, &bp);
+			}	
 		}
-		assert(end[X] < DIM_SIZE[X]);
-		assert(start[X] >= 0);
-		assert(end[Y] < DIM_SIZE[Y]);
-		assert(start[Y] >= 0);
-		assert(end[Z] < DIM_SIZE[Z]);
-		assert(start[Z] >= 0);
-		bgl_record->bgl_part_list = list_create(NULL);
-		j=0;
-		/* printf("creating list %d%d%dx%d%d%d\n", */
-/* 			       start[X],start[Y],start[Z],end[X],end[Y],end[Z]); */
-		for (x = start[X]; x <= end[X]; x++) {
-			for (y = start[Y]; y <= end[Y]; y++) {
-				for (z = start[Z]; z <= end[Z]; z++) {
-					list_append(bgl_record->bgl_part_list, 
-						    &pa_system_ptr->grid[x][y][z]);
+	
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+			j=0;
+			while (bgl_record->nodes[j] != '\0') {
+				if ((bgl_record->nodes[j]   == '[')
+				    &&  (bgl_record->nodes[j+4] == 'x')
+				    &&  (bgl_record->nodes[j+8] == ']')) {
 					j++;
+					number = atoi(bgl_record->nodes + j);
+					start[X] = number / 100;
+					start[Y] = (number % 100) / 10;
+					start[Z] = (number % 10);
+					j += 4;
+					number = atoi(bgl_record->nodes + j);
+					end[X] = number / 100;
+					end[Y] = (number % 100) / 10;
+					end[Z] = (number % 10);
+					j += 5;
+				}
+				j++;
+			}
+			assert(end[X] < DIM_SIZE[X]);
+			assert(start[X] >= 0);
+			assert(end[Y] < DIM_SIZE[Y]);
+			assert(start[Y] >= 0);
+			assert(end[Z] < DIM_SIZE[Z]);
+			assert(start[Z] >= 0);
+			bgl_record->bgl_part_list = list_create(NULL);
+			j=0;
+			/* printf("creating list %d%d%dx%d%d%d\n", */
+/* 			       start[X],start[Y],start[Z],end[X],end[Y],end[Z]); */
+			for (x = start[X]; x <= end[X]; x++) {
+				for (y = start[Y]; y <= end[Y]; y++) {
+					for (z = start[Z]; z <= end[Z]; z++) {
+						list_append(bgl_record->bgl_part_list, 
+							    &pa_system_ptr->grid[x][y][z]);
+						j++;
+					}
 				}
 			}
+			bgl_record->bp_count = j;
+			set_bgl_part(bgl_record->bgl_part_list, 
+				     bgl_record->bp_count, 
+				     bgl_record->conn_type);			
+			if (node_name2bitmap(bgl_record->nodes, false, 
+					     &(bgl_record->bitmap))) {
+				error("Unable to convert nodes %s to bitmap", 
+				      bgl_record->nodes);
+			}
 		}
-		bgl_record->bp_count = j;
-		set_bgl_part(bgl_record->bgl_part_list, 
-			     bgl_record->bp_count, 
-			     bgl_record->conn_type);			
-		if (node_name2bitmap(bgl_record->nodes, false, 
-				&(bgl_record->bitmap))) {
-			error("Unable to convert nodes %s to bitmap", 
-				bgl_record->nodes);
-		}
-	}
-	list_iterator_destroy(itr);
+		list_iterator_destroy(itr);
 	
-	itr = list_iterator_create(bgl_list);
-	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL)			
-		configure_partition(bgl_record);
+		itr = list_iterator_create(bgl_list);
+		while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL)			
+			configure_partition(bgl_record);
 	
-	list_iterator_destroy(itr);
-	rc = SLURM_SUCCESS;
+		list_iterator_destroy(itr);
+		rc = SLURM_SUCCESS;
  	} 
+//	list_iterator_destroy(itr_curr);
+	
 #else
 	if (bgl_list) {
 		bgl_record_t *record;

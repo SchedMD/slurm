@@ -31,10 +31,10 @@
 List bgl_bp_list;
 
 static int _get_bp_by_location(rm_BGL_t* my_bgl, int* curr_coord, rm_BP_t** bp);
-static int _set_switch(rm_switch_t* curr_switch, pa_connection_t *int_wire);
+//static int _set_switch(rm_switch_t* curr_switch, pa_connection_t *int_wire);
 static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch);
 static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, int source, int target, int dim);
-
+static int _destroy_bgl_bp_list(List bgl_bp);
 /** 
  * this is just stupid.  there are some implicit rules for where
  * "NextBP" goes to, but we don't know, so we have to do this.
@@ -62,53 +62,53 @@ static int _get_bp_by_location(rm_BGL_t* my_bgl, int* curr_coord, rm_BP_t** bp)
 	return 0;
 }
 
-static int _set_switch(rm_switch_t* curr_switch, pa_connection_t *int_wire)
-{
-	int firstconnect=1;
-	rm_connection_t conn;
-	int j;
-	int conn_num=0;
+/* static int _set_switch(rm_switch_t* curr_switch, pa_connection_t *int_wire) */
+/* { */
+/* 	int firstconnect=1; */
+/* 	rm_connection_t conn; */
+/* 	int j; */
+/* 	int conn_num=0; */
 	
-	for(j=0;j<NUM_PORTS_PER_NODE;j+=2) {
-		if(j==2)
-			j++;
-		if(int_wire[j].used) {
-			switch(int_wire[j].port_tar) {
-			case 1:
-				conn.p1 = RM_PORT_S1;
-				break;
-			case 2:
-				conn.p1 = RM_PORT_S2;
-				break;
-			case 4:
-				conn.p1 = RM_PORT_S4;
-				break;
-			}
-			switch(j) {
-			case 0:
-				conn.p2 = RM_PORT_S0; 
-				break;
-			case 3:
-				conn.p2 = RM_PORT_S3; 
-				break;
-			case 5:
-				conn.p2 = RM_PORT_S5; 
-				break;
-			}
-			conn.part_state = RM_PARTITION_READY;
-			//printf("Connecting %d - %d\n",(conn.p1-6),(conn.p2-6));
-			if(firstconnect) {
-				rm_set_data(curr_switch,RM_SwitchFirstConnection, &conn);
-				firstconnect=0;
-			} else 
-				rm_set_data(curr_switch,RM_SwitchNextConnection, &conn);   
-			conn_num++;
-		}		
-	}
-	//printf("conn_num = %d\n",conn_num);
-	rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num);
-	return 1;
-}
+/* 	for(j=0;j<NUM_PORTS_PER_NODE;j+=2) { */
+/* 		if(j==2) */
+/* 			j++; */
+/* 		if(int_wire[j].used) { */
+/* 			switch(int_wire[j].port_tar) { */
+/* 			case 1: */
+/* 				conn.p1 = RM_PORT_S1; */
+/* 				break; */
+/* 			case 2: */
+/* 				conn.p1 = RM_PORT_S2; */
+/* 				break; */
+/* 			case 4: */
+/* 				conn.p1 = RM_PORT_S4; */
+/* 				break; */
+/* 			} */
+/* 			switch(j) { */
+/* 			case 0: */
+/* 				conn.p2 = RM_PORT_S0;  */
+/* 				break; */
+/* 			case 3: */
+/* 				conn.p2 = RM_PORT_S3;  */
+/* 				break; */
+/* 			case 5: */
+/* 				conn.p2 = RM_PORT_S5;  */
+/* 				break; */
+/* 			} */
+/* 			conn.part_state = RM_PARTITION_READY; */
+/* 			//printf("Connecting %d - %d\n",(conn.p1-6),(conn.p2-6)); */
+/* 			if(firstconnect) { */
+/* 				rm_set_data(curr_switch,RM_SwitchFirstConnection, &conn); */
+/* 				firstconnect=0; */
+/* 			} else  */
+/* 				rm_set_data(curr_switch,RM_SwitchNextConnection, &conn);    */
+/* 			conn_num++; */
+/* 		}		 */
+/* 	} */
+/* 	//printf("conn_num = %d\n",conn_num); */
+/* 	rm_set_data(curr_switch, RM_SwitchConnNum, &conn_num); */
+/* 	return 1; */
+/* } */
 
 static int _add_switch_conns(rm_switch_t* curr_switch, bgl_switch_t *bgl_switch)
 {
@@ -254,6 +254,30 @@ static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, int source, 
 	
 	return 1;
 }
+
+static int _destroy_bgl_bp_list(List bgl_bp_list)
+{
+	bgl_switch_t *bgl_switch;
+	bgl_conn_t *bgl_conn;
+	bgl_bp_t *bgl_bp;
+	
+	if(bgl_bp_list) {
+		while((bgl_bp = list_pop(bgl_bp_list)) != NULL) {
+			while((bgl_switch = list_pop(bgl_bp->switch_list)) != NULL) {
+				while((bgl_conn = list_pop(bgl_switch->conn_list)) != NULL) {
+					xfree(bgl_conn);
+				}
+				list_destroy(bgl_switch->conn_list);
+				xfree(bgl_switch);
+			}
+			list_destroy(bgl_bp->switch_list);
+			xfree(bgl_bp);
+		}
+		list_destroy(bgl_bp_list);
+	}
+	return 1;
+}
+
 /**
  * connect the given switch up with the given connections
  */
@@ -274,6 +298,7 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 	bgl_switch_t *bgl_switch;
 	int first_bp=1;
 	int first_switch=1;
+	
 	bgl_bp_list = list_create(NULL);
 	bgl_record->switch_count = 0;
 	bgl_record->bp_count = 0;
@@ -385,7 +410,8 @@ int configure_partition_switches(bgl_record_t * bgl_record)
 			}
 		}
 	}
-	list_destroy(bgl_bp_list);
+	_destroy_bgl_bp_list(bgl_bp_list);	
+	
 /* 		rm_switch_t *curr_switch; */
 /* 		int j; */
 /* 	bgl_record->bp_count = 4; */
