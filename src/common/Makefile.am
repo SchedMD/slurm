@@ -16,9 +16,9 @@ elan_sources =
 endif
 
 if WITH_AUTHD
-authd_sources = slurm_auth_impl.c
+authd_sources = slurm_auth_authd.c
 else
-authd_sources = slurm_auth_impl.c
+authd_sources = slurm_auth_authd.c
 endif
 
 noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la libcred.la 
@@ -68,10 +68,11 @@ noinst_HEADERS = 	xmalloc.h 	\
 			qsw.h			\
 			util_signals.h
 
-libdaemonize_la_SOURCES =	daemonize.c
+libdaemonize_la_SOURCES = \
+			daemonize.c
 libcred_la_SOURCES = credential_utils.c signature_utils.c list.c
-EXTRA_libcommon_la_SOURCES =		\
+EXTRA_libcommon_la_SOURCES = \
 			qsw.c
 
-libcommon_la_LIBADD = $(SSL_LIBS)
+libcommon_la_LIBADD = $(SSL_LIBS) $(AUTHD_LIBS)
 
