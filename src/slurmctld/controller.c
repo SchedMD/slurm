@@ -77,6 +77,7 @@ main (int argc, char *argv[])
 	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+/*	log_options_t opts = { 1, LOG_LEVEL_DEBUG3,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET } ; */
 
 	init_time = time (NULL);
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);

@@ -309,25 +309,45 @@ find_job_record(uint32_t job_id)
 void
 dump_job_desc(job_desc_msg_t * job_specs)
 {
+	char * dist = NULL;
+	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
+	long num_nodes,  procs_per_task, time_limit, priority, contiguous, shared;
+
 	if (job_specs == NULL) 
 		return;
 
-	debug3("JobDesc: user_id=%u job_id=%u partition=%s, name=%s\n",
-		job_specs->user_id, job_specs->job_id, 
+	job_id = (job_specs->job_id != NO_VAL) ? job_specs->job_id : -1 ;
+	debug3("JobDesc: user_id=%u job_id=%ld partition=%s, name=%s\n", 
+		job_specs->user_id, job_id, 
 		job_specs->partition, job_specs->name);
-	debug3("    min_procs=%u min_memory=%u min_tmp_disk=%u features=%s\n",
-		job_specs->min_procs, job_specs->min_memory, 
-		job_specs->min_tmp_disk, job_specs->features);
-	debug3("    num_procs=%u num_nodes=%u req_nodes=%s\n", 
-		job_specs->num_procs, job_specs->num_nodes, 
-		job_specs->req_nodes);
-	debug3("    time_limit=%u contiguous=%u priority=%u shared=%u\n", 
-		job_specs->time_limit, job_specs->contiguous,
-		job_specs->priority, job_specs->shared);
-	debug3("    dist=%u procs_per_task=%u job_script=%s groups=%s\n", 
-		job_specs->dist, job_specs->procs_per_task,
-		job_specs->job_script, job_specs->groups);
-/*	debug3("    partition_key=%?\n", job_specs->partition_key); */
+
+	min_procs = (job_specs->min_procs != NO_VAL) ? job_specs->min_procs : -1 ;
+	min_memory = (job_specs->min_memory != NO_VAL) ? job_specs->min_memory : -1 ;
+	min_tmp_disk = (job_specs->min_tmp_disk != NO_VAL) ? job_specs->min_tmp_disk : -1 ;
+	debug3("   min_procs=%ld min_memory=%ld min_tmp_disk=%ld features=%s", 
+		min_procs, min_memory, min_tmp_disk, job_specs->features);
+
+	num_procs = (job_specs->num_procs != NO_VAL) ? job_specs->num_procs : -1 ;
+	num_nodes = (job_specs->num_nodes != NO_VAL) ? job_specs->num_nodes : -1 ;
+	debug3("   num_procs=%ld num_nodes=%ld req_nodes=%s", 
+		num_procs, num_nodes, job_specs->req_nodes);
+
+	time_limit = (job_specs->time_limit != NO_VAL) ? job_specs->time_limit : -1 ;
+	priority = (job_specs->priority != NO_VAL) ? job_specs->priority : -1 ;
+	contiguous = (job_specs->contiguous != (uint16_t) NO_VAL) ? job_specs->contiguous : -1 ;
+	shared = (job_specs->shared != (uint16_t) NO_VAL) ? job_specs->shared : -1 ;
+	debug3("   time_limit=%ld priority=%ld contiguous=%ld shared=%ld features=%s", 
+		time_limit, priority, contiguous, shared, job_specs->features);
+
+	procs_per_task = (job_specs->procs_per_task != NO_VAL) ? job_specs->procs_per_task : -1 ;
+	if (job_specs->dist == DIST_BLOCK)
+		dist = "BLOCK";
+	else if (job_specs->dist == DIST_CYCLE)
+		dist = "CYCLE";
+	debug3("   procs_per_task=%ld dist=%s job_script=%s groups=%s", 
+		procs_per_task, dist, job_specs->job_script, job_specs->groups);
+
+/*	debug3("   partition_key=%?\n", job_specs->partition_key); */
 
 }
 
