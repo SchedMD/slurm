@@ -96,9 +96,10 @@ void run_backup(void)
 			&thread_attr_rpc, _background_rpc_mgr, NULL))
 		fatal("pthread_create error %m");
 
+	sleep(5);	/* Give the primary slurmctld set-up time */
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
-		sleep(5);	/* Give the primary slurmctld set-up time */
+		sleep(1);
 		if (difftime(time(NULL), last_ping) <
 		    slurmctld_conf.heartbeat_interval)
 			continue;
@@ -111,8 +112,8 @@ void run_backup(void)
 			break;
 	}
 	if (slurmctld_config.shutdown_time != 0) {
-		pthread_join(slurmctld_config.thread_id_sig, NULL);
 		info("BackupController terminating");
+		pthread_join(slurmctld_config.thread_id_sig, NULL);
 		if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
 			error("Unable to remove pidfile '%s': %m",
 		     	 slurmctld_conf.slurmctld_pidfile);
