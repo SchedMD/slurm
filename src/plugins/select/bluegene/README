@@ -23,12 +23,21 @@ partition entry in slurm.conf:
   PartitionName=batch222 Nodes=bgl[202x313] # Add more nodes
   PartitionName=batch222 Nodes=bgl[222x333] # Add more nodes
 
-there may be a corresponding BGL partition specification: 
+There may be a corresponding BGL partition specification in the 
+bluegene.conf file: 
 
   Nodes=bgl[200x311] Type=Mesh
   Nodes=bgl[220x331] Type=Torus
   Nodes=bgl[202x313] Type=Torus
   Nodes=bgl[222x333] Type=Mesh
+
+Note that the node names must be identical in both places. 
+String comparison is used and "bgl[000x001]" will not match 
+"bgl[000,001]".
+
+The system serial number used in rm_set_serial() may also be 
+defined in bluegene.conf using the "Serial=" specification. 
+The default value is equivalent to "Serial=BGL".
 
 Note that the configuration specified in this file may not be
 physically possible due to the wiring contraints of the BGL system.  A
@@ -40,6 +49,6 @@ PROBLEMS --------
 
 If you experience problems compiling, installing, or running this
 plugin please send email to either Dan Phung <phung4@llnl.gov> or
-Morris Jette <jette@llnl.gov>.
+Morris Jette <jette1@llnl.gov>.
 
 $Id$
