@@ -33,12 +33,16 @@ typedef resource_allocation_response_msg_t allocation_resp;
 static allocation_resp * allocate_nodes(void);
 static void              print_job_information(allocation_resp *resp);
 static void		 create_job_step(job_t *job);
+static void		 sigterm_handler(int signum);
+void *                   sig_thr(void *arg);
 
 int
 main(int ac, char **av)
 {
+	sigset_t sigset;
 	allocation_resp *resp;
 	job_t *job;
+	struct sigaction action;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -83,6 +87,15 @@ main(int ac, char **av)
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
+	/* block all signals in all threads, except sigterm */
+	sigfillset(&sigset);
+	sigdelset(&sigset, SIGTERM);
+	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
+		fatal("sigprocmask: %m");
+	action.sa_handler = &sigterm_handler;
+	action.sa_flags   = 0;
+	sigaction(SIGTERM, &action, NULL);
+
 	/* job structure should now be filled in */
 
 	if ((job->jfd = slurm_init_msg_engine_port(0)) == SLURM_SOCKET_ERROR)
@@ -112,16 +125,30 @@ main(int ac, char **av)
 		fatal("Unable to create message thread. %m\n");
 	debug("Started msg server thread (%d)\n", job->jtid);
 
-	/* launch jobs */
+	/* spawn signal thread */
+	if (pthread_create(&job->sigid, NULL, &sig_thr, (void *) job))
+		fatal("Unable to create signals thread. %m");
+	debug("Started signals thread (%d)", job->sigid);
 
+	/* launch jobs */
 	launch(job);
 
-	/* wait on and process signals */
+	/* wait for job to terminate */
+	while (job->state != SRUN_JOB_OVERDONE) {
+		pthread_cond_wait(&job->state_cond, &job->state_mutex);
+		debug("main thread woke up, state is now %d", job->state);
+		if (errno == EINTR)
+			debug("got signal");
+	}
 
-	sleep(120);
-
+	/* job is now overdone, blow this popsicle stand  */
+	
 	if (!opt.no_alloc)
 		slurm_complete_job(job->jobid);
+
+	pthread_kill(job->jtid, SIGTERM);
+	pthread_kill(job->ioid, SIGTERM);
+	pthread_kill(job->sigid, SIGTERM);
 
 	exit(0);
 }
@@ -174,7 +201,8 @@ allocate_nodes(void)
 
 }
 
-static void create_job_step(job_t *job)
+static void 
+create_job_step(job_t *job)
 {
 	job_step_create_request_msg_t req;
 	job_step_create_response_msg_t *resp;
@@ -212,3 +240,46 @@ print_job_information(allocation_resp *resp)
 	}
 	printf("\n");
 }
+
+static void
+sigterm_handler(int signum)
+{
+	if (signum == SIGTERM) {
+		debug2("thread %d canceled\n", pthread_self());
+		pthread_exit(0);
+	}
+}
+
+
+/* simple signal handling thread */
+void *
+sig_thr(void *arg)
+{
+	job_t *job = (job_t *)arg;
+	sigset_t set;
+	int signo;
+	struct sigaction action;
+
+
+	while (1) {
+		sigfillset(&set);
+		pthread_sigmask(SIG_UNBLOCK, &set, NULL);
+		sigwait(&set, &signo);
+		debug2("recvd signal %d", signo);
+		switch (signo) {
+		  case SIGINT:
+			  pthread_mutex_lock(&job->state_mutex);
+			  job->state = SRUN_JOB_OVERDONE;
+			  pthread_cond_signal(&job->state_cond);
+			  pthread_mutex_unlock(&job->state_mutex);
+			  pthread_exit(0);
+			  break;
+		  default:
+			  /* fwd_signal(job, signo); */
+			  break;
+		}
+	}
+
+	pthread_exit(0);
+}
+
