@@ -37,12 +37,12 @@
 #include <errno.h>
 
 #include "src/common/log.h"
+#include "src/common/parse_spec.h"
 #include "src/common/xmalloc.h"
 
 #define BUF_SIZE 1024
 #define SEPCHARS " \n\t"
 
-static int  _load_string  (char **destination, char *keyword, char *in_line) ;
 static int  _load_long (long *destination, char *keyword, char *in_line) ;
 static int  _load_integer (int *destination, char *keyword, char *in_line) ;
 static int  _load_float (float *destination, char *keyword, char *in_line) ;
@@ -95,7 +95,7 @@ slurm_parser (char *spec, ...)
 			break;
 		case 's':
 			str_ptr = va_arg(ap, char **);
-			error_code = _load_string (str_ptr, keyword, spec);
+			error_code = load_string (str_ptr, keyword, spec);
 			break;
 		default:
 			fatal ("parse_spec: invalid type %c", type);
@@ -255,7 +255,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 
 
 /*
- * _load_string  - parse a string for a keyword, value pair, and load the 
+ * load_string  - parse a string for a keyword, value pair, and load the 
  *	char value
  * IN/OUT destination - location into which result is stored, set to value, 
  *	no change if value not found, if destination had previous value, 
@@ -269,7 +269,7 @@ _load_long (long *destination, char *keyword, char *in_line)
  * NOTE: in_line is overwritten, do not use a constant
  */
 int 
-_load_string  (char **destination, char *keyword, char *in_line) 
+load_string  (char **destination, char *keyword, char *in_line) 
 {
 	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
 	char *str_ptr1, *str_ptr2, *str_ptr3;
@@ -282,7 +282,7 @@ _load_string  (char **destination, char *keyword, char *in_line)
 		if ((scratch[0] == (char) NULL) || 
 		    (isspace ((int) scratch[0]))) {	
 			/* keyword with no value set */
-			info ("_load_string : keyword %s lacks value", 
+			info ("load_string : keyword %s lacks value", 
 			      keyword);
 			return EINVAL;
 		}
