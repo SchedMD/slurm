@@ -227,41 +227,34 @@ _flush_io(job_t *job)
 	debug3("Read %dB from tasks, wrote %dB", nbytes, nwritten);
 }
 
+static int
+_initial_fd_state (io_filename_t *f, int task)
+{
+	if (f->type == IO_ALL)
+		return (WAITING_FOR_IO);
+	if (f->type == IO_ONE && f->taskid == task)
+		return (WAITING_FOR_IO);
+
+	return (IO_DONE);
+}
+
 static void
 _io_thr_init(job_t *job, struct pollfd *fds) 
 {
-	int out_fd_state = WAITING_FOR_IO;
-	int err_fd_state = WAITING_FOR_IO;
 	int i;
 
 	xassert(job != NULL);
 
-	/*
-	 * XXX: Handle job->ofname/efname == IO_ONE
-	 */
-
 	_set_iofds_nonblocking(job);
 
-	if (job->ofname->type == IO_ALL)
-		out_fd_state = WAITING_FOR_IO;
-	else {
-		if (job->ifname->type != IO_ALL)
-			out_fd_state = IO_DONE;
-		else
-			out_fd_state = WAITING_FOR_IO;
-
-		if (!opt.efname)
-			err_fd_state = IO_DONE;
-	}
-
-	if ((job->efname->type == IO_ALL) && (err_fd_state != IO_DONE)) {
-		err_fd_state = WAITING_FOR_IO;
-	} else 
-		err_fd_state = IO_DONE;
-
 	for (i = 0; i < opt.nprocs; i++) {
-		job->out[i] = out_fd_state; 
-		job->err[i] = err_fd_state;
+		int instate = _initial_fd_state (job->ifname, i);
+		job->out[i] = _initial_fd_state (job->ofname, i);
+		job->err[i] = _initial_fd_state (job->efname, i);
+
+		if (job->out[i] != WAITING_FOR_IO)
+			job->out[i] = instate;
+			
 	}
 
 	for (i = 0; i < job->niofds; i++) 
@@ -467,20 +460,30 @@ _fopen(char *filename)
 	return fp;
 }
 
+static int
+_is_local_file (io_filename_t *fname)
+{
+	if (fname->name == NULL)
+		return (0);
+
+	return ((fname->type != IO_PER_TASK) && (fname->type != IO_ONE));
+}
+
+
 int
 open_streams(job_t *job)
 {
-	if ((job->ifname->type != IO_PER_TASK) && job->ifname->name) 
+	if (_is_local_file (job->ifname))
 		job->stdinfd = _stdin_open(job->ifname->name);
 	else
 		job->stdinfd = STDIN_FILENO;
 
-	if ((job->ofname->type != IO_PER_TASK) && job->ofname->name)
+	if (_is_local_file (job->ofname))
 		job->outstream = _fopen(job->ofname->name);
 	else
 		job->outstream = stdout;
 
-	if ((job->efname->type != IO_PER_TASK) && job->efname->name)
+	if (_is_local_file (job->efname))
 		job->errstream = _fopen(job->efname->name);
 	else
 		job->errstream = stderr;

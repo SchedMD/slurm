@@ -56,6 +56,10 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 	char *name = NULL;
 	char *orig = xstrdup(format);
 	char *p, *q;
+	int id;
+
+	if (((id = fname_single_task_io (format)) >= 0) && (taskid != id)) 
+			return (xstrdup ("/dev/null"));
 
 	/* If format doesn't specify an absolute pathname,
 	 * use cwd
@@ -158,14 +162,36 @@ fname_free(void *name)
 {
 	xfree(name);
 }
+
+/*
+ * Return >= 0 if fmt specifies "single task only" IO
+ *  i.e. if it specifies a single integer only
+ */
+int fname_single_task_io (const char *fmt)
+{
+	unsigned long taskid;
+	char *p;
+	
+	taskid = strtoul (fmt, &p, 10);
+
+	if (*p == '\0')
+		return ((int) taskid);
+
+	return (-1);
+}
+
 int 
 fname_trunc_all(slurmd_job_t *job, const char *fmt)
 {
 	int i, rc = SLURM_SUCCESS;
 	char *fname;
 	ListIterator filei;
-	List files = list_create((ListDelF)fname_free);
+	List files = NULL;
 
+	if (fname_single_task_io (fmt) >= 0)
+		return (0);
+
+	files = list_create((ListDelF)fname_free);
 	for (i = 0; i < job->ntasks; i++) {
 		fname = fname_create(job, fmt, job->task[i]->gid);
 		if (!list_find_first(files, (ListFindF) find_fname, fname))
