@@ -88,8 +88,8 @@ static char *_build_script (char *pathname, int file_type);
 static char *_get_shell (void);
 static int   _is_file_text (char *, char**);
 static int   _run_batch_job (void);
-static void  _run_job_script(uint32_t jobid, uint32_t node_cnt);
-static int   _set_batch_script_env(uint32_t jobid, uint32_t node_cnt);
+static void  _run_job_script(job_t *job);
+static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
 
 
@@ -157,7 +157,7 @@ srun(int ac, char **av)
 		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp); 
-		_run_job_script(resp->job_id, resp->node_cnt);
+		_run_job_script(job);
 		job_destroy(job, 0);
 
 		debug ("Spawned srun shell terminated");
@@ -345,7 +345,7 @@ _run_batch_job(void)
 	if (opt.share)
 		job.shared		= 1;
 
-	_set_batch_script_env(0, 0);
+	/* _set_batch_script_env(job); */
 	job.environment		= environ;
 
 	job.env_size            = 0;
@@ -539,25 +539,30 @@ _build_script (char *fname, int file_type)
 
 
 static int
-_set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
+_set_batch_script_env(job_t *job)
 {
 	int rc = SLURM_SUCCESS;
 	char *dist = NULL;
 
-	if (jobid > 0) {
-		if (setenvf("SLURM_JOBID=%u", jobid)) {
+	if (job->jobid > 0) {
+		if (setenvf("SLURM_JOBID=%u", job->jobid)) {
 			error("Unable to set SLURM_JOBID environment");
 			rc = SLURM_FAILURE;
 		}
 	}
 
-	if (node_cnt > 0) {
-		if (setenvf("SLURM_NNODES=%u", node_cnt)) {
-			error("Unable to set SLURM_NNODES environment");
+	if (job->nhosts > 0) {
+		if (setenvf("SLURM_NNODES=%u", job->nhosts)) {
+			error("Unable to set SLURM_NNODES environment var");
 			rc = SLURM_FAILURE;
 		}
-		if (!opt.nprocs_set)
-			opt.nprocs = node_cnt;
+	}
+
+	if (job->nodelist) {
+		if (setenvf("SLURM_NODELIST=%s", job->nodelist)) {
+			error("Unable to set SLURM_NODELIST environment var.");
+			rc = SLURM_FAILURE;
+		}
 	}
 
 	if (opt.nprocs_set && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
@@ -565,11 +570,13 @@ _set_batch_script_env(uint32_t jobid, uint32_t node_cnt)
 		rc = SLURM_FAILURE;
 	}
 
-	if ( (opt.cpus_per_task > 0) &&
-	     setenvf("SLURM_CPUS_PER_TASK=%u", opt.cpus_per_task)) {
+	
+	if ( opt.cpus_set 
+	   && setenvf("SLURM_CPUS_PER_TASK=%u", opt.cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	}
+	 
 
 	if (opt.distribution != SRUN_DIST_UNKNOWN) {
 		dist = (opt.distribution == SRUN_DIST_BLOCK) ?  
@@ -642,13 +649,13 @@ static int _set_rlimit_env(void)
 }
 
 /* allocation option specified, spawn a script and wait for it to exit */
-static void _run_job_script (uint32_t jobid, uint32_t node_cnt)
+static void _run_job_script (job_t *job)
 {
 	char *shell = NULL;
 	int   i;
 	pid_t child;
 
-	if (_set_batch_script_env(jobid, node_cnt) < 0) 
+	if (_set_batch_script_env(job) < 0) 
 		return;
 
 	/* determine shell from script (if any) or user default */
@@ -670,20 +677,21 @@ static void _run_job_script (uint32_t jobid, uint32_t node_cnt)
 		remote_argc = 1;
 		remote_argv = (char **) xmalloc((remote_argc + 1) * 
 						sizeof(char *));
-		remote_argv[0] = strdup (shell);
+		remote_argv[0] = xstrdup(shell);
 		remote_argv[1] = NULL;	/* End of argv's (for execv) */
 	}
 
 	/* spawn the shell with arguments (if any) */
 	if (_verbose)
-		info ("Spawning srun shell %s", shell);
+		info("Spawning srun shell %s", shell);
 
 	switch ( (child = fork()) ) {
 		case -1:
-			error ("Fork error %m");
+			error("fork:%m");
 		case 0:
+			unblock_all_signals();
 			execv(shell, remote_argv);
-			fatal("exec error %m");
+			error("exec: %m");
 			exit(1);
 		default:
 			while ( (i = wait(NULL)) ) {
