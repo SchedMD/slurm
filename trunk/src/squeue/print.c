@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>, et. al.
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
+ *             Moe Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -31,6 +32,7 @@
 #include <sys/types.h>
 
 #include <src/common/list.h>
+#include <src/common/hostlist.h>
 #include <src/common/xmalloc.h>
 
 #include <src/squeue/print.h>
@@ -449,8 +451,13 @@ _print_job_nodes( job_info_t* job, int width, bool right )
 {
 	if ( job == NULL ) /* Print the Header instead */
 		_print_str( "Nodes", width, right, false );
-	else
-		_print_str( job->nodes, width, right, false );
+	else {
+		hostlist_t hl = hostlist_create(job->nodes);
+		char buf[1024];
+		hostlist_ranged_string(hl, 1024, buf);
+		_print_str( buf, width, right, false );
+		hostlist_destroy(hl);
+	}
 
 	return SLURM_SUCCESS;
 }
