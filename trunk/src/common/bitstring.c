@@ -417,16 +417,16 @@ bitstr_t *
 bit_copy(bitstr_t *b)
 {
 	bitstr_t *new;
-	int newsize_words, newsize_bits;
+	int newsize_bits;
+	size_t len = 0;  /* Number of bytes to memcpy() */
 
 	_assert_bitstr_valid(b);
 
 	newsize_bits  = bit_size(b);
-	newsize_words = (newsize_bits + BITSTR_MAXPOS) / 8;
+	len = (_bitstr_words(newsize_bits) - BITSTR_OVERHEAD)*sizeof(bitstr_t);
 	new = bit_alloc(newsize_bits);
 	if (new)
-		memcpy(&new[BITSTR_OVERHEAD], 
-		       &b[BITSTR_OVERHEAD], newsize_words);
+		memcpy(&new[BITSTR_OVERHEAD], &b[BITSTR_OVERHEAD], len);
 
 	return new;
 }
