@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-LIBS=-lncurses
+LIBS=-lcurses
 INCLUDES = -I$(top_srcdir) -I 
 bin_PROGRAMS = smap
 
@@ -13,7 +13,7 @@ smap_LDADD =					  \
 	$(top_builddir)/src/api/libslurm.la
 
 noinst_HEADERS = smap.h 
-smap_SOURCES = smap.c opts.c
+smap_SOURCES = smap.c job_functions.c partition_functions.c configure_functions.c grid_functions.c opts.c
 
 force:
 $(smap_LDADD) : force

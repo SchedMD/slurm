@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -38,7 +38,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <ncurses.h>
+#include <curses.h>
 
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
@@ -53,7 +53,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
-enum { JOBS, SLURMPART, BGLPART };
+enum { JOBS, SLURMPART, BGLPART, COMMANDS };
 
 /* Input parameters */
 struct smap_parameters {
@@ -82,14 +82,42 @@ extern struct smap_parameters params;
 
 extern void parse_command_line(int argc, char *argv[]);
 
-#define X 8
-#define Y 4
-#define Z 4
-#define num_of_proc 128
 typedef struct {
 	char letter;
 	int color;
 	int indecies;
+	int state;
 } axis;
+
+extern int quiet_flag;
+extern int xcord;
+extern int ycord;
+extern int X;
+extern int Y;
+extern int Z;
+extern int num_of_proc;
+
+WINDOW *grid_win;
+WINDOW *text_win;
+
+time_t now;
+
+
+axis ***grid;
+axis *fill_in_value;
+
+void clear_window(WINDOW * win);
+
+void init_grid(node_info_msg_t * node_info_ptr);
+int set_grid(int start, int end, int count);
+int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
+		 int endz, int count);
+void print_grid(void);
+
+void print_date(void);
+
+void get_part(void);
+void get_job(void);
+void get_command(void);
 
 #endif

@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -59,7 +59,6 @@ static void _usage(void);
  */
 extern void parse_command_line(int argc, char *argv[])
 {
-	char *env_val = NULL;
 	int opt_char;
 	int option_index;
 	int tmp = 0;
@@ -67,8 +66,6 @@ extern void parse_command_line(int argc, char *argv[])
 		{"display", required_argument, 0, 'D'},
 		{"noheader", no_argument, 0, 'h'},
 		{"iterate", required_argument, 0, 'i'},
-		{"long", no_argument, 0, 'l'},
-		{"sort", required_argument, 0, 'S'},
 		{"version", no_argument, 0, 'V'},
 		{"help", no_argument, 0, OPT_LONG_HELP},
 		{"usage", no_argument, 0, OPT_LONG_USAGE},
@@ -76,18 +73,8 @@ extern void parse_command_line(int argc, char *argv[])
 		{NULL, 0, 0, 0}
 	};
 
-	if (getenv("SMAP_ALL"))
-		params.all_flag = true;
-	if ((env_val = getenv("SMAP_FORMAT")))
-		params.format = xstrdup(env_val);
-	if ((env_val = getenv("SMAP_PARTITION")))
-		params.partition = xstrdup(env_val);
-	if ((env_val = getenv("SMAP_SORT")))
-		params.sort = xstrdup(env_val);
-
-
 	while ((opt_char =
-		getopt_long(argc, argv, "D:hi:lS:V",
+		getopt_long(argc, argv, "D:hi:V",
 			    long_options, &option_index)) != -1) {
 		switch (opt_char) {
 		case (int) '?':
@@ -102,6 +89,8 @@ extern void parse_command_line(int argc, char *argv[])
 				tmp = SLURMPART;
 			else if (!strcmp(optarg, "b"))
 				tmp = BGLPART;
+			else if (!strcmp(optarg, "c"))
+				tmp = COMMANDS;
 
 			params.display = tmp;
 			break;
@@ -114,13 +103,6 @@ extern void parse_command_line(int argc, char *argv[])
 				error("Error: --iterate=%s");
 				exit(1);
 			}
-			break;
-		case (int) 'l':
-			params.long_output = true;
-			break;
-		case (int) 'S':
-			xfree(params.sort);
-			params.sort = xstrdup(optarg);
 			break;
 		case (int) 'V':
 			_print_version();
@@ -137,29 +119,6 @@ extern void parse_command_line(int argc, char *argv[])
 		}
 	}
 
-	if (params.display == SLURMPART) {
-		if (params.long_output)
-			params.format =
-			    "%9P %.5a %.9l %.8s %.4r %.5h %.10g %.5D %.11T %N";
-		else
-			params.format = "%9P %.5a %.9l %.5D %.6t %N";
-
-	} else if (params.display == JOBS) {
-		if (params.long_output)
-			params.format =
-			    "%.7i %.9P %.8j %.8u %.8T %.10M %.9l %.6D %R";
-		else
-			params.format =
-			    "%.7i %.9P %.8j %.8u  %.2t %.10M %.6D %R";
-
-	} else {
-		if (params.long_output)
-			params.format =
-			    "%9P %.5a %.9l %.8s %.4r %.5h %.10g %.5D %.11T %N";
-		else
-			params.format = "%9P %.5a %.9l %.5D %.6t %N";
-
-	}
 }
 
 
@@ -172,19 +131,20 @@ static void _print_version(void)
 static void _usage(void)
 {
 	printf("\
-Usage: smap [-adelNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
-             [-S fields] [-o format] \n");
+Usage: smap [-hV] [-D jsbc] [-i seconds]\n");
 }
 
 static void _help(void)
 {
 	printf("\
 Usage: smap [OPTIONS]\n\
-  -D, --display              set which Display mode to use (j=jobs, s=slurm partitions, b=BG/L partitions)\n\
+  -D, --display              set which Display mode to use\n\
+      j=jobs\n\
+      s=slurm partitions\n\
+      b=BG/L partitions\n\
+      c=set configuration\n\
   -h, --noheader             no headers on output\n\
   -i, --iterate=seconds      specify an interation period\n\
-  -l, --long                 long output - displays more information\n\
-  -S, --sort=fields          comma seperated list of fields to sort on\n\
   -V, --version              output version information and exit\n\
 \nHelp options:\n\
   --help                     show this help message\n\
