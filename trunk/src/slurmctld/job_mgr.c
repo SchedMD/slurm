@@ -499,15 +499,27 @@ load_job_state ( void )
 		safe_unpackstr_xmalloc (&partition, &name_len, buffer);
 		safe_unpackstr_xmalloc (&name, &name_len, buffer);
 
-		safe_unpack16 (&details, buffer);
-		if ((remaining_buf (buffer) < (11 * sizeof (uint32_t))) && details) {
-			/* no room for details */
-			error ("job state file problem on job %u", job_id);
-			goto cleanup;
+		/* validity test as possible */
+		if ((job_state >= JOB_END) || 
+		    (kill_on_node_fail > 1)) {
+			error ("Invalid data for job %u: job_state=%u, kill_on_node_fail=%u",
+				job_id, job_state, kill_on_node_fail);
+			error ("No more job data will be processed from the checkpoint file");
+			if (nodes)
+				xfree (nodes);
+			if (partition)
+				xfree (partition);
+			if (name)
+				xfree (name);
+			error_code = EINVAL;
+			break;
 		}
 
+		safe_unpack16 (&details, buffer);
+
 		if (details == DETAILS_FLAG ) {
-			unpack_job_credential (&credential_ptr , buffer);
+			if (unpack_job_credential (&credential_ptr , buffer))
+				goto unpack_error;
 
 			safe_unpack32 (&num_procs, buffer);
 			safe_unpack32 (&num_nodes, buffer);
@@ -528,6 +540,29 @@ load_job_state ( void )
 			safe_unpackstr_xmalloc (&stdin, &name_len, buffer);
 			safe_unpackstr_xmalloc (&stdout, &name_len, buffer);
 			safe_unpackstr_xmalloc (&work_dir, &name_len, buffer);
+
+			/* validity test as possible */
+			if ((shared > 1) || 
+			    (contiguous > 1) ||
+			    (batch_flag > 1)) {
+				error ("Invalid data for job %u: shared=%u, contiguous=%u, batch_flag=%u",
+					job_id, shared, contiguous, batch_flag);
+				error ("No more job data will be processed from the checkpoint file");
+				if (req_nodes)
+					xfree (req_nodes);
+				if (features)
+					xfree (features);
+				if (stderr)
+					xfree (stderr);
+				if (stdin)
+					xfree (stdin);
+				if (stdout)
+					xfree (stdout);
+				if (work_dir)
+					xfree (work_dir);
+				error_code = EINVAL;
+				break;
+			}
 		}
 
 		if (nodes) {
@@ -612,8 +647,7 @@ load_job_state ( void )
 		}
 
 		safe_unpack16 (&step_flag, buffer);
-		while ((step_flag == STEP_FLAG) && 
-		       (remaining_buf (buffer) > (2 * sizeof (uint32_t)))) {
+		while (step_flag == STEP_FLAG) {
 			struct step_record *step_ptr;
 			uint16_t step_id, cyclic_alloc;
 			uint32_t start_time;
@@ -623,6 +657,15 @@ load_job_state ( void )
 			safe_unpack16 (&cyclic_alloc, buffer);
 			unpack_time (&start_time, buffer);
 			safe_unpackstr_xmalloc (&node_list, &name_len, buffer);
+
+			/* validity test as possible */
+			if (cyclic_alloc > 1) {
+				error ("Invalid data for job %u.%u: cyclic_alloc=%u",
+					job_id, step_id, cyclic_alloc);
+				error ("No more job data will be processed from the checkpoint file");
+				error_code = EINVAL;
+				break;
+			}
 
 			step_ptr = create_step_record (job_ptr);
 			if (step_ptr == NULL) 
@@ -637,18 +680,16 @@ load_job_state ( void )
 			}
 #ifdef HAVE_LIBELAN3
 			if (remaining_buf (buffer) < QSW_PACK_SIZE)
-				break;
+				goto unpack_error;
 			qsw_alloc_jobinfo(&step_ptr->qsw_job);
 			qsw_unpack_jobinfo(step_ptr->qsw_job, buffer);
 #endif
 			safe_unpack16 (&step_flag, buffer);
 		}
+		if (error_code) 
+			break;
 
 cleanup:
-		if (name) {
-			xfree (name);
-			name = NULL; 
-		}
 		if (nodes) {
 			xfree (nodes); 
 			nodes = NULL; 
@@ -656,6 +697,10 @@ cleanup:
 		if (partition) {
 			xfree (partition); 
 			partition = NULL;
+		}
+		if (name) {
+			xfree (name);
+			name = NULL; 
 		}
 		if (node_bitmap) {
 			bit_free (node_bitmap); 
@@ -697,6 +742,11 @@ cleanup:
 
 	free_buf (buffer);
 	return error_code;
+
+unpack_error:
+	error ("Incomplete job data checkpoint file.  State not completely restored");
+	free_buf (buffer);
+	return EFAULT;
 }
 
 /* add_job_hash - add a job hash entry for given job record, job_id must already be set */
@@ -1597,7 +1647,7 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		job_ptr->priority = job_desc->priority;
 	else
 		set_job_prio (job_ptr);
-	if (job_desc->kill_on_node_fail != NO_VAL)
+	if (job_desc->kill_on_node_fail != (uint16_t) NO_VAL)
 		job_ptr->kill_on_node_fail = job_desc->kill_on_node_fail;
 
 	detail_ptr = job_ptr->details;
@@ -1609,9 +1659,9 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 	}
 	if (job_desc->features)
 		detail_ptr->features = xstrdup ( job_desc->features );
-	if (job_desc->shared != NO_VAL)
+	if (job_desc->shared != (uint16_t) NO_VAL)
 		detail_ptr->shared = job_desc->shared;
-	if (job_desc->contiguous != NO_VAL)
+	if (job_desc->contiguous != (uint16_t) NO_VAL)
 		detail_ptr->contiguous = job_desc->contiguous;
 	if (job_desc->min_procs != NO_VAL)
 		detail_ptr->min_procs = job_desc->min_procs;

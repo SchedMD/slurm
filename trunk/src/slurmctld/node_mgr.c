@@ -466,6 +466,19 @@ load_node_state ( void )
 		safe_unpack32 (&real_memory, buffer);
 		safe_unpack32 (&tmp_disk, buffer);
 
+		/* validity test as possible */
+		if ((cpus == 0) || 
+		    ((node_state & (~NODE_STATE_NO_RESPOND)) >= NODE_STATE_END)) {
+			error ("Invalid data for node %s: cpus=%u, state=%u",
+				node_name, cpus, node_state);
+			error ("No more node data will be processed from the checkpoint file");
+			if (node_name)
+				xfree (node_name);
+			error_code = EINVAL;
+			break;
+			
+		}
+
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);
 		if (node_ptr) {
@@ -474,6 +487,8 @@ load_node_state ( void )
 			node_ptr->real_memory = real_memory;
 			node_ptr->tmp_disk = tmp_disk;
 			node_ptr->last_response = time (NULL);
+		} else {
+			error ("Node %s has vanished from configuration", node_name);
 		}
 		if (node_name)
 			xfree (node_name);
@@ -481,6 +496,11 @@ load_node_state ( void )
 
 	free_buf (buffer);
 	return error_code;
+
+unpack_error:
+	error ("Incomplete node data checkpoint file.  State not completely restored");
+	free_buf (buffer);
+	return EFAULT;
 }
 
 /* 

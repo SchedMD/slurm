@@ -71,25 +71,25 @@
 
 #define safe_unpack16(valp,buf) {			\
         if (remaining_buf(buf) < sizeof(*(valp)))	\
-		break;					\
+		goto unpack_error;					\
 	unpack16(valp,buf);				\
 }
 
 #define safe_unpack32(valp,buf) {			\
         if (remaining_buf(buf) < sizeof(*(valp)))	\
-		break;					\
+		goto unpack_error;					\
 	unpack32(valp,buf);				\
 }
 
 #define safe_unpackstr_xmalloc(valp,size_valp,buf) { 	\
        if (remaining_buf(buf) < sizeof(uint16_t))	\
-		break;					\
+		goto unpack_error;					\
 	unpackmem_xmalloc(valp,size_valp,buf);		\
 }
 
 #define safe_unpack_time(valp,buf) {			\
         if (remaining_buf(buf) < sizeof(time_t))	\
-		break;					\
+		goto unpack_error;					\
 	unpack_time(valp,buf);				\
 }
 
