@@ -28,7 +28,7 @@
 #define _HAVE_OPT_H
 
 #if HAVE_CONFIG_H
-#include <config.h>
+#  include "config.h"
 #endif
 
 #include <sys/types.h>
@@ -43,12 +43,12 @@
 */
 
 #if HAVE_POPT_H
-#include <popt.h>
+#  include <popt.h>
 #else
-#include <src/popt/popt.h>
+#  include "src/popt/popt.h"
 #endif
 
-#include <src/common/macros.h> /* true and false */
+#include "src/common/macros.h" /* true and false */
 
 #define MAX_THREADS	10
 #define MAX_USERNAME	9

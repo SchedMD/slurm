@@ -28,13 +28,14 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <src/common/hostlist.h>
-#include <src/common/log.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xstring.h>
-#include <src/srun/job.h>
-#include <src/srun/opt.h>
+#include "src/common/hostlist.h"
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
+#include "src/srun/job.h"
+#include "src/srun/opt.h"
 
 job_t *
 job_create(resource_allocation_response_msg_t *resp)

@@ -27,10 +27,10 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
-#ifdef HAVE_PTHREAD_H
+#ifdef WITH_PTHREADS
 #  include <pthread.h>
 #endif
 
@@ -48,23 +48,23 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include <src/api/slurm.h>
+#include "src/api/slurm.h"
 
-#include <src/common/log.h>
-#include <src/common/read_config.h>
-#include <src/common/xstring.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xsignal.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
-#include <src/srun/opt.h>
-#include <src/srun/env.h>
-#include <src/srun/job.h>
-#include <src/srun/launch.h>
+#include "src/srun/opt.h"
+#include "src/srun/env.h"
+#include "src/srun/job.h"
+#include "src/srun/launch.h"
 
-#include <src/srun/net.h>
-#include <src/srun/msg.h>
-#include <src/srun/io.h>
+#include "src/srun/net.h"
+#include "src/srun/msg.h"
+#include "src/srun/io.h"
 
 #define MAX_RETRIES 20
 
@@ -114,9 +114,10 @@ static void 		*p_signal_task(void *args);
 static int               _set_batch_script_env(uint32_t jobid);
 
 #ifdef HAVE_LIBELAN3
-#  include <src/common/qsw.h> 
-static void qsw_standalone(job_t *job);
+#  include "src/common/qsw.h"
+   static void qsw_standalone(job_t *job);
 #endif
+
 int
 main(int ac, char **av)
 {

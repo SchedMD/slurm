@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -33,13 +33,13 @@
 #include <unistd.h>
 #include <sys/param.h>
 
-#include <src/common/xmalloc.h>
-#include <src/common/log.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/common/log.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/xmalloc.h"
 
-#include <src/srun/job.h>
-#include <src/srun/launch.h>
-#include <src/srun/opt.h>
+#include "src/srun/job.h"
+#include "src/srun/launch.h"
+#include "src/srun/opt.h"
 
 extern char **environ;
 

@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <string.h>		/* strcpy, strncasecmp */
@@ -43,16 +43,16 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xstring.h>
-#include <src/common/list.h>
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #ifdef HAVE_TOTALVIEW
-#include <src/srun/attach.h>
+#include "src/srun/attach.h"
 #endif
-#include <src/srun/env.h>
-#include <src/srun/opt.h>
+#include "src/srun/env.h"
+#include "src/srun/opt.h"
 
 #define __DEBUG 0
 

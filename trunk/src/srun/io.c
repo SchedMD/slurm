@@ -34,19 +34,19 @@
 #include <string.h>
 #include <errno.h>
 
-#include <src/common/xassert.h>
-#include <src/common/xmalloc.h>
-#include <src/common/log.h>
-#include <src/common/fd.h>
-#include <src/common/macros.h>
-#include <src/common/pack.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/common/slurm_protocol_pack.h>
+#include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
-#include <src/srun/io.h>
-#include <src/srun/job.h>
-#include <src/srun/net.h>
-#include <src/srun/opt.h>
+#include "src/srun/io.h"
+#include "src/srun/job.h"
+#include "src/srun/net.h"
+#include "src/srun/opt.h"
 
 #define IO_BUFSIZ	2048
 

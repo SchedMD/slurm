@@ -3,7 +3,8 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <grondona1@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Mark Grondona <grondona1@llnl.gov>, Kevin Tew <tew1@llnl.gov>, 
+ *  et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -37,8 +38,8 @@
 #include <string.h>
 #include <errno.h>
 
-#include <src/common/log.h>
-#include "net.h"
+#include "src/common/log.h"
+#include "src/srun/net.h"
 
 #ifndef NET_DEFAULT_BACKLOG
 #  define NET_DEFAULT_BACKLOG	1024

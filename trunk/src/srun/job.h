@@ -3,12 +3,14 @@
 #ifndef _HAVE_JOB_H
 #define _HAVE_JOB_H
 
-#include <pthread.h>
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif
 
 #include <netinet/in.h>
 
-#include <src/common/macros.h>
-#include <src/api/slurm.h>
+#include "src/common/macros.h"
+#include "src/api/slurm.h"
 
 typedef enum {
 	SRUN_JOB_INIT = 0,
