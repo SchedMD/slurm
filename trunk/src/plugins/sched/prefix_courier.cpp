@@ -47,14 +47,16 @@ prefix_courier_t::receive( void )
 	char *buf;
 
 	// * Read the packet size.
-	if ( read_bytes( header, 9 ) != 9 ) {
-		debug( "prefix_courier::receive: malformed message header" );
+	if ( courier_t::read_bytes( header, 9 ) != 9 ) {
+		if ( errno != 0 )
+			debug( "prefix_courier::receive: malformed header (wire)" );
 		return NULL;
 	}
 
 	// * Convert to binary.
 	if ( sscanf( header, "%ul", &size ) != 1 ) {
-		debug( "prefix_courier::receive: malformed message header" );
+		if ( errno != 0 )
+			debug( "prefix_courier::receive: malformed header (decode)" );
 		return NULL;
 	}
 
@@ -63,7 +65,7 @@ prefix_courier_t::receive( void )
 	xassert( buf );
 
 	// * Read the actual packet data.
-	if ( read_bytes( buf, size ) != size ) {
+	if ( courier_t::read_bytes( buf, size ) != size ) {
 		debug( "prefix_courier::receive: unable to receive fixed-length data" );
 		delete [] buf;
 		return NULL;
