@@ -69,7 +69,7 @@ static int part_sz_cpus, part_sz_disk, part_sz_mem;
 static const char equal_string[] = 
     "================================================================================\n";
 static const char dash_line[] =
-    "--------------------------------------------------------------------------------\n";
+    "------------------------------------------------------------------------\n";
 
 /************
  * Funtions *
@@ -660,6 +660,7 @@ _display_partition_node_info(struct partition_summary *partition,
 	char ram_buf[64];
 	char disk_buf[64];
 	char name_buf[64];
+	int  line_cnt = 0;
 
 
 	ListIterator node_i = list_iterator_create(partition->states);
@@ -667,6 +668,7 @@ _display_partition_node_info(struct partition_summary *partition,
 	char *part_name = partition->info->name;
 
 	while ((state_sum = list_next(node_i)) != NULL) {
+		line_cnt++;
 		_build_min_max_string(ram_buf, state_sum->ram_min,
 				      state_sum->ram_max);
 		_build_min_max_string(disk_buf, state_sum->disk_min,
@@ -701,6 +703,26 @@ _display_partition_node_info(struct partition_summary *partition,
 		part_name = no_name;
 	}
 	list_iterator_destroy(node_i);
+
+	if (line_cnt == 0) {
+		if (print_name == true) {
+			_print_str(part_name, part_sz_part, false);
+			printf(" ");
+		} else
+			printf("\t");
+		_print_int(0, part_sz_num, true);
+		printf(" ");
+		_print_str("N/A", part_sz_state, false);
+		printf(" ");
+		_print_str("0", part_sz_cpus, true);
+		printf(" ");
+		_print_str("0", part_sz_mem, true);
+		printf(" ");
+		_print_str("0", part_sz_disk, true);
+		printf(" ");
+		_print_str("", part_sz_nodes, false);
+		printf("\n");
+	}
 }
 
 static void _display_all_partition_info_long(List partitions)
