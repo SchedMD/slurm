@@ -127,8 +127,6 @@ typedef struct queued_request {
 	time_t       last_attempt;	/* Time of last xmit attempt */
 } queued_request_t;
 
-static int agent_sigarray[] = { SIGALRM, 0 };
-
 static void _alarm_handler(int dummy);
 static inline void _comm_err(char *node_name);
 static void _list_delete_retry(void *retry_entry);
@@ -171,7 +169,6 @@ void *agent(void *args)
 		goto cleanup;
 
 	xsignal(SIGALRM, _alarm_handler);
-	xsignal_unblock(agent_sigarray);
 
 	/* initialize the agent data structures */
 	agent_info_ptr = _make_agent_info(agent_arg_ptr);
@@ -598,7 +595,7 @@ static void *_thread_per_node_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
+	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT;
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
 			if (!srun_agent)
