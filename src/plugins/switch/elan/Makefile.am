@@ -29,7 +29,7 @@ switch_elan_la_LIBADD  = $(ELAN_LIBS)  $(top_builddir)/src/api/libslurm.la
 switch_elan_la_LDFLAGS = $(PLUGIN_FLAGS)
 
 else
-EXTRA_switch_none_la_SOURCES =  \
+EXTRA_switch_elan_la_SOURCES =  \
 	switch_elan.c           \
 	elanhosts.c elanhosts.h \
 	qsw.c qsw.h
