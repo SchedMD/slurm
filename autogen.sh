@@ -72,8 +72,8 @@ echo "running aclocal $ACLOCAL_FLAGS ... "
 aclocal $ACLOCAL_FLAGS
 echo "running autoheader ... "
 autoheader
-echo "running automake --add-missing ... "
-automake --add-missing
+echo "running automake --copy --add-missing ... "
+automake --force --copy --add-missing
 echo "running autoconf ... "
 autoconf
 if [ -e config.status ]; then
