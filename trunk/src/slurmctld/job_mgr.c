@@ -43,7 +43,7 @@
 #include <src/common/list.h>
 #include <src/common/macros.h>
 #include <src/common/pack.h>
-#include <src/common/slurm_protocol_errno.h>
+#include <src/common/slurm_errno.h>
 #include <src/common/xstring.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
@@ -1574,7 +1574,7 @@ top_priority (struct job_record *job_ptr) {
 
 /*
  * update_job - update a job's parameters per the supplied specifications
- * output: returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
+ * output: returns 0 on success, otherwise an error code from common/slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * locks.c - semaphore functions for slurmctld
+ *  locks.c - semaphore functions for slurmctld
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -39,6 +39,7 @@
 pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
 slurmctld_lock_flags_t slurmctld_locks;
+int kill_thread = 0;
 
 void wr_rdlock (lock_datatype_t datatype);
 void wr_rdunlock (lock_datatype_t datatype);
@@ -117,6 +118,8 @@ wr_rdlock (lock_datatype_t datatype)
 		} 
 		else {	/* wait for state change and retry */
 			pthread_cond_wait (&locks_cond, &locks_mutex);
+			if (kill_thread)
+				pthread_exit (NULL);
 		}
 	}
 	pthread_mutex_unlock (&locks_mutex);
@@ -148,6 +151,8 @@ wr_wrlock (lock_datatype_t datatype)
 		} 
 		else {	/* wait for state change and retry */
 			pthread_cond_wait (&locks_cond, &locks_mutex);
+			if (kill_thread)
+				pthread_exit (NULL);
 		}
 	}
 	pthread_mutex_unlock (&locks_mutex);
@@ -171,4 +176,12 @@ get_lock_values (slurmctld_lock_flags_t *lock_flags)
 		fatal ("get_lock_values passed null pointer");
 
 	memcpy ((void *)lock_flags, (void *) &slurmctld_locks, sizeof (slurmctld_locks) );
+}
+
+/* kill_locked_threads - Kill all threads waiting on semaphores */
+void
+kill_locked_threads ( void )
+{
+	kill_thread = 1;
+	pthread_cond_broadcast (&locks_cond);
 }

@@ -18,8 +18,7 @@
 
 #include <src/common/bitstring.h>
 #include <src/common/qsw.h>
-#include <src/common/xerrno.h>
-
+#include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/slurmd/task_mgr.h>
 #include <src/slurmd/interconnect.h>
@@ -43,18 +42,18 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	switch ((pid = fork())) 
 	{
 		case -1:
-			xperror("fork");
+			slurm_perror("fork");
 			exit(1);
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
-				xperror("wait");
+				slurm_perror("wait");
 				exit(1);
 			}
 			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
-				xperror("qsw_prgdestroy");
+				slurm_perror("qsw_prgdestroy");
 				exit(1);
 			}
 			exit(0);
@@ -63,7 +62,7 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	/* Process 2: */
 	if (qsw_prog_init(launch_msg -> qsw_job , launch_msg -> uid) < 0) 
 	{
-		xperror("qsw_prog_init");
+		slurm_perror("qsw_prog_init");
 		exit(1);
 	}
 	
@@ -78,18 +77,18 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 	int nodeid , nprocs , i ; 
 
 	if (qsw_setcap( task_start -> launch_msg -> qsw_job, i) < 0) {
-		xperror("qsw_setcap");
+		slurm_perror("qsw_setcap");
 		exit(1);
 	}
 	if (do_env(i, nodeid, nprocs) < 0) {
-		xperror("do_env");
+		slurm_perror("do_env");
 		exit(1);
 	}
 
 	pid = fork();
 	switch (pid) {
 		case -1:        /* error */
-			xperror("fork");
+			slurm_perror("fork");
 			exit(1);
 		case 0:         /* child falls thru */
 			return SLURM_SUCCESS ;
@@ -97,7 +96,7 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 		default:        /* parent */
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
-				xperror("waitpid");
+				slurm_perror("waitpid");
 				exit(1);
 			}
 			exit(0);

@@ -10,7 +10,6 @@
 
 #include <src/common/log.h>
 #include <src/common/list.h>
-#include <src/common/xerrno.h>
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_errno.h>

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * locks.h - definitions for semaphore functions for slurmctld (locks.c)
+ *  locks.h - definitions for semaphore functions for slurmctld (locks.c)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -112,6 +112,7 @@ typedef struct {
 
 extern void get_lock_values (slurmctld_lock_flags_t *lock_flags);
 extern void init_locks ( void );
+extern void kill_locked_threads ( void );
 extern void lock_slurmctld (slurmctld_lock_t lock_levels);
 extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
 
