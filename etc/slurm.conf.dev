@@ -10,6 +10,7 @@ FastSchedule=1
 FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
+InactiveLimit=120
 KillWait=30
 Prioritize=/usr/local/maui/priority
 ReturnToService=0
