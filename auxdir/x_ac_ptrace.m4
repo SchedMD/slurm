@@ -22,5 +22,7 @@ AC_DEFUN([X_AC_PTRACE], [
    [ptrace(PT_TRACE_ME,0,0,0,0);],
    [AC_DEFINE(PTRACE_FIVE_ARGS, 1,
              [Define to 1 if ptrace takes five arguments.])])
+
+  AC_CHECK_FUNCS(ptrace64, [], []) 
 ])
 
