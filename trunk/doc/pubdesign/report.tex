@@ -1,4 +1,3 @@
-
 % define some macros:
 \newcommand{\srun}{{\tt srun}}
 \newcommand{\scancel}{{\tt scancel}}
@@ -33,8 +32,6 @@ resource management system.
 %\end{center}
 
 \newpage
-
-
 
 \section{Overview}
 
@@ -149,16 +146,17 @@ tools performing these functions.
 
 \subsection{Architecture}
 
-\begin{figure}[htb]
+
+\begin{figure}[tb]
 \centerline{\epsfig{file=arch.eps}}
 \caption{SLURM Architecture}
 \label{arch}
 \end{figure}
 
-\begin{figure}[htb]
-\centerline{\epsfig{file=slurm-arch.eps,scale=0.5}}
-\caption{SLURM Architecture - Subsystems}
-\label{archdetail}
+\begin{figure}[tcb]
+\centerline{\epsfig{file=figures/entities.eps,scale=0.5}}
+\caption{SLURM Entities}
+\label{entities}
 \end{figure}
 
 
@@ -168,6 +166,31 @@ a management node (with optional fail-over twin), and a four command line
 utilities: {\tt srun}, {\tt scancel}, {\tt squeue}, and {\tt scontrol},
 which can run anywhere in the cluster.  A scalable communications library
 ties these components together.
+
+The entities managed by these SLURM daemons include {\em nodes}, the
+compute resource in SLURM, {\em partitions}, which group nodes into
+logical disjoint sets, {\em jobs}, or allocations of resources assigned
+to a user for a specified amount of time, and {\em job steps}, which are
+sets of parallel tasks within a job.  Jobs are created within partitions
+until the resources (nodes) within that paritition are exhausted. Once
+a job is assigned to a set of nodes, the user will be able to initiate
+parallel work in the form of job steps in any configuration within the
+allocation. For instance a single job step may be started which utilizes
+all nodes within the job, or several job steps may each use a portion
+of the allocation.
+
+Figure~\ref{entities} further illustrates the interrelation of these
+entities as they are managed by SLURM. The diagram shows a group of
+compute nodes split into two partitions. Partition 1 is running one
+job, with one job step utilizing the full allocation within that job.
+The job in Partition 2 has only one job step using half of the original
+job allocation.
+
+\begin{figure}[tb]
+\centerline{\epsfig{file=slurm-arch.eps,scale=0.5}}
+\caption{SLURM Architecture - Subsystems}
+\label{archdetail}
+\end{figure}
 
 Figure~\ref{archdetail} exposes the subsystems that are implemented
 within the {\tt slurmd} and {\tt slurmctld} daemons.  These subsystems
@@ -321,21 +344,6 @@ line options select the stdin handling method such as broadcast to all
 tasks, or send only to task 0.}, and respond to signals from the user.
 \srun\ may also be instructed to allocate a set of resources and
 spawn a shell with access to those resources.
-
-%\item {\tt srun}: Submit a job for execution.  {\tt srun} may run 
-%in either interactive or batch mode.  {\tt srun}'s standard input (if
-%it is a file) is copied to the controller, which copies it to {\tt
-%slurmd}'s\footnote{{\tt srun} command line options select the stdin
-%handling method such as broadcast to all tasks, or send only to task 0.}
-%After job submission, batch {\tt srun} terminates, while interactive
-%{\tt srun} establishes connections with {\tt slurmd}'s to get standard
-%output and error of the tasks in real time, and responds to signals
-%from the user.\footnote{From the controller's point of view there
-%is no difference between batch and interactive jobs;  an interactive
-%{\tt srun} may detach from its job, leaving it to continue running as
-%though submitted in batch mode.  It is also possible for {\tt srun}
-%to attach to a job interactively that was submitted in batch mode,
-%subject to authentication.}
 
 \end{itemize}
 
@@ -1106,6 +1114,167 @@ to a user's terminal at a later time by running
 \end{verbatim}
 at any time, though the remote \srun\ will not be terminated as the result 
 of an attach.
+
+\section{Job Initiation Design}
+
+There are three modes in which jobs may be run by users under SLURM. The
+first and most simple is {\em interactive} mode, in which stdout and
+stderr are displayed on the user's terminal in real time, and stdin and
+signals may be forwarded from the  terminal transparently to the remote
+tasks. The second is {\em batch} or {queued} mode, in which the job is
+queued until the request for resources can be met, at which time the
+job is run by SLURM as the submitting user. In {\em allocate} mode,
+a job is allocated to the requesting user, under which the user may
+manually run job steps via a script or in a subshell spawned by \srun .
+
+\begin{figure}[tb]
+\centerline{\epsfig{file=figures/connections.eps,scale=0.25}}
+\caption{\small Job initiation connections overview. 1. \srun\ connects to 
+         \slurmctld\ requesting resources. 2. \slurmctld\ issues a response,
+	 with list of nodes and job credential. 3. \srun\ opens a listen
+	 port for every task in the job step, then sends a run job step
+	 request to \slurmd . 4. \slurmd 's initiate job step and connect
+	 back to \srun\ for stdout/err. }
+\label{connections}
+\end{figure}
+
+Figure~\ref{connections} gives a high-level depiction of the connections
+that will occur between SLURM components during a general interactive job
+startup. \srun\ will request resources from the \slurmctld\ which will 
+respond with the list of allocated nodes, timelimit, job credential, etc.
+if the request is granted. \srun\ then initializes listen ports for each
+task and sends a message to the \slurmd 's on the allocated nodes requesting
+that the remote processes be initiated. The \slurmd 's begin execution of
+the tasks and connect back to \srun\ for stdout and stderr. This process and
+the other initiation modes are described in more detail below.
+
+\subsection{Interactive job initiation}
+
+\begin{figure}[tb]
+\centerline{\epsfig{file=figures/interactive-job-init.eps,scale=0.5} }
+\caption{\small Interactive job initiation. \srun\ simultaneously allocates nodes
+         and a job step from \slurmctld\ then sends a run request to all
+	 \slurmd 's in job. Dashed arrows indicate a periodic request that
+	 may or may not occur during the lifetime of the job.}
+\label{init-interactive}
+\end{figure}
+
+Interactive job initiation is illustrated in figure~\ref{init-interactive}.
+The process begins with a user invoking \srun\ in interactive mode -- in 
+figure~\ref{init-interactive}, the user has requested an interactive
+run of the executable ``{\tt cmd}'' in the default partition. 
+
+After processing command line options, \srun\ sends a message to
+\slurmctld\ registering a job step. This message simultaneously requests
+an allocation (or job) and a job step. \srun\ waits for a reply from
+\slurmctld , which may not come instantly if the user has requested that
+\srun\ block until resources are available. When resources are available
+for the user's job, \slurmctld\ replies with a job credential, list of
+nodes that were allocated, cpus per node, and so on. \srun\ then sends
+a message each \slurmd\ on the allocated nodes requesting that a job
+step be initiated. The \slurmd 's verify that the job is valid using
+the forwarded job credential and then respond to \srun .
+
+Each \slurmd\ invokes a job thread to handle the request, which in turn
+invokes a task thread for each requested task. The task thread connects
+back to a port opened by \srun\ for stdout and stderr. The host and
+port for this connection is contained in the run request message sent
+to this machine by \srun . Once stdout and stderr have successfully 
+been connected, the task thread takes the necessary steps to initiate 
+the user's executable on the node, initializing environment, current
+working directory, and interconnect resources if needed. 
+
+Once the user process exits, the task thread records the exit status and
+sends a task exit message back to \srun . When all local processes
+terminate, the job thread exits. The \srun\ process will either wait
+for all tasks to exit, or attempt to clean up the remaining processes
+when a single task exits based upon user option. Regardless, once all
+tasks are finished, \srun\ sends a message to the \slurmctld\ releasing
+the allocated nodes, then exits with an appropriate exit status.
+
+When the \slurmctld\ recieves notification that \srun\ no longer needs
+the allocated nodes, it issues a request for the epilog to be run on each of
+the \slurmd 's in the allocation. As \slurmd 's report that the epilog ran
+successfully, the nodes are returned to the partition.
+
+\subsection{Queued (batch) job initiation}
+
+\begin{figure}[tb]
+\centerline{\epsfig{file=figures/queued-job-init.eps,scale=0.5} }
+\caption{\small Queued job initiation. 
+         \slurmctld\ initiates the user's job as a batch script on one node. 
+	 Batch script contains an srun call which initiates parallel tasks 
+	 after instantiating job step with controller. The shaded region is 
+	 a compressed representation and is illustrated in more detail in the 
+	 interactive diagram (figure~\ref{init-interactive}).}
+\label{init-batch}
+\end{figure}
+
+Figure~\ref{init-batch} illustrates the initiation of a queued job in SLURM.
+The user invokes srun in batch mode by supplying the {\tt --batch} option 
+to \srun . Once user options are processed, \srun\ sends a batch job request
+to \slurmctld\ that contains the input/output location for the job, current
+working directory, environment, requested number of nodes, etc. The 
+\slurmctld\ queues the request in its priority ordered queue. 
+
+Once the resources are available and the job has a high enough priority,
+\slurmctld\ allocates the resources to the job and contacts the first node 
+of the allocation requesting that the user ``job'' be started. In this case
+the job may either be another invocation of \srun\ or a {\em job script} which
+has multiple invocations of \srun\ within it. The \slurmd\ on the remote
+node responds to the run request, initiating the job thread, task thread, 
+and user script. An \srun\ executed from within the script detects that it
+has access to an allocation and initiates a job step on some or all of the
+nodes within the job.
+
+Once the job step is complete, the \srun\ in the job script notifies the
+\slurmctld\, and terminates. The job script continues executing and may
+initiate further job steps. Once the job script completes, the task
+thread running the job script collects the exit status and sends a task exit
+message to the \slurmctld . The \slurmctld\ notes that the job is complete
+and requests that the job epilog be run on all nodes that were allocated.
+As the \slurmd 's respond with successful completion of the epilog, 
+the nodes are returned to the partition.
+
+\subsection{Allocate mode initiation}
+
+\begin{figure}[tb]
+\centerline{\epsfig{file=figures/allocate-init.eps,scale=0.5} }
+\caption{\small Job initiation in allocate mode. Resources are allocated and
+         \srun\ spawns a shell with access to the resources. When user runs 
+	 an \srun\ from within the shell, the a job step is initiated under
+	 the allocation.}
+\label{init-allocate}
+\end{figure}
+
+In allocate mode, the user wishes to allocate a job and interactively run
+job steps under that allocation. The process of initiation in this mode
+is illustrated in figure~\ref{init-allocate}. The invoked \srun\ sends
+an allocate request to \slurmctld , which, if resources are available,
+responds with a list of nodes allocated, time limit, etc. The \srun\
+process spawns a shell on the user's terminal with access to the
+allocation,  then waits for the shell to exit (at which time the job
+will be considered complete). 
+
+An \srun\ initiated within the allocate subshell will recognize that it
+is running under an allocation and therefore already within a job. Provided
+with no other arguments, \srun\ started in this manner will initiate a job
+step on all nodes within the current job. However, the user may select
+a subset of these nodes implicitly by using the \srun\ {\tt --nodes}  
+option, or explicitly by specifying a relative nodelist 
+( {\tt --nodelist=[0-5]} ). 
+
+An \srun\ executed from the subshell will read the environment and
+user options, then notify the controller that it is starting a job step
+under the current job. The \slurmctld\ registers the job step and responds
+with a job credential. \srun\ then initiates the job step using the same
+general method as described in the section on interactive job initiation.
+
+When the user exits the allocate subshell, the original \srun\ recieves
+exit status, notifies \slurmctld\ that the job is complete, and exits. 
+The controller runs the epilog on each of the allocated nodes, returning
+nodes to the partition as they complete the epilog.
+
 
 \section{Infrastructure: Communications Library}
 
