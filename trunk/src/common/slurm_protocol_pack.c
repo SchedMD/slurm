@@ -72,13 +72,19 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
+		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
+		case REQUEST_WILL_JOB_RUN : 
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
+		case RESPONSE_RESOURCE_ALLOCATION :
+		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
+		case RESPONSE_WILL_JOB_RUN :
+			pack_job_allocation_response_msg ( ( job_allocation_response_msg_t * ) msg -> data , buffer , buf_len ) ;
+			break ;
 
-			
 		case REQUEST_CANCEL_JOB :
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
@@ -169,10 +175,17 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
+		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
+		case REQUEST_WILL_JOB_RUN : 
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
+			break ;
+		case RESPONSE_RESOURCE_ALLOCATION :
+		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
+		case RESPONSE_WILL_JOB_RUN :
+			unpack_job_allocation_response_msg ( ( job_allocation_response_msg_t ** ) & ( msg -> data ) , buffer , buf_len ) ;
 			break ;
 
 		case REQUEST_CANCEL_JOB :
@@ -226,6 +239,31 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break;
 		
 	}
+	return 0 ;
+}
+
+void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, char ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> job_id , ( void ** ) buffer , length ) ;
+	packstr ( msg -> node_list , ( void ** ) buffer , length ) ;
+}
+
+int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , char ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	job_allocation_response_msg_t * tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( job_allocation_response_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+	{
+		return ENOMEM;
+	}
+
+	/* load the data values */
+	/* unpack timestamp of snapshot */
+	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
+	*msg = tmp_ptr ;
 	return 0 ;
 }
 

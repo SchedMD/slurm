@@ -194,6 +194,15 @@ void slurm_free_node_table ( node_table_t * node )
 	}
 }
 
+void slurm_free_job_allocation_response_msg ( job_allocation_response_msg_t * job_alloc_resp_msg )
+{
+	if ( job_alloc_resp_msg )
+	{
+		if ( job_alloc_resp_msg -> node_list )
+			xfree ( job_alloc_resp_msg -> node_list);
+		xfree ( job_alloc_resp_msg ) ;
+	}	
+}
 
 
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
