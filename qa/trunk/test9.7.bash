@@ -66,7 +66,7 @@ do
 		exit_code=$rc
 	fi
 	sleep $sleep_time
-	$exec2 -N1-$inx -c1 -s -l hostname         >>$log 2>&1
+	$exec2 -N1-$inx -n$inx -O -s -l hostname         >>$log 2>&1
 	rc=$?
 	if [ $rc -ne 0 ]; then
 		exit_code=$rc
