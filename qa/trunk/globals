@@ -14,6 +14,8 @@ set sinfo       "sinfo"
 set squeue      "squeue"
 set srun        "srun"
 
+set mpi_ping	"/usr/lib/mpi-test/mping"
+
 #
 # Specify locations of other executable files used
 # Only the shell names (e.g. bin_bash) must be full pathnames
