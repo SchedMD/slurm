@@ -189,9 +189,10 @@ void log_flush(void);
  */
 
 /* fatal() aborts program unless NDEBUG defined
+ * error() returns SLURM_ERROR
  */
 void	fatal(const char *, ...);
-void	error(const char *, ...);
+int	error(const char *, ...);
 void	info(const char *, ...);
 void	verbose(const char *, ...);
 void	debug(const char *, ...);
