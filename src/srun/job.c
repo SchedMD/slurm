@@ -611,12 +611,46 @@ int    job_resp_hack_for_step(resource_allocation_response_msg_t *resp)
 static int 
 _job_resp_add_nodes(bitstr_t *req_bitmap, bitstr_t *exc_bitmap, int node_cnt)
 {
-	int inx;
+	int inx, offset;
 	int total = bit_set_count(req_bitmap);
 	int max_nodes = MAX(opt.min_nodes, opt.max_nodes);
 
-	for (inx=0; ((inx<node_cnt) && (total<max_nodes)); inx++) {
-		if (bit_test(exc_bitmap, inx) || bit_test(req_bitmap, inx))
+	/* work up from first allocated node to first excluded node */
+	offset = bit_ffs(req_bitmap);
+	if (offset == -1)	/* no specific required nodes)
+		offset = 0;	/* start at beginning */
+	for (inx=offset; inx<node_cnt; inx++) {
+		if (total >= max_nodes) 
+			break;
+		if (bit_test(exc_bitmap, inx))
+			break;
+		if (bit_test(req_bitmap, inx))
+			continue;
+		bit_set(req_bitmap, inx);
+		total++;
+	}
+
+	/* then work down from first allocated node to first excluded node */
+	for (inx=offset; inx>=0; inx--) {
+		if (total >= max_nodes) 
+			break;
+		if (bit_test(exc_bitmap, inx))
+			break;
+		if (bit_test(req_bitmap, inx))
+			continue;
+		bit_set(req_bitmap, inx);
+		total++;
+	}
+	if (opt.contiguous)
+		return total;
+
+	/* then get everything else */
+	for (inx=0; inx<node_cnt; inx++) {
+		if (total >= max_nodes) 
+			break;
+		if (bit_test(exc_bitmap, inx))
+			continue;
+		if (bit_test(req_bitmap, inx))
 			continue;
 		bit_set(req_bitmap, inx);
 		total++;
