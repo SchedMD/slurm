@@ -1,0 +1,15 @@
+# 
+# Sample /etc/SLURM.conf2
+# Author: John Doe
+# Date: 11/06/2001
+#
+Administrators=cdunlap,garlick,grondo,jette
+#
+ControlMachine=linux
+BackupController=blue199.pacific.llnl.gov
+#
+NodeSpecConf=/g/g0/jette/slurm-code/etc/sample.node.conf2
+PartitionConf=/g/g0/jette/slurm-code/etc/sample.part.conf2
+#
+ControlDaemon=/g/g0/jette/slurm-code/Controller
+ServerDaemon=/g/g0/jette/slurm-code/Server

@@ -1,0 +1,370 @@
+.TH SRUN "1" "February 2002" "srun 0.1" "slurm components"
+.SH "NAME"
+srun \- run parallel jobs
+.SH SYNOPSIS
+.B srun
+[\fIOPTIONS\fR...] \fIexecutable \fR[\fIargs\fR...]
+.br
+.B srun
+\-\-allocate [\fIOPTIONS\fR...] [job_script]
+.br
+.B srun
+\-\-attach=jobid
+.SH DESCRIPTION
+Allocate resources and optionally initiate parallel jobs on
+clusters managed by SLURM.
+.TP
+parallel run options
+.TP
+\fB\-n\fR, \fB\-\-nprocs\fR=\fInprocs\fR
+Specify the number of processes to run. Request that
+.B srun
+allocate \fInprocs\fR processes. Specification of the number of processes
+per node may be achieved with the
+.B -c
+and
+.B -N
+options. If unspecified, the default is one process.
+.TP
+\fB\-c\fR, \fB\-\-cpus\fR=\fIncpus\fR
+Request that \fIncpus\fR be allocated \fBper process\fR. This may be
+useful if the job will be multithreaded and requires more than one cpu
+per task for optimal performance. The default is one cpu per process.
+.TP
+\fB\-N\fR, \fB\-\-nodes\fR=\fInnodes\fR
+Request that \fInnodes\fR nodes be allocated to this job. The default
+is to allocate one cpu per process, such that nodes with one cpu will
+run one process, nodes with 2 cpus will be allocated 2 processes, etc.
+The distribution of processes across nodes may be controlled using this
+option along with the
+.B -n
+and
+.B -c
+options.
+.TP
+\fB\-p\fR, \fB\-\-partition\fR=\fIpartition\fR
+Request resources from partition "\fIpartition\fR." Partitions
+are created by the slurm administrator.
+.TP
+\fB\-\-cddir\fR=\fIpath\fR
+have the remote processes do a chdir to \fIpath\fR before beginning
+execution. The default is to chdir to the current working directory
+of the \fBsrun\fR process.
+.TP
+\fB\-I\fR, \fB\-\-immediate\fR
+exit if resources are not immediately
+available. By default, \fB\-\-immediate\fR is off, and
+.B srun
+will block until resources become available.
+.TP
+\fB\-O\fR, \fB\-\-overcommit\fR
+overcommit resources. Normally,
+.B srun
+will not allocate more than one process to a cpu. By specifying
+\fB\-\-overcommit\fR you are explicitly allowing more than one process
+per cpu.
+.TP
+\fB\-l\fR, \fB\-\-label\fR
+prepend task number to lines of stdout/err. Normally, stdout and stderr
+from remote tasks is line-buffered directly to the stdout and stderr of
+.B srun
+. The \fB\-\-label\fR option will prepend lines of output with the remote
+task id.
+.TP
+\fB\-m\fR, \fB\-\-distribution\fR=(\fIblock\fR|\fIcyclic\fR)
+Specify an alternate distribution method for remote processes.
+.RS
+.TP
+.B block
+The block method of distribution will allocate processes in-order to
+the cpus on a node. This is the default behavior.
+.TP
+.B cyclic
+The cyclic method distributes processes in a round-robin fashion across
+the allocated nodes. That is, process 1 will be allocated to the first
+node, process 2 to the second, and so on.
+.RE
+.TP
+\fB\-J\fR, \fB\-\-job\-name\fR=\fIjobname\fR
+Specify a name for the job. The specified name will appear along with
+the job id number when querying running jobs on the system. The default
+is an empty name.
+.TP
+\fB\-o\fR, \fB\-\-output\fR=\fIout\fR
+Specify how stdout is to be directed. By default,
+.B srun
+collects stdout from all tasks and line buffers this output to
+the attached terminal. With \fB\-\-output\fR stdout may be redirected
+to a file, to one file per task, or to /dev/null. See \fBIO Redirection\fR
+below.
+.TP
+\fB\-i\fR, \fB\-\-input\fR=\fIin\fR
+Specify how stdin is to redirected. By default,
+.B srun
+redirects stdin to all tasks from /dev/null. See \fBIO Redirection\fR
+below for more options.
+.TP
+\fB\-e\fR, \fB\-\-error\fR=\fIerr\fR
+Specify how stderr is to be redirected. By default,
+.B srun
+redirects stderr to the same file as stdout, if one is specified. The
+\fB\-\-error\fR option is provided to allow stdout and stderr to be
+redirected to different locations.
+See \fBIO Redirection\fR below for more options.
+.TP
+\fB\-b\fR, \fB\-\-batch\fR
+Submit in "batch mode." \fBsrun\fR will allocate resources and "detach" -
+starting another \fBsrun\fR on the first allocated node to manage the
+job.  stdin will be redirected from /dev/null, stdout and stderr will be
+redirected to a file (default is \fIjobname\fR.out or \fIjobid\fR.out in
+current working directory, see \fB\-o\fR for other IO options).
+.TP
+\fB\-v\fR, \fB\-\-verbose\fR
+verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
+.B srun.
+.TP
+\fB\-d\fR, \fB\-\-debug\fR
+enable debug output. Multiple \fB-d\fR's increase the debug level of
+.B srun
+.PP
+Allocate options:
+.TP
+\fB\-A\fR, \fB\-\-allocate\fR
+allocate resources and spawn a shell. When \fB\-\-allocate\fR is specified to
+.B srun
+, no remote tasks are started. Instead a subshell is started that has access
+to the allocated resources. Multiple jobs can then be run on the same cpus
+from within this subshell. See \fBAllocate Mode\fR below.
+.PP
+Attach to running job:
+.TP
+\fB\-a\fR, \fB\-\-attach\fR=\fIid\fR
+This option will attach
+.B srun
+to a running job with job id = \fIid\fR. Provided that the calling user
+has access to that running job, stdout and stderr will be redirected to the
+current session and signals received by
+.B srun
+will be forwarded to the remote processes.
+.TP
+\fB\-j\fR, \fB\-\-join\fR
+Join with running job. This will duplicate stdout/stderr to the calling
+\fBsrun\fR. stdin and signals will not be propagated to the job.
+\fB\-\-join\fR is only allowed with \fB\-\-attach\fR.
+.TP
+\fB\-s\fR, \fB\-\-steal\fR
+Steal the connection to the running job. This will close any open
+sessions with the specified job and allow stdin and signals to be propagated.
+\fB\-\-steal\fR is only allowed with \fB\-\-attach\fR.
+.PP
+Constraint Options. The following options all put constraints on the nodes
+that may be considered for the job:
+.TP
+\fB\-\-mincpus\fR=\fIn\fR
+Specify minimum number of cpus per node
+.TP
+\fB\-\-mem\fR=\fIMB\fR
+Specify a minimum amount of real memory
+.TP
+\fB\-\-vmem\fR=\fIMB\fR
+Specify a minimum amount of virtual memory
+.TP
+\fB\-\-tmp\fR=\fIMB\fR
+Specify a minimum amount of temporary disk space
+.TP
+\fB\-C\fR, \fB\-\-constraint\fR=\fIlist\fR
+specify a list of constraints. The \fIlist\fR of constraints is
+a comma separated list of features that have been assigned to the
+nodes by the slurm administrator. If no nodes have the requested
+feature, then the job will be rejected by the slurm job manager.
+.TP
+\fB\-\-contiguous\fR
+demand a contiguous range of nodes. The default is on. Specify
+--contiguous=no if a contiguous range of nodes is not a constraint.
+.TP
+\fB\-w\fR, \fB\-\-nodelist\fR=\fIhost1,host2,...\fR or \fIfilename\fR
+request a specific list of hosts. The job will contain \fIat least\fR
+these hosts. The list may be specified as a comma-separated list of
+hosts, a range of hosts (host[1-5,7,...] for example), or a filename.
+The host list will be assumed to be a filename if it contains a "/"
+character.
+.PP
+Help options
+.TP
+-?, \fB\-\-help\fR
+Show this help message
+.TP
+\fB\-\-usage\fR
+Display brief usage message
+.PP
+Other options
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+output version information and exit
+.PP
+Unless the \fB\-a\fR (\fB\-\-attach\fR) or \fB-A\fR (\fB\-\-allocate\fR)
+options are specified (see \fBAllocate mode\fR and \fBAttaching to jobs\fR
+below),
+.B srun
+will submit the job request to the slurm job controller, then initiate all
+processes on the remote nodes. If the request cannot be met immediately,
+.B srun
+will block until the resources are free to run the job. If the
+\fB\-I\fR (\fB\-\-immediate\fR) option is specified
+.B srun
+will terminate if resources are not immediately available.
+.PP
+When initiating remote processes
+.B srun
+will propagate the current working directory, unless
+\fB\-\-cddir\fR=\fIpath\fR is specified, in which case \fIpath\fR will
+become the working directory for the remote processes.
+.PP
+The \fB-n\fB, \fB-c\fR, and \fB-N\fR options control how CPUs  and
+nodes will be allocated to the job. When specifying only the number
+of processes to run with \fB-n\fR, a default of one CPU per process
+is allocated. By specifying the number of CPUs required per task (\fB-c\fR),
+more than one CPU may be allocated per process. If the number of nodes
+is specified with \fB-N\fR,
+.B srun
+will attempt to allocate \fIat least\fR the number of nodes specified.
+.PP
+Combinations of the above three options may be used to change how
+processes are distributed across nodes and cpus. For instance, by specifying
+both the number of processes and number of nodes on which to run, the
+number of processes per node is implied. However, if the number of CPUs
+per process is more important then number of processes (\fB-n\fR) and the
+number of CPUs per process (\fB-c\fR) should be specified.
+.PP
+.B srun
+will refuse to  allocate more than one process per CPU unless
+\fB\-\-overcommit\fR (\fB\-O\fR) is also specified.
+.PP
+.B srun
+will attempt to meet the above specifications "at a minimum." That is,
+if 16 nodes are requested for 32 processes, and some nodes do not have
+2 CPUs, the allocation of nodes will be increased in order to meet the
+demand for CPUs. In other words, a \fIminimum\fR of 16 nodes are being
+requested. However, if 16 nodes are requested for 15 processes,
+.B srun
+will consider this an error, as 15 processes cannot run across 16 nodes.
+.PP
+.B "IO Redirection"
+.PP
+By default stdout and stderr will be redirected from all tasks to the
+stdout and stderr of
+.B srun
+, and stdin will be redirected from /dev/null to all tasks. This
+behavior may be changed with the \fB\-\-output\fR, \fB\-\-error\fR,
+and \fB\-\-input\fR (\fB\-o\fR, \fB\-e\fR, \fB\-i\fR) options. Valid
+arguments to these options are
+.TP 10
+all
+stdout stderr is redirected from all tasks to srun (This is the default).
+stdin is forwarded to all tasks.
+.TP
+none
+stdout and stderr are redirected to /dev/null.
+stdin is redirected from /dev/null (This is the default for stdin)
+.TP
+filename
+stdout and stderr are redirected to the named file (relative to the
+current working directory of the job). stdin is redirected from the
+named file.
+.TP
+format string
+If a format string is provided (such as "output.%d"),
+.B srun
+will open one file per task passing the task id as the argument to
+the format string. The format specifier may be any valid printf
+format, as long as it takes a numeric argument.
+.PP
+.PP
+.B "Allocate Mode"
+.PP
+When the allocate option is specified (\fB\-A\fR, \fB\-\-allocate\fR)
+\fBsrun\fR will not initiate any remote processes after acquiring
+resources. Instead, \fBsrun\fR will spawn a subshell which has access
+to the acquired resources. Subsequent instances of \fBsrun\fR from within
+this subshell will then run on these resources.
+.PP
+If the name of a script is specified on the
+commandline with \fB\-\-allocate\fR, the spawned shell will run the
+specified script. Resources allocated in this way will only be freed
+when the subshell terminates.
+.PP
+.B "Attaching to a running job"
+.PP
+Use of the \fB-a\fR \fIjobid\fR (or \fB\-\-attach\fR) option allows
+\fBsrun\fR to reattach to a running job, receiving stdout and stderr
+from the job and forwarding signals to the job, just as if the current
+session of \fBsrun\fR had started the job. (stdin, however, cannot
+be forwarded to the job).
+.PP
+There are two ways to reattach to a running job. The default method
+is to steal any current connections to the job. In this case, the
+\fBsrun\fR process currently managing the job will be terminated, and
+control will be relegated to the caller. To allow the current
+\fBsrun\fR to continue managing the running job, the \fB\-j\fB
+(\fB\-\-join\fR) option may be specified. When joining with the
+running job, stdout and stderr are duplicated to the new \fBsrun\fR
+session, but signals are not forwarded to the remote job.
+.PP
+Node and CPU selection options do not make sense when specifying 
+\fB\-\-attach\fR, and it is an error to use \fB-n\fR, \fB-c\fR, 
+or \fB-N\fR in attach mode.
+.PP
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some
+.B srun
+options may be set via environment variables. These environment
+variables, along with their corresponding options, are listed below.
+(Note: commandline options will always override these settings)
+.TP 20
+SLURM_NPROCS
+\fB\-n, \-\-nprocs\fR=\fIn\fR
+.TP
+SLURM_CPUS_PER_TASK
+\fB\-c, \-\-ncpus\fR=\fIn\fR
+.TP
+SLURM_NNODES
+\fB\-N, \-\-nodes\fR=\fIn\fR
+.TP
+SLURM_PARTITION
+\fB\-p, --partition\fR=\fIpartition\fR
+.TP
+SLURM_STDOUTMODE
+\fB\-o, \-\-output\fR=\fImode\fR
+.TP
+SLURM_STDINMODE
+\fB\-i, \-\-input\fR=\fImode\fR
+.TP
+SLURM_STDERRMODE
+\fB\-e, \-\-error\fR=\fImode\fR
+.TP
+SLURM_DISTRIBUTION
+\fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)
+.TP
+SLURM_DEBUG
+\fB\-d, \-\-debug\fR
+.PP
+Additionally,
+.B srun
+will set some environment variables  in the environment of the
+executing tasks on the remote compute nodes. These environment variables
+are:
+.TP 20
+SLURM_JOBID
+job id of the executing job.
+.TP
+SLURM_RANK
+the MPI rank of the current process
+.TP
+SLURM_NPROCS
+total number of processes in the current job
+.TP
+SLURM_NODELIST
+list of nodes that the slurm job is executing on.
+.TP
+.SH "SEE ALSO"

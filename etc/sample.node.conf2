@@ -1,0 +1,49 @@
+# 
+# Sample sample.node.conf2
+# Author: John Doe
+# Date: 11/06/2001
+#
+Name=DEFAULT OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 State=IDLE
+#
+# lx01-lx02 for login only, no state is DOWN for SLURM initiated jobs
+Name=lx01 State=DOWN
+Name=lx02 State=DOWN
+#
+# lx03-lx09 for partitions 1 (debug) and 3 (super)
+Name=DEFAULT Partition=1,3
+Name=lx03
+Name=lx04
+Name=lx05 
+Name=lx06 
+Name=lx07 TmpDisk=4096
+Name=lx08 
+Name=lx09 
+#
+# lx10-lx30 for partitions 0 (pbatch) and 3 (super)
+Name=DEFAULT Partition=0,3
+Name=lx10 
+Name=lx11 VirtualMemory=2048
+Name=lx12 RealMemory=1024 
+Name=lx13 
+Name=lx14 CPUs=32
+Name=lx15
+Name=lx16 
+Name=lx17 State=DOWN
+Name=lx18
+Name=lx19 
+Name=lx20 
+Name=lx21 
+Name=lx22 CPUs=8
+Name=lx23 
+Name=lx24 
+Name=lx25 
+Name=lx26 
+Name=lx27 
+Name=lx28 
+Name=lx29 
+Name=lx30 
+#
+# lx31-lx32 for partitions 4 (class) and 3 (super)
+Name=DEFAULT Partition=3,4
+Name=lx31 
+Name=lx32 
