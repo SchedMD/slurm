@@ -69,7 +69,9 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
+
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
 #define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
@@ -204,6 +206,13 @@ int main(int argc, char *argv[])
 
 	if (xsignal_block(controller_sigarray) < 0)
 		error("Unable to block signals");
+
+	/*
+	 * Initialize scheduling.
+	 */
+	if ( slurm_sched_init() != SLURM_SUCCESS ) {
+		fatal( "failed to initialize scheduling" );
+	}
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -377,6 +386,11 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received");
+			/*
+			 * XXX - need to shut down the scheduler
+			 * plugin, re-read the configuration, and then
+			 * restart the (possibly new) plugin.
+			 */
 			lock_slurmctld(config_write_lock);
 			error_code = read_slurm_conf(0);
 			unlock_slurmctld(config_write_lock);

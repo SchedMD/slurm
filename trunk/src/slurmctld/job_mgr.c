@@ -57,6 +57,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 
 #define DETAILS_FLAG 0xdddd
@@ -1934,6 +1935,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
+	detail_ptr->req_tasks = job_desc->num_tasks;
 	if (job_desc->req_nodes) {
 		detail_ptr->req_nodes = 
 				_copy_nodelist_no_dup(job_desc->req_nodes);
@@ -2572,7 +2574,7 @@ static void _set_job_prio(struct job_record *job_ptr)
 {
 	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
-	job_ptr->priority = default_prio--;
+	job_ptr->priority = slurm_sched_initial_priority();
 }
 
 
