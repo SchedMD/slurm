@@ -42,9 +42,8 @@
 
 extern bool _initialized;
 
-struct pa_request;
-typedef struct pa_request {
-	int* geometry;
+typedef struct {
+	int geometry[PA_SYSTEM_DIMENSIONS];
 	int size; 
 	int conn_type;
 	bool rotate;
@@ -57,7 +56,7 @@ typedef struct pa_request {
  * hard coded for 1d-3d only!  (just have the higher order dims as
  * null if you want lower dimensions).
  */
-typedef struct pa_node {
+typedef struct {
 	/* set if using this node in a partition*/
 	bool used;
 
@@ -67,10 +66,14 @@ typedef struct pa_node {
 	/* shallow copy of the conf_results.  initialized and used as
 	 * array of Lists accessed by dimension, ie conf_result_list[dim]
 	 */
-	List* conf_result_list; 
+	List conf_result_list[PA_SYSTEM_DIMENSIONS]; 
 	
 } pa_node_t;
 
+typedef struct {
+	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
+	pa_node_t ***grid;
+} pa_system_t;
 /**
  * create a partition request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
@@ -89,7 +92,7 @@ typedef struct pa_node {
  * 
  * return success of allocation/validation of params
  */
-int new_pa_request(pa_request_t** pa_request, 
+int new_pa_request(pa_request_t* pa_request, 
 		    int geometry[PA_SYSTEM_DIMENSIONS], int size, 
 		    bool rotate, bool elongate, 
 		    bool force_contig, int conn_type);
@@ -97,12 +100,12 @@ int new_pa_request(pa_request_t** pa_request,
 /**
  * delete a partition request 
  */
-void delete_pa_request(struct pa_request* pa_request);
+void delete_pa_request(pa_request_t* pa_request);
 
 /**
  * print a partition request 
  */
-void print_pa_request(struct pa_request* pa_request);
+void print_pa_request(pa_request_t* pa_request);
 
 /**
  * Initialize internal structures by either reading previous partition
@@ -135,7 +138,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
  * 
  * return: success or error of request
  */
-int allocate_part(struct pa_request* pa_request, List* results);
+int allocate_part(pa_request_t* pa_request, List* results);
 
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
