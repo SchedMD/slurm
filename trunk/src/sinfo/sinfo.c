@@ -244,13 +244,13 @@ static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node)
  *****************************************************************************/
 static const char display_line[] =
     "--------------------------------------------------------------------------------\n";
-int node_sz_name = 15;
-int node_sz_state = 8;
-int node_sz_cpus = 4;
-int node_sz_mem = 7;
-int node_sz_disk = 7;
-int node_sz_weight = 7;
-int node_sz_part = 10;
+int node_sz_name     = 15;
+int node_sz_state    = 6;
+int node_sz_cpus     = 4;
+int node_sz_mem      = 6;
+int node_sz_disk     = 8;
+int node_sz_weight   = 6;
+int node_sz_part     = 10;
 int node_sz_features = 0;
 
 static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt)
@@ -289,13 +289,13 @@ static void _display_node_info_header()
 	printf(" ");
 	_print_str("CPUS", node_sz_cpus, true);
 	printf(" ");
-	_print_str("MEM", node_sz_mem, true);
+	_print_str("MEMORY", node_sz_mem, true);
 	printf(" ");
-	_print_str("DISK", node_sz_disk, true);
+	_print_str("TMP_DISK", node_sz_disk, true);
 	printf(" ");
 	_print_str("WEIGHT", node_sz_weight, true);
 	printf(" ");
-	_print_str("PART", node_sz_part, false);
+	_print_str("PARTITION", node_sz_part, false);
 	printf(" ");
 	_print_str("FEATURES", node_sz_features, false);
 	printf("\n");
@@ -306,8 +306,8 @@ static void _display_node_info(node_info_t * node, char *name)
 {
 	_print_str(name, node_sz_name, false);
 	printf(" ");
-	_print_str(node_state_string(node->node_state), node_sz_state,
-		   false);
+	_print_str(node_state_string_compact(node->node_state), 
+		   node_sz_state, false);
 	printf(" ");
 	_print_int(node->cpus, node_sz_cpus, true);
 	printf(" ");
@@ -543,12 +543,12 @@ _display_all_partition_summary(partition_info_msg_t * part_ptr,
 }
 
 /* Formating for partiton display headers... */
-int part_sz_part = 10;
-int part_sz_num = 5;
-int part_sz_state = 9;
-int part_sz_cpus = 4;
-int part_sz_ram = 9;
-int part_sz_disk = 11;
+int part_sz_part  = 10;
+int part_sz_num   = 5;
+int part_sz_state = 6;
+int part_sz_cpus  = 4;
+int part_sz_mem   = 6;
+int part_sz_disk  = 8;
 int part_sz_nodes = 0;
 
 static void _print_partition_header(bool no_name)
@@ -565,7 +565,7 @@ static void _print_partition_header(bool no_name)
 	printf(" ");
 	_print_str("CPUS", part_sz_cpus, true);
 	printf(" ");
-	_print_str("MEMORY", part_sz_ram, true);
+	_print_str("MEMORY", part_sz_mem, true);
 	printf(" ");
 	_print_str("TMP_DISK", part_sz_disk, true);
 	printf(" ");
@@ -627,12 +627,12 @@ _display_partition_node_info(struct partition_summary *partition,
 
 		_print_int(state_sum->node_count, part_sz_num, true);
 		printf(" ");
-		_print_str(node_state_string(state_sum->state),
+		_print_str(node_state_string_compact(state_sum->state),
 			   part_sz_state, false);
 		printf(" ");
 		_print_str(cpu_buf, part_sz_cpus, true);
 		printf(" ");
-		_print_str(ram_buf, part_sz_ram, true);
+		_print_str(ram_buf, part_sz_mem, true);
 		printf(" ");
 		_print_str(disk_buf, part_sz_disk, true);
 		printf(" ");
