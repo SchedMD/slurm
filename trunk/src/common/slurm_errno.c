@@ -110,6 +110,7 @@ g" },
 	{ ESLURMD_OPENSSL_ERROR,			"Openssl error" },
 	{ ESLURMD_NO_AVAILABLE_JOB_STEP_SLOTS_IN_SHMEM,	"No available job step slots in shmem" },
 	{ ESLURMD_NO_AVAILABLE_TASK_SLOTS_IN_SHMEM,	"No available task slots in shmem" },
+	{ ESLURMD_ERROR_FINDING_JOB_STEP_IN_SHMEM , 	"Job step not found in shmem" },
         /* socket specific SLURM communications error */
 	{ SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH,		"Received zero length message" },
 	{ SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH,	"Received message length < 0" },

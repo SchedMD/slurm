@@ -220,20 +220,29 @@ int send_task_exit_msg ( int task_return_code , task_start_t * task_start )
 
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 {
+	int i=0;
 	int error_code = SLURM_SUCCESS ;
 	
 	/* get shmemptr */
 	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
-	
+	task_t * task_ptr ;
 	/* find job step */
 	job_step_t * job_step_ptr = find_job_step ( shmem_ptr , kill_task_msg -> job_id , kill_task_msg -> job_step_id ) ;
+	if ( job_step_ptr == (void * ) SLURM_ERROR )
+	{
+		debug3 ( "we have problems huston, find_job_step faild " ) ;
+		slurm_seterrno_ret ( ESLURMD_ERROR_FINDING_JOB_STEP_IN_SHMEM ) ;
+	}
 	
 	/* cycle through job_step and kill tasks*/
-	task_t * task_ptr = job_step_ptr -> head_task ;
+	task_ptr = job_step_ptr -> head_task ;
+	
 	while ( task_ptr != NULL )
 	{
+		debug3 ( "killing task %i of jobid %i , of job_step %i ", i , kill_task_msg -> job_id , kill_task_msg -> job_step_id ) ;
 		kill_task ( task_ptr , kill_task_msg -> signal ) ;
 		task_ptr = task_ptr -> next ;
+		i++ ;
 	}
 	return error_code ;
 }
@@ -267,6 +276,7 @@ int kill_all_tasks ( )
 
 int kill_task ( task_t * task , int signal )
 {
+	debug3 ( "killing proccess %i, with signal %i ", task -> task_start . exec_pid , signal ) ;
 	return kill ( task -> task_start . exec_pid , signal ) ;
 }
 

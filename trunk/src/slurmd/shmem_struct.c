@@ -211,11 +211,13 @@ job_step_t * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_
 	pthread_mutex_lock ( & shmem -> mutex ) ;
 	for ( i=0 ; i < MAX_JOB_STEPS ; i ++ )
         {
-		if (shmem -> job_steps[i].used == false 
+		debug3 ( "jobstep[%i] used %i ",i,shmem -> job_steps[i].used );
+		if (shmem -> job_steps[i].used == true 
 				&& shmem -> job_steps[i].job_id == job_id 
 				&& shmem -> job_steps[i].job_step_id == job_step_id 
 			)
 		{
+			debug3 ( "found it jobstep[%i] used %i ",i,shmem -> job_steps[i].used );
 			pthread_mutex_unlock ( & shmem -> mutex ) ;
 			return & shmem -> job_steps[i] ;
 		} 
