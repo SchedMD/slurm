@@ -452,7 +452,7 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 		error ("Munge decode failed: %s %s", 
 			munge_ctx_strerror(ctx), retry ? "(retrying ...)": "");
 
-		if ((e = EMUNGE_SOCKET) && retry--)
+		if ((e == EMUNGE_SOCKET) && retry--)
 			goto again;
 
 		/*
