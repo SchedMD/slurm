@@ -349,7 +349,7 @@ _switch_standalone(job_t *job)
 	if (switch_alloc_jobinfo(&job->switch_job) < 0)
 		fatal("switch_alloc_jobinfo: %m");
 	if (switch_build_jobinfo(job->switch_job, job->nodelist, opt.nprocs, 
-				cyclic) < 0)
+				cyclic, opt.network) < 0)
 		fatal("switch_build_jobinfo: %m");
 }
 

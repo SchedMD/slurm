@@ -38,16 +38,23 @@
 /* NOTE: DEFAULT_INACTIVE_LIMIT must be 0 for Blue Gene/L systems */
 #define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_COMP_TYPE      "jobcomp/none"
+#define DEFAULT_KILL_TREE           0
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_MAX_JOB_COUNT       2000
 #define DEFAULT_MIN_JOB_AGE         300
+#define DEFAULT_MPICH_GM_DIR        0
+#ifdef HAVE_AIX		/* AIX specific default configuration parameters */
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/ker_ext"
+#else
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/sid"
+#endif
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
 #ifdef HAVE_BGL		/* Blue Gene specific default configuration parameters */
-#  define DEFAULT_SELECT_TYPE         "select/bluegene"
+#  define DEFAULT_SELECT_TYPE       "select/bluegene"
 #else
-#  define DEFAULT_SELECT_TYPE         "select/linear"
+#  define DEFAULT_SELECT_TYPE       "select/linear"
 #endif
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120
@@ -57,8 +64,6 @@
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #define DEFAULT_WAIT_TIME           0
-#define DEFAULT_MPICH_GM_DIR        0
-#define DEFAULT_KILL_TREE           0
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 

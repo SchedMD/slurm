@@ -548,7 +548,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	if (switch_build_jobinfo(step_ptr->switch_job, 
 				step_ptr->step_node_list,
 				step_specs->num_tasks, 
-				step_ptr->cyclic_alloc) < 0) {
+				step_ptr->cyclic_alloc,
+				job_ptr->network) < 0) {
 		error("switch_build_jobinfo: %m");
 		delete_step_record (job_ptr, step_ptr->step_id);
 		return ESLURM_INTERCONNECT_FAILURE;

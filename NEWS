@@ -1,6 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.5.0-pre1
+=============================
+ -- Add network option to srun and job creation API for specification 
+    of communication protocol over IBM Federation switch.
+ -- Add new slurm.conf parameter ProctrackType (process tracking) and 
+    associated plugin in the slurmd module.
+ 
 * Changes in SLURM 0.4.7
 ========================
  -- Remove some BGL specific headers that IBM now distributes, NOTE

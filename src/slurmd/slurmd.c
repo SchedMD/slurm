@@ -63,6 +63,7 @@
 #include "src/slurmd/shm.h"
 #include "src/slurmd/setproctitle.h"
 #include "src/slurmd/get_mach_stat.h"
+#include "src/slurmd/proctrack.h"
 
 #define GETOPT_ARGS	"L:DvhcM"
 
@@ -484,10 +485,13 @@ _read_config()
 	_free_and_set(&conf->pubkey,   path_pubkey);     
 		      
 	if ( (conf->cf.control_addr == NULL) || 
-	     (conf->cf.slurmctld_port == 0)    ) {
-		error("Unable to establish control machine or port");
-		exit(1);
-	}
+	     (conf->cf.slurmctld_port == 0)    )
+		fatal("Unable to establish control machine or port");
+
+	if ( (conf->cf.kill_tree)
+	&&   (strcmp(conf->cf.proctrack_type, "proctrack/sid")) )
+		fatal("configuration error: KillTree compatable only with "
+			"proctrack/sid");
 
 	slurm_mutex_unlock(&conf->config_mutex);
 }
@@ -639,11 +643,13 @@ _slurmd_init()
 	_read_config();
 
 	/* 
-	 * Update location of log messages (syslog, stderr, logfile, etc.)
-	 * and print current configuration (if in debug mode)
+	 * Update location of log messages (syslog, stderr, logfile, etc.),
+	 * print current configuration (if in debug mode), and 
+	 * load appropriate plugin(s).
 	 */
 	_update_logging();
 	_print_conf();
+	slurm_proctrack_init();
 
 	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;

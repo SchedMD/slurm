@@ -266,6 +266,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->min_job_age         = slurmctld_conf.min_job_age;
 	conf_ptr->mpich_gm_dir        = slurmctld_conf.mpich_gm_dir;
 	conf_ptr->plugindir           = xstrdup(slurmctld_conf.plugindir);
+	conf_ptr->proctrack_type      = xstrdup(slurmctld_conf.proctrack_type);
 	conf_ptr->prolog              = xstrdup(slurmctld_conf.prolog);
 	conf_ptr->ret2service         = slurmctld_conf.ret2service;
 	conf_ptr->schedauth           = xstrdup(slurmctld_conf.schedauth);

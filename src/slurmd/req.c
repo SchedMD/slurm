@@ -676,20 +676,21 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		goto done;
 	}
 
-	if (step->sid <= (pid_t) 0) {
-		debug ("step %u.%u invalid in shm [mpid:%d sid:%d]", 
+	if (step->cont_id == 0) {
+		debug ("step %u.%u invalid in shm [mpid:%d cont_id:%u]", 
 			req->job_id, req->job_step_id, 
-			step->mpid, step->sid);
+			step->mpid, step->cont_id);
 		rc = ESLURMD_JOB_NOTRUNNING;
 		goto done;
 	}
 
 	if (conf->cf.kill_tree) {
-		kill_proc_tree(step->sid, req->signal);
+		kill_proc_tree((pid_t) step->cont_id, req->signal);
 		rc = SLURM_SUCCESS;
 	} else {
-		if ((step->sid > (pid_t) 0)
-		&&  (kill(-step->sid, req->signal) < 0))
+pid_t pid =(pid_t) step->cont_id;
+		if ((step->cont_id > 0)
+		&&  (kill(-pid, req->signal) < 0))
 			rc = errno;
 
 		if (step->task_list 
@@ -721,8 +722,8 @@ _kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
 	int          cnt   = 0;	
 
 	while ((s = list_next(i))) {
-		if ((s->jobid == jobid) && (s->sid > (pid_t) 0)) {
-			kill(s->sid, signum);
+		if ((s->jobid == jobid) && (s->cont_id > 0)) {
+			kill(s->cont_id, signum);
 			cnt++;
 		}
 	}
@@ -800,7 +801,7 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	if (mysid == -1)
 		error("getsid: %m");
 	while ((mysid != -1) && (s = list_next(i))) {
-		if (s->sid == mysid) {
+		if ((pid_t)s->cont_id == mysid) {
 			resp.job_id = s->jobid;
 			found = true;
 			break;
@@ -948,8 +949,8 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 			continue;
 		}
 
-		if (s->sid <= 0) {
-			debug ("bad sid value in shm for %d!", jobid);
+		if (s->cont_id == 0) {
+			debug ("bad cont_id value in shm for %d!", jobid);
 			continue;
 		}
 
@@ -959,16 +960,17 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 		step_cnt++;
 
 		if (conf->cf.kill_tree) {
-			kill_proc_tree(s->sid, sig);
+			kill_proc_tree((pid_t) s->cont_id, sig);
 		} else {
-			debug2("signal %d to job %u (pg:%d)",
-			       sig, jobid, s->sid);
-			if ((s->sid > (pid_t) 0)
-			&&  (kill(-s->sid, sig) < 0))
-				error("kill jid %d sid %d: %m",
-				      s->jobid, s->sid);
-			if (s->task_list 
-			&&  (s->task_list->pid > (pid_t) 0)
+pid_t pid = (pid_t) s->cont_id;
+			debug2("signal %d to job %u (cont_id:%u)",
+			       sig, jobid, s->cont_id);
+			if ((pid > (pid_t) 0)
+			&&  (kill(-pid, sig) < 0))
+				error("kill jid %d cont_id %u: %m",
+				      s->jobid, s->cont_id);
+			if (s->task_list
+			&&  (s->task_list->pid  > (pid_t) 0)
 			&&  (kill(-s->task_list->pid, sig) < 0))
 				error("kill jid %d pgrp %d: %m",
 					s->jobid, s->task_list->pid);

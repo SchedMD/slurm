@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "November 2004" "slurm.conf 0.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "February 2005" "slurm.conf 0.5" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -181,6 +181,16 @@ Identifies the places in which to look for SLURM plugins.
 This is a colon-separated list of directories, like the PATH 
 environment variable. 
 The default value is "/usr/local/lib/slurm".
+.TP
+\fBProctrackType\fR
+Identifies the plugin to be used for process tracking. 
+The slurmd daemon uses this mechanism to identify all processes 
+which are children of processes it spawns for a user job. 
+Acceptable vlues at present include "proctrack/kern_ext" (which 
+is the default for AIX systems) and "proctrack/sid" (which 
+is the default for all other systems).
+The slurmd daemon must be restarted for a change in ProctrackType 
+to take effect.
 .TP
 \fBProlog\fR
 Fully qualified pathname of a script to execute as user root on every 

@@ -205,6 +205,8 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/jobcomp/filetxt/Makefile
 		 src/plugins/jobcomp/none/Makefile
 		 src/plugins/jobcomp/script/Makefile
+		 src/plugins/proctrack/Makefile
+		 src/plugins/proctrack/sid/Makefile
 		 src/plugins/sched/Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile

@@ -308,6 +308,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->schedauth);
 	xfree (ctl_conf_ptr->schedtype);
@@ -357,6 +358,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->mpich_gm_dir		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->proctrack_type);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedauth );
@@ -416,7 +418,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *checkpoint_type = NULL, *control_addr = NULL;
 	char *control_machine = NULL, *epilog = NULL;
-	char *prolog = NULL;
+	char *proctrack_type = NULL, *prolog = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
 	char *select_type = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
@@ -454,6 +456,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"MinJobAge=", 'd', &min_job_age,
 		"MpichGmDirectSupport=", 'd', &mpich_gm_dir,
 		"PluginDir=", 's', &plugindir,
+		"ProctrackType=", 's', &proctrack_type,
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
 		"SchedulerAuth=", 's', &sched_auth,
@@ -649,6 +652,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree( ctl_conf_ptr->plugindir );
 		}
 		ctl_conf_ptr->plugindir = plugindir;
+	}
+
+	if ( proctrack_type ) {
+		if ( ctl_conf_ptr->proctrack_type ) {
+			error( MULTIPLE_VALUE_MSG, "ProctrackType" );
+			xfree( ctl_conf_ptr->proctrack_type );
+		}
+		ctl_conf_ptr->proctrack_type = proctrack_type;
 	}
 	
 	if ( prolog ) {
@@ -1129,6 +1140,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->plugindir == NULL)
 		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
+
+	if (ctl_conf_ptr->proctrack_type == NULL)
+		ctl_conf_ptr->proctrack_type = xstrdup(DEFAULT_PROCTRACK_TYPE);
 
 	if (ctl_conf_ptr->ret2service == (uint16_t) NO_VAL)
 		ctl_conf_ptr->ret2service = DEFAULT_RETURN_TO_SERVICE;

@@ -1722,6 +1722,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->min_job_age, buffer);
 	pack16(build_ptr->mpich_gm_dir, buffer);
 	packstr(build_ptr->plugindir, buffer);
+	packstr(build_ptr->proctrack_type, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->ret2service, buffer);
 	packstr(build_ptr->schedauth, buffer);
@@ -1786,6 +1787,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->min_job_age, buffer);
 	safe_unpack16(&build_ptr->mpich_gm_dir, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->proctrack_type, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->schedauth, &uint16_tmp, buffer);
@@ -1905,6 +1907,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 
 	pack16(job_desc_ptr->port, buffer);
 	packstr(job_desc_ptr->host, buffer);
+	packstr(job_desc_ptr->network, buffer);
 
 	if (select_g_alloc_jobinfo (&jobinfo) == SLURM_SUCCESS) {
 		select_g_set_jobinfo(jobinfo, SELECT_DATA_GEOMETRY, 
@@ -1980,6 +1983,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 
 	safe_unpack16(&job_desc_ptr->port, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->host, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job_desc_ptr->network, &uint16_tmp, buffer);
 
 	if (select_g_alloc_jobinfo (&job_desc_ptr->select_jobinfo)
 	||  select_g_unpack_jobinfo(job_desc_ptr->select_jobinfo, buffer))
