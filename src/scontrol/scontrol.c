@@ -267,13 +267,13 @@ print_job (char * job_id_str)
 	uint32_t job_id = 0;
 	static job_info_msg_t *old_job_buffer_ptr = NULL;
 	job_info_msg_t * job_buffer_ptr = NULL;
-	job_table_t *job_ptr = NULL;
+	job_info_t *job_ptr = NULL;
 
 	if (old_job_buffer_ptr) {
 		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
 					&job_buffer_ptr);
 		if (error_code == 0)
-			slurm_free_job_info (old_job_buffer_ptr);
+			slurm_free_job_info_msg (old_job_buffer_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			job_buffer_ptr = old_job_buffer_ptr;
 			error_code = 0;
@@ -372,7 +372,7 @@ print_node_list (char *node_list)
 		error_code = slurm_load_node (old_node_info_ptr->last_update, 
 			&node_info_ptr);
 		if (error_code == 0)
-			slurm_free_node_info (old_node_info_ptr);
+			slurm_free_node_info_msg (old_node_info_ptr);
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			node_info_ptr = old_node_info_ptr;
 			error_code = 0;
@@ -430,12 +430,12 @@ print_part (char *partition_name)
 	int error_code, i, print_cnt = 0;
 	static partition_info_msg_t *old_part_info_ptr = NULL;
 	partition_info_msg_t *part_info_ptr = NULL;
-	partition_table_t *part_ptr = NULL;
+	partition_info_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
 		error_code = slurm_load_partitions (old_part_info_ptr->last_update, &part_info_ptr);
 		if (error_code == 0) {
-			slurm_free_partition_info (old_part_info_ptr);
+			slurm_free_partition_info_msg (old_part_info_ptr);
 		}
 		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
@@ -463,7 +463,7 @@ print_part (char *partition_name)
 		    strcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
 		print_cnt++;
-		slurm_print_partition_table (stdout, & part_ptr[i] ) ;
+		slurm_print_partition_info (stdout, & part_ptr[i] ) ;
 		if (partition_name)
 			break;
 	}
