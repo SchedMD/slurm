@@ -145,7 +145,7 @@ _xlate_state_name(const char *state_name)
 		return JOB_COMPLETING;
 	}	
 
-	fprintf (stderr, "Invalid job state specified: %s", state_name);
+	fprintf (stderr, "Invalid job state specified: %s\n", state_name);
 	state_names = xstrdup(job_state_string(0));
 	for (i=1; i<JOB_END; i++) {
 		xstrcat(state_names, ",");
@@ -197,6 +197,7 @@ static void _print_version (void)
  */
 static void _opt_default()
 {
+	opt.batch	= false;
 	opt.interactive	= false;
 	opt.job_cnt	= 0;
 	opt.job_name	= NULL;
@@ -216,6 +217,20 @@ static void _opt_default()
 static void _opt_env()
 {
 	char *val;
+
+	if ( (val=getenv("SCANCEL_BATCH")) ) {
+		if (strcasecmp(val, "true") == 0)
+			opt.batch       = true;
+		else if (strcasecmp(val, "T") == 0)
+			opt.batch       = true;
+		else if (strcasecmp(val, "false") == 0)
+			opt.batch       = false;
+		else if (strcasecmp(val, "F") == 0)
+			opt.batch       = false;
+		else
+			error ("Unrecognized SCANCEL_BATCH value: %s",
+				val);
+	}
 
 	if ( (val=getenv("SCANCEL_INTERACTIVE")) ) {
 		if (strcasecmp(val, "true") == 0)
@@ -271,7 +286,8 @@ static void _opt_args(int argc, char **argv)
 {
 	int opt_char;
 	int option_index;
-	static struct option long_options[] = {
+	static struct option long_options[] = { 
+		{"batch",	no_argument,       0, 'b'},
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
 		{"partition",   required_argument, 0, 'p'},
@@ -285,12 +301,15 @@ static void _opt_args(int argc, char **argv)
 		{"usage",       no_argument,       0, OPT_LONG_USAGE}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "in:p:qs:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "bin:p:qs:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				fprintf(stderr, "Try \"scancel --help\" for more information\n");
 				exit(1);
+				break;
+			case (int)'b':
+				opt.batch = true;
 				break;
 			case (int)'i':
 				opt.interactive = true;
@@ -418,6 +437,7 @@ static void _opt_list(void)
 {
 	int i;
 
+	info("batch          : %s", tf_(opt.batch));
 	info("interactive    : %s", tf_(opt.interactive));
 	info("job_name       : %s", opt.job_name);
 	info("partition      : %s", opt.partition);
@@ -435,12 +455,14 @@ static void _opt_list(void)
 static void _usage(void)
 {
 	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-q] [-s name | integer]\n");
-	printf("               [-t PENDING | RUNNING] [--usage] [-v] [-V] [job_id[.step_id]]\n");
+	printf("               [--batch] [-t PENDING | RUNNING] [--usage] [-v] [-V]\n");
+	printf("               [job_id[.step_id]]\n");
 }
 
 static void _help(void)
 {
 	printf("Usage: scancel [OPTIONS] [job_id[.step_id]]\n");
+	printf("  -b, --batch                     signal batch shell for specified job\n");
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             name of job to be signalled\n");
 	printf("  -p, --partition=partition       name of job's partition\n");

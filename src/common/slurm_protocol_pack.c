@@ -2293,6 +2293,7 @@ _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer)
 	pack32(msg->job_id, buffer);
 	pack32(msg->job_step_id, buffer);
 	pack16(msg->signal, buffer);
+	pack16(msg->batch_flag, buffer);
 }
 
 /* _unpack_job_step_kill_msg
@@ -2312,6 +2313,7 @@ _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer)
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
 	safe_unpack16(&msg->signal, buffer);
+	safe_unpack16(&msg->batch_flag, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

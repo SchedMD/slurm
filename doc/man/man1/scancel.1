@@ -19,6 +19,9 @@ Print a help message describing all \fBscancel\fR options.
 \fB\-\-usage\fR
 Print a brief help message listing the \fBscancel\fR options.
 .TP
+\fB\-b\fR, \fB\-\-batch\fR
+Signal only the batch job shell.
+.TP
 \fB\-i\fR, \fB\-\-interactive\fR
 Interactive mode. Confirm each job_id.step_id before performing the cancel operation.
 .TP
@@ -55,8 +58,35 @@ ARGUMENTS
 The Slurm job ID of the job to have one or more of its steps signaled.
 .TP
 \fIstep_id\fP
-The step ID of the job step to be signaled. If none is provided, then 
-all jobs steps associated with the provided job_id will be signaled.
+The step ID of the job step to be signaled. If none is provided and the 
+\fB\-\-batch\fR option is not used, then all jobs steps associated with 
+the provided job_id will be signaled.
+.SH "ENVIRONMENT VARIABLES"
+.PP
+Some \fBscancel\fR options may be set via environment variables. These 
+environment variables, along with their corresponding options, are listed below.
+(Note: commandline options will always override these settings)
+.TP 20
+SCANCEL_BATCH
+\fB\-b, \-\-batch\fR
+.TP 20
+SCANCEL_INTERACTIVE
+\fB\-i\fR, \fB\-\-interactive\fR
+.TP 20
+SCANCEL_NAME
+\fB\-n\fR, \fB\-\-name\fR=\fIjob_name\fR
+.TP 20
+SCANCEL_PARTITION
+\fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
+.TP 20
+SCANCEL_STATE
+\fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
+.TP 20
+SCANCEL_USER
+\fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
+.TP 20
+SCANCEL_VERBOSE
+\fB\-v\fR, \fB\-\-verbose\fR
 .SH "NOTES"
 .TP
 If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the jobs satisfying all of the filtering options will be signaled.

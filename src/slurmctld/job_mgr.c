@@ -50,6 +50,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/xassert.h"
@@ -124,6 +125,7 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
+static void _signal_batch_job(struct job_record *job_ptr, uint16_t signal);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -1291,12 +1293,14 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
+ * IN batch_flag - signal batch shell only if set
  * IN uid - uid of requesting user
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
+extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag, 
+		uid_t uid)
 {
 	struct job_record *job_ptr;
 	time_t now = time(NULL);
@@ -1337,6 +1341,11 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 			deallocate_nodes(job_ptr, false);
 			job_completion_logger(job_ptr);
+		} else if (batch_flag) {
+			if (job_ptr->batch_flag)
+				_signal_batch_job(job_ptr, signal);
+			else
+				return ESLURM_JOB_SCRIPT_MISSING;
 		} else {
 			ListIterator step_record_iterator;
 			struct step_record *step_ptr;
@@ -1348,10 +1357,6 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 				signal_step_tasks(step_ptr, signal);
 			}
 			list_iterator_destroy (step_record_iterator);
-/* FIXME:
-			if (job_ptr->batch_flag)
-				_signal_batch_job(job_ptr, signal);
- */
 		}
 		verbose("job_signal %u of running job %u successful", 
 			signal, job_id);
@@ -1361,6 +1366,55 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 	verbose("job_signal: job %u can't be sent signal %u from state=%s",
 		job_id, signal, job_state_string(job_ptr->job_state));
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
+}
+
+static void
+_signal_batch_job(struct job_record *job_ptr, uint16_t signal)
+{
+	bitoff_t i;
+	kill_tasks_msg_t *kill_tasks_msg;
+	agent_arg_t *agent_args;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+
+	xassert(job_ptr);
+	i = bit_ffs(job_ptr->node_bitmap);
+	if (i < 0) {
+		error("_signal_batch_job JobId=%u lacks assigned nodes");
+		return;
+	}
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type	= REQUEST_KILL_TASKS;
+	agent_args->retry	= 1;
+	agent_args->slurm_addr	= xmalloc(sizeof(struct sockaddr_in));
+	memcpy(agent_args->slurm_addr, &node_record_table_ptr[i].slurm_addr,
+			sizeof(struct sockaddr_in));
+	agent_args->node_names	= xmalloc(MAX_NAME_LEN);
+	strncpy(agent_args->node_names, node_record_table_ptr[i].name,
+			MAX_NAME_LEN);
+	
+	kill_tasks_msg = xmalloc(sizeof(kill_tasks_msg_t));
+	kill_tasks_msg->job_id      = job_ptr->job_id;
+	kill_tasks_msg->job_step_id = NO_VAL;
+	kill_tasks_msg->signal      = signal;
+
+	agent_args->msg_args = kill_tasks_msg;
+	debug2("Spawning batch signal agent");
+	if (pthread_attr_init(&attr_agent))
+		fatal("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate(&attr_agent, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create(&thread_agent, &attr_agent, agent,
+				(void *) agent_args)) {
+		error("pthread_create error %m");
+		agent_queue_request(agent_args);
+	}
+	return;
 }
 
 /* 
@@ -2127,7 +2181,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		deallocate_nodes(job_ptr, true);
 		job_completion_logger(job_ptr);
 	} else
-		job_signal(job_ptr->job_id, SIGKILL, 0);
+		job_signal(job_ptr->job_id, SIGKILL, 0, 0);
 	return;
 }
 

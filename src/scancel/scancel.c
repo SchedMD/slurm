@@ -220,7 +220,8 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
 		verbose("Signal %u to job %u", signal, job_id);
-		error_code = slurm_kill_job (job_id, signal);
+		error_code = slurm_kill_job (job_id, signal, 
+				(uint16_t)opt.batch);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;

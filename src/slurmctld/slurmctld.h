@@ -648,12 +648,14 @@ extern bool job_is_completing(void);
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
  * IN signal - signal to send, SIGKILL == cancel the job
+ * IN batch_flag - signal batch shell only if set
  * IN uid - uid of requesting user
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_signal(uint32_t job_id, uint16_t signal, uid_t uid);
+extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag, 
+		uid_t uid);
 
 /* 
  * job_step_cancel - cancel the specified job step
