@@ -23,9 +23,9 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_errno.h>
 
-/******************************************/
-/* Morris Jette's configuration stuff */
-/******************************************/
+/*****************************/
+/* configuration functions   */
+/*****************************/
 
 /* slurmctld_conf must be loaded with port numbers and controller names */
 extern slurm_ctl_conf_t slurmctld_conf;
@@ -245,6 +245,13 @@ int inline slurm_set_stream_blocking ( slurm_fd open_fd ) ;
  */
 void inline slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
 
+/* reset_slurm_addr
+ * resets the address field of a slurm_addr, port and family remain unchanged
+ * OUT slurm_address	- slurm_addr to be reset in
+ * IN new_address	- source of address to write into slurm_address
+ */
+void reset_slurm_addr ( slurm_addr * slurm_address , slurm_addr new_address );
+
 /* slurm_set_addr
  * initializes the slurm_address with the port and ip_addrss passed to it
  * NOT THREAD SAFE
@@ -279,6 +286,7 @@ void inline slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , c
  * IN buf_len		- length of hostname buffer
  */
 void inline slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
+
 /* slurm_print_slurm_addr
  * prints a slurm_addr into a buf
  * IN address		- slurm_addr to print
@@ -286,6 +294,13 @@ void inline slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char
  * IN n			- max number of bytes to write (including NUL)
  */
 void inline slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n ) ;
+
+/* slurm_get_peer_addr
+ * get the slurm address of the peer connection, similar to getpeeraddr
+ * IN fd		- an open connection
+ * OUT slurm_address	- place to park the peer's slurm_addr
+ */
+int inline slurm_get_peer_addr ( slurm_fd fd, slurm_addr * slurm_address ) ;
 
 /**********************************************************************/
 /* slurm_addr pack routines*/ 
