@@ -31,7 +31,7 @@
 #include <src/popt/popt.h>
 #include <src/squeue/squeue.h>
 
-#define __DEBUG 1
+#define __DEBUG 0
 
 #define OPT_JOBS      	0x01
 #define OPT_JOBS_NONE 	0x02
