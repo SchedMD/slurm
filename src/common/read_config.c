@@ -449,10 +449,10 @@ _parse_node_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
-	FREE_NULL(feature);
-	FREE_NULL(node_addr);
-	FREE_NULL(node_name);
-	FREE_NULL(state);
+	xfree(feature);
+	xfree(node_addr);
+	xfree(node_name);
+	xfree(state);
 
 	return 0;
 }
@@ -487,13 +487,13 @@ _parse_part_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
-	FREE_NULL(allow_groups);
-	FREE_NULL(default_str);
-	FREE_NULL(partition);
-	FREE_NULL(root_str);
-	FREE_NULL(nodes);
-	FREE_NULL(shared_str);
-	FREE_NULL(state_str);
+	xfree(allow_groups);
+	xfree(default_str);
+	xfree(partition);
+	xfree(root_str);
+	xfree(nodes);
+	xfree(shared_str);
+	xfree(state_str);
 
 	return 0;
 }
@@ -643,7 +643,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if ((ctl_conf_ptr->backup_controller == NULL) && 
 	    (ctl_conf_ptr->backup_addr != NULL)) {
 		error ("BackupAddr specified without BackupController");
-		FREE_NULL (ctl_conf_ptr->backup_controller);
+		FREE_NULL (ctl_conf_ptr->backup_addr);
 	}
 
 	if (ctl_conf_ptr->control_machine == NULL)
