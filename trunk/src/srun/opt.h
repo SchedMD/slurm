@@ -27,7 +27,9 @@
 #ifndef _HAVE_OPT_H
 #define _HAVE_OPT_H
 
-#include "config.h"
+#if HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <sys/types.h>
 #include <unistd.h>
@@ -48,6 +50,7 @@
 
 #include <src/common/macros.h> /* true and false */
 
+#define MAX_THREADS	1
 #define MAX_USERNAME	9
 
 /* global variables relating to user options */
@@ -99,6 +102,7 @@ typedef struct srun_options {
 	bool nprocs_set;	/* true if nprocs explicitly set */
 	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	bool cpus_set;		/* true if cpus_per_task explicitly set */
+	int  max_threads;	/* --threads, -T (threads in srun) */
 	int  nodes;		/* --nodes=n,       -N n	*/ 
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/

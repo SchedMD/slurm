@@ -85,6 +85,7 @@
 #define OPT_CDDIR       0x15
 #define OPT_BATCH       0x16
 #define OPT_TIME        0x17
+#define OPT_THREADS     0x18
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -201,9 +202,9 @@ struct poptOption runTable[] = {
 	 "err"},
         {"verbose", 'v', 0, 0, OPT_VERBOSE,
 	 "verbose operation (multiple -v's increase verbosity)", },
-	/*{"debug", 'd', 0, 0, OPT_DEBUG,
-	 "enable debug",
-	 },*/
+	{"threads", 'T', POPT_ARG_INT, &opt.max_threads, OPT_THREADS,
+	 "number of threads in srun",
+	 "threads"},
 	POPT_TABLEEND
 };
 
@@ -521,6 +522,7 @@ static void opt_default()
 	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
+	opt.max_threads = MAX_THREADS;
 
 	opt.job_name = NULL;
 
@@ -1171,6 +1173,7 @@ void opt_list()
 	info("attach         : `%s'", opt.attach);
 	info("overcommit     : %s", tf_(opt.overcommit));
 	info("batch          : %s", tf_(opt.batch));
+	info("threads        : %d", opt.max_threads);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
