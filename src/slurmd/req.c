@@ -322,17 +322,20 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	       goto done;
 	}
 
-	verbose("Successful request to send signal %d to %d", 
-		req->signal, req->job_id, req->job_step_id);
-
-	if (killpg(step->sid, req->signal) < 0)
-		rc = errno;
+	/* Special case some signals to avoid harming job's slurmd shepherd */
+	if ((req->signal == SIGSTOP) || (req->signal == SIGCONT) || 
+	    (req->signal == SIGKILL))
+		rc = shm_signal_step(req->job_id, req->job_step_id, 
+				     req->signal); 
+	else {
+		if (killpg(step->sid, req->signal) < 0)
+			rc = errno;
+	}
 	shm_free_step(step);
 
-
-	/* rc = shm_signal_step(req->job_id, req->job_step_id, req->signal); */
-
   done:
+	verbose("Send signal %d to %u.%u: %m", 
+		req->signal, req->job_id, req->job_step_id);
 	slurm_send_rc_msg(msg, rc);
 }
 
