@@ -412,11 +412,11 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 }
 
 /*
- * load_node_state - load the node state from file, recover from slurmctld 
+ * load_all_node_state - load the node state from file, recover on slurmctld 
  *	restart. execute this after loading the configuration file data.
  *	data goes into common storage
  */
-int load_node_state ( void )
+int load_all_node_state ( void )
 {
 	char *node_name, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0;

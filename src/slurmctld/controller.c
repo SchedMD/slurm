@@ -1411,9 +1411,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 
 	/* return result */
 	if (error_code) {
-		info(
-		   "_slurm_rpc_allocate_resources error %d allocating resources, time=%ld", 
-		   error_code, (long) (clock() - start_time));
+		info("_slurm_rpc_allocate_resources error %d, time=%ld", 
+		     error_code, (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
 		info(
@@ -1854,8 +1853,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		     (long) (clock() - start_time));
 
 		job_step_resp.job_step_id = step_rec->step_id;
-		job_step_resp.node_list =
-		    bitmap2node_name(step_rec->node_bitmap);
+		job_step_resp.node_list = xstrdup(step_rec->step_node_list);
 		job_step_resp.credentials =
 		    &step_rec->job_ptr->details->credential;
 

@@ -67,12 +67,6 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 
-#define FREE_NULL(_X)			\
-	do {				\
-		if (_X) xfree (_X);	\
-		_X	= NULL; 	\
-	} while (0)
-
 #if COMMAND_TIMEOUT == 1
 #  define WDOG_POLL 		1	/* secs */
 #else

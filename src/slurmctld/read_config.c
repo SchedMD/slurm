@@ -48,11 +48,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
-#define FREE_NULL(_X)			\
-	do {				\
-		if (_X) xfree (_X);	\
-		_X	= NULL; 	\
-	} while (0)
 
 static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
@@ -776,9 +771,9 @@ int read_slurm_conf(int recover)
 	set_slurmd_addr();
 
 	if (recover) {
-		(void) load_node_state();
-		(void) load_part_state();
-		(void) load_job_state();
+		(void) load_all_node_state();
+		(void) load_all_part_state();
+		(void) load_all_job_state();
 	}
 	(void) sync_job_files();
 
