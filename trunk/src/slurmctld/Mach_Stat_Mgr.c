@@ -17,9 +17,12 @@
 #define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
+struct Node_Record **Hash_Table = NULL;
 char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
 
 int	Delete_Node_Record(char *name);
+void	Dump_Hash();
+int	Hash_Index(char *name);
 int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
@@ -27,6 +30,7 @@ int 	Parse_Node_Spec(char *Specification, char *My_Name, char *My_OS,
 	enum Node_State *NodeState, int *Set_State, time_t *My_LastResponse, int *Set_LastResponse);
 void	Partition_String_To_Value (char *partition, unsigned int *Partition_Value, int *Error_Code);
 void 	Partition_Value_To_String(unsigned int partition, char *Partition_String, int Partition_String_size, char *node_name);
+void	Rehash();
 int	Tally_Node_CPUs(char *Node_List);
 
 List   Node_Record_List = NULL;		/* List of Node_Records */
@@ -47,6 +51,7 @@ main(int argc, char * argv[]) {
 	printf("Error %d from Read_Node_Spec_Conf\n", Error_Code);
 	exit(1);
     } /* if */
+    if (Hash_Table != NULL) Dump_Hash();
 
     /* Update existing record */
     Error_Code = Update_Node_Spec_Conf("Name=mx01 CPUs=3 TmpDisk=12345");
@@ -109,8 +114,21 @@ int Delete_Node_Record(char *name) {
     } /* while */
 
     list_iterator_destroy(Node_Record_Iterator);
+    Rehash();
     return Error_Code;
 } /* Delete_Node_Record */
+
+
+/* Print the Hash_Table contents */
+void Dump_Hash() {
+    int i;
+
+    if (Hash_Table ==  NULL) return;
+    for (i=0; i<Node_Count; i++) {
+	if (Hash_Table[i] == NULL) continue;
+	printf("Hash:%d:%s\n", i, Hash_Table[i]->Name);
+    } /* for */
+} /* Dump_Hash */
 
 
 /*
@@ -191,7 +209,27 @@ int Dump_Node_Records (char *File_Name) {
 struct Node_Record *Find_Node_Record(char *name) {
     ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+    int i;
 
+    /* Try to find in hash table first */
+    if (Hash_Table != NULL) {
+	i = Hash_Index(name);
+        if (strcmp(Hash_Table[i]->Name, name) == 0) return Hash_Table[i];
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Find_Node_Record: Hash table lookup failure for %s\n", name);
+#else
+	syslog(LOG_DEBUG, "Find_Node_Record: Hash table lookup failure for %s\n", name)
+#endif
+    } /* if */
+
+#if DEBUG_SYSTEM
+    if (Hash_Table != NULL) {
+	printf("Find linear for %s\n", name);
+	Dump_Hash();
+    } /* if */
+#endif
+
+    /* Revert to linear search */
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
     if (Node_Record_Iterator == NULL) {
 #if DEBUG_SYSTEM
@@ -209,6 +247,24 @@ struct Node_Record *Find_Node_Record(char *name) {
     list_iterator_destroy(Node_Record_Iterator);
     return Node_Record_Point;
 } /* Find_Node_Record */
+
+
+/* Hash_Index - Return a hash table index for the given node name */
+int Hash_Index(char *name) {
+    int i, inx, tmp;
+
+    if (Node_Count == 0) return 0;	/* Degenerate case */
+    inx = 0;
+    for (i=0; ;i++) { 
+	tmp = (int) name[i];
+	if (tmp == 0) break;	/* end if string */
+	if (tmp < (int)'0') continue;
+	if (tmp > (int)'9') continue;
+	inx = (inx * 10) + (tmp - (int)'0');
+    } /* for */
+    inx = inx % Node_Count;
+    return inx;
+} /* Hash_Index */
 
 
 /* 
@@ -590,8 +646,57 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	syslog(LOG_NOTICE, "Read_Node_Spec_Conf error %d closing file %s\n", errno, File_Name);
 #endif
     } /* if */
+    Rehash();
     return Error_Code;
 } /* Read_Node_Spec_Conf */
+
+
+/* 
+ * Rehash - Build a hash table of the Node_Record entries. This is a large hash table 
+ * to permit the immediate finding of a record based only upon its name without regards 
+ * to the number. There should be no need for a search. The algorithm is optimized for 
+ * node names with a common prefix followed by a base-ten sequence number. All names 
+ * should have the same number of digits (e.g. "lx01" rather than "lx1" for a cluster 
+ * having 10 to 99 nodes). If you have a large cluster and use a different naming convention, 
+ * this function should be re-written.
+ */
+void Rehash() {
+    ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
+    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+    int i;
+
+    if (Hash_Table ==  NULL)
+	Hash_Table = malloc(sizeof(struct Node_Record *) * Node_Count);
+    else
+	Hash_Table = realloc(Hash_Table, (sizeof(struct Node_Record *) * Node_Count));
+
+    if (Hash_Table == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Rehash: list_append can not allocate memory\n");
+#else
+	syslog(LOG_ERR, "Rehash: list_append can not allocate memory\n");
+#endif
+	return;
+    } /* if */
+    bzero(Hash_Table, (sizeof(struct Node_Record *) * Node_Count));
+
+    Node_Record_Iterator = list_iterator_create(Node_Record_List);
+    if (Node_Record_Iterator == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Rehash: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Rehash: list_iterator_create unable to allocate memory\n");
+#endif
+	return;
+    }
+
+    while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
+	i = Hash_Index(Node_Record_Point->Name);
+	Hash_Table[i] = Node_Record_Point;
+    } /* while */
+
+    list_iterator_destroy(Node_Record_Iterator);
+} /* Rehash */
 
 
 /*
@@ -752,6 +857,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 
 	/* Set defaults */
 	Node_Count++;
+	strcpy(Node_Record_Point->Name, My_Name);
 	strcpy(Node_Record_Point->OS, "UNKNOWN");
 	Node_Record_Point->CPUs = 1;
 	Node_Record_Point->Speed = 1.0;
@@ -761,7 +867,7 @@ int Update_Node_Spec_Conf (char *Specification) {
 	Node_Record_Point->Partition = 1;
 	Node_Record_Point->NodeState = STATE_UNKNOWN;
 	Node_Record_Point->LastResponse = 0;
-
+	Rehash();
     } /* if */
 
     
