@@ -68,13 +68,13 @@ print_job (char * job_id_str)
 	List format = list_create( NULL );
 	job_format_add_job_id( format, 12, false );	
 	job_format_add_name( format, 10, true );	
-	job_format_add_user_name( format, 8, true );	
-	job_format_add_job_state_compact( format, 3, true );	
-	job_format_add_time_limit( format, 6, true );	
-	job_format_add_start_time( format, 12, true );	
-	job_format_add_end_time( format, 12, true);	
-	job_format_add_priority( format, 6, true );	
-	job_format_add_nodes( format, 16, true );	
+	job_format_add_user_name( format, 8, false );	
+	job_format_add_job_state_compact( format, 3, false );	
+	job_format_add_time_limit( format, 10, false );	
+	job_format_add_start_time( format, 12, false );	
+	job_format_add_end_time( format, 12, false);	
+	job_format_add_priority( format, 6, false );	
+	job_format_add_nodes( format, 16, false );	
 
 	if (job_buffer_ptr == NULL) {
 		if ( (slurm_load_jobs ((time_t) NULL, &job_buffer_ptr) ) ) {

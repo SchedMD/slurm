@@ -37,9 +37,14 @@
 #define OPT_FORMAT    	0x08
 #define OPT_VERBOSE   	0x09
 
+
 extern struct squeue_parameters params;
 char *states = NULL;
 char *partitions = NULL;
+
+/* FUNCTIONS */
+int parse_state( char* str, enum job_states* states );
+int parse_format( char* );
 
 /*
  * parse_command_line
@@ -81,12 +86,12 @@ parse_command_line( int argc, char* argv[] )
 			case OPT_JOBS_NONE:
 				/* Eventually I will want to parse these and form a list */
 				if ( (opt_arg = poptGetArg( context )) != NULL )
-					params.jobs = opt_arg;
+					params.jobs = (char*)opt_arg;
 				break;	
 			case OPT_STEPS_NONE:
 				/* Eventually I will want to parse these and form a list */
 				if ( (opt_arg = poptGetArg( context )) != NULL )
-					params.steps = opt_arg;
+					params.steps = (char*)opt_arg;
 				break;	
 			case OPT_STATES:
 				if ( parse_state( states, &params.state ) != SLURM_SUCCESS )
@@ -99,7 +104,7 @@ parse_command_line( int argc, char* argv[] )
 				params.partitions = partitions;	
 				break;	
 			case OPT_FORMAT:
-				/*parse_format_string( params.format );*/
+				parse_format( params.format );
 				break;
 			case OPT_VERBOSE:
 				params.verbose = true;
@@ -118,8 +123,6 @@ parse_command_line( int argc, char* argv[] )
 
 			exit (1);
 		}
-
-
 	}
 	if ( next_opt < -1 )
 	{
@@ -158,6 +161,13 @@ parse_state( char* str, enum job_states* states )
 	else if ( strcasecmp( str, job_state_string( JOB_END )) == 0 )
 		*states = JOB_END;
 	else return SLURM_ERROR;
+
+	return SLURM_SUCCESS;
+}
+
+int 
+parse_format( char* format )
+{
 
 	return SLURM_SUCCESS;
 }
