@@ -316,11 +316,11 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                         }
                 }
                 if (rc == 0) {
-				error("_slurm_recv_timeout at %d of %d, "
-				      "recv zero bytes", recvlen, size);
-                        slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
-                        recvlen = SLURM_ERROR;
-                        goto done;
+			error("_slurm_recv_timeout at %d of %d, "
+			      "recv zero bytes", recvlen, size);
+			slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
+			recvlen = SLURM_ERROR;
+			goto done;
                 }
                 recvlen += rc;
         }
