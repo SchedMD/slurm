@@ -33,6 +33,7 @@
 #include <stdarg.h>
 
 #include <src/common/xmalloc.h>
+#include <src/common/xassert.h>
 #include <src/common/xstring.h>
 
 /* add environment variable to end of env vector allocated with
@@ -50,6 +51,8 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 	char buf[BUFSIZ];
 	char **env = *envp;
 		
+	xassert(env[*envc] == NULL);
+	
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
@@ -59,6 +62,8 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 	env[(*envc)]   = NULL;
 
 	*envp = env;
+
+	xassert(strcmp(env[(*envc) - 1], buf) == 0);
 	return *envc;
 }
 

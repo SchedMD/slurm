@@ -32,11 +32,16 @@
 #include <pthread.h>
 #endif
 
+#include <pwd.h>
+
 #include <src/common/macros.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/list.h>
 #include <src/common/eio.h>
 
+#ifndef MAXHOSTNAMELEN
+#define MAXHOSTNAMELEN	64
+#endif
 
 #define SLURM_KEY_SIZE	SLURM_SSL_SIGNATURE_LENGTH
 typedef struct srun_key {
@@ -64,51 +69,59 @@ typedef struct task_info {
 	               *out,       /* I/O objects used in IO event loop   */
 		       *err;       
 	int             estatus;   /* this task's exit status             */
-	char *		ofile;	   /* output file (if any)                */
-	char *		errfile;   /* error file (if any)		  */
+	char *		ofname;    /* output file (if any)                */
+	char *		efname;    /* error file (if any)		  */
+	char *          ifname;    /* input file (if any) 		  */
 	List            srun_list; /* List of srun objs for this task     */
 } task_info_t;
 
 
 typedef struct srun_info {
-	srun_key_t *key;	/* srun key for IO verification       */
-	slurm_addr resp_addr;	/* response addr for task exit msg    */
-	slurm_addr ioaddr;      /* Address to connect on for I/O      */
+	srun_key_t *key;	   /* srun key for IO verification       */
+	slurm_addr resp_addr;	   /* response addr for task exit msg    */
+	slurm_addr ioaddr;         /* Address to connect on for I/O      */
+
+	bool       noconnect;      /* don't connect I/O back to srun     *
+				    * e.g. for local file I/O only       */
 } srun_info_t;
 
 typedef struct slurmd_job {
-	uint32_t      jobid;
-	uint32_t      stepid;
-	uint32_t      nnodes;
-	uint32_t      nprocs;
-	uint32_t      nodeid;
-	uint32_t      ntasks;
-	uint16_t      envc;
-	uint16_t      argc;
-	char        **env;
-	char        **argv;
-	char         *cwd;
+	uint32_t       jobid;
+	uint32_t       stepid;
+	uint32_t       nnodes;
+	uint32_t       nprocs;
+	uint32_t       nodeid;
+	uint32_t       ntasks;
+	uint16_t       envc;
+	uint16_t       argc;
+	char         **env;
+	char         **argv;
+	char          *cwd;
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;
 #endif
 	uid_t         uid;
-	time_t        timelimit;
-	task_info_t **task;
-	List          objs; 
-	List 	      sruns;
-	int           unixsock;
-	pthread_t     ioid;
+	struct passwd *pwd;
+	char          *ifname;
+	char          *ofname;
+	char          *efname;
+	time_t         timelimit;
+	task_info_t  **task;
+	List           objs; 
+	List 	       sruns;
+	pthread_t      ioid;
 } slurmd_job_t;
 
 
 slurmd_job_t * job_create(launch_tasks_request_msg_t *msg, slurm_addr *client);
+slurmd_job_t * job_batch_job_create(batch_job_launch_msg_t *msg);
 
 void job_kill(slurmd_job_t *job, int signal);
 
 void job_destroy(slurmd_job_t *job);
 
-struct srun_info * srun_info_create(void *keydata, slurm_addr resp_addr, 
-		                    slurm_addr ioaddr);
+struct srun_info * srun_info_create(void *keydata, slurm_addr *respaddr, 
+		                    slurm_addr *ioaddr);
 
 void  srun_info_destroy(struct srun_info *srun);
 

@@ -332,15 +332,18 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	int rc;
 	unsigned int cred_len, msg_len, tmp_len;
 	Buf buffer;
-
 	slurm_auth_t creds = slurm_auth_alloc_credentials();
+
+	if (creds == NULL)
+		error("unable to alloc credentials");
 
 	/* initialize header */
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
-	if (slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC) 
+	if ((rc = slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC)) 
 			!= SLURM_SUCCESS) {
 		/* Should probably do something more meaningful. */
-		error("init_header: failed to sign client credentials\n");
+		error("init_header: failed to sign client credentials rc=%d\n",
+				rc);
 	}
 
 	/* pack header */
@@ -736,15 +739,11 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 	int error_code = 0;
 
 	/* init message connection for message communication with controller */
-	if ((sockfd =
-	     slurm_open_msg_conn(&request_msg->address)) ==
-	    SLURM_SOCKET_ERROR)
+	if ((sockfd = slurm_open_msg_conn(&request_msg->address)) < 0)
 		return SLURM_SOCKET_ERROR;
 
 	/* send request message */
-	if ((rc =
-	     slurm_send_node_msg(sockfd,
-				 request_msg)) == SLURM_SOCKET_ERROR) {
+	if ((rc = slurm_send_node_msg(sockfd, request_msg)) < 0) {
 		error_code = 1;
 		goto slurm_send_only_node_msg_cleanup;
 	}

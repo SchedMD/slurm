@@ -282,13 +282,25 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	steps          = shm_get_steps();
 	msg->job_count = list_count(steps);
 	msg->job_id    = xmalloc(msg->job_count * sizeof(*msg->job_id));
+	
+	/* Note: Running batch jobs will have step_id == NO_VAL
+	 */
 	msg->step_id   = xmalloc(msg->job_count * sizeof(*msg->step_id));
 
 	i = list_iterator_create(steps);
 	n = 0;
 	while ((s = list_next(i))) {
-		debug("found currently running job %d.%d", 
-		      s->jobid, s->stepid);
+		if (!shm_step_still_running(s->jobid, s->stepid)) {
+			debug("deleting stale reference to %d.%d in shm",
+			      s->jobid, (int32_t) s->stepid);
+			shm_delete_step(s->jobid, s->stepid);
+			continue;
+		}
+		if (s->stepid == NO_VAL)
+			debug("found apparently running job %d", s->jobid);
+		else
+			debug("found apparently running step %d.%d", 
+			      s->jobid, s->stepid);
 		msg->job_id[n]  = s->jobid;
 		msg->step_id[n] = s->stepid;
 		n++;
@@ -340,7 +352,7 @@ _read_config()
 	_free_and_set(&conf->prolog,     slurmctld_conf.prolog );
 	_free_and_set(&conf->tmpfs,      slurmctld_conf.tmp_fs );
 	_free_and_set(&conf->pubkey,     slurmctld_conf.job_credential_public_certificate );
-	_free_and_set(&conf->savedir,    slurmctld_conf.slurmd_spooldir);
+	_free_and_set(&conf->spooldir,    slurmctld_conf.slurmd_spooldir);
 
 	debug3("Confile     = `%s'",     conf->conffile );
 	debug3("Epilog      = `%s'",     conf->epilog );
@@ -349,7 +361,7 @@ _read_config()
 	debug3("Prolog      = `%s'",     conf->prolog );
 	debug3("TmpFS       = `%s'",     conf->tmpfs );
 	debug3("Public Cert = `%s'",     conf->pubkey );
-	debug3("Spool Dir   = `%s'",     conf->savedir );
+	debug3("Spool Dir   = `%s'",     conf->spooldir );
 }
 
 static void 
@@ -373,7 +385,7 @@ _init_conf()
 	conf->epilog    = NULL;
 	conf->logfile   = NULL;
 	conf->port      = 0;
-	conf->savedir	= NULL;
+	conf->spooldir	= NULL;
 	conf->pubkey    = NULL;
 	conf->prolog    = NULL;
 	conf->daemonize =  0;
@@ -506,16 +518,16 @@ _setdir(void)
 {
 	struct stat sbuf;
 
-	if (conf->savedir) {
-		if (stat (conf->savedir, &sbuf) == -1) {
-			if (_mkdir2(conf->savedir, 0700))
-				error ("mkdir2 on %s error %m", conf->savedir);
-			_free_and_set(&conf->savedir, xstrdup("/tmp") );
+	if (conf->spooldir) {
+		if (stat (conf->spooldir, &sbuf) == -1) {
+			if (_mkdir2(conf->spooldir, 0700))
+				error ("mkdir2 on %s error %m", conf->spooldir);
+			_free_and_set(&conf->spooldir, xstrdup("/tmp") );
 		}
 	} else {
-		_free_and_set(&conf->savedir, xstrdup("/tmp") );
+		_free_and_set(&conf->spooldir, xstrdup("/tmp") );
 	}
-	chdir(conf->savedir);
+	chdir(conf->spooldir);
 }
 
 /* _mkdir2 - create a directory, does system call if root, runs mkdir otherwise */

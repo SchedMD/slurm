@@ -66,13 +66,40 @@ static void * p_launch_task(void *args);
 static void print_launch_msg(launch_tasks_request_msg_t *msg);
 static int  envcount(char **env);
 
+static void
+_dist_block(job_t *job, uint32_t **task_ids)
+{
+	int i, j, taskid = 0;
+	for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
+		for (j=0; (((j*opt.cpus_per_task)<job->cpus[i]) && 
+					(taskid<opt.nprocs)); j++) {
+			task_ids[i][j] = taskid++;
+			job->ntask[i]++;
+		}
+	}
+}
+
+static void
+_dist_cyclic(job_t *job, uint32_t **task_ids)
+{
+	int i, j, taskid = 0;
+	for (j=0; (taskid<opt.nprocs); j++) {	/* cycle counter */
+		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
+			if (j < job->cpus[i]) {
+				task_ids[i][j] = taskid++;
+				job->ntask[i]++;
+			}
+		}
+	}
+}
+
 void *
 launch(void *arg)
 {
 	slurm_msg_t *req_array_ptr;
 	launch_tasks_request_msg_t *msg_array_ptr;
 	job_t *job = (job_t *) arg;
-	int i, j, k, my_envc, taskid;
+	int i, my_envc, taskid;
 	char hostname[MAXHOSTNAMELEN];
 	uint32_t **task_ids;
 
@@ -89,24 +116,10 @@ launch(void *arg)
 	for (i = 0; i < job->nhosts; i++)
 		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i]*sizeof(uint32_t));
 	taskid = 0;
-	if (opt.distribution == SRUN_DIST_BLOCK) {
-		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-			for (j=0; (((j*opt.cpus_per_task)<job->cpus[i]) && 
-			           (taskid<opt.nprocs)); j++) {
-				task_ids[i][j] = taskid++;
-				job->ntask[i]++;
-			}
-		}
-	} else {	/*  (opt.distribution == SRUN_DIST_CYCLIC) */
-		for (k=0; (taskid<opt.nprocs); k++) {	/* cycle counter */
-			for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-				if (k < job->cpus[i]) {
-					task_ids[i][k] = taskid++;
-					job->ntask[i]++;
-				}
-			}
-		}
-	}
+	if (opt.distribution == SRUN_DIST_BLOCK)
+		_dist_block(job, task_ids);
+	else /* (opt.distribution == SRUN_DIST_CYCLIC) */
+		_dist_cyclic(job, task_ids);
 
 	msg_array_ptr = (launch_tasks_request_msg_t *) 
 			xmalloc(sizeof(launch_tasks_request_msg_t) * job->nhosts);
@@ -114,36 +127,40 @@ launch(void *arg)
 			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
 	my_envc = envcount(environ);
 	for (i = 0; i < job->nhosts; i++) {
+		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
+		slurm_msg_t                *m = &req_array_ptr[i];
+
 		/* Common message contents */
-		msg_array_ptr[i].job_id = job->jobid;
-		msg_array_ptr[i].uid = opt.uid;
-		msg_array_ptr[i].argc = remote_argc;
-		msg_array_ptr[i].argv = remote_argv;
-		msg_array_ptr[i].credential = job->cred;
-		msg_array_ptr[i].job_step_id = job->stepid;
-		msg_array_ptr[i].envc = my_envc;
-		msg_array_ptr[i].env = environ;
-		msg_array_ptr[i].cwd = opt.cwd;
-		msg_array_ptr[i].nnodes = job->nhosts;
-		msg_array_ptr[i].nprocs = opt.nprocs;
-#ifdef HAVE_LIBELAN3
-		msg_array_ptr[i].qsw_job = job->qsw_job;
-#endif 
+		r->job_id          = job->jobid;
+		r->uid             = opt.uid;
+		r->argc            = remote_argc;
+		r->argv            = remote_argv;
+		r->credential      = job->cred;
+		r->job_step_id     = job->stepid;
+		r->envc            = my_envc;
+		r->env             = environ;
+		r->cwd             = opt.cwd;
+		r->nnodes          = job->nhosts;
+		r->nprocs          = opt.nprocs;
 
 		/* Node specific message contents */
-		msg_array_ptr[i].tasks_to_launch = job->ntask[i];
-		msg_array_ptr[i].global_task_ids = task_ids[i];
-		msg_array_ptr[i].srun_node_id    = (uint32_t)i;
-		msg_array_ptr[i].io_port         = ntohs(job->ioport[i%job->niofds]);
-		msg_array_ptr[i].resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+		r->tasks_to_launch = job->ntask[i];
+		r->global_task_ids = task_ids[i];
+		r->srun_node_id    = (uint32_t)i;
+		r->io_port         = ntohs(job->ioport[i%job->niofds]);
+		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+		m->msg_type        = REQUEST_LAUNCH_TASKS;
+		m->data            = &msg_array_ptr[i];
+		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
+
+#ifdef HAVE_LIBELAN3
+		r->qsw_job = job->qsw_job;
+#endif 
 #ifdef HAVE_TOTALVIEW
 		if (opt.totalview)
-			msg_array_ptr[i].task_flags &= TASK_TOTALVIEW_DEBUG;
+			r->task_flags &= TASK_TOTALVIEW_DEBUG;
 #endif
 
-		req_array_ptr[i].msg_type = REQUEST_LAUNCH_TASKS;
-		req_array_ptr[i].data     = &msg_array_ptr[i];
-		memcpy(&req_array_ptr[i].address, &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
 	p_launch(req_array_ptr, job);
