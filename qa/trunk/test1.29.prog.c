@@ -47,5 +47,12 @@ main (int argc, char **argv)
 #else
 	printf("USER_NPROC unsupported\n");
 #endif
+#ifdef RLIMIT_STACK
+        (void) getrlimit(RLIMIT_STACK, &u_limit);
+        printf("USER_STACK=%d\n", u_limit.rlim_cur);
+#else
+        printf("USER_STACK unsupported\n");
+#endif
+
 	exit(exit_code);
 }

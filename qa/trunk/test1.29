@@ -45,6 +45,7 @@ set limit_core       943
 set limit_fsize      274515
 set limit_nofile     1386
 set limit_nproc      123
+set limit_stack      4591
 set matches          0
 
 print_header $test_id
@@ -63,6 +64,7 @@ exec echo "ulimit -c $limit_core"    >>$file_in
 exec echo "ulimit -f $limit_fsize"   >>$file_in
 exec echo "ulimit -n $limit_nofile"  >>$file_in
 exec echo "ulimit -u $limit_nproc"   >>$file_in
+exec echo "ulimit -s $limit_stack"   >>$file_in
 exec echo "$srun -N1 $file_prog_get" >>$file_in
 
 exec $bin_chmod 700 $file_in
@@ -137,6 +139,16 @@ expect {
 		incr matches
 		exp_continue
 	}
+	-re "USER_STACK=($number)" {
+		if {$expect_out(1,string) == [expr $limit_stack * 1024]} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_STACK unsupported" {
+		incr matches
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: sort not responding\n"
 		set exit_code 1
@@ -146,7 +158,7 @@ expect {
 	}
 }
 
-if {$matches != 4} {
+if {$matches != 5} {
 	send_user "\nFAILURE: User limits not propogated\n"
 	set exit_code 1
 }
