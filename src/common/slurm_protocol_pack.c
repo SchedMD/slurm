@@ -548,7 +548,10 @@ int unpack_resource_allocation_and_run_response_msg ( resource_allocation_and_ru
 	unpack_job_credential( &tmp_ptr->credentials, ( void ** ) buffer , length ) ;
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
-	qsw_unpack_jobinfo(tmp_ptr->qsw_job , (void **) buffer , length ) ;
+	if (qsw_unpack_jobinfo(tmp_ptr->qsw_job, (void **) buffer, length) < 0) {
+		error("qsw_unpack_jobinfo: %m");
+		return -1;
+	}
 #endif
 
 	*msg = tmp_ptr ;
@@ -1378,10 +1381,15 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , vo
 	slurm_unpack_slurm_addr_no_alloc ( & msg -> response_addr , buffer , length ) ;
 	slurm_unpack_slurm_addr_no_alloc ( & msg -> streams , buffer , length ) ;
 	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
+
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&msg->qsw_job);
-	qsw_unpack_jobinfo(msg -> qsw_job , (void **) buffer , length ) ;
+	if (qsw_unpack_jobinfo(msg->qsw_job, (void **) buffer, length) < 0) {
+		error("qsw_unpack_jobinfo: %m");
+		return -1;
+	}
 #endif
+
 	*msg_ptr = msg ;
 	return 0 ;
 }

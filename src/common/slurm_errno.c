@@ -86,10 +86,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ENOSLURM,             "Out of slurm" }, /* oh no! */
         { EBADMAGIC_QSWLIBSTATE,"Bad magic in QSW libstate" },
         { EBADMAGIC_QSWJOBINFO, "Bad magic in QSW jobinfo" },
-        { EINVAL_PRGCREATE,     "Program identifier in use or number of CPUs invalid"
- },
-        { ECHILD_PRGDESTROY,    "Processes belonging to this program are still runnin
-g" },
+        { EINVAL_PRGCREATE,     "Program identifier in use or number of CPUs invalid" },
+        { ECHILD_PRGDESTROY,    "Processes belonging to this program are still running" },
         { EEXIST_PRGDESTROY,    "Program identifier does not exist" },
         { EELAN3INIT,           "Too many processes using Elan or mapping failure" },
         { EELAN3CONTROL,        "Could not open elan3 control device" },
