@@ -247,27 +247,26 @@ void hostlist_uniq(hostlist_t hl);
 
 /* ----[ hostlist print functions ]---- */
 
-/* hostlist_to_string():
+/* hostlist_ranged_string():
  *
  * Write the string representation of the hostlist hl into buf,
- * writing at most n chars. Returns the number of bytes that would have
- * been written (including the terminating '\0') had there been enough
- * space.
+ * writing at most n chars. Returns the number of bytes written,
+ * or -1 if truncation occurred.
  *
  * The result will be NULL terminated.
  * 
- * hostlist_to_string() will write a bracketed hostlist representation
+ * hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
 size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
 
-/* hostlist_to_long_string():
+/* hostlist_deranged_string():
  *
  * Writes the string representation of the hostlist hl into buf,
- * writing at most n chars. Returns the number of bytes that would have
- * been written (including the terminating '\0'). 
+ * writing at most n chars. Returns the number of bytes written,
+ * or -1 if truncation occurred.
  *
- * hostlist_to_long_string() will not attempt to write a bracketed
+ * hostlist_deranged_string() will not attempt to write a bracketed
  * hostlist representation. Every hostname will be explicitly written.
  */
 size_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf);
