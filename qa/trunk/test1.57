@@ -42,6 +42,11 @@ expect {
 	"$prompt" {
 		send_user "Job initiated\n"
 	}
+	-re "queued and waiting for resources" {
+		send_user "\nWARNING: can't test srun task distribution\n"
+		exec $bin_rm -f $file_in
+		exit $exit_code
+	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
