@@ -64,7 +64,7 @@ static int  _handle_pollerr(fd_info_t *info);
 static int  _close_stream(int *fd, FILE *out, int tasknum);
 static int  _do_task_output(int *fd, FILE *out, int tasknum);
 static void _bcast_stdin(int fd, job_t *job);	
-static int  _readx(int fd, char *buf, size_t maxbytes);
+static ssize_t _readx(int fd, char *buf, size_t maxbytes);
 static ssize_t _readn(int fd, void *buf, size_t nbytes);
 static char * _next_line(char **str);
 
@@ -325,11 +325,10 @@ _do_task_output(int *fd, FILE *out, int tasknum)
 	return len;
 }
 
-static int 
+static ssize_t 
 _readx(int fd, char *buf, size_t maxbytes)
 {
-	/* FIXME: This function should return ssize_t */
-	int n;
+	size_t n;
 
   again:
 	if ((n = read(fd, (void *) buf, maxbytes)) < 0) {
@@ -347,7 +346,7 @@ _readx(int fd, char *buf, size_t maxbytes)
 }	
 
 
-/* return a pointer to the begging of the next line in *str and
+/* return a pointer to the beginning of the next line in *str and
  * nullify newline character. *str will be pointed just past 
  * nullified '\n'
  */
