@@ -313,6 +313,12 @@ int main(int argc, char *argv[])
 			break;
 	}
 
+	/* NOTE: We don't wait for the agent to complete or clear
+	 * free data structures by default */
+#if	MEM_LEAK_TEST
+	log_fini();
+	xfree(slurmctld_conf.slurm_conf);
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -615,7 +621,7 @@ static void *_slurmctld_background(void *no_data)
 
 #if	MEM_LEAK_TEST
 	/* This should purge all allocated memory,      *\
-	   \*   Anything left over represents a leak.   */
+	\*   Anything left over represents a leak.   */
 	if (job_list)
 		list_destroy(job_list);
 

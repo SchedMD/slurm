@@ -821,8 +821,8 @@ void rehash_node (void)
 {
 	int i, inx;
 
-	xrealloc (hash_table, (sizeof (int) * node_record_count));
-	memset (hash_table, 0, (sizeof (int) * node_record_count));
+	xfree (hash_table);
+	hash_table = xmalloc (sizeof (int) * node_record_count);
 
 	for (i = 0; i < node_record_count; i++) {
 		if (strlen (node_record_table_ptr[i].name) == 0)
