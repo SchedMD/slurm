@@ -101,28 +101,28 @@ void print_header_job(void)
 {
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "ID");
-	smap_info_ptr->xcord += 4;
+	smap_info_ptr->xcord += 3;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "JOBID");
+		  smap_info_ptr->xcord, " JOBID");
 	smap_info_ptr->xcord += 7;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "PARTITION");
-	smap_info_ptr->xcord += 11;
+	smap_info_ptr->xcord += 10;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "USER");
-	smap_info_ptr->xcord += 8;
+	smap_info_ptr->xcord += 9;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "NAME");
 	smap_info_ptr->xcord += 10;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "ST");
-	smap_info_ptr->xcord += 4;
+	smap_info_ptr->xcord += 3;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "TIME");
-	smap_info_ptr->xcord += 10;
+		  smap_info_ptr->xcord, "      TIME");
+	smap_info_ptr->xcord += 11;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "NODES");
-	smap_info_ptr->xcord += 7;
+	smap_info_ptr->xcord += 6;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "NODELIST");
 	smap_info_ptr->xcord = 1;
@@ -140,27 +140,28 @@ int print_text_job(job_info_t * job_ptr)
 	int width = 0;
 	struct passwd *user = NULL;
 	long days, hours, minutes, seconds;
+	char time_buf[20];
 
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "%c", job_ptr->num_procs);
-	smap_info_ptr->xcord += 4;
+	smap_info_ptr->xcord += 3;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%d", job_ptr->job_id);
+		  smap_info_ptr->xcord, "%6d", job_ptr->job_id);
 	smap_info_ptr->xcord += 7;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%s", job_ptr->partition);
-	smap_info_ptr->xcord += 11;
+		  smap_info_ptr->xcord, "%.10s", job_ptr->partition);
+	smap_info_ptr->xcord += 10;
 	user = getpwuid((uid_t) job_ptr->user_id);
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%s", user->pw_name);
-	smap_info_ptr->xcord += 8;
+		  smap_info_ptr->xcord, "%.8s", user->pw_name);
+	smap_info_ptr->xcord += 9;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%s", job_ptr->name);
+		  smap_info_ptr->xcord, "%.9s", job_ptr->name);
 	smap_info_ptr->xcord += 10;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%s",
+		  smap_info_ptr->xcord, "%.2s",
 		  job_state_string_compact(job_ptr->job_state));
-	smap_info_ptr->xcord += 4;
+	smap_info_ptr->xcord += 3;
 	time = smap_info_ptr->now_time - job_ptr->start_time;
 
 	seconds = time % 60;
@@ -169,22 +170,25 @@ int print_text_job(job_info_t * job_ptr)
 	days = time / 86400;
 
 	if (days)
-		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-			  smap_info_ptr->xcord, "%ld:%2.2ld:%2.2ld:%2.2ld",
-			  days, hours, minutes, seconds);
+		snprintf(time_buf, sizeof(time_buf),
+			"%ld:%2.2ld:%2.2ld:%2.2ld",
+			days, hours, minutes, seconds);
 	else if (hours)
-		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-			  smap_info_ptr->xcord, "%ld:%2.2ld:%2.2ld", hours,
-			  minutes, seconds);
+		snprintf(time_buf, sizeof(time_buf),
+			"%ld:%2.2ld:%2.2ld", 
+			hours, minutes, seconds);
 	else
-		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-			  smap_info_ptr->xcord, "%ld:%2.2ld", minutes,
-			  seconds);
-
-	smap_info_ptr->xcord += 10;
+		snprintf(time_buf, sizeof(time_buf),
+			"%ld:%2.2ld", minutes,seconds);
+	width = strlen(time_buf);
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%d", job_ptr->num_nodes);
-	smap_info_ptr->xcord += 7;
+		smap_info_ptr->xcord + (10 - width), "%s",
+		time_buf);
+	smap_info_ptr->xcord += 11;
+
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		  smap_info_ptr->xcord, "%5d", job_ptr->num_nodes);
+	smap_info_ptr->xcord += 6;
 	tempxcord = smap_info_ptr->xcord;
 	width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 	while (job_ptr->nodes[i] != '\0') {
