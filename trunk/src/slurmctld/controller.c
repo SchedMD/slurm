@@ -56,6 +56,7 @@ inline static void slurm_rpc_job_cancel ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
 
 int 
 main (int argc, char *argv[]) 
@@ -153,6 +154,8 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_free_job_desc_msg ( msg -> data ) ; 
 			break;
 		case REQUEST_NODE_REGISRATION_STATUS:
+			slurm_rpc_register_node_status ( msg ) ;
+			slurm_free_node_registration_status_msg ( msg -> data ) ;
 			break;
 		case REQUEST_RECONFIGURE:
 			slurm_rpc_reconfigure_controller ( msg ) ;
@@ -468,7 +471,6 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	struct job_record *job_rec_ptr;
 	uint32_t job_id ;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 	char * node_name_ptr = NULL;
@@ -601,7 +603,7 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	node_registration_status_msg_t * node_reg_stat_msg = ( node_registration_status_msg_t * ) msg-> data ;
+	slurm_node_registration_status_msg_t * node_reg_stat_msg = ( slurm_node_registration_status_msg_t * ) msg-> data ;
 
 	start_time = clock ();
 
@@ -629,6 +631,36 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	}
 }
 
+/* This may be the same as above if so remove please KBT */
+void 
+slurm_rpc_register_node_status ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	char * node_name_ptr = NULL;
+	slurm_node_registration_status_msg_t * reg_msg = ( slurm_node_registration_status_msg_t * ) msg -> data ;
+	start_time = clock ();
+
+	/* do RPC call */
+
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmctld_req: register error %d on node %s, time=%ld",
+				error_code, node_name_ptr, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: registured node %s, time=%ld",
+				node_name_ptr, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+	if (node_name_ptr)
+		xfree (node_name_ptr);
+
+}
 
 
 void
