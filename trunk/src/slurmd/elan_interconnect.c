@@ -80,7 +80,6 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 	nnodes = task_start->launch_msg->nnodes;
 	procid = task_start->local_task_id;
 	nprocs = task_start->launch_msg->nprocs;
-
 	if (qsw_setcap( task_start -> launch_msg -> qsw_job, procid) < 0) {
 		slurm_perror("qsw_setcap");
 		return SLURM_ERROR ;
@@ -97,13 +96,13 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 			return SLURM_ERROR ;
 		case 0:         /* child falls thru */
 			return SLURM_SUCCESS ;
-			_exit( 0 );
 		default:        /* parent */
 			if (waitpid(pid, NULL, 0) < 0) 
 			{
 				slurm_perror("waitpid");
 				return SLURM_ERROR ;
 			}
+			_exit ( 0 ) ;
 			return SLURM_SUCCESS ;
 	}
 }
