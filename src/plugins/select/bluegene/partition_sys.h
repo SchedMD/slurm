@@ -25,8 +25,14 @@
 #ifndef _PARTITION_SYS_H_
 #define _PARTITION_SYS_H_
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <math.h>
 #include <slurm/slurm.h>
+
+#include "bluegene.h"
 
 #define X_DIMENSION 8
 #define Y_DIMENSION 4
@@ -36,20 +42,15 @@
  * structure for use by partitioning algorithm to refer to the
  * structural elements of the BGL partition system.
  */
-typedef struct partition{
+typedef struct partition {
 	int bl_coord[SYSTEM_DIMENSIONS]; /* bottom left coordinates */
 	int tr_coord[SYSTEM_DIMENSIONS]; /* top right coordinates */
 	ushort dimensions[SYSTEM_DIMENSIONS]; /* X,Y,Z dimensions */
 	void* bgl_record_ptr;		/* pointer to referring bgl_record */
 	int size;
-#ifdef _RM_API_H__
-	pm_partition_id_t* bgl_part_id;	/* ID returned from CMCS	*/
-
-#else
-	ushort* bgl_part_id;	/* ID returned from CMCS	*/
-	ushort part_type;	/* Type=Mesh/Torus/NAV		*/
+	pm_partition_id_t *bgl_part_id;	/* ID returned from CMCS	*/
+	ushort conn_type;	/* Type=Mesh/Torus/NAV		*/
 	ushort node_use;	/* Use=Virtual/Coprocessor	*/
-#endif
 } partition_t;
 
 extern int configure_switches(partition_t* partition);

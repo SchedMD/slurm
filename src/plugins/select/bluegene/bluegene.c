@@ -23,7 +23,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdlib.h>
+#include <time.h>
+#include <slurm/slurm.h>
 
 #include "src/slurmctld/proc_req.h"
 #include "src/common/hostlist.h"
@@ -76,6 +82,11 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 
 /* Rotate a geometry array through six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
+
+#ifdef USE_BGL_FILES
+static char *_convert_bp_state(rm_BP_state_t state);
+static void _set_bp_node_state(rm_BP_state_t state, rm_element_t *element);
+#endif
 
 /**
  * create_static_partitions - create the static partitions that will be used
@@ -154,12 +165,12 @@ static void _process_config()
 				bgl_part->nodes);
 		else {
 			/** 
-			 * bgl_part->part_type should have been extracted in
+			 * bgl_part->conn_type should have been extracted in
 			 * copy_slurm_partition_list
 			 */
 			request_result->bgl_record_ptr = bgl_part;
 			request_result->node_use = bgl_part->node_use;
-			request_result->part_type = bgl_part->part_type;
+			request_result->conn_type = bgl_part->conn_type;
 			bgl_part->alloc_part = request_result;
 		}
 	}
@@ -182,7 +193,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	/** 
 	 * try to find the corresponding bgl_conf_record for the
 	 * nodes specified in the slurm_part_list, but if not
-	 * found, _find_part_type will default to RM_MESH
+	 * found, _find_conn_type will default to RM_MESH
 	 */
 	while ((slurm_part = (struct part_record *) list_next(itr))) {
 		/* no need to create record for slurm partition without nodes*/
@@ -216,7 +227,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 			bgl_record->slurm_part_id = xstrdup(slurm_part->name);
 
 			bgl_record->node_use = config_ptr->node_use;
-			bgl_record->part_type = config_ptr->part_type;
+			bgl_record->conn_type = config_ptr->conn_type;
 			bgl_record->hostlist = hostlist_create(cur_nodes);
 			bgl_record->size = hostlist_count(bgl_record->hostlist);
 			if (node_name2bitmap(cur_nodes, false, &(bgl_record->bitmap))){
@@ -333,20 +344,20 @@ extern int read_bgl_conf(void)
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *node_use = NULL, *part_type = NULL;
+	char *nodes = NULL, *node_use = NULL, *conn_type = NULL;
 	bgl_conf_record_t* new_record;
 
 	error_code = slurm_parser(in_line,
 				"Nodes=", 's', &nodes,
-				"Type=", 's', &part_type,
+				"Type=", 's', &conn_type,
 				"Use=", 's', &node_use,
 				"END");
 
 	if (error_code)
 		goto cleanup;
-	if (!nodes && !node_use && !part_type)
+	if (!nodes && !node_use && !conn_type)
 		goto cleanup;	/* only comment */
-	if (!nodes && (node_use || part_type)) {
+	if (!nodes && (node_use || conn_type)) {
 		error("bluegene.conf lacks Nodes value, but has Type or Use value");
 		error_code = SLURM_ERROR;
 		goto cleanup;
@@ -356,17 +367,17 @@ static int _parse_bgl_spec(char *in_line)
 	new_record->nodes = nodes;
 	nodes = NULL;	/* pointer moved, nothing left to xfree */
 
-	if (!part_type)
-		new_record->part_type = RM_MESH;
-	else if (strcasecmp(part_type, "TORUS") == 0)
-		new_record->part_type = RM_TORUS;
-	else if (strcasecmp(part_type, "MESH") == 0)
-		new_record->part_type = RM_MESH;
+	if (!conn_type)
+		new_record->conn_type = RM_MESH;
+	else if (strcasecmp(conn_type, "TORUS") == 0)
+		new_record->conn_type = RM_TORUS;
+	else if (strcasecmp(conn_type, "MESH") == 0)
+		new_record->conn_type = RM_MESH;
 	else {
 		error("_parse_bgl_spec: partition type %s invalid for nodes "
 			"%s, defaulting to type: MESH", 
-			part_type, new_record->nodes);
-		new_record->part_type = RM_MESH;
+			conn_type, new_record->nodes);
+		new_record->conn_type = RM_MESH;
 	}
 
 	if (!node_use)
@@ -385,12 +396,13 @@ static int _parse_bgl_spec(char *in_line)
 
 #if _DEBUG
 	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
-		new_record->nodes, convert_part_type(new_record->part_type), 
+		new_record->nodes, 
+		convert_conn_type(new_record->conn_type), 
 		convert_node_use(new_record->node_use));
 #endif
 
   cleanup:
-	xfree(part_type);
+	xfree(conn_type);
 	xfree(node_use);
 	xfree(nodes);
 	return error_code;
@@ -454,8 +466,10 @@ static int _parse_request(char* request_string, partition_t** request_result)
 {
 	int loc = 0, i,j, rc = SLURM_ERROR;
 
-	if (!request_string)
+	if (!request_string) {
+		error("_parse_request request_string is NULL");
 		return SLURM_ERROR;
+	}
 
 	debug("incoming request %s", request_string);
 	*request_result = (partition_t*) xmalloc(sizeof(partition_t));
@@ -487,14 +501,21 @@ static int _parse_request(char* request_string, partition_t** request_result)
 			break;
 		}
 	}
-	if (loc != 5)
+	if (loc != 5) {
+		error("_parse_request: Mal-formed node list: %s", 
+			request_string);
+error("DIM=%d, loc=%d i=%d", SYSTEM_DIMENSIONS, loc, i);
 		goto cleanup;
+	}
 
 	(*request_result)->size = 1;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		if (((*request_result)->bl_coord[i] < 0)
-		||  ((*request_result)->tr_coord[i] < 0))
+		||  ((*request_result)->tr_coord[i] < 0)) {
+			error("_parse_request: Bad node list values: %s", 
+				request_string);
 			goto cleanup;
+		}
 		/* count self */
 		(*request_result)->dimensions[i] =
 			(*request_result)->tr_coord[i] -
@@ -513,11 +534,11 @@ static int _parse_request(char* request_string, partition_t** request_result)
 /* Initialize all plugin variables */
 extern int init_bgl(void)
 {
-#ifdef _RM_API_H__
+#ifdef USE_BGL_FILES
 	int rc;
 	
 	// FIXME, this needs to be read in from conf file.
-	rc = set_rm_serial("BGL");
+	rc = rm_set_serial("BGL");
 	if (rc != STATUS_OK){
 		error("init_bgl: rm_set_serial failed");
 		return SLURM_ERROR;
@@ -566,7 +587,7 @@ extern void print_bgl_record(bgl_record_t* record)
 	info("\tnodes: %s", record->nodes);
 	info("\tsize: %d", record->size);
 	info("\tlifecycle: %s", convert_lifecycle(record->part_lifecycle));
-	info("\tpart_type: %s", convert_part_type(record->part_type));
+	info("\tconn_type: %s", convert_conn_type(record->conn_type));
 	info("\tnode_use: %s", convert_node_use(record->node_use));
 
 	if (record->hostlist){
@@ -598,9 +619,9 @@ extern char* convert_lifecycle(lifecycle_type_t lifecycle)
 		return "STATIC";
 }
 
-extern char* convert_part_type(rm_partition_t pt)
+extern char* convert_conn_type(rm_connection_type_t conn_type)
 {
-	switch (pt) {
+	switch (conn_type) {
 		case (RM_MESH): 
 			return "RM_MESH"; 
 		case (RM_TORUS): 
@@ -718,7 +739,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		if ((conn_type != record->part_type)
+		if ((conn_type != record->conn_type)
 		&& (conn_type != RM_NAV)) {
 			debug("bgl partition %s conn-type not usable", record->nodes);
 			continue;
@@ -856,8 +877,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
 		 */
 		char bgl_part_id[BITSIZE];
-#ifdef _RM_API_H__
-		snprintf(bgl_part_id, BITSIZE, "LLNL_%i", *(record->bgl_part_id));
+#ifdef USE_BGL_FILES
+		snprintf(bgl_part_id, BITSIZE, "%s", *record->bgl_part_id);
 #else
 		snprintf(bgl_part_id, BITSIZE, "LLNL_128_16");
 #endif
@@ -880,18 +901,15 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
  */
 static void _update_bgl_node_bitmap(void)
 {
-#ifdef _RM_API_H__
-	int bp_num,wire_num,switch_num,i;
+#ifdef USE_BGL_FILES
+	int bp_num,i;
 	rm_BP_t *my_bp;
-	rm_switch_t *my_switch;
-	rm_wire_t *my_wire;
 	rm_BP_state_t bp_state;
 	rm_location_t bp_loc;
-	// rm_size3D_t bp_size,size_in_bp,m_size;
-	// rm_size3D_t bp_size,size_in_bp,m_size;
-	char* reason = NULL;
+	rm_size3D_t bp_size;
 	char down_node_list[BUFSIZE] = "";
 	char bgl_down_node[128];
+	char *bp_id;
 
 	if (!bgl) {
 		error("error, BGL is not initialized");
@@ -907,34 +925,35 @@ static void _update_bgl_node_bitmap(void)
 	rm_get_data(bgl,RM_BPNum,&bp_num);
 	debug("- - - - - BPS (%d) - - - - - -",bp_num);
 
-	for(i=0;i<bp_num;i++){
-		if(i==0)
+	for (i=0;i<bp_num;i++) {
+		if (i==0)
 			rm_get_data(bgl,RM_FirstBP,&my_bp);
 		else
 			rm_get_data(bgl,RM_NextBP,&my_bp);
 		
 		// is this blocking call?
-		rm_get_data(my_bp,RM_BPState,&bp_state);
-		rm_get_data(my_bp,RM_BPLoc,&bp_loc);
+		rm_get_data(my_bp, RM_BPState, &bp_state);
+		rm_get_data(my_bp, RM_BPLoc,   &bp_loc);
+		rm_get_data(my_bp, RM_PartitionID, &bp_id);
 		/* from here we either update the node or bitmap
 		   entry */
 		/** translate the location to the "node name" */
-		snprintf(bgl_down_node, sizeof[bgl_down_node], "bgl%d%d%d", 
+		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
 		debug("update bgl node bitmap: %s loc(%s) is in state %s", 
-		      BPID, 
-		      bgl_down_node,
-		      convert_bp_state(RM_BPState));
+		      bp_id, bgl_down_node, _convert_bp_state(RM_BPState));
 		// convert_partition_state(BPPartState);
-		// BPID,convert_bp_state(BPState),bp_loc.X,bp_loc.Y,bp_loc.Z,BPPartID
+		// BPID,_convert_bp_state(BPState),bp_loc.X,bp_loc.Y,
+		// bp_loc.Z,BPPartID
 
 		if (RM_BPState == RM_BP_DOWN) {
 			/* now we have to convert the BGL BP to a node
 			 * that slurm knows about = comma separated
 			 * node list
 			 */
-			if (strlen(down_node_list) + strlen(bgl_down_node) + 2) < BUFSIZE) {
-				if (done_node_list[0] != '\0')
+			if ((strlen(down_node_list) + strlen(bgl_down_node) 
+			     +2) < BUFSIZE) {
+				if (down_node_list[0] != '\0')
 					strcat(down_node_list,",");
 				strcat(down_node_list, bgl_down_node);
 			} else
@@ -955,9 +974,10 @@ static void _update_bgl_node_bitmap(void)
 }
 
 
-#ifdef _RM_API_H__
-/** */
-extern char *convert_bp_state(rm_BP_state_t state){
+#ifdef USE_BGL_FILES
+/* Convert base partition state value to a string */
+static char *_convert_bp_state(rm_BP_state_t state)
+{
 	switch(state){ 
 	case RM_BP_UP:
 		return "RM_BP_UP";
@@ -967,14 +987,16 @@ extern char *convert_bp_state(rm_BP_state_t state){
 		break;
 	case RM_BP_NAV:
 		return "RM_BP_NAV";
-	defalt:
+	default:
 		return "BP_STATE_UNIDENTIFIED!";
 	}
-};
+}
 
-/** */
-extern void set_bp_node_state(rm_BP_state_t state, node_record node){
-	switch(state){ 
+/* Set a base partition's state */
+static void _set_bp_node_state(rm_BP_state_t state, rm_element_t* element)
+{
+	/* rm_set_data(element, RM_PartitionState, state) */
+	switch(state) { 
 	case RM_BP_UP:
 		debug("RM_BP_UP");
 		break;
@@ -984,11 +1006,11 @@ extern void set_bp_node_state(rm_BP_state_t state, node_record node){
 	case RM_BP_NAV:
 		debug("RM_BP_NAV");
 		break;
-	defalt:
+	default:
 		debug("BGL state update returned UNKNOWN state");
 		break;
 	}
-};
+}
 #endif
 
 /*
