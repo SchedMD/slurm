@@ -97,7 +97,7 @@ expect {
 		send "yes\n"
 		exp_continue
 	}
-	-re "Loaded MPI support library" {
+	-re "Attached to parallel task 5" {
 		incr matches
 		send "G\n"
 		exp_continue
