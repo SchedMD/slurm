@@ -215,7 +215,7 @@ void * stdin_io_pipe_thread ( void * arg )
 	while ( true )
 	{
 		//if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) == SLURM_PROTOCOL_ERROR )
-		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
+		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[STDIN_OUT_SOCK] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
 			local_errno = errno ;	
 			switch ( local_errno )
@@ -332,17 +332,17 @@ void * stdout_io_pipe_thread ( void * arg )
 		}
 		/* write out socket code */
 		//if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
-		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[STDIN_OUT_SOCK] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
 			switch ( local_errno )
 			{
-				case 0:
 				case EBADF:
 				case EPIPE:
 				case ECONNREFUSED:
 				case ECONNRESET:
 				case ENOTCONN:
+					info ( "std out connection lost" ) ;
 					attempt_reconnect = true ;
 					slurm_close_stream ( io_arg->sockets[STDIN_OUT_SOCK] ) ;
 					break ;
@@ -420,17 +420,17 @@ void * stderr_io_pipe_thread ( void * arg )
 		}
 		/* write out socket code */
 		//if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
-		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[SIG_STDERR_SOCK] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
 			switch ( local_errno )
 			{
-				case 0:
 				case EBADF:
 				case EPIPE:
 				case ECONNREFUSED:
 				case ECONNRESET:
 				case ENOTCONN:
+					info ( "std err connection lost %s ", local_errno ) ;
 					attempt_reconnect = true ;
 					slurm_close_stream ( io_arg->sockets[SIG_STDERR_SOCK] ) ;
 					break ;

@@ -25,4 +25,16 @@ typedef struct credential_tools_ctx
 		EVP_PKEY * public ;
 	} key ;
 } credential_tools_ctx_t ;
+
+int ssl_init ( ) ;
+int ssl_destroy ( ) ;
+
+int init_signer ( credential_tools_ctx_t * ctx , char * path ) ;
+int init_verifier ( credential_tools_ctx_t * ctx , char * path ) ;
+
+int destroy_credential_ctx ( credential_tools_ctx_t * ctx ) ;
+
+int credential_sign ( credential_tools_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int * signature_length ) ;
+int credential_verify ( credential_tools_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int signature_length ) ;
+
 #endif

@@ -18,11 +18,13 @@
 int ssl_init ( )
 {
 	ERR_load_crypto_strings();
+	OpenSSL_add_all_algorithms();
 	return SLURM_SUCCESS ;
 }
 
 int ssl_destroy ( )
 {
+	EVP_cleanup();
 	ERR_free_strings();
 	return SLURM_SUCCESS ;
 }
@@ -86,7 +88,6 @@ int destroy_credential_ctx ( credential_tools_ctx_t * ctx )
 	if ( ctx )
 	{
 	EVP_PKEY_free ( ctx -> key . private ) ;
-	xfree ( ctx ) ;
 	}
 	return SLURM_SUCCESS ;
 }
@@ -97,7 +98,7 @@ int credential_sign ( credential_tools_ctx_t * ctx , char * data_buffer , int da
 	int rc ;
 	EVP_MD_CTX md_ctx ;
 
-	EVP_SignInit ( & md_ctx , EVP_dss1 ( ) ) ;
+	EVP_SignInit ( & md_ctx , EVP_sha1 ( ) ) ;
 	EVP_SignUpdate ( & md_ctx , data_buffer , data_length ) ;
 	if ( ( rc = EVP_SignFinal ( & md_ctx , signature_buffer , signature_length , ctx -> key . private ) ) != SLURM_OPENSSL_SIGNED )
 	{
@@ -113,7 +114,7 @@ int credential_verify ( credential_tools_ctx_t * ctx , char * data_buffer , int 
 	int rc ;
 	EVP_MD_CTX md_ctx ;
 
-	EVP_VerifyInit ( & md_ctx , EVP_dss1 ( ) ) ;
+	EVP_VerifyInit ( & md_ctx , EVP_sha1 ( ) ) ;
 	EVP_VerifyUpdate ( & md_ctx , data_buffer , data_length ) ;
 	if ( ( rc = EVP_VerifyFinal ( & md_ctx , signature_buffer , signature_length ,  ctx -> key . public ) ) != SLURM_OPENSSL_VERIFIED )
 	{
