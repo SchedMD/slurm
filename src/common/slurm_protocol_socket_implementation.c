@@ -301,7 +301,7 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 	{
 		_slurm_FD_SET ( open_fd , &set ) ;
 		rc = _slurm_select ( open_fd + 1 , NULL , & set, NULL , timeout ) ;
-		if ( rc == SLURM_PROTOCOL_ERROR || rc < 0 )
+		if ( (rc == SLURM_PROTOCOL_ERROR) || (rc < 0) )
 		{
 			if ( errno == EINTR )
 			{
@@ -344,14 +344,14 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 		}
 	}
 
-	return bytes_sent ;
-	if ( flags != SLURM_PROTOCOL_ERROR )
+	if ( fd_flags != SLURM_PROTOCOL_ERROR )
 	{
 		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
 	}
-	
+	return bytes_sent ;
+
 	_slurm_send_timeout_exit_error:
-	if ( flags != SLURM_PROTOCOL_ERROR )
+	if ( fd_flags != SLURM_PROTOCOL_ERROR )
 	{
 		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
 	}
@@ -374,7 +374,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 	{
 		_slurm_FD_SET ( open_fd , &set ) ;
 		rc = _slurm_select ( open_fd + 1 , & set , NULL , NULL , timeout ) ;
-		if ( rc == SLURM_PROTOCOL_ERROR || rc < 0 )
+		if ( (rc == SLURM_PROTOCOL_ERROR) || (rc < 0) )
 		{
 			if ( errno == EINTR )
 			{
@@ -393,8 +393,8 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 		}
 		else 
 		{
-			rc = _slurm_recv ( open_fd, buffer+bytes_recv , size , flags ) ;
-			if ( rc  == SLURM_PROTOCOL_ERROR || rc < 0 )
+			rc = _slurm_recv ( open_fd, &buffer[bytes_recv], (size-bytes_recv), flags ) ;
+			if ( (rc  == SLURM_PROTOCOL_ERROR) || (rc < 0) )
 			{
 
 				if ( errno == EINTR )
@@ -414,15 +414,16 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 			else
 			{
 				bytes_recv+=rc ;
+				break ;
 			}
 		}
 	}
-	return bytes_recv ;
 	if ( fd_flags != SLURM_PROTOCOL_ERROR )
 	{
 		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
 	}
-	
+	return bytes_recv ;
+
 	_slurm_recv_timeout_exit_error:
 	if ( fd_flags != SLURM_PROTOCOL_ERROR )
 	{
