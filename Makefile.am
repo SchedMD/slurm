@@ -5,7 +5,7 @@ EXTRA_DIST = auxdir etc doc
 # don't include lib and doc 'til we have something there
 #SUBDIRS = lib src doc  
 
-SUBDIRS = src
+SUBDIRS = src testsuite
 
 # remove *all* files that can be regenerated from automated tools
 squeaky-clean: maintainer-clean

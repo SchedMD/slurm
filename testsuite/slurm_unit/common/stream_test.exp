@@ -1,0 +1,46 @@
+#!/usr/bin/expect
+
+set cwd [ file dirname [ info script] ]
+spawn -noecho "$cwd/stream_server" "4002"
+set server_id $spawn_id
+
+spawn -noecho "$cwd/stream_client" "4002"
+set client_id $spawn_id
+
+proc send_recv_test { id_1 id_2 message } {
+#	send_user "id_1: $id_1\nid_2: $id_2\n"
+	set spawn_id $id_2
+	set size [ string length $message ]
+	send -i $id_1 "$message\n"
+
+	expect { 
+		"$message" { 
+			pass "size=$size"
+		}
+		default { 
+			fail "size=$size Timed out/ EOF"
+		}
+	}
+}
+
+proc num_test { client_id server_id size } {
+	for { set i 0 } { $i < ($size) } { incr i 1 } {
+		send_recv_test $client_id $server_id $i
+		send_recv_test $server_id $client_id $i
+	}
+}
+
+# A few lame chats...
+send_recv_test $client_id $server_id "This is a stream test" 
+send_recv_test $server_id $client_id "Really?" 
+send_recv_test $client_id $server_id "Yep. Let's test it. ;-)" 
+send_recv_test $server_id $client_id "OK." 
+
+num_test $server_id $client_id 1000
+
+send_recv_test $client_id $server_id "I wonder if the number test passed." 
+send_recv_test $server_id $client_id "let's see." 
+
+# Close the connections
+send -i $client_id "quit\n"
+send -i $server_id "quit\n"
