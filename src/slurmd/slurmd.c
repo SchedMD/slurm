@@ -31,7 +31,10 @@
 
 #include <string.h>
 #include <pthread.h>
+#include <sys/time.h>
 #include <sys/param.h>
+#include <sys/resource.h>
+#include <unistd.h>
 
 #include <src/common/log.h>
 #include <src/common/xmalloc.h>
@@ -460,6 +463,13 @@ _create_msg_socket()
 static int
 _slurmd_init()
 {
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		setrlimit(RLIMIT_NOFILE,&rlim);
+	}
+
 	slurm_ssl_init();
 	slurm_init_verifier(&conf->vctx, conf->pubkey);
 	initialize_credential_state_list(&conf->cred_state_list);
