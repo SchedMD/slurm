@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "July 2003" "Morris Jette" "Slurm job step initiation functions"
+.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm job step initiation functions"
 .SH "NAME"
 slurm_job_step_create \- Slurm job step initiation functions
 .SH "SYNTAX"
@@ -57,6 +57,9 @@ On success, zero is returned. On error, -1 is returned, and Slurm error code is 
 \fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect. 
 .LP
 \fBESLURM_BAD_DIST\fR task distribution specification is invalid. 
+.LP
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
+SLURM controller.
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
