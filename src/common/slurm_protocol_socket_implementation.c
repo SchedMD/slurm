@@ -1,9 +1,9 @@
 /* Author Kevin Tew
  * May 17, 2002
  */
-#include "slurm_protocol_interface.h"
-#include "slurm_protocol_common.h"
-#include "slurm_protocol_defs.h"
+#include <src/common/slurm_protocol_interface.h>
+#include <src/common/slurm_protocol_common.h>
+#include <src/common/slurm_protocol_defs.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>

@@ -1,7 +1,10 @@
-#include "slurm_protocol_defs.h"
-#include "slurm_protocol_util.h"
+#include <src/common/slurm_protocol_defs.h>
+#include <src/common/slurm_protocol_common.h>
+#include <src/common/slurm_protocol_util.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
 
 extern int debug ;
 
@@ -27,3 +30,10 @@ void init_header ( header_t * header , slurm_message_type_t message_type , uint1
 	header -> message_type = message_type ;
 }
 
+/* sets the fields of a slurm_addr */
+void set_slurm_addr_hton ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )
+{
+	slurm_address -> family = AF_SLURM ;
+	slurm_address -> port = htons ( port ) ;
+	slurm_address -> address = htons ( ip_address ) ;
+}
