@@ -555,10 +555,29 @@ static void *_slurmctld_background(void *no_data)
 
 	while (shutdown_time == 0) {
 		sleep(1);
-
 		now = time(NULL);
 
-		if (difftime(now, last_timelimit_time) > PERIODIC_TIMEOUT) {
+		if (shutdown_time) {
+			int i;
+			/* wait for RPC's to complete */
+			for (i=0; ((i<2) && server_thread_count); i++) {
+				debug2("server_thread_count=%d",
+					server_thread_count);
+				sleep(1);
+			}
+			if (server_thread_count)
+				info(
+				   "warning: shutdown with server_thread_count of %d", 
+				   server_thread_count);
+			if (_report_locks_set() == 0)
+				_save_all_state();
+			else
+				error(
+				   "unable to save state due to set semaphores");
+			break;
+		}
+
+		if (difftime(now, last_timelimit_time) >= PERIODIC_TIMEOUT) {
 			last_timelimit_time = now;
 			debug("Performing job time limit check");
 			lock_slurmctld(job_write_lock);
@@ -597,30 +616,11 @@ static void *_slurmctld_background(void *no_data)
 				last_checkpoint_time = 0;  /* force save */
 		}
 
-		if (shutdown_time ||
-		    (difftime(now, last_checkpoint_time) >=
-		     PERIODIC_CHECKPOINT)) {
-			if (shutdown_time) {
-				/* wait for any RPC's to complete */
-				if (server_thread_count)
-					sleep(1);
-				if (server_thread_count)
-					sleep(1);
-				if (server_thread_count)
-					info(
-					   "warning: shutting down with server_thread_count of %d", 
-					   server_thread_count);
-				if (_report_locks_set() == 0) {
-					last_checkpoint_time = now;
-					_save_all_state();
-				} else
-					error
-					    ("unable to save state due to set semaphores");
-			} else {
+		if (difftime(now, last_checkpoint_time) >=
+		    PERIODIC_CHECKPOINT) {
 				last_checkpoint_time = now;
-				debug("Performing full system state save");
+				debug2("Performing full system state save");
 				_save_all_state();
-			}
 		}
 
 	}
@@ -1812,6 +1812,9 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		/* wait for workload to dry up before sending reply */
 		for (i = 0; ((i < 10) && (server_thread_count > 1)); i++)
 			sleep(1);
+		if (server_thread_count > 1)
+			error("shutting down with server_thread_count=%d",
+				server_thread_count);
 	}
 	slurm_send_rc_msg(msg, error_code);
 	if ((error_code == SLURM_SUCCESS) && core_arg)
