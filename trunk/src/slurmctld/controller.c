@@ -51,6 +51,7 @@
 
 log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 slurm_ctl_conf_t slurmctld_conf;
+time_t shutdown_time = (time_t)0;
 
 int getnodename (char *name, size_t len);
 int msg_from_root (void);
@@ -67,6 +68,7 @@ inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_cancel ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_step_complete ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
@@ -132,7 +134,7 @@ main (int argc, char *argv[])
 	/*
 	 * Procss incoming RPCs indefinitely
 	 */
-	while (1) 
+	while (shutdown_time == 0) 
 	{
 		/* accept needed for stream implementation 
 		 * is a no-op in message implementation that just passes sockfd to newsockfd
@@ -166,7 +168,7 @@ main (int argc, char *argv[])
 			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 		}
 	}			
-	return 0 ;
+	exit (0) ;
 }
 
 /* slurmctld_background - process slurmctld background activities */
@@ -182,7 +184,9 @@ slurmctld_background ( void * no_data )
 	/* Locks: Read config, write job, write node, write partition */
 	slurmctld_lock_t state_write_lock = { READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
-	while (1) {
+	while (shutdown_time == 0) {
+		sleep (2);
+
 		now = time (NULL);
 
 		if ((now - last_timelimit_time) > PERIODIC_TIMEOUT) {
@@ -200,15 +204,22 @@ slurmctld_background ( void * no_data )
 			unlock_slurmctld (job_write_lock);
 		}
 
-		if ((now - last_checkpoint_time) > PERIODIC_CHECKPOINT) {
+		if (shutdown_time || (now - last_checkpoint_time) > PERIODIC_CHECKPOINT) {
+			if (shutdown_time) {	
+				/* wait for any RPC's to complete */
+				now = time (NULL);
+				if ((now - shutdown_time) < 2)
+					sleep ((int)(now - shutdown_time + 2));
+			}
+			
 			last_checkpoint_time = now;
 			lock_slurmctld (state_write_lock);
 			/* issue call to save state */
 			unlock_slurmctld (state_write_lock);
 		}
 
-		sleep (5);
 	}
+	return ((void *)0);
 }
 
 /* process_rpc - process an RPC request and close the connection */
@@ -282,6 +293,9 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_RECONFIGURE:
 			slurm_rpc_reconfigure_controller ( msg ) ;
+			break;
+		case REQUEST_SHUTDOWN:
+			slurm_rpc_shutdown_controller ( msg ) ;
 			break;
 		case REQUEST_UPDATE_JOB:
 			slurm_rpc_update_job ( msg ) ;
@@ -789,6 +803,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	clock_t start_time;
 
 	start_time = clock ();
+/* must be user root */
 
 	/* do RPC call */
 	error_code = read_slurm_conf ( );
@@ -809,6 +824,20 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	}
 
 	schedule();
+}
+
+
+/* slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */
+void 
+slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
+{
+	/* do RPC call */
+/* must be user root */
+	shutdown_time = time (NULL);
+
+	/* return result */
+	info ("slurm_rpc_shutdown_controller completed successfully");
+	slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 }
 
 
