@@ -567,8 +567,9 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		goto fail;
 	}
 #else
-	/* See qsw gnat sw-elan/4334 - elan3_control_open can return -1 on error */
-	if ((jobinfo->j_ctx = elan3_control_open(0)) == NULL || jobinfo->j_ctx == -1) {
+	/* see qsw gnat sw-elan/4334: elan3_control_open can return -1 */
+	if ((jobinfo->j_ctx = elan3_control_open(0)) == NULL 
+			|| jobinfo->j_ctx == (void *)-1) {
 		xseterrno(EELAN3CONTROL);
 		goto fail;
 	}
