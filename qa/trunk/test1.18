@@ -53,7 +53,7 @@ expect {
 }
 if {$job_id == 0} {
 	send_user "\nFAILURE: job submit failure\n"
-	set exit_code   1
+	exit 1
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: job run time failure\n"
