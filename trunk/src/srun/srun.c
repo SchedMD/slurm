@@ -311,6 +311,7 @@ create_job_step(job_t *job)
 	req.cpu_count  = opt.nprocs;
 	req.node_list  = job->nodelist;
 	req.relative   = false;
+	req.task_dist  = SLURM_DIST_CYCLIC;
 
 	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	req_msg.data     = &req;
