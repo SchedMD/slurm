@@ -568,7 +568,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
 	  Node_Record_Point->Name, Node_Record_Point->OS, Node_Record_Point->CPUs, 
 	  Node_Record_Point->Speed, Node_Record_Point->RealMemory, 
 	  Node_Record_Point->VirtualMemory, Node_Record_Point->TmpDisk, Out_Partition,
-	  Node_State_String[Node_Record_Point->NodeState], Out_Time) == EOF) {
+	  Node_State_String[Node_Record_Point->NodeState], Out_Time) < 1) {
 	return EINVAL;
     } /* if */
     return 0;
