@@ -1584,6 +1584,7 @@ static void
 _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 {
 	pack_time(build_ptr->last_update, buffer);
+	packstr(build_ptr->authtype, buffer);
 	packstr(build_ptr->backup_addr, buffer);
 	packstr(build_ptr->backup_controller, buffer);
 	packstr(build_ptr->control_addr, buffer);
@@ -1594,6 +1595,7 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->heartbeat_interval, buffer);
 	pack16(build_ptr->inactive_limit, buffer);
 	pack16(build_ptr->kill_wait, buffer);
+	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->prioritize, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->ret2service, buffer);
@@ -1627,6 +1629,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	/* load the data values */
 	/* unpack timestamp of snapshot */
 	safe_unpack_time(&build_ptr->last_update, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->authtype, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->backup_addr, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->backup_controller, &uint16_tmp,
 			       buffer);
@@ -1639,6 +1642,7 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->heartbeat_interval, buffer);
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
+	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prioritize, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
@@ -1667,11 +1671,13 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	return SLURM_SUCCESS;
 
       unpack_error:
+	xfree(build_ptr->authtype);
 	xfree(build_ptr->backup_addr);
 	xfree(build_ptr->backup_controller);
 	xfree(build_ptr->control_addr);
 	xfree(build_ptr->control_machine);
 	xfree(build_ptr->epilog);
+	xfree(build_ptr->plugindir);
 	xfree(build_ptr->prioritize);
 	xfree(build_ptr->prolog);
 	xfree(build_ptr->slurmctld_logfile);
