@@ -63,9 +63,10 @@
  *  *Must be zero-terminated*
  */
 static int smgr_sigarray[] = {
-	SIGINT,  SIGTERM, SIGCHLD, 
-	SIGUSR1, SIGUSR2, SIGTSTP,
-	SIGQUIT, SIGPIPE, SIGALRM, 0
+	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1, 
+	SIGUSR2, SIGTSTP, SIGXCPU,
+	SIGQUIT, SIGPIPE, 
+	SIGALRM, 0
 };
 
 /*
