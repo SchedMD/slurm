@@ -1174,7 +1174,7 @@ void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, voi
 {
 	int i=0;
 	uint16_t nl = htons(size_val);
-	_pack16( nl, buffer, length);
+	pack16( nl, buffer, length);
 
 	for ( i=0; i < size_val; i++ ) 
 	{
@@ -1186,8 +1186,10 @@ void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, voi
 void unpack_slurm_addr_array ( slurm_addr ** slurm_address , uint16_t * size_val , void ** buffer , int * length )
 {
 	int i=0;
-	_unpack16( size_val, buffer , length );
-	slurm_address = xmalloc( (*size_val) * sizeof( slurm_addr ) );
+	uint16_t nl ;
+	unpack16( & nl , buffer , length );
+	*size_val = ntohs ( nl ) ;
+	*slurm_address = xmalloc( (*size_val) * sizeof( slurm_addr ) );
 
 	for ( i=0; i < *size_val; i++ ) 
 	{
