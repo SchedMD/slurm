@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="8 October 2004">
+<meta name="LLNLRandRdate" content="19 October 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -143,8 +143,8 @@ a a a a . . . #            Z
 <h3>System Administration</h3>
 
 <p>Building a Blue Gene compatible system is dependent upon the <i>configure</i>
-program locating some expected files. You should see "#define HAVE_BGL 1" in 
-the "config.h" file before making SLURM.</p>
+program locating some expected files. You should see "#define HAVE_BGL 1" and
+"#define HAVE_FRONT_END 1" in the "config.h" file before making SLURM.</p>
 
 <p>The slurmctld daemon should execute on the system's service node with 
 an optional backup daemon on one of the front end nodes. 
@@ -167,9 +167,14 @@ to schedule all of them in priority order. </p>
 
 <p>SLURM node and partition descriptions should make use of the 
 <a href="#naming">naming</a> conventions described above. For example,
-"NodeName=bgl[000x733] NodeAddr=frontend0 Procs=1024". 
-Note that the NodeAddr value for all 128 base partitions is the name 
-of the front end node executing the slurmd daemon.</p>
+"NodeName=bgl[000x733] NodeAddr=frontend0 NodeHostname=frontend0 Procs=1024". 
+Note that the values of both NodeAddr and NodeHostname for all 
+128 base partitions is the name of the front end node executing 
+the slurmd daemon. 
+The NodeName values represent base partitions. 
+No computers are actually expected to return a value of "bgl000"
+in response to the <i>hostname</i> command nor will any attempt 
+be made to route message traffic to this address. </p>
 
 <p>While users are unable to initiate SLURM job steps on Blue Gene systems, 
 this restriction does not apply to user root or SlurmUser. 
@@ -207,7 +212,7 @@ rebooting of c-nodes and I/O nodes.</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified 8 October 2004</p></td>
+Last modified 19 October 2004</p></td>
 </tr>
 </table>
 </td>

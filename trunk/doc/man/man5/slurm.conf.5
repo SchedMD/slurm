@@ -140,6 +140,14 @@ authentication by Slurm daemons.
 Fully qualified pathname of a file containing a public key used for 
 authentication by Slurm daemons.
 .TP
+\fBKillTree\fR
+If set to "1", signals (e.g. Ctrl-C or scancel) are forwarded to all descendant 
+processes of one that was directly invoked by the user.  This is always
+required if \fBMpichGmDirectSupport\fR is set to "1".  The default behavior 
+is that signals are forwarded to processes that belong to the process group 
+of the process that was directly invoked by the user.
+NOTE: This option is not currently supported on AIX systems.
+.TP
 \fBKillWait\fR
 The interval, in seconds, given to a job's processes between the 
 SIGTERM and SIGKILL signals upon reaching its time limit. 
@@ -162,6 +170,11 @@ SLURM's active database. Set the values of \fBMaxJobCount\fR and
 \fBMinJobAge\fR to insure the slurmctld daemon does not exhaust 
 its memory or other resources. The default value is 300 seconds. 
 A value of zero prevents any job record purging.
+.TP
+\fBMpichGmDirectSupport\fR
+If set to "1", srun handles executable files linked with the MPICH-GM 
+library directly, not via mpirun that uses rsh. If set, \fBKillTree\fR
+must also be set to "1".
 .TP
 \fBPluginDir\fR
 Identifies the places in which to look for SLURM plugins. 
@@ -374,27 +387,52 @@ information as shown in the example.
 A job step's tasks are allocated to nodes in order the nodes appear 
 in the configuration file. There is presently no capability within 
 SLURM to arbitarily order a job step's tasks.
-The node configuration specifies the following information: 
-.TP
-\fBNodeName\fR
-Name of a node as returned by the hostname command, 
-without the full domain name (e.g. "lx0012"). 
-A simple node range expression may optionally 
-be used to specify ranges 
-of nodes to avoid building a configuration file with large numbers 
-of entries. The node range expression can contain one  
+.LP
+A simple node range expression may optionally be used to specify 
+ranges of nodes to avoid building a configuration file with large 
+numbers of entries. The node range expression can contain one  
 pair of square brackets with a sequence of comma separated 
 numbers and/or ranges of numbers separated by a "-"
 (e.g. "linux[0-64,128]", or "lx[15,18,32-33]"). 
-If the NodeName is "DEFAULT", the values specified 
+Presently the numeric range must be the last characters in the 
+node name (e.g. "unit[0-31]rack1" is invalid). 
+The node configuration specified the following information:
+.TP
+\fBNodeName\fR
+Name that SLURM uses to refer to a node. 
+Typically this would be the string that "/bin/hostname -s" 
+returns, however it may be an arbitary string if 
+\fBNodeHostname\fR is specified.
+If the \fBNodeName\fR is "DEFAULT", the values specified 
 with that record will apply to subsequent node specifications   
 unless explicitly set to other values in that node record or 
 replaced with a different set of default values. 
 For architectures in which the node order is significant, 
 nodes will be considered consecutive in the order defined. 
-For example, if the configuration for NodeName=charlie immediately 
-follows the configuration for NodeName=baker they will be 
+For example, if the configuration for "NodeName=charlie" immediately 
+follows the configuration for "NodeName=baker" they will be 
 considered adjacent in the computer.
+.TP
+\fBNodeHostname\fR
+The string that "/bin/hostname -s" returns. 
+A node range expression can be used to specify a set of nodes.
+If an expression is used, the number of nodes identified by 
+\fBNodeHostname\fR on a line in the configuration file must 
+be identical to the number of nodes identified by \fBNodeName\fR.
+By default, the \fBNodeHostname\fR will be identical in value to 
+\fBNodeName\fR.
+.TP
+\fBNodeAddr\fR
+Name that a node should be referred to in establishing 
+a communications path. 
+This name will be used as an 
+argument to the gethostbyname() function for identification. 
+If a node range expression is used to designate multiple nodes, 
+they must exactly match the entries in the \fBNodeName\fR
+(e.g. "NodeName=lx[0-7] NodeAddr="elx[0-7]"). 
+\fBNodeAddr\fR may also contain IP addresses.
+By default, the \fBNodeAddr\fR will be identical in value to 
+\fBNodeName\fR.
 .TP
 \fBFeature\fR
 A comma delimited list of arbitrary strings indicative of some 
@@ -404,23 +442,6 @@ either has a feature or it does not.
 If desired a feature may contain a numeric component indicating, 
 for example, processor speed. 
 By default a node has no features.
-.TP
-\fBNodeAddr\fR
-Name that a node should be referred to in establishing 
-a communications path. This name will be used as an 
-argument to the gethostbyname() function for identification. 
-For example, "elx0012" might be used to designate 
-the ethernet address for node "lx0012". A simple node range 
-expression may optionally be used to specify ranges 
-of nodes. The node range expression can contain one  
-pair of square brackets with a sequence of comma separated 
-numbers and/or ranges of numbers separated by a "-"
-(e.g. "elinux[0-64,128]"). 
-If a node range expression is used to designate multiple nodes, 
-they must exactly match the entries in the \fBNodeName\fR
-(e.g. "NodeName=lx[0-7] NodeAddr="elx[0-7]"). 
-By default the \fBNodeAddr\fR will be identical in value to 
-\fBNodeName\fR.
 .TP
 \fBRealMemory\fR
 Size of real memory on the node in MegaBytes (e.g. "2048").

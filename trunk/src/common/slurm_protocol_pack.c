@@ -1711,9 +1711,11 @@ _pack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer)
 	pack16(build_ptr->inactive_limit, buffer);
 	packstr(build_ptr->job_comp_loc, buffer);
 	packstr(build_ptr->job_comp_type, buffer);
+	pack16(build_ptr->kill_tree, buffer);
 	pack16(build_ptr->kill_wait, buffer);
 	pack16(build_ptr->max_job_cnt, buffer);
 	pack16(build_ptr->min_job_age, buffer);
+	pack16(build_ptr->mpich_gm_dir, buffer);
 	packstr(build_ptr->plugindir, buffer);
 	packstr(build_ptr->prolog, buffer);
 	pack16(build_ptr->ret2service, buffer);
@@ -1773,9 +1775,11 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 	safe_unpack16(&build_ptr->inactive_limit, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_loc, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->job_comp_type, &uint16_tmp, buffer);
+	safe_unpack16(&build_ptr->kill_tree, buffer);
 	safe_unpack16(&build_ptr->kill_wait, buffer);
 	safe_unpack16(&build_ptr->max_job_cnt, buffer);
 	safe_unpack16(&build_ptr->min_job_age, buffer);
+	safe_unpack16(&build_ptr->mpich_gm_dir, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->plugindir, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16(&build_ptr->ret2service, buffer);
@@ -2669,6 +2673,7 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 
 	pack32(msg->job_id, buffer);
 	pack32(msg->uid, buffer);
+	pack32(msg->nprocs, buffer);
 
 	pack16(msg->num_cpu_groups, buffer);
 	pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
@@ -2704,6 +2709,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 
 	safe_unpack32(&launch_msg_ptr->job_id, buffer);
 	safe_unpack32(&launch_msg_ptr->uid, buffer);
+	safe_unpack32(&launch_msg_ptr->nprocs, buffer);
 
 	safe_unpack16(&launch_msg_ptr->num_cpu_groups, buffer);
 	if (launch_msg_ptr->num_cpu_groups > 0) {

@@ -311,6 +311,8 @@ _confirm_launch_complete(job_t *job)
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
 			error ("Node %s not responding, terminating job step",
 			       job->host[i]);
+			info("sending Ctrl-C to remaining tasks");
+			fwd_signal(job, SIGINT);
 			job->rc = 124;
 			update_job_state(job, SRUN_JOB_FAILED);
 			pthread_exit(0);
@@ -564,7 +566,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 	slurm_fd     fd = (slurm_fd) NULL;
 	slurm_msg_t *msg = NULL;
 	slurm_addr   cli_addr;
-	char         host[256];
+	unsigned char *uc;
 	short        port;
 	int          timeout = 0;	/* slurm default value */
 
@@ -578,8 +580,12 @@ _accept_msg_connection(job_t *job, int fdnum)
 		return;
 	}
 
-	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
-	debug2("got message connection from %s:%d", host, ntohs(port));
+	/* Should not call slurm_get_addr() because the IP may not be
+	   in /etc/hosts. */
+	uc = (unsigned char *)&cli_addr.sin_addr.s_addr;
+	port = cli_addr.sin_port;
+	debug2("got message connection from %u.%u.%u.%u:%d",
+	       uc[0], uc[1], uc[2], uc[3], ntohs(port));
 
 	msg = xmalloc(sizeof(*msg));
 
@@ -592,7 +598,8 @@ _accept_msg_connection(job_t *job, int fdnum)
 	if (slurm_receive_msg(fd, msg, timeout) < 0) {
 		if (errno == EINTR)
 			goto again;
-		error("slurm_receive_msg[%s]: %m", host);
+		error("slurm_receive_msg[%u.%u.%u.%u]: %m",
+		      uc[0],uc[1],uc[2],uc[3]);
 		xfree(msg);
 	} else {
 

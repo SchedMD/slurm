@@ -340,6 +340,20 @@ uint16_t slurm_get_wait_time(void)
         return wait_time;
 }
 
+/* slurm_get_mpich_gm_dir
+ * returns mpich_gm_dir from slurmctld_conf object
+ * RET uint16_t        - mpich_gm_dir
+ */
+uint16_t slurm_get_mpich_gm_dir(void)
+{
+        uint16_t mpich_gm_dir;
+
+        _lock_update_config();
+        mpich_gm_dir = slurmctld_conf.mpich_gm_dir;
+        slurm_mutex_unlock(&config_lock);
+        return mpich_gm_dir;
+}
+
 /* Change general slurm communication errors to slurmctld specific errors */
 static void _remap_slurmctld_errno(void)
 {

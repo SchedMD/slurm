@@ -12,6 +12,7 @@ srun_SOURCES = \
 	opt.c opt.h \
 	env.c env.h \
 	job.c job.h \
+	gmpi.c gmpi.h \
 	net.c net.h \
 	msg.c msg.h \
 	io.c io.h   \

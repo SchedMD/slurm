@@ -132,7 +132,7 @@ static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static int  _send_pending_exit_msgs(slurmd_job_t *job);
 
 static void _setargs(slurmd_job_t *job);
-static void _set_launch_ip_in_env(slurmd_job_t *, slurm_addr *cli);
+static void _set_mgr_env(slurmd_job_t *, slurm_addr *cli, slurm_addr *self);
 
 static void _random_sleep(slurmd_job_t *job);
 static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
@@ -152,8 +152,9 @@ static void _hup_handler(int sig) {;}
 /*
  * Launch an job step on the current node
  */
-int
-mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
+extern int
+mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli,
+		 slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
 
@@ -166,7 +167,7 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 
 	_setargs(job);
 
-	_set_launch_ip_in_env(job, cli);
+	_set_mgr_env(job, cli, self);
 
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
@@ -231,7 +232,8 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
  * Spawn a task / job step on the current node
  */
 int
-mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli)
+mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
+	       slurm_addr *self)
 {
 	slurmd_job_t *job = NULL;
 
@@ -243,7 +245,7 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli)
 
 	_setargs(job);
 
-	_set_launch_ip_in_env(job, cli);
+	_set_mgr_env(job, cli, self);
 
 	if (_job_mgr(job) < 0)
 		return SLURM_ERROR;
@@ -968,6 +970,7 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 
 	hostlist_ranged_string(hl, 1024, buf);
 	setenvpf(&job->env, "SLURM_JOBID",    "%u", job->jobid);
+	setenvpf(&job->env, "SLURM_NPROCS",   "%u", msg->nprocs);
 	setenvpf(&job->env, "SLURM_NNODES",   "%u", hostlist_count(hl));
 	setenvpf(&job->env, "SLURM_NODELIST", "%s", buf);
 	hostlist_destroy(hl);
@@ -1020,7 +1023,7 @@ _send_launch_failure (launch_tasks_request_msg_t *msg, slurm_addr *cli, int rc)
 	resp_msg.data = &resp;
 	resp_msg.msg_type = RESPONSE_LAUNCH_TASKS;
 
-	resp.node_name     = conf->hostname;
+	resp.node_name     = conf->node_name;
 	resp.srun_node_id  = msg->srun_node_id;
 	resp.return_code   = rc ? rc : -1;
 	resp.count_of_pids = 0;
@@ -1047,7 +1050,7 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
 
-	resp.node_name        = conf->hostname;
+	resp.node_name        = conf->node_name;
 	resp.srun_node_id     = job->nodeid;
 	resp.return_code      = rc;
 	resp.count_of_pids    = job->ntasks;
@@ -1073,7 +1076,7 @@ _complete_job(uint32_t jobid, int err, int status)
 	req.job_step_id	= NO_VAL; 
 	req.job_rc      = status;
 	req.slurm_rc	= err; 
-	req.node_name	= conf->hostname;
+	req.node_name	= conf->node_name;
 	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
 	req_msg.data	= &req;	
 
@@ -1213,7 +1216,7 @@ _setargs(slurmd_job_t *job)
 }
 
 static void
-_set_launch_ip_in_env(slurmd_job_t *job, slurm_addr *cli)
+_set_mgr_env(slurmd_job_t *job, slurm_addr *cli, slurm_addr *self)
 {
 	char *p;
 	char addrbuf[INET_ADDRSTRLEN];
@@ -1229,6 +1232,14 @@ _set_launch_ip_in_env(slurmd_job_t *job, slurm_addr *cli)
 		*p = '\0';
 
 	setenvpf (&job->env, "SLURM_LAUNCH_NODE_IPADDR", "%s", addrbuf);
+
+	if (getenvp(job->env, "SLURM_GMPI")) {
+		setenvpf (&job->env, "GMPI_MASTER", "%s", addrbuf);
+		slurm_print_slurm_addr (self, addrbuf, INET_ADDRSTRLEN);
+		if ((p = strchr (addrbuf, ':')) != NULL) *p = '\0';
+		setenvpf (&job->env, "GMPI_SLAVE", "%s", addrbuf);
+	}
+
 	return;
 }
 

@@ -560,6 +560,10 @@ _setup_env(slurmd_job_t *job, int taskid)
 	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gid     ) < 0)
 		return -1;
 
+	if (getenvp(job->env, "SLURM_GMPI")) {
+		if (setenvpf(&job->env, "GMPI_ID", "%d", t->gid) < 0)
+			return -1;
+	}
 	return SLURM_SUCCESS;
 }
 

@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.0-pre4
 =============================
+ -- Add support for MPICH-GM (from takao.hatazaki@hp.com)
+ -- Add support for NodeHostname in node configuration
  -- Make "scontrol show daemons" function properly on front-end system 
     (e.g. Blue Gene)
 

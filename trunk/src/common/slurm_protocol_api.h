@@ -166,6 +166,12 @@ char *slurm_get_switch_type(void);
  */
 uint16_t slurm_get_wait_time(void);
 
+/* slurm_get_mpich_gm_dir
+ * returns mpich_gm_dir from slurmctld_conf object
+ * RET uint16_t        - mpich_gm_dir
+ */
+uint16_t slurm_get_mpich_gm_dir(void);
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/

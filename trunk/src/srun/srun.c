@@ -66,6 +66,7 @@
 #include "src/srun/env.h"
 #include "src/srun/io.h"
 #include "src/srun/job.h"
+#include "src/srun/gmpi.h"
 #include "src/srun/launch.h"
 #include "src/srun/msg.h"
 #include "src/srun/net.h"
@@ -211,9 +212,11 @@ int srun(int ac, char **av)
 	 */
 	setenvf("SLURM_NODELIST=%s", job->nodelist);
 	setenvf("SLURM_JOBID=%u",    job->jobid);
-	setenvf("SLURM_NPROCS=%d",   opt.nprocs);
+	if (opt.nprocs_set)
+		setenvf("SLURM_NPROCS=%d",   opt.nprocs);
 	setenvf("SLURM_NNODES=%d",   job->nhosts);
 	setenvf("SLURM_TASKS_PER_NODE=%s", task_cnt = _task_count_string (job));
+	xfree(task_cnt);
 	setenvf("SLURM_DISTRIBUTION=%s",
 		format_distribution_t (opt.distribution));
 
@@ -223,7 +226,24 @@ int srun(int ac, char **av)
 	if (bgl_part_id)
 		setenvf("BGL_PARTITION_ID=%s", bgl_part_id);
 
-	xfree(task_cnt);
+	if (slurm_get_mpich_gm_dir() && getenv("GMPI_PORT") == NULL) {
+		/*
+		 * It is possible for one to modify the mpirun command in
+		 * MPICH-GM distribution so that it calls srun, instead of
+		 * rsh, for remote process invocations.  In that case, we
+		 * should not override envs nor open the master port.
+		 */
+		char *port = NULL;
+		if (gmpi_thr_create(job, &port))
+			job_fatal(job, "Unable to create GMPI thread");
+		setenvf("GMPI_PORT=%s", port);
+		xfree(port);
+		setenvf("GMPI_SHMEM=1");
+		setenvf("GMPI_MAGIC=%u", job->jobid);
+		setenvf("GMPI_NP=%d", opt.nprocs);
+		setenvf("GMPI_BOARD=-1"); /* FIXME for multi-board config. */
+		setenvf("SLURM_GMPI=1"); /* mark for slurmd */
+	}
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
@@ -575,7 +595,8 @@ _set_batch_script_env(job_t *job)
 	char *p;
 	struct utsname name;
 
-	if (opt.nprocs_set && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
+	if ( opt.nprocs_set
+	   && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");
 		rc = SLURM_FAILURE;
 	}

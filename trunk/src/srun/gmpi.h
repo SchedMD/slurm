@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * src/slurmd/mgr.c - job management functions for slurmd
+ *  gmpi.h - srun support for MPICH-GM (GMPI)
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  Written by Takao Hatazaki <takao.hatazaki@hp.com>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,35 +23,25 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
-#ifndef _MGR_H
-#define _MGR_H
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
+#ifndef _HAVE_GMPI_H
+#define _HAVE_GMPI_H
 
-#include "src/common/slurm_protocol_defs.h"
+#include "src/srun/job.h"
 
-#include "src/slurmd/job.h"
+typedef struct {
+	int defined;
+	unsigned int port_board_id;
+	unsigned int unique_high_id;
+	unsigned int unique_low_id;
+	unsigned int numanode;
+	unsigned int remote_pid;
+	unsigned int remote_port;
+} gm_slave_t;
 
-/* Spawn a task / job step on this node
- */
-int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client,
-		   slurm_addr *self);
+#define GMPI_RECV_BUF_LEN 65536
 
-/* Launch a job step on this node
- */
-int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
-		     slurm_addr *self);
+extern int gmpi_thr_create(job_t *job, char **port);
 
-/* 
- * Launch batch script on this node
- */
-int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
+#endif	/* _HAVE_GMPI_H */
 
-/*
- * Run epilog or prolog on this node
- */
-int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid);
-
-#endif

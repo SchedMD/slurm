@@ -388,7 +388,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	job_step_t  *s;
 	int          n;
 
-	msg->node_name = xstrdup (conf->hostname);
+	msg->node_name = xstrdup (conf->node_name);
 
 	get_procs(&msg->cpus);
 	get_memory(&msg->real_memory_size);
@@ -475,6 +475,7 @@ _read_config()
 	if (!conf->logfile)
 		conf->logfile = xstrdup(conf->cf.slurmd_logfile);
 
+	_free_and_set(&conf->node_name, get_conf_node_name(conf->hostname));
 	_free_and_set(&conf->epilog,   xstrdup(conf->cf.epilog));
 	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
@@ -542,6 +543,7 @@ _init_conf()
 		exit(1);
 	}
 	conf->hostname    = xstrdup(host);
+	conf->node_name   = NULL;
 	conf->conffile    = NULL;
 	conf->epilog      = NULL;
 	conf->logfile     = NULL;
@@ -938,11 +940,21 @@ static void _install_fork_handlers(void)
 	return;
 }
 
-void slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len) 
+extern void
+slurmd_get_addr(slurm_addr *a, uint16_t *port, char *buf, uint32_t len) 
 {
+#if 0
 	slurm_mutex_lock(&fork_mutex);
 	slurm_get_addr(a, port, buf, len);
 	slurm_mutex_unlock(&fork_mutex);
+#else
+	/* This function is used only for printing debug information.
+	   Do not consult /etc/hosts or, more significantly, YP */
+	unsigned char *uc = (unsigned char *)&a->sin_addr.s_addr;
+	xassert(len > 15);
+	*port = a->sin_port;
+	sprintf(buf, "%u.%u.%u.%u", uc[0], uc[1], uc[2], uc[3]);
+#endif
 	return;
 }
 

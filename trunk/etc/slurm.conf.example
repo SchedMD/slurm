@@ -264,13 +264,27 @@
 #                         have in its active database at one time. Set the 
 #                         values of MaxJobCount and MinJobAge so as to avoid 
 #                         having slurmctld exhaust its memory or other resources.
+#    "MpichGmDirectSupport"
+#                       : if set to `1', srun handles executable files linked
+#                         with MPICH-GM library directly, not via mpirun that
+#                         uses rsh.
+#    "KillTree"         : if set to `1', signals (e.g. Ctrl-C or scancel) are
+#                         forwarded to all descendant processes of one that was
+#                         directly invoked by the user.  This is always
+#                         required if MpichGmDirectSupport is set to 1.  The
+#                         default behavior is that signals are forwarded to
+#                         processes that belong to the process group of the
+#                         process that was directly invoked by the user.
+#
 # Example:
 #
-# FastSchedule=0	# default is `1'
-# FirstJobid=1000       # default is `1'
-# HashBase=8		# default is `10'
-# ReturnToService=1     # default is `0'
+# FastSchedule=0		# default is `1'
+# FirstJobid=1000       	# default is `1'
+# HashBase=8			# default is `10'
+# ReturnToService=1     	# default is `0'
 # MaxJobCount=10000		# Defaults to 2000
+# MpichGmDirectSupport=1	# default is `0'
+# KillTree=1			# default is `0'
 
 
 #
@@ -334,11 +348,20 @@
 #                    specifies a node or set of nodes to be managed by SLURM.
 #                    The special NodeName of "DEFAULT" may be used to establish
 #                    default node configuration parameters for subsequent node
-#                    records.
+#                    records. Typically this would be the string that 
+#                    `/bin/hostname -s` would return on the node. However 
+#                    NodeName may be an arbitrary string if NodeHostname is 
+#                    used (see below).
 #
 #     "Feature"    : comma separated list of "features" for the given node(s) 
 #
-#     "NodeAddr"   : preferred address for contacting the node
+#     "NodeAddr"   : preferred address for contacting the node. This may be 
+#                    either a name or IP address.
+#
+#     "NodeHostname"
+#                  : the string that `/bin/hostname -s` would return on the
+#                    node.  In other words, NodeName may be the name other than
+#                    the real hostname.
 #
 #     "RealMemory" : Amount of real memory (in Megabytes)
 #

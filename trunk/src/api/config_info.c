@@ -95,12 +95,16 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_credential_private_key);
 	fprintf(out, "JobCredPublicKey  = %s\n", 
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
+	fprintf(out, "KillTree          = %u\n", 
+		slurm_ctl_conf_ptr->kill_tree);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
 	fprintf(out, "MaxJobCnt         = %u\n", 
 		slurm_ctl_conf_ptr->max_job_cnt);
 	fprintf(out, "MinJobAge         = %u\n", 
 		slurm_ctl_conf_ptr->min_job_age);
+	fprintf(out, "MpichGmDirectSupport = %u\n", 
+		slurm_ctl_conf_ptr->mpich_gm_dir);
 	fprintf(out, "PluginDir         = %s\n", 
 		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "Prolog            = %s\n", 

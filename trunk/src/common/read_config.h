@@ -57,6 +57,8 @@
 #define DEFAULT_SWITCH_TYPE         "switch/none"
 #define DEFAULT_TMP_FS              "/tmp"
 #define DEFAULT_WAIT_TIME           0
+#define DEFAULT_MPICH_GM_DIR        0
+#define DEFAULT_KILL_TREE           0
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
@@ -76,8 +78,27 @@ extern void free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);
  * getnodename - equivalent to gethostname(), but return only the first 
  *      component of the fully qualified name (e.g. "linux123.foo.bar" 
  *      becomes "linux123") 
+ * NOTE: NodeName in the config may be different from real hostname.
+ *       Use get_conf_node_name() to get the former.
  */
 extern int getnodename (char *name, size_t len);
+
+/*
+ * Register the given NodeName in the alias table.
+ * If node_hostname is NULL, only node_name will be used and
+ * no lookup table record is created.
+ */
+extern void register_conf_node_aliases(char *node_name, char *node_hostname);
+
+/*
+ * get_conf_node_hostname - Return the NodeHostname for given NodeName
+ */
+extern char *get_conf_node_hostname(char *node_name);
+
+/*
+ * get_conf_node_name - Return the NodeName for given NodeHostname
+ */
+extern char *get_conf_node_name(char *node_hostname);
 
 /*
  * parse_config_spec - parse the overall configuration specifications, update  

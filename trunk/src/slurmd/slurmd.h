@@ -64,6 +64,7 @@ typedef struct slurmd_config {
 	char         ***argv;           /* pointer to argument vector      */
 	int 	     *argc;             /* pointer to argument count       */
 	char         *hostname;		/* local hostname		   */
+        char         *node_name;        /* node name                       */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir	           */
