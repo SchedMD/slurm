@@ -88,6 +88,24 @@ extern int slurm_load_build ();
 extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
 
 /*
+ * slurm_submit - submit/queue a job with supplied contraints. 
+ * input: spec - specification of the job's constraints
+ *	job_id - place to store id of submitted job
+ * output: job_id - the job's id
+ *	returns 0 if no error, EINVAL if the request is invalid
+ * NOTE: required specification include: Script=<script_path_name>
+ *	User=<uid>
+ * NOTE: optional specifications include: Contiguous=<YES|NO> 
+ *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
+ *	JobId=<id> JobName=<name> Key=<key> MinProcs=<count> 
+ *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
+ *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
+ *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
+ *	TotalProcs=<count>
+ */
+extern int slurm_submit (char *spec, char **job_id);
+
+/*
  * load_job - load the supplied job information buffer for use by info gathering 
  *	APIs if job records have changed since the time specified. 
  * input: buffer - pointer to job information buffer

@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include "pack.h"
+#include "xmalloc.h"
 	
 	
 /*
@@ -98,15 +99,18 @@ _packstr(char *valp, uint32_t size_val, void **bufp, int *lenp)
 
 }
 
+
 /*
  * Given 'bufp' pointing to a network byte order 32-bit integer
  * (size) and an arbitrary data string, return a pointer to the 
  * data string in 'valp'.  Also return the sizes of 'valp' in bytes. 
  * Advance bufp and decrement lenp by 4 bytes (size of memory 
  * size records) plus the actual buffer size.
+ * NOTE: valp is set to point into the buffer bufp, a copy of 
+ *	the data is not made
  */
 void
-_unpackstr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
+_unpackstr_ptr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
 {
 	uint32_t nl;
 
@@ -117,6 +121,38 @@ _unpackstr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
 
 	if (*size_valp > 0) {
 		*valp = *bufp;
+		(size_t)*bufp += *size_valp;
+		(size_t)*lenp -= *size_valp;
+	}
+	else
+		*valp = NULL;
+
+}
+	
+
+/*
+ * Given 'bufp' pointing to a network byte order 32-bit integer
+ * (size) and an arbitrary data string, return a pointer to the 
+ * data string in 'valp'.  Also return the sizes of 'valp' in bytes. 
+ * Advance bufp and decrement lenp by 4 bytes (size of memory 
+ * size records) plus the actual buffer size.
+ * NOTE: valp is set to point into a newly created buffer, 
+ *	the caller is responsible for calling xfree on *valp
+ *	if non-NULL (set to NULL on zero size buffer value)
+ */
+void
+_unpackstr_xmalloc(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
+{
+	uint32_t nl;
+
+	memcpy(&nl, *bufp, sizeof(nl));
+	*size_valp = ntohl(nl);
+	(size_t)*bufp += sizeof(nl);
+	(size_t)*lenp -= sizeof(nl);
+
+	if (*size_valp > 0) {
+		*valp = xmalloc(*size_valp);
+		memcpy (*valp, *bufp, *size_valp);
 		(size_t)*bufp += *size_valp;
 		(size_t)*lenp -= *size_valp;
 	}
