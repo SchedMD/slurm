@@ -172,7 +172,7 @@ cancel_jobs (void)
 					continue;
 				if (opt.interactive && (confirmation(i) == 0))
 					break;
-				if (opt.step_id[j] == 0)
+				if (opt.step_id[j] == NO_VAL)
 					cancel_job_id (opt.job_id[j]);
 				else
 					cancel_step_id (opt.job_id[j], 
@@ -186,7 +186,7 @@ cancel_jobs (void)
 
 	} else if (opt.job_cnt) {	/* delete specific jobs */
 		for (j = 0; j < opt.job_cnt; j++ ) {
-			if (opt.step_id[j] == 0)
+			if (opt.step_id[j] == NO_VAL)
 				cancel_job_id (opt.job_id[j]);
 			else
 				cancel_step_id (opt.job_id[j], 
@@ -211,6 +211,7 @@ cancel_job_id (uint32_t job_id)
 	int error_code, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
+		verbose("cancelling job %u", job_id);
 		error_code = slurm_cancel_job (job_id);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
@@ -230,6 +231,7 @@ cancel_step_id (uint32_t job_id, uint32_t step_id)
 	int error_code, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
+		verbose("cancelling steo %u.%u", job_id, step_id);
 		error_code = slurm_cancel_job_step (job_id, step_id);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))

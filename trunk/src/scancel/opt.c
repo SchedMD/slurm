@@ -354,7 +354,8 @@ xlate_job_step_ids(const char **rest)
 				exit (1);
 			}
 			opt.step_id[i] = tmp_l;
-		}
+		} else 
+			opt.step_id[i] = NO_VAL;
 
 		if (next_str[0] != '\0') {
 			error ("Invalid job ID %s", rest[i]);
