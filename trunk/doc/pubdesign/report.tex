@@ -615,6 +615,64 @@ but might consider writing this data to an open source database if so desired.
 
 \section{Slurmd}
 
+Slurmd is a multi-threaded daemon for managing user job and 
+monitoring system state. 
+Upon initiation it will read the /etc/SLURM.conf file, capture 
+system state, and await requests from the SLURM control daemon 
+(slurmctrld). 
+
+It's most common action will be to report system state upon 
+request. Upon slurmd startup, it will gather the processor 
+count, real memory size, and temporary disk space for the 
+system. Since this information should be static, it will be 
+cached. A thread will be created to capture CPU, real-memory 
+and virtual-memory consumption from the process table entries. 
+Differences in resource utilization values from process table 
+snapshot to snapshot will be accumulated. Slurmd will 
+insure these accumulated values are not decremented if resource 
+consumption for a user happens to decrease from snapshot to 
+snapshot, this would simply reflect the termination of some 
+processes.
+Both the memory high-water marks will be recorded and the 
+integral of memory consumption (e.g. megabyte-hours).
+Resource consumption will be grouped by user ID and 
+SLURM job ID (if any). Data will be collected for 
+system user accounts (root, ftp, ntp, etc.) as well as 
+customer accounts. The intent is to capture all resource 
+use including kernel, idle and down time. 
+Upon request, the accumulated values will be uploaded to 
+the controller and cleared. 
+When all processes associated with a SLURM job have terminated, 
+slurmd with notify the controller. 
+
+Slurmd will accept requests from the SLURM control daemon 
+to initiate and terminate user jobs. The initiate 
+job request will contain: real and effective user IDs, 
+environment variables, working directory, task numbers, 
+Kerberos credential (?), interconnect specifications 
+and authorization, core paths, process limits (?), SLURM job ID,
+command to execute, and it arguments. Slurmd will 
+execute the prolog script (if any), reset its session
+ID, and then initiate the job as requested. It will 
+record to disk the SLURM job ID, session ID, process ID associated 
+with each task, and user associated with the job. 
+In the event of slurmd failure, this information will 
+be recovered from disk in order to signal or terminate 
+the job as needed.
+
+\marginpar{We discussed a general purpose signal delivery. 
+What purpose does this serve? --MJ}
+
+The job termination request will contain the SLURM job ID and 
+a delay period. Slurmd will send SIGTERM to all processes associated 
+with the appropriate session ID or process tree, sleep for the 
+delay specified, and send SIGKILL to all those same processes. 
+If the processes do not terminate, SIGKILL will be resent. 
+If the processes still do not terminate, slurmd will declare 
+the node's state as DOWN to the control daemon. After all 
+processes terminate, slurmd will execute the epilog program 
+(if any). 
+
 \section{Command Line Utilities}
 
 \section{Infrastructure: Communications Library}
