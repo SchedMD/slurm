@@ -15,15 +15,11 @@ else
 test_modules = 
 endif
 
-bin_PROGRAMS = slurmctld
+noinst_LIBRARIES = libslurmapi.a
 
-noinst_PROGRAMS = $(test_modules)
+libslurmapi_a_SOURCES = allocate.c node_info.c partition_info.c
 
 LDADD = $(top_srcdir)/src/common/libcommon.a
-
-slurmctld_SOURCES = allocate.c \
-		    node_info.c \
-		    partition_info.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
@@ -40,7 +36,7 @@ slurmctld_SOURCES = allocate.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-allocate      : allocate_d.o
+allocate       : allocate_d.o
 node_info      : node_info_d.o
 partition_info : partition_info_d.o
 
