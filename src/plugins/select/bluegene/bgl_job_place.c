@@ -145,11 +145,6 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		 * drained, allocated to some other job, or in some 
 		 * SLURM partition not available to this job.
 		 */
-		char bitstring[BITSIZE];
-		char bitstring2[BITSIZE];
-		bit_fmt(bitstring, BITSIZE, record->bitmap);
-		bit_fmt(bitstring2, BITSIZE, slurm_part_bitmap);
-		
 		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
 			debug("bgl partition %s has nodes not usable by this "
 				"job", record->bgl_part_id);
