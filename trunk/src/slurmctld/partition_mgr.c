@@ -234,6 +234,7 @@ build_part_bitmap (struct part_record *part_record_point)
 		node_record_point = find_node_record (this_node_name);
 		if (node_record_point == NULL) {
 			error ("build_part_bitmap: invalid node specified %s", this_node_name);
+			free (this_node_name);
 			if (old_bitmap)
 				bit_free (old_bitmap);
 			hostlist_destroy (host_list);
@@ -247,6 +248,7 @@ build_part_bitmap (struct part_record *part_record_point)
 			      (int) (node_record_point - node_record_table_ptr));
 		bit_set (part_record_point->node_bitmap,
 			    (int) (node_record_point - node_record_table_ptr));
+		free (this_node_name);
 	}
 	hostlist_destroy (host_list);
 
