@@ -77,7 +77,6 @@ char hostname[MAX_NAME_LEN];
 slurm_ssl_key_ctx_t verify_ctx;
 List credential_state_list;
 slurmd_config_t slurmd_conf;
-pthread_t thread_id_rpc = (pthread_t) 0;
 
 /* function prototypes */
 static char *public_cert_filename();
@@ -105,10 +104,10 @@ inline static int slurmd_shutdown();
 
 int main(int argc, char *argv[])
 {
-	int error_code;
+	int rc;
+	pthread_t sigthr;
 	char node_name[MAX_NAME_LEN];
 	log_options_t log_opts_def = LOG_OPTS_STDERR_ONLY;
-	pthread_attr_t thread_attr_rpc;
 
 	init_time = time(NULL);
 	slurmd_conf.log_opts = log_opts_def;
@@ -116,44 +115,39 @@ int main(int argc, char *argv[])
 
 
 	parse_commandline_args(argc, argv, &slurmd_conf);
-	log_init(argv[0], slurmd_conf.log_opts, SYSLOG_FACILITY_DAEMON,
-		 NULL);
+	log_init(argv[0], slurmd_conf.log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (slurmd_conf.daemonize == true) {
 		daemon(false, true);
 	}
 
 /*
-	if ( ( error_code = init_slurm_conf () ) ) 
-		fatal ("slurmd: init_slurm_conf error %d", error_code);
-	if ( ( error_code = read_slurm_conf ( ) ) ) 
-		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONFIG_FILE);
+	if ( ( rc = init_slurm_conf () ) ) 
+		fatal ("slurmd: init_slurm_conf error %d", rc);
+	if ( ( rc = read_slurm_conf ( ) ) ) 
+		fatal ("slurmd: error %d from read_slurm_conf reading %s", rc, SLURM_CONFIG_FILE);
 */
 
 	/* shared memory init */
 	slurmd_init();
 
-	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
-		fatal("getnodename: %m", errno);
+	if ((rc = getnodename(node_name, MAX_NAME_LEN)))
+		fatal("getnodename: %m");
 
 	strncpy(hostname, node_name, MAX_NAME_LEN);
 
 	/* send registration message to slurmctld */
 	send_node_registration_status_msg();
 
+	/* block SIGHUP, SIGTERM, and SIGINT in all threads */
+	/* block_some_signals(); */
 
-	/* block all signals for now */
-	block_all_signals_pthread();
-
-	/* create attached thread to process RPCs */
-	if (pthread_attr_init(&thread_attr_rpc))
-		fatal("pthread_attr_init: %m");
-	if (pthread_create
-	    (&thread_id_rpc, &thread_attr_rpc, slurmd_msg_engine, NULL))
+	/* create attached thread to handle signals */
+	if (pthread_create(&sigthr, NULL, &slurmd_handle_signals, 
+			   (void *)NULL) != 0)
 		fatal("pthread_create: %m");
-	/* slurmd_msg_engine ( NULL ) ; */
 
-	slurmd_handle_signals(NULL);
+	slurmd_msg_engine((void *)NULL);
 
 	slurmd_destroy();
 	return SLURM_SUCCESS;
@@ -186,7 +180,7 @@ void *slurmd_handle_signals(void *args)
 			shutdown_time = time(NULL);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmd_shutdown();
-			pthread_join(thread_id_rpc, NULL);
+			/* pthread_join(thread_id_rpc, NULL); */
 			pthread_exit((void *) 0);
 			break;
 		case SIGHUP:	/* kill -1 */
