@@ -82,6 +82,7 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 		for (i = 0; i < msg->env_size; i++) {
 			if ( msg->environment[i] )
 				xfree ( msg->environment[i] ) ;
+			xfree( msg->environment );
 		}
 		if ( msg->features )
 			xfree ( msg->features ) ;
@@ -119,6 +120,7 @@ void slurm_free_partition_info (partition_info_msg_t * msg )
 			for (i = 0; i < msg -> record_count; i++) {
 				slurm_free_partition_table ( & ( msg->partition_array[i] ) ) ;
 			}
+			xfree( msg -> partition_array );
 		}
 		xfree ( msg );
 	}
@@ -158,6 +160,7 @@ void slurm_free_job_info ( job_info_msg_t * msg )
 			for (i = 0; i < msg -> record_count; i++) {
 				slurm_free_job_table ( & ( msg->job_array[i] ) ) ;
 			}
+			xfree( msg -> job_array );
 		}
 		xfree ( msg );
 	}
@@ -192,6 +195,43 @@ void slurm_free_job_table ( job_table_t * job )
 	}
 }
 
+void slurm_free_job_step_info_memebers ( job_step_info_t * msg )
+{
+	if ( msg != NULL )
+	{
+		if ( msg->partition != NULL )
+			xfree( msg->partition );
+		if ( msg->nodes != NULL )
+			xfree( msg->nodes );
+	}	
+}
+
+void slurm_free_job_step_info ( job_step_info_t * msg )
+{
+	if ( msg != NULL )
+	{
+		slurm_free_job_step_info_memebers ( msg );
+		xfree( msg );
+	}
+}
+
+void slurm_free_job_step_info_response_msg ( job_step_info_response_msg_t * msg ) 
+{
+	if ( msg != NULL )
+	{
+		if ( msg->job_steps != NULL )
+		{
+			int i;
+			for ( i=0 ; i < msg->job_step_count; i++ )
+			{
+				slurm_free_job_step_info_memebers ( &(msg->job_steps[i]) ) ;
+			}
+			xfree( msg->job_steps );
+		}
+		xfree( msg );
+	}	
+}
+
 void slurm_free_node_info ( node_info_msg_t * msg )
 {
 	int i; 
@@ -202,6 +242,7 @@ void slurm_free_node_info ( node_info_msg_t * msg )
 			for (i = 0; i < msg -> record_count; i++) {
 				slurm_free_node_table ( & ( msg->node_array[i] ) ) ;
 			}
+			xfree( msg -> node_array );
 		}
 		xfree ( msg );
 	}
@@ -329,21 +370,25 @@ void slurm_free_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg )
 		if ( msg -> credential )
 			xfree ( msg -> credential );
 		if ( msg -> env )
+		{
 			for ( i = 0 ; i < msg -> envc ; i++ )
 			{
 				if ( msg -> env[i] )
 					xfree ( msg -> env[i] );
 			}
-		xfree ( msg -> env ) ;
+			xfree ( msg -> env ) ;
+		}
 		if ( msg -> cwd )
 			xfree ( msg -> cwd );
 		if ( msg -> argv )
+		{
 			for ( i = 0 ; i < msg -> argc ; i++ )
 			{
 				if ( msg -> argv[i] )
 					xfree ( msg -> argv[i] );
 			}
-		xfree ( msg -> argv ) ;
+			xfree ( msg -> argv ) ;
+		}
 		if ( msg -> global_task_ids )
 			xfree ( msg -> global_task_ids );
 		xfree ( msg ) ;
