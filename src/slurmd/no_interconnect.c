@@ -25,37 +25,42 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <src/common/slurm_protocol_api.h>
-#include <src/slurmd/task_mgr.h>
 #include <src/slurmd/interconnect.h>
+#include <src/slurmd/setenvpf.h>
 
-/* exported module funtion to launch tasks */
-/*launch_tasks should really be named launch_job_step*/
-int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
+int interconnect_init (slurmd_job_t *job)
 {
-	pthread_atfork ( NULL , NULL , pthread_fork_child_after ) ;
-	return interconnect_init ( launch_msg );
+	return SLURM_SUCCESS;
 }
 
-/* Contains interconnect specific setup instructions and then calls 
- * fan_out_task_launch */
-int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
+int interconnect_attach (slurmd_job_t *job, int taskid) 
 {
-	return fan_out_task_launch ( launch_msg ) ;
-}
-
-int interconnect_set_capabilities ( task_start_t * task_start ) 
-{
-	return SLURM_SUCCESS ;
+	return SLURM_SUCCESS;
 }
 
 /*
  * Set env variables needed for this interconnect
  */
-int interconnect_env(char ***env, uint16_t *envc, int nodeid, int nnodes, 
-	             int procid, int nprocs)
+int interconnect_env(slurmd_job_t *job, int taskid)
 {
-	return SLURM_SUCCESS ;
+	int cnt = job->envc;
+	task_info_t *t = job->task[taskid];
+
+	if (setenvpf(&job->env, &cnt, "SLURM_NODEID=%d", job->nodeid) < 0)
+		return -1;
+	if (setenvpf(&job->env, &cnt, "SLURM_PROCID=%d", t->gid     ) < 0)
+		return -1;
+	if (setenvpf(&job->env, &cnt, "SLURM_NNODES=%d", job->nnodes) < 0)
+		return -1;
+	if (setenvpf(&job->env, &cnt, "SLURM_NPROCS=%d", job->nprocs) < 0)
+		return -1;
+
+	return SLURM_SUCCESS;
+}
+
+int interconnect_fini(slurmd_job_t *job)
+{
+	return SLURM_SUCCESS;
 }
 
 
