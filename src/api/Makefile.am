@@ -22,10 +22,10 @@ endif
 # and   age   = API_AGE
 # and   rev   = API_REVISION
 #
-# The following examples are based upon initial values of API_MAJOR = 6,
+# The following examples are based upon initial values of API_CURRENT = 6,
 # API_AGE = 4, API_REVISION = 6.
 #
-# If any interfaces have been added: increment API_MAJOR, increment API_AGE,
+# If any interfaces have been added: increment API_CURRENT, increment API_AGE,
 # and set API_REVISION = 0 (e.g. libslurm.so.2.4.6 -> libslurm.so.2.5.0)
 #
 # If any interfaces have been removed: increment API_CURRENT, set API_AGE = 0, 
