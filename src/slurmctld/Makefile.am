@@ -22,7 +22,7 @@ noinst_PROGRAMS = $(test_modules)
 LDADD = $(top_srcdir)/src/common/libcommon.a
 
 slurmctld_SOURCES = Controller.c \
-                    Mach_Stat_Mgr.c \
+		    Node_Mgr.c \
 		    Partition_Mgr.c \
 		    Read_Config.c 
 
@@ -48,7 +48,7 @@ Node_Mgr      : Node_Mgr_d.o
 Partition_Mgr : Partition_Mgr_d.o
 
 % : %_d.o
-	$(LINK) $(LDFLAGS) $^ $(LDADD)
+	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
 
 %_d.o : %.c
 	$(COMPILE) -DDEBUG_MODULE -c -o $@ $< 
