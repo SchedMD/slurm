@@ -23,7 +23,9 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
 	long *My_TmpDisk, int *Set_TmpDisk, int *My_MaxTime, int *Set_MaxTime,  
 	int *My_CpuCount, int *Set_CpuCount, int *My_NodeCount, int *Set_NodeCount);
-
+char *Pick_Best_Nodes(struct Node_Record **Node_List_Pos, int *Node_List_Index, int *Node_List_CPUs,
+	int Node_List_Count, int Req_CPU_Count, int Req_Node_Count, int Req_Continguous,
+	int *Error_Code);
 extern List   Node_Record_List;		/* List of Node_Records */
 extern List   Part_Record_List;		/* List of Part_Records */
 
@@ -275,8 +277,265 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
 	*Set_NodeCount = 1;
     } /* if */
 
+    free(Scratch);
     return 0;
 } /* Parse_Job_Spec */
+
+
+/*
+ * Pick_Best_Nodes - From the list of acceptable nodes, select the "best" ones to use
+ * On systems with the Quadrics switch, this means 
+ *  1. selecting the set of continguous nodes which is best fit (e.g. for a 4 node job and 
+ *     a system with two sets of contiguous nodes of size 4 nodes and 16 nodes, pick the 4 node set).
+ *  2. if no single continuous node set is available, select the nodes so as to minimize 
+ *     the number of sets (e.g for a 5 node job and a system with available node sets of size 
+ *     3, 2, 1, 1, 1, 1, and 1, select the 3 and 2 node set.
+ * Input: Node_List_Pos - Pointers to available nodes
+ *        Node_List_Index - Index numbers of available nodes (position in list)
+ *        Node_List_CPUs - Count of CPUs on each available nodes 
+ *        Node_List_Count - Number of entries in Node_List_*
+ *        Req_CPU_Count - Required count of CPUs
+ *        Req_Node_Count - Required count of nodes
+ *        Req_Continguous - Request the nodes be contiguous
+ * Output: Error_Code is set
+ *         Returns node list, NOTE: This memory space must be freed by whatever calls Pick_Best_Nodes
+ */
+char *Pick_Best_Nodes(struct Node_Record **Node_List_Pos, int *Node_List_Index, int *Node_List_CPUs,
+	int Node_List_Count, int Req_CPU_Count, int Req_Node_Count, int Req_Continguous,
+	int *Error_Code) {
+    int inx, Node_List_Size;
+    int CPU_Tally, Node_Tally;
+    int Best_Fit, Best_Fit_CPUs;
+    int Biggest_Fit, Biggest_Fit_CPUs;
+    int *Node_Set_Pos, *Node_Set_Nodes, *Node_Set_CPUs, Node_Set_Size;
+    char *Scratch;
+
+    /* Test for trivial case */
+    if (Node_List_Count <= 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Pick_Best_Nodes: Internal error, passed null node list\n");
+#else
+	syslog(LOG_ERR, "Pick_Best_Nodes: Internal error, passed null node list\n");
+#endif
+	*Error_Code = 0;
+	return (char *)NULL;
+    } /* if */
+
+    Node_Set_Pos = (int *)malloc(Node_List_Count * sizeof(int *));
+    if (Node_Set_Pos == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+	*Error_Code =  ENOMEM;
+	return (char *)NULL;
+    } /* if */
+
+    Node_Set_Nodes = (int *)malloc(Node_List_Count * sizeof(int *));
+    if (Node_Set_Nodes == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+	*Error_Code =  ENOMEM;
+	free(Node_Set_Pos);
+	return (char *)NULL;
+    } /* if */
+
+    Node_Set_CPUs = (int *)malloc(Node_List_Count * sizeof(int *));
+    if (Node_Set_CPUs == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+	*Error_Code =  ENOMEM;
+	free(Node_Set_Pos);
+	free(Node_Set_Nodes);
+	return (char *)NULL;
+    } /* if */
+
+    Node_Set_Size = -1;
+    for (inx=0; inx<Node_List_Count; inx++) {
+	if (inx == 0) {
+	    Node_Set_Size++;
+	    Node_Set_Pos[Node_Set_Size]   = inx;
+	    Node_Set_Nodes[Node_Set_Size] = 1;
+	    Node_Set_CPUs[Node_Set_Size]  = Node_List_CPUs[inx];
+	} else if (Node_List_Index[inx-1] == (Node_List_Index[inx]-1)) {
+	    Node_Set_Nodes[Node_Set_Size]++;
+	    Node_Set_CPUs[Node_Set_Size]  += Node_List_CPUs[inx];
+	} else { 	/* no longer contiguous */
+	    Node_Set_Size++;
+	    Node_Set_Pos[Node_Set_Size]   = inx;
+	    Node_Set_Nodes[Node_Set_Size] = 1;
+	    Node_Set_CPUs[Node_Set_Size]  = Node_List_CPUs[inx];
+	} /* else */
+    } /* for */
+    Node_Set_Size++;
+
+    Best_Fit = -1;
+    Biggest_Fit = -1;
+    for (inx=0; inx<Node_Set_Size; inx++) {
+	if ((Biggest_Fit == -1) || (Biggest_Fit_CPUs < Node_Set_CPUs[inx])) {
+	    Biggest_Fit = inx;
+	    Biggest_Fit_CPUs = Node_Set_CPUs[inx];
+	} /* if */
+	if (Node_Set_CPUs[inx]  < Req_CPU_Count)  continue;
+	if (Node_Set_Nodes[inx] < Req_Node_Count) continue;
+	if ((Best_Fit == -1) || (Best_Fit_CPUs > Node_Set_CPUs[inx])) {
+	    Best_Fit = inx;
+	    Best_Fit_CPUs = Node_Set_CPUs[inx];
+	} /* if */
+    } /* for */
+
+    if (Best_Fit != -1) { /* Return this list */
+	Node_List_Size = BUF_SIZE;
+	Scratch = (char *)malloc(Node_List_Size);
+	if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+	    syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+	    *Error_Code =  ENOMEM;
+	    free(Node_Set_Pos);
+	    free(Node_Set_Nodes);
+	    free(Node_List_CPUs);
+	    return (char *)NULL;
+	} /* if */
+	Scratch[0] = (char)NULL;
+	CPU_Tally = 0;
+	Node_Tally = 0;
+	for (inx=Node_Set_Pos[Best_Fit]; inx<Node_List_Count; inx++) {
+	    if ((strlen(Scratch)+strlen(Node_List_Pos[inx]->Name)+1) >= Node_List_Size) {
+		Node_List_Size += BUF_SIZE;
+		Scratch = realloc(Scratch, Node_List_Size);
+		if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+		    syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+		    free(Node_Set_Pos);
+		    free(Node_Set_Nodes);
+		    free(Node_List_CPUs);
+		    *Error_Code =  ENOMEM;
+		    return (char *)NULL;
+		    } /* if */
+		} /* if */
+	    if (strlen(Scratch) > 0) strcat(Scratch, ",");
+	    strcat(Scratch, Node_List_Pos[inx]->Name);
+	    CPU_Tally += Node_List_CPUs[inx];
+	    Node_Tally++;
+	    if ((CPU_Tally  >= Req_CPU_Count) && (Node_Tally >= Req_Node_Count)) break;
+	} /* for */
+	free(Node_Set_Pos);
+	free(Node_Set_Nodes);
+	free(Node_Set_CPUs);
+	Scratch = realloc(Scratch, strlen(Scratch)+1);
+	*Error_Code = 0;
+	return Scratch;
+    } /* if */
+
+    if (Req_Continguous != 0) {		/* Can not provide contiguous node list */
+	free(Node_Set_Pos);
+	free(Node_Set_Nodes);
+	free(Node_Set_CPUs);
+	*Error_Code = EBUSY;
+	return (char *)NULL;
+    } /* if */
+
+    /* We need to select the "best" sets of contiguous node lists */
+    /* This is the smallest number of sets and the smallest number of CPUs */
+    Node_List_Size = BUF_SIZE;
+    Scratch = (char *)malloc(Node_List_Size);
+    if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+	*Error_Code =  ENOMEM;
+	free(Node_Set_Pos);
+	free(Node_Set_Nodes);
+	free(Node_List_CPUs);
+	return (char *)NULL;
+    } /* if */
+
+    Scratch[0] = (char)NULL;
+    CPU_Tally = 0;
+    Node_Tally = 0;
+    Best_Fit = Biggest_Fit;
+    while ((CPU_Tally < Req_CPU_Count) || (Node_Tally < Req_Node_Count)) {
+	for (inx=Node_Set_Pos[Best_Fit]; inx<Node_List_Count; inx++) {
+	    if ((strlen(Scratch)+strlen(Node_List_Pos[inx]->Name)+1) >= Node_List_Size) {
+		Scratch = realloc(Scratch, Node_List_Size+BUF_SIZE);
+		if (Scratch == NULL) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "Pick_Best_Nodes: unable to allocate memory\n");
+#else
+		    syslog(LOG_ERR, "Pick_Best_Nodes: unable to allocate memory\n");
+#endif
+		    free(Node_Set_Pos);
+		    free(Node_Set_Nodes);
+		    free(Node_List_CPUs);
+		    *Error_Code =  ENOMEM;
+		    return (char *)NULL;
+		} /* if */
+	    } /* if */
+	    if (strlen(Scratch) > 0) strcat(Scratch, ",");
+	    strcat(Scratch, Node_List_Pos[inx]->Name);
+	    CPU_Tally += Node_List_CPUs[inx];
+	    Node_Tally++;
+	    if ((CPU_Tally  >= Req_CPU_Count) && (Node_Tally >= Req_Node_Count)) break;
+	    if (((inx+1) < Node_List_Count) && 
+	        (Node_List_Index[inx+1] != (Node_List_Index[inx]+1))) break;
+	} /* for */
+	if ((CPU_Tally  >= Req_CPU_Count) && (Node_Tally >= Req_Node_Count)) break; /* All done */
+	Node_Set_CPUs[Best_Fit]  = 0;	/* Don't reuse this set */
+	Node_Set_Nodes[Best_Fit] = 0;
+	/* Now pick the next best fitting set */
+	Best_Fit = -1;
+	Biggest_Fit = -1;
+	for (inx=0; inx<=Node_Set_Size; inx++) {
+	    if (Node_Set_Nodes[inx] == 0) continue;
+	    if ((Biggest_Fit == -1) || (Biggest_Fit_CPUs < Node_Set_CPUs[inx])) {
+		Biggest_Fit = inx;
+		Biggest_Fit_CPUs = Node_Set_CPUs[inx];
+	    } /* if */
+	    if (Node_Set_CPUs[inx]  < (Req_CPU_Count-CPU_Tally))  continue;
+	    if (Node_Set_Nodes[inx] < (Req_Node_Count-Node_Tally)) continue;
+	    if ((Best_Fit == -1) || (Best_Fit_CPUs > Node_Set_CPUs[inx])) {
+		Best_Fit = inx;
+		Best_Fit_CPUs = Node_Set_CPUs[inx];
+	    } /* if */
+	} /* for */
+	if (Biggest_Fit == -1) {
+#if DEBUG_SYSTEM
+ 	   fprintf(stderr, "Pick_Best_Nodes: Internal error\n");
+	   fprintf(stderr, "Current node list: %s\n", Scratch);
+#else
+ 	   syslog(LOG_ERR, "Pick_Best_Nodes: Internal error\n");
+#endif
+ 	   free(Node_Set_Pos);
+ 	   free(Node_Set_Nodes);
+ 	   free(Node_Set_CPUs);
+	   free(Scratch);
+	   return (char *)NULL;
+	} /* if */
+	if (Best_Fit == -1) Best_Fit=Biggest_Fit;
+    } /* while */
+
+    free(Node_Set_Pos);
+    free(Node_Set_Nodes);
+    free(Node_Set_CPUs);
+    Scratch = realloc(Scratch, strlen(Scratch)+1);
+    *Error_Code = 0;
+    return Scratch;
+} /* Pick_Best_Nodes */
 
 
 /*
@@ -287,7 +546,6 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
  * NOTE: The value returned MUST be freed to avoid memory leak
  */
 char *Will_Job_Run(char *Specification, int *Error_Code) {
-    char *Node_List;
     char My_Name[MAX_NAME_LEN];
     char My_OS[MAX_OS_LEN];
     int My_CPUs, My_Contiguous, My_RealMemory, My_VirtualMemory, My_MaxTime;
@@ -299,9 +557,12 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
     int Set_MaxTime, Set_CpuCount, Set_NodeCount;
     char *Scratch, *Node_List_Ptr, *str_ptr1, *str_ptr2, *Fail_Mode;
     int Node_Tally, CPU_Tally;
-
-    int Node_List_Size, inx;
+    int inx, Node_List_Size;
     struct Node_Record  *Node_Record_Point;
+    ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
+    struct Node_Record **Node_List_Pos;
+    int *Node_List_Index;
+    int *Node_List_CPUs;
 
     *Error_Code =  Parse_Job_Spec(Specification, My_Name, My_OS, 
 	&My_CPUs, &Set_CPUs, &My_Speed, &Set_Speed, &My_Contiguous,
@@ -342,7 +603,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 #else
 	    syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
 #endif
-	    *Error_Code =  EACCES;
+	    *Error_Code =  ENOMEM;
 	    return (char *)NULL;
 	} /* if */
 	strcpy(Scratch, Node_List_Ptr);
@@ -385,16 +646,33 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 
 	    if (Fail_Mode != (char *)NULL) {
 #if DEBUG_SYSTEM
-		fprintf(stderr, "Will_Job_Run: node %s does not meet job %s specification\n", str_ptr1, Fail_Mode);
+		fprintf(stderr, "Will_Job_Run: node %s does not meet job %s specification\n", 
+			str_ptr1, Fail_Mode);
 #else
-		syslog(LOG_ERR, "Will_Job_Run: node %s does not meet job %s specification\n", str_ptr1, Fail_Mode);
+		syslog(LOG_WARNING, "Will_Job_Run: node %s does not meet job %s specification\n", 
+			str_ptr1, Fail_Mode);
 #endif
 	    	*Error_Code =  EINVAL;
 		free(Scratch);
 		return (char *)NULL;
 	    } /* if */
 	    if (Node_Record_Point->NodeState == STATE_BUSY) {
-	    	*Error_Code =  EBUSY;
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Will_Job_Run: requested node %s busy\n", str_ptr1);
+#else
+		syslog(LOG_WARNING, "Will_Job_Run: requested node %s busy\n", str_ptr1);
+#endif
+		*Error_Code =  EBUSY;
+		free(Scratch);
+		return (char *)NULL;
+	    } /* if */
+	    if (Node_Record_Point->NodeState != STATE_IDLE) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Will_Job_Run: node %s not available for use\n", str_ptr1);
+#else
+		syslog(LOG_WARNING, "Will_Job_Run: node %s not available for use\n", str_ptr1);
+#endif
+		*Error_Code =  EINVAL;
 		free(Scratch);
 		return (char *)NULL;
 	    } /* if */
@@ -413,14 +691,16 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	Scratch[Node_List_Size] = (char)NULL;
 	return Scratch;
 
-    } else if ((Set_NodeCount != 0) || (Set_CpuCount != 0)) {
-	ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
-	struct Node_Record **Node_List_Pos;
-	int *Node_List_Index;
-	int *Node_List_CPUs;
-	int Node_List_Count, Best_Fit_CPUs, Best_Fit_Index, List_Head;
+    } else if ((Set_NodeCount != 0) || (Set_CpuCount != 0)) {	/* We need to select the nodes */
+	if (Set_CpuCount  == 0) My_CpuCount=0;
+	if (Set_NodeCount == 0) My_NodeCount=0;
+	/* Check for trivial case, no nodes or CPUs requested */
+	if ((My_CpuCount  == 0 ) && (My_NodeCount == 0)) {
+	    *Error_Code =  0;
+	    return (char *)NULL;
+	} /* if */
 
-	Node_List_Pos = (struct Node_Record **)malloc(Node_Count * sizeof(void *));
+	Node_List_Pos = (struct Node_Record **)malloc(Node_Count * sizeof(struct Node_Record *));
 	if (Node_List_Pos == NULL) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
@@ -430,7 +710,6 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    *Error_Code =  ENOMEM;
 	    return (char *)NULL;
 	} /* if */
-
 
 	Node_List_Index = (int *)malloc(Node_Count * sizeof(int *));
 	if (Node_List_Index == NULL) {
@@ -458,8 +737,6 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    return (char *)NULL;
 	} /* if */
 
-	Node_List_Count = 0;
-
 	Node_Record_Iterator = list_iterator_create(Node_Record_List);
 	if (Node_Record_Iterator == NULL) {
 #if DEBUG_SYSTEM
@@ -470,13 +747,14 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    free(Node_List_Pos);
 	    free(Node_List_Index);
 	    free(Node_List_CPUs);
-	    *Error_Code = EINVAL;
+	    *Error_Code = ENOMEM;
 	    return (char *)NULL;
 	} /* if */
 
 	/* Identify the acceptable nodes */
 	inx = 0;
-	Node_List_Count = 0;
+	Node_Tally = 0;
+	CPU_Tally = 0;
 	while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
 	    if (((strlen(My_OS) != 0) && (OS_Comp(My_OS, Node_Record_Point->OS) < 0)) || 
 	        ((Partition & Node_Record_Point->Partition) == 0) ||
@@ -488,165 +766,33 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	        (Node_Record_Point->NodeState != STATE_IDLE)) {
 		inx++;
 	    } else {	/* Node is usable */
-		Node_List_Pos[Node_List_Count]   = Node_Record_Point;
-		Node_List_Index[Node_List_Count] = inx++;
-		Node_List_CPUs[Node_List_Count]  = Node_Record_Point->CPUs;
-		Node_List_Count++;
+		Node_List_Pos[Node_Tally]   = Node_Record_Point;
+		Node_List_Index[Node_Tally] = inx++;
+		Node_List_CPUs[Node_Tally]  = Node_Record_Point->CPUs;
+		CPU_Tally += Node_Record_Point->CPUs;
+		Node_Tally++;
 	    } /* else */
 	} /* while */
 	list_iterator_destroy(Node_Record_Iterator);
 
-	/* Now pick "best" set of acceptable nodes */
-	CPU_Tally = 0;
-	Node_Tally = 0;
-	Best_Fit_CPUs = 0;
-	for (inx=0; inx<Node_List_Count; inx++) {
-	    if (inx == 0) {
-		List_Head = inx;
-		CPU_Tally = Node_List_CPUs[List_Head];
-		Node_Tally = 1;
-	    } else if (Node_List_Index[inx-1] == (Node_List_Index[inx]-1)) {
-		CPU_Tally += Node_List_CPUs[inx];
-		Node_Tally++;
-		if (((inx+1) >= Node_List_Count) &&
-		    (My_Contiguous   != 0) && 
-		    (((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) ||
-		     ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)))) continue;
-		if (((inx+1) >= Node_List_Count) &&
-		    ((Set_CpuCount  == 0) || (CPU_Tally  >= My_CpuCount )) &&
-		    ((Set_NodeCount == 0) || (Node_Tally >= My_NodeCount)) &&
-		    ((Best_Fit_CPUs == 0) || (CPU_Tally <= Best_Fit_CPUs))) {  /* New best fit */
-		    Best_Fit_CPUs = CPU_Tally;
-		    Best_Fit_Index = List_Head;
-		} /* if */
-	    } else { 	/*no longer contiguous */
-		if ((My_Contiguous   != 0) && 
-		    (((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) ||
-		     ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)))) {
-		    /* Can't use last set of nodes, start search over */
-		    List_Head = inx;
-		    CPU_Tally = Node_List_CPUs[List_Head];
-		    Node_Tally = 1;
-		    continue;
-		} /* if */
-		if (((Set_CpuCount  == 0) || (CPU_Tally  >= My_CpuCount )) &&
-		    ((Set_NodeCount == 0) || (Node_Tally >= My_NodeCount)) &&
-		    ((Best_Fit_CPUs == 0) || (CPU_Tally <= Best_Fit_CPUs))) {  /* New best fit */
-		    Best_Fit_CPUs = CPU_Tally;
-		    Best_Fit_Index = List_Head;
-		} /* if */
-		List_Head = inx;
-		CPU_Tally = Node_List_CPUs[List_Head];
-		Node_Tally = 1;
-	    } /* else */
-	} /* for */
-
-	/* Build node list string from selection */
-	if (Best_Fit_CPUs != 0) {
-	    Node_List_Size = BUF_SIZE;
-	    Scratch = malloc(Node_List_Size);
-	    if (Scratch == NULL) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
-#else
-		syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
-#endif
-		free(Node_List_Pos);
-		free(Node_List_Index);
-		free(Node_List_CPUs);
-		*Error_Code =  ENOMEM;
-		return (char *)NULL;
-	    } /* if */
-	    Scratch[0] = (char)NULL;
-	    CPU_Tally = 0;
-	    Node_Tally = 0;
-	    for (inx=Best_Fit_Index; inx<Node_List_Count; inx++) {
-		if ((strlen(Scratch)+strlen(Node_List_Pos[inx]->Name)+1) >= Node_List_Size) {
-		    Scratch = realloc(Scratch, Node_List_Size+BUF_SIZE);
-		    if (Scratch == NULL) {
-#if DEBUG_SYSTEM
-			fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
-#else
-			syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
-#endif
-			list_iterator_destroy(Node_Record_Iterator);
-			free(Scratch);
-			free(Node_List_Pos);
-			free(Node_List_Index);
-			free(Node_List_CPUs);
-			*Error_Code =  ENOMEM;
-			return (char *)NULL;
-		    } /* if */
-		} /* if */
-		if (strlen(Scratch) > 0) strcat(Scratch, ",");
-		strcat(Scratch, Node_List_Pos[inx]->Name);
-		CPU_Tally += Node_List_Pos[inx]->CPUs;
-		Node_Tally++;
-		if ((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) continue;
-		if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
-		free(Node_List_Pos);
-		free(Node_List_Index);
-		free(Node_List_CPUs);
-		Scratch = realloc(Scratch, strlen(Scratch)+1);
-		return Scratch;
-	    } /* for */
-
-	} else {	/* Select arbitrary nodes */
-	    Node_List_Size = BUF_SIZE;
-	    Scratch = malloc(Node_List_Size);
-	    if (Scratch == NULL) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
-#else
-		syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
-#endif
-		free(Node_List_Pos);
-		free(Node_List_Index);
-		free(Node_List_CPUs);
-		*Error_Code =  ENOMEM;
-		return (char *)NULL;
-	    } /* if */
-	    Scratch[0] = (char)NULL;
-	    CPU_Tally = 0;
-	    Node_Tally = 0;
-	    for (inx=0; inx<Node_List_Count; inx++) {
-		if ((strlen(Scratch)+strlen(Node_List_Pos[inx]->Name)+1) >= Node_List_Size) {
-		    Scratch = realloc(Scratch, Node_List_Size+BUF_SIZE);
-		    if (Scratch == NULL) {
-#if DEBUG_SYSTEM
-			fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
-#else
-			syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
-#endif
-			list_iterator_destroy(Node_Record_Iterator);
-			free(Scratch);
-			free(Node_List_Pos);
-			free(Node_List_Index);
-			free(Node_List_CPUs);
-			*Error_Code =  ENOMEM;
-			return (char *)NULL;
-		    } /* if */
-		} /* if */
-		if (strlen(Scratch) > 0) strcat(Scratch, ",");
-		strcat(Scratch, Node_List_Pos[inx]->Name);
-		CPU_Tally += Node_List_Pos[inx]->CPUs;
-		Node_Tally++;
-		if ((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) continue;
-		if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
-		free(Node_List_Pos);
-		free(Node_List_Index);
-		free(Node_List_CPUs);
-		Scratch = realloc(Scratch, strlen(Scratch)+1);
-		return Scratch;
-	    } /* for */
-	    /* No joy, clean house */
-	    free(Scratch);
+	/* Is there enough nodes to satisfy request (quick test) */
+	if ((CPU_Tally  < My_CpuCount ) || (Node_Tally < My_NodeCount)) {
 	    free(Node_List_Pos);
 	    free(Node_List_Index);
 	    free(Node_List_CPUs);
 	    *Error_Code =  EBUSY;
 	    return (char *)NULL;
-	} /* else */
+	} /* if */
+
+	/* Now pick "best" set of acceptable nodes */
+	Node_List_Ptr = Pick_Best_Nodes(Node_List_Pos, Node_List_Index, 
+	    Node_List_CPUs, Node_Tally, My_CpuCount, My_NodeCount, 
+	    My_Contiguous, Error_Code);
+	free(Node_List_Pos);
+	free(Node_List_Index);
+	free(Node_List_CPUs);
+	return Node_List_Ptr;
+
     } else {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Will_Job_Run: No NodeList, CpuCount, or NodeCount specified\n");
