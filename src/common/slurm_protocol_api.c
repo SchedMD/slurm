@@ -571,6 +571,15 @@ int slurm_fcntl ( slurm_fd fd , int cmd , ... )
 	return rc ;
 }
 	
+int slurm_set_stream_non_blocking ( slurm_fd open_fd )
+{
+	return _slurm_set_stream_non_blocking (  open_fd ) ;
+}
+
+int slurm_set_stream_blocking ( slurm_fd open_fd ) 
+{
+	return _slurm_set_stream_blocking (  open_fd ) ;
+}
 
 /************************/
 /***** slurm addr functions */

@@ -325,6 +325,33 @@ int _slurm_close_stream ( slurm_fd open_fd )
 	return _slurm_close ( open_fd ) ;
 }
 
+
+int _slurm_set_stream_non_blocking ( slurm_fd open_fd )
+{
+	int flags ;
+	if ( ( flags = _slurm_fcntl ( open_fd , F_GETFL ) ) == SLURM_SOCKET_ERROR )
+	{
+		return SLURM_SOCKET_ERROR ;
+	}
+	flags |= O_NONBLOCK ;
+	return _slurm_fcntl ( open_fd , F_SETFL , flags )  ;
+}
+
+int _slurm_set_stream_blocking ( slurm_fd open_fd ) 
+{
+	int flags ;
+	if ( ( flags = _slurm_fcntl ( open_fd , F_GETFL ) ) == SLURM_SOCKET_ERROR )
+	{
+		return SLURM_SOCKET_ERROR ;
+	}
+	flags &= !O_NONBLOCK ;
+	return _slurm_fcntl ( open_fd , F_SETFL , flags ) ;
+}
+
+
+
+
+
 extern int _slurm_socket (int __domain, int __type, int __protocol)
 {
 	return socket ( __domain, __type, __protocol ) ;
