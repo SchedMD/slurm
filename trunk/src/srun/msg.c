@@ -62,6 +62,8 @@
 #  include "src/srun/attach.h"
 #endif
 
+#include "src/common/xstring.h"
+
 #define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
 
 static int    tasks_exited     = 0;
@@ -113,6 +115,8 @@ _build_tv_list(job_t *job, char *host, int nodeid, int ntasks, uint32_t *pid)
 	if (MPIR_proctable_size == 0) {
 		MPIR_proctable_size = opt.nprocs;
 		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs);
+		totalview_jobid = NULL;
+		xstrfmtcat(totalview_jobid, "%lu", job->jobid);
 	}
 
 	for (i = 0; i < ntasks; i++) {
