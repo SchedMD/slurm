@@ -33,7 +33,10 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_print_ctl_conf - output the contents of Slurm's configuration message */
+/*
+ * slurm_print_ctl_conf - output the contents of slurm control configuration message 
+ *	as loaded using slurm_load_ctl_conf
+ */
 void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
 	char time_str[16];
@@ -66,7 +69,11 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 	fprintf(out, "TmpFS             = %s\n", slurm_ctl_conf_ptr->tmp_fs);
 }
 
-/* slurm_load_ctl_conf - issue RPC to get Slurm configuration information if changed since update_time */
+/*
+ * slurm_load_ctl_conf - issue RPC to get slurm controlconfiguration information 
+ *	if changed since update_time 
+ * NOTE: free the response using slurm_free_ctl_conf
+ */
 int
 slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **slurm_ctl_conf_ptr )
 {
