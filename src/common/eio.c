@@ -55,11 +55,11 @@ int io_handle_events(List objs)
 static int
 _poll_loop_internal(List objs)
 {
-	int            retval = 0;
-	struct pollfd *pollfds;
-	io_obj_t     **map;
+	int            retval  = 0;
+	struct pollfd *pollfds = NULL;
+	io_obj_t     **map     = NULL;
 	unsigned int   maxnfds = 0, nfds = 0;
-	unsigned int   n = 0;
+	unsigned int   n       = 0;
 
 	for (;;) {
 
