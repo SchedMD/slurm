@@ -1,19 +1,26 @@
 /* Author Kevin Tew
  * May 17, 2002
  */
+#include <unistd.h>
+#include <string.h>
+#include <netdb.h>
+#include <errno.h>
+#include <netinet/in.h>
+#include <sys/time.h>
+#include <sys/types.h>
+
+#if HAVE_SYS_SOCKET_H
+#  include <sys/socket.h>
+#else
+#  if HAVE_SOCKET_H
+#    include <socket.h>
+#  endif
+#endif
+
 #include <src/common/slurm_protocol_interface.h>
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/log.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <netdb.h>
-#include <errno.h>
-#include <stdio.h>
-#include <sys/time.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string.h>
 
 /* high level calls */
 uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address )

@@ -1,6 +1,6 @@
-#include <slurm_protocol_pack.h>
+#include <stdlib.h>
+#include <src/common/slurm_protocol_pack.h>
 #include <src/common/pack.h>
-#include <stdio.h>
 
 void pack_header ( char ** buffer , uint32_t * length , header_t * header )
 {
@@ -80,7 +80,7 @@ void pack_msg ( char ** buffer , uint32_t * buf_len , slurm_msg_t const * msg )
 		case MESSAGE_UPLOAD_ACCOUNTING_INFO :
 			break ;
 		default :
-			debug ( stderr , "No pack method for msg type %i",  msg -> msg_type ) ;
+			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
 			break;
 		
 	}
