@@ -103,6 +103,7 @@ typedef struct task_info {
 } task_info_t;
 
 static void alarm_handler(int dummy);
+static void list_delete_retry (void *retry_entry);
 static void queue_agent_retry (agent_info_t *agent_info_ptr, int count);
 static void slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg);
 static void spawn_retry_agent (agent_arg_t *agent_arg_ptr);
@@ -195,7 +196,7 @@ agent (void *args)
 			                   &agent_info_ptr->thread_mutex);
 		}
  
-		/* create thread, note this is freed from  thread_per_node_rpc() */
+		/* create thread specific dat, NOTE freed from thread_per_node_rpc() */
 		task_specific_ptr 			= xmalloc (sizeof (task_info_t));
 		task_specific_ptr->thread_mutex_ptr	= &agent_info_ptr->thread_mutex;
 		task_specific_ptr->thread_cond_ptr	= &agent_info_ptr->thread_cond;
@@ -530,7 +531,7 @@ queue_agent_retry (agent_info_t *agent_info_ptr, int count)
 	/* add the requeust to a list */
 	pthread_mutex_lock (&retry_mutex);
 	if (retry_list == NULL) {
-		retry_list = list_create (NULL);
+		retry_list = list_create (&list_delete_retry);
 		if (retry_list == NULL)
 			fatal ("list_create failed");
 	}
@@ -538,6 +539,28 @@ queue_agent_retry (agent_info_t *agent_info_ptr, int count)
 		fatal ("list_append failed");
 	pthread_mutex_unlock (&retry_mutex);
 }
+
+/*
+ * list_delete_retry - delete an entry from the retry list, 
+ *	see common/list.h for documentation
+ */
+void 
+list_delete_retry (void *retry_entry) 
+{
+	agent_arg_t *agent_arg_ptr;	/* pointer to part_record */
+
+	agent_arg_ptr = (agent_arg_t *) retry_entry;
+	if (agent_arg_ptr -> slurm_addr)
+		xfree (agent_arg_ptr -> slurm_addr);
+	if (agent_arg_ptr -> node_names)
+		xfree (agent_arg_ptr -> node_names);
+#if AGENT_IS_THREAD
+	if (agent_arg_ptr -> msg_args)
+		xfree (agent_arg_ptr -> msg_args);
+#endif
+	xfree (agent_arg_ptr);
+}
+
 
 /* agent_retry - Agent for retrying pending RPCs (top one on the queue), 
  *	argument is unused */
@@ -633,4 +656,15 @@ void slurmctld_free_job_launch_msg(batch_job_launch_msg_t * msg)
 		slurm_free_job_launch_msg (msg);
 	}
 }
+
+/* agent_purge - purge all pending RPC requests */
+void agent_purge (void)
+{		retry_list = list_create (NULL);
+
+	pthread_mutex_lock (&retry_mutex);
+	if (retry_list == NULL)
+		list_destroy (retry_list);
+	pthread_mutex_unlock (&retry_mutex);
+}
+
 
