@@ -119,7 +119,7 @@ _print_job ( void )
 	else
 		error_code = slurm_load_jobs ((time_t) NULL, &new_job_ptr);
 	if (error_code) {
-		slurm_perror ("slurm_load_jobs error:");
+		slurm_perror ("slurm_load_jobs error");
 		return;
 	}
 	old_job_ptr = new_job_ptr;
@@ -166,7 +166,7 @@ _print_job_steps( void )
 		error_code = slurm_get_job_steps ((time_t) NULL, 0, 0, 
 		                                  &new_step_ptr);
 	if (error_code) {
-		slurm_perror ("slurm_get_job_steps error:");
+		slurm_perror ("slurm_get_job_steps error");
 		return;
 	}
 	old_step_ptr = new_step_ptr;
