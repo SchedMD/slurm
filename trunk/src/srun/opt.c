@@ -49,9 +49,8 @@
 #include <src/common/list.h>
 
 
-#include "opt.h"
-#include "env.h"
-
+#include <src/srun/env.h>
+#include <src/srun/opt.h>
 
 #define __DEBUG 0
 
@@ -772,9 +771,10 @@ static void opt_args(int ac, char **av)
 
 
 	if (rc < -1) {
-		error("bad argument %s: %s",
-			 poptBadOption(optctx, POPT_BADOPTION_NOALIAS),
-			 poptStrerror(rc));
+		const char *bad_opt;
+		bad_opt = poptBadOption(optctx, POPT_BADOPTION_NOALIAS);
+		if (strcmp (bad_opt, "-h"))
+			error("bad argument %s: %s", bad_opt, poptStrerror(rc));
 		poptPrintUsage(optctx, stderr, 0);
 
 		exit(1);
