@@ -1460,6 +1460,7 @@ void make_node_comp(struct node_record *node_ptr)
 {
 	uint16_t no_resp_flag, base_state;
 
+	xassert(node_ptr);
 	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND;
@@ -1489,6 +1490,7 @@ static void _make_node_down(struct node_record *node_ptr)
 	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag;
 
+	xassert(node_ptr);
 	last_node_update = time (NULL);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state = NODE_STATE_DOWN | no_resp_flag;
