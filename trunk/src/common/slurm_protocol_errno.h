@@ -10,7 +10,7 @@
 #define SLURM_PROTOCOL_ERROR -1
 #define SLURM_PROTOCOL_FAILURE -1
 
-/* Geneeral Message error codes */
+/* General Message error codes */
 #define SLURM_UNEXPECTED_MSG_ERROR -1900
 #define SLURM_PROTOCOL_VERSION_ERROR -1910
 
@@ -37,9 +37,21 @@
 #define ESLURM_NODES_BUSY				-2016
 
 /* partition_mgr.c/update_part */
-#define ESLURM_PROTOCOL_INVALID_PARTITION_NAME		-2101
+#define ESLURM_INVALID_PARTITION_NAME			-2101
+#define ESLURM_INVALID_NODE_NAME_SPECIFIED		-2102
 
 /* node_mgr.c/update_node */
 #define ESLURM_INVALID_NODE_NAME			-2201
 
+/* look up an errno value */
+extern char * slurm_strerror(int errnum);
+
+/* set an errno value */
+extern void slurm_seterrno(int errnum);
+
+/* print message: error string for current errno value */
+extern void slurm_perror(char *msg);
+
 #endif
+
+
