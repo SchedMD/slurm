@@ -1926,6 +1926,7 @@ void job_time_limit(void)
 	job_record_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
 		(struct job_record *) list_next(job_record_iterator))) {
+		bool inactive_flag = false;
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
@@ -1937,16 +1938,22 @@ void job_time_limit(void)
 			else if ((job_ptr->time_last_active +
 				  slurmctld_conf.inactive_limit) <= now) {
 				/* job inactive, kill it */
-				job_ptr->end_time = now;
+				job_ptr->end_time   = now;
 				job_ptr->time_limit = 1;
+				inactive_flag       = true;
 			}
 		}
 		if ((job_ptr->time_limit == INFINITE) ||
 		    (job_ptr->end_time > now))
 			continue;
+
 		last_job_update = now;
-		info("Time limit exhausted for job_id %u, terminating",
-		     job_ptr->job_id);
+		if (inactive_flag)
+			info("Inactivity time limit reached for JobId=%u",
+			     job_ptr->job_id);
+		else
+			info("Time limit exhausted for JobId=%u",
+			     job_ptr->job_id);
 		_job_timed_out(job_ptr);
 	}
 
