@@ -339,6 +339,16 @@ job_destroy(job_t *job, int error)
 #endif
 }
 
+void
+job_kill(job_t *job)
+{
+	if (!opt.no_alloc) {
+		if (slurm_kill_job_step(job->jobid, job->stepid, SIGKILL) < 0)
+			error ("slurm_kill_job_step: %m");
+	}
+	update_job_state(job, SRUN_JOB_FAILED);
+}
+
 int
 job_active_tasks_on_host(job_t *job, int hostid)
 {

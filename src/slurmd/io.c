@@ -1364,9 +1364,15 @@ _task_read(io_obj_t *obj, List objs)
 static int 
 _task_error(io_obj_t *obj, List objs)
 {
+	int size, err;
 	struct io_info *t = (struct io_info *) obj->arg;
 	xassert(t->magic == IO_MAGIC);
-	error("error on %s %d", _io_str[t->type], t->id);
+
+	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
+		error ("getsockopt: %m");
+
+	error("error on %s %d: %s", _io_str[t->type], t->id, 
+			slurm_strerror(err));
 	_obj_close(obj, objs);
 	return -1;
 }

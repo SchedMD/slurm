@@ -125,7 +125,6 @@ srun(int ac, char **av)
 		log_alter(logopt, 0, NULL);
 	}
 
-	sig_setup_sigmask();
 
 	/* now global "opt" should be filled in and available,
 	 * create a job from opt
@@ -137,6 +136,7 @@ srun(int ac, char **av)
 
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
+		sig_setup_sigmask();
 		job = job_create_noalloc(); 
 #ifdef HAVE_LIBELAN3
 		_qsw_standalone(job);
@@ -149,10 +149,12 @@ srun(int ac, char **av)
 		}
 		job = job_create_allocation(resp); 
 		job->old_job = true;
+		sig_setup_sigmask();
 		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 
 	} else if (opt.allocate) {
+		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		if (_verbose)
@@ -169,6 +171,7 @@ srun(int ac, char **av)
 		exit (0);
 
 	} else {
+		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
 		if (_verbose)

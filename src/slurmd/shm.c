@@ -246,7 +246,7 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 			/* If at least one task still remains, consider
 			 * the job running
 			 */
-			if (getsid(t->pid) == s->sid)
+			if ((t->pid > 0) && (getsid(t->pid) == s->sid))
 				retval = true;
 		}	
 	} 

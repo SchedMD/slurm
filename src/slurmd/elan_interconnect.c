@@ -35,7 +35,7 @@
 
 #include <slurm/slurm_errno.h>
 
-include "src/common/xmalloc.h"
+#include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/bitstring.h"
 #include "src/common/log.h"

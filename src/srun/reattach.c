@@ -1,5 +1,6 @@
 /****************************************************************************\
- *  reattach.c - reattach to a running job
+ * src/srun/reattach.c - reattach to a running job
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -456,7 +457,12 @@ int reattach()
 
 	if ((opt.nprocs = s->ntasks) == 0) 
 		exit(1);
-	
+
+	/*
+	 * Indicate that nprocs has been manually set
+	 */
+	opt.nprocs_set = true;
+
 	if (!(job = job_create_noalloc()))
 		exit(1);
 
