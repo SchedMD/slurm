@@ -1,9 +1,9 @@
 /*****************************************************************************
  *  $Id$
  *****************************************************************************
- *  $LSDId: cbuf.c,v 1.32 2003/01/03 21:08:19 dun Exp $
+ *  $LSDId: cbuf.c,v 1.35 2005/01/13 00:41:17 dun Exp $
  *****************************************************************************
- *  Copyright (C) 2002-2003 The Regents of the University of California.
+ *  Copyright (C) 2002-2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
  *
@@ -330,7 +330,7 @@ cbuf_size (cbuf_t cb)
     assert(cb != NULL);
     cbuf_mutex_lock(cb);
     assert(cbuf_is_valid(cb));
-    size = cb->size;
+    size = cb->maxsize;
     cbuf_mutex_unlock(cb);
     return(size);
 }
@@ -344,7 +344,7 @@ cbuf_free (cbuf_t cb)
     assert(cb != NULL);
     cbuf_mutex_lock(cb);
     assert(cbuf_is_valid(cb));
-    nfree = cb->size - cb->used;
+    nfree = cb->maxsize - cb->used;
     cbuf_mutex_unlock(cb);
     return(nfree);
 }
@@ -381,6 +381,12 @@ cbuf_lines_used (cbuf_t cb)
 int
 cbuf_reused (cbuf_t cb)
 {
+/*  If (O > R)
+ *    n = O - R
+ *  else
+ *    n = (O - 0) + ((S+1) - R).
+ *  (S+1) is used since data[] contains 'size' bytes + a 1-byte sentinel.
+ */
     int reused;
 
     assert(cb != NULL);
@@ -988,12 +994,11 @@ cbuf_write_from_fd (cbuf_t dst, int srcfd, int len, int *ndropped)
     if (len == -1) {
         /*
          *  Try to use all of the free buffer space available for writing.
-         *    If it is all in use, try to grab another chunk and limit the
-         *    amount of data being overwritten.
+         *    If it is all in use, try to grab another chunk.
          */
         len = dst->size - dst->used;
         if (len == 0) {
-            len = MIN(dst->size, CBUF_CHUNK);
+            len = CBUF_CHUNK;
         }
     }
     if (len > 0) {
@@ -1275,7 +1280,7 @@ cbuf_get_fd (void *dstbuf, int *psrcfd, int len)
 
     do {
         n = read(*psrcfd, dstbuf, len);
-    } while ((n < 0) && ((errno == EINTR) || (errno == EAGAIN)));
+    } while ((n < 0) && (errno == EINTR));
     return(n);
 }
 

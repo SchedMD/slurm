@@ -1,7 +1,9 @@
 /*****************************************************************************
  *  $Id$
  *****************************************************************************
- *  Copyright (C) 2002-2003 The Regents of the University of California.
+ *  $LSDId: cbuf.h,v 1.22 2005/01/19 22:35:57 dun Exp $
+ *****************************************************************************
+ *  Copyright (C) 2002-2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Chris Dunlap <cdunlap@llnl.gov>.
  *
@@ -104,14 +106,14 @@ void cbuf_flush (cbuf_t cb);
 
 int cbuf_size (cbuf_t cb);
 /*
- *  Returns the current size of the buffer allocated to [cb]
- *    (ie, the number of bytes in can currently hold).
+ *  Returns the maximum size of the buffer allocated to [cb]
+ *    (ie, the number of bytes it can currently hold).
  */
 
 int cbuf_free (cbuf_t cb);
 /*
- *  Returns the number of bytes in [cb] available for writing before
- *    unread data is overwritten (unless the cbuf is able to resize itself).
+ *  Returns the number of bytes in [cb] available for writing before unread
+ *    data is overwritten (assuming the cbuf can resize itself if needed).
  */
 
 int cbuf_used (cbuf_t cb);
