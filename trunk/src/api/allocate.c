@@ -137,5 +137,5 @@ int Allocate(char *Spec, char **NodeList) {
     } /* if */
     NodeList[0] = Buffer;
     return 0;
-} /* Load_Node */
+} /* Allocate */
 

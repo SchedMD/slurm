@@ -10,14 +10,14 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = allocate node_info partition_info reconfigure update_config
+test_modules = allocate build_info node_info partition_info reconfigure update_config
 else
 test_modules = 
 endif
 
 noinst_LIBRARIES = libslurmapi.a
 
-libslurmapi_a_SOURCES = allocate.c node_info.c partition_info.c reconfigure.c update_config.c
+libslurmapi_a_SOURCES = allocate.c build_info.c node_info.c partition_info.c reconfigure.c update_config.c
 
 LDADD = $(top_srcdir)/src/common/libcommon.a
 
@@ -26,6 +26,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.a
 # place of the rules that follow.
 
 #allocate_CFLAGS        = -DDEBUG_MODULE $(AM_CFLAGS)
+#build_info_CFLAGS      = -DDEBUG_MODULE $(AM_CFLAGS)
 #node_info_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
 #partition_info_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
 #reconfigure_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
@@ -39,6 +40,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.a
 # Note: automake 1.5 will complain about these...
 #
 allocate       : allocate_d.o
+build_info     : build_info_d.o
 node_info      : node_info_d.o
 partition_info : partition_info_d.o
 reconfigure    : reconfigure_d.o
