@@ -78,9 +78,8 @@ int main(int argc, char *argv[])
 	initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
-		printf
-		    ("Screen is too small make sure the screen is at least %dx%d\nRight now it is %dx%d\n",
-		     75 + width, height, COLS, LINES);
+		printf("Screen is too small make sure the screen is at least %dx%d\n"
+			"Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 		exit(0);
 	}
 	raw();
@@ -201,9 +200,8 @@ void *_resize_handler(int sig)
 	initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
-		printf
-			("Screen is too small make sure the screen is at least %dx%d\nRight now it is %dx%d\n",
-			 75 + width, height, COLS, LINES);
+		printf("Screen is too small make sure the screen is at least %dx%d\n"
+			"Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 		exit(0);
 	}
 	
