@@ -19,5 +19,4 @@
 
 uint32_t check_header_version( header_t * header) ;
 void init_header ( header_t * header , slurm_msg_type_t msg_type , uint16_t flags ) ;
-void set_slurm_addr_hton ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
 #endif
