@@ -91,6 +91,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	int i;
 	uint16_t req_geometry[SYSTEM_DIMENSIONS];
 	uint16_t conn_type, node_use, rotate, target_size = 1;
+	uint32_t req_procs = job_ptr->num_procs;
 
 	sort_bgl_record_inc_size(bgl_list);
 
@@ -113,6 +114,20 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 
 	debug("number of partitions to check: %d", list_count(bgl_list));
 	while ((record = (bgl_record_t*) list_next(itr))) {
+		/* Check processor count */
+		if (req_procs > 512) {
+			uint32_t proc_cnt;
+			if (record->node_use == SELECT_VIRTUAL_NODE_MODE)
+				proc_cnt = record->bp_count * 1024;
+			else
+				proc_cnt = record->bp_count * 512;
+			if (req_procs > proc_cnt) {
+				debug("partition %s CPU count too low",
+					record->bgl_part_id);
+				continue;
+			}
+		}
+
 		/*
 		 * check that the number of nodes is suitable
 		 */
@@ -199,12 +214,8 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 				continue;	/* Not usable */
 		}
 
-		if ((*found_bgl_record == NULL)
-		||  (record->bp_count < (*found_bgl_record)->bp_count)) {
-			*found_bgl_record = record;
-			if (record->bp_count == target_size)
-				break;
-		}
+		*found_bgl_record = record;
+		break;
 	}
 	list_iterator_destroy(itr);
 	
