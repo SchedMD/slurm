@@ -113,7 +113,8 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			pack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
+			pack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_JOB :
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , 
@@ -378,8 +379,8 @@ void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t 
 	pack32 ( msg->job_id , ( void ** ) buffer , length ) ;
 	packstr ( msg->node_list , ( void ** ) buffer , length ) ;
 	pack16 ( msg->num_cpu_groups , ( void ** ) buffer , length ) ;
-	packint_array ( msg->cpus_per_node, msg->num_cpu_groups , ( void ** ) buffer  , length ) ;
-	packint_array ( msg->cpu_count_reps, msg->num_cpu_groups, ( void ** ) buffer  , length ) ;
+	pack32_array ( msg->cpus_per_node, msg->num_cpu_groups , ( void ** ) buffer  , length ) ;
+	pack32_array ( msg->cpu_count_reps, msg->num_cpu_groups, ( void ** ) buffer  , length ) ;
 }
 
 int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , int * length )
@@ -389,16 +390,14 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 	/* alloc memory for structure */	
 	tmp_ptr = xmalloc ( sizeof ( resource_allocation_response_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
-	{
 		return ENOMEM;
-	}
 
 	/* load the data values */
 	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
 	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack16 ( & tmp_ptr -> num_cpu_groups , ( void ** ) buffer , length ) ;
-	unpackint_array ( (uint32_t **) &(tmp_ptr->cpus_per_node), &uint16_tmp, ( void ** ) buffer  , length ) ;
-	unpackint_array ( (uint32_t **) &(tmp_ptr->cpu_count_reps), &uint16_tmp,  ( void ** ) buffer  , length ) ;
+	unpack32_array ( (uint32_t **) &(tmp_ptr->cpus_per_node), &uint16_tmp, ( void ** ) buffer  , length ) ;
+	unpack32_array ( (uint32_t **) &(tmp_ptr->cpu_count_reps), &uint16_tmp,  ( void ** ) buffer  , length ) ;
 	*msg = tmp_ptr ;
 	return 0 ;
 }
