@@ -569,22 +569,29 @@ executing tasks on the remote compute nodes. These environment variables
 are:
 .TP 20
 SLURM_CPUS_ON_NODE
-count of processors available to the job on this node
+Count of processors available to the job on this node
 .TP
 SLURM_JOBID
-job id of the executing job.
+Job id of the executing job
 .TP
-SLURM_PROCID
-the MPI rank (or relative process ID) of the current process
+SLURM_LAUNCH_NODE_IPADDR
+IP adddress of the node from which the task launch was 
+initiated (where the srun command ran from)
+.TP
+SLURM_NNODES 
+Total number of nodes in the job's resource allocation
 .TP
 SLURM_NODEID
 The relative node ID of the current node
 .TP
-SLURM_NPROCS
-total number of processes in the current job
-.TP
 SLURM_NODELIST
-list of nodes that the slurm job is executing on.
+List of nodes allocated to the job
+.TP
+SLURM_NPROCS
+Total number of processes in the current job
+.TP
+SLURM_PROCID 
+The MPI rank (or relative process ID) of the current process
 
 .SH "SIGNALS AND ESCAPE SEQUENCES"
 Signals sent to the \fBsrun\fR command are automatically forwarded to 
@@ -600,9 +607,15 @@ is for this put the \fBsrun\fR command into a mode where various special
 actions may be invoked.
 
 .SH "MPI SUPPORT"
-On computers with a Quadrics interconnect, \fBsrun\fR directly supports 
-the Quadrics version of MPI without modification. Applications build 
-using the Quadrics MPI library will communicate directly over the 
+LAM/MPI version 7.0.4 or higher is well intergated with SLURM. 
+The \fBlamboot\fR command will acquire a SLURM resource allocation 
+and uses the \fBsrun\fR command to launch its \fBlamd\fR daemons on 
+each allocated node.  See \fIhttp://www.lam\-mpi.org/\fR for more 
+information.
+
+On computers with a Quadrics interconnect, \fBsrun\fR directly supports
+the Quadrics version of MPI without modification. Applications build
+using the Quadrics MPI library will communicate directly over the
 Quadrics interconnect without any special \fBsrun\fR options.
 
 Users may also use MPICH on any computer where that is available. 
