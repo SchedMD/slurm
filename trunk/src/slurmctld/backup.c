@@ -46,6 +46,7 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #include "src/slurmctld/read_config.h"
@@ -56,6 +57,15 @@ static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static int          _ping_controller(void);
 
+/*
+ * Static list of signals to block in this process
+ * *Must be zero-terminated*
+ */
+static int backup_sigarray[] = {
+	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
+	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
+	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
+};
 
 /* run_backup - this is the backup controller, it should run in standby 
  *	mode, assuming control when the primary controller stops responding */
@@ -67,7 +77,8 @@ void run_backup(void)
 	info("slurmctld running in background mode");
 	/* default: don't resume if shutdown */
 	slurmctld_config.resume_backup = false;
-
+	if (xsignal_block(backup_sigarray) < 0)
+		error("Unable to block signals");
 	/*
 	 * create attached thread for signal handling
 	 */
@@ -151,32 +162,18 @@ static void *_background_signal_hand(void *no_data)
 
 	create_pidfile(slurmctld_conf.slurmctld_pidfile);
 
-	if (sigemptyset(&set))
-		error("sigemptyset error: %m");
-	if (sigaddset(&set, SIGINT))
-		error("sigaddset error on SIGINT: %m");
-	if (sigaddset(&set, SIGTERM))
-		error("sigaddset error on SIGTERM: %m");
-	if (sigaddset(&set, SIGABRT))
-		error("sigaddset error on SIGABRT: %m");
-
-	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
-		fatal("sigprocmask error: %m");
-
 	while (1) {
+		xsignal_sigset_create(backup_sigarray, &set);
 		sigwait(&set, &sig);
 		switch (sig) {
 		case SIGINT:	/* kill -2  or <CTRL-C> */
 		case SIGTERM:	/* kill -15 */
-			info("Terminate signal (SIGINT or SIGTERM) received");
+		case SIGABRT:   /* abort */
+			info("Terminate signal (SIGABRT, SIGINT or SIGTERM) received");
 			slurmctld_config.shutdown_time = time(NULL);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			slurmctld_shutdown();
 			return NULL;	/* Normal termination */
-			break;
-		case SIGABRT:	/* abort */
-			info("SIGABRT received");
-			abort();
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);
