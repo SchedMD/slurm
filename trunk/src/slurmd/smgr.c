@@ -90,6 +90,15 @@ static void  _setup_spawn_io(slurmd_job_t *job);
 /* parallel debugger support */
 static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
 static void  _pdebug_stop_current(slurmd_job_t *job);
+#ifdef HAVE_PTRACE64
+#  define _PTRACE(r,p,a,d) ptrace64((r),(long long)(p),(long long)(a),(d),NULL)
+#else
+#  ifdef PTRACE_FIVE_ARGS
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(d),NULL)
+#  else
+#    define _PTRACE(r,p,a,d) ptrace((r),(p),(a),(void *)(d))
+#  endif
+#endif
 
 /*
  *  Dummy handler for SIGCHLD. 
@@ -587,11 +596,7 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 		waitpid(pid, &status, WUNTRACED);
 		if (kill(pid, SIGSTOP) < 0)
 			error("kill(%lu): %m", (unsigned long) pid);
-#ifdef PTRACE_FIVE_ARGS
-		if (ptrace(PTRACE_DETACH, (long) pid, NULL, 0, NULL))
-#else
-		if (ptrace(PTRACE_DETACH, (long) pid, NULL, NULL))
-#endif
+		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0))
 			error("ptrace(%lu): %m", (unsigned long) pid);
 	}
 }
@@ -606,10 +611,6 @@ _pdebug_stop_current(slurmd_job_t *job)
 	 * Stop the task on exec for TotalView to connect 
 	 */
 	if ( (job->task_flags & TASK_PARALLEL_DEBUG)
-#ifdef PTRACE_FIVE_ARGS
-	     && (ptrace(PTRACE_TRACEME, 0, NULL, 0, NULL) < 0) )
-#else
-	     && (ptrace(PTRACE_TRACEME, 0, NULL, NULL) < 0) )
-#endif
+	     && (_PTRACE(PTRACE_TRACEME, 0, NULL, 0) < 0) )
 		error("ptrace: %m");
 }
