@@ -675,6 +675,7 @@ int Update_Part(char *PartitionName, char *Spec) {
 	goto cleanup;
     } /* if */
 
+    Last_Part_Update = time(NULL);
     if (MaxTime_Val  != NO_VAL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Update_Part: setting MaxTime to %d for partition %s\n", 

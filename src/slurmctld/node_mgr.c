@@ -328,36 +328,6 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 } /* Create_Config_Record */
 
 
-/* Node_Lock - Lock the node and configuration information */
-void Node_Lock() {
-    int Error_Code;
-    Error_Code = pthread_mutex_lock(&Node_Mutex);
-    if (Error_Code) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Node_Lock: pthread_mutex_lock error %d\n", Error_Code);
-#else
-	syslog(LOG_ALERT, "Node_Lock: pthread_mutex_lock error %d\n", Error_Code);
-#endif
-	abort();
-    } /* if */
-} /* Node_Lock */
-
-
-/* Node_Unlock - Unlock the node and configuration information */
-void Node_Unlock() {
-    int Error_Code;
-    Error_Code = pthread_mutex_unlock(&Node_Mutex);
-    if (Error_Code) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Node_Lock: pthread_mutex_unlock error %d\n", Error_Code);
-#else
-	syslog(LOG_ALERT, "Node_Lock: pthread_mutex_unlock error %d\n", Error_Code);
-#endif
-	abort();
-    } /* if */
-} /* Node_Unlock */
-
-
 /* 
  * Create_Node_Record - Create a node record
  * Input: Error_Code - Location to store error value in
@@ -864,6 +834,36 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap) {
     BitMap[0] =My_BitMap;
     return 0;
 } /* NodeName2BitMap */
+
+
+/* Node_Lock - Lock the node and configuration information */
+void Node_Lock() {
+    int Error_Code;
+    Error_Code = pthread_mutex_lock(&Node_Mutex);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Node_Lock: pthread_mutex_lock error %d\n", Error_Code);
+#else
+	syslog(LOG_ALERT, "Node_Lock: pthread_mutex_lock error %d\n", Error_Code);
+#endif
+	abort();
+    } /* if */
+} /* Node_Lock */
+
+
+/* Node_Unlock - Unlock the node and configuration information */
+void Node_Unlock() {
+    int Error_Code;
+    Error_Code = pthread_mutex_unlock(&Node_Mutex);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Node_Lock: pthread_mutex_unlock error %d\n", Error_Code);
+#else
+	syslog(LOG_ALERT, "Node_Lock: pthread_mutex_unlock error %d\n", Error_Code);
+#endif
+	abort();
+    } /* if */
+} /* Node_Unlock */
 
 
 /* 

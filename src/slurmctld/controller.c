@@ -289,23 +289,18 @@ void Slurmctld_Req(int sockfd) {
     if (strncmp("Reconfigure",    In_Line,  11) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
-	Node_Lock();
-	Part_Lock();
 	Error_Code = Init_SLURM_Conf();
 	if (Error_Code == 0) Error_Code = Read_SLURM_Conf(SLURM_CONF);
-	Part_Unlock();
-	Node_Unlock();
 #if DEBUG_SYSTEM
 	if (Error_Code)
-	    fprintf(stderr, "Slurmctld_Req: Reconfigure error %d", Error_Code);
+	    fprintf(stderr, "Slurmctld_Req: Reconfigure error %d, ", Error_Code);
 	else 
-	    fprintf(stderr, "Slurmctld_Req: Reconfigure completed successfully");
-	fprintf(stderr, "Reconfigure Time = %ld usec\n", (long)(clock() - Start_Time));
+	    fprintf(stderr, "Slurmctld_Req: Reconfigure completed successfully, ");
+	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
 #endif
-	if (Error_Code == 0)
-	    send(sockfd, "SUCCESS", 8, 0);
-	else
-	    send(sockfd, "EINVAL", 7, 0);
+	sprintf(In_Line, "%d", Error_Code);
+	send(sockfd, In_Line, strlen(In_Line)+1, 0);
+
 	return;
     } /* if (Reconfigure */
 
@@ -325,21 +320,20 @@ void Slurmctld_Req(int sockfd) {
 #if DEBUG_SYSTEM
 	if (Error_Code) {
 	    if (NodeName)
-		fprintf(stderr, "Slurmctld_Req: Update error %d on node %s", Error_Code, NodeName);
+		fprintf(stderr, "Slurmctld_Req: Update error %d on node %s, ", Error_Code, NodeName);
 	    else
-		fprintf(stderr, "Slurmctld_Req: Update error %d on partition %s", Error_Code, PartName);
+		fprintf(stderr, "Slurmctld_Req: Update error %d on partition %s, ", Error_Code, PartName);
 	} else {
 	    if (NodeName)
-		fprintf(stderr, "Slurmctld_Req: Updated node %s", NodeName);
+		fprintf(stderr, "Slurmctld_Req: Updated node %s, ", NodeName);
 	    else
-		fprintf(stderr, "Slurmctld_Req: Updated partition %s", PartName);
+		fprintf(stderr, "Slurmctld_Req: Updated partition %s, ", PartName);
 	} /* else */
-	fprintf(stderr, "Update Time = %ld usec\n", (long)(clock() - Start_Time));
+	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
 #endif
-	if (Error_Code == 0)
-	    send(sockfd, "SUCCESS", 8, 0);
-	else
-	    send(sockfd, "EINVAL", 7, 0);
+	sprintf(In_Line, "%d", Error_Code);
+	send(sockfd, In_Line, strlen(In_Line)+1, 0);
+
 	if (NodeName) free(NodeName);
 	if (PartName) free(PartName);
 	return;
