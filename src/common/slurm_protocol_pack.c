@@ -549,7 +549,7 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 	unpackstr_xmalloc (&job->nodes, &uint16_tmp, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job->partition, &uint16_tmp, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job->name, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
 	if (node_inx_str == NULL)
 		job->node_inx = bitfmt2int("");
 	else {
