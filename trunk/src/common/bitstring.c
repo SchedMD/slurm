@@ -505,8 +505,10 @@ main(int argc, char *argv[])
 		assert(bit_test(bs,14));
 
 		bs2 = bit_copy(bs);
-		assert(bit_fls(bs2) == 14);
 		bit_fill_gaps(bs2);
+		assert(bit_ffs(bs2) == 9);
+		assert(bit_fls(bs2) == 14);
+		assert(bit_set_count(bs2) == 6);
 		assert(bit_test(bs2,12));
 		assert(bit_super_set(bs,bs2) == 1);
 		assert(bit_super_set(bs2,bs) == 0);
