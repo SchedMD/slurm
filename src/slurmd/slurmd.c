@@ -732,7 +732,7 @@ _set_slurmd_spooldir(void)
 	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST))
 		error("mkdir(%s): %m", conf->spooldir);
 
-	if (chdir(conf->spooldir) < 0)
+	if (conf->daemonize && chdir(conf->spooldir) < 0)
 		fatal("chdir(%s): %m", conf->spooldir);
 }
 

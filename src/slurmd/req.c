@@ -507,6 +507,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uid_t       req_uid;
 	gid_t       req_gid;
 	slurm_addr  ioaddr;
+	char       *key;
+	int         len;
 	slurm_msg_t                    resp_msg;
 	reattach_tasks_request_msg_t  *req = msg->data;
 	reattach_tasks_response_msg_t  resp;
@@ -547,10 +549,13 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	debug3("reattach: srun ioaddr: %s:%d", host, port);
 
+
+	slurm_cred_get_signature(req->cred, &key, &len);
+
 	while (1) {
 		rc = shm_update_step_addrs( req->job_id, req->job_step_id,
 				            &ioaddr, &resp_msg.address,
-				            req->key ); 
+				            key ); 
 		if ((rc == 0) || (errno != EAGAIN))
 			break;
 		sched_yield();	/* relinquish processor */

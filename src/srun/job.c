@@ -37,6 +37,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/cbuf.h"
@@ -433,18 +434,12 @@ _job_create_internal(allocation_info_t *info)
 static void
 _job_fake_cred(job_t *job)
 {
-	int fd;
-	if ((fd = open("/dev/random", O_RDONLY)) < 0)
-		error ("unable to open /dev/random: %m");
-
-	job->cred          = xmalloc(sizeof(*job->cred));
-	job->cred->job_id  = job->jobid;
-	job->cred->user_id = opt.uid;
-	job->cred->expiration_time = 0x7fffffff;
-	read(fd, job->cred->signature, SLURM_SSL_SIGNATURE_LENGTH);
-
-	if (close(fd) < 0)
-		error ("close(/dev/random): %m");
+	slurm_cred_arg_t arg;
+	arg.jobid    = job->jobid;
+	arg.stepid   = job->stepid;
+	arg.uid      = opt.uid;
+	arg.hostlist = job->nodelist;
+	job->cred = slurm_cred_faker(&arg);
 }
 
 

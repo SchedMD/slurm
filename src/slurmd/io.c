@@ -49,6 +49,7 @@
 #include <errno.h>
 
 #include "src/common/eio.h"
+#include "src/common/io_hdr.h"
 #include "src/common/cbuf.h"
 #include "src/common/log.h"
 #include "src/common/fd.h"
@@ -1028,31 +1029,22 @@ io_init_pipes(slurmd_job_t *job)
 static int
 _io_write_header(struct io_info *client, srun_info_t *srun)
 {
-	slurm_io_stream_header_t hdr;
-	char *buf;
-	int retval;
-	int size   = sizeof(hdr);
-	Buf buffer = init_buf(size);
+	io_hdr_t hdr;
 
-	hdr.version = SLURM_PROTOCOL_VERSION;
-	memcpy(hdr.key, srun->key->data, SLURM_SSL_SIGNATURE_LENGTH);
-	hdr.task_id = client->id;
+	memcpy(hdr.key, srun->key->data, SLURM_IO_KEY_SIZE);
+	hdr.taskid = client->id;
 
 	if ((client->type == CLIENT_STDOUT) || (client->type == CLIENT_STDIN)) 
-		hdr.type = SLURM_IO_STREAM_INOUT; 
+		hdr.type = SLURM_IO_STDOUT; 
 	else
-		hdr.type = SLURM_IO_STREAM_SIGERR;
+		hdr.type = SLURM_IO_STDERR;
 
-	pack_io_stream_header(&hdr, buffer);
+	if (io_hdr_write_cb(client->buf, &hdr) < 0) {
+		error ("Unable to write io header: %m");
+		return SLURM_ERROR;
+	}
 
-	/* XXX Shouldn't have to jump through these hoops to 
-	 * support slurm Buf type. Need a better way to do this
-	 */
-	size   = buffer->processed;
-	buf    = xfer_buf_data(buffer);
-	retval = cbuf_write(client->buf, buf, size, NULL);
-	xfree(buf);
-	return retval;
+	return SLURM_SUCCESS;
 }
 
 static int

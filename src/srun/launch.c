@@ -163,7 +163,7 @@ launch(void *arg)
 		r->uid             = opt.uid;
 		r->argc            = remote_argc;
 		r->argv            = remote_argv;
-		r->credential      = job->cred;
+		r->cred            = job->cred;
 		r->job_step_id     = job->stepid;
 		r->envc            = my_envc;
 		r->env             = environ;

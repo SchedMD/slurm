@@ -32,6 +32,7 @@
 #include <slurm/slurm_errno.h>
 
 #include <stdarg.h>
+#include <fcntl.h>
 
 /*
  * OpenSSL includes
@@ -106,6 +107,10 @@ struct slurm_cred_context {
  *
  */
 struct slurm_job_credential {
+#ifndef NDEBUG
+#  define CRED_MAGIC 0x0b0b0b
+	int      magic;
+#endif
 	uint32_t jobid;        /* Job ID associated with this credential    */
 	uint32_t stepid;       /* Job step ID for this credential           */
 	uid_t    uid;          /* user for which this cred is valid         */
@@ -301,6 +306,9 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 
 	cred = _slurm_cred_alloc();
 
+	xassert(cred != NULL);
+	xassert(cred->magic == CRED_MAGIC);
+
 	cred->jobid  = arg->jobid;
 	cred->stepid = arg->stepid;
 	cred->uid    = arg->uid;
@@ -317,6 +325,36 @@ slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg)
 	return NULL;
 }
 
+slurm_cred_t
+slurm_cred_faker(slurm_cred_arg_t *arg)
+{
+	int fd;
+	slurm_cred_t cred = NULL;
+
+	xassert(arg != NULL);
+
+	cred = _slurm_cred_alloc();
+
+	cred->jobid  = arg->jobid;
+	cred->stepid = arg->stepid;
+        cred->uid    = arg->uid;
+	cred->nodes  = xstrdup(arg->hostlist);
+	cred->ctime  = time(NULL);
+	cred->siglen = SLURM_IO_KEY_SIZE;
+
+	if ((fd = open("/dev/random", O_RDONLY)) < 0)
+		error ("unable to open /dev/random: %m");
+
+	cred->signature = xmalloc(cred->siglen * sizeof(char));
+	read(fd, cred->signature, cred->siglen);
+
+	if (close(fd) < 0)
+		error ("close(/dev/random): %m");
+
+	return cred;
+    	
+}
+
 
 int
 slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred, 
@@ -327,8 +365,9 @@ slurm_cred_verify(slurm_cred_ctx_t ctx, slurm_cred_t cred,
 	xassert(ctx  != NULL);
 	xassert(cred != NULL);
 	xassert(arg  != NULL);
-	xassert(ctx->magic == CRED_CTX_MAGIC);
-	xassert(ctx->type  == SLURM_CRED_VERIFIER);
+	xassert(ctx->magic  == CRED_CTX_MAGIC);
+	xassert(ctx->type   == SLURM_CRED_VERIFIER);
+	xassert(cred->magic == CRED_MAGIC);
 
 	if (_slurm_cred_verify_signature(ctx, cred) < 0)
 		slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
@@ -359,6 +398,8 @@ slurm_cred_destroy(slurm_cred_t cred)
 {
 	if (cred == NULL)
 		return;
+
+	xassert(cred->magic == CRED_MAGIC);
 
 	if (cred->nodes)
 		xfree(cred->nodes);
@@ -418,9 +459,12 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 }
 
 int
-slurm_cred_get_signature(slurm_cred_t cred, char *data, int *datalen)
+slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *datalen)
 {
-	data     = cred->signature;
+	xassert(datap != NULL);
+	xassert(datalen != NULL);
+
+	*datap   = cred->signature;
 	*datalen = cred->siglen;
 	return SLURM_SUCCESS;
 }
@@ -428,7 +472,11 @@ slurm_cred_get_signature(slurm_cred_t cred, char *data, int *datalen)
 void
 slurm_cred_pack(slurm_cred_t cred, Buf buffer)
 {
+	xassert(cred != NULL);
+	xassert(cred->magic == CRED_MAGIC);
+
 	_pack_cred(cred, buffer);
+	xassert(cred->siglen > 0);
 	packmem(cred->signature, (uint16_t) cred->siglen, buffer);
 	return;
 }
@@ -452,6 +500,8 @@ slurm_cred_unpack(Buf buffer)
 	safe_unpackstr_xmalloc( &cred->nodes, &len,  buffer);
 	safe_unpack_time(       &cred->ctime,        buffer);
 	safe_unpackmem_xmalloc( sigp,         &len,  buffer);
+
+	xassert(len > 0);
 
 	cred->siglen = len;
 
@@ -493,6 +543,8 @@ slurm_cred_print(slurm_cred_t cred)
 {
 	if (cred == NULL)
 		return;
+
+	xassert(cred->magic == CRED_MAGIC);
 
 	info("Cred: Jobid   %u",  cred->jobid         );
 	info("Cred: Stepid  %u",  cred->jobid         );
@@ -659,6 +711,8 @@ _slurm_cred_alloc(void)
 	cred->signature = NULL;
 	cred->siglen    = 0;
 
+	xassert(cred->magic = CRED_MAGIC);
+
 	return cred;
 }
 
@@ -721,6 +775,8 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	buffer = init_buf(4096);
 	_pack_cred(cred, buffer);
 
+	debug("Checking credential with %d bytes of sig data", siglen);
+
 	EVP_VerifyInit(&ectx, EVP_sha1());
 	EVP_VerifyUpdate(&ectx, get_buf_data(buffer), get_buf_offset(buffer));
 
@@ -734,7 +790,7 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (!rc) {
 		ERR_load_crypto_strings();
-		error("EVP_VerifyFinal: %s", _ssl_error());
+		error("Credential signature check error: %s", _ssl_error());
 		ERR_free_strings();
 		rc = SLURM_ERROR;
 	} else
@@ -940,7 +996,6 @@ _job_state_pack_one(job_state_t *j, Buf buffer)
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
 
-	_print_data(buffer->head, buffer->processed);
 }
 
 

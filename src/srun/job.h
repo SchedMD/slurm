@@ -80,7 +80,7 @@ typedef struct srun_job {
 	pthread_mutex_t state_mutex; 
 	pthread_cond_t  state_cond;
 
-	slurm_job_credential_t *cred;
+	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
 	int nhosts;
 	char **host;		/* hostname vector */

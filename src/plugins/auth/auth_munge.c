@@ -111,13 +111,14 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 }
 
 
-void init ( void )
+int init ( void )
 {
 	/* 
 	 * Perhaps we could init a global context here? 
 	 * Do nothing for now.
 	 *
 	 */
+	return 0;
 }
 
 

@@ -133,6 +133,15 @@ typedef struct {
  */
 slurm_cred_t slurm_cred_create(slurm_cred_ctx_t ctx, slurm_cred_arg_t *arg);
 
+
+/*
+ * Create a "fake" credential with bogus data in the signature.
+ * This function can be used for testing, or when srun would like
+ * to talk to slurmd directly, bypassing the controller
+ * (which normally signs creds)
+ */
+slurm_cred_t slurm_cred_faker(slurm_cred_arg_t *arg);
+
 /*
  * Verify the signed credential `cred,' and return cred contents in
  * the cred_arg structure. The credential is cached and cannot be reused.
@@ -179,7 +188,7 @@ slurm_cred_t slurm_cred_unpack(Buf buffer);
  * Get a pointer to the slurm credential signature
  * (used by slurm IO connections to verify connecting agent)
  */
-int slurm_cred_get_signature(slurm_cred_t cred, char *data, int *len);
+int slurm_cred_get_signature(slurm_cred_t cred, char **datap, int *len);
 
 
 /*

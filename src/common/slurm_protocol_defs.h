@@ -49,12 +49,6 @@
 #include "src/common/slurm_protocol_common.h"
 #include "src/common/xassert.h"
 
-/* used to define the type of the io_stream_header_t.type
- */
-enum io_stream_types {
-	SLURM_IO_STREAM_INOUT = 0,
-	SLURM_IO_STREAM_SIGERR = 1
-};
 
 /* used to define flags of the launch_tasks_request_msg_t.task_flags
  */
@@ -163,13 +157,6 @@ typedef struct slurm_protocol_header {
 	slurm_msg_type_t msg_type;
 	uint32_t body_length;
 } header_t;
-
-typedef struct slurm_io_stream_header {
-	uint16_t version;	/*version/magic number */
-	char key[SLURM_SSL_SIGNATURE_LENGTH];
-	uint32_t task_id;
-	uint16_t type;
-} slurm_io_stream_header_t;
 
 typedef struct slurm_msg {
 	slurm_msg_type_t msg_type;
@@ -294,15 +281,15 @@ typedef struct job_time_msg {
 } job_time_msg_t;
 
 typedef struct reattach_tasks_request_msg {
-	uint32_t  job_id;
-	uint32_t  job_step_id;
-	uint32_t  srun_node_id;
-	uint16_t  resp_port;
-	uint16_t  io_port;
-	char     *ofname;
-	char     *efname;
-	char     *ifname;
-	char      key[SLURM_SSL_SIGNATURE_LENGTH];
+	uint32_t     job_id;
+	uint32_t     job_step_id;
+	uint32_t     srun_node_id;
+	uint16_t     resp_port;
+	uint16_t     io_port;
+	char        *ofname;
+	char        *efname;
+	char        *ifname;
+	slurm_cred_t cred;
 } reattach_tasks_request_msg_t;
 
 typedef struct reattach_tasks_response_msg {
