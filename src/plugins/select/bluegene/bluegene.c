@@ -412,9 +412,10 @@ extern int create_static_partitions(List part_list)
 		     bgl_record->conn_type);
 	bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 	configure_partition(bgl_record);
+	print_bgl_record(bgl_record);
 
 	found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-	//list_push(bgl_list, found_record);
+	list_push(bgl_list, found_record);
 			
 	found_record->bgl_part_list = bgl_record->bgl_part_list;			
 	found_record->hostlist = bgl_record->hostlist;
@@ -658,7 +659,7 @@ static int _delete_old_partitions(void)
 			//debug("Checking if Partition %s is free",part_name);
 			if ((rc = rm_get_partition(part_name, &my_part))
 			    != STATUS_OK) {
-				info("Above error is ok. "
+				debug("Above error is ok. "
 					"Partition %s doesn't exist.",
 					part_name);
 				continue;
