@@ -28,6 +28,7 @@
 #define _SLURM_ERRNO_H
 
 #include <errno.h>
+
 /* set errno to the specified value - then return -1 */ 
 #define slurm_seterrno_ret(errnum) do { \
 	slurm_seterrno(errnum);         \
@@ -38,10 +39,6 @@
 #define SLURM_SUCCESS   0
 #define SLURM_ERROR    -1 
 #define SLURM_FAILURE  -1
-
-/* to mimick bash on task launch failure */
-/* XXX: Shouldn't this be in slurmd code then? */
-#define SLURM_EXIT_FAILURE_CODE 127
 
 /* general communication layer return codes */
 #define SLURM_SOCKET_ERROR     -1
@@ -140,7 +137,7 @@ enum {
 	ESLURMD_FORK_FAILED,
 	ESLURMD_EXECVE_FAILED,
 
-	/* slurmd errors with user job */
+	/* slurmd errors in user batch job */
 	ESCRIPT_CHDIR_FAILED =			4100,
 	ESCRIPT_OPEN_OUTPUT_FAILED,
 	ESCRIPT_NON_ZERO_RETURN,

@@ -32,7 +32,7 @@
  */
 
 #if HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
  
 #include <stdlib.h>
@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <src/common/slurm_errno.h>
+#include "src/common/slurm_errno.h"
 
 /* Type for error string table entries */
 typedef struct {
@@ -72,10 +72,12 @@ static slurm_errtab_t slurm_errtab[] = {
 
 
 	/* _info.c/communcation layer RESPONSE_SLURM_RC message codes */
-	{ SLURM_NO_CHANGE_IN_DATA, /* XXX: Why is this an error? */
+
+	{ SLURM_NO_CHANGE_IN_DATA,	/* Not really an error */
 	  "Data has not changed since time specified"		},
 
 	/* slurmctld error codes */
+
 	{ ESLURM_INVALID_PARTITION_NAME,
 	  "Invalid partition name specified"			},
 	{ ESLURM_DEFAULT_PARTITION_NOT_SET,
@@ -128,6 +130,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job is pending execution"				},
 
 	/* Quadrics Elan routine error codes */
+
 	{ ENOSLURM, 	/* oh no! */
 	  "Out of slurm"					},
 	{ EBADMAGIC_QSWLIBSTATE, 
@@ -166,6 +169,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid signal number"				},
 
 	/* slurmd error codes */
+
 	{ ESLRUMD_PIPE_ERROR_ON_TASK_SPAWN, 
 	  "Pipe error on task spawn"				},
 	{ ESLURMD_KILL_TASK_FAILED, 
@@ -202,6 +206,37 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Unknown socket error"				},
 	{ ESLURMD_SIGNATURE_FIELD_TOO_SMALL,
 	  "Credential signature field is too small"		},
+	{ ESLURMD_CAN_NOT_CREATE_BATCH_DIR,
+	  "Slurmd could not create a batch directory"		},
+	{ ESLURMD_CAN_NOT_MODIFY_BATCH_DIR,
+	  "Slurmd could not chown or chmod a batch directory"	},
+	{ ESLURMD_CAN_NOT_CREATE_BATCH_SCRIPT,
+	  "Slurmd could not create a batch script"		},
+	{ ESLURMD_CAN_NOT_MODIFY_BATCH_SCRIPT,
+	  "Slurmd could not chown or chmod a batch script"	},
+	{ ESLURMD_CAN_NOT_SETUP_ENVIRONMENT,
+	  "Slurmd could not set up environment for batch job"	},
+	{ ESLURMD_SHARED_MEMORY_ERROR,
+	  "Slurmd shared memory error"				},
+	{ ESLURMD_CAN_NOT_SET_UID_OR_GID,
+	  "Slurmd could not set UID or GID for batch job"	},
+	{ ESLURMD_CAN_NOT_SET_SID,
+	  "Slurmd could not set session ID for batch job"	},
+	{ ESLURMD_CAN_NOT_SPAWN_THREAD_HANDLER,
+	  "Slurmd could not spawn thread handler"		},
+	{ ESLURMD_FORK_FAILED,
+	  "Slurmd could not fork batch job"			},
+	{ ESLURMD_EXECVE_FAILED,
+	  "Slurmd could not execve batch job"			},
+
+	/* slurmd errors in user batch job */
+	{ ESCRIPT_CHDIR_FAILED,
+	  "Script unable to change directory to work directory"	},
+	{ ESCRIPT_OPEN_OUTPUT_FAILED,
+	  "Script cound not open output file"			},
+	{ ESCRIPT_NON_ZERO_RETURN,
+	  "Script terminated with non-zero exit code"		},
+
 
 	/* socket specific SLURM communications error */
 
