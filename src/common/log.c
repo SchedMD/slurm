@@ -483,7 +483,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 		case LOG_LEVEL_ERROR:
 			priority = LOG_ERR;
-			pfx = "error: ";
+			pfx = "error:  ";
 			break;
 
 		case LOG_LEVEL_INFO:
@@ -493,7 +493,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 
 		case LOG_LEVEL_DEBUG:
 			priority = LOG_DEBUG;
-			pfx = "debug : ";
+			pfx = "debug:  ";
 			break;
 
 		case LOG_LEVEL_DEBUG2:
