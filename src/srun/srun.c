@@ -756,7 +756,7 @@ _run_batch_job(void)
 
 	
 	if (rc == 0) {
-		info("jobid %u",resp->job_id);
+		info("jobid %u submitted",resp->job_id);
 		slurm_free_submit_response_response_msg (resp);
 	}
 	xfree (job_script);
