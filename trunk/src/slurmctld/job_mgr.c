@@ -2115,9 +2115,6 @@ void job_time_limit(void)
 	time_t now = time(NULL);
 	time_t old = now - slurmctld_conf.inactive_limit;
 
-	if (slurmctld_conf.inactive_limit == 0)
-		return;		/* no purging of inactive jobs/steps */
-
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
 		(struct job_record *) list_next(job_iterator))) {
@@ -2126,7 +2123,8 @@ void job_time_limit(void)
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
 
-		if (job_ptr->time_last_active <= old) {
+		if (slurmctld_conf.inactive_limit && 
+		    (job_ptr->time_last_active <= old)) {
 			/* job inactive, kill it */
 			job_ptr->end_time   = now;
 			job_ptr->time_limit = 1;
@@ -2145,7 +2143,12 @@ void job_time_limit(void)
 			continue;
 		}
 
+		if (job_ptr->end_time <= (now + 60))
+			srun_timeout (job_ptr->job_id, job_ptr->end_time);
+
 		/* test for and purge inactive job steps */
+		if (slurmctld_conf.inactive_limit == 0)
+			continue;
 		step_iterator = list_iterator_create(job_ptr->step_list);
 		while ((step_ptr = (struct step_record *) 
 				list_next(step_iterator))) {
@@ -2160,9 +2163,6 @@ void job_time_limit(void)
 				0, false, 0);
 		}	
 		list_iterator_destroy(step_iterator);
-
-		if (job_ptr->end_time <= (now + 60)) 
-			srun_timeout (job_ptr->job_id, job_ptr->end_time);
 	}
 
 	list_iterator_destroy(job_iterator);
