@@ -24,10 +24,8 @@ messages to each other.  Each MPI task uses the set of capabilities to
 obtain "Elan contexts", which in turn select routing and page tables 
 on the adapter for remote DMA operations.  Capablilities are unique across 
 the cluster.  Each contains a 128-bit pseudorandom key and a range of Elan
-network Id's.  For nodes with non-contiguous network Id's to communicate,
-multiple capabilties, each specifying a contiguous range, must be generated 
-for the job.  Similarly, on multi-rail (multiple switch plane) systems,
-a set of capabilities is needed for each adapter).
+network Id's.  Multiple capabilities are needed in some cases such as
+a job running on multiple switch adapters per node ("multi-rail").
 
 A program description is similar to a process group, but members cannot
 detach from their program description.  On each node, the program description
@@ -89,6 +87,9 @@ Support for future interconnects such as InfiniBand is anticipated.
 
 Can SM just be linked in as part of JM since JM is the only component talking 
 to it?
+
+Should the SM be associated with the partition manager since it is preferable
+to allocate contiguous nodes on the Elan for collective optimizations?
 
 Multirail support requires more thought.
 
