@@ -25,6 +25,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include "config.h"
+
 #include <signal.h>
 #include "src/smap/smap.h"
 
@@ -63,7 +65,7 @@ int main(int argc, char *argv[])
 	if (error_code) {
 #ifdef HAVE_BGL_FILES
 		rm_size3D_t bp_size;
-		if ((rc = rm_set_serial("BGL")) != STATUS_OK) {
+		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 			fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
 			return SLURM_ERROR;
 		}

@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 
+#include "config.h"
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/xmalloc.h"
@@ -557,7 +558,7 @@ static void _read_part_db2(void)
 		return;
 	}
 
-	if ((rc = rm_set_serial("BGL")) != STATUS_OK) {
+	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
 		error("rm_set_serial(): %s\n", bgl_err_str(rc));
 		return;
 	}
