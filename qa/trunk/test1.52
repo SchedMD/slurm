@@ -30,6 +30,11 @@ expect {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit $exit_code
 	}
+	-re "configuration not available" {
+		send_user "WARNING: partition too small for test\n"
+		kill_srun
+		exit 0
+	}
 	-re "0: ($alpha_numeric)" {
 		set host_0 $expect_out(1,string)
 		exp_continue
@@ -49,10 +54,10 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -113,10 +118,10 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
+		wait
 	}
 }
 
