@@ -9,4 +9,4 @@ include_HEADERS =		\
 	slurm_errno.h
 
 MAINTAINERCLEANFILES = 		\
-	slurm.h.in
+	slurm.h
