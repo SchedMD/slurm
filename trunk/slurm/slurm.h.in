@@ -63,7 +63,12 @@ BEGIN_C_DECLS
 
 #include <slurm/slurm_errno.h>
 
-#include <stdint.h>		/* for uint16_t, uint32_t definitions */
+#if HAVE_STDINT_H
+#  include <stdint.h>		/* for uint16_t, uint32_t definitions */
+#endif
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>		/* for uint16_t, uint32_t definitions */
+#endif
 #include <stdio.h>		/* for FILE definitions */
 #include <time.h>		/* for time_t definitions */
 
