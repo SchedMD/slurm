@@ -317,6 +317,11 @@ _exec_all_tasks(slurmd_job_t *job)
 		_pdebug_trace_process(job, pid);
 	}
 
+   again:
+	for (i = 1; i < job->ntasks; i++)
+		if (getpgid (job->task[i]->pid) != job->task[0]->pid) 
+			goto again;
+
 	return SLURM_SUCCESS;
 }
 
