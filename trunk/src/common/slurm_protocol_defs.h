@@ -40,6 +40,16 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+/* used to define the size of the credential.signature size
+ * used to define the key size of the io_stream_header_t
+ */
+#define SLURM_SSL_SIGNATURE_LENGTH 16
+
+/* used to define the type of the io_stream_header_t.type
+ */
+#define SLURM_IO_STREAM_INOUT 0
+#define SLURM_IO_STREAM_SIGERR 1
+
 
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
@@ -124,7 +134,8 @@ typedef enum {
 	RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION,
 	REQUEST_JOB_WILL_RUN,
 	RESPONSE_JOB_WILL_RUN,
-	MESSAGE_REVOKE_JOB_CREDENTIAL,
+//	MESSAGE_REVOKE_JOB_CREDENTIAL,
+	REQUEST_REVOKE_JOB_CREDENTIAL,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -171,10 +182,16 @@ typedef struct slurm_protocol_header
 typedef struct slurm_io_stream_header
 {
 	uint16_t version ; /*version/magic number*/
-	char key[16] ;
+	char key[SLURM_SSL_SIGNATURE_LENGTH] ;
 	uint32_t task_id ;
 	uint16_t type ;
 } slurm_io_stream_header_t ;
+
+typedef struct revoke_credential_msg
+{
+	uint32_t job_id ;
+	char signature[SLURM_SSL_SIGNATURE_LENGTH] ;
+} revoke_credential_msg_t ;
 
 /* Job credential */
 typedef struct slurm_job_credential
@@ -183,7 +200,7 @@ typedef struct slurm_job_credential
 	uid_t user_id;
 	char* node_list;
 	time_t experation_time;	
-	char signature[16]; /* What are we going to do here? */
+	char signature[SLURM_SSL_SIGNATURE_LENGTH]; /* What are we going to do here? */
 } slurm_job_credential_t;
 
 typedef struct slurm_msg
