@@ -54,12 +54,15 @@
 #include <src/common/list.h>
 
 struct sinfo_parameters {
-	char* partition;
-	char* state;
-	char* node;
+	bool partition_flag;
+	const char* partition;
+	const char* state;
+	bool node_flag;
+	const char* node;
 	bool summarize;
+	bool long_output;
+	bool line_wrap;
 	int verbose;
-	char* format;
 };
 
 int parse_state( char* str, enum job_states* states );

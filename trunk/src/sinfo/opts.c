@@ -45,16 +45,16 @@ parse_command_line( int argc, char* argv[] )
 	/* { long-option, short-option, argument type, variable address, option tag, docstr, argstr } */
 
 	poptContext context;
-	char next_opt;
+	char next_opt, curr_opt;
 	int rc = 0;
 
 	/* Declare the Options */
 	static const struct poptOption options[] = 
 	{
-		{"state", 't', POPT_ARG_STRING, &params.state, OPT_NODE_STATE, "specify the what state of nodes to view", "state"},
-		{"partition", 'p', POPT_ARG_STRING, &params.partition, OPT_PARTITION,"specify a partition", "partition"},
-		{"node", 'n', POPT_ARG_STRING, &params.node, OPT_NODE,"specify a specific node", "node"},
-		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, "format string", "format string"},
+		{"state", 't', POPT_ARG_STRING, &params.state, OPT_NODE_STATE, "specify the what state of nodes to view", "NODE_STATE"},
+		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag, OPT_PARTITION,"show partition information and optionally specify a specific partition", "PARTITION"},
+		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE, "specify a specific node", "NODE"},
+		{"long", 'l', POPT_ARG_NONE, &params.long_output, OPT_FORMAT, "long output - displays more information", NULL},
 		{"summarize", 's', POPT_ARG_NONE, &params.summarize, OPT_VERBOSE, "summarize partitition information, do not show individual nodes", NULL},
 		{"verbose", 'v', POPT_ARG_NONE, &params.verbose, OPT_VERBOSE, "verbosity level", "level"},
 		POPT_AUTOHELP 
@@ -64,32 +64,59 @@ parse_command_line( int argc, char* argv[] )
 	/* Initial the popt contexts */
 	context = poptGetContext(NULL, argc, (const char**)argv, options, 0);
 
-	while ( ( next_opt = poptGetNextOpt(context) ) > -1  )
+	next_opt = poptGetNextOpt(context);
+
+	while ( next_opt > -1  )
 	{
-		switch ( next_opt )
+		const char* opt_arg = NULL;
+		curr_opt = next_opt;
+		next_opt = poptGetNextOpt(context);
+
+		switch ( curr_opt )
 		{
-			case OPT_SUMMARIZE:
-				break;	
-				
-			case OPT_NODE_STATE:
-				break;	
-				
 			case OPT_PARTITION:
+				if ( (opt_arg = poptGetArg( context )) != NULL )
+				{
+					params.partition = opt_arg;
+				}
 				break;	
 				
 			case OPT_NODE:
+				if ( (opt_arg = poptGetArg( context )) != NULL )
+				{
+					params.node = opt_arg;
+				}
+				break;
+			case OPT_NODE_STATE:
+				if ( params.state[0] == '-' ) 
+				{
+					fprintf(stderr, "%s: %s\n", argv[0], poptStrerror(POPT_ERROR_NOARG));
+					exit (1);
+				}
 				break;	
 				
-			case OPT_FORMAT:
-				break;	
-				
-			case OPT_VERBOSE:
-				break;	
-
 			default:
-				break;	
+			break;	
 		}
+		if ( (opt_arg = poptGetArg( context )) != NULL )
+		{
+			fprintf(stderr, "%s: %s \"%s\"\n", argv[0], poptStrerror(POPT_ERROR_BADOPT), opt_arg);
+			exit (1);
+		}
+		if ( curr_opt < 0 )
+		{
+			fprintf(stderr, "%s: \"%s\" %s\n", argv[0], poptBadOption(context, POPT_BADOPTION_NOALIAS), poptStrerror(next_opt));
+
+			exit (1);
+		}
+	
 	}
+	if ( next_opt < -1 )
+	{
+		fprintf(stderr, "%s: \"%s\" %s\n", argv[0], poptBadOption(context, POPT_BADOPTION_NOALIAS), poptStrerror(next_opt));
+		exit (1);
+	}
+
 	
 	return rc;
 }
@@ -125,12 +152,12 @@ void
 print_options()
 {
 	printf( "-----------------------------\n" );
-	printf( "partition = %s\n", params.partition ) ;
+	printf( "partition(%s) = %s\n", (params.partition_flag ? "true" : "false"), params.partition ) ;
+	printf( "node(%s) = %s\n", (params.node_flag ? "true" : "false"),params.node );
 	printf( "state = %s\n",  params.state );
 	printf( "summarize = %s\n", params.summarize ? "true" : "false" );
-	printf( "node = %s\n", params.node );
 	printf( "verbose = %d\n", params.verbose );
-	printf( "format = %s\n", params.format );
+	printf( "long output = %s\n",  params.long_output ? "true" : "false" );
 	printf( "-----------------------------\n\n\n" );
 } ;
 
