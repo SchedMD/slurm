@@ -442,6 +442,7 @@ slurmctld_req (int sockfd) {
 		error_code = init_slurm_conf ();
 		if (error_code == 0)
 			error_code = read_slurm_conf (SLURM_CONF);
+		reset_job_bitmaps ();
 
 		if (error_code)
 			error ("slurmctld_req: reconfigure error %d, time=%ld",
