@@ -13,6 +13,7 @@ documents those changes that are of interest to users and admins.
  -- Add proper support for "srun -n" option on BGL recognizing 
     processor count in both virual and coprocessor modes.
  -- Make default node_use on Blue Gene be coprocessor, as documented.
+ -- Add SIGKILL to BlueGene jobs as part of cleanup.
 
 * Changes in SLURM 0.4.0-pre9
 =============================
