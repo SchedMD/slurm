@@ -238,11 +238,11 @@ int main (int argc, char *argv[])
 .br
 	        slurm_alloc_msg_ptr->job_id );
 .br 
-	if (slurm_job_cancel(slurm_alloc_msg_ptr->
+	if (slurm_job_kill(slurm_alloc_msg_ptr->
 .br
-	                     job_id)) {
+	                     job_id, SIGKILL)) {
 .br 
-		printf ("cancel errno %d\\n", slurm_get_errno());
+		printf ("kill errno %d\\n", slurm_get_errno());
 .br 
 		exit (1);
 .br 
