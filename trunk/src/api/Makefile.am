@@ -47,6 +47,7 @@ libslurm_la_SOURCES =    \
 	allocate.c       \
 	bnr.c            \
 	cancel.c         \
+	checkpoint.c     \
 	complete.c       \
 	config_info.c    \
 	init_msg.c       \

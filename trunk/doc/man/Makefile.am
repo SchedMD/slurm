@@ -15,6 +15,8 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_allocate_resources.3 \
 	man3/slurm_allocate_resources_and_run.3 \
 	man3/slurm_api_version.3 \
+	man3/slurm_checkpoint.3 \
+	man3/slurm_checkpoint_error.3 \
 	man3/slurm_complete_job.3 \
 	man3/slurm_complete_job_step.3 \
 	man3/slurm_confirm_allocation.3 \

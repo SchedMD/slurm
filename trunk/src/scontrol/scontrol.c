@@ -79,6 +79,7 @@ static int input_words;	/* number of words of input permitted */
 static int one_liner;	/* one record per line if =1 */
 static int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
+static int	_checkpoint(char *op, char *job_step_id_str);
 static void	_delete_it (int argc, char *argv[]);
 static int	_get_command (int *argc, char *argv[]);
 static bool	_in_node_bit_list(int inx, int *node_list_array);
@@ -1127,7 +1128,7 @@ _process_command (int argc, char *argv[])
 	}
 	else if (strncasecmp (argv[0], "all", 3) == 0)
 		all_flag = 1;
-	else if (strncasecmp (argv[0], "completing", 1) == 0) {
+	else if (strncasecmp (argv[0], "completing", 3) == 0) {
 		if (argc > 1) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -1219,6 +1220,30 @@ _process_command (int argc, char *argv[])
 				slurm_perror ("slurm_reconfigure error");
 		}
 	}
+	else if (strncasecmp (argv[0], "checkpoint", 5) == 0) {
+		if (argc > 3) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too many arguments for keyword:%s\n", 
+				        argv[0]);
+		}
+		else if (argc < 3) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf(stderr, 
+				        "too few arguments for keyword:%s\n", 
+				        argv[0]);
+		}
+		else {
+			error_code =_checkpoint(argv[1], argv[2]);
+			if (error_code) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					slurm_perror ("slurm_checkpoint error");
+			}
+		}
+	}
 	else if (strncasecmp (argv[0], "show", 3) == 0) {
 		if (argc > 3) {
 			exit_code = 1;
@@ -1307,7 +1332,7 @@ _process_command (int argc, char *argv[])
 		}		
 		_update_it ((argc - 1), &argv[1]);
 	}
-	else if (strncasecmp (argv[0], "delete", 1) == 0) {
+	else if (strncasecmp (argv[0], "delete", 3) == 0) {
 		if (argc < 2) {
 			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
@@ -1362,7 +1387,7 @@ _delete_it (int argc, char *argv[])
 		}
 	} else {
 		exit_code = 1;
-		fprintf(stderr, "Invalid deletion entity: %s", argv[1]);
+		fprintf(stderr, "Invalid deletion entity: %s\n", argv[1]);
 	}
 }
 
@@ -1771,6 +1796,8 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
                               generating a core file.                      \n\
      all                      display information about all partitions, including\n\
                               hidden partitions.                            \n\
+     checkpoint <CH_OP><step> perform a checkpoint operation on identified  \n\
+                              job step \n\
      completing               display jobs in completing state along with  \n\
                               their completing or down nodes               \n\
      delete <SPECIFICATIONS>  delete the specified partition, kill its jobs\n\
@@ -1805,8 +1832,73 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
   file. You may wish to use the \"show\" keyword then use its output as    \n\
   input for the update keyword, editing as needed.                         \n\
                                                                            \n\
+  <CH_OP> identify checkpoint operations and may be \"disable\", \"enable\",\n\
+  \"create\", \"vacate\", \"restart\", or \"error\". \n\
+                                                                           \n\
   All commands and options are case-insensitive, although node names and   \n\
   partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\
   are distinct).                                                       \n\n");
 
+}
+
+/* 
+ * _checkpoint - update the slurm partition configuration per the 
+ *	supplied arguments 
+ * IN op - checkpoint operation
+ * IN job_step_id_str - either a job name (for all steps of the given job) or 
+ *			a step name: "<jid>.<step_id>"
+ * RET 0 if no slurm error, errno otherwise. parsing error prints 
+ *			error message and returns 0
+ */
+static int _checkpoint(char *op, char *job_step_id_str)
+{
+	int rc = SLURM_SUCCESS;
+	uint32_t job_id = 0, step_id = 0, step_id_set = 0;
+	char *next_str;
+	uint32_t ckpt_errno;
+	char *ckpt_strerror = NULL;
+
+	if (job_step_id_str) {
+		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		if (next_str[0] == '.') {
+			step_id = (uint32_t) strtol (&next_str[1], &next_str, 10);
+			step_id_set = 1;
+		} else
+			step_id = NO_VAL;
+		if (next_str[0] != '\0') {
+			fprintf(stderr, "Invalid job step name\n");
+			return 0;
+		}
+	} else {
+		fprintf(stderr, "Invalid job step name\n");
+		return 0;
+	}
+
+	if (strncasecmp(op, "disable", 3) == 0)
+		rc = slurm_checkpoint (CHECK_DISABLE, job_id, step_id);
+	else if (strncasecmp(op, "enable", 2) == 0)
+		rc = slurm_checkpoint (CHECK_ENABLE, job_id, step_id);
+
+	else if (strncasecmp(op, "create", 2) == 0)
+		rc = slurm_checkpoint (CHECK_CREATE, job_id, step_id);
+	else if (strncasecmp(op, "vacate", 2) == 0)
+		rc = slurm_checkpoint (CHECK_VACATE, job_id, step_id);
+	else if (strncasecmp(op, "resume", 2) == 0)
+		rc = slurm_checkpoint (CHECK_RESUME, job_id, step_id);
+
+	else if (strncasecmp(op, "error", 2) == 0) {
+		rc = slurm_checkpoint_error (job_id, step_id, 
+			&ckpt_errno, &ckpt_strerror);
+		if (rc == SLURM_SUCCESS) {
+			printf("error(%u): %s\n", ckpt_errno, ckpt_strerror);
+			free(ckpt_strerror);
+		}
+	}
+
+	else {
+		fprintf (stderr, "Invalid checkpoint operation: %s\n", op);
+		return 0;
+	}
+
+	return rc;
 }

@@ -40,6 +40,8 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/checkpoint.h"
+#include "src/common/slurm_protocol_interface.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -48,6 +50,7 @@
 
 #define MAX_RETRIES 10
 
+static int _job_step_ckpt_error(struct step_record *step_ptr, slurm_fd conn_fd);
 static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer);
 static bitstr_t * _pick_step_nodes (struct job_record  *job_ptr, 
 				    step_specs *step_spec );
@@ -684,4 +687,92 @@ bool step_on_node(struct job_record  *job_ptr, struct node_record *node_ptr)
 
 	list_iterator_destroy (step_iterator);
 	return found;
+}
+
+/*
+ * job_step_checkpoint - perform some checkpoint operation
+ * IN op - the operation to be performed
+ * IN job_id - id of the job
+ * IN step_id - id of the job step, NO_VAL indicates all steps of the indicated job
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_step_checkpoint(enum check_opts op,
+		uint32_t job_id, uint32_t step_id, uid_t uid, 
+		slurm_fd conn_fd)
+{
+	int rc = SLURM_SUCCESS;
+	struct job_record *job_ptr;
+	struct step_record *step_ptr;
+
+	/* find the job */
+	job_ptr = find_job_record (job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+	if ((uid != job_ptr->user_id) && (uid != 0))
+		return ESLURM_ACCESS_DENIED ;
+
+	/* find the individual job step */
+	if (step_id != NO_VAL) {
+		step_ptr = find_step_record(job_ptr, (uint32_t) step_id);
+		if (step_ptr == NULL)
+			return ESLURM_INVALID_JOB_ID;
+		if (op == CHECK_ERROR) {
+			rc = _job_step_ckpt_error(step_ptr, conn_fd);
+		} else {
+			rc = g_slurm_checkpoint_op(op, step_ptr);
+			last_job_update = time(NULL);
+		}
+	}
+
+	/* operate on all of a job's steps */
+	else {
+		int update_rc = -2;
+		bool error_reply = false;
+		ListIterator step_iterator;
+
+		step_iterator = list_iterator_create (job_ptr->step_list);
+		while ((step_ptr = (struct step_record *) 
+					list_next (step_iterator))) {
+			if (op == CHECK_ERROR) {
+				rc = _job_step_ckpt_error(step_ptr, conn_fd);
+				error_reply = true;
+				break;
+			} else {
+				update_rc = g_slurm_checkpoint_op(op, step_ptr);
+				rc = MAX(rc, update_rc);
+			}
+		}
+		if (update_rc != -2)	/* some work done */
+			last_job_update = time(NULL);
+		if ((op == CHECK_ERROR) && 
+		    (!error_reply))	/* no steps found */
+			rc = ESLURM_INVALID_JOB_ID;
+		list_iterator_destroy (step_iterator);
+	}
+
+	return rc;
+}
+
+static int _job_step_ckpt_error(struct step_record *step_ptr, slurm_fd conn_fd)
+{
+	int rc;
+	uint32_t ckpt_errno;
+	char *ckpt_strerror;
+	slurm_msg_t resp_msg;
+	checkpoint_resp_msg_t resp_data;
+
+	rc = g_slurm_checkpoint_error(step_ptr, &ckpt_errno, &ckpt_strerror);
+	if (rc)
+		return rc;
+
+	resp_data.ckpt_errno = ckpt_errno;
+	resp_data.ckpt_strerror = ckpt_strerror;
+	resp_msg.msg_type = RESPONSE_CHECKPOINT;
+	resp_msg.data = &resp_data;
+	if (slurm_send_node_msg(conn_fd, &resp_msg) < 0)
+		rc = SLURM_SOCKET_ERROR;
+
+	return rc;
 }

@@ -43,6 +43,7 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/switch.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
@@ -228,6 +229,12 @@ static int  _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr,
 
 static void _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer);
 static int  _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer);
+
+static void _pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer);
+static int  _unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer);
+
+static void _pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer);
+static int  _unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer);
 
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
@@ -483,6 +490,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 	 case SRUN_TIMEOUT:
 		_pack_srun_timeout_msg((srun_timeout_msg_t *)msg->data, buffer);
 		break;
+	 case REQUEST_CHECKPOINT:
+		_pack_checkpoint_msg((checkpoint_msg_t *)msg->data, buffer);
+		break;
+	 case RESPONSE_CHECKPOINT:
+		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data, buffer);
+		break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -727,6 +740,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		rc = _unpack_srun_timeout_msg((srun_timeout_msg_t **)
 				& msg->data, buffer);
 		break;
+	 case REQUEST_CHECKPOINT:
+		rc = _unpack_checkpoint_msg((checkpoint_msg_t **)
+				& msg->data, buffer);
+		break;
+	 case RESPONSE_CHECKPOINT:
+		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
+				& msg->data, buffer);
+		break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
 		 return EINVAL;
@@ -741,7 +762,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 static void
 _pack_update_node_msg(update_node_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	packstr(msg->node_names, buffer);
 	pack16(msg->node_state, buffer);
@@ -755,7 +776,7 @@ _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer)
 	update_node_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(update_node_msg_t));
 	*msg = tmp_ptr;
 
@@ -777,7 +798,7 @@ _pack_node_registration_status_msg(slurm_node_registration_status_msg_t *
 				   msg, Buf buffer)
 {
 	int i;
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack_time(msg->timestamp, buffer);
 	pack32(msg->status, buffer);
@@ -803,7 +824,7 @@ _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 	slurm_node_registration_status_msg_t *node_reg_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	node_reg_ptr = xmalloc(sizeof(slurm_node_registration_status_msg_t));
 	*msg = node_reg_ptr;
 
@@ -841,7 +862,7 @@ static void
 _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 				       msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->error_code, buffer);
 	pack32(msg->job_id, buffer);
@@ -864,7 +885,7 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	resource_allocation_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(resource_allocation_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -912,7 +933,7 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 static void
  _pack_resource_allocation_and_run_response_msg
     (resource_allocation_and_run_response_msg_t * msg, Buf buffer) {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
@@ -936,7 +957,7 @@ static int
 	resource_allocation_and_run_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(resource_allocation_and_run_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -994,7 +1015,7 @@ static int
 static void
 _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 	pack32(msg->error_code, buffer);
@@ -1006,7 +1027,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer)
 	submit_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(submit_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -1032,7 +1053,7 @@ _unpack_node_info_msg(node_info_msg_t ** msg, Buf buffer)
 	int i;
 	node_info_t *node = NULL;
 
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	*msg = xmalloc(sizeof(node_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -1062,7 +1083,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 {
 	uint16_t uint16_tmp;
 
-	assert(node != NULL);
+	xassert(node != NULL);
 
 	safe_unpackstr_xmalloc(&node->name, &uint16_tmp, buffer);
 	safe_unpack16(&node->node_state, buffer);
@@ -1088,7 +1109,7 @@ _unpack_node_info_members(node_info_t * node, Buf buffer)
 static void
 _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	packstr(msg->allow_groups, buffer);
 	pack16(msg-> default_part, buffer);
@@ -1110,7 +1131,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	uint16_t uint16_tmp;
 	update_part_msg_t *tmp_ptr;
 
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	/* alloc memory for structure */
 	tmp_ptr = xmalloc(sizeof(update_part_msg_t));
@@ -1142,7 +1163,7 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 static void
 _pack_delete_partition_msg(delete_part_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	packstr(msg->name,         buffer);
 }
@@ -1153,7 +1174,7 @@ _unpack_delete_partition_msg(delete_part_msg_t ** msg, Buf buffer)
 	uint16_t uint16_tmp;
 	delete_part_msg_t *tmp_ptr;
 
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	/* alloc memory for structure */
 	tmp_ptr = xmalloc(sizeof(delete_part_msg_t));
@@ -1172,7 +1193,7 @@ static void
 _pack_job_step_create_request_msg(job_step_create_request_msg_t
 				  * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 	pack32(msg->user_id, buffer);
@@ -1195,7 +1216,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 	job_step_create_request_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(job_step_create_request_msg_t));
 	*msg = tmp_ptr;
 
@@ -1224,7 +1245,7 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 static void
 _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id,  buffer);
 	pack32(msg->job_uid, buffer);
@@ -1236,7 +1257,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	kill_job_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(kill_job_msg_t));
 	*msg = tmp_ptr;
 
@@ -1254,7 +1275,7 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 static void 
 _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 	pack32(msg->return_code, buffer);
@@ -1268,7 +1289,7 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer)
 	uint16_t uint16_tmp;
 
 	/* alloc memory for structure */
-	assert(msg);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(epilog_complete_msg_t));
 	*msg = tmp_ptr;
 
@@ -1286,7 +1307,7 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer)
 static void
 _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 	pack_time((uint32_t) msg->expiration_time, buffer);
@@ -1298,7 +1319,7 @@ _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer)
 	job_time_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg);
+	xassert(msg);
 	tmp_ptr = xmalloc(sizeof(job_time_msg_t));
 	*msg = tmp_ptr;
 
@@ -1316,7 +1337,7 @@ static void
 _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 				   Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_step_id, buffer);
 	packstr(msg->node_list, buffer);
@@ -1333,7 +1354,7 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 	job_step_create_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(job_step_create_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -1361,6 +1382,8 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 static void
 _pack_partition_info_msg(slurm_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
+
 	packmem_array(msg->data, msg->data_size, buffer);
 }
 
@@ -1370,6 +1393,7 @@ _unpack_partition_info_msg(partition_info_msg_t ** msg, Buf buffer)
 	int i;
 	partition_info_t *partition = NULL;
 
+	xassert(msg != NULL);
 	*msg = xmalloc(sizeof(partition_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -1510,6 +1534,7 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t
 	int i = 0;
 	job_step_info_t *step;
 
+	xassert(msg != NULL);
 	*msg = xmalloc(sizeof(job_step_info_response_msg_t));
 
 	safe_unpack_time(&(*msg)->last_update, buffer);
@@ -1534,6 +1559,7 @@ _unpack_job_step_info_response_msg(job_step_info_response_msg_t
 static void
 _pack_buffer_msg(slurm_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	packmem_array(msg->data, msg->data_size, buffer);
 }
 
@@ -1543,6 +1569,7 @@ _unpack_job_info_msg(job_info_msg_t ** msg, Buf buffer)
 	int i;
 	job_info_t *job = NULL;
 
+	xassert(msg != NULL);
 	*msg = xmalloc(sizeof(job_info_msg_t));
 
 	/* load buffer's header (data structure version and time) */
@@ -1949,6 +1976,7 @@ _unpack_old_job_desc_msg(old_job_alloc_msg_t **
 static void
 _pack_last_update_msg(last_update_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	pack_time(msg->last_update, buffer);
 }
 
@@ -1957,6 +1985,7 @@ _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer)
 {
 	last_update_msg_t *last_update_msg;
 
+	xassert(msg != NULL);
 	last_update_msg = xmalloc(sizeof(last_update_msg_t));
 	*msg = last_update_msg;
 
@@ -1972,6 +2001,7 @@ _unpack_last_update_msg(last_update_msg_t ** msg, Buf buffer)
 static void
 _pack_return_code_msg(return_code_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	pack32(msg->return_code, buffer);
 }
 
@@ -1980,6 +2010,7 @@ _unpack_return_code_msg(return_code_msg_t ** msg, Buf buffer)
 {
 	return_code_msg_t *return_code_msg;
 
+	xassert(msg != NULL);
 	return_code_msg = xmalloc(sizeof(return_code_msg_t));
 	*msg = return_code_msg;
 
@@ -1996,6 +2027,7 @@ static void
 _pack_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg,
 				 Buf buffer)
 {
+	xassert(msg != NULL);
 	pack32(msg->job_id, buffer);
 	pack32(msg->job_step_id, buffer);
 	pack32(msg->srun_node_id, buffer);
@@ -2014,6 +2046,7 @@ _unpack_reattach_tasks_request_msg(reattach_tasks_request_msg_t ** msg_ptr,
 	uint16_t uint16_tmp;
 	reattach_tasks_request_msg_t *msg;
 
+	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(*msg));
 	*msg_ptr = msg;
 
@@ -2041,6 +2074,7 @@ static void
 _pack_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg,
 				  Buf buffer)
 {
+	xassert(msg != NULL);
 	packstr(msg->node_name,   buffer);
 	packstr(msg->executable_name, buffer);
 	pack32(msg->return_code,  buffer);
@@ -2057,6 +2091,8 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 	uint32_t ntasks;
 	uint16_t uint16_tmp;
 	reattach_tasks_response_msg_t *msg = xmalloc(sizeof(*msg));
+
+	xassert(msg_ptr != NULL);
 	*msg_ptr = msg;
 
 	safe_unpackstr_xmalloc(&msg->node_name, &uint16_tmp, buffer);
@@ -2080,6 +2116,7 @@ _unpack_reattach_tasks_response_msg(reattach_tasks_response_msg_t ** msg_ptr,
 static void
 _pack_task_exit_msg(task_exit_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	pack32(msg->return_code, buffer);
 	pack32(msg->num_tasks, buffer);
 	pack32_array(msg->task_id_list,
@@ -2092,6 +2129,7 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer)
 	task_exit_msg_t *msg;
 	uint32_t uint32_tmp;
 
+	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(task_exit_msg_t));
 	*msg_ptr = msg;
 
@@ -2112,6 +2150,7 @@ _unpack_task_exit_msg(task_exit_msg_t ** msg_ptr, Buf buffer)
 static void
 _pack_launch_tasks_response_msg(launch_tasks_response_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	pack32(msg->return_code, buffer);
 	packstr(msg->node_name, buffer);
 	pack32(msg->srun_node_id, buffer);
@@ -2128,6 +2167,7 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 	uint32_t uint32_tmp;
 	launch_tasks_response_msg_t *msg;
 
+	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(launch_tasks_response_msg_t));
 	*msg_ptr = msg;
 
@@ -2150,6 +2190,7 @@ _unpack_launch_tasks_response_msg(launch_tasks_response_msg_t **
 static void
 _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	pack32(msg->job_id, buffer);
 	pack32(msg->job_step_id, buffer);
 	pack32(msg->nnodes, buffer);
@@ -2182,6 +2223,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	uint32_t uint32_tmp;
 	launch_tasks_request_msg_t *msg;
 
+	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
 	*msg_ptr = msg;
 
@@ -2227,6 +2269,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 static void
 _pack_spawn_task_request_msg(spawn_task_request_msg_t * msg, Buf buffer)
 {
+	xassert(msg != NULL);
 	pack32(msg->job_id, buffer);
 	pack32(msg->job_step_id, buffer);
 	pack32(msg->nnodes, buffer);
@@ -2252,6 +2295,7 @@ _unpack_spawn_task_request_msg(spawn_task_request_msg_t **
 	uint16_t uint16_tmp;
 	spawn_task_request_msg_t *msg;
 
+	xassert(msg_ptr != NULL);
 	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
 	*msg_ptr = msg;
 
@@ -2559,7 +2603,7 @@ _unpack_slurm_addr_array(slurm_addr ** slurm_address,
 static void
 _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 	pack32(msg->uid, buffer);
@@ -2590,7 +2634,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 	uint32_t uint32_tmp;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	launch_msg_ptr = xmalloc(sizeof(batch_job_launch_msg_t));
 	*msg = launch_msg_ptr;
 
@@ -2650,7 +2694,7 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 static void
 _pack_job_id_request_msg(job_id_request_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_pid, buffer);
 }
@@ -2661,7 +2705,7 @@ _unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer)
 	job_id_request_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(job_id_request_msg_t));
 	*msg = tmp_ptr;
 
@@ -2678,7 +2722,7 @@ _unpack_job_id_request_msg(job_id_request_msg_t ** msg, Buf buffer)
 static void
 _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer)
 {
-	assert(msg != NULL);
+	xassert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
 }
@@ -2689,7 +2733,7 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
 	job_id_response_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
-	assert(msg != NULL);
+	xassert(msg != NULL);
 	tmp_ptr = xmalloc(sizeof(job_id_response_msg_t));
 	*msg = tmp_ptr;
 
@@ -2706,7 +2750,7 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
 static void
 _pack_srun_ping_msg(srun_ping_msg_t * msg, Buf buffer)
 {
-	assert ( msg != NULL );
+	xassert ( msg != NULL );
 
 	pack32 ( msg ->job_id  , buffer ) ;
 	pack32 ( msg ->step_id , buffer ) ;
@@ -2716,7 +2760,7 @@ static int
 _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer)
 {
 	srun_ping_msg_t * msg;
-	assert ( msg_ptr != NULL );
+	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof (srun_ping_msg_t) ) ;
 	*msg_ptr = msg;
@@ -2734,7 +2778,7 @@ _unpack_srun_ping_msg(srun_ping_msg_t ** msg_ptr, Buf buffer)
 static void 
 _pack_srun_node_fail_msg(srun_node_fail_msg_t * msg, Buf buffer)
 {
-	assert ( msg != NULL );
+	xassert ( msg != NULL );
 
 	pack32 ( msg ->job_id  , buffer ) ;
 	pack32 ( msg ->step_id , buffer ) ;
@@ -2746,7 +2790,7 @@ _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, Buf buffer)
 {
 	uint16_t uint16_tmp;
 	srun_node_fail_msg_t * msg;
-	assert ( msg_ptr != NULL );
+	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof (srun_node_fail_msg_t) ) ;
 	*msg_ptr = msg;
@@ -2767,7 +2811,7 @@ _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, Buf buffer)
 static void
 _pack_srun_timeout_msg(srun_timeout_msg_t * msg, Buf buffer)
 {
-	assert ( msg != NULL );
+	xassert ( msg != NULL );
 
 	pack32 ( msg -> job_id  , buffer ) ;
 	pack32 ( msg -> step_id , buffer ) ;
@@ -2778,7 +2822,7 @@ static int
 _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer)
 {
 	srun_timeout_msg_t * msg;
-	assert ( msg_ptr != NULL );
+	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof (srun_timeout_msg_t) ) ;
 	*msg_ptr = msg ;
@@ -2794,10 +2838,69 @@ _unpack_srun_timeout_msg(srun_timeout_msg_t ** msg_ptr, Buf buffer)
 	return SLURM_ERROR;
 }
 
+static void
+_pack_checkpoint_msg(checkpoint_msg_t *msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack16 ( msg -> op,      buffer ) ;
+	pack32 ( msg -> job_id,  buffer ) ;
+	pack32 ( msg -> step_id, buffer ) ;
+}
+
+static int
+_unpack_checkpoint_msg(checkpoint_msg_t **msg_ptr, Buf buffer)
+{
+	checkpoint_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (checkpoint_msg_t) ) ;
+	*msg_ptr = msg ;
+
+	safe_unpack16 ( & msg -> op ,      buffer ) ;
+	safe_unpack32 ( & msg -> job_id  , buffer ) ;
+	safe_unpack32 ( & msg -> step_id , buffer ) ;
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
+	return SLURM_ERROR;
+}
+
+static void
+_pack_checkpoint_resp_msg(checkpoint_resp_msg_t *msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack32 ( msg -> ckpt_errno,  buffer ) ;
+	packstr ( msg -> ckpt_strerror, buffer ) ;
+}
+
+static int
+_unpack_checkpoint_resp_msg(checkpoint_resp_msg_t **msg_ptr, Buf buffer)
+{
+	checkpoint_resp_msg_t * msg;
+	uint16_t uint16_tmp;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (checkpoint_resp_msg_t) ) ;
+	*msg_ptr = msg ;
+
+	safe_unpack32 ( & msg -> ckpt_errno , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg -> ckpt_strerror, & uint16_tmp , buffer ) ;
+	return SLURM_SUCCESS;
+
+    unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
+	return SLURM_ERROR;
+}
+
 /* template 
 void pack_ ( * msg , Buf buffer )
 {
-	assert ( msg != NULL );
+	xassert ( msg != NULL );
 
 	pack16 ( msg -> , buffer ) ;
 	pack32 ( msg -> , buffer ) ;
@@ -2809,7 +2912,7 @@ int unpack_ ( ** msg_ptr , Buf buffer )
 	uint16_t uint16_tmp;
 	* msg ;
 
-	assert ( msg_ptr != NULL );
+	xassert ( msg_ptr != NULL );
 
 	msg = xmalloc ( sizeof ( ) ) ;
 	*msg_ptr = msg;

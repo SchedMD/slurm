@@ -392,6 +392,21 @@ void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
 	}
 }
 
+void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
+{
+	if (msg) {
+		xfree(msg->ckpt_strerror);
+		xfree(msg);
+	}
+}
+
 char *job_state_string(enum job_states inx)
 {
 	static char *job_state_string[] = {

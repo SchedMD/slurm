@@ -669,6 +669,19 @@ extern int job_signal(uint32_t job_id, uint16_t signal, uint16_t batch_flag,
  */
 extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, uid_t uid );
 
+/*
+ * job_step_checkpoint - perform some checkpoint operation
+ * IN op - the operation to be performed
+ * IN job_id - id of the job
+ * IN step_id - id of the job step, NO_VAL indicates all steps of the indicated job
+ * IN uid - user id of the user issuing the RPC
+ * IN conn_fd - file descriptor on which to send reply
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_step_checkpoint(enum check_opts op,
+		uint32_t job_id, uint32_t step_id, uid_t uid, 
+		slurm_fd conn_fd);
+
 /* 
  * job_complete - note the normal termination the specified job
  * IN job_id - id of the job which completed

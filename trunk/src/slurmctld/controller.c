@@ -46,6 +46,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/checkpoint.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
@@ -209,11 +210,12 @@ int main(int argc, char *argv[])
 		error("Unable to block signals");
 
 	/*
-	 * Initialize scheduling.
+	 * Initialize plugins.
 	 */
-	if ( slurm_sched_init() != SLURM_SUCCESS ) {
-		fatal( "failed to initialize scheduling" );
-	}
+	if ( slurm_sched_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize scheduling plugin" );
+	if ( g_slurm_checkpoint_init() != SLURM_SUCCESS )
+		fatal( "failed to initialize checkpoint plugin" );
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
