@@ -1,6 +1,6 @@
 /*****************************************************************************\
- *  bgl_switch_connections.c
- * 
+ *  bgl_switch_connections.c - Blue Gene switch management functions, 
+ *  establish switch connections
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,9 +31,6 @@ void _connect(rm_partition_t *my_part, rm_switch_t *my_switch,
 	      rm_connection_t *conn1, rm_connection_t *conn2, rm_connection_t *conn3,
 	      int first)
 {
-	// rm_get_data(bgl,RM_FirstSwitch,&my_switch);
-	// rm_get_data(bgl,RM_NextSwitch,&my_switch);
-	
 	if (first){
 		rm_set_data(my_switch,RM_SwitchFirstConnection,conn1);
 		rm_set_data(my_switch,RM_SwitchSecondConnection,conn2);
