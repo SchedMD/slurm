@@ -380,7 +380,6 @@ _p_reattach_task(void *arg)
 	debug3("sending reattach request to %s", host);
 
 	rc = slurm_send_only_node_msg(t->msg);
-	printf("rc = %d\n", rc);
 	if (rc < 0) {
 		error("reattach: %s: %m", host);
 		t->state = THD_FAILED;
