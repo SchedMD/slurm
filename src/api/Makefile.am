@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-EXTRA_DIST = slurm.h
+EXTRA_DIST = slurm.h libslurm.sym
 
 INCLUDES = -I$(top_srcdir)/src/common
 
@@ -47,8 +47,6 @@ libslurm_la_LIBADD        = $(common_dir)/libcommon.la
 libslurm_la_LDFLAGS       = -export-symbols libslurm.sym
 libslurm_la_DEPENDENCIES  = libslurm.sym $(libslurm_la_LIBADD)
 
-libslurm.sym :
-	cp slurmapi.exp libslurm.sym
 
 # hack to allow building .lo objects from other directories
 ../*/*.lo : %.lo : %.c
