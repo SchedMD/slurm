@@ -17,11 +17,7 @@ set file_in     "test$test_id.input"
 set file_out    "test$test_id.output"
 set file_err    "test$test_id.error"
 
-set complete_flag        0
 set exit_code            0
-set name_flag            0
-set login_grp_info       ""
-set job_grp_info         ""
 set job_id               0
 
 print_header $test_id
