@@ -1,5 +1,7 @@
 /*****************************************************************************\
- *  hostlist.h - hostname list manipulation routines
+ *  $Id$
+ *****************************************************************************
+ *  $LSDId: hostlist.h,v 1.2 2003/04/24 00:15:27 grondo Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -27,32 +29,25 @@
 #ifndef _HOSTLIST_H
 #define _HOSTLIST_H
 
-/* BEGIN_C_DECLS should be used at the beginning of your declarations,
-   so that C++ compilers don't mangle their names.  Use _END_C_DECLS at
-   the end of C declarations. */
-#undef BEGIN_C_DECLS
-#undef END_C_DECLS
-#ifdef __cplusplus
-# define BEGIN_C_DECLS	extern "C" {
-# define END_C_DECLS	}
-#else
-# define BEGIN_C_DECLS	/* empty */
-# define END_C_DECLS	/* empty */
-#endif
-
-/* PARAMS is a macro used to wrap function prototypes, so that compilers
-   that don't understand ANSI C prototypes still work, and ANSI C
-   compilers can issue warnings about type mismatches.  */
-#undef PARAMS
-#if defined (__STDC__) || defined (_AIX) \
-	|| (defined (__mips) && defined (_SYSTYPE_SVR4)) \
-	|| defined(WIN32) || defined(__cplusplus)
-# define PARAMS(protos)	protos
-#else
-# define PARAMS(protos)	()
-#endif
-
-BEGIN_C_DECLS
+/* Notes:
+ *
+ * If WITH_LSD_FATAL_ERROR_FUNC is defined, the linker will expect to
+ * find and external lsd_fatal_error(file,line,mesg) function. By default,
+ * lsd_fatal_error(file,line,mesg) is a macro definition that outputs an
+ * error message to stderr. This macro may be redefined to invoke another
+ * routine instead. e.g.:
+ *
+ *    #define lsd_fatal_error(file,line,mesg)  \
+ *              error("%s:%s %s\n",file,line,mesg);
+ *
+ * If WITH_LSD_NOMEM_ERROR_FUNC is defined, the linker will expect to 
+ * find an external lsd_nomem_error(file,line,mesg) function. By default,
+ * lsd_nomem_error(file,line,mesg) is a macro definition that returns NULL.
+ * This macro may be redefined to invoke another routine instead.
+ *
+ * If WITH_PTHREADS is defined, these routines will be thread-safe.
+ *
+ */
 
 /* The hostlist opaque data type 
  *
@@ -75,6 +70,12 @@ typedef struct hostset * hostset_t;
  * 
  */
 typedef struct hostlist_iterator * hostlist_iterator_t;
+
+/* ----[ general node name functions: ]---- */
+
+/* getnodename - equivalent to gethostname, but return only the first component of the fully 
+ *	qualified name (e.g. "linux123.foo.bar" becomes "linux123") */
+extern int getnodename (char *name, size_t len);
 
 /* ----[ hostlist_t functions: ]---- */
 
@@ -106,20 +107,20 @@ typedef struct hostlist_iterator * hostlist_iterator_t;
  * The returned hostlist must be freed with hostlist_destroy()
  *
  */
-hostlist_t hostlist_create PARAMS((char *str));
+hostlist_t hostlist_create(char *str);
 
 /* hostlist_copy(): 
  *
  * Allocate a copy of a hostlist object. Returned hostlist must be freed
  * with hostlist_destroy.
  */
-hostlist_t hostlist_copy PARAMS((hostlist_t hl));
+hostlist_t hostlist_copy(hostlist_t hl);
 
 /* hostlist_destroy():
  *
  * Destroy a hostlist object. Frees all memory allocated to the hostlist.
  */
-void hostlist_destroy PARAMS((hostlist_t hl));
+void hostlist_destroy(hostlist_t hl);
 
 
 /* ----[ hostlist list operations ]---- */
@@ -133,7 +134,7 @@ void hostlist_destroy PARAMS((hostlist_t hl));
  * Returns the number of hostnames inserted into the list, 
  * or 0 on failure.
  */
-int hostlist_push PARAMS((hostlist_t hl, char *hosts));
+int hostlist_push(hostlist_t hl, char *hosts);
 
 
 /* hostlist_push_host():
@@ -144,7 +145,7 @@ int hostlist_push PARAMS((hostlist_t hl, char *hosts));
  *
  * return value is 1 for success, 0 for failure.
  */
-int hostlist_push_host PARAMS((hostlist_t hl, char *host));
+int hostlist_push_host(hostlist_t hl, char *host);
 
 
 /* hostlist_push_list():
@@ -154,7 +155,7 @@ int hostlist_push_host PARAMS((hostlist_t hl, char *host));
  * Returns 1 for success, 0 for failure.
  *
  */
-int hostlist_push_list PARAMS((hostlist_t hl1, hostlist_t hl2));
+int hostlist_push_list(hostlist_t hl1, hostlist_t hl2);
 
 
 /* hostlist_pop():
@@ -165,7 +166,7 @@ int hostlist_push_list PARAMS((hostlist_t hl1, hostlist_t hl2));
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-char * hostlist_pop PARAMS((hostlist_t hl));
+char * hostlist_pop(hostlist_t hl);
 
 
 /* hostlist_shift():
@@ -176,7 +177,7 @@ char * hostlist_pop PARAMS((hostlist_t hl));
  *
  * Note: Caller is responsible for freeing the returned memory.
  */
-char * hostlist_shift PARAMS((hostlist_t hl));
+char * hostlist_shift(hostlist_t hl);
 
 
 /* hostlist_pop_range():
@@ -188,7 +189,7 @@ char * hostlist_shift PARAMS((hostlist_t hl));
  *
  * Caller is responsible for freeing returned memory
  */
-char * hostlist_pop_range PARAMS((hostlist_t hl));
+char * hostlist_pop_range(hostlist_t hl);
 
 /* hostlist_shift_range():
  *
@@ -199,7 +200,7 @@ char * hostlist_pop_range PARAMS((hostlist_t hl));
  *
  * Caller is responsible for freeing returned memory.
  */
-char * hostlist_shift_range PARAMS((hostlist_t hl));
+char * hostlist_shift_range(hostlist_t hl);
 
 
 /* hostlist_find():
@@ -210,7 +211,7 @@ char * hostlist_shift_range PARAMS((hostlist_t hl));
  * Returns -1 if host is not found.
  *
  */
-int hostlist_find PARAMS((hostlist_t hl, char *hostname));
+int hostlist_find(hostlist_t hl, char *hostname);
 
 /* hostlist_delete():
  *
@@ -218,16 +219,18 @@ int hostlist_find PARAMS((hostlist_t hl, char *hostname));
  *
  * Returns the number of hosts successfully deleted
  */
-int hostlist_delete PARAMS((hostlist_t hl, char *hosts));
+int hostlist_delete(hostlist_t hl, char *hosts);
 
 
 /* hostlist_delete_host():
  *
  * Deletes the first host that matches `hostname' from the hostlist hl.
+ * Note: "hostname" argument cannot contain a range of hosts 
+ *       (see hostlist_delete() for this functionality.)
  *
  * Returns 1 if successful, 0 if hostname is not found in list.
  */
-int hostlist_delete_host PARAMS((hostlist_t hl, char *hostname));
+int hostlist_delete_host(hostlist_t hl, char *hostname);
 
 
 /* hostlist_delete_nth():
@@ -237,14 +240,14 @@ int hostlist_delete_host PARAMS((hostlist_t hl, char *hostname));
  * Returns 1 if successful 0 on error.
  *
  */
-int hostlist_delete_nth PARAMS((hostlist_t hl, int n));
+int hostlist_delete_nth(hostlist_t hl, int n);
 
 
 /* hostlist_count():
  *
  * Return the number of hosts in hostlist hl.
  */ 
-int hostlist_count PARAMS((hostlist_t hl));
+int hostlist_count(hostlist_t hl);
 
 /* hostlist_is_empty(): return true if hostlist is empty. */
 #define hostlist_is_empty(__hl) ( hostlist_count(__hl) == 0 )
@@ -256,14 +259,14 @@ int hostlist_count PARAMS((hostlist_t hl));
  * Sort the hostlist hl.
  *
  */
-void hostlist_sort PARAMS((hostlist_t hl));
+void hostlist_sort(hostlist_t hl);
 
 /* hostlist_uniq():
  *
  * Sort the hostlist hl and remove duplicate entries.
  * 
  */
-void hostlist_uniq PARAMS((hostlist_t hl));
+void hostlist_uniq(hostlist_t hl);
 
 
 /* ----[ hostlist print functions ]---- */
@@ -279,7 +282,7 @@ void hostlist_uniq PARAMS((hostlist_t hl));
  * hostlist_ranged_string() will write a bracketed hostlist representation
  * where possible.
  */
-size_t hostlist_ranged_string PARAMS((hostlist_t hl, size_t n, char *buf));
+size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf);
 
 /* hostlist_deranged_string():
  *
@@ -290,7 +293,7 @@ size_t hostlist_ranged_string PARAMS((hostlist_t hl, size_t n, char *buf));
  * hostlist_deranged_string() will not attempt to write a bracketed
  * hostlist representation. Every hostname will be explicitly written.
  */
-size_t hostlist_deranged_string PARAMS((hostlist_t hl, size_t n, char *buf));
+size_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf);
 
 
 /* ----[ hostlist utility functions ]---- */
@@ -300,7 +303,7 @@ size_t hostlist_deranged_string PARAMS((hostlist_t hl, size_t n, char *buf));
  *
  * Return the number of ranges currently held in hostlist hl.
  */
-int hostlist_nranges PARAMS((hostlist_t hl));
+int hostlist_nranges(hostlist_t hl);
 
 
 /* ----[ hostlist iterator functions ]---- */
@@ -310,26 +313,26 @@ int hostlist_nranges PARAMS((hostlist_t hl));
  * Creates and returns a hostlist iterator used for non destructive
  * access to a hostlist or hostset. Returns NULL on failure.
  */
-hostlist_iterator_t hostlist_iterator_create PARAMS((hostlist_t hl));
+hostlist_iterator_t hostlist_iterator_create(hostlist_t hl);
 
 /* hostset_iterator_create():
  *
  * Same as hostlist_iterator_create(), but creates a hostlist_iterator
  * from a hostset.
  */
-hostlist_iterator_t hostset_iterator_create PARAMS((hostset_t set));
+hostlist_iterator_t hostset_iterator_create(hostset_t set);
 
 /* hostlist_iterator_destroy():
  *
  * Destroys a hostlist iterator.
  */
-void hostlist_iterator_destroy PARAMS((hostlist_iterator_t i));
+void hostlist_iterator_destroy(hostlist_iterator_t i);
 
 /* hostlist_iterator_reset():
  *
  * Reset an iterator to the beginning of the list.
  */
-void hostlist_iterator_reset PARAMS((hostlist_iterator_t i));
+void hostlist_iterator_reset(hostlist_iterator_t i);
 
 /* hostlist_next():
  *
@@ -338,7 +341,7 @@ void hostlist_iterator_reset PARAMS((hostlist_iterator_t i));
  *
  * The caller is responsible for freeing the returned memory.
  */ 
-char * hostlist_next PARAMS((hostlist_iterator_t i));
+char * hostlist_next(hostlist_iterator_t i);
 
 
 /* hostlist_next_range():
@@ -349,7 +352,7 @@ char * hostlist_next PARAMS((hostlist_iterator_t i));
  * The caller is responsible for freeing the returned memory.
  *
  */
-char * hostlist_next_range PARAMS((hostlist_iterator_t i));
+char * hostlist_next_range(hostlist_iterator_t i);
 
 
 /* hostlist_remove():
@@ -357,7 +360,7 @@ char * hostlist_next_range PARAMS((hostlist_iterator_t i));
  *
  * Returns 1 for success, 0 for failure.
  */
-int hostlist_remove PARAMS((hostlist_iterator_t i));
+int hostlist_remove(hostlist_iterator_t i);
 
 
 /* ----[ hostset operations ]---- */
@@ -367,17 +370,17 @@ int hostlist_remove PARAMS((hostlist_iterator_t i));
  * Create a new hostset object from a string representation of a list of
  * hosts. See hostlist_create() for valid hostlist forms.
  */
-hostset_t hostset_create PARAMS((char *hostlist));
+hostset_t hostset_create(char *hostlist);
 
 /* hostset_copy():
  *
  * Copy a hostset object. Returned set must be freed with hostset_destroy().
  */
-hostset_t hostset_copy PARAMS((hostset_t set));
+hostset_t hostset_copy(hostset_t set);
 
 /* hostset_destroy():
  */
-void hostset_destroy PARAMS((hostset_t set));
+void hostset_destroy(hostset_t set);
 
 /* hostset_insert():
  * Add a host or list of hosts into hostset "set."
@@ -385,35 +388,34 @@ void hostset_destroy PARAMS((hostset_t set));
  * Returns number of hosts successfully added to "set"
  * (insertion of a duplicate is not considered successful)
  */
-int hostset_insert PARAMS((hostset_t set, char *hosts));
+int hostset_insert(hostset_t set, char *hosts);
 
 /* hostset_delete():
  * Delete a host or list of hosts from hostset "set."
  * Returns number of hosts deleted from set.
  */
-int hostset_delete PARAMS((hostset_t set, char *hosts));
+int hostset_delete(hostset_t set, char *hosts);
 
 /* hostset_within():
  * Return 1 if all hosts specified by "hosts" are within the hostset "set"
  * Retrun 0 if every host in "hosts" is not in the hostset "set"
  */
-int hostset_within PARAMS((hostset_t set, char *hosts));
+int hostset_within(hostset_t set, char *hosts);
 
 /* hostset_shift():
  * hostset equivalent to hostlist_shift()
  */
-char * hostset_shift PARAMS((hostset_t set));
+char * hostset_shift(hostset_t set);
 
 /* hostset_shift_range():
  * hostset eqivalent to hostlist_shift_range()
  */
-char * hostset_shift_range PARAMS((hostset_t set));
+char * hostset_shift_range(hostset_t set);
 
 /* hostset_count():
  * Count the number of hosts currently in hostset
  */
-int hostset_count PARAMS((hostset_t set));
+int hostset_count(hostset_t set);
 
-END_C_DECLS
 
 #endif /* !_HOSTLIST_H */
