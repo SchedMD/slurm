@@ -1384,7 +1384,7 @@ static int _set_one_dim(int *start, int *end, int *coord)
 	}
 	return 1;
 }
-
+#ifdef BUILD_EXE
 /** */
 int main(int argc, char** argv)
 {
@@ -1514,3 +1514,4 @@ int main(int argc, char** argv)
 	
 	return 0;
 }
+#endif

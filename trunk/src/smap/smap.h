@@ -35,10 +35,6 @@
 #  include "config.h"
 #endif
 
-#ifdef HAVE_BGL_FILES
-#  include "rm_api.h"
-#endif
-
 #include <pwd.h>
 #include <ctype.h>
 #include <stdio.h>
