@@ -174,7 +174,9 @@ void Slurmctld_Req(int sockfd) {
 	   fprintf(stderr, "Slurmctld_Req: Dump_Node returning %d bytes, ", Dump_Size);
 	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
 #endif
-	if (Error_Code == 0) {
+	if (Dump_Size == 0) 
+	    send(sockfd, "NOCHANGE", 9, 0);
+	else if (Error_Code == 0) {
 	    Dump_Loc = 0;
 	    while (Dump_Size > 0) {
 		i = send(sockfd, &Dump[Dump_Loc], Dump_Size, 0);
@@ -205,9 +207,16 @@ void Slurmctld_Req(int sockfd) {
 	    fprintf(stderr, "Slurmctld_Req: Dump_Part returning %d bytes, ", Dump_Size);
 	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
 #endif
-	if (Error_Code == 0)
-	    send(sockfd, Dump, Dump_Size, 0);
-	else
+	if (Dump_Size == 0) 
+	    send(sockfd, "NOCHANGE", 9, 0);
+	else if (Error_Code == 0) {
+	    Dump_Loc = 0;
+	    while (Dump_Size > 0) {
+		i = send(sockfd, &Dump[Dump_Loc], Dump_Size, 0);
+		Dump_Loc += i;
+		Dump_Size -= i;
+	    } /* while */
+	} else
 	    send(sockfd, "EINVAL", 7, 0);
 	if (Dump) free(Dump);
 	return;

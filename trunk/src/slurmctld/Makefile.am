@@ -19,7 +19,7 @@ bin_PROGRAMS = slurmctld
 
 noinst_PROGRAMS = $(test_modules)
 
-LDADD = $(top_srcdir)/src/common/libcommon.a
+LDADD = $(top_srcdir)/src/api/libslurmapi.a $(top_srcdir)/src/common/libcommon.a
 
 slurmctld_SOURCES = controller.c \
 		    node_mgr.c \
