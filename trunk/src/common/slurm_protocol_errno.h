@@ -15,7 +15,7 @@
 #define SLURM_PROTOCOL_VERSION_ERROR -1910
 
 /* _info.c/ocommuncation layer RESPONSE_SLURM_RC message codes */
-#define SLURM_NO_CHANGE_IN_DATA 100
+#define SLURM_NO_CHANGE_IN_DATA -1920
 
 /* job_mgr.c/job_create */
 #define ESLURM_INVALID_PARTITION_SPECIFIED		-2000
