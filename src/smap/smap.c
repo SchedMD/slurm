@@ -136,7 +136,7 @@ int main(int argc, char *argv[])
 
 		init_grid(node_info_ptr);
 		wclear(pa_system_ptr->text_win);
-		//wclear(pa_system_ptr->grid_win);        
+		wclear(pa_system_ptr->grid_win);        
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord = 1;
 

@@ -61,7 +61,7 @@ extern void get_job(void)
 		}
 	}
 
-	if (new_job_ptr->record_count && !params.no_header)
+	if (!params.no_header)
 		_print_header_job();
 	for (i = 0; i < new_job_ptr->record_count; i++) {
 		job = new_job_ptr->job_array[i];
