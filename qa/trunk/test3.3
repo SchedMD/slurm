@@ -57,6 +57,14 @@ if {[string compare $node_old_state ""] == 0} {
 	send_user " of node $node_name\n"
 	exit 1
 }
+if {[string compare $node_old_state "UNKNOWN"] == 0} {
+	send_user "\nWarning: Unusable node state $node_old_state\n"
+	exit 0
+}
+if {[string compare $node_old_state "COMPLETING"] == 0} {
+	send_user "\nWarning: Unusable node state $node_old_state\n"
+	exit 0
+}
 
 #
 # Change that node's state
