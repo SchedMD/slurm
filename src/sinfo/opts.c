@@ -88,7 +88,8 @@ extern void parse_command_line(int argc, char *argv[])
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'},
 		{"help",      no_argument,       0, OPT_LONG_HELP},
-		{"usage",     no_argument,       0, OPT_LONG_USAGE}
+		{"usage",     no_argument,       0, OPT_LONG_USAGE},
+		{NULL,        0,                 0, 0}
 	};
 
 	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rRsS:t:vV",
