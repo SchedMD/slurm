@@ -38,15 +38,15 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "src/slurmctld/slurmctld.h"
+
 typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;
 
 /* initialization of job completion logging */
 extern int g_slurm_jobcomp_init(char *jobcomp_loc);
 
 /* write record of a job's completion */
-extern int g_slurm_jobcomp_write(uint32_t job_id, uint32_t user_id, char *job_name, 
-		char *job_state, char *partition, uint32_t time_limit,
-		time_t start_end, time_t end_time, char *node_list);
+extern int g_slurm_jobcomp_write(struct job_record *job_ptr);
 
 /* return error code */
 extern int g_slurm_jobcomp_errno(void);

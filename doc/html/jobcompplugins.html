@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="8 July 2004">
+<meta name="LLNLRandRdate" content="20 July 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -108,28 +108,19 @@ be stubbed.</p>
 
 <p class="commandline">int slurm_jobcomp_set_location (char * location);</p>
 <p style="margin-left:.2in"><b>Description</b>: Specify the location to be used for job logging.</p>
-<p style="margin-left:.2in"><b>Arguments</b>:<span class="commandline"> location</span>&nbsp; 
+<p style="margin-left:.2in"><b>Argument</b>:<span class="commandline"> location</span>&nbsp; 
 &nbsp;&nbsp;(input) specification of where logging should be done. The interpretation of 
 this string is at the discression of the plugin implementation.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
 
-<p class="commandline">int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, 
-char *job_name, char *job_state, char *partition, uint32_t time_limit, time_t start_time, 
-time_t end_time, char *node_list);</p>
+<p class="commandline">int slurm_jobcomp_log_record ( struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note termation of a job with the specified 
 characteristics.</p>
-<p style="margin-left:.2in"><b>Arguments</b>: <br>
-<span class="commandline"> jobid</span>&nbsp;&nbsp;&nbsp;(input) SLURM id of the job.<br>
-<span class="commandline"> user_id</span>&nbsp;&nbsp;&nbsp;(input) User id of the job's owner.<br>
-<span class="commandline"> job_name</span>&nbsp;&nbsp;&nbsp;(input) Name of the job.<br>
-<span class="commandline"> partition</span>&nbsp;&nbsp;&nbsp;(input) SLURM partition where the job ran.<br>
-<span class="commandline"> time_limit</span>&nbsp;&nbsp;&nbsp;(input) Time limit of the job in minutes (or INFINITE).<br>
-<span class="commandline"> start_time</span>&nbsp;&nbsp;&nbsp;(input) Time the job began execution.<br>
-<span class="commandline"> end_time</span>&nbsp;&nbsp;&nbsp;(input) Time the job ended.<br>
-<span class="commandline"> node_list</span>&nbsp;&nbsp;&nbsp;(input) List of nodes allocated to the job.
-May use SLURM node list expression. May be NULL if job was never allocated resources.</p>
+<p style="margin-left:.2in"><b>Argument</b>: <br>
+<span class="commandline"> job_ptr</span>&nbsp;&nbsp;&nbsp;(input) Pointer to job record as defined
+in <i>src/slurmctld/slurmctld.h</i></p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
 the plugin should return SLURM_ERROR and set the errno to an appropriate value 
 to indicate the reason for failure.</p>
@@ -163,7 +154,7 @@ to implement a particular API version using the mechanism outlined for SLURM plu
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified July 8, 2004</p></td>
+Last modified July 20, 2004</p></td>
 </tr>
 </table>
 </td>
