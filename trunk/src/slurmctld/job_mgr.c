@@ -2110,6 +2110,7 @@ void job_time_limit(void)
 			continue;
 		}
 
+		/* Give srun command warning message about pending timeout */
 		if (job_ptr->end_time <= (now + 60))
 			srun_timeout (job_ptr->job_id, job_ptr->end_time);
 
@@ -2300,7 +2301,7 @@ static int _list_find_job_id(void *job_entry, void *key)
 static int _list_find_job_old(void *job_entry, void *key)
 {
 	time_t now      = time(NULL);
-	time_t kill_age = now - (slurmctld_conf.kill_wait * 2);
+	time_t kill_age = now - (slurmctld_conf.kill_wait + 20);
 	time_t min_age  = now - slurmctld_conf.min_job_age;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
