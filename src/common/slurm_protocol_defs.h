@@ -252,6 +252,7 @@ typedef struct launch_tasks_msg
 	char ** env ;
 	char * cwd ;
 	char * cmd_line ;
+	slurm_addr response_addr ;
 	slurm_addr * streams;
 	uint32_t * global_task_ids;
 } launch_tasks_msg_t ;
