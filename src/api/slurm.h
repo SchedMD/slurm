@@ -7,9 +7,6 @@
  * author: moe jette, jette@llnl.gov
  */
 
-#define MAX_ID_LEN	32
-#define MAX_NAME_LEN	1024 	/* gethostname in linux returns a FQ DNS name */
-
 #include <src/common/slurm_protocol_defs.h>
 #include <stdio.h>
 
