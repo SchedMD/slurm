@@ -42,7 +42,7 @@
 #include <src/slurmctld/agent.h>
 #include <src/slurmctld/slurmctld.h>
 
-#define AGENT_TEST 0
+#define AGENT_TEST 1
 #define BUF_SIZE 1024
 
 struct node_set {		/* set of nodes with same configuration */
