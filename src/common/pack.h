@@ -28,6 +28,9 @@ void	_unpack16(uint16_t *valp, void **bufp, int *lenp);
 void	_pack32array(uint32_t *valp, uint16_t size_val, void **bufp, int *lenp);
 void	_unpack32array( uint32_t **valp, uint16_t* size_val, void **bufp, int *lenp);
 
+void	_packstrarray(char **valp, uint16_t size_val, void **bufp, int *lenp);
+void	_unpackstrarray(char ***valp, uint16_t* size_val, void **bufp, int *lenp);
+
 void	_packmem(char *valp, uint16_t size_val, void **bufp, int *lenp);
 void	_unpackmem_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp);
 void	_unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp);
@@ -86,6 +89,22 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	_packmem(str,(uint16_t)_size,bufp,lenp);	\
 } while (0)				
 
+#define packstring_array(array,_size,bufp,lenp) do {	\
+	assert((bufp) != NULL && *(bufp) != NULL);	\
+        assert((lenp) != NULL);				\
+        assert(*(lenp) >= (sizeof(_size)+_size));	\
+	_packstrarray(array,(uint16_t)_size,bufp,lenp);	\
+} while (0)				
+
+#define unpackstring_array(valp,size_valp,bufp,lenp) do {	\
+	assert(valp != NULL);				\
+	assert(sizeof(size_valp) == sizeof(uint16_t *));\
+	assert((bufp) != NULL && *(bufp) != NULL);	\
+        assert((lenp) != NULL);				\
+        assert(*(lenp) >= sizeof(uint16_t));		\
+	_unpackstrarray(valp,(uint16_t *)size_valp,bufp,lenp);\
+} while (0)
+
 #define pack32_array(array,_size,bufp,lenp) packint_array(array,_size,bufp,lenp)
 #define packint_array(array,_size,bufp,lenp) do {	\
 	assert((bufp) != NULL && *(bufp) != NULL);	\
@@ -105,6 +124,7 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 } while (0)
 
 
+#define unpackstr_ptr		unpackmem_ptr
 #define unpackmem_ptr(valp,size_valp,bufp,lenp) do {	\
 	assert(valp != NULL);				\
 	assert(sizeof(size_valp) == sizeof(uint16_t *));\
@@ -114,9 +134,7 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	_unpackmem_ptr(valp,(uint16_t *)size_valp,bufp,lenp);\
 } while (0)
 
-#define unpackstr_ptr		unpackmem_ptr
 #define unpackstr_malloc	unpackmem_malloc
-
 #define unpackmem_malloc(valp,size_valp,bufp,lenp) do {\
 	assert(valp != NULL);				\
 	assert(sizeof(size_valp) == sizeof(uint16_t *));\
@@ -126,6 +144,7 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	_unpackmem_malloc(valp,(uint16_t *)size_valp,bufp,lenp);\
 } while (0)
 
+#define unpackstr_xmalloc	unpackmem_xmalloc
 #define unpackmem_xmalloc(valp,size_valp,bufp,lenp) do {\
 	assert(valp != NULL);				\
 	assert(sizeof(size_valp) == sizeof(uint16_t *));\
@@ -135,6 +154,5 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	_unpackmem_xmalloc(valp,(uint16_t *)size_valp,bufp,lenp);\
 } while (0)
 
-#define unpackstr_xmalloc	unpackmem_xmalloc
 
 #endif /* _PACK_INCLUDED */

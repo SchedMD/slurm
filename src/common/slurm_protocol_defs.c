@@ -233,12 +233,18 @@ void slurm_free_update_node_msg ( update_node_msg_t * msg )
 
 void slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg )
 {
+	int i ;
 	if ( msg )
 	{
 		if ( msg -> credentials )
 			xfree ( msg -> credentials );
 		if ( msg -> env )
-			xfree ( msg -> env );
+			for ( i = 0 ; i < msg -> envc ; i++ )
+			{
+				if ( msg -> env[i] )
+					xfree ( msg -> env[i] );
+			}
+			xfree ( msg -> env ) ;
 		if ( msg -> cwd )
 			xfree ( msg -> cwd );
 		if ( msg -> cmd_line )

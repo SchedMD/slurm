@@ -222,3 +222,59 @@ _unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*valp = NULL;
 
 }
+
+/*
+ * Given a pointer to array of char * (char ** or char *[] ) and a size (size_val), convert 
+ * size_val to network byte order and store at 'bufp' followed by 
+ * the data at valp. Advance bufp and decrement lenp by 4 bytes 
+ * (size of size_val) then pack each of the size_val strings. 
+ */
+void
+_packstrarray(char **valp, uint16_t size_val, void **bufp, int *lenp)
+{
+	int i ;
+	uint16_t nl = htons(size_val);
+
+	memcpy(*bufp, &nl, sizeof(nl));
+	(size_t)*bufp += sizeof(nl);
+	*lenp -= sizeof(nl);
+
+	for ( i = 0 ; i < size_val ; i ++ )
+	{
+		packstr(valp[i],bufp,lenp) ;
+	}
+
+}
+
+/*
+ * Given 'bufp' pointing to a network byte order 32-bit integer
+ * (size) and a array of strings  Advance bufp and decrement 
+ * lenp by 4 bytes (size of memory  size records) plus the actual 
+ * buffer size.
+ * NOTE: valp is set to point into a newly created buffer, 
+ *	the caller is responsible for calling xfree on *valp
+ *	if non-NULL (set to NULL on zero size buffer value)
+ */
+void
+_unpackstrarray (char ***valp, uint16_t *size_valp, void **bufp, int *lenp)
+{
+	int i ;
+	uint16_t nl;
+	uint16_t uint16_tmp;
+
+	memcpy(&nl, *bufp, sizeof(nl));
+	*size_valp = ntohs(nl);
+	(size_t)*bufp += sizeof(nl);
+	*lenp -= sizeof(nl);
+
+	if (*size_valp > 0) {
+		*valp = xmalloc(sizeof ( char * ) * *size_valp ) ;
+		for ( i = 0 ; i < *size_valp ; i ++ )
+		{
+			unpackstr_xmalloc ( & (*valp)[i] , & uint16_tmp , bufp , lenp ) ;
+		}
+	}
+	else
+		*valp = NULL;
+
+}

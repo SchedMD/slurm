@@ -185,7 +185,8 @@ typedef struct launch_tasks_msg
 	uint32_t gid ;
 	char * credentials ;
 	uint32_t tasks_to_launch ;
-	char * env ;
+	uint16_t envc ;
+	char ** env ;
 	char * cwd ;
 	char * cmd_line ;
 	slurm_addr * streams;

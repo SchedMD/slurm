@@ -797,7 +797,7 @@ void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_
 	pack32 ( msg -> gid , buffer , length ) ;
 	packstr ( msg -> credentials , buffer , length ) ;
 	pack32 ( msg -> tasks_to_launch , buffer , length ) ;
-	packstr ( msg -> env , buffer , length ) ;
+	packstring_array ( msg -> env , msg -> envc , buffer , length ) ;
 	packstr ( msg -> cwd , buffer , length ) ;
 	packstr ( msg -> cmd_line , buffer , length ) ;
 	pack_slurm_addr_array ( msg -> streams , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
@@ -822,7 +822,7 @@ int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , u
 	unpack32 ( & msg -> gid , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> credentials , & uint16_tmp , buffer , length ) ;
 	unpack32 ( & msg -> tasks_to_launch , buffer , length ) ;
-	unpackstr_xmalloc ( & msg -> env , & uint16_tmp , buffer , length ) ;
+	unpackstring_array ( & msg -> env , & msg -> envc , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cwd , & uint16_tmp , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cmd_line , & uint16_tmp , buffer , length ) ;
 	unpack_slurm_addr_array ( & msg -> streams , & uint16_tmp , buffer , length ) ;
