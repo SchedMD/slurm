@@ -128,7 +128,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* shared memory init */
-	slurmd_init();
+	if (slurmd_init() < 0)
+		exit (1);
 
 	if ((rc = getnodename(node_name, MAX_NAME_LEN)))
 		fatal("getnodename: %m");
