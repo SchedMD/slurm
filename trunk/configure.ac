@@ -53,13 +53,6 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
 
-AC_CHECK_HEADER(readline/readline.h, [], 
-	[AC_MSG_ERROR("readline/readline.h not found")],
-	[]
-)
-
-AC_CHECK_LIB([readline], [readline], [], AC_MSG_ERROR([libreadline not found!],[history]))
-
 dnl Checks for structures.
 dnl
 
@@ -250,6 +243,28 @@ fi
 AC_DEFINE_UNQUOTED(HAVE_ELAN, "$HAVE_ELAN", [Define to enable Elan support.])
 AC_SUBST(HAVE_ELAN)
 
+dnl Check for whether to include readline support
+dnl 
+AC_MSG_CHECKING([whether to include readline support])
+AC_ARG_ENABLE(readline,
+  AC_HELP_STRING([--disable-readline], [disable readline support]),
+  [ readline=no  ],
+  [ readline=yes ]
+)
+AC_MSG_RESULT(${readline})
+
+if test x$readline = xyes; then
+   savedLIBS="$LIBS"
+   READLINE_LIBS="-lreadline -lncurses"
+   LIBS="$READLINE_LIBS $LIBS"
+   AC_CHECK_LIB([readline], [readline], [], AC_MSG_ERROR([Cannot find libreadline!]))
+   AC_DEFINE(HAVE_READLINE, 1, [Define if you are compiling with readline])
+   LIBS="$savedLIBS"
+else
+   READLINE_LIBS=""
+fi
+
+AC_SUBST(READLINE_LIBS)
 
 dnl OpenSSL location (taken from openssh configure.ac)
 dnl
@@ -432,6 +447,8 @@ AC_CONFIG_FILES([Makefile
 		 src/scancel/Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
+		 doc/Makefile
+		 doc/man/Makefile
 		 testsuite/Makefile
 		 testsuite/slurm_unit/Makefile
 		 testsuite/slurm_unit/common/Makefile

@@ -33,8 +33,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <readline/readline.h>
-#include <readline/history.h>
+
+#if HAVE_READLINE
+#  include <readline/readline.h>
+#  include <readline/history.h>
+#endif
 
 #if HAVE_INTTYPES_H
 #  include <inttypes.h>
@@ -54,6 +57,7 @@
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/cbuf.h"
 
 #define	BUF_SIZE 1024
 #define	MAX_INPUT_FIELDS 128
@@ -128,6 +132,24 @@ main (int argc, char *argv[])
 	exit (error_code);
 }
 
+/*
+ * Alternative to readline if readline is not available
+ */
+static char *
+getline(const char *prompt)
+{
+	char buf[4096];
+	char *line;
+	int len;
+
+	printf("%s", prompt);
+
+	fgets(buf, 4096, stdin);
+	len = strlen(buf) + 1;
+	line = malloc (len * sizeof(char));
+	return strncpy(line, buf, len);
+}
+
 
 /*
  * _get_command - get a command from the user
@@ -144,7 +166,12 @@ _get_command (int *argc, char **argv)
 
 	*argc = 0;
 
+#if HAVE_READLINE
 	in_line = readline ("scontrol: ");
+#else
+	in_line = getline("scontrol: ");
+#endif
+
 	if (in_line == NULL)
 		return 0;
 	else if (strcmp (in_line, "!!") == 0) {
@@ -158,7 +185,9 @@ _get_command (int *argc, char **argv)
 		last_in_line_size = in_line_size = strlen (in_line);
 	}
 
+#if HAVE_READLINE
 	add_history(in_line);
+#endif
 
 	for (i = 0; i < in_line_size; i++) {
 		if (in_line[i] == '\0')

@@ -8,9 +8,8 @@ bin_PROGRAMS = scontrol
 
 LDADD = 					\
 	$(top_builddir)/src/common/libcommon.la \
-	$(top_builddir)/src/api/libslurm.la
+	$(top_builddir)/src/api/libslurm.la     \
+	$(READLINE_LIBS)
 
-LIBS = -lpthread -ltermcap -lreadline
 
 scontrol_SOURCES = scontrol.c
-
