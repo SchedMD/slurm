@@ -391,9 +391,9 @@ extern int _slurm_ioctl(int d, int request, ...)
 /* sets the fields of a slurm_addr */
 void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )
 {
-	slurm_address -> family = AF_SLURM ;
-	slurm_address -> port = htons ( port ) ;
-	slurm_address -> address = htonl ( ip_address ) ;
+	slurm_address -> sin_family = AF_SLURM ;
+	slurm_address -> sin_port = htons ( port ) ;
+	slurm_address -> sin_addr.s_addr = htonl ( ip_address ) ;
 }
 
 /* sets the fields of a slurm_addr */
@@ -404,14 +404,14 @@ void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host 
 void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host )
 {
 	struct hostent * host_info = gethostbyname ( host ) ;
-	memcpy ( & slurm_address -> address , & host_info -> h_addr , host_info -> h_length ) ;
-	slurm_address -> family = AF_SLURM ;
-	slurm_address -> port = htons ( port ) ;
+	memcpy ( & slurm_address -> sin_addr . s_addr , & host_info -> h_addr , host_info -> h_length ) ;
+	slurm_address -> sin_family = AF_SLURM ;
+	slurm_address -> sin_port = htons ( port ) ;
 }
 
 void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , unsigned int buf_len )
 {
-	struct hostent * host_info = gethostbyaddr ( ( char * ) &( slurm_address -> address) , sizeof ( slurm_address ->  address ) , AF_SLURM ) ;
-	*port = slurm_address -> port ;
+	struct hostent * host_info = gethostbyaddr ( ( char * ) &( slurm_address -> sin_addr . s_addr ) , sizeof ( slurm_address ->  sin_addr . s_addr ) , AF_SLURM ) ;
+	*port = slurm_address -> sin_port ;
 	strncpy ( host , host_info -> h_name , buf_len ) ;
 }
