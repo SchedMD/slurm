@@ -50,6 +50,8 @@
 #define OPT_LONG   	    0x0a
 #define OPT_SHORT  	    0x0b
 #define OPT_NO_HEAD   	0x0c
+#define OPT_VERSION     0x0d
+
 
 /* FUNCTIONS */
 static char *_get_prefix(char *token);
@@ -58,6 +60,7 @@ static int   _parse_state(char *str, enum node_states *states);
 static void  _parse_token( char *token, char *field, int *field_size, 
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
+static void  _print_version( void );
 
 /*
  * parse_command_line
@@ -99,6 +102,8 @@ int parse_command_line(int argc, char *argv[])
 		 OPT_NO_HEAD, "no headers on output", NULL},
 		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
 		 "format specification", "format"},
+		{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
+			"output version information and exit", NULL},
 		POPT_AUTOHELP 
 		{NULL, '\0', 0, NULL, 0, NULL, NULL} /* end */
 	};
@@ -110,15 +115,24 @@ int parse_command_line(int argc, char *argv[])
 	poptSetOtherOptionHelp(context, "[-elNsv]");
 
 	while ((curr_opt = poptGetNextOpt(context)) > 0) {
-		if (curr_opt == OPT_NODE_STATE) {
-			params.state_flag = true;
-			if (_parse_state(temp_state, &params.state)
-			    == SLURM_ERROR) {
-				fprintf(stderr,
-					"%s: %s is invalid node state\n",
-					argv[0], temp_state);
-				exit(1);
-			}
+		switch ( curr_opt )
+		{
+			case OPT_NODE_STATE:
+				params.state_flag = true;
+				if (_parse_state(temp_state, &params.state)
+				    == SLURM_ERROR) {
+					fprintf(stderr,
+						"%s: %s is invalid node state\n",
+						argv[0], temp_state);
+					exit(1);
+				}
+				break;
+			case OPT_VERSION:
+				_print_version();
+				exit(0);
+				break;	
+			default:
+				break;	
 		}
 	}
 	if (curr_opt < -1) {
@@ -423,6 +437,11 @@ void _print_options( void )
 	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
 	printf("verbose     = %d\n", params.verbose);
 	printf("-----------------------------\n\n");
+}
+
+static void _print_version(void)
+{
+	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
 
 
