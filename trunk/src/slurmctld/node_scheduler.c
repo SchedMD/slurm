@@ -54,7 +54,11 @@
 #define MAX_RETRIES 10
 
 struct node_set {		/* set of nodes with same configuration */
-	uint32_t cpus_per_node;
+	uint32_t cpus_per_node;	/* NOTE: This is the minimum count,
+				 * if FastSchedule==0 then individual 
+				 * nodes within the same configuration 
+				 * line (in slurm.conf) can actually 
+				 * have different CPU counts */
 	uint32_t nodes;
 	uint32_t weight;
 	int feature;
@@ -465,13 +469,16 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			_add_node_set_info(&node_set_ptr[i], &avail_bitmap, 
 					   &avail_nodes, &avail_cpus);
 			if ((job_ptr->details->req_node_bitmap) &&
-			    (!bit_super_set(job_ptr->details->req_node_bitmap, avail_bitmap)))
+			    (!bit_super_set(job_ptr->details->req_node_bitmap, 
+					avail_bitmap)))
 				continue;
 			if ((avail_nodes  < min_nodes) ||
-			    (avail_cpus   < job_ptr->num_procs) ||
 			    ((max_nodes   > min_nodes) && 
 			     (avail_nodes < max_nodes)))
 				continue;	/* Keep accumulating nodes */
+			if (slurmctld_conf.fast_schedule
+			&&  (avail_cpus   < job_ptr->num_procs))
+				continue;	/* Keep accumulating CPUs */
 
 			if (shared) {
 				pick_code = _pick_best_load(job_ptr, avail_bitmap, 
@@ -510,11 +517,13 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 		/* determine if job could possibly run (if all configured 
 		 * nodes available) */
-		if ((!runable_ever || !runable_avail) &&
-		    (total_nodes >= min_nodes) && 
-		    (total_cpus >= job_ptr->num_procs) &&
-		    ((job_ptr->details->req_node_bitmap == NULL) ||
-		     (bit_super_set(job_ptr->details->req_node_bitmap, total_bitmap)))) {
+		if ((!runable_ever || !runable_avail)
+		&&  (total_nodes >= min_nodes)
+		&&  ((slurmctld_conf.fast_schedule == 0) ||
+		     (total_cpus >= job_ptr->num_procs))
+		&&  ((job_ptr->details->req_node_bitmap == NULL) ||
+		     (bit_super_set(job_ptr->details->req_node_bitmap, 
+				total_bitmap)))) {
 			if (!runable_avail) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = bit_copy(total_bitmap);
