@@ -72,7 +72,7 @@ main (int argc, char *argv[])
 	if (opt.verbose) {
 		log_opts.stderr_level += opt.verbose;
 		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
-	}
+	} 
 
 	if ((opt.interactive) ||
 	    (opt.job_name) ||
@@ -229,8 +229,10 @@ _cancel_job_id (uint32_t job_id, uint16_t signal)
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		error("Kill job error on job id %u: %s", 
-		      job_id, slurm_strerror(slurm_get_errno()));
+		error_code = slurm_get_errno();
+		if ((opt.verbose >= 0) || (error_code != ESLURM_ALREADY_DONE ))
+			error("Kill job error on job id %u: %s", 
+			job_id, slurm_strerror(slurm_get_errno()));
 	}
 }
 
@@ -249,8 +251,10 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		error("Kill job error on job id %u.%u: %s", 
-		      job_id, step_id, slurm_strerror(slurm_get_errno()));
+		error_code = slurm_get_errno();
+		if ((opt.verbose >= 0) || (error_code != ESLURM_ALREADY_DONE ))
+			error("Kill job error on job id %u.%u: %s", 
+		 		job_id, step_id, slurm_strerror(slurm_get_errno()));
 	}
 }
 

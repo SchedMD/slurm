@@ -204,7 +204,7 @@ static void _opt_default()
 	opt.state	= JOB_END;
 	opt.user_name	= NULL;
 	opt.user_id	= 0;
-	opt.verbose	= false;
+	opt.verbose	= 0;
 }
 
 /*
@@ -250,13 +250,13 @@ static void _opt_env()
 
 	if ( (val=getenv("SCANCEL_VERBOSE")) ) {
 		if (strcasecmp(val, "true") == 0)
-			opt.verbose = true;
+			opt.verbose = 1;
 		else if (strcasecmp(val, "T") == 0)
-			opt.verbose = true;
+			opt.verbose = 1;
 		else if (strcasecmp(val, "false") == 0)
-			opt.verbose = false;
+			opt.verbose = 0;
 		else if (strcasecmp(val, "F") == 0)
-			opt.verbose = false;
+			opt.verbose = 0;
 		else
 			error ("Unrecognized SCANCEL_VERBOSE value: %s",
 				val);
@@ -274,6 +274,7 @@ static void _opt_args(int argc, char **argv)
 		{"interactive", no_argument,       0, 'i'},
 		{"name",        required_argument, 0, 'n'},
 		{"partition",   required_argument, 0, 'p'},
+		{"quiet",       no_argument,       0, 'q'},
 		{"signal",      required_argument, 0, 's'},
 		{"state",       required_argument, 0, 't'},
 		{"user",        required_argument, 0, 'u'},
@@ -283,7 +284,7 @@ static void _opt_args(int argc, char **argv)
 		{"usage",       no_argument,       0, OPT_LONG_USAGE}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "in:p:s:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "in:p:qs:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -298,6 +299,9 @@ static void _opt_args(int argc, char **argv)
 				break;
 			case (int)'p':
 				opt.partition = xstrdup(optarg);
+				break;
+			case (int)'q':
+				opt.verbose = -1;
 				break;
 			case (int)'s':
 				opt.signal = _xlate_signal_name(optarg);
@@ -429,7 +433,7 @@ static void _opt_list(void)
 
 static void _usage(void)
 {
-	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-s name | integer]\n");
+	printf("Usage: scancel [-n job_name] [-u user] [-p partition] [-q] [-s name | integer]\n");
 	printf("               [-t PENDING | RUNNING] [--usage] [-v] [-V] [job_id[.step_id]]\n");
 }
 
@@ -439,6 +443,7 @@ static void _help(void)
 	printf("  -i, --interactive               require response from user for each job\n");
 	printf("  -n, --name=job_name             name of job to be signalled\n");
 	printf("  -p, --partition=partition       name of job's partition\n");
+	printf("  -q, --quiet                     disable warnings\n");
 	printf("  -s, --signal=name | integer     signal to send to job, default is SIGKILL\n");
 	printf("  -t, --states=states             states to jobs to cancel,\n");
 	printf("                                  default is pending and running,\n");
