@@ -33,6 +33,7 @@
 #include <slurm/slurm.h>
 
 #include "src/common/log.h"
+#include "src/slurmctld/proc_req.h"
 #include "bluegene.h"
 #include "partition_sys.h"
 
