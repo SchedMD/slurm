@@ -22,6 +22,16 @@ int \fBslurm_step_ctx_get\fR (
 .br
 );
 .LP
+int \fBslurm_jobinfo_ctx_get\fR (
+.br
+	switch_jobinfo_t \fIjobinfo\fP, 
+.br
+	int \fIdata_type\fP, 
+.br
+	void *\fIdata\fP
+.br
+);
+.LP
 int \fBslurm_step_ctx_set\fR (
 .br
 	slurm_step_ctx \fIctx\fP,
@@ -68,15 +78,28 @@ function calls, and destroyed by \fBslurm_step_ctx_destroy\fR.
 Identifies the fields in \fIctx\fP to be collected by \fBslurm_step_ctx_get\fR
 or set by \fBslurm_step_ctx_set\fR.
 .TP
+\fIdata\fP
+Storage location for requested data. See \fIdata_type\fP below.
+.TP
+\fIdata_type\fP
+Switch-specific data requested. The interpretation of this field depends
+upon the switch plugin in use.
+.TP
 \fIfd_array\fP
 Array of socket file descriptors to be connected to the initiated tasks.
 Tasks will be connected to these file descriptors in order of their 
 task id.
 This socket will carry standard input, output and error for the task.
+\fIjobinfo\fP
+Switch-specific job information as returned by \fBslurm_step_ctx_get\fR.
 .TP
 \fIsignal\fP
 Signal to be sent to the spawned tasks. 
 .SH "DESCRIPTION"
+.LP
+\fBslurm_jobinfo_ctx_get\fR Get values from a \fIjobinfo\fR field as
+returned by \fBslurm_step_ctx_get\fR. The operation of this function 
+is highly dependent upon the switch plugin in use.
 .LP
 \fBslurm_step_ctx_create\fR Create a job step context. To avoid memory 
 leaks call \fBslurm_step_ctx_destroy\fR when the use of this context is
