@@ -90,6 +90,7 @@ parse_command_line( int argc, char* argv[] )
 		{"sort",       required_argument, 0, 'S'},
 		{"states",     required_argument, 0, 't'},
 		{"user",       required_argument, 0, 'u'},
+		{"users",      required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
 		{"help",       no_argument,       0, OPT_LONG_HELP},
