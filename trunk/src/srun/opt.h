@@ -107,7 +107,6 @@ typedef struct srun_options {
 	bool nodes_set;		/* true if nodes explicitly set */
 	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
-	int priority;		/* --priority=n,   -P n   	*/
 	enum distribution_t
 		distribution;	/* --distribution=, -m dist	*/
 	char *job_name;		/* --job-name=,     -J name	*/
@@ -127,6 +126,7 @@ typedef struct srun_options {
 
 	int immediate;		/* -i, --immediate      	*/
 
+	bool hold;		/* --hold, -H			*/
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
 	bool allocate;		/* --allocate, 	   -A		*/

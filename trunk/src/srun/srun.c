@@ -318,8 +318,8 @@ _run_batch_job(void)
 
 	job.partition      = opt.partition;
 
-	if (opt.priority > -1)
-		job.priority = opt.priority;
+	if (opt.hold)
+		job.priority = 0;
 	if (opt.mincpus > -1)
 		job.min_procs = opt.mincpus;
 	if (opt.realmem > -1)
@@ -343,6 +343,8 @@ _run_batch_job(void)
 
 	job.user_id        = opt.uid;
 
+	if (opt.hold)
+		job.priority 		= 0;
 	if (opt.no_kill)
  		job.kill_on_node_fail	= 0;
 	if (opt.time_limit > -1)
