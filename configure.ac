@@ -45,7 +45,7 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
-                 sys/systemcfg.h \
+                 sys/systemcfg.h conio.h\
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -190,6 +190,7 @@ AC_CONFIG_FILES([Makefile
 		 src/scancel/Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
+		 src/smap/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile

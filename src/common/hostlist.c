@@ -2168,20 +2168,105 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
     return len;
 }
 
+int set_grid(int start, int end, int count)
+{
+  /*hostrange_t *hr = hl->hr;
+ 
+  int start = (int)hr[0]->lo;
+  int end = (int)hr[hl->nranges-1]->hi;
+  */
+  int x1, y1, z1, x2, y2, z2, temp, temp1, temp2;
+  
+  x1 = start / 100;
+  temp = start % 100;
+  y1 = temp / 10;
+  z1 = temp % 10;
+
+  x2 = end / 100;
+  temp = end % 100;
+  y2 = temp / 10;
+  z2 = temp % 10;
+  
+  for(temp = x1;temp<=x2;temp++)
+    for(temp1 = y1;temp1<=y2;temp1++)
+      for(temp2 = z1;temp2<=z2;temp2++)
+	{
+	  Axis[temp][temp1][temp2].letter = FillInValue[count].letter;
+	  Axis[temp][temp1][temp2].color = FillInValue[count].color;
+	}
+  
+  return 1;
+}
+
 size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 {
-    int i = 0;
+    int m,i = 0;
     int len = 0;
     int truncated = 0;
-
+    hostrange_t *hr = hl->hr;
+    int x1, y1, z1, x2, y2, z2, temp, temp1, temp2, endx=0,endy=0,endz=0;
+    int box=1;
+  
     LOCK_HOSTLIST(hl);
-    while (i < hl->nranges && len < n) {
-        len += _get_bracketed_list(hl, &i, n - len, buf + len);
-        if ((len > 0) && (len < n) && (i < hl->nranges))
-            buf[len++] = ',';
-    }
-    UNLOCK_HOSTLIST(hl);
+    for(i=0;i<hl->nranges;i++)
+      {
+	x2 = hr[i]->hi / 100;
+	temp = hr[i]->hi % 100;
+	y2 = temp / 10;
+	z2 = temp % 10;
+	
+	if(x2>endx)
+	  endx=x2;
+	if(y2>endy)
+	  endy=y2;
+	if(z2>endz)
+	  endz=z2;
+	set_grid((int)hr[i]->lo, (int)hr[i]->hi, GridCount);
+      }
+#ifndef HAVE_BGL
+    goto notbox;
+#endif
+    
+  
+    i=hl->nranges-1;
+    if(((endx*100) + (endy*10) + endz) != hr[i]->hi)
+      goto notbox;
+    
+    x1 = hr[0]->lo / 100;
+    temp = hr[0]->lo % 100;
+    y1 = temp / 10;
+    z1 = temp % 10;
+    
+    for(temp = x1;temp<=x2;temp++)
+      for(temp1 = y1;temp1<=y2;temp1++)
+	for(temp2 = z1;temp2<=z2;temp2++)
+	  if(Axis[temp][temp1][temp2].letter != Axis[x1][y1][z1].letter)
+	    goto notbox;
+    
+    m = (n - len) <= n ? n - len : 0;
+    len += snprintf(buf, n, "%s", hr[i]->prefix);
+    buf[len++] = '[';
+    len += snprintf(buf + len, m, "%0*lu", hr[i]->width, hr[0]->lo);
+    //len += hostrange_numstr(hr[i], m, buf + len);
+    buf[len++] = 'x';
+    len += snprintf(buf + len, m, "%0*lu", hr[i]->width, hr[i]->hi);
+    //len += hostrange_numstr(hr[hl->nranges-1], m, buf + len);
+    buf[len++] = ']';
 
+    if(!box)
+      {	
+notbox:
+	i=0;
+	while (i < hl->nranges && len < n) {
+	  len += _get_bracketed_list(hl, &i, n - len, buf + len);
+	  if ((len > 0) && (len < n) && (i < hl->nranges))
+            buf[len++] = ',';
+	}
+	
+      }
+    UNLOCK_HOSTLIST(hl);
+    GridCount++;
+	
     /* NUL terminate */
     if (len >= n) {
         truncated = 1;
@@ -2192,7 +2277,6 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 
     return truncated ? -1 : len;
 }
-
 /* ----[ hostlist iterator functions ]---- */
 
 static hostlist_iterator_t hostlist_iterator_new(void)
