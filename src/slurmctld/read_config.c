@@ -765,23 +765,20 @@ int read_slurm_conf(int recover)
 	rehash_jobs();
 	set_slurmd_addr();
 
-	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
-		fatal("getnodename error %s", slurm_strerror(error_code));
-	if (slurmctld_conf.control_machine &&
-	    (strcmp(node_name, slurmctld_conf.control_machine) == 0))
-		(void) shutdown_backup_controller();
+	if (recover) {
+		if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
+			fatal("getnodename error %s", slurm_strerror(error_code));
+		if (slurmctld_conf.control_machine &&
+		    (strcmp(node_name, slurmctld_conf.control_machine) == 0))
+			(void) shutdown_backup_controller();
+	}
 
 	if (recover > 1) {	/* Load node, part and job info */
 		(void) load_all_node_state(false);
 		(void) load_all_part_state();
 		(void) load_all_job_state();
 	} else if (recover == 1) {	/* Load job info only */
-		if (old_node_table_ptr) {
-			debug("restoring original state of nodes");
-			_restore_node_state(old_node_table_ptr, 
-					    old_node_record_count);
-		} else
-			(void) load_all_node_state(true);
+		(void) load_all_node_state(true);
 		(void) load_all_job_state();
 		reset_job_bitmaps();
 	} else {	/* Load no info, preserve all state */
