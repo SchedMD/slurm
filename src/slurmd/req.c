@@ -54,6 +54,7 @@ static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_revoke_credential(slurm_msg_t *, slurm_addr *);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
+static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 
@@ -100,6 +101,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg, cli);
+		break;
+	case REQUEST_JOB_ID:
+		_rpc_pid2jid(msg, cli);
+		slurm_free_job_id_request_msg(msg->data);
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -301,6 +306,22 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
   done:
 	slurm_send_rc_msg(msg, rc);
 }
+
+static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
+{
+	job_id_request_msg_t *req = (job_id_request_msg_t *) msg->data;
+	slurm_msg_t           resp_msg;
+	job_id_response_msg_t resp;
+
+	error("_rpc_pid2jid pid=%u, code stub only", req->job_pid);
+	resp.job_id           = 1234;	/* dummy value for testing */
+
+	resp_msg.address      = msg->address;
+	resp_msg.msg_type     = RESPONSE_JOB_ID;
+	resp_msg.data         = &resp;
+	slurm_send_node_msg(msg->conn_fd, &resp_msg);
+}
+
 
 static void 
 _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
