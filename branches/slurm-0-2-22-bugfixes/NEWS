@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.24 (not yet tagged)
+=========================
+ -- Fixes for reported problems:
+   - slurm/387: Jobs lost and nodes DOWN on slurmctld restart
+
 * Changes in SLURM 0.2.23
 =========================
  -- Fixes for reported problems:
