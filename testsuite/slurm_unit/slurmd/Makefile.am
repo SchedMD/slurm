@@ -4,12 +4,8 @@ AUTOMAKE_OPTIONS = foreign
 
 if WITH_ELAN
 interconnect_lib = $(top_srcdir)/src/slurmd/libelan_interconnect.la
-process_lib = $(top_srcdir)/src/slurmd/libforked.la
-io_lib = $(top_srcdir)/src/slurmd/libnbio.la
 else
 interconnect_lib = $(top_srcdir)/src/slurmd/libno_interconnect.la
-process_lib = $(top_srcdir)/src/slurmd/libthreaded.la
-io_lib = $(top_srcdir)/src/slurmd/libthreaded_io.la
 endif
 	
 
@@ -23,9 +19,6 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/slurmd/io_threads.o \
 	$(top_srcdir)/src/slurmd/pipes.o \
 	$(top_srcdir)/src/slurmd/setenvpf.o \
-	$(top_srcdir)/src/common/libcred.la \
 	$(SSL_LIBS) \
-	$(interconnect_lib) \
-	$(process_lib) \
-	$(io_lib)
+	$(interconnect_lib) 
 
