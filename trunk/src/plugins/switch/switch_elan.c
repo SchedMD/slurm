@@ -38,6 +38,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include <slurm/slurm_errno.h>
 
@@ -54,8 +55,6 @@
 
 #define BUF_SIZE 1024
 
-#ifdef HAVE_LIBELAN3
-#include <elan3/elan3.h>
 /*
  * Static prototypes for network error resolver creation:
  */
@@ -66,8 +65,6 @@ static int             neterr_retval = 0;
 static pthread_t       neterr_tid;
 static pthread_mutex_t neterr_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  neterr_cond  = PTHREAD_COND_INITIALIZER;
-
-#endif /* HAVE_LIBELAN3 */
 
 /* Type for error string table entries */
 typedef struct {
@@ -373,6 +370,21 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_jobinfo, char *buf,
  * switch functions for job initiation
  */
 
+static int _have_elan3 (void)
+{
+#if HAVE_LIBELAN3
+	return (1);
+#else
+	struct stat st;
+
+	if (stat ("/proc/qsnet/elan3", &st) < 0)
+		return (0);
+
+	return (1);
+#endif /* HAVE_LIBELAN3 */
+	return (0);
+}	
+
 /*  Initialize node for use of the Elan interconnect by loading 
  *   elanid/hostname pairs then spawning the Elan network error
  *   resover thread.
@@ -382,12 +394,12 @@ char *switch_p_sprint_jobinfo(switch_jobinfo_t switch_jobinfo, char *buf,
  */
 int switch_p_node_init ( void )
 {
-#if HAVE_LIBELAN3
 	pthread_attr_t attr;
 
-        /* 
-         *  We only know how to do this for Elan3 right now
-         */
+	/*
+	 *  Only need to run neterr resolver thread on Elan3 systems.
+	 */
+	if (!_have_elan3 ()) return SLURM_SUCCESS;
 
 	/*
 	 *  Load neterr elanid/hostname values into kernel 
@@ -415,18 +427,72 @@ int switch_p_node_init ( void )
 
 	return neterr_retval;
 
-#else  /* !HAVE_LIBELAN3 */
 
         return SLURM_SUCCESS;
-#endif /*  HAVE_LIBELAN3 */
 }
 
-#if HAVE_LIBELAN3
+/*
+ * Use dlopen(3) for libelan3.so (when needed)
+ *   This allows us to build a single version of the elan plugin
+ *   for Elan3 and Elan4 on QsNetII systems.
+ */
+static void *elan3h = NULL;
+
+/*
+ *  * Wrapper functions for needed libelan3 functions
+ *   */
+static int _elan3_init_neterr_svc (int dbglvl)
+{
+	static int (*init_svc) (int);
+
+	if (!(init_svc = dlsym (elan3h, "elan3_init_neterr_svc")))
+		return (0);
+
+	return (init_svc (dbglvl));
+}
+
+
+static int _elan3_register_neterr_svc (void)
+{
+	static int (*reg_svc) (void);
+
+	if (!(reg_svc = dlsym (elan3h, "elan3_register_neterr_svc")))
+		return (0);
+
+	return (reg_svc ());
+}
+
+static int _elan3_run_neterr_svc (void)
+{
+	static int (*run_svc) ();
+
+	if (!(run_svc = dlsym (elan3h, "elan3_run_neterr_svc")))
+		return (0);
+
+	return (run_svc ());
+}
+
+
+static int _elan3_load_neterr_svc (int i, char *host)
+{
+	static int (*load_svc) (int, char *);
+
+	if (!(load_svc = dlsym (elan3h, "elan3_load_neterr_svc")))
+		return (0);
+
+	return (load_svc (i, host));
+}
+
 static void *_neterr_thr(void *arg)
 {	
 	debug3("Starting Elan network error resolver thread");
 
-	if (!elan3_init_neterr_svc(0)) {
+	if (!(elan3h = dlopen ("libelan3.so", RTLD_LAZY))) {
+		error ("Unable to open libelan3.so: %s", dlerror ());
+		goto fail;
+	}
+
+	if (!_elan3_init_neterr_svc(0)) {
 		error("elan3_init_neterr_svc: %m");
 		goto fail;
 	}
@@ -436,7 +502,7 @@ static void *_neterr_thr(void *arg)
 	 *   cannot be bound, then there is already a thread running, and
 	 *   we should just exit with success.
 	 */
-	if (!elan3_register_neterr_svc()) {
+	if (!_elan3_register_neterr_svc()) {
 		if (errno != EADDRINUSE) {
 			error("elan3_register_neterr_svc: %m");
 			goto fail;
@@ -457,7 +523,7 @@ static void *_neterr_thr(void *arg)
 	 *   never return. If it does, there's not much we can do
 	 *   about it.
 	 */
-	elan3_run_neterr_svc();
+	_elan3_run_neterr_svc();
 
 	return NULL;
 
@@ -469,7 +535,6 @@ static void *_neterr_thr(void *arg)
 
 	return NULL;
 }
-#endif /* HAVE_LIBELAN3 */
 
 /*
  *  Called from slurmd just before termination.
@@ -594,7 +659,6 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
-#if HAVE_LIBELAN3
 
 static int 
 _set_elan_ids(void)
@@ -606,14 +670,13 @@ _set_elan_ids(void)
 		if (qsw_gethost_bynodeid(host, 256, i) < 0)
 			continue;
 			
-		if (elan3_load_neterr_svc(i, host) < 0)
+		if (_elan3_load_neterr_svc(i, host) < 0)
 			error("elan3_load_neterr_svc(%d, %s): %m", i, host);
 	}
 
 	return SLURM_SUCCESS;
 }
 
-#endif
 
 /* 
  * Linear search through table of errno values and strings,
