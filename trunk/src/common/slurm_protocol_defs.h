@@ -43,7 +43,7 @@
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
-#define NO_VAL	 (0x7f7f7f7f)
+#define NO_VAL	 (0xfffffffe)
 
 /* last entry must be STATE_END, keep in sync with node_state_string    		*/
 /* if a node ceases to respond, its last state is ORed with NODE_STATE_NO_RESPOND	*/
@@ -52,9 +52,6 @@ enum node_states {
 	NODE_STATE_UNKNOWN,	/* node's initial state, unknown */
 	NODE_STATE_IDLE,	/* node idle and available for use */
 	NODE_STATE_ALLOCATED,	/* node has been allocated, job not currently running */
-	NODE_STATE_STAGE_IN,	/* node has been allocated, job is starting execution */
-	NODE_STATE_RUNNING,	/* node has been allocated, job currently running */
-	NODE_STATE_STAGE_OUT,	/* node has been allocated, job is terminating */
 	NODE_STATE_DRAINED,	/* node idle and not to be allocated future work */
 	NODE_STATE_DRAINING,	/* node in use, but not to be allocated future work */
 	NODE_STATE_END		/* last entry in table */
