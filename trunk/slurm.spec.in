@@ -148,6 +148,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
+%dir doc/html
 %doc doc/html/*
 %{_bindir}/*
 %{_sbindir}/*
