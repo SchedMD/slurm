@@ -286,145 +286,6 @@ int delete_part_record (char *name)
 
 
 /* 
- * dump_all_part - dump all partition information to a buffer
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if partition records updated since time 
- *                       specified, otherwise return empty buffer
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: part_list - global list of partition records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-int 
-dump_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) 
-{
-	ListIterator part_record_iterator;	/* for iterating through part_record list */
-	struct part_record *part_record_point;	/* pointer to part_record */
-	char *buffer;
-	int buffer_offset, buffer_allocated, error_code;
-	char out_line[BUF_SIZE];
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-	buffer = NULL;
-	buffer_offset = 0;
-	buffer_allocated = 0;
-	if (*update_time == last_part_update)
-		return 0;
-
-	part_record_iterator = list_iterator_create (part_list);		
-
-	/* write header, version and time */
-	sprintf (out_line, HEAD_FORMAT, (unsigned long) last_part_update,
-		 PART_STRUCT_VERSION);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	/* write individual partition records */
-	while ((part_record_point = 
-		(struct part_record *) list_next (part_record_iterator))) {
-		if (part_record_point->magic != PART_MAGIC)
-			fatal ("dump_all_part: data integrity is bad");
-
-		error_code = dump_part(part_record_point, out_line, BUF_SIZE);
-		if (error_code != 0) continue;
-
-		if (write_buffer
-		    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-			goto cleanup;
-	}			
-
-	list_iterator_destroy (part_record_iterator);
-	xrealloc (buffer, buffer_offset);
-
-	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
-	*update_time = last_part_update;
-	return 0;
-
-      cleanup:
-	list_iterator_destroy (part_record_iterator);
-	if (buffer)
-		xfree (buffer);
-	return EINVAL;
-}
-
-
-/* 
- * dump_part - dump all configuration information about a specific partition to a buffer
- * input:  dump_part_ptr - pointer to partition for which information is requested
- *         out_line - buffer for partition information 
- *         out_line_size - byte size of out_line
- * output: out_line - set to partition information values
- *         return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
- *       and make the corresponding changes to load_part_config in api/partition_info.c
- */
-int 
-dump_part (struct part_record *part_record_point, char *out_line, int out_line_size) 
-{
-	char *nodes, *default_flag, *key, *state, *allow_groups, *shared;
-
-	if (part_record_point->nodes)
-		nodes = part_record_point->nodes;
-	else
-		nodes = "NONE";
-
-	if (part_record_point == default_part_loc)
-		default_flag = "YES";
-	else
-		default_flag = "NO";
-
-	if (part_record_point->key)
-		key = "YES";
-	else
-		key = "NO";
-
-	if (part_record_point->state_up)
-		state = "UP";
-	else
-		state = "DONW";
-
-	if (part_record_point->shared)
-		shared = "YES";
-	else
-		shared = "NO";
-
-	if (part_record_point->allow_groups)
-		allow_groups = part_record_point->allow_groups;
-	else
-		allow_groups = "ALL";
-
-	if ((strlen(PART_STRUCT_FORMAT) + strlen(part_record_point->name) + 20 +
-	     strlen(nodes) + strlen(allow_groups)) > out_line_size) {
-		error ("dump_node: buffer too small for node %s", part_record_point->name);
-		return 1;
-	}
-
-	sprintf (out_line, PART_STRUCT_FORMAT,
-		 part_record_point->name,
-		 part_record_point->max_nodes,
-		 part_record_point->max_time,
-		 nodes,
-		 key,
-		 default_flag,
-		 allow_groups,
-		 shared,
-		 state,
-		 part_record_point->total_nodes,
-		 part_record_point->total_cpus);
-
-	return 0;
-}
-
-
-/* 
  * find_part_record - find a record for partition with specified name,
  * input: name - name of the desired partition 
  * output: return pointer to node partition or null if not found
@@ -524,6 +385,131 @@ list_find_part (void *part_entry, void *key)
 	if (strncmp (((struct part_record *) part_entry)->name, 
 	    (char *) key, MAX_NAME_LEN) == 0)
 		return 1;
+
+	return 0;
+}
+
+
+/* 
+ * pack_all_part - dump all partition information for all partitions in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: part_list - global list of partition records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change PART_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_part() in api/part_info.c whenever the data format changes
+ */
+int 
+pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+{
+	ListIterator part_record_iterator;
+	struct part_record *part_record_point;
+	int buf_len, buffer_allocated, buffer_offset = 0, error_code;
+	char *buffer;
+	void *buf_ptr;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+	if (*update_time == last_part_update)
+		return 0;
+
+	buffer_allocated = (BUF_SIZE*16);
+	buffer = xmalloc(buffer_allocated);
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
+
+	part_record_iterator = list_iterator_create (part_list);		
+
+	/* write haeader: version and time */
+	pack32  ((uint32_t) PART_STRUCT_VERSION, &buf_ptr, &buf_len);
+	pack32  ((uint32_t) last_part_update, &buf_ptr, &buf_len);
+
+	/* write individual partition records */
+	while ((part_record_point = 
+		(struct part_record *) list_next (part_record_iterator))) {
+		if (part_record_point->magic != PART_MAGIC)
+			fatal ("pack_all_part: data integrity is bad");
+
+		error_code = pack_part(part_record_point, &buf_ptr, &buf_len);
+		if (error_code != 0) continue;
+		if (buf_len > BUF_SIZE) 
+			continue;
+		buffer_allocated += (BUF_SIZE*16);
+		buf_len += (BUF_SIZE*16);
+		buffer_offset = (char *)buf_ptr - buffer;
+		xrealloc(buffer, buffer_allocated);
+		buf_ptr = buffer + buffer_offset;
+	}			
+
+	list_iterator_destroy (part_record_iterator);
+	buffer_offset = (char *)buf_ptr - buffer;
+	xrealloc (buffer, buffer_offset);
+
+	buffer_ptr[0] = buffer;
+	*buffer_size = buffer_offset;
+	*update_time = last_part_update;
+	return 0;
+}
+
+
+/* 
+ * pack_part - dump all configuration information about a specific partition in 
+ *	machine independent form (for network transmission)
+ * input:  dump_part_ptr - pointer to partition for which information is requested
+ *	buf_ptr - buffer for node information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if buffer too small
+ * global: default_part_loc - pointer to the default partition
+ * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
+ *	and make the corresponding changes to load_part_config in api/partition_info.c
+ */
+int 
+pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
+{
+	uint16_t default_part_flag;
+	uint32_t group_size, name_size, node_size;
+
+	if (part_record_point->name)
+		name_size = strlen(part_record_point->name) + 1;
+	else
+		name_size = 0;
+
+	if (part_record_point->allow_groups)
+		group_size = strlen(part_record_point->allow_groups) + 1;
+	else
+		group_size = 0;
+
+	if (part_record_point->nodes)
+		node_size = strlen(part_record_point->nodes) + 1;
+	else
+		node_size = 0;
+
+	if (default_part_loc == part_record_point)
+		default_part_flag = 1;
+	else
+		default_part_flag = 0;
+
+	packstr (part_record_point->name, name_size, buf_ptr, buf_len);
+	pack32  (part_record_point->max_time, buf_ptr, buf_len);
+	pack32  (part_record_point->max_nodes, buf_ptr, buf_len);
+	pack32  (part_record_point->total_nodes, buf_ptr, buf_len);
+	pack32  (part_record_point->total_cpus, buf_ptr, buf_len);
+	pack16  (default_part_flag, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->key, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
+	packstr (part_record_point->allow_groups, group_size, buf_ptr, buf_len);
+	packstr (part_record_point->nodes, node_size, buf_ptr, buf_len);
 
 	return 0;
 }

@@ -10,6 +10,7 @@
 #define MAX_ID_LEN	32
 #define MAX_NAME_LEN	16
 #define NODE_STRUCT_VERSION 1
+#define PART_STRUCT_VERSION 1
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
 
@@ -47,6 +48,27 @@ struct node_buffer {
 	int node_count;		/* count of entries in node_table */
 	void *raw_buffer_ptr;	/* raw network buffer info */
 	struct node_table *node_table_ptr;
+};
+
+struct part_table {
+	char *name;		/* name of the partition */
+	uint32_t max_time;	/* minutes or INFINITE */
+	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
+	uint16_t default_part;	/* 1 if if this is default partition */
+	uint16_t key;		/* 1 if slurm distributed key is required for use  */
+	uint16_t shared;	/* 1 if >1 job can share a node, 2 if required */
+	uint16_t state_up;	/* 1 if state is up, 0 if down */
+	char *nodes;		/* comma delimited list names of nodes in partition */
+	char *allow_groups;	/* comma delimited list of groups, null indicates all */
+};
+
+struct part_buffer {
+	time_t last_update;	/* time of last buffer update */
+	int part_count;		/* count of entries in node_table */
+	void *raw_buffer_ptr;	/* raw network buffer info */
+	struct part_table *part_table_ptr;
 };
 
 /*
@@ -89,16 +111,10 @@ extern void slurm_free_build_info (void);
 extern void slurm_free_node_info (struct node_buffer *node_buffer_ptr);
 
 /*
- * free_job_info - free the job information buffer (if allocated)
- * NOTE: buffer is loaded by load_job and used by load_job_name.
+ * slurm_free_part_info - free the partition information buffer (if allocated)
+ * NOTE: buffer is loaded by load_part.
  */
-extern void free_job_info (void);
-
-/*
- * free_part_info - free the partition information buffer (if allocated)
- * NOTE: buffer is loaded by load_part and used by load_part_name.
- */
-extern void free_part_info (void);
+extern void slurm_free_part_info (struct part_buffer *part_buffer_ptr);
 
 /*
  * slurm_load_build - update the build information buffer for use by info gathering APIs
@@ -139,6 +155,20 @@ extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
 extern int slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr);
 
 /*
+ * slurm_load_part - load the supplied partition information buffer for use by info 
+ *	gathering APIs if partition records have changed since the time specified. 
+ * input: update_time - time of last update
+ *	part_buffer_ptr - place to park part_buffer pointer
+ * output: part_buffer_ptr - pointer to allocated part_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
+ *		ENOMEM if malloc failure
+ * NOTE: the allocated memory at part_buffer_ptr freed by slurm_free_part_info.
+ */
+extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr);
+
+/*
  * slurm_submit - submit/queue a job with supplied contraints. 
  * input: spec - specification of the job's constraints
  *	job_id - place to store id of submitted job
@@ -166,36 +196,6 @@ extern int slurm_submit (char *spec, char **job_id);
  * NOTE: buffer is used by load_job_config and freed by free_job_info.
  */
 extern int load_job (time_t * last_update_time);
-
-/*
- * load_part - update the partition information buffer for use by info gathering APIs if 
- *	partition records have changed since the time specified. 
- * input: last_update_time - pointer to time of last buffer
- * output: last_update_time - time reset if buffer is updated
- *         returns 0 if no error, einval if the buffer is invalid, enomem if malloc failure
- * NOTE: buffer is used by load_part_name and free by free_part_info.
- */
-extern int load_part (time_t * last_update_time);
-
-/* 
- * load_part_name - load the state information about the named partition
- * input: req_name - name of the partition for which information is requested
- *		     if "", then get info for the first partition in list
- *        next_name - location into which the name of the next partition is 
- *                   stored, "" if no more
- *        max_time, etc. - pointers into which the information is to be stored
- * output: req_name - the partition's name is stored here
- *         next_name - the name of the next partition in the list is stored here
- *         max_time, etc. - the partition's state information
- *         returns 0 on success, enoent if not found, or einval if buffer is bad
- * NOTE:  req_name and next_name must be declared by caller with have length MAX_NAME_LEN or larger.
- *        nodes and allow_groups must be declared by caller with length of FEATURE_SIZE or larger.
- * NOTE: buffer is loaded by load_part and free by free_part_info.
- */
-extern int load_part_name (char *req_name, char *next_name, int *max_time,
-		    int *max_nodes, int *total_nodes, int *total_cpus,
-		    int *key, int *state_up, int *shared, int *default_flag,
-		    char *nodes, char *allow_groups);
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf format 
