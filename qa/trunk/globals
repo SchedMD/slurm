@@ -99,6 +99,11 @@ set alpha_under    "\[A-Z_\]+"
 set end_of_line    "\[\r\n\]"
 set number         "\[0-9\]+"
 
+#
+# Cache SlurmUser to check for SuperUser requests
+#
+set super_user     0
+set super_user_set 0
 
 ################################################################
 #
@@ -171,6 +176,7 @@ proc kill_srun {  } {
 	expect {
 		-re "($number)" {
 			set uid $expect_out(1,string)
+			exp_continue
 		}
 		eof {
 			wait
@@ -375,5 +381,76 @@ proc test_front_end { } {
 	}
 
 	return 0
+}
+
+################################################################
+#
+# Proc: test_super_user
+#
+# Purpose: Determine if user is a SLURM super user (i.e. user 
+# root or configured SlurmUser)
+#
+################################################################
+
+proc test_super_user { } {
+	global alpha_numeric bin_id number scontrol super_user super_user_set
+
+	if {$super_user_set != 0} {
+		return $super_user
+	}
+
+#
+#	Check if user root
+#
+	log_user 0
+	spawn $bin_id -u
+	set uid -1
+	expect {
+		-re "($number)" {
+			set uid $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$uid == 0} {
+		log_user 1
+		set super_user 1
+		set super_user_set 1
+		return $super_user
+	}
+
+#
+#	Check if SlurmUser
+#
+	spawn $bin_id -un
+	set user ""
+	expect {
+		-re "($alpha_numeric)" {
+			set user $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	spawn $scontrol show control
+	set slurm_user ""
+	expect {
+		-re "SlurmUser *= ($alpha_numeric)" {
+			set slurm_user $expect_out(1,string)
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {[string compare $user $slurm_user] == 0} {
+		set super_user 1
+	}
+	set super_user_set 1
+	log_user 1
+	return $super_user
 }
 
