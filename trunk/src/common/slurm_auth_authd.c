@@ -67,15 +67,27 @@ typedef struct slurm_auth_credentials {
 	credentials creds;	/* Authd's credential structure. */
 	signature sig;		/* RSA hash for the credentials. */
 } slurm_auth_credentials_t;
-#else
-typedef struct credentials {
+#else /* !HAVE_AUTHD */
+/* XXX: This needs to go away. This module should only be compiled in if
+ *      we have authd. 
+ */
+#include <sys/types.h>
+#include <time.h>
+
+typedef struct authd_credentials {
 	uid_t uid;
 	gid_t gid;
 	time_t valid_from;
 	time_t valid_to;
-}
+} credentials;
+
+typedef struct authd_signature {
+	unsigned char data[1];
+} signature;
+
 typedef struct slurm_auth_credentials {
 	credentials creds;
+	signature   sig;
 } slurm_auth_credentials_t;
 #endif
 
@@ -120,8 +132,19 @@ slurm_auth_verify_credentials( slurm_auth_t cred )
 {
 #ifdef HAVE_AUTHD
 	int rc = auth_verify_signature(&cred->creds, &cred->sig);
-	if (rc < 0)
-		return SLURM_FAILURE;
+	if (rc < 0) {
+		switch (rc) {
+		 case AUTH_FOPEN_ERROR:
+			 slurm_seterrno_ret(ESLURM_AUTH_FOPEN_ERROR);
+		 case AUTH_RSA_ERROR:
+		 case AUTH_CRED_ERROR:
+			 slurm_seterrno_ret(ESLURM_AUTH_CRED_INVALID);
+		 case AUTH_NET_ERROR:
+			 slurm_seterrno_ret(ESLURM_AUTH_NET_ERROR);
+		 default:
+			 slurm_seterrno_ret(ESLURM_AUTH_CRED_INVALID);
+		}
+	}
 #else
 	return SLURM_SUCCESS;
 #endif
