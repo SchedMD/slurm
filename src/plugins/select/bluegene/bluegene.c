@@ -701,6 +701,9 @@ extern int read_bgl_conf(void)
 	/* Check to see if the configs we have are correct */
 	if (!_validate_config_nodes()) { 
 		_delete_old_partitions();
+		/* FIXME: Wait for MMCS to actually complete the 
+		 * partition deletions */
+		sleep(3);
 	}
 	/* looking for partitions only I created */
 	if (create_static_partitions(NULL)) {
