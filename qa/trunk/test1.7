@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -33,9 +33,6 @@ source ./globals
 
 set test_id      "1.7"
 set exit_code    0
-set timed_out    0
-set completions  0
-
 set sleep_time   180
 
 print_header $test_id
@@ -51,6 +48,7 @@ print_header $test_id
 # message gets sent
 #
 set timeout [expr $max_job_delay + $sleep_time]
+set timed_out 0
 spawn $srun -t1 $bin_sleep $sleep_time
 expect {
 	-re "job exceeded timelimit" {
@@ -68,12 +66,16 @@ expect {
 		wait
 	}
 }
+if {$timed_out != 1} {
+	send_user "\nFAILURE: time limit not enforced\n"
+	set exit_code 1
+}
 
-set timeout [expr $max_job_delay + (4 * 60)]
+set completions 0
 spawn $srun -t4 $bin_sleep $sleep_time
 expect {
 	-re "job exceeded timelimit" {
-		incr completions -1
+		set completions -1
 		exp_continue
 	}
 	timeout {
@@ -87,11 +89,11 @@ expect {
 		incr completions
 	}
 }
-
-if {($timed_out < 1) || ($completions != 1)} {
-	send_user "\nFAILURE: time limit controls failed\n"
+if {$completions != 1} {
+	send_user "\nFAILURE: job failed to completed\n"
 	set exit_code 1
 }
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
