@@ -20,7 +20,7 @@ INCLUDES = -I$(top_srcdir)
 #
 # If any interfaces have been removed, set age = 0
 #
-current = 2
+current = 1
 rev     = 0
 age     = 0
 
