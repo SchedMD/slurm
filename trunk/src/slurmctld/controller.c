@@ -75,7 +75,6 @@
 				 * check-in before we ping them */
 #define MAX_SERVER_THREADS 20	/* Max threads to service RPCs */
 #define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
-#define DEFAULT_PIDFILE   "/var/run/slurmctld.pid"
 
 #ifndef MAX
 #  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
@@ -335,7 +334,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int sig;
 	int error_code;
 	sigset_t set;
-	char *pidfile = DEFAULT_PIDFILE;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
 		WRITE_LOCK, WRITE_LOCK
@@ -344,9 +342,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	if (slurmctld_conf.slurmctld_pidfile)
-		pidfile = slurmctld_conf.slurmctld_pidfile;
-	create_pidfile(pidfile);
+	create_pidfile(slurmctld_conf.slurmctld_pidfile);
 
 	if (sigemptyset(&set))
 		error("sigemptyset error: %m");
@@ -2488,11 +2484,8 @@ _init_pidfile(void)
 {
 	int   fd      = -1;
 	uid_t uid     = slurmctld_conf.slurm_user_id;
-	char *pidfile = slurmctld_conf.slurmctld_pidfile;
 
-	pidfile = pidfile ? pidfile : DEFAULT_PIDFILE;
-
-	if ((fd = create_pidfile(pidfile)) < 0) 
+	if ((fd = create_pidfile(slurmctld_conf.slurmctld_pidfile)) < 0) 
 		return;
 
 	if (uid && (fchown(fd, uid, -1) < 0))

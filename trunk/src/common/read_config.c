@@ -778,6 +778,13 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 	if (ctl_conf_ptr->kill_wait == (uint16_t) NO_VAL)
 		ctl_conf_ptr->kill_wait = DEFAULT_KILL_WAIT;
 
+	if (ctl_conf_ptr->slurmctld_pidfile == NULL)
+		ctl_conf_ptr->slurmctld_pidfile = 
+				xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
+
+	if (ctl_conf_ptr->slurmd_pidfile == NULL)
+		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
+
 	if (ctl_conf_ptr->wait_time == (uint16_t) NO_VAL)
 		ctl_conf_ptr->wait_time = DEFAULT_WAIT_TIME;
 }
