@@ -1177,7 +1177,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		 slurm_addr ** node_addr)
 {
 	int error_code;
-	bool no_alloc, top_prio, test_only;
+	bool no_alloc, top_prio, test_only, too_fragmented;
 	struct job_record *job_ptr;
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
 				 &job_ptr, submit_uid);
@@ -1194,16 +1194,30 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		fatal("job_allocate: allocated job %u lacks record",
 		      new_job_id);
 
-	top_prio = _top_priority(job_ptr);
 	/* Avoid resource fragmentation if important */
-	if (switch_no_frag() && top_prio && job_is_completing())
-		top_prio = false;	/* Don't scheduled job right now */
-	if (immediate && (!top_prio)) {
+	if (switch_no_frag() && 
+	    (submit_uid || (job_specs->req_nodes == NULL)) && 
+	    job_is_completing())
+		too_fragmented = true;	/* Don't pick nodes for job now */
+		/* FIXME: Ideally we only want to refuse the request if the 
+		 * required node list is insufficient to satisfy the job's
+		 * processor or node count requirements, but the overhead is
+		 * rather high to do that right here. We let requests from
+		 * user root proceed if a node list is specified, for 
+		 * meta-schedulers (e.g. LCRM). */
+	else
+		too_fragmented = false;
+
+	top_prio = _top_priority(job_ptr);
+	if (immediate && (too_fragmented || (!top_prio))) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
 		job_ptr->end_time   = 0;
 		job_completion_logger(job_ptr);
-		return ESLURM_NOT_TOP_PRIORITY;
+		if (too_fragmented)
+			return ESLURM_FRAGMENTATION;
+		else
+			return ESLURM_NOT_TOP_PRIORITY;
 	}
 
 	test_only = will_run || (allocate == 0);
@@ -1224,7 +1238,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		last_job_update = time(NULL);
 	}
 
-	no_alloc = test_only || (!top_prio);
+	no_alloc = test_only || too_fragmented || (!top_prio);
 
 	error_code = select_nodes(job_ptr, no_alloc);
 	if ((error_code == ESLURM_NODES_BUSY) ||
