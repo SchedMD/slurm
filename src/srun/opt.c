@@ -1223,6 +1223,10 @@ static void _opt_list()
 	info("overcommit     : %s", tf_(opt.overcommit));
 	info("batch          : %s", tf_(opt.batch));
 	info("threads        : %d", opt.max_threads);
+	if (opt.time_limit == INFINITE)
+		info("time_limit     : INFINITE");
+	else
+		info("time_limit     : %d", opt.time_limit);
 	info("wait           : %d", opt.max_wait);
 	str = print_constraints();
 	info("constraints    : %s", str);
