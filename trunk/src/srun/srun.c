@@ -153,6 +153,10 @@ srun(int ac, char **av)
 #endif
 
 	} else if ( (resp = _existing_allocation()) ) {
+		if (opt.allocate) {
+			error("job already has an allocation");
+			exit(1);
+		}
 		old_job = true;
 		job = job_create_allocation(resp); 
 		_create_job_step(job);
