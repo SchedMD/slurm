@@ -89,8 +89,8 @@ static struct userlim ulims[] =
  * Prototypes:
  *
  */
-static long   _get_env_val(char **env, const char *name);
-static int    _set_limit(char **env, struct userlim *ulim);
+static int _get_env_val(char **env, const char *name, unsigned long *valp);
+static int _set_limit(char **env, struct userlim *ulim);
 
 
 /*
@@ -110,14 +110,28 @@ int set_user_limits(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+/*
+ *  Return an rlimit as a string suitable for printing.
+ */
+static char * rlim_to_string (unsigned long rlim, char *buf, size_t n)
+{
+	if (rlim == RLIM_INFINITY)
+		strlcpy (buf, "inf", n);
+	else 
+		snprintf (buf, n, "%lu", rlim);
+	return (buf);
+}
+
 static int
 _set_limit(char **env, struct userlim *u)
 {
-	long          val;
+	unsigned long val;
 	const char *  name = u->var+6;
+	char max[24], cur[24], req[24]; 
 	struct rlimit r;
 
-	if ((val = _get_env_val(env, u->var)) < -1L) {
+
+	if (_get_env_val (env, u->var, &val) < 0) {
 		error ("couldn't find %s in environment", u->var);
 		return SLURM_ERROR;
 	}
@@ -125,19 +139,21 @@ _set_limit(char **env, struct userlim *u)
 	if (getrlimit(u->resource, &r) < 0)
 		error("getrlimit(%s): %m", name);
 
-	debug2("%s: max:%ld cur:%ld req:%ld", name, 
-	       (long)r.rlim_max, (long) r.rlim_cur, (long) val);
+	debug2("%-14s: max:%s cur:%s req:%s", name, 
+	       rlim_to_string (r.rlim_max, max, sizeof (max)),
+	       rlim_to_string (r.rlim_cur, cur, sizeof (cur)),
+	       rlim_to_string (val,        req, sizeof (req)) );
 
 	/* 
 	 *  Only call setrlimit() if new value does not
 	 *   equal current value.
 	 */
 	if (r.rlim_cur != (rlim_t) val) {
-		r.rlim_cur = (val == -1L) ? RLIM_INFINITY : (rlim_t) val;
+		r.rlim_cur = (rlim_t) val;
 
 		if (setrlimit(u->resource, &r) < 0)
 			error("Can't propagate %s of %ld from submit host: %m",
-				name, (long)r.rlim_cur);	
+				name, (long) r.rlim_cur);	
 	}
 
 	unsetenvp(env, u->var); 
@@ -146,27 +162,26 @@ _set_limit(char **env, struct userlim *u)
 }
 
 
-static long
-_get_env_val(char **env, const char *name)
+static int
+_get_env_val(char **env, const char *name, unsigned long *valp)
 {
 	char *val    = NULL;
 	char *p      = NULL;
-	long  retval = 0L; 
 
 	xassert(env  != NULL);
 	xassert(name != NULL);
 
 	if(!(val = getenvp(env, name))) 
-		return -2L;
+		return (-1);
 
-	retval = strtol(val, &p, 10);
+	*valp = strtoul(val, &p, 10);
 
 	if (p && (*p != '\0'))  {
 		error("Invalid %s env var, value = `%s'", name, val);
-		return -2L;
+		return (-1);
 	}
 
-	return retval;
+	return (0);
 }
 
 

@@ -1,9 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.5
+========================
+ -- Fix "SLURM_RLIMIT_* not found in environment" error message when
+    distributing large rlimit to jobs.
+
 * Changes in SLURM 0.3.4
 ========================
- -- Fixes for reported problesm:
+ -- Fixes for reported problems:
    - slurm/404: Explicitly set pthread stack size to 1MB for srun
  -- Allow srun to respond to ctrl-c and kill queued job while waiting
     for allocation from controller.
