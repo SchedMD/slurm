@@ -1089,12 +1089,13 @@ job_cancel (uint32_t job_id, uid_t uid)
  * IN job_id - id of the job which completed
  * IN uid - user id of user issuing the RPC
  * IN requeue - job should be run again if possible
+ * IN job_return_code - job's return code, if set then set state to JOB_FAILED
  * RET - 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int
-job_complete (uint32_t job_id, uid_t uid, bool requeue) 
+job_complete (uint32_t job_id, uid_t uid, bool requeue, uint32_t job_return_code) 
 {
 	struct job_record *job_ptr;
 
@@ -1133,7 +1134,10 @@ job_complete (uint32_t job_id, uid_t uid, bool requeue)
 		job_ptr->job_state = JOB_PENDING;
 		info ("Requeing job %u", job_ptr->job_id);
 	} else {
-		job_ptr->job_state = JOB_COMPLETE;
+		if (job_return_code)
+			job_ptr->job_state = JOB_FAILED;
+		else
+			job_ptr->job_state = JOB_COMPLETE;
 		job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
 		delete_all_step_records(job_ptr);
