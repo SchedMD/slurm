@@ -82,6 +82,8 @@ struct squeue_parameters {
 	List  user_list;
 };
 
+extern struct squeue_parameters params;
+
 int parse_command_line( int argc, char* argv[] );
 
 #endif

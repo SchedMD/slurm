@@ -26,6 +26,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 #include <pwd.h>
 #include <sys/types.h>
 
@@ -33,6 +34,10 @@
 #include <src/common/xmalloc.h>
 
 #include <src/squeue/print.h>
+#include <src/squeue/squeue.h>
+
+static int filter_job( job_info_t * job );
+static int filter_step( job_step_info_t * step );
 
 /*****************************************************************************
  * Global Print Functions
@@ -83,6 +88,8 @@ int print_jobs_array( job_info_t* jobs, int size, List format )
 		print_job_from_format( NULL, format );
 		for (; i<size; i++)
 		{
+			if (filter_job( &jobs[i] ))
+				continue;
 			print_job_from_format( &jobs[i], format );
 		}
 	}
@@ -102,6 +109,8 @@ int print_steps_array( job_step_info_t* steps, int size, List format )
 		print_step_from_format( NULL, format );
 		for (; i<size; i++ )
 		{
+			if (filter_step( &steps[i] ))
+				continue;
 			print_step_from_format( &steps[i], format );
 		}
 	}
@@ -627,3 +636,145 @@ int _print_step_nodes( job_step_info_t* step, int width, bool right_justify )
 	return SLURM_SUCCESS;
 }
 
+/* filter job records per input specifications, returns 1 if job should be filter out (not printed) */
+static int filter_job( job_info_t * job )
+{
+	int filter;
+	ListIterator iterator;
+	uint32_t *job_id, *user;
+	enum job_states *state_id;
+	char *part;
+
+	if (params.job_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.job_list );
+		while ( (job_id = list_next( iterator )) ) {
+			if (*job_id == job->job_id) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 1;
+	}
+
+	if (params.part_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.part_list );
+		while ( (part = list_next( iterator )) ) {
+			if (strcmp (part, job->partition) == 0) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 2;
+	}
+
+	if (params.state_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.state_list );
+		while ( (state_id = list_next( iterator )) ) {
+			if (*state_id == job->job_state) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 3;
+	} else {
+		if ((job->job_state != JOB_PENDING) &&
+		    (job->job_state != JOB_STAGE_IN) && 
+		    (job->job_state != JOB_RUNNING) && 
+		    (job->job_state != JOB_STAGE_OUT)) 
+			return 4;
+	}
+
+	if (params.user_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.user_list );
+		while ( (user = list_next( iterator )) ) {
+			if (*user == job->user_id) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 5;
+	}
+
+	return 0;
+}
+
+/* filter step records per input specifications, returns 1 if step should be filter out (not printed) */
+static int filter_step( job_step_info_t * step )
+{
+	int filter;
+	ListIterator iterator;
+	uint32_t *job_id, *user;
+	char *part;
+	squeue_job_step_t *job_step_id;
+
+	if (params.job_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.job_list );
+		while ( (job_id = list_next( iterator )) ) {
+			if (*job_id == step->job_id) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 1;
+	}
+
+	if (params.part_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.part_list );
+		while ( (part = list_next( iterator )) ) {
+			if (strcmp (part, step->partition) == 0) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 2;
+	}
+
+	if (params.step_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.step_list );
+		while ( (job_step_id = list_next( iterator )) ) {
+			if ((job_step_id->job_id  == step->job_id) &&
+			    (job_step_id->step_id == step->step_id)) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 3;
+	}
+
+	if (params.user_list) {
+		filter = 1;
+		iterator = list_iterator_create( params.user_list );
+		while ( (user = list_next( iterator )) ) {
+			if (*user == step->user_id) {
+				filter = 0;
+				break;
+			}
+		}
+		list_iterator_destroy( iterator );
+		if (filter == 1)
+			return 5;
+	}
+
+	return 0;
+}
