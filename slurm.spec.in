@@ -156,6 +156,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/jobcomp_script.so
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
+%{_libdir}/slurm/select_linear.so
 %{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
 %config(noreplace) /etc/rc.d/init.d/slurm
@@ -228,6 +229,8 @@ fi
 
 
 %changelog
+* Thu Sep 29 2004 Morris Jette <jette1@llnl.gov>
+- Added select_linear.so plugin
 * Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
 - don't allow rpm to strip binaries since this breaks interface to parallel
   debuggers.
