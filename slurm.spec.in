@@ -28,22 +28,14 @@ Requires: openssl >= 0.9.6
 %endif
 
 #
-# Defaults are --with-elan --with-totalview
-# (Use --without [elan|totalview] to disable)
+# Defaults is --with-totalview
+# (Use --without totalview to disable)
 #
-%{!?_with_elan: %{!?_without_elan: %define _with_elan --with-elan}}
 %{!?_with_totalview: %{!?_without_totalview: %define _with_totalview --with-totalview}}
-
-%{?_with_elan:BuildRequires: qsnetlibs}
 
 %package devel
 Summary: Development package for SLURM.
 Group: Development/System
-Requires: slurm
-
-%package auth-none
-Summary: SLURM auth NULL implementation (no authentication)
-Group: System Environment/Base
 Requires: slurm
 
 %package auth-authd
@@ -61,6 +53,11 @@ Summary: SLURM scheduling plugin for the Maui scheduler.
 Group: System Environment/Base
 Requires: slurm
 
+%package switch-elan
+Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
+Group: System Environment/Base
+Requires: slurm qsnetlibs
+
 %description 
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
@@ -71,9 +68,6 @@ partition management, job management, and scheduling modules.
 Development package for SLURM.  This package includes the header files
 and static libraries for the SLURM API.
 
-%description auth-none
-SLURM NULL authentication module 
-
 %description auth-authd
 SLURM authentication module for Brent Chun's authd
 
@@ -83,6 +77,9 @@ SLURM authentication module for Chris Dunlap's Munge
 %description sched-wiki
 SLURM scheduling plugin for the Maui scheduler.
 
+%description switch-elan
+SLURM switch plugin for Quadrics Elan3 or Elan4.
+
 %prep
 %setup -n %{name}-%{version}-%{release}
 
@@ -90,8 +87,6 @@ SLURM scheduling plugin for the Maui scheduler.
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
     --sysconfdir=/etc/slurm		\
     %{?_enable_debug}                   \
-    %{?_with_elan}                      \
-    %{?_without_elan}                   \
     %{?_with_totalview}                 \
     %{?_without_totalview}
 
@@ -141,10 +136,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/*
 %dir /etc/slurm
 %dir %{_libdir}/slurm
+%{_libdir}/slurm/auth_none.so
 %{_libdir}/slurm/jobcomp_none.so
 %{_libdir}/slurm/jobcomp_filetxt.so
 %{_libdir}/slurm/sched_backfill.so
 %{_libdir}/slurm/sched_builtin.so
+%{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
 %config(noreplace) /etc/rc.d/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
@@ -158,14 +155,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/*
 #############################################################################
 
-#%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
-%files auth-none
-%defattr(-,root,root)
-%{_libdir}/slurm/auth_none.so
-#%endif
-#############################################################################
-
-%if %{?_with_munge:1}%{!?_with_munge:0}
+%if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
 %files auth-munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
@@ -184,6 +174,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki.so
 #############################################################################
 
+%if %(test -f %{_libdir}/slurm/switch-elan.so && echo 1 || echo 0)
+%files auth-authd
+%defattr(-,root,root)
+%{_libdir}/slurm/switch-elan.so
+%endif
+#############################################################################
 
 %pre
 #if [ -x /etc/rc.d/init.d/slurm ]; then
@@ -221,6 +217,9 @@ fi
 
 
 %changelog
+* Tue Jan 27 2004 Moe Jette <jette@llnl.gov>
+- package slurm switch plugins - none and elan
+- clean-up handling of auth-none.so processing (part of main slurm RPM)
 * Thu Dec 11 2003 Mark Grondona <mgrondona@llnl.gov>
 - package slurm sched plugins 
 - removed jobcomp-filetxt package -- plugin now part of base package.
