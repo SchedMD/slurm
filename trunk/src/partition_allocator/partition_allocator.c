@@ -437,9 +437,12 @@ void pa_fini()
 		return;
 	}
 
-	list_destroy(path);
-	list_destroy(best_path);
-	list_destroy(bp_map_list);
+	if (path)
+		list_destroy(path);
+	if (best_path)
+		list_destroy(best_path);
+	if (bp_map_list)
+		list_destroy(bp_map_list);
 	_delete_pa_system();
 
 //	printf("pa system destroyed\n");
