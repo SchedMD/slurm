@@ -35,19 +35,20 @@ typedef struct {
 	pa_request_t *request; 
 } allocated_part_t;
 
-void _delete_allocated_parts(List allocated_partitions);
-allocated_part_t *_make_request(pa_request_t *request);
-int _create_allocation(char *com, List allocated_partitions);
-int _remove_allocation(char *com, List allocated_partitions);
-int _alter_allocation(char *com, List allocated_partitions);
-int _copy_allocation(char *com, List allocated_partitions);
-int _save_allocation(char *com, List allocated_partitions);
-void _print_header_command();
-void _print_text_command(allocated_part_t *allocated_part);
+static void	_delete_allocated_parts(List allocated_partitions);
+static allocated_part_t *
+		_make_request(pa_request_t *request);
+static int	_create_allocation(char *com, List allocated_partitions);
+static int	_remove_allocation(char *com, List allocated_partitions);
+static int	_alter_allocation(char *com, List allocated_partitions);
+static int	_copy_allocation(char *com, List allocated_partitions);
+static int	_save_allocation(char *com, List allocated_partitions);
+static void	_print_header_command(void);
+static void	_print_text_command(allocated_part_t *allocated_part);
 
 char error_string[255];
 
-void _delete_allocated_parts(List allocated_partitions)
+static void _delete_allocated_parts(List allocated_partitions)
 {
 	allocated_part_t *allocated_part;
 	
@@ -60,7 +61,7 @@ void _delete_allocated_parts(List allocated_partitions)
 	list_destroy(allocated_partitions);
 }
 
-allocated_part_t *_make_request(pa_request_t *request)
+static allocated_part_t *_make_request(pa_request_t *request)
 {
 	List results = list_create(NULL);
 	ListIterator results_i;		
@@ -70,7 +71,8 @@ allocated_part_t *_make_request(pa_request_t *request)
 	if (!allocate_part(request, results)){
 		memset(error_string,0,255);
 		sprintf(error_string,"allocate failure for %d%d%d", 
-			  request->geometry[0], request->geometry[1], request->geometry[2]);
+			  request->geometry[0], request->geometry[1], 
+			  request->geometry[2]);
 		return NULL;
 	} else {
 				
@@ -90,7 +92,7 @@ allocated_part_t *_make_request(pa_request_t *request)
 
 }
 
-int _create_allocation(char *com, List allocated_partitions)
+static int _create_allocation(char *com, List allocated_partitions)
 {
 	int i=6, i2=-1, i3=0;
 	int len = strlen(com);
@@ -110,19 +112,19 @@ int _create_allocation(char *com, List allocated_partitions)
 		while(com[i-1]!=' ' && i<len) {
 			i++;
 		}
-		if(!strncmp(com+i, "torus", 5) || !strncmp(com+i, "TORUS", 5) || !strncmp(com+i, "Torus", 5)) {
+		if(!strncasecmp(com+i, "torus", 5)) {
 			request->conn_type=TORUS;
 			i+=5;
-		} else if(!strncmp(com+i, "rotate", 6) || !strncmp(com+i, "ROTATE", 6) || !strncmp(com+i, "Rotate", 6)) {
+		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
 			i+=6;
-		} else if(!strncmp(com+i, "elongate", 8) || !strncmp(com+i, "ELONGATE", 8) || !strncmp(com+i, "Elongate", 8)) {
+		} else if(!strncasecmp(com+i, "elongate", 8)) {
 			request->elongate=true;
 			i+=8;
-		} else if(!strncmp(com+i, "force", 5) || !strncmp(com+i, "FORCE", 5) || !strncmp(com+i, "Force", 5)) {
+		} else if(!strncasecmp(com+i, "force", 5)) {
 			request->force_contig=true;				
 			i+=5;
-		} else if(!strncmp(com+i, "proc", 4) || !strncmp(com+i, "PROC", 4) || !strncmp(com+i, "Proc", 4)) {
+		} else if(!strncasecmp(com+i, "proc", 4)) {
 			request->co_proc=true;				
 			i+=4;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
@@ -154,15 +156,18 @@ int _create_allocation(char *com, List allocated_partitions)
 					i2++;
 				if(i2==len){
 					memset(error_string,0,255);
-					sprintf(error_string, "Error in dimension specified, please re-enter");
+					sprintf(error_string, 
+						"Error in dimension specified, please re-enter");
 					break;
 				} 
 				request->geometry[1] = atoi(&com[i2]);
-				i2++;					while(com[i2-1]!='x' && i2<len)
+				i2++;
+				while(com[i2-1]!='x' && i2<len)
 					i2++;
 				if(i2==len){
 					memset(error_string,0,255);
-					sprintf(error_string, "Error in dimension specified, please re-enter");
+					sprintf(error_string, 
+						"Error in dimension specified, please re-enter");
 					break;
 				} 
 				request->geometry[2] = atoi(&com[i2]);
@@ -180,12 +185,19 @@ int _create_allocation(char *com, List allocated_partitions)
 			
 		if(!new_pa_request(request)) {
 			memset(error_string,0,255);
-			if(request->size!=-1)
-			sprintf(error_string, "Problems with request for %d\nEither you put in something that doesn't work,\nor we are unable to process your request.", 
-				  request->size);
-			else
-				sprintf(error_string, "Problems with request for %d%d%d\nEither you put in something that doesn't work,\nor we are unable to process your request.", 
-				  request->geometry[0], request->geometry[1], request->geometry[2]);
+			if(request->size!=-1) {
+				sprintf(error_string, 
+					"Problems with request for %d\n"
+					"Either you put in something that doesn't work,\n"
+					"or we are unable to process your request.", 
+					request->size);
+			} else
+				sprintf(error_string, 
+					"Problems with request for %d%d%d\n"
+					"Either you put in something that doesn't work,\n"
+					"or we are unable to process your request.", 
+					request->geometry[0], request->geometry[1], 
+					request->geometry[2]);
 		} else {
 			if((allocated_part = _make_request(request)) != NULL)
 				list_append(allocated_partitions, allocated_part);
@@ -195,14 +207,13 @@ int _create_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-int _remove_allocation(char *com, List allocated_partitions)
+static int _remove_allocation(char *com, List allocated_partitions)
 {
 	ListIterator results_i;
 	allocated_part_t *allocated_part;
 	int i=6, found=0;
 	int len = strlen(com);
 	char letter;
-	char letter_case = '\0';
 
 	int color_count = 0;		
 	while(com[i-1]!=' ' && i<len) {
@@ -215,26 +226,18 @@ int _remove_allocation(char *com, List allocated_partitions)
 		return 0;
 	} else {
 		letter = com[i];
-		if(letter>91) {
-			letter_case = letter-32;
-		} else {
-			letter_case = letter+32;
-		}
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			if(found) {
-				redo_part(allocated_part->nodes, allocated_part->request->conn_type, color_count);
-				if(allocated_part->request->conn_type==TORUS) 
-					allocated_part->letter = 
-						pa_system_ptr->fill_in_value[color_count].letter;
-				
-				else 
-					allocated_part->letter =
-						pa_system_ptr->fill_in_value[color_count+32].letter;
+				redo_part(allocated_part->nodes, 
+					allocated_part->request->conn_type, 
+					color_count);
+				allocated_part->letter = 
+					pa_system_ptr->fill_in_value[color_count].letter;
 				allocated_part->color =
-						pa_system_ptr->fill_in_value[color_count].color;
+					pa_system_ptr->fill_in_value[color_count].color;
 				
-			} else if((allocated_part->letter == letter) || (allocated_part->letter == letter_case)) {
+			} else if(allocated_part->letter == letter) {
 				found=1;
 				remove_part(allocated_part->nodes,color_count);
 				list_destroy(allocated_part->nodes);
@@ -250,7 +253,7 @@ int _remove_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-int _alter_allocation(char *com, List allocated_partitions)
+static int _alter_allocation(char *com, List allocated_partitions)
 {
 	int torus=MESH, i=5, i2=0;
 	int len = strlen(com);
@@ -264,19 +267,19 @@ int _alter_allocation(char *com, List allocated_partitions)
 		while(com[i-1]!=' ' && i<len) {
 			i++;
 		}
-		if(!strncmp(com+i, "torus", 5)) {
+		if(!strncasecmp(com+i, "torus", 5)) {
 			torus=TORUS;
 			i+=5;
-		} else if(!strncmp(com+i, "rotate", 6)) {
+		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			rotate=true;
 			i+=6;
-		} else if(!strncmp(com+i, "elongate", 8)) {
+		} else if(!strncasecmp(com+i, "elongate", 8)) {
 			elongate=true;
 			i+=8;
-		} else if(!strncmp(com+i, "force", 5)) {
+		} else if(!strncasecmp(com+i, "force", 5)) {
 			force_contig=true;				
 			i+=5;
-		} else if(!strncmp(com+i, "proc", 4)) {
+		} else if(!strncasecmp(com+i, "proc", 4)) {
 			co_proc=true;				
 			i+=4;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
@@ -290,7 +293,7 @@ int _alter_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-int _copy_allocation(char *com, List allocated_partitions)
+static int _copy_allocation(char *com, List allocated_partitions)
 {
 	ListIterator results_i;
 	allocated_part_t *allocated_part;
@@ -299,24 +302,19 @@ int _copy_allocation(char *com, List allocated_partitions)
 	int i=4;
 	int len = strlen(com);
 	char letter = '\0';
-	char letter_case = '\0';
 
 	while(com[i-1]!=' ' && i<len) {
 		i++;
 	}
 	
-	if(i<len) {
+	if(i<len)
 		letter = com[i];
-		if(letter>91) {
-			letter_case = letter-32;
-		} else {
-			letter_case = letter+32;
-		}
-	}
 	request->geometry[X] = -1;
 		
 	results_i = list_iterator_create(allocated_partitions);
 	while((allocated_part = list_next(results_i)) != NULL) {
+		if(allocated_part->letter != letter)
+			continue;
 		request->geometry[X] = allocated_part->request->geometry[X];
 		request->geometry[Y] = allocated_part->request->geometry[Y];
 		request->geometry[Z] = allocated_part->request->geometry[Z];
@@ -326,26 +324,33 @@ int _copy_allocation(char *com, List allocated_partitions)
 		request->elongate = allocated_part->request->elongate;
 		request->force_contig = allocated_part->request->force_contig;
 		request->co_proc = allocated_part->request->co_proc;
-		if((allocated_part->letter == letter) || (allocated_part->letter == letter_case)) {
-			break;
-		}
+		break;
 	}
-	list_iterator_destroy(results_i);			
-	
-	if(request->geometry[X]==-1) {
+	list_iterator_destroy(results_i);
+
+	if(request->geometry[X] == -1) {
 		memset(error_string,0,255);
-		sprintf(error_string, "Problem with the copy\nAre you sure there is enough room for it?");
+		sprintf(error_string, "Could not find requested record to copy");
+		xfree(request);
 		return 0;
 	}
+
 	request->rotate_count= 0;
 	request->elongate_count = 0;
 		
-	if((allocated_part = _make_request(request)) != NULL)
+	if((allocated_part = _make_request(request)) != NULL) {
 		list_append(allocated_partitions, allocated_part);
-	return 1;
+		return 1;
+	}
+
+	memset(error_string,0,255);
+	sprintf(error_string, "Problem with the copy\n"
+		"Are you sure there is enough room for it?");
+	xfree(request);
+	return 0;
 }
 
-int _save_allocation(char *com, List allocated_partitions)
+static int _save_allocation(char *com, List allocated_partitions)
 {
 	int len = strlen(com);
 	int i=5, j=0;
@@ -373,12 +378,14 @@ int _save_allocation(char *com, List allocated_partitions)
 		sprintf(filename,"bluegene.conf.%ld",pa_system_ptr->now_time);
 	}
 	file_ptr = fopen(filename,"w");
-	if (file_ptr!=NULL)
-	{
+	if (file_ptr!=NULL) {
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
-			sprintf(save_string, "Nodes=bgl[%s] Type=%d Use=%d\n", allocated_part->request->save_name, allocated_part->request->conn_type, allocated_part->request->co_proc);
+			sprintf(save_string, "Nodes=bgl[%s] Type=%d Use=%d\n", 
+				allocated_part->request->save_name, 
+				allocated_part->request->conn_type, 
+				allocated_part->request->co_proc);
 			
 			fputs (save_string,file_ptr);
 		}
@@ -387,7 +394,7 @@ int _save_allocation(char *com, List allocated_partitions)
 	return 1;
 }
 
-void _print_header_command()
+static void _print_header_command(void)
 {
 	pa_system_ptr->ycord=2;
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
@@ -420,7 +427,7 @@ void _print_header_command()
 	pa_system_ptr->ycord++;
 }
 
-void _print_text_command(allocated_part_t *allocated_part)
+static void _print_text_command(allocated_part_t *allocated_part)
 {
 	wattron(pa_system_ptr->text_win,
 		COLOR_PAIR(allocated_part->color));
@@ -548,21 +555,29 @@ void get_command(void)
 			_delete_allocated_parts(allocated_partitions);
 			pa_fini();
 			exit(0);
-		} else if (!strncmp(com, "resume", 6)) {
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord, pa_system_ptr->xcord, "%s", com);
-		} else if (!strncmp(com, "drain", 5)) {
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord, pa_system_ptr->xcord, "%s", com);
-		} else if (!strncmp(com, "remove", 6) || !strncmp(com, "delete", 6) || !strncmp(com, "drop", 4)) {
+		} else if (!strncasecmp(com, "resume", 6)) {
+			mvwprintw(pa_system_ptr->text_win,
+				pa_system_ptr->ycord,
+				pa_system_ptr->xcord, "%s", com);
+		} else if (!strncasecmp(com, "drain", 5)) {
+			mvwprintw(pa_system_ptr->text_win, 
+				pa_system_ptr->ycord, 
+				pa_system_ptr->xcord, "%s", com);
+		} else if (!strncasecmp(com, "remove", 6)
+			|| !strncasecmp(com, "delete", 6) 
+			|| !strncasecmp(com, "drop", 4)) {
 			_remove_allocation(com, allocated_partitions);
-		} else if (!strncmp(com, "alter", 5)) {
+		} else if (!strncasecmp(com, "alter", 5)) {
 			_alter_allocation(com, allocated_partitions);
-		} else if (!strncmp(com, "create", 6)) {
+		} else if (!strncasecmp(com, "create", 6)) {
 			_create_allocation(com, allocated_partitions);
-		} else if (!strncmp(com, "copy", 4) || !strncmp(com, "c ", 2) || !strncmp(com, "c\0", 2)) {
+		} else if (!strncasecmp(com, "copy", 4)
+			|| !strncasecmp(com, "c ", 2) 
+			|| !strncasecmp(com, "c\0", 2)) {
 			_copy_allocation(com, allocated_partitions);
-		} else if (!strncmp(com, "save", 4)) {
+		} else if (!strncasecmp(com, "save", 4)) {
 			_save_allocation(com, allocated_partitions);
-		} else if (!strncmp(com, "clear all", 9)) {
+		} else if (!strncasecmp(com, "clear all", 9)) {
 			_delete_allocated_parts(allocated_partitions);
 			allocated_partitions = list_create(NULL);
 		} else {

@@ -122,7 +122,7 @@ extern int quiet_flag;
 void init_grid(node_info_msg_t * node_info_ptr);
 extern int set_grid(int start, int end, int count);
 extern int set_grid_bgl(int startx, int starty, int startz, 
-		int endx, int endy, int endz, int count, bool lower);
+		int endx, int endy, int endz, int count);
 extern void print_grid(void);
 
 void parse_command_line(int argc, char *argv[]);

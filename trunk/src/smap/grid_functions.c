@@ -56,10 +56,10 @@ extern int set_grid(int start, int end, int count)
 }
 
 extern int set_grid_bgl(int startx, int starty, int startz, 
-		int endx, int endy, int endz, int count, bool lower)
+		int endx, int endy, int endz, int count)
 {
 	int x, y, z;
-	int i = 0, offset;
+	int i = 0;
 	assert(endx < DIM_SIZE[X]);
 	assert(startx >= 0);
 	assert(endy < DIM_SIZE[Y]);
@@ -69,17 +69,12 @@ extern int set_grid_bgl(int startx, int starty, int startz,
 	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
 
-	if (lower)
-		offset = 32;
-	else
-		offset = 0;
-
 	for (x = startx; x <= endx; x++) {
 		for (y = starty; y <= endy; y++) {
 			for (z = startz; z <= endz; z++) {
 				pa_system_ptr->grid[x][y][z].letter = 
 					pa_system_ptr->
-					fill_in_value[count].letter + offset;
+					fill_in_value[count].letter;
 				pa_system_ptr->grid[x][y][z].color = 
 					pa_system_ptr->
 					fill_in_value[count].color;
