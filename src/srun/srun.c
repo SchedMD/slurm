@@ -104,16 +104,14 @@ main(int ac, char **av)
 		qsw_standalone(job);
 #endif
 	} else {
-		resp = allocate_nodes();
+		if (!(resp = allocate_nodes())) {
+			info("No nodes allocated. exiting");
+			exit(1);
+		}
 		if (_verbose || _debug)
 			print_job_information(resp);
 		else
 			printf("jobid %d\n", resp->job_id); 
-		
-		if (!resp->node_list) {
-		 	info("No nodes allocated. exiting");
-			exit(1);
-		}
 
 		job = job_create(resp); 
 		create_job_step(job);
@@ -173,11 +171,14 @@ main(int ac, char **av)
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
 		debug3("main thread woke up, state is now %d", job->state);
 	}
+	pthread_mutex_unlock(&job->state_mutex);
 
 	/* job is now overdone, blow this popsicle stand  */
 
-	if (!opt.no_alloc)
+	if (!opt.no_alloc) {
+		debug("cancelling job %d", job->jobid);
 		slurm_complete_job(job->jobid);
+	}
 
 	/* kill launch thread */
 	pthread_kill(job->lid, SIGTERM);
