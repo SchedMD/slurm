@@ -43,8 +43,8 @@
 char* bgl_conf = BLUEGENE_CONFIG_FILE;
 
 /* Global variables */
-List bgl_list;				/* list of bgl_record entries */
-List bgl_conf_list;			/* list of bgl_conf_record entries */
+List bgl_list = NULL;			/* list of bgl_record entries */
+List bgl_conf_list = NULL;		/* list of bgl_conf_record entries */
 
 #define SWAP(a,b,t)	\
 _STMT_START {	\
@@ -266,7 +266,7 @@ extern int read_bgl_conf()
 	while (fgets(in_line, BUFSIZE, bgl_spec_file) != NULL) {
 		line_num++;
 		if (strlen(in_line) >= (BUFSIZE - 1)) {
-			error("_read_bgl_config line %d, of input file %s "
+			error("read_bgl_config line %d, of input file %s "
 			      "too long", 
 			      line_num, bgl_conf);
 			fclose(bgl_spec_file);
@@ -508,7 +508,7 @@ extern int init_bgl(void)
 #endif
 	/** global variable */
 	bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
-	init_BGL_PARTITION_NUM();
+	init_bgl_partition_num();
 
 	return SLURM_SUCCESS;
 }
