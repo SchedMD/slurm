@@ -98,14 +98,14 @@ if {[string compare $host_2 ""] == 0} {
 	send_user "\nFAILURE: Did not get hostname of task 2\n"
 	set exit_code   1	
 }
+if {[test_front_end] != 0} {
+	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
+#	On blue gene we could get extra tasks
+	exit $exit_code
+}
 if {[string compare $host_3 ""] != 0} {
 	send_user "\nFAILURE: Started more than three tasks\n"
 	set exit_code   1	
-}
-
-if {[test_front_end] != 0} {
-	send_user "\nWARNING: Additional testing is incompatable with front-end systems\n"
-	exit $exit_code
 }
 
 set dup_hostname 0
