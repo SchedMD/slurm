@@ -116,6 +116,7 @@ static void *       _service_connection(void *arg);
 static int          _shutdown_backup_controller(void);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
+inline static void  _slurm_rpc_batch_launch_resp(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
@@ -744,6 +745,10 @@ static void _slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_UPDATE_PARTITION:
 		_slurm_rpc_update_partition(msg);
 		slurm_free_update_part_msg(msg->data);
+		break;
+	case RESPONSE_BATCH_JOB_LAUNCH:
+		_slurm_rpc_batch_launch_resp(msg);
+		slurm_free_batch_resp_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC message type %d", msg->msg_type);
@@ -1863,7 +1868,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 {
 	/* init */
-	int error_code = 0;
+	int error_code = SLURM_SUCCESS;
 	clock_t start_time;
 	slurm_node_registration_status_msg_t *node_reg_stat_msg =
 	    (slurm_node_registration_status_msg_t *) msg->data;
@@ -1913,6 +1918,27 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		   (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 	}
+}
+
+/* Process RPC registering batch job launch */
+static void  _slurm_rpc_batch_launch_resp(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	uid_t uid;
+	batch_launch_response_msg_t *launch_resp_msg =
+	    (batch_launch_response_msg_t *) msg->data;
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
+		NO_LOCK, NO_LOCK };
+
+	debug("Processing RPC: RESPONSE_BATCH_JOB_LAUNCH");
+	uid = slurm_auth_uid(msg->cred);
+
+	/* do RPC call */
+	lock_slurmctld(job_write_lock);
+	(void) set_batch_job_sid(uid, launch_resp_msg->job_id, 
+				 launch_resp_msg->sid);
+	unlock_slurmctld(job_write_lock);
 }
 
 /*
