@@ -52,7 +52,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 
-#if HAVE_LIBELAN3
+#if HAVE_ELAN
 #  include "src/common/qsw.h"
 #endif
 
@@ -479,7 +479,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = node_cnt;
 		alloc_msg.node_addr      = node_addr;
 		alloc_msg.cred           = slurm_cred;
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 		alloc_msg.qsw_job = qsw_copy_jobinfo(step_rec->qsw_job);
 #endif
 		unlock_slurmctld(job_write_lock);
@@ -489,7 +489,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_id);
 		slurm_cred_destroy(slurm_cred);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 		qsw_free_jobinfo(alloc_msg.qsw_job);
 #endif
 		(void) dump_all_job_state();	/* Has its own locks */
@@ -920,7 +920,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.node_list   = xstrdup(step_rec->step_node_list);
 		job_step_resp.cred        = slurm_cred;
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 		job_step_resp.qsw_job =  qsw_copy_jobinfo(step_rec->qsw_job);
 #endif
 		unlock_slurmctld(job_write_lock);
@@ -931,7 +931,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		xfree(job_step_resp.node_list);
 		slurm_cred_destroy(slurm_cred);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 		qsw_free_jobinfo(job_step_resp.qsw_job);
 #endif
 		(void) dump_all_job_state();	/* Sets own locks */

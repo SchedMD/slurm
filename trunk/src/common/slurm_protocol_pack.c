@@ -43,6 +43,10 @@
 #include "src/common/slurm_protocol_pack.h"
 #include "src/common/xmalloc.h"
 
+#if HAVE_ELAN
+#  include "src/common/qsw.h"
+#endif
+
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 
@@ -847,7 +851,7 @@ static void
 	_pack_slurm_addr_array(msg->node_addr, msg->node_cnt, buffer);
 
 	slurm_cred_pack(msg->cred, buffer);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_pack_jobinfo(msg->qsw_job, buffer);
 #endif
 }
@@ -898,7 +902,7 @@ static int
 	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
 	if (qsw_unpack_jobinfo(tmp_ptr->qsw_job, buffer) < 0) {
 		error("qsw_unpack_jobinfo: %m");
@@ -1209,7 +1213,7 @@ _pack_job_step_create_response_msg(job_step_create_response_msg_t * msg,
 	pack32(msg->job_step_id, buffer);
 	packstr(msg->node_list, buffer);
 	slurm_cred_pack(msg->cred, buffer);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_pack_jobinfo(msg->qsw_job, buffer);
 #endif
 
@@ -1232,7 +1236,7 @@ _unpack_job_step_create_response_msg(job_step_create_response_msg_t ** msg,
 	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
 	if (qsw_unpack_jobinfo(tmp_ptr->qsw_job, buffer)) {
 		error("qsw_unpack_jobinfo: %m");
@@ -2029,7 +2033,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack32(msg->slurmd_debug, buffer);
 	pack32_array(msg->global_task_ids,
 		     msg->tasks_to_launch, buffer);
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_pack_jobinfo(msg->qsw_job, buffer);
 #endif
 }
@@ -2068,7 +2072,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	if (msg->tasks_to_launch != uint32_tmp)
 		goto unpack_error;
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_alloc_jobinfo(&msg->qsw_job);
 	if (qsw_unpack_jobinfo(msg->qsw_job, buffer) < 0) {
 		error("qsw_unpack_jobinfo: %m");

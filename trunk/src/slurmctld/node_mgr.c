@@ -1141,7 +1141,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		node_ptr->cpus = cpus;
 		node_ptr->real_memory = real_memory;
 		node_ptr->tmp_disk = tmp_disk;
-#ifdef 		HAVE_LIBELAN3
+#ifdef 		HAVE_ELAN
 		/* Every node in a given partition must have the same 
 		 * processor count at present */
 		if ((slurmctld_conf.fast_schedule == 0) &&

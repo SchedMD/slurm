@@ -36,7 +36,7 @@
 #      include <stdint.h>
 #    endif
 #  endif			/* HAVE_INTTYPES_H */
-#  ifdef HAVE_LIBELAN3
+#  if HAVE_ELAN
 #    include <src/common/qsw.h>
 #  endif
 #else				/* !HAVE_CONFIG_H */
@@ -252,7 +252,7 @@ typedef struct launch_tasks_request_msg {
 
 	slurm_cred_t cred;	/* job credential            */
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context */
 #endif
 } launch_tasks_request_msg_t;

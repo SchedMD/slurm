@@ -259,7 +259,7 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg->ofname);
 	xfree(msg->ofname);
 
-#	ifdef HAVE_LIBELAN3
+#	ifdef HAVE_ELAN
 	qsw_free_jobinfo(msg->qsw_job);
 #	endif
 

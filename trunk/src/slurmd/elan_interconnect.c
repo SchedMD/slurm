@@ -33,7 +33,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include <pthread.h>
-#include <elan3/elan3.h>
+
 
 #include <slurm/slurm_errno.h>
 
@@ -50,6 +50,8 @@
 #include "src/slurmd/setenvpf.h"
 #include "src/slurmd/elanhosts.h"
 
+#ifdef HAVE_LIBELAN3
+#  include <elan3/elan3.h>
 /*
  * Static prototypes for network error resolver creation:
  */
@@ -62,6 +64,8 @@ static pthread_t       neterr_tid;
 static pthread_mutex_t neterr_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  neterr_cond  = PTHREAD_COND_INITIALIZER;
 
+#endif /* HAVE_LIBELAN3 */
+
 
 /*  Initialize node for use of the Elan interconnect by loading 
  *   elanid/hostname pairs then spawning the Elan network error
@@ -72,8 +76,13 @@ static pthread_cond_t  neterr_cond  = PTHREAD_COND_INITIALIZER;
  */
 int interconnect_node_init(void)
 {
+#if HAVE_LIBELAN3
 	int err = 0;
 	pthread_attr_t attr;
+
+        /* 
+         *  We only know how to do this for Elan3 right now
+         */
 
 	/*
 	 *  Load neterr elanid/hostname values into kernel 
@@ -101,8 +110,15 @@ int interconnect_node_init(void)
 	pthread_mutex_unlock(&neterr_mutex);
 
 	return neterr_retval;
+
+#else  /* !HAVE_LIBELAN3 */
+
+        return SLURM_SUCCESS;
+#endif /*  HAVE_LIBELAN3 */
+
 }
 
+#if HAVE_LIBELAN3
 static void *neterr_thr(void *arg)
 {	
 	debug3("Starting Elan network error resolver thread");
@@ -174,6 +190,8 @@ load_neterr_data(void)
 	return rc < 0 ? SLURM_FAILURE :  SLURM_SUCCESS;
 }
 
+#endif /* HAVE_LIBELAN3 */
+
 
 /*
  *  Called from slurmd just before termination.
@@ -183,12 +201,15 @@ load_neterr_data(void)
 int 
 interconnect_node_fini(void)
 {
+#if HAVE_LIBELAN3
 	int err = pthread_cancel(neterr_tid);
 	if (err == 0) 
 		return SLURM_SUCCESS;
 
 	error("Unable to cancel neterr thread: %s", slurm_strerror(err));
 	return SLURM_FAILURE;
+#endif /* HAVE_LIBELAN3 */
+        return SLURM_SUCCESS;
 }
 
 
@@ -303,6 +324,9 @@ interconnect_attach(slurmd_job_t *job, int procid)
 	return SLURM_SUCCESS;
 }
 
+
+#if HAVE_LIBELAN3
+
 static int
 set_elan_ids(elanhost_config_t ec)
 {
@@ -319,3 +343,5 @@ set_elan_ids(elanhost_config_t ec)
 
 	return 0;
 }
+
+#endif

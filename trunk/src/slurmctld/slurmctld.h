@@ -45,9 +45,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 #  include "src/common/qsw.h"
-#endif				/* HAVE_LIBELAN3 */
+#endif				/* HAVE_ELAN */
 
 #ifdef WITH_PTHREADS
 #  include <pthread.h>
@@ -315,7 +315,7 @@ struct 	step_record {
 					   step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
-#ifdef HAVE_LIBELAN3
+#ifdef HAVE_ELAN
 	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque */
 #endif
 };
