@@ -496,8 +496,10 @@ _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 		_io_add_connecting(j, t, s, CLIENT_STDIN);
 	}
 
-	if (!list_find_first(t->srun_list, (ListFindF) find_obj, s))
+	if (!list_find_first(t->srun_list, (ListFindF) find_obj, s)) {
+		debug("appending new client to srun_list for task %d", t->gid);
 		list_append(t->srun_list, (void *) s);
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -1187,7 +1189,8 @@ _write(io_obj_t *obj, List objs)
 			return 0;
 		if ((errno == EPIPE) || (errno == EINVAL) || (errno == EBADF))
 			_obj_close(obj, objs);
-		error("write failed: <task %d>: %m", io->id);
+		else
+			error("write failed: <task %d>: %m", io->id);
 		return -1;
 	}
 

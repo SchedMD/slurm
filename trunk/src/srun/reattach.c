@@ -470,7 +470,12 @@ int reattach()
 		log_set_argv0(new_argv0);
 	}
 
-/*	if (opt.join)    MARK: IS THIS NEEDED?? */
+	/*
+	 * mask and handle certain signals iff we are "joining" with
+	 * the job in question. If opt.join is off, attached srun is in
+	 * "read-only" mode and cannot forward stdin/signals.
+	 */
+	if (opt.join)
 		sig_setup_sigmask();
 
 	if (msg_thr_create(job) < 0) {
@@ -512,6 +517,6 @@ int reattach()
 
 static bool _job_all_done(job_t *job)
 {
-	return (job->state == SRUN_JOB_DETACHED);
+	return (job->state >= SRUN_JOB_TERMINATED);
 }
 

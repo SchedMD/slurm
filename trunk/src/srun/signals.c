@@ -95,6 +95,7 @@ sig_setup_sigmask(void)
 	sigaddset(&sigset, SIGQUIT);
 	sigaddset(&sigset, SIGTSTP);
 	sigaddset(&sigset, SIGSTOP);
+	sigaddset(&sigset, SIGCONT);
 
 	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0) {
 		error("sigprocmask: %m");
@@ -204,6 +205,7 @@ _sig_thr_setup(sigset_t *set)
 	sigaddset(set, SIGQUIT);
 	sigaddset(set, SIGTSTP);
 	sigaddset(set, SIGSTOP);
+	sigaddset(set, SIGCONT);
 	if ((rc = pthread_sigmask(SIG_BLOCK, set, NULL)) != 0)
 		error ("pthread_sigmask: %s", slurm_strerror(rc));
 }
@@ -229,8 +231,13 @@ _sig_thr(void *arg)
 			  _handle_intr(job, &last_intr, &last_intr_sent);
 			  break;
 		  case SIGSTOP:
-		  case SIGTSTP:
 			debug3("Ignoring SIGSTOP");
+			break;
+		  case SIGTSTP:
+			debug3("got SIGTSTP");
+			break;
+		  case SIGCONT:
+			debug3("got SIGCONT");
 			break;
 		  case SIGQUIT:
 			info("Quit");
