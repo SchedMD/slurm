@@ -871,7 +871,7 @@ node_name2list (char *node_names, char **node_list, int *node_count)
 			xfree(buffer);
 			xfree (my_node_list);
 			xfree (format);
-			return EINVAL;
+			return ESLURM_INVALID_NODE_NAME;
 		}
 		for (i = start_inx; i <= end_inx; i++) {
 			if (count_inx == 0)
@@ -885,7 +885,7 @@ node_name2list (char *node_names, char **node_list, int *node_count)
 				xfree(buffer);
 				xfree (my_node_list);
 				xfree (format);
-				return EINVAL;
+				return ESLURM_INVALID_NODE_NAME;
 			}
 			if ((buf_rec_inx+1) >= buf_recs) {
 				buf_recs += 200;
@@ -1210,11 +1210,7 @@ split_node_name (char *name, char *prefix, char *suffix, int *index,
 
 /* 
  * update_node - update the configuration data for one or more nodes
- * input: node_names - node names, may contain regular expression
- *        spec - the updates to the node's specification 
- * output:  return - 0 if no error, otherwise an error code
  * global: node_record_table_ptr - pointer to global node table
- * NOTE: the contents of spec are overwritten by white space
  */
 int 
 update_node ( update_node_msg_t * update_node_msg ) 
@@ -1228,7 +1224,7 @@ update_node ( update_node_msg_t * update_node_msg )
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s\n", update_node_msg -> node_names );
-		return EINVAL;
+		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	state_val = update_node_msg -> node_state ; 
@@ -1237,11 +1233,12 @@ update_node ( update_node_msg_t * update_node_msg )
 	if (error_code)
 		return error_code;
 
+	last_node_update = time (NULL);
 	for (i = 0; i < node_count; i++) {
 		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
 		if (node_record_point == NULL) {
 			error ("update_node: node name %s does not exist, can not be updated", &node_list[i*MAX_NAME_LEN]);
-			error_code = EINVAL;
+			error_code = ESLURM_INVALID_NODE_NAME;
 			break;
 		}
 

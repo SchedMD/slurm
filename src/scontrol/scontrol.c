@@ -36,7 +36,7 @@
 static char *command_name;
 static int exit_flag;			/* program to terminate if =1 */
 static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
-static int input_words;		/* number of words of input permitted */
+static int input_words;			/* number of words of input permitted */
 
 void dump_command (int argc, char *argv[]);
 int get_command (int *argc, char *argv[]);
@@ -47,6 +47,9 @@ void print_node_list (char *node_list);
 void print_part (char *partition_name);
 int process_command (int argc, char *argv[]);
 int update_it (int argc, char *argv[]);
+int update_job (int argc, char *argv[]);
+int update_node (int argc, char *argv[]);
+int update_part (int argc, char *argv[]);
 void usage ();
 
 int 
@@ -658,38 +661,110 @@ process_command (int argc, char *argv[])
 int
 update_it (int argc, char *argv[]) 
 {
-	char *in_line;
-	int error_code, i, in_line_size;
+	int error_code, i;
 
 	error_code = 0;
-	in_line_size = BUF_SIZE;
-	in_line = (char *) xmalloc (in_line_size);
-	if (in_line == NULL) {
-		fprintf (stderr, "%s: error %d allocating memory\n",
-			 command_name, errno);
-		return ENOMEM;
-	}			
-	strcpy (in_line, "");
-
-	for (i = 0; i < argc; i++) {
-		if ((strlen (in_line) + strlen (argv[i]) + 2) > in_line_size) {
-			in_line_size += BUF_SIZE;
-			xrealloc (in_line, in_line_size);
-			if (in_line == NULL) {
-				fprintf (stderr,
-					 "%s: error %d allocating memory\n",
-					 command_name, errno);
-				return ENOMEM;
-			}	
-		}		
-
-		strcat (in_line, argv[i]);
-		strcat (in_line, " ");
-	}			
-
-/*	error_code = slurm_update_config (in_line); */
-	xfree (in_line);
+	/* First identify the entity to update */
+	for (i=0; i<argc; i++) {
+		if (strncmp (argv[i], "NodeName=", 9) == 0) {
+			error_code = update_node (argc, argv);
+			break;
+		}
+		else if (strncmp (argv[i], "PartitionName=", 14) == 0) {
+			error_code = update_part (argc, argv);
+			break;
+		}
+		else if (strncmp (argv[i], "JobId=", 6) == 0) {
+			error_code = update_job (argc, argv);
+			break;
+		}
+	}
+	
+	if (i >= argc) {	
+		printf("No valid entity in update command\n");
+		printf("Input line must include \"NodeName\", \"PartitionName\", or \"JobId\"\n");
+		error_code = EINVAL;
+	}
+	else if (error_code) {
+		printf("errorno=%d\n",error_code);
+	}
 	return error_code;
+}
+
+/* 
+ * update_job - update the slurm job configuration per the supplied arguments 
+ * input: argc - count of arguments
+ *        argv - list of arguments
+ * output: returns 0 if no error, errno otherwise
+ */
+int
+update_job (int argc, char *argv[]) 
+{
+	printf("Not yet implemented\n");
+	return EINVAL;
+}
+
+/* 
+ * update_node - update the slurm node configuration per the supplied arguments 
+ * input: argc - count of arguments
+ *        argv - list of arguments
+ * output: returns 0 if no error, errno otherwise
+ */
+int
+update_node (int argc, char *argv[]) 
+{
+	int error_code, i, j, k;
+	uint16_t state_val;
+	update_node_msg_t node_msg;
+
+	error_code = 0;
+	node_msg.node_names = NULL;
+	node_msg.node_state = (uint16_t) NO_VAL;
+	for (i=0; i<argc; i++) {
+		if (strncmp(argv[i], "NodeName=", 9) == 0)
+			node_msg.node_names = &argv[i][9];
+		else if (strncmp(argv[i], "State=", 6) == 0) {
+			state_val = (uint16_t) NO_VAL;
+			for (j = 0; j <= NODE_STATE_END; j++) {
+				if (strcmp (node_state_string(j), "END") == 0) {
+					fprintf (stderr, "Invalid input: %s\n", argv[i]);
+					fprintf (stderr, "Request aborted\n Valid states are:");
+					for (k = 0; k <= NODE_STATE_END; k++) {
+						fprintf (stderr, "%s ", node_state_string(k));
+					}
+					fprintf (stderr, "\n");
+					return EINVAL;
+				}
+				if (strcmp (node_state_string(j), &argv[i][6]) == 0) {
+					state_val = (uint16_t) j;
+					break;
+				}
+			}	
+			node_msg.node_state = state_val;
+		}
+		else {
+			fprintf (stderr, "Invalid input: %s\n", argv[i]);
+			fprintf (stderr, "Request aborted\n");
+			return EINVAL;
+		}
+	}
+
+printf("Node=%s,State=%u\n",node_msg.node_names,node_msg.node_state);
+	error_code = slurm_update_node(&node_msg);
+	return error_code;
+}
+
+/* 
+ * update_part - update the slurm partition configuration per the supplied arguments 
+ * input: argc - count of arguments
+ *        argv - list of arguments
+ * output: returns 0 if no error, errno otherwise
+ */
+int
+update_part (int argc, char *argv[]) 
+{
+	printf("Not yet implemented\n");
+	return EINVAL;
 }
 
 /* usage - show the valid scontrol commands */

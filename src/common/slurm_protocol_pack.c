@@ -268,8 +268,10 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 
 void pack_update_node_msg ( update_node_msg_t * msg, void ** buffer , uint32_t * length )
 {
+	assert ( msg != NULL );
+
 	packstr ( msg -> node_names , ( void ** ) buffer , length ) ;
-	pack32 ( msg -> node_state , ( void ** ) buffer , length ) ;
+	pack16 ( msg -> node_state , ( void ** ) buffer , length ) ;
 }
 
 int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_t * length )
@@ -284,7 +286,7 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 	}
 
 	unpackstr_xmalloc ( & tmp_ptr -> node_names , &uint16_tmp,  ( void ** ) buffer , length ) ;
-	unpack32 ( & tmp_ptr -> node_state , ( void ** ) buffer , length ) ;
+	unpack16 ( & tmp_ptr -> node_state , ( void ** ) buffer , length ) ;
 	*msg = tmp_ptr ;
 	return 0 ;
 }
