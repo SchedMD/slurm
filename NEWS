@@ -1,6 +1,16 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.17
+=========================
+ -- Fixes for reported problems:
+   - slurm/285: "srun killed due to SIGPIPE"
+ -- Support for running job steps on nodes relative to current 
+    allocation via srun -r, --relative=n option.
+ -- SIGKILL no longer broadcasted to job via srun on task failure unless
+    --no-allocate option is used.
+ -- Re-enabled "chkconfig --add" in default RPMs.
+
 * Changes in SLURM 0.2.16
 =========================
  -- Fixes for reported problems:
