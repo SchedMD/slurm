@@ -91,6 +91,9 @@ static int
 static void _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer);
 static int _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer);
 
+static void _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer);
+static int  _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer);
+
 static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer);
 static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer);
 
@@ -354,11 +357,13 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_complete_job_step_msg((complete_job_step_msg_t *)
 					     msg->data, buffer);
 		 break;
-
 	 case REQUEST_KILL_TIMELIMIT:
 	 case REQUEST_KILL_JOB:
 		 _pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer);
 		 break;
+	 case MESSAGE_EPILOG_COMPLETE:
+		_pack_epilog_comp_msg((epilog_complete_msg_t *) msg->data, buffer);
+		break;
 	 case REQUEST_UPDATE_JOB_TIME:
 		 _pack_update_job_time_msg((job_time_msg_t *)
 					     msg->data, buffer);
@@ -568,6 +573,10 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data), 
 					   buffer);
 		 break;
+	 case MESSAGE_EPILOG_COMPLETE:
+		rc = _unpack_epilog_comp_msg((epilog_complete_msg_t **) 
+		                           & (msg->data), buffer);
+		break;
 	 case REQUEST_UPDATE_JOB_TIME:
 		 rc = _unpack_update_job_time_msg(
 					(job_time_msg_t **)
@@ -1122,6 +1131,36 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	xfree(tmp_ptr);
+	*msg = NULL;
+	return SLURM_ERROR;
+}
+
+static void 
+_pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer)
+{
+	assert(msg != NULL);
+
+	pack32(msg->job_id, buffer);
+	packstr(msg->node_name, buffer);
+}
+
+static int  
+_unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer)
+{
+	epilog_complete_msg_t *tmp_ptr;
+	uint16_t uint16_tmp;
+
+	/* alloc memory for structure */
+	assert(msg);
+	tmp_ptr = xmalloc(sizeof(epilog_complete_msg_t));
+	*msg = tmp_ptr;
+
+	safe_unpack32(&(tmp_ptr->job_id), buffer);
+	safe_unpackstr_xmalloc(& (tmp_ptr->node_name), &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

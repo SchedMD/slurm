@@ -133,6 +133,7 @@ typedef enum {
 	RESPONSE_REATTACH_TASKS,
 	REQUEST_KILL_TIMELIMIT,
 	REQUEST_KILL_JOB,
+	MESSAGE_EPILOG_COMPLETE,
 
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
@@ -209,6 +210,11 @@ typedef struct kill_tasks_msg {
 	uint32_t job_step_id;
 	uint32_t signal;
 } kill_tasks_msg_t;
+
+typedef struct epilog_complete_msg {
+	uint32_t job_id;
+	char    *node_name;
+} epilog_complete_msg_t;
 
 typedef struct shutdown_msg {
 	uint16_t core;
