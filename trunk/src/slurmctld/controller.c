@@ -48,7 +48,8 @@ slurm_ctl_conf_t slurmctld_conf;
 
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
-void fill_build_table ( slurm_ctl_conf_t * build_ptr );
+void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
+void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
@@ -58,9 +59,11 @@ inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_allocate_resources_immediately ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
+
+inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
+
+
 int 
 main (int argc, char *argv[]) 
 {
@@ -75,15 +78,18 @@ main (int argc, char *argv[])
 	init_time = time (NULL);
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
+	fill_ctld_conf ( &slurmctld_conf );
+	parse_commandline ( argc, argv, &slurmctld_conf );
+
 	if ( ( error_code = init_slurm_conf () ) ) 
 		fatal ("slurmctld: init_slurm_conf error %d", error_code);
-	if ( ( error_code = read_slurm_conf (SLURM_CONF) ) ) 
+	if ( ( error_code = read_slurm_conf ( slurmctld_conf.slurm_conf )) ) 
 		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmctld: errno %d from gethostname", errno);
-	if ( strcmp (node_name, control_machine) &&  strcmp (node_name, backup_controller) )
+	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  strcmp (node_name, slurmctld_conf.backup_machine) )
 	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
-			node_name, control_machine, backup_controller);
+			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_machine);
 
 	
 	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
@@ -147,11 +153,11 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_free_last_update_msg ( msg -> data ) ;
 			break;
 		case REQUEST_RESOURCE_ALLOCATION :
-			slurm_rpc_allocate_resources ( msg ) ;
+			slurm_rpc_allocate_resources ( msg, false ) ;
 			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION :
-			slurm_rpc_allocate_resources_immediately ( msg ) ;
+			slurm_rpc_allocate_resources ( msg, true ) ;
 			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
 		case REQUEST_JOB_WILL_RUN :
@@ -217,7 +223,7 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	else
 	{
 		/* success */
-		fill_build_table ( & build_tbl ) ;
+		fill_ctld_conf ( & build_tbl ) ;
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_BUILD_INFO ;
@@ -477,20 +483,20 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 }
 
 /* Allocate:  allocate resources for a job */
-void slurm_rpc_allocate_resources ( slurm_msg_t * msg )
+void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 {
 	/* init */
 	int error_code;
+	slurm_msg_t response_msg ;
 	clock_t start_time;
-	uint32_t job_id ;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
-	char * node_name_ptr = NULL;
+	resource_allocation_response_msg_t * alloc_msg = xmalloc( sizeof( resource_allocation_response_msg_t ) ) ;
 
 	start_time = clock ();
 
 	/* do RPC call */
 	error_code = job_allocate(job_desc_msg, 
-			&job_id, &node_name_ptr, false , false );
+			&alloc_msg->job_id, &alloc_msg->node_list, immediate , false );
 
 	/* return result */
 	if (error_code)
@@ -502,12 +508,16 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg )
 	else
 	{
 		info ("slurmctld_req: allocated nodes %s, JobId=%u, time=%ld",
-				node_name_ptr, job_id, 
+				alloc_msg->node_list, alloc_msg->job_id, 
 				(long) (clock () - start_time));
 		/* send job_ID  and node_name_ptr */
+		response_msg . msg_type = ( immediate ) ? RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : RESPONSE_RESOURCE_ALLOCATION ;
+		response_msg . data = & alloc_msg ;
+		slurm_send_controller_msg ( msg->conn_fd , & response_msg ) ;
 	}
-	if (node_name_ptr)
-		xfree (node_name_ptr);
+
+	if ( alloc_msg )
+		xfree ( alloc_msg );
 }
 
 /* JobWillRun - determine if job with given configuration can be initiated now */
@@ -542,36 +552,6 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 
 }
 
-/* slurm_rpc_allocate_resources_immediately - test if job could initiated now */
-void slurm_rpc_allocate_resources_immediately ( slurm_msg_t * msg )
-{
-	/* init */
-	int error_code;
-	clock_t start_time;
-	uint32_t job_id ;
-	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
-	char * node_name_ptr = NULL;
-
-	start_time = clock ();
-
-	/* do RPC call */
-	error_code = job_allocate(job_desc_msg, &job_id, &node_name_ptr, true , false );
-	
-	/* return result */
-	if (error_code)
-	{
-		info ("slurmctld_req: job_will_run error %d, time=%ld",
-				error_code, (long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , error_code );
-	}
-	else
-	{
-		info ("slurmctld_req: job_will_run success for , time=%ld",
-				(long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
-	}
-
-}
 
 /* Reconfigure - re-initialized from configuration files */
 void 
@@ -672,25 +652,85 @@ slurm_rpc_register_node_status ( slurm_msg_t * msg )
 
 
 void
-fill_build_table ( slurm_ctl_conf_t * build_ptr )
+init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
-	build_ptr->last_update		= init_time ;
-	build_ptr->backup_interval	= BACKUP_INTERVAL ;
-	build_ptr->backup_location	= BACKUP_LOCATION ;
-	build_ptr->backup_machine	= backup_controller ;
-	build_ptr->control_daemon	= CONTROL_DAEMON ;
-	build_ptr->control_machine	= control_machine ;
-	build_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
-	build_ptr->epilog		= EPILOG ;
-	build_ptr->fast_schedule	= FAST_SCHEDULE ;
-	build_ptr->hash_base		= HASH_BASE ;
-	build_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
-	build_ptr->init_program		= INIT_PROGRAM ;
-	build_ptr->kill_wait		= KILL_WAIT ;
-	build_ptr->prioritize		= PRIORITIZE ;
-	build_ptr->prolog		= PROLOG ;
-	build_ptr->server_daemon	= SERVER_DAEMON ;
-	build_ptr->server_timeout	= SERVER_TIMEOUT ;
-	build_ptr->slurm_conf		= SLURM_CONF ;
-	build_ptr->tmp_fs		= TMP_FS ;
+	conf_ptr->last_update       	= init_time ;
+	conf_ptr->backup_interval   	= 0 ;
+	conf_ptr->backup_location   	= NULL ;
+	conf_ptr->backup_machine    	= NULL ;
+	conf_ptr->control_daemon    	= NULL ;
+	conf_ptr->control_machine   	= NULL ;
+	conf_ptr->controller_timeout	= 0 ;
+	conf_ptr->epilog           		= NULL ;
+	conf_ptr->fast_schedule     	= 0 ;
+	conf_ptr->hash_base         	= 0 ;
+	conf_ptr->heartbeat_interval	= 0;
+	conf_ptr->init_program      	= NULL ;
+	conf_ptr->kill_wait         	= 0 ;
+	conf_ptr->prioritize        	= NULL ;
+	conf_ptr->prolog            	= NULL ;
+	conf_ptr->server_daemon     	= NULL ;
+	conf_ptr->server_timeout    	= 0 ;
+	conf_ptr->slurm_conf        	= NULL ;
+	conf_ptr->tmp_fs            	= NULL ;
+}
+
+void
+fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
+{
+	conf_ptr->last_update = init_time ;
+	if ( !conf_ptr->backup_interval )    conf_ptr->backup_interval   	= BACKUP_INTERVAL ;
+	if ( !conf_ptr->backup_location )    conf_ptr->backup_location   	= BACKUP_LOCATION ;
+	if ( !conf_ptr->backup_machine )     conf_ptr->backup_machine    	= backup_controller ;
+	if ( !conf_ptr->control_daemon )     conf_ptr->control_daemon    	= CONTROL_DAEMON ;
+	if ( !conf_ptr->control_machine )    conf_ptr->control_machine   	= control_machine ;
+	if ( !conf_ptr->controller_timeout ) conf_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
+	if ( !conf_ptr->epilog )             conf_ptr->epilog           	= EPILOG ;
+	if ( !conf_ptr->fast_schedule )      conf_ptr->fast_schedule     	= FAST_SCHEDULE ;
+	if ( !conf_ptr->hash_base )          conf_ptr->hash_base         	= HASH_BASE ;
+	if ( !conf_ptr->heartbeat_interval ) conf_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
+	if ( !conf_ptr->init_program )       conf_ptr->init_program      	= INIT_PROGRAM ;
+	if ( !conf_ptr->kill_wait )          conf_ptr->kill_wait         	= KILL_WAIT ;
+	if ( !conf_ptr->prioritize )         conf_ptr->prioritize        	= PRIORITIZE ;
+	if ( !conf_ptr->prolog )             conf_ptr->prolog            	= PROLOG ;
+	if ( !conf_ptr->server_daemon )      conf_ptr->server_daemon     	= SERVER_DAEMON ;
+	if ( !conf_ptr->server_timeout )     conf_ptr->server_timeout   	= SERVER_TIMEOUT ;
+	if ( !conf_ptr->slurm_conf )         conf_ptr->slurm_conf       	= SLURM_CONF ;
+	if ( !conf_ptr->tmp_fs )             conf_ptr->tmp_fs            	= TMP_FS ;
+}
+
+
+/* Variables for commandline passing using getopt */
+extern char *optarg;
+extern int optind, opterr, optopt;
+
+void 
+parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
+{
+	int c = 0;
+	opterr = 0;
+
+	while ((c = getopt (argc, argv, "b:c:f:s")) != -1)
+		switch (c)
+		{
+			case 'b':
+				conf_ptr->backup_machine = optarg;
+				printf("backup_machine = %s\n", conf_ptr->backup_machine );
+				break;
+			case 'c':
+				conf_ptr->control_machine = optarg;
+				printf("control_machine = %s\n", conf_ptr->control_machine );
+				break;
+			case 'f':
+				slurmctld_conf.slurm_conf = optarg;
+				printf("slurmctrld.conf = %s\n", slurmctld_conf.slurm_conf );
+				break;
+			case 's':
+				conf_ptr->fast_schedule = 1;
+				break;
+			default:
+				abort ();
+		}
+
+
 }
