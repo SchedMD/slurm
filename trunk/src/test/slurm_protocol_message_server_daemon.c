@@ -73,7 +73,7 @@ main (int argc, char *argv[])
 		fatal ("slurmd: errno %d from gethostname", errno);
 
 	
-	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PROTOCOL_DEFAULT_SLURMCTLD_PORT ) ) 
+	if ( ( sockfd = slurm_init_msg_engine_port ( atoi (SLURMCTLD_PORT) ) ) 
 			== SLURM_SOCKET_ERROR )
 		fatal ("slurmctld: error starting message engine \n", errno);
 		
