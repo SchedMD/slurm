@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Mette <jette1@llnl.gov>.
+ *  Written by Morris Mette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -31,6 +31,7 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
+#define DEFAULT_CHECKPOINT_TYPE    "checkpoint/none"
 #define DEFAULT_FAST_SCHEDULE       1
 #define DEFAULT_FIRST_JOB_ID        1
 #define DEFAULT_HASH_BASE           10

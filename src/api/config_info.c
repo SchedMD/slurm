@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -71,6 +71,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController  = %s\n", 
 		slurm_ctl_conf_ptr->backup_controller);
+	fprintf(out, "CheckpointType    = %s\n",
+		slurm_ctl_conf_ptr->checkpoint_type);
 	fprintf(out, "ControlAddr       = %s\n", 
 		slurm_ctl_conf_ptr->control_addr);
 	fprintf(out, "ControlMachine    = %s\n", 

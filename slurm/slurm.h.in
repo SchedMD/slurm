@@ -407,6 +407,7 @@ typedef struct slurm_ctl_conf {
 	char *authtype;		/* authentication type */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;/* name of slurmctld secondary server */
+	char *checkpoint_type;	/* checkpoint plugin type */
 	char *control_addr;	/* comm path of slurmctld primary server */
 	char *control_machine;	/* name of slurmctld primary server */
 	char *epilog;		/* pathname of job epilog */

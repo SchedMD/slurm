@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Mette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -94,6 +94,7 @@ void
 free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	xfree (ctl_conf_ptr->authtype);
+	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
 	xfree (ctl_conf_ptr->control_addr);
@@ -130,6 +131,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	ctl_conf_ptr->last_update		= time(NULL);
 	xfree (ctl_conf_ptr->authtype);
+	xfree (ctl_conf_ptr->checkpoint_type);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
 	xfree (ctl_conf_ptr->control_addr);
@@ -199,7 +201,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	int slurmctld_port = -1, slurmd_port = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
-	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
+	char *checkpoint_type = NULL, *control_addr = NULL;
+	char *control_machine = NULL, *epilog = NULL;
 	char *prolog = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
@@ -215,6 +218,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 
 	error_code = slurm_parser (in_line,
 		"AuthType=", 's', &auth_type,
+		"CheckpointType=", 's', &checkpoint_type,
 		"BackupAddr=", 's', &backup_addr, 
 		"BackupController=", 's', &backup_controller, 
 		"ControlAddr=", 's', &control_addr, 
@@ -266,6 +270,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree( ctl_conf_ptr->authtype );
 		}
 		ctl_conf_ptr->authtype = auth_type;
+	}
+
+	if ( checkpoint_type ) {
+		if ( ctl_conf_ptr->checkpoint_type ) {
+			error( MULTIPLE_VALUE_MSG, "CheckpointType" );
+			xfree( ctl_conf_ptr->checkpoint_type );
+		}
+		ctl_conf_ptr->checkpoint_type = checkpoint_type;
 	}
 
 	if ( backup_addr ) {
@@ -820,6 +832,10 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->authtype == NULL)
 		ctl_conf_ptr->authtype = xstrdup(DEFAULT_AUTH_TYPE);
+
+	if (ctl_conf_ptr->checkpoint_type == NULL)
+		 ctl_conf_ptr->checkpoint_type = 
+			xstrdup(DEFAULT_CHECKPOINT_TYPE);
 
 	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
 		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
