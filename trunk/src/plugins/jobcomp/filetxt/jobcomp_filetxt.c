@@ -55,7 +55,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
-		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s %s\n"
+		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s NodeCnt=%u %s\n"
  
 /* Type for error string table entries */
 typedef struct {
@@ -224,7 +224,7 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 			(unsigned long) job_ptr->user_id, job_ptr->name, 
 			job_state_string(job_state), 
 			job_ptr->partition, lim_str, start_str, 
-			end_str, job_ptr->nodes,
+			end_str, job_ptr->nodes, job_ptr->node_cnt,
 			select_buf);
 	tot_size = strlen(job_rec);
 
