@@ -51,6 +51,8 @@ void slurm_print_ctl_conf ( FILE* out,
 
 	make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, time_str);
 	fprintf(out, "Configuration data as of %s\n", time_str);
+	fprintf(out, "AuthType          = %s\n", 
+		slurm_ctl_conf_ptr->authtype);
 	fprintf(out, "BackupAddr        = %s\n", 
 		slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController  = %s\n", 
@@ -77,6 +79,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->job_credential_public_certificate);
 	fprintf(out, "KillWait          = %u\n", 
 		slurm_ctl_conf_ptr->kill_wait);
+	fprintf(out, "PluginDir         = %s\n", 
+		slurm_ctl_conf_ptr->plugindir);
 	fprintf(out, "Prioritize        = %s\n", 
 		slurm_ctl_conf_ptr->prioritize);
 	fprintf(out, "Prolog            = %s\n", 
