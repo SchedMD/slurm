@@ -1,5 +1,5 @@
 set terminal postscript eps
-set output "times.eps"
+set output "figures/times.eps"
 
 set size 0.95,0.95
 
