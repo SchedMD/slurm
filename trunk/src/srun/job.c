@@ -53,11 +53,16 @@ job_create(resource_allocation_response_msg_t *resp)
 	pthread_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
 
-	if (resp != NULL) {
+	if (resp) {
 		job->nodelist = xstrdup(resp->node_list);
 	        hl = hostlist_create(resp->node_list);
 		job->jobid = resp->job_id;
 		ncpu  = *resp->cpus_per_node;
+		job->nhosts = hostlist_count(hl);
+		job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * 
+							sizeof(slurm_addr));
+		memcpy(job->slurmd_addr, resp->node_addr, 
+		       sizeof(job->slurmd_addr[0])*job->nhosts);
 	} else {
 		job->cred = 
 		       (slurm_job_credential_t *) xmalloc(sizeof(*job->cred));
@@ -73,14 +78,12 @@ job_create(resource_allocation_response_msg_t *resp)
 		ncpu = 1;
 		if (opt.nprocs <= 1)
 			opt.nprocs = hostlist_count(hl);
+		job->nhosts = hostlist_count(hl);
+		job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * 
+							sizeof(slurm_addr));
 	}
 
-
-	job->nhosts = hostlist_count(hl);
-
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
-	job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * 
-						sizeof(slurm_addr));
 	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int) );
 	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int) );
 
@@ -149,9 +152,6 @@ job_create(resource_allocation_response_msg_t *resp)
 				cpu_inx++;
 				cpu_cnt = 0;
 			}
-			memcpy(&job->slurmd_addr[i], 
-			       &resp->node_addr[i], 
-			       sizeof(job->slurmd_addr[i]));
 		} else {
 			job->cpus[i] = tph;
 			slurm_set_addr (&job->slurmd_addr[i], 
