@@ -6,32 +6,47 @@
 
 int main ( int argc , char * argv[] )
 {
-	/* declare file descriptors */
 	slurm_fd worker_socket ;
-
-	/* declare address structures */
 	slurm_addr worker_address ;
-	slurm_addr peer_address ;
-	slurm_msg_type_t msg_type ;
-
-	unsigned int buffer_len = 1024 ;
-	char buf_temp [ buffer_len ] ;
-	char * buffer = buf_temp ;
-	char * test_send = "This is a test of simple socket communication" ;
-	unsigned int test_send_len = strlen ( test_send ) ;
-	unsigned int length_io ;
-		
+	slurm_msg_t msg;
+	slurm_msg_t resp;
+	int16_t port;
+	update_node_msg_t *in_msg, out_msg;
+	
 	/* init address sturctures */
-	slurm_set_addr_uint ( & worker_address , 7001 , SLURM_INADDR_ANY ) ;
-	/* open and listen on socket */
+	if (argc > 1)
+		port = atoi( argv[1] ) ;
+
+	if ((argc < 2) || (port < 1)) {
+		printf("Usage: %s <port_number>\n", argv[0] );
+		exit( 1 );
+	}
+	slurm_set_addr_uint ( & worker_address , port , SLURM_INADDR_ANY ) ;
 	worker_socket = slurm_open_msg_conn ( & worker_address ) ;
 
-	length_io = slurm_receive_buffer ( worker_socket , & peer_address, & msg_type , buffer , buffer_len ) ;
-	printf ( "Bytes Recieved %i\n", length_io ) ;
+	msg.address = worker_address;		
+	msg.msg_type = REQUEST_UPDATE_NODE;
+	out_msg.node_state = 0x1234;
+	out_msg.node_names = "Test message";
+	msg.data = &out_msg;
+	slurm_send_node_msg( worker_socket , &msg ) ;
 
-	msg_type = 1 ;
-	length_io = slurm_send_node_buffer ( worker_socket , & peer_address, msg_type , test_send , test_send_len ) ;
-	printf ( "Bytes Sent %i\n", length_io ) ;
+	printf("Sending message=%s\n", out_msg.node_names);
+	if (slurm_receive_msg (worker_socket, &resp) < 0) {
+		printf("Error reading slurm_receive_msg %m\n");
+		exit(1);
+	}
+	if (resp.msg_type != REQUEST_UPDATE_NODE) {
+		printf("Got wrong message type: %u\n", resp.msg_type);
+		exit(1);
+	}
+	in_msg = (update_node_msg_t *) resp.data;
+	printf("Message received=%s\n", in_msg->node_names);
+
+	msg.address = worker_address;		
+	msg.msg_type = REQUEST_SHUTDOWN_IMMEDIATE;
+	printf("Sending server shutdown request\n");
+	slurm_send_node_msg( worker_socket , &msg ) ;
 
 	slurm_shutdown_msg_conn ( worker_socket ) ;
 

@@ -6,40 +6,54 @@
 
 int main ( int argc , char * argv[] )
 {
-	/* declare file descriptors */
 	slurm_fd listen_socket ;
 	slurm_fd worker_socket ;
-
-	/* declare address structures */
-	slurm_addr listen_address ;
 	slurm_addr peer_address ;
-
-	slurm_msg_type_t msg_type;
-
-	unsigned int buffer_len = 1024 ;
-	char buf_temp [ buffer_len ] ;
-	char * buffer = buf_temp ;
-	char * test_send = "This is a test of simple socket communication" ;
-	unsigned int test_send_len = strlen ( test_send ) ;
-	unsigned int length_io ;
+	slurm_msg_t msg;
+	slurm_msg_t resp;
+	int16_t port;
+	update_node_msg_t *in_msg, out_msg;
 		
 	/* init address sturctures */
-	slurm_set_addr_uint ( & listen_address , 7001 , SLURM_INADDR_ANY ) ;
-	/* open and listen on socket */
-	listen_socket = slurm_init_msg_engine ( & listen_address ) ;
+	if (argc > 1)
+		port = atoi( argv[1] ) ;
+
+	if ((argc < 2) || (port < 1)) {
+		printf("Usage: %s <port_number>\n", argv[0] );
+		exit( 1 );
+	}
+	listen_socket = slurm_init_msg_engine_port (port);
 	printf ( "listen socket %i\n", listen_socket ) ;
+
 	worker_socket = slurm_accept_msg_conn (  listen_socket , & peer_address ) ;
 	printf ( "worker socket %i\n", worker_socket ) ;
 
+	while (1) {
+		if (slurm_receive_msg (worker_socket, &msg) == SLURM_SOCKET_ERROR ) {
+			printf ("slurm_receive_msg error\n");
+			break;
+		}
 
-	msg_type = 1 ;
-	length_io = slurm_send_node_buffer ( worker_socket , & peer_address, msg_type , test_send , test_send_len ) ;
-	printf ( "Bytes Sent %i\n", length_io ) ;
-	
-	length_io = slurm_receive_buffer ( worker_socket , & peer_address, & msg_type ,  buffer , buffer_len ) ;
-	printf ( "Bytes Recieved %i\n", length_io ) ;
+		if (msg.msg_type == REQUEST_SHUTDOWN_IMMEDIATE) {
+			printf ("processing shutdown request\n");
+			break;
+		}
+		if (msg.msg_type == REQUEST_UPDATE_NODE) {
+			in_msg = (update_node_msg_t *) msg.data;
+			if (msg.data_size > 0)
+				printf ("Message received=%s\n",in_msg->node_names);
+		}
+
+		resp.address = msg.address;		
+		resp.msg_type = REQUEST_UPDATE_NODE;
+		out_msg.node_state = 0x1234;
+		out_msg.node_names = "Message received";
+		resp.data = &out_msg;
+		printf("Sending message=%s\n", out_msg.node_names);
+		slurm_send_node_msg( worker_socket , &resp ) ;
+
+	}
 
 	slurm_shutdown_msg_engine ( worker_socket ) ;
-
 	return 0 ;
 }
