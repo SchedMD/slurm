@@ -38,7 +38,7 @@ exec echo "ulimit -c $limit_core"    >>$file_in
 exec echo "ulimit -f $limit_fsize"   >>$file_in
 exec echo "ulimit -n $limit_nofile"  >>$file_in
 exec echo "ulimit -u $limit_nproc"   >>$file_in
-exec echo "$srun -N1 -d 5 -vvvvv $file_prog_get" >>$file_in
+exec echo "$srun -N1 $file_prog_get" >>$file_in
 
 exec $bin_chmod 700 $file_in
 
