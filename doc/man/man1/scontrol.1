@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "April 2004" "scontrol 0.3" "Slurm components"
+.TH SCONTROL "1" "July 2004" "scontrol 0.3" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -57,6 +57,16 @@ are unavailable to user's group.
 .TP
 \fIabort\fP
 Instruct the Slurm controller to terminate immediately and generate a core file.
+.TP
+\fIcheckpoint\fP \fICKPT_OP\fP \fIID\fP
+Perform a checkpoint activity on the job step(s) with the specified identification.
+\fICKPT_OP\fP may be \fIdisable\fP, \fIenable\fP, 
+\fIcreate\fP (create a checkpoint and let the job step continue), 
+\fIvacate\fP (create a checkpoint and terminate the job step), 
+\fIerror\fP (report the reason for the last checkpoint failure), 
+or \fIresume\fP (resume execution of the previously checkpointed job steps).
+\fIID\fP can be used to identify a specific job (e.g. "<job_id>", implying all of its steps) 
+or a specific job step (e.g. "<job_id>.<step_id>").
 .TP
 \fIcompleting\fP
 Display all jobs in a COMPLETING state along with associated nodes in either a 
@@ -333,6 +343,7 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 \fBscancel\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1), 
+\fBslurm_checkpoint\fR(3),
 \fBslurm_delete_partition\fR(3),
 \fBslurm_load_ctl_conf\fR(3), 
 \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 

@@ -173,6 +173,19 @@ enum ctx_keys {
 	SLURM_STEP_CTX_TID	/* get array of task IDs for specified node */
 };
 
+/* Define checkpoint options */
+enum check_opts {
+	CHECK_DISABLE,		/* disable checkpointing */
+	CHECK_ENABLE,		/* enable checkpointing */
+	CHECK_CREATE,		/* create a checkpoint for this job, 
+				 * job continues execution afterwards */
+	CHECK_VACATE,		/* create a checkpoint for this job,
+				 * job terminates afterwards */
+	CHECK_RESUME,		/* resume a previously checkpointed job */
+	CHECK_COMPLETE,		/* a checkpoint of this job has completed */
+	CHECK_FAILED		/* a checkpoint of this job has failed */
+};
+
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
@@ -1017,6 +1030,36 @@ extern int slurm_reconfigure PARAMS(( void ));
  * RET 0 or a slurm error code
  */
 extern int slurm_shutdown PARAMS(( uint16_t core ));
+
+/*****************************************************************************\
+ *      SLURM JOB CHECKPOINT FUNCTIONS
+\*****************************************************************************/
+
+/*
+ * slurm_checkpoint - perform some checkpoint operation for some job step
+ * IN op      - operation to perform
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint PARAMS(( enum check_opts op, uint32_t job_id,
+		uint32_t step_id ));
+
+
+/*
+ * slurm_checkpoint_error - gather error information for the last checkpoint operation 
+ * for some job step
+ * IN job_id  - job on which to perform operation
+ * IN step_id - job step on which to perform operation
+ * OUT ckpt_errno - error number associated with the last checkpoint operation,
+ *	this value is dependent upon the checkpoint plugin used and may be
+ *	completely unrelated to slurm error codes
+ * OUT ckpt_strerror - string describing the message associated with the last 
+ *	checkpoint operation
+ * RET 0 or a slurm error code
+ */
+extern int slurm_checkpoint_error PARAMS(( uint32_t job_id, uint32_t step_id, 
+		uint32_t *ckpt_errno, char **ckpt_strerror ));
 
 END_C_DECLS
 

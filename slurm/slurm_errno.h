@@ -128,6 +128,8 @@ enum {
 	ESLURM_INVALID_SCHEDTYPE_CHANGE,
 	ESLURM_INVALID_SWITCHTYPE_CHANGE,
 	ESLURM_FRAGMENTATION,
+	ESLURM_NOT_SUPPORTED,
+	ESLURM_DISABLED,
 
 	/* switch specific error codes, specific values defined in plugin module */
 	ESLURM_SWITCH_MIN = 3000,

@@ -159,7 +159,12 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_SWITCHTYPE_CHANGE,
 	  "SwitchType change requires restart of all SLURM daemons and jobs"},
 	{ ESLURM_FRAGMENTATION,
-	  "Resources too fragmented for allocation"		},
+	  "Immediate execution impossible, "
+	  "resources too fragmented for allocation"		},
+	{ ESLURM_NOT_SUPPORTED,
+	  "Requested operation not supported on this system"	},
+	{ ESLURM_DISABLED,
+	  "Requested operation is presently disabled"		},
 
 	/* slurmd error codes */
 

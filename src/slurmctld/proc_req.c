@@ -40,6 +40,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/checkpoint.h"
 #include "src/common/daemonize.h"
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
@@ -69,6 +70,7 @@ static int          _make_step_cred(struct step_record *step_rec,
 				    slurm_cred_t *slurm_cred);
 inline static void  _slurm_rpc_allocate_resources(slurm_msg_t * msg);
 inline static void  _slurm_rpc_allocate_and_run(slurm_msg_t * msg);
+inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_conf(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
@@ -219,6 +221,10 @@ void slurmctld_req (slurm_msg_t * msg)
 		error("slurmctld is talking with itself. "
 			"SlurmctldPort == SlurmdPort");
 		slurm_send_rc_msg(msg, EINVAL);
+		break;
+	case REQUEST_CHECKPOINT:
+		_slurm_rpc_checkpoint(msg);
+		slurm_free_checkpoint_msg(msg->data);
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -1668,4 +1674,53 @@ static void _update_cred_key(void)
 {
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx, 
 				  slurmctld_conf.job_credential_private_key);
+}
+
+/* Assorted checkpoint operations */
+inline static void  _slurm_rpc_checkpoint(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	checkpoint_msg_t *ckpt_ptr = (checkpoint_msg_t *) msg->data;
+	/* Locks: write job */
+	slurmctld_lock_t job_write_lock = { 
+		NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+	uid_t uid;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_CHECKPOINT");
+	uid = g_slurm_auth_get_uid(msg->cred);
+
+	/* do RPC call */
+	lock_slurmctld(job_write_lock);
+	error_code = job_step_checkpoint(ckpt_ptr->op,
+			ckpt_ptr->job_id, ckpt_ptr->step_id, uid,
+			msg->conn_fd);
+	unlock_slurmctld(job_write_lock);
+	END_TIMER;
+
+	/* return result */
+	if (error_code) {
+		if (ckpt_ptr->step_id == NO_VAL)
+			info("_slurm_rpc_checkpoint for %u: %s", 
+				ckpt_ptr->job_id, slurm_strerror(error_code));
+		else
+			info("_slurm_rpc_checkpoint for %u.%u: %s", 
+				ckpt_ptr->job_id, ckpt_ptr->step_id, 
+				slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else if (ckpt_ptr->op == CHECK_ERROR) {
+		;	/* Response already sent */
+	} else {
+		if (ckpt_ptr->step_id == NO_VAL)
+			info("_slurm_rpc_checkpoint complete for %u %s",
+				ckpt_ptr->job_id, TIME_STR);
+		else
+			info("_slurm_rpc_checkpoint complete for %u.%u %s",
+				ckpt_ptr->job_id, ckpt_ptr->step_id, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+		/* NOTE: This function provides it own locks */
+		schedule_job_save();
+	}
 }

@@ -124,6 +124,8 @@ typedef enum {
 	RESPONSE_CANCEL_JOB_STEP,
 	REQUEST_COMPLETE_JOB_STEP,
 	RESPONSE_COMPLETE_JOB_STEP,
+	REQUEST_CHECKPOINT,
+	RESPONSE_CHECKPOINT,
 
 	REQUEST_LAUNCH_TASKS = 6001,
 	RESPONSE_LAUNCH_TASKS,
@@ -391,6 +393,17 @@ typedef struct srun_timeout_msg {
 	time_t   timeout;	/* when job scheduled to be killed */
 } srun_timeout_msg_t;
 
+typedef struct checkpoint_msg {
+	uint16_t op;		/* checkpoint operation, see enum check_opts */
+	uint32_t job_id;	/* slurm job_id */
+	uint32_t step_id;	/* slurm step_id */
+} checkpoint_msg_t;
+
+typedef struct checkpoint_resp_msg {
+	uint32_t ckpt_errno;	/* errno from last checkpoint operation */
+	char * ckpt_strerror;	/* string descriptive of ckpt_errno */
+} checkpoint_resp_msg_t;
+
 /*****************************************************************************\
  * Slurm API Message Types
 \*****************************************************************************/
@@ -469,6 +482,8 @@ void inline slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg);
 void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg);
 void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg);
 void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg);
+void inline slurm_free_checkpoint_msg(checkpoint_msg_t *msg);
+void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg);
 
 void slurm_free_resource_allocation_response_msg (
 		resource_allocation_response_msg_t * msg);
