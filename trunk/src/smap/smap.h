@@ -56,6 +56,21 @@
 #  include "src/common/getopt.h"
 #endif
 
+#ifdef HAVE_BGL_FILES
+# include "rm_api.h"
+#else
+  typedef char *   pm_partition_id_t; 
+  typedef int      rm_connection_type_t;
+  typedef int      rm_partition_mode_t;
+  typedef uint16_t rm_partition_t;
+  typedef char *   rm_BGL_t;
+  typedef char *   rm_component_id_t;
+  typedef rm_component_id_t rm_bp_id_t;
+  typedef int      rm_BP_state_t;
+  typedef int      status_t;
+#endif
+
+ 
 #include "src/common/macros.h"
 #include <slurm/slurm.h>
 
@@ -96,6 +111,11 @@ typedef struct {
 
 extern smap_parameters_t params;
 extern int DIM_SIZE[PA_SYSTEM_DIMENSIONS];
+
+#ifdef HAVE_BGL_FILES
+rm_BGL_t *bgl;
+#endif		
+
 void parse_command_line(int argc, char *argv[]);
 
 extern pa_system_t *pa_system_ptr;
