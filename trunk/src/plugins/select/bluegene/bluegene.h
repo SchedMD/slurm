@@ -74,7 +74,7 @@ typedef struct bgl_conf_record{
  * static, dynamic, etc.
  * 
  */
-extern int read_bgl_conf();
+extern int read_bgl_conf(void);
 
 /* Initialize all plugin variables */
 extern int init_bgl(void);
