@@ -4,7 +4,7 @@
 CPPFLAGS =  -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"
 AUTOMAKE_OPTIONS = foreign
 
-PLUGIN_FLAGS = -module -avoid-version --export-dynamic  -lm
+PLUGIN_FLAGS = -module -avoid-version --export-dynamic -lm
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 
