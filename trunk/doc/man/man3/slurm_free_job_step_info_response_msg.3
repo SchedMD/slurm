@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "April 2003" "Morris Jette" "Slurm job step information functions"
+.TH "Slurm API" "3" "July 2003" "Morris Jette" "Slurm job step information functions"
 .SH "NAME"
 \fBslurm_free_job_step_info_response_msg, slurm_get_job_steps,
 slurm_print_job_step_info, slurm_print_job_step_info_msg
@@ -7,7 +7,7 @@ slurm_print_job_step_info, slurm_print_job_step_info_msg
 .LP 
 #include <stdio.h>
 .br
-#include <slurm.h>
+#include <slurm/slurm.h>
 .LP
 void \fBslurm_free_job_step_info_response_msg\fR (
 .br 
@@ -107,7 +107,9 @@ code is set appropriately.
 .LP 
 #include <stdio.h>
 .br
-#include <slurm.h>
+#include <slurm/slurm.h>
+.br
+#include <slurm/slurm_errno.h>
 .LP 
 int main (int argc, char *argv[])
 .br 
