@@ -122,7 +122,7 @@ static void _read_data_array_from_file(char *file_name, char ***data,
 				       uint16_t * size);
 static void _read_data_from_file(char *file_name, char **data);
 static void _remove_defunct_batch_dirs(List batch_dirs);
-static void _reset_detail_bitmaps(struct job_record *job_ptr);
+static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
@@ -2260,19 +2260,22 @@ void reset_job_bitmaps(void)
 	ListIterator job_record_iterator;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
+	bool job_fail = false;
 
 	if (job_list == NULL) 
 		fatal ("reset_job_bitmaps: job_list == NULL");
+
 	job_record_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
 		(struct job_record *) list_next(job_record_iterator))) {
 		xassert (job_ptr->magic == JOB_MAGIC);
+		job_fail = false;
 		part_ptr = list_find_first(part_list, &list_find_part,
-				   job_ptr->partition);
+					   job_ptr->partition);
 		if (part_ptr == NULL) {
 			error("Invalid partition (%s) for job_id %u", 
 		    	      job_ptr->partition, job_ptr->job_id);
-			job_ptr->job_state = JOB_NODE_FAIL;
+			job_fail = true;
 		}
 		job_ptr->part_ptr = part_ptr;
 
@@ -2281,27 +2284,42 @@ void reset_job_bitmaps(void)
 		    (node_name2bitmap(job_ptr->nodes, &job_ptr->node_bitmap))) {
 			error("Invalid nodes (%s) for job_id %u", 
 		    	      job_ptr->nodes, job_ptr->job_id);
-			job_ptr->job_state = JOB_NODE_FAIL;
+			job_fail = true;
 		}
 		build_node_details(job_ptr);	/* set: num_cpu_groups, 
 						 * cpu_count_reps, node_cnt, 
 						 * cpus_per_node, node_addr */
-		_reset_detail_bitmaps(job_ptr);
+		if (_reset_detail_bitmaps(job_ptr))
+			job_fail = true;
+
 		_reset_step_bitmaps(job_ptr);
 
 		if ((job_ptr->kill_on_step_done) &&
 		    (list_count(job_ptr->step_list) <= 1))
-			job_ptr->job_state = JOB_NODE_FAIL;
+			job_fail = true;
+
+		if (job_fail) {
+			if (job_ptr->job_state == JOB_PENDING) {
+				job_ptr->start_time = 
+					job_ptr->end_time = time(NULL);
+				job_ptr->job_state = JOB_NODE_FAIL;
+			} else if (job_ptr->job_state == JOB_RUNNING) {
+				job_ptr->end_time = time(NULL);
+				job_ptr->job_state = JOB_NODE_FAIL | 
+						     JOB_COMPLETING;
+			}
+			delete_all_step_records(job_ptr);
+		}
 	}
 
 	list_iterator_destroy(job_record_iterator);
 	last_job_update = time(NULL);
 }
 
-static void _reset_detail_bitmaps(struct job_record *job_ptr)
+static int _reset_detail_bitmaps(struct job_record *job_ptr)
 {
 	if (job_ptr->details == NULL) 
-		return;
+		return SLURM_SUCCESS;
 
 	FREE_NULL_BITMAP(job_ptr->details->req_node_bitmap);
 	if ((job_ptr->details->req_nodes) && 
@@ -2309,7 +2327,7 @@ static void _reset_detail_bitmaps(struct job_record *job_ptr)
 			      &job_ptr->details->req_node_bitmap))) {
 		error("Invalid req_nodes (%s) for job_id %u", 
 	    	      job_ptr->details->req_nodes, job_ptr->job_id);
-		job_ptr->job_state = JOB_NODE_FAIL;
+		return SLURM_ERROR;
 	}
 
 	FREE_NULL_BITMAP(job_ptr->details->exc_node_bitmap);
@@ -2318,8 +2336,10 @@ static void _reset_detail_bitmaps(struct job_record *job_ptr)
 			      &job_ptr->details->exc_node_bitmap))) {
 		error("Invalid exc_nodes (%s) for job_id %u", 
 	    	      job_ptr->details->exc_nodes, job_ptr->job_id);
-		job_ptr->job_state = JOB_NODE_FAIL;
+		return SLURM_ERROR;
 	}
+
+	return SLURM_SUCCESS;
 }
 
 static void _reset_step_bitmaps(struct job_record *job_ptr)

@@ -56,7 +56,7 @@ static int  _parse_part_spec(char *in_line);
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
-static int  _sync_nodes_to_run_job(struct job_record *job_ptr);
+static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
 #ifdef 	HAVE_LIBELAN3
 static void _validate_node_proc_count(void);
 #endif
@@ -848,7 +848,7 @@ static int _sync_nodes_to_jobs(void)
 
 		if ((job_ptr->job_state == JOB_RUNNING) ||
 		    (job_ptr->job_state &  JOB_COMPLETING))
-			update_cnt += _sync_nodes_to_run_job(job_ptr);
+			update_cnt += _sync_nodes_to_active_job(job_ptr);
 	}
 	if (update_cnt)
 		info("_sync_nodes_to_jobs updated state of %d nodes",
@@ -880,7 +880,7 @@ static int _sync_nodes_to_comp_job(void)
 	return update_cnt;
 }
 
-static int _sync_nodes_to_run_job(struct job_record *job_ptr)
+static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
 	uint16_t base_state, no_resp_flag;
@@ -888,20 +888,29 @@ static int _sync_nodes_to_run_job(struct job_record *job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		node_record_table_ptr[i].run_job_cnt++;
 		base_state = node_record_table_ptr[i].node_state & 
 			     (~NODE_STATE_NO_RESPOND);
-		if (base_state == NODE_STATE_DOWN)
+		if (base_state == NODE_STATE_DOWN) {
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
-		if ((base_state == NODE_STATE_UNKNOWN) || 
-		    (base_state == NODE_STATE_IDLE)    ||
-		    (base_state == NODE_STATE_DRAINED)) {
-			cnt++;
+			job_ptr->end_time = time(NULL);
+			delete_all_step_records(job_ptr);
+		} else {
+	 		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
+					* This counter moved to comp_job_cnt 
+					* by _sync_nodes_to_comp_job() */
 			no_resp_flag = node_record_table_ptr[i].node_state & 
 				       NODE_STATE_NO_RESPOND;
-			node_record_table_ptr[i].node_state =
+			if ((base_state == NODE_STATE_UNKNOWN) || 
+			    (base_state == NODE_STATE_IDLE)) {
+				cnt++;
+				node_record_table_ptr[i].node_state =
 				    NODE_STATE_ALLOCATED | no_resp_flag;
-		}
+			} else if (base_state == NODE_STATE_DRAINED) {
+				cnt++;
+				node_record_table_ptr[i].node_state =
+				    NODE_STATE_DRAINING | no_resp_flag;
+			}
+		} 
 	}
 	return cnt;
 }
