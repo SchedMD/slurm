@@ -707,11 +707,8 @@ select_nodes (struct job_record *job_ptr)
 		fatal("select_nodes: bad job pointer value");
 
 	/* pick up nodes from the weight ordered configuration list */
-	if (job_ptr->details->nodes) {	/* insure that selected nodes are in this partition */
-		error_code = node_name2bitmap (job_ptr->details->nodes, &req_bitmap);
-		if (error_code == EINVAL)
-			goto cleanup;
-	}
+	if (job_ptr->details->req_node_bitmap)	/* insure selected nodes in partition */
+		req_bitmap = bit_copy (job_ptr->details->req_node_bitmap);
 	part_ptr = find_part_record(job_ptr->partition);
 	if (part_ptr == NULL)
 		fatal("select_nodes: invalid partition name %s for job %s", 
@@ -852,6 +849,8 @@ select_nodes (struct job_record *job_ptr)
 		&job_ptr->details->node_list, 
 		&job_ptr->details->total_procs);
 	allocate_nodes (req_bitmap);
+	job_ptr->node_bitmap = req_bitmap;
+	req_bitmap = NULL;
 	job_ptr->job_state = JOB_STAGE_IN;
 	job_ptr->start_time = time(NULL);
 	if (job_ptr->time_limit == INFINITE)

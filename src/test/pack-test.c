@@ -66,7 +66,7 @@ int main (int argc, char *argv[])
 	xfree(outstring);
 
 	unpackstr_xmalloc(&nullstr, &byte_cnt, &bufp, &len_buf);
-	TEST(nullstr != NULL, "un/packstr of null string failed.");
+	TEST(strcmp(nullstr, "") != 0, "un/packstr of null string failed.");
 
 	unpackstr_xmalloc(&outstring, &byte_cnt, &bufp, &len_buf);
 	TEST(strcmp("literal", outstring) != 0, 

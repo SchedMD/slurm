@@ -89,6 +89,8 @@ struct job_table {
 	time_t end_time;	/* time of termination, actual or expected */
 	uint32_t priority;	/* relative priority of the job */
 	char *nodes;		/* comma delimited list of nodes allocated to job */
+	int *node_inx;		/* list index pairs into node_table for *nodes:
+				   start_range_1, end_range_1, start_range_2, .., -1  */
 	char *partition;	/* name of assigned partition */
 	uint32_t num_procs;	/* number of processors required by job */
 	uint32_t num_nodes;	/* number of nodes required by job */
@@ -97,8 +99,9 @@ struct job_table {
 	uint32_t min_procs;	/* minimum processors required per node */
 	uint32_t min_memory;	/* minimum real memory required per node */
 	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */
-	uint32_t total_procs;	/* number of allocated processors */
 	char *req_nodes;	/* comma separated list of required nodes */
+	int *req_node_inx;	/* list index pairs into node_table for *req_nodes:
+				   start_range_1, end_range_1, start_range_2, .., -1  */
 	char *features;		/* comma separated list of required features */
 	char *job_script;	/* pathname of required script */
 };
@@ -118,17 +121,6 @@ struct node_table {
 	uint32_t tmp_disk;	/* megabytes of total disk in TMP_FS */
 	uint32_t weight;	/* desirability of use */
 	char *partition;	/* partition name */ 
-	uint32_t num_procs;	/* required number of processors */
-	uint32_t num_nodes;	/* required number of nodes */
-	uint16_t shared;	/* 1 if job willing to share nodes */
-	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
-	uint32_t min_procs;	/* minimum processors per node */
-	uint32_t min_memory;	/* minimum real memory per node */
-	uint32_t min_tmp_disk;	/* minimum temporary disk per node */
-	uint32_t total_procs;	/* total processor count allocated to job */
-	char *req_nodes;	/* list of nodes required by the job */
-	char *features;		/* list of features required by the job */
-	char *job_script;	/* pathname of script to execute for the job */
 };
 
 struct node_buffer {
@@ -149,6 +141,8 @@ struct part_table {
 	uint16_t shared;	/* 1 if >1 job can share a node, 2 if required */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes in partition */
+	int *node_inx;		/* list index pairs into node_table:
+				   start_range_1, end_range_1, start_range_2, .., -1  */
 	char *allow_groups;	/* comma delimited list of groups, null indicates all */
 };
 

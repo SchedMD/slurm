@@ -21,6 +21,7 @@
 
 #include "list.h"
 #include "slurm.h"
+#include "bits_bytes.h"
 
 #define BUF_SIZE 1024
 #define SEPCHARS " \n\t"
@@ -29,62 +30,113 @@ int node_record_count = 0;	/* count of records in the node record table */
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int 
 main (int argc, char *argv[]) 
 {
 	char in_line[128];
 	char *out_line;
-	int error_code, int_found, i, size;
+	int error_code, error_count = 0, int_found, i;
 	float float_found;
 	char *string_found;
 	char *buffer, *format;
-	int buffer_offset, buffer_size;
-	int start_inx, end_inx, count_inx;
+	int count_inx, end_inx, start_inx;
+	int buffer_offset, buffer_size, *bit_int_ptr;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 
 	error_code = log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
-	if (error_code)
+	if (error_code) {
 		printf ("log_init error %d\n", error_code);
+		error_count++;
+	}
 
 	printf ("testing string manipulation functions...\n");
+	bit_int_ptr = bitfmt2int ("0-10,23,30-40");
+	if (bit_int_ptr == NULL) {
+		printf ("bitfmt2int error on test1\n");
+		error_count++;
+	}
+	else if (bit_int_ptr[0] !=  0 ||
+		 bit_int_ptr[1] != 10 ||
+		 bit_int_ptr[2] != 23 ||
+		 bit_int_ptr[3] != 23 ||
+		 bit_int_ptr[4] != 30 ||
+		 bit_int_ptr[5] != 40 ||
+		 bit_int_ptr[6] != -1) {
+		printf ("bitfmt2int error on test2\n");
+		error_count++;
+	} else
+		free (bit_int_ptr);
+
+	bit_int_ptr = bitfmt2int ("");
+	if (bit_int_ptr == NULL) {
+		printf ("bitfmt2int error on test3\n");
+		error_count++;
+	}
+	else if (bit_int_ptr[0] != -1) {
+		printf ("bitfmt2int error on test4\n");
+		error_count++;
+	} else
+		free (bit_int_ptr);
+
 	strcpy (in_line,
 		"test1=UNLIMITED test2=1234 test3 left_over test4=my,string test5=12.34");
 
 	error_code = load_integer (&int_found, "test1=", in_line);
-	if (error_code)
+	if (error_code) {
 		printf ("load_integer error on test1\n");
-	if (int_found != -1)
+		error_count++;
+	}
+	if (int_found != -1) {
 		printf ("load_integer parse error on test1, got %d\n",
 			int_found);
+		error_count++;
+	}
 
 	error_code = load_integer (&int_found, "test2=", in_line);
-	if (error_code)
+	if (error_code) {
 		printf ("load_integer error on test2\n");
-	if (int_found != 1234)
+		error_count++;
+	}
+	if (int_found != 1234) {
 		printf ("load_integer parse error on test2, got %d\n",
 			int_found);
+		error_count++;
+	}
 
 	error_code = load_integer (&int_found, "test3", in_line);
-	if (error_code)
+	if (error_code) {
 		printf ("load_integer error on test3\n");
-	if (int_found != 1)
+		error_count++;
+	}
+	if (int_found != 1) {
 		printf ("load_integer parse error on test3, got %d\n",
 			int_found);
+		error_count++;
+	}
 
 	string_found = NULL;	/* NOTE: arg1 of load_string is freed if set */
 	error_code = load_string (&string_found, "test4=", in_line);
-	if (error_code)
+	if (error_code) {
 		printf ("load_string error on test4\n");
-	if (strcmp (string_found, "my,string") != 0)
+		error_count++;
+	}
+	if (strcmp (string_found, "my,string") != 0) {
 		printf ("load_string parse error on test4, got :%s:\n",
 			string_found);
+		error_count++;
+	}
 	xfree (string_found);
 
 	error_code = load_float (&float_found, "test5=", in_line);
-	if (error_code)
+	if (error_code) {
 		printf ("load_float error on test5\n");
-	if ((float_found - 12.34) > 0.001)
+		error_count++;
+	}
+	if ((float_found - 12.34) > 0.001) {
 		printf ("load_float parse error on test5, got %f\n",
 			float_found);
+		error_count++;
+	}
 
 	printf ("NOTE: we expect this to print \"leftover\"\n");
 	report_leftover (in_line, 0);
@@ -98,21 +150,31 @@ main (int argc, char *argv[])
 		"test4=", 's', &string_found,
 		"test5=", 'f', &float_found,
 		"END");
-	if (error_code != 0)
+	if (error_code != 0) {
 		printf ("slurm_parser error %d\n", error_code);
-	if (int_found != 56)
+		error_count++;
+	}
+	if (int_found != 56) {
 		printf ("load_integer parse error on test6, got %d\n",
 			int_found);
-	if (i != 89)
+		error_count++;
+	}
+	if (i != 89) {
 		printf ("load_integer parse error on test7, got %d\n",
 			int_found);
-	if (strcmp (string_found, "my,string") != 0)
+		error_count++;
+	}
+	if (strcmp (string_found, "my,string") != 0) {
 		printf ("load_string parse error on test8, got :%s:\n",
 			string_found);
+		error_count++;
+	}
 	xfree (string_found);
-	if ((float_found - 1.234) > 0.001)
+	if ((float_found - 1.234) > 0.001) {
 		printf ("load_float parse error on test9, got %f\n",
 			float_found);
+		error_count++;
+	}
 	printf ("NOTE: we expect this to print \"leftover\"\n");
 	report_leftover (in_line, 0);
 
@@ -122,26 +184,33 @@ main (int argc, char *argv[])
 	error_code =
 		write_buffer (&buffer, &buffer_offset, &buffer_size,
 			      "val1\n");
-	if (error_code)
+	if (error_code) {
 		printf ("write_buffer error on test1\n");
-	error_code =
-		write_buffer (&buffer, &buffer_offset, &buffer_size,
-			      "val2\n");
-	if (error_code)
+		error_count++;
+	}
+	error_code = write_buffer (&buffer, &buffer_offset, 
+				   &buffer_size,"val2\n");
+	if (error_code) {
 		printf ("write_buffer error on test2\n");
+		error_count++;
+	}
 	buffer_offset = 0;
-	error_code =
-		read_buffer (buffer, &buffer_offset, buffer_size, &out_line);
-	if (error_code)
+	error_code = read_buffer (buffer, &buffer_offset, buffer_size, &out_line);
+	if (error_code) {
 		printf ("read_buffer error on test1\n");
+		error_count++;
+	}
 	if (strcmp (out_line, "val1\n") != 0)
 		printf ("read_buffer error on test2\n");
-	error_code =
-		read_buffer (buffer, &buffer_offset, buffer_size, &out_line);
-	if (error_code)
+	error_code = read_buffer (buffer, &buffer_offset, buffer_size, &out_line);
+	if (error_code) {
 		printf ("read_buffer error on test3\n");
-	if (strcmp (out_line, "val2\n") != 0)
+		error_count++;
+	}
+	if (strcmp (out_line, "val2\n") != 0) {
 		printf ("read_buffer error on test4\n");
+		error_count++;
+	}
 	xfree(buffer);
 
 	/* check node name parsing */
@@ -149,8 +218,10 @@ main (int argc, char *argv[])
 	error_code =
 		parse_node_name (out_line, &format, &start_inx, &end_inx,
 				 &count_inx);
-	if (error_code != 0)
+	if (error_code != 0) {
 		printf ("error: parse_node_name error %d\n", error_code);
+		error_count++;
+	}
 	else {
 		if ((start_inx != 3) || (end_inx != 234))
 			printf ("error: parse_node_name failure\n");
@@ -160,10 +231,58 @@ main (int argc, char *argv[])
 			xfree (format);
 	}
 
-	exit (0);
+	exit (error_count);
 }
 #endif
 
+/*
+ * bitfmt2int - convert a string describing bitmap (e.g. "0-30,45,50-60") 
+ *	into an array of integer (start/end) pairs terminated by -1
+ *	(e.g. "0, 30, 45, 45, 50, 60, -1")
+ * input: bitmap string as produced by bitstring.c : bitfmt
+ * output: an array of integers
+ * NOTE: the caller must free the returned memory
+ */
+int *
+bitfmt2int (char *bit_str_ptr) 
+{
+	int *bit_int_ptr, i, bit_inx, size, sum, start_val;
+
+	if (bit_str_ptr == NULL) 
+		return NULL;
+	size = strlen (bit_str_ptr) + 1;
+	bit_int_ptr = malloc ( sizeof (int *) * size);
+	if (bit_int_ptr == NULL)
+		return NULL;
+
+	bit_inx = sum = 0;
+	start_val = -1;
+	for (i = 0; i < size; i++) {
+		if (bit_str_ptr[i] >= '0' &&
+		    bit_str_ptr[i] <= '9'){
+			sum = (sum * 10) + (bit_str_ptr[i] - '0');
+		}
+
+		else if (bit_str_ptr[i] == '-') {
+			start_val = sum;
+			sum = 0;
+		}
+
+		else if (bit_str_ptr[i] == ',' || 
+		         bit_str_ptr[i] == (char) NULL) {
+			if (i == 0)
+				break;
+			if (start_val == -1)
+				start_val = sum;
+			bit_int_ptr[bit_inx++] = start_val;
+			bit_int_ptr[bit_inx++] = sum;
+			start_val = -1;
+			sum = 0;
+		}
+	}
+	bit_int_ptr[bit_inx] = -1;
+	return bit_int_ptr;
+}
 
 
 /*

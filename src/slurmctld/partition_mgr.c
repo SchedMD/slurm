@@ -508,6 +508,7 @@ int
 pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
 {
 	uint16_t default_part_flag;
+	char node_inx_ptr[BUF_SIZE];
 
 	if (default_part_loc == part_record_point)
 		default_part_flag = 1;
@@ -518,13 +519,17 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 	pack32  (part_record_point->max_time, buf_ptr, buf_len);
 	pack32  (part_record_point->max_nodes, buf_ptr, buf_len);
 	pack32  (part_record_point->total_nodes, buf_ptr, buf_len);
+
 	pack32  (part_record_point->total_cpus, buf_ptr, buf_len);
 	pack16  (default_part_flag, buf_ptr, buf_len);
 	pack16  ((uint16_t)part_record_point->key, buf_ptr, buf_len);
 	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
+
 	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
 	packstr (part_record_point->allow_groups, buf_ptr, buf_len);
 	packstr (part_record_point->nodes, buf_ptr, buf_len);
+	bit_fmt (node_inx_ptr, BUF_SIZE, part_record_point->node_bitmap);
+	packstr (node_inx_ptr, buf_ptr, buf_len);
 
 	return 0;
 }

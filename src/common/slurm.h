@@ -131,7 +131,8 @@ struct job_details {
 	uint32_t magic;			/* magic cookie to test data integrity */
 	uint32_t num_procs;		/* minimum number of processors */
 	uint32_t num_nodes;		/* minimum number of nodes */
-	char *nodes;			/* required nodes */
+	char *req_nodes;		/* required nodes */
+	bitstr_t *req_node_bitmap;	/* bitmap of required nodes */
 	char *features;			/* required features */
 	uint16_t shared;		/* 1 if more than one job can execute on a node */
 	uint16_t contiguous;		/* requires contiguous nodes, 1=true, 0=false */
@@ -154,6 +155,7 @@ struct job_record {
 	uint32_t user_id;		/* user the job runs as */
 	enum job_states job_state;	/* state of the job */
 	char *nodes;			/* comma delimited list of nodes allocated to job */
+	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job */
 	uint32_t time_limit;		/* maximum run time in minutes, 0xffffffff if unlimited */
 	time_t start_time;		/* time execution begins, actual or expected*/
 	time_t end_time;		/* time of termination, actual or expected */
@@ -266,6 +268,12 @@ extern struct part_record *create_part_record (void);
  *	node_record_table_ptr - pointer to global node table
  */
 extern void deallocate_nodes (unsigned *bitmap);
+
+/* 
+ * delete_job_details - delete a job's detail record and clear it's pointer
+ * input: job_entry - pointer to job_record to clear the record of
+ */
+extern void  delete_job_details (struct job_record *job_entry);
 
 /* 
  * delete_job_record - delete record for job with specified job_id
@@ -492,7 +500,7 @@ extern void node_unlock ();
  * input: node_names - list of nodes
  *        bitmap - place to put bitmap pointer
  * output: bitmap - set to bitmap or null on error 
- *         returns 0 if no error, otherwise einval or enomem
+ *         returns 0 if no error, otherwise EINVAL or ENOMEM
  * NOTE: the caller must free memory at bitmap when no longer required
  */
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
