@@ -208,7 +208,7 @@ launch_job (struct job_record *job_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 
-/*	if (job_ptr->details->batch_flag == 0) */
+	if (job_ptr->details->batch_flag == 0)
 		return;
 
 	node_ptr = find_first_node_record (job_ptr -> node_bitmap);
@@ -235,10 +235,9 @@ launch_job (struct job_record *job_ptr)
 	agent_arg_ptr -> slurm_addr = xmalloc (sizeof (struct sockaddr_in));
 	memcpy (agent_arg_ptr -> slurm_addr, 
 		&(node_ptr -> slurm_addr), sizeof (struct sockaddr_in));
-	agent_arg_ptr -> node_names = node_ptr -> name;
+	agent_arg_ptr -> node_names = xstrdup (node_ptr -> name);
 	agent_arg_ptr -> msg_type = REQUEST_BATCH_JOB_LAUNCH;
 	agent_arg_ptr -> msg_args = (void *)launch_msg_ptr;
-/* FIXME: Agent must perform full data structure cleanup for launch_msg_ptr */
 
 	/* Launch the RPC via agent */
 	debug3 ("Spawning job launch agent for job_id %u", job_ptr -> job_id);

@@ -361,9 +361,11 @@ dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf
 
 	pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
 	pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
+
 	pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
 	pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
 	pack16  ((uint16_t) detail_ptr->kill_on_node_fail, buf_ptr, buf_len);
+	pack16  ((uint16_t) detail_ptr->batch_flag, buf_ptr, buf_len);
 
 	pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
 	pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
@@ -466,7 +468,7 @@ load_job_state ( void )
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
-	uint16_t shared, contiguous, kill_on_node_fail, name_len;
+	uint16_t shared, contiguous, kill_on_node_fail, name_len, batch_flag;
 	char *req_nodes = NULL, *features = NULL;
 	char  *stderr = NULL, *stdin = NULL, *stdout = NULL, *work_dir = NULL;
 	slurm_job_credential_t *credential_ptr = NULL;
@@ -536,9 +538,11 @@ load_job_state ( void )
 
 			safe_unpack32 (&num_procs, &buf_ptr, &buffer_size);
 			safe_unpack32 (&num_nodes, &buf_ptr, &buffer_size);
+
 			safe_unpack16 (&shared, &buf_ptr, &buffer_size);
 			safe_unpack16 (&contiguous, &buf_ptr, &buffer_size);
 			safe_unpack16 (&kill_on_node_fail, &buf_ptr, &buffer_size);
+			safe_unpack16 (&batch_flag, &buf_ptr, &buffer_size);
 
 			safe_unpack32 (&min_procs, &buf_ptr, &buffer_size);
 			safe_unpack32 (&min_memory, &buf_ptr, &buffer_size);
@@ -617,7 +621,7 @@ load_job_state ( void )
 			job_ptr->details->shared = shared;
 			job_ptr->details->contiguous = contiguous;
 			job_ptr->details->kill_on_node_fail = kill_on_node_fail;
-			job_ptr->details->kill_on_node_fail = 1;
+			job_ptr->details->batch_flag = batch_flag;
 			job_ptr->details->min_procs = min_procs;
 			job_ptr->details->min_memory = min_memory;
 			job_ptr->details->min_tmp_disk = min_tmp_disk;
@@ -1275,10 +1279,15 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		goto cleanup ;
 	}
 
-	if ( ( error_code = copy_job_desc_to_file ( job_desc , (*job_rec_ptr)->job_id ) ) )  {
-		error_code = ESLURM_WRITING_TO_FILE ;
-		goto cleanup ;
+	if (job_desc->script) {
+		if ( ( error_code = copy_job_desc_to_file ( job_desc , (*job_rec_ptr)->job_id ) ) )  {
+			error_code = ESLURM_WRITING_TO_FILE ;
+			goto cleanup ;
+		}
+		(*job_rec_ptr)->details->batch_flag = 1;
 	}
+	else
+		(*job_rec_ptr)->details->batch_flag = 0;
 
 	if (part_ptr->shared == SHARED_FORCE)		/* shared=force */
 		(*job_rec_ptr)->details->shared = 1;
