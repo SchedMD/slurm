@@ -26,7 +26,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODES" {
+	-re "#NODES " {
 		incr matches
 		exp_continue
 	}
@@ -39,7 +39,7 @@ expect {
 		exp_continue
 	}
 	-re "CPUS" {
-		incr matches -1
+		incr matches -10
 		exp_continue
 	}
 	timeout {
@@ -68,7 +68,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODES" {
+	-re "#NODES " {
 		incr matches
 		exp_continue
 	}

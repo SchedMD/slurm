@@ -35,7 +35,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODES" {
+	-re "MAX_TIME" {
+		incr matches
+		exp_continue
+	}
+	-re "#NODES.A/I/O/T" {
 		incr matches
 		exp_continue
 	}
@@ -44,7 +48,7 @@ expect {
 		exp_continue
 	}
 	-re "STATE" {
-		incr matches -1
+		incr matches -10
 		exp_continue
 	}
 	-re "($end_of_line)($alpha_numeric)(\[ \*\]) *UP" {
@@ -62,7 +66,7 @@ expect {
 	}
 }
 
-if {$matches != 4} {
+if {$matches != 5} {
 	send_user "\nFAILURE: sinfo partition summarize format error\n"
 	set exit_code 1
 }
@@ -114,7 +118,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODES" {
+	-re "MAX_TIME" {
+		incr matches
+		exp_continue
+	}
+	-re "#NODES " {
 		incr matches
 		exp_continue
 	}
@@ -126,8 +134,16 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "MAX_TIME" {
-		incr matches -1
+	-re "ROOT" {
+		incr matches -10
+		exp_continue
+	}
+	-re "SHARE" {
+		incr matches -10
+		exp_continue
+	}
+	-re "GROUPS" {
+		incr matches
 		exp_continue
 	}
 	timeout {
@@ -138,8 +154,8 @@ expect {
 	}
 }
 
-if {$matches != 5} {
-	send_user "\nFAILURE: sinfo partition normal format error\n"
+if {$matches != 6} {
+	send_user "\nFAILURE: sinfo partition normal format error $matches\n"
 	set exit_code 1
 }
 
@@ -158,15 +174,19 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODES" {
-		incr matches
-		exp_continue
-	}
-	-re "STATE" {
-		incr matches
-		exp_continue
-	}
 	-re "MAX_TIME" {
+		incr matches
+		exp_continue
+	}
+	-re "JOB_SIZE" {
+		incr matches
+		exp_continue
+	}
+	-re "ROOT" {
+		incr matches
+		exp_continue
+	}
+	-re "SHARE" {
 		incr matches
 		exp_continue
 	}
@@ -174,6 +194,15 @@ expect {
 		incr matches
 		exp_continue
 	}
+	-re "#NODES " {
+		incr matches
+		exp_continue
+	}
+	-re "STATE" {
+		incr matches
+		exp_continue
+	}
+
 	-re "NODE_LIST" {
 		incr matches
 		exp_continue
@@ -186,7 +215,7 @@ expect {
 	}
 }
 
-if {$matches != 7} {
+if {$matches != 10} {
 	send_user "\nFAILURE: sinfo partition long format error\n"
 	set exit_code 1
 }
