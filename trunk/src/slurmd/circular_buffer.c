@@ -7,15 +7,16 @@
 
 #include <src/slurmd/circular_buffer.h>
 
-#define BUFFER_FULL_DUMP_SIZE 4096 
-#define INITIAL_BUFFER_SIZE 8192
-#define INCREMENTAL_BUFFER_SIZE 8192
-#define MAX_BUFFER_SIZE ( ( 8192 * 10 ) )
+#define DEF_INITIAL_BUFFER_SIZE 8192
+#define DEF_INCREMENTAL_BUFFER_SIZE 8192
+#define DEF_MAX_BUFFER_SIZE ( ( 8192 * 10 ) )
+#define BUFFER_FULL_DUMP_SIZE ( buf -> min_size / 2 )
 
 static int assert_checks ( circular_buffer_t * buf ) ;
 static int assert_checks_2 ( circular_buffer_t * buf ) ;
 static int expand_buffer ( circular_buffer_t * buf ) ;
 static int shrink_buffer ( circular_buffer_t * buf ) ;
+static void common_init ( circular_buffer_t * buf ) ;
 
 void free_circular_buffer ( circular_buffer_t * buf_ptr )
 {
@@ -34,8 +35,34 @@ int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 	circular_buffer_t * buf ;
 	*buf_ptr = xmalloc ( sizeof ( circular_buffer_t ) ) ;
 	buf = *buf_ptr ;
-	buf -> buffer = xmalloc ( INITIAL_BUFFER_SIZE ) ;
-	buf -> buf_size = INITIAL_BUFFER_SIZE ;
+
+	buf -> min_size = DEF_INITIAL_BUFFER_SIZE ;
+	buf -> max_size = DEF_MAX_BUFFER_SIZE ;
+	buf -> incremental_size = DEF_INCREMENTAL_BUFFER_SIZE ;
+
+	common_init ( buf ) ;
+	return SLURM_SUCCESS ;
+
+}
+
+int init_circular_buffer2 ( circular_buffer_t ** buf_ptr , int min_size , int max_size , int incremental_size )
+{
+	circular_buffer_t * buf ;
+	*buf_ptr = xmalloc ( sizeof ( circular_buffer_t ) ) ;
+	buf = *buf_ptr ;
+	
+	buf -> min_size = min_size ;	
+	buf -> max_size = max_size ;	
+	buf -> incremental_size = incremental_size ;	
+
+	common_init ( buf ) ;
+	return SLURM_SUCCESS ;
+}
+
+static void common_init ( circular_buffer_t * buf )
+{
+	buf -> buffer = xmalloc ( buf -> min_size ) ;
+	buf -> buf_size = buf -> min_size ;
 
 	buf -> start = buf -> buffer ;
 	buf -> end = buf -> start + buf-> buf_size ;
@@ -44,8 +71,9 @@ int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 	buf -> tail = buf -> start ;
 
 	buf -> read_size = 0 ;
-	buf -> write_size = INITIAL_BUFFER_SIZE ;
-	return SLURM_SUCCESS ;
+	buf -> write_size = buf -> min_size ;
+	
+	return ;
 }
 
 void print_circular_buffer ( circular_buffer_t * buf )
@@ -222,7 +250,6 @@ static int assert_checks ( circular_buffer_t * buf )
 {
 	/* sanity checks */
 	/* insures that dump data when MAX_BUFFER_SIZE is full will work correctly */
-	assert ( BUFFER_FULL_DUMP_SIZE <= INITIAL_BUFFER_SIZE / 2 ) ;
 	
 	assert ( buf != NULL ) ; /* buf struct is not null */
 	assert ( buf-> start == buf -> buffer ); /* stat hasn't moved */
@@ -244,7 +271,7 @@ static int shrink_buffer ( circular_buffer_t * buf )
 {
 	char * new_buffer ;
 
-	if ( buf->buf_size == INITIAL_BUFFER_SIZE )
+	if ( buf->buf_size == buf -> min_size )
 	{
 	/*	info ( "circular buffer at minimum" ) ; */
 
@@ -252,25 +279,25 @@ static int shrink_buffer ( circular_buffer_t * buf )
 		buf -> tail = buf -> start ;
 
 		buf -> read_size = 0 ;
-		buf -> write_size = INITIAL_BUFFER_SIZE ;
+		buf -> write_size = buf -> min_size ;
 		
 		return SLURM_SUCCESS ;
 	}
 	else
 	{
-		new_buffer = xmalloc ( INITIAL_BUFFER_SIZE ) ;
+		new_buffer = xmalloc ( buf -> min_size ) ;
 		xfree ( buf -> buffer ) ;
 		buf -> buffer = new_buffer ;
-		buf -> buf_size = INITIAL_BUFFER_SIZE ;
+		buf -> buf_size = buf -> min_size ;
 		
 		buf -> start = new_buffer ;
-		buf -> end = new_buffer + INITIAL_BUFFER_SIZE ; 
+		buf -> end = new_buffer + buf -> min_size ; 
 		
 		buf -> head = new_buffer ;
 		buf -> tail = new_buffer ;
 
 		buf -> read_size = 0 ;
-		buf -> write_size = INITIAL_BUFFER_SIZE ;
+		buf -> write_size = buf -> min_size ;
 		
 		return SLURM_SUCCESS ;
 	}
@@ -286,7 +313,7 @@ static int expand_buffer ( circular_buffer_t * buf )
 /*	info ( "EXPANDING BUFFER" ) ; */
 	/*print_circular_buffer ( buf ) ; */
 
-	if ( buf->buf_size == MAX_BUFFER_SIZE )
+	if ( buf->buf_size == buf -> max_size )
 	{
 		/*print_circular_buffer ( buf ) ; */
 		/*info ( "circular buffer maxed, dumping BUFFER_FULL_DUMP_SIZE of data"); */
@@ -318,7 +345,7 @@ static int expand_buffer ( circular_buffer_t * buf )
 
 	if ( buf->tail > buf->head )
 	{
-		new_buffer = xmalloc ( buf->buf_size + INCREMENTAL_BUFFER_SIZE ) ;
+		new_buffer = xmalloc ( buf->buf_size + buf -> incremental_size  ) ;
 		data_size = buf->tail - buf->head ;
 		memcpy ( new_buffer , buf->head , data_size ) ;
 		xfree ( buf -> buffer ) ;
@@ -326,7 +353,7 @@ static int expand_buffer ( circular_buffer_t * buf )
 	}
 	else if ( buf->tail <= buf->head ) /* CASE B */
 	{
-		new_buffer = xmalloc ( buf->buf_size + INCREMENTAL_BUFFER_SIZE ) ;
+		new_buffer = xmalloc ( buf->buf_size + buf -> incremental_size ) ;
 		data_size_blk1 = buf->end - buf->head ;
 		data_size_blk2 = buf->tail - buf->start ;
 		data_size = data_size_blk1 + data_size_blk2 ;
@@ -345,8 +372,8 @@ static int expand_buffer ( circular_buffer_t * buf )
 	buf -> start = new_buffer ;
 	buf -> head = new_buffer ;
 	buf -> tail = new_buffer + data_size ;
-	buf -> end = new_buffer + buf->buf_size + INCREMENTAL_BUFFER_SIZE ;
-	buf -> buf_size += INCREMENTAL_BUFFER_SIZE ;
+	buf -> end = new_buffer + buf->buf_size + buf -> incremental_size ;
+	buf -> buf_size += buf -> incremental_size ;
 	buf -> read_size = data_size ;
 	buf -> write_size = buf -> end - buf-> tail ;
 
