@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "November 2002" "squeue 0.1" "Slurm components"
+.TH SQUEUE "1" "January 2003" "squeue 0.1" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -52,7 +52,7 @@ limit)
 .br
 \fB%m\fR Minimum size of memory (in MB) requested by the job
 .br
-\fB%n\fR List of node names explicity requested by the job
+\fB%n\fR List of node names explicitly requested by the job
 .br
 \fB%N\fR List of nodes allocated to the job or job step
 .br
@@ -82,15 +82,15 @@ limit)
 Display all job information.
 .TP
 \fB\-i\fR, \fB\-\-iterate\fR
-Repeatedly gathter and report the requested information at the interval
+Repeatedly gather and report the requested information at the interval
 specified (in seconds).
 .TP
 \fB\-j\fR, \fB\-\-jobs\fR
-Specify the jobs to view.  This takes a comma seperated list of jobs to view.
+Specify the jobs to view.  This takes a comma separated list of jobs to view.
 Defaults to all jobs.
 .TP
 \fB\-s\fR, \fB\-\-job-steps\fR
-Specify the job steps to view.  This takes a comma seperated list of job steps
+Specify the job steps to view.  This takes a comma separated list of job steps
 to view in the format "job_id.step_id". Defaults to all job steps.
 .TP
 \fB\-l\fR, \fB\-\-long\fR
