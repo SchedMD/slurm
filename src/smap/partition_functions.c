@@ -55,6 +55,7 @@ typedef struct {
 	enum connection_type bgl_conn_type;
 	enum node_use_type bgl_node_use;
 	hostlist_t hostlist;
+	bool printed;
 } db2_block_info_t;
 
 static List block_list = NULL;
@@ -67,6 +68,9 @@ static void _print_header_part(void);
 static int  _print_text_part(partition_info_t * part_ptr, 
 		db2_block_info_t *db2_info_ptr);
 static void _read_part_db2(void);
+#ifdef HAVE_BGL_FILES
+static int _print_rest(void *object, void *arg);
+#endif
 
 void get_part(void)
 {
@@ -75,6 +79,7 @@ void get_part(void)
 	partition_info_t part;
 	char node_entry[13];
 	int start, startx, starty, startz, endx, endy, endz;
+	db2_block_info_t *block_ptr;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -112,6 +117,8 @@ void get_part(void)
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
+		if (!part.nodes || (part.nodes[0] == '\0'))
+			continue;	/* empty partition */
 		if (params.display == BGLPART) {
 			memcpy(node_entry, part.nodes, 12);
 			node_entry[12] = '\0';
@@ -140,8 +147,10 @@ void get_part(void)
 					wattron(pa_system_ptr->text_win, 
 							COLOR_PAIR(pa_system_ptr->
 							fill_in_value[count].color));
-					_print_text_part(&part, _find_part_db2(
-							part.allow_groups));
+					block_ptr = _find_part_db2(part.allow_groups);
+					if (block_ptr)
+						block_ptr->printed = true;
+					_print_text_part(&part, block_ptr);
 					wattroff(pa_system_ptr->text_win, 
 							COLOR_PAIR(pa_system_ptr->
 							fill_in_value[count].color));
@@ -174,6 +183,11 @@ void get_part(void)
 				count++;
 			}
 		}
+	}
+
+	/* Report any BGL Blocks not in a SLURM partition */
+	if (params.display == BGLPART) {
+		list_for_each(block_list, _print_rest, &count);
 	}
 
 	part_info_ptr = new_part_ptr;
@@ -216,7 +230,8 @@ static void _print_header_part(void)
 	pa_system_ptr->ycord++;
 }
 
-static int _print_text_part(partition_info_t * part_ptr, db2_block_info_t *db2_info_ptr)
+static int _print_text_part(partition_info_t * part_ptr, 
+		db2_block_info_t *db2_info_ptr)
 {
 	int printed = 0;
 	int tempxcord;
@@ -225,31 +240,34 @@ static int _print_text_part(partition_info_t * part_ptr, db2_block_info_t *db2_i
 	int width = 0;
 	char *nodes, time_buf[20];
 
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%c", part_ptr->root_only);
-	pa_system_ptr->xcord += 4;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "%.9s", part_ptr->name);
-	pa_system_ptr->xcord += 10;
-	if (part_ptr->state_up)
+	if (part_ptr->name) {
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "UP");
-	else
+			pa_system_ptr->xcord, "%c", part_ptr->root_only);
+		pa_system_ptr->xcord += 4;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "DOWN");
-	pa_system_ptr->xcord += 7;
+			pa_system_ptr->xcord, "%.9s", part_ptr->name);
+		pa_system_ptr->xcord += 10;
+		if (part_ptr->state_up)
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				pa_system_ptr->xcord, "UP");
+		else
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				pa_system_ptr->xcord, "DOWN");
+		pa_system_ptr->xcord += 7;
 
-	if (part_ptr->max_time == INFINITE)
-		snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
-	else {
-		snprint_time(time_buf, sizeof(time_buf), 
-			(part_ptr->max_time * 60));
-	}
-	width = strlen(time_buf);
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		pa_system_ptr->xcord + (9 - width), "%s", 
-		time_buf);
-	pa_system_ptr->xcord += 11;
+		if (part_ptr->max_time == INFINITE)
+			snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
+		else {
+			snprint_time(time_buf, sizeof(time_buf), 
+				(part_ptr->max_time * 60));
+		}
+		width = strlen(time_buf);
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			pa_system_ptr->xcord + (9 - width), "%s", 
+			time_buf);
+		pa_system_ptr->xcord += 11;
+	} else
+		pa_system_ptr->xcord += 32;
 
 	if (params.display == BGLPART) {
 		if (db2_info_ptr) {
@@ -315,6 +333,10 @@ static int _print_text_part(partition_info_t * part_ptr, db2_block_info_t *db2_i
 		pa_system_ptr->xcord++;
 
 		i++;
+	}
+
+	/* FIXME: Report any BGL Blocks not reported above */
+	if (params.display == BGLPART) {
 	}
 
 	pa_system_ptr->xcord = 1;
@@ -413,6 +435,48 @@ static int _list_nodelist_find(void *object, void *key)
 	return 0;
 }
 
+static int _clear_printed_flag(void *object, void *arg)
+{
+	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
+	block_ptr->printed = false;
+	return SLURM_SUCCESS;
+}
+
+static int _print_rest(void *object, void *arg)
+{
+	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
+	int *count = (int *) arg;
+	int start, startx, starty, startz, endx, endy, endz;
+	partition_info_t part;
+
+	if (block_ptr->printed)
+		return SLURM_SUCCESS;
+
+	if (block_ptr->nodes[3] == '[') {
+		start = atoi(block_ptr->nodes + 4);
+		startx = start / 100;
+		starty = (start % 100) / 10;
+		startz = (start % 10);
+		start = atoi(block_ptr->nodes + 8);
+		endx = start / 100;
+		endy = (start % 100) / 10;
+		endz = (start % 10);
+	} else {
+		start = atoi(block_ptr->nodes + 3);
+		startx = endx = start / 100;
+		starty = endy = (start % 100) / 10;
+		startz = endz = (start % 10);
+	}
+
+	part.name = NULL;
+	part.allow_groups = block_ptr->nodes;
+	part.total_nodes =  set_grid_bgl(startx, starty, startz, 
+			endx, endy, endz, *count);
+	part.root_only = (int) pa_system_ptr->fill_in_value[*count].letter;
+	_print_text_part(&part, block_ptr);
+	return SLURM_SUCCESS;
+}
+
 static int _post_block_read(void *object, void *arg)
 {
 	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
@@ -454,6 +518,7 @@ static void _read_part_db2(void)
 		 * run rm_bgl_free, so just read the data once 
 		 * and never free it. There is also no sense in
 		 * processing it again either. */
+		list_for_each(block_list, _clear_printed_flag, NULL);
 		return;
 	}
 
