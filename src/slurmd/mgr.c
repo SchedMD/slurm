@@ -64,9 +64,8 @@
 #include "src/slurmd/interconnect.h"
 
 static int  _run_job(slurmd_job_t *job);
-static int  _run_batch_job(slurmd_job_t *job);
 static int  _exec_all_tasks(slurmd_job_t *job);
-static void _task_exec(slurmd_job_t *job, int i, bool batch);
+static void _task_exec(slurmd_job_t *job, int i);
 static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
 static int  _become_user(slurmd_job_t *job);
@@ -270,7 +269,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if ((rc = _setup_batch_env(job, msg->nodes)) < 0)
 		goto cleanup;
 
-	status = _run_batch_job(job);
+	status = _run_job(job);
 		
    cleanup:
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
@@ -305,10 +304,12 @@ _run_job(slurmd_job_t *job)
 	int            rc   = SLURM_SUCCESS;
 	struct passwd *spwd = getpwuid(geteuid());
 
+	_block_most_signals();
+
 	/* Insert job info into shared memory */
 	job_update_shm(job);
 
-	if (interconnect_init(job) == SLURM_ERROR) {
+	if (!job->batch && interconnect_init(job) == SLURM_ERROR) {
 		error("interconnect_init: %m");
 		rc = errno;
 		/* shm_init(); */
@@ -347,7 +348,8 @@ _run_job(slurmd_job_t *job)
 	}
 
 	rc = _exec_all_tasks(job);
-	_send_launch_resp(job, rc);
+	if (!job->batch)
+		_send_launch_resp(job, rc);
 	_wait_for_all_tasks(job);
 
 	debug2("all tasks exited, waiting on IO");
@@ -355,8 +357,9 @@ _run_job(slurmd_job_t *job)
 	pthread_join(job->ioid, NULL);
 	debug2("IO complete");
 
-	interconnect_fini(job); /* ignore errors        */
-	job_delete_shm(job);    /* again, ignore errors */
+	if (!job->batch)
+		interconnect_fini(job); /* ignore errors        */
+	job_delete_shm(job);            /* again, ignore errors */
 	verbose("job completed, rc = %d", rc);
 	return rc;
 
@@ -364,10 +367,12 @@ fail2:
 	io_close_all(job);
 	pthread_join(job->ioid, NULL);
 fail1:
-	interconnect_fini(job);
+	if (!job->batch)
+		interconnect_fini(job);
 fail:
 	job_delete_shm(job);
-	_send_launch_resp(job, rc);
+	if (!job->batch)
+		_send_launch_resp(job, rc);
 	return rc;
 }
 
@@ -447,85 +452,6 @@ _handle_attach_req(slurmd_job_t *job)
 	list_prepend(job->sruns, (void *) srun);
 
 	io_new_clients(job);
-}
-
-static int
-_run_batch_job(slurmd_job_t *job)
-{
-	int    status = 0;
-	int    rc     = 0;
-	task_t t;
-	pid_t  sid, pid;
-	struct passwd *spwd = getpwuid(getuid());
-
-	_block_most_signals();
-
-	if ((rc = io_spawn_handler(job)) < 0) {
-		return ESLURMD_IO_ERROR;
-	}
-
-	/*
-	 * Temporarily drop permissions 
-	 */
-	if ((rc = _drop_privileges(job->pwd)) < 0)
-		return ESLURMD_SET_UID_OR_GID_ERROR;
-
-	/* Open input/output files and/or connections back to client
-	 */
-	rc = io_prepare_clients(job);
-
-	if (_reclaim_privileges(spwd) < 0) 
-		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
-
-	if (rc < 0)
-		return ESLURMD_CANNOT_SPAWN_IO_THREAD;
-
-	xsignal(SIGPIPE, SIG_IGN);
-
-	if ((sid = setsid()) < (pid_t) 0) {
-		error("job %d: setsid: %m", job->jobid);
-		return ESLURMD_SET_SID_ERROR;
-	}
-
-	if (shm_update_step_sid(job->jobid, job->stepid, sid) < 0) {
-		error("job %d: shm_update_step_sid: %m", job->jobid);
-		return ESLURMD_SHARED_MEMORY_ERROR;
-	}
-
-	t.id = 0;
-	t.global_id = 0;
-	t.ppid      = getpid();
-
-	if ((t.pid = fork()) < 0) {
-		error("fork: %m");
-		return ESLURMD_FORK_FAILED;
-	} else if (t.pid == 0)   /* child */
-		_task_exec(job, 0, true);
-
-	/* Parent continues: */
-
-	job->task[0]->pid = t.pid;
-
-	if (shm_add_task(job->jobid, job->stepid, &t) < 0) {
-		error("job %d: shm_add_task: %m", job->jobid);
-		return ESLURMD_SHARED_MEMORY_ERROR;
-	}
-
-	while ((pid = waitpid(0, &status, 0)) < 0 && (pid != t.pid)) {
-		if (errno == EINTR) {
-			_handle_attach_req(job);
-			continue;
-		} else 
-			error("waitpid: %m");
-	}
-
-	verbose("batch job %d exited with status %d", job->jobid, status);
-
-	/* Wait for io to complete */
-	io_close_all(job);
-	pthread_join(job->ioid, NULL);
-
-	return status;
 }
 
 static void
@@ -627,7 +553,7 @@ _become_user(slurmd_job_t *job)
 }
 
 static void
-_task_exec(slurmd_job_t *job, int i, bool batch)
+_task_exec(slurmd_job_t *job, int i)
 {
 	int rc;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -648,12 +574,12 @@ _task_exec(slurmd_job_t *job, int i, bool batch)
 	}
 
 	/* attach to interconnect */
-	if (!batch && (interconnect_attach(job, i) < 0)) {
+	if (!job->batch && (interconnect_attach(job, i) < 0)) {
 		error("interconnect attach failed: %m");
 		exit(1);
 	}
 
-	if (!batch && (interconnect_env(job, i) < 0)) {
+	if (!job->batch && (interconnect_env(job, i) < 0)) {
 		error("interconnect_env: %m");
 	}
 
@@ -749,7 +675,7 @@ _exec_all_tasks(slurmd_job_t *job)
 	if (i == job->ntasks) 
 		return 0; /* _wait_for_all_tasks(job); */
 	else
-		_task_exec(job, i, false);
+		_task_exec(job, i);
 
 	debug3("All tasks exited");
 	return 0;
@@ -777,7 +703,8 @@ _send_exit_msg(int rc, task_info_t *t)
 	i = list_iterator_create(t->srun_list);
 	while ((srun = list_next(i))) {
 		resp.address = srun->resp_addr;
-		slurm_send_only_node_msg(&resp);
+		if (resp.address.sin_family != 0)
+			slurm_send_only_node_msg(&resp);
 	}
 	list_iterator_destroy(i);
 

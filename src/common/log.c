@@ -256,6 +256,18 @@ void log_set_fpfx(char *prefix)
 	slurm_mutex_unlock(&log_lock);
 }
 
+void log_set_argv0(char *argv0)
+{
+	slurm_mutex_lock(&log_lock);
+	if (log->argv0)
+		xfree(log->argv0);
+	if (!argv0)
+		log->argv0 = xstrdup("");
+	else 
+		log->argv0 = xstrdup(argv0);
+	slurm_mutex_unlock(&log_lock);
+}
+
 /* reinitialize log data structures. Like log_init, but do not init
  * the log mutex
  */

@@ -202,16 +202,17 @@ _get_job_info(srun_step_t *s)
 		job = &resp->job_array[i];
 		if (job->job_id == s->jobid)
 			break;
+		job = NULL;
 	}
 
 	if (job == NULL) {
-		error ("Cannot find job %d", s->jobid);
+		error ("Unable to find job %d", s->jobid);
 		goto done;
 	}
 
 	if (job->job_state != JOB_RUNNING) {
-		error ("Cannot attach to %s job %d",
-		       job_state_string(job->job_state), s->jobid);
+		error ("Cannot attach to job %d in state %s",
+		       job->job_id, job_state_string(job->job_state));
 		goto done;
 	}
 
@@ -293,8 +294,6 @@ _attach_to_job(job_t *job)
 
 	req = xmalloc(job->nhosts * sizeof(*req));
 	msg = xmalloc(job->nhosts * sizeof(*msg));
-
-
 
 	debug("Going to attach to job %d.%d", job->jobid, job->stepid);
 
@@ -462,6 +461,13 @@ int reattach()
 
 	job->jobid  = s->jobid;
 	job->stepid = s->stepid;
+	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+
+	if (job->stepid == NO_VAL) {
+		char *new_argv0 = NULL;
+		xstrfmtcat(new_argv0, "attach[%d]", job->jobid);
+		log_set_argv0(new_argv0);
+	}
 
 	if (opt.join)
 		sig_setup_sigmask();

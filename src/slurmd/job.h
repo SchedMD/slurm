@@ -77,9 +77,9 @@ typedef struct srun_info {
 	srun_key_t *key;	   /* srun key for IO verification       */
 	slurm_addr resp_addr;	   /* response addr for task exit msg    */
 	slurm_addr ioaddr;         /* Address to connect on for I/O      */
-	char *		ofname;    /* output file (if any)                */
-	char *		efname;    /* error file  (if any)		  */
-	char *          ifname;    /* input file  (if any) 		  */
+	char *	   ofname;         /* output file (if any)               */
+	char *	   efname;         /* error file  (if any)	         */
+	char *     ifname;         /* input file  (if any) 		 */
 
 } srun_info_t;
 
@@ -93,6 +93,7 @@ typedef struct slurmd_job {
 	uint32_t       debug;
 	uint16_t       envc;
 	uint16_t       argc;
+	bool           batch;
 	char         **env;
 	char         **argv;
 	char          *cwd;

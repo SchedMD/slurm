@@ -308,7 +308,10 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	int         rc   = SLURM_SUCCESS;
 	uint16_t    port = 0;
 	char        host[MAXHOSTNAMELEN];
-	uid_t       req_uid, owner;
+	int         i;
+	job_step_t *step;
+	task_t     *t;
+	uid_t       req_uid;
 	gid_t       req_gid;
 	slurm_addr  ioaddr;
 	slurm_msg_t                    resp_msg;
@@ -328,16 +331,15 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
 
-	owner = shm_get_step_owner(req->job_id, req->job_step_id);
-	if (owner == (uid_t) -1) {
+	if ((step = shm_get_step(req->job_id, req->job_step_id)) < 0) {
 		rc = ESRCH;
 		goto done;
 	}
-
-	if ((owner != req_uid) && (req_uid != 0)) {
+	
+	if ((step->uid != req_uid) && (req_uid != 0)) {
 		error("uid %ld attempt to attach to job %d.%d owned by %ld",
 				(long) req_uid, req->job_id, req->job_step_id,
-				(long) owner);
+				(long) step->uid);
 		rc = EPERM;
 		goto done;
 	}
@@ -357,15 +359,29 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 				            req->key ); 
 	} while ((rc < 0) && (errno == EAGAIN));
 
+	resp.local_pids = xmalloc(step->ntasks * sizeof(*resp.local_pids));
+	resp.gids       = xmalloc(step->ntasks * sizeof(*resp.local_pids));
+	resp.ntasks     = step->ntasks;
+	for (t = step->task_list, i = 0; t; t = t->next, i++) {
+		resp.gids[t->id] = t->global_id;
+		resp.local_pids[t->id] = t->pid;
+	}
+
+	shm_free_step(step);
 
     done:
 	debug2("update step addrs rc = %d", rc);
 	resp_msg.data         = &resp;
 	resp_msg.msg_type     = RESPONSE_REATTACH_TASKS;
+	resp.node_name        = conf->hostname;
 	resp.srun_node_id     = req->srun_node_id;
 	resp.return_code      = rc;
 
 	slurm_send_only_node_msg(&resp_msg);
+
+	xfree(resp.gids);
+	xfree(resp.local_pids);
+
 }
 
 

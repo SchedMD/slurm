@@ -79,14 +79,12 @@ _pwd_destroy(struct passwd *pwd)
 {
 	if (!pwd)
 		return;
-
 	xfree(pwd->pw_name);
 	xfree(pwd->pw_passwd);
 	xfree(pwd->pw_gecos);
 	xfree(pwd->pw_shell);
 	xfree(pwd->pw_dir);
 	xfree(pwd);
-
 }
 
 
@@ -186,6 +184,8 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	job->ntasks  = 1; 
 	job->jobid   = msg->job_id;
 	job->stepid  = NO_VAL;
+	job->batch   = true;
+
 	job->uid     = (uid_t)msg->uid;
 	job->cwd     = xstrdup(msg->work_dir);
 

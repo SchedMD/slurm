@@ -303,9 +303,12 @@ typedef struct reattach_tasks_request_msg {
 } reattach_tasks_request_msg_t;
 
 typedef struct reattach_tasks_response_msg {
-	uint32_t return_code;
-	uint32_t srun_node_id;
-	uint32_t ntasks;       /* number of tasks on this node */
+	char     *node_name;
+	uint32_t  return_code;
+	uint32_t  srun_node_id;
+	uint32_t  ntasks;       /* number of tasks on this node     */
+	uint32_t *gids;         /* Global task id assignments       */
+	uint32_t *local_pids;   /* list of process ids on this node */
 } reattach_tasks_response_msg_t;
 
 typedef struct batch_job_launch_msg {
