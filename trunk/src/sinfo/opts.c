@@ -55,7 +55,7 @@ parse_command_line( int argc, char* argv[] )
 	/* Declare the Options */
 	static const struct poptOption options[] = 
 	{
-		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE, "specify an interation period", "ITERATE"},
+		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE, "specify an interation period", "seconds"},
 		{"state", 't', POPT_ARG_STRING, &temp_state, OPT_NODE_STATE, "specify the what state of nodes to view", "NODE_STATE"},
 		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag, OPT_PARTITION,"show partition information and optionally specify a specific partition", "PARTITION"},
 		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE, "specify a specific node", "NODE"},
@@ -156,8 +156,9 @@ print_options()
 {
 	printf( "-----------------------------\n" );
 	printf( "partition(%s) = %s\n", (params.partition_flag ? "true" : "false"), params.partition );
-	printf( "node(%s) = %s\n", (params.node_flag ? "true" : "false"),params.node );
-	printf( "state = %s\n",  node_state_string( params.state ) );
+	printf( "node(%s) = %s\n", (params.node_flag ? "true" : "false"), params.node );
+	printf( "state(%s) = %s\n",  (params.state_flag ? "true" : "false"), 
+				node_state_string( params.state ) );
 	printf( "summarize = %s\n", params.summarize ? "true" : "false" );
 	printf( "verbose = %d\n", params.verbose );
 	printf( "long output = %s\n",  params.long_output ? "true" : "false" );

@@ -185,6 +185,8 @@ void display_all_nodes( node_info_msg_t* node_msg )
 			node_msg->node_array[i].node_state &= ~NODE_STATE_NO_RESPOND;
 			if ( ( ( params.node == NULL ) || 
 			       ( hostlist_find( hosts, node_msg->node_array[i].name ) != -1 )) &&
+			     ( ( params.partition == NULL) || 
+			       ( strcmp (node_msg->node_array[i].partition, params.partition ) == 0 ) ) &&
 			     ( ( params.state_flag == false) || 
 			       ( node_msg->node_array[i].node_state == params.state ) ) )
 				list_append( nodes, &node_msg->node_array[i] );
@@ -404,7 +406,7 @@ setup_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_p
 		node_info_t* ninfo = &node_ptr->node_array[i];
 		struct partition_summary* part_sum = find_partition_summary( partitions, ninfo->partition );
 		struct node_state_summary* node_sum = NULL;
-		
+
 		if ( part_sum == NULL )
 		{
 			/* This should never happen */
