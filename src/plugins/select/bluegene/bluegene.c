@@ -534,7 +534,7 @@ error("DIM=%d, loc=%d i=%d", SYSTEM_DIMENSIONS, loc, i);
 /* Initialize all plugin variables */
 extern int init_bgl(void)
 {
-#ifdef HAVE_BGL_FILES
+#ifdef USE_BGL_FILES
 	int rc;
 
 #if 0	
