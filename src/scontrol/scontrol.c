@@ -1515,6 +1515,7 @@ _update_node (int argc, char *argv[])
 	uint16_t state_val;
 	update_node_msg_t node_msg;
 	char *reason_str = NULL;
+	char *user_name;
 	char time_buf[64];
 	struct tm *time_ptr;
 	time_t now;
@@ -1539,7 +1540,13 @@ _update_node (int argc, char *argv[])
 
 			/* Append user, date and time */
 			xstrcat(reason_str, " [");
-			xstrcat(reason_str, getlogin());
+			user_name = getlogin();
+			if (user_name)
+				xstrcat(reason_str, user_name);
+			else {
+				sprintf(time_buf, "%d", getuid());
+				xstrcat(reason_str, time_buf);
+			}
 			now = time(NULL);
 			time_ptr = localtime(&now);
 			strftime(time_buf, sizeof(time_buf), "@%b %d %H:%M]", 
