@@ -48,6 +48,7 @@
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/switch.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
@@ -509,6 +510,7 @@ static int _parse_part_spec(char *in_line)
 	int hidden_val = NO_VAL, state_val = NO_VAL, shared_val = NO_VAL;
 	int error_code;
 	struct part_record *part_ptr;
+	static int default_part_val = NO_VAL;
 
 	if ((error_code =
 	     load_string(&partition_name, "PartitionName=", in_line)))
@@ -552,7 +554,8 @@ static int _parse_part_spec(char *in_line)
 			goto cleanup;
 		}
 		xfree(default_str);
-	}
+	} else
+		default_val = default_part_val;
 
 	if (hidden_str) {
 		if (strcasecmp(hidden_str, "YES") == 0)
@@ -636,6 +639,8 @@ static int _parse_part_spec(char *in_line)
 
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {
 		xfree(partition_name);
+		if (default_val != NO_VAL)
+			default_part_val = default_val;
 		if (hidden_val != NO_VAL)
 			default_part.hidden  = hidden_val;
 		if (max_time_val != NO_VAL)
