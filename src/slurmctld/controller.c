@@ -187,6 +187,7 @@ int main(int argc, char *argv[])
 		if (error_code)
 			error("daemon error %d", error_code);
 	}
+	info("slurmctld version %s started", SLURM_VERSION);
 
 	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
