@@ -924,7 +924,8 @@ void update_logging(void)
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (slurmctld_conf.slurmctld_logfile)
 			log_opts.syslog_level = LOG_LEVEL_QUIET;
-	}
+	} else
+		log_opts.syslog_level = LOG_LEVEL_QUIET;
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
