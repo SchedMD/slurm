@@ -173,8 +173,14 @@ char * xbasename(char *path)
  */
 char * xstrdup(const char *str)
 {
-	size_t siz = strlen(str) + 1;
-	char *result = (char *)xmalloc(siz);
+	size_t siz;
+	char   *result;
+
+	if (str == NULL)
+		return NULL;
+
+	siz = strlen(str) + 1;
+	result = (char *)xmalloc(siz);
 
 	xassert(strlcpy(result, str, siz) == siz-1);
 
