@@ -7,8 +7,8 @@
   Name:		slurm
   Major:	0
   Minor:	3
-  Micro:        3
-  Version:	0.3.3
+  Micro:        4
+  Version:	0.3.4
   Release:	1
   API_CURRENT:	1
   API_REVISION: 2
