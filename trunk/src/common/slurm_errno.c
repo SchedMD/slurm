@@ -195,6 +195,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Pipe error on task spawn"				},
 	{ ESLURMD_KILL_TASK_FAILED, 
 	  "Kill task failed"					},
+	{ ESLURMD_UID_NOT_FOUND,
+	  "User not found on host"                              },
 	{ ESLURMD_KILL_JOB_FAILED, 
 	  "Attempt to kill job failed or timed out"	        },
 	{ ESLURMD_INVALID_JOB_CREDENTIAL, 
