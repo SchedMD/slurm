@@ -293,11 +293,26 @@ static char *_host_state_name(host_state_t state_inx)
 
 void report_task_status(job_t *job)
 {
-	int i;
+	int i, j;
+	int first_task, last_task;
+	task_state_t current_state;
 
 	for (i = 0; i < opt.nprocs; i++) {
-		info ("task:%d state:%s", i, 
-		      _task_state_name(job->task_state[i]));
+		current_state = job->task_state[i];
+		first_task = last_task = i;
+		for (j = (i+1); j < opt.nprocs; j++) {
+			if (current_state == job->task_state[i])
+				last_task = j;
+			else
+				break;
+		}
+		if (first_task == last_task)
+			info ("task:%d state:%s", first_task, 
+			      _task_state_name(current_state));
+		else
+			info ("tasks:%d-%d state:%s", first_task, last_task, 
+			      _task_state_name(current_state));
+		i = last_task;
 	}
 }
 
