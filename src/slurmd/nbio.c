@@ -88,6 +88,7 @@ int error_task_socket ( nbio_attr_t * nbio_attr , int fd_index ) ;
 int set_max_fd ( nbio_attr_t * nbio_attr ) ;
 int nbio_cleanup ( nbio_attr_t * nbio_attr ) ;
 int reconnect (  nbio_attr_t * nbio_attr ) ;
+int test_error_conditions (  nbio_attr_t * nbio_attr ) ;
 
 int init_io_debug ( io_debug_t * io_dbg , task_start_t * task_start , char * name )
 {
@@ -154,8 +155,11 @@ void * do_nbio ( void * arg )
 		else if  ( rc == 0 )
 		{
 			reconnect ( & nbio_attr ) ;
+			/* these are here to set the write set after the fd numbers could have changed in reconnect */
 			if ( nbio_attr . out_cir_buf -> read_size > 0 ) { slurm_FD_SET ( nbio_attr . fd [IN_OUT_FD] , & nbio_attr . init_set [WR_SET] ); }
 			if ( nbio_attr . err_cir_buf -> read_size > 0 ) { slurm_FD_SET ( nbio_attr . fd [SIG_ERR_FD] , & nbio_attr . init_set [WR_SET] ); }
+			if ( test_error_conditions ( & nbio_attr ) ) break ;
+			
 			nbio_attr . select_timer . tv_sec = RECONNECT_TIMEOUT_SECONDS ;
 			nbio_attr . select_timer . tv_usec = RECONNECT_TIMEOUT_MICROSECONDS ;
 			continue ;
@@ -164,12 +168,9 @@ void * do_nbio ( void * arg )
 		{
 			debug3 ( "select has unknown error: %i", rc ) ;
 		}
-
-		if ( nbio_attr . die ) 
-		{
-			break ;
-		}
-
+		
+		if ( test_error_conditions ( & nbio_attr ) ) break ;
+		
 		nbio_set_init ( & nbio_attr , nbio_attr . next_set ) ;
 
 		/* error fd set */
@@ -564,6 +565,23 @@ int reconnect (  nbio_attr_t * nbio_attr )
 			slurm_set_stream_non_blocking ( nbio_attr -> fd [SIG_ERR_FD] ) ;
 			nbio_attr -> reconnect_flags[SIG_ERR_FD] = CONNECTED ;
 		}
+	}
+	return SLURM_SUCCESS ;
+}
+
+int test_error_conditions (  nbio_attr_t * nbio_attr )
+{
+	/* task has died and io is flushed */
+	if ( nbio_attr -> out_cir_buf -> read_size == 0
+			&& nbio_attr -> err_cir_buf -> read_size == 0
+			&& nbio_attr -> flush_flag )
+	{
+		return SLURM_ERROR ;
+	}
+
+	if ( nbio_attr -> die ) 
+	{
+		return SLURM_ERROR ;
 	}
 	return SLURM_SUCCESS ;
 }
