@@ -67,17 +67,18 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
-#  if (!HAVE_MALLOC)
+#  if !HAVE_MALLOC
 #    include "src/common/malloc.h"
 #  endif
 #endif
 
 #ifndef HAVE_SETPROCTITLE
-
+#include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 #include <unistd.h>
+#include "src/common/strlcpy.h"
 #ifdef HAVE_SYS_PSTAT_H
 #include <sys/pstat.h>		/* for HP-UX */
 #endif
@@ -121,8 +122,6 @@
 #endif
 #endif /* HAVE_SETPROCTITLE */
 
-#include "src/slurmd/slurmd.h"
-
 extern char **environ;
 
 /*
@@ -140,6 +139,12 @@ static size_t ps_buffer_size;		/* space determined at run time */
 static int	save_argc;
 static char **save_argv;
 
+#if HAVE__PROGNAME
+extern char *__progname;
+#else
+static char __progname[64];
+#endif
+
 #ifndef HAVE_SETPROCTITLE
 /*
  * Call this to update the ps status display to a fixed prefix plus an
@@ -154,7 +159,6 @@ setproctitle(const char *fmt, ...)
 #if SETPROCTITLE_STRATEGY != PS_USE_NONE
 	ssize_t used;
 	va_list ap;
-	char *prog_name, *slash_ptr;
 
 	/* no ps display if you didn't call save_ps_display_args() */
 	if (save_argv == NULL)
@@ -180,16 +184,12 @@ setproctitle(const char *fmt, ...)
 	/*
 	 * Make fixed prefix of ps display.
 	 */
-	slash_ptr = strrchr(conf->argv[0][0], (int)'/');
-	if (slash_ptr)
-		prog_name = slash_ptr + 1;
-	else
-		prog_name = conf->argv[0][0];
+
 	va_start(ap, fmt);
 	if (fmt == NULL)
-		snprintf(ps_buffer, ps_buffer_size, "%s", prog_name);
+		snprintf(ps_buffer, ps_buffer_size, "%s", __progname);
 	else {
-		used = snprintf(ps_buffer, ps_buffer_size, "%s: ", prog_name);
+		used = snprintf(ps_buffer, ps_buffer_size, "%s: ", __progname);
 		if (used == -1 || used >= ps_buffer_size)
 			used = ps_buffer_size;
 		vsnprintf(ps_buffer + used, ps_buffer_size - used, fmt, ap);
@@ -216,6 +216,15 @@ setproctitle(const char *fmt, ...)
 #endif /* PS_USE_NONE */
 }
 
+static void _init__progname (const char *argv0)
+{
+#if !HAVE__PROGNAME
+	char *start = strrchr (argv0, '/');
+	strlcpy (__progname, start ? (start + 1) : argv0, sizeof (__progname));
+	return;
+#endif /* !HAVE__PROGNAME */
+}
+
 #endif /* HAVE_SETPROCTITLE */
 
 /*
@@ -237,6 +246,8 @@ init_setproctitle(int argc, char *argv[])
 
 	save_argc = argc;
 	save_argv = argv;
+
+	_init__progname (argv[0]);
 
 #if SETPROCTITLE_STRATEGY == PS_USE_CLOBBER_ARGV
 	/*

@@ -38,6 +38,15 @@ case "$host" in
                [Define if you need setproctitle padding])
      ;;
 esac
+
+AC_MSG_CHECKING([for __progname])
+AC_TRY_COMPILE([#include <stdio.h>], 
+  [extern char *__progname; puts(__progname);],
+  [ac_have__progname=yes]
+)
+AC_MSG_RESULT(${ac_have__progname=no})
+if test "$ac_have__progname" = "yes"; then
+  AC_DEFINE([HAVE__PROGNAME], 1, [Define if you have __progname.])
+fi
+
 ])
-
-
