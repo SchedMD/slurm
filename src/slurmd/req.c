@@ -50,6 +50,9 @@
 #define MAXHOSTNAMELEN	64
 #endif
 
+static void _insert_fake_cred(uint32_t jobid, time_t timelimit);
+static bool _job_still_running(uint32_t job_id);
+static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
@@ -60,11 +63,9 @@ static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
-static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
-static void _insert_fake_cred(uint32_t jobid, time_t timelimit);
-
+static void _wait_for_procs(uint32_t job_id, uid_t job_uid);
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
@@ -513,41 +514,82 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 	list_destroy(steps);
 }
 
+static bool
+_job_still_running(uint32_t job_id)
+{
+	bool        retval = false;
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL;   
+
+	while ((s = list_next(i))) {
+		if ((s->jobid == job_id) &&
+		    (shm_step_still_running(job_id, s->stepid))) {
+			retval = true;
+			break;
+		}
+	}
+	list_destroy(steps);
+
+	return retval;
+}
+
 static void 
 _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 {
-	int   rc      = SLURM_SUCCESS;
+	int   rc;
+	bool  still_running;
 	uid_t req_uid = slurm_auth_uid(msg->cred);
 	revoke_credential_msg_t *req = (revoke_credential_msg_t *) msg->data;
 
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
-		rc = ESLURM_USER_ID_MISSING;
 		error("Security violation, uid %u can't revoke credentials",
 		      (unsigned int) req_uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 	} else {
 		rc = revoke_credential(req, conf->cred_state_list);
+		if (rc < 0)
+			error("revoking credential for job %d: %m", 
+			      req->job_id);
+		else {
+			debug("credential for job %d revoked", req->job_id);
+			save_cred_state(conf->cred_state_list);
+		}
 
 		/*
 		 * Now kill all steps associated with this job, they are
 		 * no longer allowed to be running
 		 */
 		_kill_all_active_steps(req->job_id, SIGKILL);
-
-		if (rc < 0)
-			error("revoking credential for job %d: %m", 
-			      req->job_id);
-		else
-			debug("credential for job %d revoked", req->job_id);
-
-		if (_run_epilog(req->job_id, req->job_uid) != 0) {
+		still_running = _job_still_running(req->job_id);
+		if ((!still_running) && 
+		    (_run_epilog(req->job_id, req->job_uid) != 0)) {
 			error ("[job %d] epilog failed", req->job_id);
 			rc = ESLURMD_EPILOG_FAILED;
 		}
-	}
+		slurm_send_rc_msg(msg, rc);
 
-	slurm_send_rc_msg(msg, rc);
-	if (rc == SLURM_SUCCESS)
-		save_cred_state(conf->cred_state_list);
+		/* FIXME: slurmctld has been told of job completion and 
+		 * credential revoke and node state is IDLE, but we still 
+		 * have running processes running */
+		if (still_running)
+			_wait_for_procs(req->job_id, req->job_uid);
+	}
+}
+
+static void
+_wait_for_procs(uint32_t job_id, uid_t job_uid)
+{
+	error("Waiting for job %u to complete", job_id);
+	do {
+		sleep(1);
+	} while (_job_still_running(job_id));
+	debug("Job %u complete", job_id);
+
+	if (_run_epilog(job_id, job_uid) != 0) {
+		error ("[job %d] epilog failed", job_id);
+		/* NEED TO TELL SLURMCTLD OF FAILURE */
+	}
 }
 
 static void 
