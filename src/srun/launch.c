@@ -97,6 +97,21 @@ _dist_cyclic(job_t *job)
 	}
 }
 
+int 
+launch_thr_create(job_t *job)
+{
+	int e;
+	pthread_attr_t attr;
+
+	pthread_attr_init(&attr);
+	if ((e = pthread_create(&job->lid, &attr, &launch, (void *) job))) 
+		slurm_seterrno_ret(e);
+
+	debug("Started launch thread (%d)", job->lid);
+
+	return SLURM_SUCCESS;
+}
+
 void *
 launch(void *arg)
 {

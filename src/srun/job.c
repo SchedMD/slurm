@@ -201,6 +201,9 @@ _job_fake_cred(job_t *job)
 	job->cred->user_id = opt.uid;
 	job->cred->expiration_time = 0x7fffffff;
 	read(fd, job->cred->signature, SLURM_SSL_SIGNATURE_LENGTH);
+
+	if (close(fd) < 0)
+		error ("close(/dev/random): %m");
 }
 
 job_t *
@@ -263,8 +266,19 @@ update_job_state(job_t *job, job_state_t state)
 void 
 job_force_termination(job_t *job)
 {
-	info ("forcing job termination");
-	update_job_state(job, SRUN_JOB_OVERDONE);
+	if (mode == MODE_ATTACH) {
+		info ("forcing detach");
+		update_job_state(job, SRUN_JOB_DETACHED); 	
+	} else {
+		info ("forcing job termination");
+		update_job_state(job, SRUN_JOB_OVERDONE);
+	}
+
 	pthread_kill(job->ioid, SIGTERM);
 }
 
+
+void 
+job_destroy(job_t *job, const char *msg)
+{
+}

@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * src/srun/launch.h - header for srun launch thread
+ * src/srun/signals.h - srun signal handling
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  Written by Mark Grodnona <mgrondona@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,33 +24,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifndef _HAVE_LAUNCH_H
-#define _HAVE_LAUNCH_H
+#ifndef _SIGNALS_H
+#define _SIGNALS_H
 
-#ifdef HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#ifdef WITH_PTHREADS
-#  include <pthread.h>
-#endif
-
-#include "src/common/macros.h"
-#include "src/common/slurm_protocol_api.h"
-
-#include "src/srun/opt.h"
 #include "src/srun/job.h"
 
-typedef struct launch_thr {
-	pthread_t	thread;
-	pthread_attr_t  attr;
-	char            *host;		/* name of host on which to run       */
-	int             ntasks;		/* number of tasks to initiate on host*/
-	int 		*taskid;	/* list of global task ids 	      */
-	int 		i;		/* temporary index into array	      */
-} launch_thr_t;
+void sig_setup_sigmask(void);
+int  sig_thr_create(job_t *job);
+void fwd_signal(job_t *job, int signal);
 
-int    launch_thr_create(job_t *job);
-void * launch(void *arg);
-
-#endif /* !_HAVE_LAUNCH_H */
+#endif /* !_SIGNALS_H */
