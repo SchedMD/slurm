@@ -1,0 +1,68 @@
+Let's see if we are all on the same page if we use data structures for job APIs.
+The user defines a structure job_desc as below. He then calls slurm_job_desc_init(), 
+which sets the values to initial values (#dead, #deadbeef, or NULL for the pointers). 
+The user then set any values as desired, likely only a small subset of the values. 
+Some of the values can be set only by user root (e.g. priority, user_id, group_id). 
+For example, we ignore the request from user "tewk" to run as user "root" with 
+group id "root" and high priority. The user then calls the appropriate API (allocate, 
+submit, update, will_run). The API call packs the values reset by the user, including 
+proper values for user_id and group_id. Only the values set by the user are sent, 
+packing in <job_tag><value> pairs. Alternately, we ship all fields in a pre-defined 
+order and forgo the tags. There probably will be little difference in size and 
+it just seems easier to have a fixed order - one just constructs matching pack 
+and unpack functions as we already have in several places. 
+
+Is this everyone's understanding? Comments?
+
+stucture job_desc {	/* Job descriptor for submit, allocate, and update requests */
+	uint16_t contiguous;	/* 1 if job requires contiguous nodes, 0 otherwise */
+	char *features;		/* comma separated list of required features */
+	char *groups;		/* comma separated list of group IDs, 
+				 * can only be set if user is root */
+	uint32_t job_id;	/* job ID */
+	char *name;		/* name of the job */
+	void *key;		/* root key to submit job, format TBD */
+	uint32_t min_procs;	/* minimum processors required per node */
+	uint32_t min_memory;	/* minimum real memory required per node */
+	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */
+	char *partition;	/* name of requested partition */
+	uint32_t priority;	/* relative priority of the job, 
+				 * can only be set if user is root */
+	char *req_nodes;	/* comma separated list of required nodes */
+	char *job_script;	/* pathname of required script */
+	uint16_t shared;	/* 1 if job can share nodes with other jobs */
+	uint32_t time_limit;	/* maximum run time in minutes */
+	uint32_t num_procs;	/* number of processors required by job */
+	uint32_t num_nodes;	/* number of nodes required by job */
+	uint32_t user_id;	/* set only if different from current UID, 
+				 * can only be set if user is root */
+};
+
+int slurm_job_desc_init (stucture job_desc *job_info);
+int slurm_allocate (stucture job_desc *job_info);
+int slurm_job_update (stucture job_desc *job_info);
+int slurm_submit (stucture job_desc *job_info);
+int slurm_will_run (stucture job_desc *job_info);
+
+enum job_tag { 		/* Used for allocate, job create, or update */
+	CONTIGUOUS,	/* Node allocation to be contiguous, 1=yes, 2=no, uint16_t */
+	FEATURES,	/* Required node features, comma separated, char* */
+	GROUPS,		/* list of user's groups, comma separated, char* */
+	JOB_ID,  	/* Job's ID, uint32_t */
+	JOB_NAME,	/* Job's name, char * */
+	PART_KEY,	/* Key required for partition access, type? */
+	MIN_PROCS,	/* Minimum processor count per node, uint32_t */
+	MIN_REAL_MEM,	/* Minimum MB real memory per node, uint32_t */
+	MIN_TMP_DISK,	/* Minimum MB temporary disk per node, uint32_t */
+	PARTITION,	/* Name of requested partition, char* */
+	PRIORITY,	/* Job's priority, uint32_t */
+	REQ_NODES,	/* List of required nodes, comma separated, char* */
+	SCRIPT,  	/* Pathname of script to execute for job, char* */
+	SHARED, 	/* Nodes to be shared, 1=yes, 2=no, uint16_t */
+	TIME_LIMIT,	/* Job time limit in minutes, uint32_t */
+	TOTAL_NODES,	/* Minimum count of nodes required by the job, uint32_t */
+	TOTAL_PROCS,	/* Minimum count of processors required by the job, uint32_t */
+	USER_ID 	/* User's ID, uint32_t */
+};
+/* Remove Distribution, ProcsPerTask, they go with a job step only */
+
