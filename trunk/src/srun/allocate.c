@@ -67,7 +67,7 @@ allocate_nodes(void)
 	SigFunc *oquitf, *ointf, *otermf;
 	sigset_t oset;
 	resource_allocation_response_msg_t *resp = NULL;
-	job_desc_msg_t *j = job_desc_msg_create();
+	job_desc_msg_t *j = job_desc_msg_create_from_opts (NULL);
 
 	oquitf = xsignal(SIGQUIT, _intr_handler);
 	ointf  = xsignal(SIGINT,  _intr_handler);
@@ -214,8 +214,9 @@ _intr_handler(int signo)
  * (see opt.h)
  */
 job_desc_msg_t *
-job_desc_msg_create(void)
+job_desc_msg_create_from_opts (const char *script)
 {
+	extern char **environ;
 	job_desc_msg_t *j = xmalloc(sizeof(*j));
 
 	slurm_init_job_desc_msg(j);
@@ -264,6 +265,24 @@ job_desc_msg_create(void)
 		j->host = xstrdup(slurmctld_comm_addr.hostname);
 	else
 		j->host = NULL;
+
+	if (script) {
+		/*
+  		 * If script is set then we are building a request for
+		 *  a batch job
+  		 */
+		xassert (opt.batch);
+
+		j->environment = environ;
+		j->env_size = envcount (environ);
+		j->script = script;
+		j->argv = remote_argv;
+		j->argc = remote_argc;
+		j->err  = opt.efname;
+		j->in   = opt.ifname;
+		j->out  = opt.ofname;
+		j->work_dir = opt.cwd;
+	}
 
 	return (j);
 }
