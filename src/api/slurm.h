@@ -29,11 +29,45 @@
 #define _SLURM_H
 
 #include <stdio.h>			/* for FILE definitions */
+
 #include <src/common/slurm_protocol_defs.h>
+
+/*****************************************************************************\
+ *	DEFINITIONS FOR INPUT VALUES
+\*****************************************************************************/
+
+/* INFINITE is used to identify unlimited configurations,  */
+/* eg. the maximum count of nodes any job may use in some partition */
+#define	INFINITE (0xffffffff)
+#define NO_VAL	 (0xfffffffe)
+
+#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_KILL_NODE_FAIL	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
+#define SLURM_JOB_DESC_DEFAULT_ENV_SIZE 	0
+#define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
+#define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
+#define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
+#define SLURM_JOB_DESC_DEFAULT_PRIORITY		NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
+#define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
+#define SLURM_JOB_DESC_DEFAULT_SHARED	 	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_WORKING_DIR	NULL
 
 /*****************************************************************************\
  *	RESOURCE ALLOCATION FUNCTIONS
 \*****************************************************************************/
+
+/* slurm_init_job_desc_msg - set default job descriptor values */
+extern void slurm_init_job_desc_msg (job_desc_msg_t * job_desc_msg);
 
 /*
  * slurm_allocate_resources - allocate resources for a job request
@@ -182,7 +216,7 @@ extern int slurm_load_jobs (time_t update_time,
 		job_info_msg_t **job_info_msg_pptr);
 
 /*
- * slurm_free_job_info - free the job information response message
+ * slurm_free_job_info_msg - free the job information response message
  * NOTE: buffer is loaded by slurm_load_job.
  */
 extern void slurm_free_job_info_msg (job_info_msg_t * job_buffer_ptr);
@@ -249,8 +283,8 @@ extern void slurm_print_job_step_info ( FILE*, job_step_info_t * step_ptr );
 \*****************************************************************************/
 
 /*
- * slurm_load_node - issue RPC to get slurm all node configuration information 
- *	if changed since update_time 
+ * slurm_load_node - issue RPC to get slurm all node configuration  
+ *	information if changed since update_time 
  * NOTE: free the response using slurm_free_node_info_msg
  */
 extern int slurm_load_node (time_t update_time, 
@@ -286,9 +320,12 @@ extern int slurm_update_node ( update_node_msg_t * node_msg ) ;
  *	SLURM PARTITION CONFIGURATION READ/PRINT/UPDATE FUNCTIONS
 \*****************************************************************************/
 
+/* slurm_init_part_desc_msg - set default partition configuration parameters */
+void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg);
+
 /*
- * slurm_load_partitions - issue RPC to get slurm all partition configuration  
- *	information if changed since update_time 
+ * slurm_load_partitions - issue RPC to get slurm all partition   
+ *	configuration information if changed since update_time 
  * NOTE: free the response using slurm_free_partition_info_msg
  */
 extern int slurm_load_partitions (time_t update_time, 

@@ -68,12 +68,6 @@ enum task_flag_vals {
 	TASK_UNUSED2 = 0x4
 };
 
-
-/* INFINITE is used to identify unlimited configurations,  */
-/* eg. the maximum count of nodes any job may use in some partition */
-#define	INFINITE (0xffffffff)
-#define NO_VAL	 (0xfffffffe)
-
 /* last entry must be STATE_END, keep in sync with node_state_string    		*/
 /* if a node ceases to respond, its last state is ORed with NODE_STATE_NO_RESPOND	*/
 enum node_states {
@@ -620,36 +614,12 @@ void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
 void inline
 slurm_free_reattach_tasks_streams_msg(reattach_tasks_streams_msg_t * msg);
-void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t *
-					     msg);
+void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
 extern char *job_state_string_compact(enum job_states inx);
 extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
-
-#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_KILL_NODE_FAIL	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
-#define SLURM_JOB_DESC_DEFAULT_ENV_SIZE 	0
-#define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
-#define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
-#define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
-#define SLURM_JOB_DESC_DEFAULT_PRIORITY		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
-#define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
-#define SLURM_JOB_DESC_DEFAULT_SHARED	 	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_WORKING_DIR	NULL
-void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg);
-void slurm_init_part_desc_msg(update_part_msg_t * update_part_msg);
 
 #endif
