@@ -848,7 +848,7 @@ static void _update_bgl_node_bitmap()
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	// rm_size3D_t bp_size,size_in_bp,m_size;
 	char* reason = NULL;
-	char down_node_list[BUFSIZE];
+	char down_node_list[BUFSIZE] = "";
 	char bgl_down_node[128];
 
 	if (!bgl){
