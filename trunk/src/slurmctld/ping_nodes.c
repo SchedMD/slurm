@@ -46,6 +46,9 @@
 /* Request that nodes re-register at most every MAX_REG_FREQUENCY pings */
 #define MAX_REG_FREQUENCY 20
 
+/* Spawn no more than MAX_REG_THREADS for node re-registration */
+#define MAX_REG_THREADS (MAX_SERVER_THREADS - 2)
+
 static pthread_mutex_t lock_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int ping_count = 0;
 
@@ -125,9 +128,9 @@ void ping_nodes (void)
 	reg_agent_args->retry = 0;
 	now = time (NULL);
 
-	offset += MAX_SERVER_THREADS;
+	offset += MAX_REG_THREADS;
 	if ((offset > node_record_count) && 
-	    (offset >= (MAX_SERVER_THREADS * MAX_REG_FREQUENCY)))
+	    (offset >= (MAX_REG_THREADS * MAX_REG_FREQUENCY)))
 		offset = 0;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -161,7 +164,7 @@ void ping_nodes (void)
 		 * once in a while). We limit these requests since they 
 		 * can generate a flood of incomming RPCs. */
 		if ((base_state == NODE_STATE_UNKNOWN) || 
-		    ((i >= offset) && (i < (offset + MAX_SERVER_THREADS)))) {
+		    ((i >= offset) && (i < (offset + MAX_REG_THREADS)))) {
 			debug3 ("attempt to register %s now", 
 			        node_record_table_ptr[i].name);
 			if ((reg_agent_args->node_count+1) > 
