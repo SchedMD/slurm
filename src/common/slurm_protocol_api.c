@@ -648,7 +648,7 @@ int slurm_send_only_node_msg ( slurm_msg_t * request_msg )
         slurm_fd sockfd ;
 
         /* init message connection for message communication with controller */
-        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_msg_conn ( & request_msg -> address ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
         /* send request message */
