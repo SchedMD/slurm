@@ -81,6 +81,7 @@ struct sched_obj_list
  */
 struct sched_obj_cache_entry
 {
+	int32_t idx;
 	char *field;
 	void *data;
 };
@@ -252,7 +253,9 @@ sched_obj_cache_entry_destructor( void *ent )
 /*  TAG(                sched_obj_cache_entry_find                       )  */
 /* ************************************************************************ */
 void *
-sched_obj_cache_entry_find( sched_obj_list_t objlist, char *field )
+sched_obj_cache_entry_find( sched_obj_list_t objlist,
+			    int32_t idx,
+			    char *field )
 {
 	ListIterator i;
 	struct sched_obj_cache_entry *e;
@@ -260,7 +263,7 @@ sched_obj_cache_entry_find( sched_obj_list_t objlist, char *field )
 	i = list_iterator_create( objlist->cache );
 
 	while ( ( e = (struct sched_obj_cache_entry *) list_next( i ) ) != NULL ) {
-		if ( strcmp( e->field, field ) == 0 ) {
+		if ( ( e->idx == idx ) && ( strcmp( e->field, field ) == 0 ) ) {
 			list_iterator_destroy( i );
 			return e->data;
 		}
@@ -275,10 +278,14 @@ sched_obj_cache_entry_find( sched_obj_list_t objlist, char *field )
 /*  TAG(                     sched_obj_cache_entry_add                   )  */
 /* ************************************************************************ */
 void
-sched_obj_cache_entry_add( sched_obj_list_t objlist, char *field, void *data )
+sched_obj_cache_entry_add( sched_obj_list_t objlist,
+			   int32_t idx,
+			   char *field,
+			   void *data )
 {
 	struct sched_obj_cache_entry *e =
 		(struct sched_obj_cache_entry *) xmalloc( sizeof( *e ) );
+	e->idx = idx;
 	e->field = field;
 	e->data = data;
 	list_push( objlist->cache, e );
@@ -451,13 +458,14 @@ sched_get_job_id( sched_obj_list_t job_data,
 
 	if ( type ) *type = 's';
 	if ( ( cache = sched_obj_cache_entry_find( job_data,
+						   idx,
 						   "job_id" ) ) != NULL )
 		return cache;
 	snprintf( str, 16,
 		 "%u",
 		 ( (struct job_record *)job_data->data )[ idx ].job_id );
 	cache = xstrdup( str );
-	sched_obj_cache_entry_add( job_data, "job_id", cache );
+	sched_obj_cache_entry_add( job_data, idx, "job_id", cache );
 	return cache;
 }
 
@@ -533,7 +541,7 @@ sched_get_job_time_limit( sched_obj_list_t job_data,
 	
 	if ( type ) *type = 't';
 
-	if ( ( cache = sched_obj_cache_entry_find( job_data, "time_limit" ) ) != NULL )
+	if ( ( cache = sched_obj_cache_entry_find( job_data, idx, "time_limit" ) ) != NULL )
 		return cache;
 	cache = xmalloc( sizeof( time_t ) );
 	*cache = ( (struct job_record *)job_data->data )[ idx ].time_limit;
@@ -547,7 +555,7 @@ sched_get_job_time_limit( sched_obj_list_t job_data,
 		*cache *= 60;   // seconds, not mins.
 		break;
 	}
-	sched_obj_cache_entry_add( job_data, "time_limit", cache );
+	sched_obj_cache_entry_add( job_data, idx, "time_limit", cache );
 	return cache;
 }
 
@@ -682,13 +690,14 @@ sched_get_job_req_nodes( sched_obj_list_t job_data,
 	details = ( (struct job_record *)job_data->data )[ idx ].details;
 	if ( details && details->req_nodes ) {
 		if ( ( cache = sched_obj_cache_entry_find( job_data,
+							   idx,
 							   "req_nodes" ) ) != NULL ) {
 			return cache;
 		}
 		cache = expand_hostlist( details->req_nodes );
 		if ( ! cache )
 			return details->req_nodes;
-		sched_obj_cache_entry_add( job_data, "req_nodes", cache );
+		sched_obj_cache_entry_add( job_data, idx, "req_nodes", cache );
 		return cache;
 	}
 	return "";
