@@ -135,20 +135,8 @@ extern int init ( void )
 static void _init_db_properties(void)
 {
 	char *db_prop_orig_loc, db_prop_new_loc[512];
-	int orig_sz;
-	char *tmp_char;
 
-	if ((slurmctld_conf.slurm_conf == NULL)
-	||  ((orig_sz = strlen(slurmctld_conf.slurm_conf)) == 0))
-		fatal("SLURM_CONFIG_FILE undefined");
-	db_prop_orig_loc = xmalloc(orig_sz + 20);
-
-	strcpy(db_prop_orig_loc, slurmctld_conf.slurm_conf);
-	tmp_char = strrchr(db_prop_orig_loc, (int) '/');
-	if (tmp_char)
-		tmp_char[1] = '\0';	/* after last '/' */
-	strcat(db_prop_orig_loc, "db.properties");
-
+	db_prop_orig_loc = "/bgl/BlueLight/ppcfloor/bglsys/bin/db.properties";
 	if (getcwd(db_prop_new_loc, (sizeof(db_prop_new_loc) - 20)) == NULL)
 		fatal("getcwd: %m");
 	strcat(db_prop_new_loc, "/db.properties");
@@ -159,8 +147,6 @@ static void _init_db_properties(void)
 		fatal("symlink(%s,%s): %m", db_prop_orig_loc, db_prop_new_loc);
 	debug("symlink(%s,\n\t%s)", db_prop_orig_loc, db_prop_new_loc);
 #endif
-
-	xfree(db_prop_orig_loc);
 }
 
 static int _init_status_pthread(void)
