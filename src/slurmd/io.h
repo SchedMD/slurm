@@ -24,5 +24,6 @@ int forward_io ( task_start_t * task_arg ) ;
 void * stdin_io_pipe_thread ( void * arg ) ;
 void * stdout_io_pipe_thread ( void * arg ) ;
 void * stderr_io_pipe_thread ( void * arg ) ;
+int wait_on_io_threads ( task_start_t * task_start ) ;
 
 #endif
