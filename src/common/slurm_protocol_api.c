@@ -55,7 +55,6 @@
 /* EXTERNAL VARIABLES */
 
 /* #DEFINES */
-#define CREDENTIAL_TTL_SEC 5
 #define _DEBUG	0
 
 /* STATIC VARIABLES */
@@ -448,9 +447,9 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
-	rc = g_slurm_auth_activate(auth_cred, CREDENTIAL_TTL_SEC);
+	rc = g_slurm_auth_activate(auth_cred);
 	if (rc != SLURM_SUCCESS)	/* Try once more */
-		rc = g_slurm_auth_activate(auth_cred, CREDENTIAL_TTL_SEC);
+		rc = g_slurm_auth_activate(auth_cred);
 	if (rc != SLURM_SUCCESS) {
 		error
 		    ("slurm_send_node_msg: sending msg with unsigned credential, rc=%d)",

@@ -192,13 +192,10 @@ slurm_auth_free( slurm_auth_credential_t *cred )
  * to return valid data until this function has been called successfully
  * for the credential.
  *
- * secs - the number of seconds for which this credential is deemed
- * valid; not appropriate to this plugin but essential to others.
- *
  * Return SLURM_SUCCESS if the credential is successfully activated.
  */
 int
-slurm_auth_activate( slurm_auth_credential_t *cred, int secs )
+slurm_auth_activate( slurm_auth_credential_t *cred )
 {
 	if ( cred == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;		

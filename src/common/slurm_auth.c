@@ -47,7 +47,7 @@
 typedef struct slurm_auth_ops {
 	void *	(*alloc)	( void );
 	int	(*free)		( void *cred );
-	int	(*activate)	( void *cred, int secs );
+	int	(*activate)	( void *cred );
 	int	(*verify)	( void *cred );
 	uid_t	(*get_uid)	( void *cred );
 	gid_t	(*get_gid)	( void *cred );
@@ -228,7 +228,6 @@ slurm_auth_generic_errstr( int slurm_errno )
 		{ SLURM_AUTH_BADARG, "bad argument to plugin function" },
 		{ SLURM_AUTH_MEMORY, "memory management error" },
 		{ SLURM_AUTH_NOUSER, "no such user" },
-		{ SLURM_AUTH_EXPIRED, "authentication credential expired" },
 		{ SLURM_AUTH_INVALID, "authentication credential invalid" },
 		{ SLURM_AUTH_MISMATCH, "authentication type mismatch" },
 		{ 0, NULL }
@@ -320,11 +319,11 @@ c_slurm_auth_free( slurm_auth_context_t c, void *cred )
 }
 
 int
-c_slurm_auth_activate( slurm_auth_context_t c, void *cred, int secs )
+c_slurm_auth_activate( slurm_auth_context_t c, void *cred )
 {
 	if ( ( c == NULL ) || ( cred == NULL ) ) return SLURM_ERROR;
 	if ( c->ops.activate ) {
-		return (*(c->ops.activate))( cred, secs );
+		return (*(c->ops.activate))( cred );
 	} else {
 		return SLURM_ERROR;
 	}
@@ -460,12 +459,12 @@ g_slurm_auth_free( void *cred )
 }
 
 int
-g_slurm_auth_activate( void *cred, int secs )
+g_slurm_auth_activate( void *cred )
 {
 	if ( slurm_auth_init() < 0 )
 		return SLURM_ERROR;
 
-	return (*(g_context->ops.activate))( cred, secs );
+	return (*(g_context->ops.activate))( cred );
 }
 
 int

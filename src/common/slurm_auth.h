@@ -80,11 +80,10 @@ enum {
     SLURM_AUTH_BADARG,
     SLURM_AUTH_MEMORY,
     SLURM_AUTH_NOUSER,
-    SLURM_AUTH_EXPIRED,
     SLURM_AUTH_INVALID,
     SLURM_AUTH_MISMATCH,
 
-    SLURM_AUTH_FIRST_LOCAL_ERROR
+    SLURM_AUTH_FIRST_LOCAL_ERROR	/* Always keep me last. */
 };
 
 /*
@@ -121,7 +120,7 @@ int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
  */
 void	*c_slurm_auth_alloc( slurm_auth_context_t c );
 int	c_slurm_auth_free( slurm_auth_context_t c, void *cred );
-int	c_slurm_auth_activate( slurm_auth_context_t c, void *cred, int secs );
+int	c_slurm_auth_activate( slurm_auth_context_t c, void *cred );
 int	c_slurm_auth_verify( slurm_auth_context_t c, void *cred );
 uid_t	c_slurm_auth_get_uid( slurm_auth_context_t c, void *cred );
 gid_t	c_slurm_auth_get_gid( slurm_auth_context_t c, void *cred );
@@ -141,7 +140,7 @@ int slurm_auth_init( void );
  */
 void	*g_slurm_auth_alloc( void );
 int	g_slurm_auth_free( void *cred );
-int	g_slurm_auth_activate( void *cred, int secs );
+int	g_slurm_auth_activate( void *cred );
 int	g_slurm_auth_verify( void *cred );
 uid_t	g_slurm_auth_get_uid( void *cred );
 gid_t	g_slurm_auth_get_gid( void *cred );
