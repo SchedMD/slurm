@@ -78,6 +78,11 @@ Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
 Requires: slurm qsnetlibs
 
+%packages switch-federation
+Summary: SLURM switch plugin for IBM Federation switch.
+Group: System Environment/Base
+Requires: slurm
+
 %description 
 SLURM is an open source, fault-tolerant, and highly
 scalable cluster management and job scheduling system for Linux clusters
@@ -108,6 +113,9 @@ SLURM GUI.
 
 %description switch-elan
 SLURM switch plugin for Quadrics Elan3 or Elan4.
+
+%description switch-federation
+SLURM switch plugin for IBM Federation switch.
 
 %prep
 %setup -n %{name}-%{version}-%{release}
@@ -141,7 +149,7 @@ install -D -m644 etc/bluegene.conf.example $RPM_BUILD_ROOT/etc/slurm/bluegene.co
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
 
 # Build file lists for optional plugin packages
-for plugin in auth_munge auth_authd switch_elan; do
+for plugin in auth_munge auth_authd switch_elan switch_federation; do
    LIST=./${plugin}.files
    touch $LIST
    test -f $RPM_BUILD_ROOT/%{_libdir}/slurm/${plugin}.so &&
@@ -237,6 +245,10 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root)
 #############################################################################
 
+%files -f switch_federation.files switch-federation
+%defattr(-,root,root)
+#############################################################################
+
 %pre
 #if [ -x /etc/init.d/slurm ]; then
 #    if /etc/init.d/slurm status | grep -q running; then
@@ -269,6 +281,8 @@ fi
 
 
 %changelog
+* Thr Mar 10 2005 Morris Jette <jette1@llnl.gov>
+- added federation switch plugin
 * Fri Mar 04 2005 Morris Jette <jette1@llnl.gov>
 - added proctrack_aix plugin
 * Fri Feb 25 2005 Morris Jette <jette1@llnl.gov>
