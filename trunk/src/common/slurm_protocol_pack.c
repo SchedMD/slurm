@@ -1483,7 +1483,9 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	safe_unpack32(&job->job_id, buffer);
 	safe_unpack32(&job->user_id, buffer);
+
 	safe_unpack16(&job->job_state, buffer);
+	safe_unpack16(&job->batch_flag, buffer);
 	safe_unpack32(&job->time_limit, buffer);
 
 	safe_unpack_time(&job->start_time, buffer);

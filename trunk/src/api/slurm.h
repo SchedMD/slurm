@@ -167,6 +167,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 typedef struct job_info {
 	uint32_t job_id;	/* job ID */
 	char *name;		/* name of the job */
+	uint16_t batch_flag;	/* 1 if batch: queued job with script */
 	uint32_t user_id;	/* user the job runs as */
 	uint16_t job_state;	/* state of the job, see enum job_states */
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */

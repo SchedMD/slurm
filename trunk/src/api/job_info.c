@@ -73,10 +73,12 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 
 	fprintf ( out, "JobId=%u UserId=%u Name=%s ", 
 		job_ptr->job_id, job_ptr->user_id, job_ptr->name);
-	fprintf ( out, "JobState=%s TimeLimit=%u ", 
+	fprintf ( out, "JobState=%s TimeLimit=%u\n", 
 		job_state_string(job_ptr->job_state), job_ptr->time_limit);
-	fprintf ( out, "Priority=%u Partition=%s\n", 
-		job_ptr->priority, job_ptr->partition);
+
+	fprintf ( out, "   Priority=%u Partition=%s BatchFlag=%u\n", 
+		job_ptr->priority, job_ptr->partition, job_ptr->batch_flag);
+
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "   StartTime=%s ", time_str);
 	make_time_str ((time_t *)&job_ptr->end_time, time_str);
@@ -103,6 +105,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
 	fprintf ( out, "   Features=%s ReqNodeList=%s ", job_ptr->features, 
 		job_ptr->req_nodes);
+
 	fprintf ( out, "ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
