@@ -202,6 +202,9 @@ int main(int ac, char **av)
 	setenvf("SLURM_NPROCS=%d",   opt.nprocs);
 	setenvf("SLURM_NNODES=%d",   job->nhosts);
 	setenvf("SLURM_TASKS_PER_NODE=%s", (task_cnt = _sprint_task_cnt(job)));
+	setenvf("SLURM_DISTRIBUTION=%s",
+		format_distribution_t (opt.distribution));
+
 	xfree(task_cnt);
 
 	if (msg_thr_create(job) < 0)
