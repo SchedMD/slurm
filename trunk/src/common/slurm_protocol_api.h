@@ -337,6 +337,14 @@ void inline slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void
  */
 int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * response_msg ) ;
 
+/* slurm_send_recv_node_msg
+ * opens a connection to node, sends the node a message, listens for the response, then closes the connection
+ * IN request_msg	- slurm_msg request
+ * OUT response_msg	- slurm_msg response
+ * RET int 		- return code
+ */
+int slurm_send_recv_node_msg ( slurm_msg_t * request_msg , slurm_msg_t * response_msg ) ;
+
 /* slurm_send_only_controller_msg
  * opens a connection to the controller, sends the controller a message then, closes the connection
  * IN request_msg	- slurm_msg request

@@ -34,6 +34,7 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <time.h>
+#include <signal.h>
 #include <unistd.h>
 #include <pthread.h>
 #include <src/common/hostlist.h>
@@ -61,40 +62,47 @@ typedef struct slurmd_config
 	char * slurm_conf ;
 } slurmd_config_t ;
 
+typedef struct connection_arg
+{
+	int newsockfd ;
+} connection_arg_t ;
 
 time_t init_time;
+pid_t slurmd_pid ;
+time_t shutdown_time = (time_t)0;
 slurmd_shmem_t * shmem_seg ;
 char hostname[MAX_NAME_LEN] ;
 slurm_ssl_key_ctx_t verify_ctx ;
 List credential_state_list ;
 slurmd_config_t slurmd_conf ;
+pthread_t thread_id_rpc = (pthread_t)0 ;
 
 /* function prototypes */
 static void slurmd_req ( slurm_msg_t * msg );
-static int slurmd_msg_engine ( void * args ) ;
+static void * slurmd_msg_engine ( void * args ) ;
 inline static int send_node_registration_status_msg ( ) ;
 
 inline static void slurm_rpc_kill_tasks ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_launch_tasks ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reattach_tasks_streams ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_revoke_credential ( slurm_msg_t * msg ) ;
+inline static void slurmd_rpc_shutdown_slurmd ( slurm_msg_t * msg ) ;
 
 inline static int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
 static void * service_connection ( void * arg ) ;
+static void * slurmd_handle_signals ( void * args ) ;
 inline int slurmd_init ( ) ;
 inline int slurmd_destroy ( ) ;
-static int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_config ) ;
-
-typedef struct connection_arg
-{
-	int newsockfd ;
-} connection_arg_t ;
+inline static int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_config ) ;
+inline static int blockall_signals ( ) ;
+inline static int slurmd_shutdown () ;
 
 int main (int argc, char *argv[]) 
 {
 	int error_code ;
 	char node_name[MAX_NAME_LEN];
 	log_options_t log_opts_def = LOG_OPTS_STDERR_ONLY ;
+        pthread_attr_t thread_attr_rpc;
 
 	init_time = time (NULL);
 	slurmd_conf . log_opts = log_opts_def ;
@@ -122,15 +130,74 @@ int main (int argc, char *argv[])
 	/* send registration message to slurmctld*/
 	send_node_registration_status_msg ( ) ;
 
-	slurmd_msg_engine ( NULL ) ;
+	
+	/* block all signals for now */
+	blockall_signals ( ) ;
 
-	/*slurm_msg_engine is a infinite io loop, but just in case we get back here */
+	/* create attached thread to process RPCs */
+	if (pthread_attr_init (&thread_attr_rpc))
+		fatal ("pthread_attr_init errno %d", errno);
+	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmd_msg_engine, NULL))
+		fatal ("pthread_create errno %d", errno);
+	/* slurmd_msg_engine ( NULL ) ; */
+
+	slurmd_handle_signals ( NULL ) ;
+	
 	slurmd_destroy ( ) ;
 	return SLURM_SUCCESS ;
 }
 
+int blockall_signals ( )
+{
+        sigset_t set;
+	if (sigfillset (&set))
+		error ("sigfillset errno %d", errno);
+	if (pthread_sigmask (SIG_BLOCK, &set, NULL))
+		error ("pthread_sigmask errno %d", errno);
+	return SLURM_SUCCESS ;
+}
+
+void * slurmd_handle_signals ( void * args )
+{
+        sigset_t set;
+	int error_code ;
+	int sig ;
+
+	/* just watch for select signals */
+	if (sigemptyset (&set))
+		error ("sigemptyset errno %d", errno);
+	if (sigaddset (&set, SIGHUP))
+		error ("sigaddset errno %d on SIGHUP", errno);
+	if (sigaddset (&set, SIGINT))
+		error ("sigaddset errno %d on SIGINT", errno);
+	if (sigaddset (&set, SIGTERM))
+		error ("sigaddset errno %d on SIGTERM", errno);
+	while (1) 
+	{
+		if ( (error_code = sigwait (&set, &sig)) )
+			error ("sigwait errno %d\n", error_code);
+
+		switch (sig) 
+		{
+			case SIGINT:	/* kill -2  or <CTRL-C>*/
+			case SIGTERM:	/* kill -15 */
+				info ("Terminate signal (SIGINT or SIGTERM) received\n");
+				shutdown_time = time (NULL);
+				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+				slurmd_shutdown ();
+				pthread_join (thread_id_rpc, NULL);
+				pthread_exit ((void *)0);
+				break;
+			case SIGHUP:	/* kill -1 */
+				info ("Reconfigure signal (SIGHUP) received\n");
+				//error_code = read_slurm_conf ( );
+		}
+	}
+}
+
 int slurmd_init ( )
 {
+	slurmd_pid = getpid ( );
 	shmem_seg = get_shmem ( ) ;
 	init_shmem ( shmem_seg ) ;
 	slurm_ssl_init ( ) ;
@@ -192,7 +259,7 @@ int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t 
 
 /* accept thread for incomming slurm messages 
  * args - do nothing right now */
-int slurmd_msg_engine ( void * args )
+void * slurmd_msg_engine ( void * args )
 {
 	int error_code ;
 	slurm_fd newsockfd;
@@ -233,6 +300,13 @@ int slurmd_msg_engine ( void * args )
 		/* receive message call that must occur before thread spawn because in message 
 		 * implementation their is no connection and the message is the sign of a new connection */
 		conn_arg -> newsockfd = newsockfd ;
+
+		if ( shutdown_time )
+		{
+			service_connection ( ( void * ) conn_arg ) ;
+			pthread_exit ( (void * ) 0 ) ;
+			
+		}
 		
 		if ( ( error_code = pthread_create ( & request_thread_id , & thread_attr , service_connection , ( void * ) conn_arg ) ) ) 
 		{
@@ -242,7 +316,7 @@ int slurmd_msg_engine ( void * args )
 		}
 	}			
 	slurm_shutdown_msg_engine ( sockfd ) ;
-	return 0 ;
+	return NULL ;
 }
 
 /* worker thread method for accepted message connections
@@ -298,6 +372,10 @@ void slurmd_req ( slurm_msg_t * msg )
 		case REQUEST_REVOKE_JOB_CREDENTIAL:
 			slurm_rpc_revoke_credential ( msg ) ;
 			slurm_free_revoke_credential_msg ( msg -> data ) ;
+			break ;
+		case REQUEST_SHUTDOWN :
+		case REQUEST_SHUTDOWN_IMMEDIATE :
+			slurmd_rpc_shutdown_slurmd ( msg ) ;
 			break ;
 		default:
 			error ("slurmd_req: invalid request msg type %d\n", msg-> msg_type);
@@ -447,6 +525,64 @@ void slurm_rpc_revoke_credential ( slurm_msg_t * msg )
 
 }
 
+/* slurmd_rpc_shutdown_slurmd - process RPC to shutdown slurmd */
+void slurmd_rpc_shutdown_slurmd ( slurm_msg_t * msg )
+{
+	/* do RPC call */
+	/* must be user root */
+	if (shutdown_time)
+		debug3 ("slurm_rpc_shutdown_controller again");
+	else {
+		kill (slurmd_pid, SIGTERM);  /* tell master to clean-up */
+		info ("slurm_rpc_shutdown_controller completed successfully");
+	}
+
+	/* return result */
+	slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+}
+
+
+/* slurm_shutdown - issue RPC to have slurmctld shutdown, knocks loose an accept() */
+int slurmd_shutdown ()
+{
+	int rc ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+	slurm_addr slurmd_addr ;
+
+	/* init message connection for message communication with controller */
+	slurm_set_addr_char ( & slurmd_addr , slurm_get_slurmd_port ( ) , "localhost" ) ;
+
+	/* send request message */
+	request_msg . address = slurmd_addr ;
+	request_msg . msg_type = REQUEST_SHUTDOWN_IMMEDIATE ;
+
+	if ( ( rc = slurm_send_recv_node_msg ( & request_msg , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurm_send_recv_node_only_msg error");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	switch ( response_msg . msg_type )
+	{
+		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			rc = slurm_rc_msg->return_code;
+			slurm_free_return_code_msg ( slurm_rc_msg );
+			if (rc) {
+				error ("slurm_shutdown_msg_conn error (%d)", rc);
+				return SLURM_PROTOCOL_ERROR;
+			}
+			break ;
+		default:
+			error ("slurm_shutdown_msg_conn type bad (%d)", response_msg . msg_type);
+			return SLURM_UNEXPECTED_MSG_ERROR;
+			break ;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS ;
+}
+
 void slurm_rpc_slurmd_template ( slurm_msg_t * msg )
 {
 	/* init */
@@ -457,9 +593,9 @@ void slurm_rpc_slurmd_template ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	
+
 	/*error_code = (); */
-	
+
 	/* return result */
 	if (error_code)
 	{
@@ -594,3 +730,4 @@ int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_
 	}
 	return SLURM_SUCCESS ;
 }
+
