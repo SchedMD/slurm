@@ -47,8 +47,8 @@
 #include <unistd.h>
 
 #include <src/api/slurm.h>
+#include <src/common/hostlist.h>
 #include <src/common/log.h>
-#include <src/common/nodelist.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 
@@ -203,8 +203,8 @@ get_command (int *argc, char **argv)
 		if (isspace ((int) in_line[i]))
 			continue;
 		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* really bogus input line */
-			fprintf (stderr, "%s: over %d fields in line: %s\n",
-				 command_name, input_words, in_line);
+			fprintf (stderr, "%s: can not process over %d words as configured\n",
+				 command_name, input_words);
 			return E2BIG;
 		}		
 		argv[(*argc)++] = &in_line[i];
@@ -430,10 +430,9 @@ print_node_list (char *node_list)
 {
 	static node_info_msg_t *old_node_info_ptr = NULL;
 	node_info_msg_t *node_info_ptr = NULL;
-
-	int start_inx, end_inx, count_inx, error_code, i;
-	char *str_ptr1, *str_ptr2, *format, *my_node_list;
-	char this_node_name[BUF_SIZE];
+	hostlist_t host_list;
+	int error_code;
+	char *this_node_name;
 
 	if (old_node_info_ptr) {
 		error_code = slurm_load_node (old_node_info_ptr->last_update, 
@@ -467,50 +466,16 @@ print_node_list (char *node_list)
 		print_node (NULL, node_info_ptr);
 	}
 	else {
-		format = NULL;
-		my_node_list = xmalloc (strlen (node_list) + 1);
-		if (my_node_list == NULL) {
-			if (quiet_flag != 1)
-				fprintf (stderr,
-					 "unable to allocate memory\n");
-			abort ();
-		}		
+		host_list = hostlist_create (node_list);
+		if ((host_list == NULL) && (quiet_flag != 1)) {
+			fprintf (stderr, "unable to parse node list %s\n", node_list);
+			return;
+		}
 
-		strcpy (my_node_list, node_list);
-		str_ptr2 = (char *) strtok_r (my_node_list, ",", &str_ptr1);
-		while (str_ptr2) {	/* break apart by comma separators */
-			error_code =
-				parse_node_names (str_ptr2, &format,
-						 &start_inx, &end_inx,
-						 &count_inx);
-			if (error_code) {
-				if (quiet_flag != 1)
-					fprintf (stderr,
-						 "invalid node name specification: %s\n",
-						 str_ptr2);
-				break;
-			}	
-			if (strlen (format) >= sizeof (this_node_name)) {
-				if (quiet_flag != 1)
-					fprintf (stderr,
-						 "invalid node name specification: %s\n",
-						 format);
-				xfree (format);
-				break;
-			}	
-			for (i = start_inx; i <= end_inx; i++) {
-				if (count_inx == 0)
-					strncpy (this_node_name, format,
-						 sizeof (this_node_name));
-				else
-					sprintf (this_node_name, format, i);
-				print_node (this_node_name, node_info_ptr);
-			}
-			if (format)
-				xfree (format);
-			str_ptr2 = (char *) strtok_r (NULL, ",", &str_ptr1);
-		}		
-		xfree (my_node_list);
+		while ( (this_node_name = hostlist_shift (host_list)) )
+			print_node (this_node_name, node_info_ptr);
+
+		hostlist_destroy (host_list);
 	}			
 	return;
 }
