@@ -15,7 +15,7 @@ if ($pid)
 	my $new_sock1 = $sock1->accept();
 	while(<$new_sock1>) 
 	{
-		print $_;
+		print STDOUT $_;
 	}
 	close($sock1);
 }
@@ -32,7 +32,7 @@ else
 	my $new_sock2 = $sock2->accept();
 	while(<$new_sock2>) 
 	{
-		print $_;
+		print STDERR $_;
 	}
 	close($sock2);
 }

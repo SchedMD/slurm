@@ -165,7 +165,7 @@ int forward_io ( task_start_t * task_arg )
 	
 	/* spawn io pipe threads */
 	pthread_attr_init( & pthread_attr ) ;
-	pthread_attr_setdetachstate ( & pthread_attr , PTHREAD_CREATE_DETACHED ) ;
+	//pthread_attr_setdetachstate ( & pthread_attr , PTHREAD_CREATE_DETACHED ) ;
 	if ( pthread_create ( & task_arg->io_pthread_id[STDIN_FILENO] , NULL , stdin_io_pipe_thread , task_arg ) )
 		goto return_label;
 	if ( pthread_create ( & task_arg->io_pthread_id[STDOUT_FILENO] , NULL , stdout_io_pipe_thread , task_arg ) )
@@ -174,9 +174,11 @@ int forward_io ( task_start_t * task_arg )
 		goto kill_stdout_thread;
 
 	/* threads have been detatched*/
-	//pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , NULL ) ;
-	//pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
-	//pthread_join ( task_arg->io_pthread_id[STDIN_FILENO] , NULL ) ;
+	pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , NULL ) ;
+	info ( "errexit" ) ;
+	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
+	info ( "outexit" ) ;
+	pthread_kill (  task_arg->io_pthread_id[STDIN_FILENO] , SIGKILL );
 	
 	goto return_label;
 
@@ -206,6 +208,8 @@ void * stdin_io_pipe_thread ( void * arg )
 			info ( "error reading stdin stream for task %i", 1 ) ;
 			pthread_exit ( NULL ) ; 
 		}
+		write ( 1 ,  "stdin-", 6 ) ;
+		write ( 1 ,  buffer , bytes_read ) ;
 		if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , buffer , bytes_read ) ) <= 0 )
 		{
 			info ( "error sending stdin stream for task %i", 1 ) ;
@@ -231,7 +235,8 @@ void * stdout_io_pipe_thread ( void * arg )
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
 			local_errno = errno ;	
-			info ( "error reading stdout stream for task %i , errno %i", 1 , local_errno ) ;
+			info ( "error reading stdout stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+
 			pthread_exit ( NULL ) ;
 		}
 		write ( 1 ,  buffer , bytes_read ) ;
@@ -250,17 +255,17 @@ void * stderr_io_pipe_thread ( void * arg )
 	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int sock_bytes_written ;
-	
-	/* dest_addr = somethiong from arg */
-
+	int local_errno ;
 
 	while ( true )
 	{
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
-			info ( "error reading stderr stream for task %i", 1 ) ;
+			local_errno = errno ;
+			info ( "error reading stderr stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
 			pthread_exit ( NULL ) ;
 		}
+		write ( 2 ,  buffer , bytes_read ) ;
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			info ( "error sending stderr stream for task %i", 1 ) ;
@@ -294,6 +299,7 @@ void * task_exec_thread ( void * arg )
 			break ;
 
 		case CHILD_PROCCESS:
+			info ("CLIENT PROCESS");
 			sigaction(SIGTTOU, &newaction, &oldaction); /* ignore tty output */
 			sigaction(SIGTTIN, &newaction, &oldaction); /* ignore tty input */
 			sigaction(SIGTSTP, &newaction, &oldaction); /* ignore user */
@@ -320,21 +326,24 @@ void * task_exec_thread ( void * arg )
 				info ( "set group id failed " ) ;
 				_exit ( SLURM_FAILURE ) ;
 			}
-			
 			/* initgroups */
-			if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
+			/*if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
 			{
 				info ( "init groups failed " ) ;
 				_exit ( SLURM_FAILURE ) ;
 			}
-			
-			/* set session id */
+			*/
 
 			/* run bash and cmdline */
+			debug( "cwd %s", launch_msg->cwd ) ;
 			chdir ( launch_msg->cwd ) ;
-			execl ( "/bin/sh", launch_msg->cmd_line );
-
+			debug( "cmdline %s", launch_msg->cmd_line ) ;
+			execl ("/bin/bash", "bash", "-c", launch_msg->cmd_line, 0);
+	
 			//execle ( "/bin/sh", launch_msg->cmd_line , launch_msg->env );
+			close ( STDIN_FILENO );
+			close ( STDOUT_FILENO );
+			close ( STDERR_FILENO );
 			_exit ( SLURM_SUCCESS ) ;
 			
 		default: /*parent proccess */

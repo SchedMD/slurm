@@ -15,7 +15,7 @@ int main ( int argc , char ** argv )
 	//kill_tasks_msg_t kill_tasks_msg ;
 	launch_tasks_msg . job_id = 1000 ;
 	launch_tasks_msg . job_step_id = 2000 ; 
-	launch_tasks_msg . uid = 801 ;
+	launch_tasks_msg . uid = 8207 ;
 	launch_tasks_msg . credentials = NULL ;
 	launch_tasks_msg . tasks_to_launch = 1 ;
 	launch_tasks_msg . envc = 0 ;
@@ -27,7 +27,6 @@ int main ( int argc , char ** argv )
 	
 	
 	launch_tasks ( & launch_tasks_msg ) ;
-	sleep ( 1 ) ;
 	//kill_tasks ( & kill_tasks_msg ) ;
 	return SLURM_SUCCESS ;
 }
