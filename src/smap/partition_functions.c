@@ -175,13 +175,13 @@ int print_text_part(partition_info_t * part_ptr)
 	int prefixlen;
 	int i = 0;
 	int width = 0;
-	char *nodes;
+	char *nodes, time_buf[20];
 
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "%c", part_ptr->root_only);
 	smap_info_ptr->xcord += 4;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%s", part_ptr->name);
+		  smap_info_ptr->xcord, "%.9s", part_ptr->name);
 	smap_info_ptr->xcord += 10;
 	if (part_ptr->state_up)
 		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
@@ -191,15 +191,30 @@ int print_text_part(partition_info_t * part_ptr)
 			  smap_info_ptr->xcord, "DOWN");
 	smap_info_ptr->xcord += 7;
 	if (part_ptr->max_time == INFINITE)
-		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-			  smap_info_ptr->xcord, "UNLIMITED");
-	else
-		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-			  smap_info_ptr->xcord, "%u", part_ptr->max_time);
-
+		snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
+	else {
+		long minutes, hours, days;
+		minutes = part_ptr->max_time % 60;
+		hours = (part_ptr->max_time / 60) % 24;
+		days = (part_ptr->max_time / (24 * 60));
+		if (days)
+			snprintf(time_buf, sizeof(time_buf),
+				"%ld:%2.2ld:%2.2ld:00",
+				 days, hours, minutes);
+		else if (hours)
+			snprintf(time_buf, sizeof(time_buf),
+				"%ld:%2.2ld:00", hours, minutes);
+		else
+			snprintf(time_buf, sizeof(time_buf),
+				"%ld:00", minutes);
+	}
+	width = strlen(time_buf);
+	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+		smap_info_ptr->xcord + (9 - width), "%s", 
+		time_buf);
 	smap_info_ptr->xcord += 11;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%d", part_ptr->total_nodes);
+		  smap_info_ptr->xcord, "%5d", part_ptr->total_nodes);
 	smap_info_ptr->xcord += 7;
 
 	tempxcord = smap_info_ptr->xcord;
