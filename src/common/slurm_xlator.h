@@ -215,14 +215,6 @@
 /* xassert.[ch] functions */
 #define	__xassert_failed	slurm_xassert_failed
 
-/* xmalloc.[ch] functions */
-#define	_xmalloc		slurm_xmalloc
-#define	_try_xmalloc		slurm_try_xmalloc
-#define	_xfree			slurm_xfree
-#define	_xrealloc		slurm_xrealloc
-#define	_try_xrealloc		slurm_try_xrealloc
-#define	_xsize			slurm_xsize
-
 /* xsignal.[ch] functions */
 #define	xsignal			slurm_xsignal
 #define	xsignal_save_mask	slurm_xsignal_save_mask

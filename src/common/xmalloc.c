@@ -42,17 +42,6 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 
-/*
- * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
- * for details. 
- */
-strong_alias(_xmalloc,		slurm_xmalloc);
-strong_alias(_try_xmalloc,	slurm_try_xmalloc);
-strong_alias(_xfree,		slurm_xfree);
-strong_alias(_xrealloc,		slurm_xrealloc);
-strong_alias(_try_xrealloc,	slurm_try_xrealloc);
-strong_alias(_xsize,		slurm_xsize);
-
 #if	HAVE_UNSAFE_MALLOC
 #  include <pthread.h>
    static pthread_mutex_t malloc_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -82,7 +71,7 @@ static void malloc_assert_failed(char *, const char *, int,
  *   size (IN)	number of bytes to malloc
  *   RETURN	pointer to allocate heap space
  */
-void *_xmalloc(size_t size, const char *file, int line, const char *func)
+void *slurm_xmalloc(size_t size, const char *file, int line, const char *func)
 {	
 	void *new;
 	int *p;
@@ -110,7 +99,8 @@ void *_xmalloc(size_t size, const char *file, int line, const char *func)
 /*
  * same as above, except return NULL on malloc failure instead of exiting
  */
-void *_try_xmalloc(size_t size, const char *file, int line, const char *func)
+void *slurm_try_xmalloc(size_t size, const char *file, int line, 
+                        const char *func)
 {	
 	void *new;
 	int *p;
@@ -136,8 +126,8 @@ void *_try_xmalloc(size_t size, const char *file, int line, const char *func)
  *   item (IN/OUT)	double-pointer to allocated space
  *   newsize (IN)	requested size
  */
-void * _xrealloc(void **item, size_t newsize, 
-	       const char *file, int line, const char *func)
+void * slurm_xrealloc(void **item, size_t newsize, 
+	              const char *file, int line, const char *func)
 {
 	int *p = NULL;
 
@@ -192,8 +182,8 @@ void * _xrealloc(void **item, size_t newsize,
  * same as above, but return <= 0 on malloc() failure instead of aborting.
  * `*item' will be unchanged.
  */
-int _try_xrealloc(void **item, size_t newsize, 
-	          const char *file, int line, const char *func)
+int slurm_try_xrealloc(void **item, size_t newsize, 
+	               const char *file, int line, const char *func)
 {
 	int *p = NULL;
 
@@ -244,7 +234,7 @@ int _try_xrealloc(void **item, size_t newsize,
  * Return the size of a buffer.
  *   item (IN)		pointer to allocated space
  */
-int _xsize(void *item, const char *file, int line, const char *func)
+int slurm_xsize(void *item, const char *file, int line, const char *func)
 {
 	int *p = (int *)item - 2;
 	xmalloc_assert(item != NULL);	
@@ -257,7 +247,7 @@ int _xsize(void *item, const char *file, int line, const char *func)
  * object.
  *   item (IN/OUT)	double-pointer to allocated space
  */
-void _xfree(void **item, const char *file, int line, const char *func)
+void slurm_xfree(void **item, const char *file, int line, const char *func)
 {
 	if (*item != NULL) {
 		int *p = (int *)*item - 2;
