@@ -7,19 +7,18 @@
 
 <h2>Overview</h2>
 
-Simple Linux Utility for Resource Management (SLURM) is an open source,
-fault-tolerant, and highly scalable cluster management and job 
-scheduling system for Linux clusters large and small.  
-SLURM requires no kernel modifications for it operation and is 
-relatively self-contained.
+The Simple Linux Utility for Resource Management (SLURM) is an open
+source, fault-tolerant, and highly scalable cluster management and job
+scheduling system for Linux clusters large and small.  SLURM requires
+no kernel modifications for it operation and is relatively self-contained.
 
 As a cluster resource manager, SLURM has three key functions.  First,
-it allocates exclusive and/or non-exclusive access to resources 
-(compute nodes) to users for 
-some duration of time so they can perform work.  Second, it provides 
-a framework for starting, executing, and monitoring work (normally a 
-parallel job) on the set of allocated nodes.  Finally, it arbitrates 
-conflicting requests for resources by managing a queue of pending work.
+it allocates exclusive and/or non-exclusive access to resources (compute
+nodes) to users for some duration of time so they can perform work.
+Second, it provides a framework for starting, executing, and monitoring
+work (normally a parallel job) on the set of allocated nodes.  Finally,
+it arbitrates conflicting requests for resources by managing a queue of
+pending work.
 
 <h2>Architecture</h2>
 
@@ -220,33 +219,26 @@ SLURM logs from multiple nodes.
 
 <h3>Configuration</h3>
 
-The SLURM configuration file includes a wide variety of parameters. 
-A full description of the parameters is included in the <i>slurm.conf</i> 
-man page. 
-Rather than duplicate that information, a sample configuration file 
-is shown below.
-Any text following a "#" is considered a comment.
-The keywords in the file are not case sensitive, 
-although the argument typically is (e.g. "SlurmUser=slurm" 
-might be specified as "slurmuser=slurm").
-The control machine, like all other machine specifications can 
-include both the host name and the name used for communications. 
-In this case, the host's name is "mcri" and the name "emcri" is 
-used for communications. The "e" prefix identifies this as an 
-ethernet address at this site. 
-Port numbers to be used for communications are specified as 
-well as various timer values. 
-On DPCS systems set FirstJobId to 65536 or higher. 
-This will permit DPCS to specify a SLURM job id to match its own job id 
-without conflicts from jobs submitted to SLURM by other means.
-<p>
-A description of the nodes and their grouping into non-overlapping 
-partitions is required.
-Partition and node specifications use node range expressions to 
-identify nodes in a concise fashion. 
-This configuration file defines a 1154 node cluster for SLURM, but 
-might be used for a much larger cluster by just changing a 
-few node range expressions.
+The SLURM configuration file includes a wide variety of
+parameters.  A full description of the parameters is included in the
+<i>slurm.conf</i> man page.  Rather than duplicate that information,
+a sample configuration file is shown below.  Any text following a
+"#" is considered a comment.  The keywords in the file are not case
+sensitive, although the argument typically is (e.g. "SlurmUser=slurm"
+might be specified as "slurmuser=slurm").  The control machine, like
+all other machine specifications can include both the host name and
+the name used for communications.  In this case, the host's name is
+"mcri" and the name "emcri" is used for communications. The "e" prefix
+identifies this as an ethernet address at this site.  Port numbers to be
+used for communications are specified as well as various timer values.
+On DPCS systems set FirstJobId to 65536 or higher.  This will permit
+DPCS to specify a SLURM job id to match its own job id without conflicts
+from jobs submitted to SLURM by other means.  <p> A description of the
+nodes and their grouping into non-overlapping partitions is required.
+Partition and node specifications use node range expressions to identify
+nodes in a concise fashion.  This configuration file defines a 1154 node
+cluster for SLURM, but might be used for a much larger cluster by just
+changing a few node range expressions.
 
 <pre>
 # 
