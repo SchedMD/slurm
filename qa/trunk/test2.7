@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 #
 # Purpose: Test of SLURM functionality
-#          Validate scontrol pid2jid command.
+#          Validate scontrol pidinfo command.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -25,7 +25,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in $file_out $file_err
 exec echo "#!$bin_bash"                >$file_in
-exec echo "$scontrol pid2jid \$\$"    >>$file_in
+exec echo "$scontrol pidinfo \$\$"    >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
@@ -64,11 +64,12 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 
 #
 # Verify job_id in output file
+# NOTE: after slurm version 0.3 is deployed, remove "\[:\]" below
 #
 if {[wait_for_file $file_out] == 0} {
 	spawn $bin_cat $file_out
 	expect {
-		-re "($number)" {
+		-re "job id\[:\]* ($number)" {
 			set scontrol_id $expect_out(1,string)
 			exp_continue
 		}
@@ -77,12 +78,12 @@ if {[wait_for_file $file_out] == 0} {
 	}
 }
 
-exec $bin_rm -f $file_in $file_out $file_err
 if {$job_id != $scontrol_id} {
-	send_user "\nFAILURE: scontrol pid2jid error\n"
+	send_user "\nFAILURE: scontrol pidinfo error\n"
 	set exit_code 1
 }
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+	exec $bin_rm -f $file_in $file_out $file_err
 }
 exit $exit_code
