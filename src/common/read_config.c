@@ -848,6 +848,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->job_comp_type == NULL)
 		ctl_conf_ptr->job_comp_type = xstrdup(DEFAULT_JOB_COMP_TYPE);
+
+	if (ctl_conf_ptr->plugindir == NULL)
+		ctl_conf_ptr->plugindir = xstrdup(SLURM_PLUGIN_PATH);
 }
 
 /* Normalize supplied debug level to be in range per log.h definitions */
