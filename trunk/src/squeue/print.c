@@ -25,7 +25,7 @@ int print_jobs( List jobs, List format )
 			print_job_from_format( job, format );
 		}
 	}
-	else printf("No jobs found in system" );
+	else printf("No jobs found in system\n");
 	
 	return SLURM_SUCCESS;
 }
@@ -43,7 +43,7 @@ int print_steps( List steps, List format )
 			print_step_from_format( step, format );
 		}
 	}
-	else printf("No job steps found in system" );
+	else printf("No job steps found in system\n" );
 	
 	return SLURM_SUCCESS;
 }
@@ -59,7 +59,7 @@ int print_jobs_array( job_info_t* jobs, int size, List format )
 			print_job_from_format( &jobs[i], format );
 		}
 	}
-	else printf("No jobs found in system" );
+	else printf("No jobs found in system\n" );
 	
 	return SLURM_SUCCESS;
 }
