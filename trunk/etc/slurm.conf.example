@@ -202,11 +202,11 @@
 #
 # o Define the process tracking mechanism in use.
 #
-# "ProctrackType"          : the type of process tracking mechanism
-#     "proctrack/kern_ext" : use AIX kernel extension for process tracking,
-#                            the default value on AIX computers
-#     "proctrack/sid"      : use Unix session ID for process tracking,
-#                            the default value on all other computers
+# "ProctrackType"      : the type of process tracking mechanism
+#     "proctrack/aix"  : use AIX kernel extension for process tracking,
+#                        the default value on AIX computers
+#     "proctrack/sid"  : use Unix session ID for process tracking,
+#                        the default value on all other computers
 #
 # ProctrackType=proctrack/sid
 
