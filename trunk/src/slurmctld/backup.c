@@ -78,6 +78,9 @@ void run_backup(void)
 {
 	time_t last_controller_response = time(NULL), last_ping = 0;
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
+	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK,
+		NO_LOCK, NO_LOCK
+	};
 
 	info("slurmctld running in background mode");
 	/* default: don't resume if shutdown */
@@ -117,6 +120,7 @@ void run_backup(void)
 	/* repeatedly ping ControlMachine */
 	while (slurmctld_config.shutdown_time == 0) {
 		sleep(1);
+		/* Lock of slurmctld_conf below not important */
 		if (difftime(time(NULL), last_ping) <
 		    slurmctld_conf.heartbeat_interval)
 			continue;
@@ -124,16 +128,24 @@ void run_backup(void)
 		last_ping = time(NULL);
 		if (_ping_controller() == 0)
 			last_controller_response = time(NULL);
-		else if (difftime(time(NULL), last_controller_response) >
-			 slurmctld_conf.slurmctld_timeout)
-			break;
+		else {
+			uint32_t timeout;
+			lock_slurmctld(config_read_lock);
+			timeout = slurmctld_conf.slurmctld_timeout;
+			unlock_slurmctld(config_read_lock);
+
+			if (difftime(time(NULL), last_controller_response) >
+					timeout)
+				break;
+		}
 	}
 	if (slurmctld_config.shutdown_time != 0) {
 		info("BackupController terminating");
 		pthread_join(slurmctld_config.thread_id_sig, NULL);
 		/* Since pidfile is created as user root (its owner is
 		 *   changed to SlurmUser) SlurmUser may not be able to 
-		 *   remove it, so this is not necessarily an error. */
+		 *   remove it, so this is not necessarily an error. 
+		 * No longer need slurmctld_conf lock after above join. */
 		if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
 			verbose("Unable to remove pidfile '%s': %m",
 				slurmctld_conf.slurmctld_pidfile);
@@ -144,10 +156,13 @@ void run_backup(void)
 			exit(0);
 	}
 
+	lock_slurmctld(config_read_lock);
 	error("ControlMachine %s not responding, "
 		"BackupController %s taking over",
 		slurmctld_conf.control_machine,
 		slurmctld_conf.backup_controller);
+	unlock_slurmctld(config_read_lock);
+
 	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 	pthread_join(slurmctld_config.thread_id_rpc, NULL);
@@ -176,6 +191,7 @@ static void *_background_signal_hand(void *no_data)
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
+	/* No need for slurmctld_conf lock yet */
 	create_pidfile(slurmctld_conf.slurmctld_pidfile);
 
 	while (1) {
@@ -199,13 +215,14 @@ static void *_background_signal_hand(void *no_data)
 			 */
 			lock_slurmctld(config_write_lock);
 			error_code = read_slurm_conf(0);
-			unlock_slurmctld(config_write_lock);
 			if (error_code)
 				error("read_slurm_conf: %s",
 					slurm_strerror(error_code));
 			else {
+				/* Leave config lock set through this */
 				_update_cred_key();
 			}
+			unlock_slurmctld(config_write_lock);
 			break;
 		case SIGABRT:   /* abort */
 			info("SIGABRT received");
@@ -221,7 +238,8 @@ static void *_background_signal_hand(void *no_data)
 	}
 }
 
-/* Reset the job credential key based upon configuration parameters */
+/* Reset the job credential key based upon configuration parameters.
+ * slurmctld_conf is locked on entry. */
 static void _update_cred_key(void)
 {	
 	slurm_cred_ctx_key_update(slurmctld_config.cred_ctx, 
@@ -238,16 +256,21 @@ static void *_background_rpc_mgr(void *no_data)
 	slurm_msg_t *msg = NULL;
 	bool done_flag = false;
 	int error_code;
+	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK,
+		NO_LOCK, NO_LOCK
+	};
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_background_rpc_mgr pid = %lu", (unsigned long) getpid());
 
 	/* initialize port for RPCs */
+	lock_slurmctld(config_read_lock);
 	if ((sockfd =
 	     slurm_init_msg_engine_port(slurmctld_conf.slurmctld_port))
 	    == SLURM_SOCKET_ERROR)
 		fatal("slurm_init_msg_engine_port error %m");
+	unlock_slurmctld(config_read_lock);
 
 	/*
 	 * Process incoming RPCs indefinitely
@@ -324,15 +347,19 @@ static int _ping_controller(void)
 {
 	int rc;
 	slurm_msg_t req;
-
-	debug3("pinging slurmctld at %s", slurmctld_conf.control_addr);
+	/* Locks: Read configuration */
+	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK,
+		NO_LOCK, NO_LOCK 
+	};
 
 	/* 
 	 *  Set address of controller to ping
 	 */
+	lock_slurmctld(config_read_lock);
+	debug3("pinging slurmctld at %s", slurmctld_conf.control_addr);
 	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port, 
 	               slurmctld_conf.control_addr);
-
+	unlock_slurmctld(config_read_lock);
 
 	req.msg_type = REQUEST_PING;
 
