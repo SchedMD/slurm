@@ -68,6 +68,7 @@ bool all_slurmd_hosts = false;
 #define NAME_HASH_LEN 512
 static names_ll_t *host_to_node_hashtbl[NAME_HASH_LEN] = {NULL};
 static names_ll_t *node_to_host_hashtbl[NAME_HASH_LEN] = {NULL};
+static char *this_hostname = NULL;
 
 static void _free_name_hashtbl()
 {
@@ -94,6 +95,7 @@ static void _free_name_hashtbl()
 		}
 		node_to_host_hashtbl[i] = NULL;
 	}
+	xfree(this_hostname);
 }
 
 static void _init_name_hashtbl()
@@ -159,7 +161,6 @@ static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 {
 	hostlist_t node_list = NULL, host_list = NULL;
 	char *hn = NULL, *nn;
-	static char *me = NULL;
 
 	if (node_name == NULL || *node_name == '\0')
 		return;
@@ -169,16 +170,16 @@ static void _register_conf_node_aliases(char *node_name, char *node_hostname)
 		}
 		return;
 	}
-	if (!me) {
-		me = xmalloc(MAX_NAME_LEN);
-		getnodename(me, MAX_NAME_LEN);
+	if (!this_hostname) {
+		this_hostname = xmalloc(MAX_NAME_LEN);
+		getnodename(this_hostname, MAX_NAME_LEN);
 	}
 	if (strcasecmp(node_name, "localhost") == 0)
-		node_name = me;
+		node_name = this_hostname;
 	if (node_hostname == NULL)
 		node_hostname = node_name;
 	if (strcasecmp(node_hostname, "localhost") == 0)
-		node_hostname = me;
+		node_hostname = this_hostname;
 
 	node_list = hostlist_create(node_name);
 #ifdef HAVE_FRONT_END	/* Common NodeHostname for all NodeName values */

@@ -478,6 +478,7 @@ static int _parse_node_spec(char *in_line)
 
 	/* free allocated storage */
 	xfree(node_addr);
+	xfree(node_hostname);
 	xfree(reason);
 	if (addr_list)
 		hostlist_destroy(addr_list);
