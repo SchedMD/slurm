@@ -2,28 +2,39 @@ TO BUILD:
   cd slurm
   ./autogen.sh
   ./configure
-  make
-
+  make [--with-authd] [--with-elan] [--with-totalview] 
+  /* --with-authd if you want to use authd for authentication */
+  /* --with-elan  if you have an Quadics elan switch, defaults to IP */
+  /* --with-totalview  if you want to support the Etnus TotalView debugger */
 
 TO TEST:
-  cd slurm/src/slurmctld
-  ./slurmctld		# start the controller
+  You will need to construct a valid configuration file for your machine.
+  To run on a single host, you can use the file etc/slurm.conf. For a 
+  cluster, you should build something based upon etc/slurm.conf.dev. 
+  See doc/man/man5/slurm.conf.5 for help in building this.
 
-Submit jobs and exercise the other APIs using the DejaGnu scripts
-  cd slurm/testsuite/slurm_unit/api/manual
-  make
-  ./submit-tst [number of jobs]
-  ./allocate-tst [number of jobs]
-  ./update_config-tst
-  ./reconfigure-tst
-  ./cancel-tst [job_id]
+  Initiate slurmctld on the control machine (it can run without root 
+  permissions, as user SlurmUser as set in slurm.conf).
+  Initiate slurmd on each host (needs to run as root for production, 
+  but can run as a normal user for testing).
+  Run jobs using the srun command.
+  Get system status using scontrol, sinfo, squeue.
+  Terminate jobs using scancel.
+  These daemons and commands are in sub-directories of "slurm/src". 
 
-You can also use the tools scontrol, squeue, and scancel.
-These tools are in sub-directories of "slurm/src". 
-All of these tools also have man pages in "slurm/doc/man".
-The job initiation tool srun is not quite ready for use (as of 7/22/2002)
+  There DejaGnu scripts to exercise various APIs and tools (they need 
+  more work.
 
 NOTES:
-You should have autoconf version 2.52 or higher (see "autoconf -V").
-On the cluster dev[0-25].llnl.gov, do this by putting /usr/local/pkg/autoconf-2.53/bin
-at the begining of your search path.
+  You should have autoconf version 2.52 or higher (see "autoconf -V").
+
+STATUS (As of 11/26/2002): 
+  Basic functionality is in place, although development work is required
+  in various areas. 
+  The code is not ready for production use yet.
+  Documentation needs updating, although the man pages are in pretty 
+  good shape.
+  Scaling studies are needed. 
+  Send feedback to Morris Jette <jette1@llnl.gov> and Mark Grondona
+  <grondona1@llnl.gov>.
+
