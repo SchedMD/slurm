@@ -69,7 +69,8 @@
 
 #define MAX_RETRIES 20
 
-typedef resource_allocation_response_msg_t allocation_resp;
+typedef resource_allocation_response_msg_t         allocation_resp;
+typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
 
 #define	TYPE_NOT_TEXT	0
 #define	TYPE_TEXT	1
@@ -98,8 +99,11 @@ typedef struct task_info {
  * forward declaration of static funcs
  */
 static allocation_resp	*_allocate_nodes(void);
+static alloc_run_resp	*_alloc_nodes_step(void);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
+static void		 _job_step_record(job_t *job, 
+			                  alloc_run_resp *run_resp);
 static void		 _sigterm_handler(int signum);
 static void		 _sig_kill_alloc(int signum);
 static void *            _sig_thr(void *arg);
@@ -113,6 +117,8 @@ static void 		 _fwd_signal(job_t *job, int signo);
 static void 		 _p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
 static void 		*_p_signal_task(void *args);
 static int               _set_batch_script_env(uint32_t jobid);
+static void 		 _xlate_allocrun2alloc_resp(alloc_run_resp *run_resp, 
+						    allocation_resp *resp);
 
 #ifdef HAVE_LIBELAN3
 #  include "src/common/qsw.h"
@@ -124,6 +130,7 @@ main(int ac, char **av)
 {
 	sigset_t sigset;
 	allocation_resp *resp;
+	alloc_run_resp *run_resp;
 	job_t *job;
 	pthread_attr_t attr;
 	struct sigaction action;
@@ -160,31 +167,46 @@ main(int ac, char **av)
 		if (_run_batch_job())
 			exit (1);
 		exit (0);
+
 	} else if (opt.no_alloc) {
 		info("do not allocate resources");
 		job = job_create(NULL); 
 #ifdef HAVE_LIBELAN3
 		_qsw_standalone(job);
 #endif
+
 	} else if ( (resp = _existing_allocation()) ) {
 		old_job = true;
 		job = job_create(resp); 
 		_create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
+
 	} else if (opt.allocate) {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
-		job = job_create(resp); 
 		if (_verbose || _debug)
 			_print_job_information(resp);
+		job = job_create(resp); 
 		_run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
 
 		debug ("Spawned srun shell terminated");
 		exit (0);
+
 	} else if (mode == MODE_ATTACH) {
 		reattach();
 		exit (0);
+
+	} else if ((run_resp = _alloc_nodes_step()) != NULL) {
+		debug("doing combined alloc and run");
+		resp = xmalloc(sizeof(*resp));
+		_xlate_allocrun2alloc_resp(run_resp, resp);
+		if (_verbose || _debug)
+			_print_job_information(resp);
+		job = job_create(resp); 
+		xfree(resp);
+		_job_step_record(job, run_resp);
+		slurm_free_resource_allocation_and_run_response_msg(run_resp);
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
@@ -267,8 +289,10 @@ main(int ac, char **av)
 }
 
 
-/* allocate nodes from slurm controller via slurm api
+/*
+ * allocate nodes from slurm controller via slurm api
  * will xmalloc memory for allocation response, which caller must free
+ *	initialization if set
  */
 static allocation_resp *
 _allocate_nodes(void)
@@ -282,11 +306,12 @@ _allocate_nodes(void)
 
 	job.contiguous     = opt.contiguous;
 	job.features       = opt.constraints;
-
 	job.name           = opt.job_name;
-
+	job.req_nodes      = opt.nodelist;
 	job.partition      = opt.partition;
-
+	job.num_nodes      = opt.nodes;
+	job.num_tasks      = opt.nprocs;
+	job.user_id        = opt.uid;
 	if (opt.mincpus > -1)
 		job.min_procs = opt.mincpus;
 	if (opt.realmem > -1)
@@ -294,18 +319,10 @@ _allocate_nodes(void)
 	if (opt.tmpdisk > -1)
 		job.min_tmp_disk = opt.tmpdisk;
 
-	job.req_nodes      = opt.nodelist;
-
 	if (opt.overcommit)
 		job.num_procs      = opt.nodes;
 	else
 		job.num_procs      = opt.nprocs * opt.cpus_per_task;
-
-	job.num_nodes      = opt.nodes;
-
-	job.num_tasks      = opt.nprocs;
-
-	job.user_id        = opt.uid;
 
 	if (opt.fail_kill)
  		job.kill_on_node_fail	= 0;
@@ -360,7 +377,52 @@ _allocate_nodes(void)
 	}
 
 	return resp;
+}
 
+/*
+ * allocate nodes and initiate a job step from slurm controller via slurm api
+ * will xmalloc memory for allocation response, which caller must free
+ *	initialization if set
+ */
+static alloc_run_resp *
+_alloc_nodes_step(void)
+{
+	job_desc_msg_t job;
+	resource_allocation_and_run_response_msg_t *resp;
+
+	slurm_init_job_desc_msg(&job);
+
+	job.contiguous     = opt.contiguous;
+	job.features       = opt.constraints;
+	job.name           = opt.job_name;
+	job.req_nodes      = opt.nodelist;
+	job.partition      = opt.partition;
+	job.num_nodes      = opt.nodes;
+	job.num_tasks      = opt.nprocs;
+	job.user_id        = opt.uid;
+	if (opt.mincpus > -1)
+		job.min_procs = opt.mincpus;
+	if (opt.realmem > -1)
+		job.min_memory = opt.realmem;
+	if (opt.tmpdisk > -1)
+		job.min_tmp_disk = opt.tmpdisk;
+
+	if (opt.overcommit)
+		job.num_procs      = opt.nodes;
+	else
+		job.num_procs      = opt.nprocs * opt.cpus_per_task;
+
+	if (opt.fail_kill)
+ 		job.kill_on_node_fail	= 0;
+	if (opt.time_limit > -1)
+		job.time_limit		= opt.time_limit;
+	if (opt.share)
+		job.shared		= 1;
+
+	if (slurm_allocate_resources_and_run(&job, &resp) == SLURM_FAILURE)
+		return NULL;
+
+	return resp;
 }
 
 static void
@@ -390,7 +452,7 @@ _qsw_standalone(job_t *job)
 	for (i = 0; i < job->nhosts; i++) {
 		int nodeid;
 		if ((nodeid = qsw_getnodeid_byhost(job->host[i])) < 0)
-				fatal("qsw_getnodeid_byhost: %m");
+			fatal("qsw_getnodeid_byhost: %m");
 		bit_set(nodeset, nodeid);
 	}
 
@@ -407,8 +469,6 @@ _create_job_step(job_t *job)
 {
 	job_step_create_request_msg_t req;
 	job_step_create_response_msg_t *resp;
-	slurm_msg_t req_msg;
-	slurm_msg_t resp_msg;
 
 	req.job_id     = job->jobid;
 	req.user_id    = opt.uid;
@@ -427,34 +487,34 @@ _create_job_step(job_t *job)
 		else
 			opt.distribution = SRUN_DIST_BLOCK;
 	}
-
 	if (opt.distribution == SRUN_DIST_BLOCK)
 		req.task_dist  = SLURM_DIST_BLOCK;
 	else 	/* (opt.distribution == SRUN_DIST_CYCLIC) */
 		req.task_dist  = SLURM_DIST_CYCLIC;
 
-	req_msg.msg_type = REQUEST_JOB_STEP_CREATE;
-	req_msg.data     = &req;
-
-	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0) {
+	if (slurm_job_step_create(&req, &resp) || (resp == NULL)) {
 		error("unable to create job step: %s", slurm_strerror(errno));
+		slurm_complete_job(job->jobid, 0, errno);
 		exit(1);
 	}
-
-	if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
-		return_code_msg_t *rcmsg = (return_code_msg_t *) resp_msg.data;
-		error("unable to create job step: %s", 
-				slurm_strerror(rcmsg->return_code));
-		slurm_complete_job(job->jobid, 0, rcmsg->return_code);
-		exit(1);
-	}
-
-	resp = (job_step_create_response_msg_t *) resp_msg.data;
 
 	job->stepid = resp->job_step_id;
 	job->cred   = resp->credentials;
 #ifdef HAVE_LIBELAN3	
 	job->qsw_job= resp->qsw_job;
+#endif
+
+}
+
+static void 
+_job_step_record(job_t *job, alloc_run_resp *run_resp)
+{
+	job->stepid = run_resp->job_step_id;
+	job->cred   = run_resp->credentials;
+	run_resp->credentials = NULL;	/* Don't free it */
+#ifdef	HAVE_LIBELAN3	
+	job->qsw_job= run_resp->qsw_job;
+	run_resp->qsw_job = NULL;	/* Don't free it */
 #endif
 
 }
@@ -466,8 +526,8 @@ _print_job_information(allocation_resp *resp)
 	int i;
 	char tmp_str[10], job_details[4096];
 
-	sprintf(job_details, "jobid %d: `%s', cpu counts: ", 
-	        resp->job_id, resp->node_list);
+	sprintf(job_details, "jobid %d: nodes(%d):`%s', cpu counts: ", 
+	        resp->job_id, resp->node_cnt, resp->node_list);
 
 	for (i = 0; i < resp->num_cpu_groups; i++) {
 		sprintf(tmp_str, ",%u(x%u)", resp->cpus_per_node[i], 
@@ -1005,4 +1065,18 @@ static void _run_job_script (uint32_t jobid)
 		error("Unable to clear SLURM_JOBID environment variable");
 		return;
 	}
+}
+
+/* translate a resource_allocation_and_run_response_msg_t into a 
+ *	resource_allocation_response_msg_t */
+static void
+_xlate_allocrun2alloc_resp(alloc_run_resp *run_resp, allocation_resp *resp)
+{
+	resp->job_id		= run_resp->job_id;
+	resp->node_list		= run_resp->node_list;
+	resp->num_cpu_groups	= run_resp->num_cpu_groups;
+	resp->cpus_per_node	= run_resp->cpus_per_node;
+	resp->cpu_count_reps	= run_resp->cpu_count_reps;
+	resp->node_cnt		= run_resp->node_cnt;
+	resp->node_addr		= run_resp->node_addr;
 }
