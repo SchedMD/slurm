@@ -66,10 +66,11 @@
 #define	MAX_INPUT_FIELDS 128
 
 static char *command_name;
-static int exit_flag;			/* program to terminate if =1 */
-static int one_liner;			/* one record per line if =1 */
-static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
-static int input_words;			/* number of words of input permitted */
+static int exit_code;	/* scontrol's exit code, =1 on any error at any time */
+static int exit_flag;	/* program to terminate if =1 */
+static int input_words;	/* number of words of input permitted */
+static int one_liner;	/* one record per line if =1 */
+static int quiet_flag;	/* quiet=1, verbose=-1, normal=0 */
 
 static int	_get_command (int *argc, char *argv[]);
 static int 	_load_jobs (job_info_msg_t ** job_buffer_pptr);
@@ -113,17 +114,18 @@ main (int argc, char *argv[])
 		{"version",  0, 0, 'V'},
 	};
 
-	command_name = argv[0];
-	exit_flag = 0;
+	command_name      = argv[0];
+	exit_code         = 0;
+	exit_flag         = 0;
 	input_field_count = 0;
-	quiet_flag = 0;
+	quiet_flag        = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	while((opt_char = getopt_long(argc, argv, "hoqvV",
 			long_options, &option_index)) != -1) {
 		if (opt_char == (int)'h') {
 			_usage ();
-			exit(0);
+			exit(exit_code);
 		}
 		else if (opt_char == (int)'o')
 			one_liner = 1;
@@ -133,11 +135,12 @@ main (int argc, char *argv[])
 			quiet_flag = -1;
 		else if (opt_char == (int)'V') {
 			_print_version();
-			exit(0);
+			exit(exit_code);
 		}
 		else {
+			exit_code = 1;
 			fprintf(stderr, "getopt error, returned %c", opt_char);
-			return 1;
+			exit(exit_code);
 		}
 	}
 
@@ -160,14 +163,12 @@ main (int argc, char *argv[])
 	while (error_code == SLURM_SUCCESS) {
 		error_code = _process_command (input_field_count, 
 					       input_fields);
-		if (error_code)
-			break;
-		if (exit_flag == 1)
+		if (error_code || exit_flag)
 			break;
 		error_code = _get_command (&input_field_count, input_fields);
 	}			
 
-	exit (error_code);
+	exit(exit_code);
 }
 
 static void _print_version(void)
@@ -242,6 +243,7 @@ _get_command (int *argc, char **argv)
 		if (isspace ((int) in_line[i]))
 			continue;
 		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* bogus input line */
+			exit_code = 1;
 			fprintf (stderr, 
 				 "%s: can not process over %d words\n",
 				 command_name, input_words);
@@ -378,8 +380,12 @@ _pid2jid(pid_t job_pid)
 	error_code = slurm_pid2jobid (job_pid, &job_id);
 	if (error_code == SLURM_SUCCESS)
 		printf("Slurm job id: %u\n", job_id);
-	else if (quiet_flag != 1)
-		slurm_perror ("slurm_pid2jobid error");
+	else {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_pid2jobid error");
+	}
+
 	return;
 }
 
@@ -398,12 +404,14 @@ _print_completing (void)
 
 	error_code = _load_jobs  (&job_info_msg);
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
 	error_code = _load_nodes (&node_info_msg);
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_nodes error");
 		return;
@@ -484,16 +492,19 @@ _print_config (char *config_param, bool ping_only)
 		error_code = slurm_load_ctl_conf ((time_t) NULL, 
 						  &slurm_ctl_conf_ptr);
 
-	if ((error_code) && (quiet_flag != 1))
-		slurm_perror ("slurm_load_ctl_conf error");
-	if (error_code == SLURM_SUCCESS)
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_ctl_conf error");
+	}
+	else
 		old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
+
 
 	if ((error_code == SLURM_SUCCESS) && !ping_only) {
 		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 		fprintf(stdout, "\n"); 
 	}
-
 	_ping_slurmctld ( slurm_ctl_conf_ptr );
 }
 
@@ -553,6 +564,7 @@ _print_daemons (void)
 		line_num++;
 		line_size = strlen (in_line);
 		if (line_size >= (BUF_SIZE - 1)) {
+			exit_code = 1;
 			if (quiet_flag == -1)
 				fprintf(stderr, 
 					"Line %d of config file %s too long\n", 
@@ -610,6 +622,7 @@ static void _parse_conf_line (char *in_line, bool *any_slurmctld,
 		"NodeName=", 's', &node_name,
 		"END");
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "Can't parse %s of %s\n",
 				in_line, SLURM_CONFIG_FILE);
@@ -663,6 +676,7 @@ _print_job (char * job_id_str)
 
 	error_code = _load_jobs(&job_buffer_ptr);
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_jobs error");
 		return;
@@ -689,10 +703,12 @@ _print_job (char * job_id_str)
 			break;
 	}
 
-	if ((print_cnt == 0) && (quiet_flag != 1)) {
-		if (job_buffer_ptr->record_count)
-			printf ("Job %u not found\n", job_id);
-		else
+	if (print_cnt == 0) {
+		if (job_id_str) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				printf ("Job %u not found\n", job_id);
+		} else if (quiet_flag != 1)
 			printf ("No jobs in the system\n");
 	}
 }
@@ -732,11 +748,13 @@ _print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 		}
 	}
 
-	if ((print_cnt == 0) && (quiet_flag != 1)) {
-		if (node_buffer_ptr->record_count)
-			printf ("Node %s not found\n", node_name);
-		else
-			printf ("No nodes in the system\n");
+	if (print_cnt == 0) {
+		if (node_name) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				printf ("Node %s not found\n", node_name);
+		} else if (quiet_flag != 1)
+				printf ("No nodes in the system\n");
 	}
 }
 
@@ -758,6 +776,7 @@ _print_node_list (char *node_list)
 
 	error_code = _load_nodes(&node_info_ptr);
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_node error");
 		return;
@@ -783,17 +802,20 @@ _print_node_list (char *node_list)
 
 			hostlist_destroy (host_list);
 		}
-		else if (quiet_flag != 1) {
-			if (errno == EINVAL)
-				fprintf (stderr, 
-					 "unable to parse node list %s\n", 
-					 node_list);
-			else if (errno == ERANGE)
-				fprintf (stderr, 
-					 "too many nodes in supplied range %s\n", 
-					 node_list);
-			else
-				perror ("error parsing node list");
+		else {
+			exit_code = 1;
+			if (quiet_flag != 1) {
+				if (errno == EINVAL)
+					fprintf (stderr, 
+					         "unable to parse node list %s\n", 
+					         node_list);
+				else if (errno == ERANGE)
+					fprintf (stderr, 
+					         "too many nodes in supplied range %s\n", 
+					         node_list);
+				else
+					perror ("error parsing node list");
+			}
 		}
 	}			
 	return;
@@ -813,6 +835,7 @@ _print_part (char *partition_name)
 
 	error_code = _load_partitions(&part_info_ptr);
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_partitions error");
 		return;
@@ -832,15 +855,19 @@ _print_part (char *partition_name)
 		    strcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
 		print_cnt++;
-		slurm_print_partition_info (stdout, & part_ptr[i], one_liner ) ;
+		slurm_print_partition_info (stdout, & part_ptr[i], 
+		                            one_liner ) ;
 		if (partition_name)
 			break;
 	}
 
-	if ((print_cnt == 0) && (quiet_flag != 1)) {
-		if (part_info_ptr->record_count)
-			printf ("Partition %s not found\n", partition_name);
-		else
+	if (print_cnt == 0) {
+		if (partition_name) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				printf ("Partition %s not found\n", 
+				        partition_name);
+		} else if (quiet_flag != 1)
 			printf ("No partitions in the system\n");
 	}
 }
@@ -896,6 +923,7 @@ _print_step (char *job_step_id_str)
 	}
 
 	if (error_code) {
+		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_get_job_steps error");
 		return;
@@ -922,10 +950,13 @@ _print_step (char *job_step_id_str)
 		                           one_liner ) ;
 	}
 
-	if ((job_step_info_ptr->job_step_count == 0) && (quiet_flag != 1)) {
-		if (job_step_info_ptr->job_step_count)
-			printf ("Job step %u.%u not found\n", job_id, step_id);
-		else
+	if (job_step_info_ptr->job_step_count == 0) {
+		if (job_step_id_str) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				printf ("Job step %u.%u not found\n", 
+				        job_id, step_id);
+		} else if (quiet_flag != 1)
 			printf ("No job steps in the system\n");
 	}
 }
@@ -943,92 +974,125 @@ _process_command (int argc, char *argv[])
 	int error_code;
 
 	if (argc < 1) {
+		exit_code = 1;
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
 	}
 	else if (strncasecmp (argv[0], "abort", 5) == 0) {
 		/* require full command name */
-		if (argc > 2)
+		if (argc > 2) {
+			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
 		error_code = slurm_shutdown (1);
-		if (error_code && (quiet_flag != 1))
-			slurm_perror ("slurm_shutdown error");
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				slurm_perror ("slurm_shutdown error");
+		}
 	}
 	else if (strncasecmp (argv[0], "completing", 1) == 0) {
-		if (argc > 1)
+		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
 		_print_completing();
 	}
 	else if (strncasecmp (argv[0], "exit", 1) == 0) {
-		if (argc > 1)
+		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
 		exit_flag = 1;
 	}
 	else if (strncasecmp (argv[0], "help", 1) == 0) {
-		if (argc > 1)
+		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n",
 				 argv[0]);
+		}
 		_usage ();
 	}
 	else if (strncasecmp (argv[0], "oneliner", 1) == 0) {
-		if (argc > 1)
+		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n",
 				 argv[0]);
+		}
 		one_liner = 1;
 	}
 	else if (strncasecmp (argv[0], "pid2jid", 3) == 0) {
-		if (argc > 2)
+		if (argc > 2) {
+			exit_code = 1;
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
-		else if (argc < 2)
-			_usage ();
-		else
+		} else if (argc < 2) {
+			exit_code = 1;
+			fprintf (stderr, 
+				 "missing argument for keyword:%s\n", 
+				 argv[0]);
+		} else
 			_pid2jid ((pid_t) atol (argv[1]) );
 
 	}
 	else if (strncasecmp (argv[0], "ping", 3) == 0) {
+		if (argc > 1) {
+			exit_code = 1;
+			fprintf (stderr, 
+				 "too many arguments for keyword:%s\n",
+				 argv[0]);
+		}
 		_print_config (NULL, true);
 	}
 	else if (strncasecmp (argv[0], "quiet", 4) == 0) {
-		if (argc > 1)
+		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
 		quiet_flag = 1;
-
 	}
 	else if (strncasecmp (argv[0], "quit", 4) == 0) {
-		if (argc > 1)
+		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr, 
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
 		exit_flag = 1;
 	}
 	else if (strncasecmp (argv[0], "reconfigure", 1) == 0) {
-		if (argc > 2)
+		if (argc > 2) {
+			exit_code = 1;
 			fprintf (stderr, "too many arguments for keyword:%s\n",
 			         argv[0]);
+		}
 		error_code = slurm_reconfigure ();
-		if (error_code && (quiet_flag != 1))
-			slurm_perror ("slurm_reconfigure error");
-
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				slurm_perror ("slurm_reconfigure error");
+		}
 	}
 	else if (strncasecmp (argv[0], "show", 3) == 0) {
 		if (argc > 3) {
+			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, 
 				        "too many arguments for keyword:%s\n", 
 				        argv[0]);
 		}
 		else if (argc < 2) {
+			exit_code = 1;
 			if (quiet_flag != 1)
 				fprintf(stderr, 
 				        "too few arguments for keyword:%s\n", 
@@ -1041,10 +1105,13 @@ _process_command (int argc, char *argv[])
 				_print_config (NULL, false);
 		}
 		else if (strncasecmp (argv[1], "daemons", 3) == 0) {
-			if ((argc > 2) && (quiet_flag != 1))
-				fprintf(stderr,
-				        "too many arguments for keyword:%s\n", 
-				        argv[0]);
+			if (argc > 2) {
+				exit_code = 1;
+				if (quiet_flag != 1)
+					fprintf(stderr,
+					        "too many arguments for keyword:%s\n", 
+					        argv[0]);
+			}
 			_print_daemons ();
 		}
 		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
@@ -1071,52 +1138,61 @@ _process_command (int argc, char *argv[])
 			else
 				_print_step (NULL);
 		}
-		else if (quiet_flag != 1) {
-			fprintf (stderr,
-				 "invalid entity:%s for keyword:%s \n",
-				 argv[1], argv[0]);
+		else {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				fprintf (stderr,
+					 "invalid entity:%s for keyword:%s \n",
+					 argv[1], argv[0]);
 		}		
 
 	}
 	else if (strncasecmp (argv[0], "shutdown", 8) == 0) {
 		/* require full command name */
-		if (argc > 2)
+		if (argc > 2) {
+			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n", 
 				 argv[0]);
+		}
 		error_code = slurm_shutdown (0);
-		if (error_code && (quiet_flag != 1))
-			slurm_perror ("slurm_shutdown error");
+		if (error_code) {
+			exit_code = 1;
+			if (quiet_flag != 1)
+				slurm_perror ("slurm_shutdown error");
+		}
 	}
 	else if (strncasecmp (argv[0], "update", 1) == 0) {
 		if (argc < 2) {
+			exit_code = 1;
 			fprintf (stderr, "too few arguments for %s keyword\n",
 				 argv[0]);
 			return 0;
 		}		
 		_update_it ((argc - 1), &argv[1]);
-
 	}
 	else if (strncasecmp (argv[0], "verbose", 4) == 0) {
 		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}		
 		quiet_flag = -1;
-
 	}
 	else if (strncasecmp (argv[0], "version", 4) == 0) {
 		if (argc > 1) {
+			exit_code = 1;
 			fprintf (stderr,
 				 "too many arguments for %s keyword\n",
 				 argv[0]);
 		}		
 		_print_version();
-
 	}
-	else
+	else {
+		exit_code = 1;
 		fprintf (stderr, "invalid keyword: %s\n", argv[0]);
+	}
 
 	return 0;
 }
@@ -1149,12 +1225,14 @@ _update_it (int argc, char *argv[])
 		}
 	}
 	
-	if (i >= argc) {	
+	if (i >= argc) {
+		exit_code = 1;
 		printf("No valid entity in update command\n");
 		printf("Input line must include \"NodeName\", ");
 		printf("\"PartitionName\", or \"JobId\"\n");
 	}
 	else if (error_code) {
+		exit_code = 1;
 		slurm_perror ("slurm_update error");
 	}
 }
@@ -1240,6 +1318,7 @@ _update_job (int argc, char *argv[])
 		else if (strncasecmp(argv[i], "Features=", 9) == 0)
 			job_msg.features = &argv[i][9];
 		else {
+			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
 			return 0;
@@ -1304,6 +1383,7 @@ _update_node (int argc, char *argv[])
 					break;
 				}
 				if (strcmp(node_state_string(j),"END") == 0) {
+					exit_code = 1;
 					fprintf(stderr, "Invalid input: %s\n", 
 						argv[i]);
 					fprintf (stderr, "Request aborted\n");
@@ -1320,6 +1400,7 @@ _update_node (int argc, char *argv[])
 			node_msg.node_state = state_val;
 		}
 		else {
+			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
 			return 0;
@@ -1329,9 +1410,10 @@ _update_node (int argc, char *argv[])
 	rc = slurm_update_node(&node_msg);
 	xfree(reason_str);
 
-	if (rc)
+	if (rc) {
+		exit_code = 1;
 		return slurm_get_errno ();
-	else
+	} else
 		return 0;
 }
 
@@ -1381,6 +1463,7 @@ _update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][8], "YES") == 0)
 				part_msg.default_part = 1;
 			else {
+				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
 				fprintf (stderr, 
@@ -1394,6 +1477,7 @@ _update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][9], "YES") == 0)
 				part_msg.root_only = 1;
 			else {
+				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
 				fprintf (stderr, 
@@ -1409,10 +1493,12 @@ _update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][7], "FORCE") == 0)
 				part_msg.shared = SHARED_FORCE;
 			else {
+				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
 				fprintf (stderr, 
-				         "Acceptable Shared values are YES, NO and FORCE\n");
+				         "Acceptable Shared values are "
+				         "YES, NO and FORCE\n");
 				return 0;
 			}
 		}
@@ -1422,6 +1508,7 @@ _update_part (int argc, char *argv[])
 			else if (strcasecmp(&argv[i][6], "UP") == 0)
 				part_msg.state_up = 1;
 			else {
+				exit_code = 1;
 				fprintf (stderr, "Invalid input: %s\n", 
 					 argv[i]);
 				fprintf (stderr, 
@@ -1434,15 +1521,17 @@ _update_part (int argc, char *argv[])
 		else if (strncasecmp(argv[i], "AllowGroups=", 12) == 0)
 			part_msg.allow_groups = &argv[i][12];
 		else {
+			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
 			return 0;
 		}
 	}
 
-	if (slurm_update_partition(&part_msg))
+	if (slurm_update_partition(&part_msg)) {
+		exit_code = 1;
 		return slurm_get_errno ();
-	else
+	} else
 		return 0;
 }
 
