@@ -58,20 +58,31 @@ static void _step_req_destroy(job_step_create_request_msg_t *r);
 
 static sig_atomic_t destroy_job = 0;
 
+
 resource_allocation_response_msg_t *
 allocate_nodes(void)
 {
 	int rc = 0;
 	SigFunc *oquitf, *ointf, *otermf;
+	sigset_t oset;
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create();
 
-	xsignal_unblock(SIGINT);
-	oquitf = xsignal(SIGINT,   _intr_handler);
+	/* 
+	 *  Save old signal mask for this thread
+	 */
+	if ((rc = pthread_sigmask(SIG_BLOCK, NULL, &oset)) != 0) {
+		error("pthread_sigmask: %s", slurm_strerror(rc));
+		return NULL;
+	}
+
 	xsignal_unblock(SIGQUIT);
-	ointf  = xsignal(SIGQUIT,  _intr_handler);
+	xsignal_unblock(SIGINT);
 	xsignal_unblock(SIGTERM);
-	otermf = xsignal(SIGTERM,  _intr_handler);
+
+	oquitf = xsignal(SIGQUIT, _intr_handler);
+	ointf  = xsignal(SIGINT,  _intr_handler);
+	otermf = xsignal(SIGTERM, _intr_handler);
 
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
 		if (destroy_job)
@@ -85,6 +96,9 @@ allocate_nodes(void)
 	}
 
     done:
+	if ((rc = pthread_sigmask(SIG_BLOCK, &oset, NULL)) != 0) 
+		error("Unable to restore signal mask: %s", slurm_strerror(rc));
+
 	xsignal(SIGINT,  ointf);
 	xsignal(SIGTERM, otermf);
 	xsignal(SIGQUIT, oquitf);
