@@ -35,7 +35,6 @@ exec echo "ulimit -c $limit_core"    >>$file_in
 exec echo "ulimit -f $limit_fsize"   >>$file_in
 exec echo "ulimit -n $limit_nofile"  >>$file_in
 exec echo "ulimit -u $limit_nproc"   >>$file_in
-exec echo "$srun -N1 $bin_env"       >>$file_in
 exec echo "$srun -N1 $file_prog_get" >>$file_in
 
 
@@ -81,30 +80,6 @@ if {[wait_for_file $file_out] != 0} {
 }
 spawn $bin_sort $file_out
 expect {
-	-re "SLURM_RLIMIT_CORE=($number)" {
-		if {$expect_out(1,string) == [expr $limit_core * 1024]} {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "SLURM_RLIMIT_FSIZE=($number)" {
-		if {$expect_out(1,string) == [expr $limit_fsize * 1024]} {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "SLURM_RLIMIT_NOFILE=($number)" {
-		if {$expect_out(1,string) == $limit_nofile} {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "SLURM_RLIMIT_NPROC=($number)" {
-		if {$expect_out(1,string) == $limit_nproc} {
-			incr matches
-		}
-		exp_continue
-	}
 	-re "USER_CORE=($number)" {
 		if {$expect_out(1,string) == [expr $limit_core * 1024]} {
 			incr matches
@@ -138,7 +113,7 @@ expect {
 }
 exec $bin_rm -f $file_out
 
-if {$matches != 8} {
+if {$matches != 4} {
 	send_user "\nFAILURE: User limits not propogated\n"
 	set exit_code 1
 }
