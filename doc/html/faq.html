@@ -15,8 +15,8 @@ Linux clusters, high-performance computing, Livermore Computing">
 <meta name="copyright"
 content="This document is copyrighted U.S.
 Department of Energy under Contract W-7405-Eng-48">
-<meta name="Author" content="Moe Jette">
-<meta name="email" content="jette@llnl.gov">
+<meta name="Author" content="Morris Jette">
+<meta name="email" content="jette1@llnl.gov">
 <meta name="Classification"
 content="DOE:DOE Web sites via organizational
 structure:Laboratories and Other Field Facilities">
@@ -58,6 +58,7 @@ structure:Laboratories and Other Field Facilities">
 <li><a href="#pending">Why is my job not running?</a></li>
 <li><a href="#sharing">Why does the srun --overcommit option not permit multiple jobs 
 to run on nodes?</a></li>
+<li><a href="#purge">Why is my job killed prematurely?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in &quot;completing&quot; state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -125,6 +126,23 @@ four tasks to use.
 of srun's <b>--shared</b> option in conjunction with the <b>Shared</b> parameter 
 in SLURM's partition configuration. See the man pages for srun and slurm.conf for 
 more information.
+<p><a name="purge"><b>5. Why is my job killed prematurely?</b></a><br>
+SLURM has a job purging mechanism to remove inactive jobs (resource allocations)
+before reaching its time limit, which could be infinite.
+This inactivity time limit is configurable by the system administrator. 
+You can check it's value with the command
+<blockquite>
+<p><span class="commandline">scontrol show config | grep InactiveLimit</span></p>
+</blockquote>
+The value of InactiveLimit is in seconds. 
+A zero value indicates that job purging is disabled. 
+A job is considered inactive if it has no active job steps or if the srun 
+command creating the job is not responding.
+In the case of a batch job, the srun command terminates after the job script 
+is submitted. 
+Therefore batch job pre- and post-processing is limited to the InactiveLimit.
+Contact your system administrator if you believe the InactiveLimit value 
+should be changed. 
 </td>
 </tr>
 <tr> 
