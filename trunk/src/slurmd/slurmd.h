@@ -58,6 +58,9 @@ extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
  */
 typedef slurm_ssl_key_ctx_t slurm_ssl_ctx;
 typedef struct slurmd_config {
+
+	slurm_ctl_conf_t cf;            /* slurm.conf configuration        */
+
 	char         *prog;		/* Program basename		   */
 	char         ***argv;           /* pointer to argument vector      */
 	int 	     *argc;             /* pointer to argument count       */

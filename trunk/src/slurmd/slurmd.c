@@ -116,23 +116,43 @@ static void     *_service_connection(void *);
 static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
 static void      _update_logging(void);
 
-static slurm_ctl_conf_t slurmctld_conf;
 
 int 
 main (int argc, char *argv[])
 {
 	int pidfd;
 
+	/*
+	 * Create and set default values for the slurmd global
+	 * config variable "conf"
+	 */
 	_create_conf();
 	_init_conf();
+
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
+
+	/*
+	 * Process commandline arguments first, since one option may be
+	 * an alternate location for the slurm config file.
+	 */
 	_process_cmdline(argc, argv);
+
+	/*
+	 * Read global slurm config file, ovverride necessary values from
+	 * defaults and command line.
+	 *
+	 */
 	_read_config();
+
+	/* 
+	 * Update location of log messages (syslog, stderr, logfile, etc.)
+	 * and print current configuration (if in debug mode)
+	 */
 	_update_logging();
 	_print_conf();
 
-	/* Create slurmd spool directory 
-	 * if necessary, and chdir() to it.
+	/* 
+	 * Create slurmd spool directory if necessary, and chdir() to it.
 	 */
 	_set_slurmd_spooldir();
 
@@ -339,7 +359,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 
 	get_procs(&msg->cpus);
 	get_memory(&msg->real_memory_size);
-	get_tmp_disk(&msg->temporary_disk_space, slurmctld_conf.tmp_fs);
+	get_tmp_disk(&msg->temporary_disk_space, conf->cf.tmp_fs);
 
 	steps          = shm_get_steps();
 	msg->job_count = list_count(steps);
@@ -388,48 +408,59 @@ _free_and_set(char **confvar, char *newval)
 		return 0;
 }
 
+/*
+ * Read the slurm configuration file (slurm.conf) and substitute some
+ * values into the slurmd configuration in preference of the defaults.
+ *
+ */
 static void
 _read_config()
 {
-	read_slurm_conf_ctl(&slurmctld_conf);
+        char *path_pubkey;
+	read_slurm_conf_ctl(&conf->cf);
 
 	slurm_mutex_lock(&conf->config_mutex);
+
 	if (conf->conffile == NULL)
-		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
+		conf->conffile = xstrdup(conf->cf.slurm_conf);
 
-	conf->port          =            slurmctld_conf.slurmd_port;
-	conf->slurm_user_id =		 slurmctld_conf.slurm_user_id;
-	_free_and_set(&conf->epilog,     xstrdup(slurmctld_conf.epilog));
-	_free_and_set(&conf->prolog,     xstrdup(slurmctld_conf.prolog));
-	_free_and_set(&conf->tmpfs,      xstrdup(slurmctld_conf.tmp_fs));
-	_free_and_set(&conf->pubkey,     xstrdup(
-		      slurmctld_conf.job_credential_public_certificate));
-	_free_and_set(&conf->spooldir,   
-		      xstrdup(slurmctld_conf.slurmd_spooldir));
-	_free_and_set(&conf->pidfile,    
-		      xstrdup(slurmctld_conf.slurmd_pidfile));
-	slurm_mutex_unlock(&conf->config_mutex);
+	conf->port          =  conf->cf.slurmd_port;
+	conf->slurm_user_id =  conf->cf.slurm_user_id;
 
-	if ((slurmctld_conf.control_addr == NULL) || 
-	    (slurmctld_conf.slurmctld_port == 0)) {
+	path_pubkey = xstrdup(conf->cf.job_credential_public_certificate);
+
+	_free_and_set(&conf->epilog,   xstrdup(conf->cf.epilog));
+	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
+	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
+	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
+	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
+	_free_and_set(&conf->pubkey,   path_pubkey);     
+		      
+	if ( (conf->cf.control_addr == NULL) || 
+	     (conf->cf.slurmctld_port == 0)    ) {
 		error("Unable to establish control machine or port");
 		exit(1);
 	}
+
+	slurm_mutex_unlock(&conf->config_mutex);
 }
 
 static void
 _reconfigure(void)
 {
-	read_slurm_conf_ctl(&slurmctld_conf);
+	read_slurm_conf_ctl(&conf->cf);
 	_update_logging();
 	_print_conf();
 
 	slurm_mutex_lock(&conf->config_mutex);
+
 	if (conf->conffile == NULL)
-		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
-	conf->slurm_user_id =		 slurmctld_conf.slurm_user_id;
-	_free_and_set(&conf->epilog,     xstrdup(slurmctld_conf.epilog));
-	_free_and_set(&conf->prolog,     xstrdup(slurmctld_conf.prolog));
+		_free_and_set(&conf->conffile, conf->cf.slurm_conf);
+
+	conf->slurm_user_id = conf->cf.slurm_user_id;
+	_free_and_set(&conf->epilog, xstrdup(conf->cf.epilog));
+	_free_and_set(&conf->prolog, xstrdup(conf->cf.prolog));
+
 	slurm_mutex_unlock(&conf->config_mutex);
 }
 
@@ -438,9 +469,9 @@ _print_conf()
 {
 	slurm_mutex_lock(&conf->config_mutex);
 	debug3("Confile     = `%s'",     conf->conffile);
-	debug3("Debug       = %d",       slurmctld_conf.slurmd_debug);
+	debug3("Debug       = %d",       conf->cf.slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
-	debug3("Logfile     = `%s'",     slurmctld_conf.slurmd_logfile);
+	debug3("Logfile     = `%s'",     conf->cf.slurmd_logfile);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
@@ -754,31 +785,26 @@ _kill_old_slurmd(void)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(void) 
 {
-	/* Preserve execute line arguments (if any) */
-	if (conf->debug_level) {
-		if ((LOG_LEVEL_INFO + conf->debug_level) > LOG_LEVEL_DEBUG3)
-			slurmctld_conf.slurmd_debug = LOG_LEVEL_DEBUG3;
-		else
-			slurmctld_conf.slurmd_debug = LOG_LEVEL_INFO + 
-						      conf->debug_level;
+	/* 
+	 * Initialize debug level if not already set
+	 */
+	if (conf->debug_level == 0) {
+		conf->debug_level = LOG_LEVEL_INFO;
+		if (conf->cf.slurmd_debug != (uint16_t) NO_VAL)
+			conf->debug_level = conf->cf.slurmd_debug; 
+
 	} 
-	if (slurmctld_conf.slurmd_debug != (uint16_t) NO_VAL) {
-		conf->log_opts.stderr_level  = slurmctld_conf.slurmd_debug;
-		conf->log_opts.logfile_level = slurmctld_conf.slurmd_debug;
-		conf->log_opts.syslog_level  = slurmctld_conf.slurmd_debug;
-	}
-	if (conf->logfile) {
-		if (slurmctld_conf.slurmd_logfile)
-			xfree(slurmctld_conf.slurmd_logfile);
-		slurmctld_conf.slurmd_logfile = xstrdup(conf->logfile);
-	}
+
+	conf->log_opts.stderr_level  = conf->debug_level;
+	conf->log_opts.logfile_level = conf->debug_level;
+	conf->log_opts.syslog_level  = conf->debug_level;
 
 	if (conf->daemonize) {
 		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
-		if (slurmctld_conf.slurmd_logfile)
+		if (conf->logfile)
 			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
-	}
+	} else
+		conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
 
-	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON,
-		  slurmctld_conf.slurmd_logfile);
+	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 }

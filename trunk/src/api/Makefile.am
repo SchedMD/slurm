@@ -4,7 +4,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-
 INCLUDES = -I$(top_srcdir)
 
 # libslurm version information : 
