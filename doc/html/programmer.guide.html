@@ -15,7 +15,7 @@ SLURM requires no kernel modifications and is relatively self-contained.
 
 <h2>Component Overview</h2>
 The <b>Job Initiator</b> (JI) is the tool used by the customer to initiate 
-a job. The job initiator can execute on any computer in the cluser. Its 
+a job. The job initiator can execute on any computer in the cluster. Its 
 request is sent to the <b>controller</b> executing on the <b>control machine</b>. 
 <p>
 The controller (<b>ControlDaemon</b>) orchestrates all SLURM activities including: accepting the 
@@ -23,10 +23,10 @@ job initiation request, allocating nodes to the job, enforcing partition
 constraints, enforcing job limits, and general record keeping. The three 
 primary components (threads) of the controller are the <b>Partition Manager</b> (PM), 
 <b>Node Manager</b> (NM), and <b>Job Manager</b> (JM). The partition manager
-keeps track of partition state and contraints. The node manager keeps track 
+keeps track of partition state and constraints. The node manager keeps track 
 of node state and configuration. The job manager keeps track of job state 
 and enforces its limits. Since all of these functions are critical to the 
-overall SLURM operation, a <b>backup controler</b> assumes thsse responsibilities
+overall SLURM operation, a <b>backup controller</b> assumes these responsibilities
 in the event of control machine failure.
 <p>
 The final component of interest is the <b>Job Shepherd</b> (JS), which is 
@@ -118,7 +118,7 @@ At this point, the controller enters a reactive mode. Node and job state
 information is logged when received, requests for getting and/or setting 
 state information are processed, resources are allocated to jobs, etc.
 <p>
-The allocation of resources to jobs is fairly complext. When a job 
+The allocation of resources to jobs is fairly complex. When a job 
 initiation request is received, a record  of each partition that might 
 be used to satisfy the request is made. Each available node is then 
 checked for possible use. This involves many tests:
@@ -143,11 +143,11 @@ the allocation is made and the selection process ends.
 The controller expects each SLURM Job Shepherd (on the computer 
 servers) to report its state every <b>ServerTimeout</b> seconds. 
 If it fails to do so, the node will have its state set to DOWN 
-and no futher jobs will be scheduled on that node until it 
+and no further jobs will be scheduled on that node until it 
 reports a valid state. The controller will also send a state 
 request message to the wayward node. The controller collects 
 node and job resource use information. When a job has reached 
-its perscribed time-limit, its termination is initiated through 
+its prescribed time-limit, its termination is initiated through 
 signals to the appropriate Job Shepherds.
 <p>
 The controller also reports its state to the backup controller 
@@ -165,7 +165,7 @@ activities using the syslog function. This not only identifies the
 event, but its significance.
 
 <h2>Job Shepherd</h2>
-The job shepherd is a relatively light-weigt daemon. It too is 
+The job shepherd is a relatively light-weight daemon. It too is 
 multi-threaded and performs five primary functions:
 <ol>
 <li>Initiate jobs
@@ -205,7 +205,7 @@ system daemon time) is still reported.
 The job shepherd accepts connections from the the SLURM 
 administrative tool and Job Initiators. It can then confirm 
 the identity of the user executing the command and forward 
-the authetnicated request to the control machine. Responses 
+the authenticated request to the control machine. Responses 
 to the request from the control machine are forwarded as 
 needed.
 
@@ -216,7 +216,7 @@ node on which the ControlDaemon executes, all SLURM daemons are
 notified in order to route their messages appropriately.
 <p>
 ControlDaemon collects state information from ServerDaemon. If there 
-have been no communcations for a while, it pings the ServerDaemon. 
+have been no communications for a while, it pings the ServerDaemon. 
 If there is no response within ServerTimeout, the node is considered 
 DOWN and unavailable for use. The appropriate Job Initiator is also 
 notified in order to terminate the job. The ControlDaemon also processes 
@@ -230,7 +230,7 @@ as requested by the Job Initiator and ControlDaemon.
 <h2>Authentication and Authorization</h2>
 <i>I am inclined for the administrator tool and job initiator work through 
 a SLURM daemon. The SLURM daemon can confirm the identify of the user 
-and forward the communcations through low-numbered sockets. This eliminates 
+and forward the communications through low-numbered sockets. This eliminates 
 the authentication problems without introducing the complexity of Kerberos 
 or PKI, which I would really like to avoid. - Moe</i>
 
@@ -324,7 +324,7 @@ All functions described below can be issued from any node in the SLURM cluster.
 <dl>
 <dt>Get_Acctg_Info(TBD);
 <dd>Return job and system accounting information.
-The function has yet to be defined.
+This function has yet to be defined.
 
 <dt>int Get_Build_Info(char *Info_Req, char **Build_Info);
 <dd>Return SLURM build information. 
@@ -338,13 +338,15 @@ when the buffer is no longer needed.
 Returns an error code or zero if no error.
 Possible error codes include: TBD.
 
-<dt>int Get_Job_Info(time_t *Last_Update, int *Version_Job_Record, struct Job_Record *Job_Info);
+<dt>int Get_Job_Info(time_t *Last_Update, int *Version_Job_Record, struct Job_Record *Job_Info, int *Job_Records);
 <dd>Load into the buffer Job_Info the current job state information only if changed since Last_Update. 
 The buffer Job_Info is created or its size changed as needed. 
 The application is responsible for setting *Job_Info to NULL initially and executing "free(*Job_Info)" 
 when the buffer is no longer needed.
-The values of Last_Update and Version_Job_Record are returned. 
-Version_Job_Record can be checked by the applicationto insure it is built with the appropriate structure format.
+The value of Last_Update is set with the time of last update.
+The value of Version_Job_Record is set with the version number of the structure format. 
+The value of Job_Records is set with the count of records returned.
+Version_Job_Record can be checked by the application to insure it is built with the appropriate structure format.
 Returns an error code or zero if no error.
 Possible error codes include: TBD.
 
@@ -359,23 +361,27 @@ SLURM build time) will be revoked.
 Returns an error code or zero if no error.
 Possible error codes include: TBD.
 
-<dt>int Get_Node_Info(time_t *Last_Update, int *Version_Node_Record, struct Node_Record **Node_Info);
+<dt>int Get_Node_Info(time_t *Last_Update, int *Version_Node_Record, struct Node_Record *Node_Info, int *Node_Records);
 <dd>Load into the buffer Node_Info the current node state information only if changed since Last_Update. 
 The buffer Node_Info is created or its size changed as needed. 
 The application is responsible for setting *Node_Info to NULL initially and executing "free(*Node_Info)" 
 when the buffer is no longer needed.
-The values of Last_Update and Version_Node_Record are returned. 
-Version_Node_Record can be checked by the applicationto insure it is built with the appropriate structure format.
+The value of Last_Update is set with the time of last update.
+The value of Version_Node_Record is set with the version number of the structure format. 
+The value of Node_Records is set with the count of records returned.
+Version_Node_Record can be checked by the application to insure it is built with the appropriate structure format.
 Returns an error code or zero if no error.
 Possible error codes include: TBD.
 
-<dt>int Get_Part_Info(time_t *Last_Update, int *Version_Part_Record, struct Part_Record *Part_Info);
+<dt>int Get_Part_Info(time_t *Last_Update, int *Version_Part_Record, struct Part_Record *Part_Info, int *Part_Records);
 <dd>Load into the buffer Part_Info the current partition state information only if changed since Last_Update. 
 The buffer Part_Info is created or its size changed as needed. 
 The application is responsible for setting *Part_Info to NULL initially and executing "free(*Node_Info)" 
 when the buffer is no longer needed.
-The values of Last_Update and Version_Part_Record are returned. 
-Version_Part_Record can be checked by the applicationto insure it is built with the appropriate structure format.
+The value of Last_Update is set with the time of last update.
+The value of Version_Part_Record is set with the version number of the structure format. 
+The value of Part_Records is set with the count of records returned.
+Version_Part_Record can be checked by the application to insure it is built with the appropriate structure format.
 Returns an error code or zero if no error.
 Possible error codes include: TBD.
 
@@ -434,8 +440,127 @@ Returns -2 if Job_Spec can not be successfully parsed.
 Returns -1 if the job can not be initiated given current SLURM configuration. 
 Returns 0 if the job can not presently be initiated due to busy nodes.
 Returns 1 if the job can be initiated immediately.
-
 </dl>
+
+<h2>Examples of API Use</h2>
+<pre>
+    char *Build_Info;
+    int Error_Code, i, Job_Id, Signal;
+    time_t Last_Update;
+    struct Job_Record  *Job_Info;
+    struct Node_Record *Node_Info;
+    struct Part_Record *Part_Info;
+    int Job_Records, Node_Records, Part_Records;
+    int Version_Job_Record, Version_Node_Record, Version_Part_Record;
+    int Key;
+    char Scratch[128];
+
+    Build_Info = NULL;
+    Error_Code = Get_Build_Info("PROLOG", &Build_Info);
+    if (Error_Code != 0) 
+        printf("Error %d executing Get_Build_Info for PROLOG\n", Error_Code);
+    else
+	printf("Get_Build_Info for PROLOG returns %s\n", Build_Info[0]);
+    Error_Code = Get_Build_Info("", Build_Info);
+    if (Error_Code != 0) 
+        printf("Error %d executing Get_Build_Info for everything\n", Error_Code);
+    else
+	printf("Get_Build_Info for everything returns %s\n", Build_Info[0]);
+    free(Build_Info[0]);
+
+    Last_Update = (time_t) 0;
+    Job_Info = (struct Job_Record *)NULL;
+    Error_Code = Get_Job_Info(&Last_Update, &Version_Job_Record, &Job_Info, &Job_Records);
+    if (Error_Code != 0) 
+        printf("Error %d executing Get_Job_Info\n", Error_Code);
+    else if (Version_Job_Record != JOB_STRUCT_VERSION) 
+        printf("Get_Job_Info returned version %d, expected version %d\n", Version_Job_Record, JOB_STRUCT_VERSION);
+    else {
+        printf("Get_Job_Info returned %d records\n", Job_Records);
+        for (i=0; i&ltJob_Records; i++) {
+            printf("Job_Id=%d\n", Job_Info[i].Job_Id);
+        } /* for */
+    } /* else */
+    free(Job_Info);
+
+    Error_Code = Get_Key(&Key);
+    if (Error_Code != 0) 
+        printf("Error %d executing Get_Key\n", Error_Code);
+    else 
+        printf("Get_Key value is %d\n", Key);
+
+    Last_Update = (time_t) 0;
+    Node_Info = (struct Node_Info *)NULL;
+    Error_Code = Get_Node_Info(&Last_Update, &Version_Node_Record, &Node_Info, &Node_Records);
+    if (Error_Code != 0) 
+        printf("Error %d executing Get_Node_Info\n", Error_Code);
+    else if (Version_Node_Record != NODE_STRUCT_VERSION) 
+        printf("Get_Node_Info returned version %d, expected version %d\n", Version_Node_Record, NODE_STRUCT_VERSION);
+    else {
+        printf("Get_Node_Info returned %d records\n", Node_Records);
+        for (i=0; i&ltNode_Records; i++) {
+            printf("NodeName=%s\n", Node_Info[i].Name);
+        } /* for */
+    } /* else */
+    free(Node_Info);
+
+    Last_Update = (time_t) 0;
+    Part_Info = (struct Job_Record *)NULL;
+    Error_Code = Get_Part_Info(&Last_Update, &Version_Part_Record, &Part_Info, &Part_Records);
+    if (Error_Code != 0) 
+        printf("Error %d executing Get_Part_Info\n", Error_Code);
+    else if (Version_Job_Record != JOB_STRUCT_VERSION) 
+        printf("Get_Part_Info returned version %d, expected version %d\n", Version_Part_Record, PART_STRUCT_VERSION);
+    else {
+        printf("Get_Part_Info returned %d records\n", Part_Records);
+        /* Format TBD */
+    } /* else */
+    free(Job_Info);
+
+    printf("Enter SLURM Job_Id of job to be killed: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Job_Id = atoi(Scratch);
+    Error_Code = Kill_Job(Job_Id);
+    if (Error_Code != 0) 
+        printf("Error %d executing Kill_Job on job %d\n", Error_Code, Job_Id);
+
+    printf("Enter name of node to reconfigure: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Error_Code = Reconfigure(Scratch);
+    if (Error_Code != 0) 
+        printf("Error %d executing Reconfigure on node %s\n", Error_Code, Scratch);
+
+    printf("Enter job specification: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Error_Code = Will_Job_Run(Scratch);
+    if (Error_Code != 0) 
+        printf("Error %d executing Will_Job_Run on specification %s\n", Error_Code, Scratch);
+    Error_Code = Run_Job(Scratch);
+    if (Error_Code != 0) 
+        printf("Error %d executing Run_Job on specification %s\n", Error_Code, Scratch);
+
+    printf("Enter SLURM Job_Id of job to be signalled: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Job_Id = atoi(Scratch);
+    printf("Enter signal number: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Signal = atoi(Scratch);
+    Error_Code = Signal_Job(Job_Id, Signal);
+    if (Error_Code != 0) 
+        printf("Error %d executing Signal_Job on job %d and signal %d\n", Error_Code, Job_Id, Signal);
+
+    printf("Enter configuration update specification: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Error_Code = Update(Scratch);
+    if (Error_Code != 0) 
+        printf("Error %d executing Update on specification %s\n", Error_Code, Scratch);
+
+    printf("Enter name of node to upload state from: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Error_Code = Upload(Scratch);
+    if (Error_Code != 0) 
+        printf("Error %d executing Upload on node %s\n", Error_Code, Scratch);
+</pre>
 
 <h2>To Do</h2>
 <ul>
@@ -443,7 +568,7 @@ Returns 1 if the job can be initiated immediately.
 <li>How do we interface with TotalView?</li>
 <li>If we develop a simple scheduler (outside of DPCS), the addition of 
 parameters makes things get really complex very quickly. Trying to 
-map jobs onto consecuitve nodes in particular is difficult. To keep 
+map jobs onto consecutive nodes in particular is difficult. To keep 
 things simple, we probably just want to something simple like FCFS 
 or trying to start jobs in priority order.</li>
 <li>Deadlines: MCR to be built in July 2002, accepted August 2002.</li>
