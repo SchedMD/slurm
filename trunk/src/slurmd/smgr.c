@@ -554,9 +554,8 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 	/*  If task to be debugged, wait for it to stop via
 	 *  child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
 	 *  ptrace(PTRACE_DETACH). This requires a kernel patch,
-	 *  which you probably already have in place for TotalView:
-	 *  http://hypermail.idiosynkrasia.net
-	 *        /linux-kernel/archived/2001/week51/1193.html 
+	 *  which you may already have in place for TotalView.
+	 *  If not, apply the kernel patch in etc/ptrace.patch
 	 */
 
 	if (job->task_flags & TASK_TOTALVIEW_DEBUG) {
