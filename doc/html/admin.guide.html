@@ -350,13 +350,9 @@ specification will utilize this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 
-<dt>Key
-<dd>Specifies if SLURM provided key is required for a job to 
-execute in this partition.
-The key is provided to user root upon request and is invalidated 
-after one use or expiration.
-The key may be used to deligate control of partitions to external 
-schedulers.
+<dt>RootOnly
+<dd>Specifies if only user ID zero (or user <i>root</i> may 
+initiate jobs in this partition.
 Possible values are "YES" and "NO". 
 The default value is "NO".
 
@@ -417,7 +413,7 @@ PartitionName=DEFAULT MaxTime=30 MaxNodes=2
 PartitionName=login Nodes=lx[0001-0002] State=DOWN
 PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
 PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
-PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 Key=YES
+PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 RootOnly=YES
 </pre>
 <p>
 APIs and an administrative tool can be used to alter the SLRUM 
@@ -640,7 +636,7 @@ PartitionName=DEFAULT MaxTime=30 MaxNodes=2
 PartitionName=login Nodes=lx[0001-0002] State=DOWN
 PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
 PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
-PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 Key=YES
+PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 RootOnly=YES
 </pre>
 
 <a name="SampleAdmin"><h2>Sample scontrol Execution</h2></a>
@@ -661,7 +657,7 @@ Remove node lx0030 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified July 30, 2002</p>
+<p>Last Modified August 2, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
