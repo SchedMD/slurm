@@ -109,6 +109,18 @@ const uint32_t plugin_version	= 90;
  * some form of runtime typing to ensure that the pointers they have
  * received are actually appropriate credentials and not pointers to
  * random memory.
+ *
+ * A word about thread safety.  The authentication plugin API specifies
+ * that SLURM will exercise the plugin sanely.  That is, the authenticity
+ * of a credential which has not been activated should not be tested.
+ * However, the credential should be thread-safe.  This does not mean
+ * necessarily that a plugin must recognize when an inconsistent sequence
+ * of API calls is in progress, but if a plugin will crash or otherwise
+ * misbehave if it is handed a credential in an inconsistent state (perhaps
+ * it is in the process of being activated and a signature is incomplete)
+ * then it is the plugin's responsibility to provide its own serialization\
+ * to avoid that.
+ *
  */
 typedef struct _slurm_auth_credential {
 	uid_t uid;

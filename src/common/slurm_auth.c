@@ -239,19 +239,19 @@ slurm_auth_init( void )
 	
 	g_context = slurm_auth_context_create( get_auth_type() );
 	if ( g_context == NULL ) {
-		verbose( "cannot create a context for %s", get_auth_type() );
+		error( "cannot create a context for %s", get_auth_type() );
 		retval = SLURM_ERROR;
 		goto done;
 	}
 	
 	if ( slurm_auth_get_ops( g_context ) == NULL ) {
-		verbose( "cannot resolve plugin operations" );
+		error( "cannot resolve plugin operations" );
+		slurm_auth_context_destroy( g_context );
+		g_context = NULL;
 		retval = SLURM_ERROR;
-	} else {
-		retval = SLURM_SUCCESS;
 	}
 
-    done:
+ done:
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }
