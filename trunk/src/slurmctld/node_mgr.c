@@ -488,7 +488,8 @@ load_node_state ( void )
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);
 		if (node_ptr) {
-			node_ptr->node_state = node_state;
+			/* Flag all nodes as not responding until they check in */
+			node_ptr->node_state = node_state | NODE_STATE_NO_RESPOND;
 			node_ptr->cpus = cpus;
 			node_ptr->real_memory = real_memory;
 			node_ptr->tmp_disk = tmp_disk;
