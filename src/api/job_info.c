@@ -215,9 +215,13 @@ make_time_str (time_t *time, char *string)
 	struct tm time_tm;
 
 	localtime_r (time, &time_tm);
-	sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", 
-		(time_tm.tm_mon+1), time_tm.tm_mday, 
-		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+	if ( *time == (time_t) 0 ) {
+		sprintf( string, "Unknown" );
+	} else {
+		sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", 
+			  (time_tm.tm_mon+1), time_tm.tm_mday, 
+			  time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+	}
 }
 
 
