@@ -380,7 +380,7 @@ _job_mgr(slurmd_job_t *job)
 	xsignal(SIGHUP, _hup_handler);
 
 	if ((rc = _setup_io(job))) 
-		goto fail1;
+		goto fail2;
 
 	/*
 	 * Create slurmd session manager and read task pids from pipe
@@ -886,55 +886,24 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 static int
 _complete_job(slurmd_job_t *job, int err, int status)
 {
-	int                rc;
-	size_t             size;
-	slurm_fd           sock;
-	slurm_msg_t        msg;
-	slurm_msg_t        resp_msg;
+	int                      rc;
+	slurm_msg_t              req_msg;
 	complete_job_step_msg_t  req;
-	return_code_msg_t *resp;
 
 	req.job_id	= job->jobid;
 	req.job_step_id	= NO_VAL; 
 	req.job_rc	= status;
 	req.slurm_rc	= err; 
 	req.node_name	= conf->hostname;
-	msg.msg_type	= REQUEST_COMPLETE_JOB_STEP;
-	msg.data	= &req;	
+	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
+	req_msg.data	= &req;	
 
-	if ((sock = slurm_open_controller_conn()) < 0) {
-		error("unable to open connection to controller");
-		return SLURM_ERROR;
-	}
-	
-	if ((rc = slurm_send_controller_msg(sock, &msg)) < 0) {
-		error("sending message to controller");	
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0) {
+		error("Unable to send job complete message: %m");
 		return SLURM_ERROR;
 	}
 
-	size = slurm_receive_msg(sock, &resp_msg);
-
-	if ((rc = slurm_shutdown_msg_conn(sock)) < 0) {
-		error("shutting down controller connection");
-		return SLURM_ERROR;
-	}
-
-	if (size < 0) {
-		error("Unable to receive resp from controller");
-		return SLURM_ERROR;
-	}
-
-	switch (resp_msg.msg_type) {
-	case RESPONSE_SLURM_RC:
-		resp = resp_msg.data;
-		rc = resp->return_code;
-		slurm_free_return_code_msg(resp);
-		slurm_seterrno_ret(rc);
-		break;
-	default:
-		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
-		break;
-	}
+	if (rc) slurm_seterrno_ret(rc);
 
 	return SLURM_SUCCESS;
 }
