@@ -5,9 +5,9 @@ We will use the common/list library to manage the tables.
 
 JOB TABLE (basic job information)
 ---------
-Partition name (string)
+Job ID (string)
 Job Name (string)
-Job ID (number)
+Partition name (string)
 User ID (number)
 Nodes (string, comma separated list with regular expressions)
 State (Pending, Held, Stage_In, Running, Stage_Out, Complete, Reserved_Resources, others?)
