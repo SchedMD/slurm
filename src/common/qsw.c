@@ -514,18 +514,22 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	node_num = 0;
 	for (i = cap->LowNode; i <= cap->HighNode; i++) {
 		if (bit_test(nodeset, i)) {
-			int j, proc0, task_cnt;
+			int j, bit, task_cnt;
 
 			if (node_num++ < full_node_cnt)
 				task_cnt = max_procs_per_node;
 			else
 				task_cnt = min_procs_per_node;
+
 			for (j = 0; j < task_cnt; j++) {
-				proc0 = (i - cap->LowNode) * 
-				        max_procs_per_node;
-				assert((proc0 + j) < 
-				       (sizeof(cap->Bitmap) * 8));
-				BT_SET(cap->Bitmap, (proc0 + j));
+				if (cyclic_alloc)
+					bit = (i-cap->LowNode) + (j*nnodes);
+				else
+					bit = ((i-cap->LowNode)
+					       * max_procs_per_node) + j;
+
+				assert(bit < (sizeof(cap->Bitmap) * 8));
+				BT_SET(cap->Bitmap, bit);
 			}
 		}
 	}
