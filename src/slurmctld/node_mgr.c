@@ -15,6 +15,7 @@
 
 #include "list.h"
 #include "slurm.h"
+#include "slurmlib.h"
 
 #define BUF_SIZE 	1024
 #define NO_VAL	 	(-99)
@@ -43,12 +44,11 @@ void	Split_Node_Name(char *Name, char *Prefix, char *Suffix, int *Index, int *Di
 /* main is used here for testing purposes only */
 main(int argc, char * argv[]) {
     int Error_Code, size;
-    char *Format, *Out_Line;
+    char *Out_Line;
     unsigned *Map1, *Map2;
     unsigned U_Map[2];
     struct Config_Record *Config_Ptr;
     struct Node_Record *Node_Ptr;
-    int Start_Inx, End_Inx, Count_Inx;
     char *Dump;
     int Dump_Size;
     time_t Update_Time;
@@ -67,7 +67,6 @@ main(int argc, char * argv[]) {
     Node_Record_Count = 0;
 
     /* Now check out configuration and node structure functions */
-    Node_Lock();
     Error_Code = Init_Node_Conf();
     if (Error_Code) printf("ERROR: Init_Node_Conf error %d\n", Error_Code);
     Default_Config_Record.CPUs       = 12;
@@ -148,19 +147,6 @@ main(int argc, char * argv[]) {
     printf("NOTE: We expect Find_Node_Record to report not finding a record for lx02\n");
     Node_Ptr   = Find_Node_Record("lx02");
     if (Node_Ptr != 0) printf("ERROR: Find_Node_Record failure 3\n");
-
-    /* Check node name parsing */
-    Out_Line = "linux[003-234]";
-    Error_Code = Parse_Node_Name(Out_Line, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-    if (Error_Code != 0) 
-	printf("ERROR: Parse_Node_Name error %d\n", Error_Code);
-    else {
-	if ((Start_Inx != 3) || (End_Inx != 234)) printf("ERROR: Parse_Node_Name failure\n");
-	printf("Parse_Node_Name of \"%s\" produces format \"%s\", %d to %d, %d records\n", 
-	    Out_Line, Format, Start_Inx, End_Inx, Count_Inx);
-	if (Format) free(Format);
-    } /* else */
-    Node_Unlock();
 
     exit(0);
 } /* main */
@@ -466,6 +452,7 @@ int Delete_Node_Record(char *name) {
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
 
     Last_Node_Update = time(NULL);
+    Node_Lock();
     Node_Record_Point = Find_Node_Record(name);
     if (Node_Record_Point == (struct Node_Record *)NULL) {
 #if DEBUG_MODULE
@@ -473,6 +460,7 @@ int Delete_Node_Record(char *name) {
 #else
 	syslog(LOG_ALERT, "Delete_Node_Record: Attempt to delete non-existent node %s\n", name);
 #endif
+	Node_Unlock();
 	return ENOENT;
     } /* if */
 
@@ -483,6 +471,7 @@ int Delete_Node_Record(char *name) {
     strcpy(Node_Record_Point->Name, "");
     Node_Record_Point->NodeState = STATE_DOWN;
     Last_BitMap_Update = time(NULL);
+    Node_Unlock();
     return 0;
 } /* Delete_Node_Record */
 
@@ -694,6 +683,7 @@ int Hash_Index(char *name) {
 int Init_Node_Conf() {
     Last_Node_Update = time(NULL);
 
+    Node_Lock();
     Node_Record_Count = 0;
     if (Node_Record_Table_Ptr) {
 	free(Node_Record_Table_Ptr);
@@ -736,6 +726,7 @@ int Init_Node_Conf() {
 #endif
 	abort();
     } /* if */
+    Node_Unlock();
     return 0;
 } /* Init_Node_Conf */
 
@@ -876,117 +867,6 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap) {
 
 
 /* 
- * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
- * generate multiple node names as needed.
- * Input: NodeName - Node name to parse
- * Output: Format - sprintf format for generating names
- *         Start_Inx - First index to used
- *         End_Inx - Last index value to use
- *         Count_Inx - Number of index values to use (will be zero if none)
- *         return 0 if no error, error code otherwise
- * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
- */
-int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx) {
-    int Base, Format_Pos, Precision, i;
-    char Type[1];
-
-    i = strlen(NodeName);
-    Format[0] = (char *)malloc(i+1);
-    if (Format[0] == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Parse_Node_Name: unable to allocate memory\n");
-#else
-	syslog(LOG_ERR, "Parse_Node_Name: unable to allocate memory\n");
-#endif
-	abort();
-    } /* if */
-
-    *Start_Inx = 0;
-    *End_Inx   = 0;
-    *Count_Inx = 0;
-    Format_Pos = 0;
-    Base = 0;
-    Format[0][Format_Pos] = (char)NULL;
-    i = 0;
-    while (1) {
-	if (NodeName[i] == (char)NULL) break;
-	if (NodeName[i] == '\\') {
-	    if (NodeName[++i] == (char)NULL) break;
-	    Format[0][Format_Pos++] = NodeName[i++];
-	} else if (NodeName[i] == '[') {		/* '[' preceeding number range */
-	    if (NodeName[++i] == (char)NULL) break;
-	    if (Base != 0) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
-#else
-		syslog(LOG_ERR, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
-#endif
-		free(Format[0]);
-		return EINVAL;
-	    } /* if */
-	    if (NodeName[i] == 'o') {
-		Type[0] = NodeName[i++];
-		Base = 8;
-	    } else {
-		Type[0] = 'd';
-		Base = 10;
-	    } /* else */
-	    Precision = 0;
-	    while (1) {
-		if ((NodeName[i] >= '0') && (NodeName[i] <= '9')) {
-		    *Start_Inx = ((*Start_Inx) * Base) + (int)(NodeName[i++] - '0');
-		    Precision++;
-		    continue;
-		} /* if */
-		if (NodeName[i] == '-') {		/* '-' between numbers */
-		    i++;
-		    break;
-		} /* if */
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName);
-#else
-		syslog(LOG_ERR, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName);
-#endif
-		free(Format[0]);
-		return EINVAL;
-	    } /* while */
-	    while (1) {
-		if ((NodeName[i] >= '0') && (NodeName[i] <= '9')) {
-		    *End_Inx = ((*End_Inx) * Base) + (int)(NodeName[i++] - '0');
-		    continue;
-		} /* if */
-		if (NodeName[i] == ']') {		/* ']' terminating number range */ 
-		    i++;
-		    break;
-		} /* if */
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName);
-#else
-		syslog(LOG_ERR, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
-			NodeName[i], NodeName);
-#endif
-		free(Format[0]);
-		return EINVAL;
-	    } /* while */
-	    *Count_Inx = (*End_Inx - *Start_Inx) + 1;
-	    Format[0][Format_Pos++] = '%';
-	    Format[0][Format_Pos++] = '.';
-	    if (Precision > 9) Format[0][Format_Pos++] = '0' + (Precision/10);
-	    Format[0][Format_Pos++] = '0' + (Precision%10);
-	    Format[0][Format_Pos++] = Type[0];
-	} else {
-	    Format[0][Format_Pos++] = NodeName[i++];
-	} /* else */
-    } /* while */
-    Format[0][Format_Pos] = (char)NULL;
-    return 0;
-} /* Parse_Node_Name */
-
-
-/* 
  * Rehash - Build a hash table of the Node_Record entries. This is a large hash table 
  * to permit the immediate finding of a record based only upon its name without regards 
  * to the number. There should be no need for a search. The algorithm is optimized for 
@@ -998,6 +878,7 @@ void Rehash() {
     struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
     int i, inx;
 
+    Node_Lock();
     Hash_Table = (int *)realloc(Hash_Table, (sizeof(int) * Node_Record_Count));
 
     if (Hash_Table == NULL) {
@@ -1016,6 +897,8 @@ void Rehash() {
 	Hash_Table[inx] = i;
     } /* for */
 
+    Node_Unlock();
+    return;
 } /* Rehash */
 
 
