@@ -354,6 +354,7 @@ struct slurm_ctl_conf {
 	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
 	char *prioritize;	/* pathname of program to set initial job priority */
 	char *prolog;		/* pathname of job prolog */
+	uint16_t ret2service;	/* 1 return node to service at registration */ 
 	uint32_t slurmctld_port;	/* default communications port to slurmctld */
 	uint16_t slurmctld_timeout;	/* how long backup waits for primarly slurmctld */
 	uint32_t slurmd_port;	/* default communications port to slurmd */

@@ -550,7 +550,7 @@ extern void validate_jobs_on_node ( char *node_name, uint32_t job_count,
 /* validate_node_specs - validate the node's specifications as valid */
 extern int validate_node_specs (char *node_name,
 				uint32_t cpus, uint32_t real_memory, 
-				uint32_t tmp_disk);
+				uint32_t tmp_disk, uint32_t job_count);
 
 /*
  * yes_or_no - map string into integer
