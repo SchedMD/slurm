@@ -50,10 +50,11 @@
 #include "src/srun/opt.h"
 
 #define IO_BUFSIZ		2048
-#define MAX_MSG_WAIT_SEC	  30	/* max wait to confirm launches, sec */
 #define MAX_TERM_WAIT_SEC	  60	/* max time since first task 
 					 * terminated, secs, warning msg */
 #define POLL_TIMEOUT_MSEC	 500	/* max wait for i/o poll, msec */
+
+static time_t time_first_done = 0;
 
 /* fd_info struct used in poll() loop to map fds back to task number,
  * appropriate output type (stdout/err), and original fd
@@ -65,10 +66,6 @@ typedef struct fd_info {
 	cbuf_t buf;
 } fd_info_t;
 
-static time_t time_first_done = 0;
-static time_t time_last_io = 0;
-static time_t time_startup = 0;
-
 static void	_accept_io_stream(job_t *job, int i);
 static void	_bcast_stdin(int fd, job_t *job);	
 static int	_close_stream(int *fd, FILE *out, int tasknum);
@@ -79,7 +76,6 @@ static int	_handle_pollerr(fd_info_t *info);
 static char *	_host_state_name(host_state_t state_inx);
 static ssize_t	_readn(int fd, void *buf, size_t nbytes);
 static ssize_t	_readx(int fd, char *buf, size_t maxbytes);
-static char *   _taskid2hostname(int task_id, job_t * job);
 static char *	_task_state_name(task_state_t state_inx);
 static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
 
@@ -141,7 +137,6 @@ _io_thr_poll(void *job_arg)
 	xassert(job != NULL);
 
 	debug3("IO thread pid = %ld", getpid());
-	time_startup = time(NULL);
 
 	/* need ioport + msgport + stdin + 2*nprocs fds */
 	fds = xmalloc(numfds*sizeof(*fds));
@@ -157,7 +152,6 @@ _io_thr_poll(void *job_arg)
 		_poll_set_rd(fds[i], job->iofd[i]);
 	}
 	_poll_set_rd(fds[i], STDIN_FILENO);
-	time_last_io = time(NULL);
 
 	while (1) {
 		int eofcnt = 0;
@@ -219,7 +213,6 @@ _io_thr_poll(void *job_arg)
 			}
 		}
 
-		time_last_io = time(NULL);
 		for (i = 0; i < job->niofds; i++) {
 			if (fds[i].revents) {
 				if (fds[i].revents & POLLERR)
@@ -249,22 +242,8 @@ _io_thr_poll(void *job_arg)
 
 static void _do_poll_timeout (job_t *job)
 {
-	int i, j;
-	static bool check_all_start = false;
+	int i, age;
 	static bool term_msg_sent = false;
-
-	if ((check_all_start == false) &&
-	    ((time(NULL) - time_startup) > MAX_MSG_WAIT_SEC)) {
-		check_all_start = true;
-		for (i = 0; i < opt.nprocs; i++) {
-			if (job->task_state[i] != SRUN_TASK_INIT)
-				continue;
-			error("Task %d on node %s never started, terminating job", 
-			      i, _taskid2hostname(i, job));
-			update_job_state(job, SRUN_JOB_FAILED);
-			pthread_exit(0);
-		}
-	}
 
 	for (i = 0; ((i < opt.nprocs) && (time_first_done == 0)); i++) {
 		if ((job->task_state[i] == SRUN_TASK_FAILED) || 
@@ -272,19 +251,19 @@ static void _do_poll_timeout (job_t *job)
 			time_first_done = time(NULL);
 	}
 
-	i = time(NULL) - time_last_io;
-	j = time(NULL) - time_first_done;
+	age = time(NULL) - time_first_done;
 	if (job->state == SRUN_JOB_FAILED)
 		pthread_exit(0);
-	else if (time_first_done && opt.max_wait && (j > opt.max_wait)) {
-		error("First task termination %d seconds ago", j);
+	else if (time_first_done && opt.max_wait && 
+	         (age > opt.max_wait)) {
+		error("First task termination %d seconds ago", age);
 		error("Terminating remaining tasks now");
 		report_task_status(job);
 		update_job_state(job, SRUN_JOB_FAILED);
 		pthread_exit(0);
 	} else if (time_first_done && (term_msg_sent == false) && 
-		   (j > MAX_TERM_WAIT_SEC)) {
-		info("Warning: First task termination %d seconds ago", j);
+		   (age > MAX_TERM_WAIT_SEC)) {
+		info("Warning: First task termination %d seconds ago", age);
 		term_msg_sent = true;
 	}
 }
@@ -338,31 +317,6 @@ void report_task_status(job_t *job)
 			     last_task, _task_state_name(current_state));
 		i = last_task;
 	}
-}
-
-static char *   _taskid2hostname (int task_id, job_t * job)
-{
-	int i, j, id = 0;
-
-	if (opt.distribution == SRUN_DIST_BLOCK) {
-		for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
-			id += job->ntask[i];
-			if (task_id < id)
-				return job->host[i];
-		}
-
-	} else {	/* cyclic */
-		for (j=0; (id<opt.nprocs); j++) {	/* cycle counter */
-			for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
-				if (j >= job->cpus[i])
-					continue;
-				if (task_id == (id++))
-					return job->host[i];
-			}
-		}
-	}
-
-	return "Unknown";
 }
 
 static char *_task_state_name(task_state_t state_inx)

@@ -53,9 +53,10 @@
 #include "src/srun/attach.h"
 #endif
 
-#define MAX_MSG_WAIT_SEC	 60	/* max wait to confirm launches, sec */
+#define LAUNCH_WAIT_SEC	 60	/* max wait to confirm launches, sec */
 #define POLL_TIMEOUT_MSEC	500
-static time_t time_last_msg;
+
+static time_t time_first_launch = 0;
 
 static int tasks_exited = 0;
 static uint32_t slurm_user_id;
@@ -67,6 +68,7 @@ static void	_handle_msg(job_t *job, slurm_msg_t *msg);
 static void	_launch_handler(job_t *job, slurm_msg_t *resp);
 static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
+static char *	_taskid2hostname(int task_id, job_t * job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -155,30 +157,68 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 static void 
 _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
+	int i;
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
 
-	if ((msg->task_id < 0) || (msg->task_id >= opt.nprocs)) {
-		error("task exit resp has bad task_id %d",
-		      msg->task_id);
-		return;
+	for (i=0; i<msg->num_tasks; i++) {
+		if ((msg->task_id_list[i] < 0) || 
+		    (msg->task_id_list[i] >= opt.nprocs)) {
+			error("task exit resp has bad task_id %d",
+			      msg->task_id_list[i]);
+			return;
+		}
+
+		if (msg->return_code)
+			verbose("task %d from node %s exited with status %d",  
+			        msg->task_id_list[i], 
+			        _taskid2hostname(msg->task_id_list[i], job), 
+			        msg->return_code);
+		else
+			debug2("task %d exited with status 0",  
+			       msg->task_id_list[i]);
+
+		pthread_mutex_lock(&job->task_mutex);
+		job->tstatus[msg->task_id_list[i]] = msg->return_code;
+		if (msg->return_code) {
+			job->task_state[msg->task_id_list[i]] = 
+						SRUN_TASK_FAILED;
+		} else {
+			job->task_state[msg->task_id_list[i]] = 
+						SRUN_TASK_EXITED;
+		}
+		pthread_mutex_unlock(&job->task_mutex);
+
+		tasks_exited++;
+		if (tasks_exited == opt.nprocs) {
+			debug2("all tasks exited");
+			update_job_state(job, SRUN_JOB_OVERDONE);
+		}
+	}
+}
+
+static char *   _taskid2hostname (int task_id, job_t * job)
+{
+	int i, j, id = 0;
+
+	if (opt.distribution == SRUN_DIST_BLOCK) {
+		for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
+			id += job->ntask[i];
+			if (task_id < id)
+				return job->host[i];
+		}
+
+	} else {	/* cyclic */
+		for (j=0; (id<opt.nprocs); j++) {	/* cycle counter */
+			for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
+				if (j >= job->cpus[i])
+					continue;
+				if (task_id == (id++))
+					return job->host[i];
+			}
+		}
 	}
 
-	debug2("task %d exited with status %d", msg->task_id, 
-	       msg->return_code);
-
-	pthread_mutex_lock(&job->task_mutex);
-	job->tstatus[msg->task_id] = msg->return_code;
-	if (msg->return_code)
-		job->task_state[msg->task_id]  = SRUN_TASK_FAILED;
-	else
-		job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
-	pthread_mutex_unlock(&job->task_mutex);
-
-	tasks_exited++;
-	if (tasks_exited == opt.nprocs) {
-		debug2("all tasks exited");
-		update_job_state(job, SRUN_JOB_OVERDONE);
-	}
+	return "Unknown";
 }
 
 static void
@@ -272,17 +312,17 @@ _msg_thr_poll(job_t *job)
 
 	for (i = 0; i < job->njfds; i++)
 		_poll_set_rd(fds[i], job->jfd[i]);
-	time_last_msg = time(NULL);
+	time_first_launch = time(NULL);
 
 	while (1) {
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
-				i = time(NULL) - time_last_msg;
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
 				else if (check_launch_msg_sent)
 					;
-				else if (i > MAX_MSG_WAIT_SEC) {
+				else if ((time(NULL) - time_first_launch) > 
+				         LAUNCH_WAIT_SEC) {
 					_confirm_launch_complete(job);
 					check_launch_msg_sent = true; 
 				}
@@ -301,7 +341,6 @@ _msg_thr_poll(job_t *job)
 			}
 		}
 
-		time_last_msg = time(NULL);
 		for (i = 0; i < job->njfds; i++) {
 			unsigned short revents = fds[i].revents;
 			if ((revents & POLLERR) || 
