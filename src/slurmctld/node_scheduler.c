@@ -888,8 +888,8 @@ build_node_details (struct job_record *job_ptr)
 
 	job_ptr->num_cpu_groups = 0;
 	job_ptr->node_cnt       = bit_set_count (job_ptr->node_bitmap);
-	job_ptr->cpus_per_node  = xmalloc (sizeof(uint32_t *) * job_ptr->node_cnt);
-	job_ptr->cpu_count_reps = xmalloc (sizeof(uint32_t *) * job_ptr->node_cnt);
+	job_ptr->cpus_per_node  = xmalloc (sizeof(uint32_t) * job_ptr->node_cnt);
+	job_ptr->cpu_count_reps = xmalloc (sizeof(uint32_t) * job_ptr->node_cnt);
 	job_ptr->node_addr      = xmalloc (sizeof(slurm_addr) * job_ptr->node_cnt);
 
 	/* Use hostlist here to insure ordering of info matches that of srun */
@@ -899,13 +899,18 @@ build_node_details (struct job_record *job_ptr)
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_ptr = find_node_record (this_node_name);
 		if (node_ptr) {
+			int usable_cpus;
+			if (slurmctld_conf.fast_schedule)
+				usable_cpus = node_ptr->config_ptr->cpus;
+			else
+				usable_cpus = node_ptr->cpus;
 			memcpy (&job_ptr->node_addr[node_inx++],
 			        &node_ptr->slurm_addr,
 				sizeof (slurm_addr));
 			if ((cpu_inx == -1) || 
-			    (job_ptr->cpus_per_node[cpu_inx] != node_ptr->cpus)) {
+			    (job_ptr->cpus_per_node[cpu_inx] != usable_cpus)) {
 				cpu_inx++;
-				job_ptr->cpus_per_node[cpu_inx] = node_ptr->cpus;
+				job_ptr->cpus_per_node[cpu_inx] = usable_cpus;
 				job_ptr->cpu_count_reps[cpu_inx] = 1;
 			} else
 				job_ptr->cpu_count_reps[cpu_inx]++;
