@@ -16,6 +16,7 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
+#include "get_resp.h"
 #define DEBUG_MODULE
 /* report results of successful job allocation */
 void report_results(resource_allocation_response_msg_t* resp_msg);
@@ -23,9 +24,9 @@ void report_results(resource_allocation_response_msg_t* resp_msg);
 int
 main( int argc, char* argv[])
 {
-	int error_code;	
-	job_step_create_request_msg_t request = {   5, 5, 4,4 , 0, "" }; 
 	job_desc_msg_t job_mesg;
+
+	job_step_create_request_msg_t request = {   5, 5, 4,4 , 0, "" }; 
 	resource_allocation_response_msg_t* resp_msg ;
 
 	slurm_msg_t request_msg ;
@@ -34,34 +35,13 @@ main( int argc, char* argv[])
 	request_msg.msg_type = REQUEST_JOB_STEP_CREATE;
 	request_msg.data = &request;
 
-	/* Create a job/resource allocation */
-	slurm_init_job_desc_msg( &job_mesg );
-	job_mesg. contiguous = 1;
-	job_mesg. groups = ("students,employee\0");
-	job_mesg. name = ("job01\0");
-	job_mesg. partition_key = "1234";
-	job_mesg. min_procs = 4;
-	job_mesg. min_memory = 1024;
-	job_mesg. min_tmp_disk = 2034;
-	job_mesg. partition = "batch\0";
-	job_mesg. priority = 100;
-	job_mesg. req_nodes = "lx[3000-3003]\0";
-	job_mesg. job_script = "/bin/hostname\0";
-	job_mesg. shared = 0;
-	job_mesg. time_limit = 200;
-	job_mesg. num_procs = 1000;
-	job_mesg. num_nodes = 400;
-	job_mesg. user_id = 1500;
-
-
-	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
-	if (error_code)
-		printf ("allocate error %d\n", errno);
-	else
-		report_results(resp_msg);
-
-	request. job_id = resp_msg->job_id;
-	request. user_id = 1500;
+	request.job_id = get_int_resp( "job_id", 1 );
+	request.user_id = get_int_resp( "user_id", 1500 ); 
+	request.node_count = get_int_resp( "node_count", 10 ); 
+	request.cpu_count = get_int_resp( "cpu_count", 10 ); 
+	request.relative = get_int_resp( "relative", 0 ); 
+	request.node_list = get_string_resp( "node_list", NULL );
+	 
 	
 	/*create job step */
 	slurm_send_recv_controller_msg ( &request_msg , &response_msg);	
@@ -69,7 +49,7 @@ main( int argc, char* argv[])
 
 	if ( response_msg.msg_type != RESPONSE_JOB_STEP_CREATE )
 	{
-		printf("DAMN\n");
+		printf("job_step_create failed\n");
 	}
 	else 
 	{

@@ -16,8 +16,6 @@ main (int argc, char *argv[])
 	uint16_t tmp_id;
 	//char update_spec[] = "TimeLimit=1234 Priority=123";
 
-	note("This is BullShit");
-
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	error_code = init_job_conf ();
 	if (error_code) 
