@@ -47,7 +47,7 @@
 */
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <stdio.h>
@@ -59,18 +59,22 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <syslog.h>
-#include <pthread.h>
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif /* WITH_PTHREADS */
+
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>	/* for abort() */
 #endif
 
-#include <src/common/macros.h>
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xassert.h>
-#include <src/common/xstring.h>
-#include <src/common/safeopen.h>
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/safeopen.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 #ifndef LINEBUFSIZE
 #  define LINEBUFSIZE 256
@@ -142,8 +146,9 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			char *errmsg = NULL;
 			pthread_mutex_unlock(&log_lock);
 			xslurm_strerrorcat(errmsg);
-			fprintf(stderr, "%s: log_init(): Unable to open logfile"
-					"`%s': %s\n", prog, logfile, errmsg);
+			fprintf(stderr, 
+			        "%s: log_init(): Unable to open logfile"
+			        "`%s': %s\n", prog, logfile, errmsg);
 			xfree(errmsg);
 			rc = errno;
 			goto out;
@@ -226,7 +231,8 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 
 	while (*fmt != '\0') {
 
-		if ((p = (char *)strchr(fmt, '%')) == NULL) {  /* no more format chars */
+		if ((p = (char *)strchr(fmt, '%')) == NULL) {  
+			/* no more format chars */
 			xstrcat(buf, fmt);
 			break;
 
@@ -253,7 +259,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				xslurm_strerrorcat(buf);
 				break;
 
-			case 't': 	/* "%t" => locally preferred date/time*/ 
+			case 't': 	/* "%t" => locally date/time*/ 
 				xstrftimecat(buf, "%x %X");
 				break;
 			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
@@ -510,7 +516,8 @@ struct fatal_cleanup {
 static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;    
 static struct fatal_cleanup *fatal_cleanups = NULL;
 
-/* Registers a cleanup function to be called by fatal() for this thread before exiting. */
+/* Registers a cleanup function to be called by fatal() for this thread 
+** before exiting. */
 void
 fatal_add_cleanup(void (*proc) (void *), void *context)
 {
@@ -526,7 +533,8 @@ fatal_add_cleanup(void (*proc) (void *), void *context)
 	pthread_mutex_unlock(&fatal_lock);
 }
 
-/* Registers a cleanup function to be called by fatal() for all threads of the job. */
+/* Registers a cleanup function to be called by fatal() for all threads 
+** of the job. */
 void
 fatal_add_cleanup_job(void (*proc) (void *), void *context)
 {
@@ -566,7 +574,8 @@ fatal_remove_cleanup(void (*proc) (void *context), void *context)
 	    (u_long) proc, (u_long) context);
 }
 
-/* Removes a cleanup frunction to be called at fatal() for all threads of the job. */
+/* Removes a cleanup frunction to be called at fatal() for all threads of 
+** the job. */
 void
 fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 {
@@ -585,11 +594,13 @@ fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 		}
 	}
 	pthread_mutex_unlock(&fatal_lock);
-	fatal("fatal_remove_cleanup_job: no such cleanup function: 0x%lx 0x%lx",
+	fatal(
+	    "fatal_remove_cleanup_job: no such cleanup function: 0x%lx 0x%lx",
 	    (u_long) proc, (u_long) context);
 }
 
-/* Execute cleanup functions, first thread-specific then those for the whole job */
+/* Execute cleanup functions, first thread-specific then those for the 
+** whole job */
 void
 fatal_cleanup(void)
 {
