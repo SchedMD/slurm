@@ -31,14 +31,6 @@
 #include "config.h"
 #endif
 
-/*
-#ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-#endif
-
-#include <getopt.h>
-*/
-
 #include <src/common/macros.h>	/* true and false */
 #include <src/common/slurm_protocol_defs.h>
 
