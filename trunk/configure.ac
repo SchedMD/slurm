@@ -41,13 +41,21 @@ AC_CHECK_HEADERS(mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
                  stdlib.h dirent.h pthread.h sys/prctl.h \
                  sysint.h inttypes.h termcap.h netdb.h sys/socket.h  \
+                 sys/systemcfg.h \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
 
+
 dnl Checks for structures.
 dnl
+AC_TRY_COMPILE([#include <sys/systemcfg.h>], 
+   [double x = _system_configuration.physmem;],
+   [AC_DEFINE(HAVE__SYSTEM_CONFIGURATION, 1,
+             [Define to 1 if you have the external variable,
+              _system_configuration with a member named physmem.])])
+
 
 dnl check to see if glibc's program_invocation_short_name is available:
 dnl
@@ -91,6 +99,10 @@ AC_DEFINE(WITH_PTHREADS,1,[Define if you have pthreads.])
 LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
+
+case "$host" in
+  *-*-aix*) LDFLAGS="$LDFLAGS -Wl,-brtl -Wl,-bexpall " ;;
+esac
 
 AC_SLURM_SEMAPHORE
 

@@ -3,6 +3,7 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.3.0.0-pre7 (not tagged yet)
 ===============================
+ -- Add support for getting node's real memory size on AIX
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
