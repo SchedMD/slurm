@@ -627,7 +627,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			info("_pick_best_nodes: required nodes exceed limit");
 			return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE;
 		}
-		if (total_nodes > node_lim) {
+		if ((node_lim != INFINITE) && (total_nodes > node_lim)) {
 			/* exceed partition node limit */
 			return ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 		}
@@ -831,7 +831,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	bitstr_t *req_bitmap = NULL;
 	struct node_set *node_set_ptr = NULL;
 	struct part_record *part_ptr = job_ptr->part_ptr;
-	uint32_t min_nodes, max_nodes;
+	uint32_t min_nodes, max_nodes, part_node_limit;
+	int super_user = false;
 
 	xassert(job_ptr);
 	xassert(job_ptr->magic == JOB_MAGIC);
@@ -846,7 +847,10 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	}
 
 	/* Confirm that partition is up and has compatible nodes limits */
-	if ((part_ptr->state_up == 0) ||
+	if ((job_ptr->user_id == 0) || (job_ptr->user_id == getuid()))
+		super_user = true;
+	else if (
+	    (part_ptr->state_up == 0) ||
 	    ((job_ptr->time_limit != NO_VAL) &&
 	     (job_ptr->time_limit > part_ptr->max_time)) ||
 	    ((job_ptr->details->max_nodes != 0) &&	/* no node limit */
@@ -875,8 +879,15 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	}
 
 	/* pick the nodes providing a best-fit */
-	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
-	if ((job_ptr->details->max_nodes == 0) ||
+	if (super_user) {
+		min_nodes = job_ptr->details->min_nodes;
+		part_node_limit = INFINITE;
+	} else {
+		min_nodes = MAX(job_ptr->details->min_nodes, 
+				part_ptr->min_nodes);
+		part_node_limit = part_ptr->max_nodes;
+	}
+	if (super_user || (job_ptr->details->max_nodes == 0) ||
 	    (part_ptr->max_nodes == INFINITE))
 		max_nodes = job_ptr->details->max_nodes;
 	else
@@ -894,7 +905,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 				      &req_bitmap, job_ptr->details->num_procs,
 				      min_nodes, max_nodes,
 				      job_ptr->details->contiguous, 
-				      shared, part_ptr->max_nodes);
+				      shared, part_node_limit);
 	if (error_code) {
 		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
 			debug3("JobId=%u not runnable with present config",
