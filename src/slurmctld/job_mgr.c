@@ -715,6 +715,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	uint32_t num_tasks;
 	time_t start_time;
 	char *step_node_list = NULL, *host = NULL;
+	switch_jobinfo_t switch_tmp = NULL;
 
 	safe_unpack16(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
@@ -723,6 +724,9 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpack_time(&start_time, buffer);
 	safe_unpackstr_xmalloc(&host, &name_len, buffer);
 	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
+	switch_alloc_jobinfo(&switch_tmp);
+        if (switch_unpack_jobinfo(switch_tmp, buffer))
+                goto unpack_error;
 
 	/* validity test as possible */
 	if (cyclic_alloc > 1) {
@@ -746,22 +750,19 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->num_tasks    = num_tasks;
 	step_ptr->port         = port;
 	step_ptr->host         = host;
-	host = NULL;		/* re-used, nothing left to free */
+	host                   = NULL;  /* re-used, nothing left to free */
 	step_ptr->start_time   = start_time;
 	step_ptr->step_node_list = step_node_list;
-	step_node_list = NULL;	/* re-used, nothing left to free */
+	step_node_list         =  NULL;	/* re-used, nothing left to free */
 	step_ptr->time_last_active = time(NULL);
-	switch_alloc_jobinfo(&step_ptr->switch_job);
-	if (switch_unpack_jobinfo(step_ptr->switch_job, buffer)) {
-		switch_free_jobinfo(step_ptr->switch_job);
-		goto unpack_error;
-	}
+	step_ptr->switch_job   = switch_tmp;
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
       unpack_error:
 	xfree(host);
 	xfree(step_node_list);
+	switch_free_jobinfo(switch_tmp);
 	return SLURM_FAILURE;
 }
 
