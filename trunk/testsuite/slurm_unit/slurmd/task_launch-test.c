@@ -6,11 +6,14 @@ int main ( int argc , char* argv[] )
 	slurm_msg_t response_msg ;
         launch_tasks_msg_t launch_tasks_msg ;
 	slurm_addr      io_pipe_addrs[2] ;
+	slurm_addr      slurmd_addr ;
 	int             gids[1] ;
 	gids[1] = 9999 ;
 
+	slurm_set_addr_char ( & slurmd_addr , 7003 , "localhost" ) ;
 	request_msg . msg_type = REQUEST_LAUNCH_TASKS ;
 	request_msg . data = & launch_tasks_msg ;
+	request_msg . address = slurmd_addr ;
 
 	slurm_set_addr_char ( io_pipe_addrs , 7071 , "localhost" ) ;
 	slurm_set_addr_char ( io_pipe_addrs + 1 , 7072 , "localhost" ) ;
