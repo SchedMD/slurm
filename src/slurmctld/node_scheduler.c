@@ -1301,6 +1301,8 @@ extern void re_kill_job(struct job_record *job_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int buf_rec_size = 0;
+	hostlist_t kill_hostlist = hostlist_create("");
+	char host_str[64];
 
 	xassert(job_ptr);
 	xassert(job_ptr->details);
@@ -1319,8 +1321,7 @@ extern void re_kill_job(struct job_record *job_ptr)
 			continue;
 		if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 			continue;
-		info("Resending KILL_JOB request for JobId=%u, Node=%s",
-			job_ptr->job_id, node_ptr->name);
+		(void) hostlist_push_host(kill_hostlist, node_ptr->name);
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 32;
 			xrealloc((agent_args->slurm_addr),
@@ -1340,8 +1341,16 @@ extern void re_kill_job(struct job_record *job_ptr)
 	if (agent_args->node_count == 0) {
 		xfree(kill_job);
 		xfree(agent_args);
+		hostlist_destroy(kill_hostlist);
 		return;
 	}
+
+	hostlist_uniq(kill_hostlist);
+	hostlist_ranged_string(kill_hostlist, 
+			sizeof(host_str), host_str);
+	info("Resending KILL_JOB request JobId=%u Nodelist=%s",
+			job_ptr->job_id, host_str);
+	hostlist_destroy(kill_hostlist);
 
 	agent_args->msg_args = kill_job;
 	debug2("Spawning job kill agent");
