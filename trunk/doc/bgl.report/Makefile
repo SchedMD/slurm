@@ -10,7 +10,7 @@
 
 REPORT = report
 
-TEX = ../common/llnlCoverPage.tex $(REPORT).tex 
+TEX = ../common/llnlCoverPage.tex $(REPORT).tex
 
 FIGDIR = ../figures
 FIGS = $(FIGDIR)/arch.eps \
@@ -39,7 +39,7 @@ BIB = ../common/project.bib
 all: $(REPORT).ps 
 
 
-$(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
+$(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB) smap.output
 	rm -f *.log *.aux *.blg *.bbl
 	(TEXINPUTS=.:../common::; export TEXINPUTS; \
 	 BIBINPUTS=.:../common::; export BIBINPUTS; \
