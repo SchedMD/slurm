@@ -347,7 +347,6 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 		fatal ("create_step_record failed with no memory");
 
 	/* set the step_record values */
-	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = step_specs->task_dist;
 
