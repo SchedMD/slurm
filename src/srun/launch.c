@@ -202,9 +202,11 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 		}
 	}
 
+	pthread_mutex_lock(&active_mutex);
 	while (active > 0) {
 		pthread_cond_wait(&active_cond, &active_mutex);
 	}
+	pthread_mutex_unlock(&active_mutex);
 	xfree(thread_ptr);
 }
 

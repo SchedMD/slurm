@@ -259,6 +259,21 @@ main(int ac, char **av)
 	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGTERM);
 
+	/* kill signal thread */
+	pthread_cancel(job->sigid);
+
+	/* wait for  stdio */
+	n = 0;
+	for (i = 0; i < opt.nprocs; i++) {
+		if ((job->err[i] < 0) && (job->out[i] < 0))
+			n++;
+	}
+
+	if (n < opt.nprocs)
+		pthread_join(job->ioid, NULL);
+	else
+		pthread_kill(job->ioid, SIGTERM);
+
 	if (old_job) {
 		debug("cancelling job step %u.%u", job->jobid, job->stepid);
 		slurm_complete_job_step(job->jobid, job->stepid);
@@ -266,27 +281,6 @@ main(int ac, char **av)
 		debug("cancelling job %u", job->jobid);
 		slurm_complete_job(job->jobid);
 	}
-
-	/* kill signal thread */
-	pthread_cancel(job->sigid);
-
-	/* wait for  stdio */
-	n = 0;
-	for (i = 0; i < opt.nprocs; i++) {
-		if (job->out[i] == WAITING_FOR_IO)
-			job->out[i] = IO_DONE;
-		if (job->err[i] == WAITING_FOR_IO)
-			job->err[i] = IO_DONE;
-		if ((job->err[i] == IO_DONE) && 
-		    (job->out[i] == IO_DONE))
-			n++;
-	}
-	verbose("end of job n = %d", n);
-	if (n < opt.nprocs)
-		pthread_join(job->ioid, NULL);
-	else
-		pthread_kill(job->ioid, SIGTERM);
-
 
 	exit(0);
 }
@@ -581,7 +575,7 @@ static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 	task_info_t *task_info_ptr;
 	thd_t *thread_ptr;
 
-	if (opt.max_threads > job->nhosts)	/* don't need more threads than tasks */
+	if (opt.max_threads > job->nhosts) 	/* don't need more threads than tasks */
 		opt.max_threads = job->nhosts;
 
 	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
@@ -619,9 +613,12 @@ static void p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job)
 		}
 	}
 
+
+	pthread_mutex_lock(&active_mutex);
 	while (active > 0) {
 		pthread_cond_wait(&active_cond, &active_mutex);
 	}
+	pthread_mutex_unlock(&active_mutex);
 	xfree(thread_ptr);
 }
 
@@ -724,9 +721,11 @@ run_batch_job(void)
 		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) &&
 		    (retries < MAX_RETRIES)) {
 			if (retries == 0)
-				error ("Slurm controller not responding, sleeping and retrying");
+				error ("Slurm controller not responding, "
+						"sleeping and retrying");
 			else
-				debug ("Slurm controller not responding, sleeping and retrying");
+				debug ("Slurm controller not responding, "
+						"sleeping and retrying");
 
 			sleep (++retries);
 		}
