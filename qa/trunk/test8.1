@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test of Blue Gene/L specific srun command line options
+#          Test of Blue Gene specific srun command line options
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -66,10 +66,6 @@ spawn $srun --geometry=$geometry --no-rotate --conn-type=$connection --node-use=
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
-		exp_continue
-	}
-	-re "uid=" {
-		incr tasks
 		exp_continue
 	}
 	timeout {

@@ -1,14 +1,14 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Test scancel of individual job steps (job.step specification).
+#          Test of Blue Gene specific srun environment variables
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
 # Note:    This script generates and then deletes files in the working directory 
-#          named test6.9.input
+#          named test8.2.input
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,29 +34,52 @@
 ############################################################################
 source ./globals
 
-set test_id     "6.9"
-set exit_code   0
+set test_id          "8.2"
+set exit_code        0
 set file_in     "test$test_id.input"
-set job_id      0
+set job_id           0
+
+set env_name_conn_type  "SLURM_CONN_TYPE"
+set env_valu_conn_type  "torus"
+set env_name_geometry   "SLURM_GEOMTRY"
+set env_valu_geometry   "2x3x4"
+set env_name_node_use  "SLURM_NODE_USE"
+set env_valu_node_use  "coprocessor"
+set env_name_rotate  "SLURM_NO_ROTATE"
+set env_valu_rotate  0
+
+global env
 
 print_header $test_id
+
+
+if {[test_front_end] == 0} {
+	send_user "\nWARNING: This test is only compatable with front-end systems\n"
+	 exit $exit_code
+}
+
+#
+# Set target environment variables
+#
+set env($env_name_conn_type)   $env_valu_conn_type
+set env($env_name_geometry)   $env_valu_geometry
+set env($env_name_node_use)   $env_valu_node_use
+set env($env_name_rotate)   $env_valu_rotate
 
 #
 # Delete left-over input script files
 # Build input script file
-# The "sleep 1" insures the background tasks is step 0 and foreground tasks is step 1
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"                        >$file_in
-exec echo "$srun $bin_sleep $max_job_delay &" >>$file_in
-exec echo "$bin_sleep 1"                      >>$file_in
-exec echo "$srun $bin_sleep $max_job_delay"   >>$file_in
+exec echo "#!$bin_bash"         >$file_in
+exec echo "$bin_sleep 1 &"     >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
-# Spawn srun batch job
+# Spawn a job via srun using these environment variables
 #
-spawn $srun --batch --output=/dev/null --error=/dev/null --job-name=job.$test_id -t5 $file_in
+set timeout $max_job_delay
+spawn $srun --batch --output=/dev/null --error=/dev/null $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -71,64 +94,56 @@ expect {
 		wait
 	}
 }
+
 if {$job_id == 0} {
 	send_user "\nFAILURE: batch submit failure\n"
 	exit 1
 }
-exec $bin_rm -f $file_in
-
-if {[wait_for_job $job_id RUNNING] != 0} {
-	send_user "\nFAILURE: error on job\n"
-	exit 1
-}
-exec $bin_sleep 2
 
 #
-# Kill single job steps individually
+# Confirm parameters passed into SLURM
 #
-set matches  0
-spawn $scancel --interactive $job_id.0
+set matches 0
+spawn $scontrol show job $job_id
 expect {
-	-re "Cancel step_id=$job_id.0*\? " {
-		send "y\n"
+	-re "Connection=\[Tt\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Rotate=\[Nn\]" {
+		incr matches
+		exp_continue
+	}
+	-re "NodeUse=\[Cc\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Geometry=$env_valu_geometry" {
 		incr matches
 		exp_continue
 	}
 	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
+		send_user "\nFAILURE: scontrol not responding\n"
 		set exit_code 1
 	}
 	eof {
 		wait
 	}
 }
-if {$matches != 1} {
-	send_user "\nFAILURE: scancel with step_id failed\n"
+
+if {$matches != 4} {
+	send_user "\nFAILURE: Blue Gene option processing error\n"
 	set exit_code 1
 }
 
-set matches  0
-spawn $scancel --interactive $job_id.1
-expect {
-	-re "Cancel step_id=$job_id.1*\? " {
-		send "y\n"
-		incr matches
-		exp_continue
-	}
-	timeout {
-		send_user "\nFAILURE: scancel not responding\n"
-		set exit_code 1
-	}
-	eof {
-		wait
-	}
-}
-if {$matches != 1} {
-	send_user "\nFAILURE: scancel with step_id failed\n"
-	set exit_code 1
-}
+#
+# Kill the job, running it is unimportant
+#
+exec $scancel --quiet $job_id
 
 if {$exit_code == 0} {
+	exec $bin_rm -f $file_in
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
+
