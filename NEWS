@@ -1,6 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.6
+=========================
+ -- More fixes for handling cleanup of slow terminating jobs.
+ -- Added completing job state to default list of states to print with squeue.
+ -- Fixed bug in srun that might leave nodes allocated after a Ctrl-C.
+
 * Changes in SLURM 0.2.5
 =========================
  -- Various fixes for cleanup of slow terminating or unkillable jobs.
