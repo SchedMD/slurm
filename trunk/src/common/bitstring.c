@@ -270,7 +270,6 @@ bit_fls(bitstr_t *b)
 	return value;
 }
 
-
 /* 
  * set all bits between the first and last bits set (i.e. fill in the gaps 
  *	to make set bits contiguous)
@@ -328,6 +327,20 @@ bit_and(bitstr_t *b1, bitstr_t *b2) {
 }
 
 /* 
+ * b1 = ~b1		one's complement
+ *   b1 (IN/OUT)	first bitmap
+ */
+void
+bit_not(bitstr_t *b) {
+	bitoff_t bit;
+
+	_assert_bitstr_valid(b);
+
+	for (bit = 0; bit < _bitstr_bits(b); bit += sizeof(bitstr_t)*8)
+		b[_bit_word(bit)] = ~b[_bit_word(bit)];
+}
+
+/* 
  * b1 |= b2
  *   b1 (IN/OUT)	first bitmap
  *   b2 (IN)		second bitmap
@@ -359,7 +372,7 @@ bit_copy(bitstr_t *b)
 	newsize_words = (newsize_bits + 7) / 8;
 	new = bit_alloc(newsize_bits);
 	if (new)
-		memcpy(new, b, newsize_words);
+		memcpy(&new[BITSTR_OVERHEAD], &b[BITSTR_OVERHEAD], newsize_words);
 
 	return new;
 }
@@ -431,6 +444,54 @@ bit_clear_count(bitstr_t *b)
 {
 	_assert_bitstr_valid(b);
 	return (_bitstr_bits(b) - bit_set_count(b));
+}
+
+/*
+ * build a bitmap containing the first nbits of b which are set
+ */
+bitstr_t *
+bit_pick_cnt(bitstr_t *b, bitoff_t nbits) {
+	bitoff_t bit = 0, new_bits, count = 0;
+	bitstr_t *new;
+
+	_assert_bitstr_valid(b);
+
+	if (_bitstr_bits(b) < nbits)
+		return NULL;
+
+	new = bit_alloc(bit_size(b));
+	if (new == NULL)
+		return NULL;
+
+	while ((bit < _bitstr_bits(b)) && (count < nbits)) {
+		int word = _bit_word(bit);
+
+		if (b[word] == 0) {
+			bit += sizeof(bitstr_t)*8;
+			continue;
+		}
+
+		new_bits = hweight(b[word]);
+		if ((count + new_bits) <= nbits) {
+			new[word] = b[word];
+			count += new_bits;
+			bit += sizeof(bitstr_t)*8;
+			continue;
+		}
+		while ((bit < _bitstr_bits(b)) && (count < nbits)) {
+			if (bit_test(b, bit)) {
+				bit_set(new, bit);
+				count++;
+			}
+			bit++;
+		}
+	}
+	if (count < nbits) {
+		bit_free (new);
+		new = NULL;
+	}
+
+	return new;
 }
 
 /* 

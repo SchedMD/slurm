@@ -118,6 +118,7 @@ void	bit_free(bitstr_t *b);
 bitstr_t *bit_realloc(bitstr_t *b, bitoff_t nbits);
 bitoff_t bit_size(bitstr_t *b);
 void	bit_and(bitstr_t *b1, bitstr_t *b2);
+void	bit_not(bitstr_t *b);
 void	bit_or(bitstr_t *b1, bitstr_t *b2);
 int	bit_set_count(bitstr_t *b);
 int	bit_clear_count(bitstr_t *b);
@@ -126,5 +127,6 @@ bitoff_t bit_fls(bitstr_t *b);
 void	bit_fill_gaps(bitstr_t *b);
 int	bit_super_set(bitstr_t *b1, bitstr_t *b2);
 bitstr_t *bit_copy(bitstr_t *b);
+bitstr_t *bit_pick_cnt(bitstr_t *b, bitoff_t nbits);
 
 #endif /* !_BITSTRING_H_ */
