@@ -1656,7 +1656,10 @@ _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
 
 	amount = read(fd, &rec_cnt, sizeof(uint16_t));
 	if (amount < sizeof(uint16_t)) {
-		error("Error reading file %s, %m", file_name);
+		if (amount != 0)	/* incomplete write */
+			error("Error reading file %s, %m", file_name);
+		else 
+			verbose("File %s has zero size", file_name); 
 		close(fd);
 		return;
 	}
