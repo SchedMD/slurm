@@ -42,6 +42,7 @@
 #include <slurm/slurm_errno.h>
 #include "src/common/slurm_xlator.h"
 #include "src/plugins/switch/federation/federation.h"
+#include "src/plugins/switch/federation/federation_keys.h"
 
 /* 
  * Definitions local to this module
@@ -58,7 +59,7 @@
 #define FED_AUTO_WINMEM 0
 #define FED_MAX_WIN 15
 #define FED_MIN_WIN 0
-#define FED_DEBUG 0
+#define FED_DEBUG 1
 
 #define ZERO 48
 
@@ -1285,13 +1286,24 @@ fed_free_jobinfo(fed_jobinfo_t *jp)
 int
 fed_get_jobinfo(fed_jobinfo_t *jp, int key, void *data)
 {
+	NTBL **table = (NTBL **)data;
+	int *job_key = (int *)data;
+	
 	assert(jp);
 	assert(jp->magic == FED_JOBINFO_MAGIC);
 
 	switch(key) {
+	case FED_JOBINFO_TABLE:
+		*table = jp->table;
+		break;
+	case FED_JOBINFO_KEY:
+		*job_key = jp->job_key;
+		break;
 	default:
 		slurm_seterrno_ret(EINVAL);
 	}
+	
+	return SLURM_SUCCESS;
 }
 
 /* Load a network table on node.  If table contains more than
