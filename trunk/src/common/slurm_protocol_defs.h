@@ -118,6 +118,7 @@ typedef enum {
 	REQUEST_ALLOCATION_AND_RUN_JOB_STEP,
 	RESPONSE_ALLOCATION_AND_RUN_JOB_STEP,
 	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
+	REQUEST_UPDATE_JOB_TIME,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -284,6 +285,11 @@ typedef struct revoke_credential_msg {
 	char signature[SLURM_SSL_SIGNATURE_LENGTH];
 } revoke_credential_msg_t;
 
+typedef struct job_time_msg {
+	uint32_t job_id;
+	time_t expiration_time;
+} job_time_msg_t;
+
 typedef struct reattach_tasks_request_msg {
 	uint32_t  job_id;
 	uint32_t  job_step_id;
@@ -379,6 +385,7 @@ void inline
 slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
 
 void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
+void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(enum job_states inx);
