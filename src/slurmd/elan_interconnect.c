@@ -146,3 +146,8 @@ static int do_env(int nodeid, int nnodes, int procid, int nprocs)
 		return -1;
 	return 0;
 }
+
+
+void pthread_fork_child ( )
+{
+}
