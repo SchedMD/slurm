@@ -26,16 +26,16 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif 
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
 
-#include <src/common/xmalloc.h>
-#include <src/common/xassert.h>
-#include <src/common/xstring.h>
+#include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
+#include "src/common/xstring.h"
 
 /* add environment variable to end of env vector allocated with
  * xmalloc() extending *envp if necessary.

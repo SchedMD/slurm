@@ -26,7 +26,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #if HAVE_UNISTD_H
@@ -47,17 +47,17 @@
 #include <unistd.h>
 #include <errno.h>
 
-#include <src/common/eio.h>
-#include <src/common/cbuf.h>
-#include <src/common/log.h>
-#include <src/common/fd.h>
-#include <src/common/list.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xsignal.h>
+#include "src/common/eio.h"
+#include "src/common/cbuf.h"
+#include "src/common/log.h"
+#include "src/common/fd.h"
+#include "src/common/list.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 
-#include <src/slurmd/job.h>
-#include <src/slurmd/shm.h>
-#include <src/slurmd/io.h>
+#include "src/slurmd/job.h"
+#include "src/slurmd/shm.h"
+#include "src/slurmd/io.h"
 
 typedef enum slurmd_io_tupe {
 	TASK_STDERR = 0,

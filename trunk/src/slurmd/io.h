@@ -28,8 +28,8 @@
 #ifndef _IO_H
 #define _IO_H
 
-#include <src/slurmd/job.h>
-#include <src/common/eio.h>
+#include "src/slurmd/job.h"
+#include "src/common/eio.h"
 
 /*
  * Spawn IO handling thread.

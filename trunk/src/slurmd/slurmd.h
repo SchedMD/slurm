@@ -40,6 +40,8 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
+#include <sys/types.h>
+
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/slurm_protocol_api.h"
@@ -71,6 +73,7 @@ typedef struct slurmd_config {
 	List          cred_state_list;  /* credential stat list            */
 	List          threads;		/* list of active threads	   */
 	slurm_ssl_ctx vctx;		/* ssl context for cred utils      */
+	uid_t           slurm_user_id;	/* UID that slurmctld runs as      */
 } slurmd_conf_t;
 
 slurmd_conf_t * conf;

@@ -106,14 +106,14 @@ main (int argc, char *argv[])
 	_init_conf();
 	_process_cmdline(argc, argv);
 	_read_config();
-	_print_conf();
 	_set_slurmd_spooldir();
 
 	if (conf->daemonize) 
 		daemon(0,0);
 
-	create_pidfile(DEFAULT_PIDFILE);
+	create_pidfile(conf->pidfile);
 	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
+	_print_conf();
 	info("%s started on %T", xbasename(argv[0]));
 	_create_msg_socket();
 	conf->pid = getpid();
@@ -349,6 +349,7 @@ _read_config()
 	}
 
 	conf->port          =            slurmctld_conf.slurmd_port;
+	conf->slurm_user_id =		 slurmctld_conf.slurm_user_id;
 	_free_and_set(&conf->epilog,     slurmctld_conf.epilog );
 	_free_and_set(&conf->prolog,     slurmctld_conf.prolog );
 	_free_and_set(&conf->tmpfs,      slurmctld_conf.tmp_fs );
@@ -370,6 +371,7 @@ _print_conf()
 	debug3("Public Cert = `%s'",     conf->pubkey);
 	debug3("Spool Dir   = `%s'",     conf->spooldir);
 	debug3("Pid File    = `%s'",     conf->pidfile);
+	debug3("Slurm UID   = %u",       conf->slurm_user_id);
 
 }
 

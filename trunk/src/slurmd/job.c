@@ -26,7 +26,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #if HAVE_STRING_H
@@ -35,16 +35,16 @@
 
 #include <signal.h>
 
-#include <src/common/xmalloc.h>
-#include <src/common/xassert.h>
-#include <src/common/xstring.h>
-#include <src/common/log.h>
-#include <src/common/eio.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
+#include "src/common/xstring.h"
+#include "src/common/log.h"
+#include "src/common/eio.h"
+#include "src/common/slurm_protocol_api.h"
 
-#include <src/slurmd/job.h>
-#include <src/slurmd/shm.h>
-#include <src/slurmd/io.h>
+#include "src/slurmd/job.h"
+#include "src/slurmd/shm.h"
+#include "src/slurmd/io.h"
 
 static char ** _array_copy(int n, char **src);
 static void _array_free(int n, char ***array);

@@ -27,7 +27,7 @@
 #ifndef _REQ_H
 #define _REQ_H
 
-#include <src/common/slurm_protocol_defs.h>
+#include "src/common/slurm_protocol_defs.h"
 
 /* Process request contained in slurm message `msg' from client at
  * "*client_addr"

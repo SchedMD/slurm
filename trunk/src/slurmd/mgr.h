@@ -27,12 +27,12 @@
 #define _MGR_H
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
-#include <src/common/slurm_protocol_defs.h>
+#include "src/common/slurm_protocol_defs.h"
 
-#include <src/slurmd/job.h>
+#include "src/slurmd/job.h"
 
 /* Launch a job step on this node
  */

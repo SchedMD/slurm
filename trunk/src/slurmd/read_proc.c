@@ -27,7 +27,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif 
 
 #include <stdlib.h>
@@ -41,7 +41,7 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <src/common/log.h>
+#include "src/common/log.h"
 
 #define SESSION_RECS 50
 

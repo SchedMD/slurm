@@ -28,7 +28,7 @@
 #define _SHM_H
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif  
 
 #if HAVE_INTTYPES_H
@@ -47,10 +47,10 @@
 #  include <unistd.h>
 #endif 
 
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/list.h>
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/list.h"
 
-#include <src/slurmd/job.h>
+#include "src/slurmd/job.h"
 
 /* local job states */
 typedef enum job_state {
