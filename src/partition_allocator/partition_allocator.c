@@ -256,7 +256,6 @@ void _print_pa_system(pa_system_t pa_system)
 void _delete_pa_system(void* object)
 {
 	int x, y, z;
-	// pa_system_t* pa_system = (pa_system_t*) object;
 	pa_system_t pa_system = (pa_system_t) object;
 	
 	if (!pa_system){
@@ -266,17 +265,12 @@ void _delete_pa_system(void* object)
 	for (x=0; x<DIM_SIZE[X]; x++){
 		for (y=0; y<DIM_SIZE[Y]; y++){
 			for (z=0; z<DIM_SIZE[Z]; z++){
-				// 999: memory leak!!!
-				// _delete_pa_node(&((*pa_system)[x][y][z]));
 				_delete_pa_node(&(pa_system[x][y][z]));
 			}			
-			// xfree((*pa_system)[x][y]);
 			xfree(pa_system[x][y]);
 		}
-		// xfree((*pa_system)[x]);
 		xfree(pa_system[x]);
 	}
-	// xfree(*pa_system);
 	xfree(pa_system);
 }
 
@@ -1284,8 +1278,6 @@ void pa_init()
 		}
 		list_destroy(switch_config_list);
 	}
-	// 999
-	// exit(0);	
 
 	/* create the Y configuration (4 nodes) */
 	if (filenames[Y]){
