@@ -71,7 +71,7 @@ WITHCONF=--sysconfdir=/etc/slurm
 CFLAGS="-g -Wall"
 %configure \
     --enable-debug                       \
-    $PFX_FIX $WITHCONF $WITHELAN $WITHTV \
+    $PFX_FIX $WITHCONF                   \
     %{?_with_elan}                       \
     %{?_without_elan}                    \
     %{?_with_totalview}                  \
