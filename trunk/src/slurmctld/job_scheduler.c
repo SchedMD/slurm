@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -268,6 +268,16 @@ static void _launch_job(struct job_record *job_ptr)
 	launch_msg_ptr->script = get_job_script(job_ptr);
 	launch_msg_ptr->environment =
 	    get_job_env(job_ptr, &launch_msg_ptr->envc);
+
+	launch_msg_ptr->num_cpu_groups = job_ptr->num_cpu_groups;
+	launch_msg_ptr->cpus_per_node  = xmalloc(sizeof(uint32_t) *
+			job_ptr->num_cpu_groups);
+	memcpy(launch_msg_ptr->cpus_per_node, job_ptr->cpus_per_node,
+			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
+	launch_msg_ptr->cpu_count_reps  = xmalloc(sizeof(uint32_t) *
+			job_ptr->num_cpu_groups);
+	memcpy(launch_msg_ptr->cpu_count_reps, job_ptr->cpu_count_reps,
+			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;

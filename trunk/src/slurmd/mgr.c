@@ -132,13 +132,13 @@ static void _setargs(slurmd_job_t *job);
 static void _set_launch_ip_in_env(slurmd_job_t *, slurm_addr *cli);
 
 static void _random_sleep(slurmd_job_t *job);
-
+static char *_sprint_task_cnt(batch_job_launch_msg_t *msg);
 /*
  * Batch job mangement prototypes:
  */
 static char * _make_batch_dir(slurmd_job_t *job);
 static char * _make_batch_script(batch_job_launch_msg_t *msg, char *path);
-static int    _setup_batch_env(slurmd_job_t *job, char *nodes);
+static int    _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg);
 static int    _complete_job(uint32_t jobid, int err, int status);
 
 
@@ -205,7 +205,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
 		goto cleanup2;
 
-	if ((rc = _setup_batch_env(job, msg->nodes)) < 0)
+	if ((rc = _setup_batch_env(job, msg)) < 0)
 		goto cleanup2;
 
 	status = _job_mgr(job);
@@ -910,10 +910,10 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 }
 
 static int
-_setup_batch_env(slurmd_job_t *job, char *nodes)
+_setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 {
-	char       buf[1024];
-	hostlist_t hl = hostlist_create(nodes);
+	char       buf[1024], *task_buf;
+	hostlist_t hl = hostlist_create(msg->nodes);
 
 	if (!hl)
 		return SLURM_ERROR;
@@ -924,7 +924,32 @@ _setup_batch_env(slurmd_job_t *job, char *nodes)
 	setenvpf(&job->env, "SLURM_NODELIST", "%s", buf);
 	hostlist_destroy(hl);
 
+	task_buf = _sprint_task_cnt(msg);
+	setenvpf(&job->env, "SLURM_TASKS_PER_NODE", "%s", task_buf);
+	xfree(task_buf); 
+
 	return 0;
+}
+
+static char *
+_sprint_task_cnt(batch_job_launch_msg_t *msg)
+{
+        int i;
+        char *task_str = xstrdup("");
+        char tmp[16], *comma = "";
+
+	for (i=0; i<msg->num_cpu_groups; i++) {
+		if (i == 1)
+			comma = ",";
+		if (msg->cpu_count_reps[i] > 1)
+			sprintf(tmp, "%s%d(x%d)", comma, msg->cpus_per_node[i],
+				msg->cpu_count_reps[i]);
+		else
+			sprintf(tmp, "%s%d", comma, msg->cpus_per_node[i]);
+		xstrcat(task_str, tmp);
+	}
+
+        return task_str;
 }
 
 static void
