@@ -53,8 +53,8 @@ License\cite{GPL2002}.
 {\em autoconf} configuration engine.  
 While initially written for Linux, other UNIX-like operating systems 
 should be easy porting targets.
-SLURM also supports a {\em plugin} mechanism, which permits a variety 
-of different infrastructures to be easily supported. 
+SLURM also supports a general purpose {\em plugin} mechanism, which 
+permits a variety of different infrastructures to be easily supported. 
 The SLURM configuration file specifies which set of plugin modules 
 should be used. 
 
@@ -80,8 +80,9 @@ User jobs may be configured to continue execution despite the failure
 of one or more nodes on which they are executing. 
 The user command controlling a job, {\tt srun}, may detach and reattach 
 from the parallel tasks at any time. 
-Nodes allocated to a job are available for reuse as soon as the allocated 
-job(s) to that node terminate. If some nodes fail to complete job termination 
+Nodes allocated to a job are available for reuse as soon as the job(s) 
+allocated to that node terminate. 
+If some nodes fail to complete job termination 
 in a timely fashion due to hardware of software problems, only the 
 scheduling of those tardy nodes will be effected.
 
@@ -97,7 +98,7 @@ entire cluster.
 simple configuration file and minimizes distributed state.  
 Its configuration may be changed at any time without impacting running jobs. 
 Heterogeneous nodes within a cluster may be easily managed.
-Its interfaces are usable by scripts and its behavior is highly 
+SLURM interfaces are usable by scripts and its behavior is highly 
 deterministic.
 
 \end{itemize}
@@ -169,8 +170,10 @@ compute resource in SLURM, {\em partitions}, which group nodes into
 logical disjoint sets, {\em jobs}, or allocations of resources assigned
 to a user for a specified amount of time, and {\em job steps}, which are
 sets of (possibly parallel) tasks within a job.  
-Priority-ordered jobs are allocated nodes within 
-partitions until the resources (nodes) within that partition are exhausted. 
+Each job in the priority-ordered queue is allocated nodes within a 
+single partition. 
+Once an allocation request fails, no lower priority jobs for that 
+partition will be considered for a resource allocation.
 Once a job is assigned a set of nodes, the user is able to initiate
 parallel work in the form of job steps in any configuration within the
 allocation. For instance a single job step may be started which utilizes
@@ -206,7 +209,8 @@ are explained in more detail below.
 
 \slurmd\ is a multi-threaded daemon running on each compute node and 
 can be compared to a remote shell daemon:  
-it reads the common SLURM configuration file, waits for work, 
+it reads the common SLURM configuration file, 
+notifies the controller that it is active, waits for work, 
 executes the work, returns status,then waits for more work.  
 Since it initiates jobs for other users, it must run as user {\em root}.
 It also asynchronously exchanges node and job status with {\tt slurmctld}.  
@@ -254,7 +258,7 @@ disk periodically with incremental changes written to disk immediately
 for fault tolerance.  
 \slurmctld\ runs in either master or standby mode, depending on the
 state of its fail-over twin, if any.
-\slurmctld\ need not execute as user {\tt root}. 
+\slurmctld\ need not execute as user {\em root}. 
 In fact, it is recommended that a unique user entry be created for 
 executing \slurmctld\ and that user must be identified in the SLURM 
 configuration file as {\tt SlurmUser}.
@@ -280,7 +284,7 @@ The Job Manager is awakened on a periodic basis and whenever there
 is a change in state that might permit a job to begin running, such
 as job completion, job submission, partition {\em up} transition,
 node {\em up} transition, etc.  The Job Manager then makes a pass
-through the priority ordered job queue. The highest priority jobs 
+through the priority-ordered job queue. The highest priority jobs 
 for each partition are allocated resources as possible. As soon as an 
 allocation failure occurs for any partition, no lower-priority jobs for 
 that partition are considered for initiation. 
@@ -401,7 +405,7 @@ his own jobs.  Any user may view SLURM configuration and state
 information.  
 Only privileged users may modify the SLURM configuration,
 cancel any job, or perform other restricted activities.  
-Privileged users in SLURM include the users {\tt root} 
+Privileged users in SLURM include the users {\em root} 
 and {\tt SlurmUser} (as defined in the SLURM configuration file). 
 If permission to modify SLURM configuration is 
 required by others, set-uid programs may be used to grant specific
@@ -412,7 +416,7 @@ We presently support three authentication mechanisms via plugins:
 A plugin can easily be developed for Kerberos or authentication 
 mechanisms as desired.
 The \munged\ implementation is described below.
-A \munged\ daemon running as user {\tt root} on each node confirms the 
+A \munged\ daemon running as user {\em root} on each node confirms the 
 identify of the user making the request using the {\em getpeername} 
 function and generates a credential. 
 The credential contains a user id, 
@@ -519,7 +523,7 @@ the job's resources, such as the slurm job id ({\em 42}) and the
 allocated nodes ({\em dev[6-7]}).
 
 The remote \slurmd\ establishes the new environment, executes a SLURM 
-prolog program (if one is configured) as user {\tt root}, and executes the
+prolog program (if one is configured) as user {\em root}, and executes the
 job script (or command) as the submitting user. The \srun\ within the job script 
 detects that it is running with allocated resources from the presence
 of the {\tt SLURM\_JOBID} environment variable. \srun\ connects to
@@ -563,7 +567,7 @@ and exits.
 the Job Manager of its exit status and begins cleanup. 
 The Job Manager directs the {\tt slurmd}'s formerly assigned to the
 job to run the SLURM epilog program (if one is configured) as user 
-{\tt root}. 
+{\em root}. 
 Finally, the Job Manager releases the resources allocated to job {\em 42}
 and updates the job status to {\em complete}. The record of a job's
 existence is eventually purged.
@@ -702,7 +706,7 @@ scheduling component.
 Data associated with a partition includes:
 \begin{itemize}
 \item Name
-\item RootOnly flag to indicated that only users {\tt root} or 
+\item RootOnly flag to indicated that only users {\em root} or 
 {\tt SlurmUser} may allocate resources in this partition (for any user)
 \item List of associated nodes
 \item State of partition (UP or DOWN)
@@ -1030,7 +1034,7 @@ core paths, SLURM job id, and the command line to execute.
 System specific programs can be executed on each allocated 
 node prior to the initiation of a user job and after the termination of a 
 user job (e.g. {\tt Prolog} and {\tt Epilog} in the configuration file).
-These programs are executed as user {\tt root} and can be used to establish
+These programs are executed as user {\em root} and can be used to establish
 an appropriate environment for the user (e.g. permit logins, disable
 logins, terminate "orphan" processes, etc.).  
 \slurmd\ executes the Prolog program, resets its
@@ -1066,7 +1070,7 @@ If a job step ID is supplied, only that job step is effected.
 
 \subsection{scontrol}
 
-\scontrol\ is a tool meant for SLURM administration by user root. 
+\scontrol\ is a tool meant for SLURM administration by user {\em root}. 
 It provides the following capabilities:
 \begin{itemize}
 \item {\em Shutdown}: Cause \slurmctld\ and \slurmd\ to save state 
@@ -1407,18 +1411,21 @@ We expect SLURM to begin production use on LLNL Linux clusters
 starting in March 2003 and be available for distribution shortly 
 thereafter. 
 
-Looking ahead, we anticipate moving the interconnect topography 
-and API functions into plugin modules and adding support for 
-additional systems. 
-We plan to add support for additional operating systems 
-(IA64 and x86-64) and interconnects (InfiniBand, Myrinet, and 
-the IBM Blue Gene\cite{BlueGene2002} system\footnote{Blue Gene 
+Looking ahead, we anticipate adding support for additional 
+operating systems (IA64 and x86-64) and interconnects (InfiniBand
+and the IBM Blue Gene\cite{BlueGene2002} system\footnote{Blue Gene 
 has a different interconnect than any supported by SLURM and 
 a 3-D topography with restrictive allocation constraints.}). 
-We plan to add support for suspending and resuming jobs, which 
-provides the infrastructure needed to support gang scheduling. 
+We anticipate adding a job preempt/resume capability to 
+the next release of SLURM. 
+This will provide an external scheduler the infrastructure 
+required to perform gang scheduling. 
+We also anticipate adding a checkpoint/restart capability 
+at some time in the future. 
 We also plan to support changing the node count associated 
-with running jobs (as needed for MPI2).
+with running jobs (as needed for MPI2). 
+Recording resource use by each parallel job is planned for a 
+future release.
 
 \section{Acknowledgments}
 
@@ -1434,7 +1441,8 @@ SLURM APIs
 \item Fabrizio Petrini of Los Alamos National Laboratory for his work to 
 integrate SLURM with STORM communications 
 \item Mark Seager and Greg Tomaschke for their support of this project
-\item Jay Windley of Linux Networx for his work on the security components
+\item Jay Windley of Linux Networx for his development of the plugin 
+mechanism and work on the security components
 \end{itemize}
 
 \appendix
