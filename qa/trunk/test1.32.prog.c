@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  prog1.32.proc.c - Simple signal catching test program for SLURM regression 
+ *  prog1.32.prog.c - Simple signal catching test program for SLURM regression 
  *  test1.32. Report caught signals. Exit after SIGUSR1 and SIGUSR2 received.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
