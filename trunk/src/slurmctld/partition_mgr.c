@@ -59,10 +59,12 @@ time_t last_part_update;		/* time of last update to partition records */
 static	int	build_part_bitmap (struct part_record *part_record_point);
 static	void	dump_part_state (struct part_record *part_record_point, 
 			void **buf_ptr, int *buf_len);
+static	uid_t 	*get_groups_members (char *group_names);
 static	uid_t 	*get_group_members (char *group_name);
 static	time_t	get_group_tlm (void);
 static	void	list_delete_part (void *part_entry);
 static	void 	print_group_members (uid_t *uid_list);
+static	int	uid_list_size (uid_t *uid_list_ptr);
 
 
 /*
@@ -467,6 +469,9 @@ init_part_conf ()
 	if (default_part.allow_groups)
 		xfree (default_part.allow_groups);
 	default_part.allow_groups = (char *) NULL;
+	if (default_part.allow_uids)
+		xfree (default_part.allow_uids);
+	default_part.allow_uids = (uid_t *) NULL;
 	if (default_part.node_bitmap)
 		bit_free (default_part.node_bitmap);
 	default_part.node_bitmap = (bitstr_t *) NULL;
@@ -506,6 +511,8 @@ list_delete_part (void *part_entry)
 	}			
 	if (part_record_point->allow_groups)
 		xfree (part_record_point->allow_groups);
+	if (part_record_point->allow_uids)
+		xfree (part_record_point->allow_uids);
 	if (part_record_point->nodes)
 		xfree (part_record_point->nodes);
 	if (part_record_point->node_bitmap)
@@ -727,6 +734,9 @@ update_part (update_part_msg_t * part_desc )
 		strcpy ( part_ptr->allow_groups , part_desc->allow_groups ) ;
 		info ("update_part: setting allow_groups to %s for partition %s",
 				part_desc->allow_groups, part_desc->name);
+		if (part_ptr->allow_uids)
+			xfree (part_ptr->allow_uids);
+		part_ptr->allow_uids = get_groups_members (part_desc->allow_groups);
 	}			
 
 	if (part_desc->nodes != NULL) {
@@ -761,6 +771,47 @@ validate_group (struct part_record *part_ptr, uid_t submit_uid)
 	return 1;
 }
 
+/* get_groups_members - indentify the users in a comma delimited list of group names
+ * Returns a zero terminated list of its UIDs or NULL on error 
+ * NOTE: User root has implicitly access to every group (the zero terminating uid)
+ * NOTE: The caller must xfree non-NULL return values */
+uid_t *
+get_groups_members (char *group_names)
+{
+	int *group_uids = NULL;
+	int *temp_uids = NULL;
+	int i, j, k;
+	char *tmp_names, *name_ptr, *one_group_name;
+
+	if (group_names == NULL)
+		return NULL;
+
+	i = strlen(group_names) + 1;
+	tmp_names = xmalloc (i);
+	strcpy (tmp_names, group_names);
+
+	one_group_name = strtok_r (tmp_names, ",", &name_ptr);
+	while ( one_group_name ) {
+		temp_uids = get_group_members (one_group_name);
+		if (group_uids) {
+			/* concatenate the uid_lists and free the new one */
+			i = uid_list_size (group_uids);
+			j = uid_list_size (temp_uids);
+			xrealloc (group_uids, sizeof (uid_t) * (i+j+1));
+			for (k=0; k<=j; k++)
+				group_uids[i+k] = temp_uids[k];
+			xfree (temp_uids);
+		} 
+		else
+			group_uids = temp_uids;
+		one_group_name = strtok_r (NULL, ",", &name_ptr);
+	}
+	xfree (tmp_names);
+debug3 ("members of groups: %s", group_names);
+print_group_members (group_uids);
+	return group_uids;
+}
+
 /* get_group_members - indentify the users in a given group name
  * Returns a zero terminated list of its UIDs or NULL on error 
  * NOTE: User root has implicitly access to every group (the zero terminating uid)
@@ -776,7 +827,7 @@ get_group_members (char *group_name)
 
 	group_struct_ptr = getgrnam(group_name);   /* Note: static memory, do not free */
 	if (group_struct_ptr == NULL) {
-		printf ("Could not find group %s\n", group_name);
+		error ("Could not find configured group %s\n", group_name);
 		setgrent ();
 		return NULL;
 	}
@@ -786,7 +837,7 @@ get_group_members (char *group_name)
 			break;
 	}
 	uid_cnt = i;
-	group_uids = (int *) malloc (sizeof (uid_t) * (uid_cnt + 1));
+	group_uids = (int *) xmalloc (sizeof (uid_t) * (uid_cnt + 1));
 	memset (group_uids, 0, (sizeof (uid_t) * (uid_cnt + 1)));
 
 	j = 0;
@@ -797,7 +848,8 @@ get_group_members (char *group_name)
 				group_uids[j++] = user_pw_ptr->pw_uid;
 		}
 		else
-			printf ("Could not find user %s\n", group_struct_ptr->gr_mem[i]);
+			error ("Could not find user %s in configured group %s\n", 
+				group_struct_ptr->gr_mem[i], group_name);
 		setpwent ();
 	}
 
@@ -812,7 +864,7 @@ get_group_tlm (void)
 	struct stat stat_buf;
 
 	if (stat (GROUP_FILE, &stat_buf)) {
-		printf ("can't stat /etc/group file\n");
+		error ("Can't stat file %s %m", GROUP_FILE);
 		return (time_t) 0;
 	}
 	return stat_buf.st_mtime;
@@ -826,10 +878,25 @@ print_group_members (uid_t *uid_list)
 
 	if (uid_list) {
 		for (i=0; uid_list[i]; i++) {
-			if (i > 0)
-				printf (",");
-			printf ("%u", (unsigned int) uid_list[i]);
+			debug3 ("%u", (unsigned int) uid_list[i]);
 		}
 	}
 	printf ("\n\n");
+}
+
+/* uid_list_size - return the count of uid's in a zero terminated list */
+int	
+uid_list_size (uid_t *uid_list_ptr)
+{
+	int i;
+
+	if (uid_list_ptr == NULL)
+		return 0;
+
+	for (i=0; ; i++) {
+		if (uid_list_ptr[i] == 0)
+			break;
+	}
+
+	return i;
 }

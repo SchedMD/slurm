@@ -131,6 +131,7 @@ struct part_record {
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes in partition */
 	char *allow_groups;	/* comma delimited list of groups, null indicates all */
+	uid_t *allow_uids;	/* zero terminated list of allowed users */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in partition */
 };
 extern List part_list;		/* list of part_record entries */
