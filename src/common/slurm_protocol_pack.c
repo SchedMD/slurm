@@ -882,7 +882,6 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	} else
 		tmp_ptr->node_addr = NULL;
 
-	debug("job id is %u", tmp_ptr->job_id);
 	return SLURM_SUCCESS;
 
       unpack_error:
