@@ -220,6 +220,8 @@ int main(int argc, char *argv[])
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
+	if (select_g_state_restore(slurmctld_conf.state_save_location))
+		fatal( "failed to restore node selection plugin state");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -314,17 +316,22 @@ int main(int argc, char *argv[])
 		verbose("Unable to remove pidfile '%s': %m",
 			slurmctld_conf.slurmctld_pidfile);
 
+	if (select_g_state_save(slurmctld_conf.state_save_location))
+		error("Failed to save node select plugin state");
+
 #if	MEM_LEAK_TEST
 	/* This should purge all allocated memory,   *\
 	\*   Anything left over represents a leak.   */
 	sleep(5);	/* give running agents a chance to complete */
 	agent_purge();
+	slurm_select_fini();
 	job_fini();
 	part_fini();	/* part_fini() must preceed node_fini() */
 	node_fini();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	free_slurm_conf(&slurmctld_conf);
 	slurm_api_clear_config();
+	sleep(1);
 #endif
 
 	info("Slurmctld shutdown completing");

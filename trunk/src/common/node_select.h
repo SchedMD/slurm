@@ -40,6 +40,11 @@
 extern int slurm_select_init(void);
 
 /*
+ * Terminate plugin and free all associated memory
+ */
+extern int slurm_select_fini(void);
+
+/*
  * Save any global state information
  * IN dir_name - directory into which the data can be stored
  */

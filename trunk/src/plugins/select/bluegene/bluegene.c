@@ -65,7 +65,6 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
 static void _destroy_bgl_record(void* object);
 static void _destroy_bgl_conf_record(void* object);
-static void _print_bitmap(bitstr_t* bitmap);
 static void _process_config();
 static int _parse_bgl_spec(char *in_line);
 static bgl_conf_record_t* _find_config_by_nodes(char* nodes);
@@ -150,7 +149,8 @@ static void _process_config()
 		request_result = NULL;
 		if (_parse_request(bgl_part->nodes, &request_result)
 		|| (request_result == NULL))
-			error("_process_config: error parsing request %s", bgl_part->nodes);
+			error("_process_config: error parsing request %s", 
+				bgl_part->nodes);
 		else {
 			/** 
 			 * bgl_part->part_type should have been extracted in
@@ -362,8 +362,9 @@ static int _parse_bgl_spec(char *in_line)
 	else if (strcasecmp(part_type, "MESH") == 0)
 		new_record->part_type = RM_MESH;
 	else {
-		error("_parse_bgl_spec: partition type %s invalid for nodes %s, "
-			"defaulting to type: MESH", part_type, new_record->nodes);
+		error("_parse_bgl_spec: partition type %s invalid for nodes "
+			"%s, defaulting to type: MESH", 
+			part_type, new_record->nodes);
 		new_record->part_type = RM_MESH;
 	}
 
@@ -405,9 +406,8 @@ static void _destroy_bgl_record(void* object)
 			hostlist_destroy(this_record->hostlist);
 		if (this_record->bitmap)
 			bit_free(this_record->bitmap);
-#ifdef _RM_API_H__
+		xfree(this_record->alloc_part);
 		xfree(this_record->bgl_part_id);
-#endif
 		xfree(this_record);
 	}
 }
@@ -428,8 +428,8 @@ static void _destroy_bgl_conf_record(void* object)
 static bgl_conf_record_t* _find_config_by_nodes(char* nodes)
 {
 	return (bgl_conf_record_t*) list_find_first(bgl_conf_list,
-						      (ListFindF) _listfindf_conf_part_record, 
-						      nodes);
+				(ListFindF) _listfindf_conf_part_record, 
+				nodes);
 }
 
 /** nodes example: 000x111 */
@@ -530,6 +530,7 @@ extern int init_bgl(void)
 /* Purge all plugin variables */
 extern void fini_bgl(void)
 {
+	list_destroy(bgl_list);
 	list_destroy(bgl_conf_list);
 }
 
@@ -835,16 +836,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 
 	/** we should do the BGL stuff here like, init BGL job stuff... */
 	return SLURM_SUCCESS;
-}
-
-/** 
- * for my debugging purposes, I occasionally print out the bitmap
- */
-static void _print_bitmap(bitstr_t* bitmap)
-{
-	char bitstring[BITSIZE];
-	bit_fmt(bitstring, BITSIZE, bitmap);
-	debug("bitmap:\t%s", bitstring);
 }
 
 /** 

@@ -123,6 +123,7 @@ static int _init_status_pthread()
 	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
 	thread_running = true;
 	pthread_mutex_unlock( &thread_flag_mutex );
+	pthread_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
 }
