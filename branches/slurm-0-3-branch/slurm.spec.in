@@ -112,7 +112,7 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 DESTDIR="$RPM_BUILD_ROOT" make install
 
-install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
+install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
 # Delete unpackaged files:
 rm -f $RPM_BUILD_ROOT/%{_libdir}/slurm/*.{a,la}
@@ -158,7 +158,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_builtin.so
 %{_libdir}/slurm/switch_none.so
 %dir %{_libdir}/slurm/src
-%config(noreplace) /etc/rc.d/init.d/slurm
+%config(noreplace) /etc/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
 #############################################################################
 
@@ -193,9 +193,9 @@ rm -rf $RPM_BUILD_ROOT
 #############################################################################
 
 %pre
-#if [ -x /etc/rc.d/init.d/slurm ]; then
-#    if /etc/rc.d/init.d/slurm status | grep -q running; then
-#        /etc/rc.d/init.d/slurm stop
+#if [ -x /etc/init.d/slurm ]; then
+#    if /etc/init.d/slurm status | grep -q running; then
+#        /etc/init.d/slurm stop
 #    fi
 #fi
 
@@ -207,10 +207,10 @@ fi
 
 %preun
 if [ $1 = 0 ]; then
-    if [ -x /etc/rc.d/init.d/slurm ]; then
+    if [ -x /etc/init.d/slurm ]; then
         [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-        if /etc/rc.d/init.d/slurm status | grep -q running; then
-            /etc/rc.d/init.d/slurm stop
+        if /etc/init.d/slurm status | grep -q running; then
+            /etc/init.d/slurm stop
         fi
     fi
 fi

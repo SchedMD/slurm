@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.10
+=========================
+ -- Move startup script from "/etc/rc.d/init.d/slurm" to "/etc/init.d/slurm"
+
 * Changes in SLURM 0.3.9
 ========================
  -- Fixes for reported problems:
