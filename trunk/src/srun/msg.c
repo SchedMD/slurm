@@ -90,7 +90,7 @@ static void	_set_jfds_nonblocking(job_t *job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
 static void     _timeout_handler(time_t timeout);
-static void     _node_fail_handler(char *nodelist);
+static void     _node_fail_handler(char *nodelist, job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -182,11 +182,20 @@ static void _timeout_handler(time_t timeout)
  * job is continuing to execute on the specified nodes, but quite possibly 
  * not. The job will continue to execute given the --no-kill option. 
  * Otherwise all of the job's tasks and the job itself are killed..
- * FIXME: How should srun deal with this notification?
  */
-static void _node_fail_handler(char *nodelist)
+static void _node_fail_handler(char *nodelist, job_t *job)
 {
-	error("Node failure on %s", nodelist);
+	if ( (opt.no_kill) &&
+	     (io_node_fail(nodelist, job) == SLURM_SUCCESS) ) {
+		error("Node failure on %s, eliminated that node", nodelist);
+		return;
+	}
+
+	error("Node failure on %s, killing job", nodelist);
+	update_job_state(job, SRUN_JOB_FORCETERM);
+	info("sending Ctrl-C to remaining tasks");
+	fwd_signal(job, SIGINT);
+	pthread_kill(job->ioid,  SIGHUP);
 }
 
 static bool _job_msg_done(job_t *job)
@@ -520,7 +529,7 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			break;
 		case SRUN_NODE_FAIL:
 			nf = msg->data;
-			_node_fail_handler(nf->nodelist);
+			_node_fail_handler(nf->nodelist, job);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			slurm_free_srun_node_fail_msg(msg->data);
 			break;
