@@ -834,12 +834,13 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
                         ESLURM_IN_STANDBY_MODE) &&
 	        (req->msg_type != MESSAGE_NODE_REGISTRATION_STATUS) &&
 	        (slurmctld_conf.backup_controller) &&
-                (difftime(time(NULL), start_time) < (slurmctld_conf.slurmctld_timeout +
+                (difftime(time(NULL), start_time) < 
+                        (slurmctld_conf.slurmctld_timeout +
                         slurmctld_conf.heartbeat_interval))) {
 		debug("Neither primary nor backup controller responding, "
 		      "sleep and retry");
 		slurm_free_return_code_msg(resp->data);
-		sleep(5);
+		sleep(30);
 		if ((fd = slurm_open_controller_conn()) < 0) 
                 	return SLURM_SOCKET_ERROR;
 	}
