@@ -126,10 +126,14 @@ proc get_line_cnt { file_name } {
 #
 # Returns: A non-zero return code indicates a failure.
 #
+# Note: usleep is used to avoid pkill race error message (the
+# processes terminate after the process table is read and before
+# the signal is sent to the detected processses)
+#
 ################################################################
 
 proc kill_srun {  } {
-	global bin_id bin_pkill number
+	global bin_id bin_pkill bin_usleep number
 
 	spawn $bin_id -u
 	expect {
@@ -142,7 +146,9 @@ proc kill_srun {  } {
 	}
 
 	exec $bin_pkill -INT -u $uid srun
+	exec $bin_usleep 1000
 	exec $bin_pkill -INT -u $uid srun
+	exec $bin_usleep 1000
 	exec $bin_pkill -INT -u $uid srun
 
 	return 0
