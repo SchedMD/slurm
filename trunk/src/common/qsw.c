@@ -296,6 +296,7 @@ qsw_pack_jobinfo(qsw_jobinfo_t j, void *data, int len)
 		pack32(j->j_cap.UserKey.Values[i], &data, &len);
 	pack16(j->j_cap.Type, 		&data, &len);
 	pack16(j->j_cap.Generation, 	&data, &len);
+	pack32(j->j_cap.Version,	&data, &len);
 	pack32(j->j_cap.LowContext, 	&data, &len);
 	pack32(j->j_cap.HighContext, 	&data, &len);
 	pack32(j->j_cap.MyContext, 	&data, &len);
@@ -329,6 +330,7 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, void *data, int len)
 		unpack32(&j->j_cap.UserKey.Values[i], &data, &len);
 	unpack16(&j->j_cap.Type, 	&data, &len);
 	unpack16(&j->j_cap.Generation, 	&data, &len); 
+	unpack32(&j->j_cap.Version,	&data, &len);
 	unpack32(&j->j_cap.LowContext, 	&data, &len);
 	unpack32(&j->j_cap.HighContext, &data, &len);
 	unpack32(&j->j_cap.MyContext,	&data, &len);
@@ -838,6 +840,6 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 	fprintf(fp, "cap.Railmask=0x%x\n", cap->RailMask);
 	fprintf(fp, "cap.Bitmap=");
 	_print_capbitmap(fp, cap);
-	fprintf(fp, "------------------\n");
+	fprintf(fp, "\n------------------\n");
 }
 #endif
