@@ -9,6 +9,7 @@ EXTRA_DIST = \
     slurm.m4 \
     type_socklen_t.m4 \
     x_ac__system_configuration.m4 \
+    x_ac_aix.m4 \
     x_ac_debug.m4 \
     x_ac_elan.m4 \
     x_ac_gpl_licensed.m4 \

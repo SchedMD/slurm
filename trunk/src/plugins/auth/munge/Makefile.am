@@ -16,8 +16,12 @@ pkglib_LTLIBRARIES = $(MUNGE)
 
 # Munge authentication plugin
 auth_munge_la_SOURCES = auth_munge.c
-auth_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) 
+auth_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
+
+if HAVE_AIX
 auth_munge_la_LIBADD =  -lmunge \
 			$(top_builddir)/src/common/libcommon.la   \
 			$(top_builddir)/src/api/libslurm.la 
-
+else
+auth_munge_la_LIBADD =   -lmunge 
+endif
