@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="7 February 2005">
+<meta name="LLNLRandRdate" content="17 February 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -90,6 +90,22 @@ You can also continue to use the <i>--nodes</i> option with a minimum and (optio
 maximum node count. The <i>--ntasks</i> option continues to be supported. 
 See the srun man pages for details. </p>
 
+<p>To reiterate: srun is used to submit a job script, but mpirun is used to launch the parallel tasks. 
+The script that you submit to SLURM can contain multiple invocations of mpirun as
+well as any desired commands for pre- and post-processing. 
+The mpirun command will get its <i>bglblock</i> or BGL partition information from the
+<i>BGL_PARTITION_ID</i> as set by SLURM. A sample script is shown below.
+<pre>
+#!/bin/bash
+# pre-processing
+date
+# processing
+mpirun -exec /home/user/prog -cwd /home/user -args 123
+mpirun -exec /home/user/prog -cwd /home/user -args 124
+# post-processing
+date 
+</pre></p>
+ 
 <a name="naming">
 <p>The naming of nodes includes a three-digit suffix representing the base partition's 
 location in the X, Y and Z dimensions with a zero origin.
@@ -163,6 +179,14 @@ The value of <i>SelectType</i> must be set to "select/bluegene" in order to have
 node selection performed using a system aware of the system's topography 
 and interfaces. 
 The value of <i>SchedulerType</i> should be set to "sched/builtin".
+The value of <i>Prolog</i> should be set to a program that will delay 
+execution until the bglblock identified by the BGL_PARTITION_ID environment 
+variable is ready for use. 
+The value of <i>Epilog</i> should be set to a program that will wait
+until the bglblock identified by the BGL_PARTITION_ID environment
+variable has been freed. 
+The prolog and epilog programs are used to insure proper synchronization 
+between the slurmctld daemon, the user job, and MMCS.
 Since jobs with different geometries or other characteristics do not interfere 
 with each other's scheduling, backfill scheduling is not presently meaningful.
 SLURM's builtin scheduler on Blue Gene will sort pending jobs and then attempt 
@@ -231,7 +255,7 @@ rebooting of c-nodes and I/O nodes.</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 7 February 200</p></td>
+Last modified 17 February 2005</p></td>
 </tr>
 </table>
 </td>
