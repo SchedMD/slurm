@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- Modify partition's group_allow test to be based upon the user 
     of the allocation rather than the user making the allocation 
     request (user root for LCRM batch jobs).
+ -- Restructure plugin directory structure.
 
 * Changes in SLURM 0.3.0.0-pre10
 ================================

@@ -84,8 +84,8 @@
 
 #include "src/common/slurm_xlator.h"
 
-#include "src/plugins/switch/elanhosts.h"
-#include "src/plugins/switch/qsw.h"
+#include "src/plugins/switch/elan/elanhosts.h"
+#include "src/plugins/switch/elan/qsw.h"
 
 /*
  * Definitions local to this module.
