@@ -660,11 +660,6 @@ static void *_thread_per_node_rpc(void *args)
 		       thread_ptr->node_name, slurm_strerror(rc));
 		thread_state = DSH_DONE;
 		break;
-	case ESLURMD_KILL_JOB_FAILED:		/* non-killable process */
-		info("agent KILL_JOB RPC to node %s FAILED",
-		       thread_ptr->node_name);
-		thread_state = DSH_FAILED;
-		break;
 	default:
 		error("agent error from host %s for msg type %d: %s", 
 		      thread_ptr->node_name, task_ptr->msg_type, 
