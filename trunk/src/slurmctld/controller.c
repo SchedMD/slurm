@@ -53,7 +53,7 @@ inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_cancel ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_job_submit ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 
@@ -149,8 +149,8 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_free_job_id_msg ( msg -> data ) ;
 			break;
 		case REQUEST_SUBMIT_BATCH_JOB: 
-/*			slurm_rpc_job_submit ( msg ) ;
-			slurm_free_??? ( msg -> data ) ; */
+			slurm_rpc_submit_batch_job ( msg ) ;
+			slurm_free_job_desc_msg ( msg -> data ) ; 
 			break;
 		case REQUEST_NODE_REGISRATION_STATUS:
 			break;
