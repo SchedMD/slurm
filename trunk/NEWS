@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.0-pre5 (NOT TAGGED OR BUILT YET)
+=============================
+ -- Fix node state transition: DOWN to DRAINED (instead of DRAINING)
+ -- Fix a couple of minor slurmctld memory leaks
+
 * Changes in SLURM 0.3.0-pre4
 =============================
  -- Fix bug where early launch failures (such as invalid UID/GID) resulted
