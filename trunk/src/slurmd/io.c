@@ -138,7 +138,6 @@ static bool   _isa_task(struct io_info *io);
 #endif
 
 static struct io_operations * _ops_copy(struct io_operations *ops);
-static void                   _ops_destroy(struct io_operations *ops);
 
 /* Slurmd I/O objects:
  * N   task   stderr, stdout objs (read-only)
@@ -380,6 +379,7 @@ static void *
 _io_thr(void *arg)
 {
 	slurmd_job_t *job = (slurmd_job_t *) arg;
+	debug("IO handler started pid=%lu", (unsigned long) getpid());
 	io_handle_events(job->objs);
 	debug("IO handler exited");
 	_handle_unprocessed_output(job);
@@ -696,7 +696,7 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 		io->obj->fd      = client->fd;
 		io->disconnected = 0;
 
-		_ops_destroy(io->obj->ops);
+		xfree(io->obj->ops);
 		io->obj->ops     = _ops_copy(client->ops); 
 
 		/* 
@@ -885,11 +885,6 @@ _ops_copy(struct io_operations *ops)
 	return ret;
 }
 
-static void
-_ops_destroy(struct io_operations *ops)
-{
-	xfree(ops);
-}
 
 io_obj_t *
 _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
@@ -919,7 +914,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 	 case CLIENT_STDOUT:
 		 io->readers = list_create(NULL);
 	 case CLIENT_STDERR:
-		 _ops_destroy(obj->ops);
+		 xfree(obj->ops);
 		 obj->ops    = _ops_copy(&client_ops);
 		 io->buf     = cbuf_create(1024, 1048576);
 		 io->writers = list_create(NULL);
@@ -927,7 +922,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 cbuf_opt_set(io->buf, CBUF_OPT_OVERWRITE, CBUF_WRAP_ONCE);
 		 break;
 	 case CLIENT_STDIN: 
-		 _ops_destroy(obj->ops);
+		 xfree(obj->ops);
 		 obj->ops    = _ops_copy(&client_ops);
 		 _obj_set_unwritable(obj);
 		 io->readers = list_create(NULL);
@@ -975,15 +970,15 @@ io_obj_destroy(io_obj_t *obj)
 		 break;
 	 case CLIENT_STDOUT:
 		 list_destroy(io->readers);
-		 _ops_destroy(obj->ops);
+		 xfree(obj->ops);
 	 case CLIENT_STDERR:
 		 cbuf_destroy(io->buf);
 		 list_destroy(io->writers);
-		 _ops_destroy(obj->ops);
+		 xfree(obj->ops);
 		 break;
 	 case CLIENT_STDIN:
 		 cbuf_destroy(io->buf);
-		 _ops_destroy(obj->ops);
+		 xfree(obj->ops);
 		 list_destroy(io->readers);
 		 break;
 	 default:
@@ -1227,7 +1222,7 @@ _do_attach(struct io_info *io)
 	xassert(io->magic == IO_MAGIC);
 	xassert(_isa_client(io));
 
-	_ops_destroy(io->obj->ops);
+	xfree(io->obj->ops);
 	io->obj->ops = _ops_copy(&client_ops);
 
 	t  = io->task;
