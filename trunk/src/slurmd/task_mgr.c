@@ -18,6 +18,7 @@
 
 #include <src/slurmd/task_mgr.h>
 #include <src/slurmd/shmem_struct.h>
+#include <src/slurmd/circular_buffer.h>
 
 /*
 global variables 
@@ -247,16 +248,20 @@ void * stdin_io_pipe_thread ( void * arg )
 void * stdout_io_pipe_thread ( void * arg )
 {
 	task_start_t * io_arg = ( task_start_t * ) arg ;
-	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
+	//char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int sock_bytes_written ;
 	int local_errno ;
+	circular_buffer_t * cir_buf ;
+
+	init_circular_buffer ( & cir_buf ) ;
 	
 	posix_signal_pipe_ignore ( ) ;
 
 	while ( true )
 	{
-		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		//if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
 			if ( bytes_read == SLURM_PROTOCOL_ERROR && errno == EINTR ) 
 			{
@@ -267,32 +272,44 @@ void * stdout_io_pipe_thread ( void * arg )
 
 				local_errno = errno ;	
 				info ( "error reading stdout stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
-				pthread_exit ( NULL ) ;
+				goto stdout_return ;
 			}
 		}
+		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
-		write ( 1 ,  buffer , bytes_read ) ;
+		//write ( 1 ,  buffer , bytes_read ) ;
+		write ( 1 , cir_buf->head , cir_buf->read_size ) ;
 		/* debug */
-		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		//if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
 			info ( "error sending stdout stream for task %i , errno %i", 1 , local_errno ) ;
-			pthread_exit ( NULL ) ; 
+			goto stdout_return ;
 		}
+		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
 	}
+
+	stdout_return:
+	free_circular_buffer ( cir_buf ) ;
+	pthread_exit ( NULL ) ; 
 }
 
 void * stderr_io_pipe_thread ( void * arg )
 {
 	task_start_t * io_arg = ( task_start_t * ) arg ;
-	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
+	//char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int sock_bytes_written ;
 	int local_errno ;
+	circular_buffer_t * cir_buf ;
 
+	init_circular_buffer ( & cir_buf ) ;
+	
 	while ( true )
 	{
-		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		//if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
+		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
 			if ( bytes_read == SLURM_PROTOCOL_ERROR && errno == EINTR ) 
 			{
@@ -303,18 +320,27 @@ void * stderr_io_pipe_thread ( void * arg )
 
 				local_errno = errno ;	
 				info ( "error reading stderr stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
-				pthread_exit ( NULL ) ;
+				goto stderr_return ;
 			}
 		}
+		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
-		write ( 2 ,  buffer , bytes_read ) ;
+		//write ( 2 ,  buffer , bytes_read ) ;
+		write ( 2 , cir_buf->head , cir_buf->read_size ) ;
 		/* debug */
-		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		//if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
-			info ( "error sending stderr stream for task %i", 1 ) ;
-			pthread_exit ( NULL ) ; 
+			local_errno = errno ;	
+			info ( "error sending stderr stream for task %i , errno %i", 1 , local_errno ) ;
+			goto stderr_return ;
 		}
+		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
 	}
+
+	stderr_return:
+	free_circular_buffer ( cir_buf ) ;
+	pthread_exit ( NULL ) ; 
 }
 
 
