@@ -85,6 +85,7 @@
 #define OPT_STEAL       0x14
 #define OPT_CDDIR       0x15
 #define OPT_BATCH       0x16
+#define OPT_TIME        0x17
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -160,6 +161,9 @@ struct poptOption runTable[] = {
 	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
 	 "partition requested",
 	 "partition"},
+	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
+	 "time limit",
+	 "minutes"},
 	{"cddir", 'D', POPT_ARG_STRING, NULL, OPT_CDDIR,
 	 "change current working directory of remote procs",
 	 "path"},
@@ -168,6 +172,12 @@ struct poptOption runTable[] = {
 	 },
 	{"overcommit", 'O', POPT_ARG_NONE, &opt.overcommit, 0,
 	 "overcommit resources",
+	 },
+	{"kill-off", 'k', POPT_ARG_NONE, &opt.fail_kill, 0,
+	 "do not kill job on node failure",
+	 },
+	{"share", 's', POPT_ARG_NONE, &opt.share, 0,
+	 "share node with other jobs",
 	 },
 	{"label", 'l', POPT_ARG_NONE, &opt.labelio, 0,
 	 "prepend task number to lines of stdout/err",
@@ -481,6 +491,7 @@ static void opt_default()
 	opt.nprocs = 1;
 	opt.cpus = 1;
 	opt.nodes = 0; /* nodes need not be set */
+	opt.time_limit = -1;
 	opt.partition = NULL;
 
 	opt.job_name = "";
@@ -499,6 +510,8 @@ static void opt_default()
 	opt.labelio = false;
 	opt.overcommit = false;
 	opt.batch = false;
+	opt.share = false;
+	opt.fail_kill = false;
 
 	opt.immediate = false;
 

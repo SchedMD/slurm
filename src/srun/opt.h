@@ -94,6 +94,7 @@ typedef struct srun_options {
 	int  nprocs;		/* --nprocs=n,      -n n	*/
 	int  cpus;		/* --cpus_per_task=n, -c n	*/
 	int  nodes;		/* --nodes=n,       -N n	*/ 
+	int  time_limit;	/* --time,   -t		*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum distribution_t
 		distribution;	/* --distribution=, -m dist	*/
@@ -122,6 +123,8 @@ typedef struct srun_options {
 	bool allocate;		/* --allocate, 	   -A		*/
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool batch;		/* --batch,   -b		*/
+	bool fail_kill;		/* --kill,   -k			*/
+	bool share;		/* --share,   -s		*/
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/
