@@ -20,14 +20,15 @@ FIGS = $(FIGDIR)/arch.eps \
        $(FIGDIR)/connections.eps \
        $(FIGDIR)/interactive-job-init.eps \
        $(FIGDIR)/queued-job-init.eps \
-       $(FIGDIR)/allocate-init.eps 
+       $(FIGDIR)/allocate-init.eps
 
-PLOTS = 
+PLOTS = $(FIGDIR)/times.eps 
+
 BIB = project.bib
 
 %.eps: %.dia
 	dia --nosplash -e $@ $< 
-%.eps: %.gnuplot %.data
+%.eps: %.gpl
 	gnuplot $<
 %.eps: %.fig
 	fig2dev -Lps $< $@
