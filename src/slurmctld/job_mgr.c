@@ -95,8 +95,8 @@ static void _dump_job_details(struct job_details *detail_ptr,
 				    Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer);
-static void _excise_node_from_job(struct job_record *job_record_ptr, 
-				  struct node_record *node_record_ptr);
+static void _excise_node_from_job(struct job_record *job_ptr, 
+				  struct node_record *node_ptr);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static void _job_timed_out(struct job_record *job_ptr);
@@ -904,17 +904,17 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 }
 
 /* Remove one node from a job's allocation */
-static void _excise_node_from_job(struct job_record *job_record_ptr, 
-				  struct node_record *node_record_ptr)
+static void _excise_node_from_job(struct job_record *job_ptr, 
+				  struct node_record *node_ptr)
 {
-	make_node_idle(node_record_ptr, job_record_ptr); /* updates bitmap */
-	job_record_ptr->nodes = bitmap2node_name(job_record_ptr->node_bitmap);
-	xfree(job_record_ptr->cpus_per_node);
-	xfree(job_record_ptr->cpu_count_reps);
-	xfree(job_record_ptr->node_addr);
+	make_node_idle(node_ptr, job_ptr); /* updates bitmap */
+	job_ptr->nodes = bitmap2node_name(job_ptr->node_bitmap);
+	xfree(job_ptr->cpus_per_node);
+	xfree(job_ptr->cpu_count_reps);
+	xfree(job_ptr->node_addr);
 
 	/* build_node_details rebuilds everything from node_bitmap */
-	build_node_details(job_record_ptr);
+	build_node_details(job_ptr);
 }
 
 
