@@ -114,17 +114,22 @@ int accept_stream(int fd)
 int readn(int fd, void *buf, size_t nbytes)
 {
 	int n;
-	int pbuf = (int)buf;
+	char *pbuf = (char *)buf;
 	size_t nleft = nbytes;
 
 	while (nleft > 0) {
-		if ((n = read(fd, (void *)pbuf, nleft)) < 0 
-		    && (errno != EINTR)) {
-			/* eof */
-			return(0);
+		n = read(fd, (void *)pbuf, nleft);
+		if (n > 0) {
+			pbuf+=n;
+			nleft-=n;
+		} else if (n == 0) 	/* EOF */
+			break;
+		else if (errno == EINTR)
+			continue;
+		else {
+			debug("read error: %m");
+			break;
 		}
-		pbuf+=n;
-		nleft-=n;
 	}
 	return(n);
 }
