@@ -74,8 +74,7 @@
 #endif				/* !MAX */
 
 /* Log to stderr and syslog until becomes a daemon */
-log_options_t log_opts = 
-   { LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0 };
+log_options_t log_opts = LOG_OPTS_INITIALIZER;
 
 /* Global variables */
 slurm_ctl_conf_t slurmctld_conf;
@@ -83,6 +82,8 @@ extern slurm_ssl_key_ctx_t sign_ctx;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
+static int	debug_level = 0;
+static char	*debug_logfile = NULL;
 static int	recover   = DEFAULT_RECOVER;
 static bool	resume_backup = false;
 static time_t	shutdown_time = (time_t) 0;
@@ -2035,17 +2036,13 @@ static void _parse_commandline(int argc, char *argv[],
 			exit(0);
 			break;
 		case 'L':
-			slurmctld_conf.slurmctld_logfile = xstrdup(optarg);
+			debug_logfile = xstrdup(optarg);
 			break;
 		case 'r':
 			recover = 1;
 			break;
 		case 'v':
-			if (slurmctld_conf.slurmctld_debug)
-				slurmctld_conf.slurmctld_debug++;
-			else 
-				slurmctld_conf.slurmctld_debug = 
-				    LOG_LEVEL_VERBOSE;
+			debug_level++;
 			break;
 		default:
 			_usage(argv[0]);
@@ -2447,16 +2444,30 @@ static int _shutdown_backup_controller(void)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(void) 
 {
+	/* Preserve execute line arguments (if any) */
+	if (debug_level) {
+		if ((LOG_LEVEL_INFO + debug_level) > LOG_LEVEL_DEBUG3)
+			slurmctld_conf.slurmctld_debug = LOG_LEVEL_DEBUG3;
+		else
+			slurmctld_conf.slurmctld_debug = LOG_LEVEL_INFO + 
+							 debug_level;
+	} 
 	if (slurmctld_conf.slurmctld_debug != (uint16_t) NO_VAL) {
 		log_opts.stderr_level  = slurmctld_conf.slurmctld_debug;
 		log_opts.logfile_level = slurmctld_conf.slurmctld_debug;
 		log_opts.syslog_level  = slurmctld_conf.slurmctld_debug;
 	}
+	if (debug_logfile) {
+		FREE_NULL(slurmctld_conf.slurmctld_logfile);
+		slurmctld_conf.slurmctld_logfile = xstrdup(debug_logfile);
+	}
+
 	if (daemonize) {
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		if (slurmctld_conf.slurmctld_logfile)
 			log_opts.syslog_level = LOG_LEVEL_QUIET;
 	}
+
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
 }
