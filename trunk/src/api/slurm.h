@@ -57,35 +57,6 @@ enum node_states {
 	STATE_END		/* last entry in table */
 };
 
-struct build_buffer {
-	time_t last_update;	/* time of last buffer update */
-	void *raw_buffer_ptr;	/* raw network buffer info */
-	struct build_table *build_table_ptr;
-};
-
-
-struct job_buffer {
-	time_t last_update;	/* time of last buffer update */
-	uint32_t job_count;	/* count of entries in node_table */
-	void *raw_buffer_ptr;	/* raw network buffer info */
-	struct job_table *job_table_ptr;
-};
-
-
-struct node_buffer {
-	time_t last_update;	/* time of last buffer update */
-	uint32_t node_count;	/* count of entries in node_table */
-	void *raw_buffer_ptr;	/* raw network buffer info */
-	struct node_table *node_table_ptr;
-};
-
-struct part_buffer {
-	time_t last_update;	/* time of last buffer update */
-	int part_count;		/* count of entries in node_table */
-	void *raw_buffer_ptr;	/* raw network buffer info */
-	struct part_table *part_table_ptr;
-};
-
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
  * input: spec - specification of the job's constraints
