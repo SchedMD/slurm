@@ -707,8 +707,63 @@ update_it (int argc, char *argv[])
 int
 update_job (int argc, char *argv[]) 
 {
+	int error_code, i;
+	job_desc_msg_t job_msg;
+
+	error_code = 0;
+	slurm_init_job_desc_msg (&job_msg);	
+
+	for (i=0; i<argc; i++) {
+		if (strncmp_i(argv[i], "JobId=", 6) == 0)
+			job_msg.job_id = (uint32_t) strtol(&argv[i][6], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "TimeLimit=", 10) == 0)
+			job_msg.time_limit = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "Priority=", 9) == 0)
+			job_msg.priority = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "ReqProcs=", 9) == 0)
+			job_msg.num_procs = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "ReqNodes=", 9) == 0)
+			job_msg.num_nodes = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "MinProcs=", 9) == 0)
+			job_msg.min_procs = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "MinMemory=", 10) == 0)
+			job_msg.min_memory = (uint32_t) strtol(&argv[i][10], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "MinTmpDisk=", 11) == 0)
+			job_msg.min_tmp_disk = (uint32_t) strtol(&argv[i][1], (char **) NULL, 10);
+		else if (strncmp_i(argv[i], "Partition=", 10) == 0)
+			job_msg.partition = &argv[i][10];
+		else if (strncmp_i(argv[i], "Name=", 5) == 0)
+			job_msg.name = &argv[i][5];
+		else if (strncmp_i(argv[i], "Shared=", 7) == 0) {
+			if (strcmp_i(&argv[i][7], "YES") == 0)
+				job_msg.shared = 1;
+			else if (strcmp_i(&argv[i][7], "NO") == 0)
+				job_msg.shared = 0;
+			else
+				job_msg.shared = (uint32_t) strtol(&argv[i][7], (char **) NULL, 10);
+		}
+		else if (strncmp_i(argv[i], "Contiguous=", 11) == 0) {
+			if (strcmp_i(&argv[i][11], "YES") == 0)
+				job_msg.contiguous = 1;
+			else if (strcmp_i(&argv[i][11], "NO") == 0)
+				job_msg.contiguous = 0;
+			else
+				job_msg.contiguous = (uint32_t) strtol(&argv[i][11], (char **) NULL, 10);
+		}
+		else if (strncmp_i(argv[i], "ReqNodeList=", 12) == 0)
+			job_msg.req_nodes = &argv[i][12];
+		else if (strncmp_i(argv[i], "Features=", 9) == 0)
+			job_msg.features = &argv[i][9];
+		else {
+			fprintf (stderr, "Invalid input: %s\n", argv[i]);
+			fprintf (stderr, "Request aborted\n");
+			return EINVAL;
+		}
+	}
+
 	printf("Not yet implemented\n");
-	return EINVAL;
+/*	error_code = slurm_update_job(&job_msg); */
+	return error_code;
 }
 
 /* 
