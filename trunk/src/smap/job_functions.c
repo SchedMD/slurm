@@ -173,18 +173,18 @@ int print_text_job(job_info_t * job_ptr)
 
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "%5d", job_ptr->num_nodes);
-	smap_info_ptr->xcord += 6;
+        smap_info_ptr->xcord += 6;
+
 	tempxcord = smap_info_ptr->xcord;
-	width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
+	//width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
+
 	while (job_ptr->nodes[i] != '\0') {
-		if ((printed =
-		     mvwaddch(smap_info_ptr->text_win,
-			      smap_info_ptr->ycord, smap_info_ptr->xcord,
-			      job_ptr->nodes[i])) < 0)
+		if ((printed = mvwaddch(smap_info_ptr->text_win,
+                                        smap_info_ptr->ycord, smap_info_ptr->xcord,
+                                        job_ptr->nodes[i])) < 0)
 			return printed;
 		smap_info_ptr->xcord++;
-		width =
-		    smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
+		width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 		if (job_ptr->nodes[i] == '[')
 			prefixlen = i + 1;
 		else if (job_ptr->nodes[i] == ',' && (width - 9) <= 0) {

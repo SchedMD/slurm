@@ -207,15 +207,14 @@ int print_text_part(partition_info_t * part_ptr)
 	smap_info_ptr->xcord += 7;
 
 	tempxcord = smap_info_ptr->xcord;
-	width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
+	//width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 	if (params.display == BGLPART)
 		nodes = part_ptr->allow_groups;
 	else
 		nodes = part_ptr->nodes;
 	prefixlen = i;
 	while (nodes[i] != '\0') {
-		width =
-		    smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
+		width = smap_info_ptr->text_win->_maxx - smap_info_ptr->xcord;
 
 		if (!prefixlen && nodes[i] == '[' && nodes[i - 1] == ',')
 			prefixlen = i + 1;
