@@ -50,6 +50,7 @@
 #include <src/slurmd/get_mach_stat.h>
 
 #define BUF_SIZE 1024
+#define DEFAULT_TMP_FS "/tmp"
 
 char *get_tmp_fs_name (void);
 

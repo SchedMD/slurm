@@ -73,23 +73,46 @@
 #define SHM_LOCKNAME	"/.slurm.lock"
 
 /* Increment SHM_VERSION if format changes */
-#define SHM_VERSION	0x1001
+#define SHM_VERSION	1001
+
+/* These macros convert shared memory pointers to local memory
+ * pointers and back again. Pointers in shared memory are relative
+ * to the address at which the shared memory is attached
+ *
+ * These routines must be used to convert a pointer in shared memory
+ * back to a "real" pointer in local memory. e.g. t = _taskp(t->next)
+ */
+#define _laddr(p)  \
+	((p) ? (((size_t)(p)) + ((size_t)slurmd_shm)) : (size_t)NULL)  
+#define _offset(p) \
+        ((p) ? (((size_t)(p)) - ((size_t)slurmd_shm)) : (size_t)NULL) 
+
+#define _taskp(__p) (task_t *)     _laddr(__p)
+#define _toff(__p)  (task_t *)     _offset(__p)
+#define _stepp(__p) (job_step_t *) _laddr(__p)
+#define _soff(__p)  (job_step_t *) _offset(__p)
 
 typedef struct shmem_struct {
-	int        version;
-	int        users;	
-	job_step_t step[MAX_JOB_STEPS];
-	task_t     task[MAX_TASKS];
+	int         version;
+	int         users;	
+	job_step_t  step[MAX_JOB_STEPS];
+	task_t      task[MAX_TASKS];
 } slurmd_shm_t;
 
 
-/* static variables: */
-static sem_t *shm_lock;
-static char  *lockname;
-static int shmid;
+/* 
+ * static variables: 
+ * */
+static sem_t        *shm_lock;
+static char         *lockname;
 static slurmd_shm_t *slurmd_shm;
+static int           shmid;
+static pid_t         attach_pid = (pid_t) 0;
 
-/* static function prototypes: */
+
+/* 
+ * static function prototypes: 
+ */
 static int  _is_valid_ipc_name(const char *name);
 static char *_create_ipc_name(const char *name);
 static int _shm_unlink_lock(void);
@@ -98,18 +121,21 @@ static void _shm_lock(void);
 static void _shm_unlock(void);
 static void _shm_initialize(void);
 static void _shm_prepend_task_to_step(job_step_t *, task_t *);
+static void _shm_prepend_task_to_step_internal(job_step_t *, task_t *);
 static void _shm_task_copy(task_t *, task_t *);
 static void _shm_step_copy(job_step_t *, job_step_t *);
 static void _shm_clear_task(task_t *);
 static void _shm_clear_step(job_step_t *);
 static int  _shm_find_step(uint32_t, uint32_t);
-static task_t * _shm_alloc_task(void);
-static task_t * _shm_find_task_in_step(job_step_t *s, int taskid);
+
+static task_t *     _shm_alloc_task(void);
+static task_t *     _shm_find_task_in_step(job_step_t *s, int taskid);
+static job_step_t * _shm_copy_step(job_step_t *j);
 
 
-/* initialize shared memory: 
- * Attach if shared region already exists, otherwise create and attach
-*/
+/* initialize shared memory: Attach to memory if shared region 
+ * already exists - otherwise create and attach
+ */
 int
 shm_init(void)
 {
@@ -123,7 +149,11 @@ shm_fini(void)
 	int destroy = 0;
 	xassert(slurmd_shm != NULL);
 	_shm_lock();
-	if (--slurmd_shm->users == 0)
+
+	verbose("%ld calling shm_fini() on %ld", getpid(), attach_pid);
+	xassert(attach_pid == getpid());
+
+	if ((attach_pid == getpid()) && (--slurmd_shm->users == 0))
 		destroy = 1;
 
 	/* detach segment from local memory */
@@ -158,9 +188,24 @@ shm_cleanup(void)
 			error("sem_unlink: %m");
 		xfree(s);
 	}
+}
 
-
-
+List
+shm_get_steps(void)
+{
+	List l;
+	int  i;
+	xassert(slurmd_shm != NULL);
+	l = list_create((ListDelF) &shm_free_step);
+	_shm_lock();
+	for (i = 0; i < MAX_JOB_STEPS; i++) {
+		if (slurmd_shm->step[i].state > SLURMD_JOB_UNUSED) {
+			job_step_t *s = _shm_copy_step(&slurmd_shm->step[i]);
+			if (s) list_append(l, (void *) s);
+		}
+	}
+	_shm_unlock();
+	return l;
 }
 
 static int
@@ -215,7 +260,7 @@ _create_ipc_name(const char *name)
 static int
 _shm_unlink_lock()
 {
-	debug3("process %ld removing shm lock", getpid());
+	verbose("process %ld removing shm lock", getpid());
 	if (sem_unlink(lockname) == -1) 
 		return 0;
 	xfree(lockname);
@@ -270,14 +315,15 @@ shm_insert_step(job_step_t *step)
 	}
 
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
-		if (slurmd_shm->step[i].state == SLURMD_JOB_UNUSED)
+		if (slurmd_shm->step[i].state <= SLURMD_JOB_UNUSED)
 			break;
 	}
 	if (i == MAX_JOB_STEPS) {
 		_shm_unlock();
 		slurm_seterrno_ret(ENOSPC);
-	} else
+	} else {
 		_shm_step_copy(&slurmd_shm->step[i], step);
+	}
 
 	_shm_unlock();
 	return SLURM_SUCCESS;
@@ -292,6 +338,7 @@ shm_delete_step(uint32_t jobid, uint32_t stepid)
 		_shm_unlock();
 		slurm_seterrno_ret(ESRCH);
 	}
+	debug3("shm: found step %d.%d at %d", jobid, stepid, i);
 	_shm_clear_step(&slurmd_shm->step[i]);
 	_shm_unlock();
 	return 0;
@@ -317,20 +364,17 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	int         retval = SLURM_SUCCESS;
 	int         i;
 	job_step_t *s;
-	task_t     *t, *tlast;
+	task_t     *t;
 
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		s = &slurmd_shm->step[i];
-		tlast = NULL;
-		for (t = s->task_list; t; t = t->next) {
-			xassert(t != tlast);
+		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
 			if (t->pid > 0 && kill(t->pid, signo) < 0) {
 				error("kill %d.%d task %d pid %ld: %m", 
 				      jobid, stepid, t->id, (long)t->pid);
 				retval = errno;
 			}
-			tlast = t;
 		}	
 	} else
 		retval = ESRCH;
@@ -342,40 +386,50 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 		return SLURM_SUCCESS;
 }
 
+static job_step_t *
+_shm_copy_step(job_step_t *j)
+{
+	job_step_t *s;
+	task_t *t;
+
+	s = xmalloc(sizeof(*s));
+	_shm_step_copy(s, j);
+
+	for (t = _taskp(j->task_list); t; t = _taskp(t->next)) {
+		task_t *u = xmalloc(sizeof(*u));
+		_shm_task_copy(u, t);
+		_shm_prepend_task_to_step(s, u);
+	}
+	return s;
+}
+
 
 job_step_t *
 shm_get_step(uint32_t jobid, uint32_t stepid)
 {
 	int i;
-	job_step_t *s = NULL;
-	task_t *t;
-
+	job_step_t *s;
 	_shm_lock();
-	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
-		s = xmalloc(sizeof(job_step_t));
-		_shm_step_copy(s, &slurmd_shm->step[i]);
-		for (t = slurmd_shm->step[i].task_list; t; t = t->next) {
-			task_t *u = xmalloc(sizeof(task_t));
-			_shm_task_copy(u, t);
-			_shm_prepend_task_to_step(s, u);
-		}
-
-	}
+	if ((i = _shm_find_step(jobid, stepid)) >= 0) 
+		s = _shm_copy_step(&slurmd_shm->step[i]);
 	_shm_unlock();
 	return s;
 }
 
+/*
+ * Free a job step structure in local memory
+ */
 void 
 shm_free_step(job_step_t *step)
 {
-	task_t *p, *t;
-	if ((t = step->task_list)) {
-		do {
-			p = t->next;
-			xfree(t);
-		} while ((t = p));
-	}
+	task_t *p, *t = step->task_list;
 	xfree(step);
+	if (!t) 
+		return;
+	do {
+		p = t->next;
+		xfree(t);
+	} while ((t = p));
 }
 
 int 
@@ -547,41 +601,57 @@ shm_add_task(uint32_t jobid, uint32_t stepid, task_t *task)
 	int i;
 	job_step_t *s;
 	task_t *t;
+
 	xassert(task != NULL);
+
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) < 0) {
 		_shm_unlock();
 		slurm_seterrno_ret(ESRCH);
 	} 
 	s = &slurmd_shm->step[i];
+
 	debug2("adding task %d to step %d.%d", task->id, jobid, stepid);
+
 	if (_shm_find_task_in_step(s, task->id)) {
 		_shm_unlock();
 		slurm_seterrno_ret(EEXIST);
 	}
+
 	if (!(t = _shm_alloc_task())) {
 		_shm_unlock();
 		slurm_seterrno_ret(ENOMEM);
 	}
+
 	_shm_task_copy(t, task);
-	_shm_prepend_task_to_step(s, t);
+	_shm_prepend_task_to_step_internal(s, t);
 	_shm_unlock();
+
 	return 0;
+}
+
+static void
+_shm_prepend_task_to_step_internal(job_step_t *s, task_t *task)
+{
+	task->next     = (s->task_list);
+	s->task_list   = _toff(task);
+	task->job_step = _soff(s);
 }
 
 static void
 _shm_prepend_task_to_step(job_step_t *s, task_t *task)
 {
-	task->next = s->task_list;
-	s->task_list = task;
+	task->next     = s->task_list;
+	s->task_list   = task;
 	task->job_step = s;
 }
+
 
 static task_t *
 _shm_find_task_in_step(job_step_t *s, int taskid)
 {
 	task_t *t = NULL;
-	for (t = s->task_list; t && t->used; t = t->next) {
+	for (t = _taskp(s->task_list); t && t->used; t = _taskp(t->next)) {
 		if (t->id == taskid)
 			return t;
 	}
@@ -593,8 +663,8 @@ _shm_alloc_task(void)
 {
 	int i;
 	for (i = 0; i < MAX_TASKS; i++) {
-		if (!slurmd_shm->task[i].used) {
-			slurmd_shm->task[i].used = true;
+		if (slurmd_shm->task[i].used == 0) {
+			slurmd_shm->task[i].used = 1;
 			return &slurmd_shm->task[i];
 		}
 	}
@@ -606,7 +676,7 @@ _shm_task_copy(task_t *to, task_t *from)
 {
 	*to = *from;
 	/* next and step are not valid for copying */
-	to->used = true;
+	to->used = 1;
 	to->next = NULL;
 	to->job_step = NULL;
 }
@@ -616,7 +686,9 @@ _shm_step_copy(job_step_t *to, job_step_t *from)
 {
 	*to = *from;
 	to->state = SLURMD_JOB_ALLOCATED;
-	to->task_list = NULL; /* addition of tasks is another step */
+
+	/* addition of tasks is another step */
+	to->task_list = NULL;  
 }
 
 static void
@@ -628,30 +700,25 @@ _shm_clear_task(task_t *t)
 static void
 _shm_clear_step(job_step_t *s)
 {
-	task_t *p, *t = s->task_list;
-	for (t = s->task_list; t; t = t->next)
-		_shm_clear_task(t);
-
+	task_t *p, *t = _taskp(s->task_list);
 	memset(s, 0, sizeof(*s));
+	if (!t) 
+		return;
+	do {
+	       	p = _taskp(t->next);
+		debug3("going to clear task %d", t->id);
+		_shm_clear_task(t);
+	} while ((t = p));
 }
-
 
 static int
 _shm_create()
 {
 	int oflags = IPC_CREAT | IPC_EXCL | 0600;
-	key_t key = ftok(".", 'a');
+	key_t key = ftok(lockname, 1);
 
-	if ((shmid = shmget(key, sizeof(slurmd_shm_t), oflags)) < 0) {
-		if ((shmid = shmget(key, sizeof(slurmd_shm_t), 0600)) < 0) {
-			if (errno == EINVAL) {
-				error("shm_init: Existing shm invalid. "
-				      "Please remove.");
-			} else
-				error("shmget: %m");
-			return SLURM_ERROR;
-		}
-	}
+	if ((shmid = shmget(key, sizeof(slurmd_shm_t), oflags)) < 0) 
+		return SLURM_ERROR;
 
 	slurmd_shm = shmat(shmid, NULL, 0);
 	if (slurmd_shm == (void *)-1 || slurmd_shm == NULL) {
@@ -661,29 +728,30 @@ _shm_create()
 
 	_shm_initialize();
 
-	return 1;
+	return SLURM_SUCCESS;
 }
 
 static int
 _shm_attach()
 {
 	int oflags = 0;
-	key_t key = ftok(".", 'a');
+	key_t key = ftok(lockname, 1);
 
 	if ((shmid = shmget(key, sizeof(slurmd_shm_t), oflags)) < 0) 
 		return SLURM_ERROR;
 
 	slurmd_shm = shmat(shmid, NULL, 0);
-	if (slurmd_shm == (void *)-1 || !slurmd_shm) 
+	if (slurmd_shm == (void *)-1 || slurmd_shm == NULL) { 
+		error("shmat: %m");
 		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
 
 /* 
- * Create shared memory region if it doesn't exist, if it does exist,
- * reinitialize it.
- *
+ * Attempt to create a new shared segment. If exclusive create fails,
+ * attach to existing segment and reinitialize it.
  */
 static int
 _shm_new()
@@ -692,12 +760,18 @@ _shm_new()
 		error("shm_attach: %m");
 		return SLURM_FAILURE;
 	}
-	_shm_initialize();
+	attach_pid = getpid();
 	slurmd_shm->users = 1;
 	_shm_unlock();
 	return SLURM_SUCCESS;
 }
 
+/*
+ * Reattach to existing shared memory segment. If shared segment does
+ * not exist, create and initialize it.
+ * Here we assume that create of new semaphore failed, so we attach to
+ * the existing semaphore.
+ */
 static int
 _shm_reopen()
 {
@@ -715,13 +789,18 @@ _shm_reopen()
 	}
 
 
-	/* Lock and unlock semaphore to ensure data is initialized */
+	/* 
+	 * Lock and unlock semaphore to ensure data is initialized 
+	 */
 	_shm_lock();
 	if (slurmd_shm->version != SHM_VERSION) {
 		error("shm_init: Wrong version in shared memory");
 		retval = SLURM_FAILURE;
-	} else
+	} else {
 		slurmd_shm->users++;
+		attach_pid = getpid();
+	}
+
 	_shm_unlock();
 
 	return retval;
@@ -737,12 +816,17 @@ _shm_lock_and_initialize()
 	if (slurmd_shm && slurmd_shm->version == SHM_VERSION) {           
 		/* we've already opened shared memory */
 		_shm_lock();
-		slurmd_shm->users++;
+		if (attach_pid != getpid()) {
+			attach_pid = getpid();
+			slurmd_shm->users++;
+		}
 		_shm_unlock();
 		return SLURM_SUCCESS;
 	}
 
 	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, S_IRUSR|S_IWUSR, 0);
+
+	debug3("Initial open of semaphore: %m");
 
 	if (shm_lock != SEM_FAILED) /* lock didn't exist. Create shmem      */
 		return _shm_new();

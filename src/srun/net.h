@@ -12,5 +12,9 @@ int net_stream_listen(int *fd, int *port);
  */
 int net_accept_stream(int fd);
 
+/* set low water mark on socket
+ */
+int net_set_low_water(int sock, size_t size);
+
 
 #endif /* !_NET_H */

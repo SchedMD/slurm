@@ -48,6 +48,7 @@
 #endif 
 
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/list.h>
 
 #include <src/slurmd/job.h>
 
@@ -112,6 +113,14 @@ int shm_fini(void);
  * Force cleanup of any stale shared memory locks
  */
 void shm_cleanup(void);
+
+/*
+ * Returns a list of job_step_t's currently recorded in shared memory. Presumably,
+ * these job steps are still running or have abnormally terminated. 
+ *
+ * Caller must free the resulting list with list_destroy()
+ */
+List shm_get_steps(void);
 
 /*
  * Insert a new step into shared memory, the step passed in by address

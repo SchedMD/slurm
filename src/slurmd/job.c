@@ -33,6 +33,8 @@
 #  include <string.h>
 #endif
 
+#include <signal.h>
+
 #include <src/common/xmalloc.h>
 #include <src/common/xassert.h>
 #include <src/common/xstring.h>
@@ -53,12 +55,19 @@ static void _job_init_task_info(slurmd_job_t *job,
 
 /* create a slurmd job structure from a launch tasks message */
 slurmd_job_t * 
-job_create(launch_tasks_request_msg_t *msg)
+job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 {
 	slurmd_job_t  *job;
 	srun_info_t   *srun;
+	slurm_addr     resp_addr;
+	slurm_addr     io_addr;
 
 	xassert(msg != NULL);
+
+	memcpy(&resp_addr, cli_addr, sizeof(slurm_addr));
+	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
+	slurm_set_addr(&resp_addr, msg->resp_port, NULL); 
+	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
 
 	job = xmalloc(sizeof(*job));
 
@@ -85,10 +94,7 @@ job_create(launch_tasks_request_msg_t *msg)
 
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 
-	srun = srun_info_create( (void *)msg->credential->signature,
-			         msg->response_addr,
-			         msg->streams 
-			       );
+	srun = srun_info_create((void *)msg->credential->signature, resp_addr, io_addr);
 
 	job->sruns  = list_create((ListDelF) _srun_info_destructor);
 
@@ -115,10 +121,24 @@ _job_init_task_info(slurmd_job_t *job, launch_tasks_request_msg_t *msg)
 	}
 }
 
+void
+job_signal_tasks(slurmd_job_t *job, int signal)
+{
+	int n = job->ntasks;
+	while (--n >= 0) {
+		if (kill(job->task[n]->pid, signal) < 0) {
+			if (errno != EEXIST) {
+				error("job %d.%d: kill task %d: %m", 
+				      job->jobid, job->stepid, n);
+			}
+		}
+	}
+}
+
 
 /* remove job from shared memory, kill initiated tasks, etc */
 void 
-job_kill(slurmd_job_t *job)
+job_kill(slurmd_job_t *job, int rc)
 {
 	job_state_t *state;
 
@@ -128,18 +148,18 @@ job_kill(slurmd_job_t *job)
 		return;
 
 	if (*state > SLURMD_JOB_STARTING) {
-		/* singnal all tasks on step->task_list 
+		/* signal all tasks on step->task_list 
 		 * This will result in task exit msgs being sent to srun
 		 * XXX IMPLEMENT
 		 */
-		/* job_signal_tasks(job, SIGKILL); */
+		job_signal_tasks(job, SIGKILL);
 	}
 	*state = SLURMD_JOB_ENDING;
 	shm_unlock_step_state(job->jobid, job->stepid);
 	
-	/* forward remaining task_exit messages? */
-	/* send_exit_codes() 			 */
+	return;
 }
+
 
 void 
 job_destroy(slurmd_job_t *job)
@@ -259,8 +279,10 @@ job_update_shm(slurmd_job_t *job)
 
 	s.sw_id     = 0;
 
-	if (shm_insert_step(&s) == SLURM_FAILURE)
+	if (shm_insert_step(&s) < 0)
 		error("Updating shmem with new step info: %m");
+
+	verbose("shm_insert job %d.%d", job->jobid, job->stepid);
 }
 
 void 

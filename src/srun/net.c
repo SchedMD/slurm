@@ -118,7 +118,8 @@ int readn(int fd, void *buf, size_t nbytes)
 	size_t nleft = nbytes;
 
 	while (nleft > 0) {
-		if ((n = read(fd, (void *)pbuf, nleft)) < 0 && (errno != EINTR)) {
+		if ((n = read(fd, (void *)pbuf, nleft)) < 0 
+		    && (errno != EINTR)) {
 			/* eof */
 			return(0);
 		}
@@ -128,3 +129,13 @@ int readn(int fd, void *buf, size_t nbytes)
 	return(n);
 }
 
+int net_set_low_water(int sock, size_t size)
+{
+	if (setsockopt(sock, SOL_SOCKET, SO_RCVLOWAT, 
+	  (const void *) &size, sizeof(size)) < 0) {
+		error("Unable to set low water socket option: %m");
+		return -1;
+	}
+
+	return 0;
+}
