@@ -418,10 +418,7 @@ static char *_host_state_name(host_state_t state_inx)
 
 static bool _job_io_done(job_t *job)
 {
-	if (job->state == SRUN_JOB_DETACHED)
-		return true;
-	else
-		return false;
+	return (job->state >= SRUN_JOB_FORCETERM);
 }
 
 void report_task_status(job_t *job)

@@ -81,11 +81,7 @@ static void * _p_signal_task(void *);
 
 static bool _job_sig_done(job_t *job)
 {
-	if ((job->state == SRUN_JOB_DETACHED) ||
-	    (job->state == SRUN_JOB_OVERDONE))
-		return true;
-	else
-		return false;
+	return (job->state >= SRUN_JOB_DONE);
 }
 
 int 
@@ -182,7 +178,7 @@ _handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
 	} else  { /* second Ctrl-C in half as many seconds */
 
 		/* terminate job */
-		if (job->state != SRUN_JOB_OVERDONE) {
+		if (job->state < SRUN_JOB_FORCETERM) {
 
 			info("sending Ctrl-C to job");
 			*last_intr = time(NULL);

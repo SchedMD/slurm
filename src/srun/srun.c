@@ -352,12 +352,7 @@ _sig_kill_alloc(int signum)
 
 static bool _job_all_done(job_t *job)
 {
-	if ((job->state == SRUN_JOB_DETACHED ) ||
-	    (job->state == SRUN_JOB_FAILED   ) ||
-	    (job->state == SRUN_JOB_OVERDONE))
-		return true;
-	else
-		return false;
+	return (job->state >= SRUN_JOB_TERMINATED);
 }
 
 
