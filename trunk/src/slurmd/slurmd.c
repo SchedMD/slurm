@@ -168,6 +168,8 @@ void *slurmd_handle_signals(void *args)
 		error("sigaddset error on SIGINT: %m");
 	if (sigaddset(&set, SIGTERM))
 		error("sigaddset error on SIGTERM: %m");
+        if (sigaddset(&set, SIGABRT))
+                error("sigaddset error on SIGABRT: %m");
 
 	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
 		fatal("sigprocmask error: %m");
@@ -189,6 +191,9 @@ void *slurmd_handle_signals(void *args)
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received\n");
 			//error_code = read_slurm_conf ( );
+			break;
+		default:
+			error("Invalid signal (%d) received", sig);
 		}
 	}
 }
