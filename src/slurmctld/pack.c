@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * pack.c - pack slurmctld structures into buffers understood by the 
+ *  pack.c - pack slurmctld structures into buffers understood by the 
  *          slurm_protocol 
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
@@ -100,10 +100,10 @@ pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer
 	uint32_t list_size = list_count(steps);
 	current = *buffer_base = xmalloc( buffer_size );
 
-
 	pack32( current_time, &current, &current_size ); /* FIXME What am I really suppose to put as the time?*/
-	debug("job_step_count = %d\n");
+	debug("job_step_count = %u\n", list_size);
 	pack32( list_size , &current, &current_size );
+
 	/* Pack the Steps */
 	while( ( current_step = (struct step_record*)list_next( iterator ) ) != NULL )
 	{
