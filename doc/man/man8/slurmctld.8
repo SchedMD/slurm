@@ -1,17 +1,23 @@
-.TH SLURMD "1" "October 2002" "slurmctld 0.1" "Slurm components"
+.TH SLURMCTLD "8" "October 2002" "slurmctld 0.1" "Slurm components"
 .SH "NAME"
-slurmd \- The compute node daemon of Slurm.
+slurmctld \- The central management daemon of Slurm.
 .SH "SYNOPSIS"
-\fBslurmd\fR [\fIOPTIONS\fR...]
+\fBslurmctld\fR [\fIOPTIONS\fR...]
 .SH "DESCRIPTION"
-\fBslurmld\fR is the compute node daemon of Slurm. It monitors all tasks running
-on the compute node , accepts work (tasks), launched tasks, and kill running tasks 
-upon request.
+\fBslurmctld\fR is the central management daemon of Slurm. It monitors all other 
+Slurm daemons and resources, accepts work (jobs), and allocates resources to 
+those jobs. Given the critical functionality of \fBslurmctld\fR, there may 
+be a backup server to assume these functions in the event that the primary 
+server fails. 
 .TP
 OPTIONS
 .TP
 \fB-d\fR
 Execute \fBslurmctld\fR as a daemon (in the background) with logging to syslog.
+.TP
+\fB-D\fR
+Debug mode. Execute \fBslurmctld\fR in the foreground with logging to stdout. 
+(Current default).
 .TP
 \fB-e <errlev>\fR
 Set stderr logging to the specified level..TP
@@ -29,6 +35,10 @@ Write log messages to the specified file.
 .TP
 \fB-s <errlev>\fR
 Set syslog logging to the specified level.
+.TP
+\fB-r\fR
+Recover \fBslurmctld\fR state from its last checkpoint 
+(performed periodically and at time of graceful shutdown).
 .TP
 ARGUMENTS
 .TP
@@ -58,12 +68,13 @@ Log highly detailed debugging messages
 \fB<file>\fR
 Pathname of a configuration or log file to use.
 .SH "NOTES"
-It may be useful to experiment with different \fBslurmd\fR specific 
+It may be useful to experiment with different \fBslurmctld\fR specific 
 configuration parameters using a distinct configuration file. However, 
-this special configuration file will not be recognized by \fBslurmctld\fR 
+this special configuration file will not be recognized by \fBslurmd\fR 
 or the Slurm programs. If you desire changing communication ports, 
 the location of the temporary file system, or other parameters used 
-by other Slurm components, change the common configuration file.
+by other Slurm components, change the common configuration file, 
+\fB/etc/slurm.conf\fR.
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -85,4 +96,4 @@ details.
 .LP
 /etc/slurm.conf
 .SH "SEE ALSO"
-\fBslurm.conf\fR(5)
+\fBslurm.conf\fR(5), \fBslurmd\fR(8)
