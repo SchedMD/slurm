@@ -76,7 +76,8 @@ static int	_get_command (int *argc, char *argv[]);
 static void	_parse_conf_line (char *in_line, bool *any_slurmctld,
 				  bool *have_slurmctld, bool *have_slurmd);
 static void	_pid2jid(pid_t job_pid);
-static void	_print_config (char *config_param);
+static void	_ping_slurmctld(slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr);
+static void	_print_config (char *config_param, bool ping_only);
 static void     _print_daemons (void);
 static void	_print_job (char * job_id_str);
 static void	_print_node (char *node_name, node_info_msg_t *node_info_ptr);
@@ -245,9 +246,10 @@ _pid2jid(pid_t job_pid)
 /* 
  * _print_config - print the specified configuration parameter and value 
  * IN config_param - NULL to print all parameters and values
+ * IN ping_only - just ping slurmctld daemons
  */
 static void 
-_print_config (char *config_param)
+_print_config (char *config_param, bool ping_only)
 {
 	int error_code;
 	static slurm_ctl_conf_info_msg_t *old_slurm_ctl_conf_ptr = NULL;
@@ -277,9 +279,33 @@ _print_config (char *config_param)
 	}
 	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
 
-	slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
+	if (!ping_only)
+		slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
+	fprintf(stdout, "\n"); 
+	_ping_slurmctld ( slurm_ctl_conf_ptr );
 }
 
+/* Report if slurmctld daemons are responding */
+static void 
+_ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
+{
+	static char *state[2] = { "UP", "DOWN" };
+	int primary = 1, secondary = 1;
+
+	if (slurm_ping(1) == SLURM_SUCCESS)
+		primary = 0;
+	fprintf(stdout, "Slurmctld(primary)   at %s is %s\n", 
+		slurm_ctl_conf_ptr->control_machine, state[primary]);
+
+	if (slurm_ctl_conf_ptr->backup_addr) {
+		if (slurm_ping(0) == SLURM_SUCCESS)
+			secondary = 0;
+		fprintf(stdout, "Slurmctld(secondary) at %s is %s\n\n", 
+			slurm_ctl_conf_ptr->backup_controller, 
+			state[secondary]);
+	} else
+		fprintf(stdout, "\n"); 
+}
 
 /*
  * _print_daemons - report what daemons should be running on this node
@@ -777,6 +803,9 @@ _process_command (int argc, char *argv[])
 			_pid2jid ((pid_t) atol (argv[1]) );
 
 	}
+	else if (strcasecmp (argv[0], "ping") == 0) {
+		_print_config (NULL, true);
+	}
 	else if (strcasecmp (argv[0], "quiet") == 0) {
 		if (argc > 1)
 			fprintf (stderr, "too many arguments for keyword:%s\n", 
@@ -808,9 +837,9 @@ _process_command (int argc, char *argv[])
 		}
 		else if (strncasecmp (argv[1], "config", 3) == 0) {
 			if (argc > 2)
-				_print_config (argv[2]);
+				_print_config (argv[2], false);
 			else
-				_print_config (NULL);
+				_print_config (NULL, false);
 		}
 		else if (strncasecmp (argv[1], "daemons", 5) == 0) {
 			if ((argc > 2) && (quiet_flag != 1))
@@ -1052,8 +1081,8 @@ _update_node (int argc, char *argv[])
 					state_val = (uint16_t) j;
 					break;
 				}
-				if ((j == NODE_STATE_END) && 
-				    (strcasecmp ("drain", &argv[i][6]) == 0)) {
+				if ((j == 0) && 
+				    (strcasecmp ("DRAIN", &argv[i][6]) == 0)) {
 					state_val = NODE_STATE_DRAINING;
 					break;
 				}
@@ -1062,8 +1091,8 @@ _update_node (int argc, char *argv[])
 						argv[i]);
 					fprintf (stderr, "Request aborted\n");
 					fprintf (stderr, "Valid states are: ");
-					fprintf (stderr, "NoResp ");
-					for (k = 0; k <= NODE_STATE_END; k++) {
+					fprintf (stderr, "NoResp DRAIN ");
+					for (k = 0; k < NODE_STATE_END; k++) {
 						fprintf (stderr, "%s ", 
 						         node_state_string(k));
 					}
@@ -1215,6 +1244,7 @@ scontrol [-q | -v] [<COMMAND>]                                             \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      pid2jid <pid>            return slurm job id for given pid.           \n\
+     ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
      reconfigure              re-read configuration files.                 \n\
