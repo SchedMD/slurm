@@ -14,7 +14,7 @@
 
 AC_DEFUN([X_AC_BGL],
 [
-   bgl_default_dirs="/bgl/BlueLight/current/ppc/bglsys /home/bgdb2cli/sqllib"
+   bgl_default_dirs="/bgl/BlueLight/ppcfloor/bglsys /home/bgdb2cli/sqllib"
 
    for bgl_dir in $bgl_default_dirs; do
       # Skip directories that don't exist
