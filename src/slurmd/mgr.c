@@ -269,11 +269,20 @@ _set_job_log_prefix(slurmd_job_t *job)
 {
 	char buf[256];
 
-	if (job->stepid == NO_VAL)
-		snprintf(buf, sizeof(buf), "[%u]", job->jobid);
-	else
-		snprintf(buf, sizeof(buf), "[%u.%u]", 
-			 job->jobid, job->stepid);
+	if (job->jobid > MAX_NOALLOC_JOBID) {
+		return;
+
+	} else if (job->jobid >= MIN_NOALLOC_JOBID) {
+		snprintf(buf, sizeof(buf), "[no-alloc:%u]",
+		         job->jobid - MIN_NOALLOC_JOBID);
+
+	} else {
+		if (job->stepid == NO_VAL)
+			snprintf(buf, sizeof(buf), "[%u]", job->jobid);
+		else
+			snprintf(buf, sizeof(buf), "[%u.%u]", 
+				job->jobid, job->stepid);
+	}
 
 	log_set_fpfx(buf);
 }
@@ -1061,43 +1070,22 @@ _slurmd_job_log_init(slurmd_job_t *job)
 static void
 _setargs(slurmd_job_t *job)
 {
+	if (job->jobid > MAX_NOALLOC_JOBID)
+		return;
+
+	if (job->jobid >= MIN_NOALLOC_JOBID) {
+		setproctitle("no-alloc [%d]", job->jobid - MIN_NOALLOC_JOBID);
+		return;
+	}
+
+	/*
+	 *  Otherwise, a normal job
+	 */
 	if (job->stepid == NO_VAL)
 		setproctitle("[%d]",    job->jobid);
 	else
 		setproctitle("[%d.%d]", job->jobid, job->stepid); 
-}
 
-/*
- * Attempt to change the cmdline argument list for slurmd
- * to denote the job/job step that this process is managing.
- */
-#if 0
-static void
-_setargs(slurmd_job_t *job, char **argv, int argc)
-{
-	int i;
-	size_t len = 0;
-	char *arg  = NULL;
-
-	for (i = 0; i < argc; i++) 
-		len += strlen(argv[i]) + 1;
-
-	if (job->stepid == NO_VAL)
-		xstrfmtcat(arg, "[%d]", job->jobid);
-	else
-		xstrfmtcat(arg, "[%d.%d]", job->jobid, job->stepid); 
-
-	if (len < (strlen(arg) + 7))
-		goto done;
-
-	memset(argv[0], 0, len);
-	strncpy(argv[0], "slurmd", 6);
-	strncpy((*argv)+7, arg, strlen(arg));
-
-    done:
-	xfree(arg);
 	return;
 }
-#endif
-
 

@@ -48,6 +48,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/list.h"
+#include "src/common/util-net.h"
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
@@ -177,13 +178,13 @@ _fork_new_slurmd(void)
 	if ((pid = fork()) < 0) 
 		error("fork_slurmd: fork: %m");
 	else if (pid > 0) {
-		if (close(fds[1]) < 0)
+		if ((fds[1] >= 0) && (close(fds[1]) < 0))
 			error("Unable to close write-pipe in parent: %m");
 
 		/*  Wait for grandchild */
-		if (read(fds[0], &c, 1) < 0)
+		if ((fds[0] >= 0) && (read(fds[0], &c, 1) < 0))
 			return error("Unable to read EOF from grandchild: %m");
-		if (close(fds[0]) < 0)
+		if ((fds[0] >= 0) && (close(fds[0]) < 0))
 			error("Unable to close read-pipe in parent: %m");
 
 		/* Reap child */
@@ -209,9 +210,19 @@ _fork_new_slurmd(void)
 	if (close(fds[1]) < 0)
 		error("Unable to close write-pipe in grandchild: %m");
 
+	/*
+	 *  We could destroy the credential context object here. 
+	 *   However, since we have forked from the main slurmd,
+	 *   any mutexes protecting this object (and objects it
+	 *   contains) will not be in a sane state on some systems
+	 *   (e.g. RH73). For now, just let it stay in memory.
+	 *
+	 *  slurm_cred_ctx_destroy(conf->vctx);
+	 */
+
 	slurm_shutdown_msg_engine(conf->lfd);
-	slurm_cred_ctx_destroy(conf->vctx);
 	_close_fds();
+
 	/*
 	 *  Reopen logfile by calling log_alter() without
 	 *    changing log options
@@ -330,7 +341,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	slurm_get_addr(cli, &port, host, sizeof(host));
+	slurmd_get_addr(cli, &port, host, sizeof(host));
 	info("launch task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
@@ -627,7 +638,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	reattach_tasks_response_msg_t  resp;
 
 	memset(&resp, 0, sizeof(reattach_tasks_response_msg_t));
-	slurm_get_addr(cli, &port, host, sizeof(host));
+	slurmd_get_addr(cli, &port, host, sizeof(host));
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req_gid = g_slurm_auth_get_gid(msg->cred);
 
@@ -667,7 +678,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	memcpy(&ioaddr, cli, sizeof(slurm_addr));
 	slurm_set_addr(&ioaddr, req->io_port, NULL);
-	slurm_get_addr(&ioaddr, &port, host, sizeof(host));
+	slurmd_get_addr(&ioaddr, &port, host, sizeof(host));
 
 	debug3("reattach: srun ioaddr: %s:%d", host, port);
 
@@ -828,15 +839,16 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 *    notify slurmctld that we have already completed this
 	 *    request.
 	 */
-	if ((nsteps == 0) && !conf->epilog && (msg->conn_fd > 0)) {
+	if ((nsteps == 0) && !conf->epilog && (msg->conn_fd >= 0)) {
 		slurm_send_rc_msg(msg, ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
 		return;
 	}
 
-	if (msg->conn_fd > 0) {
+	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		slurm_close_accepted_conn(msg->conn_fd);
+		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
+			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
 	}
 
 	/*
