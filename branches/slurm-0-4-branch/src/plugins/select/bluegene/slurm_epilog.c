@@ -52,10 +52,11 @@ int main(int argc, char *argv[])
 #include "src/plugins/select/bluegene/wrap_rm_api.h"
 
 #define _DEBUG 0
-#define MAX_RETRIES 20			/* max retry count in polling */
+#define MAX_RETRIES 40			/* max retry count in polling */
 #define POLL_SLEEP 3			/* retry interval in seconds  */
 #define MAX_DELAY (MAX_RETRIES * POLL_SLEEP)	/* time in seconds    */
 
+static char *bgl_err_str(status_t inx);
 static void  _wait_part_owner(char *part_name, char *user_id);
 
 int main(int argc, char *argv[])
@@ -84,7 +85,7 @@ int main(int argc, char *argv[])
 static void  _wait_part_owner(char *part_name, char *user_id)
 {
 	uid_t target_uid;
-	int i, j, rc1, num_parts;
+	int i, j, rc, num_parts;
 	rm_partition_t *part_ptr;
 	char *name;
 	struct passwd *pw_ent;
@@ -107,75 +108,82 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 #endif
 		}
 
-		if ((rc1 = rm_get_partitions_info(part_state, &part_list))
-		    != STATUS_OK) {
-			fprintf(stderr, "rm_get_partitions() errno=%d\n", 
-				rc1);
+		if ((rc = rm_get_partitions_info(part_state, &part_list))
+				!= STATUS_OK) {
+			fprintf(stderr, "rm_get_partitions(): %s\n", 
+				bgl_err_str(rc));
 				
 		}
-		
-		rm_get_data(part_list, RM_PartListSize, &num_parts);
-		for(j=0; j<num_parts; j++) {
-			if(j)
-				rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
-			else
-				rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
-			rm_get_data(part_ptr, RM_PartitionID, &name);
-			if(!strcmp(part_name, name)) {
-				rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name);
-				if (name[0] == '\0') {
-					is_ready = 1;
+
+		if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
+                                        != STATUS_OK) {
+			 fprintf(stderr, "rm_get_data(RM_PartListSize): %s\n",
+				 bgl_err_str(rc));
+			 num_parts = 0;
+		}
+
+		for (j=0; j<num_parts; j++) {
+			if (j) {
+				if ((rc = rm_get_data(part_list,
+						RM_PartListNextPart, &part_ptr))
+						!= STATUS_OK) {
+					fprintf(stderr, "rm_get_data("
+						"RM_PartListNextPart): %s\n",
+						bgl_err_str(rc));
 					break;
 				}
-				
-				if ((pw_ent = getpwnam(name)) == NULL) {
-					fprintf(stderr, "getpwnam(%s) errno=%d\n", name, 
-						errno);
-					continue;
-				}
-#if (_DEBUG > 1)
-				printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
-#endif
-				if (pw_ent->pw_uid != target_uid) {
-					is_ready = 1;
+			} else {
+				if ((rc = rm_get_data(part_list,
+						RM_PartListFirstPart, &part_ptr))
+						!= STATUS_OK) {
+					fprintf(stderr, "rm_get_data("
+						"RM_PartListFirstPart: %s\n",
+						bgl_err_str(rc));
 					break;
 				}
 			}
-		}
-		rm_free_partition_list(part_list);
-		if(is_ready)
+
+			if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name))
+					!= STATUS_OK) {
+				fprintf(stderr,
+					"rm_get_data(RM_PartitionID): %s\n",
+					bgl_err_str(rc));
+				continue;
+			}
+
+			if (strcmp(part_name, name) != 0)
+				continue;
+
+			if ((rc = rm_get_data(part_ptr, RM_PartitionUserName,
+					&name)) != STATUS_OK) {
+				fprintf(stderr,
+					"rm_get_data(RM_PartitionUserName): %s\n",
+					bgl_err_str(rc));
+				break;
+			}
+
+			if (name[0] == '\0')
+				break;
+			if ((pw_ent = getpwnam(name)) == NULL) {
+				fprintf(stderr, "getpwnam(%s) errno=%d\n",
+					name, errno);
+				break;
+			}
+#if (_DEBUG > 1)
+			printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
+#endif
+			if (pw_ent->pw_uid != target_uid)
+				is_ready = 1;
 			break;
+		}
 
-		/* if ((rc1 = rm_get_partition(part_name, &part_ptr)) !=  */
-/* 				STATUS_OK) { */
-/* 			fprintf(stderr, "rm_get_partition(%s) errno=%d\n", */
-/* 				part_name, rc1); */
-/* 			return; */
-/* 		} */
-/* 		rc1 = rm_get_data(part_ptr, RM_PartitionUserName, &name); */
-/* 		rc2 = rm_free_partition(part_ptr); */
-/* 		if (rc1 != STATUS_OK) { */
-/* 			fprintf(stderr, */
-/* 				"rm_get_data(%s, RM_PartitionUserName) " */
-/* 				"errno=%d\n", part_name, rc1); */
-/* 			return; */
-/* 		} */
-/* 		if (rc2 != STATUS_OK) */
-/* 			fprintf(stderr, "rm_free_partition() errno=%d\n", rc2); */
+		if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
+			fprintf(stderr, "rm_free_partition_list(): %s\n",
+				bgl_err_str(rc));
+		}
 
-/* 		/\* Now test this owner *\/ */
-/* 		if (name[0] == '\0') */
-/* 			break; */
-/* 		if ((pw_ent = getpwnam(name)) == NULL) { */
-/* 			fprintf(stderr, "getpwnam(%s) errno=%d\n", part_name,  */
-/* 				errno); */
-/* 			continue; */
-/* 		} */
-/* #if (_DEBUG > 1) */
-/* 		printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid); */
-/* #endif */
-/* 		if (pw_ent->pw_uid != target_uid) */
-/* 			break; */
+		if (is_ready)
+			break;
 	}
 
 #if _DEBUG
@@ -187,6 +195,38 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 	if (i >= MAX_RETRIES)
 		fprintf(stderr, "Partition %s owner not changed (%s)\n", 
 			part_name, name);
+}
+
+/* Temporary static function.
+ * This module will get completely re-written for driver 140 */
+static char *bgl_err_str(status_t inx)
+{
+        switch (inx) {
+                case STATUS_OK:
+                        return "Status OK";
+                case PARTITION_NOT_FOUND:
+                        return "Partition not found";
+                case JOB_NOT_FOUND:
+                        return "Job not found";
+                case BP_NOT_FOUND:
+                        return "Base partition not found";
+                case SWITCH_NOT_FOUND:
+                        return "Switch not found";
+                case JOB_ALREADY_DEFINED:
+                        return "Job already defined";
+                case CONNECTION_ERROR:
+                        return "Connection error";
+                case INTERNAL_ERROR:
+                        return "Internal error";
+                case INVALID_INPUT:
+                        return "Invalid input";
+                case INCOMPATIBLE_STATE:
+                        return "Incompatible state";
+                case INCONSISTENT_DATA:
+                        return "Inconsistent data";
+        }
+
+        return "?";
 }
 
 #endif  /* HAVE_BGL_FILES */
