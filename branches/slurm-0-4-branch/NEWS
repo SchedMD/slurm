@@ -1,6 +1,10 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.17
+========================
+ -- Bug fixes from testing .16.
+
 * Changes in SLURM 0.4.16
 ========================
  -- Added error checking to a bunch of Bridge API calls and more 
