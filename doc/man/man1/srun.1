@@ -33,7 +33,10 @@ per task for optimal performance. The default is one cpu per process.
 \fB\-N\fR, \fB\-\-nodes\fR=\fInnodes\fR
 Request that \fInnodes\fR nodes be allocated to this job. \fInnodes\fR
 may be either a specific number or a minimum and maximum node count 
-separated by a hyphen (e.g. "\-\-nodes=2\-4"). Note that the environment 
+separated by a hyphen (e.g. "\-\-nodes=2\-4"). The partition's node 
+limits supersede those of the job. If a job's node limits are completely 
+outside of the range permitted for it's associated partition, the job 
+will be left in a PENDING state. Note that the environment 
 variable \fBSLURM_NNODES\fR will be set to the count of nodes actually 
 allocated to the job. See the \fBENVIRONMENT VARIABLES \fR section 
 for more information. The default
@@ -47,10 +50,12 @@ Request resources from partition "\fIpartition\fR." Partitions
 are created by the slurm administrator.
 .TP
 \fB\-t\fR, \fB\-\-time\fR=\fIminutes\fR
-Establish a time limit to terminate the job after the specified number of minutes.
-The default value is the partition's time limit. When the time limit is reached, 
-the job's processes are sent SIGXCPU followed by SIGKILL. The interval between 
-signals is specified by the SLURM configuration parameter \fBKillWait\fR.
+Establish a time limit to terminate the job after the specified number of 
+minutes. If the job's time limit exceed's the partition's time limit, the 
+job will be left in a PENDING state. The default value is the partition's 
+time limit. When the time limit is reached, the job's processes are sent 
+SIGXCPU followed by SIGKILL. The interval between signals is specified by 
+the SLURM configuration parameter \fBKillWait\fR.
 .TP
 \fB\-\-cddir\fR=\fIpath\fR
 have the remote processes do a chdir to \fIpath\fR before beginning
