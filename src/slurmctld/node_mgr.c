@@ -1541,8 +1541,10 @@ void make_node_idle(struct node_record *node_ptr,
 /* node_fini - free all memory associated with node records */
 void node_fini(void)
 {
-	if (config_list)
+	if (config_list) {
 		list_destroy(config_list);
+		config_list = NULL;
+	}
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
 }

@@ -125,6 +125,8 @@ void run_backup(void)
 	pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 	pthread_join(slurmctld_config.thread_id_sig, NULL);
 
+	/* clear old state and read new state */
+	job_fini();
 	if (read_slurm_conf(1))	/* Recover all state */
 		fatal("Unable to recover slurm state");
 	slurmctld_config.shutdown_time = (time_t) 0;
