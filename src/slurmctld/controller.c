@@ -167,7 +167,7 @@ slurmctld_req (int sockfd) {
 	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
 	int cpus, real_memory, tmp_disk;
 	char *node_name_ptr, *part_name, *time_stamp;
-	uint16_t job_id;
+	uint32_t job_id;
 	time_t last_update;
 	clock_t start_time;
 	char *dump;
@@ -348,7 +348,7 @@ slurmctld_req (int sockfd) {
 
 	/* JobCancel - cancel a slurm job or reservation */
 	else if (strncmp ("JobCancel", in_line, 9) == 0) {
-		job_id = (uint16_t) atoi (&in_line[10]);
+		job_id = (uint32_t) strtol (&in_line[10], (char **)NULL, 10);
 		error_code = job_cancel (job_id);
 		if (error_code)
 			info ("slurmctld_req: job_cancel error %d, time=%ld",
@@ -364,7 +364,9 @@ slurmctld_req (int sockfd) {
 
 	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
-		error_code = job_create(&in_line[9], &job_id, 0);	/* skip "JobSubmit" */
+		struct job_record *job_rec_ptr;
+		error_code = job_create(&in_line[9], &job_id, 0, 
+				&job_rec_ptr);	/* skip "JobSubmit" */
 		if (error_code)
 			info ("slurmctld_req: job_submit error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));

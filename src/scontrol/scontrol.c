@@ -278,7 +278,7 @@ void
 print_job (char * job_id_str) 
 {
 	int error_code, i;
-	uint16_t job_id = 0;
+	uint32_t job_id = 0;
 	static struct job_buffer *old_job_buffer_ptr = NULL;
 	struct job_buffer *job_buffer_ptr = NULL;
 	struct job_table *job_ptr = NULL;
@@ -306,7 +306,7 @@ printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
 		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
 
 	if (job_id_str)
-		job_id = (uint16_t) atoi (job_id_str);
+		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
 
 	job_ptr = job_buffer_ptr->job_table_ptr;
 	for (i = 0; i < job_buffer_ptr->job_count; i++) {
