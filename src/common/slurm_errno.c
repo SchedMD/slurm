@@ -124,6 +124,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Error configuring interconnect"			},
 	{ ESLURM_BAD_DIST, 
 	  "Task distribution specification invalid"		},
+	{ ESLURM_JOB_PENDING, 
+	  "Job is pending execution"				},
 
 	/* Quadrics Elan routine error codes */
 	{ ENOSLURM, 	/* oh no! */

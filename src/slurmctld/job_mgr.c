@@ -2533,6 +2533,8 @@ old_job_info (uint32_t uid, uint32_t job_id, char **node_list,
 		return ESLURM_INVALID_JOB_ID;
 	if ((uid != 0) && (job_ptr->user_id != uid))
 		return ESLURM_ACCESS_DENIED;
+	if (job_ptr->job_state == JOB_PENDING) 
+		return ESLURM_JOB_PENDING;
 	if ((job_ptr->job_state != JOB_STAGE_IN) && 
 	    (job_ptr->job_state != JOB_RUNNING))
 		return ESLURM_ALREADY_DONE;
