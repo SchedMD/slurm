@@ -146,18 +146,12 @@ int parse_command_line(int argc, char *argv[])
 	}
 
 	if ( ( params.format == NULL ) && 
-	     ( env_val = getenv("SINFO_FORMAT") ) ) {
-		i = strlen(env_val);
-		params.format = xmalloc(i);
-		strcpy(params.format, env_val);
-	}
+	     ( env_val = getenv("SINFO_FORMAT") ) ) 
+		params.format = xstrdup(env_val);
 
 	if ( ( params.partition == NULL ) && 
-	     ( env_val = getenv("SINFO_PARTITION") ) ) {
-		i = strlen(env_val);
-		params.partition = xmalloc(i);
-		strcpy(params.partition, env_val);
-	}
+	     ( env_val = getenv("SINFO_PARTITION") ) ) 
+		params.partition = xstrdup(env_val);
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) 
