@@ -20,21 +20,24 @@ RETVAL=0
 # exec_prefix are same.  This is the default, unless the user requests
 # otherwise.
 #
+# Any node can be a slurm controller and/or server.
+#
 case "$1" in
     start)
         if [ controller ]; then
             echo -n "Starting slurmctld: "
             daemon /usr/local/slurm/sbin/slurmctld
             RETVAL=$?
-            echo
             [ $RETVAL -eq 0 ] && touch /var/lock/subsys/slurmctld
+            echo
 	fi
         if [ server ]; then
             echo -n "Starting slurmd: "
             daemon /usr/local/slurm/sbin/slurmd
-            RETVAL=$?
+            RETVALS=$?
+            [ $RETVALS -eq 0 ] && touch /var/lock/subsys/slurmd
+            RETVAL=$(($RETVAL + $RETVALS))
             echo
-            [ $RETVAL -eq 0 ] && touch /var/lock/subsys/slurmd
 	fi
         ;;
     stop)
@@ -42,15 +45,16 @@ case "$1" in
             echo -n "Shutting down slurmctld: "
             killproc slurmctld
             RETVAL=$?
-            echo
             [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/slurmctld
+            echo
 	fi
         if [ server ]; then
             echo -n "Shutting down slurmd: "
             killproc slurmd
-            RETVAL=$?
+            RETVALS=$?
+            [ $RETVALS -eq 0 ] && rm -f /var/lock/subsys/slurmd
+            RETVAL=$(($RETVAL + $RETVALS))
             echo
-            [ $RETVAL -eq 0 ] && rm -f /var/lock/subsys/slurmd
 	fi
         ;;
     status)
