@@ -410,6 +410,7 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 	consec_end   = xmalloc (sizeof (int) * consec_size);
 	consec_req   = xmalloc (sizeof (int) * consec_size);
 
+	/* Build table with information about sets of consecutive nodes */
 	consec_cpus[consec_index] = consec_nodes[consec_index] = 0;
 	consec_req[consec_index] = -1;	/* no required nodes here by default */
 	rem_cpus = req_cpus;
@@ -418,7 +419,10 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 		if (bit_test (bitmap, index)) {
 			if (consec_nodes[consec_index] == 0)
 				consec_start[consec_index] = index;
-			i = node_record_table_ptr[index].cpus;
+			if (slurmctld_conf.fast_schedule) 	/* don't bother checking each node */
+				i = node_record_table_ptr[index].config_ptr->cpus;
+			else
+				i = node_record_table_ptr[index].cpus;
 			if (req_bitmap && bit_test (req_bitmap, index)) {
 				if (consec_req[consec_index] == -1) 
 					/* first required node in set */
@@ -457,23 +461,24 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 
 #ifdef EXTREME_DEBUG
 	/* don't compile this, slows things down too much */
-	info ("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
+	debug3 ("rem_cpus=%d, rem_nodes=%d", rem_cpus, rem_nodes);
 	for (i = 0; i < consec_index; i++) {
 		if (consec_req[i] != -1)
-			info ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
+			debug3 ("start=%s, end=%s, nodes=%d, cpus=%d, req=%s",
 				node_record_table_ptr[consec_start[i]].name,
 				node_record_table_ptr[consec_end[i]].name,
 				consec_nodes[i], consec_cpus[i],
 				node_record_table_ptr[consec_req[i]].name);
 		else
-			info ("start=%s, end=%s, nodes=%d, cpus=%d",
+			debug3 ("start=%s, end=%s, nodes=%d, cpus=%d",
 				node_record_table_ptr[consec_start[i]].name,
 				node_record_table_ptr[consec_end[i]].name,
 				consec_nodes[i], consec_cpus[i]);
 	}			
 #endif
 
-
+	/* accumulate nodes from these sets of consecutive nodes until */
+	/*   sufficient resources have been accumulated */
 	while (consec_index) {
 		best_fit_cpus = best_fit_nodes = best_fit_sufficient = 0;
 		best_fit_req = -1;	/* first required node, -1 if none */
@@ -655,8 +660,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			bit_and (node_set_ptr[i].my_bitmap, up_node_bitmap);
 			if (shared != 1)
 				bit_and (node_set_ptr[i].my_bitmap, idle_node_bitmap);
-			node_set_ptr[i].nodes =
-				bit_set_count (node_set_ptr[i].my_bitmap);
+			node_set_ptr[i].nodes = bit_set_count (node_set_ptr[i].my_bitmap);
 			if (avail_set)
 				bit_or (avail_bitmap, node_set_ptr[i].my_bitmap);
 			else {
@@ -790,11 +794,11 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		/* since nodes can register with more resources than defined */
 		/* in the configuration, we want to use those higher values */
 		/* for scheduling, but only as needed */
-		if ((job_ptr->details->min_procs > config_record_point->cpus) ||
+		if (slurmctld_conf.fast_schedule) 	/* don't bother checking each node */
+			check_node_config = 0;
+		else if ((job_ptr->details->min_procs > config_record_point->cpus) ||
 		    (job_ptr->details->min_memory > config_record_point->real_memory) ||
 		    (job_ptr->details->min_tmp_disk > config_record_point->tmp_disk)) {
-			if (slurmctld_conf.fast_schedule) 	/* don't bother checking each node */
-				continue;
 			check_node_config = 1;
 		}
 		else
@@ -848,7 +852,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		node_set_ptr[node_set_index].cpus_per_node = config_record_point->cpus;
 		node_set_ptr[node_set_index].weight = config_record_point->weight;
 		node_set_ptr[node_set_index].feature = tmp_feature;
-		debug ("found %d usable nodes from configuration containing node %s",
+		debug ("found %d usable nodes from configuration containing nodes %s",
 			node_set_ptr[node_set_index].nodes,
 			config_record_point->nodes);
 
