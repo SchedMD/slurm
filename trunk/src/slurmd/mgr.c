@@ -971,7 +971,8 @@ _handle_attach_req(slurmd_job_t *job)
 	if (shm_step_addrs( job->jobid, job->stepid, 
 			    &srun->ioaddr, &srun->resp_addr,
 			    srun->key ) < 0) {
-		error("Unable to update client addrs from shm: %m");
+		if (errno)
+			error("Unable to update client addrs from shm: %m");
 		return;
 	}
 
