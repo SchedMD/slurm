@@ -114,7 +114,7 @@ in the configuration file with multiple entries where "Name=DEFAULT".
 In order to support the concept of jobs requiring consecutive nodes, 
 nodes should be place in this file in consecutive order.
 The size of any field in the configuration file is limited to 1024 characters.
-A sample node configuration file is included at the end of this document.
+A <a href="#SampleNode">sample node configuration file</a> is included at the end of this document.
 
 <h3>Partition Configuration</h3>
 The partition configuration permits you to establish different job 
@@ -171,7 +171,7 @@ in the configuration file with multiple entries where "Name=DEFAULT".
 The size of any field in the configuration file is limited to 1024 characters.
 If user controls are desired then set either AllowUsers or DenyUsers, but not both.
 If AllowUsers is set, then DenyUsers is ignored. 
-A sample partition configuration file is included at the end of this document.
+A <a href="#SamplePart">sample partition configuration file</a> is included at the end of this document.
 
 <h2>Commands</h2>
 To be developed and documented by Moe Jette.
@@ -184,7 +184,7 @@ The hierarchical communications provides excellent scalability.
 Fault-tolerance will be built through mechanisms to save 
 and restore the database using local and global file systems. 
 
-<h2>Sample node configuration file</h2>
+<a name="SampleNode"><h2>Sample node configuration file</h2></a>
 <pre>
 # 
 # Sample sample.node.conf2
@@ -237,7 +237,7 @@ Name=lx31
 Name=lx32 
 </pre>
 
-<h2>Sample partition configuration file</h2>
+<a name="SamplePart"><h2>Sample partition configuration file</h2></a>
 <pre>
 # 
 # Example sample.part.conf2
