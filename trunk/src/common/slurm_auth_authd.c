@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * slurm_auth_authd.h - authentication implementation for Brent Chun's authd
+ * slurm_auth_authd.c - authentication module for Brent Chun's authd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -28,9 +28,6 @@
 #  include <config.h>
 #endif
 
-#if HAVE_AUTHD
-#  include <auth.h>
-#endif
 
 #include <stdio.h>
 #include <unistd.h>
@@ -54,58 +51,77 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#include <src/common/slurm_auth.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/xmalloc.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
+#include <src/common/slurm_auth.h>
 
 #define UNIX_PATH_MAX 108    /* Cribbed from /usr/include/linux/un.h */
 
+#if HAVE_AUTHD
+#  include <auth.h>
+/* Completion of slurm_auth_credentials_t from slurm_auth.h 
+ */
+typedef struct slurm_auth_credentials {
+	credentials creds;	/* Authd's credential structure. */
+	signature sig;		/* RSA hash for the credentials. */
+} slurm_auth_credentials_t;
+#else
+typedef struct credentials {
+	uid_t uid;
+	gid_t gid;
+	time_t valid_from;
+	time_t valid_to;
+}
+typedef struct slurm_auth_credentials {
+	credentials creds;
+} slurm_auth_credentials_t;
+#endif
+
 static int slurm_sign_auth_credentials( slurm_auth_credentials_t *cred );
 
-slurm_auth_credentials_t *
+slurm_auth_t 
 slurm_auth_alloc_credentials( void )
 {
-	return xmalloc( sizeof( slurm_auth_credentials_t ) );
+	return (slurm_auth_t) xmalloc(sizeof(struct slurm_auth_credentials));
 }
 
 
 void
-slurm_auth_free_credentials( slurm_auth_credentials_t *cred )
+slurm_auth_free_credentials( slurm_auth_t cred )
 {
 	xfree( cred );
 }
 
 
 int
-slurm_auth_activate_credentials( slurm_auth_credentials_t *cred,
-				 time_t seconds_to_live )
+slurm_auth_activate_credentials( slurm_auth_t cred, time_t ttl )
 {
-/* By all rights we should use the library provided with authd
- * for doing this, which would make us more robust as authd's
- * implementation changes.  Unfortunately the authd library is
- * built on top of its author's convenience library, which we
- * don't want to require for SLURM users.
- */
+	int rc;
 	/* Initialize credentials with our user and group IDs. */
 	cred->creds.uid = getuid();
 	cred->creds.gid = getgid();
   
 	/* Set the valid time interval. */
 	cred->creds.valid_from = time( NULL );
-	cred->creds.valid_to = cred->creds.valid_from + seconds_to_live;
+	cred->creds.valid_to = cred->creds.valid_from + ttl;
 
 	/* Sign the credentials. */
-	return slurm_sign_auth_credentials( cred );
+	if ((rc = slurm_sign_auth_credentials(cred)) < 0) 
+		return SLURM_FAILURE;
+		
+	return SLURM_SUCCESS;
 }
 
 
 int
-slurm_auth_verify_credentials( slurm_auth_credentials_t *cred )
+slurm_auth_verify_credentials( slurm_auth_t cred )
 {
 #ifdef HAVE_AUTHD
-	return auth_verify_signature(&cred->creds, &cred->sig);
+	int rc = auth_verify_signature(&cred->creds, &cred->sig);
+	if (rc < 0)
+		return SLURM_FAILURE;
 #else
 	return SLURM_SUCCESS;
 #endif
@@ -113,17 +129,17 @@ slurm_auth_verify_credentials( slurm_auth_credentials_t *cred )
 
 
 /* Should really do this with inline accessors. */
-int slurm_auth_uid( slurm_auth_credentials_t *cred )
+uid_t slurm_auth_uid( slurm_auth_t cred )
 {
 	return cred->creds.uid;
 }
 
-int slurm_auth_gid( slurm_auth_credentials_t *cred )
+gid_t slurm_auth_gid( slurm_auth_t cred )
 {
 	return cred->creds.gid;
 }
 
-void slurm_auth_pack_credentials( slurm_auth_credentials_t *cred,
+void slurm_auth_pack_credentials( slurm_auth_t cred,
 				  void **buffer,
 				  uint32_t *length )
 {
@@ -137,27 +153,28 @@ void slurm_auth_pack_credentials( slurm_auth_credentials_t *cred,
 }
 
 
-void slurm_auth_unpack_credentials( slurm_auth_credentials_t **cred_ptr,
+void slurm_auth_unpack_credentials( slurm_auth_t *credp,
 				    void **buffer,
 				    uint32_t *length )
 {
 	uint16_t dummy;
 	char *data;
-	slurm_auth_credentials_t *cred = xmalloc ( sizeof ( slurm_auth_credentials_t ) ) ;
+	slurm_auth_t cred;
 
+	cred = slurm_auth_alloc_credentials();
 	unpack32( &cred->creds.uid, buffer, length );
 	unpack32( &cred->creds.gid, buffer, length );
 	unpack32( (uint32_t *) &cred->creds.valid_from, buffer, length );
 	unpack32( (uint32_t *) &cred->creds.valid_to, buffer, length );
 	unpackmem_ptr( &data, &dummy, buffer, length );
 	memcpy( cred->sig.data, data, sizeof( signature ) );
-	*cred_ptr = cred ;
-
+	*credp = cred;
+	return;
 }
 
 
 static int
-slurm_sign_auth_credentials( slurm_auth_credentials_t *cred )
+slurm_sign_auth_credentials( slurm_auth_t cred )
 {
 #ifdef HAVE_AUTHD
 	return auth_get_signature(&cred->creds, &cred->sig);
