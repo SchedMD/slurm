@@ -221,10 +221,11 @@ record to a buffer.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:<br>
 <span class="commandline"> switch_node</span>&nbsp; &nbsp;&nbsp;(input) a 
 node's switch state record.<br>
-<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) size 
+<span class="commandline"> buf</span>&nbsp; &nbsp;&nbsp;(input/output) point to
+buffer into which the switch state record is to be written.<br> 
 of buf in bytes.<br>
-<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) point to 
-buffer into which the switch state record is to be written.</p>
+<span class="commandline"> size</span>&nbsp; &nbsp;&nbsp;(input) size
+of buf in bytes.</p>
 <p style="margin-left:.2in"><b>Returns</b>: Location of buffer, same as <i>buf</i>.</p>
 
 <h4>Job's Switch Credential Management Functions</h4>
