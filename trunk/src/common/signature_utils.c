@@ -86,7 +86,7 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	if ((fp = fopen(path, "r")) == NULL) {
 		error ("can't open certificate file '%s' : %m ", path);
 		return SLURM_ERROR;
-	};
+	}
 
 	ctx->key.public = NULL;
 	if (!PEM_read_PUBKEY(fp, &ctx->key.public, NULL, NULL)) {

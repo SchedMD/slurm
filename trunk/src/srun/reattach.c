@@ -422,16 +422,6 @@ _p_reattach_task(void *arg)
 }
 
 
-static void 
-_complete_job(job_t *job)
-{
-	if (opt.join) {
-		if (job->stepid != NO_VAL)
-			slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
-		slurm_complete_job(job->jobid, 0, 0);
-	}
-}
-
 int reattach()
 {
 	List          steplist = _step_list_create(opt.attach);

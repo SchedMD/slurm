@@ -45,6 +45,10 @@
 #include "src/srun/opt.h"
 #include "src/srun/fname.h"
 
+#if HAVE_TOTALVIEW
+#include "src/srun/attach.h"
+#endif
+
 typedef struct allocation_info {
 	uint32_t                jobid;
 	uint32_t                stepid;

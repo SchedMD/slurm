@@ -73,7 +73,6 @@ typedef struct task_info {
  */
 static void   _sigterm_handler(int);
 static void   _handle_intr(job_t *, time_t *, time_t *); 
-static inline bool _job_sig_done(job_t *job);
 static void   _sig_thr_setup(sigset_t *set);
 static void * _sig_thr(void *);
 static void   _p_fwd_signal(slurm_msg_t *, job_t *);

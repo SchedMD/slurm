@@ -58,8 +58,8 @@ static int  _insert_revoked_credential_state(revoke_credential_msg_t *, List);
 static void _pack_one_cred(credential_state_t *, Buf);
 static int  _unpack_one_cred(credential_state_t *, Buf);
 
-static int  _init_credential_state(credential_state_t *, 
-		                   slurm_job_credential_t *);
+static int  _init_credential_state( credential_state_t *, 
+		                    slurm_job_credential_t *);
 
 int
 sign_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred)
@@ -138,7 +138,8 @@ verify_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred,
 	return SLURM_SUCCESS;
 }
 
-void print_credential(slurm_job_credential_t * cred)
+void 
+print_credential(slurm_job_credential_t * cred)
 {
 	int i, j = 0;
 	long long_tmp;
@@ -154,7 +155,8 @@ void print_credential(slurm_job_credential_t * cred)
        info("cred signature:%s", sig_str);
 }
 
-int revoke_credential(revoke_credential_msg_t * msg, List list)
+int 
+revoke_credential(revoke_credential_msg_t * msg, List list)
 {
 	time_t              now   = time(NULL);
 	uint32_t            jobid = msg->job_id;
@@ -176,7 +178,9 @@ int revoke_credential(revoke_credential_msg_t * msg, List list)
 	return SLURM_SUCCESS;
 }
 
-int
+
+
+static int
 _is_credential_still_valid(slurm_job_credential_t * credential, List list)
 {
 	uint32_t            jobid = credential->job_id;
@@ -199,7 +203,14 @@ _is_credential_still_valid(slurm_job_credential_t * credential, List list)
 	return SLURM_SUCCESS;
 }
 
-int _clear_expired_revoked_credentials(List list)
+void
+clear_expired_credentials(List l)
+{
+	_clear_expired_revoked_credentials(l);
+}
+
+static int 
+_clear_expired_revoked_credentials(List list)
 {
 	time_t now = time(NULL);
 	ListIterator iterator;
@@ -218,7 +229,8 @@ int _clear_expired_revoked_credentials(List list)
 	return SLURM_SUCCESS;
 }
 
-bool credential_is_cached(List list, uint32_t jobid)
+bool 
+credential_is_cached(List list, uint32_t jobid)
 {
 	ListIterator i;
 	credential_state_t *state;
@@ -232,19 +244,21 @@ bool credential_is_cached(List list, uint32_t jobid)
 	return (state != NULL);
 }
 
-int initialize_credential_state_list(List * list)
+int 
+initialize_credential_state_list(List * list)
 {
 	*list = list_create((ListDelF) _free_credential_state);
 	return SLURM_SUCCESS;
 }
 
-int destroy_credential_state_list(List list)
+int 
+destroy_credential_state_list(List list)
 {
 	list_destroy(list);
 	return SLURM_SUCCESS;
 }
 
-int
+static int
 _init_credential_state(credential_state_t * credential_state,
 		      slurm_job_credential_t * credential)
 {
@@ -254,14 +268,16 @@ _init_credential_state(credential_state_t * credential_state,
 	return SLURM_SUCCESS;
 }
 
-void _free_credential_state(void *state)
+static void 
+_free_credential_state(void *state)
 {
 	if (state) {
 		xfree(state);
 	}
 }
 
-int _insert_credential_state(slurm_job_credential_t * credential, List list)
+static int 
+_insert_credential_state(slurm_job_credential_t * credential, List list)
 {
 	credential_state_t *s = xmalloc(sizeof(*s));
 
@@ -292,7 +308,8 @@ _insert_revoked_credential_state(revoke_credential_msg_t *msg, List list)
  * IN/OUT buffer	- existing buffer into which the credential
  *			  information should be stored
  */ 
-void pack_credential_list(List list, Buf buffer)
+void 
+pack_credential_list(List list, Buf buffer)
 {
 	ListIterator        i = NULL;
 	credential_state_t *s = NULL;
@@ -311,7 +328,8 @@ void pack_credential_list(List list, Buf buffer)
  *			  information should be read
  * RET int		- zero or error code
  */ 
-int unpack_credential_list(List list, Buf buffer)
+int 
+unpack_credential_list(List list, Buf buffer)
 {
 	credential_state_t *s = NULL;
 
@@ -345,7 +363,7 @@ _unpack_one_cred(credential_state_t *state, Buf buffer)
 	safe_unpack16(&state->revoked,		buffer);
 	safe_unpack16(&state->procs_allocated,	buffer);
 	safe_unpack16(&state->total_procs,	buffer);
-	unpack_time(&state->revoke_time,		buffer);
+	unpack_time(&state->revoke_time,	buffer);
 	unpack_time(&state->expiration,		buffer);
 	return SLURM_SUCCESS;
 

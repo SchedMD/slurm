@@ -1,7 +1,7 @@
-# 
-#                   Sample configuration file for SLURM
 #  $Id$
-
+############################################################################### 
+#                   Sample configuration file for SLURM
+###############################################################################
 #
 # This file holds the system-wide SLURM configuration. It is read
 # by SLURM clients, daemons, and the SLURM API to determine where
@@ -13,6 +13,8 @@
 # Many of the config values are not mandatory, and so may be left
 # out of the config file. We will attempt to list the default 
 # values for those parameters in this file.
+#
+###############################################################################
 
 #  
 #     SLURM daemon configuration
@@ -98,11 +100,11 @@
 #
 #    "SlurmdDebug"      : verbosity of slurmd log messages (0-7, see above)
 #
-#    "SlurmctldLogfile" : fully qualified pathname to slurmctld logfile
+#    "SlurmctldLogFile" : fully qualified pathname to slurmctld logfile
 #                         (If a logfile is set for slurmctld, logging via
 #                          syslog will be turned off)
 #
-#    "SlurmdLogfile"    : fully qualified pathname to slurmd logfile
+#    "SlurmdLogFile"    : fully qualified pathname to slurmd logfile
 #                         (same caveat as SlurmctldLogfile above)
 #
 # Example:
