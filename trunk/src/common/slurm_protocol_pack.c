@@ -203,6 +203,10 @@ static void _pack_batch_job_resp_msg(batch_launch_response_msg_t * msg,
 static int  _unpack_batch_job_resp_msg(batch_launch_response_msg_t ** msg, 
 				       Buf buffer);
 
+static void _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer);
+static int  _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, 
+				      Buf buffer);
+
 static void _pack_buffer_msg(slurm_msg_t * msg, Buf buffer);
 
 /* pack_header
@@ -411,8 +415,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 break;
 		/********  job_step_id_t Messages  ********/
 	 case REQUEST_JOB_INFO:
-	 case REQUEST_CANCEL_JOB_STEP:
 		 _pack_job_step_id_msg((job_step_id_t *) msg->data, buffer);
+		 break;
+	 case REQUEST_CANCEL_JOB_STEP:
+		 _pack_job_step_kill_msg((job_step_kill_msg_t *) 
+					 msg->data, buffer);
 		 break;
 	 case REQUEST_COMPLETE_JOB_STEP:
 		 _pack_complete_job_step_msg((complete_job_step_msg_t *)
@@ -619,9 +626,12 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 break;
 		/********  job_step_id_t Messages  ********/
 	 case REQUEST_JOB_INFO:
-	 case REQUEST_CANCEL_JOB_STEP:
 		 rc = _unpack_job_step_id_msg((job_step_id_t **)
 					      & (msg->data), buffer);
+		 break;
+	 case REQUEST_CANCEL_JOB_STEP:
+		 rc = _unpack_job_step_kill_msg((job_step_kill_msg_t **)
+					        & (msg->data), buffer);
 		 break;
 	 case REQUEST_COMPLETE_JOB_STEP:
 		 rc = _unpack_complete_job_step_msg((complete_job_step_msg_t
@@ -2204,6 +2214,45 @@ _unpack_job_step_id_msg(job_step_id_t ** msg_ptr, Buf buffer)
 	safe_unpack_time(&msg->last_update, buffer);
 	safe_unpack32(&msg->job_id, buffer);
 	safe_unpack32(&msg->job_step_id, buffer);
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	FREE_NULL(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+/* _pack_job_step_kill_msg
+ * packs a slurm job step signal message
+ * IN msg - pointer to the job step signal message
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
+ *			automatically updated
+ */
+static void
+_pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer)
+{
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_step_id, buffer);
+	pack16(msg->signal, buffer);
+}
+
+/* _unpack_job_step_kill_msg
+ * unpacks a slurm job step signal message
+ * OUT msg_ptr - pointer to the job step signal message buffer
+ * IN/OUT buffer - source of the unpack, contains pointers that are 
+ *			automatically updated
+ */
+static int
+_unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, Buf buffer)
+{
+	job_step_kill_msg_t *msg;
+
+	msg = xmalloc(sizeof(job_step_kill_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->job_step_id, buffer);
+	safe_unpack16(&msg->signal, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:

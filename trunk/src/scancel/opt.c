@@ -31,6 +31,7 @@
 #endif
 
 #include <pwd.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>		/* strcpy, strncasecmp */
 #include <sys/types.h>
@@ -47,6 +48,8 @@
 #include <src/scancel/scancel.h>
 
 #define __DEBUG 0
+
+#define SIZE(a) (sizeof(a)/sizeof(a[0]))
 
 /*---[ popt definitions ]------------------------------------------------*/
 
@@ -65,6 +68,7 @@
 #define OPT_USER	0x07
 #define OPT_VERBOSE	0x08
 #define OPT_VERSION	0x09
+#define OPT_SIGNAL	0x0a
 
 
 #ifndef POPT_TABLEEND
@@ -78,7 +82,9 @@ struct poptOption options[] = {
 	 "name of job", "name"},
 	{"partition", 'p', POPT_ARG_STRING, NULL, OPT_PARTITION,
 	 "name of job's partition", "name"},
-	{"state", 's', POPT_ARG_STRING, NULL, OPT_STATE,
+	{"signal", 's', POPT_ARG_STRING, NULL, OPT_SIGNAL,
+	 "signal name or number", "name | integer"},
+	{"state", 't', POPT_ARG_STRING, NULL, OPT_STATE,
 	 "name of job's state", "PENDING | RUNNING"},
 	{"user", 'u', POPT_ARG_STRING, NULL, OPT_USER,
 	 "name of job's owner", "name"},
@@ -88,6 +94,22 @@ struct poptOption options[] = {
 	 "report the current version", },
 	POPT_AUTOHELP
 	POPT_TABLEEND
+};
+
+struct signv {
+	char *name;
+	uint16_t val;
+} sys_signame[ ] = {
+	{ "HUP",	SIGHUP },
+	{ "INT",	SIGINT },
+	{ "QUIT",	SIGQUIT },
+	{ "KILL",	SIGKILL },
+	{ "ALRM",	SIGALRM },
+	{ "TERM",	SIGTERM },
+	{ "USR1",	SIGUSR1 },
+	{ "USR2",	SIGUSR2 },
+	{ "STOP",	SIGSTOP },
+	{ "CONT",	SIGCONT }
 };
 
 /*---[ end popt definitions ]---------------------------------------------*/
@@ -118,6 +140,10 @@ static void print_version (void);
 /* translate job state name to number
  */
 static enum job_states xlate_state_name(const char *state_name);
+
+/* translate name name to number
+ */
+static uint16_t xlate_signal_name(const char *signal_name);
 
 /* list known options and their settings 
  */
@@ -165,11 +191,39 @@ static enum job_states xlate_state_name(const char *state_name)
 		xstrcat(state_names, ",");
 		xstrcat(state_names, job_state_string(i));
 	}
-	fprintf (stderr, "Valid job states include: %s", state_names);
+	fprintf (stderr, "Valid job states include: %s\n", state_names);
 	xfree (state_names);
 	exit (1);
 }
 
+
+static uint16_t xlate_signal_name(const char *signal_name)
+{
+	uint16_t sig_num;
+	char *end_ptr, *sig_names;
+	int i;
+
+	sig_num = (uint16_t) strtol(signal_name, &end_ptr, 10);
+	if ((*end_ptr == '\0') || (sig_num != 0))
+		return sig_num;
+	
+	for (i=0; i<SIZE(sys_signame); i++) {
+		if (strcasecmp(sys_signame[i].name, signal_name) == 0) {
+			xfree(sig_names);
+			return sys_signame[i].val;
+		}
+		if (i == 0)
+			sig_names = xstrdup(sys_signame[i].name);
+		else {
+			xstrcat(sig_names, ",");
+			xstrcat(sig_names, sys_signame[i].name);
+		}			
+	}
+	fprintf (stderr, "Invalid job signal: %s\n", signal_name);
+	fprintf (stderr, "Valid signals include: %s\n", sig_names);
+	xfree(sig_names);
+	exit(1);
+}
 
 static void print_version (void)
 {
@@ -185,6 +239,7 @@ static void opt_default()
 	opt.job_cnt = 0;
 	opt.job_name = NULL;
 	opt.partition = NULL;
+	opt.signal = SIGKILL;
 	opt.state = JOB_END;
 	opt.user_name = NULL;
 	opt.user_id = 0;
@@ -277,6 +332,10 @@ static void opt_args(int ac, char **av)
 
 		case OPT_PARTITION:
 			opt.partition = xstrdup(arg);
+			break;
+
+		case OPT_SIGNAL:
+			opt.signal = xlate_signal_name(arg);
 			break;
 
 		case OPT_STATE:
@@ -415,6 +474,7 @@ opt_list(void)
 	info("interactive    : %s", tf_(opt.interactive));
 	info("job_name       : %s", opt.job_name);
 	info("partition      : %s", opt.partition);
+	info("signal         : %u", opt.signal);
 	info("state          : %s", job_state_string(opt.state));
 	info("user_id        : %u", opt.user_id);
 	info("user_name      : %s", opt.user_name);

@@ -1,21 +1,25 @@
-.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm job cancel calls"
+.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm job cancel calls"
 .SH "NAME"
-slurm_cancel_job, slurm_cancel_job_step \- Slurm job cancel calls
+slurm_kill_job, slurm_kill_job_step \- Slurm job signal calls
 .SH "SYNTAX"
 .LP 
 #include <slurm.h>
 .LP
-int \fBslurm_cancel_job\fR (
-.br 
-	uint32_t \fIjob_id\fP
-.br 
-);
-.LP
-int \fBslurm_cancel_job_step\fR (
+int \fBslurm_kill_job\fR (
 .br 
 	uint32_t \fIjob_id\fP,
 .br 
-	uint32_t \fIjob_step_id\fP
+	uint16_t \fIsignal\fP
+.br 
+);
+.LP
+int \fBslurm_kill_job_step\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_step_id\fP,
+.br 
+	uint16_t \fIsignal\fP
 .br 
 );
 .SH "ARGUMENTS"
@@ -26,17 +30,18 @@ Slurm job id number.
 .TP
 \fIjob_step_id\fp
 Slurm job step id number.
+.TP
+\fIsignal\fp
+Signal to be sent to the job or job step.
 .SH "DESCRIPTION"
 .LP 
-\fBslurm_cancel_job\fR Request the cancellation of a running or pending job. This function 
+\fBslurm_kill_job\fR Request that a signal be sent to a job and all of its job steps. If the job is pending, it will be terminated immediately.This function 
 may only be successfully executed by the job's owner or user root.
 .LP 
-\fBslurm_cancel_job_step\fR Request the cancellation of a running job step. This function 
-may only be successfully executed by the job's owner or user root.
+\fBslurm_kill_job_step\fR Request that a signal be sent to a specific job step. This function may only be successfully executed by the job's owner or user root.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and Slurm error code is set 
-appropriately.
+On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.

@@ -25,7 +25,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <unistd.h>
@@ -51,8 +51,9 @@
 #define MAX_CANCEL_RETRY 10
 
 static void cancel_jobs (void);
-static void cancel_job_id (uint32_t job_id);
-static void cancel_step_id (uint32_t job_id, uint32_t step_id);
+static void _cancel_job_id (uint32_t job_id, uint16_t signal);
+static void _cancel_step_id (uint32_t job_id, uint32_t step_id, 
+			     uint16_t signal);
 static int  confirmation (int i);
 static void filter_job_records (void);
 static void load_job_records (void);
@@ -173,10 +174,12 @@ cancel_jobs (void)
 				if (opt.interactive && (confirmation(i) == 0))
 					break;
 				if (opt.step_id[j] == NO_VAL)
-					cancel_job_id (opt.job_id[j]);
+					_cancel_job_id (opt.job_id[j], 
+							opt.signal);
 				else
-					cancel_step_id (opt.job_id[j], 
-					                opt.step_id[j]);
+					_cancel_step_id (opt.job_id[j], 
+					                opt.step_id[j],
+							opt.signal);
 				break;
 			}
 			if (i >= job_buffer_ptr->record_count)
@@ -187,10 +190,12 @@ cancel_jobs (void)
 	} else if (opt.job_cnt) {	/* delete specific jobs */
 		for (j = 0; j < opt.job_cnt; j++ ) {
 			if (opt.step_id[j] == NO_VAL)
-				cancel_job_id (opt.job_id[j]);
+				_cancel_job_id (opt.job_id[j], 
+						opt.signal);
 			else
-				cancel_step_id (opt.job_id[j], 
-				                opt.step_id[j]);
+				_cancel_step_id (opt.job_id[j], 
+				                opt.step_id[j], 
+						opt.signal);
 		}
 
 	} else {		/* delete all jobs per filtering */
@@ -200,19 +205,19 @@ cancel_jobs (void)
 				continue;
 			if (opt.interactive && (confirmation(i) == 0))
 				continue;
-			cancel_job_id (job_ptr[i].job_id);
+			_cancel_job_id (job_ptr[i].job_id, opt.signal);
 		}
 	}
 }
 
 static void
-cancel_job_id (uint32_t job_id)
+_cancel_job_id (uint32_t job_id, uint16_t signal)
 {
 	int error_code, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		verbose("cancelling job %u", job_id);
-		error_code = slurm_cancel_job (job_id);
+		verbose("Killing job %u", job_id);
+		error_code = slurm_kill_job (job_id, signal);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
@@ -220,19 +225,19 @@ cancel_job_id (uint32_t job_id)
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		fprintf (stderr, "Cancel job error on job id %u: %s\n", 
+		fprintf (stderr, "Kill job error on job id %u: %s\n", 
 			job_id, slurm_strerror(slurm_get_errno()));
 	}
 }
 
 static void
-cancel_step_id (uint32_t job_id, uint32_t step_id)
+_cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 {
 	int error_code, i;
 
 	for (i=0; i<MAX_CANCEL_RETRY; i++) {
-		verbose("cancelling steo %u.%u", job_id, step_id);
-		error_code = slurm_cancel_job_step (job_id, step_id);
+		verbose("Killing step %u.%u", job_id, step_id);
+		error_code = slurm_kill_job_step (job_id, step_id, signal);
 		if ((error_code == 0) || 
 		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
 			break;
@@ -240,7 +245,7 @@ cancel_step_id (uint32_t job_id, uint32_t step_id)
 		sleep ( 5 + i );
 	}
 	if (error_code) {
-		fprintf (stderr, "Cancel job error on job id %u.%u: %s\n", 
+		fprintf (stderr, "Kill job error on job id %u.%u: %s\n", 
 			job_id, step_id, slurm_strerror(slurm_get_errno()));
 	}
 }

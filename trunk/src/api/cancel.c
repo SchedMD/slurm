@@ -36,31 +36,33 @@
 #include "src/common/slurm_protocol_api.h"
 
 /*
- * slurm_cancel_job - cancel an existing job and all of its steps 
+ * slurm_kill_job - send the specified signal to all steps of an existing job
  * IN job_id - the job's id
+ * IN signal - signal number
  * RET 0 on success or slurm error code
  */
 int 
-slurm_cancel_job ( uint32_t job_id )
+slurm_kill_job ( uint32_t job_id, uint16_t signal )
 {
-	return slurm_cancel_job_step ( job_id, NO_VAL);
+	return slurm_kill_job_step ( job_id, NO_VAL, signal );
 }
 
 /*
- * slurm_cancel_job_step - cancel a specific job step
+ * slurm_kill_job_step - send the specified signal to an existing job step
  * IN job_id - the job's id
  * IN step_id - the job step's id
+ * IN signal - signal number
  * RET 0 on success or slurm error code
  */
 int 
-slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
+slurm_kill_job_step ( uint32_t job_id, uint32_t step_id, uint16_t signal )
 {
 	int msg_size ;
 	int rc ;
 	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
-	job_step_id_msg_t job_step_id_msg ;
+	job_step_kill_msg_t job_step_kill_msg ;
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
@@ -71,10 +73,11 @@ slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
 	}
 
 	/* send request message */
-	job_step_id_msg . job_id = job_id ;
-	job_step_id_msg . job_step_id = step_id ;
+	job_step_kill_msg . job_id      = job_id ;
+	job_step_kill_msg . job_step_id = step_id ;
+	job_step_kill_msg . signal      = signal ;
 	request_msg . msg_type = REQUEST_CANCEL_JOB_STEP ;
-	request_msg . data = &job_step_id_msg ;
+	request_msg . data = &job_step_kill_msg ;
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
 			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
