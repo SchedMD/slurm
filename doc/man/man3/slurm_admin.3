@@ -6,6 +6,14 @@
 .LP 
 #include <slurm.h>
 .LP 
+void \fBslurm_free_key\fR (
+.br
+	slurm_key_t *\fIslurm_key_ptr\fP
+.br
+);
+.LP 
+slurm_key_t *\fBslurm_get_key\fR ( );
+.LP 
 int \fBslurm_reconfigure\fR ( );
 .LP
 int \fBslurm_update_job\fR (
@@ -34,6 +42,9 @@ int \fBslurm_update_partition\fR (
 .SH "ARGUMENTS"
 .LP 
 .TP 
+\fIslurm_key_ptr\fP
+Specifies the pointer to a Slurm generated key as returned by \fBslurm_get_key\fR.
+.TP
 \fIupdate_job_msg_ptr\fP
 Specifies the pointer to a job update request specification. See slurm.h for full details on the data structure's contents. 
 .TP 
@@ -44,9 +55,13 @@ Specifies the pointer to a node update request specification. See slurm.h for fu
 Specifies the pointer to a partition update request specification. See slurm.h for full details on the data structure's contents. 
 .SH "DESCRIPTION"
 .LP 
-\fBslurm_reconfigure\fR Request that the Slurm controller re-read its configuration file. The new configuration parameters take effect immediately. This function may only be successfully executed by user root.
+\fBslurm_free_key\fR Release the storage generated in response to a call of the function \fBslurm_get_key\fR.
 .LP 
+\fBslurm_get_key\fR Generate a key authorizing use of some Slurm partitions (depending upon partition configuration. This storage should be released by executing \fBslurm_free_key\fR. This function may only be successfully executed by user root.
+.LP
 \fBslurm_init_part_desc_msg\fR Initialize the contents of a partition descriptor with default values. Execute this function before executing \fBslurm_update_part\fR.
+.LP 
+\fBslurm_reconfigure\fR Request that the Slurm controller re-read its configuration file. The new configuration parameters take effect immediately. This function may only be successfully executed by user root.
 .LP 
 \fBslurm_update_job\fR Request that the configuration of a job be updated. Note that most, but not all paramters of a job may be changed by this function. Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function to avoid making unanticipated changes to a job's configuration. This function may only be successfully executed by user root.
 .LP 
@@ -81,6 +96,10 @@ int main (int argc, char *argv[])
 	update_node_msg_t update_node_msg;
 .br
 	partition_desc_msg_t update_part_msg ;
+.br 
+	resource_allocation_response_msg_t* slurm_alloc_msg_ptr ;
+.br
+	slurm_key_t *slurm_key_ptr;
 .LP 
 	if (slurm_reconfigure ( )) {
 .br
@@ -126,6 +145,34 @@ int main (int argc, char *argv[])
 		exit (1);
 .br 
 	}
+.LP
+	slurm_key_ptr = slurm_get_key ( );
+.br
+	slurm_init_part_desc_msg ( &update_part_msg );
+.br 
+	job_mesg. name = ("job01\0");
+.br 
+	job_mesg. partition = ("reserved\0");;
+.br 
+	job_mesg. num_nodes = 400;
+.br
+	job_mesg. slurm_key_ptr = slurm_key_ptr;
+.br 
+	if (slurm_allocate_resources(&job_desc_msg,&slurm_alloc_msg_ptr,true)) {
+.br
+		printf ("allocate errno %d\n", slurm_get_errno());
+.br 
+		exit (1);
+.br 
+	}
+.br 
+	printf ("Allocated nodes %s to job_id %u\n", 
+.br 
+		slurm_alloc_msg_ptr->node_list, slurm_alloc_msg_ptr->job_id );
+.br
+	slurm_free_resource_allocation_response_msg ( slurm_alloc_msg_ptr );
+.br 
+	slurm_free_key ( slurm_key_ptr );
 .br 
 	exit (0);
 .br 
@@ -133,4 +180,4 @@ int main (int argc, char *argv[])
 .ec
 .SH "SEE ALSO"
 .LP 
-\fBscontrol\fR(1), \fBslurm_get_errno\fR(3), \fBslurm_init_job_desc_msg\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
+\fBscontrol\fR(1), \fBslurm_allocate_resources\fR(3), \fBslurm_get_errno\fR(3), \fBslurm_init_job_desc_msg\fR(3), \fBslurm_job_will_run\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3), \fBslurm_submit_batch_job\fR(3)
