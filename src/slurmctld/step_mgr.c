@@ -291,7 +291,7 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 	}
 
 	agent_args->msg_args = kill_tasks_msg;
-	debug("Spawning signal agent");
+	debug2("Spawning signal agent");
 	if (pthread_attr_init(&attr_agent))
 		fatal("pthread_attr_init error %m");
 	if (pthread_attr_setdetachstate
