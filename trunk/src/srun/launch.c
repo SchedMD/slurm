@@ -69,6 +69,11 @@ launch(void *arg)
 	msg.cwd = opt.cwd;
 	slurm_set_addr_char(&msg.response_addr, 
 		 	    ntohs(job->jaddr.sin_port), hostname);
+
+#if HAVE_LIBELAN3
+	msg.qsw_job = job->qsw_job;
+#endif
+	debug("setting iopart to %s:%d", hostname, ntohs(job->ioport));
 	slurm_set_addr_char(&msg.streams , ntohs(job->ioport), hostname); 
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
@@ -84,6 +89,7 @@ launch(void *arg)
 		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(), 
 				    ntohl(job->iaddr[i]));
 
+		debug2("launching on host %s", job->host[i]);
                 print_launch_msg(&msg);
 		if (slurm_send_only_node_msg(&req) < 0)
 			error("Unable to send launch request: %s",
