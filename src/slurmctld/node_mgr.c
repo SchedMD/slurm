@@ -653,6 +653,7 @@ load_node_state ( void )
 			xrealloc(buffer, buffer_allocated);
 			buf_ptr = (void *) (buffer + buffer_size);
 		}
+		buf_ptr = (void *) buffer;
 		buffer_size += buffer_used;
 		close (state_fd);
 		if (buffer_used < 0) 

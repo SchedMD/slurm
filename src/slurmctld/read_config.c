@@ -654,8 +654,7 @@ parse_part_spec (char *in_line) {
 	default_str = shared_str = state_str = (char *) NULL;
 	max_time_val = max_nodes_val = root_val = default_val = state_val = shared_val = NO_VAL;
 
-	if ((error_code =
-	    load_string (&partition_name, "PartitionName=", in_line)))
+	if ((error_code = load_string (&partition_name, "PartitionName=", in_line)))
 		return error_code;
 	if (partition_name == NULL)
 		return 0;	/* no partition info */

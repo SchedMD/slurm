@@ -204,6 +204,10 @@ extern void  allocate_nodes (unsigned *bitmap);
  */
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
+/* build_node_details - give a node bitmap, return cpu counts for those nodes */
+extern void build_node_details (bitstr_t *node_bitmap, 
+		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t **cpu_count_reps);
+
 /* count_cpus - report how many cpus are associated with the identified nodes */
 extern int  count_cpus (unsigned *bitmap);
 
