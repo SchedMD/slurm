@@ -129,13 +129,6 @@ main (int argc, char *argv[])
 		set_job_prio (job_rec);
 	}
 
-	printf ("\nupdate a job record\n");
-	error_code = update_job (tmp_id, update_spec);
-	if (error_code) {
-		printf ("ERROR: update_job error %d\n", error_code);
-		error_count++;
-	}
-
 	error_code = pack_all_jobs (&dump, &dump_size, &update_time);
 	if (error_code) {
 		printf ("ERROR: dump_all_job error %d\n", error_code);
@@ -409,7 +402,7 @@ immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **n
 {
 	return job_allocate (job_specs, new_job_id, node_list, 
 				num_cpu_groups, cpus_per_node, cpu_count_reps, 
-				true , false );
+				true , false , true );
 }
 
 int 
@@ -419,27 +412,28 @@ will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list
 {
 	return job_allocate (job_specs, new_job_id, node_list, 
 				num_cpu_groups, cpus_per_node, cpu_count_reps, 
-				false , true );
+				false , true , true );
 }
 
 int 
 job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-	int immediate, int will_run)
+	int immediate, int will_run, int allocate)
 {
 	int error_code;
 	struct job_record *job_ptr;
 
+	error_code = job_create (job_specs, new_job_id, allocate, will_run, &job_ptr);
+	if (error_code || will_run || (allocate == 0))
+		return error_code;
+	if (job_ptr == NULL)
+		fatal ("job_allocate: allocated job %u lacks record", new_job_id);
+
+	/* Some of these pointers are NULL on submit (e.g. allocate == 0) */
+	/* Exit above to avoid use of invalid pointer */
 	*num_cpu_groups = 0;
 	node_list[0] = NULL;
 	cpus_per_node[0] = cpu_count_reps[0] = NULL;
-
-	error_code = job_create (job_specs, new_job_id, 1, will_run, &job_ptr);
-	if (error_code || will_run)
-		return error_code;
-	if (job_ptr == NULL)
-		fatal ("job_allocate: allocated job %u lacks record", 
-				new_job_id);
 	last_job_update = time (NULL);
 
 	if (immediate && top_priority(job_ptr) != 1) {

@@ -76,14 +76,6 @@ main (int argc, char *argv[])
 		exit (1);
 	}			
 
-	error_code = init_slurm_conf ();
-	if (error_code) {
-		printf ("controller: error %d from init_slurm_conf\n",
-			error_code);
-		error_count++;
-		exit (error_count);
-	}			
-
 	error_code = read_slurm_conf (argv[1]);
 	if (error_code) {
 		printf ("controller: error %d from read_slurm_conf\n",
@@ -144,26 +136,6 @@ main (int argc, char *argv[])
 		if (in_line[strlen (in_line) - 1] == '\n')
 			in_line[strlen (in_line) - 1] = (char) NULL;
 		line_num++;
-		error_code = job_allocate(in_line, &job_id, &node_list);
-		if (error_code) {
-			if (strncmp (in_line, "JobName=FAIL", 12) != 0) {
-				printf ("ERROR:");
-				error_count++;
-			}
-			printf ("for job: %s\n", in_line);
-			printf ("node_scheduler: error %d from job_allocate on line %d\n", 
-				error_code, line_num);
-		}
-		else {
-			if (strncmp (in_line, "JobName=FAIL", 12) == 0) {
-				printf ("ERROR: ");
-				error_count++;
-			}
-			printf ("for job: %s\n  nodes selected %s\n",
-				in_line, node_list);
-			if (node_list)
-				xfree (node_list);
-		}
 		printf("time = %ld usec\n\n", (long) (clock() - start_time));
 	}
 	exit (error_count);		

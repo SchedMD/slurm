@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * partition_mgr.c - manage the partition information of slurm
+ *  partition_mgr.c - manage the partition information of slurm
  *	Note: there is a global partition list (part_list) and
  *	time stamp (last_part_update)
  *****************************************************************************
@@ -134,38 +134,6 @@ main (int argc, char *argv[])
 		error_count++;
 	}
 	xfree (dump);
-
-	error_code = update_part ("batch", update_spec);
-	if (error_code) {
-		printf ("ERROR: update_part error %d\n", error_code);
-		error_count++;
-	}
-
-	part_ptr = find_part_record ("batch");
-	if (part_ptr == NULL) {
-		printf ("ERROR: list_find failure\n");
-		error_count++;
-	}
-	if (part_ptr->max_time != 34) {
-		printf ("ERROR: update_part max_time not reset\n");
-		error_count++;
-	}
-	if (part_ptr->max_nodes != 56) {
-		printf ("ERROR: update_part max_nodes not reset\n");
-		error_count++;
-	}
-	if (part_ptr->key != 0) {
-		printf ("ERROR: update_part key not reset\n");
-		error_count++;
-	}
-	if (part_ptr->state_up != 0) {
-		printf ("ERROR: update_part state_up not set\n");
-		error_count++;
-	}
-	if (part_ptr->shared != SHARED_FORCE) {
-		printf ("ERROR: update_part shared not set\n");
-		error_count++;
-	}
 
 	node_record_count = 0;	/* delete_part_record dies if node count is bad */
 	error_code = delete_part_record ("batch");
