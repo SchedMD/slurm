@@ -342,7 +342,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 		case SIGTERM:	/* kill -15 */
 			info("Terminate signal (SIGINT or SIGTERM) received");
 			shutdown_time = time(NULL);
-			slurm_cred_ctx_destroy(cred_ctx);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			_slurmctld_shutdown();
 			pthread_join(thread_id_rpc, NULL);
