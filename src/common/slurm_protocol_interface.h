@@ -99,20 +99,20 @@ extern int _slurm_socket (int __domain, int __type, int __protocol)  ;
 extern int _slurm_socketpair (int __domain, int __type, int __protocol, int __fds[2]) ;
 
 /* Give the socket FD the local address ADDR (which is LEN bytes long).  */
-extern int _slurm_bind (int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len) ;
+extern int _slurm_bind (int __fd, struct sockaddr const * __addr, socklen_t __len) ;
 	     
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
-extern int _slurm_getsockname (int __fd, __SOCKADDR_ARG __addr, socklen_t *__restrict __len) ;
+extern int _slurm_getsockname (int __fd, struct sockaddr * __addr, socklen_t *__restrict __len) ;
 
 /* Open a connection on socket FD to peer at ADDR (which LEN bytes long).
  * For connectionless socket types, just set the default address to send to
  * and the only address from which to accept transmissions.
  * Return 0 on success, -1 for errors.  */
-extern int _slurm_connect (int __fd, __CONST_SOCKADDR_ARG __addr, socklen_t __len) ;
+extern int _slurm_connect (int __fd, struct sockaddr const * __addr, socklen_t __len) ;
 
 /* Put the address of the peer connected to socket FD into *ADDR
  * (which is *LEN bytes long), and its actual length into *LEN.  */
-extern int _slurm_getpeername (int __fd, __SOCKADDR_ARG __addr, socklen_t *__restrict __len) ;
+extern int _slurm_getpeername (int __fd, struct sockaddr * __addr, socklen_t *__restrict __len) ;
 
 /* Send N bytes of BUF to socket FD.  Returns the number sent or -1.  */
 extern ssize_t _slurm_send (int __fd, __const void *__buf, size_t __n, int __flags) ;
@@ -125,13 +125,13 @@ extern ssize_t _slurm_read (int __fd, void *__buf, size_t __n) ;
 
 /* Send N bytes of BUF on socket FD to peer at address ADDR (which is
  * ADDR_LEN bytes long).  Returns the number sent, or -1 for errors.  */
-extern ssize_t _slurm_sendto (int __fd, __const void *__buf, size_t __n, int __flags, __CONST_SOCKADDR_ARG __addr, socklen_t __addr_len) ;
+extern ssize_t _slurm_sendto (int __fd, __const void *__buf, size_t __n, int __flags, struct sockaddr const * __addr, socklen_t __addr_len) ;
 
 /* Read N bytes into BUF through socket FD.
  * If ADDR is not NULL, fill in *ADDR_LEN bytes of it with tha address of
  * the sender, and store the actual size of the address in *ADDR_LEN.
  * Returns the number of bytes read or -1 for errors.  */
-extern ssize_t _slurm_recvfrom (int __fd, void *__restrict __buf, size_t __n, int __flags, __SOCKADDR_ARG __addr, socklen_t *__restrict __addr_len) ;
+extern ssize_t _slurm_recvfrom (int __fd, void *__restrict __buf, size_t __n, int __flags, struct sockaddr * __addr, socklen_t *__restrict __addr_len) ;
 
 /* Send a msg described MESSAGE on socket FD.
  * Returns the number of bytes sent, or -1 for errors.  */
@@ -161,7 +161,7 @@ extern int _slurm_listen (int __fd, int __n) ;
  * set *ADDR (which is *ADDR_LEN bytes long) to the address of the connecting
  * peer and *ADDR_LEN to the address's actual length, and return the
  * new socket's descriptor, or -1 for errors.  */
-extern int _slurm_accept (int __fd, __SOCKADDR_ARG __addr, socklen_t *__restrict __addr_len) ;
+extern int _slurm_accept (int __fd, struct sockaddr * __addr, socklen_t *__restrict __addr_len) ;
 
 /* Shut down all or part of the connection open on socket FD.
  * HOW determines what to shut down:
