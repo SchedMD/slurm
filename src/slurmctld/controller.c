@@ -151,11 +151,6 @@ int main(int argc, char *argv[])
 		      SLURM_CONFIG_FILE);
 	update_logging();
 	_kill_old_slurmctld();
-	/* Insure that StateSaveLocation directory (if it already 
-	 *   exists) is owned by SlurmUser */
-	if (slurmctld_conf.state_save_location)
-		(void) chown(slurmctld_conf.state_save_location, 
-				slurmctld_conf.slurm_user_id, -1);
 
 	/* 
 	 * Need to create pidfile here in case we setuid() below
@@ -1063,11 +1058,22 @@ _init_pidfile(void)
 extern int
 set_slurmctld_state_loc(void)
 {
+	char *tmp;
+
 	if ((mkdir(slurmctld_conf.state_save_location, 0755) < 0) && 
 	    (errno != EEXIST)) {
 		fatal("mkdir(%s): %m", slurmctld_conf.state_save_location);
 		return SLURM_ERROR;
 	}
+
+	tmp = xstrdup(slurmctld_conf.state_save_location);
+	xstrcat(tmp, "/slurm_mkdir_test");
+	if ((mkdir(tmp, 0755) < 0) && (errno != EEXIST)) {
+		fatal("mkdir(%s): %m", tmp);
+		return SLURM_ERROR;
+	}
+	(void) unlink(tmp);
+	xfree(tmp);
 
 	/*
 	 * Only chdir() to spool directory if slurmctld will be 

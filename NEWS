@@ -14,8 +14,6 @@ documents those changes that are of interest to users and admins.
     for filtering node states.
  -- Fix bug in sinfo to properly process specified state filter including
     "*" suffix for non-responding nodes.
- -- Explicitly set the owner of StateSaveLocation to SlurmUser on 
-    slurmctld startup
  -- Create StateSaveLocation directory if changes via slurmctld reconfig
 
 * Changes in SLURM 0.3.0.0-pre7
