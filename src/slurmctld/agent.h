@@ -35,7 +35,7 @@
 #define AGENT_IS_THREAD  	1	/* set if agent itself a thread of 
 					 * slurmctld, 0 for function call */
 #define AGENT_THREAD_COUNT	10	/* maximum active agent threads */
-#define COMMAND_TIMEOUT 	5	/* seconds */
+#define COMMAND_TIMEOUT 	10	/* command requeue or error, seconds */
 
 typedef struct agent_arg {
 	uint32_t	node_count;	/* number of nodes to communicate 
