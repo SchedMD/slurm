@@ -114,6 +114,10 @@ extern int slurm_load_partitions (time_t update_time, partition_info_msg_t **par
 extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
 		submit_response_msg_t ** slurm_alloc_msg );
 
+/* slurm_job_step_create - create a job step for a given job id */
+extern int slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg, 
+			job_step_create_response_msg_t ** slurm_step_alloc_resp_msg );
+
 extern int slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, job_step_info_response_msg_t **step_response_pptr);
 extern void  slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_step_info_msg_ptr );
 extern void slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr );
