@@ -660,7 +660,7 @@ static int _delete_old_partitions(void)
 				info("Above error is ok. "
 					"Partition %s doesn't exist.",
 					part_name);
-				//break;
+				continue;
 			}
 			rm_remove_partition(part_name);
 			//sleep(3);
