@@ -85,7 +85,7 @@ This file must be accessible to the ControlMachine and BackupController.
 to execute on every compute server node (the default value is "/usr/local/SLURM/Slurmd.Server").
 This file must be accessible to every SLURM compute server.
 
-dt>Prolog
+<dt>Prolog
 <dd>This program is executed on each node allocated to a job prior to its initiation. 
 By default no prolog is executed. 
 
@@ -106,15 +106,15 @@ and the units are seconds.
 
 <dt>ServerTimeout
 <dd>How long to wait for the ServerDaemon to respond before assuming it 
-has failed and declaring the node DOWN and terminating any job running on 
+has failed and declaring the node DOWN then terminating any job running on 
 it. The default value is 300 and the units are seconds.
 
 <dt>PrimaryBackupInterval
-<dd>How log to wait between making primary SLURM state saves. The default 
+<dd>How long to wait between making primary SLURM state saves. The default 
 value is -1 (not taken) and the units are seconds.
 
 <dt>SecondaryBackupInterval
-<dd>How log to wait between making secondary SLURM state saves. The default 
+<dd>How long to wait between making secondary SLURM state saves. The default 
 value is -1 (not taken) and the units are seconds.
 
 <dt>PrimaryNodeBackup
@@ -279,7 +279,7 @@ The size of each line in the file is limited to 1024 characters.
 A <a href="#SampleNode">sample node configuration file</a> is 
 included at the end of this document.
 <p>
-The job states have the following meanings:
+The node states have the following meanings:
 <dl>
 <dt>UNKNOWN
 <dd>Default initial node state upon startup of SLURM.
