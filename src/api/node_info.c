@@ -62,12 +62,10 @@ slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 void
 slurm_print_node_table ( FILE* out, node_table_t * node_ptr )
 {
-	fprintf ( out, "NodeName=%s CPUs=%u ", 
-		node_ptr->name, node_ptr->cpus);
-	fprintf ( out, "RealMemory=%u TmpDisk=%u ", 
-		node_ptr->real_memory, node_ptr->tmp_disk);
-	fprintf ( out, "State=%s Weight=%u ", 
-		node_state_string(node_ptr->node_state), node_ptr->weight);
+	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
+		node_ptr->name, node_state_string(node_ptr->node_state), node_ptr->cpus);
+	fprintf ( out, "RealMemory=%u TmpDisk=%u Weight=%u ", 
+		node_ptr->real_memory, node_ptr->tmp_disk, node_ptr->weight);
 	fprintf ( out, "Features=%s Partition=%s\n\n", 
 		node_ptr->features, node_ptr->partition);
 }
