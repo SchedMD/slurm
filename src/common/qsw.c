@@ -160,7 +160,7 @@ qsw_pack_libstate(qsw_libstate_t ls, void **data, int *len)
 	pack32(ls->ls_prognum, data, len);
 	pack32(ls->ls_hwcontext, data, len);
 
-	return len;
+	return *len;
 }
 
 /*
@@ -182,7 +182,7 @@ qsw_unpack_libstate(qsw_libstate_t ls, void **data, int *len)
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
 
-	return len; 
+	return *len; 
 }
 
 /*
@@ -285,30 +285,30 @@ qsw_free_jobinfo(qsw_jobinfo_t j)
  *   RETURN		#bytes unused in 'data' or -1 on error (sets errno)
  */
 int
-qsw_pack_jobinfo(qsw_jobinfo_t j, void *data, int len)
+qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
 {
 	int i;
 
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 
-	pack32(j->j_magic, 		&data, &len);
-	pack32(j->j_prognum, 		&data, &len);
+	pack32(j->j_magic, 		data, len);
+	pack32(j->j_prognum, 		data, len);
 	for (i = 0; i < 4; i++)
-		pack32(j->j_cap.UserKey.Values[i], &data, &len);
-	pack16(j->j_cap.Type, 		&data, &len);
-	pack16(j->j_cap.Generation, 	&data, &len);
-	pack32(j->j_cap.Version,	&data, &len);
-	pack32(j->j_cap.LowContext, 	&data, &len);
-	pack32(j->j_cap.HighContext, 	&data, &len);
-	pack32(j->j_cap.MyContext, 	&data, &len);
-	pack32(j->j_cap.LowNode, 	&data, &len);
-	pack32(j->j_cap.HighNode, 	&data, &len);
-	pack32(j->j_cap.Entries, 	&data, &len);
-	pack32(j->j_cap.RailMask, 	&data, &len);
+		pack32(j->j_cap.UserKey.Values[i], data, len);
+	pack16(j->j_cap.Type, 		data, len);
+	pack16(j->j_cap.Generation, 	data, len);
+	pack32(j->j_cap.Version,	data, len);
+	pack32(j->j_cap.LowContext, 	data, len);
+	pack32(j->j_cap.HighContext, 	data, len);
+	pack32(j->j_cap.MyContext, 	data, len);
+	pack32(j->j_cap.LowNode, 	data, len);
+	pack32(j->j_cap.HighNode, 	data, len);
+	pack32(j->j_cap.Entries, 	data, len);
+	pack32(j->j_cap.RailMask, 	data, len);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
-		pack32(j->j_cap.Bitmap[i], &data, &len);
-	
-	return len;
+		pack32(j->j_cap.Bitmap[i], data, len);
+
+	return *len;
 }
 
 /*
@@ -319,33 +319,33 @@ qsw_pack_jobinfo(qsw_jobinfo_t j, void *data, int len)
  *   RETURN		#bytes unused in 'data' or -1 on error (sets errno)
  */
 int
-qsw_unpack_jobinfo(qsw_jobinfo_t j, void *data, int len)
+qsw_unpack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
 {
 	int i;
 
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
 
-	unpack32(&j->j_magic, 		&data, &len);
-	unpack32(&j->j_prognum, 	&data, &len);
+	unpack32(&j->j_magic, 		data, len);
+	unpack32(&j->j_prognum, 	data, len);
 	for (i = 0; i < 4; i++)
-		unpack32(&j->j_cap.UserKey.Values[i], &data, &len);
-	unpack16(&j->j_cap.Type, 	&data, &len);
-	unpack16(&j->j_cap.Generation, 	&data, &len); 
-	unpack32(&j->j_cap.Version,	&data, &len);
-	unpack32(&j->j_cap.LowContext, 	&data, &len);
-	unpack32(&j->j_cap.HighContext, &data, &len);
-	unpack32(&j->j_cap.MyContext,	&data, &len);
-	unpack32(&j->j_cap.LowNode, 	&data, &len);
-	unpack32(&j->j_cap.HighNode, 	&data, &len);
-	unpack32(&j->j_cap.Entries, 	&data, &len);
-	unpack32(&j->j_cap.RailMask, 	&data, &len);
+		unpack32(&j->j_cap.UserKey.Values[i], data, len);
+	unpack16(&j->j_cap.Type, 	data, len);
+	unpack16(&j->j_cap.Generation, 	data, len); 
+	unpack32(&j->j_cap.Version,	data, len);
+	unpack32(&j->j_cap.LowContext, 	data, len);
+	unpack32(&j->j_cap.HighContext, data, len);
+	unpack32(&j->j_cap.MyContext,	data, len);
+	unpack32(&j->j_cap.LowNode, 	data, len);
+	unpack32(&j->j_cap.HighNode,    data, len);
+	unpack32(&j->j_cap.Entries, 	data, len);
+	unpack32(&j->j_cap.RailMask, 	data, len);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
-		unpack32(&j->j_cap.Bitmap[i], &data, &len);
+		unpack32(&j->j_cap.Bitmap[i], data, len);
 	
 	if (j->j_magic != QSW_JOBINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_QSWJOBINFO);
 
-	return len;
+	return *len;
 }
 
 /*
@@ -800,7 +800,6 @@ qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum)
 }
 
 
-#if 0
 #define TRUNC_BITMAP 1
 static void
 _print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
@@ -812,7 +811,7 @@ _print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
 #endif
 	for (bit = bit_max; bit >= 0; bit--)
 		fprintf(fp, "%c", BT_TEST(cap->Bitmap, bit) ? '1' : '0');
-	printf(fp, "\n");
+	fprintf(fp, "\n");
 }
 
 void
@@ -843,4 +842,3 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 	_print_capbitmap(fp, cap);
 	fprintf(fp, "\n------------------\n");
 }
-#endif

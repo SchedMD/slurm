@@ -501,7 +501,7 @@ dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len)
 	packstr (node_list, buf_ptr, buf_len);
 	xfree (node_list);
 #ifdef HAVE_LIBELAN3
-	qsw_pack_libstate(step_ptr->qsw_job, buf_ptr, buf_len);
+	qsw_pack_jobinfo(step_ptr->qsw_job, (void **)buf_ptr, buf_len);
 #endif
 }
 
@@ -704,7 +704,7 @@ load_job_state ( void )
 				xfree (node_list);
 			}
 #ifdef HAVE_LIBELAN3
-			qsw_unpack_libstate(step_ptr->qsw_job, buf_ptr, buf_len);
+			qsw_unpack_jobinfo(step_ptr->qsw_job, buf_ptr, &buffer_size);
 #endif
 			info ("recovering job step %u.%u", job_id, step_id);
 			unpack16 (&step_flag, &buf_ptr, &buffer_size);

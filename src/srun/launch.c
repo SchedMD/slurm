@@ -72,7 +72,7 @@ launch(void *arg)
 
 #if HAVE_LIBELAN3
 	msg.qsw_job = job->qsw_job;
-#endif
+#endif 
 	debug("setting iopart to %s:%d", hostname, ntohs(job->ioport));
 	slurm_set_addr_char(&msg.streams , ntohs(job->ioport), hostname); 
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
