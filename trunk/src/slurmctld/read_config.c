@@ -117,8 +117,6 @@ static int _build_bitmaps(void)
 	    (avail_node_bitmap    == NULL) ||
 	    (share_node_bitmap    == NULL)) 
 		fatal ("bit_alloc malloc failure");
-	/* Set all bits, all nodes initially available for sharing */
-	bit_nset(share_node_bitmap, 0, (node_record_count-1));
 
 	/* initialize the configuration bitmaps */
 	config_iterator = list_iterator_create(config_list);
@@ -134,6 +132,9 @@ static int _build_bitmaps(void)
 			fatal ("bit_alloc malloc failure");
 	}
 	list_iterator_destroy(config_iterator);
+
+	/* Set all bits, all nodes initially available for sharing */
+	bit_nset(share_node_bitmap, 0, (node_record_count-1));
 
 	/* identify all nodes non-sharable due to non-sharing jobs */
 	job_iterator = list_iterator_create(job_list);

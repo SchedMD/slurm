@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov> et. al.
+ *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -180,7 +180,7 @@ extern int node_record_count;		/* count in node_record_table_ptr */
 extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes, 
 					 * not DOWN, DRAINED or DRAINING */
 extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
-extern bitstr_t *share_node_bitmap;	/* bitmap of non-sharable nodes */
+extern bitstr_t *share_node_bitmap;	/* bitmap of sharable nodes */
 extern struct config_record default_config_record;
 extern struct node_record default_node_record;
 
