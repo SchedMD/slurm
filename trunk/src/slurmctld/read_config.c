@@ -661,7 +661,6 @@ int read_slurm_conf(int recover)
 	int i, j, error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
-	char node_name[MAX_NAME_LEN];
 
 	/* initialization */
 	START_TIMER;
@@ -764,14 +763,6 @@ int read_slurm_conf(int recover)
 	rehash_node();
 	rehash_jobs();
 	set_slurmd_addr();
-
-	if (recover) {
-		if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
-			fatal("getnodename error %s", slurm_strerror(error_code));
-		if (slurmctld_conf.control_machine &&
-		    (strcmp(node_name, slurmctld_conf.control_machine) == 0))
-			(void) shutdown_backup_controller();
-	}
 
 	if (recover > 1) {	/* Load node, part and job info */
 		(void) load_all_node_state(false);

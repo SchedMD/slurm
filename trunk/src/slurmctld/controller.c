@@ -101,6 +101,7 @@ static void         _parse_commandline(int argc, char *argv[],
 inline static int   _report_locks_set(void);
 static void *       _service_connection(void *arg);
 static int          _set_slurmctld_state_loc(void);
+static int          _shutdown_backup_controller(void);
 static void *       _slurmctld_background(void *no_data);
 static void *       _slurmctld_rpc_mgr(void *no_data);
 static void *       _slurmctld_signal_hand(void *no_data);
@@ -134,13 +135,9 @@ int main(int argc, char *argv[])
 		      SLURM_CONFIG_FILE);
 		exit(1);
 	}
+	update_logging();
 	_kill_old_slurmctld();
-	/* Now recover the remaining state information */
-	if ((error_code = read_slurm_conf(recover))) {
-		error("read_slurm_conf reading %s: %m",
-		      SLURM_CONFIG_FILE);
-		exit(1);
-	}
+
 	/* 
 	 * Need to create pidfile here in case we setuid() below
 	 * (init_pidfile() exits if it can't initialize pid file)
@@ -196,13 +193,18 @@ int main(int argc, char *argv[])
 		/* start in primary or backup mode */
 		if (slurmctld_conf.backup_controller &&
 		    (strcmp(node_name,
-			    slurmctld_conf.backup_controller) == 0))
+			    slurmctld_conf.backup_controller) == 0)) {
 			run_backup();
-		else if (slurmctld_conf.control_machine &&
+		} else if (slurmctld_conf.control_machine &&
 			 (strcmp(node_name, slurmctld_conf.control_machine) 
-			  == 0))
+			  == 0)) {
+			(void) _shutdown_backup_controller();
+			/* Now recover the remaining state information */
+			if ((error_code = read_slurm_conf(recover)))
+				fatal("read_slurm_conf reading %s: %m",
+					SLURM_CONFIG_FILE);
 			info("Running primary controller");
-		else {
+		} else {
 			error
 			    ("this host (%s) not valid controller (%s or %s)",
 			     node_name, slurmctld_conf.control_machine,
@@ -397,7 +399,6 @@ static void *_slurmctld_signal_hand(void *no_data)
 				error("read_slurm_conf error %s",
 				      slurm_strerror(error_code));
 			else {
-				update_logging();
 				_update_cred_key();
 			}
 			break;
@@ -864,14 +865,16 @@ static void _usage(char *prog_name)
  *	has resumed operation
  * RET 0 or an error code 
  */
-int shutdown_backup_controller(void)
+static int _shutdown_backup_controller(void)
 {
 	int rc;
 	slurm_msg_t req;
 
 	if ((slurmctld_conf.backup_addr == NULL) ||
-	    (strlen(slurmctld_conf.backup_addr) == 0))
+	    (strlen(slurmctld_conf.backup_addr) == 0)) {
+		debug("No backup controller to shutdown");
 		return SLURM_PROTOCOL_SUCCESS;
+	}
 
 	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.backup_addr);
@@ -889,6 +892,7 @@ int shutdown_backup_controller(void)
 		error("shutdown_backup: %s", slurm_strerror(rc));
 		return SLURM_ERROR;
 	}
+	debug("backup controller has relinquished control");
 
 	/* FIXME: Ideally the REQUEST_CONTROL RPC does not return until all   
 	 * other activity has ceased and the state has been saved. That is   
