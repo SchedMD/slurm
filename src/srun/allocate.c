@@ -149,40 +149,37 @@ existing_allocation(void)
 static void
 _wait_for_resources(resource_allocation_response_msg_t **resp)
 {
-	old_job_alloc_msg_t old_job;
+	old_job_alloc_msg_t old;
 	resource_allocation_response_msg_t *r = *resp;
 	int sleep_time = MIN_ALLOC_WAIT;
 
 	info ("job %u queued and waiting for resources", r->job_id);
 
-	old_job.job_id = r->job_id;
-	old_job.uid = (uint32_t) getuid();
+	old.job_id = r->job_id;
+	old.uid = (uint32_t) getuid();
 	slurm_free_resource_allocation_response_msg(r);
 
 	/* Keep polling until the job is allocated resources */
-	while (1) {
-		if (_wait_for_alloc_rpc(sleep_time, resp) > 0)
+	while (_wait_for_alloc_rpc(sleep_time, resp) <= 0) {
+
+		if (slurm_confirm_allocation(&old, resp) >= 0)
 			break;
-		if (slurm_confirm_allocation(&old_job, resp) >= 0)
-			break;
-		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
-			debug3("Still waiting for allocation");
-			if (sleep_time < MAX_ALLOC_WAIT)
-				++sleep_time;
-			sleep(sleep_time);
-		} else {
-			error("Unable to confirm resource allocation for "
-			      "job %u: %m", old_job.job_id);
-			exit (1);
-		}
+
+		if (slurm_get_errno() == ESLURM_JOB_PENDING) 
+			debug3 ("Still waiting for allocation");
+		else 
+			fatal ("Unable to confirm allocation for job %u: %m", 
+			       old.job_id);
 
 		if (destroy_job) {
-			verbose("cancelling job %u", old_job.job_id);
-			slurm_complete_job(old_job.job_id, 0, 0);
+			verbose("cancelling job %u", old.job_id);
+			slurm_complete_job(old.job_id, 0, 0);
 			debugger_launch_failure();
 			exit(0);
 		}
 
+		if (sleep_time < MAX_ALLOC_WAIT)
+			sleep_time++;
 	}
 	info ("job %u has been allocated resources", (*resp)->job_id);
 }
@@ -197,22 +194,20 @@ _wait_for_alloc_rpc(int sleep_time, resource_allocation_response_msg_t **resp)
 {
 	struct pollfd fds[1];
 	slurm_fd slurmctld_fd;
-	int rc, wait_msec = sleep_time * 1000;
 
-	slurmctld_fd = slurmctld_msg_init();
-	if (slurmctld_fd < 0) {
-		sleep(sleep_time);
-		return 0;
+	if ((slurmctld_fd = slurmctld_msg_init()) < 0) {
+		sleep (sleep_time);
+		return (0);
 	}
 
 	fds[0].fd = slurmctld_fd;
 	fds[0].events = POLLIN;
 
-	while ((rc = poll(fds, 1, wait_msec)) < 0) {
+	while (poll (fds, 1, (sleep_time * 1000)) < 0) {
 		switch (errno) {
 			case EAGAIN:
 			case EINTR:
-				continue;
+				return (-1);
 			case ENOMEM:
 			case EINVAL:
 			case EFAULT:
@@ -222,10 +217,10 @@ _wait_for_alloc_rpc(int sleep_time, resource_allocation_response_msg_t **resp)
 		}
 	}
 
-	rc = 0;
 	if (fds[0].revents & POLLIN)
-		rc = _accept_msg_connection(slurmctld_fd, resp);
-	return rc;
+		return (_accept_msg_connection(slurmctld_fd, resp));
+
+	return (0);
 }
 
 /* Accept RPC from slurmctld and process it.
