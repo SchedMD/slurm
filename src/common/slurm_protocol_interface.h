@@ -43,6 +43,7 @@
 
 #include <src/common/slurm_protocol_common.h>
 
+extern struct timeval SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
 
 /****************\
  **  Data Types  **
