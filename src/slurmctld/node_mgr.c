@@ -534,18 +534,6 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpdateTime", 
 	&Last_Node_Update, sizeof(Last_Node_Update))) goto cleanup;
 
-    /* Write up and idle node bitmaps */
-    My_BitMap_Size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    My_BitMap_Size *= sizeof(unsigned);
-    if ((Node_Record_Count > 0) && Up_NodeBitMap && Idle_NodeBitMap) {
-	i = My_BitMap_Size;
-    } else
-	i = 0;
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpBitMap", 
-	Up_NodeBitMap, i)) goto cleanup;
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "IdleBitMap", 
-	Idle_NodeBitMap, i)) goto cleanup;
-
     /* Write node records */
     for (inx=0; inx<Node_Record_Count; inx++) {
 #if DEBUG_SYSTEM

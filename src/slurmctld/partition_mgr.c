@@ -386,10 +386,6 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	&i, sizeof(i))) goto cleanup;
     if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "UpdateTime", 
 	&Last_Part_Update, sizeof(Last_Part_Update))) goto cleanup;
-    My_BitMap_Size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    My_BitMap_Size *= sizeof(unsigned);
-    if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "BitMapSize", 
-	&My_BitMap_Size, sizeof(My_BitMap_Size))) goto cleanup;
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
@@ -444,13 +440,6 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	    i = 0;
 	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "AllowGroups", 
 		Part_Record_Point->AllowGroups, i)) goto cleanup;
-
-	if ((Node_Record_Count > 0) && (Part_Record_Point->NodeBitMap)) {
-	    i = My_BitMap_Size;
-	} else
-	    i = 0;
-	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "NodeBitMap", 
-		Part_Record_Point->NodeBitMap, i)) goto cleanup;
 
 	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "EndPart", 
 		"", 0)) goto cleanup;
