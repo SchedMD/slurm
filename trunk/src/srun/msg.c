@@ -100,7 +100,7 @@ _build_tv_list(launch_tasks_response_msg_t *msg)
 		tv_tasks = &MPIR_proctable[MPIR_proctable_size++];
 		tv_tasks->host_name = msg->node_name;
 		tv_tasks->executable_name = opt.progname;
-		tv_tasks->pid = msg->local_pid[i];
+		tv_tasks->pid = msg->local_pids[i];
 	}
 	msg->node_name = NULL;	/* nothing to free */
 }
