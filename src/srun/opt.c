@@ -101,7 +101,7 @@
 #define OPT_THREADS     0x18
 #define OPT_WAIT	0x19
 #define OPT_OVERCOMMIT	0x1a
-#define OPT_PRIORITY	0x1b
+#define OPT_HOLD	0x1b
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -183,9 +183,9 @@ struct poptOption runTable[] = {
 	{"partition", 'p', POPT_ARG_STRING, &opt.partition, OPT_PARTITION,
 	 "partition requested",
 	 "partition"},
-	{"priority", 'P', POPT_ARG_INT, &opt.priority, OPT_PRIORITY,
-	 "job priority requested",
-	 "priority"},
+	{"hold", 'H', POPT_ARG_NONE, &opt.hold, OPT_HOLD,
+	 "submit job in held state",
+	 },
 	{"time", 't', POPT_ARG_INT, &opt.time_limit, OPT_TIME,
 	 "time limit",
 	 "minutes"},
@@ -570,28 +570,28 @@ static void _opt_default()
 	opt.totalview = _under_totalview();
 #endif
 
-	opt.immediate = false;
+	opt.immediate	= false;
 
-	opt.allocate = false;
-	opt.attach = NULL;
-	opt.join = false;
-	opt.max_wait = 0;
+	opt.allocate	= false;
+	opt.attach	= NULL;
+	opt.join	= false;
+	opt.max_wait	= 0;
 
 	_verbose = 0;
 	opt.slurmd_debug = LOG_LEVEL_QUIET;
 
 	/* constraint default (-1 is no constraint) */
-	opt.priority = -1;
-	opt.mincpus  = -1;
-	opt.realmem  = -1;
-	opt.tmpdisk  = -1;
+	opt.mincpus	= -1;
+	opt.realmem	= -1;
+	opt.tmpdisk	= -1;
 
-	opt.constraints = NULL;
-	opt.contiguous = false;
-	opt.nodelist = NULL;
-	opt.exc_nodes = NULL;
+	opt.hold	= false;
+	opt.constraints	= NULL;
+	opt.contiguous	= false;
+	opt.nodelist	= NULL;
+	opt.exc_nodes	= NULL;
 
-	mode = MODE_NORMAL;
+	mode	= MODE_NORMAL;
 
 }
 
