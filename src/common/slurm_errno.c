@@ -149,6 +149,10 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid node state specified"			},
 	{ ESLURM_INVALID_FEATURE, 
 	  "Invalid feature specification"			},
+	{ ESLURM_INVALID_SCHEDTYPE_CHANGE,
+	  "Invalid change in SchedulerType requested"		},
+	{ ESLURM_INVALID_SWITCHTYPE_CHANGE,
+	  "SwitchType change requires restart of all SLURM daemons and jobs"},
 
 	/* Quadrics Elan routine error codes */
 

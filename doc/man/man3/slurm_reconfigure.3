@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "October 2003" "Morris Jette" "Slurm administrative calls"
+.TH "Slurm API" "3" "February 2004" "Morris Jette" "Slurm administrative calls"
 .SH "NAME"
 slurm_delete_partition, slurm_init_part_desc_msg,
 slurm_reconfigure, slurm_shutdown, slurm_update_job, 
@@ -122,14 +122,24 @@ code is set appropriately.
 \fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your 
 code.
 .LP
-\fBESLURM_INVALID_NODE_NAME\fR the requested node name(s) is/are not valid. 
+\fBESLURM_INVALID_NODE_NAME\fR The requested node name(s) is/are not valid. 
 .LP
-\fBESLURM_INVALID_NODE_STATE\fR the specified state node state or requested 
+\fBESLURM_INVALID_NODE_STATE\fR The specified state node state or requested 
 node state transition is not valid. 
 .LP
-\fBESLURM_INVALID_PARTITION_NAME\fR the requested partition name is not valid. 
+\fBESLURM_INVALID_PARTITION_NAME\fR The requested partition name is not valid. 
 .LP
-\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for 
+\fBESLURM_INVALID_SCHEDTYPE_CHANGE\fR The \fBSchedulerType\fR parameter can 
+not be changed using the \fBslurm_reconfigure\fR function, but the 
+\fBslurmctld\fR daemon must be restarted. Manual changes to existing job 
+parameters may also be required. See \fBslurm.conf\fR(5) for more information.
+.LP
+\fBESLURM_INVALID_SWITCHTYPE_CHANGE\fR The \fBSwitchType\fR parameter can
+not be changed using the \fBslurm_reconfigure\fR function, but all
+SLURM daemons and commands must be restarted. All previously running 
+jobs will be lost. See \fBslurm.conf\fR(5) for more information.
+.LP
+\fBESLURM_ACCESS_DENIED\fR The requesting user lacks authorization for 
 the requested action (e.g. trying to delete or modify another user's job). 
 .LP
 \fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
@@ -236,4 +246,4 @@ details.
 .SH "SEE ALSO"
 .LP 
 \fBscontrol\fR(1), \fBslurm_get_errno\fR(3), \fBslurm_init_job_desc_msg\fR(3),
-\fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
+\fBslurm_perror\fR(3), \fBslurm_strerror\fR(3), \fBslurm.conf\fR(5)

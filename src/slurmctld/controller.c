@@ -397,7 +397,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 			error_code = read_slurm_conf(0);
 			unlock_slurmctld(config_write_lock);
 			if (error_code)
-				error("read_slurm_conf error %s",
+				error("read_slurm_conf: %s",
 				      slurm_strerror(error_code));
 			else {
 				_update_cred_key();
