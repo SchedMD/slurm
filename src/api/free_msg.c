@@ -136,6 +136,7 @@ void slurm_free_submit_response_response_msg(submit_response_msg_t * msg)
 void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 {
 	if (config_ptr) {
+		xfree(config_ptr->authtype);
 		xfree(config_ptr->backup_addr);
 		xfree(config_ptr->backup_controller);
 		xfree(config_ptr->control_addr);
@@ -143,6 +144,7 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 		xfree(config_ptr->epilog);
 		xfree(config_ptr->job_credential_private_key);
 		xfree(config_ptr->job_credential_public_certificate);
+		xfree(config_ptr->plugindir);
 		xfree(config_ptr->prioritize);
 		xfree(config_ptr->prolog);
 		xfree(config_ptr->slurm_user_name);
