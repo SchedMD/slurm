@@ -122,7 +122,7 @@ void * stdin_io_pipe_thread ( void * arg )
 					case ENOTCONN:
 						break ;
 					default:
-						info ( "error reading stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+						info ( "error reading stdin  stream for task %i, %m errno: %i , bytes read %i ", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
 						error ( "uncaught errno %i", local_errno ) ;
 						break;
 				}
@@ -156,7 +156,7 @@ void * stdin_io_pipe_thread ( void * arg )
 				{
 
 					local_errno = errno ;	
-					info ( "error sending stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+					info ( "error sending stdin  stream for task %i, %m errno: %i , bytes read %i ", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
 					goto stdin_return ;
 				}
 			}
@@ -199,7 +199,7 @@ void * stdout_io_pipe_thread ( void * arg )
 		if ( ( bytes_read = read_EINTR ( task_start->pipes[CHILD_OUT_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
 			local_errno = errno ;	
-			info ( "error reading stdout stream for task %i, errno %i , bytes read %i ", 
+			info ( "error reading stdout stream for task %i, %m errno: %i , bytes read %i ", 
 					task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
 			goto stdout_return ;
 		}
@@ -251,7 +251,7 @@ void * stdout_io_pipe_thread ( void * arg )
 					slurm_close_stream ( task_start->sockets[STDIN_OUT_SOCK] ) ;
 					break ;
 				default:
-					info ( "error sending stdout stream for task %i , errno %i", 1 , local_errno ) ;
+					info ( "error sending stdout stream for task %i, errno %i", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno ) ;
 					error ( "uncaught errno %i", local_errno ) ;
 					break ;
 			}
@@ -298,7 +298,7 @@ void * stderr_io_pipe_thread ( void * arg )
 			{
 
 				local_errno = errno ;	
-				info ( "error reading stderr stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+				info ( "error reading stderr stream for task %i, errno %i , bytes read %i ", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
 				goto stderr_return ;
 			}
 		}
@@ -352,7 +352,7 @@ void * stderr_io_pipe_thread ( void * arg )
 					slurm_close_stream ( task_start->sockets[SIG_STDERR_SOCK] ) ;
 					break ;
 				default:
-					info ( "error sending stderr stream for task %i , errno %i", 1 , local_errno ) ;
+					info ( "error sending stderr stream for task %i , %m errno: %i", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno ) ;
 					error ( "uncaught errno %i", local_errno ) ;
 					break ;
 			}
@@ -373,7 +373,7 @@ int connect_io_stream (  task_start_t * task_start , int out_or_err )
 	if ( ( task_start->sockets[out_or_err] = slurm_open_stream ( & ( task_start -> io_streams_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
 		local_errno = errno ;	
-		info ( "error opening socket to srun to pipe %s errno %i" , out_or_err ? "stdout" : "stderr" , local_errno ) ;
+		info ( "error opening socket to srun to pipe %s %m errno: %i" , out_or_err ? "stdout" : "stderr" , local_errno ) ;
 		return SLURM_PROTOCOL_ERROR ;
 	}
 	else
@@ -423,7 +423,7 @@ ssize_t read_EINTR(int fd, void *buf, size_t count)
 	{
 		if ( ( bytes_read = read ( fd, buf, count ) ) <= 0 )
 		{
-			debug ( "bytes_read: %i , errno: %i", bytes_read , errno ) ;
+			debug ( "bytes_read: %i , %m errno: %i", bytes_read , errno ) ;
 			if ( ( bytes_read == SLURM_PROTOCOL_ERROR ) && ( errno == EINTR ) ) 
 			{
 				continue ;
