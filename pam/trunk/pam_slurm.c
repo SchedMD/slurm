@@ -43,6 +43,7 @@
 #include <sys/types.h>
 #include <syslog.h>
 #include <unistd.h>
+#include <dlfcn.h>
 
 #include "hostlist.h"
 
@@ -60,6 +61,17 @@ struct _options {
     const char *msg_suffix;
 };
 
+/*
+ *  Handle for libslurm.so
+ *
+ *  We open libslurm.so via dlopen () in order to pass the
+ *   flag RTDL_GLOBAL so that subsequently loaded modules have
+ *   access to libslurm symbols. This is pretty much only needed
+ *   for dynamically loaded modules that would otherwise be
+ *   linked against libslurm.
+ *
+ */
+static void * slurm_h = NULL;
 
 static void _log_msg(int level, const char *format, ...);
 static void _parse_args(struct _options *opts, int argc, const char **argv);
@@ -206,6 +218,53 @@ _hostrange_member(char *hostname, char *str)
 }
 
 /*
+ *  Wrapper for SLURM API function slurm_load_jobs ()
+ */
+int _slurm_load_jobs (job_info_msg_t **msgp)
+{
+    static int (*load_jobs) (time_t, job_info_msg_t **);
+
+    if (!(load_jobs = dlsym (slurm_h, "slurm_load_jobs"))) {
+        _log_msg (LOG_ERR, "Unable to resolve slurm_load_jobs\n");
+        return -1;
+    }
+    
+    return load_jobs ((time_t) NULL, msgp);
+}
+
+/*
+ *  Wrapper for SLURM API function slurm_strerror ()
+ */
+char * _slurm_strerror (int errnum)
+{
+    static char * (*f) (int);
+
+    if (!(f = dlsym (slurm_h, "slurm_strerror"))) {
+        _log_msg (LOG_ERR, "Unable to resolve slurm_strerror\n");
+        return "unknown error";
+    }
+
+    return f (errnum);
+}
+
+/*
+ *  Wrapper for slurm_free_job_info_msg ()
+ */
+void _free_msg (job_info_msg_t *msg)
+{
+    static void (*free_msg) (job_info_msg_t *);
+
+    if (!(free_msg = dlsym (slurm_h, "slurm_free_job_info_msg"))) {
+        _log_msg (LOG_ERR, "Unable to resolve slurm_free_job...\n");
+        return;
+    }
+
+    free_msg (msg);
+
+    return;
+}
+
+/*
  *  Query the SLURM database to find out if 'uid' has been allocated 
  *  this node. If so, return 1 indicating that 'uid' is authorized to 
  *  this node else return 0.  
@@ -215,8 +274,7 @@ _slurm_match_allocation(uid_t uid)
 {
     int authorized = 0, i;
     char hostname[MAXHOSTNAMELEN], *p;
-    job_info_msg_t *job_buffer_ptr;
-    job_info_t * job_ptr;
+    job_info_msg_t * msg;
 
     if (gethostname(hostname, sizeof(hostname)) < 0) {
         _log_msg(LOG_ERR, "gethostname: %m");
@@ -225,22 +283,23 @@ _slurm_match_allocation(uid_t uid)
     if ((p = strchr(hostname, '.')))
         *p = '\0';
 
-    if (slurm_load_jobs((time_t)NULL, &job_buffer_ptr)) {
-        _log_msg(LOG_ERR, "slurm_load_jobs: %s", 
-                 slurm_strerror(slurm_get_errno()));
+    if (_slurm_load_jobs(&msg) < 0) {
+        _log_msg(LOG_ERR, "slurm_load_jobs: %s", _slurm_strerror(errno));
         return 0;
     }
 
-    for (i = 0; i < job_buffer_ptr->record_count; i++) {
-        job_ptr = &job_buffer_ptr->job_array[i];
-        if ((job_ptr->user_id   == uid)         &&
-            (job_ptr->job_state == JOB_RUNNING) &&
-            (_hostrange_member(hostname, job_ptr->nodes))) {
+    for (i = 0; i < msg->record_count; i++) {
+        job_info_t *j = &msg->job_array[i];
+
+        if (  (j->user_id == uid) 
+           && (j->job_state == JOB_RUNNING) 
+           && _hostrange_member(hostname, j->nodes) ) {
                 authorized = 1;
                 break;
         }
     }
-    slurm_free_job_info_msg (job_buffer_ptr);
+
+    _free_msg (msg);
 
     return authorized;
 }
@@ -294,6 +353,32 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
     return;
 }
 
+extern void _init (void);
+
+/* 
+ * Dynamically open system's libslurm.so with RTLD_GLOBAL flag.
+ *  This allows subsequently loaded modules access to libslurm symbols.
+ */
+void _init (void)
+{
+    if (slurm_h)
+        return;
+
+	if (!(slurm_h = dlopen("libslurm.so", RTLD_NOW|RTLD_GLOBAL))) 
+		_log_msg (LOG_ERR, "Unable to dlopen libslurm: %s\n", dlerror ());
+
+    return;
+}
+
+extern void _fini (void);
+
+void _fini (void)
+{
+    if (slurm_h)
+        dlclose (slurm_h);
+    return;
+}
+
 
 /*************************************\
  *  Statically Loaded Module Struct  *
@@ -310,3 +395,7 @@ struct pam_module _pam_rms_modstruct = {
     NULL,
 };
 #endif /* PAM_STATIC */
+
+/*
+ * vi: sw=4 ts=4 expandtab
+ */

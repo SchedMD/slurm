@@ -16,7 +16,7 @@ CPPFLAGS=
 DEFAULT_INCLUDES = -I.
 DEFS=
 LDFLAGS=	
-LIBS=           -lc -lslurm
+LIBS=           
 COPTS=		$(CFLAGS) $(CPPFLAGS) $(DEFS)
 INSTALL=	/usr/bin/install -c
 OBJECTS =	pam_slurm.o hostlist.o
@@ -42,7 +42,7 @@ realclean: clean
 	-rm -f *.tgz *.rpm
 
 tags: *.[ch]
-	-ctags * 2>/dev/null
+	-ctags *.[ch] 2>/dev/null
 
 .SUFFIXES:
 .SUFFIXES: .c .o .so
