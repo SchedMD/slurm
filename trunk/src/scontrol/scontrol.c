@@ -115,19 +115,16 @@ main (int argc, char *argv[])
 	else
 		error_code = get_command (&input_field_count, input_fields);
 
-	while (1) {
-#if DEBUG_MODULE
+	while (error_code == 0) {
+#if DEBUG_MODULE > 1
 		dump_command (input_field_count, input_fields);
 #endif
-		error_code =
-			process_command (input_field_count, input_fields);
+		error_code = process_command (input_field_count, input_fields);
 		if (error_code != 0)
 			break;
 		if (exit_flag == 1)
 			break;
 		error_code = get_command (&input_field_count, input_fields);
-		if (error_code != 0)
-			break;
 	}			
 
 	exit (error_code);
@@ -142,10 +139,14 @@ main (int argc, char *argv[])
 void
 dump_command (int argc, char *argv[]) 
 {
-	int i;
+	int i, j;
 
 	for (i = 0; i < argc; i++) {
-		printf ("arg %d:%s:\n", i, argv[i]);
+		printf ("arg %d:%s:", i, argv[i]);
+		for (j = 0; argv[i][j] ; j++) {
+			printf ("%2x ", (unsigned)argv[i][j]);
+		}
+		printf ("\n");
 	}			
 }
 
@@ -161,6 +162,7 @@ get_command (int *argc, char **argv)
 {
 	static char *in_line;
 	static int in_line_size = 0;
+	static int last_in_line_size = 0;
 	int in_line_pos = 0;
 	int temp_char, i;
 
@@ -185,6 +187,20 @@ get_command (int *argc, char **argv)
 			break;
 		if (temp_char == (int) '\n')
 			break;
+		if ((temp_char == (int) '!') && (in_line_pos == 0)) {
+			temp_char = getchar();
+			if (temp_char == (int) '!') {
+				in_line_pos = last_in_line_size;
+				while (temp_char != (int) '\n')
+					temp_char = getchar();
+				break;
+			}
+			else {
+				in_line[in_line_pos++] = (char) temp_char;
+				in_line[in_line_pos++] = (char) temp_char;
+				continue;
+			}
+		}
 		if ((in_line_pos + 2) >= in_line_size) {
 			in_line_size += BUF_SIZE;
 			xrealloc (in_line, in_line_size);
@@ -197,11 +213,13 @@ get_command (int *argc, char **argv)
 			}	
 		}		
 		in_line[in_line_pos++] = (char) temp_char;
-	}			
+	}
+
 	in_line[in_line_pos] = (char) NULL;
+	last_in_line_size = in_line_pos;
 
 	for (i = 0; i < in_line_pos; i++) {
-		if (isspace ((int) in_line[i]))
+		if ((in_line[i] == '\0') && (isspace ((int) in_line[i])))
 			continue;
 		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* really bogus input line */
 			fprintf (stderr, "%s: can not process over %d words as configured\n",
@@ -210,7 +228,7 @@ get_command (int *argc, char **argv)
 		}		
 		argv[(*argc)++] = &in_line[i];
 		for (i++; i < in_line_pos; i++) {
-			if (!isspace ((int) in_line[i]))
+			if ((in_line[i] != '\0') && (!isspace ((int) in_line[i])))
 				continue;
 			in_line[i] = (char) NULL;
 			break;
@@ -284,13 +302,13 @@ print_job (char * job_id_str)
 	}
 	else
 		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
+
 	if (error_code) {
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_load_jobs error");
 		return;
 	}
-	else if (error_code == 0)
-		old_job_buffer_ptr = job_buffer_ptr;
+	old_job_buffer_ptr = job_buffer_ptr;
 	
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
@@ -389,8 +407,8 @@ print_node_list (char *node_list)
 			slurm_perror ("slurm_load_node error");
 		return;
 	}
-	else
-		old_node_info_ptr = node_info_ptr;
+
+	old_node_info_ptr = node_info_ptr;
 
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld, records=%d\n", 
@@ -452,8 +470,8 @@ print_part (char *partition_name)
 			slurm_perror ("slurm_load_partitions error");
 		return;
 	}
-	else
-		old_part_info_ptr = part_info_ptr;
+
+	old_part_info_ptr = part_info_ptr;
 
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) part_info_ptr->last_update);
@@ -490,6 +508,8 @@ print_step (char *job_step_id_str)
 	char *next_str;
 	job_step_info_response_msg_t *job_step_info_ptr;
 	job_step_info_t * job_step_ptr;
+	static uint32_t last_job_id = 0, last_step_id = 0;
+	static job_step_info_response_msg_t *old_job_step_info_ptr;
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
@@ -497,13 +517,36 @@ print_step (char *job_step_id_str)
 			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
 	}
 
-	error_code = slurm_get_job_steps ( (time_t) 0, job_id, step_id, &job_step_info_ptr);
+	if ((old_job_step_info_ptr) &&
+	    (last_job_id == job_id) && (last_step_id == step_id)) {
+		error_code = slurm_get_job_steps ( old_job_step_info_ptr->last_update,
+					job_id, step_id, &job_step_info_ptr);
+		if (error_code == 0)
+			slurm_free_job_step_info_response_msg (old_job_step_info_ptr);
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			job_step_info_ptr = old_job_step_info_ptr;
+			error_code = 0;
+			if (quiet_flag == -1)
+				printf ("slurm_get_job_steps no change in data\n");
+		}
+	}
+	else {
+		if (old_job_step_info_ptr)
+			slurm_free_job_step_info_response_msg (old_job_step_info_ptr);
+		error_code = slurm_get_job_steps ( (time_t) 0, 
+					job_id, step_id, &job_step_info_ptr);
+	}
+
 	if (error_code) {
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_get_job_steps error");
 		return;
 	}
-	
+
+	old_job_step_info_ptr = job_step_info_ptr;
+	last_job_id = job_id;
+	last_step_id = step_id;
+
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) job_step_info_ptr->last_update);
 
@@ -518,8 +561,6 @@ print_step (char *job_step_id_str)
 		else
 			printf ("No job steps in the system\n");
 	}
-
-	slurm_free_job_step_info_response_msg (job_step_info_ptr);
 }
 
 
@@ -534,54 +575,45 @@ process_command (int argc, char *argv[])
 {
 	int error_code;
 
-	if ((strcmp_i (argv[0], "exit") == 0) ||
+	if (argc < 1) {
+		if (quiet_flag == -1)
+			fprintf(stderr, "no input");
+	}
+	else if ((strcmp_i (argv[0], "exit") == 0) ||
 	    (strcmp_i (argv[0], "quit") == 0)) {
 		if (argc > 1)
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 argv[0]);
+			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		exit_flag = 1;
 
 	}
 	else if (strcmp_i (argv[0], "help") == 0) {
 		if (argc > 1)
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 argv[0]);
+			fprintf (stderr, "too many arguments for keyword:%s\n",argv[0]);
 		usage ();
 
 	}
 	else if (strcmp_i (argv[0], "quiet") == 0) {
 		if (argc > 1)
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 argv[0]);
+			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		quiet_flag = 1;
 
 	}
 	else if (strncmp_i (argv[0], "reconfigure", 7) == 0) {
 		if (argc > 2)
-			fprintf (stderr,
-				 "too many arguments for keyword:%s\n",
-				 argv[0]);
+			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		error_code = slurm_reconfigure ();
 		if ((error_code != 0) && (quiet_flag != 1))
-			fprintf (stderr, "error %d from reconfigure\n",
-				 error_code);
+			fprintf (stderr, "error %d from reconfigure\n", error_code);
 
 	}
 	else if (strcmp_i (argv[0], "show") == 0) {
 		if (argc > 3) {
 			if (quiet_flag != 1)
-				fprintf (stderr,
-					 "too many arguments for keyword:%s\n",
-					 argv[0]);
+				fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		}
 		else if (argc < 2) {
 			if (quiet_flag != 1)
-				fprintf (stderr,
-					 "too few arguments for keyword:%s\n",
-					 argv[0]);
+				fprintf (stderr, "too few arguments for keyword:%s\n", argv[0]);
 		}
 		else if (strncmp_i (argv[1], "config", 3) == 0) {
 			if (argc > 2)
@@ -933,6 +965,7 @@ usage () {
 	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
+	printf ("     !!                       Repeat the last command entered.\n");
 	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or \"step\".\n");
 	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
 	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
