@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include "src/common/credential_utils.h"
+#include "src/common/daemonize.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -184,6 +185,11 @@ int main(int argc, char *argv[])
 	if (slurmctld_conf.state_save_location)
 		(void) mkdir(slurmctld_conf.state_save_location, 0700);
 
+	if (slurmctld_conf.slurm_user_id && 
+	    (slurmctld_conf.slurm_user_id != getuid()))
+		error("Slurmctld not running as user %s",
+		      slurmctld_conf.slurm_user_name);
+
 	if (slurmctld_conf.slurmctld_logfile && daemonize) {
 		info("Routing all log messages to %s",
 		     slurmctld_conf.slurmctld_logfile);
@@ -194,6 +200,7 @@ int main(int argc, char *argv[])
 		log_opts.stderr_level = LOG_LEVEL_QUIET;
 		log_opts.syslog_level = LOG_LEVEL_QUIET;
 	}
+
 	if (slurmctld_conf.slurmctld_logfile) {
 		log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON,
 			 slurmctld_conf.slurmctld_logfile);
@@ -292,7 +299,9 @@ static void *_slurmctld_signal_hand(void *no_data)
 
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-	info("Send signals to _slurmctld_signal_hand, pid = %u", getpid());
+
+	if (slurmctld_conf.slurmctld_pidfile)
+		create_pidfile(slurmctld_conf.slurmctld_pidfile);
 
 	if (sigemptyset(&set))
 		error("sigemptyset error: %m");
