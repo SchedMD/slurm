@@ -66,6 +66,27 @@ void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 	unpack32 ( & header -> body_length , ( void ** ) buffer , length ) ;
 }
 
+void pack_stream_io_header ( slurm_stream_io_header * msg , void ** buffer , uint32_t * length )
+{
+	assert ( msg != NULL );
+
+	pack16( msg->version, buffer, length ) ;
+	packmem( msg->key, 16 , buffer, length ) ; 
+	pack32( msg->task_id, buffer, length ) ;	
+	pack16( msg->type, buffer, length ) ;
+}
+
+void unpack_stream_io_header ( slurm_stream_io_header * msg , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	
+	unpack16( & msg->version, buffer, length ) ;
+	unpackmem( msg->key, & uint16_tmp , buffer , length ) ; 
+	unpack32( & msg->task_id, buffer, length ) ;	
+	unpack16( & msg->type, buffer, length ) ;
+}
+
+
 /* pack_msg
  * packs a slurm protocol mesg body
  * header 	- the body structure to pack
@@ -346,6 +367,9 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 	uint16_t uint16_tmp;
 	update_node_msg_t * tmp_ptr ;
 	/* alloc memory for structure */	
+	
+	assert ( msg != NULL );
+	
 	tmp_ptr = xmalloc ( sizeof ( update_node_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
 		return ENOMEM;
@@ -358,6 +382,8 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 
 void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg, void ** buffer , uint32_t * length )
 {
+	assert ( msg != NULL );
+	
 	pack32 ( msg -> timestamp , ( void ** ) buffer , length ) ;
 	packstr ( msg -> node_name , ( void ** ) buffer , length ) ;
 	pack32 ( msg -> cpus , ( void ** ) buffer , length ) ;
@@ -370,6 +396,9 @@ int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t *
 	uint16_t uint16_tmp;
 	slurm_node_registration_status_msg_t * node_reg_ptr ;
 	/* alloc memory for structure */	
+
+	assert ( msg != NULL );
+	
 	node_reg_ptr = xmalloc ( sizeof ( slurm_node_registration_status_msg_t ) ) ;
 	if (node_reg_ptr == NULL) 
 	{
@@ -389,6 +418,8 @@ int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t *
 
 void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , int * length )
 {
+	assert ( msg != NULL );
+	
 	pack32 ( msg->job_id , ( void ** ) buffer , length ) ;
 	packstr ( msg->node_list , ( void ** ) buffer , length ) ;
 	pack16 ( msg->num_cpu_groups , ( void ** ) buffer , length ) ;
@@ -400,6 +431,9 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 {
 	uint16_t uint16_tmp;
 	resource_allocation_response_msg_t * tmp_ptr ;
+
+	assert ( msg != NULL );
+	
 	/* alloc memory for structure */	
 	tmp_ptr = xmalloc ( sizeof ( resource_allocation_response_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
@@ -417,6 +451,8 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 
 void pack_submit_response_msg ( submit_response_msg_t * msg, void ** buffer , int * length )
 {
+	assert ( msg != NULL );
+	
 	pack32 ( msg->job_id , ( void ** ) buffer , length ) ;
 }
 
@@ -424,6 +460,9 @@ int unpack_submit_response_msg ( submit_response_msg_t ** msg , void ** buffer ,
 {
 	submit_response_msg_t * tmp_ptr ;
 	/* alloc memory for structure */	
+
+	assert ( msg != NULL );
+	
 	tmp_ptr = xmalloc ( sizeof ( submit_response_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
 		return ENOMEM;
@@ -436,6 +475,7 @@ int unpack_submit_response_msg ( submit_response_msg_t ** msg , void ** buffer ,
 void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
 	assert ( msg != NULL );
+	
 	assert (  sizeof(*msg) == sizeof(slurm_msg_t) ) ;
 	assert ( buf_ptr != NULL && (*buf_ptr) != NULL ) ;
 	assert ( ( buffer_size ) != NULL ) ;
@@ -450,6 +490,8 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buff
 {
 	int i;
 	node_table_t *node;
+	
+	assert ( msg != NULL );
 	
 	*msg = xmalloc ( sizeof ( node_info_msg_t ) );
 	if ( *msg == NULL )
@@ -472,17 +514,21 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buff
 
 int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size )
 {
-		*node = xmalloc ( sizeof(node_table_t) );
-		if (node == NULL) {
-			return ENOMEM;
-		}
-		unpack_node_table ( *node , buf_ptr , buffer_size ) ;
-		return 0 ;
+	assert ( node != NULL );
+
+	*node = xmalloc ( sizeof(node_table_t) );
+	if (node == NULL) {
+		return ENOMEM;
+	}
+	unpack_node_table ( *node , buf_ptr , buffer_size ) ;
+	return 0 ;
 }
 
 int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size )
 {
 	uint16_t uint16_tmp;
+
+	assert ( node != NULL );
 
         unpackstr_xmalloc (&node->name, &uint16_tmp, buf_ptr, buffer_size);
         unpack16  (&node->node_state, buf_ptr, buffer_size);
@@ -518,6 +564,9 @@ unpack_update_partition_msg ( update_part_msg_t ** msg , void ** buffer, uint32_
 {
 	uint16_t uint16_tmp;
 	update_part_msg_t * tmp_ptr ;
+	
+	assert ( msg != NULL );
+
 	/* alloc memory for structure */	
 	tmp_ptr = xmalloc ( sizeof ( update_part_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
@@ -553,6 +602,9 @@ int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , v
 	uint16_t uint16_tmp;
 	job_step_create_request_msg_t * tmp_ptr ;
 	/* alloc memory for structure */	
+
+	assert ( msg != NULL );
+
 	tmp_ptr = xmalloc ( sizeof ( job_step_create_request_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
 		return ENOMEM;
@@ -576,7 +628,7 @@ void pack_job_credential ( slurm_job_credential_t* msg , void ** buffer , uint32
 	pack16( (uint16_t) msg->user_id, buffer, length ) ;
 	packstr( msg->node_list, buffer, length ) ;
 	pack32( msg->experation_time, buffer, length ) ;	
-	pack32( msg->signature, buffer, length ) ; 
+	packmem( msg->signature, 16 , buffer, length ) ; 
 }
 
 int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length )
@@ -592,7 +644,7 @@ int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint3
 	unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer, length ) ;
 	unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack32( (uint32_t*) &(tmp_ptr->experation_time), buffer, length ) ;	/* What are we going to do about time_t ? */
-	unpack32( &(tmp_ptr->signature), buffer, length ) ; 
+	unpackmem( tmp_ptr->signature, 16 , buffer, length ) ; 
 
 	*msg = tmp_ptr;
 	return 0;

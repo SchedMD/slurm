@@ -18,12 +18,14 @@
 
 /* Pack / Unpack methods for slurm protocol header */
 void pack_header ( header_t  * header , char ** buffer , uint32_t * length );
-
 void unpack_header ( header_t * header , char ** buffer , uint32_t * length );
+
+/* Pack / Unpack methods for slurm io pipe streams header */
+void pack_stream_io_header ( slurm_stream_io_header * msg , void ** buffer , uint32_t * length ) ;
+void unpack_stream_io_header ( slurm_stream_io_header * msg , void ** buffer , uint32_t * length ) ;
 
 /* generic case statement Pack / Unpack methods for slurm protocol bodies */
 int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len );
-
 int unpack_msg ( slurm_msg_t * msgi , char ** buffer , uint32_t * buf_len );
 
 /* specific Pack / Unpack methods for slurm protocol bodies */
@@ -39,6 +41,7 @@ int unpack_last_update ( last_update_msg_t ** msg , void ** buffer , uint32_t * 
 
 void pack_job_step_create_request_msg ( job_step_create_request_msg_t* msg , void ** buffer , uint32_t * length );
 int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , void ** buffer , uint32_t * length );
+
 void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , void ** buffer , uint32_t * length );
 int unpack_job_step_create_response_msg (job_step_create_response_msg_t** msg , void ** buffer , uint32_t * length );
 
@@ -65,8 +68,10 @@ int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer
 
 void pack_cancel_job_msg ( job_id_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+
 void pack_cancel_job_step_msg ( job_step_id_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+
 void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
 
@@ -81,6 +86,7 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 
 void pack_partition_table_msg ( partition_desc_msg_t *  msg , void ** buffer , int * buf_len );
 int unpack_partition_table_msg ( partition_desc_msg_t **  msg_ptr , void ** buffer , int *  buf_len );
+
 void pack_update_partition_msg ( update_part_msg_t * msg , void ** buffer, uint32_t * length  );
 int unpack_update_partition_msg ( update_part_msg_t ** msg_ptr , void ** buffer, uint32_t * length  );
 
