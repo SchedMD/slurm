@@ -101,7 +101,6 @@ if {$exit_code != 0} {
 	exit $exit_code
 }
 
-#send_user "\nhost_0:$host_0:host_1:$host_1:\n"
 #
 # Exclude specific node
 #
@@ -359,7 +358,6 @@ expect {
 		exp_continue
 	}
 	"error:" {
-		send_user "This error is expected, no worries\n"
 		incr matches
 		exp_continue
 	}
@@ -378,12 +376,29 @@ expect {
 if {$matches == 0} {
 	send_user "\nFAILURE: No error for exceeding processor count\n"
 	set exit_code   1
+} else {
+	send_user "This error is expected, no worries\n"
 }
 
 #
 # Post-processing
 #
 send "exit\n"
+expect {
+	-re "error.*Exit 1" {
+		send_user "This error is expected, no worries\n"
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }

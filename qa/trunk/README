@@ -149,7 +149,7 @@ test4.9    Check sinfo formating options (--format option and SINFO_FORMAT
            environment variable).
 test4.10   Confirm that sinfo reports a proper version number (--version 
            option).
-test4.11   Test down node reason display (--list-reason option).
+test4.11   Test down node reason display (--list-reasons option).
 
 test5.#    Testing of squeue options.
 =====================================
