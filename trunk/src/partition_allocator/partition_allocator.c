@@ -28,10 +28,10 @@
 #include <math.h>
 #include "partition_allocator.h"
 
-int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 #define DEBUG_PA
 #define BEST_COUNT_INIT 10;
 
+int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 bool _initialized = false;
 
 /* _pa_system is the "current" system that the structures will work
@@ -277,12 +277,6 @@ void pa_init(node_info_msg_t *node_info_ptr)
 		return;
 	}
 
-	if(node_info_ptr==NULL) {
-		printf("You need to run slurm_load_node to init the node "
-			"pointer\nbefore calling pa_init.\n");
-		return;
-	}
-	
 	best_count=BEST_COUNT_INIT;
 					
 	pa_system_ptr = (pa_system_t *) xmalloc(sizeof(pa_system_t));
@@ -292,31 +286,37 @@ void pa_init(node_info_msg_t *node_info_ptr)
 	pa_system_ptr->num_of_proc = 0;
 	pa_system_ptr->resize_screen = 0;
 
-	for (i = 0; i < node_info_ptr->record_count; i++) {
-		node_ptr = &node_info_ptr->node_array[i];
-		start = atoi(node_ptr->name + 3);
-		temp = start / 100;
-		if (DIM_SIZE[X] < temp)
-			DIM_SIZE[X] = temp;
-		temp = (start / 10) % 10;
-		if (DIM_SIZE[Y] < temp)
-			DIM_SIZE[Y] = temp;
-		temp = start % 10;
-		if (DIM_SIZE[Z] < temp)
-			DIM_SIZE[Z] = temp;
+	if(node_info_ptr!=NULL) {
+		for (i = 0; i < node_info_ptr->record_count; i++) {
+			node_ptr = &node_info_ptr->node_array[i];
+			start = atoi(node_ptr->name + 3);
+			temp = start / 100;
+			if (DIM_SIZE[X] < temp)
+				DIM_SIZE[X] = temp;
+			temp = (start / 10) % 10;
+			if (DIM_SIZE[Y] < temp)
+				DIM_SIZE[Y] = temp;
+			temp = start % 10;
+			if (DIM_SIZE[Z] < temp)
+				DIM_SIZE[Z] = temp;
+		}
+		DIM_SIZE[X]++;
+		DIM_SIZE[Y]++;
+		DIM_SIZE[Z]++;
+		pa_system_ptr->num_of_proc = node_info_ptr->record_count;
+        }
+	if(DIM_SIZE[X]==0 && DIM_SIZE[X]==0 && DIM_SIZE[X]==0) {
+		printf("You need to give me the dimensions\nto set up the system.\n");
+		return;
 	}
-	DIM_SIZE[X]++;
-	DIM_SIZE[Y]++;
-	DIM_SIZE[Z]++;
+		
 	_create_pa_system();
 
-	pa_system_ptr->num_of_proc = node_info_ptr->record_count;
-                
 	pa_system_ptr->fill_in_value = (pa_node_t *) 
 		xmalloc(sizeof(pa_node_t) * pa_system_ptr->num_of_proc);
-                
+	
 	init_grid(node_info_ptr);
-
+	
 	_create_config_even(pa_system_ptr->grid);
 	
 	path = list_create(NULL);
@@ -347,7 +347,7 @@ void pa_fini()
  * 
  * IN c: coordinate of the node to put down
  */
-void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
+void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 {
 	if (!_initialized){
 		printf("Error, configuration not initialized, "
@@ -356,7 +356,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 	}
 
 #ifdef DEBUG_PA
-	printf("set_node_down: node to set down: [%d%d%d]\n", c[0], c[1], c[2]); 
+	printf("pa_set_node_down: node to set down: [%d%d%d]\n", c[0], c[1], c[2]); 
 #endif
 
 	/* first we make a copy of the current system */
@@ -537,6 +537,11 @@ int redo_part(List nodes, int conn_type, int new_count)
 	return 1;
 }
 
+int set_bgl_part(List nodes, int size, int conn_type)
+{
+	_set_internal_wires(nodes, size, conn_type);
+	return 1;
+}
 /* _init_grid - set values of every grid point */
 void init_grid(node_info_msg_t * node_info_ptr)
 {
@@ -548,25 +553,29 @@ void init_grid(node_info_msg_t * node_info_ptr)
 	for (x = 0; x < DIM_SIZE[X]; x++)
 		for (y = 0; y < DIM_SIZE[Y]; y++)
 			for (z = 0; z < DIM_SIZE[Z]; z++) {
-				node_ptr = &node_info_ptr->node_array[i];
-				node_base_state = (node_ptr->node_state) & (~NODE_STATE_NO_RESPOND);
-				pa_system_ptr->grid[x][y][z].color = 7;
-				if ((node_base_state == NODE_STATE_DOWN) || 
-				    (node_base_state == NODE_STATE_DRAINED) || 
-				    (node_base_state == NODE_STATE_DRAINING)) {
-					pa_system_ptr->grid[x][y][z].color = 0;
-					pa_system_ptr->grid[x][y][z].letter = '#';
-					if(_initialized) {
-						c[0] = x;
-						c[1] = y;
-						c[2] = z;
-						set_node_down(c);
-					}
-				} else {
+				if(node_info_ptr!=NULL) {
+					node_ptr = &node_info_ptr->node_array[i];
+					node_base_state = (node_ptr->node_state) & (~NODE_STATE_NO_RESPOND);
 					pa_system_ptr->grid[x][y][z].color = 7;
-					pa_system_ptr->grid[x][y][z].letter = '.';
+					if ((node_base_state == NODE_STATE_DOWN) || 
+					    (node_base_state == NODE_STATE_DRAINED) || 
+					    (node_base_state == NODE_STATE_DRAINING)) {
+						pa_system_ptr->grid[x][y][z].color = 0;
+						pa_system_ptr->grid[x][y][z].letter = '#';
+						if(_initialized) {
+							c[0] = x;
+							c[1] = y;
+							c[2] = z;
+							pa_set_node_down(c);
+						}
+					} else {
+						pa_system_ptr->grid[x][y][z].color = 7;
+						pa_system_ptr->grid[x][y][z].letter = '.';
+					}
+					pa_system_ptr->grid[x][y][z].state = node_ptr->node_state;
+				} else {
+					pa_system_ptr->grid[x][y][z].state = NODE_STATE_IDLE;
 				}
-				pa_system_ptr->grid[x][y][z].state = node_ptr->node_state;
 				pa_system_ptr->grid[x][y][z].indecies = i++;
 			}
 	y = 65;
@@ -638,7 +647,7 @@ static void _create_pa_system(void)
 				xmalloc(sizeof(pa_node_t) * DIM_SIZE[Z]);
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				int coord[PA_SYSTEM_DIMENSIONS] = {x,y,z};
-				_new_pa_node(&pa_system_ptr->grid[x][y][z], 						coord);
+				_new_pa_node(&pa_system_ptr->grid[x][y][z], coord);
 			}
 		}
 	}
