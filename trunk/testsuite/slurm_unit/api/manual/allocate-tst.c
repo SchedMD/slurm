@@ -101,7 +101,7 @@ main (int argc, char *argv[])
 	for ( ; job_count <max_jobs;  job_count++) {
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. name = ("more.tiny\0");
-		job_mesg. num_procs = 40;
+		job_mesg. num_procs = 32;
  	        job_mesg. user_id = 1500;
 
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
@@ -117,7 +117,7 @@ main (int argc, char *argv[])
 	for ( ; job_count <max_jobs;  job_count++) {
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. name = ("more.queue\0");
-		job_mesg. num_procs = 40;
+		job_mesg. num_procs = 32;
  	        job_mesg. user_id = 1500;
 
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
