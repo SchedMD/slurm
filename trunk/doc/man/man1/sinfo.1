@@ -1,4 +1,4 @@
-.TH SINFO "1" "November 2002" "sinfo 0.1" "Slurm components"
+.TH SINFO "1" "February 2003" "sinfo 0.1" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information of jobs located in the scheduling queue.
@@ -33,9 +33,10 @@ List nodes of a given state.
 List only a partition state summary. Do not show individual nodes.
 .TP
 \fB\-p <partition>\fR, \fB\-\-partition <partition>\fR
-Display information about the specified partition.  If \fB-p\fR is used with a
-\fB-n\fR with no arguments, all the nodes of the specified partition will be
-displayed.
+Display information about the specified partition.  
+If \fB-p\fR is used no arguments, all partitions will be displayed.
+If \fB-p\fR is used with a \fB-n\fR having no arguments, all the nodes of the 
+specified partition will be displayed.
 .TP
 \fB\-\-usage\fR
 Dipaly brief description of commands and options.
