@@ -117,8 +117,8 @@ rpm-internal: tar-internal
 	    <$$spec >$$tmp/SPECS/$$proj.spec; \
 	if ! test -s $$tmp/SPECS/$$proj.spec; then \
 	  echo "ERROR: Cannot create $$proj.spec." 1>&2; exit 1; fi; \
-	rpm --showrc | egrep "_(gpg|pgp)_nam" >/dev/null && sign="--sign"; \
-	if ! rpm -ba --define "_tmppath $$tmp/TMP" --define "_topdir $$tmp" \
+	rpmbuild --showrc | egrep "_(gpg|pgp)_nam" >/dev/null && sign="--sign"; \
+	if ! rpmbuild -ba --define "_tmppath $$tmp/TMP" --define "_topdir $$tmp" \
           $$sign --quiet $$rpmargs $$tmp/SPECS/$$proj.spec \
                                                    >$$tmp/rpm.log 2>&1; then \
 	    cat $$tmp/rpm.log; exit 1; fi; \
