@@ -561,12 +561,12 @@ char *node_state_string(enum node_states inx)
 		"END"
 	};
 	static char *node_down_string[] = {
-		"DOWN",
-		"DOWN+UNKNOWN",
-		"DOWN+IDLE",
-		"DOWN+ALLOCATED",
-		"DOWN+DRAINED",
-		"DOWN+DRAINING",
+		"NoResp+DOWN",
+		"NoResp+UNKNOWN",
+		"NoResp+IDLE",
+		"NoResp+ALLOCATED",
+		"NoResp+DRAINED",
+		"NoResp+DRAINING",
 		"END"
 	};
 	if (inx & NODE_STATE_NO_RESPOND) {
