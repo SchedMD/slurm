@@ -293,9 +293,10 @@ typedef struct resource_allocation_and_run_response_msg {
 	int16_t num_cpu_groups;	/* elements in below cpu arrays */
 	int32_t *cpus_per_node;	/* cpus per node */
 	int32_t *cpu_count_reps;/* how many nodes have same cpu count */
-	uint32_t job_step_id;	/* assigned step id */
 	uint16_t node_cnt;	/* count of nodes */
 	slurm_addr *node_addr;	/* network addresses */
+
+	uint32_t job_step_id;	/* assigned step id */
 	slurm_job_credential_t *credentials;
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
