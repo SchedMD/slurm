@@ -4,6 +4,8 @@
  *
  * See comments about origin, limitations, and internal structure in 
  * bitstring.h.
+ *
+ * J. Garlick April 2002
  */
 
 #include <stdint.h>
@@ -115,42 +117,6 @@ bit_clear(bitstr_t *b, bitoff_t bit)
  *   start (IN)		starting (low numbered) bit position
  *   stop (IN)		ending (higher numbered) bit position
  */
-static void
-bit_nset_slow(bitstr_t *b, bitoff_t start, bitoff_t stop)
-{
-	_assert_bitstr_valid(b);
-	_assert_bit_valid(b, start);
-	_assert_bit_valid(b, stop);
-	while (start <= stop) {
-		bit_set(b, start);
-		start++;
-	}
-}
-
-/* 
- * Clear bits start ... stop in bitstring.
- *   b (IN)		target bitstring
- *   start (IN)		starting (low numbered) bit position
- *   stop (IN)		ending (higher numbered) bit position
- */
-static void
-bit_nclear_slow(bitstr_t *b, bitoff_t start, bitoff_t stop)
-{
-	_assert_bitstr_valid(b);
-	_assert_bit_valid(b, start);
-	_assert_bit_valid(b, stop);
-	while (start <= stop) {
-		bit_clear(b, start);
-		start++;
-	}
-}
-
-/* 
- * Set bits start ... stop in bitstring
- *   b (IN)		target bitstring
- *   start (IN)		starting (low numbered) bit position
- *   stop (IN)		ending (higher numbered) bit position
- */
 void
 bit_nset(bitstr_t *b, bitoff_t start, bitoff_t stop)
 {
@@ -200,15 +166,25 @@ bit_nclear(bitstr_t *b, bitoff_t start, bitoff_t stop)
 bitoff_t
 bit_ffc(bitstr_t *b)
 {
-	bitoff_t bit, value = -1;
+	bitoff_t bit = 0, value = -1;
 
 	_assert_bitstr_valid(b);
 
-	for (bit = 0; bit < _bitstr_bits(b); ++bit)
-		if (!bit_test(b, bit)) {
-			value = bit;
-			break;
+	while (bit < _bitstr_bits(b) && value == -1) {
+		int word = _bit_word(bit);
+
+		if (b[word] == BITSTR_MAXPOS) {
+			bit += sizeof(bitstr_t)*8;
+			continue;
 		}
+		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
+			if (!bit_test(b, bit)) {
+				value = bit;
+				break;
+			}
+			bit++;
+		}
+	}
 	return value;
 }
 
@@ -220,19 +196,30 @@ bit_ffc(bitstr_t *b)
 bitoff_t 
 bit_ffs(bitstr_t *b)
 {
-	bitoff_t bit, value = -1;
+	bitoff_t bit = 0, value = -1;
 
 	_assert_bitstr_valid(b);
 
-	for (bit = 0; bit < _bitstr_bits(b); ++bit)
-		if (bit_test(b, bit)) {
-			value = bit;
-			break;
+	while (bit < _bitstr_bits(b) && value == -1) {
+		int word = _bit_word(bit);
+
+		if (b[word] == 0) {
+			bit += sizeof(bitstr_t)*8;
+			continue;
 		}
+		while (bit < _bitstr_bits(b) && _bit_word(bit) == word) {
+			if (bit_test(b, bit)) {
+				value = bit;
+				break;
+			}
+			bit++;
+		}
+	}
 	return value;
 }
 
-/* 
+
+/*
  * b1 &= b2
  *   b1 (IN/OUT)	first string
  *   b2 (IN)		second bitstring
@@ -311,26 +298,6 @@ hweight(uint64_t w)
  *   b (IN)		bitstring to check
  *   RETURN		count of set bits 
  */
-static int
-bit_set_count_slow(bitstr_t *b)
-{
-	int count = 0;
-	bitoff_t bit;
-
-	_assert_bitstr_valid(b);
-
-	for (bit = 0; bit < _bitstr_bits(b); bit++)
-		if (bit_test(b, bit))
-			count++;
-
-	return count;
-}
-
-/*
- * Count the number of bits set in bitstring.
- *   b (IN)		bitstring to check
- *   RETURN		count of set bits 
- */
 int
 bit_set_count(bitstr_t *b)
 {
@@ -343,18 +310,6 @@ bit_set_count(bitstr_t *b)
 		count += hweight(b[_bit_word(bit)]);
 
 	return count;
-}
-
-/*
- * Count the number of bits clear in bitstring.
- *   b (IN)		bitstring to check
- *   RETURN		count of clear bits 
- */
-static int
-bit_clear_count_slow(bitstr_t *b)
-{
-	_assert_bitstr_valid(b);
-	return (_bitstr_bits(b) - bit_set_count_slow(b));
 }
 
 /*
@@ -423,7 +378,7 @@ bit_fmt(char *str, int len, bitstr_t *b)
 #include <sys/time.h>
 
 int
-main(int argc, char argv[])
+main(int argc, char *argv[])
 {
 	printf("Testing static decl\n");
 	{
@@ -440,6 +395,7 @@ main(int argc, char argv[])
 	printf("Testing basic vixie functions\n");
 	{
 		bitstr_t *bs = bit_alloc(16);
+
 
 		/*bit_set(bs, 42);*/ 	/* triggers assert in bit_set - OK */
 		bit_set(bs,9);
@@ -498,6 +454,7 @@ main(int argc, char argv[])
 	{
 		bitstr_t *bs = bit_alloc(1);
 
+		assert(bit_ffs(bs) == -1);
 		bit_set(bs,0);
 		/*bit_set(bs, 1000);*/	/* triggers assert in bit_set - OK */
 		bs = bit_realloc(bs,1048576);
@@ -506,11 +463,9 @@ main(int argc, char argv[])
 		assert(bit_test(bs, 0));
 		assert(bit_test(bs, 1000));
 		assert(bit_test(bs, 1048575));
-		assert(bit_set_count_slow(bs) == 3);
 		assert(bit_set_count(bs) == 3);
 		bit_clear(bs,0);
 		bit_clear(bs,1000);
-		assert(bit_set_count_slow(bs) == 1);
 		assert(bit_set_count(bs) == 1);
 		assert(bit_ffs(bs) == 1048575);
 		bit_free(bs);
@@ -529,39 +484,6 @@ main(int argc, char argv[])
 		assert(!strcmp(bit_fmt(tmpstr,sizeof(tmpstr), bs), 
 					"[9-14,42,102]"));
 	}
-	printf("Comparing performance of hamming versus shift bit counting\n");
-	{
-		bitstr_t *bs[1024];
-		struct timeval t1, t2, result1, result2;
-		int i, j, count1 = 0, count2 = 0;
-
-		/* set one bit in each word */
-		for (i = 0; i < 1024; i++) {
-			bs[i] = bit_alloc(100000);
-			for (j=0; j<_bitstr_bits(bs[i]); j+=sizeof(bitstr_t))
-			bit_set(bs[i], j);
-		}
-		printf("Starting...\n");
-		gettimeofday(&t1, NULL);
-		for (i = 0; i < 1024; i++)
-			count1 += bit_set_count(bs[i]);
-		gettimeofday(&t2, NULL);
-		timersub(&t2, &t1, &result1);
-		printf("Fast: %fs\n", (float)result1.tv_usec / 1000000.0 
-				+ result1.tv_sec);
-
-		gettimeofday(&t1, NULL);
-		for (i = 0; i < 1024; i++)
-			count2 += bit_set_count_slow(bs[i]);
-		gettimeofday(&t2, NULL);
-		timersub(&t2, &t1, &result2);
-		printf("Slow: %fs\n", (float)result2.tv_usec / 1000000.0 
-				+ result2.tv_sec);
-
-		assert(count1 == count2);
-		printf("Done...\n");
-	}
-
 
 	printf("Testing successful!\n");
 	exit(0);
