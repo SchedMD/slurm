@@ -60,7 +60,7 @@ int Load_Nodes_Up(unsigned **NodeBitMap, int *BitMap_Size);
 main(int argc, char * argv[]) {
     int Error_Code, size;
     char *Out_Line;
-    unsigned *Map1, *Map2, *Map3;
+    unsigned *Map1, *Map2;
     unsigned U_Map[2];
     struct Config_Record *Config_Ptr;
     struct Node_Record *Node_Ptr;
@@ -76,7 +76,7 @@ main(int argc, char * argv[]) {
     unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
     int BitMapSize;		/* Bytes in NodeBitMap */
 
-    /* Bitmap tests */
+    /* Bitmap setup */
     Node_Record_Count = 97;
     size = (Node_Record_Count + 7) / 8;
     Map1 = malloc(size);
@@ -84,26 +84,8 @@ main(int argc, char * argv[]) {
     BitMapSet(Map1, 7);
     BitMapSet(Map1, 23);
     BitMapSet(Map1, 71);
-    Out_Line = BitMapPrint(Map1);
-    printf("BitMapPrint #1 shows %s\n", Out_Line);
-    free(Out_Line);
     Map2 = BitMapCopy(Map1);
-    Out_Line = BitMapPrint(Map2);
-    printf("BitMapPrint #2 shows %s\n", Out_Line);
-    free(Out_Line);
-    Map3 = BitMapCopy(Map1);
-    BitMapClear(Map2, 23);
-    BitMapOR(Map3, Map2);
-    if (BitMapValue(Map3, 23) != 1) printf("ERROR: BitMap Error 1\n");
-    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMap Error 2\n");
-    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMap Error 3\n");
-    BitMapAND(Map3, Map2);
-    if (BitMapValue(Map3, 23) != 0) printf("ERROR: BitMap Error 4\n");
-    if (BitMapValue(Map3, 71) != 1) printf("ERROR: BitMap Error 5\n");
-    if (BitMapValue(Map3, 93) != 0) printf("ERROR: BitMap Error 6\n");
-    Out_Line = BitMapPrint(Map3);
-    printf("BitMapPrint #3 shows %s\n", Out_Line);
-    free(Out_Line);
+    BitMapSet(Map2, 11);
     Node_Record_Count = 0;
 
     /* Now check out configuration and node structure functions */
@@ -138,7 +120,7 @@ main(int argc, char * argv[]) {
     Config_Ptr->CPUs = 543;
     Config_Ptr->Nodes = "lx[03-20]";
     Config_Ptr->Feature = "for_lx03";
-    Config_Ptr->NodeBitMap = Map3;
+    Config_Ptr->NodeBitMap = Map2;
     strcpy(Node_Ptr->Name, "lx03");
     if (Node_Ptr->LastResponse != (time_t)678) printf("ERROR: Node default LastResponse not set\n");
     Node_Ptr->Config_Ptr = Config_Ptr;
@@ -241,155 +223,6 @@ main(int argc, char * argv[]) {
     exit(0);
 } /* main */
 #endif
-
-/*
- * BitMapAND - AND two bitmaps together
- * Input: BitMap1 and BitMap2 - The bitmaps to AND
- * Output: BitMap1 is set to the value of BitMap1 & BitMap2
- */
-void BitMapAND(unsigned *BitMap1, unsigned *BitMap2) {
-    int i, size;
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    for (i=0; i<size; i++) {
-	BitMap1[i] &= BitMap2[i];
-    } /* for (i */
-} /* BitMapAND */
-
-
-/*
- * BitMapClear - Clear the specified bit in the specified bitmap
- * Input: BitMap - The bit map to manipulate
- *        Position - Postition to clear
- * Output: BitMap - Updated value
- */
-void BitMapClear(unsigned *BitMap, int Position) {
-    int val, bit, mask;
-
-    val  = Position / (sizeof(unsigned)*8);
-    bit  = Position % (sizeof(unsigned)*8);
-    mask = ~(0x1 << ((sizeof(unsigned)*8)-1-bit));
-
-    BitMap[val] &= mask;
-} /* BitMapClear */
-
-
-/*
- * BitMapCopy - Create a copy of a bitmap
- * Input: BitMap - The bitmap create a copy of
- * Output: Returns pointer to copy of BitMap or NULL if error (no memory)
- * NOTE:  The returned value MUST BE FREED by the calling routine
- */
-unsigned *BitMapCopy(unsigned *BitMap) {
-    int i, size;
-    unsigned *Output;
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
-    Output = malloc(size);
-    if (Output == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "BitMapCopy: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "BitMapCopy: unable to allocate memory\n");
-#endif
-	return NULL;
-    } /* if */
-
-    size /= sizeof(unsigned);			/* Count of unsigned's */
-    for (i=0; i<size; i++) {
-	Output[i] = BitMap[i];
-    } /* for (i */
-    return Output;
-} /* BitMapCopy */
-
-
-/*
- * BitMapOR - OR two bitmaps together
- * Input: BitMap1 and BitMap2 - The bitmaps to OR
- * Output: BitMap1 is set to the value of BitMap1 | BitMap2
- */
-void BitMapOR(unsigned *BitMap1, unsigned *BitMap2) {
-    int i, size;
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    for (i=0; i<size; i++) {
-	BitMap1[i] |= BitMap2[i];
-    } /* for (i */
-} /* BitMapOR */
-
-
-/*
- * BitMapPrint - Convert the specified bitmap into a printable hexadecimal string
- * Input: BitMap - The bit map to print
- * Output: Returns a string
- * NOTE: The returned string must be freed by the calling program
- */
-char *BitMapPrint(unsigned *BitMap) {
-    int i, j, k, size, nibbles;
-    char *Output, temp_str[2];
-
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
-    nibbles = (Node_Record_Count + 3) / 4;
-    Output = (char *)malloc(nibbles+3);
-    if (Output == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "BitMapPrint: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "BitMapPrint: unable to allocate memory\n");
-#endif
-	return NULL;
-    } /* if */
-
-    strcpy(Output, "0x");
-    k = 0;
-    for (i=0; i<size; i++) {				/* Each unsigned */
-	for (j=((sizeof(unsigned)*8)-4); j>=0; j-=4) {	/* Each nibble */
-	    sprintf(temp_str, "%x", ((BitMap[i]>>j)&0xf));
-	    strcat(Output, temp_str);
-	    k++;
-	    if (k == nibbles) return Output;
-	} /* for (j */
-    } /* for (i */
-    return Output;
-} /* BitMapPrint */
-
-
-/*
- * BitMapSet - Set the specified bit in the specified bitmap
- * Input: BitMap - The bit map to manipulate
- *        Position - Postition to set
- * Output: BitMap - Updated value
- */
-void BitMapSet(unsigned *BitMap, int Position) {
-    int val, bit, mask;
-
-    val  = Position / (sizeof(unsigned)*8);
-    bit  = Position % (sizeof(unsigned)*8);
-    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-
-    BitMap[val] |= mask;
-} /* BitMapSet */
-
-
-/*
- * BitMapValue - Return the value of specified bit in the specified bitmap
- * Input: BitMap - The bit map to get value from
- *        Position - Postition to get
- * Output: Returns the value 0 or 1
- */
-int BitMapValue(unsigned *BitMap, int Position) {
-    int val, bit, mask;
-
-    val  = Position / (sizeof(unsigned)*8);
-    bit  = Position % (sizeof(unsigned)*8);
-    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
-
-    mask &= BitMap[val];
-    if (mask == 0)
-	return 0;
-    else
-	return 1;
-} /* BitMapValue */
 
 
 /*
