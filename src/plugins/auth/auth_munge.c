@@ -158,7 +158,7 @@ int
 slurm_auth_free( slurm_auth_credential_t *cred )
 {
 	if (!cred) {
-		plugin_errno = SLURM_BADARG;
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -191,7 +191,7 @@ slurm_auth_activate( slurm_auth_credential_t *cred, int secs )
 	munge_ctx_t *ctx = NULL;
 
 	if (!cred) {
-		plugin_errno = SLURM_BADARG;
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -215,7 +215,7 @@ int
 slurm_auth_verify( slurm_auth_credential_t *c )
 {
 	if (!c) {
-		plugin_errno = SLURM_BADARG;
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 
@@ -225,7 +225,7 @@ slurm_auth_verify( slurm_auth_credential_t *c )
 		return SLURM_SUCCESS;
 
 	if (_decode_cred(c->m_str, c) < 0) {
-		cred->cr_errno = SLURM_ERROR;
+		c->cr_errno = SLURM_ERROR;
 		return SLURM_ERROR;
 	}
 
@@ -244,7 +244,7 @@ uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred )
 {
 	if (cred == NULL) {
-		plugin_errno = SLURM_BADARG;
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
 	if (!cred->verified) {
@@ -265,7 +265,7 @@ gid_t
 slurm_auth_get_gid( slurm_auth_credential_t *cred )
 {
 	if (cred == NULL) {
-		plugin_errno = SLURM_BADARG;
+		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_AUTH_NOBODY;
 	}
 	if (!cred->verified) {
@@ -335,7 +335,7 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	 * Get the authentication type.
 	 */
 	if ( unpackmem_ptr( &type, &size, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_PACK;
+		cred->cr_errno = SLURM_AUTH_UNPACK;
 		return SLURM_ERROR;
 	}
 	if ( strcmp( type, plugin_type ) != 0 ) {
@@ -343,12 +343,12 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 		return SLURM_ERROR;
 	}
 	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
-		cred->cr_errno = SLURM_AUTH_PACK;
+		cred->cr_errno = SLURM_AUTH_UNPACK;
 		return SLURM_ERROR;
 	}	
 
 	if (unpackmem_ptr(&m, &size, buf) < 0) {
-		cred->cr_errno = SLURM_AUTH_PACK;
+		cred->cr_errno = SLURM_AUTH_UNPACK;
 		return SLURM_ERROR;
 	}
 
