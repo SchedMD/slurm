@@ -893,8 +893,15 @@ static bool _opt_verify(void)
 	bool verified = true;
 	uid_t euid;
 
-	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG3)
-		opt.slurmd_debug = LOG_LEVEL_DEBUG3 - LOG_LEVEL_ERROR;
+	/*
+	 *  Do not set slurmd debug level higher than DEBUG2,
+	 *   as DEBUG3 is used for slurmd IO operations, which
+	 *   are not appropriate to be sent back to srun. (because
+	 *   these debug messages cause the generation of more
+	 *   debug messages ad infinitum)
+	 */
+	if (opt.slurmd_debug + LOG_LEVEL_ERROR > LOG_LEVEL_DEBUG2)
+		opt.slurmd_debug = LOG_LEVEL_DEBUG2 - LOG_LEVEL_ERROR;
 
 	/*
 	 * If we are root and have been asked to submit as another
