@@ -133,7 +133,9 @@ static int _build_bitmaps(void)
 			       (~NODE_STATE_NO_RESPOND);
 		no_resp_flag = node_record_table_ptr[i].node_state & 
 			       NODE_STATE_NO_RESPOND;
-		if (base_state == NODE_STATE_IDLE)
+		if ((base_state == NODE_STATE_IDLE   ) ||
+		    (base_state == NODE_STATE_DOWN   ) ||
+		    (base_state == NODE_STATE_DRAINED))
 			bit_set(idle_node_bitmap, i);
 		if ((base_state != NODE_STATE_DOWN)     &&
 		    (base_state != NODE_STATE_UNKNOWN)  &&
