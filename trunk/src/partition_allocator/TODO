@@ -1,0 +1,24 @@
+- be able to translate out the geometry
+- add trace of coordinates into structures
+
+- use symmetry of wiring to reduce size of problem.
+
+- add table to store results
+  > partition sizes, geometery, coordinates?, torus/non-torus
+
+- add functionality to query table
+- input/output of 
+  > static wiring
+  > mark certain nodes as down
+
+done- add permutations of switch with only 2 or 1 wire(s).
+done- add complexity of another dimension.
+
+done- how to indicate that a partition is toridal vs mesh?
+  > brute force: traverse it
+done > smarter -> keep track of non-toridal conns.  if none = torus.
+
+done - switch to smarter graph checking (flexing) implementation.
+
+done - if merging, remember to change all the internal connections
+of the node to be the new label (ID)
