@@ -24,14 +24,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#include <stdlib.h> // for exit(int);
+#include <stdlib.h>
+#include <math.h>
 #include "partition_allocator.h"
 #include "graph_solver.h"
-#include <math.h>
 
 int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {8,4,4};
-
-struct pa_node*** _pa_system_list;
+// #define DEBUG_PA
 
 /**
  * These lists hold the partition data and corresponding
@@ -51,8 +50,12 @@ bool _initialized = false;
  * link to the other neighbor nodes and holds the list of possible
  * configurations for the X, Y, and Z switches.
  */
-struct pa_node*** _pa_system;
-List pa_system_copies;
+typedef struct pa_node*** pa_system_t;
+
+/* _pa_system is the "current" system that the structures will work
+ *  on */
+pa_system_t _pa_system;
+List _pa_system_list;
 
 /** 
  * pa_node: node within the allocation system.  Note that this node is
@@ -76,7 +79,6 @@ typedef struct pa_node {
 /** internal helper functions */
 /** */
 void _new_pa_node(pa_node_t* pa_node, int* coordinates);
-// void _new_pa_node(pa_node_t** pa_node);
 /** */
 void _print_pa_node();
 /** */
@@ -86,15 +88,19 @@ int _listfindf_pa_node(pa_node_t* A, pa_node_t* B);
 /** */
 bool _is_down_node(pa_node_t* pa_node);
 /* */
-void _create_pa_system();
+void _create_pa_system(pa_system_t* pa_system, List* conf_result_list);
 /* */
-void _print_pa_system();
-// void _create_pa_system(pa_node_t**** pa_system, List* conf_result_list);
+void _print_pa_system(pa_system_t pa_system);
 /* */
-void _delete_pa_system();
-// void _delete_pa_system(pa_node_t*** pa_system);
+void _delete_pa_system(void* object);
+/* */
+void _copy_pa_system(pa_system_t source, pa_system_t* target);
+/* */
+void _backup_pa_system();
+/** load the partition configuration from file */
+int _load_part_config(char* filename, List part_config_list);
 /* run the graph solver to get the conf_result(s) */
-int _get_part_config(List port_config_list, List conf_result_list);
+int _get_part_config(int num_nodes, List port_config_list, List conf_result_list);
 /* find the first partition match in the system */
 int _find_first_match(pa_request_t* pa_request, List* results);
 bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int const_dim, 
@@ -124,7 +130,17 @@ bool _is_contiguous(int size, int* node_id);
 static void _print_results(List results);
 /* */
 static void _insert_result(List results, pa_node_t* result);
-
+/** */
+int _parse_conf_result(char *in_line, List config_result_list);
+/** */
+int _tokenize_int(char* source, int size, char* delimiter, int* int_array);
+/** */
+int _tokenize_node_ids(char* source, int size, int* partition_sizes, 
+		       char *delimiter, char *separator, int** node_id);
+int _tokenize_port_conf_list(char* source, char* delimiter, 
+			     char* separator, List port_conf_list);
+int _tokenize_port_conf(char* source, char* delimiter,
+			List port_conf_list);
 
 /** */
 void _new_pa_node(pa_node_t* pa_node, int* coord)
@@ -195,23 +211,23 @@ void _print_pa_node(pa_node_t* pa_node)
 }
 
 /** */
-void _create_pa_system()
+void _create_pa_system(pa_system_t* pa_system, List* conf_result_list)
 {
 	int i, x, y, z;
-	_pa_system = (pa_node_t***) xmalloc(sizeof(pa_node_t**) * DIM_SIZE[X]);
+	*pa_system = (pa_node_t***) xmalloc(sizeof(pa_node_t**) * DIM_SIZE[X]);
 	for (x=0; x<DIM_SIZE[X]; x++){
-		_pa_system[x] = (pa_node_t**) xmalloc(sizeof(pa_node_t*) * DIM_SIZE[Y]);
+		(*pa_system)[x] = (pa_node_t**) xmalloc(sizeof(pa_node_t*) * DIM_SIZE[Y]);
 
 		for (y=0; y<DIM_SIZE[Y]; y++){
-			_pa_system[x][y] = (pa_node_t*) xmalloc(sizeof(pa_node_t) * DIM_SIZE[Z]);
+			(*pa_system)[x][y] = (pa_node_t*) xmalloc(sizeof(pa_node_t) * DIM_SIZE[Z]);
 
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				int coord[PA_SYSTEM_DIMENSIONS] = {x,y,z};
-				_new_pa_node(&(_pa_system[x][y][z]), coord);
+				_new_pa_node(&((*pa_system)[x][y][z]), coord);
 
 				for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-					list_copy(_conf_result_list[i], 
-						  &(_pa_system[x][y][z].conf_result_list[i]));
+					list_copy(conf_result_list[i], 
+						  &((*pa_system)[x][y][z].conf_result_list[i]));
 				}
 			}
 		}
@@ -219,65 +235,302 @@ void _create_pa_system()
 }
 
 /** */
-void _print_pa_system()
+void _print_pa_system(pa_system_t pa_system)
 {
 	int x=0,y=0,z=0;
-	printf("pa_system: \n");
+	printf("pa_system: %d%d%d\n", DIM_SIZE[X], DIM_SIZE[Y], DIM_SIZE[Z]);
 	for (x=0; x<DIM_SIZE[X]; x++){
 		for (y=0; y<DIM_SIZE[Y]; y++){
 			for (z=0; z<DIM_SIZE[Z]; z++){
 				printf(" pa_node %d%d%d 0x%p: \n", x, y, z,
-				       &(_pa_system[x][y][z]));
-				_print_pa_node(&(_pa_system[x][y][z]));
+				       &(pa_system[x][y][z]));
+				_print_pa_node(&(pa_system[x][y][z]));
 			}
 		}
 	}
 }
 
 /** */
-void _delete_pa_system()
+void _delete_pa_system(void* object)
 {
 	int x, y, z;
+	pa_system_t* pa_system = (pa_system_t*) object;
 
-	if (!_initialized){
+	// 999
+	return;
+
+	if (!pa_system){
 		return;
 	}
-
+	
 	for (x=0; x<DIM_SIZE[X]; x++){
 		for (y=0; y<DIM_SIZE[Y]; y++){
 			for (z=0; z<DIM_SIZE[Z]; z++){
-				_delete_pa_node(&(_pa_system[x][y][z]));
-			}
-			xfree(_pa_system[x][y]);
+				// 999: memory leak!!!
+				_delete_pa_node(&((*pa_system)[x][y][z]));
+			}			
+			xfree((*pa_system)[x][y]);
 		}
-		xfree(_pa_system[x]);
+		xfree((*pa_system)[x]);
 	}
-	xfree(_pa_system);
+	xfree(*pa_system);
 }
 
+/* */
+void _copy_pa_system(pa_system_t source, pa_system_t* target)
+{
+	int i, x, y, z;
+	*target = (pa_node_t***) xmalloc(sizeof(pa_node_t**) * DIM_SIZE[X]);
+	for (x=0; x<DIM_SIZE[X]; x++){
+		(*target)[x] = (pa_node_t**) xmalloc(sizeof(pa_node_t*) * DIM_SIZE[Y]);
+
+		for (y=0; y<DIM_SIZE[Y]; y++){
+			(*target)[x][y] = (pa_node_t*) xmalloc(sizeof(pa_node_t) * DIM_SIZE[Z]);
+			
+			for (z=0; z<DIM_SIZE[Z]; z++){
+				int coord[PA_SYSTEM_DIMENSIONS] = {x,y,z};
+				_new_pa_node(&((*target)[x][y][z]), coord);
+
+				for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+					if (source[x][y][z].conf_result_list[i] != NULL)
+						list_copy(source[x][y][z].conf_result_list[i],
+							  &((*target)[x][y][z].conf_result_list[i]));
+				}
+			}
+		}
+	}
+}
+
+void _backup_pa_system()
+{
+	pa_system_t new_system;
+	// new_system = (pa_system_t*) xmalloc(sizeof(pa_system_t));
+	
+	list_push(_pa_system_list, &_pa_system);
+	_copy_pa_system(_pa_system, &new_system);
+	_pa_system = new_system;
+
+}
+
+/** load the partition configuration from file */
+int _load_part_config(char* filename, List config_result_list)
+{
+
+	FILE *conf_file;	/* pointer to input data file */
+	int line_num;		/* line number in input file */
+	char in_line[BUFSIZE];	/* input line */
+	int i, j, error_code;
+
+#ifdef DEBUG_PA
+	printf("loading partition configuration from %s\n", filename);
+#endif
+
+	/* initialization */
+	conf_file = fopen(filename, "r");
+	if (conf_file == NULL)
+		fatal("_load_part_config error opening file %s, %m",
+		      filename);
+
+	/* process the data file */
+	line_num = 0;
+	while (fgets(in_line, BUFSIZE, conf_file) != NULL) {
+		line_num++;
+		if (strlen(in_line) >= (BUFSIZE - 1)) {
+			error("_load_part_configig line %d, of input file %s "
+			      "too long", line_num, filename);
+			fclose(conf_file);
+			return E2BIG;
+			break;
+		}
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		/* escape sequence "\#" translated to "#" */
+		for (i = 0; i < BUFSIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {
+				for (j = i; j < BUFSIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}
+				continue;
+			}
+			in_line[i] = (char) NULL;
+			break;
+		}
+		
+		/* parse what is left, non-comments */
+		/* partition configuration parameters */
+		error_code = _parse_conf_result(in_line, config_result_list);
+		
+		/* report any leftover strings on input line */
+		report_leftover(in_line, line_num);
+	}
+	fclose(conf_file);
+	
+	return error_code;
+}
+
+/*
+ * _parse_conf_result - parse the partition configuration result,
+ * build table and set values
+ * IN/OUT in_line - line from the configuration file
+ * 
+ * RET 0 if no error, error code otherwise
+ */
+int _parse_conf_result(char *in_line, List config_result_list)
+{
+	int error_code = SLURM_SUCCESS;
+	conf_result_t *conf_result;
+	conf_data_t *conf_data;
+
+	/* stuff used for tokenizing */
+	char *delimiter=",", *separator="/";
+
+	/* elements of the file */
+	int num_partitions;
+	char *part_sizes = NULL, *part_types = NULL, *node_ids = NULL, *port_confs = NULL;
+
+	error_code = slurm_parser(in_line,
+				  "NumPartitions=", 'd', &num_partitions,
+				  "PartitionSizes=", 's', &part_sizes,
+				  "PartitionTypes=", 's', &part_types,
+				  "NodeIDs=", 's', &node_ids,
+				  "PortConfig=", 's', &port_confs,
+				  "END");
+
+	if (error_code || num_partitions<1 || !part_sizes || !part_types ||
+	    !node_ids || !port_confs){
+		error_code = SLURM_ERROR;
+		goto cleanup;
+	}
+
+	new_conf_data(&conf_data, num_partitions);
+	
+	_tokenize_int(part_sizes, num_partitions,
+		      delimiter, conf_data->partition_sizes);
+	_tokenize_int(part_types, num_partitions,
+		      delimiter, (int*) conf_data->partition_type);
+	_tokenize_node_ids(node_ids, num_partitions, conf_data->partition_sizes,
+			   delimiter, separator, conf_data->node_id);
+
+	new_conf_result(&conf_result, conf_data);
+
+	_tokenize_port_conf_list(port_confs, delimiter, separator,
+				 conf_result->port_conf_list);
+
+	list_push(config_result_list, conf_result);
+
+  cleanup:
+	xfree(part_sizes);
+	xfree(part_types);
+	xfree(node_ids);
+	xfree(port_confs);
+	return error_code;
+}
+
+/* */
+int _tokenize_int(char* source, int size, char* delimiter, int* int_array)
+{
+	char *stuff, *cpy, *next_ptr;
+	int i;
+
+	cpy = source;
+	stuff = strtok_r(cpy, delimiter, &next_ptr);
+	for (i = 0; i<size; i++){
+		int_array[i] = atoi(stuff);
+		cpy = next_ptr;
+		stuff = strtok_r(cpy, delimiter, &next_ptr);
+	}
+	return SLURM_SUCCESS;
+}
+
+/* */
+int _tokenize_node_ids(char* source, int size, int* partition_sizes, 
+		       char *delimiter, char *separator, int** node_id)
+{
+	char *stuff, *cpy, *next_ptr;
+	int i;
+
+	cpy = source;
+	stuff = strtok_r(cpy, delimiter, &next_ptr);
+	for (i = 0; i<size; i++){
+		// int_array[i] = stuff;
+		node_id[i] = (int*) xmalloc(sizeof(int)*partition_sizes[i]);
+		if (_tokenize_int(stuff, partition_sizes[i], separator, node_id[i])){
+			return SLURM_ERROR;
+		}
+		cpy = next_ptr;
+		stuff = strtok_r(cpy, delimiter, &next_ptr);
+	}
+	return SLURM_SUCCESS;
+}
+
+int _tokenize_port_conf_list(char* source, char* delimiter, 
+			     char* separator, List port_conf_list)
+{
+	char *stuff, *cpy, *next_ptr;
+
+	cpy = source;
+	while((stuff = strtok_r(cpy, delimiter, &next_ptr))){
+		_tokenize_port_conf(stuff, separator, port_conf_list);
+
+		// int_array[i] = atoi(stuff);
+		cpy = next_ptr;
+		// stuff = strtok_r(cpy, delimiter, &next_ptr);
+	}
+
+	return SLURM_SUCCESS;
+}
+
+int _tokenize_port_conf(char* source, char* delimiter,
+			List port_conf_list)
+{
+	char *stuff, *cpy, *next_ptr;
+	int i;
+	int plus_ports[PA_SYSTEM_DIMENSIONS];
+	int minus_ports[PA_SYSTEM_DIMENSIONS];
+	port_conf_t* port_conf;
+	
+	cpy = source;
+	stuff = strtok_r(cpy, delimiter, &next_ptr);
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+		plus_ports[i] = stuff[i]-'0';
+	}
+
+	cpy = next_ptr;
+	stuff = strtok_r(cpy, delimiter, &next_ptr);
+	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
+		minus_ports[i] = stuff[i]-'0';
+	}
+	new_port_conf(&port_conf, plus_ports, minus_ports);
+	list_append(port_conf_list, port_conf);
+	return SLURM_SUCCESS;
+}
 
 /** 
  * get the partition configuration for the given port configuration
  */
-int _get_part_config(List switch_config_list, List part_config_list)
+int _get_part_config(int num_nodes, List switch_config_list, List config_result_list)
 {
-	int num_nodes = 4;
 	int rc = 1;
-	if (init_system(switch_config_list, num_nodes)){
+	if (gs_init(switch_config_list, num_nodes)){
 		printf("error initializing system\n");
 		goto cleanup;
 	}
 	/* first we find the partition configurations for the separate
 	 * dimensions
 	 */
-	if (find_all_tori(part_config_list)){
+	if (find_all_tori(config_result_list)){
 		printf("error finding all tori\n");
 		goto cleanup;
 	}
 	rc = 0;
 
  cleanup:
-	delete_system();
+	gs_fini();
 	return rc;
 }
 
@@ -873,7 +1126,7 @@ int _cmpf_int(int* A, int* B)
  * IN - elongate: if true, will try to fit different geometries of
  *      same size requests
  * IN - contig: enforce contiguous regions constraint
- * IN - conn_type: connection type of request (TORUS or MESH)
+ * IN - conn_type: connection type of request (RM_TORUS or RM_MESH)
  * 
  * return SUCCESS of operation.
  */
@@ -978,50 +1231,85 @@ void pa_init()
 {
 	int i;
 	List switch_config_list;
+	pa_system_t* pa_system = NULL;
+	
+#ifdef DEBUG_PA
+	printf("pa_init()\n");
+#endif
+	/* if we've initialized, just pop off all the old crusty
+	 * pa_systems */
+	if (_initialized){
+		while((pa_system = (pa_system_t*) list_pop(_pa_system_list))){
+			;
+		}
 
+		/* after that's done, we should be left with the top
+		 * of the stack which was the original pa_system */
+		_pa_system = *pa_system;
+		return;
+	}
+
+	char** filenames = (char**)xmalloc(sizeof(char*) * PA_SYSTEM_DIMENSIONS);
 	_conf_result_list = (List*) xmalloc(sizeof(List) * PA_SYSTEM_DIMENSIONS);
 	
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 		_conf_result_list[i] = list_create(delete_conf_result);
 	}
 
-	/** 
-	 * hard code in configuration until we can read it from a file 
-	 */
-	/** yes, I know, y and z configs are the same, but i'm doing this
-	 * in case they change
-	 */
+	/* see if we need to load in the filenames from the env */
+	filenames[X] = getenv("X_DIM_CONF");
+	filenames[Y] = getenv("Y_DIM_CONF");
+	filenames[Z] = getenv("Z_DIM_CONF");
 
 	/* create the X configuration (8 nodes) */
-	switch_config_list = list_create(delete_gen);
-	create_config_8_1d(switch_config_list);
-	if (_get_part_config(switch_config_list, _conf_result_list[X])){
-		printf("Error getting configuration\n");
-		exit(0);
+	if (filenames[X]){
+		_load_part_config(filenames[X], _conf_result_list[X]);
+	} else {
+		switch_config_list = list_create(delete_gen);
+		create_config_8_1d(switch_config_list);
+		if (_get_part_config(8, switch_config_list, _conf_result_list[X])){
+			printf("Error getting configuration\n");
+			exit(0);
+		}
+		list_destroy(switch_config_list);
 	}
-	list_destroy(switch_config_list);
+
+	// 999
+	// exit(0);	
 
 	/* create the Y configuration (4 nodes) */
-	switch_config_list = list_create(delete_gen);
-	create_config_4_1d(switch_config_list);
-	if (_get_part_config(switch_config_list, _conf_result_list[Y])){
-		printf("Error getting configuration\n");
-		exit(0);
+	if (filenames[Y]){
+		_load_part_config(filenames[Y], _conf_result_list[Y]);
+	} else {
+		switch_config_list = list_create(delete_gen);
+		create_config_4_1d(switch_config_list);
+		if (_get_part_config(4, switch_config_list, _conf_result_list[Y])){
+			printf("Error getting configuration\n");
+			exit(0);
+		}
+		list_destroy(switch_config_list);
 	}
-	list_destroy(switch_config_list);
 
 	/* create the Z configuration (4 nodes) */
-	switch_config_list = list_create(delete_gen);
-	create_config_4_1d(switch_config_list);
-	if (_get_part_config(switch_config_list, _conf_result_list[Z])){
-		printf("Error getting configuration\n");
-		exit(0);
+	if (filenames[Z]){
+		_load_part_config(filenames[Z], _conf_result_list[Z]);
+	} else {
+		switch_config_list = list_create(delete_gen);
+		create_config_4_1d(switch_config_list);
+		if (_get_part_config(4, switch_config_list, _conf_result_list[Z])){
+			printf("Error getting configuration\n");
+			exit(0);
+		}
+		list_destroy(switch_config_list);
 	}
-	list_destroy(switch_config_list);
 
+	xfree(filenames);
 
-	_create_pa_system();
+	_create_pa_system(&_pa_system, _conf_result_list);
+	_pa_system_list = list_create(_delete_pa_system);
 	_initialized = true;
+	
+	// whenever we make a change, we do this: 
 }
 
 /** 
@@ -1029,13 +1317,23 @@ void pa_init()
  */
 void pa_fini()
 {
+	ListIterator itr;
 	int i;
-
+	pa_system_t* pa_system;
+#ifdef DEBUG_PA
+	printf("pa_fini()\n");
+#endif
 	for (i=0; i<PA_SYSTEM_DIMENSIONS; i++) {
 		list_destroy(_conf_result_list[i]);
 	}
 	xfree(_conf_result_list);
-	_delete_pa_system();
+
+	itr = list_iterator_create(_pa_system_list);
+	while((pa_system = (pa_system_t*) list_next(itr))){
+		_delete_pa_system(pa_system);
+	}
+	list_iterator_destroy(itr);
+	
 	printf("pa system destroyed\n");
 }
 
@@ -1055,6 +1353,9 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 #ifdef DEBUG_PA
 	printf("set_node_down: node to set down: [%d%d%d]\n", c[0], c[1], c[2]); 
 #endif
+
+	/* first we make a copy of the current system */
+	_backup_pa_system();
 
 	/* basically set the node as NULL */
 	_delete_pa_node(&(_pa_system[c[0]][c[1]][c[2]]));
@@ -1086,9 +1387,30 @@ int allocate_part(pa_request_t* pa_request, List* results)
 	print_pa_request(pa_request);
 #endif
 
+	_backup_pa_system();
 	_find_first_match(pa_request, results);
 	return 1;
 }
+
+/** 
+ * Doh!  Admin made a boo boo.  Note: Undo only has one history
+ * element, so two consecutive undo's will fail.
+ *
+ * returns SLURM_SUCCESS if undo was successful.
+ */
+int undo_last_allocatation()
+{
+	pa_system_t* pa_system;
+	pa_system = (pa_system_t*) list_pop(_pa_system_list);
+	if (pa_system == NULL){
+		return SLURM_ERROR;
+	} else {
+		_delete_pa_system(_pa_system);
+		_pa_system = *pa_system;
+	}
+	return SLURM_SUCCESS;
+}
+
 
 /** */
 int main(int argc, char** argv)
@@ -1114,7 +1436,6 @@ int main(int argc, char** argv)
 	set_node_down(dead_node2);
 	printf("done setting node down\n");
 	*/
-	// _print_pa_system();
 	
 	int geo[3] = {2,2,2};
 	bool rotate = false;
@@ -1122,7 +1443,7 @@ int main(int argc, char** argv)
 	bool force_contig = true;
 	List results;
 	pa_request_t* request; 
-	new_pa_request(&request, geo, -1, rotate, elongate, force_contig, TORUS);
+	new_pa_request(&request, geo, -1, rotate, elongate, force_contig, RM_TORUS);
 	
 	// int i;
 	// for (i=0; i<8; i++){
@@ -1136,12 +1457,11 @@ int main(int argc, char** argv)
 	// }
 
 	if (allocate_part(request, &results)){
-		printf("I allocated it success for %d%d%d\n", 
+		printf("allocate success for %d%d%d\n", 
 		       geo[0], geo[1], geo[2]);
 		// _print_results(results);
 		list_destroy(results);
 	}
-	_print_pa_system();
 
 	delete_pa_request(request);
 	

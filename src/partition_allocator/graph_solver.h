@@ -110,7 +110,9 @@ int find_all_tori(List part_config_list);
 /** */
 void print_system(system_t* sys);
 /** */
-int init_system(List port_config_list, int num_nodes);
+int gs_init(List port_config_list, int num_nodes);
+/** */
+void gs_fini();
 /* */
 void sort_node_id(int* node_id, int size);
 
@@ -118,7 +120,7 @@ void sort_node_id(int* node_id, int size);
 void create_config_9_2d(List switch_config_list);
 /** 2x2x2 */
 void create_config_8_3d(List switch_config_list);
-/** 2x2x2 */
+/** 8x1x1 */
 void create_config_8_1d(List switch_config_list);
 /** 2x2x1 */
 void create_config_4_2d(List switch_config_list);

@@ -27,15 +27,19 @@
 #ifndef _PARTITION_ALLOCATOR_H_
 #define _PARTITION_ALLOCATOR_H_
 
+#include "src/common/read_config.h"
+#include "src/common/parse_spec.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
+#include "src/common/xstring.h"
 #include "src/partition_allocator/graph_structs.h"
 
 #define PA_SYSTEM_DIMENSIONS 3
 // #define DEBUG_PA
-#define UNDO_BUFFER 3
 #define BIG_MAX 9999;
+#define BUFSIZE 4096
 
 extern bool _initialized;
 struct pa_request;
@@ -116,8 +120,10 @@ int allocate_part(struct pa_request* pa_request, List* results);
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
  * element, so two consecutive undo's will fail.
+ * 
+ * returns SLURM_SUCCESS if undo was successful.
  */
-void undo_last_allocatation();
+int undo_last_allocatation();
 
 
 #endif /* _PARTITION_ALLOCATOR_H_ */
