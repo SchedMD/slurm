@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "August 2002" "Morris Jette" "Slurm job management calls"
+.TH "Slurm API" "3" "September 2002" "Morris Jette" "Slurm job management calls"
 .SH "NAME"
 .LP 
 \fBslurm_job\fR \- Slurm job management calls
@@ -44,6 +44,12 @@ int \fBslurm_complete_job_step\fR (
 .br 
 );
 .LP
+void \fBslurm_free_job_step_create_response_msg\fR (
+.br
+	job_step_create_response_msg_t *\fIslurm_step_alloc_resp_msg_ptr\fP
+.br
+);
+.LP
 void \fBslurm_free_resource_allocation_response_msg\fR ( 
 .br 
 	resource_allocation_response_msg_t *\fIslurm_alloc_msg_ptr\fP 
@@ -70,6 +76,15 @@ int \fBslurm_job_will_run\fR (
 .br 
 );
 .LP
+int \fBslurm_job_step_create\fR (
+.br
+	job_step_create_request_msg_t *\fIslurm_step_alloc_req_msg_ptr\fP, 
+.br
+	job_step_create_response_msg_t **\fIslurm_step_alloc_resp_msg_pptr\fP
+.br
+);
+{
+.LP
 int \fBslurm_submit_batch_job\fR (
 .br 
 	job_desc_msg_t *\fIjob_desc_msg_ptr\fP,
@@ -87,22 +102,43 @@ int \fBslurm_update_job\fR (
 .LP 
 .TP 
 \fIimmediate\fP
-If set do not queue the job; return the an error code or the results of a successful allocation immediately; do not queue the request.
+If set do not queue the job; return the an error code or the results of a successful 
+allocation immediately; do not queue the request.
 .TP 
 \fIjob_desc_msg_ptr\fP
-Specifies the pointer to a job request specification. See slurm.h for full details on the data structure's contents. 
+Specifies the pointer to a job request specification. See slurm.h for full details 
+on the data structure's contents. 
 .TP 
 \fIjob_id\fP
 Slurm job id number.
 .TP 
 \fIslurm_alloc_msg_pptr\fP
-Specifies the double pointer to the structure to be created and filled with a description of the created resource allocation (job): job ID, list of allocated nodes, processor count per allocated node, etc. See slurm.h for full details on the data structure's contents. 
+Specifies the double pointer to the structure to be created and filled with a 
+description of the created resource allocation (job): job ID, list of allocated nodes, 
+processor count per allocated node, etc. See slurm.h for full details on the data 
+structure's contents. 
 .TP 
 \fIslurm_alloc_msg_ptr\fP
-Specifies the pointer to the structure to be created and filled in by the function \fIslurm_allocate_resources\fP or \fIslurm_job_will_run\fP.
+Specifies the pointer to the structure to be created and filled in by the function 
+\fIslurm_allocate_resources\fP or \fIslurm_job_will_run\fP.
+.TP
+\fIslurm_step_alloc_req_msg_ptr\fP
+Specifies the pointer to the structure with job spep request specification. See 
+slurm.h for full details on the data structure's contents.
+.TP
+\fIslurm_step_alloc_resp_msg_pptr\fP
+Specifies the double pointer to the structure to be created and filled with a description of the 
+created job step: node allocation, credentials, etc. See slurm.h for full details on the data 
+structure's contents. 
+.TP
+\fIslurm_step_alloc_resp_msg_ptr\fP
+Specifies the pointer to the structure to be created and filled with a description of the 
+created job step: node allocation, credentials, etc. See slurm.h for full details on the data 
+structure's contents. 
 .TP 
 \fIslurm_submit_msg_pptr\fP
-Specifies the double pointer to the structure to be created and filled with a description of the created job: job ID, etc. See slurm.h for full details on the data structure's contents. 
+Specifies the double pointer to the structure to be created and filled with a description 
+of the created job: job ID, etc. See slurm.h for full details on the data structure's contents. 
 .TP 
 \fIslurm_submit_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function \fIslurm_submit_batch_job\fP.
@@ -111,27 +147,51 @@ Specifies the pointer to the structure to be created and filled in by the functi
 Slurm job step id number.
 .SH "DESCRIPTION"
 .LP 
-\fBslurm_allocate_resources\fR Request a resource allocation for a job. If successful, a job entry is created. Always release the response message when no longer required using the function \fBslurm_free_resource_allocation_response_msg\fR.
+\fBslurm_allocate_resources\fR Request a resource allocation for a job. If successful, a 
+job entry is created. Always release the response message when no longer required using 
+the function \fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
-\fBslurm_cancel_job\fR Request the cancellation of a running or pending job. This function may only be successfully executed by the job's owner or user root.
+\fBslurm_cancel_job\fR Request the cancellation of a running or pending job. This function 
+may only be successfully executed by the job's owner or user root.
 .LP 
-\fBslurm_cancel_job_step\fR Request the cancellation of a running job step. This function may only be successfully executed by the job's owner or user root.
+\fBslurm_cancel_job_step\fR Request the cancellation of a running job step. This function 
+may only be successfully executed by the job's owner or user root.
 .LP 
-\fBslurm_complete_job\fR Note the termination of a job. This function may only be successfully executed by the job's owner or user root.
+\fBslurm_complete_job\fR Note the termination of a job. This function may only be successfully 
+executed by the job's owner or user root.
 .LP 
-\fBslurm_complete_job_step\fR Note the termination of a job step. This function may only be successfully executed by the job's owner or user root.
+\fBslurm_complete_job_step\fR Note the termination of a job step. This function may only 
+be successfully executed by the job's owner or user root.
+.LP
+\fBslurm_free_job_step_create_response_msg\fR Release the storage generated in response 
+to a call of the function \fBslurm_job_step_create\fR.
 .LP 
-\fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response to a call of the function \fBslurm_allocate_resources\fR or \fBslurm_job_will_run\fR.
+\fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response 
+to a call of the function \fBslurm_allocate_resources\fR or \fBslurm_job_will_run\fR.
 .LP 
-\fBslurm_free_submit_response_msg\fR Release the storage generated in response to a call of the function \fBslurm_submit_batch_job\fR.
+\fBslurm_free_submit_response_msg\fR Release the storage generated in response to a call 
+of the function \fBslurm_submit_batch_job\fR.
 .LP 
-\fBslurm_init_job_desc_msg\fR Initialize the contents of a job descriptor with default values. Execute this function before issuing a request to submit or modify a job.
+\fBslurm_init_job_desc_msg\fR Initialize the contents of a job descriptor with default values. 
+Execute this function before issuing a request to submit or modify a job.
+.LP
+\fBslurm_job_step_create\fR Initialize a job step including the allocation of nodes to 
+it from those already allocate to that job. Always release the response message when no 
+longer required using the function \fBslurm_free_job_step_create_response_msg\fR.
 .LP 
-\fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately. If successful, a list of the available nodes and their configurations will be returned. Always release the response message when no longer required using the function \fBslurm_free_resource_allocation_response_msg\fR.
+\fBslurm_job_will_run\fR Determine if the supplied job description could be executed immediately. 
+If successful, a list of the available nodes and their configurations will be returned. Always 
+release the response message when no longer required using the function 
+\fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
-\fBslurm_submit_batch_job\fR Submit a job for later execution. The job will be queued and executed when resources are available.  Always release the response message when no longer required using the function \fBslurm_free_submit_response_msg\fR.
+\fBslurm_submit_batch_job\fR Submit a job for later execution. The job will be queued 
+and executed when resources are available.  Always release the response message when no 
+longer required using the function \fBslurm_free_submit_response_msg\fR.
 .LP 
-\fBslurm_update_job\fR Update the characteristics of an existing job. Not all job characteristics may be changed (e.g. the time limit of a job may be changed, but the nodes allocated to a running job may not be changed). This function may only be successfully executed by user root.
+\fBslurm_update_job\fR Update the characteristics of an existing job. Not all job 
+characteristics may be changed (e.g. the time limit of a job may be changed, but the nodes 
+allocated to a running job may not be changed). This function may only be successfully 
+executed by user root.
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
