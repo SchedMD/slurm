@@ -86,6 +86,7 @@ typedef resource_allocation_and_run_response_msg_t alloc_run_resp;
  * forward declaration of static funcs
  */
 static allocation_resp	*_allocate_nodes(void);
+static int 		 _compute_task_count(allocation_resp *resp);
 static void              _print_job_information(allocation_resp *resp);
 static void		 _create_job_step(job_t *job);
 static void		 _sig_kill_alloc(int signum);
@@ -329,9 +330,23 @@ _allocate_nodes(void)
 		sigaction(SIGINT, &old_action, NULL);
 	}
 	if (!opt.nprocs_set)	/* can vary by min-max node count */
-		opt.nprocs = resp->node_cnt;
+		opt.nprocs = _compute_task_count(resp);
 
 	return resp;
+}
+
+static int _compute_task_count(allocation_resp *resp)
+{
+	int i, cnt = 0;
+
+	if (opt.cpus_set) {
+		for (i=0; i<resp->num_cpu_groups; i++)
+			cnt += (resp->cpu_count_reps[i] * 
+				(resp->cpus_per_node[i]/opt.cpus_per_task));
+	} 
+	if (cnt < resp->node_cnt)
+		cnt = resp->node_cnt;
+	return cnt;
 }
 
 static void
