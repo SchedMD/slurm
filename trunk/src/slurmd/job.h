@@ -113,6 +113,7 @@ typedef struct slurmd_job {
 	qsw_jobinfo_t qsw_job; /* Elan-specific job information             */
 #endif
 	uid_t         uid;     /* user id for job                           */
+	gid_t         gid;     /* group ID for job                          */
 
 	bool           batch;      /* true if this is a batch job           */
 	bool           run_prolog; /* true if need to run prolog            */
