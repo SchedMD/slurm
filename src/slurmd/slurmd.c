@@ -161,16 +161,16 @@ void *slurmd_handle_signals(void *args)
 
 	/* just watch for select signals */
 	if (sigemptyset(&set))
-		error("sigemptyset errno %d", errno);
+		error("sigemptyset error: %m");
 	if (sigaddset(&set, SIGHUP))
-		error("sigaddset errno %d on SIGHUP", errno);
+		error("sigaddset error on SIGHUP: %m");
 	if (sigaddset(&set, SIGINT))
-		error("sigaddset errno %d on SIGINT", errno);
+		error("sigaddset error on SIGINT: %m");
 	if (sigaddset(&set, SIGTERM))
-		error("sigaddset errno %d on SIGTERM", errno);
+		error("sigaddset error on SIGTERM: %m");
 
 	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
-		fatal("sigprocmask: %m");
+		fatal("sigprocmask error: %m");
 
 	while (1) {
 		if ((error_code = sigwait(&set, &sig)))
