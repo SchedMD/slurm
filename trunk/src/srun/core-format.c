@@ -33,6 +33,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "src/srun/core-format.h"
 #include "src/srun/env.h"
@@ -42,7 +44,7 @@
 #define CORE_LIGHT  1 /* Default lightweight corefile from liblwcf */
 #define CORE_LCB    2 /* PTOOLS Lightweight Corefile Browser (LCB) compliant*/
 #define CORE_LIST   3 /* List core format types to stdout and exit */
-
+#define LIB_LIGHT   "liblwcf-preload.so"
 
 struct core_format_info {
 	core_format_t type;
@@ -94,6 +96,13 @@ static void _print_valid_core_types (void)
 
 	info ("Valid corefile format types:");
 	for (ci = core_types; ci && ci->name != NULL; ci++) {
+		if ((ci->type == CORE_LIGHT) ||
+		    (ci->type == CORE_LCB)) {
+			struct stat buf;
+			if ((stat("/usr/lib/" LIB_LIGHT, &buf) < 0) &&
+			    (stat("/usr/local/lib/" LIB_LIGHT, &buf) < 0))
+				continue;
+		}
 		if (ci->type != CORE_LIST) 
 			info (" %-8s -- %s", ci->name, ci->descr);
 	}
@@ -132,7 +141,7 @@ int core_format_enable (core_format_t type)
 	case CORE_LCB:
 		setenvf ("LWCF_CORE_FORMAT=LCB");
 	case CORE_LIGHT:
-		setenvf ("LD_PRELOAD=liblwcf-preload.so");
+		setenvf ("LD_PRELOAD=" LIB_LIGHT);
 		break;
 	}
 
