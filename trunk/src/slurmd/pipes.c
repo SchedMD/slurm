@@ -38,7 +38,6 @@ int init_parent_pipes(int *pipes)
 int setup_child_pipes(int *pipes)
 {
 	int error_code = SLURM_SUCCESS;
-	int local_errno;
 
 	/* dup stdin */
 	/* close ( STDIN_FILENO ); */

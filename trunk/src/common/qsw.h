@@ -37,6 +37,7 @@ typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
 #define QSW_LIBSTATE_PACK_MAX	12
 #define QSW_JOBINFO_PACK_MAX	120
 #define QSW_MAX_TASKS		1024
+#define QSW_PACK_SIZE		(4 * (2+4+1+8+ELAN_BITMAPSIZE))
 
 int		qsw_alloc_libstate(qsw_libstate_t *lsp);
 void		qsw_free_libstate(qsw_libstate_t ls);
@@ -69,5 +70,6 @@ int		qsw_getnodeid(void);
 int		qsw_getnodeid_byhost(char *host);
 int		qsw_gethost_bynodeid(char *host, int len, int elanid);
 
+void		qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo);
 
 #endif /* _QSW_INCLUDED */

@@ -236,7 +236,7 @@ slurmctld_signal_hand ( void * no_data )
 				if (error_code)
 					error ("read_slurm_conf error %d", error_code);
 				break;
-			case SIBABRT:	/* abort */
+			case SIGABRT:	/* abort */
 				fatal ("SIGABRT received");
 				break;
 			default:

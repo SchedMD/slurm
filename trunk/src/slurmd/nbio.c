@@ -129,7 +129,7 @@ int init_nbio_attr(nbio_attr_t * nbio_attr, task_start_t * task_start)
 	return SLURM_SUCCESS;
 }
 
-void *do_nbio(void *arg)
+int do_nbio(void *arg)
 {
 	nbio_attr_t nbio_attr;
 	task_start_t *task_start = (task_start_t *) arg;

@@ -143,18 +143,20 @@ int interconnect_set_capabilities(task_start_t * task_start)
 /*
  * Set environment variables needed by QSW MPICH / libelan.
  */
-int interconnect_env(char ***env, int *envc, int nodeid, int nnodes, 
+int interconnect_env(char ***env, uint16_t *envc, int nodeid, int nnodes, 
 	             int procid, int nprocs)
 {
-	if (setenvpf(env, envc, "RMS_RANK=%d", procid) < 0)
+	int cnt = *envc;
+
+	if (setenvpf(env, &cnt, "RMS_RANK=%d", procid) < 0)
 		return -1;
-	if (setenvpf(env, envc, "RMS_NODEID=%d", nodeid) < 0)
+	if (setenvpf(env, &cnt, "RMS_NODEID=%d", nodeid) < 0)
 		return -1;
-	if (setenvpf(env, envc, "RMS_PROCID=%d", procid) < 0)
+	if (setenvpf(env, &cnt, "RMS_PROCID=%d", procid) < 0)
 		return -1;
-	if (setenvpf(env, envc, "RMS_NNODES=%d", nnodes) < 0)
+	if (setenvpf(env, &cnt, "RMS_NNODES=%d", nnodes) < 0)
 		return -1;
-	if (setenvpf(env, envc, "RMS_NPROCS=%d", nprocs) < 0)
+	if (setenvpf(env, &cnt, "RMS_NPROCS=%d", nprocs) < 0)
 		return -1;
 	return 0;
 }

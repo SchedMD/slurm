@@ -48,6 +48,7 @@
 #include <rms/rmscall.h>
 
 #include <src/common/bitstring.h>
+#include <src/common/log.h>
 #include <src/common/pack.h>
 #include <src/common/qsw.h>
 #include <src/common/slurm_errno.h>
@@ -283,6 +284,7 @@ qsw_free_jobinfo(qsw_jobinfo_t j)
  *   data (OUT)		where to store packed data
  *   len (IN)		max size of data 
  *   RETURN		#bytes unused in 'data' or -1 on error (sets errno)
+ * NOTE: Keep in sync with QSW_PACK_SIZE above
  */
 int
 qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
