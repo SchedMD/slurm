@@ -389,13 +389,13 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = node_cnt;
 		alloc_msg.node_list      = node_list_ptr;
 		alloc_msg.num_cpu_groups = num_cpu_groups;
+		unlock_slurmctld(job_write_lock);
+
 		response_msg.msg_type = RESPONSE_RESOURCE_ALLOCATION;
 		response_msg.data = &alloc_msg;
 
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_id);
-		if (do_unlock)
-			unlock_slurmctld(job_write_lock);
 		(void) dump_all_job_state();
 	} else {	/* allocate error */
 		if (do_unlock)
