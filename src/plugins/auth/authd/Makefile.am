@@ -16,6 +16,7 @@ pkglib_LTLIBRARIES = $(AUTHD)
 
 # Authd authentication plugin -- requires libauth
 auth_authd_la_SOURCES = auth_authd.c
-auth_authd_la_LDFLAGS = $(PLUGIN_FLAGS) 
-auth_authd_la_LIBADD = -lauth -le
-
+auth_authd_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS) 
+auth_authd_la_LIBADD = -lauth -le \
+			$(top_builddir)/src/common/libcommon.la   \
+			$(top_builddir)/src/api/libslurm.la
