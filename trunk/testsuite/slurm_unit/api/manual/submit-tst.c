@@ -2,6 +2,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <slurm/slurm.h>
 #include "testsuite/dejagnu.h"
@@ -26,7 +28,7 @@ main (int argc, char *argv[])
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 100;
 	job_mesg. min_nodes = 1;
-	job_mesg. user_id = 1500;
+	job_mesg. user_id = getuid();
 	job_mesg. script = "#!/bin/csh\n/bin/hostname\n";
 	job_mesg. err = "/tmp/slurm.stderr";
 	job_mesg. in = "/tmp/slurm.stdin";
@@ -64,7 +66,7 @@ main (int argc, char *argv[])
 		job_mesg. shared = 0;
 		job_mesg. time_limit = 100 + i;
 		job_mesg. min_nodes = i;
-		job_mesg. user_id = 1500;
+		job_mesg. user_id = getuid();
 		error_code = slurm_submit_batch_job( &job_mesg, &resp_msg );
 		if (error_code) {
 			slurm_perror ("slurm_submit_batch_job");

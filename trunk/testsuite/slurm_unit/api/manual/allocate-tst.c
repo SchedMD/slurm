@@ -27,6 +27,8 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <slurm/slurm.h>
 #include "testsuite/dejagnu.h"
@@ -62,12 +64,12 @@ main (int argc, char *argv[])
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 10;
 	job_mesg. min_nodes = 1;
-	job_mesg. user_id = 1500;
+	job_mesg. user_id = getuid();
 
 
 	error_code = slurm_allocate_resources_and_run ( &job_mesg , &run_resp_msg ); 
 	if (error_code)
-		printf ("allocate error %d\n", errno);
+		slurm_perror ("slurm_allocate_resources_and_run");
 	else {
 		report_results ((resource_allocation_response_msg_t*) run_resp_msg);
 		slurm_free_resource_allocation_and_run_response_msg ( run_resp_msg );
@@ -85,13 +87,12 @@ main (int argc, char *argv[])
 		job_mesg. shared = 0;
 		job_mesg. time_limit = 200;
 		job_mesg. num_procs = 4000;
-		job_mesg. user_id = 1500;
+		job_mesg. user_id = getuid();
 		job_mesg. immediate = 1;
 
-		/* the string also had Immediate */
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 		if (error_code) {
-			printf ("allocate error %d\n", errno);
+			slurm_perror ("slurm_allocate_resources #1");
 			break;
 		}
 		else {
@@ -104,12 +105,12 @@ main (int argc, char *argv[])
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. name = ("more.tiny\0");
 		job_mesg. num_procs = 32;
- 	        job_mesg. user_id = 1500;
+ 	        job_mesg. user_id = getuid();
  	        job_mesg. immediate = 1;
 
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 		if (error_code) {
-			printf ("allocate error %d\n", errno);
+			slurm_perror ("slurm_allocate_resources #2");
 			break;
 		}
 		else {
@@ -122,12 +123,12 @@ main (int argc, char *argv[])
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. name = ("more.queue\0");
 		job_mesg. num_procs = 32;
- 	        job_mesg. user_id = 1500;
+ 	        job_mesg. user_id = getuid();
  	        job_mesg. immediate = 0;
 
 		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 		if (error_code) {
-			printf ("allocate error %d\n", errno);
+			slurm_perror ("slurm_allocate_resources #3");
 			break;
 		}
 		else {
@@ -145,7 +146,8 @@ report_results(resource_allocation_response_msg_t* resp_msg)
 {
 	int i;
 
-	printf ("allocate nodes %s to job %u\n", resp_msg->node_list, resp_msg->job_id);
+	printf ("allocate nodes %s to job %u\n", 
+		resp_msg->node_list, resp_msg->job_id);
 	if (resp_msg->num_cpu_groups > 0) {
 		printf ("processor counts: ");
 		for (i=0; i<resp_msg->num_cpu_groups; i++) {
