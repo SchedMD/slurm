@@ -674,12 +674,13 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 	int len = 0;
 	int dropped = 0;
 
-    again:
-	if ((len = cbuf_write_from_fd(buf, *fd, -1, &dropped)) <= 0) {
+	if ((len = cbuf_write_from_fd(buf, *fd, -1, &dropped)) < 0) {
 		if (errno == EAGAIN)
-			goto again;
-		if (len < 0) 
-			error("Error task %d IO: %m", tasknum);
+			return 0;
+		error("Error task %d IO: %m", tasknum);
+		_close_stream(fd, out, tasknum);
+		return len;
+	} else if (len == 0) {
 		_close_stream(fd, out, tasknum);
 		return len;
 	}
