@@ -175,7 +175,6 @@ typedef struct {
 #else
 	pa_node_t *grid;
 #endif
-	pa_node_t *fill_in_value;
 } pa_system_t;
 
 /* Used to Keep track of where the Base Partitions are at all times
@@ -189,6 +188,8 @@ typedef struct {
 
 /* Global */
 extern List bp_map_list;
+extern char letters[36];
+extern char colors[6];
 
 /**
  * create a partition request.  Note that if the geometry is given,

@@ -409,29 +409,25 @@ static int _set_pairs()
 {
 	int x,y,z;
 
-	z = 0;
 	y = 65;
-	for (x = 0; x < 128; x++) {
+	for (x = 0; x < 62; x++) {
 		if (y == 91)
 			y = 97;
 		else if(y == 123)
 			y = 48;
 		else if(y == 58)
 			y = 65;
-		pa_system_ptr->fill_in_value[x].letter = y;
+		letters[x] = y;
 		y++;
+	}
+
+	z=1;
+	for (x = 0; x < 6; x++) {
 		if(z == 4)
 			z++;
-		z = z % 7;
-		if (z == 0)
-			z = 1;
-		
-		pa_system_ptr->fill_in_value[x].color = z;
+		colors[x] = z;				
+		init_pair(colors[x], colors[x], COLOR_BLACK);
 		z++;
-		
-		init_pair(pa_system_ptr->fill_in_value[x].color,
-			  pa_system_ptr->fill_in_value[x].color,
-			  COLOR_BLACK);
 	}
 	return 1;
 }

@@ -357,9 +357,9 @@ static int _remove_allocation(char *com, List allocated_partitions)
 					allocated_part->request->conn_type, 
 					color_count);
 				allocated_part->letter = 
-					pa_system_ptr->fill_in_value[color_count].letter;
+					letters[color_count%62];
 				allocated_part->color =
-					pa_system_ptr->fill_in_value[color_count].color;
+					colors[color_count%6];
 				
 			} else if(allocated_part->letter == letter) {
 				found=1;

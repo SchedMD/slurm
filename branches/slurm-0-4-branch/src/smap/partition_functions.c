@@ -118,17 +118,12 @@ void get_slurm_part(void)
 			j += 2;
 		}
 		part.root_only =
-			(int) pa_system_ptr->
-			fill_in_value[count].letter;
+			(int) letters[count%62];
 		wattron(pa_system_ptr->text_win,
-			COLOR_PAIR(pa_system_ptr->
-				   fill_in_value[count].
-				   color));
+			COLOR_PAIR(colors[count%6]));
 		_print_text_part(&part, NULL);
 		wattroff(pa_system_ptr->text_win,
-			 COLOR_PAIR(pa_system_ptr->
-				    fill_in_value[count].
-				    color));
+			 COLOR_PAIR(colors[count%6]));
 		count++;
 			
 	}
@@ -706,13 +701,13 @@ static int _print_rest(db2_block_info_t *block_ptr, int *count)
 		part.name = "no part";
 
 	part.allow_groups = block_ptr->nodes;
-	part.root_only = (int) pa_system_ptr->fill_in_value[block_ptr->letter_num].letter;	
+	part.root_only = (int) letters[block_ptr->letter_num%62];	
 	
 	wattron(pa_system_ptr->text_win, 
-		COLOR_PAIR(pa_system_ptr->fill_in_value[block_ptr->letter_num].color));
+		COLOR_PAIR(colors[block_ptr->letter_num%6]));
 	_print_text_part(&part, block_ptr);
 	wattroff(pa_system_ptr->text_win,
-		 COLOR_PAIR(pa_system_ptr->fill_in_value[block_ptr->letter_num].color));
+		 COLOR_PAIR(colors[block_ptr->letter_num%6]));
 	return SLURM_SUCCESS;
 }
 

@@ -54,6 +54,8 @@ List path;
 List best_path;
 int best_count;
 int color_count = 0;
+char letters[36];
+char colors[6];
 
 /** internal helper functions */
 #ifdef HAVE_BGL_FILES
@@ -474,13 +476,6 @@ void pa_init(node_info_msg_t *node_info_ptr)
 		
 	_create_pa_system();
 	
-	if(pa_system_ptr->num_of_proc<298)
-		pa_system_ptr->fill_in_value = (pa_node_t *) 
-			xmalloc(sizeof(pa_node_t) * 300);
-	else
-		pa_system_ptr->fill_in_value = (pa_node_t *) 
-			xmalloc(sizeof(pa_node_t) * (pa_system_ptr->num_of_proc+2));
-		
 	init_grid(node_info_ptr);
 	
 	_create_config_even(pa_system_ptr->grid);
@@ -684,12 +679,10 @@ int redo_part(List nodes, int conn_type, int new_count)
 	results_i = list_iterator_create(nodes);
 	while ((pa_node = list_next(results_i)) != NULL) {
 		pa_node->used = false;
-		pa_node->letter = 
-			pa_system_ptr->fill_in_value[new_count].letter;
-		
-		pa_node->color =
-			pa_system_ptr->fill_in_value[new_count].color;
-		
+
+		pa_node->letter = letters[new_count%62];			
+		pa_node->color = colors[new_count%6];
+			
 		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
 			curr_switch = &pa_node->axis_switch[dim];
 			if(curr_switch->int_wire[0].used) {
@@ -1178,9 +1171,6 @@ static void _create_pa_system(void)
 		_new_pa_node(&pa_system_ptr->grid[x], coord);
 #endif
 	}
-	pa_system_ptr->fill_in_value = (pa_node_t *) 
-		xmalloc(sizeof(pa_node_t) * pa_system_ptr->num_of_proc);
-                
 }
 
 /** */
@@ -1203,7 +1193,6 @@ static void _delete_pa_system(void)
 #endif
 	
 	xfree(pa_system_ptr->grid);
-	xfree(pa_system_ptr->fill_in_value);
 	xfree(pa_system_ptr);
 }
 
@@ -1516,11 +1505,9 @@ static char *_set_internal_wires(List nodes, int size, int conn_type)
 			pa_node[i]->used=1;
 			pa_node[i]->conn_type=conn_type;
 			if(pa_node[i]->letter == '.') {
-				pa_node[i]->letter =
-					pa_system_ptr->fill_in_value[color_count].letter;
+				pa_node[i]->letter = letters[color_count%62];
+				pa_node[i]->color = colors[color_count%6];
 				
-				pa_node[i]->color =
-					pa_system_ptr->fill_in_value[color_count].color;
 				set=1;
 			}
 		} else {

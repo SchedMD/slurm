@@ -44,11 +44,9 @@ extern int set_grid(int start, int end, int count)
 					continue;
 
 				pa_system_ptr->grid[x][y][z].letter = 
-					pa_system_ptr->
-					fill_in_value[count].letter;
+					letters[count%62];
 				pa_system_ptr->grid[x][y][z].color = 
-					pa_system_ptr->
-					fill_in_value[count].color;
+					colors[count%6];
 			}
 		}
 	}
@@ -63,11 +61,9 @@ extern int set_grid(int start, int end, int count)
 			continue;
 
 		pa_system_ptr->grid[x].letter = 
-			pa_system_ptr->
-			fill_in_value[count].letter;
+			letters[count%62]
 		pa_system_ptr->grid[x].color = 
-			pa_system_ptr->
-			fill_in_value[count].color;
+			colors[count%6];
 	}
 #endif
 	return 1;
@@ -93,11 +89,9 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 			for (z = start[Z]; z <= end[Z]; z++) {
 				if(!set) {
 					pa_system_ptr->grid[x][y][z].letter = 
-						pa_system_ptr->
-						fill_in_value[count].letter;
+						letters[count%62];
 					pa_system_ptr->grid[x][y][z].color = 
-						pa_system_ptr->
-						fill_in_value[count].color;
+						colors[count%6];
 				}
 				i++;
 			}
@@ -107,11 +101,9 @@ extern int set_grid_bgl(int *start, int *end, int count, int set)
 	for (x = start[X]; x <= end[X]; x++) {
 		if(!set) {
 			pa_system_ptr->grid[x].letter = 
-				pa_system_ptr->
-				fill_in_value[count].letter;
+				letters[count%62];
 			pa_system_ptr->grid[x].color = 
-				pa_system_ptr->
-				fill_in_value[count].color;
+				colors[count%6];
 		}
 		i++;
 	}
