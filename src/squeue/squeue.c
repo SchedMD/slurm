@@ -175,7 +175,7 @@ _print_job_steps( void )
 		        (long) new_step_ptr->last_update);
 	
 	if (params.format == NULL)
-		params.format = "%.10i %9P %8u %.9M %N";
+		params.format = "%10i %9P %8u %.9M %N";
 	if (params.format_list == NULL)
 		parse_format(params.format);
 
