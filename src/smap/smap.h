@@ -56,6 +56,15 @@
 #  include "src/common/getopt.h"
 #endif
 
+ 
+#include "src/common/macros.h"
+#include <slurm/slurm.h>
+
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/bitstring.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/partition_allocator/partition_allocator.h"
+
 #ifdef HAVE_BGL_FILES
 # include "rm_api.h"
 #else
@@ -70,15 +79,6 @@
   typedef int      rm_BP_state_t;
   typedef int      status_t;
 #endif
-
- 
-#include "src/common/macros.h"
-#include <slurm/slurm.h>
-
-#include "src/common/slurm_protocol_api.h"
-#include "src/common/bitstring.h"
-#include "src/slurmctld/slurmctld.h"
-#include "src/partition_allocator/partition_allocator.h"
 
 /* getopt_long options, integers but not characters */
 #define OPT_LONG_HELP  0x100
