@@ -347,6 +347,10 @@ slurm_auth_unpack( Buf buf )
 		plugin_errno = SLURM_AUTH_UNPACK;
 		return NULL;
 	}	
+	if ( version != plugin_version ) {
+		plugin_errno = SLURM_AUTH_MISMATCH;
+		return NULL;
+	}
 
 	/* Allocate and initialize credential. */
 	cred = xmalloc(sizeof(*cred));
