@@ -14,6 +14,7 @@
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_errno.h>
+#include <src/common/util_signals.h>
 #include <src/slurmd/task_mgr.h>
 #include <src/slurmd/shmem_struct.h>
 
@@ -145,12 +146,13 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 int forward_io ( task_start_t * task_arg ) 
 {
 	pthread_attr_t pthread_attr ;
-	struct sigaction newaction ;
-        struct sigaction oldaction ;
 	int local_errno;
-	newaction . sa_handler = SIG_IGN ;
+	
 #define STDIN_OUT_SOCK 0
 #define SIG_STDERR_SOCK 1 
+
+	posix_signal_pipe_ignore ( ) ;
+
 	/* open stdout & stderr sockets */
 	if ( ( task_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( task_arg -> inout_dest ) ) ) == SLURM_PROTOCOL_ERROR )
 	{
@@ -165,8 +167,6 @@ int forward_io ( task_start_t * task_arg )
 		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 		pthread_exit ( 0 ) ;
 	}
-	
-	sigaction(SIGPIPE, &newaction, &oldaction); /* ignore tty input */
 	
 	/* spawn io pipe threads */
 	pthread_attr_init( & pthread_attr ) ;
@@ -203,24 +203,42 @@ void * stdin_io_pipe_thread ( void * arg )
 	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int bytes_written ;
-	struct sigaction newaction ;
-        struct sigaction oldaction ;
-	newaction . sa_handler = SIG_IGN ;
-	sigaction(SIGPIPE, &newaction, &oldaction); /* ignore tty input */
+	int local_errno ;
+	
+	posix_signal_pipe_ignore ( ) ;
 	
 	while ( true )
 	{
 		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) == SLURM_PROTOCOL_ERROR )
 		{
-			info ( "error reading stdin stream for task %i", 1 ) ;
-			pthread_exit ( NULL ) ; 
+				local_errno = errno ;	
+				info ( "error reading stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+				pthread_exit ( NULL ) ;
 		}
+		/* debug */
 		write ( 1 ,  "stdin-", 6 ) ;
 		write ( 1 ,  buffer , bytes_read ) ;
-		if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , buffer , bytes_read ) ) <= 0 )
+		/* debug */
+		while ( true)
 		{
-			info ( "error sending stdin stream for task %i", 1 ) ;
-			pthread_exit ( NULL ) ;
+			if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , buffer , bytes_read ) ) <= 0 )
+			{
+				if ( bytes_written == SLURM_PROTOCOL_ERROR && errno == EINTR ) 
+				{
+					continue ;
+				}
+				else
+				{
+
+					local_errno = errno ;	
+					info ( "error sending stdin stream for task %i , errno %i", 1 , local_errno ) ;
+					pthread_exit ( NULL ) ;
+				}
+			}
+			else
+			{
+				break ;
+			}
 		}
 	}
 }
@@ -232,21 +250,28 @@ void * stdout_io_pipe_thread ( void * arg )
 	int bytes_read ;
 	int sock_bytes_written ;
 	int local_errno ;
-	struct sigaction newaction ;
-        struct sigaction oldaction ;
-	newaction . sa_handler = SIG_IGN ;
-	sigaction(SIGPIPE, &newaction, &oldaction); /* ignore tty input */
 	
+	posix_signal_pipe_ignore ( ) ;
+
 	while ( true )
 	{
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
-			local_errno = errno ;	
-			info ( "error reading stdout stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+			if ( bytes_read == SLURM_PROTOCOL_ERROR && errno == EINTR ) 
+			{
+				continue ;
+			}
+			else
+			{
 
-			pthread_exit ( NULL ) ;
+				local_errno = errno ;	
+				info ( "error reading stdout stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+				pthread_exit ( NULL ) ;
+			}
 		}
+		/* debug */
 		write ( 1 ,  buffer , bytes_read ) ;
+		/* debug */
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
@@ -268,11 +293,21 @@ void * stderr_io_pipe_thread ( void * arg )
 	{
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
-			local_errno = errno ;
-			info ( "error reading stderr stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
-			pthread_exit ( NULL ) ;
+			if ( bytes_read == SLURM_PROTOCOL_ERROR && errno == EINTR ) 
+			{
+				continue ;
+			}
+			else
+			{
+
+				local_errno = errno ;	
+				info ( "error reading stderr stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+				pthread_exit ( NULL ) ;
+			}
 		}
+		/* debug */
 		write ( 2 ,  buffer , bytes_read ) ;
+		/* debug */
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			info ( "error sending stderr stream for task %i", 1 ) ;
@@ -290,11 +325,7 @@ void * task_exec_thread ( void * arg )
 	int rc ;
 	int cpid ;
 	struct passwd * pwd ;
-	struct sigaction newaction ;
-        struct sigaction oldaction ;
 
-	newaction . sa_handler = SIG_IGN ;
-		 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
 
@@ -306,10 +337,11 @@ void * task_exec_thread ( void * arg )
 			break ;
 
 		case CHILD_PROCCESS:
-			info ("CLIENT PROCESS");
-			sigaction(SIGTTOU, &newaction, &oldaction); /* ignore tty output */
-			sigaction(SIGTTIN, &newaction, &oldaction); /* ignore tty input */
-			sigaction(SIGTSTP, &newaction, &oldaction); /* ignore user */
+			debug ("CLIENT PROCESS");
+
+			posix_signal_ignore (SIGTTOU); /* ignore tty output */
+			posix_signal_ignore (SIGTTIN); /* ignore tty input */
+			posix_signal_ignore (SIGTSTP); /* ignore user */
 			
 			/* setup std stream pipes */
 			setup_child_pipes ( pipes ) ;
