@@ -631,9 +631,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
 							contiguous);
-			if ((pick_code == SLURM_SUCCESS) &&
-			    ((node_lim == INFINITE) ||
-			     (bit_set_count(avail_bitmap) <= node_lim)))
+			if (pick_code == SLURM_SUCCESS)
 				runable = true;
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
