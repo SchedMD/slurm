@@ -73,6 +73,7 @@ int main (int argc, char *argv[])
 	char node_name[MAX_NAME_LEN];
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	init_time = time (NULL);
+	opts.stderr_level = LOG_LEVEL_DEBUG3;
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 /*
