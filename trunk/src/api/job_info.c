@@ -237,10 +237,10 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "Rotate=YES ");
 	else
 		fprintf ( out, "Rotate=NO ");
-	if (job_ptr->node_use == RM_VIRTUAL)
-		 fprintf ( out, "NodeUse=VIRTUAL ");
-	else
+	if (job_ptr->node_use == RM_COPROCESSOR)
 		fprintf ( out, "NodeUse=COPROCESSOR ");
+	else
+		fprintf ( out, "NodeUse=VIRTUAL ");
 #endif
 
 	fprintf( out, "\n\n");

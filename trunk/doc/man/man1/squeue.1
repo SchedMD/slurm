@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "August 2004" "squeue 0.4" "Slurm components"
+.TH SQUEUE "1" "September 2004" "squeue 0.4" "Slurm components"
 
 .SH "NAME"
 squeue \- view information about jobs located in the SLURM scheduling queue.
@@ -184,6 +184,18 @@ User ID
 .TP
 \fB%x\fR 
 List of node names explicitly excluded by the job
+.TP
+\fB%y\fR 
+Geometry requirement of resource allocation (X,Y,Z dimensions).
+.TP
+\fB%Y\fR 
+Connection type: TORUS, MESH, or NAV (torus else mesh).
+.TP
+\fB%z\fR 
+Permit rotation of geometry (yes or no).
+.TP
+\fB%Z\fR 
+Node use: VIRTUAL or COPROCESSOR.
 .TP
 \fB%.<*>\fR 
 right justification of the field

@@ -386,7 +386,7 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 
 #ifdef HAVE_BGL
 	if (shared) {
-		error("attempt to share Blue Gene nodes");
+		error("attempt to share Blue Gene nodes ignored");
 		shared = 0;
 	}
 #endif

@@ -111,7 +111,7 @@ char * bitmap2node_name (bitstr_t *bitmap)
 		hostlist_push(hl, node_record_table_ptr[i].name);
 	}
 	hostlist_uniq(hl);
-	hostlist_ranged_string(hl, 8192, buf);
+	hostlist_ranged_string(hl, sizeof(buf), buf);
 	hostlist_destroy(hl);
 	return xstrdup(buf);
 }

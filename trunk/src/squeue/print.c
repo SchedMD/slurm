@@ -792,6 +792,94 @@ int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_geometry(job_info_t * job, int width, bool right_justify,
+			char* suffix) 
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("GEOMETRY", width, right_justify, true);
+	else {
+#ifdef HAVE_BGL
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u,%u,%u", 
+			job->geometry[0], job->geometry[1], job->geometry[2]);
+		_print_str(id, width, right_justify, true);
+#else
+		_print_str("n/a", width, right_justify, true);
+#endif
+	}
+	if (suffix)
+		printf("%s", suffix); 
+	return SLURM_SUCCESS;
+}
+
+int _print_job_conn_type(job_info_t * job, int width, bool right_justify,
+			char* suffix) 
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("CONN_TYPE", width, right_justify, true);
+	else {
+		char *id;
+#ifdef HAVE_BGL
+		if (job->conn_type == RM_TORUS)
+			id = "torus";
+		else if (job->conn_type == RM_MESH)
+			id = "mesh";
+		else
+			id = "nav";
+#else
+		id = "n/a";
+#endif
+		_print_str(id, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix); 
+	return SLURM_SUCCESS;
+}
+
+int _print_job_node_use(job_info_t * job, int width, bool right_justify,
+			char* suffix) 
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("NODE_USE", width, right_justify, true);
+	else {
+		char *id;
+#ifdef HAVE_BGL
+		if (job->node_use == RM_COPROCESSOR)
+			id = "coprocessor";
+		else
+			id = "virtual";
+#else
+		id = "n/a";
+#endif
+		_print_str(id, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix); 
+	return SLURM_SUCCESS;
+}
+
+int _print_job_rotate(job_info_t * job, int width, bool right_justify,
+			char* suffix) 
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("ROTATE", width, right_justify, true);
+	else {
+		char *id;
+#ifdef HAVE_BGL
+		if (job->rotate == 0)
+			id = "no";
+		else
+			id = "yes";
+#else
+		id = "n/a";
+#endif
+		_print_str(id, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix); 
+	return SLURM_SUCCESS;
+}
+
 /*****************************************************************************
  * Job Step Print Functions
  *****************************************************************************/

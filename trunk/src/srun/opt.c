@@ -74,6 +74,10 @@
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
 #define OPT_CORE        0x07
+#define OPT_CONN_TYPE	0x08
+#define OPT_NODE_USE	0x09
+#define OPT_NO_ROTATE	0x0a
+#define OPT_GEOMETRY	0x0b
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP     0x100
@@ -214,11 +218,12 @@ static bool _valid_node_list(char **node_list_pptr)
  */
 static enum distribution_t _verify_dist_type(const char *arg)
 {
+	int len = strlen(arg);
 	enum distribution_t result = SRUN_DIST_UNKNOWN;
 
-	if (strncasecmp(arg, "cyclic", strlen(arg)) == 0)
+	if (strncasecmp(arg, "cyclic", len) == 0)
 		result = SRUN_DIST_CYCLIC;
-	else if (strncasecmp(arg, "block", strlen(arg)) == 0)
+	else if (strncasecmp(arg, "block", len) == 0)
 		result = SRUN_DIST_BLOCK;
 
 	return result;
@@ -230,11 +235,13 @@ static enum distribution_t _verify_dist_type(const char *arg)
  */
 static int _verify_conn_type(const char *arg)
 {
-	if (!strcasecmp(arg, "MESH"))
+	int len = strlen(arg);
+
+	if (!strncasecmp(arg, "MESH", len))
 		return RM_MESH;
-	else if (!strcasecmp(arg, "TORUS"))
+	else if (!strncasecmp(arg, "TORUS", len))
 		return RM_TORUS;
-	else if (!strcasecmp(arg, "NAV"))
+	else if (!strncasecmp(arg, "NAV", len))
 		return RM_NAV;
 
 	error("invalid --conn-type argument %s ignored.", arg);
@@ -247,9 +254,11 @@ static int _verify_conn_type(const char *arg)
  */
 static int _verify_node_use(const char *arg)
 {
-	if (!strcasecmp(arg, "VIRTUAL"))
+	int len = strlen(arg);
+
+	if (!strncasecmp(arg, "VIRTUAL", len))
 		return RM_VIRTUAL;
-	else if (!strcasecmp(arg, "COPROCESSOR"))
+	else if (!strncasecmp(arg, "COPROCESSOR", len))
 		return RM_COPROCESSOR;
 
 	error("invalid --node-use argument %s ignored.", arg);
@@ -543,13 +552,17 @@ env_vars_t env_vars[] = {
   {"SLURM_ACCOUNT",       OPT_STRING,     &opt.account,       NULL           },
   {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           }, 
   {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
-  {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL,          },
+  {"SLURM_CONN_TYPE",     OPT_CONN_TYPE,  NULL,               NULL           },
+  {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL           },
   {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
+  {"SLURM_GEOMETRY",      OPT_GEOMETRY,   NULL,               NULL           },
   {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
   {"SLURM_JOBID",         OPT_INT,        &opt.jobid,         NULL           },
   {"SLURM_LABELIO",       OPT_INT,        &opt.labelio,       NULL           },
   {"SLURM_NNODES",        OPT_NODES,      NULL,               NULL           },
+  {"SLURM_NO_ROTATE",     OPT_NO_ROTATE,  NULL,               NULL           },
+  {"SLURM_NODE_USE",      OPT_NODE_USE,   NULL,               NULL           },
   {"SLURM_NPROCS",        OPT_INT,        &opt.nprocs,        &opt.nprocs_set},
   {"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT, NULL,               NULL           },
   {"SLURM_PARTITION",     OPT_STRING,     &opt.partition,     NULL           },
@@ -639,7 +652,26 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_CORE:
 	    opt.core_type = core_format_type (val);
 	    break;
-	    
+
+	case OPT_CONN_TYPE:
+		opt.conn_type = _verify_conn_type(val);
+		break;
+	
+	case OPT_NODE_USE:
+		opt.node_use = _verify_node_use(val);
+		break;
+
+	case OPT_NO_ROTATE:
+		opt.no_rotate = true;
+		break;
+
+	case OPT_GEOMETRY:
+		if (_verify_geometry(val, opt.geometry)) {
+			error("\"%s=%s\" -- invalid geometry, ignoring...",
+				e->var, val);
+		}
+		break;
+
 	default:
 	    /* do nothing */
 	    break;
