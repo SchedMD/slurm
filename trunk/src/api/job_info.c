@@ -222,6 +222,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
 	switch (resp_msg.msg_type) {
 	case RESPONSE_JOB_INFO:
 		*resp = (job_info_msg_t *)resp_msg.data;
+		slurm_free_cred(resp_msg.cred);
 		break;
 	case RESPONSE_SLURM_RC:
 		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
