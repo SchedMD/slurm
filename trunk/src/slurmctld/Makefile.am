@@ -27,8 +27,7 @@ slurmctld_SOURCES = 	\
 	node_scheduler.c\
 	partition_mgr.c \
 	read_config.c	\
-	step_mgr.c	\
-	pack.c 
+	step_mgr.c
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)

@@ -26,7 +26,7 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
@@ -35,31 +35,30 @@
 #include <string.h>
 #include <unistd.h>
 
-#include <src/common/list.h>
-#include <src/common/xstring.h>
-#include <src/slurmctld/agent.h>
-#include <src/slurmctld/locks.h>
-#include <src/slurmctld/slurmctld.h>
+#include "src/common/list.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/agent.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/slurmctld.h"
 
 struct job_queue {
 	int priority;
 	struct job_record *job_ptr;
 };
 
-static	int	build_job_queue (struct job_queue **job_queue);
-static	void	launch_job (struct job_record *job_ptr);
-static	void	sort_job_queue (struct job_queue *job_queue, int job_queue_size);
+static int  _build_job_queue(struct job_queue **job_queue);
+static void _launch_job(struct job_record *job_ptr);
+static void _sort_job_queue(struct job_queue *job_queue,
+			    int job_queue_size);
 
 /* 
- * build_job_queue - build (non-priority ordered) list of pending jobs
- * input: job_queue - storage location for job queue
- * output: job_queue - pointer to job queue
- *	returns - number of entries in job_queue
+ * _build_job_queue - build (non-priority ordered) list of pending jobs
+ * OUT job_queue - pointer to job queue
+ * RET number of entries in job_queue
  * global: job_list - global list of job records
  * NOTE: the buffer at *job_queue must be xfreed by the caller
  */
-int 
-build_job_queue (struct job_queue **job_queue) 
+static int _build_job_queue(struct job_queue **job_queue)
 {
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point = NULL;
@@ -69,24 +68,25 @@ build_job_queue (struct job_queue **job_queue)
 	/* build list pending jobs */
 	job_buffer_size = job_queue_size = 0;
 	job_queue[0] = my_job_queue = NULL;
-	job_record_iterator = list_iterator_create (job_list);	
-	
-	while ((job_record_point = 
-		(struct job_record *) list_next (job_record_iterator))) {
-		if (job_record_point->job_state != JOB_PENDING) 
+	job_record_iterator = list_iterator_create(job_list);
+
+	while ((job_record_point =
+		(struct job_record *) list_next(job_record_iterator))) {
+		if (job_record_point->job_state != JOB_PENDING)
 			continue;
 		if (job_record_point->magic != JOB_MAGIC)
-			fatal ("prio_order_job: data integrity is bad");
+			fatal("prio_order_job: data integrity is bad");
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 50;
-			xrealloc(my_job_queue, job_buffer_size * 
-				sizeof (struct job_queue));
+			xrealloc(my_job_queue, job_buffer_size *
+				 sizeof(struct job_queue));
 		}
 		my_job_queue[job_queue_size].job_ptr = job_record_point;
-		my_job_queue[job_queue_size].priority = job_record_point->priority;
+		my_job_queue[job_queue_size].priority =
+		    job_record_point->priority;
 		job_queue_size++;
-	}			
-	list_iterator_destroy (job_record_iterator);
+	}
+	list_iterator_destroy(job_record_iterator);
 
 	job_queue[0] = my_job_queue;
 	return job_queue_size;
@@ -97,7 +97,7 @@ build_job_queue (struct job_queue **job_queue)
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority  
  *	order until a request fails
- * output: returns count of jobs scheduled
+ * RET count of jobs scheduled
  * global: job_list - global list of job records
  *	last_job_update - time of last update to job table
  * Note: We re-build the queue every time. Jobs can not only be added 
@@ -105,52 +105,55 @@ build_job_queue (struct job_queue **job_queue)
  *	changed with the update_job RPC. In general nodes will be in priority 
  *	order (by submit time), so the sorting should be pretty fast.
  */
-int
-schedule (void)
+int schedule(void)
 {
 	struct job_queue *job_queue;
 	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts;
 	/* Locks: Write job, write node, read partition */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	slurmctld_lock_t job_write_lock =
+	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
-	lock_slurmctld (job_write_lock);
-	job_queue_size = build_job_queue (&job_queue);
+	lock_slurmctld(job_write_lock);
+	job_queue_size = _build_job_queue(&job_queue);
 	if (job_queue_size == 0) {
-		unlock_slurmctld (job_write_lock);
+		unlock_slurmctld(job_write_lock);
 		return SLURM_SUCCESS;
 	}
-	sort_job_queue (job_queue, job_queue_size);
+	_sort_job_queue(job_queue, job_queue_size);
 
 	failed_part_cnt = 0;
 	failed_parts = NULL;
-	for (i=0; i<job_queue_size; i++) {
+	for (i = 0; i < job_queue_size; i++) {
 		job_ptr = job_queue[i].job_ptr;
-		for (j=0; j<failed_part_cnt; j++) {
+		for (j = 0; j < failed_part_cnt; j++) {
 			if (failed_parts[j] == job_ptr->part_ptr)
 				break;
 		}
-		if (j < failed_part_cnt) continue;
+		if (j < failed_part_cnt)
+			continue;
 		error_code = select_nodes(job_ptr, 0);
 		if (error_code == ESLURM_NODES_BUSY) {
-			xrealloc(failed_parts, 
-			         (failed_part_cnt+1)*sizeof(struct part_record *));
-			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
-		}
-		else if (error_code == SLURM_SUCCESS) {		/* job initiated */
-			last_job_update = time (NULL);
-			info ("schedule: job_id %u on nodes %s", 
-			      job_ptr->job_id, job_ptr->nodes);
-			launch_job (job_ptr);
+			xrealloc(failed_parts,
+				 (failed_part_cnt +
+				  1) * sizeof(struct part_record *));
+			failed_parts[failed_part_cnt++] =
+			    job_ptr->part_ptr;
+		} else if (error_code == SLURM_SUCCESS) {	
+			/* job initiated */
+			last_job_update = time(NULL);
+			info("schedule: job_id %u on nodes %s",
+			     job_ptr->job_id, job_ptr->nodes);
+			_launch_job(job_ptr);
 			job_cnt++;
-		}
-		else {
-			info ("schedule: job_id %u non-runnable, error %m",
-				job_ptr->job_id);
-			last_job_update = time (NULL);
+		} else {
+			info("schedule: job_id %u non-runnable, error %m",
+			     job_ptr->job_id);
+			last_job_update = time(NULL);
 			job_ptr->job_state = JOB_FAILED;
-			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			job_ptr->start_time = job_ptr->end_time =
+			    time(NULL);
 			delete_job_details(job_ptr);
 		}
 	}
@@ -159,30 +162,27 @@ schedule (void)
 		xfree(failed_parts);
 	if (job_queue)
 		xfree(job_queue);
-	unlock_slurmctld (job_write_lock);
+	unlock_slurmctld(job_write_lock);
 	return job_cnt;
 }
 
 
 /* 
- * sort_job_queue - sort job_queue in decending priority order
- * input: job_queue - pointer to un-sorted job queue
- *	job_queue_size - count of elements in the job queue
- * output: job_queue - pointer to sorted job queue
+ * _sort_job_queue - sort job_queue in decending priority order
+ * IN job_queue_size - count of elements in the job queue
+ * IN/OUT job_queue - pointer to sorted job queue
  */
-void
-sort_job_queue (struct job_queue *job_queue, int job_queue_size) 
+static void _sort_job_queue(struct job_queue *job_queue, int job_queue_size)
 {
 	int i, j, top_prio_inx;
 	int tmp_prio, top_prio;
 	struct job_record *tmp_job_ptr;
 
-	for (i=0; i<job_queue_size; i++) {
+	for (i = 0; i < job_queue_size; i++) {
 		top_prio = job_queue[i].priority;
 		top_prio_inx = i;
-		for (j=(i+1); j<job_queue_size; j++) {
-			if (top_prio >= 
-			    job_queue[j].priority)
+		for (j = (i + 1); j < job_queue_size; j++) {
+			if (top_prio >= job_queue[j].priority)
 				continue;
 			top_prio = job_queue[j].priority;
 			top_prio_inx = j;
@@ -194,13 +194,14 @@ sort_job_queue (struct job_queue *job_queue, int job_queue_size)
 		job_queue[i].priority = job_queue[top_prio_inx].priority;
 		job_queue[i].job_ptr = job_queue[top_prio_inx].job_ptr;
 		job_queue[top_prio_inx].priority = tmp_prio;
-		job_queue[top_prio_inx].job_ptr  = tmp_job_ptr;
+		job_queue[top_prio_inx].job_ptr = tmp_job_ptr;
 	}
 }
 
-/* launch_job - send an RPC to a slurmd to initiate a job */
-void
-launch_job (struct job_record *job_ptr)
+/* _launch_job - send an RPC to a slurmd to initiate a job 
+ * IN job_ptr - pointer to job that will be initiated
+ */
+static void _launch_job(struct job_record *job_ptr)
 {
 	batch_job_launch_msg_t *launch_msg_ptr;
 	agent_arg_t *agent_arg_ptr;
@@ -211,50 +212,54 @@ launch_job (struct job_record *job_ptr)
 	if (job_ptr->details->batch_flag == 0)
 		return;
 
-	node_ptr = find_first_node_record (job_ptr -> node_bitmap);
+	node_ptr = find_first_node_record(job_ptr->node_bitmap);
 	if (node_ptr == NULL)
 		return;
 
 	/* Initialization of data structures */
-	launch_msg_ptr = (batch_job_launch_msg_t *) xmalloc (sizeof (batch_job_launch_msg_t));
-	launch_msg_ptr -> job_id   = job_ptr -> job_id;
-	launch_msg_ptr -> uid      = job_ptr -> user_id;
-	launch_msg_ptr -> nodes    = xstrdup (job_ptr -> nodes);
-	launch_msg_ptr -> err      = xstrdup (job_ptr -> details -> err);
-	launch_msg_ptr -> in       = xstrdup (job_ptr -> details -> in);
-	launch_msg_ptr -> out      = xstrdup (job_ptr -> details -> out);
-	launch_msg_ptr -> work_dir = xstrdup (job_ptr -> details -> work_dir);
-	launch_msg_ptr -> argc = 0;	/* FIXME */
-	launch_msg_ptr -> argv = NULL;	/* FIXME */
-	launch_msg_ptr -> script = get_job_script (job_ptr);
-	launch_msg_ptr -> environment = get_job_env (job_ptr, &launch_msg_ptr -> envc);
+	launch_msg_ptr =
+	    (batch_job_launch_msg_t *)
+	    xmalloc(sizeof(batch_job_launch_msg_t));
+	launch_msg_ptr->job_id = job_ptr->job_id;
+	launch_msg_ptr->uid = job_ptr->user_id;
+	launch_msg_ptr->nodes = xstrdup(job_ptr->nodes);
+	launch_msg_ptr->err = xstrdup(job_ptr->details->err);
+	launch_msg_ptr->in = xstrdup(job_ptr->details->in);
+	launch_msg_ptr->out = xstrdup(job_ptr->details->out);
+	launch_msg_ptr->work_dir = xstrdup(job_ptr->details->work_dir);
+	launch_msg_ptr->argc = 0;	/* FIXME */
+	launch_msg_ptr->argv = NULL;	/* FIXME */
+	launch_msg_ptr->script = get_job_script(job_ptr);
+	launch_msg_ptr->environment =
+	    get_job_env(job_ptr, &launch_msg_ptr->envc);
 
-	agent_arg_ptr = (agent_arg_t *) xmalloc (sizeof (agent_arg_t));
-	agent_arg_ptr -> node_count = 1;
-	agent_arg_ptr -> retry = 1;
-	agent_arg_ptr -> slurm_addr = xmalloc (sizeof (struct sockaddr_in));
-	memcpy (agent_arg_ptr -> slurm_addr, 
-		&(node_ptr -> slurm_addr), sizeof (struct sockaddr_in));
-	agent_arg_ptr -> node_names = xstrdup (node_ptr -> name);
-	agent_arg_ptr -> msg_type = REQUEST_BATCH_JOB_LAUNCH;
-	agent_arg_ptr -> msg_args = (void *)launch_msg_ptr;
+	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
+	agent_arg_ptr->node_count = 1;
+	agent_arg_ptr->retry = 1;
+	agent_arg_ptr->slurm_addr = xmalloc(sizeof(struct sockaddr_in));
+	memcpy(agent_arg_ptr->slurm_addr,
+	       &(node_ptr->slurm_addr), sizeof(struct sockaddr_in));
+	agent_arg_ptr->node_names = xstrdup(node_ptr->name);
+	agent_arg_ptr->msg_type = REQUEST_BATCH_JOB_LAUNCH;
+	agent_arg_ptr->msg_args = (void *) launch_msg_ptr;
 
 	/* Launch the RPC via agent */
-	debug3 ("Spawning job launch agent for job_id %u", job_ptr -> job_id);
-	if (pthread_attr_init (&attr_agent))
-		fatal ("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate (&attr_agent, PTHREAD_CREATE_DETACHED))
-		error ("pthread_attr_setdetachstate error %m");
+	debug3("Spawning job launch agent for job_id %u", job_ptr->job_id);
+	if (pthread_attr_init(&attr_agent))
+		fatal("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate
+	    (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
 #ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope (&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error ("pthread_attr_setscope error %m");
+	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error("pthread_attr_setscope error %m");
 #endif
-	if (pthread_create (&thread_agent, &attr_agent, 
-				agent, (void *)agent_arg_ptr)) {
-		error ("pthread_create error %m");
-		sleep (1); /* sleep and try once more */
-		if (pthread_create (&thread_agent, &attr_agent, 
-					agent, (void *)agent_arg_ptr))
-			fatal ("pthread_create error %m");
+	if (pthread_create(&thread_agent, &attr_agent,
+			   agent, (void *) agent_arg_ptr)) {
+		error("pthread_create error %m");
+		sleep(1);	/* sleep and try once more */
+		if (pthread_create(&thread_agent, &attr_agent,
+				   agent, (void *) agent_arg_ptr))
+			fatal("pthread_create error %m");
 	}
 }

@@ -110,11 +110,26 @@ typedef struct {
 }	slurmctld_lock_flags_t;
 
 
+/* get_lock_values - Get the current value of all locks
+ * OUT lock_flags - a copy of the current lock values */
 extern void get_lock_values (slurmctld_lock_flags_t *lock_flags);
+
+/* init_locks - create locks used for slurmctld data structure access 
+ *	control */
 extern void init_locks ( void );
+
+/* kill_locked_threads - Kill all threads waiting on semaphores */
 extern void kill_locked_threads ( void );
+
+/* lock_slurmctld - Issue the required lock requests in a well defined order
+ * RET 0 on success, -1 on failure */
 extern void lock_slurmctld (slurmctld_lock_t lock_levels);
+
+/* unlock_slurmctld - Issue the required unlock requests in a well 
+ *	defined order */
 extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
+
+/* un/lock semaphore used for saving state of slurmctld */
 extern void inline lock_state_files ( void );
 extern void inline unlock_state_files ( void );
 
