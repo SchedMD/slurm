@@ -1,6 +1,23 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.18
+=========================
+ -- Memory corruption bug fixed, it was causing slurmctld to seg-fault
+ -- Non-responding nodes now go from DRAINING to DRAINED state when 
+    jobs complete
+ -- Do not schedule pending jobs while any job is actively COMPLETING 
+    unless the submitted job specifically identifies its nodes (like DPCS)
+ -- Reset priority of jobs with priority==1 when a non-responding node 
+    starts to respond again
+ -- Ignore jobs with priority==1 when establishing new baseline upon 
+    slurmctld restart
+ -- Make slurmctld/message retry be timer based rather than queue based 
+    for better scalability
+ -- Slurmctld logging is more concise, using hostlists more
+ -- srun --no-allocate used special job_id range to avoid conflicts 
+    or premature job termination (purging by slurmctld)
+
 * Changes in SLURM 0.2.17
 =========================
  -- Fixes for reported problems:
