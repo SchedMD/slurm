@@ -1,0 +1,207 @@
+SLURM Partition Management Infrastructure
+December 14, 2001
+By Moe Jette
+
+
+Abstract
+
+The purpose of SLURM's partition management infrastructure is to configure 
+and monitor the state of partitions in the cluster. 
+The Partition Manager (PM) will execute on the SLURM Control 
+Machine and record the configuration of each node along with its 
+latest reported state. 
+The Partition Manager will actually be a component within the 
+MachStatusManager program (along with the Machine Status Manager).
+This information will be available for viewing and/or modification 
+using APIs and a Machine Status Tool (MST, which also manages node 
+information).
+
+Partition Manager
+
+The Partition Manager (PM) is responsible for maintaining a 
+configuration record for each partition in the cluster. 
+PM will have a configuration file identifying a variety of parameters. 
+The location of this file will be provided by the symbolic link at 
+"/etc/SLURM.cfg".
+There will be default values for most parameters if not specified. 
+Lines in the configuration file having "#" in column one will be 
+considered comments.
+Parameters used by the machine status include:
+ControlMachine    The fully qualified name of the machine where control 
+                  functions operate
+CollectorNodes    Comma separated list of nodes which can server to 
+                  collect messages and combine the data so as to 
+                  reduce network traffic (Note: This design feature is unique  
+                  to SLURM and DPCS, it offers vastly improved scalability, 
+                  default is none, specify comma separated list of fully 
+                  qualified node names as desired)
+NodeSpecConf      Fully qualified pathname of the file containing node 
+                  configuration information as described below (default 
+                  "/usr/local/SLURM/NodeSpecConf")
+PartitionConf     Fully qualified pathname of the file containing partitoin 
+                  configuration information as described below (default 
+                  "/usr/local/SLURM/PartitionConf")
+DefaultPartition  Name of the default partition
+MachStatusManager The qualified pathname of the file containing the Machine 
+                  Status Manager (default "/usr/local/SLURM/MachStatusManager")
+MachStatusDaemon  The qualified pathname of the file containing the Machine 
+                  Status Daemon (default "/usr/local/SLURM/MachStatusDaemon")
+MachStatusPort    The port to be used for the Machine Status Manager and 
+                  Machine Status Daemon communications. Should be privileged 
+                  port (acquired only by user root).
+MachStatusDebug   A list of debug flags separated by commas (default is 
+                  minimal logging, example "init,msg")
+HeartBeatInterval Seconds between node status reports (default is "300")
+HeartBeatTimeout  If last node status report is at least this number 
+                  of seconds ago, node is considered "Down" (default is "600")
+Only one parameter should be specified per line with the parameter's name, 
+an equal sign, and the value. 
+White space is ignored.
+A sample SlurmConf file is included at the end of this document.
+
+
+PM will maintain the following information about each partition:
+ 1 Name           Name by which the partition may be referenced (e.g. "Interactive")
+ 2 Number         Unique number by which the partition can be referenced
+ 3 JobType        Jobs which may execute in the partition, default is "ALL" 
+                  (e.g. BATCH, INTERACTIVE, ALL)
+ 4 MaxTime        Maximum wall-time limit for any job in minutes, 
+                  default value is "UNLIMITED"
+ 5 MaxCpus        Maximum count of CPUs which may be allocated to any job,
+                  default value is "UNLIMITED"
+ 7 State          State of partition (e.g. UP, DRAINING, DRAINED, DOWN), 
+                  default value is "UP"
+ 8 AllowUsers     Names of user who may use the partition, 
+                  separated by commas, default value is "ALL"
+ 9 DenyUsers      Names of user who may not use the partition, 
+                  separated by commas, default value is "NONE"
+
+
+Only the first two items, Name and Number, must be supplied in the configuration file.
+If not otherwise specified, all nodes will be in partition zero.
+Lines in the configuration file having "#" in column one will be 
+considered comments.
+The configuration file should contain information about one partition on 
+a single line.
+Each field should contain the field's name, an equal sign, and the value. 
+Fields should be space or tab separated.
+The default values for each partition can be specified with a record in which 
+"Name" is "DEFAULT" if other default values are prefered. 
+The default entry values will apply only to lines following it in the 
+configuration file and the default values can be reset multiple times 
+in the configuration file with multiple entries where "Name" is "DEFAULT".
+The size of any field in the configuration file is limited to 1024 characters.
+If user controls are desired then set either AllowUsers or DenyUsers, but not both.
+If AllowUsers is set, then DenyUsers is ignored. 
+If DenyUsers is set, then AllowUsers is ignored. 
+A sample PartitionConf file is included at the end of this document.
+
+In order to simplify the building and support of SLURM, we will not 
+incorporate a database into PM at this time (if ever). 
+The data can easily be kept in a C structure and written to a file 
+for backup. 
+This design also provides much greater speed than would be possible 
+with a database.
+
+The operation of MP will be as follows:
+ 1. Read the SlurmConf file and confirm its integrity, log results
+ 2. Read the PartitionConf file and confirm its integrity, log results
+
+The MP shall accept API requests on the MachStatusPort to set or get 
+partition status information. 
+Only user root will be permitted to set partion status information 
+and authentication will be provided by virtue of the low port number. 
+The API shall permit any user to get system information. 
+It will be possible to get state information for individual partions 
+or all partions. 
+We do not expect to provide support for SQL queries, the filtering 
+and other processing will be the responsibility of the application. 
+
+We will provide a simple command-line interface to PM utilizing 
+the API described above. 
+We anticipate providing this tool with support for: 
+1. Identifying fields to be reported
+2. Identifying the partions to have state reported
+3. Sorting on specific fields
+4. Filtering on specific field values (e.g. "State=DOWN")
+
+
+Notes
+
+It is advisable to start the ControlMachine before any other 
+of the cluster's nodes.
+
+There is no necessity for synchronized clocks on the nodes 
+(unlike LoadLeveler).
+
+The hierarchical communications with CollectorNodes provide 
+excellent scalability (unlike LoadLeveler).
+
+I am assuming that all nodes will have the same daemons 
+running with the exception of the ControlMachine.
+The ControlMachine will direct each node to operate in a 
+different fashion as needed.
+
+Fault-tolerance will be built through mechanisms to save 
+and restore the database using local and global file systems. 
+
+We need more complete documentation (e.g. man pages for all components).
+
+We need to discuss fault-tolerance, which requires the communications 
+library design work.
+
+
+Sample SlurmConf
+
+# 
+# Example SlurmConf
+# Author: John Doe
+# Date: 11/06/2001
+#
+ControlMachine    = lx_control.llnl.gov
+CollectorNodes    = lx01.llnl.gov,lx02.llnl.gov
+NodeSpecConf      = /usr/local/SLURM/NodeSpecConf
+PartitionConf     = /usr/local/SLURM/PartitionConf
+#
+MachStatusManager = /usr/local/SLURM/MachStatusManager
+MachStatusDaemon  = /usr/local/SLURM/MachStatusDaemon
+MachStatusPort    = 612
+MachStatusDebug   = init,msg
+#
+HeartBeatInterval = 300
+HeartBeatTimeout  = 600
+
+
+Sample PartitionConf
+
+# 
+# Example PartitionConf
+# Author: John Doe
+# Date: 12/14/2001
+#
+Name=DEFAULT JobType=Batch
+#
+Name=pbatch Number=0 JobType=BATCH       MaxCpus=128
+Name=debug  Number=1 JobType=INTERACTIVE MaxCpus=4   MaxTime=60
+Name=super  Number=3 JobType=BATCH       MaxCpus=256 AllowUsers=cdunlap,garlick,jette
+Name=class  Number=4 JobType=ALL         MaxCpus=16  AllowUsers=student1,student2,student3
+
+
+Dependencies
+
+The Communications Library is required.
+This code is a component of the Machine Status Manager, which must be completed first.
+
+
+Module Testing
+
+Test Partition Manager with various PartitionConf specifications 
+(with and without various defaults).
+Test Machine Status Manager API with all options both from a privileged port 
+and a non-previlged port (non-root user).
+Review logs from above tests.
+
+
+Integration and System Testing
+
+Test Machine Status Tool, all options in various combinations per man pages.

@@ -42,6 +42,10 @@ CollectorNodes    Comma separated list of nodes which can server to
 NodeSpecConf      Fully qualified pathname of the file containing node 
                   configuration information as described below (default 
                   "/usr/local/SLURM/NodeSpecConf")
+PartitionConf     Fully qualified pathname of the file containing partitoin 
+                  configuration information as described below (default 
+                  "/usr/local/SLURM/PartitionConf")
+DefaultPartition  Name of the default partition
 MachStatusManager The qualified pathname of the file containing the Machine 
                   Status Manager (default "/usr/local/SLURM/MachStatusManager")
 MachStatusDaemon  The qualified pathname of the file containing the Machine 
@@ -65,16 +69,18 @@ MSM will maintain the following information about each node:
  2 OS             Operating System name and level (output of the command
                   "/bin/uname -s -r | /bin/sed 's/ //g'")
  3 CPUs           Number of processors (e.g. "2")
- 4 Speed          Relative speed of these CPUs, units are arbitrary (e.g. "1.4")
+ 4 Speed          Relative speed of these CPUs, units can be an arbitrary 
+                  floating point number, but MHz value is recommended 
+                  (e.g. "863.8")
  5 RealMemory     Size of real memory in MegaBytes (e.g. "2048")
  6 VirtualMemory  Size of virtual memory in MegaBytes (e.g. "4096")
  7 TmpDisk        Size of temporary disk storage in MegaBytes (e.g. "16384")
- 8 Pool           List of pool numbers (collections of nodes) this node 
-                  belongs to, pool numbers range from 0 to 31 and are 
+ 8 Partition      List of partition numbers (collections of nodes) this node 
+                  belongs to, partition numbers range from 0 to 31 and are 
                   specified with comma separators (e.g. "1,3").
- 9 HeartBeatTime  Time of last contact from node, format is time_t as 
+ 9 LastResponse   Time of last contact from node, format is time_t as 
                   returned by the "time" function
-10 State          State of node, either "Up" or "Down" for now
+10 State          State of node (e.g. IDLE, BUSY, DRAINING, DRAINED, DOWN)
 
 Only the first item, Name, must be supplied in the configuration file.
 Items two through eight can initially be read from the configuration file 
@@ -82,19 +88,19 @@ referred to by "NodeSpecConf" or can be established through communications
 with the Machine Status Daemon (MSD).
 Items nine and higher are established through communications with other 
 SLURM components, primarily the Machine Status Daemon (MSD).
-The "Pool" specification will only come into play when SLURM starts to 
+The "Partition" specification will only come into play when SLURM starts to 
 schedule resources and initiate jobs, in phase two of this project. 
-If not otherwise specified, all nodes will be in pool zero.
-If a node is not to be included in any pool, indicate this with the 
-expression "Pool= ".
-Change the value of MAX_POOLS at SLURM build time to change the maximum 
-pool value if so desired.
+If not otherwise specified, all nodes will be in partition zero.
+If a node is not to be included in any partition, indicate this with the 
+expression "Partition= ".
+Change the value of MAX_PARTITION at SLURM build time to change the maximum 
+partition value if so desired.
 Lines in the configuration file having "#" in column one will be 
 considered comments.
 The configuration file should contain information about one node on 
 a single line.
 Each field should contain the field's name, an equal sign, and the value. 
-Fields should be space separated.
+Fields should be space or tab separated.
 The default values for each node can be specified with a record in which 
 "Name" is "DEFAULT". 
 The default entry values will apply only to lines following it in the 
@@ -162,7 +168,7 @@ We anticipate providing this tool with support for:
 1. Identifying fields to be reported
 2. Identifying the machines to have state reported
 3. Sorting on specific fields
-4. Filtering on specific field values (e.g. "State=Down")
+4. Filtering on specific field values (e.g. "State=DOWN")
 
 
 Machine Status Daemon
@@ -195,16 +201,13 @@ There is no necessity for synchronized clocks on the nodes
 The hierarchical communications with CollectorNodes provide 
 excellent scalability (unlike LoadLeveler).
 
-What is the best way to provide logging? I am inclined for 
-each daemon to have its own local log file. Other suggestions?
-
 I am assuming that all nodes will have the same daemons 
 running with the exception of the ControlMachine.
 The ControlMachine will direct each node to operate in a 
 different fashion as needed.
 
-There is no fault-tolerance logic to deal with the ControlMachine 
-failing. 
+Fault-tolerance will be built through mechanisms to save 
+and restore the database using local and global file systems. 
 
 Do we want to special case nodes going down by running some 
 script that might send e-mail?
@@ -226,8 +229,9 @@ Sample SlurmConf
 # Date: 11/06/2001
 #
 ControlMachine    = lx_control.llnl.gov
-CollectorNodes    = lx01.llnl.gov, lx02.llnl.gov
+CollectorNodes    = lx01.llnl.gov,lx02.llnl.gov
 NodeSpecConf      = /usr/local/SLURM/NodeSpecConf
+PartitionConf     = /usr/local/SLURM/PartitionConf
 #
 MachStatusManager = /usr/local/SLURM/MachStatusManager
 MachStatusDaemon  = /usr/local/SLURM/MachStatusDaemon
@@ -245,12 +249,12 @@ Sample NodeSpecConf
 # Author: John Doe
 # Date: 11/06/2001
 #
-Name=DEFAULT OS=RedHat4.3 CPUs=2 Speed=1.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Pool=1
+Name=DEFAULT OS=RedHat4.3 CPUs=2 Speed=1.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 Partition=1
 #
 Name=lx01.llnl.gov
 Name=lx02.llnl.gov
-Name=lx03.llnl.gov Speed=1.5 RealMemory=3072 Pool=1,2
-Name=lx04.llnl.gov CPUs=1 Speed=1.3 Pool=1,3
+Name=lx03.llnl.gov Speed=1.5 RealMemory=3072 Partition=1,2
+Name=lx04.llnl.gov CPUs=1 Speed=1.3 Partition=1,3
 Name=lx05.llnl.gov
 Name=lx06.llnl.gov
 
@@ -258,8 +262,6 @@ Name=lx06.llnl.gov
 Dependencies
 
 The Communications Library is required.
-The Overlord Daemon is required.
-The Logging Library may be required depending upon design decisions.
 
 
 Module Testing
