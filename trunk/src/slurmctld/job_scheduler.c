@@ -77,8 +77,8 @@ static int _build_job_queue(struct job_queue **job_queue)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
-		if ((job_ptr->job_state != JOB_PENDING)   ||
-		    (job_ptr->job_state & JOB_COMPLETING) ||
+		if ((job_ptr->job_state != JOB_PENDING)    ||
+		    (job_ptr->job_state &  JOB_COMPLETING) ||
 		    (job_ptr->priority == 0))	/* held */
 			continue;
 		xassert (job_ptr->magic == JOB_MAGIC);
