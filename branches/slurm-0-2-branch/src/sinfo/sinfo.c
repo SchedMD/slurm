@@ -230,6 +230,14 @@ static bool _filter_out(node_info_t *node_ptr)
 			return true;
 	}
 
+	if ( (params.dead_nodes) &&
+	     (!(node_ptr->node_state & NODE_STATE_NO_RESPOND)) )
+		return true;
+
+	if ( (params.responding_nodes) &&
+	     (node_ptr->node_state & NODE_STATE_NO_RESPOND) )
+		return true;
+
 	if (params.state_list) {
 		int *node_state;
 		bool match = false;

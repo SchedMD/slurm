@@ -66,6 +66,7 @@ extern void parse_command_line(int argc, char *argv[])
 	int opt_char;
 	int option_index;
 	static struct option long_options[] = {
+		{"dead",      no_argument,       0, 'd'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
 		{"iterate",   required_argument, 0, 'i'},
@@ -74,6 +75,8 @@ extern void parse_command_line(int argc, char *argv[])
 		{"Node",      no_argument,       0, 'N'},
 		{"format",    required_argument, 0, 'o'},
 		{"partition", required_argument, 0, 'p'},
+		{"responding",no_argument,       0, 'r'},
+		{"list-reasons", no_argument,    0, 'R'},
 		{"summarize", no_argument,       0, 's'},
 		{"sort",      required_argument, 0, 'S'},
 		{"states",    required_argument, 0, 't'},
@@ -83,103 +86,119 @@ extern void parse_command_line(int argc, char *argv[])
 		{"usage",     no_argument,       0, OPT_LONG_USAGE}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "ehi:ln:No:p:sS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "dehi:ln:No:p:rRsS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
-			case (int)'?':
-				fprintf(stderr, "Try \"sinfo --help\" for more information\n");
+		case (int)'?':
+			fprintf(stderr, "Try \"sinfo --help\" for more information\n");
+			exit(1);
+			break;
+		case (int)'d':
+			params.dead_nodes = true;
+			break;
+		case (int)'e':
+			params.exact_match = true;
+			break;
+		case (int)'h':
+			params.no_header = true;
+			break;
+		case (int) 'i':
+			params.iterate= atoi(optarg);
+			if (params.iterate <= 0) {
+				error ("Error: --iterate=%s");
 				exit(1);
-				break;
-			case (int)'e':
-				params.exact_match = true;
-				break;
-			case (int)'h':
-				params.no_header = true;
-				break;
-			case (int) 'i':
-				params.iterate= atoi(optarg);
-				if (params.iterate <= 0) {
-					fprintf(stderr, 
-						"Error: --iterate=%s",
-						optarg);
-					exit(1);
-				}
-				break;
-			case (int) 'l':
-				params.long_output = true;
-				break;
-			case (int) 'n':
-				params.nodes= xstrdup(optarg);
-				break;
-			case (int) 'N':
-				params.node_flag = true;
-				break;
-			case (int) 'o':
-				params.format = xstrdup(optarg);
-				break;
-			case (int) 'p':
-				params.partition = xstrdup(optarg);
-				break;
-			case (int) 's':
-				params.summarize = true;
-				break;
-			case (int) 'S':
-				params.sort = xstrdup(optarg);
-				break;
-			case (int) 't':
-				params.states = xstrdup(optarg);
-				params.state_list = 
-					_build_state_list(params.states);
-				break;
-			case (int) 'v':
-				params.verbose++;
-				break;
-			case (int) 'V':
-				_print_version();
-				exit(0);
-			case (int) OPT_LONG_HELP:
-				_help();
-				exit(0);
-			case (int) OPT_LONG_USAGE:
-				_usage();
-				exit(0);
+			}
+			break;
+		case (int) 'l':
+			params.long_output = true;
+			break;
+		case (int) 'n':
+			params.nodes= xstrdup(optarg);
+			break;
+		case (int) 'N':
+			params.node_flag = true;
+			break;
+		case (int) 'o':
+			params.format = xstrdup(optarg);
+			break;
+		case (int) 'p':
+			params.partition = xstrdup(optarg);
+			break;
+		case (int) 'r':
+			params.responding_nodes = true;
+			break;
+		case (int) 'R':
+			params.list_reasons = true;
+			break;
+		case (int) 's':
+			params.summarize = true;
+			break;
+		case (int) 'S':
+			params.sort = xstrdup(optarg);
+			break;
+		case (int) 't':
+			params.states = xstrdup(optarg);
+			params.state_list = 
+				_build_state_list(params.states);
+			break;
+		case (int) 'v':
+			params.verbose++;
+			break;
+		case (int) 'V':
+			_print_version();
+			exit(0);
+		case (int) OPT_LONG_HELP:
+			_help();
+			exit(0);
+		case (int) OPT_LONG_USAGE:
+			_usage();
+			exit(0);
 		}
 	}
 
-	if ( ( params.format == NULL ) && 
-	     ( env_val = getenv("SINFO_FORMAT") ) )
-		params.format = xstrdup(env_val);
 
 	if ( ( params.partition == NULL ) && 
-	     ( env_val = getenv("SINFO_PARTITION") ) )
+			( env_val = getenv("SINFO_PARTITION") ) )
 		params.partition = xstrdup(env_val);
 
 	if ( ( params.partition == NULL ) && 
-	     ( env_val = getenv("SINFO_SORT") ) )
+			( env_val = getenv("SINFO_SORT") ) )
 		params.sort = xstrdup(env_val);
 
 	if ( params.format == NULL ) {
-		if ( params.summarize ) 
+		if ( params.summarize ) {
 			params.format = "%9P %.5a %.9l %.15F  %N";
-		else if ( params.node_flag ) {
+
+		} else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
-			if ( params.long_output ) {
-				params.format = "%N %.5D %.9P %.11T %.4c "
-					        "%.6m %.8d %.6w %.8f %20R";
-			} else {
-				params.format = "%N %.5D %.9P %6t";
-			}
+			params.format = params.long_output ?
+			  "%N %.5D %.9P %.11T %.4c %.6m %.8d %.6w %.8f %20R" :
+			  "%N %.5D %.9P %6t";
+
+		} else if (params.list_reasons) {
+			params.format = params.long_output ?  
+			  "%35R %6t %N" : 
+			  "%35R %N";
+
+		} else if ((env_val = getenv ("SINFO_FORMAT"))) {
+			params.format = xstrdup(env_val);
+
 		} else {
-			if ( params.long_output )
-				params.format = "%9P %.5a %.9l %.8s %.4r %.5h "
-					        "%.10g %.5D %.11T %N";
-			else
-				params.format = "%9P %.5a %.9l %.5D %.6t %N";
+
+			params.format = params.long_output ? 
+			  "%9P %.5a %.9l %.8s %.4r %.5h %.10g %.5D %.11T %N" :
+			  "%9P %.5a %.9l %.5D %.6t %N";
 		}
 	}
 	_parse_format( params.format );
 
-	if (params.nodes || params.partition || params.state_list)
+	if (params.list_reasons && (params.state_list == NULL)) {
+		params.states = xstrdup ("down,drain");
+		params.state_list = _build_state_list (params.states);
+	}
+
+	if (params.dead_nodes || params.nodes || params.partition || 
+			params.responding_nodes ||params.state_list)
 		params.filtering = true;
 
 	if (params.verbose)
@@ -247,16 +266,24 @@ _build_all_states_list( void )
 static int
 _parse_state( char* str, uint16_t* states )
 {	
-	int i;
+	int i, len;
+	uint16_t no_resp;
 	char *state_names;
 
+	len = strlen(str);
+	if (str[len - 1] == '*') {
+		no_resp = NODE_STATE_NO_RESPOND;
+		len--;
+	} else
+		no_resp = 0;
+
 	for (i = 0; i<NODE_STATE_END; i++) {
-		if (strcasecmp (node_state_string(i), str) == 0) {
-			*states = i;
+		if (strncasecmp (node_state_string(i), str, len) == 0) {
+			*states = (i | no_resp);
 			return SLURM_SUCCESS;
 		}	
-		if (strcasecmp (node_state_string_compact(i), str) == 0) {
-			*states = i;
+		if (strncasecmp (node_state_string_compact(i), str, len) == 0) {
+			*states = (i | no_resp);
 			return SLURM_SUCCESS;
 		}	
 	}
@@ -473,6 +500,7 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 void _print_options( void )
 {
 	printf("-----------------------------\n");
+	printf("dead        = %s\n", params.dead_nodes ? "true" : "false");
 	printf("exact       = %d\n", params.exact_match);
 	printf("filtering   = %s\n", params.filtering ? "true" : "false");
 	printf("format      = %s\n", params.format);
@@ -485,6 +513,8 @@ void _print_options( void )
 	printf("nodes       = %s\n", params.nodes ? params.nodes : "n/a");
 	printf("partition   = %s\n", params.partition ? 
 					params.partition: "n/a");
+	printf("responding  = %s\n", params.responding_nodes ?
+					"true" : "false");
 	printf("states      = %s\n", params.states);
 	printf("sort        = %s\n", params.sort);
 	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
@@ -521,28 +551,32 @@ static void _print_version(void)
 
 static void _usage( void )
 {
-	printf("Usage: sinfo [-i seconds] [-t node_state] [-p PARTITION] [-n NODES]\n");
-	printf("             [-S fields] [-o format] [--usage] [-elNsv]\n");
+	printf("\
+Usage: sinfo [-delNRrsv] [-i seconds] [-t states] [-p partition] [-n nodes]\n\
+             [-S fields] [-o format] \n");
 }
 
 static void _help( void )
 {
-	printf("Usage: sinfo [OPTIONS]\n");
-	printf("  -e, --exact                   group nodes only on exact match of\n");
-	printf("                                configuration\n");
-	printf("  -h, --noheader                no headers on output\n");
-	printf("  -i, --iterate=seconds         specify an interation period\n");
-	printf("  -l, --long                    long output - displays more information\n");
-	printf("  -n, --nodes=NODES             report on specific node(s)\n");
-	printf("  -N, --Node                    Node-centric format\n");
-	printf("  -o, --format=format           format specification\n");
-	printf("  -p, --partition=PARTITION     report on specific partition\n");
-	printf("  -s, --summarize               report state summary only\n");
-	printf("  -S, --sort=fields             comma seperated list of fields to sort on\n");
-	printf("  -t, --states=node_state       specify the what states of nodes to view\n");
-	printf("  -v, --verbose                 verbosity level\n");
-	printf("  -V, --version                 output version information and exit\n");
-	printf("\nHelp options:\n");
-	printf("  --help                        show this help message\n");
-	printf("  --usage                       display brief usage message\n");
+	printf ("\
+Usage: sinfo [OPTIONS]\n\
+  -d, --dead                 show only non-responding nodes\n\
+  -e, --exact                group nodes only on exact match of configuration\n\
+  -h, --noheader             no headers on output\n\
+  -i, --iterate=seconds      specify an interation period\n\
+  -l, --long                 long output - displays more information\n\
+  -n, --nodes=NODES          report on specific node(s)\n\
+  -N, --Node                 Node-centric format\n\
+  -o, --format=format        format specification\n\
+  -p, --partition=PARTITION  report on specific partition\n\
+  -r, --responding           report only responding nodes\n\
+  -R, --list-reasons         list reason nodes are down or drained\n\
+  -s, --summarize            report state summary only\n\
+  -S, --sort=fields          comma seperated list of fields to sort on\n\
+  -t, --states=node_state    specify the what states of nodes to view\n\
+  -v, --verbose              verbosity level\n\
+  -V, --version              output version information and exit\n\
+\nHelp options:\n\
+  --help                     show this help message\n\
+  --usage                    display brief usage message\n");
 }

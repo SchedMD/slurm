@@ -99,12 +99,15 @@ struct sinfo_match_flags {
 
 /* Input parameters */
 struct sinfo_parameters {
+	bool dead_nodes;
 	bool exact_match;
 	bool filtering;
 	bool long_output;
 	bool no_header;
 	bool node_field_flag;
 	bool node_flag;
+	bool responding_nodes;
+	bool list_reasons;
 	bool summarize;
 	struct sinfo_match_flags match_flags;
 
