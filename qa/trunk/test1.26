@@ -192,6 +192,11 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 	set spawn_id $alloc
 	expect {
 		-i $alloc
+		-re "error:" {
+			send_user "\nFAILURE: some error happened\n"
+			set failures 1
+			exp_continue
+		}
 		-re "0: ($alpha_numeric)" {
 			set host_0 $expect_out(1,string)
 			exp_continue
@@ -207,7 +212,6 @@ for {set inx 0} {$inx < $interations} {incr inx} {
 
 	if {$failures == 0} {
 		incr successes
-		set  include_node $host_0
 	} else {
 		kill_srun
 		set exit_code 1
