@@ -197,6 +197,7 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		return NULL;
 	
 	nodes_avail = bit_copy (job_ptr->node_bitmap);
+	bit_and (nodes_avail, up_node_bitmap);
 
 	if ( step_spec->node_count == INFINITE)	/* return all available nodes */
 		return nodes_avail;
@@ -210,6 +211,11 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
 			info ("pick_step_nodes: requested nodes %s not part of job %u",
 				step_spec->node_list, job_ptr->job_id);
+			goto cleanup;
+		}
+		if (bit_super_set (nodes_picked, up_node_bitmap) == 0) {
+			info ("pick_step_nodes: some requested node %s is/are down",
+				step_spec->node_list);
 			goto cleanup;
 		}
 	}
@@ -232,7 +238,8 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 	/* if user specifies step needs a specific processor count and all nodes */
 	/* have the same processor count, just translate this to a node count */
 	if (step_spec->cpu_count && (job_ptr->num_cpu_groups == 1)) {
-		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) / job_ptr->cpus_per_node[0];
+		i = (step_spec->cpu_count + (job_ptr->cpus_per_node[0] - 1) ) / 
+								job_ptr->cpus_per_node[0];
 		step_spec->node_count = (i > step_spec->node_count) ? i : step_spec->node_count ;
 		step_spec->cpu_count = 0;
 	}
@@ -240,7 +247,8 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 	if (step_spec->node_count) {
 		nodes_picked_cnt = bit_set_count(nodes_picked);
 		if (step_spec->node_count > nodes_picked_cnt) {
-			node_tmp = bit_pick_cnt(nodes_avail, (step_spec->node_count - nodes_picked_cnt));
+			node_tmp = bit_pick_cnt(nodes_avail, 
+						(step_spec->node_count - nodes_picked_cnt));
 			if (node_tmp == NULL)
 				goto cleanup;
 			bit_or  (nodes_picked, node_tmp);
