@@ -28,13 +28,12 @@
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
-#endif
-
-#if HAVE_STDINT_H
-#  include <stdint.h>
-#endif
-#if HAVE_INTTYPES_H
-#  include <inttypes.h>
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  endif
 #endif
 
 #include <stdio.h>
