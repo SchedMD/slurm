@@ -43,7 +43,7 @@
 /* used to define the size of the credential.signature size
  * used to define the key size of the io_stream_header_t
  */
-#define SLURM_SSL_SIGNATURE_LENGTH 16
+#define SLURM_SSL_SIGNATURE_LENGTH 128
 
 /* used to define the type of the io_stream_header_t.type
  */
