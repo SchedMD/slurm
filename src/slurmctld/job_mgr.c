@@ -2227,10 +2227,13 @@ static int _list_find_job_id(void *job_entry, void *key)
  */
 static int _list_find_job_old(void *job_entry, void *key)
 {
-	time_t min_age = time(NULL) - slurmctld_conf.min_job_age;
+	time_t now      = time(NULL);
+	time_t kill_age = now - slurmctld_conf.kill_wait;
+	time_t min_age  = now - slurmctld_conf.min_job_age;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
-	if (job_ptr->job_state & JOB_COMPLETING) {
+	if ( (job_ptr->job_state & JOB_COMPLETING) &&
+	     (job_ptr->end_time < kill_age) ) {
 		re_kill_job(job_ptr);
 		return 0;       /* Job still completing */
 	}
