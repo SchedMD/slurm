@@ -99,7 +99,7 @@ order its queues through an application programming interface (API).
 
 Compute nodes simply run a {\tt slurmd} daemon (similar to a remote shell 
 daemon) to export control to SLURM.  The central controller daemon,
-{\tt slurmctrld}, maintains the global state and directs operations.
+{\tt slurmctld}, maintains the global state and directs operations.
 
 \subsection{What SLURM is Not}
 
@@ -134,21 +134,77 @@ tools that perform these functions.
 \label{arch}
 \end{figure}
 
-As depicted in Figure~\ref{arch}, SLURM consists of a central
-{\tt slurmctrld} daemon running on a management node (with optional 
-failover twin), a {\tt slurmd} daemon running on each compute node, 
+\begin{figure}
+\epsfig{file=LCM.arch.eps,width=6in}
+\caption{SLURM Architecture - Subsystems}
+\label{archdetail}
+\end{figure}
+
+
+As depicted in Figure~\ref{arch}, SLURM consists of 
+a {\tt slurmd} daemon running on each compute node, 
+a central {\tt slurmctld} daemon running on a management node (with optional 
+failover twin), 
 and a four command line utilities: {\tt srun}, {\tt scancel}, {\tt squeue}, 
 and {\tt slurmadmin}, which can run anywhere in the cluster.
 A scalable communications library ties these components together.
 
-Most SLURM state exists in the controller.  The {\tt slurmd} running
+Figure~\ref{archdetail} exposes the subsystems that are implemented within
+the {\tt slurmd} and {\tt slurmctld} daemons.  These subsystems are explained
+in more detail below.
+
+\marginpar{Moe - could you update figure~\ref{archdetail} to move
+switch manager to controller, add stream copy service to slurmd, and
+change job management to process manager in slurmd?  Thanks --JG}  
+
+\subsubsection{Slurmd}
+
+The {\tt slurmd} running
 on each compute node can be compared to a remote shell daemon:  it waits 
 for work, executes the work, returns status, then waits for more work.  
 It also asynchronously exchanges node and job status with the controller.  
 It never communicates with other compute nodes and the only job information 
 it has at any given time pertains to the currently executing job, if any.
 
-The {\tt slurmctrld} controller performs a variety of tasks simultaneously:
+{\tt slurmd} reads its configuration from a file: {\tt /etc/slurmd.conf}
+and has three major components:
+
+\begin{itemize}
+\item {\em Machine and Job Status Service}:  Respond to controller 
+requests for machine and job state information, and send asynchronous 
+reports of some state changes (e.g. {\tt slurmd} startup, process 
+termination) to the controller.
+Job status includes accounting information which may be required by
+an external metabatch system such as DPCS.
+
+\item{\em Process Manager}:  Start, monitor, and clean up after
+a set of processes belonging to a parallel job, as dictated by the
+controller.  Starting a process may include executing a prolog script, 
+setting process limits, setting real and effective
+user id, setting environment, setting current working directory, allocating 
+interconnect resources, setting core paths, and managing process groups.  
+Terminating a process may include terminating all members of a process 
+group, and executing an epilog script.
+
+\item{\em Stream Copy Service}:  Allow stderr/stdout/stdin and core files
+to be copied in and out of the spool directory for a job.  In the case
+of batch jobs, this will happen during startup and cleanup only and will
+occur between the controller and {\tt slurmd}'s.
+In the case of interactive jobs, stdout/stderr may additionally be ``carbon 
+copied'' to the {\tt srun} command during job execution.
+
+\end{itemize}
+
+\subsubsection{Controller}
+
+Most SLURM state exists in the controller, {\tt slurmctld}. 
+When {\tt slurmctld} starts, it reads its configuration from a file:
+{\tt /etc/slurmctld.conf}.  It also can read additional state from a 
+checkpoint file left over from a previous {\tt slurmctld}.
+{\tt slurmctld} runs in either master or standby mode, depending
+on the state of its failover twin, if any.  
+
+{\tt slurmctld} performs several tasks simultaneously:
 
 \begin{itemize}
 \item {\em Machine Status Manager}: Monitor the state of each 
@@ -158,22 +214,22 @@ Notify the partition manager when nodes change state.
 {\tt slurmadmin} may be used to set set nodes administratively to 
 {\em up}, {\em down}, or {\em drain} status.
 
-\item {\em Partition Manager}:  Distinct functionality or capabilities 
-are associated with different sets of nodes in the cluster.  Each such set 
-of nodes is considered a partition.  {\tt slurmadmin} may be used to set
-partitions to {\em up}, {\em down}, or {\em drain} status.  The partition 
-manager acts as a resource allocator for the job manager, where the resources 
-are whole nodes.  It also interacts with the machine status manager to 
-maintain an accurate notion of what resources it has available.
+\item {\em Partition Manager}:  Manage partition membership, partition
+status ({\tt slurmadmin} may be used to set
+partitions to {\em up}, {\em down}, or {\em drain} status), and
+act as a resource allocator for the job manager, where the resources 
+are whole nodes.  The partition manager also interacts with the machine 
+status manager to maintain an accurate notion of what resources it has 
+available.
 
-\item {\em Scheduler}: The scheduler determines the order of the job queue.
-When jobs are first submitted, they are placed in the queue and the 
+\item {\em Scheduler}: Determine the order in which jobs are executed.
+When jobs are first submitted, they are placed in the job queue and the 
 scheduler is called to perform any reordering of the queue dictated by 
 its policy.  The default scheduler implements FIFO with backfill.
 The default may be replaced with an external scheduler which implements
 other policies.  
 
-\item {\em Job Manager}:  The job manager manages the job queue.
+\item {\em Job Manager}:  Manage the job queue.
 The job manager is awakened whenever there is a change in state that 
 might permit a job to begin running, such as job completion, job submission, 
 partition {\em up} transition, or node {\em up} transition.
@@ -181,41 +237,85 @@ When awakened, the job manager makes one pass through the job queue and
 performs any cleanup associated with completed jobs.
 The job manager then makes a second pass through the job queue and
 starts jobs until a partition manager resource allocation fails.
-On failure, the job manager goes back to sleep.
+On allocation failure, the job manager goes back to sleep.
 
 \item {\em Job Status Manager}:
-The job status manager is closely related to the machine status manager.
-It periodically polls {\tt slurmd}'s on compute nodes that are running jobs 
-and wakes up the job manager when processes stop running on any of the nodes.  
+Poll {\tt slurmd}'s on compute nodes that are running jobs.
+When the job status manager detects that one or more nodes have completed 
+their work, it initiates cleanup by marking the job as {\em completed} 
+and awakening the job manager.  The job status manager is closely related to
+the machine status manager.
 
-\item {\em Switch Manager}:  The interconnect manager can be configured
-to use Simple Network Monitoring Protocol (SNMP) to record link errors 
-logged by interconnect hardware and to include this information in the status
-of jobs reported to users.  In addition, the partition manager is notified 
-when links change state so it can change the state of the attached compute 
-node.  The interconnect manager configuration is optional;  without one, 
+\item {\em Switch Manager}:  Monitor the state of interconnect links 
+and inform the machine status manager of any compute nodes whose links
+have failed.  The switch manager can be configured
+to use Simple Network Monitoring Protocol (SNMP) to obtain link
+information from SNMP-capable network hardware.
+The switch manager configuration is optional;  without one, 
 SLURM simply ignores link errors.
 
 \end{itemize}
 
+\subsubsection{Command Line Utilities}
+
+The command line utilities primarily interact with the controller.
+The utilities find the host:port of the controller by reading a configuration 
+file: {\tt /etc/slurm.conf}.
+They authenticate to the controller using a method selected at compile
+time, initially either Kerberos V or ...?
+
+\marginpar{Chris help me out here on the authentication --JG}
+
+\begin{itemize}
+\item {\tt srun}: Submit a job for execution.  {\tt srun} may run in either
+interactive or batch mode.  {\tt srun}'s standard input (if it is a file) is 
+copied to the controller, which copies it to {\tt slurmd}'s\footnote{{\tt srun}
+command line options select the stdin handling method such as broadcast to 
+all tasks, or send only to task 0.}
+After job submission, batch {\tt srun} terminates, while interactive 
+{\tt srun} establishes connections with {\tt slurmd}'s to get standard output 
+and error of the tasks in real time, and responds to signals from the 
+user.\footnote{From the controller's point of view there is no difference 
+between batch and interactive jobs;  an interactive {\tt srun} may detach from 
+its job, leaving it to continue running as though submitted in batch mode.
+It is also possible for {\tt srun} to attach to a job interactively that
+was submitted in batch mode, subject to authentication.}
+
+\item {\tt squeue}: Display the queue of running and waiting jobs.
+
+\item {\tt scancel}: Cancel a running or a waiting job, subject to
+authentication.
+
+\item {\tt slurmadmin}: Perfrom priviledged administrative commands
+such as draining a partition in preparation for maintenance, or cancelling
+jobs.  Must be run as the root user.
+
+\end{itemize}
+
+\subsubsection{Communications Layer}
+
+{\em Does the communications layer need to handle stdout/stderr streams?
+If these only apply to an interactive run, can we live with TCP?
+TCP may also be appropriate for the copying of stdout/stderr/stdin/core
+at the beginning and end of a job.  If that requirement is lifted,
+the comm layer design over UDP is simpler.}
+
 \subsection{Example:  Executing a Batch Job}
 
-A user wishes to run a job in batch mode ({\tt srun} will return 
-immediately and the job will execute ``in the background'').  
-The job is a two-node run of {\em mping}, a simple application that measures 
-MPI ping-pong performance.  This run will test message sizes increasing
-in powers of two from one byte to one megabyte.  It will run in the 
-{\em tinymem} partition.
-The user issues the {\tt srun} command from his home directory:
+A user wishes to run a job in batch mode, in which {\tt srun} will return 
+immediately and the job will execute ``in the background'' when resources
+are available.
+
+The job is a two-node run of {\em mping}, a simple MPI application.
+The user submits the job:
 \begin{verbatim}
-srun --partition tinymem --numnodes 2 --taskspernode 1 mping 1 1048576
+srun --numnodes 2 --taskspernode 1 mping 1 1048576
 \end{verbatim}
 
-The {\tt srun} command looks at the {\tt /etc/slurm.conf} configuration file
-to determine the host:port of the controller.  It authenticates the user
-to the controller and submits the job request.  The request contains the
-information specified on the {\tt srun} command line, {\tt srun}'s current
-working directory, and {\tt srun}'s complete environment.
+The {\tt srun} command authenticates the user to the controller and submits
+the job request.  As stdin is not a file, it is not copied to the controller.
+The request includes the {\tt srun} environment, current working directory, 
+and command line option information.
 
 The controller consults the partition manager to test whether the job will
 will ever be able to run.  If the user has requested a nonexistant partition,
@@ -223,16 +323,18 @@ more nodes than are configured in the partition, a nonexistant constraint,
 etc., the partition manager returns an error and the request is discarded.
 The failure is reported to {\tt srun} which tells the user and exits:
 \begin{verbatim}
-srun: not enough nodes configured in partition
+srun: request will never run
 \end{verbatim}
 
 On successful submission, the controller assigns the job a unique 
-{\em batch id}, adds it to the job queue, and returns the batch id to 
-{\tt srun}, which reports this to user and exits:
+{\em batch id}, adds it to the job queue and returns the 
+batch id to {\tt srun}, which reports this to user and exits, returning
+success to the user's shell:
 
 \begin{verbatim}
-srun: tinymem-42 enqueued
+srun: tinymem-42
 \end{verbatim}
+
 The controller calls the scheduler to reorder the batch queue and awakens the 
 job manager.
 The job manager scans for completed jobs, finds none, then tries to run
@@ -241,15 +343,10 @@ and makes a successful request to the partition manager to allocate
 two nodes from the {\em tinymem} partition: {\em dev6} and {\em dev7}.
 
 The job manager sends a copy of the environment, current working directory,
-command path, command arguments, any information needed to use the 
-interconnect, etc.  
-to the {\tt slurmd}'s running on {\em dev6} and {\em dev7}.  The {\tt slurmd}'s
-set up the environment and execute the command as the submitting user.
-Since no special stdout/stderr handling options
-\footnote{There are multiple options for stdin/stdout/stderr handling.  
-The default is to spool files on the compute nodes and concatenate them when 
-the job completes.}  
-were requested, stdout and stderr of the command will spool to files on the 
+command path, command arguments, interconnect info, etc.
+to the {\tt slurmd}'s running on {\em dev6} and {\em dev7}.  
+The {\tt slurmd}'s set up the environment and execute the command as 
+the submitting user.  Stdout and stderr are redirected to files on the 
 compute nodes:
 
 \begin{verbatim}
@@ -260,7 +357,7 @@ compute nodes:
 The job manager notifies the job status manager that a new job is running,
 continues to try to run jobs until it cannot, then sleeps.
 Meanwhile, on {\em dev6}, {\tt /var/spool/slurm/tinymem-42/stdout.0}
-accumulates output:
+accumulates the application's output:
 
 \begin{verbatim}
   1 pinged   0:        1 bytes      5.38 uSec     0.19 MB/s                     
@@ -277,27 +374,59 @@ awakens the job manager.  The job manager discovers the completed job in
 its first pass through the queue and begins cleanup.
 First it ensures that all tasks have completed by telling the {\tt slurmd}'s
 to terminate the job if it is still running.
-Next it retrieves the stdout/stderr spool files and merges them into a single
-report, which it stores in the user's {\tt srun} directory.
+Next it retrieves the stdout/stderr spool files from the stream copy service
+of each {\tt slurmd} and merges them into a single report, 
+which it stores in the user's {\tt srun} directory.
 
 Finally, the job manager frees resources back to the partition manager and
 the job is removed from the job queue.
 
-\subsection{Batch Execution Discussion}
-
 \subsection{Example:  Executing an Interactive Job}
 
-\subsection{Interactive Execution Discussion}
+A user wishes to run the same job in interactive mode, in which {\tt srun}
+will block while the job executes and stdout/stderr of the job will be 
+copied onto stdout/stderr of {\tt srun}.
 
-\subsection{Example:  Recovery from Failure}
+The user submits the job, this time requesting an interactive run:
+\begin{verbatim}
+srun --interactive --numnodes 2 --taskspernode 1 mping 1 1048576
+\end{verbatim}
+
+The {\tt srun} command authenticates the user to the controller and 
+executes the same steps described in the batch example, except {\tt srun} 
+does not terminate on successful submission.  Instead, it receives a list of
+hostnames and a {\em nonce} used to authenticate to the {\tt slurmd}'s.
+After the job startup, {\tt srun} has no further interaction with the 
+controller.
+
+{\tt srun} then opens connections to the {\tt slurmd}'s and copies 
+stdout/stderr of each task to stdout/stderr of {\tt srun}.  These streams
+are also spooled on the node and will be collected, merged, and stored
+in the user's {\tt srun} directory on completion.
+
+The user sees the output of task 0 on stdout of {\tt srun}:
+
+\begin{verbatim}
+  1 pinged   0:        1 bytes      5.38 uSec     0.19 MB/s                     
+  1 pinged   0:        2 bytes      5.32 uSec     0.38 MB/s                     
+  1 pinged   0:        4 bytes      5.27 uSec     0.76 MB/s                     
+  1 pinged   0:        8 bytes      5.39 uSec     1.48 MB/s                     
+  ...
+  1 pinged   0:  1048576 bytes   4682.97 uSec   223.91 MB/s              
+\end{verbatim}
+
+When the job terminates, {\tt srun} receives an EOF on each stream and
+closes them, gets the job exit status from {\tt slurmd}'s, and terminates.
+
+If a signal is received by {\tt srun} while the job is executing (for example,
+a SIGINT resulting from a Control-C), it is sent to each {\tt slurmd} which 
+terminates the individual tasks and reports this to the job status manager,
+which cleans up the job.
+
+\marginpar{This is as far as I got in the ``big picture'' update --JG}
 
 \section{Controller Design}
 
-\begin{figure}
-\epsfig{file=LCM.arch.eps,width=6in}
-\caption{SLURM Controller Architecture}
-\label{controllerarch}
-\end{figure}
 
 The controller includes the following subsystems:
 
