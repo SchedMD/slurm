@@ -39,7 +39,7 @@
 #define BUFSIZE 4096
 
 #ifdef HAVE_BGL_FILES
-/* Find the specified BlueGene node ID and configure it down in MMCS */
+/* Find the specified BlueGene node ID and drain it from SLURM */
 static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 {
 	int bp_num, i, rc;
@@ -47,7 +47,9 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 	rm_BP_t *my_bp;
 	rm_location_t bp_loc;
 	rm_BP_state_t bp_state;
-	char bgl_down_node[128];
+	char bgl_down_node[128], reason[128];
+	time_t now;
+	struct tm *time_ptr;
 
 	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
@@ -91,19 +93,18 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		if ((rc = rm_set_data(my_bp, RM_BPState, RM_BP_DOWN)) 
-				!= STATUS_OK)
-			error("switch for node %s is bad, could not set down, "
-				"rm_set_data(RM_BPState): %s",
-				bgl_down_node, bgl_err_str(rc));
-		else
-			info("switch for node %s is bad, set down", 
-				bgl_down_node);
+
+		error("switch for node %s is bad", bgl_down_node);
+		now = time(NULL);
+		time_ptr = localtime(&now);
+		strftime(reason, sizeof(reason),
+			"bluegene_select: MMCS switch DOWN [SLURM@%b %d %H:%M]",
+			time_ptr);
+		slurm_drain_nodes(bgl_down_node, reason);
+
 	}
 }
-#endif
 
-#ifdef HAVE_BGL_FILES
 /* Convert base partition state value to a string */
 static char *_convert_bp_state(rm_BP_state_t state)
 {
@@ -119,42 +120,33 @@ static char *_convert_bp_state(rm_BP_state_t state)
 	}
 	return "BP_STATE_UNIDENTIFIED!";
 }
-#endif
 
-/* Test for nodes that are DOWN in BlueGene database, 
- * if so DRAIN them in SLURM */ 
-extern void test_down_nodes(void)
+/* Test for nodes that are DOWN in MMCS and DRAIN them in SLURM */ 
+static void _test_down_nodes(rm_BGL_t *bgl)
 {
-#ifdef HAVE_BGL_FILES
 	int bp_num, i, rc;
 	rm_BP_t *my_bp;
 	rm_BP_state_t bp_state;
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
-	rm_BGL_t *bgl_new;
 
-	if ((rc = rm_get_BGL(&bgl_new)) != STATUS_OK) {
-		error("rm_get_BGL(): %s", bgl_err_str(rc));
-		return;
-	}
-
-	debug("Running test_down_nodes");
+	debug2("Running _test_down_nodes");
 	down_node_list[0] = '\0';
-	if ((rc = rm_get_data(bgl_new, RM_BPNum, &bp_num)) != STATUS_OK) {
+	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 		bp_num = 0;
 	}
 	for (i=0; i<bp_num; i++) {
 		if (i) {
-			if ((rc = rm_get_data(bgl_new, RM_NextBP, &my_bp)) 
+			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp)) 
 					!= STATUS_OK) {
 				error("rm_get_data(RM_NextBP): %s", 
 					bgl_err_str(rc));
 				continue;
 			}
 		} else {
-			if ((rc = rm_get_data(bgl_new, RM_FirstBP, &my_bp)) 
+			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp)) 
 					!= STATUS_OK) {
 				error("rm_get_data(RM_FirstBP): %s", 
 					bgl_err_str(rc));
@@ -187,8 +179,6 @@ extern void test_down_nodes(void)
 		} else
 			error("down_node_list overflow");
 	}
-	rm_free_BGL(bgl_new);
-
 	if (down_node_list[0]) {
 		char reason[128];
 		time_t now = time(NULL);
@@ -198,26 +188,18 @@ extern void test_down_nodes(void)
 			time_ptr);
 		slurm_drain_nodes(down_node_list, reason);
 	}
-#endif
 }
 
-/* Test for switches that are DOWN in BlueGene database, 
+/* Test for switches that are DOWN in MMCS, 
  * when found DRAIN them in SLURM and configure their base partition DOWN */
-extern void test_down_switches(void)
+static void _test_down_switches(rm_BGL_t *bgl)
 {
-#ifdef HAVE_BGL_FILES
 	int switch_num, i, rc;
 	rm_switch_t *my_switch;
 	rm_bp_id_t bp_id;
 	rm_switch_state_t switch_state;
-	rm_BGL_t *bgl;
 
-	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
-		error("rm_get_BGL(): %s", bgl_err_str(rc));
-		return;
-	}
-
-	debug2("Running test_down_switches");
+	debug2("Running _test_down_switches");
 	if ((rc = rm_get_data(bgl, RM_SwitchNum, &switch_num)) != STATUS_OK) {
 		error("rm_get_data(RM_SwitchNum): %s", bgl_err_str(rc));
 		switch_num = 0;
@@ -255,7 +237,33 @@ extern void test_down_switches(void)
 		}
 		_configure_node_down(bp_id, bgl);
 	}
-	
-	rm_free_BGL(bgl);
+}
+#endif
+
+/* 
+ * Search MMCS for failed switches and nodes. Failed resources are DRAINED in 
+ * SLURM. This relies upon rm_get_BGL(), which is slow (10+ seconds) so run 
+ * this test infrequently.
+ */
+extern void test_mmcs_failures(void)
+{
+#ifdef HAVE_BGL_FILES
+	rm_BGL_t *bgl;
+	int rc;
+
+	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
+		error("rm_set_serial(%s): %s", BGL_SERIAL, bgl_err_str(rc));
+		return;
+	}
+	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+		error("rm_get_BGL(): %s", bgl_err_str(rc));
+		return;
+	}
+
+	_test_down_switches(bgl);
+	_test_down_nodes(bgl);
+	if ((rc = rm_free_BGL(bgl)) != STATUS_OK)
+		error("rm_free_BGL(): %s", bgl_err_str(rc));
 #endif
 }
+

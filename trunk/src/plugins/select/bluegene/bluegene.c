@@ -35,15 +35,10 @@
  * APIs are so slow (10-15 seconds for rm_get_BGL) that we do not 
  * want to slow down job launch or termination by that much. When
  * the APIs are thread safe, revert to the code marked by
- * "#ifdef THE_BGL_APIS_REALLY_WORKED".        - Jette 2/17/2005
+ * "#ifdef BGL_THREAD_SAFE".        - Jette 2/17/2005
  */
-#ifdef THE_BGL_APIS_REALLY_WORKED
-#  define NODE_POLL_TIME 120	/* poll MMCS node state every 120 secs */
-#  define SWITCH_POLL_TIME 180	/* poll MMCS switch state every 180 secs */
-#else
-#  define NODE_POLL_TIME   10000
-#  define SWITCH_POLL_TIME 10000
-#endif
+#define MMCS_POLL_TIME 120	/* poll MMCS for down switches and nodes 
+				 * every 120 secs */
 
 #define _DEBUG 0
 
@@ -259,27 +254,21 @@ extern void sort_bgl_record_inc_size(List records){
  */
 extern void *bluegene_agent(void *args)
 {
-	static time_t last_node_test, last_switch_test, now;
+	static time_t last_mmcs_test;
 
-	last_node_test   = time(NULL) + NODE_POLL_TIME;
-	last_switch_test = time(NULL) + SWITCH_POLL_TIME;
+	last_mmcs_test = time(NULL) + MMCS_POLL_TIME;
 	while (!agent_fini) {
-		sleep(1);
-		now = time(NULL);
+#ifdef BGL_THREAD_SAFE
+		time_t now = time(NULL);
 
-		if (difftime(now, last_node_test) >= NODE_POLL_TIME) {
+		if (difftime(now, last_mmcs_test) >= MMCS_POLL_TIME) {
 			if (agent_fini)		/* don't bother */
 				return NULL;	/* quit now */
-			last_node_test = now;
-			test_down_nodes();	/* can run for a while */
+			last_mmcs_test = now;
+			test_mmcs_failures();	/* can run for a while */
 		}
-
-		if (difftime(now, last_switch_test) >= SWITCH_POLL_TIME) {
-			if (agent_fini)         /* don't bother */
-				return NULL;	/* quit now */
-			last_switch_test = now;
-			test_down_switches();	/* can run for a while */
-		}
+#endif
+		sleep(1);
 	}
 	return NULL;
 }
@@ -581,7 +570,6 @@ static int _validate_config_nodes(void)
 {
 	int rc = SLURM_ERROR;
 #ifdef HAVE_BGL_FILES
-	int i=0;
 	bgl_record_t* record;	/* records from configuration files */
 	bgl_record_t* init_record;	/* records from actual BGL config */
 	ListIterator itr_conf, itr_curr;

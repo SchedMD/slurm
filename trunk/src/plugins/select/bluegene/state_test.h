@@ -26,12 +26,11 @@
 #ifndef _STATE_TEST_H_
 #define _STATE_TEST_H_
 
-/* Test for nodes that are DOWN in BlueGene database, 
- * if so DRAIN them in SLURM */
-extern void test_down_nodes(void);
-
-/* Test for switches that are DOWN in BlueGene database,  
- * if so DRAIN them in SLURM and configure their base partition DOWN */
-extern void test_down_switches(void);
+/*
+ * Search MMCS for failed switches and nodes. Failed resources are DRAINED in 
+ * SLURM. This relies upon rm_get_BGL(), which is slow (10+ seconds) so run 
+ * this test infrequently.
+ */
+extern void test_mmcs_failures(void);
 
 #endif /* _STATE_TEST_H_ */
