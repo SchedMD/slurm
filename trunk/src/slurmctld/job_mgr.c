@@ -1097,6 +1097,11 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		      new_job_id);
 
 	top_prio = _top_priority(job_ptr);
+#ifdef HAVE_LIBELAN3
+	/* Avoid resource fragmentation if important */
+	if (top_prio && job_is_completing())
+		top_prio = false;	/* Don't scheduled job right now */
+#endif
 	if (immediate && (!top_prio)) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
@@ -1123,6 +1128,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	}
 
 	no_alloc = test_only || (!top_prio);
+
 	error_code = select_nodes(job_ptr, no_alloc);
 	if ((error_code == ESLURM_NODES_BUSY) ||
 	    (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)) {

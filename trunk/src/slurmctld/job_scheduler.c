@@ -64,39 +64,62 @@ static void _sort_job_queue(struct job_queue *job_queue,
  */
 static int _build_job_queue(struct job_queue **job_queue)
 {
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point = NULL;
+	ListIterator job_iterator;
+	struct job_record *job_ptr = NULL;
 	int job_buffer_size, job_queue_size;
 	struct job_queue *my_job_queue;
 
 	/* build list pending jobs */
 	job_buffer_size = job_queue_size = 0;
 	job_queue[0] = my_job_queue = NULL;
-	job_record_iterator = list_iterator_create(job_list);
 
-	while ((job_record_point =
-		(struct job_record *) list_next(job_record_iterator))) {
-		if ((job_record_point->job_state != JOB_PENDING)   ||
-		    (job_record_point->job_state & JOB_COMPLETING) ||
-		    (job_record_point->priority == 0))	/* held */
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->job_state != JOB_PENDING)   ||
+		    (job_ptr->job_state & JOB_COMPLETING) ||
+		    (job_ptr->priority == 0))	/* held */
 			continue;
-		xassert (job_record_point->magic == JOB_MAGIC);
+		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 50;
 			xrealloc(my_job_queue, job_buffer_size *
 				 sizeof(struct job_queue));
 		}
-		my_job_queue[job_queue_size].job_ptr = job_record_point;
-		my_job_queue[job_queue_size].priority =
-		    job_record_point->priority;
+		my_job_queue[job_queue_size].job_ptr  = job_ptr;
+		my_job_queue[job_queue_size].priority = job_ptr->priority;
 		job_queue_size++;
 	}
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 
 	job_queue[0] = my_job_queue;
 	return job_queue_size;
 }
 
+/*
+ * job_is_completing - Determine if jobs are in the process of completing.
+ * RET - True of any job is in the process of completing
+ * NOTE: This function can reduce resource fragmentation, which is a 
+ * critical issue on Elan interconnect based systems.
+ */
+extern bool job_is_completing(void)
+{
+	bool completing = false;
+	ListIterator job_iterator;
+	struct job_record *job_ptr = NULL;
+	time_t recent = time(NULL) - (slurmctld_conf.kill_wait + 2);
+
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		if ((job_ptr->job_state & JOB_COMPLETING) &&
+		    (job_ptr->end_time >= recent)) {
+			completing = true;
+			break;
+		}
+	}
+	list_iterator_destroy(job_iterator);
+
+	return completing;
+}
 
 /* 
  * schedule - attempt to schedule all pending jobs
@@ -121,6 +144,14 @@ int schedule(void)
 	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
 	lock_slurmctld(job_write_lock);
+#ifdef HAVE_LIBELAN3
+	/* Avoid resource fragmentation if important */
+	if (job_is_completing()) {
+		unlock_slurmctld(job_write_lock);
+		return SLURM_SUCCESS;
+	}
+#endif
+	debug("Running job scheduler");
 	job_queue_size = _build_job_queue(&job_queue);
 	if (job_queue_size == 0) {
 		unlock_slurmctld(job_write_lock);
