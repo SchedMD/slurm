@@ -236,8 +236,8 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			}
                 }
                 if (rc == 0) {
-				debug("_slurm_send_timeout at %d of %d, "
-					"sent zero bytes", sent, size);
+			debug("_slurm_send_timeout at %d of %d, "
+				"sent zero bytes", sent, size);
                         slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
                         sent = SLURM_ERROR;
                         goto done;
@@ -279,9 +279,9 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
 
         while (recvlen < size) {
 
-                if ((timeout -= _tot_wait(&tstart)) < 0) {
-				debug("_slurm_recv_timeout at %d of %d, timeout",
-					recvlen, size);
+                if ((timeout -= _tot_wait(&tstart)) <= 0) {
+			debug("_slurm_recv_timeout at %d of %d, timeout",
+				recvlen, size);
                         slurm_seterrno(SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT);
                         recvlen = SLURM_ERROR;
                         goto done;
@@ -291,27 +291,27 @@ int _slurm_recv_timeout(slurm_fd fd, char *buffer, size_t size,
                         if ((errno == EINTR) || (rc == 0))
                                 continue;
                         else {
-					debug("_slurm_recv_timeout at %d of %d, "
-						"poll error: %s",
-						recvlen, size, strerror(errno));
- 					slurm_seterrno(
-						SLURM_COMMUNICATIONS_RECEIVE_ERROR);
- 					recvlen = SLURM_ERROR; 
-  					goto done;
+				debug("_slurm_recv_timeout at %d of %d, "
+					"poll error: %s",
+					recvlen, size, strerror(errno));
+ 				slurm_seterrno(
+					SLURM_COMMUNICATIONS_RECEIVE_ERROR);
+ 				recvlen = SLURM_ERROR; 
+  				goto done;
                         }
                 } 
-                rc = _slurm_recv(fd, &buffer[recvlen], size - recvlen, flags);
+                rc = _slurm_recv(fd, &buffer[recvlen], (size - recvlen), flags);
                 if (rc < 0)  {
                         if (errno == EINTR)
                                 continue;
                         else {
-					debug("_slurm_recv_timeout at %d of %d, "
-						"recv error: %s",
-						recvlen, size, strerror(errno));
-					slurm_seterrno(
-						SLURM_COMMUNICATIONS_RECEIVE_ERROR);
-					recvlen = SLURM_ERROR; 
-					goto done;
+				debug("_slurm_recv_timeout at %d of %d, "
+					"recv error: %s",
+					recvlen, size, strerror(errno));
+				slurm_seterrno(
+					SLURM_COMMUNICATIONS_RECEIVE_ERROR);
+				recvlen = SLURM_ERROR; 
+				goto done;
                         }
                 }
                 if (rc == 0) {
