@@ -336,6 +336,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_GET_JOB_STEP_INFO :
 			break ;
 		case RESPONSE_GET_JOB_STEP_INFO :
+			unpack_job_step_info_response_msg( ( job_step_info_response_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_JOB_RESOURCE :
 			break ;
@@ -462,8 +463,18 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
 	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack16 ( & tmp_ptr -> num_cpu_groups , ( void ** ) buffer , length ) ;
-	unpack32_array ( (uint32_t **) &(tmp_ptr->cpus_per_node), &uint16_tmp, ( void ** ) buffer  , length ) ;
-	unpack32_array ( (uint32_t **) &(tmp_ptr->cpu_count_reps), &uint16_tmp,  ( void ** ) buffer  , length ) ;
+
+	if ( tmp_ptr -> num_cpu_groups > 0 ){ 
+		tmp_ptr->cpus_per_node = (uint32_t*) xmalloc( sizeof(uint32_t) * tmp_ptr -> num_cpu_groups );
+		tmp_ptr->cpu_count_reps = (uint32_t*) xmalloc( sizeof(uint32_t) * tmp_ptr -> num_cpu_groups );
+		unpack32_array ( (uint32_t **) &(tmp_ptr->cpus_per_node), &uint16_tmp, ( void ** ) buffer  , length ) ;
+		unpack32_array ( (uint32_t **) &(tmp_ptr->cpu_count_reps), &uint16_tmp,  ( void ** ) buffer  , length ) ;
+	}
+	else
+	{
+		tmp_ptr->cpus_per_node = NULL;
+		tmp_ptr->cpu_count_reps = NULL;
+	}
 	*msg = tmp_ptr ;
 	return 0 ;
 }
@@ -663,20 +674,23 @@ int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , void ** buffe
 	return 0;
 }
 
-void pack_job_credential ( slurm_job_credential_t* msg , void ** buffer , uint32_t * length )
+void pack_job_credential ( slurm_job_credential_t* cred , void ** buffer , uint32_t * length )
 {
-	assert ( msg != NULL );
+	int i=0;
+	assert ( cred != NULL );
 
-	pack32( msg->job_id, buffer, length ) ;
-	pack16( (uint16_t) msg->user_id, buffer, length ) ;
-	packstr( msg->node_list, buffer, length ) ;
-	pack32( msg->experation_time, buffer, length ) ;	
-	packmem( msg->signature, SLURM_SSL_SIGNATURE_LENGTH , buffer, length ) ; 
+	pack32( cred->job_id, buffer, length ) ;
+	pack16( (uint16_t) cred->user_id, buffer, length ) ;
+	packstr( cred->node_list, buffer, length ) ;
+	pack32( cred->experation_time, buffer, length ) ;	
+	for ( i = 0; i < sizeof( cred->signature ); i++ ) /* this is a fixed size array */
+		pack8( cred->signature[i], buffer, length ); 
 }
 
 int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
+	int i = 0;
 	slurm_job_credential_t* tmp_ptr ;
 	/* alloc memory for structure */	
 	tmp_ptr = xmalloc ( sizeof ( slurm_job_credential_t ) ) ;
@@ -687,8 +701,10 @@ int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint3
 	unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer, length ) ;
 	unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack32( (uint32_t*) &(tmp_ptr->experation_time), buffer, length ) ;	/* What are we going to do about time_t ? */
-	unpackmem( tmp_ptr->signature, & uint16_tmp , buffer, length ) ; 
-
+	
+	for ( i = 0; i < sizeof( tmp_ptr->signature ); i++ ) /* this is a fixed size array */
+		unpack8( (uint8_t*)(tmp_ptr->signature + i), buffer, length ); 
+	
 	*msg = tmp_ptr;
 	return 0;
 }
@@ -791,8 +807,6 @@ int unpack_partition_info_msg ( partition_info_msg_t ** msg , void ** buf_ptr , 
 }
 
 
-
-
 int unpack_partition_table_msg ( partition_table_msg_t ** part , void ** buf_ptr , int * buffer_size )
 {
 		*part = xmalloc ( sizeof(partition_table_t) );
@@ -831,6 +845,68 @@ int unpack_partition_table ( partition_table_msg_t * part , void ** buf_ptr , in
 		xfree ( node_inx_str );
 	}
 	return 0;
+}
+
+void pack_job_step_info_members(   uint32_t job_id, uint16_t step_id, 
+		uint32_t user_id, time_t start_time, char *partition, char *nodes, 
+		void ** buffer , int * length )
+{
+	pack32 ( job_id , ( void ** ) buffer , length ) ;
+	pack16 ( step_id , ( void ** ) buffer , length ) ;
+	pack32 ( user_id , ( void ** ) buffer , length ) ;
+	pack32 ( start_time , ( void ** ) buffer , length ) ;
+	packstr ( partition, ( void ** ) buffer , length ) ;
+	packstr ( nodes, ( void ** ) buffer , length ) ;
+	
+}
+
+void pack_job_step_info ( job_step_info_t* step, void ** buf_ptr , int * buffer_size )
+{
+	pack_job_step_info_members( 
+				step->job_id, 
+				step->step_id, 
+				step->user_id, 
+				step->start_time, 
+				step->partition ,
+				step->nodes,
+				buf_ptr,
+				buffer_size
+			);
+}
+
+int unpack_job_step_info_members ( job_step_info_t * step , void ** buf_ptr , int * buffer_size )
+{
+	uint16_t uint16_tmp = 0;
+
+	unpack32  (&step->job_id, buf_ptr, buffer_size);
+	unpack16  (&step->step_id, buf_ptr, buffer_size);
+	unpack32  (&step->user_id, buf_ptr, buffer_size);
+	unpack32  ((uint32_t*)&step->start_time, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&step->partition, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&step->nodes, &uint16_tmp, buf_ptr, buffer_size);
+
+	return SLURM_SUCCESS;
+}
+
+int unpack_job_step_info ( job_step_info_t ** step , void ** buf_ptr , int * buffer_size )
+{
+	*step = xmalloc( sizeof( job_step_info_t ) );
+	unpack_job_step_info_members( *step, buf_ptr, buffer_size );
+	return SLURM_SUCCESS;
+}
+
+int unpack_job_step_info_response_msg ( job_step_info_response_msg_t** msg, void ** buf_ptr , int * buffer_size )
+{
+	int i=0;
+	*msg = xmalloc( sizeof( job_step_info_response_msg_t ) );
+
+	unpack32 (&(*msg)->last_update , buf_ptr, buffer_size);
+	unpack32 (&(*msg)->job_step_count , buf_ptr, buffer_size);
+	
+	for ( i=0; i < (*msg)->job_step_count; i++ )
+		unpack_job_step_info_members ( &(*msg)->job_steps[i] , buf_ptr, buffer_size);
+
+	return SLURM_SUCCESS;
 }
 
 void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
