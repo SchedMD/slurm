@@ -106,8 +106,6 @@ _session_mgr(slurmd_job_t *job)
 {
 	xassert(job != NULL);
 
-	/* _cleanup_file_descriptors(job); */
-
 	/*
 	 * Call interconnect_init() before becoming user
 	 */
@@ -143,6 +141,12 @@ _session_mgr(slurmd_job_t *job)
 		exit(6);
 	}
 
+	/*
+	 *  Clean up open file descriptors in session manager so that
+	 *    IO thread in job manager can tell output is complete,
+	 *    and additionally, so that closing stdin will generate
+	 *    EOF to tasks
+	 */ 
 	_cleanup_file_descriptors(job);
 
         _wait_for_all_tasks(job);
@@ -214,7 +218,7 @@ _exec_all_tasks(slurmd_job_t *job)
 		} else if (pid == 0)  /* child */
 			_exec_task(job, i);
 
-		/* Parent continue: 
+		/* Parent continues: 
 		 */
 
 		debug2("pid %ld forked child process %ld for local task %d",
@@ -240,18 +244,10 @@ _exec_all_tasks(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+
 static void
 _exec_task(slurmd_job_t *job, int i)
 {
-	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-
-	io_prepare_child(job->task[i]);
-
-	/* 
-	 * Reinitialize slurm log facility to send errors back to client 
-	 */
-	log_init("slurmd", opts, 0, NULL); 
-
 	if (_unblock_all_signals() < 0) {
 		error("unable to unblock signals");
 		exit(1);
@@ -272,6 +268,12 @@ _exec_task(slurmd_job_t *job, int i)
 		_pdebug_stop_current(job);
 	}
 
+	/* 
+	 * If io_prepare_child() is moved above interconnect_attach()
+	 * this causes EBADF from qsw_attach(). Why?
+	 */
+	io_prepare_child(job->task[i]);
+
 	execve(job->argv[0], job->argv, job->env);
 
 	/* 
@@ -280,6 +282,7 @@ _exec_task(slurmd_job_t *job, int i)
 	error("execve(): %s: %m", job->argv[0]); 
 	exit(errno);
 }
+
 
 static sig_atomic_t timelimit_exceeded = 0;
 static void
