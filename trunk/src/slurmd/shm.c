@@ -898,6 +898,9 @@ _shm_attach()
 static int
 _shm_new()
 {
+	xassert(shm_lock != NULL);
+	xassert(shm_lock != SEM_FAILED);
+
 	if (_shm_create() < 0) {
 		if (_shm_attach() < 0) {
 			error("shm_attach: %m");
@@ -956,6 +959,10 @@ _shm_reopen()
 		 */
 		sem_unlink(lockname);
 		shm_lock = _sem_open(SHM_LOCKNAME, oflags|O_CREAT, 0600, 0);
+		if (shm_lock == SEM_FAILED) {
+			error ("reopen of [%s] failed: %m", lockname);
+			return SLURM_ERROR;
+		}
 		return _shm_new();
 	}
 	
