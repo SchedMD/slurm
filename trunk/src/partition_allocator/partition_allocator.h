@@ -169,6 +169,18 @@ typedef struct {
 	pa_node_t *fill_in_value;
 } pa_system_t;
 
+/* Used to Keep track of where the Base Partitions are at all times
+   Rack and Midplane is the bp_id and XYZ is the coords.
+*/
+
+typedef struct {
+	char *bp_id;
+	int coord[PA_SYSTEM_DIMENSIONS];	
+} pa_bp_map_t;
+
+/* Global */
+extern List bp_map_list;
+
 /**
  * create a partition request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
@@ -258,5 +270,10 @@ int set_bgl_part(List nodes, int size, int conn_type);
 int reset_pa_system();
 
 void init_grid(node_info_msg_t *node_info_ptr);
+
+/**
+ * find a base partitions bgl location 
+ */
+int *find_bp_loc(char* bp_id);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */
