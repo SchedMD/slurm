@@ -102,7 +102,7 @@ _make_batch_dir(batch_job_launch_msg_t *msg)
 {
 	char path[MAXPATHLEN]; 
 
-	snprintf(path, 1024, "%s/job%u", conf->spooldir, msg->job_id);
+	snprintf(path, 1024, "%s/job%05u", conf->spooldir, msg->job_id);
 
 	if ((mkdir(path, 0700) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", path);
@@ -111,11 +111,6 @@ _make_batch_dir(batch_job_launch_msg_t *msg)
 
 	if (chown(path, (uid_t) msg->uid, (gid_t) -1) < 0) {
 		error("chown(%s): %m", path);
-		goto error;
-	}
-
-	if (chmod(path, 0500) < 0) {
-		error("chmod(%s): %m", path);
 		goto error;
 	}
 
@@ -135,8 +130,10 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 
   again:
 	if ((fp = safeopen(script, "w", SAFEOPEN_CREATE_ONLY)) == NULL) {
-		if ((errno != EEXIST) || (unlink(script) < 0)) 
+		if ((errno != EEXIST) || (unlink(script) < 0))  {
+			error("couldn't open `%s': %m", script);
 			goto error;
+		}
 		goto again;
 	}
 
@@ -201,7 +198,7 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if (!(job = job_batch_job_create(msg))) 
 		goto cleanup;
 
-	if ((batchdir = _make_batch_dir(msg)) == NULL)
+	if ((batchdir = _make_batch_dir(msg)) == NULL) 
 		goto cleanup;
 
 	if (job->argv[0])
@@ -210,15 +207,20 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
 		goto cleanup;
 
+	if ((chmod(batchdir, 0500) < 0)) {
+		error("chmod(%s): %m", batchdir);
+		goto cleanup;
+	}
+
 	_setup_batch_env(job, msg->nodes);
 
 	_run_batch_job(job);
 		
    cleanup:
 	shm_fini();
-	if (unlink(job->argv[0]) < 0)
+	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
-	if (rmdir(batchdir) < 0)
+	if (batchdir && (rmdir(batchdir) < 0))
 		error("rmdir(%s): %m",  batchdir);
 	xfree(batchdir);
 	return 0; 
