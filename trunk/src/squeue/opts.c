@@ -550,17 +550,18 @@ _print_options()
 #endif
 
 	printf( "-----------------------------\n" );
-	printf( "iterate %d\n", params.iterate );
-	printf( "job_flag %d\n", params.job_flag );
-	printf( "step_flag %d\n", params.step_flag );
-	printf( "jobs %s\n", params.jobs );
-	printf( "partitions %s\n", params.partitions ) ;
-	printf( "sort %s\n", params.sort ) ;
-	printf( "states %s\n", params.states ) ;
-	printf( "steps %s\n", params.steps );	
-	printf( "users %s\n", params.users );	
-	printf( "verbose %d\n", params.verbose );
-	printf( "format %s\n", params.format );
+	printf( "format     = %s\n", params.format );
+	printf( "iterate    = %d\n", params.iterate );
+	printf( "job_flag   = %d\n", params.job_flag );
+	printf( "jobs       = %s\n", params.jobs );
+	printf( "partitions = %s\n", params.partitions ) ;
+	printf( "sort       = %s\n", params.sort ) ;
+	printf( "states     = %s\n", params.states ) ;
+	printf( "step_flag  = %d\n", params.step_flag );
+	printf( "steps      = %s\n", params.steps );	
+	printf( "users      = %s\n", params.users );	
+	printf( "verbose    = %d\n", params.verbose );
+
 #if	__DEBUG
 	if (params.job_list) {
 		i = 0;
