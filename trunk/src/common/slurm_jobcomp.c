@@ -37,6 +37,7 @@
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -46,9 +47,7 @@
  */
 typedef struct slurm_jobcomp_ops {
 	int          (*set_loc)   ( char *loc );
-	int          (*job_write) ( uint32_t job_id, uint32_t user_id, char *job_name,
-				char *job_state, char *partition, uint32_t time_limit,
-				time_t start_time, time_t end_time, char *node_list);
+	int          (*job_write) ( struct job_record *job_ptr);
 	int          (*sa_errno)  ( void );
 	char *       (*job_strerror)  ( int errnum );
 } slurm_jobcomp_ops_t;
@@ -210,17 +209,13 @@ g_slurm_jobcomp_init( char *jobcomp_loc )
 }
 
 extern int
-g_slurm_jobcomp_write(uint32_t job_id, uint32_t user_id, char *job_name, 
-			char *job_state, char *partition, uint32_t time_limit,
-			time_t start_time, time_t end_time, char *node_list)
+g_slurm_jobcomp_write(struct job_record *job_ptr)
 {
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.job_write))(job_id, user_id, job_name,
-				job_state, partition, time_limit, start_time, 
-				end_time, node_list);
+		retval = (*(g_context->ops.job_write))(job_ptr);
 	else {
 		error ("slurm_jobcomp plugin context not initialized");
 		retval = ENOENT;

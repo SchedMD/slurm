@@ -48,9 +48,11 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/common/list.h"
+#include "src/slurmctld/slurmctld.h"
 #include "job_record.h"
 
 /*
@@ -379,15 +381,22 @@ int slurm_jobcomp_set_location ( char * location )
 	return SLURM_SUCCESS;
 }
 
-int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, char *job_name,
-		char *job_state, char *partition, uint32_t time_limit,
-		time_t start, time_t end_time, char *node_list)
+int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	job_record job;
+	enum job_states job_state;
 
 	debug3("Entering slurm_jobcomp_log_record");
-	job = job_record_create(job_id,user_id,job_name,job_state,partition,time_limit,
-				start,end_time,node_list);
+	/* Job will typically be COMPLETING when this is called. 
+	 * We remove this flag to get the eventual completion state:
+	 * JOB_FAILED, JOB_TIMEOUT, etc. */
+	job_state = job_ptr->job_state & (~JOB_COMPLETING);
+
+	job = job_record_create(job_ptr->job_id, job_ptr->user_id, job_ptr->name,
+				job_state_string(job_state), 
+				job_ptr->partition, job_ptr->time_limit,
+				job_ptr->start_time, job_ptr->end_time,
+				job_ptr->nodes);
 	pthread_mutex_lock(&job_list_mutex);
 	list_append(job_list,(void *)job);
 	pthread_mutex_unlock(&job_list_mutex);

@@ -3394,13 +3394,6 @@ void job_fini (void)
 /* log the completion of the specified job */
 extern void job_completion_logger(struct job_record  *job_ptr)
 {
-	char *log_state; 
 	xassert(job_ptr);
-
-	log_state = job_state_string(job_ptr->job_state & (~JOB_COMPLETING));
-
-	g_slurm_jobcomp_write(job_ptr->job_id, job_ptr->user_id,
-			job_ptr->name, log_state, job_ptr->partition,
-			job_ptr->time_limit, job_ptr->start_time, 
-			job_ptr->end_time, job_ptr->nodes);
+	g_slurm_jobcomp_write(job_ptr);
 }

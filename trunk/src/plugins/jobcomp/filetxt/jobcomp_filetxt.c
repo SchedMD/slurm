@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -46,9 +46,11 @@
 #include <unistd.h>
 
 #include "src/common/macros.h"
+#include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/slurmctld.h"
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s"\
 		" TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s\n"
@@ -181,15 +183,13 @@ _make_time_str (time_t *time, char *string, int str_size)
 		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
 }
 
-int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, 
-		char *job_name, char *job_state, char *partition, 
-		uint32_t time_limit, time_t start_time, 
-		time_t end_time, char *node_list)
+int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	int rc = SLURM_SUCCESS;
 	char job_rec[256];
 	char usr_str[32], start_str[32], end_str[32], lim_str[32];
 	size_t offset = 0, tot_size, wrote;
+	enum job_states job_state;
 
 	if ((log_name == NULL) || (job_comp_fd < 0)) {
 		error("JobCompLoc log file %s not open", log_name);
@@ -197,19 +197,27 @@ int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id,
 	}
 
 	slurm_mutex_lock( &file_lock );
-	_get_user_name(user_id, usr_str, sizeof(usr_str));
-	if (time_limit == INFINITE)
+	_get_user_name(job_ptr->user_id, usr_str, sizeof(usr_str));
+	if (job_ptr->time_limit == INFINITE)
 		strcpy(lim_str, "UNLIMITED");
 	else
 		snprintf(lim_str, sizeof(lim_str), "%lu", 
-				(unsigned long) time_limit);
-	_make_time_str(&start_time, start_str, sizeof(start_str));
-	_make_time_str(&end_time,   end_str,   sizeof(end_str));
+				(unsigned long) job_ptr->time_limit);
+
+	/* Job will typically be COMPLETING when this is called. 
+	 * We remove this flag to get the eventual completion state:
+	 * JOB_FAILED, JOB_TIMEOUT, etc. */
+	job_state = job_ptr->job_state & (~JOB_COMPLETING);
+
+	_make_time_str(&(job_ptr->start_time), start_str, sizeof(start_str));
+	_make_time_str(&(job_ptr->end_time),   end_str,   sizeof(end_str));
+
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
-			(unsigned long) job_id, usr_str, 
-			(unsigned long) user_id, job_name, 
-			job_state, partition, lim_str, start_str, 
-			end_str, node_list);
+			(unsigned long) job_ptr->job_id, usr_str, 
+			(unsigned long) job_ptr->user_id, job_ptr->name, 
+			job_state_string(job_state), 
+			job_ptr->partition, lim_str, start_str, 
+			end_str, job_ptr->nodes);
 	tot_size = (strlen(job_rec) + 1);
 
 	while ( offset < tot_size ) {

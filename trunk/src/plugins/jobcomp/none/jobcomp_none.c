@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -39,6 +39,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_jobcomp.h"
+#include "src/slurmctld/slurmctld.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -92,9 +93,7 @@ int slurm_jobcomp_set_location ( char * location )
 	return SLURM_SUCCESS;
 }
 
-int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id, char *job_name,
-		char *job_state, char *partition, uint32_t time_limit,
-		time_t start, time_t end_time, char *node_list)
+int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	return SLURM_SUCCESS;
 }
