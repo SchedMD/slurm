@@ -1569,6 +1569,7 @@ void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , Buf bu
 	pack32  ( msg -> return_code , buffer ) ;
 	packstr ( msg -> node_name , buffer ) ;
 	pack32  ( msg -> srun_node_id , buffer ) ;
+	pack32  ( msg -> local_pid , buffer ) ;
 }
 
 int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , Buf buffer )
@@ -1582,6 +1583,7 @@ int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , 
 	safe_unpack32 ( & msg -> return_code , buffer ) ;
 	safe_unpackstr_xmalloc ( & msg -> node_name , & uint16_tmp , buffer  ) ;
 	safe_unpack32 ( & msg -> srun_node_id , buffer ) ;
+	safe_unpack32 ( & msg -> local_pid , buffer ) ;
 	return SLURM_SUCCESS ;
 
     unpack_error:
@@ -1607,6 +1609,7 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , Buf buff
 	packstr_array ( msg -> argv , msg -> argc , buffer ) ;
 	pack16 (  msg -> resp_port , buffer ) ;
 	pack16 (  msg -> io_port , buffer ) ;
+	pack16 (  msg -> task_flags , buffer ) ;
 	pack32_array ( msg -> global_task_ids , (uint16_t) msg -> tasks_to_launch , buffer ) ;
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo( msg -> qsw_job , buffer ) ;
@@ -1635,6 +1638,7 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , Bu
 	safe_unpackstr_array ( & msg -> argv , & msg->argc , buffer ) ;
 	safe_unpack16 ( & msg -> resp_port , buffer  ) ;
 	safe_unpack16 ( & msg -> io_port , buffer  ) ;
+	safe_unpack16 ( & msg -> task_flags , buffer  ) ;
 	safe_unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer ) ;
 
 #ifdef HAVE_LIBELAN3

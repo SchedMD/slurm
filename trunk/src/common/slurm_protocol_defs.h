@@ -55,8 +55,18 @@
 
 /* used to define the type of the io_stream_header_t.type
  */
-#define SLURM_IO_STREAM_INOUT 0
-#define SLURM_IO_STREAM_SIGERR 1
+enum io_stream_types {
+	SLURM_IO_STREAM_INOUT = 0,
+	SLURM_IO_STREAM_SIGERR = 1
+};
+
+/* used to define flags of the launch_tasks_request_msg_t.task_flags
+ */
+enum task_flag_vals {
+	TASK_TOTALVIEW_DEBUG = 0x1,
+	TASK_UNUSED1 = 0x2,
+	TASK_UNUSED2 = 0x4
+};
 
 
 /* INFINITE is used to identify unlimited configurations,  */
@@ -445,6 +455,7 @@ typedef struct launch_tasks_request_msg {
 	char     *cwd;
 	uint16_t  resp_port;
 	uint16_t  io_port;
+	uint16_t  task_flags;
 	uint32_t *global_task_ids;
 
 	slurm_job_credential_t *credential;	/* job credential            */
@@ -458,6 +469,7 @@ typedef struct launch_tasks_response_msg {
 	uint32_t return_code;
 	char *node_name;
 	uint32_t srun_node_id;
+	uint32_t local_pid;
 } launch_tasks_response_msg_t;
 
 typedef struct task_ext_msg {
