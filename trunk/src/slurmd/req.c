@@ -185,7 +185,7 @@ _fork_new_slurmd(void)
 			break;
 	}
 
-	return pid;
+	return((int) pid);
 }
 
 static int
@@ -196,7 +196,7 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 	if ((retval = _fork_new_slurmd()) == 0) 
 		exit (mgr_launch_batch_job(req, cli));
 
-	return retval;
+	return (retval <= 0) ? retval : 0;
 }
 
 static int
@@ -207,7 +207,7 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 	if ((retval = _fork_new_slurmd()) == 0)
 		exit (mgr_launch_tasks(req, cli));
 
-	return retval;
+	return (retval <= 0) ? retval : 0;
 }
 				                                            
 static int
