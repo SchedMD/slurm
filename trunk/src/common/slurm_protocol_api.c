@@ -862,8 +862,12 @@ static int _send_recv_rc_msg(slurm_fd fd, slurm_msg_t *req, int *rc,
         if (msg.msg_type != RESPONSE_SLURM_RC) 
                 slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
 
+        verbose("got rc msg");
+
         *rc = ((return_code_msg_t *) msg.data)->return_code;
         slurm_free_return_code_msg(msg.data);
+
+        g_slurm_auth_destroy(msg.cred);
 
      done:
         return retval;
