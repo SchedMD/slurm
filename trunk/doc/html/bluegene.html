@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-209488">
-<meta name="LLNLRandRdate" content="17 February 2005">
+<meta name="LLNLRandRdate" content="24 February 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -186,10 +186,12 @@ and interfaces.
 The value of <i>SchedulerType</i> should be set to "sched/builtin".
 The value of <i>Prolog</i> should be set to a program that will delay 
 execution until the bglblock identified by the BGL_PARTITION_ID environment 
-variable is ready for use. 
+variable is ready for use. It is recommended that you construct a script 
+that serves this function and calls the supplied program <i>slurm_prolog</i>.
 The value of <i>Epilog</i> should be set to a program that will wait
 until the bglblock identified by the BGL_PARTITION_ID environment
-variable has been freed. 
+variable has been freed. It is recommended that you construct a script
+that serves this function and calls the supplied program <i>slurm_epilog</i>.
 The prolog and epilog programs are used to insure proper synchronization 
 between the slurmctld daemon, the user job, and MMCS.
 Since jobs with different geometries or other characteristics do not interfere 
@@ -253,6 +255,11 @@ At that time the <i>bluegene.conf</i> configuration file will become obsolete.
 Dynamic partition does involve substantial overhead including the 
 rebooting of c-nodes and I/O nodes.</p>
 
+<p>Assuming that you build RPMs for SLURM, note that the smap and bluegene 
+RPMs must be built on the service node (where the BGL Bridge API libraries 
+exist) and installed on both the service node and front-end nodes (which 
+lack the API libraries).</p>
+
 <p class="footer"><a href="#top">top</a></p></td>
 
 </tr>
@@ -260,7 +267,7 @@ rebooting of c-nodes and I/O nodes.</p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-209488<br>
-Last modified 17 February 2005</p></td>
+Last modified 24 February 2005</p></td>
 </tr>
 </table>
 </td>
