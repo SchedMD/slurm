@@ -60,11 +60,23 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 			while(true)
 			{
 			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
+				pid_t pids[256];
+				int npids;
+				int i;
 				
 				slurm_perror("qsw_prgdestroy");
 				debug ("qsw_prgdestroy iteration %i, %m errno: %i", i , errno);
 				sleep (1);
 				i++ ;
+
+				if (rms_prginfo( launch_msg -> qsw_job, sizeof(pids)/sizeof(pid_t), pids, &npids) < 0) {
+					perror("rms_prginfo");
+					exit(1);
+				}
+				printf("pids");
+				for (i = 0; i < npids; i++)
+					printf("%d\n", pids[i]);
+				printf("\n");
 				continue ;
 				return SLURM_ERROR ;
 			}
