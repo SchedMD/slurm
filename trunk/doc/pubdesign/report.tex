@@ -198,9 +198,15 @@ controller or an \srun\ or \scancel\ process. Starting a process may
 include executing a prolog script, setting process limits, setting real
 and effective user id, setting environment variables, setting working
 directory, allocating interconnect resources, setting corefile paths,
-connecting stdin/stdout/stderr to local files or remote host, and managing
+initializing the Stream Copy Service, and managing
 process groups. Terminating a process may include terminating all members
 of a process group and executing an epilog script.
+
+\item {\em Stream Copy Service}: Allow handling of stderr, stdout, and
+stdin of remote tasks. Job input may be redirected from a file or files, a
+\srun\ process, or /dev/null.  Job output may be saved into local files or
+sent back to the \srun\ command. Regardless of the location of stdout/err,
+all job output will be locally buffered to avoid blocking local tasks.
 
 \item {\em Job Control}: Allow asynchronous interaction with the
 Remote Execution environment by propagating signals or explicit job
