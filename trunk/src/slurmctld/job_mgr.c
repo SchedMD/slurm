@@ -1160,15 +1160,15 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((IS_JOB_FINISHED(job_ptr)) ||
-	    (job_ptr->kill_on_step_done & KILL_IN_PROGRESS))
-		return ESLURM_ALREADY_DONE;
-
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
 		error("Security violation, JOB_CANCEL RPC from uid %d",
 		      uid);
 		return ESLURM_USER_ID_MISSING;
 	}
+
+	if ((IS_JOB_FINISHED(job_ptr)) ||
+	    (job_ptr->kill_on_step_done & KILL_IN_PROGRESS))
+		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->job_state == JOB_PENDING) &&
 	    (signal == SIGKILL)) {
@@ -1195,7 +1195,7 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		list_iterator_destroy (step_record_iterator);
 
 		if (signal == SIGKILL) {
-			job_ptr->kill_on_step_done &= KILL_IN_PROGRESS;
+			job_ptr->kill_on_step_done |= KILL_IN_PROGRESS;
 			job_ptr->time_last_active   = now;
 			last_job_update = now;
 		}
