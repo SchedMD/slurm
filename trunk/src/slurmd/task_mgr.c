@@ -207,7 +207,6 @@ void * task_exec_thread ( void * arg )
 			/*1*/setup_parent_pipes ( task_start->pipes ) ;
 			/*2*/waitpid ( cpid , & task_return_code , 0 ) ;
 			/*3*/wait_on_io_threads ( task_start ) ;
-			/*4*/cleanup_parent_pipes (  task_start->pipes ) ;
 			
 			send_task_exit_msg ( task_return_code , task_start ) ;
 			break;
