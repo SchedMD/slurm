@@ -199,7 +199,7 @@ typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and upda
 				 *                                  * value is #fffffffe */
 	uint32_t num_procs;     /* number of processors required by job, default=0 */
 	uint32_t num_nodes;     /* number of nodes required by job, default=0 */
-	uint32_t dist;    
+	uint32_t dist;    	/* task distribution pattern, block/cycle */
 	uint32_t procs_per_task;   
 	uint32_t user_id;       /* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
