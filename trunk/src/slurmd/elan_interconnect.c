@@ -53,11 +53,9 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job)
 
 	debug3("going to destory program description...");
 
-	while(qsw_prgdestroy(qsw_job) < 0) {
+	while((qsw_prgdestroy(qsw_job) < 0) && (errno != ESRCH)) {
 		i++;
 		error("qsw_prgdestroy: %m");
-		if (errno == ESRCH)
-			break;
 		if (i == 1) {
 			debug("sending SIGTERM to remaining tasks");
 			qsw_prgsignal(qsw_job, SIGTERM);
