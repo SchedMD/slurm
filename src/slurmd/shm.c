@@ -924,7 +924,8 @@ _shm_reopen()
 {
 	int retval = SLURM_SUCCESS;
 
-	if ((shm_lock = _sem_open(SHM_LOCKNAME, 0)) == SEM_FAILED) {
+	if ((shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, 0600, 0)) 
+	     == SEM_FAILED) {
 		if (errno != ENOENT) {
 			error("Unable to initialize semaphore: %m");
 			return SLURM_FAILURE;
@@ -932,7 +933,8 @@ _shm_reopen()
 		debug("Lockfile found but semaphore deleted: "
 		      "creating new shm segment");
 		shm_cleanup();
-		if ((shm_lock = _sem_open(SHM_LOCKNAME, 0)) == SEM_FAILED) {
+		if ((shm_lock = _sem_open(SHM_LOCKNAME,O_CREAT|O_EXCL, 
+		     0600, 0)) == SEM_FAILED) {
 			error("Unable to initialize semaphore: %m");
 			return SLURM_FAILURE;
 		}
