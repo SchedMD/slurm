@@ -890,7 +890,13 @@ read_slurm_conf ( ) {
 	if (default_part_loc == NULL) {
 		error ("read_slurm_conf: default partition not set.");
 		return EINVAL;
-	}			
+	}	
+
+	if (node_record_count < 1) {
+		error ("read_slurm_conf: no nodes configured.");
+		return EINVAL;
+	}	
+		
 	rehash ();
 	if ((error_code = build_bitmaps ()))
 		return error_code;
