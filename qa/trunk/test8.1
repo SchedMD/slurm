@@ -8,7 +8,7 @@
 #          anything else indicates a failure mode that must be investigated.
 #
 # Note:    This script generates and then deletes files in the working directory 
-#          named test7.5.input
+#          named test8.1.input
 ############################################################################
 # Copyright (C) 2004 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -93,10 +93,6 @@ if {$job_id == 0} {
 set matches 0
 spawn $scontrol show job $job_id
 expect {
-	-re "Geometry=$geometry" {
-		incr matches
-		exp_continue
-	}
 	-re "Connection=\[Tt\]" {
 		incr matches
 		exp_continue
@@ -106,6 +102,10 @@ expect {
 		exp_continue
 	}
 	-re "NodeUse=\[Cc\]" {
+		incr matches
+		exp_continue
+	}
+	-re "Geometry=$geometry" {
 		incr matches
 		exp_continue
 	}
