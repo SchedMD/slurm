@@ -1655,11 +1655,6 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	if ((error_code =_validate_job_create_req(job_desc)))
 		goto cleanup;
 
-	if (will_run) {
-		error_code = SLURM_SUCCESS;
-		goto cleanup;
-	}
-
 	if ((error_code = _copy_job_desc_to_job_record(job_desc,
 						       job_pptr,
 						       part_ptr,
@@ -1675,7 +1670,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		goto cleanup;
 	}
 
-	if (job_desc->script) {
+	if (job_desc->script
+	&&  (!will_run)) {	/* don't bother with copy if just a test */
 		if ((error_code = _copy_job_desc_to_file(job_desc,
 							 job_ptr->job_id))) {
 			job_ptr->job_state = JOB_FAILED;

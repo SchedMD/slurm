@@ -165,7 +165,7 @@ void slurmctld_req (slurm_msg_t * msg)
 		slurm_free_job_step_info_request_msg(msg->data);
 		break;
 	case REQUEST_JOB_WILL_RUN:
-		_slurm_rpc_job_will_run(msg->data);
+		_slurm_rpc_job_will_run(msg);
 		slurm_free_job_desc_msg(msg->data);
 		break;
 	case MESSAGE_NODE_REGISTRATION_STATUS:
@@ -1096,7 +1096,7 @@ static void _slurm_rpc_job_will_run(slurm_msg_t * msg)
 	if (error_code == SLURM_SUCCESS) {
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, 
-				false, true, true, uid, &job_ptr);
+				true, true, true, uid, &job_ptr);
 		unlock_slurmctld(job_write_lock);
 		END_TIMER;
 	}

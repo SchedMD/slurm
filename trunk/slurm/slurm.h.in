@@ -657,13 +657,10 @@ extern void slurm_free_submit_response_response_msg PARAMS((
  * slurm_job_will_run - determine if a job would execute immediately if 
  *	submitted now
  * IN job_desc_msg - description of resource allocation request
- * OUT slurm_alloc_msg - response to request
  * RET 0 on success or slurm error code
- * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 extern int slurm_job_will_run PARAMS((
-	job_desc_msg_t * job_desc_msg , 
-	resource_allocation_response_msg_t ** job_alloc_resp_msg));
+	job_desc_msg_t * job_desc_msg));
 
 
 /*****************************************************************************\
