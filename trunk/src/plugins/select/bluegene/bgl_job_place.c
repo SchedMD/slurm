@@ -128,7 +128,9 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	 * the spec arguement */
 	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
-	/* FIXME: NEED TO PUT THIS LOGIC IN: 
+
+	/*
+	 * FIXME: NEED TO PUT THIS LOGIC IN: 
 	 * if RM_NAV, then the partition with both the TORUS and the
 	 * dims should be favored over the MESH and the dims, but
 	 * foremost is the correct num of dims. 
@@ -197,7 +199,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		}
 
 		/*****************************************/
-		/** match up geometry as "best" possible */
+		/* match up geometry as "best" possible  */
 		/*****************************************/
 		if (req_geometry[0] == 0)
 			;	/* Geometry not specified */
@@ -261,8 +263,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	bgl_record_t* record;
 	char buf[100];
 
-	debug("bluegene::submit_job");
-
 	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
 		SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
@@ -282,6 +282,5 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 			SELECT_DATA_PART_ID, bgl_part_id);
 	}
 
-	/* we should do the BGL stuff here like, init BGL job stuff... */
 	return SLURM_SUCCESS;
 }
