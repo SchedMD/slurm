@@ -191,7 +191,8 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 
 	if ((e = munge_decode(m, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
 		error ("Invalid Munge credential: %s", munge_strerror(e));
-		_print_cred(ctx);
+		if (e != EMUNGE_CRED_INVALID)
+			_print_cred(ctx);
 		goto done;
 	}
 
