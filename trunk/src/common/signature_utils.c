@@ -35,7 +35,7 @@ int slurm_init_signer(slurm_ssl_key_ctx_t * ctx, char *path)
 	FILE *key_file;
 	if ((key_file = fopen(path, "r")) == NULL) {
 		local_errno = errno;
-		error("can't open key file '%s' : %m",
+		fatal("can't open key file '%s' : %m",
 		      path);
 		return SLURM_ERROR;
 	};
@@ -57,7 +57,7 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	FILE *cert_file;
 	if ((cert_file = fopen(path, "r")) == NULL) {
 		local_errno = errno;
-		error("can't open certificate file '%s' : %m ", path);
+		fatal("can't open certificate file '%s' : %m ", path);
 		return SLURM_ERROR;
 	};
 

@@ -92,7 +92,6 @@ verify_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred,
 {
 	int rc;
 	time_t now = time(NULL);
-	char this_node_name[MAX_NAME_LEN];
 	int length;
 	Buf buffer;
 
@@ -104,21 +103,28 @@ verify_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred,
 			      cred->signature, SLURM_SSL_SIGNATURE_LENGTH);
 	free_buf(buffer);
 
-	if (rc)
+	if (rc) {
+		error("Invalid credential submitted");
 		slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
+	}
 
-	if (cred->expiration_time < now)
+	if (cred->expiration_time < now) {
+		error("credential has expired expiration=%lx now=%lx",
+		      (long)cred->expiration_time , (long)now);
 		slurm_seterrno_ret(ESLURMD_CREDENTIAL_EXPIRED);
+	}
 
+#if WE_WANT_TO_CONFIRM_NODELIST_IN_CREDENTIAL
+	/* FIXME:XXX: if so desired */
+	char this_node_name[MAX_NAME_LEN];
 	if ((rc = getnodename(this_node_name, MAX_NAME_LEN)))
 		fatal("slurmd: getnodename: %m");
 
-	/* XXX: Fix this I suppose?
 	if ( verify_node_name_list ( this_node_name , 
 	                             credential->node_list ) )
 		slurm_seterrno_ret(
 			ESLURMD_NODE_NAME_NOT_PRESENT_IN_CREDENTIAL);
-	*/
+#endif
 
 	/* XXX:
 	 * need code to check to make sure that only the specified 
@@ -140,12 +146,12 @@ void print_credential(slurm_job_credential_t * cred)
 
 	for (i=0; i<SLURM_SSL_SIGNATURE_LENGTH; i+=sizeof(long)) {
 		memcpy(&long_tmp, &cred->signature[i], sizeof(long));
-		sprintf(&sig_str[(j++)*9], "%8lx  ", long_tmp);
+		sprintf(&sig_str[(j++)*9], "%8lx ", long_tmp);
 	}
 
-	info("cred uid:%u job_id:%u time:%lx",
-	     cred->user_id, cred->job_id, (long)cred->expiration_time);
-	info("cred signature:%s", sig_str);
+       info("cred uid:%u job_id:%u time:%lx",
+            cred->user_id, cred->job_id, (long)cred->expiration_time);
+       info("cred signature:%s", sig_str);
 }
 
 int revoke_credential(revoke_credential_msg_t * msg, List list)
