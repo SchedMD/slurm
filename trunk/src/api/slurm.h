@@ -75,7 +75,7 @@ enum node_states {
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
-extern int slurm_allocate (char *spec, char **node_list, uint32_t *job_id);
+extern int slurm_allocate_resources ( job_desc_msg_t * );
 
 /*
  * slurm_cancel - cancel the specified job 
