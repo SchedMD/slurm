@@ -73,8 +73,7 @@
 /* We use Chris Dunlap's POSIX semaphore implementation if necessary */
 #include "src/slurmd/semaphore.h"
 
-#define MAX_JOB_STEPS	16
-#define MAX_BATCH_JOBS	128
+#define MAX_JOB_STEPS	64
 #define MAX_TASKS	1024
 
 #define SHM_LOCKNAME	"/.slurm.lock"
@@ -200,7 +199,7 @@ shm_fini(void)
 	slurmd_shm = NULL;
 
 	if (destroy && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
-		error("shmctl: %m");
+		error("Can't delete shm segment (%d): %m", shmid);
 		goto error;
 	}
 	_shm_unlock();
@@ -239,10 +238,10 @@ shm_cleanup(void)
 		 *  region.
 		 */
 		id = shmget(key, 1, 0);
-	} 
+	}
 
-	if ((id > 0) && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
-		error ("Unable to destroy existing shm segment");
+	if ((id > 0) && (shmctl(id, IPC_RMID, NULL) < 0)) {
+		error ("Can't destroy existing shm segment (%d): %m", id);
 	}
 }
 
@@ -961,7 +960,7 @@ _shm_attach()
 		      shmid, (int)(shmi.shm_segsz/1024), 
 		      (sizeof(slurmd_shm_t)/1024));
 		error("You probably need to run with `-c' "
-			"or just delete old segment.");
+			"or just delete old segment (see `ipcrm').");
 		slurm_seterrno_ret(EINVAL);
 	}
 
