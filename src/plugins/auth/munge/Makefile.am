@@ -20,8 +20,7 @@ auth_munge_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
 auth_munge_la_LIBADD =  -lmunge \
-			$(top_builddir)/src/common/libcommon.la   \
-			$(top_builddir)/src/api/libslurm.la 
+			$(top_builddir)/src/common/libcommon.la
 else
 auth_munge_la_LIBADD =   -lmunge 
 endif
