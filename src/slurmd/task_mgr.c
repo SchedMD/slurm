@@ -186,7 +186,7 @@ int append_task_to_list (  launch_tasks_msg_t * launch_msg , int pid )
 
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 {
-	int error_code ;
+	int error_code = SLURM_SUCCESS ;
 
 	return error_code ;
 }

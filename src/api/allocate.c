@@ -20,7 +20,7 @@
 
 /* slurm_allocate_resources - allocated resources for a job request */
 int
-slurm_allocate_resources (job_desc_msg_t * job_desc_msg , job_allocation_response_msg_t * job_alloc_resp_msg, int immediate )
+slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t * job_alloc_resp_msg, int immediate )
 {
 	int msg_size ;
 	int rc ;
@@ -71,7 +71,7 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg , job_allocation_respons
 	return SLURM_SUCCESS ;
 }
 
-int slurm_job_will_run (job_desc_msg_t * job_desc_msg , job_allocation_response_msg_t * job_alloc_resp_msg )
+int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t * job_alloc_resp_msg )
 {
 	int msg_size ;
 	int rc ;

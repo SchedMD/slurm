@@ -194,14 +194,18 @@ void slurm_free_node_table ( node_table_t * node )
 	}
 }
 
-void slurm_free_job_allocation_response_msg ( job_allocation_response_msg_t * job_alloc_resp_msg )
+void slurm_free_resource_allocation_response_msg ( resource_allocation_response_msg_t * msg )
 {
-	if ( job_alloc_resp_msg )
+	if ( msg )
 	{
-		if ( job_alloc_resp_msg -> node_list )
-			xfree ( job_alloc_resp_msg -> node_list);
-		xfree ( job_alloc_resp_msg ) ;
-	}	
+		if ( msg->node_list )
+			xfree ( msg->node_list ) ;
+		if ( msg->cpus_per_node )
+			xfree ( msg->cpus_per_node ) ;
+		if ( msg->cpu_count_reps )
+			xfree ( msg->cpu_count_reps ) ;
+		xfree ( msg ) ;
+	}
 }
 
 void slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg )

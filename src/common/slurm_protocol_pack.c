@@ -84,7 +84,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			pack_job_allocation_response_msg ( ( job_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
+			pack_job_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_NODE :
 			pack_update_node_msg ( ( update_node_msg_t * ) msg-> data , ( void ** ) buffer , buf_len ) ;
@@ -198,7 +198,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			unpack_job_allocation_response_msg ( ( job_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
+			unpack_job_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 
 		case REQUEST_UPDATE_NODE :
@@ -289,18 +289,18 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 	return 0 ;
 }
 
-void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, void ** buffer , uint32_t * length )
+void pack_job_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> job_id , ( void ** ) buffer , length ) ;
 	packstr ( msg -> node_list , ( void ** ) buffer , length ) ;
 }
 
-int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , void ** buffer , uint32_t * length )
+int unpack_job_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
-	job_allocation_response_msg_t * tmp_ptr ;
+	resource_allocation_response_msg_t * tmp_ptr ;
 	/* alloc memory for structure */	
-	tmp_ptr = xmalloc ( sizeof ( job_allocation_response_msg_t ) ) ;
+	tmp_ptr = xmalloc ( sizeof ( resource_allocation_response_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
 	{
 		return ENOMEM;

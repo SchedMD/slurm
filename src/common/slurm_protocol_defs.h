@@ -167,11 +167,13 @@ typedef struct kill_tasks_msg
 } kill_tasks_msg_t ;
 
 
-typedef struct slurm_job_allocation_response_msg
+typedef struct resource_allocation_response_msg
 {
 	uint32_t job_id;
 	char* node_list;
-} job_allocation_response_msg_t ;
+	uint32_t* cpus_per_node;
+	uint32_t* cpu_count_reps;
+} resource_allocation_response_msg_t ;
 
 typedef struct job_desc_msg {    /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
@@ -322,6 +324,8 @@ void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
 void inline slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
+void inline slurm_free_resource_allocation_response_msg( resource_allocation_response_msg_t * msg );
+
 void inline slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg ) ;
 
 void inline slurm_free_job_info ( job_info_msg_t * msg ) ;

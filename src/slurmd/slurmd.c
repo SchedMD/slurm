@@ -278,7 +278,7 @@ void slurm_rpc_kill_tasks ( slurm_msg_t * msg )
 void slurm_rpc_slurmd_example ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = SLURM_SUCCESS;
 	clock_t start_time;
 
 	start_time = clock ();
