@@ -101,7 +101,7 @@ typedef struct {
 #define LOG_OPTS_STDERR_ONLY	{ 1, LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
 
 /* 
- * initialize/reinitialize log module (may be called multiple times)
+ * initialize log module (called only once)
  *
  * example:
  *
@@ -118,6 +118,13 @@ typedef struct {
  */
 int log_init(char *argv0, log_options_t opts, 
               log_facility_t fac, char *logfile);
+
+/* Alter log facility, options are like log_init() above, except that
+ * an argv0 argument is not passed. 
+ *
+ * This function may be called multiple times.
+ */
+int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 
 /* 
  * the following log a message to the log facility at the appropriate level:

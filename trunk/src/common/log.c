@@ -88,12 +88,8 @@ typedef struct {
 }	log_t;
 
 /* static variables */
-static pthread_mutex_t  log_lock = PTHREAD_MUTEX_INITIALIZER;    
+static pthread_mutex_t  log_lock;
 static log_t            *log = NULL;
-
-#define SYSLOG_LEVEL    log->opt.syslog_level
-#define STDERR_LEVEL    log->opt.stderr_level
-#define LOGFILE_LEVEL   log->opt.logfile_level
 
 #define LOG_INITIALIZED ((log != NULL) && log->initialized)
 
@@ -113,29 +109,31 @@ extern char * program_invocation_short_name;
  * logfile =
  *        logfile name if logfile level > LOG_QUIET
  */
-int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
+static int 
+_log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 {
 	int rc = 0;
-
-	pthread_mutex_lock(&log_lock);
-
-	if (log) {
-		if (log->argv0) 
-			xfree(log->argv0);
-	} else {
+	
+	if (!log)  {
 		log = (log_t *)xmalloc(sizeof(log_t));
+		log->logfp = NULL;
+		log->argv0 = NULL;
 	}
 
-	log->logfp = NULL;
-
-	log->argv0 = xstrdup(xbasename(prog));
+	if (prog) {
+		if (log->argv0)
+			xfree(log->argv0);
+		log->argv0 = xstrdup(xbasename(prog));
+	} else if (!log->argv0) {
+		log->argv0 = default_argv0;
+	}
 
 	log->opt = opt;
 
-	if (SYSLOG_LEVEL > LOG_LEVEL_QUIET)
+	if (log->opt.syslog_level > LOG_LEVEL_QUIET)
 		log->facility = fac;
 
-	if (LOGFILE_LEVEL > LOG_LEVEL_QUIET) {
+	if (log->opt.logfile_level > LOG_LEVEL_QUIET) {
 		FILE *fp; 
 
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
@@ -154,9 +152,33 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	}
 
 	log->initialized = 1;
-
-	pthread_mutex_unlock(&log_lock);
  out:
+	return rc;
+}
+
+
+/* initialize log mutex, then initialize log data structures
+ */
+int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
+{
+	int rc = 0;
+
+	pthread_mutex_init(&log_lock, NULL);
+	pthread_mutex_lock(&log_lock);
+	rc = _log_init(prog, opt, fac, logfile);
+	pthread_mutex_unlock(&log_lock);
+	return rc;
+}
+
+/* reinitialize log data structures. Like log_init, but do not init
+ * the log mutex
+ */
+int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
+{	
+	int rc = 0;
+	pthread_mutex_lock(&log_lock);
+	rc = _log_init(NULL, opt, fac, logfile);
+	pthread_mutex_unlock(&log_lock);
 	return rc;
 }
 
@@ -292,26 +314,21 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	char *msgbuf = NULL;
 	int priority = LOG_INFO;
 
-	pthread_mutex_lock(&log_lock);
-
 	if (!LOG_INITIALIZED) {
-		char *argv0 = default_argv0;
 		log_options_t opts = LOG_OPTS_STDERR_ONLY;
-
-		pthread_mutex_unlock(&log_lock);
-		log_init(argv0, opts, 0, NULL);
-		pthread_mutex_lock(&log_lock);
-
+		log_init(NULL, opts, 0, NULL);
 	}
 
-	if (level > SYSLOG_LEVEL  && 
-	    level > LOGFILE_LEVEL && 
-	    level > STDERR_LEVEL) {
+	pthread_mutex_lock(&log_lock);
+
+	if (level > log->opt.syslog_level  && 
+	    level > log->opt.logfile_level && 
+	    level > log->opt.stderr_level) {
 		pthread_mutex_unlock(&log_lock);
 		return;
 	}
 
-	if (log->opt.prefix_level || SYSLOG_LEVEL > level) {
+	if (log->opt.prefix_level || log->opt.syslog_level > level) {
 		switch (level) {
 		case LOG_LEVEL_FATAL:
 			priority = LOG_CRIT;
@@ -354,7 +371,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	/* format the basic message */
 	buf = vxstrfmt(fmt, args);
 
-	if (level <= STDERR_LEVEL) {
+	if (level <= log->opt.stderr_level) {
 		fflush(stdout);
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
 			fprintf(stderr, "%s: %s%s", log->argv0, pfx, buf);
@@ -363,7 +380,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		fflush(stderr);
 	}
 
-	if (level <= LOGFILE_LEVEL && log->logfp != NULL) {
+	if (level <= log->opt.logfile_level && log->logfp != NULL) {
 		xstrfmtcat(&msgbuf, "[%T] %s%s", pfx, buf);
 
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
@@ -375,7 +392,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		xfree(msgbuf);
 	}
 
-	if (level <=  SYSLOG_LEVEL) {
+	if (level <=  log->opt.syslog_level) {
 		xstrfmtcat(&msgbuf, "%s%s", pfx, buf);
 
 		openlog(log->argv0, LOG_PID, log->facility);
