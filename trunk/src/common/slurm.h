@@ -92,7 +92,7 @@ struct Part_Record {
     int MaxNodes;		/* -1 if unlimited */
     char *Nodes;		/* Names of nodes in partition */
     char *AllowGroups;		/* NULL indicates ALL */
-    unsigned RootKey:1;		/* 1 if RootKey is required for use */
+    unsigned Interactive:1;	/* 1 if interactive (non-queued) jobs may run here */
     unsigned StateUp:1;		/* 1 if state is UP */
     char *NodeBitMap;		/* Bitmap of nodes in partition */
 };
