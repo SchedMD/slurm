@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
     fails)
  -- Node does not transition from COMPLETING to DOWN state due to 
     not responding. Wait for tasks to complete or admin to set DOWN
+ -- Always chmod SlurmdSpoolDir to 755 (a umask of 007 was resulting 
+    in batch jobs failing)
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================

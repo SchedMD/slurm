@@ -832,14 +832,14 @@ _set_slurmd_spooldir(void)
 			fatal("mkdir(%s): %m", conf->spooldir);
 			return SLURM_ERROR;
 		}
+	}
 
-		/* 
-		 * Ensure spool directory permissions are correct.
-		 */
-		if (chmod(conf->spooldir, 0755) < 0) {
-			error("chmod(%s, 0755): %m", conf->spooldir);
-			return SLURM_ERROR;
-		}
+	/* 
+	 * Ensure spool directory permissions are correct.
+	 */
+	if (chmod(conf->spooldir, 0755) < 0) {
+		error("chmod(%s, 0755): %m", conf->spooldir);
+		return SLURM_ERROR;
 	}
 
 	return SLURM_SUCCESS;
