@@ -1194,12 +1194,19 @@ _write(io_obj_t *obj, List objs)
 	}
 
 	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
-			return 0;
-		if ((errno == EPIPE) || (errno == EINVAL) || (errno == EBADF))
+		switch (errno) {
+		case EAGAIN:
+			return 0; 
+			break;
+		case EPIPE:
+		case EINVAL:
+		case EBADF:
+		case ECONNRESET: 
 			_obj_close(obj, objs); 
-		else
+			break;
+		default:
 			error("write failed: <task %d>: %m", io->id);
+		}
 		return -1;
 	}
 
