@@ -160,8 +160,8 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 			/* NOTREACHED */
 			break;
 		default:
-			debug("created process %ld for job %d",
-					pid, req->job_id);
+			debug("created process %ld for job %u",
+					(long) pid, req->job_id);
 			break;
 	}
 
@@ -188,8 +188,8 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			/* NOTREACHED */
 			break;
 		default:
-			debug("created process %ld for job %d.%d",
-			      pid, req->job_id, req->job_step_id);
+			debug("created process %ld for job %u.%u",
+			      (long) pid, req->job_id, req->job_step_id);
 			break;
 	}
 
@@ -283,7 +283,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	slurm_get_addr(cli, &port, host, sizeof(host));
-	info("launch task %u.%u request from %ld@%s", req->job_id, 
+	info("launch task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
@@ -291,7 +291,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
 		retval = errno;
-		error("Invalid job credential from %ld@%s: %m", req_uid, host);
+		error("Invalid job credential from %ld@%s: %m", 
+		      (long) req_uid, host);
 		goto done;
 	}
 
@@ -416,7 +417,8 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != step->uid) && (req_uid != 0)) {
 	       debug("kill req from uid %ld for job %d.%d owned by uid %ld",
-		     req_uid, req->job_id, req->job_step_id, step->uid);       
+		     (long) req_uid, req->job_id, req->job_step_id, 
+		     (long) step->uid);       
 	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	       goto done;
 	}
@@ -571,8 +573,8 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	req_gid = g_slurm_auth_get_gid(msg->cred);
 
-	info("reattach request from %ld@%s for %d.%d", 
-	     req_uid, host, req->job_id, req->job_step_id);
+	info("reattach request from %ld@%s for %u.%u", 
+	     (long) req_uid, host, req->job_id, req->job_step_id);
 
 	/* 
 	 * Set response addr by resp_port and client address

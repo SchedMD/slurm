@@ -360,7 +360,7 @@ _handle_unprocessed_output(slurmd_job_t *job)
 
 		if (io->buf && (n = cbuf_used(io->buf)))
 			error("task %d: %ld bytes of stdout unprocessed", 
-			      io->id, n);
+			      io->id, (long) n);
 
 		if (!(readers = ((struct io_info *)t->err->arg)->readers))
 			continue;
@@ -369,7 +369,7 @@ _handle_unprocessed_output(slurmd_job_t *job)
 
 		if (io->buf && (n = cbuf_used(io->buf)))
 			error("task %d: %ld bytes of stderr unprocessed", 
-			      io->id, n);
+			      io->id, (long) n);
 	}
 }
 
@@ -545,7 +545,7 @@ io_prepare_clients(slurmd_job_t *job)
 			return SLURM_FAILURE;
 
 		/* kick IO thread */
-		debug3("sending sighup to io thread id %ld", job->ioid);
+		debug3("sending sighup to io thread id %ld", (long) job->ioid);
 		if (pthread_kill(job->ioid, SIGHUP) < 0)
 			error("pthread_kill: %m");
 	}
@@ -976,7 +976,7 @@ io_obj_destroy(io_obj_t *obj)
 		 list_destroy(io->readers);
 		 break;
 	 default:
-		 error("unknown IO object type: %ld", io->type);
+		 error("unknown IO object type: %ld", (long) io->type);
 	}
 
 	xassert(io->magic = ~IO_MAGIC);
@@ -1174,7 +1174,7 @@ _write(io_obj_t *obj, List objs)
 	if (io->id == 0)
 		log_flush();
 
-	debug3("Need to write %ld bytes to %s %d", 
+	debug3("Need to write %d bytes to %s %d", 
 		cbuf_used(io->buf), _io_str[io->type], io->id);
 
 	/* If obj has recvd EOF, and there is no more data to write,
@@ -1251,7 +1251,7 @@ _connecting_write(io_obj_t *obj, List objs)
 	xassert(io->magic == IO_MAGIC);
 	xassert(_isa_client(io));
 
-	debug3("Need to write %ld bytes to connecting %s %d", 
+	debug3("Need to write %d bytes to connecting %s %d", 
 		cbuf_used(io->buf), _io_str[io->type], io->id);
 	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
@@ -1333,13 +1333,13 @@ _task_read(io_obj_t *obj, List objs)
 			return 0;
 		}
 		error("Unable to read from task %ld fd %d errno %d %m", 
-				t->id, obj->fd, errno);
+				(long) t->id, obj->fd, errno);
 		return -1;
 	}
 	debug3("read %d bytes from %s %d", n, _io_str[t->type], t->id);
 
 	if (n == 0) {  /* got eof */
-		debug3("got eof on task %ld", t->id);
+		debug3("got eof on task %ld", (long) t->id);
 		_obj_close(obj, objs);
 		return 0;
 	}
@@ -1351,9 +1351,9 @@ _task_read(io_obj_t *obj, List objs)
 		xassert(r->magic == IO_MAGIC);
 		n = cbuf_write(r->buf, (void *) buf, n, &dropped);
 		debug3("wrote %ld bytes into %s buf (fd=%d)", 
-		       n, _io_str[r->type], r->obj->fd);
+		       (long) n, _io_str[r->type], r->obj->fd);
 		if (dropped > 0) {
-			debug3("dropped %ld bytes from %s buf", 
+			debug3("dropped %d bytes from %s buf", 
 				dropped, _io_str[r->type]);
 		}
 	}
@@ -1414,7 +1414,7 @@ _client_read(io_obj_t *obj, List objs)
 	if ((n = read(obj->fd, (void *) buf, len)) < 0) {
 		if (errno == EINTR)
 			goto again;
-		error("read from client %ld: %m", client->id);
+		error("read from client %ld: %m", (long) client->id);
 		return -1;
 	}
 

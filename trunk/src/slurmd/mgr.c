@@ -299,7 +299,8 @@ _setup_io(slurmd_job_t *job)
 	rc = io_prepare_clients(job);
 
 	if (_reclaim_privileges(spwd) < 0)
-		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
+		error("sete{u/g}id(%lu/%lu): %m", 
+		      (u_long) spwd->pw_uid, (u_long) spwd->pw_gid);
 
 	if (rc < 0) 
 		return ESLURMD_IO_ERROR;

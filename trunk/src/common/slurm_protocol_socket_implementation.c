@@ -517,7 +517,7 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 
 slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr *addr)
 {
-	size_t len = sizeof(slurm_addr);
+	socklen_t len = sizeof(slurm_addr);
 	return _slurm_accept(fd, (struct sockaddr *)addr, &len);
 }
 

@@ -237,7 +237,7 @@ _io_thr_poll(void *job_arg)
 
 	xassert(job != NULL);
 
-	debug3("IO thread pid = %ld", getpid());
+	debug3("IO thread pid = %ld", (long) getpid());
 
 	/* need ioport + msgport + stdin + 2*nprocs fds */
 	fds = xmalloc(numfds*sizeof(*fds));
@@ -607,7 +607,7 @@ _read_io_header(int fd, job_t *job, char *host)
 	else
 		job->err[hdr.taskid] = fd;
 
-	debug2("accepted %s connection from %s task %ld, sd=%d", 
+	debug2("accepted %s connection from %s task %u, sd=%d", 
 	       (hdr.type == SLURM_IO_STDERR ? "stderr" : "stdout"), 
 		host, hdr.taskid, fd                               );
 

@@ -563,7 +563,7 @@ msg_thr(void *arg)
 {
 	job_t *job = (job_t *) arg;
 
-	debug3("msg thread pid = %ld", getpid());
+	debug3("msg thread pid = %ld", (long) getpid());
 	slurm_uid = (uid_t) slurm_get_slurm_user_id();
 	_msg_thr_poll(job);
 	return (void *)1;

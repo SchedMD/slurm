@@ -116,7 +116,7 @@ read_pidfile(const char *pidfile, int *pidfd)
 
 	if (lpid != (pid_t) pid) 
 		fatal ("pidfile locked by %ld but contains pid=%ld",
-		       (long) lpid, pid);
+		       (long) lpid, (long) pid);
 
 	if (pidfd != NULL)
 		*pidfd = fd;

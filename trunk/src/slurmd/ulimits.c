@@ -94,7 +94,7 @@ _set_limit(char **env, struct userlim *u)
 			error("getrlimit(%s,%ld): %m", u->var+6, val);
 
 		debug2("%s: max:%ld cur:%ld", u->var+6, 
-		       r.rlim_max, r.rlim_cur);
+		       (long)r.rlim_max, (long) r.rlim_cur);
 
 		/* 
 		 * If resource limit is already set equal to value
@@ -106,7 +106,8 @@ _set_limit(char **env, struct userlim *u)
 		r.rlim_cur = (val == -1L) ? RLIM_INFINITY : (rlim_t) val;
 
 		if ((retval = setrlimit(u->resource, &r)) < 0)
-			error("setrlimit(%s,%ld): %m", u->var+6, r.rlim_cur);
+			error("setrlimit(%s,%ld): %m", 
+			      u->var+6, (long)r.rlim_cur);
 	}
 
 	return retval;

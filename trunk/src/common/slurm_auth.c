@@ -218,8 +218,9 @@ slurm_auth_marshal_args( void *hosts, int timeout )
 	/* Marshal host list.  Don't quite know how to do this yet. */
 	argv[ hostlist_idx ] = hosts;
 
-	/* Marshal timeout. */
-	argv[ timeout_idx ] = (void *) timeout;
+	/* Marshal timeout.
+	 * This strange looking code avoids warnings on IA64 */
+	argv[ timeout_idx ] = ((char *) NULL) + timeout;
 
 	return argv;
 }
