@@ -632,9 +632,11 @@ _set_batch_script_env(job_t *job)
 	xfree(task_cnt);
 
 	uname(&name);
-	if (strcasecmp(name.sysname, "AIX") == 0)
-		setenvf("LOADL_BATCH=yes");	/* Required for AIX/POE systems
-						 * indicating pre-allocation */
+	if (strcasecmp(name.sysname, "AIX") == 0) {
+		/* Required for AIX/POE systems indicating pre-allocation */
+		setenvf("LOADLBATCH=yes");
+		setenvf("LOADL_ACTIVE=3.2.0");
+	}
 
 	return rc;
 }
