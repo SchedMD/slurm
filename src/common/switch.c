@@ -44,7 +44,6 @@
  * at the end of the structure.
  */
 typedef struct slurm_switch_ops {
-	int          (*fini)              ( void );
 	int          (*state_save)        ( char *dir_name );
 	int          (*state_restore)     ( char *dir_name );
 	bool         (*no_frag)           ( void );
@@ -164,7 +163,6 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 	 * declared for slurm_switch_ops_t.
 	 */
 	static const char *syms[] = {
-		"fini",
 		"switch_p_libstate_save",
 		"switch_p_libstate_restore",
 		"switch_p_no_frag",
