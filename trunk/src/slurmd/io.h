@@ -56,6 +56,10 @@ int  io_prepare_child(task_info_t *t);
 
 void io_close_all(slurmd_job_t *job);
 
+/*
+ * Connect initial N tasks to their stdio
+ */
+int io_prepare_clients(slurmd_job_t *job);
 
 /* Notes:
  *

@@ -63,7 +63,7 @@
 
 static int  _run_job(slurmd_job_t *job);
 static int  _run_batch_job(slurmd_job_t *job);
-static void _exec_all_tasks(slurmd_job_t *job);
+static int  _exec_all_tasks(slurmd_job_t *job);
 static void _task_exec(slurmd_job_t *job, int i, bool batch);
 static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
@@ -71,6 +71,9 @@ static int  _become_user(slurmd_job_t *job);
 static int  _unblock_all_signals(void);
 static int  _send_exit_msg(int rc, task_info_t *t);
 static int  _complete_job(slurmd_job_t *job, int rc, int status);
+static void _send_launch_resp(slurmd_job_t *job, int rc);
+static void _wait_for_all_tasks(slurmd_job_t *job);
+static void _slurmd_job_log_init(slurmd_job_t *job);
 
 static void
 _setargs(slurmd_job_t *job, char **argv, int argc)
@@ -123,7 +126,6 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 	shm_fini();
 	return(SLURM_SUCCESS);
   error:
-	job_error(job, "cannot run job: %m");
 	shm_fini();
 	return(SLURM_ERROR);
 }
@@ -284,7 +286,6 @@ static int
 _run_job(slurmd_job_t *job)
 {
 	int            rc   = SLURM_SUCCESS;
-	int            i    = 0;
 	struct passwd *spwd = getpwuid(geteuid());
 
 	/* Insert job info into shared memory */
@@ -294,39 +295,59 @@ _run_job(slurmd_job_t *job)
 		job_error(job, "interconnect_init: %m");
 		rc = -2;
 		/* shm_init(); */
-		goto done;
+		goto fail;
 	}
+
+	if ((rc = io_spawn_handler(job)) < 0) {
+		rc = ESLURMD_IO_ERROR;
+		goto fail1;
+	}
+
+	/* connect job stderr to this node's task 0 stderr so
+	 * user recieves error messages on stderr
+	 */
+	_slurmd_job_log_init(job);
 
 	/*
 	 * Temporarily drop permissions 
 	 */
-	 if ((rc = _drop_privileges(job->pwd)) < 0)
-		goto done;
+	if ((rc = _drop_privileges(job->pwd)) < 0)
+		goto fail2;
 
-	/* Option: connect slurmd stderr to srun local task 0: stderr? */
-	if (io_spawn_handler(job) == SLURM_ERROR) {
-		job_error(job, "unable to spawn io handler");
-		rc = -3;
-		goto done;
-	}
+	/* Open input/output files and/or connections back to client
+	 */
+	rc = io_prepare_clients(job);
 
 	if (_reclaim_privileges(spwd) < 0) 
 		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
 
-	_exec_all_tasks(job);
-	job_debug2(job, "job complete, waiting on IO");
+	if (rc < 0) {
+		rc = ESLURMD_IO_ERROR;
+		goto fail2;
+	}
+
+	rc = _exec_all_tasks(job);
+	_send_launch_resp(job, rc);
+	_wait_for_all_tasks(job);
+
+	job_debug2(job, "all tasks exited, waiting on IO");
 	io_close_all(job);
 	pthread_join(job->ioid, NULL);
 	job_debug2(job, "IO complete");
 
-   done:
 	interconnect_fini(job); /* ignore errors        */
 	job_delete_shm(job);    /* again, ignore errors */
-	job_verbose(job, "job complete with rc = %d", rc);
-	if (rc < 0) {
-		for (i = 0; i < job->ntasks; i++)
-			_send_exit_msg(-rc, job->task[i]);
-	}
+	job_verbose(job, "job completed", rc);
+	return rc;
+
+fail2:
+	io_close_all(job);
+	pthread_join(job->ioid, NULL);
+fail1:
+	interconnect_fini(job);
+fail:
+	job_delete_shm(job);
+	_send_launch_resp(job, rc);
 	return rc;
 }
 
@@ -417,27 +438,24 @@ _run_batch_job(slurmd_job_t *job)
 	pid_t  sid, pid;
 	struct passwd *spwd = getpwuid(getuid());
 
-	/* Temporarily drop permissions to initiate
-	 * IO thread. This will ensure that calling user
-	 * has appropriate permissions to open output
-	 * files, if any.
-	 */
-	if (_drop_privileges(job->pwd) < 0) {
-		error("seteuid(%ld) : %m", job->uid);
-		return ESLURMD_SET_UID_OR_GID_ERROR;
+
+	if ((rc = io_spawn_handler(job)) < 0) {
+		return ESLURMD_IO_ERROR;
 	}
 
-	rc = io_spawn_handler(job);
-
-	/* seteuid/gid back to saved uid/gid
+	/*
+	 * Temporarily drop permissions 
 	 */
-	if (_reclaim_privileges(spwd) < 0) {
-		error("seteuid(%ld) : %m", spwd->pw_uid);
+	if ((rc = _drop_privileges(job->pwd)) < 0)
 		return ESLURMD_SET_UID_OR_GID_ERROR;
-	}
 
-	/* Give up if we couldn't spawn IO handler for whatever reason
+	/* Open input/output files and/or connections back to client
 	 */
+	rc = io_prepare_clients(job);
+
+	if (_reclaim_privileges(spwd) < 0) 
+		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
+
 	if (rc < 0)
 		return ESLURMD_CANNOT_SPAWN_IO_THREAD;
 
@@ -635,7 +653,7 @@ _task_exec(slurmd_job_t *job, int i, bool batch)
 	exit(errno);
 }
 
-static void 
+static int
 _exec_all_tasks(slurmd_job_t *job)
 {
 	pid_t sid;
@@ -663,7 +681,7 @@ _exec_all_tasks(slurmd_job_t *job)
 
 		if ((t.pid = fork()) < 0) {
 			error("fork: %m");
-			exit(1);
+			return 1;
 			/* job_cleanup() */
 		} else if (t.pid == 0)   /* child */
 			break;
@@ -682,12 +700,12 @@ _exec_all_tasks(slurmd_job_t *job)
 	}
 
 	if (i == job->ntasks) 
-		_wait_for_all_tasks(job);
+		return 0; /* _wait_for_all_tasks(job); */
 	else
 		_task_exec(job, i, false);
 
 	debug3("All tasks exited");
-	return;
+	return 0;
 }
 
 static int 
@@ -733,3 +751,52 @@ _unblock_all_signals(void)
 	}
 	return SLURM_SUCCESS;
 }
+
+static void
+_send_launch_resp(slurmd_job_t *job, int rc)
+{	
+	int i;
+	slurm_msg_t resp_msg;
+	launch_tasks_response_msg_t resp;
+	srun_info_t *srun = list_peek(job->sruns);
+
+	job_debug(job, "Sending launch resp rc=%d", rc);
+
+        resp_msg.address      = srun->resp_addr;
+	resp_msg.data         = &resp;
+	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
+
+	resp.node_name        = conf->hostname;
+	resp.srun_node_id     = job->nodeid;
+	resp.return_code      = rc;
+	resp.count_of_pids    = job->ntasks;
+
+	resp.local_pids = xmalloc(job->ntasks * sizeof(*resp.local_pids));
+	for (i = 0; i < job->ntasks; i++) 
+		resp.local_pids[i] = job->task[i]->pid;  
+
+	slurm_send_only_node_msg(&resp_msg);
+
+	xfree(resp.local_pids);
+}
+
+static void
+_slurmd_job_log_init(slurmd_job_t *job) 
+{
+	char argv0[64];
+	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
+
+	/* Connect slurmd stderr to job's stderr */
+	if (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0) {
+		error("job_log_init: dup2(stderr): %m");
+		return;
+	}
+
+	logopt.stderr_level += job->debug;
+
+	snprintf(argv0, sizeof(argv0), "slurmd[%s]", conf->hostname);
+
+	/* reinitialize log to log on stderr */
+	log_init(argv0, logopt, 0, NULL);
+}
+

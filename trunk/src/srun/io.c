@@ -344,13 +344,24 @@ _io_thr_poll(void *job_arg)
 
 static void _do_poll_timeout (job_t *job)
 {
-	int i, age;
+	int i, age, eofcnt = 0;
 	static bool term_msg_sent = false;
+
 
 	for (i = 0; ((i < opt.nprocs) && (time_first_done == 0)); i++) {
 		if ((job->task_state[i] == SRUN_TASK_FAILED) || 
 		    (job->task_state[i] == SRUN_TASK_EXITED))
 			time_first_done = time(NULL);
+	}
+
+	for (i = 0; i < opt.nprocs; i++) {
+		if ((job->err[i] == IO_DONE) && (job->out[i] == IO_DONE))
+			eofcnt++;
+	}
+
+	if (eofcnt == opt.nprocs) {
+		_flush_io(job);
+		pthread_exit(0);
 	}
 
 	age = time(NULL) - time_first_done;

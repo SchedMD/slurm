@@ -249,6 +249,8 @@ typedef struct launch_tasks_request_msg {
 	char     *efname;
 	char     *ifname;
 
+	int32_t   slurmd_debug; /* remote slurmd debug level */
+
 	slurm_job_credential_t *credential;	/* job credential            */
 
 #ifdef HAVE_LIBELAN3

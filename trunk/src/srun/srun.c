@@ -317,7 +317,7 @@ _allocate_nodes(void)
 	else
 		job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
-	if (opt.fail_kill)
+	if (opt.no_kill)
  		job.kill_on_node_fail	= 0;
 	if (opt.time_limit > -1)
 		job.time_limit		= opt.time_limit;
@@ -494,7 +494,8 @@ _sig_thr(void *arg)
 {
 	job_t *job = (job_t *)arg;
 	sigset_t set;
-	time_t last_intr = 0;
+	time_t last_intr      = 0;
+	time_t last_intr_sent = 0;
 	int signo;
 
 	while (1) {
@@ -520,6 +521,12 @@ _sig_thr(void *arg)
 					info("sending Ctrl-C to job");
 					last_intr = time(NULL);
 					_fwd_signal(job, signo);
+					if ((time(NULL) - last_intr_sent) < 1) {
+						info("forcing termination");
+						update_job_state(job, SRUN_JOB_OVERDONE);
+						pthread_kill(job->ioid, SIGTERM);
+					}
+					last_intr_sent = time(NULL);
 				} else {
 					info("forcing termination");
 					pthread_kill(job->ioid, SIGTERM);
@@ -702,7 +709,7 @@ _run_batch_job(void)
 
 	job.user_id        = opt.uid;
 
-	if (opt.fail_kill)
+	if (opt.no_kill)
  		job.kill_on_node_fail	= 0;
 	if (opt.time_limit > -1)
 		job.time_limit		= opt.time_limit;

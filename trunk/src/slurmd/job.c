@@ -118,6 +118,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->nnodes  = msg->nnodes;
 	job->nodeid  = msg->srun_node_id;
 	job->ntasks  = msg->tasks_to_launch;
+	job->debug   = msg->slurmd_debug;
 
 	job->timelimit   = msg->credential->expiration_time;
 

@@ -90,6 +90,7 @@ typedef struct slurmd_job {
 	uint32_t       nprocs;
 	uint32_t       nodeid;
 	uint32_t       ntasks;
+	uint32_t       debug;
 	uint16_t       envc;
 	uint16_t       argc;
 	char         **env;

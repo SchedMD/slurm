@@ -113,7 +113,6 @@ static bool   _isa_client(struct io_info *io);
 static bool   _isa_task(struct io_info *io);
 
 static int    _io_init_pipes(task_info_t *t);
-static int    _io_prepare_clients(slurmd_job_t *);
 static int    _io_prepare_tasks(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _io_write_header(struct io_info *, srun_info_t *);
@@ -235,13 +234,7 @@ io_spawn_handler(slurmd_job_t *job)
 	xassert(_validate_io_list(job->objs));
 
 	pthread_create(&job->ioid, &attr, &_io_thr, (void *)job);
-
-	/* open 2*ntask initial connections or files for stdout/err 
-	 * append these to objs list 
-	 */
-	if (_io_prepare_clients(job) < 0)
-		return SLURM_FAILURE;
-		
+	
 	return 0;
 }
 
@@ -278,11 +271,12 @@ _io_finalize(task_info_t *t)
 	/* Need to close all stdin writers
 	 *
 	 * We effectively close these writers by
-	 * forcing them to be unwritable. This will
+	 * forcing them to be unreadable. This will
 	 * prevent the IO thread from hanging waiting
 	 * for stdin data. (While also not forcing the
 	 * close of a pipe that is also writable)
 	 */
+
 	 
 	if (in->writers) {
 		ListIterator i;
@@ -305,6 +299,8 @@ io_close_all(slurmd_job_t *job)
 
 	for (i = 0; i < job->ntasks; i++)
 		_io_finalize(job->task[i]);
+
+	close(STDERR_FILENO);
 
 	/* Signal IO thread to close appropriate 
 	 * client connections
@@ -407,7 +403,7 @@ _obj_set_unwritable(io_obj_t *obj)
 	obj->ops->writable = NULL;
 }
 
-static void
+static int
 _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun, 
 		   slurmd_io_type_t type)
 {
@@ -419,7 +415,7 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 		/* XXX retry or silently fail? 
 		 *     fail for now.
 		 */
-		return;
+		return SLURM_ERROR;
 	}
 		
 	fd_set_nonblocking(sock);
@@ -438,6 +434,8 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	}
 
 	list_append(job->objs, (void *)obj);
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -447,18 +445,17 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 static int
 _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 {
+	/* Try hard to get stderr connected to something
+	 */
+	if (  (_open_output_file(j, t, s->efname, CLIENT_STDERR) < 0)
+	   && (_io_add_connecting(j, t, s, CLIENT_STDERR)        < 0) )
+		return SLURM_FAILURE;
+
 	if (s->ofname) {
 		if (_open_output_file(j, t, s->ofname, CLIENT_STDOUT) < 0)
 			return SLURM_FAILURE;
 	} else {
 		_io_add_connecting(j, t, s, CLIENT_STDOUT); 
-	}
-
-	if (s->efname) {
-		if (_open_output_file(j, t, s->efname, CLIENT_STDERR) < 0)
-			return SLURM_FAILURE;
-	} else {
-		_io_add_connecting(j, t, s, CLIENT_STDERR); 
 	}
 
 	if (s->ifname) {
@@ -477,8 +474,8 @@ _io_prepare_one(slurmd_job_t *j, task_info_t *t, srun_info_t *s)
 /* 
  * create initial client objs for N tasks
  */
-static int
-_io_prepare_clients(slurmd_job_t *job)
+int
+io_prepare_clients(slurmd_job_t *job)
 {
 	int          i;
 	srun_info_t *srun;
@@ -487,10 +484,12 @@ _io_prepare_clients(slurmd_job_t *job)
 	xassert(srun != NULL);
 
 	if (srun->ofname && (fname_trunc_all(job, srun->ofname) < 0))
-		return SLURM_FAILURE;
+			goto error;
 
-	if (srun->efname && (fname_trunc_all(job, srun->efname) < 0))
-		return SLURM_FAILURE;
+	if (srun->efname && (strcmp(srun->ofname, srun->efname) != 0)) {
+		if (fname_trunc_all(job, srun->efname) < 0)
+			goto error;
+	}
 
 	if (srun->ioaddr.sin_addr.s_addr) {
 		char         host[256];
@@ -503,19 +502,28 @@ _io_prepare_clients(slurmd_job_t *job)
 	 * local file
 	 */
 	for (i = 0; i < job->ntasks; i++) {
-		_io_prepare_one(job, job->task[i], srun);
+		if (_io_prepare_one(job, job->task[i], srun) < 0)
+			return SLURM_FAILURE;
 
 		/* kick IO thread */
 		pthread_kill(job->ioid, SIGHUP);
 	}
 
 	return SLURM_SUCCESS;
+
+   error:
+	/* 
+	 * Try to open stderr connection for errors
+	 */
+	_io_add_connecting(job, job->task[0], srun, CLIENT_STDERR);
+	pthread_kill(job->ioid, SIGHUP);
+	return SLURM_FAILURE;
 }
 
 int
 io_new_clients(slurmd_job_t *job)
 {
-	return _io_prepare_clients(job);
+	return io_prepare_clients(job);
 }
 
 static int
@@ -540,10 +548,14 @@ _open_output_file(slurmd_job_t *job, task_info_t *t, char *fmt,
 	int          fd     = -1;
 	io_obj_t    *obj    = NULL;
 	int          flags  = O_APPEND|O_WRONLY;
-	char        *fname  = fname_create(job, fmt, t->gid);
+	char        *fname  ;
+
+	if (fmt == NULL)
+		return SLURM_ERROR;
 
 	xassert((type == CLIENT_STDOUT) || (type == CLIENT_STDERR));
 
+	fname = fname_create(job, fmt, t->gid);
 	if ((fd = _open_task_file(fname, flags)) > 0) {
 		debug("opened `%s' for %s fd %d", fname, _io_str[type], fd);
 		obj  = _io_obj(job, t, fd, type);
@@ -1494,6 +1506,7 @@ _validate_client_stderr(struct io_info *client)
 	xassert(client->magic == IO_MAGIC);
 	xassert(!client->readers);
 	xassert(client->obj->ops->writable != NULL);
+
 	i = list_iterator_create(client->writers);
 	while ((t = list_next(i))) {
 		xassert(t->magic == IO_MAGIC);

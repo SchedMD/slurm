@@ -177,8 +177,8 @@ struct poptOption runTable[] = {
 	{"overcommit", 'O', POPT_ARG_NONE, &opt.overcommit, 0,
 	 "overcommit resources",
 	 },
-	{"kill-off", 'k', POPT_ARG_NONE, &opt.fail_kill, 0,
-	 "do not kill job on node failure",
+	{"no-kill", 'k', POPT_ARG_NONE, &opt.no_kill, 0,
+	 "Do not kill job on node failure",
 	 },
 	{"share", 's', POPT_ARG_NONE, &opt.share, 0,
 	 "share node with other jobs",
@@ -206,6 +206,8 @@ struct poptOption runTable[] = {
 	 "err"},
         {"verbose", 'v', 0, 0, OPT_VERBOSE,
 	 "verbose operation (multiple -v's increase verbosity)", },
+        {"slurmd-debug", 'd', POPT_ARG_INT, &opt.slurmd_debug, OPT_DEBUG,
+	 "slurmd debug level", "value"},
 	{"threads", 'T', POPT_ARG_INT, &opt.max_threads, OPT_THREADS,
 	 "number of threads in srun",
 	 "threads"},
@@ -259,7 +261,8 @@ typedef struct env_vars {
 } env_vars_t;
 
 env_vars_t env_vars[] = {
-	{"SLURM_DEBUG", OPT_DEBUG, NULL, NULL},
+	{"SLURM_DEBUG", OPT_VERBOSE, NULL, NULL},
+	{"SLURMD_DEBUG", OPT_INT, &opt.slurmd_debug, NULL}, 
 	{"SLURM_NPROCS", OPT_INT, &opt.nprocs, &opt.nprocs_set},
 	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set},
 	{"SLURM_NNODES", OPT_INT, &opt.nodes, &opt.nodes_set},
@@ -495,7 +498,7 @@ static void _opt_default()
 	opt.overcommit = false;
 	opt.batch = false;
 	opt.share = false;
-	opt.fail_kill = false;
+	opt.no_kill = false;
 #ifdef HAVE_TOTALVIEW
 	opt.totalview = _under_totalview();
 #endif
@@ -508,7 +511,7 @@ static void _opt_default()
 	opt.max_wait = 0;
 
 	_verbose = 0;
-	_debug = 0;
+	opt.slurmd_debug = LOG_LEVEL_QUIET;
 
 	/* constraint default (-1 is no constraint) */
 	opt.mincpus = -1;
@@ -566,7 +569,7 @@ static void _opt_env()
 
 			case OPT_DEBUG:
 				if (val != NULL) {
-					_debug =
+					_verbose =
 					    (int) strtol(val, &end, 10);
 					if (!(end && *end == '\0')) {
 						error("%s=%s invalid",
@@ -687,10 +690,6 @@ static void _opt_args(int ac, char **av)
 		switch (rc) {
 		case OPT_VERBOSE:
 			_verbose++;
-			break;
-
-		case OPT_DEBUG:
-			_debug++;
 			break;
 
 		case OPT_OUTPUT:
