@@ -246,6 +246,8 @@ typedef struct job_step_specs {
 typedef struct job_descriptor {	/* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes, 0 otherwise,
 				 * default=0 */
+	uint16_t kill_on_node_fail; /* 1 if node failure to kill job, 0 otherwise,
+				 * default=1 */
 	char **environment;	/* environment variables to set for job, 
 				   *   name=value pairs, one per line */
 	uint16_t env_size;	/* element count in environment */
@@ -609,6 +611,7 @@ extern char *node_state_string(enum node_states inx);
 extern char *node_state_string_compact(enum node_states inx);
 
 #define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_KILL_NODE_FAIL	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
 #define SLURM_JOB_DESC_DEFAULT_ENV_SIZE 	0
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL

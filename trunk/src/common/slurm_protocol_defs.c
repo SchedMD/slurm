@@ -483,6 +483,8 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
 	job_desc_msg->contiguous =
 	    (uint16_t) SLURM_JOB_DESC_DEFAULT_CONTIGUOUS;
+	job_desc_msg->kill_on_node_fail =
+	    (uint16_t) SLURM_JOB_DESC_DEFAULT_KILL_NODE_FAIL;
 	job_desc_msg->environment = SLURM_JOB_DESC_DEFAULT_ENVIRONMENT;
 	job_desc_msg->env_size    = SLURM_JOB_DESC_DEFAULT_ENV_SIZE;
 	job_desc_msg->features    = SLURM_JOB_DESC_DEFAULT_FEATURES;
