@@ -13,29 +13,12 @@
 
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
- * input: spec - specification of the job's constraints
- *        job_id - place into which a job_id can be stored
- * output: job_id - the job's id
- *         node_list - list of allocated nodes
- *         returns 0 if no error, EINVAL if the request is invalid, 
- *			EAGAIN if the request can not be satisfied at present
- * NOTE: required specifications include: User=<uid>
- *	optional specifications include: Contiguous=<YES|NO> 
- *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
- *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>
- *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
- *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
- *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
- *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
 extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg, int immediate ) ;
 
 /*
  * slurm_cancel - cancel the specified job 
- * input: job_id - the job_id to be cancelled
- * output: returns 0 if no error, EINVAL if the request is invalid, 
- *			EAGAIN if the request can not be satisfied at present
  */
 extern int slurm_cancel_job (uint32_t job_id);
 
@@ -170,8 +153,7 @@ extern int parse_node_name (char *node_name, char **format, int *start_inx,
  */
 extern int slurm_reconfigure ();
 
-/*
- * slurm_update_node - updates the node state
- */
-int slurm_update_node ( update_node_msg_t * node_msg )  ;
-int slurm_update_partition ( update_part_msg_t * desc_msg ) ;
+/* update a job, node, or partition's configuration, root access only */ 
+extern int slurm_update_job ( job_desc_msg_t * job_msg ) ;
+extern int slurm_update_node ( update_node_msg_t * node_msg ) ;
+extern int slurm_update_partition ( update_part_msg_t * part_msg ) ;
