@@ -73,6 +73,8 @@ static void _wait_for_procs(uint32_t job_id, uid_t job_uid);
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
+	int rc;
+
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
 		_rpc_batch_job(msg, cli);
@@ -112,11 +114,11 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent) */
-		if (_rpc_ping(msg, cli) == SLURM_SUCCESS) {
-			/* Then initiate a separate node registration */
-			slurm_free_node_registration_status_msg(msg->data);
+		rc = _rpc_ping(msg, cli);
+		slurm_free_node_registration_status_msg(msg->data);
+		/* Then initiate a separate node registration */
+		if (rc == SLURM_SUCCESS)
 			send_registration_msg(SLURM_SUCCESS);
-		}
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg, cli);
