@@ -418,7 +418,7 @@ static void _opt_default()
 	opt.exc_nodes	    = NULL;
 	opt.max_launch_time = 60; /* 60 seconds to launch job             */
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
-	opt.msg_timeout     = 2;  /* Default launch msg timeout           */
+	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
 	mode	= MODE_NORMAL;
 
