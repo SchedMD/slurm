@@ -48,18 +48,15 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 {
 	va_list ap;
 	char buf[BUFSIZ];
-	char *bufcpy;
 	char **env = *envp;
 		
 	va_start(ap, fmt);
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
-	xrealloc(*env, (*envc+1)*sizeof(char *));
-
-	bufcpy = xstrdup(buf);
-	env[(*envc)++] = bufcpy;
-	env[*envc]   = NULL;
+	xrealloc(env, (*envc+2)*sizeof(char *));
+	env[(*envc)++] = xstrdup(buf);
+	env[(*envc)]   = NULL;
 
 	*envp = env;
 	return *envc;
