@@ -6,19 +6,28 @@
 #
 ControlMachine=dev0   ControlAddr=edev0 
 BackupController=dev1 BackupAddr=edev1
-Epilog="" Prolog=""
+#
+Epilog=/admin/sbin/slurm.epilog
 FastSchedule=1
 FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
+InactiveLimit=120
 JobCredentialPrivateKey=private.key
 JobCredentialPublicCertificate=public.cert
-InactiveLimit=120
 KillWait=30
 Prioritize=/usr/local/maui/priority
+Prolog=/admin/sbin/slurm.prolog
 ReturnToService=0
-SlurmctldPort=7002 SlurmdPort=7003
-SlurmctldTimeout=300 SlurmdTimeout=300
+SlurmUser=jette
+#SlurmctldLogFile=/var/tmp/slurmctld.log
+SlurmctldPort=7002
+SlurmctldTimeout=300
+#SlurmdLogFile=/var/tmp/slurmd.log
+SlurmdPidFile=/var/run/slurmd.pid
+SlurmdPort=7003
+SlurmdSpoolDir=/var/tmp/slurmd.spool
+SlurmdTimeout=300
 StateSaveLocation=/tmp/slurm.state
 TmpFS=/tmp
 #
