@@ -260,6 +260,8 @@ static int _verify_node_use(const char *arg)
 		return SELECT_VIRTUAL_NODE_MODE;
 	else if (!strncasecmp(arg, "COPROCESSOR", len))
 		return SELECT_COPROCESSOR_MODE;
+	else if (!strncasecmp(arg, "NAV", len))
+		return SELECT_NAV_MODE;
 
 	error("invalid --node-use argument %s ignored.", arg);
 	return -1;

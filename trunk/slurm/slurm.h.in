@@ -169,7 +169,8 @@ enum connection_type {
 
 enum node_use_type {
 	SELECT_COPROCESSOR_MODE,/* use extra processor for communications */
-	SELECT_VIRTUAL_NODE_MODE/* application uses both processors */
+	SELECT_VIRTUAL_NODE_MODE,/* application uses both processors */
+	SELECT_NAV_MODE		/* either mode is acceptable */
 };
 
 enum select_data_type {
