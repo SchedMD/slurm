@@ -107,10 +107,11 @@ static char 		*get_shell (void);
 static int 		 is_file_text (char *fname, char** shell_ptr);
 static int		 run_batch_job (void);
 static allocation_resp	*existing_allocation(void);
-static void		 run_job_script(uint32_t job_id);
+static void		 run_job_script(uint32_t jobid);
 static void 		 fwd_signal(job_t *job, int signo);
 static void 		 p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
 static void 		*p_signal_task(void *args);
+static int               _set_batch_script_env(uint32_t jobid);
 
 #ifdef HAVE_LIBELAN3
 #  include <src/common/qsw.h> 
@@ -172,12 +173,14 @@ main(int ac, char **av)
 	} else if (opt.allocate) {
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
+		job = job_create(resp); 
 		if (_verbose || _debug)
 			print_job_information(resp);
 		else
 			printf("jobid %u\n", resp->job_id); 
 		run_job_script(resp->job_id);
 		slurm_complete_job(resp->job_id, 0, 0);
+
 		if (_verbose || _debug)
 			info ("Spawned srun shell terminated");
 		exit (0);
@@ -643,7 +646,7 @@ static void * p_signal_task(void *args)
 static int
 run_batch_job(void)
 {
-	int i, file_type, rc, retries;
+	int file_type, rc, retries;
 	job_desc_msg_t job;
 	submit_response_msg_t *resp;
 	extern char **environ;
@@ -694,13 +697,13 @@ run_batch_job(void)
 	if (opt.share)
 		job.shared		= 1;
 
+	_set_batch_script_env(0);
 	job.environment		= environ;
-	for (i=0; ; i++) {
-		if (environ[i] == NULL) {
-			job.env_size	= (i - 1);
-			break;
-		}
-	}
+
+	job.env_size            = 0;
+	while (environ[job.env_size] != NULL)
+		job.env_size++;
+
 	job.script		= job_script;
 	if (opt.efname)
 		job.err		= opt.efname;
@@ -885,33 +888,47 @@ existing_allocation( void )
 	return resp;
 }
 
+static int
+_set_batch_script_env(uint32_t jobid)
+{
+	char *dist = NULL;
+
+	if (jobid > 0) {
+		if (setenvf("SLURM_JOBID=%u", jobid)) {
+			error("Unable to set SLURM_JOBID env var");
+			return -1;
+		}
+	}
+
+	if (setenvf("SLURM_NNODES=%u", opt.nodes)) {
+		error("Unable to set SLURM_NNODES environment variable");
+		return -1;
+	}
+
+	if (setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
+		error("Unable to set SLURM_NPROCS environment variable");
+		return -1;
+	}
+
+	dist = opt.distribution == SRUN_DIST_BLOCK ? "block" : "cyclic";
+
+	if (setenvf("SLURM_DISTRIBUTION=%s", dist)) {
+		error("Unable to set SLURM_DISTRIBUTION environment variable");
+		return -1;
+	}
+
+	return 0;
+}
+
 /* allocation option specified, spawn a script and wait for it to exit */
-void run_job_script (uint32_t job_id)
+void run_job_script (uint32_t jobid)
 {
 	char *shell = NULL;
 	int   i;
 	pid_t child;
 
-	if (setenvf("SLURM_JOBID=%u", job_id)) {
-		error("Unable to set SLURM_JOBID environment variable");
+	if (_set_batch_script_env(jobid) < 0) 
 		return;
-	}
-
-	if (setenvf("SLURM_NNODES=%u", opt.nodes)) {
-		error("Unable to set SLURM_NNODES environment variable");
-		return;
-	}
-
-	if (setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
-		error("Unable to set SLURM_NPROCS environment variable");
-		return;
-	}
-
-	if (setenvf("SLURM_DISTRIBUTION=%s", 
-		    opt.distribution == SRUN_DIST_BLOCK ?  "block" : "cyclic")) {
-		error("Unable to set SLURM_DISTRIBUTION environment variable");
-		return;
-	}
 
 	/* determine shell from script (if any) or user default */
 	if (remote_argc) {

@@ -99,7 +99,7 @@ launch(void *arg)
 	slurm_msg_t *req_array_ptr;
 	launch_tasks_request_msg_t *msg_array_ptr;
 	job_t *job = (job_t *) arg;
-	int i, my_envc, taskid;
+	int i, my_envc;
 	char hostname[MAXHOSTNAMELEN];
 	uint32_t **task_ids;
 
@@ -115,10 +115,9 @@ launch(void *arg)
 	task_ids = (uint32_t **) xmalloc(job->nhosts * sizeof(uint32_t *));
 	for (i = 0; i < job->nhosts; i++)
 		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i]*sizeof(uint32_t));
-	taskid = 0;
 	if (opt.distribution == SRUN_DIST_BLOCK)
 		_dist_block(job, task_ids);
-	else /* (opt.distribution == SRUN_DIST_CYCLIC) */
+	else 
 		_dist_cyclic(job, task_ids);
 
 	msg_array_ptr = (launch_tasks_request_msg_t *) 
@@ -142,6 +141,13 @@ launch(void *arg)
 		r->cwd             = opt.cwd;
 		r->nnodes          = job->nhosts;
 		r->nprocs          = opt.nprocs;
+
+		if (opt.output == IO_PER_TASK)
+			r->ofname  = opt.ofname;
+		if (opt.error  == IO_PER_TASK)
+			r->efname  = opt.efname;
+		if (opt.input  == IO_PER_TASK)
+			r->ifname  = opt.ifname;
 
 		/* Node specific message contents */
 		r->tasks_to_launch = job->ntask[i];
@@ -191,6 +197,7 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 			debug("Node %s is unused",job->host[i]);
 			continue;
 		}
+
 		pthread_mutex_lock(&active_mutex);
 		while (active >= opt.max_threads) {
 			pthread_cond_wait(&active_cond, &active_mutex);
@@ -210,7 +217,7 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 		if (pthread_attr_setscope (&thread_ptr[i].attr, PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
-		while ( pthread_create (&thread_ptr[i].thread, 
+		if ( pthread_create (&thread_ptr[i].thread, 
 		                        &thread_ptr[i].attr, 
 		                        p_launch_task, 
 		                        (void *) task_info_ptr) ) {
@@ -218,6 +225,7 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 			/* just run it under this thread */
 			p_launch_task((void *) task_info_ptr);
 		}
+
 	}
 
 	pthread_mutex_lock(&active_mutex);

@@ -126,7 +126,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
 	char *slurmd_logfile = NULL, *slurmd_port = NULL;
-	char *slurmd_spooldir = NULL;
+	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
 	long first_job_id = -1;
@@ -153,6 +153,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmdLogFile=", 's', &slurmd_logfile,
 		"SlurmdPort=", 's', &slurmd_port,
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
+		"SlurmdPidFile=",  's', &slurmd_pidfile,
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location, 
 		"TmpFS=", 's', &tmp_fs,
@@ -314,6 +315,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree (ctl_conf_ptr->slurmd_spooldir);
 		}
 		ctl_conf_ptr->slurmd_spooldir = slurmd_spooldir;
+	}
+
+	if ( slurmd_pidfile ) {
+		if ( ctl_conf_ptr->slurmd_pidfile ) {
+			error (MULTIPLE_VALUE_MSG, "SlurmdPidFile");
+			xfree (ctl_conf_ptr->slurmd_pidfile);
+		}
+		ctl_conf_ptr->slurmd_pidfile = slurmd_pidfile;
 	}
 
 	if ( slurmd_timeout != -1) {

@@ -124,7 +124,7 @@ _launch_batch_job(batch_job_launch_msg_t *req, slurm_addr *cli)
 			/* NOTREACHED */
 			break;
 		default:
-			verbose("created process %ld for job %d",
+			debug("created process %ld for job %d",
 					pid, req->job_id);
 			break;
 	}
@@ -156,7 +156,7 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			/* NOTREACHED */
 			break;
 		default:
-			verbose("created process %ld for job %d.%d",
+			debug("created process %ld for job %d.%d",
 					pid, req->job_id, req->job_step_id);
 			break;
 	}
@@ -181,7 +181,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	req_uid = slurm_auth_uid(msg->cred);
 	req_gid = slurm_auth_gid(msg->cred);
 
-	verbose("launch tasks request from %ld@%s", req_uid, host, port);
+	info("launch tasks request from %ld@%s", req_uid, host);
 
 	rc = verify_credential(&conf->vctx, 
 			       req->credential, 
@@ -190,7 +190,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	if ((rc == SLURM_SUCCESS) && (req_uid == req->uid))
 		rc = _launch_tasks(req, cli);
 	else {
-		verbose("Invalid credential from %ld@%s, launching job anyway", 
+		info("XXX: Invalid credential from %ld@%s, launching job anyway", 
 		        req_uid, host);
 		rc = _launch_tasks(req, cli);
 	}
@@ -222,14 +222,12 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	req_uid = slurm_auth_uid(msg->cred);
 	req_gid = slurm_auth_gid(msg->cred);
 
-	verbose("req_uid = %ld, req->uid = %ld", req_uid, req->uid);
-
 	if ((req_uid != 0) && (req_uid != (uid_t)req->uid)) {
 		rc = EPERM;
 		goto done;
 	}
 
-	verbose("batch launch request from %ld@%s", req_uid, host, port);
+	info("batch launch request from %ld@%s", req_uid, host);
 
 	if (_launch_batch_job(req, cli) < 0)
 		rc = SLURM_FAILURE;

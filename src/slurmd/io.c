@@ -104,9 +104,9 @@ struct io_info {
 
 
 static int    _io_init_pipes(task_info_t *t);
-static void   _io_prepare_clients(slurmd_job_t *);
-static void   _io_prepare_tasks(slurmd_job_t *);
-static void   _io_prepare_files(slurmd_job_t *);
+static int    _io_prepare_clients(slurmd_job_t *);
+static int    _io_prepare_tasks(slurmd_job_t *);
+static int    _io_prepare_files(slurmd_job_t *);
 static void * _io_thr(void *);
 static int    _io_write_header(struct io_info *, srun_info_t *);
 static void   _io_connect_objs(io_obj_t *, io_obj_t *);
@@ -121,7 +121,7 @@ static void   _io_client_attach(io_obj_t *, io_obj_t *, io_obj_t *,
 
 static struct io_obj  * _io_obj_create(int fd, void *arg);
 static struct io_info * _io_info_create(uint32_t id);
-static struct io_obj  * _io_obj(slurmd_job_t *, int, uint32_t, int);
+static struct io_obj  * _io_obj(slurmd_job_t *, task_info_t *, int, int);
 static void           * _io_thr(void *arg);
 
 
@@ -142,6 +142,7 @@ static int  _client_read(io_obj_t *, List);
 static int  _task_error(io_obj_t *, List);
 static int  _client_error(io_obj_t *, List);
 static int  _connecting_write(io_obj_t *, List);
+static int  _file_write(io_obj_t *, List);
 
 /* Task Output operations (TASK_STDOUT, TASK_STDERR)
  * These objects are never writable --
@@ -208,10 +209,9 @@ io_spawn_handler(slurmd_job_t *job)
 	}
 
 	/* create task IO objects and append these to the objs list
-	 *
-	 * XXX check for errors?
 	 */
-	_io_prepare_tasks(job);
+	if (_io_prepare_tasks(job) < 0)
+		return SLURM_FAILURE;
 
 	if ((errno = pthread_attr_init(&attr)) != 0)
 		error("pthread_attr_init: %m");
@@ -227,10 +227,13 @@ io_spawn_handler(slurmd_job_t *job)
 	/* open 2*ntask initial connections or files for stdout/err 
 	 * append these to objs list 
 	 */
-	if (list_count(job->sruns) > 0)
-		_io_prepare_clients(job);
-	_io_prepare_files(job);
+	if ((list_count(job->sruns) > 0) && (_io_prepare_clients(job) < 0))
+		return SLURM_FAILURE;
 
+	if (_io_prepare_files(job) < 0) 
+		slurm_seterrno_ret(ESCRIPT_OPEN_OUTPUT_FAILED);
+
+		
 	return 0;
 }
 
@@ -292,7 +295,7 @@ _io_thr(void *arg)
 	return (void *)1;
 }
 
-static void
+static int
 _io_prepare_tasks(slurmd_job_t *job)
 {
 	int          i;
@@ -302,29 +305,31 @@ _io_prepare_tasks(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++) {
 		t = job->task[i];
 
-		t->in  = _io_obj(job, t->pin[1],  t->gid, TASK_STDIN );
+		t->in  = _io_obj(job, t, t->pin[1],  TASK_STDIN );
 		list_append(job->objs, (void *)t->in );
 
-		t->out = _io_obj(job, t->pout[0], t->gid, TASK_STDOUT);
+		t->out = _io_obj(job, t, t->pout[0], TASK_STDOUT);
 		list_append(job->objs, (void *)t->out);
 
 		/* "ghost" stdout client buffers task data without sending 
 		 * it anywhere
 		 */
-		obj    = _io_obj(job, -1, t->gid, CLIENT_STDOUT);
+		obj    = _io_obj(job, t, -1,         CLIENT_STDOUT);
 		_io_client_attach(obj, t->out, NULL, job->objs);
 
-		t->err = _io_obj(job, t->perr[0], t->gid, TASK_STDERR);
+		t->err = _io_obj(job, t, t->perr[0], TASK_STDERR);
 		list_append(job->objs, (void *)t->err);
 
 		/* "fake" stderr client buffers task data without sending 
 		 * it anywhere
 		 */
-		obj    = _io_obj(job, -1, t->gid, CLIENT_STDERR);
+		obj    = _io_obj(job, t, -1,         CLIENT_STDERR);
 		_io_client_attach(obj, t->err, NULL, job->objs);
 	}
 
 	xassert(_validate_io_list(job->objs));
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -361,7 +366,7 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	fd_set_nonblocking(sock);
 	fd_set_close_on_exec(sock);
 
-	obj      = _io_obj(job, sock, t->gid, type);
+	obj      = _io_obj(job, t, sock, type);
 	obj->ops = &connecting_client_ops;
 	_io_write_header(obj->arg, srun);
 	list_append(job->objs, (void *)obj);
@@ -370,7 +375,7 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 /* 
  * create initial client objs for N tasks
  */
-static void
+static int
 _io_prepare_clients(slurmd_job_t *job)
 {
 	int          i;
@@ -380,7 +385,7 @@ _io_prepare_clients(slurmd_job_t *job)
 
 	srun = list_peek(job->sruns);
 	if (srun->noconnect)
-		return;
+		return SLURM_SUCCESS;
 
 	/* 
 	 * connect back to clients for stdin/out/err
@@ -392,6 +397,8 @@ _io_prepare_clients(slurmd_job_t *job)
 		/* kick IO thread */
 		pthread_kill(job->ioid, SIGHUP);
 	}
+
+	return SLURM_SUCCESS;
 }
 
 static int
@@ -422,15 +429,15 @@ _open_output_file(slurmd_job_t *job, task_info_t *t, slurmd_io_type_t type)
 
 	if ((fd = _open_task_file(fname, flags)) > 0) {
 		verbose("opened `%s' for %s fd %d", fname, _io_str[type], fd);
-		obj  = _io_obj(job, fd, t->gid, type);
+		obj  = _io_obj(job, t, fd, type);
 		_obj_set_unreadable(obj);
+		obj->ops->handle_write = &_file_write;
 		xassert(obj->ops->writable != NULL);
 		if (type == CLIENT_STDOUT)
 			_io_client_attach(obj, t->out, NULL, job->objs);
 		else
 			_io_client_attach(obj, t->err, NULL, job->objs);
-	} else
-		error("Unable to open `%s': %m", fname);
+	} 
 
 	_validate_io_list(job->objs);
 
@@ -445,28 +452,33 @@ _open_stdin_file(slurmd_job_t *job, task_info_t *t)
 	int       flags = O_RDONLY;
 	
 	if ((fd = _open_task_file(t->ifname, flags)) > 0) {
-		obj = _io_obj(job, fd, t->gid, CLIENT_STDIN); 
+		obj = _io_obj(job, t, fd, CLIENT_STDIN); 
 		_obj_set_unwritable(obj);
 		_io_client_attach(obj, NULL, t->in, job->objs);
 	}
 	return fd;
 }
 
-static void
+static int
 _io_prepare_files(slurmd_job_t *job)
 {
 	int i;
 
 	if (!job->ofname && !job->efname && !job->ifname)
-		return;
+		return SLURM_SUCCESS;
 
 	for (i = 0; i < job->ntasks; i++) {
-		_open_output_file(job, job->task[i], CLIENT_STDOUT);
-		_open_output_file(job, job->task[i], CLIENT_STDERR);
-		if (job->ifname)
-			_open_stdin_file (job, job->task[i]);
+		if (_open_output_file(job, job->task[i], CLIENT_STDOUT) < 0)
+			return SLURM_FAILURE;
+		if (_open_output_file(job, job->task[i], CLIENT_STDERR) < 0)
+			return SLURM_FAILURE;
+		if (job->ifname && (_open_stdin_file(job, job->task[i]) < 0))
+			return SLURM_FAILURE;
+
 		pthread_kill(job->ioid, SIGHUP);
 	}
+
+	return SLURM_SUCCESS;
 }
 
 /* Attach io obj "client" as a reader of 'writer' and a writer to 'reader'
@@ -587,7 +599,9 @@ _io_disconnect(struct io_info *src, struct io_info *dst)
 {
 	char *a, *b;
 	xassert(src->magic == IO_MAGIC);
+	xassert(src->readers != NULL);
 	xassert(dst->magic == IO_MAGIC);
+	xassert(dst->writers != NULL);
 	a = _io_str[dst->type];
 	b = _io_str[src->type]; 
 
@@ -618,7 +632,7 @@ _io_disconnect_client(struct io_info *client, List objs)
 		while ((t = list_next(i))) {
 			if (list_count(t->readers) > 1) {
 				destroy = true;
-				_io_disconnect(client, t);
+				_io_disconnect(t, client);
 			}
 		}
 		list_iterator_destroy(i);
@@ -630,7 +644,7 @@ _io_disconnect_client(struct io_info *client, List objs)
 		i = list_iterator_create(client->readers);
 		while ((t = list_next(i))) {
 			if (list_count(t->writers) > 1) {
-				_io_disconnect(t, client);
+				_io_disconnect(client, t);
 			}
 		}
 		list_iterator_destroy(i);
@@ -675,9 +689,9 @@ _ops_destroy(struct io_operations *ops)
 }
 
 io_obj_t *
-_io_obj(slurmd_job_t *job, int fd, uint32_t id, int type)
+_io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 {
-	struct io_info *io = _io_info_create(id);
+	struct io_info *io = _io_info_create(t->gid);
 	struct io_obj *obj = _io_obj_create(fd, (void *)io);
 
 	xassert(io->magic == IO_MAGIC);
@@ -717,7 +731,7 @@ _io_obj(slurmd_job_t *job, int fd, uint32_t id, int type)
 	 */
 	io->obj  = obj;
 	io->job  = job;
-	io->task = job->task[io->id - job->task[0]->gid];
+	io->task = t;
 
 	xassert(io->task->gid == io->id);
 
@@ -970,6 +984,16 @@ _write(io_obj_t *obj, List objs)
 	debug3("Wrote %d bytes to %s %d", n, _io_str[io->type], io->id);
 
 	return 0;
+}
+
+/* flush after writing data to file 
+ */
+static int
+_file_write(io_obj_t *obj, List objs)
+{
+	int rc = _write(obj, objs);
+	fdatasync(obj->fd);
+	return rc;
 }
 
 static void

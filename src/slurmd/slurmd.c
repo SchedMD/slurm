@@ -26,7 +26,7 @@
 \*****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <string.h>
@@ -38,32 +38,33 @@
 #include <sys/resource.h>
 #include <unistd.h>
 
-#include <src/common/log.h>
-#include <src/common/read_config.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xstring.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/xsignal.h>
-#include <src/common/credential_utils.h>
-#include <src/common/signature_utils.h>
-#include <src/common/parse_spec.h>
-#include <src/common/hostlist.h>
-#include <src/common/fd.h>
+#include "src/common/log.h"
+#include "src/common/read_config.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/common/xsignal.h"
+#include "src/common/daemonize.h"
+#include "src/common/credential_utils.h"
+#include "src/common/signature_utils.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/parse_spec.h"
+#include "src/common/hostlist.h"
+#include "src/common/macros.h"
+#include "src/common/fd.h"
 
-#include <src/slurmd/slurmd.h>
-#include <src/slurmd/req.h>
-#include <src/slurmd/shm.h>
-#include <src/slurmd/get_mach_stat.h>
+#include "src/slurmd/slurmd.h"
+#include "src/slurmd/req.h"
+#include "src/slurmd/shm.h"
+#include "src/slurmd/get_mach_stat.h"
 
 #define GETOPT_ARGS	"L:f:Dvhc"
 
 #ifndef MAXHOSTNAMELEN
-#define MAXHOSTNAMELEN	64
+#  define MAXHOSTNAMELEN	64
 #endif
 
-#ifndef MAX
-#  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
-#endif /* !MAX */
+#define DEFAULT_SPOOLDIR	"/tmp"
+#define DEFAULT_PIDFILE		"/var/run/slurmd.pid"
 
 typedef struct connection {
 	slurm_fd fd;
@@ -88,12 +89,12 @@ static int        _slurmd_init();
 static int        _slurmd_fini();
 static void       _create_conf();
 static void       _init_conf();
+static void       _print_conf();
 static void       _read_config();
+static void       _set_slurmd_spooldir(void);
 static void       _usage();
 static void       _handle_connection(slurm_fd fd, slurm_addr *client);
 static void      *_service_connection(void *);
-static void       _setdir(void);
-static int        _mkdir2 (char * path, int modes);
 static void       _fill_registration_msg(slurm_node_registration_status_msg_t *);
 
 static slurm_ctl_conf_t slurmctld_conf;
@@ -104,15 +105,17 @@ main (int argc, char *argv[])
 	_create_conf();
 	_init_conf();
 	_process_cmdline(argc, argv);
-	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	_read_config();
-	_create_msg_socket();
+	_print_conf();
+	_set_slurmd_spooldir();
 
-	if (conf->daemonize) {
+	if (conf->daemonize) 
 		daemon(0,0);
-		_setdir();
-	}
 
+	create_pidfile(DEFAULT_PIDFILE);
+	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
+	info("%s started on %T", xbasename(argv[0]));
+	_create_msg_socket();
 	conf->pid = getpid();
 	
 	if (_slurmd_init() < 0)
@@ -328,40 +331,46 @@ _free_and_set(char **confvar, char *newval)
 static void
 _read_config()
 {
-	read_slurm_conf_ctl (&slurmctld_conf);
+	read_slurm_conf_ctl(&slurmctld_conf);
 
-	/* If a parameter was set on the execute line, don't reset it from the config file */
+	/* If a parameter was set on the execute line, 
+	 * don't reset it from the config file 
+	 */
 	if (conf->conffile == NULL)
-		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf );
-	if ((conf->logfile == NULL) && (slurmctld_conf.slurmd_logfile)) {
-		conf->log_opts.logfile_level = MAX (conf->log_opts.logfile_level, 
-							conf->log_opts.stderr_level);
-		conf->log_opts.logfile_level = MAX (conf->log_opts.logfile_level, 
-							conf->log_opts.syslog_level);
-		if (conf->daemonize) {
-			info ("Routing all log messages to %s", slurmctld_conf.slurmd_logfile);
-			conf->log_opts.stderr_level  = LOG_LEVEL_QUIET;
+		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
+
+	if ((conf->logfile == NULL) && (slurmctld_conf.slurmd_logfile)) 
+		_free_and_set(&conf->logfile, slurmctld_conf.slurmd_logfile );
+
+	if (conf->daemonize) {
+		conf->log_opts.stderr_level  = LOG_LEVEL_QUIET;
+		if (conf->logfile)
 			conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
-		}
-		_free_and_set(&conf->logfile,    slurmctld_conf.slurmd_logfile );
-		log_init(conf->prog, conf->log_opts, LOG_DAEMON, conf->logfile);
 	}
 
 	conf->port          =            slurmctld_conf.slurmd_port;
 	_free_and_set(&conf->epilog,     slurmctld_conf.epilog );
 	_free_and_set(&conf->prolog,     slurmctld_conf.prolog );
 	_free_and_set(&conf->tmpfs,      slurmctld_conf.tmp_fs );
-	_free_and_set(&conf->pubkey,     slurmctld_conf.job_credential_public_certificate );
+	_free_and_set(&conf->pubkey,     
+		      slurmctld_conf.job_credential_public_certificate);
 	_free_and_set(&conf->spooldir,    slurmctld_conf.slurmd_spooldir);
+	_free_and_set(&conf->pidfile,     slurmctld_conf.slurmd_pidfile);
+}
 
-	debug3("Confile     = `%s'",     conf->conffile );
-	debug3("Epilog      = `%s'",     conf->epilog );
-	debug3("Logfile     = `%s'",     conf->logfile );
+static void
+_print_conf()
+{
+	debug3("Confile     = `%s'",     conf->conffile);
+	debug3("Epilog      = `%s'",     conf->epilog);
+	debug3("Logfile     = `%s'",     conf->logfile);
 	debug3("Port        = %u",       conf->port);
-	debug3("Prolog      = `%s'",     conf->prolog );
-	debug3("TmpFS       = `%s'",     conf->tmpfs );
-	debug3("Public Cert = `%s'",     conf->pubkey );
-	debug3("Spool Dir   = `%s'",     conf->spooldir );
+	debug3("Prolog      = `%s'",     conf->prolog);
+	debug3("TmpFS       = `%s'",     conf->tmpfs);
+	debug3("Public Cert = `%s'",     conf->pubkey);
+	debug3("Spool Dir   = `%s'",     conf->spooldir);
+	debug3("Pid File    = `%s'",     conf->pidfile);
+
 }
 
 static void 
@@ -374,7 +383,7 @@ static void
 _init_conf()
 {
 	char  host[MAXHOSTNAMELEN];
-	log_options_t lopts = LOG_OPTS_STDERR_ONLY;
+	log_options_t lopts = LOG_OPTS_INITIALIZER;
 
 	if (getnodename(host, MAXHOSTNAMELEN) < 0) {
 		error("Unable to get my hostname: %m");
@@ -384,13 +393,14 @@ _init_conf()
 	conf->conffile  = NULL;
 	conf->epilog    = NULL;
 	conf->logfile   = NULL;
-	conf->port      = 0;
-	conf->spooldir	= NULL;
 	conf->pubkey    = NULL;
 	conf->prolog    = NULL;
-	conf->daemonize =  0;
+	conf->port      =  0;
+	conf->daemonize =  1;
 	conf->lfd       = -1;
 	conf->log_opts  = lopts;
+	conf->pidfile   = xstrdup(DEFAULT_PIDFILE);
+	conf->spooldir	= xstrdup(DEFAULT_SPOOLDIR);
 	return;
 }
 
@@ -404,10 +414,12 @@ _process_cmdline(int ac, char **av)
 	while ((c = getopt(ac, av, GETOPT_ARGS)) > 0) {
 		switch (c) {
 		case 'D': 
-			conf->daemonize = 1;
+			conf->daemonize = 0;
 			break;
 		case 'v':
 			conf->log_opts.stderr_level++;
+			conf->log_opts.logfile_level++;
+			conf->log_opts.syslog_level++;
 			break;
 		case 'h':
 			_usage();
@@ -512,46 +524,15 @@ _usage()
 			"\tPrint this help message.\n");
 }
 
-/* create spool directory as needed and "cd" to it */
-static void       
-_setdir(void)
+/* create spool directory as needed and "cd" to it 
+ */
+static void
+_set_slurmd_spooldir(void)
 {
-	struct stat sbuf;
+	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST))
+		error("mkdir(%s): %m", conf->spooldir);
 
-	if (conf->spooldir) {
-		if (stat (conf->spooldir, &sbuf) == -1) {
-			if (_mkdir2(conf->spooldir, 0700))
-				error ("mkdir2 on %s error %m", conf->spooldir);
-			_free_and_set(&conf->spooldir, xstrdup("/tmp") );
-		}
-	} else {
-		_free_and_set(&conf->spooldir, xstrdup("/tmp") );
-	}
-	chdir(conf->spooldir);
-}
-
-/* _mkdir2 - create a directory, does system call if root, runs mkdir otherwise */
-static int 
-_mkdir2 (char * path, int modes) 
-{
-	char *cmd;
-	int error_code;
-
-	if (getuid() == 0) {
-		if (mknod (path, S_IFDIR | modes, 0))
-			return errno;
-	}
-
-	else {
-		cmd = xstrdup ("/bin/mkdir ");
-		xstrcat (cmd, path);
-		error_code = system (cmd);
-		xfree (cmd);
-		if (error_code)
-			return error_code;
-		(void) chmod (path, modes);
-	}
-
-	return SLURM_SUCCESS;
+	if (chdir(conf->spooldir) < 0)
+		fatal("chdir(%s): %m", conf->spooldir);
 }
 

@@ -350,6 +350,7 @@ typedef struct slurm_ctl_conf {
 	char *slurmd_logfile;	/* where slurmd error log gets written */
 	uint32_t slurmd_port;	/* default communications port to slurmd */
 	char *slurmd_spooldir;	/* where slurmd put temporary state info */
+	char *slurmd_pidfile;   /* where to put slurmd pidfile           */
 	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before 
 				 * considering node DOWN */
 	char *slurm_conf;	/* pathname of slurm config file */

@@ -28,7 +28,7 @@
 #define _SLURMD_H
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
@@ -40,10 +40,10 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#include <src/common/log.h>
-#include <src/common/list.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/signature_utils.h>
+#include "src/common/log.h"
+#include "src/common/list.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/signature_utils.h"
 
 /*
  * Global config type
@@ -55,6 +55,7 @@ typedef struct slurmd_config {
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */
 	char         *spooldir;		/* SlurmdSpoolDir	           */
+	char         *pidfile;		/* PidFile location		   */
 	char         *nodename;		/* this node's hostname            */
 	char         *tmpfs;		/* directory of tmp FS             */
 	char         *pubkey;		/* location of job cred public key */
