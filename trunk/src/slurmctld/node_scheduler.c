@@ -159,6 +159,7 @@ main (int argc, char *argv[])
  * this is a simple prototype for testing 
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
+ *	last_node_update - last update time of node table
  */
 void 
 allocate_nodes (unsigned *bitmap) 
@@ -208,6 +209,8 @@ void
 deallocate_nodes (unsigned *bitmap) 
 {
 	int i;
+
+	last_node_update = time (NULL);
 
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (bitmap, i) == 0)
