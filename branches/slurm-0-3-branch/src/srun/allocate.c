@@ -132,6 +132,8 @@ existing_allocation(void)
 	job.uid = getuid();
 
 	if (slurm_confirm_allocation(&job, &resp) < 0) {
+		if (opt.parallel_debug)
+			return NULL;    /* create new allocation as needed */
 		if (errno == ESLURM_ALREADY_DONE) 
 			error ("SLURM job %u has expired.", job.job_id); 
 		else
