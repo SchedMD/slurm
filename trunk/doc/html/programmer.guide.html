@@ -24,6 +24,9 @@ This directory contains modules of general use throughout the SLURM code.
 The modules are described below.
 
 <dl>
+<dt>bits_bytes.c
+<dd>A collection of functions for processing bit maps and strings for parsing.
+
 <dt>list.c
 <dd>Module is a general purpose list manager. One can define a 
 list, add and delete entries, search for entries, etc. 
@@ -33,27 +36,38 @@ list, add and delete entries, search for entries, etc.
 
 <dt>slurm.h
 <dd>Definitions for common SLURM data structures and functions.
+
+<dt>slurmlib.h
+<dd>Definitions for SLURM API data structures and functions.
 </dl>
 
 
-<h2>Scancel Modules</h2>
-Scancel is a command to cancel running or pending jobs.
+<h2>scancel Modules</h2>
+scancel is a command to cancel running or pending jobs.
+
+<dl>
+<dt>scancel.c
+<dd>A command line interface to cancel jobs.
+</dl>
 
 
-<h2>Slurmadmin Modules</h2>
-Slurmadmin is the administrator tool for monitoring and modifying SLURM state.
+<h2>scontrol Modules</h2>
+scontrol is the administrator tool for monitoring and modifying SLURM configuration 
+and state. It has a command line interface only
+
+<dl>
+<dt>scontrol.c
+<dd>A command line interface to slurmctld.
+</dl>
 
 
-<h2>Slurmctld Modules</h2>
-Slurmctld executes on the control machine and orchestrates SLURM activities 
+<h2>slurmctld Modules</h2>
+slurmctld executes on the control machine and orchestrates SLURM activities 
 across the entire cluster including monitoring node and partition state, 
 scheduling, job queue management, job dispatching, and switch management. 
 The slurmctld modules and their functionality are described below.
 
 <dl>
-<dt>bits_bytes.c
-<dd>A collection of functions for processing bit maps and strings for parsing.
-
 <dt>controller.c
 <dd>Primary SLURM daemon to execute on control machine. 
 It manages communications the Partition Manager, Switch Manager, and Job Manager threads.
@@ -91,7 +105,7 @@ This includes: size of real memory, size of temporary disk storage, and
 the number of processors.
 
 <dt>read_proc.c
-This module collects job state information including real memory use, 
+<dd>This module collects job state information including real memory use, 
 virtual memory use, and CPU time use.
 </dl>
 
@@ -128,342 +142,152 @@ and 4 node sets rather than use the smaller sets).
 All functions described below can be issued from any node in the SLURM cluster. 
 
 <dl>
-<dt>int Allocate_Resources(char *Job_Spec);
-<dd>Allocate resources for the job with the specification Job_Spec.
-This call can only be successfully executed by user <b>root</b>.
-Returns -2 if Job_Spec can not be successfully parsed.
-Returns -1 if the job can not be initiated given current SLURM configuration. 
-Returns 0 if the job can not presently be initiated due to busy nodes.
-Returns a SLURM job ID greater than zero.
+<dt>int Allocate(char *Spec, char **NodeList);
+<dd>Allocate nodes for a job with supplied contraints. 
+<dd>Input: Spec - Specification of the job's constraints;
+<dd>NodeList - Place into which a node list pointer can be placed;
+<dd>Output: NodeList - List of allocated nodes;
+<dd>Returns 0 if no error, EINVAL if the request is invalid, 
+EAGAIN if the request can not be satisfied at present;
+<dd>NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
+Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
+TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
+MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
+<dd>NOTE: The calling function must free the allocated storage at NodeList[0]
 
-<dt>Get_Acctg_Info(TBD);
-<dd>Return job and system accounting information.
-This function has yet to be defined.
+<dt>void Free_Build_Info(void);
+<dd>Free the build information buffer (if allocated).
+<dd>NOTE: Buffer is loaded by Load_Build and used by Load_Build_Name.
 
-<dt>int Deallocate_Resources(int Job_Id);
-<dd>Deallocated the resources associated with the specified SLURM Job_Id. 
-This call can only be successfully executed by user <b>root</b>. 
-If there is an active job associated with this resource allocation, it will 
-be terminated.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dt>void Free_Node_Info(void);
+<dd>Free the node information buffer (if allocated)
+<dd>NOTE: Buffer is loaded by Load_Node and used by Load_Node_Name.
 
-<dt>int Get_Build_Info(char *Info_Req, char **Build_Info);
-<dd>Return SLURM build information. 
-Specify the names of configuration parameters requested in the string Info_Req. 
-All configuration information is returned if the length of Info_Req is zero.
-The keywords and values are returned in the buffer Build_Info using the 
-format "keyword=value" with white-space between each pair.
-The buffer Build_Info is created or its size changed as needed. 
-The application is responsible for setting *Build_Info to NULL initially and executing "free(*Build_Info)" 
-when the buffer is no longer needed.
-Returns an error code or zero if no error.
-Possible error codes include: TBD.
+<dt>void Free_Part_Info(void);
+<dd>Free the partition information buffer (if allocated)
+<dd>NOTE: Buffer is loaded by Load_Part and used by Load_Part_Name.
 
-<dt>int Get_Job_Info(time_t *Last_Update, int *Version_Job_Record, struct Job_Record *Job_Info, int *Job_Records);
-<dd>Load into the buffer Job_Info the current job state information only if changed since Last_Update. 
-The buffer Job_Info is created or its size changed as needed. 
-The application is responsible for setting *Job_Info to NULL initially and executing "free(*Job_Info)" 
-when the buffer is no longer needed.
-The value of Last_Update is set with the time of last update.
-The value of Version_Job_Record is set with the version number of the structure format. 
-The value of Job_Records is set with the count of records returned.
-Version_Job_Record can be checked by the application to insure it is built with the appropriate structure format.
-Returns an error code or zero if no error.
-Possible error codes include: TBD.
+<dt>int Get_Job_Info(TBD);
+<dd>Function to be defined.
 
-<dt>int Get_Key(int *key);
+<dt>int Get_Key(? *key);
 <dd>Load into the location key the value of an authorization key. 
-This key can be used as part of a job specification (see Job_Spec in the Run_Job and 
-Will_Job_Run functions) to grant access to partitions with access restrictions. 
-This call can only be successfully executed by user <b>root</b>.
-The key can only be used once to initiate a job. 
-A key that has been issued and not utilized in KEY_TIMEOUT seconds (defined at 
-SLURM build time) will be revoked.
-Returns an error code or zero if no error.
-Possible error codes include: TBD.
-
-<dt>int Get_Node_Info(time_t *Last_Update, int *Version_Node_Record, struct Node_Record *Node_Info, int *Node_Records);
-<dd>Load into the buffer Node_Info the current node state information only if changed since Last_Update. 
-The buffer Node_Info is created or its size changed as needed. 
-The application is responsible for setting *Node_Info to NULL initially and executing "free(*Node_Info)" 
-when the buffer is no longer needed.
-The value of Last_Update is set with the time of last update.
-The value of Version_Node_Record is set with the version number of the structure format. 
-The value of Node_Records is set with the count of records returned.
-Version_Node_Record can be checked by the application to insure it is built with the appropriate structure format.
-Returns an error code or zero if no error.
-Possible error codes include: TBD.
-
-<dt>int Get_Part_Info(time_t *Last_Update, int *Version_Part_Record, struct Part_Record *Part_Info, int *Part_Records);
-<dd>Load into the buffer Part_Info the current partition state information only if changed since Last_Update. 
-The buffer Part_Info is created or its size changed as needed. 
-The application is responsible for setting *Part_Info to NULL initially and executing "free(*Node_Info)" 
-when the buffer is no longer needed.
-The value of Last_Update is set with the time of last update.
-The value of Version_Part_Record is set with the version number of the structure format. 
-The value of Part_Records is set with the count of records returned.
-Version_Part_Record can be checked by the application to insure it is built with the appropriate structure format.
-Returns an error code or zero if no error.
-Possible error codes include: TBD.
+<dd>To be defined.
 
 <dt>int Kill_Job(int Job_Id);
 <dd>Terminate the specified SLURM job. 
-The SIGTERM signal is sent to task zero of the job followed by SIGKILL to all processes KILL_WAIT seconds later. 
-KILL_WAIT is specified at SLURM build time.
-This command can only be issued by user <b>root</b> or the user whose job is specified by Job_Id. 
-The Kill_Job request must succeed in removing the job record and releasing its nodes 
-for re-use even if one or more of the nodes allocated to the job is not responding. 
-The job will be terminated on that node when it returns to service.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dd>TBD.
 
-<dt>int NodeBitMap2List(char **NodeList, char *BitMap, time_t BitMapTime);
-<dd>Translate the supplied Node BitMap into its List into its equivalent List. 
-The calling program must execute free(NodeList[0]) to release allocated 
-memory. A time stamp associated with the BitMap is supplied in order to 
-invalidate old BitMaps when the nodes defined to SLURM change.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dt>int Load_Build(void);
+<dd>Update the build information buffer for use by info gathering APIs
+<dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure.
+<dd>NOTE: Buffer is used by Load_Build_Name and freed by Free_Build_Info.
 
-<dt>int NodeList2BitMap(char *NodeList, char **BitMap, time_t *BitMapTime);
-<dd>Translate the supplied NodeList string into its equivalent BitMap. 
-The calling program must execute free(BitMap[0]) to release allocated 
-memory. A time stamp associated with the BitMap is returned in order to 
-invalidate old BitMaps when the nodes defined to SLURM change.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dt>int Load_Build_Name(char *Req_Name, char *Next_Name, char *Value);
+<dd>Load the state information about the named build parameter
+<dd>Input: Req_Name - Name of the parameter for which information is requested
+if "", then get info for the first parameter in list
+<dd>Next_Name - Location into which the name of the next parameter is 
+stored, "" if no more
+<dd>Value - Pointer to location into which the information is to be stored
+<dd>Output: Req_Name - The parameter's name is stored here
+<dd>Next_Name - The name of the next parameter in the list is stored here
+<dd>Value - The parameter's state information
+<dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+<dd>NOTE:  Req_Name, Next_Name, and Value must be declared by caller with have 
+length BUILD_SIZE or larger
+<dd>NOTE: Buffer is loaded by Load_Build and freed by Free_Build_Info.
 
-<dt>int Reconfigure(char *NodeList);
-<dd>The SLURM daemons on the specified nodes will re-read the configuration file. 
-NodeList contains a comma separated list of nodes. 
-All nodes are reconfigured if NodeList has zero length. 
-This command can only be issued by user <b>root</b>.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dt>int Load_Node(time_t *Last_Update_Time);
+<dd>Load the supplied node information buffer for use by info gathering APIs if
+node records have changed since the time specified. 
+<dd>Input: Buffer - Pointer to node information buffer
+<dd>Buffer_Size - size of Buffer
+<dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+<dd>NOTE: Buffer is loaded by Load_Node and freed by Free_Node_Info.
+
+<dt>int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs, 
+int *RealMemory, int *TmpDisk, int *Weight, char *Features,
+char *Partition, char *NodeState);
+<dd>Load the state information about the named node
+<dd>Input: Req_Name - Name of the node for which information is requested
+if "", then get info for the first node in list
+<dd>Next_Name - Location into which the name of the next node is 
+stored, "" if no more
+<dd>CPUs, etc. - Pointers into which the information is to be stored
+<dd>Output: Next_Name - Name of the next node in the list
+<dd>CPUs, etc. - The node's state information
+<dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+<dd>NOTE:  Req_Name, Next_Name, Partition, and NodeState must be declared by the 
+caller and have length MAX_NAME_LEN or larger.
+Features must be declared by the caller and have length FEATURE_SIZE or larger
+<dd>NOTE: Buffer is loaded by Load_Node and freed by Free_Node_Info.
+
+<dt>int Load_Part(time_t *Last_Update_Time);
+<dd>Update the partition information buffer for use by info gathering APIs if 
+partition records have changed since the time specified. 
+<dd>Input: Last_Update_Time - Pointer to time of last buffer
+<dd>Output: Last_Update_Time - Time reset if buffer is updated
+<dd>Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+<dd>NOTE: Buffer is used by Load_Part_Name and free by Free_Part_Info.
+
+<dt>int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
+int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared, int *Default,
+char *Nodes, char *AllowGroups);
+<dd>Load the state information about the named partition
+<dd>Input: Req_Name - Name of the partition for which information is requested
+if "", then get info for the first partition in list
+<dd>Next_Name - Location into which the name of the next partition is 
+stored, "" if no more
+<dd>MaxTime, etc. - Pointers into which the information is to be stored
+<dd>Output: Req_Name - The partition's name is stored here
+<dd>Next_Name - The name of the next partition in the list is stored here
+<dd>MaxTime, etc. - The partition's state information
+<dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+<dd>NOTE:  Req_Name and Next_Name must be declared by caller with have length MAX_NAME_LEN or larger.
+<dd>Nodes and AllowGroups must be declared by caller with length of FEATURE_SIZE or larger.
+<dd>NOTE: Buffer is loaded by Load_Part and free by Free_Part_Info.
+
+<dt>int Reconfigure(void);
+<dd>Request that slurmctld re-read the configuration files
+Output: Returns 0 on success, errno otherwise
 
 <dt>int Run_Job(char *Job_Spec);
 <dd>Initiate the job with the specification Job_Spec.
-Returns -2 if Job_Spec can not be successfully parsed.
-Returns -1 if the job can not be initiated given current SLURM configuration. 
-Returns 0 if the job can not presently be initiated due to busy nodes.
-Returns a SLURM job ID greater than zero if the job is being initiated.
+<dd>TBD.
 
 <dt>int Signal_Job(int Job_Id, int Signal);
 <dd>Send the specified signal to the specified SLURM job. 
-The signal is sent only to task zero of the job. 
-This command can only be issued by user <b>root</b> or the user whose job 
-is specified by Job_Id.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dd>TBD.
 
 <dt>int Transfer_Resources(pid_t Pid, int Job_Id);
 <dd>Transfer the ownership of resources associated with the specified 
-SLURM Job_Id to the indicated process. 
-This call can only be successfully executed by user <b>root</b>.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dd>TBD.
 
-<dt>int Update(char *Config_Spec);
-<dd>Update the SLURM configuration per Config_Spec. 
-The format of Config_Spec is identical to that of the SLURM configuration file 
-as described in the <a href="admin.guide.html">SLURM Administrator's Guide</a>. 
-This command can only be issued by user <b>root</b>.
-Returns zero or an error code.
-Possible error codes include: TBD.
-
-<dt>int Upload(char *NodeList);
-<dd>Upload into the SLURM node configuration table actual configuration 
-as actually reported by SERVER_DAEMON on each node (memory, CPU count, temporary disk, etc.).
-This could be used to establish a baseline configuration rather than 
-entering the configurations manually into a file. 
-Information from all nodes is uploaded if NodeList has zero length. 
-This command can only be issued by user <b>root</b>.
-Returns zero or an error code.
-Possible error codes include: TBD.
+<dt>int Update(char *Spec);
+<dd>Request that slurmctld update its configuration per request
+<dd>Input: A line containing configuration information per the configuration file format
+<dd>Output: Returns 0 on success, errno otherwise
 
 <dt>int Will_Job_Run(char *Job_Spec);
-<dd>Determine if a job with the specification Job_Spec can be initiated.
-Returns -2 if Job_Spec can not be successfully parsed.
-Returns -1 if the job can not be initiated given current SLURM configuration. 
-Returns 0 if the job can not presently be initiated due to busy nodes.
-Returns 1 if the job can be initiated immediately.
+<dd>TBD.
 </dl>
 
 <h2>Examples of API Use</h2>
-<pre>
-    char *Build_Info;
-    int Error_Code, i, Job_Id, Signal;
-    pid_t Proc_Id;
-    time_t Last_Update;
-    struct Job_Record  *Job_Info;
-    struct Node_Record *Node_Info;
-    struct Part_Record *Part_Info;
-    int Job_Records, Node_Records, Part_Records;
-    int Version_Job_Record, Version_Node_Record, Version_Part_Record;
-    int Key;
-    char Scratch[128];
-    char *BitMap, *Node_List;
-
-    Build_Info = NULL;
-    Error_Code = Get_Build_Info("PROLOG", &Build_Info);
-    if (Error_Code != 0) 
-        printf("Error %d executing Get_Build_Info for PROLOG\n", Error_Code);
-    else
-	printf("Get_Build_Info for PROLOG returns %s\n", Build_Info[0]);
-    Error_Code = Get_Build_Info("", Build_Info);
-    if (Error_Code != 0) 
-        printf("Error %d executing Get_Build_Info for everything\n", Error_Code);
-    else
-	printf("Get_Build_Info for everything returns %s\n", Build_Info[0]);
-    free(Build_Info[0]);
-
-    Last_Update = (time_t) 0;
-    Job_Info = (struct Job_Record *)NULL;
-    Error_Code = Get_Job_Info(&Last_Update, &Version_Job_Record, &Job_Info, &Job_Records);
-    if (Error_Code != 0) 
-        printf("Error %d executing Get_Job_Info\n", Error_Code);
-    else if (Version_Job_Record != JOB_STRUCT_VERSION) 
-        printf("Get_Job_Info returned version %d, expected version %d\n", Version_Job_Record, JOB_STRUCT_VERSION);
-    else {
-        printf("Get_Job_Info returned %d records\n", Job_Records);
-        for (i=0; i&ltJob_Records; i++) {
-            printf("Job_Id=%d\n", Job_Info[i].Job_Id);
-        } /* for */
-    } /* else */
-    free(Job_Info);
-
-    Error_Code = Get_Key(&Key);
-    if (Error_Code != 0) 
-        printf("Error %d executing Get_Key\n", Error_Code);
-    else 
-        printf("Get_Key value is %d\n", Key);
-
-    Last_Update = (time_t) 0;
-    Node_Info = (struct Node_Info *)NULL;
-    Error_Code = Get_Node_Info(&Last_Update, &Version_Node_Record, &Node_Info, &Node_Records);
-    if (Error_Code != 0) 
-        printf("Error %d executing Get_Node_Info\n", Error_Code);
-    else if (Version_Node_Record != NODE_STRUCT_VERSION) 
-        printf("Get_Node_Info returned version %d, expected version %d\n", Version_Node_Record, NODE_STRUCT_VERSION);
-    else {
-        printf("Get_Node_Info returned %d records\n", Node_Records);
-        for (i=0; i&ltNode_Records; i++) {
-            printf("NodeName=%s\n", Node_Info[i].Name);
-        } /* for */
-    } /* else */
-    free(Node_Info);
-
-    Last_Update = (time_t) 0;
-    Part_Info = (struct Job_Record *)NULL;
-    Error_Code = Get_Part_Info(&Last_Update, &Version_Part_Record, &Part_Info, &Part_Records);
-    if (Error_Code != 0) 
-        printf("Error %d executing Get_Part_Info\n", Error_Code);
-    else if (Version_Job_Record != JOB_STRUCT_VERSION) 
-        printf("Get_Part_Info returned version %d, expected version %d\n", Version_Part_Record, PART_STRUCT_VERSION);
-    else {
-        printf("Get_Part_Info returned %d records\n", Part_Records);
-        /* Format TBD */
-    } /* else */
-    free(Job_Info);
-
-    printf("Enter SLURM Job_Id of job to be killed: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Job_Id = atoi(Scratch);
-    Error_Code = Kill_Job(Job_Id);
-    if (Error_Code != 0) 
-        printf("Error %d executing Kill_Job on job %d\n", Error_Code, Job_Id);
-
-    printf("Enter name of node to reconfigure: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Error_Code = Reconfigure(Scratch);
-    if (Error_Code != 0) 
-        printf("Error %d executing Reconfigure on node %s\n", Error_Code, Scratch);
-
-    strcpy(Scratch, "lx[01-10]");
-    Error_Code = NodeList2BitMap(Scratch, &BitMap, &Last_Update);
-    if (Error_Code != 0) 
-        printf("Error %d executing NodeList2BitMap on nodes %s\n", Error_Code, Scratch);
-
-    Error_Code = NodeBitMap2List(&NodeList, BitMap, Last_Update);
-    if (Error_Code != 0) 
-        printf("Error %d executing NodeBitMap2List on nodes %s\n", Error_Code, Scratch);
-    else {
-	printf("NodeBitMap2List returned %s, expected %s\n", NodeList, Scratch);
-	free(BitMap);
-	free(NodeList);
-    } /* else */
-
-    printf("Enter job specification: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Error_Code = Will_Job_Run(Scratch);
-    if (Error_Code != 0) 
-        printf("Error %d executing Will_Job_Run on specification %s\n", Error_Code, Scratch);
-    Error_Code = Run_Job(Scratch);
-    if (Error_Code != 0) 
-        printf("Error %d executing Run_Job on specification %s\n", Error_Code, Scratch);
-
-    Job_Id = Allocate_Resources(Scratch);
-    if (Job_Id <= 0) 
-        printf("Error %d executing Allocate_Resources on specification %s\n", Error_Code, Scratch);
-    else
-        printf("Allocate_Resources to Job ID %d with specification %s\n", Error_Code, Job_Id, Scratch);
-
-    printf("Enter process ID of process to be given the allocated resources: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Proc_Id = atoi(Scratch);
-    Error_Code = Transfer_Resources(Proc_Id, Job_Id);
-    if (Error_Code != 0) 
-        printf("Error %d executing Transfer_Resources on Job ID %d to Proc ID %d\n", Error_Code, Job_Id, Proc_Id);
-
-    Error_Code = Deallocate_Resources(Job_Id);
-    if (Error_Code != 0) 
-        printf("Error %d executing Deallocate_Resources on Job ID %d\n", Error_Code, Job_Id);
-
-    printf("Enter SLURM Job_Id of job to be signalled: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Job_Id = atoi(Scratch);
-    printf("Enter signal number: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Signal = atoi(Scratch);
-    Error_Code = Signal_Job(Job_Id, Signal);
-    if (Error_Code != 0) 
-        printf("Error %d executing Signal_Job on job %d and signal %d\n", Error_Code, Job_Id, Signal);
-
-    printf("Enter configuration update specification: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Error_Code = Update(Scratch);
-    if (Error_Code != 0) 
-        printf("Error %d executing Update on specification %s\n", Error_Code, Scratch);
-
-    printf("Enter name of node to upload state from: ");
-    fgets(Scratch, sizeof(Scratch), stdin);
-    Error_Code = Upload(Scratch);
-    if (Error_Code != 0) 
-        printf("Error %d executing Upload on node %s\n", Error_Code, Scratch);
-</pre>
+Please see the source code of scancel, scontrol, squeue, and srun for examples 
+of all APIs.
 
 <h2>To Do</h2>
 <ul>
 <li>How do we interface with TotalView?</li>
 
-<li>The SLURM Job Manager component would be responsible for enforcing 
-job time and size limits plus group access controls.</li>
-
 <li>Deadlines: MCR to be built in July 2002, accepted August 2002.</li>
-
-<li>SLURM needs to use switch for timely distribution of executable and 
-stdin files.</li>
-
-<li>get_mach_stat.c is quite system dependent. We probably want to 
-construct multiple file names containing the system name (e.g. 
-Get_Mach_Stat.aix.c, Get_Mach_Stat.linux.c, etc.) and build accordingly.</li>
 
 </ul>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified March 14, 2002</p>
+<p>Last Modified April 12, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
