@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="24 August 2004">
+<meta name="LLNLRandRdate" content="25 August 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -80,6 +80,45 @@ some initialization and termination functions for the job.</li>
 symbols required by the SLURM Plugin API require no specialization for node selection support. 
 Note carefully, however, the versioning discussion below.</p>
 
+<p>A simplified flow of logic follows:
+<pre>
+slurmctld daemon starts
+if (<i>select_p_state_restor)</i>() != SLURM_SUCCESS)
+   abort
+
+slurmctld reads the rest of its configuration and state information
+if (<i>select_p_node_init</i>() != SLURM_SUCCESS)
+   abort
+
+wait for job 
+if (<i>select_p_job_test</i>(all available nodes) != SLURM_SUCCESS) {
+   if (<i>select_p_job_test</i>(all configured nodes) != SLURM_SUCCESS)
+      reject the job and tell the user it can never run
+   else
+      leave the job queued for later execution
+} else {
+   update job's node list and node bitmap
+   if (<i>select_p_job_init</i>() != SLURM_SUCCESS)
+      leave the job queued for later execution
+   else {
+      execute the job
+      wait for job to end or be terminated
+      <i>select_p_job_fini</i>()
+    }
+}
+
+wait for slurmctld shutdown request
+<i>select_p_state_save</i>()
+</pre>
+Depending upon failure modes, it is possible that 
+<span class="commandline">select_p_state_save()</span>
+will not be called at slurmctld terminatation.
+When slurmctld is restarted, other function calls may be replayed.
+<span class="commandline">select_p_node_init()</span> may be used 
+to syncronize the plugin's state with that of slurmctld.</p>
+
+<p class="footer"><a href="#top">top</a></p>
+
 <h3>Data Objects</h3>
 <p> These functions are expected to read and/or modify data structures directly in 
 the slurmctld daemon's memory. Slurmctld is a multi-threaded program with independent 
@@ -108,8 +147,7 @@ This function is called by the slurmctld deamon on shutdown.</p>
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory into which user SlurmUser (as defined
 in slurm.conf) can create a file and write state information into that file. Cannot be NULL.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
-the plugin should return SLURM_ERROR and set the errno to an appropriate value 
-to indicate the reason for failure.</p>
+the plugin should return SLURM_ERROR.</p>
 
 <p class="commandline">int select_p_state_restore (char *dir_name);</p>
 <p style="margin-left:.2in"><b>Description</b>: Restore any global node selection state 
@@ -120,8 +158,7 @@ This function is called by the slurmctld deamon on startup.</p>
 &nbsp;&nbsp;(input) fully-qualified pathname of a directory containing a state information file 
 from which user SlurmUser (as defined in slurm.conf) can read. Cannot be NULL.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
-the plugin should return SLURM_ERROR and set the errno to an appropriate value 
-to indicate the reason for failure.</p>
+the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <p class="commandline">int select_p_node_init (struct node_record *node_ptr, int node_cnt);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initialization of the node record data 
@@ -135,14 +172,13 @@ rebuilding the node records and bitmaps. <br>
 <span class="commandline"> node_cnt</span>&nbsp; &nbsp;&nbsp;(input) number 
 of node data records.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure, 
-the plugin should return SLURM_ERROR and set the errno to an appropriate value 
-to indicate the reason for failure.</p>
+the plugin should return SLURM_ERROR, causing slurmctld to exit.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
 <h4>Job-Specific Node Selection Functions</h4>
 <p class="commandline">int select_p_job_test (struct job_record *job_ptr,
-bitstr_t * bitmap, int min_nodes, int max_nodes);</p>
+bitstr_t bitmap, int min_nodes, int max_nodes);</p>
 <p style="margin-left:.2in"><b>Description</b>: Given a job's scheduling requirement 
 specification and a set of nodes which might  be used to satisfy the request, identify 
 the nodes which "best" satify the request. Note that nodes being considered for allocation 
@@ -173,7 +209,8 @@ maximum number of nodes to allocate to this job. Note this reflects both job
 and partition specifications.<br>
 </p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR (do not set <i>errno</i>).</p>
+the plugin should return SLURM_ERROR and future attempts may be made to schedule 
+the job.</p>
 
 <p class="commandline">int select_p_job_init (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the initiation of the specified job
@@ -186,8 +223,8 @@ The <i>nodes</i> and <i>node_bitmap</i> fields of this job record identify the
 nodes which have already been selected for this job to use. For an example of 
 a job record field that the plugin may write into, see <i>select_id</i>.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
+the plugin should return SLURM_ERROR, which causes the job to be requeued for 
+later execution.</p>
 
 <p class="commandline">int select_p_job_fini (struct job_record *job_ptr);</p>
 <p style="margin-left:.2in"><b>Description</b>: Note the termination of the 
@@ -199,8 +236,7 @@ to the job being terminated. Data in this job record may safely be read or writt
 The <i>nodes</i> and/or <i>node_bitmap</i> fields of this job record identify the 
 nodes which were selected for this job to use.</p>
 <p style="margin-left:.2in"><b>Returns</b>: SLURM_SUCCESS if successful. On failure,
-the plugin should return SLURM_ERROR and set the errno to an appropriate value
-to indicate the reason for failure.</p>
+the plugin should return SLURM_ERROR.</p>
 
 <p class="footer"><a href="#top">top</a></p>
 
@@ -219,7 +255,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 24 August 2004</p></td>
+Last modified 25 August 2004</p></td>
 </tr>
 </table>
 </td>

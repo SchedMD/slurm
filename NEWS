@@ -10,10 +10,11 @@ documents those changes that are of interest to users and admins.
    - slurm/482: Adjust Elan base context number to match RMS range
  -- Preserve job's requested processor count info after job is initiated 
     (for viewing by squeue and scontrol)
+ -- srun cancels created job if job step creation fails
  -- Added a lots of Blue Gene/L support logic: slurmd executes on a single 
     node to front-end the 512-CPU base-partitions (Blue Gene/L's nodes)
- -- srun cancels created job if job step creation fails
  -- Add SelectType configuration parameter for node selection plugin
+ -- Add node selection plugin infrastructure (still need to move logic)
  -- Modify node hashing algorithm for better performance on Blue Gene/L
 
 * Changes in SLURM 0.4.0-pre1

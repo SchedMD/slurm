@@ -52,6 +52,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/sched_plugin.h"
+#include "src/slurmctld/select_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -736,7 +737,7 @@ int read_slurm_conf(int recover)
 	char *old_auth_type       = xstrdup(slurmctld_conf.authtype);
 	char *old_checkpoint_type = xstrdup(slurmctld_conf.checkpoint_type);
 	char *old_sched_type      = xstrdup(slurmctld_conf.schedtype);
-	char *old_select_type      = xstrdup(slurmctld_conf.select_type);
+	char *old_select_type     = xstrdup(slurmctld_conf.select_type);
 	char *old_switch_type     = xstrdup(slurmctld_conf.switch_type);
 
 	/* initialization */
@@ -863,8 +864,12 @@ int read_slurm_conf(int recover)
 #ifdef 	HAVE_ELAN
 	_validate_node_proc_count();
 #endif
-	(void) _sync_nodes_to_comp_job();
-
+	if (select_g_node_init(node_record_table_ptr, node_record_count)
+			!= SLURM_SUCCESS ) {
+		error("failed to restore node selection plugin state");
+		abort();
+	}
+	(void) _sync_nodes_to_comp_job(); /* must follow select_g_node_init() */
 	load_part_uid_allow_list(1);
 
 	/* sort config_list by weight for scheduling */
@@ -1035,7 +1040,7 @@ static int _sync_nodes_to_comp_job(void)
 		}
 	}
 	if (update_cnt)
-		info("_sync_nodes_to_comp_jobs completing %d jobs",
+		info("_sync_nodes_to_comp_job completing %d jobs",
 			update_cnt);
 	return update_cnt;
 }

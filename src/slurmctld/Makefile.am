@@ -31,10 +31,12 @@ slurmctld_SOURCES = 	\
 	proc_req.c	\
 	proc_req.h	\
 	read_config.c	\
+	read_config.h	\
 	sched_plugin.c	\
 	sched_plugin.h	\
 	sched_upcalls.c	\
-	read_config.h	\
+	select_plugin.c	\
+	select_plugin.h	\
 	slurmctld.h	\
 	srun_comm.c	\
 	srun_comm.h	\
