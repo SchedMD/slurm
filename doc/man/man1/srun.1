@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "October 2002" "srun 0.1" "slurm components"
+.TH SRUN "1" "November 2002" "srun 0.1" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -77,6 +77,12 @@ overcommit resources. Normally,
 will not allocate more than one process to a cpu. By specifying
 \fB\-\-overcommit\fR you are explicitly allowing more than one process
 per cpu.
+.TP
+\fB\-T\fR, \fB\-\-threads\fR=\fInthreads\fR
+Request that 
+.B srun
+use \fInthreads\fR to initiate and control the parallel job. The 
+default value is the smaller of 10 or the number of nodes allocated.
 .TP
 \fB\-l\fR, \fB\-\-label\fR
 prepend task number to lines of stdout/err. Normally, stdout and stderr
