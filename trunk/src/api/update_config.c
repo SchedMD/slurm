@@ -36,8 +36,8 @@ int slurm_update_node ( update_node_msg_t * node_msg )
 
 
 	/* send request message */
-	/*request_msg . msg_type = REQUEST_UPDATE_CONFIG_INFO ;*/
-	request_msg . data = NULL ; 
+	request_msg . msg_type = REQUEST_UPDATE_NODE ;
+	request_msg . data = node_msg ; 
 
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;

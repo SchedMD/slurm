@@ -165,7 +165,7 @@ typedef struct job_id_msg {
 typedef struct slurm_update_node_msg
 {
 	char * node_names ;
-	uint32_t node_state ;
+	uint16_t node_state ;
 }	update_node_msg_t ;
 
 typedef struct slurm_node_registration_status_msg

@@ -61,6 +61,7 @@ inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
@@ -181,6 +182,9 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_RECONFIGURE:
 			slurm_rpc_reconfigure_controller ( msg ) ;
+			break;
+		case REQUEST_UPDATE_NODE:
+			slurm_rpc_update_node ( msg ) ;
 			break;
 		default:
 			error ("slurmctld_req: invalid request msg type %d\n", msg-> msg_type);
@@ -372,30 +376,30 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	int error_code;
 	clock_t start_time;
 	update_node_msg_t * update_node_msg_ptr ;
-	char * node_name_ptr = NULL;
 	start_time = clock ();
 	
 	update_node_msg_ptr = (update_node_msg_t * ) msg-> data ;
 	
 	/* do RPC call */
-	error_code = update_node ( update_node_msg_ptr );	/* skip "Update" */
+	error_code = update_node ( update_node_msg_ptr );
 
 	/* return result */
 	if (error_code)
 	{
 		error ("slurmctld_req: update error %d on node %s, time=%ld",
-				error_code, node_name_ptr, (long) (clock () - start_time));
+				error_code, update_node_msg_ptr->node_names, 
+				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
 		info ("slurmctld_req: updated node %s, time=%ld",
-				node_name_ptr, (long) (clock () - start_time));
+				update_node_msg_ptr->node_names, 
+				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	if (node_name_ptr)
-		xfree (node_name_ptr);
-
+	if (update_node_msg_ptr->node_names)
+		xfree (update_node_msg_ptr->node_names);
 }
 
 void 
@@ -542,7 +546,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 
 }
 
-/* Reconfigure - re-initialized from configuration files */
+/* slurm_rpc_reconfigure_controller - re-initialize controller from configuration files */
 void 
 slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 {

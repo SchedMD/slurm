@@ -38,4 +38,8 @@
 
 /* partition_mgr.c/update_part */
 #define ESLURM_PROTOCOL_INVALID_PARTITION_NAME		-2101
+
+/* node_mgr.c/update_node */
+#define ESLURM_INVALID_NODE_NAME			-2201
+
 #endif
