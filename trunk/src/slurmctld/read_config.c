@@ -415,9 +415,9 @@ parse_node_spec (char *in_line) {
 	if (state != NULL) {
 		state_val = NO_VAL;
 		for (i = 0; i <= NODE_STATE_END; i++) {
-			if (strcmp (node_state_string(i), "END") == 0)
+			if (strcasecmp (node_state_string(i), "END") == 0)
 				break;
-			if (strcmp (node_state_string(i), state) == 0) {
+			if (strcasecmp (node_state_string(i), state) == 0) {
 				state_val = i;
 				break;
 			}	
@@ -445,7 +445,7 @@ parse_node_spec (char *in_line) {
 				fatal ("memory allocation failure");
 			getnodename (this_node_name, 128);
 		}
-		if (strcmp (this_node_name, "DEFAULT") == 0) {
+		if (strcasecmp (this_node_name, "DEFAULT") == 0) {
 			xfree(node_name);
 			node_name = NULL;
 			if (cpus_val != NO_VAL)
@@ -573,9 +573,9 @@ parse_part_spec (char *in_line) {
 		goto cleanup;
 
 	if (default_str) {
-		if (strcmp(default_str, "YES") == 0)
+		if (strcasecmp (default_str, "YES") == 0)
 			default_val = 1;
-		else if (strcmp(default_str, "NO") == 0)
+		else if (strcasecmp (default_str, "NO") == 0)
 			default_val = 0;
 		else {
 			error ("update_part: ignored partition %s update, bad state %s",
@@ -588,9 +588,9 @@ parse_part_spec (char *in_line) {
 	}
 
 	if (root_str) {
-		if (strcmp(root_str, "YES") == 0)
+		if (strcasecmp (root_str, "YES") == 0)
 			root_val = 1;
-		else if (strcmp(root_str, "NO") == 0)
+		else if (strcasecmp (root_str, "NO") == 0)
 			root_val = 0;
 		else {
 			error ("update_part: ignored partition %s update, bad key %s",
@@ -603,11 +603,11 @@ parse_part_spec (char *in_line) {
 	}
 
 	if (shared_str) {
-		if (strcmp(shared_str, "YES") == 0)
+		if (strcasecmp (shared_str, "YES") == 0)
 			shared_val = SHARED_YES;
-		else if (strcmp(shared_str, "NO") == 0)
+		else if (strcasecmp (shared_str, "NO") == 0)
 			shared_val = SHARED_NO;
-		else if (strcmp(shared_str, "FORCE") == 0)
+		else if (strcasecmp (shared_str, "FORCE") == 0)
 			shared_val = SHARED_FORCE;
 		else {
 			error ("update_part: ignored partition %s update, bad shared %s",
@@ -620,9 +620,9 @@ parse_part_spec (char *in_line) {
 	}
 
 	if (state_str) {
-		if (strcmp(state_str, "UP") == 0)
+		if (strcasecmp (state_str, "UP") == 0)
 			state_val = 1;
-		else if (strcmp(state_str, "DOWN") == 0)
+		else if (strcasecmp (state_str, "DOWN") == 0)
 			state_val = 0;
 		else {
 			error ("update_part: ignored partition %s update, bad state %s",
@@ -634,7 +634,7 @@ parse_part_spec (char *in_line) {
 		state_str = NULL;
 	}
 
-	if (strcmp (partition_name, "DEFAULT") == 0) {
+	if (strcasecmp (partition_name, "DEFAULT") == 0) {
 		xfree (partition_name);
 		if (max_time_val != NO_VAL)
 			default_part.max_time = max_time_val;
