@@ -151,7 +151,7 @@ _print_job ( void )
 		if (params.long_list) {
 			job_format_add_priority( params.format_list, 10, true );
 			out_size += (10 + 1);
-			job_format_add_start_time( params.format_list, 11, false );
+			job_format_add_start_time( params.format_list,11,false);
 			out_size += (11 + 1);
 			job_format_add_end_time( params.format_list, 11, false);
 			out_size += (11 + 1);
