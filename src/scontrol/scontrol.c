@@ -1,6 +1,6 @@
 /*****************************************************************************\
- * scontrol - administration tool for slurm. 
- * provides interface to read, write, update, and configurations.
+ *  scontrol - administration tool for slurm. 
+ *  provides interface to read, write, update, and configurations.
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -485,39 +485,22 @@ print_part (char *partition_name)
 void 
 print_step (char *job_step_id_str)
 {
-	int error_code, i, print_cnt = 0;
-	uint32_t job_id = 0, step_id = 0;
-	static job_info_msg_t *old_job_buffer_ptr = NULL;
-	job_info_msg_t * job_buffer_ptr = NULL;
-	job_info_t *job_ptr = NULL;
+	int error_code, i, print_cnt=0;
+	uint32_t job_id = 0;
+	uint16_t step_id = 0;
 	char *next_str;
+	job_step_info_response_msg_t *job_step_info_ptr;
+	job_step_info_t * job_step_ptr;
 
-printf ("only printing job info at present\n");
-
-	if (old_job_buffer_ptr) {
-		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
-					&job_buffer_ptr);
-		if (error_code == 0)
-			slurm_free_job_info_msg (old_job_buffer_ptr);
-		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
-			job_buffer_ptr = old_job_buffer_ptr;
-			error_code = 0;
-			if (quiet_flag == -1)
- 				printf ("slurm_free_job_info no change in data\n");
-		}
-	}
-	else
-		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
+	error_code = slurm_get_job_steps ( job_id, step_id, &job_step_info_ptr);
 	if (error_code) {
 		if (quiet_flag != 1)
-			slurm_perror ("slurm_load_jobs error");
+			slurm_perror ("slurm_get_job_steps error");
 		return;
 	}
-	else if (error_code == 0)
-		old_job_buffer_ptr = job_buffer_ptr;
 	
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
+		printf ("last_update_time=%ld,\n", (long) job_step_info_ptr->last_update);
 
 	if (job_step_id_str) {
 		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
@@ -525,22 +508,26 @@ printf ("only printing job info at present\n");
 			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
 	}
 
-	job_ptr = job_buffer_ptr->job_array ;
-	for (i = 0; i < job_buffer_ptr->record_count; i++) {
-		if (job_step_id_str && job_id != job_ptr[i].job_id) 
+	job_step_ptr = job_step_info_ptr->job_steps ;
+	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
+		if (job_step_id_str && job_id != job_step_ptr[i].job_id) 
+			continue;
+		if (job_step_id_str && step_id != job_step_ptr[i].step_id) 
 			continue;
 		print_cnt++;
-		slurm_print_job_info (stdout, & job_ptr[i] ) ;
+		slurm_print_job_step_info (stdout, & job_step_ptr[i] ) ;
 		if (job_step_id_str)
 			break;
 	}
 
 	if ((print_cnt == 0) && (quiet_flag != 1)) {
-		if (job_buffer_ptr->record_count)
+		if (job_step_info_ptr->job_step_count)
 			printf ("Job step %u.%u not found\n", job_id, step_id);
 		else
 			printf ("No job steps in the system\n");
 	}
+
+	slurm_free_job_step_info_response_msg (job_step_info_ptr);
 }
 
 
