@@ -166,7 +166,9 @@ typedef enum {
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
 } slurm_msg_type_t ;
 
-/*core api configuration struct */
+/******************************************************************************
+ * core api configuration struct 
+ ******************************************************************************/
 typedef struct slurm_protocol_config 
 {
 	slurm_addr primary_controller;
@@ -190,22 +192,6 @@ typedef struct slurm_io_stream_header
 	uint16_t type ;
 } slurm_io_stream_header_t ;
 
-typedef struct revoke_credential_msg
-{
-	uint32_t job_id ;
-	char signature[SLURM_SSL_SIGNATURE_LENGTH] ;
-} revoke_credential_msg_t ;
-
-/* Job credential */
-typedef struct slurm_job_credential
-{
-	uint32_t job_id;
-	uid_t user_id;
-	char* node_list;
-	time_t experation_time;	
-	char signature[SLURM_SSL_SIGNATURE_LENGTH]; /* What are we going to do here? */
-} slurm_job_credential_t;
-
 typedef struct slurm_msg
 {
 	slurm_msg_type_t msg_type ;
@@ -215,40 +201,30 @@ typedef struct slurm_msg
 	uint32_t data_size ;
 } slurm_msg_t ;
 
-/* really short messages */
-typedef struct last_update_msg {
-	uint32_t last_update;
-} last_update_msg_t ;
 
-typedef struct return_code_msg {
-	int32_t return_code;
-} return_code_msg_t ;
-
-typedef struct job_id_msg {
-	uint32_t job_id;
-} job_id_msg_t ;
-
-typedef struct job_step_id_msg {
-	uint32_t job_id;
-	uint32_t job_step_id ;
-} job_step_id_msg_t ;
-
-typedef struct slurm_update_node_msg
+/*****************************************************************************
+ * Slurm Protocol Data Structures
+ *****************************************************************************/
+typedef struct 
 {
-	char * node_names ;
-	uint16_t node_state ;
-}	update_node_msg_t ;
+	uint32_t job_id;
+	uid_t user_id;
+	char* node_list;
+	time_t experation_time;	
+	char signature[SLURM_SSL_SIGNATURE_LENGTH]; /* What are we going to do here? */
+} slurm_job_credential_t;
 
-typedef struct slurm_node_registration_status_msg
+typedef struct 
 {
-	uint32_t timestamp ;
-	char* node_name;
-	uint32_t cpus;
-	uint32_t real_memory_size ;
- 	uint32_t temporary_disk_space ;
-} slurm_node_registration_status_msg_t ;
+	uint32_t job_id;	/* job ID */
+	uint16_t step_id;   /* step ID */
+	uint32_t user_id;	/* user the job runs as */
+	time_t start_time;  /* step start time */
+	char *partition;	/* name of assigned partition */
+	char *nodes;        /* comma delimited list of nodes allocated to job_step */
+} job_step_info_t;
 
-typedef struct job_step_create_request_msg 
+typedef struct job_step_specs
 {
 	uint32_t job_id;
 	uint32_t user_id;
@@ -256,78 +232,10 @@ typedef struct job_step_create_request_msg
 	uint32_t cpu_count;
 	uint16_t relative;
 	char* node_list;
-} job_step_create_request_msg_t; 
+} job_step_specs_t;
 
-typedef struct job_step_create_request_msg job_step_specs_t;
-
-typedef struct job_step_create_response_msg 
-{
-	uint32_t job_step_id;
-	char* node_list;
-	slurm_job_credential_t* credentials;
-#ifdef HAVE_LIBELAN3
-    qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
-#endif
-	
-} job_step_create_response_msg_t; 
-
-typedef struct launch_tasks_request_msg
-{
-	uint32_t job_id ;
-	uint32_t job_step_id ;
-	uint32_t uid ;
-	slurm_job_credential_t* credential;
-	uint32_t tasks_to_launch ;
-	uint16_t envc ;
-	char ** env ;
-	char * cwd ;
-	uint16_t argc;
-	char ** argv;
-	slurm_addr response_addr ;
-	slurm_addr streams;
-	uint32_t * global_task_ids;
-} launch_tasks_request_msg_t ;
-
-typedef struct launch_tasks_response_msg
-{
-	uint32_t return_code;
-	char * node_name ;
-} launch_tasks_response_msg_t ;
-
-typedef struct reattach_tasks_streams_msg
-{
-	uint32_t job_id ;
-	uint32_t job_step_id ;
-	uint32_t uid ;
-	slurm_job_credential_t* credential;
-	uint32_t tasks_to_reattach ;
-	slurm_addr streams;
-	uint32_t * global_task_ids;
-} reattach_tasks_streams_msg_t ;
-
-typedef struct kill_tasks_msg
-{
-	uint32_t job_id ;
-	uint32_t job_step_id ;
-	uint32_t signal ;
-} kill_tasks_msg_t ;
-
-
-typedef struct resource_allocation_response_msg
-{
-	uint32_t job_id;
-	char* node_list;
-	int16_t num_cpu_groups;
-	int32_t* cpus_per_node;
-	int32_t* cpu_count_reps;
-} resource_allocation_response_msg_t ;
-
-typedef struct submit_response_msg
-{
-	uint32_t job_id;
-} submit_response_msg_t ;
-
-typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and update requests */
+typedef struct job_descriptor
+{   /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
 				 * default=0 */
 	char **environment;      /* environment variables to set for job, 
@@ -362,33 +270,9 @@ typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and upda
 	uint32_t user_id;       /* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
 	char *work_dir;         /* fully qualified pathname of working directory */
-} job_desc_msg_t ;
+} job_descriptor_t ;
 
-struct slurm_ctl_conf {
-	uint32_t last_update;   /* last update time of the build parameters*/
-	char *backup_controller;/* name of slurmctld secondary server */
-	char *control_machine;	/* name of slurmctld primary server */
-	char *epilog;		/* pathname of job epilog */
-	uint32_t first_job_id;	/* first slurm generated job_id to assign */
-	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
-				 * (only check configuration file, faster) */
-	uint16_t hash_base;	/* base used for hashing node table */
-	uint16_t heartbeat_interval; /* interval between node heartbeats, seconds */
-	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
-	char *prioritize;	/* pathname of program to set initial job priority */
-	char *prolog;		/* pathname of job prolog */
-	uint32_t slurmctld_port;/* default communications port to slurmctld */
-	uint16_t slurmctld_timeout;	/* how long backup waits for primarly slurmctld */
-	uint32_t slurmd_port;	/* default communications port to slurmd */
-	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before setting down */
-	char *slurm_conf;	/* pathname of slurm config file */
-	char *state_save_location;	/* pathname of state save directory */
-	char *tmp_fs;		/* pathname of temporary file system */
-} ;
-typedef struct slurm_ctl_conf slurm_ctl_conf_t ;
-typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t ;
-
-struct job_table {
+typedef struct job_table {
 	uint32_t job_id;	/* job ID */
 	char *name;		/* name of the job */
 	uint32_t user_id;	/* user the job runs as */
@@ -412,11 +296,20 @@ struct job_table {
 	int *req_node_inx;	/* list index pairs into node_table for *req_nodes:
 				   start_range_1, end_range_1, start_range_2, .., -1  */
 	char *features;		/* comma separated list of required features */
-};
-typedef struct job_table job_table_t ;
-typedef struct job_table job_table_msg_t ;
+} job_table_t ; 
 
-struct part_table {
+typedef struct node_table {
+	char *name;		/* node name */
+	uint16_t node_state;	/* see node_state_string below for translation */
+	uint32_t cpus;		/* configured count of cpus running on the node */
+	uint32_t real_memory;	/* configured megabytes of real memory on the node */
+	uint32_t tmp_disk;	/* configured megabytes of total disk in TMP_FS */
+	uint32_t weight;	/* arbitrary priority of node for scheduling work on */
+	char *features;		/* arbitrary list of features associated with a node */
+	char *partition;	/* name of partition node configured to */
+} node_table_t ;
+
+typedef struct part_table {
         char *name;             /* name of the partition */
         uint32_t max_time;      /* minutes or INFINITE */
         uint32_t max_nodes;     /* per job or INFINITE */
@@ -430,12 +323,75 @@ struct part_table {
         int *node_inx;          /* list index pairs into node_table:
                                    start_range_1, end_range_1, start_range_2, .., -1  */
         char *allow_groups;     /* comma delimited list of groups, null indicates all */
-} ;
+} part_table_t;
 typedef struct part_table partition_desc_t ;
-typedef struct part_table partition_desc_msg_t ;
 typedef struct part_table partition_table_t ;
-typedef struct part_table partition_table_msg_t ;
-typedef struct part_table update_part_msg_t ;
+
+/*****************************************************************************
+ * Slurm API Protocol Data Structures
+ *****************************************************************************/
+
+struct slurm_ctl_conf {
+	uint32_t last_update;   /* last update time of the build parameters*/
+	char *backup_controller;/* name of slurmctld secondary server */
+	char *control_machine;	/* name of slurmctld primary server */
+	char *epilog;		/* pathname of job epilog */
+	uint32_t first_job_id;	/* first slurm generated job_id to assign */
+	uint16_t fast_schedule;	/* 1 to *not* check configurations by node 
+				 * (only check configuration file, faster) */
+	uint16_t hash_base;	/* base used for hashing node table */
+	uint16_t heartbeat_interval; /* interval between node heartbeats, seconds */
+	uint16_t kill_wait;	/* seconds from SIGXCPU to SIGKILL on job termination */
+	char *prioritize;	/* pathname of program to set initial job priority */
+	char *prolog;		/* pathname of job prolog */
+	uint32_t slurmctld_port;/* default communications port to slurmctld */
+	uint16_t slurmctld_timeout;	/* how long backup waits for primarly slurmctld */
+	uint32_t slurmd_port;	/* default communications port to slurmd */
+	uint16_t slurmd_timeout;/* how long slurmctld waits for slurmd before setting down */
+	char *slurm_conf;	/* pathname of slurm config file */
+	char *state_save_location;	/* pathname of state save directory */
+	char *tmp_fs;		/* pathname of temporary file system */
+} ;
+
+typedef struct slurm_ctl_conf slurm_ctl_conf_t ;
+
+/****************************************************************************
+ * Slurm Protocol Message Types
+ ****************************************************************************/
+typedef struct job_descriptor job_desc_msg_t ;
+
+typedef struct job_id_msg 
+{
+	uint32_t job_id;
+} job_id_msg_t ;
+
+typedef struct job_step_id_msg 
+{
+	uint32_t job_id;
+	uint32_t job_step_id ;
+} job_step_id_msg_t ;
+
+typedef struct job_step_create_response_msg 
+{
+	uint32_t job_step_id;
+	char* node_list;
+	slurm_job_credential_t* credentials;
+#ifdef HAVE_LIBELAN3
+    qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
+#endif
+	
+} job_step_create_response_msg_t; 
+
+typedef struct job_step_specs job_step_create_request_msg_t;
+
+typedef struct job_step_info_response_msg 
+{
+	uint32_t last_update;
+	uint32_t job_step_count;
+	job_step_info_t * job_steps;
+} job_step_info_response_msg_t ; 
+
+typedef struct job_table job_table_msg_t ;
 
 typedef struct job_info_msg {
 	uint32_t last_update;
@@ -443,31 +399,116 @@ typedef struct job_info_msg {
 	job_table_t * job_array;
 } job_info_msg_t ;
 
-typedef struct partition_info_msg {
+
+typedef struct kill_tasks_msg
+{
+	uint32_t job_id ;
+	uint32_t job_step_id ;
+	uint32_t signal ;
+} kill_tasks_msg_t ;
+
+typedef struct last_update_msg {
 	uint32_t last_update;
-	uint32_t record_count;
-	partition_table_t * partition_array;
-} partition_info_msg_t ;
+} last_update_msg_t ;
 
-struct node_table {
-	char *name;		/* node name */
-	uint16_t node_state;	/* see node_state_string below for translation */
-	uint32_t cpus;		/* configured count of cpus running on the node */
-	uint32_t real_memory;	/* configured megabytes of real memory on the node */
-	uint32_t tmp_disk;	/* configured megabytes of total disk in TMP_FS */
-	uint32_t weight;	/* arbitrary priority of node for scheduling work on */
-	char *features;		/* arbitrary list of features associated with a node */
-	char *partition;	/* name of partition node configured to */
-};
+typedef struct launch_tasks_request_msg
+{
+	uint32_t job_id ;
+	uint32_t job_step_id ;
+	uint32_t uid ;
+	slurm_job_credential_t* credential;
+	uint32_t tasks_to_launch ;
+	uint16_t envc ;
+	char ** env ;
+	char * cwd ;
+	uint16_t argc;
+	char ** argv;
+	slurm_addr response_addr ;
+	slurm_addr streams;
+	uint32_t * global_task_ids;
+} launch_tasks_request_msg_t ;
 
-typedef struct node_table node_table_t ;
-typedef struct node_table node_table_msg_t ;
+typedef struct launch_tasks_response_msg
+{
+	uint32_t return_code;
+	char * node_name ;
+} launch_tasks_response_msg_t ;
 
 typedef struct node_info_msg {
 	uint32_t last_update;
 	uint32_t record_count;
 	node_table_t * node_array;
 } node_info_msg_t ;
+
+typedef struct node_table node_table_msg_t ;
+
+typedef struct partition_info_msg {
+	uint32_t last_update;
+	uint32_t record_count;
+	partition_table_t * partition_array;
+} partition_info_msg_t ;
+
+
+typedef struct part_table partition_desc_msg_t ;
+typedef struct part_table partition_table_msg_t ;
+typedef struct part_table update_part_msg_t ;
+
+typedef struct return_code_msg {
+	int32_t return_code;
+} return_code_msg_t ;
+
+typedef struct revoke_credential_msg
+{
+	uint32_t job_id ;
+	char signature[SLURM_SSL_SIGNATURE_LENGTH] ;
+} revoke_credential_msg_t ;
+
+typedef struct reattach_tasks_streams_msg
+{
+	uint32_t job_id ;
+	uint32_t job_step_id ;
+	uint32_t uid ;
+	slurm_job_credential_t* credential;
+	uint32_t tasks_to_reattach ;
+	slurm_addr streams;
+	uint32_t * global_task_ids;
+} reattach_tasks_streams_msg_t ;
+
+
+typedef struct resource_allocation_response_msg
+{
+	uint32_t job_id;
+	char* node_list;
+	int16_t num_cpu_groups;
+	int32_t* cpus_per_node;
+	int32_t* cpu_count_reps;
+} resource_allocation_response_msg_t ;
+
+typedef struct submit_response_msg
+{
+	uint32_t job_id;
+} submit_response_msg_t ;
+
+/****************************************************************************
+ * Slurm API Message Types
+ ****************************************************************************/
+typedef struct slurm_update_node_msg
+{
+	char * node_names ;
+	uint16_t node_state ;
+}	update_node_msg_t ;
+
+typedef struct slurm_node_registration_status_msg
+{
+	uint32_t timestamp ;
+	char* node_name;
+	uint32_t cpus;
+	uint32_t real_memory_size ;
+ 	uint32_t temporary_disk_space ;
+} slurm_node_registration_status_msg_t ;
+
+typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t ;
+
 
 /* the following typedefs follow kevin's communication message naming comvention */
 
@@ -487,6 +528,10 @@ void inline slurm_free_node_registration_status_msg ( slurm_node_registration_st
 void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
 void inline slurm_free_job_table ( job_table_t * job ) ;
 void inline slurm_free_job_table_msg ( job_table_t * job ) ;
+
+void inline slurm_free_job_step_info ( job_step_info_t * msg ) ;
+void inline slurm_free_job_step_info_memebers ( job_step_info_t * msg );
+void inline slurm_free_job_step_info_response_msg ( job_step_info_response_msg_t * msg ) ;
 
 void inline slurm_free_partition_info ( partition_info_msg_t * msg ) ;
 void inline slurm_free_partition_table ( partition_table_t * part ) ;
