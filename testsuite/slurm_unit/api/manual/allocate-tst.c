@@ -86,9 +86,10 @@ main (int argc, char *argv[])
 		job_mesg. time_limit = 200;
 		job_mesg. num_procs = 4000;
 		job_mesg. user_id = 1500;
+		job_mesg. immediate = 1;
 
 		/* the string also had Immediate */
-		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 		if (error_code) {
 			printf ("allocate error %d\n", errno);
 			break;
@@ -104,8 +105,9 @@ main (int argc, char *argv[])
 		job_mesg. name = ("more.tiny\0");
 		job_mesg. num_procs = 32;
  	        job_mesg. user_id = 1500;
+ 	        job_mesg. immediate = 1;
 
-		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , true ); 
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 		if (error_code) {
 			printf ("allocate error %d\n", errno);
 			break;
@@ -121,8 +123,9 @@ main (int argc, char *argv[])
 		job_mesg. name = ("more.queue\0");
 		job_mesg. num_procs = 32;
  	        job_mesg. user_id = 1500;
+ 	        job_mesg. immediate = 0;
 
-		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
+		error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 		if (error_code) {
 			printf ("allocate error %d\n", errno);
 			break;

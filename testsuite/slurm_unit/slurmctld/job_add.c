@@ -44,9 +44,10 @@ main( int argc, char* argv[])
 	job_mesg. num_procs = get_int_resp( "num_procs", 1000) ;
 	job_mesg. num_nodes = get_int_resp( "num_nodes", 400);
 	job_mesg. user_id = get_int_resp( "user_id", 1500 );
+	job_mesg. immediate = 0;
 
 
-	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
+	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg ); 
 	if (error_code)
 		printf ("allocate error %s\n", slurm_strerror( error_code ));
 	else
