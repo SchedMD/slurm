@@ -213,7 +213,7 @@ _intr_handler(int signo)
 
 
 /*
- * Create job description struction based off srun options
+ * Create job description structure based off srun options
  * (see opt.h)
  */
 job_desc_msg_t *
@@ -318,7 +318,11 @@ create_job_step(job_t *job)
 #ifdef HAVE_LIBELAN3
 	job->qsw_job = resp->qsw_job;
 #endif
-	_step_req_destroy(req);
+	/* 
+	 * Recreate filenames which may depend upon step id
+	 */
+	job_update_io_fnames(job);
 
+	_step_req_destroy(req);
 }
 

@@ -148,6 +148,11 @@ void    job_force_termination(job_t *job);
 job_t * job_create_noalloc(void);
 job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
 
+/*
+ *  Update job filenames and modes for stderr, stdout, and stdin.
+ */
+void    job_update_io_fnames(job_t *j);
+
 /* 
  * Issue a fatal error message and terminate running job
  */
