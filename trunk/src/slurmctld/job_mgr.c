@@ -488,7 +488,7 @@ static int _load_job_state(Buf buffer)
 		_add_job_hash(job_ptr);
 	}
 
-	if ((default_prio >= priority) && (priority != 0))
+	if ((default_prio >= priority) && (priority > 1))
 		default_prio = priority - 1;
 	if (job_id_sequence <= job_id)
 		job_id_sequence = job_id + 1;
