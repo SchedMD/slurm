@@ -1,0 +1,9 @@
+Name=Job1	Node_List=lx[0021-0030]
+Name=Job2	Node_List=lx[0401-0404],lx[0409-0416] PartitionName=batch Key=1234
+Name=Job3	Node_List=lx0031 PartitionName=class Groups=employee,students,teacher
+Name=FAIL_Part	Node_List=lx[0021-0030] PartitionName=NOPART
+Name=FAIL_Key	PartitionName=batch
+Name=FAIL_Group	PartitionName=class Groups=employee,teacher
+Name=FAIL_NodeL	PartitionName=batch Node_List=lx[0021-0030] Key=1234
+Name=FAIL_CPUs	Node_List=lx[0021-0030] Req_CPUs=600
+Name=FAIL_Nodes	Node_List=lx[0021-0030] Req_Nodes=30
