@@ -178,7 +178,9 @@ it is diffuclt to get TotalView to use <b>srun</b> for a bulk launch, since
 </p>
 <p>Another solution would be to run TotalView within an existing <b>srun</b>
 <i>--allocate</i> session. Then the Totalview bulk launch command to <b>srun</b>
-could be set to ensure only a single task per node.
+could be set to ensure only a single task per node. This functions properly 
+because the SLRUM_JOBID environment variable is set in the allocation shell 
+environment.
 </p>
 <p class="footer"><a href="#top">top</a></p>
 
