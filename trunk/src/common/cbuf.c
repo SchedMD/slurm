@@ -1275,7 +1275,7 @@ cbuf_get_fd (void *dstbuf, int *psrcfd, int len)
 
     do {
         n = read(*psrcfd, dstbuf, len);
-    } while ((n < 0) && (errno == EINTR));
+    } while ((n < 0) && ((errno == EINTR) || (errno == EAGAIN)));
     return(n);
 }
 

@@ -31,7 +31,7 @@ slurmd_SOURCES = 	        	\
 	ulimits.c ulimits.h     	\
 	setproctitle.c setproctitle.h
 
-slurmd_LDFLAGS = -export-dynamic
+slurmd_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
 force:
 $(slurmd_LDADD) : force

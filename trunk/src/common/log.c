@@ -414,6 +414,28 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				} else
 					xstrcat(buf, "%d");
 				break;
+			case 'u':
+				if (unprocessed == 0) {
+					snprintf(tmp, sizeof(tmp), "%u",
+						 va_arg(ap, int));
+					xstrcat(buf, tmp);
+				} else
+					xstrcat(buf, "%u");
+				break;
+			case 'l':
+				if ((unprocessed == 0) && (*(p+1) == 'u')) {
+					snprintf(tmp, sizeof(tmp), "%lu",
+						va_arg(ap, long unsigned));
+					xstrcat(buf, tmp);
+					p++;
+				} else if ((unprocessed==0) && (*(p+1)=='d')) {
+					snprintf(tmp, sizeof(tmp), "%ld",
+						va_arg(ap, long int));
+					xstrcat(buf, tmp);
+					p++;
+				} else
+					xstrcat(buf, "%l");
+				break; 
 			default:	/* try to handle the rest  */
 				xstrcatchar(buf, '%');
 				xstrcatchar(buf, *p);

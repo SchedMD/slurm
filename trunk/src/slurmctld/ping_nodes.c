@@ -230,16 +230,10 @@ void ping_nodes (void)
 			sizeof(host_str), host_str);
 		debug2 ("Spawning ping agent for %s", host_str);
 		ping_begin();
-		if (pthread_attr_init (&ping_attr_agent))
-			fatal ("pthread_attr_init error %m");
+		slurm_attr_init (&ping_attr_agent);
 		if (pthread_attr_setdetachstate (&ping_attr_agent, 
 						PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&ping_attr_agent, 
-						PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
-#endif
 		while (pthread_create (&ping_thread_agent, &ping_attr_agent, 
 					agent, (void *)ping_agent_args)) {
 			error ("pthread_create error %m");
@@ -257,16 +251,10 @@ void ping_nodes (void)
 			sizeof(host_str), host_str);
 		debug2 ("Spawning registration agent for %s", host_str);
 		ping_begin();
-		if (pthread_attr_init (&reg_attr_agent))
-			fatal ("pthread_attr_init error %m");
+		slurm_attr_init (&reg_attr_agent);
 		if (pthread_attr_setdetachstate (&reg_attr_agent, 
 						 PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope (&reg_attr_agent, 
-					   PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope error %m");
-#endif
 		while (pthread_create (&reg_thread_agent, &reg_attr_agent, 
 					agent, (void *)reg_agent_args)) {
 			error ("pthread_create error %m");

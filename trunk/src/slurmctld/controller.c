@@ -253,14 +253,7 @@ int main(int argc, char *argv[])
 		slurm_mutex_lock(&slurmctld_config.thread_count_lock);
 		slurmctld_config.server_thread_count++;
 		slurm_mutex_unlock(&slurmctld_config.thread_count_lock);
-		if (pthread_attr_init(&thread_attr_rpc))
-			fatal("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		/* we want 1:1 threads if there is a choice */
-		if (pthread_attr_setscope
-		    (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM))
-			error("pthread_attr_setscope error %m");
-#endif
+		slurm_attr_init(&thread_attr_rpc);
 		if (pthread_create(&slurmctld_config.thread_id_rpc, 
 				&thread_attr_rpc,_slurmctld_rpc_mgr, NULL))
 			fatal("pthread_create error %m");
@@ -268,14 +261,7 @@ int main(int argc, char *argv[])
 		/*
 		 * create attached thread for signal handling
 		 */
-		if (pthread_attr_init(&thread_attr_sig))
-			fatal("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		/* we want 1:1 threads if there is a choice */
-		if (pthread_attr_setscope(&thread_attr_sig, 
-					PTHREAD_SCOPE_SYSTEM))
-			error("pthread_attr_setscope error %m");
-#endif
+		slurm_attr_init(&thread_attr_sig);
 		if (pthread_create(&slurmctld_config.thread_id_sig,
 				 &thread_attr_sig, _slurmctld_signal_hand,
 				 NULL))
@@ -284,14 +270,7 @@ int main(int argc, char *argv[])
 		/*
 		 * create attached thread for state save
 		 */
-		if (pthread_attr_init(&thread_attr_save))
-			fatal("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		/* we want 1:1 threads if there is a choice */
-		if (pthread_attr_setscope(&thread_attr_save,
-					PTHREAD_SCOPE_SYSTEM))
-			error("pthread_attr_setscope error %m");
-#endif
+		slurm_attr_init(&thread_attr_save);
 		if (pthread_create(&slurmctld_config.thread_id_save,
 				&thread_attr_save, slurmctld_state_save,
 				NULL))
@@ -492,17 +471,10 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	debug3("_slurmctld_rpc_mgr pid = %u", getpid());
 
 	/* threads to process individual RPC's are detached */
-	if (pthread_attr_init(&thread_attr_rpc_req))
-		fatal("pthread_attr_init %m");
+	slurm_attr_init(&thread_attr_rpc_req);
 	if (pthread_attr_setdetachstate
 	    (&thread_attr_rpc_req, PTHREAD_CREATE_DETACHED))
 		fatal("pthread_attr_setdetachstate %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	if (pthread_attr_setscope
-	    (&thread_attr_rpc_req, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
 
 	/* initialize port for RPCs */
 	lock_slurmctld(config_read_lock);

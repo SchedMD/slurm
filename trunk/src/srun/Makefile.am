@@ -44,6 +44,8 @@ srun_LDADD = \
 	$(SRUN_WRAPPER_OBJ) \
 	$(convenience_libs)
 
+srun_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
 EXTRA_srun_SOURCES = srun.wrapper.c
 srun_DEPENDENCIES = $(SRUN_WRAPPER_OBJ)
 

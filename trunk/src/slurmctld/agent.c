@@ -188,15 +188,10 @@ void *agent(void *args)
 	thread_ptr = agent_info_ptr->thread_struct;
 
 	/* start the watchdog thread */
-	if (pthread_attr_init(&attr_wdog))
-		fatal("pthread_attr_init error %m");
+	slurm_attr_init(&attr_wdog);
 	if (pthread_attr_setdetachstate
 	    (&attr_wdog, PTHREAD_CREATE_JOINABLE))
 		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_wdog, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
 	while (pthread_create(&thread_wdog, &attr_wdog, _wdog,
 				(void *) agent_info_ptr)) {
 		error("pthread_create error %m");
@@ -222,16 +217,10 @@ void *agent(void *args)
 		 *      _thread_per_node_rpc() */
 		task_specific_ptr = _make_task_data(agent_info_ptr, i);
 
-		if (pthread_attr_init(&thread_ptr[i].attr))
-			fatal("pthread_attr_init error %m");
+		slurm_attr_init(&thread_ptr[i].attr);
 		if (pthread_attr_setdetachstate(&thread_ptr[i].attr,
 						PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope(&thread_ptr[i].attr,
-					  PTHREAD_SCOPE_SYSTEM))
-			error("pthread_attr_setscope error %m");
-#endif
 		while ((rc = pthread_create(&thread_ptr[i].thread,
 					    &thread_ptr[i].attr,
 					    _thread_per_node_rpc,
@@ -856,15 +845,10 @@ void agent_queue_request(agent_arg_t *agent_arg_ptr)
 	if (agent_cnt < MAX_AGENT_CNT) {	/* execute now */
 		pthread_attr_t attr_agent;
 		pthread_t thread_agent;
-		if (pthread_attr_init(&attr_agent))
-			fatal("pthread_attr_init error %m");
+		slurm_attr_init(&attr_agent);
 		if (pthread_attr_setdetachstate
 				(&attr_agent, PTHREAD_CREATE_DETACHED))
 			error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-			error("pthread_attr_setscope error %m");
-#endif
 		if (pthread_create(&thread_agent, &attr_agent,
 					agent, (void *) agent_arg_ptr) == 0)
 			return;
@@ -896,15 +880,10 @@ static void _spawn_retry_agent(agent_arg_t * agent_arg_ptr)
 
 	debug2("Spawning RPC agent for msg_type %u", 
 	       agent_arg_ptr->msg_type);
-	if (pthread_attr_init(&attr_agent))
-		fatal("pthread_attr_init error %m");
+	slurm_attr_init(&attr_agent);
 	if (pthread_attr_setdetachstate(&attr_agent,
 					PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
 	while (pthread_create(&thread_agent, &attr_agent,
 			agent, (void *) agent_arg_ptr)) {
 		error("pthread_create error %m");

@@ -90,13 +90,7 @@ void run_backup(void)
 	/*
 	 * create attached thread to process RPCs
 	 */
-	if (pthread_attr_init(&thread_attr_rpc))
-		fatal("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	if (pthread_attr_setscope(&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
+	slurm_attr_init(&thread_attr_rpc);
 	if (pthread_create(&slurmctld_config.thread_id_rpc, 
 			&thread_attr_rpc, _background_rpc_mgr, NULL))
 		fatal("pthread_create error %m");
@@ -104,13 +98,7 @@ void run_backup(void)
 	/*
 	 * create attached thread for signal handling
 	 */
-	if (pthread_attr_init(&thread_attr_sig))
-		fatal("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	if (pthread_attr_setscope(&thread_attr_sig, PTHREAD_SCOPE_SYSTEM))
-		error("pthread_attr_setscope error %m");
-#endif
+	slurm_attr_init(&thread_attr_sig);
 	if (pthread_create(&slurmctld_config.thread_id_sig,
 			&thread_attr_sig, _background_signal_hand, NULL))
 		fatal("pthread_create %m");

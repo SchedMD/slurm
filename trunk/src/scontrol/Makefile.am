@@ -12,5 +12,7 @@ LDADD = 					  \
 	$(top_builddir)/src/api/libslurm.la       \
 	$(READLINE_LIBS)
 
-
 scontrol_SOURCES = scontrol.c
+
+scontrol_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+

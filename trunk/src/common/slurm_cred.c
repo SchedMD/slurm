@@ -31,8 +31,10 @@
 
 #include <slurm/slurm_errno.h>
 
-#include <stdarg.h>
 #include <fcntl.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <sys/time.h>
 
 /*
  * OpenSSL includes
@@ -395,14 +397,21 @@ slurm_cred_faker(slurm_cred_arg_t *arg)
 	cred->ctime  = time(NULL);
 	cred->siglen = SLURM_IO_KEY_SIZE;
 
-	if ((fd = open("/dev/urandom", O_RDONLY)) < 0)
-		error ("unable to open /dev/random: %m");
-
 	cred->signature = xmalloc(cred->siglen * sizeof(char));
-	read(fd, cred->signature, cred->siglen);
 
-	if (close(fd) < 0)
-		error ("close(/dev/random): %m");
+	if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
+		read(fd, cred->signature, cred->siglen);
+		if (close(fd) < 0)
+		error ("close(/dev/urandom): %m");
+	} else {	/* Note: some systems lack this file */
+		unsigned int i;
+		struct timeval tv;
+		gettimeofday(&tv, NULL);
+		i = (unsigned int) (tv.tv_sec + tv.tv_usec);
+		srand((unsigned int) i);
+		for (i=0; i<cred->siglen; i++)
+			cred->signature[i] = (rand() & 0xff);
+	}
 
 	slurm_mutex_unlock(&cred->mutex);
 	return cred;
@@ -966,6 +975,7 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 		rc = SLURM_ERROR;
 	}
 
+	EVP_MD_CTX_cleanup(&ectx);
 	free_buf(buffer);
 
 	return rc;

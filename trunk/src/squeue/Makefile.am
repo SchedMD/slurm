@@ -14,3 +14,5 @@ LDADD = $(top_builddir)/src/common/libcommon.la 	\
 noinst_HEADERS = squeue.h print.h
 squeue_SOURCES = squeue.c print.c opts.c sort.c
 
+squeue_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+
