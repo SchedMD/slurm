@@ -57,7 +57,7 @@ int main ( int argc , char * argv[] )
 	int16_t port = atoi( argv[1] ) ;
 		
 	/* init address sturctures */
-	slurm_set_addr_uint ( & worker_address , port , 0x7f000001 ) ;
+	slurm_set_addr_uint ( & worker_address , port , SLURM_INADDR_ANY) ;
 	/* connect socket */
 	worker_socket = slurm_open_stream ( & worker_address ) ;
 
