@@ -38,6 +38,10 @@
 #include "src/common/xstring.h"
 #include "src/squeue/squeue.h"
 
+/* getopt_long options, integers but not characters */
+#define OPT_LONG_HELP  0x100
+#define OPT_LONG_USAGE 0x101
+
 /* FUNCTIONS */
 static List  _build_job_list( char* str );
 static List  _build_part_list( char* str );
@@ -77,11 +81,11 @@ parse_command_line( int argc, char* argv[] )
 		{"user",       required_argument, 0, 'u'},
 		{"verbose",    no_argument,       0, 'v'},
 		{"version",    no_argument,       0, 'V'},
-		{"help",       no_argument,       0, '1'},
-		{"usage",      no_argument,       0, '2'}
+		{"help",       no_argument,       0, OPT_LONG_HELP},
+		{"usage",      no_argument,       0, OPT_LONG_USAGE}
 	};
 
-	while((opt_char = getopt_long(argc, argv, "hi:j::lo:p:s::S:t:u:vV12",
+	while((opt_char = getopt_long(argc, argv, "hi:j::lo:p:s::S:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
@@ -145,10 +149,10 @@ parse_command_line( int argc, char* argv[] )
 			case (int) 'V':
 				_print_version();
 				exit(0);
-			case (int) '1':
+			case OPT_LONG_HELP:
 				_help();
 				exit(0);
-			case (int) '2':
+			case OPT_LONG_USAGE:
 				_usage();
 				exit(0);
 		}
