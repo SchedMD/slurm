@@ -135,11 +135,11 @@ License\cite{GPL2002}.
 While initially written for Linux, other UNIX-like operating systems 
 should be easy porting targets.
 SLURM also supports a general purpose {\em plugin} mechanism, which 
-permits a variety of different infrastructures to be easily developed. 
+permits a variety of different infrastructures to be easily supported. 
 The SLURM configuration file specifies which set of plugin modules 
 should be used. 
 
-\item {\em Interconnect independence}: Currently, SLURM supports UDP/IP based
+\item {\em Interconnect independence}: Currently SLURM supports UDP/IP based
 communication and the Quadrics Elan3 interconnect.  Adding support for 
 other interconnects, including topography constraints, is straightforward 
 and will utilize the plugin mechanism described above\footnote{SLURM 
@@ -151,8 +151,7 @@ next version of SLURM.}.
 thousands of nodes. The SLURM controller for a cluster with 1000 nodes
 occupies on the order of 2 MB of memory and excellent performance has
 been demonstrated.  Jobs may specify their resource requirements in a
-variety of ways including requirements options and ranges, potentially
-permitting earlier job initiation than otherwise possible.
+variety of ways including requirements options and ranges.
 
 \item {\em Fault tolerance}: SLURM can handle a variety of failure
 modes without terminating workloads, including crashes of the node
@@ -222,7 +221,7 @@ also submit, signal, and terminate jobs as well as reorder the queue of
 pending jobs via the API.
 
 
-\subsection{Architecture}
+\section{Architecture}
 
 \begin{figure}[tb]
 \centerline{\epsfig{file=../figures/arch.eps,scale=0.35}}
@@ -274,11 +273,12 @@ Figure~\ref{archdetail} exposes the subsystems that are implemented
 within the \slurmd\ and \slurmctld\ daemons.  These subsystems are
 explained in more detail below.
 
-\subsubsection{Slurmd}
+\subsection{Slurmd}
 
 \slurmd\ is a multi-threaded daemon running on each compute node and
 can be compared to a remote shell daemon: it reads the common SLURM
-configuration file, notifies the controller that it is active, waits
+configuration file and saved state information, 
+notifies the controller that it is active, waits
 for work, executes the work, returns status,then waits for more work.
 Since it initiates jobs for other users, it must run as user {\em root}.
 It also asynchronously exchanges node and job status with {\tt slurmctld}.
@@ -290,7 +290,7 @@ currently executing jobs.  \slurmd\ has five major components:
 requests for machine and job state information, and send asynchronous
 reports of some state changes (e.g. \slurmd\ startup) to the controller.
 
-\item {\em Remote Execution}: Start, monitor, and clean up after a set
+\item {\em Remote Execution}: Start, manage, and clean up after a set
 of processes (typically belonging to a parallel job) as dictated by
 the \slurmctld\ daemon or an \srun\ or \scancel\ command. Starting a
 process may include executing a prolog program, setting process limits,
@@ -312,14 +312,13 @@ requests to any set of locally managed processes.
 
 \end{itemize}
 
-\subsubsection{Slurmctld}
+\subsection{Slurmctld}
 
 Most SLURM state information exists in {\tt slurmctld}, also known as
 the controller.  \slurmctld\ is multi-threaded with independent read
 and write locks for the various data structures to enhance scalability.
-When \slurmctld\ starts, it reads the SLURM configuration file.  It also
-can read additional state information from a checkpoint file generated
-by a previous execution of {\tt slurmctld}.  Full controller state
+When \slurmctld\ starts, it reads the SLURM configuration file and 
+any previously saved state information.  Full controller state
 information is written to disk periodically with incremental changes
 written to disk immediately for fault tolerance.  \slurmctld\ runs in
 either master or standby mode, depending on the state of its fail-over
@@ -361,10 +360,10 @@ scheduling cycle as described above.
 
 \end{itemize}
 
-\subsubsection{Command Line Utilities}
+\subsection{Command Line Utilities}
 
-The command line utilities are the user interface to SLURM functionality.
-They offer users access to remote execution and job control. They also
+The command line utilities offer users access to remote execution and job control. 
+They also
 permit administrators to dynamically change the system configuration.
 These commands all use SLURM APIs which are directly available for more
 sophisticated applications.
@@ -402,9 +401,9 @@ with access to those resources.
 
 \end{itemize}
 
-\subsubsection{Plugins}
+\subsection{Plugins}
 
-In order to make the use of different infrastructures possible,
+In order to simplify the use of different infrastructures,
 SLURM uses a general purpose plugin mechanism.  A SLURM plugin is a
 dynamically linked code object which is loaded explicitly at run time
 by the SLURM libraries.  A plugin provides a customized implemenation
@@ -418,21 +417,21 @@ to verify a credential to approve or deny authentication,
 credential, etc.  It also must define the data structure used, a plugin
 type, a plugin version number, etc.  When a slurm daemon is initiated, it
 reads the configuration file to determine which of the available plugins
-should be used.  For example {\tt AuthType=auth/authd} says to use the
-plugin for authd based authentication and {\tt PluginDir=/usr/local/lib}
+should be used.  For example {\em AuthType=auth/authd} says to use the
+plugin for authd based authentication and {\em PluginDir=/usr/local/lib}
 identifies the directory in which to find the plugin.
 
-\subsubsection{Communications Layer}
+\subsection{Communications Layer}
 
 SLURM presently uses Berkeley sockets for communications.  However,
-we anticipate using the plugin mechanism to easily permit use of
+we anticipate using the plugin mechanism to permit use of
 other communications layers.  At LLNL we are using an Ethernet
 for SLURM communications and the Quadrics Elan switch exclusively
 for user applications.  The SLURM configuration file permits the
 identification of each node's hostname as well as its name to be used
 for communications.  In the case of a control machine known as {\em mcri}
 to be communicated with using the name {\em emcri} (say to indicate an
-ethernet communications path), this is represented in the configuration
+Ethernet communications path), this is represented in the configuration
 file as {\em ControlMachine=mcri ControlAddr=emcri}.  The name used for
 communication is the same as the hostname unless otherwise specified.
 
@@ -451,25 +450,25 @@ felt this would adversely impact performance (albeit slightly).  If XML
 support is desired, it is straightforward to perform a translation and
 use the SLURM API's.
 
-\subsubsection{Security}
+\subsection{Security}
 
 SLURM has a simple security model: Any user of the cluster may submit
 parallel jobs to execute and cancel his own jobs.  Any user may view
 SLURM configuration and state information.  Only privileged users
 may modify the SLURM configuration, cancel any job, or perform other
 restricted activities.  Privileged users in SLURM include the users 
-{\em root} and {\tt SlurmUser} (as defined in the SLURM configuration file).
+{\em root} and {\em SlurmUser} (as defined in the SLURM configuration file).
 If permission to modify SLURM configuration is required by others, set-uid
 programs may be used to grant specific permissions to specific users.
 
-\paragraph{\em Communication authentication}
+\subsubsection{Communication authentication}
 
 Historically, inter-node authentication has been accomplished via the use
-of reserved ports and setuid binaries. In this scheme, daemons check the
+of reserved ports and set-uid programs. In this scheme, daemons check the
 source port of a request to ensure that it is less than a certain value,
 and thus only accessible by {\tt root}. The communications over that
 connection are then implicitly trusted.  Since reserved ports are a very
-limited resource and setuid binaries are a possible security concern,
+limited resource and setuid programs are a possible security concern,
 we have strived to employ a credential based authentication scheme which
 does not depend on reserved ports. In this design, a SLURM authentication
 credential is attached to every message and authoratatively verifies the
@@ -489,10 +488,10 @@ authd} assumes a secure network and Munge does not.  Other authentication
 implementations, such as a credential based on Kerberos, should be easy
 to develop using the ``auth'' plugin API.
 
-\paragraph{\em Job authentication}
+\subsubsection{Job authentication}
 
 When resources are allocated to a user by the controller, a {\em job step
-credential} is generated by combining the UID, job ID, step ID, the list
+credential} is generated by combining the uid, job id, step id, the list
 of resources allocated (nodes), and the credential lifetime and signing
 the result with the \slurmctld\ private key.  This credential grants the
 user access to allocated resources, and removes the burden from \slurmd\
@@ -502,7 +501,7 @@ key and runs the user's request if the credential is valid.  Part of the
 credential signature is also used to validate {\tt stdout}, {\tt stdin},
 and {\tt stderr} connections back from \slurmd\ to \srun .
 
-\paragraph{\em Authorization}
+\subsubsection{Authorization}
 
 Access to partitions may be restricted via a {\em RootOnly} flag.
 If this flag is set, job submit or allocation requests to this partition
@@ -580,7 +579,7 @@ the job script detects that it is running with allocated resources from
 the presence of a {\tt SLURM\_JOBID} environment variable. \srun\
 connects to \slurmctld\ to request a job step to run on all nodes of
 the current job. \slurmctld\ validates the request and replies with a
-job credential and switch resources. \srun\ then contacts \slurmd 's
+job step credential and switch resources. \srun\ then contacts \slurmd 's
 running on both {\em dev6} and {\em dev7}, passing the job credential,
 environment, current working directory, command path and arguments,
 and interconnect information. The {\tt slurmd}'s verify the valid job
