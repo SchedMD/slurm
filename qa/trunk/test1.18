@@ -66,9 +66,7 @@ expect {
 	}
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
-		kill_srun
 		set exit_code 1
-		exp_continue
 	}
 	eof {
 		wait
@@ -80,13 +78,14 @@ if {$job_id == 0} {
 }
 if {$matches == 0} {
 	send_user "\nFAILURE: job run time failure\n"
-	set exit_code   1
+	exit 1
 }
 
 #
 # Attach to initial program via srun
 #
 set matches     0
+set timeout     10
 spawn $srun --attach=$job_id --join
 set attach_id $spawn_id
 expect {
@@ -113,8 +112,9 @@ if {$matches == 0} {
 #
 # Make sure initial program terminates too
 #
+# Explicitly reset spawn_id for wait call
+set spawn_id $init_id
 expect {
-        -i $init_id
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		set exit_code   1
