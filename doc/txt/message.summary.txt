@@ -60,7 +60,7 @@ Output: 	job_id, return code, error code
 Notes:  	submit a batch job to the slurm queue
 
 
-Command(s):	Run Job Step	
+Command(s):	Register Job Step	
 Client:   	srun or slurm api call
 Server: 	slurmctld
 Input:  	job_id,username/uid
@@ -74,14 +74,14 @@ Notes:  	run a set of parallel tasks under an allocated job
 		resources are already available
 
 
-Command(s):	Job Step Resource Request
+Command(s):	Get Job Step Information
 Client:   	srun, scancel 
 Server: 	slurmctld
 Input:  	job_id, step_id, uid
 Output: 	return code, error code, node list, ncpus/node(?)
 Notes:  	Obtain the list of resources assigned to a currently executing 
                 job step. Needed by at least `srun --attach`, and scancel.
-		uid must match that of job_id
+		uid must match that of job_id or be root
 	
 	
 Command(s):	Run Job Step Request
@@ -93,24 +93,25 @@ Output: 	return code, error code
 Notes:  	request initiation of ntasks tasks on this node.
 
 
-Command(s):	Signal Job Step Request
-Client:   	srun or slurmctld (possibly scancel)
+Command(s):	Signal Job Step by Node Request
+Client:   	srun or slurmctld (or possibly scancel)
 Server: 	slurmd
 Input:  	uid, signal no., job_id
 		optional: step_id, task no.
 Output: 	return code
 Notes:  	Signal all steps and all tasks unless otherwise specified.
 		This could be used to support gang scheduling
+		Cancel all steps unless otherwise specified.
 
 
-Command(s):	Kill Job Step Request
-Client:   	srun or slurmctld or scancel
-Server: 	slurmd
-Input:  	uid, job_id 
-		optional: step_id
+Command(s):	Signal Job Step by Cluster Request
+Client:   	scancel user command, plus DPCS from API, any node in cluster
+Server: 	slurmctld
+Input:  	uid, signal no., job_id
+		optional: step_id, task no.
 Output: 	return code
-Notes:  	explicitly kill job as opposed to implicit job kill with a
-		signal job request. Kill all steps unless otherwise specified.
+Notes:  	Can only be run as user root or the user id for the job
+		Cancel all steps unless otherwise specified.
 
 
 Command(s):	Job Step Attach Request
@@ -122,16 +123,6 @@ Output: 	return code, error code,
 Notes:  	srun process ``attaches'' to a currently running job. This
 		request is used for srun recovery, or by a user who wants
 		to interactively reattach to a batch job.
-
-
-Command(s):	Cancel job step or entire job
-Client:   	scancel user command, plus DPCS from API, any node in cluster
-Server: 	slurmctld
-Input:  	user id, job_id
-		optional: step_id
-Output: 	error code
-Notes:  	Can only be run as user root or the user id for the job
-		Cancel all steps unless otherwise specified.
 
 
 Command(s):	Reconfigure (tell slurmctld to re-read configuration)
@@ -222,10 +213,9 @@ Notes:  	On termination of a job (not the job step), slurmctld tells
 Summary of interactions:
 dpcs->slurmd		Get job id from process id
 
-scancel->slurmctld	Cancel job step or entire job
+scancel->slurmctld	Signal Job Step by Cluster Request
 
-scancel->slurmd		Kill Job Step Request
-			Signal Job Step Request
+scancel->slurmd		Signal Job Step by Node Request
 
 scontrol->slurmctld	Reconfigure
 			Modify job information
@@ -235,26 +225,26 @@ scontrol->slurmctld	Reconfigure
 
 slurmctld->slurmctld	Report node status (backup to primary controller)
 		
-slurmctld->slurmd	Kill Job Step Request
+slurmctld->slurmd	Signal Job Step by Node Request
 			Report node status
 			Run epilog
 			Run Job Step Request
 			Upload accounting information
-			Signal Job Step Request
+			Signal Job Step by Node Request
 
 slurmd->slurmctld	Get job step infomration
 			Register node
 
 srun->slurmctld		Get job step infomration
 			Job Step Attach Request
-			Job Step Resource Request
-			Run Job Step
+			Get Job Step Informationt
+			Register Job Step
 			Submit job
 			Allocate job
 			Claim job allocation
 
 srun->slurmd		Kill Job Step Request
-			Signal Job Step Request
+			Signal Job Step by Node Request
 			Run Job Step Request
 
 ----TEMPLATE----
