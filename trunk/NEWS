@@ -12,6 +12,7 @@ documents those changes that are of interest to users and admins.
  -- If slurmd can't respond to ping (e.g. paging is keeping it from 
     responding in a timely fashion) then send a registration RPC
     to slurmctld.
+ -- Fix slurmd -M option to call mlockall() after daemonizing.
  -- Add "slurm_" prefix to slurm's hostlist_ function man pages.
  -- More AIX support added.
  -- Change get info calls from using show_all to more general show_flags
