@@ -368,7 +368,7 @@ static int _have_elan3 (void)
 #else
 	struct stat st;
 
-	if (stat ("/proc/qsnet/elan3", &st) < 0)
+	if (stat ("/proc/qsnet/elan3/device0", &st) < 0)
 		return (0);
 
 	return (1);
