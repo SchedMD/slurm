@@ -27,8 +27,10 @@
 #
 # Example:
 #
-# ControlMachine=dev0   ControlAddr=edev0 
-# BackupController=dev1 BackupAddr=edev1
+# ControlMachine=dev0
+# ControlAddr=edev0		# default: same as ControlMachine
+# BackupController=dev1		# default: no backup controller
+# BackupAddr=edev1		# default: same as BackupController
 
 #
 # o Define the SLURM controller "save state" directory
@@ -42,6 +44,20 @@
 # Example:
 # 
 # StateSaveLocation=/mnt/slurm	# default: "/tmp"
+
+
+#
+# o Define the slurmd "save state" directory
+#
+#   The SLURM daemon executing on each host, slurmd, will periodically 
+#   save state into this directory so that said state may be recovered
+#   after a fatal system error. This pathname is shared by all hosts, 
+#   but the file must be unique on each host so this must reference a 
+#   local file system.
+#
+# Example:
+# 
+# SlurmdSpoolDir=/tmp/slurmd	# default: "/tmp/slurmd"
 
 
 #
@@ -107,7 +123,7 @@
 # Example:
 #
 # SlurmctldPidFile=/var/slurm/slurmctld.pid  # default: "/var/run/slurmctld.pid"
-# SlurmdPidFile=/var/slurm/slurmctld.pid     * default: "/var/run/slurmd.pid"
+# SlurmdPidFile=/var/slurm/slurmctld.pid     # default: "/var/run/slurmd.pid"
 
 
 #
@@ -133,9 +149,9 @@
 #
 # Example:
 #
-# SlurmctldTimeout=60	# Defaults to 300s
-# SlurmdTimeout=60	# Defaults to 300s
-# HeartBeatInterval=20	# Defaults to 30s
+# SlurmctldTimeout=60	# Defaults to 300 seconds
+# SlurmdTimeout=60	# Defaults to 300 seconds
+# HeartBeatInterval=20	# Defaults to 30 seconds
 # InactiveLimit=600	# Defaults to 0 (unlimited)
 # KillWait=10		# Defaults to 30 seconds
 
@@ -166,7 +182,7 @@
 # FastSchedule=0	# default is `1'
 # FirstJobid=1000       # default is `1'
 # HashBase=16		# default is `10'
-# Prioritize=/etc/prio  # default is none or NULL
+# Prioritize=/etc/prio  # default is none
 # ReturnToService=1     # default is `0'
 
 
@@ -267,6 +283,7 @@
 #   parameters are recognized:
 #
 #    "PartitionName" : Name used to reference this partition
+#
 #    "Nodes"         : list of nodes that compose this partition
 #
 #    "AllowGroups"   : Comma separated list of group ids which are allowed
