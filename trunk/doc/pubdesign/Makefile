@@ -11,7 +11,7 @@
 REPORT = report
 JSSPP  = jsspp
 
-TEX = llnl.tex $(JSSPP).tex $(REPORT).tex
+TEX = llnlCoverPage.tex $(JSSPP).tex $(REPORT).tex 
 
 FIGDIR = figures
 FIGS = $(FIGDIR)/arch.eps \
@@ -42,6 +42,7 @@ BIB = project.bib
 all: $(JSSPP).ps $(REPORT).ps 
 
 $(JSSPP).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
+	rm -f *.log *.aux *.blg *.bbl
 	latex $(JSSPP)
 	bibtex $(JSSPP)
 	latex $(JSSPP)
@@ -49,11 +50,10 @@ $(JSSPP).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
-	latex llnl
-	bibtex llnl
-	latex llnl
-	latex llnl
-	mv llnl.dvi $(REPORT).dvi
+	latex report
+	bibtex report
+	latex report
+	latex report
 
 view: $(REPORT).ps
 	ghostview $(REPORT) &
