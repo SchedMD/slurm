@@ -288,7 +288,7 @@ slurm_auth_create( void *argv[] )
 		char *env = getenv( "SLURM_AUTHD_TTL" );
 		if ( env ) {
 			ttl = atoi( env );
-			if ( ttl <= 0 ) ttl = authd_ttl;
+			if ( ttl <= 0 ) ttl = AUTHD_TTL;
 		}
 	}
 #endif /*NDEBUG*/
