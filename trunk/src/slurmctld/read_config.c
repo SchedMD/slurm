@@ -171,7 +171,7 @@ static int _build_bitmaps(void)
 			continue;
 
 		if ((host_list = hostlist_create(part_ptr->nodes)) == NULL) {
-			error("hostlist_create error for %s, %m",
+			fatal("hostlist_create error for %s, %m",
 			      part_ptr->nodes);
 			continue;
 		}
@@ -179,7 +179,7 @@ static int _build_bitmaps(void)
 		while ((this_node_name = hostlist_shift(host_list))) {
 			node_ptr = find_node_record(this_node_name);
 			if (node_ptr == NULL) {
-				error("_build_bitmaps: invalid node name "
+				fatal("_build_bitmaps: invalid node name "
 					"specified %s", this_node_name);
 				free(this_node_name);
 				continue;
@@ -762,7 +762,6 @@ int read_slurm_conf(int recover)
 	} else if (recover == 1) {	/* Load job info only */
 		(void) load_all_node_state(true);
 		(void) load_all_job_state();
-		reset_job_bitmaps();
 	} else {	/* Load no info, preserve all state */
 		if (old_node_table_ptr) {
 			debug("restoring original state of nodes");
@@ -770,8 +769,8 @@ int read_slurm_conf(int recover)
 					    old_node_record_count);
 		}
 		reset_first_job_id();
-		reset_job_bitmaps();
 	}
+	reset_job_bitmaps();
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
 	_purge_old_node_state(old_node_table_ptr, old_node_record_count);

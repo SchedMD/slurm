@@ -1006,6 +1006,7 @@ sched_set_nodelist( const uint32_t job_id, char *nodes )
 
 		/* Remove any old node list. */
 		if ( det->req_nodes ) xfree( det->req_nodes );
+		if ( det->req_node_bitmap ) bit_free( det->req_node_bitmap );
 
 		/*
 		 * Don't know what to do about the exclusion
@@ -1015,7 +1016,7 @@ sched_set_nodelist( const uint32_t job_id, char *nodes )
 		det->req_nodes = _copy_nodelist_no_dup( nodes );
 
 		/* Now do a new bitmap. */
-		node_name2bitmap( det->req_nodes,
+		node_name2bitmap( det->req_nodes, true,
 				  &det->req_node_bitmap );
 
 		rc = SLURM_SUCCESS;

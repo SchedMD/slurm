@@ -798,13 +798,15 @@ extern void node_fini(void);
 /*
  * node_name2bitmap - given a node name regular expression, build a bitmap 
  *	representation
- * IN node_names - list of nodes
- * OUT bitmap - set to bitmap or NULL on error 
- * RET 0 if no error, otherwise EINVAL or enomem
+ * IN node_names  - list of nodes
+ * IN best_effort - if set don't return an error on invalid node name entries 
+ * OUT bitmap     - set to bitmap or NULL on error 
+ * RET 0 if no error, otherwise EINVAL
  * global: node_record_table_ptr - pointer to global node table
- * NOTE: the caller must xfree memory at bitmap when no longer required
+ * NOTE: the caller must bit_free() memory at bitmap when no longer required
  */
-extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
+extern int node_name2bitmap (char *node_names, bool best_effort, 
+		bitstr_t **bitmap);
 
 /* node_did_resp - record that the specified node is responding
  * IN name - name of the node */
