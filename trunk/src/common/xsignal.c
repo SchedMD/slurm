@@ -75,7 +75,7 @@ xsignal_unblock(int signo)
 static int
 _sigmask_block(sigset_t *set, sigset_t *oset)
 {
-	if (pthread_sigmask(SIG_BLOCK, &set, &oset) < 0) {
+	if (pthread_sigmask(SIG_BLOCK, set, oset) < 0) {
 		error("pthread_sigmask: %m");
 		return SLURM_ERROR;
 	}
