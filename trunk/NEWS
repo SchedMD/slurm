@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.3
+==========================
+ -- Fix bug in srun when using per-task files for stderr.
+ -- Better error reporting on failure to open per-task input/output files.
+ -- Update auth_munge plugin for munge 0.1.
+ -- Minor changes to squeue interface.
+ -- New srun option `--hold' to submit job in "held" state.
+
 * Changes in SLURM 0.2.2
 ==========================
  -- Fixes for reported problems:
