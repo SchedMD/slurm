@@ -35,6 +35,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <src/common/bitstring.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
@@ -248,14 +249,68 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 
 /* 
  * pick_step_nodes - select nodes for a job step that satify its requirements
+ *	we satify the super-set of constraints.
  */
 bitstr_t *
 pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
 		 char *node_list, char *relative_node_list) {
+	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
+	int error_code, nodes_picked_cnt;
+
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
+	
+	nodes_avail = bit_copy(job_ptr->node_bitmap);
 
-	return bit_copy(job_ptr->node_bitmap);
+/* we want a short-cut here for all nodes, just return copy of job_ptr->node_bitmap */
+
+	if (node_list) {
+		error_code = node_name2bitmap (node_list, &nodes_picked);
+		if (error_code) {
+			info ("pick_step_nodes: invalid node list %s", node_list);
+			goto cleanup;
+		}
+		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
+			info ("pick_step_nodes: requested nodes %s not part of job %u",
+				node_list, job_ptr->job_id);
+			goto cleanup;
+		}
+		nodes_picked_cnt = bit_set_count(nodes_picked);
+	}
+	else
+		nodes_picked = bit_alloc (bit_size (nodes_avail) );
+
+	if (relative_node_list) {
+		info ("pick_step_nodes: relative_node_list not yet supported");
+	}
+
+	if (min_nodes) {
+		nodes_picked_cnt = bit_set_count(nodes_picked);
+		if (min_nodes > nodes_picked_cnt) {
+			node_tmp = bit_pick_cnt(nodes_avail, (min_nodes - nodes_picked_cnt));
+			if (node_tmp == NULL)
+				goto cleanup;
+			bit_or  (nodes_picked, node_tmp);
+			bit_not (node_tmp);
+			bit_and (nodes_avail, node_tmp);
+			bit_free (node_tmp);
+			node_tmp = NULL;
+		}
+	}
+
+	if (min_cpus) {
+	}
+
+	if (nodes_avail)
+		bit_free(nodes_avail);
+	return nodes_picked;
+
+cleanup:
+	if (nodes_avail)
+		bit_free(nodes_avail);
+	if (nodes_picked)
+		bit_free(nodes_picked);
+	return NULL;
 }
 
 
