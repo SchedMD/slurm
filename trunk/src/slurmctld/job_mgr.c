@@ -51,9 +51,9 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/hostlist.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
-
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
@@ -88,6 +88,7 @@ static int  _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 					 struct part_record *part_ptr,
 					 bitstr_t ** exc_bitmap,
 					 bitstr_t ** req_bitmap);
+static char *_copy_nodelist_no_dup(char *node_list);
 static void _del_batch_list_rec(void *x);
 static void _delete_job_desc_files(uint32_t job_id);
 static void _dump_job_details(struct job_details *detail_ptr,
@@ -1851,12 +1852,12 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
 	if (job_desc->req_nodes) {
-		detail_ptr->req_nodes = xstrdup(job_desc->req_nodes);
+		detail_ptr->req_nodes = _copy_nodelist_no_dup(job_desc->req_nodes);
 		detail_ptr->req_node_bitmap = *req_bitmap;
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 	}
 	if (job_desc->exc_nodes) {
-		detail_ptr->exc_nodes = xstrdup(job_desc->exc_nodes);
+		detail_ptr->exc_nodes = _copy_nodelist_no_dup(job_desc->exc_nodes);
 		detail_ptr->exc_node_bitmap = *exc_bitmap;
 		*exc_bitmap = NULL;	/* Reused nothing left to free */
 	}
@@ -1883,6 +1884,31 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
+}
+
+/*
+ * _copy_nodelist_no_dup - Take a node_list string and convert it to an 
+ *	expression without duplicate names. For example, we want to convert 
+ *	a users request for nodes "lx1,lx2,lx1,lx3" to "lx[1-3]"
+ * node_list IN - string describing a list of nodes
+ * RET a compact node expression, must be xfreed by the user
+ */
+static char *_copy_nodelist_no_dup(char *node_list)
+{
+	int   new_size = 32;
+	char *new_str;
+	hostlist_t hl = hostlist_create(node_list);
+	if (hl == NULL)
+		return NULL;
+
+	hostlist_uniq(hl);
+	new_str = xmalloc(new_size);
+	while (hostlist_ranged_string(hl, new_size, new_str) == -1) {
+		new_size *= 2;
+		xrealloc(new_str, new_size);
+	}
+	hostlist_destroy(hl);
+	return new_str;
 }
 
 /* 
