@@ -92,7 +92,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_INVALID_PARTITION_NAME,
 	  "Invalid partition name specified"			},
 	{ ESLURM_DEFAULT_PARTITION_NOT_SET,
-	  "System default partition not set"			},
+	  "No partition specified or system default partition"	},
 	{ ESLURM_ACCESS_DENIED, 
 	  "Access denied"					},
 	{ ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP,
