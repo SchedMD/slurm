@@ -72,7 +72,7 @@ int parse_command_line(int argc, char *argv[])
 
 	poptContext context;
 	int curr_opt;
-	int i = 0, rc = 0;
+	int rc = 0;
 	char *env_val = NULL;
 	static char *temp_state = NULL;
 
