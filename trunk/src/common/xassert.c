@@ -16,8 +16,7 @@
 
 void __xassert_failed(char *expr, const char *file, int line, char *func)
 {
-        fatal("%s:%d: %s(): Assertion (%s) failed.\n", file, line, func, expr);
-
-        /* in case abort was disabled in fatal() */
-        abort();
+	error("%s:%d: %s(): Assertion (%s) failed.\n", file, line, func, expr);
+	log_flush();
+	abort();
 }
