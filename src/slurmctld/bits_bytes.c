@@ -237,6 +237,7 @@ unsigned *BitMapCopy(unsigned *BitMap) {
  * Input: BitMap - The bit map to get count from
  * Output: Returns the count of set bits
  * NOTE: This routine adapted from Linux 2.4.9 <linux/bitops.h>.
+ * NOTE: This routine works only when sizeof(unsigned int) is a multiple of 4
  */
 int BitMapCount(unsigned *BitMap) {
     int count, quad_byte, size, word, res;

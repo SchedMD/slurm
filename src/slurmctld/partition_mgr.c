@@ -315,6 +315,7 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
     Part_Record_Point->TotalNodes  = Default_Part.TotalNodes;
     Part_Record_Point->TotalCPUs   = Default_Part.TotalCPUs;
     Part_Record_Point->NodeBitMap  = NULL;
+    Part_Record_Point->Magic       = PART_MAGIC;
 
     if (Default_Part.AllowGroups) {
 	Part_Record_Point->AllowGroups = (char *)malloc(strlen(Default_Part.AllowGroups)+1);
@@ -432,6 +433,15 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
+	if (Part_Record_Point->Magic != PART_MAGIC) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Dump_Part: Data integrity is bad\n");
+#else
+	    syslog(LOG_ALERT, "Dump_Part: Data integrity is bad\n");
+#endif
+	    exit(EINVAL);
+	} /* if */
+
 	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartName", 
 		Part_Record_Point->Name, sizeof(Part_Record_Point->Name))) goto cleanup;
 

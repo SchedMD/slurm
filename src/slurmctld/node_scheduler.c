@@ -384,7 +384,7 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 #else
 	syslog(LOG_ALERT, "Pick_Best_CPUs: BitMap pointer is NULL\n");
 #endif
-	return EINVAL;
+	exit(EINVAL);
     } /* if */
 
     Error_Code = EINVAL;	/* Default is no fit */
