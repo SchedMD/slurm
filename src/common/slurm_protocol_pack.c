@@ -745,7 +745,7 @@ int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , void ** buffe
 		return ENOMEM;
 
 	unpack32( &(tmp_ptr->job_id), buffer, length ) ;
-	unpack32( &(tmp_ptr->expiration_time), buffer, length ) ;
+	unpack32( (uint32_t*) &(tmp_ptr->expiration_time), buffer, length ) ;
 	unpackmem( tmp_ptr->signature, & uint16_tmp , buffer, length ) ; 
 
 	*msg = tmp_ptr;

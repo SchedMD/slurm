@@ -1,6 +1,8 @@
 #ifndef _SLURMD_INTERCONNECT_H_
 #define _SLURMD_INTERCONNECT_H_
 
+#include <pthread.h>
+
 /* interconnect_init
  * called by launch_tasks to initialize the interconnect
  * IN launch_msg	- launch_tasks_msg
