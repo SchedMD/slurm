@@ -36,6 +36,7 @@
 #include <time.h>
 #include <string.h>
 
+#include "src/common/hostlist.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
@@ -109,6 +110,9 @@ void ping_nodes (void)
 	int i, pos, age, retries = 0;
 	time_t now;
 	uint16_t base_state;
+	hostlist_t ping_hostlist = hostlist_create("");
+	hostlist_t reg_hostlist  = hostlist_create("");
+	char host_str[64];
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
@@ -164,8 +168,8 @@ void ping_nodes (void)
 		 * can generate a flood of incomming RPCs. */
 		if ((base_state == NODE_STATE_UNKNOWN) || 
 		    ((i >= offset) && (i < (offset + MAX_REG_THREADS)))) {
-			debug3 ("attempt to register %s now", 
-			        node_record_table_ptr[i].name);
+			(void) hostlist_push_host(reg_hostlist, 
+					node_record_table_ptr[i].name);
 			if ((reg_agent_args->node_count+1) > 
 						reg_buf_rec_size) {
 				reg_buf_rec_size += 32;
@@ -185,8 +189,8 @@ void ping_nodes (void)
 			continue;
 		}
 
-		debug3 ("ping %s now", node_record_table_ptr[i].name);
-
+		(void) hostlist_push_host(ping_hostlist, 
+				node_record_table_ptr[i].name);
 		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
 			ping_buf_rec_size += 32;
 			xrealloc ((ping_agent_args->slurm_addr), 
@@ -207,7 +211,10 @@ void ping_nodes (void)
 	if (ping_agent_args->node_count == 0)
 		xfree (ping_agent_args);
 	else {
-		debug2 ("Spawning ping agent");
+		hostlist_uniq(ping_hostlist);
+		hostlist_ranged_string(ping_hostlist, 
+			sizeof(host_str), host_str);
+		debug2 ("Spawning ping agent for %s", host_str);
 		ping_begin();
 		if (pthread_attr_init (&ping_attr_agent))
 			fatal ("pthread_attr_init error %m");
@@ -231,7 +238,10 @@ void ping_nodes (void)
 	if (reg_agent_args->node_count == 0)
 		xfree (reg_agent_args);
 	else {
-		debug2 ("Spawning node registration agent");
+		hostlist_uniq(reg_hostlist);
+		hostlist_ranged_string(reg_hostlist, 
+			sizeof(host_str), host_str);
+		debug2 ("Spawning registration agent for %s", host_str);
 		ping_begin();
 		if (pthread_attr_init (&reg_attr_agent))
 			fatal ("pthread_attr_init error %m");
@@ -251,4 +261,7 @@ void ping_nodes (void)
 			sleep (1); /* sleep and try again */
 		}
 	}
+
+	hostlist_destroy(ping_hostlist);
+	hostlist_destroy(reg_hostlist);
 }
