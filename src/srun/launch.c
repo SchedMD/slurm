@@ -109,15 +109,18 @@ launch(void *arg)
 	taskid = 0;
 	if (opt.distribution == SRUN_DIST_BLOCK) {
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-			for (j=0; ((j<job->ntask[i]) && (taskid<opt.nprocs)); j++) {
+			for (j=0; ((j<job->cpus[i]) && (taskid<opt.nprocs)); j++) {
 				task_ids[i][j] = taskid++;
+				job->ntask[i]++;
 			}
 		}
 	} else {	/*  (opt.distribution == SRUN_DIST_CYCLIC) */
 		for (k=0; (taskid<opt.nprocs); k++) {	/* cycle counter */
 			for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-				if (k < job->ntask[i])
+				if (k < job->cpus[i]) {
 					task_ids[i][k] = taskid++;
+					job->ntask[i]++;
+				}
 			}
 		}
 	}
