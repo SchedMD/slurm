@@ -74,6 +74,7 @@ enum part_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bgl_record {
 	char* slurm_part_id;		/* ID specified by admins	*/
+	char * owner_name;		/* Owner of partition		*/
 	pm_partition_id_t bgl_part_id;	/* ID returned from CMCS	*/
 	char* nodes;			/* String of nodes in partition */
 	lifecycle_type_t part_lifecycle;/* either STATIC or DYNAMIC	*/
@@ -81,7 +82,7 @@ typedef struct bgl_record {
 	bitstr_t *bitmap;		/* bitmap of nodes for this partition */
 	struct partition* alloc_part;	/* the allocated partition   */
 	int size;			/* node count for the partitions */
-	rm_connection_type_t conn_type;/* Mesh or Torus or NAV */
+	rm_connection_type_t conn_type;	/* Mesh or Torus or NAV */
 	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 } bgl_record_t;
 

@@ -724,9 +724,9 @@ extern int select_nodes(struct job_record *job_ptr, bool test_only)
 		error_code = SLURM_SUCCESS;
 		goto cleanup;
 	}
-	if (select_g_job_init(job_ptr) != SLURM_SUCCESS) {
+	if (select_g_job_begin(job_ptr) != SLURM_SUCCESS) {
 		/* Leave job queued, something is hosed */
-		error("select_g_job_init(%u): %m", job_ptr->job_id);
+		error("select_g_job_begin(%u): %m", job_ptr->job_id);
 		error_code = ESLURM_NODES_BUSY;
 		goto cleanup;
 	}

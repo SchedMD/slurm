@@ -128,6 +128,11 @@ extern int select_p_state_restore(char *dir_name)
 	return SLURM_SUCCESS;
 }
 
+extern int select_p_job_init(List job_list)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 {
 	if (node_ptr == NULL) {
@@ -386,7 +391,7 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 	return error_code;
 }
 
-extern int select_p_job_init(struct job_record *job_ptr)
+extern int select_p_job_begin(struct job_record *job_ptr)
 {
 	return SLURM_SUCCESS;
 }

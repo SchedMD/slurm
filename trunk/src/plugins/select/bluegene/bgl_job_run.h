@@ -51,4 +51,10 @@ extern int start_job(struct job_record *job_ptr);
  */
 extern int term_job(struct job_record *job_ptr);
 
+/*
+ * Synchronize BGL block state to that of currently active jobs.
+ * This can recover from slurmctld crashes when partition ownership 
+ * changes were queued
+ */
+extern int sync_jobs(List job_list);
 #endif /* _BGL_JOB_RUN_H_ */
