@@ -23,7 +23,7 @@ print_header $test_id
 #
 exec $bin_rm -f $file_in
 exec echo "#!$bin_bash"          >$file_in
-exec echo "$srun $bin_sleep 10" >>$file_in
+exec echo "$srun $bin_sleep 60" >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
