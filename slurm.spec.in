@@ -50,9 +50,8 @@ and static libraries for the SLURM API.
 %endif
 
 
-./configure --prefix=%{_prefix} --mandir=%{_mandir} --bindir=%{_bindir} \
-            --sbindir=%{_sbindir} --libdir=%{_libdir}                   \
-            --with-slurm-conf=/etc/slurm --enable-debug                 \
+%configure  --program-prefix=%{?_program_prefix:%{_program_prefix}} \
+            --with-slurm-conf=/etc/slurm --enable-debug             \
             $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
 make
 
@@ -89,31 +88,31 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
 
-#%pre
-#if [ -x /etc/rc.d/init.d/slurm ]; then
-#	if /etc/rc.d/init.d/slurm status | grep running >/dev/null 2>&1; then
-#		/etc/rc.d/init.d/slurm stop
-#	fi
-#fi
+%pre
+if [ -x /etc/rc.d/init.d/slurm ]; then
+    if /etc/rc.d/init.d/slurm status | grep -q running; then
+        /etc/rc.d/init.d/slurm stop
+    fi
+fi
 
 %post
 /sbin/ldconfig %{_libdir}
-#if [ -x /etc/rc.d/init.d/slurm ]; then
-#	[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-#	[ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-#	if ! /etc/rc.d/init.d/slurm status | grep -q running; then
-#		/etc/rc.d/init.d/slurm start
-#	fi
-#fi
+if [ -x /etc/rc.d/init.d/slurm ]; then
+    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+    [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
+    if ! /etc/rc.d/init.d/slurm status | grep -q running; then
+        /etc/rc.d/init.d/slurm start
+    fi
+fi
 
 %preun
 if [ "$1" = 0 ]; then
-	if [ -x /etc/rc.d/init.d/slurm ]; then
-		[ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
-		if /etc/rc.d/init.d/slurm status | grep -q running; then
-			/etc/rc.d/init.d/slurm stop
-		fi
-	fi
+    if [ -x /etc/rc.d/init.d/slurm ]; then
+        [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+        if /etc/rc.d/init.d/slurm status | grep -q running; then
+            /etc/rc.d/init.d/slurm stop
+        fi
+    fi
 fi
 
 
