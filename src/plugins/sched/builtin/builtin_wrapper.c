@@ -69,5 +69,8 @@ slurm_sched_plugin_schedule( void )
 u_int32_t
 slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 {
-	return (max_prio - 1);
+	if (max_prio >= 2)
+		return (max_prio - 1);
+	else
+		return 1;
 }
