@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2003" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "July 2003" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -113,6 +113,20 @@ If the job fails to terminate gracefully
 in the interval specified, it will be forcably terminated. 
 The default value is 30 seconds.
 .TP
+\fBMaxJobCount\fR
+The maximum number of jobs SLURM can have in its active database 
+at one time. Set the values of \fBMaxJobCount\fR and \fBMinJobAge\fR 
+to insure the slurmctld daemon does not exhaust its memory or other 
+resources. Once this limit is reached, requests to submit additional 
+jobs will fail. The default value is 2000 jobs.
+.TP
+\fBMinJobAge\fR
+The minimum age of a completed job before its record is purged from 
+SLURM's active database. Set the values of \fBMaxJobCount\fR and 
+\fBMinJobAge\fR to insure the slurmctld daemon does not exhaust 
+its memory or other resources. The default value is 300 seconds. 
+A value of zero prevents any job record purging.
+.TP
 \fBPluginDir\fR
 Identifies the places in which to look for SLURM plugins. 
 This is a colon-separated list of directories, like the PATH 
@@ -184,7 +198,9 @@ to for work. The default value is SLURMD_PORT as established at system
 build time.
 .TP
 \fBSlurmdSpoolDir\fR
-Fully qualified pathname of a file into which the \fBslurmd\fR daemon's state information is written. This must be a common pathname for all nodes, but should represent a file which is local to each node (reference a local file
+Fully qualified pathname of a file into which the \fBslurmd\fR daemon's state 
+information is written. This must be a common pathname for all nodes, but 
+should represent a file which is local to each node (reference a local file
 system). The default value is "/tmp/slurmd".
 .TP
 \fBSlurmdTimeout\fR
@@ -202,7 +218,14 @@ into this directory.
 .TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 
-temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR space. The default value is "/tmp".
+temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR space. 
+The default value is "/tmp".
+.TP
+\fBWaitTimefR
+Specifies how many seconds the srun command should by default wait after 
+the first task terminates before terminating all remaining tasks. The 
+"--wait" option on the srun command line overrides this value. 
+If set to 0, this feature is disabled.
 .LP
 The configuration of nodes (or machines) to be managed by Slurm is 
 also specified in \fB/etc/slurm.conf\fR. 
@@ -433,6 +456,10 @@ InactiveLimit=120
 .br
 KillWait=30
 .br
+MaxJobCount=10000
+.br
+MinJobAge=3600
+.br
 PluginDir=/usr/local/lib:/usr/local/slurm/lib
 .br
 Prioritize=/usr/local/maui/priority
@@ -454,6 +481,8 @@ SlurmdSpoolDir=/usr/local/slurm/slurmd.spool
 StateSaveLocation=/usr/local/slurm/slurm.state
 .br
 TmpFS=/tmp
+.br
+WaitTime=30
 .br
 JobCredentialPrivateKey=/usr/local/slurm/private.key
 .br
