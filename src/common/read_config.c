@@ -106,6 +106,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->prolog);
+	xfree (ctl_conf_ptr->schedauth);
+	xfree (ctl_conf_ptr->schedtype);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
@@ -148,7 +150,10 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->min_job_age		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->prolog);
-	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
+	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL;
+	xfree( ctl_conf_ptr->schedauth );
+	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
+	xfree( ctl_conf_ptr->schedtype );
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurm_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
@@ -190,11 +195,13 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1;
 	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
+	int sched_port = -1;
 	int slurmctld_debug = -1, slurmd_debug = -1;
 	int max_job_cnt = -1, min_job_age = -1, wait_time = -1;
 	char *backup_addr = NULL, *backup_controller = NULL;
 	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
-	char *prolog = NULL;
+	char *prioritize = NULL, *prolog = NULL;
+	char *sched_type = NULL, *sched_auth = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
@@ -230,6 +237,9 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"PluginDir=", 's', &plugindir,
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
+		"SchedulerAuth=", 's', &sched_auth,
+		"SchedulerPort=", 'd', &sched_port,
+		"SchedulerType=", 's', &sched_type,
 		"SlurmUser=", 's', &slurm_user,
 		"SlurmctldDebug=", 'd', &slurmctld_debug,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
@@ -404,6 +414,27 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->ret2service = ret2service;
 	}
 
+	if ( sched_auth ) {
+		if ( ctl_conf_ptr->schedauth ) {
+			xfree( ctl_conf_ptr->schedauth );
+		}
+		ctl_conf_ptr->schedauth = sched_auth;
+	}
+
+	if ( sched_port != -1 ) {
+		if ( sched_port < 1 )
+			error( "External scheduler port %d is invalid",
+			       sched_port );
+		ctl_conf_ptr->schedport = (uint16_t) sched_port;
+	}
+
+	if ( sched_type ) {
+		if ( ctl_conf_ptr->schedtype ) {
+			xfree( ctl_conf_ptr->schedtype );
+		}
+		ctl_conf_ptr->schedtype = sched_type;
+	}
+	
 	if ( slurm_user ) {
 		struct passwd *slurm_passwd;
 		slurm_passwd = getpwnam(slurm_user);

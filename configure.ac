@@ -27,6 +27,7 @@ AM_CONFIG_HEADER(slurm/slurm.h)
 dnl Checks for programs.
 dnl
 AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
@@ -311,6 +312,9 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/jobcomp/Makefile
+		 src/plugins/sched/Makefile
+		 src/plugins/sched/builtin/Makefile
+		 src/plugins/sched/wiki/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile

@@ -1,2 +1,3 @@
-SUBDIRS = auth jobcomp
+# $Id$
 
+SUBDIRS = auth jobcomp sched
