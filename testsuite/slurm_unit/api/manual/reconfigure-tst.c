@@ -18,7 +18,7 @@ main (int argc, char *argv[]) {
 	for (i = 0; i < count; i++) {
 		error_code = slurm_reconfigure ();
 		if (error_code != 0) {
-			printf ("reconfigure error %d\n", errno);
+			slurm_perror ("slurm_reconfigure");
 			return (1);
 		}
 	}

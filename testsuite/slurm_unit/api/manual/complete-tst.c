@@ -21,9 +21,11 @@ main (int argc, char *argv[])
 	for (i=1; i<argc; i++) {
 		error_code = slurm_complete_job ((uint32_t) atoi(argv[i]),
 		                                 0, 0);
-		if (error_code)
-			printf ("slurm_complete_job error %d for job %s\n", 
-				errno, argv[i]);
+		if (error_code) {
+			char msg[64];
+			sprintf(msg, "slurm_complete_job(%.12s)",argv[i]);
+			slurm_perror (msg);
+		}
 	}
 
 	return (error_code);

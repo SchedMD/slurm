@@ -16,7 +16,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr);
 	if (error_code) {
-		printf ("slurm_load_node error %d\n", errno);
+		slurm_perror ("last_update_time");
 		return (error_code);
 	}
 
