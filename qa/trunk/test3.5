@@ -1,7 +1,7 @@
 #!/usr/bin/expect
 ############################################################################
 # Purpose: Test of SLURM functionality
-#          Validate scontrol update command for partitions.
+#          Validate scontrol create, delete, and update for partitions.
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -105,6 +105,7 @@ expect {
 #
 # Confirm the partition now exists
 #
+set allow  0
 set found -1
 spawn $scontrol show part $part_name
 expect {
@@ -114,6 +115,10 @@ expect {
 	}
 	-re "PartitionName" {
 		set found 1
+		exp_continue
+	}
+	-re "AllowGroups=.null" {
+		set allow 1
 		exp_continue
 	}
 	timeout {
@@ -127,6 +132,90 @@ expect {
 if {$found != 1} {
 	send_user "\nFAILURE: partition not created\n"
 	exit 1
+}
+if {$allow != 1} {
+	send_user "\nFAILURE: partition groups value incorrect\n"
+	set exit_code 1
+}
+
+#
+# Now set group to mine
+#
+spawn $bin_id -gn
+expect {
+	-re "($alpha_numeric)" {
+		set my_group  $expect_out(1,string)
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: id not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+spawn $scontrol update PartitionName=$part_name AllowGroups=$my_group
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "AllowGroups=$my_group" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+        send_user "\nFAILURE: partition group not reset\n"
+	set exit_code 1
+}
+
+#
+# Now reset AllowGroups to ALL
+#
+spawn $scontrol update PartitionName=$part_name AllowGroups=ALL
+expect {
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+set found 0
+spawn $scontrol show part $part_name
+expect {
+	-re "AllowGroups=.null" {
+		set found 1
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: scontrol not responding\n"
+		set exit_code 1
+	}
+	eof {
+		wait
+	}
+}
+if {$found != 1} {
+	send_user "\nFAILURE: partition group not reset\n"
+	set exit_code 1
 }
 
 #

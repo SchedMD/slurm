@@ -1,7 +1,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 #
 # This file is part of SLURM, a resource management program.
@@ -158,7 +158,7 @@ test3.1    Validate scontrol reconfigure command.
 test3.2    Validate scontrol update command for partitions.
 test3.3    Validate scontrol update command for nodes.
 test3.4    Validate scontrol update command for jobs.
-test3.5    Validate scontrol create and delete of partition.
+test3.5    Validate scontrol create, delete, and update of partition.
 test3.6    Testing of hidden partitions.
 UNTESTED   "scontrol abort"    would stop slurm 
 UNTESTED   "scontrol shutdown" would stop slurm
