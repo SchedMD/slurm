@@ -36,6 +36,7 @@
 #include <sys/param.h>
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
@@ -81,7 +82,7 @@ launch_thr_create(job_t *job)
 	int e;
 	pthread_attr_t attr;
 
-	pthread_attr_init(&attr);
+	slurm_attr_init(&attr);
 	if ((e = pthread_create(&job->lid, &attr, &launch, (void *) job))) 
 		slurm_seterrno_ret(e);
 
@@ -210,18 +211,10 @@ static void _spawn_launch_thr(thd_t *th)
 	pthread_attr_t attr;
 	int err = 0;
 
-	if ((err = pthread_attr_init (&attr)))
-		fatal ("pthread_attr_init: %s", slurm_strerror(err));
-
-
+	slurm_attr_init (&attr);
 	err = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	if (err)
 		error ("pthread_attr_setdetachstate: %s", slurm_strerror(err));
-
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if ((err = pthread_attr_setscope(&attr, PTHREAD_SCOPE_SYSTEM)))
-		error ("pthread_attr_setscope: %s", slurm_strerror(err));
-#endif
 
 	err = pthread_create(&th->thread, &attr, _p_launch_task, (void *)th);
 	if (err) {

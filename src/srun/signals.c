@@ -39,6 +39,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/xmalloc.h"
@@ -119,7 +120,7 @@ sig_thr_create(job_t *job)
 	int e;
 	pthread_attr_t attr;
 
-	pthread_attr_init(&attr);
+	slurm_attr_init(&attr);
 
 	if ((e = pthread_create(&job->sigid, &attr, &_sig_thr, job)) != 0)
 		slurm_seterrno_ret(e);
@@ -283,17 +284,10 @@ static void _p_fwd_signal(slurm_msg_t *req, job_t *job)
 		tinfo->job_ptr  = job;
 		tinfo->host_inx = i;
 
-		if ((errno = pthread_attr_init(&thd[i].attr)))
-			error("pthread_attr_init failed");
-
+		slurm_attr_init(&thd[i].attr);
 		if (pthread_attr_setdetachstate(&thd[i].attr, 
 		                                PTHREAD_CREATE_DETACHED))
 			error ("pthread_attr_setdetachstate failed");
-
-#ifdef PTHREAD_SCOPE_SYSTEM
-		if (pthread_attr_setscope(&thd[i].attr, PTHREAD_SCOPE_SYSTEM))
-			error ("pthread_attr_setscope failed");
-#endif
 		if (pthread_create( &thd[i].thread, &thd[i].attr, 
 			            _p_signal_task, (void *) tinfo )) {
 			error ("pthread_create failed");
