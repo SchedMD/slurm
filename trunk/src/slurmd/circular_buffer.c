@@ -11,6 +11,7 @@
 
 static int assert_checks ( circular_buffer_t * buf ) ;
 static int expand_buffer ( circular_buffer_t * buf ) ;
+static int shrink_buffer ( circular_buffer_t * buf ) ;
 
 void free_circular_buffer ( circular_buffer_t * buf_ptr )
 {
@@ -33,10 +34,10 @@ int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 	buf -> buf_size = INITIAL_BUFFER_SIZE ;
 
 	buf -> start = buf -> buffer ;
-	buf -> head = buf -> start ;
-
-	buf -> tail = buf -> start ;
 	buf -> end = buf -> start + buf-> buf_size ;
+
+	buf -> head = buf -> start ;
+	buf -> tail = buf -> start ;
 
 	buf -> read_size = 0 ;
 	buf -> write_size = INITIAL_BUFFER_SIZE ;
@@ -73,12 +74,13 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 		{
 			if ( buf -> tail == buf -> start ) /* CASE head == start */
 			{
-				fatal ( "buffer empty, shrink or adjust code not written" ) ;
+				/* buffer empty*/
+				shrink_buffer ( buf ) ;
 			}
 			else
 			{
 				buf -> head = buf -> start ;
-				buf -> read_size = buf -> start - buf -> end ;
+				buf -> read_size = buf -> tail - buf -> head ;
 			}
 		}
 		else
@@ -88,7 +90,8 @@ int read_update ( circular_buffer_t * buf , unsigned int size )
 	}
 	else if ( buf->tail == buf->head ) /* CASE head == tail */
 	{
-		fatal ( "buffer empty, shrink or adjust code not written" ) ;
+		/* buffer empty*/
+		shrink_buffer ( buf ) ;
 	}
 
 	/* final sanity check */
@@ -116,19 +119,19 @@ int write_update ( circular_buffer_t * buf , unsigned int size )
 	assert_checks ( buf ) ;
 
 	/* take care of wrap around issues */
-	if ( buf->tail > buf->head )
+	if ( buf->tail > buf->head ) /* CASE tail after head */
 	{
-
-		if ( buf -> tail == buf -> end  ) 
+		if ( buf -> tail == buf -> end  ) /* CASE tail == end */
 		{
-			if ( buf->head == buf-> start )
+			if ( buf->head == buf-> start ) /* CASE head == start */
 			{
+				/* buffer full*/
 				expand_buffer ( buf ) ;
 			}
 			else
 			{
 				buf -> tail = buf -> start ;
-				buf -> write_size = buf -> start - buf -> end ;
+				buf -> write_size = buf -> head - buf -> tail ;
 			}
 		}
 		else
@@ -136,12 +139,13 @@ int write_update ( circular_buffer_t * buf , unsigned int size )
 			buf -> write_size = buf -> end - buf -> tail ;
 		}
 	}
-	else if ( buf->tail < buf->head ) /* CASE B */
+	else if ( buf->tail < buf->head ) /* CASE tail befpre head */
 	{
 		buf -> write_size = buf -> head - buf -> tail ;
 	}
-	else if ( buf->tail == buf->head ) /* CASE C */
+	else if ( buf->tail == buf->head ) /* CASE head == tail */
 	{
+		/* buffer full*/
 		expand_buffer ( buf ) ;
 	}
 
@@ -183,6 +187,42 @@ static int assert_checks ( circular_buffer_t * buf )
 		assert ( buf -> read_size == 0 ) ;
 	}
 	return SLURM_SUCCESS ;
+}
+
+static int shrink_buffer ( circular_buffer_t * buf )
+{
+	char * new_buffer ;
+
+	if ( buf->buf_size == INITIAL_BUFFER_SIZE )
+	{
+		info ( "circular buffer at minimum" ) ;
+
+		buf -> head = buf -> start ;
+		buf -> tail = buf -> start ;
+
+		buf -> read_size = 0 ;
+		buf -> write_size = INITIAL_BUFFER_SIZE ;
+		
+		return SLURM_SUCCESS ;
+	}
+	else
+	{
+		new_buffer = xmalloc ( INITIAL_BUFFER_SIZE ) ;
+		xfree ( buf -> buffer ) ;
+		buf -> buffer = new_buffer ;
+		buf -> buf_size = INITIAL_BUFFER_SIZE ;
+		
+		buf -> start = new_buffer ;
+		buf -> end = new_buffer + INITIAL_BUFFER_SIZE ; 
+		
+		buf -> head = new_buffer ;
+		buf -> tail = new_buffer ;
+
+		buf -> read_size = 0 ;
+		buf -> write_size = INITIAL_BUFFER_SIZE ;
+		
+		return SLURM_SUCCESS ;
+	}
 }
 
 static int expand_buffer ( circular_buffer_t * buf )
