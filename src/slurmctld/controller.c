@@ -109,21 +109,9 @@ main(int argc, char * argv[]) {
 	} /* if */
 
 /* Convert to pthread, TBD */
-	if ((child_pid = fork()) < 0) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "slurmctld: Error %d from fork\n", errno);
-#else
-	    syslog(LOG_ALERT, "slurmctld: Error %d from fork\n", errno);
-#endif
-	    abort();
-	} else if (child_pid == 0) {	/* child */
-	    close(sockfd);		/* close original socket */
-	    Slurmctld_Req(newsockfd);	/* process the request */
-	    close(newsockfd);		/* close the new socket */
-	    exit(0);
-	} else {			/* parent */
-	    close(newsockfd);		/* close the new socket */
-	} /* else */
+Slurmctld_Req(newsockfd);	/* Process the request */
+close(newsockfd);		/* close the new socket */
+
     } /* while */
 } /* main */
 
@@ -150,12 +138,12 @@ void Slurmctld_Req(int sockfd) {
 	Error_Code = Select_Nodes(&In_Line[8], &NodeName);   /* Skip over "Allocate" */
 #if DEBUG_SYSTEM
 	if (Error_Code)
-	    fprintf(stderr, "Slurmctld_Req: Error %d allocating resources for %s",
+	    fprintf(stderr, "Slurmctld_Req: Error %d allocating resources for %s, ",
 		 Error_Code, &In_Line[8]);
 	else 
-	    fprintf(stderr, "Slurmctld_Req: Allocated nodes %s to job %s", 
+	    fprintf(stderr, "Slurmctld_Req: Allocated nodes %s to job %s, ", 
 		NodeName, &In_Line[8]);
-	fprintf(stderr, "Allocate Time = %ld usec\n", (long)(clock() - Start_Time));
+	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
 #endif
 	if (Error_Code == 0)
 	    send(sockfd, NodeName, strlen(NodeName)+1, 0);
