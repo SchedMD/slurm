@@ -34,10 +34,14 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_allocate_resources - allocated resources for a job request */
+/*
+ * slurm_allocate_resources - allocate resources for a job request
+ * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
+ */
 int
 slurm_allocate_resources (job_desc_msg_t * job_desc_msg , 
-			resource_allocation_response_msg_t ** slurm_alloc_msg, int immediate )
+			resource_allocation_response_msg_t ** slurm_alloc_msg, 
+			int immediate )
 {
 	int msg_size ;
 	int rc ;
@@ -104,8 +108,12 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
-/* slurm_job_will_run - determine if a job would execute if submitted right now */
-int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** slurm_alloc_msg)
+/*
+ * slurm_job_will_run - determine if a job would execute immediately if submitted now
+ * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
+ */
+int slurm_job_will_run (job_desc_msg_t * job_desc_msg , 
+			resource_allocation_response_msg_t ** slurm_alloc_msg)
 {
 	int msg_size ;
 	int rc ;
@@ -167,7 +175,10 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_resp
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
-/* slurm_allocate_resources_and_run - allocated resources for a job request and run a job step */
+/*
+ * slurm_allocate_resources_and_run - allocate resources for a job request and initiate a job step
+ * NOTE: free the allocated using slurm_free_resource_allocation_and_run_response_msg
+ */
 int
 slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg , 
 			resource_allocation_and_run_response_msg_t ** slurm_alloc_msg )
@@ -233,7 +244,10 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
-/* slurm_job_step_create - create a job step for a given job id */
+/*
+ * slurm_job_step_create - create a job step for a given job id
+ * NOTE: free the response using slurm_free_job_step_create_response_msg
+ */
 int
 slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg, 
 			job_step_create_response_msg_t ** slurm_step_alloc_resp_msg )
@@ -299,9 +313,13 @@ slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg,
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
-/* slurm_confirm_allocation - confirm an existing resource allocation */
+/*
+ * slurm_confirm_allocation - confirm an existing resource allocation
+ * NOTE: free the response using slurm_free_resource_allocation_response_msg
+ */
 int 
-slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** slurm_alloc_msg ) 
+slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg , 
+			resource_allocation_response_msg_t ** slurm_alloc_msg ) 
 {
 	int msg_size ;
 	int rc ;
