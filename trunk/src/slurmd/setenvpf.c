@@ -34,43 +34,79 @@
 #include <string.h>
 
 #include "src/common/xmalloc.h"
+#include "src/common/log.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
-/* add environment variable to end of env vector allocated with
- * xmalloc() extending *envp if necessary.
+
+/*
+ *  Return pointer to `name' entry in environment if found, or
+ *   pointer to the last entry (i.e. NULL) if `name' is not
+ *   currently set in `env'
  *
- * envp		Pointer to environment array allocated with xmalloc()
- * fmt		printf style format (e.g. "SLURM_NPROCS=%d")
- *
- */    
-int
-setenvpf(char ***envp, const char *fmt, ...)
+ */
+static char **
+_find_name_in_env(char **env, const char *name)
 {
-	va_list ap;
+	char **ep;
+
+	ep = env;
+	while (*ep != NULL) {
+		size_t cnt = 0;
+
+		while ( ((*ep)[cnt] == name[cnt]) 
+		      && ( name[cnt] != '\0')
+		      && ((*ep)[cnt] != '\0')    )
+			++cnt;
+
+		if (name[cnt] == '\0' && (*ep)[cnt] == '=') {
+			break;
+		} else
+			++ep;
+	}
+
+	return (ep);
+}
+
+/*
+ *  Extend memory allocation for env by 1 entry. Make last entry == NULL.
+ */
+static void
+_extend_env(char ***envp)
+{
+	size_t newsize = xsize (*envp) + sizeof (char *);
+	xrealloc (*envp, newsize);
+	(*envp)[newsize - 1] = NULL;
+	return;
+}
+
+int 
+setenvpf(char ***envp, const char *name, const char *fmt, ...)
+{
+	char *str = NULL;
 	char buf[BUFSIZ];
-	char **env = *envp;
-	char **ep  = env;
-	int    cnt = 0;
-		
+	char **ep = NULL;
+	va_list ap;
+
+	str = xstrdup (name);
+	xstrcatchar (str, '=');
+
 	va_start(ap, fmt);
-	vsnprintf(buf, sizeof(buf), fmt, ap);
+	vsnprintf (buf, BUFSIZ, fmt, ap);
 	va_end(ap);
 
-	while (ep[cnt] != NULL)
-	       cnt++;	
+	xstrcat (str, buf);
 
-	if ((cnt+1) >= (xsize(env)/sizeof(char *))) 
-		xrealloc(env, (cnt+2)*sizeof(char *));
+	ep = _find_name_in_env (*envp, name);
 
-	env[cnt++] = xstrdup(buf);
-	env[cnt]   = NULL;
+	if (*ep != NULL) 
+		xfree (*ep);
+	else
+		_extend_env (envp);
+		
+	*ep = str;
 
-	*envp = env;
-
-	xassert(strcmp(env[cnt - 1], buf) == 0);
-
-	return cnt;
+	return (0);
 }
 
 /*
@@ -86,27 +122,16 @@ unsetenvp(char **env, const char *name)
 	char **ep;
 
 	ep = env;
-	while (*ep != NULL) {
-		size_t cnt = 0;
+	while ((ep = _find_name_in_env (ep, name)) && (*ep != NULL)) {
+		char **dp = ep;
 
-		while ( ((*ep)[cnt] == name[cnt]) 
-		      && ( name[cnt] != '\0')
-		      && ((*ep)[cnt] != '\0')    )
-			++cnt;
-
-		if (name[cnt] == '\0' && (*ep)[cnt] == '=') {
-			/*  Found name. Move later env values 
-			 *   to front 
-			 */
-			char **dp = ep;
-
-			do 
-				dp[0] = dp[1];
-			while (*dp++);
-		} else
-			++ep;
+		do 
+			dp[0] = dp[1];
+		while (*dp++);
 
 		/*  Continue loop in case `name' appears again. */
+
+		++ep;
 	}
 
 	return;

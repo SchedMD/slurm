@@ -248,8 +248,8 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
 		argv[1] = NULL;
 
 		env[0]  = NULL;
-		setenvpf(&env, "SLURM_JOBID=%u", jobid);
-		setenvpf(&env, "SLURM_UID=%u",   uid);
+		setenvpf(&env, "SLURM_JOBID", "%u", jobid);
+		setenvpf(&env, "SLURM_UID",   "%u", uid);
 
 		execve(path, argv, env);
 		error("help! %m");
@@ -902,9 +902,9 @@ _setup_batch_env(slurmd_job_t *job, char *nodes)
 		return SLURM_ERROR;
 
 	hostlist_ranged_string(hl, 1024, buf);
-	setenvpf(&job->env, "SLURM_JOBID=%u",    job->jobid);
-	setenvpf(&job->env, "SLURM_NNODES=%u",   hostlist_count(hl));
-	setenvpf(&job->env, "SLURM_NODELIST=%s", buf);
+	setenvpf(&job->env, "SLURM_JOBID",    "%u", job->jobid);
+	setenvpf(&job->env, "SLURM_NNODES",   "%u", hostlist_count(hl));
+	setenvpf(&job->env, "SLURM_NODELIST", "%s", buf);
 	hostlist_destroy(hl);
 
 	return 0;
