@@ -1,12 +1,11 @@
 # This file is to be processed with autoconf to generate a configure script
 
 # XXX generate PROJECT and VERSION automatically at some point
-AC_INIT([slurm], [0.1])
-# AC_PREREQ(2.50)
+AC_INIT([slurm],[0.1])
+# AC_PREREQ(2.52)
 AC_CONFIG_SRCDIR([src/common/slurm.h])
 AC_CONFIG_AUX_DIR(auxdir)
-AC_CANONICAL_HOST
-AC_CANONICAL_SYSTEM
+AC_CANONICAL_TARGET([])
 
 # determine project/version 
 # PROJECT="slurm"
@@ -33,30 +32,58 @@ AC_ARG_ENABLE(debug,
 )
 AC_MSG_RESULT(${debug=no})
 if test "x$debug" = "xtrue"; then 
-  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith -Wstrict-prototypes}"
+  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith}"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith -Wstrict-prototypes}"
+  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith}"
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$debug" = "xtrue")
+#
 
+# check for whether to include Elan support:
+AC_MSG_CHECKING(whether to include Elan support)
+AC_ARG_WITH(elan,
+  AC_HELP_STRING([--with-elan],[compile with Elan support]),
+  [ case "${withval}" in
+      yes) elan=yes ;;
+      no)  elan=no ;;
+      *) AC_MSG_ERROR([bad value ${enableval} for --with-elan]) ;;
+    esac
+  ]
+)
+AC_MSG_RESULT(${elan=no})
+AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
+
+  
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_MAKE_SET
 AC_PROG_RANLIB
 
 dnl Checks for libraries
+if test $with_elan; then
+  AC_CHECK_LIB(rms, rms_prgcreate, 
+    [], 
+    [AC_MSG_ERROR([unable to find the RMS library needed for Elan support.])], 
+    "-lelan3"
+  )
+  AC_CHECK_LIB(elan3, elan3_create,
+    [],
+    [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support])],
+  )
+fi
 
 dnl Checks for header files.
-AC_CHECK_HEADERS(popt.h mcheck.h unistd.h)
-AC_CHECK_HEADERS(strings.h values.h)
-
-dnl Checks for types.
-AC_PROG_GCC_TRADITIONAL([])
+AC_CHECK_HEADERS(popt.h mcheck.h values.h)
+AC_HEADER_SYS_WAIT
+AC_HEADER_TIME
 
 dnl Checks for structures.
 
+dnl Checks for types.
+
 dnl Checks for compiler characteristics.
+AC_PROG_GCC_TRADITIONAL([])
 
 dnl checks for library functions.
 AC_FUNC_MALLOC
@@ -92,9 +119,9 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmd/Makefile 
 		 src/slurmctld/Makefile 
 		 src/scontrol/Makefile
+		 src/test/Makefile
 		]
 )
-
 
 AC_OUTPUT
 
