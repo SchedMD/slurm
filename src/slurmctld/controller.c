@@ -61,11 +61,16 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/proc_req.h"
+#include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
 #define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
-#define DEFAULT_RECOVER   1	/* Recover state by default if set */
+#define DEFAULT_RECOVER   1	/* Default state recovery on restart
+				 * 0 = use no saved state information
+				 * 1 = recover saved job state, 
+				 *     node DOWN/DRAIN state and reason information
+				 * 2 = recover all state saved from last shutdown */
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
 				 * check-in before we ping them */
 #define MEM_LEAK_TEST	  0	/* Running memory leak test if set */

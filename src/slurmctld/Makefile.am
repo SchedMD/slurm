@@ -32,6 +32,7 @@ slurmctld_SOURCES = 	\
 	proc_req.c	\
 	proc_req.h	\
 	read_config.c	\
+	read_config.h	\
 	slurmctld.h	\
 	step_mgr.c
 

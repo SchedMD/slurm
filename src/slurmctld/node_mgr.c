@@ -381,11 +381,13 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
 }
 
 /*
- * load_all_node_state - load the node state from file, recover on slurmctld 
- *	restart. execute this after loading the configuration file data.
- *	data goes into common storage
+ * load_all_node_state - Load the node state from file, recover on slurmctld 
+ *	restart. Execute this after loading the configuration file data.
+ *	Data goes into common storage.
+ * IN state_only - if true over-write only node state and reason fields
+ * RET 0 or error code
  */
-int load_all_node_state ( void )
+extern int load_all_node_state ( bool state_only )
 {
 	char *node_name, *reason = NULL, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0;
@@ -440,7 +442,8 @@ int load_all_node_state ( void )
 							NODE_STATE_END)) {
 			error ("Invalid data for node %s: cpus=%u, state=%u",
 				node_name, cpus, node_state);
-			error ("No more node data will be processed from the checkpoint file");
+			error ("No more node data will be processed from the "
+				"checkpoint file");
 			xfree (node_name);
 			error_code = EINVAL;
 			break;
@@ -449,17 +452,28 @@ int load_all_node_state ( void )
 
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);
-		if (node_ptr) {
+		if (node_ptr == NULL) {
+			error ("Node %s has vanished from configuration", 
+			       node_name);
+			xfree(reason);
+		} else if (state_only) {
+			if ((node_ptr->node_state == NODE_STATE_UNKNOWN) &&
+			    ((node_state == NODE_STATE_DOWN) ||
+			     (node_state == NODE_STATE_DRAINED) ||
+			     (node_state == NODE_STATE_DRAINING)))
+				node_ptr->node_state    = node_state;
+			if (node_ptr->reason == NULL)
+				node_ptr->reason = reason;
+			else
+				xfree(reason);
+		} else {
 			node_ptr->node_state    = node_state;
+			xfree(node_ptr->reason);
 			node_ptr->reason        = reason;
 			node_ptr->cpus          = cpus;
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
 			node_ptr->last_response = (time_t) 0;
-		} else {
-			error ("Node %s has vanished from configuration", 
-			       node_name);
-			xfree(reason);
 		}
 		xfree (node_name);
 	}
