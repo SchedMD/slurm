@@ -50,7 +50,7 @@
 
 /* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite any RPC activity 
  * This will catch any state transisions that may have otherwise been missed */
-#define	PERIODIC_SCHEDULE	15
+#define	PERIODIC_SCHEDULE	30
 
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
@@ -147,8 +147,8 @@ extern time_t last_step_update;	*//* time of last update to job steps */
 /* This should prevent exhausting memory */
 #define DETAILS_MAGIC 0xdea84e7
 #define JOB_MAGIC 0xf0b7392c
-#define MAX_JOB_COUNT 1000
-#define MIN_JOB_AGE 600
+#define MAX_JOB_COUNT 2000
+#define MIN_JOB_AGE 300
 #define STEP_MAGIC 0xce593bc1
 
 extern int job_count;			/* number of jobs in the system */
