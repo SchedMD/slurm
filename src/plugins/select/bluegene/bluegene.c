@@ -28,6 +28,15 @@
 #define BUFSIZE 4096
 #define BITSIZE 128
 
+/*
+ * The BGL bridge APIs are *not* thread safe. This means we can not 
+ * presently test for down nodes and switches in a separate pthread. 
+ * We could do so from within bgl_job_run.c:_part_agent(), but these 
+ * APIs are so slow (10-15 seconds for rm_get_BGL) that we do not 
+ * want to slow down job launch or termination by that much. When
+ * the APIs are thread safe, revert to the code marked by
+ * "#ifdef THE_BGL_APIS_REALLY_WORKED".        - Jette 2/17/2005
+ */
 #ifdef THE_BGL_APIS_REALLY_WORKED
 #  define NODE_POLL_TIME 120	/* poll MMCS node state every 120 secs */
 #  define SWITCH_POLL_TIME 180	/* poll MMCS switch state every 180 secs */
