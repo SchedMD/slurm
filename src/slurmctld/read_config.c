@@ -112,7 +112,7 @@ static int _build_bitmaps(void)
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if ((idle_node_bitmap     == NULL) ||
 	    (avail_node_bitmap    == NULL) ||
-	    (share_node_bitmap == NULL)) 
+	    (share_node_bitmap    == NULL)) 
 		fatal ("memory allocation failure");
 	/* Set all bits, all nodes initially available for sharing */
 	bit_nset(share_node_bitmap, 0, (node_record_count-1));
