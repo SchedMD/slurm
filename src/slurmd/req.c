@@ -367,12 +367,23 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		errnum = errno;
 
     done:
-	if (slurm_send_rc_msg(msg, errnum) < 0)
+	if (slurm_send_rc_msg(msg, errnum) < 0) {
+
 		error("launch_tasks: unable to send return code: %m");
-	if (errnum == SLURM_SUCCESS)
+
+		/*
+		 * Rewind credential so that srun may perform retry
+		 */
+		slurm_cred_rewind(conf->vctx, req->cred); /* ignore errors */
+
+	} else if (errnum == SLURM_SUCCESS)
 		save_cred_state(conf->vctx);
+
+	/*
+	 *  If job prolog failed, indicate failure to slurmctld
+	 */
 	if (errnum == ESLURMD_PROLOG_FAILED)
-		send_registration_msg(errnum);	/* slurmctld makes node DOWN */
+		send_registration_msg(errnum);	
 }
 
 
