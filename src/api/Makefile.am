@@ -27,9 +27,9 @@ endif
 #
 # If any interfaces have been removed, set age = 0
 #
-current = 1
-rev     = 0
-age     = 0
+current = $(SLURM_API_CURRENT)
+rev     = $(SLURM_API_REVISION)
+age     = $(SLURM_API_AGE)
 
 lib_LTLIBRARIES = libslurm.la
 

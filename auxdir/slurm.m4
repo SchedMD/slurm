@@ -114,11 +114,24 @@ AC_SUBST(PROJECT)
 # Automake desires "PACKAGE" variable instead of PROJECT
 PACKAGE=$PROJECT
 
-# rpm make target needs Version in META, not major and minor version numbers
-API="`perl -ne 'print,exit if s/^\s*API:\s*(\S*).*/\1/i' $srcdir/META`"
-AC_DEFINE_UNQUOTED(SLURM_API_VERSION, $API, [Define the API's version.])
+## Build the API version
+SLURM_API_VERSION="0x"
+for name in CURRENT REVISION AGE; do
+   API=`perl -ne "print,exit if s/^\s*API_$name:\s*(\S*).*/\1/i" $srcdir/META`
+   eval SLURM_API_$name=$API
+   API=`printf "%02x" $API`
+   SLURM_API_VERSION="${SLURM_API_VERSION}$API"
+done
+AC_DEFINE_UNQUOTED(SLURM_API_VERSION, $SLURM_API_VERSION, [Define the API's version])
+AC_DEFINE_UNQUOTED(SLURM_API_CURRENT,  $SLURM_API_CURRENT,  [API current version])
+AC_DEFINE_UNQUOTED(SLURM_API_REVISION, $SLURM_API_REVISION, [API current rev])
+AC_DEFINE_UNQUOTED(SLURM_API_AGE,      $SLURM_API_AGE,      [API current age])
 AC_SUBST(SLURM_API_VERSION)
+AC_SUBST(SLURM_API_CURRENT)
+AC_SUBST(SLURM_API_REVISION)
+AC_SUBST(SLURM_API_AGE)
 
+# rpm make target needs Version in META, not major and minor version numbers
 VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
