@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>, Joseph Ekstrom (ekstrom1@llnl.gov)
+ *  Written by moe jette <jette1@llnl.gov>, Joseph Ekstrom <ekstrom1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -38,8 +38,6 @@
 
 #include <src/common/bitstring.h>
 #include <src/slurmctld/slurmctld.h>
-
-#define BUF_SIZE 1024
 
 bitstr_t * pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec );
 

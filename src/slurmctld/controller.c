@@ -749,70 +749,41 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 	schedule();
 }
 
-/* slurm_rpc_job_step_get_info - process RPC msg to get job_step information */
-void list_append_list( List to, List from )
-{
-	ListIterator i_from = list_iterator_create( from );
-	void *temp = NULL;
-	while ( (temp = list_next( i_from ) ) != NULL )
-		list_append( to, temp );
-
-}
-
 void 
 slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) 
 {
-	int error_code = 0;
 	clock_t start_time;
-	List step_list = list_create( NULL );
 	void* resp_buffer = NULL;
 	int resp_buffer_size = 0;
+	int error_code = 0;
 	job_step_info_request_msg_t* request = ( job_step_info_request_msg_t * ) msg-> data ;
 
 	start_time = clock ();
 
-	if ( request->job_id == 0 )
+	if ( request -> last_update >= last_job_update )
 	{
-		/* Return all steps */
-		struct job_record *current_job = NULL;
-		ListIterator i_jobs = list_iterator_create( job_list );
-		
-		while ( (current_job = list_next( i_jobs ) ) != NULL )
-			list_append_list( step_list, current_job->step_list );
-
+		info ("slurm_rpc_job_step_get_info, no change, time=%ld", 
+			(long) (clock () - start_time));
+		error_code = SLURM_NO_CHANGE_IN_DATA;
 	}
-	else if ( request->job_step_id == 0 )
-	{
-		/* Return all steps for job_id */
-		struct job_record* job_ptr = find_job_record( request->job_id );
-		if ( job_ptr == NULL )
-			error_code = ESLURM_INVALID_JOB_ID;
-		else
-			list_append_list( step_list, job_ptr->step_list );
-
-	}
-	else
-	{
-		/* Return  step with give step_id/job_id */
-		struct step_record* step =  find_step_record( find_job_record( request->job_id ), request->job_step_id ); 
-		if ( step ==  NULL ) 
-			error_code = ESLURM_INVALID_JOB_ID;
-		else
-			list_append( step_list, step );
+	else {
+		error_code = pack_ctld_job_step_info_reponse_msg (&resp_buffer, &resp_buffer_size, 
+							 request->job_id, request->step_id);
+		if (error_code == ESLURM_INVALID_JOB_ID)
+			info ("slurm_rpc_job_step_get_info, no such job step %u.%u, time=%ld", 
+				request->job_id, request->step_id, (long) (clock () - start_time));
+		else if (error_code)
+			error ("slurm_rpc_job_step_get_info, error %d, time=%ld", 
+				error_code, (long) (clock () - start_time));
 	}
 
 	if ( error_code )
-	{
-		error ("slurm_rpc_job_step_get_info error %d for job step %u.%u, time=%ld",
-				error_code, request->job_id, request->job_step_id, 
-				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
-	}
-	else
-	{
+	else {
 		slurm_msg_t response_msg ;
 	
-		pack_ctld_job_step_info_reponse_msg( step_list, &resp_buffer, &resp_buffer_size );
+		info ("slurm_rpc_job_step_get_info, size=%d, time=%ld", 
+		      resp_buffer_size, (long) (clock () - start_time));
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_JOB_STEP_INFO;
 		response_msg . data = resp_buffer ;
@@ -820,8 +791,6 @@ slurm_rpc_job_step_get_info ( slurm_msg_t * msg )
 		slurm_send_node_msg( msg->conn_fd , &response_msg ) ;
 
 	}
-	
-	list_destroy( step_list );
 }
 
 /* slurm_rpc_update_job - process RPC to update the configuration of a job (e.g. priority) */

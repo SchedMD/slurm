@@ -364,11 +364,12 @@ extern void pack_all_jobs (char **buffer_ptr, int *buffer_size,
  */
 extern void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
-/* pack_ctld_job_step_info_reponse_msg - packs a job_step_info_response message
- * IN - steps - a list of steps to send
- * NOTE: This xmallocs memory for the buffer, so the user must use xfree on it.
+/* pack_ctld_job_step_info_reponse_msg - packs the message
+ * IN - job_id and step_id - zero for all
+ * OUT - packed buffer and length NOTE- MUST xfree buffer
+ * return - error code
  */
-extern int pack_ctld_job_step_info_reponse_msg( List steps, void** buffer_base, int* buffer_size );
+extern int pack_ctld_job_step_info_reponse_msg (void** buffer_base, int* buffer_length, uint32_t job_id, uint32_t step_id );
 
 /* pack_ctld_job_step_info - packs a job_step_info_t from a step_record
  */
