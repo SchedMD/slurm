@@ -315,11 +315,13 @@ _parse_format( char* format )
 					right_justify, 
 					suffix );
 		} else if (field[0] == 'c') {
+			params.match_flags.cpus_flag = true;
 			format_add_cpus( params.format_list, 
 					field_size, 
 					right_justify, 
 					suffix );
 		} else if (field[0] == 'd') {
+			params.match_flags.disk_flag = true;
 			format_add_disk( params.format_list, 
 					field_size, 
 					right_justify, 
@@ -359,6 +361,7 @@ _parse_format( char* format )
 					right_justify, 
 					suffix );
 		} else if (field[0] == 'm') {
+			params.match_flags.memory_flag = true;
 			format_add_memory( params.format_list, 
 					field_size, 
 					right_justify, 
@@ -405,6 +408,7 @@ _parse_format( char* format )
 					right_justify, 
 					suffix );
 		} else if (field[0] == 'w') {
+			params.match_flags.weight_flag = true;
 			format_add_weight( params.format_list, 
 					field_size, 
 					right_justify, 
@@ -497,6 +501,10 @@ void _print_options( void )
 	printf("-----------------------------\n");
 	printf("avail_flag      = %s\n", params.match_flags.avail_flag ?
 			"true" : "false");
+	printf("cpus_flag       = %s\n", params.match_flags.cpus_flag ?
+			"true" : "false");
+	printf("disk_flag       = %s\n", params.match_flags.disk_flag ?
+			"true" : "false");
 	printf("features_flag   = %s\n", params.match_flags.features_flag ?
 			"true" : "false");
 	printf("groups_flag     = %s\n", params.match_flags.groups_flag ?
@@ -505,6 +513,8 @@ void _print_options( void )
 					"true" : "false");
 	printf("max_time_flag   = %s\n", params.match_flags.max_time_flag ?
 					"true" : "false");
+	printf("memory_flag     = %s\n", params.match_flags.memory_flag ?
+			"true" : "false");
 	printf("partition_flag  = %s\n", params.match_flags.partition_flag ?
 			"true" : "false");
 	printf("reason_flag     = %s\n", params.match_flags.reason_flag ?
@@ -514,6 +524,8 @@ void _print_options( void )
 	printf("share_flag      = %s\n", params.match_flags.share_flag ?
 			"true" : "false");
 	printf("state_flag      = %s\n", params.match_flags.state_flag ?
+			"true" : "false");
+	printf("weight_flag     = %s\n", params.match_flags.weight_flag ?
 			"true" : "false");
 	printf("-----------------------------\n\n");
 }
