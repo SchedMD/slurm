@@ -31,6 +31,7 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg );
 int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg );
 void * task_exec_thread ( void * arg ) ;
 int send_task_exit_msg ( int task_return_code , task_start_t * task_start ) ;
+int interconnect_set_capabilities ( task_start_t * task_start ) ;
 
 /******************************************************************
  *task launch method call hierarchy
@@ -120,6 +121,8 @@ void * task_exec_thread ( void * arg )
 	struct passwd * pwd ;
 	int task_return_code ;
 	int local_errno ;
+
+	interconnect_set_capabilities ( task_start ) ;
 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
