@@ -68,7 +68,7 @@
 
 #define MAX_THREADS		64
 
-#define DEFAULT_SPOOLDIR	"/tmp/slurmd"
+#define DEFAULT_SPOOLDIR	"/var/spool/slurmd"
 #define DEFAULT_PIDFILE		"/var/run/slurmd.pid"
 
 typedef struct connection {
@@ -146,10 +146,15 @@ main (int argc, char *argv[])
 	_read_config();
 
 	/* 
-	 * Create slurmd spool directory if necessary, and chdir() to it.
+	 * Create slurmd spool directory if necessary.
 	 */
 	if (_set_slurmd_spooldir() < 0) {
 		error("Unable to initialize slurmd spooldir");
+		exit(1);
+	}
+
+	if (conf->daemonize && (chdir("/tmp") < 0)) {
+		error("Unable to chdir to /tmp");
 		exit(1);
 	}
 
@@ -738,15 +743,6 @@ _set_slurmd_spooldir(void)
 {
 	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", conf->spooldir);
-		return SLURM_ERROR;
-	}
-
-	/*
-	 * Only chdir() to spool directory if slurmd will be 
-	 * running as a daemon
-	 */
-	if (conf->daemonize && chdir(conf->spooldir) < 0) {
-		error("chdir(%s): %m", conf->spooldir);
 		return SLURM_ERROR;
 	}
 
