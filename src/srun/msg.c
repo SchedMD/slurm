@@ -17,6 +17,8 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 {
 	launch_tasks_response_msg_t *msg = 
 		(launch_tasks_response_msg_t *) resp->data;
+
+	debug2("recieved launch resp from %s", msg->node_name);
 	
 	if (msg->return_code != 0)  {
 		error("recvd return code %d from %s", msg->return_code,
@@ -51,7 +53,6 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 	switch (msg->msg_type)
 	{
 		case RESPONSE_LAUNCH_TASKS:
-			debug("recvd launch tasks response\n");
 			_launch_handler(job, msg);
 			break;
 		case MESSAGE_TASK_EXIT:

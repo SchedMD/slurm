@@ -59,6 +59,10 @@ typedef struct srun_job {
 	task_state_t *task_state; /* ntask task states	*/
 	pthread_mutex_t task_mutex;
 
+#if HAVE_LIBELAN3
+	qsw_jobinfo_t qsw_job;
+#endif
+
 } job_t;
 
 job_t * job_create(resource_allocation_response_msg_t *resp);

@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <signal.h>
 
+
 #include <src/common/log.c>
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
@@ -36,6 +37,10 @@ static void		 create_job_step(job_t *job);
 static void		 sigterm_handler(int signum);
 void *                   sig_thr(void *arg);
 
+#if HAVE_LIBELAN3
+#  include <src/common/qsw.h> 
+static void qsw_standalone(job_t *job);
+#endif
 int
 main(int ac, char **av)
 {
@@ -70,6 +75,9 @@ main(int ac, char **av)
 	if (opt.no_alloc) {
 		printf("do not allocate resources\n");
 		job = job_create(NULL); 
+#if HAVE_LIBELAN3
+		qsw_standalone(job);
+#endif
 	} else {
 		resp = allocate_nodes();
 		if (_verbose || _debug)
@@ -201,6 +209,28 @@ allocate_nodes(void)
 
 }
 
+#if HAVE_LIBELAN3
+static void
+qsw_standalone(job_t *job)
+{
+	int i;
+	bitstr_t bit_decl(nodeset, QSW_MAX_TASKS);
+
+	for (i = 0; i < job->nhosts; i++) {
+		int nodeid;
+		if ((nodeid = qsw_getnodeid_byhost(job->host[i])) < 0)
+				fatal("qsw_getnodeid_byhost: %m");
+		bit_set(nodeset, nodeid);
+
+	}
+
+	if (qsw_alloc_jobinfo(&job->qsw_job) < 0)
+		fatal("qsw_alloc_jobinfo: %m");
+	if (qsw_setup_jobinfo(job->qsw_job, opt.nprocs, nodeset, 0) < 0)
+		fatal("qsw_setup_jobinfo: %m");
+}
+#endif /* HAVE_LIBELAN3 */
+
 static void 
 create_job_step(job_t *job)
 {
@@ -220,6 +250,14 @@ create_job_step(job_t *job)
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
 		error("unable to create job step: %s", slurm_strerror(errno));
+
+	if (resp_msg.msg_type == RESPONSE_SLURM_RC) {
+		return_code_msg_t *rcmsg = (return_code_msg_t *) resp_msg.data;
+		error("unable to create job step: %s", 
+				slurm_strerror(rcmsg->return_code));
+		slurm_complete_job(job->jobid);
+		exit(1);
+	}
 
 	resp = (job_step_create_response_msg_t *) resp_msg.data;
 
