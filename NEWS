@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.0-pre4
 =============================
-
+ -- Make "scontrol show daemons" function properly on front-end system 
+    (e.g. Blue Gene)
 
 * Changes in SLURM 0.4.0-pre3
 =============================
