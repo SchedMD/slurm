@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm job step information functions"
+.TH "Slurm API" "3" "April 2003" "Morris Jette" "Slurm job step information functions"
 .SH "NAME"
 \fBslurm_free_job_step_info_response_msg, slurm_get_job_steps,
 slurm_print_job_step_info, slurm_print_job_step_info_msg
@@ -31,7 +31,9 @@ void \fBslurm_print_job_step_info\fR (
 .br
 	FILE *\fIout_file\fp,
 .br
-	job_step_info_t *\fIjob_step_ptr\fP
+	job_step_info_t *\fIjob_step_ptr\fP,
+.br
+	int \fIone_linerfP
 .br 
 );
 .LP 
@@ -39,7 +41,9 @@ void \fBslurm_print_job_step_info_msg\fR (
 .br
 	FILE *\fIout_file\fp,
 .br
-	job_step_info_response_msg_t *\fIjob_step_info_msg_ptr\fP
+	job_step_info_response_msg_t *\fIjob_step_info_msg_ptr\fP,
+.br
+	int \fIone_linerfP
 .br 
 );
 .SH "ARGUMENTS"
@@ -62,6 +66,9 @@ Specifies the pointer to the structure created by the function
 \fIjob_step_ptr\fP
 Specifies a pointer to a single job step records from the \fIjob_step_info_msg_pptr\fP 
 data structure.
+.TP 
+\fIone_liner\fP
+Print one record per line if non-zero.
 .TP 
 \fIout_file\fP
 Specifies the file to print data to.

@@ -643,17 +643,20 @@ extern void slurm_free_job_info_msg PARAMS((job_info_msg_t * job_buffer_ptr));
  *	jobs based upon message as loaded using slurm_load_jobs
  * IN out - file to write to
  * IN job_info_msg_ptr - job information message pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_job_info_msg PARAMS((
-	FILE * out, job_info_msg_t * job_info_msg_ptr ));
+	FILE * out, job_info_msg_t * job_info_msg_ptr, int one_liner ));
 
 /*
  * slurm_print_job_info - output information about a specific Slurm 
  *	job based upon message as loaded using slurm_load_jobs
  * IN out - file to write to
  * IN job_ptr - an individual job information record pointer
+ * IN one_liner - print as a single line if true
  */
-extern void slurm_print_job_info PARAMS(( FILE*, job_info_t * job_ptr ));
+extern void slurm_print_job_info PARAMS(( FILE*, job_info_t * job_ptr, 
+					  int one_liner ));
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
@@ -708,18 +711,21 @@ extern void slurm_free_job_step_info_response_msg PARAMS((
  *	job steps based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
  * IN job_step_info_msg_ptr - job step information message pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_job_step_info_msg PARAMS(( 
-	FILE * out, job_step_info_response_msg_t * job_step_info_msg_ptr ));
+	FILE * out, job_step_info_response_msg_t * job_step_info_msg_ptr, 
+	int one_liner ));
 
 /*
  * slurm_print_job_step_info - output information about a specific Slurm 
  *	job step based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
  * IN job_ptr - an individual job step information record pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_job_step_info PARAMS(( 
-	FILE * out, job_step_info_t * step_ptr ));
+	FILE * out, job_step_info_t * step_ptr, int one_liner ));
 
 
 /*****************************************************************************\
@@ -750,18 +756,20 @@ extern void slurm_free_node_info_msg PARAMS((
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_info_msg_ptr - node information message pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_node_info_msg PARAMS(( 
-	FILE * out, node_info_msg_t * node_info_msg_ptr )) ;
+	FILE * out, node_info_msg_t * node_info_msg_ptr, int one_liner )) ;
 
 /*
  * slurm_print_node_table - output information about a specific Slurm nodes
  *	based upon message as loaded using slurm_load_node
  * IN out - file to write to
  * IN node_ptr - an individual node information record pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_node_table PARAMS(( 
-	FILE * out, node_info_t * node_ptr ));
+	FILE * out, node_info_t * node_ptr, int one_liner ));
 
 /*
  * slurm_update_node - issue RPC to a node's configuration per request, 
@@ -809,18 +817,20 @@ extern void slurm_free_partition_info_msg PARAMS((
  *	partitions based upon message as loaded using slurm_load_partitions
  * IN out - file to write to
  * IN part_info_ptr - partitions information message pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_partition_info_msg PARAMS((
-	FILE * out, partition_info_msg_t * part_info_ptr ));
+	FILE * out, partition_info_msg_t * part_info_ptr, int one_liner ));
 
 /*
  * slurm_print_partition_info - output information about a specific Slurm 
  *	partition based upon message as loaded using slurm_load_partitions
  * IN out - file to write to
  * IN part_ptr - an individual partition information record pointer
+ * IN one_liner - print as a single line if true
  */
 extern void slurm_print_partition_info PARAMS(( 
-	FILE *out , partition_info_t * part_ptr ));
+	FILE *out , partition_info_t * part_ptr, int one_liner ));
 
 /*
  * slurm_update_partition - issue RPC to a partition's configuration per  

@@ -42,10 +42,12 @@
  *	job steps based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
  * IN job_step_info_msg_ptr - job step information message pointer
+ * IN one_liner - print as a single line if true
  */
 void 
 slurm_print_job_step_info_msg ( FILE* out, 
-		job_step_info_response_msg_t * job_step_info_msg_ptr )
+		job_step_info_response_msg_t * job_step_info_msg_ptr, 
+		int one_liner )
 {
 	int i;
 	job_step_info_t *job_step_ptr = job_step_info_msg_ptr->job_steps ;
@@ -58,7 +60,8 @@ slurm_print_job_step_info_msg ( FILE* out,
 
 	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++) 
 	{
-		slurm_print_job_step_info ( out, & job_step_ptr[i] ) ;
+		slurm_print_job_step_info ( out, & job_step_ptr[i], 
+					    one_liner ) ;
 	}
 }
 
@@ -67,17 +70,26 @@ slurm_print_job_step_info_msg ( FILE* out,
  *	job step based upon message as loaded using slurm_get_job_steps
  * IN out - file to write to
  * IN job_ptr - an individual job step information record pointer
+ * IN one_liner - print as a single line if true
  */
 void
-slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
+slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr, 
+			    int one_liner )
 {
 	char time_str[16];
 
+	/****** Line 1 ******/
 	make_time_str ((time_t *)&job_step_ptr->start_time, time_str);
-	fprintf ( out, "StepId=%u.%u UserId=%u Tasks=%u StartTime=%s\n", 
+	fprintf ( out, "StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
 		job_step_ptr->job_id, job_step_ptr->step_id, 
 		job_step_ptr->user_id, job_step_ptr->num_tasks, time_str);
-	fprintf ( out, "   Partition=%s Nodes=%s\n\n", 
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
+
+	/****** Line 2 ******/
+	fprintf ( out, "Partition=%s Nodes=%s\n\n", 
 		job_step_ptr->partition, job_step_ptr->nodes);
 }
 
