@@ -1,6 +1,7 @@
 /* */
 
 #include <netdb.h>
+#include <string.h>
 #include <sys/socket.h>
 
 #include "job.h"
