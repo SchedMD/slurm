@@ -91,12 +91,14 @@ static void       _create_conf();
 static void       _init_conf();
 static void       _print_conf();
 static void       _read_config();
+static void       _reconfigure();
 static void       _wait_for_all_threads();
 static void       _set_slurmd_spooldir(void);
 static void       _usage();
 static void       _handle_connection(slurm_fd fd, slurm_addr *client);
 static void      *_service_connection(void *);
 static void       _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void       _update_logging(void);
 
 static slurm_ctl_conf_t slurmctld_conf;
 
@@ -105,8 +107,10 @@ main (int argc, char *argv[])
 {
 	_create_conf();
 	_init_conf();
+	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
 	_process_cmdline(argc, argv);
 	_read_config();
+	_update_logging();
 	_print_conf();
 
 	/* Create slurmd spool directory 
@@ -121,8 +125,6 @@ main (int argc, char *argv[])
 	conf->argc = &argc;
 
 	create_pidfile(conf->pidfile);
-	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
-	_print_conf();
 	info("%s started on %T", xbasename(argv[0]));
 	_create_msg_socket();
 	conf->pid = getpid();
@@ -166,7 +168,7 @@ _msg_engine()
 					break;
 				}
 				if (reconfig) {
-					/* _reconfigure(); */
+					_reconfigure();
 					verbose("got reconfigure request");
 				}
 				goto again;
@@ -362,38 +364,45 @@ _read_config()
 {
 	read_slurm_conf_ctl(&slurmctld_conf);
 
-	/* If a parameter was set on the execute line, 
-	 * don't reset it from the config file 
-	 */
 	if (conf->conffile == NULL)
 		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
 
-	if ((conf->logfile == NULL) && (slurmctld_conf.slurmd_logfile)) 
-		_free_and_set(&conf->logfile, slurmctld_conf.slurmd_logfile );
-
-	if (conf->daemonize) {
-		conf->log_opts.stderr_level  = LOG_LEVEL_QUIET;
-		if (conf->logfile)
-			conf->log_opts.syslog_level  = LOG_LEVEL_QUIET;
-	}
-
 	conf->port          =            slurmctld_conf.slurmd_port;
 	conf->slurm_user_id =		 slurmctld_conf.slurm_user_id;
-	_free_and_set(&conf->epilog,     slurmctld_conf.epilog );
-	_free_and_set(&conf->prolog,     slurmctld_conf.prolog );
-	_free_and_set(&conf->tmpfs,      slurmctld_conf.tmp_fs );
-	_free_and_set(&conf->pubkey,     
-		      slurmctld_conf.job_credential_public_certificate);
-	_free_and_set(&conf->spooldir,    slurmctld_conf.slurmd_spooldir);
-	_free_and_set(&conf->pidfile,     slurmctld_conf.slurmd_pidfile);
+	_free_and_set(&conf->epilog,     xstrdup(slurmctld_conf.epilog));
+	_free_and_set(&conf->prolog,     xstrdup(slurmctld_conf.prolog));
+	_free_and_set(&conf->tmpfs,      xstrdup(slurmctld_conf.tmp_fs));
+	_free_and_set(&conf->pubkey,     xstrdup(
+		      slurmctld_conf.job_credential_public_certificate));
+	_free_and_set(&conf->spooldir,   
+		      xstrdup(slurmctld_conf.slurmd_spooldir));
+	_free_and_set(&conf->pidfile,    
+		      xstrdup(slurmctld_conf.slurmd_pidfile));
+}
+
+static void
+_reconfigure(void)
+{
+	read_slurm_conf_ctl(&slurmctld_conf);
+	_update_logging();
+	_print_conf();
+
+	/* FIXME: We need mutex on conf data for epilog and prolog */
+	/* FIXME: is is reasonable to reset other parameters? */
+	if (conf->conffile == NULL)
+		_free_and_set(&conf->conffile,   slurmctld_conf.slurm_conf);
+	conf->slurm_user_id =		 slurmctld_conf.slurm_user_id;
+	_free_and_set(&conf->epilog,     xstrdup(slurmctld_conf.epilog));
+	_free_and_set(&conf->prolog,     xstrdup(slurmctld_conf.prolog));
 }
 
 static void
 _print_conf()
 {
 	debug3("Confile     = `%s'",     conf->conffile);
+	debug3("Debug       = %d",       slurmctld_conf.slurmd_debug);
 	debug3("Epilog      = `%s'",     conf->epilog);
-	debug3("Logfile     = `%s'",     conf->logfile);
+	debug3("Logfile     = `%s'",     slurmctld_conf.slurmd_logfile);
 	debug3("Port        = %u",       conf->port);
 	debug3("Prolog      = `%s'",     conf->prolog);
 	debug3("TmpFS       = `%s'",     conf->tmpfs);
@@ -420,7 +429,7 @@ _init_conf()
 		error("Unable to get my hostname: %m");
 		exit(1);
 	}
-	conf->hostname = xstrdup(host);
+	conf->hostname  = xstrdup(host);
 	conf->conffile  = NULL;
 	conf->epilog    = NULL;
 	conf->logfile   = NULL;
@@ -432,6 +441,7 @@ _init_conf()
 	conf->log_opts  = lopts;
 	conf->pidfile   = xstrdup(DEFAULT_PIDFILE);
 	conf->spooldir	= xstrdup(DEFAULT_SPOOLDIR);
+	conf->debug_level =  0;
 	return;
 }
 
@@ -448,9 +458,7 @@ _process_cmdline(int ac, char **av)
 			conf->daemonize = 0;
 			break;
 		case 'v':
-			conf->log_opts.stderr_level++;
-			conf->log_opts.logfile_level++;
-			conf->log_opts.syslog_level++;
+			conf->debug_level++;
 			break;
 		case 'h':
 			_usage();
@@ -567,3 +575,35 @@ _set_slurmd_spooldir(void)
 		fatal("chdir(%s): %m", conf->spooldir);
 }
 
+
+/* Reset slurmctld logging based upon configuration parameters */
+static void _update_logging(void) 
+{
+	/* Preserve execute line arguments (if any) */
+	if (conf->debug_level) {
+		if ((LOG_LEVEL_INFO + conf->debug_level) > LOG_LEVEL_DEBUG3)
+			slurmctld_conf.slurmd_debug = LOG_LEVEL_DEBUG3;
+		else
+			slurmctld_conf.slurmd_debug = LOG_LEVEL_INFO + 
+						      conf->debug_level;
+	} 
+	if (slurmctld_conf.slurmd_debug != (uint16_t) NO_VAL) {
+		conf->log_opts.stderr_level  = slurmctld_conf.slurmd_debug;
+		conf->log_opts.logfile_level = slurmctld_conf.slurmd_debug;
+		conf->log_opts.syslog_level  = slurmctld_conf.slurmd_debug;
+	}
+	if (conf->logfile) {
+		if (slurmctld_conf.slurmd_logfile)
+			xfree(slurmctld_conf.slurmd_logfile);
+		slurmctld_conf.slurmd_logfile = xstrdup(conf->logfile);
+	}
+
+	if (conf->daemonize) {
+		conf->log_opts.stderr_level = LOG_LEVEL_QUIET;
+		if (slurmctld_conf.slurmd_logfile)
+			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
+	}
+
+	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON,
+		  slurmctld_conf.slurmd_logfile);
+}
