@@ -35,6 +35,7 @@
 
 #include <slurm/slurm.h>
 
+#include "src/api/job_info.h"
 #include "src/common/slurm_protocol_api.h"
 
 /*
