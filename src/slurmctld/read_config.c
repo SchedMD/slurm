@@ -78,7 +78,7 @@ int node_record_count = 0;
  * RET 0 if no error, errno otherwise
  * Note: Operates on common variables, no arguments
  * global: idle_node_bitmap - bitmap record of idle nodes
- *	up_node_bitmap - bitmap records of up nodes
+ *	avail_node_bitmap - bitmap records of up nodes
  *	node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  *	part_list - pointer to global partition list
@@ -101,11 +101,11 @@ static int _build_bitmaps(void)
 
 	/* initialize the idle and up bitmaps */
 	FREE_NULL_BITMAP(idle_node_bitmap);
-	FREE_NULL_BITMAP(up_node_bitmap);
+	FREE_NULL_BITMAP(avail_node_bitmap);
 	idle_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	up_node_bitmap   = (bitstr_t *) bit_alloc(node_record_count);
-	if ((idle_node_bitmap == NULL) ||
-	    (up_node_bitmap   == NULL)) 
+	avail_node_bitmap   = (bitstr_t *) bit_alloc(node_record_count);
+	if ((idle_node_bitmap  == NULL) ||
+	    (avail_node_bitmap == NULL)) 
 		fatal ("memory allocation failure");
 	/* initialize the configuration bitmaps */
 	config_record_iterator = list_iterator_create(config_list);
@@ -140,7 +140,7 @@ static int _build_bitmaps(void)
 		    (base_state != NODE_STATE_DRAINING) &&
 		    (base_state != NODE_STATE_DRAINED)  &&
 		    (no_resp_flag == 0))
-			bit_set(up_node_bitmap, i);
+			bit_set(avail_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set(node_record_table_ptr[i].config_ptr->
 				node_bitmap, i);

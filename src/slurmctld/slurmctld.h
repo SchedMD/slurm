@@ -156,8 +156,9 @@ extern time_t last_bitmap_update;	/* time of last node creation or
 					 * deletion */
 extern time_t last_node_update;		/* time of last node record update */
 extern int node_record_count;		/* count in node_record_table_ptr */
-extern bitstr_t *up_node_bitmap;	/* bitmap of nodes are up */
-extern bitstr_t *idle_node_bitmap;	/* bitmap of nodes are idle */
+extern bitstr_t *avail_node_bitmap;	/* bitmap of available nodes, 
+					 * not DOWN, DRAINED or DRAINING */
+extern bitstr_t *idle_node_bitmap;	/* bitmap of idle nodes */
 extern struct config_record default_config_record;
 extern struct node_record default_node_record;
 
