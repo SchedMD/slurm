@@ -343,11 +343,12 @@ int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, 
 
 cleanup:
     free(Temp_Specs);
-    if (Job_Name[0])      free(Job_Name[0]);
     if (Req_Features[0])  free(Req_Features[0]);
     if (Req_Node_List[0]) free(Req_Node_List[0]);
     if (Req_Group[0])     free(Req_Group[0]);
     if (Req_Partition[0]) free(Req_Partition[0]);
+    if (Job_Name[0])      free(Job_Name[0]);
+    Req_Features[0] = Req_Node_List[0] = Req_Group[0] = Req_Partition[0] = Job_Name[0] = NULL;
 } /* Parse_Job_Specs */
 
 
@@ -373,7 +374,7 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
     int *Consec_Req;	/* Are nodes from this set required (in Req_BitMap) */
     int Consec_Index, Consec_Size;
     int Rem_CPUs, Rem_Nodes;	/* Remaining resources required */
-    int Best_Fit_Nodes, Best_Fit_CPUs, Best_Fit_Req, Best_Fit_Location;
+    int Best_Fit_Nodes, Best_Fit_CPUs, Best_Fit_Req, Best_Fit_Location, Best_Fit_Sufficient;
 
     if (BitMap == NULL) {
 #if DEBUG_SYSTEM
@@ -450,6 +451,7 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
     if (Consec_Nodes[Consec_Index] != 0) Consec_End[Consec_Index++] = index-1;
 
 #if DEBUG_SYSTEM > 1
+    printf("Rem_CPUs=%d, Rem_Nodes=%d\n", Rem_CPUs, Rem_Nodes);
     for (i=0; i<Consec_Index; i++) {
 	printf("Start=%s, End=%s, Nodes=%d, CPUs=%d", 
 		Node_Record_Table_Ptr[Consec_Start[i]].Name, 
@@ -464,21 +466,24 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 
 
     while (Consec_Index) {
-	Best_Fit_CPUs = Best_Fit_Nodes = 0;
+	Best_Fit_CPUs = Best_Fit_Nodes = Best_Fit_Sufficient = 0;
 	Best_Fit_Req = -1;	/* First required node, -1 if none */
 	for (i=0; i<Consec_Index; i++) {
 	    if (Consec_Nodes[i] == 0) continue;
 	    Sufficient = ((Consec_Nodes[i] >= Rem_Nodes) && (Consec_CPUs[i] >= Rem_CPUs));
 	    if ((Best_Fit_Nodes == 0) || 					/* First possibility */
 		((Best_Fit_Req == -1) && (Consec_Req[i] != -1)) ||		/* Required nodes */
+		(Sufficient && (Best_Fit_Sufficient == 0)) ||			/* First large enough */
 	        (Sufficient && (Consec_CPUs[i] < Best_Fit_CPUs)) ||		/* Less waste option */
 	        ((Sufficient == 0) && (Consec_CPUs[i] > Best_Fit_CPUs))) {	/* Larger option */ 
 		Best_Fit_CPUs  = Consec_CPUs[i];
 		Best_Fit_Nodes = Consec_Nodes[i];
 		Best_Fit_Location = i;
 		Best_Fit_Req = Consec_Req[i];
+		Best_Fit_Sufficient = Sufficient;
 	    } /* if */
 	} /* for */
+	if (Best_Fit_Nodes == 0) break;
 	if (Consecutive && ((Best_Fit_Nodes < Rem_Nodes) || (Best_Fit_CPUs < Rem_CPUs))) 
 		break; /* No hole large enough */
 	if (Best_Fit_Req != -1) {	/* Work out from required nodes */
@@ -631,7 +636,7 @@ int Pick_Best_Nodes(struct Node_Set *Node_Set_Ptr, int Node_Set_Size, unsigned *
 	    ((Req_BitMap[0] == NULL) || (BitMapIsSuper(Req_BitMap[0],Avail_BitMap) == 1)) &&
 	     ((Max_Nodes == -1) || (Req_Nodes <= Max_Nodes))) {	
 	    /* Determine if job could possibly run (if configured nodes all available) */
-	    Error_Code = Pick_Best_CPUs(Avail_BitMap, Req_BitMap[0], Req_Nodes, Req_CPUs, Contiguous);
+	    Error_Code = Pick_Best_CPUs(Total_BitMap, Req_BitMap[0], Req_Nodes, Req_CPUs, Contiguous);
 	    if ((Error_Code == 0) && (Max_Nodes != -1) && 
 		    (BitMapCount(Avail_BitMap) > Max_Nodes)) Error_Code = EINVAL;
 	    if (Error_Code == 0) Runable=1;
