@@ -6,7 +6,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -78,6 +78,7 @@ static void 	_list_delete_config (void *config_entry);
 static int	_list_find_config (void *config_entry, void *key);
 static void 	_make_node_down(struct node_record *node_ptr);
 static void 	_pack_node (struct node_record *dump_node_ptr, Buf buffer);
+static void	_sync_bitmaps(struct node_record *node_ptr, int job_count);
 static bool 	_valid_node_state_change(enum node_states old, 
 					enum node_states new);
 
@@ -1002,7 +1003,7 @@ int
 validate_node_specs (char *node_name, uint32_t cpus, 
 			uint32_t real_memory, uint32_t tmp_disk, 
 			uint32_t job_count, uint32_t status) {
-	int error_code, node_inx;
+	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	char *reason_down = NULL;
@@ -1041,6 +1042,17 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
+	/* Every node in a given partition must have the same
+	 * processor count with elan switch at present */
+	if ((slurmctld_conf.fast_schedule == 0)  &&
+	    (node_ptr->config_ptr->cpus != cpus) &&
+	    (strcmp(slurmctld_conf.switch_type, "switch/elan") == 0)) {
+		error ("Node %s processor count inconsistent with rest "
+			"of partition", node_name);
+		error_code = EINVAL;
+		reason_down = "Inconsisent CPU count in partition";
+	}
+
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND) {
 		last_node_update = time (NULL);
 		reset_job_priority();
@@ -1054,6 +1066,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			error ("Setting node %s state to DOWN", node_name);
 			set_node_down(node_name, reason_down);
 		}
+		_sync_bitmaps(node_ptr, job_count);
 	} else if (status == ESLURMD_PROLOG_FAILED) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
 		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
@@ -1063,18 +1076,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			set_node_down(node_name, "Prolog failed");
 		}
 	} else {
-		node_ptr->cpus = cpus;
-		node_ptr->real_memory = real_memory;
-		node_ptr->tmp_disk = tmp_disk;
-		/* Every node in a given partition must have the same 
-		 * processor count at present */
-		if ((slurmctld_conf.fast_schedule == 0)  &&
-		    (node_ptr->config_ptr->cpus != cpus) && 
-		    (strcmp(slurmctld_conf.switch_type, "switch/elan") == 0)) {
-			error ("Node %s processor count inconsistent with rest "
-			       "of partition", node_name);
-			return EINVAL;		/* leave node down */
-		}
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 			last_node_update = time (NULL);
 			reset_job_priority();
@@ -1115,22 +1116,33 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			last_node_update = time (NULL);
 			node_ptr->node_state = NODE_STATE_IDLE;
 		}
-
-		node_inx = node_ptr - node_record_table_ptr;
-		if (job_count == 0) {
-			bit_set (idle_node_bitmap, node_inx);
-			bit_set (share_node_bitmap, node_inx);
-		}
-
-		if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
-		    (node_ptr->node_state == NODE_STATE_DRAINING) ||
-		    (node_ptr->node_state == NODE_STATE_DRAINED))
-			bit_clear (avail_node_bitmap, node_inx);
-		else
-			bit_set   (avail_node_bitmap, node_inx);
+		_sync_bitmaps(node_ptr, job_count);
 	}
 
 	return error_code;
+}
+
+/* Sync idle, share, and avail_node_bitmaps for a given node */
+static void _sync_bitmaps(struct node_record *node_ptr, int job_count)
+{
+	int node_inx = node_ptr - node_record_table_ptr;
+
+	if (job_count == 0) {
+		bit_set (idle_node_bitmap, node_inx);
+		bit_set (share_node_bitmap, node_inx);
+		if (node_ptr->node_state == NODE_STATE_DRAINING)
+			node_ptr->node_state = NODE_STATE_DRAINED;
+	} else {
+		if (node_ptr->node_state == NODE_STATE_DRAINED)
+			node_ptr->node_state = NODE_STATE_DRAINING;
+	}
+
+	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
+	    (node_ptr->node_state == NODE_STATE_DRAINING) ||
+	    (node_ptr->node_state == NODE_STATE_DRAINED))
+		bit_clear (avail_node_bitmap, node_inx);
+	else
+		bit_set   (avail_node_bitmap, node_inx);
 }
 
 /*
