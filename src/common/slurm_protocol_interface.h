@@ -193,4 +193,8 @@ extern void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char 
 extern void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 extern void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
 
+/* pack routines for slurm_addr */
+extern void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+extern void _slurm_pack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+
 #endif /* !_SLURM_PROTOCOL_INTERFACE_H */

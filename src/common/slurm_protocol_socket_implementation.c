@@ -420,3 +420,18 @@ void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * hos
 	*port = slurm_address -> sin_port ;
 	strncpy ( host , host_info -> h_name , buf_len ) ;
 }
+
+void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length )
+{
+	pack32 ( ntohl ( slurm_address -> sin_addr.s_addr ) , ( void ** ) buffer , length ) ;
+	pack16 ( ntohs ( slurm_address -> sin_port ) , ( void ** ) buffer , length ) ;
+}
+
+void _slurm_pack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length )
+{
+	slurm_address -> sin_family = AF_SLURM ;
+	unpack32 ( & slurm_address -> sin_addr.s_addr , ( void ** ) buffer , length ) ;
+	slurm_address -> sin_addr.s_addr = htonl ( slurm_address -> sin_addr.s_addr );
+	unpack16 ( & slurm_address -> sin_port , ( void ** ) buffer , length ) ;
+	slurm_address -> sin_port = htons ( slurm_address -> sin_port ) ;
+}

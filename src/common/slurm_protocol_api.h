@@ -147,6 +147,8 @@ void inline slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char *
 void inline slurm_set_addr_any ( slurm_addr * slurm_address , uint16_t port ) ;
 void inline slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 void inline slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
+void inline slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+void inline slurm_pack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
 
 /* Slurm message functions */
 void slurm_free_msg ( slurm_msg_t * msg ) ;
@@ -158,4 +160,5 @@ void slurm_send_rc_msg ( slurm_msg_t * request_msg , int rc ); /* sends a return
 int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * response_msg ) ;
 int slurm_send_only_controller_msg ( slurm_msg_t * request_msg ) ;
 int slurm_send_only_node_msg ( slurm_msg_t * request_msg ) ;
+
 #endif
