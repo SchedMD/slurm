@@ -108,7 +108,7 @@ static void      _restore_cred_state(slurm_cred_ctx_t ctx);
 static void      _increment_thd_count();
 static void      _decrement_thd_count();
 static void      _wait_for_all_threads();
-static void      _set_slurmd_spooldir(void);
+static int       _set_slurmd_spooldir(void);
 static void      _usage();
 static void      _handle_connection(slurm_fd fd, slurm_addr *client);
 static void     *_service_connection(void *);
@@ -148,7 +148,10 @@ main (int argc, char *argv[])
 	/* 
 	 * Create slurmd spool directory if necessary, and chdir() to it.
 	 */
-	_set_slurmd_spooldir();
+	if (_set_slurmd_spooldir() < 0) {
+		error("Unable to initialize slurmd spooldir");
+		exit(1);
+	}
 
 	if (conf->daemonize) 
 		daemon(1,0);
@@ -726,14 +729,24 @@ _usage()
 
 /* create spool directory as needed and "cd" to it 
  */
-static void
+static int
 _set_slurmd_spooldir(void)
 {
-	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST))
+	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", conf->spooldir);
+		return SLURM_ERROR;
+	}
 
-	if (conf->daemonize && chdir(conf->spooldir) < 0)
+	/*
+	 * Only chdir() to spool directory if slurmd will be 
+	 * running as a daemon
+	 */
+	if (conf->daemonize && chdir(conf->spooldir) < 0) {
 		fatal("chdir(%s): %m", conf->spooldir);
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
 }
 
 
