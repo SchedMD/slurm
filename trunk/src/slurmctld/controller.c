@@ -471,7 +471,8 @@ static void *_service_connection(void *arg)
 	msg = xmalloc(sizeof(slurm_msg_t));
 
 	if (slurm_receive_msg(newsockfd, msg, 0) < 0) {
-		error("slurm_receive_msg (_service_connection) error %m");
+		/* likely indicates sender killed after opening connection */
+		info("_service_connection/slurm_receive_msg %m");
 	} else {
 		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE)
 			return_code = (void *) "fini";
