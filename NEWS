@@ -1,6 +1,28 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.0
+============================
+
+ -- SlurmdTimeout of 0 means never set a non-responding node to DOWN.
+ -- New srun option, -u,--unbuffered, for unbuffered stdout.
+ -- Enhancements for sinfo
+   - Non-responding nodes show "*" character appended instead of "NoResp+".
+   - Node states show abbreviated variant by default
+ -- Enhancements for scontrol.
+   - Added "ping" command to show current state of SLURM controllers.
+   - Job dump in scontrol shows user name as well as UID. 
+   - Node state of DRAIN is appropriately mapped to DRAINING or DRAINED.
+ -- Modifications for error free builds on 64 bit architectures.
+ -- Fix bug where request for task count exceeding partition limit
+    was accepted and queued indefinitely.
+ -- Job cancel immediately deallocates nodes instead of waiting on srun.
+ -- Attempt to create slurmd spool if it does not exist.
+ -- Fixed signal handling bug in srun allocate mode.
+ -- Earlier error detection in slurmd startup.
+ -- "fatal: _shm_unlock: Numerical result out of range" bug fixed in slurmd.
+ -- Config file parsing is now case insensitive.
+ -- SLURM_NODELIST environment variable now set in allocate mode.
 
 * Changes in SLURM 0.2.0-pre2
 =============================
