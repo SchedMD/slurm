@@ -718,9 +718,9 @@ static void
 _display_partition_node_info(struct partition_summary *partition)
 {
 	char *no_name = "";
-	char name_buf[64], part_name[64], part_time[20], part_job_size[30];
+	char *name_buf = NULL, part_name[64], part_time[20], part_job_size[30];
 	char part_root[10], part_share[10], *part_groups;
-	int  line_cnt = 0;
+	int  line_cnt = 0, name_len, err;
 
 	ListIterator node_i = list_iterator_create(partition->states);
 	struct node_state_summary *state_sum = NULL;
@@ -750,10 +750,22 @@ _display_partition_node_info(struct partition_summary *partition)
 		part_groups = partition->info->allow_groups;
 	else 
 		part_groups = "ALL";
+	if (params.long_output)
+		name_len = 1024;
+	else
+		name_len = 64;
+	name_buf = malloc(name_len);
 
 	while ((state_sum = list_next(node_i)) != NULL) {
 		line_cnt++;
-		hostlist_ranged_string(state_sum->nodes, 64, name_buf);
+		err = hostlist_ranged_string(state_sum->nodes, name_len, 
+						name_buf);
+		while ((err < 0) && params.long_output) {
+			name_len *= 2;
+			name_buf = realloc(name_buf, name_len);
+			err = hostlist_ranged_string(state_sum->nodes, 
+						name_len, name_buf);
+		}
 
 		_print_str(part_name, part_sz_part, false);
 		printf(" ");
@@ -816,6 +828,7 @@ _display_partition_node_info(struct partition_summary *partition)
 		_print_str("", part_sz_nodes, false);
 		printf("\n");
 	}
+	free(name_buf);
 }
 
 static int _build_min_max_string(char *buffer, int min, int max, bool range)
