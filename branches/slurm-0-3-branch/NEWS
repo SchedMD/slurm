@@ -4,10 +4,12 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.3.11
 =========================
  -- Fixes for reported problems:
-   - slurm/538: user tasks block writing to stdio.
- -- New srun option -X, --disable-status to disable Ctrl-C status feature.
-    (i.e. srun immediately forwards SIGINT to remote processes)
- -- Fix for occaisional slurmd error "Unable to put task .. into pgrp .."
+   - slurm/538: user tasks block writing to stdio
+ -- Added srun option --disable-status,-X to disable srun status feature
+    and instead forward SIGINT immediately to job upon receipt of Ctrl-C.
+ -- Fix for bogus slurmd error message "Unable to put task N into pgrp..."
+ -- Fix case where slurmd may erroneously detect shared memory entry
+    as "stale" and delete entry for unkillable or slow-to-exit job.
  -- (qsnet) Fix for running slurmd on node without and elan3 adapter.
 
 * Changes in SLURM 0.3.10
