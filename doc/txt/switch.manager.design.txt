@@ -1,0 +1,109 @@
+SLURM Switch Manager
+December 19, 2001 
+By Jim Garlick
+
+
+Abstract
+
+Switch Manager
+
+The SLURM Switch Manager (SM) is consulted by the Job Manager (JM) before 
+initiating the execution of a parallel job that makes use of an interconnect.
+In a non-redundant configuration, a single instance of the SM executes as part 
+of the SLURM system.
+
+When initiating a parallel job, the JM passes a list of nodes, the number of
+tasks per node, and the number of CPU's per task to to the SM.  The SM returns 
+interconnect-dependent data needed to execute the job in the form of an opaque 
+data structure.  This data is then used by the job manager to initiate the job.
+
+In the case of the Elan interconnect, the opaque data contains an array of
+"Elan capabilities" and a "program description" for the job.  A capability is 
+a security token which permits the processes holding the capability to pass 
+messages to each other.  Each MPI task uses the set of capabilities to 
+obtain "Elan contexts", which in turn select routing and page tables 
+on the adapter for remote DMA operations.  Capablilities are unique across 
+the cluster.  Each contains a 128-bit pseudorandom key and a range of Elan
+network Id's.  For nodes with non-contiguous network Id's to communicate,
+multiple capabilties, each specifying a contiguous range, must be generated 
+for the job.  Similarly, on multi-rail (multiple switch plane) systems,
+a set of capabilities is needed for each adapter).
+
+A program description is similar to a process group, but members cannot
+detach from their program description.  On each node, the program description
+facilitates manipulation of the job, really a collection of processes 
+descending from the job manager, as an atomic entity for purposes of 
+signaling, distribution of Elan capabilities, and collection of accounting 
+information.  The program description needs to be unique on a per-node basis;
+this constraint is more than satisfied by allocating it at the SM level.
+
+The following details the calls made between JM, SM, and Elan API's:
+
+1) JM sends request containing the following to SM:
+
+   typedef enum { SM_ELAN3, SM_NONE } sm_type_t
+
+   typedef struct {
+	char *nodes[MAX_NODES];	/* list of nodes, null terminated */
+	int tasks_per_node;	/* number of tasks per node */
+	int cpus_per_task;	/* number of CPU's per task */
+	sm_type_t interconnect;	/* select interconnect */	
+   } sm_request_t;
+
+2) SM converts node names to Elan network ID's using genders file or
+a Slurm switch manager configuration file.
+
+3) SM generates a unique program description.  The program description may
+be a monotinically increasing integer whose current value is stored on disk
+in case the SM is restarted.
+
+4) SM generates an array of contexts for the list of Elan network ID's.
+
+5) SM returns opaque encapsualtion of the following data structure to JM:
+
+   typedef struct {
+	int magic;
+	int prg;		/* program description */
+	int ncap;		/* number of capabilities */
+	ELAN_CAPABILITY cap[];	/* array of capabilities */
+   } sm_reply_elan_t
+
+6) JM forwards the above along with other job info to slurmd on each node.
+
+7) ON THE NODE: slurmd forks and 
+     - calls rms_prgcreate() to assign program description to this process and
+       all its children
+     - calls rms_prgaddcap() once for each capability in the cap[]
+     - setuid to owner of job
+     - chdir, set up environment, etc..
+     - for each task, fork process then child:
+        - calls rms_setcap() once for each capability in the cap[]
+        - execs the job
+
+Notes
+
+The design of SLURM should not be tied to any particular interconnect.
+The initial implementation of SLURM supports the Quadrics Elan3 interconnect,
+or no interconnect (e.g. the kernel IP stack with standard network adapters).
+Support for future interconnects such as InfiniBand is anticipated.
+
+Can SM just be linked in as part of JM since JM is the only component talking 
+to it?
+
+Multirail support requires more thought.
+
+Need to implement a test program to exercise rms_* functions for manipulating
+capabilities, contexts, and program descriptions on a single node.
+
+Module Testing
+
+Integration and System Testing
+
+References
+
+Quadrics documentation, available online:
+  http://www.quadrics.com/onlinedocs/QM-1/html/index.html
+
+- "RMS Reference Manual"
+- "Elan Programming Manual"
+
