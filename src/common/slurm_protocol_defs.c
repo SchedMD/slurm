@@ -42,6 +42,11 @@ void slurm_free_last_update_msg(last_update_msg_t * msg)
 	xfree(msg);
 }
 
+void slurm_free_shutdown_msg(shutdown_msg_t * msg)
+{
+	xfree(msg);
+}
+
 void slurm_free_job_id_msg(job_id_msg_t * msg)
 {
 	xfree(msg);

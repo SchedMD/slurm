@@ -542,6 +542,14 @@ process_command (int argc, char *argv[])
 		if (quiet_flag == -1)
 			fprintf(stderr, "no input");
 	}
+	else if (strncasecmp (argv[0], "abort", 5) == 0) {
+		if (argc > 2)
+			fprintf (stderr,
+				 "too many arguments for keyword:%s\n", argv[0]);
+		error_code = slurm_shutdown (1);
+		if ((error_code != 0) && (quiet_flag != 1))
+			slurm_perror ("slurm_shutdown error");
+	}
 	else if ((strcasecmp (argv[0], "exit") == 0) ||
 	         (strcasecmp (argv[0], "quit") == 0)) {
 		if (argc > 1)
@@ -566,7 +574,7 @@ process_command (int argc, char *argv[])
 			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		error_code = slurm_reconfigure ();
 		if ((error_code != 0) && (quiet_flag != 1))
-			fprintf (stderr, "error %d from reconfigure\n", error_code);
+			fprintf (stderr, "error from reconfigure %s\n", slurm_strerror (error_code));
 
 	}
 	else if (strcasecmp (argv[0], "show") == 0) {
@@ -619,10 +627,9 @@ process_command (int argc, char *argv[])
 		if (argc > 2)
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n", argv[0]);
-		error_code = slurm_shutdown ();
+		error_code = slurm_shutdown (0);
 		if ((error_code != 0) && (quiet_flag != 1))
-			fprintf (stderr, "error %d from shutdown\n", error_code);
-
+			slurm_perror ("slurm_shutdown error");
 	}
 	else if (strcasecmp (argv[0], "update") == 0) {
 		if (argc < 2) {
@@ -918,6 +925,7 @@ usage () {
 	printf ("  <keyword> may be omitted from the execute line and scontrol will execute in interactive\n");
 	printf ("    mode. It will process commands as entered until explicitly terminated.\n");
 	printf ("    Valid <COMMAND> values are:\n");
+	printf ("     abort                    shutdown slurm controller immediately generating a core file.\n");
 	printf ("     exit                     terminate this command.\n");
 	printf ("     help                     print this description of use.\n");
 	printf ("     quiet                    print no messages other than error messages.\n");
