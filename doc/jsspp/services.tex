@@ -37,6 +37,8 @@ for job initiation and to
 get stdout and stderr, forward stdin, and respond to signals from the user.
 The \srun\ may also be instructed to allocate a set of resources and
 spawn a shell with access to those resources.
+\srun\ has a total of 13 parameters to control where and when the job 
+is initiated.
 
 \end{itemize}
 
@@ -49,7 +51,7 @@ loaded explicitly at run time by the SLURM libraries.
 A plugin provides a customized implemenation of a well-defined
 API connected to tasks such as authentication, interconnect fabric, 
 task scheduling.
-A set of functions is defined for use by all of the different 
+A common set of functions is defined for use by all of the different 
 infrastructures of a particular variety. 
 For example, the authentication plugin must define functions 
 such as: 
@@ -57,7 +59,7 @@ such as:
 {\tt slurm\_auth\_verify} to verify a credential to 
 approve or deny authentication, 
 {\tt slurm\_auth\_get\_uid} to get the user ID associated with 
-a specific credential.
+a specific credential, etc.
 It also must define the data structure used, a plugin type, 
 a plugin version number.
 The available plugins are defined in the configuration file.
@@ -86,7 +88,7 @@ node's hostname as well as its name to be used for communications.
 While SLURM is able to manage 1000 nodes without difficulty using 
 sockets and Ethernet, we are reviewing other communication 
 mechanisms which may offer improved scalability. 
-One possible alternative is STORM\cite{STORM2001}. 
+One possible alternative is STORM\cite{STORM01}. 
 STORM uses the cluster interconnect and Network Interface Cards to 
 provide high-speed communications including a broadcast capability. 
 STORM only supports the Quadrics Elan interconnnect at present, 
@@ -107,7 +109,7 @@ required by others, set-uid programs may be used to grant specific
 permissions to specific users.
 
 We presently support three authentication mechanisms via plugins: 
-{\tt authd}\cite{Authd2002}, {\tt munged} and {\tt none}. 
+{\tt authd}\cite{Authd02}, {\tt munged} and {\tt none}. 
 A plugin can easily be developed for Kerberos or authentication 
 mechanisms as desired.
 The \munged\ implementation is described below.

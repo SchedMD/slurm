@@ -23,7 +23,7 @@ FIGS = $(FIGDIR)/allocate-init.eps \
 
 PLOTS = $(FIGDIR)/times.eps 
 
-BIB = ../common/project.bib
+BIB = ../common/project.bib references.bib
 
 %.eps: %.dia
 	dia --nosplash -e $@ $< 
@@ -43,14 +43,14 @@ all: $(REPORT).ps
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
-	(TEXINPUTS=.:../common::; export TEXINPUTS; \
-	 BIBINPUTS=$$TEXINPUTS  ; export BIBINPUTS; \
-	 latex $(REPORT); bibtex $(REPORT); latex $(REPORT) \
-	 latex $(REPORT) )
+	latex $(REPORT)
+	bibtex $(REPORT)
+	latex $(REPORT)
+	latex $(REPORT)
 
 view: $(REPORT).ps
 	ghostview $(REPORT) &
 
 clean: 
-	rm -f *~ *.dvi *.log *.aux $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
+	rm -f *~ *% *.dvi *.log *.aux $(REPORT).ps *.blg *.bbl #*.eps #*.gif *.ps
 	      
