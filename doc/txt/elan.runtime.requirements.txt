@@ -59,6 +59,19 @@ a monotonically increasing integer value in the range of
 ELAN_RMS_BASE_CONTEXT_NUM to ELAN_RMS_TOP_CONTEXT_NUM (inclusive), 
 defined in <elan3/elanvp.h>.
 
+On selecting nodes for a job: only contiguous nodes can utilize the hardware
+broadcast feature so preference should be given to contiguous ranges of nodes.
+This is a hardware limitation.  Broadcast packets on the switch are 
+routed using a data structure that includes the tree depth and link range.      
+The tree depth targets all the leaf nodes "below" the node at the specified     
+depth, and the range trims links off each side of the range.  One can't mask
+out nodes in the middle, and a broadcast or flood DMA will fail if any of       
+the destinations fail.  The same limitation should apply to federated switches 
+as they are simply a degenerate fat tree with additional depth (not as fat
+at the top as the 128-way building blocks).
+                                                                                
+I'll put this in the elan design document in slurm-doc. 
+
 
 SLURM Job Manager Support
 
@@ -168,6 +181,7 @@ components, and I2C to distribute this information inside the switch chassis.
 The I2C is available externally via a parallel port attached to the management
 node.  A Quadrics JTAG kernel module makes this information available to
 applications such as the SLURM switch manager.
+
 
 
 Notes
