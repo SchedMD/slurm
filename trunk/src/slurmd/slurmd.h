@@ -53,6 +53,8 @@
 typedef slurm_ssl_key_ctx_t slurm_ssl_ctx;
 typedef struct slurmd_config {
 	char         *prog;		/* Program basename		   */
+	char         ***argv;           /* pointer to argument vector      */
+	int 	     *argc;             /* pointer to argument count       */
 	char         *hostname;		/* local hostname		   */
 	char         *conffile;		/* config filename                 */
 	char         *logfile;		/* slurmd logfile, if any          */

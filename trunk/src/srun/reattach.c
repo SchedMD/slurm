@@ -467,7 +467,7 @@ int reattach()
 	if ((opt.nprocs = s->ntasks) == 0) 
 		exit(1);
 	
-	if (!(job = job_create(NULL)))
+	if (!(job = job_create_noalloc()))
 		exit(1);
 
 	job->jobid  = s->jobid;
@@ -487,7 +487,7 @@ int reattach()
 
 	xsignal(SIGTERM, &_term_handler);
 
-	slurm_mutex_unlock(&job->state_mutex);
+	slurm_mutex_lock(&job->state_mutex);
 	while (   (job->state != SRUN_JOB_OVERDONE)
 	       && (job->state != SRUN_JOB_FAILED  ))
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);

@@ -126,7 +126,10 @@ _job_create_internal(allocation_info_t *info)
 		job->task_state[i] = SRUN_TASK_INIT;
 		job->outbuf[i]     = cbuf_create(1024, 1048576);
 		job->errbuf[i]     = cbuf_create(1024, 1048576);
-		job->inbuf[i]      = cbuf_create(256,  8192);
+
+		job->inbuf[i]      = cbuf_create(256,  1048576);
+		cbuf_opt_set(job->inbuf[i], CBUF_OPT_OVERWRITE, 0);
+
 		job->stdin_eof[i]  = false;
 	}
 
@@ -221,136 +224,6 @@ job_create_noalloc(void)
 	xfree(info);
 	return (job);
 
-}
-
-job_t *
-job_create(resource_allocation_response_msg_t *resp)
-{
-	int i, cpu_cnt = 0, cpu_inx = 0; 
-	int ntask, tph;  /* ntasks left to assign and tasks per host */
-	div_t d;
-	hostlist_t hl;
-	job_t *job = (job_t *) xmalloc(sizeof(*job));
-
-
-	pthread_mutex_init(&job->state_mutex, NULL);
-	pthread_cond_init(&job->state_cond, NULL);
-	job->state = SRUN_JOB_INIT;
-
-	if (resp) {
-		job->nodelist = xstrdup(resp->node_list);
-	        hl = hostlist_create(resp->node_list);
-		job->jobid = resp->job_id;
-		job->nhosts = hostlist_count(hl);
-		job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
-		memcpy(job->slurmd_addr, resp->node_addr, 
-		       sizeof(job->slurmd_addr[0])*job->nhosts);
-	} else {
-		job->cred = 
-		       (slurm_job_credential_t *) xmalloc(sizeof(*job->cred));
-		job->cred->job_id = job->jobid;
-		job->cred->user_id = opt.uid;
-		job->cred->expiration_time = 0x7fffffff;
-		job->cred->signature[0] = 'a';
-
-		job->nodelist = xstrdup(opt.nodelist);
-		hl = hostlist_create(opt.nodelist);
-		srand48(getpid());
-		job->jobid = (uint32_t) (lrand48() % 65550L + 1L);
-		if (opt.nprocs <= 1)
-			opt.nprocs = hostlist_count(hl);
-		job->nhosts = hostlist_count(hl);
-		job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * 
-							sizeof(slurm_addr));
-	}
-
-
-	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
-	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int) );
-	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int) );
-
-	/* Compute number of file descriptors / Ports needed for Job 
-	 * control info server
-	 */
-	d = div(opt.nprocs, 48);
-	job->njfds = d.rem > 0 ? d.quot+1 : d.quot;
-	job->jfd   = (slurm_fd *)   xmalloc(job->njfds * sizeof(slurm_fd));
-	job->jaddr = (slurm_addr *) xmalloc(job->njfds * sizeof(slurm_addr));
-
-	debug3("njfds = %d", job->njfds);
-
-	/* Compute number of IO file descriptors needed and allocate 
-	 * memory for them
-	 */
-	d = div(opt.nprocs, 64);
-	job->niofds = d.rem > 0 ? d.quot+1 : d.quot;
-	job->iofd   = (int *) xmalloc(job->niofds * sizeof(int));
-	job->ioport = (int *) xmalloc(job->niofds * sizeof(int));
-
-	/* ntask stdout and stderr fds */
-	job->out    = (int *)  xmalloc(opt.nprocs * sizeof(int));
-	job->err    = (int *)  xmalloc(opt.nprocs * sizeof(int));
-
-	/* ntask cbufs for stdout and stderr */
-	job->outbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->errbuf     = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->inbuf      = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	job->stdin_eof  = (bool *)   xmalloc(opt.nprocs * sizeof(bool));
-
-	/* nhost host states */
-	job->host_state =  xmalloc(job->nhosts * sizeof(host_state_t));
-
-	/* ntask task states and statii*/
-	job->task_state  =  xmalloc(opt.nprocs * sizeof(task_state_t));
-	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
-
-	for (i = 0; i < opt.nprocs; i++) {
-		job->task_state[i] = SRUN_TASK_INIT;
-		job->outbuf[i]     = cbuf_create(1024, 1048576);
-		job->errbuf[i]     = cbuf_create(1024, 1048576);
-		job->inbuf[i]      = cbuf_create(256,  8192);
-		job->stdin_eof[i]  = false;
-	}
-
-
-	pthread_mutex_init(&job->task_mutex, NULL);
-
-	ntask = opt.nprocs;
-
-	/* tasks per host, round up */
-	tph = (ntask+job->nhosts-1) / job->nhosts; 
-
-	for(i = 0; i < job->nhosts; i++) {
-		job->host[i]  = hostlist_shift(hl);
-		/* job->host_state[i] = SRUN_HOST_INIT;  *implicitly set */
-
-		/* actual task counts and layouts performed in launch() */
-		/* job->ntask[i] = 0; */
-
-		if (resp) {
-			if (opt.overcommit)
-				job->cpus[i] = tph;
-			else
-				job->cpus[i] = resp->cpus_per_node[cpu_inx];
-
-			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) {
-				/* move to next record */
-				cpu_inx++;
-				cpu_cnt = 0;
-			}
-		} else {
-			job->cpus[i] = tph;
-			slurm_set_addr (&job->slurmd_addr[i], 
-					slurm_get_slurmd_port(), job->host[i]);
-		}
-
-	}
-
-	job->ifname = fname_create(job, opt.ifname);
-	job->ofname = fname_create(job, opt.ofname);
-	job->efname = opt.efname ? fname_create(job, opt.efname) : job->ofname;
-
-	return job;
 }
 
 void
