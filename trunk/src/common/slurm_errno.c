@@ -134,6 +134,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Task count specification invalid"			},
 	{ ESLURM_INVALID_JOB_CREDENTIAL, 
 	  "Error generating job credential"			},
+	{ ESLURM_IN_STANDBY_MODE,
+	  "Slurm backup controller in standby mode"	},
 
 	/* Quadrics Elan routine error codes */
 

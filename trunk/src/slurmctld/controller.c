@@ -2360,7 +2360,7 @@ static int _background_process_msg(slurm_msg_t * msg)
 		} else {
 			error("Invalid RPC received %d from uid %u", 
 			      msg->msg_type, uid);
-			error_code = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+			error_code = ESLURM_IN_STANDBY_MODE;
 		}
 	}
 	if (msg->msg_type != REQUEST_SHUTDOWN_IMMEDIATE)
