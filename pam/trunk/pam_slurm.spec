@@ -33,7 +33,9 @@ make CFLAGS="$RPM_OPT_FLAGS"
 %install
 rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
-make install DESTDIR="$RPM_BUILD_ROOT"
+# make install DESTDIR="$RPM_BUILD_ROOT"
+# for multilib support, we install into /%{_lib}/security instead
+install -m0755 -g root -o root pam_slurm.so $RPM_BUILD_ROOT/%{_lib}/security
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
