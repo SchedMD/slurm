@@ -114,6 +114,8 @@ static void _dump_job_details_state(struct job_details *detail_ptr,
 				    Buf buffer);
 static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer);
 static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer);
+static void _excise_node_from_job(struct job_record *job_record_ptr, 
+				  struct node_record *node_record_ptr);
 static int  _find_batch_dir(void *x, void *key);
 static void _get_batch_job_dir_ids(List batch_dirs);
 static int  _job_create(job_desc_msg_t * job_specs, uint32_t * new_job_id,
@@ -903,20 +905,42 @@ int kill_running_job_by_node_name(char *node_name)
 		      job_record_point->job_id, node_name);
 		job_count++;
 		if ((job_record_point->details == NULL) ||
-		    (job_record_point->kill_on_node_fail)) {
-			last_job_update = time(NULL);
+		    (job_record_point->kill_on_node_fail) ||
+		    (job_record_point->node_cnt <= 1)) {
 			job_record_point->job_state = JOB_NODE_FAIL;
 			job_record_point->end_time = time(NULL);
 			deallocate_nodes(job_record_point);
 			delete_job_details(job_record_point);
+		} else {
+			/* Remove node from this job's list */
+			_excise_node_from_job(job_record_point, 
+					      node_record_point);
 		}
 
 	}
 	list_iterator_destroy(job_record_iterator);
+	if (job_count)
+		last_job_update = time(NULL);
 
 	return job_count;
 }
 
+/* Remove one node from a job's allocation */
+static void _excise_node_from_job(struct job_record *job_record_ptr, 
+				  struct node_record *node_record_ptr)
+{
+	int bit_position;
+
+	bit_position = node_record_ptr - node_record_table_ptr;
+	bit_clear(job_record_ptr->node_bitmap, bit_position);
+	job_record_ptr->nodes = bitmap2node_name(job_record_ptr->node_bitmap);
+	FREE_NULL(job_record_ptr->cpus_per_node);
+	FREE_NULL(job_record_ptr->cpu_count_reps);
+	FREE_NULL(job_record_ptr->node_addr);
+
+	/* build_node_details rebuilds everything from node_bitmap */
+	build_node_details(job_record_ptr);
+}
 
 
 /*
