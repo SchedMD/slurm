@@ -20,8 +20,9 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include "slurmctld.h"
-#include "list.h"
+#include <src/common/list.h>
+#include <src/common/macros.h>
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
 

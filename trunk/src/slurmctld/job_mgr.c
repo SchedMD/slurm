@@ -1093,9 +1093,15 @@ reset_job_bitmaps ()
 			fatal ("dump_all_job: job integrity is bad");
 		if (job_record_point->node_bitmap)
 			bit_free(job_record_point->node_bitmap);
-		if (job_record_point->nodes)
+		if (job_record_point->nodes) {
 			node_name2bitmap (job_record_point->nodes,
 					&job_record_point->node_bitmap);
+			if ( (job_record_point->job_state == JOB_STAGE_IN) ||
+			     (job_record_point->job_state == JOB_RUNNING) ||
+			     (job_record_point->job_state == JOB_STAGE_OUT) )
+				allocate_nodes ( job_record_point->node_bitmap ) ;
+
+		}
 
 		if (job_record_point->details == NULL)
 			continue;
