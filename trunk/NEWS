@@ -1,6 +1,19 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.10
+=========================
+ -- New slurm.conf configuration parameters:
+   - WaitTime:    Default for srun -w,--wait parameter.
+   - MaxJobCount: Maximum number of jobs SLURM can handle at one time.
+   - MinJobAge:   Minimum time since completing before job is purged from 
+                  slurmctld memory.
+ -- Block user defined signals USR1 and USR2 in slurmd session manager.
+ -- More squeue cleanup.
+ -- Support for passing options to sinfo via environment variables.
+ -- Added option to scontrol to find intersection of completing jobs and nodes.
+ -- Added fix in auth_munge to prevent "Munged communication error" message.
+
 * Changes in SLURM 0.2.9
 ========================
  -- Fixes for reported problems:
