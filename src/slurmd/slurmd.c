@@ -426,6 +426,12 @@ void slurmd_req(slurm_msg_t * msg)
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 		slurmd_rpc_shutdown_slurmd(msg);
 		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
+		/* Treat as ping (for slurmctld agent) */
+		slurm_rpc_ping(msg);
+		/* Then initiate a separate node registration */
+		send_node_registration_status_msg();
+		break;
 	case REQUEST_PING:
 		slurm_rpc_ping(msg);
 		break;
