@@ -4,12 +4,32 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.2.17
 =========================
  -- Fixes for reported problems:
+   - slurm/279: Hold jobs that can't execute due to DOWN or DRAINED 
+     nodes and release when nodes are returned to service.
    - slurm/285: "srun killed due to SIGPIPE"
  -- Support for running job steps on nodes relative to current 
     allocation via srun -r, --relative=n option.
  -- SIGKILL no longer broadcasted to job via srun on task failure unless
     --no-allocate option is used.
  -- Re-enabled "chkconfig --add" in default RPMs.
+ -- Backup controller setting proper PID into slurmctld.pid file.
+ -- Backup controller restores QSW state each time it assumes control
+ -- Backup controller purges old job records before assuming control
+    to avoid resurrecting defunct jobs.
+ -- Kill jobs on non-responding DRAINING nodes and make their state
+    DRAINED.
+ -- Save state upon completion of a job's last EPILOG_COMPLETION to 
+    reduce possibility of inconsistent job and node records when the 
+    controller is transitioning between primary and backup. 
+ -- Change logging level of detailed communication errors to not print 
+    them unless detailed debugging is requested.
+ -- Increase number of concurrent controller server threads from 20 
+    to 50 and restructure code to handle backlogs more efficiently.
+ -- Partition state at controller startup is based upon slurm.conf 
+    rather than previously saved state. Additional improvements to 
+    avoid inconsistent job/node/partition states at restart. Job state 
+    information is used to arbitrate conflicts.
+ -- Orphaned file descriptors eliminated.
 
 * Changes in SLURM 0.2.16
 =========================
