@@ -139,17 +139,18 @@ build_bitmaps ()
 
 	/* scan all nodes and identify which are up and idle and their configuration */
 	for (i = 0; i < node_record_count; i++) {
-		uint16_t base_state;
+		uint16_t base_state, no_resp_flag;
 
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;	/* defunct */
 		base_state = node_record_table_ptr[i].node_state & (~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND;
 		if (base_state == NODE_STATE_IDLE)
 			bit_set (idle_node_bitmap, i);
 		if ((base_state != NODE_STATE_DOWN) &&
 		    (base_state != NODE_STATE_UNKNOWN) &&
 		    (base_state != NODE_STATE_DRAINED) &&
-		    ((node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND) == 0))
+		    (no_resp_flag == 0))
 			bit_set (up_node_bitmap, i);
 		if (node_record_table_ptr[i].config_ptr)
 			bit_set (node_record_table_ptr[i].config_ptr->node_bitmap, i);
