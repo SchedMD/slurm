@@ -181,6 +181,20 @@ public:
 		sprintf( buf, fmt ? fmt : "%ld", val );
 		append( buf );
 	}
+
+	void append( const long int val, const char *fmt = NULL )
+	{
+		char buf[ 64 ];
+		sprintf( buf, fmt ? fmt : "%ld", val );
+		append( buf );
+	}
+
+	void append( const unsigned long int val, const char *fmt = NULL )
+	{
+		char buf[ 64 ];
+		sprintf( buf, fmt ? fmt : "%lu", val );
+		append( buf );
+	}
 	
 	void operator += ( const u_int32_t val )
 	{
@@ -190,7 +204,14 @@ public:
 	{
 		append( val );
 	}
-	
+	void operator += ( const long int val )
+	{
+		append( val );
+	}
+	void operator += ( const unsigned long int val )
+	{
+		append( val );
+	}
 	const size_t length( void ) const
 	{
 		return m_population;
