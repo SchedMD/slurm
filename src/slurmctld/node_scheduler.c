@@ -834,7 +834,7 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				      &req_bitmap,
 				      job_ptr->details->num_procs,
-				      job_ptr->details->num_nodes,
+				      job_ptr->details->min_nodes,
 				      job_ptr->details->contiguous,
 				      job_ptr->details->shared,
 				      part_ptr->max_nodes);
