@@ -54,7 +54,6 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 
-#define MIN(x,y) (((x)<(y))?(x):(y))
 
 struct sinfo_parameters {
 	char* partition;

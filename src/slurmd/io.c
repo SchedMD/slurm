@@ -122,7 +122,6 @@ static void   _io_client_attach(io_obj_t *, io_obj_t *, io_obj_t *,
 static void   _io_connect_objs(io_obj_t *, io_obj_t *);
 static int    _shutdown_task_obj(struct io_info *t);
 static bool   _isa_client(struct io_info *io);
-static bool   _isa_task(struct io_info *io);
 static int    _open_output_file(slurmd_job_t *job, task_info_t *t, 
 		                char *fname, slurmd_io_type_t type);
 static int    _open_stdin_file(slurmd_job_t *job, task_info_t *t, 
@@ -133,6 +132,9 @@ static struct io_info * _io_info_create(uint32_t id);
 static struct io_obj  * _io_obj(slurmd_job_t *, task_info_t *, int, int);
 static void           * _io_thr(void *arg);
 
+#ifndef NDEBUG
+static bool   _isa_task(struct io_info *io);
+#endif
 
 static struct io_operations * _ops_copy(struct io_operations *ops);
 static void                   _ops_destroy(struct io_operations *ops);
@@ -851,6 +853,7 @@ _io_disconnect_client(struct io_info *client, List objs)
 	return;
 }
 
+#ifndef NDEBUG
 static bool
 _isa_task(struct io_info *io)
 {
@@ -859,6 +862,7 @@ _isa_task(struct io_info *io)
 		|| (io->type == TASK_STDERR)
 		|| (io->type == TASK_STDIN ));
 }
+#endif
 
 static bool
 _isa_client(struct io_info *io)
