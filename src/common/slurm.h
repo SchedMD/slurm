@@ -25,6 +25,7 @@
 #include "log.h"
 #include "bitstring.h"
 #include "xmalloc.h"
+#include "pack.h"
 
 #define DEBUG_SYSTEM 1
 
@@ -61,11 +62,11 @@ extern char *backup_controller;	/* name of computer acting as slurm backup contr
 #define NODE_MAGIC   0x0de575ed
 #define NO_VAL   (-9812)
 struct config_record {
-	unsigned magic;		/* magic cookie to test data integrity */
-	int cpus;		/* count of cpus running on the node */
-	int real_memory;	/* megabytes of real memory on the node */
-	int tmp_disk;		/* megabytes of total storage in TMP_FS file system */
-	int weight;		/* arbitrary priority of node for scheduling work on */
+	uint32_t magic;		/* magic cookie to test data integrity */
+	uint32_t cpus;		/* count of cpus running on the node */
+	uint32_t real_memory;	/* megabytes of real memory on the node */
+	uint32_t tmp_disk;	/* megabytes of total storage in TMP_FS file system */
+	uint32_t weight;	/* arbitrary priority of node for scheduling work on */
 	char *feature;		/* arbitrary list of features associated with a node */
 	char *nodes;		/* names of nodes in partition configuration record */
 	bitstr_t *node_bitmap;	/* bitmap of nodes in configuration record */
@@ -78,8 +79,7 @@ extern List config_list;	/* list of config_record entries */
 enum node_states {
 	STATE_DOWN,		/* node is not responding */
 	STATE_UNKNOWN,		/* node's initial state, unknown */
-	STATE_IDLE,		/* node idle and available for use */
-	STATE_STAGE_IN,		/* node has been allocated, job not yet running */
+	STATE_IDLE,		/* node unassigned to job */
 	STATE_BUSY,		/* node has been allocated, job currently */
 	STATE_DRAINED,		/* node idle and not to be allocated future work */
 	STATE_DRAINING,		/* node in use, but not to be allocated future work */
@@ -93,11 +93,11 @@ extern time_t last_node_update;		/* time of last update to node records */
 struct node_record {
 	unsigned magic;			/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];	/* name of the node. a null name indicates defunct node */
-	enum node_states node_state;	/* state of the node, negative if down */
+	int node_state;			/* enum node_states, negative if down */
 	time_t last_response;		/* last response from the node */
-	int cpus;			/* actual count of cpus running on the node */
-	int real_memory;		/* actual megabytes of real memory on the node */
-	int tmp_disk;			/* actual megabytes of total disk in TMP_FS */
+	uint32_t cpus;			/* actual count of cpus running on the node */
+	uint32_t real_memory;		/* actual megabytes of real memory on the node */
+	uint32_t tmp_disk;		/* actual megabytes of total disk in TMP_FS */
 	struct config_record *config_ptr;	/* configuration specification for this node */
 	struct part_record *partition_ptr;	/* partition for this node */
 };
@@ -111,16 +111,17 @@ extern struct node_record default_node_record;
 
 /* NOTE: change PART_STRUCT_VERSION value whenever the contents of PART_STRUCT_FORMAT change */
 #define PART_STRUCT_VERSION 1
-#define PART_STRUCT_FORMAT "PartitionName=%s MaxNodes=%d MaxTime=%d Nodes=%s Key=%s Default=%s AllowGroups=%s Shared=%s State=%s #TotalNodes=%d TotalCPUs=%d\n"
+#define	INFINITE (0xffffffff)
+#define PART_STRUCT_FORMAT "PartitionName=%s MaxNodes=%u MaxTime=%u Nodes=%s Key=%s Default=%s AllowGroups=%s Shared=%s State=%s #TotalNodes=%d TotalCPUs=%d\n"
 #define PART_MAGIC 0xaefe8495
 extern time_t last_part_update;	/* time of last update to part records */
 struct part_record {
-	unsigned magic;		/* magic cookie to test data integrity */
+	uint32_t magic;		/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];/* name of the partition */
-	int max_time;		/* minutes, -1 if unlimited */
-	int max_nodes;		/* per job, -1 if unlimited */
-	int total_nodes;	/* total number of nodes in the partition */
-	int total_cpus;		/* total number of cpus in the partition */
+	uint32_t max_time;	/* minutes, 0xffffffff if unlimited */
+	uint32_t max_nodes;	/* per job, 0xffffffff if unlimited */
+	uint32_t total_nodes;	/* total number of nodes in the partition */
+	uint32_t total_cpus;	/* total number of cpus in the partition */
 	unsigned key:1;		/* 1 if slurm distributed key is required for use of partition */
 	unsigned shared:2;	/* 1 if more than one job can execute on a node, 2 if required */
 	unsigned state_up:1;	/* 1 if state is up, 0 if down */
@@ -165,36 +166,36 @@ extern char *job_state_string[];
 extern int job_count;			/* number of jobs in the system */
 
 struct job_details {
-	unsigned magic;			/* magic cookie to test data integrity */
-	int num_procs;			/* minimum number of processors */
-	int num_nodes;			/* minimum number of nodes */
+	uint32_t magic;			/* magic cookie to test data integrity */
+	uint32_t num_procs;		/* minimum number of processors */
+	uint32_t num_nodes;		/* minimum number of nodes */
 	char *nodes;			/* required nodes */
 	char *features;			/* required features */
-	int shared;			/* desires shared nodes, 1=true, 0=false */
-	int contiguous;			/* requires contiguous nodes, 1=true, 0=false */
-	int min_procs;			/* minimum processors per node, MB */
-	int min_memory;			/* minimum memory per node, MB */
-	int min_tmp_disk;		/* minimum temporary disk per node, MB */
+	unsigned shared:2;		/* 1 if more than one job can execute on a node */
+	unsigned contiguous:1;		/* requires contiguous nodes, 1=true, 0=false */
+	uint32_t min_procs;		/* minimum processors per node, MB */
+	uint32_t min_memory;		/* minimum memory per node, MB */
+	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
 	enum task_dist dist;		/* distribution of tasks, 0=fill, 0=cyclic */
 	char *job_script;		/* name of job script to execute */
-	int procs_per_task;		/* processors required per task */
-	int total_procs;		/* total number of allocated processors, for accounting */
+	uint32_t procs_per_task;	/* processors required per task */
+	uint32_t total_procs;		/* total number of allocated processors, for accounting */
 	char *node_list;		/* comma separated assigned node list (by task) */
 	time_t submit_time;		/* time of submission */
 };
 
 struct job_record {
 	char job_id[MAX_ID_LEN];	/* job ID */
-	unsigned magic;			/* magic cookie to test data integrity */
+	uint32_t magic;			/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];	/* name of the job */
 	char partition[MAX_NAME_LEN];	/* name of the partition */
-	uid_t user_id;			/* user the job runs as */
+	uint32_t user_id;		/* user the job runs as */
 	enum job_states job_state;	/* state of the job */
 	char *nodes;			/* comma delimited list of nodes allocated to job */
-	int time_limit;			/* maximum run time in minutes, -1 if unlimited */
+	uint32_t time_limit;		/* maximum run time in minutes, 0xffffffff if unlimited */
 	time_t start_time;		/* time execution begins, actual or expected*/
 	time_t end_time;		/* time of termination, actual or expected */
-	int priority;			/* relative priority of the job */
+	uint32_t priority;		/* relative priority of the job */
 	struct job_details *details;	/* job details (set until job terminates) */
 };
 
@@ -221,26 +222,26 @@ extern void  allocate_nodes (unsigned *bitmap);
 extern int bitmap2node_name (bitstr_t *bitmap, char **node_list);
 
 /*
- * block_or_cyclic - map string into integer
+ * block_or_cycle - map string into integer
  * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
  * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
  */
-extern enum task_dist block_or_cyclic (char *in_string);
+extern enum task_dist block_or_cycle (char *in_string);
 
 /*
- * build_node_list - build a node_list for a job laying out the actual
- *	task distributions on the nodes
+ * build_node_list - build a node_list for a job including processor 
+ *	count on the node (e.g. "lx01[4],lx02[4],...")
  * input: bitmap - bitmap of nodes to use
- *	dist - distribution of tasks, BLOCK or CYCLE
- *	procs_per_task - how many processor each task will consume
  *	node_list - place to store node list
  *	total_procs - place to store count of total processors allocated
  * output: node_list - comma separated list of nodes on which the tasks 
- *		are to be initiated (ordered)
+ *		are to be initiated
  *	total_procs - count of total processors allocated
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the storage at node_list must be xfreed by the caller
  */
-extern void build_node_list (bitstr_t *bitmap, enum task_dist dist, 
-		int procs_per_task, char **node_list, int *total_procs);
+extern void  build_node_list (bitstr_t *bitmap, char **node_list, 
+	uint32_t *total_procs);
 
 /*
  * count_cpus - report how many cpus are associated with the identified nodes 
@@ -452,6 +453,15 @@ extern int init_node_conf ();
 extern int init_part_conf ();
 
 /* 
+ * init_slurm_conf - initialize or re-initialize the slurm configuration  
+ *	values. this should be called before calling read_slurm_conf.  
+ * output: return value - 0 if no error, otherwise an error code
+ * globals: control_machine - name of primary slurmctld machine
+ *	backup_controller - name of backup slurmctld machine
+ */
+extern int init_slurm_conf ();
+
+/* 
  * is_key_valid - determine if supplied key is valid
  * input: key - a slurm key acquired by user root
  * output: returns 1 if key is valid, 0 otherwise
@@ -477,6 +487,16 @@ extern int  is_key_valid (int key);
  *	and node_list
  */
 extern int job_allocate (char *job_specs, char **new_job_id, char **node_list);
+
+/* 
+ * job_cancel - cancel the specified job
+ * input: job_id - id of the job to be cancelled
+ * output: returns 0 on success, EINVAL if specification is invalid
+ *	EAGAIN of job available for cancellation now 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int job_cancel (char * job_id);
 
 /*
  * job_create - parse the suppied job specification and create job_records for it
@@ -606,6 +626,38 @@ extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
 extern int  node_name2list (char *node_names, char **node_list, int *node_count);
 
 /* 
+ * pack_all_node - dump all configuration and node information for all nodes in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the data buffer is actually allocated by dump_node and the 
+ *                     calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
+ */
+extern int pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time);
+
+/* 
+ * pack_node - dump all configuration information about a specific node in 
+ *	machine independent form (for network transmission)
+ * input:  dump_node_ptr - pointer to node for which information is requested
+ *	buf_ptr - buffer for node information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if out_line buffer too small
+ * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
+ *	and make the corresponding changes to load_node_config in api/node_info.c
+ */
+extern int pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len); 
+
+/* 
  * parse_job_specs - pick the appropriate fields out of a job request specification
  * input: job_specs - string containing the specification
  *        req_features, etc. - pointers to storage for the specifications
@@ -648,13 +700,29 @@ extern int read_buffer (char *buffer, int *buffer_offset, int buffer_size,
 			char **line);
 
 /*
- * read_SLURM_CONF - load the slurm configuration from the specified file 
- * call init_SLURM_CONF before ever calling read_SLURM_CONF.  
- * read_SLURM_CONF can be called more than once if so desired.
- * input: file_name - name of the file containing slurm configuration information
+ * read_slurm_conf - load the slurm configuration from the specified file. 
+ * read_slurm_conf can be called more than once if so desired.
+ * input: file_name - name of the file containing overall slurm configuration information
  * output: return - 0 if no error, otherwise an error code
+ * global: control_machine - primary machine on which slurmctld runs
+ * 	backup_controller - backup machine on which slurmctld runs
+ *	default_part_loc - pointer to default partition
+ * NOTE: call init_slurm_conf before ever calling read_slurm_conf.  
  */
-extern int read_SLURM_CONF (char *file_name);
+extern int  read_slurm_conf (char *file_name);
+
+/* 
+ * rehash - build a hash table of the node_record entries. this is a large hash table 
+ * to permit the immediate finding of a record based only upon its name without regards 
+ * to the number. there should be no need for a search. the algorithm is optimized for 
+ * node names with a base-ten sequence number suffix. if you have a large cluster and 
+ * use a different naming convention, this function and/or the hash_index function 
+ * should be re-written.
+ * global: node_record_table_ptr - pointer to global node table
+ *         hash_table - table of hash indecies
+ * NOTE: allocates memory for hash_table
+ */
+extern void rehash ();
 
 /* 
  * report_leftover - report any un-parsed (non-whitespace) characters on the
@@ -743,7 +811,8 @@ extern int update_part (char *partition_name, char *spec);
  * output: returns 0 if no error, enoent if no such node, einval if values too low
  */
 extern int validate_node_specs (char *node_name,
-				int cpus, int real_memory, int tmp_disk);
+				uint32_t cpus, uint32_t real_memory, 
+				uint32_t tmp_disk);
 
 /* 
  * write_buffer - write the specified line to the specified buffer, 
