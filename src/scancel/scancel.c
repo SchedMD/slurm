@@ -64,11 +64,11 @@ main (int argc, char *argv[])
 {
 	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 
-	log_init (argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init ("scancel", log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	initialize_and_process_args(argc, argv);
 	if (opt.verbose) {
 		log_opts.stderr_level =+opt.verbose;
-		log_init (argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+		log_alter (log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
 
 	if ((opt.interactive) ||
