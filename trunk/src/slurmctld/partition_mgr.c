@@ -139,7 +139,7 @@ main(int argc, char * argv[]) {
 	printf("  TotalNodes=%d, TotalCPUs=%d, Key=%d StateUp=%d, AllowGroups=%s\n", 
 	    TotalNodes, TotalCPUs, Key, StateUp, AllowGroups);
 	if (BitMapSize > 0) 
-	    printf("  BitMap[0]=%x, BitMapSize=%d\n",NodeBitMap[0], BitMapSize);
+	    printf("  BitMap[0]=0x%x, BitMapSize=%d\n", NodeBitMap[0], BitMapSize);
 	if (strlen(Next_Name) == 0) break;
 	strcpy(Req_Name, Next_Name);
     } /* while */
@@ -530,6 +530,7 @@ int Load_Part(char *Buffer, int Buffer_Size) {
  * Output: Req_Name - The partition's name is stored here
  *         Next_Name - The name of the next partition in the list is stored here
  *         MaxTime, etc. - The partition's state information
+ *         BitMap_Size - Size of BitMap in bytes
  *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
  */
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 

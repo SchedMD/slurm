@@ -1,7 +1,9 @@
 /*
  * read_config.c - Read the overall SLURM configuration file
- * This module also has the basic functions for manipulation of data structures
  * See slurm.h for documentation on external functions and data structures
+ *
+ * NOTE: DEBUG_MODULE of read_config requires that it be loaded with 
+ *       partition_mgr and node_mgr
  *
  * Author: Moe Jette, jette@llnl.gov
  */
