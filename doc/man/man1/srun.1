@@ -154,6 +154,12 @@ with "#!" followed by the fully qualified pathname of a valid shell.
 verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
 .B srun.
 .TP
+\fB\-d\fR, \fB\-\-slurmd-debug\fR=\fIlevel\fR
+Specify a debug level for slurmd(8). \fIlevel\fR may be an integer value
+between 0 [quiet, only errors are displayed] and 6 [insanely verbose
+operation]. The slurmd debug information is copied to the stderr of
+the job. 
+.TP
 \fB\-W\fR, \fB\-\-wait\fR=\fIseconds\fR
 Specify how long to wait after the first task terminates before terminating 
 all remaining tasks. The default value is unlimited. This can be useful to 
@@ -413,6 +419,9 @@ SLURM_CPUS_PER_TASK
 SLURM_DEBUG
 \fB\-v, \-\-verbose\fR
 .TP
+SLURMD_DEBUG
+\fB\-d, \-\-slurmd-debug\fR
+.TP
 SLURM_DISTRIBUTION
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)
 .TP
@@ -464,6 +473,8 @@ the tasks it is controlling with a few exceptions. The escape sequence
 \fB<control-c>\fR will report the state of all tasks associated with 
 the \fBsrun\fR command. If \fB<control-c>\fR is entered twice within 
 one second, then the associated SIGINT signal will be sent to all tasks.
+If a third \fB<control-c>\fB is recieved, the job will be forcefully
+terminated without waiting for remote tasks to exit.
 
 The escape sequence \fB<control-z>\fR is presently ignored. Our intent 
 is for this put the \fBsrun\fR command into a mode where various special 
