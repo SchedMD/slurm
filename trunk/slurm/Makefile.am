@@ -5,3 +5,6 @@
 AUTOMAKE_OPTIONS = foreign
 
 EXTRA_DIST = slurm.h slurm_errno.h
+
+MAINTAINERCLEANFILES = 			\
+	slurm.h.in
