@@ -62,10 +62,12 @@ typedef struct task_info {
 	job_t *job_ptr;
 } task_info_t;
 
-static void p_launch(slurm_msg_t *req_array_ptr, job_t *job);
-static void * p_launch_task(void *args);
-static void print_launch_msg(launch_tasks_request_msg_t *msg);
-static int  envcount(char **env);
+static void   _dist_block(job_t *job, uint32_t **task_ids);
+static void   _dist_cyclic(job_t *job, uint32_t **task_ids);
+static void   _p_launch(slurm_msg_t *req_array_ptr, job_t *job);
+static void * _p_launch_task(void *args);
+static void   _print_launch_msg(launch_tasks_request_msg_t *msg);
+static int    _envcount(char **env);
 
 static void
 _dist_block(job_t *job, uint32_t **task_ids)
@@ -126,7 +128,7 @@ launch(void *arg)
 							job->nhosts);
 	req_array_ptr = (slurm_msg_t *) 
 			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
-	my_envc = envcount(environ);
+	my_envc = _envcount(environ);
 	for (i = 0; i < job->nhosts; i++) {
 		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
 		slurm_msg_t                *m = &req_array_ptr[i];
@@ -172,7 +174,7 @@ launch(void *arg)
 
 	}
 
-	p_launch(req_array_ptr, job);
+	_p_launch(req_array_ptr, job);
 
 	for (i = 0; i < job->nhosts; i++)
 		xfree(task_ids[i]);
@@ -194,8 +196,8 @@ launch(void *arg)
 	return(void *)(0);
 }
 
-/* p_launch - parallel (multi-threaded) task launcher */
-static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
+/* _p_launch - parallel (multi-threaded) task launcher */
+static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 {
 	int i;
 	task_info_t *task_info_ptr;
@@ -231,11 +233,11 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 #endif
 		if ( pthread_create (	&thread_ptr[i].thread, 
 		                        &thread_ptr[i].attr, 
-		                        p_launch_task, 
+		                        _p_launch_task, 
 		                        (void *) task_info_ptr) ) {
 			error ("pthread_create error %m");
 			/* just run it under this thread */
-			p_launch_task((void *) task_info_ptr);
+			_p_launch_task((void *) task_info_ptr);
 		}
 
 	}
@@ -248,8 +250,8 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 	xfree(thread_ptr);
 }
 
-/* p_launch_task - parallelized launch of a specific task */
-static void * p_launch_task(void *args)
+/* _p_launch_task - parallelized launch of a specific task */
+static void * _p_launch_task(void *args)
 {
 	task_info_t *task_info_ptr = (task_info_t *)args;
 	slurm_msg_t *req_ptr = task_info_ptr->req_ptr;
@@ -260,7 +262,7 @@ static void * p_launch_task(void *args)
 	int failure = 0;
 
 	debug3("launching on host %s", job_ptr->host[host_inx]);
-        print_launch_msg(msg_ptr);
+        _print_launch_msg(msg_ptr);
 	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
 		error("task launch error on %s: %m", job_ptr->host[host_inx]);
 		pthread_mutex_lock(&job_ptr->task_mutex);
@@ -286,7 +288,7 @@ static void * p_launch_task(void *args)
 }
 
 
-static void print_launch_msg(launch_tasks_request_msg_t *msg)
+static void _print_launch_msg(launch_tasks_request_msg_t *msg)
 {
 	debug3("%d.%d uid:%ld n:%ld cwd:%s %d [%d-%d]",
 		msg->job_id, msg->job_step_id, (long) msg->uid, 
@@ -296,7 +298,7 @@ static void print_launch_msg(launch_tasks_request_msg_t *msg)
 }
 
 static int
-envcount(char **environ)
+_envcount(char **environ)
 {
 	int envc = 0;
 	while (environ[envc] != NULL)
