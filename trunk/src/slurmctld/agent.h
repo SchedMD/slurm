@@ -24,7 +24,10 @@
  *  You should have received a copy of the GNU General Public License along
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
- *****************************************************************************
+\*****************************************************************************/
+
+#ifndef _AGENT_H
+#define _AGENT_H
 
 #include <src/slurmctld/agent.h>
 #include <src/slurmctld/slurmctld.h>
@@ -58,3 +61,5 @@ typedef struct agent_info {
 } agent_info_t;
 
 void *agent (void *args);
+
+#endif /* !_AGENT_H */
