@@ -4,6 +4,8 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+EXTRA_DIST = slurm.h
+
 INCLUDES = -I$(top_srcdir)/src/common
 
 # should we build individual modules?
@@ -18,10 +20,9 @@ endif
 # link to libslurm (for test modules):
 LDADD = -lslurm
 
-lib_LTLIBRARIES = libslurm.la 
+lib_LTLIBRARIES = libslurm.la
 
 libslurm_la_SOURCES =    \
-	nodelist.c	 \
 	allocate.c       \
 	build_info.c     \
 	job_info.c       \
@@ -49,11 +50,13 @@ libslurm.sym :
 	cp slurmapi.exp libslurm.sym
 
 # hack to allow building .lo objects from other directories
-$(filter %.lo, $(libslurm_la_LIBADD)) : %.lo : %.c
+../*/*.lo : %.lo : %.c
 	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
+#$(filter %.lo, $(libslurm_la_LIBADD)) : %.lo : %.c
+#	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
 	
-$(filter %.la, $(libslurm_la_LIBADD)) : %.la : 
-	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
+#$(filter %.la, $(libslurm_la_LIBADD)) : %.la : 
+#	cd `echo $@|sed 's#/[^/]*\$$##'` && $(MAKE) `echo $@|sed 's#.*/##'`
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
