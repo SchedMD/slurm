@@ -91,6 +91,7 @@ static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
 
+inline static void  _disable_signals(void);
 inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
@@ -117,7 +118,6 @@ int main(int argc, char *argv[])
 	int error_code;
 	char node_name[MAX_NAME_LEN];
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
-	sigset_t set;
 
 	/*
 	 * Establish initial configuration
@@ -186,15 +186,7 @@ int main(int argc, char *argv[])
 	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
 	 */
 
-	/* Block SIGALRM and SIGPIPE for everyone not explicitly enabled */
-	if (sigemptyset(&set))
-		error("sigemptyset error: %m");
-	if (sigaddset(&set, SIGALRM))
-		error("sigaddset error on SIGALRM: %m");
-	if (sigaddset(&set, SIGPIPE))
-		error("sigaddset error on SIGPIPE: %m");
-	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
-		fatal("sigprocmask error: %m");
+	_disable_signals();
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -284,6 +276,35 @@ int main(int argc, char *argv[])
 	log_fini();
 
 	exit(0);
+}
+
+/* Disable selected signals for all threads by default */
+static void _disable_signals(void)
+{
+	sigset_t set;
+
+	if (sigemptyset(&set))
+		error("sigemptyset error: %m");
+
+	if (sigaddset(&set, SIGALRM))
+		error("sigaddset error on SIGALRM: %m");
+	if (sigaddset(&set, SIGPIPE))
+		error("sigaddset error on SIGPIPE: %m");
+#ifdef	SIGIO
+	if (sigaddset(&set, SIGIO))
+		error("sigaddset error on SIGIO: %m");
+#endif
+#ifdef	SIGPWR
+	if (sigaddset(&set, SIGPWR))
+		error("sigaddset error on SIGPWR: %m");
+#endif
+#ifdef	SIGLOST
+	if (sigaddset(&set, SIGLOST))
+		error("sigaddset error on SIGLOST: %m");
+#endif
+
+	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
+		fatal("sigprocmask error: %m");
 }
 
 /* initialization of common slurmctld configuration */
