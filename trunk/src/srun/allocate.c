@@ -42,7 +42,10 @@
 #  include "src/srun/attach.h"
 #endif
 
-#define MAX_RETRIES 10
+#define MAX_ALLOC_WAIT 60	/* seconds */
+#define MIN_ALLOC_WAIT  2	/* seconds */
+#define MAX_RETRIES    10
+#define MIN(x,y) (((x)<(y))?(x):(y))
 
 /*
  * Static Prototypes
@@ -125,6 +128,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	SigFunc *old_handler;
 	old_job_alloc_msg_t old_job;
 	resource_allocation_response_msg_t *r = *resp;
+	int sleep_time = MIN_ALLOC_WAIT;
 
 	info ("job %u queued and waiting for resources", r->job_id);
 
@@ -134,13 +138,14 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 	old_job.job_id = r->job_id;
 	old_job.uid = (uint32_t) getuid();
 	slurm_free_resource_allocation_response_msg(r);
-	sleep (2);
+	sleep (sleep_time);
 
 	/* Keep polling until the job is allocated resources */
 	while (slurm_confirm_allocation(&old_job, resp) < 0) {
 		if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 			debug3("Still waiting for allocation");
-			sleep(5);
+			sleep_time = MIN((++sleep_time), MAX_ALLOC_WAIT);
+			sleep(sleep_time);
 		} else {
 			error("Unable to confirm resource allocation for "
 			      "job %u: %m", old_job.job_id);
