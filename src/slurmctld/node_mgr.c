@@ -1111,7 +1111,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		reason_down = "Low CPUs";
 	}
 	node_ptr->cpus = cpus;
-	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr))
+	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr) &&
+	    (slurmctld_conf.fast_schedule == 0))
 		node_ptr->partition_ptr->total_cpus += 
 						(cpus - config_ptr->cpus);
 
