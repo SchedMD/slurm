@@ -12,8 +12,8 @@ documents those changes that are of interest to users and admins.
  -- Fix bug in purging of batch jobs (active batch jobs were being 
     improperly purged starting in version 0.3.0).
  -- When updating a node state to DRAINING/DRAINED a Reason must be 
-    provided and a timestamp will automatically be appended to that 
-    Reason
+    provided. The user name and a timestamp will automatically be 
+    appended to that Reason.
 
 * Changes in SLURM 0.3.4
 ========================
