@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -94,6 +94,22 @@ if {[wait_for_file $file_out] == 0} {
 		-re "job id ($number)" {
 			set scontrol_id $expect_out(1,string)
 			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+}
+
+#
+# Check for errors in log
+#
+if {[wait_for_file $file_err] == 0} {
+	spawn $bin_cat $file_err
+	expect {
+		-re "error" {
+			send_user "\nFAILURE: some error encountered\n"
+			set exit_code 1
 		}
 		eof {
 			wait
