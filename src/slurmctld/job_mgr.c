@@ -396,6 +396,8 @@ find_job_record(char *job_id)
 	struct job_record *job_ptr;
 
 	job_ptr = list_find_first (job_list, &list_find_job_id, job_id);
+	if ((job_ptr != NULL) && (job_ptr->magic != JOB_MAGIC))
+		fatal ("job_list invalid");
 	return job_ptr;
 }
 
@@ -451,7 +453,7 @@ job_allocate (char *job_specs, char **new_job_id, char **node_list)
 	error_code = job_create (job_specs, new_job_id);
 	if (error_code)
 		return error_code;
-	job_ptr = find_job_record(new_job_id[0]);
+	job_ptr = find_job_record (new_job_id[0]);
 	if (job_ptr == NULL)
 		fatal ("job_allocate allocated job %s lacks record", 
 			new_job_id[0]);
@@ -465,6 +467,50 @@ job_allocate (char *job_specs, char **new_job_id, char **node_list)
 	node_list[0] = xmalloc(i);
 	strcpy(node_list[0], job_ptr->nodes);
 	return 0;
+}
+
+
+/* 
+ * job_cancel - cancel the specified job
+ * input: job_id - id of the job to be cancelled
+ * output: returns 0 on success, EINVAL if specification is invalid
+ *	EAGAIN of job available for cancellation now 
+ * global: job_list - pointer global job list
+ */
+int
+job_cancel (char * job_id) 
+{
+	struct job_record *job_ptr;
+	bitstr_t *req_bitmap;
+	int error_code;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info ("job_cancel: invalid job id %s", job_id);
+		return EINVAL;
+	}
+	if (job_ptr->job_state == JOB_PENDING) {
+		job_ptr->job_state = JOB_END;
+		job_ptr->start_time = job_ptr->end_time = time(NULL);
+		info ("job_cancel of pending job %s", job_id);
+		return 0;
+	}
+
+	if (job_ptr->job_state == JOB_STAGE_IN) {
+		job_ptr->job_state = JOB_END;
+		error_code = node_name2bitmap (job_ptr->nodes, &req_bitmap);
+		if (error_code == EINVAL)
+			fatal ("invalid node list for job %s", job_id);
+		deallocate_nodes (req_bitmap);
+		bit_free (req_bitmap);
+		info ("job_cancel of job %s successful", job_id);
+		return 0;
+	} 
+
+	info ("job_cancel: job %s can't be cancelled from state=%s", 
+		job_id, job_state_string[job_ptr->job_state]);
+	return EAGAIN;
+
 }
 
 
@@ -582,13 +628,13 @@ job_create (char *job_specs, char **new_job_id)
 
 	/* can this user access this partition */
 	if (part_ptr->key && (is_key_valid (key) == 0)) {
-		info ("select_nodes: job lacks key required of partition %s",
+		info ("job_create: job lacks key required of partition %s",
 			 part_ptr->name);
 		error_code = EINVAL;
 		goto cleanup;
 	}			
 	if (match_group (part_ptr->allow_groups, req_group) == 0) {
-		info ("select_nodes: job lacks group required of partition %s",
+		info ("job_create: job lacks group required of partition %s",
 			 part_ptr->name);
 		error_code = EINVAL;
 		goto cleanup;
@@ -609,7 +655,7 @@ job_create (char *job_specs, char **new_job_id)
 		if (contiguous == 1)
 			bit_fill_gaps (req_bitmap);
 		if (bit_super_set (req_bitmap, part_ptr->node_bitmap) != 1) {
-			info ("select_nodes: requested nodes %s not in partition %s",
+			info ("job_create: requested nodes %s not in partition %s",
 				req_node_list, part_ptr->name);
 			error_code = EINVAL;
 			goto cleanup;
@@ -624,7 +670,7 @@ job_create (char *job_specs, char **new_job_id)
 		req_bitmap = NULL;
 	}			
 	if (req_cpus > part_ptr->total_cpus) {
-		info ("select_nodes: too many cpus (%d) requested of partition %s(%d)",
+		info ("job_create: too many cpus (%d) requested of partition %s(%d)",
 			req_cpus, part_ptr->name, part_ptr->total_cpus);
 		error_code = EINVAL;
 		goto cleanup;
@@ -635,7 +681,7 @@ job_create (char *job_specs, char **new_job_id)
 			i = part_ptr->max_nodes;
 		else
 			i = part_ptr->total_nodes;
-		info ("select_nodes: too many nodes (%d) requested of partition %s(%d)",
+		info ("job_create: too many nodes (%d) requested of partition %s(%d)",
 			 req_nodes, part_ptr->name, i);
 		error_code = EINVAL;
 		goto cleanup;
