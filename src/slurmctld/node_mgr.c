@@ -1103,10 +1103,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	else {
 		info ("validate_node_specs: node %s has registered", node_name);
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
-		if ((node_ptr->node_state == NODE_STATE_DOWN) ||
-		    (node_ptr->node_state == NODE_STATE_UNKNOWN))
+		if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 			node_ptr->node_state = NODE_STATE_IDLE;
-		bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
+		if (node_ptr->node_state != NODE_STATE_DOWN)
+			bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
 
 	unlock_slurmctld (node_write_lock);
