@@ -1,16 +1,30 @@
-/* $Id$ */
-
-/* Started with Jim Garlick's xstring functions from pdsh 
+/*****************************************************************************\
+ *  xstring.c - heap-oriented string manipulation functions with "safe" 
+ *	string expansion as needed.
+ ******************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <grondona@llnl.gov>, Jim Garlick <garlick@llnl.gov>, 
+ *  et. al.
+ *  UCRL-CODE-2002-040.
  *
- * Mark Grondona <mgrondona@llnl.gov>
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
  *
- */
-
-/* $Id$ */
-
-/*
- * Heap-oriented string functions.
- */
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #if     HAVE_CONFIG_H
 #  include "config.h"
@@ -18,20 +32,17 @@
 
 #include <string.h>
 #include <stdio.h>
-#if 	HAVE_STRERROR_R && !HAVE_DECL_STRERROR_R
-char *strerror_r(int, char *, int);
-#endif
 #include <errno.h>
 #if 	HAVE_UNISTD_H
 #  include <unistd.h>
 #endif
-
 #include <pthread.h>
-
 #include <xmalloc.h>
 #include <xstring.h>
 #include <strlcpy.h>
 #include <xassert.h>
+
+#include <src/common/slurm_errno.h>
 
 #define XFGETS_CHUNKSIZE 64
 
@@ -100,25 +111,14 @@ void _xstrcatchar(char **str, char c)
 
 
 /*
- * concatenate strerror(errno) onto string in buf, expand buf as needed
+ * concatenate slurm_strerror(errno) onto string in buf, expand buf as needed
  *
  */
-void _xstrerrorcat(char **buf)
+void _xslurm_strerrorcat(char **buf)
 {
-#if HAVE_STRERROR_R 
-#  if HAVE_WORKING_STRERROR_R || STRERROR_R_CHAR_P
-	char errbuf[64];
-	char *err = strerror_r(errno, errbuf, 64);
-#  else
-	char err[64];
-	strerror_r(errno, err, 64);
-#  endif
-#elif HAVE_STRERROR
-	char *err = strerror(errno);
-#else
-	extern char *sys_errlist[];
-	char *err = sys_errlist[errno];
-#endif
+
+	char *err = slurm_strerror(errno);
+
 	xstrcat(*buf, err);
 }
 

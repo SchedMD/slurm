@@ -143,7 +143,7 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		if (!fp) {
 			char *errmsg = NULL;
 			pthread_mutex_unlock(&log_lock);
-			xstrerrorcat(errmsg);
+			xslurm_strerrorcat(errmsg);
 			fprintf(stderr, "%s: log_init(): Unable to open logfile"
 					"`%s': %s\n", prog, logfile, errmsg);
 			xfree(errmsg);
@@ -209,7 +209,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				break;
 
 			case 'm':	/* "%m" => strerror(errno) */
-				xstrerrorcat(buf);
+				xslurm_strerrorcat(buf);
 				break;
 
 			case 't': 	/* "%t" => locally preferred date/time*/ 

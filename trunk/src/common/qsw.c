@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * qsw.c - Library routines for initiating jobs on QsNet. *****************************************************************************
+ *  qsw.c - Library routines for initiating jobs on QsNet. *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Jim Garlick <garlick@llnl.gov>
@@ -124,7 +124,7 @@ qsw_alloc_libstate(qsw_libstate_t *lsp)
 	assert(lsp != NULL);
 	new = (qsw_libstate_t)malloc(sizeof(struct qsw_libstate));
 	if (!new)
-		xseterrno_ret(ENOMEM);
+		slurm_seterrno_ret(ENOMEM);
 	new->ls_magic = QSW_LIBSTATE_MAGIC;
 	*lsp = new;
 	return 0;
@@ -179,7 +179,7 @@ qsw_unpack_libstate(qsw_libstate_t ls, void *data, int len)
 	unpack32(&ls->ls_hwcontext, &data, &len);
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
-		xseterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
+		slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
 
 	return len; 
 }
@@ -255,7 +255,7 @@ qsw_alloc_jobinfo(qsw_jobinfo_t *jp)
 	assert(jp != NULL);
 	new = (qsw_jobinfo_t)malloc(sizeof(struct qsw_jobinfo));
 	if (!new)
-		xseterrno_ret(ENOMEM);
+		slurm_seterrno_ret(ENOMEM);
 	new->j_magic = QSW_JOBINFO_MAGIC;
 	new->j_ctx = NULL;
 	*jp = new;
@@ -340,7 +340,7 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, void *data, int len)
 		unpack32(&j->j_cap.Bitmap[i], &data, &len);
 	
 	if (j->j_magic != QSW_JOBINFO_MAGIC)
-		xseterrno_ret(EBADMAGIC_QSWJOBINFO);
+		slurm_seterrno_ret(EBADMAGIC_QSWJOBINFO);
 
 	return len;
 }
@@ -496,7 +496,7 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
 	/* Note: ELAN_MAX_VPS is 512 on "old" Elan driver, 16384 on new. */
 	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS || nnodes <= 0 
 			|| (nprocs % nnodes) != 0) {
-		xseterrno_ret(EINVAL);
+		slurm_seterrno_ret(EINVAL);
 	}
       
 	/* initialize jobinfo */
@@ -544,10 +544,10 @@ qsw_prgdestroy(qsw_jobinfo_t jobinfo)
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
 			case ECHILD:
-				xseterrno(ECHILD_PRGDESTROY);
+				slurm_seterrno(ECHILD_PRGDESTROY);
 				break;
 			case EEXIST:
-				xseterrno(EEXIST_PRGDESTROY);
+				slurm_seterrno(EEXIST_PRGDESTROY);
 				break;
 			default:
 				break;
@@ -583,14 +583,14 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 #if USE_OLD_LIBELAN
 	/* obtain an Elan context (not the same as a hardware context num!) */
 	if ((jobinfo->j_ctx = _elan3_init(0)) == NULL) {
-		xseterrno(EELAN3INIT);
+		slurm_seterrno(EELAN3INIT);
 		goto fail;
 	}
 #else
 	/* see qsw gnat sw-elan/4334: elan3_control_open can return -1 */
 	if ((jobinfo->j_ctx = elan3_control_open(0)) == NULL 
 			|| jobinfo->j_ctx == (void *)-1) {
-		xseterrno(EELAN3CONTROL);
+		slurm_seterrno(EELAN3CONTROL);
 		goto fail;
 	}
 #endif
@@ -599,7 +599,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
 			case EINVAL:
-				xseterrno(EINVAL_PRGCREATE);
+				slurm_seterrno(EINVAL_PRGCREATE);
 				break;
 			default:
 				break;
@@ -610,17 +610,17 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
       	/* make cap known via rms_getcap/rms_ncaps to members of this prgnum */
 	if (elan3_create(jobinfo->j_ctx, &jobinfo->j_cap) < 0) {
 		/* XXX masking errno value better than not knowing which function failed? */
-		xseterrno(EELAN3CREATE); 
+		slurm_seterrno(EELAN3CREATE); 
 		goto fail;
 	}
 	if (rms_prgaddcap(jobinfo->j_prognum, 0, &jobinfo->j_cap) < 0) {
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
 			case ESRCH:
-				xseterrno(ESRCH_PRGADDCAP);
+				slurm_seterrno(ESRCH_PRGADDCAP);
 				break;
 			case EFAULT:
-				xseterrno(EFAULT_PRGADDCAP);
+				slurm_seterrno(EFAULT_PRGADDCAP);
 				break;
 			default:
 				break;
@@ -634,7 +634,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 fail:
 	err = errno; /* presrve errno in case _elan3_fini touches it */
 	qsw_prog_fini(jobinfo); 
-	xseterrno(err);
+	slurm_seterrno(err);
 	return -1;
 }
 
@@ -656,10 +656,10 @@ qsw_setcap(qsw_jobinfo_t jobinfo, int procnum)
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
 			case EINVAL:
-				xseterrno(EINVAL_SETCAP);
+				slurm_seterrno(EINVAL_SETCAP);
 				break;
 			case EFAULT:
-				xseterrno(EFAULT_SETCAP);
+				slurm_seterrno(EFAULT_SETCAP);
 				break;
 			default:
 				break;
@@ -687,7 +687,7 @@ qsw_getnodeid(void)
 #endif
 	}
 	if (nodeid == -1)
-		xseterrno(EGETNODEID);
+		slurm_seterrno(EGETNODEID);
 	return nodeid;
 }
 
@@ -728,7 +728,7 @@ qsw_getnodeid_byhost(char *host)
 		id = atoi(q + 1);
 
 	if (id == -1)
-		xseterrno(EGETNODEID_BYHOST);
+		slurm_seterrno(EGETNODEID_BYHOST);
 	return id;
 }
 
@@ -746,7 +746,7 @@ qsw_gethost_bynodeid(char *buf, int len, int id)
 	int res;
 
 	if (id == -1)
-		xseterrno_ret(EGETHOST_BYNODEID);
+		slurm_seterrno_ret(EGETHOST_BYNODEID);
 
 	/* use the local hostname to determine 'base' name */
 	if (gethostname(name, MAXHOSTNAMELEN) < 0)
@@ -783,10 +783,10 @@ qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum)
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
 			case EINVAL:
-				xseterrno(EINVAL_PRGSIGNAL);
+				slurm_seterrno(EINVAL_PRGSIGNAL);
 				break;
 			case ESRCH:
-				xseterrno(ESRCH_PRGSIGNAL);
+				slurm_seterrno(ESRCH_PRGSIGNAL);
 				break;
 			default:
 				break;

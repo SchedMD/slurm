@@ -1,7 +1,7 @@
 #ifndef _SLURM_PROTOCOL_COMMON_H
 #define _SLURM_PROTOCOL_COMMON_H
 
-#include <src/common/slurm_protocol_errno.h>
+#include <src/common/slurm_errno.h>
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0
 /* for accpet commands */
