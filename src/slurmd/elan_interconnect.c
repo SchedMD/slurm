@@ -56,9 +56,16 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 				slurm_perror("wait");
 				return SLURM_ERROR ;
 			}
+			while(true)
+			{
 			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
 				slurm_perror("qsw_prgdestroy");
+				debug ("qsw_prgdestroy %m errno: %i",errno);
+				sleep (1);
+				continue ;
 				return SLURM_ERROR ;
+			}
+			break ;
 			}
 			return SLURM_SUCCESS ;
 	}
