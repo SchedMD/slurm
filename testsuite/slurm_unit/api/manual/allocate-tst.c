@@ -41,7 +41,7 @@ main (int argc, char *argv[])
 	if (error_code)
 		printf ("allocate error %d\n", error_code);
 	else {
-		printf ("allocate nodes %s to job %u\n", "TBD", job_mesg.job_id);
+		printf ("allocate nodes %s to job %u\n", resp_msg.node_list, job_mesg.job_id);
 	}
 	job_count = 1;
 
@@ -69,7 +69,7 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", "TBD", job_mesg.job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg.node_list, job_mesg.job_id);
 		}
 	}
 
@@ -85,7 +85,7 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", "TBD", job_mesg.job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg.node_list,  job_mesg.job_id);
 		}
 	}
 
@@ -101,7 +101,7 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", "TBD", job_mesg.job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg.node_list,  job_mesg.job_id);
 		}
 	}
 
