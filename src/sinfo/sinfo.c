@@ -47,24 +47,25 @@ static int _query_server(partition_info_msg_t ** part_pptr,
 
 
 /* Node Functions */
-static void _display_all_nodes(node_info_msg_t * node_msg);
+static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt);
 static void _display_node_info_header(void);
 static void _display_nodes_list(List nodes);
 static void _display_nodes_list_long(List nodes);
+static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt);
+static List _group_node_list(node_info_msg_t * msg, int node_rec_cnt);
 static char *_node_name_string_from_list(List nodes, char *buffer);
-
-static List _group_node_list(node_info_msg_t * msg);
+static void _swap_char(char *from, char *to);
+static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node);
 
 /* Partition Functions */
+static void _display_all_partition_info_long(List partitions);
 static void _display_all_partition_summary(partition_info_msg_t * part_ptr,
-					   node_info_msg_t * node_ptr);
+					   node_info_msg_t * node_ptr, 
+					   int node_rec_cnt);
 static void _display_partition_info_long(struct partition_summary
 					 *partition);
 static void _display_partition_node_info(struct partition_summary
 					 *partition, bool print_name);
-static void _display_all_partition_summary(partition_info_msg_t * part_ptr,
-					   node_info_msg_t * node_ptr);
-static void _display_all_partition_info_long(List partitions);
 static void _display_partition_summarys(List partitions);
 
 /* Misc Display functions */
@@ -77,8 +78,9 @@ static int _print_str(char *number, int width, bool right);
 static struct partition_summary *_find_partition_summary(List l, char *name);
 static struct node_state_summary *_find_node_state_summary(
 		List l, node_info_t *ninfo);
-static List _setup_partition_summary(
-		partition_info_msg_t * part_ptr, node_info_msg_t * node_ptr);
+static List _setup_partition_summary(partition_info_msg_t * part_ptr, 
+				     node_info_msg_t * node_ptr, 
+				     int node_rec_cnt);
 static void _print_partition_header(bool no_name);
 
 
@@ -87,6 +89,7 @@ int main(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
+	int node_rec_cnt;
 
 	command_name = argv[0];
 
@@ -101,15 +104,14 @@ int main(int argc, char *argv[])
 		if (_query_server(&partition_msg, &node_msg) != 0)
 			exit(1);
 
-		if (params.node_flag)
-			_display_all_nodes(node_msg);
+		_filter_nodes(node_msg, &node_rec_cnt);
 
-		else if (params.partition_flag)
-			_display_all_partition_summary(partition_msg,
-						       node_msg);
+		if (params.node_flag)
+			_display_all_nodes(node_msg, node_rec_cnt);
+
 		else
 			_display_all_partition_summary(partition_msg,
-						       node_msg);
+						       node_msg, node_rec_cnt);
 
 		if (params.iterate) {
 			printf("\n");
@@ -174,6 +176,69 @@ _query_server(partition_info_msg_t ** part_pptr,
 	return 0;
 }
 
+/* Filter the node list based upon user options */
+static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt)
+{
+	int i, new_rec_cnt = 0;
+	hostlist_t hosts = NULL;
+
+	if ((params.node	== NULL) && 
+	    (params.partition 	== NULL) && 
+	    (!params.state_flag)) {
+		/* Nothing to filter out */
+		*node_rec_cnt = node_msg->record_count;
+		return;
+	}
+
+	if (params.node)
+		hosts = hostlist_create(params.node);
+
+	for (i = 0; i < node_msg->record_count; i++) {
+		if (params.node && hostlist_find
+		      (hosts, node_msg->node_array[i].name) == -1)
+			continue;
+		if (params.partition && strcmp
+			 (node_msg->node_array[i].partition,
+			  params.partition))
+			continue;
+		if (params.state_flag && 
+		    (node_msg->node_array[i].node_state !=
+			    params.state) && 
+		    ((node_msg->node_array[i].node_state & 
+		      (~NODE_STATE_NO_RESPOND)) != params.state)) 
+			continue;
+		_swap_node_rec(&node_msg->node_array[i], 
+			       &node_msg->node_array[new_rec_cnt]);
+		new_rec_cnt++;
+	}
+
+	if (hosts)
+		hostlist_destroy(hosts);
+	*node_rec_cnt = new_rec_cnt;
+}
+
+static void _swap_char(char *from, char *to) 
+{
+	char *tmp;
+	tmp  = to;
+	to   = from;
+ 	from = tmp;
+}
+
+/* Swap *char values, just overwrite the numbers in moving node info */
+static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node)
+{
+	_swap_char(from_node->name,      to_node->name);
+	_swap_char(from_node->features,  to_node->features);
+	_swap_char(from_node->partition, to_node->partition);
+	to_node->node_state	= from_node->node_state;
+	to_node->cpus		= from_node->cpus;
+	to_node->real_memory	= from_node->real_memory;
+	to_node->tmp_disk	= from_node->tmp_disk;
+	to_node->weight	= from_node->weight;
+}
+
+
 /*****************************************************************************
  *                        DISPLAY NODE INFO FUNCTIONS
  *****************************************************************************/
@@ -188,46 +253,22 @@ int node_sz_weight = 7;
 int node_sz_part = 10;
 int node_sz_features = 0;
 
-static void _display_all_nodes(node_info_msg_t * node_msg)
+static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt)
 {
 
 	_display_node_info_header();
 
-	if (params.long_output == true || params.node != NULL) {
+	if (params.long_output == true) {
 		List nodes = list_create(NULL);
-		hostlist_t hosts = NULL;
-		int i = 0;
+		int i;
 
-		if (params.node)
-			hosts = hostlist_create(params.node);
-
-		for (; i < node_msg->record_count; i++) {
-			/* don't display temporary not responding flag */
-			node_msg->node_array[i].node_state &=
-			    ~NODE_STATE_NO_RESPOND;
-			if (((params.node == NULL)
-			     ||
-			     (hostlist_find
-			      (hosts, node_msg->node_array[i].name) != -1))
-			    && ((params.partition == NULL)
-				||
-				(strcmp
-				 (node_msg->node_array[i].partition,
-				  params.partition) == 0))
-			    && ((params.state_flag == false)
-				|| (node_msg->node_array[i].node_state ==
-				    params.state)))
-				list_append(nodes,
-					    &node_msg->node_array[i]);
-		}
+		for (i = 0; i < node_rec_cnt; i++)
+			list_append(nodes, &node_msg->node_array[i]);
 
 		_display_nodes_list_long(nodes);
-
-		if (hosts)
-			hostlist_destroy(hosts);
 		list_destroy(nodes);
 	} else {
-		List nodes = _group_node_list(node_msg);
+		List nodes = _group_node_list(node_msg, node_rec_cnt);
 		ListIterator i = list_iterator_create(nodes);
 		List current;
 
@@ -312,25 +353,15 @@ static void _display_nodes_list_long(List nodes)
 
 /* group similar nodes together, return a list of lists containing nodes 
  * with similar configurations */
-static List _group_node_list(node_info_msg_t * msg)
+static List _group_node_list(node_info_msg_t * msg, int node_rec_cnt)
 {
 	List node_lists = list_create(NULL);
 	node_info_t *nodes = msg->node_array;
 	int i;
 
-	for (i = 0; i < msg->record_count; i++) {
+	for (i = 0; i < node_rec_cnt; i++) {
 		ListIterator list_i = NULL;
 		List curr_list = NULL;
-
-		/* don't bother considering temporary not responding flag */
-		nodes[i].node_state &= ~NODE_STATE_NO_RESPOND;
-
-		if (params.partition != NULL
-		    && strcmp(params.partition, nodes[i].partition))
-			continue;
-		if (params.state_flag == true
-		    && nodes[i].node_state != params.state)
-			continue;
 
 		list_i = list_iterator_create(node_lists);
 		while ((curr_list = list_next(list_i)) != NULL) {
@@ -358,10 +389,10 @@ static List _group_node_list(node_info_msg_t * msg)
 				part_test = false;
 
 			if (feature_test && part_test &&
-			    nodes[i].node_state == curr->node_state &&
-			    nodes[i].cpus == curr->cpus &&
+			    nodes[i].node_state  == curr->node_state &&
+			    nodes[i].cpus        == curr->cpus &&
 			    nodes[i].real_memory == curr->real_memory &&
-			    nodes[i].tmp_disk == curr->tmp_disk) {
+			    nodes[i].tmp_disk    == curr->tmp_disk) {
 				list_append(curr_list, &(nodes[i]));
 				break;
 			}
@@ -423,7 +454,7 @@ _find_node_state_summary(List l, node_info_t *ninfo)
 
 static List
 _setup_partition_summary(partition_info_msg_t * part_ptr,
-			node_info_msg_t * node_ptr)
+			node_info_msg_t * node_ptr, int node_rec_cnt)
 {
 	int i = 0;
 	List partitions = list_create(NULL);
@@ -439,7 +470,7 @@ _setup_partition_summary(partition_info_msg_t * part_ptr,
 		list_append(partitions, sum);
 	}
 
-	for (i = 0; i < node_ptr->record_count; i++) {
+	for (i = 0; i < node_rec_cnt; i++) {
 		node_info_t *ninfo = &node_ptr->node_array[i];
 		struct partition_summary *part_sum;
 		struct node_state_summary *node_sum = NULL;
@@ -500,9 +531,10 @@ _setup_partition_summary(partition_info_msg_t * part_ptr,
 
 static void
 _display_all_partition_summary(partition_info_msg_t * part_ptr,
-			       node_info_msg_t * node_ptr)
+			       node_info_msg_t * node_ptr, int node_rec_cnt)
 {
-	List partitions = _setup_partition_summary(part_ptr, node_ptr);
+	List partitions = _setup_partition_summary(part_ptr, 
+						   node_ptr, node_rec_cnt);
 	if (params.long_output)
 		_display_all_partition_info_long(partitions);
 	else
