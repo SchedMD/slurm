@@ -1028,19 +1028,21 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 
 
 /*
- * purge_old_job - purge old job records. if memory space is needed. 
+ * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
+ * global: job_list - global job table
+ *	last_job_update - time of last job table update
  */
 void
 purge_old_job (void) 
 {
 	int i;
 
-	if (job_count < (MAX_JOB_COUNT / 2)) return;	/* plenty of room */
-
 	i = list_delete_all (job_list, &list_find_job_old, NULL);
-	if (i)
+	if (i) {
 		info ("purge_old_job: purged %d old job records");
+		last_job_update = time (NULL);
+	}
 }
 
 

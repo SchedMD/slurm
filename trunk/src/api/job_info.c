@@ -33,7 +33,7 @@ main (int argc, char *argv[])
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i, j;
 	struct job_buffer *job_buffer_ptr = NULL;
-	struct job_table *job_ptr;
+	struct job_table *job_ptr = NULL;
 
 	error_code = slurm_load_job (last_update_time, &job_buffer_ptr);
 	if (error_code) {
@@ -41,60 +41,59 @@ main (int argc, char *argv[])
 		exit (error_code);
 	}
 
-	printf("Updated at %lx, record count %d\n",
+	printf("Jobs updated at %lx, record count %d\n",
 		job_buffer_ptr->last_update, job_buffer_ptr->job_count);
 	job_ptr = job_buffer_ptr->job_table_ptr;
 
 	for (i = 0; i < job_buffer_ptr->job_count; i++) {
-			printf ("JobId=%s UserId=%u ", 
-				job_ptr[i].job_id, job_ptr[i].user_id);
-			printf ("JobState=%u TimeLimit=%u ", 
-				job_ptr[i].job_state, job_ptr[i].time_limit);
-			printf ("Priority=%u Partition=%s\n", 
-				job_ptr[i].priority, job_ptr[i].partition);
+		printf ("JobId=%s UserId=%u ", 
+			job_ptr[i].job_id, job_ptr[i].user_id);
+		printf ("JobState=%u TimeLimit=%u ", 
+			job_ptr[i].job_state, job_ptr[i].time_limit);
+		printf ("Priority=%u Partition=%s\n", 
+			job_ptr[i].priority, job_ptr[i].partition);
 
-			printf ("   Name=%s NodeList=%s ", 
-				job_ptr[i].name, job_ptr[i].nodes);
-			printf ("StartTime=%x EndTime=%x\n", 
-				(uint32_t) job_ptr[i].start_time, 
-				(uint32_t) job_ptr[i].end_time);
+		printf ("   Name=%s NodeList=%s ", 
+			job_ptr[i].name, job_ptr[i].nodes);
+		printf ("StartTime=%x EndTime=%x\n", 
+			(uint32_t) job_ptr[i].start_time, 
+			(uint32_t) job_ptr[i].end_time);
 
-			printf ("   NodeListIndecies=");
-			for (j = 0; job_ptr[i].node_inx; j++) {
-				if (j > 0)
-					printf(",%d", job_ptr[i].node_inx[j]);
-				else
-					printf("%d", job_ptr[i].node_inx[j]);
-				if (job_ptr[i].node_inx[j] == -1)
-					break;
-			}
-			printf("\n");
+		printf ("   NodeListIndecies=");
+		for (j = 0; job_ptr[i].node_inx; j++) {
+			if (j > 0)
+				printf(",%d", job_ptr[i].node_inx[j]);
+			else
+				printf("%d", job_ptr[i].node_inx[j]);
+			if (job_ptr[i].node_inx[j] == -1)
+				break;
+		}
+		printf("\n");
 
-			printf ("   ReqProcs=%u ReqNodes=%u ",
-				job_ptr[i].num_procs, job_ptr[i].num_nodes);
-			printf ("Shared=%u Contiguous=%u\n",
-				job_ptr[i].shared, job_ptr[i].contiguous);
+		printf ("   ReqProcs=%u ReqNodes=%u ",
+			job_ptr[i].num_procs, job_ptr[i].num_nodes);
+		printf ("Shared=%u Contiguous=%u\n",
+			job_ptr[i].shared, job_ptr[i].contiguous);
 
-			printf ("   MinProcs=%u MinMemory=%u ",
-				job_ptr[i].min_procs, job_ptr[i].min_memory);
-			printf ("MinTmpDisk=%u\n",
-				job_ptr[i].min_tmp_disk);
+		printf ("   MinProcs=%u MinMemory=%u ",
+			job_ptr[i].min_procs, job_ptr[i].min_memory);
+		printf ("MinTmpDisk=%u\n",
+			job_ptr[i].min_tmp_disk);
 
-			printf ("   ReqNodeList=%s Features=%s ",
-				job_ptr[i].req_nodes, job_ptr[i].features);
-			printf ("JobScript=%s\n",
-				job_ptr[i].job_script);
-			printf ("   ReqNodeListIndecies=");
-			for (j = 0; job_ptr[i].req_node_inx; j++) {
-				if (j > 0)
-					printf(",%d", job_ptr[i].req_node_inx[j]);
-				else
-					printf("%d", job_ptr[i].req_node_inx[j]);
-				if (job_ptr[i].req_node_inx[j] == -1)
-					break;
-			}
-			printf("\n\n");
-
+		printf ("   ReqNodeList=%s Features=%s ",
+			job_ptr[i].req_nodes, job_ptr[i].features);
+		printf ("JobScript=%s\n",
+			job_ptr[i].job_script);
+		printf ("   ReqNodeListIndecies=");
+		for (j = 0; job_ptr[i].req_node_inx; j++) {
+			if (j > 0)
+				printf(",%d", job_ptr[i].req_node_inx[j]);
+			else
+				printf("%d", job_ptr[i].req_node_inx[j]);
+			if (job_ptr[i].req_node_inx[j] == -1)
+				break;
+		}
+		printf("\n\n");
 	}			
 	slurm_free_job_info (job_buffer_ptr);
 	exit (0);

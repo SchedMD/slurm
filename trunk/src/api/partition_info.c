@@ -31,7 +31,7 @@ main (int argc, char *argv[])
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i, j;
 	struct part_buffer *part_buffer_ptr = NULL;
-	struct part_table *part_ptr;
+	struct part_table *part_ptr = NULL;
 
 	error_code = slurm_load_part (last_update_time, &part_buffer_ptr);
 	if (error_code) {
@@ -44,28 +44,28 @@ main (int argc, char *argv[])
 	part_ptr = part_buffer_ptr->part_table_ptr;
 
 	for (i = 0; i < part_buffer_ptr->part_count; i++) {
-			printf ("PartitionName=%s MaxTime=%u ", 
-				part_ptr[i].name, part_ptr[i].max_time);
-			printf ("MaxNodes=%u TotalNodes=%u ", 
-				part_ptr[i].max_nodes, part_ptr[i].total_nodes);
-			printf ("TotalCPUs=%u Key=%u\n", 
-				part_ptr[i].total_cpus, part_ptr[i].key);
-			printf ("   Default=%u ", 
-				part_ptr[i].default_part);
-			printf ("Shared=%u StateUp=%u ", 
-				part_ptr[i].shared, part_ptr[i].state_up);
-			printf ("Nodes=%s AllowGroups=%s\n", 
-				part_ptr[i].nodes, part_ptr[i].allow_groups);
-			printf ("   NodeIndecies=");
-			for (j = 0; part_ptr[i].node_inx; j++) {
-				if (j > 0)
-					printf(",%d", part_ptr[i].node_inx[j]);
-				else
-					printf("%d", part_ptr[i].node_inx[j]);
-				if (part_ptr[i].node_inx[j] == -1)
-					break;
-			}
-			printf("\n\n");
+		printf ("PartitionName=%s MaxTime=%u ", 
+			part_ptr[i].name, part_ptr[i].max_time);
+		printf ("MaxNodes=%u TotalNodes=%u ", 
+			part_ptr[i].max_nodes, part_ptr[i].total_nodes);
+		printf ("TotalCPUs=%u Key=%u\n", 
+			part_ptr[i].total_cpus, part_ptr[i].key);
+		printf ("   Default=%u ", 
+			part_ptr[i].default_part);
+		printf ("Shared=%u StateUp=%u ", 
+			part_ptr[i].shared, part_ptr[i].state_up);
+		printf ("Nodes=%s AllowGroups=%s\n", 
+			part_ptr[i].nodes, part_ptr[i].allow_groups);
+		printf ("   NodeIndecies=");
+		for (j = 0; part_ptr[i].node_inx; j++) {
+			if (j > 0)
+				printf(",%d", part_ptr[i].node_inx[j]);
+			else
+				printf("%d", part_ptr[i].node_inx[j]);
+			if (part_ptr[i].node_inx[j] == -1)
+				break;
+		}
+		printf("\n\n");
 	}
 	slurm_free_part_info (part_buffer_ptr);
 	exit (0);

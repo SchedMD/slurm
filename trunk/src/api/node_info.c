@@ -32,7 +32,7 @@ main (int argc, char *argv[])
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i;
 	struct node_buffer *node_buffer_ptr = NULL;
-	struct node_table *node_ptr;
+	struct node_table *node_ptr = NULL;
 
 	error_code = slurm_load_node (last_update_time, &node_buffer_ptr);
 	if (error_code) {
