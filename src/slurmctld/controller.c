@@ -200,9 +200,11 @@ int main(int argc, char *argv[])
 			  == 0)) {
 			(void) _shutdown_backup_controller();
 			/* Now recover the remaining state information */
-			if ((error_code = read_slurm_conf(recover)))
-				fatal("read_slurm_conf reading %s: %m",
+			if ((error_code = read_slurm_conf(recover))) {
+				error("read_slurm_conf reading %s: %m",
 					SLURM_CONFIG_FILE);
+				abort();
+			}
 			info("Running primary controller");
 		} else {
 			error
@@ -212,8 +214,10 @@ int main(int argc, char *argv[])
 			exit(0);
 		}
 
-		if (switch_state_begin(recover))
-			fatal("switch_state_begin: %m");
+		if (switch_state_begin(recover)) {
+			error("switch_state_begin: %m");
+			abort();
+		}
 
 		/*
 		 * create attached thread for signal handling
@@ -403,7 +407,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 			}
 			break;
 		case SIGABRT:	/* abort */
-			fatal("SIGABRT received");
+			info("SIGABRT received");
+			abort();
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);

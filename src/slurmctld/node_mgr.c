@@ -247,13 +247,9 @@ create_node_record (struct config_record *config_point, char *node_name)
 	int old_buffer_size, new_buffer_size;
 
 	last_node_update = time (NULL);
-	if (config_point == NULL)
-		fatal ("create_node_record: invalid config_point");
-	if (node_name == NULL) 
-		fatal ("create_node_record: node_name is NULL");
-	if (strlen (node_name) >= MAX_NAME_LEN)
-		fatal ("create_node_record: node_name too long: %s", 
-		       node_name);
+	xassert(config_point);
+	xassert(node_name); 
+	xassert(strlen (node_name) < MAX_NAME_LEN);
 
 	/* round up the buffer size to reduce overhead of xrealloc */
 	old_buffer_size = (node_record_count) * sizeof (struct node_record);
@@ -632,11 +628,12 @@ int init_node_conf (void)
 
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();
-	else
+	else {
 		config_list = list_create (&_list_delete_config);
+		if (config_list == NULL)
+			fatal("list_create malloc failure");
+	}
 
-	if (config_list == NULL)
-		fatal ("memory allocation failure");
 	return SLURM_SUCCESS;
 }
 
@@ -659,8 +656,7 @@ static void _list_delete_config (void *config_entry)
 	struct config_record *config_ptr = (struct config_record *) 
 					   config_entry;
 
-	if (config_ptr == NULL)
-		fatal ("_list_delete_config: config_ptr == NULL");
+	xassert(config_ptr);
 	xassert(config_ptr->magic == CONFIG_MAGIC);
 	xfree (config_ptr->feature);
 	xfree (config_ptr->nodes);
@@ -715,8 +711,8 @@ int node_name2bitmap (char *node_names, bitstr_t **bitmap)
 	}
 
 	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
-	if (my_bitmap == 0)
-		fatal ("memory allocation failure");
+	if (my_bitmap == NULL)
+		fatal("bit_alloc malloc failure");
 
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_record_point = find_node_record (this_node_name);

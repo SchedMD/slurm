@@ -173,9 +173,7 @@ static void _wr_wrunlock(lock_datatype_t datatype)
  * OUT lock_flags - a copy of the current lock values */
 void get_lock_values(slurmctld_lock_flags_t * lock_flags)
 {
-	if (lock_flags == NULL)
-		fatal("get_lock_values passed null pointer");
-
+	xassert(lock_flags);
 	memcpy((void *) lock_flags, (void *) &slurmctld_locks,
 	       sizeof(slurmctld_locks));
 }

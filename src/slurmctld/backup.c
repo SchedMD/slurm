@@ -131,8 +131,10 @@ void run_backup(void)
 
 	/* clear old state and read new state */
 	job_fini();
-	if (read_slurm_conf(2))	/* Recover all state */
-		fatal("Unable to recover slurm state");
+	if (read_slurm_conf(2)) {	/* Recover all state */
+		error("Unable to recover slurm state");
+		abort();
+	}
 	slurmctld_config.shutdown_time = (time_t) 0;
 	return;
 }
@@ -173,7 +175,8 @@ static void *_background_signal_hand(void *no_data)
 			return NULL;	/* Normal termination */
 			break;
 		case SIGABRT:	/* abort */
-			fatal("SIGABRT received");
+			info("SIGABRT received");
+			abort();
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);
