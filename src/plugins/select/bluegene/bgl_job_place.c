@@ -24,24 +24,8 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-
-#include "src/common/bitstring.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/macros.h"
-
-#include "src/slurmctld/proc_req.h"
 #include "src/common/node_select.h"
 #include "bluegene.h"
-#include "partition_sys.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128

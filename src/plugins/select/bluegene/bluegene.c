@@ -23,30 +23,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <time.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-
-#include "src/slurmctld/proc_req.h"
-#include "src/common/hostlist.h"
-#include "src/common/list.h"
-#include "src/common/macros.h"
-#include "src/common/node_select.h"
-#include "src/common/read_config.h"
-#include "src/common/parse_spec.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
-#include "bgl_job_place.h"
 #include "bluegene.h"
-#include "partition_sys.h"
-#include "state_test.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128
@@ -67,21 +44,18 @@ bool agent_fini = false;
 
 /* some local functions */
 static int  _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b);
-static int  _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b);
+/* static int  _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b); */
 static int  _copy_slurm_partition_list(List slurm_part_list);
 static void _destroy_bgl_conf_record(void* object);
 static void _destroy_bgl_record(void* object);
-static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-				char *tv_str, int len_tv_str);
-static bgl_conf_record_t* 
-            _find_config_by_nodes(char* nodes);
+//static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2, char *tv_str, int len_tv_str);
+static bgl_conf_record_t* _find_config_by_nodes(char* nodes);
 static int  _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
 static int  _parse_bgl_spec(char *in_line);
 static int  _parse_request(char* request_string, partition_t** request);
 static void _process_config(void);
-static int  _sync_partitions(void);
+//static int  _sync_partitions(void);
 static int  _validate_config_nodes(void);
-static int  _wire_bgl_partitions(void);
 
 /*
  * create_static_partitions - create the static partitions that will be used
@@ -90,57 +64,158 @@ static int  _wire_bgl_partitions(void);
  *   configurations. Fill in bgl_part_id 
  * RET - success of fitting all configurations
  */
-extern int create_static_partitions(List part_list)
+/* <<<<<<< bluegene.c */
+int create_static_partitions(List part_list)
 {
 	int rc = SLURM_SUCCESS;
+	ListIterator itr;
+	int number, j=0;
+	int x, y, z;
+	int start[PA_SYSTEM_DIMENSIONS];
+	int end[PA_SYSTEM_DIMENSIONS];
+	bgl_conf_record_t *bgl_conf_record;
+	
+	pm_partition_id_t part_id;
+	rm_partition_t *my_part;
+	int i;
+	rm_BP_t * bp;
+	int bp_num;
+	char *name;
+	
+	/* Check if partitions configured in SLURM are already configured on
+	 * the system */
 
-	if (bgl_list) {
-		bgl_record_t *record;
-		while ((record = list_pop(bgl_list)))
-			_destroy_bgl_record(record);
-	} else
-		bgl_list = list_create(_destroy_bgl_record);
 
-	/* copy the slurm.conf partition info from slurmctld into bgl_list */
-	if ((rc = _copy_slurm_partition_list(part_list)))
-		return rc;
 
-	/* synchronize slurm.conf and bluegene.conf data */
-	_process_config();
+	/******************************************************************/
 
-	/* 
-	 * After reading in the configuration, we have a list of partition 
-	 * requests configurations that we can use to partition up the system. 
-	 * We also have the current BGL state information. Sync the two up,
-	 * rewire and create partitions as needed.
-	 */
-	if ((rc = _sync_partitions()))
-		return rc;
+	/* we are commenting this out until we are able to rewrite it.  
+	   this means we are blowing the partitions away right at the beginning
+	   no matter what */
 
+/* 	if (bgl_list) { */
+/* 		bgl_record_t *record; */
+/* 		while ((record = list_pop(bgl_list))) */
+/* 			_destroy_bgl_record(record); */
+/* 	} else */
+/* 		bgl_list = list_create(_destroy_bgl_record); */
+/* 	printf("copying\n"); */
+/* 	/\* copy the slurm.conf partition info from slurmctld into bgl_list *\/ */
+/* 	if ((rc = _copy_slurm_partition_list(part_list))) */
+/* 		return rc; */
+/* 	printf("done copying\n"); */
+/* 	_process_config(); */
+
+/* 	if ((rc = _validate_config_nodes())) { */
+
+	/******************************************************************/
+
+
+		/* If not, delete all existing partitions and jobs then
+		 * configure from scratch */
+	part_id="RMP101";
+	bp_num=1;
+	//rm_get_data(bgl, RM_BPNum, &bp_num);
+	//rm_get_data(bgl, RM_FirstBP, &bp);
+		for (i=0; i<bp_num; i++){
+			//	rm_get_data(bp, RM_BPPartID, &part_id);
+			if ((rc = rm_get_partition(part_id, &my_part))
+			    != STATUS_OK) {
+				error("rm_get_partition(%s): %s",
+				      part_id, bgl_err_str(rc));
+				rc = SLURM_ERROR;
+				continue;
+			}
+
+			rm_get_data(my_part, RM_PartitionUserName, &name);
+			printf("user name for %s is %s\n",part_id,name);
+			if(!strcmp(name,"")) {
+				printf("destroying %s\n",(char *)part_id);
+				pm_destroy_partition(part_id);
+				rm_remove_partition(part_id);
+				printf("done\n");
+			}
+			//rm_get_data(bgl, RM_NextBP, &bp);	
+		}
+	
+		itr = list_iterator_create(bgl_conf_list);
+		while ((bgl_conf_record = (bgl_conf_record_t *) list_next(itr)) != NULL) {
+			j=0;
+			while (bgl_conf_record->nodes[j] != '\0') {
+				if ((bgl_conf_record->nodes[j]   == '[')
+				    &&  (bgl_conf_record->nodes[j+4] == 'x')
+				    &&  (bgl_conf_record->nodes[j+8] == ']')) {
+					j++;
+					number = atoi(bgl_conf_record->nodes + j);
+					start[X] = number / 100;
+					start[Y] = (number % 100) / 10;
+					start[Z] = (number % 10);
+					j += 4;
+					number = atoi(bgl_conf_record->nodes + j);
+					end[X] = number / 100;
+					end[Y] = (number % 100) / 10;
+					end[Z] = (number % 10);
+					j += 5;
+				}
+				j++;
+			}
+			assert(end[X] < DIM_SIZE[X]);
+			assert(start[X] >= 0);
+			assert(end[Y] < DIM_SIZE[Y]);
+			assert(start[Y] >= 0);
+			assert(end[Z] < DIM_SIZE[Z]);
+			assert(start[Z] >= 0);
+			bgl_conf_record->bgl_part_list = list_create(NULL);
+			j=0;
+			/* printf("creating list %d%d%dx%d%d%d\n", */
+/* 			       start[X],start[Y],start[Z],end[X],end[Y],end[Z]); */
+			for (x = start[X]; x <= end[X]; x++)
+				for (y = start[Y]; y <= end[Y]; y++)
+					for (z = start[Z]; z <= end[Z]; z++) {
+						list_append(bgl_conf_record->bgl_part_list, 
+							    &pa_system_ptr->grid[x][y][z]);
+						j++;
+					}
+			bgl_conf_record->size = j;
+			set_bgl_part(bgl_conf_record->bgl_part_list, 
+				     bgl_conf_record->size, 
+				     bgl_conf_record->conn_type);			
+			
+		}
+		list_iterator_destroy(itr);
+		
+		itr = list_iterator_create(bgl_conf_list);
+		while ((bgl_conf_record = (bgl_conf_record_t *) list_next(itr)) != NULL)			
+			configure_partition(bgl_conf_record);
+				
+		list_iterator_destroy(itr);
+		rc = SLURM_SUCCESS;
+/* 	} */
 	return rc;
 }
 
 /* Synchronize the actual bluegene partitions to that configured in SLURM */ 
-static int _sync_partitions(void)
-{
-	int rc = SLURM_SUCCESS;
+/* static int _sync_partitions(void) */
+/* { */
+/* 	int rc = SLURM_SUCCESS; */
 
-	/* Check if partitions configured in SLURM are already configured on
-	 * the system */
-	if ((rc = _validate_config_nodes())) {
-		/* If not, delete all existing partitions and jobs then
-		 * configure from scratch */
-		rc = _wire_bgl_partitions();
-	}
+/* 	/\* Check if partitions configured in SLURM are already configured on */
+/* 	 * the system *\/ */
+/* 	if ((rc = _validate_config_nodes())) { */
+/* 		/\* If not, delete all existing partitions and jobs then */
+/* 		 * configure from scratch *\/ */
+/* 		rc = _wire_bgl_partitions(); */
+/* 	} */
 
-	return rc;
-}
+/* 	return rc; */
+/* } */
 
 /*
  * Match slurm configuration information with current BGL partition 
  * configuration. Return SLURM_SUCCESS if they match, else an error 
  * code. Writes bgl_partition_id into bgl_list records.
  */
+
 static int  _validate_config_nodes(void)
 {
 	int rc = SLURM_SUCCESS;
@@ -157,7 +232,7 @@ static int  _validate_config_nodes(void)
 	itr_conf = list_iterator_create(bgl_list);
 	while ((conf_record = (bgl_record_t*) list_next(itr_conf))) {
 		/* translate hostlist to ranged string for consistent format */
-		(void) hostlist_ranged_string(conf_record->hostlist, 
+		(void) hostlist_ranged_string(conf_record->hostlist,
 			sizeof(nodes), nodes);
         	/* search here */
 		itr_init = list_iterator_create(bgl_init_part_list);
@@ -179,7 +254,7 @@ static int  _validate_config_nodes(void)
 			rc = EINVAL;
 		} else {
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
-				conf_record->bgl_part_id, nodes,  
+				conf_record->bgl_part_id, nodes,
 				convert_conn_type(conf_record->conn_type),
 				convert_node_use(conf_record->node_use));
 		}
@@ -188,31 +263,6 @@ static int  _validate_config_nodes(void)
 	list_iterator_destroy(itr_conf);
 #endif
 
-	return rc;
-}
-
-/* Current blue gene partitions do not match the configuration, 
- * rewire everything and recreate the partitions */
-static int _wire_bgl_partitions(void)
-{
-	int rc = SLURM_SUCCESS;
-#ifdef USE_BGL_FILES
-/* orignial logic from Dan Phung */
-	bgl_record_t* cur_record;
-	partition_t* cur_partition;
-	ListIterator itr;
-
-	itr = list_iterator_create(bgl_list);
-	while ((cur_record = (bgl_record_t*) list_next(itr))) {
-		cur_partition = (partition_t*) cur_record->alloc_part;
-		if (configure_switches(cur_partition))
-			error("error on cur_record %s", cur_record->nodes);
-	}	
-	list_iterator_destroy(itr);
-#else
-	error("FIXME: Add logic to re-wire partitions");
-	rc = EINVAL;
-#endif
 	return rc;
 }
 
@@ -237,10 +287,10 @@ static void _process_config(void)
 		request_result = NULL;
 		if (_parse_request(bgl_part->nodes, &request_result)
 		|| (request_result == NULL))
-			error("_process_config: error parsing request %s", 
+			error("_process_config: error parsing request %s",
 				bgl_part->nodes);
 		else {
-			/* 
+			/*
 			 * bgl_part->conn_type should have been extracted in
 			 * copy_slurm_partition_list
 			 */
@@ -267,7 +317,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 	int rc = SLURM_SUCCESS;
 
 	itr = list_iterator_create(slurm_part_list);
-	/* 
+	/*
 	 * try to find the corresponding bgl_conf_record for the
 	 * nodes specified in the slurm_part_list, but if not
 	 * found, _find_conn_type will default to RM_MESH
@@ -282,10 +332,10 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 
 		cur_nodes = strtok_r(nodes_tmp, delimiter, &next_ptr);
 #if _DEBUG
-		debug("_copy_slurm_partition_list parse:%s, token[0]:%s", 
+		debug("_copy_slurm_partition_list parse:%s, token[0]:%s",
 			slurm_part->nodes, cur_nodes);
 #endif
-		/* 
+		/*
 		 * for each of the slurm partitions, there may be
 		 * several bgl partitions, so we need to find how to
 		 * wire each of those bluegene partitions.
@@ -294,7 +344,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 			bgl_conf_record_t *config_ptr;
 			config_ptr = _find_config_by_nodes(cur_nodes);
 			if (config_ptr == NULL) {
-				error("Nodes missing from bluegene.conf: %s", 
+				error("Nodes missing from bluegene.conf: %s",
 					cur_nodes);
 				rc = SLURM_ERROR;
 				goto cleanup;
@@ -309,10 +359,10 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 			bgl_record->conn_type = config_ptr->conn_type;
 			bgl_record->hostlist = hostlist_create(cur_nodes);
 			bgl_record->size = hostlist_count(bgl_record->hostlist);
-			if (node_name2bitmap(cur_nodes, false, 
+			if (node_name2bitmap(cur_nodes, false,
 					&(bgl_record->bitmap))){
 				error("_copy_slurm_partition_list unable to "
-					"convert nodes %s to bitmap", 
+					"convert nodes %s to bitmap",
 					cur_nodes);
 				_destroy_bgl_record(bgl_record);
 				rc = SLURM_ERROR;
@@ -339,7 +389,7 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 			
 	} /* end while(slurm_part) */
 	list_iterator_destroy(itr);
-
+	printf("rc %d",rc);
 	return rc;
 }
 
@@ -382,8 +432,10 @@ extern int read_bgl_conf(void)
 	if (bgl_conf_list) {
 		while ((conf_rec = list_pop(bgl_conf_list)))
 			_destroy_bgl_conf_record(conf_rec);
+		list_destroy(bgl_conf_list);
+		bgl_conf_list = list_create(NULL);
 	} else
-		bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
+		bgl_conf_list = list_create(NULL);
 
 	/* process the data file */
 	line_num = 0;
@@ -509,7 +561,10 @@ static int _parse_bgl_spec(char *in_line)
 	new_record->nodes = nodes;
 	nodes = NULL;	/* pointer moved, nothing left to xfree */
 	
-	if (!conn_type || !strcasecmp(conn_type,"MESH"))
+	printf("this is the type ");
+	printf("%s %d\n",conn_type,strlen(conn_type));
+	
+	if (!strcasecmp(conn_type,"MESH"))
 		new_record->conn_type = SELECT_MESH;
 	else 
 		new_record->conn_type = SELECT_TORUS;
@@ -518,8 +573,9 @@ static int _parse_bgl_spec(char *in_line)
 		new_record->node_use = SELECT_COPROCESSOR_MODE;
 	else
 		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-	
-	list_push(bgl_conf_list, new_record);
+	printf("this is the type ");
+	printf("%d\n",new_record->conn_type);
+	list_append(bgl_conf_list, new_record);
 #if _DEBUG
 	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
 		new_record->nodes, 
@@ -537,7 +593,6 @@ static void _destroy_bgl_record(void* object)
 
 	if (this_record) {
 		xfree(this_record->nodes);
-		xfree(this_record->owner_name);
 		xfree(this_record->slurm_part_id);
 		if (this_record->hostlist)
 			hostlist_destroy(this_record->hostlist);
@@ -549,10 +604,12 @@ static void _destroy_bgl_record(void* object)
 	}
 }
 
+
 static void _destroy_bgl_conf_record(void* object)
 {
 	bgl_conf_record_t* this_record = (bgl_conf_record_t*) object;
 	if (this_record) {
+		list_destroy(this_record->bgl_part_list);
 		xfree(this_record->nodes);
 		xfree(this_record);
 	}
@@ -565,7 +622,7 @@ static void _destroy_bgl_conf_record(void* object)
 static bgl_conf_record_t* _find_config_by_nodes(char* nodes)
 {
 	return (bgl_conf_record_t*) list_find_first(bgl_conf_list,
-				(ListFindF) _listfindf_conf_part_record, 
+				(ListFindF) _listfindf_conf_part_record,
 				nodes);
 }
 
@@ -612,7 +669,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 				loc++;
 		} else if (loc == 1) {
 			for (j=0; j<SYSTEM_DIMENSIONS; j++) {
-				(*request_result)->bl_coord[j] = 
+				(*request_result)->bl_coord[j] =
 						_char2num(request_string[i+j]);
 			}
 			i += (SYSTEM_DIMENSIONS - 1);
@@ -623,7 +680,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 			loc++;
 		} else if (loc == 3) {
 			for (j=0; j<SYSTEM_DIMENSIONS; j++) {
-				(*request_result)->tr_coord[j] = 
+				(*request_result)->tr_coord[j] =
 						_char2num(request_string[i+j]);
 			}
 			i += (SYSTEM_DIMENSIONS - 1);
@@ -636,7 +693,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 		}
 	}
 	if (loc != 5) {
-		error("_parse_request: Mal-formed node list: %s", 
+		error("_parse_request: Mal-formed node list: %s",
 			request_string);
 		/* error("DIM=%d, loc=%d i=%d", SYSTEM_DIMENSIONS, loc, i); */
 		goto cleanup;
@@ -646,7 +703,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 	for (i=0; i<SYSTEM_DIMENSIONS; i++) {
 		if (((*request_result)->bl_coord[i] < 0)
 		||  ((*request_result)->tr_coord[i] < 0)) {
-			error("_parse_request: Bad node list values: %s", 
+			error("_parse_request: Bad node list values: %s",
 				request_string);
 			goto cleanup;
 		}
@@ -659,7 +716,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 	}
 	rc = SLURM_SUCCESS;
 	
- cleanup: 
+ cleanup:
 	if (rc == SLURM_ERROR)
 		xfree(*request_result);
 	return rc;
@@ -692,6 +749,10 @@ extern int init_bgl(void)
 	}
 	verbose("BlueGene configured with %d x %d x %d base partitions",
 		bp_size.X, bp_size.Y, bp_size.Z);
+	DIM_SIZE[X]=bp_size.X;
+	DIM_SIZE[Y]=bp_size.Y;
+	DIM_SIZE[Z]=bp_size.Z;
+	pa_init(NULL);
 #endif
 
 	info("BlueGene plugin loaded successfully");
@@ -720,10 +781,12 @@ extern void fini_bgl(void)
 	xfree(bluegene_mloader);
 	xfree(bluegene_ramdisk);
 
+
 #ifdef HAVE_BGL_FILES
 	if (bgl)
 		slurm_rm_free_BGL(bgl);
 #endif
+	pa_fini();
 }
 
 extern void print_bgl_record(bgl_record_t* record)
@@ -813,7 +876,7 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
 		return -1;
 	else if (rec_a->size > rec_b->size)
 		return 1;
-	else 
+	else
 		return 0;
 }
 
@@ -823,20 +886,20 @@ static int _bgl_record_cmpf_inc(bgl_record_t* rec_a, bgl_record_t* rec_b)
  * returns: -1: rec_a >rec_b   0: rec_a == rec_b   1: rec_a < rec_b
  * 
  */
-static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b)
-{
-	if (rec_a->size > rec_b->size)
-		return -1;
-	else if (rec_a->size < rec_b->size)
-		return 1;
-	else 
-		return 0;
-}
+/* static int _bgl_record_cmpf_dec(bgl_record_t* rec_a, bgl_record_t* rec_b) */
+/* { */
+/* 	if (rec_a->size > rec_b->size) */
+/* 		return -1; */
+/* 	else if (rec_a->size < rec_b->size) */
+/* 		return 1; */
+/* 	else  */
+/* 		return 0; */
+/* } */
 
 /** 
  * sort the partitions by increasing size
  */
-extern void sort_bgl_record_inc_size(List records){
+void sort_bgl_record_inc_size(List records){
 	if (records == NULL)
 		return;
 	list_sort(records, (ListCmpF) _bgl_record_cmpf_inc);
@@ -845,11 +908,11 @@ extern void sort_bgl_record_inc_size(List records){
 /** 
  * sort the partitions by decreasing size
  */
-void sort_bgl_record_dec_size(List records){
-	if (records == NULL)
-		return;
-	list_sort(records, (ListCmpF) _bgl_record_cmpf_dec);
-}
+/* void sort_bgl_record_dec_size(List records){ */
+/* 	if (records == NULL) */
+/* 		return; */
+/* 	list_sort(records, (ListCmpF) _bgl_record_cmpf_dec); */
+/* } */
 
 /*
  * bluegene_agent - detached thread periodically updates status of
@@ -892,14 +955,14 @@ bluegene_agent(void *args)
  * OUT tv_str - place to put delta time in format "usec=%ld"
  * IN len_tv_str - size of tv_str in bytes
  */
-static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
-		char *tv_str, int len_tv_str)
-{
-	long delta_t;
-	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000;
-	delta_t +=  tv2->tv_usec - tv1->tv_usec;
-	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
-}
+/* static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2, */
+/* 		char *tv_str, int len_tv_str) */
+/* { */
+/* 	long delta_t; */
+/* 	delta_t  = (tv2->tv_sec  - tv1->tv_sec) * 1000000; */
+/* 	delta_t +=  tv2->tv_usec - tv1->tv_usec; */
+/* 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t); */
+/* } */
 
 /*
  * Convert a BGL API error code to a string
