@@ -110,23 +110,29 @@ slurm_protocol_config_t *slurm_get_api_config()
  */
 int slurm_api_set_default_config()
 {
+	int rc = SLURM_SUCCESS;
+
 	slurm_mutex_lock(&config_lock);
 	if ((slurmctld_conf.control_addr != NULL) &&
-	    (slurmctld_conf.slurmctld_port != 0)) {
-		slurm_mutex_unlock(&config_lock);
-		return SLURM_SUCCESS;
-	}
+	    (slurmctld_conf.slurmctld_port != 0))
+		goto cleanup;
 
 	read_slurm_conf_ctl(&slurmctld_conf);
 	if ((slurmctld_conf.control_addr == NULL) ||
-	    (slurmctld_conf.slurmctld_port == 0))
-		fatal("Unable to establish control machine or port");
+	    (slurmctld_conf.slurmctld_port == 0)) {
+		error("Unable to establish control machine or port");
+		rc =SLURM_ERROR;
+		goto cleanup;
+	}
 
 	slurm_set_addr(&proto_conf_default.primary_controller,
 		       slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.control_addr);
-	if (proto_conf_default.primary_controller.sin_port == 0)
-		fatal("Unable to establish control machine address");
+	if (proto_conf_default.primary_controller.sin_port == 0) {
+		error("Unable to establish control machine address");
+		rc =SLURM_ERROR;
+		goto cleanup;
+	}
 
 	if (slurmctld_conf.backup_addr) {
 		slurm_set_addr(&proto_conf_default.secondary_controller,
@@ -135,8 +141,9 @@ int slurm_api_set_default_config()
 	}
 	proto_conf = &proto_conf_default;
 
+      cleanup:
 	slurm_mutex_unlock(&config_lock);
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /* slurm_get_slurmd_port
@@ -233,11 +240,13 @@ slurm_fd slurm_open_controller_conn()
 {
 	slurm_fd connection_fd;
 
-	slurm_api_set_default_config();
+	connection_fd = slurm_api_set_default_config();
+
 	/* try to send to primary first then secondary */
-	if ((connection_fd =
-	     slurm_open_msg_conn(&proto_conf->primary_controller)) ==
-	    SLURM_SOCKET_ERROR) {
+	if ((connection_fd == SLURM_SUCCESS) &&
+	    ((connection_fd =
+	      slurm_open_msg_conn(&proto_conf->primary_controller)) ==
+	      SLURM_SOCKET_ERROR)) {
 		debug("Open connection to primary controller failed: %m");
 
 		if ((slurmctld_conf.backup_controller) &&
@@ -259,9 +268,12 @@ slurm_fd slurm_open_controller_conn()
 slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 {
 	slurm_fd connection_fd;
-	slurm_api_set_default_config();
 
-	if (dest == PRIMARY_CONTROLLER) {
+	connection_fd = slurm_api_set_default_config();
+
+	if (connection_fd != SLURM_SUCCESS) {
+		debug3("slurm_api_set_default_config error");
+	} else if (dest == PRIMARY_CONTROLLER) {
 		if ((connection_fd =
 		     slurm_open_msg_conn(&proto_conf->
 					 primary_controller)) ==
