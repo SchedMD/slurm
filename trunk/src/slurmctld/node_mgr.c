@@ -275,10 +275,12 @@ bitmap2node_name (bitstr_t *bitmap)
 	char last_prefix[MAX_NAME_LEN], last_suffix[MAX_NAME_LEN];
 	int first_index = 0, last_index = 0, index, first_digits, last_digits;
 
-	node_list_size = 0;
-	if (bitmap == NULL)
-		fatal ("bitmap2node_name: bitmap is NULL");
+	if (bitmap == NULL) {
+		node_list_ptr = xmalloc (1);	/* returns ptr to "\0" */
+		return node_list_ptr;
+	}
 
+	node_list_size = 0;
 	node_list_ptr = xmalloc (BUF_SIZE);
 	strcpy (node_list_ptr, "");
 
