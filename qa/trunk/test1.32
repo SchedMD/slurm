@@ -64,24 +64,37 @@ expect {
 #
 # Spawn initial program via srun
 # Note: For systems supporting proper pthreads, instead use
-#       exec $bin_kill -USR1 $srun_pid
+#       exec $bin_kill -USR1 $srun_pid, otherwise we need pkill 
+#       and can get multiple signals delivered
 #
 set timeout $max_job_delay
 spawn $srun -N1 -t1 --unbuffered $file_prog
 set srun_pid [exp_pid]
 expect {
 	-re "WAITING" {
-		incr matches
+		if {$matches == 0} {
+			set matches 1
+		}
+#		exec $bin_kill -USR1 $srun_pid
 		exec $bin_pkill -USR1 -u $uid srun
 		exp_continue
 	}
 	-re "SIGUSR1" {
-		incr matches
+		if {$matches == 1} {
+			set matches 2
+		}
+#		exec $bin_kill -USR2 $srun_pid
 		exec $bin_pkill -USR2 -u $uid srun
 		exp_continue
 	}
 	-re "SIGUSR2" {
-		incr matches
+		if {$matches == 2} {
+			set matches 3
+		}
+		exp_continue
+	}
+	-re "error.*not running" {
+		send_user "\nDon't worry about the error...\n"
 		exp_continue
 	}
 	timeout {
