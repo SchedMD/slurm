@@ -9,6 +9,7 @@ documents those changes that are of interest to users and admins.
     calls, improves performance and eliminates realloc failure on 
     RH EL3 under extremely heavy workload apparently due to memory 
     fragmentation
+ -- Fix scheduling logic for heterogeneous processor count.
 
 * Changes in SLURM 0.3.0
 ========================
