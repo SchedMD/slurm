@@ -1072,10 +1072,9 @@ _shm_validate(void)
 			continue;
 
 		/*
-		 * Consider a job step running if the step state is less
-		 * than STARTED or if s->sid has not yet been set.
-		 * If the state is >= STARTED, check for running processes
-		 * by attempting to signal the running session.
+		 * If the state is >= STARTED and there is a container id, 
+		 * check for running processes by attempting to signal the 
+		 * running container/session.
 		 */
 		if ((s->state >= SLURMD_JOB_STARTED) &&
 		    (s->cont_id) &&
