@@ -61,8 +61,9 @@
 /* Log to stderr and syslog until becomes a daemon */
 log_options_t log_opts = { 1, LOG_LEVEL_INFO,  LOG_LEVEL_INFO, LOG_LEVEL_QUIET } ;
 slurm_ctl_conf_t slurmctld_conf;
-time_t shutdown_time = (time_t)0;
+time_t shutdown_time;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
+bool resume_backup;
 int server_thread_count = 0;
 pid_t slurmctld_pid;
 pthread_t thread_id_main = (pthread_t)0;
@@ -77,12 +78,18 @@ void slurmctld_req ( slurm_msg_t * msg );
 void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
+static int ping_controller ( void );
 void *process_rpc ( void * req );
 inline int report_locks_set ( void );
+static void run_backup ( void );
 inline static void save_all_state ( void );
+static int shutdown_backup_controller ( void );
 void *slurmctld_background ( void * no_data );
-void *slurmctld_signal_hand ( void * no_data );
-void *slurmctld_rpc_mgr( void * no_data );
+static int background_process_msg ( slurm_msg_t * msg );
+static void *background_signal_hand ( void * no_data );
+static void *background_rpc_mgr( void * no_data );
+static void *slurmctld_signal_hand ( void * no_data );
+static void *slurmctld_rpc_mgr( void * no_data );
 inline static int slurmctld_shutdown ( void );
 void * service_connection ( void * arg );
 void usage (char *prog_name);
@@ -148,18 +155,6 @@ main (int argc, char *argv[])
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("getnodename error %d", error_code);
 
-	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
-	     strcmp ("localhost", slurmctld_conf.control_machine) &&
-		/* this is not the control machine AND */
-	     ((slurmctld_conf.backup_controller == NULL) ||
-		/* there is no backup controller OR */
-	      (strcmp (node_name, slurmctld_conf.backup_controller) &&
-	       strcmp ("localhost", slurmctld_conf.backup_controller))) )
-		/* this is not the backup controller */
-	       	fatal ("this machine (%s) is not the primary (%s) or backup (%s) controller", 
-			node_name, slurmctld_conf.control_machine, 
-			slurmctld_conf.backup_controller);
-
 	/* init ssl job credential stuff */
         slurm_ssl_init ( ) ;
 	slurm_init_signer ( &sign_ctx, slurmctld_conf.job_credential_private_key ) ;
@@ -172,36 +167,56 @@ main (int argc, char *argv[])
 	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
 		fatal ("sigprocmask error: %m");
 
-	/*
-	 * create attached thread signal handling
-	 */
-	if (pthread_attr_init (&thread_attr_sig))
-		fatal ("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	if (pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM))
-		error ("pthread_attr_setscope error %m");
-#endif
-	if (pthread_create ( &thread_id_sig, &thread_attr_sig, slurmctld_signal_hand, NULL))
-		fatal ("pthread_create %m");
+	while (1) {
+		/* initialization */
+		shutdown_time = (time_t) 0;
+		resume_backup = false;
 
-	/*
-	 * create attached thread to process RPCs
-	 */
-	pthread_mutex_lock(&thread_count_lock);
-	server_thread_count++;
-	pthread_mutex_unlock(&thread_count_lock);
-	if (pthread_attr_init (&thread_attr_rpc))
-		fatal ("pthread_attr_init error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	if (pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM))
-		error ("pthread_attr_setscope error %m");
-#endif
-	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
-		fatal ("pthread_create error %m");
+		/* start in primary or backup mode */
+		if ( slurmctld_conf.backup_controller &&
+		     (strcmp (node_name, slurmctld_conf.backup_controller) == 0) )
+			run_backup ();
+		else if (strcmp (node_name, slurmctld_conf.control_machine))
+	     	  	fatal ("this machine (%s) is not the primary (%s) or backup (%s) controller", 
+				node_name, slurmctld_conf.control_machine, 
+				slurmctld_conf.backup_controller);
+		else 		/* this is the primary, tell the secondary to shutdown */
+			(void) shutdown_backup_controller ();
 
-	slurmctld_background (NULL);	/* This could be run as a pthread */
+		/*
+		 * create attached thread for signal handling
+		 */
+		if (pthread_attr_init (&thread_attr_sig))
+			fatal ("pthread_attr_init error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		/* we want 1:1 threads if there is a choice */
+		if (pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM))
+			error ("pthread_attr_setscope error %m");
+#endif
+		if (pthread_create ( &thread_id_sig, &thread_attr_sig, slurmctld_signal_hand, NULL))
+			fatal ("pthread_create %m");
+
+		/*
+		 * create attached thread to process RPCs
+		 */
+		pthread_mutex_lock(&thread_count_lock);
+		server_thread_count++;
+		pthread_mutex_unlock(&thread_count_lock);
+		if (pthread_attr_init (&thread_attr_rpc))
+			fatal ("pthread_attr_init error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		/* we want 1:1 threads if there is a choice */
+		if (pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM))
+			error ("pthread_attr_setscope error %m");
+#endif
+		if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
+			fatal ("pthread_create error %m");
+
+		slurmctld_background (NULL);	/* This could be run as a pthread */
+		if (resume_backup == false) 
+			break;
+	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -242,11 +257,12 @@ slurmctld_signal_hand ( void * no_data )
 				shutdown_time = time (NULL);
 				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 				slurmctld_shutdown ();
+				pthread_join (thread_id_rpc, NULL);
+
 				/* ssl clean up */
 				slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
 				slurm_ssl_destroy ( ) ;
 
-				pthread_join (thread_id_rpc, NULL);
 				return NULL;	/* Normal termination */
 				break;
 			case SIGHUP:	/* kill -1 */
@@ -340,9 +356,10 @@ slurmctld_rpc_mgr ( void * no_data )
 	}
 
 	debug3 ("slurmctld_rpc_mgr shutting down");
-	pthread_mutex_lock(&thread_count_lock);
+	pthread_mutex_lock (&thread_count_lock);
 	server_thread_count--;
-	pthread_mutex_unlock(&thread_count_lock);
+	pthread_mutex_unlock (&thread_count_lock);
+	(void) slurm_shutdown_msg_engine (sockfd);
 	pthread_exit ((void *)0);
 }
 
@@ -618,6 +635,9 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_RECONFIGURE:
 			slurm_rpc_reconfigure_controller ( msg ) ;
+			break;
+		case REQUEST_CONTROL:
+			slurm_rpc_shutdown_controller ( msg ) ;
 			break;
 		case REQUEST_SHUTDOWN:
 			slurm_rpc_shutdown_controller ( msg ) ;
@@ -1590,31 +1610,37 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 void 
 slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 {
-	int error_code = 0;
+	int error_code = 0, i;
+	uint16_t core_arg = 0;
 	shutdown_msg_t * shutdown_msg = (shutdown_msg_t *) msg->data;
 #ifdef	HAVE_AUTHD
 	uid_t uid = 0;
-#endif
 
-	/* do RPC call */
-	debug ("Performing RPC: REQUEST_SHUTDOWN");
-#ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid (msg->cred);
 	if ( (uid != 0) &&  (uid != getuid ()) ) {
 		error ("Security violation, SHUTDOWN RPC from uid %u", (unsigned int) uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
 #endif
-
 	if (error_code)
 		;
-	else if (shutdown_msg->core)
+	else if (msg->msg_type == REQUEST_CONTROL) {
+		info ("Performing RPC: REQUEST_CONTROL");
+		resume_backup = true;		/* resume backup mode */
+	} else {
+		debug ("Performing RPC: REQUEST_SHUTDOWN");
+		core_arg = shutdown_msg->core;
+	}
+
+	/* do RPC call */
+	if (error_code)
+		;
+	else if (core_arg)
 		debug3 ("performing immeditate shutdown without state save");
 	else if (shutdown_time)
 		debug3 ("slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
 	else if (thread_id_sig) {
 		pthread_kill (thread_id_sig, SIGTERM);	/* tell master to clean-up */
-		info ("slurm_rpc_shutdown_controller completed successfully");
 	} 
 	else {
 		error ("thread_id_sig undefined, doing shutdown the hard way");
@@ -1623,8 +1649,13 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 		slurmctld_shutdown ();
 	}
 
+	if (msg->msg_type == REQUEST_CONTROL) {
+		/* wait for workload to dry up before sending reply */
+		for (i=0; ((i<10) && (server_thread_count>1)); i++)
+			sleep (1);
+	}
 	slurm_send_rc_msg ( msg , error_code );
-	if ((error_code == 0) && (shutdown_msg->core))
+	if ((error_code == 0) && core_arg)
 		fatal ("Aborting per RPC request");
 }
 
@@ -1784,18 +1815,20 @@ slurmctld_shutdown ()
 	int rc ;
 	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
+	slurm_addr self;
 
-        /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
-		error ("slurm_open_controller_conn error");
+        /* init message connection for message communication with self/controller */
+	slurm_set_addr(&self, slurmctld_conf.slurmctld_port, "localhost");
+	if ( ( sockfd = slurm_open_msg_conn (&self) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurmctld_shutdown/slurm_open_msg_conn: %m");
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* send request message */
 	request_msg . msg_type = REQUEST_SHUTDOWN_IMMEDIATE ;
 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
-		error ("slurm_send_controller_msg error");
+	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("slurmctld_shutdown/slurm_send_node_msg error: %m");
 		return SLURM_SOCKET_ERROR ;
 	}
 
@@ -1975,4 +2008,342 @@ usage (char *prog_name)
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("  -r           Recover state from last checkpoint\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
+}
+
+/* run_backup - controller should run in standby mode, assuming control when the 
+ * primary controller stops responding */
+void
+run_backup (void)
+{
+	time_t last_controller_response = time(NULL), last_ping = 0;
+	pthread_attr_t thread_attr_sig, thread_attr_rpc;
+
+	info ("slurmctld running in background mode");
+	resume_backup = false;		/* default: don't resume if shutdown */
+
+	/*
+	 * create attached thread for signal handling
+	 */
+	if (pthread_attr_init (&thread_attr_sig))
+		fatal ("pthread_attr_init error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	if (pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create ( &thread_id_sig, &thread_attr_sig, background_signal_hand, NULL))
+		fatal ("pthread_create %m");
+
+	/*
+	 * create attached thread to process RPCs
+	 */
+	if (pthread_attr_init (&thread_attr_rpc))
+		fatal ("pthread_attr_init error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	/* we want 1:1 threads if there is a choice */
+	if (pthread_attr_setscope (&thread_attr_rpc, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, background_rpc_mgr, NULL))
+		fatal ("pthread_create error %m");
+
+	/* repeatedly ping ControlMachine */
+	while (shutdown_time == 0) {
+		sleep (1);
+		if (difftime (time(NULL), last_ping) < slurmctld_conf.heartbeat_interval)
+			continue;
+
+		last_ping = time(NULL);
+		if (ping_controller() == 0)
+			last_controller_response = time( NULL );
+		else if (difftime (time(NULL), last_controller_response) >
+		         slurmctld_conf.slurmctld_timeout)
+			break;
+	}
+	if (shutdown_time != 0)
+		exit (0);
+
+	error ("ControlMachine %s not responding, BackupController %s taking over",
+		slurmctld_conf.control_machine, slurmctld_conf.backup_controller);
+	pthread_kill (thread_id_sig, SIGTERM);
+	pthread_join (thread_id_sig, NULL);
+
+	if (read_slurm_conf (1))	/* Recover all state */
+		fatal ("Unable to recover slurm state");
+	reset_job_bitmaps ();
+	shutdown_time = (time_t) 0;
+	return;
+}
+
+/* background_signal_hand - Process daemon-wide signals */
+void *
+background_signal_hand ( void * no_data ) 
+{
+	int sig ;
+	sigset_t set;
+
+	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	info ("Send signals to background_signal_hand, pid = %u", getpid ());
+
+	if (sigemptyset (&set))
+		error ("sigemptyset error: %m");
+	if (sigaddset (&set, SIGINT))
+		error ("sigaddset error on SIGINT: %m");
+	if (sigaddset (&set, SIGTERM))
+		error ("sigaddset error on SIGTERM: %m");
+	if (sigaddset (&set, SIGABRT))
+		error ("sigaddset error on SIGABRT: %m");
+
+	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
+		fatal ("sigprocmask error: %m");
+
+	while (1) {
+		sigwait (&set, &sig);
+		switch (sig) {
+			case SIGINT:	/* kill -2  or <CTRL-C> */
+			case SIGTERM:	/* kill -15 */
+				info ("Terminate signal (SIGINT or SIGTERM) received\n");
+				shutdown_time = time (NULL);
+				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+				slurmctld_shutdown ();
+				pthread_join (thread_id_rpc, NULL);
+
+				return NULL;	/* Normal termination */
+				break;
+			case SIGABRT:	/* abort */
+				fatal ("SIGABRT received");
+				break;
+			default:
+				error ("Invalid signal (%d) received", sig);
+		}
+	}
+}
+
+/* background_rpc_mgr - Read and process incoming RPCs */
+void *
+background_rpc_mgr ( void * no_data ) 
+{
+	slurm_fd newsockfd;
+        slurm_fd sockfd;
+	slurm_addr cli_addr ;
+	slurm_msg_t * msg = NULL ;
+	bool done_flag = false;
+	int error_code;
+
+	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	debug3 ("background_rpc_mgr pid = %u", getpid ());
+
+	/* initialize port for RPCs */
+	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
+			== SLURM_SOCKET_ERROR )
+		fatal ("slurm_init_msg_engine_port error %m");
+
+	/*
+	 * Procss incoming RPCs indefinitely
+	 */
+	while (done_flag == false) 
+	{
+		/* accept needed for stream implementation 
+		 * is a no-op in message implementation that just passes sockfd to newsockfd
+		 */
+		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
+		{
+			error ("slurm_accept_msg_conn error %m") ;
+			continue ;
+		}
+
+		msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;
+		msg ->conn_fd = newsockfd;
+		if ( slurm_receive_msg ( newsockfd , msg ) == SLURM_SOCKET_ERROR )
+			error ("slurm_receive_msg error %m");
+		else {
+			error_code = background_process_msg ( msg ) ; 
+			if ((error_code == 0) && 
+			    (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE))
+				done_flag = true;
+		}
+		slurm_free_msg ( msg ) ;
+
+		/* close should only be called when the socket implementation is being used 
+		 * the following call will be a no-op in a message/mongo implementation */
+		slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+	}
+
+	debug3 ("background_rpc_mgr shutting down");
+	slurm_close_accepted_conn ( sockfd ); /* close the main socket */
+	pthread_exit ((void *)0);
+}
+
+/* background_process_msg - process an RPC to the backup_controller */
+int 
+background_process_msg ( slurm_msg_t * msg )
+{
+	int error_code = 0;
+#ifdef	HAVE_AUTHD
+	uid_t uid = 0;
+
+	uid = slurm_auth_uid (msg->cred);
+	if ( (uid != 0) &&  (uid != getuid ()) ) {
+		error ("Security violation, SHUTDOWN RPC from uid %u", (unsigned int) uid);
+		error_code = ESLURM_USER_ID_MISSING;
+	}
+#endif
+
+	if (error_code == 0) {
+		if (msg->msg_type == REQUEST_SHUTDOWN_IMMEDIATE) {
+			debug3 ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
+		} else if (msg->msg_type == REQUEST_SHUTDOWN) {
+			debug ("Performing RPC: REQUEST_SHUTDOWN");
+			pthread_kill (thread_id_sig, SIGTERM);
+		} else if (msg->msg_type == REQUEST_CONTROL) {
+			debug3 ("Ignoring RPC: REQUEST_CONTROL");
+		} else {
+			error ("Invalid RPC received %d", msg->msg_type);
+			error_code = SLURM_COMMUNICATIONS_RECEIVE_ERROR;
+		}
+	}
+	if (msg->msg_type != REQUEST_SHUTDOWN_IMMEDIATE)
+		slurm_send_rc_msg ( msg , error_code );
+	return error_code;
+}
+
+/* Ping ControlMachine, return 0 if no error */
+int
+ping_controller ( void )
+{
+	int rc, msg_size;
+	slurm_fd sockfd ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+	slurm_addr primary_addr;
+
+	debug3 ("pinging slurmctld at %s", slurmctld_conf.control_addr);
+        /* init message connection for message communication with primary controller */
+	slurm_set_addr (&primary_addr, slurmctld_conf.slurmctld_port, 
+			slurmctld_conf.control_addr);
+	if ( ( sockfd = slurm_open_msg_conn (&primary_addr) ) == SLURM_SOCKET_ERROR ) {
+		error ("ping_controller/slurm_open_msg_conn: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* send request message */
+	request_msg . msg_type = REQUEST_PING ;
+
+	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("ping_controller/slurm_send_node_msg error: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* receive message */
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("ping_controller/slurm_receive_msg error: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* shutdown message connection */
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+		error ("ping_controller/slurm_shutdown_msg_conn error: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	if ( msg_size )
+		return msg_size;
+
+	switch ( response_msg . msg_type )
+	{
+		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			rc = slurm_rc_msg->return_code;
+			slurm_free_return_code_msg ( slurm_rc_msg );	
+			if (rc) {
+				error ("ping_controller/response error %d", rc);
+				return SLURM_PROTOCOL_ERROR;
+			}
+			break ;
+		default:
+			error ("ping_controller/unexpected message type %d", 
+			       response_msg . msg_type);
+			return SLURM_PROTOCOL_ERROR;
+			break ;
+	}
+        return SLURM_PROTOCOL_SUCCESS ;
+}
+
+/* Tell the backup_controller to relinquish control, primary control_machine is back */
+static int 
+shutdown_backup_controller ( void )
+{
+	int rc ;
+	int msg_size ;
+	slurm_fd sockfd ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+	slurm_addr secondary_addr;
+
+	if ( (slurmctld_conf.backup_addr == NULL) || 
+	     (strlen (slurmctld_conf.backup_addr) == 0) )
+		return SLURM_PROTOCOL_SUCCESS;
+
+        /* init message connection for message communication with primary controller */
+	slurm_set_addr (&secondary_addr, slurmctld_conf.slurmctld_port, 
+			slurmctld_conf.backup_addr);
+	if ( ( sockfd = slurm_open_msg_conn (&secondary_addr) ) == SLURM_SOCKET_ERROR ) {
+		error ("shutdown_backup_controller/slurm_open_msg_conn: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* send request message */
+	request_msg . msg_type = REQUEST_CONTROL ;
+	request_msg . data = NULL ;
+
+	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("shutdown_backup_controller/slurm_send_node_msg error: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* receive message */
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+		error ("shutdown_backup_controller/slurm_receive_msg error: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* shutdown message connection */
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+		error ("shutdown_backup_controller/slurm_shutdown_msg_conn error: %m");
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	if ( msg_size )
+		return msg_size;
+
+	switch ( response_msg . msg_type )
+	{
+		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			rc = slurm_rc_msg->return_code;
+			slurm_free_return_code_msg ( slurm_rc_msg );	
+			if (rc) {
+				error ("shutdown_backup_controller/response error %d", rc);
+				return SLURM_PROTOCOL_ERROR;
+			} else
+				info ("BackupController told to shutdown");
+			break ;
+		default:
+			error ("shutdown_backup_controller/unexpected message type %d", 
+			       response_msg . msg_type);
+			return SLURM_PROTOCOL_ERROR;
+			break ;
+	}
+
+	/* FIXME: Ideally the REQUEST_CONTROL RPC does not return until all other  
+	 * activity has ceased and the state has been saved. That is not presently  
+	 * the case (it returns when no other work is pending, so the state save 
+	 * should occur right away). We sleep for a while here and give the backup  
+	 * controller time to shutdown */
+	sleep (2);
+        return SLURM_PROTOCOL_SUCCESS ;
 }
