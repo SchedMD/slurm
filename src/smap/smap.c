@@ -45,14 +45,14 @@ void *_resize_handler(int sig);
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
-	node_info_msg_t *node_info_ptr;
+	node_info_msg_t *node_info_ptr=NULL;
 	int error_code;
 	int height = 40;
 	int width = 100;
 	int startx = 0;
 	int starty = 0;
 	int end = 0;
-	int i;
+	int i, rc;
 	//char *name;
 	
         	
@@ -61,8 +61,30 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
-		node_info_ptr = NULL;
-		slurm_perror("slurm_load_node");
+#ifdef HAVE_BGL_FILES
+		rm_size3D_t bp_size;
+		if ((rc = rm_set_serial("BGL")) != STATUS_OK) {
+			fatal("init_bgl: rm_set_serial(): %s", bgl_err_str(rc));
+			return SLURM_ERROR;
+		}
+		
+		if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+			fatal("init_bgl: rm_get_BGL(): %s", bgl_err_str(rc));
+			return SLURM_ERROR;
+		}
+		
+		if ((rc = rm_get_data(bgl, RM_Msize, &bp_size)) != STATUS_OK) {
+			fatal("init_bgl: rm_get_data(): %s", bgl_err_str(rc));
+			return SLURM_ERROR;
+		}
+		verbose("BlueGene configured with %d x %d x %d base partitions",
+			bp_size.X, bp_size.Y, bp_size.Z);
+		DIM_SIZE[X]=bp_size.X;
+		DIM_SIZE[Y]=bp_size.Y;
+		DIM_SIZE[Z]=bp_size.Z;
+		slurm_rm_free_BGL(bgl);
+#endif	
+       		//slurm_perror("slurm_load_node");
 		pa_init(NULL);
 	} else {
 		pa_init(node_info_ptr);
