@@ -969,7 +969,7 @@ extern int validate_group (struct part_record *part_ptr, uid_t submit_uid);
  *	records, call this function after validate_node_specs() sets the node 
  *	state properly 
  * IN node_name - node which should have jobs running
- * IN job_count - number of jobs which should be running on specified node
+ * IN/OUT job_count - number of jobs which should be running on specified node
  * IN job_id_ptr - pointer to array of job_ids that should be on this node
  * IN step_id_ptr - pointer to array of job step ids that should be on node
  */
@@ -983,6 +983,7 @@ extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count,
  * IN cpus - number of cpus measured
  * IN real_memory - mega_bytes of real_memory measured
  * IN tmp_disk - mega_bytes of tmp_disk measured
+ * IN job_count - number of jobs allocated to this node
  * IN status - node status code
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * global: node_record_table_ptr - pointer to global node table

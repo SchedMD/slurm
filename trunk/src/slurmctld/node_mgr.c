@@ -1007,6 +1007,7 @@ int update_node ( update_node_msg_t * update_node_msg )
  * IN cpus - number of cpus measured
  * IN real_memory - mega_bytes of real_memory measured
  * IN tmp_disk - mega_bytes of tmp_disk measured
+ * IN job_count - number of jobs allocated to this node
  * IN status - node status code
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * global: node_record_table_ptr - pointer to global node table

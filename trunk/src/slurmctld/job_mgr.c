@@ -2664,7 +2664,7 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
  *	are actually running, if not clean up the job records and/or node 
  *	records
  * IN node_name - node which should have jobs running
- * IN job_count - number of jobs which should be running on specified node
+ * IN/OUT job_count - number of jobs which should be running on specified node
  * IN job_id_ptr - pointer to array of job_ids that should be on this node
  * IN step_id_ptr - pointer to array of job step ids that should be on node
  */
@@ -2672,7 +2672,7 @@ void
 validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		      uint32_t * job_id_ptr, uint16_t * step_id_ptr)
 {
-	int i, node_inx, jobs_running = 0;
+	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
 
@@ -2682,13 +2682,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		return;
 	}
 	node_inx = node_ptr - node_record_table_ptr;
-
-	/* If no job is running here, ensure none are assigned to this node */
-	if (*job_count == 0) {
-		debug("Node %s registered with no jobs", node_name);
-		(void) kill_running_job_by_node_name(node_name, true);
-		return;
-	}
 
 	/* Ensure that jobs running are really supposed to be there */
 	for (i = 0; i < *job_count; i++) {
@@ -2704,7 +2697,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 
 		else if (job_ptr->job_state == JOB_RUNNING) {
 			if (bit_test(job_ptr->node_bitmap, node_inx)) {
-				jobs_running++;
 				debug3("Registered job %u.%u on node %s ",
 				       job_id_ptr[i], step_id_ptr[i], 
 				       node_name);
@@ -2743,9 +2735,12 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		}
 	}
 
-	if (jobs_running == 0) {	/* *job_count is > 0 */
-		error("resetting job_count on node %s to zero", node_name);
-		*job_count = 0;
+	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
+
+	if (jobs_on_node != *job_count) {
+		error("resetting job_count on node %s to %d", 
+		      node_name, jobs_on_node);
+		*job_count = jobs_on_node;
 	}
 
 	return;
