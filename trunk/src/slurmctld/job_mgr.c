@@ -2230,6 +2230,11 @@ static int _list_find_job_old(void *job_entry, void *key)
 	time_t min_age = time(NULL) - slurmctld_conf.min_job_age;
 	struct job_record *job_ptr = (struct job_record *)job_entry;
 
+	if (job_ptr->job_state & JOB_COMPLETING) {
+		re_kill_job(job_ptr);
+		return 0;       /* Job still completing */
+	}
+
 	if (slurmctld_conf.min_job_age == 0)
 		return 0;	/* No job record purging */
 
@@ -2238,11 +2243,6 @@ static int _list_find_job_old(void *job_entry, void *key)
 
 	if (!(IS_JOB_FINISHED(job_ptr))) 
 		return 0;	/* Job still active */
-
-	if (job_ptr->job_state & JOB_COMPLETING) {
-		re_kill_job(job_ptr);
-		return 0;	/* Job still completing */
-	}
 
 	return 1;		/* Purge the job */
 }
