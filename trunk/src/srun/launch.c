@@ -40,10 +40,7 @@ launch(void *arg)
 	int i, j, taskid;
 	char hostname[MAXHOSTNAMELEN];
 
-	pthread_mutex_lock(&job->state_mutex);
-	job->state = SRUN_JOB_LAUNCHING;
-	pthread_cond_signal(&job->state_cond);
-	pthread_mutex_unlock(&job->state_mutex);
+	update_job_state(job, SRUN_JOB_LAUNCHING);
 
 	if (read_slurm_port_config() < 0)
 		error("read_slurm_port_config: %d", slurm_strerror(errno));
@@ -102,11 +99,8 @@ launch(void *arg)
 		xfree(msg.global_task_ids);
 	}
 
-	pthread_mutex_lock(&job->state_mutex);
-	job->state = SRUN_JOB_STARTING;
-	pthread_cond_signal(&job->state_cond);
-	pthread_mutex_unlock(&job->state_mutex);
 
+	update_job_state(job, SRUN_JOB_STARTING);
 
 	return(void *)(0);
 

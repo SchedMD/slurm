@@ -77,6 +77,7 @@ typedef struct srun_job {
 } job_t;
 
 job_t * job_create(resource_allocation_response_msg_t *resp);
+void    update_job_state(job_t *job, job_state_t newstate);
 
 
 #endif /* !_HAVE_JOB_H */
