@@ -66,6 +66,11 @@ expect {
 			incr matches
 			exp_continue
 		}
+		if {[string compare $expect_out(1,string) "DISTRIBUTION"] == 0 } {
+			incr matches
+			exp_continue
+		}
+
 		exp_continue
 	}
 	timeout {
@@ -79,7 +84,7 @@ expect {
 	}
 }
 
-if {$matches != 9} {
+if {$matches != 10} {
 	send_user "\nFAILURE: Not all SLURM environment variables set ($matches of 9)\n"
 	set exit_code 1
 }
