@@ -295,7 +295,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		goto done;
 	}
 
-	xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));
+	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
 
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
