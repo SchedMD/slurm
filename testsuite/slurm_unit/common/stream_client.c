@@ -1,18 +1,16 @@
 #include <src/common/slurm_protocol_api.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <pthread.h>
-#include <error.h>
 
 extern int errno;
 
 void* read2stdout_thread( void* arg )
 {
-	uint32_t buffer_len = 1024*1024 ;
-	int32_t bytes_read ;
+	unsigned int buffer_len = 1024*1024 ;
+	int bytes_read ;
 	char buffer[ buffer_len ] ;
 	slurm_fd fd = (slurm_fd) arg ;
 
@@ -28,8 +26,8 @@ void* read2stdout_thread( void* arg )
 
 void stdout2socket_loop( slurm_fd fd )
 {
-	uint32_t buffer_len = 1024*1024 ;
-	int32_t bytes_read ;
+	unsigned int buffer_len = 1024*1024 ;
+	int bytes_read ;
 	char buffer[ buffer_len ] ;
 
 	while (1)
@@ -49,7 +47,7 @@ void stdout2socket_loop( slurm_fd fd )
 	}
 }
 
-int32_t main ( int32_t argc , char * argv[] )
+int main ( int argc , char * argv[] )
 {
 	slurm_fd worker_socket ; /* declare file descriptors */
 	slurm_addr worker_address ; /* declare address structures */
