@@ -14,6 +14,5 @@ checkpoint_none_la_SOURCES = checkpoint_none.c
 checkpoint_none_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
-checkpoint_none_la_LIBADD  = $(top_builddir)/src/common/libcommon.la   \
-			$(top_builddir)/src/api/libslurm.la
+checkpoint_none_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
 endif

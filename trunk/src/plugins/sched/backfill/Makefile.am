@@ -17,6 +17,5 @@ sched_backfill_la_SOURCES = backfill_wrapper.c	\
 sched_backfill_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 if HAVE_AIX
-sched_backfill_la_LIBADD = $(top_builddir)/src/common/libcommon.la   \
-			$(top_builddir)/src/api/libslurm.la
+sched_backfill_la_LIBADD = $(top_builddir)/src/common/libcommon.la
 endif

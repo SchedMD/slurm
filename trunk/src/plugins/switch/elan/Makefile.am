@@ -25,11 +25,12 @@ switch_elan_la_SOURCES =        \
 #  available in slurmctld (slurm_setenvpf)
 
 if HAVE_AIX
-switch_elan_la_LIBADD  = $(ELAN_LIBS)  \
-			$(top_builddir)/src/common/libcommon.la   \
+switch_elan_la_LIBADD  = $(ELAN_LIBS) \
+			$(top_builddir)/src/common/libcommon.la \
 			$(top_builddir)/src/api/libslurm.la
 else
-switch_elan_la_LIBADD  = $(ELAN_LIBS)  $(top_builddir)/src/api/libslurm.la
+switch_elan_la_LIBADD  = $(ELAN_LIBS) \
+			$(top_builddir)/src/api/libslurm.la
 endif
 
 switch_elan_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)

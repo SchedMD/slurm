@@ -44,6 +44,5 @@ else
 pkglib_LTLIBRARIES    = sched_wiki.la
 sched_wiki_la_SOURCES = $(wiki_src)
 sched_wiki_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
-sched_wiki_la_LIBADD  = -lstdc++ \
-			$(top_builddir)/src/api/libslurm.la
+sched_wiki_la_LIBADD  = -lstdc++
 endif
