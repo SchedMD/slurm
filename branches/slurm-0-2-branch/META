@@ -7,6 +7,6 @@
   Name:		slurm
   Major:	0
   Minor:	2
-  Micro:        21
-  Version:	0.2.21
-  Release:	1
+  Micro:        22
+  Version:	0.2.22
+  Release:	0.pre1
