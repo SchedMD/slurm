@@ -51,7 +51,7 @@
 #include <src/slurmctld/slurmctld.h>
 #include <src/common/credential_utils.h>
 #ifdef	HAVE_AUTHD
-#include <src/common/authentication.h>
+#include <src/common/slurm_authentication.h>
 #endif
 
 #define BUF_SIZE 1024
@@ -1154,10 +1154,10 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	dump_job_desc (job_desc_msg);
 #ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid (msg.cred);
-	if ((uid != job_desc_msg.user_ID) && 
+	if ((uid != job_desc_msg->user_id) && 
 	    (uid != 0)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error ("Bogus RESOURCE_ALLOCATE from uid %d", uid);
+		error ("Security violation, RESOURCE_ALLOCATE from uid %d", uid);
 	}	
 #endif
 	if (error_code == 0) {
@@ -1226,10 +1226,10 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
         dump_job_desc (job_desc_msg);
 #ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid (msg.cred);
-	if ((uid != job_desc_msg.user_ID) &&
+	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error ("Bogus ALLOCATE_AND_RUN RPC from uid %d", uid);
+		error ("Security violation, ALLOCATE_AND_RUN RPC from uid %d", uid);
 	}
 #endif
 	if (error_code == 0) {
@@ -1309,10 +1309,10 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	dump_job_desc(job_desc_msg);
 #ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid (msg.cred);
-	if ((uid != job_desc_msg.user_ID) &&
+	if ((uid != job_desc_msg->user_id) &&
 	    (uid != 0)) {
 		error_code = ESLURM_USER_ID_MISSING;
-		error ("Bogus JOB_WILL_RUN RPC from uid %d", uid);
+		error ("Security violation, JOB_WILL_RUN RPC from uid %d", uid);
 	}
 #endif
 
@@ -1356,7 +1356,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 #ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid (msg.cred);
 	if (uid != 0) {
-		error ("Bogus RECONFIGURE RPC from uid %d", uid);
+		error ("Security violation, RECONFIGURE RPC from uid %d", uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
 #endif
@@ -1408,7 +1408,7 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 #ifdef	HAVE_AUTHD
 	uid = slurm_auth_uid (msg.cred);
 	if (uid != 0) {
-		error ("Bogus SHUTDOWN RPC from uid %d", uid);
+		error ("Security violation, SHUTDOWN RPC from uid %d", uid);
 		error_code = ESLURM_USER_ID_MISSING;
 	}
 #endif
@@ -1439,17 +1439,21 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 void 
 slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg )
 {
+	int error_code = 0;
 #ifdef	HAVE_AUTHD
 	int uid;
 
 	uid = slurm_auth_uid (msg.cred);
-	if (uid != 0)
-		error ("Bogus SHUTDOWN_IMMEDIATE RPC from uid %d", uid);
+	if (uid != 0) {
+		error ("Security violation, SHUTDOWN_IMMEDIATE RPC from uid %d", uid);
+		error_code = ESLURM_USER_ID_MISSING;
+	}
 #endif
 
 	/* do RPC call */
-	debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 	/* No op: just used to knock loose accept RPC thread */
+	if (error_code == 0)
+		debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
 }
 /* slurm_rpc_create_job_step - process RPC to creates/registers a job step with the step_mgr */
 void 
@@ -1519,6 +1523,9 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 			( slurm_node_registration_status_msg_t * ) msg-> data ;
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: MESSAGE_NODE_REGISTRATION_STATUS");
