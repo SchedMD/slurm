@@ -141,6 +141,17 @@ void print_date()
 	pa_system_ptr->ycord++;
 }
 
+void clear_window(WINDOW *win)
+{
+	int x,y;
+	for(x=0; x<=win->_maxx; x++)
+		for(y=0; y<win->_maxy; y++) {
+			mvwaddch(win, y, x, ' ');
+		}
+	wmove(win, 1, 1);
+	wnoutrefresh(win);
+}
+
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);

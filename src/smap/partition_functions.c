@@ -56,7 +56,9 @@ static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t *part_ptr, 
 			     db2_block_info_t *db2_info_ptr);
 static void _read_part_db2(void);
+#if HAVE_BGL_FILES
 static int _set_start_finish(db2_block_info_t *db2_info_ptr);
+#endif
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last);
 static int _print_rest(db2_block_info_t *block_ptr, int *count);
 
@@ -327,7 +329,7 @@ static char *_part_state_str(rm_partition_state_t state)
 	return tmp;
 }
 
-static int _print_text_part(partition_info_t * part_ptr, 
+static int _print_text_part(partition_info_t *part_ptr, 
 			    db2_block_info_t *db2_info_ptr)
 {
 	int printed = 0;
@@ -518,10 +520,14 @@ static void _block_list_del(void *object)
 	db2_block_info_t *block_ptr = (db2_block_info_t *)object;
 
 	if (block_ptr) {
-		xfree(block_ptr->bgl_user_name);
-		xfree(block_ptr->bgl_block_name);
-		xfree(block_ptr->slurm_part_name);
-		xfree(block_ptr->nodes);
+		if(block_ptr->bgl_user_name)
+			xfree(block_ptr->bgl_user_name);
+		if(block_ptr->bgl_block_name)
+			xfree(block_ptr->bgl_block_name);
+		if(block_ptr->slurm_part_name)
+			xfree(block_ptr->slurm_part_name);
+		if(block_ptr->nodes)
+			xfree(block_ptr->nodes);
 		if (block_ptr->hostlist)
 			hostlist_destroy(block_ptr->hostlist);
 		
@@ -573,7 +579,6 @@ static int _list_match_all(void *object, void *key)
 	return 1;
 }
 
-#endif
 
 static int _set_start_finish(db2_block_info_t *db2_info_ptr)
 {
@@ -616,6 +621,7 @@ static int _set_start_finish(db2_block_info_t *db2_info_ptr)
 /* 	       db2_info_ptr->end[X],db2_info_ptr->end[Y],db2_info_ptr->end[Z]); */
 	return 1;
 }
+#endif
 
 static int _in_slurm_partition(db2_block_info_t *db2_info_ptr, int *first, int *last)
 {

@@ -40,9 +40,15 @@
 #include "src/partition_allocator/tv.h"
 
 // #define DEBUG_PA
-#define BIG_MAX 9999;
+#define BIG_MAX 9999
 #define BUFSIZE 4096
+
+#if HAVE_BGL
 #define PA_SYSTEM_DIMENSIONS 3
+#else
+#define PA_SYSTEM_DIMENSIONS 1
+#endif
+
 #define NUM_PORTS_PER_NODE 6
 
 extern bool _initialized;
@@ -165,7 +171,11 @@ typedef struct {
 	time_t now_time;
 
 	/* made to hold info about a system, which right now is only a grid of pa_nodes*/
+#if HAVE_BGL
 	pa_node_t ***grid;
+#else
+	pa_node_t *grid;
+#endif
 	pa_node_t *fill_in_value;
 } pa_system_t;
 
@@ -230,7 +240,8 @@ void pa_fini();
  * 
  * IN c: coordinate of the node to put down
  */
-void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
+//void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
+void pa_set_node_down(pa_node_t *pa_node);
 
 /** 
  * Try to allocate a partition.
