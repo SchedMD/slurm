@@ -84,17 +84,21 @@ parse_command_line( int argc, char* argv[] )
 			"job_id"},
 		{"steps", 's', POPT_ARG_NONE, &params.step_flag, 
 			OPT_STEPS_NONE, 
-			"comma separated list of job steps to view, default is all",
+			"comma separated list of job steps to view, "
+			"default is all",
 			"job_step"},
 		{"long", 'l', POPT_ARG_NONE, &params.long_list, OPT_LONG, 
 			"long report", NULL},
 		{"sort", 'S', POPT_ARG_STRING, &params.sort, OPT_SORT,
 			"comma seperated list of fields to sort on", "fields"},
 		{"states", 't', POPT_ARG_STRING, &params.states, OPT_STATES,
-			"comma seperated list of states to view", "states"},
+			"comma seperated list of states to view, "
+			"default is pending and running, "
+			"\"all\" reports all states", "states"},
 		{"partitions", 'p', POPT_ARG_STRING, 
 			&params.partitions, OPT_PARTITIONS,
-			"comma separated list of partitions to view", 
+			"comma separated list of partitions to view, "
+			"default is all partitions", 
 			"partitions"},
 		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
 			"format specification", "format"},
