@@ -58,9 +58,9 @@ main(int argc, char * argv[]) {
 	    break;
 	} /* if */
 
-	printf("Found partition Name=%s, TotalNodes=%d, Nodes=%s, MaxTime=%d, MaxNodes=%d Default=%d \n", 
-	    Req_Name, TotalNodes, Nodes, MaxTime, MaxNodes, Default);
-	printf("  TotalNodes=%d, TotalCPUs=%d, Key=%d StateUp=%d, Shared=%d, AllowGroups=%s\n", 
+	printf("Found partition Name=%s Nodes=%s MaxTime=%d MaxNodes=%d Default=%d \n", 
+	    Req_Name, Nodes, MaxTime, MaxNodes, Default);
+	printf("  TotalNodes=%d TotalCPUs=%d Key=%d StateUp=%d Shared=%d AllowGroups=%s\n", 
 	    TotalNodes, TotalCPUs, Key, StateUp, Shared, AllowGroups);
 	if (strlen(Next_Name) == 0) break;
 	strcpy(Req_Name, Next_Name);
@@ -127,6 +127,10 @@ int Load_Part(time_t *Last_Update_Time) {
     Buffer_Size = Buffer_Offset + In_Size;
     Buffer = realloc(Buffer, Buffer_Size);
     if (Buffer == NULL) return ENOMEM;
+    if (strcmp(Buffer, "NOCHANGE") == 0) {
+	free(Buffer);
+	return 0;
+    } /* if */
 
     Buffer_Offset = 0;
     Error_Code = Read_Buffer(Buffer, &Buffer_Offset, Buffer_Size, &My_Line);
@@ -150,6 +154,7 @@ int Load_Part(time_t *Last_Update_Time) {
 	return EINVAL;
     } /* if */
 
+    *Last_Update_Time = (time_t)My_Time;
     Part_API_Buffer = Buffer;
     Part_API_Buffer_Size = Buffer_Size;
     return 0;
@@ -242,9 +247,10 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
 
 	Last_Buffer_Offset = Buffer_Offset;
 	Error_Code = Read_Buffer(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, &My_Line);
-	if (Error_Code) 	/* No more records */
+	if (Error_Code) {	/* No more records */
+	    strcpy(Next_Name_Value, "");
 	    strcpy(Next_Name, "");
-	else {
+	} else {
 	    sscanf(My_Line, "PartitionName=%s", My_Part_Name);
 	    strncpy(Next_Name_Value, My_Part_Name, MAX_NAME_LEN);
 	    strncpy(Next_Name, My_Part_Name, MAX_NAME_LEN);

@@ -28,7 +28,6 @@ int  	Node_API_Buffer_Size = 0;
 main(int argc, char * argv[]) {
     static time_t Last_Update_Time = (time_t)NULL;
     int Error_Code, size, i;
-    struct Node_Record *Node_Ptr;
     char Partition[MAX_NAME_LEN], Node_State[MAX_NAME_LEN], Features[FEATURE_SIZE];
     char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
     char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
@@ -51,9 +50,9 @@ main(int argc, char * argv[]) {
 	    break;
 	} /* if */
 	if ((i<10) || (i%100 == 0)) {
-	    printf("Found node Name=%s, CPUs=%d, RealMemory=%d, TmpDisk=%d, ", 
+	    printf("Found node Name=%s CPUs=%d RealMemory=%d TmpDisk=%d ", 
 		Req_Name, CPUs, RealMemory, TmpDisk);
-	    printf("State=%s Weight=%d, Features=%s, Partition=%s\n", 
+	    printf("State=%s Weight=%d Features=%s Partition=%s\n", 
 	  	Node_State, Weight, Features, Partition);
 	} else if (i%100 == 1) 
 	    printf("Skipping...\n");
@@ -123,6 +122,10 @@ int Load_Node(time_t *Last_Update_Time) {
     Buffer_Size = Buffer_Offset + In_Size;
     Buffer = realloc(Buffer, Buffer_Size);
     if (Buffer == NULL) return ENOMEM;
+    if (strcmp(Buffer, "NOCHANGE") == 0) {
+	free(Buffer);
+	return 0;
+    } /* if */
 
     /* Load buffer's header (data structure version and time) */
     Buffer_Offset = 0;
@@ -148,6 +151,7 @@ int Load_Node(time_t *Last_Update_Time) {
 	return EINVAL;
     } /* if */
 
+    *Last_Update_Time = (time_t)My_Time;
     Node_API_Buffer = Buffer;
     Node_API_Buffer_Size = Buffer_Size;
     return 0;
@@ -217,14 +221,15 @@ int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs,
 
 	Last_Buffer_Offset = Buffer_Offset;
 	Error_Code = Read_Buffer(Node_API_Buffer, &Buffer_Offset, Node_API_Buffer_Size, &My_Line);
-	if (Error_Code) 	/* No more records */
+	if (Error_Code) {	/* No more records */
+	    strcpy(Next_Name_Value, "");
 	    strcpy(Next_Name, "");
-	else {
+	} else {
 	    sscanf(My_Line, "NodeName=%s", My_NodeName);
 	    strncpy(Next_Name_Value, My_NodeName, MAX_NAME_LEN);
 	    strncpy(Next_Name, My_NodeName, MAX_NAME_LEN);
 	} /* else */
 	return 0;
     } /* while */
-
+    return ENOENT;
 } /* Load_Node_Config */
