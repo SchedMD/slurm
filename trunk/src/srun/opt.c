@@ -1075,6 +1075,9 @@ static bool _opt_verify(void)
 	if (opt.max_wait)
 		opt.max_exit_timeout = opt.max_wait;
 
+	if (opt.time_limit == 0)
+		opt.time_limit = INFINITE;
+
 	return verified;
 }
 
