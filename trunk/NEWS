@@ -1,7 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.2.6
+* Changes in SLURM 0.2.8
+=========================
+ -- Fix for bug in slurmd that could make debug messages appear in job output.
+ -- Fix for bug in slurmctld retry count computation.
+ -- Srun now times out slow launch threads.
+ -- "Time Used" output in squeue now includes seconds.
+
+* Changes in SLURM 0.2.7
 =========================
  -- Fix for bug in Elan module that results in slurmd hang.
  -- Added completing job state to default list of states to print with squeue.
