@@ -126,7 +126,7 @@
 # Example:
 #
 # SlurmctldPidFile=/var/slurm/slurmctld.pid  # default: "/var/run/slurmctld.pid"
-# SlurmdPidFile=/var/slurm/slurmctld.pid     # default: "/var/run/slurmd.pid"
+# SlurmdPidFile=/var/slurm/slurmd.pid     # default: "/var/run/slurmd.pid"
 
 #
 # o Define the authentication method for communicating between SLURM
