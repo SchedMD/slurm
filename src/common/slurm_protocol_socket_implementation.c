@@ -63,13 +63,28 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	{	
 		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR  )
 		{
-			info ( "Error receiving length of datagram.  errno %i", errno ) ;
-			return recv_len ;
+			if ( errno ==  EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				return SLURM_PROTOCOL_ERROR ;
+			}
 		}
-		if ( recv_len >= 0 )
+		else if ( recv_len > 0 )
 		{
 			total_len += recv_len ;
 			moving_buffer += recv_len ;
+		}
+		else if ( recv_len == 0 )
+		{
+			info ( "Error receiving length of datagram.  errno %i", errno ) ;
+			return SLURM_PROTOCOL_ERROR ;
+		}
+		else 
+		{
+			fatal ( "We don't handle negative return codes > -1") ;
 		}
 	}
 	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
@@ -91,10 +106,19 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 			}
 			return recv_len ;
 		}
-		if ( recv_len >= 0 )
+		else if ( recv_len > 0 )
 		{
 			total_len += recv_len ;
 			moving_buffer += recv_len ;
+		}
+		else if ( recv_len == 0 )
+		{
+			info ( "Error receiving datagram.  errno %i", errno ) ;
+			return SLURM_PROTOCOL_ERROR ;
+		}
+		else 
+		{
+			fatal ( "We don't handle negative return codes > -1") ;
 		}
 	}
 	
