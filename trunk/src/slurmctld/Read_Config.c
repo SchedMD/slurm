@@ -6,6 +6,8 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
+#define DEBUG_SYSTEM 1
+
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -14,6 +16,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
+#include <syslog.h>
 
 #include "slurm.h"
 #include "list.h"
@@ -143,7 +146,7 @@ int Build_BitMaps() {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n")
+	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
 	return ENOMEM;
     } /* if */
@@ -172,7 +175,7 @@ int Build_BitMaps() {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n")
+	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
 	    return ENOMEM;
 	} /* if */
@@ -208,7 +211,7 @@ int Build_BitMaps() {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n")
+	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
 	return ENOMEM;
     } /* if */
@@ -229,7 +232,7 @@ int Build_BitMaps() {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n")
+	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
 	    free(AllPart_NodeBitMap);
 	    return ENOMEM;
@@ -740,7 +743,7 @@ int Read_SLURM_Conf (char *File_Name) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n")
+	    syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n");
 #endif
 	    return ENOMEM;
 	} /* if */
@@ -748,14 +751,14 @@ int Read_SLURM_Conf (char *File_Name) {
 #if DEBUG_SYSTEM
     fprintf(stderr, "Read_SLURM_Conf: BackupController value not specified.\n");
 #else
-    syslog(LOG_WARN, "Read_SLURM_Conf: BackupController value not specified.\n")
+    syslog(LOG_WARNING, "Read_SLURM_Conf: BackupController value not specified.\n");
 #endif
     } /* if */
     if (ControlMachine == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Read_SLURM_Conf: ControlMachine value not specified.\n");
 #else
-	syslog(LOG_ALERT, "Read_SLURM_Conf: ControlMachine value not specified.\n")
+	syslog(LOG_ALERT, "Read_SLURM_Conf: ControlMachine value not specified.\n");
 #endif
 	return EINVAL;
     } /* if */
