@@ -53,6 +53,8 @@ static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
 static int  _parse_node_spec(char *in_line);
 static int  _parse_part_spec(char *in_line);
+static void _restore_node_state(struct node_record *old_node_table_ptr, 
+				int old_node_record_count);
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
@@ -633,7 +635,6 @@ int read_slurm_conf(int recover)
 	int i, j, error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
-	struct node_record *node_record_point;
 	char node_name[MAX_NAME_LEN];
 
 	/* initialization */
@@ -749,13 +750,8 @@ int read_slurm_conf(int recover)
 		reset_first_job_id();
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
-			for (i = 0; i < old_node_record_count; i++) {
-				node_record_point  = 
-				  find_node_record(old_node_table_ptr[i].name);
-				if (node_record_point)
-					node_record_point->node_state =
-					    old_node_table_ptr[i].node_state;
-			}
+			_restore_node_state(old_node_table_ptr, 
+					    old_node_record_count);
 		}
 		reset_job_bitmaps();
 	}
@@ -780,6 +776,26 @@ int read_slurm_conf(int recover)
 	     (long) (clock() - start_time));
 
 	return SLURM_SUCCESS;
+}
+
+
+/* Restore node state and size information from saved records */
+static void _restore_node_state(struct node_record *old_node_table_ptr, 
+				int old_node_record_count)
+{
+	struct node_record *node_ptr;
+	int i;
+
+	for (i = 0; i < old_node_record_count; i++) {
+		node_ptr  = find_node_record(old_node_table_ptr[i].name);
+		if (node_ptr == NULL)
+			continue;
+		node_ptr->node_state	= old_node_table_ptr[i].node_state;
+		node_ptr->last_response	= old_node_table_ptr[i].last_response;
+		node_ptr->cpus		= old_node_table_ptr[i].cpus;
+		node_ptr->real_memory	= old_node_table_ptr[i].real_memory;
+		node_ptr->tmp_disk	= old_node_table_ptr[i].tmp_disk;
+	}
 }
 
 
