@@ -428,6 +428,9 @@ typedef struct launch_tasks_request_msg
 	slurm_addr response_addr ;
 	slurm_addr streams;
 	uint32_t * global_task_ids;
+#ifdef HAVE_LIBELAN3
+	qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
+#endif
 } launch_tasks_request_msg_t ;
 
 typedef struct launch_tasks_response_msg

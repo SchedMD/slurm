@@ -1318,7 +1318,7 @@ int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , void ** buffer , uint32_
 {
 	task_exit_msg_t * msg ;
 
-	msg = xmalloc ( sizeof ( launch_tasks_response_msg_t ) ) ;
+	msg = xmalloc ( sizeof ( task_exit_msg_t ) ) ;
 	if (msg == NULL) 
 	{
 		*msg_ptr = NULL ;
@@ -1369,6 +1369,9 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** 
 	slurm_pack_slurm_addr ( & msg -> response_addr , buffer , length ) ;
 	slurm_pack_slurm_addr ( & msg -> streams , buffer , length ) ;
 	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
+#ifdef HAVE_LIBELAN3
+	/* put the elan3 stuff here */	
+#endif
 }
 
 int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
@@ -1394,6 +1397,9 @@ int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , vo
 	slurm_unpack_slurm_addr_no_alloc ( & msg -> response_addr , buffer , length ) ;
 	slurm_unpack_slurm_addr_no_alloc ( & msg -> streams , buffer , length ) ;
 	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
+#ifdef HAVE_LIBELAN3
+	/* put the elan3 stuff here */	
+#endif
 	*msg_ptr = msg ;
 	return 0 ;
 }
