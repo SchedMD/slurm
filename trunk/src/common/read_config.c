@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Moe Mette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -39,6 +39,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <src/common/hostlist.h>
 #include <src/common/log.h>
 #include <src/common/macros.h>
 #include <src/common/parse_spec.h>
@@ -47,6 +48,7 @@
 #include <src/common/xstring.h>
 
 #define BUF_SIZE 1024
+#define MAX_NAME_LEN	32
 #define FREE_NULL(_X)			\
 	do {				\
 		if (_X) xfree (_X);	\
@@ -61,7 +63,8 @@ static int parse_part_spec (char *in_line);
  * ctl_conf_ptr(I/O) - pointer to data structure to be initialized
  */
 void
-init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr) {
+init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
+{
 	ctl_conf_ptr->last_update		= time(NULL);
 	FREE_NULL (ctl_conf_ptr->backup_addr);
 	FREE_NULL (ctl_conf_ptr->backup_controller);
@@ -77,7 +80,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr) {
 	FREE_NULL (ctl_conf_ptr->prioritize);
 	FREE_NULL (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
-	FREE_NULL (ctl_conf_ptr->slurm_conf);
 	FREE_NULL (ctl_conf_ptr->slurmctld_logfile);
 	ctl_conf_ptr->slurmctld_port		= (uint32_t) NO_VAL;
 	ctl_conf_ptr->slurmctld_timeout		= (uint16_t) NO_VAL;
@@ -85,8 +87,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr) {
 	ctl_conf_ptr->slurmd_port		= (uint32_t) NO_VAL;
 	FREE_NULL (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
-	FREE_NULL (ctl_conf_ptr->slurm_conf);
-	ctl_conf_ptr->slurm_conf		= xstrdup(SLURM_CONFIG_FILE);
 	FREE_NULL (ctl_conf_ptr->state_save_location);
 	FREE_NULL (ctl_conf_ptr->tmp_fs);
 	FREE_NULL (ctl_conf_ptr->job_credential_private_key);
@@ -100,6 +100,12 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr) {
  * in_line(I/O) - input line, parsed info overwritten with white-space
  * ctl_conf_ptr(I) - pointer to data structure to be updated
  * returns - 0 if no error, otherwise an error code
+ *
+ * NOTE: slurmctld and slurmd ports are built thus:
+ *	if SlurmctldPort/SlurmdPort are set then
+ *		get the port number based upon a look-up in /etc/services
+ *		if the lookup fails, translate SlurmctldPort/SlurmdPort into a number
+ *	These port numbers are overridden if set in the configuration file
  */
 int 
 parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr) 
@@ -114,7 +120,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
 	char *slurmd_logfile = NULL, *slurmd_port = NULL, *slurmd_spooldir = NULL;
 	char *job_credential_private_key = NULL , *job_credential_public_certificate = NULL;
-	long first_job_id = 0;
+	long first_job_id = -1;
 	struct servent *servent;
 
 	error_code = slurm_parser (in_line,
@@ -261,7 +267,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if (servent)
 			ctl_conf_ptr->slurmctld_port   = servent -> s_port;
 		else
-			ctl_conf_ptr->slurmctld_port   = strtol (slurmctld_port, (char **) NULL, 10);
+			ctl_conf_ptr->slurmctld_port   = strtol (slurmctld_port, 
+								 (char **) NULL, 10);
 		endservent ();
 	}
 
@@ -286,7 +293,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if (servent)
 			ctl_conf_ptr->slurmd_port   = servent -> s_port;
 		else
-			ctl_conf_ptr->slurmd_port   = strtol (slurmd_port, (char **) NULL, 10);
+			ctl_conf_ptr->slurmd_port   = strtol (slurmd_port,  
+							      (char **) NULL, 10);
 		endservent ();
 	}
 
@@ -333,7 +341,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			error ("Multiple values for JobCredentialPublicCertificate, latest one used");
 			xfree (ctl_conf_ptr->job_credential_public_certificate);
 		}
-		ctl_conf_ptr->tmp_fs = job_credential_public_certificate;
+		ctl_conf_ptr->job_credential_public_certificate = job_credential_public_certificate;
 	}
 
 	return 0;
@@ -438,7 +446,10 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr)
 	int error_code, i, j;
 
 	assert (ctl_conf_ptr);
+	init_slurm_conf (ctl_conf_ptr);
 
+	if (ctl_conf_ptr->slurm_conf == NULL)
+		ctl_conf_ptr->slurm_conf = xstrdup (SLURM_CONFIG_FILE);
 	slurm_spec_file = fopen (ctl_conf_ptr->slurm_conf, "r");
 	if (slurm_spec_file == NULL) {
 		fatal ("read_slurm_conf_ctl error opening file %s, %m", 
@@ -458,14 +469,16 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr)
 			break;
 		}		
 
-		/* everything after a non-escaped "#" is a comment */
-		/* replace comment flag "#" with an end of string (NULL) */
+		/* everything after a non-escaped "#" is a comment	*/
+		/* replace comment flag "#" with a `\0' (End of string)	*/
+		/* an escaped value "\#" is translated to "#"		*/
+		/* this permitted embedded "#" in node/partition names	*/
 		for (i = 0; i < line_size; i++) {
 			if (in_line[i] == '\0')
 				break;
 			if (in_line[i] != '#')
 				continue;
-			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
+			if ((i > 0) && (in_line[i - 1] == '\\')) {
 				for (j = i; j < line_size; j++) {
 					in_line[j - 1] = in_line[j];
 				}
@@ -501,7 +514,8 @@ read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr)
 	}
 
 	fclose (slurm_spec_file);
-	return 0;
+	validate_config (ctl_conf_ptr);
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -521,6 +535,78 @@ report_leftover (char *in_line, int line_num)
 		error ("Ignored input on line %d of configuration: %s",
 			line_num, &in_line[i]);
 		break;
+	}
+}
+
+/* validate configuration
+ *
+ * NOTE: default slurmctld and slurmd ports are built thus:
+ *	if SLURMCTLD_PORT/SLURMD_PORT are set then
+ *		get the port number based upon a look-up in /etc/services
+ *		if the lookup fails, translate SLURMCTLD_PORT/SLURMD_PORT into a number
+ *	These port numbers are overridden if set in the configuration file
+ */
+void
+validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
+{
+	struct servent *servent;
+
+	if ((ctl_conf_ptr->backup_controller != NULL) &&
+	    (strcmp("localhost", ctl_conf_ptr->backup_controller) == 0)) {
+		xfree (ctl_conf_ptr->backup_controller);
+		ctl_conf_ptr->backup_controller = xmalloc (MAX_NAME_LEN);
+		if ( getnodename (ctl_conf_ptr->backup_controller, MAX_NAME_LEN) ) 
+			fatal ("getnodename: %m");
+	}
+
+	if ((ctl_conf_ptr->backup_addr == NULL) && 
+	    (ctl_conf_ptr->backup_controller != NULL))
+		ctl_conf_ptr->backup_addr = xstrdup (ctl_conf_ptr->backup_controller);
+
+	if ((ctl_conf_ptr->backup_controller == NULL) && 
+	    (ctl_conf_ptr->backup_addr != NULL)) {
+		error ("BackupAddr specified without matching BackupController");
+		FREE_NULL (ctl_conf_ptr->backup_controller);
+	}
+
+	if (ctl_conf_ptr->control_machine == NULL)
+		fatal ("read_slurm_conf: control_machine value not specified.");
+	else if (strcmp("localhost", ctl_conf_ptr->control_machine) == 0) {
+		xfree (ctl_conf_ptr->control_machine);
+		ctl_conf_ptr->control_machine = xmalloc (MAX_NAME_LEN);
+		if ( getnodename (ctl_conf_ptr->control_machine, MAX_NAME_LEN) ) 
+			fatal ("getnodename: %m");
+	}
+
+	if ((ctl_conf_ptr->control_addr == NULL) && 
+	    (ctl_conf_ptr->control_machine != NULL))
+		ctl_conf_ptr->control_addr = xstrdup (ctl_conf_ptr->control_machine);
+
+	if ((ctl_conf_ptr->backup_controller != NULL) && 
+	    (strcmp (ctl_conf_ptr->backup_controller, ctl_conf_ptr->control_machine) == 0)) {
+		error ("ControlMachine and BackupController are the same machine");
+		FREE_NULL (ctl_conf_ptr->backup_addr);
+		FREE_NULL (ctl_conf_ptr->backup_controller);
+	}
+
+	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) {
+		servent = getservbyname (SLURMCTLD_PORT, NULL);
+		if (servent)
+			ctl_conf_ptr->slurmctld_port   = servent -> s_port;
+		else
+			ctl_conf_ptr->slurmctld_port   = strtol (SLURMCTLD_PORT, 
+								 (char **) NULL, 10);
+		endservent ();
+	}
+
+	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) {
+		servent = getservbyname (SLURMD_PORT, NULL);
+		if (servent)
+			ctl_conf_ptr->slurmd_port   = servent -> s_port;
+		else
+			ctl_conf_ptr->slurmd_port   = strtol (SLURMCTLD_PORT, 
+								 (char **) NULL, 10);
+		endservent ();
 	}
 }
 

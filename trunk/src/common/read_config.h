@@ -32,4 +32,14 @@ extern int read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr);
  */
 extern void report_leftover (char *in_line, int line_num);
 
+/* validate configuration
+ *
+ * NOTE: default slurmctld and slurmd ports are built thus:
+ *	if SLURMCTLD_PORT/SLURMD_PORT are set then
+ *		get the port number based upon a look-up in /etc/services
+ *		if the lookup fails, translate SLURMCTLD_PORT/SLURMD_PORT into a number
+ *	These port numbers are overridden if set in the configuration file
+ */
+extern void validate_config (slurm_ctl_conf_t *ctl_conf_ptr);
+
 #endif /* !_READ_CONFIG_H */

@@ -28,13 +28,11 @@ PRIMARY_CONTROLLER   = 1,
 SECONDARY_CONTROLLER = 2 };
 
 /*****************************/
-/* configuration functions   */
+/* configuration parameters  */
 /*****************************/
 
 /* slurmctld_conf must be loaded with port numbers and controller names */
 extern slurm_ctl_conf_t slurmctld_conf;
-/* function to read hostname and port numbers from configuration file */
-int read_slurm_port_config ( );
 
 
 /***************************************************/
