@@ -320,9 +320,9 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 	if (bitmap == NULL)
 		fatal ("pick_best_quadrics: bitmap pointer is NULL\n");
 
-	error_code = EINVAL;	/* default is no fit */
+	error_code   = EINVAL;	/* default is no fit */
 	consec_index = 0;
-	consec_size = 50;	/* start allocation for 50 sets of consecutive nodes */
+	consec_size  = 50;	/* start allocation for 50 sets of consecutive nodes */
 	consec_cpus  = xmalloc (sizeof (int) * consec_size);
 	consec_nodes = xmalloc (sizeof (int) * consec_size);
 	consec_start = xmalloc (sizeof (int) * consec_size);

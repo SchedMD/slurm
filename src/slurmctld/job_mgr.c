@@ -128,7 +128,8 @@ main (int argc, char *argv[])
  * output: error_code - set to zero if no error, errno otherwise
  *         returns a pointer to the record or NULL if error
  * global: job_list - global job list
- *         job_count - number of jobs in the system
+ *	job_count - number of jobs in the system
+ *	last_job_update - time of last job table update
  * NOTE: allocates memory that should be xfreed with either
  *	delete_job_record or list_delete_job
  */
@@ -173,6 +174,7 @@ create_job_record (int *error_code)
  * input: job_id - job_id of the desired job
  * output: return 0 on success, errno otherwise
  * global: job_list - pointer to global job list
+ *	last_job_update - time of last job table update
  */
 int 
 delete_job_record (char *job_id) 
@@ -439,6 +441,7 @@ init_job_conf ()
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
+ *	last_job_update - time of last job table update
  * NOTE: the calling program must xfree the memory pointed to by new_job_id 
  *	and node_list
  */
@@ -463,6 +466,7 @@ job_allocate (char *job_specs, char **new_job_id, char **node_list)
 	error_code = select_nodes(job_ptr);
 	if (error_code)
 		return error_code;
+	last_job_update = time (NULL);
 	i = strlen(job_ptr->nodes) + 1;
 	node_list[0] = xmalloc(i);
 	strcpy(node_list[0], job_ptr->nodes);
@@ -476,6 +480,7 @@ job_allocate (char *job_specs, char **new_job_id, char **node_list)
  * output: returns 0 on success, EINVAL if specification is invalid
  *	EAGAIN of job available for cancellation now 
  * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
  */
 int
 job_cancel (char * job_id) 
@@ -490,6 +495,7 @@ job_cancel (char * job_id)
 		return EINVAL;
 	}
 	if (job_ptr->job_state == JOB_PENDING) {
+		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		info ("job_cancel of pending job %s", job_id);
@@ -497,6 +503,7 @@ job_cancel (char * job_id)
 	}
 
 	if (job_ptr->job_state == JOB_STAGE_IN) {
+		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		error_code = node_name2bitmap (job_ptr->nodes, &req_bitmap);
 		if (error_code == EINVAL)
@@ -1069,6 +1076,7 @@ set_job_prio (struct job_record *job_ptr)
  *        spec - the updates to the job's specification 
  * output: return - 0 if no error, otherwise an error code
  * global: job_list - global list of job entries
+ *	last_job_update - time of last job table update
  * NOTE: the contents of spec are overwritten by white space
  * NOTE: only the job's priority and time_limt may be changed
  */
