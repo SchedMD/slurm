@@ -681,8 +681,6 @@ _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 	int dropped = 0;
 
 	if ((len = cbuf_write_from_fd(buf, *fd, -1, &dropped)) <= 0) {
-		if (errno == EAGAIN)
-			return len;
 		if ((len != 0)) 
 			error("Error task %d IO: %m", tasknum);
 		_close_stream(fd, out, tasknum);
