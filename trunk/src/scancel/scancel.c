@@ -46,118 +46,214 @@
 #include <src/common/log.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
+#include <src/scancel/scancel.h>
 
 #define MAX_CANCEL_RETRY 10
 
-int confirmation (uint32_t job_id, int has_step, uint32_t step_id);
-void job_cancel (char *name, int interactive);
-void usage (char * command);
+static void cancel_jobs (void);
+static void cancel_job_id (uint32_t job_id);
+static void cancel_step_id (uint32_t job_id, uint32_t step_id);
+static int  confirmation (int i);
+static void filter_job_records (void);
+static void load_job_records (void);
+
+static job_info_msg_t * job_buffer_ptr = NULL;
 
 int
 main (int argc, char *argv[]) 
 {
-	int interactive = 0, pos;
-	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 
-	if (argc < 2) {
-		usage (argv[0]);
-		exit (1);
+	log_init (argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
+	initialize_and_process_args(argc, argv);
+	if (opt.verbose) {
+		log_opts.stderr_level =+opt.verbose;
+		log_init (argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	}
 
-	log_init (argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
-
-	for (pos = 1; pos < argc; pos++) {
-		if (argv[pos][0] != '-')
-			break;
-		else if (strncmp (argv[pos], "-help", 2) == 0) 
-			usage (argv[0]);
-		else if (strcmp (argv[pos], "-i") == 0) 
-			interactive = 1;
-		else if (strcmp (argv[pos], "-v") == 0) 
-			printf ("Version %s\n", VERSION);
-		else {
-			fprintf (stderr, "Invalid option %s\n", argv[pos]);
-			exit (1);
-		}
+	if ((opt.interactive) ||
+	    (opt.job_name) ||
+	    (opt.partition) ||
+	    (opt.state != JOB_END) ||
+	    (opt.user_name)) {
+		load_job_records ();
+		filter_job_records ();
 	}
 
-	for ( ; pos<argc; pos++) {
-		job_cancel (argv[pos], interactive);
-	}
+	cancel_jobs ();
 
 	exit (0);
 }
 
-/* job_cancel - process request to cancel a specific job or job step */
-void
-job_cancel (char *name, int interactive)
+
+/* load_job_records - load all job information for filtering and verification */
+static void 
+load_job_records (void)
 {
-	int error_code = 0, i;
-	long tmp_l;
-	uint32_t job_id, step_id;
-	char *next_str;
+	int error_code;
 
-	tmp_l = strtol(name, &next_str, 10);
-	if (tmp_l <= 0) {
-		fprintf (stderr, "Invalid job_id %s\n", name);
-		exit (1);
-	}
-	job_id = tmp_l;
-
-	/* cancelling individual job step */
-	if (next_str[0] == '.') {
-		tmp_l = strtol(&next_str[1], NULL, 10);
-		if (tmp_l < 0) {
-			fprintf (stderr, "Invalid step_id %s\n", name);
-			exit (1);
-		}
-		step_id = tmp_l;
-
-		if (interactive && (confirmation (job_id, 1, step_id) == 0 ))
-			return;
-
-		for (i=0; i<MAX_CANCEL_RETRY; i++) {
-			error_code = slurm_cancel_job_step (job_id, step_id);
-			if ((error_code == 0) || 
-			    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
-				break;
-			printf ("Job is in transistional state, retrying\n");
-			sleep ( 5 + i );
-		}
-	}
-
-	/* cancelling entire job, no job step */
-	else {
-		if (interactive && (confirmation (job_id, 0, 0) == 0 ))
-			return;
-
-		for (i=0; i<MAX_CANCEL_RETRY; i++) {
-			error_code = slurm_cancel_job (job_id);
-			if ((error_code == 0) || 
-			    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
-				break;
-			printf ("Job is in transistional state, retrying\n");
-			sleep ( 5 + i );
-		}
-	}
+	error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
 
 	if (error_code) {
-		slurm_perror ("Cancel job error: ");
+		slurm_perror ("slurm_load_jobs error: ");
 		exit (1);
 	}
 }
 
+
+/* filter_job_records - filtering job information per user specification */
+static void 
+filter_job_records (void)
+{
+	int i, j;
+	job_info_t *job_ptr = NULL;
+
+	job_ptr = job_buffer_ptr->job_array ;
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		if (job_ptr[i].job_id == 0) 
+			continue;
+
+		if ((job_ptr[i].job_state != JOB_PENDING) && 
+		    (job_ptr[i].job_state != JOB_RUNNING)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if ((opt.job_name != NULL) &&
+		    (strcmp(job_ptr[i].name,opt.job_name) != 0)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if ((opt.partition != NULL) &&
+		    (strcmp(job_ptr[i].partition,opt.partition) != 0)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if ((opt.state != JOB_END) &&
+		    (job_ptr[i].job_state != opt.state)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if ((opt.user_name != NULL) &&
+		    (job_ptr[i].user_id != opt.user_id)) {
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+
+		if (opt.job_cnt == 0)
+			continue;
+		for (j = 0; j < opt.job_cnt; j++) {
+			if (job_ptr[i].job_id == opt.job_id[j])
+				break;
+		}
+		if (j >= opt.job_cnt) { /* not found */
+			job_ptr[i].job_id = 0;
+			continue;
+		}
+	}
+}
+
+
+/* cancel_jobs - filter then cancel jobs or job steps per request */
+static void
+cancel_jobs (void)
+{
+	int i, j;
+	job_info_t *job_ptr = NULL;
+
+	if (opt.job_cnt && opt.interactive) {	/* delete jobs with interactive */
+		job_ptr = job_buffer_ptr->job_array ;
+		for (j = 0; j < opt.job_cnt; j++ ) {
+			for (i = 0; i < job_buffer_ptr->record_count; i++) {
+				if (job_ptr[i].job_id != opt.job_id[j]) 
+					continue;
+				if (opt.interactive && (confirmation(i) == 0))
+					break;
+				if (opt.step_id[j] == 0)
+					cancel_job_id (opt.job_id[j]);
+				else
+					cancel_step_id (opt.job_id[j], 
+					                opt.step_id[j]);
+				break;
+			}
+			if (i >= job_buffer_ptr->record_count)
+				fprintf (stderr, "Job %u not found", 
+				         opt.job_id[j]);
+		}
+
+	} else if (opt.job_cnt) {	/* delete specific jobs */
+		for (j = 0; j < opt.job_cnt; j++ ) {
+			if (opt.step_id[j] == 0)
+				cancel_job_id (opt.job_id[j]);
+			else
+				cancel_step_id (opt.job_id[j], 
+				                opt.step_id[j]);
+		}
+
+	} else {		/* delete all jobs per filtering */
+		job_ptr = job_buffer_ptr->job_array ;
+		for (i = 0; i < job_buffer_ptr->record_count; i++) {
+			if (job_ptr[i].job_id == 0) 
+				continue;
+			if (opt.interactive && (confirmation(i) == 0))
+				continue;
+			cancel_job_id (job_ptr[i].job_id);
+		}
+	}
+}
+
+static void
+cancel_job_id (uint32_t job_id)
+{
+	int error_code, i;
+
+	for (i=0; i<MAX_CANCEL_RETRY; i++) {
+		error_code = slurm_cancel_job (job_id);
+		if ((error_code == 0) || 
+		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
+			break;
+		printf ("Job is in transistional state, retrying\n");
+		sleep ( 5 + i );
+	}
+	if (error_code) {
+		fprintf (stderr, "Cancel job error on job id %u: %s\n", 
+			job_id, slurm_strerror(slurm_get_errno()));
+	}
+}
+
+static void
+cancel_step_id (uint32_t job_id, uint32_t step_id)
+{
+	int error_code, i;
+
+	for (i=0; i<MAX_CANCEL_RETRY; i++) {
+		error_code = slurm_cancel_job_step (job_id, step_id);
+		if ((error_code == 0) || 
+		    (errno != ESLURM_TRANSITION_STATE_NO_UPDATE))
+			break;
+		printf ("Job is in transistional state, retrying\n");
+		sleep ( 5 + i );
+	}
+	if (error_code) {
+		fprintf (stderr, "Cancel job error on job id %u.%u: %s\n", 
+			job_id, step_id, slurm_strerror(slurm_get_errno()));
+	}
+}
+
 /* confirmation - Confirm job cancel request interactively */
-int 
-confirmation (uint32_t job_id, int has_step, uint32_t step_id)
+static int 
+confirmation (int i)
 {
 	char in_line[128];
+	job_info_t *job_ptr = NULL;
 
+	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
-		if (has_step)
-			printf ("Cancel job step %u.%u [y/n]? ", job_id, step_id);
-		else
-			printf ("Cancel job %u [y/n]? ", job_id);
+		printf ("Cancel job_id=%u name=%s partition=%s [y/n]? ", 
+		        job_ptr[i].job_id, job_ptr[i].name, job_ptr[i].partition);
 
 		fgets (in_line, sizeof (in_line), stdin);
 		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))
@@ -167,12 +263,3 @@ confirmation (uint32_t job_id, int has_step, uint32_t step_id)
 	}
 
 }
-
-/* usage - print message describing command lone options for scancel */
-void
-usage (char *command) 
-{
-	printf ("Usage: %s [-i] [-v] job_id[.step_id] [job_id[.step_id] ...]\n", command);
-}
-
-
