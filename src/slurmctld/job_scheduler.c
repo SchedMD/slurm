@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include <src/common/list.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 struct job_queue {
@@ -92,6 +93,7 @@ build_job_queue (struct job_queue **job_queue)
  * schedule - attempt to schedule all pending jobs
  *	pending jobs for each partition will be scheduled in priority  
  *	order until a request fails
+ * output: returns count of jobs scheduled
  * global: job_list - global list of job records
  *	last_job_update - time of last update to job table
  * Note: We re-build the queue every time. Jobs can not only be added 
@@ -99,17 +101,22 @@ build_job_queue (struct job_queue **job_queue)
  *	changed with the update_job RPC. In general nodes will be in priority 
  *	order (by submit time), so the sorting should be pretty fast.
  */
-void
-schedule()
+int
+schedule (void)
 {
 	struct job_queue *job_queue;
-	int i, j, error_code, failed_part_cnt, job_queue_size;
+	int i, j, error_code, failed_part_cnt, job_queue_size, job_cnt = 0;
 	struct job_record *job_ptr;
 	struct part_record **failed_parts;
+	/* Locks: Write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
+	lock_slurmctld (job_write_lock);
 	job_queue_size = build_job_queue (&job_queue);
-	if (job_queue_size == 0)
-		return;
+	if (job_queue_size == 0) {
+		unlock_slurmctld (job_write_lock);
+		return 0;
+	}
 	sort_job_queue (job_queue, job_queue_size);
 
 	failed_part_cnt = 0;
@@ -131,6 +138,7 @@ schedule()
 			last_job_update = time (NULL);
 			info ("schedule: job_id %u on nodes %s", 
 			      job_ptr->job_id, job_ptr->nodes);
+			job_cnt++;
 		}
 		else {
 			info ("schedule: job_id %u non-runnable, errno %d",
@@ -146,6 +154,8 @@ schedule()
 		xfree(failed_parts);
 	if (job_queue)
 		xfree(job_queue);
+	unlock_slurmctld (job_write_lock);
+	return job_cnt;
 }
 
 
