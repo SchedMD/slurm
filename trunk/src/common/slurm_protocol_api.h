@@ -81,4 +81,7 @@ void slurm_free_msg ( slurm_msg_t * msg ) ;
 /***** slurm send highlevel msg  functions */
 /*******************************************/
 void slurm_send_rc_msg ( slurm_msg_t * request_msg , int rc );
+int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * response_msg ) ;
+int slurm_send_only_controller_msg ( slurm_msg_t * request_msg ) ;
+int slurm_send_only_node_msg ( slurm_msg_t * request_msg ) ;
 #endif
