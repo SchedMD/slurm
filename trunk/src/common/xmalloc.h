@@ -15,10 +15,12 @@
 #  include <sys/types.h>
 #endif
 
-#include <src/common/macros.h>
+#include "macros.h"
 
 #define xmalloc(__sz) 		\
          _xmalloc (__sz, __FILE__, __LINE__, __CURRENT_FUNC__)
+#define try_xmalloc(__sz)	\
+	 _try_xmalloc(__sz, __FILE__, __LINE__, __CURRENT_FUNC__)
 #define xfree(__p)		\
          _xfree((void **)&(__p), __FILE__, __LINE__, __CURRENT_FUNC__)
 #define xrealloc(__p, __sz) 	\
@@ -27,6 +29,7 @@
 	 _xsize((void *)__p, __FILE__, __LINE__, __CURRENT_FUNC__)
 
 void *_xmalloc(size_t size, const char *file, int line, const char *func);
+void *_try_xmalloc(size_t size, const char *file, int line, const char *func);
 void _xfree(void **p, const char *file, int line, const char *func);
 void _xrealloc(void **p, size_t newsize, 
 	       const char *file, int line, const char *func);
