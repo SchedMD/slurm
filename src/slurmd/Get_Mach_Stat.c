@@ -3,7 +3,8 @@
  *	node configuration format "Name=linux.llnl.gov CPUs=4 ..."
  * NOTE: Most of these modules are very much system specific. Built on RedHat2.4
  * NOTE: While not currently used by SLURM, this code can also get a nodes OS name, 
- *       virtual memory size, and CPU speed.
+ *       virtual memory size, and CPU speed. See code ifdef'ed out via USE_OS_NAME,
+ *       USE_CPU_SPEED, and USE_VIRTUAL_MEMORY
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -16,6 +17,7 @@
 #include <syslog.h>
 #include <sys/utsname.h>
 #include <sys/vfs.h>
+#include <unistd.h>
 
 #include "slurm.h"
 
@@ -26,8 +28,10 @@ int Get_CPUs(int *CPUs);
 int Get_Mach_Name(char *Node_Name);
 int Get_Memory(int *RealMemory);
 int Get_TmpDisk(long *TmpDisk);
-#if 0
+#ifdef USE_OS_NAME
 int Get_OS_Name(char *OS_Name);
+#endif
+#ifdef USE_CPU_SPEED
 int Get_Speed(float *Speed);
 #endif
 
@@ -58,36 +62,24 @@ main(int argc, char * argv[]) {
  *         return code - 0 if no error, otherwise errno
  */
 int Get_CPUs(int *CPUs) {
-    char buffer[128];
-    FILE *CPU_Info_File;
-    char *buf_ptr;
     int My_CPU_Tally;
 
     *CPUs = 1;
-    CPU_Info_File = fopen("/proc/stat", "r");
-    if (CPU_Info_File == NULL) {
+    My_CPU_Tally = (int)sysconf(_SC_NPROCESSORS_ONLN);
+    if (My_CPU_Tally < 1) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Get_CPUs: error %d opening /proc/stat\n", errno);
+	fprintf(stderr, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
 #else
-	syslog(LOG_ERR, "Get_CPUs: error %d opening /proc/stat\n", errno);
+	syslog(LOG_ERR, "Get_CPUs: error running sysconf(_SC_NPROCESSORS_ONLN)\n");
 #endif
-	return errno;
+	return EINVAL;
     } /* if */
 
-    My_CPU_Tally = 0;
-    while (fgets(buffer, sizeof(buffer), CPU_Info_File) != NULL) {
-	if ((buf_ptr=strstr(buffer, "cpu")) != NULL) {
-	    buf_ptr += 3;
-	    if ((buf_ptr[0] >= '0') && (buf_ptr[0] <= '9')) My_CPU_Tally++;
-	} /* if */
-    } /* while */
-    if (My_CPU_Tally > *CPUs) *CPUs=My_CPU_Tally;
-
-    fclose(CPU_Info_File);
+    *CPUs = My_CPU_Tally;
     return 0;
 }
 
-#if 0
+#ifdef USE_OS_NAME
 /*
  * Get_OS_Name - Return the operating system name and version 
  * Input: OS_Name - buffer for the OS name, must be at least MAX_OS_LEN characters
@@ -173,7 +165,7 @@ int Get_Memory(int *RealMemory) {
 	    *RealMemory = (int)strtol(buf_ptr+9, (char **)NULL, 10);
 	    if (strstr(buf_ptr, "kB") != NULL) *RealMemory /= 1024;
 	} /* if */
-#if 0
+#ifdef USE_VIRTUAL_MEMORY
 	if ((buf_ptr=strstr(buffer, "SwapTotal:")) != NULL) {
 	    *VirtualMemory = (int)strtol(buf_ptr+10, (char **)NULL, 10);
 	    if (strstr(buf_ptr, "kB") != NULL) *VirtualMemory /= 1024;
@@ -185,7 +177,7 @@ int Get_Memory(int *RealMemory) {
     return 0;
 }
 
-#if 0
+#ifdef USE_CPU_SPEED
 /*
  * Get_Speed - Return the speed of CPUs on this system (MHz clock)
  * Input: CPUs - buffer for the CPU speed
@@ -240,14 +232,14 @@ int Get_TmpDisk(long *TmpDisk) {
     Total_Size = 0;
     Page_Size = (getpagesize() / 1048576.0); /* Megabytes per page */
 
-    if (statfs(DEFAULT_TMP_FS, &Stat_Buf) == 0) {
+    if (statfs(TMP_FS, &Stat_Buf) == 0) {
 	Total_Size = (long)Stat_Buf.f_blocks;
     } else if (errno != ENOENT) {
 	Error_Code = errno;
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, DEFAULT_TMP_FS);
+	fprintf(stderr, "Get_TmpDisk: error %d executing statfs on %s\n", errno, TMP_FS);
 #else
-	syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, DEFAULT_TMP_FS);
+	syslog(LOG_ERR, "Get_TmpDisk: error %d executing statfs on %sp\n", errno, TMP_FS);
 #endif
     } /* else */
 
