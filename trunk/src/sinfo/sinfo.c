@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 
 	command_name = argv[0];
 
-	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 
 	while (1) {
