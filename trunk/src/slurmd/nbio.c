@@ -89,6 +89,7 @@ int set_max_fd ( nbio_attr_t * nbio_attr ) ;
 int nbio_cleanup ( nbio_attr_t * nbio_attr ) ;
 int reconnect (  nbio_attr_t * nbio_attr ) ;
 int test_error_conditions (  nbio_attr_t * nbio_attr ) ;
+int print_nbio_sets ( slurm_fd_set set_ptr[] ) ;
 
 int init_io_debug ( io_debug_t * io_dbg , task_start_t * task_start , char * name )
 {
@@ -103,6 +104,7 @@ int init_nbio_attr ( nbio_attr_t * nbio_attr , task_start_t * task_start )
 	int i;
 	nbio_attr -> max_fd = 0 ; 
 	nbio_attr -> flush_flag = false ; 
+	nbio_attr -> die = false ; 
 	nbio_attr -> task_start = task_start ;
 	nbio_attr -> fd[IN_OUT_FD] = task_start -> sockets[STDIN_OUT_SOCK];
 	nbio_attr -> fd[SIG_ERR_FD] = task_start -> sockets[SIG_STDERR_SOCK];
@@ -112,7 +114,6 @@ int init_nbio_attr ( nbio_attr_t * nbio_attr , task_start_t * task_start )
 	init_circular_buffer ( & nbio_attr -> in_cir_buf ) ;
 	init_circular_buffer ( & nbio_attr -> out_cir_buf ) ;
 	init_circular_buffer ( & nbio_attr -> err_cir_buf ) ;
-	nbio_set_init (  nbio_attr , nbio_attr -> init_set ) ;
 	for ( i=0 ; i < 2 ; i ++ ) 
 	{ 
 		nbio_attr -> reconnect_flags[i] = RECONNECT ; 
@@ -134,10 +135,10 @@ void * do_nbio ( void * arg )
 	init_io_debug ( & in_dbg , task_start , "stdin" ) ;
 	init_io_debug ( & out_dbg , task_start , "stdout" ) ;
 	init_io_debug ( & err_dbg , task_start , "stderr" ) ;
-
-	posix_signal_pipe_ignore ( ) ;
 	init_nbio_attr ( & nbio_attr , task_start ) ;
 
+	posix_signal_pipe_ignore ( ) ;
+	
 	reconnect ( & nbio_attr ) ;
 
 	while ( true ) 
@@ -147,14 +148,18 @@ void * do_nbio ( void * arg )
 		set_max_fd ( & nbio_attr ) ;
 
 		rc = slurm_select ( nbio_attr . max_fd , & nbio_attr . init_set[RD_SET] , & nbio_attr . init_set[WR_SET] , & nbio_attr . init_set[ER_SET] , & nbio_attr . select_timer ) ;
+		debug3 ( "nbio select: rc: %i", rc ) ;
+		print_nbio_sets ( nbio_attr . init_set ) ;
 		if ( rc == SLURM_ERROR)
 		{
 			debug3 ( "select errror %m errno: %i", errno ) ;
+			nbio_set_init ( & nbio_attr , nbio_attr . init_set ) ;
 			continue ;
 		}
 		else if  ( rc == 0 )
 		{
 			reconnect ( & nbio_attr ) ;
+			nbio_set_init ( & nbio_attr , nbio_attr .  init_set ) ;
 			/* these are here to set the write set after the fd numbers could have changed in reconnect */
 			if ( nbio_attr . out_cir_buf -> read_size > 0 ) { slurm_FD_SET ( nbio_attr . fd [IN_OUT_FD] , & nbio_attr . init_set [WR_SET] ); }
 			if ( nbio_attr . err_cir_buf -> read_size > 0 ) { slurm_FD_SET ( nbio_attr . fd [SIG_ERR_FD] , & nbio_attr . init_set [WR_SET] ); }
@@ -167,6 +172,7 @@ void * do_nbio ( void * arg )
 		else if ( rc < 0 )
 		{
 			debug3 ( "select has unknown error: %i", rc ) ;
+			break ;
 		}
 		
 		if ( test_error_conditions ( & nbio_attr ) ) break ;
@@ -406,7 +412,6 @@ int write_task_socket ( circular_buffer_t * cir_buf, slurm_fd write_fd , io_debu
 				case ECONNRESET:
 				case ENOTCONN:
 					if ( dbg ) debug3 ( "lost %s socket connection %m errno: %i", dbg -> name , local_errno ) ;
-					slurm_close_stream ( write_fd ) ;
 					slurm_seterrno_ret ( ESLURMD_SOCKET_DISCONNECT ) ;
 					break ;
 				default:
@@ -459,6 +464,8 @@ int error_task_socket ( nbio_attr_t * nbio_attr , int fd_index )
 		case ESLURMD_UNKNOWN_SOCKET_ERROR :
 		case ESLURMD_SOCKET_DISCONNECT :
 		case ESLURMD_EOF_ON_SOCKET :
+			slurm_close_stream ( nbio_attr -> fd [fd_index] ) ;
+			nbio_attr -> fd [fd_index] = -1 ;
 			switch ( nbio_attr -> reconnect_flags[fd_index] )
 			{
 				case CONNECTED :
@@ -485,8 +492,6 @@ int error_task_socket ( nbio_attr_t * nbio_attr , int fd_index )
 int nbio_set_init ( nbio_attr_t * nbio_attr , slurm_fd_set * set_ptr )
 {
 	int i ;
-
-	nbio_attr -> max_fd  = 0 ;
 
 	for ( i=0 ; i < 3 ; i++ )
 	{
@@ -550,18 +555,18 @@ int reconnect (  nbio_attr_t * nbio_attr )
 {
 	if ( nbio_attr -> reconnect_flags[IN_OUT_FD] == RECONNECT )
 	{
-		slurm_close_stream ( nbio_attr -> fd [IN_OUT_FD] ) ;
 		if ( connect_io_stream ( nbio_attr -> task_start , STDIN_OUT_SOCK ) > 0 )
 		{
+			nbio_attr -> fd[IN_OUT_FD] = nbio_attr -> task_start -> sockets[STDIN_OUT_SOCK] ;
 			slurm_set_stream_non_blocking ( nbio_attr -> fd [IN_OUT_FD] ) ;
 			nbio_attr -> reconnect_flags[IN_OUT_FD] = CONNECTED ;
 		}
 	}
 	if (  nbio_attr -> reconnect_flags[SIG_ERR_FD] == RECONNECT )
 	{
-		slurm_close_stream ( nbio_attr -> fd [SIG_ERR_FD] ) ;
 		if ( connect_io_stream ( nbio_attr -> task_start , SIG_STDERR_SOCK ) > 0 )
 		{
+			nbio_attr -> fd[SIG_ERR_FD] = nbio_attr -> task_start -> sockets[SIG_STDERR_SOCK] ;
 			slurm_set_stream_non_blocking ( nbio_attr -> fd [SIG_ERR_FD] ) ;
 			nbio_attr -> reconnect_flags[SIG_ERR_FD] = CONNECTED ;
 		}
@@ -583,6 +588,28 @@ int test_error_conditions (  nbio_attr_t * nbio_attr )
 	{
 		return SLURM_ERROR ;
 	}
+
+	if ( waitpid ( nbio_attr -> task_start -> exec_pid , NULL , WNOHANG ) > 0 )
+	{
+		return SLURM_ERROR ;
+	}
+	return SLURM_SUCCESS ;
+}
+
+int print_nbio_sets ( slurm_fd_set set_ptr[] ) 
+{
+	int i ;
+	info ( "--- 00000000001111111111222222222233") ;
+	info ( "--- 01234567890123456789012345678901") ;
+	printf ( "rd  ");
+	for ( i=0 ; i < 32 ; i ++ ) printf ( "%i" , slurm_FD_ISSET ( i , & set_ptr[RD_SET] ) ) ;
+	printf ( "\n" ) ;
+	printf ( "wr  ");
+	for ( i=0 ; i < 32 ; i ++ ) printf ( "%i" , slurm_FD_ISSET ( i , & set_ptr[WR_SET] ) ) ;
+	printf ( "\n" ) ;
+	printf ( "er  ");
+	for ( i=0 ; i < 32 ; i ++ ) printf ( "%i" , slurm_FD_ISSET ( i , & set_ptr[ER_SET] ) ) ;
+	printf ( "\n" ) ;
 	return SLURM_SUCCESS ;
 }
 
