@@ -9,7 +9,6 @@ int
 main (int argc, char *argv[]) 
 {
 	int dump_size, error_code, error_count = 0, i;
-	time_t update_time = (time_t) NULL;
 	struct job_record * job_rec;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	char *dump;
@@ -50,10 +49,11 @@ main (int argc, char *argv[])
 	}
 
 	error_code = 0;
-       	pack_all_jobs (&dump, &dump_size, &update_time);
+       	pack_all_jobs (&dump, &dump_size);
 	if (error_code)
 		fail ("dump_all_job error %d", error_code);
-	else pass( "dump_all_job");
+	else 
+		pass( "dump_all_job");
 
 	if (dump)
 		xfree(dump);
