@@ -21,6 +21,7 @@ Prolog=/admin/sbin/slurm.prolog
 ReturnToService=0
 SlurmUser=jette
 #SlurmctldLogFile=/var/tmp/slurmctld.log
+SlurmctldPidFile=/var/run/slurmctld.pid
 SlurmctldPort=7002
 SlurmctldTimeout=300
 #SlurmdLogFile=/var/tmp/slurmd.log
