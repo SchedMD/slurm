@@ -24,7 +24,7 @@ int
 main( int argc, char* argv[])
 {
 	int error_code;	
-	job_step_create_request_msg_t request = {   5, 5, 4,4 , 0, SLURM_DIST_CYCLIC, "" }; 
+	job_step_create_request_msg_t request = {  5, 5, 4, 4, 4, 0, SLURM_DIST_CYCLIC, "" }; 
 	job_desc_msg_t job_mesg;
 	resource_allocation_response_msg_t* resp_msg ;
 
