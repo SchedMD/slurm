@@ -435,6 +435,7 @@ job_update_shm(slurmd_job_t *job)
 	strncpy(s.exec_name, job->argv[0], MAXPATHLEN);
 	s.sw_id     = 0;
 	s.io_update = false;
+	s.state     = SLURMD_JOB_STARTING;
 
 	if (shm_insert_step(&s) < 0) 
 		return SLURM_ERROR;
@@ -445,6 +446,12 @@ job_update_shm(slurmd_job_t *job)
 		debug("updated shm with step %d.%d", job->jobid, job->stepid);
 
 	return SLURM_SUCCESS;
+}
+
+int
+job_update_state(slurmd_job_t *job, job_state_t s)
+{
+	return shm_update_step_state(job->jobid, job->stepid, s);
 }
 
 void 

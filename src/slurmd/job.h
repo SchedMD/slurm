@@ -28,7 +28,7 @@
 #ifndef _JOB_H
 #define _JOB_H
 
-#ifdef HAVE_PTHREAD
+#if WITH_PTHREADS
 #include <pthread.h>
 #endif
 
@@ -38,6 +38,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/list.h"
 #include "src/common/eio.h"
+
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -53,6 +54,16 @@ typedef enum task_state {
 	SLURMD_TASK_RUNNING,
 	SLURMD_TASK_COMPLETE
 } task_state_t;
+
+/* local job states */
+typedef enum job_state {
+	SLURMD_JOB_UNUSED = 0,
+	SLURMD_JOB_ALLOCATED,
+	SLURMD_JOB_STARTING,
+	SLURMD_JOB_STARTED,
+	SLURMD_JOB_ENDING,
+	SLURMD_JOB_COMPLETE
+} job_state_t;
 
 typedef struct task_info {
 	pthread_mutex_t mutex;	   /* mutex to protect task state          */
@@ -112,7 +123,8 @@ typedef struct slurmd_job {
 	task_info_t  **task;  /* list of task information pointers          */
 	List           objs;  /* list of IO objects                         */
 	List 	       sruns; /* List of sruns                              */
-	pthread_t      ioid;  /* pthread id of IO thread                    */
+
+	pthread_t       ioid; /* pthread id of IO thread                    */
 
 	pid_t          jmgr_pid;     /* job manager pid                     */
 	pid_t          smgr_pid;     /* session manager pid                 */
@@ -142,6 +154,8 @@ struct task_info * task_info_create(int taskid, int gtaskid);
 void task_info_destroy(struct task_info *t);
 
 int job_update_shm(slurmd_job_t *job);
+
+int job_update_state(slurmd_job_t *job, job_state_t s);
 
 void job_delete_shm(slurmd_job_t *job);
 

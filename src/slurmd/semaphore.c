@@ -267,7 +267,7 @@ int sem_wait(sem_t *sem)
     }
     op.sem_num = 0;
     op.sem_op = -1;
-    op.sem_flg = SEM_UNDO;
+    op.sem_flg = 0;
     if (semop(sem->id, &op, 1) == -1) {
         return(-1);
     }
