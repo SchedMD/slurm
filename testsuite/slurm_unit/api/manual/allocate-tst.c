@@ -50,7 +50,6 @@ main (int argc, char *argv[])
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1;
 	job_mesg. name = ("job01\0");
-	job_mesg. partition_key = "1234";
 	job_mesg. min_procs = 1;
 	job_mesg. min_memory = 64;
 	job_mesg. min_tmp_disk = 256;
@@ -74,7 +73,6 @@ main (int argc, char *argv[])
 		job_mesg. contiguous = 1;
 		job_mesg. groups = ("students,employee\0");
 		job_mesg. name = ("more.big\0");
-		job_mesg. partition_key = "1234";
 		job_mesg. min_procs = 4;
 		job_mesg. min_memory = 1024;
 		job_mesg. min_tmp_disk = 2034;
