@@ -12,6 +12,21 @@
 
 
 /*
+ * Allocate - Allocate nodes for a job with supplied contraints. 
+ * Input: Spec - Specification of the job's constraints
+ *        NodeList - Place into which a node list pointer can be placed
+ * Output: NodeList - List of allocated nodes
+ *         Returns 0 if no error, EINVAL if the request is invalid, 
+ *			EAGAIN if the request can not be satisfied at present
+ * NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
+ *	Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
+ *	TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
+ *	MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
+ * NOTE: The calling function must free the allocated storage at NodeList[0]
+ */
+extern int Allocate(char *Spec, char **NodeList);
+
+/*
  * Free_Node_Info - Free the node information buffer (if allocated)
  */
 extern void Free_Node_Info(void);
