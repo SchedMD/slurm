@@ -57,7 +57,7 @@ extern void slurm_free_node_info_msg (node_info_msg_t * node_buffer_ptr);
  */
 extern void slurm_print_job_info_msg ( FILE* , job_info_msg_t * job_info_msg_ptr ) ;
 
-/* slurm_print_job_table - prints the job table object (if allocated) */
+/* slurm_print_job_info - prints the job table object (if allocated) */
 extern void slurm_print_job_info ( FILE*, job_info_t * job_ptr );
 
 /* 
@@ -117,6 +117,7 @@ extern int slurm_load_partitions (time_t update_time, partition_info_msg_t **par
 extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
 		submit_response_msg_t ** slurm_alloc_msg );
 
+extern int slurm_get_job_steps ( uint32_t job_id, int16_t step_id, job_step_info_response_msg_t **step_response_pptr);
 /*
  * slurm_will_run - determine if a job would execute immediately 
  *	if submitted. 

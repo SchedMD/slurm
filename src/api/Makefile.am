@@ -28,6 +28,7 @@ libslurm_la_SOURCES =    \
 	complete.c       \
 	config_info.c    \
 	job_info.c       \
+	job_step_info.c       \
 	node_info.c      \
 	partition_info.c \
 	submit.c         \
