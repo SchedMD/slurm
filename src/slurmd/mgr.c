@@ -65,8 +65,10 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg)
 	/* New process, so we must reinit shm */
 	if (shm_init() < 0) 
 		return SLURM_ERROR;
+
 	if (!(job = job_create(msg)))
 		return SLURM_ERROR;
+
 	slurmd_run_job(job); 
 	debug2("%ld returned from slurmd_run_job()", getpid());
 	shm_fini();
@@ -87,13 +89,29 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg)
 void
 slurmd_run_job(slurmd_job_t *job)
 {
-	int rc;
+	int rc, i;
+
 	/* Insert job info into shared memory */
 	job_update_shm(job);
+
+	/* 
+	 * Need to detach from shared memory
+	 * We don't know what will happen in interconnect_init()
+	 */
+	shm_fini();
 
 	if (interconnect_init(job) == SLURM_ERROR) {
 		error("interconnect_init failed");
 		rc = 2;
+		shm_init();
+		goto done;
+	}
+
+	/* Reattach to shared memory after interconnect is initialized
+	 */
+	if (shm_init() < 0) {
+		error("shm_init: %m");
+		rc = 1;
 		goto done;
 	}
 
@@ -117,6 +135,10 @@ slurmd_run_job(slurmd_job_t *job)
 	interconnect_fini(job); /* ignore errors        */
 	verbose("removing job %d.%d from system", job->jobid, job->stepid);
 	job_delete_shm(job);    /* again, ignore errors */
+	if (rc > 0) {
+		for (i = 0; i < job->ntasks; i++) 
+			_send_exit_msg(rc, job->task[i]);
+	}
 	return;
 }
 

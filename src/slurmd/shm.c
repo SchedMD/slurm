@@ -132,6 +132,8 @@ shm_fini(void)
 		return -1;
 	}
 
+	slurmd_shm = NULL;
+
 	if (destroy && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
 		error("shmctl: %m");
 		return -1;
@@ -627,10 +629,8 @@ static void
 _shm_clear_step(job_step_t *s)
 {
 	task_t *p, *t = s->task_list;
-	do {
-		p = t->next;
+	for (t = s->task_list; t; t = t->next)
 		_shm_clear_task(t);
-	} while ((t = p));
 
 	memset(s, 0, sizeof(*s));
 }
