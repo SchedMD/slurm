@@ -196,6 +196,9 @@ int main(int argc, char *argv[])
 		case JOBS:
 			get_job();
 			break;
+		case SLURMPART:
+			get_slurm_part();
+			break;
 #if HAVE_BGL
 		case COMMANDS:
 			get_command();
@@ -204,9 +207,6 @@ int main(int argc, char *argv[])
 			get_bgl_part();
 			break;
 #endif
-		default:
-			get_slurm_part();
-			break;
 		}
 			
 		if(!params.commandline) {
@@ -382,6 +382,9 @@ static void *_resize_handler(int sig)
 	case JOBS:
 		get_job();
 		break;
+	case SLURMPART:
+		get_slurm_part();
+		break;
 #if HAVE_BGL
 	case COMMANDS:
 		get_command();
@@ -390,9 +393,6 @@ static void *_resize_handler(int sig)
 		get_bgl_part();
 		break;
 #endif
-	default:
-		get_slurm_part();
-		break;
 	}
 
 	print_grid(0);
