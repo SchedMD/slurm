@@ -162,7 +162,7 @@ void * task_exec_thread ( void * arg )
 			if ( ( rc = initgroups ( pwd ->pw_name , pwd -> pw_gid ) ) == SLURM_ERROR )
 			{
 				info ( "init groups failed " ) ;
-				_exit ( SLURM_FAILURE ) ;
+				//_exit ( SLURM_FAILURE ) ;
 			}
 			
 			if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) 
