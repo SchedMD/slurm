@@ -844,21 +844,17 @@ read_slurm_conf (int recover) {
 	int line_num;		/* line number in input file */
 	char in_line[BUF_SIZE];	/* input line */
 	int i, j, error_code;
-	/* Locks: Write configuration, write job, write node, write partition */
-	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
 	struct node_record *node_record_point;
 
 	/* initialization */
-	lock_slurmctld (config_write_lock);
 	start_time = clock ();
 	old_node_record_count = node_record_count;
 	old_node_table_ptr = node_record_table_ptr;	/* save node states for reconfig RPC */
 	node_record_table_ptr = NULL;
 	if ( (error_code = init_slurm_conf ()) ) {
 		node_record_table_ptr = old_node_table_ptr;
-		unlock_slurmctld (config_write_lock);
 		return error_code;
 	}
 
@@ -879,7 +875,6 @@ read_slurm_conf (int recover) {
 			if (old_node_table_ptr)
 				xfree (old_node_table_ptr);
 			fclose (slurm_spec_file);
-			unlock_slurmctld (config_write_lock);
 			return E2BIG;
 			break;
 		}		
@@ -908,7 +903,6 @@ read_slurm_conf (int recover) {
 			fclose (slurm_spec_file);
 			if (old_node_table_ptr)
 				xfree (old_node_table_ptr);
-			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}
 
@@ -917,7 +911,6 @@ read_slurm_conf (int recover) {
 			fclose (slurm_spec_file);
 			if (old_node_table_ptr)
 				xfree (old_node_table_ptr);
-			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}		
 
@@ -926,7 +919,6 @@ read_slurm_conf (int recover) {
 			fclose (slurm_spec_file);
 			if (old_node_table_ptr)
 				xfree (old_node_table_ptr);
-			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}		
 
@@ -941,7 +933,6 @@ read_slurm_conf (int recover) {
 
 	if (slurmctld_conf.control_machine == NULL) {
 		fatal ("read_slurm_conf: control_machine value not specified.");
-		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}			
 
@@ -949,7 +940,6 @@ read_slurm_conf (int recover) {
 		error ("read_slurm_conf: default partition not set.");
 		if (old_node_table_ptr)
 			xfree (old_node_table_ptr);
-		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}	
 
@@ -957,7 +947,6 @@ read_slurm_conf (int recover) {
 		error ("read_slurm_conf: no nodes configured.");
 		if (old_node_table_ptr)
 			xfree (old_node_table_ptr);
-		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}	
 		
@@ -979,10 +968,8 @@ read_slurm_conf (int recover) {
 		(void) load_job_state ();
 	}
 
-	if ((error_code = build_bitmaps ())) {
-		unlock_slurmctld (config_write_lock);
+	if ((error_code = build_bitmaps ()))
 		return error_code;
-	}
 	if (recover) {
 		(void) sync_nodes_to_jobs ();
 	}
@@ -994,7 +981,6 @@ read_slurm_conf (int recover) {
 	info ("read_slurm_conf: finished loading configuration, time=%ld",
 		(long) (clock () - start_time));
 
-	unlock_slurmctld (config_write_lock);
 	return SLURM_SUCCESS;
 }
 

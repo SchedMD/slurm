@@ -467,7 +467,7 @@ delete_config_record ()
 	last_node_update = time (NULL);
 	(void) list_delete_all (config_list, &list_find_config,
 				"universal_key");
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -476,7 +476,7 @@ delete_config_record ()
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to NODE_STATE_DOWN
  * input: name - name of the desired node
- * output: return 0 on success, errno otherwise
+ * output: return SLURM_SUCCESS on success, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
  */
 int 
@@ -499,7 +499,7 @@ delete_node_record (char *name)
 	strcpy (node_record_point->name, "");
 	node_record_point->node_state = NODE_STATE_DOWN;
 	last_bitmap_update = time (NULL);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -549,7 +549,7 @@ dump_all_node_state ( void )
 	for (inx = 0; inx < node_record_count; inx++) {
 		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
-			fatal ("pack_all_node: data integrity is bad");
+			fatal ("dump_all_node_state: data integrity is bad");
 
 		dump_node_state(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
 		if (buf_len > BUF_SIZE) 
@@ -740,7 +740,7 @@ hash_index (char *name)
 	int i, inx, tmp;
 
 	if (node_record_count == 0)
-		return 0;	/* degenerate case */
+		return SLURM_SUCCESS;	/* degenerate case */
 	inx = 0;
 
 	if ( slurmctld_conf.hash_base == 10 ) {
@@ -845,7 +845,7 @@ init_node_conf ()
 
 	if (config_list == NULL)
 		fatal ("init_node_conf: list_create can not allocate memory");
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -884,7 +884,7 @@ list_find_config (void *config_entry, void *key)
 {
 	if (strcmp (key, "universal_key") == 0)
 		return 1;
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -940,7 +940,7 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 
 	hostlist_destroy (host_list);
 	bitmap[0] = my_bitmap;
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -966,15 +966,12 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	char *buffer;
 	void *buf_ptr;
 	int nodes_packed;
-	/* Locks: Read node */
-	slurmctld_lock_t node_read_lock = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_node_update)
 		return;
 
-	lock_slurmctld (node_read_lock);
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
@@ -1002,7 +999,6 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		buf_ptr = buffer + buffer_offset;
 	}
 
-	unlock_slurmctld (node_read_lock);
 	buffer_offset = (char *)buf_ptr - buffer;
 	xrealloc (buffer, buffer_offset);
 
@@ -1152,9 +1148,6 @@ update_node ( update_node_msg_t * update_node_msg )
 	char  *this_node_name ;
 	struct node_record *node_record_point;
 	hostlist_t host_list;
-	/* Locks: Write node */
-	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
-
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s\n", update_node_msg -> node_names );
@@ -1168,7 +1161,6 @@ update_node ( update_node_msg_t * update_node_msg )
 		return ESLURM_INVALID_NODE_NAME;
 	}
 
-	lock_slurmctld (node_write_lock);
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
 		node_record_point = find_node_record (this_node_name);
@@ -1201,7 +1193,6 @@ update_node ( update_node_msg_t * update_node_msg )
 		free (this_node_name);
 	}
 
-	unlock_slurmctld (node_write_lock);
 	hostlist_destroy (host_list);
 	return error_code;
 }
@@ -1223,15 +1214,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	/* Locks: Write node */
-	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
-	lock_slurmctld (node_write_lock);
 	node_ptr = find_node_record (node_name);
-	if (node_ptr == NULL) {
-		unlock_slurmctld (node_write_lock);
+	if (node_ptr == NULL)
 		return ENOENT;
-	}
 	node_ptr->last_response = last_node_update = time (NULL);
 
 	config_ptr = node_ptr->config_ptr;
@@ -1275,6 +1261,5 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
 
-	unlock_slurmctld (node_write_lock);
 	return error_code;
 }

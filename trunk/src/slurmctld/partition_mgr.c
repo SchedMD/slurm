@@ -348,7 +348,7 @@ dump_all_part_state ( void )
 	part_record_iterator = list_iterator_create (part_list);		
 	while ((part_record_point = (struct part_record *) list_next (part_record_iterator))) {
 		if (part_record_point->magic != PART_MAGIC)
-			fatal ("pack_all_part: data integrity is bad");
+			fatal ("dump_all_part_state: data integrity is bad");
 
 		dump_part_state (part_record_point, &buf_ptr, &buf_len);
 		if (buf_len > BUF_SIZE) 
@@ -652,15 +652,12 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	char *buffer;
 	void *buf_ptr;
 	int parts_packed;
-	/* Locks: Read partition */
-	slurmctld_lock_t part_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_part_update)
 		return;
 
-	lock_slurmctld (part_read_lock);
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
@@ -691,7 +688,6 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	}			
 
 	list_iterator_destroy (part_record_iterator);
-	unlock_slurmctld (part_read_lock);
 	buffer_offset = (char *)buf_ptr - buffer;
 	xrealloc (buffer, buffer_offset);
 
@@ -761,8 +757,6 @@ update_part (update_part_msg_t * part_desc )
 {
 	int error_code, i;
 	struct part_record *part_ptr;
-	/* Locks: Read node, write partition */
-	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
 
 	if ((part_desc -> name == NULL ) ||
 			(strlen (part_desc->name ) >= MAX_NAME_LEN)) {
@@ -771,7 +765,6 @@ update_part (update_part_msg_t * part_desc )
 	}			
 
 	error_code = 0;
-	lock_slurmctld (part_write_lock);
 	part_ptr = list_find_first (part_list, &list_find_part, part_desc->name);
 
 	if (part_ptr == NULL) {
@@ -851,6 +844,5 @@ update_part (update_part_msg_t * part_desc )
 		}
 	}
 			
-	unlock_slurmctld (part_write_lock);
 	return error_code;
 }

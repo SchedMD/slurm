@@ -115,7 +115,7 @@ schedule (void)
 	job_queue_size = build_job_queue (&job_queue);
 	if (job_queue_size == 0) {
 		unlock_slurmctld (job_write_lock);
-		return 0;
+		return SLURM_SUCCESS;
 	}
 	sort_job_queue (job_queue, job_queue_size);
 
