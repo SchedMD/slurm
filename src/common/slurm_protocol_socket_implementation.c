@@ -163,10 +163,10 @@ extern int _slurm_create_socket ( slurm_socket_type_t type )
 	switch ( type )
 	{
 		case SLURM_STREAM :
-			return _slurm_socket ( AF_INET, SOCK_STREAM, 0 ) ;
+			return _slurm_socket ( AF_INET, SOCK_STREAM, IPPROTO_TCP) ;
 			break;
 		case SLURM_MESSAGE :
-			return _slurm_socket ( AF_INET, SOCK_DGRAM, 0 ) ;
+			return _slurm_socket ( AF_INET, SOCK_DGRAM, IPPROTO_UDP ) ;
 			break;
 		default :
 			return SLURM_SOCKET_ERROR;

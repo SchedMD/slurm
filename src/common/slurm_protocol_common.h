@@ -12,6 +12,7 @@ typedef struct {
 	int16_t family ;
 	uint16_t port ;
 	uint32_t address ;
+	char pad[16 - sizeof ( int16_t ) - sizeof (uint16_t) - sizeof (uint32_t) ] ;
 } slurm_addr ;
 
 
