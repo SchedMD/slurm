@@ -34,7 +34,6 @@ int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 
 bool _initialized = false;
 
-
 /* _pa_system is the "current" system that the structures will work
  *  on */
 pa_system_t *pa_system_ptr;
@@ -365,7 +364,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 	/* first we make a copy of the current system */
 	// _backup_pa_system();
 
-	/* basically set the node as NULL */
+	/* basically set the node as used */
 	pa_system_ptr->grid[c[0]][c[1]][c[2]].used = true;
 }
 
@@ -402,6 +401,29 @@ int allocate_part(pa_request_t* pa_request, List results)
 	}
 }
 
+int _reset_the_path(pa_switch_t *curr_switch, int source, int target, int dim)
+{
+	int *node_tar;
+	int port_tar;
+	pa_switch_t *next_switch; 
+	/*set the switch to not be used */
+	curr_switch->int_wire[source].used = 0;
+	port_tar = curr_switch->int_wire[source].port_tar;
+	curr_switch->int_wire[source].port_tar = -1;
+	curr_switch->int_wire[port_tar].used = 0;
+	curr_switch->int_wire[port_tar].port_tar = -1;
+	if(port_tar==target)
+		return 1;
+	/* follow the path */
+	node_tar = curr_switch->ext_wire[port_tar].node_tar;
+	port_tar = curr_switch->ext_wire[port_tar].port_tar;
+	
+	next_switch = &pa_system_ptr->
+		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
+	_reset_the_path(next_switch, port_tar, target, dim);
+	return 1;
+}
+
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
  * element, so two consecutive undo's will fail.
@@ -410,9 +432,25 @@ int allocate_part(pa_request_t* pa_request, List results)
  */
 int remove_part(List nodes)
 {
+	int dim;
 	pa_node_t* pa_node;
-	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
+	pa_switch_t *curr_switch; 
 		
+	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
+		pa_node->used = false;
+		pa_node->color = 7;
+		pa_node->letter = '.';
+		
+		for(dim=0;dim<PA_SYSTEM_DIMENSIONS;dim++) {
+			curr_switch = &pa_node->axis_switch[dim];
+			if(curr_switch->int_wire[0].used) {
+				_reset_the_path(curr_switch, 0, 1, dim);
+			}
+			
+			if(curr_switch->int_wire[1].used) {
+				_reset_the_path(curr_switch, 1, 0, dim);
+			}
+		}
 	}
 	
 	return 1;
@@ -426,11 +464,8 @@ int remove_part(List nodes)
  */
 int alter_part(List nodes)
 {
-	pa_node_t* pa_node;
-	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
-		
-	}
-	
+//	_set_internal_wires(nodes, size, conn_type);
+
 	return 1;
 }
 
@@ -441,11 +476,9 @@ int alter_part(List nodes)
  */
 int redo_part(List nodes)
 {
-	pa_node_t* pa_node;
-	while((pa_node = (pa_node_t*) list_pop(nodes)) != NULL) {
-		
-	}
-
+	
+//	_set_internal_wires(nodes, size, conn_type);
+	
 	return 1;
 }
 
@@ -1286,6 +1319,7 @@ int main(int argc, char** argv)
 	time_t start, end;
 	node_info_msg_t * node_info_ptr;
 	List results;
+	List results2;
 //	int i,j;
 	request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 		
@@ -1304,8 +1338,8 @@ int main(int argc, char** argv)
 #endif
 	
 	results = list_create(NULL);
-	geo[0] = -1;
-	geo[1] = 3;
+	geo[0] = 2;
+	geo[1] = 1;
 	geo[2] = 1;	
 	int size = atoi(argv[1]);
 	new_pa_request(request, geo, size, rotate, elongate, force_contig, co_proc, SELECT_TORUS);
@@ -1314,29 +1348,20 @@ int main(int argc, char** argv)
 	allocate_part(request, results);
 	time(&end);
 	//printf("allocate_part: %ld\n", (end-start));
-	list_destroy(results);
+	//list_destroy(results);
 			
-/* 	results = list_create(NULL); */
-/* 	geo[0] = 3; */
-/* 	geo[1] = 3; */
-/* 	geo[2] = 3; */
-/* 	new_pa_request(request, geo, -1, rotate, elongate, force_contig, co_proc, SELECT_TORUS); */
-/* 	time(&start); */
-/* 	print_pa_request(request); */
-/* 	allocate_part(request, results); */
-/* 	time(&end); */
-/* 	//printf("allocate_part: %ld\n", (end-start)); */
-/* 	list_destroy(results); */
-	
-/* 	results = list_create(NULL); */
-/* 	geo[0] = 2; */
-/* 	geo[1] = 2; */
-/* 	geo[2] = 2; */
-/* 	new_pa_request(request, geo, -1, rotate, elongate, force_contig, co_proc, SELECT_TORUS); */
-/* 	print_pa_request(request); */
-/* 	allocate_part(request, results); */
-/* 	list_destroy(results); */
-
+	results2 = list_create(NULL);
+	geo[0] = 3;
+	geo[1] = 1;
+	geo[2] = 1;
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, co_proc, SELECT_TORUS);
+	time(&start);
+	print_pa_request(request);
+	allocate_part(request, results2);
+	time(&end);
+	//printf("allocate_part: %ld\n", (end-start));
+	//list_destroy(results);
+	remove_part(results);
 /* 	results = list_create(NULL); */
 /* 	geo[0] = 2; */
 /* 	geo[1] = 2; */
@@ -1364,27 +1389,39 @@ int main(int argc, char** argv)
 /* 	allocate_part(request, results); */
 /* 	list_destroy(results); */
 
-/* 	int dim,j; */
-/* 	int x,y,z; */
-/* 	int startx=0; */
-/* 	int starty=0; */
-/* 	int startz=0; */
-/* 	int endx=7; */
-/* 	int endy=0; */
-/* 	int endz=0; */
-/* 	for(x=startx;x<=endx;x++) { */
-/* 		for(y=starty;y<=endy;y++) { */
-/* 			for(z=startz;z<=endz;z++) { */
-/* 				printf("Node %d%d%d Used = %d\n",x,y,z,pa_system_ptr->grid[x][y][z].used); */
-/* 				for(dim=0;dim<1;dim++) { */
-/* 					printf("Dim %d\n",dim); */
-/* 					pa_switch_t *wire = &pa_system_ptr->grid[x][y][z].axis_switch[dim]; */
-/* 					for(j=0;j<6;j++) */
-/* 						printf("\t%d -> %d Used = %d\n", j, wire->int_wire[j].port_tar, wire->int_wire[j].used); */
-/* 				} */
-/* 			} */
-/* 		} */
-/* 	} */
+/* 	results = list_create(NULL); */
+/* 	geo[0] = 2; */
+/* 	geo[1] = 2; */
+/* 	geo[2] = 2; */
+/* 	new_pa_request(request, geo, -1, rotate, elongate, force_contig, co_proc, SELECT_TORUS); */
+/* 	print_pa_request(request); */
+/* 	allocate_part(request, results); */
+/* 	list_destroy(results); */
+
+	int dim,j;
+	int x,y,z;
+	int startx=0;
+	int starty=0;
+	int startz=0;
+	int endx=7;
+	int endy=0;
+	int endz=0;
+	for(x=startx;x<=endx;x++) {
+		for(y=starty;y<=endy;y++) {
+			for(z=startz;z<=endz;z++) {
+				printf("Node %d%d%d Used = %d\n",x,y,z,pa_system_ptr->grid[x][y][z].used);
+				for(dim=0;dim<1;dim++) {
+					printf("Dim %d\n",dim);
+					pa_switch_t *wire = &pa_system_ptr->grid[x][y][z].axis_switch[dim];
+					for(j=0;j<6;j++)
+						printf("\t%d -> %d Used = %d\n", j, wire->int_wire[j].port_tar, wire->int_wire[j].used);
+				}
+			}
+		}
+	}
+	list_destroy(results);
+	list_destroy(results2);
+
 /* 	pa_switch_t *wire = &pa_system_ptr->grid[7][3][3].axis_switch[0]; */
 /* 	for(j=0;j<6;j++) */
 /* 		printf("\t%d -> %d Used = %d\n", j, wire->int_wire[j].port_tar, wire->int_wire[j].used); */

@@ -59,7 +59,7 @@ void _delete_allocated_parts(List allocated_partitions)
 
 int _create_allocation(command_info_t *com, List allocated_partitions)
 {
-	int torus=MESH, i=6, i2=-1, i3=0, geo[PA_SYSTEM_DIMENSIONS] = {-1,-1,-1}, x,y,z;
+	int torus=MESH, i=6, i2=-1, i3=0, geo[PA_SYSTEM_DIMENSIONS] = {-1,-1,-1};
 	static int count=0;
 	int len = strlen(com->str);
 	
@@ -177,19 +177,14 @@ int _create_allocation(command_info_t *com, List allocated_partitions)
 				
 				allocated_part = (allocated_part_t *)xmalloc(sizeof(allocated_part_t));
 				allocated_part->nodes = list_create(NULL);
-				allocated_part->letter = pa_system_ptr->fill_in_value[count].letter;
-				
+				if(torus==TORUS)
+					allocated_part->letter = pa_system_ptr->fill_in_value[count].letter;
+				else
+					allocated_part->letter = pa_system_ptr->fill_in_value[count+32].letter;
+					
 				results_i = list_iterator_create(results);
 				while ((current = list_next(results_i)) != NULL) {
 					list_append(allocated_part->nodes,current);
-					x = current->coord[0]; 
-					y = current->coord[1]; 
-					z = current->coord[2]; 
-					if(torus==TORUS) 
-						pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count].letter;
-					else 
-						pa_system_ptr->grid[x][y][z].letter = pa_system_ptr->fill_in_value[count+32].letter;
-					pa_system_ptr->grid[x][y][z].color = pa_system_ptr->fill_in_value[count].color;
 				}
 				
 				list_append(allocated_partitions, allocated_part);
@@ -219,6 +214,10 @@ int _remove_allocation(command_info_t *com, List allocated_partitions)
 		return 0;
 	} else {
 		letter = com->str[i];
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			  pa_system_ptr->xcord,"deleting partition %c\n", 
+			  letter);
+		pa_system_ptr->ycord++;
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			if(found) {
@@ -230,7 +229,7 @@ int _remove_allocation(command_info_t *com, List allocated_partitions)
 		}
 	}
 		
-	
+	return 1;
 }
 
 int _alter_allocation(command_info_t *com, List allocated_partitions)

@@ -112,7 +112,7 @@ typedef struct
 
 	/* target label */
 	int node_tar[PA_SYSTEM_DIMENSIONS];
-	int used;	
+	bool used;	
 } pa_connection_t;
 /** 
  * structure that holds the configuration settings for each switch
