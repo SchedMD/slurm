@@ -30,14 +30,19 @@
 #endif
 
 #include <errno.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #include <src/common/slurm_errno.h>
+#include <src/common/xmalloc.h>
+#include <src/slurmctld/agent.h>
 #include <src/slurmctld/slurmctld.h>
 
+#define AGENT_TEST 1
 #define BUF_SIZE 1024
 
 struct node_set {		/* set of nodes with same configuration */
@@ -109,20 +114,56 @@ void
 deallocate_nodes (struct job_record  * job_ptr) 
 {
 	int i;
-	revoke_credential_msg_t revoke_job_cred;
+	revoke_credential_msg_t *revoke_job_cred;
+#if AGENT_TEST
+	agent_arg_t *agent_args;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
 
+	agent_args = xmalloc (sizeof (agent_arg_t));
+	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
+#endif
+	revoke_job_cred = xmalloc (sizeof (revoke_credential_msg_t));
 	last_node_update = time (NULL);
-	revoke_job_cred.job_id = job_ptr -> job_id;
-	revoke_job_cred.expiration_time = job_ptr -> details -> credential . expiration_time ;
-	memset ( (void *)revoke_job_cred.signature, 0, sizeof (revoke_job_cred.signature));
+	revoke_job_cred->job_id = job_ptr->job_id;
+	revoke_job_cred->expiration_time = job_ptr->details->credential.expiration_time ;
+	memset ( (void *)revoke_job_cred->signature, 0, sizeof (revoke_job_cred->signature));
 
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (job_ptr->node_bitmap, i) == 0)
 			continue;
-		slurm_revoke_job_cred (&node_record_table_ptr[i], &revoke_job_cred);
+#if AGENT_TEST
+		xrealloc ((agent_args->slurm_addr), 
+		          (sizeof (struct sockaddr_in) * (agent_args->addr_count+1)));
+		agent_args->slurm_addr[(agent_args->addr_count++)] = 
+			node_record_table_ptr[i].slurm_addr;
+#else
+		slurm_revoke_job_cred (&node_record_table_ptr[i], revoke_job_cred);
+#endif
 		node_record_table_ptr[i].node_state = NODE_STATE_IDLE;
 		bit_set (idle_node_bitmap, i);
 	}
+
+#if AGENT_TEST
+	agent_args->msg_args = revoke_job_cred;
+	debug ("Spawning revoke credential agent");
+	if (pthread_attr_init (&attr_agent))
+		fatal ("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope (&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error ("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create (&thread_agent, &attr_agent, agent, (void *)agent_args)) {
+		error ("pthread_create error %m");
+		sleep (1); /* sleep and try once more */
+		if (pthread_create (&thread_agent, &attr_agent, agent, (void *)agent_args))
+			fatal ("pthread_create error %m");
+	}
+#else
+	xfree (revoke_job_cred);
+#endif
 	return;
 }
 
