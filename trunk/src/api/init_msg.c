@@ -85,6 +85,7 @@ void slurm_init_part_desc_msg (update_part_msg_t * update_part_msg)
 	update_part_msg->allow_groups 	= NULL;
 	update_part_msg->max_time 	= (uint32_t) NO_VAL;
 	update_part_msg->max_nodes 	= (uint32_t) NO_VAL;
+	update_part_msg->min_nodes 	= (uint32_t) NO_VAL;
 	update_part_msg->default_part 	= (uint16_t) NO_VAL;
 	update_part_msg->root_only 	= (uint16_t) NO_VAL;
 	update_part_msg->shared 	= (uint16_t) NO_VAL;

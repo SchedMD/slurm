@@ -180,6 +180,7 @@ struct part_record *create_part_record(void)
 	strcpy(part_ptr->name, "DEFAULT");
 	part_ptr->max_time    = default_part.max_time;
 	part_ptr->max_nodes   = default_part.max_nodes;
+	part_ptr->min_nodes   = default_part.min_nodes;
 	part_ptr->root_only   = default_part.root_only;
 	part_ptr->state_up    = default_part.state_up;
 	part_ptr->shared      = default_part.shared;
@@ -322,6 +323,7 @@ static void _dump_part_state(struct part_record *part_record_point, Buf buffer)
 	packstr(part_record_point->name, buffer);
 	pack32(part_record_point->max_time, buffer);
 	pack32(part_record_point->max_nodes, buffer);
+	pack32(part_record_point->min_nodes, buffer);
 
 	pack16(default_part_flag, buffer);
 	pack16((uint16_t) part_record_point->root_only, buffer);
@@ -340,7 +342,7 @@ static void _dump_part_state(struct part_record *part_record_point, Buf buffer)
 int load_all_part_state(void)
 {
 	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
-	uint32_t max_time, max_nodes;
+	uint32_t max_time, max_nodes, min_nodes;
 	time_t time;
 	uint16_t name_len, def_part_flag, root_only, shared, state_up;
 	struct part_record *part_ptr;
@@ -383,6 +385,7 @@ int load_all_part_state(void)
 		safe_unpackstr_xmalloc(&part_name, &name_len, buffer);
 		safe_unpack32(&max_time, buffer);
 		safe_unpack32(&max_nodes, buffer);
+		safe_unpack32(&min_nodes, buffer);
 		safe_unpack16(&def_part_flag, buffer);
 		safe_unpack16(&root_only, buffer);
 		safe_unpack16(&shared, buffer);
@@ -410,8 +413,9 @@ int load_all_part_state(void)
 					   part_name);
 
 		if (part_ptr) {
-			part_ptr->max_time = max_time;
+			part_ptr->max_time  = max_time;
 			part_ptr->max_nodes = max_nodes;
+			part_ptr->min_nodes = min_nodes;
 			if (def_part_flag) {
 				strcpy(default_part_name, part_name);
 				default_part_loc = part_ptr;
@@ -468,6 +472,7 @@ int init_part_conf(void)
 	strcpy(default_part.name, "DEFAULT");
 	default_part.max_time    = INFINITE;
 	default_part.max_nodes   = INFINITE;
+	default_part.min_nodes   = 1;
 	default_part.root_only   = 0;
 	default_part.state_up    = 1;
 	default_part.shared      = SHARED_NO;
@@ -612,6 +617,7 @@ void pack_part(struct part_record *part_record_point, Buf buffer)
 	packstr(part_record_point->name, buffer);
 	pack32(part_record_point->max_time, buffer);
 	pack32(part_record_point->max_nodes, buffer);
+	pack32(part_record_point->min_nodes, buffer);
 	pack32(part_record_point->total_nodes, buffer);
 
 	pack32(part_record_point->total_cpus, buffer);
@@ -673,6 +679,12 @@ int update_part(update_part_msg_t * part_desc)
 		info("update_part: setting max_nodes to %d for partition %s", 
 		     part_desc->max_nodes, part_desc->name);
 		part_ptr->max_nodes = part_desc->max_nodes;
+	}
+
+	if (part_desc->min_nodes != NO_VAL) {
+		info("update_part: setting min_nodes to %d for partition %s", 
+		     part_desc->min_nodes, part_desc->name);
+		part_ptr->min_nodes = part_desc->min_nodes;
 	}
 
 	if (part_desc->root_only != (uint16_t) NO_VAL) {

@@ -1114,6 +1114,13 @@ _update_part (int argc, char *argv[])
 				part_msg.max_nodes = 
 					(uint32_t) strtol(&argv[i][9], 
 						(char **) NULL, 10);
+		else if (strncasecmp(argv[i], "MinNodes=", 9) == 0)
+			if (strcasecmp(&argv[i][9],"UNLIMITED") == 0)
+				part_msg.min_nodes = INFINITE;
+			else
+				part_msg.min_nodes = 
+					(uint32_t) strtol(&argv[i][9], 
+						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "Default=", 8) == 0) {
 			if (strcasecmp(&argv[i][8], "NO") == 0)
 				part_msg.default_part = 0;
