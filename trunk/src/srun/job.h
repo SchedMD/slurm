@@ -74,7 +74,7 @@ typedef struct srun_job {
 	task_state_t *task_state; /* ntask task states */
 	pthread_mutex_t task_mutex;
 
-#if HAVE_LIBELAN3
+#ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;
 #endif
 

@@ -111,7 +111,7 @@ static void 		 fwd_signal(job_t *job, int signo);
 static void 		 p_fwd_signal(slurm_msg_t *req_array_ptr, job_t *job);
 static void 		*p_signal_task(void *args);
 
-#if HAVE_LIBELAN3
+#ifdef HAVE_LIBELAN3
 #  include <src/common/qsw.h> 
 static void qsw_standalone(job_t *job);
 #endif
@@ -162,7 +162,7 @@ main(int ac, char **av)
 	} else if (opt.no_alloc) {
 		printf("do not allocate resources\n");
 		job = job_create(NULL); 
-#if HAVE_LIBELAN3
+#ifdef HAVE_LIBELAN3
 		qsw_standalone(job);
 #endif
 	} else if ( (resp = existing_allocation()) ) {
@@ -401,7 +401,7 @@ sig_kill_alloc(int signum)
 
 
 
-#if HAVE_LIBELAN3
+#ifdef HAVE_LIBELAN3
 static void
 qsw_standalone(job_t *job)
 {
@@ -462,7 +462,7 @@ create_job_step(job_t *job)
 
 	job->stepid = resp->job_step_id;
 	job->cred   = resp->credentials;
-#if HAVE_LIBELAN3	
+#ifdef HAVE_LIBELAN3	
 	job->qsw_job= resp->qsw_job;
 #endif
 
