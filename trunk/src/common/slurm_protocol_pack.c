@@ -66,9 +66,8 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_NODE_INFO:
 			pack_node_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
-		case REQUEST_NODE_REGISRATION_STATUS :
-			break ;
 		case MESSAGE_NODE_REGISRATION_STATUS :
+			pack_node_registration_status_msg ( ( slurm_node_registration_status_msg_t * ) msg , ( void ** ) buffer , buf_len );
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
@@ -76,13 +75,14 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_WILL_JOB_RUN : 
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
+		case REQUEST_NODE_REGISRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_WILL_JOB_RUN :
-			pack_job_allocation_response_msg ( ( job_allocation_response_msg_t * ) msg -> data , buffer , buf_len ) ;
+			pack_job_allocation_response_msg ( ( job_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 
 		case REQUEST_CANCEL_JOB :
@@ -169,9 +169,8 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_NODE_INFO:
 			unpack_node_info_msg ( ( node_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
 			break;
-		case REQUEST_NODE_REGISRATION_STATUS :
-			break ;
 		case MESSAGE_NODE_REGISRATION_STATUS :
+			unpack_node_registration_status_msg ( ( slurm_node_registration_status_msg_t ** ) &( msg -> data ), ( void ** ) buffer , buf_len );
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
@@ -179,13 +178,14 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_WILL_JOB_RUN : 
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
+		case REQUEST_NODE_REGISRATION_STATUS :
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_WILL_JOB_RUN :
-			unpack_job_allocation_response_msg ( ( job_allocation_response_msg_t ** ) & ( msg -> data ) , buffer , buf_len ) ;
+			unpack_job_allocation_response_msg ( ( job_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 
 		case REQUEST_CANCEL_JOB :
@@ -242,13 +242,13 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 	return 0 ;
 }
 
-void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, char ** buffer , uint32_t * length )
+void pack_job_allocation_response_msg ( job_allocation_response_msg_t * msg, void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> job_id , ( void ** ) buffer , length ) ;
 	packstr ( msg -> node_list , ( void ** ) buffer , length ) ;
 }
 
-int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , char ** buffer , uint32_t * length )
+int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
 	job_allocation_response_msg_t * tmp_ptr ;
@@ -267,7 +267,7 @@ int unpack_job_allocation_response_msg ( job_allocation_response_msg_t ** msg , 
 	return 0 ;
 }
 
-void pack_node_registration_status_msg ( node_registration_status_msg_t * msg, char ** buffer , uint32_t * length )
+void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg, void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> timestamp , ( void ** ) buffer , length ) ;
 	packstr ( msg -> node_name , ( void ** ) buffer , length ) ;
@@ -276,12 +276,12 @@ void pack_node_registration_status_msg ( node_registration_status_msg_t * msg, c
 	pack32 ( msg -> temporary_disk_space , ( void ** ) buffer , length ) ;
 }
 
-int unpack_node_registration_status_msg ( node_registration_status_msg_t ** msg , char ** buffer , uint32_t * length )
+int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t ** msg , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
-	node_registration_status_msg_t * node_reg_ptr ;
+	slurm_node_registration_status_msg_t * node_reg_ptr ;
 	/* alloc memory for structure */	
-	node_reg_ptr = xmalloc ( sizeof ( node_registration_status_msg_t ) ) ;
+	node_reg_ptr = xmalloc ( sizeof ( slurm_node_registration_status_msg_t ) ) ;
 	if (node_reg_ptr == NULL) 
 	{
 		return ENOMEM;

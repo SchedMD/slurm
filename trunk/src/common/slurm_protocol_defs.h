@@ -130,7 +130,7 @@ typedef struct slurm_node_registration_status_msg
 	uint32_t cpus;
 	uint32_t real_memory_size ;
  	uint32_t temporary_disk_space ;
-} node_registration_status_msg_t ;
+} slurm_node_registration_status_msg_t ;
 
 typedef struct slurm_job_allocation_response_msg
 {
@@ -284,6 +284,7 @@ void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
 void inline slurm_free_build_info ( build_info_msg_t * build_ptr ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
+void inline slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg ) ;
 
 void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
 void inline slurm_free_job_table ( job_table_t * job ) ;
