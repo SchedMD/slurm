@@ -175,20 +175,40 @@ AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
 HAVE_ELAN=0
 if test "$with_elan" = "yes"; then
   savedLIBS="$LIBS"
-  AC_CHECK_LIB(elan3, elan3_create,
-    [], 
-    [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support.])], 
+  AC_CHECK_LIB([elanctrl], [elanctrl_open], 
+               [ have_elanctrl=yes
+                 ELAN_LIBS="-lelanctrl"
+                 AC_DEFINE(HAVE_LIBELANCTRL, 1, 
+                           [define if you have libelanctrl.])
+               ], 
+               [ have_elanctrl=no
+               ]
   )
+
+  AC_CHECK_LIB([elan3], [elan3_create], 
+               [ have_elan3=yes
+                 ELAN_LIBS="-lelan3"
+                 AC_DEFINE(HAVE_LIBELAN3, 1, 
+                           [define if you have libelan3.])
+               ], 
+               [ have_elan3=no
+               ]
+  )
+
+  if test "$have_elanctrl" = "no" -a "$have_elan3" = "no"; then
+      AC_MSG_ERROR([Unable to find libelan3 or libelanctrl for Elan support!])
+  fi
+
   AC_CHECK_LIB(rmscall, rms_prgcreate, 
     [],
     [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
   )
   HAVE_ELAN=1
-  ELAN_LIBS="-lelan3 -lrmscall"
+  AC_DEFINE(HAVE_ELAN, 1, [Define to enable Elan support.])
+  ELAN_LIBS="$ELAN_LIBS -lrmscall"
   LIBS="$savedLIBS" 
 fi
 
-AC_DEFINE_UNQUOTED(HAVE_ELAN, "$HAVE_ELAN", [Define to enable Elan support.])
 AC_SUBST(HAVE_ELAN)
 AC_SUBST(ELAN_LIBS)
 
