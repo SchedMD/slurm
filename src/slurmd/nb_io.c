@@ -56,4 +56,13 @@ int wait_on_io_threads ( task_start_t * task_start )
 	return SLURM_SUCCESS ;
 }
 
+int iotype_init_pipes ( int * pipes )
+{
+	int i ;
+	for ( i=0 ; i < 6 ; i ++ ) 
+	{
+		slurm_set_stream_non_blocking ( pipes[0] ) ;
+	}
+	return SLURM_SUCCESS ;
+}
 

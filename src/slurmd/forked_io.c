@@ -133,3 +133,7 @@ int wait_on_io_threads ( task_start_t * task_start )
 	return SLURM_SUCCESS ;
 }
 
+int iotype_init_pipes ( int * pipes )
+{
+	return SLURM_SUCCESS ;
+}
