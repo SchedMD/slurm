@@ -662,14 +662,13 @@ int update_part(update_part_msg_t * part_desc)
 		return ESLURM_INVALID_PARTITION_NAME;
 	}
 
-	error_code = 0;
-	part_ptr =
-	    list_find_first(part_list, &list_find_part, part_desc->name);
+	error_code = SLURM_SUCCESS;
+	part_ptr = list_find_first(part_list, &list_find_part, 
+					part_desc->name);
 
 	if (part_ptr == NULL) {
-		error
-		    ("update_part: partition %s does not exist, being created",
-		     part_desc->name);
+		error("update_part: partition %s does not exist, "
+			"being created", part_desc->name);
 		part_ptr = create_part_record();
 		strcpy(part_ptr->name, part_desc->name);
 	}
