@@ -209,7 +209,6 @@ static void _setup_spawn_io(slurmd_job_t *job)
 		error("connect io: %m");
 		exit(1);
 	}
-	fd_set_nonblocking(fd);
 	(void) close(STDIN_FILENO);
 	(void) close(STDOUT_FILENO);
 	(void) close(STDERR_FILENO);
