@@ -433,6 +433,8 @@ job_update_shm(slurmd_job_t *job)
 	s.timelimit = job->timelimit;
 	strncpy(s.exec_name, job->argv[0], MAXPATHLEN);
 	s.sw_id     = 0;
+	s.mpid      = (pid_t) 0;
+	s.sid       = (pid_t) 0;
 	s.io_update = false;
 	s.state     = SLURMD_JOB_STARTING;
 
