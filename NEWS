@@ -1,6 +1,14 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.3.0-pre4
+=============================
+ -- Fix bug where early launch failures (such as invalid UID/GID) resulted
+    in jobs not terminating properly.
+ -- Initial support for BNR committed (not yet functional).
+ -- QsNet: SLURM now uses /etc/elanhosts exclusively for converting 
+    hostnames to ElanIDs.
+
 * Changes in SLURM 0.3.0-pre3
 =============================
  -- Fixes for reported problems:
