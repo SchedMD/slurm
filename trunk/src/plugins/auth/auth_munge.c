@@ -156,11 +156,27 @@ static void
 _print_cred_info(munge_info_t *mi)
 {
 	char buf[256];
-	info ("ENCODED: %s", ctime_r(&mi->encoded, buf));
-	info ("DECODED: %s", ctime_r(&mi->decoded, buf));
-	info ("CIPHER:  %s", munge_cipher_strings[mi->cipher]);
-	info ("MAC:     %s", munge_mac_strings[mi->mac]);
-	info ("ZIP:     %s", munge_zip_strings[mi->zip]);
+
+	xassert(mi != NULL);
+
+	if (mi->encoded > 0)
+		info ("ENCODED: %s", ctime_r(&mi->encoded, buf));
+	if (mi->decoded > 0)
+		info ("DECODED: %s", ctime_r(&mi->decoded, buf));
+
+	if (  (mi->cipher > MUNGE_CIPHER_NONE) 
+	   && (mi->cipher < MUNGE_CIPHER_LAST_ENTRY) )
+		info ("CIPHER:  %s", munge_cipher_strings[mi->cipher]);
+
+	if (  (mi->mac > MUNGE_MAC_NONE) 
+	   && (mi->mac < MUNGE_MAC_LAST_ENTRY) ) {
+		info ("MAC:     %s", munge_mac_strings[mi->mac]);
+		/*
+		 *  Only print ZIP if MAC is valid.
+		 *   (because ZIP == NONE could be valid)
+		 */
+		info ("ZIP:     %s", munge_zip_strings[mi->zip]);
+	}
 }
 
 static void 
@@ -179,6 +195,7 @@ _print_cred(munge_ctx_t ctx)
 static int 
 _decode_cred(char *m, slurm_auth_credential_t *c)
 {
+	sigset_t set, oset;
 	munge_err_t e;
 	munge_ctx_t ctx = munge_ctx_create();
 
@@ -187,19 +204,38 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 
 	xassert(c->magic == MUNGE_MAGIC);
 
+	/*
+	 *  Block all signals to allow munge_decode() to proceed
+	 *   uninterrupted.
+	 */
+	sigfillset(&set);
+	sigdelset(&set, SIGABRT);
+	sigdelset(&set, SIGSEGV);
+	sigdelset(&set, SIGILL);
+	if (pthread_sigmask(SIG_SETMASK, &set, &oset) < 0) 
+		error("pthread_sigmask: %m");
+
+
 	if (c->verified) 
 		return SLURM_SUCCESS;
 
 	if ((e = munge_decode(m, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
-		error ("Invalid Munge credential: %s", munge_strerror(e));
-		if (e != EMUNGE_CRED_INVALID)
-			_print_cred(ctx);
+		error ("Munge decode failed: %s", munge_ctx_strerror(ctx));
+
+		/*
+		 *  Print any valid credential data 
+		 */
+		_print_cred(ctx); 
+
 		goto done;
 	}
 
 	c->verified = true;
 
      done:
+	if (pthread_sigmask(SIG_SETMASK, &oset, NULL) < 0) 
+		error("pthread_sigmask: %m");
+
 	munge_ctx_destroy(ctx);
 	return SLURM_SUCCESS;
 }
@@ -248,7 +284,7 @@ slurm_auth_create( void *argv[] )
 
 	if ((e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len))) {
 		plugin_errno = SLURM_ERROR;
-		error("munge_encode: %s", munge_strerror(e));
+		error("munge_encode: %s", munge_ctx_strerror(ctx));
 		xfree( cred );
 		return NULL;
 	}
@@ -287,7 +323,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *c, void *argv[] )
+slurm_auth_verify( slurm_auth_credential_t *c, void *argv )
 {
 	if (!c) {
 		plugin_errno = SLURM_AUTH_BADARG;
