@@ -7,6 +7,8 @@
 #ifndef _SAFEOPEN_H
 #define _SAFEOPEN_H
 
+#include <unistd.h>
+
 /* safeopen flags:
  *
  * default is to create if needed, and fail if path is a soft link

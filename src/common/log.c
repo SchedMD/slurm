@@ -167,14 +167,14 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 
 	log->opt = opt;
 
+	if (log->buf) 
+		cbuf_destroy(log->buf);
+	if (log->fbuf)
+		cbuf_destroy(log->fbuf);
+
 	if (log->opt.buffered) {
 		log->buf  = cbuf_create(128, 8192);
 		log->fbuf = cbuf_create(128, 8192);
-	} else {
-		if (log->buf) 
-			cbuf_destroy(log->buf);
-		if (log->fbuf)
-			cbuf_destroy(log->fbuf);
 	}
 
 	if (log->opt.syslog_level > LOG_LEVEL_QUIET)
@@ -195,8 +195,12 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 			xfree(errmsg);
 			rc = errno;
 			goto out;
-		} else
-			log->logfp = fp;
+		} 
+
+		if (log->logfp)
+			fclose(log->logfp); /* Ignore errors */
+
+		log->logfp = fp;
 	}
 
 	log->initialized = 1;
@@ -569,7 +573,7 @@ log_flush()
 	if (log->opt.stderr_level) 
 		cbuf_read_to_fd(log->buf, fileno(stderr), -1);
 	else if (log->logfp)
-		cbuf_read_to_fd(log->buf, fileno(log->logfp), -1);
+		cbuf_read_to_fd(log->fbuf, fileno(log->logfp), -1);
 
     done:
 	slurm_mutex_unlock(&log_lock);
