@@ -3,6 +3,8 @@
  *	Note: there is a global node table (node_record_table_ptr), its 
  *	hash table (node_hash_table), time stamp (last_node_update) and 
  *	configuration list (config_list)
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1780,7 +1782,7 @@ void make_node_idle(struct node_record *node_ptr,
 				delay = last_job_update - job_ptr->end_time;
 				if (delay > 60)
 					info("Job %u completion process took "
-						"%ld second", job_ptr->job_id,
+						"%ld seconds", job_ptr->job_id,
 						(long) delay);
 				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);

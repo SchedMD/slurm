@@ -1,5 +1,7 @@
 /****************************************************************************\
  *  slurm_protocol_defs.h - definitions used for RPCs
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -88,6 +90,8 @@ typedef enum {
 	RESPONSE_ACCOUNTING_INFO,
 	REQUEST_JOB_ID,
 	RESPONSE_JOB_ID,
+	REQUEST_NODE_SELECT_INFO,
+	RESPONSE_NODE_SELECT_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -113,6 +117,8 @@ typedef enum {
 	RESPONSE_ALLOCATION_AND_RUN_JOB_STEP,
 	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
 	REQUEST_UPDATE_JOB_TIME,
+	REQUEST_JOB_READY,
+	RESPONSE_JOB_READY,
 
 	REQUEST_JOB_STEP_CREATE = 5001,
 	RESPONSE_JOB_STEP_CREATE,
@@ -457,6 +463,7 @@ slurm_free_node_registration_status_msg(slurm_node_registration_status_msg_t *
 void inline slurm_free_job_info(job_info_t * job);
 void inline slurm_free_job_info_members(job_info_t * job);
 
+void inline slurm_free_job_id_msg(job_id_msg_t * msg);
 void inline slurm_free_job_id_request_msg(job_id_request_msg_t * msg);
 void inline slurm_free_job_id_response_msg(job_id_response_msg_t * msg);
 

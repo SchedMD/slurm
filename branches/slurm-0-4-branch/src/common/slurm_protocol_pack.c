@@ -1,5 +1,7 @@
 /****************************************************************************\
  *  slurm_protocol_pack.c - functions to pack and unpack structures for RPCs
+ *
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -48,6 +50,7 @@
 
 #define _pack_job_info_msg(msg,buf)		_pack_buffer_msg(msg,buf)
 #define _pack_job_step_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
+#define _pack_bgl_block_info_msg(msg,buf)	_pack_buffer_msg(msg,buf)
 
 static void _pack_update_node_msg(update_node_msg_t * msg, Buf buffer);
 static int _unpack_update_node_msg(update_node_msg_t ** msg, Buf buffer);
@@ -58,6 +61,9 @@ static void
 static int
  _unpack_node_registration_status_msg(slurm_node_registration_status_msg_t
 				      ** msg, Buf buffer);
+
+static void _pack_job_ready_msg(job_id_msg_t * msg, Buf buffer);
+static int _unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer);
 
 static void
  _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
@@ -457,6 +463,7 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 break;
 	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
 		 break;
+	 case RESPONSE_JOB_READY:
 	 case RESPONSE_SLURM_RC:
 		 _pack_return_code_msg((return_code_msg_t *) msg->data,
 				       buffer);
@@ -496,6 +503,12 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		break;
 	 case RESPONSE_CHECKPOINT:
 		_pack_checkpoint_resp_msg((checkpoint_resp_msg_t *)msg->data, buffer);
+		break;
+	 case REQUEST_JOB_READY:
+		_pack_job_ready_msg((job_id_msg_t *)msg->data, buffer);
+		break;
+	 case RESPONSE_NODE_SELECT_INFO:
+		_pack_bgl_block_info_msg((slurm_msg_t *) msg, buffer);
 		break;
 	 default:
 		 debug("No pack method for msg type %i", msg->msg_type);
@@ -705,6 +718,7 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 		 break;
 	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
 		 break;
+	 case RESPONSE_JOB_READY:
 	 case RESPONSE_SLURM_RC:
 		 rc = _unpack_return_code_msg((return_code_msg_t **)
 					      & (msg->data), buffer);
@@ -748,6 +762,14 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_CHECKPOINT:
 		rc = _unpack_checkpoint_resp_msg((checkpoint_resp_msg_t **)
 				& msg->data, buffer);
+		break;
+	 case REQUEST_JOB_READY:
+		 rc = _unpack_job_ready_msg((job_id_msg_t **)
+				& msg->data, buffer);
+		break;
+	 case RESPONSE_NODE_SELECT_INFO:
+		error("No unpack method for RESPONSE_NODE_SELECT_INFO");
+		return EINVAL;
 		break;
 	 default:
 		 debug("No unpack method for msg type %i", msg->msg_type);
@@ -2885,6 +2907,32 @@ _unpack_srun_node_fail_msg(srun_node_fail_msg_t ** msg_ptr, Buf buffer)
 	*msg_ptr = NULL;
 	xfree( msg->nodelist );
 	xfree( msg );
+	return SLURM_ERROR;
+}
+
+static void
+_pack_job_ready_msg(job_id_msg_t * msg, Buf buffer)
+{
+	xassert ( msg != NULL );
+
+	pack32 ( msg -> job_id  , buffer ) ;
+}
+
+static int
+_unpack_job_ready_msg(job_id_msg_t ** msg_ptr, Buf buffer)
+{
+	job_id_msg_t * msg;
+	xassert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof (job_id_msg_t) );
+	*msg_ptr = msg ;
+
+	safe_unpack32 ( & msg -> job_id  , buffer ) ;
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	*msg_ptr = NULL;
+	xfree(msg);
 	return SLURM_ERROR;
 }
 

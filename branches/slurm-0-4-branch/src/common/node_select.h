@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  node_select.h - Define node selection plugin functions.
+ *
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -97,6 +99,13 @@ extern int select_g_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
  * IN job_ptr - pointer to job being initiated
  */
 extern int select_g_job_begin(struct job_record *job_ptr);
+
+/*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_ptr - pointer to job being tested
+ * RET -1 on error, 1 if ready to execute, 0 otherwise
+ */
+extern int select_g_job_ready(struct job_record *job_ptr);
 
 /*
  * Note termination of job is starting. Executed from slurmctld.

@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  proc_msg.c - process incomming messages to slurmctld
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -76,12 +78,14 @@ inline static void  _slurm_rpc_dump_jobs(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_nodes(slurm_msg_t * msg);
 inline static void  _slurm_rpc_dump_partitions(slurm_msg_t * msg);
 inline static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg);
+inline static void  _slurm_rpc_job_ready(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_kill(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_complete(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_create(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_step_get_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_job_will_run(slurm_msg_t * msg);
 inline static void  _slurm_rpc_node_registration(slurm_msg_t * msg);
+inline static void  _slurm_rpc_node_select_info(slurm_msg_t * msg);
 inline static void  _slurm_rpc_old_job_alloc(slurm_msg_t * msg);
 inline static void  _slurm_rpc_ping(slurm_msg_t * msg);
 inline static void  _slurm_rpc_reconfigure_controller(slurm_msg_t * msg);
@@ -224,6 +228,14 @@ void slurmctld_req (slurm_msg_t * msg)
 	case REQUEST_CHECKPOINT:
 		_slurm_rpc_checkpoint(msg);
 		slurm_free_checkpoint_msg(msg->data);
+		break;
+	case REQUEST_JOB_READY:
+		_slurm_rpc_job_ready(msg);
+		slurm_free_job_id_msg(msg->data);
+		break;
+	case REQUEST_NODE_SELECT_INFO:
+		_slurm_rpc_node_select_info(msg);
+		/* Note: No data to free */
 		break;
 	default:
 		error("invalid RPC msg_type=%d", msg->msg_type);
@@ -1693,6 +1705,53 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 		schedule();
 		save_all_state();
 
+	}
+}
+
+/* determine of nodes are ready for the job */
+static void _slurm_rpc_job_ready(slurm_msg_t * msg)
+{
+	int error_code, result;
+	job_id_msg_t *id_msg = (job_id_msg_t *) msg->data;
+	DEF_TIMERS;
+	slurm_msg_t response_msg;
+	return_code_msg_t rc_msg;
+
+	START_TIMER;
+	error_code = job_node_ready(id_msg->job_id, &result);
+	END_TIMER;
+
+	if (error_code) {
+		info("_slurm_rpc_job_ready: %s",
+			slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		info("_slurm_rpc_job_ready(%u)=%d %s", id_msg->job_id, 
+			result, TIME_STR);
+		rc_msg.return_code = result;
+		response_msg.address = msg->address;
+		response_msg.msg_type = RESPONSE_JOB_READY;
+		response_msg.data = &rc_msg;
+		slurm_send_node_msg(msg->conn_fd, &response_msg);
+	}
+}
+
+/* get node select info plugin */
+static void  _slurm_rpc_node_select_info(slurm_msg_t * msg)
+{
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_NODE_SELECTINFO");
+	//error_code = get_the_info();
+	END_TIMER;
+
+	if (error_code) {
+		info("_slurm_rpc_node_select_info: %s", 
+			slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
 	}
 }
 

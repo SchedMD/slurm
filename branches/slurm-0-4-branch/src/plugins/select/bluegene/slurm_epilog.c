@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  slurm_epilog.c - Wait until the specified partition is no longer owned by
- *	this user. This is executed via SLURM to synchronize the user's job 
- *	execution with slurmctld configuration of partitions.
+ * slurm_ epilog.c - Wait until the specified partition is no longer ready and 
+ *      owned by this user. This is executed via SLURM to synchronize the 
+ *      user's job execution with slurmctld configuration of partitions.
  *
- * NOTE: execute "/bgl/BlueLight/ppcfloor/bglsys/bin/db2profile" first
+ * $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,203 +31,121 @@
 #if HAVE_CONFIG_H
 #  include "config.h"
 #endif
+
 #include <stdlib.h>
-
-#ifndef HAVE_BGL_FILES
-
-/* Just a stub, no synchronization to perform */
-int main(int argc, char *argv[])
-{
-        exit(0);
-}
-
-#else
-
 #include <errno.h>
-#include <pwd.h>
 #include <stdio.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <string.h>
-#include "src/plugins/select/bluegene/wrap_rm_api.h"
+#include <strings.h>
+#include <sys/types.h>
+#include <slurm/slurm.h>
+
+#include "src/api/job_info.h"
+#include "src/common/hostlist.h"
 
 #define _DEBUG 0
-#define MAX_RETRIES 40			/* max retry count in polling */
-#define POLL_SLEEP 3			/* retry interval in seconds  */
-#define MAX_DELAY (MAX_RETRIES * POLL_SLEEP)	/* time in seconds    */
 
-static char *bgl_err_str(status_t inx);
-static void  _wait_part_owner(char *part_name, char *user_id);
+/*
+ * Check the bglblock's status every POLL_SLEEP seconds. 
+ * Retry for a period of MIN_DELAY + (INCR_DELAY * base partition count).
+ * For example if MIN_DELAY=300 and INCR_DELAY=20, wait up to 428 seconds
+ * for a 16 base partition bglblock to ready (300 + 20 * 16).
+ */ 
+#define POLL_SLEEP 3			/* retry interval in seconds  */
+#define MIN_DELAY  300			/* time in seconds */
+#define INCR_DELAY 20			/* time in seconds per BP */
+
+int max_delay = MIN_DELAY;
+int cur_delay = 0; 
+
+static int  _get_job_size(uint32_t job_id);
+static void _wait_part_not_ready(uint32_t job_id);
 
 int main(int argc, char *argv[])
 {
-	char *job_id = NULL, *part_name = NULL, *user_id = NULL;
+	char *job_id_char = NULL;
+	uint32_t job_id;
 
-	job_id = getenv("SLURM_JOBID");		/* get SLURM job ID */
-	if (!job_id)
+	job_id_char = getenv("SLURM_JOBID");		/* get SLURM job ID */
+	if (!job_id_char) {
 		fprintf(stderr, "SLURM_JOBID not set\n");
-
-	part_name = getenv("MPIRUN_PARTITION");	/* get partition ID */
-	if (!part_name) {
-		fprintf(stderr, "MPIRUN_PARTITION not set for job %s\n",
-			job_id);
 		exit(0);
 	}
 
-	user_id = getenv("SLURM_UID");          /* get SLURM user ID */
-	if (!user_id)
-		fprintf(stderr, "SLURM_UID not set for job %s\n", job_id);
-	else
-		_wait_part_owner(part_name, user_id);
+	job_id = (uint32_t) atol(job_id_char);
+	if (job_id == 0) {
+		fprintf(stderr, "SLURM_JOBID invalid: %s\n", job_id_char);
+		exit(0);
+	}
+
+	_wait_part_not_ready(job_id);
 	exit(0);
 }
 
-static void  _wait_part_owner(char *part_name, char *user_id)
+static void _wait_part_not_ready(uint32_t job_id)
 {
-	uid_t target_uid;
-	int i, j, rc, num_parts;
-	rm_partition_t *part_ptr;
-	char *name;
-	struct passwd *pw_ent;
-	int is_ready = 0;
-	rm_partition_state_flag_t part_state = PARTITION_ALL_FLAG;
-	rm_partition_list_t *part_list;
+	int is_ready = 1, i;
 
-	target_uid = atoi(user_id);
+	max_delay = MIN_DELAY + (INCR_DELAY * _get_job_size(job_id));
 
 #if _DEBUG
-	printf("Waiting for partition %s owner to change from %d.\n", 
-		part_name, target_uid);
+	printf("Waiting for job %u to be not ready.", job_id);
 #endif
 
-	for (i=0; i<MAX_RETRIES; i++) {
+	for (i=0; (cur_delay < max_delay); i++) {
 		if (i) {
 			sleep(POLL_SLEEP);
+			cur_delay += POLL_SLEEP;
 #if _DEBUG
 			printf(".");
 #endif
 		}
 
-		if ((rc = rm_get_partitions_info(part_state, &part_list))
-				!= STATUS_OK) {
-			fprintf(stderr, "rm_get_partitions(): %s\n", 
-				bgl_err_str(rc));
-				
-		}
-
-		if ((rc = rm_get_data(part_list, RM_PartListSize, &num_parts))
-                                        != STATUS_OK) {
-			 fprintf(stderr, "rm_get_data(RM_PartListSize): %s\n",
-				 bgl_err_str(rc));
-			 num_parts = 0;
-		}
-
-		for (j=0; j<num_parts; j++) {
-			if (j) {
-				if ((rc = rm_get_data(part_list,
-						RM_PartListNextPart, &part_ptr))
-						!= STATUS_OK) {
-					fprintf(stderr, "rm_get_data("
-						"RM_PartListNextPart): %s\n",
-						bgl_err_str(rc));
-					break;
-				}
-			} else {
-				if ((rc = rm_get_data(part_list,
-						RM_PartListFirstPart, &part_ptr))
-						!= STATUS_OK) {
-					fprintf(stderr, "rm_get_data("
-						"RM_PartListFirstPart: %s\n",
-						bgl_err_str(rc));
-					break;
-				}
-			}
-
-			if ((rc = rm_get_data(part_ptr, RM_PartitionID, &name))
-					!= STATUS_OK) {
-				fprintf(stderr,
-					"rm_get_data(RM_PartitionID): %s\n",
-					bgl_err_str(rc));
-				continue;
-			}
-
-			if (strcmp(part_name, name) != 0)
-				continue;
-
-			if ((rc = rm_get_data(part_ptr, RM_PartitionUserName,
-					&name)) != STATUS_OK) {
-				fprintf(stderr,
-					"rm_get_data(RM_PartitionUserName): %s\n",
-					bgl_err_str(rc));
-				break;
-			}
-			
-			/* Now test this owner */
-			if (name[0] == '\0')
-				break;
-			if ((pw_ent = getpwnam(name)) == NULL) {
-				fprintf(stderr, "getpwnam(%s) errno=%d\n",
-					name, errno);
-				continue;
-			}
-#if (_DEBUG > 1)
-			printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);
-#endif
-			if (pw_ent->pw_uid != target_uid)
-				is_ready = 1;
+		if (slurm_job_node_ready(job_id) == 0) {
+			is_ready = 0;
 			break;
 		}
-
-		if ((rc = rm_free_partition_list(part_list)) != STATUS_OK) {
-			fprintf(stderr, "rm_free_partition_list(): %s\n",
-				bgl_err_str(rc));
-		}
-
-		if (is_ready)
-			break;
 	}
 
 #if _DEBUG
-	if (i >= MAX_RETRIES)
+	if (is_ready == 1)
 		printf("\n");
 	else
-		printf("\nPartition %s owner is %d.\n", part_name, target_uid);
+     		printf("\nJob %u is not ready.\n", job_id);
 #endif
-	if (i >= MAX_RETRIES)
-		fprintf(stderr, "Partition %s owner not changed (%s)\n", 
-			part_name, name);
+	if (is_ready == 1)
+		fprintf(stderr, "Job %u is still ready.\n", job_id);
+
 }
 
-/* Temporary static function.
- * This module will get completely re-written for driver 140 */
-static char *bgl_err_str(status_t inx)
+static int _get_job_size(uint32_t job_id)
 {
-        switch (inx) {
-                case STATUS_OK:
-                        return "Status OK";
-                case PARTITION_NOT_FOUND:
-                        return "Partition not found";
-                case JOB_NOT_FOUND:
-                        return "Job not found";
-                case BP_NOT_FOUND:
-                        return "Base partition not found";
-                case SWITCH_NOT_FOUND:
-                        return "Switch not found";
-                case JOB_ALREADY_DEFINED:
-                        return "Job already defined";
-                case CONNECTION_ERROR:
-                        return "Connection error";
-                case INTERNAL_ERROR:
-                        return "Internal error";
-                case INVALID_INPUT:
-                        return "Invalid input";
-                case INCOMPATIBLE_STATE:
-                        return "Incompatible state";
-                case INCONSISTENT_DATA:
-                        return "Inconsistent data";
-        }
+	job_info_msg_t *job_buffer_ptr;
+	job_info_t * job_ptr;
+	int i, size = 1;
+	hostlist_t hl;
 
-        return "?";
+	if (slurm_load_jobs((time_t) 0, &job_buffer_ptr, SHOW_ALL)) {
+		slurm_perror("slurm_load_jobs");
+		return 1;
+	}
+
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		job_ptr = &job_buffer_ptr->job_array[i];
+		if (job_ptr->job_id != job_id)
+			continue;
+		hl = hostlist_create(job_ptr->nodes);
+		if (hl) {
+			size = hostlist_count(hl);
+			hostlist_destroy(hl);
+		}
+		break;
+	}
+	slurm_free_job_info_msg (job_buffer_ptr);
+
+#if _DEBUG
+	printf("Size is %d\n", size);
+#endif
+	return size;
 }
-
-#endif  /* HAVE_BGL_FILES */

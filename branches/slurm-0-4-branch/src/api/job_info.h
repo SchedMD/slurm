@@ -1,9 +1,10 @@
 /*****************************************************************************\
  *  job_info.h - get/print the job state information of slurm
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -33,5 +34,12 @@
  * OUT string - pointer user defined buffer
  */
 extern void slurm_make_time_str (time_t *time, char *string);
+
+/*
+ * slurm_job_node_ready - report if nodes are ready for job to execute now
+ * IN job_id - slurm job id
+ * RET: 1 if ready, 0 if not ready, -1 if error
+ */
+extern int slurm_job_node_ready(uint32_t job_id);
 
 #endif

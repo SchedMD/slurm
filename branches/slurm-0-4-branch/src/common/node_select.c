@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  select_plugin.c - node selection plugin wrapper.
+ *  node_select.c - node selection plugin wrapper.
  *
  *  NOTE: The node selection plugin itself is intimately tied to 
  *  slurmctld functions and data structures. Some related 
@@ -7,6 +7,8 @@
  *  variable setting) are required by most SLURM commands. 
  *  Rather than creating a new plugin with these commonly 
  *  used functions, they are included within this module.
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -66,6 +68,7 @@ typedef struct slurm_select_ops {
 						  bitstr_t *bitmap, int min_nodes, 
 						  int max_nodes );
 	int		(*job_begin)		( struct job_record *job_ptr );
+	int		(*job_ready)		( struct job_record *job_ptr );
 	int		(*job_fini)		( struct job_record *job_ptr );
 } slurm_select_ops_t;
 
@@ -117,6 +120,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_part_init",
 		"select_p_job_test",
 		"select_p_job_begin",
+		"select_p_job_ready",
 		"select_p_job_fini"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
@@ -338,6 +342,19 @@ extern int select_g_job_begin(struct job_record *job_ptr)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.job_begin))(job_ptr);
+}
+
+/*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_ptr - pointer to job being tested
+ * RET -1 on error, 1 if ready to execute, 0 otherwise
+ */
+extern int select_g_job_ready(struct job_record *job_ptr)
+{
+	if (slurm_select_init() < 0)
+		return -1;
+
+	return (*(g_select_context->ops.job_ready))(job_ptr);
 }
 
 /*

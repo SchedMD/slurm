@@ -2,6 +2,8 @@
  *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), job_count, time stamp 
  *	(last_job_update), and hash table (job_hash)
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -3589,5 +3591,29 @@ extern bool job_independent(struct job_record *job_ptr)
 	if (detail_ptr)
 		detail_ptr->wait_reason = WAIT_DEPENDENCY;
 	return false;	/* job exists and incomplete */
+}
+/*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_id - job to test
+ * OUT ready - 1 if job is ready to execute 0 otherwise
+ * RET SLURM error code
+ */
+extern int job_node_ready(uint32_t job_id, int *ready)
+{
+	int rc;
+	struct job_record *job_ptr;
+	xassert(ready);
+
+	*ready = 0;
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL)
+		return ESLURM_INVALID_JOB_ID;
+
+	rc = select_g_job_ready(job_ptr);
+	if (rc == -1)
+		return SLURM_ERROR;
+
+	*ready = rc;
+	return SLURM_SUCCESS;
 }
 

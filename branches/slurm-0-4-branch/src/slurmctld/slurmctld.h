@@ -1,5 +1,7 @@
 /*****************************************************************************\
  *  slurmctld.h - definitions of functions and structures for slurmcltd use
+ *
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -627,6 +629,14 @@ extern bool job_is_completing(void);
  * RET 0 on success, otherwise ESLURM error code
  */
 extern int job_fail(uint32_t job_id);
+
+/*
+ * determine if job is ready to execute per the node select plugin
+ * IN job_id - job to test
+ * OUT ready - 1 if job is ready to execute 0 otherwise
+ * RET SLURM error code
+ */
+extern int job_node_ready(uint32_t job_id, int *ready);
 
 /* 
  * job_signal - signal the specified job
