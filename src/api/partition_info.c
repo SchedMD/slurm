@@ -5,8 +5,6 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
-#define PROTOTYPE_API 1
-
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -181,7 +179,6 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
     int i, Error_Code, Version, Buffer_Offset;
     static time_t Last_Update_Time, Update_Time;
     struct Part_Record My_Part;
-    int My_BitMap_Size;
     static char Next_Name_Value[MAX_NAME_LEN];
     char My_Part_Name[MAX_NAME_LEN], My_Key[MAX_NAME_LEN], My_Default[MAX_NAME_LEN];
     char My_Shared[MAX_NAME_LEN], My_State[MAX_NAME_LEN], *My_Line;

@@ -40,11 +40,11 @@ The following parameters may be specified:
 <dl>
 <dt>ControlMachine
 <dd>The name of the machine where SLURM control functions are executed 
-(e.g. "lx01"). This value must be specified.
+(e.g. "lx0001"). This value must be specified.
 
 <dt>BackupController
 <dd>The name of the machine where SLURM control functions are to be 
-executed in the event that ControlMachine fails (e.g. "lx02"). This node
+executed in the event that ControlMachine fails (e.g. "lx0002"). This node
 may also be used as a compute server if so desired. It will come into service 
 as a controller only upon the failure of ControlMachine and will revert 
 to a "standby" mode when the ControlMachine becomes available once again. 
@@ -65,8 +65,8 @@ follows.
 <pre>
 # /etc/SLURM.conf
 # Built by John Doe, 1/29/2002
-ControlMachine=lx01
-BackupController=lx02
+ControlMachine=lx0001
+BackupController=lx0002
 </pre>
 <p>
 The node configuration permits you to identify the nodes (or machines) 
@@ -78,7 +78,7 @@ The node configuration specifies the following information:
 <dl>
 
 <dt>NodeName
-<dd>Name of a node as returned by hostname (e.g. "lx12"). 
+<dd>Name of a node as returned by hostname (e.g. "lx0012"). 
 <a name="NodeExp">A simple regular expression may optionally 
 be used to specify ranges 
 of nodes to avoid building a configuration file with thousands 
@@ -249,11 +249,13 @@ will be provided with any nodes names, but performance will suffer
 without this optimization.
 A sample SLURM configuration file (node information only) follows.
 <pre>
-# Node specifications
-NodeName=DEFAULT       TmpDisk=16384
+#
+# Node Configurations
+#
+NodeName=DEFAULT TmpDisk=16384 State=IDLE
 NodeName=lx[0001-0002] State=DRAINED
-NodeName=lx[0003-0016] CPUs=16 RealMemory=2048 Weight=16
-NodeName=lx[0017-8096] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz,VizTools
+NodeName=lx[0003-8000] CPUs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz,VizTools
 </pre>
 <p>
 The partition configuration permits you to establish different job 
@@ -333,11 +335,14 @@ satisfy the configuration specifications for that partitions.
 The job may specify a particular PartitionName, if so desired, 
 or use the system's default partition.
 <pre>
-# Partition specifications
-PartitionName=DEFAULT Key=NO
-PartitionName=batch   MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] Key=YES
-PartitionName=debug   MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default=YES
-PartitionName=class   MaxNodes=1  MaxTime=10        Nodes=lx[31-32] AllowGroups=students
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT MaxTime=30 MaxNodes=2
+PartitionName=login Nodes=lx[0001-0002] State=DOWN
+PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
+PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
+PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 Key=YES
 </pre>
 <p>
 APIs and an administrative tool can be used to alter the SLRUM 
@@ -409,7 +414,7 @@ value is represented internally as -1.
 <dt>NodeList
 <dd>Comma separated list of nodes which are allocated to the job. 
 The nodes may be specified using regular expressions (e.g.
-"lx[10-20],lx[33-40]".
+"lx[0010-0020],lx[0033-0040]".
 This value may not be changed by scontrol. 
 
 <dt>Number
@@ -567,9 +572,10 @@ be used to identify node names.
 Options are of the same format as the configuration file. 
 Not all configuration information can be modified using 
 this mechanism, such as the configuration of a node 
-after it has registered. One can always modify the 
-SLURM configuration file and use the reconfigure command 
-to rebuild all controller information if required. 
+after it has registered (only a node's state can be modified). 
+One can always modify the SLURM configuration file and 
+use the reconfigure command to rebuild all controller 
+information if required. 
 This command can only be issued by user <b>root</b>.
 
 <dt>verbose
@@ -594,34 +600,38 @@ that your system's syslog functionality is operational.
 <pre>
 # /etc/SLURM.conf
 # Built by John Doe, 1/29/2002
-ControlMachine=lx01
-BackupController=lx02
+ControlMachine=lx0001
+BackupController=lx0002
 #
-# Node specifications
-NodeName=DEFAULT   CPUs=16 RealMemory=2048 TmpDisk=16384
-NodeName=lx[01-02] State=DRAINED
-NodeName=lx[03-16] Feature=CoolDebugger
+# Node Configurations
 #
-# Default partition specification
-PartitionName=DEFAULT Interactive=YES
-PartitionName=batch MaxCpus=128 MaxTime=240 Nodes=lx[10-30] Interactive=NO
-PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default=YES
-PartitionName=class MaxCpus=16  MaxTime=10  Nodes=lx[31-32] AllowGroups=students
+NodeName=DEFAULT TmpDisk=16384 State=IDLE
+NodeName=lx[0001-0002] State=DRAINED
+NodeName=lx[0003-8000] CPUs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz
+#
+# Partition Configurations
+#
+PartitionName=DEFAULT MaxTime=30 MaxNodes=2
+PartitionName=login Nodes=lx[0001-0002] State=DOWN
+PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
+PartitionName=class Nodes=lx[0031-0040] AllowGroups=students
+PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096 Key=YES
 </pre>
 
 <a name="SampleAdmin"><h2>Sample scontrol Execution</h2></a>
 <pre>
-Remove node lx30 from service, removing jobs as needed:
+Remove node lx0030 from service, removing jobs as needed:
   # scontrol
-  scontrol: update NodeName=lx30 State=DRAINING
+  scontrol: update NodeName=lx0030 State=DRAINING
   scontrol: show job
-  ID=1234 Name=Simulation MaxTime=100 Nodes=lx[29-30] State=RUNNING User=smith
-  ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx20,lx23 State=RUNNING User=smith
+  ID=1234 Name=Simulation MaxTime=100 Nodes=lx[0029-0030] State=RUNNING User=smith
+  ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx0020,lx0023 State=RUNNING User=smith
   scontrol: update job ID=1234 State=ENDING
   scontrol: show job 1234
   Job 1234 not found
-  scontrol: show node lx30
-  Name=lx30 Partition=class State=DRAINED CPUs=16 RealMemory=2048 TmpDisk=16384
+  scontrol: show node lx0030
+  Name=lx0030 Partition=class State=DRAINED CPUs=16 RealMemory=2048 TmpDisk=16384
   scontrol: quit
 </pre>
 

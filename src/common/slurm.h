@@ -25,19 +25,26 @@
 #define DEBUG_SYSTEM 1
 
 #define BACKUP_INTERVAL		60
-#define BACKUP_LOCATION		"/usr/local/SLURM/Slurm.state"
+#define BACKUP_LOCATION		"/usr/local/SLURM/Slurm.State"
 #define CONTROL_DAEMON  	"/usr/local/SLURM/Slurmd.Control"
 #define CONTROLLER_TIMEOUT 	300
 #define EPILOG			""
 #define HASH_BASE		10
 #define HEARTBEAT_INTERVAL	60
 #define INIT_PROGRAM		""
-#define MASTER_DAEMON   	"/usr/local/SLURM/Slurmd.Master"
+#define KILL_WAIT		30
+#define	PRIORITIZE		""
 #define PROLOG			""
 #define SERVER_DAEMON   	"/usr/local/SLURM/Slurmd.Server"
 #define SERVER_TIMEOUT  	300
 #define SLURM_CONF		"/g/g0/jette/slurm/etc/SLURM.conf2"
 #define TMP_FS			"/tmp"
+
+/* NOTE: Change BUILD_STRUCT_VERSION value whenever the contents of BUILD_STRUCT_FORMAT change */
+#define BUILD_STRUCT_VERSION 1
+#define HEAD_FORMAT "#Time=%lu Version=%d\n"
+#define BUILD_STRUCT_FORMAT  "%s %s\n"
+#define BUILD_STRUCT2_FORMAT "%s %d\n"
 
 extern char *ControlMachine;	/* Name of computer acting as SLURM controller */
 extern char *BackupController;	/* Name of computer acting as SLURM backup controller */
@@ -53,7 +60,6 @@ struct Job_Record {
 
 /* NOTE: Change NODE_STRUCT_VERSION value whenever the contents of NODE_STRUCT_FORMAT change */
 #define NODE_STRUCT_VERSION 1
-#define HEAD_FORMAT "#Time=%lu Version=%d\n"
 #define NODE_STRUCT_FORMAT "NodeName=%s State=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
 #define CONFIG_MAGIC 'C'
 #define NODE_MAGIC   'N'

@@ -360,7 +360,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
     struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
     char *Buffer;
-    int Buffer_Offset, Buffer_Allocated, i, Record_Size, My_BitMap_Size;
+    int Buffer_Offset, Buffer_Allocated, i, Record_Size;
     char Out_Line[BUF_SIZE*2], *Nodes, *Key, *Default, *AllowGroups, *Shared, *State;
 
     Buffer_Ptr[0] = NULL;

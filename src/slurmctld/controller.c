@@ -115,6 +115,100 @@ close(newsockfd);		/* close the new socket */
     } /* while */
 } /* main */
 
+/* 
+ * Dump_Build - Dump all build parameters to a buffer
+ * Input: Buffer_Ptr - Location into which a pointer to the data is to be stored.
+ *                     The data buffer is actually allocated by Dump_Part and the 
+ *                     calling function must free the storage.
+ *         Buffer_Size - Location into which the size of the created buffer is in bytes
+ * Output: Buffer_Ptr - The pointer is set to the allocated buffer.
+ *         Buffer_Size - Set to size of the buffer in bytes
+ *         Returns 0 if no error, errno otherwise
+ * NOTE: The buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: IF YOU MAKE ANY CHANGES HERE be sure to increment the value of BUILD_STRUCT_VERSION
+ *       and make the corresponding changes to Load_Build_Name in api/build_info.c
+ */
+int Dump_Build(char **Buffer_Ptr, int *Buffer_Size) {
+    char *Buffer;
+    int Buffer_Offset, Buffer_Allocated, i, Record_Size;
+    char Out_Line[BUILD_SIZE*2];
+
+    Buffer_Ptr[0] = NULL;
+    *Buffer_Size = 0;
+    Buffer = NULL;
+    Buffer_Offset = 0;
+    Buffer_Allocated = 0;
+
+    /* Write haeader, version and time */
+    sprintf(Out_Line, HEAD_FORMAT, (unsigned long)time(NULL), BUILD_STRUCT_VERSION);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    /* Write paramter records */
+    sprintf(Out_Line, BUILD_STRUCT2_FORMAT, "BACKUP_INTERVAL", BACKUP_INTERVAL);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "BACKUP_LOCATION", BACKUP_LOCATION);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "CONTROL_DAEMON", CONTROL_DAEMON);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT2_FORMAT, "CONTROLLER_TIMEOUT", CONTROLLER_TIMEOUT);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "EPILOG", EPILOG);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT2_FORMAT, "HASH_BASE", HASH_BASE);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT2_FORMAT, "HEARTBEAT_INTERVAL", HEARTBEAT_INTERVAL);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "INIT_PROGRAM", INIT_PROGRAM);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT2_FORMAT, "KILL_WAIT", KILL_WAIT);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "PRIORITIZE", PRIORITIZE);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "PROLOG", PROLOG);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "SERVER_DAEMON", SERVER_DAEMON);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT2_FORMAT, "SERVER_TIMEOUT", SERVER_TIMEOUT);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "SLURM_CONF", SLURM_CONF);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    sprintf(Out_Line, BUILD_STRUCT_FORMAT, "TMP_FS", TMP_FS);
+    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+
+    Buffer = realloc(Buffer, Buffer_Offset);
+    if (Buffer == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Dump_Build: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Dump_Build: unable to allocate memory\n");
+#endif
+	abort();
+    } /* if */
+
+    Buffer_Ptr[0] = Buffer;
+    *Buffer_Size = Buffer_Offset;
+    return 0;
+
+cleanup:
+    if (Buffer) free(Buffer);
+    return EINVAL;
+} /* Dump_Build */
+
+
 /*
  * Slurmctld_Req - Process a slurmctld request from the given socket
  * Input: sockfd - The socket with a request to be processed
@@ -153,11 +247,31 @@ void Slurmctld_Req(int sockfd) {
 	    send(sockfd, "EINVAL", 7, 0);
 
 	if (NodeName) free(NodeName);
-	return;
-    } /* if (Allocate */
+
+    /* DumpBuild:  Dump build parameters to a buffer */
+    } else if (strncmp("DumpBuild",    In_Line,  9) == 0) {	
+	Start_Time = clock();
+	Error_Code = Dump_Build(&Dump, &Dump_Size);
+#if DEBUG_SYSTEM
+	if (Error_Code)
+	    fprintf(stderr, "Slurmctld_Req: Dump_Build error %d, ", Error_Code);
+	else 
+	   fprintf(stderr, "Slurmctld_Req: Dump_Build returning %d bytes, ", Dump_Size);
+	fprintf(stderr, "time = %ld usec\n", (long)(clock() - Start_Time));
+#endif
+	if (Error_Code == 0) {
+	    Dump_Loc = 0;
+	    while (Dump_Size > 0) {
+		i = send(sockfd, &Dump[Dump_Loc], Dump_Size, 0);
+		Dump_Loc += i;
+		Dump_Size -= i;
+	    } /* while */
+	} else
+	    send(sockfd, "EINVAL", 7, 0);
+	if (Dump) free(Dump);
 
     /* DumpNode:  Dump node state information to a buffer */
-    if (strncmp("DumpNode",    In_Line,  8) == 0) {	
+    } else if (strncmp("DumpNode",    In_Line,  8) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
 	Error_Code = Load_String(&TimeStamp, "LastUpdate=", In_Line);
@@ -186,11 +300,9 @@ void Slurmctld_Req(int sockfd) {
 	} else
 	    send(sockfd, "EINVAL", 7, 0);
 	if (Dump) free(Dump);
-	return;
-    } /* if (DumpNode */
 
     /* DumpPart:  Dump partition state information to a buffer */
-    if (strncmp("DumpPart",    In_Line,  8) == 0) {	
+    } else if (strncmp("DumpPart",    In_Line,  8) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
 	Error_Code = Load_String(&TimeStamp, "LastUpdate=", In_Line);
@@ -219,11 +331,9 @@ void Slurmctld_Req(int sockfd) {
 	} else
 	    send(sockfd, "EINVAL", 7, 0);
 	if (Dump) free(Dump);
-	return;
-    } /* if (Dump_Part */
 
     /* JobSubmit:  Submit job to execute, TBD */
-    if (strncmp("JobSubmit",    In_Line,  9) == 0) {	
+    } else if (strncmp("JobSubmit",    In_Line,  9) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
 	Error_Code = EINVAL;
@@ -238,11 +348,9 @@ void Slurmctld_Req(int sockfd) {
 	    send(sockfd, Dump, Dump_Size, 0);
 	else
 	    send(sockfd, "EINVAL", 7, 0);
-	return;
-    } /* if (JobSubmit */
 
     /* JobWillRun:  Will job run if submitted, TBD */
-    if (strncmp("JobWillRun",    In_Line,  10) == 0) {	
+    } else if (strncmp("JobWillRun",    In_Line,  10) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
 	Error_Code = EINVAL;
@@ -257,11 +365,9 @@ void Slurmctld_Req(int sockfd) {
 	    send(sockfd, Dump, Dump_Size, 0);
 	else
 	    send(sockfd, "EINVAL", 7, 0);
-	return;
-    } /* if (JobWillRun */
 
     /* NodeConfig:   Process node configuration state on check-in */
-    if (strncmp("NodeConfig",    In_Line,  10) == 0) {	
+    } else if (strncmp("NodeConfig",    In_Line,  10) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
 	Error_Code  = Load_String (&NodeName,   "NodeName=",   In_Line);
@@ -282,11 +388,9 @@ void Slurmctld_Req(int sockfd) {
 	else
 	    send(sockfd, "EINVAL", 7, 0);
 	if (NodeName) free(NodeName);
-	return;
-    } /* if (NodeConfig */
 
     /* Reconfigure:   Re-read configuration files */
-    if (strncmp("Reconfigure",    In_Line,  11) == 0) {	
+    } else if (strncmp("Reconfigure",    In_Line,  11) == 0) {	
 	Start_Time = clock();
 	TimeStamp = NULL;
 	Error_Code = Init_SLURM_Conf();
@@ -301,11 +405,8 @@ void Slurmctld_Req(int sockfd) {
 	sprintf(In_Line, "%d", Error_Code);
 	send(sockfd, In_Line, strlen(In_Line)+1, 0);
 
-	return;
-    } /* if (Reconfigure */
-
     /* Update:   Modify the configuration of a job, node, or partition */
-    if (strncmp("Update",    In_Line,  6) == 0) {	
+    } else if (strncmp("Update",    In_Line,  6) == 0) {	
 	Start_Time = clock();
 	NodeName = PartName = NULL;
 	Error_Code = Load_String(&NodeName, "NodeName=", In_Line);
@@ -336,14 +437,14 @@ void Slurmctld_Req(int sockfd) {
 
 	if (NodeName) free(NodeName);
 	if (PartName) free(PartName);
-	return;
-    } /* if (Update */
 
+    } else {
 #if DEBUG_SYSTEM
-    fprintf(stderr, "Slurmctld_Req: Invalid input %s", In_Line);
+	fprintf(stderr, "Slurmctld_Req: Invalid request %s\n", In_Line);
 #else
-    syslog(LOG_WARNING, "Slurmctld_Req: Invalid input %s", In_Line);
+	syslog(LOG_WARNING, "Slurmctld_Req: Invalid request %s\n", In_Line);
 #endif
-    send(sockfd, "EINVAL", 7, 0);
+	send(sockfd, "EINVAL", 7, 0);
+    } /* else */
     return;
 } /* main */

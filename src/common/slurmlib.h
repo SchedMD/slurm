@@ -6,6 +6,7 @@
  */
 
 #define MAX_NAME_LEN	16
+#define BUILD_SIZE	128
 #define FEATURE_SIZE	1024
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
@@ -28,6 +29,11 @@
 extern int Allocate(char *Spec, char **NodeList);
 
 /*
+ * Free_Build_Info - Free the build information buffer (if allocated)
+ */
+extern void Free_Build_Info(void);
+
+/*
  * Free_Node_Info - Free the node information buffer (if allocated)
  */
 extern void Free_Node_Info(void);
@@ -37,6 +43,28 @@ extern void Free_Node_Info(void);
  */
 extern void Free_Part_Info(void);
 
+/*
+ * Load_Build - Update the build information buffer for use by info gathering APIs
+ * Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+ */
+extern int Load_Build();
+
+/* 
+ * Load_Build_Name - Load the state information about the named build parameter
+ * Input: Req_Name - Name of the parameter for which information is requested
+ *		     if "", then get info for the first parameter in list
+ *        Next_Name - Location into which the name of the next parameter is 
+ *                   stored, "" if no more
+ *        Value - Pointer to location into which the information is to be stored
+ * Output: Req_Name - The parameter's name is stored here
+ *         Next_Name - The name of the next parameter in the list is stored here
+ *         Value - The parameter's state information
+ *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+ * NOTE:  Req_Name, Next_Name, and Value must be declared by caller with have 
+ *        length BUILD_SIZE or larger
+ */
+extern int Load_Build_Name(char *Req_Name, char *Next_Name, char *Value);
+ 
 /*
  * Load_Node - Load the supplied node information buffer for use by info gathering APIs if
  *	node records have changed since the time specified. 

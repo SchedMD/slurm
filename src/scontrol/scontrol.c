@@ -19,6 +19,7 @@ int Input_Words;	/* Number of words of input permitted */
 
 void Dump_Command(int argc, char *argv[]);
 int  Get_Command(int *argc, char *argv[]);
+void Print_Build(char *build_param);
 void Print_Node(char *node_name);
 void Print_Node_List(char *node_list);
 void Print_Part(char *partition_name);
@@ -147,9 +148,49 @@ int Get_Command(int *argc, char **argv) {
 } /* Get_Command */
 
 
+/* 
+ * Print_Build - Print the specified  build parameter and value 
+ * Input: build_param - NULL to print all parameters and values
+ */
+void Print_Build(char *build_param) {
+    char Req_Name[BUILD_SIZE], Next_Name[BUILD_SIZE], Value[BUILD_SIZE];
+    int Error_Code;
+
+    Error_Code = Load_Build();
+    if (Error_Code) {
+	if (Quiet_Flag != 1) printf("Load_Build error %d\n", Error_Code);
+	return;
+    } /* if */
+
+
+    if (build_param) 
+	strncpy(Req_Name, build_param, BUILD_SIZE);
+    else
+	strcpy(Req_Name, "");	/* Start at beginning of node list */
+
+    while (1) {
+	Error_Code = Load_Build_Name(Req_Name, Next_Name, Value);
+	if (Error_Code != 0)  {
+	    if (Quiet_Flag != 1) {
+		if (Error_Code == ENOENT) 
+		    printf("No parameter %s found\n", Req_Name);
+		else
+		    printf("Error %d finding value for parameter %s\n", Error_Code, Req_Name);
+	    } /* if */
+	    break;
+	} /* if */
+	printf("%s=%s\n", Req_Name, Value);
+
+	if (build_param || (strlen(Next_Name) == 0)) break;
+	strcpy(Req_Name, Next_Name);
+    } /* while */
+/*  Free_Build_Info();		Keep data for reuse, cleaned on exit */
+} /* Print_Build */
+
 /*
  * Print_Node - Print the specified node's information
  * Input: node_name - NULL to print all node information
+ * NOTE: Call this only after executing Load_Node, called from Print_Node_List
  */
 void Print_Node(char *node_name) {
     int Error_Code, size, i;
@@ -168,7 +209,7 @@ void Print_Node(char *node_name) {
     else
 	strcpy(Req_Name, "");	/* Start at beginning of node list */
 
-    for (i=1; ;i++) {
+    while (1) {
 	Error_Code = Load_Node_Config(Req_Name, Next_Name, &CPUs, &RealMemory, &TmpDisk, &Weight, 
 	    Features, Partition, Node_State);
 	if (Error_Code != 0)  {
@@ -207,37 +248,41 @@ void Print_Node_List(char *node_list) {
     } /* if */
     if (Quiet_Flag == -1) printf("Last_Update_Time=%ld\n", (long)Last_Update_Time);
 
-    My_Node_List = malloc(strlen(node_list)+1);
-    if (My_Node_List == NULL) {
-	if (Quiet_Flag != 1) fprintf(stderr, "Unable to allocate memory\n");
-	abort();
-    } /* if */
-
-    strcpy(My_Node_List, node_list);
-    str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
-    while (str_ptr2) {	/* Break apart by comma separators */
-	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-	if (Error_Code) {
-	    if (Quiet_Flag != 1) fprintf(stderr, "Invalid node name specification: %s\n", str_ptr2);
-	    break;
-	} /* if */ 
-	if (strlen(Format) >= sizeof(This_Node_Name)) {
-	    if (Quiet_Flag != 1) fprintf(stderr, "Invalid node name specification: %s\n", Format);
-	    free(Format);
-	    break;
+    if (node_list == NULL) {
+	Print_Node(NULL);
+    } else {
+	My_Node_List = malloc(strlen(node_list)+1);
+	if (My_Node_List == NULL) {
+	    if (Quiet_Flag != 1) fprintf(stderr, "Unable to allocate memory\n");
+	    abort();
 	} /* if */
-	for (i=Start_Inx; i<=End_Inx; i++) {
-	    if (Count_Inx == 0) 
-		strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
-	    else
-		sprintf(This_Node_Name, Format, i);
-	    Print_Node(This_Node_Name);
-	} /* for */
-	free(Format);
-	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
-    } /* while */
 
-    free(My_Node_List);
+	strcpy(My_Node_List, node_list);
+	str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
+	while (str_ptr2) {	/* Break apart by comma separators */
+	    Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	    if (Error_Code) {
+		if (Quiet_Flag != 1) fprintf(stderr, "Invalid node name specification: %s\n", str_ptr2);
+		break;
+	    } /* if */ 
+	    if (strlen(Format) >= sizeof(This_Node_Name)) {
+		if (Quiet_Flag != 1) fprintf(stderr, "Invalid node name specification: %s\n", Format);
+		free(Format);
+		break;
+	    } /* if */
+	    for (i=Start_Inx; i<=End_Inx; i++) {
+		if (Count_Inx == 0) 
+		    strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
+		else
+		    sprintf(This_Node_Name, Format, i);
+		Print_Node(This_Node_Name);
+	    } /* for */
+	    free(Format);
+	    str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
+	} /* while */
+	free(My_Node_List);
+    } /* else */
+
 /*  Free_Node_Info();		Keep data for reuse, cleaned on exit */
     return;
 } /* Print_Node_List */
@@ -277,7 +322,7 @@ void Print_Part(char *partition_name) {
     else
 	strcpy(Req_Name, "");	/* Start at beginning of partition list */
 
-    while (Error_Code == 0) {
+    while (1) {
 	Error_Code = Load_Part_Name(Req_Name, Next_Name, &MaxTime, &MaxNodes, 
 	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared, &Default, 
 	    Nodes, AllowGroups);
@@ -337,14 +382,17 @@ int Process_Command(int argc, char *argv[]) {
 	} else if (argc < 2) {
 	    if (Quiet_Flag != 1) fprintf(stderr, "Too few arguments for keyword:%s\n", argv[0]);
 	} else if (strncmp(argv[1],"build", 3) == 0) {
-	    if (Quiet_Flag != 1) printf("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
+	    if (argc > 2) 
+		Print_Build(argv[2]);
+	    else
+		Print_Build(NULL);
 	} else if (strncmp(argv[1],"jobs", 3) == 0) {
 	    if (Quiet_Flag != 1) printf("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
 	} else if (strncmp(argv[1],"nodes", 3) == 0) {
 	    if (argc > 2) 
 		Print_Node_List(argv[2]);
 	    else
-		Print_Node(NULL);
+		Print_Node_List(NULL);
 	} else if (strncmp(argv[1],"partitions", 3) == 0) {
 	    if (argc > 2) 
 		Print_Part(argv[2]);
