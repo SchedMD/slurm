@@ -96,7 +96,7 @@ static int   _run_batch_job (void);
 static void  _run_job_script(job_t *job);
 static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
-static char *_sprint_task_cnt(job_t *job);
+static char *_task_count_string(job_t *job);
 static void  _switch_standalone(job_t *job);
 static int   _become_user (void);
 
@@ -210,7 +210,7 @@ int srun(int ac, char **av)
 	setenvf("SLURM_JOBID=%u",    job->jobid);
 	setenvf("SLURM_NPROCS=%d",   opt.nprocs);
 	setenvf("SLURM_NNODES=%d",   job->nhosts);
-	setenvf("SLURM_TASKS_PER_NODE=%s", (task_cnt = _sprint_task_cnt(job)));
+	setenvf("SLURM_TASKS_PER_NODE=%s", task_cnt = _task_count_string (job));
 	setenvf("SLURM_DISTRIBUTION=%s",
 		format_distribution_t (opt.distribution));
 
@@ -274,12 +274,12 @@ int srun(int ac, char **av)
 }
 
 static char *
-_sprint_task_cnt(job_t *job)
+_task_count_string (job_t *job)
 {
 	int i, last_val, last_cnt;
-	char *task_str = xstrdup("");
 	char tmp[16];
-	
+	char *str = xstrdup ("");
+
 	last_val = job->ntask[0];
 	last_cnt = 1;
 	for (i=1; i<job->nhosts; i++) {
@@ -290,7 +290,7 @@ _sprint_task_cnt(job_t *job)
 				sprintf(tmp, "%d(x%d),", last_val, last_cnt);
 			else
 				sprintf(tmp, "%d,", last_val);
-			xstrcat(task_str, tmp);
+			xstrcat(str, tmp);
 			last_val = job->ntask[i];
 			last_cnt = 1;
 		}
@@ -299,8 +299,8 @@ _sprint_task_cnt(job_t *job)
 		sprintf(tmp, "%d(x%d)", last_val, last_cnt);
 	else
 		sprintf(tmp, "%d", last_val);
-	xstrcat(task_str, tmp);
-	return task_str;
+	xstrcat(str, tmp);
+	return (str);
 }
 
 static void
@@ -366,6 +366,8 @@ _run_batch_job(void)
 		error ("unable to build script from file %s", remote_argv[0]);
 		return SLURM_ERROR;
 	}
+
+	_set_batch_script_env (NULL);
 
 	if (!(req = job_desc_msg_create_from_opts (script)))
 		fatal ("Unable to create job request");
@@ -560,44 +562,22 @@ static int
 _set_batch_script_env(job_t *job)
 {
 	int rc = SLURM_SUCCESS;
-	char *dist = NULL, *task_cnt;
+	char *dist = NULL;
+	char *p;
 	struct utsname name;
-
-	if (job->jobid > 0) {
-		if (setenvf("SLURM_JOBID=%u", job->jobid)) {
-			error("Unable to set SLURM_JOBID environment");
-			rc = SLURM_FAILURE;
-		}
-	}
-
-	if (job->nhosts > 0) {
-		if (setenvf("SLURM_NNODES=%u", job->nhosts)) {
-			error("Unable to set SLURM_NNODES environment var");
-			rc = SLURM_FAILURE;
-		}
-	}
-
-	if (job->nodelist) {
-		if (setenvf("SLURM_NODELIST=%s", job->nodelist)) {
-			error("Unable to set SLURM_NODELIST environment var.");
-			rc = SLURM_FAILURE;
-		}
-	}
 
 	if (opt.nprocs_set && setenvf("SLURM_NPROCS=%u", opt.nprocs)) {
 		error("Unable to set SLURM_NPROCS environment variable");
 		rc = SLURM_FAILURE;
 	}
 
-	
 	if ( opt.cpus_set 
 	   && setenvf("SLURM_CPUS_PER_TASK=%u", opt.cpus_per_task) ) {
 		error("Unable to set SLURM_CPUS_PER_TASK");
 		rc = SLURM_FAILURE;
 	}
-	 
 
-	if (opt.distribution != SRUN_DIST_UNKNOWN) {
+	if (job && opt.distribution != SRUN_DIST_UNKNOWN) {
 		dist = (opt.distribution == SRUN_DIST_BLOCK) ?  
 		       "block" : "cyclic";
 
@@ -625,11 +605,41 @@ _set_batch_script_env(job_t *job)
 		rc = SLURM_FAILURE;
 	}
 
-	if (setenvf("SLURM_TASKS_PER_NODE=%s", (task_cnt = _sprint_task_cnt(job)))) {
-		error("Unable to set SLURM_TASKS_PER_NODE environment variable");
-		rc = SLURM_FAILURE;
+	/*
+	 * If no job has been allocated yet, just return. We are
+	 *  submitting a batch job.
+	 */
+	if (job == NULL)
+		return (rc);
+
+
+	if (job->jobid > 0) {
+		if (setenvf("SLURM_JOBID=%u", job->jobid)) {
+			error("Unable to set SLURM_JOBID environment");
+			rc = SLURM_FAILURE;
+		}
 	}
-	xfree(task_cnt);
+
+	if (job->nhosts > 0) {
+		if (setenvf("SLURM_NNODES=%u", job->nhosts)) {
+			error("Unable to set SLURM_NNODES environment var");
+			rc = SLURM_FAILURE;
+		}
+	}
+
+	if (job->nodelist) {
+		if (setenvf("SLURM_NODELIST=%s", job->nodelist)) {
+			error("Unable to set SLURM_NODELIST environment var.");
+			rc = SLURM_FAILURE;
+		}
+	}
+	if ((p = _task_count_string (job))) {
+		if (setenvf ("SLURM_TASKS_PER_NODE=%s", p)) {
+			error ("Can't set SLURM_TASKS_PER_NODE env variable");
+			rc = SLURM_FAILURE;
+		}
+		xfree (p);
+	}
 
 	uname(&name);
 	if (strcasecmp(name.sysname, "AIX") == 0) {
