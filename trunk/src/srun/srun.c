@@ -116,7 +116,9 @@ int main(int ac, char **av)
 	 * verify some basic values
 	 */
 	initialize_and_process_args(ac, av);
-	(void) _set_rlimit_env();
+
+	if (!opt.allocate)
+		(void) _set_rlimit_env();
 
 	/* reinit log with new verbosity (if changed by command line)
 	 */
@@ -186,6 +188,11 @@ int main(int ac, char **av)
 	}
 
 	/* job structure should now be filled in */
+
+	/*
+	 *  Set nodelist environment variable
+	 */
+	setenvf("SLURM_NODELIST=%s", job->nodelist);
 
 	if (msg_thr_create(job) < 0)
 		job_fatal(job, "Unable to create msg thread");
