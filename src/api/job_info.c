@@ -79,7 +79,6 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	int j;
 	char time_str[16], select_buf[80];
-	struct passwd *user_info = NULL;
 	struct group *group_info = NULL;
 
 	/****** Line 1 ******/
