@@ -1209,7 +1209,6 @@ void node_not_resp (char *name, time_t msg_time)
 	last_node_update = time (NULL);
 	error ("Node %s not responding", name);
 	bit_clear (avail_node_bitmap, i);
-	bit_clear (idle_node_bitmap, i);
 	node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 	return;
 }
