@@ -192,12 +192,12 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	rm_free_partition(bgl_record->bgl_part);
 	//exit(0);
 	/* Initiate boot of the partition */
-	/*debug("Booting Partition %s", part_id);
+	debug("Booting Partition %s", part_id);
 	rc = pm_create_partition(part_id);
 	if (rc != STATUS_OK) {
 		error("Error booting_partition partition");
 		return(-1);
-		}*/
+	}
 
 	/* Wait for Partition to be booted */
 	rc = rm_get_partition(part_id, &bgl_record->bgl_part);
@@ -205,10 +205,11 @@ static int _post_allocate(bgl_record_t *bgl_record)
 		error("Error in GetPartition");
 		return(-1);
 	}
-	memset(command,0,100);
-	sprintf(command,"/home/da/allocate_block %s %s", part_id, USER_NAME);
-	system(command);
-
+	rm_free_partition(bgl_record->bgl_part);
+	/* memset(command,0,100); */
+/* 	sprintf(command,"/home/da/allocate_block %s %s", part_id, USER_NAME); */
+/* 	system(command); */
+/* 	sleep(5); */
 	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &bgl_record->bgl_part_id);
 	bgl_record->node_use = bgl_record->node_use;
 	bgl_record->conn_type = bgl_record->conn_type;
@@ -933,7 +934,9 @@ int read_bgl_partitions()
 			break; 
 		}
 		//info("Node:%s in BglBlock:%s", node_name_tmp, part_id);
-
+		if(strncmp("RMP",part_id,3)) 
+			goto noadd;
+		//printf("no part_id of %s\n",part_id);
 		bgl_part_ptr = list_find_first(bgl_curr_part_list,
 					       _part_list_find, part_id);
 		if (!bgl_part_ptr) {
@@ -947,16 +950,16 @@ int read_bgl_partitions()
 			}
 			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
 			list_push(bgl_curr_part_list, bgl_part_ptr);
-
+				
 			bgl_part_ptr->bgl_part_list = list_create(NULL);
 			list_append(bgl_part_ptr->bgl_part_list, &pa_system_ptr->grid[bp_loc.X][bp_loc.Y][bp_loc.Z]);
-			
-                        bgl_part_ptr->bgl_part_id = xstrdup(part_id);
-			
-                        // need to get the 000x000 range for nodes
-                        // also need to get coords
-
-                        if ((rm_rc = rm_get_data(part_ptr,
+				
+			bgl_part_ptr->bgl_part_id = xstrdup(part_id);
+				
+			// need to get the 000x000 range for nodes
+			// also need to get coords
+				
+			if ((rm_rc = rm_get_data(part_ptr,
 						 RM_PartitionConnection,
 						 &bgl_part_ptr->conn_type))
 			    != STATUS_OK) {
@@ -972,33 +975,29 @@ int read_bgl_partitions()
 			if ((rm_rc = rm_get_data(part_ptr, 
 						 RM_PartitionUserName,
 						 &bgl_part_ptr->owner_name))
-                            != STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartitionUserName): %s",
 				      bgl_err_str(rm_rc));
 			} 
-			
+				
 			if ((rm_rc = rm_get_data(part_ptr, 
 						 RM_PartitionBPNum,
 						 &bgl_part_ptr->bp_count))
-                            != STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartitionUserName): %s",
 				      bgl_err_str(rm_rc));
 			} 
-
+				
 			if ((rm_rc = rm_get_data(part_ptr, 
 						 RM_PartitionSwitchNum,
 						 &bgl_part_ptr->switch_count))
-                            != STATUS_OK) {
+			    != STATUS_OK) {
 				error("rm_get_data(RM_PartitionUserName): %s",
 				      bgl_err_str(rm_rc));
 			} 
-
-			info("BglBlock:%s Conn:%s Use:%s Owner:%s", part_id, 
-			     convert_conn_type(bgl_part_ptr->conn_type),
-			     convert_node_use(bgl_part_ptr->node_use), 
-			     bgl_part_ptr->owner_name);
+				
 			bgl_part_ptr->part_lifecycle = STATIC;
-			
+				
 
 			if ((rm_rc = rm_free_partition(part_ptr))
 			    != STATUS_OK) {
@@ -1007,11 +1006,11 @@ int read_bgl_partitions()
 			}
 		
 
-                } else {
+		} else {
 			list_append(bgl_part_ptr->bgl_part_list, 
 				    &pa_system_ptr->grid[bp_loc.X][bp_loc.Y][bp_loc.Z]);			
 		}
-
+	noadd:
                 if ((rm_rc = rm_get_data(bgl, RM_NextBP, &bp_ptr))
 		    != STATUS_OK) {
 			error("rm_get_data(RM_NextBP): %s",
@@ -1031,13 +1030,14 @@ static int _post_bgl_init_read(void *object, void *arg)
 {
 	bgl_record_t *bgl_record = (bgl_record_t *) object;
 	pa_node_t* pa_node;
-	char name[10];
-	int start[PA_SYSTEM_DIMENSIONS] = {0}, end[PA_SYSTEM_DIMENSIONS] = {0};
+	char name[13];
+	int start[PA_SYSTEM_DIMENSIONS] = {8,8,8}, end[PA_SYSTEM_DIMENSIONS] = {0,0,0};
 	int dim;
 	ListIterator itr;
 	
 	itr = list_iterator_create(bgl_record->bgl_part_list);
 	while ((pa_node = (pa_node_t *) list_next(itr)) != NULL) {
+		
 		for(dim=0; dim<PA_SYSTEM_DIMENSIONS; dim++) {
 			if(pa_node->coord[dim] < start[dim])
 				start[dim] = pa_node->coord[dim];
@@ -1045,7 +1045,7 @@ static int _post_bgl_init_read(void *object, void *arg)
 				end[dim] = pa_node->coord[dim];
 		}	
 	}
-	sprintf(name, "bgl%d%d%dx%d%d%d",  
+	sprintf(name, "bgl[%d%d%dx%d%d%d]",  
 		start[X], start[Y], start[Z],
 		end[X], end[Y], end[Z]);
 	bgl_record->nodes = xstrdup(name);
