@@ -79,8 +79,9 @@ void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
 inline int report_locks_set ( void );
 inline static void save_all_state ( void );
+static void sigabort_handler (int signum);
 void *slurmctld_background ( void * no_data );
-void slurmctld_cleanup (void *context);
+static void slurmctld_cleanup (void *context);
 void *slurmctld_rpc_mgr( void * no_data );
 int slurm_shutdown ( void );
 void * service_connection ( void * arg );
@@ -119,6 +120,7 @@ main (int argc, char *argv[])
 	char node_name[MAX_NAME_LEN];
 	pthread_attr_t thread_attr_bg, thread_attr_rpc;
 	sigset_t set;
+	struct sigaction action, old_action;
 
 	/*
 	 * Establish initial configuration
@@ -150,7 +152,7 @@ main (int argc, char *argv[])
 			node_name, slurmctld_conf.control_machine, 
 			slurmctld_conf.backup_controller);
 
-	/* init ssl job credential stuff*/
+	/* init ssl job credential stuff */
         slurm_ssl_init ( ) ;
 	slurm_init_signer ( & sign_ctx , slurmctld_conf . job_credential_private_key ) ;
 		
@@ -158,6 +160,14 @@ main (int argc, char *argv[])
 	if (sigfillset (&set))
 		error ("sigfillset errno %d", errno);
 	if (pthread_sigmask (SIG_BLOCK, &set, NULL))
+
+	/* create special handler for SIGABRT (failed asserts) */
+	if (sigemptyset (&set))
+		error ("sigemptyset errno %d", errno);
+	action.sa_handler = &sigabort_handler;
+	action.sa_mask = set;
+	action.sa_flags = 0;
+	sigaction (SIGABRT, &action, NULL);
 		error ("pthread_sigmask errno %d", errno);
 
 	/* create attached thread for background activities */
@@ -192,25 +202,39 @@ main (int argc, char *argv[])
 		error ("sigaddset errno %d on SIGINT", errno);
 	if (sigaddset (&set, SIGTERM))
 		error ("sigaddset errno %d on SIGTERM", errno);
+	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	debug3 ("main pid = %u", getpid ());
+
 	while (1) {
 		if ( (error_code = sigwait (&set, &sig)) )
 			error ("sigwait errno %d\n", error_code);
 
 		switch (sig) {
-			case SIGINT:	/* kill -2  or <CTRL-C>*/
+			case SIGINT:	/* kill -2  or <CTRL-C> */
 			case SIGTERM:	/* kill -15 */
-				info ("Terminate signal (SIGINT or SIGTERM) received\n");
-				shutdown_time = time (NULL);
-				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
-				slurm_shutdown ();
-				/* ssl clean up */
-				slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
-				slurm_ssl_destroy ( ) ;
+				action.sa_handler = SIG_IGN;
+				sigaction (SIGABRT, &action, &old_action);
+				if (old_action.sa_handler == SIG_IGN) {
+					info ("Cleaning up job threads on abort\n");
+					slurmctld_cleanup (NULL);
+					/* pthread_exit (NULL);	NOTE: This can leave threads */
+					exit (1);	/* Abnormal termination */
+				}
+				else {
+					info ("Terminate signal (SIGINT or SIGTERM) received\n");
+					shutdown_time = time (NULL);
+					/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+					slurm_shutdown ();
+					/* ssl clean up */
+					slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
+					slurm_ssl_destroy ( ) ;
 
-				pthread_join (thread_id_rpc, NULL);
-				/* thread_id_bg waits for all RPCs to complete */
-				pthread_join (thread_id_bg, NULL);
-				pthread_exit ((void *)0);
+					pthread_join (thread_id_rpc, NULL);
+					/* thread_id_bg waits for all RPCs to complete */
+					pthread_join (thread_id_bg, NULL);
+					exit (0);	/* Normal termination */
+				}
 				break;
 			case SIGHUP:	/* kill -1 */
 				info ("Reconfigure signal (SIGHUP) received\n");
@@ -238,6 +262,10 @@ slurmctld_rpc_mgr ( void * no_data )
 	pthread_attr_t thread_attr_rpc_req;
 	int no_thread;
 	connection_arg_t * conn_arg;
+
+	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	debug3 ("slurmctld_rpc_mgr pid = %u", getpid ());
 
 	/* threads to process individual RPC's are detached */
 	if (pthread_attr_init (&thread_attr_rpc_req))
@@ -345,6 +373,9 @@ slurmctld_background ( void * no_data )
 
 	/* Let the dust settle before doing work */
 	last_sched_time = last_checkpoint_time = last_timelimit_time = time (NULL);
+	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
+	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+	debug3 ("slurmctld_background pid = %u", getpid ());
 
 	while (shutdown_time == 0) {
 		sleep (1);
@@ -1478,19 +1509,35 @@ usage (char *prog_name)
 }
 
 /* slurmctld_cleanup - fatal error occured, kill all tasks */
-void 
+static void 
 slurmctld_cleanup (void *context)
 {
-	pthread_t my_thread_id = pthread_self();
+	pthread_t my_thread_id = pthread_self ();
 
 	kill_locked_threads ();
 
 	if (thread_id_bg &&  (thread_id_bg  != my_thread_id))
-		pthread_kill (thread_id_bg, SIGKILL);
+		(void) pthread_cancel (thread_id_bg);
 
 	if (thread_id_rpc && (thread_id_rpc != my_thread_id))
-		pthread_kill (thread_id_rpc, SIGKILL);
+		(void) pthread_cancel (thread_id_rpc);
 
 	if (thread_id_main && (thread_id_main != my_thread_id))
-		pthread_kill  (thread_id_main, SIGKILL);
+		(void) pthread_cancel (thread_id_main);
 }
+
+/* sigabort_handler - abort just occured, kill everything immediately */
+static void
+sigabort_handler (int signum)
+{
+	struct sigaction action;
+
+	if (signum == SIGABRT) {
+		info ("Abort signal being processed");
+		action.sa_handler = SIG_IGN;
+		sigaction (SIGABRT, &action, NULL);
+		pthread_kill (thread_id_main, SIGTERM); /* have main thread clean up everything */
+		return; 		/* return needed to dump core */
+	}
+}
+
