@@ -39,7 +39,7 @@ main( int argc, char* argv[])
 		job_step_create_response_msg_t* msg = (job_step_create_response_msg_t *) response_msg.data ;
 		printf("job_step_id = %u\n ", msg->	job_step_id );
 		printf("node_list = %s\n", msg->node_list );
-		printf("credentials:\n\tjob_id = %u\n\tuser_id = %u\n\tnode_list = %s\n\texperation_time = %u\n\tsignature = %u\n\n", 
+		printf("credentials:\n\tjob_id = %u\n\tuser_id = %u\n\tnode_list = %s\n\texperation_time = %lu\n\tsignature = %u\n\n", 
 					msg->credentials->job_id, 
 					msg->credentials->user_id, 
 					msg->credentials->node_list, 
@@ -51,4 +51,5 @@ main( int argc, char* argv[])
 
 
 	}
+	return SLURM_SUCCESS ;
 }
