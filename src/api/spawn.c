@@ -217,7 +217,7 @@ slurm_step_ctx_get (slurm_step_ctx ctx, int ctx_key, ...)
 extern int
 slurm_jobinfo_ctx_get(switch_jobinfo_t jobinfo, int data_type, void *data)
 {
-	if (jobinfo == NULL)
+	if (jobinfo == NULL) {
 		slurm_seterrno(EINVAL);
 		return SLURM_ERROR;
 	}
