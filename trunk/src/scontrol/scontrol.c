@@ -950,10 +950,14 @@ _update_job (int argc, char *argv[])
 			job_msg.job_id = 
 				(uint32_t) strtol(&argv[i][6], 
 						 (char **) NULL, 10);
-		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0)
-			job_msg.time_limit = 
-				(uint32_t) strtol(&argv[i][10], 
-						(char **) NULL, 10);
+		else if (strncasecmp(argv[i], "TimeLimit=", 10) == 0) {
+			if (strcasecmp(&argv[i][10], "UNLIMITED") == 0)
+				job_msg.time_limit = INFINITE;
+			else
+				job_msg.time_limit = 
+					(uint32_t) strtol(&argv[i][10], 
+							  (char **) NULL, 10);
+		}
 		else if (strncasecmp(argv[i], "Priority=", 9) == 0)
 			job_msg.priority = 
 				(uint32_t) strtol(&argv[i][9], 

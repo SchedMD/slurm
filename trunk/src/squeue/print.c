@@ -387,6 +387,8 @@ int _print_job_time_limit(job_info_t * job, int width, bool right)
 	char time[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("TimeLimit", width, right, true);
+	else if (job->time_limit == INFINITE)
+		_print_str("UNLIMITED", width, right, true);
 	else {
 		/* format is "hours:minutes" */
 		snprintf(time, FORMAT_STRING_SIZE, "%d:%2.2d",
@@ -413,6 +415,9 @@ int _print_job_end_time(job_info_t * job, int width, bool right)
 {
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("EndTime", width, right, true);
+	else if ((job->time_limit == INFINITE) &&
+		 (job->end_time > time(NULL)))
+		_print_str("NONE", width, right, true);
 	else
 		_print_time(job->end_time, 0, width, right);
 

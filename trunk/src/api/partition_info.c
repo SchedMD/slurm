@@ -70,20 +70,13 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 	int j ;
 
 	fprintf ( out, "PartitionName=%s ", part_ptr->name);
-	if (part_ptr->max_time == INFINITE)
-		fprintf ( out, "MaxTime=UNLIMITED ");
-	else
-		fprintf ( out, "MaxTime=%u ", part_ptr->max_time);
-	if (part_ptr->max_nodes == INFINITE)
-		fprintf ( out, "MaxNodes=UNLIMITED ");
-	else
-		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
 	fprintf ( out, "TotalNodes=%u ", part_ptr->total_nodes);
 	fprintf ( out, "TotalCPUs=%u ", part_ptr->total_cpus);
 	if (part_ptr->root_only)
 		fprintf ( out, "RootOnly=YES\n");
 	else
 		fprintf ( out, "RootOnly=NO\n");
+
 	if (part_ptr->default_part)
 		fprintf ( out, "   Default=YES ");
 	else
@@ -98,10 +91,18 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 		fprintf ( out, "State=UP ");
 	else
 		fprintf ( out, "State=DOWN ");
+	if (part_ptr->max_time == INFINITE)
+		fprintf ( out, "MaxTime=UNLIMITED\n");
+	else
+		fprintf ( out, "MaxTime=%u\n", part_ptr->max_time);
 
-	fprintf ( out, "Nodes=%s AllowGroups=%s\n", part_ptr->nodes, 
-			part_ptr->allow_groups);
-	fprintf ( out, "   NodeIndecies=");
+	if (part_ptr->max_nodes == INFINITE)
+		fprintf ( out, "   MaxNodes=UNLIMITED ");
+	else
+		fprintf ( out, "   MaxNodes=%u ", part_ptr->max_nodes);
+	fprintf ( out, "AllowGroups=%s\n", part_ptr->allow_groups);
+
+	fprintf ( out, "   Nodes=%s NodeIndecies=", part_ptr->nodes);
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
 			fprintf( out, ",%d", part_ptr->node_inx[j]);
