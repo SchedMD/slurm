@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * daemonize.c - daemonization routine
+ *  daemonize.c - daemonization routine
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -31,8 +31,8 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#include <src/common/macros.h>
-#include <src/common/log.h>
+#include "src/common/macros.h"
+#include "src/common/log.h"
 
 /* closeall FDs >= a specified value */
 static void

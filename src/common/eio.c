@@ -30,11 +30,11 @@
 #include <sys/poll.h>
 #include <errno.h>
 
-#include <src/common/xmalloc.h>
-#include <src/common/xassert.h>
-#include <src/common/log.h>
-#include <src/common/list.h>
-#include <src/common/eio.h>
+#include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
+#include "src/common/log.h"
+#include "src/common/list.h"
+#include "src/common/eio.h"
 
 /* Function prototypes
  */
