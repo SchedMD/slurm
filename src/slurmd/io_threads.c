@@ -47,8 +47,9 @@ void * stdin_io_pipe_thread ( void * arg )
 			local_errno = errno ;	
 			if ( bytes_read == 0)
 			{
-				debug3 ( "0 returned EOF on socket ") ;
-				break ;
+				debug3 ( "STDIN stdin 0 returned EOF on socket ") ;
+				continue ;
+				//break ;
 			}
 			else if ( bytes_read == -1 )
 			{
@@ -59,16 +60,21 @@ void * stdin_io_pipe_thread ( void * arg )
 					case ECONNREFUSED:
 					case ECONNRESET:
 					case ENOTCONN:
-						break ;
+						debug3 ( "STDIN stdin connection lost %m errno: %i", local_errno ) ;
+						continue ;
+						//break ;
 					default:
-						debug3 ( "error reading stdin  stream for task %i, %m errno: %i , bytes read %i ", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
-						debug3 ( "uncaught errno %i", local_errno ) ;
-						break;
+						debug3 ( "%i STDIN uncaught error reading stdin sock stream, %m errno: %i , bytes read %i ", 
+								task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
+						continue ;
+						//break;
 				}
 			}
 			else
 			{
-				debug3 ( "bytes_read: %i don't know what to do with this return code ", bytes_read ) ;
+				debug3 ( "STDIN bytes_read: %i don't know what to do with this return code ", bytes_read ) ;
+				continue ;
+				//break ;
 			}
 		}
 		else
@@ -83,29 +89,19 @@ void * stdin_io_pipe_thread ( void * arg )
 		debug3 ( "%i stdin bytes read", bytes_read ) ;
 		*/
 		/* debug */
-		
-		while ( true)
-		{
-		
-			if ( ( bytes_written = write ( task_start->pipes[CHILD_IN_WR_PIPE] , cir_buf->head , cir_buf->read_size ) ) <= 0 )
-			{
-				if ( ( bytes_written == SLURM_PROTOCOL_ERROR ) && ( errno == EINTR ) ) 
-				{
-					continue ;
-				}
-				else
-				{
 
-					local_errno = errno ;	
-					debug3 ( "error sending stdin  stream for task %i, %m errno: %i , bytes read %i ", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
-					goto stdin_return ;
-				}
-			}
-			else
-			{
-				cir_buf_read_update ( cir_buf , bytes_written ) ;
-				break ;
-			}
+
+		if ( ( bytes_written = write_EINTR ( task_start->pipes[CHILD_IN_WR_PIPE] , cir_buf->head , cir_buf->read_size ) ) <= 0 )
+		{
+
+			local_errno = errno ;	
+			debug3 ( "%i error sending stdin pipe stream, %m errno: %i , bytes written %i ", 
+					task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_written) ;
+			goto stdin_return ;
+		}
+		else
+		{
+			cir_buf_read_update ( cir_buf , bytes_written ) ;
 		}
 	}
 	stdin_return:
@@ -141,7 +137,7 @@ void * stdout_io_pipe_thread ( void * arg )
 		if ( ( bytes_read = read_EINTR ( task_start->pipes[CHILD_OUT_RD_PIPE] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
 			local_errno = errno ;	
-			debug3 ( "error reading stdout stream for task %i, %m errno: %i , bytes read %i ", 
+			debug3 ( "%i error reading stdout pipe stream, %m errno: %i , bytes read %i ", 
 					task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
 			goto stdout_return ;
 		}
@@ -151,8 +147,10 @@ void * stdout_io_pipe_thread ( void * arg )
 		}
 		
 		/* debug */
+		/*
 		write ( 1 , cir_buf->head , cir_buf->read_size ) ;
 		debug3 ( "%i stdout bytes read", bytes_read ) ;
+		*/
 		/* debug */
 		
 		/* reconnect code */
@@ -178,28 +176,43 @@ void * stdout_io_pipe_thread ( void * arg )
 		}
 
 		/* write out socket code */
-		if ( ( sock_bytes_written = slurm_write_stream ( task_start->sockets[STDIN_OUT_SOCK] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( sock_bytes_written = slurm_write_stream ( task_start->sockets[STDIN_OUT_SOCK] , cir_buf->head , cir_buf->read_size ) ) <= 0 )
 		{
 			local_errno = errno ;	
-			switch ( local_errno )
+			if ( sock_bytes_written == 0)
 			{
-				case EBADF:
-				case EPIPE:
-				case ECONNREFUSED:
-				case ECONNRESET:
-				case ENOTCONN:
-					debug3 ( "std out connection losti %i", local_errno ) ;
-					attempt_reconnect = true ;
-					slurm_close_stream ( task_start->sockets[STDIN_OUT_SOCK] ) ;
-					break ;
-				default:
-					debug3 ( "error sending stdout stream for task %i, errno %i", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno ) ;
-					debug3 ( "uncaught errno %i", local_errno ) ;
-					break ;
+				debug3 ( "stdout 0 returned EOF on socket ") ;
+				break ;
 			}
-			continue ;
+			else if ( sock_bytes_written == -1 )
+			{
+				switch ( local_errno )
+				{
+					case EBADF:
+					case EPIPE:
+					case ECONNREFUSED:
+					case ECONNRESET:
+					case ENOTCONN:
+						debug3 ( "stdout connection lost %m errno: %i", local_errno ) ;
+						attempt_reconnect = true ;
+						slurm_close_stream ( task_start->sockets[STDIN_OUT_SOCK] ) ;
+						break ;
+					default:
+						debug3 ( "%i uncaught error sending stdout sock stream, errno %i sock bytes written %i",  
+								task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , sock_bytes_written ) ;
+						break ;
+				}
+			}
+			else
+			{
+				debug3 ( "bytes_read: %i don't know what to do with this return code ", bytes_read ) ;
+				break ;
+			}
 		}
-		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
+		else
+		{
+			cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
+		}
 	}
 
 	stdout_return:
@@ -235,7 +248,7 @@ void * stderr_io_pipe_thread ( void * arg )
 		if ( ( bytes_read = read_EINTR ( task_start->pipes[CHILD_ERR_RD_PIPE] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
 			local_errno = errno ;	
-				debug3 ( "error reading stderr stream for task %i, errno %i , bytes read %i ", 
+				debug3 ( "%i error reading stderr pipe stream, errno %i , bytes read %i ", 
 						task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , bytes_read ) ;
 				goto stderr_return ;
 		}
@@ -274,28 +287,43 @@ void * stderr_io_pipe_thread ( void * arg )
 		}
 
 		/* write out socket code */
-		if ( ( sock_bytes_written = slurm_write_stream ( task_start->sockets[SIG_STDERR_SOCK] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( sock_bytes_written = slurm_write_stream ( task_start->sockets[SIG_STDERR_SOCK] , cir_buf->head , cir_buf->read_size ) ) <= 0 )
 		{
 			local_errno = errno ;	
-			switch ( local_errno )
+			if ( sock_bytes_written == 0)
 			{
-				case EBADF:
-				case EPIPE:
-				case ECONNREFUSED:
-				case ECONNRESET:
-				case ENOTCONN:
-					debug3 ( "std err connection lost %i ", local_errno ) ;
-					attempt_reconnect = true ;
-					slurm_close_stream ( task_start->sockets[SIG_STDERR_SOCK] ) ;
-					break ;
-				default:
-					debug3 ( "error sending stderr stream for task %i , %m errno: %i", task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno ) ;
-					debug3 ( "uncaught errno %i", local_errno ) ;
-					break ;
+				debug3 ( "stderr 0 returned EOF on socket ") ;
+				break ;
 			}
-			continue ;
+			else if ( sock_bytes_written == -1 )
+			{
+				switch ( local_errno )
+				{
+					case EBADF:
+					case EPIPE:
+					case ECONNREFUSED:
+					case ECONNRESET:
+					case ENOTCONN:
+						debug3 ( "stderr connection lost %m errno: %i", local_errno ) ;
+						attempt_reconnect = true ;
+						slurm_close_stream ( task_start->sockets[SIG_STDERR_SOCK] ) ;
+						break ;
+					default:
+						debug3 ( "%i uncaught error sending stderr sock stream, %m errno: %i sock bytes %i", 
+								task_start -> launch_msg -> global_task_ids[ task_start -> local_task_id ] , local_errno , sock_bytes_written ) ;
+						break ;
+				}
+			}
+			else
+			{
+				debug3 ( "bytes_read: %i don't know what to do with this return code ", bytes_read ) ;
+				break ;
+			}
 		}
-		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
+		else
+		{
+			cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
+		}
 	}
 
 	stderr_return:
