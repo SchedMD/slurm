@@ -29,10 +29,11 @@
 #include <sys/socket.h>
 #include <stdlib.h>
 
-#include <src/common/xmalloc.h>
-#include <src/common/xstring.h>
 #include <src/common/hostlist.h>
 #include <src/common/log.h>
+#include <src/common/slurm_protocol_api.h>
+#include <src/common/xmalloc.h>
+#include <src/common/xstring.h>
 #include <src/srun/job.h>
 #include <src/srun/opt.h>
 
@@ -65,6 +66,7 @@ job_create(resource_allocation_response_msg_t *resp)
 		job->cred->signature[0] = 'a';
 
 		job->nodelist = xstrdup(opt.nodelist);
+debug("nodelist=%s",job->nodelist);
 		hl = hostlist_create(opt.nodelist);
 		job->jobid = 1;
 		ncpu = 1;
@@ -74,9 +76,10 @@ job_create(resource_allocation_response_msg_t *resp)
 
 
 	job->nhosts = hostlist_count(hl);
+debug("nhosts=%d",job->nhosts);
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
-	job->iaddr = (uint32_t *) xmalloc(job->nhosts * sizeof(uint32_t));
+	job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * sizeof(slurm_addr));
 	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int *) );
 	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int *) );
 
@@ -117,15 +120,8 @@ job_create(resource_allocation_response_msg_t *resp)
 	tph   = (ntask+job->nhosts-1) / job->nhosts; /* tasks per host, round up */
 
 	for(i = 0; i < job->nhosts; i++) {
-		struct hostent *he;
 		job->host[i]  = hostlist_shift(hl);
 
-		he = gethostbyname(job->host[i]);
-		if (he == NULL) {
-			error("Unable to resolve host `%s'\n", job->host[i]);
-			continue;
-		}
-		memcpy(&job->iaddr[i], *he->h_addr_list, sizeof(job->iaddr[i]));
 
 		/* actual task counts and layouts performed in launch() */
 		/* job->ntask[i] = 0; */
@@ -134,8 +130,13 @@ job_create(resource_allocation_response_msg_t *resp)
 			job->cpus[i] = resp->cpus_per_node[cpu_inx];
 			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx])
 				cpu_inx++;
-		} else
+			memcpy(&job->slurmd_addr[i], 
+			       &resp->node_addr[i], sizeof(job->slurmd_addr[i]));
+		} else {
 			job->cpus[i] = tph;
+			slurm_set_addr (&job->slurmd_addr[i], 
+					slurm_get_slurmd_port(), job->host[i]);
+		}
 	}
 
 	return job;
