@@ -38,20 +38,20 @@
 #define ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE	-2015
 #define ESLURM_NODES_BUSY				-2016
 #define ESLURM_INVALID_JOB_ID				-2017
-#define ESLURM_INVALID_NODE_NAMES			-2018
+#define ESLURM_INVALID_NODE_NAME			-2018
 #define ESLURM_INVALID_PARTITION_NAME			-2019
-#define fBESLURM_TRANSITION_STATE_NO_UPDATE		-2020
+#define ESLURM_TRANSITION_STATE_NO_UPDATE		-2020
 #define ESLURM_ALREADY_DONE				-2021
 
 /* partition_mgr.c/update_part */
-#define ESLURM_INVALID_NODE_NAME_SPECIFIED		-2101
+/* already defined above ESLURM_INVALID_NODE_NAME	-2018 */
 
 /* node_mgr.c/update_node */
-#define ESLURM_INVALID_NODE_NAME			-2201
+/* already defined above ESLURM_INVALID_NODE_NAME	-2018 */
 #define ESLURM_ACCESS_DENIED				-2202
 
 /* step_mgr.c */
-/* already defined above #define ESLURM_ACCESS_DENIED				-2301 */
+/* already defined above ESLURM_ACCESS_DENIED		-2202 */
 
 /* look up an errno value */
 extern char * slurm_strerror(int errnum);
@@ -59,7 +59,7 @@ extern char * slurm_strerror(int errnum);
 /* set an errno value */
 extern void slurm_seterrno(int errnum);
 
-/* set an errno value */
+/* get an errno value */
 extern inline int slurm_get_errno();
 
 /* print message: error string for current errno value */

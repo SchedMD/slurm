@@ -464,7 +464,7 @@ job_cancel (uint32_t job_id)
 
 	info ("job_cancel: job %u can't be cancelled from state=%s", 
 			job_id, job_state_string(job_ptr->job_state));
-	return fBESLURM_TRANSITION_STATE_NO_UPDATE;
+	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
 
@@ -708,7 +708,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 
 	info ("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
 			job_id, step_id, job_state_string(job_ptr->job_state));
-	return fBESLURM_TRANSITION_STATE_NO_UPDATE;
+	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
 
@@ -1304,7 +1304,7 @@ update_job (job_desc_msg_t * job_specs)
 		if (error_code == EINVAL) {
 			if ( req_bitmap )
 				bit_free (req_bitmap);
-			return ESLURM_INVALID_NODE_NAMES;
+			return ESLURM_INVALID_NODE_NAME;
 		}
 
 		if (detail_ptr -> req_nodes)

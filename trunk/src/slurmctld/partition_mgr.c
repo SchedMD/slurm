@@ -206,7 +206,7 @@ int build_part_bitmap (struct part_record *part_record_point)
 			bit_free (old_bitmap);
 		error ("build_part_bitmap: invalid node specified %s", 
 			part_record_point->nodes);
-		return ESLURM_INVALID_NODE_NAME_SPECIFIED;
+		return ESLURM_INVALID_NODE_NAME;
 	}
 
 	for (i = 0; i < node_count; i++) {
@@ -217,7 +217,7 @@ int build_part_bitmap (struct part_record *part_record_point)
 			if (old_bitmap)
 				bit_free (old_bitmap);
 			xfree(node_list);
-			return ESLURM_INVALID_NODE_NAME_SPECIFIED;
+			return ESLURM_INVALID_NODE_NAME;
 		}	
 		part_record_point->total_nodes++;
 		part_record_point->total_cpus += node_record_point->cpus;
