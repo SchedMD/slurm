@@ -72,7 +72,8 @@ void	_unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp
 } while (0)
 
 #define packstr(str,bufp,lenp) do {			\
-	uint16_t _size = (uint16_t)(strlen(str)+1);	\
+	uint16_t _size;					\
+	_size = (uint16_t)(str ? strlen(str)+1 : 0);	\
         assert(_size == 0 || str != NULL);		\
 	assert((bufp) != NULL && *(bufp) != NULL);	\
         assert((lenp) != NULL);				\
