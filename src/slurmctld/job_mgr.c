@@ -382,6 +382,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 	pack32(dump_job_ptr->priority, buffer);
+	pack32(dump_job_ptr->batch_sid, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -421,7 +422,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 /* Unpack a job's state information from a buffer */
 static int _load_job_state(Buf buffer)
 {
-	uint32_t job_id, user_id, time_limit, priority;
+	uint32_t job_id, user_id, time_limit, priority, batch_sid;
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
@@ -435,6 +436,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&user_id, buffer);
 	safe_unpack32(&time_limit, buffer);
 	safe_unpack32(&priority, buffer);
+	safe_unpack32(&batch_sid, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -502,13 +504,14 @@ static int _load_job_state(Buf buffer)
 	    (_load_job_details(job_ptr, buffer)))
 		goto unpack_error;
 
-	job_ptr->user_id = user_id;
-	job_ptr->time_limit = time_limit;
-	job_ptr->priority = priority;
-	job_ptr->start_time = start_time;
-	job_ptr->end_time = end_time;
+	job_ptr->user_id      = user_id;
+	job_ptr->time_limit   = time_limit;
+	job_ptr->priority     = priority;
+	job_ptr->batch_sid    = batch_sid;
+	job_ptr->start_time   = start_time;
+	job_ptr->end_time     = end_time;
 	job_ptr->time_last_active = time(NULL);
-	job_ptr->job_state = job_state;
+	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
 	strncpy(job_ptr->name, name, MAX_NAME_LEN);
 	FREE_NULL(name);
@@ -518,7 +521,7 @@ static int _load_job_state(Buf buffer)
 	FREE_NULL(partition);
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
 	job_ptr->kill_on_step_done = kill_on_step_done;
-	job_ptr->batch_flag = batch_flag;
+	job_ptr->batch_flag        = batch_flag;
 	info("recovered job id %u", job_id);
 
 	safe_unpack16(&step_flag, buffer);
@@ -2049,7 +2052,7 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
  * IN dump_job_ptr - pointer to job for which information is requested
  * IN/OUT buffer - buffer in which data is placed, pointers automatically 
  *	updated
- * NOTE: change _unpack_job_desc_msg() in common/slurm_protocol_pack.c
+ * NOTE: change _unpack_job_info_members() in common/slurm_protocol_pack.c
  *	  whenever the data format changes
  */
 void pack_job(struct job_record *dump_job_ptr, Buf buffer)
@@ -2061,6 +2064,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);
+	pack32(dump_job_ptr->batch_sid, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
@@ -2850,3 +2854,36 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	}
 	return;
 }
+
+/*
+ * set_batch_job_sid - set the batch_sid for a specified job_id
+ * IN uid - originating uid of the RPC
+ * IN job_id - the id of a batch job
+ * IN batch_sid - local session id for the job
+ * RET int - 0 or an error code
+ * global: job_list - global list of job entries is updated
+ */
+int set_batch_job_sid(uid_t uid, uint32_t job_id, uint32_t batch_sid)
+{
+	struct job_record *job_ptr;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		error("set_batch_job_sid: job_id %u does not exist.", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((uid != 0) && 
+	    (uid != getuid()) && 
+	    (uid != job_ptr->user_id)) {
+		error("Security violation, RESPONSE_BATCH_JOB_LAUNCH RPC from uid %d",
+		      uid);
+		return ESLURM_USER_ID_MISSING;
+	}
+
+error("set_batch_job_sid:%u,%u,%u",uid, job_id, batch_sid);
+	job_ptr->batch_sid = batch_sid;
+	return SLURM_SUCCESS;
+}
+
+
