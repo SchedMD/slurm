@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -185,6 +186,22 @@ job_force_termination(job_t *job)
 }
 
 
+int
+job_rc(job_t *job)
+{
+	int i;
+
+	if (job->rc) return(job->rc);
+
+	for (i = 0; i < opt.nprocs; i++) 
+		job->rc |= job->tstatus[i];
+
+	job->rc = WEXITSTATUS(job->rc);
+
+	return(job->rc);
+}
+
+
 void job_fatal(job_t *job, const char *msg)
 {
 	if (msg) error(msg);
@@ -336,6 +353,9 @@ _job_create_internal(allocation_info_t *info)
 	slurm_mutex_init(&job->state_mutex);
 	pthread_cond_init(&job->state_cond, NULL);
 	job->state = SRUN_JOB_INIT;
+
+	job->signaled = false;
+	job->rc       = 0;
 
 	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);

@@ -257,9 +257,10 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		slurm_mutex_unlock(&job->task_mutex);
 
-		if (!opt.no_kill)
+		if (!opt.no_kill) {
+			job->rc = 124;
 			update_job_state(job, SRUN_JOB_FAILED);
-		else 
+		} else 
 			update_failed_tasks(job, msg->srun_node_id);
 #ifdef HAVE_TOTALVIEW
 		tv_launch_failure();
@@ -283,6 +284,7 @@ _confirm_launch_complete(job_t *job)
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
 			error ("Node %s not responding, terminiating job step",
 			       job->host[i]);
+			job->rc = 124;
 			update_job_state(job, SRUN_JOB_FAILED);
 			pthread_exit(0);
 		}
@@ -313,6 +315,7 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 			       job->jobid, job->stepid, resp->srun_node_id,
 			       slurm_strerror(resp->return_code));
 		}
+		job->rc = 1;
 		update_job_state(job, SRUN_JOB_FAILED);
 		return;
 	}
@@ -349,12 +352,25 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 
 
 static void 
-_print_exit_status(hostlist_t hl, char *host, int status)
+_print_exit_status(job_t *job, hostlist_t hl, char *host, int status)
 {
 	char buf[1024];
 	char *corestr = "";
+	bool signaled  = false;
+	void (*print) (const char *, ...) = &error; 
 
 	xassert(hl != NULL);
+
+	slurm_mutex_lock(&job->state_mutex);
+	signaled = job->signaled;
+	slurm_mutex_unlock(&job->state_mutex);
+
+	/*
+	 *  Print message that task was signaled as verbose message
+	 *    not error message if the user generated the signal.
+	 */
+	if (signaled) 
+		print = &verbose;
 
 	hostlist_ranged_string(hl, sizeof(buf), buf);
 
@@ -369,11 +385,26 @@ _print_exit_status(hostlist_t hl, char *host, int status)
 #endif
 
 	if (WIFSIGNALED(status))
-		error("%s: %s: %s%s", host, buf, sigstr(status), corestr); 
+		(*print) ("%s: %s: %s%s", host, buf, sigstr(status), corestr); 
 	else
-		error("%s: %s: Exit %d", host, buf, WEXITSTATUS(status));
+		error ("%s: %s: Exit %d", host, buf, WEXITSTATUS(status));
 
 	return;
+}
+
+static void
+_die_if_signaled(job_t *job, int status)
+{
+	bool signaled  = false;
+
+	slurm_mutex_lock(&job->state_mutex);
+	signaled = job->signaled;
+	slurm_mutex_unlock(&job->state_mutex);
+
+	if (WIFSIGNALED(status) && !signaled) {
+		job->rc = 128 + WTERMSIG(status);
+		update_job_state(job, SRUN_JOB_FAILED);
+	}
 }
 
 static void 
@@ -416,13 +447,16 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 			debug2("All tasks exited");
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
+
 	}
 
-	_print_exit_status(hl, host, status);
+	_print_exit_status(job, hl, host, status);
 
 	hostlist_destroy(hl);
-}
 
+	_die_if_signaled(job, status);
+
+}
 
 static void
 _handle_msg(job_t *job, slurm_msg_t *msg)

@@ -208,6 +208,7 @@ launch(void *arg)
 	if (fail_launch_cnt) {
 		error("%d task launch requests failed, terminating job step", 
 		      fail_launch_cnt);
+		job->rc = 124;
 		job_kill(job);
 	} else {
 		debug("All task launch requests sent");

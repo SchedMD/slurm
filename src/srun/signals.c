@@ -129,6 +129,7 @@ sig_thr_create(job_t *job)
 	return SLURM_SUCCESS;
 }
 
+
 void 
 fwd_signal(job_t *job, int signo)
 {
@@ -136,15 +137,22 @@ fwd_signal(job_t *job, int signo)
 	slurm_msg_t *req_array_ptr;
 	kill_tasks_msg_t msg;
 
-	debug("forward signal %d to job", signo);
+
+	if (signo == SIGKILL || signo == SIGINT || signo == SIGTERM) {
+		slurm_mutex_lock(&job->state_mutex);
+		job->signaled = true;
+		slurm_mutex_unlock(&job->state_mutex);
+	}
+
+	debug2("forward signal %d to job", signo);
 
 	/* common to all tasks */
 	msg.job_id      = job->jobid;
 	msg.job_step_id = job->stepid;
 	msg.signal      = (uint32_t) signo;
 
-	req_array_ptr = (slurm_msg_t *) 
-			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
+	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
+
 	for (i = 0; i < job->nhosts; i++) {
 		if (job->host_state[i] != SRUN_HOST_REPLIED) {
 			debug2("%s has not yet replied\n", job->host[i]);
@@ -156,13 +164,13 @@ fwd_signal(job_t *job, int signo)
 
 		req_array_ptr[i].msg_type = REQUEST_KILL_TASKS;
 		req_array_ptr[i].data = &msg;
-		memcpy(&req_array_ptr[i].address, 
-		       &job->slurmd_addr[i], sizeof(slurm_addr));
+		memcpy( &req_array_ptr[i].address, 
+		        &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
 
 	_p_fwd_signal(req_array_ptr, job);
 
-	debug("All tasks have been signalled");
+	debug2("All tasks have been signalled");
 	xfree(req_array_ptr);
 }
 

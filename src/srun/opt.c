@@ -261,41 +261,11 @@ struct poptOption options[] = {
 };
 
 /*---[ end popt definitions ]---------------------------------------------*/
-
-/*---[ env var processing ]-----------------------------------------------*/
-
-/*
- * try to use a similar scheme as popt. 
- * 
- * in order to add a new env var (to be processed like an option):
- *
- * define a new entry into env_vars[], if the option is a simple int
- * or string you may be able to get away with adding a pointer to the
- * option to set. Otherwise, process var based on "type" in _opt_env.
- */
-typedef struct env_vars {
-	const char *var;
-	int type;
-	void *arg;
-	void *set_flag;
-} env_vars_t;
-
-env_vars_t env_vars[] = {
-	{"SLURM_DEBUG", OPT_VERBOSE, NULL, NULL},
-	{"SLURMD_DEBUG", OPT_INT, &opt.slurmd_debug, NULL}, 
-	{"SLURM_NPROCS", OPT_INT, &opt.nprocs, &opt.nprocs_set},
-	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set},
-	{"SLURM_NNODES", OPT_NODES, NULL, NULL},
-	{"SLURM_OVERCOMMIT", OPT_OVERCOMMIT, NULL, NULL},
-	{"SLURM_PARTITION", OPT_STRING, &opt.partition, NULL},
-	{"SLURM_DISTRIBUTION", OPT_DISTRIB, NULL, NULL},
-	{"SLURM_WAIT", OPT_INT, &opt.max_wait, NULL},
-	{NULL, 0, NULL}
-};
-
 /* forward declarations of static functions 
  *
  */
+
+typedef struct env_vars env_vars_t;
 
 /* 
  * fill in default options 
@@ -305,6 +275,7 @@ static void _opt_default(void);
 /* set options based upon env vars 
  */
 static void _opt_env(void);
+static void _process_env_var(env_vars_t *e, const char *val);
 
 /* set options based upon commandline args
  */
@@ -484,7 +455,7 @@ static long _to_bytes(const char *arg)
 	int multiplier = 1;
 	long result;
 
-	buf = strdup(arg);
+	buf = xstrdup(arg);
 
 	end = strlen(buf) - 1;
 
@@ -619,6 +590,44 @@ static void _opt_default()
 
 }
 
+/*---[ env var processing ]-----------------------------------------------*/
+
+/*
+ * try to use a similar scheme as popt. 
+ * 
+ * in order to add a new env var (to be processed like an option):
+ *
+ * define a new entry into env_vars[], if the option is a simple int
+ * or string you may be able to get away with adding a pointer to the
+ * option to set. Otherwise, process var based on "type" in _opt_env.
+ */
+struct env_vars {
+	const char *var;
+	int type;
+	void *arg;
+	void *set_flag;
+};
+
+env_vars_t env_vars[] = {
+	{"SLURMD_DEBUG",        OPT_INT, &opt.slurmd_debug,  NULL           }, 
+	{"SLURM_NPROCS",        OPT_INT, &opt.nprocs,        &opt.nprocs_set},
+	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task, &opt.cpus_set  },
+	{"SLURM_PARTITION",     OPT_STRING,  &opt.partition, NULL           },
+	{"SLURM_IMMEDIATE",     OPT_INT,     &opt.immediate, NULL           },
+	{"SLURM_DEBUG",         OPT_DEBUG,       NULL,       NULL           },
+	{"SLURM_NNODES",        OPT_NODES,       NULL,       NULL           },
+	{"SLURM_OVERCOMMIT",    OPT_OVERCOMMIT,  NULL,       NULL           },
+	{"SLURM_DISTRIBUTION",  OPT_DISTRIB,     NULL,       NULL           },
+	{"SLURM_WAIT",          OPT_INT,     &opt.max_wait,  NULL           },
+	{"SLURM_STDINMODE",     OPT_STRING,  &opt.ifname,    NULL           },
+	{"SLURM_STDERRMODE",    OPT_STRING,  &opt.efname,    NULL           },
+	{"SLURM_STDOUTMODE",    OPT_STRING,  &opt.ofname,    NULL           },
+	{"SLURM_TIMELIMIT",     OPT_INT,     &opt.time_limit,NULL           },
+	{"SLURM_LABELIO",       OPT_INT,     &opt.labelio,   NULL           },
+	{NULL, 0, NULL, NULL}
+};
+
+
 /*
  * _opt_env(): used by initialize_and_process_args to set options via
  *            environment variables. See comments above for how to
@@ -626,102 +635,73 @@ static void _opt_default()
  */
 static void _opt_env()
 {
-	char *val;
-	char *end;
-	env_vars_t *e = env_vars;
+	char       *val = NULL;
+	env_vars_t *e   = env_vars;
 
 	while (e->var) {
-
-		debug2("looking for env var %s", e->var);
-
-		if ((val = getenv(e->var)) != NULL) {
-
-			debug2("now processing env var %s=%s", e->var,
-			       val);
-
-			if (e->set_flag)
-				*((bool *) e->set_flag) = true;
-
-			switch (e->type) {
-
-			case OPT_STRING:
-				*((char **) e->arg) = strdup(val);
-				break;
-
-			case OPT_INT:
-				if (val != NULL) {
-					*((int *) e->arg) =
-					    (int) strtol(val, &end, 10);
-
-					if (!(end && *end == '\0')) {
-						error("%s=%s invalid. ignoring...",
-						     e->var, val);
-					}
-				}
-				break;
-
-			case OPT_DEBUG:
-				if (val != NULL) {
-					_verbose =
-					    (int) strtol(val, &end, 10);
-					if (!(end && *end == '\0')) {
-						error("%s=%s invalid",
-						      e->var, val);
-					}
-				}
-				break;
-
-			case OPT_INPUT:
-			case OPT_OUTPUT:
-			case OPT_ERROR:
-				if (val != NULL) {
-					*((char **) e->arg) = strdup(val);
-				}
-				break;
-
-			case OPT_DISTRIB:
-				{
-					enum distribution_t dt =
-					    _verify_dist_type(val);
-
-					if (dt == SRUN_DIST_UNKNOWN) {
-						error("\"%s=%s\" -- invalid distribution type."
-						     " ignoring...",
-						     e->var, val);
-					} else
-						opt.distribution = dt;
-
-				}
-				break;
-
-			case OPT_NODES:
-				opt.nodes_set = 
-					_verify_node_count(val, 
-						   &opt.min_nodes, 
-						   &opt.max_nodes);
-				if (opt.nodes_set == false) {
-					error("\"%s=%s\" -- invalid node count."
-						     " ignoring...",
-						     e->var, val);
-				}
-				break;
-
-			case OPT_OVERCOMMIT:
-				opt.overcommit = true;
-				break;
-
-			default:
-				/* do nothing */
-				break;
-			}
-
-		}
-
+		if ((val = getenv(e->var)) != NULL) 
+			_process_env_var(e, val);
 		e++;
 	}
-
-
 }
+
+
+static void
+_process_env_var(env_vars_t *e, const char *val)
+{
+	char *end = NULL;
+	enum distribution_t dt;
+
+	debug2("now processing env var %s=%s", e->var, val);
+
+	if (e->set_flag) {
+		*((bool *) e->set_flag) = true;
+	}
+
+	switch (e->type) {
+	case OPT_STRING:
+	    *((char **) e->arg) = xstrdup(val);
+	    break;
+	case OPT_INT:
+	    if (val != NULL) {
+		    *((int *) e->arg) = (int) strtol(val, &end, 10);
+		    if (!(end && *end == '\0')) 
+			    error("%s=%s invalid. ignoring...", e->var, val);
+	    }
+	    break;
+	case OPT_DEBUG:
+	    if (val != NULL) {
+		    _verbose = (int) strtol(val, &end, 10);
+		    if (!(end && *end == '\0')) 
+			    error("%s=%s invalid", e->var, val);
+	    }
+	    break;
+	case OPT_DISTRIB:
+	    dt = _verify_dist_type(val);
+	    if (dt == SRUN_DIST_UNKNOWN) {
+		    error("\"%s=%s\" -- invalid distribution type. " 
+		          "ignoring...", e->var, val);
+	    } else 
+		    opt.distribution = dt;
+	    break;
+	case OPT_NODES:
+	    opt.nodes_set = _verify_node_count( val, 
+			                        &opt.min_nodes, 
+					        &opt.max_nodes );
+	    if (opt.nodes_set == false) {
+		    error("\"%s=%s\" -- invalid node count. ignoring...",
+			  e->var, val);
+	    }
+	    break;
+	case OPT_OVERCOMMIT:
+	    opt.overcommit = true;
+	    break;
+	default:
+	    /* do nothing */
+	    break;
+	}
+}
+
 
 /*
  * _opt_args() : set options via commandline args and popt
@@ -799,15 +779,15 @@ static void _opt_args(int ac, char **av)
 			break;
 
 		case OPT_OUTPUT:
-			opt.ofname = strdup(arg);
+			opt.ofname = xstrdup(arg);
 			break;
 
 		case OPT_INPUT:
-			opt.ifname = strdup(arg);
+			opt.ifname = xstrdup(arg);
 			break;
 
 		case OPT_ERROR:
-			opt.efname = strdup(arg);
+			opt.efname = xstrdup(arg);
 			break;
 
 		case OPT_DISTRIB:
@@ -858,7 +838,7 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_CDDIR:
 			xfree(opt.cwd);
-			opt.cwd = strdup(arg);
+			opt.cwd = xstrdup(arg);
 			break;
 
 		case OPT_NODELIST:
@@ -895,7 +875,7 @@ static void _opt_args(int ac, char **av)
 
 	remote_argv = (char **) xmalloc((remote_argc + 1) * sizeof(char *));
 	for (i = 0; i < remote_argc; i++)
-		remote_argv[i] = strdup(rest[i]);
+		remote_argv[i] = xstrdup(rest[i]);
 	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if (remote_argc > 0) {
@@ -904,7 +884,7 @@ static void _opt_args(int ac, char **av)
 		int  mode       = (search_cwd) ? R_OK : R_OK | X_OK;
 
 		if ((fullpath = _search_path(cmd, search_cwd, mode))) {
-			free(remote_argv[0]);
+			xfree(remote_argv[0]);
 			remote_argv[0] = fullpath;
 		} 
 	}
