@@ -30,7 +30,7 @@
 #  if HAVE_STRING_H
 #    include <string.h>
 #  endif
-#  if HAVE_PTHREAD_H
+#  if HAVE_PTHREAD
 #    include <pthread.h>
 #  endif
 #else				/* !HAVE_CONFIG_H */
@@ -809,6 +809,7 @@ static size_t
 hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 {
 	unsigned long i;
+	int truncated = 0;
 	int len = 0;
 	char sep = separator == NULL ? ',' : separator[0];
 
@@ -819,20 +820,22 @@ hostrange_to_string(hostrange_t hr, size_t n, char *buf, char *separator)
 		return snprintf(buf, n, "%s", hr->prefix);
 
 	for (i = hr->lo; i <= hr->hi; i++) {
-		size_t m = (n - len) <= n ? n - len : 0;
-		len += snprintf(buf + len, m, "%s%0*lu",
-				hr->prefix, hr->width, i);
-		if (len >= n || len < 0) {
+		size_t m = (n - len) <= n ? n - len : 0; /* check for < 0 */
+		int ret = snprintf(buf + len, m, "%s%0*lu",
+				   hr->prefix, hr->width, i);
+		if (ret < 0 || ret > m) {
 			len = n;
+			truncated = 1;
 			break;
 		}
+		len+=ret;
 		buf[len++] = sep;
 	}
 
 	/* back up over final separator */
 	buf[--len] = '\0';
 
-	return len;
+	return truncated == 1 ? -1 : len;
 }
 
 /* Place the string representation of the numeric part of hostrange into buf
@@ -1799,21 +1802,24 @@ size_t hostlist_deranged_string(hostlist_t hl, size_t n, char *buf)
 {
 	int i;
 	int len = 0;
+	int truncated = 0;
 
 	LOCK_HOSTLIST(hl);
 	for (i = 0; i < hl->nranges; i++) {
 		size_t m = (n - len) <= n ? n - len : 0;
-		len += hostrange_to_string(hl->hr[i], m, buf + len, ",");
-		if (len >= n || len < 0) {
+		int ret = hostrange_to_string(hl->hr[i], m, buf + len, ",");
+		if (ret < 0 || ret > m) {
 			len = n;
+			truncated = 1;
 			break;
 		}
+		len+=ret;
 		buf[len++] = ',';
 	}
 	UNLOCK_HOSTLIST(hl);
 	buf[len > 0 ? --len : 0] = '\0';
 
-	return len;
+	return truncated == 1 ? -1 : len;
 }
 
 /* return true if a bracket is needed for the range at i in hostlist hl */
