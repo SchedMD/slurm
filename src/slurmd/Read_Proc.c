@@ -5,6 +5,11 @@
  *
  * Author: Moe Jette, jette@llnl.gov
  */
+
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif 
+
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
