@@ -1,0 +1,183 @@
+SLURM Job Initiation DRAFT
+By Mark Grondona
+
+Abstract
+
+Job initiation refers to the process wherein SLURM accepts a request
+from a user for a job to run, along with corresponding constraints,
+and runs this job on N nodes with M tasks per node. In this document,
+Job Initiation will be expanded to include job termination as well. A
+job will be considered terminated when all remote tasks have exited
+and the nodes have been returned to the partition.
+
+Design constraints include, but are not limited to, the following:
+
+  o of course: specification of a wide range of options
+    (e.g. nodes,tasks,tasks/node,min # of cpus, runtime, etc., etc.)
+  o preservation of current environment
+  o configurable stdin forwarding (to one, all, or a specified task)
+  o reliable signal forwarding
+  o configurable stdout and stderr handling with minimal use of sockets 
+  o graceful and reliable termination of jobs under all conditions
+  o initialize MPI/switch environments (see also
+	  elan.runtime.requirements.txt)
+
+It is anticipated that the communications library will offer a framework
+for easily handling many of these constraints.
+
+Contents
+
+1.0 Making a Job Run Request
+    1.0.1 Node Allocation and Reservation
+    1.0.2 Job Startup
+
+2.0 Job Request Utility 
+
+3.0 Notes
+
+4.0 References
+----
+
+1.0 Making a Job Run Request
+
+In this document, we will consider a job run to consist of two 
+main parts:
+
+ 1. Allocation and reservation of nodes
+
+    In this part of job initiation, nodes are assigned to the job
+    and those nodes are reserved, i.e. cannot be utilized by other
+    jobs in the system.
+
+    This step necessarily includes authentication and authorization
+    of the requester.
+
+ 2. Initiation of one or more copies of executable on all or some of 
+    reserved nodes.
+
+    In this second part of job initiation, all or some of the nodes
+    allocated to the job in step 1 run the user executable in parallel.
+
+    All tasks should pass stdout/err back to the initiating process,
+    and the initiation process should be able to forward stdin and 
+    signals to all remote processes in a reliable manner. As mentioned
+    above, the communications layer is expected to be able to 
+    handle this funtionality.
+
+A third part could be considered job termination. This will be addressed
+later.
+
+1.0.1 Node Allocation and Reservation
+
+Node allocation and reservation will presumably be handled by the Job
+Manager. The requester will utilize the comm layer to send a job run
+request to the Job Manager (JM). The JM will reply with an authorization*
+and job #, or an error and error cause if the job cannot be run. The job
+run request may also specify whether the run request is to be immediate,
+or whether the request is merely for an allocation.
+
+If the request to run is for an allocation, the JM may simply assign
+the resources to the job# and pass necessary information back to the
+requester. The requester will spawn a shell on the local node which
+will have necessary environment variables defined (and necessary 
+authorization) for subsequent job runs (without a node allocation step)
+from within the shell (like RMS's allocate command).
+
+1.0.2 Job startup
+
+If the request to run is immediate, then there are two possible designs:
+
+ A. JM spawns a thread/process which requests initiation of M 
+    instantiations of executable on all N assigned nodes. Somehow
+    the JM will pass back stdout/stdin/stderr file descriptors
+    to the requester. 
+
+ B. The job requester sends initiation request to start all tasks
+    on assigned nodes. Somehow, authorization for said nodes is
+    handled (in comm layer?) Comm layer also handles std{in,out,err}
+    signals/etc.
+
+The comm layer will make many of the other requirements of this step
+easy. There will presumably be some sort of job_run_request structure
+that may be passed through the comm layer to all remote nodes that
+have been allocated. This run_job_request structure should contain
+at least:
+
+  o job id
+  o uid, gid
+  o environment
+  o cwd
+  o argc, argv 
+  
+and possibly (?)
+
+  o task no. (if a separate message is generated for each task)
+  o some sort of requester info (?) 
+    (can above be handled based upon job id#?)
+
+The slurmds on the remote nodes will (somehow) be aware that a job has been
+authorized to run, and when they receive the job_run_request, will spawn
+what is currently called the Job Shepherd (JS). There will most likely be
+one JS per task. The JS will handle stdout/err and stdin/signal delivery
+to/from the remote requester. It will also monitor the user process and
+notify the requester (and/or some other layer?) when the task exits.
+
+-----------
+[*]  depending on comm layer design, there may be a need for 
+     some type of authorization key that the job requester will need
+     in order to proceed to job initiation after the resources
+     have been allocation. The term authorization will be used as
+     a placeholder until more specific information is known.
+
+2.0 Job Request Utility
+
+The job request utility will provide a tool with which users will be able
+to generate a job run request and pass this off to the local slurmd and
+job manager. The tool will be very similar to prun and or poe and should
+provide at least the following funtionality:
+
+  o required options (I know, an oxymoron):
+  	- number of tasks 
+	or
+	- number of nodes and
+	- number of tasks per node
+  o optional options (redundant):
+  	- partition to run in
+  	- task distribution method
+	- stdin redirection 
+	- stdout/err redirection
+	- resource constraints (See job.manager.design.txt)
+        - time limit 
+	- label task IO 
+	- retry submission
+	- submission retry period
+	- verbosity
+	
+	- host lists (?)
+        - core file type (stack trace or full core) (?)
+        - allocate only? (or have separate command for this functionality)
+
+  o options may also be provided via environment vars
+  o environment propagation (including cwd)
+  o signal forwarding 
+  o stdin forwarding
+  o stdout/err handling
+  o job heartbeat (do we need this at user level?)
+
+The above is just an initial list and further items should be appended.
+
+3.0 Notes
+
+ - Really need to define who actually sends job_run_request to allocated
+   nodes. Should this be done from within slurmd or by the job run utility?
+   Perhaps comm layer design will make this point moot.
+
+ - reliable job termination also needs a design. Perhaps that design should
+   go into this doc as I had originally thought? Now I am not so sure.
+   We have to make sure that all resources are freed on job exit, but
+   also try to make job termination as quick as possible to minimize wasted
+   resources. Not sure if this is necessarily a tradeoff relationship.
+
+4.0 References
+
+
