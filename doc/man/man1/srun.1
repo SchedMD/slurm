@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "January 2004" "srun 0.3" "slurm components"
+.TH SRUN "1" "April 2004" "srun 0.3" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -615,6 +615,15 @@ Total number of processes in the current job
 .TP
 SLURM_PROCID 
 The MPI rank (or relative process ID) of the current process
+.TP
+SLURM_TASKS_PER_NODE
+Number of tasks to be initiated on each node. Values are 
+comma separated and in the same order as SLURM_NODELIST.
+If two or more consecutive nodes are to have the same task 
+count, that count is followed by "(x#)" where "#" is the 
+repetition count. For example, "SLURM_TASKS_PER_NODE=2(x3),1"
+indicates that the first three nodes will each execute three 
+tasks and the fourth node will execute one task.
 
 .SH "SIGNALS AND ESCAPE SEQUENCES"
 Signals sent to the \fBsrun\fR command are automatically forwarded to 
