@@ -47,9 +47,8 @@
 #include <sys/param.h>
 #include <unistd.h>
 
-#include <src/common/hostlist.h>
-
-#include <src/common/log.h>
+#include "src/common/hostlist.h"
+#include "src/common/log.h"
 
 /* printf-style error function -- redefine to your project's error 
  * reporting facility. Should take args like _err(char *, ...)

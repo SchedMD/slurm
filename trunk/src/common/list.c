@@ -41,7 +41,8 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include "list.h"
+
+#include "src/common/list.h"
 
 
 /*******************
