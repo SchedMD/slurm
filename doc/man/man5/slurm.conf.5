@@ -16,14 +16,29 @@ The size of each line in the file is limited to 1024 characters.
 .LP
 The overall configuration parameters available include:
 .TP
+\fBBackupAddr\fR
+The name of the machine where SLURM control functions are 
+executed in the event that \fBControlMachine\fR fails. 
+This should be a node name as returned by the hostname command, 
+without the full domain name (e.g. "lx0001"). 
+By default the \fBBackupAddr\fR will be identical in value to 
+\fBBackupController\fR.
+.TP
 \fBBackupController\fR
 The name of the machine where SLURM control functions are to be 
-executed in the event that ControlMachine fails. This node
+executed in the event that \fBControlMachine\fR fails. This node
 may also be used as a compute server if so desired. It will come into service 
 as a controller only upon the failure of ControlMachine and will revert 
 to a "standby" mode when the ControlMachine becomes available once again. 
 This should be a node name without the full domain name (e.g. "lx0002"). 
 While not essential, it is highly recommended that you specify a backup controller.
+.TP
+\fBControlAddr\fR
+The name of the machine where SLURM control functions are executed. 
+This should be a node name as returned by the hostname command, 
+without the full domain name (e.g. "lx0001"). 
+By default the \fBControlAddr\fR will be identical in value to 
+\fBControlMachine\fR.
 .TP
 \fBControlMachine\fR
 The name of the machine where SLURM control functions are executed. 
@@ -172,7 +187,8 @@ node specifications should be place in this file in consecutive order.
 The node configuration specifies the following information: 
 .TP
 \fBNodeName\fR
-Name of a node as returned by hostname (e.g. "lx0012"). 
+Name of a node as returned by the hostname command, 
+without the full domain name (e.g. "lx0012"). 
 A simple regular expression may optionally 
 be used to specify ranges 
 of nodes to avoid building a configuration file with large numbers 
@@ -198,6 +214,23 @@ either has a feature or it does not.
 If desired a feature may contain a numeric component indicating, 
 for example, processor speed. 
 By default a node has no features.
+.TP
+\fBNodeAddr\fR
+Name that a node should be refered to in establishing 
+a communications path. This name will be used as an 
+argument to the gethostbyname() function for identification. 
+For example, "elx0012" might be used to designate 
+the ethernet address for node "lx0012". A simple regular 
+expression may optionally be used to specify ranges 
+of nodes. The regular expression can contain one  
+pair of square brackets with a sequence of comma separated 
+numbers and/or ranges of numbers separated by a "-"
+(e.g. "elinux[0-64,128]"). 
+If a regular express is used to designate multiple nodes, 
+they must exactly match the entries in the \fBNodeName\fR
+(e.g. "NodeName=lx[0-7] NodeAddr="elx[0-7]"). 
+By default the \fBNodeAddr\fR will be identical in value to 
+\fBNodeName\fR.
 .TP
 \fBRealMemory\fR
 Size of real memory on the node in MegaBytes (e.g. "2048").
@@ -316,9 +349,13 @@ are "UP" or "DOWN". The default value is "UP".
 .br
 #
 .br
-ControlMachine=dev0 BackupController=dev1
+ControlMachine=dev0 ControlAddr=edev0
 .br
-Epilog=/usr/local/slurm/epilog Prolog=/usr/local/slurm/prolog
+BackupController=dev1 BackupAddr=edev1
+.br
+Epilog=/usr/local/slurm/epilog 
+.br
+Prolog=/usr/local/slurm/prolog
 .br
 FastSchedule=1
 .br
@@ -354,9 +391,11 @@ JobCredentialPublicCertificate=/usr/local/slurm/public.cert
 .br
 #
 .br
-NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
+NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000
 .br
-NodeName=dev[0-25] Weight=16
+NodeName=DEFAULT State=UNKNOWN
+.br
+NodeName=dev[0-25] NodeAddr=edev[0-25] Weight=16
 .br
 #
 .br
@@ -391,4 +430,5 @@ details.
 /etc/slurm.conf
 .SH "SEE ALSO"
 .LP
+\fBgethostbyname\fR(3), \fBgroup\fR(5), \fBhostname\fR(1), 
 \fBscontrol\fR(1), \fBslurmctld\fR(8), \fBslurmd\fR(8) 
