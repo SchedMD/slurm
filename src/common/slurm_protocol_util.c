@@ -88,17 +88,17 @@ int read_io_stream_header2(slurm_io_stream_header_t * header, int fd)
 		return rsize;
 	header->version = ntohs(header->version);
 
-	rsize = slurm_read_stream(fd, &header->key, sizeof(header->key));
+	rsize = slurm_read_stream(fd, (char *) &header->key, sizeof(header->key));
 	if (rsize != sizeof(header->key)) 
 		return rsize;
 
-	rsize = slurm_read_stream(fd, &header->task_id, 
+	rsize = slurm_read_stream(fd, (char *) &header->task_id, 
 			          sizeof(header->task_id));
 	if (rsize != sizeof(header->task_id)) 
 		return rsize;
 	header->task_id = ntohl(header->task_id);
 
-	rsize = slurm_read_stream(fd, &header->type, sizeof(header->type));
+	rsize = slurm_read_stream(fd, (char *) &header->type, sizeof(header->type));
 	if (rsize != sizeof(header->type))
 		return rsize;
 	header->type = ntohs(header->type);
