@@ -28,7 +28,7 @@ and
 .B -N
 options. If unspecified, the default is one process.
 .TP
-\fB\-c\fR, \fB\-\-cpus\fR=\fIncpus\fR
+\fB\-c\fR, \fB\-\-cpus\-per\-task\fR=\fIncpus\fR
 Request that \fIncpus\fR be allocated \fBper process\fR. This may be
 useful if the job will be multithreaded and requires more than one cpu
 per task for optimal performance. The default is one cpu per process.
@@ -348,7 +348,7 @@ SLURM_NPROCS
 \fB\-n, \-\-nprocs\fR=\fIn\fR
 .TP
 SLURM_CPUS_PER_TASK
-\fB\-c, \-\-ncpus\fR=\fIn\fR
+\fB\-c, \-\-ncpus\-per\-task\fR=\fIn\fR
 .TP
 SLURM_NNODES
 \fB\-N, \-\-nodes\fR=\fIn\fR
@@ -388,5 +388,17 @@ total number of processes in the current job
 .TP
 SLURM_NODELIST
 list of nodes that the slurm job is executing on.
-.TP
+
+.SH "BUGS"
+If the number of processors per node allocated to a job is not evenly 
+divisible by the value of \fBcpus\-per\-node\fR, tasks may be initiated 
+on nodes lacking a sufficient number of processors for the desired parallelism. 
+For example, if \fBcpus\-per\-node\fR is three, \fBnprocs\fR is four and 
+the job is allocated three nodes each with four processors. The requisite 
+12 processors have been allocated, but there is no way for the job to 
+initiate four tasks with each of them having exclusive access to three 
+processors on the same node.  The \fBnodes\fR and \fBmincpus\fR options 
+may be helpful in preventing this problem. 
+
 .SH "SEE ALSO"
+\fBscancel\fR(1), \fBsqueue\fR(1)
