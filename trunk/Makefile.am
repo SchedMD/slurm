@@ -32,4 +32,8 @@ include $(top_srcdir)/Make-rpm.mk
 maintainer-clean-local:
 	-(cd $(top_srcdir) && rm -rf autom4te.cache)
 	-find . -name "Makefile.in" -exec rm {} \;
+
+distclean-local:
+	-rm -rf autom4te*.cache autoscan.*
 	-find $(PACKAGE)-* -exec chmod u+w {} \;
+	-rm -rf $(PACKAGE)-*
