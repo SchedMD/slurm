@@ -16,10 +16,7 @@
 #include <time.h>
 #include "list.h"
 
-#define MAX_NAME_LEN 32
-#define MAX_OS_LEN 20
-#define MAX_PARTITION 32
-#define MAX_PART_LEN 16
+#define MAX_NAME_LEN 32		/* Maximum length of partition or node name */
 
 #define BACKUP_INTERVAL		60
 #define BACKUP_LOCATION		"/usr/local/SLURM/Slurm.state"
@@ -53,7 +50,7 @@ struct Job_Record {
 struct Config_Record {
     int CPUs;				/* Count of CPUs running on the node */
     int RealMemory;			/* Megabytes of real memory on the node */
-    long TmpDisk;			/* Megabytes of total storage in TMP_FS file system */
+    int TmpDisk;			/* Megabytes of total storage in TMP_FS file system */
     char *Feature;			/* Arbitrary list of features associated with a node */
 };
 List Config_List;			/* List of Config_Record entries */
@@ -80,24 +77,27 @@ struct Node_Record {
 };
 struct Node_Record *Node_Record_Table_Ptr;	/* Location of the node records */
 int	Node_Record_Count;		/* Count of records in the Node Record Table */
+int	*Hash_Table;			/* Table of hashed indicies into Node_Record */
 
 /* NOTE: Change PART_STRUCT_VERSION value whenever the contents of "struct Node_Record" change */
 #define PART_STRUCT_VERSION 1
 struct Part_Record {
-    char Name[MAX_PART_LEN];
-    int  Number;
-    unsigned RunBatch:1;
-    unsigned RunInteractive:1;
-    unsigned Available:1;
+    char Name[MAX_NAME_LEN];	/* Name of the partition */
     int MaxTime;		/* -1 if unlimited */
-    int MaxCpus;		/* -1 if unlimited */
-    char *AllowUsers;		/* NULL indicates ALL */
-    char *DenyUsers;		/* NULL indicates NONE */
+    int MaxNodes;		/* -1 if unlimited */
+    char *Nodes;		/* Names of nodes in partition */
+    char *AllowGroups;		/* NULL indicates ALL */
+    unsigned RootKey:1;		/* 1 if RootKey is required for use */
+    unsigned Shared:1;		/* 1 if access is shared */
+    unsigned StateUp:1;		/* 1 if state is UP */
 };
+List Part_List;			/* List of Part_Record entries */
+char Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
+struct Part_Record *Default_Part_Loc;	/* Location of default partition */
 
 /* 
  * Create_Node_Record - Create a node record
- * Input: None
+ * Input: Location to store error value in
  * Output: Error_Code is set to zero if no error, errno otherwise
  *         Returns a pointer to the record or NULL if error
  * NOTE The record's values are initialized to those of Default_Record
@@ -105,11 +105,27 @@ struct Part_Record {
 struct Node_Record *Create_Node_Record(int *Error_Code);
 
 /* 
+ * Create_Part_Record - Create a partition record
+ * Input: Location to store error value in
+ * Output: Error_Code is set to zero if no error, errno otherwise
+ *         Returns a pointer to the record or NULL if error
+ * NOTE The record's values are initialized to those of Default_Part
+ */
+struct Part_Record *Create_Part_Record(int *Error_Code);
+
+/* 
  * Find_Node_Record - Find a record for node with specified name,
  * Input: name - name of the desired node 
  * Output: return pointer to node record or NULL if not found
  */
 struct Node_Record *Find_Node_Record(char *name);
+
+/* 
+ * Find_Part_Record - Find a record for partition with specified name,
+ * Input: name - name of the desired partition 
+ * Output: return pointer to node partition or NULL if not found
+ */
+struct Part_Record *Find_Part_Record(char *name);
 
 /* 
  * Init_SLURM_Conf - Initialize the SLURM configuration values and data structures. 
