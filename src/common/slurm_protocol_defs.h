@@ -84,6 +84,13 @@ typedef enum { test1, test2
 #define RESPONSE_SLURM_RC			9000	
 #define MESSAGE_UPLOAD_ACCOUNTING_INFO		9010	
 
+/*core api configuration struct */
+typedef struct slurm_protocol_config 
+{
+	slurm_addr primary_controller;
+	slurm_addr secondary_controller;
+}
+
 /*core api protocol message structures */
 typedef struct slurm_protocol_header
 {
