@@ -911,10 +911,13 @@ read_slurm_conf ( ) {
 	}	
 		
 	rehash ();
+	set_slurmd_addr ();
 	if ((error_code = build_bitmaps ())) {
 		unlock_slurmctld (config_write_lock);
 		return error_code;
 	}
+
+	/* sort config_list by weight for scheduling */
 	list_sort (config_list, &list_compare_config);
 
 	slurmctld_conf.last_update = time (NULL) ;

@@ -84,6 +84,7 @@ struct node_record {
 	uint32_t tmp_disk;		/* actual megabytes of total disk in TMP_FS */
 	struct config_record *config_ptr;	/* configuration specification for this node */
 	struct part_record *partition_ptr;	/* partition for this node */
+	struct sockaddr_in slurm_addr;	/* network address */
 };
 extern struct node_record *node_record_table_ptr;	/* location of the node records */
 extern int node_record_count;		/* count of records in the node record table */
@@ -239,10 +240,8 @@ extern struct part_record *create_part_record (void);
  */
 extern struct step_record * create_step_record (struct job_record *job_ptr);
 
-/* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
- * this is a simple prototype for testing 
- */
-extern void deallocate_nodes (unsigned *bitmap);
+/* deallocate_nodes - for a given job, deallocate its nodes and make their state IDLE */
+void deallocate_nodes (struct job_record  * job_ptr);
 
 /* 
  * delete_job_details - delete a job's detail record and clear it's pointer
@@ -438,6 +437,9 @@ extern void	set_job_id (struct job_record *job_ptr);
 
 /* set_job_prio - set a default job priority */
 extern void	set_job_prio (struct job_record *job_ptr);
+
+/* set_slurmd_addr - establish the slurm_addr for the slurmd on each node */
+extern void set_slurmd_addr (void);
 
 /* step_create - parse the suppied job step specification and create step_records for it */
 extern int step_create ( step_specs *step_specs, struct step_record** );
