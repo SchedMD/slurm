@@ -725,9 +725,12 @@ extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
  * IN name - name of the node */
 extern void node_did_resp (char *name);
 
-/* node_not_resp - record that the specified node is not responding 
- * IN name - name of the node */
-extern void node_not_resp (char *name);
+/* 
+ * node_not_resp - record that the specified node is not responding
+ * IN name - name of the node 
+ * IN msg_time - time message was sent
+ */
+extern void node_not_resp (char *name, time_t msg_time);
 
 /*
  * old_job_info - get details about an existing job allocation

@@ -79,15 +79,22 @@
 #  define WDOG_POLL 		2	/* secs */
 #endif
 
-typedef enum { DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_NO_RESP, 
-	       DSH_FAILED, DSH_JOB_HUNG } state_t;
+typedef enum {
+	DSH_NEW,        /* Request not yet started */
+	DSH_ACTIVE,     /* Request in progress */
+	DSH_DONE,       /* Request completed normally */
+	DSH_NO_RESP,    /* Request timed out */
+	DSH_FAILED,     /* Request resulted in error */
+	DSH_JOB_HUNG    /* Job has non-killable processes */
+} state_t;
 
 typedef struct thd {
 	pthread_t thread;		/* thread ID */
 	pthread_attr_t attr;		/* thread attributes */
 	state_t state;			/* thread state */
-	time_t time;			/* start time or delta time 
-					 * at termination */
+	time_t start_time;		/* start time */
+	time_t end_time;		/* end time or delta time 
+					 * upon termination */
 	struct sockaddr_in slurm_addr;	/* network address */
 	char node_name[MAX_NAME_LEN];	/* node's name */
 } thd_t;
@@ -331,9 +338,10 @@ static void *_wdog(void *args)
 {
 	int fail_cnt, no_resp_cnt, retry_cnt;
 	bool work_done;
-	int i, delay, max_delay = 0;
+	int i, max_delay = 0;
 	agent_info_t *agent_ptr = (agent_info_t *) args;
 	thd_t *thread_ptr = agent_ptr->thread_struct;
+	time_t now;
 #if AGENT_IS_THREAD
 	/* Locks: Write job and write node */
 	slurmctld_lock_t node_write_lock =
@@ -350,15 +358,14 @@ static void *_wdog(void *args)
 		retry_cnt   = 0;	/* assume no required retries */
 
 		sleep(WDOG_POLL);
+		now = time(NULL);
 
 		slurm_mutex_lock(&agent_ptr->thread_mutex);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
 			switch (thread_ptr[i].state) {
 			case DSH_ACTIVE:
 				work_done = false;
-				delay = difftime(time(NULL),
-						 thread_ptr[i].time);
-				if (delay >= COMMAND_TIMEOUT) {
+				if (thread_ptr[i].end_time <= now) {
 					debug3("thd %d timed out\n", 
 					       thread_ptr[i].thread);
 					pthread_kill(thread_ptr[i].thread,
@@ -369,9 +376,8 @@ static void *_wdog(void *args)
 				work_done = false;
 				break;
 			case DSH_DONE:
-				if (max_delay < (int) thread_ptr[i].time)
-					max_delay =
-					    (int) thread_ptr[i].time;
+				if (max_delay < (int)thread_ptr[i].end_time)
+					max_delay = (int)thread_ptr[i].end_time;
 				break;
 			case DSH_NO_RESP:
 				no_resp_cnt++;
@@ -397,7 +403,8 @@ static void *_wdog(void *args)
 		lock_slurmctld(node_write_lock);
 		for (i = 0; i < agent_ptr->thread_count; i++) {
 			if (thread_ptr[i].state == DSH_NO_RESP)
-				node_not_resp(thread_ptr[i].node_name);
+				node_not_resp(thread_ptr[i].node_name,
+				              thread_ptr[i].start_time);
 		}
 		unlock_slurmctld(node_write_lock);
 #else
@@ -419,8 +426,7 @@ static void *_wdog(void *args)
 		}
 
 		/* send RPC */
-		fatal
-		    ("Code development needed here if agent is not thread");
+		fatal("Code development needed here if agent is not thread");
 
 		xfree(slurm_names);
 #endif
@@ -478,7 +484,6 @@ static void *_wdog(void *args)
 static void *_thread_per_node_rpc(void *args)
 {
 	int rc = SLURM_SUCCESS;
-	int timeout = 0;
 	slurm_msg_t msg;
 	task_info_t *task_ptr = (task_info_t *) args;
 	thd_t *thread_ptr = task_ptr->thread_struct_ptr;
@@ -496,7 +501,7 @@ static void *_thread_per_node_rpc(void *args)
 
 	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
 	thread_ptr->state = DSH_ACTIVE;
-	thread_ptr->time = time(NULL);
+	thread_ptr->start_time = time(NULL);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
 	is_kill_msg = (  (msg_type == REQUEST_KILL_TIMELIMIT)
@@ -507,15 +512,15 @@ static void *_thread_per_node_rpc(void *args)
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	if (is_kill_msg) { 
-		timeout = slurmctld_conf.kill_wait + 2;  
-
+	if (is_kill_msg) 
 		/* Extend time that this thread is allowed to exist.  */
-		thread_ptr->time = time(NULL) + timeout;
-	}
+		thread_ptr->end_time = thread_ptr->start_time +
+					slurmctld_conf.kill_wait + 2;
+	else
+		thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
 
 	if (task_ptr->get_reply) {
-		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
+		if (slurm_send_recv_rc_msg(&msg, &rc, 0) < 0) {
 			error("agent: %s: %m", thread_ptr->node_name);
 			goto cleanup;
 		}
@@ -583,7 +588,8 @@ static void *_thread_per_node_rpc(void *args)
       cleanup:
 	slurm_mutex_lock(task_ptr->thread_mutex_ptr);
 	thread_ptr->state = thread_state;
-	thread_ptr->time = (time_t) difftime(time(NULL), thread_ptr->time);
+	thread_ptr->end_time = (time_t) difftime(time(NULL), 
+						thread_ptr->start_time);
 
 	/* Signal completion so another thread can replace us */
 	(*task_ptr->threads_active_ptr)--;
