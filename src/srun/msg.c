@@ -365,7 +365,7 @@ _print_exit_status(job_t *job, hostlist_t hl, char *host, int status)
 	char buf[1024];
 	char *corestr = "";
 	bool signaled  = false;
-	void (*print) (const char *, ...) = &error; 
+	void (*print) (const char *, ...) = (void *) &error; 
 
 	xassert(hl != NULL);
 
