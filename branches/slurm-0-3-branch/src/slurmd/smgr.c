@@ -271,6 +271,7 @@ _become_user(slurmd_job_t *job)
 static int
 _exec_all_tasks(slurmd_job_t *job)
 {
+	char c;
 	int i;
 	int fd = job->fdpair[1];
 
@@ -286,13 +287,26 @@ _exec_all_tasks(slurmd_job_t *job)
 		return error ("Unable to block signals");
 
 	for (i = 0; i < job->ntasks; i++) {
-		pid_t pid = fork();
+		int fdpair[2];
+		pid_t pid;
 
-		if (pid < 0) {
+		if (pipe (fdpair) < 0)
+			error ("exec_all_tasks: pipe: %m");
+
+		if ((pid = fork ()) < 0) {
 			error("fork: %m");
 			return SLURM_ERROR;
-		} else if (pid == 0)  /* child */
+		} else if (pid == 0)  { /* child */
+			/*
+			 * Stall exec until pgid is set by parent
+			 */
+			if (read (fdpair[0], &c, sizeof (c)) != 1)
+				error ("pgrp child read failed: %m");
+			close (fdpair[0]);
+			close (fdpair[1]);
+
 			_exec_task(job, i);
+		}
 
 		/* Parent continues: 
 		 */
@@ -311,16 +325,27 @@ _exec_all_tasks(slurmd_job_t *job)
 		job->task[i]->pid = pid;
 
 		/*
+		 * Set this child's pgid to pid of first task
+		 */
+		if (setpgid (pid, job->task[0]->pid) < 0)
+			error ("Unable to put task %d (pid %ld) into pgrp %ld",
+			       i, pid, job->task[0]->pid);
+
+		/*
+		 * Now it's ok to unblock this child, so it may call exec
+		 */
+		if (write (fdpair[1], &c, sizeof (c)) != 1)
+			error ("write to unblock task %d failed", i); 
+
+		close (fdpair[0]);
+		close (fdpair[1]);
+
+		/*
 		 * Prepare process for attach by parallel debugger 
 		 * (if specified and able)
 		 */
 		_pdebug_trace_process(job, pid);
 	}
-
-   again:
-	for (i = 1; i < job->ntasks; i++)
-		if (getpgid (job->task[i]->pid) != job->task[0]->pid) 
-			goto again;
 
 	return SLURM_SUCCESS;
 }
@@ -333,13 +358,6 @@ _exec_task(slurmd_job_t *job, int i)
 		error("unable to unblock signals");
 		exit(1);
 	}
-
-	/*
-	 * Move this process into new pgrp within this session
-	 */
-	if (setpgid (0, i ? job->task[0]->pid : 0) < 0) 
-		error ("Unable to put task %d into pgrp %ld: %m", 
-		       i, job->task[0]->pid);
 
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
