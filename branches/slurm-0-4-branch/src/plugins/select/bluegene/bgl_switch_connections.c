@@ -224,7 +224,8 @@ static int _lookat_path(bgl_bp_t *bgl_bp, pa_switch_t *curr_switch, int source, 
 	next_switch = &pa_system_ptr->
 		grid[node_tar[X]][node_tar[Y]][node_tar[Z]].axis_switch[dim];
 	
-	if(_lookat_path(bgl_bp, next_switch, port_tar, target, dim) == SLURM_ERROR)
+	if(_lookat_path(bgl_bp, next_switch, port_tar, target, dim) 
+			== SLURM_ERROR)
 		return SLURM_ERROR;
 	
 	return SLURM_SUCCESS;
@@ -352,7 +353,8 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 	bgl_itr = list_iterator_create(bgl_bp_list);
 	while((bgl_bp = list_next(bgl_itr)) != NULL) {
 			
-		if (_get_bp_by_location(bgl, bgl_bp->coord, &curr_bp) == SLURM_ERROR) {
+		if (_get_bp_by_location(bgl, bgl_bp->coord, &curr_bp) 
+				== SLURM_ERROR) {
 			return SLURM_ERROR;
 		}
 		
@@ -385,18 +387,24 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 		found_bpid = 0;
 		for (i=0; i<switch_count; i++) {
 			if(i) {
-				if ((rc = rm_get_data(bgl, RM_NextSwitch, &curr_switch)) != STATUS_OK) {
-					fatal("rm_get_data: RM_NextSwitch: %s", bgl_err_str(rc));
+				if ((rc = rm_get_data(bgl, RM_NextSwitch, 
+						&curr_switch)) != STATUS_OK) {
+					fatal("rm_get_data: RM_NextSwitch: %s",
+						bgl_err_str(rc));
 					return SLURM_ERROR;
 				}
 			} else {
-				if ((rc = rm_get_data(bgl, RM_FirstSwitch, &curr_switch)) != STATUS_OK) {
-					fatal("rm_get_data: RM_FirstSwitch: %s", bgl_err_str(rc));
+				if ((rc = rm_get_data(bgl, RM_FirstSwitch, 
+						&curr_switch)) != STATUS_OK) {
+					fatal("rm_get_data: RM_FirstSwitch: %s",
+						bgl_err_str(rc));
 					return SLURM_ERROR;
 				}
 			}
-			if ((rc = rm_get_data(curr_switch, RM_SwitchBPID, &curr_bpid)) != STATUS_OK) {
-				fatal("rm_get_data: RM_SwitchBPID: %s", bgl_err_str(rc));
+			if ((rc = rm_get_data(curr_switch, RM_SwitchBPID, 
+					&curr_bpid)) != STATUS_OK) {
+				fatal("rm_get_data: RM_SwitchBPID: %s", 
+					bgl_err_str(rc));
 				return SLURM_ERROR;
 			}
 			
@@ -416,7 +424,8 @@ extern int configure_partition_switches(bgl_record_t * bgl_record)
 				if ((rc = rm_get_data(coord_switch[bgl_switch->dim],
 						      RM_SwitchID,&name2)) 
 				    != STATUS_OK) {
-					fatal("rm_get_data: RM_SwitchID: %s", bgl_err_str(rc));
+					fatal("rm_get_data: RM_SwitchID: %s", 
+						bgl_err_str(rc));
 					return SLURM_ERROR;
 				}
 								
