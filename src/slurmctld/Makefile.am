@@ -24,10 +24,12 @@ noinst_PROGRAMS = $(test_modules)
 LDADD   = $(top_srcdir)/src/common/libcommon.la 
 
 slurmctld_SOURCES = 	\
+	locks.h  	\
 	slurmctld.h	\
 	controller.c 	\
 	job_mgr.c 	\
 	job_scheduler.c \
+	locks.c   	\
 	node_mgr.c 	\
 	node_scheduler.c\
 	partition_mgr.c \
