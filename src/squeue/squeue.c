@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  squeue.c - Report jobs in the system
+ *  squeue.c - Report jobs in the slurm system
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -43,13 +43,21 @@ main (int argc, char *argv[])
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
-	print_options();
 	
-	if ( params.step_flag )
+	while (1) 
 	{
-		print_job_steps( 0, 0 );
+		if ( params.step_flag )
+			print_job_steps( 0, 0 );
+		else 
+			print_job( NULL );
+
+		if ( params.iterate ) {
+			printf( "\n");
+			sleep( params.iterate );
+		}
+		else
+			break;
 	}
-	else print_job( NULL );
 
 	exit (0);
 }
