@@ -528,13 +528,13 @@ _sig_thr(void *arg)
 		switch (signo) {
 		  case SIGINT:
 			if ((time(NULL) - last_intr) > 1) {
-				info("interrupt (one more within 1 sec to abort)");
+				printf("interrupt (one more within 1 sec to abort)\n");
 				report_task_status(job);
 				last_intr = time(NULL);
 			 } else  { /* second Ctrl-C in half as many seconds */
 				   /* terminate job */
 				if (job->state != SRUN_JOB_OVERDONE) {
-					info("sending Ctrl-C to job");
+					printf("sending Ctrl-C to job\n");
 					last_intr = time(NULL);
 					_fwd_signal(job, signo);
 				} else {
