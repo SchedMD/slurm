@@ -1943,10 +1943,8 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		return ESLURM_USER_ID_MISSING;
 	}
 	if ((job_desc_msg->name) &&
-	    (strlen(job_desc_msg->name) > MAX_NAME_LEN)) {
-		info("_validate_job_desc: job name %s too long",
-		     job_desc_msg->name);
-		return ESLURM_JOB_NAME_TOO_LONG;
+	    (strlen(job_desc_msg->name) >= MAX_NAME_LEN)) {
+		job_desc_msg->name[MAX_NAME_LEN-1] = '\0';
 	}
 	if (job_desc_msg->contiguous == (uint16_t) NO_VAL)
 		job_desc_msg->contiguous = 0;
