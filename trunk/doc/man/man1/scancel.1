@@ -1,0 +1,41 @@
+.TH SCANCEL "1" "July 2002" "scancel 0.1" "Slurm components"
+.SH "NAME"
+scancel \- Used to cancel jobs or job steps that are under the control of Slurm.
+.SH "SYNOPSIS"
+\fBscancel\fR [\fIOPTIONS\fR...] \fIjob_id\fR[.\fIstep_id\fR] [\fIjob_id\fR[.\fIstep_id\fR]...]
+.SH "DESCRIPTION"
+\fBscancel\fR is used to cancel jobs or job steps. An arbitrary number of jobs 
+or job steps may be cancelled using a space separated list. A job or job step 
+can only be cancelled by the owner of that job or user root. If an attempt is 
+made by an unauthorized user to cancel a job or job step, an error message will 
+be printed and the job will not be cancelled. 
+.TP
+OPTIONS
+.TP
+\fB-?\fR
+Report the usage for scancel.
+.TP
+\fB-i\fR
+Interactive mode. Confirm each job_id.step_id before performing the cancel operation.
+.TP
+\fB-v\fR
+Print the version number of the scontrol command.
+.TP
+ARGUMENTS
+.TP
+\fIjob_id\fP
+The Slurm job ID of the job to have one of its steps or the entire job cancelled.
+.TP
+\fIstep_id\fP
+The step ID of the job step to be cancelled. If none is provided, then 
+all jobs steps associated with the provided job_id will be cancelled along 
+with the job itself.
+.SH "EXAMPLES"
+.TP
+Cancel steps 1 and 3 of job 1234:
+scancel 1234.1 1234.3
+.TP
+Cancel job 1234 along with all of its steps:
+scancel 1234
+.SH "SEE ALSO"
+\fBslurm_cancel_job\fR(3), \fBslurm_cancel_job_step\fR(3)
