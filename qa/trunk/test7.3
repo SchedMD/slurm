@@ -111,6 +111,11 @@ expect {
 		incr matches
 		exp_continue
 	}
+	-re "error" {
+		send_user "\nFAILURE: some error occurred\n"
+		set exit_code 1
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: spawn_task not responding\n"
 		exec $scancel --quiet $job_id
