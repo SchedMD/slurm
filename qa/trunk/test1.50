@@ -26,7 +26,7 @@ set host_3      ""
 set timeout $max_job_delay
 spawn $srun -N2 -n4 -l --distribution=block -t1 $bin_hostname  
 expect {
-	-re "More processors requested than permitted" {
+	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}
@@ -94,7 +94,7 @@ set host_3      ""
 set timeout $max_job_delay
 spawn $srun -N2 -n4 -l --distribution=cyclic -t1 $bin_hostname  
 expect {
-	-re "More processors requested than permitted" {
+	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exit 0
 	}

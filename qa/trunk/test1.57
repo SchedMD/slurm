@@ -34,7 +34,7 @@ exec $bin_chmod 700 $file_in
 set timeout $max_job_delay
 spawn $srun -N4 -A $file_in
 expect {
-	-re "More processors requested than permitted" {
+	-re "More ($alpha) requested than permitted" {
 		send_user "\nWARNING: can't test srun task distribution\n"
 		exec $bin_rm -f $file_in
 		exit $exit_code
