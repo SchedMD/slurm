@@ -150,7 +150,7 @@ _check_script_permissions(char * location)
  */
 static char ** _create_environment(char *job, char *user, char *job_name,
 	char *job_state, char *partition, char *limit, char* start, char * end,
-	char *node_list)
+	char * submit, char * batch, char *node_list)
 {
 	int len = 0;
 	char ** envptr;
@@ -165,10 +165,12 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	len += strlen(start)+7;
 	len += strlen(end)+5;
 	len += strlen(node_list)+7;
+        len += strlen(submit)+7;
+        len += strlen(batch)+6;
 #ifdef _PATH_STDPATH
 	len += strlen(_PATH_STDPATH)+6;
 #endif
-	len += (11*sizeof(char *));
+	len += (13*sizeof(char *));
 
 	if(!(envptr = (char **)try_xmalloc(len))) return NULL;
 
@@ -228,16 +230,28 @@ static char ** _create_environment(char *job, char *user, char *job_name,
 	memcpy(ptr,node_list,strlen(node_list)+1);
 	ptr += strlen(node_list)+1;
 
-#ifdef _PATH_STDPATH
 	envptr[9] = ptr;
+	memcpy(ptr,"SUBMIT=",7);
+	ptr += 7;
+	memcpy(ptr,submit,strlen(submit)+1);
+	ptr += strlen(submit)+1;
+
+	envptr[10] = ptr;
+	memcpy(ptr, "BATCH=",6);
+	ptr += 6;
+	memcpy(ptr,batch,strlen(batch)+1);
+	ptr += strlen(batch)+1;
+
+#ifdef _PATH_STDPATH
+	envptr[11] = ptr;
 	memcpy(ptr,"PATH=",5);
 	ptr += 5;
 	memcpy(ptr,_PATH_STDPATH,strlen(_PATH_STDPATH)+1);
 	ptr += strlen(_PATH_STDPATH)+1;
 
-	envptr[10] = NULL;
+	envptr[12] = NULL;
 #else
-	envptr[9] = NULL;
+	envptr[11] = NULL;
 #endif
 	
 	return envptr;
@@ -250,6 +264,7 @@ void *script_agent (void *args) {
 	pid_t pid = -1;
 	char user_id_str[32],job_id_str[32], nodes_cache[1];
 	char start_str[32], end_str[32], lim_str[32];
+	char submit_str[32], *batch_str;
 	char * argvp[] = {script,NULL};
 	int status;
 	char ** envp, * nodes;
@@ -270,6 +285,12 @@ void *script_agent (void *args) {
 			(unsigned long)job->start);
 		snprintf(end_str, sizeof(end_str),"%lu",
 			(unsigned long)job->end);
+		snprintf(submit_str, sizeof(submit_str),"%lu",
+			(unsigned long)job->submit);
+		if (job->batch_flag)
+			batch_str = "yes";
+		else
+			batch_str = "no"; 
 		nodes_cache[0] = '\0';
 
 		if (job->limit == INFINITE) {
@@ -289,7 +310,8 @@ void *script_agent (void *args) {
 		envp = _create_environment(job_id_str,user_id_str,
 					job->job_name, job->job_state,
 					job->partition, lim_str,
-					start_str,end_str,nodes);
+					start_str,end_str,submit_str,
+					batch_str,nodes);
 
 		if(envp == NULL) {
 			plugin_errno = ENOMEM;
@@ -385,6 +407,7 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 {
 	job_record job;
 	enum job_states job_state;
+	time_t submit;
 
 	debug3("Entering slurm_jobcomp_log_record");
 	/* Job will typically be COMPLETING when this is called. 
@@ -392,11 +415,16 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	 * JOB_FAILED, JOB_TIMEOUT, etc. */
 	job_state = job_ptr->job_state & (~JOB_COMPLETING);
 
+	if (job_ptr->details)
+		submit = job_ptr->details->submit_time;
+	else
+		submit = job_ptr->start_time;
+
 	job = job_record_create(job_ptr->job_id, job_ptr->user_id, job_ptr->name,
 				job_state_string(job_state), 
 				job_ptr->partition, job_ptr->time_limit,
 				job_ptr->start_time, job_ptr->end_time,
-				job_ptr->nodes);
+				submit, job_ptr->batch_flag, job_ptr->nodes);
 	pthread_mutex_lock(&job_list_mutex);
 	list_append(job_list,(void *)job);
 	pthread_mutex_unlock(&job_list_mutex);
