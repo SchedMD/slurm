@@ -221,7 +221,7 @@ int _create_bgl_partitions(List requests)
 int _fit_request(List sys, List allocated, uint16_t* request)
 {
 	int i, rc = 1;
-	uint16_t* new_request;
+	uint16_t* new_request = NULL;
 	int request_size = int_array_size(request);
 	partition_t* cur_partition;
 	ListIterator itr;
@@ -230,7 +230,6 @@ int _fit_request(List sys, List allocated, uint16_t* request)
 	int max_index = SYSTEM_DIMENSIONS; /* we want the earliest, so we'll 
 					    * set a good high point as the farthest 
 					    * dimesion */
-
 
 	if (sys == NULL || allocated == NULL || request == NULL)
 		return 1;
@@ -245,8 +244,6 @@ int _fit_request(List sys, List allocated, uint16_t* request)
 	debug("current system list");
 	print_sys_list(sys);
 #endif
-	/* ??? FIXME wtf, if rotate_part doesn't have something printed before it....it segfaults */
-	debug("");
 	rotate_part(request, &new_request);
 	xfree(request);
 	request = new_request;
