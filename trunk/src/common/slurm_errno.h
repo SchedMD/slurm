@@ -31,6 +31,7 @@
 #ifndef _SLURM_ERRNO_H
 #define _SLURM_ERRNO_H
 
+#include <errno.h>
 /* set errno to the specified value - then return -1 */ 
 #define slurm_seterrno_ret(errnum) do { slurm_seterrno(errnum); return (-1); } while (0)
 

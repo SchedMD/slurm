@@ -42,6 +42,7 @@
 #include <src/common/xstring.h>
 #include <src/common/list.h>
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/util_signals.h>
 #include <src/common/log.h>
 
 #include <src/slurmd/get_mach_stat.h>
@@ -93,8 +94,8 @@ static void * service_connection ( void * arg ) ;
 static void * slurmd_handle_signals ( void * args ) ;
 inline int slurmd_init ( ) ;
 inline int slurmd_destroy ( ) ;
+
 inline static int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_config ) ;
-inline static int blockall_signals ( ) ;
 inline static int slurmd_shutdown () ;
 
 int main (int argc, char *argv[]) 
@@ -132,7 +133,7 @@ int main (int argc, char *argv[])
 
 	
 	/* block all signals for now */
-	blockall_signals ( ) ;
+	block_all_signals_pthread ( ) ;
 
 	/* create attached thread to process RPCs */
 	if (pthread_attr_init (&thread_attr_rpc))
@@ -144,16 +145,6 @@ int main (int argc, char *argv[])
 	slurmd_handle_signals ( NULL ) ;
 	
 	slurmd_destroy ( ) ;
-	return SLURM_SUCCESS ;
-}
-
-int blockall_signals ( )
-{
-        sigset_t set;
-	if (sigfillset (&set))
-		error ("sigfillset errno %d", errno);
-	if (pthread_sigmask (SIG_BLOCK, &set, NULL))
-		error ("pthread_sigmask errno %d", errno);
 	return SLURM_SUCCESS ;
 }
 

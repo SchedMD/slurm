@@ -137,6 +137,8 @@ void * task_exec_thread ( void * arg )
 		case CHILD_PROCCESS:
 			debug ("CLIENT PROCESS");
 
+			unblock_all_signals ( ) ;
+
 			posix_signal_ignore (SIGTTOU); /* ignore tty output */
 			posix_signal_ignore (SIGTTIN); /* ignore tty input */
 			posix_signal_ignore (SIGTSTP); /* ignore user */
