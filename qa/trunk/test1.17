@@ -9,7 +9,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -43,6 +43,7 @@ print_header $test_id
 # Interactively print $SLURM_JOBID
 #
 set timeout $max_job_delay
+set match 0
 spawn $srun --allocate --verbose -t1
 expect {
 	-re "jobid ($number).*" {
@@ -52,7 +53,11 @@ expect {
 	}
 	-re "MY_ID=($number)" {
 		set slurm_jobid $expect_out(1,string)
-		send "exit\n"
+		send "exit 2\n"
+		exp_continue
+	}
+	-re "\[Ee\]xit 2" {
+		set match 1
 		exp_continue
 	}
 	timeout {
@@ -62,6 +67,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -69,7 +75,6 @@ expect {
 #
 # Confirm the job_ids match.
 #
- 
 if { $job_id == 0 } {
 	send_user "\nFAILURE: srun --allocate failure\n"
 	set exit_code 1
@@ -79,6 +84,15 @@ if { $job_id == 0 } {
 		set exit_code 1
 	}
 }
+
+#
+# Confirm exit code is propogated
+#
+if { $match != 1 } {
+	send_user "\nFAILURE: srun exit code not reported\n"
+	set exit_code 1
+}
+
 if { $exit_code == 0 } {
 	send_user "\nSUCCESS\n"
 }
