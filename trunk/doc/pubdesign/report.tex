@@ -144,6 +144,17 @@ currently collect the above data are available as models for SLURM development.
 The communications protocols in those daemon and logic to associate processes 
 with jobs would require modification.
 
+The current SLURM design only supports the allocation of entire nodes to 
+jobs. Our customers at LLNL have expressed the opinion that sharing of 
+nodes can severely reduce their job's performance and even reliability. 
+This is due to contention for shared resources such as local disk space, 
+real memory, virtual memory and processor cycles. The proper support of 
+shared resources, including the enforcement of limits on these resources, 
+entails a substantial amount of additional effort. Given such a cost to 
+benefit situation at LLNL, we have decided to not support shared nodes. 
+However, we have designed SLURM so as to not preclude the addition of 
+such a capability at a later time if so desired.
+
 It is not likely that each node in the cluster could report such information
 directly to the control machine without severe scalability constraints. This
 could be remedied by using intermediate nodes in a hierarchical fashion to

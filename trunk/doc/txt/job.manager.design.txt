@@ -27,6 +27,8 @@ NodeList   Explicit comma separated list of desired nodes. This is optional.
            configuration specifications must still be satisfied. These nodes need  
            not be in a single partition.
 TaskCount  Total count of tasks desired
+Contiguous Only contiguous nodes can be allocated to the job, TRUE or FALSE. 
+           Default is FALSE.
 
 Node configuration requirements, all optional:
 MinCpus           Minimum acceptable processor count per node

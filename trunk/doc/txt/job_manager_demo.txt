@@ -1,0 +1,106 @@
+# Read a sample node and partition configuration
+# Select nodes for a collection of job initiation specifications
+linux{jette}501: Controller sample.node.conf2 sample.part.conf2 sample.job.conf2
+User=FAILS_Node_Down JobType=INTERACTIVE NodeCount=1 MaxTime=40 NodeList=lx01
+Will_Job_Run: node lx01 does not meet job NodeState specification
+  Job can not be scheduled at this time, error=13 
+
+User=jette           JobType=INTERACTIVE NodeCount=2 MaxTime=40 NodeList=lx11,lx12
+  Job scheduled on this nodes:
+  lx11,lx12
+
+User=anyuser         JobType=BATCH       NodeCount=2 MaxTime=40 NodeList=lx11,lx12
+  Job scheduled on this nodes:
+  lx11,lx12
+
+User=FAILS_JobType   JobType=Batch       NodeCount=2 MinTmpDisk=1000 MaxTime=40 NodeList=lx07,lx12
+Find_Valid_Parts: Invalid JobType specified
+  Job can not be scheduled at this time, error=22 
+
+User=FAILS_Tmp_Disk  JobType=BATCH       NodeCount=2 MinTmpDisk=8000 MaxTime=40 NodeList=lx07,lx12
+Will_Job_Run: node lx07 does not meet job TmpDisk specification
+  Job can not be scheduled at this time, error=13 
+
+User=jette           JobType=BATCH       NodeCount=4 Partition=pbatch MinRealMemory=2048
+  Job scheduled on this nodes:
+  lx10,lx11,lx13,lx14
+
+User=userfor_lx14    JobType=BATCH       NodeCount=1 Partition=pbatch MinCpus=32
+  Job scheduled on this nodes:
+  lx14
+
+User=userfor_lx10-12 JobType=BATCH       NodeCount=2 Partition=pbatch MinVirtualMemory=4000
+  Job scheduled on this nodes:
+  lx10,lx12
+
+User=jette           JobType=BATCH       NodeCount=29
+  Job scheduled on this nodes:
+  lx03,lx04,lx05,lx06,lx07,lx08,lx09,lx10,lx11,lx12,lx13,lx14,lx15,lx16,lx17,lx19,lx20,lx21,lx22,lx23,lx24,lx25,lx26,lx27,lx28,lx29,lx30,lx31,lx32
+
+
+
+# The sample node configuration file
+linux{jette}504: cat sample.node.conf2
+# 
+# Sample sample.node.conf2
+# Author: John Doe
+# Date: 11/06/2001
+#
+Name=DEFAULT OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 State=IDLE
+#
+# lx01-lx02 for login only, no state is DOWN for SLURM initiated jobs
+Name=lx01 State=DOWN
+Name=lx02 State=DOWN
+#
+# lx03-lx09 for partitions 1 (debug) and 3 (super)
+Name=DEFAULT Partition=1,3
+Name=lx03
+Name=lx04
+Name=lx05 
+Name=lx06 
+Name=lx07 TmpDisk=4096
+Name=lx08 
+Name=lx09 
+#
+# lx10-lx30 for partitions 0 (pbatch) and 3 (super)
+Name=DEFAULT Partition=0,3
+Name=lx10 
+Name=lx11 VirtualMemory=2048
+Name=lx12 RealMemory=1024 
+Name=lx13 
+Name=lx14 CPUs=32
+Name=lx15 
+Name=lx16 
+Name=lx17 
+Name=lx18 State=DOWN
+Name=lx19 
+Name=lx20 
+Name=lx21 
+Name=lx22 CPUs=8
+Name=lx23 
+Name=lx24 
+Name=lx25 
+Name=lx26 
+Name=lx27 
+Name=lx28 
+Name=lx29 
+Name=lx30 
+#
+# lx31-lx32 for partitions 4 (class) and 3 (super)
+Name=DEFAULT Partition=3,4
+Name=lx31 
+Name=lx32 
+
+
+# The sample node configuration file
+linux{jette}505: cat sample.part.conf2 
+# 
+# Example sample.part.conf2
+# Author: John Doe
+# Date: 12/14/2001
+#
+Name=pbatch  Number=0 JobType=BATCH       MaxCpus=128 MaxTime=UNLIMITED
+Name=debug   Number=1 JobType=INTERACTIVE MaxCpus=16  MaxTime=60
+Name=super   Number=3 JobType=ALL   MaxCpus=UNLIMITED MaxTime=UNLIMITED AllowUsers=cdunlap,garlick,jette
+Name=class   Number=4 JobType=ALL         MaxCpus=16  MaxTime=10        AllowUsers=student1,student2,student3
+linux{jette}506: 
