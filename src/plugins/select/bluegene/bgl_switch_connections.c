@@ -27,9 +27,9 @@
 /**
  * connect the given switch up with the given connections
  */
-void _connect(rm_partition_t *my_part, rm_switch_t *my_switch,
-	      rm_connection_t *conn1, rm_connection_t *conn2, rm_connection_t *conn3,
-	      int first)
+static void _connect(rm_partition_t *my_part, rm_switch_t *my_switch,
+		rm_connection_t *conn1, rm_connection_t *conn2, 
+		rm_connection_t *conn3, int first)
 {
 	if (first){
 		rm_set_data(my_switch,RM_SwitchFirstConnection,conn1);
