@@ -48,7 +48,8 @@
 #include "src/common/xassert.h"
 
 
-/* used to define flags of the launch_tasks_request_msg_t.task_flags
+/* used to define flags of the launch_tasks_request_msg_t.and
+ * spawn task_request_msg_t task_flags
  */
 enum task_flag_vals {
 	TASK_PARALLEL_DEBUG = 0x1,
@@ -133,6 +134,7 @@ typedef enum {
 	REQUEST_KILL_TIMELIMIT,
 	REQUEST_KILL_JOB,
 	MESSAGE_EPILOG_COMPLETE,
+	REQUEST_SPAWN_TASK,
 
 	SRUN_PING = 7001,
 	SRUN_TIMEOUT,
@@ -276,6 +278,29 @@ typedef struct launch_tasks_response_msg {
 	uint32_t count_of_pids;
 	uint32_t *local_pids;
 } launch_tasks_response_msg_t;
+
+typedef struct spawn_task_request_msg {
+	uint32_t  job_id;
+	uint32_t  job_step_id;
+	uint32_t  nnodes;	/* number of nodes in this job step       */
+	uint32_t  nprocs;	/* number of processes in this job step   */
+	uint32_t  uid;
+	uint32_t  srun_node_id;	/* node id of this node (relative to job) */
+	uint16_t  envc;
+	uint16_t  argc;
+	uint16_t  cpus_allocated;
+	char    **env;
+	char    **argv;
+	char     *cwd;
+	uint16_t  io_port;
+	uint16_t  task_flags;
+	uint32_t  global_task_id;
+
+	int32_t   slurmd_debug; /* remote slurmd debug level */
+
+	slurm_cred_t cred;	/* job credential            */
+	switch_jobinfo_t switch_job;	/* switch credential for the job */
+} spawn_task_request_msg_t;
 
 typedef struct task_ext_msg {
 	uint32_t num_tasks;
@@ -424,6 +449,8 @@ void inline slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t *
 						msg);
 void inline slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 						 msg);
+void inline slurm_free_spawn_task_request_msg(spawn_task_request_msg_t *
+						msg);
 void inline slurm_free_task_exit_msg(task_exit_msg_t * msg);
 void inline slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg);
 

@@ -45,6 +45,7 @@ libslurm_la_SOURCES =    \
 	job_step_info.c  \
 	node_info.c      \
 	partition_info.c \
+	spawn.c \
 	submit.c         \
 	reconfigure.c    \
 	update_config.c  

@@ -167,6 +167,77 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	return job;
 }
 
+/* create a slurmd job structure from a spawn task message */
+slurmd_job_t * 
+job_spawn_create(spawn_task_request_msg_t *msg, slurm_addr *cli_addr)
+{
+	struct passwd *pwd;
+	slurmd_job_t  *job;
+	srun_info_t   *srun;
+	slurm_addr     io_addr;
+
+	xassert(msg != NULL);
+
+	debug3("entering job_spawn_create");
+
+	if ((pwd = _pwd_create((uid_t)msg->uid)) == NULL) {
+		error("uid %ld not found on system", (long) msg->uid);
+		slurm_seterrno (ESLURMD_UID_NOT_FOUND);
+		return NULL;
+	}
+	job = xmalloc(sizeof(*job));
+
+	job->jobid   = msg->job_id;
+	job->stepid  = msg->job_step_id;
+	job->uid     = (uid_t) msg->uid;
+	job->pwd     = pwd;
+	job->gid     = job->pwd->pw_gid;
+	job->nprocs  = msg->nprocs;
+	job->nnodes  = msg->nnodes;
+	job->nodeid  = msg->srun_node_id;
+	job->ntasks  = 1;	/* tasks to launch always one */
+	job->debug   = msg->slurmd_debug;
+	job->cpus    = msg->cpus_allocated;
+
+	job->timelimit   = (time_t) -1;
+	job->task_flags  = msg->task_flags;
+	job->spawn_task = true;
+
+	job->env     = _array_copy(msg->envc, msg->env);
+	job->argc    = msg->argc;
+	job->argv    = _array_copy(job->argc, msg->argv);
+
+	job->cwd     = xstrdup(msg->cwd);
+
+	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
+	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
+
+	job->switch_job = msg->switch_job;
+
+	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->eio     = eio_handle_create();
+
+	srun = srun_info_create(msg->cred, NULL, &io_addr);
+
+	job->sruns   = list_create((ListDelF) _srun_info_destructor);
+
+	list_append(job->sruns, (void *) srun);
+
+	_job_init_task_info(job, &(msg->global_task_id));
+
+	if (pipe(job->fdpair) < 0) {
+		error("pipe: %m");
+		return NULL;
+	}
+
+	fd_set_close_on_exec(job->fdpair[0]);
+	fd_set_close_on_exec(job->fdpair[1]);
+
+	job->smgr_status = -1;
+
+	return job;
+}
+
 /*
  * return the default output filename for a batch job
  */
@@ -344,9 +415,6 @@ srun_info_create(slurm_cred_t cred, slurm_addr *resp_addr, slurm_addr *ioaddr)
 	srun_key_t       *key  = xmalloc(sizeof(*key ));
 
 	srun->key    = key;
-	srun->ofname = NULL;
-	srun->efname = NULL;
-	srun->ifname = NULL;
 
 	/*
 	 * If no credential was provided, return the empty

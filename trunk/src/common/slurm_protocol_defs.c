@@ -282,7 +282,6 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	if (msg == NULL)
 		return;
 
-
 	slurm_cred_destroy(msg->cred);
 
 	if (msg->env) {
@@ -302,6 +301,34 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg->ifname);
 	xfree(msg->ofname);
 	xfree(msg->efname);
+
+	if (msg->switch_job)
+		switch_free_jobinfo(msg->switch_job);
+
+	xfree(msg);
+}
+
+void slurm_free_spawn_task_request_msg(spawn_task_request_msg_t * msg)
+{
+	int i;
+	if (msg == NULL)
+		return;
+
+	slurm_cred_destroy(msg->cred);
+
+	if (msg->env) {
+		for (i = 0; i < msg->envc; i++) {
+			xfree(msg->env[i]);
+		}
+		xfree(msg->env);
+	}
+	xfree(msg->cwd);
+	if (msg->argv) {
+		for (i = 0; i < msg->argc; i++) {
+			xfree(msg->argv[i]);
+		}
+		xfree(msg->argv);
+	}
 
 	if (msg->switch_job)
 		switch_free_jobinfo(msg->switch_job);
