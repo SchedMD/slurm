@@ -483,8 +483,10 @@ int error_task_socket ( nbio_attr_t * nbio_attr , int fd_index )
 		case ESLURMD_UNKNOWN_SOCKET_ERROR :
 		case ESLURMD_SOCKET_DISCONNECT :
 		case ESLURMD_EOF_ON_SOCKET :
-			slurm_close_stream ( nbio_attr -> fd [fd_index] ) ;
-			nbio_attr -> fd [fd_index] = -1 ;
+			if ( !slurm_close_stream ( nbio_attr -> fd [fd_index] ) ) ;
+			{
+				nbio_attr -> fd [fd_index] = -1 ;
+			}
 			switch ( nbio_attr -> reconnect_flags[fd_index] )
 			{
 				case CONNECTED :

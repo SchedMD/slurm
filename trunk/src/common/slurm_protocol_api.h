@@ -215,6 +215,7 @@ int inline slurm_close_stream ( slurm_fd open_fd ) ;
  * RET size_t		- bytes sent , or -1 on errror
  */
 size_t inline slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size ) ;
+size_t inline slurm_write_stream_timeout  ( slurm_fd open_fd , char * buffer , size_t size , int timeout ) ;
 
 /* slurm_read_stream
  * read into buffer grom a stream file descriptor
@@ -224,6 +225,7 @@ size_t inline slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t siz
  * RET size_t		- bytes read , or -1 on errror
  */
 size_t inline slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size ) ;
+size_t inline slurm_read_stream_timeout  ( slurm_fd open_fd , char * buffer , size_t size , int timeout ) ;
 
 /* slurm_get_stream_addr
  * esentially a encapsilated get_sockname  

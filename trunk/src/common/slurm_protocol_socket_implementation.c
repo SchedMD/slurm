@@ -50,6 +50,12 @@
 #include <src/common/log.h>
 #include <src/common/pack.h>
 
+/* global constants */
+struct timeval SLURM_MESSGE_TIMEOUT_SEC_STATIC = { tv_sec:10L , tv_usec:0 } ;
+struct timeval * SLURM_MESSGE_TIMEOUT_SEC = & SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
+
+
+/* internal static prototypes */
 /*****************************************************************
  * MIDDLE LAYER MSG FUNCTIONS
  ****************************************************************/
@@ -76,6 +82,11 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd )
 
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
+	return _slurm_msg_recvfrom_timeout ( open_fd , buffer , size , flags , slurm_address , SLURM_MESSGE_TIMEOUT_SEC ) ;
+}
+
+ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout)
+{
 	size_t recv_len ;
 
 	char size_buffer_temp [8] ;
@@ -89,8 +100,8 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	total_len = 0 ;
 	while ( total_len < sizeof ( uint32_t ) )
 	{	
-		//if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ) == SLURM_SOCKET_ERROR  )
-		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR  )
+		//if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR  )
+		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR  )
 		{
 			if ( errno ==  EINTR )
 			{
@@ -125,8 +136,8 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	total_len = 0 ;
 	while ( total_len < transmit_size )
 	{
-		//if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ) == SLURM_SOCKET_ERROR )
-		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
+		//if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
+		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR )
 		{
 			if ( errno ==  EINTR )
 			{
@@ -162,6 +173,11 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
+	return _slurm_msg_sendto_timeout ( open_fd, buffer , size , flags, slurm_address , SLURM_MESSGE_TIMEOUT_SEC ) ;
+}
+
+ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout )
+{
 	size_t send_len ;
 
 	char size_buffer_temp [8] ;
@@ -180,8 +196,8 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 
 	while ( true )
 	{
-		//if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) )  == SLURM_PROTOCOL_ERROR )
-		if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS) )  == SLURM_PROTOCOL_ERROR )
+		//if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS) )  == SLURM_PROTOCOL_ERROR )
+		if ( ( send_len = _slurm_send_timeout ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) )  == SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
 			{
@@ -210,8 +226,8 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	}
 	while ( true )
 	{
-		//if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ) == SLURM_PROTOCOL_ERROR )
-		if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		//if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( send_len = _slurm_send_timeout ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
 			{
@@ -246,16 +262,12 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	return SLURM_PROTOCOL_ERROR ;
 }
 
-int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, int timeout )
+int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, struct timeval * timeout )
 {
 	int rc ;
 	int bytes_sent = 0 ;
 	int fd_flags ;
 	_slurm_fd_set set ;
-	struct timeval time_out_val ;
-	
-	time_out_val . tv_sec = timeout ;
-	time_out_val . tv_usec = 0 ;
 
 	_slurm_FD_ZERO ( & set ) ;
 	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
@@ -263,7 +275,7 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 	while ( bytes_sent < size )
 	{
 		_slurm_FD_SET ( open_fd , &set ) ;
-		rc = _slurm_select ( open_fd + 1 , NULL , & set, NULL , & time_out_val ) ;
+		rc = _slurm_select ( open_fd + 1 , NULL , & set, NULL , timeout ) ;
 		if ( rc == SLURM_PROTOCOL_ERROR || rc < 0 )
 		{
 			if ( errno == EINTR )
@@ -322,16 +334,13 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 	
 }
 
-int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, int timeout )
+int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, struct timeval * timeout )
 {
 	int rc ;
 	int bytes_recv = 0 ;
 	int fd_flags ;
 	_slurm_fd_set set ;
-	struct timeval time_out_val ;
 	
-	time_out_val . tv_sec = timeout ;
-	time_out_val . tv_usec = 0 ;
 
 	_slurm_FD_ZERO ( & set ) ;
 	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
@@ -339,7 +348,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 	while ( bytes_recv < size )
 	{
 		_slurm_FD_SET ( open_fd , &set ) ;
-		rc = _slurm_select ( open_fd + 1 , & set , NULL , NULL , & time_out_val ) ;
+		rc = _slurm_select ( open_fd + 1 , & set , NULL , NULL , timeout ) ;
 		if ( rc == SLURM_PROTOCOL_ERROR || rc < 0 )
 		{
 			if ( errno == EINTR )

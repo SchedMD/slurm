@@ -424,6 +424,43 @@ slurm_fd slurm_open_stream ( slurm_addr * slurm_address )
 	return _slurm_open_stream ( slurm_address ) ;
 }
 
+size_t slurm_write_stream_timeout_tv  ( slurm_fd open_fd , char * buffer , size_t size , struct timeval * timeout )
+{
+	return _slurm_send_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ;
+}
+
+size_t slurm_read_stream_timeout_tv  ( slurm_fd open_fd , char * buffer , size_t size , struct timeval * timeout )
+{
+	return _slurm_recv_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ;
+}
+
+size_t slurm_write_stream_timeout  ( slurm_fd open_fd , char * buffer , size_t size , int timeout )
+{
+	struct timeval time_out ;
+	time_out . tv_sec = timeout ;
+	time_out . tv_usec = 0 ;
+	return _slurm_send_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & time_out ) ;
+}
+
+size_t slurm_read_stream_timeout  ( slurm_fd open_fd , char * buffer , size_t size , int timeout )
+{
+	struct timeval time_out ;
+	time_out . tv_sec = timeout ;
+	time_out . tv_usec = 0 ;
+	return _slurm_recv_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & time_out ) ;
+}
+
+size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
+{
+	return _slurm_send_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ;
+}
+
+size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
+{
+	return _slurm_recv_timeout ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ;
+}
+
+/*
 size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
 	int rc ;
@@ -469,6 +506,7 @@ size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
 		}
 	}
 }
+*/
 
 int slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address )
 {
