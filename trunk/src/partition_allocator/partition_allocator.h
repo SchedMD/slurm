@@ -46,6 +46,8 @@ typedef struct {
 	int geometry[PA_SYSTEM_DIMENSIONS];
 	int size; 
 	int conn_type;
+	int rotate_count;
+	int elongate_count;
 	bool rotate;
 	bool elongate; 
 	bool force_contig;
@@ -67,7 +69,7 @@ typedef struct {
 	 * array of Lists accessed by dimension, ie conf_result_list[dim]
 	 */
 	List conf_result_list[PA_SYSTEM_DIMENSIONS]; 
-	
+	port_t ports[NUM_PORTS_PER_NODE];
 } pa_node_t;
 
 typedef struct {

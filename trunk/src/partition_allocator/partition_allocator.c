@@ -80,14 +80,15 @@ int _load_part_config(char* filename, List part_config_list);
 /* run the graph solver to get the conf_result(s) */
 int _get_part_config(int num_nodes, List port_config_list, List conf_result_list);
 /* find the first partition match in the system */
-int _find_first_match(pa_request_t* pa_request, List* results);
+int _check_for_options(pa_request_t* pa_request); 
+int _find_match(pa_request_t* pa_request, List* results);
 bool _find_first_match_aux(pa_request_t* pa_request, int dim2check, int const_dim, 
 			   int dimA, int dimB, List* results);
 /* check to see if the conf_result matches */
-/* bool _check_pa_node(pa_node_t* pa_node, int geometry,  */
+/* bool _node_used(pa_node_t* pa_node, int geometry,  */
 /*  		    int conn_type, bool force_contig, */
 /* 		    dimension_t dim, int cur_node_id); */
-bool _check_pa_node(pa_node_t* pa_node);
+bool _node_used(pa_node_t* pa_node);
 /* */
 void _process_results(List results, pa_request_t* request);
 /* */
@@ -509,103 +510,252 @@ int _get_part_config(int num_nodes, List switch_config_list, List config_result_
 	return rc;
 }
 
+int _check_for_options(pa_request_t* pa_request) 
+{
+	int temp;
+	if(pa_request->rotate) {
+		//printf("Rotating! %d%d%d \n",pa_request->geometry[X],pa_request->geometry[Y],pa_request->geometry[Z]);
+		if (pa_request->rotate_count==(PA_SYSTEM_DIMENSIONS-1)) {
+			//printf("Special!\n");
+			temp=pa_request->geometry[X];
+			pa_request->geometry[X]=pa_request->geometry[Z];
+			pa_request->geometry[Z]=temp;
+			pa_request->rotate_count++;
+			return 1;
+		
+		} else if(pa_request->rotate_count<(PA_SYSTEM_DIMENSIONS*2)) {
+			temp=pa_request->geometry[X];
+			pa_request->geometry[X]=pa_request->geometry[Y];
+			pa_request->geometry[Y]=pa_request->geometry[Z];
+			pa_request->geometry[Z]=temp;
+			pa_request->rotate_count++;
+			return 1;
+		} else 
+			pa_request->rotate = false;
+		       
+	}
+	if(pa_request->elongate && pa_request->elongate_count<PA_SYSTEM_DIMENSIONS) {
+		pa_request->elongate_count++;
+		printf("Elongating! not working yet\n");
+		return 0;
+	}
+	return 0;
+}
+
 /** 
  * greedy algorithm for finding first match
  */
-int _find_first_match(pa_request_t* pa_request, List* results)
+int _find_match(pa_request_t* pa_request, List* results)
 {
-	int cur_dim=0, cur_node_id, k=0, x=0, y=0, z=0;
-	int found_count[PA_SYSTEM_DIMENSIONS] = {0,0,0};
-	bool match_found, request_filled = false;
+	int x=0, y=0, z=0;
 	int *geometry = pa_request->geometry;
-	
-	for (z=0; z<DIM_SIZE[Z]; z++){ 
-	for (y=0; y<DIM_SIZE[Y]; y++){ 
-	for (x=0; x<DIM_SIZE[X]; x++){
-		cur_dim = X;
-		cur_node_id = x;
+	int start_x=0, start_y=0, start_z=0;
+	int find_x=0, find_y=0, find_z=0;
+	pa_node_t* pa_node;
+	ListIterator itr;
+	int found_one=0;
 
-		if (found_count[cur_dim] != geometry[cur_dim]){
-			pa_node_t* pa_node = &_pa_system_ptr->grid[x][y][z];
-			// printf("address of pa_node %d%d%d(%s) 0x%p\n", x,y,z, convert_dim(cur_dim), pa_node);
-			match_found = _check_pa_node(pa_node);
-			if (match_found){
-				/* now we recursively snake down the remaining dimensions 
-				 * to see if they can also satisfy the request. 
-				 */
-				/* "remaining_OK": remaining nodes can support the configuration */
-				bool remaining_OK = _find_first_match_aux(pa_request, X, Y, x, z, results);
-				if (remaining_OK){
-					/* insert the pa_node_t* into the List of results */
+	*results = list_create(NULL);
+start_again:
+	//printf("starting looking for a grid of %d%d%d\n",pa_request->geometry[X],pa_request->geometry[Y],pa_request->geometry[Z]);
+	for (z=0; z<geometry[Z]; z++) {
+		for (y=0; y<geometry[Y]; y++) {			
+			for (x=0; x<geometry[X]; x++) {
+				pa_node = &_pa_system_ptr->grid[find_x][find_y][find_z];
+				if (!_node_used(pa_node)) {
+					//	cont_x++;			
+					
+					//printf("Yeap, I found one at %d%d%d\n", find_x, find_y, find_z);
 					_insert_result(*results, pa_node);
-					found_count[cur_dim]++;
-#ifdef DEBUG_PA
-					printf("_find_first_match: found match for %s = %d%d%d\n",
-					       convert_dim(cur_dim), x,y,z); 
-					printf("<found %d geometry %d>\n", found_count[cur_dim], geometry[cur_dim]);
-#endif
-					if (found_count[cur_dim] == geometry[cur_dim]){
-#ifdef DEBUG_PA
-						printf("_find_first_match: found full match for %s dimension\n", 
-						       convert_dim(cur_dim));
-#endif
-						request_filled = true;
-						goto done;
-					}
+					find_x++;
+					found_one=1;
 				} else {
-#ifdef DEBUG_PA
-					printf("_find_first_match: match NOT found for other dimensions,"
-					       " resetting previous results\n"); 
-#endif
-					for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
-						found_count[k] = 0;
+					//printf("hey I am used! %d%d%d\n", find_x, find_y, find_z);
+					if(found_one) {
+						list_destroy(*results);
+						*results = list_create(NULL);
+						found_one=0;
 					}
-					list_destroy(*results);
-					*results = list_create(NULL);
+					if((DIM_SIZE[X]-find_x-1)>=geometry[X]) {
+						find_x++;
+						start_x=find_x;
+					} else {
+						find_x=0;
+						start_x=find_x;
+						if(find_z<(DIM_SIZE[Z]-1)) {
+							//find_y=0;
+							//printf("incrementing find_Z from %d to %d\n",find_z,find_z+1);
+							find_z++;
+							start_z=find_z;
+						} else if (find_y<(DIM_SIZE[Y]-1)) {
+							find_z=0;
+							start_z=find_z;
+							//printf("incrementing find_y from %d to %d\n",find_y,find_y+1);
+							find_y++;
+							//printf("setting start_y = %d\n",find_y);
+							start_y=find_y;
+						} else {
+							//printf("couldn't find it\n");
+							if(!_check_for_options(pa_request))
+								return 0;
+							else {
+								find_x=0;
+								find_y=0;
+								find_z=0;
+								start_x=0;
+								start_y=0;
+								start_z=0;
+								goto start_again;
+							}
+						}
+						//printf("x= %d, y= %d, z= %d\n", x, y, z);
+					}
+					goto start_again;
+				}		
+			}
+			//printf("looking at %d%d%d\n",x,y,z);
+			find_x=start_x;
+			if(y<(geometry[Y]-1)) {
+				if(find_y<(DIM_SIZE[Y]-1)) {
+					find_y++;
+				} else {
+					if(!_check_for_options(pa_request))
+						return 0;
+					else {
+						find_x=0;
+						find_y=0;
+						find_z=0;
+						start_x=0;
+						start_y=0;
+						start_z=0;
+						goto start_again;
+					}
 				}
-			} 
+			}
+		//start_y=find_y;
 		}
-		
-		/* check whether we're done */
-		bool all_found = true;
-		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){
-			if (found_count[k] != geometry[k]) {
-				all_found = false;
-				break;
+		find_y=start_y;
+		if(z<(geometry[Z]-1)) {
+			if(find_z<(DIM_SIZE[Z]-1)) {
+				find_z++;
+			} else {
+				if(!_check_for_options(pa_request))
+					return 0;
+				else {
+					find_x=0;
+					find_y=0;
+					find_z=0;
+					start_x=0;
+					start_y=0;
+					start_z=0;
+					goto start_again;
+				}
 			}
 		}
-		if (all_found){
-			request_filled = true;
-			goto done;
-		}
-		
-	} /* X dimension for loop for */
-	} /* Y dimension for loop */
-	} /* Z dimension for loop*/
-	
- done:
-	/* if the request is filled, we then need to touch the
-	 * projections of the allocated partition to reflect the
-	 * correct effect on the system.
-	 */
-	if (request_filled){
-#ifdef DEBUG_PA
-		printf("_find_first_match: match found for request %d%d%d\n",
-		       geometry[X], geometry[Y], geometry[Z]);
-#endif
-		_process_results(*results, pa_request);
-		// _print_results(*results);
-
-		return 0;
-	} else {
-		list_destroy(*results);
-#ifdef DEBUG_PA
-		printf("_find_first_match: error, couldn't "
-		       "find match for request %d%d%d\n",
-		       geometry[X], geometry[Y], geometry[Z]);
-#endif
-		return 1;
+		//start_z=find_z;
 	}
+
+	if(found_one) {
+		/** THIS IS where we might should call the graph
+		 * solver to see if the allocation can be wired,
+		 * before returning a definitive TRUE */
+		itr = list_iterator_create(*results);
+		while((pa_node = (pa_node_t*) list_next(itr))){
+			
+			pa_node->used=1;
+			//printf("Using node %d%d%d\n",pa_node->coord[X], pa_node->coord[Y], pa_node->coord[Z]);
+		}
+	} else {
+		printf("couldn't find it 2\n");
+		return 0;
+	}
+	return 1;
+/*********************Dan's old code**********************************************/
+
+/* 		cur_dim = X; */
+/* 		cur_node_id = x; */
+
+/* 		if (found_count[cur_dim] != geometry[cur_dim]){ */
+/* 			pa_node_t* pa_node = &_pa_system_ptr->grid[x][y][z]; */
+/* 			// printf("address of pa_node %d%d%d(%s) 0x%p\n", x,y,z, convert_dim(cur_dim), pa_node); */
+/* 			match_found = _node_used(pa_node); */
+/* 			if (!match_found){ */
+/* 				/\* now we recursively snake down the remaining dimensions  */
+/* 				 * to see if they can also satisfy the request.  */
+/* 				 *\/ */
+/* 				/\* "remaining_OK": remaining nodes can support the configuration *\/ */
+/* 				bool remaining_OK = _find_first_match_aux(pa_request, X, Y, x, z, results); */
+/* 				if (remaining_OK){ */
+/* 					/\* insert the pa_node_t* into the List of results *\/ */
+/* 					_insert_result(*results, pa_node); */
+/* 					found_count[cur_dim]++; */
+/* #ifdef DEBUG_PA */
+/* 					printf("_find_first_match: found match for %s = %d%d%d\n", */
+/* 					       convert_dim(cur_dim), x,y,z);  */
+/* 					printf("<found %d geometry %d>\n", found_count[cur_dim], geometry[cur_dim]); */
+/* #endif */
+/* 					if (found_count[cur_dim] == geometry[cur_dim]){ */
+/* #ifdef DEBUG_PA */
+/* 						printf("_find_first_match: found full match for %s dimension\n",  */
+/* 						       convert_dim(cur_dim)); */
+/* #endif */
+/* 						request_filled = true; */
+/* 						goto done; */
+/* 					} */
+/* 				} else { */
+/* #ifdef DEBUG_PA */
+/* 					printf("_find_first_match: match NOT found for other dimensions," */
+/* 					       " resetting previous results\n");  */
+/* #endif */
+/* 					for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){ */
+/* 						found_count[k] = 0; */
+/* 					} */
+/* 					list_destroy(*results); */
+/* 					*results = list_create(NULL); */
+/* 				} */
+/* 			}  */
+/* 		} */
+		
+/* 		/\* check whether we're done *\/ */
+/* 		bool all_found = true; */
+/* 		for (k=0; k<PA_SYSTEM_DIMENSIONS; k++){ */
+/* 			if (found_count[k] != geometry[k]) { */
+/* 				all_found = false; */
+/* 				break; */
+/* 			} */
+/* 		} */
+/* 		if (all_found){ */
+/* 			request_filled = true; */
+/* 			goto done; */
+/* 		} */
+		
+/* 	} /\* X dimension for loop for *\/ */
+/* 	} /\* Y dimension for loop *\/ */
+/* 	} /\* Z dimension for loop*\/ */
+	
+/*  done: */
+/* 	/\* if the request is filled, we then need to touch the */
+/* 	 * projections of the allocated partition to reflect the */
+/* 	 * correct effect on the system. */
+/* 	 *\/ */
+/* 	if (request_filled){ */
+/* #ifdef DEBUG_PA */
+/* 		printf("_find_first_match: match found for request %d%d%d\n", */
+/* 		       geometry[X], geometry[Y], geometry[Z]); */
+/* #endif */
+/* 		_process_results(*results, pa_request); */
+/* 		// _print_results(*results); */
+
+/* 		return 0; */
+/* 	} else { */
+/* 		list_destroy(*results); */
+/* #ifdef DEBUG_PA */
+/* 		printf("_find_first_match: error, couldn't " */
+/* 		       "find match for request %d%d%d\n", */
+/* 		       geometry[X], geometry[Y], geometry[Z]); */
+/* #endif */
+/* 		return 1; */
+/* 	} */
 }
 
 /**
@@ -646,8 +796,8 @@ bool _find_first_match_aux(pa_request_t* pa_request,
 		// convert_dim(var_dim), convert_dim(dim2check));
 		pa_node = &_pa_system_ptr->grid[a][b][c];
 		if (found_count[dim2check] != geometry[dim2check]){
-			match_found = _check_pa_node(pa_node);
-			if (match_found){
+			match_found = _node_used(pa_node);
+			if (!match_found){
 				bool remaining_OK;
 				if (dim2check == X){
 					/* index "i" should be the y dir here */
@@ -697,21 +847,21 @@ bool _find_first_match_aux(pa_request_t* pa_request,
 	return request_filled;
 }
 
-/* bool _check_pa_node(pa_node_t* pa_node, int geometry,  */
+/* bool _node_used(pa_node_t* pa_node, int geometry,  */
 /*  		    int conn_type, bool force_contig, */
 /* 		    dimension_t dim, int cur_node_id) */
-bool _check_pa_node(pa_node_t* pa_node)
+bool _node_used(pa_node_t* pa_node)
 {
 /* 	ListIterator itr; */
 /* 	conf_result_t* conf_result; */
 /* 	int i=0, j = 0; */
 
-	/* printf("check_pa_node: node to check against %s %d\n", convert_dim(dim), cur_node_id); */
+	/* printf("_node_used: node to check against %s %d\n", convert_dim(dim), cur_node_id); */
 	/* if we've used this node in another partition already */
 	if (_is_down_node(pa_node) || pa_node->used)
-		return false;
-	else
 		return true;
+	else
+		return false;
 
 	
 
@@ -1206,7 +1356,9 @@ endit:
 	printf("geometry: %d %d %d size = %d\n", pa_request->geometry[0],pa_request->geometry[1],pa_request->geometry[2], pa_request->size);
 		
 	pa_request->conn_type = conn_type;
+	pa_request->rotate_count= 0;
 	pa_request->rotate = rotate;
+	pa_request->elongate_count = 0;
 	pa_request->elongate = elongate;
 	pa_request->force_contig = force_contig;
 	
@@ -1412,19 +1564,11 @@ int allocate_part(pa_request_t* pa_request, List* results)
 #endif
 
 	// _backup_pa_system();
-	if (!_find_first_match(pa_request, results)){
-		ListIterator itr = list_iterator_create(*results);
-		pa_node_t* pa_node;
-		while((pa_node = list_next(itr))){
-			pa_node->used = true;
-		}
-
-		/** THIS IS where we might should call the graph
-		 * solver to see if the allocation can be wired,
-		 * before returning a definitive TRUE */
-		
+	if (_find_match(pa_request, results)){
+		//printf("hey I am returning 1\n");
 		return 1;
 	} else {
+		//printf("hey I am returning 0\n");
 		return 0;
 	}
 }
@@ -1522,8 +1666,8 @@ char* get_conf_result_str(List pa_node_list)
 int main(int argc, char** argv)
 {
 	int geo[3] = {-1,-1,-1};
-	bool rotate = false;
-	bool elongate = false;
+	bool rotate = true;
+	bool elongate = true;
 	bool force_contig = true;
 	List results;
 	pa_request_t *request; 
@@ -1532,23 +1676,7 @@ int main(int argc, char** argv)
 	request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 	results = list_create(NULL);
 
-	if (argc == 4){
-		int i;
-		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
-			geo[i] = atoi(argv[i+1]);
-		}
-		new_pa_request(request, geo, -1, rotate, elongate, 
-			force_contig, SELECT_TORUS);
-	} else if (argc == 2) {
-		new_pa_request(request, geo, atoi(argv[1]), rotate, 
-			elongate, force_contig, SELECT_TORUS);
-	} else {
-		printf(" usage: partition_allocator dimX dimY dimZ\n");
-		printf("    or: partition_allocator size\n");
-		printf(" tries to allocate the given geometry request \n");
-		exit(0);
-	}
-
+	
 	//printf("geometry: %d %d %d size = %d\n", request->geometry[0], request->geometry[1], request->geometry[2], request->size);
 	time(&start);
 	pa_init();
@@ -1561,39 +1689,58 @@ int main(int argc, char** argv)
 	  set_node_down(dead_node2);
 	  printf("done setting node down\n");
 	*/
-	  int dead_node1[3] = {0,0,0};
+	/*int dead_node1[3] = {0,0,0};
 	  set_node_down(dead_node1);
-	
+	*/
 	// time(&start);
-	if (allocate_part(request, &results)){
-		ListIterator itr;
-
-		printf("<allocation succeeded>\n");
-		       
-/* 		itr = list_iterator_create(results); */
-/* 		printf("results: \n"); */
-		/*
-		pa_node_t* result;
-		while((result = (pa_node_t*) list_next(itr))){
-			printf("%d%d%d ", 
-			       result->coord[0], 
-			       result->coord[1],
-			       result->coord[2]);
-		}
-		printf("\n");
-		*/
-/* 		char* result = get_conf_result_str(results); */
-/* 		printf("results: %s\n", result); */
-/* 		xfree(result); */
-/* 		printf("results: %s\n", result); */
-		list_destroy(results);
-		// _print_results(results);
-	} else {
-		printf("request failed\n");
-	}
-
+	
 	results = list_create(NULL);
+	geo[0] = 2;
+	geo[1] = 2;
+	geo[2] = 2;	
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
 	allocate_part(request, &results);
+	list_destroy(results);
+	
+	results = list_create(NULL);
+	geo[0] = 2;
+	geo[1] = 2;
+	geo[2] = 2;	
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
+	allocate_part(request, &results);
+	list_destroy(results);
+	
+	results = list_create(NULL);
+	geo[0] = 4;
+	geo[1] = 4;
+	geo[2] = 4;	
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
+	allocate_part(request, &results);
+	list_destroy(results);
+	
+	results = list_create(NULL);
+	geo[0] = 2;
+	geo[1] = 3;
+	geo[2] = 4;	
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
+	allocate_part(request, &results);
+	list_destroy(results);
+	
+	results = list_create(NULL);
+	geo[0] = 2;
+	geo[1] = 2;
+	geo[2] = 4;	
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
+	allocate_part(request, &results);
+	list_destroy(results);
+	
+	results = list_create(NULL);
+	geo[0] = 4;
+	geo[1] = 1;
+	geo[2] = 2;	
+	new_pa_request(request, geo, -1, rotate, elongate, force_contig, SELECT_TORUS);
+	allocate_part(request, &results);
+	list_destroy(results);
 	// time(&end);
 	// printf("allocate: %ld\n", (end-start));
 
