@@ -25,35 +25,41 @@
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
 
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <src/common/slurm_protocol_api.h>
+#include "src/api/slurm.h"
+#include "src/common/hostlist.h"
+#include "src/common/slurm_protocol_api.h"
 
 /* slurm_complete_job - note the completion of a job and all of its steps */
 int 
-slurm_complete_job ( uint32_t job_id )
+slurm_complete_job ( uint32_t job_id, uint32_t job_return_code,
+                     uint32_t system_return_code )
 {
-	return slurm_complete_job_step ( job_id, NO_VAL);
+	return slurm_complete_job_step ( job_id, NO_VAL, job_return_code, 
+	                                 system_return_code);
 }
 
 /* slurm_complete_job_step - note the completion of a specific job step 
  *	(or all steps if step_id==NO_VAL) */
 int 
-slurm_complete_job_step ( uint32_t job_id, uint32_t step_id  )
+slurm_complete_job_step ( uint32_t job_id, uint32_t step_id, 
+                          uint32_t job_return_code, 
+                          uint32_t system_return_code )
 {
 	int msg_size ;
 	int rc ;
 	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
-	job_step_id_msg_t job_step_id_msg ;
+	complete_job_step_msg_t complete_job_step_msg ;
 	return_code_msg_t * slurm_rc_msg ;
+	char host[128];
 
 	/* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
@@ -63,10 +69,14 @@ slurm_complete_job_step ( uint32_t job_id, uint32_t step_id  )
 	}
 
 	/* send request message */
-	job_step_id_msg . job_id = job_id ;
-	job_step_id_msg . job_step_id = step_id ;
-	request_msg . msg_type = REQUEST_COMPLETE_JOB_STEP ;
-	request_msg . data = &job_step_id_msg ;
+	complete_job_step_msg . job_id		= job_id ;
+	complete_job_step_msg . job_step_id	= step_id ;
+	complete_job_step_msg . job_rc		= job_return_code ;
+	complete_job_step_msg . slurm_rc	= system_return_code ;
+	(void) getnodename (host, sizeof(host)) ;
+	complete_job_step_msg . node_name	= host;
+	request_msg . msg_type	= REQUEST_COMPLETE_JOB_STEP ;
+	request_msg . data	= &complete_job_step_msg ;
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
 			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );

@@ -207,6 +207,15 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 	}
 }
 
+void slurm_free_job_complete_msg(complete_job_step_msg_t * msg)
+{
+	if (msg) {
+		if (msg->node_name)
+			xfree(msg->node_name);
+		xfree(msg);
+	}
+}
+
 
 void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 					  msg)
