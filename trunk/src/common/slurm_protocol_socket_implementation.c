@@ -41,6 +41,7 @@
 #include <signal.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <arpa/inet.h>
 #include <sys/param.h>
 #include <stdlib.h>
@@ -60,6 +61,12 @@
 #include "src/common/xsignal.h"
 #include "src/common/xmalloc.h"
 #include "src/common/util-net.h"
+
+#define PORT_RETRIES    2
+#define MIN_USER_PORT   (IPPORT_RESERVED + 1)
+#define MAX_USER_PORT   0xffff
+#define RANDOM_USER_PORT ((uint16_t) ((lrand48() % \
+                (MAX_USER_PORT - MIN_USER_PORT + 1)) + MIN_USER_PORT))
 
 /*
  *  Maximum message size. Messages larger than this value (in bytes)
@@ -98,8 +105,39 @@ slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address )
 slurm_fd _slurm_accept_msg_conn (slurm_fd fd, slurm_addr *addr)
 {
         return _slurm_accept_stream(fd, addr);
-}        
+} 
 
+/*
+ * Pick a random port number to use. Use this if the system 
+ * selected port can't connect. This may indicate that the 
+ * port/address of both the client and server match a defunct 
+ * socket record in TIME_WAIT state.
+ */
+static void _sock_bind_wild(int sockfd)
+{
+        int rc, retry;
+        slurm_addr sin;
+        static bool seeded = false;
+
+        if (!seeded) {
+                seeded = true;
+                srand48((long int) (time(NULL) + getpid()));
+        }
+
+        memset(&sin, 0, sizeof(sin));
+        sin.sin_family = AF_INET;
+        sin.sin_addr.s_addr = htonl(INADDR_ANY);
+        sin.sin_port = htons(RANDOM_USER_PORT);
+
+        for (retry=0; retry < PORT_RETRIES ; retry++) {
+                rc = bind(sockfd, (struct sockaddr *) &sin, sizeof(sin));
+                if (rc >= 0)
+                        break;
+                sin.sin_port  = htons(RANDOM_USER_PORT);
+        }
+        return;
+}
+       
 /* 
  * This would be a no-op in a message implementation
  */
@@ -389,32 +427,43 @@ slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr *addr)
 
 slurm_fd _slurm_open_stream(slurm_addr *addr)
 {
-        int rc;
+        int rc, retry;
         slurm_fd fd;
 
         if ( (addr->sin_family == 0) || (addr->sin_port  == 0) ) 
                 return SLURM_SOCKET_ERROR;
 
-        if ((fd =_slurm_create_socket(SLURM_STREAM)) < 0) {
-		error("Error creating slurm stream socket: %m");
-                return fd;
-        }
+        for (retry=0; ; retry++) {
+                if ((fd =_slurm_create_socket(SLURM_STREAM)) < 0) {
+        		error("Error creating slurm stream socket: %m");
+                        return fd;
+                }
 
-        rc = _slurm_connect(fd, (struct sockaddr const *)addr, sizeof(*addr));
+                if (retry) {
+                        if (retry == 1)
+                                debug3("Error connecting, picking new stream port");
+                        _sock_bind_wild(fd);
+                }
 
-        if (rc < 0) {
-		debug2("Error connecting slurm stream socket: %m");
-		goto error;
+                rc = _slurm_connect(fd, (struct sockaddr const *)addr, sizeof(*addr));
+                if (rc >= 0)                    /* success */
+                        break;
+                if ((errno != ECONNREFUSED) || (retry > PORT_RETRIES))
+                        goto error;
+
+                if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
+                        _slurm_close_stream(fd);        /* try again */
 	}
 
         return fd;
 
     error:
+        debug2("Error connecting slurm stream socket: %m");
 	if ((_slurm_close_stream(fd) < 0) && (errno == EINTR))
 		_slurm_close_stream(fd);	/* try again */
         return rc;
 }
-        
+
 int _slurm_get_stream_addr(slurm_fd fd, slurm_addr *addr )
 {
         int size = sizeof(addr);
