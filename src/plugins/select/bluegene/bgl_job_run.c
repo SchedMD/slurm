@@ -183,16 +183,19 @@ static char *_get_part_owner(pm_partition_id_t bgl_part_id)
 /* Set the owner of an existing partition */
 static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 {
-	int i, rc;
+	int rc;
 	rm_partition_t * part_elem;
-	rm_partition_state_t part_state;
-
+	
 	if (user && user[0])
 		info("Setting partition %s owner to %s", bgl_part_id, user);
 	else
 		info("Clearing partition %s owner", bgl_part_id);
 
-#ifdef USE_BGL_FILES
+
+#ifdef HAVE_BGL_FILES
+
+// FIX: the else clause in this is wrong.
+
 /* Also, remove logic to boot partitions. BGLblocks should be allocated via 
  * MMCSconsole to user nobody and bluegene.conf set at slurmctld boot time */
 
@@ -217,6 +220,8 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 
 	return err_ret;
 #else
+	int i=0;
+	rm_partition_state_t part_state;
 	/* Wait for partition state to be FREE */
 	for (i=0; i<MAX_POLL_RETRIES; i++) {
 		sleep(POLL_INTERVAL);
@@ -275,6 +280,10 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
  */
 static int _boot_part(pm_partition_id_t bgl_part_id)
 {
+#ifdef USE_BGL_FILES
+/* Due to various system problems, we do not want to boot BGL
+ * partitions when each job is started, but only at slurmctld 
+ * startup on an as needed basis. */
 	int rc;
 
 	info("Booting partition %s", bgl_part_id);
@@ -283,6 +292,7 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 			bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
+#endif
 	return SLURM_SUCCESS;
 }
 
@@ -375,7 +385,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	}
 
 	/* Change the block's owner */
-	_set_part_owner(bgl_update_ptr->bgl_part_id, "nobody");
+	_set_part_owner(bgl_update_ptr->bgl_part_id, USER_NAME);
 
 	if ((rc = rm_free_job_list(job_list)) != STATUS_OK)
 		error("rm_free_job_list(): %s", bgl_err_str(rc));
@@ -463,7 +473,7 @@ static List _get_all_blocks(void)
 	if (!ret_list)
 		fatal("malloc error");
 
-	itr = list_iterator_create(bgl_init_part_list);
+	itr = list_iterator_create(bgl_curr_part_list);
 	while ((block_ptr = (bgl_record_t *) list_next(itr))) {
 		if ((block_ptr->owner_name == NULL)
 		||  (block_ptr->owner_name[0] == '\0') 
@@ -522,6 +532,32 @@ extern int start_job(struct job_record *job_ptr)
 	return rc;
 }
 
+#ifdef HAVE_BGL_FILES
+/*
+ * Perform any work required to terminate a jobs on a partition
+ * bgl_part_id IN - partition name
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens when new partitions are created and we 
+ * need to clean up jobs on them.
+ */
+int term_jobs_on_part(pm_partition_id_t bgl_part_id)
+{
+	int rc = SLURM_SUCCESS;
+	bgl_update_t *bgl_update_ptr;
+	if (bgl_update_list == NULL) {
+		debug("No jobs started that I know about");
+		return rc;
+	}
+	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
+	bgl_update_ptr->op = TERM_OP;
+	bgl_update_ptr->bgl_part_id = bgl_part_id;
+	_part_op(bgl_update_ptr);
+	
+	return rc;
+}
+#endif
+
 /*
  * Perform any work required to terminate a job
  * job_ptr IN - pointer to the job being terminated
@@ -531,7 +567,7 @@ extern int start_job(struct job_record *job_ptr)
  * the job. Insure that this function, mpirun and the epilog can
  * all deal with termination race conditions.
  */
-extern int term_job(struct job_record *job_ptr)
+int term_job(struct job_record *job_ptr)
 {
 	int rc = SLURM_SUCCESS;
 #ifdef HAVE_BGL_FILES
@@ -565,8 +601,10 @@ extern int sync_jobs(List job_list)
 	ListIterator job_iterator, block_iterator;
 	struct job_record  *job_ptr;
 	pm_partition_id_t bgl_part_id;
-	bgl_update_t *bgl_update_ptr;
 	List block_list = _get_all_blocks();
+#ifdef USE_BGL_BLOCK
+	bgl_update_t *bgl_update_ptr;
+#endif
 
 	/* Insure that all running jobs own the specified partition */
 	job_iterator = list_iterator_create(job_list);

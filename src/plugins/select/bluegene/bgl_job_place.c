@@ -24,21 +24,6 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#if HAVE_CONFIG_H
-#  include "config.h"
-#endif
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <slurm/slurm.h>
-
-#include "src/common/bitstring.h"
-#include "src/common/list.h"
-#include "src/common/log.h"
-#include "src/common/macros.h"
-
-#include "src/slurmctld/proc_req.h"
 #include "src/common/node_select.h"
 #include "bluegene.h"
 #include "partition_sys.h"
@@ -122,38 +107,24 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		target_size *= req_geometry[i];
 	if (target_size == 0)	/* no geometry specified */
 		target_size = min_nodes;
-
 	/* this is where we should have the control flow depending on
 	 * the spec arguement */
 	itr = list_iterator_create(bgl_list);
 	*found_bgl_record = NULL;
 
-	/*
-	 * FIXME: NEED TO PUT THIS LOGIC IN: 
-	 * if RM_NAV, then the partition with both the TORUS and the
-	 * dims should be favored over the MESH and the dims, but
-	 * foremost is the correct num of dims. 
-	 */
 	debug("number of partitions to check: %d", list_count(bgl_list));
 	while ((record = (bgl_record_t*) list_next(itr))) {
 		/*
 		 * check that the number of nodes is suitable
 		 */
- 		if ((record->size < min_nodes)
-		||  (max_nodes != 0 && record->size > max_nodes)
-		||  (record->size < target_size)) {
+ 		if ((record->bp_count < min_nodes)
+		||  (max_nodes != 0 && record->bp_count > max_nodes)
+		||  (record->bp_count < target_size)) {
 			debug("partition %s node count not suitable",
-				record->slurm_part_id);
+				record->bgl_part_id);
 			continue;
 		}
-
-		/* Check that configured */
-		if (!record->alloc_part) {
-			error("warning, bgl_record %s undefined in "
-				"bluegene.conf", record->nodes);
-			continue;
-		}
-
+		
 		/*
 		 * Next we check that this partition's bitmap is within 
 		 * the set of nodes which the job can use. 
@@ -161,9 +132,14 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		 * drained, allocated to some other job, or in some 
 		 * SLURM partition not available to this job.
 		 */
+		char bitstring[BITSIZE];
+		char bitstring2[BITSIZE];
+		bit_fmt(bitstring, BITSIZE, record->bitmap);
+		bit_fmt(bitstring2, BITSIZE, slurm_part_bitmap);
+		
 		if (!bit_super_set(record->bitmap, slurm_part_bitmap)) {
 			debug("bgl partition %s has nodes not usable by this "
-				"job", record->nodes);
+				"job", record->bgl_part_id);
 			continue;
 		}
 
@@ -174,7 +150,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		&& (!bit_super_set(job_ptr->details->req_node_bitmap,
 				record->bitmap))) {
 			info("bgl partition %s lacks required nodes",
-				record->nodes);
+				record->bgl_part_id);
 			continue;
 		}
 
@@ -184,7 +160,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		if ((conn_type != record->conn_type)
 		&&  (conn_type != SELECT_NAV)) {
 			debug("bgl partition %s conn-type not usable", 
-				record->nodes);
+				record->bgl_part_id);
 			continue;
 		} 
 
@@ -194,7 +170,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		if ((node_use != record->node_use) 
 		&&  (node_use != SELECT_NAV)) {
 			debug("bgl partition %s node-use not usable", 
-					record->nodes);
+					record->bgl_part_id);
 			continue;
 		}
 
@@ -208,17 +184,15 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			int rot_cnt = 0;	/* attempt six rotations  */
 
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
-				for (i=0; i<SYSTEM_DIMENSIONS; i++) {
-					if (record->alloc_part->dimensions[i] <
-							req_geometry[i])
-						break;
-				}
-				if (i == SYSTEM_DIMENSIONS) {
+				
+				if ((record->geo[X] >= req_geometry[X])
+				&&  (record->geo[Y] >= req_geometry[Y])
+				&&  (record->geo[Z] >= req_geometry[Z])) {
 					match = true;
 					break;
 				}
-				if (rotate == 0)
-					break;		/* not usable */
+				if (!rotate)
+					break;
 				_rotate_geo(req_geometry, rot_cnt);
 			}
 
@@ -227,9 +201,9 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		}
 
 		if ((*found_bgl_record == NULL)
-		||  (record->size < (*found_bgl_record)->size)) {
+		||  (record->bp_count < (*found_bgl_record)->bp_count)) {
 			*found_bgl_record = record;
-			if (record->size == target_size)
+			if (record->bp_count == target_size)
 				break;
 		}
 	}
@@ -238,7 +212,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {
 		debug("_find_best_partition_match %s <%s>", 
-			(*found_bgl_record)->slurm_part_id, 
+			(*found_bgl_record)->bgl_part_id, 
 			(*found_bgl_record)->nodes);
 		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
 		return SLURM_SUCCESS;
@@ -268,8 +242,8 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		SELECT_PRINT_MIXED);
 	debug("bluegene:submit_job: %s nodes=%d-%d", buf, min_nodes, max_nodes);
 	
-	if (_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
-					max_nodes, spec, &record)) {
+	if ((_find_best_partition_match(job_ptr, slurm_part_bitmap, min_nodes, 
+					max_nodes, spec, &record)) == SLURM_ERROR) {
 		return SLURM_ERROR;
 	} else {
 		/* now we place the part_id into the env of the script to run */
