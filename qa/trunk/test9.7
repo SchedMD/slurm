@@ -27,7 +27,7 @@ for {set inx 0} {$inx < $task_cnt} {incr inx} {
 }
 
 #
-# Run cycle_count jobs to copy job input to job output and compare sizes
+# Test output for successful completion messasge
 #
 set success_cnt 0
 set timeout [expr $max_job_delay * $interations * $task_cnt]
@@ -36,6 +36,9 @@ for {set inx 0} {$inx < $task_cnt} {incr inx} {
 		-i $task_id($inx)
 		"########## EXIT_CODE 0 ##########" {
 			incr success_cnt
+		}
+		timeout {
+			send_user "\nFAILURE: Timeout on task $inx\n"
 		}
 	}
 }
