@@ -33,7 +33,7 @@ global variables
 #define CHILD_ERR_RD 4
 #define CHILD_ERR_WR 5
 
-extern slurmd_shmem_t * shmem_seg ;
+//extern slurmd_shmem_t * shmem_seg ;
 
 /* prototypes */
 void slurm_free_task ( void * _task ) ;
@@ -78,9 +78,11 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 {
 	int i ;
 	int rc ;
+	
 	/* shmem work - see slurmd.c shmem_seg this is probably not needed*/
-	//slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
-	slurmd_shmem_t * shmem_ptr = shmem_seg ;
+	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
+	//slurmd_shmem_t * shmem_ptr = shmem_seg ;
+
 	/*alloc a job_step objec in shmem for this launch_tasks request */
 	/*launch_tasks should really be named launch_job_step*/
 	job_step_t * curr_job_step = alloc_job_step ( shmem_ptr , launch_msg -> job_id , launch_msg -> job_step_id ) ;
