@@ -86,6 +86,7 @@ struct Node_Record {
     int RealMemory;			/* Actual megabytes of real memory on the node */
     int TmpDisk;			/* Actual megabytes of total storage in TMP_FS file system */
     struct Config_Record *Config_Ptr;	/* Configuration specification for this node */
+    struct Part_Record *Partition_Ptr;	/* Partition for this node */
 };
 extern struct Node_Record *Node_Record_Table_Ptr; /* Location of the node records */
 extern int	Node_Record_Count;	/* Count of records in the Node Record Table */

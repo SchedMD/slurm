@@ -304,7 +304,8 @@ int Build_BitMaps() {
 		    BitMapSet(Part_Record_Point->NodeBitMap, j);
 		    BitMapSet(AllPart_NodeBitMap, j);
 		    Part_Record_Point->TotalNodes++;
-		    Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
+		    Part_Record_Point->TotalCPUs += Node_Record_Point->CPUs;
+		    Node_Record_Point->Partition_Ptr = Part_Record_Point;
 		} /* else */
 	    } /* for */
 	    free(Format);

@@ -422,6 +422,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
     return Config_Point;
 } /* Create_Config_Record */
 
+
 /* 
  * Create_Node_Record - Create a node record
  * Input: Error_Code - Location to store error value in
@@ -484,6 +485,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Co
     Node_Record_Point->NodeState	= Default_Node_Record.NodeState;
     Node_Record_Point->LastResponse	= Default_Node_Record.LastResponse;
     Node_Record_Point->Config_Ptr	= Config_Point;
+    Node_Record_Point->Partition_Ptr	= NULL;
     /* These values will be overwritten when the node actually registers */
     Node_Record_Point->CPUs 		= Config_Point->CPUs;
     Node_Record_Point->RealMemory  	= Config_Point->RealMemory;
@@ -524,6 +526,10 @@ int Delete_Node_Record(char *name) {
 	return ENOENT;
     } /* if */
 
+    if (Node_Record_Point->Partition_Ptr) {
+	(Node_Record_Point->Partition_Ptr->TotalNodes)--;
+	(Node_Record_Point->Partition_Ptr->TotalCPUs) -= Node_Record_Point->CPUs;
+    } /* if */
     strcpy(Node_Record_Point->Name, "");
     Node_Record_Point->NodeState = STATE_DOWN;
     return 0;
@@ -909,6 +915,8 @@ int Init_Node_Conf() {
     Default_Node_Record.CPUs   		= 1;
     Default_Node_Record.RealMemory    	= 1;
     Default_Node_Record.TmpDisk    	= 1;
+    Default_Node_Record.Config_Ptr    	= NULL;
+    Default_Node_Record.Partition_Ptr	= NULL;
     Default_Config_Record.CPUs       	= 1;
     Default_Config_Record.RealMemory 	= 1;
     Default_Config_Record.TmpDisk    	= 1;
@@ -1408,6 +1416,9 @@ int Validate_Node_Specs(char *NodeName, int CPUs, int RealMemory, int TmpDisk) {
 	Error_Code = EINVAL;
     } /* if */
     Node_Ptr->CPUs = CPUs;
+    if ((Config_Ptr->CPUs != CPUs) &&
+	(Node_Ptr->Partition_Ptr))	/* Need to update Partition records TotalCPUs */
+	Node_Ptr->Partition_Ptr->TotalCPUs += (CPUs - Config_Ptr->CPUs);
 
     if (RealMemory < Config_Ptr->RealMemory) {
 #if DEBUG_SYSTEM
