@@ -13,7 +13,6 @@ main (int argc, char *argv[])
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i;
 	node_info_msg_t * node_info_msg_ptr = NULL;
-	node_info_t * node_ptr ;
 
 	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr);
 	if (error_code) {
@@ -21,9 +20,8 @@ main (int argc, char *argv[])
 		return (error_code);
 	}
 
-	printf("Nodes updated at %d, record count %d\n",
-		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
-	node_ptr = node_info_msg_ptr -> node_array ;
+	printf("Nodes updated at %ld, record count %d\n",
+		(long)node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
 	{
@@ -31,7 +29,7 @@ main (int argc, char *argv[])
 		 * last 1 entry, and every 200th entry */
 		if ((i < 10) || (i % 200 == 0) || 
 		    ((i + 1)  == node_info_msg_ptr-> record_count)) {
-			slurm_print_node_table ( stdout, & node_ptr[i] ) ;
+			slurm_print_node_table ( stdout, & node_info_msg_ptr -> node_array[i] ) ;
 		}
 		else if ((i==10) || (i % 200 == 1))
 			printf ("skipping...\n");

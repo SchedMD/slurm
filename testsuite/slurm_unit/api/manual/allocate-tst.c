@@ -48,28 +48,25 @@ main (int argc, char *argv[])
 
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1;
-	job_mesg. groups = ("students,employee\0");
 	job_mesg. name = ("job01\0");
 	job_mesg. partition_key = "1234";
 	job_mesg. min_procs = 4;
 	job_mesg. min_memory = 1024;
 	job_mesg. min_tmp_disk = 2034;
-	job_mesg. partition = "batch\0";
 	job_mesg. priority = 100;
-	job_mesg. req_nodes = "lx[3000-3003]\0";
 	job_mesg. shared = 0;
 	job_mesg. time_limit = 200;
-	job_mesg. num_procs = 1000;
-	job_mesg. num_nodes = 400;
+	job_mesg. num_nodes = 1;
 	job_mesg. user_id = 1500;
 
 
 	error_code = slurm_allocate_resources ( &job_mesg , &resp_msg , false ); 
 	if (error_code)
 		printf ("allocate error %d\n", errno);
-	else
+	else {
 		report_results(resp_msg);
-	slurm_free_resource_allocation_response_msg ( resp_msg );
+		slurm_free_resource_allocation_response_msg ( resp_msg );
+	}
 
 	for (job_count = 1 ; job_count <max_jobs;  job_count++) {
 		slurm_init_job_desc_msg( &job_mesg );
@@ -93,9 +90,10 @@ main (int argc, char *argv[])
 			printf ("allocate error %d\n", errno);
 			break;
 		}
-		else 
+		else {
 			report_results(resp_msg);
-		slurm_free_resource_allocation_response_msg ( resp_msg );
+			slurm_free_resource_allocation_response_msg ( resp_msg );
+		}
 	}
 
 	for ( ; job_count <max_jobs;  job_count++) {
@@ -109,9 +107,10 @@ main (int argc, char *argv[])
 			printf ("allocate error %d\n", errno);
 			break;
 		}
-		else 
+		else {
 			report_results(resp_msg);
-		slurm_free_resource_allocation_response_msg ( resp_msg );
+			slurm_free_resource_allocation_response_msg ( resp_msg );
+		}
 	}
 
 	for ( ; job_count <max_jobs;  job_count++) {
@@ -125,9 +124,10 @@ main (int argc, char *argv[])
 			printf ("allocate error %d\n", errno);
 			break;
 		}
-		else 
+		else {
 			report_results(resp_msg);
-		slurm_free_resource_allocation_response_msg ( resp_msg );
+			slurm_free_resource_allocation_response_msg ( resp_msg );
+		}
 	}
 
 	return (0);

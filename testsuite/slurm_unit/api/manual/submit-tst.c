@@ -10,7 +10,7 @@
 int 
 main (int argc, char *argv[]) 
 {
-/*	int error_code, i, count;
+	int error_code, i, count;
 	job_desc_msg_t job_mesg;
 	submit_response_msg_t *resp_msg;
 	char *env[2];
@@ -46,9 +46,10 @@ main (int argc, char *argv[])
 		printf ("submit error %d\n", errno);
 		return (error_code);
 	}
-	else
+	else {
 		printf ("job %u submitted\n", resp_msg->job_id);
-	slurm_free_submit_response_msg ( resp_msg );
+		slurm_free_submit_response_response_msg ( resp_msg );
+	}
 
 	if (argc > 1) 
 		count = atoi (argv[1]);
@@ -79,9 +80,9 @@ main (int argc, char *argv[])
 		}
 		else {
 			printf ("job %u submitted\n", resp_msg->job_id);
+			slurm_free_submit_response_response_msg ( resp_msg );
 		}
-		slurm_free_submit_response_msg ( resp_msg );
 	}
 	exit (error_code);
-*/
+
 }
