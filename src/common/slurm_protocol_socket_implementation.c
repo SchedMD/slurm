@@ -1,6 +1,29 @@
-/* Author Kevin Tew
- * May 17, 2002
- */
+/*****************************************************************************\
+ *  slurm_protocol_socket_implementation.c - slurm communications interfaces 
+ *	based upon sockets
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
@@ -501,6 +524,10 @@ void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host 
 void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host )
 {
 	struct hostent * host_info = gethostbyname ( host ) ;
+	if (host_info == NULL) {
+		error ("gethostbyname failure on %s, defaulting to localhost", host);
+		host_info = gethostbyname ( "localhost" ) ;
+	}
 	memcpy ( & slurm_address -> sin_addr . s_addr , host_info -> h_addr , host_info -> h_length ) ;
 	slurm_address -> sin_family = AF_SLURM ;
 	slurm_address -> sin_port = htons ( port ) ;
