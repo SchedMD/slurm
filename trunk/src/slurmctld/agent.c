@@ -451,9 +451,9 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 		int no_resp_cnt, int retry_cnt)
 {
 #if AGENT_IS_THREAD
-	/* Locks: Write job and write node */
+	/* Locks: Read config, write job, write node */
 	slurmctld_lock_t node_write_lock =
-	    { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	    { READ_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 #endif
 	thd_t *thread_ptr = agent_ptr->thread_struct;
 	int i;

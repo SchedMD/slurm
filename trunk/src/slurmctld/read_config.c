@@ -1059,6 +1059,7 @@ static void _validate_node_proc_count(void)
  * switch_state_begin - Recover or initialize switch state
  * IN recover - If set, recover switch state as previously saved
  * RET 0 if no error, otherwise an error code
+ * Don't need slurmctld_conf lock as nothing else is running to update value
  */ 
 int switch_state_begin(int recover)
 {
@@ -1071,6 +1072,7 @@ int switch_state_begin(int recover)
 /*
  * switch_state_fini - save switch state and shutdown switch
  * RET 0 if no error, otherwise an error code
+ * Don't need slurmctld_conf lock as nothing else is running to update value
  */ 
 int switch_state_fini(void)
 {

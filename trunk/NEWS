@@ -29,6 +29,8 @@ documents those changes that are of interest to users and admins.
  -- Added -q,--quit-on-interrupt option to srun.
  -- Elan switch plugin now starts neterr resolver thread on all Elan3
     systems (QsNet and QsNetII).
+ -- Added some missing read locks for references for slurmctld's 
+    configuration data structure
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
