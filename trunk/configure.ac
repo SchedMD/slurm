@@ -47,12 +47,18 @@ dnl Checks for header files.
 dnl
 AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
-                 stdlib.h 					 \
+                 stdlib.h \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
 
+AC_CHECK_HEADER(readline/readline.h, [], 
+	[AC_MSG_ERROR("readline/readline.h not found")],
+	[]
+)
+
+AC_CHECK_LIB([readline], [readline], [], AC_MSG_ERROR([libreadline not found!],[history]))
 
 dnl Checks for structures.
 dnl
