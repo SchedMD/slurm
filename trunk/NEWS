@@ -1,23 +1,23 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.0-pre5
-=============================
+* Changes in SLURM 0.3.0.0-pre5
+===============================
  -- Fixes for reported problems:
    - slurm/346: Support multiple colon-separated PluginDir values
  -- Fix node state transition: DOWN to DRAINED (instead of DRAINING)
  -- Fix a couple of minor slurmctld memory leaks
 
-* Changes in SLURM 0.3.0-pre4
-=============================
+* Changes in SLURM 0.3.0.0-pre4
+===============================
  -- Fix bug where early launch failures (such as invalid UID/GID) resulted
     in jobs not terminating properly.
  -- Initial support for BNR committed (not yet functional).
  -- QsNet: SLURM now uses /etc/elanhosts exclusively for converting 
     hostnames to ElanIDs.
 
-* Changes in SLURM 0.3.0-pre3
-=============================
+* Changes in SLURM 0.3.0.0-pre3
+===============================
  -- Fixes for reported problems:
    - slurm/328: Slurmd was restarting with a new shared memory segment and 
      losing track of jobs
@@ -54,16 +54,16 @@ documents those changes that are of interest to users and admins.
  -- Increase maximum jobs steps per node from 16 to 64
  -- Delete correct shared memory segment on slurmd -c (clean start)
 
-* Changes in SLURM 0.3.0-pre2
-=============================
+* Changes in SLURM 0.3.0.0-pre2
+===============================
  -- Fixes for reported problems:
    - slurm/326: Properly clean-up jobs terminating on non-responding nodes
  -- Move all configuration data structure into common/read_config, scontrol
     now always shows default values if not specified in slurm.conf file
  -- Remove the unused "Prioritize" configuration parameter
 
-* Changes in SLURM 0.3.0-pre1
-=============================
+* Changes in SLURM 0.3.0.0-pre1
+===============================
  -- Fixes for reported problems:
    - slurm/252: "jobs left orphaned when using TotalView:" SLURM controller 
      now pings srun and kills defunct jobs.
