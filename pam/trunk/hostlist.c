@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
+ *  $LSDId: hostlist.c,v 1.14 2003/10/14 20:11:54 grondo Exp $
+ *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
@@ -2038,7 +2040,7 @@ _get_bracketed_list(hostlist_t hl, int *start, const size_t n, char *buf)
     len = snprintf(buf, n, "%s", hr[i]->prefix);
 
     if ((len < 0) || (len > n))
-        return -1;
+        return n; /* truncated, buffer filled */
 
     if (bracket_needed && len < n && len >= 0)
         buf[len++] = '[';

@@ -1,6 +1,8 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
+ *  $LSDId: hostlist.h,v 1.4 2003/09/19 21:37:34 grondo Exp $
+ *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
