@@ -40,7 +40,7 @@ libcommon_la_SOURCES = 			\
 	pack.c pack.h			\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
-	read_config.c read_confi.h	\
+	read_config.c read_config.h	\
 	slurm_errno.c			\
 	slurm_protocol_api.c		\
  	slurm_protocol_api.h		\
@@ -49,11 +49,14 @@ libcommon_la_SOURCES = 			\
 	slurm_protocol_util.c		\
 	slurm_protocol_util.h		\
 	slurm_protocol_socket_implementation.c	\
-	slurm_protocol_socket_implementation.h	\
+	slurm_protocol_socket_common.h	\
+	slurm_protocol_common.h		\
+	slurm_protocol_interface.h	\
 	slurm_protocol_defs.c		\
 	slurm_protocol_defs.h		\
 	util-net.c util-net.h		\
 	slurm_auth.h			\
+	macros.h			\
 	$(elan_sources) \
         $(auth_sources)
 
