@@ -14,6 +14,9 @@ system running SLURM.
 \fB-?\fR, \fB--help\fR
 Print a help message describing the usage of \fBsinfo\fR.
 .TP
+\fB-i <time>\fR , \fB--iterate <time>\fR
+Print the state on a periodic basis.
+.TP
 \fB-l\fR , \fB--long\fR
 List more detailed information than normally provided.
 .TP
@@ -47,6 +50,9 @@ The names of one or more comma separated partitions.
 .TP
 \fBstate\fR
 A valid node state. Possible values include: DOWN, UNKNOWN, IDLE, ALLOCATED, DRAINED, and DRAINING.
+.TP
+\fBtime\fR
+Number of seconds to wait between each iteration.
 .SH "EXAMPLE"
 .eo
 PUT THE EXAMPLE HERE...
