@@ -791,7 +791,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
  * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
  * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
  * NOTE: the caller must insure that the buffer is sufficiently large to hold 
- *	 the data being written (space remaining at leas BUF_SIZE)
+ *	 the data being written (space remaining at least BUF_SIZE)
  */
 int 
 pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 

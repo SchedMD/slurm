@@ -109,9 +109,10 @@ main (int argc, char *argv[])
 	update_time = (time_t) 0;
 	error_code = pack_all_part (&dump, &dump_size, &update_time);
 	if (error_code) {
-		printf ("ERROR: pack_part error %d\n", error_code);
+		printf ("ERROR: pack_all_part error %d\n", error_code);
 		error_count++;
 	}
+	xfree (dump);
 
 	error_code = update_part ("batch", update_spec);
 	if (error_code) {
@@ -528,8 +529,13 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
 	packstr (part_record_point->allow_groups, buf_ptr, buf_len);
 	packstr (part_record_point->nodes, buf_ptr, buf_len);
-	bit_fmt (node_inx_ptr, BUF_SIZE, part_record_point->node_bitmap);
-	packstr (node_inx_ptr, buf_ptr, buf_len);
+	if (part_record_point->node_bitmap) {
+		bit_fmt (node_inx_ptr, BUF_SIZE, part_record_point->node_bitmap);
+		packstr (node_inx_ptr, buf_ptr, buf_len);
+	}
+	else
+		packstr ("", buf_ptr, buf_len);
+
 
 	return 0;
 }
