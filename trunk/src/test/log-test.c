@@ -16,23 +16,23 @@ int main(int ac, char **av)
 	log_opts.stderr_level = LOG_LEVEL_DEBUG2;
 
 	/* test log to stderr when log not initialized */
-	error("test: log not initialized.");
+	error("testing with unitialized log.");
 
 	/* now initialize log: */
 	log_init("log-test", log_opts, 0, NULL);
 
-	error  ("error message");
-	info   ("informational");
-	verbose("verbose");
-	debug  ("debug level 1");
-	debug2 ("debug level 2");
+	error  ("testing error");
+	info   ("testing info ");
+	verbose("testing verbose");
+	debug  ("testing debug level 1");
+	debug2 ("testing debug level 2");
 	debug3 ("ERROR: Should not see this.");
 
 	info   ("testing print of null pointer: %p = %s",  p, p);
 
-	info   ("double: %18.7f int: %05i string `%s'", f, i, string);
+	info   ("testing double: %18.7f int: %05i string `%s'", f, i, string);
 
-	info   ("unsigned: %u   int: % 08d", u, negi);
+	info   ("testing unsigned: %u   int: % 08d", u, negi);
 
 	/* for now, this test passes if we make it through without 
 	 * dumping core
