@@ -181,19 +181,17 @@ static int _build_bitmaps(void)
 			node_record_point =
 			    find_node_record(this_node_name);
 			if (node_record_point == NULL) {
-				error
-				    ("_build_bitmaps: invalid node name specified %s",
-				     this_node_name);
+				error("_build_bitmaps: invalid node name "
+					"specified %s", this_node_name);
 				free(this_node_name);
 				continue;
 			}
 			j = node_record_point - node_record_table_ptr;
 			if (bit_test(all_part_node_bitmap, j) == 1) {
-				error
-				    ("_build_bitmaps: node %s defined in more than one partition",
-				     this_node_name);
-				error
-				    ("_build_bitmaps: only the first specification is honored");
+				error("_build_bitmaps: node %s defined in "
+					"more than one partition", this_node_name);
+				error("_build_bitmaps: only the first "
+					"specification is honored");
 			} else {
 				bit_set(part_record_point->node_bitmap, j);
 				bit_set(all_part_node_bitmap, j);
@@ -294,9 +292,8 @@ static int _parse_node_spec(char *in_line)
 		}
 		if ((state_val == NO_VAL) ||
 		    (state_val == NODE_STATE_COMPLETING)) {
-			error
-			    ("_parse_node_spec: invalid initial state %s for node %s",
-			     state, node_name);
+			error("_parse_node_spec: invalid initial state %s for "
+				"node %s", state, node_name);
 			error_code = EINVAL;
 			goto cleanup;
 		}
@@ -486,9 +483,8 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(default_str, "NO") == 0)
 			default_val = 0;
 		else {
-			error
-			    ("update_part: ignored partition %s update, bad state %s",
-			     partition_name, default_str);
+			error("update_part: ignored partition %s update, "
+				"bad state %s", partition_name, default_str);
 			error_code = EINVAL;
 			goto cleanup;
 		}
@@ -501,9 +497,8 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(root_str, "NO") == 0)
 			root_val = 0;
 		else {
-			error
-			    ("update_part: ignored partition %s update, bad key %s",
-			     partition_name, root_str);
+			error("update_part: ignored partition %s update, "
+				"bad key %s", partition_name, root_str);
 			error_code = EINVAL;
 			goto cleanup;
 		}
@@ -533,9 +528,8 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(shared_str, "FORCE") == 0)
 			shared_val = SHARED_FORCE;
 		else {
-			error
-			    ("update_part: ignored partition %s update, bad shared %s",
-			     partition_name, shared_str);
+			error("update_part: ignored partition %s update, "
+				"bad shared %s", partition_name, shared_str);
 			error_code = EINVAL;
 			goto cleanup;
 		}
@@ -548,9 +542,8 @@ static int _parse_part_spec(char *in_line)
 		else if (strcasecmp(state_str, "DOWN") == 0)
 			state_val = 0;
 		else {
-			error
-			    ("update_part: ignored partition %s update, bad state %s",
-			     partition_name, state_str);
+			error("update_part: ignored partition %s update, "
+				"bad state %s", partition_name, state_str);
 			error_code = EINVAL;
 			goto cleanup;
 		}
@@ -595,9 +588,9 @@ static int _parse_part_spec(char *in_line)
 	}
 	if (default_val == 1) {
 		if (strlen(default_part_name) > 0)
-			info(
-			   "_parse_part_spec: changing default partition from %s to %s", 
-			   default_part_name, partition_name);
+			info("_parse_part_spec: changing default partition "
+				"from %s to %s", 
+				default_part_name, partition_name);
 		strcpy(default_part_name, partition_name);
 		default_part_loc = part_record_point;
 	}
@@ -690,9 +683,9 @@ int read_slurm_conf(int recover)
 	while (fgets(in_line, BUF_SIZE, slurm_spec_file) != NULL) {
 		line_num++;
 		if (strlen(in_line) >= (BUF_SIZE - 1)) {
-			error
-			    ("read_slurm_conf line %d, of input file %s too long",
-			     line_num, slurmctld_conf.slurm_conf);
+			error("read_slurm_conf line %d, of input file %s "
+				"too long", 
+				line_num, slurmctld_conf.slurm_conf);
 			xfree(old_node_table_ptr);
 			fclose(slurm_spec_file);
 			return E2BIG;
@@ -851,7 +844,7 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 {
 	if (ctl_conf_ptr->backup_controller == NULL)
-		info("read_slurm_conf: backup_controller value not specified.");
+		info("read_slurm_conf: backup_controller not specified.");
 
 	if (ctl_conf_ptr->fast_schedule == (uint16_t) NO_VAL)
 		ctl_conf_ptr->fast_schedule = DEFAULT_FAST_SCHEDULE;
@@ -1017,9 +1010,8 @@ static void _validate_node_proc_count(void)
 			if (part_size == -1)
 				part_size = node_size;
 			else if (part_size != node_size)
-				fatal
-				    ("Partition %s has inconsistent processor count",
-				     part_ptr->name);
+				fatal("Partition %s has inconsistent "
+					"processor count", part_ptr->name);
 		}
 	}
 	list_iterator_destroy(part_record_iterator);
