@@ -43,6 +43,7 @@
 #define HASH_BASE		10
 #define HEARTBEAT_INTERVAL	60
 #define INIT_PROGRAM		""
+#define FIRST_JOB_ID		(1 << 16)
 #define KILL_WAIT		30
 #define	PRIORITIZE		""
 #define PROLOG			""
@@ -158,7 +159,7 @@ struct job_record {
 	enum job_states job_state;	/* state of the job */
 	char *nodes;			/* comma delimited list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job */
-	uint32_t time_limit;		/* maximum run time in minutes, 0xffffffff if unlimited */
+	uint32_t time_limit;		/* maximum run time in minutes or INFINITE */
 	time_t start_time;		/* time execution begins, actual or expected*/
 	time_t end_time;		/* time of termination, actual or expected */
 	uint32_t priority;		/* relative priority of the job */
@@ -778,15 +779,12 @@ extern void step_lock ();
 extern void step_unlock ();
 
 /*
- * update_job - update a job's parameters
- * input: job_id - job's id
- *        spec - the updates to the job's specification 
- * output: return - 0 if no error, otherwise an error code
+ * update_job - update a job's parameters per the supplied specifications
+ * output: returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
  * global: job_list - global list of job entries
- * NOTE: the contents of spec are overwritten by white space
- * NOTE: only the job's priority and time_limt may be changed once queued
+ *	last_job_update - time of last job table update
  */
-extern int update_job (uint32_t job_id, char *spec);
+extern int update_job (job_desc_msg_t * job_specs);
 
 /* 
  * update_node - update the configuration data for one or more nodes

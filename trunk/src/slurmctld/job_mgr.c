@@ -1,9 +1,28 @@
-/* 
+/*****************************************************************************\
  * job_mgr.c - manage the job information of slurm
- * see slurm.h for documentation on external functions and data structures
- *
- * author: moe jette, jette@llnl.gov
- */
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -160,7 +179,7 @@ main (int argc, char *argv[])
  * NOTE: allocates memory that should be xfreed with either
  *	delete_job_record or list_delete_job
  */
-	struct job_record * 
+struct job_record * 
 create_job_record (int *error_code) 
 {
 	struct job_record  *job_record_point;
@@ -198,7 +217,7 @@ create_job_record (int *error_code)
  * delete_job_details - delete a job's detail record and clear it's pointer
  * input: job_entry - pointer to job_record to clear the record of
  */
-	void 
+void 
 delete_job_details (struct job_record *job_entry)
 {
 	if (job_entry->details == NULL) 
@@ -226,11 +245,11 @@ delete_job_details (struct job_record *job_entry)
  * output: return 0 on success, errno otherwise
  * global: job_list - pointer to global job list
  *	last_job_update - time of last job table update
- * NOTE: Slow as currently constructed due to singly linked list and linear search.
- *	This would be faster with hash table and doubly linked list. We intend to 
- *	purge entries through purge_old_job() anyway.
+ * NOTE: Slow as currently constructed due to singly linked list and linear search, 
+ *	which is forced by the common/list.c functions. We intend to purge entries 
+ *	through purge_old_job() anyway.
  */
-	int 
+int 
 delete_job_record (uint32_t job_id) 
 {
 	ListIterator job_record_iterator;
@@ -268,7 +287,7 @@ delete_job_record (uint32_t job_id)
  * global: job_list - global job list pointer
  *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
-	struct job_record *
+struct job_record *
 find_job_record(uint32_t job_id) 
 {
 	int i;
@@ -324,7 +343,7 @@ dump_job_desc(job_desc_msg_t * job_specs)
  * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
  */
-	int 
+int 
 init_job_conf () 
 {
 	if (job_list == NULL) {
@@ -339,12 +358,13 @@ init_job_conf ()
 
 
 /*
- * job_allocate - parse the suppied job specification, create job_records for it, 
- *	and allocate nodes for it. if the job can not be immediately allocated 
- *	nodes, EAGAIN will be returned
+ * job_allocate - create job_records for job with supplied specification and 
+ *	allocate nodes for it. if the job can not be immediately allocated nodes
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
  *	node_list - location for storing new job's allocated nodes
+ *	immediate - either allocate nodes immediately or return failure
+ *	will_run - test if job allocation would succeed, don't actually allocate nodes
  * output: new_job_id - the job's ID
  *	node_list - list of nodes allocated to the job
  *	returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
@@ -355,13 +375,15 @@ init_job_conf ()
  * NOTE: the calling program must xfree the memory pointed to by node_list
  */
 
-int immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
+int
+immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
                          int immediate , int will_run )
 {
 	return job_allocate (job_specs, new_job_id, node_list, true , false );
 }
 
-int will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
+int 
+will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
                   int immediate , int will_run )
 {
 	return job_allocate (job_specs, new_job_id, node_list, false , true );
@@ -426,7 +448,7 @@ job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-	int
+int
 job_cancel (uint32_t job_id) 
 {
 	struct job_record *job_ptr;
@@ -461,11 +483,13 @@ job_cancel (uint32_t job_id)
 }
 
 /*
- * job_create - parse the suppied job specification and create job_records for it.
+ * job_create - create job_records with supplied jobs specifications.
  *	this performs only basic tests for request validity (access to partition, 
  *	nodes count in partition, and sufficient processors in partition).
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
+ *	allocate - resource allocation request if set rather than job submit
+ *	will_run - job is not to be created, test of validity only
  *	job_rec_ptr - place to park pointer to the job (or NULL)
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
@@ -593,8 +617,12 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 			bit_free (req_bitmap);
 		return error_code ;
 }
-
-int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_rec_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap )
+/* copy_job_desc_to_job_record - copy the job descriptor from the RPC structure 
+ *	into the actual slurmctld job record */
+int 
+copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
+	struct job_record ** job_rec_ptr , struct part_record *part_ptr, 
+	bitstr_t *req_bitmap )
 {
 	int error_code ;
 	struct job_details *detail_ptr;
@@ -670,7 +698,8 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		info ("job_create: job failed to specify ReqNodes, TotalNodes or TotalProcs");
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
-	if (allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 && job_desc_msg->job_script == NULL) {
+	if (allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 && 
+	    job_desc_msg->job_script == NULL) {
 		info ("job_create: job failed to specify Script");
 		return ESLURM_JOB_SCRIPT_MISSING;
 	}			
@@ -689,7 +718,8 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 	if (job_desc_msg->dist == NO_VAL)
 		job_desc_msg->shared = DIST_BLOCK ;
 
-	if (job_desc_msg->job_id != NO_VAL && find_job_record ((uint32_t) job_desc_msg->job_id))
+	if (job_desc_msg->job_id != NO_VAL && 
+	    find_job_record ((uint32_t) job_desc_msg->job_id))
 	{
 		info  ("job_create: Duplicate job id %d", job_desc_msg->job_id);
 		return ESLURM_DUPLICATE_JOB_ID;
@@ -757,7 +787,7 @@ job_unlock ()
  *	job_count - count of job list entries
  *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
-	void 
+void 
 list_delete_job (void *job_entry)
 {
 	struct job_record *job_record_point;
@@ -799,7 +829,7 @@ list_delete_job (void *job_entry)
  *	see common/list.h for documentation, key is the job's id 
  * global- job_list - the global partition list
  */
-	int 
+int 
 list_find_job_id (void *job_entry, void *key) 
 {
 	if (((struct job_record *) job_entry)->job_id == *((uint32_t *) key))
@@ -813,7 +843,7 @@ list_find_job_id (void *job_entry, void *key)
  *	see common/list.h for documentation, key is ignored 
  * global- job_list - the global partition list
  */
-	int 
+int 
 list_find_job_old (void *job_entry, void *key) 
 {
 	time_t min_age;
@@ -842,10 +872,10 @@ list_find_job_old (void *job_entry, void *key)
  *         update_time - set to time partition records last updated
  * global: job_list - global list of job records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ * NOTE: change unpack_job_desc() in common/slurm_protocol_pack.c whenever the
+ *	data format changes
  */
-	void 
+void 
 pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	ListIterator job_record_iterator;
@@ -916,8 +946,8 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
  *	buf_len - byte size of buffer
  * output: buf_ptr - advanced to end of data written
  *	buf_len - byte size remaining in buffer
- * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ * NOTE: change unpack_job_desc() in common/slurm_protocol_pack.c whenever the
+ *	 data format changes
  * NOTE: the caller must insure that the buffer is sufficiently large to hold 
  *	 the data being written (space remaining at least BUF_SIZE)
  */
@@ -1158,7 +1188,7 @@ cleanup:
  * global: job_list - global job table
  *	last_job_update - time of last job table update
  */
-	void
+void
 purge_old_job (void) 
 {
 	int i;
@@ -1178,7 +1208,7 @@ purge_old_job (void)
  * global: last_job_update - time of last job table update
  *	job_list - pointer to global job list
  */
-	void 
+void 
 reset_job_bitmaps () 
 {
 	ListIterator job_record_iterator;
@@ -1216,10 +1246,10 @@ reset_job_bitmaps ()
  * set_job_id - set a default job_id, insure that it is unique
  * input: job_ptr - pointer to the job_record
  */
-	void
+void
 set_job_id (struct job_record *job_ptr)
 {
-	static uint32_t id_sequence = (1 << 16);
+	static uint32_t id_sequence = FIRST_JOB_ID;
 #ifdef HUGE_JOB_ID
 	uint32_t new_id;
 #endif
@@ -1250,7 +1280,7 @@ set_job_id (struct job_record *job_ptr)
  * input: job_ptr - pointer to the job_record
  * NOTE: this is a simple prototype, we need to re-establish value on restart
  */
-	void
+void
 set_job_prio (struct job_record *job_ptr)
 {
 	static int default_prio = 100000;
@@ -1286,7 +1316,6 @@ top_priority (struct job_record *job_ptr) {
 			continue;
 		if (job_record_point->priority >  job_ptr->priority &&
 				job_record_point->part_ptr == job_ptr->part_ptr) {
-printf("p1=%u,p2=%u\n",job_record_point->priority,job_ptr->priority);
 			top = 0;
 			break;
 		}
@@ -1298,65 +1327,127 @@ printf("p1=%u,p2=%u\n",job_record_point->priority,job_ptr->priority);
 
 
 /*
- * update_job - update a job's parameters
- * input: job_id - job's id
- *        spec - the updates to the job's specification 
- * output: return - 0 if no error, otherwise an error code
+ * update_job - update a job's parameters per the supplied specifications
+ * output: returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
- * NOTE: the contents of spec are overwritten by white space
- * NOTE: only the job's priority and time_limt may be changed
  */
-	int 
-update_job (uint32_t job_id, char *spec) 
+int 
+update_job (job_desc_msg_t * job_specs) 
 {
-	int bad_index, error_code, i, time_limit;
-	int prio;
+	int error_code;
 	struct job_record *job_ptr;
+	struct job_details *detail_ptr;
+	struct part_record *tmp_part_ptr;
+	bitstr_t *req_bitmap = NULL ;
 
-	job_ptr = find_job_record (job_id);
+	job_ptr = find_job_record (job_specs -> job_id);
 	if (job_ptr == NULL) {
-		error ("update_job: job_id %u does not exist.", job_id);
-		return ENOENT;
+		error ("update_job: job_id %u does not exist.", job_specs -> job_id);
+		return ESLURM_INVALID_JOB_ID;
 	}			
+	detail_ptr = job_ptr->details;
+	last_job_update = time (NULL);
 
-	time_limit = NO_VAL;
-	error_code = load_integer (&time_limit, "TimeLimit=", spec);
-	if (error_code)
-		return error_code;
-
-	prio = NO_VAL;
-	error_code = load_integer (&prio, "Priority=", spec);
-	if (error_code)
-		return error_code;
-
-	bad_index = -1;
-	for (i = 0; i < strlen (spec); i++) {
-		if (spec[i] == '\n')
-			spec[i] = ' ';
-		if (isspace ((int) spec[i]))
-			continue;
-		bad_index = i;
-		break;
-	}			
-
-	if (bad_index != -1) {
-		error ("update_job: ignored job_id %u update specification: %s",
-				job_id, &spec[bad_index]);
-		return EINVAL;
-	}			
-
-	if (time_limit != NO_VAL) {
-		job_ptr->time_limit = time_limit;
-		info ("update_job: setting time_limit to %d for job_id %u",
-				time_limit, job_id);
+	if (job_specs -> time_limit != NO_VAL) {
+		job_ptr -> time_limit = job_specs -> time_limit;
+		info ("update_job: setting time_limit to %u for job_id %u",
+				job_specs -> time_limit, job_specs -> job_id);
 	}
 
-	if (prio != NO_VAL) {
-		job_ptr->priority = prio;
-		info ("update_job: setting priority to %f for job_id %u",
-				(double) prio, job_id);
+	if (job_specs -> priority != NO_VAL) {
+		job_ptr -> priority = job_specs -> priority;
+		info ("update_job: setting priority to %u for job_id %u",
+				job_specs -> priority, job_specs -> job_id);
 	}
 
-	return 0;
+	if (job_specs -> min_procs != NO_VAL && detail_ptr) {
+		detail_ptr -> min_procs = job_specs -> min_procs;
+		info ("update_job: setting min_procs to %u for job_id %u",
+				job_specs -> min_procs, job_specs -> job_id);
+	}
+
+	if (job_specs -> min_memory != NO_VAL && detail_ptr) {
+		detail_ptr -> min_memory = job_specs -> min_memory;
+		info ("update_job: setting min_memory to %u for job_id %u",
+				job_specs -> min_memory, job_specs -> job_id);
+	}
+
+	if (job_specs -> min_tmp_disk != NO_VAL && detail_ptr) {
+		detail_ptr -> min_tmp_disk = job_specs -> min_tmp_disk;
+		info ("update_job: setting min_tmp_disk to %u for job_id %u",
+				job_specs -> min_tmp_disk, job_specs -> job_id);
+	}
+
+	if (job_specs -> num_procs != NO_VAL && detail_ptr) {
+		detail_ptr -> num_procs = job_specs -> num_procs;
+		info ("update_job: setting num_procs to %u for job_id %u",
+				job_specs -> num_procs, job_specs -> job_id);
+	}
+
+	if (job_specs -> num_nodes != NO_VAL && detail_ptr) {
+		detail_ptr -> num_nodes = job_specs -> num_nodes;
+		info ("update_job: setting num_nodes to %u for job_id %u",
+				job_specs -> num_nodes, job_specs -> job_id);
+	}
+
+	if (job_specs -> shared != (uint16_t) NO_VAL && detail_ptr) {
+		detail_ptr -> shared = job_specs -> shared;
+		info ("update_job: setting shared to %u for job_id %u",
+				job_specs -> shared, job_specs -> job_id);
+	}
+
+	if (job_specs -> contiguous != (uint16_t) NO_VAL && detail_ptr) {
+		detail_ptr -> contiguous = job_specs -> contiguous;
+		info ("update_job: setting contiguous to %u for job_id %u",
+				job_specs -> contiguous, job_specs -> job_id);
+	}
+
+	if (job_specs -> features && detail_ptr) {
+		if (detail_ptr -> features)
+			xfree (detail_ptr -> features);
+		detail_ptr -> features = job_specs -> features;
+		info ("update_job: setting features to %s for job_id %u",
+				job_specs -> features, job_specs -> job_id);
+		job_specs -> features = NULL;
+	}
+
+	if (job_specs -> name) {
+		strncpy(job_ptr -> name, job_specs -> name, MAX_NAME_LEN);
+		info ("update_job: setting name to %s for job_id %u",
+				job_specs -> name, job_specs -> job_id);
+		job_specs -> name = NULL;
+	}
+
+	if (job_specs -> partition) {
+		tmp_part_ptr = find_part_record (job_specs -> partition);
+		if (tmp_part_ptr == NULL)
+			return ESLURM_INVALID_PARTITION;
+		strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
+		job_ptr -> part_ptr = tmp_part_ptr;
+		info ("update_job: setting partition to %s for job_id %u",
+				job_specs -> partition, job_specs -> job_id);
+		job_specs -> partition = NULL;
+	}
+
+	if (job_specs -> req_nodes && detail_ptr) {
+		error_code = node_name2bitmap (job_specs->req_nodes, &req_bitmap);
+		if (error_code == EINVAL) {
+			if ( req_bitmap )
+				bit_free (req_bitmap);
+			return ESLURM_INVALID_NODE_NAMES;
+		}
+
+		if (detail_ptr -> req_nodes)
+			xfree (detail_ptr -> req_nodes);
+		detail_ptr -> req_nodes = job_specs -> req_nodes;
+		if (detail_ptr->req_node_bitmap)
+			bit_free (detail_ptr->req_node_bitmap);
+		detail_ptr->req_node_bitmap = req_bitmap;
+		info ("update_job: setting req_nodes to %s for job_id %u",
+				job_specs -> req_nodes, job_specs -> job_id);
+		job_specs -> req_nodes = NULL;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS;
 }
