@@ -49,11 +49,9 @@
 
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
-
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 
-/* macros for simple comparisons
- */
+#define job_hash_inx(job_id)	(job_id % MAX_JOB_COUNT)
 #define yes_or_no(in_string) \
 		(( strcmp ((in_string),"YES"))? \
 			(strcmp((in_string),"NO")? \
@@ -277,9 +275,9 @@ find_job_record(uint32_t job_id)
 	int i;
 
 	/* First try to find via hash table */
-	if (job_hash[job_id % MAX_JOB_COUNT] &&
-			job_hash[job_id % MAX_JOB_COUNT]->job_id == job_id)
-		return job_hash[job_id % MAX_JOB_COUNT];
+	if (job_hash[job_hash_inx (job_id)] &&
+			job_hash[job_hash_inx (job_id)]->job_id == job_id)
+		return job_hash[job_hash_inx (job_id)];
 
 	/* linear search of overflow hash table overflow */
 	for (i=0; i<max_hash_over; i++) {
@@ -859,10 +857,10 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		job_ptr->job_id = job_desc->job_id;
 	else
 		set_job_id(job_ptr);
-	if (job_hash[job_ptr->job_id % MAX_JOB_COUNT]) 
+	if (job_hash[job_hash_inx (job_ptr->job_id)]) 
 		job_hash_over[max_hash_over++] = job_ptr;
 	else
-		job_hash[job_ptr->job_id % MAX_JOB_COUNT] = job_ptr;
+		job_hash[job_hash_inx (job_ptr->job_id)] = job_ptr;
 
 	if (job_desc->name) {
 		strncpy (job_ptr->name, job_desc->name , sizeof (job_ptr->name)) ;
@@ -1048,8 +1046,8 @@ list_delete_job (void *job_entry)
 	if (job_record_point->magic != JOB_MAGIC)
 		fatal ("list_delete_job: passed invalid job pointer");
 
-	if (job_hash[job_record_point->job_id % MAX_JOB_COUNT] == job_record_point)
-		job_hash[job_record_point->job_id % MAX_JOB_COUNT] = NULL;
+	if (job_hash[job_hash_inx (job_record_point->job_id)] == job_record_point)
+		job_hash[job_hash_inx (job_record_point->job_id)] = NULL;
 	else {
 		for (i=0; i<max_hash_over; i++) {
 			if (job_hash_over[i] != job_record_point)
