@@ -107,6 +107,7 @@ static int controller_sigarray[] = {
 	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
 };
 
+static void         _default_sigaction(int sig);
 inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
@@ -367,6 +368,11 @@ static void *_slurmctld_signal_hand(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	create_pidfile(slurmctld_conf.slurmctld_pidfile);
+	/* Make sure no required signals are ignored (possibly inherited) */
+	_default_sigaction(SIGINT);
+	_default_sigaction(SIGTERM);
+	_default_sigaction(SIGHUP);
+	_default_sigaction(SIGABRT);
 
 	while (1) {
 		xsignal_sigset_create(controller_sigarray, &set);
@@ -409,6 +415,18 @@ static void *_slurmctld_signal_hand(void *no_data)
 		}
 	}
 
+}
+
+static void _default_sigaction(int sig)
+{
+	struct sigaction act;
+	if (sigaction(sig, NULL, &act)) {
+		error("sigaction(%d): %m", sig);
+		return;
+	}
+	act.sa_handler = SIG_DFL;
+	if (sigaction(sig, &act, NULL))
+		error("sigaction(%d): %m", sig);
 }
 
 /* _slurmctld_rpc_mgr - Read incoming RPCs and create pthread for each */
