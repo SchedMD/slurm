@@ -203,6 +203,9 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 		log->logfp = fp;
 	}
 
+	if (fileno(log->logfp) < 0)
+		log->logfp = NULL;
+
 	log->initialized = 1;
  out:
 	return rc;
@@ -429,6 +432,8 @@ _log_printf(cbuf_t cb, FILE *stream, const char *fmt, ...)
 {
 	va_list ap;
 
+	xassert(fileno(stream) >= 0);
+
 	va_start(ap, fmt);
 	if (log->opt.buffered && (cb != NULL)) {
 		char *buf = vxstrfmt(fmt, ap);
@@ -572,7 +577,7 @@ log_flush()
 
 	if (log->opt.stderr_level) 
 		cbuf_read_to_fd(log->buf, fileno(stderr), -1);
-	else if (log->logfp)
+	else if (log->logfp && (fileno(log->logfp) > 0))
 		cbuf_read_to_fd(log->fbuf, fileno(log->logfp), -1);
 
     done:
