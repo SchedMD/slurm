@@ -15,7 +15,6 @@ int main ( int argc , char ** argv )
 	launch_tasks_msg . cmd_line = "./testme" ;
 	launch_tasks_msg . cwd = "." ;
 	
-	task_mgr_init ( ) ;
 	launch_tasks ( & launch_tasks_msg ) ;
 	sleep ( 1 ) ;
 	kill_tasks ( & kill_tasks_msg ) ;
