@@ -233,7 +233,7 @@ srun(int ac, char **av)
 	pthread_cancel(job->sigid);
 	log_fini();
 
-	exit(0);
+	return 0;
 }
 
 
