@@ -11,7 +11,7 @@ sbin_PROGRAMS = slurmctld
 
 slurmctld_LDADD = 					\
 	$(top_builddir)/src/common/libcommon.la    	\
-	$(top_builddir)/src/common/libdaemonize.la 
+	$(top_builddir)/src/common/libdaemonize.la
 
 
 slurmctld_SOURCES = 	\
@@ -42,7 +42,7 @@ slurmctld_SOURCES = 	\
 	state_save.h	\
 	step_mgr.c
 
-slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
+slurmctld_LDFLAGS = -export-dynamic $(CMD_LDFLAGS) $(BGL_LDFLAGS)
 
 force:
 $(slurmctld_LDADD) : force
