@@ -8,8 +8,11 @@ Jobs will be submitted via an API with an execution specification
 which is expected to be constructed by a front-end program (e.g. 
 prun or poe). The specification contains the following fields:
 
-Name       The name of the user submitting the job (required)
+User       The name of the user submitting the job (required)
 JobType    INTERACTIVE or BATCH (required)
+
+Job configuration requirements, all optional:
+Partition  Name of the partition to use.
 MaxTime    Maximum execution period of the job. This execution may be 
            provided in more than one piece via gang scheduling (job preemption). 
            The default value is unlimited, which is indicated with a value of -1.
