@@ -289,6 +289,7 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmctld/Makefile 
 		 src/scontrol/Makefile
 		 src/scancel/Makefile
+                 src/slurm-tv-clean/Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 src/plugins/Makefile
