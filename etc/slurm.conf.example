@@ -319,6 +319,9 @@
 #    "MaxTime"       : Maximum timelimit of jobs in this partition in minutes.
 #                      The default is unlimited or `-1'
 #
+#    "MinNodes"      : Minimum count of nodes that will be allocated to any
+#                      single job. The default is `1'
+#
 #    "Shared"        : Allow sharing of nodes by jobs. Possible values are
 #                      "YES" "NO" or "FORCE"
 #
