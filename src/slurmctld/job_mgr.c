@@ -1285,7 +1285,7 @@ update_job (job_desc_msg_t * job_specs)
 	if (job_specs -> partition) {
 		tmp_part_ptr = find_part_record (job_specs -> partition);
 		if (tmp_part_ptr == NULL)
-			return ESLURM_INVALID_PARTITION;
+			return ESLURM_INVALID_PARTITION_NAME;
 		strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
 		job_ptr -> part_ptr = tmp_part_ptr;
 		info ("update_job: setting partition to %s for job_id %u",
