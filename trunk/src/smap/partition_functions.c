@@ -428,7 +428,7 @@ static int _print_text_part(partition_info_t *part_ptr,
 		else
 			nodes = part_ptr->nodes;
 		prefixlen = i;
-		while (nodes[i] != '\0') {
+		while (nodes && nodes[i]) {
 			width = pa_system_ptr->text_win->_maxx - pa_system_ptr->xcord;
 
 			if (!prefixlen && nodes[i] == '[' && nodes[i - 1] == ',')
