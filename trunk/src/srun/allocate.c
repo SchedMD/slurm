@@ -76,6 +76,7 @@ allocate_nodes(void)
 	ointf  = xsignal(SIGINT,  _intr_handler);
 	otermf = xsignal(SIGTERM, _intr_handler);
 
+	sigemptyset(&oset);	/* for clean valgrind */
 	xsignal_save_mask(&oset);
 	xsignal_unblock(sigarray);
 
