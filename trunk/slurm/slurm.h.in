@@ -164,8 +164,8 @@ enum connection_type {
 };
 
 enum node_use_type {
-	RM_VIRTUAL,		/* application uses both processors */
-	RM_COPROCESSOR		/* use second processor for communications */
+	RM_PARTITION_COPROCESSOR_MODE, /* use extra processor for communications */
+	RM_PARTITION_VIRTUAL_NODE_MODE	/* application uses both processors */
 };
 
 enum select_data_type {

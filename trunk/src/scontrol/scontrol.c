@@ -1576,9 +1576,9 @@ _update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "NodeUse=", 8) == 0) {
 			if (strcasecmp(&argv[i][8], "virtual") == 0)
-				job_msg.node_use = RM_VIRTUAL;
+				job_msg.node_use = RM_PARTITION_VIRTUAL_NODE_MODE;
 			else if (strcasecmp(&argv[i][8], "coprocessor") == 0)
-				job_msg.node_use = RM_COPROCESSOR;
+				job_msg.node_use = RM_PARTITION_COPROCESSOR_MODE;
 			else
 				job_msg.node_use = 
 					(uint16_t) strtol(&argv[i][8], 

@@ -68,7 +68,7 @@ static void _destroy_bgl_conf_record(void* object);
 static void _print_bitmap(bitstr_t* bitmap);
 static void _process_config();
 static int _parse_bgl_spec(char *in_line);
-static void _find_part_type(char* nodes, rm_partition_t** return_part_type);
+static bgl_conf_record_t* _find_config_by_nodes(char* nodes);
 static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
 static void _update_bgl_node_bitmap();
 static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
@@ -162,7 +162,8 @@ static void _process_config()
 			 * copy_slurm_partition_list
 			 */
 			request_result->bgl_record_ptr = bgl_part;
-			request_result->part_type = (rm_partition_t*) bgl_part->part_type;
+			request_result->node_use = bgl_part->node_use;
+			request_result->part_type = bgl_part->part_type;
 			bgl_part->alloc_part = request_result;
 		}
 	}
@@ -203,13 +204,21 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 		 * several bgl partitions, so we need to find how to
 		 * wire each of those bgl partitions.
 		 */
-		while(cur_nodes != NULL){
+		while (cur_nodes != NULL) {
+			bgl_conf_record_t *config_ptr;
+			config_ptr = _find_config_by_nodes(cur_nodes);
+			if (config_ptr == NULL) {
+				error("Nodes missing from bluegene.conf: %s", cur_nodes);
+				rc = SLURM_ERROR;
+				goto cleanup;
+			}
+
 			bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 			bgl_record->nodes = xstrdup(cur_nodes);
 			bgl_record->slurm_part_id = xstrdup(slurm_part->name);
-			bgl_record->part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
 
-			_find_part_type(cur_nodes, &bgl_record->part_type);
+			bgl_record->node_use = config_ptr->node_use;
+			bgl_record->part_type = config_ptr->part_type;
 			bgl_record->hostlist = hostlist_create(cur_nodes);
 			bgl_record->size = hostlist_count(bgl_record->hostlist);
 			if (node_name2bitmap(cur_nodes, false, &(bgl_record->bitmap))){
@@ -219,15 +228,15 @@ static int _copy_slurm_partition_list(List slurm_part_list)
 				rc = SLURM_ERROR;
 				goto cleanup;
 			}
-			
-			if (slurm_part->min_nodes == slurm_part->max_nodes && 
-			    bgl_record->size == slurm_part->max_nodes)
+	
+			if ((slurm_part->min_nodes == slurm_part->max_nodes)
+			&& (bgl_record->size == slurm_part->max_nodes))
 				bgl_record->part_lifecycle = STATIC;
 			else 
 				bgl_record->part_lifecycle = DYNAMIC;
 			print_bgl_record(bgl_record);
 			list_push(bgl_list, bgl_record);
-			
+
 			nodes_tmp = next_ptr;
 			cur_nodes = strtok_r(nodes_tmp, delimiter, &next_ptr);
 		} /* end while(cur_nodes) */
@@ -294,9 +303,7 @@ extern int read_bgl_conf()
 		
 		/* parse what is left, non-comments */
 		/* partition configuration parameters */
-		if ((error_code = _parse_bgl_spec(in_line))) {
-			error("_parse_bgl_spec error, skipping this line");
-		}
+		error_code = _parse_bgl_spec(in_line);
 		
 		/* report any leftover strings on input line */
 		report_leftover(in_line, line_num);
@@ -326,45 +333,66 @@ extern int read_bgl_conf()
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *part_type = NULL;
+	char *nodes = NULL, *node_use = NULL, *part_type = NULL;
 	bgl_conf_record_t* new_record;
 
 	error_code = slurm_parser(in_line,
-				  "Nodes=", 's', &nodes,
-				  "Type=", 's', &part_type,
-				  "END");
+				"Nodes=", 's', &nodes,
+				"Type=", 's', &part_type,
+				"Use=", 's', &node_use,
+				"END");
 
-	/** error if you're not specifying nodes or partition type on
-	    this line */
-	if (error_code || !nodes || !part_type){
-		xfree(nodes);
-		xfree(part_type);
-		return error_code;
+	if (error_code)
+		goto cleanup;
+	if (!nodes && !node_use && !part_type)
+		goto cleanup;	/* only comment */
+	if (!nodes && (node_use || part_type)) {
+		error("bluegene.conf lacks Nodes value, but has Type or Use value");
+		error_code = SLURM_ERROR;
+		goto cleanup;
 	}
-
-	// debug("parsed nodes %s", nodes);
-	// debug("partition type %s", part_type);
 
 	new_record = (bgl_conf_record_t*) xmalloc(sizeof(bgl_conf_record_t));
 	new_record->nodes = nodes;
-	new_record->part_type = xmalloc(sizeof(rm_partition_t));
+	nodes = NULL;	/* pointer moved, nothing left to xfree */
 
-	if (strcasecmp(part_type, "TORUS") == 0)
-		*(new_record->part_type) = RM_TORUS;
+	if (!part_type)
+		new_record->part_type = RM_MESH;
+	else if (strcasecmp(part_type, "TORUS") == 0)
+		new_record->part_type = RM_TORUS;
 	else if (strcasecmp(part_type, "MESH") == 0)
-		*(new_record->part_type) = RM_MESH;
+		new_record->part_type = RM_MESH;
 	else {
-		error("_parse_bgl_spec: partition type %s invalid for nodes %s",
-		      part_type, nodes);
-		error("defaulting to type: MESH");
-		*(new_record->part_type) = RM_MESH;
+		error("_parse_bgl_spec: partition type %s invalid for nodes %s, "
+			"defaulting to type: MESH", part_type, new_record->nodes);
+		new_record->part_type = RM_MESH;
+	}
+
+	if (!node_use)
+		new_record->node_use = RM_PARTITION_COPROCESSOR_MODE;
+	else if (strcasecmp(node_use, "COPROCESSOR") == 0)
+		new_record->node_use = RM_PARTITION_COPROCESSOR_MODE;
+	else if (strcasecmp(node_use, "VIRTUAL") == 0)
+		new_record->node_use = RM_PARTITION_VIRTUAL_NODE_MODE;
+	else {
+		error("_parse_bgl_spec: node use %s invalid for nodes %s, "
+			"defaulting to type: COPROCESSOR", 
+			node_use, new_record->nodes);
+		new_record->node_use = RM_PARTITION_COPROCESSOR_MODE;
 	}
 	list_push(bgl_conf_list, new_record);
 
+#if _DEBUG
+	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
+		new_record->nodes, convert_part_type(new_record->part_type), 
+		convert_node_use(new_record->node_use));
+#endif
+
+  cleanup:
 	xfree(part_type);
-	/* xfree(nodes);	Don't do this as we moved value into new record type */
-	
-	return SLURM_SUCCESS;
+	xfree(node_use);
+	xfree(nodes);
+	return error_code;
 }
 
 static void _destroy_bgl_record(void* object)
@@ -374,7 +402,6 @@ static void _destroy_bgl_record(void* object)
 	if (this_record){
 		xfree(this_record->nodes);
 		xfree(this_record->slurm_part_id);
-		xfree(this_record->part_type);
 		if (this_record->hostlist)
 			hostlist_destroy(this_record->hostlist);
 		if (this_record->bitmap)
@@ -391,31 +418,19 @@ static void _destroy_bgl_conf_record(void* object)
 	bgl_conf_record_t* this_record = (bgl_conf_record_t*) object;
 	if (this_record){
 		xfree(this_record->nodes);
-		xfree(this_record->part_type);
 		xfree(this_record);
 	}
 }
 
 /** 
- * search through the list of nodes,types to find the partition type
- * for the given nodes
+ * search through the list of nodes,types to find the partition 
+ * containing the given nodes
  */
-static void _find_part_type(char* nodes, rm_partition_t** return_part_type)
+static bgl_conf_record_t* _find_config_by_nodes(char* nodes)
 {
-	bgl_conf_record_t* record = NULL;
-
-	record = (bgl_conf_record_t*) list_find_first(bgl_conf_list,
+	return (bgl_conf_record_t*) list_find_first(bgl_conf_list,
 						      (ListFindF) _listfindf_conf_part_record, 
 						      nodes);
-
-	*return_part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
-
-	if (record != NULL && record->part_type != NULL){
-		**return_part_type = *(record->part_type);
-	} else {
-		// error("warning: nodes not found in slurm.conf, defaulting to type RM_MESH");
-		**return_part_type = RM_MESH;
-	}
 }
 
 /** nodes example: 000x111 */
@@ -535,6 +550,7 @@ extern void print_bgl_record(bgl_record_t* record)
 	info("\tsize: %d", record->size);
 	info("\tlifecycle: %s", convert_lifecycle(record->part_lifecycle));
 	info("\tpart_type: %s", convert_part_type(record->part_type));
+	info("\tnode_use: %s", convert_node_use(record->node_use));
 
 	if (record->hostlist){
 		char buffer[BUFSIZE];
@@ -565,18 +581,30 @@ extern char* convert_lifecycle(lifecycle_type_t lifecycle)
 		return "STATIC";
 }
 
-extern char* convert_part_type(rm_partition_t* pt)
+extern char* convert_part_type(rm_partition_t pt)
 {
-	switch(*pt) {
-	case (RM_MESH): 
-		return "RM_MESH"; 
-	case (RM_TORUS): 
-		return "RM_TORUS"; 
-	case (RM_NAV):
-		return "RM_NAV";
-		      
-	default:
-		break;
+	switch (pt) {
+		case (RM_MESH): 
+			return "RM_MESH"; 
+		case (RM_TORUS): 
+			return "RM_TORUS"; 
+		case (RM_NAV):
+			return "RM_NAV";
+		default:
+			break;
+	}
+	return "";
+}
+
+extern char* convert_node_use(rm_partition_mode_t pt)
+{
+	switch (pt) {
+		case (RM_PARTITION_COPROCESSOR_MODE): 
+			return "RM_COPROCESSOR"; 
+		case (RM_PARTITION_VIRTUAL_NODE_MODE): 
+			return "RM_VIRTUAL"; 
+		default:
+			break;
 	}
 	return "";
 }
@@ -656,17 +684,26 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/***********************************************/
 		/* check the connection type specified matches */
 		/***********************************************/
-		// debug("part type match %s ? %s", convert_part_type(&job_ptr->type), 
-		// convert_part_type(record->part_type));
-		if (!record->part_type){
-			error("find_best_partition_match record->part_type is NULL"); 
-			continue;
-		}
-		debug("conn_type %d", conn_type);
-		if (conn_type != *(record->part_type) &&
-		    conn_type != RM_NAV){
+#if _DEBUG
+		info("part type match %s ? %s", convert_part_type(conn_type), 
+			convert_part_type(record->part_type));
+#endif
+
+		if ((conn_type != record->part_type)
+		&& (conn_type != RM_NAV)) {
 			continue;
 		} 
+
+		/***********************************************/
+		/* check the node_use specified matches */
+		/***********************************************/
+#if _DEBUG
+		info("node use match %s ? %s", convert_node_use(node_use), 
+			convert_node_use(record->node_use));
+#endif
+
+		if (node_use != record->node_use)
+			continue;
 
 		/*****************************************/
 		/** match up geometry as "best" possible */

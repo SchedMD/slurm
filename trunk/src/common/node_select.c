@@ -338,7 +338,7 @@ static char *_job_conn_type_string(uint16_t inx)
 
 static char *_job_node_use_string(uint16_t inx)
 {
-	if (inx == RM_COPROCESSOR)
+	if (inx == RM_PARTITION_COPROCESSOR_MODE)
 		return "coprocessor";
 	else
 		return "virtual";

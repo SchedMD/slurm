@@ -38,6 +38,7 @@
 #ifndef _RM_API_H__
   typedef uint16_t pm_partition_id_t;
   typedef uint16_t rm_partition_t;
+  typedef uint16_t rm_partition_mode_t;
 #else 
   rm_BGL_t *bgl;
 #endif
@@ -54,7 +55,8 @@ typedef struct bgl_record {
 	bitstr_t *bitmap;		/* bitmap of nodes for this partition */
 	struct partition* alloc_part;       /* the allocated partition   */
 	int size;			/* node count for the partitions */
-	rm_partition_t* part_type;	/* Type=Mesh/Torus/		*/
+	rm_partition_t part_type;	/* Mesh or Torus or NAV		*/
+	rm_partition_mode_t node_use;	/* either COPROCESSOR or VIRTUAL */
 } bgl_record_t;
 
 /** 
@@ -63,7 +65,8 @@ typedef struct bgl_record {
  */
 typedef struct bgl_conf_record{
 	char* nodes;
-	rm_partition_t* part_type;
+	rm_partition_t part_type;
+	rm_partition_mode_t node_use;
 } bgl_conf_record_t;
 
 /** 
@@ -98,10 +101,11 @@ extern void sort_bgl_record_dec_size(List records);
 
 /** */
 extern void print_bgl_record(bgl_record_t* record);
-/** */
+
+/* Return strings representing blue gene data types */
 extern char* convert_lifecycle(lifecycle_type_t lifecycle);
-/** */
-extern char* convert_part_type(rm_partition_t* pt);
+extern char* convert_part_type(rm_partition_t pt);
+extern char* convert_node_use(rm_partition_mode_t pt);
 
 /* bluegene_agent - detached thread periodically updates status of bluegene nodes */
 extern void *bluegene_agent(void *args);
