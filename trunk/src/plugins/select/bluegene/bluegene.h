@@ -32,6 +32,7 @@
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
+#include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
 #ifdef HAVE_BGL_FILES
@@ -63,6 +64,7 @@ extern char *bluegene_linux;
 extern char *bluegene_mloader;
 extern char *bluegene_ramdisk;
 extern char *bluegene_serialL;
+extern List bgl_init_part_list; 	/* Initial bgl partition state */
 
 typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
@@ -90,9 +92,9 @@ typedef struct bgl_conf_record{
 	rm_partition_mode_t node_use;
 } bgl_conf_record_t;
 
-/** 
- * process the configuration file so to interpret what partitions are
- * static, dynamic, etc.
+/* 
+ * Read and process the bluegene.conf configuration file so to interpret what 
+ * partitions are static, dynamic, etc.
  * 
  */
 extern int read_bgl_conf(void);
@@ -103,11 +105,11 @@ extern int init_bgl(void);
 /* Purge all plugin variables */
 extern void fini_bgl(void);
 
-/**
+/*
  * create_static_partitions - create the static partitions that will be used
- * for scheduling.  
- * IN - part_list: slurmctld's list of partition configurations 
- * OUT - (global, to slurmctld): Table of partitionIDs to geometries
+ *   for scheduling.
+ * IN/OUT part_list - (global, from slurmctld): SLURM's partition 
+ *   configurations. Fill in bgl_part_id                 
  * RET - success of fitting all configurations
  */
 extern int create_static_partitions(List part_list);
