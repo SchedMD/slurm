@@ -542,12 +542,18 @@ extern int  select_g_pack_jobinfo  (select_jobinfo_t jobinfo, Buf buffer)
 {
 	int i;
 
-	for (i=0; i<SYSTEM_DIMENSIONS; i++)
-		pack16(jobinfo->geometry[i], buffer);		
-	pack16(jobinfo->conn_type, buffer);
-	pack16(jobinfo->rotate, buffer);
-	pack16(jobinfo->node_use, buffer);
-	packstr(jobinfo->bgl_part_id, buffer);
+	if (jobinfo) {
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			pack16(jobinfo->geometry[i], buffer);		
+		pack16(jobinfo->conn_type, buffer);
+		pack16(jobinfo->rotate, buffer);
+		pack16(jobinfo->node_use, buffer);
+		packstr(jobinfo->bgl_part_id, buffer);
+	} else {
+		for (i=0; i<(SYSTEM_DIMENSIONS+3); i++)
+			pack16((uint16_t) 0, buffer);
+		packstr(NULL, buffer);
+	}
 
 	return SLURM_SUCCESS;
 }
