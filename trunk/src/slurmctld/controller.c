@@ -82,7 +82,7 @@ inline static void save_all_state ( void );
 void *slurmctld_background ( void * no_data );
 void *slurmctld_signal_hand ( void * no_data );
 void *slurmctld_rpc_mgr( void * no_data );
-int slurm_shutdown ( void );
+inline static int slurmctld_shutdown ( void );
 void * service_connection ( void * arg );
 void usage (char *prog_name);
 
@@ -99,7 +99,8 @@ inline static void slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response );
+inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg );
+inline static void slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg );
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
@@ -136,6 +137,10 @@ main (int argc, char *argv[])
 
 	if ( ( error_code = read_slurm_conf (recover)) ) 
 		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
+	if (daemonize) {
+		if (chdir (slurmctld_conf.state_save_location))
+			fatal ("chdir to %s error %m", slurmctld_conf.state_save_location);
+	}
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("getnodename error %d", error_code);
 
@@ -218,7 +223,7 @@ slurmctld_signal_hand ( void * no_data )
 				info ("Terminate signal (SIGINT or SIGTERM) received\n");
 				shutdown_time = time (NULL);
 				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
-				slurm_shutdown ();
+				slurmctld_shutdown ();
 				/* ssl clean up */
 				slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
 				slurm_ssl_destroy ( ) ;
@@ -546,10 +551,11 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_reconfigure_controller ( msg ) ;
 			break;
 		case REQUEST_SHUTDOWN:
-			slurm_rpc_shutdown_controller ( msg , 1 ) ;
+			slurm_rpc_shutdown_controller ( msg ) ;
+			slurm_free_shutdown_msg ( msg -> data ) ;
 			break;
 		case REQUEST_SHUTDOWN_IMMEDIATE:
-			slurm_rpc_shutdown_controller ( msg , 0 ) ;
+			slurm_rpc_shutdown_controller_immediate ( msg ) ;
 			break;
 		case REQUEST_UPDATE_JOB:
 			slurm_rpc_update_job ( msg ) ;
@@ -1289,6 +1295,11 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	error_code = read_slurm_conf (0);
 	if (error_code == 0)
 		reset_job_bitmaps ();
+
+	if (daemonize) {
+		if (chdir (slurmctld_conf.state_save_location))
+			fatal ("chdir to %s error %m", slurmctld_conf.state_save_location);
+	}
 	unlock_slurmctld (config_write_lock);
 
 	/* return result */
@@ -1311,33 +1322,44 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 
 /* slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */
 void 
-slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response )
+slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 {
+	shutdown_msg_t * shutdown_msg = (shutdown_msg_t *) msg->data;
 /* must be user root */
 
 	/* do RPC call */
-	if (response)
-		debug ("Performing RPC: REQUEST_SHUTDOWN");
-	else
-		debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
+	debug ("Performing RPC: REQUEST_SHUTDOWN");
 
-	if (shutdown_time)
+	if (shutdown_msg->core)
+		debug3 ("performing immeditate shutdown without state save");
+	else if (shutdown_time)
 		debug3 ("slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
 	else if (thread_id_sig) {
 		pthread_kill (thread_id_sig, SIGTERM);	/* tell master to clean-up */
 		info ("slurm_rpc_shutdown_controller completed successfully");
-	} else {
+	} 
+	else {
 		error ("thread_id_sig undefined, doing shutdown the hard way");
 		shutdown_time = time (NULL);
 		/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
-		slurm_shutdown ();
+		slurmctld_shutdown ();
 	}
 
-	if (response)
-		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	if (shutdown_msg->core)
+		fatal ("Aborting per RPC request");
 }
 
+/* slurm_rpc_shutdown_controller_immediate - process RPC to shutdown slurmctld */
+void 
+slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg )
+{
+/* must be user root */
 
+	/* do RPC call */
+	debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
+	/* No op: just used to knock loose accept RPC thread */
+}
 /* slurm_rpc_create_job_step - process RPC to creates/registers a job step with the step_mgr */
 void 
 slurm_rpc_job_step_create( slurm_msg_t* msg )
@@ -1435,11 +1457,11 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 }
 
 /*
- * slurm_shutdown - issue RPC to have slurmctld shutdown, 
+ * slurmctld_shutdown - issue RPC to have slurmctld shutdown, 
  *	knocks loose an slurm_accept_msg_conn() if we have a thread hung there
  */
 int
-slurm_shutdown ()
+slurmctld_shutdown ()
 {
 	int rc ;
 	slurm_fd sockfd ;

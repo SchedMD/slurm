@@ -121,6 +121,9 @@ int unpack_partition_table_msg ( partition_desc_msg_t **  msg_ptr , void ** buff
 void pack_update_partition_msg ( update_part_msg_t * msg , void ** buffer, uint32_t * length  );
 int unpack_update_partition_msg ( update_part_msg_t ** msg_ptr , void ** buffer, uint32_t * length  );
 
+void pack_shutdown_msg ( shutdown_msg_t * msg , void ** buffer, uint32_t * length  );
+int unpack_shutdown_msg ( shutdown_msg_t ** msg_ptr , void ** buffer, uint32_t * length  );
+
 void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
 

@@ -80,6 +80,8 @@ slurmd_config_t slurmd_conf;
 
 /* function prototypes */
 static char *public_cert_filename();
+inline static void reset_cwd(void);
+inline static char *state_save_location (void);
 static void slurmd_req(slurm_msg_t * msg);
 static void *slurmd_msg_engine(void *args);
 inline static int send_node_registration_status_msg();
@@ -120,14 +122,8 @@ int main(int argc, char *argv[])
 
 	if (slurmd_conf.daemonize == true) {
 		daemon(false, true);
+		reset_cwd();
 	}
-
-/*
-	if ( ( rc = init_slurm_conf () ) ) 
-		fatal ("slurmd: init_slurm_conf error %d", rc);
-	if ( ( rc = read_slurm_conf ( ) ) ) 
-		fatal ("slurmd: error %d from read_slurm_conf reading %s", rc, SLURM_CONFIG_FILE);
-*/
 
 	/* shared memory init */
 	slurmd_init();
@@ -191,7 +187,8 @@ void *slurmd_handle_signals(void *args)
 			break;
 		case SIGHUP:	/* kill -1 */
 			info("Reconfigure signal (SIGHUP) received\n");
-			//error_code = read_slurm_conf ( );
+			if (slurmd_conf.daemonize == true)
+				reset_cwd();
 			break;
 		default:
 			error("Invalid signal (%d) received", sig);
@@ -772,4 +769,84 @@ int parse_commandline_args(int argc, char **argv,
 		}
 	}
 	return SLURM_SUCCESS;
+}
+
+/* reset_cwd - reset the current working directory per slurm configuration file 
+ *	this makes the core file go to StateSaveLocation if a daemon */
+void 
+reset_cwd(void)
+{
+	char *dir;
+
+	dir = state_save_location ();
+	if (dir == NULL)
+		error ("No state save location specified in configuration file");
+	else {
+		if (chdir (dir))
+			error ("chdir to %s error %m", dir);
+debug ("chdir %s", dir);
+		xfree (dir);
+	}
+}
+
+/* state_save_location - returns the value of StateSaveLocation from the slurm configuration file
+ *	NOTE: The caller must xfree the return value */
+char *
+state_save_location (void)
+{
+	FILE *slurm_spec_file;
+	char in_line[BUF_SIZE];	/* input line */
+	char *dir = NULL;
+	int i, j, error_code, line_num = 0;
+
+        slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	if (slurm_spec_file == NULL) {
+		error ( "state_save_location error %d opening file %s: %m",
+			errno, SLURM_CONFIG_FILE);
+		return NULL ;
+	}
+
+	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		line_num++;
+		if (strlen (in_line) >= (BUF_SIZE - 1)) {
+			error ("state_save_location line %d, of input file %s too long\n",
+				 line_num, SLURM_CONFIG_FILE);
+			fclose (slurm_spec_file);
+			return NULL;
+		}		
+
+		/* everything after a non-escaped "#" is a comment */
+		/* replace comment flag "#" with an end of string (NULL) */
+		for (i = 0; i < BUF_SIZE; i++) {
+			if (in_line[i] == (char) NULL)
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {	/* escaped "#" */
+				for (j = i; j < BUF_SIZE; j++) {
+					in_line[j - 1] = in_line[j];
+				}	
+				continue;
+			}	
+			in_line[i] = (char) NULL;
+			break;
+		}		
+
+		/* parse what is left */
+		/* overall slurm configuration parameters */
+		error_code = slurm_parser(in_line,
+			"StateSaveLocation=", 's', &dir, 
+			"END");
+		if (error_code) {
+			error ("error parsing configuration file input line %d", line_num);
+			fclose (slurm_spec_file);
+			return NULL;
+		}		
+
+		if ( dir ) {
+			fclose (slurm_spec_file);
+			return dir;	
+		}
+	}			
+	return NULL;
 }

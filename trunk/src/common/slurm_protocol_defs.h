@@ -411,6 +411,10 @@ typedef struct kill_tasks_msg {
 	uint32_t signal;
 } kill_tasks_msg_t;
 
+typedef struct shutdown_msg {
+	uint16_t core;
+} shutdown_msg_t;
+
 typedef struct last_update_msg {
 	uint32_t last_update;
 } last_update_msg_t;
@@ -542,6 +546,7 @@ void inline slurm_free_job_step_id(job_step_id_t * msg);
 #define slurm_free_job_info_request_msg(msg) slurm_free_job_step_id(msg)
 
 void inline slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * build_ptr);
+void inline slurm_free_shutdown_msg (shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
 void inline
@@ -554,8 +559,7 @@ void inline slurm_free_submit_response_response_msg(submit_response_msg_t *
 						    msg);
 
 void inline
-slurm_free_node_registration_status_msg
-(slurm_node_registration_status_msg_t * msg);
+slurm_free_node_registration_status_msg (slurm_node_registration_status_msg_t * msg);
 
 void inline slurm_free_job_info_msg(job_info_msg_t * msg);
 void inline slurm_free_job_info(job_info_t * job);

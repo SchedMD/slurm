@@ -134,15 +134,17 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SUBMIT_BATCH_JOB :
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case REQUEST_JOB_WILL_RUN : 
-		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP : 
+		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP :
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
-		case REQUEST_SHUTDOWN :
 		case REQUEST_SHUTDOWN_IMMEDIATE :
 			/* Message contains no body/information */
 			break ;
+		case REQUEST_SHUTDOWN :
+			pack_shutdown_msg ( (shutdown_msg_t *) msg -> data, ( void ** ) buffer , buf_len )  ;
+			break;
 		case RESPONSE_SUBMIT_BATCH_JOB:
 			pack_submit_response_msg ( ( submit_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
@@ -287,9 +289,11 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
 		case REQUEST_RECONFIGURE :
-		case REQUEST_SHUTDOWN :
 		case REQUEST_SHUTDOWN_IMMEDIATE :
 			/* Message contains no body/information */
+			break ;
+		case REQUEST_SHUTDOWN :
+			unpack_shutdown_msg ( ( shutdown_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
 		case RESPONSE_SUBMIT_BATCH_JOB :
 			unpack_submit_response_msg ( ( submit_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
@@ -1406,7 +1410,7 @@ int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uin
 	kill_tasks_msg_t * msg ;
 
 	msg = xmalloc ( sizeof ( kill_tasks_msg_t ) ) ;
-	if ( msg == NULL) 
+	if ( msg == NULL)
 	{
 		*msg_ptr = NULL ;
 		return ENOMEM ;
@@ -1415,6 +1419,27 @@ int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uin
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
 	unpack32 ( & msg -> signal , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
+void pack_shutdown_msg ( shutdown_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack16 ( msg -> core , buffer , length ) ;
+}
+
+int unpack_shutdown_msg ( shutdown_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	shutdown_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( shutdown_msg_t ) ) ;
+	if ( msg == NULL)
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack16 ( & msg -> core , buffer , length ) ;
 	*msg_ptr = msg ;
 	return 0 ;
 }

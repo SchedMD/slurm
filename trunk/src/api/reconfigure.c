@@ -99,7 +99,7 @@ slurm_reconfigure ()
 
 /* slurm_shutdown - issue RPC to have slurmctld shutdown */
 int
-slurm_shutdown ()
+slurm_shutdown (uint16_t core)
 {
 	int msg_size ;
 	int rc ;
@@ -107,6 +107,7 @@ slurm_shutdown ()
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
 	return_code_msg_t * slurm_rc_msg ;
+	shutdown_msg_t shutdown_msg ;
 
         /* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
@@ -115,7 +116,9 @@ slurm_shutdown ()
 	}
 
 	/* send request message */
+	shutdown_msg . core = core ;
 	request_msg . msg_type = REQUEST_SHUTDOWN ;
+	request_msg . data = &shutdown_msg;
 
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
