@@ -22,6 +22,28 @@ int \fBslurm_cancel_job\fR (
 .br 
 );
 .LP
+int \fBslurm_cancel_job_step\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_step_id\fP
+.br 
+);
+.LP
+int \fBslurm_complete_job\fR (
+.br 
+	uint32_t \fIjob_id\fP
+.br 
+);
+.LP
+int \fBslurm_complete_job_step\fR (
+.br 
+	uint32_t \fIjob_id\fP,
+.br 
+	uint32_t \fIjob_step_id\fP
+.br 
+);
+.LP
 void \fBslurm_free_resource_allocation_response_msg\fR ( 
 .br 
 	resource_allocation_response_msg_t *\fIslurm_alloc_msg_ptr\fP 
@@ -84,11 +106,20 @@ Specifies the double pointer to the structure to be created and filled with a de
 .TP 
 \fIslurm_submit_msg_ptr\fP
 Specifies the pointer to the structure to be created and filled in by the function \fIslurm_submit_batch_job\fP.
+.TP
+\fIjob_step_id\fp
+Slurm job step id number.
 .SH "DESCRIPTION"
 .LP 
 \fBslurm_allocate_resources\fR Request a resource allocation for a job. If successful, a job entry is created. Always release the response message when no longer required using the function \fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
 \fBslurm_cancel_job\fR Request the cancellation of a running or pending job. This function may only be successfully executed by the job's owner or user root.
+.LP 
+\fBslurm_cancel_job_step\fR Request the cancellation of a running job step. This function may only be successfully executed by the job's owner or user root.
+.LP 
+\fBslurm_complete_job\fR Note the termination of a job. This function may only be successfully executed by the job's owner or user root.
+.LP 
+\fBslurm_complete_job_step\fR Note the termination of a job step. This function may only be successfully executed by the job's owner or user root.
 .LP 
 \fBslurm_free_resource_allocation_response_msg\fR Release the storage generated in response to a call of the function \fBslurm_allocate_resources\fR or \fBslurm_job_will_run\fR.
 .LP 
