@@ -421,113 +421,164 @@ void inline slurm_free_checkpoint_resp_msg(checkpoint_resp_msg_t *msg)
 /* Given a job's reason for waiting, return a descriptive string */
 extern char *job_reason_string(enum job_wait_reason inx)
 {
-	static char *job_reason_string[] = {
-		"None",			/* WAIT_NO_REASON	*/
-		"Priority",		/* WAIT_PRIORITY	*/
-		"Dependency",		/* WAIT_DEPENDENCY	*/
-		"Resources",		/* WAIT_RESOUCES	*/
-		"PartitionNodeLimit",	/* WAIT_PART_NODE_LIMIT	*/
-		"PartitionTimeLimit",	/* WAIT_PART_TIME_LIMIT	*/
-		"PartitionDown",	/* WAIT_PART_STATE	*/
-		"JobHeld"		/* WAIT_HELD		*/
-	};
-	return job_reason_string[inx];
+	switch (inx) {
+		case WAIT_NO_REASON:
+			return "None";
+		case WAIT_PRIORITY:
+			return "Priority";
+		case WAIT_DEPENDENCY:
+			return "Dependency";
+		case WAIT_RESOUCES:
+			return "Resources";
+		case WAIT_PART_NODE_LIMIT:
+			return "PartitionNodeLimit";
+		case WAIT_PART_TIME_LIMIT:
+			return "PartitionTimeLimit";
+		case WAIT_PART_STATE:
+			return "PartitionDown";
+		case WAIT_HELD:
+			return "JobHeld";
+		default:
+			return "?";
+	}
 }
 
 char *job_state_string(enum job_states inx)
 {
-	static char *job_state_string[] = {
-		"PENDING",		/* JOB_PENDING		*/
-		"RUNNING",		/* JOB_RUNNING		*/
-		"COMPLETED",		/* JOB_COMPLETE		*/
-		"CANCELLED",		/* JOB_CANCELLED	*/
-		"FAILED",		/* JOB_FAILED		*/
-		"TIMEOUT",		/* JOB_TIMEOUT		*/
-		"NODE_FAIL",		/* JOB_NODE_FAIL	*/
-		"END"			/* JOB_END		*/
-	};
 	if (inx & JOB_COMPLETING)
 		return "COMPLETING";
-	else
-		return job_state_string[inx];
+
+	switch (inx) {
+		case JOB_PENDING:
+			return "PENDING";
+		case JOB_RUNNING:
+			return "RUNNING";
+		case JOB_COMPLETE:
+			return "COMPLETED";
+		case JOB_CANCELLED:
+			return "CANCELLED";
+		case JOB_FAILED:
+			return "FAILED";
+		case JOB_TIMEOUT:
+			return "TIMEOUT";
+		case JOB_NODE_FAIL:
+			return "NODE_FAIL";
+		default:
+			return "?";
+	}
 }
 
 char *job_state_string_compact(enum job_states inx)
 {
-	static char *job_state_string[] = {
-		"PD",
-		"R",
-		"CD",
-		"CA",
-		"F",
-		"TO",
-		"NF",
-		"END"
-	};
 	if (inx & JOB_COMPLETING)
 		return "CG";
-	else
-		return job_state_string[inx];
+
+	switch (inx) {
+		case JOB_PENDING:
+			return "PD";
+		case JOB_RUNNING:
+			return "R";
+		case JOB_COMPLETE:
+			return "CD";
+		case JOB_CANCELLED:
+			return "CA";
+		case JOB_FAILED:
+			return "F";
+		case JOB_TIMEOUT:
+			return "TO";
+		case JOB_NODE_FAIL:
+			return "NF";
+		default:
+			return "?";
+	}
 }
 
 char *node_state_string(enum node_states inx)
 {
-	static char *node_state_string[] = {
-		"DOWN",
-		"UNKNOWN",
-		"IDLE",
-		"ALLOCATED",
-		"DRAINED",
-		"DRAINING",
-		"COMPLETING",
-		"END"
-	};
-	static char *node_no_resp_string[] = {
-		"DOWN*",
-		"UNKNOWN*",
-		"IDLE*",
-		"ALLOCATED*",
-		"DRAINED*",
-		"DRAINING*",
-		"COMPLETING*",
-		"END"
-	};
+	bool no_resp_flag;
+
 	if (inx & NODE_STATE_NO_RESPOND) {
+		no_resp_flag = true;
 		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
-		return node_no_resp_string[inx];
+	} else
+		no_resp_flag = false;
+
+	switch (inx) {
+		case NODE_STATE_DOWN:
+			if (no_resp_flag)
+				return "DOWN*";
+			return "DOWN";
+		case NODE_STATE_UNKNOWN:
+			if (no_resp_flag)
+				return "UNKNOWN*";
+			return "UNKNOWN";
+		case NODE_STATE_IDLE:
+			if (no_resp_flag)
+				return "IDLE*";
+			return "IDLE";
+		case NODE_STATE_ALLOCATED:
+			if (no_resp_flag)
+				return "ALLOCATED*";
+			return "ALLOCATED";
+		case NODE_STATE_DRAINED:
+			if (no_resp_flag)
+				return "DRAINED*";
+			return "DRAINED";
+		case NODE_STATE_DRAINING:
+			if (no_resp_flag)
+				return "DRAINING*";
+			return "DRAINING";
+		case NODE_STATE_COMPLETING:
+			if (no_resp_flag)
+				return "COMPLETING*";
+			return "COMPLETING";
+		default:
+			return "?";
 	}
-	else
-		return node_state_string[inx];
 }
 
 char *node_state_string_compact(enum node_states inx)
 {
-	static char *node_state_string[] = {
-		"DOWN",
-		"UNK",
-		"IDLE",
-		"ALLOC",
-		"DRAIN",
-		"DRNG",
-		"COMP",
-		"END"
-	};
-	static char *node_no_resp_string[] = {
-		"DOWN*",
-		"UNK*",
-		"IDLE*",
-		"ALLOC*",
-		"DRAIN*",
-		"DRNG*",
-		"COMP*",
-		"END"
-	};
+	bool no_resp_flag;
+
 	if (inx & NODE_STATE_NO_RESPOND) {
+		no_resp_flag = true;
 		inx = (uint16_t) (inx & (~NODE_STATE_NO_RESPOND));
-		return node_no_resp_string[inx];
+	} else
+		no_resp_flag = false;
+
+	switch (inx) {
+		case NODE_STATE_DOWN:
+			if (no_resp_flag)
+				return "DOWN*";
+			return "DOWN";
+		case NODE_STATE_UNKNOWN:
+			if (no_resp_flag)
+				return "UNK*";
+			return "UNK";
+		case NODE_STATE_IDLE:
+			if (no_resp_flag)
+				return "IDLE*";
+			return "IDLE";
+		case NODE_STATE_ALLOCATED:
+			if (no_resp_flag)
+				return "ALLOC*";
+			return "ALLOC";
+		case NODE_STATE_DRAINED:
+			if (no_resp_flag)
+				return "DRAIN*";
+			return "DRAIN";
+		case NODE_STATE_DRAINING:
+			if (no_resp_flag)
+				return "DRNG*";
+			return "DRNG";
+		case NODE_STATE_COMPLETING:
+			if (no_resp_flag)
+				return "COMP*";
+			return "COMP";
+		default:
+			return "?";
 	}
-	else
-		return node_state_string[inx];
 }
 
 /*
