@@ -56,7 +56,7 @@ typedef struct slurm_checkpoint_context * slurm_checkpoint_context_t;
 extern int checkpoint_init(char *checkpoint_type);
 
 /* shutdown checkpoint plugin */
-extern void checkpoint_fini(void);
+extern int checkpoint_fini(void);
 
 /* perform some checkpoint operation */
 extern int checkpoint_op(uint16_t op, uint16_t data,

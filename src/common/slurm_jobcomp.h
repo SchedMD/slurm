@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2003 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.com> et. al.
+ *  Written by Morris Jette <jette1@llnl.com> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -28,6 +28,9 @@
 #ifndef __SLURM_JOBCOMP_H__
 #define __SLURM_JOBCOMP_H__
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
 #if HAVE_STDINT_H
 #  include <stdint.h>           /* for uint16_t, uint32_t definitions */
 #endif
@@ -44,6 +47,9 @@ typedef struct slurm_jobcomp_context * slurm_jobcomp_context_t;
 
 /* initialization of job completion logging */
 extern int g_slurm_jobcomp_init(char *jobcomp_loc);
+
+/* terminate pthreads and free, general clean-up for termination */
+extern int g_slurm_jobcomp_fini(void);
 
 /* write record of a job's completion */
 extern int g_slurm_jobcomp_write(struct job_record *job_ptr);

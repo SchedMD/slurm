@@ -128,6 +128,11 @@ int init ( void )
 	return SLURM_SUCCESS;
 }
 
+extern int fini ( void )
+{
+	return SLURM_SUCCESS;
+}
+
 
 /*
  * Allocate a credential.  This function should return NULL if it cannot

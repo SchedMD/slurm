@@ -79,8 +79,7 @@ const char plugin_type[]       	= "select/bluegene";
 const uint32_t plugin_version	= 90;
 
 /** pthread stuff for updating BGL node status */
-static pthread_t bluegene_thread;
-static bool thread_running = false;
+static pthread_t bluegene_thread = 0;
 static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /** initialize the status pthread */
@@ -112,7 +111,7 @@ static int _init_status_pthread()
 	pthread_attr_t attr;
 
 	pthread_mutex_lock( &thread_flag_mutex );
-	if ( thread_running ) {
+	if ( bluegene_thread ) {
 		debug2( "Bluegene thread already running, not starting another" );
 		pthread_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
@@ -121,20 +120,31 @@ static int _init_status_pthread()
 	slurm_attr_init( &attr );
 	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
 	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
-	thread_running = true;
 	pthread_mutex_unlock( &thread_flag_mutex );
 	pthread_attr_destroy( &attr );
 
 	return SLURM_SUCCESS;
 }
 
+static void _cancel_thread (pthread_t thread_id)
+{
+	int i;
+
+	for (i=0; i<4; i++) {
+		if (pthread_cancel(thread_id))
+			return;
+		usleep(1000);
+	}
+	error("Could not kill bluegene select pthread");
+}
+
 extern int fini ( void )
 {
 	pthread_mutex_lock( &thread_flag_mutex );
-	if ( thread_running ) {
+	if ( bluegene_thread ) {
 		verbose( "Bluegene select plugin shutting down" );
-		pthread_cancel( bluegene_thread );
-		thread_running = false;
+		_cancel_thread( bluegene_thread );
+		bluegene_thread = 0;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 

@@ -44,6 +44,7 @@
  * at the end of the structure.
  */
 typedef struct slurm_switch_ops {
+	int          (*fini)              ( void );
 	int          (*state_save)        ( char *dir_name );
 	int          (*state_restore)     ( char *dir_name );
 	bool         (*no_frag)           ( void );
@@ -102,6 +103,7 @@ struct slurm_switch_context {
 
 static slurm_switch_context_t g_context = NULL;
 static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
+
 
 static slurm_switch_context_t
 _slurm_switch_context_create( const char *switch_type)
@@ -162,6 +164,7 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 	 * declared for slurm_switch_ops_t.
 	 */
 	static const char *syms[] = {
+		"fini",
 		"switch_p_libstate_save",
 		"switch_p_libstate_restore",
 		"switch_p_no_frag",
@@ -260,6 +263,17 @@ extern int switch_init( void )
 	slurm_mutex_unlock( &context_lock );
 	xfree(switch_type);
 	return retval;
+}
+
+extern int switch_fini(void)
+{
+	int rc;
+
+	if (!g_context)
+		return SLURM_SUCCESS;
+
+	rc = _slurm_switch_context_destroy(g_context);
+	return rc;
 }
 
 extern int  switch_save(char *dir_name)

@@ -141,8 +141,8 @@ plugrack_entry_destructor( void *v )
          * which should only be callable from plugrack_destroy().
          */
         xassert( victim->refcount == 0 );
-        if ( victim->full_type ) xfree( victim->full_type );
-        if ( victim->fq_path ) xfree( victim->fq_path );
+        xfree( victim->full_type );
+        xfree( victim->fq_path );
         if ( victim->plug != PLUGIN_INVALID_HANDLE ) 
 		plugin_unload( victim->plug );
         xfree( victim );
@@ -178,7 +178,8 @@ accept_path_paranoia( plugrack_t rack,
         /* Is path owned by authorized user? */
         if ( check_own ) {
                 if ( st.st_uid != rack->uid ) {
-			debug3( "accept_path_paranoia: %s not owned by proper user", fq_path );
+			debug3( "accept_path_paranoia: %s not owned by "
+				"proper user", fq_path );
 			return 0;
 		}
         }
@@ -187,7 +188,8 @@ accept_path_paranoia( plugrack_t rack,
         if ( check_write ) {
                 if (  ( st.st_mode & S_IWGRP ) 
 		      || ( st.st_mode & S_IWOTH ) ) {
-			debug3( "accept_path_paranoia: %s writable by others", fq_path );
+			debug3( "accept_path_paranoia: %s writable by others", 
+				fq_path );
 			return 0;
 		}
         }
@@ -323,7 +325,8 @@ plugrack_destroy( plugrack_t rack )
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
                 if ( e->refcount > 0 ) {
-			debug2( "plugrack_destroy: attempt to destroy plugin rack that is still in use" );
+			debug2( "plugrack_destroy: attempt to destroy "
+				"plugin rack that is still in use" );
                         list_iterator_destroy( it );
                         return SLURM_ERROR; /* plugins still in use. */
                 }
@@ -552,7 +555,8 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
                                            PLUGRACK_PARANOIA_FILE_OWN,
                                            rack->paranoia & 
                                            PLUGRACK_PARANOIA_FILE_WRITABLE )) {
-			debug3( "plugin_read_dir: skipping %s for security reasons", fq_path );
+			debug3( "plugin_read_dir: skipping %s for security "
+				"reasons", fq_path );
                         continue;
                 }
 

@@ -357,7 +357,8 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
  * NOTE: returned bitmap must be freed by the caller using bit_free()
  */
 static bitstr_t *
-_pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
+_pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec )
+{
 
 	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
 	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
@@ -517,6 +518,10 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		return ESLURM_ALREADY_DONE;
 	job_ptr->kill_on_step_done = kill_job_when_step_done;
 
+	if ((step_specs->num_tasks < 1)
+	|| (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE)))
+		return ESLURM_BAD_TASK_COUNT;
+
 	job_ptr->time_last_active = now;
 	nodeset = _pick_step_nodes (job_ptr, step_specs);
 	if (nodeset == NULL)
@@ -529,9 +534,6 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 		else
 			step_specs->num_tasks = node_count;
 	}
-	if ((step_specs->num_tasks < 1) ||
-	    (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE)))
-		return ESLURM_BAD_TASK_COUNT;
 
 	step_ptr = create_step_record (job_ptr);
 	if (step_ptr == NULL)

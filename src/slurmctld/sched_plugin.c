@@ -170,7 +170,7 @@ slurm_sched_context_destroy( slurm_sched_context_t *c )
 /*        be restarted  and job priority changes may be required to change */
 /*        the scheduler type.                                              */
 /* *********************************************************************** */
-int
+extern int
 slurm_sched_init( void )
 {
 	int retval = SLURM_SUCCESS;
@@ -200,6 +200,22 @@ slurm_sched_init( void )
 	slurm_mutex_unlock( &g_sched_context_lock );
 	xfree(sched_type);
 	return retval;
+}
+
+/* *********************************************************************** */
+/*  TAG(                        slurm_sched_fini                        )  */
+/* *********************************************************************** */
+extern int
+slurm_sched_fini( void )
+{
+	int rc;
+
+	if (!g_sched_context)
+		return SLURM_SUCCESS;
+
+	rc = slurm_sched_context_destroy(g_sched_context);
+	g_sched_context = NULL;
+	return rc;
 }
 
 
