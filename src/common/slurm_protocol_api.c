@@ -126,7 +126,7 @@ uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_a
 	return pack_len ;
 }
 
-uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_type_t * message_type , char ** data_buffer , size_t buf_len )
+uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_type_t * message_type , char * data_buffer , size_t buf_len )
 {
 	char buftemp[MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buftemp ;
