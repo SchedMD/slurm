@@ -55,9 +55,11 @@
 #define UNIX_PATH_MAX 108    /* Cribbed from /usr/include/linux/un.h */
 
 static int slurm_sign_auth_credentials( slurm_auth_credentials_t *cred );
+#ifdef HAVE_AUTHD
 static int open_authd_connection( void );
 static int read_bytes( int fd, void *buf, size_t len );
 static int write_bytes( int fd, void *buf, size_t len );
+#endif
 
 slurm_auth_credentials_t *
 slurm_auth_alloc_credentials( void )
@@ -252,6 +254,7 @@ slurm_auth_print_credentials( slurm_auth_credentials_t *cred )
 }
 #endif /*DEBUG*/
 
+#ifdef HAVE_AUTHD
 static int
 open_authd_connection( void )
 {
@@ -323,3 +326,4 @@ static int write_bytes( int fd, void *buf, size_t n_bytes )
 	return 0;
 }
 
+#endif
