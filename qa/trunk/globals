@@ -146,11 +146,26 @@ proc kill_srun {  } {
 		}
 	}
 
-	exec $bin_pkill -INT -u $uid srun
+	spawn $bin_pkill -INT -u $uid srun
+	expect {
+		eof {
+			wait
+		}
+	}
 	exec $bin_usleep 1000
-	exec $bin_pkill -INT -u $uid srun
+	spawn $bin_pkill -INT -u $uid srun
+	expect {
+		eof {
+			wait
+		}
+	}
 	exec $bin_sleep  1
-	exec $bin_pkill -KILL -u $uid srun
+	spawn $bin_pkill -KILL -u $uid srun
+	expect {
+		eof {
+			wait
+		}
+	}
 
 	return 0
 }
