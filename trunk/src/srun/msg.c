@@ -53,6 +53,7 @@
 #endif
 
 static int tasks_exited = 0;
+static uint32_t slurm_user_id;
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -90,9 +91,10 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 #ifdef HAVE_TOTALVIEW
 			if (opt.totalview) {
 				MPIR_PROCDESC * tv_tasks;
-				tv_tasks = &MPIR_proctable[MPIR_proctable_size++];
+				tv_tasks = 
+					&MPIR_proctable[MPIR_proctable_size++];
 				tv_tasks->host_name = msg->node_name;
-				msg->node_name = NULL;	/* nothing left to free */
+				msg->node_name = NULL;	/* nothing to free */
 				tv_tasks->executable_name = opt.progname;
 				tv_tasks->pid = msg->local_pid;
 			}
@@ -133,16 +135,12 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 static void
 _handle_msg(job_t *job, slurm_msg_t *msg)
 {
-#ifdef HAVE_AUTHD
-	uid_t uid = 0;
-
-	uid = slurm_auth_uid (msg->cred);
-	if ( (uid != 0) && (uid != getuid ()) ) {
+	uid_t    req_uid = slurm_auth_uid(msg->cred);
+	if ((req_uid != slurm_user_id) && (req_uid != 0)) {
 		error ("Security violation, slurm message from uid %u", 
-		       (unsigned int) uid);
+		       (unsigned int) req_uid);
 		return;
 	}
-#endif
 
 	switch (msg->msg_type)
 	{
@@ -253,7 +251,9 @@ void *
 msg_thr(void *arg)
 {
 	job_t *job = (job_t *) arg;
+
 	debug3("msg thread pid = %ld", getpid());
+	slurm_user_id = slurm_get_slurm_user_id();
 	_msg_thr_poll(job);
 	return (void *)1;
 }
