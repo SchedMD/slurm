@@ -65,9 +65,6 @@ static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
 /** initialize the status pthread */
 static int _init_status_pthread(void);
 
-/* initialize the db.properties file, link into current working directory */
-static void _init_db_properties(void);
-
 /*
  * init() is called when the plugin is loaded, before any other functions
  * are called.  Put global initialization here.
@@ -96,30 +93,11 @@ extern int init ( void )
 		fatal("enum node_use_type out of sync with rm_api.h");
 #endif
 
-	_init_db_properties();
-
 	verbose("%s loading...", plugin_name);
 	if (init_bgl() || _init_status_pthread())
 		return SLURM_ERROR;
 
 	return SLURM_SUCCESS;
-}
-
-static void _init_db_properties(void)
-{
-	char *db_prop_orig_loc, db_prop_new_loc[512];
-
-	db_prop_orig_loc = "/bgl/BlueLight/ppcfloor/bglsys/bin/db.properties";
-	if (getcwd(db_prop_new_loc, (sizeof(db_prop_new_loc) - 20)) == NULL)
-		fatal("getcwd: %m");
-	strcat(db_prop_new_loc, "/db.properties");
-
-#ifdef HAVE_BGL_FILES
-	(void) unlink(db_prop_new_loc);
-	if (symlink(db_prop_orig_loc, db_prop_new_loc))
-		fatal("symlink(%s,%s): %m", db_prop_orig_loc, db_prop_new_loc);
-	debug("symlink(%s,\n\t%s)", db_prop_orig_loc, db_prop_new_loc);
-#endif
 }
 
 static int _init_status_pthread(void)
