@@ -130,7 +130,9 @@ g" },
 	{ SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH,		"Received zero length message" },
 	{ SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH,	"Received message length < 0" },
 	{ SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT,		"Failed to send entire message" },
-	{ ESLURM_PROTOCOL_INCOMPLETE_PACKET,			"Header lengths are logner than data received" }
+	{ ESLURM_PROTOCOL_INCOMPLETE_PACKET,			"Header lengths are logner than data received" },
+	{ SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT,			"Socket timed out on send/recv operation" } ,
+	{ SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT,		"Zero Bytes were transmitted or received" } 
 };
 
 /* 

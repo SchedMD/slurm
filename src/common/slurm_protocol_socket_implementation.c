@@ -89,6 +89,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	total_len = 0 ;
 	while ( total_len < sizeof ( uint32_t ) )
 	{	
+		//if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ) == SLURM_SOCKET_ERROR  )
 		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR  )
 		{
 			if ( errno ==  EINTR )
@@ -124,6 +125,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	total_len = 0 ;
 	while ( total_len < transmit_size )
 	{
+		//if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ) == SLURM_SOCKET_ERROR )
 		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
 		{
 			if ( errno ==  EINTR )
@@ -178,6 +180,7 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 
 	while ( true )
 	{
+		//if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) )  == SLURM_PROTOCOL_ERROR )
 		if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS) )  == SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
@@ -186,17 +189,19 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 			}
 			else
 			{
-				sigaction(SIGPIPE, &oldaction , &newaction);
-				return SLURM_PROTOCOL_ERROR ;
+				goto _slurm_msg_sendto_exit_error ;
+				//sigaction(SIGPIPE, &oldaction , &newaction);
+				//return SLURM_PROTOCOL_ERROR ;
 			}
 		}
 		else if ( send_len != sizeof ( uint32_t ) )
 		{
 			/*debug ( "Error sending length of datagram" ) ;*/
 			/*debug ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , sizeof ( uint32_t ) ) ;*/
-			sigaction(SIGPIPE, &oldaction , &newaction);
 			slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT ) ;
-			return SLURM_PROTOCOL_ERROR ;
+			goto _slurm_msg_sendto_exit_error ;
+			//sigaction(SIGPIPE, &oldaction , &newaction);
+			//return SLURM_PROTOCOL_ERROR ;
 		}
 		else
 		{
@@ -205,6 +210,7 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	}
 	while ( true )
 	{
+		//if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , SLURM_MESSGE_TIMEOUT_SEC ) ) == SLURM_PROTOCOL_ERROR )
 		if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			if ( errno ==  EINTR )
@@ -213,25 +219,182 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 			}
 			else
 			{
-				sigaction(SIGPIPE, &oldaction , &newaction);
-				return SLURM_PROTOCOL_ERROR ;
+				goto _slurm_msg_sendto_exit_error ;
+			//	sigaction(SIGPIPE, &oldaction , &newaction);
+			//	return SLURM_PROTOCOL_ERROR ;
 			}
 		}
 		else if ( send_len != size )
 		{
 			/*debug ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;*/
-			sigaction(SIGPIPE, &oldaction , &newaction);
 			slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT ) ;
-			return SLURM_PROTOCOL_ERROR ;
+			goto _slurm_msg_sendto_exit_error ;
+			//sigaction(SIGPIPE, &oldaction , &newaction);
+			//return SLURM_PROTOCOL_ERROR ;
 		}
 		else
 		{
 			break ;
 		}
 	}
-
+	
 	sigaction(SIGPIPE, &oldaction , & newaction );
 	return send_len ;
+
+	_slurm_msg_sendto_exit_error:	
+	sigaction(SIGPIPE, &oldaction , & newaction );
+	return SLURM_PROTOCOL_ERROR ;
+}
+
+int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, int timeout )
+{
+	int rc ;
+	int bytes_sent = 0 ;
+	int fd_flags ;
+	_slurm_fd_set set ;
+	struct timeval time_out_val ;
+	
+	time_out_val . tv_sec = timeout ;
+	time_out_val . tv_usec = 0 ;
+
+	_slurm_FD_ZERO ( & set ) ;
+	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
+	_slurm_set_stream_non_blocking ( open_fd ) ;
+	while ( bytes_sent < size )
+	{
+		_slurm_FD_SET ( open_fd , &set ) ;
+		rc = _slurm_select ( open_fd + 1 , NULL , & set, NULL , & time_out_val ) ;
+		if ( rc == SLURM_PROTOCOL_ERROR || rc < 0 )
+		{
+			if ( errno == EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				goto _slurm_send_timeout_exit_error;
+			}
+				
+		}
+		else if  ( rc == 0 )
+		{
+			slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT ) ;
+			goto _slurm_send_timeout_exit_error;
+		}
+		else 
+		{
+			rc = _slurm_send ( open_fd, buffer , size , flags ) ;
+			if ( rc  == SLURM_PROTOCOL_ERROR || rc < 0 )
+			{
+				if ( errno == EINTR )
+				{
+					continue ;
+				}
+				else
+				{
+					goto _slurm_send_timeout_exit_error;
+				}
+			}
+			else if ( rc == 0 )
+			{
+				slurm_seterrno ( SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT ) ;
+				goto _slurm_send_timeout_exit_error;
+			}
+			else
+			{
+				bytes_sent+=rc ;
+			}
+		}
+	}
+
+	return bytes_sent ;
+	if ( flags != SLURM_PROTOCOL_ERROR )
+	{
+		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
+	}
+	
+	_slurm_send_timeout_exit_error:
+	if ( flags != SLURM_PROTOCOL_ERROR )
+	{
+		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
+	}
+	return SLURM_PROTOCOL_ERROR ;
+	
+}
+
+int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, int timeout )
+{
+	int rc ;
+	int bytes_recv = 0 ;
+	int fd_flags ;
+	_slurm_fd_set set ;
+	struct timeval time_out_val ;
+	
+	time_out_val . tv_sec = timeout ;
+	time_out_val . tv_usec = 0 ;
+
+	_slurm_FD_ZERO ( & set ) ;
+	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
+	_slurm_set_stream_non_blocking ( open_fd ) ;
+	while ( bytes_recv < size )
+	{
+		_slurm_FD_SET ( open_fd , &set ) ;
+		rc = _slurm_select ( open_fd + 1 , & set , NULL , NULL , & time_out_val ) ;
+		if ( rc == SLURM_PROTOCOL_ERROR || rc < 0 )
+		{
+			if ( errno == EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				goto _slurm_recv_timeout_exit_error;
+			}
+				
+		}
+		else if  ( rc == 0 )
+		{
+			slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT ) ;
+			goto _slurm_recv_timeout_exit_error;
+		}
+		else 
+		{
+			rc = _slurm_recv ( open_fd, buffer , size , flags ) ;
+			if ( rc  == SLURM_PROTOCOL_ERROR || rc < 0 )
+			{
+
+				if ( errno == EINTR )
+				{
+					continue ;
+				}
+				else
+				{
+					goto _slurm_recv_timeout_exit_error;
+				}
+			}
+			else if ( rc == 0 )
+			{
+				slurm_seterrno ( SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT ) ;
+				goto _slurm_recv_timeout_exit_error;
+			}
+			else
+			{
+				bytes_recv+=rc ;
+			}
+		}
+	}
+	return bytes_recv ;
+	if ( fd_flags != SLURM_PROTOCOL_ERROR )
+	{
+		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
+	}
+	
+	_slurm_recv_timeout_exit_error:
+	if ( fd_flags != SLURM_PROTOCOL_ERROR )
+	{
+		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
+	}
+	return SLURM_PROTOCOL_ERROR ;
 }
 
 int _slurm_shutdown_msg_engine ( slurm_fd open_fd )
@@ -347,10 +510,6 @@ int _slurm_set_stream_blocking ( slurm_fd open_fd )
 	flags &= !O_NONBLOCK ;
 	return _slurm_fcntl ( open_fd , F_SETFL , flags ) ;
 }
-
-
-
-
 
 extern int _slurm_socket (int __domain, int __type, int __protocol)
 {
