@@ -63,7 +63,6 @@ static	uid_t 	*get_groups_members (char *group_names);
 static	uid_t 	*get_group_members (char *group_name);
 static	time_t	get_group_tlm (void);
 static	void	list_delete_part (void *part_entry);
-static	void 	print_group_members (uid_t *uid_list);
 static	int	uid_list_size (uid_t *uid_list_ptr);
 
 
@@ -455,7 +454,6 @@ init_part_conf ()
 	last_part_update = time (NULL);
 
 	strcpy (default_part.name, "DEFAULT");
-	default_part.allow_groups = (char *) NULL;
 	default_part.max_time = INFINITE;
 	default_part.max_nodes = INFINITE;
 	default_part.root_only = 0;
@@ -768,8 +766,49 @@ update_part (update_part_msg_t * part_desc )
 int
 validate_group (struct part_record *part_ptr, uid_t submit_uid)
 {
-	return 1;
+	int i;
+
+	if (part_ptr->allow_groups == NULL)
+		return 1;	/* all users allowed */
+	if ( (submit_uid == 0) || (submit_uid = getuid ()) )
+		return 1;	/* super-user can run anywhere */
+
+	if (part_ptr->allow_uids == NULL)
+		return 0;	/* no non-super-users in the list */
+	for (i=0; part_ptr->allow_uids[i]; i++) {
+		if (part_ptr->allow_uids[i] == submit_uid)
+			return 1;
+	}
+	return 0;		/* not in this group's list */
+
 }
+
+/* load_part_uid_allow_list - for every partition reload the allow_uid list if "force" 
+ *	is true or the GROUP_FILE has changed */
+void
+load_part_uid_allow_list ( int force )
+{
+	static time_t last_update_time;
+	time_t temp_time;
+	ListIterator part_record_iterator;
+	struct part_record *part_record_point;
+
+	temp_time = get_group_tlm();
+	if ( (force == 0) && (temp_time == last_update_time) )
+		return;
+	debug ("Updating partition uid access list");
+	last_update_time = temp_time;
+	last_part_update = time (NULL);
+
+	part_record_iterator = list_iterator_create (part_list);		
+	while ((part_record_point = (struct part_record *) list_next (part_record_iterator))) {
+		if (part_record_point->allow_uids)
+			xfree (part_record_point->allow_uids);
+		part_record_point->allow_uids = get_groups_members (part_record_point->allow_groups);
+	}
+	list_iterator_destroy (part_record_iterator);
+}
+
 
 /* get_groups_members - indentify the users in a comma delimited list of group names
  * Returns a zero terminated list of its UIDs or NULL on error 
@@ -807,8 +846,7 @@ get_groups_members (char *group_names)
 		one_group_name = strtok_r (NULL, ",", &name_ptr);
 	}
 	xfree (tmp_names);
-debug3 ("members of groups: %s", group_names);
-print_group_members (group_uids);
+
 	return group_uids;
 }
 
@@ -870,6 +908,7 @@ get_group_tlm (void)
 	return stat_buf.st_mtime;
 }
 
+#if EXTREME_LOGGING
 /* print_group_members - print the members of a uid list */
 void 
 print_group_members (uid_t *uid_list)
@@ -883,6 +922,7 @@ print_group_members (uid_t *uid_list)
 	}
 	printf ("\n\n");
 }
+#endif
 
 /* uid_list_size - return the count of uid's in a zero terminated list */
 int	

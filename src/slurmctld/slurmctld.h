@@ -58,6 +58,10 @@
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
 
+/* Check for updates to GROUP_FILE every PERIODIC_GROUP_CHECK seconds, 
+ *	Update the group uid_t access list as needed */
+#define	PERIODIC_GROUP_CHECK	600
+
 #define safe_unpack16(valp,bufp,lenp) {			\
         if (*(lenp) < sizeof(*(valp)))			\
 		break;					\
@@ -376,6 +380,9 @@ extern int load_job_state ( void );
 
 /* load_node_state - load the node state from file, recover from slurmctld restart */
 extern int load_node_state ( void );
+
+/* load_part_uid_allow_list - for every partition reload the allow_uid list */
+extern void load_part_uid_allow_list ( int force );
 
 /* load_part_state - load the partition state from file, recover from slurmctld restart */
 extern int load_part_state ( void );

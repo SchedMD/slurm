@@ -370,6 +370,8 @@ slurmctld_background ( void * no_data )
 	time_t now;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	/* Locks: Write partition */
+	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK, NO_LOCK, WRITE_LOCK };
 
 	/* Let the dust settle before doing work */
 	last_sched_time = last_checkpoint_time = last_timelimit_time = time (NULL);
@@ -388,6 +390,13 @@ slurmctld_background ( void * no_data )
 			lock_slurmctld (job_write_lock);
 			job_time_limit ();
 			unlock_slurmctld (job_write_lock);
+		}
+
+		if ((now - last_timelimit_time) > PERIODIC_GROUP_CHECK) {
+			last_timelimit_time = now;
+			lock_slurmctld (part_write_lock);
+			load_part_uid_allow_list ( 0 );
+			unlock_slurmctld (part_write_lock);
 		}
 
 		if ((now - last_sched_time) > PERIODIC_SCHEDULE) {
@@ -1384,12 +1393,12 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 		error_code = read_slurm_conf (0);
 		if (error_code == 0)
 			reset_job_bitmaps ();
+		unlock_slurmctld (config_write_lock);
 
 		if (daemonize) {
 			if (chdir (slurmctld_conf.state_save_location))
 				fatal ("chdir to %s error %m", slurmctld_conf.state_save_location);
 		}
-		unlock_slurmctld (config_write_lock);
 	}
 	
 	/* return result */
