@@ -38,6 +38,7 @@ proc run_cat_job { input_file output_file } {
 			return 1
 		}
 		eof {
+			wait
 		}
 	}
 	return [wait_for_file $output_file]
@@ -63,6 +64,7 @@ expect {
                 exp_continue
         }
         eof {
+		wait
         }
 }
 

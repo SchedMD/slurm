@@ -37,6 +37,7 @@ proc run_cat_job { input_file output_file } {
 			return 1
 		}
 		eof {
+			wait
 		}
 	}
 

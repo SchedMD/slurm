@@ -80,11 +80,11 @@ set number         "\[0-9\]+"
 ################################################################
 
 proc cancel_job { job_id } {
-	global scancel
+	global scancel bin_sleep
 
 	send_user "cancelling $job_id\n"
 	exec $scancel $job_id
-	sleep 1
+	exec $bin_sleep 1
 	return [wait_for_job $job_id "DONE"]
 }
 
@@ -110,6 +110,7 @@ proc get_line_cnt { file_name } {
 			exp_continue
 		}
 		eof {
+			wait
 		}
 	}
 	return $lines
@@ -166,11 +167,11 @@ proc print_header { test_id } {
 ################################################################
 
 proc wait_for_file { file_name } {
-	global max_file_delay
+	global bin_sleep max_file_delay
 
 	for {set my_delay 0} {$my_delay <= $max_file_delay} {incr my_delay} {
 		if {$my_delay > 0} {
-			sleep 1
+			exec $bin_sleep 1
 		}
 		if [file exists $file_name] {
 			return 0
@@ -203,7 +204,7 @@ proc wait_for_file { file_name } {
 ################################################################
 
 proc wait_for_job { job_id state } {
-	global max_job_delay
+	global bin_sleep max_job_delay
 	global scontrol
 	set is_done     0
 	set is_running  0
@@ -241,11 +242,12 @@ proc wait_for_job { job_id state } {
 				return 1
 			}
 			eof {
+				wait
 			}
 		}
 	
 		if {[string compare $state "DONE"] == 0    && $is_done == 1 } {
-			sleep  2
+			exec $bin_sleep  2
 			return 0
 		}
 		if {[string compare $state "RUNNING"] == 0 && $is_running == 1 } {
@@ -255,7 +257,7 @@ proc wait_for_job { job_id state } {
 			return 1
 		}
 
-		sleep $sleep_time
+		exec $bin_sleep $sleep_time
 		set sleep_time  [expr $sleep_time * 2]
 		if { $sleep_time > 10 } {
 			set sleep_time 10

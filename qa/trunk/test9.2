@@ -38,6 +38,7 @@ proc run_hostname_job { output_file } {
 		eof {
 		}
 	}
+	wait
 
 	return [wait_for_file $output_file]
 }
