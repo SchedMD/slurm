@@ -596,6 +596,13 @@ static int _parse_part_spec(char *in_line)
 			goto cleanup;
 		}
 		xfree(shared_str);
+#ifdef HAVE_BGL
+		if (shared_val != SHARED_NO) {
+			error("Illegal Shared parameter value for partition %s",
+				partition_name);
+			shared_val = SHARED_NO;
+		} 
+#endif
 	}
 
 	if (state_str) {
