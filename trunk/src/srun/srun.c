@@ -364,6 +364,10 @@ sig_thr(void *arg)
 
 	while (1) {
 		sigfillset(&set);
+		sigdelset(&set, SIGTERM);
+		sigdelset(&set, SIGABRT);
+		sigdelset(&set, SIGSEGV);
+		sigdelset(&set, SIGQUIT);
 		pthread_sigmask(SIG_BLOCK, &set, NULL);
 		sigwait(&set, &signo);
 		debug2("recvd signal %d", signo);

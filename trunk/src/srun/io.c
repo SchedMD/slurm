@@ -2,12 +2,12 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/select.h>
+#include <sys/poll.h>
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
-
 
 #include <src/common/xassert.h>
 #include <src/common/xmalloc.h>
@@ -23,14 +23,132 @@
 #define IO_BUFSIZ	2048
 #define IO_DONE		-9	/* signify that eof has been recvd on stream */
 
+/* fd_info struct used in poll() loop to map fds back to task number,
+ * appropriate output type (stdout/err), and original fd
+ */
+typedef struct fd_info {
+	int taskid;	/* corresponding task id		*/
+	int *fd; 	/* pointer to fd in job->out/err array 	*/
+	FILE *fp;	/* fp on which to write output		*/
+} fd_info_t;
+
 static void _accept_io_stream(job_t *job);
-static int  _handle_task_output(int *fd, FILE *out, int tasknum);
+static int  _do_task_output_poll(fd_info_t *info);
+static int  _do_task_output(int *fd, FILE *out, int tasknum);
 static void _bcast_stdin(int fd, job_t *job);	
 static int  _readx(int fd, char *buf, size_t maxbytes);
 static ssize_t _readn(int fd, void *buf, size_t nbytes);
 static char * _next_line(char **str);
 
-void *io_thr(void *job_arg)
+#define _poll_set_rd(_pfd, _fd) do { 	\
+	(_pfd).fd = _fd;		\
+	(_pfd).events = POLLIN; 	\
+        } while (0)
+
+#define _poll_set_wr(_pfd, _fd) do { 	\
+	(_pfd).fd = _fd;		\
+	(_pfd).events = POLLOUT;	\
+        } while (0)
+
+#define _poll_rd_isset(pfd) ((pfd).revents & POLLIN )
+#define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
+#define _poll_err(pfd)      ((pfd).revents & POLLERR)
+
+static int 
+_do_task_output_poll(fd_info_t *info)
+{
+	return _do_task_output(info->fd, info->fp, info->taskid);
+}
+
+static void 
+*_io_thr_poll(void *job_arg)
+{
+	job_t *job = (job_t *) job_arg;
+	struct pollfd *fds;
+	nfds_t nfds = 0;
+	fd_info_t map[opt.nprocs*2+3];	/* map fd in pollfd array to fd info */
+	int i;
+
+	xassert(job != NULL);
+
+	/* need ioport + msgport + stdin + 2*nprocs fds */
+	fds = xmalloc((3+2*opt.nprocs)*sizeof(*fds));
+
+	if (fcntl(job->iofd, F_SETFL, O_NONBLOCK) < 0)
+		error("Unable to set nonblocking I/O on iofd\n");
+
+	for (i = 0; i < opt.nprocs; i++) {
+		job->out[i] = -1; 
+		job->err[i] = -1;
+	}
+
+	_poll_set_rd(fds[0], job->iofd   );
+	_poll_set_rd(fds[1], STDIN_FILENO);
+
+	while (1) {
+		int eofcnt = 0;
+		nfds = 2;
+
+		for (i = 0; i < opt.nprocs; i++) {
+			if (job->out[i] > 0) {
+				_poll_set_rd(fds[nfds], job->out[i]);
+				map[nfds].taskid = i;
+				map[nfds].fd     = &job->out[i];
+				map[nfds].fp     = stdout;
+				nfds++;
+			}
+
+			if (job->err[i] > 0) {
+				_poll_set_rd(fds[nfds], job->err[i]);
+				map[nfds].taskid = i;
+				map[nfds].fd     = &job->err[i];
+				map[nfds].fp     = stderr;
+				nfds++;
+			}
+
+			if (job->out[i] == IO_DONE && job->err[i] == IO_DONE)
+				eofcnt++;
+		}
+
+		/* exit if we have recieved eof on all streams */
+		if (eofcnt == opt.nprocs)
+			pthread_exit(0);
+
+		while (poll(fds, nfds, 500) < 0) {
+			switch(errno) {
+				case EINTR:
+					continue;
+					break;
+				case ENOMEM:
+				case EFAULT:
+					fatal("poll: %m");
+					break;
+				default:
+					error("poll: %m. trying again.");
+					break;
+			}
+		}
+
+		if (fds[0].revents) {
+			_accept_io_stream(job);
+		}
+
+		for (i = 2; i < nfds; i++) {
+			unsigned short revents = fds[i].revents;
+			if (revents & POLLERR)
+				error("poll error on fd %d", fds[i].fd);
+			else if (revents & POLLIN) {
+				_do_task_output_poll(&map[i]);
+			} 
+		}
+
+		if (_poll_rd_isset(fds[1]))
+			_bcast_stdin(STDIN_FILENO, job);
+	}
+}
+
+static void 
+*_io_thr_select(void *job_arg)
 {
 	job_t *job = (job_t *) job_arg;
 	fd_set rset, wset;
@@ -85,16 +203,22 @@ void *io_thr(void *job_arg)
 
 		for (i = 0; i < opt.nprocs; i++) {
 			if (job->err[i] > 0 && FD_ISSET(job->err[i], &rset)) 
-				_handle_task_output(&job->err[i], stderr, i);
+				_do_task_output(&job->err[i], stderr, i);
 			if (job->out[i] > 0 && FD_ISSET(job->out[i], &rset)) 
-				_handle_task_output(&job->out[i], stdout, i);
+				_do_task_output(&job->out[i], stdout, i);
 		}
 
 		if (FD_ISSET(STDIN_FILENO, &rset))
 			_bcast_stdin(STDIN_FILENO, job);
 	}
-	
+
 	return (void *)(0);
+}
+
+void *
+io_thr(void *arg)
+{
+	return _io_thr_poll(arg);
 }
 
 static void
@@ -126,9 +250,6 @@ _accept_io_stream(job_t *job)
 
 	_readn(sd, &msgbuf, len); 
 	unpack_io_stream_header(&hdr, (void **) &bufptr, &len); 
-	debug("accepted %s connection from %s task %ld", 
-			(hdr.type ? "stderr" : "stdout"), 
-			buf, hdr.task_id               );
 
 	/* Assign new fds arbitrarily for now, until slurmd
 	 * sends along some control information
@@ -143,10 +264,14 @@ _accept_io_stream(job_t *job)
 	else
 		job->err[hdr.task_id] = sd;
 
+	debug("accepted %s connection from %s task %ld, sd=%d", 
+			(hdr.type ? "stderr" : "stdout"), 
+			buf, hdr.task_id, sd                   );
+
 }
 
 static int
-_handle_task_output(int *fd, FILE *out, int tasknum)
+_do_task_output(int *fd, FILE *out, int tasknum)
 {
 	char buf[IO_BUFSIZ];
 	char *line, *p;
