@@ -520,16 +520,16 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
  * Here are the necessary steps to set up to run an Elan MPI parallel program
  * (set of processes) on a node (possibly one of many allocated to the prog):
  *
- * Process 1	Process 2	|	Process 3	Process 4
+ * Process 1	Process 2	|	Process 3
  * read args			|
  * fork	-------	rms_prgcreate	|
  * waitpid 	elan3_create	|
  * 		rms_prgaddcap	|
  *		fork N procs ---+------	rms_setcap
  *		wait all	|	setup RMS_ env	
- *				|	fork ----------	setuid, etc.
- *				|	wait		exec mpi process
- *				|	exit
+ *				|	setuid, etc.
+ *				|	exec mpi process
+ *				|	
  *		exit		|
  * rms_prgdestroy		|
  * exit				|     (one pair of processes per mpi proc!)
@@ -539,8 +539,6 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
  * - The second fork is required when running multiple processes per node 
  *   because each process must announce its use of one of the hw contexts 
  *   in the range allocated in the capability.
- * - The third fork seems required after the rms_setcap or else elan3_attach
- *   will fail with EINVAL.
  */
 
 /*
