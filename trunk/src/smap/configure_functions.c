@@ -100,20 +100,20 @@ static int _create_allocation(char *com, List allocated_partitions)
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
 	
 	request->geometry[0] = -1;
-	request->conn_type=MESH;
+	request->conn_type=TORUS;
 	request->rotate = false;
 	request->elongate = false;
 	request->force_contig = false;
-	request->co_proc = false;
+	request->co_proc = true;
 	
 	while(i<len) {
 		
 		while(com[i-1]!=' ' && i<len) {
 			i++;
 		}
-		if(!strncasecmp(com+i, "torus", 5)) {
-			request->conn_type=TORUS;
-			i+=5;
+		if(!strncasecmp(com+i, "mesh", 4)) {
+			request->conn_type=MESH;
+			i+=4;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			request->rotate=true;
 			i+=6;
@@ -123,9 +123,9 @@ static int _create_allocation(char *com, List allocated_partitions)
 		} else if(!strncasecmp(com+i, "force", 5)) {
 			request->force_contig=true;				
 			i+=5;
-		} else if(!strncasecmp(com+i, "proc", 4)) {
-			request->co_proc=true;				
-			i+=4;
+		} else if(!strncasecmp(com+i, "virtual", 7)) {
+			request->co_proc=false;				
+			i+=7;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
 			i2=i;
 			i++;
@@ -253,21 +253,21 @@ static int _remove_allocation(char *com, List allocated_partitions)
 
 static int _alter_allocation(char *com, List allocated_partitions)
 {
-	int torus=MESH, i=5, i2=0;
+	int torus=TORUS, i=5, i2=0;
 	int len = strlen(com);
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = false;
-	bool co_proc = false;
+	bool co_proc = true;
 		
 	while(i<len) {
 		
 		while(com[i-1]!=' ' && i<len) {
 			i++;
 		}
-		if(!strncasecmp(com+i, "torus", 5)) {
-			torus=TORUS;
-			i+=5;
+		if(!strncasecmp(com+i, "mesh", 4)) {
+			torus=MESH;
+			i+=4;
 		} else if(!strncasecmp(com+i, "rotate", 6)) {
 			rotate=true;
 			i+=6;
@@ -277,9 +277,9 @@ static int _alter_allocation(char *com, List allocated_partitions)
 		} else if(!strncasecmp(com+i, "force", 5)) {
 			force_contig=true;				
 			i+=5;
-		} else if(!strncasecmp(com+i, "proc", 4)) {
-			co_proc=true;				
-			i+=4;
+		} else if(!strncasecmp(com+i, "virtual", 7)) {
+			co_proc=false;				
+			i+=7;
 		} else if(i2<0 && (com[i] < 58 && com[i] > 47)) {
 			i2=i;
 			i++;
@@ -392,6 +392,9 @@ static int _save_allocation(char *com, List allocated_partitions)
 	char filename[20];
 	char save_string[255];
 	FILE *file_ptr;
+	char *co_proc;
+	char *conn_type;
+
 	ListIterator results_i;		
 	
 	memset(filename,0,20);
@@ -413,13 +416,25 @@ static int _save_allocation(char *com, List allocated_partitions)
 	}
 	file_ptr = fopen(filename,"w");
 	if (file_ptr!=NULL) {
+		fputs ("BlrtsImage=/bgl/BlueLight/ppcfloor/bglsys/bin/rts_hw.rts\n", file_ptr);
+		fputs ("LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf\n", file_ptr);
+		fputs ("MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts\n", file_ptr);
+		fputs ("RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf\n", file_ptr);
 		results_i = list_iterator_create(allocated_partitions);
 		while((allocated_part = list_next(results_i)) != NULL) {
 			memset(save_string,0,255);
-			sprintf(save_string, "Nodes=bgl[%s] Type=%d Use=%d\n", 
+			if(allocated_part->request->conn_type == TORUS)
+				conn_type = "TORUS";
+			else
+				conn_type = "MESH";
+			if(allocated_part->request->co_proc)
+				co_proc = "COPROCCESSOR";
+			else
+				co_proc = "VIRTUAL";
+			sprintf(save_string, "Nodes=bgl[%s] Type=%s Use=%s\n", 
 				allocated_part->request->save_name, 
-				allocated_part->request->conn_type, 
-				allocated_part->request->co_proc);
+				conn_type, 
+				co_proc);
 			
 			fputs (save_string,file_ptr);
 		}
