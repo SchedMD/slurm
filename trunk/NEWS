@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
  -- Slurmctld does not attempt to recover jobs when the switch plugin 
     value changes (decision reached when any job's switch state recovery 
     fails)
+ -- Node does not transition from COMPLETING to DOWN state due to 
+    not responding. Wait for tasks to complete or admin to set DOWN
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================

@@ -166,6 +166,7 @@ void ping_nodes (void)
 		if ((node_ptr->last_response != (time_t)0) &&
 		    (node_ptr->last_response <= node_dead_time) &&
 		    ((base_state != NODE_STATE_DOWN) &&
+		     (base_state != NODE_STATE_COMPLETING) &&
 		     (base_state != NODE_STATE_DRAINED))) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_ptr->name);

@@ -370,7 +370,7 @@ static void *_wdog(void *args)
 					       (unsigned long) thread_ptr[i].thread);
 					if (pthread_kill(thread_ptr[i].thread,
 						     SIGALRM) == ESRCH)
-						thread_ptr[i].state = DSH_FAILED;
+						thread_ptr[i].state = DSH_NO_RESP;
 				}
 				break;
 			case DSH_NEW:
