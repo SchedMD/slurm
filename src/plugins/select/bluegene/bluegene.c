@@ -45,6 +45,7 @@
 #include "src/common/xstring.h"
 #include "bluegene.h"
 #include "partition_sys.h"
+#include "state_test.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128
@@ -90,20 +91,11 @@ static int  _parse_bgl_spec(char *in_line);
 static int  _parse_request(char* request_string, partition_t** request);
 static void _process_config(void);
 static int  _sync_partitions(void);
-static void _test_down_nodes(void);
-static void _test_down_switches(void);
 static int  _validate_config_nodes(void);
 static int  _wire_bgl_partitions(void);
 
 /* Rotate a geometry array through six permutations */
 static void _rotate_geo(uint16_t *req_geometry, int rot_cnt);
-
-#ifdef HAVE_BGL_FILES
-static char *_convert_bp_state(rm_BP_state_t state);
-#endif
-#ifdef USE_BGL_FILES
-static void _set_bp_node_state(rm_BP_state_t state, rm_element_t *element);
-#endif
 
 /*
  * create_static_partitions - create the static partitions that will be used
@@ -1099,217 +1091,6 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	return SLURM_SUCCESS;
 }
 
-/* Test for nodes that are DOWN in BlueGene database */ 
-static void _test_down_nodes(void)
-{
-#ifdef HAVE_BGL_FILES
-	int bp_num, i;
-	rm_BP_t *my_bp;
-	rm_BP_state_t bp_state;
-	rm_location_t bp_loc;
-	char down_node_list[BUFSIZE];
-	char bgl_down_node[128];
-
-	if (!bgl) {
-		error("error, BGL is not initialized");
-		return;
-	}
-
-	down_node_list[0] = '\0';
-	if (rm_get_data(bgl, RM_BPNum, &bp_num) != STATUS_OK)
-		return;
-
-	for (i=0; i<bp_num; i++) {
-		if (i) {
-			if (rm_get_data(bgl, RM_NextBP, &my_bp) != STATUS_OK)
-				continue;
-		} else {
-			if (rm_get_data(bgl, RM_FirstBP, &my_bp) != STATUS_OK)
-				continue;
-		}
-
-		if ((rm_get_data(my_bp, RM_BPState, &bp_state) != STATUS_OK)
-		||  (bp_state != RM_BP_DOWN)
-		||  (rm_get_data(my_bp, RM_BPLoc, &bp_loc) != STATUS_OK)) {
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-			rm_free_BP(my_bp);
-#endif
-			continue;
-		}
-
-		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d", 
-			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		debug("_test_down_nodes: %s in state %s", 
-			bgl_down_node, _convert_bp_state(RM_BPState));
-		if ((strlen(down_node_list) + strlen(bgl_down_node) + 2) 
-				< BUFSIZE) {
-			if (down_node_list[0] != '\0')
-				strcat(down_node_list,",");
-			strcat(down_node_list, bgl_down_node);
-		} else
-			error("down_node_list overflow");
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-		rm_free_BP(my_bp);
-#endif
-	}
-
-	if (down_node_list[0]) {
-		char reason[128];
-		time_t now = time(NULL);
-		struct tm * time_ptr = localtime(&now);
-		strftime(reason, sizeof(reason), 
-			"bluegene_select: CMCS state DOWN [SLURM@%b %d %H:%M]", 
-			time_ptr);
-		slurm_drain_nodes(down_node_list, reason);
-	}
-#endif
-}
-
-/* Find the specified BlueGene node ID and configure it down in CMCS */
-static void _configure_node_down(rm_bp_id_t bp_id)
-{
-#ifdef HAVE_BGL_FILES
-	int bp_num, i;
-	rm_bp_id_t bpid;
-	rm_BP_t *my_bp;
-	rm_location_t bp_loc;
-	rm_BP_state_t bp_state;
-	char bgl_down_node[128];
-
-	if (!bgl) {
-		error("error, BGL is not initialized");
-		return;
-	}
-
-	if (rm_get_data(bgl, RM_BPNum, &bp_num) != STATUS_OK)
-		return;
-	for (i=0; i<bp_num; i++) {
-		if (i) {
-			if (rm_get_data(bgl, RM_NextBP, &my_bp) != STATUS_OK)
-				continue;
-		} else {
-			if (rm_get_data(bgl, RM_FirstBP, &my_bp) != STATUS_OK)
-				continue;
-		}
-		if ((rm_get_data(my_bp, RM_BPID, &bpid) != STATUS_OK)
-		||  (strcmp(bpid, bpid) != 0)
-		||  (rm_get_data(my_bp, RM_BPLoc, &bp_loc) != STATUS_OK)
-		||  (rm_get_data(my_bp, RM_BPState, &bp_state) != STATUS_OK)
-		||  (bp_state == RM_BP_DOWN)	/* already down */
-		||  (rm_get_data(my_bp, RM_BPLoc, &bp_loc) != STATUS_OK)) {
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-			rm_free_BP(my_bp);
-#endif
-			continue;
-		}
-		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
-			bp_loc.X, bp_loc.Y, bp_loc.Z);
-#ifdef USE_BGL_FILES
-		if (rm_set_data(my_bp, RM_BPState, RM_BP_DOWN) != STATUS_OK)
-			info("switch for node %s is bad, cound not set down",
-				bgl_down_node);
-		else
-			info("switch for node %s is bad, set down", 
-				bgl_down_node);
-
-/* FIXME: rm_free_BP is consistenly generating a segfault */
-		rm_free_BP(my_bp);
-#else
-		info("switch for node %s is bad, set down", bgl_down_node);
-#endif
-	}	
-}
-
-/* Test for switches that are DOWN in BlueGene database */
-static void _test_down_switches(void)
-{
-#ifdef HAVE_BGL_FILES
-	int switch_num, i;
-	rm_switch_t *my_switch;
-	rm_bp_id_t bp_id;
-	rm_switch_state_t switch_state;
-
-	if (!bgl) {
-		error("error, BGL is not initialized");
-		return;
-	}
-
-	if (rm_get_data(bgl, RM_SwitchNum, &switch_num) != STATUS_OK)
-		return;
-	for (i=0; i<switch_num; i++) {
-		if (i) {
-			if (rm_get_data(bgl, RM_NextSwitch, &my_switch)
-					!= STATUS_OK)
-				continue;
-		} else {
-			if (rm_get_data(bgl, RM_FirstSwitch, &my_switch)
-					!= STATUS_OK)
-				continue;
-		}
-
-		if ((rm_get_data(my_switch, RM_SwitchState, &switch_state)
-				!= STATUS_OK)
-		||  (switch_state != RM_SWITCH_DOWN)
-		||  (rm_get_data(my_switch, RM_SwitchBPID, &bp_id) 
-				!= STATUS_OK)) {
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_switch() is consistenly generating a segfault */
-			rm_free_switch(my_switch);
-#endif
-			continue;
-		}
-		_configure_node_down(bp_id);
-#ifdef USE_BGL_FILES
-/* FIXME: rm_free_switch() is consistenly generating a segfault */
-		rm_free_switch(my_switch);
-#endif
-	}
-#endif
-}
-
-
-/* Convert base partition state value to a string */
-static char *_convert_bp_state(rm_BP_state_t state)
-{
-	switch(state){ 
-	case RM_BP_UP:
-		return "RM_BP_UP";
-		break;
-	case RM_BP_DOWN:
-		return "RM_BP_DOWN";
-		break;
-	case RM_BP_NAV:
-		return "RM_BP_NAV";
-	default:
-		return "BP_STATE_UNIDENTIFIED!";
-	}
-}
-#endif
-#ifdef USE_BGL_FILES
-/* Set a base partition's state */
-static void _set_bp_node_state(rm_BP_state_t state, rm_element_t* element)
-{
-	/* rm_set_data(element, RM_PartitionState, state) */
-	switch(state) { 
-	case RM_BP_UP:
-		debug("RM_BP_UP");
-		break;
-	case RM_BP_DOWN:
-		debug("RM_BP_DOWN");
-		break;
-	case RM_BP_NAV:
-		debug("RM_BP_NAV");
-		break;
-	default:
-		debug("BGL state update returned UNKNOWN state");
-		break;
-	}
-}
-#endif
-
 /*
  * bluegene_agent - detached thread periodically updates status of
  * bluegene nodes. 
@@ -1331,13 +1112,13 @@ bluegene_agent(void *args)
 
 		if (difftime(now, last_node_test) >= NODE_POLL_TIME) {
 			gettimeofday(&tv1, NULL);
-			_test_down_nodes();
+			test_down_nodes();
 			gettimeofday(&tv2, NULL);
 			_diff_tv_str(&tv1, &tv2, tv_str, 20);
 		}
 		if (difftime(now, last_node_test) >= SWITCH_POLL_TIME) {
 			gettimeofday(&tv1, NULL);
-			_test_down_switches();
+			test_down_switches();
 			gettimeofday(&tv2, NULL);
 			_diff_tv_str(&tv1, &tv2, tv_str, 20);
 		}
