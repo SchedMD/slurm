@@ -1,7 +1,7 @@
 /*****************************************************************************\
  *  test7.3.prog.c - Test of slurm_spawn API (needed on IBM SP systems).
  *  
- *  Usage: test7.3.prog [min_nodes] [max_nodes]
+ *  Usage: test7.3.prog [min_nodes] [max_nodes] [tasks]
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -42,7 +42,7 @@ static void _do_task_work(int *fd_array, int tasks);
 
 int main (int argc, char *argv[])
 {
-	int i, min_nodes = 1, max_nodes = 1, nodes, tasks = 1, rc = 0;
+	int i, min_nodes = 1, max_nodes = 1, nodes, tasks = 0, rc = 0;
 	job_desc_msg_t job_req;
 	resource_allocation_response_msg_t *job_resp;
 	job_step_create_request_msg_t step_req;
@@ -93,7 +93,10 @@ int main (int argc, char *argv[])
 		}
 	}
 	nodes = job_resp->node_cnt;
-	tasks = nodes * TASKS_PER_NODE;
+	if (argc > 3)
+		tasks = atoi(argv[3]);
+	if (tasks < 1)
+		tasks = max_nodes * TASKS_PER_NODE;
 	printf("Starting %d tasks on %d nodes\n", tasks, nodes);
 
 	/* Set up step configuration */
