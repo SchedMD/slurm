@@ -407,6 +407,10 @@ computer is fully ready for executing user jobs. It may, for example,
 wait until every required file system has been mounted.
 By default there is no initialization program.
 
+<dt>KILL_WAIT
+<dd>How long to wait between sending SIGTERM and SIGKILL signals to jobs at termination time.
+The default value is 60 and the units are seconds.
+
 <dt>PROLOG
 <dd>This program is executed on each node allocated to a job prior to its initiation. 
 This file must be accessible to every SLURM compute server. By default no prolog is executed. 
@@ -470,15 +474,17 @@ state of one entity record, specify either its ID number
 (assumed if entirely numeric) or its name. 
 
 <dt>update &lt;options&gt;
-<dd>Update the configuration information. Options are of the same 
-format as the configuration file. 
+<dd>Update the configuration information. 
+Options are of the same format as the configuration file. 
+This command can only be issued by user <b>root</b>.
 
 <dt>upload [&lt;NodeName&gt;]
 <dd>Upload into the SLURM node configuration table actual configuration 
 as actually reported by SERVER_DAEMON on each node (memory, CPU count, temporary disk, etc.).
 This could be used to establish a baseline configuration rather than 
-entering the configurations manually into a file. By default information 
-from all nodes is uploaded. 
+entering the configurations manually into a file. 
+By default information from all nodes is uploaded. 
+This command can only be issued by user <b>root</b>.
 
 <dt>verbose
 <dd>Enable detailed logging of slurm_admin execution state information.
@@ -487,7 +493,10 @@ from all nodes is uploaded.
 <dd>Display the slurm_admin tool version number.
 
 <dt>write &lt;filename&gt;
-<dd>Write current entity configuration information to the specified file. 
+<dd>Write current configuration information to the specified file. 
+This file can subsequently be used as a SLURM configuration file. 
+This file can be quite verbose as regular expressions will not be 
+used for node identification. (To do: add regular expressions) 
 </dl>
 
 <h2>Miscellaneous</h2>
@@ -561,9 +570,9 @@ Remove node lx30 from service, removing jobs as needed:
 </pre>
 
 <hr>
-URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
+URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
 <p>Last Modified February 6, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
-</h
+</html>
