@@ -1,9 +1,9 @@
 /****************************************************************************\
- *  * slurm_protocol_defs.h - definitions used for RPCs
+ *  sinfo.h - definitions used for sinfo data functions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>.
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -59,15 +59,16 @@
 
 struct sinfo_parameters {
 	bool partition_flag;
-	const char* partition;
+	char* partition;
 	bool state_flag;
 	enum node_states state;
 	bool node_flag;
-	const char* node;
+	char* node;
 	bool summarize;
 	bool long_output;
 	bool line_wrap;
 	int verbose;
+	int iterate;
 };
 
 struct node_state_summary {

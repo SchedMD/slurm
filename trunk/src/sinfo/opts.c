@@ -1,9 +1,9 @@
 /****************************************************************************\
- *  * slurm_protocol_defs.h - definitions used for RPCs
+ *  opts.c - sinfo command line option processing functions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>.
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -33,6 +33,7 @@
 #define OPT_NODE     	0x04
 #define OPT_FORMAT    	0x05
 #define OPT_VERBOSE   	0x06
+#define OPT_ITERATE   	0x07
 
 int parse_state( char* str, enum node_states* states );
 
@@ -54,6 +55,7 @@ parse_command_line( int argc, char* argv[] )
 	/* Declare the Options */
 	static const struct poptOption options[] = 
 	{
+		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE, "specify an interation period", "ITERATE"},
 		{"state", 't', POPT_ARG_STRING, &temp_state, OPT_NODE_STATE, "specify the what state of nodes to view", "NODE_STATE"},
 		{"partition", 'p', POPT_ARG_NONE, &params.partition_flag, OPT_PARTITION,"show partition information and optionally specify a specific partition", "PARTITION"},
 		{"node", 'n', POPT_ARG_NONE, &params.node_flag, OPT_NODE, "specify a specific node", "NODE"},
@@ -80,14 +82,14 @@ parse_command_line( int argc, char* argv[] )
 			case OPT_PARTITION:
 				if ( (opt_arg = poptGetArg( context )) != NULL )
 				{
-					params.partition = opt_arg;
+					params.partition = (char *) opt_arg;
 				}
 				break;	
 				
 			case OPT_NODE:
 				if ( (opt_arg = poptGetArg( context )) != NULL )
 				{
-					params.node = opt_arg;
+					params.node = (char *) opt_arg;
 				}
 				break;
 			case OPT_NODE_STATE:
@@ -123,7 +125,8 @@ parse_command_line( int argc, char* argv[] )
 		exit (1);
 	}
 
-	
+	if ( params.verbose )
+		print_options();
 	return rc;
 }
 
@@ -134,32 +137,18 @@ parse_command_line( int argc, char* argv[] )
 int
 parse_state( char* str, enum node_states* states )
 {	
-	/* FIXME - this will eventually return an array of enums
-	 */
-	printf("parse_state: str = %s\n", str );
+	int i;
 
-	printf("%s\n", node_state_string( NODE_STATE_DOWN ) );
-	printf("%s\n", node_state_string( NODE_STATE_UNKNOWN ) );
-	printf("%s\n", node_state_string( NODE_STATE_IDLE ) );
-	printf("%s\n", node_state_string( NODE_STATE_ALLOCATED ) );
-	printf("%s\n", node_state_string( NODE_STATE_DRAINED ) );
-	printf("%s\n", node_state_string( NODE_STATE_DRAINING ) );
+	for (i = 0; i <= NODE_STATE_END; i++) {
+		if (strcasecmp (node_state_string(i), "END") == 0)
+			return SLURM_ERROR;
 
-	if ( strcasecmp( str, node_state_string( NODE_STATE_DOWN )) == 0 )
-		*states = NODE_STATE_DOWN;
-	else if ( strcasecmp( str, node_state_string( NODE_STATE_UNKNOWN )) == 0 )
-		*states = NODE_STATE_UNKNOWN;
-	else if ( strcasecmp( str, node_state_string( NODE_STATE_IDLE )) == 0 )
-		*states = NODE_STATE_IDLE;
-	else if ( strcasecmp( str, node_state_string( NODE_STATE_ALLOCATED )) == 0 )
-		*states = NODE_STATE_ALLOCATED;
-	else if ( strcasecmp( str, node_state_string( NODE_STATE_DRAINED )) == 0 )
-		*states = NODE_STATE_DRAINED;
-	else if ( strcasecmp( str, node_state_string( NODE_STATE_DRAINING )) == 0 )
-		*states = NODE_STATE_DRAINING;
-	else return SLURM_ERROR;
-
-	return SLURM_SUCCESS;
+		if (strcasecmp (node_state_string(i), str) == 0) {
+			*states = i;
+			return SLURM_SUCCESS;
+		}	
+	}	
+	return SLURM_ERROR;
 }
 
 void 

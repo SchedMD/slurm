@@ -1,9 +1,9 @@
 /*****************************************************************************\
- *  squeue.c - Report jobs in the system
+ *  sinfo.c - Report overall state the system
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -25,6 +25,7 @@
 \*****************************************************************************/
 
 #include <src/sinfo/sinfo.h>
+#include <src/common/hostlist.h>
 #include <src/common/list.h>
 
 
@@ -32,13 +33,11 @@
  * Global Variables *
  ********************/
 static char *command_name;
-struct sinfo_parameters params = { partition_flag:false, partition:NULL, state_flag:false, node_flag:false, node:NULL, summarize:false, long_output:false, line_wrap:false, verbose:false };
+struct sinfo_parameters params = { partition_flag:false, partition:NULL, state_flag:false, node_flag:false, node:NULL, summarize:false, long_output:false, line_wrap:false, verbose:false, iterate:0 };
 
 /************
  * Funtions *
  ************/
-void usage ();
-
 int query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_pptr  );
 
 
@@ -61,6 +60,7 @@ void display_partition_summarys ( List partitions );
 
 /* Misc Display functions */
 int build_min_max_string( char* buffer, int max, int min );
+void print_date( void );
 int print_int( int number, int width, bool right );
 int print_str( char* number, int width, bool right );
 char* int_to_str( int num );
@@ -77,37 +77,78 @@ main (int argc, char *argv[])
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
 
-	if ( query_server( &partition_msg, &node_msg ) != 0 )
-		exit (1);
+	while (1) 
+	{
+		if ( params.iterate && (params.verbose || params.long_output) )
+			print_date ();
 
-	if ( params.node_flag )
-		display_all_nodes( node_msg );
+		if ( query_server( &partition_msg, &node_msg ) != 0 )
+			exit (1);
+
+		if ( params.node_flag )
+			display_all_nodes( node_msg );
 	
-	else if ( params.partition_flag )
-		display_all_partition_summary( partition_msg, node_msg );
-	else
-		display_all_partition_summary( partition_msg, node_msg );
+		else if ( params.partition_flag )
+			display_all_partition_summary( partition_msg, node_msg );
+		else
+			display_all_partition_summary( partition_msg, node_msg );
+
+		if ( params.iterate ) {
+			printf( "\n");
+			sleep( params.iterate );
+		}
+		else
+			break;
+	}
+
 	exit (0);
 }
 
-
+/* download the current server state */
 int
 query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_pptr  )
 {
-	static time_t last_update_time = (time_t) NULL;
+	static partition_info_msg_t * old_part_ptr = NULL, * new_part_ptr;
+	static node_info_msg_t * old_node_ptr = NULL, * new_node_ptr;
 	int error_code;
 
-	error_code = slurm_load_partitions (last_update_time, part_pptr);
+	if (old_part_ptr) {
+		error_code = slurm_load_partitions (old_part_ptr->last_update, &new_part_ptr);
+		if (error_code ==  SLURM_SUCCESS)
+			slurm_free_partition_info_msg( old_part_ptr );
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_part_ptr = old_part_ptr;
+		}
+	}
+	else
+		error_code = slurm_load_partitions ((time_t) NULL, &new_part_ptr);
 	if (error_code) {
 		slurm_perror ("slurm_load_part");
-		return (error_code);
+		return error_code;
 	}
 
-	error_code = slurm_load_node (last_update_time, node_pptr);
-	if (error_code) {
-		slurm_perror("slurm_load_node");
-		return (error_code);
+
+	old_part_ptr = new_part_ptr;
+	*part_pptr = new_part_ptr;
+
+	if (old_node_ptr) {
+		error_code = slurm_load_node (old_node_ptr->last_update, &new_node_ptr);
+		if (error_code ==  SLURM_SUCCESS)
+			slurm_free_node_info_msg( old_node_ptr );
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			error_code = SLURM_SUCCESS;
+			new_node_ptr = old_node_ptr;
+		}
 	}
+	else
+		error_code = slurm_load_node ((time_t) NULL, &new_node_ptr);
+	if (error_code) {
+		slurm_perror ("slurm_load_node");
+		return error_code;
+	}
+	old_node_ptr = new_node_ptr;
+	*node_pptr = new_node_ptr;
 
 	return 0;
 }
@@ -117,11 +158,11 @@ query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_pptr  )
  *****************************************************************************/
 static const char display_line[] = "--------------------------------------------------------------------------------\n";
 int node_sz_name = 15;
-int node_sz_state = 10;
+int node_sz_state = 8;
 int node_sz_cpus = 4;
 int node_sz_mem = 7;
 int node_sz_disk = 7;
-int node_sz_weight = 5;
+int node_sz_weight = 7;
 int node_sz_part = 10;
 int node_sz_features = 0;
 
@@ -133,15 +174,26 @@ void display_all_nodes( node_info_msg_t* node_msg )
 	if ( params.long_output == true || params.node != NULL )
 	{
 		List nodes = list_create( NULL );
+		hostlist_t hosts = NULL;
 		int i = 0;
 
-		for ( ; i < node_msg->record_count; i++ )
-			if ( ( params.node == NULL || strcmp( node_msg->node_array[i].name, params.node) == 0 )
-					&& ( params.state_flag == false || node_msg->node_array[i].node_state == params.state ) )
+		if (params.node)
+			hosts = hostlist_create( params.node );
+
+		for ( ; i < node_msg->record_count; i++ ) {
+			/* don't bother considering temporary not responding flag */
+			node_msg->node_array[i].node_state &= ~NODE_STATE_NO_RESPOND;
+			if ( ( ( params.node == NULL ) || 
+			       ( hostlist_find( hosts, node_msg->node_array[i].name ) != -1 )) &&
+			     ( ( params.state_flag == false) || 
+			       ( node_msg->node_array[i].node_state == params.state ) ) )
 				list_append( nodes, &node_msg->node_array[i] );
-		
+		}
+
 		display_nodes_list_long( nodes );
 
+		if (hosts)
+			hostlist_destroy (hosts);
 		list_destroy( nodes );
 	}
 	else 
@@ -155,6 +207,7 @@ void display_all_nodes( node_info_msg_t* node_msg )
 			display_nodes_list( current );
 			list_destroy( current );
 		}
+		list_iterator_destroy( i );
 		list_destroy( nodes );
 	}
 }
@@ -171,7 +224,7 @@ void display_node_info_header()
 	printf(" ");
 	print_str( "DISK", node_sz_disk, true);
 	printf(" ");
-	print_str( "WGHT", node_sz_weight, true);
+	print_str( "WEIGHT", node_sz_weight, true);
 	printf(" ");
 	print_str( "PART", node_sz_part, false );
 	printf(" ");
@@ -231,6 +284,7 @@ display_nodes_list_long( List nodes )
 
 }
 
+/* group similar nodes together, return a list of lists containing nodes with similar configurations */
 List
 group_node_list( node_info_msg_t* msg )
 {
@@ -240,15 +294,19 @@ group_node_list( node_info_msg_t* msg )
 	
 	for ( i=0; i < msg->record_count; i++ )
 	{
-		ListIterator list_i = list_iterator_create( node_lists );
+		ListIterator list_i = NULL;
 		List curr_list = NULL;
+
+		/* don't bother considering temporary not responding flag */
+		nodes[i].node_state &= ~NODE_STATE_NO_RESPOND;
 
 		if (  params.partition != NULL && strcmp( params.partition, nodes[i].partition ) )
 			continue;
 		if ( params.state_flag == true && nodes[i].node_state != params.state )
 			continue;
 
-		while ( (curr_list = list_next(list_i)) != NULL )
+		list_i = list_iterator_create( node_lists );
+		while ( (curr_list = list_next( list_i )) != NULL )
 		{
 			node_info_t* curr = list_peek( curr_list ); 		
 			bool feature_test; 
@@ -275,7 +333,8 @@ group_node_list( node_info_msg_t* msg )
 				break;
 			}
 		}
-		
+		list_iterator_destroy( list_i );
+
 		if ( curr_list == NULL )
 		{
 			List temp = list_create( NULL ) ;
@@ -300,9 +359,11 @@ find_partition_summary( List l, char* name )
 	while ( (current = list_next(i) ) != NULL )
 	{
 		if ( strcmp( current->info->name, name ) == 0 )
-			return current;
+			break;
 	}
-	return NULL;
+
+	list_iterator_destroy( i );
+	return current;
 }
 
 struct node_state_summary*
@@ -314,9 +375,11 @@ find_node_state_summary( List l, enum node_states state )
 	while ( (current = list_next(i) ) != NULL )
 	{
 		if ( state == current->state )
-			return current;
+			break;
 	}
-	return NULL;
+
+	list_iterator_destroy( i );
+	return current;
 }
 
 List
@@ -325,9 +388,12 @@ setup_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_p
 	int i=0;
 	List partitions = list_create( NULL );
 
+	/* create a data structure for each partition */
 	for ( i=0; i < part_ptr->record_count; i++ )
 	{
-		struct partition_summary* sum = (struct partition_summary*) malloc( sizeof(struct partition_summary));
+		struct partition_summary* sum;
+
+		sum = (struct partition_summary*) malloc( sizeof(struct partition_summary));
 		sum->info = &part_ptr->partition_array[i];
 		sum->states = list_create( NULL );
 		list_append( partitions, sum );
@@ -342,7 +408,7 @@ setup_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_p
 		if ( part_sum == NULL )
 		{
 			/* This should never happen */
-			printf("Couldn't find the partition... this is bad news\n");
+			printf("Couldn't find partition %s, notify system administators\n", ninfo->partition);
 			continue;
 		}
 	
@@ -383,7 +449,8 @@ display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* 
 	List partitions = setup_partition_summary( part_ptr, node_ptr );
 	if ( params.long_output )
 		display_all_partition_info_long( partitions );		
-	else display_partition_summarys( partitions );
+	else 
+		display_partition_summarys( partitions );
 	list_destroy( partitions );
 }
 
@@ -435,6 +502,7 @@ display_partition_summarys ( List partitions )
 		if ( params.partition == NULL || strcmp( partition->info->name, params.partition ) == 0 )
 			display_partition_node_info( partition, true );
 	}
+	list_iterator_destroy( part_i );
 }
 
 
@@ -480,6 +548,7 @@ display_partition_node_info( struct partition_summary* partition, bool print_nam
 		printf("\n");
 		part_name = no_name;
 	}
+	list_iterator_destroy( node_i );
 }
 
 
@@ -497,6 +566,7 @@ display_all_partition_info_long( List partitions )
 		printf("\n");
 	}
 	printf( "================================================================================\n" );
+	list_iterator_destroy( part_i );
 }
 
 void
@@ -512,7 +582,8 @@ display_partition_info_long( struct partition_summary* partition )
 	printf("\ttotal cpus        = %d\n", part->total_cpus );
 	if ( part->max_time == -1 ) 
 		printf("\tmax jobtime       = NONE\n" );
-	else printf("\tmax jobtime       = %d\n", part->max_time );
+	else 
+		printf("\tmax jobtime       = %d\n", part->max_time );
 	printf("\tmax nodes/job     = %d\n", part->max_nodes );
 	printf("\troot only         = %s\n", part->root_only ? "YES" : "NO" );
 	printf("\tshare nodes       = %s\n", part->shared == 2 ? "ALWAYS" : part->shared ? "YES" : "NO" );
@@ -597,6 +668,16 @@ print_int( int number, int width, bool right )
 	return print_str( buf, width, right );
 }
 
+void 
+print_date( void )
+{
+	time_t now;
+
+	now = time( NULL );
+	printf("%s", ctime( &now ));
+}
+
+
 /* node_name_string_from_list - analyzes a list of node_info_t* and 
  * 		fills in a buffer with the appropriate nodename in a prefix[001-100]
  * 		type format.
@@ -615,6 +696,7 @@ node_name_string_from_list( List nodes, char* buffer )
 
 	while( (curr_node = list_next(i) ) != NULL )
 		hostlist_push( list, curr_node->name );
+	list_iterator_destroy( i );
 	
 	hostlist_ranged_string( list, 32, buffer );
 	hostlist_destroy( list );
