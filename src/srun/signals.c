@@ -52,7 +52,7 @@
  *  Static list of signals to block in srun:
  */
 static int srun_sigarray[] = {
-	SIGINT,  SIGQUIT, SIGTSTP, SIGCONT, 
+	SIGINT,  SIGQUIT, SIGTSTP, SIGCONT, SIGTERM,
 	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
@@ -102,7 +102,6 @@ sig_setup_sigmask(void)
 	if (xsignal_block(srun_sigarray) < 0)
 		return SLURM_ERROR;
 
-	xsignal(SIGTERM, &_sigterm_handler);
 	xsignal(SIGHUP,  &_sigterm_handler);
 
 	return SLURM_SUCCESS;
@@ -182,9 +181,6 @@ fwd_signal(job_t *job, int signo)
 static void
 _sigterm_handler(int signum)
 {
-	if (signum == SIGTERM) {
-		pthread_exit(0);
-	}
 }
 
 static void
