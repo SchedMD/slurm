@@ -160,3 +160,46 @@ void slurm_free_node_table ( node_table_t * node )
 		free (node->partition) ;
 	}
 }
+
+
+#define SLURM_JOB_DESC_NONCONTIGUOUS		0
+#define SLURM_JOB_DESC_CONTIGUOUS		1 
+#define SLURM_JOB_DESC_DEFAULT_FEATURES		"NONE"
+#define SLURM_JOB_DESC_DEFAULT_GROUPS		"SET_BY_API"
+#define SLURM_JOB_DESC_DEFAULT_JOB_ID		0
+#define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
+#define SLURM_JOB_DESC_DEFAULT_PARITION_KEY	NULL
+#define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	0
+#define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	0
+#define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	0
+#define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
+#define SLURM_JOB_DESC_DEFAULT_PRIORITY		0xfffffffe
+#define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
+#define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
+#define SLURM_JOB_DESC_DEFAULT_SHARED		0
+#define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	0xfffffffe
+#define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	0
+#define SLURM_JOB_DESC_DEFAULT_NUM_NODES	0
+#define SLURM_JOB_DESC_DEFAULT_USER_ID		0 
+
+void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
+{
+	job_desc_msg -> contiguous = SLURM_JOB_DESC_NONCONTIGUOUS ;
+	job_desc_msg -> features = SLURM_JOB_DESC_DEFAULT_FEATURES ;
+	job_desc_msg -> groups = SLURM_JOB_DESC_DEFAULT_GROUPS ; /* will be set by api */
+	job_desc_msg -> job_id = SLURM_JOB_DESC_DEFAULT_JOB_ID ; /* will be set by api */
+	job_desc_msg -> name = SLURM_JOB_DESC_DEFAULT_JOB_NAME  ;
+	job_desc_msg -> partition_key = SLURM_JOB_DESC_DEFAULT_PARITION_KEY ;
+	job_desc_msg -> min_procs = SLURM_JOB_DESC_DEFAULT_MIN_PROCS ;
+	job_desc_msg -> min_memory = SLURM_JOB_DESC_DEFAULT_MIN_MEMORY ;
+	job_desc_msg -> min_tmp_disk = SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK ;
+	job_desc_msg -> partition = SLURM_JOB_DESC_DEFAULT_PARTITION ;
+	job_desc_msg -> priority = SLURM_JOB_DESC_DEFAULT_PRIORITY ;
+	job_desc_msg -> req_nodes = SLURM_JOB_DESC_DEFAULT_REQ_NODES ;
+	job_desc_msg -> job_script = SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT ;
+	job_desc_msg -> shared = SLURM_JOB_DESC_DEFAULT_SHARED ;
+	job_desc_msg -> time_limit = SLURM_JOB_DESC_DEFAULT_TIME_LIMIT ;
+	job_desc_msg -> num_procs = SLURM_JOB_DESC_DEFAULT_NUM_PROCS ;
+	job_desc_msg -> num_nodes = SLURM_JOB_DESC_DEFAULT_NUM_NODES ;
+	job_desc_msg -> user_id = SLURM_JOB_DESC_DEFAULT_USER_ID ;
+}
