@@ -22,6 +22,11 @@
 #include "pack.h"
 
 #include "slurm.h"
+#include <src/common/slurm_errno.h>
+#include <src/common/slurm_protocol_api.h>
+#define SLURM_PORT 7000 
+
+/* prototypes */
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -30,17 +35,27 @@ main (int argc, char *argv[])
 {
 	static time_t last_update_time = (time_t) NULL;
 	int error_code;
-	struct build_buffer *build_buffer_ptr = NULL;
 	struct build_table  *build_table_ptr = NULL;
 
-	error_code = slurm_load_build (last_update_time, &build_buffer_ptr);
+	error_code = slurm_load_build (last_update_time, &build_table_ptr);
 	if (error_code) {
 		printf ("slurm_load_build error %d\n", error_code);
 		exit (1);
 	}
+	
+	slurm_print_build_info ( build_table_ptr );
+	
+	slurm_free_build_info ( build_table_ptr );
 
-	printf("Build updated at %lx\n", build_buffer_ptr->last_update);
-	build_table_ptr = build_buffer_ptr->build_table_ptr;
+	exit (0);
+}
+#endif
+
+void slurm_print_build_info ( build_info_msg_t * build_table_ptr )
+{
+	if ( build_table_ptr == NULL )
+		return ;
+	printf("Build updated at %lx\n", build_table_ptr->last_update);
 	printf("BACKUP_INTERVAL	= %u\n", build_table_ptr->backup_interval);
 	printf("BACKUP_LOCATION	= %s\n", build_table_ptr->backup_location);
 	printf("BACKUP_MACHINE	= %s\n", build_table_ptr->backup_machine);
@@ -49,8 +64,7 @@ main (int argc, char *argv[])
 	printf("EPILOG		= %s\n", build_table_ptr->epilog);
 	printf("FAST_SCHEDULE	= %u\n", build_table_ptr->fast_schedule);
 	printf("HASH_BASE	= %u\n", build_table_ptr->hash_base);
-	printf("HEARTBEAT_INTERVAL	= %u\n", 
-				build_table_ptr->heartbeat_interval);
+	printf("HEARTBEAT_INTERVAL	= %u\n", build_table_ptr->heartbeat_interval);
 	printf("INIT_PROGRAM	= %s\n", build_table_ptr->init_program);
 	printf("KILL_WAIT	= %u\n", build_table_ptr->kill_wait);
 	printf("PRIORITIZE	= %s\n", build_table_ptr->prioritize);
@@ -59,153 +73,71 @@ main (int argc, char *argv[])
 	printf("SERVER_TIMEOUT	= %u\n", build_table_ptr->server_timeout);
 	printf("SLURM_CONF	= %s\n", build_table_ptr->slurm_conf);
 	printf("TMP_FS		= %s\n", build_table_ptr->tmp_fs);
-
-	slurm_free_build_info (build_buffer_ptr);
-	exit (0);
 }
-#endif
 
-
-/*
- * slurm_free_build_info - free the build information buffer (if allocated)
- * NOTE: buffer is loaded by slurm_load_build.
- */
-void
-slurm_free_build_info (struct build_buffer *build_buffer_ptr)
+void slurm_free_build_info ( struct build_table * build_ptr )
 {
-	if (build_buffer_ptr == NULL)
-		return;
-	if (build_buffer_ptr->raw_buffer_ptr)
-		free (build_buffer_ptr->raw_buffer_ptr);
-	if (build_buffer_ptr->build_table_ptr)
-		free (build_buffer_ptr->build_table_ptr);
+	if ( build_ptr == NULL )
+		return ;
+	free ( build_ptr->backup_location ) ;
+	free ( build_ptr->backup_machine ) ;
+	free ( build_ptr->control_daemon ) ;
+	free ( build_ptr->control_machine ) ;
+	free ( build_ptr->epilog ) ;
+	free ( build_ptr->init_program ) ;
+	free ( build_ptr->prolog ) ;
+	free ( build_ptr->server_daemon ) ;
+	free ( build_ptr->slurm_conf ) ;
+	free ( build_ptr->tmp_fs ) ;
+	free ( build_ptr ) ;
 }
 
-
-/*
- * slurm_load_build - load the slurm build information buffer for use by info 
- *	gathering APIs if build info has changed since the time specified. 
- * input: update_time - time of last update
- *	build_buffer_ptr - place to park build_buffer pointer
- * output: build_buffer_ptr - pointer to allocated build_buffer
- *	returns -1 if no update since update_time, 
- *		0 if update with no error, 
- *		EINVAL if the buffer (version or otherwise) is invalid, 
- *		ENOMEM if malloc failure
- * NOTE: the allocated memory at build_buffer_ptr freed by slurm_free_node_info.
- */
 int
-slurm_load_build (time_t update_time, struct build_buffer **build_buffer_ptr)
+slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
 {
-	int buffer_offset, buffer_size, in_size, sockfd;
-	char request_msg[64], *buffer;
-	void *buf_ptr;
-	struct sockaddr_in serv_addr;
-	uint32_t uint32_tmp, uint32_time;
-	uint16_t uint16_tmp;
-	struct build_table *build_ptr;
+	int msg_size ;
+	int rc ;
+	slurm_fd sockfd ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+        last_update_msg_t last_time_msg ; 
+	
+	/* init message connection for message communication with controller */
+	
+	if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+		return SLURM_SOCKET_ERROR ;	
 
-	*build_buffer_ptr = NULL;
-	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
-		return EINVAL;
-	serv_addr.sin_family = PF_INET;
-	serv_addr.sin_addr.s_addr = inet_addr (SLURMCTLD_HOST);
-	serv_addr.sin_port = htons (SLURMCTLD_PORT);
-	if (connect
-	    (sockfd, (struct sockaddr *) &serv_addr,
-	     sizeof (serv_addr)) < 0) {
-		close (sockfd);
-		return EINVAL;
-	}			
-	sprintf (request_msg, "DumpBuild LastUpdate=%lu",
-		 (long) (update_time));
-	if (send (sockfd, request_msg, strlen (request_msg) + 1, 0) <
-	    strlen (request_msg)) {
-		close (sockfd);
-		return EINVAL;
-	}			
-	buffer = NULL;
-	buffer_offset = 0;
-	buffer_size = 8 * 1024;
-	while (1) {
-		buffer = realloc (buffer, buffer_size);
-		if (buffer == NULL) {
-			close (sockfd);
-			return ENOMEM;
-		}		
-		in_size =
-			recv (sockfd, &buffer[buffer_offset],
-			      (buffer_size - buffer_offset), 0);
-		if (in_size <= 0) {	/* end of input */
-			in_size = 0;
-			break;
-		}		
-		buffer_offset += in_size;
-		buffer_size += in_size;
-	}			
-	close (sockfd);
-	buffer_size = buffer_offset + in_size;
-	buffer = realloc (buffer, buffer_size);
-	if (buffer == NULL)
-		return ENOMEM;
-	if (strcmp (buffer, "nochange") == 0) {
-		free (buffer);
-		return -1;
-	}
+	
+	/* send request message */
+	/* pack32 ( update_time , &buf_ptr , &buffer_size ); */
+	last_time_msg . last_update = update_time ;
+	request_msg . msg_type = REQUEST_BUILD_INFO ;
+	request_msg . data = &last_time_msg ;
+	
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
+		return SLURM_SOCKET_ERROR ;	
+	
 
-	/* load buffer's header (data structure version and time) */
-	buf_ptr = buffer;
-	unpack32 (&uint32_tmp, &buf_ptr, &buffer_size);
-	if (uint32_tmp != BUILD_STRUCT_VERSION) {
-		free (buffer);
-		return EINVAL;
-	}
-	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
+	/* receive message */
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR )
+		return SLURM_SOCKET_ERROR ;	
+	/* shutdown message connection */
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
+		return SLURM_SOCKET_ERROR ;	
+	
+	switch ( response_msg . msg_type )
+        {
+                case RESPONSE_BUILD_INFO:
+                        *build_table_ptr = ( build_info_msg_t * ) response_msg . data ; 
+        		return SLURM_SUCCESS ;
+                        break ;
+                case RESPONSE_SLURM_RC:
+			return SLURM_NO_CHANGE_IN_DATA ;
+                        break ;
+                default:
+			return SLURM_UNEXPECTED_MSG_ERROR ;
+                        break ;
+        }
 
-	/* load the data values */
-	build_ptr = malloc (sizeof  (struct build_table));
-	if (build_ptr == NULL) {
-		free (buffer);
-		return ENOMEM;
-	}
-	unpack16 (&build_ptr->backup_interval, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->backup_location, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->backup_machine, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->control_daemon, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->control_machine, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpack16 (&build_ptr->controller_timeout, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->epilog, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpack16 (&build_ptr->fast_schedule, &buf_ptr, &buffer_size);
-	unpack16 (&build_ptr->hash_base, &buf_ptr, &buffer_size);
-	unpack16 (&build_ptr->heartbeat_interval, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->init_program, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpack16 (&build_ptr->kill_wait, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->prioritize, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->prolog, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->server_daemon, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpack16 (&build_ptr->server_timeout, &buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->slurm_conf, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-	unpackstr_ptr (&build_ptr->tmp_fs, &uint16_tmp, 
-		&buf_ptr, &buffer_size);
-
-	*build_buffer_ptr = malloc (sizeof (struct build_buffer));
-	if (*build_buffer_ptr == NULL) {
-		free (buffer);
-		free (build_ptr);
-		return ENOMEM;
-	}
-	(*build_buffer_ptr)->last_update = (time_t) uint32_time;
-	(*build_buffer_ptr)->raw_buffer_ptr = buffer;
-	(*build_buffer_ptr)->build_table_ptr = build_ptr;
-	return 0;
+        return SLURM_SUCCESS ;
 }
