@@ -29,7 +29,7 @@
 #include "graph_solver.h"
 #include <math.h>
 
-int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {4,4,4};
+int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {8,4,4};
 
 struct pa_node*** _pa_system_list;
 
