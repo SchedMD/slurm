@@ -36,8 +36,9 @@ main(int argc, char * argv[]) {
     int  Error_Code, Int_Found, i, size;
     char *String_Found;
     unsigned *Map1, *Map2, *Map3;
-    char *Buffer;
+    char *Buffer, *Format;
     int Buffer_Offset, Buffer_Size;
+    int Start_Inx, End_Inx, Count_Inx;
 
     printf("Testing string manipulation functions...\n");
     strcpy(In_Line, "Test1=UNLIMITED Test2=1234 Test3 LeftOver Test4=My,String");
@@ -128,6 +129,19 @@ main(int argc, char * argv[]) {
     Error_Code = Read_Buffer(Buffer, &Buffer_Offset, Buffer_Size, &Out_Line);
     if (Error_Code) printf("Read_Buffer error on Test3\n");
     if (strcmp(Out_Line,"Val2\n") != 0) printf("Read_Buffer error on Test4\n");
+
+    /* Check node name parsing */
+    Out_Line = "linux[003-234]";
+    Error_Code = Parse_Node_Name(Out_Line, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+    if (Error_Code != 0) 
+	printf("ERROR: Parse_Node_Name error %d\n", Error_Code);
+    else {
+	if ((Start_Inx != 3) || (End_Inx != 234)) printf("ERROR: Parse_Node_Name failure\n");
+	printf("Parse_Node_Name of \"%s\" produces format \"%s\", %d to %d, %d records\n", 
+	    Out_Line, Format, Start_Inx, End_Inx, Count_Inx);
+	if (Format) free(Format);
+    } /* else */
+
     exit(0);
 } /* main */
 #endif
@@ -578,6 +592,117 @@ int Load_String(char **destination, char *keyword, char *In_Line) {
     } /* if */
     return 0;
 } /* Load_String */
+
+/* 
+ * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
+ * generate multiple node names as needed.
+ * Input: NodeName - Node name to parse
+ * Output: Format - sprintf format for generating names
+ *         Start_Inx - First index to used
+ *         End_Inx - Last index value to use
+ *         Count_Inx - Number of index values to use (will be zero if none)
+ *         return 0 if no error, error code otherwise
+ * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
+ */
+int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx) {
+    int Base, Format_Pos, Precision, i;
+    char Type[1];
+
+    i = strlen(NodeName);
+    Format[0] = (char *)malloc(i+1);
+    if (Format[0] == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Parse_Node_Name: unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Parse_Node_Name: unable to allocate memory\n");
+#endif
+	abort();
+    } /* if */
+
+    *Start_Inx = 0;
+    *End_Inx   = 0;
+    *Count_Inx = 0;
+    Format_Pos = 0;
+    Base = 0;
+    Format[0][Format_Pos] = (char)NULL;
+    i = 0;
+    while (1) {
+	if (NodeName[i] == (char)NULL) break;
+	if (NodeName[i] == '\\') {
+	    if (NodeName[++i] == (char)NULL) break;
+	    Format[0][Format_Pos++] = NodeName[i++];
+	} else if (NodeName[i] == '[') {		/* '[' preceeding number range */
+	    if (NodeName[++i] == (char)NULL) break;
+	    if (Base != 0) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
+#else
+		syslog(LOG_ERR, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
+#endif
+		free(Format[0]);
+		return EINVAL;
+	    } /* if */
+	    if (NodeName[i] == 'o') {
+		Type[0] = NodeName[i++];
+		Base = 8;
+	    } else {
+		Type[0] = 'd';
+		Base = 10;
+	    } /* else */
+	    Precision = 0;
+	    while (1) {
+		if ((NodeName[i] >= '0') && (NodeName[i] <= '9')) {
+		    *Start_Inx = ((*Start_Inx) * Base) + (int)(NodeName[i++] - '0');
+		    Precision++;
+		    continue;
+		} /* if */
+		if (NodeName[i] == '-') {		/* '-' between numbers */
+		    i++;
+		    break;
+		} /* if */
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
+			NodeName[i], NodeName);
+#else
+		syslog(LOG_ERR, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
+			NodeName[i], NodeName);
+#endif
+		free(Format[0]);
+		return EINVAL;
+	    } /* while */
+	    while (1) {
+		if ((NodeName[i] >= '0') && (NodeName[i] <= '9')) {
+		    *End_Inx = ((*End_Inx) * Base) + (int)(NodeName[i++] - '0');
+		    continue;
+		} /* if */
+		if (NodeName[i] == ']') {		/* ']' terminating number range */ 
+		    i++;
+		    break;
+		} /* if */
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
+			NodeName[i], NodeName);
+#else
+		syslog(LOG_ERR, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
+			NodeName[i], NodeName);
+#endif
+		free(Format[0]);
+		return EINVAL;
+	    } /* while */
+	    *Count_Inx = (*End_Inx - *Start_Inx) + 1;
+	    Format[0][Format_Pos++] = '%';
+	    Format[0][Format_Pos++] = '.';
+	    if (Precision > 9) Format[0][Format_Pos++] = '0' + (Precision/10);
+	    Format[0][Format_Pos++] = '0' + (Precision%10);
+	    Format[0][Format_Pos++] = Type[0];
+	} else {
+	    Format[0][Format_Pos++] = NodeName[i++];
+	} /* else */
+    } /* while */
+    Format[0][Format_Pos] = (char)NULL;
+    return 0;
+} /* Parse_Node_Name */
+
 
 
 /* 

@@ -13,7 +13,7 @@ noinst_LIBRARIES = libcommon.a
 
 libcommon_a_SOURCES = bits_bytes.c list.c
 
-noinst_HEADERS = list.h slurm.h
+noinst_HEADERS = list.h slurm.h slurmlib.h
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in

@@ -90,3 +90,16 @@ int Load_Part(time_t *Last_Update_Time);
 int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
 	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared, int *Default,
 	char *Nodes, char *AllowGroups);
+
+/* 
+ * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
+ * generate multiple node names as needed.
+ * Input: NodeName - Node name to parse
+ * Output: Format - sprintf format for generating names
+ *         Start_Inx - First index to used
+ *         End_Inx - Last index value to use
+ *         Count_Inx - Number of index values to use (will be zero if none)
+ *         return 0 if no error, error code otherwise
+ * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
+ */
+extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
