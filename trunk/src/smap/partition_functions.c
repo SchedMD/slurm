@@ -672,7 +672,7 @@ static void _read_part_db2(void)
 static db2_block_info_t *_find_part_db2(char *nodelist)
 {
 #ifdef HAVE_BGL_FILES
-	int i = 64;
+	int i = 1024;
 	char *new_nodelist;
 	hostlist_t hostlist;
 	db2_block_info_t *rc;
