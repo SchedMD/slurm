@@ -35,7 +35,7 @@
 #include <string.h>
 #include <syslog.h>
 
-#include <src/common/slurm_protocol_errno.h>
+#include <src/common/slurm_errno.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
@@ -718,7 +718,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
  * select_nodes - select and allocate nodes to a specific job
  * input: job_ptr - pointer to the job record
  *	test_only - do not allocate nodes, just confirm they could be allocated now
- * output: returns 0 on success, ESLURM code from slurm_protocol_errno.h otherwise)
+ * output: returns 0 on success, ESLURM code from slurm_errno.h otherwise)
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  *	config_list - global list of node configuration info

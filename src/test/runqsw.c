@@ -73,17 +73,17 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 	/* Process 1: */
 	switch ((pid = fork())) {
 		case -1:
-			xperror("fork");
+			slurm_perror("fork");
 			exit(1);
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
 			if (waitpid(pid, NULL, 0) < 0) {
-				xperror("wait");
+				slurm_perror("wait");
 				exit(1);
 			}
 			if (qsw_prgdestroy(job) < 0) {
-				xperror("qsw_prgdestroy");
+				slurm_perror("qsw_prgdestroy");
 				exit(1);
 			}
 			exit(0);
@@ -91,13 +91,13 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 
 	/* Process 2: */
 	if (qsw_prog_init(job, uid) < 0) {
-		xperror("qsw_prog_init");
+		slurm_perror("qsw_prog_init");
 		exit(1);
 	}
 	for (i = 0; i < nprocs; i++) {
 		cpid[i] = fork();
 		if (cpid[i] < 0) {
-			xperror("fork");
+			slurm_perror("fork");
 			exit(1);
 		} else if (cpid[i] == 0)
 			break;
@@ -110,7 +110,7 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 		while (waiting > 0) {
 			pid = waitpid(0, NULL, 0);
 			if (pid < 0) {
-				xperror("waitpid");
+				slurm_perror("waitpid");
 				exit(1);
 			}
 			for (j = 0; j < nprocs; j++) {
@@ -123,24 +123,24 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 
 	/* Process 3: (there are nprocs instances of us) */
 	if (qsw_setcap(job, i) < 0) {
-		xperror("qsw_setcap");
+		slurm_perror("qsw_setcap");
 		exit(1);
 	}
 	if (do_env(i, nodeid, nprocs) < 0) {
-		xperror("do_env");
+		slurm_perror("do_env");
 		exit(1);
 	}
 
 	pid = fork();
 	switch (pid) {
 		case -1:        /* error */
-			xperror("fork");
+			slurm_perror("fork");
 			exit(1);
 		case 0:         /* child falls thru */
 			break;
 		default:        /* parent */
 			if (waitpid(pid, NULL, 0) < 0) {
-				xperror("waitpid");
+				slurm_perror("waitpid");
 				exit(1);
 			}
 			exit(0);
@@ -149,11 +149,11 @@ slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 
 	/* Process 4: execs the job */
 	if (setuid(uid) < 0) {
-		xperror("setuid");
+		slurm_perror("setuid");
 		exit(1);
 	}
 	execl("/bin/bash", "bash", "-c", cmdbuf, 0);
-	xperror("execl");
+	slurm_perror("execl");
 	exit(1);
 }
 
@@ -203,7 +203,7 @@ main(int argc, char *argv[])
 		nprocs = 2;
 	if (nodeid < 0) {
 		if ((nodeid = qsw_getnodeid()) < 0) {
-			xperror("qsw_getnodeid");
+			slurm_perror("qsw_getnodeid");
 			exit(1);
 		}
 	}
@@ -219,11 +219,11 @@ main(int argc, char *argv[])
 	 * qsw_init to establish a persistant state in the library.
 	 */
 	if (qsw_alloc_jobinfo(&job) < 0) {
-		xperror("qsw_alloc_jobinfo");
+		slurm_perror("qsw_alloc_jobinfo");
 		exit(1);
 	}
 	if (qsw_setup_jobinfo(job, nprocs, nodeset, 0) < 0) {
-		xperror("qsw_setup_jobinfo");
+		slurm_perror("qsw_setup_jobinfo");
 		exit(1);
 	}
 

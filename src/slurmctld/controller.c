@@ -1466,6 +1466,8 @@ slurmctld_cleanup (void *context)
 {
 	pthread_t my_thread_id = pthread_self();
 
+	kill_locked_threads ();
+
 	if (thread_id_bg &&  (thread_id_bg  != my_thread_id))
 		pthread_kill (thread_id_bg, SIGKILL);
 
