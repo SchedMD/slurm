@@ -232,7 +232,7 @@ slurmctld->slurmd	Signal Job Step by Node Request
 			Upload accounting information
 			Signal Job Step by Node Request
 
-slurmd->slurmctld	Get job step infomration
+slurmd->slurmctld	Get job step information
 			Register node
 
 srun->slurmctld		Get job step infomration
