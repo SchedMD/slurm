@@ -121,6 +121,41 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 	}
 }
 
+void slurm_free_job_launch_msg(batch_job_launch_msg_t * msg)
+{
+	int i;
+
+	if (msg) {
+		if (msg->nodes)
+			xfree(msg->nodes);
+		if (msg->script)
+			xfree(msg->script);
+		if (msg->stderr)
+			xfree(msg->stderr);
+		if (msg->stdin)
+			xfree(msg->stdin);
+		if (msg->stdout)
+			xfree(msg->stdout);
+		if (msg->work_dir)
+			xfree(msg->work_dir);
+
+		for (i = 0; i < msg->argc; i++) {
+			if (msg->argv[i])
+				xfree(msg->argv[i]);
+		}
+		if (msg->argv)
+			xfree(msg->argv);
+
+		for (i = 0; i < msg->env_size; i++) {
+			if (msg->environment[i])
+				xfree(msg->environment[i]);
+		}
+		if (msg->environment)
+			xfree(msg->environment);
+		xfree(msg);
+	}
+}
+
 static void 
 _free_all_partitions(partition_info_msg_t *msg)
 {

@@ -520,6 +520,22 @@ typedef struct submit_response_msg {
 	uint32_t job_id;
 } submit_response_msg_t;
 
+typedef struct batch_job_launch_msg {
+	uint32_t job_id;
+	uint32_t user_id;
+	char *nodes;		/* comma delimited list of nodes allocated to job_step */
+	char *script;		/* the actual job script, default NONE */
+	char *stderr;		/* pathname of stderr */
+	char *stdin;		/* pathname of stdin */
+	char *stdout;		/* pathname of stdout */
+	char *work_dir;		/* fully qualified pathname of working directory */
+	uint16_t argc;
+	char **argv;
+	uint16_t env_size;	/* element count in environment */
+	char **environment;	/* environment variables to set for job, 
+				   *   name=value pairs, one per line */
+} batch_job_launch_msg_t;
+
 /****************************************************************************
  * Slurm API Message Types
  ****************************************************************************/
@@ -577,6 +593,8 @@ void inline slurm_free_job_step_info(job_step_info_t * msg);
 void inline slurm_free_job_step_info_memebers(job_step_info_t * msg);
 void inline
 slurm_free_job_step_info_response_msg(job_step_info_response_msg_t * msg);
+
+void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
 
 void inline slurm_free_partition_info_msg(partition_info_msg_t * msg);
 void inline slurm_free_partition_info(partition_info_t * part);
