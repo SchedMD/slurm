@@ -99,6 +99,12 @@ node when a user's job begins execution (e.g. "/usr/local/slurm/prolog").
 This may be used to purge files, enable user login, etc. By default there 
 is no prolog.
 
+<dt>ReturnToService
+<dd>If set to 1, then nodes a node's state with transistion from DOWN to 
+the appropriate state upon registration. The default value is 0, which 
+means that a node will remain DOWN until a system administrator explicitly 
+makes it available for use.
+
 <dt>SlurmctldPort
 <dd>The port number that the SLURM controller, <i>slurmctld</i>, listens 
 to for work. The default value is SLURMCTLD_PORT as established at system 
@@ -662,7 +668,7 @@ Remove node lx0030 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified September 13, 2002</p>
+<p>Last Modified October 10, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
