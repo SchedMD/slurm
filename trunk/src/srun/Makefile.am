@@ -33,7 +33,9 @@ srun_SOURCES = \
 	sigstr.c    \
 	sigstr.h    \
 	allocate.c  \
-	allocate.h
+	allocate.h  \
+	core-format.c \
+	core-format.h
 
 convenience_libs =  \
 	$(top_builddir)/src/common/libcommon.la   \

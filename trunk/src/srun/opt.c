@@ -88,6 +88,7 @@
 #define OPT_DISTRIB     0x04
 #define OPT_NODES       0x05
 #define OPT_OVERCOMMIT  0x06
+#define OPT_CORE        0x07
 
 /* generic getopt_long flags, integers and *not* valid characters */
 #define LONG_OPT_HELP     0x100
@@ -103,6 +104,7 @@
 #define LONG_OPT_UID      0x10a
 #define LONG_OPT_GID      0x10b
 #define LONG_OPT_MPI      0x10c
+#define LONG_OPT_CORE	  0x10e
 
 /*---- forward declarations of static functions  ----*/
 
@@ -400,7 +402,7 @@ static void _opt_default()
 	opt.ifname = NULL;
 	opt.efname = NULL;
 
-	opt.core_format = "normal";
+	opt.core_type = CORE_DEFAULT;
 
 	opt.labelio = false;
 	opt.unbuffered = false;
@@ -476,6 +478,7 @@ struct env_vars {
 env_vars_t env_vars[] = {
   {"SLURMD_DEBUG",        OPT_INT,        &opt.slurmd_debug,  NULL           }, 
   {"SLURM_CPUS_PER_TASK", OPT_INT,        &opt.cpus_per_task, &opt.cpus_set  },
+  {"SLURM_CORE_FORMAT",   OPT_CORE,       NULL,               NULL,          },
   {"SLURM_DEBUG",         OPT_DEBUG,      NULL,               NULL           },
   {"SLURM_DISTRIBUTION",  OPT_DISTRIB,    NULL,               NULL           },
   {"SLURM_IMMEDIATE",     OPT_INT,        &opt.immediate,     NULL           },
@@ -567,6 +570,10 @@ _process_env_var(env_vars_t *e, const char *val)
 	case OPT_OVERCOMMIT:
 	    opt.overcommit = true;
 	    break;
+
+	case OPT_CORE:
+	    opt.core_type = core_format_type (val);
+	    break;
 	    
 	default:
 	    /* do nothing */
@@ -641,6 +648,7 @@ static void _opt_args(int argc, char **argv)
 		{"quit-on-interrupt", no_argument,   0, 'q'},
 		{"quiet",            no_argument,    0, 'Q'},
 		{"contiguous",       no_argument,       0, LONG_OPT_CONT},
+		{"core",             required_argument, 0, LONG_OPT_CORE},
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
@@ -825,6 +833,12 @@ static void _opt_args(int argc, char **argv)
 			break;
 		case LONG_OPT_CONT:
 			opt.contiguous = true;
+			break;
+		case LONG_OPT_CORE:
+			opt.core_type = core_format_type (optarg);
+			if (opt.core_type == CORE_INVALID)
+				error ("--core=\"%s\" Invalid -- ignoring.\n",
+				      optarg);
 			break;
 		case LONG_OPT_MINCPU:
 			opt.mincpus = _get_int(optarg, "mincpus");
@@ -1019,6 +1033,8 @@ static bool _opt_verify(void)
 			      opt.progname, opt.min_nodes, opt.max_nodes);
 			verified = false;
 		}
+
+		core_format_enable (opt.core_type);
 
 		/* massage the numbers */
 		if (opt.nodes_set && !opt.nprocs_set) {
@@ -1258,7 +1274,7 @@ static void _opt_list()
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);
 	info("distribution   : %s", format_distribution_t(opt.distribution));
-	info("core format    : %s", opt.core_format);
+	info("core format    : %s", core_format_name (opt.core_type));
 	info("verbose        : %d", _verbose);
 	info("slurmd_debug   : %d", opt.slurmd_debug);
 	info("immediate      : %s", tf_(opt.immediate));
@@ -1295,9 +1311,9 @@ Usage: srun [-N nnodes] [-n ntasks] [-i in] [-i in] [-e err] [-e err]\n\
             [-D path] [--immediate] [--overcommit] [--no-kill]\n\
             [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n\
             [--jobid=id] [--batch] [--verbose] [--slurmd_debug=#]\n\
-            [-T threads] [-W sec] [--attach] [--join] [--contiguous]\n\
-            [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list] [--mpi=type]\n\
-            [-w hosts...] [-x hosts...] [--usage] [OPTIONS...] \n\
+            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n\
+            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n\
+            [--mpi=type] [-w hosts...] [-x hosts...] \n\
             executable [args...]\n");
 }
 
@@ -1337,13 +1353,16 @@ Parallel run options:\n\
   -v, --verbose               verbose mode (multiple -v's increase verbosity)\n\
   -Q, --quiet                 quiet mode (suppress informational messages)\n\
   -d, --slurmd-debug=level    slurmd debug level\n\
+      --core=type             change default corefile format type\n\
+                              (type=\"list\" to list of valid formats)\n\
 \n\
 Allocate only:\n\
   -A, --allocate              allocate resources and spawn a shell\n\
 \n\
 Attach to running job:\n\
   -a, --attach=jobid          attach to running job with specified id\n\
-  -j, --join                  when used with --attach, allow\n\
+  -j, --join                  when used with --attach, allow forwarding of\n\
+                              signals and stdin.\n\
 \n\
 Constraint options:\n\
       --mincpus=n             minimum number of cpus per node\n\

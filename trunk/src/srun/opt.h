@@ -35,6 +35,7 @@
 #include <unistd.h>
 
 #include "src/common/macros.h" /* true and false */
+#include "src/srun/core-format.h"
 
 #define MAX_THREADS	64
 #define MAX_USERNAME	9
@@ -111,7 +112,7 @@ typedef struct srun_options {
 	char *efname;		/* --error, -e filename         */
 
 	int  slurmd_debug;	/* --slurmd-debug, -D           */
-	char *core_format;	/* --corefile-format=, -C type	*/
+	core_format_t core_type;/* --core= 	        	*/
 	char *attach;		/* --attach=id	    -a id	*/ 
 	bool join;		/* --join, 	    -j		*/
 
