@@ -99,7 +99,7 @@ inline static void slurm_rpc_job_step_get_info ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg );
+inline static void slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response );
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
@@ -514,8 +514,10 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_reconfigure_controller ( msg ) ;
 			break;
 		case REQUEST_SHUTDOWN:
+			slurm_rpc_shutdown_controller ( msg , 1 ) ;
+			break;
 		case REQUEST_SHUTDOWN_IMMEDIATE:
-			slurm_rpc_shutdown_controller ( msg ) ;
+			slurm_rpc_shutdown_controller ( msg , 0 ) ;
 			break;
 		case REQUEST_UPDATE_JOB:
 			slurm_rpc_update_job ( msg ) ;
@@ -1175,7 +1177,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 
 /* slurm_rpc_shutdown_controller - process RPC to shutdown slurmctld */
 void 
-slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
+slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response )
 {
 	/* do RPC call */
 /* must be user root */
@@ -1186,8 +1188,9 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 		info ("slurm_rpc_shutdown_controller completed successfully");
 	}
 
-	/* return result */
-	slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	if (response) {
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
 }
 
 
@@ -1282,12 +1285,9 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 int
 slurm_shutdown ()
 {
-	int msg_size ;
 	int rc ;
 	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
 	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
@@ -1303,35 +1303,12 @@ slurm_shutdown ()
 		return SLURM_SOCKET_ERROR ;
 	}
 
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
-		error ("slurm_receive_msg error");
-		return SLURM_SOCKET_ERROR ;
-	}
+	/* no response */
 
 	/* shutdown message connection */
 	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
 		error ("slurm_shutdown_msg_conn error");
 		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				error ("slurm_shutdown_msg_conn error (%d)", rc);
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			error ("slurm_shutdown_msg_conn type bad (%d)", response_msg . msg_type);
-			return SLURM_UNEXPECTED_MSG_ERROR;
-			break ;
 	}
 
         return SLURM_PROTOCOL_SUCCESS ;
