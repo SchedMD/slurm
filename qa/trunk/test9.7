@@ -40,6 +40,9 @@ for {set inx 0} {$inx < $task_cnt} {incr inx} {
 		timeout {
 			send_user "\nFAILURE: Timeout on task $inx\n"
 		}
+		eof {
+			send_user "\nFAILURE: EOF on task $inx\n"
+		}
 	}
 }
 
