@@ -676,7 +676,7 @@ static int _parse_part_spec(char *in_line)
 		part_ptr = create_part_record();
 		strcpy(part_ptr->name, partition_name);
 	} else {
-		info("_parse_node_spec: duplicate entry for partition %s",
+		verbose("_parse_node_spec: duplicate entry for partition %s",
 		     partition_name);
 	}
 	if (default_val == 1) {
