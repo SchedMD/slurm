@@ -33,8 +33,9 @@
 #endif
 
 #include <errno.h>
-#include <sys/poll.h>
 #include <fcntl.h>
+#include <sys/poll.h>
+#include <time.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -52,8 +53,20 @@
 #include "src/srun/attach.h"
 #endif
 
+#define MAX_MSG_WAIT_SEC  60	/* max msg idle, secs, confirm launches */
+#define POLL_TIMEOUT_MSEC	500
+time_t time_last_msg;
+
 static int tasks_exited = 0;
 static uint32_t slurm_user_id;
+
+static void	_accept_msg_connection(job_t *job, int fdnum);
+static void	_confirm_launch_complete(job_t *job);
+static void 	_exit_handler(job_t *job, slurm_msg_t *exit_msg);
+static void	_handle_msg(job_t *job, slurm_msg_t *msg);
+static void	_launch_handler(job_t *job, slurm_msg_t *resp);
+static void 	_msg_thr_poll(job_t *job);
+static void	_set_jfds_nonblocking(job_t *job);
 
 #define _poll_set_rd(_pfd, _fd) do {    \
 	(_pfd).fd = _fd;                \
@@ -69,7 +82,6 @@ static uint32_t slurm_user_id;
 #define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
 #define _poll_err(pfd)      ((pfd).revents & POLLERR)
 
-#define POLL_TIMEOUT_MSEC	500
 
 static void
 _launch_handler(job_t *job, slurm_msg_t *resp)
@@ -106,6 +118,24 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		pthread_mutex_unlock(&job->task_mutex);
 	}
 
+}
+
+/* _confirm_launch_complete
+ * confirm that all tasks registers a sucessful launch
+ * exit on failure */
+static void	
+_confirm_launch_complete(job_t *job)
+{
+	int i;
+
+	for (i=0; i<job->nhosts; i++) {
+		if (job->host_state[i] != SRUN_HOST_REPLIED) {
+			error ("Node %s not responding, terminiating job step",
+			       job->host[i]);
+			update_job_state(job, SRUN_JOB_FAILED);
+			pthread_exit(0);
+		}
+	}
 }
 
 static void 
@@ -214,6 +244,7 @@ _msg_thr_poll(job_t *job)
 	struct pollfd *fds;
 	nfds_t nfds = job->njfds;
 	int i, rc;
+	static bool check_launch_msg_sent = false;
 
 	fds = xmalloc(job->njfds * sizeof(*fds));
 
@@ -221,14 +252,21 @@ _msg_thr_poll(job_t *job)
 
 	for (i = 0; i < job->njfds; i++)
 		_poll_set_rd(fds[i], job->jfd[i]);
+	time_last_msg = time(NULL);
 
 	while (1) {
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
+				i = time(NULL)-time_last_msg;
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
-				else
-					continue;
+				else if (check_launch_msg_sent)
+					;
+				else if (i > MAX_MSG_WAIT_SEC) {
+					_confirm_launch_complete(job);
+					check_launch_msg_sent = true; 
+				}
+				continue;
 			}
 
 			switch (errno) {
@@ -243,9 +281,12 @@ _msg_thr_poll(job_t *job)
 			}
 		}
 
+		time_last_msg = time(NULL);
 		for (i = 0; i < job->njfds; i++) {
 			unsigned short revents = fds[i].revents;
-			if (revents & POLLERR)
+			if ((revents & POLLERR) || 
+			    (revents & POLLHUP) ||
+			    (revents & POLLNVAL))
 				error("poll error on jfd %d: %m", fds[i].fd);
 			else if (revents & POLLIN) 
 				_accept_msg_connection(job, i);
@@ -264,49 +305,3 @@ msg_thr(void *arg)
 	_msg_thr_poll(job);
 	return (void *)1;
 }
-
-void *
-_msg_thr_one(void *arg)
-{
-	job_t *job = (job_t *) arg;
-	slurm_fd fd;
-	slurm_fd newfd;
-	slurm_msg_t *msg = NULL;
-	slurm_addr cli_addr;
-	char addrbuf[256];
-
-	xassert(job != NULL);
-
-	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
-
-	fd = job->jfd[0];
-
-	while (1) {
-
-		if ((newfd = slurm_accept_msg_conn(fd, &cli_addr)) < 0) {
-			error("_msg_thr_one/slurm_accept_msg_conn: %m");
-			break;
-		}
-
-		slurm_print_slurm_addr(&cli_addr, addrbuf, 256);
-		debug2("got message connection from %s", addrbuf);
-
-
-		msg = xmalloc(sizeof(*msg));
-		if (slurm_receive_msg(newfd, msg) == SLURM_SOCKET_ERROR) {
-			error("_msg_thr_one/slurm_receive_msg: %m");
-			slurm_close_accepted_conn(newfd);
-			break;
-		}
-
-		msg->conn_fd = newfd;
-		_handle_msg(job, msg);
-		slurm_close_accepted_conn(newfd);
-	}
-
-	/* reached only on receive error */
-	return (void *)(0);
-}
-
-
