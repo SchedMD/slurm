@@ -69,6 +69,7 @@ receptionist_thread_entry( void *dummy )
 	// * Set up Wiki scheduler address.
 	sockaddr.sin_family = AF_INET;
 
+	sockaddr.sin_addr.s_addr = INADDR_ANY;
 	sockaddr.sin_port = htons( sched_get_port() );
 
 	try {
