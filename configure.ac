@@ -117,10 +117,10 @@ AC_ARG_ENABLE(debug,
 
 AC_MSG_RESULT(${with_slurm_debug=no})
 if test "x$with_slurm_debug" = "xtrue"; then 
-  CFLAGS="-g -Wall -Wpointer-arith $CFLAGS"
+  CFLAGS="-g -Wall -Wpointer-arith -fno-strict-aliasing $CFLAGS"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="-O2 -Wall -Wpointer-arith $CFLAGS"
+  CFLAGS="-O2 -Wall -Wpointer-arith -fno-strict-aliasing $CFLAGS"
   AC_DEFINE(NDEBUG, 1, [Define for production compile of code])
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$with_slurm_debug" = "xtrue")
@@ -159,7 +159,6 @@ AC_SUBST(SLURMD_PORT)
 
 dnl check for whether to include Elan support
 dnl
-AC_MSG_CHECKING(whether to include Elan support)
 savedLIBS="$LIBS"
 AC_CHECK_LIB([elanctrl], [elanctrl_open], 
              [ have_elanctrl=yes
