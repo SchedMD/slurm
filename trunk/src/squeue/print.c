@@ -107,6 +107,8 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 				continue;
 			else if (params.sort[i] == 'i')
 				sort_job_by_job_id(job_list);
+			else if (params.sort[i] == 'j')
+				sort_job_by_job_name(job_list);
 			else if (params.sort[i] == 'p')
 				sort_job_by_priority(job_list);
 			else if (params.sort[i] == 'P')
@@ -946,6 +948,15 @@ int _sort_job_by_id(void *void1, void *void2)
 	job_info_t *job2 = (job_info_t *) void2;
 
 	return job1->job_id - job2->job_id;
+}
+
+/* sort lower to higher */
+int _sort_job_by_name(void *void1, void *void2)
+{
+	job_info_t *job1 = (job_info_t *) void1;
+	job_info_t *job2 = (job_info_t *) void2;
+
+	return strcmp(job1->name, job2->name);
 }
 
 /* sort higher to lower */
