@@ -165,9 +165,10 @@ shm_fini(void)
 	_shm_lock();
 
 	debug3("%ld calling shm_fini() (attached by %ld)", 
-		getpid(), attach_pid);
+		(long) getpid(), attach_pid);
 
-	debug("[%ld] shm_fini: shm_users = %d", getpid(), slurmd_shm->users); 
+	debug("[%ld] shm_fini: shm_users = %d", 
+	      (long) getpid(), slurmd_shm->users); 
 
 	if (--slurmd_shm->users == 0)
 		destroy = 1;
@@ -317,7 +318,7 @@ _create_ipc_name(const char *name)
 static int
 _shm_unlink_lock()
 {
-	debug("process %ld removing shm lock", getpid());
+	debug("process %ld removing shm lock", (long) getpid());
 	if (sem_unlink(lockname) == -1) 
 		return 0;
 	xfree(lockname);
@@ -615,7 +616,7 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 			s->io_update = true;
 
 			debug3("Going to send shm update signal to %ld", 
-				s->mpid);
+				(long) s->mpid);
 			if ((s->mpid > 0) && (kill(s->mpid, SIGHUP) < 0)) {
 				slurm_seterrno(EPERM);
 				retval = SLURM_FAILURE;

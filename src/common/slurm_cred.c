@@ -667,7 +667,7 @@ slurm_cred_print(slurm_cred_t cred)
 
 	info("Cred: Jobid   %u",  cred->jobid         );
 	info("Cred: Stepid  %u",  cred->jobid         );
-	info("Cred: UID     %lu", cred->uid           );
+	info("Cred: UID     %lu", (u_long) cred->uid  );
 	info("Cred: Nodes   %s",  cred->nodes         );
 	info("Cred: ctime   %s",  ctime(&cred->ctime) );
 	info("Cred: siglen  %d",  cred->siglen        );

@@ -86,7 +86,7 @@ interconnect_preinit(slurmd_job_t *job)
 int 
 interconnect_init(slurmd_job_t *job)
 {
-	debug2("calling interconnect_init from process %ld", getpid());
+	debug2("calling interconnect_init from process %ld", (long) getpid());
 	if (qsw_prog_init(job->qsw_job, job->uid) < 0) {
 		error ("elan interconnect_init: qsw_prog_init: %m");
 		/* we may lose the following info if not logging to stderr */
@@ -122,7 +122,7 @@ interconnect_attach(slurmd_job_t *job, int procid)
 
 	debug3("nodeid=%d nnodes=%d procid=%d nprocs=%d", 
 	       nodeid, nnodes, procid, nprocs);
-	debug3("setting capability in process %ld", getpid());
+	debug3("setting capability in process %ld", (long) getpid());
 	if (qsw_setcap(job->qsw_job, procid) < 0) {
 		error("qsw_setcap: %m");
 		return SLURM_ERROR;

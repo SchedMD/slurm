@@ -218,7 +218,7 @@ _exec_all_tasks(slurmd_job_t *job)
 		 */
 
 		debug2("pid %ld forked child process %ld for local task %d",
-		       getpid(), (long) pid, i);
+		       (long) getpid(), (long) pid, i);
 
 		/* 
 		 * Send pid to job manager

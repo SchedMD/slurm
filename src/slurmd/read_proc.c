@@ -122,9 +122,9 @@ dump_proc(int uid, int sid)
 			continue;
 		if ((sid != -1) && (sid != s_ptr->session))
 			continue;
-		printf ("uid=%d session=%d time=%lu resident_set_size=%ld ", 
-			s_ptr->uid, s_ptr->session, s_ptr->time, 
-			s_ptr->resident_set_size);
+		printf ("uid=%lu session=%lu time=%lu resident_set_size=%ld ", 
+			(u_long) s_ptr->uid, (u_long) s_ptr->session, 
+			(u_long) s_ptr->time, (long) s_ptr->resident_set_size);
 		printf ("iteration=%d processes=%d\n", 
 			s_ptr->iteration, s_ptr->processes);
 		count++;
