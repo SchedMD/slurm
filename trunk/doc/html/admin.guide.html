@@ -99,10 +99,6 @@ For example, if the configuration for NodeName=charlie immediately
 follows the configuration for NodeName=baker they will be 
 considered adjacent in the computer.
 
-<dt>CPUs
-<dd>Number of processors on the node (e.g. "2").
-The default value is 1.
-
 <dt>Feature
 <dd>A comma delimited list of arbitrary strings indicative of some 
 characteristic associated with the node. 
@@ -115,7 +111,11 @@ By default a node has no features.
 <dd>Size of real memory on the node in MegaBytes (e.g. "2048").
 The default value is 1.
 
-<dt>State
+<dt>Procs
+<dd>Number of processors on the node (e.g. "2").
+The default value is 1.
+
+dt>State
 <dd>State of the node with respect to the initiation of user jobs. 
 Acceptable values are "DOWN", "UNKNOWN", "IDLE", and "DRAINING". 
 The <a href="#NodeStates">node states</a> are fully described below. 
@@ -145,7 +145,7 @@ utilization, responsiveness and capability. It would be
 preferable to allocate smaller memory nodes rather than larger 
 memory nodes if either will satisfy a job's requirements. 
 The units of weight are arbitrary, but larger weights 
-should be assigned to nodes with more CPUs, memory, 
+should be assigned to nodes with more processors, memory, 
 disk space, higher processor speed, etc.
 Weight is an integer value with a default value of 1.
 
@@ -163,7 +163,7 @@ scheduling process by permitting it to compare job requirements
 against these (relatively few) configuration parameters and 
 possibly avoid having to perform checks job requirements 
 against every individual node's configuration.
-The resources checked at node registration time are: CPUs, 
+The resources checked at node registration time are: Procs, 
 RealMemory and TmpDisk. 
 While baseline values for each of these can be established 
 in the configuration file, the actual values upon node 
@@ -254,8 +254,8 @@ A sample SLURM configuration file (node information only) follows.
 #
 NodeName=DEFAULT TmpDisk=16384 State=IDLE
 NodeName=lx[0001-0002] State=DRAINED
-NodeName=lx[0003-8000] CPUs=16 RealMemory=2048 Weight=16
-NodeName=lx[8001-9999] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz,VizTools
+NodeName=lx[0003-8000] Procs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] Procs=32 RealMemory=4096 Weight=40 Feature=1200MHz,VizTools
 </pre>
 <p>
 The partition configuration permits you to establish different job 
@@ -362,11 +362,8 @@ scontrol administration tool to modify job state information:
 <dl>
 
 <dt>Contiguous
-<dd>If this keyword is present, the nodes allocated to the job must 
-be contiguous.
-
-<dt>CPUCount
-<dd>Minimum total number of CPUs to be allocated to the job.
+<dd>Determine if the nodes allocated to the job must be contiguous.
+Acceptable values are "YES" and "NO" with the default being "NO".
 
 <dt>Features
 <dd>Required features of nodes to be allocated to this job. 
@@ -386,8 +383,16 @@ subset of nodes assessing a single parallel file system.
 This might be specified with a specification of 
 "Features=[PFS1|PFS2|PFS3|PFS4]".
 
-<dt>Group
+<dt>Groups
 <dd>Comma separated list of group names to which the user belongs.
+
+<dt>JobName
+<dd>Name to be associated with the job
+
+<dt>JobId
+<dd>Identification for the job. By default this is the partition's 
+name, followed by a period, followed by a sequence number (e.g. 
+"batch.1234").
 
 <dt>Key
 <dd>Key granted to user root for optional access control to partitions.
@@ -399,8 +404,8 @@ This name can be specified by users when submitting their jobs.
 <dd>Maximum wall-time limit for the job in minutes. An "UNLIMITED"
 value is represented internally as -1.
 
-<dt>MinCPUs
-<dd>Minimum number of CPUs per node.
+<dt>MinProcs
+<dd>Minimum number of processors per node.
 
 <dt>MinRealMemory
 <dd>Minimum number of megabytes of real memory per node.
@@ -408,11 +413,8 @@ value is represented internally as -1.
 <dt>MinTmpDisk
 <dd>Minimum number of megabytes of temporary disk storage per node.
 
-<dt>NodeCount
-<dd>Minimum total number of nodes to be allocated to the job.
-
-<dt>NodeList
-<dd>Comma separated list of nodes which are allocated to the job. 
+<dt>ReqNodes
+<dd>Comma separated list of nodes which must be allocated to the job. 
 The nodes may be specified using regular expressions (e.g.
 "lx[0010-0020],lx[0033-0040]".
 This value may not be changed by scontrol. 
@@ -424,13 +426,33 @@ may not be changed by scontrol.
 <dt>Partition
 <dd>Name of the partition in which this job should execute.
 
-<dt>State
-<dd>State of the job.  Possible values are "PENDING", "STARTING", 
-"RUNNING", and "ENDING". 
+<dt>Priority
+<dd>Floating point priority of the pending job. The value may 
+be specified by user root initiated jobs, otherwise SLURM will 
+select a value. Generally, higher priority jobs will be initiated 
+before lower priority jobs. Backfill scheduling will permit 
+lower priority jobs to be initiated before higher priority jobs 
+only if doing so will not delay the anticipated initiation time 
+of the higher priority job .
+
+<dt>Script
+<dd>Pathname of the script to be executed for the job. 
+The script will typically contain "srun" commands to initiate 
+the parallel commands.
 
 <dt>Shared
 <dd>Job can share nodes with other jobs. Possible values are 1
 and 0 for YES and NO respectively.
+
+<dt>State
+<dd>State of the job.  Possible values are "PENDING", "STARTING", 
+"RUNNING", and "ENDING". 
+
+<dt>TotalNodes
+<dd>Minimum total number of nodes to be allocated to the job.
+
+<dt>TotalProcs
+<dd>Minimum total number of processors to be allocated to the job.
 
 <dt>User
 <dd>Name of the user executing this job.
@@ -467,6 +489,12 @@ The default value is 300 and the units are seconds.
 This can be used to remove temporary files created by the job or other clean-up.
 This file must be accessible to every SLURM compute server. 
 By default there is no epilog program. 
+
+<dt>FAST_SCHEDULE
+<dd>SLURM will only check the job's memory, processor, and disk 
+contraints against the configuration file entries if set. If set, 
+the specific values of each node will not be tested and scheduling 
+will be considerably faster for large clusters.
 
 <dt>HASH_BASE
 <dd>SLURM uses a hash table in order to locate table entries rapidly. 
@@ -607,8 +635,8 @@ BackupController=lx0002
 #
 NodeName=DEFAULT TmpDisk=16384 State=IDLE
 NodeName=lx[0001-0002] State=DRAINED
-NodeName=lx[0003-8000] CPUs=16 RealMemory=2048 Weight=16
-NodeName=lx[8001-9999] CPUs=32 RealMemory=4096 Weight=40 Feature=1200MHz
+NodeName=lx[0003-8000] Procs=16 RealMemory=2048 Weight=16
+NodeName=lx[8001-9999] Procs=32 RealMemory=4096 Weight=40 Feature=1200MHz
 #
 # Partition Configurations
 #
@@ -631,7 +659,7 @@ Remove node lx0030 from service, removing jobs as needed:
   scontrol: show job 1234
   Job 1234 not found
   scontrol: show node lx0030
-  Name=lx0030 Partition=class State=DRAINED CPUs=16 RealMemory=2048 TmpDisk=16384
+  Name=lx0030 Partition=class State=DRAINED Procs=16 RealMemory=2048 TmpDisk=16384
   scontrol: quit
 </pre>
 
