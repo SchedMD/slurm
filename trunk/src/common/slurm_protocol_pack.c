@@ -484,9 +484,13 @@ void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t 
 	
 	pack32 ( msg->job_id , buffer ) ;
 	packstr ( msg->node_list , buffer ) ;
+
 	pack16 ( msg->num_cpu_groups , buffer ) ;
 	pack32_array ( msg->cpus_per_node, msg->num_cpu_groups , buffer ) ;
 	pack32_array ( msg->cpu_count_reps, msg->num_cpu_groups, buffer ) ;
+
+	pack16 ( msg->node_cnt , buffer ) ;
+	pack_slurm_addr_array ( msg->node_addr, msg->node_cnt , buffer ) ;
 }
 
 int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t ** msg , Buf buffer )
@@ -504,8 +508,8 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 	/* load the data values */
 	unpack32 ( & tmp_ptr -> job_id , buffer ) ;
 	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  buffer ) ;
-	unpack16 ( & tmp_ptr -> num_cpu_groups , buffer ) ;
 
+	unpack16 ( & tmp_ptr -> num_cpu_groups , buffer ) ;
 	if ( tmp_ptr -> num_cpu_groups > 0 ){ 
 		tmp_ptr->cpus_per_node = (uint32_t*) xmalloc( sizeof(uint32_t) * tmp_ptr -> num_cpu_groups );
 		tmp_ptr->cpu_count_reps = (uint32_t*) xmalloc( sizeof(uint32_t) * tmp_ptr -> num_cpu_groups );
@@ -517,6 +521,14 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 		tmp_ptr->cpus_per_node = NULL;
 		tmp_ptr->cpu_count_reps = NULL;
 	}
+
+	unpack16 ( & tmp_ptr -> node_cnt , buffer ) ;
+	if ( tmp_ptr -> node_cnt > 0 )
+		unpack_slurm_addr_array ( &(tmp_ptr->node_addr) , 
+		                          &(tmp_ptr->node_cnt) , buffer );
+	else
+		tmp_ptr->node_addr = NULL;
+
 	*msg = tmp_ptr ;
 	info ("job id is %ld", tmp_ptr->job_id);
 	return 0 ;
@@ -532,6 +544,10 @@ void pack_resource_allocation_and_run_response_msg ( resource_allocation_and_run
 	pack32_array ( msg->cpus_per_node, msg->num_cpu_groups , buffer ) ;
 	pack32_array ( msg->cpu_count_reps, msg->num_cpu_groups, buffer ) ;
 	pack32 ( msg -> job_step_id , buffer ) ;
+
+	pack16 ( msg->node_cnt , buffer ) ;
+	pack_slurm_addr_array ( msg->node_addr, msg->node_cnt , buffer ) ;
+
 	pack_job_credential( msg->credentials, buffer ) ;
 #ifdef HAVE_LIBELAN3
 	qsw_pack_jobinfo( msg -> qsw_job , buffer ) ;
@@ -567,6 +583,14 @@ int unpack_resource_allocation_and_run_response_msg ( resource_allocation_and_ru
 		tmp_ptr->cpu_count_reps = NULL;
 	}
 	unpack32 ( &tmp_ptr -> job_step_id, buffer ) ;
+
+	unpack16 ( & tmp_ptr -> node_cnt , buffer ) ;
+	if ( tmp_ptr -> node_cnt > 0 )
+		unpack_slurm_addr_array ( &(tmp_ptr->node_addr) , 
+		                          &(tmp_ptr->node_cnt) , buffer );
+	else
+		tmp_ptr->node_addr = NULL;
+
 	unpack_job_credential( &tmp_ptr->credentials, buffer ) ;
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);

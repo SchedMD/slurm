@@ -509,6 +509,8 @@ typedef struct resource_allocation_response_msg {
 	int16_t num_cpu_groups;
 	int32_t *cpus_per_node;
 	int32_t *cpu_count_reps;
+	uint16_t node_cnt;
+	slurm_addr *node_addr;	/* network addresses */
 } resource_allocation_response_msg_t;
 
 typedef struct resource_allocation_and_run_response_msg {
@@ -518,6 +520,8 @@ typedef struct resource_allocation_and_run_response_msg {
 	int32_t *cpus_per_node;
 	int32_t *cpu_count_reps;
 	uint32_t job_step_id;
+	uint16_t node_cnt;
+	slurm_addr *node_addr;	/* network addresses */
 	slurm_job_credential_t *credentials;
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */

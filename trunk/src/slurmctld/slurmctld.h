@@ -124,7 +124,7 @@ struct node_record {
 	struct config_record *config_ptr;	/* configuration specification for this node */
 	struct part_record *partition_ptr;	/* partition for this node */
 	char comm_name[MAX_NAME_LEN];	/* communications path name of the node */
-	struct sockaddr_in slurm_addr;	/* network address */
+	slurm_addr slurm_addr;		/* network address */
 };
 extern struct node_record *node_record_table_ptr;	/* location of the node records */
 extern int node_record_count;		/* count of records in the node record table */
@@ -219,6 +219,8 @@ struct job_record {
 	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with same cpu count */
 	uint16_t next_step_id;		/* next step id to be used */
+	uint16_t node_cnt;		/* count of nodes allocated to this job */
+	slurm_addr *node_addr;		/* addresses of the nodes allocated to this job */
 	List step_list;			/* list of job's steps */
 };
 
@@ -249,9 +251,8 @@ extern void  allocate_nodes (unsigned *bitmap);
  */
 extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
-/* build_node_details - give a node bitmap, return cpu counts for those nodes */
-extern void build_node_details (bitstr_t *node_bitmap, 
-		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t **cpu_count_reps);
+/* build_node_details - set cpu counts and addresses for allocated nodes */
+extern void build_node_details (struct job_record *job_ptr);
 
 /* count_cpus - report how many cpus are associated with the identified nodes */
 extern int  count_cpus (unsigned *bitmap);
@@ -373,7 +374,8 @@ extern int  is_key_valid (void * key);
 /* job_allocate - allocate resource for the supplied job specifications */
 extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
-	int immediate, int will_run, int allocate, uid_t submit_uid);
+	int immediate, int will_run, int allocate, uid_t submit_uid,
+	uint16_t *node_cnt, slurm_addr **node_addr);
 
 /* job_cancel - cancel the specified job */
 extern int job_cancel (uint32_t job_id, uid_t uid);
@@ -438,7 +440,8 @@ extern void node_not_resp (char *name);
 
 /* old_job_info - get details about an existing job allocation */
 extern int old_job_info (uint32_t uid, uint32_t job_id, char **node_list, 
-	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps);
+	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps,
+	uint16_t * node_cnt, slurm_addr ** node_addr);
 
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
