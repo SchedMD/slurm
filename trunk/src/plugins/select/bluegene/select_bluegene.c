@@ -49,6 +49,7 @@
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/slurmctld.h"
+#include "bgl_job.h"
 #include "bluegene.h"
 
 /*
