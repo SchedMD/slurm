@@ -16,7 +16,6 @@ int main ( int argc , char ** argv )
 	launch_tasks_msg . job_id = 1000 ;
 	launch_tasks_msg . job_step_id = 2000 ; 
 	launch_tasks_msg . uid = 801 ;
-	launch_tasks_msg . gid = 802 ;
 	launch_tasks_msg . credentials = NULL ;
 	launch_tasks_msg . tasks_to_launch = 1 ;
 	launch_tasks_msg . envc = 0 ;

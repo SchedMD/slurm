@@ -13,7 +13,7 @@ if ($pid)
 			Reuse => 1,
 			);
 	my $new_sock1 = $sock1->accept();
-	while(defined(<$new_sock1>)) 
+	while(<$new_sock1>) 
 	{
 		print $_;
 	}
@@ -30,7 +30,7 @@ else
 			Reuse => 1,
 			);
 	my $new_sock2 = $sock2->accept();
-	while(defined(<$new_sock2>)) 
+	while(<$new_sock2>) 
 	{
 		print $_;
 	}

@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <assert.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/shm.h>
 #include <string.h>
@@ -12,9 +13,9 @@
 #define OCTAL_RW_PERMISSIONS 0666
 
 /* function prototypes */
-void clear_task ( task_t * task );
-void clear_job_step( job_step_t * job_step );
-int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task ) ;
+static void clear_task ( task_t * task );
+static void clear_job_step( job_step_t * job_step );
+static int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task ) ;
 
 /* gets a pointer to the slurmd shared memory segment
  * if it doesn't exist, one is created 
@@ -61,6 +62,7 @@ void init_shmem ( slurmd_shmem_t * shmem )
 	{
 		clear_job_step ( & shmem->job_steps[i] ) ;
 	}
+	pthread_mutex_init ( & shmem -> mutex , NULL ) ;
 }
 
 /* runs through the job_step array looking for a unused job_step.
@@ -74,6 +76,7 @@ void init_shmem ( slurmd_shmem_t * shmem )
 void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
 {
 	int i ;
+	pthread_mutex_lock ( & shmem -> mutex ) ;
 	for ( i=0 ; i < MAX_JOB_STEPS ; i ++ )
         {
 		if (shmem -> job_steps[i].used == false )
@@ -82,10 +85,12 @@ void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id )
 			shmem -> job_steps[i].used = true ;
 			shmem -> job_steps[i].job_id=job_id;
 			shmem -> job_steps[i].job_step_id=job_step_id;
+			pthread_mutex_unlock ( & shmem -> mutex ) ;
 			return & shmem -> job_steps[i] ;
 		} 
         }
-		fatal ( "No available job_step slots in shmem segment");
+	pthread_mutex_unlock ( & shmem -> mutex ) ;
+	fatal ( "No available job_step slots in shmem segment");
 	return (void * ) SLURM_ERROR ;
 }
 
@@ -100,6 +105,7 @@ void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id )
 void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) 
 {
 	int i ;
+	pthread_mutex_lock ( & shmem -> mutex ) ;
 	for ( i=0 ; i < MAX_TASKS ; i ++ )
         {
 		if (shmem -> tasks[i].used == false )
@@ -107,10 +113,12 @@ void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step )
 			clear_task ( & shmem -> tasks[i] ) ;
 			shmem -> tasks[i].used = true ;
 			prepend_task ( shmem , job_step , & shmem -> tasks[i] ) ;
+			pthread_mutex_unlock ( & shmem -> mutex ) ;
 			return & shmem -> tasks[i] ;
 		} 
-        }
-		fatal ( "No available task slots in shmem segment");
+	}
+	pthread_mutex_unlock ( & shmem -> mutex ) ;
+	fatal ( "No available task slots in shmem segment");
 	return (void * ) SLURM_ERROR ;
 }
 
@@ -124,7 +132,7 @@ void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step )
  * task - task to be prepended
  */
 
-int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task )
+static int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task )
 {
 	/* prepend operation*/
 	/* newtask next pointer gets head of the jobstep task list */
@@ -152,7 +160,7 @@ int deallocate_job_step ( job_step_t * jobstep )
 }
 
 /* clears a job_step array memeber for future use */
-void clear_task ( task_t * task )
+static void clear_task ( task_t * task )
 {
 	task -> used = false ;
 	task -> job_step = NULL ;
@@ -160,8 +168,28 @@ void clear_task ( task_t * task )
 }
 
 /* clears a job_step array memeber for future use */
-void clear_job_step( job_step_t * job_step )
+static void clear_job_step( job_step_t * job_step )
 {
 	job_step -> used = false ;
 	job_step -> head_task = NULL ;
+}
+
+/* api call for DPCS to return a job_id given a session_id */
+int find_job_id_for_session ( slurmd_shmem_t * shmem , int session_id )
+{
+	int i ;
+	pthread_mutex_lock ( & shmem -> mutex ) ;
+	for ( i=0 ; i < MAX_JOB_STEPS ; i ++ )
+        {
+		if (shmem -> job_steps[i].used == true )
+		{
+			if (shmem -> job_steps[i].session_id == session_id )
+
+			pthread_mutex_unlock ( & shmem -> mutex ) ;
+			return shmem -> job_steps[i].job_id ;
+		} 
+        }
+	pthread_mutex_unlock ( & shmem -> mutex ) ;
+	info ( "No job_id found for session_id %i", session_id );
+	return SLURM_FAILURE ; 
 }

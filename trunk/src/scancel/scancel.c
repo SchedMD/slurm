@@ -28,6 +28,7 @@
 #  include <config.h>
 #endif
 
+#include <unistd.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
