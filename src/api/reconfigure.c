@@ -37,7 +37,7 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-static int send_message_controller (	enum controller_id dest, 
+static int _send_message_controller (	enum controller_id dest, 
 					slurm_msg_t *request_msg );
 
 /*
@@ -89,7 +89,8 @@ slurm_reconfigure ( void )
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = (return_code_msg_t *) response_msg.data ;
+			slurm_rc_msg = 
+				(return_code_msg_t *) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -125,14 +126,14 @@ slurm_shutdown (uint16_t core)
 	request_msg . data = &shutdown_msg;
 
 	/* explicity send the message to both primary and backup controllers */
-	(void) send_message_controller ( SECONDARY_CONTROLLER, &request_msg );
-	rc = send_message_controller ( PRIMARY_CONTROLLER,   &request_msg );
+	(void) _send_message_controller ( SECONDARY_CONTROLLER, &request_msg );
+	rc = _send_message_controller ( PRIMARY_CONTROLLER,   &request_msg );
 
 	return rc;
 }
 
 int
-send_message_controller ( enum controller_id dest, slurm_msg_t *request_msg ) 
+_send_message_controller ( enum controller_id dest, slurm_msg_t *request_msg ) 
 {
 	int rc, msg_size ;
 	slurm_fd sockfd ;

@@ -586,8 +586,6 @@ typedef struct slurm_node_registration_status_msg {
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;
 
 
-/* the following typedefs follow kevin's communication message naming comvention */
-
 /* free message functions */
 void inline slurm_free_last_update_msg(last_update_msg_t * msg);
 void inline slurm_free_return_code_msg(return_code_msg_t * msg);
@@ -597,49 +595,23 @@ void inline slurm_free_job_step_id(job_step_id_t * msg);
 #define slurm_free_job_step_info_request_msg(msg) slurm_free_job_step_id(msg)
 #define slurm_free_job_info_request_msg(msg) slurm_free_job_step_id(msg)
 
-void inline slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * build_ptr);
 void inline slurm_free_shutdown_msg (shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
-void inline
-slurm_free_resource_allocation_response_msg
-(resource_allocation_response_msg_t * msg);
-void inline
-slurm_free_resource_allocation_and_run_response_msg
-(resource_allocation_and_run_response_msg_t * msg);
-void inline slurm_free_submit_response_response_msg(submit_response_msg_t *
-						    msg);
 
 void inline
 slurm_free_node_registration_status_msg (slurm_node_registration_status_msg_t * msg);
 
-void inline slurm_free_job_info_msg(job_info_msg_t * msg);
 void inline slurm_free_job_info(job_info_t * job);
 void inline slurm_free_job_info_members(job_info_t * job);
 
-void inline slurm_free_job_step_info(job_step_info_t * msg);
-void inline slurm_free_job_step_info_memebers(job_step_info_t * msg);
-void inline
-slurm_free_job_step_info_response_msg(job_step_info_response_msg_t * msg);
-
 void inline slurm_free_job_launch_msg(batch_job_launch_msg_t * msg);
-
-void inline slurm_free_partition_info_msg(partition_info_msg_t * msg);
-void inline slurm_free_partition_info(partition_info_t * part);
-void inline slurm_free_partition_info_members(partition_info_t * part);
-
-void inline slurm_free_node_info_msg(node_info_msg_t * msg);
-void inline slurm_free_node_info(node_info_t * node);
-void inline slurm_free_node_info_members(node_info_t * node);
 
 void inline slurm_free_update_node_msg(update_node_msg_t * msg);
 void inline slurm_free_update_part_msg(update_part_msg_t * msg);
 void inline
 slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 				       msg);
-void inline
-slurm_free_job_step_create_response_msg(job_step_create_response_msg_t *
-					msg);
 void inline slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t
 						* msg);
 void inline

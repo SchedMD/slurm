@@ -34,7 +34,7 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-int slurm_update (void * data, slurm_msg_type_t msg_type);
+static int _slurm_update (void * data, slurm_msg_type_t msg_type);
 
 /*
  * slurm_update_job - issue RPC to a job's configuration per request, 
@@ -43,7 +43,7 @@ int slurm_update (void * data, slurm_msg_type_t msg_type);
 int 
 slurm_update_job ( job_desc_msg_t * job_msg ) 
 {
-	return slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB);
+	return _slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB);
 }
 
 /*
@@ -53,7 +53,7 @@ slurm_update_job ( job_desc_msg_t * job_msg )
 int 
 slurm_update_node ( update_node_msg_t * node_msg ) 
 {
-	return slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
+	return _slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
 }
 
 /*
@@ -63,13 +63,13 @@ slurm_update_node ( update_node_msg_t * node_msg )
 int 
 slurm_update_partition ( update_part_msg_t * part_msg ) 
 {
-	return slurm_update ((void *) part_msg, REQUEST_UPDATE_PARTITION);
+	return _slurm_update ((void *) part_msg, REQUEST_UPDATE_PARTITION);
 }
 
 
-/* slurm_update - issue RPC for all update requests */
+/* _slurm_update - issue RPC for all update requests */
 int 
-slurm_update (void * data, slurm_msg_type_t msg_type)
+_slurm_update (void * data, slurm_msg_type_t msg_type)
 {
 	int msg_size;
 	int rc ;
