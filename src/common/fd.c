@@ -35,9 +35,9 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <src/common/fd.h>
-#include <src/common/log.h>
 
+#include "src/common/fd.h"
+#include "src/common/log.h"
 
 static int fd_get_lock(int fd, int cmd, int type);
 static pid_t fd_test_lock(int fd, int type);
