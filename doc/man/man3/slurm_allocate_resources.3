@@ -112,8 +112,12 @@ of the created job: job ID, etc. See slurm.h for full details on the data struct
 Specifies the pointer to the structure to be created and filled in by the function \fIslurm_submit_batch_job\fP.
 .SH "DESCRIPTION"
 .LP 
-\fBslurm_allocate_resources\fR Request a resource allocation for a job. If successful, a 
-job entry is created. Always release the response message when no longer required using 
+\fBslurm_allocate_resources\fR Request a resource allocation for a job. If 
+successful, a job entry is created. Note that if the job's requested node 
+count or time allocation are outside of the partition's limits then a job 
+entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left 
+queued until the partition limits are changed.
+Always release the response message when no longer required using 
 the function \fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
 \fBslurm_allocate_resources_and_run\fR Request a resource allocation for a job 
@@ -143,8 +147,8 @@ If successful, a list of the available nodes and their configurations will be re
 release the response message when no longer required using the function 
 \fBslurm_free_resource_allocation_response_msg\fR.
 .LP 
-\fBslurm_submit_batch_job\fR Submit a job for later execution. The job will be queued 
-and executed when resources are available.  Always release the response message when no 
+\fBslurm_submit_batch_job\fR Submit a job for later execution. Note that if 
+the job's requested node count or time allocation are outside of the partition's limits then a job entry will be created, a warning indication will be placed in the \fIerror_code\fP field of the response message, and the job will be left queued until the partition limits are changed and resources are available.  Always release the response message when no 
 longer required using the function \fBslurm_free_submit_response_msg\fR.
 .SH "RETURN VALUE"
 .LP
@@ -180,6 +184,15 @@ On success, zero is returned. On error, -1 is returned, and Slurm error code is 
 \fBESLURM_NOT_TOP_PRIORITY\fR job can not be started immediately because higher priority jobs are waiting to use this partition. 
 .LP
 \fBESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE\fR the requested node configuration is not available (at least not in sufficient quantity) to satisfy the request. 
+.LP
+\fBESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE\fR the requested partition 
+configuration is not available to satisfy the request. This is not a fatal 
+error, but indicates that the job will be left queued until the partition's 
+configuration is changed. This typically indicates that the job's requested 
+node count is outside of the node count range its partition is configured 
+to support (e.g. the job wants 64 nodes and the partition will only schedule 
+jobs using between 1 and 32 nodes). Alternately, the job's time limit exceeds 
+the partition's time limit. 
 .LP
 \fBESLURM_NODES_BUSY\fR the requested nodes are already in use. 
 .LP
