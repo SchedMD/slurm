@@ -8,5 +8,5 @@ bin_PROGRAMS = squeue
 
 LDADD = $(top_srcdir)/src/common/libcommon.la $(top_srcdir)/src/api/libslurm.la
 
-scontrol_SOURCES = squeue.c
+squeue_SOURCES = squeue.c
 
