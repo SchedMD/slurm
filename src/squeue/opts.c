@@ -25,6 +25,8 @@
 \*****************************************************************************/
 
 #include <popt.h>
+#include <pwd.h>
+#include <sys/types.h>
 
 #include <src/popt/popt.h>
 #include <src/squeue/squeue.h>
@@ -43,8 +45,6 @@
 #define OPT_ITERATE   	0x0a
 #define OPT_USERS   	0x0b
 #define OPT_LONG   	0x0c
-
-extern struct squeue_parameters params;
 
 /* FUNCTIONS */
 static List build_job_list( char* str );
@@ -73,12 +73,10 @@ parse_command_line( int argc, char* argv[] )
 	{
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate, OPT_ITERATE,
 			 "specify an interation period", "seconds"},
-		{"jobs", 'j', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL, 
-			&params.jobs, OPT_JOBS_NONE, 
+		{"jobs", 'j', POPT_ARG_NONE, &params.job_flag, OPT_JOBS_NONE, 
 			"comma separated list of jobs to view, default is all", 
 			"job_id"},
-		{"job-steps", 's', POPT_ARG_STRING | POPT_ARGFLAG_OPTIONAL, 
-			&params.steps, OPT_STEPS_NONE, 
+		{"steps", 's', POPT_ARG_NONE, &params.step_flag, OPT_STEPS_NONE, 
 			"comma separated list of job steps to view, default is all" , 
 			"job_step"},
 		{"long", 'l', POPT_ARG_NONE, &params.long_list, OPT_LONG, 
@@ -115,11 +113,13 @@ parse_command_line( int argc, char* argv[] )
 		switch ( curr_opt )
 		{
 			case OPT_JOBS_NONE:
-				params.job_flag = true;
+				if ( (opt_arg = poptGetArg( context )) != NULL )
+					params.jobs = (char*)opt_arg;
 				params.job_list = build_job_list( params.jobs );
 				break;	
 			case OPT_STEPS_NONE:
-				params.step_flag = true;
+				if ( (opt_arg = poptGetArg( context )) != NULL )
+					params.steps = (char*)opt_arg;
 				params.step_list = build_step_list( params.steps );
 				break;	
 			case OPT_STATES:
@@ -208,7 +208,8 @@ print_options()
 #if	__DEBUG
 	ListIterator iterator;
 	int i;
-	char *part, *user;
+	char *part;
+	uint32_t *user;
 	enum job_states *state_id;
 	squeue_job_step_t *job_step_id;
 	uint32_t *job_id;
@@ -268,7 +269,7 @@ print_options()
 		i = 0;
 		iterator = list_iterator_create( params.user_list );
 		while ( (user = list_next( iterator )) ) {
-			printf( "user_list[%d] = %s\n", i++, user);
+			printf( "user_list[%d] = %u\n", i++, *user);
 		}
 		list_iterator_destroy( iterator );
 	}
@@ -406,6 +407,8 @@ build_user_list( char* str )
 	List my_list;
 	char *user, *tmp_char, *my_user_list;
 	int i;
+	uint32_t *uid;
+	struct passwd *passwd_ptr;
 
 	if ( str == NULL)
 		return NULL;
@@ -416,7 +419,14 @@ build_user_list( char* str )
 	user = strtok_r( my_user_list, ",", &tmp_char );
 	while (user) 
 	{
-		list_append( my_list, user );
+		passwd_ptr = getpwnam( user );
+		if (passwd_ptr == NULL)
+			fprintf( stderr, "Invalid user: %s\n", user);
+		else {
+			uid = malloc( sizeof( uint32_t ));
+			*uid = passwd_ptr->pw_uid;
+			list_append( my_list, uid );
+		}
 		user = strtok_r (NULL, ",", &tmp_char);
 	}
 	return my_list;
