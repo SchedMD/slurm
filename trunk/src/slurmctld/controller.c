@@ -335,7 +335,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int sig;
 	int error_code;
 	sigset_t set;
-	char *pidfile = "/var/run/slurmctld.pid";
+	char *pidfile = DEFAULT_PIDFILE;
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
 		WRITE_LOCK, WRITE_LOCK
