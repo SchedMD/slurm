@@ -45,7 +45,9 @@ dnl
 
 dnl Checks for header files.
 dnl
-AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h stdbool.h)
+AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
+                 stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
+                 stdlib.h )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
 AC_HEADER_STDC
@@ -94,6 +96,18 @@ AC_SUBST(WITH_PTHREADS)
 LDFLAGS="$LDFLAGS $PTHREAD_CFLAGS"
 CPPFLAGS="$CPPFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
+
+SEMAPHORE_SOURCES=""
+SEMAPHORE_LIBS=""
+AC_CHECK_LIB(
+  posix4, 
+  sem_open, 
+  [SEMAPHORE_LIBS="-lposix4";
+   AC_DEFINE(HAVE_POSIX_SEMS, 1, [Define if you have Posix semaphores.])],
+  [SEMAPHORE_SOURCES="semaphore.c"]
+)
+AC_SUBST(SEMAPHORE_SOURCES)
+AC_SUBST(SEMAPHORE_LIBS)
 
 AC_CHECK_LIB(popt, poptGetNextOpt, [got_popt=yes], [got_popt=no])
 AM_CONDITIONAL(USE_INCLUDED_POPT, test $got_popt = no)
@@ -201,6 +215,7 @@ AC_ARG_WITH(elan,
 )
 AC_MSG_RESULT(${elan=no})
 AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
+HAVE_ELAN=0
 if test $with_elan; then
   AC_CHECK_LIB(elan3, elan3_create,
     [], 
@@ -210,8 +225,11 @@ if test $with_elan; then
     [],
     [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
   )
+  HAVE_ELAN=1
 fi
 
+AC_DEFINE_UNQUOTED(HAVE_ELAN, "$HAVE_ELAN", [Define to enable Elan support.])
+AC_SUBST(HAVE_ELAN)
 
 dnl OpenSSL location (taken from openssh configure.ac)
 dnl
