@@ -1,8 +1,9 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.1
+* Changes in SLURM 0.3.1 (not tagged yet)
 ========================
+ -- Set SLURM_TASKS_PER_NODE env var for batch jobs (and LAM/MPI).
  -- Fix for slurmd spinning when stdin buffers full (gnats:434)
 
 * Changes in SLURM 0.3.0

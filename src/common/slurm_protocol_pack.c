@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>, Moe Jette <jette1@llnl.gov>, et. al.
+ *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -2486,6 +2486,10 @@ _pack_batch_job_launch_msg(batch_job_launch_msg_t * msg, Buf buffer)
 	pack32(msg->job_id, buffer);
 	pack32(msg->uid, buffer);
 
+	pack16(msg->num_cpu_groups, buffer);
+	pack32_array(msg->cpus_per_node, msg->num_cpu_groups, buffer);
+	pack32_array(msg->cpu_count_reps, msg->num_cpu_groups, buffer);
+
 	packstr(msg->nodes, buffer);
 	packstr(msg->script, buffer);
 	packstr(msg->work_dir, buffer);
@@ -2505,6 +2509,7 @@ static int
 _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 {
 	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
 	batch_job_launch_msg_t *launch_msg_ptr;
 
 	assert(msg != NULL);
@@ -2513,6 +2518,23 @@ _unpack_batch_job_launch_msg(batch_job_launch_msg_t ** msg, Buf buffer)
 
 	safe_unpack32(&launch_msg_ptr->job_id, buffer);
 	safe_unpack32(&launch_msg_ptr->uid, buffer);
+
+	safe_unpack16(&launch_msg_ptr->num_cpu_groups, buffer);
+	if (launch_msg_ptr->num_cpu_groups > 0) {
+		safe_unpack32_array((uint32_t **) &
+				(launch_msg_ptr->cpus_per_node), &uint32_tmp,
+				buffer);
+		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
+		safe_unpack32_array((uint32_t **) &
+				(launch_msg_ptr->cpu_count_reps), &uint32_tmp,
+				buffer);
+		if (launch_msg_ptr->num_cpu_groups != uint32_tmp)
+			goto unpack_error;
+	} else {
+		launch_msg_ptr->cpus_per_node = NULL;
+		launch_msg_ptr->cpu_count_reps = NULL;
+	}
 
 	safe_unpackstr_xmalloc(&launch_msg_ptr->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&launch_msg_ptr->script, &uint16_tmp, buffer);
