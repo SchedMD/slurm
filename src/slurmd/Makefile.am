@@ -8,21 +8,16 @@ sbin_PROGRAMS = slurmd
 INCLUDES = -I$(top_srcdir) $(SSL_CPPFLAGS)
 
 if WITH_ELAN
-interconnect_lib = libelan_interconnect.la
-noinst_LTLIBRARIES = 		\
-	libelan_interconnect.la	
+interconnect_sources = elan_interconnect.c
 else
-interconnect_lib = libno_interconnect.la
-noinst_LTLIBRARIES = 		\
-	libno_interconnect.la	
+interconnect_sources = no_interconnect.c
 endif
 
-LDADD = $(top_builddir)/src/common/libcommon.la \
+slurmd_LDADD = \
+        $(top_builddir)/src/common/libcommon.la    \
 	$(top_builddir)/src/common/libdaemonize.la \
-	$(top_builddir)/src/common/libcred.la \
-	$(SSL_LIBS)
-
-slurmd_LDADD = $(LDADD) $(interconnect_lib)
+	$(top_builddir)/src/common/libcred.la      \
+	$(SSL_LIBS) 
 
 	
 common_sources = 	        \
@@ -40,9 +35,11 @@ common_sources = 	        \
 	setenvpf.c setenvpf.h   \
 	interconnect.h
 
-slurmd_SOURCES = $(common_sources)
+slurmd_SOURCES = $(common_sources) $(interconnect_sources)
 
+EXTRA_slurmd_SOURCES = no_interconnect.c elan_interconnect.c
 
-libelan_interconnect_la_SOURCES = elan_interconnect.c
-libno_interconnect_la_SOURCES   = no_interconnect.c
+force-dependency-check:
 
+$(slurmd_LDADD) : force-dependency-check
+	@cd `dirname $@` && $(MAKE) `basename $@`

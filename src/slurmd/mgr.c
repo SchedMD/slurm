@@ -742,9 +742,10 @@ _block_most_signals(void)
 	}
 	sigaddset(&set, SIGINT);
 	sigaddset(&set, SIGTERM);
-	sigaddset(&set, SIGSTOP);
+	/* sigaddset(&set, SIGSTOP); */
 	sigaddset(&set, SIGTSTP);
 	sigaddset(&set, SIGQUIT);
+	sigaddset(&set, SIGPIPE);
 	if (sigprocmask(SIG_BLOCK, &set, NULL) < 0) {
 		error("sigprocmask: %m");
 		return SLURM_ERROR;
