@@ -42,6 +42,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/macros.h"
 #include "src/common/slurm_xlator.h"
 
 #include "src/plugins/switch/elan/qsw.h"
@@ -400,9 +401,7 @@ int switch_p_node_init ( void )
 	if (_set_elan_ids() < 0)
 		return SLURM_ERROR;
 
-	if (pthread_attr_init(&attr))
-		error("pthread_attr_init: %m");
-
+	slurm_attr_init(&attr);
 	if (pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED))
 		error("pthread_attr_setdetachstate: %m");
 
