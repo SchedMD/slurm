@@ -975,6 +975,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 			if (state_val == NODE_STATE_DOWN) {
 				bit_clear (up_node_bitmap, node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
+				kill_running_job_by_node_name (this_node_name,
+							       false);
 			}
 			else if (state_val == NODE_STATE_UNKNOWN) {
 				bit_clear (up_node_bitmap, node_inx);
