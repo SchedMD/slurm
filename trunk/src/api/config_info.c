@@ -16,6 +16,8 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
@@ -26,6 +28,7 @@ static pthread_mutex_t build_api_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int
 main (int argc, char *argv[]) {
 	char req_name[BUILD_SIZE], next_name[BUILD_SIZE], value[BUILD_SIZE];
 	int error_code;
@@ -41,7 +44,7 @@ main (int argc, char *argv[]) {
 		if (error_code != 0) {
 			printf ("slurm_load_build_name error %d finding %s\n",
 				error_code, req_name);
-			break;
+			exit (1);
 		}		
 
 		printf ("%s=%s\n", req_name, value);
@@ -177,7 +180,7 @@ int slurm_load_build () {
 int slurm_load_build_name (char *req_name, char *next_name, char *value) {
 	int i, error_code, version, buffer_offset;
 	static char next_build_name[BUILD_SIZE] = "";
-	static last_buffer_offset;
+	static int last_buffer_offset;
 	unsigned long my_time;
 	char *my_line;
 	char my_build_name[BUILD_SIZE], my_build_value[BUILD_SIZE];

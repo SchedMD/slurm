@@ -15,12 +15,15 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int
 main (int argc, char *argv[]) {
 	int error_code;
 	char part_update1[] = "PartitionName=batch State=DOWN";
@@ -41,7 +44,7 @@ main (int argc, char *argv[]) {
 	if (error_code)
 		printf ("error %d for node_update2\n", error_code);
 
-	exit (0);
+	exit (error_code);
 }
 #endif
 
@@ -54,11 +57,10 @@ main (int argc, char *argv[]) {
 int
 update_config (char *spec) {
 	static int error_code;
-	int buffer_offset, buffer_size, in_size, version;
-	char *request_msg, *buffer, *my_line;
+	int buffer_offset, buffer_size, in_size;
+	char *request_msg, *buffer;
 	int sockfd;
 	struct sockaddr_in serv_addr;
-	unsigned long my_time;
 
 	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
 		return EINVAL;

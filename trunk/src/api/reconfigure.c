@@ -15,12 +15,15 @@
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int 
 main (int argc, char *argv[]) {
 	int i, count, error_code;
 
@@ -31,8 +34,10 @@ main (int argc, char *argv[]) {
 
 	for (i = 0; i < count; i++) {
 		error_code = reconfigure ();
-		if (error_code != 0)
+		if (error_code != 0) {
 			printf ("reconfigure error %d\n", error_code);
+			exit (1);
+		}
 	}
 	exit (0);
 }
@@ -45,11 +50,10 @@ main (int argc, char *argv[]) {
  */
 int
 reconfigure () {
-	int buffer_offset, buffer_size, error_code, in_size, version;
-	char request_msg[64], *buffer, *my_line;
+	int buffer_offset, buffer_size, error_code, in_size;
+	char request_msg[64], *buffer;
 	int sockfd;
 	struct sockaddr_in serv_addr;
-	unsigned long my_time;
 
 	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
 		return EINVAL;
