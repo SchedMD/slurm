@@ -1237,6 +1237,31 @@ int unpack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t ** msg_ptr 
 	return 0 ;
 }
 
+void pack_task_exit_msg ( task_exit_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> task_id , buffer , length ) ;
+	pack32 ( msg -> return_code , buffer , length ) ;
+}
+
+int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	task_exit_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( launch_tasks_response_msg_t ) ) ;
+	if (msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> task_id , buffer , length ) ;
+	unpack32 ( & msg -> return_code , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
+
 void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> return_code , buffer , length ) ;
