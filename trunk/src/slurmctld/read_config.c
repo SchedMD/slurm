@@ -23,7 +23,6 @@
 #include "list.h"
 
 #define BUF_SIZE 1024
-#define NO_VAL (-99)
 
 int parse_node_spec (char *in_line);
 int parse_part_spec (char *in_line);
@@ -325,25 +324,20 @@ parse_node_spec (char *in_line) {
 	if (node_name == NULL)
 		return 0;	/* no node info */
 
-	if (error_code == 0)
-		error_code = load_integer (&cpus_val, "CPUs=", in_line);
-	if (error_code == 0)
-		error_code =
-			load_integer (&real_memory_val, "RealMemory=",
-				      in_line);
-	if (error_code == 0)
-		error_code =
-			load_integer (&tmp_disk_val, "TmpDisk=", in_line);
-	if (error_code == 0)
-		error_code = load_integer (&weight_val, "Weight=", in_line);
-	if (error_code != 0) {
-		xfree (node_name);
-		return error_code;
-	}			
+	error_code = slurm_parser(in_line,
+		"Procs=", 'd', &cpus_val, 
+		"Feature=", 's', &feature, 
+		"RealMemory=", 'd', &real_memory_val, 
+		"State=", 's', &state, 
+		"TmpDisk=", 'd', &tmp_disk_val, 
+		"Weight=", 'd', &weight_val, 
+		"END");
 
-	if (error_code = load_string (&state, "State=", in_line))
-		return error_code;
+	if (error_code)
+		goto cleanup;
+
 	if (state != NULL) {
+		state_val = NO_VAL;
 		for (i = 0; i <= STATE_END; i++) {
 			if (strcmp (node_state_string[i], "END") == 0)
 				break;
@@ -355,31 +349,19 @@ parse_node_spec (char *in_line) {
 		if (state_val == NO_VAL) {
 			error ("parse_node_spec: invalid state %s for node_name %s",
 				 state, node_name);
-			xfree (node_name);
-			xfree (state);
-			return EINVAL;
-		}		
-		xfree (state);
+			error_code = EINVAL;
+			goto cleanup;
+		}	
 	}			
-
-	error_code = load_string (&feature, "Feature=", in_line);
-	if (error_code != 0) {
-		xfree (node_name);
-		return error_code;
-	}			
-
 
 	error_code = node_name2list(node_name, &node_list, &node_count);
-	if (error_code) {
-		xfree(node_name);
-		if (feature)
-			xfree (feature);
-		return error_code;
-	}
+	if (error_code)
+		goto cleanup;
 
 	for (i = 0; i < node_count; i++) {
 		if (strcmp (&node_list[i*MAX_NAME_LEN], "DEFAULT") == 0) {
 			xfree(node_name);
+			node_name = NULL;
 			if (cpus_val != NO_VAL)
 				default_config_record.cpus = cpus_val;
 			if (real_memory_val != NO_VAL)
@@ -399,13 +381,7 @@ parse_node_spec (char *in_line) {
 		}
 
 		if (i == 0) {
-			config_point = create_config_record (&error_code);
-			if (error_code != 0) {
-				xfree(node_name);
-				if (feature)
-					xfree (feature);
-				break;
-			}
+			config_point = create_config_record ();
 			if (config_point->nodes)
 				free(config_point->nodes);	
 			config_point->nodes = node_name;
@@ -427,10 +403,8 @@ parse_node_spec (char *in_line) {
 		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
 		if (node_record_point == NULL) {
 			node_record_point =
-				create_node_record (&error_code, config_point, 
+				create_node_record (config_point, 
 							&node_list[i*MAX_NAME_LEN]);
-			if (error_code != 0)
-				break;
 			if (state_val != NO_VAL)
 				node_record_point->node_state = state_val;
 		}
@@ -441,8 +415,19 @@ parse_node_spec (char *in_line) {
 	}
 
 	/* xfree allocated storage */
+	if (state)
+		xfree(state);
 	if (node_list)
 		xfree (node_list);
+	return error_code;
+
+      cleanup:
+	if (node_name)
+		xfree(node_name);
+	if (feature)
+		xfree(feature);
+	if (state)
+		xfree(state);
 	return error_code;
 }
 
@@ -457,13 +442,15 @@ int
 parse_part_spec (char *in_line) {
 	int line_num;		/* line number in input file */
 	char *allow_groups, *nodes, *partition_name;
-	int max_time_val, max_nodes_val, key_val, default_val, state_up_val,
+	char *default_str, *key_str, *shared_str, *state_str;
+	int max_time_val, max_nodes_val, key_val, default_val, state_val,
 		shared_val;
 	int error_code, i;
 	struct part_record *part_record_point;
 
-	allow_groups = nodes = partition_name = (char *) NULL;
-	max_time_val = max_nodes_val = key_val = default_val = state_up_val =
+	partition_name = (char *) NULL;
+	default_str = shared_str = state_str = (char *) NULL;
+	max_time_val = max_nodes_val = key_val = default_val = state_val =
 		shared_val = NO_VAL;
 
 	if (error_code =
@@ -478,56 +465,83 @@ parse_part_spec (char *in_line) {
 		return EINVAL;
 	}			
 
-	if (error_code == 0)
-		error_code = load_integer (&max_time_val, "MaxTime=", in_line);
-	if (error_code == 0)
-		error_code = load_integer (&max_nodes_val, "MaxNodes=", in_line);
-	if (error_code == 0)
-		error_code = load_integer (&default_val, "Default=NO", in_line);
-	if (default_val == 1)
-		default_val = 0;
-	if (error_code == 0)
-		error_code = load_integer (&default_val, "Default=YES", in_line);
-	if (error_code == 0)
-		error_code = load_integer (&shared_val, "Shared=NO", in_line);
-	if (state_up_val == 1)
-		shared_val = 0;
-	if (error_code == 0)
-		error_code = load_integer (&shared_val, "Shared=FORCE", in_line);
-	if (state_up_val == 1)
-		shared_val = 2;
-	if (error_code == 0)
-		error_code = load_integer (&shared_val, "Shared=YES", in_line);
-	if (error_code == 0)
-		error_code = load_integer (&state_up_val, "State=DOWN", in_line);
-	if (state_up_val == 1)
-		state_up_val = 0;
-	if (error_code == 0)
-		error_code = load_integer (&state_up_val, "State=UP", in_line);
-	if (error_code == 0)
-		error_code = load_integer (&key_val, "Key=NO", in_line);
-	if (key_val == 1)
-		key_val = 0;
-	if (error_code == 0)
-		error_code = load_integer (&key_val, "Key=YES", in_line);
-	if (error_code != 0) {
-		xfree (partition_name);
-		return error_code;
-	}			
+	allow_groups = default_str = key_str = nodes = NULL;
+	shared_str = state_str = NULL;
+	error_code = slurm_parser(in_line,
+		"AllowGroups=", 's', &allow_groups, 
+		"Default=", 's', &default_str, 
+		"Key=", 's', &key_str, 
+		"MaxTime=", 'd', &max_time_val, 
+		"MaxNodes=", 'd', &max_nodes_val, 
+		"Nodes=", 's', &nodes, 
+		"Shared=", 's', &shared_str, 
+		"State=", 's', &state_str, 
+		"END");
 
-	error_code = load_string (&nodes, "Nodes=", in_line);
-	if (error_code) {
-		xfree (partition_name);
-		return error_code;
-	}			
+	if (error_code) 
+		goto cleanup;
 
-	error_code = load_string (&allow_groups, "AllowGroups=", in_line);
-	if (error_code) {
-		xfree (partition_name);
-		if (nodes)
-			xfree (nodes);
-		return error_code;
-	}			
+	if (default_str) {
+		if (strcmp(default_str, "YES") == 0)
+			default_val = 1;
+		else if (strcmp(default_str, "NO") == 0)
+			default_val = 0;
+		else {
+			error ("update_part: ignored partition %s update, bad state %s",
+			    partition_name, default_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+		xfree (default_str);
+		default_str = NULL;
+	}
+
+	if (key_str) {
+		if (strcmp(key_str, "YES") == 0)
+			key_val = 1;
+		else if (strcmp(key_str, "NO") == 0)
+			key_val = 0;
+		else {
+			error ("update_part: ignored partition %s update, bad key %s",
+			    partition_name, key_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+		xfree (key_str);
+		key_str = NULL;
+	}
+
+	if (shared_str) {
+		if (strcmp(shared_str, "YES") == 0)
+			shared_val = 1;
+		else if (strcmp(shared_str, "NO") == 0)
+			shared_val = 0;
+		else if (strcmp(shared_str, "FORCE") == 0)
+			shared_val = 2;
+		else {
+			error ("update_part: ignored partition %s update, bad shared %s",
+			    partition_name, shared_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+		xfree (shared_str);
+		shared_str = NULL;
+	}
+
+	if (state_str) {
+		if (strcmp(state_str, "UP") == 0)
+			state_val = 1;
+		else if (strcmp(state_str, "DOWN") == 0)
+			state_val = 0;
+		else {
+			error ("update_part: ignored partition %s update, bad state %s",
+			    partition_name, state_str);
+			error_code = EINVAL;
+			goto cleanup;
+		}
+		xfree (state_str);
+		state_str = NULL;
+	}
 
 	if (strcmp (partition_name, "DEFAULT") == 0) {
 		xfree (partition_name);
@@ -537,8 +551,8 @@ parse_part_spec (char *in_line) {
 			default_part.max_nodes = max_nodes_val;
 		if (key_val != NO_VAL)
 			default_part.key = key_val;
-		if (state_up_val != NO_VAL)
-			default_part.state_up = state_up_val;
+		if (state_val != NO_VAL)
+			default_part.state_up = state_val;
 		if (shared_val != NO_VAL)
 			default_part.shared = shared_val;
 		if (allow_groups) {
@@ -556,15 +570,7 @@ parse_part_spec (char *in_line) {
 
 	part_record_point = list_find_first (part_list, &list_find_part, partition_name);
 	if (part_record_point == NULL) {
-		part_record_point = create_part_record (&error_code);
-		if (error_code) {
-			xfree (partition_name);
-			if (nodes)
-				xfree (nodes);
-			if (allow_groups)
-				xfree (allow_groups);
-			return error_code;
-		}		
+		part_record_point = create_part_record ();
 		strcpy (part_record_point->name, partition_name);
 	}
 	else {
@@ -583,8 +589,8 @@ parse_part_spec (char *in_line) {
 		part_record_point->max_nodes = max_nodes_val;
 	if (key_val != NO_VAL)
 		part_record_point->key = key_val;
-	if (state_up_val != NO_VAL)
-		part_record_point->state_up = state_up_val;
+	if (state_val != NO_VAL)
+		part_record_point->state_up = state_val;
 	if (shared_val != NO_VAL)
 		part_record_point->shared = shared_val;
 	if (allow_groups) {
@@ -599,6 +605,23 @@ parse_part_spec (char *in_line) {
 	}			
 	xfree (partition_name);
 	return 0;
+
+      cleanup:
+	if (allow_groups)
+		xfree(allow_groups);
+	if (default_str)
+		xfree(default_str);
+	if (key_str)
+		xfree(key_str);
+	if (nodes)
+		xfree(nodes);
+	if (partition_name)
+		xfree(partition_name);
+	if (shared_str)
+		xfree(shared_str);
+	if (state_str)
+		xfree(state_str);
+	return error_code;
 }
 
 
@@ -661,13 +684,11 @@ read_slurm_conf (char *file_name) {
 
 		/* parse what is left */
 		/* overall slurm configuration parameters */
-		if (error_code =
-		    load_string (&control_machine, "ControlMachine=", in_line)) {
-			fclose (slurm_spec_file);
-			return error_code;
-		}		
-		if (error_code =
-		    load_string (&backup_controller, "BackupController=", in_line)) {
+		error_code = slurm_parser(in_line,
+			"ControlMachine=", 's', &control_machine, 
+			"BackupController=", 's', &backup_controller, 
+			"END");
+		if (error_code) {
 			fclose (slurm_spec_file);
 			return error_code;
 		}		

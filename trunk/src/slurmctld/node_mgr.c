@@ -81,9 +81,7 @@ main (int argc, char *argv[])
 	default_config_record.weight = 89;
 	default_node_record.last_response = (time_t) 678;
 
-	config_ptr = create_config_record (&error_code);
-	if (error_code)
-		printf ("ERROR: create_config_record error %d\n", error_code);
+	config_ptr = create_config_record ();
 	if (config_ptr->cpus != 12)
 		printf ("ERROR: config default cpus not set\n");
 	if (config_ptr->real_memory != 345)
@@ -95,12 +93,8 @@ main (int argc, char *argv[])
 	config_ptr->feature = "for_lx01,lx02";
 	config_ptr->nodes = "lx[01-02]";
 	config_ptr->node_bitmap = map1;
-	node_ptr = create_node_record (&error_code, config_ptr, "lx01");
-	if (error_code)
-		printf ("ERROR: create_node_record error %d\n", error_code);
-	node_ptr = create_node_record (&error_code, config_ptr, "lx02");
-	if (error_code)
-		printf ("ERROR: create_node_record error %d\n", error_code);
+	node_ptr = create_node_record (config_ptr, "lx01");
+	node_ptr = create_node_record (config_ptr, "lx02");
 
 	up_node_bitmap   = (bitstr_t *) bit_alloc (8);
 	idle_node_bitmap = (bitstr_t *) bit_alloc (8);
@@ -113,14 +107,12 @@ main (int argc, char *argv[])
 		printf ("ERROR: update_node error2 node_state=%d\n",
 			node_ptr->node_state);
 
-	config_ptr = create_config_record (&error_code);
+	config_ptr = create_config_record ();
 	config_ptr->cpus = 543;
 	config_ptr->nodes = "lx[03-20]";
 	config_ptr->feature = "for_lx03,lx04";
 	config_ptr->node_bitmap = map2;
-	node_ptr = create_node_record (&error_code, config_ptr, "lx03");
-	if (error_code)
-		printf ("ERROR: create_node_record error %d\n", error_code);
+	node_ptr = create_node_record (config_ptr, "lx03");
 	if (node_ptr->last_response != (time_t) 678)
 		printf ("ERROR: node default last_response not set\n");
 	if (node_ptr->cpus != 543)
@@ -129,13 +121,11 @@ main (int argc, char *argv[])
 		printf ("ERROR: node default real_memory not set\n");
 	if (node_ptr->tmp_disk != 67)
 		printf ("ERROR: node default tmp_disk not set\n");
-	node_ptr = create_node_record (&error_code, config_ptr, "lx04");
-	if (error_code)
-		printf ("ERROR: create_node_record error %d\n", error_code);
+	node_ptr = create_node_record (config_ptr, "lx04");
 
 	error_code = node_name2list (node_names, &node_list, &node_count);
 	if (error_code)
-		printf ("ERROR: node_name2bitmap error %d\n", error_code);
+		printf ("ERROR: node_name2list error %d\n", error_code);
 	printf("node_name2list for %s generates\n  ", node_names);
 	for (i = 0; i < node_count; i++)
 		printf("%s ", &node_list[i*MAX_NAME_LEN]);
@@ -303,15 +293,13 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 
 /*
  * create_config_record - create a config_record entry and set is values to the defaults.
- * input: error_code - pointer to an error code
  * output: returns pointer to the config_record
- *         error_code - set to zero if no error, errno otherwise
  * global: default_config_record - default configuration values
  * NOTE: memory allocated will remain in existence until delete_config_record() is called 
  *	to deletet all configuration records
  */
 struct config_record * 
-create_config_record (int *error_code) 
+create_config_record (void) 
 {
 	struct config_record *config_point;
 
@@ -346,11 +334,9 @@ create_config_record (int *error_code)
 
 /* 
  * create_node_record - create a node record and set its values to defaults
- * input: error_code - location to store error value in
- *        config_point - pointer to node's configuration information
+ * input: config_point - pointer to node's configuration information
  *        node_name - name of the node
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or NULL if error
+ * output: returns a pointer to the record or NULL if error
  * global: default_node_record - default node values
  * NOTE: the record's values are initialized to those of default_node_record, node_name and 
  *	config_point's cpus, real_memory, and tmp_disk values
@@ -358,15 +344,12 @@ create_config_record (int *error_code)
  *	global node table is no longer required
  */
 struct node_record * 
-create_node_record (int *error_code, struct config_record *config_point,
-		    char *node_name) 
+create_node_record (struct config_record *config_point, char *node_name) 
 {
 	struct node_record *node_record_point;
 	int old_buffer_size, new_buffer_size;
 
-	*error_code = 0;
 	last_node_update = time (NULL);
-
 	if (config_point == NULL)
 		fatal ("create_node_record: invalid config_point");
 	if (node_name == NULL) 
@@ -1041,7 +1024,10 @@ update_node (char *node_names, char *spec)
 
 	state_val = NO_VAL;
 	state = NULL;
-	if (error_code = load_string (&state, "State=", spec))
+	error_code = slurm_parser (spec,
+		"State=", 's', &state, 
+		"END");
+	if (error_code)
 		return error_code;
 	if (state != NULL) {
 		for (i = 0; i <= STATE_END; i++) {

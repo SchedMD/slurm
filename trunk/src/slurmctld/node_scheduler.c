@@ -20,7 +20,6 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define NO_VAL (-99)
 
 struct node_set {		/* set of nodes with same configuration that could be allocated */
 	int cpus_per_node;
@@ -30,15 +29,6 @@ struct node_set {		/* set of nodes with same configuration that could be allocat
 	bitstr_t *my_bitmap;
 };
 
-int count_cpus (unsigned *bitmap);
-int is_key_valid (int key);
-int match_group (char *allow_groups, char *user_groups);
-int match_feature (char *seek, char *available);
-int parse_job_specs (char *job_specs, char **req_features,
-		     char **req_node_list, char **job_name, char **req_group,
-		     char **req_partition, int *contiguous, int *req_cpus,
-		     int *req_nodes, int *min_cpus, int *min_memory,
-		     int *min_tmp_disk, int *key, int *shared);
 int pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 		    int req_cpus, int consecutive);
 int pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
@@ -48,7 +38,8 @@ int valid_features (char *requested, char *available);
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
-main (int argc, char *argv[]) {
+main (int argc, char *argv[]) 
+{
 	int error_code, line_num, i;
 	FILE *command_file;
 	char in_line[BUF_SIZE], *node_list;
@@ -139,7 +130,8 @@ main (int argc, char *argv[]) {
  *	node_record_table_ptr - pointer to global node table
  */
 void 
-allocate_nodes (unsigned *bitmap) {
+allocate_nodes (unsigned *bitmap) 
+{
 	int i;
 
 	for (i = 0; i < node_record_count; i++) {
@@ -160,7 +152,8 @@ allocate_nodes (unsigned *bitmap) {
  *	node_record_table_ptr - pointer to global node table
  */
 int 
-count_cpus (unsigned *bitmap) {
+count_cpus (unsigned *bitmap) 
+{
 	int i, sum;
 
 	sum = 0;
@@ -180,7 +173,8 @@ count_cpus (unsigned *bitmap) {
  * NOTE: this is only a placeholder for a future function
  */
 int 
-is_key_valid (int key) {
+is_key_valid (int key) 
+{
 	if (key == NO_VAL)
 		return 0;
 	return 1;
@@ -194,7 +188,8 @@ is_key_valid (int key) {
  * output: returns 1 if found, 0 otherwise
  */
 int 
-match_feature (char *seek, char *available) {
+match_feature (char *seek, char *available) 
+{
 	char *tmp_available, *str_ptr3, *str_ptr4;
 	int found;
 
@@ -229,7 +224,8 @@ match_feature (char *seek, char *available) {
  * output: returns 1 if user is member, 0 otherwise
  */
 int
-match_group (char *allow_groups, char *user_groups) {
+match_group (char *allow_groups, char *user_groups) 
+{
 	char *tmp_allow_group, *str_ptr1, *str_ptr2;
 	char *tmp_user_group, *str_ptr3, *str_ptr4;
 
@@ -264,119 +260,6 @@ match_group (char *allow_groups, char *user_groups) {
 }
 
 
-/* 
- * parse_job_specs - pick the appropriate fields out of a job request specification
- * input: job_specs - string containing the specification
- *        req_features, etc. - pointers to storage for the specifications
- * output: req_features, etc. - the job's specifications
- *         returns 0 if no error, errno otherwise
- * NOTE: the calling function must xfree memory at req_features[0], req_node_list[0],
- *	job_name[0], req_group[0], and req_partition[0]
- */
-int 
-parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
-		 char **job_name, char **req_group, char **req_partition,
-		 int *contiguous, int *req_cpus, int *req_nodes,
-		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
-		 int *shared) {
-	int bad_index, error_code, i;
-	char *temp_specs;
-
-	req_features[0] = req_node_list[0] = req_group[0] = req_partition[0] =
-		job_name[0] = NULL;
-	*contiguous = *req_cpus = *req_nodes = *min_cpus = *min_memory =
-		*min_tmp_disk = NO_VAL;
-	*key = *shared = NO_VAL;
-
-	temp_specs = xmalloc (strlen (job_specs) + 1);
-	strcpy (temp_specs, job_specs);
-
-	error_code = load_string (job_name, "JobName=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_string (req_features, "Features=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_string (req_node_list, "NodeList=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_string (req_group, "Groups=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_string (req_partition, "Partition=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (contiguous, "Contiguous", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (req_cpus, "TotalCPUs=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (req_nodes, "TotalNodes=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (min_cpus, "MinCPUs=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (min_memory, "MinMemory=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (min_tmp_disk, "MinTmpDisk=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (key, "Key=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	error_code = load_integer (shared, "Shared=", temp_specs);
-	if (error_code)
-		goto cleanup;
-
-	bad_index = -1;
-	for (i = 0; i < strlen (temp_specs); i++) {
-		if (isspace ((int) temp_specs[i]) || (temp_specs[i] == '\n'))
-			continue;
-		bad_index = i;
-		break;
-	}			
-
-	if (bad_index != -1) {
-		error ("parse_job_specs: bad job specification input: %s",
-			 &temp_specs[bad_index]);
-		error_code = EINVAL;
-	}			
-
-	xfree (temp_specs);
-	return error_code;
-
-      cleanup:
-	xfree (temp_specs);
-	if (req_features[0])
-		xfree (req_features[0]);
-	if (req_node_list[0])
-		xfree (req_node_list[0]);
-	if (req_group[0])
-		xfree (req_group[0]);
-	if (req_partition[0])
-		xfree (req_partition[0]);
-	if (job_name[0])
-		xfree (job_name[0]);
-	req_features[0] = req_node_list[0] = req_group[0] = req_partition[0] =
-		job_name[0] = NULL;
-}
-
-
 /*
  * pick_best_quadrics - identify the nodes which best fit the req_nodes and req_cpus counts
  *	for a system with Quadrics elan interconnect.
@@ -397,7 +280,8 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
  */
 int
 pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
-		int req_cpus, int consecutive) {
+		int req_cpus, int consecutive) 
+{
 	int i, index, error_code, sufficient;
 	int *consec_nodes;	/* how many nodes we can add from this consecutive set of nodes */
 	int *consec_cpus;	/* how many nodes we can add from this consecutive set of nodes */
@@ -581,7 +465,8 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 int
 pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t **req_bitmap, int req_cpus, int req_nodes,
-		 int contiguous, int shared, int max_nodes) {
+		 int contiguous, int shared, int max_nodes) 
+{
 	int error_code, i, j, size;
 	int total_nodes, total_cpus;	/* total resources configured in partition */
 	int avail_nodes, avail_cpus;	/* resources available for use now */
@@ -733,15 +618,19 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
  * output: node_list - list of allocated nodes
  *         returns 0 on success, EINVAL if not possible to satisfy request, 
  *		or EAGAIN if resources are presently busy
+ * globals: list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
  * NOTE: the calling program must xfree the memory pointed to by node_list
  */
 int
-select_nodes (char *job_specs, char **node_list) {
-	char *req_features, *req_node_list, *job_name, *req_group,
-		*req_partition, *out_line;
-	int contiguous, req_cpus, req_nodes, min_cpus, min_memory,
-		min_tmp_disk;
-	int error_code, cpu_tally, node_tally, key, shared;
+select_nodes (char *job_specs, char **node_list) 
+{
+	char *req_features, *req_node_list, *job_name, *req_group;
+	char *req_partition, *out_line, *script, *job_id;
+	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
+	int min_tmp_disk, time_limit, procs_per_task, dist;
+	int error_code, cpu_tally, node_tally, key, shared, user_id;
+	float priority;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap, *scratch_bitmap;
 	ListIterator config_record_iterator;	/* for iterating through config_list */
@@ -750,11 +639,11 @@ select_nodes (char *job_specs, char **node_list) {
 	struct node_set *node_set_ptr;
 	int node_set_index, node_set_size;
 
-	req_features = req_node_list = job_name = req_group = req_partition =
-		NULL;
+	req_features = req_node_list = job_name = req_group = NULL;
 	req_bitmap = scratch_bitmap = NULL;
-	contiguous = req_cpus = req_nodes = min_cpus = min_memory =
-		min_tmp_disk = NO_VAL;
+	req_partition = script = job_id = NULL;
+	contiguous = req_cpus = req_nodes = min_cpus = NO_VAL;
+	min_memory = min_tmp_disk = NO_VAL;
 	key = shared = NO_VAL;
 	node_set_ptr = NULL;
 	config_record_iterator = NULL;
@@ -764,19 +653,20 @@ select_nodes (char *job_specs, char **node_list) {
 	part_lock ();
 
 	/* setup and basic parsing */
-	error_code =
+	error_code =	
 		parse_job_specs (job_specs, &req_features, &req_node_list,
 				 &job_name, &req_group, &req_partition,
 				 &contiguous, &req_cpus, &req_nodes,
 				 &min_cpus, &min_memory, &min_tmp_disk, &key,
-				 &shared);
+				 &shared, &dist, &script, &time_limit, 
+				 &procs_per_task, &job_id, &priority, &user_id);
 	if (error_code != 0) {
 		error_code = EINVAL;	/* permanent error, invalid parsing */
 		error ("select_nodes: parsing failure on %s", job_specs);
 		goto cleanup;
 	}			
 	if ((req_cpus == NO_VAL) && (req_nodes == NO_VAL) && (req_node_list == NULL)) {
-		info ("select_nodes: job failed to specify node_list, cpu or node count");
+		info ("select_nodes: job failed to specify ReqNodes, TotalNodes or TotalProcs");
 		error_code = EINVAL;
 		goto cleanup;
 	}			
@@ -914,8 +804,8 @@ select_nodes (char *job_specs, char **node_list) {
 		/* check configuration of individual nodes only if the check of baseline */
 		/* values in the configuration file are too low. this will slow the scheduling */
 		/* for very large cluster. */
-		if (check_node_config
-		    && (node_set_ptr[node_set_index].nodes != 0)) {
+		if ((FAST_SCHEDULE == 0) && check_node_config && 
+		    (node_set_ptr[node_set_index].nodes != 0)) {
 			for (i = 0; i < node_record_count; i++) {
 				if (bit_test
 				    (node_set_ptr[node_set_index].my_bitmap, i) == 0)
@@ -1045,7 +935,8 @@ select_nodes (char *job_specs, char **node_list) {
  *		requirements are satisfied without mutually exclusive feature list.
  */
 int
-valid_features (char *requested, char *available) {
+valid_features (char *requested, char *available) 
+{
 	char *tmp_requested, *str_ptr1;
 	int bracket, found, i, option, position, result;
 	int last_op;		/* last operation 0 for or, 1 for and */

@@ -18,7 +18,6 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define NO_VAL   -9876
 
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
@@ -282,7 +281,7 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size,
 	int detail) 
 {
 	char *job_id, *name, *partition, *nodes, *req_nodes, *features;
-	char *groups, *job_script;
+	char *job_script;
 	struct job_details *detail_ptr;
 
 	if (dump_job_ptr->job_id)
@@ -340,12 +339,7 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size,
 			features = detail_ptr->features;
 		else
 			features = "NONE";
-	
-		if (detail_ptr->groups)
-			groups = detail_ptr->groups;
-		else
-			groups = "NONE";
-	
+
 		if (detail_ptr->job_script)
 			job_script = detail_ptr->job_script;
 		else
@@ -355,7 +349,7 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size,
 		     strlen(partition) + strlen(name) + strlen(nodes) + 
 		     strlen(job_state_string[dump_job_ptr->job_state]) + 
 		     strlen(req_nodes) + strlen(features) + 
-		     strlen(groups) + strlen(job_script) + 20) > out_line_size) {
+		     strlen(job_script) + 20) > out_line_size) {
 			error ("dump_job: buffer too small for job %s", job_id);
 			return 1;
 		}
@@ -375,7 +369,6 @@ dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size,
 			 detail_ptr->num_nodes, 
 			 req_nodes, 
 			 features, 
-			 groups, 
 			 detail_ptr->shared, 
 			 detail_ptr->contiguous, 
 			 detail_ptr->min_procs, 
@@ -427,6 +420,240 @@ init_job_conf ()
 	if (job_list == NULL)
 		fatal ("init_job_conf: list_create can not allocate memory");
 	return 0;
+}
+
+
+/*
+ * job_create - parse the suppied job specification and create job_records for it
+ * input: job_specs - job specifications
+ * output: returns 0 on success, EINVAL if specification is invalid
+ * globals: job_list - pointer to global job list 
+ *	list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
+ */
+int
+job_create (char *job_specs)
+{
+	char *req_features, *req_node_list, *job_name, *req_group;
+	char *req_partition, *script, *out_line, *job_id;
+	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
+	int i, min_tmp_disk, time_limit, procs_per_task, user_id;
+	int error_code, cpu_tally, dist, node_tally, key, shared;
+	char *job_script;
+	struct part_record *part_ptr;
+	struct job_record *job_ptr;
+	struct job_details *detail_ptr;
+	float priority;
+	bitstr_t *req_bitmap;
+
+	req_features = req_node_list = job_name = req_group = NULL;
+	job_id = req_partition = script = NULL;
+	req_bitmap = NULL;
+	contiguous = dist = req_cpus = req_nodes = min_cpus = NO_VAL;
+	min_memory = min_tmp_disk = time_limit = procs_per_task = NO_VAL;
+	key = shared = user_id = NO_VAL;
+	priority = (float) NO_VAL;
+
+	/* setup and basic parsing */
+	error_code =
+		parse_job_specs (job_specs, &req_features, &req_node_list,
+				 &job_name, &req_group, &req_partition,
+				 &contiguous, &req_cpus, &req_nodes,
+				 &min_cpus, &min_memory, &min_tmp_disk, &key,
+				 &shared, &dist, &script, &time_limit, 
+				 &procs_per_task, &job_id, &priority, &user_id);
+	if (error_code != 0) {
+		error_code = EINVAL;	/* permanent error, invalid parsing */
+		error ("job_create: parsing failure on %s", job_specs);
+		goto cleanup;
+	}			
+	if ((req_cpus == NO_VAL) && (req_nodes == NO_VAL) && 
+	    (req_node_list == NULL)) {
+		info ("job_create: job failed to specify ReqNodes, TotalNodes or TotalProcs");
+		error_code = EINVAL;
+		goto cleanup;
+	}
+	if (script == NULL) {
+		info ("job_create: job failed to specify Script");
+		error_code = EINVAL;
+		goto cleanup;
+	}			
+	if (user_id == NO_VAL) {
+		info ("job_create: job failed to User");
+		error_code = EINVAL;
+		goto cleanup;
+	}	
+	if (contiguous == NO_VAL)
+		contiguous = 0;		/* default not contiguous */
+	if (req_cpus == NO_VAL)
+		req_cpus = 0;		/* default no cpu count requirements */
+	if (req_nodes == NO_VAL)
+		req_nodes = 0;		/* default no node count requirements */
+	if (min_cpus == NO_VAL)
+		min_cpus = 1;		/* default is 1 processor per node */
+	if (min_memory == NO_VAL)
+		min_memory = 1;		/* default is 1 MB memory per node */
+	if (min_tmp_disk == NO_VAL)
+		min_tmp_disk = 1;	/* default is 1 MB disk per node */
+	if (shared == NO_VAL)
+		shared = 0;		/* default is not shared nodes */
+	if (dist == NO_VAL)
+		dist = 0;		/* default is block distribution */
+	if (procs_per_task == NO_VAL)
+		procs_per_task = 1;	/* default is 1 processor per task */
+
+
+	/* find selected partition */
+	if (req_partition) {
+		part_ptr = list_find_first (part_list, &list_find_part,
+					 req_partition);
+		if (part_ptr == NULL) {
+			info ("job_create: invalid partition specified: %s",
+				 req_partition);
+			error_code = EINVAL;
+			goto cleanup;
+		}		
+	}
+	else {
+		if (default_part_loc == NULL) {
+			error ("job_create: default partition not set.");
+			error_code = EINVAL;
+			goto cleanup;
+		}		
+		part_ptr = default_part_loc;
+	}
+	if (time_limit == NO_VAL)	/* Default time_limit is partition maximum */
+		time_limit = part_ptr->max_time;
+
+
+	/* can this user access this partition */
+	if (part_ptr->key && (is_key_valid (key) == 0)) {
+		info ("select_nodes: job lacks key required of partition %s",
+			 part_ptr->name);
+		error_code = EINVAL;
+		goto cleanup;
+	}			
+	if (match_group (part_ptr->allow_groups, req_group) == 0) {
+		info ("select_nodes: job lacks group required of partition %s",
+			 part_ptr->name);
+		error_code = EINVAL;
+		goto cleanup;
+	}
+	if (req_group)
+		xfree(req_group);
+
+
+	/* check if select partition has sufficient resources to satisfy request */
+	if (req_node_list) {	/* insure that selected nodes are in this partition */
+		error_code = node_name2bitmap (req_node_list, &req_bitmap);
+		if (error_code == EINVAL)
+			goto cleanup;
+		if (error_code != 0) {
+			error_code = EAGAIN;	/* no memory */
+			goto cleanup;
+		}		
+		if (contiguous == 1)
+			bit_fill_gaps (req_bitmap);
+		if (bit_super_set (req_bitmap, part_ptr->node_bitmap) != 1) {
+			info ("select_nodes: requested nodes %s not in partition %s",
+				req_node_list, part_ptr->name);
+			error_code = EINVAL;
+			goto cleanup;
+		}		
+		i = count_cpus (req_bitmap);
+		if (i > req_cpus)
+			req_cpus = i;
+		i = bit_set_count (req_bitmap);
+		if (i > req_nodes)
+			req_nodes = i;
+		bit_free (req_bitmap);
+	}			
+	if (req_cpus > part_ptr->total_cpus) {
+		info ("select_nodes: too many cpus (%d) requested of partition %s(%d)",
+			req_cpus, part_ptr->name, part_ptr->total_cpus);
+		error_code = EINVAL;
+		goto cleanup;
+	}			
+	if ((req_nodes > part_ptr->total_nodes) || 
+	    (req_nodes > part_ptr->max_nodes)) {
+		if (part_ptr->total_nodes > part_ptr->max_nodes)
+			i = part_ptr->max_nodes;
+		else
+			i = part_ptr->total_nodes;
+		info ("select_nodes: too many nodes (%d) requested of partition %s(%d)",
+			 req_nodes, part_ptr->name, i);
+		error_code = EINVAL;
+		goto cleanup;
+	}			
+	if (part_ptr->shared == 2)	/* shared=force */
+		shared = 1;
+	else if ((shared != 1) || (part_ptr->shared == 0)) /* user or partition want no sharing */
+		shared = 0;
+
+	job_ptr = create_job_record (&error_code);
+	if ((job_ptr == NULL) || error_code)
+		goto cleanup;
+
+	if (job_id) {
+		strncpy (job_ptr->job_id, job_id, MAX_ID_LEN);
+		xfree (job_id);
+		job_id = NULL;
+	}
+	else
+		set_job_id(job_ptr);
+	if (job_name) {
+		strncpy (job_ptr->name, job_name, MAX_NAME_LEN);
+		xfree (job_name);
+	}
+	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
+	job_ptr->user_id = (uid_t) user_id;
+	job_ptr->job_state = JOB_PENDING;
+	job_ptr->time_limit = time_limit;
+	if (key && is_key_valid (key) && ((priority - NO_VAL) > 0.01))
+		job_ptr->priority = priority;
+	else
+		set_job_prio (job_ptr);
+
+	detail_ptr = job_ptr->details;
+	detail_ptr->num_procs = req_cpus;
+	detail_ptr->num_nodes = req_nodes;
+	if (req_nodes)
+		detail_ptr->nodes = req_node_list;
+	if (req_features)
+		detail_ptr->features = req_features;
+	detail_ptr->shared = shared;
+	detail_ptr->contiguous = contiguous;
+	detail_ptr->min_procs = min_cpus;
+	detail_ptr->min_memory = min_memory;
+	detail_ptr->min_tmp_disk = min_tmp_disk;
+	detail_ptr->dist = dist;
+	detail_ptr->job_script = script;
+	detail_ptr->procs_per_task = procs_per_task;
+	/* job_ptr->nodes		*leave as NULL pointer for now */
+	/* job_ptr->start_time		*leave as NULL pointer for now */
+	/* job_ptr->end_time		*leave as NULL pointer for now */
+	/* detail_ptr->total_procs	*leave as NULL pointer for now */
+
+	return 0;
+
+      cleanup:
+	if (job_id)
+		xfree (job_id);
+	if (job_name)
+		xfree (job_name);
+	if (req_bitmap)
+		bit_free (req_bitmap);
+	if (req_group)
+		xfree (req_group);
+	if (req_features)
+		xfree (req_features);
+	if (req_node_list)
+		xfree (req_node_list);
+	if (req_partition)
+		xfree (req_partition);
+	if (script)
+		xfree (script);
+	return error_code;
 }
 
 
@@ -484,8 +711,6 @@ list_delete_job (void *job_entry)
 			xfree(job_record_point->details->nodes);
 		if (job_record_point->details->features)
 			xfree(job_record_point->details->features);
-		if (job_record_point->details->groups)
-			xfree(job_record_point->details->groups);
 		xfree(job_record_point->details);
 	}
 
@@ -529,6 +754,139 @@ list_find_job_old (void *job_entry, void *key)
 		return 0;
 
 	return 1;
+}
+
+
+/* 
+ * parse_job_specs - pick the appropriate fields out of a job request specification
+ * input: job_specs - string containing the specification
+ *        req_features, etc. - pointers to storage for the specifications
+ * output: req_features, etc. - the job's specifications
+ *         returns 0 if no error, errno otherwise
+ * NOTE: the calling function must xfree memory at req_features[0], req_node_list[0],
+ *	job_name[0], req_group[0], and req_partition[0]
+ */
+int 
+parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
+		 char **job_name, char **req_group, char **req_partition,
+		 int *contiguous, int *req_cpus, int *req_nodes,
+		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
+		 int *shared, int *dist, char **script, int *time_limit, 
+		 int *procs_per_task, char **job_id, float *priority, 
+		 int *user_id) {
+	int bad_index, error_code, i;
+	char *temp_specs, *contiguous_str, *dist_str, *shared_str;
+
+	req_features[0] = req_node_list[0] = req_group[0] = NULL;
+	req_partition[0] = job_name[0] = script[0] = job_id[0] = NULL;
+	contiguous_str = shared_str = dist_str = NULL;
+	*contiguous = *req_cpus = *req_nodes = *min_cpus = NO_VAL;
+	*min_memory = *min_tmp_disk = *time_limit = NO_VAL;
+	*dist = *key = *shared = *procs_per_task = *user_id = NO_VAL;
+	*priority = (float) NO_VAL;
+
+	temp_specs = xmalloc (strlen (job_specs) + 1);
+	strcpy (temp_specs, job_specs);
+
+	error_code = slurm_parser(temp_specs,
+		"Contiguous=", 's', &contiguous_str, 
+		"Distribution=", 's', &dist_str, 
+		"Features=", 's', req_features, 
+		"Groups=", 's', req_group, 
+		"JobId=", 's', job_id, 
+		"JobName=", 's', job_name, 
+		"Key=", 'd', key, 
+		"MinProcs=", 'd', min_cpus, 
+		"MinRealMemory=", 'd', min_memory, 
+		"MinTmpDisk=", 'd', min_tmp_disk, 
+		"Partition=", 's', req_partition, 
+		"Priority=", 'f', priority, 
+		"ProcsPerTask=", 'd', procs_per_task, 
+		"ReqNodes=", 's', req_node_list, 
+		"Script=", 's', script, 
+		"Shared=", 's', shared_str, 
+		"TimeLimit=", 'd', time_limit, 
+		"TotalNodes=", 'd', req_nodes, 
+		"TotalProcs=", 'd', req_cpus, 
+		"User=", 'd', user_id,
+		"END");
+
+	if (error_code)
+		goto cleanup;
+
+	if (contiguous_str) {
+		i = yes_or_no (contiguous_str);
+		if (i == -1) {
+			error ("parse_job_specs: invalid Contiguous value");
+			goto cleanup;
+		}
+		*contiguous = i;
+	}
+
+	if (dist_str) {
+		i = block_or_cycle (dist_str);
+		if (i == -1) {
+			error ("parse_job_specs: invalid Distribution value");
+			goto cleanup;
+		}
+		*dist = i;
+	}
+
+	if (shared_str) {
+		i = yes_or_no (shared_str);
+		if (i == -1) {
+			error ("parse_job_specs: invalid Shared value");
+			goto cleanup;
+		}
+		*shared = i;
+	}
+
+	bad_index = -1;
+	for (i = 0; i < strlen (temp_specs); i++) {
+		if (isspace ((int) temp_specs[i]) || (temp_specs[i] == '\n'))
+			continue;
+		bad_index = i;
+		break;
+	}			
+
+	if (bad_index != -1) {
+		error ("parse_job_specs: bad job specification input: %s",
+			 &temp_specs[bad_index]);
+		error_code = EINVAL;
+	}			
+
+	if (error_code)
+		goto cleanup;
+
+	xfree (temp_specs);
+	if (contiguous_str)
+		xfree (contiguous_str);
+	if (dist_str)
+		xfree (dist_str);
+	if (shared_str)
+		xfree (shared_str);
+	return error_code;
+
+      cleanup:
+	xfree (temp_specs);
+	if (contiguous_str)
+		xfree (contiguous_str);
+	if (job_id[0])
+		xfree (job_id[0]);
+	if (job_name[0])
+		xfree (job_name[0]);
+	if (req_features[0])
+		xfree (req_features[0]);
+	if (req_node_list[0])
+		xfree (req_node_list[0]);
+	if (req_group[0])
+		xfree (req_group[0]);
+	if (req_partition[0])
+		xfree (req_partition[0]);
+	if (shared_str)
+		xfree (shared_str);
+	req_features[0] = req_node_list[0] = req_group[0] = NULL;
+	req_partition[0] = job_name[0] = script[0] = NULL;
 }
 
 

@@ -23,7 +23,6 @@
 #include "slurmlib.h"
 
 #define BUF_SIZE 1024
-#define NO_VAL (-99)
 
 int msg_from_root (void);
 void slurmctld_req (int sockfd);
@@ -139,6 +138,11 @@ dump_build (char **buffer_ptr, int *buffer_size)
 		goto cleanup;
 
 	sprintf (out_line, BUILD_STRUCT_FORMAT, "EPILOG", EPILOG);
+	if (write_buffer
+	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
+		goto cleanup;
+
+	sprintf (out_line, BUILD_STRUCT_FORMAT, "FAST_SCHEDULE", FAST_SCHEDULE);
 	if (write_buffer
 	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
 		goto cleanup;
