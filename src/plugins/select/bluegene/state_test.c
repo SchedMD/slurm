@@ -102,7 +102,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 			info("switch for node %s is bad, set down", 
 				bgl_down_node);
 #else
-		info("switch for node %s is bad, set down", bgl_down_node);
+		info("FIXME: switch for node %s is bad, set down", bgl_down_node);
 #endif
 	}
 }
@@ -137,18 +137,16 @@ extern void test_down_nodes(void)
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
+	static rm_BGL_t *bgl = NULL;
 
-#ifdef USE_BGL_FILES
-	rm_BGL_t *bgl;
-	/* rm_free_BGL() causes seg-fault with 410 drivers and we can't
-	 * affort this memory leak */
+	if (bgl)
+		return;
 	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
 		error("rm_get_BGL(): %s", bgl_err_str(rc));
 		return;
 	}
-#endif
 
-	debug("running test_down_nodes");
+	debug("Running test_down_nodes");
 	down_node_list[0] = '\0';
 	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
 		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
@@ -196,10 +194,7 @@ extern void test_down_nodes(void)
 		} else
 			error("down_node_list overflow");
 	}
-#ifdef USE_BGL_FILES
-	/* Causes seg-fault with 410 drivers */
-	rm_free_BGL(bgl);
-#endif
+	slurm_rm_free_BGL(bgl);
 
 	if (down_node_list[0]) {
 		char reason[128];
@@ -222,18 +217,17 @@ extern void test_down_switches(void)
 	rm_switch_t *my_switch;
 	rm_bp_id_t bp_id;
 	rm_switch_state_t switch_state;
+	static rm_BGL_t *bgl = NULL;
 
-#ifdef USE_BGL_FILES
-	rm_BGL_t *bgl;
-	/* rm_free_BGL() causes seg-fault with 410 drivers and we can't 
-	 * affort this memory leak */
+	if (bgl)
+		return;
+
 	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
 		error("rm_get_BGL(): %s", bgl_err_str(rc));
 		return;
 	}
-#endif
 
-	debug2("running test_down_switches");
+	debug2("Running test_down_switches");
 	if ((rc = rm_get_data(bgl, RM_SwitchNum, &switch_num)) != STATUS_OK) {
 		error("rm_get_data(RM_SwitchNum): %s", bgl_err_str(rc));
 		switch_num = 0;
@@ -271,9 +265,7 @@ extern void test_down_switches(void)
 		}
 		_configure_node_down(bp_id, bgl);
 	}
-#ifdef USE_BGL_FILES
-	/* Causes seg-fault with 410 drivers */
-	rm_free_BGL(bgl);
-#endif
+	
+	slurm_rm_free_BGL(bgl);
 #endif
 }
