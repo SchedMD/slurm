@@ -57,6 +57,7 @@ List bgl_conf_list = NULL;              /* list of bgl_conf_record entries */
 char *bluegene_serial = NULL;
 
 /* Global variables */
+rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
 
 #define SWAP(a,b,t)	\
@@ -103,7 +104,8 @@ static void _set_bp_node_state(rm_BP_state_t state, rm_element_t *element);
  */
 extern int create_static_partitions(List part_list)
 {
-	/** purge the old list.  Later on, it may be more efficient just to amend the list */
+	int rc = SLURM_SUCCESS;
+
 	if (bgl_list) {
 		bgl_record_t *record;
 		while ((record = list_pop(bgl_list)))
@@ -112,16 +114,17 @@ extern int create_static_partitions(List part_list)
 		bgl_list = list_create(_destroy_bgl_record);
 
 	/** copy the slurm conf partition info, this will fill in bgl_list */
-	if (_copy_slurm_partition_list(part_list))
-		return SLURM_ERROR;
+	if ((rc = _copy_slurm_partition_list(part_list)))
+		return rc;
 
 	_process_config();
 	/* after reading in the configuration, we have a list of partition 
 	 * requests (List <int*>) that we can use to partition up the system
 	 */
-	_wire_bgl_partitions();
+	if ((rc = _wire_bgl_partitions()))
+		return rc;
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /**
@@ -129,9 +132,14 @@ extern int create_static_partitions(List part_list)
  */
 static int _wire_bgl_partitions(void)
 {
+	int rc = SLURM_SUCCESS;
 	bgl_record_t* cur_record;
 	partition_t* cur_partition;
 	ListIterator itr;
+
+	/* read current bgl partition info */
+	if ((rc = read_bgl_partitions()))
+		return rc;
 
 	itr = list_iterator_create(bgl_list);
 	while ((cur_record = (bgl_record_t*) list_next(itr))) {
@@ -141,7 +149,7 @@ static int _wire_bgl_partitions(void)
 	}	
 	list_iterator_destroy(itr);
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /** 
@@ -636,27 +644,27 @@ extern void print_bgl_record(bgl_record_t* record)
 	info(" bgl_record: ");
 	info("\tslurm_part_id: %s", record->slurm_part_id);
 	if (record->bgl_part_id)
-		info("\tbgl_part_id: %d", *(record->bgl_part_id));
+		info("\tbgl_part_id: %s", record->bgl_part_id);
 	info("\tnodes: %s", record->nodes);
 	info("\tsize: %d", record->size);
 	info("\tlifecycle: %s", convert_lifecycle(record->part_lifecycle));
 	info("\tconn_type: %s", convert_conn_type(record->conn_type));
 	info("\tnode_use: %s", convert_node_use(record->node_use));
 
-	if (record->hostlist){
+	if (record->hostlist) {
 		char buffer[BUFSIZE];
 		hostlist_ranged_string(record->hostlist, BUFSIZE, buffer);
 		info("\thostlist %s", buffer);
 	}
 
-	if (record->alloc_part){
+	if (record->alloc_part) {
 		info("\talloc_part:");
 		print_partition(record->alloc_part);
 	} else {
 		info("\talloc_part: NULL");
 	}
 
-	if (record->bitmap){
+	if (record->bitmap) {
 		char bitstring[BITSIZE];
 		bit_fmt(bitstring, BITSIZE, record->bitmap);
 		info("\tbitmap: %s", bitstring);
@@ -931,7 +939,7 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		 */
 		char bgl_part_id[BITSIZE];
 #ifdef USE_BGL_FILES
-		snprintf(bgl_part_id, BITSIZE, "%s", *record->bgl_part_id);
+		snprintf(bgl_part_id, BITSIZE, "%s", record->bgl_part_id);
 #else
 		snprintf(bgl_part_id, BITSIZE, "LLNL_128_16");
 #endif
