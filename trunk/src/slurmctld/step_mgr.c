@@ -39,6 +39,9 @@
 
 #define BUF_SIZE 1024
 
+bitstr_t * pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
+		 char *node_list, char *relative_node_list);
+
 /* 
  * create_step_record - create an empty step_record for the specified job.
  * input: job_ptr - pointer to job table entry to have step record added
@@ -243,6 +246,19 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 }
 
 
+/* 
+ * pick_step_nodes - select nodes for a job step that satify its requirements
+ */
+bitstr_t *
+pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
+		 char *node_list, char *relative_node_list) {
+	if (job_ptr->node_bitmap == NULL)
+		return NULL;
+
+	return bit_copy(job_ptr->node_bitmap);
+}
+
+
 /*
  * step_create - parse the suppied job step specification and create step_records for it
  * input: step_specs - job step specifications
@@ -255,26 +271,31 @@ step_create (struct step_specs *step_specs)
 {
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
+	bitstr_t *nodeset;
 #ifdef HAVE_LIBELAN3
 	int first, last, i, node_id, nprocs;
-	bitstr_t *nodeset;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
 
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL)
-		return ENOENT;
+		return ESLURM_INVALID_JOB_ID;
 	if (step_specs->user_id != job_ptr->user_id &&
 	    step_specs->user_id != 0)
-		return EACCES;
+		return ESLURM_ACCESS_DENIED;
+
+	nodeset = pick_step_nodes (job_ptr, step_specs->min_nodes, step_specs->min_cpus, 
+		step_specs->node_list, step_specs->relative_node_list);
+	if (nodeset == NULL)
+		return ESLURM_REQUESTED_NODE_CONFIGURATION_UNAVAILBLE;
 
 	step_ptr = create_step_record (job_ptr);
 	if (step_ptr == NULL)
-		return ENOMEM;
+		fatal ("create_step_record failed with no memory");
 
 	step_ptr->step_id = (job_ptr->next_step_id)++;
-/* we need to be able to filter out some of the bitmap entries here for partial allocation */
-	step_ptr->node_bitmap = bit_copy (job_ptr->node_bitmap);
+	step_ptr->node_bitmap = nodeset;
+
 #ifdef HAVE_LIBELAN3
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
 		fatal ("step_create: qsw_alloc_jobinfo error");

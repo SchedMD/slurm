@@ -192,8 +192,12 @@ struct 	step_record {
 
 struct step_specs {
 	uint32_t job_id;		/* job ID */
-	uint16_t step_id;		/* step number */
+	uint32_t step_id;		/* step number */
 	uint32_t user_id;		/* user the job runs as */
+	uint32_t min_nodes;		/* count of required nodes */
+	uint32_t min_cpus;		/* count of required processors */
+	char *node_list;		/* list of required nodes */
+	char *relative_node_list;	/* relative positions of required nodes */
 };
 
 extern List job_list;			/* list of job_record entries */
