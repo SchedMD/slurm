@@ -86,6 +86,7 @@ enum {
 	ESLURM_ALREADY_DONE,
 	ESLURM_INTERCONNECT_FAILURE,
 	ESLURM_BAD_DIST,
+	ESLURM_JOB_PENDING,
 
 	/* Quadrics Elan routine error codes */
 	ENOSLURM =					3000,
