@@ -52,6 +52,10 @@ int color_count = 0;
 
 /** internal helper functions */
 /** */
+static void _bp_map_list_del(void *object);
+/** */
+static void _set_bp_map(void);
+/** */
 static void _new_pa_node(pa_node_t *pa_node, 
 		int *coord);
 /** */
@@ -94,6 +98,9 @@ static int _configure_dims(int *coord, int *start, int *end, int dim);
 static int _set_one_dim(int *start, int *end, int *coord);
 
 static int _append_geo(int *geo, List geos, int rotate);
+
+/* Global */
+List bp_map_list;
 
 /**
  * create a partition request.  Note that if the geometry is given,
@@ -348,6 +355,8 @@ void pa_init(node_info_msg_t *node_info_ptr)
 		return;
 	}
 
+	_set_bp_map();
+	
 	best_count=BEST_COUNT_INIT;
 						
 	pa_system_ptr = (pa_system_t *) xmalloc(sizeof(pa_system_t));
@@ -429,6 +438,7 @@ void pa_fini()
 
 	list_destroy(path);
 	list_destroy(best_path);
+	list_destroy(bp_map_list);
 	_delete_pa_system();
 
 //	printf("pa system destroyed\n");
@@ -705,7 +715,114 @@ void init_grid(node_info_msg_t * node_info_ptr)
 	return;
 }
 
+int *find_bp_loc(char* bp_id)
+{
+	pa_bp_map_t *bp_map;
+	ListIterator itr;
+	
+	itr = list_iterator_create(bp_map_list);
+	while ((bp_map = list_next(itr)) != NULL)
+		if (!strcmp(bp_map->bp_id, bp_id)) 
+			break;	/* we found it */
+		
+	list_iterator_destroy(itr);
+	if(bp_map != NULL)
+		return bp_map->coord;
+	else
+		return NULL;
+}
+
+static void _bp_map_list_del(void *object)
+{
+	pa_bp_map_t *bp_map = (pa_bp_map_t *)object;
+	
+	if (bp_map) {
+		xfree(bp_map->bp_id);
+		
+		xfree(bp_map);		
+	}
+}
+
 /** */
+static void _set_bp_map(void)
+{
+#ifdef HAVE_BGL_FILES
+	static rm_BGL_t *bgl = NULL;
+	int rc;
+	rm_BP_t *my_bp;
+	pa_bp_map_t *bp_map;
+	int bp_num, i;
+	char *bp_id;
+	rm_location_t bp_loc;
+
+	bp_map_list = list_create(_bp_map_list_del);
+
+	if (!getenv("DB2INSTANCE") || !getenv("VWSPATH")) {
+		fprintf(stderr, "Missing DB2INSTANCE or VWSPATH env var.\n"
+			"Execute 'db2profile'\n");
+		return;
+	}
+	
+	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
+		error("rm_set_serial(): %d\n", rc);
+		return;
+	}
+	
+	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
+		error("rm_get_BGL(): %d\n", rc);
+		return;
+	}
+	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
+		//fprintf(stderr, "rm_get_data(RM_BPNum): %s\n", bgl_err_str(rc));
+		bp_num = 0;
+	}
+
+	for (i=0; i<bp_num; i++) {
+
+		if (i) {
+			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp))
+			    != STATUS_OK) {
+				/* fprintf(stderr, "rm_get_data(RM_NextBP): %s\n", */
+/* 					bgl_err_str(rc)); */
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp))
+			    != STATUS_OK) {
+				/* fprintf(stderr, "rm_get_data(RM_FirstBP): %s\n", */
+/* 					bgl_err_str(rc)); */
+				break;
+			}
+		}
+		
+		bp_map = (pa_bp_map_t *) xmalloc(sizeof(pa_bp_map_t));
+		list_push(bp_map_list, bp_map);
+		
+		if ((rc = rm_get_data(my_bp, RM_BPID, &bp_id))
+		    != STATUS_OK) {
+			/* fprintf(stderr, "rm_get_data(RM_BPLoc): %s\n", */
+/* 				bgl_err_str(rc)); */
+			continue;
+		}
+		bp_map->bp_id = strdup(bp_id);
+		
+		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc))
+		    != STATUS_OK) {
+			/* fprintf(stderr, "rm_get_data(RM_BPLoc): %s\n", */
+/* 				bgl_err_str(rc)); */
+			continue;
+		}
+		bp_map->coord[X] = bp_loc.X;
+		bp_map->coord[Y] = bp_loc.Y;
+		bp_map->coord[Z] = bp_loc.Z;
+	}
+	
+#else
+	return;
+#endif
+	
+}
+
 static void _new_pa_node(pa_node_t *pa_node, int *coord)
 {
 	int i,j;
@@ -1488,7 +1605,7 @@ static int _append_geo(int *geometry, List geos, int rotate)
 int main(int argc, char** argv)
 {
 	pa_request_t *request = (pa_request_t*) xmalloc(sizeof(pa_request_t)); 
-	
+	int *loc;
 	List results;
 //	List results2;
 //	int i,j;
@@ -1496,12 +1613,19 @@ int main(int argc, char** argv)
 	DIM_SIZE[Y]=1;
 	DIM_SIZE[Z]=1;
 	pa_init(NULL);
+	loc = find_bp_loc("R171");
+	printf("The loc is %d%d%d\n",loc[X],loc[Y],loc[Z]);
+	if((loc = find_bp_loc("R178")))
+		printf("The loc is %d%d%d\n",loc[X],loc[Y],loc[Z]);
+	else
+		printf("This doesn't exsist!\n");
+	exit(0);
 	
-	request->rotate = true;
-	request->elongate = true;
-	request->force_contig = true;
-	request->co_proc = true;
-	request->geometry[0]=-1;
+/* 	request->rotate = true; */
+/* 	request->elongate = true; */
+/* 	request->force_contig = true; */
+/* 	request->co_proc = true; */
+/* 	request->geometry[0]=-1; */
 
 	results = list_create(NULL);
 	request->geometry[0] = -1;
