@@ -1,5 +1,5 @@
 /*
- * Read_Config.c - Read the overall SLURM configuration file
+ * read_config.c - Read the overall SLURM configuration file
  * This module also has the basic functions for manipulation of data structures
  * See slurm.h for documentation on external functions and data structures
  *
@@ -52,12 +52,13 @@ main(int argc, char * argv[]) {
     Error_Code = Init_SLURM_Conf();
     if (Error_Code != 0) exit(Error_Code);
 
+    printf("NOTE: We expect a bunch of Find_Node_Record lookup errors for initialization.\n");
     if (argc == 2) 
 	Error_Code = Read_SLURM_Conf(argv[1]);
     else
 	Error_Code = Read_SLURM_Conf(SLURM_CONF);
 
-    if (Error_Code != 0) {
+    if (Error_Code) {
 	printf("Error %d from Read_SLURM_Conf\n", Error_Code);
 	exit(1);
     } /* if */
@@ -133,6 +134,8 @@ int Build_BitMaps() {
     int Start_Inx, End_Inx, Count_Inx;
     char *str_ptr1, *str_ptr2;
 
+    Last_Node_Update = time(NULL);
+    Last_Part_Update = time(NULL);
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
 		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
     size *= 8;				/* Bytes in bitmap */
@@ -148,6 +151,8 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
+	if (Idle_NodeBitMap) free(Idle_NodeBitMap);
+	if (Up_NodeBitMap)   free(Up_NodeBitMap);
 	return ENOMEM;
     } /* if */
     memset(Idle_NodeBitMap, 0, size);
@@ -167,7 +172,8 @@ int Build_BitMaps() {
 	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
 #endif
 	return ENOMEM;
-    }
+    } /* if */
+
     while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
 	if (Config_Record_Point->NodeBitMap) free(Config_Record_Point->NodeBitMap);
 	Config_Record_Point->NodeBitMap = (unsigned *)malloc(size);
@@ -177,6 +183,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
+	    list_iterator_destroy(Config_Record_Iterator);
 	    return ENOMEM;
 	} /* if */
 	memset(Config_Record_Point->NodeBitMap, 0, size);
@@ -197,6 +204,13 @@ int Build_BitMaps() {
 	    Node_Record_Point = Find_Node_Record(This_Node_Name);
 	    if (Node_Record_Point == NULL) continue;
 	    if (Node_Record_Point->Config_Ptr != Config_Record_Point) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Build_BitMaps: bad configuration pointer for node %s\n",
+			This_Node_Name);
+#else
+		syslog(LOG_ERR, "Build_BitMaps: bad configuration pointer for node %s\n",
+			This_Node_Name);
+#endif
 	    } /* if */
 	    j = Node_Record_Point - Node_Record_Table_Ptr;
 	    BitMapSet(Config_Record_Point->NodeBitMap, j);
@@ -223,6 +237,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
 #endif
+	free(AllPart_NodeBitMap);
 	return ENOMEM;
     } /* if */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
@@ -235,6 +250,7 @@ int Build_BitMaps() {
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
 	    free(AllPart_NodeBitMap);
+	    list_iterator_destroy(Part_Record_Iterator);
 	    return ENOMEM;
 	} /* if */
 	memset(Part_Record_Point->NodeBitMap, 0, size);
@@ -273,7 +289,7 @@ int Build_BitMaps() {
 	} /* for */
     } /* while */
     BitMapSet(AllPart_NodeBitMap, j);
-   list_iterator_destroy(Part_Record_Iterator);
+    list_iterator_destroy(Part_Record_Iterator);
     return 0;
 } /* Build_BitMaps */
 
@@ -480,9 +496,8 @@ int Parse_Node_Spec (char *In_Line) {
 #else
     	    syslog(LOG_ERR, "Parse_Node_Spec: Node name %s too long\n", This_Node_Name);
 #endif
-	    if (i != Start_Inx)  free(NodeName);
-	    if (Format != NULL)  free(Format);
-	    if (Feature != NULL) free(NodeName);
+	    if (i == Start_Inx) free(NodeName);
+	    if (Feature) free(Feature);		/* Can't use feature */
 	    Error_Code = EINVAL;
 	    break;
 	} /* if */
@@ -492,7 +507,7 @@ int Parse_Node_Spec (char *In_Line) {
 	    if (TmpDisk_Val != NO_VAL)       Default_Config_Record.TmpDisk = TmpDisk_Val;
 	    if (Weight_Val != NO_VAL)        Default_Config_Record.Weight = Weight_Val;
 	    if (State_Val != NO_VAL)         Default_Node_Record.NodeState = State_Val;
-	    if (Feature != NULL) {
+	    if (Feature) {
 		if (Default_Config_Record.Feature) free(Default_Config_Record.Feature);
 		Default_Config_Record.Feature = Feature;
 	    } /* if */
@@ -500,18 +515,16 @@ int Parse_Node_Spec (char *In_Line) {
 	    if (i == Start_Inx) {
 		Config_Point = Create_Config_Record(&Error_Code);
 		if (Error_Code != 0) {
-		    free(NodeName);
-		    if (Format)  free(Format);
-		    if (Feature) free(Feature);
-		    return Error_Code;
+		    if (Feature) free(Feature);	/* Can't use feature */
+		    break;
 		} /* if */
 		Config_Point->Nodes = NodeName;
 		if (CPUs_Val != NO_VAL)       Config_Point->CPUs = CPUs_Val;
 		if (RealMemory_Val != NO_VAL) Config_Point->RealMemory = RealMemory_Val;
 		if (TmpDisk_Val != NO_VAL)    Config_Point->TmpDisk = TmpDisk_Val;
 		if (Weight_Val != NO_VAL)     Config_Point->Weight = Weight_Val;
-		if (Feature != NULL) {
-		    if (Config_Point->Feature != NULL) free(Config_Point->Feature);
+		if (Feature) {
+		    if (Config_Point->Feature) free(Config_Point->Feature);
 		    Config_Point->Feature = Feature;
 		} /* if */
 	    } /* if */
@@ -584,15 +597,15 @@ int Parse_Part_Spec (char *In_Line) {
     } /* if */
 
     Error_Code = Load_String (&Nodes, "Nodes=", In_Line);
-    if (Error_Code != 0) {
+    if (Error_Code) {
 	free(PartitionName);
 	return Error_Code;
     } /* if */
 
     Error_Code = Load_String (&AllowGroups, "AllowGroups=", In_Line);
-    if (Error_Code != 0) {
+    if (Error_Code) {
 	free(PartitionName);
-	if (Nodes != NULL) free(Nodes);
+	if (Nodes) free(Nodes);
 	return Error_Code;
     } /* if */
 
@@ -601,24 +614,25 @@ int Parse_Part_Spec (char *In_Line) {
 	if (MaxNodes_Val != NO_VAL)    Default_Part.MaxNodes     = MaxNodes_Val;
 	if (Key_Val != NO_VAL)         Default_Part.Key          = Key_Val;
 	if (StateUp_Val  != NO_VAL)    Default_Part.StateUp      = StateUp_Val;
-	if (AllowGroups != (char *)NULL) {
-	    if (Default_Part.AllowGroups != (char *)NULL) free(Default_Part.AllowGroups);
+	if (AllowGroups) {
+	    if (Default_Part.AllowGroups) free(Default_Part.AllowGroups);
 	    Default_Part.AllowGroups = AllowGroups;
 	} /* if */
-	if (Nodes != (char *)NULL) {
-	    if (Default_Part.Nodes != (char *)NULL) free(Default_Part.Nodes);
+	if (Nodes) {
+	    if (Default_Part.Nodes) free(Default_Part.Nodes);
 	    Default_Part.Nodes = Nodes;
 	} /* if */
+	free(PartitionName);
 	return 0;
     } /* if */
 
     Part_Record_Point = Find_Part_Record(PartitionName);
     if (Part_Record_Point == NULL) {
 	Part_Record_Point = Create_Part_Record(&Error_Code);
-	if (Error_Code != 0) {
+	if (Error_Code) {
 	    free(PartitionName);
-	    if (Nodes != NULL) free(Nodes);
-	    if (AllowGroups != NULL) free(AllowGroups);
+	    if (Nodes) free(Nodes);
+	    if (AllowGroups) free(AllowGroups);
 	    return Error_Code;
 	} /* if */
 	strcpy(Part_Record_Point->Name, PartitionName);
@@ -646,14 +660,15 @@ int Parse_Part_Spec (char *In_Line) {
     if (MaxNodes_Val != NO_VAL)    Part_Record_Point->MaxNodes     = MaxNodes_Val;
     if (Key_Val  != NO_VAL)        Part_Record_Point->Key          = Key_Val;
     if (StateUp_Val  != NO_VAL)    Part_Record_Point->StateUp      = StateUp_Val;
-    if (AllowGroups != (char *)NULL) {
-	if (Part_Record_Point->AllowGroups != (char *)NULL) free(Part_Record_Point->AllowGroups);
+    if (AllowGroups) {
+	if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
 	Part_Record_Point->AllowGroups = AllowGroups;
     } /* if */
-    if (Nodes != (char *)NULL) {
-	if (Part_Record_Point->Nodes != (char *)NULL) free(Part_Record_Point->Nodes);
+    if (Nodes) {
+	if (Part_Record_Point->Nodes) free(Part_Record_Point->Nodes);
 	Part_Record_Point->Nodes = Nodes;
     } /* if */
+    free(PartitionName);
     return 0;
 } /* Parse_Part_Spec */
 
