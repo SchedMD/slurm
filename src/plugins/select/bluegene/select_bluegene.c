@@ -214,7 +214,9 @@ extern int select_p_state_restore(char *dir_name)
 /* Sync BGL blocks to currently active jobs */
 extern int select_p_job_init(List job_list)
 {
-	return sync_jobs(job_list);
+	/* change back when done testing */
+	//return sync_jobs(job_list);
+	return SLURM_SUCCESS;
 }
 
 /* All initialization is performed by select_p_part_init() */

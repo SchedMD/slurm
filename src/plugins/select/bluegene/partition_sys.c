@@ -34,6 +34,7 @@
   extern void * lsd_nomem_error(char *file, int line, char *mesg){}
 #endif
 
+#define USER_NAME "nobody"
 /** these are used in the dynamic partitioning algorithm */
 /* global system = list of free partitions */
 List bgl_sys_free = NULL;
@@ -179,7 +180,7 @@ static void _pre_allocate(bgl_conf_record_t *bgl_conf_record)
 	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionRamdiskImg, bluegene_ramdisk);
 	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionConnection, &bgl_conf_record->conn_type);
 	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionMode, &bgl_conf_record->node_use);
-	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionUserName, "");
+	rm_set_data(bgl_conf_record->bgl_part, RM_PartitionUserName, USER_NAME);
 }
 
 /** 
@@ -188,8 +189,9 @@ static void _pre_allocate(bgl_conf_record_t *bgl_conf_record)
 static int _post_allocate(rm_partition_t *my_part)
 {
 	int rc;
-	rm_partition_state_t state;
+//	rm_partition_state_t state=RM_PARTITION_READY;
 	pm_partition_id_t part_id;
+	char command[100];
 	/* Add partition record to the DB */
 	printf("adding partition\n");
 	//my_part->description = "Stand-alone mpirun";
@@ -206,12 +208,12 @@ static int _post_allocate(rm_partition_t *my_part)
 	rm_free_partition(my_part);
 	//exit(0);
 	/* Initiate boot of the partition */
-	debug("Booting Partition %s", part_id);
+	/*debug("Booting Partition %s", part_id);
 	rc = pm_create_partition(part_id);
 	if (rc != STATUS_OK) {
 		error("Error booting_partition partition");
 		return(-1);
-	}
+		}*/
 
 	/* Wait for Partition to be booted */
 	rc = rm_get_partition(part_id, &my_part);
@@ -219,8 +221,11 @@ static int _post_allocate(rm_partition_t *my_part)
 		error("Error in GetPartition");
 		return(-1);
 	}
-
-	rm_get_data(my_part, RM_PartitionState, &state);
+	memset(command,0,100);
+	sprintf(command,"/home/da/allocate_block %s %s", part_id, USER_NAME);
+	system(command);
+	
+	//rm_set_data(my_part, RM_PartitionState, state);
 	fflush(stdout);
 
 	return 0;

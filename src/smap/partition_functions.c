@@ -598,13 +598,6 @@ static int _post_block_read(void *object, void *arg)
 		xrealloc(block_ptr->nodes, len);
 	}
 
-#if _DEBUG
-	fprintf(stderr, "part=%s, nodes=%s conn=%s mode=%s\n", 
-		block_ptr->bgl_block_name, block_ptr->nodes,
-		_convert_conn_type(block_ptr->bgl_conn_type),
-		_convert_node_use(block_ptr->bgl_node_use));
-
-#endif
 	return SLURM_SUCCESS;
 } 
 #endif
@@ -658,29 +651,29 @@ static void _read_part_db2(void)
 	}
 
 	if ((rc = rm_get_data(bgl, RM_BPNum, &bp_num)) != STATUS_OK) {
-		fprintf(stderr, "rm_get_data(RM_BPNum): %s\n", bgl_err_str(rc));
+		//fprintf(stderr, "rm_get_data(RM_BPNum): %s\n", bgl_err_str(rc));
 		bp_num = 0;
 	}
 	for (i=0; i<bp_num; i++) {
 		if (i) {
 			if ((rc = rm_get_data(bgl, RM_NextBP, &my_bp))
 			    != STATUS_OK) {
-				fprintf(stderr, "rm_get_data(RM_NextBP): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_get_data(RM_NextBP): %s\n", */
+/* 					bgl_err_str(rc)); */
 				break;
 			}
 		} else {
 			if ((rc = rm_get_data(bgl, RM_FirstBP, &my_bp))
 			    != STATUS_OK) {
-				fprintf(stderr, "rm_get_data(RM_FirstBP): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_get_data(RM_FirstBP): %s\n", */
+/* 					bgl_err_str(rc)); */
 				break;
 			}
 		}
 		if ((rc = rm_get_data(my_bp, RM_BPLoc, &bp_loc))
 		    != STATUS_OK) {
-			fprintf(stderr, "rm_get_data(RM_BPLoc): %s\n",
-				bgl_err_str(rc));
+			/* fprintf(stderr, "rm_get_data(RM_BPLoc): %s\n", */
+/* 				bgl_err_str(rc)); */
 			continue;
 		}
 		snprintf(bgl_node, sizeof(bgl_node), "bgl%d%d%d",
@@ -688,8 +681,8 @@ static void _read_part_db2(void)
 
 		if ((rc = rm_get_data(my_bp, RM_BPPartID, &part_id))
 		    != STATUS_OK) {
-			fprintf(stderr, "rm_get_data(RM_BPPartId): %s\n",
-				bgl_err_str(rc));
+			/* fprintf(stderr, "rm_get_data(RM_BPPartId): %s\n", */
+/* 				bgl_err_str(rc)); */
 			continue;
 		}
 		if (!part_id || (part_id[0] == '\0')) {
@@ -711,8 +704,8 @@ static void _read_part_db2(void)
 
 			if ((rc = rm_get_partition(part_id, &part_ptr))
 			    != STATUS_OK) {
-				fprintf(stderr, "rm_get_partition(%s): %s\n",
-					part_id, bgl_err_str(rc));
+				/*fprintf(stderr, "rm_get_partition(%s): %s\n",
+				  part_id, bgl_err_str(rc));*/
 				continue;
 			}
 			block_ptr = xmalloc(sizeof(db2_block_info_t));
@@ -722,52 +715,46 @@ static void _read_part_db2(void)
 			if ((rc = rm_get_data(part_ptr, 
 					      RM_PartitionState, 
 					      &block_ptr->state)) != STATUS_OK) {
-				fprintf(stderr, "rm_get_data("
-					"RM_PartitionState): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_get_data(" */
+/* 					"RM_PartitionState): %s\n", */
+/* 					bgl_err_str(rc)); */
 			}				
 			
 			if ((rc = rm_get_data(part_ptr, 
 					      RM_PartitionUserName, 
 					      &block_ptr->bgl_user_name)) != STATUS_OK) {
-				fprintf(stderr, "rm_get_data("
-					"RM_PartitionUserName): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_get_data(" */
+/* 					"RM_PartitionUserName): %s\n", */
+/* 					bgl_err_str(rc)); */
 			}				
 			
 			if ((rc = rm_get_data(part_ptr,
 					      RM_PartitionConnection,
 					      &conn_type)) != STATUS_OK) {
-				fprintf(stderr, "rm_get_data("
-					"RM_PartitionConnection): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_get_data(" */
+/* 					"RM_PartitionConnection): %s\n", */
+/* 					bgl_err_str(rc)); */
 				block_ptr->bgl_conn_type = SELECT_NAV;
 			} else
 				block_ptr->bgl_conn_type = conn_type;
 			if ((rc = rm_get_data(part_ptr, RM_PartitionMode,
 					      &node_use))
 			    != STATUS_OK) {
-				fprintf(stderr, "rm_get_data("
-					"RM_PartitionMode): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_get_data(" */
+/* 					"RM_PartitionMode): %s\n", */
+/* 					bgl_err_str(rc)); */
 				block_ptr->bgl_node_use = SELECT_NAV_MODE;
 			} else
 				block_ptr->bgl_node_use = node_use;
 			if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) {
-				fprintf(stderr, "rm_free_partition(): %s\n",
-					bgl_err_str(rc));
+				/* fprintf(stderr, "rm_free_partition(): %s\n", */
+/* 					bgl_err_str(rc)); */
 			}
 			block_ptr->hostlist = hostlist_create(bgl_node);
 		} else {
 			/* Add node name to existing BGL partition record */
 			hostlist_push(block_ptr->hostlist, bgl_node);
 		}
-#if _DEBUG
-		fprintf(stderr, "part=%s, node=%s conn=%s mode=%s\n", 
-			part_id, bgl_node, 
-			_convert_conn_type(block_ptr->bgl_conn_type),
-			_convert_node_use(block_ptr->bgl_node_use));
-#endif
 	}
 
 	/* perform post-processing for each bluegene partition */
