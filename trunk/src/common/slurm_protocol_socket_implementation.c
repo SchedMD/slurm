@@ -53,6 +53,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 
 	char size_buffer_temp [8] ;
 	char * size_buffer = size_buffer_temp ;
+	char * moving_buffer = buffer ;
 	unsigned int size_buffer_len = 8 ;
 	unsigned int transmit_size ;
 	unsigned int total_len ;
@@ -75,7 +76,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	while ( total_len < transmit_size )
 	{
 /*		if ( ( recv_len = _slurm_recv ( connection_fd , buffer , transmit_size , NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR ) */
-		if ( ( recv_len = _slurm_recv ( open_fd , buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
+		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
 		{
 			info ( "Error receiving length of datagram.  errno %i \n", errno ) ;
 			return recv_len ;
@@ -83,6 +84,7 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 		if ( recv_len >= 0 )
 		{
 			total_len += recv_len ;
+			moving_buffer += recv_len ;
 		}
 	}
 /*

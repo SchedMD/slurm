@@ -137,7 +137,6 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	int rc ;
 	unsigned int unpack_len ;
 	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
-int i;
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
@@ -245,7 +244,6 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 	char * buffer = buftemp ;
 	header_t header ;
 	int rc ;
-int i;
 	unsigned int unpack_len ; /* length left to upack */
 	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ; /* buffer size */
 
