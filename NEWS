@@ -4,7 +4,8 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.4.3
 ========================
  -- Turn off some RPM build checks (bug in RPM, see slurm.spec.in)
-
+ -- starting slurmctrld will destroy all RMP*** partitions everytime.  
+ 
 * Changes in SLURM 0.4.2
 ========================
  -- Fix memory leak in BlueGene plugin.
