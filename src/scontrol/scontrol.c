@@ -27,6 +27,7 @@
 #include <src/api/slurm.h>
 #include <src/common/nodelist.h>
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/xmalloc.h>
 
 #define	BUF_SIZE 1024
 #define	max_input_fields 128
@@ -61,7 +62,7 @@ main (int argc, char *argv[])
 		input_words = argc;
 	else
 		input_words = 128;
-	input_fields = (char **) malloc (sizeof (char *) * input_words);
+	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
 	for (i = 1; i < argc; i++) {
 		if (strcmp (argv[i], "-q") == 0) {
 			quiet_flag = 1;
@@ -136,7 +137,7 @@ get_command (int *argc, char **argv)
 
 	if (in_line_size == 0) {
 		in_line_size += BUF_SIZE;
-		in_line = (char *) malloc (in_line_size);
+		in_line = (char *) xmalloc (in_line_size);
 		if (in_line == NULL) {
 			fprintf (stderr, "%s: error %d allocating memory\n",
 				 command_name, errno);
@@ -157,7 +158,7 @@ get_command (int *argc, char **argv)
 			break;
 		if ((in_line_pos + 2) >= in_line_size) {
 			in_line_size += BUF_SIZE;
-			in_line = (char *) realloc (in_line, in_line_size);
+			xrealloc (in_line, in_line_size);
 			if (in_line == NULL) {
 				fprintf (stderr,
 					 "%s: error %d allocating memory\n",
@@ -198,7 +199,7 @@ void
 print_build (char *build_param)
 {
 	int error_code;
-	static build_info_msg_t *old_build_table_ptr= NULL;
+	static build_info_msg_t *old_build_table_ptr = NULL;
 	build_info_msg_t  *build_table_ptr = NULL;
 
 	if (old_build_table_ptr) {
@@ -206,12 +207,16 @@ print_build (char *build_param)
 			 &build_table_ptr);
 		if (error_code == 0)
 			slurm_free_build_info(old_build_table_ptr);
-		else if (error_code == -1)
+		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
 			build_table_ptr = old_build_table_ptr;
+			error_code = 0;
+			if (quiet_flag == -1)
+				printf ("slurm_load_build no change in data\n");
+		}
 	}
 	else
 		error_code = slurm_load_build ((time_t) NULL, &build_table_ptr);
-	if (error_code > 0) {
+	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_build error %d\n", error_code);
 		return;
@@ -300,12 +305,16 @@ print_job (char * job_id_str)
 					&job_buffer_ptr);
 		if (error_code == 0)
 			slurm_free_job_info (old_job_buffer_ptr);
-		else if (error_code == -1)
+		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
 			job_buffer_ptr = old_job_buffer_ptr;
+			error_code = 0;
+			if (quiet_flag == -1)
+				printf ("slurm_free_job_info no change in data\n");
+		}
 	}
 	else
 		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
-	if (error_code > 0) {
+	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_job error %d\n", error_code);
 		return;
@@ -313,8 +322,6 @@ print_job (char * job_id_str)
 	else if (error_code == 0)
 		old_job_buffer_ptr = job_buffer_ptr;
 	
-	printf("time=%lu\n",(long)old_job_buffer_ptr->last_update);
-
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
 
@@ -325,35 +332,7 @@ print_job (char * job_id_str)
 	for (i = 0; i < job_buffer_ptr->record_count; i++) {
 		if (job_id_str && job_id != job_ptr[i].job_id) 
 			continue;
-		slurm_print_job_table ( & job_ptr[i] ) ;
-/*
-		printf ("JobId=%u UserId=%u ", 
-			job_ptr[i].job_id, job_ptr[i].user_id);
-		printf ("JobState=%u TimeLimit=%u ", 
-			job_ptr[i].job_state, job_ptr[i].time_limit);
-		printf ("Priority=%u Partition=%s\n", 
-			job_ptr[i].priority, job_ptr[i].partition);
-
-		printf ("   Name=%s NodeList=%s ", 
-			job_ptr[i].name, job_ptr[i].nodes);
-		printf ("StartTime=%x EndTime=%x\n", 
-			(uint32_t) job_ptr[i].start_time, 
-			(uint32_t) job_ptr[i].end_time);
-
-		printf ("   ReqProcs=%u ReqNodes=%u ",
-			job_ptr[i].num_procs, job_ptr[i].num_nodes);
-		printf ("Shared=%u Contiguous=%u ",
-			job_ptr[i].shared, job_ptr[i].contiguous);
-		printf ("MinProcs=%u MinMemory=%u ",
-			job_ptr[i].min_procs, job_ptr[i].min_memory);
-		printf ("MinTmpDisk=%u\n",
-			job_ptr[i].min_tmp_disk);
-
-		printf ("   ReqNodeList=%s Features=%s ",
-			job_ptr[i].req_nodes, job_ptr[i].features);
-		printf ("JobScript=%s\n\n",
-			job_ptr[i].job_script);
-*/
+		slurm_print_job_table (stdout, & job_ptr[i] ) ;
 		if (job_id_str)
 			break;
 	}
@@ -418,13 +397,17 @@ print_node_list (char *node_list)
 			&node_info_ptr);
 		if (error_code == 0)
 			slurm_free_node_info (old_node_info_ptr);
-		else if (error_code == -1)
+		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
 			node_info_ptr = old_node_info_ptr;
+			error_code = 0;
+			if (quiet_flag == -1)
+				printf ("slurm_free_job_info no change in data\n");
+		}
 
 	}
 	else
 		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
-	if (error_code > 0) {
+	if (error_code) {
 		if (quiet_flag != 1)
 			printf ("load_node error %d\n", error_code);
 		return;
@@ -440,7 +423,7 @@ print_node_list (char *node_list)
 	}
 	else {
 		format = NULL;
-		my_node_list = malloc (strlen (node_list) + 1);
+		my_node_list = xmalloc (strlen (node_list) + 1);
 		if (my_node_list == NULL) {
 			if (quiet_flag != 1)
 				fprintf (stderr,
@@ -467,7 +450,7 @@ print_node_list (char *node_list)
 					fprintf (stderr,
 						 "invalid node name specification: %s\n",
 						 format);
-				free (format);
+				xfree (format);
 				break;
 			}	
 			for (i = start_inx; i <= end_inx; i++) {
@@ -479,10 +462,10 @@ print_node_list (char *node_list)
 				/*print_node (this_node_name, node_info_ptr);*/
 			}
 			if (format)
-				free (format);
+				xfree (format);
 			str_ptr2 = (char *) strtok_r (NULL, ",", &str_ptr1);
 		}		
-		free (my_node_list);
+		xfree (my_node_list);
 	}			
 	return;
 }
@@ -501,12 +484,19 @@ print_part (char *partition_name)
 	partition_table_msg_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
+printf("old1=%ld, time1=%ld\n",(long)old_part_info_ptr, (long)old_part_info_ptr->last_update);
 		error_code = slurm_load_partitions (old_part_info_ptr->last_update, 
 					&part_info_ptr);
-		if (error_code == 0)
-			slurm_free_partition_info (old_part_info_ptr);
-		else if (error_code == -1)
+printf("time2=%ld, err=%d\n",(long)part_info_ptr->last_update, error_code);
+		if (error_code == 0) {
+/*			slurm_free_partition_info (old_part_info_ptr); */
+		}
+		else if (error_code == SLURM_NO_CHANGE_IN_DATA) {
 			part_info_ptr = old_part_info_ptr;
+			error_code = 0;
+			if (quiet_flag == -1)
+				printf ("slurm_load_part no change in data\n");
+		}
 	}
 	else
 		error_code = slurm_load_partitions ((time_t) NULL, &part_info_ptr);
@@ -515,8 +505,9 @@ print_part (char *partition_name)
 			printf ("slurm_load_part error %d\n", error_code);
 		return;
 	}
-	else if (error_code == 0)
+	else
 		old_part_info_ptr = part_info_ptr;
+printf("old2=%ld\n",(long)old_part_info_ptr);
 
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) part_info_ptr->last_update);
@@ -526,24 +517,12 @@ print_part (char *partition_name)
 		if (partition_name && 
 		    strcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
-		slurm_print_partition_table ( & part_ptr[i] ) ;
-/*
-		printf ("PartitionName=%s MaxTime=%u ", 
-			part_ptr[i].name, part_ptr[i].max_time);
-		printf ("MaxNodes=%u TotalNodes=%u ", 
-			part_ptr[i].max_nodes, part_ptr[i].total_nodes);
-		printf ("TotalCPUs=%u Key=%u\n", 
-			part_ptr[i].total_cpus, part_ptr[i].key);
-		printf ("   Default=%u ", 
-			part_ptr[i].default_part);
-		printf ("Shared=%u StateUp=%u ", 
-			part_ptr[i].shared, part_ptr[i].state_up);
-		printf ("Nodes=%s AllowGroups=%s\n\n", 
-			part_ptr[i].nodes, part_ptr[i].allow_groups);
-*/
+		slurm_print_partition_table (stdout, & part_ptr[i] ) ;
 		if (partition_name)
 			break;
 	}
+slurm_free_partition_info (old_part_info_ptr);
+old_part_info_ptr=NULL;
 }
 
 
@@ -685,7 +664,7 @@ update_it (int argc, char *argv[])
 	int error_code, i, in_line_size;
 
 	in_line_size = BUF_SIZE;
-	in_line = (char *) malloc (in_line_size);
+	in_line = (char *) xmalloc (in_line_size);
 	if (in_line == NULL) {
 		fprintf (stderr, "%s: error %d allocating memory\n",
 			 command_name, errno);
@@ -696,7 +675,7 @@ update_it (int argc, char *argv[])
 	for (i = 0; i < argc; i++) {
 		if ((strlen (in_line) + strlen (argv[i]) + 2) > in_line_size) {
 			in_line_size += BUF_SIZE;
-			in_line = (char *) realloc (in_line, in_line_size);
+			xrealloc (in_line, in_line_size);
 			if (in_line == NULL) {
 				fprintf (stderr,
 					 "%s: error %d allocating memory\n",
@@ -710,7 +689,7 @@ update_it (int argc, char *argv[])
 	}			
 
 	error_code = slurm_update_config (in_line);
-	free (in_line);
+	xfree (in_line);
 	return error_code;
 }
 
