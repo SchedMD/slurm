@@ -68,16 +68,18 @@ static void _init_sys(partition_t*);
     * OUT - bp: will point to BP at location loc
     * OUT - rc: error code (0 = success)
     */
-   int  _get_bp(rm_element_t *bp, rm_location_t *loc);
-   int  _is_not_equals_all_coord (int* rec_a, int* rec_b);
-   int  _is_not_equals_some_coord(int* rec_a, int* rec_b);
-   void _pre_allocate(rm_partition_t* my_part, 
+// static int  _get_bp(rm_element_t *bp, rm_location_t *loc);
+   static int  _is_not_equals_all_coord (int* rec_a, int* rec_b);
+   static int  _is_not_equals_some_coord(int* rec_a, int* rec_b);
+   static void _pre_allocate(rm_partition_t* my_part, 
 		      rm_connection_type_t part_conn);
-   int _post_allocate(rm_partition_t *my_part, 
+   static int _post_allocate(rm_partition_t *my_part, 
 		pm_partition_id_t *part_id);
-   int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list);
-// int _get_switch_list(partition_t* partition, List* switch_list);
-   int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp);
+   static int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], 
+		List* switch_list);
+// static int _get_switch_list(partition_t* partition, List* switch_list);
+   static int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, 
+		rm_BP_t** bp);
 #endif
 
 static int  _create_bgl_partitions(List requests);
@@ -1033,7 +1035,7 @@ extern int read_bgl_partitions(void)
 	int rc = SLURM_SUCCESS;
 
 #ifdef HAVE_BGL_FILES
-	int bp_cnt, i;
+	int bp_cnt, i, rm_rc;
 	rm_element_t *bp_ptr;
 	rm_location_t bp_loc;
 	pm_partition_id_t part_id;
@@ -1041,47 +1043,96 @@ extern int read_bgl_partitions(void)
 	char node_name_tmp[16];
 	bgl_record_t *bgl_part_ptr;
 
-	rm_get_data(bgl, RM_BPNum, &bp_cnt);
-	for (i=0; i<bp_cnt; i++) {
-		if (i)
-			rm_get_data(bgl, RM_NextBP, &bp_ptr);
-		else
-			rm_get_data(bgl, RM_FirstBP, &bp_ptr);
+	if (!bgl_init_part_list)
+		bgl_init_part_list = list_create(_part_list_del);
 
-		rm_get_data(bp_ptr, RM_BPLoc, &bp_loc);
+	if ((rm_rc = rm_get_data(bgl, RM_BPNum, &bp_cnt)) != STATUS_OK) {
+		error("rm_get_data(RM_BPNum): %s", bgl_err_str(rm_rc));
+		rc = SLURM_ERROR;
+		bp_cnt = 0;
+	}
+	for (i=0; i<bp_cnt; i++) {
+		if (i) {
+			if ((rm_rc = rm_get_data(bgl, RM_NextBP, &bp_ptr))
+					!= STATUS_OK) {
+				error("rm_get_data(RM_NextBP): %s", 
+					bgl_err_str(rm_rc));
+				rc = SLURM_ERROR;
+				break;
+			}
+		} else {
+			if ((rm_rc = rm_get_data(bgl, RM_FirstBP, &bp_ptr))
+					!= STATUS_OK) {
+				error("rm_get_data(RM_FirstBP): %s",
+					bgl_err_str(rm_rc));
+				rc = SLURM_ERROR;
+				break;
+			}
+		}
+		if ((rm_rc = rm_get_data(bp_ptr, RM_BPLoc, &bp_loc))
+				!= STATUS_OK) {
+			error("rm_get_data(RM_BPLoc): %s",
+				bgl_err_str(rm_rc));
+			rc = SLURM_ERROR;
+			break;
+		}
 		sprintf(node_name_tmp, "bgl%d%d%d", 
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		rm_get_data(bp_ptr, RM_BPPartID, &part_id);
+		if ((rm_rc = rm_get_data(bp_ptr, RM_BPPartID, &part_id))
+				!= STATUS_OK) {
+			error("rm_get_data(RM_BPPartID: %s",
+				bgl_err_str(rm_rc));
+			rc = SLURM_ERROR;
+			break;
+		}
 
 		if (!part_id || (part_id[0] == '\0')) {
+#if 1
+			/* this is a problem on the 128 c-node system */
+			part_id = "LLNL_128_16";
+			
+#else
 			info("Node %s in blue gene partition NONE",
 				node_name_tmp);
 			continue;
+#endif
 		}
-		if (!bgl_init_part_list)
-			bgl_init_part_list = list_create(_part_list_del);
+		info("Node %s in BglBlock %s", node_name_tmp, part_id);
 
-		bgl_part_ptr = list_find_first(bgl_init_part_list, _part_list_find, 
-			part_id);
+		bgl_part_ptr = list_find_first(bgl_init_part_list, 
+			_part_list_find, part_id);
 		if (!bgl_part_ptr) {
 			/* New BGL partition record */
-			rc = rm_get_partition(part_id, &part_ptr);
-			if (rc) {
-				info("rm_get_partition %s errno=%d",
-					part_id, rc);
+			if ((rm_rc = rm_get_partition(part_id, &part_ptr))
+					!= STATUS_OK) {
+				error("rm_get_partition(%s): %s",
+					part_id, bgl_err_str(rm_rc));
+				rc = SLURM_ERROR;
 				continue;
 			}
-			printf("Part = %s %s\n",part_id, node_name_tmp);
 			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
 			list_push(bgl_init_part_list, bgl_part_ptr);
 			bgl_part_ptr->bgl_part_id = xstrdup(part_id);
 			bgl_part_ptr->hostlist = hostlist_create(node_name_tmp);
-			rm_get_data(part_ptr, RM_PartitionConnection,
-				&bgl_part_ptr->conn_type);
-			rm_get_data(part_ptr, RM_PartitionMode,
-				&bgl_part_ptr->node_use);
+			if ((rm_rc = rm_get_data(part_ptr, 
+					RM_PartitionConnection,
+					&bgl_part_ptr->conn_type)) 
+					!= STATUS_OK) {
+				error("rm_get_data(RM_PartitionConnection): %s",
+					bgl_err_str(rm_rc));
+			}
+			if ((rm_rc = rm_get_data(part_ptr, RM_PartitionMode,
+					&bgl_part_ptr->node_use)) 
+					!= STATUS_OK) {
+				error("rm_get_data(RM_PartitionMode): %s",
+					bgl_err_str(rm_rc));
+			}
 			bgl_part_ptr->part_lifecycle = STATIC;
-			rm_free_partition(part_ptr);
+			if ((rm_rc = rm_free_partition(part_ptr)) 
+						!= STATUS_OK) {
+				error("rm_free_partition(): %s", 
+					bgl_err_str(rm_rc));
+			}
 		} else {
 			/* Add node name to existing BGL partition record */
 			hostlist_push(bgl_part_ptr->hostlist, node_name_tmp);
@@ -1146,7 +1197,9 @@ static int  _part_list_find(void *object, void *key)
 		return -1;
 	}
 
-	return strcmp(part_ptr->bgl_part_id, part_id);
+	if (strcmp(part_ptr->bgl_part_id, part_id) == 0)
+		return 1;
+	return 0;
 }
 #endif
 
