@@ -4,7 +4,7 @@
 ############################################################################
 # Copyright (C) 2002 The Regents of the University of California.
 # Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
-# Written by Moe Jette <jette1@llnl.gov>
+# Written by Morris Jette <jette1@llnl.gov>
 # UCRL-CODE-2002-040.
 # 
 # This file is part of SLURM, a resource management program.
@@ -32,7 +32,6 @@ global scancel scontrol sinfo squeue srun
 # Used to locate binaries, libraries, and header files.
 #
 set slurm_dir   "/usr"
-
 set scancel     "${slurm_dir}/bin/scancel"
 set scontrol    "${slurm_dir}/bin/scontrol"
 set sinfo       "${slurm_dir}/bin/sinfo"
@@ -53,6 +52,7 @@ set bin_chmod	"chmod"
 set bin_cp	"cp"
 set bin_echo	"echo"
 set bin_env	"env"
+set bin_file	"file"
 set bin_id	"id"
 set bin_hostname "hostname"
 set bin_kill	"kill"
@@ -73,7 +73,7 @@ set bin_wc	"wc"
 # be initiated within this number of seconds.
 # for interactive slurm jobs: set timeout $max_job_delay
 #
-set max_job_delay 60
+set max_job_delay 100
 
 #
 # Files must be propogated between nodes within this number of seconds.
