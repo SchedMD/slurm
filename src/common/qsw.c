@@ -25,8 +25,12 @@
 \*****************************************************************************/
 
 #if     HAVE_CONFIG_H
-#include "config.h"
+#  include "config.h"
 #endif
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif /* WITH_PTHREADS */
 
 #include <sys/param.h>
 #include <sys/types.h>
@@ -41,17 +45,16 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <limits.h>	/* INT_MAX */
-#include <pthread.h>
 #include <stdio.h>
 #include <elan3/elan3.h>
 #include <elan3/elanvp.h>
 #include <rms/rmscall.h>
 
-#include <src/common/bitstring.h>
-#include <src/common/log.h>
-#include <src/common/pack.h>
-#include <src/common/qsw.h>
-#include <src/common/slurm_errno.h>
+#include "src/common/bitstring.h"
+#include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/qsw.h"
+#include "src/common/slurm_errno.h"
 
 /*
  * Definitions local to this module.
@@ -416,7 +419,8 @@ _generate_hwcontext(int num)
 		_unlock_qsw();
 	} else {
 		_srand_if_needed();
-		new = lrand48() % (QSW_CTX_END - (QSW_CTX_START + num - 1) - 1);
+		new = lrand48() % 
+		      (QSW_CTX_END - (QSW_CTX_START + num - 1) - 1);
 		new +=  QSW_CTX_START;
 	}
 	return new;
@@ -494,8 +498,10 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 			else
 				task_cnt = min_procs_per_node;
 			for (j = 0; j < task_cnt; j++) {
-				proc0 = (i - cap->LowNode) * max_procs_per_node;
-				assert((proc0 + j) < (sizeof(cap->Bitmap) * 8));
+				proc0 = (i - cap->LowNode) * 
+				        max_procs_per_node;
+				assert((proc0 + j) < 
+				       (sizeof(cap->Bitmap) * 8));
 				BT_SET(cap->Bitmap, (proc0 + j));
 			}
 		}
@@ -525,7 +531,8 @@ qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, bitstr_t *nodeset,
 	/* initialize jobinfo */
 	j->j_prognum = _generate_prognum();
 	j->j_ctx = NULL;
-	_init_elan_capability(&j->j_cap, nprocs, nnodes, nodeset, cyclic_alloc);
+	_init_elan_capability(&j->j_cap, nprocs, nnodes, nodeset, 
+	                      cyclic_alloc);
 
 	return 0;
 }

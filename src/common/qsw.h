@@ -29,8 +29,8 @@
 #include <elan3/elan3.h>
 #include <elan3/elanvp.h>
 
-#include <src/common/bitstring.h>
-#include <src/common/pack.h>
+#include "src/common/bitstring.h"
+#include "src/common/pack.h"
 
 #ifndef _QSW_INCLUDED
 #define _QSW_INCLUDED
@@ -70,9 +70,11 @@ void 		qsw_prog_fini(qsw_jobinfo_t jobinfo);
 
 int 		qsw_prgdestroy(qsw_jobinfo_t jobinfo); /* was qsw_prog_reap */
 
-int 		qsw_setcap(qsw_jobinfo_t jobinfo, int procnum); /* was qsw_attach */
+int 		qsw_setcap(qsw_jobinfo_t jobinfo, int procnum); 
+		/* was qsw_attach */
 
-int		qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum); /* was qsw_signal_job */
+int		qsw_prgsignal(qsw_jobinfo_t jobinfo, int signum); 
+		/* was qsw_signal_job */
 
 int		qsw_getnodeid(void);
 int		qsw_getnodeid_byhost(char *host);
