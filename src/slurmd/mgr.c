@@ -64,8 +64,9 @@ static int  _run_job(slurmd_job_t *job);
 static int  _run_batch_job(slurmd_job_t *job);
 static void _exec_all_tasks(slurmd_job_t *job);
 static void _task_exec(slurmd_job_t *job, int i, bool batch);
-static int  _seteuid_and_chdir(slurmd_job_t *job);
-static int  _setuid(slurmd_job_t *job);
+static int  _drop_privileges(struct passwd *pwd);
+static int  _reclaim_privileges(struct passwd *pwd);
+static int  _become_user(slurmd_job_t *job);
 static int  _unblock_all_signals(void);
 static int  _send_exit_msg(int rc, task_info_t *t);
 static int  _complete_job(slurmd_job_t *job, int rc, int status);
@@ -87,6 +88,9 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 	verbose("running job step %d.%d for %s", 
 		job->jobid, job->stepid, job->pwd->pw_name);
 
+
+	/* Run job's tasks and wait for all tasks to exit.
+	 */
 	if (_run_job(job) < 0) 
 		goto error;
 
@@ -254,19 +258,12 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 static int
 _run_job(slurmd_job_t *job)
 {
-	int   rc = SLURM_SUCCESS;
-	int   i;
-	uid_t suid = getuid();
-	gid_t sgid = getgid();
+	int            rc   = SLURM_SUCCESS;
+	int            i    = 0;
+	struct passwd *spwd = getpwuid(geteuid());
 
 	/* Insert job info into shared memory */
 	job_update_shm(job);
-
-	/* 
-	 * Need to detach from shared memory
-	 * We don't know what will happen in interconnect_init()
-	 */
-	/* shm_fini(); */
 
 	if (interconnect_init(job) == SLURM_ERROR) {
 		job_error(job, "interconnect_init: %m");
@@ -275,23 +272,10 @@ _run_job(slurmd_job_t *job)
 		goto done;
 	}
 
-	/* Reattach to shared memory after interconnect is initialized
+	/*
+	 * Temporarily drop permissions 
 	 */
-	/* job_debug(job, "%ld reattaching to shm", getpid()); */
-	/* if (shm_init() < 0) {
-		job_error(job, "unable to reattach to shm: %m");
-		rc = -1;
-		goto done;
-	}*/
-	
-	/* initialize I/O, connect back to srun, and spawn thread for
-	 * forwarding I/O.
-	 */
-
-	/* Temporarily drop permissions and attempt to chdir()
-	 *
-	 */
-	 if ((rc = _seteuid_and_chdir(job)) < 0) 
+	 if ((rc = _drop_privileges(job->pwd)) < 0)
 		goto done;
 
 	/* Option: connect slurmd stderr to srun local task 0: stderr? */
@@ -301,8 +285,8 @@ _run_job(slurmd_job_t *job)
 		goto done;
 	}
 
-	if ((seteuid(suid) < 0) || (setegid(sgid) < 0)) 
-		error("sete{u/g}id(%ld/%ld): %m", suid, sgid);
+	if (_reclaim_privileges(spwd) < 0) 
+		error("sete{u/g}id(%ld/%ld): %m", spwd->pw_uid, spwd->pw_gid);
 
 	_exec_all_tasks(job);
 	job_debug2(job, "job complete, waiting on IO");
@@ -406,22 +390,24 @@ _run_batch_job(slurmd_job_t *job)
 	int    rc     = 0;
 	task_t t;
 	pid_t  sid, pid;
-	gid_t  sgid = getgid();
-	uid_t  suid = getuid();
+	struct passwd *spwd = getpwuid(getuid());
 
 	/* Temporarily drop permissions to initiate
 	 * IO thread. This will ensure that calling user
 	 * has appropriate permissions to open output
 	 * files, if any.
 	 */
-	_seteuid_and_chdir(job);
+	if (_drop_privileges(job->pwd) < 0) {
+		error("seteuid(%ld) : %m", job->uid);
+		return ESLURMD_SET_UID_OR_GID_ERROR;
+	}
 
 	rc = io_spawn_handler(job);
 
 	/* seteuid/gid back to saved uid/gid
 	 */
-	if ((seteuid(suid) < 0) || (setegid(sgid) < 0)) {
-		error("set{e/g}uid(%ld/%ld) : %m", suid, sgid);
+	if (_reclaim_privileges(spwd) < 0) {
+		error("seteuid(%ld) : %m", spwd->pw_uid);
 		return ESLURMD_SET_UID_OR_GID_ERROR;
 	}
 
@@ -457,7 +443,7 @@ _run_batch_job(slurmd_job_t *job)
 	job->task[0]->pid = t.pid;
 
 	if (shm_add_task(job->jobid, job->stepid, &t) < 0) {
-		job_error(job, "shm_add_task: %m");
+		error("job %d: shm_add_task: %m", job->jobid);
 		return ESLURMD_SHARED_MEMORY_ERROR;
 	}
 
@@ -509,37 +495,52 @@ _wait_for_all_tasks(slurmd_job_t *job)
 }
 
 static int
-_seteuid_and_chdir(slurmd_job_t *job)
+_drop_privileges(struct passwd *pwd)
 {
-	if (setegid(job->pwd->pw_gid) < 0) {
+	if (setegid(pwd->pw_gid) < 0) {
 		error("setegid: %m");
 		return -1;
 	}
 
-	if (initgroups(job->pwd->pw_name, job->pwd->pw_gid) < 0) {
-		;
-		/* error("initgroups: %m"); */
+	if (initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
+		error("initgroups: %m"); 
 	}
 
-	if (seteuid(job->pwd->pw_uid) < 0) {
+	if (seteuid(pwd->pw_uid) < 0) {
 		error("seteuid: %m");
 		return -1;
-	}
-
-	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to `%s': %m: going to /tmp instead",
-				job->cwd); 
-		if (chdir("/tmp") < 0) {
-			error("couldn't chdir to /tmp either. dying.");
-			return -1;
-		}
 	}
 
 	return SLURM_SUCCESS;
 }
 
 static int
-_setuid(slurmd_job_t *job)
+_reclaim_privileges(struct passwd *pwd)
+{
+	if (seteuid(pwd->pw_uid) < 0) {
+		error("seteuid: %m");
+		return -1;
+	}
+
+	if (setegid(pwd->pw_gid) < 0) {
+		error("setegid: %m");
+		return -1;
+	}
+
+	if (initgroups(pwd->pw_name, pwd->pw_gid) < 0) {
+		error("initgroups: %m"); 
+		return -1;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+
+
+
+
+static int
+_become_user(slurmd_job_t *job)
 {
 	if (setgid(job->pwd->pw_gid) < 0) {
 		error("setgid: %m");
@@ -551,7 +552,7 @@ _setuid(slurmd_job_t *job)
 		/* error("initgroups: %m"); */
 	}
 
-	if (setuid(job->uid) < 0) {
+	if (setuid(job->pwd->pw_uid) < 0) {
 		error("setuid: %m");
 		return -1;
 	}
@@ -572,7 +573,7 @@ _task_exec(slurmd_job_t *job, int i, bool batch)
 	 */
 	log_init("slurmd", opts, 0, NULL); 
 
-	if ((rc = _setuid(job)) < 0) 
+	if ((rc = _become_user(job)) < 0) 
 		exit(rc);
 
 	if (_unblock_all_signals() == SLURM_ERROR) {
@@ -589,6 +590,16 @@ _task_exec(slurmd_job_t *job, int i, bool batch)
 	if (!batch && (interconnect_env(job, i) < 0)) {
 		error("interconnect_env: %m");
 	}
+
+	if (chdir(job->cwd) < 0) {
+		error("couldn't chdir to `%s': %m: going to /tmp instead",
+				job->cwd); 
+		if (chdir("/tmp") < 0) {
+			error("couldn't chdir to /tmp either. dying.");
+			exit(1);
+		}
+	}
+
 
 	/* exec the cmdline */
 	execve(job->argv[0], job->argv, job->env);

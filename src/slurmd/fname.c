@@ -50,9 +50,19 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 {
 	unsigned long int wid   = 0;
 	char *name = NULL;
+	char *orig = xstrdup(format);
 	char *p, *q;
 
-	q = p = format;
+	/* If format doesn't specify an absolute pathname,
+	 * use cwd
+	 */
+	if (orig[0] != '/') {
+		xstrcat(name, job->cwd);
+		if (name[strlen(name)-1] != '/')
+			xstrcatchar(name, '/');
+	}
+
+	q = p = orig;
 	while(*p != '\0') {
 		if (*p == '%') {
 			if (isdigit(*(++p))) {
@@ -102,6 +112,7 @@ fname_create(slurmd_job_t *job, const char *format, int taskid)
 	if (q != p)
 		xmemcat(name, q, p);
 
+	xfree(orig);
 	return name;
 }
 
