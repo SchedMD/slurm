@@ -50,8 +50,9 @@
 #include "src/srun/opt.h"
 
 #define IO_BUFSIZ		2048
-#define MAX_MSG_WAIT_SEC	  10	/* max wait to confirm launches, sec */
-#define MAX_IO_WAIT_SEC		 600	/* max I/O idle, secs, warning msg */
+#define MAX_MSG_WAIT_SEC	  30	/* max wait to confirm launches, sec */
+#define MAX_TERM_WAIT_SEC	  60	/* max time since first task 
+					 * terminated, secs, warning msg */
 #define POLL_TIMEOUT_MSEC	 500	/* max wait for i/o poll, msec */
 
 /* fd_info struct used in poll() loop to map fds back to task number,
@@ -65,7 +66,6 @@ typedef struct fd_info {
 } fd_info_t;
 
 static time_t time_first_done = 0;
-static time_t time_job_done = 0;
 static time_t time_last_io = 0;
 static time_t time_startup = 0;
 
@@ -197,25 +197,10 @@ _io_thr_poll(void *job_arg)
 				time_first_done = time(NULL);
 		}
 
-		if ((job->state == SRUN_JOB_OVERDONE) ||
-		    (job->state == SRUN_JOB_FAILED)) {
-			if (time_job_done == 0)
-				time_job_done = time(NULL);
-		}
-		if (time_job_done &&
-		    ((time(NULL) - time_job_done) > MAX_MSG_WAIT_SEC)) {
-			for (i = 0; i < opt.nprocs; i++) {
-				if ((job->out[i] == IO_DONE) && 
-				    (job->err[i] == IO_DONE))
-					continue;
-				error("Task %d on node %s terminated abnormally",
-				      i, _taskid2hostname(i, job));
-				update_job_state(job, SRUN_JOB_FAILED);
-			}
+		if (job->state == SRUN_JOB_FAILED)
 			pthread_exit(0);
-		}
 
-		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) < 0) {
+		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
 			if (rc == 0) {	/* timeout */
 				_do_poll_timeout(job);
 				continue;
@@ -266,8 +251,8 @@ _io_thr_poll(void *job_arg)
 static void _do_poll_timeout (job_t *job)
 {
 	int i, j;
-	static bool no_io_msg_sent = false;
 	static bool check_all_start = false;
+	static bool term_msg_sent = false;
 
 	if ((check_all_start == false) &&
 	    ((time(NULL) - time_startup) > MAX_MSG_WAIT_SEC)) {
@@ -282,9 +267,14 @@ static void _do_poll_timeout (job_t *job)
 		}
 	}
 
+	for (i = 0; ((i < opt.nprocs) && (time_first_done == 0)); i++) {
+		if ((job->task_state[i] == SRUN_TASK_FAILED) || 
+		    (job->task_state[i] == SRUN_TASK_EXITED))
+			time_first_done = time(NULL);
+	}
+
 	i = time(NULL) - time_last_io;
 	j = time(NULL) - time_first_done;
-
 	if (job->state == SRUN_JOB_FAILED)
 		pthread_exit(0);
 	else if (time_first_done && opt.max_wait && (j > opt.max_wait)) {
@@ -293,11 +283,10 @@ static void _do_poll_timeout (job_t *job)
 		report_task_status(job);
 		update_job_state(job, SRUN_JOB_FAILED);
 		pthread_exit(0);
-	} else if (no_io_msg_sent)
-		;
-	else if (i > MAX_IO_WAIT_SEC) {
-		info("Warning: No I/O in %d seconds", MAX_IO_WAIT_SEC);
-		no_io_msg_sent = true; 
+	} else if (time_first_done && (term_msg_sent == false) && 
+		   (j > MAX_TERM_WAIT_SEC)) {
+		info("Warning: First task termination %d seconds ago", j);
+		term_msg_sent = true;
 	}
 }
 
@@ -337,7 +326,7 @@ void report_task_status(job_t *job)
 		current_state = job->task_state[i];
 		first_task = last_task = i;
 		for (j = (i+1); j < opt.nprocs; j++) {
-			if (current_state == job->task_state[i])
+			if (current_state == job->task_state[j])
 				last_task = j;
 			else
 				break;
