@@ -243,7 +243,7 @@ slurm_auth_context_create( const char *auth_type )
         c->auth_errno = SLURM_SUCCESS;
 
         /* Copy the authentication type. */
-        c->auth_type = strdup( auth_type );
+        c->auth_type = xstrdup( auth_type );
         if ( c->auth_type == NULL ) {
                 debug3( "can't make local copy of authentication type" );
                 xfree( c );
@@ -299,7 +299,7 @@ slurm_auth_context_destroy( slurm_auth_context_t c )
                 }
         }  
 
-        free( c->auth_type );
+        xfree( c->auth_type );
         xfree( c );
         
         return SLURM_SUCCESS;
@@ -340,7 +340,12 @@ slurm_auth_fini( void )
 	if ( g_context )
 		slurm_auth_context_destroy( g_context );
 
-	free_slurm_conf( &conf );
+	slurm_mutex_lock( &config_lock );
+	if ( conf.slurmd_port ) {
+		free_slurm_conf( &conf );
+		conf.slurmd_port = 0;
+	}
+	slurm_mutex_unlock( &config_lock );
 }
 
 /*
