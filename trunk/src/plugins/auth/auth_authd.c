@@ -74,6 +74,9 @@ const char plugin_name[]	= "Brett Chun's authd authentication plugin";
 const char plugin_type[]	= "auth/authd";
 const uint32_t plugin_version = 90;
 
+/* Default life span of an authd credential in seconds. */
+static const int authd_ttl = 2;
+
 typedef struct _slurm_auth_credential {
 	credentials cred;
 	signature sig;
@@ -83,8 +86,13 @@ typedef struct _slurm_auth_credential {
 /* Plugin-global errno. */
 static int plugin_errno = SLURM_SUCCESS;
 
+/*
+ * Errno values.  If you add something here you have to add its
+ * corresponding error string in slurm_auth_errstr() below.
+ */
 enum {
-	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR
+	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR,
+	SLURM_AUTH_EXPIRED
 };
 
 /*
@@ -245,9 +253,11 @@ slurm_auth_free( slurm_auth_credential_t *cred )
 }
 
 int
-slurm_auth_activate( slurm_auth_credential_t *cred, int ttl )
+slurm_auth_activate( slurm_auth_credential_t *cred )
 {
-	if ( ( cred == NULL ) || ( ttl < 1 ) ) {
+	int ttl = authd_ttl;
+	
+	if ( cred == NULL ) {
 		plugin_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
@@ -258,6 +268,21 @@ slurm_auth_activate( slurm_auth_credential_t *cred, int ttl )
 
 	/* Set a valid time interval. */
 	cred->cred.valid_from = time( NULL );
+
+	/*
+	 * In debug mode read the time-to-live from an environment
+	 * variable.
+	 */
+#ifndef NDEBUG
+	{
+		char *env = getenv( "SLURM_AUTHD_TTL" );
+		if ( env ) {
+			ttl = atoi( env );
+			if ( ttl <= 0 ) ttl = authd_ttl;
+		}
+	}
+#endif /*NDEBUG*/
+	 
 	cred->cred.valid_to = cred->cred.valid_from + ttl;
 
 	/* Sign the credential. */
@@ -442,6 +467,7 @@ slurm_auth_errstr( int slurm_errno )
 		char *msg;
 	} tbl[] = {
 		{ SLURM_AUTH_UNPACK, "cannot unpack authentication type" },
+		{ SLURM_AUTH_EXPIRED, "the credential has expired" },
 		{ 0, NULL }
 	};
 
