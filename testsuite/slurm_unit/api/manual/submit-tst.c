@@ -17,7 +17,6 @@ main (int argc, char *argv[])
 	
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1; 
-	job_mesg. groups = ("students,employee");
 	job_mesg. name = ("job01");
 	job_mesg. min_procs = 1;
 	job_mesg. min_memory = 100;
@@ -56,7 +55,6 @@ main (int argc, char *argv[])
 	for (i=1; i<count; i++) {
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1; 
-		job_mesg. groups = ("students,employee");
 		job_mesg. name = ("job02+");
 		job_mesg. min_procs = 1;
 		job_mesg. min_memory = 100 + i;

@@ -32,7 +32,6 @@ main( int argc, char* argv[])
 	printf("Creating Job Message\n");
 	
 	job_mesg. contiguous = get_tf_resp( "contiguous", 0 );
-	job_mesg. groups = get_string_resp( "groups", "students,employee\0");
 	job_mesg. name = get_string_resp( "job_name", "job01\0");
 	job_mesg. min_procs = get_int_resp( "min_procs", 4 );
 	job_mesg. min_memory = get_int_resp( "min_memory", 1024);
