@@ -81,7 +81,15 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	{
 		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
 		{
-			info ( "Error receiving datagram.  errno %i", errno ) ;
+			if ( errno ==  EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				info ( "Error receiving datagram.  errno %i", errno ) ;
+				return SLURM_PROTOCOL_ERROR ;
+			}
 			return recv_len ;
 		}
 		if ( recv_len >= 0 )
@@ -113,19 +121,49 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 
 	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 
-	if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) != sizeof ( uint32_t ) )
+	while ( true )
 	{
-		info ( "Error sending length of datagram" ) ;
-		signal(SIGPIPE, SIG_DFL);
-		return SLURM_PROTOCOL_ERROR ;
+		if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS) )  == SLURM_PROTOCOL_ERROR )
+		{
+			if ( errno ==  EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				error ( "Error in _slurm_send" ) ;
+				sigaction(SIGPIPE, &oldaction , &newaction);
+				return SLURM_PROTOCOL_ERROR ;
+			}
+		}
+		else
+		{
+			error ( "Error sending length of datagram" ) ;
+			sigaction(SIGPIPE, &oldaction , &newaction);
+			return SLURM_PROTOCOL_ERROR ;
+		}
 	}
-
-	send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ; 
-	if ( send_len != size )
+	while ( true )
 	{
-		info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
-		signal(SIGPIPE, SIG_DFL);
-		return SLURM_PROTOCOL_ERROR ;
+		if ( ( send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		{
+			if ( errno ==  EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				error ( "Error in _slurm_send" ) ;
+				signal(SIGPIPE, SIG_DFL);
+				return SLURM_PROTOCOL_ERROR ;
+			}
+		}
+		else if ( send_len != size )
+		{
+			info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
+			signal(SIGPIPE, SIG_DFL);
+			return SLURM_PROTOCOL_ERROR ;
+		}
 	}
 
 	//signal(SIGPIPE, SIG_DFL);
@@ -240,7 +278,7 @@ extern int _slurm_bind (int __fd, struct sockaddr const * __addr, socklen_t __le
 {
 	return bind ( __fd , __addr , __len ) ;
 }
-	     
+
 /* Put the local address of FD into *ADDR and its length in *LEN.  */
 extern int _slurm_getsockname (int __fd, struct sockaddr * __addr, socklen_t *__restrict __len)
 {
@@ -361,11 +399,11 @@ extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *excep
 	return select ( n , readfds , writefds , exceptfds , timeout ) ;
 }
 /*
-extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask)
-{
-	return pselect ( n , readfds , writefds , exceptfds , timeout , sigmask ) ;
-}
-*/
+   extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask)
+   {
+   return pselect ( n , readfds , writefds , exceptfds , timeout , sigmask ) ;
+   }
+   */
 extern void _slurm_FD_CLR(int fd, fd_set *set)
 {
 	FD_CLR ( fd , set ) ;
@@ -388,17 +426,17 @@ extern int _slurm_fcntl(int fd, int cmd)
 	return fcntl ( fd , cmd ) ;
 }
 /*
-extern int _slurm_fcntl(int fd, int cmd, long arg)
-{
-}
-extern int _slurm_fcntl(int fd, int cmd, struct flock *lock)
-{
-}
-extern int _slurm_ioctl(int d, int request, ...)
-{
-	return ioctl ( d , request, ... ) ;
-}
-*/
+   extern int _slurm_fcntl(int fd, int cmd, long arg)
+   {
+   }
+   extern int _slurm_fcntl(int fd, int cmd, struct flock *lock)
+   {
+   }
+   extern int _slurm_ioctl(int d, int request, ...)
+   {
+   return ioctl ( d , request, ... ) ;
+   }
+   */
 
 /* sets the fields of a slurm_addr */
 void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address )
