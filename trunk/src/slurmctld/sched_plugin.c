@@ -141,6 +141,10 @@ slurm_sched_context_create( const char *sched_type )
 static int
 slurm_sched_context_destroy( slurm_sched_context_t *c )
 {
+	/*
+	 * Must check return code here because plugins might still
+	 * be loaded and active.
+	 */
 	if ( c->plugin_list ) {
 		if ( plugrack_destroy( c->plugin_list ) != SLURM_SUCCESS ) {
 			return SLURM_ERROR;
@@ -165,7 +169,8 @@ slurm_sched_init( void )
 	
 	slurm_mutex_lock( &g_sched_context_lock );
 
-	if ( g_sched_context ) goto done;
+	if ( g_sched_context )
+		slurm_sched_context_destroy( g_sched_context );
 
 	sched_type = slurm_get_sched_type();
 	g_sched_context = slurm_sched_context_create( sched_type );
