@@ -538,7 +538,11 @@ void
 qsw_prog_fini(qsw_jobinfo_t jobinfo)
 {
 	if (jobinfo->j_ctx) {
+#if OLD_ELAN_DRIVER
 		_elan3_fini(jobinfo->j_ctx);
+#else
+		elan3_control_close(jobinfo->j_ctx);
+#endif
 		jobinfo->j_ctx = NULL;
 	}
 }
@@ -550,10 +554,14 @@ int
 qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 {
 	int err;
-
+#if OLD_ELAN_DRIVER
 	/* obtain an Elan context (not the same as a hardware context num!) */
 	if ((jobinfo->j_ctx = _elan3_init(0)) == NULL)
 		goto fail;
+#else
+	if ((jobinfo->j_ctx = elan3_control_open(0)) == NULL)
+		goto fail;
+#endif
 
 	/* associate this process and its children with prgnum */
 	if (rms_prgcreate(jobinfo->j_prognum, uid, 1) < 0)
@@ -605,7 +613,11 @@ qsw_getnodeid(void)
 
 	if (ctx) {
 		nodeid = ctx->devinfo.NodeId;
+#if OLD_ELAN_DRIVER
 		_elan3_fini(ctx);
+#else
+		elan3_control_close(ctx);
+#endif
 	}
 	return nodeid;
 }
