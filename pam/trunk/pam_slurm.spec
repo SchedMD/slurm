@@ -12,9 +12,8 @@ License:	GPL
 URL:		http://www.llnl.gov/linux/slurm/
 
 BuildRoot:	%{_tmppath}/%{name}-%{version}
-BuildRequires:	/usr/lib/libslurm.so
-
-Requires: slurm
+BuildRequires: slurm-devel
+Requires: slurm 
 
 Source0:	%{name}-%{version}.tgz
 
