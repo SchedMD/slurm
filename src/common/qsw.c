@@ -406,7 +406,7 @@ _generate_hwcontext(int num)
 		_unlock_qsw();
 	} else {
 		_srand_if_needed();
-		new = lrand48() % (QSW_CTX_END - QSW_CTX_START + 1);
+		new = lrand48() % (QSW_CTX_END - (QSW_CTX_START + num - 1) + 1);
 		new +=  QSW_CTX_START;
 	}
 	return new;
@@ -605,6 +605,7 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 			slurm_seterrno(EELAN3CONTROL);
 			goto fail;
 		}
+		
 	
 		/* make cap known via rms_getcap/rms_ncaps to members 
 		 * of this prgnum */
@@ -828,6 +829,7 @@ _print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
 	fprintf(fp, "\n");
 }
 
+#define _USE_ELAN3_CAPABILITY_STRING 1
 void
 qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 {
@@ -841,8 +843,9 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 
 	cap = &jobinfo->j_cap;
 	/* use elan3_capability_string as a shorter alternative for now */
+#if _USE_ELAN3_CAPABILITY_STRING
 	fprintf(fp, "%s\n", elan3_capability_string(cap, str));
-#if 0
+#else 
 	fprintf(fp, "cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
 			cap->UserKey.Values[0], cap->UserKey.Values[1],
 			cap->UserKey.Values[2], cap->UserKey.Values[3]);
