@@ -231,8 +231,6 @@ delete_job_details (struct job_record *job_entry)
 		xfree(job_entry->details->req_nodes);
 	if (job_entry->details->req_node_bitmap)
 		bit_free(job_entry->details->req_node_bitmap);
-	if (job_entry->details->node_list)
-		xfree(job_entry->details->node_list);
 	if (job_entry->details->features)
 		xfree(job_entry->details->features);
 	xfree(job_entry->details);
@@ -263,8 +261,7 @@ delete_job_record (uint32_t job_id)
 		if (job_record_point->job_id != job_id)
 			continue;
 
-		if (job_record_point->details) 
-			xfree (job_record_point->details);
+		delete_job_details (job_record_point);
 		xfree (job_record_point);
 		list_remove (job_record_iterator);
 		break;
@@ -358,45 +355,62 @@ init_job_conf ()
 
 
 /*
- * job_allocate - create job_records for job with supplied specification and 
- *	allocate nodes for it. if the job can not be immediately allocated nodes
+ * job_allocate - parse the suppied job specification, create job_records for it, 
+ *	and allocate nodes for it. if the job can not be immediately allocated 
+ *	nodes, EAGAIN will be returned
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
  *	node_list - location for storing new job's allocated nodes
- *	immediate - either allocate nodes immediately or return failure
- *	will_run - test if job allocation would succeed, don't actually allocate nodes
+ *	num_cpu_groups - location to store number of cpu groups
+ *	cpus_per_node - location to store pointer to array of numbers of cpus on each node allocated
+ *	cpu_count_reps - location to store pointer to array of numbers of consecutive nodes having
+ *				 same cpu count
  * output: new_job_id - the job's ID
+ *	num_cpu_groups - number of cpu groups (elements in cpus_per_node and cpu_count_reps)
+ *	cpus_per_node - pointer to array of numbers of cpus on each node allocate
+ *	cpu_count_reps - pointer to array of numbers of consecutive nodes having same cpu count
  *	node_list - list of nodes allocated to the job
- *	returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
+ *	returns 0 on success, EINVAL if specification is invalid, 
+ *		EAGAIN if higher priority jobs exist
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
- *	last_job_update - time of last job table update
- * NOTE: the calling program must xfree the memory pointed to by node_list
+ * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts of 
+ *	 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4} and
+ *	cpu_count_reps={4,2,2}
  */
 
 int
 immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
-                         int immediate , int will_run )
+		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
+		int immediate , int will_run )
 {
-	return job_allocate (job_specs, new_job_id, node_list, true , false );
+	return job_allocate (job_specs, new_job_id, node_list, 
+				num_cpu_groups, cpus_per_node, cpu_count_reps, 
+				true , false );
 }
 
 int 
 will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
-                  int immediate , int will_run )
+		uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
+		int immediate , int will_run )
 {
-	return job_allocate (job_specs, new_job_id, node_list, false , true );
+	return job_allocate (job_specs, new_job_id, node_list, 
+				num_cpu_groups, cpus_per_node, cpu_count_reps, 
+				false , true );
 }
 
-int
-job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
-	      int immediate , int will_run )
+int 
+job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
+	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
+	int immediate, int will_run)
 {
 	int error_code;
 	struct job_record *job_ptr;
 
+	*num_cpu_groups = 0;
 	node_list[0] = NULL;
+	cpus_per_node[0] = cpu_count_reps[0] = NULL;
 
 	error_code = job_create (job_specs, new_job_id, 1, will_run, &job_ptr);
 	if (error_code || will_run)
@@ -434,8 +448,10 @@ job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list
 		job_ptr->end_time  = 0;
 	}
 
-	node_list[0] = xmalloc (strlen(job_ptr->nodes) + 1);
-	strcpy(node_list[0], job_ptr->nodes);
+	node_list[0]      = job_ptr->nodes;
+	*num_cpu_groups   = job_ptr->num_cpu_groups;
+	cpus_per_node[0]  = job_ptr->cpus_per_node;
+	cpu_count_reps[0] = job_ptr->cpu_count_reps;
 	return 0;
 }
 
