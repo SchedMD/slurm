@@ -5,6 +5,7 @@
 
 extern int debug ;
 
+/* checks to see that the specified header was sent from a node running the same version of the protocol as the current node */
 uint32_t check_header_version( header_t * header)
 {
 	if ( header -> version != SLURM_PROTOCOL_VERSION )
@@ -18,6 +19,7 @@ uint32_t check_header_version( header_t * header)
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
+/* simple function to create a header, always insuring that an accurate version string is inserted */
 void init_header ( header_t * header , slurm_message_type_t message_type , uint16_t flags )
 {
 	header -> version = SLURM_PROTOCOL_VERSION ;

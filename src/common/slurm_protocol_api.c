@@ -14,26 +14,37 @@ uint32_t debug = false ;
 
 extern int errno ;
 
-/* high level routines */
+/***** high level routines */
 /* message functions */
-uint32_t slurm_init_message_engine ( slurm_addr * slurm_address )
+
+/* In the socket implementation it creates a socket, binds to it, and listens for connections.
+ * In the mongo implemenetation is should just create a mongo socket , bind and return.
+ * slurm_address 	- for now it is really just a sockaddr_in
+ * slurm_fd		- file descriptor of the connection created
+ */
+slurm_fd slurm_init_message_engine ( slurm_addr * slurm_address )
 {
 	return _slurm_init_message_engine ( slurm_address ) ;
 }
 
+/* just calls close on an established message connection
+ * open_fd	- an open file descriptor
+ * uint32_t	- the return code
+ */
 uint32_t slurm_shutdown_message_engine ( slurm_fd open_fd ) 
 {
 	return _slurm_close ( open_fd ) ;
 }
 
-/* recv message functions */
+/***** recv message functions */
 /*
  * note that a memory is allocated for the returned message and must be freed at some point 
- * open_fd - file descriptor to receive message on
- * source_address - address of the source of the message
- * message - the message itself
+ * open_fd 		- file descriptor to receive message on
+ * source_address 	- address of the source of the message for now it is really just a sockaddr_in
+ * message 		- a slurm message struct
+ * uint32_t		- size of message received in bytes
  */
-uint32_t slurm_receive_message ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_t * message ) 
+uint32_t slurm_receive_message ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_t ** message ) 
 {
 	char buftemp[MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buftemp ;
@@ -65,11 +76,19 @@ uint32_t slurm_receive_message ( slurm_fd open_fd , slurm_addr * source_address 
 	new_message -> message_type = header . message_type ;
 	unpack_message ( & buffer , & unpack_len , new_message ) ;
 
-	message = new_message ;	
+	*message = new_message ;	
 	return receive_len ;
 }
 
-/* send message functions */
+/***** send message functions */
+/* sends a slurm_protocol message to the slurmctld based on location information retrieved from the slurmd.conf
+ * if unable to contant the primary slurmctld attempts will be made to contact the backup controller
+ * 
+ * open_fd	- file descriptor to send message on
+ * message_type	- type of message to be sent ( see slurm_protocol_defs.h for message types )
+ * message	- a slurm message struct
+ * uint32_t	- size of message sent in bytes
+ */
 uint32_t slurm_send_server_message ( slurm_fd open_fd , slurm_message_type_t message_type , slurm_message_t const * message )
 {
 	return SLURM_NOT_IMPLEMENTED ;	
@@ -105,7 +124,7 @@ uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_a
 	}
 	return pack_len ;
 }
-/* No overloading allowe 
+/* No overloading allowed
    uint32_t slurm_send_server_message ( slurm_fd open_fd , slurm_message_type_t message_type , char * buffer , size_t buf_len )
    {
    return SLURM_NOT_IMPLEMENTED ;	
@@ -134,18 +153,18 @@ uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_a
    }
  */
 
-/* stream functions */
-uint32_t slurm_listen_stream ( slurm_addr * slurm_address )
+/***** stream functions */
+slurm_fd slurm_listen_stream ( slurm_addr * slurm_address )
 {
 	return _slurm_listen_stream ( slurm_address ) ;
 }
 
-uint32_t slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
+slurm_fd slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 {
 	return _slurm_accept_stream ( open_fd , slurm_address ) ;
 }
 
-uint32_t slurm_open_stream ( slurm_addr * slurm_address )
+slurm_fd slurm_open_stream ( slurm_addr * slurm_address )
 {
 	return _slurm_open_stream ( slurm_address ) ;
 }

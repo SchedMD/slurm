@@ -19,26 +19,28 @@
 #include "slurm_protocol_common.h"
 
 
-/***********\
- **  Notes  **
- \***********/
-
-/*  When a memory allocation request fails, the list returns out_of_memory().
- *  By default, this is a macro definition that returns NULL; this macro may
- *  be redefined to invoke another routine instead.  Furthermore, if WITH_OOMF
- *  is defined, this macro will not be defined and the list will expect an
- *  external Out-Of-Memory Function to be defined.
- */
-
 
 /****************\
  **  Data Types  **
  \****************/
 
 
+
+/*******************************\
+ **  Must Have Functions  **
+ \*******************************/
+/* The must have funtions are required to implement a low level plugin for the slurm protocol
+ * the genereal purpose functions just wrap standard socket calls, so if the underlying layer 
+ * implements a socket like interface, it can be used as a low level transport plugin with slurm
+ *
+ * the _slurm_recv and _slurm_send functions are also needed
+ */
+
+
 typedef enum slurm_socket_type { SLURM_MESSAGE , SLURM_STREAM } slurm_socket_type_t;
 
 /* high level interface */
+extern int _slurm_create_socket (slurm_socket_type_t type) __THROW ;
 /* message functions */
 uint32_t _slurm_init_message_engine ( slurm_addr * slurm_address ) ;
 ssize_t _slurm_message_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
@@ -59,7 +61,6 @@ uint32_t _slurm_open_stream ( slurm_addr * slurm_address ) ;
  *       Returns a file descriptor for the new socket, or -1 for errors.  */
 extern int _slurm_socket (int __domain, int __type, int __protocol) __THROW ;
 
-extern int _slurm_create_socket (slurm_socket_type_t type) __THROW ;
 
 
 /* Create two new sockets, of type TYPE in domain DOMAIN and using
@@ -147,7 +148,8 @@ extern int _slurm_close (int __fd ) __THROW;
 extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout);
 
 extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask);
-/*
+
+/* not yet implemented
 _slurm_FD_CLR(int fd, fd_set *set);
 _slurm_FD_ISSET(int fd, fd_set *set);
 _slurm_FD_SET(int fd, fd_set *set);
