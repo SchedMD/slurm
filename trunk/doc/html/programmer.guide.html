@@ -18,6 +18,32 @@ There is a description of the components and their interactions available
 in a separate document, <a href="overview.ps">SLURM: Simple Linux Utility 
 for Resource Management</a>.
 
+<p>Code should adhere to the Linux kernel code style as described in
+<a href="http://www.linuxhq.com/kernel/v2.4/doc/CodingStyle.html">
+http://www.linuxhq.com/kernel/v2.4/doc/CodingStyle.html</a>.
+
+<h2> API Modules</h2>
+This directory contains modules supporting the SLURM API functions.
+
+<dl>
+<dt>allocate.c
+<dd>API to allocate resources for a job's initiation.
+
+<dt>build_info.c
+<dd>API to report SLURM build parameter values.
+
+<dt>node_info.c
+<dd>API to report node state and configuration values.
+
+<dt>partition_info.c
+<dd>API to report partition state and configuration values.
+
+<dt>reconfigure.c
+<dd>API to request that slurmctld reload configuration information.
+
+<dt>update_config.c
+<dd>API to update job, node or partition state information.
+</dl>
 
 <h2>Common Modules</h2>
 This directory contains modules of general use throughout the SLURM code. 
@@ -93,8 +119,8 @@ partition data structures.
 </dl>
 
 
-<h2>Slurmd Modules</h2>
-Slurmd executes on each compute node. It initiates and terminates user 
+<h2>slurmd Modules</h2>
+slurmd executes on each compute node. It initiates and terminates user 
 jobs and monitors both system and job state. The slurmd modules and their 
 functionality are described below.
 
@@ -142,23 +168,6 @@ and 4 node sets rather than use the smaller sets).
 All functions described below can be issued from any node in the SLURM cluster. 
 
 <dl>
-<dt>int slurm_allocate(char *spec, char **node_list);
-<dd>Allocate nodes for a job with supplied contraints. 
-<dd>Input: spec - Specification of the job's constraints;
-<dd>node_list - Place into which a node list pointer can be placed;
-<dd>Output: node_list - List of allocated nodes;
-<dd>Returns 0 if no error, EINVAL if the request is invalid, 
-EAGAIN if the request can not be satisfied at present;
-<dd>NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
-Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
-TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
-MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
-<dd>NOTE: The calling function must free the allocated storage at node_list[0]
-
-<dt>void slurm_free_build_info(void);
-<dd>Free the build information buffer (if allocated).
-<dd>NOTE: Buffer is loaded by slurm_load_build and used by slurm_load_build_name.
-
 <dt>void free_node_info(void);
 <dd>Free the node information buffer (if allocated)
 <dd>NOTE: Buffer is loaded by load_node and used by load_node_name.
@@ -170,37 +179,6 @@ MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
 <dt>int get_job_info(TBD);
 <dd>Function to be defined.
 
-<dt>int get_key(? *key);
-<dd>Load into the location key the value of an authorization key. 
-<dd>To be defined.
-
-<dt>int kill_job(int job_id);
-<dd>Terminate the specified SLURM job. 
-<dd>TBD.
-
-<dt>int slurm_load_build(void);
-<dd>Update the build information buffer for use by info gathering APIs
-<dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure.
-<dd>NOTE: Buffer is used by slurm_load_build_name and freed by slurm_free_build_info.
-<dd>See the SLURM administrator guide for valid names.
-
-<dt>int slurm_load_build_name(char *req_name, char *next_name, char *value);
-<dd>Load the state information about the named build parameter
-<dd>Input: req_name - Name of the parameter for which information is requested
-if "", then get info for the first parameter in list
-<dd>next_name - Location into which the name of the next parameter is 
-stored, "" if no more
-<dd>value - Pointer to location into which the information is to be stored
-<dd>Output: req_name - The parameter's name is stored here
-<dd>next_name - The name of the next parameter in the list is stored here
-<dd>value - The parameter's state information
-<dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
-<dd>NOTE:  req_name, next_name, and Value must be declared by caller with have 
-length BUILD_SIZE or larger
-<dd>NOTE: Buffer is loaded by slurm_load_build and freed by slurm_free_build_info.
-<dd>See the <a href="administration.guide>SLURM administrator guide<a> 
-for valid names.
-
 <dt>int load_node(time_t *last_update_time);
 <dd>Load the supplied node information buffer for use by info gathering APIs if
 node records have changed since the time specified. 
@@ -209,7 +187,7 @@ node records have changed since the time specified.
 <dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
 <dd>NOTE: Buffer is loaded by load_node and freed by Free_Node_Info.
 
-<dt>int load_node_Config(char *req_name, char *next_name, int *cpus, 
+<dt>int load_node_config(char *req_name, char *next_name, int *cpus, 
 int *real_memory, int *tmp_disk, int *weight, char *features,
 char *partition, char *node_state);
 <dd>Load the state information about the named node
@@ -255,15 +233,61 @@ stored, "" if no more
 <dd>Request that slurmctld re-read the configuration files
 Output: Returns 0 on success, errno otherwise
 
-<dt>int run_job(char *job_spec);
+<dt>int slurm_allocate(char *spec, char **node_list);
+<dd>Allocate nodes for a job with supplied contraints. 
+<dd>Input: spec - Specification of the job's constraints;
+<dd>node_list - Place into which a node list pointer can be placed;
+<dd>Output: node_list - List of allocated nodes;
+<dd>Returns 0 if no error, EINVAL if the request is invalid, 
+EAGAIN if the request can not be satisfied at present;
+<dd>NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
+Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
+TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
+MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
+<dd>NOTE: The calling function must free the allocated storage at node_list[0]
+
+<dt>void slurm_free_build_info(void);
+<dd>Free the build information buffer (if allocated).
+<dd>NOTE: Buffer is loaded by slurm_load_build and used by slurm_load_build_name.
+
+<dt>int slurm_get_key(? *key);
+<dd>Load into the location key the value of an authorization key. 
+<dd>To be defined.
+
+<dt>int slurm_kill_job(int job_id);
+<dd>Terminate the specified SLURM job. 
+<dd>TBD.
+
+<dt>int slurm_load_build(void);
+<dd>Update the build information buffer for use by info gathering APIs
+<dd>Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure.
+
+<dt>int slurm_load_build_name(char *req_name, char *next_name, char *value);
+<dd>Load the state information about the named build parameter
+<dd>Input: req_name - Name of the parameter for which information is requested
+if "", then get info for the first parameter in list
+<dd>next_name - Location into which the name of the next parameter is 
+stored, "" if no more
+<dd>value - Pointer to location into which the information is to be stored
+<dd>Output: req_name - The parameter's name is stored here
+<dd>next_name - The name of the next parameter in the list is stored here
+<dd>value - The parameter's value is stored here
+<dd>Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
+<dd>NOTE:  req_name, next_name, and value must be declared by caller with have 
+length BUILD_SIZE or larger
+<dd>NOTE: Buffer is loaded by slurm_load_build and freed by slurm_free_build_info.
+<dd>See the <a href="admin.guide.html">SLURM administrator guide</a> 
+for valid build parameter names.
+
+<dt>int slurm_run_job(char *job_spec);
 <dd>Initiate the job with the specification job_spec.
 <dd>TBD.
 
-<dt>int signal_job(int job_id, int signal);
+<dt>int slurm_signal_job(int job_id, int signal);
 <dd>Send the specified signal to the specified SLURM job. 
 <dd>TBD.
 
-<dt>int transfer_resources(pid_t pid, int job_id);
+<dt>int slurm_transfer_resources(pid_t pid, int job_id);
 <dd>Transfer the ownership of resources associated with the specified 
 <dd>TBD.
 
@@ -272,7 +296,7 @@ Output: Returns 0 on success, errno otherwise
 <dd>Input: A line containing configuration information per the configuration file format
 <dd>Output: Returns 0 on success, errno otherwise
 
-<dt>int will_job_run(char *job_spec);
+<dt>int slurm_will_job_run(char *job_spec);
 <dd>TBD.
 </dl>
 
@@ -290,7 +314,7 @@ of all APIs.
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified April 12, 2002</p>
+<p>Last Modified April 15, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
