@@ -1,9 +1,30 @@
-/******************************************************************************\
+/*****************************************************************************\
  *  $Id: list.c,v 1.15 2001/12/15 14:33:49 dun Exp $
- *    by Chris Dunlap <cdunlap@llnl.gov>
- ******************************************************************************
+ *****************************************************************************
+ *  Copyright (C) 2001-2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Chris Dunlap <cdunlap@llnl.gov>.
+ *  UCRL-CODE-2002-009.
+ *  
+ *  This file is part of ConMan, a remote console management program.
+ *  For details, see <http://www.llnl.gov/linux/conman/>.
+ *  
+ *  ConMan is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  ConMan is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+ *****************************************************************************
  *  Refer to "list.h" for documentation on public functions.
-\******************************************************************************/
+\*****************************************************************************/
 
 
 #ifdef HAVE_CONFIG_H
@@ -287,6 +308,7 @@ int list_delete_all(List l, ListFindF f, void *key)
 
     assert(l != NULL);
     assert(f != NULL);
+    assert(key != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     pp = &l->head;
@@ -425,15 +447,15 @@ ListIterator list_iterator_create(List l)
     assert(l != NULL);
     if (!(i = list_iterator_alloc()))
         return(out_of_memory());
-    list_mutex_lock(&l->mutex);
     i->list = l;
+    list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     i->pos = l->head;
     i->prev = &l->head;
     i->iNext = l->iNext;
     l->iNext = i;
-    assert(i->magic = ITER_MAGIC);	/* set magic via assert abuse */
     list_mutex_unlock(&l->mutex);
+    assert(i->magic = ITER_MAGIC);	/* set magic via assert abuse */
     return(i);
 }
 
