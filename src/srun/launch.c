@@ -194,7 +194,7 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 		                        (void *) task_info_ptr) ) {
 			error ("pthread_create error %m");
 			/* just run it under this thread */
-			p_launch_task(task_info_ptr);
+			p_launch_task((void *) task_info_ptr);
 		}
 	}
 
@@ -213,10 +213,10 @@ static void * p_launch_task(void *args)
 	job_t *job_ptr = task_info_ptr->job_ptr;
 	int host_inx = msg_ptr->srun_node_id;
 
-	debug2("launching on host %s", job_ptr->host[host_inx]);
+	debug3("launching on host %s", job_ptr->host[host_inx]);
         print_launch_msg(msg_ptr);
 	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Already handles timeout */
-		error("%s: %m", job_ptr->host[host_inx]);
+		error("launch %s: %m", job_ptr->host[host_inx]);
 		job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
 	}
 
