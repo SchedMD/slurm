@@ -211,7 +211,7 @@ _wait_and_destroy_prg(qsw_jobinfo_t qsw_job)
 			qsw_prgsignal(qsw_job, SIGKILL);
 		}
 
-		debug("going to sleep for %d seconds and try again", sleeptime);
+		debug("sleeping for %d sec ...", sleeptime);
 		sleep(sleeptime*=2);
 	}
 
@@ -235,7 +235,7 @@ interconnect_init(slurmd_job_t *job)
 	char buf[4096];
 
 	debug2("calling interconnect_init from process %ld", (long) getpid());
-	debug("Elan info: %s", qsw_capability_string(job->qsw_job, buf, 4096));
+	verbose("ELAN: %s", qsw_capability_string(job->qsw_job, buf, 4096));
 
 	if (qsw_prog_init(job->qsw_job, job->uid) < 0) {
 		/*
