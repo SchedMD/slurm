@@ -31,7 +31,7 @@ main (int argc, char *argv[])
 		if ((i < 10) || (i % 200 == 0) || 
 		    ((i + 1)  == node_info_msg_ptr-> record_count)) {
 			slurm_print_node_table ( stdout, & node_info_msg_ptr ->
-							 node_array[i] ) ;
+							 node_array[i], 0 ) ;
 		}
 		else if ((i==10) || (i % 200 == 1))
 			printf ("skipping...\n");

@@ -21,7 +21,7 @@ main (int argc, char *argv[])
 
 	for (i=1; i<argc; i++) {
 		error_code = slurm_kill_job ((uint32_t) atoi(argv[i]), 
-							     SIGKILL);
+							     SIGKILL, 0);
 		if (error_code) {
 			char msg[64];
 			sprintf(msg, "slurm_kill_job(%.12s)",argv[i]);
