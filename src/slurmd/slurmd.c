@@ -65,7 +65,7 @@
 #include "src/slurmd/get_mach_stat.h"
 #include "src/slurmd/proctrack.h"
 
-#define GETOPT_ARGS	"L:DvhcM"
+#define GETOPT_ARGS	"L:Dvhcf:M"
 
 #ifndef MAXHOSTNAMELEN
 #  define MAXHOSTNAMELEN	64
@@ -584,6 +584,9 @@ _process_cmdline(int ac, char **av)
 			break;
 		case 'v':
 			conf->debug_level++;
+			break;
+		case 'f':
+			conf->conffile = xstrdup(optarg);
 			break;
 		case 'h':
 			_usage();

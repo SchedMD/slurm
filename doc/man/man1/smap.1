@@ -1,4 +1,4 @@
-.TH SMAP "1" "January 2005" "smap 0.4" "Slurm components"
+.TH SMAP "1" "March 2005" "smap 0.5" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -185,7 +185,7 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 .TP
 \fBINPUT COMMANDS\fR
 .TP
-.I \fresolce <RACK_MIDPLANE_ID/XYZ>\fR
+.I resolve <RACK_MIDPLANE_ID/XYZ>\fR
 Returns the XYZ coords for a Rack/Midplane id or vice-versa.
 
 To get the XYZ coord for a Rack/Midplane id input -R R101 where 10 is the rack
@@ -354,6 +354,13 @@ Job currently has an allocation.
 TO  TIMEOUT
 Job terminated upon reaching its time limit.
 
+.SH "ENVIRONMENT VARIABLES"
+The following environment variables can be used to override settings
+compiled into smap.
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+
 .SH "COPYING"
 Copyright (C) 2004 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -371,8 +378,9 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+
 .SH "SEE ALSO"
-\fBscontrol\fR(1), fBsinfo\fR(1), \fBsqueue\fR(1), 
+\fBscontrol\fR(1), \fBsinfo\fR(1), \fBsqueue\fR(1), 
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 

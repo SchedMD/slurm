@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "November 2004" "scontrol 0.4" "Slurm components"
+.TH SCONTROL "1" "March 2005" "scontrol 0.5" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -316,8 +316,12 @@ be set via environment variables. These environment variables,
 along with their corresponding options, are listed below. (Note:
 Commandline options will always override these settings.)
 .TP 20
-SCONTROL_ALL
+\fBSCONTROL_ALL\fR
 \fB\-a, \-\-all\fR
+.TP
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+
 .SH "EXAMPLE"
 .eo
 .br 

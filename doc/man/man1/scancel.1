@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "June 2004" "scancel 0.3" "Slurm components"
+.TH SCANCEL "1" "March 2005" "scancel 0.5" "Slurm components"
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
@@ -67,26 +67,30 @@ Some \fBscancel\fR options may be set via environment variables. These
 environment variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
-SCANCEL_BATCH
+\fBSCANCEL_BATCH\fR
 \fB\-b, \-\-batch\fR
 .TP 20
-SCANCEL_INTERACTIVE
+\fBSCANCEL_INTERACTIVE\fR
 \fB\-i\fR, \fB\-\-interactive\fR
 .TP 20
-SCANCEL_NAME
+\fBSCANCEL_NAME\fR
 \fB\-n\fR, \fB\-\-name\fR=\fIjob_name\fR
 .TP 20
-SCANCEL_PARTITION
+\fBSCANCEL_PARTITION\fR
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition_name\fR
 .TP 20
-SCANCEL_STATE
+\fBSCANCEL_STATE\fR
 \fB\-t\fR, \fB\-\-state\fR=\fIjob_state_name\fR
 .TP 20
-SCANCEL_USER
+\fBSCANCEL_USER\fR
 \fB\-u\fR, \fB\-\-user\fR=\fIuser_name\fR
 .TP 20
-SCANCEL_VERBOSE
+\fBSCANCEL_VERBOSE\fR
 \fB\-v\fR, \fB\-\-verbose\fR
+.TP 20
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
+
 .SH "NOTES"
 .LP
 If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the 
@@ -124,5 +128,6 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+
 .SH "SEE ALSO"
 \fBslurm_kill_job\fR(3), \fBslurm_kill_job_step\fR(3)

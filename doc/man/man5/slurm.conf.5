@@ -1,12 +1,18 @@
-.TH "slurm.conf" "5" "February 2005" "slurm.conf 0.5" "Slurm configuration file"
+.TH "slurm.conf" "5" "March 2005" "slurm.conf 0.5" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
-\fB/etc/slurm.conf\fP is an ASCI file which describes general SLURM configuration 
-information, the nodes to be managed, information about how those nodes are 
-grouped into partitions, and various scheduling parameters associated with 
-those partitions.  The file location can be modified at system build time using 
-the DEFAULT_SLURM_CONF parameter. 
+\fB/etc/slurm.conf\fP is an ASCI file which describes general SLURM
+configuration information, the nodes to be managed, information about
+how those nodes are grouped into partitions, and various scheduling
+parameters associated with those partitions.
+.LP
+The file location can be modified at system build time using the
+DEFAULT_SLURM_CONF parameter. In addition, you can use the
+\fBSLURM_CONF\fR environment variable to override the built-in
+location of this file. The SLURM daemons also allow you to override
+both the built-in and environment-provided location using the "-f"
+option on the command line.
 .LP
 The contents of the file are case insensitive except for the names of nodes 
 and partitions. Any text following a "#" in the configuration file is treated 

@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "February 2005" "srun 0.4" "slurm components"
+.TH SRUN "1" "March 2005" "srun 0.5" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -611,70 +611,73 @@ options may be set via environment variables. These environment
 variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
-SLURM_ACCOUNT
-\fB\-U, \-\-account\fR=\fIaccount\fR
+\fBSLURM_CONF\fR
+The location of the SLURM configuration file.
 .TP
-SLURM_CPUS_PER_TASK
+\fBSLURM_ACCOUNT\fR
+\fB\-U, \-\-account\fR=\fIaccount\fR
+.TP 20
+\fBSLURM_CPUS_PER_TASK\fR
 \fB\-c, \-\-ncpus\-per\-task\fR=\fIn\fR
 .TP
-SLURM_CONN_TYPE
+\fBSLURM_CONN_TYPE\fR
 \fB\-\-conn\-type\fR=(\fImesh|nav|torus\fR)
 .TP
-SLURM_CORE_FORMAT
+\fBSLURM_CORE_FORMAT\fR
 \fB\-\-core\fR=\fIformat\fR
 .TP
-SLURM_DEBUG
+\fBSLURM_DEBUG\fR
 \fB\-v, \-\-verbose\fR
 .TP
-SLURMD_DEBUG
+\fBSLURMD_DEBUG\fR
 \fB\-d, \-\-slurmd-debug\fR
 .TP
-SLURM_DISTRIBUTION
+\fBSLURM_DISTRIBUTION\fR
 \fB\-m, \-\-distribution\fR=(\fIblock|cyclic\fR)
 .TP
-SLURM_GEOMETRY
+\fBSLURM_GEOMETRY\fR
 \fB\-g, \-\-geometry\fR=\fIX,Y,Z\fR
 .TP
-SLURM_LABELIO
+\fBSLURM_LABELIO\fR
 \fB-l, --label\fR
 .TP
-SLURM_NNODES
+\fBSLURM_NNODES\fR
 \fB\-N, \-\-nodes\fR=(\fIn|min-max\fR)
 .TP
-SLURM_NO_ROTATE
+\fBSLURM_NO_ROTATE\fR
 \fB\-\-no\-rotate\fR
 .TP
-SLURM_NODE_USE
+\fBSLURM_NODE_USE\fR
 \fB\-\-node\-use\fR=(\fIcoprocessor|virtual\fR)
 .TP
-SLURM_NPROCS
+\fBSLURM_NPROCS\fR
 \fB\-n, \-\-ntasks\fR=\fIn\fR
 .TP
-SLURM_OVERCOMMIT
+\fBSLURM_OVERCOMMIT\fR
 \fB\-o, \-\-overcommit\fR
 .TP
-SLURM_PARTITION
+\fBSLURM_PARTITION\fR
 \fB\-p, --partition\fR=\fIpartition\fR
 .TP
-SLURM_REMOTE_CWD
+\fBSLURM_REMOTE_CWD\fR
 \fB\-D, --chdir=\R=\fIdir\fR
 .TP
-SLURM_STDERRMODE
+\fBSLURM_STDERRMODE\fR
 \fB\-e, \-\-error\fR=\fImode\fR
 .TP
-SLURM_STDINMODE
+\fBSLURM_STDINMODE\fR
 \fB\-i, \-\-input\fR=\fImode\fR
 .TP
-SLURM_STDOUTMODE
+\fBSLURM_STDOUTMODE\fR
 \fB\-o, \-\-output\fR=\fImode\fR
 .TP
-SLURM_TIMELIMIT
+\fBSLURM_TIMELIMIT\fR
 \fB\-t, \-\-time\fR=\fIminutes\fR
 .TP
-SLURM_WAIT
+\fBSLURM_WAIT\fR
 \fB\-W, \-\-wait\fR=\fIseconds\fR
 .TP
-SLURM_DISABLE_STATUS
+\fBSLURM_DISABLE_STATUS\fR
 \fB\-X, \-\-disable-status\fR
 .PP
 Additionally,
@@ -683,32 +686,32 @@ will set some environment variables  in the environment of the
 executing tasks on the remote compute nodes. These environment variables
 are:
 .TP 20
-SLURM_CPUS_ON_NODE
+\fBSLURM_CPUS_ON_NODE\fR
 Count of processors available to the job on this node
 .TP
-SLURM_JOBID
+\fBSLURM_JOBID\fR
 Job id of the executing job
 .TP
-SLURM_LAUNCH_NODE_IPADDR
+\fBSLURM_LAUNCH_NODE_IPADDR\fR
 IP adddress of the node from which the task launch was 
 initiated (where the srun command ran from)
 .TP
-SLURM_NNODES 
+\fBSLURM_NNODES\fR
 Total number of nodes in the job's resource allocation
 .TP
-SLURM_NODEID
+\fBSLURM_NODEID\fR
 The relative node ID of the current node
 .TP
-SLURM_NODELIST
+\fBSLURM_NODELIST\fR
 List of nodes allocated to the job
 .TP
-SLURM_NPROCS
+\fBSLURM_NPROCS\fR
 Total number of processes in the current job
 .TP
-SLURM_PROCID 
+\fBSLURM_PROCID\fR
 The MPI rank (or relative process ID) of the current process
 .TP
-SLURM_TASKS_PER_NODE
+\fBSLURM_TASKS_PER_NODE\fR
 Number of tasks to be initiated on each node. Values are 
 comma separated and in the same order as SLURM_NODELIST.
 If two or more consecutive nodes are to have the same task 
