@@ -595,10 +595,26 @@ qsw_attach(qsw_jobinfo_t jobinfo, int procnum)
 	return 0;
 }
 
-#ifdef DEBUG_MODULE
+/*
+ * Return the local elan address (for rail 0) or -1 on failure.
+ */
+int
+qsw_getnodeid(void)
+{
+	ELAN3_CTX *ctx = _elan3_init(0); /* rail 0 */
+	int nodeid = -1;
+
+	if (ctx) {
+		nodeid = ctx->devinfo.NodeId;
+		_elan3_fini(ctx);
+	}
+	return nodeid;
+}
+
+#if 0
 #define TRUNC_BITMAP 1
 static void
-_dump_capbitmap(ELAN_CAPABILITY *cap)
+_print_capbitmap(FILE *fp, ELAN_CAPABILITY *cap)
 {
 	int bit_max = sizeof(cap->Bitmap)*8 - 1;
 	int bit;
@@ -606,132 +622,36 @@ _dump_capbitmap(ELAN_CAPABILITY *cap)
 	bit_max = bit_max >= 64 ? 64 : bit_max;
 #endif
 	for (bit = bit_max; bit >= 0; bit--)
-		printf("%c", BT_TEST(cap->Bitmap, bit) ? '1' : '0');
-	printf("\n");
+		fprintf(fp, "%c", BT_TEST(cap->Bitmap, bit) ? '1' : '0');
+	printf(fp, "\n");
 }
 
-static void
-_dump_jobinfo(struct qsw_jobinfo *jobinfo)
+void
+qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 {
 	ELAN_CAPABILITY *cap;
 
 	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
 
-	printf("__________________\n");
-	printf("prognum=%d\n", jobinfo->j_prognum);
+	fprintf(fp, "__________________\n");
+	fprintf(fp, "prognum=%d\n", jobinfo->j_prognum);
 
 	cap = &jobinfo->j_cap;
-	printf("cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
+	fprintf(fp, "cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
 			cap->UserKey.Values[0], cap->UserKey.Values[1],
 			cap->UserKey.Values[2], cap->UserKey.Values[3]);
-	printf("cap.Version=%d\n", cap->Version);
-	printf("cap.Type=0x%hx\n", cap->Type);
-	printf("cap.Generation=%hd\n", cap->Generation);
-	printf("cap.LowContext=%d\n", cap->LowContext);
-	printf("cap.HighContext=%d\n", cap->HighContext);
-	printf("cap.MyContext=%d\n", cap->MyContext);
-	printf("cap.LowNode=%d\n", cap->LowNode);
-	printf("cap.HighNode=%d\n", cap->HighNode);
-	printf("cap.Entries=%d\n", cap->Entries);
-	printf("cap.Railmask=0x%x\n", cap->RailMask);
-	printf("cap.Bitmap=");
-	_dump_capbitmap(cap);
-	printf("------------------\n");
+	fprintf(fp, "cap.Version=%d\n", cap->Version);
+	fprintf(fp, "cap.Type=0x%hx\n", cap->Type);
+	fprintf(fp, "cap.Generation=%hd\n", cap->Generation);
+	fprintf(fp, "cap.LowContext=%d\n", cap->LowContext);
+	fprintf(fp, "cap.HighContext=%d\n", cap->HighContext);
+	fprintf(fp, "cap.MyContext=%d\n", cap->MyContext);
+	fprintf(fp, "cap.LowNode=%d\n", cap->LowNode);
+	fprintf(fp, "cap.HighNode=%d\n", cap->HighNode);
+	fprintf(fp, "cap.Entries=%d\n", cap->Entries);
+	fprintf(fp, "cap.Railmask=0x%x\n", cap->RailMask);
+	fprintf(fp, "cap.Bitmap=");
+	_print_capbitmap(fp, cap);
+	fprintf(fp, "------------------\n");
 }
-
-static void
-_safe_mkjob(qsw_jobinfo_t jp, int nprocs, bitstr_t *nodeset, 
-		int cyclic_alloc)
-{
-	if (qsw_setup_jobinfo(jp, nprocs, nodeset, cyclic_alloc) < 0) {
-		perror("qsw_setup_jobinfo");
-		exit(1);
-	}
-}
-
-int
-main(int argc, char *argv[])
-{
-	qsw_libstate_t ls; 
-	char ls_packed[QSW_LIBSTATE_PACK_MAX];
-	char job_packed[QSW_JOBINFO_PACK_MAX];
-	qsw_jobinfo_t job;
-	bitstr_t *nodeset = bit_alloc(42);
-
-	printf("bitmap size = %d\n", ELAN_BITMAPSIZE);
-
-	/* allocate data structures */
-	if (qsw_alloc_libstate(&ls) < 0)  {
-		perror("qsw_alloc_libstate");
-		exit(1);
-	}
-	if (qsw_alloc_jobinfo(&job) < 0) {
-		perror("qsw_alloc_jobinfo");
-		exit(1);
-	}
-
-	/* jobs will have 4 nodes to work with */
-	bit_nset(nodeset, 4, 7);
-
-	/* try one without initializing library */
-	_safe_mkjob(job, 8, nodeset, 0);
-	_dump_jobinfo(job);
-
-	/* try another one without checkpoints */	
-	qsw_init(NULL);
-
-	_safe_mkjob(job, 4, nodeset, 0);
-	_dump_jobinfo(job);
-
-	qsw_fini(NULL);
-
-	/* try another one with a checkpiont at the end */
-	qsw_init(NULL);
-
-	_safe_mkjob(job, 4, nodeset, 0);
-	_dump_jobinfo(job);
-
-	qsw_fini(ls);
-	if (qsw_pack_libstate(ls, ls_packed, sizeof(ls_packed)) < 0) {
-		perror("qsw_pack_libstate");
-		exit(1);
-	}
-
-	if (qsw_unpack_libstate(ls, ls_packed, sizeof(ls_packed)) < 0) {
-		perror("qsw_unpack_libstate");
-		exit(1);
-	}
-
-	/* restore checkpoint and try another one */
-	qsw_init(ls);
-
-	_safe_mkjob(job, 4, nodeset, 0);
-	if (qsw_pack_jobinfo(job, job_packed, sizeof(job_packed)) < 0) {
-		perror("qsw_pack_jobinfo");
-		exit(1);
-	}
-	_dump_jobinfo(job);
-
-	_safe_mkjob(job, 12, nodeset, 1);
-	_dump_jobinfo(job);
-
-	_safe_mkjob(job, 512, nodeset, 1); /* will get EINVAL if > 512*/
-	_dump_jobinfo(job);
-
-	/* revive the packed job */
-	if (qsw_unpack_jobinfo(job, job_packed, sizeof(job_packed)) < 0) {
-		perror("qsw_pack_jobinfo");
-		exit(1);
-	}
-	_dump_jobinfo(job);
-
-	/* free data structures */
-	qsw_free_jobinfo(job);
-	qsw_free_libstate(ls);
-
-	qsw_fini(NULL);
-
-	exit(0);
-}
-#endif /* DEBUG_MODULE */
-
+#endif

@@ -173,7 +173,7 @@ main(int argc, char *argv[])
 	qsw_jobinfo_t job;
 	int c;
 	int nprocs = 0;
-	int nodeid = 0;
+	int nodeid = qsw_getnodeid();
 	uid_t uid = getuid();
 	bitstr_t bit_decl(nodeset, 128);
 	char cmdbuf[1024] = { 0 }; 
