@@ -384,9 +384,13 @@ static List _group_node_list(node_info_msg_t * msg)
 
 static struct partition_summary *_find_partition_summary(List l, char *name)
 {
-	ListIterator i = list_iterator_create(l);
-	struct partition_summary *current;
+	ListIterator i;
+	struct partition_summary *current = NULL;
 
+	if (name == NULL)
+		return current;
+
+	i = list_iterator_create(l);
 	while ((current = list_next(i)) != NULL) {
 		if (strcmp(current->info->name, name) == 0)
 			break;
@@ -437,10 +441,17 @@ _setup_partition_summary(partition_info_msg_t * part_ptr,
 
 	for (i = 0; i < node_ptr->record_count; i++) {
 		node_info_t *ninfo = &node_ptr->node_array[i];
-		struct partition_summary *part_sum =
-		    _find_partition_summary(partitions, ninfo->partition);
+		struct partition_summary *part_sum;
 		struct node_state_summary *node_sum = NULL;
 
+		if (ninfo->partition == NULL) {
+			if (params.verbose)
+				printf("Node %s is not in any partition\n\n", 
+					ninfo->name);
+			continue;
+		}
+		part_sum = _find_partition_summary(partitions, 
+						   ninfo->partition);
 		if (part_sum == NULL) {
 			/* This should never happen */
 			printf
