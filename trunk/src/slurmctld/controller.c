@@ -195,8 +195,7 @@ main (int argc, char *argv[])
 				shutdown_time = time (NULL);
 				/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 				slurm_shutdown ();
-				/* ssl clean up
-				*/
+				/* ssl clean up */
 				slurm_destroy_ssl_key_ctx ( & sign_ctx ) ;
 				slurm_ssl_destroy ( ) ;
 
@@ -325,12 +324,15 @@ void * service_connection ( void * arg )
 void *
 slurmctld_background ( void * no_data )
 {
-	static time_t last_sched_time = (time_t) NULL;
-	static time_t last_checkpoint_time = (time_t) NULL;
-	static time_t last_timelimit_time = (time_t) NULL;
+	static time_t last_sched_time;
+	static time_t last_checkpoint_time;
+	static time_t last_timelimit_time;
 	time_t now;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+
+	/* Let the dust settle before doing work */
+	last_sched_time = last_checkpoint_time = last_timelimit_time = time (NULL);
 
 	while (shutdown_time == 0) {
 		sleep (1);
