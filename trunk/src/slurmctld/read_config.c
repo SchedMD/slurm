@@ -54,12 +54,12 @@
 		_X	= NULL; 	\
 	} while (0)
 
-static int _build_bitmaps(void);
-static int _init_all_slurm_conf(void);
-static int _parse_node_spec(char *in_line);
-static int _parse_part_spec(char *in_line);
+static int  _build_bitmaps(void);
+static int  _init_all_slurm_conf(void);
+static int  _parse_node_spec(char *in_line);
+static int  _parse_part_spec(char *in_line);
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
-static int _sync_nodes_to_jobs(void);
+static int  _sync_nodes_to_jobs(void);
 #ifdef 	HAVE_LIBELAN3
 static void _validate_node_proc_count(void);
 #endif
@@ -780,15 +780,15 @@ int read_slurm_conf(int recover)
 		(void) load_part_state();
 		(void) load_job_state();
 	}
+	(void) sync_job_files();
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
 #ifdef 	HAVE_LIBELAN3
 	_validate_node_proc_count();
 #endif
-	if (recover) {
+	if (recover)
 		(void) _sync_nodes_to_jobs();
-	}
 
 	load_part_uid_allow_list(1);
 
