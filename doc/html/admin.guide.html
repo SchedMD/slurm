@@ -81,6 +81,12 @@ The default value is 10.
 <dd>The interval, in seconds, at which the SLURM controller tests the 
 status of other nodes. The default value is 30 seconds.
 
+<dt>InactiveLimit
+<dd>The interval, in seconds, a job is permitted to be inactive (with 
+no active job steps) before it is terminated. This prevents forgotten 
+jobs to be purged in a timely fashion without waiting for their time 
+limit to be reached. The default value is unlimited (zero). 
+
 <dt>KillWait
 <dd>The interval, in seconds, given to a job's processes between the 
 SIGTERM and SIGKILL signals. If the job fails to terminate gracefully 
@@ -156,6 +162,7 @@ FastSchedule=1
 FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
+InactiveLimit=120
 KillWait=30
 Prioritize=/usr/local/maui/priority
 SlurmctldPort=7002 SlurmdPort=7003
@@ -627,6 +634,7 @@ FastSchedule=1
 FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
+InactiveLimit=120
 KillWait=30
 Prioritize=/usr/local/maui/priority
 SlurmctldPort=7002 SlurmdPort=7003
