@@ -1,3 +1,29 @@
+/****************************************************************************\
+ *  launch.c - initiate the user job's tasks.
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <grondona@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #if HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -10,9 +36,9 @@
 #include <src/common/log.h>
 #include <src/common/slurm_protocol_api.h>
 
-#include "launch.h"
-#include "job.h"
-#include "opt.h"
+#include <src/srun/job.h>
+#include <src/srun/launch.h>
+#include <src/srun/opt.h>
 
 extern char **environ;
 
@@ -37,8 +63,9 @@ launch(void *arg)
 	slurm_msg_t req;
 	launch_tasks_request_msg_t msg;
 	job_t *job = (job_t *) arg;
-	int i, j, taskid;
+	int i, j, k, taskid;
 	char hostname[MAXHOSTNAMELEN];
+	uint32_t **task_ids;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 
@@ -75,17 +102,34 @@ launch(void *arg)
 	*/
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
+	/* Build task id list for each host */
+	task_ids = (uint32_t **) xmalloc(job->nhosts * sizeof(uint32_t *));
+	for (i = 0; i < job->nhosts; i++)
+		task_ids[i] = (uint32_t *) xmalloc(job->ntask[i]*sizeof(uint32_t));
 	taskid = 0;
+	if (opt.distribution == SRUN_DIST_BLOCK) {
+		for (i = 0; i < job->nhosts; i++) {
+			for (j = 0; j < job->ntask[i]; j++)
+				task_ids[i][j] = taskid++;
+		}
+	} else {	/*  (opt.distribution == SRUN_DIST_CYCLIC) */
+		for (k=0; ; k++) {	/* cycle counter */
+			int last_taskid = taskid;
+			for (i = 0; i < job->nhosts; i++) {
+				if (k < job->ntask[i])
+					task_ids[i][k] = taskid++;
+			}
+			if (taskid == last_taskid)
+				break;
+		}
+	}
+
 	for (i = 0; i < job->nhosts; i++) {
 		unsigned short port;
 
 		msg.tasks_to_launch = job->ntask[i];
-		msg.global_task_ids = 
-			(uint32_t *) xmalloc(job->ntask[i]*sizeof(uint32_t));
+		msg.global_task_ids = task_ids[i];
 		msg.srun_node_id = (uint32_t)i;
-
-		for (j = 0; j < job->ntask[i]; j++)
-			msg.global_task_ids[j] = taskid++;
 
 		port = ntohs(job->ioport[i%job->niofds]);
 		slurm_set_addr_char(&msg.streams, port, hostname); 
@@ -106,6 +150,7 @@ launch(void *arg)
 
 		xfree(msg.global_task_ids);
 	}
+	xfree(task_ids);
 
 
 	update_job_state(job, SRUN_JOB_STARTING);
