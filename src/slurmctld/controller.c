@@ -1750,16 +1750,15 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 	/* do RPC call */
 	if (error_code);
 	else if (core_arg)
-		debug3
-		    ("performing immeditate shutdown without state save");
+		debug3("performing immeditate shutdown without state save");
 	else if (shutdown_time)
-		debug3
-		    ("_slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
+		debug3("shutdown RPC issued when already in progress");
 	else if (thread_id_sig) {
+		shutdown_slurmd();
 		pthread_kill(thread_id_sig, SIGTERM);	/* signal clean-up */
 	} else {
-		error
-		    ("thread_id_sig undefined, doing shutdown the hard way");
+		shutdown_slurmd();
+		error("thread_id_sig undefined, doing shutdown the hard way");
 		shutdown_time = time(NULL);
 		/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 		_slurmctld_shutdown();

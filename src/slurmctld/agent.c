@@ -283,7 +283,9 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != REQUEST_KILL_TASKS) && 
 	    (agent_arg_ptr->msg_type != REQUEST_PING) && 
 	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH) &&
+	    (agent_arg_ptr->msg_type != REQUEST_SHUTDOWN) &&
 	    (agent_arg_ptr->msg_type != REQUEST_UPDATE_JOB_TIME))
+		/* Add appropriate free msg type to agent() as needed */
 		fatal("agent passed invalid message type %d",
 		      agent_arg_ptr->msg_type);
 	return SLURM_SUCCESS;
@@ -477,9 +479,10 @@ static void *_thread_per_node_rpc(void *args)
 		goto cleanup;
 	}
 
-	/* receive message */
-	if ((msg_size = slurm_receive_msg(sockfd, response_msg))
-	    == SLURM_SOCKET_ERROR) {
+	/* receive message as needed (most message types) */
+	if ((task_ptr->msg_type != REQUEST_SHUTDOWN) && 
+	    ((msg_size = slurm_receive_msg(sockfd, response_msg))
+	     == SLURM_SOCKET_ERROR)) {
 		error(
 		    "_thread_per_node_rpc/slurm_receive_msg to host %s: %m",
 		    thread_ptr->node_name);
@@ -491,6 +494,10 @@ static void *_thread_per_node_rpc(void *args)
 		error(
 		    "_thread_per_node_rpc/slurm_shutdown_msg_conn to host %s: %m",
 		    thread_ptr->node_name);
+		goto cleanup;
+	}
+	if (task_ptr->msg_type == REQUEST_SHUTDOWN) {
+		thread_state = DSH_DONE;
 		goto cleanup;
 	}
 	if (msg_size) {

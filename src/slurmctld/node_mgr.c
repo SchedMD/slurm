@@ -1406,4 +1406,61 @@ static void _dump_hash (void)
 }
 #endif
 
+/* shutdown_slurmd - tell every slurmd to shutdown */
+void shutdown_slurmd (void)
+{
+	int i, pos;
+	shutdown_msg_t *shutdown_req;
 
+	int kill_buf_rec_size = 0;
+	agent_arg_t *kill_agent_args;
+	pthread_attr_t kill_attr_agent;
+	pthread_t kill_thread_agent;
+
+	shutdown_req = xmalloc(sizeof(shutdown_msg_t));
+	shutdown_req->core = 0;
+
+	kill_agent_args = xmalloc (sizeof (agent_arg_t));
+	kill_agent_args->msg_type = REQUEST_SHUTDOWN;
+	kill_agent_args->msg_args = shutdown_req;
+	kill_agent_args->retry = 0;
+
+	for (i = 0; i < node_record_count; i++) {
+		if ((kill_agent_args->node_count+1) > kill_buf_rec_size) {
+			kill_buf_rec_size += 32;
+			xrealloc ((kill_agent_args->slurm_addr), 
+			          (sizeof (struct sockaddr_in) * 
+				  kill_buf_rec_size));
+			xrealloc ((kill_agent_args->node_names), 
+			          (MAX_NAME_LEN * kill_buf_rec_size));
+		}
+		kill_agent_args->slurm_addr[kill_agent_args->node_count] = 
+					node_record_table_ptr[i].slurm_addr;
+		pos = MAX_NAME_LEN * kill_agent_args->node_count;
+		strncpy (&kill_agent_args->node_names[pos],
+		         node_record_table_ptr[i].name, MAX_NAME_LEN);
+		kill_agent_args->node_count++;
+
+	}
+
+	if (kill_agent_args->node_count == 0)
+		xfree (kill_agent_args);
+	else {
+		debug ("Spawning slurmd shutdown agent");
+		if (pthread_attr_init (&kill_attr_agent))
+			fatal ("pthread_attr_init error %m");
+		if (pthread_attr_setdetachstate (&kill_attr_agent, 
+						PTHREAD_CREATE_DETACHED))
+			error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		if (pthread_attr_setscope (&kill_attr_agent, 
+						PTHREAD_SCOPE_SYSTEM))
+			error ("pthread_attr_setscope error %m");
+#endif
+		if (pthread_create (&kill_thread_agent, &kill_attr_agent, 
+					agent, (void *)kill_agent_args)) {
+			error ("pthread_create error %m");
+			agent((void *)kill_agent_args);	/* do inline */
+		}
+	}
+}

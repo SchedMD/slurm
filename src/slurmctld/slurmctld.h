@@ -891,6 +891,9 @@ extern void set_node_down (char *name);
  *	Uses common data structures. */
 extern void set_slurmd_addr (void);
 
+/* shutdown_slurmd - tell every slurmd to shutdown */
+extern void shutdown_slurmd (void);
+
 /*
  * signal_step_tasks - send specific signal to specific job step
  * IN step_ptr - step record pointer
