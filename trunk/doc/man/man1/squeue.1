@@ -1,7 +1,7 @@
-.TH SQUEUE "1" "February 2004" "squeue 0.3" "Slurm components"
+.TH SQUEUE "1" "March 2004" "squeue 0.3" "Slurm components"
 
 .SH "NAME"
-squeue \- Used to view information of jobs located in the scheduling queue.
+squeue \- view information about jobs located in the SLURM scheduling queue.
 
 .SH "SYNOPSIS"
 \fBsqueue\fR [\fIOPTIONS\fR...] 
@@ -37,80 +37,125 @@ subject to any constraints specified.
 .TP
 \fB\-o <output_format>\fR, \fB\-\-format=<output_format>\fR
 Specify the information to be displayed.  
-The default format for jobs is "%.7i %.9P %.8j %.8u  %.2t %.9M %.6D %N".
+The default format for jobs is 
 If the \fB\-\-long\fR option is specified, the default job format is 
-".7i %.9P %.8j %.8u %.8T %.9M %.9l %.6D %N".
-The default format for job steps is "%10i %.9P %.8u %.9M %N".
+Format strings used internally by \fBsqueue\fR when running with
+various options are
 
+.RS
+.TP 15
+.I "default"
+"%.7i %.9P %.8j %.8u  %.2t %.9M %.6D %N"
+.TP
+.I "-l, --long"
+".7i %.9P %.8j %.8u %.8T %.9M %.9l %.6D %N"
+.TP
+.I "-s, --steps"
+"%10i %.9P %.8u %.9M %N"
+.RE
+
+.IP
 The field specifications available include: 
-.br
-\fB%b\fR Time at which the job began execution
-.br
-\fB%c\fR Minimum number of CPUs (processors) requested by the job
-.br
-\fB%C\fR Number of CPUs (processors) allocated to the job or job step
-.br
-\fB%d\fR Minimum size of temporary disk space (in MB) requested by the job
-.br
-\fB%D\fR Number of nodes allocated to the job or the minimum number of nodes 
+
+.RS
+.TP 4
+\fB%b\fR 
+Time at which the job began execution
+.TP
+\fB%c\fR 
+Minimum number of CPUs (processors) requested by the job
+.TP
+\fB%C\fR 
+Number of CPUs (processors) allocated to the job or job step
+.TP
+\fB%d\fR 
+Minimum size of temporary disk space (in MB) requested by the job
+.TP
+\fB%D\fR 
+Number of nodes allocated to the job or the minimum number of nodes 
 required by a pending job. The actual number of nodes allocated to a pending 
 job may exceed this number of the job specified a node range count or the 
 cluster contains nodes with varying processor counts.
-.br
-\fB%e\fR Time at which the job ended or is expected to end (based upon its time
-limit)
-.br
-\fB%f\fR Features required by the job
-.br
-\fB%g\fR Group name
-.br
-\fB%G\fR Group ID
-.br
-\fB%h\fR Can the nodes allocated to the job be shared with other jobs
-.br
-\fB%i\fR Job or job step id
-.br
-\fB%j\fR Job name
-.br
-\fB%l\fR Time limit of the job in days:hours:minutes:seconds. 
+.TP
+\fB%e\fR 
+Time at which the job ended or is expected to end (based upon its time limit)
+.TP
+\fB%f\fR 
+Features required by the job
+.TP
+\fB%g\fR 
+Group name
+.TP
+\fB%G\fR
+Group ID
+.TP
+\fB%h\fR
+Can the nodes allocated to the job be shared with other jobs
+.TP
+\fB%i\fR
+Job or job step id
+.TP
+\fB%j\fR
+Job name
+.TP
+\fB%l\fR
+Time limit of the job in days:hours:minutes:seconds. 
 The value may be "NOT_SET" if not yet established or "UNLIMITED" for no limit.
-.br
-\fB%m\fR Minimum size of memory (in MB) requested by the job
-.br
-\fB%M\fR Time used by the job in days:hours:minutes:seconds. 
+.TP
+\fB%m\fR
+Minimum size of memory (in MB) requested by the job
+.TP
+\fB%M\fR
+Time used by the job in days:hours:minutes:seconds. 
 The days and hours are printed only as needed.
-.br
-\fB%n\fR List of node names explicitly requested by the job
-.br
-\fB%N\fR List of nodes allocated to the job or job step
-.br
-\fB%o\fR Minimum number of nodes requested by the job
-.br
-\fB%O\fR Are contiguous nodes requested by the job
-.br
-\fB%p\fR Priority of the job (converted to a floating point number 
-between 0.0 and 1.0
-.br
-\fB%P\fR Partition of the job or job step
-.br
-\fB%S\fR Start time of the job or job step
-.br
-\fB%t\fR Job state, compact form:
+.TP
+\fB%n\fR
+List of node names explicitly requested by the job
+.TP
+\fB%N\fR
+List of nodes allocated to the job or job step. In the case of a 
+\fIcompleting\fR job, the list of nodes will comprise only those
+nodes that have not yet been returned to service.
+.TP
+\fB%o\fR
+Minimum number of nodes requested by the job
+.TP
+\fB%O\fR
+Are contiguous nodes requested by the job
+.TP
+\fB%p\fR
+Priority of the job (converted to a floating point number between 0.0 and 1.0
+.TP
+\fB%P\fR 
+Partition of the job or job step
+.TP
+\fB%S\fR 
+Start time of the job or job step
+.TP
+\fB%t\fR 
+Job state, compact form:
 PD (pending), R (running), CG (completing), CD (completed), F (failed),
 TO (timeout), and NF (node failure).
-.br
-\fB%T\fR Job state, extended form: 
+.TP
+\fB%T\fR 
+Job state, extended form: 
 PENDING, RUNNING, COMPLETING, COMPLETED, FAILED, TIMEOUT, and NODE_FAIL.
-.br
-\fB%u\fR User name
-.br
-\fB%U\fR User ID
-.br
-\fB%x\fR List of node names explicitly excluded by the job
-.br
-\fB%.<*>\fR right justification of the field
-.br 
-\fB%<Number><*>\fR size of field
+.TP
+\fB%u\fR 
+User name
+.TP
+\fB%U\fR 
+User ID
+.TP
+\fB%x\fR 
+List of node names explicitly excluded by the job
+.TP
+\fB%.<*>\fR 
+right justification of the field
+.TP
+\fB%<Number><*>\fR 
+size of field
+.RE
 .TP
 \fB\-v\fR
 Display all job information.

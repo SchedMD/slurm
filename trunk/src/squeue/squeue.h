@@ -91,6 +91,7 @@ extern struct squeue_parameters params;
 extern void parse_command_line( int argc, char* argv[] );
 extern int  parse_format( char* format );
 extern void sort_job_list( List job_list );
+extern void sort_jobs_by_start_time( List job_list );
 extern void sort_step_list( List step_list );
 
 #endif
