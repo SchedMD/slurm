@@ -1,10 +1,5 @@
 /*****************************************************************************\
  *  slurm_errno.h - error codes and functions for slurm
- *  This implementation relies on "overloading" the libc errno by 
- *  partitioning its domain into system (<1000) and SLURM (>=1000) values.
- *  SLURM API functions should call slurm_seterrno() to set errno to a value.
- *  API users should call slurm_strerror() to convert all errno values to
- *  their description strings.
  ******************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -33,20 +28,24 @@
 
 #include <errno.h>
 /* set errno to the specified value - then return -1 */ 
-#define slurm_seterrno_ret(errnum) do { slurm_seterrno(errnum); return (-1); } while (0)
+#define slurm_seterrno_ret(errnum) do { \
+	slurm_seterrno(errnum);         \
+	return (-1);                    \
+        } while (0)
 
 /* general return codes */
-#define SLURM_SUCCESS 0
-#define SLURM_ERROR -1 
-#define SLURM_FAILURE -1
+#define SLURM_SUCCESS   0
+#define SLURM_ERROR    -1 
+#define SLURM_FAILURE  -1
 
-/* to mimick bash on task launch failure*/
+/* to mimick bash on task launch failure */
+/* XXX: Shouldn't this be in slurmd code then? */
 #define SLURM_EXIT_FAILURE_CODE 127
 
 /* general communication layer return codes */
-#define SLURM_SOCKET_ERROR -1
-#define SLURM_PROTOCOL_SUCCESS 0
-#define SLURM_PROTOCOL_ERROR -1
+#define SLURM_SOCKET_ERROR     -1
+#define SLURM_PROTOCOL_SUCCESS  0
+#define SLURM_PROTOCOL_ERROR   -1
 
 enum {
 	/* General Message error codes */
@@ -59,7 +58,7 @@ enum {
 	SLURM_PROTOCOL_IO_STREAM_VERSION_ERROR,
 	SLURM_PROTOCOL_AUTHENTICATION_ERROR,
 
-	/* _info.c/ocommuncation layer RESPONSE_SLURM_RC message codes */
+	/* _info.c/communcation layer RESPONSE_SLURM_RC message codes */
 	SLURM_NO_CHANGE_IN_DATA =			1900,
 
 	/* slurmctld error codes */
@@ -133,19 +132,25 @@ enum {
 	SLURM_PROTOCOL_SOCKET_IMPL_NOT_ALL_DATA_SENT,
 	ESLURM_PROTOCOL_INCOMPLETE_PACKET ,
 	SLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT ,
-	SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT
+	SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT,
+
+        /* slurm_auth errors */
+        ESLURM_AUTH_CRED_INVALID	= 6000,
+	ESLURM_AUTH_FOPEN_ERROR,
+	ESLURM_AUTH_NET_ERROR,
+        ESLURM_AUTH_UNABLE_TO_SIGN
 };
 
 /* look up an errno value */
-extern char * slurm_strerror(int errnum);
+char * slurm_strerror(int errnum);
 
 /* set an errno value */
-extern void slurm_seterrno(int errnum);
+void slurm_seterrno(int errnum);
 
 /* get an errno value */
-extern inline int slurm_get_errno();
+inline int slurm_get_errno();
 
 /* print message: error string for current errno value */
-extern void slurm_perror(char *msg);
+void slurm_perror(char *msg);
 
-#endif
+#endif /* !_SLURM_ERRNO_H */
