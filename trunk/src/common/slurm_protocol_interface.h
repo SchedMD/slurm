@@ -63,18 +63,23 @@
 typedef enum slurm_socket_type { SLURM_MESSAGE , SLURM_STREAM } slurm_socket_type_t;
 
 /* high level interface */
-int _slurm_create_socket (slurm_socket_type_t type)  ;
+slurm_fd _slurm_create_socket (slurm_socket_type_t type)  ;
 /* msg functions */
-uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
-uint32_t _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
+slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address ) ;
+slurm_fd _slurm_open_msg_conn ( slurm_addr * slurm_address ) ;
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address ) ;
-/* uint32_t _slurm_shutdown_msg_engine ( slurm_fd open_fd ) ; */
+/* this should be a no-op that just returns open_fd in a message implementation */
+slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd , slurm_addr * slurm_address ) ;
+/* this should be a no-op in a message implementation */
+int _slurm_close_accepted_conn ( slurm_fd open_fd ) ;
+
+
+
 /* stream functions */
-uint32_t _slurm_listen_stream ( slurm_addr * slurm_address ) ;
-uint32_t _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address ) ;
-uint32_t _slurm_open_stream ( slurm_addr * slurm_address ) ;
-/*uint32_t _slurm_close_stream ( slurm_fd open_fd ) ;*/
+slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address ) ;
+slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address ) ;
+slurm_fd _slurm_open_stream ( slurm_addr * slurm_address ) ;
 
 /*******************************\
  **  General-Purpose Functions  **
