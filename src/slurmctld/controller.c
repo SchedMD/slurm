@@ -1954,6 +1954,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		   node_reg_stat_msg->node_name, 
 		   (long) (clock() - start_time));
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		schedule();	/* has own locks */
 	}
 }
 
