@@ -39,7 +39,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "waiting" {
+	-re "WAITING" {
 		incr matches
 	}
 	timeout {
@@ -68,7 +68,7 @@ spawn $srun --attach=$job_id --join
 set attach_id $spawn_id
 expect {
         -i $attach_id
-	-re "waiting" {
+	-re "WAITING" {
 		incr matches
 		send -i $attach_id "exit\n"
 	}

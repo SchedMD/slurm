@@ -12,7 +12,7 @@ main (int argc, char **argv)
 	char in_line[10];
 	int i;
 
-	fprintf(stdout, "waiting\n");
+	fprintf(stdout, "WAITING\n");
 	fflush(stdout);
 
 	for (i=0; i<sizeof(in_line); ) {
