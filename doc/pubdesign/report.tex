@@ -205,24 +205,17 @@ on the state of its failover twin, if any.
 {\tt slurmctld} performs several tasks simultaneously:
 
 \begin{itemize}
-\item {\em Machine Status Manager}: Monitor the state of each 
-node in the cluster.  Poll {\tt slurmd}'s for status periodically, and 
-receive state change notifications from {\tt slurmd}'s asynchronously.
-Notify the partition manager when nodes change state.
-{\tt slurmadmin} may be used to set set nodes administratively to 
-{\em up}, {\em down}, or {\em drain} status.
-
-\item {\em Partition Manager}:  Manage partition membership, partition
-status ({\tt slurmadmin} may be used to set
-partitions to {\em up}, or {\em down} status), and
-act as a resource allocator for the job manager, where the resources 
-are whole nodes.  The partition manager also interacts with the machine 
-status manager to maintain an accurate notion of what resources it has 
-available.
-
-\item {\em Scheduler}: Allocates resources to jobs based upon machine and 
-partition status information. Requests to the scheduler come from the 
-Job Manager.
+\item {\em Partition Manager}: Monitors the state of each 
+node in the cluster.  It polls {\tt slurmd}'s for status periodically and 
+receives state change notifications from {\tt slurmd}'s asynchronously.
+The partition manager groups nodes into non-overlapping sets 
+called {\em partitions}. Each partition can have associated with 
+it various job limits and access controls.
+The partition manager also allocates nodes to jobs based upon 
+node and partition states and configurations. Requests to initiate 
+jobs come from the Job Manager.
+{\tt slurmadmin} may be used to administratively alter node and 
+partition configurations.
 
 \item {\em Job Manager}: Accepts user job requests and (if applicable) 
 places pending jobs in a priority ordered queue. By default the job 
@@ -233,26 +226,22 @@ through time for customers wishing a more sophisticated algorithm.
 The job manager is awakened whenever there is a change in state that 
 might permit a job to begin running, such as job completion, job submission, 
 partition {\em up} transition, or node {\em up} transition.
-When awakened, the job manager makes one pass through the job queue and
-performs any cleanup associated with completed jobs.
-The job manager then makes a second pass through the job queue and
+The job manager then makes a pass through the job queue and
 starts jobs until a resource allocation fails. 
 When a resource allocation failure occurs, the Job Manager establishes 
 a time when the job might be expected to begin execution. 
 Lower priority jobs in the queue will be allocated resources on that 
 partition only if they will complete prior to the expected initiation 
 time of the higher priority job (backfill scheduling).
-After completing the scheduling cycle, the job manager goes back to sleep.
-
-\item {\em Job Status Manager}:
-Poll {\tt slurmd}'s on compute nodes that are running jobs. 
-The job status manager will record resource consumption by each job as 
-well as job status (e.g. when execution begins or ends on each node). 
-When the job status manager detects that all nodes associated with a 
-job have completed 
-their work, it initiates cleanup by marking the job as {\em completed} 
-and awakening the job manager.  The job status manager is closely related to
-the machine status manager.
+After completing the scheduling cycle, the job manager's scheduling 
+thread sleeps.
+Once a job has been allocated resources, the job manager transfers 
+necessary state information to those nodes and commences its execution. 
+Once executing, the job manager will monitor and record the job's resource 
+consumption (CPU cycles, real memory, and virtual memory) in near realtime.
+When the job manager detects that all nodes associated with a 
+job have completed their work, it initiates cleanup and performs a 
+scheduling cycle as described above.
 
 \item {\em Switch Manager}:  Monitor the state of interconnect links 
 and inform the machine status manager of any compute nodes whose links
@@ -343,10 +332,9 @@ success to the user's shell:
 srun: tinymem-42
 \end{verbatim}
 
-The controller awakens the job manager.
-The job manager scans for completed jobs, finds none, then tries to run
+The controller awakens the job manager which tries to run
 jobs starting at the head of the job queue.  It finds {\em tinymem-42}
-and makes a successful request to the scheduling to allocate 
+and makes a successful request to the partition manager to allocate 
 two nodes from the {\em tinymem} partition: {\em dev6} and {\em dev7}.
 
 The job manager sends a copy of the environment, current working directory,
@@ -361,8 +349,7 @@ compute nodes:
 /var/spool/slurm/tinymem-42/stderr.[mpirank]
 \end{verbatim}
 
-The job manager notifies the job status manager that a new job is running,
-continues to try to run jobs until it cannot, then sleeps.
+The job manager continues trying to initiate jobs until it cannot, then sleeps.
 Meanwhile, on {\em dev6}, {\tt /var/spool/slurm/tinymem-42/stdout.0}
 accumulates the application's output:
 
@@ -376,9 +363,7 @@ accumulates the application's output:
 \end{verbatim}
 
 When all tasks complete, the {\tt slurmd}'s on the two compute nodes notify
-the job status manager, which changes the job status to {\em stage\_out} and 
-awakens the job manager.  The job manager discovers the completed job in
-its first pass through the queue and begins cleanup.
+the job manager, which changes the job status to {\em stage\_out} and begins cleanup.
 It retrieves the stdout/stderr spool files from the stream copy service
 of each {\tt slurmd} and merges them into a single report, 
 which it stores in the user's {\tt srun} directory.
