@@ -11,6 +11,12 @@ documents those changes that are of interest to users and admins.
     of "slurm_" to avoid linking conflicts with applications using 
     SLURM library
  -- New srun options -Q, --quiet to suppress informational messages.
+ -- Fix bug in slurmctld's building of nodelist for job (failed if 
+    more than one numeric field in node name).
+ -- Change "scontrol completing" and "sinfo" to use job's node bitmap
+    to identify nodes associated with that particular job that are 
+    still processing job completion. This will work properly for 
+    shared nodes.
 
 * Changes in SLURM 0.3.0.0-pre9
 ===============================
