@@ -639,7 +639,8 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(node_write_lock);
 		}
 
-		if ((difftime(now, last_ping_srun_time) >=
+		if (slurmctld_conf.inactive_limit &&
+		    (difftime(now, last_ping_srun_time) >=
 		     (slurmctld_conf.inactive_limit / 2))) {
 			last_ping_srun_time = now;
 			debug2("Performing srun ping");
