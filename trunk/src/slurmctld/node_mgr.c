@@ -888,6 +888,20 @@ set_slurmd_addr (void)
 		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
 				slurmctld_conf.slurmd_port, 
 				node_record_table_ptr[i].comm_name);
+		if (node_record_table_ptr[i].slurm_addr.sin_port)
+			continue;
+		error ("slurm_set_addr failure on %s", 
+		       node_record_table_ptr[i].comm_name);
+		strncpy (node_record_table_ptr[i].name,
+			 node_record_table_ptr[i].comm_name, 
+			 MAX_NAME_LEN);
+		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
+				slurmctld_conf.slurmd_port, 
+				node_record_table_ptr[i].comm_name);
+		if (node_record_table_ptr[i].slurm_addr.sin_port)
+			continue;
+		fatal ("slurm_set_addr failure on %s", 
+		       node_record_table_ptr[i].comm_name);
 	}
 
 	return;

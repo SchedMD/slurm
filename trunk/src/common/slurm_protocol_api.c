@@ -98,6 +98,8 @@ int slurm_api_set_default_config()
 	slurm_set_addr(&proto_conf_default.primary_controller,
 		       slurmctld_conf.slurmctld_port,
 		       slurmctld_conf.control_addr);
+	if (proto_conf_default.primary_controller.sin_port == 0)
+		fatal ("Unable to establish control machine address");
 	if (slurmctld_conf.backup_addr) {
 		slurm_set_addr(&proto_conf_default.secondary_controller,
 			       slurmctld_conf.slurmctld_port,
@@ -218,20 +220,6 @@ int read_slurm_port_config()
 			slurmctld_conf.slurmd_port = slurmd_port;
 	}
 	fclose(slurm_spec_file);
-	return SLURM_SUCCESS;
-}
-
-int slurm_set_default_controllers(char *primary_controller_hostname,
-				  char *secondary_controller_hostname,
-				  uint16_t pri_port, uint16_t sec_port)
-{
-	slurm_set_addr(&proto_conf_default.primary_controller, pri_port,
-		       primary_controller_hostname);
-	if (secondary_controller_hostname) {
-		slurm_set_addr(&proto_conf_default.secondary_controller,
-			       sec_port,
-			       secondary_controller_hostname);
-	}
 	return SLURM_SUCCESS;
 }
 
