@@ -75,7 +75,7 @@ static int smgr_sigarray[] = {
  */
 static void  _session_mgr(slurmd_job_t *job);
 static int   _exec_all_tasks(slurmd_job_t *job);
-static void  _exec_task(slurmd_job_t *job, int i);
+static void  _exec_task(slurmd_job_t *job, int i, int fd);
 static int   _become_user(slurmd_job_t *job);
 static void  _make_tmpdir(slurmd_job_t *job);
 static int   _child_exited(void);
@@ -273,6 +273,8 @@ _exec_all_tasks(slurmd_job_t *job)
 {
 	int i;
 	int fd = job->fdpair[1];
+	int cpipe[2];
+	uint8_t tid;
 
 	xassert(job != NULL);
 	xassert(fd >= 0);
@@ -285,6 +287,9 @@ _exec_all_tasks(slurmd_job_t *job)
 	if (xsignal_block(smgr_sigarray) < 0)
 		return error ("Unable to block signals");
 
+	if (pipe (cpipe) < 0)
+		return error ("Unable to open child pipe: %m");
+
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid = fork();
 
@@ -292,7 +297,7 @@ _exec_all_tasks(slurmd_job_t *job)
 			error("fork: %m");
 			return SLURM_ERROR;
 		} else if (pid == 0)  /* child */
-			_exec_task(job, i);
+			_exec_task(job, i, cpipe[1]);
 
 		/* Parent continues: 
 		 */
@@ -311,24 +316,42 @@ _exec_all_tasks(slurmd_job_t *job)
 		job->task[i]->pid = pid;
 
 		/*
+		 * For task 0, wait until it has created a new pgrp.
+		 */
+		if (i == 0)
+			read (cpipe[0], &tid, sizeof (tid));
+
+		/*
 		 * Prepare process for attach by parallel debugger 
 		 * (if specified and able)
 		 */
 		_pdebug_trace_process(job, pid);
 	}
 
-   again:
-	for (i = 1; i < job->ntasks; i++)
-		if (getpgid (job->task[i]->pid) != job->task[0]->pid) 
-			goto again;
+	/*
+	 * Wait for all tasks to finish joining new process group
+	 */
+	for (i = 1; i < job->ntasks; i++)  
+		read (cpipe[0], &tid, sizeof (tid));
+
+	close (cpipe[0]);
+	close (cpipe[1]);
 
 	return SLURM_SUCCESS;
 }
 
 
 static void
-_exec_task(slurmd_job_t *job, int i)
+_exec_task(slurmd_job_t *job, int i, int fd)
 {
+	/*
+	 * Fit taskid into single byte for writing back to
+	 *  initiating slurmd. Doesn't matter if the values
+	 *  are truncated, we just need the number of bytes to
+	 *  be right.
+	 */
+	uint8_t tid = i;
+
 	if (xsignal_unblock(smgr_sigarray) < 0) {
 		error("unable to unblock signals");
 		exit(1);
@@ -340,6 +363,14 @@ _exec_task(slurmd_job_t *job, int i)
 	if (setpgid (0, i ? job->task[0]->pid : 0) < 0)
 		error ("Unable to put task %d into pgrp %ld: %m",
 			i, job->task[0]->pid);
+
+	/*
+	 * Notify slurmd that pgid has been set for this task
+	 */
+	if (write (fd, &tid, sizeof (tid)) < 0)
+		error ("Unable to notify slurmd that task %d started\n", i);
+
+	close (fd);
 
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
