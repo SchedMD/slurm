@@ -41,8 +41,7 @@ noinst_HEADERS = 	xmalloc.h 	\
 #
 # Note: automake 1.5 will complain about these...
 #
-bits_bytes     : bits_bytes_d.o
-
+bits_bytes     : bits_bytes_d.o log.o xmalloc.o xstring.o xassert.o strlcpy.o 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
 

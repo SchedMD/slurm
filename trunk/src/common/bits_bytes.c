@@ -36,6 +36,11 @@ main (int argc, char *argv[]) {
 	char *buffer, *format;
 	int buffer_offset, buffer_size;
 	int start_inx, end_inx, count_inx;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+
+	error_code = log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	if (error_code)
+		printf ("log_init error %d\n", error_code);
 
 	printf ("testing string manipulation functions...\n");
 	strcpy (in_line,
@@ -69,7 +74,7 @@ main (int argc, char *argv[]) {
 	if (strcmp (string_found, "my,string") != 0)
 		printf ("load_string parse error on test4, got :%s:\n",
 			string_found);
-	free (string_found);
+	xfree (string_found);
 
 	printf ("NOTE: we expect this to print \"leftover\"\n");
 	report_leftover (in_line, 0);
@@ -79,17 +84,17 @@ main (int argc, char *argv[]) {
 	size = (node_record_count + (sizeof (unsigned) * 8) -
 		1) / (sizeof (unsigned) * 8);
 	size *= (sizeof (unsigned) * 8);
-	map1 = malloc (size);
+	map1 = xmalloc (size);
 	memset (map1, 0, size);
 	bitmap_set (map1, 23);
 	bitmap_set (map1, 71);
 	out_line = bitmap_print (map1);
 	printf ("bitmap_print #1 map1 shows %s\n", out_line);
-	free (out_line);
+	xfree (out_line);
 	map2 = bitmap_copy (map1);
 	out_line = bitmap_print (map2);
 	printf ("bitmap_print #2 map2 shows %s\n", out_line);
-	free (out_line);
+	xfree (out_line);
 	map3 = bitmap_copy (map1);
 	bitmap_clear (map2, 23);
 	if (bitmap_is_super (map2, map1) != 1)
@@ -112,14 +117,14 @@ main (int argc, char *argv[]) {
 		printf ("error: bitmap_and error 3\n");
 	out_line = bitmap_print (map3);
 	printf ("bitmap_print #3 map3 shows %s\n", out_line);
-	free (out_line);
+	xfree (out_line);
 
 	bitmap_fill (map1);
 	out_line = bitmap_print (map1);
 	if (bitmap_value (map1, 34) != 1)
 		printf ("error: bitmap_fill error 1\n");
 	printf ("bitmap_print #4 map1 shows %s\n", out_line);
-	free (out_line);
+	xfree (out_line);
 
 	memset (map1, 0, size);
 	for (i = 0; i < 10; i++) {
@@ -159,6 +164,7 @@ main (int argc, char *argv[]) {
 		printf ("read_buffer error on test3\n");
 	if (strcmp (out_line, "val2\n") != 0)
 		printf ("read_buffer error on test4\n");
+	xfree(buffer);
 
 	/* check node name parsing */
 	out_line = "linux[003-234]";
@@ -172,7 +178,7 @@ main (int argc, char *argv[]) {
 			printf ("error: parse_node_name failure\n");
 		printf ("parse_node_name of \"%s\" produces format \"%s\", %d to %d, %d records\n", out_line, format, start_inx, end_inx, count_inx);
 		if (format)
-			free (format);
+			xfree (format);
 	}
 
 	exit (0);
@@ -189,12 +195,7 @@ void bitmap_and (unsigned *bitmap1, unsigned *bitmap2) {
 	int i, size;
 
 	if ((bitmap1 == NULL) || (bitmap2 == NULL)) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_and: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_and: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_and: bitmap pointer is NULL\n");
 	}
 
 	size = (node_record_count + (sizeof (unsigned) * 8) -
@@ -216,12 +217,7 @@ void bitmap_clear (unsigned *bitmap, int position) {
 	unsigned mask;
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_clear: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_clear: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_clear: bitmap pointer is NULL\n");
 	}
 
 	val = position / (sizeof (unsigned) * 8);
@@ -243,25 +239,11 @@ unsigned * bitmap_copy (unsigned *bitmap) {
 	unsigned *output;
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_copy: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_copy: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_copy: bitmap pointer is NULL\n");
 	}
 
 	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / 8;	/* bytes */
-	output = malloc (size);
-	if (output == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_copy: unable to allocate memory\n");
-#else
-		syslog (log_alert,
-			"bitmap_copy: unable to allocate memory\n");
-#endif
-		abort ();
-	}
+	output = xmalloc (size);
 
 	(void) memcpy (output, bitmap, size);
 	return output;
@@ -279,12 +261,7 @@ int bitmap_count (unsigned *bitmap) {
 	unsigned scan;
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_count: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_count: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_count: bitmap pointer is NULL\n");
 	}
 
 	count = 0;
@@ -356,12 +333,7 @@ void bitmap_fill (unsigned *bitmap) {
 	unsigned mask;
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_fill: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_fill: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_fill: bitmap pointer is NULL\n");
 	}
 
 	first = last = position = gap = -1;
@@ -408,12 +380,7 @@ int bitmap_is_super (unsigned *bitmap1, unsigned *bitmap2) {
 	int i, size;
 
 	if ((bitmap1 == NULL) || (bitmap2 == NULL)) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_or: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_or: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_or: bitmap pointer is NULL\n");
 	}
 
 	size = (node_record_count + (sizeof (unsigned) * 8) -
@@ -435,12 +402,7 @@ void bitmap_or (unsigned *bitmap1, unsigned *bitmap2) {
 	int i, size;
 
 	if ((bitmap1 == NULL) || (bitmap2 == NULL)) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_or: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_or: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_or: bitmap pointer is NULL\n");
 	}
 
 	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / 
@@ -462,27 +424,13 @@ char * bitmap_print (unsigned *bitmap) {
 	char *output, temp_str[2];
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_print: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_print: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_print: bitmap pointer is NULL\n");
 	}
 
 	size = (node_record_count + (sizeof (unsigned) * 8) -
 		1) / (sizeof (unsigned) * 8);
 	nibbles = (node_record_count + 3) / 4;
-	output = (char *) malloc (nibbles + 3);
-	if (output == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_print: unable to allocate memory\n");
-#else
-		syslog (log_alert,
-			"bitmap_print: unable to allocate memory\n");
-#endif
-		abort ();
-	}
+	output = (char *) xmalloc (nibbles + 3);
 
 	strcpy (output, "0x");
 	k = 0;
@@ -510,12 +458,7 @@ void bitmap_set (unsigned *bitmap, int position) {
 	unsigned mask;
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_set: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_set: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_set: bitmap pointer is NULL\n");
 	}
 
 	val = position / (sizeof (unsigned) * 8);
@@ -537,12 +480,7 @@ int bitmap_value (unsigned *bitmap, int position) {
 	unsigned mask;
 
 	if (bitmap == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "bitmap_value: bitmap pointer is NULL\n");
-#else
-		syslog (log_alert, "bitmap_value: bitmap pointer is NULL\n");
-#endif
-		abort ();
+		fatal ("bitmap_value: bitmap pointer is NULL\n");
 	}
 
 	val = position / (sizeof (unsigned) * 8);
@@ -585,26 +523,17 @@ int load_integer (int *destination, char *keyword, char *in_line) {
 		}
 		else {
 			str_ptr2 =
-				(char *) strtok_r (scratch, SEPCHARS,
-						   &str_ptr3);
+				(char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
 			str_len2 = strlen (str_ptr2);
 			if (strcmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1;
 			else if ((str_ptr2[0] >= '0') && (str_ptr2[0] <= '9')) {
 				*destination =
-					(int) strtol (scratch, (char **) NULL,
-						      10);
+					(int) strtol (scratch, (char **) NULL, 10);
 			}
 			else {
-#if DEBUG_SYSTEM
-				fprintf (stderr,
-					 "load_integer: bad value for keyword %s\n",
-					 keyword);
-#else
-				syslog (log_err,
-					"load_integer: bad value for keyword %s\n",
+				error ("load_integer: bad value for keyword %s\n",
 					keyword);
-#endif
 				return EINVAL;
 			}
 		}
@@ -641,32 +570,15 @@ int load_string (char **destination, char *keyword, char *in_line) {
 		strcpy (scratch, str_ptr1 + str_len1);
 		if ((scratch[0] == (char) NULL) || 
 		    (isspace ((int) scratch[0]))) {	/* keyword with no value set */
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "load_string: keyword %s lacks value\n",
-				 keyword);
-#else
-			syslog (log_err,
-				"load_string: keyword %s lacks value\n",
+			error ("load_string: keyword %s lacks value\n",
 				keyword);
-#endif
 			return EINVAL;
 		}
 		str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
 		str_len2 = strlen (str_ptr2);
 		if (destination[0] != NULL)
-			free (destination[0]);
-		destination[0] = (char *) malloc (str_len2 + 1);
-		if (destination[0] == NULL) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "load_string: unable to allocate memory\n");
-#else
-			syslog (log_alert,
-				"load_string: unable to allocate memory\n");
-#endif
-			abort ();
-		}
+			xfree (destination[0]);
+		destination[0] = (char *) xmalloc (str_len2 + 1);
 		strcpy (destination[0], str_ptr2);
 		for (i = 0; i < (str_len1 + str_len2); i++) {
 			str_ptr1[i] = ' ';
@@ -693,17 +605,7 @@ int parse_node_name (char *node_name, char **format, int *start_inx, int *end_in
 	char type[1];
 
 	i = strlen (node_name);
-	format[0] = (char *) malloc (i + 1);
-	if (format[0] == NULL) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "parse_node_name: unable to allocate memory\n");
-#else
-		syslog (log_err,
-			"parse_node_name: unable to allocate memory\n");
-#endif
-		abort ();
-	}
+	format[0] = (char *) xmalloc (i + 1);
 
 	*start_inx = 0;
 	*end_inx = 0;
@@ -724,16 +626,9 @@ int parse_node_name (char *node_name, char **format, int *start_inx, int *end_in
 			if (node_name[++i] == (char) NULL)
 				break;
 			if (base != 0) {
-#if DEBUG_SYSTEM
-				fprintf (stderr,
-					 "parse_node_name: invalid '[' in node name %s\n",
-					 node_name);
-#else
-				syslog (log_err,
-					"parse_node_name: invalid '[' in node name %s\n",
+				error ("parse_node_name: invalid '[' in node name %s\n",
 					node_name);
-#endif
-				free (format[0]);
+				xfree (format[0]);
 				return EINVAL;
 			}
 			if (node_name[i] == 'o') {
@@ -758,16 +653,9 @@ int parse_node_name (char *node_name, char **format, int *start_inx, int *end_in
 					i++;
 					break;
 				}
-#if DEBUG_SYSTEM
-				fprintf (stderr,
-					 "parse_node_name: invalid '%c' in node name %s\n",
+				error ("parse_node_name: invalid '%c' in node name %s\n",
 					 node_name[i], node_name);
-#else
-				syslog (log_err,
-					"parse_node_name: invalid '%c' in node name %s\n",
-					node_name[i], node_name);
-#endif
-				free (format[0]);
+				xfree (format[0]);
 				return EINVAL;
 			}
 			while (1) {
@@ -782,16 +670,9 @@ int parse_node_name (char *node_name, char **format, int *start_inx, int *end_in
 					i++;
 					break;
 				}
-#if DEBUG_SYSTEM
-				fprintf (stderr,
-					 "parse_node_name: invalid '%c' in node name %s\n",
+				error ("parse_node_name: invalid '%c' in node name %s\n",
 					 node_name[i], node_name);
-#else
-				syslog (log_err,
-					"parse_node_name: invalid '%c' in node name %s\n",
-					node_name[i], node_name);
-#endif
-				free (format[0]);
+				xfree (format[0]);
 				return EINVAL;
 			}
 			*count_inx = (*end_inx - *start_inx) + 1;
@@ -855,15 +736,8 @@ void report_leftover (char *in_line, int line_num) {
 
 	if (bad_index == -1)
 		return;
-#if DEBUG_SYSTEM
-	fprintf (stderr,
-		 "report_leftover: ignored input on line %d of configuration: %s\n",
-		 line_num, &in_line[bad_index]);
-#else
-	syslog (log_err,
-		"report_leftover: ignored input on line %d of configuration: %s\n",
+	error ("report_leftover: ignored input on line %d of configuration: %s\n",
 		line_num, &in_line[bad_index]);
-#endif
 	return;
 }
 
@@ -875,7 +749,7 @@ void report_leftover (char *in_line, int line_num) {
  *        buffer_offset - byte offset in buffer, write location
  *        buffer_size - byte size of buffer
  *        line - pointer to data to be writen
- * output: buffer - value is written here, buffer may be relocated by realloc()
+ * output: buffer - value is written here, buffer may be relocated by xrealloc()
  *         buffer_offset - incremented by value_size
  *         returns 0 if no error or errno otherwise 
  */
@@ -885,17 +759,10 @@ int write_buffer (char **buffer, int *buffer_offset, int *buffer_size, char *lin
 	line_size = strlen (line) + 1;
 	if ((*buffer_offset + line_size) >= *buffer_size) {
 		(*buffer_size) += line_size + 8096;
-		buffer[0] = realloc (buffer[0], *buffer_size);
-		if (buffer[0] == NULL) {
-#if DEBUG_SYSTEM
-			fprintf (stderr,
-				 "write_buffer: unable to allocate memory\n");
-#else
-			syslog (log_alert,
-				"write_buffer: unable to allocate memory\n");
-#endif
-			abort ();
-		}
+		if (buffer[0])
+			xrealloc (buffer[0], *buffer_size);
+		else
+			buffer[0] = xmalloc(*buffer_size);
 	}
 
 	memcpy (buffer[0] + (*buffer_offset), line, line_size);
