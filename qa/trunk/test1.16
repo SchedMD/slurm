@@ -55,7 +55,7 @@ expect {
 		set job_id $expect_out(1,string)
 		exp_continue
 	}
-	-re "remove .*\?" {
+	-re "\[Rr\]emove .*\?" {
 		set matches 1
 		send "y\n"
 		exp_continue
