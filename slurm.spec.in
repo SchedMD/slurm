@@ -20,10 +20,6 @@ Summary: Development package for SLURM.
 Group: System Environment/Base
 Requires: slurm
 
-
-# Authentication plugin sub-packages: 
-# XXX: How to conditionally build these?
-#
 %package auth-none
 Summary: SLURM auth NULL implementation (no authentication)
 Group: System Environment/Base
@@ -111,19 +107,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
 
-%if %(test -f %{_libdir}/slurm/auth_none.so)
+%if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
 %files auth-none
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_none.so
 %endif
 
-%if %(test -f %{_libdir}/slurm/auth_munge.so)
+%if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
 %files auth-munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
 %endif
 
-%if %(test -f %{_libdir}/slurm/auth_authd.so)
+%if %(test -f %{_libdir}/slurm/auth_authd.so && echo 1 || echo 0)
 %files auth-authd
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_authd.so
