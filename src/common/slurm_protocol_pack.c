@@ -148,6 +148,7 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 		case REQUEST_RECONFIGURE :
 		case REQUEST_SHUTDOWN_IMMEDIATE :
 		case REQUEST_PING :
+		case REQUEST_CONTROL :
 			/* Message contains no body/information */
 			break ;
 		case REQUEST_SHUTDOWN :
@@ -297,6 +298,7 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 		case REQUEST_RECONFIGURE :
 		case REQUEST_SHUTDOWN_IMMEDIATE :
 		case REQUEST_PING :
+		case REQUEST_CONTROL :
 			/* Message contains no body/information */
 			break ;
 		case REQUEST_SHUTDOWN :
