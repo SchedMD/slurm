@@ -87,7 +87,6 @@ create_job_spec(void)
 	if (opt.nodes > -1)
 		job.num_nodes      = opt.nodes;
 
-	job.procs_per_task = opt.cpus;
 	job.user_id        = opt.uid;
 
 	rc = slurm_allocate_resources(&job, &resp, opt.immediate);
