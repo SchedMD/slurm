@@ -70,6 +70,8 @@
 #define BUF_SIZE	  1024	/* Temporary buffer size */
 #define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
 #define DEFAULT_RECOVER   1	/* Recover state by default if set */
+#define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
+				 * check-in before we ping them */
 #define MAX_SERVER_THREADS 20	/* Max threads to service RPCs */
 #define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
 
@@ -501,8 +503,11 @@ static void *_slurmctld_background(void *no_data)
 	};
 
 	/* Let the dust settle before doing work */
-	last_sched_time = last_checkpoint_time = last_timelimit_time =
-	    last_ping_time = last_rpc_retry_time = time(NULL);
+	now = time(NULL);
+	last_sched_time = last_checkpoint_time =  now;
+	last_timelimit_time = last_rpc_retry_time = now;
+	last_ping_time = now + (time_t)MIN_CHECKIN_TIME -
+			 (time_t)slurmctld_conf.heartbeat_interval;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_background pid = %u", getpid());

@@ -377,7 +377,7 @@ static int _parse_node_spec(char *in_line)
 			if ((state_val != NO_VAL)
 			    && (state_val != NODE_STATE_UNKNOWN))
 				node_record_point->node_state = state_val;
-			node_record_point->last_response = time(NULL);
+			node_record_point->last_response = (time_t) 0;
 			if (node_addr)
 				this_node_addr = hostlist_shift(addr_list);
 			else
