@@ -211,35 +211,6 @@ typedef struct partition
 
 } partition_t;
 
-struct pa_request;
-typedef struct pa_request {
-	int* geometry;
-	int size; 
-	int conn_type;
-	bool rotate;
-	bool elongate; 
-	bool force_contig;
-} pa_request_t; 
-
-/** 
- * pa_node: node within the allocation system.  Note that this node is
- * hard coded for 1d-3d only!  (just have the higher order dims as
- * null if you want lower dimensions).
- */
-typedef struct pa_node {
-	/* set if using this node in a partition*/
-	bool used;
-
-	/* coordinates */
-	int coord[PA_SYSTEM_DIMENSIONS];
-
-	/* shallow copy of the conf_results.  initialized and used as
-	 * array of Lists accessed by dimension, ie conf_result_list[dim]
-	 */
-	List* conf_result_list; 
-	
-} pa_node_t;
-
 /** creator/destructor fxns */
 
 /** */
