@@ -15,6 +15,7 @@ html_DATA = \
 	html/help.html \
 	html/jobcompplugins.html \
 	html/lll.gif \
+	html/maui.html \
 	html/news.html \
 	html/overview.html \
 	html/platforms.html \
