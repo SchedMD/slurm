@@ -502,6 +502,7 @@ static void *_slurmctld_rpc_mgr(void *no_data)
 	(void) slurm_shutdown_msg_engine(sockfd);
 	_free_server_thread();
 	pthread_exit((void *) 0);
+	return NULL;
 }
 
 /*
