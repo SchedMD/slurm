@@ -142,7 +142,6 @@ static void *neterr_thr(void *arg)
 			goto fail;
 		}
 		info("Warning: Elan error resolver thread already running");
-		return NULL;
 	}
 
 	/* 
@@ -159,6 +158,8 @@ static void *neterr_thr(void *arg)
 	 *   about it.
 	 */
 	elan3_run_neterr_svc();
+
+	return NULL;
 
    fail:
 	slurm_mutex_lock(&neterr_mutex);
