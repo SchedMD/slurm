@@ -45,6 +45,16 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 
+/* Perform full slurmctld's state every PERIODIC_CHECKPOINT seconds */
+#define	PERIODIC_CHECKPOINT	60
+
+/* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite any RPC activity 
+ * This will catch any state transisions that may have otherwise been missed */
+#define	PERIODIC_SCHEDULE	15
+
+/* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
+#define	PERIODIC_TIMEOUT	60
+
 extern slurm_ctl_conf_t slurmctld_conf;
 
 #define MAX_NAME_LEN	32
@@ -307,6 +317,9 @@ extern int job_step_complete (uint32_t job_id, uint32_t job_step_id);
 /* job_create - create a job table record for the supplied specifications */
 extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
 	    int will_run, struct job_record **job_rec_ptr);
+
+/* job_time_limit - enforce job time limits */
+extern void job_time_limit (void);
 
 /* list_compare_config - compare two entry from the config list based upon weight */
 extern int list_compare_config (void *config_entry1, void *config_entry2);

@@ -171,7 +171,6 @@ create_job_record (int *error_code)
 	struct job_record  *job_record_point;
 	struct job_details *job_details_point;
 
-	purge_old_job ();
 	if (job_count >= MAX_JOB_COUNT) {
 		error ("create_job_record: job_count exceeds limit"); 
 		*error_code = EAGAIN;
@@ -1072,6 +1071,46 @@ job_step_complete (uint32_t job_id, uint32_t step_id)
 
 }
 
+/* 
+ * job_time_limit - terminate jobs which have exceeded their time limit
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+void
+job_time_limit (void) 
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_ptr;
+	time_t now;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	now = time (NULL);
+	lock_slurmctld (job_write_lock);
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_ptr = (struct job_record *) list_next (job_record_iterator))) {
+		if (job_ptr->magic != JOB_MAGIC)
+			fatal ("job_time_limit: job integrity is bad");
+		if ((job_ptr->time_limit == INFINITE) ||
+		    (job_ptr->end_time > now))
+			continue;
+		if ((job_ptr->job_state == JOB_PENDING) ||
+		    (job_ptr->job_state == JOB_FAILED) ||
+		    (job_ptr->job_state == JOB_COMPLETE) ||
+		    (job_ptr->job_state == JOB_TIMEOUT))
+			continue;
+		last_job_update = now;
+		info ("Time limit exhausted for job_id %u, terminated", job_ptr->job_id);
+		job_ptr->job_state = JOB_TIMEOUT;
+		job_ptr->end_time = time(NULL);
+		deallocate_nodes (job_ptr->node_bitmap);
+		delete_job_details(job_ptr);
+	}		
+
+	list_iterator_destroy (job_record_iterator);
+	unlock_slurmctld (job_write_lock);
+}
+
 /* validate_job_desc - validate that a job descriptor for job submit or 
  *	allocate has valid data, set values to defaults as required */
 int 
@@ -1392,14 +1431,7 @@ void
 purge_old_job (void) 
 {
 	int i;
-	static time_t last_purge = (time_t) 0;
-	time_t now;
 
-	now = time (NULL);
-	if (((now - last_purge) < MIN_JOB_AGE) || (job_list == NULL))
-		return;
-
-	last_purge = now;
 	i = list_delete_all (job_list, &list_find_job_old, NULL);
 	if (i) {
 		info ("purge_old_job: purged %d old job records", i);
@@ -1566,6 +1598,7 @@ update_job (job_desc_msg_t * job_specs)
 
 	if (job_specs -> time_limit != NO_VAL) {
 		job_ptr -> time_limit = job_specs -> time_limit;
+		job_ptr -> end_time = job_ptr -> start_time + (job_ptr -> time_limit * 60);
 		info ("update_job: setting time_limit to %u for job_id %u",
 				job_specs -> time_limit, job_specs -> job_id);
 	}
