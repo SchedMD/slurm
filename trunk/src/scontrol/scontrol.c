@@ -466,16 +466,20 @@ print_node_list (char *node_list)
 		print_node (NULL, node_info_ptr);
 	}
 	else {
-		host_list = hostlist_create (node_list);
-		if ((host_list == NULL) && (quiet_flag != 1)) {
-			fprintf (stderr, "unable to parse node list %s\n", node_list);
-			return;
+		if ( (host_list = hostlist_create (node_list)) ) {
+			while ( (this_node_name = hostlist_shift (host_list)) )
+				print_node (this_node_name, node_info_ptr);
+
+			hostlist_destroy (host_list);
 		}
-
-		while ( (this_node_name = hostlist_shift (host_list)) )
-			print_node (this_node_name, node_info_ptr);
-
-		hostlist_destroy (host_list);
+		else if (quiet_flag != 1) {
+			if (errno == EINVAL)
+				fprintf (stderr, "unable to parse node list %s\n", node_list);
+			else if (errno == ERANGE)
+				fprintf (stderr, "too many nodes in supplied range %s\n", node_list);
+			else
+				perror ("error parsing node list");
+		}
 	}			
 	return;
 }
