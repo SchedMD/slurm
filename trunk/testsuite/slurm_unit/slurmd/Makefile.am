@@ -22,6 +22,7 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/slurmd/reconnect_utils.o \
 	$(top_srcdir)/src/slurmd/io_threads.o \
 	$(top_srcdir)/src/slurmd/pipes.o \
+	$(top_srcdir)/src/slurmd/setenvpf.o \
 	$(top_srcdir)/src/common/libcred.la \
 	$(SSL_LIBS) \
 	$(interconnect_lib) \
