@@ -33,51 +33,49 @@
  *		fan_out_task_launch() (pthread_create)
  *			task_exec_thread() (fork) for task exec
  *			task_exec_thread() (pthread_create) for io piping 
- ******************************************************************/			
+ ******************************************************************/
 
-int launch_task ( task_start_t * task_start )
+int launch_task(task_start_t * task_start)
 {
-	pid_t pid = fork ( ) ;
-	switch ( pid ) 
-	{
-		case -1:
-			slurm_perror("fork");
-			return SLURM_ERROR ;
-			break;
-		case 0:
-			task_exec_thread ( task_start ) ;
-			_exit(0);
-		default:
-			task_start -> pthread_id = pid ;
-			return SLURM_SUCCESS ;
-			break;
-			
+	pid_t pid = fork();
+	switch (pid) {
+	case -1:
+		slurm_perror("fork");
+		return SLURM_ERROR;
+		break;
+	case 0:
+		task_exec_thread(task_start);
+		_exit(0);
+	default:
+		task_start->pthread_id = pid;
+		return SLURM_SUCCESS;
+		break;
+
 	}
-	return SLURM_SUCCESS ;
+	return SLURM_SUCCESS;
 }
 
-int wait_for_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** task_start )
+int wait_for_tasks(launch_tasks_request_msg_t * launch_msg,
+		   task_start_t ** task_start)
 {
-	int i ;
-	int rc ;
-	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
-	{
-		rc = waitpid ( task_start[i]->pthread_id , NULL , 0 )  ;
-		debug3 ( "fan_out_task_launch: thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
+	int i;
+	int rc;
+	for (i = 0; i < launch_msg->tasks_to_launch; i++) {
+		rc = waitpid(task_start[i]->pthread_id, NULL, 0);
+		debug3 ("fan_out_task_launch: thread %i pthread_id %i joined ",
+		     i, task_start[i]->pthread_id);
 	}
-	return SLURM_SUCCESS ;
+	return SLURM_SUCCESS;
 }
-	
-int kill_launched_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** task_start , int i )
+
+int kill_launched_tasks(launch_tasks_request_msg_t * launch_msg,
+			task_start_t ** task_start, int i)
 {
 	/*
-	int rc ;
-	for (  i-- ; i >= 0  ; i -- )
-	{
-		rc = kill ( task_start[i]->pthread_id , SIGKILL ) ;
-	}
-	*/
-	return SLURM_SUCCESS ;
+	   int rc ;
+	   for (  i-- ; i >= 0  ; i -- ) {
+	           rc = kill(task_start[i]->pthread_id, SIGKILL);
+	   }
+	 */
+	return SLURM_SUCCESS;
 }
-
-
