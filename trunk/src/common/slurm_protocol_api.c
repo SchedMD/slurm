@@ -651,6 +651,11 @@ void slurm_set_addr(slurm_addr * slurm_address, uint16_t port, char *host)
 	_slurm_set_addr(slurm_address, port, host);
 }
 
+void reset_slurm_addr ( slurm_addr * slurm_address , slurm_addr new_address )
+{
+	_reset_slurm_addr ( slurm_address , new_address );
+}
+
 void slurm_set_addr_char(slurm_addr * slurm_address, uint16_t port,
 			 char *host)
 {
@@ -661,6 +666,18 @@ void slurm_get_addr(slurm_addr * slurm_address, uint16_t * port,
 		    char *host, unsigned int buf_len)
 {
 	_slurm_get_addr(slurm_address, port, host, buf_len);
+}
+
+int slurm_get_peer_addr(slurm_fd fd, slurm_addr * slurm_address)
+{
+	struct sockaddr name;
+	socklen_t namelen = (socklen_t) sizeof (struct sockaddr);
+	int rc;
+
+	if ( (rc = _slurm_getpeername((int) fd, &name, &namelen)) )
+		return rc;
+	memcpy (slurm_address, &name, sizeof (slurm_addr));
+	return 0;
 }
 
 void slurm_pack_slurm_addr(slurm_addr * slurm_address, Buf buffer)

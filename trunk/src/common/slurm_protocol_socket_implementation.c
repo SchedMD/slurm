@@ -761,6 +761,12 @@ void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_
 	slurm_address -> sin_addr.s_addr = htonl ( ip_address ) ;
 }
 
+/* resets the address field of a slurm_addr, port and family remain unchanged */
+void _reset_slurm_addr ( slurm_addr * slurm_address , slurm_addr new_address )
+{
+	slurm_address -> sin_addr.s_addr = new_address.sin_addr.s_addr ;
+}
+
 /* sets the fields of a slurm_addr */
 void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host )
 {
@@ -794,7 +800,6 @@ void _slurm_print_slurm_addr ( slurm_addr * address, char *buf, size_t n )
 	snprintf(buf, n, "%s:%d", addrbuf, ntohs(address->sin_port));
 }
 	
-
 void _slurm_pack_slurm_addr ( slurm_addr * slurm_address , Buf buffer )
 {
 	pack32 ( ntohl ( slurm_address -> sin_addr.s_addr ) , buffer ) ;

@@ -118,6 +118,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 /* slurm address functions */
 /***************************/
 extern void _slurm_set_addr_uint ( slurm_addr * slurm_address , uint16_t port , uint32_t ip_address ) ;
+extern void _reset_slurm_addr ( slurm_addr * slurm_address , slurm_addr new_address );
 extern void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 extern void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host ) ;
 extern void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
