@@ -46,6 +46,7 @@
  *  lsd_fatal_error  *
  *********************/
 
+#include <unistd.h>
 #ifdef WITH_LSD_FATAL_ERROR_FUNC
 #  undef lsd_fatal_error
    extern void lsd_fatal_error(char *file, int line, char *mesg);

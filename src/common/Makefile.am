@@ -51,6 +51,7 @@ libcommon_la_SOURCES = 			\
 	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
+	malloc.c malloc.h		\
 	hostlist.c hostlist.h
 
 libdaemonize_la_SOURCES =  		\

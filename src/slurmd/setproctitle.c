@@ -67,6 +67,9 @@
 
 #if HAVE_CONFIG_H
 #  include "config.h"
+#  if (!HAVE_MALLOC)
+#    include "src/common/malloc.h"
+#  endif
 #endif
 
 #ifndef HAVE_SETPROCTITLE
@@ -118,6 +121,8 @@
 #endif
 #endif /* HAVE_SETPROCTITLE */
 
+#include "src/slurmd/slurmd.h"
+
 extern char **environ;
 
 /*
@@ -135,8 +140,6 @@ static size_t ps_buffer_size;		/* space determined at run time */
 static int	save_argc;
 static char **save_argv;
 
-extern char *__progname;
-
 #ifndef HAVE_SETPROCTITLE
 /*
  * Call this to update the ps status display to a fixed prefix plus an
@@ -151,6 +154,7 @@ setproctitle(const char *fmt, ...)
 #if SETPROCTITLE_STRATEGY != PS_USE_NONE
 	ssize_t used;
 	va_list ap;
+	char *prog_name, *slash_ptr;
 
 	/* no ps display if you didn't call save_ps_display_args() */
 	if (save_argv == NULL)
@@ -176,12 +180,16 @@ setproctitle(const char *fmt, ...)
 	/*
 	 * Make fixed prefix of ps display.
 	 */
-
+	slash_ptr = strrchr(conf->argv[0][0], (int)'/');
+	if (slash_ptr)
+		prog_name = slash_ptr + 1;
+	else
+		prog_name = conf->argv[0][0];
 	va_start(ap, fmt);
 	if (fmt == NULL)
-		snprintf(ps_buffer, ps_buffer_size, "%s", __progname);
+		snprintf(ps_buffer, ps_buffer_size, "%s", prog_name);
 	else {
-		used = snprintf(ps_buffer, ps_buffer_size, "%s: ", __progname);
+		used = snprintf(ps_buffer, ps_buffer_size, "%s: ", prog_name);
 		if (used == -1 || used >= ps_buffer_size)
 			used = ps_buffer_size;
 		vsnprintf(ps_buffer + used, ps_buffer_size - used, fmt, ap);

@@ -28,7 +28,12 @@
 #ifndef __SLURM_JOBCOMP_H__
 #define __SLURM_JOBCOMP_H__
 
-#include <stdint.h>
+#if HAVE_STDINT_H
+#  include <stdint.h>           /* for uint16_t, uint32_t definitions */
+#endif
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>         /* for uint16_t, uint32_t definitions */
+#endif
 #include <sys/types.h>
 #include <time.h>
 #include <unistd.h>

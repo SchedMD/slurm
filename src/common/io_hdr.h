@@ -33,7 +33,12 @@
 #  include "config.h"
 #endif
 
-#include <stdint.h>
+#if HAVE_STDINT_H
+#  include <stdint.h>
+#endif
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#endif
 
 #include "src/common/pack.h"
 #include "src/common/cbuf.h"

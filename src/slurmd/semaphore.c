@@ -35,6 +35,13 @@
  *  Id: semaphore.c,v 1.1.1.1 2000/10/20 21:56:06 dun Exp 
  */
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if (!HAVE_MALLOC)
+#  include "src/common/malloc.h"
+#endif
 
 #include <errno.h>
 #include <stdlib.h>

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * plugrack.c - an intelligent container for plugins
+ *  plugrack.c - an intelligent container for plugins
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,7 +37,6 @@
 
 #  if STDC_HEADERS
 #    include <string.h>
-#    include <stdlib.h>
 #  else /* ! STDC_HEADERS */
 #    if !HAVE_STRCHR
 #      define strchr index
@@ -54,6 +53,10 @@ char *strchr(), *strrchr();
 #  endif
 #  if HAVE_SYS_STAT_H
 #    include <sys/stat.h>
+#  endif
+
+#  if HAVE_STDLIB_H
+#    include <stdlib.h>
 #  endif
 
 #else /* ! HAVE_CONFIG_H */
@@ -205,6 +208,7 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
 {
         char *local;
         char *p;
+	int rc;
   
         xassert( rack );
         xassert( fq_path );
@@ -213,7 +217,7 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
         if ( ! rack->paranoia ) return 1;
   
         /* Make a local copy of the path name so we can write into it. */
-        local = alloca( strlen( fq_path ) + 1 );
+        local = malloc( strlen( fq_path ) + 1 );
         strcpy( local, fq_path );
 
         if ( ! accept_path_paranoia( rack,
@@ -222,6 +226,7 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
 				     PLUGRACK_PARANOIA_FILE_OWN,
                                      rack->paranoia & 
 				     PLUGRACK_PARANOIA_FILE_WRITABLE ) ) {
+		free( local );
                 return 0;
         }
 
@@ -232,18 +237,23 @@ accept_paranoia( plugrack_t rack, const char *fq_path )
          * it should have at least one delimiter.
          */
         if ( ( p = strrchr( local, '/' ) ) == NULL ) {
+		free( local );
                 return 0;
         }
         if ( p != local ) *p = 0;
 
-        return accept_path_paranoia( rack,
-                                     local,
-                                     rack->paranoia & 
-				     PLUGRACK_PARANOIA_DIR_OWN,
-                                     rack->paranoia & 
-				     PLUGRACK_PARANOIA_DIR_WRITABLE );
+        rc = accept_path_paranoia( rack,
+                                   local,
+                                   rack->paranoia & 
+				   PLUGRACK_PARANOIA_DIR_OWN,
+                                   rack->paranoia & 
+				   PLUGRACK_PARANOIA_DIR_WRITABLE );
+	free( local );
+	return rc;
 }
 
+#if 0
+/* Vestigial */
 /*
  * Load a plugin.  Check its type, but not any of the onwership or
  * writability.  It is presumed that those have already been checked.
@@ -275,6 +285,7 @@ plugrack_open_plugin( plugrack_t rack, const char *fq_path )
 
         return plug;
 }
+#endif
 
 
 plugrack_t plugrack_create( void )
@@ -430,7 +441,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 	if ( ( ! rack ) || (! dir ) )
 		return SLURM_ERROR;
 
-	dir_array = alloca( strlen( dir ) + 1 );
+	dir_array = malloc( strlen( dir ) + 1 );
 	xassert( dir_array );
 	strcpy( dir_array, dir );
 	head = dir_array;
@@ -449,6 +460,7 @@ plugrack_read_dir( plugrack_t rack, const char *dir )
 			head = dir_array + i + 1;
 		}
 	}
+	free( dir_array );
 	return rc;
 }
 
@@ -462,9 +474,15 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
         struct stat st;
 	static const size_t type_len = 64;
 	char plugin_type[ type_len ];
+	static int max_path_len = 0;
 
         /* Allocate a buffer for fully-qualified path names. */
-        fq_path = alloca( strlen( dir ) + NAME_MAX + 1 );
+	if (max_path_len == 0) {
+		max_path_len = pathconf("/", _PC_NAME_MAX);
+		if (max_path_len <= 0)
+			max_path_len = 256;
+	}
+        fq_path = malloc( strlen( dir ) + max_path_len + 1 );
         xassert( fq_path );
 
         /*
@@ -484,6 +502,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 				     PLUGRACK_PARANOIA_DIR_OWN,
                                      rack->paranoia & 
 				     PLUGRACK_PARANOIA_DIR_WRITABLE ) ) {
+		free( fq_path );
                 return SLURM_ERROR;
         }
   
@@ -491,6 +510,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
         dirp = opendir( dir );
         if ( dirp == NULL ) {
 		error( "cannot open plugin directory %s", dir );
+		free( fq_path );
 		return SLURM_ERROR;
 	}
   
@@ -542,6 +562,7 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 
 	closedir( dirp );
 
+	free( fq_path );
         return SLURM_SUCCESS;
 }
 
