@@ -176,24 +176,34 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	slurm_msg_t resp_msg;
 	launch_tasks_response_msg_t resp;
 	launch_tasks_request_msg_t *req = msg->data;
+	bool super_user = false;
+
+	req_uid = slurm_auth_uid(msg->cred);
+	if ((req_uid == conf->slurm_user_id) || (req_uid == 0))
+		super_user = true;
+	if ((super_user == false) && (req_uid != req->uid)) {
+		error("Security violation, launch task RCP from uid %u",
+		      (unsigned int) req_uid);
+		rc = ESLURM_USER_ID_MISSING;	/* or invalid user */
+		slurm_send_rc_msg(msg, rc);
+		return;
+	}
 
 	slurm_get_addr(cli, &port, host, sizeof(host));
-	req_uid = slurm_auth_uid(msg->cred);
-
-	info("launch tasks request from %ld@%s", req_uid, host);
+	info("launch task %u.%u request from %ld@%s", req->job_id, 
+	     req->job_step_id, req_uid, host);
 
 	rc = verify_credential(&conf->vctx, 
 			       req->credential, 
 			       conf->cred_state_list);
 
-	if ((rc == SLURM_SUCCESS) && (req_uid == req->uid))
-		rc = _launch_tasks(req, cli);
-	else {
-		info("XXX: Invalid credential from %ld@%s, launching job anyway", 
-		        req_uid, host);
-		rc = _launch_tasks(req, cli);
+	if ((rc != SLURM_SUCCESS) && (super_user == false)) {
+		error("Invalid credential from %ld@%s", req_uid, host);
+		slurm_send_rc_msg(msg, rc);
+		return;
 	}
 
+	rc = _launch_tasks(req, cli);
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
 
