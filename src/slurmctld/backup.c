@@ -139,16 +139,18 @@ void run_backup(void)
 				break;
 		}
 	}
+
+	/* Since pidfile is created as user root (its owner is
+	 *   changed to SlurmUser) SlurmUser may not be able to 
+	 *   remove it, so this is not necessarily an error. 
+	 * No longer need slurmctld_conf lock after above join. */
+	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
+		verbose("Unable to remove pidfile '%s': %m",
+			slurmctld_conf.slurmctld_pidfile);
+
 	if (slurmctld_config.shutdown_time != 0) {
 		info("BackupController terminating");
 		pthread_join(slurmctld_config.thread_id_sig, NULL);
-		/* Since pidfile is created as user root (its owner is
-		 *   changed to SlurmUser) SlurmUser may not be able to 
-		 *   remove it, so this is not necessarily an error. 
-		 * No longer need slurmctld_conf lock after above join. */
-		if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
-			verbose("Unable to remove pidfile '%s': %m",
-				slurmctld_conf.slurmctld_pidfile);
 		log_fini();
 		if (dump_core)
 			abort();
@@ -192,7 +194,11 @@ static void *_background_signal_hand(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	/* No need for slurmctld_conf lock yet */
-	create_pidfile(slurmctld_conf.slurmctld_pidfile);
+	while ( (create_pidfile(slurmctld_conf.slurmctld_pidfile) < 0) && 
+	        (errno == EAGAIN) ) {
+		verbose("create_pidfile: %m");
+		sleep(1);
+	}
 
 	while (1) {
 		xsignal_sigset_create(backup_sigarray, &set);

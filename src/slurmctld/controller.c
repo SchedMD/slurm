@@ -397,7 +397,11 @@ static void *_slurmctld_signal_hand(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	lock_slurmctld(config_read_lock);
-	create_pidfile(slurmctld_conf.slurmctld_pidfile);
+	while ( (create_pidfile(slurmctld_conf.slurmctld_pidfile) < 0) &&
+		(errno == EAGAIN) ) {
+		verbose("create_pidfile: %m");
+		sleep(1);
+	}
 	unlock_slurmctld(config_read_lock);
 
 	/* Make sure no required signals are ignored (possibly inherited) */
