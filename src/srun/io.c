@@ -24,6 +24,7 @@
 
 static void _accept_io_stream(job_t *job);
 static int  _handle_task_output(int *fd, FILE *out, int tasknum);
+static void _bcast_stdin(int fd, job_t *job);	
 static int  _readx(int fd, char *buf, size_t maxbytes);
 static ssize_t _readn(int fd, void *buf, size_t nbytes);
 static char * _next_line(char **str);
@@ -51,8 +52,9 @@ void *io_thr(void *job_arg)
 		FD_ZERO(&rset);
 		FD_ZERO(&wset);
 
-		maxfd = job->iofd;
+		maxfd = MAX(job->iofd, STDIN_FILENO);
 		FD_SET(job->iofd, &rset);
+		FD_SET(STDIN_FILENO, &rset);
 
 		for (i = 0; i < opt.nprocs; i++) {
 			maxfd = MAX(maxfd, job->out[i]);
@@ -79,6 +81,9 @@ void *io_thr(void *job_arg)
 			if (job->out[i] > 0 && FD_ISSET(job->out[i], &rset)) 
 				_handle_task_output(&job->out[i], stdout, i);
 		}
+
+		if (FD_ISSET(STDIN_FILENO, &rset))
+			_bcast_stdin(STDIN_FILENO, job);
 	}
 	
 	return (void *)(0);
@@ -225,3 +230,25 @@ _readn(int fd, void *buf, size_t nbytes)
 
 	return(n);
 }
+
+static void
+_bcast_stdin(int fd, job_t *job)
+{
+	int i;
+	char buf[IO_BUFSIZ];
+	size_t len;
+
+	if ((len = _readx(fd, buf, IO_BUFSIZ)) <= 0) {
+		if (len == 0) /* got EOF */
+			buf[len++] = 4;
+		else {
+			error("error reading stdin. %m");
+			return;
+		}
+	}
+
+	for (i = 0; i < opt.nprocs; i++)
+		write(job->out[i], buf, len);
+	return;
+}
+
