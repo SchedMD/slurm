@@ -1,16 +1,23 @@
 TO BUILD:
   > cd slurm
   > ./autogen.sh
-  > ./configure [--with-authd] [--with-elan] [--with-totalview] [--enable-debug]
+  > ./configure [OPTIONS]
   > make
+  > make install
 
-  NOTES:
-     # --with-authd if you want to use authd for authentication
-     # --with-elan  if you have an Quadics elan switch, defaults to IP
-     # --with-totalview  if you want to support the Etnus TotalView debugger
-     # --enable-debug if you want to run the daemons in debug mode (more 
-       validity checking and writes core files, useful for getting things 
-       running)
+  OPTIONS:
+     "--enable-debug" to run the daemons in debug mode (more validity 
+             checking and writes core files, useful for getting things
+             running)
+     "--prefix=" to specify a directory into which the slurm files are 
+             to be installed
+     "--with-authd" to use authd for authentication, defaults to no 
+             authentication
+     "--with-elan" to support a Quadics Elan3 interconnect, defaults 
+             to IP interconnect
+     "--with-slurm-conf=" to specify the directory into which the 
+             slurm.conf file is placed
+     "--with-totalview" to support the Etnus TotalView debugger
 
 TO TEST:
   You will need to construct a valid configuration file for your machine.
@@ -18,27 +25,34 @@ TO TEST:
     "etc/slurm.conf.localhost" with minimal modifications.  
   For a cluster, you should build something based upon "etc/slurm.conf.dev". 
   Be sure to update "SlurmUser", "JobCredentialPrivateKey" and 
-    "JobCredentialPublicCertificate". There are keys in
-    "src/slurmd/private.key" and "src/slurmd/public.cert"
+    "JobCredentialPublicCertificate". There are usable keys in
+    "src/slurmd/private.key" and "src/slurmd/public.cert". New keys 
+    can be built using the following commands:
+    "openssl genrsa -out <name of private key> 1024"
+    "openssl rsa -in <name of private key> -pubout -out <name of public key>"
   See "doc/man/man5/slurm.conf.5" for help in building this.
 
-  Initiate "src/slurmctld/slurmctld" on the control machine (it can run 
-     without root permissions, see SlurmUser in slurm.conf).
-     For testing purposes you probably want to use several options:
-     "-D" keep in foreground, "-c" clear state from previous executions, 
-     and possibly "-v" for verbose messages (more v's for more verbosity).
-  Initiate "src/slurmd/slurmd" on each compute server (it needs to run 
-     as root for production, but can run as a normal user for testing - 
-     it will report errors on the initgroups, seteuid, and setegid functions 
-     if not run as root, but if everything is run as the same user that's OK).
-     For testing purposes you probably want to use several options:
-     "-D" keep in foreground, "-c" clear state from previous executions, 
-     and possibly "-v" for verbose messages (more v's for more verbosity).
-  Run jobs using the "src/srun/srun" command.
-  Get system status using "src/sinfo/sinfo" and "src/squeue/squeue".
-  Terminate jobs using "src/scancel/scancel".
-  Get and set system configuration information using "src/scontrol/scontrol".
-  Man pages for all of these daemons and commands can be found in "doc/man". 
+  Initiate "slurmctld" on the control machine (it can run without root 
+     permissions, see SlurmUser in slurm.conf). For testing purposes you 
+     probably want to use several options: "-D" keep in foreground, "-c" 
+     clear state from previous executions, and possibly "-v" for verbose 
+     messages (more v's for more verbosity). For example: 
+     "slurmctld -D -c -vvvvv" (specify pathname as needed).
+  Initiate "slurmd" on each compute server (it needs to run as root for 
+     production, but can run as a normal user for testing - it will report 
+     errors on the initgroups, seteuid, and setegid functions if not run 
+     as root, but if everything is run as the same user that's OK). For 
+     testing purposes you probably want to use several options: "-D" 
+     keep in foreground, "-c" clear state from previous executions, 
+     and possibly "-v" for verbose messages (more v's for more verbosity). 
+     For example "slurmd -D -c -vvvvv". If using pdsh (parallel distributed 
+     shell) to initiate slurmd on every node, the execute line would be 
+     "pdsh -a "slurmd -D -c -vvvvv"" (specify pathname as needed).
+  Run jobs using the "srun" command.
+  Get system status using "sinfo" and "squeue".
+  Terminate jobs using "scancel".
+  Get and set system configuration information using "scontrol".
+  Man pages for all of these daemons and commands are available. 
 
   There DejaGnu scripts to exercise various APIs and tools.
 
@@ -48,12 +62,6 @@ NOTES:
   There is no authentication of communications between commands and 
      daemons without the the authd daemon in operation. For more 
      information, see "http://www.theether.org/authd/".
-
-  To generate your own slurm job credential private and public keypair,
-  run the following commands:
- 
-  > openssl genrsa -out <name of private key> 1024
-  > openssl rsa -in <name of private key> -pubout -out <name of public key>
 
 
 STATUS (As of 3/4/2002): 
