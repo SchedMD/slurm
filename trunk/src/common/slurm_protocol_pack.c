@@ -1249,7 +1249,11 @@ void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer )
 	packstr (build_ptr->prioritize, buffer);
 	packstr (build_ptr->prolog, buffer);
 	pack16 (build_ptr->ret2service, buffer);
+error("logfile=%s",build_ptr->slurmctld_logfile);
+	packstr (build_ptr->slurmctld_logfile, buffer);
 	pack16 (build_ptr->slurmctld_timeout, buffer);
+	packstr (build_ptr->slurmd_logfile, buffer);
+	packstr (build_ptr->slurmd_spooldir, buffer);
 	pack16 (build_ptr->slurmd_timeout, buffer);
 	packstr (build_ptr->slurm_conf, buffer);
 	packstr (build_ptr->state_save_location, buffer);
@@ -1283,7 +1287,11 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, Buf bu
 	safe_unpackstr_xmalloc (&build_ptr->prioritize, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->prolog, &uint16_tmp, buffer);
 	safe_unpack16 (&build_ptr->ret2service, buffer);
+	safe_unpackstr_xmalloc (&build_ptr->slurmctld_logfile, &uint16_tmp, buffer);
+error("logfile=%s",build_ptr->slurmctld_logfile);
 	safe_unpack16 (&build_ptr->slurmctld_timeout, buffer);
+	safe_unpackstr_xmalloc (&build_ptr->slurmd_logfile, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc (&build_ptr->slurmd_spooldir, &uint16_tmp, buffer);
 	safe_unpack16 (&build_ptr->slurmd_timeout, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurm_conf, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->state_save_location, &uint16_tmp, buffer);
@@ -1307,6 +1315,12 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, Buf bu
 		xfree (build_ptr->prioritize);
 	if (build_ptr->prolog)
 		xfree (build_ptr->prolog);
+	if (build_ptr->slurmctld_logfile)
+		xfree (build_ptr->slurmctld_logfile);
+	if (build_ptr->slurmd_logfile)
+		xfree (build_ptr->slurmd_logfile);
+	if (build_ptr->slurmd_spooldir)
+		xfree (build_ptr->slurmd_spooldir);
 	if (build_ptr->slurm_conf)
 		xfree (build_ptr->slurm_conf);
 	if (build_ptr->state_save_location)

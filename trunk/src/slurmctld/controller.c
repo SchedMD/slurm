@@ -1861,7 +1861,10 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->prioritize        	= NULL ;
 	conf_ptr->prolog            	= NULL ;
 	conf_ptr->ret2service           = 0 ;
+	conf_ptr->slurmctld_logfile   	= xstrdup ("test") ; /* FIXME to NULL */
 	conf_ptr->slurmctld_timeout   	= 300 ;
+	conf_ptr->slurmd_logfile   	= NULL ;
+	conf_ptr->slurmd_spooldir   	= NULL ;
 	conf_ptr->slurmd_timeout   	= 300 ;
 	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
 	conf_ptr->state_save_location   = xstrdup (DEFAULT_TMP_FS) ;
@@ -1900,8 +1903,11 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->prioritize        	= slurmctld_conf.prioritize ;
 	conf_ptr->prolog            	= slurmctld_conf.prolog ;
 	conf_ptr->ret2service           = slurmctld_conf.ret2service ;
+	conf_ptr->slurmctld_logfile   	= slurmctld_conf.slurmctld_logfile ;
 	conf_ptr->slurmctld_port   	= slurmctld_conf.slurmctld_port ;
 	conf_ptr->slurmctld_timeout   	= slurmctld_conf.slurmctld_timeout ;
+	conf_ptr->slurmd_logfile   	= slurmctld_conf.slurmd_logfile ;
+	conf_ptr->slurmd_spooldir   	= slurmctld_conf.slurmd_spooldir ;
 	conf_ptr->slurmd_port   	= slurmctld_conf.slurmd_port ;
 	conf_ptr->slurmd_timeout   	= slurmctld_conf.slurmd_timeout ;
 	conf_ptr->slurm_conf       	= slurmctld_conf.slurm_conf ;

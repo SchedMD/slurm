@@ -353,7 +353,7 @@ typedef struct partition_info {
  * Slurm API Protocol Data Structures
  *****************************************************************************/
 
-struct slurm_ctl_conf {
+typedef struct slurm_ctl_conf {
 	time_t last_update;	/* last update time of the build parameters */
 	char *backup_addr;	/* comm path of slurmctld secondary server */
 	char *backup_controller;	/* name of slurmctld secondary server */
@@ -370,18 +370,19 @@ struct slurm_ctl_conf {
 	char *prioritize;	/* pathname of program to set initial job priority */
 	char *prolog;		/* pathname of job prolog */
 	uint16_t ret2service;	/* 1 return node to service at registration */ 
+	char *slurmctld_logfile;	/* where slurmctld error log goes by default */
 	uint32_t slurmctld_port;	/* default communications port to slurmctld */
 	uint16_t slurmctld_timeout;	/* how long backup waits for primarly slurmctld */
+	char *slurmd_logfile;	/* where slurmd error log goes by default */
 	uint32_t slurmd_port;	/* default communications port to slurmd */
+	char *slurmd_spooldir;	/* where slurmd put temporary state info */
 	uint16_t slurmd_timeout;	/* how long slurmctld waits for slurmd before setting down */
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *state_save_location;	/* pathname of state save directory */
 	char *tmp_fs;		/* pathname of temporary file system */
 	char *job_credential_private_key;	/* path to private key */
 	char *job_credential_public_certificate;	/* path to public certificate */
-};
-
-typedef struct slurm_ctl_conf slurm_ctl_conf_t;
+} slurm_ctl_conf_t;
 
 /****************************************************************************
  * Slurm Protocol Message Types
