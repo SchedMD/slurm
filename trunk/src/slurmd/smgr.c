@@ -241,7 +241,7 @@ _exec_all_tasks(slurmd_job_t *job)
 
 		/* Parent continues: 
 		 */
-		info ("task %d (%ld) started %M", job->task[i]->gid, pid); 
+		verbose ("task %d (%ld) started %M", job->task[i]->gid, pid); 
 
 		/* 
 		 * Send pid to job manager
@@ -373,7 +373,7 @@ _reap_task(slurmd_job_t *job)
 	pid_t pid;
 	int   status = 0;
 
-	if ((pid = waitpid(-1, &status, WNOHANG)) > (pid_t) 0) 
+	if ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > (pid_t) 0) 
 		return _send_exit_status(job, pid, status);
 
 	if (pid < 0)
@@ -416,8 +416,9 @@ _wid(int n)
 
 /*
  *  Send exit status for local pid `pid' to slurmd manager process.
- *    Returns 1 if pid corresponds to a local taskid, 0 otherwise.
- *
+ *   Returns 1 if pid corresponding to a local taskid has exited.
+ *   Returns 0 if pid is not a tracked task, or if task has not
+ *    exited (e.g. task has stopped).
  */ 
 static int 
 _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
@@ -432,12 +433,26 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 		return 0;
 	e.status = status;
 
-	info ( "task %*d (%ld) exited status 0x%04x %M", 
-	        _wid(job->ntasks), 
-	        job->task[e.taskid]->gid, 
-	        pid, 
-	        status
-	     );
+	/*
+	 *  Report tasks that are stopped via debug log,
+	 *   but return 0 since the task has not exited.
+	 */
+	if ( WIFSTOPPED(status) ) {
+		verbose ( "task %*d (%ld) stopped by %s",
+		          _wid(job->ntasks), 
+			  job->task[e.taskid]->gid,
+			  pid, 
+			  _signame(WSTOPSIG(status))
+			);
+		return 0;
+	}
+
+	verbose ( "task %*d (%ld) exited status 0x%04x %M", 
+	          _wid(job->ntasks), 
+	          job->task[e.taskid]->gid, 
+	          pid, 
+	          status
+	        );
 
 	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
 
