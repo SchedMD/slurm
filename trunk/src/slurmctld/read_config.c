@@ -821,13 +821,16 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 		node_ptr  = find_node_record(old_node_table_ptr[i].name);
 		if (node_ptr == NULL)
 			continue;
-		node_ptr->node_state	= old_node_table_ptr[i].node_state;
-		node_ptr->last_response	= old_node_table_ptr[i].last_response;
-		node_ptr->cpus		= old_node_table_ptr[i].cpus;
-		node_ptr->real_memory	= old_node_table_ptr[i].real_memory;
-		node_ptr->tmp_disk	= old_node_table_ptr[i].tmp_disk;
-		node_ptr->reason	= old_node_table_ptr[i].reason;
-		old_node_table_ptr[i].reason = NULL;
+		node_ptr->node_state    = old_node_table_ptr[i].node_state;
+		node_ptr->last_response = old_node_table_ptr[i].last_response;
+		node_ptr->cpus          = old_node_table_ptr[i].cpus;
+		node_ptr->real_memory   = old_node_table_ptr[i].real_memory;
+		node_ptr->tmp_disk      = old_node_table_ptr[i].tmp_disk;
+		if(node_ptr->reason == NULL) {
+			/* Recover only if not explicitly set in slurm.conf */
+			node_ptr->reason	= old_node_table_ptr[i].reason;
+			old_node_table_ptr[i].reason = NULL;
+		}
 	}
 }
 
