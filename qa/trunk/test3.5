@@ -42,7 +42,7 @@ print_header $test_id
 # Confirm the partition name does not already exist
 #
 set found -1
-spawn $scontrol show part $part_name
+spawn $scontrol -a show part $part_name
 expect {
 	-re "not found" {
 		send_user "This error was expected, no worries\n"
@@ -66,7 +66,7 @@ if {$found == -1} {
 	exit 1
 }
 if {$found == 1} {
-	send_user "\nFAILURE: partition $partition already exists\n"
+	send_user "\nFAILURE: partition $part_name already exists\n"
 	exit 1
 }
 
