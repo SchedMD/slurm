@@ -88,7 +88,7 @@ The design below calls for a four-phase development process. Phase one will
 develop some of the required cluster management infrastructure: the communications 
 infrastructure, node status information collection and management. This 
 infrastructure is expected to be of general interest for moving data and 
-running programs in a highly scalableand parallel fashion. There will be no 
+running programs in a highly scalable and parallel fashion. There will be no 
 development of a scheduler in phase one.
 Phase two will provide basic job management functionality: basic job and partition
 management plus simple scheduling, but without use of the interconnect. 
@@ -112,27 +112,23 @@ should be minimized. In phase three, we intend for this service to also monitor
 basic job state information. In phase four, this will be expanded to include 
 job accounting information. Providing all functions
 within a single daemon will minimize system overhead. Node information that we
-intend to manage includes:
+intend to monitor includes:
 
 \begin{itemize}
 \item Count of processors on the node
-\item Speed of the processors on the node
 \item Size of real memory on the node
-\item Size of virtual memory on the node
 \item Size of temporary disk storage
-\item Operating System version
 \item Partition(s) serving
 \item State of node (RUN, IDLE, DRAIN, etc.)
 \item Cumulative CPU use (by job, kernel and daemons, possibly reporting 
 both user and system time independently)
 \item Allocated CPU time (recognizes preempted time, by job, kernel and daemons)
 \item Real memory demand (by job, kernel and daemons)
-\item Virtual memory demand (by job, kernel and daemons)
-\item Temporary disk storage use (total by all users)
 \end{itemize}
 
-The SLURM administrator could specify at a minimum a list of system node 
-names. If he requires more than one partition, that should also be specified. 
+The SLURM administrator could specify, at a minimum ,a list of system node 
+names using a regular expression. 
+If he requires more than one partition, that information should also be specified. 
 He may also specify the mimimanl node configuration values which are acceptable 
 (CPU count, real memory size, etc.). He could alternately let the individual 
 nodes register their actual configurations into the database and save that 
@@ -170,19 +166,14 @@ implemented in DPCS.
 Partition management will be used to identify groups of nodes to be used for
 execution of user jobs. Data to be associated with a partition will include:
 \begin{itemize}
-\item Name 
 \item ID number
-\item Job types permitted (INTERACTIVE and/or BATCH)
-\item Maximum job execution time
-\item Maximum job node count
+\item Access permitted, under direct user (e.g. INTERACTIVE) or system (e.g. BATCH QUEUE) control
 \item List of associated nodes
 \item State of partition (UP or DOWN)
-\item List of permitted users (default is all users)
-\item List of users not permitted (default is no users)
 \end{itemize}
 
 It will be possible to alter this data in real-time in order to effect the
-scheduling of pending jobs (currently executing jobs would continue). Unlike
+scheduling of pending jobs (currently executing jobs would continue). Unlike some
 other parallel job management systems, we believe this information can be
 confined to the SLURM control machine for better scalability. It would be used
 by the Job Manager and Machine Status Manager, which exist only on the control
@@ -194,15 +185,14 @@ a simple command-line tool utilizing the API.
 A daemon on each compute node would be responsible for allocating switch
 channels and assigning them to user jobs. The switch channels would be
 de-allocated upon job termination. Switch health monitoring tools will 
-also be implemented in phase two. If there are ample switch channels and
-bandwidth available, it may be desirable for the SLURM daemons to use the
-switch directly for communications. This option will be investigated in phase
+also be implemented in phase two. It may be desirable for the SLURM daemons to use the
+switch directly for communications, particularly for the movement of a large 
+executable and/or standard input file. This option will be investigated in phase
 three. 
 
 \section{Job Management}
 
-Jobs will be allocated entire nodes. We will support a heterogeneous cluster of
-nodes in phase two. Node sharing will be supported only temporally (e.g.
+Jobs will be allocated entire nodes. Node sharing will be supported only temporally (e.g.
 time-slicing or  gang scheduling). The core functions to be supported include:
 \begin{itemize}
 \item Initiate job\footnote{There are considerable issues regarding allocation 
@@ -223,18 +213,18 @@ available, future)
 Submitted jobs can specify desired partition, CPU count, node count, task 
 count, task distribution pattern (round-robin or sequential within a node), 
 and (optionally) an explicit list of nodes. The submitted job will be 
-identified as type INTERACITIVE or BATCH, and by virtue of this can be constrained 
-to specific partitions. The submitted job will also be associated with a specific 
-user and this may constrain partition use. 
+identified as being initiated under direct user (e.g. INTERACTIVE) or system 
+(e.g. BATCH QUEUE) control, and by virtue of this can be constrained 
+to specific partitions. 
 
 Since scheduling decisions are being provided by the scheduling component,
-there is no concept of submitting a job to be queued. The concept of gang
-scheduling, or time-slicing for parallel jobs, is supported by the preempt and
+there is no concept of submitting a job to be queued in the initial SLURM design. 
+The concept of gang scheduling, or time-slicing for parallel jobs, is supported by the preempt and
 resume functions. Automatic time-sharing of parallel jobs will not be
 supported. Automatic time-sharing of parallel jobs will not be
 supported. Explicit node selection will be optionally specified as part of the
 will job run and initiate job functions. An API for all functions would be
-developed initially followed by a  command-line tool utilizing the API. Future
+developed initially, followed by a  command-line tool utilizing the API. Future
 enhancements could include constraining jobs to a specific CPU count or memory
 size within a node, which could be used to space-share the node.
 
@@ -254,7 +244,7 @@ be moved into the proposed SLURM Job Management and Job Status components.
 DPCS will require some modification to operate within this new, richer
 environment. The DPCS Central Manager would also require porting to Linux. It
 would be simple for other schedulers including Maui, PBS, LSF, and Globus 
-to operate on the SLURM infrastructure, if so desired. In may in fact be 
+to operate on the SLURM infrastructure, if so desired. It may in fact be 
 desirable to create a very simple batch system for some customers.
 
 The DPCS writes job accounting records to Unix files. Presently, these are
@@ -398,13 +388,13 @@ massively parallel systems. PBS was developed as a replacement for
 NQS (Network Queuing System) by many of the same people.
 
 PBS has sophisticated scheduling logic. It spawn's daemons on each 
-machine to shepherd the job's tasks (appears to be like LoadLeveler 
+machine to shepherd the job's tasks (similar to LoadLeveler 
 and Condor). It provides an interface for administrators to easily 
-interface their own scheduling modules (nice feature).  Can support 
+interface their own scheduling modules (a nice feature).  PBS can support 
 long delays in file staging (in and out) with retry.  Host 
 authentication provided by checking port number (low ports only 
 accessible to root).  Credential service used for user authentication. 
-It has the job prolog and epilog feature, which is useful.  Supports 
+It has the job prolog and epilog feature, which is useful.  PBS Supports 
 high priority queue for smaller "interactive" jobs.  Signal to daemons 
 causes current log file (e.g. accounting) to be closed, renamed with 
 time-stamp, and a new log file created.
@@ -414,13 +404,13 @@ Jeff Squyres, Tim Mattson):
 \begin{itemize}
 \item Sensitivity to hostname configuration on the server; improper 
       configuration results in hard to diagnose failure modes.  Once 
-      configuration is correct, this issue dissappears.
+      configuration is correct, this issue disappears.
 \item When a compute node in the system dies, everything slows down.  
       PBS is single-threaded and continues to try to contact down nodes,
       while other activities like scheduling jobs, answering qsub/qstat 
       requests, etc., have to wait for a complete timeout cycle before being
       processed.
-\item Default schduler is just FIFO, but Maui can be plugged in so this
+\item Default scheduler is just FIFO, but Maui can be plugged in so this
       is not a big issue.
 \item Weak mechanism for starting/cleaning up parallel jobs (pbsdsh).
       When a job is killed, pbsdsh kills the processes it started, but
@@ -464,28 +454,52 @@ of some frustration.
 Maui Scheduler\footnote{http://mauischeduler.sourceforge.net/}
 is an advance reservation HPC batch scheduler for use with SP, 
 O2K, and UNIX/Linux clusters. It is widely used to extend the 
-functionality of PBS and Loadleveler
+functionality of PBS and LoadLeveler
 
 \subsection{DPCS}
 
-Something about DPCS here for peer reviewers.
+The Distributed Production Control System (DPCS)\footnote{http://www.llnl.gov/icc/lc/dpcs/dpcs_overview.html}
+is a resource manager developed by Lawrence Livermore National Laboratory (LLNL). 
+DPCS is (or will soon be) open source, although its use is presently 
+confined to LLNL. The development of DPCS began in 1990 and it has 
+evolved into a highly scalable and fault-tolerant meta-scheduler 
+operating on top of LoadLeveler, RMS, and NQS. DPCS provides 
+\begin{itemize}
+\item Basic data collection and reporting mechanisms for project-level, 
+      near real-time accounting.
+\item Resource allocation to customers with established limits per 
+      customers' organizational budgets. 
+\item Proactive delivery of services to organizations that are relatively 
+      underserviced using a fair-share resource allocation scheme.
+\item Automated, highly flexible system with feedback for proactive delivery 
+      of resources.
+\item Even distribution of the workload across available computers.
+\item Flexible prioritization of production workload, including "run on demand."
+\item Dynamic reconfiguration and re-tuning.
+\item Graceful degradation in service to prevent overuse of a computer where 
+      not authorized.
+\end{itemize}
+
+While DPCS does have some attractive characteristics, it supports only a 
+limited number of computer systems: IBM RS/6000 and SP, Linux with RMS, 
+Sun Solaris, and Compaq Alpha. DPCS also lacks commercial support.
 
 \subsection{LoadLeveler}
 
 LoadLeveler\footnote{
 http://www-1.ibm.com/servers/eserver/pseries/software/sp/loadleveler.html}
- is a proprietary batch system and parallel job manager by 
+is a proprietary batch system and parallel job manager by 
 IBM. LoadLeveler supports few non-IBM systems. Very primitive 
 scheduling software exists and other software is required for reasonable 
-performance (e.g. Maui and DPCS). Many soft and hard limits are available. Very 
-flexible queue and job class structure operating in "matrix" fashion 
-(probably overly complex). Many configuration files with signals to 
+performance (e.g. Maui and DPCS). Many soft and hard limits are available. 
+A very flexible queue and job class structure is available operating in "matrix" fashion 
+(probably overly complex). Many configuration files exist with signals to 
 daemons used to update configuration (like LSF, good). All jobs must 
 be initiated through LoadLeveler (no real "interactive" jobs, just 
-high priority queue for smaller jobs). Job accounting only available 
+high priority queue for smaller jobs). Job accounting is only available 
 on termination (very bad for long-running jobs). Good status 
-information on nodes and LoadLeveler daemons. Allocates jobs either entire 
-nodes or shared nodes depending upon configuration.
+information on nodes and LoadLeveler daemons is available. LoadLeveler 
+allocates jobs either entire nodes or shared nodes ,depending upon configuration.
 
 A special version of MPI is required. LoadLeveler allocates 
 interconnect resources, spawns the user's processes, and manages the 
@@ -506,19 +520,19 @@ daemons before designing our own.
 
 \subsection{LSF (Load Sharing Facility)}
 
-
 LSF\footnote{http://www.platform.com/}
- is a proprietary batch system and parallel job manager by 
+is a proprietary batch system and parallel job manager by 
 Platform Computing. Widely deployed on a wide variety of computer 
 architectures. Sophisticated scheduling software including 
 fair-share, backfill, consumable resources, job preemption, many soft 
 and hard limits, etc. Very flexible queue structure (perhaps overly 
-complex). Most limits are per process rather than per-job (not very 
-useful). Time limits include CPU time and wall-clock time. Many 
+complex). Limits are available on both a per process bs per-job  
+basis. Time limits include CPU time and wall-clock time. Many 
 configuration files with signals to daemons used to update 
 configuration (like LoadLeveler, good). All jobs must be initiated 
-through LSF (no real "interactive" jobs, just high priority queue for 
-smaller jobs). Job accounting only available on termination (very bad 
+through LSF to be accounted for and managed by LSF ("interactive" 
+jobs can be executed through a high priority queue for 
+smaller jobs). Job accounting only available in near real-time (important 
 for long-running jobs). Jobs initiated from same directory as 
 submitted from (not good for computer centers with diverse systems 
 under LSF control). Good status information on nodes and LSF daemons. 
