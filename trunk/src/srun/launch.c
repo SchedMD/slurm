@@ -175,7 +175,7 @@ launch(void *arg)
 
 #ifdef HAVE_TOTALVIEW
 		if (opt.totalview)
-			r->task_flags &= TASK_TOTALVIEW_DEBUG;
+			r->task_flags |= TASK_TOTALVIEW_DEBUG;
 #endif
 
 	}
