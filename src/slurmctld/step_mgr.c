@@ -37,6 +37,7 @@
 #include <string.h>
 
 #include <src/common/bitstring.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 bitstr_t * pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec );
@@ -298,26 +299,37 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	int nprocs = step_specs->cpu_count;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
+	/* Locks: Write jobs, read nodes */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 	*new_step_record = NULL;
+	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record (step_specs->job_id);
-	if (job_ptr == NULL) 
+	if (job_ptr == NULL) {
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_INVALID_JOB_ID ;
+	}
 
 	if (step_specs->user_id != job_ptr->user_id &&
-	    	step_specs->user_id != 0) 
+	    	step_specs->user_id != 0) {
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_ACCESS_DENIED ;
+	}
 
 	if ((job_ptr->job_state == JOB_COMPLETE) || 
 	    (job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_TIMEOUT) ||
-	    (job_ptr->job_state == JOB_STAGE_OUT))
+	    (job_ptr->job_state == JOB_STAGE_OUT)) {
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_ALREADY_DONE;
+	}
 
 	nodeset = pick_step_nodes (job_ptr, step_specs );
 
-	if (nodeset == NULL)
+	if (nodeset == NULL) {
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
+	}
 
 	/* FIXME need to set the error codes and define them 
 	 * probably shouldn't exit w/ a fatal... 
@@ -354,6 +366,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 #endif
 
 	*new_step_record = step_ptr;
+	unlock_slurmctld (job_write_lock);
 	return SLURM_SUCCESS;
 }
 
