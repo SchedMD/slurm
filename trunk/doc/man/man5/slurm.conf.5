@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "March 2004" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "April 2004" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -13,13 +13,13 @@ and partitions. Any text following a "#" in the configuration file is treated
 as a comment through the end of that line. 
 The size of each line in the file is limited to 1024 characters.
 Changes to the configuration file take effect upon restart of 
-SLURM daemons, daemon reciept of the SIGHUP signal, or execution 
+SLURM daemons, daemon receipt of the SIGHUP signal, or execution 
 of the command "scontrol reconfigure" unless otherwise noted.
 .LP
 The overall configuration parameters available include:
 .TP
 \fBAuthType\fR
-Define the authentication method for communcations between SLURM 
+Define the authentication method for communications between SLURM 
 components. 
 Acceptable values at present include "auth/none" and "auth/authd".
 The default value is "auth/none", which means the UID included in 
@@ -106,7 +106,7 @@ the associated srun command is not responding to slurm daemons. This
 could be due to the termination of the srun command or the program 
 being is a stopped state. This limit permits defunct jobs to be purged 
 in a timely fashion without waiting for their time limit to be reached.
-This value should reflect the possibililty that the srun command may
+This value should reflect the possibility that the srun command may
 stopped a debugger. The default value is unlimited (zero). 
 .TP
 \fBJobCompLoc\fR
@@ -174,7 +174,7 @@ until a system administrator explicitly changes its state
 .TP
 \fBSchedulerAuth\fR
 An authentication token, if any, that must be used in a scheduler 
-communication protocol. The interpreation of this value depends 
+communication protocol. The interpretation of this value depends 
 upon the value of \fBSchedulerType\fR.  In the Wiki scheduler plugin,
 this value must correspond to the checksum seed with which Maui was
 compiled.
@@ -270,7 +270,7 @@ different shared memory region and lose track of any running jobs.
 The interval, in seconds, that the SLURM controller waits for \fBslurmd\fR 
 to respond before configuring that node's state to DOWN. 
 The default value is 300 seconds.
-A value of zero indicates the node should never be set DOWN if not respnding.
+A value of zero indicates the node should never be set DOWN if not responding.
 .TP
 \fBStateSaveLocation\fR
 Fully qualified pathname of a directory into which the SLURM controller, 
@@ -289,7 +289,7 @@ Acceptable values include
 or termination (Myrinet, Ethernet, and InfiniBand),
 "switch/elan" for Quadrics Elan 3 or Elan 4 interconnect.
 The default value is "switch/none".
-All SLURM daemons, commands and running jobs must be restared for a 
+All SLURM daemons, commands and running jobs must be restarted for a 
 change in \fBSwitchType\fR to take effect.
 If running jobs exist at the time \fBslurmctld\fR is restarted with a new 
 value of \fBSwitchType\fR, records of all jobs in any state may be lost.
@@ -503,7 +503,13 @@ Ability of the partition to execute more than one job at a
 time on each node. Shared nodes will offer unpredictable performance 
 for application programs, but can provide higher system utilization 
 and responsiveness than otherwise possible. 
-Possible values are "FORCE", "YES", and "NO". 
+Possible values are "FORCE", "YES", and "NO".
+"FORCE" makes all nodes in the partition available for sharing 
+without user means of disabling it.
+"YES" makes nodes in the partition available for sharing if and 
+only if the individual jobs permit sharing (see the srun 
+"--shared" option).
+"NO" makes nodes unavailable for sharing under all circumstances. 
 The default value is "NO".
 .TP
 \fBState\fR
