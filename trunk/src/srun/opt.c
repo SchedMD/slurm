@@ -151,7 +151,7 @@ struct poptOption runTable[] = {
 	{"ntasks", 'n', POPT_ARG_INT, &opt.nprocs, OPT_NPROCS,
 	 "number of tasks to run",
 	 "ntasks"},
-	{"cpus-per-task", 'c', POPT_ARG_INT, &opt.cpus, OPT_CPUS,
+	{"cpus-per-task", 'c', POPT_ARG_INT, &opt.cpus_per_task, OPT_CPUS,
 	 "number of cpus required per task",
 	 "ncpus"},
 	{"nodes", 'N', POPT_ARG_INT, &opt.nodes, OPT_NODES,
@@ -252,7 +252,7 @@ typedef struct env_vars {
 env_vars_t env_vars[] = {
 	{"SLURM_DEBUG", OPT_DEBUG, NULL},
 	{"SLURM_NPROCS", OPT_INT, &opt.nprocs},
-	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus},
+	{"SLURM_CPUS_PER_TASK", OPT_INT, &opt.cpus_per_task},
 	{"SLURM_NNODES", OPT_INT, &opt.nodes},
 	{"SLURM_PARTITION", OPT_STRING, &opt.partition},
 	{"SLURM_STDINMODE", OPT_INPUT, &opt.input},
@@ -310,14 +310,6 @@ int initialize_and_process_args(int argc, char *argv[])
 
 	/* initialize options with argv */
 	opt_args(argc, argv);
-
-	/* validate results */
-	if (opt.distribution == SRUN_DIST_UNKNOWN) {
-		if (opt.nprocs <= opt.nodes)
-			opt.distribution = SRUN_DIST_CYCLIC;
-		else
-			opt.distribution = SRUN_DIST_BLOCK;
-	}
 
 #if	__DEBUG
 	opt_list();
@@ -521,7 +513,7 @@ static void opt_default()
 	opt.progname = NULL;
 
 	opt.nprocs = 1;
-	opt.cpus = 1;
+	opt.cpus_per_task = 1;
 	opt.nodes = 0; /* nodes need not be set */
 	opt.time_limit = -1;
 	opt.partition = NULL;
@@ -836,7 +828,6 @@ static void opt_args(int ac, char **av)
 		} 
 	}
 
-	
 	if (!opt_verify(optctx, nnodes_set, cpus_set, nprocs_set)) {
 		poptPrintUsage(optctx, stderr, 0);
 		exit(1);
@@ -860,6 +851,16 @@ opt_verify(poptContext optctx,
 		error("must specify a node list with -Z, --no-allocate.");
 		verified = false;
 	}
+
+	if (opt.distribution == SRUN_DIST_UNKNOWN) {
+		if (opt.nprocs <= opt.nodes)
+			opt.distribution = SRUN_DIST_CYCLIC;
+		else
+			opt.distribution = SRUN_DIST_BLOCK;
+	}
+
+	if (opt.mincpus < opt.cpus_per_task)
+		opt.mincpus = opt.cpus_per_task;
 
 	if ((opt.job_name == NULL) && (remote_argc > 0))
 		opt.job_name = base_name(remote_argv[0]);
@@ -908,9 +909,9 @@ opt_verify(poptContext optctx,
 			verified = false;
 		}
 
-		if (opt.cpus <= 0) {
-			error("%s: invalid number of cpus per process (-n %d)\n",
-				opt.progname, opt.cpus);
+		if (opt.cpus_per_task <= 0) {
+			error("%s: invalid number of cpus per task (-c %d)\n",
+				opt.progname, opt.cpus_per_task);
 			verified = false;
 		}
 

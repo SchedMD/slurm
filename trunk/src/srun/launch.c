@@ -109,7 +109,8 @@ launch(void *arg)
 	taskid = 0;
 	if (opt.distribution == SRUN_DIST_BLOCK) {
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-			for (j=0; ((j<job->cpus[i]) && (taskid<opt.nprocs)); j++) {
+			for (j=0; (((j*opt.cpus_per_task)<job->cpus[i]) && 
+			           (taskid<opt.nprocs)); j++) {
 				task_ids[i][j] = taskid++;
 				job->ntask[i]++;
 			}

@@ -92,9 +92,9 @@ typedef struct srun_options {
 	char *cwd;		/* current working directory	*/
 
 	int  nprocs;		/* --nprocs=n,      -n n	*/
-	int  cpus;		/* --cpus_per_task=n, -c n	*/
+	int  cpus_per_task;	/* --cpus-per-task=n, -c n	*/
 	int  nodes;		/* --nodes=n,       -N n	*/ 
-	int  time_limit;	/* --time,   -t		*/
+	int  time_limit;	/* --time,   -t			*/
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum distribution_t
 		distribution;	/* --distribution=, -m dist	*/
@@ -113,7 +113,7 @@ typedef struct srun_options {
 	char *attach;		/* --attach=id	    -a id	*/ 
 	bool join;		/* --join, 	    -j		*/
 
-	/* no longer need these, they are set globally : */
+	/* no longer need these, they are set globally : 	*/
 	/*int verbose;*/	/* -v, --verbose		*/	
 	/*int debug;*/		/* -d, --debug			*/
 
