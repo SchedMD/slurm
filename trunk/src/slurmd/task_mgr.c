@@ -202,28 +202,35 @@ int forward_io ( task_start_t * task_arg )
 void * stdin_io_pipe_thread ( void * arg )
 {
 	task_start_t * io_arg = ( task_start_t * ) arg ;
-	char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
+	//char buffer[SLURMD_IO_MAX_BUFFER_SIZE] ;
 	int bytes_read ;
 	int bytes_written ;
 	int local_errno ;
+	circular_buffer_t * cir_buf ;
+
+	init_circular_buffer ( & cir_buf ) ;
 	
 	posix_signal_pipe_ignore ( ) ;
 	
 	while ( true )
 	{
-		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) == SLURM_PROTOCOL_ERROR )
+		//if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , cir_buf->tail , cir_buf->write_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
 				local_errno = errno ;	
 				info ( "error reading stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
-				pthread_exit ( NULL ) ;
+				goto stdin_return ;
 		}
+		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
 		write ( 1 ,  "stdin-", 6 ) ;
-		write ( 1 ,  buffer , bytes_read ) ;
+		//write ( 1 ,  buffer , bytes_read ) ;
+		write ( 1 , cir_buf->head , cir_buf->read_size ) ;
 		/* debug */
 		while ( true)
 		{
-			if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , buffer , bytes_read ) ) <= 0 )
+			//if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , buffer , bytes_read ) ) <= 0 )
+			if ( ( bytes_written = write ( io_arg->pipes[CHILD_IN_WR] , cir_buf->head , cir_buf->read_size ) ) <= 0 )
 			{
 				if ( bytes_written == SLURM_PROTOCOL_ERROR && errno == EINTR ) 
 				{
@@ -234,15 +241,19 @@ void * stdin_io_pipe_thread ( void * arg )
 
 					local_errno = errno ;	
 					info ( "error sending stdin stream for task %i , errno %i", 1 , local_errno ) ;
-					pthread_exit ( NULL ) ;
+					goto stdin_return ;
 				}
 			}
 			else
 			{
+				cir_buf_read_update ( cir_buf , bytes_written ) ;
 				break ;
 			}
 		}
 	}
+	stdin_return:
+	free_circular_buffer ( cir_buf ) ;
+	pthread_exit ( NULL ) ;
 }
 
 void * stdout_io_pipe_thread ( void * arg )
