@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -63,7 +63,7 @@
  */
 const char plugin_name[]        = "switch NONE plugin";
 const char plugin_type[]        = "switch/none";
-const uint32_t plugin_version   = 90;
+const uint32_t plugin_version   = 100;
 
 /*
  * init() is called when the plugin is loaded, before any other functions
@@ -190,6 +190,12 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
+extern int switch_get_data_jobinfo(switch_jobinfo_t switch_job,
+	int key, void *resulting_data)
+{
+	return SLURM_SUCCESS;
+}
+
 /*
  * switch functions for other purposes
  */
@@ -206,5 +212,42 @@ extern int switch_p_get_errno(void)
 extern char *switch_p_strerror(int errnum)
 {
 	return NULL;
+}
+
+/*
+ * node switch state monitoring functions
+ * required for IBM Federation switch 
+ */
+extern int switch_alloc_node_info(switch_node_info_t *switch_node)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_build_node_info(switch_node_info_t switch_node)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_pack_node_info(switch_node_info_t switch_node, 
+	Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_unpack_node_info(switch_node_info_t switch_node,
+	Buf buffer)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_free_node_info(switch_node_info_t switch_node)
+{
+	return SLURM_SUCCESS;
+}
+
+extern int switch_job_complete(switch_node_info_t switch_node,
+	char *nodelist)
+{
+	return SLURM_SUCCESS;
 }
 
