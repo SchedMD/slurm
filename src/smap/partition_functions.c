@@ -28,71 +28,57 @@
 
 #include "src/smap/smap.h"
 
-void print_header_part(void);
-int print_text_part(partition_info_t * part_ptr);
+static void _print_header_part(void);
+static int  _print_text_part(partition_info_t * part_ptr);
 
 void get_part(void)
 {
 	int error_code, i, j, count = 0;
 	static partition_info_msg_t *part_info_ptr = NULL, *new_part_ptr;
-#ifdef HAVE_BGL_FILES
-	rm_partition_t *rm_part_ptr;
-#endif
 	partition_info_t part;
 	char node_entry[13];
 	int start, startx, starty, startz, endx, endy, endz;
-	int conn_type;
 	if (part_info_ptr) {
-		error_code = slurm_load_partitions(part_info_ptr->last_update, &new_part_ptr, 0);
+		error_code = slurm_load_partitions(part_info_ptr->last_update, 
+				&new_part_ptr, 0);
 		if (error_code == SLURM_SUCCESS)
 			slurm_free_partition_info_msg(part_info_ptr);
 		else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
 			error_code = SLURM_SUCCESS;
 			new_part_ptr = part_info_ptr;
 		}
-	} else
-		error_code = slurm_load_partitions((time_t) NULL, &new_part_ptr, 0);
+	} else {
+		error_code = slurm_load_partitions((time_t) NULL, 
+			&new_part_ptr, 0);
+	}
 	if (error_code) {
 		if (quiet_flag != 1) {
 			wclear(pa_system_ptr->text_win);
 			pa_system_ptr->ycord =
-			    pa_system_ptr->text_win->_maxy / 2;
+				pa_system_ptr->text_win->_maxy / 2;
 			pa_system_ptr->xcord =
-			    pa_system_ptr->text_win->_maxx;
+				pa_system_ptr->text_win->_maxx;
 			mvwprintw(pa_system_ptr->text_win,
-				  pa_system_ptr->ycord, 1,
-				  "slurm_load_partitions error");
-
+				pa_system_ptr->ycord, 1,
+				"slurm_load_partitions error");
 		}
 		return;
 	}
 
 	if (new_part_ptr->record_count && !params.no_header)
-		print_header_part();
+		_print_header_part();
 	for (i = 0; i < new_part_ptr->record_count; i++) {
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
-#ifdef HAVE_BGL_FILES
-		error_code = rm_get_partition(part.name, &rm_part_ptr);
-		if (error_code) {
-			info("rm_get_partition %s errno=%d",
-			     part.name, error_code);
-			continue;
-		}
-		rm_get_data(rm_part_ptr, RM_PartitionConnection,
-				&conn_type);
-		pa_system_ptr->ycord++;
-		mvwprintw(pa_system_ptr->text_win,
-				  pa_system_ptr->ycord, 1,
-				  "Partition name %s is type %d",part.name, conn_type);		
-#endif
 		if (params.display == BGLPART) {
 			memset(node_entry, 0, 13);
 			memcpy(node_entry, part.nodes, 12);
 			part.allow_groups = node_entry;
 			while (part.nodes[j] != '\0') {
-				if (part.nodes[j] == '[') {
+				if ((part.nodes[j]   == '[')
+				&&  (part.nodes[j+4] == 'x')
+				&&  (part.nodes[j+8] == ']')) {
 					j++;
 					start = atoi(part.nodes + j);
 					startx = start / 100;
@@ -105,11 +91,18 @@ void get_part(void)
 					endz = (start % 10);
 					j += 5;
 
-					part.total_nodes =  set_grid_bgl(startx, starty, startz, endx, endy, endz, count);
-					part.root_only = (int) pa_system_ptr->fill_in_value[count].letter;
-					wattron(pa_system_ptr->text_win, COLOR_PAIR(pa_system_ptr->fill_in_value[count].color));
-					print_text_part(&part);
-					wattroff(pa_system_ptr->text_win, COLOR_PAIR(pa_system_ptr->fill_in_value[count].color));
+					part.total_nodes =  set_grid_bgl(startx, 
+							starty, startz, endx, 
+							endy, endz, count);
+					part.root_only = (int) pa_system_ptr->
+							fill_in_value[count].letter;
+					wattron(pa_system_ptr->text_win, 
+							COLOR_PAIR(pa_system_ptr->
+							fill_in_value[count].color));
+					_print_text_part(&part);
+					wattroff(pa_system_ptr->text_win, 
+							COLOR_PAIR(pa_system_ptr->
+							fill_in_value[count].color));
 					count++;
 					memset(node_entry, 0, 13);
 					memcpy(node_entry, part.nodes + j, 12);
@@ -131,7 +124,7 @@ void get_part(void)
 					COLOR_PAIR(pa_system_ptr->
 						   fill_in_value[count].
 						   color));
-				print_text_part(&part);
+				_print_text_part(&part);
 				wattroff(pa_system_ptr->text_win,
 					 COLOR_PAIR(pa_system_ptr->
 						    fill_in_value[count].
@@ -145,7 +138,7 @@ void get_part(void)
 	return;
 }
 
-void print_header_part(void)
+static void _print_header_part(void)
 {
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "ID");
@@ -159,8 +152,18 @@ void print_header_part(void)
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "TIMELIMIT");
 	pa_system_ptr->xcord += 11;
+
+	if (params.display == BGLPART) {
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			pa_system_ptr->xcord, "BGL_BLOCK");
+		pa_system_ptr->xcord += 12;
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			pa_system_ptr->xcord, "CONN");
+		pa_system_ptr->xcord += 6;
+	}
+
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "NODES");
+		pa_system_ptr->xcord, "NODES");
 	pa_system_ptr->xcord += 7;
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "NODELIST");
@@ -168,7 +171,7 @@ void print_header_part(void)
 	pa_system_ptr->ycord++;
 }
 
-int print_text_part(partition_info_t * part_ptr)
+static int _print_text_part(partition_info_t * part_ptr)
 {
 	int printed = 0;
 	int tempxcord;
@@ -202,6 +205,18 @@ int print_text_part(partition_info_t * part_ptr)
 		pa_system_ptr->xcord + (9 - width), "%s", 
 		time_buf);
 	pa_system_ptr->xcord += 11;
+
+	if (params.display == BGLPART) {
+/* FIXME: Placeholder for now, need real data from DB2 */
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			pa_system_ptr->xcord, "%.11s", "LLNL_128_16");
+		pa_system_ptr->xcord += 12;
+
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			pa_system_ptr->xcord, "%.5s", "torus");
+		pa_system_ptr->xcord += 6;
+	}
+
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "%5d", part_ptr->total_nodes);
 	pa_system_ptr->xcord += 7;
