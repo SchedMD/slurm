@@ -250,6 +250,9 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 /* 
  * pick_step_nodes - select nodes for a job step that satify its requirements
  *	we satify the super-set of constraints.
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: returns all of a job's nodes if min_nodes == INFINITE
+ * NOTE: returned bitmap must be freed by the caller using bit_free()
  */
 bitstr_t *
 pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
@@ -262,7 +265,8 @@ pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus,
 	
 	nodes_avail = bit_copy(job_ptr->node_bitmap);
 
-/* we want a short-cut here for all nodes, just return copy of job_ptr->node_bitmap */
+	if (min_nodes == INFINITE)	/* return all available nodes */
+		return nodes_avail;
 
 	if (node_list) {
 		error_code = node_name2bitmap (node_list, &nodes_picked);
