@@ -32,6 +32,8 @@
 
 typedef struct io_obj io_obj_t;
 
+typedef struct eio_handle_components * eio_t;
+
 /* Possible I/O operations on an I/O object
  * Each takes the io_obj being operated on as an argument
  *
@@ -61,6 +63,11 @@ struct io_obj {
  *
  * returns -1 on error.
  */
-int io_handle_events(List io_obj_list);
+int io_handle_events(eio_t eio, List io_obj_list);
+
+
+eio_t eio_handle_create(void);
+void  eio_handle_destroy(eio_t eio);
+int   eio_handle_signal(eio_t eio);
 
 #endif /* !_EIO_H */

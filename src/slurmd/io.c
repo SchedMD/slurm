@@ -340,7 +340,7 @@ io_close_all(slurmd_job_t *job)
 	/* Signal IO thread to close appropriate 
 	 * client connections
 	 */
-	pthread_kill(job->ioid, SIGHUP);
+	eio_handle_signal(job->eio);
 }
 
 static void
@@ -401,7 +401,7 @@ _io_thr(void *arg)
 {
 	slurmd_job_t *job = (slurmd_job_t *) arg;
 	debug("IO handler started pid=%lu", (unsigned long) getpid());
-	io_handle_events(job->objs);
+	io_handle_events(job->eio, job->objs);
 	debug("IO handler exited");
 	_handle_unprocessed_output(job);
 	return (void *)1;
@@ -572,9 +572,7 @@ io_prepare_clients(slurmd_job_t *job)
 			retval = SLURM_ERROR;
 
 		/* kick IO thread */
-		debug3("sending sighup to io thread id %ld", (long) job->ioid);
-		if (pthread_kill(job->ioid, SIGHUP) < 0)
-			error("pthread_kill: %m");
+		eio_handle_signal(job->eio);
 	}
 
 	return retval;
@@ -584,7 +582,7 @@ io_prepare_clients(slurmd_job_t *job)
 	 * Try to open stderr connection for errors
 	 */
 	_io_add_connecting(job, job->task[0], srun, CLIENT_STDERR);
-	pthread_kill(job->ioid, SIGHUP);
+	eio_handle_signal(job->eio);
 	return SLURM_FAILURE;
 }
 
@@ -672,6 +670,7 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 	struct io_info *dst = reader ? reader->arg : NULL; 
 	struct io_info *cli = client->arg;
 	struct io_info *io;
+	struct io_operations *opsptr = NULL;
 
 	xassert((src != NULL) || (dst != NULL));
 	xassert((src == NULL) || (src->magic == IO_MAGIC));
@@ -717,8 +716,9 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 		io->obj->fd      = client->fd;
 		io->disconnected = 0;
 
-		xfree(io->obj->ops);
+		opsptr = io->obj->ops;
 		io->obj->ops     = _ops_copy(client->ops); 
+		xfree(opsptr);
 
 		/* 
 		 * Delete old client which is now an empty vessel 
@@ -1242,13 +1242,15 @@ static void
 _do_attach(struct io_info *io)
 {
 	task_info_t    *t;
+	struct io_operations *opsptr;
 	
 	xassert(io != NULL);
 	xassert(io->magic == IO_MAGIC);
 	xassert(_isa_client(io));
 
-	xfree(io->obj->ops);
+	opsptr = io->obj->ops;
 	io->obj->ops = _ops_copy(&client_ops);
+	xfree(opsptr);
 
 	t  = io->task;
 
