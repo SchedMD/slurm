@@ -18,7 +18,7 @@
 #include <src/common/bitstring.h>
 #include <src/common/pack.h>
 #include <src/common/qsw.h>
-#include <src/common/slurm_errno.h>
+#include <slurm/slurm_errno.h>
 #include <src/common/macros.h>
 
 /* Boolean option to pack/unpack jobinfo struct
