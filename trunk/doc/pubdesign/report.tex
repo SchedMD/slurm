@@ -11,8 +11,8 @@ Development will take place in four phases:  Phase I results in a solid
 infrastructure;  Phase II produces a functional but limited interactive 
 job initiation capability without use of the interconnect/switch; 
 Phase III provides switch support and documentation; Phase IV provides 
-job statusing, fault-tolerance, and job queueing and control through  
-Livermore's Distributed Production Control System (DPCS), a metabatch and
+job statusing, fault-tolerance, and job queuing and control through  
+Livermore's Distributed Production Control System (DPCS), a meta-batch and
 resource management system.
 \end{abstract}
 
@@ -31,7 +31,7 @@ resource management system.
 SLURM\footnote{A tip of the hat to Matt Groening and creators of {\em Futurama},
 where Slurm is the highly addictive soda-like beverage made from worm
 excrement.} (Simple Linux Utility for Resource Management) 
-is a resource managment 
+is a resource management 
 system suitable for use on Linux clusters, large and small.  After 
 surveying\cite{Jette2002} resource managers available for Linux and finding 
 none that were simple, highly scalable, and portable to different cluster 
@@ -58,7 +58,7 @@ interconnects is straightforward.  Users select the supported interconnects
 at compile time via GNU autoconf.
 
 \item {\em Scalability}: SLURM is designed for scalability to clusters of
-thousands of nodes.\footnote{It is anticipiated that a Linux cluster of
+thousands of nodes.\footnote{It is anticipated that a Linux cluster of
 size $>1000$ nodes will be available for testing before the initial public 
 release.}
 
@@ -68,7 +68,7 @@ controller.
 
 \item {\em Secure}: SLURM employs crypto technology to authenticate 
 users to services and services to services.  
-A Kerberos v5 infrastructure can be utillized if available.
+A Kerberos v5 infrastructure can be utilized if available.
 SLURM does not assume that its networks are physically secure.
 
 \item {\em System administrator friendly}: SLURM is configured with a few
@@ -92,10 +92,10 @@ interactively;
 {\tt scancel} for early termination of a job; 
 and {\tt squeue} for monitoring queues.
 
-System administrators perform priviledged operations through an additional
+System administrators perform privileged operations through an additional
 command line utility: {\tt slurmadmin}.
 
-External schedulers and metabatch systems can submit jobs to SLURM and
+External schedulers and meta-batch systems can submit jobs to SLURM and
 order its queues through an application programming interface (API).
 
 Compute nodes simply run a {\tt slurmd} daemon (similar to a remote shell 
@@ -108,16 +108,16 @@ SLURM is not a sophisticated batch system.  Its default scheduler
 implements FIFO with backfill and does not include the bells and 
 whistles needed to implement complex site policy.
 SLURM does however provide a sufficiently sophisticated API for an external 
-scheduler or metabatch system to order its queues based on site policy.
+scheduler or meta-batch system to order its queues based on site policy.
 
 SLURM clusters are space shared, and parallel jobs are always 
 assigned whole nodes.  SLURM does not support gang scheduling (time-slicing 
 of parallel jobs). However, the explicit preemption and later resumption 
-of a job under the direction of an external metabatch system may be supported 
+of a job under the direction of an external meta-batch system may be supported 
 in the future. At present, an external scheduler may terminate jobs and 
 requeue them in a different order via the API. 
 
-SLURM is not a metabatch system like Globus or DPCS (Distributed Production 
+SLURM is not a meta-batch system like Globus or DPCS (Distributed Production 
 Control System).  SLURM supports resource management across a single cluster.
 
 SLURM is not a comprehensive cluster administration or monitoring package.  
@@ -237,8 +237,8 @@ When awakened, the job manager makes one pass through the job queue and
 performs any cleanup associated with completed jobs.
 The job manager then makes a second pass through the job queue and
 starts jobs until a resource allocation fails. 
-When a resource allocation failure occures, the Job Manager establishes 
-a time when the job might be exected to begin execution. 
+When a resource allocation failure occurs, the Job Manager establishes 
+a time when the job might be expected to begin execution. 
 Lower priority jobs in the queue will be allocated resources on that 
 partition only if they will complete prior to the expected initiation 
 time of the higher priority job (backfill scheduling).
@@ -294,8 +294,8 @@ was submitted in batch mode, subject to authentication.}
 \item {\tt scancel}: Cancel a running or a waiting job, subject to
 authentication.
 
-\item {\tt slurmadmin}: Perfrom priviledged administrative commands
-such as draining a partition in preparation for maintenance, or cancelling
+\item {\tt slurmadmin}: Perform privileged administrative commands
+such as draining a partition in preparation for maintenance, or terminating
 jobs.  Must be run as the root user.
 
 \end{itemize}
@@ -326,8 +326,8 @@ The request includes the {\tt srun} environment, current working directory,
 and command line option information.
 
 The controller consults the partition manager to test whether the job will
-will ever be able to run.  If the user has requested a nonexistant partition,
-more nodes than are configured in the partition, a nonexistant constraint, 
+will ever be able to run.  If the user has requested a non-existent partition,
+more nodes than are configured in the partition, a non-existent constraint, 
 etc., the partition manager returns an error and the request is discarded.
 The failure is reported to {\tt srun} which tells the user and exits:
 \begin{verbatim}
@@ -376,7 +376,7 @@ accumulates the application's output:
 \end{verbatim}
 
 When all tasks complete, the {\tt slurmd}'s on the two compute nodes notify
-the job status manager, which changes the job status to {\em stage_out} and 
+the job status manager, which changes the job status to {\em stage\_out} and 
 awakens the job manager.  The job manager discovers the completed job in
 its first pass through the queue and begins cleanup.
 It retrieves the stdout/stderr spool files from the stream copy service
@@ -439,7 +439,7 @@ The controller includes the following subsystems:
 
 \begin{itemize}
 \item {\em Machine and job status}: Monitor and record the state of each 
-node in the cluster.
+job and node in the cluster.
 
 \item {\em Partition management}: Distinct functionality or capabilities 
 are associated with different sets of nodes in the cluster.  Each such set 
@@ -478,28 +478,21 @@ intend to monitor includes:
 \item Count of processors on the node
 \item Size of real memory on the node
 \item Size of temporary disk storage
-\item Partition(s) serving
+\item Partition serving
 \item State of node (RUN, IDLE, DRAIN, etc.)
-\item Cumulative CPU use (by job, kernel and daemons, possibly reporting 
-both user and system time independently)
-\item Allocated CPU time (recognizes preempted time, by job, kernel and daemons)
-\item Real memory demand (by job, kernel and daemons)
+\item Cumulative CPU use (by jobs, kernel and daemons)
+\item Real memory use (by jobs, kernel and daemons)
+\item Virtual memory use (by jobs, kernel and daemons)
 \end{itemize}
 
 The SLURM administrator could specify, at a minimum ,a list of system node 
 names using a regular expression. 
 If he requires more than one partition, that information should also be specified. 
 He may also specify the mimimanl node configuration values which are acceptable 
-(CPU count, real memory size, etc.). He could alternately let the individual 
-nodes register their actual configurations into the database and save that 
-as a baseline configuration in order to note discrepancies when nodes register 
-on future SLURM initiations.
-
+(CPU count, real memory size, etc.). 
 This information is readily available through system calls and reading the
-process table. DPCS daemons and the commands \textit{top} and \textit{df} 
+process table. The commands \textit{top} and \textit{df} 
 currently collect the above data are available as models for SLURM development. 
-The communications protocols in those daemon and logic to associate processes 
-with jobs would require modification.
 
 The current SLURM design only supports the allocation of entire nodes to 
 jobs. Our customers at LLNL have expressed the opinion that sharing of 
@@ -512,24 +505,18 @@ benefit situation at LLNL, we have decided to not support shared nodes.
 However, we have designed SLURM so as to not preclude the addition of 
 such a capability at a later time if so desired.
 
-It is not likely that each node in the cluster could report such information
-directly to the control machine without severe scalability constraints. This
-could be remedied by using intermediate nodes in a hierarchical fashion to
-coalesce the data. These nodes could be ones not designated for parallel job
-execution (e.g. login or I/O processing nodes). A status manager will be
-required on the control machine to detect and respond to anomalies as well as
-maintain the records. This data collection system is similar to that
-implemented in DPCS. 
-
 \subsection{Partition Management}
 
 Partition management will be used to identify groups of nodes to be used for
 execution of user jobs. Data to be associated with a partition will include:
 \begin{itemize}
-\item ID number
+\item Name
 \item Access permitted, under direct user (e.g. INTERACTIVE) or system (e.g. BATCH QUEUE) control
 \item List of associated nodes
 \item State of partition (UP or DOWN)
+\item Maximum time limit for any job
+\item Maximum nodes allocated to any single job
+\item List of groups permitted to use the partition (defaults to ALL)
 \end{itemize}
 
 It will be possible to alter this data in real-time in order to effect the
@@ -540,11 +527,12 @@ by the Job Manager and Machine Status Manager, which exist only on the control
 machine. An API to manage the partitions would be developed first, followed by
 a simple command-line tool utilizing the API.
 
-\subsection{Switch Management}
+\subsection{Switch Manager}
 
-A daemon on each compute node would be responsible for allocating switch
-channels and assigning them to user jobs. The switch channels would be
-de-allocated upon job termination. Switch health monitoring tools will 
+The switch manager would be responsible for allocating switch channels and assigning 
+them to user jobs. The switch channels would be de-allocated upon job termination. 
+The slurmd (on each compute node) would provide user jobs with the authentication 
+required for switch use as directed by the switch manager. Switch health monitoring tools will 
 also be implemented in phase two. It may be desirable for the SLURM daemons to use the
 switch directly for communications, particularly for the movement of a large 
 executable and/or standard input file. This option will be investigated in phase
@@ -552,8 +540,10 @@ three.
 
 \subsection{Job Management}
 
-Jobs will be allocated entire nodes. Node sharing will be supported only temporally (e.g.
-time-slicing or  gang scheduling). The core functions to be supported include:
+Jobs will be allocated entire nodes. Node sharing on a temporal basis (e.g.
+time-slicing or  gang scheduling) will not be supported in the initial SLURM 
+release either, although may be in the future. The core functions to be supported 
+by the job manager include:
 \begin{itemize}
 \item Initiate job\footnote{There are considerable issues regarding allocation 
 of resources (nodes) to jobs and then associating the  allocation to the job 
@@ -595,17 +585,31 @@ logins, disable logins, terminate "orphan" processes, etc.).
 
 \subsection{Scheduling}
 
-We propose that all scheduling decisions be relegated to DPCS. DPCS has
-sophisticated and flexible scheduling algorithms that suit our needs well and
+We propose that SLURM implement a very simple scheduling algorithm, 
+namely First-in First-out (FIFO) with backfill. Backfill scheduling 
+means that a lower priority job (i.e. newer) can be scheduled before 
+another job only if doing so does not delay the expected initiation 
+time of the higher priority job. Backfill scheduling tends to improve 
+both system utilization and responsiveness by initiating smaller 
+node count and shorter time limit jobs more rapidly. 
+
+We are well aware this algorithm will not satisfy the needs of many 
+customers and provide the means for establishing other scheduling 
+algorithms. Before a newly arrived job is placed into the queue, it 
+is assigned a priority that may be established by an administrator 
+defined program. SLURM APIs permit an external entity to alter the 
+priorities of jobs at any time to re-order the queue as desired. 
+The Maui Scheduler\footnote{http://mauischeduler.sourceforge.net/} 
+is one example of an external scheduler suitable for use with SLURM.
+
+A more sophisticated scheduler that we plan to offer with SLURM is 
+DPCS\footnote{http://www.llnl.gov/icc/lc/dpcs/dpcs\_overview.html}. 
+DPCS has flexible scheduling algorithms that suit our needs well and
 provide the scalability required for this application. Most of the resource
 accounting and some of the job management functions presently within DPCS would
 be moved into the proposed SLURM Job Management and Job Status components. 
-
 DPCS will require some modification to operate within this new, richer
-environment. The DPCS Central Manager would also require porting to Linux. It
-would be simple for other schedulers including Maui, PBS, LSF, and Globus 
-to operate on the SLURM infrastructure, if so desired. It may in fact be 
-desirable to create a very simple batch system for some customers.
+environment. The DPCS Central Manager would also require porting to Linux. 
 
 The DPCS writes job accounting records to Unix files. Presently, these are
 moved to a machine with the Sybase database. This data can be accessed via
@@ -689,22 +693,22 @@ the nodes.
 The daemon on that node receiving the message will divide the node list into
 two or more new lists of similar size and retransmit the message to one node on
 each list. Figure~\ref{communicate} shows the communications for a fan-out of 
-two.  Acknowledgements will optionally be sent for the messages to confirm 
+two.  Acknowledgments will optionally be sent for the messages to confirm 
 receipt with a third message to commit the action. Our design permits the 
 control machine to delegate one or more compute machine daemons as responsible 
-for fault-tolerance, collection of acknowledgement messages, and the commit
+for fault-tolerance, collection of acknowledgment messages, and the commit
 decision. This design minimizes the control machine overhead for performance
 reasons. This design also offers excellent scalability and fault 
 tolerance.\footnote{Arguments to the communications request include:
 \begin{itemize}
 \item Request ID
-\item Request (command or acknowledgement or commit)
+\item Request (command or acknowledgment or commit)
 \item List of nodes to be effected
 \item Fan-out (count)
 \item Commit of request to be required (Yes or No or Delegate node receiving
       message) 
-\item Acknowledgement requested to node (name of node or NULL)
-\item Acknowledgement requested to port (number)
+\item Acknowledgment requested to node (name of node or NULL)
+\item Acknowledgment requested to port (number)
 \end{itemize} }
 
 Security will be provided by the use of reserved ports, which must be opened by
