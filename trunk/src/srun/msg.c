@@ -74,6 +74,9 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		if (msg->srun_node_id >= 0 && msg->srun_node_id < job->nhosts)
 			job->host_state[msg->srun_node_id] = 
 				SRUN_HOST_REPLIED;
+		else
+			error("launch resp from %s has bad task_id %d",
+				msg->node_name, msg->srun_node_id);
 		pthread_mutex_unlock(&job->task_mutex);
 	}
 
@@ -83,7 +86,15 @@ static void
 _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+
+	if (msg->task_id < 0 || msg->task_id >= job->nhosts) {
+		error("task exit resp has bad task_id %d",
+			msg->task_id);
+		return;
+	}
+
 	debug2("task %d exited with status %d", msg->task_id, msg->return_code);
+
 	pthread_mutex_lock(&job->task_mutex);
 	job->tstatus[msg->task_id] = msg->return_code;
 	job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
@@ -94,7 +105,6 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		debug2("all tasks exited");
 		update_job_state(job, SRUN_JOB_OVERDONE);
 	}
-
 }
 
 static void
