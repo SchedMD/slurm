@@ -50,7 +50,7 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 }
 
 /*
- * Set environment variables needed by QSW MPICH / libelan.
+ * Set env variables needed for this interconnect
  */
 int interconnect_env(char ***env, uint16_t *envc, int nodeid, int nnodes, 
 	             int procid, int nprocs)

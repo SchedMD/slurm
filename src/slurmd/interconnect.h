@@ -27,7 +27,8 @@
 #ifndef _SLURMD_INTERCONNECT_H_
 #define _SLURMD_INTERCONNECT_H_
 
-#include <pthread.h>
+#include <src/common/slurm_protocol_api.h>
+#include <src/slurmd/task_mgr.h>
 
 /* interconnect_init
  * called by launch_tasks to initialize the interconnect
