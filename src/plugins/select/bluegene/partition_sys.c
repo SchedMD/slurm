@@ -37,7 +37,7 @@
 #include "partition_sys.h"
 #include "bluegene.h"
 
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 #  include "bgl_switch_connections.h"
 #endif
 
@@ -57,7 +57,7 @@ List bgl_init_part_list = NULL;	/* Initial bgl partition state */
 
 static void _init_sys(partition_t*);
 
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
    /** 
     * _get_bp: get the BP at location loc
     *
@@ -523,7 +523,7 @@ extern int configure_switches(partition_t* partition)
 	bgl_record_t* bgl_rec;
 	int cur_coord[SYSTEM_DIMENSIONS]; 
 	pm_partition_id_t bgl_part_id;
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 	List switch_list;
 	ListIterator itr;
 	rm_switch_t* cur_switch;
@@ -663,7 +663,7 @@ extern int configure_switches(partition_t* partition)
 		} /* end of cur_coord[1]*/
 	} /* end of cur_coord[1]*/
 
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 	_post_allocate(bgl_part, &bgl_part_id);
 	bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
 	bgl_rec->bgl_part_id   = xstrdup(bgl_part_id);
@@ -842,7 +842,7 @@ static void _int_array_destroy(void* object)
 	xfree(object);
 }
 
-#ifdef USE_BGL_FILES
+#ifdef HAVE_BGL_FILES
 /** 
  * initialize the BGL partition in the resource manager 
  */
@@ -1053,8 +1053,6 @@ extern int read_bgl_partitions(void)
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
 		rm_get_data(bp_ptr, RM_BPPartID, &part_id);
 
-/* FIXME: part_id not returned on LLNL_128_16 system */
-		part_id = "LLNL_128_16";
 		if (!part_id || (part_id[0] == '\0')) {
 			info("Node %s in blue gene partition NONE",
 				node_name_tmp);
@@ -1073,6 +1071,7 @@ extern int read_bgl_partitions(void)
 					part_id, rc);
 				continue;
 			}
+			printf("Part = %s %s\n",part_id, node_name_tmp);
 			bgl_part_ptr = xmalloc(sizeof(bgl_record_t));
 			list_push(bgl_init_part_list, bgl_part_ptr);
 			bgl_part_ptr->bgl_part_id = xstrdup(part_id);

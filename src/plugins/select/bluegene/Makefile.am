@@ -22,3 +22,16 @@ select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 select_bluegene_la_LIBADD  = $(top_builddir)/src/partition_allocator/libpartition_allocator.la 
 
+#to build the executable
+# bin_PROGRAMS = select_bluegene
+
+# select_bluegene_SOURCES = select_bluegene.c \
+# 				bgl_job_place.c bgl_job_place.h \
+# 				bgl_job_run.c bgl_job_run.h \
+# 				bluegene.c bluegene.h \
+# 				state_test.c state_test.h \
+# 				partition_sys.c partition_sys.h
+
+# select_bluegene_LDADD  = $(top_builddir)/src/partition_allocator/libpartition_allocator.la 
+
+# select_bluegene_LDFLAGS = -export-dynamic $(SO_LDFLAGS) $(PLUGIN_FLAGS) $(CMD_LDFLAGS) $(BGL_LDFLAGS)
