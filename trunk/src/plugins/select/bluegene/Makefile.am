@@ -1,6 +1,7 @@
 # $Id$
 # Makefile for select/bluegene plugin
 
+CPPFLAGS =  -DBLUEGENE_CONFIG_FILE=\"$(sysconfdir)/bluegene.conf\"
 AUTOMAKE_OPTIONS = foreign
 
 PLUGIN_FLAGS = -module -avoid-version --export-dynamic  -lm
