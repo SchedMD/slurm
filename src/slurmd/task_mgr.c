@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include <src/common/log.h>
 #include <src/common/list.h>
@@ -20,16 +21,15 @@
 #include <src/slurmd/circular_buffer.h>
 #include <src/slurmd/pipes.h>
 #include <src/slurmd/io.h>
+#include <src/slurmd/interconnect.h>
 
 /* global variables */
 
 /* prototypes */
 int kill_task(task_t * task, int signal);
+extern pid_t getsid(pid_t pid);
 
-int interconnect_init(launch_tasks_request_msg_t * launch_msg);
-int fan_out_task_launch(launch_tasks_request_msg_t * launch_msg);
 int send_task_exit_msg(int task_return_code, task_start_t * task_start);
-int interconnect_set_capabilities(task_start_t * task_start);
 
 /******************************************************************
  *task launch method call hierarchy

@@ -25,7 +25,7 @@ int interconnect_set_capabilities ( task_start_t * task_start )
 /*
  * Set environment variables needed by QSW MPICH / libelan.
  */
-int interconnect_env(char ***env, int *envc, int nodeid, int nnodes, 
+int interconnect_env(char ***env, uint16_t *envc, int nodeid, int nnodes, 
 	             int procid, int nprocs)
 {
 	return SLURM_SUCCESS ;

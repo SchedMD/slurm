@@ -42,7 +42,8 @@
 #ifdef HAVE_LIBELAN3
 #include <elan3/elan3.h>
 #include <elan3/elanvp.h>
-#define BUF_SIZE (1024 + ELAN_MAX_VPS)
+#include <src/common/qsw.h>
+#define BUF_SIZE (1024 + QSW_PACK_SIZE)
 #else
 #define BUF_SIZE 1024
 #endif
@@ -310,7 +311,7 @@ dump_all_job_state ( void )
 			fatal ("dump_all_job: job integrity is bad");
 		buffer_needed = BUF_SIZE;
 #ifdef HAVE_LIBELAN3
-		buffer_needed += (step_count (job_record_point) * ELAN_MAX_VPS / 8);
+		buffer_needed += (step_count (job_record_point) * QSW_PACK_SIZE);
 #endif
 		if (buf_len < buffer_needed) {
 			buffer_allocated += buffer_needed;
@@ -407,13 +408,6 @@ dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	/* Dump job steps */
 	step_record_iterator = list_iterator_create (dump_job_ptr->step_list);		
 	while ((step_record_ptr = (struct step_record *) list_next (step_record_iterator))) {
-#ifdef HAVE_LIBELAN3
-		if (*buf_len < ((ELAN_MAX_VPS / 8) + 60)) {
-			fatal ("dump_job_state, buffer space too small for %u.%u",
-				dump_job_ptr->job_id, step_record_ptr->step_id);
-			break;
-		}
-#endif
 		pack16  ((uint16_t) STEP_FLAG, buf_ptr, buf_len);
 		dump_job_step_state (step_record_ptr, buf_ptr, buf_len);
 	};
@@ -522,7 +516,7 @@ dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len)
 	packstr (node_list, buf_ptr, buf_len);
 	xfree (node_list);
 #ifdef HAVE_LIBELAN3
-	qsw_pack_jobinfo(step_ptr->qsw_job, (void **)buf_ptr, buf_len);
+	qsw_pack_jobinfo (step_ptr->qsw_job, (void **)buf_ptr, buf_len);
 #endif
 }
 
@@ -731,7 +725,7 @@ load_job_state ( void )
 				xfree (node_list);
 			}
 #ifdef HAVE_LIBELAN3
-			if (buffer_size < (2 * sizeof (uint16_t)))
+			if (buffer_size < QSW_PACK_SIZE)
 				break;
 			qsw_alloc_jobinfo(&step_ptr->qsw_job);
 			qsw_unpack_jobinfo(step_ptr->qsw_job, buf_ptr, &buffer_size);

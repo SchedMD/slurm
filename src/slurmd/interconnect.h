@@ -24,4 +24,10 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg );
  */
 int interconnect_set_capabilities ( task_start_t * task_start ) ;
 
+/*
+ * Set environment variables needed.
+ */
+int interconnect_env(char ***env, uint16_t *envc, int nodeid, int nnodes, 
+	             int procid, int nprocs) ;
+
 #endif
