@@ -51,6 +51,8 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 	va_list ap;
 	char buf[BUFSIZ];
 	char **env = *envp;
+	char **ep  = env;
+	int    cnt = 0;
 		
 	xassert(env[*envc] == NULL);
 	
@@ -58,14 +60,59 @@ setenvpf(char ***envp, int *envc, const char *fmt, ...)
 	vsnprintf(buf, sizeof(buf), fmt, ap);
 	va_end(ap);
 
-	xrealloc(env, (*envc+2)*sizeof(char *));
-	env[(*envc)++] = xstrdup(buf);
-	env[(*envc)]   = NULL;
+	while (ep[cnt] != NULL)
+	       cnt++;	
+
+	if ((cnt+1) >= (xsize(env)/sizeof(char *))) 
+		xrealloc(env, (cnt+2)*sizeof(char *));
+
+	env[cnt++] = xstrdup(buf);
+	env[cnt]   = NULL;
 
 	*envp = env;
+	*envc = cnt;
 
 	xassert(strcmp(env[(*envc) - 1], buf) == 0);
+
 	return *envc;
 }
 
+/*
+ *  Remove environment variable `name' from "environment" 
+ *   contained in `env'
+ *
+ *  [ This was taken almost verbatim from glibc's 
+ *    unsetenv()  code. ]
+ */
+void
+unsetenvp(char **env, const char *name)
+{
+	char **ep;
+
+	ep = env;
+	while (*ep != NULL) {
+		size_t cnt = 0;
+
+		while ( ((*ep)[cnt] == name[cnt]) 
+		      && ( name[cnt] != '\0')
+		      && ((*ep)[cnt] != '\0')    )
+			++cnt;
+
+		if (name[cnt] == '\0' && (*ep)[cnt] == '=') {
+			/*  Found name. Move later env values 
+			 *   to front 
+			 */
+			char **dp = ep;
+
+			do 
+				dp[0] = dp[1];
+			while (*dp++);
+		} else
+			++ep;
+
+		/*  Continue loop in case `name' appears again. */
+	}
+
+	return;
+}
 

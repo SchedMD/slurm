@@ -27,5 +27,6 @@
 #define _SETENVPF_H
 
 int setenvpf(char ***envp, int *envc, const char *fmt, ...);
+int unsetenvp(char **envp, const char *name);
 
 #endif

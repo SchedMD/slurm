@@ -35,8 +35,10 @@
 #include <string.h>
 
 #include "src/common/log.h"
+#include "src/common/xmalloc.h"
 
 #include "src/slurmd/job.h"
+#include "src/slurmd/setenvpf.h" /* For unsetenvp() */
 
 struct userlim {
 	char *var;
@@ -86,31 +88,34 @@ static int
 _set_limit(char **env, struct userlim *u)
 {
 	long          val;
-	int           retval = -1;
+	const char *  name = u->var+6;
 	struct rlimit r;
 
-	if ((val = _get_env_val(env, u->var)) > -2L) {
-		if (getrlimit(u->resource, &r) < 0)
-			error("getrlimit(%s,%ld): %m", u->var+6, val);
-
-		debug2("%s: max:%ld cur:%ld", u->var+6, 
-		       (long)r.rlim_max, (long) r.rlim_cur);
-
-		/* 
-		 * If resource limit is already set equal to value
-		 * no need to call setrlimit
-		 */
-		if (r.rlim_cur == (rlim_t) val)
-			return SLURM_SUCCESS;
-
-		r.rlim_cur = (val == -1L) ? RLIM_INFINITY : (rlim_t) val;
-
-		if ((retval = setrlimit(u->resource, &r)) < 0)
-			error("setrlimit(%s,%ld): %m", 
-			      u->var+6, (long)r.rlim_cur);
+	if ((val = _get_env_val(env, u->var)) < -1L) {
+		error ("couldn't find %s in environment", u->var);
+		return SLURM_ERROR;
 	}
 
-	return retval;
+	if (getrlimit(u->resource, &r) < 0)
+		error("getrlimit(%s): %m", name);
+
+	debug2("%s: max:%ld cur:%ld req:%ld", name, 
+	       (long)r.rlim_max, (long) r.rlim_cur, (long) val);
+
+	/* 
+	 *  Only call setrlimit() if new value does not
+	 *   equal current value.
+	 */
+	if (r.rlim_cur != (rlim_t) val) {
+		r.rlim_cur = (val == -1L) ? RLIM_INFINITY : (rlim_t) val;
+
+		if (setrlimit(u->resource, &r) < 0)
+			error("setrlimit(%s,%ld): %m", name, (long)r.rlim_cur);
+	}
+
+	unsetenvp(env, u->var); 
+
+	return SLURM_SUCCESS;
 }
 
 
