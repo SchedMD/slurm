@@ -8,6 +8,7 @@
 #include <openssl/ssl.h>
 
 #include <src/common/log.h>
+#include <src/common/list.h>
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_errno.h>
@@ -18,6 +19,13 @@
 #include <src/common/hostlist.h>
 #define MAX_NAME_LEN 1024
 
+typedef struct revoked_credential
+{
+	int job_id ;
+	time_t expiration ;
+} revoked_credential_t ;
+
+int clear_expired_revoked_credentials ( List list ) ;
 int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_t * credential )
 {
 	char buffer [4096] ;
@@ -43,7 +51,7 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 		goto return_ ;
 	}
 	
-        if ( ( error_code = getnodename (this_node_name, MAX_NAME_LEN) ) )
+        if ( ( error_code = getnodename ( this_node_name, MAX_NAME_LEN ) ) )
 		                fatal ("slurmd: errno %d from getnodename", errno);
 	
 	/*
@@ -55,7 +63,7 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 
 	}
 
-	if ( is_credential_still_valid ( credential -> job_id ) )
+	if ( is_credential_still_valid ( credential , revoked_credentials_list_t * list ) )
 	{
 		slurm_seterrno ( ESLURMD_CREDENTIAL_REVOKED ) ;
 		error_code = SLURM_ERROR ;
@@ -66,3 +74,23 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 	return_:
 	return error_code ;
 }
+
+int is_credential_still_valid ( slurm_job_credential_t * credential , List list )
+{
+	ListIterator iterator ;
+	iterator = list_iterator_create( list ) ;
+	clear_expired_revoked_credentials ( list ) ;
+	/*revoked_credential_t * revoked_credential ;
+	while ( ( revoked_credential = list_next ( iterator ) ) )
+	{
+		if ( credential -> job_id == revoked_credential -> job_id ) ;
+	}
+	*/
+	return SLURM_SUCCESS ;
+}
+
+int clear_expired_revoked_credentials ( List list )
+{
+	return SLURM_SUCCESS ;
+}
+	
