@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="9 July 2004">
+<meta name="LLNLRandRdate" content="10 August 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -270,6 +270,7 @@ of the available plugins will be utilized. </p>
 can prevent a user from accessing a node which he has not been allocated, if that 
 mode of operation is desired.</p>
 <p class="footer"><a href="#top">top</a></p>
+
 <h3>Starting the Daemons</h3>
 <p>For testing purposes you may want to start by just running slurmctld and slurmd 
 on one node. By default, they execute in the background. Use the <span class="commandline">-D</span> 
@@ -292,6 +293,7 @@ In practice, SLURM restarts with preservation consistently.</p>
 <p>A thorough battery of tests written in the &quot;expect&quot; language is also 
 available. </p>
 <p class="footer"><a href="#top">top</a></p>
+
 <h3>Administration Examples</h3>
 <p><span class="commandline">scontrol</span> can be used to print all system information 
 and modify most of it. Only a few examples are shown below. Please see the scontrol 
@@ -405,13 +407,28 @@ Slurmctld(primary/backup) at adevi/adevj are UP/UP
 </pre> <p>Shutdown all SLURM daemons on all nodes.</p>
 <pre>
 adev0: scontrol shutdown
+</pre> <p class="footer"><a href="#top">top</a></p>
+
+<h3>Upgrades</h3>
+<p>When upgrading to a new major or minor release of SLURM (e.g. 0.3.x to 0.4.x) 
+all running and pending jobs will be purged due to changes in state save 
+information. It is possible to develop software to translate state information 
+between versions, but we do not normally expect to do so.
+When upgrading to a new micro release of SLURM (e.g. 0.3.1 to 0.3.2) all
+running and pending jobs will be preserved. Just install a new version of
+SLURM and restart the daemons.
+An exception to this is that jobs may be lost when installing new pre-release 
+versions (e.g. 0.4.0-pre1 to 0.4.0-pre2). We'll try to note these cases 
+in the NEWS file.
+
 </pre> <p class="footer"><a href="#top">top</a></p></td>
+
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 9 July 2004</p></td>
+Last modified 10 August 2004</p></td>
 </tr>
 </table>
 </td>
