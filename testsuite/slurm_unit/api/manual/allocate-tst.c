@@ -16,7 +16,7 @@ main (int argc, char *argv[])
 	if (argc > 1) 
 		max_jobs = atoi (argv[1]);
 	else
-		max_jobs = 1000;
+		max_jobs = 1;
 
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1;
