@@ -42,6 +42,7 @@
 #endif
 
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -66,7 +67,7 @@ typedef enum slurmd_io_tupe {
 	TASK_STDIN,
 	CLIENT_STDERR,
 	CLIENT_STDOUT,
-	CLIENT_STDIN
+	CLIENT_STDIN,
 } slurmd_io_type_t;
 
 static char *_io_str[] = 
@@ -76,7 +77,7 @@ static char *_io_str[] =
 	"task stdin",
 	"client stderr",
 	"client stdout",
-	"client stdin"
+	"client stdin",
 };
 
 /* The IO information structure
@@ -101,6 +102,10 @@ struct io_info {
 					  * (e.g. A "ghost" client attached
 					  * to a task.)
 					  */
+
+	unsigned         rw:1;            /* 1 if client is read-write
+					   * capable, 0 otherwize
+					   */
 };
 
 
@@ -260,8 +265,6 @@ static void
 _io_finalize(task_info_t *t)
 {
 	struct io_info *in  = t->in->arg;
-	ListIterator i;
-	struct io_info *io;
 
 	if (_xclose(t->pin[0] ) < 0)
 		error("close(stdin) : %m");
@@ -272,16 +275,27 @@ _io_finalize(task_info_t *t)
 
 	in->disconnected  = 1;
 
-	if (!in->writers)
-		return;
+	/* Need to close all stdin writers
+	 *
+	 * We effectively close these writers by
+	 * forcing them to be unwritable. This will
+	 * prevent the IO thread from hanging waiting
+	 * for stdin data. (While also not forcing the
+	 * close of a pipe that is also writable)
+	 */
+	 
+	if (in->writers) {
+		ListIterator i;
+		struct io_info *io;
 
-	i = list_iterator_create(in->writers);
-	while ((io = list_next(i))) {
-		if (io->obj->fd > 0) {
-			io->eof = 1;
+		i = list_iterator_create(in->writers);
+		while ((io = list_next(i))) {
+			if (io->obj->fd > 0) {
+				io->obj->ops->readable = NULL;
+			}
 		}
+		list_iterator_destroy(i);
 	}
-	list_iterator_destroy(i);
 }
 
 void 
@@ -316,7 +330,9 @@ _handle_unprocessed_output(slurmd_job_t *job)
 			continue;
 
 		if (io->buf && (n = cbuf_used(io->buf)))
-			job_error(job, "%ld bytes of stdout unprocessed", n);
+			job_error(job, 
+			  "task %d: %ld bytes of stdout unprocessed", 
+			  io->id, n);
 
 		if (!(readers = ((struct io_info *)t->err->arg)->readers))
 			continue;
@@ -412,6 +428,15 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	obj      = _io_obj(job, t, sock, type);
 	obj->ops = &connecting_client_ops;
 	_io_write_header(obj->arg, srun);
+
+	if ((type == CLIENT_STDOUT) && !srun->ifname) {
+		struct io_info *io = obj->arg;
+		/* This is the only read-write capable client
+		 * at this time: a connected CLIENT_STDOUT
+		 */
+		io->rw = 1;
+	}
+
 	list_append(job->objs, (void *)obj);
 }
 
@@ -538,8 +563,8 @@ _open_stdin_file(slurmd_job_t *job, task_info_t *t, srun_info_t *srun)
 	char     *fname = fname_create(job, srun->ifname, t->gid);
 	
 	if ((fd = _open_task_file(fname, flags)) > 0) {
+		debug("opened `%s' for %s fd %d", fname, "stdin", fd);
 		obj = _io_obj(job, t, fd, CLIENT_STDIN); 
-		_obj_set_unwritable(obj);
 		_io_client_attach(obj, NULL, t->in, job->objs);
 	}
 	xfree(fname);
@@ -570,10 +595,16 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 		 * reader is still available.
 		 * 
 		 */
-		if (reader->fd < 0 || dst->disconnected)
+		if (reader->fd < 0 || dst->disconnected) {
+			debug3("can't attach %s to closed %s",
+				_io_str[cli->type], _io_str[dst->type]);
 			_obj_close(client, objList);
-		else
-			_io_connect_objs(client, reader);
+			return;
+		} 
+
+		_io_connect_objs(client, reader);
+		if (!list_find_first(objList, (ListFindF) find_obj, client))
+			list_append(objList, client);
 		return;
 	}
 
@@ -654,8 +685,15 @@ _io_connect_objs(io_obj_t *obj1, io_obj_t *obj2)
 
 	if (!list_find_first(src->readers, (ListFindF)find_obj, dst))
 		list_append(src->readers, dst);
+	else
+		debug3("%s already in %s readers list!", 
+			_io_str[dst->type], _io_str[src->type]);
+
 	if (!list_find_first(dst->writers, (ListFindF)find_obj, src))
 		list_append(dst->writers, src);
+	else
+		debug3("%s already in %s writers list!",
+			_io_str[src->type], _io_str[dst->type]);
 }
 
 /*
@@ -802,8 +840,12 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 break;
 	 case TASK_STDIN:
 		 obj->ops    = &task_in_ops;
-		 io->buf     = cbuf_create(512, 10240);
+		 io->buf     = cbuf_create(512, 4096);
 		 io->writers = list_create(NULL);
+
+		 /* Never overwrite stdin data
+		  */
+		 cbuf_opt_set(io->buf, CBUF_OPT_OVERWRITE, 0);
 		 break;
 	 case CLIENT_STDOUT:
 		 io->readers = list_create(NULL);
@@ -818,6 +860,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 io->readers = list_create(NULL);
 		 /* 
 		  * Connected stdin still needs output buffer 
+		  * (for connection header)
 		  */
 		 io->buf     = cbuf_create(256, 1024);
 		 break;
@@ -903,6 +946,7 @@ _io_info_create(uint32_t id)
 	io->writers      = NULL;
 	io->eof          = 0;
 	io->disconnected = 0;
+	io->rw           = 0;
 	xassert(io->magic = IO_MAGIC);
 	return io;
 }
@@ -1082,7 +1126,7 @@ _write(io_obj_t *obj, List objs)
 
 	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
-			break;
+			return 0;
 		if ((errno == EPIPE) || (errno == EINVAL) || (errno == EBADF))
 			_obj_close(obj, objs);
 		error("write failed: <task %d>: %m", io->id);
@@ -1109,7 +1153,17 @@ _do_attach(struct io_info *io)
 
 	switch (io->type) {
 	case CLIENT_STDOUT:
-		_io_client_attach(io->obj, t->out, t->in, io->job->objs); 
+		if (io->rw) {
+			debug3("attaching task %d client stdout read-write",
+			       io->id);
+			_io_client_attach( io->obj, t->out, t->in, 
+					   io->job->objs );
+		} else {
+			debug3("attaching task %d client stdout write-only",
+			       io->id);
+			_io_client_attach( io->obj, t->out, NULL, 
+					   io->job->objs ); 
+		}
 		break;
 	case CLIENT_STDERR:
 		_io_client_attach(io->obj, t->err, NULL,  io->job->objs);
@@ -1163,7 +1217,6 @@ static int
 _shutdown_task_obj(struct io_info *t)
 {
 	ListIterator i;
-	List rlist;
 	struct io_info *r;
 
 	xassert(_isa_task(t));
@@ -1175,12 +1228,16 @@ _shutdown_task_obj(struct io_info *t)
 
 	t->disconnected = 1;
 
-	rlist = t->writers ? : t->readers;
+	if (!t->readers)
+		return 0;
 
 	/* Task objects do not get destroyed. 
 	 * Simply propagate the EOF to the clients
+	 *
+	 * Only propagate EOF to readers
+	 *
 	 */
-	i = list_iterator_create(rlist);
+	i = list_iterator_create(t->readers);
 	while ((r = list_next(i))) 
 		r->eof = 1;
 	list_iterator_destroy(i);
@@ -1258,13 +1315,24 @@ _client_read(io_obj_t *obj, List objs)
 {
 	struct io_info *client = (struct io_info *) obj->arg;
 	struct io_info *reader;
-	char buf[1024]; /* XXX Configurable? */
-	ssize_t n, len = sizeof(buf);
-	ListIterator i;
+	char            buf[4096]; 
+	int             dropped  = 0;
+	ssize_t         n        = 0;
+	ssize_t         len      = sizeof(buf);
+	ListIterator    i        = NULL;
 
 	xassert(client->magic == IO_MAGIC);
 	xassert(_validate_io_list(objs));
 	xassert(_isa_client(client));
+
+	i = list_iterator_create(client->readers);
+	while ((reader = list_next(i))) {
+		if (cbuf_free(reader->buf) < len)
+			len = cbuf_free(reader->buf);
+	}
+
+	if (len == 0)
+		return 0;
 	
 
    again:
@@ -1279,8 +1347,8 @@ _client_read(io_obj_t *obj, List objs)
 			client->id);
 
 	if (n == 0)  { /* got eof, pass this eof to readers */
-		debug3("%s %d stdin closed connection", _io_str[client->type], 
-				client->id);
+		debug3("task %d [%s fd %d] read closed", 
+		       client->id, _io_str[client->type],  obj->fd);
 		/*
 		 * Do not read from this stdin any longer
 		 */
@@ -1295,13 +1363,18 @@ _client_read(io_obj_t *obj, List objs)
 			i = list_iterator_create(client->readers);
 			while((reader = list_next(i))) {
 				if (list_count(reader->writers) == 1)
-					reader->eof = 1;
-				list_delete_all( reader->writers, 
-						 (ListFindF) find_obj,
-						 client );
+			 		reader->eof = 1;
+				else
+					debug3("can't send EOF to stdin");
+				
 			}
 			list_iterator_destroy(i);
 		}
+
+		/* It is unsafe to close CLIENT_STDOUT
+		 */
+		if (client->type == CLIENT_STDIN)
+			_obj_close(obj, client->job->objs);
 
 		return 0;
 	}
@@ -1315,9 +1388,12 @@ _client_read(io_obj_t *obj, List objs)
 	/* 
 	 * Copy cbuf to all readers 
 	 */
-	i = list_iterator_create(client->readers);
-	while((reader = list_next(i))) 
-			n = cbuf_write(reader->buf, (void *) buf, n, NULL);
+	list_iterator_reset(i);
+	while((reader = list_next(i))) {
+		n = cbuf_write(reader->buf, (void *) buf, n, &dropped);
+		error ("Dropped %d bytes stdin data to task %d", 
+			dropped, client->id);
+	}
 	list_iterator_destroy(i);
 
 	return 0;

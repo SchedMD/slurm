@@ -699,6 +699,8 @@ _send_exit_msg(int rc, task_info_t *t)
 	ListIterator i;
 	srun_info_t *srun;
 
+	debug3("sending task exit msg for %d", t->gid);
+
 	/* FIXME:XXX: attempt to combine task IDs in single message */
 	task_id_list[0]  = t->gid;
 	msg.task_id_list = task_id_list;

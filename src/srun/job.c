@@ -27,6 +27,10 @@
 #include <netdb.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -40,12 +44,12 @@
 #include "src/srun/fname.h"
 
 typedef struct allocation_info {
-	uint32_t    jobid;
-	uint32_t    stepid;
-	char       *nodelist;
-	slurm_addr *addrs;
-	int        *cpus_per_node;
-	int        *cpu_count_reps;
+	uint32_t                jobid;
+	uint32_t                stepid;
+	char                   *nodelist;
+	slurm_addr             *addrs;
+	int                    *cpus_per_node;
+	int                    *cpu_count_reps;
 } allocation_info_t;
 
 
@@ -82,7 +86,9 @@ _job_create_internal(allocation_info_t *info)
 	job->stepid = info->stepid;
 
 	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
-	memcpy(job->slurmd_addr, info->addrs, sizeof(slurm_addr)*job->nhosts);
+	if (info->addrs)
+		memcpy( job->slurmd_addr, info->addrs, 
+			sizeof(slurm_addr)*job->nhosts);
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
 	job->cpus  = (int *)   xmalloc(job->nhosts * sizeof(int) );
@@ -182,6 +188,20 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	return (job);
 }
 
+static void
+_job_fake_cred(job_t *job)
+{
+	int fd;
+	if ((fd = open("/dev/random", O_RDONLY)) < 0)
+		error ("unable to open /dev/random: %m");
+
+	job->cred          = xmalloc(sizeof(*job->cred));
+	job->cred->job_id  = job->jobid;
+	job->cred->user_id = opt.uid;
+	job->cred->expiration_time = 0x7fffffff;
+	read(fd, job->cred->signature, SLURM_SSL_SIGNATURE_LENGTH);
+}
+
 job_t *
 job_create_noalloc(void)
 {
@@ -207,18 +227,20 @@ job_create_noalloc(void)
 
 	info->cpus_per_node  = &cpn;
 	info->cpu_count_reps = &opt.nprocs;
+	info->addrs          = NULL; 
 
 	/* 
 	 * Create job, then fill in host addresses
 	 */
 	job = _job_create_internal(info);
 
-	job->slurmd_addr     = xmalloc(job->nhosts * sizeof(slurm_addr));
 	for (i = 0; i < job->nhosts; i++) {
 		slurm_set_addr ( &job->slurmd_addr[i], 
 				  slurm_get_slurmd_port(), 
 				  job->host[i] );
 	}
+
+	_job_fake_cred(job);
 
    error:
 	xfree(info);

@@ -203,7 +203,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 			        taskid, _taskid2hostname(taskid, job), 
 			        msg->return_code);
 		else
-			debug2("task %d exited with status 0",  taskid);
+			verbose("task %d exited with status 0",  taskid);
 
 		slurm_mutex_lock(&job->task_mutex);
 		job->tstatus[taskid] = msg->return_code;
@@ -272,7 +272,7 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			slurm_free_task_exit_msg(msg->data);
 			break;
 		case RESPONSE_REATTACH_TASKS:
-			debug("recvd reattach response\n");
+			debug2("recvd reattach response\n");
 			_reattach_handler(job, msg);
 			slurm_free_reattach_tasks_response_msg(msg->data);
 			break;
