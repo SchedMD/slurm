@@ -160,8 +160,6 @@ static void *neterr_thr(void *arg)
 	 */
 	elan3_run_neterr_svc();
 
-	return NULL;
-
    fail:
 	slurm_mutex_lock(&neterr_mutex);
 	neterr_retval = SLURM_FAILURE;
