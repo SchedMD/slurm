@@ -25,6 +25,7 @@ html_DATA = \
 	html/quickstart_admin.html \
 	html/quickstart.html \
 	html/schedplugins.html \
+	html/selectplugins.html \
 	html/slurm_banner.jpg \
 	html/slurm_design.pdf \
 	html/slurm.html \
