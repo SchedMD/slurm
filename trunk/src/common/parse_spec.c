@@ -39,6 +39,8 @@
 #include "src/common/log.h"
 #include "src/common/parse_spec.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+
 
 #define BUF_SIZE 1024
 #define SEPCHARS " \n\t"
@@ -175,7 +177,7 @@ _load_integer (int *destination, char *keyword, char *in_line)
 			str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, 
 			                              &str_ptr3);
 			str_len2 = strlen (str_ptr2);
-			if (strcmp (str_ptr2, "UNLIMITED") == 0)
+			if (strcasecmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1;
 			else if ((str_ptr2[0] >= '0') && 
 			         (str_ptr2[0] <= '9')) {
@@ -232,7 +234,7 @@ _load_long (long *destination, char *keyword, char *in_line)
 			str_ptr2 = (char *) strtok_r (scratch, SEPCHARS, 
 			                              &str_ptr3);
 			str_len2 = strlen (str_ptr2);
-			if (strcmp (str_ptr2, "UNLIMITED") == 0)
+			if (strcasecmp (str_ptr2, "UNLIMITED") == 0)
 				*destination = -1L;
 			else if ((str_ptr2[0] >= '0') && 
 			         (str_ptr2[0] <= '9')) {
@@ -293,8 +295,7 @@ load_string  (char **destination, char *keyword, char *in_line)
 			return EINVAL;
 		}
 		xfree (destination[0]);
-		destination[0] = (char *) xmalloc (str_len2 + 1);
-		strcpy (destination[0], str_ptr2);
+		destination[0] = xstrdup(str_ptr2);
 		for (i = 0; i < (str_len1 + str_len2 + quoted); i++)
 			str_ptr1[i] = ' ';
 		if (quoted && (str_ptr1[i] == '"'))
