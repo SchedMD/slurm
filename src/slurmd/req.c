@@ -368,8 +368,11 @@ _kill_all_active_steps(uint32_t jobid)
 
 	while ((s = list_next(i))) {
 		if (s->jobid == jobid) {
-			shm_signal_step(jobid, s->stepid, SIGKILL);
-			shm_delete_step(jobid, s->stepid);
+			/* Kill entire process group 
+			 * (slurmd manager will clean up any stragglers)
+			 */
+			debug2("sending SIGKILL to process group %d", s->sid);
+			killpg(s->sid, SIGKILL);
 		}
 	}
 	list_iterator_destroy(i);

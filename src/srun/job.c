@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -257,5 +258,13 @@ update_job_state(job_t *job, job_state_t state)
 		pthread_cond_signal(&job->state_cond);
 	}
 	pthread_mutex_unlock(&job->state_mutex);
+}
+
+void 
+job_force_termination(job_t *job)
+{
+	info ("forcing job termination");
+	update_job_state(job, SRUN_JOB_OVERDONE);
+	pthread_kill(job->ioid, SIGTERM);
 }
 

@@ -124,11 +124,6 @@ static int               _set_batch_script_env(uint32_t jobid);
    static void _qsw_standalone(job_t *job);
 #endif
 
-/* empty sigint handler */
-static void
-_int_handler(int signal) 
-{ pthread_cancel(pthread_self());}
-
 int
 srun(int ac, char **av)
 {
@@ -214,6 +209,7 @@ srun(int ac, char **av)
 	/* block most signals in all threads, except sigterm */
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGINT);
+	sigaddset(&sigset, SIGQUIT);
 	sigaddset(&sigset, SIGTSTP);
 	sigaddset(&sigset, SIGSTOP);
 	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
@@ -265,7 +261,6 @@ srun(int ac, char **av)
 	pthread_kill(job->jtid, SIGTERM);
 
 	/* wait for stdio */
-	xsignal(SIGQUIT, &_int_handler); 
 	if (pthread_join(job->ioid, NULL) < 0) {
 		error ("Waiting on IO: %m");
 	}
@@ -280,6 +275,8 @@ srun(int ac, char **av)
 		debug("cancelling job %u", job->jobid);
 		slurm_complete_job(job->jobid, 0, 0);
 	}
+
+	log_fini();
 
 	exit(0);
 }
@@ -329,20 +326,19 @@ _allocate_nodes(void)
 		job.shared		= 1;
 
 	retries = 0;
-	while ((rc = slurm_allocate_resources(&job, &resp))
-					== SLURM_FAILURE) {
+	while ((rc = slurm_allocate_resources(&job, &resp)) < 0) {
 		if ((slurm_get_errno() == ESLURM_ERROR_ON_DESC_TO_RECORD_COPY) 
 		    && (retries < MAX_RETRIES)) {
+			char *msg = "Slurm controller not responding, " 
+				    "sleeping and retrying";
 			if (retries == 0)
-				error ("Slurm controller not responding, sleeping and retrying");
+				error (msg);
 			else
-				debug ("Slurm controller not responding, sleeping and retrying");
+				debug (msg);
 
 			sleep (++retries);
-		}
-		else {
-			error("Unable to allocate resources: %s", 
-			      slurm_strerror(errno));
+		} else {
+			error("Unable to allocate resources: %m");
 			return NULL;
 		}			
 	}
@@ -359,15 +355,16 @@ _allocate_nodes(void)
 		old_job.uid = (uint32_t) getuid();
 		slurm_free_resource_allocation_response_msg (resp);
 		sleep (2);
+
 		/* Keep polling until the job is allocated resources */
-		while (slurm_confirm_allocation(&old_job, &resp) == 
-							SLURM_FAILURE) {
+		while (slurm_confirm_allocation(&old_job, &resp) < 0) {
 			if (slurm_get_errno() == ESLURM_JOB_PENDING) {
 				debug3("Still waiting for allocation");
 				sleep (10);
 			} else {
-				error("Unable to confirm resource allocation for job %u: %s", 
-					old_job.job_id, slurm_strerror(errno));
+				error("Unable to confirm resource "
+				      "allocation for job %u: %m", 
+				      old_job.job_id);
 				exit (1);
 			}
 		}
@@ -497,6 +494,47 @@ _sigterm_handler(int signum)
 	}
 }
 
+static void
+_handle_intr(job_t *job, time_t *last_intr, time_t *last_intr_sent)
+{
+
+	if ((time(NULL) - *last_intr) > 1) {
+		info("interrupt (one more within 1 sec to abort)");
+		report_task_status(job);
+		*last_intr = time(NULL);
+	} else  { /* second Ctrl-C in half as many seconds */
+
+		/* terminate job */
+		if (job->state != SRUN_JOB_OVERDONE) {
+
+			info("sending Ctrl-C to job");
+			*last_intr = time(NULL);
+			_fwd_signal(job, SIGINT);
+
+			if ((time(NULL) - *last_intr_sent) < 1)
+				job_force_termination(job);
+			else
+				*last_intr_sent = time(NULL);
+		} else {
+			job_force_termination(job);
+		}
+	}
+}
+
+static void
+_sig_thr_setup(sigset_t *set)
+{
+	int rc;
+
+	sigemptyset(set);
+	sigaddset(set, SIGINT);
+	sigaddset(set, SIGQUIT);
+	sigaddset(set, SIGTSTP);
+	sigaddset(set, SIGSTOP);
+	if ((rc = pthread_sigmask(SIG_BLOCK, set, NULL)) != 0)
+		error ("pthread_sigmask: %s", slurm_strerror(rc));
+}
+
 
 /* simple signal handling thread */
 static void *
@@ -509,47 +547,24 @@ _sig_thr(void *arg)
 	int signo;
 
 	while (1) {
-		sigfillset(&set);
-		sigdelset(&set, SIGABRT);
-		sigdelset(&set, SIGSEGV);
-		sigdelset(&set, SIGQUIT);
-		sigdelset(&set, SIGUSR1);
-		sigdelset(&set, SIGUSR2);
-		pthread_sigmask(SIG_BLOCK, &set, NULL);
+
+		_sig_thr_setup(&set);
+
 		sigwait(&set, &signo);
 		debug2("recvd signal %d", signo);
 		switch (signo) {
 		  case SIGINT:
-			if ((time(NULL) - last_intr) > 1) {
-				info("interrupt (one more within 1 "
-				     "sec to abort)");
-				report_task_status(job);
-				last_intr = time(NULL);
-			 } else  { /* second Ctrl-C in half as many seconds */
-				   /* terminate job */
-				if (job->state != SRUN_JOB_OVERDONE) {
-					info("sending Ctrl-C to job");
-					last_intr = time(NULL);
-					_fwd_signal(job, signo);
-					if ((time(NULL) - last_intr_sent) < 1) {
-						info("forcing termination");
-						update_job_state(job, SRUN_JOB_OVERDONE);
-						pthread_kill(job->ioid, SIGTERM);
-					}
-					last_intr_sent = time(NULL);
-				} else {
-					info("forcing termination");
-					pthread_kill(job->ioid, SIGTERM);
-				}
-			}
+			  _handle_intr(job, &last_intr, &last_intr_sent);
+			  break;
+		  case SIGSTOP:
+		  case SIGTSTP:
+			debug3("Ignoring SIGSTOP");
+			break;
+		  case SIGQUIT:
+			info("Quit");
+			job_force_termination(job);
 			break;
 		  default:
-			if (job->state != SRUN_JOB_OVERDONE)
-				_fwd_signal(job, signo);
-			else if (signo == SIGQUIT) {
-				info("forcing termination");
-				pthread_kill(job->ioid, SIGTERM);
-			}
 			break;
 		}
 	}

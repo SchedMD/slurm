@@ -205,6 +205,18 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 }
 
 static void
+update_running_tasks(job_t *job, uint32_t nodeid)
+{
+	int i;
+	slurm_mutex_lock(&job->task_mutex);
+	for (i = 0; i < job->ntask[nodeid]; i++) {
+		uint32_t tid = job->tids[nodeid][i];
+		job->task_state[tid] = SRUN_TASK_RUNNING;
+	}
+	slurm_mutex_unlock(&job->task_mutex);
+}
+
+static void
 update_failed_tasks(job_t *job, uint32_t nodeid)
 {
 	int i;
@@ -252,8 +264,10 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		tv_launch_failure();
 #endif
 		return;
-	} else 
+	} else {
 		_process_launch_resp(job, msg);
+		update_running_tasks(job, msg->srun_node_id);
+	}
 }
 
 /* _confirm_launch_complete

@@ -49,6 +49,7 @@
 #include <stdio.h>
 
 #include "src/common/macros.h"
+#include "src/common/cbuf.h"
 
 /* supported syslog facilities and levels */
 typedef enum {
@@ -73,7 +74,7 @@ typedef enum {
  * QUIET disable logging completely.
  */
 typedef enum {
-	LOG_LEVEL_QUIET,
+	LOG_LEVEL_QUIET = 0,
 	LOG_LEVEL_FATAL,
 	LOG_LEVEL_ERROR,
 	LOG_LEVEL_INFO,
@@ -88,22 +89,23 @@ typedef enum {
  * log options: Each of stderr, syslog, and logfile can have a different level
  */
 typedef struct {
-	unsigned    prefix_level;   /* prefix level (e.g. "debug: ") if 1 */
 	log_level_t stderr_level;   /* max level to log to stderr         */
 	log_level_t syslog_level;   /* max level to log to syslog         */
 	log_level_t logfile_level;  /* max level to log to logfile        */
+	unsigned    prefix_level:1; /* prefix level (e.g. "debug: ") if 1 */
+	unsigned    buffered:1;     /* Use internal buffer to never block */
 } 	log_options_t;
 
 /* some useful initializers for log_options_t
  */
 #define LOG_OPTS_INITIALIZER	\
-	{ 1, LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO }
+	{ LOG_LEVEL_INFO, LOG_LEVEL_INFO, LOG_LEVEL_INFO, 1, 0 }
 
 #define LOG_OPTS_SYSLOG_DEFAULT	\
-	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET }  
+	{ LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET, 1, 0 }  
 
 #define LOG_OPTS_STDERR_ONLY	\
-	{ 1, LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
+	{ LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, 1, 0 }
 
 /* 
  * initialize log module (called only once)
@@ -131,6 +133,11 @@ int log_init(char *argv0, log_options_t opts,
  */
 void log_reinit(void);
 
+/* 
+ * Close log and free associated memory
+ */
+void log_fini(void);
+
 /* Alter log facility, options are like log_init() above, except that
  * an argv0 argument is not passed. 
  *
@@ -138,10 +145,29 @@ void log_reinit(void);
  */
 int log_alter(log_options_t opts, log_facility_t fac, char *logfile);
 
+/* Set prefix for log file entries
+ * (really only useful for slurmd at this point)
+ */
+void log_set_fpfx(char *pfx);
+
 /* grab the FILE * of the current logfile (or stderr if not logging to
  * a file)
  */
 FILE *log_fp(void);
+
+/* 
+ * Buffered log functions:
+ * 
+ * log_has_data() returns true if there is data in the 
+ * internal log buffer
+ */
+bool log_has_data(void);
+
+/*
+ * log_flush() attempts to flush all data in the internal
+ * log buffer to the appropriate output stream.
+ */
+void log_flush(void);
 
 /* 
  * the following log a message to the log facility at the appropriate level:
