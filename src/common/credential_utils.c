@@ -220,7 +220,7 @@ _clear_expired_revoked_credentials(List list)
 
 	iterator = list_iterator_create(list);
 	while ((s = list_next(iterator))) {
-		if (now + EXPIRATION_WINDOW > s->expiration) {
+		if (now > (s->expiration + EXPIRATION_WINDOW) ) {
 			debug2("expiring credential for job %d", s->job_id);
 			list_delete(iterator);
 		}
