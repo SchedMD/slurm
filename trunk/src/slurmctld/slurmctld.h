@@ -50,7 +50,7 @@
 #define	PERIODIC_CHECKPOINT	300
 
 /* Retry an incomplete RPC agent request every RPC_RETRY_INTERVAL seconds */
-#define	RPC_RETRY_INTERVAL	300
+#define	RPC_RETRY_INTERVAL	60
 
 /* Attempt to schedule jobs every PERIODIC_SCHEDULE seconds despite any RPC activity 
  * This will catch any state transisions that may have otherwise been missed */

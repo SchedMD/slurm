@@ -37,7 +37,7 @@
 #define COMMAND_TIMEOUT 	5	/* seconds */
 
 typedef struct agent_arg {
-	uint32_t	addr_count;		/* number of nodes to communicate with */
+	uint32_t	node_count;		/* number of nodes to communicate with */
 	uint16_t	retry;			/* if set, keep trying */
 	struct sockaddr_in *slurm_addr;		/* array of network addresses */
 	char		*node_names;		/* array with MAX_NAME_LEN bytes per node */
@@ -45,7 +45,15 @@ typedef struct agent_arg {
 	void		*msg_args;		/* RPC data to be transmitted */
 } agent_arg_t;
 
+/* agent - perform requested RPC in parallel and in the background, report status 
+ *	upon completion, input is pointer to agent_arg_t */
 extern void *agent (void *args);
+
+/* agent_retry - Agent for retrying pending RPCs (top one on the queue), 
+ *	argument is unused */
 extern void *agent_retry (void *args);
+
+/* retry_pending - retry all pending RPCs for the given node name */
+extern void retry_pending (char *node_name);
 
 #endif /* !_AGENT_H */
