@@ -31,6 +31,7 @@
 
 #include <ctype.h>
 #include <errno.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -69,6 +70,7 @@
 
 static char *command_name;
 static int exit_flag;			/* program to terminate if =1 */
+static int one_liner;			/* one record per line if =1 */
 static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
 static int input_words;			/* number of words of input permitted */
 
@@ -94,7 +96,7 @@ static void	_usage ();
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code = SLURM_SUCCESS, i, input_field_count;
+	int error_code = SLURM_SUCCESS, i, opt_char, input_field_count;
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -104,25 +106,33 @@ main (int argc, char *argv[])
 	quiet_flag = 0;
 	log_init("scontrol", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
+	while((opt_char = getopt(argc, argv, "hoqv")) != -1) {
+		if (opt_char == (int)'h') {
+			_usage ();
+			exit(0);
+		}
+		else if (opt_char == (int)'o')
+			one_liner = 1;
+		else if (opt_char == (int)'q')
+			quiet_flag = 1;
+		else if (opt_char == (int)'v')
+			quiet_flag = -1;
+		else {
+			fprintf(stderr, "getopt error, returned %c", opt_char);
+			return 1;
+		}
+	}
+
 	if (argc > MAX_INPUT_FIELDS)	/* bogus input, but continue anyway */
 		input_words = argc;
 	else
 		input_words = 128;
 	input_fields = (char **) xmalloc (sizeof (char *) * input_words);
-	for (i = 1; i < argc; i++) {
-		if (strncmp (argv[i], "-help", 2) == 0)
-			_usage ();
-		else if (strcmp (argv[i], "-q") == 0)
-			quiet_flag = 1;
-		else if (strcmp (argv[i], "quiet") == 0)
-			quiet_flag = 1;
-		else if (strcmp (argv[i], "-v") == 0)
-			quiet_flag = -1;
-		else if (strcmp (argv[i], "verbose") == 0)
-			quiet_flag = -1;
-		else
+	if (optind < argc) {
+		for (i = optind; i < argc; i++) {
 			input_fields[input_field_count++] = argv[i];
-	}			
+		}	
+	}
 
 	if (input_field_count)
 		exit_flag = 1;
@@ -489,7 +499,7 @@ _print_job (char * job_id_str)
 		if (job_id_str && job_id != job_ptr[i].job_id) 
 			continue;
 		print_cnt++;
-		slurm_print_job_info (stdout, & job_ptr[i] ) ;
+		slurm_print_job_info (stdout, & job_ptr[i], one_liner ) ;
 		if (job_id_str)
 			break;
 	}
@@ -529,7 +539,7 @@ _print_node (char *node_name, node_info_msg_t  * node_buffer_ptr)
 			i = j;
 		print_cnt++;
 		slurm_print_node_table (stdout, 
-					& node_buffer_ptr->node_array[i]);
+					& node_buffer_ptr->node_array[i], one_liner);
 
 		if (node_name) {
 			last_inx = i;
@@ -672,7 +682,7 @@ _print_part (char *partition_name)
 		    strcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
 		print_cnt++;
-		slurm_print_partition_info (stdout, & part_ptr[i] ) ;
+		slurm_print_partition_info (stdout, & part_ptr[i], one_liner ) ;
 		if (partition_name)
 			break;
 	}
@@ -751,7 +761,7 @@ _print_step (char *job_step_id_str)
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {
-		slurm_print_job_step_info (stdout, & job_step_ptr[i] ) ;
+		slurm_print_job_step_info (stdout, & job_step_ptr[i], one_liner ) ;
 	}
 
 	if ((job_step_info_ptr->job_step_count == 0) && (quiet_flag != 1)) {
@@ -1243,6 +1253,7 @@ void
 _usage () {
 	printf ("\
 scontrol [-q | -v] [<COMMAND>]                                             \n\
+  -o one-liner: put one record per line.                                   \n\
   -q is equivalent to the keyword \"quiet\" described below.               \n\
   -v is equivalent to the keyword \"verbose\" described below.             \n\
                                                                            \n\
