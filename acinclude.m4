@@ -503,6 +503,12 @@ if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ;
 		fi
 	fi
 fi
+
+AC_TRY_LINK([#include <openssl/evp.h>], 
+   [EVP_MD_CTX_cleanup(NULL);],
+   [AC_DEFINE(HAVE_EVP_MD_CTX_CLEANUP, 1,
+             [Define to 1 if function EVP_MD_CTX_cleanup exists.])])
+
 LIBS="$saved_LIBS"
 CPPFLAGS="$saved_CPPFLAGS"
 LDFLAGS="$saved_LDFLAGS"

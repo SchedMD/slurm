@@ -975,7 +975,10 @@ _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 		rc = SLURM_ERROR;
 	}
 
+#ifdef HAVE_EVP_MD_CTX_CLEANUP
+	/* Note: Likely memory leak if this function is absent */
 	EVP_MD_CTX_cleanup(&ectx);
+#endif
 	free_buf(buffer);
 
 	return rc;
