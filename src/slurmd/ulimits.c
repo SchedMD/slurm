@@ -43,12 +43,18 @@ struct userlim {
 	int   resource;
 };
 
+/*
+ * This is a list of SLURM environment variables that contain the
+ * desired user limits for this node, along with the corresponding
+ * get/setrlimit resource number.
+ */
 static struct userlim ulims[] =
         { { "SLURM_RLIMIT_CORE"  , RLIMIT_CORE  },
 	  { "SLURM_RLIMIT_FSIZE" , RLIMIT_FSIZE },
 	  { "SLURM_RLIMIT_NPROC" , RLIMIT_NPROC },
 	  { "SLURM_RLIMIT_NOFILE", RLIMIT_NOFILE},
-	  { NULL, 0 } };
+	  { NULL, 0 } 
+	};
 
 /*
  * Prototypes:
@@ -84,12 +90,23 @@ _set_limit(char **env, struct userlim *u)
 	struct rlimit r;
 
 	if ((val = _get_env_val(env, u->var)) > -2L) {
-		getrlimit(u->resource, &r);
+		if (getrlimit(u->resource, &r) < 0)
+			error("getrlimit(%s,%ld): %m", u->var+6, val);
+
+		debug2("%s: max:%ld cur:%ld", u->var+6, 
+		       r.rlim_max, r.rlim_cur);
+
+		/* 
+		 * If resource limit is already set equal to value
+		 * no need to call setrlimit
+		 */
+		if (r.rlim_cur == (rlim_t) val)
+			return SLURM_SUCCESS;
 
 		r.rlim_cur = (val == -1L) ? RLIM_INFINITY : (rlim_t) val;
 
 		if ((retval = setrlimit(u->resource, &r)) < 0)
-			error("setrlimit(%s, %ld): %m", u->var+5, val);
+			error("setrlimit(%s,%ld): %m", u->var+6, r.rlim_cur);
 	}
 
 	return retval;
