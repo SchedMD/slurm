@@ -3332,6 +3332,7 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 	if (job_ptr == NULL)
 		return true;
 	if (return_code) {
+		error("Epilog error on %s, setting DOWN", node_name);
 		set_node_down(node_name, "Epilog error");
 	} else {
 		struct node_record *node_ptr = find_node_record(node_name);
