@@ -1052,6 +1052,11 @@ _update_node (int argc, char *argv[])
 					state_val = (uint16_t) j;
 					break;
 				}
+				if ((j == NODE_STATE_END) && 
+				    (strcasecmp ("drain", &argv[i][6]) == 0)) {
+					state_val = NODE_STATE_DRAINING;
+					break;
+				}
 				if (strcmp(node_state_string(j),"END") == 0) {
 					fprintf(stderr, "Invalid input: %s\n", 
 						argv[i]);
