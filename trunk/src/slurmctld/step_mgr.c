@@ -277,6 +277,9 @@ pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time)
 void 
 pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len) 
 {
+#ifdef HAVE_LIBELAN3
+	int len;
+#endif
 	char node_inx_ptr[BUF_SIZE];
 
 	if (dump_step_ptr->job_ptr)
@@ -323,7 +326,7 @@ step_create (struct step_specs *step_specs)
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 #ifdef HAVE_LIBELAN3
-	int first, last, i, node_id;
+	int first, last, i, node_id, nprocs;
 	bitstr_t *nodeset;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
