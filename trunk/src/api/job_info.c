@@ -106,7 +106,7 @@ make_time_str (time_t *time, char *string)
 	struct tm time_tm;
 
 	localtime_r (time, &time_tm);
-	sprintf ( string, "%d/%d,%d:%2.2d:%2.2d", (time_tm.tm_mon+1), time_tm.tm_mday, 
+	sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", (time_tm.tm_mon+1), time_tm.tm_mday, 
 		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
 }
 
