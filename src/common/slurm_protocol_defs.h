@@ -304,6 +304,7 @@ typedef struct reattach_tasks_request_msg {
 
 typedef struct reattach_tasks_response_msg {
 	char     *node_name;
+	char     *executable_name;
 	uint32_t  return_code;
 	uint32_t  srun_node_id;
 	uint32_t  ntasks;       /* number of tasks on this node     */
