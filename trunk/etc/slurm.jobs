@@ -1,21 +1,23 @@
-JobName=Job01		ReqNodes=lx[0021-0022] TotalNodes=2 TotalProcs=16
-JobName=FAIL_Partition	ReqNodes=lx[0021-0022] Partition=NOPART
-JobName=FAIL_TotalProcs	ReqNodes=lx[0021-0022] TotalProcs=600
-JobName=FAIL_TotalNodes	ReqNodes=lx[0021-0022] TotalNodes=10
-JobName=FAIL_PartMaxNod	ReqNodes=lx[0021-0022] TotalNodes=2 TotalProcs=160
-JobName=FAIL_MinMemory	ReqNodes=lx[0021-0022] MinRealMemory=9000
-JobName=FAIL_MinTmpDisk	ReqNodes=lx[0021-0022] MinTmpDisk=32000
-JobName=FAIL_Features	ReqNodes=lx[0021-0022] Features=SuperFast
-JobName=FAIL_NodeBusy	ReqNodes=lx[0022-0023]
-JobName=Job02		ReqNodes=lx[0401-0404],lx[0409-0416] Partition=batch Key=1234
-JobName=FAIL_ReqNodes	ReqNodes=lx[0021-0030]               Partition=batch Key=1234
-JobName=FAIL_NoKey	ReqNodes=lx[0401-0404],lx[0409-0416] Partition=batch
-JobName=FAIL_MinProcs	ReqNodes=lx[0401-0404] MinProcs=32   Partition=batch Key=1234
-JobName=Job03		ReqNodes=lx0031 Partition=class Groups=employee,students,teacher
-JobName=FAIL_Groups	ReqNodes=lx0031 Partition=class Groups=employee,teacher
-JobName=Job04		ReqNodes=lx0301,lx0310 Contiguous=YES Partition=batch Key=1234 
-JobName=FAIL_NoSpecs	Partition=class Groups=students
-JobName=Job05		ReqNodes=lx[8000-8002] TotalNodes=400 Partition=batch Key=1234
-JobName=Job06		TotalProcs=400  Partition=batch Key=1234
-JobName=Job06		TotalNodes=4   TotalProcs=400 Partition=batch Key=1234
-JobName=Job07		TotalNodes=600                Partition=batch Key=1234
+JobName=Job01		User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] TotalNodes=2 TotalProcs=16
+JobName=FAIL_Partition	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] Partition=NOPART
+JobName=FAIL_TotalProcs	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] TotalProcs=600
+JobName=FAIL_TotalNodes	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] TotalNodes=10
+JobName=FAIL_PartMaxNod	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] TotalNodes=2 TotalProcs=160
+JobName=FAIL_MinMemory	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] MinRealMemory=9000
+JobName=FAIL_MinTmpDisk	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] MinTmpDisk=32000
+JobName=FAIL_Features	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0022] Features=SuperFast
+JobName=FAIL_NodeBusy	User=1500 Script=/bin/hostname ReqNodes=lx[0022-0023]
+JobName=FAIL_User	          Script=/bin/hostname TotalNodes=600                Partition=batch Key=1234
+JobName=FAIL_Script	User=1500                      TotalNodes=600                Partition=batch Key=1234
+JobName=Job02		User=1500 Script=/bin/hostname ReqNodes=lx[0401-0404],lx[0409-0416] Partition=batch Key=1234
+JobName=FAIL_ReqNodes	User=1500 Script=/bin/hostname ReqNodes=lx[0021-0030]               Partition=batch Key=1234
+JobName=FAIL_NoKey	User=1500 Script=/bin/hostname ReqNodes=lx[0401-0404],lx[0409-0416] Partition=batch
+JobName=FAIL_MinProcs	User=1500 Script=/bin/hostname ReqNodes=lx[0401-0404] MinProcs=32   Partition=batch Key=1234
+JobName=Job03		User=1500 Script=/bin/hostname ReqNodes=lx0031 Partition=class Groups=employee,students,teacher
+JobName=FAIL_Groups	User=1500 Script=/bin/hostname ReqNodes=lx0031 Partition=class Groups=employee,teacher
+JobName=Job04		User=1500 Script=/bin/hostname ReqNodes=lx0301,lx0310 Contiguous=YES Partition=batch Key=1234 
+JobName=FAIL_NoSpecs	User=1500 Script=/bin/hostname Partition=class Groups=students
+JobName=Job05		User=1500 Script=/bin/hostname ReqNodes=lx[8000-8002] TotalNodes=400 Partition=batch Key=1234
+JobName=Job06		User=1500 Script=/bin/hostname TotalProcs=400  Partition=batch Key=1234
+JobName=Job06		User=1500 Script=/bin/hostname TotalNodes=4   TotalProcs=400 Partition=batch Key=1234
+JobName=Job07		User=1500 Script=/bin/hostname TotalNodes=600                Partition=batch Key=1234
