@@ -1,0 +1,77 @@
+SLURM message traffic summary
+
+Command(s):	Get job information, separate commands for 
+          	accounting, node, partition, job step and build info
+Client:   	squeue and scontrol commands, plus DPCS from API, any node in cluster
+Server: 	slurmctld
+Input:  	time-stamp, version
+Output: 	error code, version, time-stamp, record count, array of records
+Notes:  	
+
+
+Command(s):	Allocate resources, submit job, will job run inquiry
+Client:   	srun user command, plus DPCS from API, any node in cluster
+Server: 	slurmctld
+Input:  	user id, many job specs, version
+Output: 	error code, version, job_id, node list
+Notes:  	
+
+
+Command(s):	Cancel job or allocation
+Client:   	scancel user command, plus DPCS from API, any node in cluster
+Server: 	slurmctld
+Input:  	user id, job id, version
+Output: 	error code
+Notes:  	can only be run as user root or the user id for the job
+
+
+Command(s):	Reconfigure (tell slurmctld to re-read configuration)
+Client:   	scontrol administrator command, any node in cluster
+Server: 	slurmctld
+Input:  	user id (root), version
+Output: 	error code, version
+Notes:  	can only be run as user root
+
+
+Command(s):	Register node (slurmd starting)
+Client:   	slurmd daemon, any node in cluster
+Server: 	slurmctld
+Input:  	version, time stamp, processor count, memory size, temporary disk space
+Output: 	none
+Notes:  	
+
+
+Command(s):	Status node
+Client:   	slurmctld or backup slurmctld
+Server: 	slurmd or slurmctld (for backup check) daemon, any node in cluster
+Input:  	none
+Output: 	version, time stamp, processor count, memory size, temporary disk space
+Notes:  	
+
+
+Command(s):	Upload accounting information
+Client:   	slurmctld
+Server: 	slurmd daemon, any node in cluster
+Input:  	none
+Output: 	version, time stamp, collection of records with user id, memory use, 
+		CPU time used, CPU time allocated, etc.
+Notes:  	not needed for initial release
+
+
+Command(s):	Get job id from process id
+Client:   	DPCS API
+Server: 	slurmd daemon on the same node as DPCS API is executed
+Input:  	process id
+Output: 	SLURM job id
+Notes:  	until SLURM accounting is funcational, DPCS needs help figuring 
+		out what processes are associated with each job
+
+----TEMPLATE----
+Command(s):	
+Client:   	
+Server: 	
+Input:  	
+Output: 	
+Notes:  	
+
+
