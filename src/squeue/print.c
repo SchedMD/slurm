@@ -34,6 +34,7 @@
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/squeue/print.h"
 #include "src/squeue/squeue.h"
 
@@ -97,11 +98,8 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 	}
 
 	/* Sort the jobs */
-	if (params.sort == NULL) {
-		params.sort = xmalloc(6);
-		/* Partition, state, priority */
-		strcat(params.sort, "P,t,p");
-	}
+	if (params.sort == NULL)
+		params.sort = xstrdup("P,t,p"); /* Partition,state,priority */
 	for (i = strlen(params.sort); i >= 0; i--) {
 		if (params.sort[i] == ',')
 			continue;
@@ -154,10 +152,8 @@ int print_steps_array(job_step_info_t * steps, int size, List format)
 		}
 
 		/* Sort the job steps */
-		if (params.sort == NULL) {
-			params.sort = xmalloc(4);
-			strcat(params.sort, "P,i");	/* Partition, id */
-		}
+		if (params.sort == NULL)
+			params.sort = xstrdup("P,i");	/* Partition, id */
 		for (i = strlen(params.sort); i >= 0; i--) {
 			if (params.sort[i] == ',')
 				continue;
