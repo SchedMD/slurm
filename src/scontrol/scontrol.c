@@ -1449,7 +1449,7 @@ void
 _usage () {
 	printf ("\
 scontrol [<OPTION>] [<COMMAND>]                                            \n\
-    Valid <COMMAND> values are:                                            \n\
+    Valid <OPTION> values are:                                            \n\
      -h or --help: equivalent to \"help\" command                          \n\
      -o or --oneliner: equivalent to \"oneliner\" command                  \n\
      -q or --quiet: equivalent to \"quite\" command                        \n\
