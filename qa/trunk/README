@@ -115,6 +115,7 @@ test1.40   Test of stand-alone srun resource allocation (--uid and --no-shell
 test1.41   Validate SLURM debugger infrastructure (--debugger-test option).
 test1.42   Test of account number and job dependencies (--account and 
            --depedency options).
+test1.43   Test of slurm_job_will_run API, (srun --test-only option).
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
