@@ -35,7 +35,7 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-/* slurm_submit_job - load the supplied node information buffer if changed */
+/* slurm_submit_batch_job - load the supplied node information buffer if changed */
 int
 slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** slurm_alloc_msg )
 {
