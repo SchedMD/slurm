@@ -174,7 +174,7 @@ slurm_load_node (time_t update_time, struct node_buffer **node_buffer_ptr)
 		unpackstr_ptr (&node[i].name, &uint16_tmp, &buf_ptr, &buffer_size);
 		if (node[i].name == NULL)
 			node[i].name = "";
-		unpack32  (&node[i].node_state, &buf_ptr, &buffer_size);
+		unpack16  (&node[i].node_state, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].cpus, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].real_memory, &buf_ptr, &buffer_size);
 		unpack32  (&node[i].tmp_disk, &buf_ptr, &buffer_size);

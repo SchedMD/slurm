@@ -15,6 +15,7 @@
 #define PART_STRUCT_VERSION 1
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
+#define STATE_NO_RESPOND 0x8000
 
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
@@ -38,8 +39,7 @@ enum task_dist {
 };
 
 /* last entry must be STATE_END, keep in sync with node_state_string    	*/
-/* any value less than or equal to zero is down. if a node was in state 	*/
-/* STATE_BUSY and stops responding, its state becomes -(STATE_BUSY), etc.	*/
+/* if a node ceases to respond, its last state is ORed with STATE_NO_RESPOND	*/
 enum node_states {
 	STATE_DOWN,		/* node is not responding */
 	STATE_UNKNOWN,		/* node's initial state, unknown */
@@ -115,7 +115,7 @@ struct job_buffer {
 
 struct node_table {
 	char *name;		/* name of the node. a null name indicates defunct node */
-	uint32_t node_state;	/* state of the node, see node_states */
+	uint16_t node_state;	/* state of the node, see node_states */
 	uint32_t cpus;		/* count of processors running on the node */
 	uint32_t real_memory;	/* megabytes of real memory on the node */
 	uint32_t tmp_disk;	/* megabytes of total disk in TMP_FS */
@@ -137,9 +137,9 @@ struct part_table {
 	uint32_t max_nodes;	/* per job or INFINITE */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint16_t default_part;	/* 1 if if this is default partition */
+	uint16_t default_part;	/* 1 if this is default partition */
 	uint16_t key;		/* 1 if slurm distributed key is required for use  */
-	uint16_t shared;	/* 1 if >1 job can share a node, 2 if required */
+	uint16_t shared;	/* 1 if job can share nodes, 2 if job must share nodes */
 	uint16_t state_up;	/* 1 if state is up, 0 if down */
 	char *nodes;		/* comma delimited list names of nodes in partition */
 	int *node_inx;		/* list index pairs into node_table:
@@ -161,7 +161,7 @@ struct part_buffer {
  * output: job_id - node_list - list of allocated nodes
  *         returns 0 if no error, EINVAL if the request is invalid, 
  *			EAGAIN if the request can not be satisfied at present
- * NOTE: required specifications include: User=<uid> Script=<pathname>
+ * NOTE: required specifications include: User=<uid>
  *	optional specifications include: Contiguous=<YES|NO> 
  *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
  *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>
@@ -170,6 +170,7 @@ struct part_buffer {
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
+ * NOTE: the calling function must free the allocated storage at job_id[0]
  */
 extern int slurm_allocate (char *spec, char **node_list, char **job_id);
 
@@ -269,6 +270,7 @@ extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer
  *	job_id - place to store id of submitted job
  * output: job_id - the job's id
  *	returns 0 if no error, EINVAL if the request is invalid
+ * NOTE: the caller must free the storage at job_id[0]
  * NOTE: required specification include: Script=<script_path_name>
  *	User=<uid>
  * NOTE: optional specifications include: Contiguous=<YES|NO> 
@@ -277,9 +279,28 @@ extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer
  *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
  *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
- *	TotalProcs=<count>
+ *	TotalProcs=<count> Immediate=<YES|NO>
  */
 extern int slurm_submit (char *spec, char **job_id);
+
+/*
+ * slurm_will_run - determine if a job would execute immediately 
+ *	if submitted. 
+ * input: spec - specification of the job's constraints
+ *	job_id - place to store id of submitted job
+ * output: returns 0 if job would run now, EINVAL if the request 
+ *		would never run, EAGAIN if job would run later
+ * NOTE: required specification include: Script=<script_path_name>
+ *	User=<uid>
+ * NOTE: optional specifications include: Contiguous=<YES|NO> 
+ *	Features=<features> Groups=<groups>
+ *	Key=<key> MinProcs=<count> 
+ *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
+ *	Priority=<integer> ReqNodes=<node_list>
+ *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
+ *	TotalProcs=<count>
+ */
+extern int slurm_will_run (char *spec, char **job_id);
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf format 

@@ -1002,15 +1002,10 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 int 
 pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len) 
 {
-	int state;
 	char *partition = NULL;
 
-	state = dump_node_ptr->node_state;
-	if (state < 0)
-		state = STATE_DOWN;
-
 	packstr (dump_node_ptr->name, buf_ptr, buf_len);
-	pack32  (state, buf_ptr, buf_len);
+	pack16  (dump_node_ptr->node_state, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->real_memory, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
@@ -1171,22 +1166,27 @@ update_node (char *node_names, char *spec)
 		}
 
 		if (state_val != NO_VAL) {
-			if ((state_val == STATE_DOWN) &&
-			    (node_record_point->node_state != STATE_UNKNOWN))
-				node_record_point->node_state = 
-					-(node_record_point->node_state);
-			else
-				node_record_point->node_state = state_val;
-			if (state_val != STATE_IDLE)
-				bit_clear (idle_node_bitmap,
-					      (int) (node_record_point - 
-						node_record_table_ptr));
-			if (state_val == STATE_DOWN)
+			if (state_val == STATE_DOWN) {
 				bit_clear (up_node_bitmap,
 					      (int) (node_record_point - 
 						node_record_table_ptr));
+				bit_clear (idle_node_bitmap,
+					      (int) (node_record_point - 
+						node_record_table_ptr));
+			}
+			else if (state_val != STATE_IDLE)
+				bit_clear (idle_node_bitmap,
+					      (int) (node_record_point - 
+						node_record_table_ptr));
+			else	/* (state_val == STATE_IDLE) */
+				bit_set (idle_node_bitmap,
+					      (int) (node_record_point - 
+						node_record_table_ptr));
+
+			node_record_point->node_state = state_val;
 			info ("update_node: node %s state set to %s",
-				&node_list[i*MAX_NAME_LEN], node_state_string[state_val]);
+				&node_list[i*MAX_NAME_LEN], 
+				node_state_string[state_val]);
 		}
 	}
 
@@ -1250,11 +1250,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	else {
 		info ("validate_node_specs: node %s has registered", node_name);
+		node_ptr->node_state &= (uint16_t) (~STATE_NO_RESPOND);
 		if ((node_ptr->node_state == STATE_DOWN) ||
 		    (node_ptr->node_state == STATE_UNKNOWN))
 			node_ptr->node_state = STATE_IDLE;
-		if (node_ptr->node_state < 0)
-			node_ptr->node_state = -(node_ptr->node_state);
 		bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
 

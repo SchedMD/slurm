@@ -366,7 +366,7 @@ slurmctld_req (int sockfd) {
 	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
 		time_stamp = NULL;
-		error_code = job_create(&in_line[9], &job_id_ptr);	/* skip "JobSubmit" */
+		error_code = job_create(&in_line[9], &job_id_ptr, 0);	/* skip "JobSubmit" */
 		if (error_code)
 			info ("slurmctld_req: job_submit error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));

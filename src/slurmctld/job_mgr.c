@@ -291,7 +291,7 @@ job_allocate (char *job_specs, char **new_job_id, char **node_list)
 
 	new_job_id[0] = node_list[0] = NULL;
 
-	error_code = job_create (job_specs, new_job_id);
+	error_code = job_create (job_specs, new_job_id, 1);
 	if (error_code)
 		return error_code;
 	job_ptr = find_job_record (new_job_id[0]);
@@ -361,13 +361,14 @@ job_cancel (char * job_id)
  *	new_job_id - location for storing new job's id
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
+ *	allocate - if set, job allocation only (no script required)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
 int
-job_create (char *job_specs, char **new_job_id)
+job_create (char *job_specs, char **new_job_id, int allocate)
 {
 	char *req_features, *req_node_list, *job_name, *req_group;
 	char *req_partition, *script, *job_id;
@@ -408,7 +409,7 @@ job_create (char *job_specs, char **new_job_id)
 		error_code = EINVAL;
 		goto cleanup;
 	}
-	if (script == NULL) {
+	if (allocate == 0 && script == NULL) {
 		info ("job_create: job failed to specify Script");
 		error_code = EINVAL;
 		goto cleanup;
@@ -1084,7 +1085,6 @@ reset_job_bitmaps ()
 
 	list_iterator_destroy (job_record_iterator);
 	last_job_update = time (NULL);
-	return 0;
 }
 
 
