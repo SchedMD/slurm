@@ -17,8 +17,8 @@ select_bluegene_la_SOURCES = select_bluegene.c \
 				bluegene.c bluegene.h \
 				state_test.c state_test.h \
 				partition_sys.c partition_sys.h
+
 select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
-if HAVE_AIX
-  select_bluegene_la_LIBADD  = $(top_builddir)/src/common/libcommon.la
-endif
+select_bluegene_la_LIBADD  = $(top_builddir)/src/partition_allocator/libpartition_allocator.la 
+
