@@ -149,6 +149,11 @@ slurm_auth_create( void *argv[] )
 	munge_ctx_t ctx = munge_ctx_create();
 	SigFunc *ohandler;
 
+	if (ctx == NULL) {
+		error("munge_ctx_create failure");
+		return NULL;
+	}
+
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
 	cred->m_str    = NULL;
@@ -434,12 +439,20 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 	int retry = 2;
 	sigset_t set, oset;
 	munge_err_t e;
-	munge_ctx_t ctx = munge_ctx_create();
+	munge_ctx_t ctx;
 
 	if ((c == NULL) || (m == NULL)) 
 		return SLURM_ERROR;
 
 	xassert(c->magic == MUNGE_MAGIC);
+
+	if (c->verified) 
+		return SLURM_SUCCESS;
+
+	if ((ctx = munge_ctx_create()) == NULL) {
+		error("munge_ctx_create failure");
+		return SLURM_ERROR;
+	}
 
 	/*
 	 *  Block all signals to allow munge_decode() to proceed
@@ -451,9 +464,6 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 	sigdelset(&set, SIGILL);
 	if (pthread_sigmask(SIG_SETMASK, &set, &oset) < 0) 
 		error("pthread_sigmask: %m");
-
-	if (c->verified) 
-		return SLURM_SUCCESS;
 
     again:
 	if ((e = munge_decode(m, ctx, &c->buf, &c->len, &c->uid, &c->gid))) {
@@ -537,7 +547,7 @@ cred_info_create(munge_ctx_t ctx)
 
 	e = munge_ctx_get(ctx, MUNGE_OPT_ZIP_TYPE, &mi->zip);
 	if (e != EMUNGE_SUCCESS)
-		error ("auth_munge: Unable to retrieve mac type: %s",
+		error ("auth_munge: Unable to retrieve zip type: %s",
 		       munge_ctx_strerror(ctx));
 
 	return mi;
