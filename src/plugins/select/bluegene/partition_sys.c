@@ -792,15 +792,9 @@ void rotate_part(const uint16_t* config, uint16_t** new_config)
 	if (config == NULL)
 		return;
 
-	if (*new_config != NULL){
-		xfree(*new_config);
-	}
-
-	(*new_config) = (uint16_t*) calloc(SYSTEM_DIMENSIONS, sizeof(uint16_t));
-	if (!(*new_config)){
-		// error("error: rotate_part: not enough memory for new array");
-		return;
-	}
+	xfree(*new_config);
+	(*new_config) = (uint16_t*) xmalloc(SYSTEM_DIMENSIONS * 
+		sizeof(uint16_t));
 	
 	if (config[0] > config[1]){
 		if (config[1] > config[2]){
