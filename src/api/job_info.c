@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  job_info.c - get the job records of slurm
+ *  job_info.c - get/print the job state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,15 +35,15 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* print the entire job_info_msg */
+/* slurm_print_job_info_msg - output information about all Slurm jobs */
 void 
 slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 {
 	int i;
 	job_table_t * job_ptr = job_info_msg_ptr -> job_array ;
 
-	fprintf( out, "Jobs updated at %d, record count %d\n",
-		job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
+	fprintf( out, "Jobs updated at %ld, record count %d\n",
+		(long) job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
 
 	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
 	{
@@ -51,11 +51,12 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 	}
 }
 
-/* print an individual job_table entry */
+/* slurm_print_job_table - output information about a specific Slurm job */
 void
 slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 {
 	int j;
+
 	fprintf ( out, "JobId=%u UserId=%u ", job_ptr->job_id, job_ptr->user_id);
 	fprintf ( out, "JobState=%s TimeLimit=%u ", job_state_string(job_ptr->job_state), job_ptr->time_limit);
 	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
@@ -91,7 +92,7 @@ slurm_print_job_table ( FILE* out, job_table_t * job_ptr )
 	fprintf( out, "\n\n");
 }
 
-/* slurm_load_job - load the supplied job information buffer if changed */
+/* slurm_load_jobs - issue RPC to get Slurm job state information if changed since update_time */
 int
 slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 {

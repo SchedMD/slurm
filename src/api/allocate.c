@@ -36,7 +36,8 @@
 
 /* slurm_allocate_resources - allocated resources for a job request */
 int
-slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** slurm_alloc_msg, int immediate )
+slurm_allocate_resources (job_desc_msg_t * job_desc_msg , 
+			resource_allocation_response_msg_t ** slurm_alloc_msg, int immediate )
 {
 	int msg_size ;
 	int rc ;
@@ -102,6 +103,7 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_re
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
+/* slurm_job_will_run - determine if a job would execute if submitted right now */
 int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** slurm_alloc_msg)
 {
 	int msg_size ;

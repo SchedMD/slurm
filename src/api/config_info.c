@@ -1,5 +1,5 @@
 /****************************************************************************\
- * config_info.c - get the build information of slurm
+ *  config_info.c - get/print the system configuration information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -32,10 +32,12 @@
 #include <stdio.h>
 #include <src/common/slurm_protocol_api.h>
 
+/* slurm_print_ctl_conf - output the contents of Slurm's configuration message */
 void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
+
 	fprintf(out, "Configuration updated at %ld\n", (time_t)slurm_ctl_conf_ptr->last_update);
 	fprintf(out, "BackupController  = %s\n", slurm_ctl_conf_ptr->backup_controller);
 	fprintf(out, "ControlMachine    = %s\n", slurm_ctl_conf_ptr->control_machine);
@@ -53,6 +55,7 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 	fprintf(out, "TmpFS             = %s\n", slurm_ctl_conf_ptr->tmp_fs);
 }
 
+/* slurm_load_ctl_conf - issue RPC to get Slurm configuration information if changed since update_time */
 int
 slurm_load_ctl_conf (time_t update_time, slurm_ctl_conf_t **slurm_ctl_conf_ptr )
 {

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  node_info.c - get the node records of slurm
+ *  node_info.c - get/print the node state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -41,7 +41,7 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* print the entire node_info_msg */
+/* slurm_print_node_info_msg - output information about all Slurm nodes */
 void 
 slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 {
@@ -58,7 +58,7 @@ slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 }
 
 
-/* print an individual node_table entry */
+/* slurm_print_node_table - output information about a specific Slurm node */
 void
 slurm_print_node_table ( FILE* out, node_table_t * node_ptr )
 {
@@ -71,7 +71,7 @@ slurm_print_node_table ( FILE* out, node_table_t * node_ptr )
 }
 
 
-/* slurm_load_node - load the supplied node information buffer if changed */
+/* slurm_load_jobs - issue RPC to get Slurm node state information if changed since update_time */
 int
 slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 {

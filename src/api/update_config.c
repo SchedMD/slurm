@@ -1,5 +1,5 @@
 /****************************************************************************\
- * update_config.c - request that slurmctld update its configuration
+ *  update_config.c - request that slurmctld update its configuration
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,21 +36,21 @@
 
 int slurm_update (void * data, slurm_msg_type_t msg_type);
 
-/* slurm_update_job - update a job's configuration per request */
+/* slurm_update_job - issue RPC to a job's configuration per request */
 int 
 slurm_update_job ( job_desc_msg_t * job_msg ) 
 {
 	return slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB);
 }
 
-/* slurm_update_node - update slurmctld node configuration per request */
+/* slurm_update_node - issue RPC to a node's configuration per request */
 int 
 slurm_update_node ( update_node_msg_t * node_msg ) 
 {
 	return slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
 }
 
-/* slurm_update_partition - update slurmctld partition configuration per request */
+/* slurm_update_partition - issue RPC to a partition's configuration per request */
 int 
 slurm_update_partition ( update_part_msg_t * part_msg ) 
 {
@@ -58,7 +58,7 @@ slurm_update_partition ( update_part_msg_t * part_msg )
 }
 
 
-/* slurm_update - perform RPC for all update requests */
+/* slurm_update - issue RPC for all update requests */
 int 
 slurm_update (void * data, slurm_msg_type_t msg_type)
 {
