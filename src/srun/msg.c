@@ -1,3 +1,29 @@
+/****************************************************************************\
+ *  msg.c - 
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <grondona@llnl.gov>, et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #include <errno.h>
 #include <pthread.h>
 #include <sys/poll.h>
@@ -10,8 +36,8 @@
 #include <src/common/log.h>
 #include <src/common/xassert.h>
 
-#include "job.h"
-#include "opt.h"
+#include <src/srun/job.h>
+#include <src/srun/opt.h>
 
 static int tasks_exited = 0;
 
@@ -36,7 +62,7 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 	launch_tasks_response_msg_t *msg = 
 		(launch_tasks_response_msg_t *) resp->data;
 
-	debug2("recieved launch resp from %s nodeid=%d", msg->node_name,
+	debug2("received launch resp from %s nodeid=%d", msg->node_name,
 			msg->srun_node_id);
 	
 	if (msg->return_code != 0)  {
@@ -84,7 +110,7 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			debug("recvd reattach response\n");
 			break;
 		default:
-			error("recieved spurious message type: %d\n",
+			error("received spurious message type: %d\n",
 					msg->msg_type);
 			break;
 	}
