@@ -31,6 +31,16 @@ u_int32_t slurm_sched_initial_priority( u_int32_t max_prio );
  */
 void slurm_sched_job_is_pending( void );
 
+/* 
+ * Return any plugin-specific error number
+ */
+int slurm_sched_p_get_errno( void );
+
+/*
+ * Return any plugin-specific error description
+ */
+char *slurm_sched_p_strerror( int errnum );
+
 /*
  **************************************************************************
  *                              U P C A L L S                             *

@@ -93,9 +93,9 @@ integer values should be used when appropriate. It is desirable that these value
 be mapped into the range ESLURM_SWITCH_MIN and ESLURM_SWITCH_MAX 
 as defined in <span class="commandline">slurm/slurm_errno.h</span>.
 The error number should be returned by the function
-<a href="#get_errno"><span class="commandline">switch_get_errno()</span></a>
+<a href="#get_errno"><span class="commandline">switch_p_get_errno()</span></a>
 and this error number can be converted to an appropriate string description using the
-<a href="#strerror"><span class="commandline">switch_strerror()</span></a>
+<a href="#strerror"><span class="commandline">switch_p_strerror()</span></a>
 function described below.</p>
 
 <p>These values must not be used as return values in integer-valued functions 
@@ -353,14 +353,14 @@ to indicate the reason for failure.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h4>Error Handling Functions</h4>
-<a name="get_errno"><p class="commandline">int switch_get_errno (void);</p></a>
+<a name="get_errno"><p class="commandline">int switch_p_get_errno (void);</p></a>
 <p style="margin-left:.2in"><b>Description</b>: Return the number of a switch
 specific error.</p>
 <p style="margin-left:.2in"><b>Arguments</b>: None</p>
 <p style="margin-left:.2in"><b>Returns</b>: Error number for the last failure encountered by
 the switch plugin.</p>
 
-<p class="commandline"><a name="strerror">char *switch_strerror(int errnum);</a></p>
+<p class="commandline"><a name="strerror">char *switch_p_strerror(int errnum);</a></p>
 <p style="margin-left:.2in"><b>Description</b>: Return a string description of a switch 
 specific error code.</p>
 <p style="margin-left:.2in"><b>Arguments</b>:

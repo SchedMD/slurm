@@ -51,4 +51,8 @@ extern int g_slurm_jobcomp_write(uint32_t job_id, uint32_t user_id, char *job_na
 /* return error code */
 extern int g_slurm_jobcomp_errno(void);
 
+/* convert job completion logger specific error code to a string */
+extern char *g_slurm_jobcomp_strerror(int errnum);
+
 #endif /*__SLURM_JOBCOMP_H__*/
+

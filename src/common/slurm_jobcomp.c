@@ -50,7 +50,9 @@ typedef struct slurm_jobcomp_ops {
 				char *job_state, char *partition, uint32_t time_limit,
 				time_t start_time, time_t end_time, char *node_list);
 	int          (*sa_errno)  ( void );
+	char *       (*job_strerror)  ( int errno );
 } slurm_jobcomp_ops_t;
+
 
 /*
  * A global job completion context.  "Global" in the sense that there's
@@ -129,7 +131,8 @@ _slurm_jobcomp_get_ops( slurm_jobcomp_context_t c )
 	static const char *syms[] = {
 		"slurm_jobcomp_set_location",
 		"slurm_jobcomp_log_record",
-		"slurm_jobcomp_get_errno"
+		"slurm_jobcomp_get_errno",
+		"slurm_jobcomp_strerror"
 	};
         int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -238,6 +241,20 @@ g_slurm_jobcomp_errno(void)
 		error ("slurm_jobcomp plugin context not initialized");
 		retval = ENOENT;
 	}
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
+
+extern char *
+g_slurm_jobcomp_strerror(int errnum)
+{
+	char *retval = NULL;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.job_strerror))(errnum);
+	else
+		error ("slurm_jobcomp plugin context not initialized");
 	slurm_mutex_unlock( &context_lock );
 	return retval;
 }

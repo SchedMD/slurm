@@ -34,6 +34,9 @@ const char		plugin_name[]	= "SLURM Built-in Scheduler plugin";
 const char		plugin_type[]	= "sched/builtin";
 const uint32_t		plugin_version	= 90;
 
+/* A plugin-global errno. */
+static int plugin_errno = SLURM_SUCCESS;
+
 /**************************************************************************/
 /*  TAG(                              init                              ) */
 /**************************************************************************/
@@ -81,5 +84,21 @@ slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 void slurm_sched_plugin_job_is_pending( void )
 {
 	/* Empty. */
+}
+
+/**************************************************************************/
+/* TAG(              slurm_sched_get_errno                              ) */
+/**************************************************************************/
+int slurm_sched_get_errno( void )
+{
+	return plugin_errno;
+}
+
+/**************************************************************************/
+/* TAG(              slurm_sched_strerror                               ) */
+/**************************************************************************/
+char *slurm_sched_strerror( int errnum )
+{
+	return NULL;
 }
 

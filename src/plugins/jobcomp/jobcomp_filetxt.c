@@ -52,6 +52,17 @@
 
 #define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s"\
 		" TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s\n"
+ 
+/* Type for error string table entries */
+typedef struct {
+	int xe_number;
+	char *xe_message;
+} slurm_errtab_t;
+
+static slurm_errtab_t slurm_errtab[] = {
+	{0, "No error"},
+	{-1, "Unspecified error"}
+};
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -219,9 +230,33 @@ int slurm_jobcomp_log_record ( uint32_t job_id, uint32_t user_id,
 	return rc;
 }
 
-int slurm_jobcomp_get_errno( void )
+extern int slurm_jobcomp_get_errno( void )
 {
 	return plugin_errno;
+}
+
+/* 
+ * Linear search through table of errno values and strings,
+ * returns NULL on error, string on success.
+ */
+static char *_lookup_slurm_api_errtab(int errnum)
+{
+	char *res = NULL;
+	int i;
+
+	for (i = 0; i < sizeof(slurm_errtab) / sizeof(slurm_errtab_t); i++) {
+		if (slurm_errtab[i].xe_number == errnum) {
+			res = slurm_errtab[i].xe_message;
+			break;
+		}
+	}
+	return res;
+}
+
+extern char *slurm_jobcomp_strerror( int errnum )
+{
+	char *res = _lookup_slurm_api_errtab(errnum);
+	return (res ? res : strerror(errnum));
 }
 
 int fini ( void )

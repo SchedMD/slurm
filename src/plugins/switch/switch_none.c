@@ -97,11 +97,6 @@ int switch_p_libstate_restore ( char * dir_name )
 	return SLURM_SUCCESS;
 }
 
-bool switch_p_no_frag ( void )
-{
-	return false;
-}
-
 /*
  * switch functions for job step specific credential
  */
@@ -197,5 +192,23 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 			uint32_t nprocs, uint32_t rank )
 {
 	return SLURM_SUCCESS;
+}
+
+/*
+ * switch functions for other purposes
+ */
+bool switch_p_no_frag ( void )
+{
+	return false;
+}
+
+extern int switch_p_get_errno(void)
+{
+	return SLURM_SUCCESS;
+}
+
+extern char *switch_p_strerror(int errnum)
+{
+	return NULL;
 }
 

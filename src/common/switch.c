@@ -75,6 +75,8 @@ typedef struct slurm_switch_ops {
 						char ***env, uint32_t nodeid, 
 						uint32_t procid, uint32_t nnodes, 
 						uint32_t nprocs, uint32_t rank);
+	char *	     (*switch_strerror)   ( int errnum );
+	int          (*switch_errno)      ( void );
 } slurm_switch_ops_t;
 
 struct slurm_switch_context {
@@ -164,7 +166,9 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_job_init",
 		"switch_p_job_fini",
 		"switch_p_job_postfini",
-		"switch_p_job_attach"
+		"switch_p_job_attach",
+		"switch_p_strerror",
+		"switch_p_get_errno"
 	};
 	int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -387,4 +391,20 @@ extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
 
 	return (*(g_context->ops.job_attach)) (jobinfo, env,
 		nodeid, procid, nnodes, nprocs, gid);
+}
+
+extern int switch_get_errno(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.switch_errno))( );
+}
+
+extern char *switch_strerror(int errnum)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.switch_strerror))( errnum );
 }
