@@ -9,22 +9,21 @@
 #  include <config.h>
 #endif
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
+#include <string.h>
 
-#include "list.h"
 #include "slurm.h"
 #include "slurmlib.h"
 
 #define BUF_SIZE 	1024
-#define NO_VAL	 	(-99)
 #define SEPCHARS 	" \n\t"
 
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* location of the node records */
 char *node_state_string[] =
-	{ "DOWN", "UNKNOWN", "IDLE", "STAGE_IN", "BUSY", "STAGE_OUT",
-"DRAINED", "DRAINING", "END" };
+	{ "DOWN", "UNKNOWN", "IDLE", "BUSY", "DRAINED", "DRAINING", "END" };
 int *hash_table = NULL;		/* table of hashed indicies into node_record */
 struct config_record default_config_record;
 struct node_record default_node_record;
@@ -38,15 +37,16 @@ bitstr_t *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
 int delete_config_record ();
 void dump_hash ();
 int hash_index (char *name);
-void rehash ();
 void split_node_name (char *name, char *prefix, char *suffix, int *index,
 		      int *digits);
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
+int 
 main (int argc, char *argv[]) 
 {
-	int error_code, node_count, i, total_procs;
+	int error_code, node_count, i;
+	uint32_t total_procs;
 	char *out_line;
 	bitstr_t *map1, *map2, *map3;
 	struct config_record *config_ptr;
@@ -141,17 +141,26 @@ main (int argc, char *argv[])
 	if (strcmp (out_line, "lx[01-02],lx04") != 0)
 		printf ("ERROR: bitmap2node_name results bad %s vs %s\n",
 			out_line, "lx[01-02],lx04");
-	build_node_list (map3, DIST_CYCLE, 6, &node_list, &total_procs);
-	printf("build_node_list: 6 procs/task over lx[01-02],lx04 has %d procs over %s\n",
+	build_node_list (map3, &node_list, &total_procs);
+	printf("build_node_list: lx[01-02],lx04 has %d procs over %s\n",
 		 total_procs, node_list);
 	bit_free (map3);
 	xfree (out_line);
 	xfree (node_list);
 
-	update_time = (time_t) 0;
 	error_code = validate_node_specs ("lx01", 12, 345, 67);
 	if (error_code)
 		printf ("ERROR: validate_node_specs error1\n");
+
+	printf("dumping node info\n");
+	update_time = (time_t) 0;
+	error_code = pack_all_node (&dump, &dump_size, &update_time);
+	if (error_code)
+		printf ("ERROR: pack_all_node error %d\n", error_code);
+	if (dump)
+		xfree(dump);
+
+	update_time = (time_t) 0;
 	error_code = dump_all_node (&dump, &dump_size, &update_time);
 	if (error_code)
 		printf ("ERROR: dump_all_node error %d\n", error_code);
@@ -199,7 +208,7 @@ main (int argc, char *argv[])
 
 /*
  * bitmap2node_name - given a bitmap, build a list of comma separated node names.
- *	names may include regular expressions
+ *	names may include regular expressions (e.g. "lx[01-10]")
  * input: bitmap - bitmap pointer
  *        node_list - place to put node list
  * output: node_list - set to node list or NULL on error 
@@ -210,13 +219,11 @@ main (int argc, char *argv[])
 int 
 bitmap2node_name (bitstr_t *bitmap, char **node_list) 
 {
-	int error_code, node_list_size, i;
-	struct node_record *node_ptr;
+	int node_list_size, i;
 	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
 	char format[MAX_NAME_LEN], temp[MAX_NAME_LEN];
 	char last_prefix[MAX_NAME_LEN], last_suffix[MAX_NAME_LEN];
-	int first_index, last_index, index, digits;
-	unsigned mask;
+	int first_index = 0, last_index = 0, index, digits;
 
 	node_list[0] = NULL;
 	node_list_size = 0;
@@ -304,11 +311,10 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 
 
 /*
- * build_node_list - build a node_list for a job laying out the actual
+ * build_node_list - build a node_list for a job including processor 
+  *	count on the node (e.g. "lx01[4],lx02[4],...")
  *	task distributions on the nodes
  * input: bitmap - bitmap of nodes to use
- *	dist - distribution of tasks, BLOCK or CYCLE
- *	procs_per_task - how many processor each task will consume
  *	node_list - place to store node list
  *	total_procs - place to store count of total processors allocated
  * output: node_list - comma separated list of nodes on which the tasks 
@@ -318,55 +324,37 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
  * NOTE: the storage at node_list must be xfreed by the caller
  */
 void 
-build_node_list (bitstr_t *bitmap, enum task_dist dist, 
-		int procs_per_task, char **node_list, int *total_procs)
+build_node_list (bitstr_t *bitmap, char **node_list, uint32_t *total_procs)
 {
-	int i, j, node_list_size, max_procs, min_procs;
-	int node_proc_count, sum_procs;
+	int i, node_list_size;
+	int sum_procs;
+	char tmp_str[MAX_NAME_LEN+10];
 
 	*total_procs = 0;
 	node_list[0] = NULL;
 	node_list_size = 0;
 	if (bitmap == NULL)
 		fatal ("build_node_list: bitmap is NULL");
-	if (procs_per_task < 0)
-		fatal ("build_node_list: procs_per_task invalid (%d)", 
-			procs_per_task);
 
 	node_list[0] = xmalloc (BUF_SIZE);
 	strcpy (node_list[0], "");
 
 	sum_procs = 0;
-	max_procs = procs_per_task;
-	for (min_procs = procs_per_task; min_procs <= max_procs; 
-	     min_procs+= procs_per_task) {
- 		for (i = 0; i < node_record_count; i++) {
-			if (bit_test (bitmap, i) != 1)
-				continue;
-			node_proc_count = node_record_table_ptr[i].cpus;
-			if (node_proc_count < min_procs) 
-				continue;
-			if (min_procs == procs_per_task)
-				sum_procs += node_proc_count;
-			if (node_proc_count > max_procs)
-				max_procs = node_proc_count;
-
-			if (node_list_size <
-			    (strlen (node_list[0]) + 
-				(MAX_NAME_LEN+1) * node_proc_count)) {
-				node_list_size += BUF_SIZE;
-				xrealloc (node_list[0], node_list_size);
-			}
-			for (j = 0; j < node_proc_count; j += procs_per_task) {
-				if (strlen (node_list[0]) > 0)
-					strcat (node_list[0], ",");
-				strcat (node_list[0], node_record_table_ptr[i].name);
-				if (dist == DIST_CYCLE)
-					break;
-			}
+ 	for (i = 0; i < node_record_count; i++) {
+		if (bit_test (bitmap, i) != 1)
+			continue;
+		sprintf (tmp_str, "%s[%d]", 
+			node_record_table_ptr[i].name,
+			node_record_table_ptr[i].cpus);
+		if (node_list_size <
+		    (strlen (node_list[0]) + (MAX_NAME_LEN+10))) {
+			node_list_size += BUF_SIZE;
+			xrealloc (node_list[0], node_list_size);
 		}
-		if (dist == DIST_BLOCK)
-			break;
+		if (sum_procs > 0)
+			strcat (node_list[0], ",");
+		strcat (node_list[0], node_record_table_ptr[i].name);
+		sum_procs += node_record_table_ptr[i].cpus;
 	}
 	*total_procs = sum_procs;
 	xrealloc (node_list[0], strlen (node_list[0]) + 1);
@@ -538,7 +526,9 @@ dump_hash ()
 
 
 /* 
- * dump_all_node - dump all configuration and node information to a buffer
+ * dump_all_node - dump all configuration and node information in text format
+ *	to a buffer, the data format will be the same as that of a configuration 
+ *	file (and can be used as such)
  * input: buffer_ptr - location into which a pointer to the data is to be stored.
  *                     the data buffer is actually allocated by dump_node and the 
  *                     calling function must xfree the storage.
@@ -556,8 +546,8 @@ int
 dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	char *buffer;
-	int buffer_offset, buffer_allocated, error_code, i, inx;
-	char out_line[BUF_SIZE], *feature, *partition;
+	int buffer_offset, buffer_allocated, error_code, inx;
+	char out_line[BUF_SIZE];
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -578,7 +568,7 @@ dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	for (inx = 0; inx < node_record_count; inx++) {
 		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
-			fatal ("dump_node: data integrity is bad");
+			fatal ("dump_all_node: data integrity is bad");
 
 		error_code = dump_node(&node_record_table_ptr[inx], out_line, BUF_SIZE);
 		if (error_code != 0) continue;
@@ -603,7 +593,9 @@ dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 
 
 /* 
- * dump_node - dump all configuration information about a specific node to a buffer
+ * dump_node - dump all configuration information about a specific node in text format
+ *	to a buffer, the data format will be the same as that of a configuration 
+ *	file (and can be used as such)
  * input:  dump_node_ptr - pointer to node for which information is requested
  *         out_line - buffer for node information 
  *         out_line_size - byte size of out_line
@@ -662,7 +654,6 @@ dump_node (struct node_record *dump_node_ptr, char *out_line, int out_line_size)
 struct node_record * 
 find_node_record (char *name) 
 {
-	struct node_record *node_record_point;	/* pointer to node_record */
 	int i;
 
 	/* try to find in hash table first */
@@ -1011,6 +1002,125 @@ node_unlock ()
 
 
 /* 
+ * pack_all_node - dump all configuration and node information for all nodes in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the data buffer is actually allocated by dump_node and the 
+ *                     calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: node_record_table_ptr - pointer to global node table
+ * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
+ */
+int 
+pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+{
+	int buf_len, buffer_allocated, buffer_offset = 0, error_code, inx;
+	char *buffer;
+	void *buf_ptr;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+	if (*update_time == last_node_update)
+		return 0;
+
+	buffer_allocated = (BUF_SIZE*16);
+	buffer = xmalloc(buffer_allocated);
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
+
+	/* write haeader: version and time */
+	pack32  ((uint32_t) NODE_STRUCT_VERSION, &buf_ptr, &buf_len);
+	pack32  ((uint32_t) last_node_update, &buf_ptr, &buf_len);
+
+	/* write node records */
+	for (inx = 0; inx < node_record_count; inx++) {
+		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
+		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
+			fatal ("pack_all_node: data integrity is bad");
+
+		error_code = pack_node(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
+		if (error_code != 0) continue;
+		if (buf_len > BUF_SIZE) 
+			continue;
+		buffer_allocated += (BUF_SIZE*16);
+		buf_len += (BUF_SIZE*16);
+		buffer_offset = (char *)buf_ptr - buffer;
+		xrealloc(buffer, buffer_allocated);
+		buf_ptr = buffer + buffer_offset;
+	}
+
+	if (buffer)
+		xrealloc (buffer, buffer_offset);
+
+	buffer_ptr[0] = buffer;
+	*buffer_size = buffer_offset;
+	*update_time = last_node_update;
+	return 0;
+}
+
+
+/* 
+ * pack_node - dump all configuration information about a specific node in 
+ *	machine independent form (for network transmission)
+ * input:  dump_node_ptr - pointer to node for which information is requested
+ *	buf_ptr - buffer for node information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if out_line buffer too small
+ * NOTE: if you make any changes here be sure to increment the value of NODE_STRUCT_VERSION
+ *	and make the corresponding changes to load_node_config in api/node_info.c
+ */
+int 
+pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len) 
+{
+	int state;
+	char *partition = NULL;
+	uint32_t feature_size, name_size, partition_size;
+
+	state = dump_node_ptr->node_state;
+	if (state < 0)
+		state = STATE_DOWN;
+	name_size = strlen(dump_node_ptr->name) + 1;
+
+	if (dump_node_ptr->config_ptr->feature)
+		feature_size = strlen(dump_node_ptr->config_ptr->feature) + 1;
+	else
+		feature_size = 0;
+
+	if (dump_node_ptr->partition_ptr) {
+		partition = dump_node_ptr->partition_ptr->name;
+		partition_size = strlen(dump_node_ptr->partition_ptr->name) + 1;
+	}
+	else
+		partition_size = 0;
+
+	if (name_size + feature_size + partition_size + 40 > *buf_len) {
+		error ("pack_node: buffer too small for node %s", dump_node_ptr->name);
+		return 1;
+	}
+
+	packstr (dump_node_ptr->name, name_size, buf_ptr, buf_len);
+	pack32  (state, buf_ptr, buf_len);
+	pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
+	pack32  (dump_node_ptr->real_memory, buf_ptr, buf_len);
+	pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
+	pack32  (dump_node_ptr->config_ptr->weight, buf_ptr, buf_len);
+	packstr (dump_node_ptr->config_ptr->feature, feature_size, 
+		 buf_ptr, buf_len);
+	packstr (partition, partition_size, buf_ptr, buf_len);
+
+	return 0;
+}
+
+
+/* 
  * rehash - build a hash table of the node_record entries. this is a large hash table 
  * to permit the immediate finding of a record based only upon its name without regards 
  * to the number. there should be no need for a search. the algorithm is optimized for 
@@ -1024,7 +1134,6 @@ node_unlock ()
 void 
 rehash () 
 {
-	struct node_record *node_record_point;	/* pointer to node_record */
 	int i, inx;
 
 	xrealloc (hash_table, (sizeof (int) * node_record_count));
@@ -1192,7 +1301,8 @@ update_node (char *node_names, char *spec)
  * global: node_record_table_ptr - pointer to global node table
  */
 int 
-validate_node_specs (char *node_name, int cpus, int real_memory, int tmp_disk) {
+validate_node_specs (char *node_name, uint32_t cpus, 
+			uint32_t real_memory, uint32_t tmp_disk) {
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;

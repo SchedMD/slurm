@@ -15,9 +15,11 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 #include "slurm.h"
 #include "slurmlib.h"
@@ -27,9 +29,10 @@
 int msg_from_root (void);
 void slurmctld_req (int sockfd);
 
+int 
 main (int argc, char *argv[]) {
 	int error_code;
-	int child_pid, cli_len, newsockfd, sockfd;
+	int cli_len, newsockfd, sockfd;
 	struct sockaddr_in cli_addr, serv_addr;
 	char node_name[MAX_NAME_LEN];
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -62,6 +65,7 @@ main (int argc, char *argv[]) {
 	serv_addr.sin_port = htons (SLURMCTLD_PORT);
 	error_code = bind (sockfd, (struct sockaddr *) &serv_addr, sizeof (serv_addr));
 	if ((error_code < 0) && (errno == EADDRINUSE)) {
+		printf("waiting to bind\n");
 		sleep (10);
 		error_code = bind (sockfd, (struct sockaddr *) &serv_addr, 
 			sizeof (serv_addr));
@@ -102,7 +106,7 @@ int
 dump_build (char **buffer_ptr, int *buffer_size)
 {
 	char *buffer;
-	int buffer_offset, buffer_allocated, i, record_size;
+	int buffer_offset, buffer_allocated;
 	char out_line[BUILD_SIZE * 2];
 
 	buffer_ptr[0] = NULL;

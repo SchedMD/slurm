@@ -9,6 +9,7 @@
 #  include <config.h>
 #endif
 
+#include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -217,7 +218,7 @@ dump_all_job (char **buffer_ptr, int *buffer_size, time_t * update_time,
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
 	char *buffer;
-	int buffer_offset, buffer_allocated, error_code, i, record_size;
+	int buffer_offset, buffer_allocated, error_code;
 	char out_line[BUF_SIZE];
 
 	buffer_ptr[0] = NULL;
@@ -238,7 +239,8 @@ dump_all_job (char **buffer_ptr, int *buffer_size, time_t * update_time,
 		goto cleanup;
 
 	/* write individual job records */
-	while (job_record_point = (struct job_record *) list_next (job_record_iterator)) {
+	while ((job_record_point = 
+		(struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("dump_all_job: data integrity is bad");
 
@@ -536,10 +538,10 @@ int
 job_create (char *job_specs, char **new_job_id)
 {
 	char *req_features, *req_node_list, *job_name, *req_group;
-	char *req_partition, *script, *out_line, *job_id;
+	char *req_partition, *script, *job_id;
 	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
 	int i, min_tmp_disk, time_limit, procs_per_task, user_id;
-	int error_code, cpu_tally, dist, node_tally, key, shared;
+	int error_code, dist, key, shared;
 	struct part_record *part_ptr;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
@@ -1014,6 +1016,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		xfree (shared_str);
 	req_features[0] = req_node_list[0] = req_group[0] = NULL;
 	job_id[0] = req_partition[0] = job_name[0] = script[0] = NULL;
+	return error_code;
 }
 
 

@@ -45,8 +45,8 @@ int
 build_job_queue (struct job_queue **job_queue) 
 {
 	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
-	int job_buffer_size, job_queue_size, i;
+	struct job_record *job_record_point = NULL;
+	int job_buffer_size, job_queue_size;
 	struct job_queue *my_job_queue;
 
 	/* build list pending jobs */
@@ -54,7 +54,8 @@ build_job_queue (struct job_queue **job_queue)
 	job_queue[0] = my_job_queue = NULL;
 	job_record_iterator = list_iterator_create (job_list);	
 	
-	while (job_record_point = (struct job_record *) list_next (job_record_iterator)) {
+	while ((job_record_point = 
+		(struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->job_state != JOB_PENDING) 
 			continue;
 		if (job_record_point->magic != JOB_MAGIC)
