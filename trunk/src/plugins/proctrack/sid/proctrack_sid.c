@@ -101,6 +101,7 @@ extern int fini ( void )
 extern uint32_t slurm_create_container ( uint32_t job_id )
 {
 	pid_t pid = setsid();
+	(void) setpgrp();
 
 	if (pid < 0) {
 		error("slurm_create_container: setpsid: %m");
@@ -121,7 +122,7 @@ extern int slurm_signal_container  ( uint32_t id, int signal )
 	if (!id)	/* no container ID */
 		return ESRCH;
 
-	return kill(-pid, signal);
+	return killpg(pid, signal);
 }
 
 extern int slurm_destroy_container ( uint32_t id )

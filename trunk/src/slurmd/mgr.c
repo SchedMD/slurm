@@ -617,7 +617,8 @@ _create_job_session(slurmd_job_t *job)
 	int   i;
 	int   rc = 0;
 	int   fd = job->fdpair[0];
-	pid_t spid;   
+	pid_t spid;
+	uint32_t cont_id = 0;   
 
 	job->jmgr_pid = getpid();
 	if (setpgrp() < 0)
@@ -638,10 +639,6 @@ _create_job_session(slurmd_job_t *job)
 		debug("shm_update_step_mpid: %m");
 
 	job->smgr_pid = spid;
-	if (shm_update_step_cont_id(job->jobid, job->stepid, 
-			(uint32_t) spid) < 0) {
-		debug("shm_update_step_cont_id: %m");
-	}
 
 	/*
 	 * Read information from session manager slurmd
@@ -653,7 +650,15 @@ _create_job_session(slurmd_job_t *job)
 			error("Error obtaining task information: %m");
 
 		if (rc == 0) /* EOF, smgr must've died */
-			goto error;
+			 goto error;
+
+		if (cont_id)
+			continue;
+		cont_id = slurm_find_container(job->task[i]->pid);
+		if (cont_id) {
+			shm_update_step_cont_id(job->jobid, job->stepid, 
+				cont_id);
+		}
 	}
 
 	if (_update_shm_task_info(job) < 0)

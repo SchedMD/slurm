@@ -69,6 +69,7 @@
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
+#include "src/slurmd/proctrack.h"
 
 /* We use Chris Dunlap's POSIX semaphore implementation if necessary */
 #include "src/slurmd/semaphore.h"
@@ -143,7 +144,7 @@ static int  _shm_clear_stale_entries(void);
 static int  _shm_find_step(uint32_t, uint32_t);
 static bool _shm_sane(void);
 static int  _shm_validate(void);
-static bool _valid_slurmd_sid(pid_t sid);
+static bool _valid_slurmd_cont_id(uint32_t cont_id);
 
 static task_t *     _shm_alloc_task(void);
 static task_t *     _shm_find_task_in_step(job_step_t *s, int taskid);
@@ -285,7 +286,7 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 	 */
 	if (  (s->state < SLURMD_JOB_STARTED)
 	   || (s->cont_id == 0) 
-	   || (_valid_slurmd_sid((pid_t) s->cont_id)) )
+	   || (_valid_slurmd_cont_id(s->cont_id)) )
 		retval = true;
 
     done:
@@ -842,14 +843,14 @@ _shm_clear_stale_entries(void)
 		job_step_t *s = &slurmd_shm->step[i];
 		task_t     *t = s->task_list;
 		bool        active_tasks = false;
-pid_t pid = (pid_t) s->cont_id;
+
 		if ((s->state == SLURMD_JOB_UNUSED)	/* unused */
 		||  (s->cont_id == 0)			/* empty */
-		||  (kill(-pid, 0) == 0))	/* still active */ 
+		||  (slurm_signal_container(s->cont_id, 0) == 0)) /* active */ 
 			continue;
 
 		while (t && !active_tasks) {
-			if (kill(-t->pid, 0) == 0)
+			if (killpg(t->pid, 0) == 0)
 				active_tasks = true;
 			t = t->next;
 		}
@@ -1077,8 +1078,8 @@ _shm_validate(void)
 		 * by attempting to signal the running session.
 		 */
 		if ((s->state >= SLURMD_JOB_STARTED) &&
-		    (s->cont_id > 0) &&
-		    (!_valid_slurmd_sid((pid_t) s->cont_id))) {
+		    (s->cont_id) &&
+		    (!_valid_slurmd_cont_id(s->cont_id))) {
 			info ("Clearing defunct job %u.%u cont_id %u from shm",
 					s->jobid, s->stepid, 
 					s->cont_id);
@@ -1093,24 +1094,15 @@ _shm_validate(void)
 }
 
 /*
- * Confirm that the supplied sid belongs to a valid slurmd job manager. 
- * For now just confirm the sid is still valid.
+ * Confirm that the supplied container id is still valid.
  * Ideallly we want to test argv[0] of the process, but that is far
  * more work and slurmd shared memory corruption has never been observed.
  */
 static bool
-_valid_slurmd_sid(pid_t sid)
+_valid_slurmd_cont_id(uint32_t cont_id)
 {
-	pid_t session;
-	xassert(sid > (pid_t) 1);
-
-	/* Check for active session */
-	if (kill(-sid, 0) != 0)
-		return false;
-
-	/* Ensure that session leader's pid == sid */
-	session = getsid(sid);
-       	if ((session > (pid_t) 0) && (session != sid))
+	/* Check if container has processes */
+	if (slurm_signal_container(cont_id, 0) != 0)
 		return false;
 
 	return true;
