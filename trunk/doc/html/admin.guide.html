@@ -35,16 +35,18 @@ on each computer under SLURM management. The following paramters may be specifie
 <dl>
 <dt>Administrators
 <dd>A comma list of users permitted to execute SLURM administrative commands 
-(the default value is "" or none).
+(the default value is "root").
 <dt>ControlMachine
 <dd>The name of the machine where SLURM control functions are executed 
-(e.g. "lx-master").
+(e.g. "lx01"). This value must be specified.
 <dt>BackupController
 <dd>The name of the machine where SLURM control functions are to be 
-executed in the event that ControlMachine fails (e.g. "lx00"). This node
+executed in the event that ControlMachine fails (e.g. "lx02"). This node
 may be used as a compute server by default. It will come into service 
 as a controller only upon the failure of ControlMachine and will revert 
-to a "standby" mode when the ControlMachine becomes available once again.
+to a "standby" mode when the ControlMachine becomes available once again. 
+While not essential, it is highly recommended that you specify a backup 
+controller.
 <dt>NodeSpecConf
 <dd>Fully qualified pathname of the file containing node configuration information 
 as described below (the default value is "/usr/local/SLURM/NodeSpecConf"). This 
@@ -81,7 +83,7 @@ in a heterogeneous environment and users are able to specify resource
 requirements to achieve the desired scheduling characteristics. 
 Note that some of these values are not appropriate for you to 
 set and this will be described in detail below.
-The partiton configuration file contains the following information: 
+The node configuration file contains the following information: 
 <dl>
 <dt>Name
 <dd>Name of a node as returned by hostname (e.g. "lx12").
@@ -119,9 +121,11 @@ system size.
 <dd>Time of last contact from node, format is time_t as returned 
 by the "time" function. The default value is 0.
 <dt>State
-<dd>State of the node. Acceptable values are "UNKNOWN", "IDLE", 
-"BUSY", "DOWN", "DRAINED", "DRAINING". 
-The default value is "UNKNOWN".
+<dd>State of the node with respect to the initiation of user jobs. 
+Acceptable values are "UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", 
+"DRAINING". For example, the SLURM control machine may very well 
+not be used for initiation of user jobs and its state would thus 
+be set to "DOWN". The default value is "UNKNOWN".
 </dl>
 
 <p>
@@ -342,8 +346,8 @@ and restore the database using local and global file systems.
 #
 Administrators=cdunlap,garlick,grondo,jette
 #
-ControlMachine=lx-master
-BackupController=lx00
+ControlMachine=lx01
+BackupController=lx02
 #
 NodeSpecConf=/usr/local/SLURM/NodeSpecConf
 PartitionConf=/usr/local/SLURM/PartitionConf
@@ -362,7 +366,7 @@ ServerDaemon=/usr/local/SLURM/Slurmd"
 #
 Name=DEFAULT OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384 State=IDLE
 #
-# lx01-lx02 for login only, no state is DOWN for SLURM initiated jobs
+# lx01-lx02 for login and control functions only, node state is DOWN for SLURM initiated jobs
 Name=lx01 State=DOWN
 Name=lx02 State=DOWN
 #
@@ -447,7 +451,7 @@ Remove node lx30 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
-<p>Last Modified January 4, 2002</p>
+<p>Last Modified January 9, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
