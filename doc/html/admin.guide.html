@@ -203,10 +203,15 @@ This value may not be changed by slurm_admin.
 The tool you will primarily use in the administration of SLURM is slurm_admin. 
 It provides the means of viewing and updating node and partition 
 configurations. It can also be used to update some job state 
-information. You can execute slurm_admin with a single command on 
+information. You can execute slurm_admin with a single keyword on 
 the execute line or it will query you for input and process those 
-commands on an interactive basis. The slurm_admin commands are shown below.
+keywords on an interactive basis. The slurm_admin keywords are shown below.
 A <a href="#SampleAdmin">sample slurm_admin session</a> with examples is appended.
+<pre>
+Usage: slurm_admin [-q] [-v] [<keyword>]
+-q is equivalent to the quiet keyword
+-v is equivalent to the verbose keyword
+</pre>
 <dl>
 <dt>exit
 <dd>Terminate slurm_admin.
