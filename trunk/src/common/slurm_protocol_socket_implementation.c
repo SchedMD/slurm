@@ -9,6 +9,9 @@
 #include <netdb.h>
 #include <errno.h>
 #include <stdio.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 extern int debug ;
 
@@ -303,34 +306,38 @@ extern int _slurm_close (int __fd )
 	return close ( __fd ) ;
 }
 
-/*
 extern int _slurm_select(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
 {
+	return select ( n , readfds , writefds , exceptfds , timeout ) ;
 }
-
+/*
 extern int _slurm_pselect(int n, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, const struct timespec *timeout, sigset_t * sigmask)
 {
+	return pselect ( n , readfds , writefds , exceptfds , timeout , sigmask ) ;
 }
 */
-/* THESE ARE MACROS
-extern _slurm_FD_CLR(int fd, fd_set *set)
+extern void _slurm_FD_CLR(int fd, fd_set *set)
 {
+	FD_CLR ( fd , set ) ;
 }
-extern _slurm_FD_ISSET(int fd, fd_set *set)
+extern void _slurm_FD_ISSET(int fd, fd_set *set)
 {
+	FD_ISSET ( fd , set ) ;
 }
-extern _slurm_FD_SET(int fd, fd_set *set)
+extern void _slurm_FD_SET(int fd, fd_set *set)
 {
+	FD_SET ( fd , set ) ;
 }
-extern _slurm_FD_ZERO(fd_set *set)
+extern void _slurm_FD_ZERO(fd_set *set)
 {
+	FD_ZERO ( set ) ;
 }
-*/
 
-/*
 extern int _slurm_fcntl(int fd, int cmd)
 {
+	return fcntl ( fd , cmd ) ;
 }
+/*
 extern int _slurm_fcntl(int fd, int cmd, long arg)
 {
 }
@@ -339,6 +346,7 @@ extern int _slurm_fcntl(int fd, int cmd, struct flock *lock)
 }
 extern int _slurm_ioctl(int d, int request, ...)
 {
+	return ioctl ( d , request, ... ) ;
 }
 */
 
