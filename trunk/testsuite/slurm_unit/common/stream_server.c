@@ -70,7 +70,7 @@ int main ( int argc , char * argv[] )
 
 		
 	/* init address sturctures */
-	slurm_set_addr_uint ( & listen_address , port, 0x7f000001 ) ;
+	slurm_set_addr_uint ( & listen_address , port, SLURM_INADDR_ANY ) ;
 	/* open and listen on socket */
 	listen_socket = slurm_listen_stream ( & listen_address ) ;
 	/* accept socket */
