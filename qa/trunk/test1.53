@@ -54,8 +54,7 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
 	}
@@ -81,11 +80,11 @@ if {[string compare $host_2_name ""] == 0} {
 # Verify node sequence number
 #
 if {$host_1_num != [expr $host_0_num + 1]} {
-	send_user "\nFAILURE: node sequence number not contiguous"
+	send_user "\nFAILURE: node sequence number not contiguous\n"
 	set exit_code   1	
 }
 if {$host_2_num != [expr $host_1_num + 1]} {
-	send_user "\nFAILURE: node sequence number not contiguous"
+	send_user "\nFAILURE: node sequence number not contiguous\n"
 	set exit_code   1	
 }
 
