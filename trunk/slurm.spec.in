@@ -27,11 +27,6 @@ Requires: openssl >= 0.9.6
   %define __os_install_post /usr/lib/rpm/brp-compress
 %endif
 
-#
-# Defaults is --with-totalview
-# (Use --without totalview to disable)
-#
-%{!?_with_totalview: %{!?_without_totalview: %define _with_totalview --with-totalview}}
 
 %package devel
 Summary: Development package for SLURM.
@@ -94,9 +89,7 @@ SLURM switch plugin for Quadrics Elan3 or Elan4.
 %build
 %configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
     --sysconfdir=/etc/slurm		\
-    %{?_enable_debug}                   \
-    %{?_with_totalview}                 \
-    %{?_without_totalview}
+    %{?_enable_debug}
 
 #
 # The following was stolen from the E17 packages:
