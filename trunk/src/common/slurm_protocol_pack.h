@@ -37,6 +37,9 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, void ** buffer , int * 
 void pack_last_update ( last_update_msg_t * msg , void ** buffer , uint32_t * length ) ;
 int unpack_last_update ( last_update_msg_t ** msg , void ** buffer , uint32_t * length ) ;
 
+void pack_return_code ( return_code_msg_t * msg , void ** buffer , uint32_t * length );
+int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * length );
+
 void pack_build_info ( build_info_msg_t * build_ptr, void ** buffer , int * buffer_size ) ;
 int unpack_build_info ( build_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size ) ;
 

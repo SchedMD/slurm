@@ -81,6 +81,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SIGNAL_JOB_STEP :
 			break ;
 		case REQUEST_RECONFIGURE :
+			/* Message contains no body/information */
 			break ;
 		case RESPONSE_CANCEL_JOB :
 		case RESPONSE_RECONFIGURE :
@@ -116,6 +117,9 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case MESSAGE_UPLOAD_ACCOUNTING_INFO :
 			break ;
+		case RESPONSE_SLURM_RC:
+			pack_return_code ( ( return_code_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
+			break;
 		default :
 			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
 			return EINVAL ;
@@ -170,6 +174,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SIGNAL_JOB_STEP :
 			break ;
 		case REQUEST_RECONFIGURE :
+			/* Message contains no body/information */
 			break ;
 		case RESPONSE_CANCEL_JOB :
 		case RESPONSE_RECONFIGURE :
@@ -205,6 +210,9 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case MESSAGE_UPLOAD_ACCOUNTING_INFO :
 			break ;
+		case RESPONSE_SLURM_RC:
+			unpack_return_code ( ( return_code_msg_t **) &(msg -> data)  , ( void ** ) buffer , buf_len ) ;
+			break;
 		default :
 			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
 			return EINVAL ;
@@ -504,6 +512,27 @@ int unpack_last_update ( last_update_msg_t ** msg , void ** buffer , uint32_t * 
 
 	unpack32 ( & last_update_msg -> last_update , buffer , length ) ;
 	*msg = last_update_msg ;
+	return 0 ;
+}
+
+void pack_return_code ( return_code_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> return_code , buffer , length ) ;
+}
+
+int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * length )
+{
+        return_code_msg_t * return_code_msg ;
+
+        return_code_msg = malloc ( sizeof ( return_code_msg_t ) ) ;
+        if ( return_code_msg == NULL)
+        {
+                *msg = NULL ;
+                return ENOMEM ;
+        }
+
+	unpack32 ( & return_code_msg -> return_code , buffer , length ) ;
+	*msg = return_code_msg ;
 	return 0 ;
 }
 
