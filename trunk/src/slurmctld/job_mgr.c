@@ -842,7 +842,10 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		error_code = pack_job(job_record_point, &buf_ptr, &buf_len);
 		if (error_code != 0) continue;
 		if (buf_len > BUF_SIZE) 
+		{
+			jobs_packed ++ ;
 			continue;
+		}
 		buffer_allocated += (BUF_SIZE*16);
 		buf_len += (BUF_SIZE*16);
 		buffer_offset = (char *)buf_ptr - buffer;

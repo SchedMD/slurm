@@ -447,6 +447,7 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	int buf_len, buffer_allocated, buffer_offset = 0, error_code;
 	char *buffer;
 	void *buf_ptr;
+	int parts_packed;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -461,7 +462,8 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	part_record_iterator = list_iterator_create (part_list);		
 
 	/* write haeader: version and time */
-	pack32  ((uint32_t) PART_STRUCT_VERSION, &buf_ptr, &buf_len);
+	parts_packed = 0 ;
+	pack32  ((uint32_t) parts_packed, &buf_ptr, &buf_len);
 	pack32  ((uint32_t) last_part_update, &buf_ptr, &buf_len);
 
 	/* write individual partition records */
@@ -471,14 +473,20 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 			fatal ("pack_all_part: data integrity is bad");
 
 		error_code = pack_part(part_record_point, &buf_ptr, &buf_len);
-		if (error_code != 0) continue;
-		if (buf_len > BUF_SIZE) 
+		if (error_code != 0) {
 			continue;
+		}
+		if (buf_len > BUF_SIZE) 
+		{
+			parts_packed ++ ;
+			continue;
+		}
 		buffer_allocated += (BUF_SIZE*16);
 		buf_len += (BUF_SIZE*16);
 		buffer_offset = (char *)buf_ptr - buffer;
 		xrealloc(buffer, buffer_allocated);
 		buf_ptr = buffer + buffer_offset;
+		parts_packed ++ ;
 	}			
 
 	list_iterator_destroy (part_record_iterator);
@@ -488,6 +496,12 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buffer_ptr[0] = buffer;
 	*buffer_size = buffer_offset;
 	*update_time = last_part_update;
+
+	/* put in the real record count in the message body header */
+        buf_ptr = buffer;
+        buf_len = buffer_allocated;
+        pack32  ((uint32_t) parts_packed, &buf_ptr, &buf_len);
+
 	return 0;
 }
 
