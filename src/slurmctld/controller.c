@@ -64,7 +64,6 @@ time_t shutdown_time = (time_t)0;
 static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
 int server_thread_count = 0;
 pid_t slurmctld_pid;
-pthread_t thread_id_bg = (pthread_t)0;
 pthread_t thread_id_main = (pthread_t)0;
 pthread_t thread_id_sig = (pthread_t)0;
 pthread_t thread_id_rpc = (pthread_t)0;
@@ -82,7 +81,6 @@ inline int report_locks_set ( void );
 inline static void save_all_state ( void );
 void *slurmctld_background ( void * no_data );
 void *slurmctld_signal_hand ( void * no_data );
-static void slurmctld_cleanup (void *context);
 void *slurmctld_rpc_mgr( void * no_data );
 int slurm_shutdown ( void );
 void * service_connection ( void * arg );
@@ -118,15 +116,13 @@ main (int argc, char *argv[])
 {
 	int error_code;
 	char node_name[MAX_NAME_LEN];
-	pthread_attr_t thread_attr_bg, thread_attr_sig, thread_attr_rpc;
-	sigset_t set;
+	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 
 	/*
 	 * Establish initial configuration
 	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 	thread_id_main = pthread_self();
-	fatal_add_cleanup_job (slurmctld_cleanup, NULL);
 
 	slurmctld_pid = getpid ( );
 	init_ctld_conf ( &slurmctld_conf );
@@ -155,17 +151,6 @@ main (int argc, char *argv[])
         slurm_ssl_init ( ) ;
 	slurm_init_signer ( &sign_ctx, slurmctld_conf.job_credential_private_key ) ;
 		
-	/* block most signals in all threads */
-	sigfillset (&set);
-	sigdelset (&set, SIGQUIT);
-	sigdelset (&set, SIGILL);
-	sigdelset (&set, SIGABRT);
-	sigdelset (&set, SIGSEGV);
-	sigdelset (&set, SIGFPE);
-	sigdelset (&set, SIGPIPE);
-	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
-		fatal("sigprocmask: %m");
-
 	/*
 	 * create attached thread signal handling
 	 */
@@ -176,18 +161,6 @@ main (int argc, char *argv[])
 	pthread_attr_setscope (&thread_attr_sig, PTHREAD_SCOPE_SYSTEM);
 #endif
 	if (pthread_create ( &thread_id_sig, &thread_attr_sig, slurmctld_signal_hand, NULL))
-		fatal ("pthread_create %m");
-
-	/*
-	 * create attached thread for background activities
-	 */
-	if (pthread_attr_init (&thread_attr_bg))
-		fatal ("pthread_attr_init %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	/* we want 1:1 threads if there is a choice */
-	pthread_attr_setscope (&thread_attr_bg, PTHREAD_SCOPE_SYSTEM);
-#endif
-	if (pthread_create ( &thread_id_bg, &thread_attr_bg, slurmctld_background, NULL))
 		fatal ("pthread_create %m");
 
 	/*
@@ -205,10 +178,8 @@ main (int argc, char *argv[])
 	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmctld_rpc_mgr, NULL))
 		fatal ("pthread_create error %m");
 
-	/* main terminates here - all work goes through above threads including 
-	 * signal processing given the way pthreads work in linux, other 
-	 * systems might find it advisable to handle signals in here instead */
-	pthread_exit ((void *)0);
+	slurmctld_background (NULL);	/* This could be run as a pthread */
+	return SLURM_SUCCESS;
 }
 
 /* slurmctld_signal_hand - Process daemon-wide signals */
@@ -225,8 +196,18 @@ slurmctld_signal_hand ( void * no_data )
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	info ("Send signals to slurmctld_signal_hand, pid = %u", getpid ());
 
-	/* watch for any signals */
-	sigfillset (&set);
+	/* just watch for select signals */
+	if (sigemptyset (&set))
+		error ("sigemptyset error: %m");
+	if (sigaddset (&set, SIGHUP))
+		error ("sigaddset error on SIGHUP: %m");
+	if (sigaddset (&set, SIGINT))
+		error ("sigaddset error on SIGINT: %m");
+	if (sigaddset (&set, SIGTERM))
+		error ("sigaddset error on SIGTERM: %m");
+
+	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
+		fatal ("sigprocmask error: %m");
 
 	while (1) {
 		sigwait (&set, &sig);
@@ -242,9 +223,7 @@ slurmctld_signal_hand ( void * no_data )
 				slurm_ssl_destroy ( ) ;
 
 				pthread_join (thread_id_rpc, NULL);
-				/* thread_id_bg waits for all RPCs to complete */
-				pthread_join (thread_id_bg, NULL);
-				pthread_exit ((void *)0);	/* Normal termination */
+				return NULL;	/* Normal termination */
 				break;
 			case SIGHUP:	/* kill -1 */
 				info ("Reconfigure signal (SIGHUP) received\n");
@@ -255,14 +234,6 @@ slurmctld_signal_hand ( void * no_data )
 				unlock_slurmctld (config_write_lock);
 				if (error_code)
 					error ("read_slurm_conf error %d", error_code);
-				break;
-			case SIGQUIT:	/* general abort signals */
-			case SIGILL:
-			case SIGABRT:
-			case SIGFPE:
-			case SIGSEGV:
-			case SIGPIPE:
-				pthread_exit ((void *) 0);
 				break;
 			default:
 				error ("Invalid signal (%d) received\n", sig);
@@ -444,7 +415,7 @@ slurmctld_background ( void * no_data )
 
 	}
 	debug3 ("slurmctld_background shutting down");
-	pthread_exit ((void *)0);
+	return NULL;
 }
 
 /* save_all_state - save slurmctld state for later recovery */
@@ -1358,9 +1329,8 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg, int response )
 		slurm_shutdown ();
 	}
 
-	if (response) {
+	if (response)
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
-	}
 }
 
 
@@ -1460,7 +1430,10 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	}
 }
 
-/* slurm_shutdown - issue RPC to have slurmctld shutdown, knocks loose an accept() */
+/*
+ * slurm_shutdown - issue RPC to have slurmctld shutdown, 
+ *	knocks loose an slurm_accept_msg_conn() if we have a thread hung there
+ */
 int
 slurm_shutdown ()
 {
@@ -1649,25 +1622,4 @@ usage (char *prog_name)
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("  -r           Recover state from last checkpoint\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
-}
-
-/* slurmctld_cleanup - fatal error occured, kill all tasks */
-static void 
-slurmctld_cleanup (void *context)
-{
-	pthread_t my_thread_id = pthread_self ();
-
-	kill_locked_threads ();
-
-	if (thread_id_bg &&  (thread_id_bg  != my_thread_id))
-		(void) pthread_cancel (thread_id_bg);
-
-	if (thread_id_rpc && (thread_id_rpc != my_thread_id))
-		(void) pthread_cancel (thread_id_rpc);
-
-	if (thread_id_sig && (thread_id_sig != my_thread_id))
-		(void) pthread_cancel (thread_id_sig);
-
-	if (thread_id_main && (thread_id_main != my_thread_id))
-		(void) pthread_cancel (thread_id_main);
 }
