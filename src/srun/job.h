@@ -20,6 +20,13 @@ typedef enum {
 } job_state_t;
 
 typedef enum {
+	SRUN_HOST_INIT = 0,
+	SRUN_HOST_CONTACTED,
+	SRUN_HOST_REPLIED,
+	SRUN_HOST_DONE
+} host_state_t;
+
+typedef enum {
 	SRUN_TASK_INIT = 0,
 	SRUN_TASK_RUNNING,
 	SRUN_TASK_FAILED,
@@ -51,12 +58,15 @@ typedef struct srun_job {
 	pthread_t ioid;		/* stdio thread id */
 	int iofd;		/* stdio listen fd */
 	int ioport;		/* stdio listen port */
-
 	int *out;		/* ntask stdout fds */
 	int *err;		/* ntask stderr fds */
 
-	int *task_status;	/* ntask status (return codes) */
-	task_state_t *task_state; /* ntask task states	*/
+	pthread_t lid;		/* launch thread id */
+
+	host_state_t *host_state; /* nhost host states */
+
+	int *tstatus;	          /* ntask exit statii */
+	task_state_t *task_state; /* ntask task states */
 	pthread_mutex_t task_mutex;
 
 #if HAVE_LIBELAN3

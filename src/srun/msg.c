@@ -24,7 +24,10 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		error("recvd return code %d from %s", msg->return_code,
 				msg->node_name);
 		return;
+	} else {
+		/* job->host_state[msg->host_id] = SRUN_HOST_REPLIED; */
 	}
+
 }
 
 static void 
@@ -33,7 +36,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
 	debug2("task %d exited with status %d", msg->task_id, msg->return_code);
 	pthread_mutex_lock(&job->task_mutex);
-	job->task_status[msg->task_id] = msg->return_code;
+	job->tstatus[msg->task_id] = msg->return_code;
 	job->task_state[msg->task_id]  = SRUN_TASK_EXITED;
 	pthread_mutex_unlock(&job->task_mutex);
 

@@ -58,10 +58,14 @@ job_create(resource_allocation_response_msg_t *resp)
 	job->out   = (int *)   xmalloc(opt.nprocs * sizeof(int)   );
 	job->err   = (int *)   xmalloc(opt.nprocs * sizeof(int)   );
 
-	/* ntask job states and statii */
-	job->task_status = (int *) xmalloc(opt.nprocs * sizeof(int));
+	/* nhost host states */
+	job->host_state = 
+		(host_state_t *) xmalloc(job->nhosts * sizeof(host_state_t));
+
+	/* ntask task states and statii*/
 	job->task_state  = 
 		(task_state_t *) xmalloc(opt.nprocs * sizeof(task_state_t));
+	job->tstatus	 = (int *) xmalloc(opt.nprocs * sizeof(int));
 
 	pthread_mutex_init(&job->task_mutex, NULL);
 
