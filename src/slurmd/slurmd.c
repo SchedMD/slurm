@@ -166,6 +166,20 @@ main (int argc, char *argv[])
 
 	_kill_old_slurmd();
 
+	if (conf->mlock_pages) {
+		/*
+		 * Call mlockall() if available to ensure slurmd
+		 *  doesn't get swapped out
+		 */
+#ifdef _POSIX_MEMLOCK
+		if (mlockall (MCL_FUTURE | MCL_CURRENT) < 0)
+			error ("failed to mlock() slurmd pages: %m");
+#else
+		error ("mlockall() system call does not appear to be available");
+#endif /* _POSIX_MEMLOCK */
+	}
+
+
 	/* 
 	 * Restore any saved revoked credential information
 	 */
@@ -658,19 +672,6 @@ _slurmd_init()
 		_kill_old_slurmd(); 
 
 		shm_cleanup();
-	}
-
-	if (conf->mlock_pages) {
-		/*
-		 * Call mlockall() if available to ensure slurmd
-		 *  doesn't get swapped out
-		 */
-#ifdef _POSIX_MEMLOCK
-		if (mlockall (MCL_FUTURE | MCL_CURRENT) < 0)
-			error ("failed to mlock() slurmd pages: %m");
-#else
-		error ("mlockall() system call does not appear to be available");
-#endif /* _POSIX_MEMLOCK */
 	}
 
 	/*
