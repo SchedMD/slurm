@@ -619,6 +619,10 @@ _create_job_session(slurmd_job_t *job)
 	int   fd = job->fdpair[0];
 	pid_t spid;   
 
+	job->jmgr_pid = getpid();
+	if (setpgrp() < 0)
+		error("setpgid(): %m");
+
 	if ((spid = smgr_create(job)) < (pid_t) 0) {
 		error("Unable to create session manager: %m");
 		return ESLURMD_FORK_FAILED;
@@ -630,7 +634,6 @@ _create_job_session(slurmd_job_t *job)
 	 * This does not truly indicate an error condition, but a rare 
 	 * timing anomaly. Thus we log the event using debug()
 	 */
-	job->jmgr_pid = getpid();
 	if (shm_update_step_mpid(job->jobid, job->stepid, getpid()) < 0)
 		debug("shm_update_step_mpid: %m");
 
