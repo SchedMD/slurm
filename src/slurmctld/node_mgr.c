@@ -437,11 +437,10 @@ extern int load_all_node_state ( bool state_only )
 		safe_unpack32 (&cpus,        buffer);
 		safe_unpack32 (&real_memory, buffer);
 		safe_unpack32 (&tmp_disk,    buffer);
+		node_state &= (~NODE_STATE_NO_RESPOND);
 
 		/* validity test as possible */
-		if ((cpus == 0) || 
-		    ((node_state & (~NODE_STATE_NO_RESPOND)) >= 
-							NODE_STATE_END)) {
+		if ((cpus == 0) || (node_state  >= NODE_STATE_END)) {
 			error ("Invalid data for node %s: cpus=%u, state=%u",
 				node_name, cpus, node_state);
 			error ("No more node data will be processed from the "
