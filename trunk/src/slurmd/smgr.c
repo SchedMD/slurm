@@ -77,7 +77,7 @@ static int smgr_sigarray[] = {
  */
 static void  _session_mgr(slurmd_job_t *job);
 static int   _exec_all_tasks(slurmd_job_t *job);
-static void  _exec_task(slurmd_job_t *job, int i, int fd);
+static void  _exec_task(slurmd_job_t *job, int i);
 static int   _become_user(slurmd_job_t *job);
 static void  _make_tmpdir(slurmd_job_t *job);
 static int   _child_exited(void);
@@ -172,7 +172,7 @@ _session_mgr(slurmd_job_t *job)
 	}
 
 	if (chdir(job->cwd) < 0) {
-		error("couldn't chdir to '%s': %m: going to /tmp instead",
+		error("couldn't chdir to `%s': %m: going to /tmp instead",
 		      job->cwd);
 		if (chdir("/tmp") < 0) {
 			error("couldn't chdir to /tmp either. dying.");
@@ -275,10 +275,9 @@ _become_user(slurmd_job_t *job)
 static int
 _exec_all_tasks(slurmd_job_t *job)
 {
+	char c;
 	int i;
 	int fd = job->fdpair[1];
-	int cpipe[2];
-	uint8_t tid;
 
 	xassert(job != NULL);
 	xassert(fd >= 0);
@@ -291,26 +290,33 @@ _exec_all_tasks(slurmd_job_t *job)
 	if (xsignal_block(smgr_sigarray) < 0)
 		return error ("Unable to block signals");
 
-	if (pipe (cpipe) < 0)
-		return error ("Unable to open child pipe: %m");
-
 	for (i = 0; i < job->ntasks; i++) {
-		pid_t pid = fork();
+		int fdpair[2];
+		pid_t pid;
 
-		if (pid < 0) {
+		if (pipe (fdpair) < 0)
+			error ("exec_all_tasks: pipe: %m");
+
+		if ((pid = fork ()) < 0) {
 			error("fork: %m");
 			return SLURM_ERROR;
-		} else if (pid == 0) {  /* child */
-			_exec_task(job, i, cpipe[1]);
-			/* Should never return */
-			exit(0);
+		} else if (pid == 0)  { /* child */
+			/*
+			 * Stall exec until pgid is set by parent
+			 */
+			if (read (fdpair[0], &c, sizeof (c)) != 1)
+				error ("pgrp child read failed: %m");
+			close (fdpair[0]);
+			close (fdpair[1]);
+
+			_exec_task(job, i);
 		}
 
 		/* Parent continues: 
 		 */
 		verbose ("task %lu (%lu) started %M", 
 			(unsigned long) job->task[i]->gid, 
-			(unsigned long) pid);
+			(unsigned long) pid); 
 
 		/* 
 		 * Send pid to job manager
@@ -323,10 +329,20 @@ _exec_all_tasks(slurmd_job_t *job)
 		job->task[i]->pid = pid;
 
 		/*
-		 * For task 0, wait until it has created a new pgrp.
+		 * Set this child's pgid to pid of first task
 		 */
-		if (i == 0)
-			read (cpipe[0], &tid, sizeof (tid));
+		if (setpgid (pid, job->task[0]->pid) < 0)
+			error ("Unable to put task %d (pid %ld) into pgrp %ld",
+			       i, pid, job->task[0]->pid);
+
+		/*
+		 * Now it's ok to unblock this child, so it may call exec
+		 */
+		if (write (fdpair[1], &c, sizeof (c)) != 1)
+			error ("write to unblock task %d failed", i); 
+
+		close (fdpair[0]);
+		close (fdpair[1]);
 
 		/*
 		 * Prepare process for attach by parallel debugger 
@@ -335,49 +351,17 @@ _exec_all_tasks(slurmd_job_t *job)
 		_pdebug_trace_process(job, pid);
 	}
 
-	/*
-	 * Wait for all tasks to finish joining new process group
-	 */
-	for (i = 1; i < job->ntasks; i++)  
-		read (cpipe[0], &tid, sizeof (tid));
-
-	close (cpipe[0]);
-	close (cpipe[1]);
-
 	return SLURM_SUCCESS;
 }
 
 
 static void
-_exec_task(slurmd_job_t *job, int i, int fd)
+_exec_task(slurmd_job_t *job, int i)
 {
-	/*
-	 * Fit taskid into single byte for writing back to
-	 *  initiating slurmd. Doesn't matter if the values
-	 *  are truncated, we just need the number of bytes to
-	 *  be right.
-	 */
-	uint8_t tid = i;
-
 	if (xsignal_unblock(smgr_sigarray) < 0) {
 		error("unable to unblock signals");
 		exit(1);
 	}
-
-	/*
-	 * Move this process into new pgrp within this session.
-	 */
-	if (setpgid (0, i ? job->task[0]->pid : 0) < 0)
-		error ("Unable to put task %d into pgrp %ld: %m",
-			i, job->task[0]->pid);
-
-	/*
-	 * Notify slurmd that pgid has been set for this task
-	 */
-	if (write (fd, &tid, sizeof (tid)) < 0)
-		error ("Unable to notify slurmd that task %d started\n", i);
-
-	close (fd);
 
 	if (!job->batch) {
 		if (interconnect_attach(job->switch_job, &job->env,
@@ -609,11 +593,11 @@ _setup_env(slurmd_job_t *job, int taskid)
 		return -1;
 	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gid     ) < 0)
 		return -1;
-
 	if (getenvp(job->env, "SLURM_GMPI")) {
 		if (setenvpf(&job->env, "GMPI_ID", "%d", t->gid) < 0)
 			return -1;
 	}
+
 	return SLURM_SUCCESS;
 }
 
@@ -648,7 +632,7 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 	if (job->task_flags & TASK_PARALLEL_DEBUG) {
 		int status;
 		waitpid(pid, &status, WUNTRACED);
-		if (kill(pid, SIGSTOP) < 0)
+		if ((pid > (pid_t) 0) && (kill(pid, SIGSTOP) < 0))
 			error("kill(%lu): %m", (unsigned long) pid);
 		if (_PTRACE(PTRACE_DETACH, pid, NULL, 0))
 			error("ptrace(%lu): %m", (unsigned long) pid);

@@ -3,8 +3,6 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.5.0-pre1
 =============================
--- Fixes for reported problems:
-  - slurm/538: user tasks block writing to stdio
  -- Add network option to srun and job creation API for specification 
     of communication protocol over IBM Federation switch.
  -- Add new slurm.conf parameter ProctrackType (process tracking) and 
@@ -15,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Add federation switch plugin.
  -- Add new configuration keyword, SchedulerRootFilter, to control 
     external scheduler control of RoolOnly partition (Chris Holmes, HP).
+ -- Modify logic to set process group ID for spawned processes (last 
+    patch from slurm v0.3.11).
 
 * Changes in SLURM 0.4.7
 ========================
@@ -84,6 +84,7 @@ documents those changes that are of interest to users and admins.
    - Fix case where slurmd may erroneously detect shared memory entry
      as "stale" and delete entry for unkillable or slow-to-exit job.
    - (qsnet) Fix for running slurmd on node without and elan3 adapter.
+   - Fix for reported problem: slurm/538: user tasks block writing to stdio
 
 * Changes in SLURM 0.4.0
 ========================
