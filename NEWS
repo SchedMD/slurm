@@ -5,6 +5,10 @@ documents those changes that are of interest to users and admins.
 =============================
  -- Add new job reason value "JobHeld" for jobs with priority==0
  -- Move startup script from "/etc/rc.d/init.d/slurm" to "/etc/init.d/slurm"
+ -- Add new logic to create BGL partitions as needed
+ -- Modify prolog/epilog logic in slurmd to accomodate very long run times, 
+    on BGL these scripts wait for events that can take a very long time 
+    (tens of seconds).
 
 * Changes in SLURM 0.4.0-pre5
 =============================
