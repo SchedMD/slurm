@@ -132,7 +132,6 @@ read_pidfile(const char *pidfile, int *pidfd)
 int
 create_pidfile(const char *pidfile)
 {
-	int fd;
 	FILE *fp;
 
 	xassert(pidfile != NULL);
