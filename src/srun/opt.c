@@ -429,7 +429,7 @@ _verify_node_count(const char *arg, int *min_nodes, int *max_nodes)
 
 	val1 = strtol(arg, &end_ptr, 10);
 	if (end_ptr[0] == '\0') {
-		*min_nodes = *max_nodes = val1;
+		*min_nodes = val1;
 		return true;
 	}
 
@@ -565,7 +565,7 @@ static void _opt_default()
 	opt.cpus_per_task = 1;
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
-	opt.max_nodes = 1;
+	opt.max_nodes = 0;
 	opt.nodes_set = false;
 	opt.time_limit = -1;
 	opt.partition = NULL;
@@ -978,7 +978,8 @@ _opt_verify(poptContext optctx)
 			verified = false;
 		}
 
-		if ((opt.min_nodes <= 0) || (opt.max_nodes <= 0)) {
+		if ((opt.min_nodes <= 0) || (opt.max_nodes < 0) || 
+		    (opt.max_nodes && (opt.min_nodes > opt.max_nodes))) {
 			error("%s: invalid number of nodes (-N %d-%d)\n",
 			      opt.progname, opt.min_nodes, opt.max_nodes);
 			verified = false;
@@ -997,7 +998,10 @@ _opt_verify(poptContext optctx)
 				      "nodes, setting nnodes to %d", 
 				      opt.nprocs, opt.min_nodes, 
 				      opt.min_nodes);
-				opt.min_nodes = opt.max_nodes = opt.nprocs;
+				opt.min_nodes = opt.nprocs;
+				if (opt.max_nodes && 
+				    (opt.min_nodes > opt.max_nodes))
+					opt.max_nodes = opt.min_nodes;
 			}
 
 		} /* else if (opt.nprocs_set && !opt.nodes_set) */
@@ -1144,7 +1148,10 @@ void _opt_list()
 	info("cwd            : %s", opt.cwd);
 	info("nprocs         : %d", opt.nprocs);
 	info("cpus_per_task  : %d", opt.cpus_per_task);
-	info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
+	if (opt.max_nodes)
+		info("nodes          : %d-%d", opt.min_nodes, opt.max_nodes);
+	else
+		info("nodes          : %d", opt.min_nodes);
 	info("partition      : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
 	info("job name       : `%s'", opt.job_name);

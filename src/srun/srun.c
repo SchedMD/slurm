@@ -260,7 +260,8 @@ _allocate_nodes(void)
 	job.exc_nodes      = opt.exc_nodes;
 	job.partition      = opt.partition;
 	job.min_nodes      = opt.min_nodes;
-	job.max_nodes      = opt.max_nodes;
+	if (opt.max_nodes)
+		job.max_nodes      = opt.max_nodes;
 	job.num_tasks      = opt.nprocs;
 	job.user_id        = opt.uid;
 	if (opt.mincpus > -1)
@@ -496,7 +497,8 @@ _run_batch_job(void)
 		job.num_procs      = opt.nprocs * opt.cpus_per_task;
 
 	job.min_nodes      = opt.min_nodes;
-	job.max_nodes      = opt.max_nodes;
+	if (opt.max_nodes)
+		job.max_nodes      = opt.max_nodes;
 
 	job.num_tasks      = opt.nprocs;
 
