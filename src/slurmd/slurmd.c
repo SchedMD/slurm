@@ -239,9 +239,17 @@ _decrement_thd_count(void)
 static void
 _increment_thd_count(void)
 {
+	bool logged = false;
+
 	slurm_mutex_lock(&active_mutex);
-	while (active_threads >= MAX_THREADS)
+	while (active_threads >= MAX_THREADS) {
+		if (!logged) {
+			info("active_threads == MAX_THREADS(%d)", 
+				MAX_THREADS);
+			logged = true;
+		}
 		pthread_cond_wait(&active_cond, &active_mutex);
+	}
 	active_threads++;
 	slurm_mutex_unlock(&active_mutex);
 }
