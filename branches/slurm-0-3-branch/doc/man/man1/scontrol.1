@@ -171,6 +171,7 @@ Possible values are"YES" and "NO".
 Set the job's required features on nodes specified value. Multiple values 
 may be comma separated if all features are required (AND operation) or 
 separated by "|" if any of the specified features are required (OR operation).
+Value may be cleared with blank data value, "Features=".
 .TP
 \fIJobId\fP=<id>
 Identify the job to be updated. This specification is required.
@@ -196,6 +197,7 @@ Set the job's priority to the specified value.
 \fIReqNodeList\fP=<nodes>
 Set the job's list of required node. Multiple node names may be specified using 
 simple node range expressions (e.g. "lx[10-20]"). 
+Value may be cleared with blank data value, "ReqNodeList=".
 .TP
 \fIReqNodes\fP=<count>
 Set the job's count of required nodes to the specified value.
@@ -232,8 +234,9 @@ changing its underlying state.
 \fBSPECIFICATIONS FOR UPDATE AND DELETE COMMANDS, PARTITIONS\fR
 .TP
 \fIAllowGroups\fP=<name>
-Identify the user groups which may use this partition. Multiple groups 
-may be specified in a comma separated list. 
+Identify the user groups which may use this partition. 
+Multiple groups may be specified in a comma separated list.
+To permit all groups to use the partition specify "AllowGroups=ALL" 
 .TP
 \fIDefault\fP=<yes|no>
 Specify if this partition is to be used by jobs which do not explicitly 
@@ -249,6 +252,7 @@ Possible values are"YES" and "NO".
 Identify the node(s) to be associated with this partition. Multiple node names 
 may be specified using simple node range expressions (e.g. "lx[10-20]"). 
 Note that jobs may only be associated with one partition at any time.
+Specify a blank data value to remove all nodes from a partition: "Nodes=".
 .TP
 \fIPartitionName\fP=<name>
 Identify the partition to be updated. This specification is required.
