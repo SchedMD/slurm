@@ -38,6 +38,7 @@
 #include <time.h>
 
 #include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_protocol_api.h"
 
@@ -48,7 +49,7 @@
  * IN job_info_msg_ptr - job information message pointer
  * IN one_liner - print as a single line if true
  */
-void 
+extern void 
 slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 {
 	int i;
@@ -70,7 +71,7 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
  * IN job_ptr - an individual job information record pointer
  * IN one_liner - print as a single line if true
  */
-void
+extern void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 {
 	int j;
@@ -208,7 +209,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
  * IN time - a time stamp
  * OUT string - pointer user defined buffer
  */
-void
+extern void
 make_time_str (time_t *time, char *string)
 {
 	struct tm time_tm;
@@ -225,10 +226,10 @@ make_time_str (time_t *time, char *string)
  *	information if changed since update_time 
  * IN update_time - time of current configuration data
  * IN job_info_msg_pptr - place to store a job configuration pointer
- * RET 0 or a slurm error code
+ * RET 0 or -1 on error
  * NOTE: free the response using slurm_free_job_info_msg
  */
-int
+extern int
 slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
 {
 	int rc;
@@ -266,11 +267,11 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
  *	on this machine
- * IN job_pid - process_id of interest on this machine
+ * IN job_pid     - process_id of interest on this machine
  * OUT job_id_ptr - place to store a slurm job_id
- * RET 0 or a slurm error code
+ * RET 0 or -1 on error
  */
-int
+extern int
 slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 {
 	int rc;
@@ -310,3 +311,34 @@ slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 	return SLURM_PROTOCOL_SUCCESS;
 }
 
+/*
+ * slurm_get_end_time - get the expected end time for a given slurm job
+ * IN jobid     - slurm job id
+ * end_time_ptr - location in which to store scheduled end time for job 
+ * RET 0 or -1 on error
+ */
+extern int
+slurm_get_end_time(uint32_t jobid, time_t *end_time_ptr)
+{
+	int error_code, i;
+	job_info_msg_t *jinfo;
+	job_info_t *job_ptr;
+
+	if ((error_code = slurm_load_jobs ((time_t) NULL, &jinfo)))
+		return error_code;
+
+	error_code = SLURM_ERROR;	/* error until job found */
+	job_ptr = jinfo->job_array;
+	for (i = 0; i < jinfo->record_count; i++) {
+		if (job_ptr[i].job_id != jobid)
+			continue;
+		*end_time_ptr = job_ptr[i].end_time;
+		error_code = SLURM_SUCCESS;
+		break;
+	}
+	slurm_free_job_info_msg(jinfo);
+
+	if (error_code)
+		slurm_seterrno(ESLURM_INVALID_JOB_ID);
+	return error_code; 
+}

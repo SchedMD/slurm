@@ -79,7 +79,7 @@ static int 	_load_nodes (node_info_msg_t ** node_buffer_pptr);
 static int 	_load_partitions (partition_info_msg_t **part_info_pptr);
 static void	_parse_conf_line (char *in_line, bool *any_slurmctld,
 				bool *have_slurmctld, bool *have_slurmd);
-static void	_pid2jid(pid_t job_pid);
+static void	_pid_info(pid_t job_pid);
 static void	_ping_slurmctld(slurm_ctl_conf_info_msg_t *slurm_ctl_conf_ptr);
 static void	_print_completing (void);
 static void	_print_completing_job(job_info_t *job_ptr, 
@@ -370,24 +370,35 @@ _load_partitions (partition_info_msg_t **part_buffer_pptr)
 }
 
 /* 
- * _pid2jid - given a local process id, print the corresponding slurm job id
+ * _pid_info - given a local process id, print the corresponding slurm job id
+ *	and its expected end time
  * IN job_pid - the local process id of interest
  */
 static void
-_pid2jid(pid_t job_pid)
+_pid_info(pid_t job_pid)
 {
 	int error_code;
 	uint32_t job_id;
+	time_t end_time;
 
 	error_code = slurm_pid2jobid (job_pid, &job_id);
-	if (error_code == SLURM_SUCCESS)
-		printf("Slurm job id: %u\n", job_id);
-	else {
+	if (error_code) {
 		exit_code = 1;
 		if (quiet_flag != 1)
 			slurm_perror ("slurm_pid2jobid error");
+		return;
 	}
 
+	error_code = slurm_get_end_time(job_id, &end_time);
+	if (error_code) {
+		exit_code = 1;
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_get_end_time error");
+		return;
+	}
+
+	/* printf("Slurm job id: %u\n", job_id);   old format */
+	printf("Slurm job id: %u ends at %s", job_id, ctime(&end_time));
 	return;
 }
 
@@ -1032,7 +1043,7 @@ _process_command (int argc, char *argv[])
 		}
 		one_liner = 1;
 	}
-	else if (strncasecmp (argv[0], "pid2jid", 3) == 0) {
+	else if (strncasecmp (argv[0], "pidinfo", 3) == 0) {
 		if (argc > 2) {
 			exit_code = 1;
 			fprintf (stderr, 
@@ -1044,7 +1055,7 @@ _process_command (int argc, char *argv[])
 				 "missing argument for keyword:%s\n", 
 				 argv[0]);
 		} else
-			_pid2jid ((pid_t) atol (argv[1]) );
+			_pid_info ((pid_t) atol (argv[1]) );
 
 	}
 	else if (strncasecmp (argv[0], "ping", 3) == 0) {
@@ -1595,7 +1606,7 @@ scontrol [<OPTION>] [<COMMAND>]                                            \n\
      exit                     terminate scontrol                           \n\
      help                     print this description of use.               \n\
      oneliner                 report output one record per line.           \n\
-     pid2jid <pid>            return slurm job id for given pid.           \n\
+     pidinfo <pid>            return slurm job information for given pid.  \n\
      ping                     print status of slurmctld daemons.           \n\
      quiet                    print no messages other than error messages. \n\
      quit                     terminate this command.                      \n\
