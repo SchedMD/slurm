@@ -65,6 +65,7 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_re
 			return (int) slurm_rc_msg->return_code;
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION:
+		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION:
 			slurm_alloc_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
 			job_desc_msg->job_id = slurm_alloc_msg->job_id;
 			return 0;
