@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	int startx = 0;
 	int starty = 0;
 	int end = 0;
-	int i, rc;
+	int i;
 	//char *name;
 	
         	
@@ -64,6 +64,7 @@ int main(int argc, char *argv[])
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
 #ifdef HAVE_BGL_FILES
+		int rc;
 		rm_BGL_t *bgl;
 		rm_size3D_t bp_size;
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
