@@ -796,8 +796,14 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 				      min_nodes, max_nodes,
 				      job_ptr->details->contiguous, 
 				      shared, part_ptr->max_nodes);
-	if (error_code)
+	if (error_code) {
+		if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
+			debug3("job %u not runnable with present config",
+			       job_ptr->job_id);
+			job_ptr->priority = 1;	/* Move to end of queue */
+		}
 		goto cleanup;
+	}
 	if (test_only) {
 		error_code = SLURM_SUCCESS;
 		goto cleanup;

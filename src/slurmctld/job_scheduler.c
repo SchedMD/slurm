@@ -149,7 +149,7 @@ int schedule(void)
 			    job_ptr->part_ptr;
 		} else if (error_code == 
 			   ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
-			debug2("job %u not runnable with present config",
+			debug3("job %u not runnable with present config",
 			       job_ptr->job_id);
 			last_job_update = time(NULL);
 			job_ptr->priority = 1;	/* Move to end of queue */
