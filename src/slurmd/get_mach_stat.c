@@ -22,18 +22,11 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
-#include <src/slurmctld/slurmctld.h>
+#include <src/slurmd/get_mach_stat.h>
+#include <src/common/log.h>
 
-int get_procs(uint32_t *procs);
-int get_mach_name(char *node_name);
-int get_memory(uint32_t *real_memory);
-int get_tmp_disk(uint32_t *tmp_disk);
-#ifdef USE_OS_NAME
-int get_os_name(char *os_name);
-#endif
-#ifdef USE_CPU_SPEED
-int get_speed(float *speed);
-#endif
+#define MAX_NAME_LEN 1024
+#define TMP_FS "/tmp"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */

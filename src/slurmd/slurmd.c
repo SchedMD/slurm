@@ -28,13 +28,16 @@
 #  include <config.h>
 #endif
 
+#include <src/slurmd/slurmd.h> 
 #include <errno.h>
 #include <stdio.h>
 #include <time.h>
 #include <unistd.h>
 #include <src/common/xmalloc.h>
+#include <src/common/xstring.h>
 
 #include <src/common/slurm_protocol_api.h>
+#include <src/slurmd/get_mach_stat.h>
 #include <src/common/log.h>
 
 #define BUF_SIZE 1024
@@ -45,23 +48,17 @@ time_t init_time;
 void slurmd_req ( slurm_msg_t * msg );
 /*
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_job_cancel ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 */
+int send_node_registration_status_msg ( ) ;
+int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
+int slurmd_msg_engine ( void * args ) ;
 
 int 
 main (int argc, char *argv[]) 
 {
 	int error_code ;
-	slurm_fd newsockfd;
-        slurm_fd sockfd;
-	slurm_msg_t * msg = NULL ;
-	slurm_addr cli_addr ;
+	
+	
 	char node_name[MAX_NAME_LEN];
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -76,13 +73,56 @@ main (int argc, char *argv[])
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: errno %d from gethostname", errno);
 	
+	slurmd_msg_engine ( NULL ) ;
+	
+	send_node_registration_status_msg ( ) ;
+	return SLURM_SUCCESS ;
+}
+
+int send_node_registration_status_msg ( )
+{
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	slurm_node_registration_status_msg_t node_reg_msg ;
+	
+	fill_in_node_registration_status_msg ( & node_reg_msg ) ;
+ 
+	request_msg . msg_type = REQUEST_NODE_REGISTRATION_STATUS ;
+	request_msg . data = & node_reg_msg ;
+		
+	slurm_send_recv_controller_msg ( & request_msg , & response_msg ) ;
+	return SLURM_SUCCESS ;
+}
+
+int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg )
+{
+	int error_code ;
+	char node_name[MAX_NAME_LEN];
+	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) )
+		fatal ("slurmd: errno %d from gethostname", errno);
+
+	node_reg_msg -> timestamp = time ( NULL ) ;
+	node_reg_msg -> node_name = xstrdup ( node_name ) ; 
+	get_procs ( & node_reg_msg -> cpus );
+	get_memory ( & node_reg_msg -> real_memory_size ) ;
+	get_tmp_disk ( & node_reg_msg -> temporary_disk_space ) ;
+	return SLURM_SUCCESS ;
+}
+
+int slurmd_msg_engine ( void * args )
+{
+	int error_code ;
+	slurm_fd newsockfd;
+        slurm_fd sockfd;
+	slurm_msg_t * msg = NULL ;
+	slurm_addr cli_addr ;
+
 	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
 		fatal ("slurmctld: error starting message engine \n", errno);
-		
 	while (1) 
 	{
 		/* accept needed for stream implementation 
-		 * is a no-op in message implementation that just passes sockfd to newsockfd
+		 * is a no-op in mongo implementation that just passes sockfd to newsockfd
 		 */
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
