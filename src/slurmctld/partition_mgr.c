@@ -352,8 +352,9 @@ int Delete_Part_Record(char *name) {
  *         Buffer_Size - Set to size of the buffer in bytes
  *         Update_Time - set to time partition records last updated
  *         Returns 0 if no error, errno otherwise
- * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
- * NOTE: This is a prototype for a function to ship data partition to an API.
+ * NOTE: The buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: IF YOU MAKE ANY CHANGES HERE be sure to increment the value of PART_STRUCT_VERSION
+ *       and make the corresponding changes to Load_Part_Name in api/partition_info.c
  */
 int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */

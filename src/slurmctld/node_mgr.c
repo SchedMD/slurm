@@ -511,8 +511,9 @@ void Dump_Hash() {
  *         Buffer_Size - Set to size of the buffer in bytes
  *         Update_Time - set to time partition records last updated
  *         Returns 0 if no error, errno otherwise
- * NOTE: In this prototype, the buffer at *Buffer_Ptr must be freed by the caller
- * NOTE: This is a prototype for a function to ship data partition to an API.
+ * NOTE: The buffer at *Buffer_Ptr must be freed by the caller
+ * NOTE: IF YOU MAKE ANY CHANGES HERE be sure to increment the value of NODE_STRUCT_VERSION
+ *       and make the corresponding changes to Load_Node_Config in api/node_info.c
  */
 int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     char *Buffer;
