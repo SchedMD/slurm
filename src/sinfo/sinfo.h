@@ -52,6 +52,7 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 #include <src/common/list.h>
+#include <src/common/hostlist.h>
 
 
 #define MIN(x,y) (((x)<(y))?(x):(y))
@@ -70,6 +71,7 @@ struct sinfo_parameters {
 };
 
 struct node_state_summary {
+	hostlist_t nodes;
 	enum node_states state;
 	uint32_t node_count;
 	uint32_t cpu_min;
