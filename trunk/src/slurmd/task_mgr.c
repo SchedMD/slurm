@@ -215,17 +215,29 @@ void * stdin_io_pipe_thread ( void * arg )
 	while ( true )
 	{
 		//if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) == SLURM_PROTOCOL_ERROR )
-		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , cir_buf->tail , cir_buf->write_size ) ) == SLURM_PROTOCOL_ERROR )
+		if ( ( bytes_read = slurm_read_stream ( io_arg->sockets[0] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
-				local_errno = errno ;	
-				info ( "error reading stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
-				goto stdin_return ;
+			local_errno = errno ;	
+			switch ( local_errno )
+			{
+				case 0:
+				case EBADF:
+				case EPIPE:
+				case ECONNREFUSED:
+				case ENOTCONN:
+					break ;
+				default:
+					info ( "error reading stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
+					error ( "uncaught errno %i", local_errno ) ;
+			}
+			continue ;
 		}
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
-		write ( 1 ,  "stdin-", 6 ) ;
+		//write ( 1 ,  "stdin-", 6 ) ;
 		//write ( 1 ,  buffer , bytes_read ) ;
-		write ( 1 , cir_buf->head , cir_buf->read_size ) ;
+		//write ( 1 , cir_buf->head , cir_buf->read_size ) ;
+		info ( "%i stdin bytes read", bytes_read ) ;
 		/* debug */
 		while ( true)
 		{
@@ -240,7 +252,7 @@ void * stdin_io_pipe_thread ( void * arg )
 				{
 
 					local_errno = errno ;	
-					info ( "error sending stdin stream for task %i , errno %i", 1 , local_errno ) ;
+					info ( "error sending stdin  stream for task %i, errno %i , bytes read %i ", 1 , local_errno , bytes_read ) ;
 					goto stdin_return ;
 				}
 			}
@@ -256,6 +268,7 @@ void * stdin_io_pipe_thread ( void * arg )
 	pthread_exit ( NULL ) ;
 }
 
+#define RECONNECT_RETRY_TIME 10
 void * stdout_io_pipe_thread ( void * arg )
 {
 	task_start_t * io_arg = ( task_start_t * ) arg ;
@@ -263,6 +276,8 @@ void * stdout_io_pipe_thread ( void * arg )
 	int bytes_read ;
 	int sock_bytes_written ;
 	int local_errno ;
+	int attempt_reconnect = false ;
+	time_t last_reconnect_try = 0 ;
 	circular_buffer_t * cir_buf ;
 
 	init_circular_buffer ( & cir_buf ) ;
@@ -271,6 +286,7 @@ void * stdout_io_pipe_thread ( void * arg )
 
 	while ( true )
 	{
+		/* read stderr code */
 		//if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
@@ -289,14 +305,46 @@ void * stdout_io_pipe_thread ( void * arg )
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
 		//write ( 1 ,  buffer , bytes_read ) ;
-		write ( 1 , cir_buf->head , cir_buf->read_size ) ;
+		//write ( 1 , cir_buf->head , cir_buf->read_size ) ;
+		info ( "%i stdout bytes read", bytes_read ) ;
 		/* debug */
+		/* reconnect code */
+		if ( attempt_reconnect )
+		{
+			time_t curr_time = time ( NULL ) ;
+			if ( difftime ( curr_time , last_reconnect_try )  > RECONNECT_RETRY_TIME )
+			{
+				slurm_close_stream ( io_arg->sockets[STDIN_OUT_SOCK] ) ;
+				if ( ( io_arg->sockets[STDIN_OUT_SOCK] = slurm_open_stream ( & ( io_arg -> inout_dest ) ) ) == SLURM_PROTOCOL_ERROR )
+				{
+					local_errno = errno ;	
+					info ( "error reconnecting socket to srun to pipe stdout errno %i" , local_errno ) ;
+					continue ;
+				}
+				attempt_reconnect = false ;
+				last_reconnect_try = time ( NULL ) ;
+			}
+		}
+		/* write out socket code */
 		//if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
-			info ( "error sending stdout stream for task %i , errno %i", 1 , local_errno ) ;
-			goto stdout_return ;
+			switch ( local_errno )
+			{
+				case 0:
+				case EBADF:
+				case EPIPE:
+				case ECONNREFUSED:
+				case ENOTCONN:
+					attempt_reconnect = true ;
+					slurm_close_stream ( io_arg->sockets[STDIN_OUT_SOCK] ) ;
+					break ;
+				default:
+					info ( "error sending stdout stream for task %i , errno %i", 1 , local_errno ) ;
+					error ( "uncaught errno %i", local_errno ) ;
+			}
+			continue ;
 		}
 		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
 	}
@@ -313,12 +361,15 @@ void * stderr_io_pipe_thread ( void * arg )
 	int bytes_read ;
 	int sock_bytes_written ;
 	int local_errno ;
+	int attempt_reconnect = false ;
+	time_t last_reconnect_try = 0 ;
 	circular_buffer_t * cir_buf ;
 
 	init_circular_buffer ( & cir_buf ) ;
 	
 	while ( true )
 	{
+		/* read stderr code */
 		//if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
@@ -337,14 +388,46 @@ void * stderr_io_pipe_thread ( void * arg )
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
 		//write ( 2 ,  buffer , bytes_read ) ;
-		write ( 2 , cir_buf->head , cir_buf->read_size ) ;
+		info ( "%i stderr bytes read", bytes_read ) ;
+		//write ( 2 , cir_buf->head , cir_buf->read_size ) ;
 		/* debug */
+		/* reconnect code */
+		if ( attempt_reconnect )
+		{
+			time_t curr_time = time ( NULL ) ;
+			if ( difftime ( curr_time , last_reconnect_try )  > RECONNECT_RETRY_TIME )
+			{
+				slurm_close_stream ( io_arg->sockets[SIG_STDERR_SOCK] ) ;
+				if ( ( io_arg->sockets[SIG_STDERR_SOCK] = slurm_open_stream ( &( io_arg -> err_dest ) ) ) == SLURM_PROTOCOL_ERROR )
+				{
+					local_errno = errno ;	
+					info ( "error reconnecting socket to srun to pipe stderr errno %i" , local_errno ) ;
+					continue ;
+				}
+				attempt_reconnect = false ;
+				last_reconnect_try = time ( NULL ) ;
+			}
+		}
+		/* write out socket code */
 		//if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , cir_buf->head , cir_buf->read_size ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			local_errno = errno ;	
-			info ( "error sending stderr stream for task %i , errno %i", 1 , local_errno ) ;
-			goto stderr_return ;
+			switch ( local_errno )
+			{
+				case 0:
+				case EBADF:
+				case EPIPE:
+				case ECONNREFUSED:
+				case ENOTCONN:
+					attempt_reconnect = true ;
+					slurm_close_stream ( io_arg->sockets[SIG_STDERR_SOCK] ) ;
+					break ;
+				default:
+					info ( "error sending stderr stream for task %i , errno %i", 1 , local_errno ) ;
+					error ( "uncaught errno %i", local_errno ) ;
+			}
+			continue ;
 		}
 		cir_buf_read_update ( cir_buf , sock_bytes_written ) ;
 	}
