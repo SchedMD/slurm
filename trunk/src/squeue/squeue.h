@@ -87,7 +87,9 @@ struct squeue_parameters {
 
 extern struct squeue_parameters params;
 
-int parse_command_line( int argc, char* argv[] );
-int parse_format( char* format );
+int  parse_command_line( int argc, char* argv[] );
+int  parse_format( char* format );
+void sort_job_list( List job_list );
+void sort_step_list( List step_list );
 
 #endif
