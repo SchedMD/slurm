@@ -13,6 +13,7 @@ sbin_PROGRAMS = slurmd
 noinst_LIBRARIES = libelan_interconnect.a libno_interconnect.a libforked_io.a  libthreaded_io.a libnbio.a
 
 LDADD = $(top_srcdir)/src/common/libcommon.la \
+	$(top_srcdir)/src/common/libdaemonize.la \
 	$(SSL_LIBS) libno_interconnect.a
 
 
