@@ -8,6 +8,9 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/slurmd/shmem_struct.h>
 
+
+#define OCTAL_RW_PERMISSIONS 0666
+
 /* function prototypes */
 void clear_task ( task_t * task );
 void clear_job_step( job_step_t * job_step );
@@ -21,11 +24,19 @@ void * get_shmem ( )
 {
 	int shmem_id ;
 	void * shmem_addr ;
-	shmem_id = shmget ( 0 , sizeof ( slurmd_shmem_t ) , IPC_CREAT ); 
+	int key ;
+	key = ftok ( ".", 'a' );
+	assert ( key != SLURM_ERROR );
+	shmem_id = shmget ( key , sizeof ( slurmd_shmem_t ) , IPC_CREAT | OCTAL_RW_PERMISSIONS ); 
 	assert ( shmem_id != SLURM_ERROR ) ;
 	shmem_addr = shmat ( shmem_id , NULL , 0 ) ;
 	assert ( shmem_addr != (void * ) SLURM_ERROR ) ;
 	return shmem_addr ;
+}
+
+int rel_shmem ( void * shmem_addr ) 
+{
+	return shmdt( shmem_addr ) ;
 }
 
 /* initializes the shared memory segment, this should only be called once by the master slurmd 

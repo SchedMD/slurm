@@ -33,6 +33,8 @@ global variables
 #define CHILD_ERR_RD 4
 #define CHILD_ERR_WR 5
 
+extern slurmd_shmem_t * shmem_seg ;
+
 /* prototypes */
 void slurm_free_task ( void * _task ) ;
 void * iowatch_launch_thread ( void * arg ) ;
@@ -76,8 +78,9 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 {
 	int i ;
 	int rc ;
-	/* shmem work */
-	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
+	/* shmem work - see slurmd.c shmem_seg this is probably not needed*/
+	//slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
+	slurmd_shmem_t * shmem_ptr = shmem_seg ;
 	/*alloc a job_step objec in shmem for this launch_tasks request */
 	/*launch_tasks should really be named launch_job_step*/
 	job_step_t * curr_job_step = alloc_job_step ( shmem_ptr , launch_msg -> job_id , launch_msg -> job_step_id ) ;
@@ -114,9 +117,9 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 	}
 
 	return_label:
+		rel_shmem ( shmem_ptr ) ;
 	return SLURM_SUCCESS ;
 }
-
 
 void * iowatch_launch_thread ( void * arg ) 
 {
@@ -131,7 +134,7 @@ void * iowatch_launch_thread ( void * arg )
 
 	/* pipe output from child task to srun over sockets */
 	setup_parent_pipes ( task_start->pipes ) ;
-	forward_io ( arg ) ;
+	//forward_io ( arg ) ;
 
 	/* wait for thread to die */
 	pthread_join ( task_start->exec_pthread_id , NULL ) ;
@@ -141,22 +144,28 @@ void * iowatch_launch_thread ( void * arg )
 
 int forward_io ( task_start_t * task_arg ) 
 {
-	//pthread_attr_t pthread_attr ;
+	pthread_attr_t pthread_attr ;
 	slurm_addr dest_addr ;
+	int local_errno;
+
+	/* open stdout & stderr sockets */
 	if ( ( task_arg->sockets[0] = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
 	{
-		info ( "error opening socket to srun to pipe stdout" ) ;
+		local_errno = errno ;	
+		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 		pthread_exit ( 0 ) ;
 	}
 	
 	if ( ( task_arg->sockets[1] = slurm_open_stream ( & dest_addr ) ) == SLURM_PROTOCOL_ERROR )
 	{
-		info ( "error opening socket to srun to pipe stdout" ) ;
+		local_errno = errno ;	
+		info ( "error opening socket to srun to pipe stdout errno %i" , local_errno ) ;
 		pthread_exit ( 0 ) ;
 	}
 	
-	//pthread_attr_init( & pthread_attr ) ;
-	//pthread_attr_setdetachstate ( & pthread_attr , PTHREAD_CREATE_DETACHED ) ;
+	/* spawn io pipe threads */
+	pthread_attr_init( & pthread_attr ) ;
+	pthread_attr_setdetachstate ( & pthread_attr , PTHREAD_CREATE_DETACHED ) ;
 	if ( pthread_create ( & task_arg->io_pthread_id[STDIN_FILENO] , NULL , stdin_io_pipe_thread , task_arg ) )
 		goto return_label;
 	if ( pthread_create ( & task_arg->io_pthread_id[STDOUT_FILENO] , NULL , stdout_io_pipe_thread , task_arg ) )
@@ -164,9 +173,12 @@ int forward_io ( task_start_t * task_arg )
 	if ( pthread_create ( & task_arg->io_pthread_id[STDERR_FILENO] , NULL , stderr_io_pipe_thread , task_arg ) )
 		goto kill_stdout_thread;
 
-	pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , NULL ) ;
-	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
-	pthread_join ( task_arg->io_pthread_id[STDIN_FILENO] , NULL ) ;
+	/* threads have been detatched*/
+	//pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , NULL ) ;
+	//pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
+	//pthread_join ( task_arg->io_pthread_id[STDIN_FILENO] , NULL ) ;
+	
+	goto return_label;
 
 	kill_stdout_thread:
 		pthread_kill ( task_arg->io_pthread_id[STDOUT_FILENO] , SIGKILL );
@@ -234,16 +246,18 @@ void * stderr_io_pipe_thread ( void * arg )
 	{
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
-			info ( "error reading stdout stream for task %i", 1 ) ;
+			info ( "error reading stderr stream for task %i", 1 ) ;
 			pthread_exit ( NULL ) ;
 		}
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
-			info ( "error sending stdout stream for task %i", 1 ) ;
+			info ( "error sending stderr stream for task %i", 1 ) ;
 			pthread_exit ( NULL ) ; 
 		}
 	}
 }
+#define FORK_ERROR -1
+#define CHILD_PROCCESS 0
 
 void * task_exec_thread ( void * arg )
 {
@@ -251,21 +265,32 @@ void * task_exec_thread ( void * arg )
 	launch_tasks_msg_t * launch_msg = task_arg -> launch_msg ;
 	int * pipes = task_arg->pipes ;
 	int rc ;
+	int cpid ;
 
-	/* setup std stream pipes */
-	setup_child_pipes ( pipes ) ;
-	
-	/* setuid and gid*/
-	if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) ;
+	switch ( ( cpid = fork ( ) ) )
+	{
+		case FORK_ERROR:
+			break ;
+		case CHILD_PROCCESS:
 
-	if ( ( rc = setgid ( launch_msg->gid ) ) == SLURM_ERROR ) ;
+			/* setup std stream pipes */
+			setup_child_pipes ( pipes ) ;
 
-	/* setup requested env */
-	setup_task_env ( task_arg ) ;
+			rc ++ ;
+			/* setuid and gid*/
+			//if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) ;
 
-	/* run bash and cmdline */
-	chdir ( launch_msg->cwd ) ;
-	execl ( "/bin/bash" , "bash" , "-c" , launch_msg->cmd_line );
+			//if ( ( rc = setgid ( launch_msg->gid ) ) == SLURM_ERROR ) ;
+
+			/* setup requested env */
+			//setup_task_env ( task_arg ) ;
+
+			/* run bash and cmdline */
+			chdir ( launch_msg->cwd ) ;
+			execl ( "/bin/bash" , "bash" , "-c" , launch_msg->cmd_line );
+		default: /*parent proccess */
+			waitpid ( cpid , NULL , 0 ) ;
+	}
 	return ( void * ) SLURM_SUCCESS ;
 }
 
@@ -298,33 +323,37 @@ int init_parent_pipes ( int * pipes )
 int setup_child_pipes ( int * pipes )
 {
 	int error_code = 0 ;
+	int local_errno;
 
 	/*dup stdin*/
-	close ( STDIN_FILENO );
-	if ( SLURM_ERROR == ( error_code = dup ( CHILD_IN_RD ) ) ) 
+	//close ( STDIN_FILENO );
+	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_IN_RD] , STDIN_FILENO ) ) ) 
 	{
-		info ("dup failed on child standard in pipe");
-		return error_code ;
+		local_errno = errno ;
+		info ("dup failed on child standard in pipe, errno %i" , local_errno );
+		//return error_code ;
 	}
 	close ( CHILD_IN_RD );
 	close ( CHILD_IN_WR );
 
 	/*dup stdout*/
-	close ( STDOUT_FILENO );
-	if ( SLURM_ERROR == ( error_code = dup ( CHILD_OUT_WR ) ) ) 
+	//close ( STDOUT_FILENO );
+	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_OUT_WR] , STDOUT_FILENO ) ) ) 
 	{
-		info ("dup failed on child standard out pipe");
-		return error_code ;
+		local_errno = errno ;
+		info ("dup failed on child standard out pipe, errno %i" , local_errno );
+		//return error_code ;
 	}
 	close ( CHILD_OUT_RD );
 	close ( CHILD_OUT_WR );
 
 	/*dup stderr*/
-	close ( STDERR_FILENO );
-	if ( SLURM_ERROR == ( error_code = dup ( CHILD_ERR_WR ) ) ) 
+	//close ( STDERR_FILENO );
+	if ( SLURM_ERROR == ( error_code |= dup2 ( pipes[CHILD_ERR_WR] , STDERR_FILENO ) ) ) 
 	{
-		info ("dup failed on child standard err pipe");
-		return error_code ;
+		local_errno = errno ;
+		info ("dup failed on child standard err pipe, errno %i" , local_errno );
+		//return error_code ;
 	}
 	close ( CHILD_ERR_RD );
 	close ( CHILD_ERR_WR );
