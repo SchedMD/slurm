@@ -107,7 +107,7 @@ It resembles a remote shell daemon to export control to SLURM.
 Since slurmd initiates and manages user jobs, it must execute as 
 the user root.
 <p>
-slurmctld and/or slurmd should be initiated at node startup time 
+<b>slurmctld</b> and/or <b>slurmd</b> should be initiated at node startup time 
 per the SLURM configuration.
 
 <h2>Examples</h2>
@@ -207,6 +207,15 @@ The authentication infrastructure used is specified in the SLURM
 configuration file and options include: 
 <a href="http://www.theether.org/authd/">authd</a>, munged and none.
 <p>
+Quadrics MPI works directly with SLURM on systems having Quadrics 
+interconnects. For non-Quadrcis interconnect systems,
+<a href="http://www.lam-mpi.org/">LAM/MPI </a> is the preferred 
+MPI infrastructure. LAM/MPI uses the command <i>lamboot</i> to 
+initiate job-specific daemons on each node using SLURM's 
+<i>srun</i> command. This places all MPI processes in a 
+process-tree under the control of the <b>slurmd</b> daemon.
+LAM/MPI version 7.0.4 or higher contains support for SLURM.
+<p>
 SLURM uses the syslog function to record events. It uses a 
 range of importance levels for these messages. Be certain
 that your system's syslog functionality is operational.
@@ -233,7 +242,8 @@ identifies this as an ethernet address at this site.  Port numbers to be
 used for communications are specified as well as various timer values.
 On DPCS systems set FirstJobId to 65536 or higher.  This will permit
 DPCS to specify a SLURM job id to match its own job id without conflicts
-from jobs submitted to SLURM by other means.  <p> A description of the
+from jobs submitted to SLURM by other means.  
+<p> A description of the
 nodes and their grouping into non-overlapping partitions is required.
 Partition and node specifications use node range expressions to identify
 nodes in a concise fashion.  This configuration file defines a 1154 node
@@ -248,10 +258,14 @@ ControlMachine=mcri   ControlAddr=emcri
 #
 AuthType=auth/authd
 Epilog=/usr/local/slurm/etc/epilog
-FirstJobId=65536
-HeartbeatInterval=30
+FastSchedule=1
+JobCompLoc=/var/tmp/jette/slurm.job.log
+JobCompType=jobcomp/filetxt
+JobCredPrivateKey=/usr/local/etc/slurm.key
+JobCredPublicKey=/usr/local/etc/slurm.cert
 PluginDir=/usr/local/slurm/lib/slurm
 Prolog=/usr/local/slurm/etc/prolog
+SchedulerType=sched/backfill
 SlurmUser=slurm
 SlurmctldPort=7002
 SlurmctldTimeout=300
@@ -356,33 +370,40 @@ BackupController  = adevj
 ControlAddr       = eadevi
 ControlMachine    = adevi
 Epilog            = (null)
-FastSchedule      = 0
-FirstJobId        = 0
+FastSchedule      = 1
+FirstJobId        = 1
 NodeHashBase      = 10
 HeartbeatInterval = 60
 InactiveLimit     = 0
+JobCompLoc        = /var/tmp/jette/slurm.job.log
+JobCompType       = jobcomp/filetxt
 JobCredPrivateKey = /etc/slurm/slurm.key
 JobCredPublicKey  = /etc/slurm/slurm.cert
 KillWait          = 30
+MaxJobCnt         = 2000
+MinJobAge         = 300
 PluginDir         = /usr/lib/slurm
-Prioritize        = (null)
 Prolog            = (null)
 ReturnToService   = 1
+SchedulerAuth     = (null)
+SchedulerPort     = 65534
+SchedulerType     = sched/backfill
 SlurmUser         = slurm(97)
 SlurmctldDebug    = 4
 SlurmctldLogFile  = /tmp/slurmctld.log
-SlurmctldPidFile  = (null)
-SlurmctldPort     = 0
+SlurmctldPidFile  = /tmp/slurmctld.pid
+SlurmctldPort     = 7002 
 SlurmctldTimeout  = 300
 SlurmdDebug       = 65534
 SlurmdLogFile     = /tmp/slurmd.log
-SlurmdPidFile     = (null)
-SlurmdPort        = 0
+SlurmdPidFile     = /tmp/slurmd.pid
+SlurmdPort        = 7003
 SlurmdSpoolDir    = /tmp/slurmd
 SlurmdTimeout     = 300
 SLURM_CONFIG_FILE = /etc/slurm/slurm.conf
 StateSaveLocation = /usr/local/tmp/slurm/adev
 TmpFS             = /tmp
+WaitTime          = 0
 
 Slurmctld(primary/backup) at adevi/adevj are UP/UP
 </pre>
@@ -394,7 +415,7 @@ adev0: scontrol shutdown
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/quick.start.guide.html
-<p>Last Modified March 27, 2003</p>
+<p>Last Modified December 9, 2003</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
