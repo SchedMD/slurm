@@ -1778,6 +1778,7 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	packstr_array(job_desc_ptr->environment, job_desc_ptr->env_size,
 		      buffer);
 	packstr(job_desc_ptr->script, buffer);
+	packstr_array(job_desc_ptr->argv, job_desc_ptr->argc, buffer);
 
 	packstr(job_desc_ptr->err, buffer);
 	packstr(job_desc_ptr->in, buffer);
@@ -1837,6 +1838,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpackstr_array(&job_desc_ptr->environment,
 			     &job_desc_ptr->env_size, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->script, &uint16_tmp, buffer);
+	safe_unpackstr_array(&job_desc_ptr->argv, &job_desc_ptr->argc, buffer);
 
 	safe_unpackstr_xmalloc(&job_desc_ptr->err, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->in, &uint16_tmp, buffer);
@@ -1867,6 +1869,7 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	xfree(job_desc_ptr->req_nodes);
 	xfree(job_desc_ptr->environment);
 	xfree(job_desc_ptr->script);
+	xfree(job_desc_ptr->argv);
 	xfree(job_desc_ptr->err);
 	xfree(job_desc_ptr->in);
 	xfree(job_desc_ptr->out);

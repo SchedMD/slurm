@@ -192,6 +192,7 @@ void delete_job_details(struct job_record *job_entry)
 
 	_delete_job_desc_files(job_entry->job_id);
 	xassert (job_entry->details->magic == DETAILS_MAGIC);
+	xfree(job_entry->details->argv);
 	xfree(job_entry->details->req_nodes);
 	xfree(job_entry->details->exc_nodes);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
@@ -936,8 +937,9 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 			if (node_ptr->comp_job_cnt)
 				(node_ptr->comp_job_cnt)--;
 			else
-				error("Node %s comp_job_cnt underflow, JobId=%u", 
-				      node_ptr->name, job_ptr->job_id);
+				error("Node %s comp_job_cnt underflow, "
+					"JobId=%u", 
+					node_ptr->name, job_ptr->job_id);
 		} else if (job_ptr->job_state == JOB_RUNNING) {
 			if (step_test && 
 			    (step_on_node(job_ptr, node_ptr) == 0))
@@ -1046,8 +1048,22 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   kill_on_node_fail=%ld task_dist=%ld script=%.40s...",
 	       kill_on_node_fail, task_dist, job_specs->script);
 
+	if (job_specs->argc == 1)
+		debug3("   argv=\"%s\"", 
+			job_specs->argv[0]);
+	else if (job_specs->argc == 2)
+		debug3("   argv=%s,%s",
+		       job_specs->argv[0],
+		       job_specs->argv[1]);
+	else if (job_specs->argc > 2)
+		debug3("   argv=%s,%s,%s,...",
+		       job_specs->argv[0],
+		       job_specs->argv[1],
+		       job_specs->argv[2]);
+
 	if (job_specs->env_size == 1)
-		debug3("   environment=\"%s\"", job_specs->environment[0]);
+		debug3("   environment=\"%s\"", 
+			job_specs->environment[0]);
 	else if (job_specs->env_size == 2)
 		debug3("   environment=%s,%s",
 		       job_specs->environment[0],
@@ -1101,7 +1117,8 @@ void rehash_jobs(void)
 		hash_table_size = slurmctld_conf.max_job_cnt;
 		job_hash = (struct job_record **) xmalloc(hash_table_size *
 					sizeof(struct job_record *));
-		job_hash_over = (struct job_record **) xmalloc(hash_table_size *
+		job_hash_over = (struct job_record **) 
+					xmalloc(hash_table_size *
 					sizeof(struct job_record *));
 	} else if (hash_table_size < slurmctld_conf.max_job_cnt) {
 		/* If the MaxJobCount grows by too much, the hash table will 
@@ -1301,7 +1318,7 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 			struct step_record *step_ptr;
 
 			step_record_iterator = 
-				list_iterator_create (job_ptr->step_list);		
+				list_iterator_create (job_ptr->step_list);
 			while ((step_ptr = (struct step_record *)
 					list_next (step_record_iterator))) {
 				signal_step_tasks(step_ptr, signal);
@@ -1462,8 +1479,9 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		if (job_desc->contiguous)
 			bit_fill_gaps(req_bitmap);
 		if (bit_super_set(req_bitmap, part_ptr->node_bitmap) != 1) {
-			info("_job_create: requested nodes %s not in partition %s",
-			     job_desc->req_nodes, part_ptr->name);
+			info("_job_create: requested nodes %s not in "
+				"partition %s", job_desc->req_nodes, 
+				part_ptr->name);
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
 		}
@@ -1555,9 +1573,9 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
 	if (job_desc->min_nodes > part_ptr->max_nodes) {
-		info("Job %u requested too many nodes (%d) of partition %s(%d)",
-		     *new_job_id, job_desc->min_nodes, part_ptr->name, 
-		     part_ptr->max_nodes);
+		info("Job %u requested too many nodes (%d) of "
+			"partition %s(%d)", *new_job_id, job_desc->min_nodes, 
+			part_ptr->name, part_ptr->max_nodes);
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
@@ -1932,6 +1950,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->time_last_active = time(NULL);
 
 	detail_ptr = job_ptr->details;
+	detail_ptr->argc = job_desc->argc;
+	detail_ptr->argv = job_desc->argv;
+	job_desc->argv   = (char **) NULL; /* nothing left */
 	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
@@ -2033,11 +2054,11 @@ void job_time_limit(void)
 		    (job_ptr->end_time <= now)) {
 			last_job_update = now;
 			if (inactive_flag)
-				info("Inactivity time limit reached for JobId=%u",
-				     job_ptr->job_id);
+				info("Inactivity time limit reached for "
+					"JobId=%u", job_ptr->job_id);
 			else
 				info("Time limit exhausted for JobId=%u",
-				     job_ptr->job_id);
+					job_ptr->job_id);
 			_job_timed_out(job_ptr);
 			continue;
 		}
@@ -2094,7 +2115,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if ((job_desc_msg->num_procs == NO_VAL) &&
 	    (job_desc_msg->min_nodes == NO_VAL) &&
 	    (job_desc_msg->req_nodes == NULL)) {
-		info("Job failed to specify num_procs, min_nodes or req_nodes");
+		info("Job specified no num_procs, min_nodes or req_nodes");
 		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if ((allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0) &&
@@ -2684,8 +2705,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			if ((job_ptr->job_state == JOB_RUNNING) &&
 			    (list_is_empty(job_ptr->step_list) == 0))
 				_xmit_new_end_time(job_ptr);
-			info("update_job: setting time_limit to %u for job_id %u", 
-			     job_specs->time_limit, job_specs->job_id);
+			info("update_job: setting time_limit to %u for "
+				"job_id %u", job_specs->time_limit, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to increase time limit for job %u",
 			      job_specs->job_id);
@@ -2697,8 +2719,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (job_ptr->priority > job_specs->priority)) {
 			job_ptr->priority = job_specs->priority;
-			info("update_job: setting priority to %u for job_id %u", 
-			     job_specs->priority, job_specs->job_id);
+			info("update_job: setting priority to %u for "
+				"job_id %u", job_specs->priority, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to increase priority for job %u",
 			      job_specs->job_id);
@@ -2710,8 +2733,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (detail_ptr->min_procs > job_specs->min_procs)) {
 			detail_ptr->min_procs = job_specs->min_procs;
-			info("update_job: setting min_procs to %u for job_id %u", 
-			     job_specs->min_procs, job_specs->job_id);
+			info("update_job: setting min_procs to %u for "
+				"job_id %u", job_specs->min_procs, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to increase min_procs for job %u",
 			      job_specs->job_id);
@@ -2723,8 +2747,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (detail_ptr->min_memory > job_specs->min_memory)) {
 			detail_ptr->min_memory = job_specs->min_memory;
-			info("update_job: setting min_memory to %u for job_id %u", 
-			     job_specs->min_memory, job_specs->job_id);
+			info("update_job: setting min_memory to %u for "
+				"job_id %u", job_specs->min_memory, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to increase min_memory for job %u",
 			      job_specs->job_id);
@@ -2736,8 +2761,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (detail_ptr->min_tmp_disk > job_specs->min_tmp_disk)) {
 			detail_ptr->min_tmp_disk = job_specs->min_tmp_disk;
-			info("update_job: setting min_tmp_disk to %u for job_id %u", 
-			     job_specs->min_tmp_disk, job_specs->job_id);
+			info("update_job: setting min_tmp_disk to %u for "
+				"job_id %u", job_specs->min_tmp_disk, 
+				job_specs->job_id);
 		} else {
 			error
 			    ("Attempt to increase min_tmp_disk for job %u",
@@ -2750,8 +2776,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (detail_ptr->num_procs > job_specs->num_procs)) {
 			detail_ptr->num_procs = job_specs->num_procs;
-			info("update_job: setting num_procs to %u for job_id %u", 
-			     job_specs->num_procs, job_specs->job_id);
+			info("update_job: setting num_procs to %u for "
+				"job_id %u", job_specs->num_procs, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to increase num_procs for job %u",
 			      job_specs->job_id);
@@ -2763,8 +2790,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (detail_ptr->min_nodes > job_specs->min_nodes)) {
 			detail_ptr->min_nodes = job_specs->min_nodes;
-			info("update_job: setting min_nodes to %u for job_id %u", 
-			     job_specs->min_nodes, job_specs->job_id);
+			info("update_job: setting min_nodes to %u for "
+				"job_id %u", job_specs->min_nodes, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to increase min_nodes for job %u",
 			      job_specs->job_id);
@@ -2788,31 +2816,34 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (detail_ptr->contiguous > job_specs->contiguous)) {
 			detail_ptr->contiguous = job_specs->contiguous;
-			info("update_job: setting contiguous to %u for job_id %u", 
-			     job_specs->contiguous, job_specs->job_id);
+			info("update_job: setting contiguous to %u for "
+				"job_id %u", job_specs->contiguous, 
+				job_specs->job_id);
 		} else {
 			error("Attempt to add contiguous for job %u",
-			      job_specs->job_id);
+				job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
 
 	if (job_specs->kill_on_node_fail != (uint16_t) NO_VAL) {
 		job_ptr->kill_on_node_fail = job_specs->kill_on_node_fail;
-		info("update_job: setting kill_on_node_fail to %u for job_id %u", 
-		     job_specs->kill_on_node_fail, job_specs->job_id);
+		info("update_job: setting kill_on_node_fail to %u for "
+			"job_id %u", job_specs->kill_on_node_fail, 
+			job_specs->job_id);
 	}
 
 	if (job_specs->features && detail_ptr) {
 		if (super_user) {
 			xfree(detail_ptr->features);
 			detail_ptr->features = job_specs->features;
-			info("update_job: setting features to %s for job_id %u", 
-			     job_specs->features, job_specs->job_id);
+			info("update_job: setting features to %s for "
+				"job_id %u", job_specs->features, 
+				job_specs->job_id);
 			job_specs->features = NULL;
 		} else {
 			error("Attempt to change features for job %u",
-			      job_specs->job_id);
+				job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -2831,12 +2862,13 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			strncpy(job_ptr->partition, job_specs->partition,
 				MAX_NAME_LEN);
 			job_ptr->part_ptr = tmp_part_ptr;
-			info("update_job: setting partition to %s for job_id %u", 
-			     job_specs->partition, job_specs->job_id);
+			info("update_job: setting partition to %s for "
+				"job_id %u", job_specs->partition, 
+				job_specs->job_id);
 			job_specs->partition = NULL;
 		} else {
 			error("Attempt to change partition for job %u",
-			      job_specs->job_id);
+				job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
 	}
@@ -2927,7 +2959,8 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		}
 
 		else if (job_ptr->job_state & JOB_COMPLETING) {
-			/* Re-send kill request as needed, not necessarily an error */
+			/* Re-send kill request as needed, 
+			 * not necessarily an error */
 			_kill_job_on_node(job_id_ptr[i], node_ptr);
 		}
 

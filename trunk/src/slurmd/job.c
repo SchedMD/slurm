@@ -213,12 +213,17 @@ job_batch_job_create(batch_job_launch_msg_t *msg)
 	srun->ifname = xstrdup("/dev/null");
 	list_append(job->sruns, (void *) srun);
 
+#if 0
 	job->argc    = msg->argc > 0 ? msg->argc : 2;
 
 	/* job script has not yet been written out to disk --
 	 * argv will be filled in later
 	 */
 	job->argv    = (char **) xmalloc(job->argc * sizeof(char *));
+#endif
+	job->argc    = msg->argc;
+	job->argv    = _array_copy(job->argc, msg->argv);
+
 
 	if (pipe(job->fdpair) < 0) {
 		error("pipe: %m");

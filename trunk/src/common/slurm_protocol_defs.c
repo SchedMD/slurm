@@ -98,6 +98,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->req_nodes);
 		xfree(msg->exc_nodes);
 		xfree(msg->script);
+		xfree(msg->argv);
 		xfree(msg->err);
 		xfree(msg->in);
 		xfree(msg->out);
