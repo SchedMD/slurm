@@ -883,6 +883,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	if ((nsteps == 0) && !conf->epilog && (msg->conn_fd >= 0)) {
 		slurm_send_rc_msg(msg, ESLURMD_KILL_JOB_ALREADY_COMPLETE);
 		slurm_cred_begin_expiration(conf->vctx, req->job_id);
+		_waiter_complete(req->job_id);
 		return;
 	}
 
