@@ -23,6 +23,7 @@ LDADD   = $(top_srcdir)/src/common/libcommon.la \
 		$(top_srcdir)/src/slurmctld/step_mgr.o \
 		$(top_srcdir)/src/slurmctld/job_mgr.o \
 		$(top_srcdir)/src/slurmctld/node_mgr.o \
+		$(top_srcdir)/src/slurmctld/locks.o \
 		$(top_srcdir)/src/common/parse_spec.o  \
 		$(top_srcdir)/src/slurmctld/read_config.o \
 		$(top_srcdir)/src/api/libslurm.la
