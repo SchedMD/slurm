@@ -1016,6 +1016,7 @@ int Update_Node(char *NodeName, char *Spec) {
     } /* if */
     strcpy(My_Node_List, NodeName);
     str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
+    Last_Node_Update = time(NULL);
     Node_Lock();
     while (str_ptr2) {	/* Break apart by comma separators */
 	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
