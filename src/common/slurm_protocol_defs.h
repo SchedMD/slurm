@@ -319,7 +319,8 @@ typedef struct return_code_msg {
 /* Note: We include select_jobinfo here in addition to the job launch 
  * RPC in order to insure reliable clean-up of a BlueGene partition in
  * the event of some launch failure or race condition preventing slurmd 
- * from getting the BGL_PARTITION_ID at that time */
+ * from getting the BGL_PARTITION_ID at that time. It is needed for 
+ * the job epilog. */
 typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint32_t job_uid;

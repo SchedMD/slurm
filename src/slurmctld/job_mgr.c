@@ -3177,7 +3177,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on node %s",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
-			kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 		}
 
 		else if (job_ptr->job_state == JOB_RUNNING) {
@@ -3196,14 +3196,15 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				error
 				    ("Registered job %u.%u on wrong node %s ",
 				     job_id_ptr[i], step_id_ptr[i], node_name);
-				kill_job_on_node(job_id_ptr[i], node_ptr);
+				kill_job_on_node(job_id_ptr[i], job_ptr, 
+						node_ptr);
 			}
 		}
 
 		else if (job_ptr->job_state & JOB_COMPLETING) {
 			/* Re-send kill request as needed, 
 			 * not necessarily an error */
-			kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 		}
 
 
@@ -3215,7 +3216,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			last_job_update    = now;
 			job_ptr->start_time = job_ptr->end_time  = now;
 			delete_job_details(job_ptr);
-			kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 			job_completion_logger(job_ptr);
 		}
 
@@ -3225,7 +3226,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			     job_id_ptr[i], step_id_ptr[i], 
 			     job_state_string(job_ptr->job_state),
 			     node_name);
-			kill_job_on_node(job_id_ptr[i], node_ptr);
+			kill_job_on_node(job_id_ptr[i], job_ptr, node_ptr);
 		}
 	}
 
@@ -3277,10 +3278,12 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
  *	these jobs and use this function to kill them - one 
  *	agent request per node as they register.
  * IN job_id - id of the job to be killed
+ * IN job_ptr - pointer to terminating job (NULL if unknown, e.g. orphaned)
  * IN node_ptr - pointer to the node on which the job resides
  */
 extern void
-kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
+kill_job_on_node(uint32_t job_id, struct job_record *job_ptr, 
+		struct node_record *node_ptr)
 {
 	agent_arg_t *agent_info;
 	kill_job_msg_t *kill_req;
@@ -3289,6 +3292,10 @@ kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 
 	kill_req = xmalloc(sizeof(kill_job_msg_t));
 	kill_req->job_id	= job_id;
+	if (job_ptr) {  /* NULL if unknown */
+		kill_req->select_jobinfo = select_g_copy_jobinfo(
+			job_ptr->select_jobinfo);
+	}
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
