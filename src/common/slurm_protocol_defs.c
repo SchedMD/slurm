@@ -65,30 +65,36 @@ void slurm_free_return_code_msg(return_code_msg_t * msg)
 	xfree(msg);
 }
 
-void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * build_ptr)
+void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 {
-	if (build_ptr) {
-		if (build_ptr->backup_addr)
-			xfree(build_ptr->backup_addr);
-		if (build_ptr->backup_controller)
-			xfree(build_ptr->backup_controller);
-		if (build_ptr->control_addr)
-			xfree(build_ptr->control_addr);
-		if (build_ptr->control_machine)
-			xfree(build_ptr->control_machine);
-		if (build_ptr->epilog)
-			xfree(build_ptr->epilog);
-		if (build_ptr->prioritize)
-			xfree(build_ptr->prioritize);
-		if (build_ptr->prolog)
-			xfree(build_ptr->prolog);
-		if (build_ptr->slurm_conf)
-			xfree(build_ptr->slurm_conf);
-		if (build_ptr->state_save_location)
-			xfree(build_ptr->state_save_location);
-		if (build_ptr->tmp_fs)
-			xfree(build_ptr->tmp_fs);
-		xfree(build_ptr);
+	if (config_ptr) {
+		if (config_ptr->backup_addr)
+			xfree(config_ptr->backup_addr);
+		if (config_ptr->backup_controller)
+			xfree(config_ptr->backup_controller);
+		if (config_ptr->control_addr)
+			xfree(config_ptr->control_addr);
+		if (config_ptr->control_machine)
+			xfree(config_ptr->control_machine);
+		if (config_ptr->epilog)
+			xfree(config_ptr->epilog);
+		if (config_ptr->prioritize)
+			xfree(config_ptr->prioritize);
+		if (config_ptr->prolog)
+			xfree(config_ptr->prolog);
+		if (config_ptr->slurmctld_logfile)
+			xfree(config_ptr->slurmctld_logfile);
+		if (config_ptr->slurmd_logfile)
+			xfree(config_ptr->slurmd_logfile);
+		if (config_ptr->slurmd_spooldir)
+			xfree(config_ptr->slurmd_spooldir);
+		if (config_ptr->slurm_conf)
+			xfree(config_ptr->slurm_conf);
+		if (config_ptr->state_save_location)
+			xfree(config_ptr->state_save_location);
+		if (config_ptr->tmp_fs)
+			xfree(config_ptr->tmp_fs);
+		xfree(config_ptr);
 	}
 }
 

@@ -56,7 +56,10 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 	fprintf(out, "Prioritize        = %s\n", slurm_ctl_conf_ptr->prioritize);
 	fprintf(out, "Prolog            = %s\n", slurm_ctl_conf_ptr->prolog);
 	fprintf(out, "ReturnToService   = %u\n", slurm_ctl_conf_ptr->ret2service);
+	fprintf(out, "SlurmctldLogFile  = %s\n", slurm_ctl_conf_ptr->slurmctld_logfile);
 	fprintf(out, "SlurmctldTimeout  = %u\n", slurm_ctl_conf_ptr->slurmctld_timeout);
+	fprintf(out, "SlurmdLogFile     = %s\n", slurm_ctl_conf_ptr->slurmd_logfile);
+	fprintf(out, "SlurmdSpoolDir    = %s\n", slurm_ctl_conf_ptr->slurmd_spooldir);
 	fprintf(out, "SlurmdTimeout     = %u\n", slurm_ctl_conf_ptr->slurmd_timeout);
 	fprintf(out, "SLURM_CONFIG_FILE = %s\n", slurm_ctl_conf_ptr->slurm_conf);
 	fprintf(out, "StateSaveLocation = %s\n", slurm_ctl_conf_ptr->state_save_location);
