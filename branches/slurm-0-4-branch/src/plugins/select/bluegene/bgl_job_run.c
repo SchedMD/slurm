@@ -416,7 +416,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	db_job_id_t job_id;
 
 	//debug("getting the job info");
-	live_states = JOB_ALL_FLAG & (~RM_JOB_TERMINATED) & (~RM_JOB_KILLED);
+	live_states = JOB_ALL_FLAG & (~JOB_TERMINATED_FLAG) & (~JOB_KILLED_FLAG);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bgl_err_str(rc));
 		return;
