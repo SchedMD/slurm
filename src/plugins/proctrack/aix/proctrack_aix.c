@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  proctrack_sid.c - process tracking via session ID plugin.
+ *  proctrack_aix.c - process tracking via AIX kernel extension.
  *****************************************************************************
  *  Copyright (C) 2005 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -77,8 +77,8 @@ extern pid_t setsid(void);	/* missing from <unistd.h> */
  * minimum versions for their plugins as the job completion logging API 
  * matures.
  */
-const char plugin_name[]      = "Process tracking via process group ID plugin";
-const char plugin_type[]      = "proctrack/sid";
+const char plugin_name[]      = "Process tracking via AIX kernel extension plugin";
+const char plugin_type[]      = "proctrack/aix";
 const uint32_t plugin_version = 90;
 
 /*

@@ -44,7 +44,7 @@
 #define DEFAULT_MIN_JOB_AGE         300
 #define DEFAULT_MPICH_GM_DIR        0
 #ifdef HAVE_AIX		/* AIX specific default configuration parameters */
-#  define DEFAULT_PROCTRACK_TYPE    "proctrack/ker_ext"
+#  define DEFAULT_PROCTRACK_TYPE    "proctrack/aix"
 #else
 #  define DEFAULT_PROCTRACK_TYPE    "proctrack/sid"
 #endif
