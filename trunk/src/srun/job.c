@@ -83,8 +83,9 @@ _job_create_internal(allocation_info_t *info)
 	hl = hostlist_create(job->nodelist);
 	job->nhosts = hostlist_count(hl);
 
-	job->jobid  = info->jobid;
-	job->stepid = info->stepid;
+	job->jobid   = info->jobid;
+	job->stepid  = info->stepid;
+	job->old_job = false;
 
 	job->slurmd_addr = xmalloc(job->nhosts * sizeof(slurm_addr));
 	if (info->addrs)
@@ -277,8 +278,23 @@ job_force_termination(job_t *job)
 	pthread_kill(job->ioid, SIGTERM);
 }
 
+void job_fatal(job_t *job, const char *msg)
+{
+	if (msg) error(msg);
+
+	job_destroy(job);
+
+	exit(1);
+}
 
 void 
-job_destroy(job_t *job, const char *msg)
+job_destroy(job_t *job)
 {
+	if (job->old_job) {
+		debug("cancelling job step %u.%u", job->jobid, job->stepid);
+		slurm_complete_job_step(job->jobid, job->stepid, 0, 0);
+	} else if (!opt.no_alloc) {
+		debug("cancelling job %u", job->jobid);
+		slurm_complete_job(job->jobid, 0, 0);
+	}
 }
