@@ -843,11 +843,8 @@ void update_logging(void)
 {
 	/* Preserve execute line arguments (if any) */
 	if (debug_level) {
-		if ((LOG_LEVEL_INFO + debug_level) > LOG_LEVEL_DEBUG3)
-			slurmctld_conf.slurmctld_debug = LOG_LEVEL_DEBUG3;
-		else
-			slurmctld_conf.slurmctld_debug = LOG_LEVEL_INFO + 
-							 debug_level;
+		slurmctld_conf.slurmctld_debug = MIN(
+			(LOG_LEVEL_INFO + debug_level), LOG_LEVEL_DEBUG3);
 	} 
 	if (slurmctld_conf.slurmctld_debug != (uint16_t) NO_VAL) {
 		log_opts.stderr_level  = slurmctld_conf.slurmctld_debug;
