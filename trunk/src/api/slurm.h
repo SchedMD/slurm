@@ -1,11 +1,31 @@
+/*****************************************************************************\
+ *  slurm.h - Definitions for all of the SLURM RPCs
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette1@llnl.gov>, Joey Ekstrom <ekstrom1@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #ifndef _SLURM_H
 #define _SLURM_H
-/* 
-
- * see slurm.h for documentation on external functions and data structures
- *
- * author: moe jette, jette@llnl.gov
- */
 
 #include <src/common/slurm_protocol_defs.h>
 #include <stdio.h>
@@ -77,21 +97,9 @@ extern void slurm_free_partition_info_msg ( partition_info_msg_t * part_info_ptr
 extern void slurm_print_partition_info_msg ( FILE*, partition_info_msg_t * part_info_ptr ) ;
 extern void slurm_print_partition_info ( FILE*, partition_info_t * part_ptr ) ;
 
-/*
- * slurm_load_ctl_conf - load the slurm build information buffer for use by info 
- *	gathering APIs if build info has changed since the time specified. 
- * input: update_time - time of last update
- *	build_buffer_ptr - place to park build_buffer pointer
- * output: build_buffer_ptr - pointer to allocated build_buffer
- *	returns -1 if no update since update_time, 
- *		0 if update with no error, 
- *		EINVAL if the buffer (version or otherwise) is invalid, 
- *		ENOMEM if malloc failure
- * NOTE: the allocated memory at build_buffer_ptr freed by slurm_free_node_info.
- */
+/* slurm_load_ctl_conf - load the slurm configuration information if changed. */
 extern int slurm_load_ctl_conf (time_t update_time, 
 	slurm_ctl_conf_t  **slurm_ctl_conf_ptr);
-
 
 /* slurm_load_job - load the supplied job information buffer if changed */
 extern int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr);
@@ -99,50 +107,24 @@ extern int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pp
 /* slurm_load_node - load the supplied node information buffer if changed */
 extern int slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr);
 
-/*
- * slurm_load_part - load the supplied partition information buffer for use by info 
- *	gathering APIs if partition records have changed since the time specified. 
- * input: update_time - time of last update
- *	part_buffer_ptr - place to park part_buffer pointer
- * output: part_buffer_ptr - pointer to allocated part_buffer
- *	returns -1 if no update since update_time, 
- *		0 if update with no error, 
- *		EINVAL if the buffer (version or otherwise) is invalid, 
- *		ENOMEM if malloc failure
- * NOTE: the allocated memory at part_buffer_ptr freed by slurm_free_part_info.
- */
+/* slurm_load_node - load the supplied partition information buffer if changed */
 extern int slurm_load_partitions (time_t update_time, partition_info_msg_t **part_buffer_ptr);
 
 /* slurm_submit_job - load the supplied node information buffer if changed */
 extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
 		submit_response_msg_t ** slurm_alloc_msg );
 
-extern int slurm_get_job_steps ( uint32_t job_id, int16_t step_id, job_step_info_response_msg_t **step_response_pptr);
+extern int slurm_get_job_steps ( uint32_t job_id, uint32_t step_id, job_step_info_response_msg_t **step_response_pptr);
 extern void  slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_step_info_msg_ptr );
 extern void slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr );
 
-/*
- * slurm_will_run - determine if a job would execute immediately 
- *	if submitted. 
- * input: spec - specification of the job's constraints
- * output: returns 0 if job would run now, EINVAL if the request 
- *		would never run, EAGAIN if job would run later
- * NOTE: required specification include: User=<uid>
- * NOTE: optional specifications include: Contiguous=<YES|NO> 
- *	Features=<features> Groups=<groups>
- *	Key=<key> MinProcs=<count> 
- *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
- *	Priority=<integer> ReqNodes=<node_list>
- *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
- *	TotalProcs=<count>
- */
+/* slurm_will_run - determine if a job would execute immediately if submitted. */
 extern int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg );
 
 /* slurm_reconfigure - request that slurmctld re-read the configuration files */
 extern int slurm_reconfigure ();
 
-/* 
- * slurm_shutdown - request that slurmctld terminate gracefully */
+/* slurm_shutdown - request that slurmctld terminate gracefully */
 extern int slurm_shutdown ();
 
 /* update a job, node, or partition's configuration, root access only */ 
