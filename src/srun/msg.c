@@ -345,7 +345,7 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 
 
 static void 
-_print_exit_status(hostlist_t hl, int status)
+_print_exit_status(hostlist_t hl, char *host, int status)
 {
 	char buf[1024];
 	char *corestr = "";
@@ -365,9 +365,9 @@ _print_exit_status(hostlist_t hl, int status)
 #endif
 
 	if (WIFSIGNALED(status))
-		error("%s: %s%s", buf, sigstr(status), corestr); 
+		error("%s: %s: %s%s", host, buf, sigstr(status), corestr); 
 	else
-		error("%s: Exit %d", buf, WEXITSTATUS(status));
+		error("%s: %s: Exit %d", host, buf, WEXITSTATUS(status));
 
 	return;
 }
@@ -377,6 +377,8 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg       = (task_exit_msg_t *) exit_msg->data;
 	hostlist_t       hl        = hostlist_create(NULL);
+	int              hostid    = job->hostid[msg->task_id_list[0]]; 
+	char            *host      = job->host[hostid];
 	int              status    = msg->return_code;
 	int              i;
 	char             buf[1024];
@@ -412,7 +414,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 		}
 	}
 
-	_print_exit_status(hl, status);
+	_print_exit_status(hl, host, status);
 
 	hostlist_destroy(hl);
 }
