@@ -1,6 +1,7 @@
 /* GLOBAL INCLUDES */
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 /* PROJECT INCLUDES */
 #include <src/common/slurm_protocol_interface.h>
@@ -13,7 +14,6 @@
 #include <src/common/log.h>
 
 /* EXTERNAL VARIABLES */
-extern int errno ;
 
 /* #DEFINES */
 
