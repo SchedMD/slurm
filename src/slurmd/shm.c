@@ -198,12 +198,13 @@ shm_cleanup(void)
 		if (sem_unlink(s) < 0)
 			error("sem_unlink: %m");
 		xfree(s);
-	} 
 	
-	/* This seems to be the only way to get a shared memory ID given
-	 *  a key, if you don't already know the size of the region.
-	 */
-	id = shmget(key, 1, 0);
+		/* This seems to be the only way to get a shared memory ID 
+		 *  given a key, if you don't already know the size of the 
+		 *  region.
+		 */
+		id = shmget(key, 1, 0);
+	} 
 
 	if ((id > 0) && (shmctl(shmid, IPC_RMID, NULL) < 0)) {
 		error ("Unable to destroy existing shm segment");
