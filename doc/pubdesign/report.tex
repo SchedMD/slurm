@@ -61,8 +61,6 @@ be running the Linux operating system, but will design so as to simplify
 support of other operating systems. We assume the nodes will be interconnected
 with Quadrics or Gigabit Ethernet, although modular design will simplify
 integration of code to support other interconnects. We assume access to this
-with Quadrics or Gigabit Ethernet, although modular design will simplify
-integration of code to support other interconnects. We assume access to this
 interconnect will be restricted to nodes of this cluster for security reasons.
 It is desirable that the times on all nodes be synchronized using NTP or other
 means, although that will not be required for the SLURM operations. The job's
@@ -101,8 +99,6 @@ capabilities including: DPCS' central manager on Linux,.
 
 Daemons will be required on each node in the cluster to monitor its state.
 While existing tools can be combined for machine status and management, such an
-emons will be required on each node in the cluster to monitor its state.
-While existing tools can be combined for machine status and management, such an
 arrangement lacks the scalability required for the support of thousands of
 nodes. We believe this poses serious problems in the management of large Linux
 clusters and feel compelled to address this issue. 
@@ -120,6 +116,7 @@ intend to collect on the nodes includes:
 \item Size of real memory on the node
 \item Size of virtual memory on the node
 \item Size of local disk storage
+\item Operating System version
 \item State of node (RUN, IDLE, DRAIN, etc.)
 \item Cumulative CPU use (by job, kernel and daemons, possibly reporting 
 both user and system time independently)
@@ -130,17 +127,15 @@ both user and system time independently)
 \end{itemize}
 
 This information is readily available through system calls and reading the
-process table. DPCS daemons are available to collect the above data. The
-communications protocols in those daemon and logic to associate processes with
-jobs would require modification.
+process table. DPCS daemons to collect the above data are available as models. 
+The communications protocols in those daemon and logic to associate processes 
+with jobs would require modification.
 
 It is not likely that each node in the cluster could report such information
 directly to the control machine without severe scalability constraints. This
 could be remedied by using intermediate nodes in a hierarchical fashion to
 coalesce the data. These nodes could be ones not designated for parallel job
 execution (e.g. login or I/O processing nodes). A status manager will be
-required on the control machine to detect and respond to anomalies as well as
-maintain the records. This data collection system is similar to that
 required on the control machine to detect and respond to anomalies as well as
 maintain the records. This data collection system is similar to that
 implemented in DPCS. 
@@ -152,8 +147,8 @@ execution of user jobs. Data to be associated with a partition will include:
 \begin{itemize}
 \item Name and/or ID number
 \item Job types permitted (INTERACTIVE and/or BATCH)
-\item Maximum execution time (required at least for interactive jobs)
-\item Maximum node count (required at least for interactive jobs)
+\item Maximum job execution time (required at least for interactive jobs)
+\item Maximum job node count (required at least for interactive jobs)
 \item List of associated nodes
 \item State of partition (UP, DOWN, DRAINING, etc.)
 \item Default (YES or NO)
@@ -173,17 +168,15 @@ a simple command-line tool utilizing the API.
 
 A daemon on each compute node would be responsible for allocating switch
 channels and assigning them to user jobs. The switch channels would be
-de-allocated upon job termination. If there are ample switch channels and
+de-allocated upon job termination. Switch health monitoring tools will 
+also be implemented in phase two. If there are ample switch channels and
 bandwidth available, it may be desirable for the SLURM daemons to use the
 switch directly for communications. This option will be investigated in phase
-three. Switch health monitoring tools will also be investigated in phase
-thrree.
+three. 
 
 \section{Scheduling}
 
 We propose that all scheduling decisions be relegated to DPCS. DPCS has
-sophisticated and flexible scheduling algorithms that suit our needs well and
-provide the scalability required for this application. Most of the resource
 sophisticated and flexible scheduling algorithms that suit our needs well and
 provide the scalability required for this application. Most of the resource
 accounting and some of the job management functions presently within DPCS would
@@ -191,11 +184,11 @@ be moved into the proposed SLURM Job Management and Job Status components.
 
 DPCS will require some modification to operate within this new, richer
 environment. The DPCS Central Manager would also require porting to Linux. It
-would be simple for other schedulers including PBS, LSF, and Globus to operate
-on the SLURM infrastructure, if so desired. 
+would be simple for other schedulers including Maui, PBS, LSF, and Globus 
+to operate on the SLURM infrastructure, if so desired. 
 
 The DPCS also writes job accounting records to Unix files. Presently, these are
-written to a machine with the Sybase database. This data can be accessed via
+moved to a machine with the Sybase database. This data can be accessed via
 command-line and web interfaces with Kerberos authentication and authorization.
 We are not contemplating making this database software available through SLURM,
 but might consider writing this data to an open source database if so desired.
@@ -217,10 +210,9 @@ list, etc.  - Gregg Hommes}
 \item Signal job for termination (following DPCS model of explicit application
 registration)
 \item Terminate job (remove all processes)
-\item Preempt job 
-\item Resume job
+\item Preempt/resume job 
 \item Checkpoint/restart job (future)
-\item Change node count of running job (could fail if insufficient resources)
+\item Change node count of running job (could fail if insufficient resources are available)
 \end{itemize}
 
 Since scheduling decisions are being provided by the scheduling component,
@@ -279,8 +271,6 @@ will be processed through those daemons.
 \section{Infrastructure: Other}
 
 We have defined an "overlord" daemon for starting other daemons and insuring
-they keep running properly. We will develop configuration management and
-logging tools as part of the overload development. These tools will be
 they keep running properly. We will develop configuration management and
 logging tools as part of the overload development. These tools will be
 incorporated into the other daemons. SLURM daemons will have configurable debug
@@ -455,15 +445,15 @@ LoadLeveler\footnote{
 http://www-1.ibm.com/servers/eserver/pseries/software/sp/loadleveler.html}
  is a proprietary batch system and parallel job manager by 
 IBM. LoadLeveler supports few non-IBM systems. Very primitive 
-scheduling software dependent upon other software for reasonable 
-performance (e.g. Maui and DPCS). Many soft and hard limits. Very 
+scheduling software exists and other software is required for reasonable 
+performance (e.g. Maui and DPCS). Many soft and hard limits are available. Very 
 flexible queue and job class structure operating in "matrix" fashion 
 (probably overly complex). Many configuration files with signals to 
 daemons used to update configuration (like LSF, good). All jobs must 
 be initiated through LoadLeveler (no real "interactive" jobs, just 
 high priority queue for smaller jobs). Job accounting only available 
 on termination (very bad for long-running jobs). Good status 
-information on nodes and LSF daemons. Allocates jobs either entire 
+information on nodes and LoadLeveler daemons. Allocates jobs either entire 
 nodes or shared nodes depending upon configuration.
 
 A special version of MPI is required. LoadLeveler allocates 
