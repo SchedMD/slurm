@@ -286,8 +286,8 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
  * partitions when each job is started, but only at slurmctld 
  * startup on an as needed basis. */
 	int rc;
-	rm_partition_state_t state;
-	rm_partition_t *my_part;
+/* 	rm_partition_state_t state; */
+/* 	rm_partition_t *my_part; */
 	
 	info("Booting partition %s", bgl_part_id);
 	if ((rc = pm_create_partition(bgl_part_id)) != STATUS_OK) {
@@ -295,15 +295,17 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 			bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
-	if ((rc = rm_get_partition(bgl_part_id, &my_part))
-	    != STATUS_OK) {
-		error("couldn't get the partition in bgl_free_partition");
-	} else {
-		rm_get_data(my_part, RM_PartitionState, &state);
-		if(state != RM_PARTITION_READY)
-			error("partition not in ready state!");
-	}
-		
+/* 	while((state != RM_PARTITION_READY) || (state != RM_PARTITION_FREE)) { */
+/* 		if ((rc = rm_get_partition(bgl_part_id, &my_part)) */
+/* 		    != STATUS_OK) { */
+/* 			error("couldn't get the partition in bgl_free_partition"); */
+/* 		} else { */
+/* 			rm_get_data(my_part, RM_PartitionState, &state); */
+/* 		} */
+/* 		sleep(3); */
+/* 	}	 */
+/* 	if(state != RM_PARTITION_READY) */
+/* 		error("partition not in ready state!"); */
 #endif
 	return SLURM_SUCCESS;
 }
