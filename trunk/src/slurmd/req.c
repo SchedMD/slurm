@@ -32,6 +32,7 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/param.h>
+#include <unistd.h>
 
 #include "src/common/credential_utils.h"
 #include "src/common/log.h"
@@ -315,10 +316,11 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	List         steps = shm_get_steps();
 	ListIterator i     = list_iterator_create(steps);
 	job_step_t  *s     = NULL;  
-	bool        found  = false; 
+	bool         found = false; 
+	pid_t	     mysid = getsid(req->job_pid);
 
-	while ((s = list_next(i))) {
-		if (s->sid == req->job_pid) {
+	while ((mysid != -1) && (s = list_next(i))) {
+		if (s->sid == mysid) {
 			resp.job_id = s->jobid;
 			found = true;
 			break;
