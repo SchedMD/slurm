@@ -1378,7 +1378,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	}
 	if ((exc_bitmap != NULL) && (req_bitmap != NULL)) {
 		bitstr_t *tmp_bitmap = NULL;
-		bool first_set;
+		bitoff_t first_set;
 		tmp_bitmap = bit_copy(exc_bitmap);
 		bit_and(tmp_bitmap, req_bitmap);
 		first_set = bit_ffs(tmp_bitmap);
