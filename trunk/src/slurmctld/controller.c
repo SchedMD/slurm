@@ -67,6 +67,7 @@ pthread_t thread_id_main = (pthread_t)0;
 pthread_t thread_id_rpc = (pthread_t)0;
 extern slurm_ssl_key_ctx_t sign_ctx ;
 int daemonize = 0;
+int recover = 0;
 
 int msg_from_root (void);
 void slurmctld_req ( slurm_msg_t * msg );
@@ -75,6 +76,7 @@ void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
 void report_locks_set ( void );
+inline static void save_all_state ( void );
 void *slurmctld_background ( void * no_data );
 void slurmctld_cleanup (void *context);
 void *slurmctld_rpc_mgr( void * no_data );
@@ -133,7 +135,7 @@ main (int argc, char *argv[])
 	}
 	init_locks ( );
 
-	if ( ( error_code = read_slurm_conf ()) ) 
+	if ( ( error_code = read_slurm_conf (recover)) ) 
 		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("getnodename errno %d", error_code);
@@ -203,7 +205,7 @@ main (int argc, char *argv[])
 				break;
 			case SIGHUP:	/* kill -1 */
 				info ("Reconfigure signal (SIGHUP) received\n");
-				error_code = read_slurm_conf ( );
+				error_code = read_slurm_conf (0);
 				if (error_code)
 					error ("read_slurm_conf error %d", error_code);
 				break;
@@ -362,12 +364,12 @@ slurmctld_background ( void * no_data )
 				report_locks_set ( );
 				last_checkpoint_time = now;
 				/* don't lock to insure checkpoint never blocks */
-				/* issue call to save state */
+				save_all_state ( );
 			}
 			else {
 				last_checkpoint_time = now;
 				lock_slurmctld (state_write_lock);
-				/* issue call to save state */
+				save_all_state ( );
 				unlock_slurmctld (state_write_lock);
 			}
 		}
@@ -375,6 +377,13 @@ slurmctld_background ( void * no_data )
 	}
 	debug3 ("slurmctld_background shutting down");
 	pthread_exit ((void *)0);
+}
+
+/* save_all_state - save slurmctld state for later recovery */
+void
+save_all_state ( void )
+{
+	dump_all_node_state ( );
 }
 
 /* report_locks_set - report any slurmctld locks left set */
@@ -1116,7 +1125,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 /* must be user root */
 
 	/* do RPC call */
-	error_code = read_slurm_conf ( );
+	error_code = read_slurm_conf (0);
 
 	/* return result */
 	if (error_code)
@@ -1388,7 +1397,7 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 	char *log_file = NULL;
 
 	opterr = 0;
-	while ((c = getopt (argc, argv, "de:f:hl:L:s:")) != -1)
+	while ((c = getopt (argc, argv, "de:f:hl:L:rs:")) != -1)
 		switch (c)
 		{
 			case 'd':
@@ -1425,6 +1434,9 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 			case 'L':
 				log_file = optarg;
 				break;
+			case 'r':
+				recover = 1;
+				break;
 			case 's':
 				errlev = strtol (optarg, (char **) NULL, 10);
 				if ((errlev < LOG_LEVEL_QUIET) || 
@@ -1455,6 +1467,7 @@ usage (char *prog_name)
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
 	printf ("  -L <file>    Set logfile to the supplied file name\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
+	printf ("  -r           Recover state from last checkpoint\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
 }
 

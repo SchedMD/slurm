@@ -50,6 +50,7 @@ struct part_record *default_part_loc = NULL;	/* location of default partition */
 time_t last_part_update;		/* time of last update to partition records */
 
 int	build_part_bitmap (struct part_record *part_record_point);
+void	dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
 void	list_delete_part (void *part_entry);
 int	list_find_part (void *part_entry, void *key);
 
@@ -317,6 +318,148 @@ delete_part_record (char *name)
 
 
 /* 
+ * dump_all_part_state - save the state of all partitions to file
+ */
+int
+dump_all_part_state ( void )
+{
+	ListIterator part_record_iterator;
+	struct part_record *part_record_point;
+	int buf_len, buffer_allocated, buffer_offset = 0;
+	char *buffer;
+	void *buf_ptr;
+	/* Locks: Read partition */
+	slurmctld_lock_t part_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
+
+	lock_slurmctld (part_read_lock);
+
+	buffer_allocated = (BUF_SIZE*16);
+	buffer = xmalloc(buffer_allocated);
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
+
+	/* write header: time */
+	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
+
+	/* write partition records to buffer */
+	part_record_iterator = list_iterator_create (part_list);		
+	while ((part_record_point = (struct part_record *) list_next (part_record_iterator))) {
+		if (part_record_point->magic != PART_MAGIC)
+			fatal ("pack_all_part: data integrity is bad");
+
+		dump_part_state (part_record_point, &buf_ptr, &buf_len);
+		if (buf_len > BUF_SIZE) 
+			continue;
+		buffer_allocated += (BUF_SIZE*16);
+		buf_len += (BUF_SIZE*16);
+		buffer_offset = (char *)buf_ptr - buffer;
+		xrealloc(buffer, buffer_allocated);
+		buf_ptr = buffer + buffer_offset;
+	}			
+	list_iterator_destroy (part_record_iterator);
+	unlock_slurmctld (part_read_lock);
+
+	/* write the buffer to file */
+	lock_state_files ();
+
+	unlock_state_files ();
+
+	xfree (buffer);
+	return 0;
+}
+
+/*
+ * dump_part_state - dump the state of a specific partition to a buffer
+ * input:  part_record_point - pointer to partition for which information is requested
+ *	buf_ptr - buffer for node information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ */
+void 
+dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
+{
+	uint16_t default_part_flag;
+
+	if (default_part_loc == part_record_point)
+		default_part_flag = 1;
+	else
+		default_part_flag = 0;
+
+	packstr (part_record_point->name, buf_ptr, buf_len);
+	pack32  (part_record_point->max_time, buf_ptr, buf_len);
+	pack32  (part_record_point->max_nodes, buf_ptr, buf_len);
+
+	pack16  (default_part_flag, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->root_only, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
+
+	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
+	packstr (part_record_point->allow_groups, buf_ptr, buf_len);
+	packstr (part_record_point->nodes, buf_ptr, buf_len);
+}
+
+/*
+ * load_part_state - load the partition state from file, recover from slurmctld restart.
+ *	execute this after loading the configuration file data.
+ */
+int
+load_part_state ( void )
+{
+	char *part_name, *allow_groups, *nodes;
+	uint32_t dump_time, max_time, max_nodes;
+	uint16_t name_len, def_part_flag, root_only, shared, state_up;
+	struct part_record *part_ptr;
+	uint32_t buffer_size;
+	void *buf_ptr;
+
+	/* read the file */
+	lock_state_files ();
+	unpack32 (&dump_time, &buf_ptr, &buffer_size);
+
+	while (1) {
+		unpackstr_xmalloc (&part_name, &name_len, &buf_ptr, &buffer_size);
+		unpack32 (&max_time, &buf_ptr, &buffer_size);
+		unpack32 (&max_nodes, &buf_ptr, &buffer_size);
+		unpack16 (&def_part_flag, &buf_ptr, &buffer_size);
+		unpack16 (&root_only, &buf_ptr, &buffer_size);
+		unpack16 (&shared, &buf_ptr, &buffer_size);
+		unpack16 (&state_up, &buf_ptr, &buffer_size);
+		unpackstr_xmalloc (&allow_groups, &name_len, &buf_ptr, &buffer_size);
+		unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
+
+		/* find record and perform update */
+		part_ptr = list_find_first (part_list, &list_find_part, part_name);
+
+		if (part_ptr == NULL) {
+			error ("load_part_state: partition %s removed from configuration file.",
+				part_name);
+		}
+		else {
+			part_ptr->max_time = max_time;
+			part_ptr->max_nodes = max_nodes;
+			if (def_part_flag) {
+				strcpy (default_part_name, part_name);
+				default_part_loc = part_ptr;	
+			}
+			part_ptr->root_only = root_only;
+			part_ptr->shared = shared;
+			part_ptr->state_up = state_up;
+			if (part_ptr->allow_groups)
+				xfree (part_ptr->allow_groups);
+			part_ptr->allow_groups = allow_groups;
+			if (part_ptr->nodes)
+				xfree (part_ptr->nodes);
+			part_ptr->allow_groups = nodes;
+		}		
+
+		if (part_name)
+			xfree (part_name);
+	}
+	unlock_state_files ();
+}
+
+/* 
  * find_part_record - find a record for partition with specified name
  * input: name - name of the desired partition 
  * output: return pointer to node partition or null if not found
@@ -475,17 +618,14 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 			fatal ("pack_all_part: data integrity is bad");
 
 		pack_part(part_record_point, &buf_ptr, &buf_len);
+		parts_packed ++ ;
 		if (buf_len > BUF_SIZE) 
-		{
-			parts_packed ++ ;
 			continue;
-		}
 		buffer_allocated += (BUF_SIZE*16);
 		buf_len += (BUF_SIZE*16);
 		buffer_offset = (char *)buf_ptr - buffer;
 		xrealloc(buffer, buffer_allocated);
 		buf_ptr = buffer + buffer_offset;
-		parts_packed ++ ;
 	}			
 
 	list_iterator_destroy (part_record_iterator);

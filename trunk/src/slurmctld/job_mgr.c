@@ -74,8 +74,6 @@ void	delete_job_desc_files (uint32_t job_id);
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
-int 	mkdir2 (char * path, int modes);
-int 	rmdir2 (char * path);
 int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
 int	write_data_to_file ( char * file_name, char * data ) ;
@@ -768,8 +766,6 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 	dir_name = xstrdup (slurmctld_conf . state_save_location);
 	if (dir_name == NULL)
 		fatal ("Memory exhausted");
-	if (stat (dir_name, &sbuf) == -1)	/* create base directory as needed */
-		(void) mkdir2 (dir_name, 0744);
 
 	/* Create job_id specific directory */
 	sprintf (job_dir, "/job.%d", job_id);

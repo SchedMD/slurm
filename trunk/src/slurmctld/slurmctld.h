@@ -259,6 +259,12 @@ extern int delete_part_record (char *name);
 /* delete_step_record - delete record for job step for specified job_ptr and step_id */
 extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 
+/* dump_all_node_state - save the state of all nodes to file */
+extern int dump_all_node_state ( void );
+
+/* dump_all_part_state - save the state of all partitions to file */
+extern int dump_all_part_state ( void );
+
 /* dump_job_desc - dump the incoming job submit request message */
 extern void dump_job_desc(job_desc_msg_t * job_specs);
 
@@ -342,11 +348,20 @@ extern void list_delete_part (void *part_entry);
 /* list_find_part - find an entry in the partition list */
 extern int list_find_part (void *part_entry, void *key);
 
+/* load_node_state - load the node state from file, recover from slurmctld restart */
+extern int load_node_state ( void );
+
+/* load_part_state - load the partition state from file, recover from slurmctld restart */
+extern int load_node_state ( void );
+
 /* match_feature - determine if the desired feature (seek) is one of those available */
 extern int  match_feature (char *seek, char *available);
 
 /* match_group - determine if the user is a member of any groups permitted to use this partition */
 extern int match_group (char *allow_groups, char *user_groups);
+
+/* mkdir2 - issues system calls for mkdir (if root) */
+int mkdir2 (char * path, int modes);
 
 /* node_name2bitmap - given a node name regular expression, build a bitmap representation */
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
@@ -389,11 +404,6 @@ extern void pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_
  */
 extern void pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
 
-/* pack_node - dump all configuration information about a specific node in 
- *	machine independent form (for network transmission)
- */
-extern void pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len); 
-
 /* 
  * pack_part - dump all configuration information about a specific partition in 
  *	machine independent form (for network transmission)
@@ -407,13 +417,16 @@ extern void pack_part (struct part_record *part_record_point, void **buf_ptr, in
 void purge_old_job (void);
 
 /* read_slurm_conf - load the slurm configuration from the configured file */
-extern int  read_slurm_conf ( );
+extern int  read_slurm_conf (int recover);
 
 /* rehash - build a hash table of the node_record entries */
 extern void rehash ();
 
 /* reset_job_bitmaps - reestablish bitmaps for existing jobs */
 extern void reset_job_bitmaps ();
+
+/* rmdir2 - issues system call to rmdir (if root) */
+extern int rmdir2 (char * path);
 
 /* schedule - attempt to schedule all pending jobs */
 void schedule();

@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * read_config.c - read the overall slurm configuration file
+ *  read_config.c - read the overall slurm configuration file
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,6 +34,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include <src/common/hostlist.h>
@@ -73,7 +75,7 @@ main (int argc, char *argv[]) {
 		exit (1);
 	}			
 
-	error_code = read_slurm_conf ( );
+	error_code = read_slurm_conf (0);
 	if (error_code) {
 		printf ("ERROR %d from read_slurm_conf\n", error_code);
 		exit (error_code);
@@ -149,7 +151,7 @@ main (int argc, char *argv[]) {
 		sleep (5);
 	}
 	for (i = 0; i < cycles; i++) {
-		error_code = read_slurm_conf ( );
+		error_code = read_slurm_conf (0);
 		if (error_code) {
 			printf ("ERROR %d from read_slurm_conf\n",
 				error_code);
@@ -361,6 +363,7 @@ parse_config_spec (char *in_line)
 	char *job_credential_private_key = NULL , *job_credential_public_certificate = NULL;
 	long first_job_id = 0;
 	struct servent *servent;
+	struct stat sbuf;
 
 	error_code = slurm_parser(in_line,
 		"BackupController=", 's', &backup_controller, 
@@ -455,6 +458,8 @@ parse_config_spec (char *in_line)
 		if ( slurmctld_conf.state_save_location )
 			xfree (slurmctld_conf.state_save_location);
 		slurmctld_conf.state_save_location = state_save_location;
+		if (stat (state_save_location, &sbuf) == -1)	/* create directory as needed */
+			(void) mkdir2 (state_save_location, 0744);
 	}
 
 	if ( tmp_fs ) {
@@ -831,10 +836,11 @@ parse_part_spec (char *in_line) {
 /*
  * read_slurm_conf - load the slurm configuration from the configured file. 
  * read_slurm_conf can be called more than once if so desired.
+ * input: recover - set to use state saved from last slurmctld shutdown
  * output: return - 0 if no error, otherwise an error code
  */
 int 
-read_slurm_conf ( ) {
+read_slurm_conf (int recover) {
 	clock_t start_time;
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
@@ -940,6 +946,11 @@ read_slurm_conf ( ) {
 		
 	rehash ();
 	set_slurmd_addr ();
+
+	if (recover) {
+		(void) load_node_state ();
+	}
+
 	if ((error_code = build_bitmaps ())) {
 		unlock_slurmctld (config_write_lock);
 		return error_code;
