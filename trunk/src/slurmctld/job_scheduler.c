@@ -203,9 +203,10 @@ int schedule(void)
 			last_job_update = time(NULL);
 			info("schedule: JobId=%u NodeList=%s",
 			     job_ptr->job_id, job_ptr->nodes);
-			srun_allocate(job_ptr->job_id);
 			if (job_ptr->batch_flag)
 				_launch_job(job_ptr);
+			else
+				srun_allocate(job_ptr->job_id);
 			job_cnt++;
 		} else if (error_code !=
 		           ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE) {
