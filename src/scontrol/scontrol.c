@@ -213,7 +213,9 @@ _get_command (int *argc, char **argv)
 	add_history(in_line);
 #endif
 
+	/* break in_line into tokens */
 	for (i = 0; i < in_line_size; i++) {
+		bool double_quote = false, single_quote = false;
 		if (in_line[i] == '\0')
 			break;
 		if (isspace ((int) in_line[i]))
@@ -226,11 +228,22 @@ _get_command (int *argc, char **argv)
 		}		
 		argv[(*argc)++] = &in_line[i];
 		for (i++; i < in_line_size; i++) {
-			if ((in_line[i] != '\0') && 
-			    (!isspace ((int) in_line[i])))
+			if (in_line[i] == '\042') {
+				double_quote = !double_quote;
 				continue;
-			in_line[i] = (char) NULL;
-			break;
+			}
+			if (in_line[i] == '\047') {
+				single_quote = !single_quote;
+				continue;
+			}
+			if (in_line[i] == '\0')
+				break;
+			if (double_quote || single_quote)
+				continue;
+			if (isspace ((int) in_line[i])) {
+				in_line[i] = '\0';
+				break;
+			}
 		}		
 	}
 	return 0;		
@@ -1221,15 +1234,31 @@ _update_job (int argc, char *argv[])
 static int
 _update_node (int argc, char *argv[]) 
 {
-	int i, j, k;
+	int i, j, k, rc;
 	uint16_t state_val;
 	update_node_msg_t node_msg;
+	char *reason_str = NULL;
 
 	node_msg.node_names = NULL;
+	node_msg.reason = NULL;
 	node_msg.node_state = (uint16_t) NO_VAL;
 	for (i=0; i<argc; i++) {
 		if (strncasecmp(argv[i], "NodeName=", 9) == 0)
 			node_msg.node_names = &argv[i][9];
+		else if (strncasecmp(argv[i], "Reason=", 7) == 0) {
+			int len = strlen(&argv[i][7]);
+			reason_str = xmalloc(len+1);
+			if (argv[i][7] == '"')
+				strcpy(reason_str, &argv[i][8]);
+			else
+				strcpy(reason_str, &argv[i][7]);
+
+			len = strlen(reason_str) - 1;
+			if ((len >= 0) && (reason_str[len] == '"'))
+				reason_str[len] = '\0';
+				
+			node_msg.reason = reason_str;
+		}
 		else if (strncasecmp(argv[i], "State=NoResp", 12) == 0)
 			node_msg.node_state = NODE_STATE_NO_RESPOND;
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
@@ -1268,7 +1297,10 @@ _update_node (int argc, char *argv[])
 		}
 	}
 
-	if (slurm_update_node(&node_msg))
+	rc = slurm_update_node(&node_msg);
+	xfree(reason_str);
+
+	if (rc)
 		return slurm_get_errno ();
 	else
 		return 0;
