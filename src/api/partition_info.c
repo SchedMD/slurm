@@ -25,16 +25,16 @@ main (int argc, char *argv[])
 	int error_code ;
 	partition_info_msg_t * part_info_ptr = NULL;
 
-	error_code = slurm_load_partition_info (last_update_time, &part_buffer_ptr);
+	error_code = slurm_load_partitions (last_update_time, &part_info_ptr);
 	if (error_code) {
 		printf ("slurm_load_part error %d\n", error_code);
 		exit (error_code);
 	}
 
 	printf("Updated at %lx, record count %d\n",
-		part_buffer_ptr->last_update, part_buffer_ptr->part_count);
-
-	slurm_free_partition_info (part_buffer_ptr);
+		(time_t) part_info_ptr->last_update, part_info_ptr->record_count);
+	slurm_print_partition_info ( part_info_ptr ) ;
+	slurm_free_partition_info (part_info_ptr);
 	exit (0);
 }
 #endif
