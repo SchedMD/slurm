@@ -74,7 +74,7 @@
 void *_xmalloc(size_t size, const char *file, int line, const char *func);
 void *_try_xmalloc(size_t size, const char *file, int line, const char *func);
 void _xfree(void **p, const char *file, int line, const char *func);
-void _xrealloc(void **p, size_t newsize, 
+void *_xrealloc(void **p, size_t newsize, 
 	       const char *file, int line, const char *func);
 int  _try_xrealloc(void **p, size_t newsize,
 		   const char *file, int line, const char *func);
