@@ -121,7 +121,6 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
-static void _spawn_signal_agent(agent_arg_t *agent_info);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -2758,8 +2757,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			error("Orphan job %u.%u reported on node %s",
 			      job_id_ptr[i], step_id_ptr[i], node_name);
 			_kill_job_on_node(job_id_ptr[i], node_ptr);
-			/* We may well have pending purge job RPC to send 
-			 * slurmd, which would synchronize this */
 		}
 
 		else if (job_ptr->job_state == JOB_RUNNING) {
@@ -2777,6 +2774,12 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				_kill_job_on_node(job_id_ptr[i], node_ptr);
 			}
 		}
+
+		else if (job_ptr->job_state & JOB_COMPLETING) {
+			/* Re-send kill request as needed, not necessarily an error */
+			_kill_job_on_node(job_id_ptr[i], node_ptr);
+		}
+
 
 		else if (job_ptr->job_state == JOB_PENDING) {
 			error("Registered PENDING job %u.%u on node %s ",
@@ -2796,8 +2799,6 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			     job_state_string(job_ptr->job_state),
 			     node_name);
 			_kill_job_on_node(job_id_ptr[i], node_ptr);
-			/* We may well have pending purge job RPC to send 
-			 * slurmd, which would synchronize this */
 		}
 	}
 
@@ -2863,27 +2864,10 @@ _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 	agent_info->msg_type	= REQUEST_KILL_JOB;
 	agent_info->msg_args	= kill_req;
 
-	_spawn_signal_agent(agent_info);
-}
-
-static void _spawn_signal_agent(agent_arg_t *agent_info)
-{
-	pthread_attr_t kill_attr_agent;
-	pthread_t kill_thread_agent;
-	if (pthread_attr_init (&kill_attr_agent))
-		fatal ("pthread_attr_init error %m");
-	if (pthread_attr_setdetachstate (&kill_attr_agent, 
-					 PTHREAD_CREATE_DETACHED))
-		error ("pthread_attr_setdetachstate error %m");
-#ifdef PTHREAD_SCOPE_SYSTEM
-	if (pthread_attr_setscope (&kill_attr_agent, PTHREAD_SCOPE_SYSTEM))
-		error ("pthread_attr_setscope error %m");
-#endif
-	if (pthread_create (&kill_thread_agent, &kill_attr_agent, 
-				agent, (void *)agent_info)) {
-		error ("pthread_create error %m");
-		agent((void *)agent_info);
-	}
+	/* Since we can get a flood of these requests at startup, 
+	 * just queue the request rather than creating a pthread 
+	 * and possibly creating an unmanagable number of threads */
+	agent_queue_request(agent_info);
 }
 
 
@@ -3097,6 +3081,36 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	return;
 }
 
+
+/*
+ * job_epilog_complete - Note the completion of the epilog script for a 
+ *	given job
+ * IN job_id      - id of the job for which the epilog was executed
+ * IN node_name   - name of the node on which the epilog was executed
+ * IN return_code - return code from epilog script
+ * RET true if job is COMPLETED, otherwise false
+ */
+bool job_epilog_complete(uint32_t job_id, char *node_name, 
+		uint32_t return_code)
+{
+	struct job_record  *job_ptr = find_job_record(job_id);
+
+	if (job_ptr == NULL)
+		return true;
+
+	if (return_code) {
+		set_node_down(node_name, "Epilog error");
+	} else {
+		struct node_record *node_ptr = find_node_record(node_name);
+		if (node_ptr)
+			make_node_idle(node_ptr, job_ptr);
+	}
+
+	if (!(job_ptr->job_state & JOB_COMPLETING))	/* COMPLETED */
+		return true;
+	else
+		return false;
+}
 
 /* job_fini - free all memory associated with job records */
 void job_fini (void) 

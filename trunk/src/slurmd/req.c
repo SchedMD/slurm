@@ -46,7 +46,7 @@
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
-#include "src/common/fd.h"
+#include "src/common/list.h"
 
 #include "src/slurmd/slurmd.h"
 #include "src/slurmd/shm.h"
@@ -66,7 +66,7 @@ static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_kill_job(slurm_msg_t *, slurm_addr *, bool found, int tmout);
+static void _rpc_kill_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
@@ -74,8 +74,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
-static int  _wait_for_procs(slurm_fd fd, uint32_t job_id, uid_t uid, int maxt);
-static int  _delay_on_fd(int fd, int timeout);
+static int  _wait_for_procs(uint32_t job_id);
 
 
 void
@@ -105,7 +104,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_KILL_JOB:
-		_rpc_kill_job(msg, cli, false, conf->cf.kill_wait);
+		_rpc_kill_job(msg, cli);
 		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
@@ -481,50 +480,55 @@ _kill_running_session_mgrs(uint32_t jobid, int signum)
 	return;
 }
 
-/* For the specified job_id: Send SIGXCPU, reply to slurmctld, 
- *	sleep(configured kill_wait), then send SIGKILL */
+/* 
+ *  For the specified job_id: Send SIGXCPU to the smgr, reply to slurmctld, 
+ *   sleep(configured kill_wait), then send SIGKILL 
+ */
 static void
 _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
-	uid_t           req_uid;
-	int             step_cnt;
+	uid_t           uid = g_slurm_auth_get_uid(msg->cred);
 	kill_job_msg_t *req = msg->data;
-	bool 		found_job = false;
+	int             nsteps;
 
-	req_uid = g_slurm_auth_get_uid(msg->cred);
-	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, uid %u can't revoke credentials",
-		      (unsigned int) req_uid);
+	if (!_slurm_authorized_user(uid)) {
+		error ("Security violation: rpc_timelimit req from uid %ld", 
+		       (long) uid);
 		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
 		return;
 	}
 
 	/*
-	 * Send SIGXCPU to warn session managers of job steps for this
-	 * job that the job is about to be terminated
+	 *  Indicate to slurmctld that we've recieved the message
+	 */
+	slurm_send_rc_msg(msg, SLURM_SUCCESS);
+	slurm_close_accepted_conn(msg->conn_fd);
+	msg->conn_fd = -1;
+
+	/*
+	 *  Send SIGXCPU to warn session managers of job steps for this
+	 *   job that the job is about to be terminated
 	 */
 	_kill_running_session_mgrs(req->job_id, SIGXCPU);
 
-	if ((step_cnt = _kill_all_active_steps(req->job_id, SIGTERM)))
-		found_job = true;
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM);
 
 	verbose( "Job %u: timeout: sent SIGTERM to %d active steps", 
-	         req->job_id, step_cnt );
+	         req->job_id, nsteps );
 
 	sleep(1);
+
 	/*
 	 * Check to see if any processes are still around
 	 */
-	if (found_job && _kill_all_active_steps(req->job_id, 0)) {
-
+	if ((nsteps > 0) && _job_still_running(req->job_id)) {
 		verbose( "Job %u: waiting %d secs for SIGKILL", 
 			 req->job_id, conf->cf.kill_wait       );
-
-		_delay_on_fd(msg->conn_fd, conf->cf.kill_wait - 3);
+		sleep (conf->cf.kill_wait - 1);
 	}
 
 	/* SIGKILL and send response */
-	_rpc_kill_job(msg, cli_addr, found_job, 2); 
+	_rpc_kill_job(msg, cli_addr); 
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
@@ -684,7 +688,8 @@ _kill_all_active_steps(uint32_t jobid, int sig)
 			debug2("sending signal %d to job %u (pg:%d)", 
 			       sig, jobid, s->sid);
 			if (kill(-s->sid, sig) < 0)
-				error("kill jid %d sid %d: %m", s->jobid, s->sid);
+				error("kill jid %d sid %d: %m", 
+				      s->jobid, s->sid);
 		} else {
 			debug2("sending signal %d to job %u.%u (pg:%d)", 
 			       sig, jobid, s->stepid, s->sid);
@@ -717,21 +722,43 @@ _job_still_running(uint32_t job_id)
 	return retval;
 }
 
-static void 
-_rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job, int timeout)
+static int
+_epilog_complete(uint32_t jobid, int rc)
 {
-	int             rc      = SLURM_SUCCESS;
-	kill_job_msg_t *req     = msg->data;
-	uid_t           req_uid = g_slurm_auth_get_uid(msg->cred);
+	slurm_msg_t            msg;
+	epilog_complete_msg_t  req;
+
+	req.job_id      = jobid;
+	req.return_code = rc;
+	req.node_name   = conf->hostname;
+
+	msg.msg_type    = MESSAGE_EPILOG_COMPLETE;
+	msg.data        = &req;
+
+	if (slurm_send_only_controller_msg(&msg) < 0) {
+		error("Unable to send epilog complete message: %m");
+		return SLURM_ERROR;
+	}
+
+	return SLURM_SUCCESS;
+}
+
+static void 
+_rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
+{
+	int             rc     = SLURM_SUCCESS;
+	kill_job_msg_t *req    = msg->data;
+	uid_t           uid    = g_slurm_auth_get_uid(msg->cred);
+	int             nsteps = 0;
 
 	/* 
 	 * check that requesting user ID is the SLURM UID
 	 */
-	if (!_slurm_authorized_user(req_uid)) {
-		error("Security violation, uid %u can't revoke credentials",
-		      (unsigned int) req_uid);
-		rc = ESLURM_USER_ID_MISSING;
-		goto done;
+	if (!_slurm_authorized_user(uid)) {
+		error("Security violation: kill_job(%ld) from uid %ld",
+		      req->job_id, (long) uid);
+		slurm_send_rc_msg(msg, ESLURM_USER_ID_MISSING);
+		return;
 	} 
 
 	/*
@@ -740,25 +767,34 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job, int timeout)
 	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
 		debug("revoking cred for job %d: %m", req->job_id);
 	} else {
-		debug("credential for job %d revoked", req->job_id);
 		save_cred_state(conf->vctx);
+		debug("credential for job %d revoked", req->job_id);
+	}
+
+	nsteps = _kill_all_active_steps(req->job_id, SIGKILL);
+
+	/*
+	 *  If there are currently no active job steps, and no
+	 *    configured epilog to run, bypass asynchronous reply and
+	 *    notify slurmctld that we have already completed this
+	 *    request.
+	 */
+	if ((nsteps == 0) && !conf->epilog && (msg->conn_fd > 0)) {
+		slurm_send_rc_msg(msg, ESLURMD_KILL_JOB_ALREADY_COMPLETE);
+		slurm_cred_begin_expiration(conf->vctx, req->job_id);
+		return;
+	}
+
+	if (msg->conn_fd > 0) {
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+		slurm_close_accepted_conn(msg->conn_fd);
 	}
 
 	/*
-	 * Now kill all steps associated with this job, they are
-	 * no longer allowed to be running
+	 *  Block until all user processes are complete.
 	 */
-	if (_kill_all_active_steps(req->job_id, SIGKILL) != 0) {
-		slurm_fd fd   = msg->conn_fd;
-		int      maxt = timeout;
-
-		if (_wait_for_procs(fd, req->job_id, req->job_uid, maxt) < 0) {
-			rc = ESLURMD_KILL_JOB_FAILED;
-			goto done;
-		}
-
-	} else if (!found_job) 
-		rc = ESLURM_INVALID_JOB_ID;	/* no such job       */
+	if (_wait_for_procs(req->job_id) < 0) 
+		rc = ESLURMD_KILL_JOB_FAILED;
 
 	/*
 	 *  Begin expiration period for cached information about job.
@@ -778,7 +814,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job, int timeout)
 		debug("completed epilog for jobid %d", req->job_id);
 	
     done:
-	slurm_send_rc_msg(msg, rc);
+	_epilog_complete(req->job_id, rc);
 }
 
 /*
@@ -791,53 +827,67 @@ _slurm_authorized_user(uid_t uid)
 	return ((uid == (uid_t) 0) || (uid == conf->slurm_user_id));
 }
 
-/*
- *  Wait for either timeout seconds or activity on file descriptor 
- */
-static int _delay_on_fd(int fd, int timeout)
+
+struct waiter {
+	uint32_t jobid;
+	pthread_t thd;
+};
+
+
+static struct waiter *
+_waiter_create(uint32_t jobid)
 {
-	int rc;
-	struct pollfd pfd;
+	struct waiter *wp = xmalloc(sizeof(struct waiter));
 
-	pfd.fd     = fd;
-	pfd.events = POLLIN;
+	wp->jobid = jobid;
+	wp->thd   = pthread_self();
 
-	fd_set_nonblocking(fd);
+	return wp;
+}
 
-	if ((rc = poll(&pfd, 1, timeout*1000)) < 0) {
-		error("delay_on_fd: poll: %m");
-		return SLURM_ERROR;
-	}
+static int _find_waiter(struct waiter *w, uint32_t *jp)
+{
+	return (w->jobid == *jp);
+}
 
-	return rc;
+static void _waiter_destroy(struct waiter *wp)
+{
+	xfree(wp);
 }
 
 static int
-_wait_for_procs(slurm_fd fd, uint32_t job_id, uid_t job_uid, int maxtime)
+_wait_for_procs(uint32_t jobid)
 {
-	time_t tstop = time(NULL) + maxtime;
+	ListIterator i;
+	static List waiters;
+	struct waiter *wp;
 
-	if (!_job_still_running(job_id))
-		return SLURM_SUCCESS;
+	if (!waiters)
+		waiters = list_create((ListDelF) _waiter_destroy);
 
-	debug("Waiting for job %u to complete", job_id);
+	/* 
+	 *  Kill any other thread waiting for this job and take over
+	 */
+	i = list_iterator_create(waiters);
+	if ((wp = list_find(i, (ListFindF) _find_waiter, (void *) &jobid))) {
+		pthread_kill(SIGTERM, wp->thd);
+		wp->thd = pthread_self();
+	} else 
+		list_append(waiters, _waiter_create(jobid));
 
-	do {
-		int retval = _delay_on_fd((int) fd, 1);
+	list_iterator_destroy(i);
 
-		/*
-		 *  If return from _delay_on_fd() is < 0 or
-		 *   1, then the connection has been closed and
-		 *   we terminate this loop with an error
-		 */
-		if ((retval != 0) || (time(NULL) >= tstop)) {
-			debug("Timed out waiting on job %u", job_id);
-			return SLURM_FAILURE;
-		}
+	debug("Waiting for job %u to complete", jobid);
 
-	} while (_job_still_running(job_id));
+	while (_job_still_running(jobid)) 
+		sleep (1);
 
-	debug("Job %u complete", job_id);
+	debug("Job %u complete", jobid);
+
+	/*
+	 *  Delete all waiting threads for this process
+	 */
+	list_delete_all(waiters, (ListFindF) _find_waiter, (void *) &jobid);
 
 	return SLURM_SUCCESS;
 }

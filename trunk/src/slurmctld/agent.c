@@ -46,10 +46,6 @@
  *
  *  All the state for each thread is maintained in thd_t struct, which is 
  *  used by the watchdog thread as well as the communication threads.
- *
- *  NOTE: REQUEST_KILL_JOB  and REQUEST_KILL_TIMELIMIT responses are 
- *  handled immediately rather than in bulk upon completion of the RPC 
- *  to all nodes
 \*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
@@ -87,8 +83,7 @@ typedef enum {
 	DSH_ACTIVE,     /* Request in progress */
 	DSH_DONE,       /* Request completed normally */
 	DSH_NO_RESP,    /* Request timed out */
-	DSH_FAILED,     /* Request resulted in error */
-	DSH_JOB_HUNG    /* Job has non-killable processes */
+	DSH_FAILED      /* Request resulted in error */
 } state_t;
 
 typedef struct thd {
@@ -141,6 +136,7 @@ static void *_wdog(void *args);
 
 static pthread_mutex_t retry_mutex = PTHREAD_MUTEX_INITIALIZER;
 static List retry_list = NULL;		/* agent_arg_t list for retry */
+static bool run_scheduler = false;
 
 /*
  * agent - party responsible for transmitting an common RPC in parallel 
@@ -379,9 +375,6 @@ static void *_wdog(void *args)
 			case DSH_FAILED:
 				fail_cnt++;
 				break;
-			case DSH_JOB_HUNG:
-				retry_cnt++;
-				break;
 			}
 		}
 		if (work_done)
@@ -442,18 +435,17 @@ static void *_wdog(void *args)
 		if (thread_ptr[i].state == DSH_FAILED)
 			set_node_down(thread_ptr[i].node_name, 
 			              "Prolog/epilog failure");
-		if ((thread_ptr[i].state == DSH_DONE) ||
-		    (thread_ptr[i].state == DSH_JOB_HUNG))
+		if (thread_ptr[i].state == DSH_DONE)
 			node_did_resp(thread_ptr[i].node_name);
 	}
 	unlock_slurmctld(node_write_lock);
-	/* attempt to schedule when all nodes registered, not 
-	 * after each node, the overhead would be too high */
-	if ((agent_ptr->msg_type == REQUEST_KILL_TIMELIMIT) ||
-	    (agent_ptr->msg_type == REQUEST_KILL_JOB))
-		schedule();
-	else if ((agent_ptr->msg_type == REQUEST_PING) ||
-	         (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
+
+	if (run_scheduler) {
+		run_scheduler = false;
+		schedule();	/* has own locks */
+	}
+	if ((agent_ptr->msg_type == REQUEST_PING) ||
+	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))
 		ping_end();
 #else
 	/* Build a list of all responding nodes and send it to slurmctld to 
@@ -504,12 +496,7 @@ static void *_thread_per_node_rpc(void *args)
 	state_t thread_state = DSH_NO_RESP;
 	slurm_msg_type_t msg_type = task_ptr->msg_type;
 	bool is_kill_msg;
-
 #if AGENT_IS_THREAD
-	struct node_record *node_ptr;
-	/* Locks: Write write node */
-	slurmctld_lock_t node_write_lock =
-	    { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
@@ -521,22 +508,15 @@ static void *_thread_per_node_rpc(void *args)
 	thread_ptr->start_time = time(NULL);
 	slurm_mutex_unlock(task_ptr->thread_mutex_ptr);
 
-	is_kill_msg = (  (msg_type == REQUEST_KILL_TIMELIMIT)
-	              || (msg_type == REQUEST_KILL_JOB)      );
+	is_kill_msg = ((msg_type == REQUEST_KILL_TIMELIMIT) ||
+	               (msg_type == REQUEST_KILL_JOB)     );
 
 	/* send request message */
 	msg.address  = thread_ptr->slurm_addr;
 	msg.msg_type = msg_type;
 	msg.data     = task_ptr->msg_args_ptr;
 
-	if (is_kill_msg) {
-		/* Extend time that this thread is allowed to exist.  */
-		timeout = slurmctld_conf.kill_wait + 2;
-		thread_ptr->end_time = thread_ptr->start_time + timeout;
-	} else
-		thread_ptr->end_time = thread_ptr->start_time + 
-		                       COMMAND_TIMEOUT; 
-
+	thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
 			_comm_err(thread_ptr->node_name);
@@ -551,22 +531,16 @@ static void *_thread_per_node_rpc(void *args)
 	}
 
 #if AGENT_IS_THREAD
-	/* SPECIAL CASE: Immediately mark node as IDLE on job kill reply */
-	if (is_kill_msg && (rc != ESLURMD_KILL_JOB_FAILED)) {
-
-		lock_slurmctld(node_write_lock);
-
-		if ((node_ptr = find_node_record(thread_ptr->node_name))) {
-			kill_job_msg_t *kill_job;
-			kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
-			debug3("Kill job_id %u on node %s ",
-			       kill_job->job_id, thread_ptr->node_name);
-			make_node_idle(node_ptr, 
-				       find_job_record(kill_job->job_id));
-			/* scheduler(); Overhead too high, 
-			 * only do when last node registers */
-		}
-		unlock_slurmctld(node_write_lock);
+	/* SPECIAL CASE: Mark node as IDLE if job already complete */
+	if (is_kill_msg && (rc == ESLURMD_KILL_JOB_ALREADY_COMPLETE)) {
+		kill_job_msg_t *kill_job;
+		kill_job = (kill_job_msg_t *) task_ptr->msg_args_ptr;
+		rc = SLURM_SUCCESS;
+		lock_slurmctld(job_write_lock);
+		if (job_epilog_complete(kill_job->job_id, 
+		                        thread_ptr->node_name, rc))
+			run_scheduler = true;
+		unlock_slurmctld(job_write_lock);
 	}
 
 	/* SPECIAL CASE: Kill non-startable batch job */
@@ -607,7 +581,7 @@ static void *_thread_per_node_rpc(void *args)
 	case ESLURMD_KILL_JOB_FAILED:		/* non-killable process */
 		info("agent KILL_JOB RPC to node %s FAILED",
 		       thread_ptr->node_name);
-		thread_state = DSH_JOB_HUNG;
+		thread_state = DSH_FAILED;
 		break;
 	default:
 		error("agent error from host %s for msg type %d: %s", 
@@ -668,8 +642,7 @@ static void _queue_agent_retry(agent_info_t * agent_info_ptr, int count)
 
 	j = 0;
 	for (i = 0; i < agent_info_ptr->thread_count; i++) {
-		if ( (thread_ptr[i].state != DSH_NO_RESP)
-		   && (thread_ptr[i].state != DSH_JOB_HUNG) )
+		if (thread_ptr[i].state != DSH_NO_RESP)
 			continue;
 		agent_arg_ptr->slurm_addr[j] = thread_ptr[i].slurm_addr;
 		strncpy(&agent_arg_ptr->node_names[j * MAX_NAME_LEN],
@@ -718,21 +691,41 @@ static void _list_delete_retry(void *retry_entry)
 /*
  * agent_retry - Agent for retrying pending RPCs (top one on the queue), 
  * IN args - unused
- * RET always NULL (function format just for use as pthread)
+ * RET count of queued requests
  */
-void *agent_retry(void *args)
+int agent_retry (void *args)
+
 {
+	int list_size = 0;
 	agent_arg_t *agent_arg_ptr = NULL;
 
 	slurm_mutex_lock(&retry_mutex);
-	if (retry_list)
+	if (retry_list) {
+		list_size = list_count(retry_list);
 		agent_arg_ptr = (agent_arg_t *) list_dequeue(retry_list);
+	}
 	slurm_mutex_unlock(&retry_mutex);
 
 	if (agent_arg_ptr)
 		_spawn_retry_agent(agent_arg_ptr);
 
-	return NULL;
+	return list_size;
+}
+
+/*
+ * agent_queue_request - put a request on the queue for later execution
+ * IN agent_arg_ptr - the request to enqueue
+ */
+void agent_queue_request(agent_arg_t *agent_arg_ptr)
+{
+	slurm_mutex_lock(&retry_mutex);
+	if (retry_list == NULL) {
+		retry_list = list_create(&_list_delete_retry);
+		if (retry_list == NULL)
+			fatal("list_create failed");
+	}
+	list_enqueue(retry_list, (void *)agent_arg_ptr);
+	slurm_mutex_unlock(&retry_mutex);
 }
 
 /* retry_pending - retry all pending RPCs for the given node name
