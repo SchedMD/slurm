@@ -53,8 +53,6 @@
 #include <src/common/xmalloc.h>
 #include <src/common/list.h>
 
-#include "print.h"
-
 struct sinfo_parameters {
 	char* partition;
 	char* state;
