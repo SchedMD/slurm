@@ -3,8 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.5
 ========================
- -- Change sinfo default time limit field to have 10 bytes (up from 9)
- -- Fix bug in bluegene partition selection (sorting bug)
+ -- Change sinfo default time limit field to have 10 bytes (up from 9).
+ -- Fix bug in bluegene partition selection (sorting bug).
+ -- Don't display any completed jobs in smap.
 
 * Changes in SLURM 0.4.4
 ========================
