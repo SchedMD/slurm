@@ -76,7 +76,7 @@ rm -rf $RPM_BUILD_ROOT
 # where does slurm.conf belong ??? Or should be throw it in the doc directory?
 %defattr(-,root,root)
 %doc README ChangeLog 
-%attr(4755, root, root) %{_bindir}/cancel
+%attr(4755, root, root) %{_bindir}/scancel
 %attr(4755, root, root) %{_bindir}/scontrol
 %attr(4755, root, root) %{_bindir}/sinfo
 %attr(4755, root, root) %{_bindir}/squeue
