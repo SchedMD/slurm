@@ -5,6 +5,9 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix race condition in slurmd seting pgid of spawned tasks for 
     process tracking.
+ -- Fix scontrol reconfig does nothing to running jobs nor crash the system
+ -- Fix sort of bgl_list only happens once in select_bluegene.c instead of every
+    time a new job is inserted.
 
 * Changes in SLURM 0.4.3
 ========================
