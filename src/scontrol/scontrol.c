@@ -406,37 +406,37 @@ print_node (char *node_name, struct node_buffer *node_buffer_ptr)
 void
 print_node_list (char *node_list) 
 {
-	static struct node_buffer *old_node_buffer_ptr = NULL;
-	struct node_buffer *node_buffer_ptr = NULL;
+	static node_info_msg_t *old_node_info_ptr = NULL;
+	node_info_msg_t *node_info_ptr = NULL;
 
 	int start_inx, end_inx, count_inx, error_code, i;
 	char *str_ptr1, *str_ptr2, *format, *my_node_list;
 	char this_node_name[BUF_SIZE];
 
-	if (old_node_buffer_ptr) {
-		error_code = slurm_load_node (old_node_buffer_ptr->last_update, 
-			&node_buffer_ptr);
+	if (old_node_info_ptr) {
+		error_code = slurm_load_node (old_node_info_ptr->last_update, 
+			&node_info_ptr);
 		if (error_code == 0)
-			slurm_free_node_info (old_node_buffer_ptr);
+			slurm_free_node_info (old_node_info_ptr);
 		else if (error_code == -1)
-			node_buffer_ptr = old_node_buffer_ptr;
+			node_info_ptr = old_node_info_ptr;
 
 	}
 	else
-		error_code = slurm_load_node ((time_t) NULL, &node_buffer_ptr);
+		error_code = slurm_load_node ((time_t) NULL, &node_info_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
 			printf ("load_node error %d\n", error_code);
 		return;
 	}
 	else if (error_code == 0)
-		old_node_buffer_ptr = node_buffer_ptr;
+		old_node_info_ptr = node_info_ptr;
 
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) node_buffer_ptr->last_update);
+		printf ("last_update_time=%ld\n", (long) node_info_ptr->last_update);
 
 	if (node_list == NULL) {
-		print_node (NULL, node_buffer_ptr);
+		/*print_node (NULL, node_info_ptr);*/
 	}
 	else {
 		format = NULL;
@@ -476,7 +476,7 @@ print_node_list (char *node_list)
 						 sizeof (this_node_name));
 				else
 					sprintf (this_node_name, format, i);
-				print_node (this_node_name, node_buffer_ptr);
+				/*print_node (this_node_name, node_info_ptr);*/
 			}
 			if (format)
 				free (format);
@@ -496,36 +496,38 @@ void
 print_part (char *partition_name) 
 {
 	int error_code, i;
-	static struct part_buffer *old_part_buffer_ptr = NULL;
-	struct part_buffer *part_buffer_ptr = NULL;
-	struct part_table *part_ptr = NULL;
+	static partition_info_msg_t *old_part_info_ptr = NULL;
+	partition_info_msg_t *part_info_ptr = NULL;
+	partition_table_msg_t *part_ptr = NULL;
 
-	if (old_part_buffer_ptr) {
-		error_code = slurm_load_part (old_part_buffer_ptr->last_update, 
-					&part_buffer_ptr);
+	if (old_part_info_ptr) {
+		error_code = slurm_load_partitions (old_part_info_ptr->last_update, 
+					&part_info_ptr);
 		if (error_code == 0)
-			slurm_free_part_info (old_part_buffer_ptr);
+			slurm_free_partition_info (old_part_info_ptr);
 		else if (error_code == -1)
-			part_buffer_ptr = old_part_buffer_ptr;
+			part_info_ptr = old_part_info_ptr;
 	}
 	else
-		error_code = slurm_load_part ((time_t) NULL, &part_buffer_ptr);
+		error_code = slurm_load_partitions ((time_t) NULL, &part_info_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_part error %d\n", error_code);
 		return;
 	}
 	else if (error_code == 0)
-		old_part_buffer_ptr = part_buffer_ptr;
+		old_part_info_ptr = part_info_ptr;
 
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) part_buffer_ptr->last_update);
+		printf ("last_update_time=%ld\n", (long) part_info_ptr->last_update);
 
-	part_ptr = part_buffer_ptr->part_table_ptr;
-	for (i = 0; i < part_buffer_ptr->part_count; i++) {
+	part_ptr = part_info_ptr->partition_array;
+	for (i = 0; i < part_info_ptr->record_count; i++) {
 		if (partition_name && 
 		    strcmp (partition_name, part_ptr[i].name) != 0)
 			continue;
+		slurm_print_partition_table ( & part_ptr[i] ) ;
+/*
 		printf ("PartitionName=%s MaxTime=%u ", 
 			part_ptr[i].name, part_ptr[i].max_time);
 		printf ("MaxNodes=%u TotalNodes=%u ", 
@@ -538,6 +540,7 @@ print_part (char *partition_name)
 			part_ptr[i].shared, part_ptr[i].state_up);
 		printf ("Nodes=%s AllowGroups=%s\n\n", 
 			part_ptr[i].nodes, part_ptr[i].allow_groups);
+*/
 		if (partition_name)
 			break;
 	}
@@ -585,7 +588,7 @@ process_command (int argc, char *argv[])
 			fprintf (stderr,
 				 "too many arguments for keyword:%s\n",
 				 argv[0]);
-		error_code = reconfigure ();
+		error_code = slurm_reconfigure ();
 		if ((error_code != 0) && (quiet_flag != 1))
 			fprintf (stderr, "error %d from reconfigure\n",
 				 error_code);
