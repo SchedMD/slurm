@@ -34,6 +34,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <string.h>
 #include <sys/poll.h>
 #include <time.h>
 
@@ -87,22 +88,83 @@ static char *	_taskid2hostname(int task_id, job_t * job);
 
 
 #ifdef HAVE_TOTALVIEW
+/* Convert node name to address string, eg. "123.45.67.8", 
+ *	also return the index in the job table (-1 if not found) */
+static char *
+_node_name_to_addr(const char *name, job_t *job, int *inx)
+{
+	int i;
+	char *buf = xmalloc(28);
+	char *colon;
+
+	for (i=0; i<job->nhosts; i++) {
+		if (strcmp(name, job->host[i]))
+			continue;
+		slurm_print_slurm_addr(&job->slurmd_addr[i], buf, 128);
+		/* This returns address:port, we need to remove ":port" */
+		colon = strchr(buf, (int)':');
+		if (colon)
+			colon[0] = '\0'; 
+		*inx = i;
+		return buf;
+	}
+
+	error("_node_name_to_addr error on %s", name);
+	*inx = -1;
+	return NULL;
+}
+ 
 static void 
-_build_tv_list(launch_tasks_response_msg_t *msg)
+_build_tv_list(launch_tasks_response_msg_t *msg, job_t *job)
 {
 	MPIR_PROCDESC * tv_tasks;
-	int i;
+	int i, node_inx, task_id;
+	char *node_addr;
+	static int tasks_recorded = 0;
 
 	if (!opt.totalview)
 		return;
 
+	node_addr = _node_name_to_addr(msg->node_name, job, &node_inx);
+	if ((node_addr == NULL) || (node_inx < 0))
+		return;
+
+	if (MPIR_proctable_size == 0) {
+		MPIR_proctable_size = opt.nprocs;
+		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs);
+	}
+
 	for (i=0; i<msg->count_of_pids; i++) {
-		tv_tasks = &MPIR_proctable[MPIR_proctable_size++];
-		tv_tasks->host_name = msg->node_name;
-		tv_tasks->executable_name = opt.progname;
+		tasks_recorded++;
+		task_id = job->tids[node_inx][i];
+		tv_tasks = &MPIR_proctable[task_id];
+		tv_tasks->host_name = node_addr;
+		tv_tasks->executable_name = remote_argv[0];
 		tv_tasks->pid = msg->local_pids[i];
+		debug("task=%d host=%s executable=%s pid=%d", task_id,
+		      tv_tasks->host_name, tv_tasks->executable_name, 
+		      tv_tasks->pid);
 	}
 	msg->node_name = NULL;	/* nothing to free */
+
+	if (tasks_recorded == opt.nprocs) {
+		MPIR_debug_state = MPIR_DEBUG_SPAWNED;
+		MPIR_Breakpoint(); 
+	}
+}
+
+void tv_launch_failure(void)
+{
+	if (opt.totalview) {
+		MPIR_debug_state = MPIR_DEBUG_ABORTING;
+		MPIR_Breakpoint(); 
+	}
+}
+
+void MPIR_Breakpoint(void)
+{
+	debug("In MPIR_Breakpoint");
+	/* This just notifies TotalView that some event of interest occured */ 
 }
 #endif
 
@@ -118,7 +180,7 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
 		pthread_mutex_unlock(&job->task_mutex);
 #ifdef HAVE_TOTALVIEW
-		_build_tv_list(msg);
+		_build_tv_list(msg, job);
 #endif
 		if (_verbose) {
 			hostlist_t pids = hostlist_create(NULL);
@@ -133,9 +195,13 @@ _process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
 			verbose("%s: %s", msg->node_name, buf);
 		}
 
-	} else
+	} else {
 		error("launch resp from %s has bad task_id %d",
 				msg->node_name, msg->srun_node_id);
+#ifdef HAVE_TOTALVIEW
+		tv_launch_failure();
+#endif
+	}
 }
 
 static void
@@ -182,6 +248,9 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 			update_job_state(job, SRUN_JOB_FAILED);
 		else 
 			update_failed_tasks(job, msg->srun_node_id);
+#ifdef HAVE_TOTALVIEW
+		tv_launch_failure();
+#endif
 		return;
 	} else 
 		_process_launch_resp(job, msg);

@@ -67,6 +67,10 @@
 #include "src/srun/msg.h"
 #include "src/srun/io.h"
 
+#ifdef HAVE_TOTALVIEW
+#  include "src/srun/attach.h"
+#endif
+
 #define MAX_RETRIES 20
 
 typedef resource_allocation_response_msg_t         allocation_resp;
@@ -126,7 +130,7 @@ _int_handler(int signal)
 { pthread_cancel(pthread_self());}
 
 int
-main(int ac, char **av)
+srun(int ac, char **av)
 {
 	sigset_t sigset;
 	allocation_resp *resp;
@@ -380,6 +384,9 @@ _sig_kill_alloc(int signum)
 
 	if (signum == SIGINT) {			/* <Control-C> */
 		slurm_complete_job (job_id, 0, 0);
+#ifdef HAVE_TOTALVIEW
+		tv_launch_failure();
+#endif
 		exit (0);
 	} else if (signum < 0)
 		job_id = (uint32_t) (0 - signum); /* kluge to pass job id */
@@ -443,6 +450,9 @@ _create_job_step(job_t *job)
 	if (slurm_job_step_create(&req, &resp) || (resp == NULL)) {
 		error("unable to create job step: %s", slurm_strerror(errno));
 		slurm_complete_job(job->jobid, 0, errno);
+#ifdef HAVE_TOTALVIEW
+		tv_launch_failure();
+#endif
 		exit(1);
 	}
 
