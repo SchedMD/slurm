@@ -7,13 +7,13 @@
  * IN pipes	- array of six file desciptors
  * OUT int	- return_code
  */
-int init_parent_pipes ( int * pipes ) ;
+int init_parent_pipes(int *pipes);
 
 /* setup_parent_pipes 
  * setups the parent side of the pipes after fork 
  * IN pipes	- array of six file desciptors
  */
-void setup_parent_pipes ( int * pipes ) ; 
+void setup_parent_pipes(int *pipes);
 
 
 /* setup_child_pipes
@@ -21,13 +21,12 @@ void setup_parent_pipes ( int * pipes ) ;
  * IN pipes	- array of six file desciptors
  * OUT int	- return_code
  */
-int setup_child_pipes ( int * pipes ) ;
+int setup_child_pipes(int *pipes);
 
 /* cleanup_parent_pipes
  * cleans up the parent side of the pipes after task exit
  * IN pipes	- array of six file desciptors
  */
-void cleanup_parent_pipes ( int * pipes ) ;
+void cleanup_parent_pipes(int *pipes);
 
-#endif
-
+#endif /* !_SLURMD_PIPES_H */
