@@ -164,6 +164,21 @@ extern unsigned * BitMapCopy(unsigned *BitMap);
 extern int BitMapCount(unsigned *BitMap);
 
 /*
+ * BitMapFill - Fill the provided bitmap so that all bits between the highest and lowest
+ * 	previously set bits are also set (i.e fill in the gaps to make it contiguous)
+ * Input: BitMap - Pointer to the bit map to fill in
+ * Output: BitMap - The filled in bitmap
+ */
+extern void BitMapFill(unsigned *BitMap);
+
+/* 
+ * BitMapIsSuper - Report if one bitmap's contents are a superset of another
+ * Input: BitMap1 and BitMap2 - The bitmaps to compare
+ * Output: Return 1 if if all bits in BitMap1 are also in BitMap2, 0 otherwise 
+ */
+extern int BitMapIsSuper(unsigned *BitMap1, unsigned *BitMap2);
+
+/*
  * BitMapOR - OR two bitmaps together
  * Input: BitMap1 and BitMap2 - The bitmaps to OR
  * Output: BitMap1 is set to the value of BitMap1 | BitMap2
