@@ -593,9 +593,12 @@ void init_grid(node_info_msg_t * node_info_ptr)
 		if (y == 0)
 			y = 65;
 		pa_system_ptr->fill_in_value[x].letter = y;
+		if(z == 4)
+			z++;
 		z = z % 7;
 		if (z == 0)
 			z = 1;
+		
 		pa_system_ptr->fill_in_value[x].color = z;
 		z++;
 		y++;

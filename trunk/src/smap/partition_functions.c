@@ -162,11 +162,6 @@ void get_bgl_part(void)
 	else
 		recs = 0;
 	for (i = 0; i < recs; i++) {
-		mvwprintw(pa_system_ptr->text_win,
-				  pa_system_ptr->ycord, 1,
-				  "here: %d",
-				  recs);
-		pa_system_ptr->ycord++;
 		j = 0;
 		part = new_part_ptr->partition_array[i];
 		
@@ -401,7 +396,6 @@ static void _block_list_del(void *object)
 
 	if (block_ptr) {
 		xfree(block_ptr->bgl_block_name);
-		xfree(block_ptr->bgl_user_name);
 		xfree(block_ptr->nodes);
 		if (block_ptr->hostlist)
 			hostlist_destroy(block_ptr->hostlist);
@@ -444,7 +438,7 @@ extern char *bgl_err_str(status_t inx)
 	return "?";
 }
 
-static int  _part_list_find(void *object, void *key)
+static int _part_list_find(void *object, void *key)
 {
 	db2_block_info_t *block_ptr = (db2_block_info_t *) object;
 	char *block_name = (char *) key;
@@ -506,7 +500,9 @@ static int _print_rest(void *object, void *arg)
 		lower = true;
 	else
 		lower = false;
-
+	
+	part.total_nodes = 0;
+		
 	if (block_ptr->nodes[11] == ']') {	/* "bgl[###x###]" */
 		start = atoi(block_ptr->nodes + 4);
 		startx = start / 100;
@@ -516,23 +512,21 @@ static int _print_rest(void *object, void *arg)
 		endx = start / 100;
 		endy = (start % 100) / 10;
 		endz = (start % 10);
-		set_grid_bgl(startx, starty, startz,
+		part.total_nodes += set_grid_bgl(startx, starty, startz,
 			     endx, endy, endz, *count, lower);
 	} else {				/* any other format */
 		hostlist_t hostlist;
 		hostlist_iterator_t host_iter;
 		char *host_name;
 
-		part.total_nodes = 0;
 		hostlist  = hostlist_create(block_ptr->nodes);
 		host_iter = hostlist_iterator_create(hostlist);
 		while ((host_name = hostlist_next(host_iter))) {
-			part.total_nodes++;
 			start = atoi(host_name + 3);
 			startx = endx = start / 100;
 			starty = endy = (start % 100) / 10;
 			startz = endz = (start % 10);
-			set_grid_bgl(startx, starty, startz,
+			part.total_nodes += set_grid_bgl(startx, starty, startz,
 				     endx, endy, endz, *count, lower);
 			free(host_name);
 		}
@@ -677,6 +671,7 @@ static void _read_part_db2(void)
 			/* New BGL partition record */
 			rm_connection_type_t conn_type;
 			rm_partition_mode_t node_use;
+			char *name;
 			if ((rc = rm_get_partition(part_id, &part_ptr))
 			    != STATUS_OK) {
 				fprintf(stderr, "rm_get_partition(%s): %s\n",
@@ -686,7 +681,16 @@ static void _read_part_db2(void)
 			block_ptr = xmalloc(sizeof(db2_block_info_t));
 			list_push(block_list, block_ptr);
 			block_ptr->bgl_block_name = xstrdup(part_id);
-//			block_ptr->bgl_user_name = xstrdup(part_ptr->uid);
+			
+
+			if ((rc = rm_get_data(part_ptr, 
+					      RM_PartitionUserName, 
+					      &block_ptr->bgl_user_name)) != STATUS_OK) {
+				fprintf(stderr, "rm_get_data("
+					"RM_PartitionUserName): %s\n",
+					bgl_err_str(rc));
+			}				
+			
 			if ((rc = rm_get_data(part_ptr,
 					      RM_PartitionConnection,
 					      &conn_type)) != STATUS_OK) {
