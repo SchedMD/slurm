@@ -648,7 +648,7 @@ int slurm_send_only_node_msg ( slurm_msg_t * request_msg )
 
 short int slurm_get_slurmd_port ( )
 {
-	return slurmctld_conf . slurmctld_port ;
+	return slurmctld_conf . slurmd_port ;
 }
 
 void slurm_free_msg ( slurm_msg_t * msg )
