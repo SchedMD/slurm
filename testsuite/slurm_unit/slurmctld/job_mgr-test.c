@@ -1,0 +1,95 @@
+
+/*#define _DEJAGNU_WAIT_
+*/
+#include <src/slurmctld/slurmctld.h>
+#include <testsuite/dejagnu.h>
+
+int
+main (int argc, char *argv[]) 
+{
+	int dump_size, error_code, error_count = 0, i;
+	time_t update_time = (time_t) NULL;
+	struct job_record * job_rec;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+	char *dump;
+	uint16_t tmp_id;
+	char update_spec[] = "TimeLimit=1234 Priority=123";
+
+	note("This is BullShit");
+
+	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+	error_code = init_job_conf ();
+	if (error_code) 
+		fail("init_job_conf error %d", error_code);
+	else pass("init_job_conf" );
+
+	job_rec = create_job_record(&error_code);
+	if ((job_rec == NULL) || error_code) {
+		fail ("create_job_record failure");
+		exit(error_count);
+	}
+	else pass( "create_job_record" );
+
+	strcpy (job_rec->name, "Name1");
+	strcpy (job_rec->partition, "batch");
+	job_rec->details->job_script = xmalloc(20);
+	strcpy (job_rec->details->job_script, "/bin/hostname");
+	job_rec->details->num_nodes = 1;
+	job_rec->details->num_procs = 1;
+	set_job_id (job_rec);
+	set_job_prio (job_rec);
+	tmp_id = job_rec->job_id;
+
+	for (i=1; i<=4; i++) {
+		job_rec = create_job_record (&error_code);
+		if ((job_rec == NULL) || error_code) {
+			fail ("create_job_record failure %d",error_code);
+			exit (error_count);
+		}
+		else pass( "create_job_record" );
+
+		strcpy (job_rec->name, "Name2");
+		strcpy (job_rec->partition, "debug");
+		job_rec->details->job_script = xmalloc(20);
+		strcpy (job_rec->details->job_script, "/bin/hostname");
+		job_rec->details->num_nodes = i;
+		job_rec->details->num_procs = i;
+		set_job_id (job_rec);
+		set_job_prio (job_rec);
+	}
+
+	error_code = update_job (tmp_id, update_spec);
+	if (error_code) {
+		fail ("update_job");
+	}
+	else pass( "update_job");
+
+	error_code = pack_all_jobs (&dump, &dump_size, &update_time);
+	if (error_code)
+		fail ("dump_all_job error %d", error_code);
+	else pass( "dump_all_job");
+
+	if (dump)
+		xfree(dump);
+
+	job_rec = find_job_record (tmp_id);
+	if (job_rec == NULL)
+		fail("find_job_record error 1");
+	else
+		pass ("found job %u, script=%s", 
+			job_rec->job_id, job_rec->details->job_script);
+
+	error_code = delete_job_record (tmp_id);
+	if (error_code) 
+		fail ("delete_job_record error %d", error_code);
+	else pass("delete_job_record");
+
+	job_rec = find_job_record (tmp_id);
+	if (job_rec != NULL) 
+		fail ("find_job_record error 2");
+	else pass( "find_job_record");
+
+	totals();
+	exit (error_count);
+}
+
