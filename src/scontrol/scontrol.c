@@ -106,11 +106,11 @@ main (int argc, char *argv[])
 
 	int option_index;
 	static struct option long_options[] = {
-		{"help", 0, 0, 'h'},
+		{"help",     0, 0, 'h'},
 		{"oneliner", 0, 0, 'o'},
-		{"quiet", 0, 0, 'q'},
-		{"verbose", 0, 0, 'v'},
-		{"version", 0, 0, 'V'},
+		{"quiet",    0, 0, 'q'},
+		{"verbose",  0, 0, 'v'},
+		{"version",  0, 0, 'V'},
 	};
 
 	command_name = argv[0];
@@ -133,7 +133,7 @@ main (int argc, char *argv[])
 			quiet_flag = -1;
 		else if (opt_char == (int)'V') {
 			_print_version();
-			return 0;
+			exit(0);
 		}
 		else {
 			fprintf(stderr, "getopt error, returned %c", opt_char);
