@@ -251,7 +251,6 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->epilog              = xstrdup(slurmctld_conf.epilog);
 	conf_ptr->fast_schedule       = slurmctld_conf.fast_schedule;
 	conf_ptr->first_job_id        = slurmctld_conf.first_job_id;
-	conf_ptr->hash_base           = slurmctld_conf.hash_base;
 	conf_ptr->heartbeat_interval  = slurmctld_conf.heartbeat_interval;
 	conf_ptr->inactive_limit      = slurmctld_conf.inactive_limit;
 	conf_ptr->job_comp_loc        = xstrdup(slurmctld_conf.job_comp_loc);

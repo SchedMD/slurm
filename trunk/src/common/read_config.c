@@ -140,7 +140,6 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->epilog);
 	ctl_conf_ptr->fast_schedule		= (uint16_t) NO_VAL;
 	ctl_conf_ptr->first_job_id		= (uint32_t) NO_VAL;
-	ctl_conf_ptr->hash_base			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->heartbeat_interval	= (uint16_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->job_comp_loc);
@@ -195,7 +194,7 @@ int
 parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr) 
 {
 	int error_code;
-	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1;
+	int fast_schedule = -1, hash_base, heartbeat_interval = -1;
 	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
 	int sched_port = -1;
@@ -229,7 +228,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"Epilog=", 's', &epilog, 
 		"FastSchedule=", 'd', &fast_schedule,
 		"FirstJobId=", 'l', &first_job_id,
-		"HashBase=", 'd', &hash_base,
+		"HashBase=", 'd', &hash_base,	/* defunct */
 		"HeartbeatInterval=", 'd', &heartbeat_interval,
 		"InactiveLimit=", 'd', &inactive_limit,
 		"JobCompLoc=", 's', &job_comp_loc,
@@ -334,12 +333,6 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->first_job_id != (uint32_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "FirstJobId");
 		ctl_conf_ptr->first_job_id = first_job_id;
-	}
-
-	if ( hash_base != -1) {
-		if ( ctl_conf_ptr->hash_base != (uint16_t) NO_VAL)
-			error (MULTIPLE_VALUE_MSG, "HashBase");
-		ctl_conf_ptr->hash_base = hash_base;
 	}
 
 	if ( heartbeat_interval != -1) {
@@ -861,9 +854,6 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->first_job_id == (uint32_t) NO_VAL)
 		ctl_conf_ptr->first_job_id = DEFAULT_FIRST_JOB_ID;
-
-	if (ctl_conf_ptr->hash_base == (uint16_t) NO_VAL)
-		ctl_conf_ptr->hash_base = DEFAULT_HASH_BASE;
 
 	if (ctl_conf_ptr->heartbeat_interval == (uint16_t) NO_VAL)
 		ctl_conf_ptr->heartbeat_interval = DEFAULT_HEARTBEAT_INTERVAL;

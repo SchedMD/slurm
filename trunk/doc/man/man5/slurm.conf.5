@@ -99,14 +99,6 @@ for each subsequent job. This may be used to provide a meta-scheduler
 with a job id space which is disjoint from the interactive jobs. 
 The default value is 1.
 .TP
-\fBHashBase\fR
-If the node names include a sequence number, this value defines the 
-base to be used in building a hash table based upon node name. Value of 8 
-and 10 are recognized for octal and decimal sequence numbers respectively.
-The value of zero is also recognized for node names lacking a sequence number. 
-The use of node names containing a numeric suffix will provide faster 
-operation for larger clusters. The default value is 10.
-.TP
 \fBHeartbeatInterval\fR
 The interval, in seconds, at which the SLURM controller tests the 
 status of other daemons. The default value is 30 seconds.
@@ -596,8 +588,6 @@ Prolog=/usr/local/slurm/prolog
 FastSchedule=1
 .br
 FirstJobId=65536
-.br
-HashBase=10
 .br
 HeartbeatInterval=60
 .br
