@@ -126,8 +126,11 @@ job_create(resource_allocation_response_msg_t *resp)
 
 		if (resp) {
 			job->cpus[i] = resp->cpus_per_node[cpu_inx];
-			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx])
+			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) {
+				/* move to next record */
 				cpu_inx++;
+				cpu_cnt = 0;
+			}
 			memcpy(&job->slurmd_addr[i], 
 			       &resp->node_addr[i], sizeof(job->slurmd_addr[i]));
 		} else {
