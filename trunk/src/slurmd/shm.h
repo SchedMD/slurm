@@ -177,11 +177,6 @@ int shm_update_step(job_step_t *step);
 void shm_free_step(job_step_t *step);
 
 /* 
- * Lock shared memory and send `signal' to all tasks in step 
- */
-int shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal);
-
-/* 
  * Add a task record to a job step in memory
  *
  * Returns SLURM_FAILURE and following errnos if not successful:

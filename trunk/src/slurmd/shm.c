@@ -448,56 +448,6 @@ shm_update_step(job_step_t *step)
 	return retval;
 }
 
-int
-shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
-{
-	int         signo  = (int) signal;
-	int         retval = SLURM_SUCCESS;
-	int         i;
-	job_step_t *s;
-	task_t     *t;
-
-	_shm_lock();
-	if ((i = _shm_find_step(jobid, stepid)) < 0) {
-		retval = EINVAL;
-		goto done;
-	}
-
-	s = &slurmd_shm->step[i];
-
-	if (stepid != NO_VAL)
-		debug2 ("signal %d for %u.%u (sid: %lu)", 
-	  	        signal, jobid, stepid, (unsigned long) s->sid);
-	else
-		debug2 ("signal %d for %u (sid: %lu)", 
-		        signal, jobid, (unsigned long) s->sid);
-
-	for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
-		pid_t sid = getsid(t->pid);
-
-		if ((sid <= (pid_t) 0) || (sid != s->sid))
-			continue;
-
-		if (t->pid <= (pid_t) 0) {
-			debug ("job %u.%u: Bad pid value %lu", 
-			       jobid, stepid, (unsigned long) t->pid);
-			continue;
-		}
-
-		if (kill(t->pid, signo) < 0) {
-			error ("kill %u.%u task %d pid %ld: %m", 
-			       jobid, stepid, t->id, (long)t->pid);
-			retval = errno;
-		}
-	}
-done:
-	_shm_unlock();
-	if (retval > 0)
-		slurm_seterrno_ret(retval);
-	else
-		return SLURM_SUCCESS;
-}
-
 static job_step_t *
 _shm_copy_step(job_step_t *j)
 {
