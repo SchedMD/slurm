@@ -72,7 +72,7 @@ The configuration file should contain one keyword followed by an
 equal sign, followed by the value (one keyword per line). 
 In the interest of simplicity (for the developers), the field 
 descriptors above are case sensitive. 
-The size of any field in the configuration file is limited to 1024 characters.
+The size of each line in the file is limited to 1024 characters.
 A <a href="#SampleOver">SLURM configuration file</a> is included at the end of this document.
 
 <h3>Node Configuration</h3>
@@ -162,7 +162,7 @@ configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "Name=DEFAULT".
 In order to support the concept of jobs requiring consecutive nodes, 
 nodes should be place in this file in consecutive order.
-The size of any field in the configuration file is limited to 1024 characters.
+The size of each line in the file is limited to 1024 characters.
 A <a href="#SampleNode">sample node configuration file</a> is included at the end of this document.
 
 <h3>Partition Configuration</h3>
@@ -217,7 +217,7 @@ The default values for each partition can be specified with a record in which
 The default entry values will apply only to lines following it in the 
 configuration file and the default values can be reset multiple times 
 in the configuration file with multiple entries where "Name=DEFAULT".
-The size of any field in the configuration file is limited to 1024 characters.
+The size of each line in the file is limited to 1024 characters.
 If user controls are desired then set either AllowUsers or DenyUsers, but not both.
 If AllowUsers is set, then DenyUsers is ignored. 
 A <a href="#SamplePart">sample partition configuration file</a> is included at the end of this document.
