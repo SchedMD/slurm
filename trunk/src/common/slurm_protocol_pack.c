@@ -156,7 +156,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_reattach_tasks_streams_msg ( ( reattach_tasks_streams_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_LAUNCH_TASKS :
-			pack_launch_tasks_msg ( ( launch_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
+			pack_launch_tasks_request_msg ( ( launch_tasks_request_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_KILL_TASKS :
 			pack_cancel_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
@@ -285,7 +285,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 				( void ** ) buffer ,  buf_len ) ;
 			break ;
 		case REQUEST_LAUNCH_TASKS :
-			unpack_launch_tasks_msg ( ( launch_tasks_msg_t ** ) & ( msg->data ) , 
+			unpack_launch_tasks_request_msg ( ( launch_tasks_request_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ; 
 		case REQUEST_REATTACH_TASKS_STREAMS :
@@ -1098,7 +1098,7 @@ int unpack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t ** msg_ptr 
 	uint16_t uint16_tmp;
 	reattach_tasks_streams_msg_t * msg ;
 
-	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	msg = xmalloc ( sizeof ( reattach_tasks_streams_msg_t ) ) ;
 	if (msg == NULL) 
 	{
 		*msg_ptr = NULL ;
@@ -1116,7 +1116,31 @@ int unpack_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t ** msg_ptr 
 	return 0 ;
 }
 
-void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_t * length )
+void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> return_code , buffer , length ) ;
+	packstr ( msg -> node_name , buffer , length ) ;
+}
+
+int unpack_launch_tasks_msg ( launch_tasks_response_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	launch_tasks_response_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( launch_tasks_response_msg_t ) ) ;
+	if (msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> return_code , buffer , length ) ;
+	unpackstr_xmalloc ( & msg -> node_name , & uint16_tmp , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
+void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
@@ -1131,12 +1155,12 @@ void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_
 	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
 }
 
-int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
-	launch_tasks_msg_t * msg ;
+	launch_tasks_request_msg_t * msg ;
 
-	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	msg = xmalloc ( sizeof ( launch_tasks_request_msg_t ) ) ;
 	if (msg == NULL) 
 	{
 		*msg_ptr = NULL ;
@@ -1169,7 +1193,7 @@ int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uin
 {
 	kill_tasks_msg_t * msg ;
 
-	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	msg = xmalloc ( sizeof ( kill_tasks_msg_t ) ) ;
 	if ( msg == NULL) 
 	{
 		*msg_ptr = NULL ;
@@ -1209,6 +1233,8 @@ int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer ,
 /* template 
 void pack_ ( * msg , void ** buffer , uint32_t * length )
 {
+	assert ( msg != NULL );
+
 	pack16 ( msg -> , buffer , length ) ;
 	pack32 ( msg -> , buffer , length ) ;
 	packstr ( msg -> , buffer , length ) ;
@@ -1219,7 +1245,9 @@ void unpack_ ( ** msg_ptr , void ** buffer , uint32_t * length )
 	uint16_t uint16_tmp;
 	* msg ;
 
-	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	assert ( msg_ptr != NULL );
+
+	msg = xmalloc ( sizeof ( ) ) ;
 	if (msg == NULL) 
 	{
 		*msg_ptr = NULL ;

@@ -228,7 +228,7 @@ void slurmd_req ( slurm_msg_t * msg )
 	{	
 		case REQUEST_LAUNCH_TASKS:
 			slurm_rpc_launch_tasks ( msg ) ;
-			slurm_free_launch_tasks_msg ( msg -> data ) ;
+			slurm_free_launch_tasks_request_msg ( msg -> data ) ;
 			break;
 		case REQUEST_KILL_TASKS:
 			slurm_rpc_kill_tasks ( msg ) ;
@@ -253,7 +253,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	launch_tasks_msg_t * task_desc = ( launch_tasks_msg_t * ) msg->data ;
+	launch_tasks_request_msg_t * task_desc = ( launch_tasks_request_msg_t * ) msg->data ;
 
 	start_time = clock ();
 	info ("slurmd_req: launch tasks message received");

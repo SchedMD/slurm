@@ -90,8 +90,11 @@ int unpack_partition_table_msg ( partition_desc_msg_t **  msg_ptr , void ** buff
 void pack_update_partition_msg ( update_part_msg_t * msg , void ** buffer, uint32_t * length  );
 int unpack_update_partition_msg ( update_part_msg_t ** msg_ptr , void ** buffer, uint32_t * length  );
 
-void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_t * length );
-int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg , void ** buffer , uint32_t * length );
+int unpack_launch_tasks_request_msg ( launch_tasks_request_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+
+void pack_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg , void ** buffer , uint32_t * length );
+int unpack_launch_tasks_response_msg ( launch_tasks_response_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
 
 void pack_kill_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_kill_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
