@@ -303,6 +303,8 @@ struct job_record {
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
 					 * job */
 	List step_list;			/* list of job's steps */
+	uint16_t port;			/* port for srun communications */
+	char *host;			/* host for srun communications */
 };
 
 struct 	step_record {
@@ -316,6 +318,9 @@ struct 	step_record {
 					   step */
 	bitstr_t *step_node_bitmap;	/* bitmap of nodes allocated to job 
 					   step */
+	time_t time_last_active;	/* time of last job activity */
+	uint16_t port;			/* port for srun communications */
+	char *host;			/* host for srun communications */
 #ifdef HAVE_ELAN
 	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque */
 #endif

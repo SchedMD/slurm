@@ -102,6 +102,7 @@ void slurm_free_job_desc_msg(job_desc_msg_t * msg)
 		xfree(msg->in);
 		xfree(msg->out);
 		xfree(msg->work_dir);
+		xfree(msg->host);
 		xfree(msg);
 	}
 }
@@ -199,6 +200,7 @@ void slurm_free_job_step_create_request_msg(job_step_create_request_msg_t *
 {
 	if (msg) {
 		xfree(msg->node_list);
+		xfree(msg->host);
 		xfree(msg);
 	}
 }
@@ -304,6 +306,28 @@ void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
 {
 	if (msg) {
 		xfree(msg->node_name);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_srun_ping_msg(srun_ping_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_srun_node_fail_msg(srun_node_fail_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->nodelist);
+		xfree(msg);
+	}
+}
+
+void inline slurm_free_srun_timeout_msg(srun_timeout_msg_t * msg)
+{
+	if (msg) {
 		xfree(msg);
 	}
 }

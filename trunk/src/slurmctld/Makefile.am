@@ -34,6 +34,8 @@ slurmctld_SOURCES = 	\
 	read_config.c	\
 	read_config.h	\
 	slurmctld.h	\
+	srun_comm.c	\
+	srun_comm.h	\
 	step_mgr.c
 
 slurmctld_LDFLAGS = -export-dynamic

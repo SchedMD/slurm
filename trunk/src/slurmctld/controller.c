@@ -69,6 +69,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/srun_comm.h"
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
 #define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
@@ -566,9 +567,14 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_sched_time;
 	static time_t last_checkpoint_time;
 	static time_t last_group_time;
-	static time_t last_ping_time;
+	static time_t last_ping_node_time;
+	static time_t last_ping_srun_time;
 	static time_t last_timelimit_time;
 	time_t now;
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK,
+		NO_LOCK, NO_LOCK
+	};
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK,
 		WRITE_LOCK, READ_LOCK
@@ -585,8 +591,9 @@ static void *_slurmctld_background(void *no_data)
 	now = time(NULL);
 	last_sched_time = last_checkpoint_time = last_group_time = now;
 	last_timelimit_time = now;
-	last_ping_time = now + (time_t)MIN_CHECKIN_TIME -
+	last_ping_node_time = now + (time_t)MIN_CHECKIN_TIME -
 			 (time_t)slurmctld_conf.heartbeat_interval;
+	last_ping_srun_time = now;
 	(void) pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	debug3("_slurmctld_background pid = %u", getpid());
@@ -622,14 +629,23 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_write_lock);
 		}
 
-		if ((difftime(now, last_ping_time) >=
+		if ((difftime(now, last_ping_node_time) >=
 		     slurmctld_conf.heartbeat_interval) &&
 		    (is_ping_done())) {
-			last_ping_time = now;
+			last_ping_node_time = now;
 			debug2("Performing node ping");
 			lock_slurmctld(node_write_lock);
 			ping_nodes();
 			unlock_slurmctld(node_write_lock);
+		}
+
+		if ((difftime(now, last_ping_srun_time) >=
+		     (slurmctld_conf.inactive_limit / 2))) {
+			last_ping_srun_time = now;
+			debug2("Performing srun ping");
+			lock_slurmctld(job_read_lock);
+			srun_ping();
+			unlock_slurmctld(job_read_lock);
 		}
 
 		(void) agent_retry(RPC_RETRY_INTERVAL);
