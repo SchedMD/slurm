@@ -220,7 +220,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 /*
  * _match_feature - determine if the desired feature is one of those available
  * IN seek - desired feature
- * IN available - comma separated list of availablefeatures
+ * IN available - comma separated list of available features
  * RET 1 if found, 0 otherwise
  */
 static int _match_feature(char *seek, char *available)
