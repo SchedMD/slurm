@@ -388,7 +388,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 #else
 		syslog(LOG_ERR, "Will_Job_Run: node %s does not meet job %s specification\n", str_ptr1, Fail_Mode);
 #endif
-	    	*Error_Code =  EACCES;
+	    	*Error_Code =  EINVAL;
 		free(Scratch);
 		return (char *)NULL;
 	    } /* if */
@@ -479,7 +479,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    strcat(Scratch, Node_Record_Point->Name);
 	    CPU_Tally += Node_Record_Point->CPUs;
 	    Node_Tally++;
-	    if ((Set_CpuCount  != 0) && (Node_Tally < My_CpuCount )) continue;
+	    if ((Set_CpuCount  != 0) && (CPU_Tally  < My_CpuCount )) continue;
 	    if ((Set_NodeCount != 0) && (Node_Tally < My_NodeCount)) continue;
 	    list_iterator_destroy(Node_Record_Iterator);
 	    Scratch = realloc(Scratch, strlen(Scratch)+1);
