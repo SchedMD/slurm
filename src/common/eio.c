@@ -54,6 +54,7 @@ int io_handle_events(List objs)
 static int
 _poll_loop_internal(List objs)
 {
+	int            retval = 0;
 	struct pollfd *pollfds;
 	io_obj_t     **map;
 	unsigned int   n, maxnfds = 0, nfds = 0;
@@ -64,21 +65,28 @@ _poll_loop_internal(List objs)
 		if (maxnfds < (n = list_count(objs))) {
 			maxnfds = n;
 			xrealloc(pollfds, maxnfds*sizeof(*pollfds));
-			xrealloc(map, maxnfds*sizeof(*pollfds));
+			xrealloc(map,     maxnfds*sizeof(*map));
 			/* 
 			 * Note: xrealloc() also handles initial malloc 
 			 */
 		}
 
-		if ((nfds = _poll_setup_pollfds(pollfds, map, objs)) <= 0)
-			return 0;
+		debug3("eio: handling events for %d objects", 
+				list_count(objs));
+		if ((nfds = _poll_setup_pollfds(pollfds, map, objs)) <= 0) 
+			goto done;
 
-		if (_poll_internal(pollfds, nfds) <= 0)
-			break;
+		if (_poll_internal(pollfds, nfds) < 0)
+			goto error;
 
 		_poll_dispatch(pollfds, nfds, map, objs);
 	}
-	return -1;
+  error:
+	retval = -1;
+  done:
+	xfree(pollfds);
+	xfree(map); 
+	return retval;
 }
 
 static int
@@ -87,9 +95,8 @@ _poll_internal(struct pollfd *pfds, unsigned int nfds)
 	int n;          
 	while ((n = poll(pfds, nfds, -1)) < 0) {
 		switch (errno) {
-		case EINTR:
-		case EAGAIN:
-			continue;
+		case EINTR : return 0;
+		case EAGAIN: continue;
 		default:
 			error("poll: %m");
 			return -1;
@@ -116,19 +123,22 @@ _poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
 	ListIterator  i    = list_iterator_create(l);
 	io_obj_t     *obj  = NULL;
 	unsigned int  nfds = 0;
+	bool          readable, writable;
 
 	while ((obj = (io_obj_t *) list_next(i))) {
-		if (_is_writable(obj) && _is_readable(obj)) {
+		writable = _is_writable(obj);
+		readable = _is_readable(obj);
+		if (writable && readable) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLOUT | POLLIN;
 			map[nfds] = obj;
 			nfds++;
-		} else if (_is_readable(obj)) {
+		} else if (readable) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLIN;
 			map[nfds] = obj;
 			nfds++;
-		} else if (_is_writable(obj)) {
+		} else if (writable) {
 			pfds[nfds].fd     = obj->fd;
 			pfds[nfds].events = POLLOUT;
 			map[nfds] = obj;
@@ -136,7 +146,7 @@ _poll_setup_pollfds(struct pollfd *pfds, io_obj_t *map[], List l)
 		}
 	}
 	list_iterator_destroy(i);
-	return (nfds > 0) ? nfds - 1 : 0;
+	return nfds;
 }
 
 static void
