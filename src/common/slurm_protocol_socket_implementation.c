@@ -61,6 +61,19 @@
 /*****************************************************************
  * MIDDLE LAYER MSG FUNCTIONS
  ****************************************************************/
+
+/* return time size start_time in msec, rounded off */
+static int _tot_wait (struct timeval *start_time)
+{
+	struct timeval end_time;
+	int msec_delay;
+
+	gettimeofday(&end_time, NULL);
+	msec_delay =   (end_time.tv_sec  - start_time->tv_sec ) * 1000;
+	msec_delay += ((end_time.tv_usec - start_time->tv_usec + 500) / 1000);
+	return msec_delay;
+}
+
 slurm_fd _slurm_init_msg_engine ( slurm_addr * slurm_address )
 {
 	return _slurm_listen_stream ( slurm_address ) ;
@@ -319,22 +332,25 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size ,
 	int rc ;
 	int bytes_sent = 0 ;
 	int fd_flags ;
+	int msec_wait = 0;
 	struct pollfd ufds;
+	struct timeval start_time;
 
 	ufds.fd = open_fd;
 	ufds.events = POLLOUT;
 	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
 	_slurm_set_stream_non_blocking ( open_fd ) ;
+	gettimeofday(&start_time, NULL);
 	while ( bytes_sent < size )
 	{
-		rc = poll(&ufds, 1, timeout);
+		rc = poll(&ufds, 1, (timeout-msec_wait));
 		if ( rc < 0 )
 		{
-			if ( errno == EINTR )
-				continue ;
-			else
+			if ( (errno != EINTR ) ||
+			     ((msec_wait = _tot_wait(&start_time)) >= timeout))
 				goto _slurm_send_timeout_exit_error;
-				
+			else
+				continue;
 		}
 		else if  ( rc == 0 )
 		{
@@ -355,7 +371,7 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size ,
 			else if ( rc == 0 )
 			{
 				slurm_seterrno ( 
-					SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT ) ;
+					SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
 				goto _slurm_send_timeout_exit_error;
 			}
 			else
@@ -371,7 +387,7 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size ,
 	}
 	return bytes_sent ;
 
-	_slurm_send_timeout_exit_error:
+    _slurm_send_timeout_exit_error:
 	if ( fd_flags != SLURM_PROTOCOL_ERROR )
 	{
 		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
@@ -386,22 +402,25 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size ,
 	int rc ;
 	int bytes_recv = 0 ;
 	int fd_flags ;
+	int msec_wait = 0;
 	struct pollfd ufds;
+	struct timeval start_time;
 
 	ufds.fd = open_fd;
 	ufds.events = POLLIN;
 	fd_flags = _slurm_fcntl ( open_fd , F_GETFL ) ;
 	_slurm_set_stream_non_blocking ( open_fd ) ;
+	gettimeofday(&start_time, NULL);
 	while ( bytes_recv < size )
 	{
-		rc = poll(&ufds, 1, timeout);
+		rc = poll(&ufds, 1, (timeout-msec_wait));
 		if ( rc < 0 )
 		{
-			if ( errno == EINTR )
-				continue ;
-			else
+			if ( (errno != EINTR ) || 	/* Real error */
+			     ((msec_wait = _tot_wait(&start_time)) >= timeout))
 				goto _slurm_recv_timeout_exit_error;
-				
+			else
+				continue;
 		}
 		else if  ( rc == 0 )
 		{
@@ -423,7 +442,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size ,
 			else if ( rc == 0 )
 			{
 				slurm_seterrno ( 
-					SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT ) ;
+					SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
 				goto _slurm_recv_timeout_exit_error;
 			}
 			else
@@ -439,7 +458,7 @@ int _slurm_recv_timeout ( slurm_fd open_fd, char *buffer , size_t size ,
 	}
 	return bytes_recv ;
 
-	_slurm_recv_timeout_exit_error:
+    _slurm_recv_timeout_exit_error:
 	if ( fd_flags != SLURM_PROTOCOL_ERROR )
 	{
 		_slurm_fcntl ( open_fd , F_SETFL , fd_flags ) ;
