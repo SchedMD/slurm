@@ -388,10 +388,6 @@ extern int select_p_job_test(struct job_record *job_ptr, bitstr_t *bitmap,
 
 extern int select_p_job_init(struct job_record *job_ptr)
 {
-	/* FIXME: Remove this statement after Blue Gene testing is complete */
-	select_g_set_jobinfo(job_ptr->select_jobinfo, SELECT_DATA_PART_ID, 
-		"TESTING");
-
 	return SLURM_SUCCESS;
 }
 
