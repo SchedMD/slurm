@@ -16,6 +16,7 @@ LinuxImage=/bgl/BlueLight/ppcfloor/bglsys/bin/zImage.elf
 MloaderImage=/bgl/BlueLight/ppcfloor/bglsys/bin/mmcs-mloader.rts
 RamDiskImage=/bgl/BlueLight/ppcfloor/bglsys/bin/ramdisk.elf
 Numpsets=8
+BridgeAPIVerbose=0
 
 #
 # Define the static partitions (bglblocks)
