@@ -510,6 +510,8 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	slurm_send_rc_msg(msg, rc);
+	if (rc == SLURM_SUCCESS)
+		save_cred_state(conf->cred_state_list);
 }
 
 static void 
