@@ -182,7 +182,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc doc/html/slurm_design.pdf
 %doc doc/html/slurmstyles.css
 %doc doc/html/spacer.gif
-%doc doc/switchplugins.html
+%doc doc/html/switchplugins.html
 %doc doc/html/team.html
 %{_bindir}/scancel
 %{_bindir}/scontrol
