@@ -120,6 +120,7 @@ struct _plugrack {
 
 #define PLUGRACK_UID_NOBODY                99        /* RedHat's, anyway. */
 
+static bool _match_major ( const char *path_name, const char *major_type );
 static int _plugrack_read_single_dir( plugrack_t rack, char *dir );
 static bool _so_file( char *pathname );
 
@@ -540,9 +541,8 @@ _plugrack_read_single_dir( plugrack_t rack, char *dir )
 		 * to avoid having some program try to open a 
 		 * plugin designed for a different program and 
 		 * discovering undefined symbols */
-		if (	rack->major_type &&
-			strncmp( rack->major_type, e->d_name, 
-				strlen( rack->major_type ) ) )
+		if ((rack->major_type) && 
+		    (!_match_major(e->d_name, rack->major_type))) 
 			continue;
 			
                 /* See if we should be paranoid about this file. */
@@ -596,6 +596,20 @@ _so_file ( char *file_name )
 			return true;
 	}
 	return false;
+}
+
+/* Return TRUE of the specified major_type is a prefix of the shared object 
+ * pathname (i.e. either "<major_name>..." or "lib<major_name>...") */
+static bool
+_match_major ( const char *path_name, const char *major_type )
+{
+	char *head = (char *)path_name;
+
+	if (strncmp(head, "lib", 3) == 0)
+		head += 3;
+	if (strncmp(head, major_type, strlen(major_type)))
+		return FALSE;
+	return TRUE;
 }
 
 int
