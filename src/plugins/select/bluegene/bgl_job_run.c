@@ -374,7 +374,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				bgl_err_str(rc));
 			continue;
 		}
-		
+
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
@@ -427,6 +427,10 @@ static void _part_op(bgl_update_t *bgl_update_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int retries;
+
+	if ((bgl_update_list == NULL)
+	&&  ((bgl_update_list = list_create(_bgl_list_del)) == NULL))
+		fatal("malloc failure in start_job/list_create");
 
 	slurm_mutex_lock(&agent_cnt_mutex);
 	if (list_enqueue(bgl_update_list, bgl_update_ptr) == NULL)
@@ -521,17 +525,11 @@ extern int start_job(struct job_record *job_ptr)
 	info("Queue start of job %u in BGL partition %s", 
 		job_ptr->job_id, bgl_part_id);
 
-	if ((bgl_update_list == NULL)
-	&&  ((bgl_update_list = list_create(_bgl_list_del)) == NULL)) {
-		fatal("malloc failure in start_job/list_create");
-		return SLURM_ERROR;
-	}
-
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = START_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
-	bgl_update_ptr->bgl_part_id = bgl_part_id;
+	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
@@ -556,7 +554,7 @@ int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 	}
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
-	bgl_update_ptr->bgl_part_id = bgl_part_id;
+	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 	_part_op(bgl_update_ptr);
 	
 	return rc;
@@ -589,7 +587,7 @@ int term_job(struct job_record *job_ptr)
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->uid = job_ptr->user_id;
 	bgl_update_ptr->job_id = job_ptr->job_id;
-	bgl_update_ptr->bgl_part_id = bgl_part_id;
+	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 	_part_op(bgl_update_ptr);
 #endif
 	return rc;
@@ -622,7 +620,7 @@ extern int sync_jobs(List job_list)
 		bgl_update_ptr->op = SYNC_OP;
 		bgl_update_ptr->uid = job_ptr->user_id;
 		bgl_update_ptr->job_id = job_ptr->job_id;
-		bgl_update_ptr->bgl_part_id = bgl_part_id;
+		bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 		_part_op(bgl_update_ptr);
 		_excise_block(block_list, bgl_part_id);
 	}
@@ -635,7 +633,7 @@ extern int sync_jobs(List job_list)
 			bgl_part_id);
 		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 		bgl_update_ptr->op = TERM_OP;
-		bgl_update_ptr->bgl_part_id = bgl_part_id;
+		bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
 		_part_op(bgl_update_ptr);
 	}
 	list_iterator_destroy(block_iterator);
