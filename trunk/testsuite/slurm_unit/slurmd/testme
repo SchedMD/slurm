@@ -17,7 +17,6 @@ print OUT "OTESTING\n" ;
 print OUT "OTESTING\n" ;
 print OUT "OTESTING\n" ;
 close OUT ;
-sleep ( 3 ) ;
 open OUT, ">>test.out" ;
 print "NOTESTING\n" ;
 print "NOTESTING\n" ;
