@@ -53,7 +53,6 @@
 #include "src/common/macros.h"
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
-#include "src/common/safeopen.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
@@ -998,10 +997,9 @@ _init_pidfile(void)
 static int
 _set_slurmctld_state_loc(void)
 {
-	(void) mkdir_parent(slurmctld_conf.state_save_location, 0755);
 	if ((mkdir(slurmctld_conf.state_save_location, 0755) < 0) && 
 	    (errno != EEXIST)) {
-		error("mkdir(%s): %m", slurmctld_conf.state_save_location);
+		fatal("mkdir(%s): %m", slurmctld_conf.state_save_location);
 		return SLURM_ERROR;
 	}
 
