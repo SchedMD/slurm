@@ -12,7 +12,19 @@
 static int assert_checks ( circular_buffer_t * buf ) ;
 static int expand_buffer ( circular_buffer_t * buf ) ;
 
-int init_cir_buf ( circular_buffer_t ** buf_ptr )
+void free_circular_buffer ( circular_buffer_t * buf_ptr )
+{
+	if ( buf_ptr )
+	{
+		if ( buf_ptr -> buffer )
+		{
+			xfree (  buf_ptr -> buffer ) ;
+		}
+		xfree ( buf_ptr ) ;
+	}
+}
+
+int init_circular_buffer ( circular_buffer_t ** buf_ptr )
 {
 	circular_buffer_t * buf ;
 	*buf_ptr = xmalloc ( sizeof ( circular_buffer_t ) ) ;
