@@ -87,7 +87,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
 	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
 
-	if (msg->task_id < 0 || msg->task_id >= job->nhosts) {
+	if (msg->task_id < 0 || msg->task_id >= opt.nprocs) {
 		error("task exit resp has bad task_id %d",
 			msg->task_id);
 		return;
