@@ -158,6 +158,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Invalid change in CheckpointType requested"		},
 	{ ESLURM_INVALID_SCHEDTYPE_CHANGE,
 	  "Invalid change in SchedulerType requested"		},
+	{ ESLURM_INVALID_SELECTTYPE_CHANGE,
+	  "Invalid change in SelectType requested"		},
 	{ ESLURM_INVALID_SWITCHTYPE_CHANGE,
 	  "SwitchType change requires restart of all SLURM daemons and jobs"},
 	{ ESLURM_FRAGMENTATION,

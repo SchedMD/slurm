@@ -108,6 +108,7 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->prolog);
 	xfree (ctl_conf_ptr->schedauth);
 	xfree (ctl_conf_ptr->schedtype);
+	xfree (ctl_conf_ptr->select_type);
 	xfree (ctl_conf_ptr->slurm_conf);
 	xfree (ctl_conf_ptr->slurm_user_name);
 	xfree (ctl_conf_ptr->slurmctld_logfile);
@@ -155,6 +156,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree( ctl_conf_ptr->schedauth );
 	ctl_conf_ptr->schedport			= (uint16_t) NO_VAL;
 	xfree( ctl_conf_ptr->schedtype );
+	xfree( ctl_conf_ptr->select_type );
 	ctl_conf_ptr->slurm_user_id		= (uint16_t) NO_VAL; 
 	xfree (ctl_conf_ptr->slurm_user_name);
 	ctl_conf_ptr->slurmctld_debug		= (uint16_t) NO_VAL; 
@@ -205,6 +207,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *control_machine = NULL, *epilog = NULL;
 	char *prolog = NULL;
 	char *sched_type = NULL, *sched_auth = NULL;
+	char *select_type = NULL;
 	char *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurm_user = NULL, *slurmctld_pidfile = NULL;
 	char *slurmctld_logfile = NULL;
@@ -243,6 +246,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SchedulerAuth=", 's', &sched_auth,
 		"SchedulerPort=", 'd', &sched_port,
 		"SchedulerType=", 's', &sched_type,
+		"SelectType=", 's', &select_type,
 		"SlurmUser=", 's', &slurm_user,
 		"SlurmctldDebug=", 'd', &slurmctld_debug,
 		"SlurmctldLogFile=", 's', &slurmctld_logfile,
@@ -454,7 +458,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		}
 		ctl_conf_ptr->schedtype = sched_type;
 	}
-	
+
+	if ( select_type ) {
+		if ( ctl_conf_ptr->select_type ) {
+			xfree( ctl_conf_ptr->select_type );
+		}
+		ctl_conf_ptr->select_type = select_type;
+	}
+
 	if ( slurm_user ) {
 		struct passwd *slurm_passwd;
 		slurm_passwd = getpwnam(slurm_user);
@@ -880,6 +891,9 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 
 	if (ctl_conf_ptr->schedtype == NULL)
 		ctl_conf_ptr->schedtype = xstrdup(DEFAULT_SCHEDTYPE);
+
+	if (ctl_conf_ptr->select_type == NULL)
+		ctl_conf_ptr->select_type = xstrdup(DEFAULT_SELECT_TYPE);
 
 	if (ctl_conf_ptr->slurm_user_name == NULL) {
 		ctl_conf_ptr->slurm_user_name = xstrdup("root");
