@@ -181,6 +181,7 @@ static void _cred_state_pack(slurm_cred_ctx_t ctx, Buf buffer);
 static void _job_state_pack_one(job_state_t *j, Buf buffer);
 static void _cred_state_pack_one(cred_state_t *s, Buf buffer);
 
+static char * timestr (const time_t *tp, char *buf, size_t n);
 
 
 slurm_cred_ctx_t 
@@ -589,6 +590,7 @@ slurm_cred_revoke(slurm_cred_ctx_t ctx, uint32_t jobid)
 int
 slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 {
+	char buf[64];
 	job_state_t  *j = NULL;
 
 	xassert(ctx != NULL);
@@ -611,6 +613,9 @@ slurm_cred_begin_expiration(slurm_cred_ctx_t ctx, uint32_t jobid)
 	}
 
 	j->expiration  = time(NULL) + ctx->expiry_window;
+
+	debug2 ("set revoke expiration for jobid %u to %s",
+	        j->jobid, timestr (&j->expiration, buf, 64) );
 
 	slurm_mutex_unlock(&ctx->mutex);
 	return SLURM_SUCCESS;
@@ -1044,6 +1049,16 @@ _credential_replayed(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 	return false;
 }
 
+static char * timestr (const time_t *tp, char *buf, size_t n)
+{
+	char fmt[] = "%y%m%d%H%M%S";
+	struct tm tmval;
+	if (!localtime_r (tp, &tmval))
+		error ("localtime: %m");
+	strftime (buf, n, fmt, &tmval);
+	return (buf);
+}
+
 
 static bool
 _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
@@ -1054,8 +1069,12 @@ _credential_revoked(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 
 	if (!(j = _find_job_state(ctx, cred->jobid))) 
 		(void) _insert_job_state(ctx, cred->jobid);
-	else if (j->revoked)
+	else if (j->revoked) {
+		char buf[64];
+		debug ("cred for %d revoked. expires at %s", 
+                       j->jobid, timestr (&j->expiration, buf, 64));
 		return true;
+	}
 
 	return false;
 }
@@ -1104,6 +1123,7 @@ _job_state_create(uint32_t jobid)
 static void
 _job_state_destroy(job_state_t *j)
 {
+	debug3 ("destroying job %u state", j->jobid);
 	xfree(j);
 }
 
@@ -1111,6 +1131,7 @@ _job_state_destroy(job_state_t *j)
 static void
 _clear_expired_job_states(slurm_cred_ctx_t ctx)
 {
+	char          t1[64], t2[64];
 	time_t        now = time(NULL);
 	ListIterator  i   = NULL;
 	job_state_t  *j   = NULL;
@@ -1118,8 +1139,15 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	i = list_iterator_create(ctx->job_list);
 
 	while ((j = list_next(i))) {
-		if (j->revoked && (now > j->expiration))
+		debug3 ("job state %u: ctime:%s%s%s",
+		        j->jobid, timestr (&j->ctime, t1, 64),
+			j->revoked ? " revoked: expires:" : "",
+		        timestr (&j->ctime, t1, 64),
+			j->revoked ? timestr (&j->expiration, t2, 64) : "");
+
+		if (j->revoked && (now > j->expiration)) {
 			list_delete(i);
+		}
 	}
 
 	list_iterator_destroy(i);
@@ -1203,13 +1231,13 @@ _job_state_pack_one(job_state_t *j, Buf buffer)
 	pack16((uint16_t) j->revoked, buffer);
 	pack_time(j->ctime, buffer);
 	pack_time(j->expiration, buffer);
-
 }
 
 
 static job_state_t *
 _job_state_unpack_one(Buf buffer)
 {
+	char         buf1[64], buf2[64];
 	uint16_t     revoked = 0;
 	job_state_t *j = xmalloc(sizeof(*j));
 
@@ -1218,7 +1246,19 @@ _job_state_unpack_one(Buf buffer)
 	safe_unpack_time( &j->ctime,      buffer);
 	safe_unpack_time( &j->expiration, buffer);
 
-	if (revoked) j->revoked = true;
+	debug3("cred_unpack:job %d ctime:%s%s%s",
+               j->jobid, 
+	       timestr (&j->ctime, buf1, 64), 
+	       (revoked ? " revoked: expires:" : ""),
+	       revoked ? timestr (&j->expiration, buf2, 64) : "");
+
+	if (revoked) {
+		j->revoked = true;
+		if (j->expiration == (time_t) MAX_TIME) {
+			info ("Warning: revoke on job %d has no expiration", 
+			      j->jobid);
+		}
+	}
 
 	return j;
 
@@ -1299,8 +1339,10 @@ _job_state_unpack(slurm_cred_ctx_t ctx, Buf buffer)
 		if (!(j = _job_state_unpack_one(buffer)))
 			goto unpack_error;
 
-		if (j->revoked && (now < j->expiration))
+		if (!j->revoked || (j->revoked && (now < j->expiration)))
 			list_append(ctx->job_list, j);
+		else
+			debug3 ("not appending expired job %u state", j->jobid);
 	}
 
 	return;
