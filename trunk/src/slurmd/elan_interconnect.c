@@ -24,7 +24,7 @@
 #include <src/slurmd/interconnect.h>
 
 static int setenvf(const char *fmt, ...) ;
-static int do_env(int nodeid, int procid, int nprocs) ;
+static int do_env(int nodeid, int nnodes, int procid, int nprocs) ;
 /* exported module funtion to launch tasks */
 /*launch_tasks should really be named launch_job_step*/
 int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
@@ -60,7 +60,7 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 	}
 
 	/* Process 2: */
-	if (qsw_prog_init(launch_msg -> qsw_job , launch_msg -> uid) < 0) 
+	if (qsw_prog_init(launch_msg->qsw_job, launch_msg->uid) < 0) 
 	{
 		slurm_perror("qsw_prog_init");
 		return SLURM_ERROR ;
@@ -72,15 +72,18 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 int interconnect_set_capabilities ( task_start_t * task_start )
 {
 	pid_t pid;
-	/* all the following variables need to be set from the task_start struct 
-	 * but currently are not */
-	int nodeid , nprocs , i ; 
+	int nodeid, nnodes, nprocs, procid; 
 
-	if (qsw_setcap( task_start -> launch_msg -> qsw_job, i) < 0) {
+	nodeid = task_start->launch_msg->srun_node_id;
+	nnodes = task_start->launch_msg->nnodes;
+	procid = task_start->local_task_id;
+	nprocs = task_start->launch_msg->nprocs;
+
+	if (qsw_setcap( task_start -> launch_msg -> qsw_job, procid) < 0) {
 		slurm_perror("qsw_setcap");
 		return SLURM_ERROR ;
 	}
-	if (do_env(i, nodeid, nprocs) < 0) {
+	if (do_env(nodeid, nnodes, procid, nprocs) < 0) {
 		slurm_perror("do_env");
 		return SLURM_ERROR ;
 	}
@@ -127,7 +130,7 @@ static int setenvf(const char *fmt, ...)
 /*
  * Set environment variables needed by QSW MPICH / libelan.
  */
-static int do_env(int nodeid, int procid, int nprocs)
+static int do_env(int nodeid, int nnodes, int procid, int nprocs)
 {
 	if (setenvf("RMS_RANK=%d", procid) < 0)
 		return -1;
@@ -135,7 +138,7 @@ static int do_env(int nodeid, int procid, int nprocs)
 		return -1;
 	if (setenvf("RMS_PROCID=%d", procid) < 0)
 		return -1;
-	if (setenvf("RMS_NNODES=%d", 1) < 0)
+	if (setenvf("RMS_NNODES=%d", nnodes) < 0)
 		return -1;
 	if (setenvf("RMS_NPROCS=%d", nprocs) < 0)
 		return -1;
