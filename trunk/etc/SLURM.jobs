@@ -1,15 +1,16 @@
-JobName=Job01		NodeList=lx[0021-0030]
+JobName=Job01		NodeList=lx[0021-0030] TotalNodes=10 TotalCPUs=160
 JobName=FAIL_Partition	NodeList=lx[0021-0030] Partition=NOPART
 JobName=FAIL_TotalCPUs	NodeList=lx[0021-0030] TotalCPUs=600
 JobName=FAIL_TotalNodes	NodeList=lx[0021-0030] TotalNodes=30
 JobName=FAIL_MinMemory	NodeList=lx[0021-0030] MinMemory=9000
 JobName=FAIL_MinTmpDisk	NodeList=lx[0021-0030] MinTmpDisk=32000
 JobName=FAIL_Features	NodeList=lx[0021-0030] Features=SuperFast
+JobName=FAIL_NodesBusy	NodeList=lx[0021-0030]
 JobName=Job02		NodeList=lx[0401-0404],lx[0409-0416] Partition=batch Key=1234
 JobName=FAIL_NodeList	NodeList=lx[0021-0030]               Partition=batch Key=1234
 JobName=FAIL_NoKey	NodeList=lx[0401-0404],lx[0409-0416] Partition=batch
 JobName=FAIL_MinCPUs	NodeList=lx[0401-0404] MinCPUs=32    Partition=batch Key=1234
 JobName=Job03		NodeList=lx0031 Partition=class Groups=employee,students,teacher
 JobName=FAIL_Groups	NodeList=lx0031 Partition=class Groups=employee,teacher
-JobName=Job04		NodeList=lx0021,lx0030 Contiguous
+JobName=Job04		NodeList=lx0301,lx0310 Contiguous    Partition=batch Key=1234 
 JobName=FAIL_NoSpecs	Partition=class Groups=students
