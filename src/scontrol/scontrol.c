@@ -1268,7 +1268,7 @@ _update_job (int argc, char *argv[])
 		}
 		else if (strncasecmp(argv[i], "Priority=", 9) == 0)
 			job_msg.priority = 
-				(uint32_t) strtol(&argv[i][9], 
+				(uint32_t) strtoll(&argv[i][9], 
 						(char **) NULL, 10);
 		else if (strncasecmp(argv[i], "ReqProcs=", 9) == 0)
 			job_msg.num_procs = 
