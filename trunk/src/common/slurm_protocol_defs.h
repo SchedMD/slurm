@@ -112,8 +112,6 @@ typedef enum {
 	RESPONSE_PARTITION_INFO,
 	REQUEST_ACCTING_INFO,
 	RESPONSE_ACCOUNTING_INFO,
-	REQUEST_GET_JOB_STEP_INFO,
-	RESPONSE_GET_JOB_STEP_INFO,
 
 	REQUEST_UPDATE_JOB = 3001,
 	REQUEST_UPDATE_NODE,
@@ -276,6 +274,7 @@ typedef struct job_descriptor
 
 typedef struct job_step_id
 {
+	uint32_t last_update;
 	uint32_t job_id;
 	uint32_t job_step_id ;
 } job_step_id_t ;
@@ -393,8 +392,8 @@ typedef struct job_step_info_response_msg
 
 typedef struct job_step_id job_step_id_msg_t ;
 typedef struct job_step_id job_step_info_request_msg_t ;
+typedef struct job_step_id job_info_request_msg_t ;
 
-typedef struct job_table job_table_msg_t ;
 
 typedef struct job_info_msg {
 	uint32_t last_update;
@@ -538,6 +537,7 @@ void inline slurm_free_return_code_msg ( return_code_msg_t * msg ) ;
 void inline slurm_free_job_step_id ( job_step_id_t * msg ) ;
 #define slurm_free_job_step_id_msg(msg) slurm_free_job_step_id((job_step_id_t*)(msg)) 
 #define slurm_free_job_step_info_request_msg(msg) slurm_free_job_step_id(msg) 
+#define slurm_free_job_info_request_msg(msg) slurm_free_job_step_id(msg) 
 
 void inline slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 

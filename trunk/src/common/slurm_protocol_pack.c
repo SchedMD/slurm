@@ -104,8 +104,6 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 	switch ( msg -> msg_type )
 	{
 		case REQUEST_BUILD_INFO :
-		case REQUEST_JOB_INFO :
-		case REQUEST_JOB_STEP_INFO :
 		case REQUEST_NODE_INFO :
 		case REQUEST_PARTITION_INFO :
 		case REQUEST_ACCTING_INFO :
@@ -177,11 +175,15 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_KILL_TASKS :
 			pack_cancel_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
+		/********  job_step_id_t Messages  ********/
+		case REQUEST_JOB_INFO :
+		case REQUEST_JOB_STEP_INFO :
 		case REQUEST_CANCEL_JOB_STEP :
 		case REQUEST_COMPLETE_JOB_STEP :
-			pack_cancel_job_step_msg ( ( job_step_id_msg_t * ) msg->data , 
+			pack_job_step_id ( ( job_step_id_t * ) msg->data , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
+
 		case REQUEST_REVOKE_JOB_CREDENTIAL :
 			pack_revoke_credential_msg ( ( revoke_credential_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
@@ -200,9 +202,8 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_JOB_ATTACH :
 			break ;
-		case REQUEST_GET_JOB_STEP_INFO :
-			break ;
-		case RESPONSE_GET_JOB_STEP_INFO :
+		case RESPONSE_JOB_STEP_INFO :
+			pack_job_step_info_msg( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_JOB_RESOURCE :
 			break ;
@@ -252,8 +253,6 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 	switch ( msg-> msg_type )
 	{
 		case REQUEST_BUILD_INFO :
-		case REQUEST_JOB_INFO :
-		case REQUEST_JOB_STEP_INFO :
 		case REQUEST_NODE_INFO :
 		case REQUEST_PARTITION_INFO :
 		case REQUEST_ACCTING_INFO :
@@ -326,9 +325,12 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			unpack_cancel_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
+		/********  job_step_id_t Messages  ********/
+		case REQUEST_JOB_INFO :
+		case REQUEST_JOB_STEP_INFO :
 		case REQUEST_CANCEL_JOB_STEP :
 		case REQUEST_COMPLETE_JOB_STEP :
-			unpack_cancel_job_step_msg ( ( job_step_id_msg_t ** ) & ( msg->data ) , 
+			unpack_job_step_id ( ( job_step_id_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_REVOKE_JOB_CREDENTIAL :
@@ -349,9 +351,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_JOB_ATTACH :
 			break ;
-		case REQUEST_GET_JOB_STEP_INFO :
-			break ;
-		case RESPONSE_GET_JOB_STEP_INFO :
+		case RESPONSE_JOB_STEP_INFO :
 			unpack_job_step_info_response_msg( ( job_step_info_response_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_JOB_RESOURCE :
@@ -974,13 +974,15 @@ int unpack_job_step_info_response_msg ( job_step_info_response_msg_t** msg, void
 	unpack32 (&(*msg)->last_update , buf_ptr, buffer_size);
 	unpack32 (&(*msg)->job_step_count , buf_ptr, buffer_size);
 	
+	(*msg)->job_steps = xmalloc( sizeof(job_step_info_t) * (*msg)->job_step_count );
+
 	for ( i=0; i < (*msg)->job_step_count; i++ )
 		unpack_job_step_info_members ( &(*msg)->job_steps[i] , buf_ptr, buffer_size);
 
 	return SLURM_SUCCESS;
 }
 
-void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
+void pack_buffer_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
 	assert ( msg != NULL );
 	assert (  sizeof(*msg) == sizeof(slurm_msg_t) ) ;
@@ -1421,13 +1423,14 @@ int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uin
 	return 0 ;
 }
 
-void pack_cancel_job_step_msg ( job_step_id_msg_t * msg , void ** buffer , uint32_t * length )
+void pack_job_step_id ( job_step_id_t * msg , void ** buffer , uint32_t * length )
 {
+	pack32 ( msg -> last_update , buffer , length ) ;
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
 }
 
-int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+int unpack_job_step_id ( job_step_id_t ** msg_ptr , void ** buffer , uint32_t * length )
 {
 	job_step_id_msg_t * msg ;
 
@@ -1438,6 +1441,7 @@ int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer ,
 		return ENOMEM ;
 	}
 
+	unpack32 ( & msg -> last_update , buffer , length ) ;
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
 	*msg_ptr = msg ;
