@@ -270,9 +270,9 @@ _set_job_log_prefix(slurmd_job_t *job)
 	char buf[256];
 
 	if (job->stepid == NO_VAL)
-		snprintf(buf, sizeof(buf), "[%d]", job->jobid);
+		snprintf(buf, sizeof(buf), "[%u]", job->jobid);
 	else
-		snprintf(buf, sizeof(buf), "[%d.%d]", 
+		snprintf(buf, sizeof(buf), "[%u.%u]", 
 			 job->jobid, job->stepid);
 
 	log_set_fpfx(buf);
