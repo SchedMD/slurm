@@ -478,6 +478,7 @@ plugrack_read_dir( plugrack_t rack,
                 strcpy( tail, e->d_name );
 
                 /* Check only regular files. */
+		if ( strncmp(e->d_name, ".", 1) == 0) continue;
                 if ( stat( fq_path, &st ) < 0 ) continue;
                 if ( ! S_ISREG( st.st_mode ) ) continue;
 
