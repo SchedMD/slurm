@@ -28,12 +28,6 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
-#define SYSTEM_DIMENSIONS 3
-#define X_DIMENSION 8
-#define Y_DIMENSION 4
-#define Z_DIMENSION 4
-enum connection_type {RM_MESH, RM_TORUS, RM_NAV};
-
 /* BEGIN_C_DECLS should be used at the beginning of your declarations,
    so that C++ compilers don't mangle their names.  Use _END_C_DECLS at
    the end of C declarations. */
@@ -151,6 +145,23 @@ enum job_wait_reason {
 	WAIT_PART_STATE		/* requested partition is down */
 };
 
+#ifdef HAVE_BGL
+#  define SYSTEM_DIMENSIONS 3	/* for job geometry */
+#else
+#  define SYSTEM_DIMENSIONS 0	/* for job geometry */
+#endif
+
+enum connection_type {
+	RM_MESH, 		/* nodes wired in mesh */
+	RM_TORUS, 		/* nodes wired in torus */
+	RM_NAV			/* nodes wired in torus else mesh */
+};
+
+enum node_use_type {
+	RM_VIRTUAL,		/* application uses both processors */
+	RM_COPROCESSOR		/* use second processor for communications */
+};
+
 /* Possible task distributions across the nodes */
 enum task_dist_states {
 	SLURM_DIST_CYCLIC,	/* distribute tasks 1 per node, round robin */
@@ -258,9 +269,11 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *host;		/* host to contact initiating srun */
 	uint32_t dependency;	/* defer until specified job completes */
 	char *account;		/* charge to specified account */
-        uint16_t geometry[SYSTEM_DIMENSIONS];
-	uint16_t type;
-	uint16_t rotate;
+	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various 
+				 * dimensions, e.g. X, Y, and Z */
+	uint16_t conn_type;	/* see enum connection_type */
+	uint16_t rotate;	/* permit geometry rotation if set */
+	uint16_t node_use;	/* see enum node_use_type */
 } job_desc_msg_t;
 
 typedef struct job_info {
@@ -302,6 +315,11 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	uint16_t wait_reason;	/* reason job still pending, see
 				 * slurm.h:enum job_wait_reason */
+	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
+				 * dimensions, e.g. X, Y, and Z */
+	uint16_t conn_type;	/* see enum connection_type */
+	uint16_t rotate;	/* permit geometry rotation if set */
+	uint16_t node_use;	/* see enum node_use_type */
 } job_info_t;
 
 typedef struct job_info_msg {

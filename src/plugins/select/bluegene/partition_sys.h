@@ -27,8 +27,8 @@
 #define _PARTITION_SYS_H_
 
 #include <math.h>
+#include <slurm/slurm.h>
 
-#define SYSTEM_DIMENSIONS 3
 #define X_DIMENSION 8
 #define Y_DIMENSION 4
 #define Z_DIMENSION 4

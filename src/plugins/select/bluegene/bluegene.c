@@ -31,7 +31,6 @@
 #include "bluegene.h"
 #include "partition_sys.h"
 #include "src/common/hostlist.h"
-#define SYSTEM_DIMENSIONS 3
 
 #define RANGE_MAX 8192
 #define BUF_SIZE 4096
@@ -801,9 +800,9 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 			error("find_best_partition_match record->part_type is NULL"); 
 			continue;
 		}
-		debug("job type %d", job_ptr->type);
-		if (job_ptr->type != *(record->part_type) &&
-		    job_ptr->type != RM_NAV){
+		debug("conn_type %d", job_ptr->conn_type);
+		if (job_ptr->conn_type != *(record->part_type) &&
+		    job_ptr->conn_type != RM_NAV){
 			continue;
 		} 
 		debug("E");
@@ -928,7 +927,7 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	*/
 	debug("******** job request ********");
 	debug("geometry:\t%d %d %d", job_ptr->geometry[0], job_ptr->geometry[1], job_ptr->geometry[2]);
-	debug("type:\t%s", convert_part_type(&job_ptr->type));
+	debug("conn_type:\t%s", convert_part_type(&job_ptr->conn_type));
 	debug("rotate:\t%d", job_ptr->rotate);
 	debug("min_nodes:\t%d", min_nodes);
 	debug("max_nodes:\t%d", max_nodes);

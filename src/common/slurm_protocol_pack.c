@@ -1631,8 +1631,19 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 		job->node_inx = bitfmt2int(node_inx_str);
 		xfree(node_inx_str);
 	}
-
 	safe_unpack32(&job->num_procs, buffer);
+
+#ifdef HAVE_BGL
+{
+	int i;
+	safe_unpack16(&job->conn_type, buffer);
+	safe_unpack16(&job->rotate, buffer);
+	safe_unpack16(&job->node_use, buffer);
+	for (i=0; i<SYSTEM_DIMENSIONS; i++)
+		safe_unpack16(&job->geometry[i], buffer);
+}
+#endif
+
 	safe_unpack32(&job->num_nodes, buffer);
 	safe_unpack16(&job->shared, buffer);
 	safe_unpack16(&job->contiguous, buffer);
@@ -1829,8 +1840,6 @@ _unpack_slurm_ctl_conf_msg(slurm_ctl_conf_info_msg_t **
 static void
 _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 {
-	uint32_t i;
-
 	/* load the data values */
 	pack16(job_desc_ptr->contiguous, buffer);
 	pack16(job_desc_ptr->kill_on_node_fail, buffer);
@@ -1876,10 +1885,15 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack16(job_desc_ptr->port, buffer);
 	packstr(job_desc_ptr->host, buffer);
 
+#ifdef HAVE_BGL
+{	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++)
 		pack16(job_desc_ptr->geometry[i], buffer);		
-	pack16(job_desc_ptr->type, buffer);
+	pack16(job_desc_ptr->conn_type, buffer);
 	pack16(job_desc_ptr->rotate, buffer);
+	pack16(job_desc_ptr->node_use, buffer);
+}
+#endif
 }
 
 /* _unpack_job_desc_msg
@@ -1893,7 +1907,6 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 {
 	uint16_t uint16_tmp;
 	job_desc_msg_t *job_desc_ptr;
-	uint32_t i;
 
 	/* alloc memory for structure */
 	job_desc_ptr = xmalloc(sizeof(job_desc_msg_t));
@@ -1944,10 +1957,16 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack16(&job_desc_ptr->port, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->host, &uint16_tmp, buffer);
 
+#ifdef HAVE_BGL
+{
+	int i;
 	for(i=0; i<SYSTEM_DIMENSIONS; i++)
 		safe_unpack16(&(job_desc_ptr->geometry[i]), buffer);
-	safe_unpack16(&job_desc_ptr->type, buffer);
+	safe_unpack16(&job_desc_ptr->conn_type, buffer);
 	safe_unpack16(&job_desc_ptr->rotate, buffer);
+	safe_unpack16(&job_desc_ptr->node_use, buffer);
+}
+#endif
 
 	return SLURM_SUCCESS;
 
