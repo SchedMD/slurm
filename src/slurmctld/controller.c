@@ -34,6 +34,9 @@ main (int argc, char *argv[]) {
 	int child_pid, cli_len, newsockfd, sockfd;
 	struct sockaddr_in cli_addr, serv_addr;
 	char node_name[MAX_NAME_LEN];
+	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+
+	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	error_code = init_slurm_conf ();
 	if (error_code)

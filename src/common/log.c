@@ -136,7 +136,7 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 
 	while (*fmt != '\0') {
 
-		if ((p = strchr(fmt, '%')) == NULL) {  /* no more format chars */
+		if ((p = (char *)strchr(fmt, '%')) == NULL) {  /* no more format chars */
 			xstrcat(buf, fmt);
 			return buf;
 

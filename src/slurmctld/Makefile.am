@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = controller node_mgr partition_mgr read_config 
+test_modules = controller node_mgr node_scheduler partition_mgr read_config 
 else
 test_modules = 
 endif

@@ -32,8 +32,8 @@ time_t last_bitmap_update = (time_t) NULL;	/* time of last node creation or dele
 time_t last_node_update = (time_t) NULL;	/* time of last update to node records */
 pthread_mutex_t node_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for node and config info */
 
-unsigned *up_node_bitmap = NULL;	/* bitmap of nodes are up */
-unsigned *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
+bitstr_t *up_node_bitmap = NULL;	/* bitmap of nodes are up */
+bitstr_t *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
 
 int delete_config_record ();
 void dump_hash ();
@@ -45,10 +45,9 @@ void split_node_name (char *name, char *prefix, char *suffix, int *index,
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
 main (int argc, char *argv[]) {
-	int error_code, size, node_count, i;
+	int error_code, node_count, i;
 	char *out_line;
-	unsigned *map1, *map2;
-	unsigned u_map[2];
+	bitstr_t *map1, *map2, *map3;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
 	char *dump;
@@ -63,14 +62,12 @@ main (int argc, char *argv[]) {
 
 	/* bitmap setup */
 	node_record_count = 97;
-	size = (node_record_count + 7) / 8;
-	map1 = xmalloc (size);
-	memset (map1, 0, size);
-	bitmap_set (map1, 7);
-	bitmap_set (map1, 23);
-	bitmap_set (map1, 71);
-	map2 = bitmap_copy (map1);
-	bitmap_set (map2, 11);
+	map1 = (bitstr_t *) bit_alloc (node_record_count);
+	bit_set (map1, 7);
+	bit_set (map1, 23);
+	bit_set (map1, 71);
+	map2 = bit_copy (map1);
+	bit_set (map2, 11);
 	node_record_count = 0;
 
 	/* now check out configuration and node structure functions */
@@ -104,8 +101,8 @@ main (int argc, char *argv[]) {
 	if (error_code)
 		printf ("ERROR: create_node_record error %d\n", error_code);
 
-	up_node_bitmap = &u_map[0];
-	idle_node_bitmap = &u_map[1];
+	up_node_bitmap   = (bitstr_t *) bit_alloc (8);
+	idle_node_bitmap = (bitstr_t *) bit_alloc (8);
 
 	printf("NOTE: We are setting lx[01-02] to state draining\n");
 	error_code = update_node ("lx[01-02]", update_spec);
@@ -144,21 +141,19 @@ main (int argc, char *argv[]) {
 	printf("\n");
 	xfree(node_list);
 
-	error_code = node_name2bitmap ("lx[01-02],lx04", &map1);
+	error_code = node_name2bitmap ("lx[01-02],lx04", &map3);
 	if (error_code)
 		printf ("ERROR: node_name2bitmap error %d\n", error_code);
-	error_code = bitmap2node_name (map1, &out_line);
+	error_code = bitmap2node_name (map3, &out_line);
 	if (error_code)
 		printf ("ERROR: bitmap2node_name error %d\n", error_code);
 	if (strcmp (out_line, "lx[01-02],lx04") != 0)
 		printf ("ERROR: bitmap2node_name results bad %s vs %s\n",
 			out_line, "lx[01-02],lx04");
-	xfree (map1);
+	bit_free (map3);
 	xfree (out_line);
 
 	update_time = (time_t) 0;
-	u_map[0] = 0xdeadbeef;
-	u_map[1] = 0xbeefdead;
 	error_code = validate_node_specs ("lx01", 12, 345, 67);
 	if (error_code)
 		printf ("ERROR: validate_node_specs error1\n");
@@ -210,7 +205,7 @@ main (int argc, char *argv[]) {
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
 int 
-bitmap2node_name (unsigned *bitmap, char **node_list) {
+bitmap2node_name (bitstr_t *bitmap, char **node_list) {
 	int error_code, node_list_size, i;
 	struct node_record *node_ptr;
 	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
@@ -235,7 +230,7 @@ bitmap2node_name (unsigned *bitmap, char **node_list) {
 			node_list_size += BUF_SIZE;
 			xrealloc (node_list[0], node_list_size);
 		}
-		if (bitmap_value (bitmap, i) == 0)
+		if (bit_test (bitmap, i) == 0)
 			continue;
 		split_node_name (node_record_table_ptr[i].name, prefix,
 				 suffix, &index, &digits);
@@ -329,9 +324,7 @@ create_config_record (int *error_code) {
 	config_point->weight = default_config_record.weight;
 	config_point->nodes = NULL;
 	config_point->node_bitmap = NULL;
-#if DEBUG_SYSTEM
 	config_point->magic = CONFIG_MAGIC;
-#endif
 	if (default_config_record.feature) {
 		config_point->feature =
 			(char *)
@@ -401,9 +394,7 @@ create_node_record (int *error_code, struct config_record *config_point,
 	node_record_point->cpus = config_point->cpus;
 	node_record_point->real_memory = config_point->real_memory;
 	node_record_point->tmp_disk = config_point->tmp_disk;
-#if DEBUG_SYSTEM
 	node_record_point->magic = NODE_MAGIC;
-#endif
 	last_bitmap_update = time (NULL);
 	return node_record_point;
 }
@@ -512,11 +503,9 @@ dump_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) {
 
 	/* write node records */
 	for (inx = 0; inx < node_record_count; inx++) {
-#if DEBUG_SYSTEM
 		if ((node_record_table_ptr[inx].magic != NODE_MAGIC) ||
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
 			fatal ("dump_node: data integrity is bad");
-#endif
 
 		error_code = dump_node(&node_record_table_ptr[inx], out_line, BUF_SIZE);
 		if (error_code != 0) continue;
@@ -604,9 +593,9 @@ find_node_record (char *name) {
 	/* try to find in hash table first */
 	if (hash_table) {
 		i = hash_index (name);
-		if (strcmp
+		if (strncmp
 		    ((node_record_table_ptr + hash_table[i])->name,
-		     name) == 0)
+		     name, MAX_NAME_LEN) == 0)
 			return (node_record_table_ptr + hash_table[i]);
 		debug ("find_node_record: hash table lookup failure for %s", name);
 #if DEBUG_SYSTEM
@@ -729,8 +718,8 @@ init_node_conf () {
 		xfree (default_config_record.nodes);
 	default_config_record.nodes = (char *) NULL;
 	if (default_config_record.node_bitmap)
-		xfree (default_config_record.node_bitmap);
-	default_config_record.node_bitmap = (unsigned *) NULL;
+		bit_free (default_config_record.node_bitmap);
+	default_config_record.node_bitmap = (bitstr_t *) NULL;
 
 	if (config_list)	/* delete defunct configuration entries */
 		(void) delete_config_record ();
@@ -764,7 +753,7 @@ list_delete_config (void *config_entry) {
 	if (config_record_point->nodes)
 		xfree (config_record_point->nodes);
 	if (config_record_point->node_bitmap)
-		xfree (config_record_point->node_bitmap);
+		bit_free (config_record_point->node_bitmap);
 	xfree (config_record_point);
 }
 
@@ -802,11 +791,11 @@ node_lock () {
  * NOTE: the caller must xfree memory at bitmap when no longer required
  */
 int 
-node_name2bitmap (char *node_names, unsigned **bitmap) {
-	int error_code, i, size, node_count;
+node_name2bitmap (char *node_names, bitstr_t **bitmap) {
+	int error_code, i, node_count;
 	char *node_list;
 	struct node_record *node_record_point;
-	unsigned *my_bitmap;
+	bitstr_t *my_bitmap;
 
 	bitmap[0] = NULL;
 	if (node_names == NULL) {
@@ -822,10 +811,9 @@ node_name2bitmap (char *node_names, unsigned **bitmap) {
 	if (error_code)
 		return error_code;
 
-	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / (sizeof (unsigned) * 8);
-	size *= 8;		/* bytes in bitmap */
-	my_bitmap = (unsigned *) xmalloc (size);
-	memset (my_bitmap, 0, size);
+	my_bitmap = (bitstr_t *) bit_alloc (node_record_count);
+	if (my_bitmap == NULL)
+		fatal("bit_alloc memory allocation failure");
 
 	for (i = 0; i < node_count; i++) {
 		node_record_point = find_node_record (&node_list[i*MAX_NAME_LEN]);
@@ -833,11 +821,11 @@ node_name2bitmap (char *node_names, unsigned **bitmap) {
 			error ("node_name2bitmap: invalid node specified %s",
 				&node_list[i*MAX_NAME_LEN]);
 			xfree (node_list);
-			xfree (my_bitmap);
+			bit_free (my_bitmap);
 			return EINVAL;
 		}
-		bitmap_set (my_bitmap,
-			    (int) (node_record_point - node_record_table_ptr));
+		bit_set (my_bitmap,
+			    (bitoff_t) (node_record_point - node_record_table_ptr));
 	}
 
 	xfree (node_list);
@@ -1082,16 +1070,15 @@ update_node (char *node_names, char *spec) {
 
 		if (state_val != NO_VAL) {
 			if ((state_val == STATE_DOWN) &&
-			    (node_record_point->node_state !=
-			     STATE_UNKNOWN))
+			    (node_record_point->node_state != STATE_UNKNOWN))
 				node_record_point->node_state = -(node_record_point->node_state);
 			else
 				node_record_point->node_state = state_val;
 			if (state_val != STATE_IDLE)
-				bitmap_clear (idle_node_bitmap,
+				bit_clear (idle_node_bitmap,
 					      (int) (node_record_point - node_record_table_ptr));
 			if (state_val == STATE_DOWN)
-				bitmap_clear (up_node_bitmap,
+				bit_clear (up_node_bitmap,
 					      (int) (node_record_point - node_record_table_ptr));
 			info ("update_node: node %s state set to %s",
 				&node_list[i*MAX_NAME_LEN], node_state_string[state_val]);
@@ -1129,8 +1116,7 @@ validate_node_specs (char *node_name, int cpus, int real_memory, int tmp_disk) {
 	error_code = 0;
 
 	if (cpus < config_ptr->cpus) {
-		error ("validate_node_specs: node %s has low cpu count",
-			node_name);
+		error ("validate_node_specs: node %s has low cpu count", node_name);
 		error_code = EINVAL;
 	}
 	node_ptr->cpus = cpus;
@@ -1138,15 +1124,13 @@ validate_node_specs (char *node_name, int cpus, int real_memory, int tmp_disk) {
 		node_ptr->partition_ptr->total_cpus += (cpus - config_ptr->cpus);
 
 	if (real_memory < config_ptr->real_memory) {
-		error ("validate_node_specs: node %s has low real_memory size",
-			node_name);
+		error ("validate_node_specs: node %s has low real_memory size", node_name);
 		error_code = EINVAL;
 	}
 	node_ptr->real_memory = real_memory;
 
 	if (tmp_disk < config_ptr->tmp_disk) {
-		error ("validate_node_specs: node %s has low tmp_disk size",
-			node_name);
+		error ("validate_node_specs: node %s has low tmp_disk size", node_name);
 		error_code = EINVAL;
 	}
 	node_ptr->tmp_disk = tmp_disk;
@@ -1155,20 +1139,17 @@ validate_node_specs (char *node_name, int cpus, int real_memory, int tmp_disk) {
 		error ("validate_node_specs: setting node %s state to DOWN",
 			node_name);
 		node_ptr->node_state = STATE_DOWN;
-		bitmap_clear (up_node_bitmap,
-			      (node_ptr - node_record_table_ptr));
+		bit_clear (up_node_bitmap, (node_ptr - node_record_table_ptr));
 
 	}
 	else {
-		error ("validate_node_specs: node %s has registered",
-			node_name);
+		info ("validate_node_specs: node %s has registered", node_name);
 		if ((node_ptr->node_state == STATE_DOWN) ||
 		    (node_ptr->node_state == STATE_UNKNOWN))
 			node_ptr->node_state = STATE_IDLE;
 		if (node_ptr->node_state < 0)
 			node_ptr->node_state = -(node_ptr->node_state);
-		bitmap_set (up_node_bitmap,
-			    (node_ptr - node_record_table_ptr));
+		bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
 
 	return error_code;
