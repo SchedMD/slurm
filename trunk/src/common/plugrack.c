@@ -304,6 +304,7 @@ plugrack_destroy( plugrack_t rack )
         list_iterator_destroy( it );
 
         list_destroy( rack->entries );
+	xfree( rack->major_type );
         xfree( rack );
         return SLURM_SUCCESS;
 }
@@ -539,7 +540,7 @@ plugrack_load_all( plugrack_t rack )
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
                 if ( e->plug == PLUGIN_INVALID_HANDLE ) {
-                        (void) plugin_load_from_file( e->fq_path );
+                        e->plug = plugin_load_from_file( e->fq_path );
                 }
         }
 
