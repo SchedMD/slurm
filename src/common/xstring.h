@@ -1,6 +1,29 @@
-/* $Id$ */
-
-/* Started with Jim Garlick's xstring functions from pdsh */
+/*****************************************************************************\
+ *  xstring.h - "safe" string processing functions with automatic memory 
+  *	management
+******************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Jim Garlick <garlick@llnl.gov>, et. al.
+ *  UCRL-CODE-2002-040.
+ *
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifndef _XSTRING_H
 #define _XSTRING_H	1
@@ -9,7 +32,7 @@
 
 #define xstrcat(__p, __q)		_xstrcat(&(__p), __q)
 #define xstrcatchar(__p, __c)		_xstrcatchar(&(__p), __c)
-#define xstrerrorcat(__p)		_xstrerrorcat(&(__p))
+#define xslurm_strerrorcat(__p)		_xslurm_strerrorcat(&(__p))
 #define xstrftimecat(__p, __fmt)	_xstrftimecat(&(__p), __fmt)
 
 /*
@@ -36,7 +59,7 @@ void _xstrcatchar(char **str1, char c);
 /*
 ** concatenate stringified errno onto str 
 */
-void _xstrerrorcat(char **str);
+void _xslurm_strerrorcat(char **str);
 
 /*
 ** concatenate current time onto str, using fmt if it is non-NUL
