@@ -1,5 +1,6 @@
 /****************************************************************************\
  *  job.c - job data structure createion functions
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -161,11 +162,14 @@ _job_create_internal(allocation_info_t *info)
 
 	for (i = 0; i < opt.nprocs; i++) {
 		job->task_state[i] = SRUN_TASK_INIT;
-		job->outbuf[i]     = cbuf_create(1024, 1048576);
-		job->errbuf[i]     = cbuf_create(1024, 1048576);
 
+		job->outbuf[i]     = cbuf_create(4096, 1048576);
+		job->errbuf[i]     = cbuf_create(4096, 1048576);
 		job->inbuf[i]      = cbuf_create(4096, 4096);
-		cbuf_opt_set(job->inbuf[i], CBUF_OPT_OVERWRITE, 0);
+
+		cbuf_opt_set(job->outbuf[i], CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
+		cbuf_opt_set(job->errbuf[i], CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
+		cbuf_opt_set(job->inbuf[i],  CBUF_OPT_OVERWRITE, CBUF_NO_DROP);
 
 		job->stdin_eof[i]  = false;
 	}

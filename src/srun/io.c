@@ -106,6 +106,8 @@ static int	_validate_header(slurm_io_stream_header_t *hdr, job_t *job);
  */
 static bool stdin_got_eof = false;
 static bool stdin_open    = true;
+static uint32_t nbytes    = 0;
+static uint32_t nwritten  = 0;
 
 static int 
 _do_task_output_poll(fd_info_t *info)
@@ -164,15 +166,32 @@ _update_task_state(job_t *job, int taskid)
 static void
 _do_output(cbuf_t buf, FILE *out, int tasknum)
 {
-	int len;
+	int  len     = 0;
+	int  tot     = 0;
 	char line[4096];
 
 	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
+		int n = len;
+
 		if (opt.labelio)
 			fprintf(out, "%0*d: ", fmt_width, tasknum);
-		fputs(line, out);
-		fflush(out);
+
+		if ((n -= fprintf(out, "%s", line)) != 0) { 
+			error("Need to rewind %d bytes", n);
+			cbuf_rewind(buf, n);
+		} 
+
+		tot += (len - n);
 	}
+
+	/* if (fflush(out) == EOF)
+		error ("fflush: %m");
+	*/
+
+	debug3("Wrote %d bytes output. %d still buffered", 
+	       tot, cbuf_used(buf));
+
+	nwritten += tot;
 
 }
 
@@ -199,6 +218,9 @@ _flush_io(job_t *job)
 		if (job->err[i] != IO_DONE)
 			_close_stream(&job->err[i], stderr, i);
 	}
+
+	fclose(job->outstream);
+	debug3("Read %dB from tasks, wrote %dB", nbytes, nwritten);
 }
 
 static void *
@@ -291,9 +313,12 @@ _io_thr_poll(void *job_arg)
 		/* exit if we have received EOF on all streams */
 		if (eofcnt) {
 			if (eofcnt == opt.nprocs) {
+				debug("got EOF on all streams");
 				_flush_io(job);
 				pthread_exit(0);
-			} if (time_first_done == 0)
+			} 
+			
+			if (time_first_done == 0)
 				time_first_done = time(NULL);
 		}
 
@@ -323,6 +348,8 @@ _io_thr_poll(void *job_arg)
 					break;
 			}
 		}
+
+		debug3("poll returned with rc = %d", rc);
 
 		for (i = 0; i < job->niofds; i++) {
 			if (fds[i].revents) {
@@ -375,6 +402,7 @@ static void _do_poll_timeout (job_t *job)
 	}
 
 	if (eofcnt == opt.nprocs) {
+		debug("In poll_timeout(): EOF on all streams");
 		_flush_io(job);
 		pthread_exit(0);
 	}
@@ -532,6 +560,13 @@ open_streams(job_t *job)
 	if (!job->outstream || !job->errstream || (job->stdinfd < 0))
 		return -1;
 
+	/*
+	 * Turn off buffering of output stream, since we're doing it 
+	 * with our own buffers. (Also, stdio buffering seems to
+	 * causing some problems with loss of output)
+	 */
+	setvbuf(job->outstream, NULL, _IONBF, 0);
+
 	return 0;
 }
 
@@ -677,7 +712,6 @@ _close_stream(int *fd, FILE *out, int tasknum)
 	int retval;
 	debug2("%d: <%s disconnected>", tasknum, 
 			out == stdout ? "stdout" : "stderr");
-	fflush(out);
 	retval = shutdown(*fd, SHUT_RDWR);
 	if ((retval >= 0) || (errno != EBADF)) 
 		close(*fd);
@@ -688,23 +722,23 @@ _close_stream(int *fd, FILE *out, int tasknum)
 static int
 _do_task_output(int *fd, FILE *out, cbuf_t buf, int tasknum)
 {
-	char line[IO_BUFSIZ];
 	int len = 0;
 	int dropped = 0;
 
 	if ((len = cbuf_write_from_fd(buf, *fd, -1, &dropped)) <= 0) {
-		if ((len != 0)) 
+		if (len < 0) 
 			error("Error task %d IO: %m", tasknum);
 		_close_stream(fd, out, tasknum);
 		return len;
 	}
 
-	while ((len = cbuf_read_line(buf, line, sizeof(line), 1))) {
-		if (opt.labelio)
-			fprintf(out, "%0*d: ", fmt_width, tasknum);
-		fputs(line, out);
-		fflush(out);
-	}
+	debug3("Wrote %d bytes into buffer of size %d", len, cbuf_used(buf));
+	if (dropped)
+		debug3("dropped %d bytes", dropped);
+
+	nbytes += len;
+
+	_do_output(buf, out, tasknum);
 
 	return len;
 }
