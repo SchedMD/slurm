@@ -67,6 +67,7 @@ create_step_record (struct job_record *job_ptr)
 	step_record_point = 
 		(struct step_record *) xmalloc (sizeof (struct step_record));
 
+	last_job_update = time(NULL);
 	step_record_point->job_ptr = job_ptr; 
 	step_record_point->step_id = (job_ptr->next_step_id)++;
 	step_record_point->start_time = time ( NULL ) ;
@@ -92,6 +93,7 @@ delete_all_step_records (struct job_record *job_ptr)
 		fatal ("delete_all_step_records: job_ptr == NULL");
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
+	last_job_update = time(NULL);
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
 		list_remove (step_record_iterator);
@@ -126,6 +128,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 	error_code = ENOENT;
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
+	last_job_update = time(NULL);
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
 		if (step_record_point->step_id == step_id) {
