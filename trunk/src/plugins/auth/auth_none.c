@@ -278,30 +278,30 @@ slurm_auth_unpack( Buf buf )
 		return NULL;
 	}
 
-	/* Allocate a new credential. */
-	cred = ((slurm_auth_credential_t *) 
-		xmalloc( sizeof( slurm_auth_credential_t ) ));
-	cred->cr_errno = SLURM_SUCCESS;
-	
-	
 	/*
 	 * Get the authentication type.
 	 */
 	if ( unpackmem_ptr( &tmpstr, &size, buf ) != SLURM_SUCCESS ) {
 		plugin_errno = SLURM_AUTH_UNPACK_TYPE;
-		xfree( cred );
 		return NULL;
 	}
 	if ( strcmp( tmpstr, plugin_type ) != 0 ) {
 		plugin_errno = SLURM_AUTH_MISMATCH;
-		xfree( cred );
 		return NULL;
 	}
 	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
 		plugin_errno = SLURM_AUTH_UNPACK_VERSION;
-		xfree( cred );
 		return NULL;
 	}
+	if( version != plugin_version ) {
+		plugin_errno = SLURM_AUTH_MISMATCH;
+		return NULL;
+	}
+
+	/* Allocate a new credential. */
+	cred = ((slurm_auth_credential_t *)
+		xmalloc( sizeof( slurm_auth_credential_t ) ));
+	cred->cr_errno = SLURM_SUCCESS;
 
 	/*
 	 * We do it the hard way because we don't know anything about the
