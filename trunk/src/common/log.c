@@ -160,7 +160,7 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	return rc;
 }
 
-/* retun a heap allocated string formed from fmt and ap arglist
+/* return a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  * 
  * args are like printf, with the addition of the following format chars:
