@@ -534,7 +534,8 @@ static int _save_allocation(char *com, List allocated_partitions)
 		}
 	if(filename[0]=='\0') {
 		pa_system_ptr->now_time = time(NULL);		
-		sprintf(filename,"bluegene.conf.%ld",pa_system_ptr->now_time);
+		sprintf(filename,"bluegene.conf.%ld",
+			(long int) pa_system_ptr->now_time);
 	}
 	file_ptr = fopen(filename,"w");
 	if (file_ptr!=NULL) {
