@@ -107,7 +107,7 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
 	if (delta_t > 1000000)
-		error("Note very large time: %s",tv_str); 
+		info("Warning: Note very large processing time: %s",tv_str); 
 }
 
 /*
