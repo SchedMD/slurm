@@ -32,6 +32,7 @@ void init_grid(node_info_msg_t * node_info_ptr)
 {
 	node_info_t *node_ptr;
 	int x, y, z, i = 0;
+	int c[3];
 	uint16_t node_base_state;
 
 	for (x = 0; x < smap_info_ptr->X; x++)
@@ -43,6 +44,12 @@ void init_grid(node_info_msg_t * node_info_ptr)
 				if ((node_base_state == NODE_STATE_DOWN) ||  (node_base_state == NODE_STATE_DRAINED) || (node_base_state == NODE_STATE_DRAINING)) {
 					smap_info_ptr->grid[x][y][z].color = 0;
 					smap_info_ptr->grid[x][y][z].letter = '#';
+					if(_initialized) {
+						c[0] = x;
+						c[1] = y;
+						c[2] = z;
+						set_node_down(c);
+					}
 				} else {
 					smap_info_ptr->grid[x][y][z].color = 7;
 					smap_info_ptr->grid[x][y][z].letter = '.';

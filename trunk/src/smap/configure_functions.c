@@ -38,32 +38,29 @@ int print_text_command(void);
 void get_command(void)
 {
 	command_info_t *com = xmalloc(sizeof(command_info_t));
-	static node_info_msg_t *node_info_ptr;
+	//static node_info_msg_t *node_info_ptr;
 	int text_height, text_width, text_starty, text_startx, error_code;
 	WINDOW *command_win;
-
+	int torus=0, i=0, i2, c[3];
 	text_height = smap_info_ptr->text_win->_maxy;	// - smap_info_ptr->text_win->_begy;
 	text_width = smap_info_ptr->text_win->_maxx;	// - smap_info_ptr->text_win->_begx;
 	text_starty = smap_info_ptr->text_win->_begy;
 	text_startx = smap_info_ptr->text_win->_begx;
-	command_win =
-	    newwin(3, text_width - 1, LINES - 4, text_startx + 1);
-	echo();
+	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
+	/*
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code)
 		if (quiet_flag != 1) {
 			wclear(smap_info_ptr->text_win);
-			smap_info_ptr->ycord =
-			    smap_info_ptr->text_win->_maxy / 2;
-			mvwprintw(smap_info_ptr->text_win,
-				  smap_info_ptr->ycord, 1,
-				  "slurm_load_node");
+			smap_info_ptr->ycord = smap_info_ptr->text_win->_maxy / 2;
+			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, 1, "slurm_load_node");
 			return;
 		}
 	init_grid(node_info_ptr);
-
+	*/
 	if (!params.no_header)
 		print_header_command();
+	
 	while (strcmp(com->str, "quit")) {
 		print_grid();
 		box(smap_info_ptr->text_win, 0, 0);
@@ -89,9 +86,37 @@ void get_command(void)
 				  smap_info_ptr->ycord,
 				  smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "create", 6)) {
+			torus=0;
 			mvwprintw(smap_info_ptr->text_win,
 				  smap_info_ptr->ycord,
 				  smap_info_ptr->xcord, "%s", com->str);
+			i=6;
+			while(com->str[i-1]!=' ' && com->str[i]!='\0')
+				i++;
+			if(!strncmp(com->str+i, "torus", 5)) 
+				torus=1;
+			while(com->str[i-1]!=' ' && com->str[i]!='\0')
+				i++;
+			i2=i;
+			while(com->str[i-1]!='x' && com->str[i]!='\0')
+				i++;
+			if(com->str[i]=='\0') {
+				if(i2>i+1) {
+					i = atoi(&com->str[i2]);
+					//allocate_part();
+				}
+				else {
+					smap_info_ptr->ycord++;
+					mvwprintw(smap_info_ptr->text_win,
+						  smap_info_ptr->ycord,
+						  smap_info_ptr->xcord, "No size or dimension specified, please re-enter");
+					
+				}
+			}
+			if(!strncmp(com->str+7, "mesh", 4)) {
+			}
+			if(!strncmp(com->str+7, "torus", 5)) {
+			}
 		} else if (!strncmp(com->str, "save", 4)) {
 			mvwprintw(smap_info_ptr->text_win,
 				  smap_info_ptr->ycord,
@@ -107,7 +132,7 @@ void get_command(void)
 	//slurm_free_node_info_msg(node_info_ptr);
 	params.display = 0;
 	noecho();
-	init_grid(node_info_ptr);
+	//init_grid(node_info_ptr);
 	wclear(smap_info_ptr->text_win);
 	smap_info_ptr->xcord = 1;
 	smap_info_ptr->ycord = 1;

@@ -142,7 +142,8 @@ int main(int argc, char *argv[])
 	box(smap_info_ptr->text_win, 0, 0);
 	wrefresh(smap_info_ptr->text_win);
 	wrefresh(smap_info_ptr->grid_win);
-
+	partition_allocator_init();
+	
 	while (!end) {
 		_get_option();
 	      redraw:

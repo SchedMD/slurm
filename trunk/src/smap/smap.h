@@ -56,6 +56,7 @@
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/partition_allocator/partition_allocator.h"
 
 enum { JOBS, SLURMPART, BGLPART, COMMANDS };
 
