@@ -13,6 +13,7 @@ html_DATA = \
 	html/entities.gif \
 	html/faq.html \
 	html/help.html \
+	html/jobcompplugins.html \
 	html/lll.gif \
 	html/news.html \
 	html/overview.html \
@@ -22,11 +23,13 @@ html_DATA = \
 	html/publications.html \
 	html/quickstart_admin.html \
 	html/quickstart.html \
+	html/schedplugins.html \
 	html/slurm_banner.jpg \
 	html/slurm_design.pdf \
 	html/slurm.html \
 	html/slurmstyles.css \
 	html/spacer.gif \
+	html/switchplugins.html \
 	html/team.html
 
 EXTRA_DIST = \
