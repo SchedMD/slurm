@@ -11,6 +11,7 @@ source ./globals
 
 set test_id          "1.29"
 set exit_code        0
+set file_err         "test$test_id.error"
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
 set file_prog_get    "test$test_id.prog"
@@ -28,7 +29,7 @@ print_header $test_id
 # We use our own program to get ulimit values since the output 
 # of the ulimit program is inconsistent across systems.
 #
-exec $bin_rm -f $file_prog_get $file_in $file_out
+exec $bin_rm -f $file_prog_get $file_err $file_in $file_out
 exec $bin_make $file_prog_get
 exec $bin_chmod 700 $file_prog_get
 
@@ -37,14 +38,15 @@ exec echo "ulimit -c $limit_core"    >>$file_in
 exec echo "ulimit -f $limit_fsize"   >>$file_in
 exec echo "ulimit -n $limit_nofile"  >>$file_in
 exec echo "ulimit -u $limit_nproc"   >>$file_in
-exec echo "$srun -N1 $file_prog_get" >>$file_in
+exec echo "$srun -N1 -d 5 -vvvvv $file_prog_get" >>$file_in
 
+exec $bin_chmod 700 $file_in
 
 #
 # Spawn a job via srun to print environment variables and user limits
 #
 set timeout $max_job_delay
-spawn $srun --batch --input=$file_in --output=$file_out --error=/dev/null -t1 $file_in
+spawn $srun --batch --output=$file_out --error=$file_err -t1 $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -72,7 +74,6 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
 	exit 1
 }
-exec $bin_rm -f $file_in $file_prog_get
 
 #
 # Inspect the job's output file
@@ -113,7 +114,6 @@ expect {
 	eof {
 	}
 }
-exec $bin_rm -f $file_out
 
 if {$matches != 4} {
 	send_user "\nFAILURE: User limits not propogated\n"
@@ -122,5 +122,7 @@ if {$matches != 4} {
 
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
+#        exec $bin_rm -f $file_err $file_in $file_prog_get $file_out
+
 }
 exit $exit_code
