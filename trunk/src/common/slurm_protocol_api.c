@@ -272,7 +272,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
-		info ( "Error recieving msg socket: errno %i", errno ) ;
+		info ( "Error receiving msg socket: errno %i", errno ) ;
 		return rc ;
 	}
 
@@ -368,7 +368,7 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) ;
 	{
-		info ( "Error recieving msg socket: errno %i", errno ) ;
+		info ( "Error receiving msg socket: errno %i", errno ) ;
 		return rc ;
 	}
 
