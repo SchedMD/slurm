@@ -279,7 +279,7 @@ int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, 
 #else
 	syslog(LOG_ALERT, "Parse_Job_Specs: unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     strcpy(Temp_Specs, Job_Specs);
 
@@ -688,10 +688,6 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
     Error_Code = Parse_Job_Specs(Job_Specs, &Req_Features, &Req_Node_List, &Job_Name, &Req_Group, 
 		&Req_Partition, &Contiguous, &Req_CPUs, &Req_Nodes, &Min_CPUs, 
 		&Min_Memory, &Min_TmpDisk, &Key, &Shared);
-    if (Error_Code == ENOMEM) {
-	Error_Code = EAGAIN;	/* Don't want to kill the job off */
-	goto cleanup;
-    } /* if */
     if (Error_Code != 0) {
 	Error_Code =  EINVAL;	/* Permanent error, invalid parsing */
 #if DEBUG_SYSTEM

@@ -171,9 +171,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	if (Idle_NodeBitMap) free(Idle_NodeBitMap);
-	if (Up_NodeBitMap)   free(Up_NodeBitMap);
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     memset(Idle_NodeBitMap, 0, size);
     memset(Up_NodeBitMap, 0, size);
@@ -186,7 +184,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
 	if (Config_Record_Point->NodeBitMap) free(Config_Record_Point->NodeBitMap);
@@ -197,8 +195,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    list_iterator_destroy(Config_Record_Iterator);
-	    return ENOMEM;
+	    exit(ENOMEM);
 	} /* if */
 	memset(Config_Record_Point->NodeBitMap, 0, size);
     } /* while */
@@ -221,7 +218,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     memset(AllPart_NodeBitMap, 0, size);
     Part_Record_Iterator = list_iterator_create(Part_List);
@@ -231,8 +228,7 @@ int Build_BitMaps() {
 #else
 	syslog(LOG_ALERT, "Build_BitMaps: list_iterator_create unable to allocate memory\n");
 #endif
-	free(AllPart_NodeBitMap);
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
 	if (Part_Record_Point->NodeBitMap) free(Part_Record_Point->NodeBitMap);
@@ -243,8 +239,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    Error_Code = ENOMEM;
-	    break;
+	    exit(ENOMEM);
 	} /* if */
 	memset(Part_Record_Point->NodeBitMap, 0, size);
 
@@ -258,8 +253,7 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    Error_Code = ENOMEM;
-	    break;
+	    exit(ENOMEM);
 	} /* if */
 	strcpy(My_Node_List, Part_Record_Point->Nodes);
 	str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);

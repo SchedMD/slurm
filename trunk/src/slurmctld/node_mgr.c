@@ -113,6 +113,10 @@ main(int argc, char * argv[]) {
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
     Node_Ptr   = Create_Node_Record(&Error_Code, Config_Ptr, "lx02");
     if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
+
+    Up_NodeBitMap = &U_Map[0];
+    Idle_NodeBitMap = &U_Map[1];
+
     Error_Code = Update_Node("lx[01-02]", Update_Spec);
     if (Error_Code) printf("ERROR: Update_Node error1 %d\n", Error_Code);
     if (Node_Ptr->NodeState != STATE_DRAINING) 
@@ -141,10 +145,8 @@ main(int argc, char * argv[]) {
     free(Out_Line);
 
     Update_Time = (time_t)0;
-    U_Map[0] = 0xdead;
-    U_Map[1] = 0xbeef;
-    Up_NodeBitMap = &U_Map[0];
-    Idle_NodeBitMap = &U_Map[1];
+    U_Map[0] = 0xdeadbeef;
+    U_Map[1] = 0xbeefdead;
     Error_Code = Validate_Node_Specs("lx01", 12, 345, 67);
     if (Error_Code) printf("ERROR: Validate_Node_Specs error1\n");
     Error_Code = Dump_Node(&Dump, &Dump_Size, &Update_Time);
@@ -251,7 +253,7 @@ main(int argc, char * argv[]) {
  * Input: BitMap - Bitmap pointer
  *        Node_List - Place to put node list
  * Output: Node_List - Set to node list or NULL on error 
- *         Returns 0 if no error, otherwise EINVAL or ENOMEM
+ *         Returns 0 if no error, errno otherwise
  * NOTE: Consider returning the node list as a regular expression if helpful
  * NOTE: The caller must free memory at Node_List when no longer required
  */
@@ -272,7 +274,7 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 #else
 	syslog(LOG_ERR, "NodeName2BitMap: BitMap is NULL\n");
 #endif
-	return EINVAL;
+	exit(EINVAL);
     } /* if */
 
     Node_List[0] = malloc(BUF_SIZE);
@@ -282,7 +284,7 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 #else
 	syslog(LOG_ALERT, "BitMap2NodeName: Can not allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     strcpy(Node_List[0], "");
 
@@ -298,7 +300,7 @@ int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
 #else
 		syslog(LOG_ALERT, "BitMap2NodeName: Can not allocate memory\n");
 #endif
-		return ENOMEM;
+		exit(ENOMEM);
 	    } /* if */
 	} /* if need more memory */
 	if (BitMapValue(BitMap, i) == 0) continue;
@@ -381,8 +383,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
-	*Error_Code = ENOMEM;
-	return (struct Config_Record *)NULL;
+	exit(ENOMEM);
     } /* if */
 
     /* Set default values */
@@ -400,9 +401,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #else
 	    syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
-	    free(Config_Point);
-	    *Error_Code = ENOMEM;
-	    return (struct Config_Record *)NULL;
+	    exit(ENOMEM);
 	} /* if */
 	strcpy(Config_Point->Feature, Default_Config_Record.Feature);
     } else
@@ -414,10 +413,7 @@ struct Config_Record *Create_Config_Record(int *Error_Code) {
 #else
 	syslog(LOG_ALERT, "Create_Config_Record: unable to allocate memory\n");
 #endif
-	if (Config_Point->Feature) free(Config_Point->Feature);
-	free(Config_Point);
-	*Error_Code = ENOMEM;
-	return (struct Config_Record *)NULL;
+	exit(ENOMEM);
     } /* if */
 
     return Config_Point;
@@ -449,8 +445,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Co
 #else
 	syslog(LOG_ALERT, "Create_Node_Record: Invalid Config_Point\n");
 #endif
-	*Error_Code = EINVAL;
-	return;
+	exit(EINVAL);
     } /* if */
     if ((Node_Name == NULL) || (strlen(Node_Name) >= MAX_NAME_LEN)) {
 #if DEBUG_SYSTEM
@@ -458,8 +453,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Co
 #else
 	syslog(LOG_ALERT, "Create_Node_Record: Invalid Node_Name %s\n", Node_Name);
 #endif
-	*Error_Code = EINVAL;
-	return;
+	exit(EINVAL);
     } /* if */
     /* Round up the buffer size to reduce overhead of realloc */
     Old_Buffer_Size = (Node_Record_Count) * sizeof(struct Node_Record);
@@ -477,8 +471,7 @@ struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Co
 #else
 	syslog(LOG_ALERT, "Create_Node_Record: unable to allocate memory\n");
 #endif
-	*Error_Code = ENOMEM;
-	return;
+	exit(ENOMEM);
     } /* if */
 
     Node_Record_Point = Node_Record_Table_Ptr + (Node_Record_Count++);
@@ -588,7 +581,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	syslog(LOG_ALERT, "Dump_Node: list_iterator_create unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     Buffer_Allocated = BUF_SIZE + (Node_Record_Count*2);
@@ -600,7 +593,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
 	list_iterator_destroy(Config_Record_Iterator);
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     /* Write haeader: version and time */
@@ -652,9 +645,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
-		if (Config_Spec_List) free(Config_Spec_List);
-		list_iterator_destroy(Config_Record_Iterator);
-		return ENOMEM;
+		exit(ENOMEM);
 	    } /* if */
 	} /* if */
 
@@ -669,10 +660,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	    syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
-	    free(Buffer);
-	    list_iterator_destroy(Config_Record_Iterator);
-	    free(Config_Spec_List);
-	    return ENOMEM;
+	    exit(ENOMEM);
 	} /* if */
 	Config_Spec_List[Config_Spec_List_Cnt++].Config_Record_Point = Config_Record_Point;
 
@@ -748,8 +736,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 		syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
-		free(Config_Spec_List);
-		return ENOMEM;
+		exit(ENOMEM);
 	    } /* if */
 	} /* if */
 
@@ -795,7 +782,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #else
 	syslog(LOG_ALERT, "Dump_Node: unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     Buffer_Ptr[0] = Buffer;
@@ -943,7 +930,7 @@ int Init_Node_Conf() {
 #else
 	syslog(LOG_ALERT, "Init_Node_Conf: list_create can not allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     return 0;
 } /* Init_Node_Conf */
@@ -1018,7 +1005,7 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap) {
 #else
 	syslog(LOG_ALERT, "NodeName2BitMap: unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     strcpy(My_Node_List, Node_List);
 
@@ -1028,12 +1015,11 @@ int NodeName2BitMap(char *Node_List, unsigned **BitMap) {
     My_BitMap = (unsigned *)malloc(size);
     if (My_BitMap == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "NodeName2BitMap: unable to allocate My_BitMap memory\n");
+	fprintf(stderr, "NodeName2BitMap: unable to allocate memory\n");
 #else
 	syslog(LOG_ALERT, "NodeName2BitMap: unable to allocate memory\n");
 #endif
-	free(My_Node_List);
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     memset(My_BitMap, 0, size);
 
@@ -1108,7 +1094,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 #else
 	syslog(LOG_ERR, "Parse_Node_Name: unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
 
     *Start_Inx = 0;
@@ -1129,7 +1115,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 #if DEBUG_SYSTEM
 		fprintf(stderr, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
 #else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
+		syslog(LOG_ERR, "Parse_Node_Name: Invalid '[' in node name %s\n", NodeName);
 #endif
 		free(Format[0]);
 		return EINVAL;
@@ -1156,7 +1142,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
 			NodeName[i], NodeName);
 #else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
+		syslog(LOG_ERR, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
 			NodeName[i], NodeName);
 #endif
 		free(Format[0]);
@@ -1175,7 +1161,7 @@ int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx,
 		fprintf(stderr, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
 			NodeName[i], NodeName);
 #else
-		syslog(LOG_ALERT, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
+		syslog(LOG_ERR, "Parse_Node_Name: Invalid '%c' in node name %s\n", 
 			NodeName[i], NodeName);
 #endif
 		free(Format[0]);
@@ -1216,7 +1202,7 @@ void Rehash() {
 #else
 	syslog(LOG_ALERT, "Rehash: list_append can not allocate memory\n");
 #endif
-	return;
+	exit(ENOMEM);
     } /* if */
     memset(Hash_Table, 0, (sizeof(int) * Node_Record_Count));
 
@@ -1283,7 +1269,7 @@ int Update_Node(char *NodeName, char *Spec) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Update_Node: Invalid node name %s\n", NodeName);
 #else
-	syslog(LOG_ALERT, "Update_Node: Invalid node name  %s\n", NodeName);
+	syslog(LOG_ERR, "Update_Node: Invalid node name  %s\n", NodeName);
 #endif
 	return EINVAL;
     } /* if */
@@ -1338,7 +1324,7 @@ int Update_Node(char *NodeName, char *Spec) {
 #else
 	syslog(LOG_ALERT, "Update_Node: Unable to allocate memory\n");
 #endif
-	return ENOMEM;
+	exit(ENOMEM);
     } /* if */
     strcpy(My_Node_List, NodeName);
     str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
