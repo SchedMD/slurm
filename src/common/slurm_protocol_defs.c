@@ -20,7 +20,7 @@ void slurm_free_return_code_msg ( return_code_msg_t * msg )
 
 
 
-void slurm_free_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
+void slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr )
 {
 	if ( build_ptr ) 
 	{
