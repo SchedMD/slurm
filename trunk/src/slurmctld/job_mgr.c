@@ -26,6 +26,18 @@
 
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 
+/* macros for simple comparisons
+ */
+#define block_or_cycle(in_string) \
+		(strcmp((in_string),"BLOCK")? \
+			(strcmp((in_string),"CYCLE")? \
+				-1 : DIST_CYCLE ) : DIST_BLOCK ) 
+
+#define yes_or_no(in_string) \
+		(( strcmp ((in_string),"YES"))? \
+			(strcmp((in_string),"NO")? \
+				-1 : 0 ) : 1 ) 
+
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
 time_t last_job_update;			/* time of last update to job records */

@@ -87,19 +87,19 @@ extern int slurm_cancel_job (uint32_t job_id);
 
 
 /***************************
- * build_info.c
+ * slurm_ctl_conf.c
  ***************************/
 
 /*
- * slurm_free_build_info - free the build information buffer (if allocated)
- * NOTE: buffer is loaded by slurm_load_build.
+ * slurm_free_slurm_ctl_conf - free the build information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_ctl_conf.
  */
-extern void slurm_free_build_info (struct build_table *build_table_ptr);
+extern void slurm_free_ctl_conf ( slurm_ctl_conf_t* slurm_ctl_conf_ptr);
 /*
- * slurm_print_build_info - prints the build information buffer (if allocated)
- * NOTE: buffer is loaded by slurm_load_build.
+ * slurm_print_slurm_ctl_conf - prints the build information buffer (if allocated)
+ * NOTE: buffer is loaded by slurm_load_slurm_ctl_conf.
  */
-extern void slurm_print_build_info ( FILE * out, struct build_table * build_table_ptr ) ;
+extern void slurm_print_ctl_conf ( FILE * out, slurm_ctl_conf_t* slurm_ctl_conf ) ;
 
 /*
  * slurm_free_job_info - free the job information buffer (if allocated)
@@ -140,7 +140,7 @@ extern void slurm_print_partition_info ( FILE*, partition_info_msg_t * part_info
 extern void slurm_print_partition_table ( FILE*, partition_table_t * part_ptr ) ;
 
 /*
- * slurm_load_build - load the slurm build information buffer for use by info 
+ * slurm_load_ctl_conf - load the slurm build information buffer for use by info 
  *	gathering APIs if build info has changed since the time specified. 
  * input: update_time - time of last update
  *	build_buffer_ptr - place to park build_buffer pointer
@@ -151,8 +151,8 @@ extern void slurm_print_partition_table ( FILE*, partition_table_t * part_ptr ) 
  *		ENOMEM if malloc failure
  * NOTE: the allocated memory at build_buffer_ptr freed by slurm_free_node_info.
  */
-extern int slurm_load_build (time_t update_time, 
-	struct build_table **build_table_ptr);
+extern int slurm_load_ctl_conf (time_t update_time, 
+	slurm_ctl_conf_t  **slurm_ctl_conf_ptr);
 
 
 /* slurm_load_job - load the supplied job information buffer if changed */

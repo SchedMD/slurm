@@ -6,7 +6,8 @@
 #include <src/common/pack.h>
 #include <src/common/log.h>
 #include <src/common/nodelist.h>
-#include <src/slurmctld/slurmctld.h>
+#include <src/common/xmalloc.h>
+
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
@@ -55,7 +56,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_last_update ( ( last_update_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break;
 		case RESPONSE_BUILD_INFO:
-			pack_build_info ( ( build_info_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
+			pack_slurm_ctl_conf ( ( slurm_ctl_conf_info_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
 			break ;
 		case RESPONSE_JOB_INFO:
 			pack_job_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
@@ -158,7 +159,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			unpack_last_update ( ( last_update_msg_t **) &(msg -> data)  , ( void ** ) buffer , buf_len ) ;
 			break;
 		case RESPONSE_BUILD_INFO:
-			unpack_build_info ( ( build_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
+			unpack_slurm_ctl_conf ( ( slurm_ctl_conf_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
 			break;
 		case RESPONSE_JOB_INFO:
 			unpack_job_info_msg ( ( job_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
@@ -533,7 +534,7 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 	return 0 ;
 }
 
-void pack_build_info ( build_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
+void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	pack32 (build_ptr->last_update, buf_ptr, buffer_size);
 	pack16 (build_ptr->backup_interval, buf_ptr, buffer_size);
@@ -556,12 +557,12 @@ void pack_build_info ( build_info_msg_t * build_ptr, void ** buf_ptr , int * buf
 	packstr (build_ptr->tmp_fs, buf_ptr, buffer_size);
 }
 
-int unpack_build_info ( build_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size )
+int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size )
 {	
 	uint16_t uint16_tmp;
-	build_info_msg_t * build_ptr ;
+	slurm_ctl_conf_info_msg_t * build_ptr ;
 	/* alloc memory for structure */	
-	build_ptr = xmalloc ( sizeof ( struct build_table ) ) ;
+	build_ptr = xmalloc ( sizeof ( slurm_ctl_conf_t ) ) ;
 	if (build_ptr == NULL) 
 	{
 		return ENOMEM;

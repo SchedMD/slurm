@@ -17,6 +17,7 @@
 /* true, false */
 #define true -1
 #define false 0
+#define NO_VAL	     0x7f7f7f7f
 
 #include <src/common/slurm_protocol_common.h>
 
@@ -170,7 +171,7 @@ typedef struct job_desc_msg {    /* Job descriptor for submit, allocate, and upd
 				 * to UID by API, can only be set if user is root */
 } job_desc_msg_t ;
 
-struct build_table {
+struct slurm_ctl_conf {
 	uint32_t last_update;   /* last update time of the build parameters*/
 	uint16_t backup_interval;/* slurmctld save state interval, seconds */
 	char *backup_location;	/* pathname of state save directory */
@@ -192,8 +193,9 @@ struct build_table {
 	uint16_t server_timeout;/* how long slurmctld waits for setting node DOWN */
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *tmp_fs;		/* pathname of temporary file system */
-};
-typedef struct build_table build_info_msg_t ;
+} ;
+typedef struct slurm_ctl_conf slurm_ctl_conf_t ;
+typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t ;
 
 struct job_table {
 	uint32_t job_id;	/* job ID */
@@ -281,7 +283,7 @@ void inline slurm_free_last_update_msg ( last_update_msg_t * msg ) ;
 void inline slurm_free_return_code_msg ( return_code_msg_t * msg ) ;
 void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
 
-void inline slurm_free_build_info ( build_info_msg_t * build_ptr ) ;
+void inline slurm_free_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
 void inline slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg ) ;
