@@ -400,8 +400,10 @@ print_node_list (char *node_list)
 	}
 	else {
 		if ( (host_list = hostlist_create (node_list)) ) {
-			while ( (this_node_name = hostlist_shift (host_list)) )
+			while ( (this_node_name = hostlist_shift (host_list)) ) {
 				print_node (this_node_name, node_info_ptr);
+				free (this_node_name);
+			}
 
 			hostlist_destroy (host_list);
 		}

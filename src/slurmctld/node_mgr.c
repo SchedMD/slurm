@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * node_mgr.c - manage the node records of slurm
+ *  node_mgr.c - manage the node records of slurm
  *	Note: there is a global node table (node_record_table_ptr), its 
  *	hash table (hash_table), time stamp (last_node_update) and 
  *	configuration list (config_list)
@@ -422,15 +422,11 @@ create_node_record (struct config_record *config_point, char *node_name)
 
 	/* round up the buffer size to reduce overhead of xrealloc */
 	old_buffer_size = (node_record_count) * sizeof (struct node_record);
-	old_buffer_size =
-		((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
-	new_buffer_size =
-		(node_record_count + 1) * sizeof (struct node_record);
-	new_buffer_size =
-		((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
+	old_buffer_size = ((int) ((old_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
+	new_buffer_size = (node_record_count + 1) * sizeof (struct node_record);
+	new_buffer_size = ((int) ((new_buffer_size / BUF_SIZE) + 1)) * BUF_SIZE;
 	if (node_record_count == 0)
-		node_record_table_ptr =
-			(struct node_record *) xmalloc (new_buffer_size);
+		node_record_table_ptr = (struct node_record *) xmalloc (new_buffer_size);
 	else if (old_buffer_size != new_buffer_size)
 		xrealloc (node_record_table_ptr, new_buffer_size);
 
@@ -774,10 +770,12 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 			error ("node_name2bitmap: invalid node specified %s",this_node_name);
 			hostlist_destroy (host_list);
 			bit_free (my_bitmap);
+			free (this_node_name);
 			return EINVAL;
 		}
 		bit_set (my_bitmap,
 			    (bitoff_t) (node_record_point - node_record_table_ptr));
+		free (this_node_name);
 	}
 
 	hostlist_destroy (host_list);
@@ -1010,6 +1008,7 @@ update_node ( update_node_msg_t * update_node_msg )
 			error ("update_node: node name %s does not exist, can not be updated", 
 				this_node_name);
 			error_code = ESLURM_INVALID_NODE_NAME;
+			free (this_node_name);
 			break;
 		}
 
@@ -1035,6 +1034,7 @@ update_node ( update_node_msg_t * update_node_msg )
 			info ("update_node: node %s state set to %s",
 				this_node_name, node_state_string(state_val));
 		}
+		free (this_node_name);
 	}
 
 	hostlist_destroy (host_list);

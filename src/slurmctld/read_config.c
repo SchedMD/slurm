@@ -189,7 +189,6 @@ main (int argc, char *argv[]) {
  * configuration input line (we over-write parsed characters with whitespace).
  * input: in_line - what is left of the configuration input line.
  *        line_num - line number of the configuration file.
- * output: none
  */
 static void
 report_leftover (char *in_line, int line_num)
@@ -309,6 +308,7 @@ build_bitmaps () {
 			if (node_record_point == NULL) {
 				error ("build_bitmaps: invalid node name specified %s",
 					this_node_name);
+				free (this_node_name);
 				continue;
 			}	
 			j = node_record_point - node_record_table_ptr;
@@ -324,6 +324,7 @@ build_bitmaps () {
 				part_record_point->total_cpus += node_record_point->cpus;
 				node_record_point->partition_ptr = part_record_point;
 			}
+			free (this_node_name);
 		}	
 		hostlist_destroy (host_list);
 	}
@@ -557,6 +558,7 @@ parse_node_spec (char *in_line) {
 					xfree (default_config_record.feature);
 				default_config_record.feature = feature;
 			}
+			free (this_node_name);
 			break;
 		}
 
@@ -598,6 +600,7 @@ parse_node_spec (char *in_line) {
 			error ("parse_node_spec: reconfiguration for node %s ignored.",
 				this_node_name);
 		}		
+		free (this_node_name);
 	}
 
 	/* xfree allocated storage */
