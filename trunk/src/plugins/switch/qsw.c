@@ -724,11 +724,11 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		if (elanctrl_create_cap(handle, &jobinfo->j_cap) < 0) {
 			error("elanctrl_create_cap: %m");
 			slurm_seterrno(EELAN3CREATE);
-			elanctrl_close(handle);
+			/* elanctrl_close(handle); */
 			goto fail;
 		}
 
-		elanctrl_close (handle);
+		/* elanctrl_close (handle); */
 	}
 
 #else /* !HAVE_LIBELANCTRL */
