@@ -453,10 +453,9 @@ static int _validate_ctx(slurm_step_ctx ctx)
 		getcwd(ctx->cwd, MAXPATHLEN);
 	}
 
-	if (ctx->env_set == 0) {
+	if ((ctx->env_set == 0) && (ctx->envc == 0)) {
 		ctx->envc	= _envcount(environ);
 		ctx->env	= environ;
-		ctx->env_set	= 1;
 	}
 
 #if _DEBUG
