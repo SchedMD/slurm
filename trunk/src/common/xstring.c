@@ -68,6 +68,9 @@ static void makespace(char **str, int needed)
  */
 void _xstrcat(char **str1, const char *str2)
 {
+	if (str2 == NULL) 
+		str2 = "(null)";
+
 	makespace(str1, strlen(str2));
 	strcat(*str1, str2);
 }
