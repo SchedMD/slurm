@@ -365,7 +365,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			unpack_job_step_create_request_msg(( job_step_create_request_msg_t ** ) &msg -> data , ( void ** ) buffer , buf_len ) ;	
 			break;
 			default :
-				debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
+				error ( "No pack method for msg type %i",  msg -> msg_type ) ;
 				return EINVAL ;
 				break;
 		
