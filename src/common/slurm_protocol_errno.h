@@ -9,6 +9,7 @@
 #define SLURM_PROTOCOL_VERSION_ERROR -100
 #define SLURM_SOCKET_ERROR -1
 #define SLURM_PROTOCOL_SUCCESS 0
+#define SLURM_PROTOCOL_ERROR -1
 #define SLURM_PROTOCOL_FAILURE -1
 
 /* general return codes */

@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <signal.h>
 
 #if HAVE_SYS_SOCKET_H
 #  include <sys/socket.h>
@@ -52,24 +53,35 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 
 	char size_buffer_temp [8] ;
 	char * size_buffer = size_buffer_temp ;
-	char * moving_buffer = buffer ;
+	char * moving_buffer = NULL ;
 	unsigned int size_buffer_len = 8 ;
 	unsigned int transmit_size ;
 	unsigned int total_len ;
-	
-	if ( ( recv_len = _slurm_recv ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) )  != sizeof ( uint32_t ) )
-	{
-		info ( "Error receiving length of datagram.  Total bytes received %i", recv_len ) ;
-		return 0 ;
+
+	moving_buffer = size_buffer ;
+	total_len = 0 ;
+	while ( total_len < sizeof ( uint32_t ) )
+	{	
+		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR  )
+		{
+			info ( "Error receiving length of datagram.  errno %i", errno ) ;
+			return recv_len ;
+		}
+		if ( recv_len >= 0 )
+		{
+			total_len += recv_len ;
+			moving_buffer += recv_len ;
+		}
 	}
 	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 
+	moving_buffer = buffer ;
 	total_len = 0 ;
 	while ( total_len < transmit_size )
 	{
 		if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
 		{
-			info ( "Error receiving length of datagram.  errno %i", errno ) ;
+			info ( "Error receiving datagram.  errno %i", errno ) ;
 			return recv_len ;
 		}
 		if ( recv_len >= 0 )
@@ -89,18 +101,23 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	char size_buffer_temp [8] ;
 	char * size_buffer = size_buffer_temp ;
 	unsigned int size_buffer_len = 8 ;
+
+	/* ignore SIGPIPE so that send can return a error code if the other side closes the socket */
+	signal(SIGPIPE, SIG_IGN);
 	
 	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 	
 	if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) != sizeof ( uint32_t ) )
 	{
 		info ( "Error sending length of datagram" ) ;
+		return SLURM_PROTOCOL_ERROR ;
 	}
 
 	send_len = _slurm_send ( open_fd ,  buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ; 
 	if ( send_len != size )
 	{
 		info ( "_slurm_msg_sendto only transmitted %i of %i bytes", send_len , size ) ;
+		return SLURM_PROTOCOL_ERROR ;
 	}
 
 	return send_len ;
