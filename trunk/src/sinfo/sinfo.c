@@ -160,10 +160,9 @@ static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt)
 	int i, new_rec_cnt = 0;
 	hostlist_t hosts = NULL;
 
-	if (((params.nodes == NULL) && 
+	if ((params.nodes == NULL) && 
 	     (params.partition 	== NULL) && 
-	     (params.state_list == NULL)) ||
-	     params.summarize) {
+	     (params.state_list == NULL)) {
 		params.filtering = false;
 		/* Nothing to filter out */
 		*node_rec_cnt = node_msg->record_count;
