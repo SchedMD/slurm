@@ -93,7 +93,7 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 } while (0)
 
 #define unpackstr_ptr		unpackmem_ptr
-#define unpackstr_ptr_malloc	unpackmem_malloc
+#define unpackstr_malloc	unpackmem_malloc
 
 #define unpackmem_malloc(valp,size_valp,bufp,lenp) do {\
 	assert(valp != NULL);				\

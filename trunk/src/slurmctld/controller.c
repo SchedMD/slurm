@@ -97,7 +97,7 @@ main (int argc, char *argv[])
 		
 		/* receive message call that must occur before thread spawn because in message 
 		 * implementation their is no connection and the message is the sign of a new connection */
-		msg = malloc ( sizeof ( slurm_msg_t ) ) ;	
+		msg = xmalloc ( sizeof ( slurm_msg_t ) ) ;	
 		if (msg == NULL)
 			return ENOMEM;
 		

@@ -260,7 +260,7 @@ int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slur
 
 	*msg_type = header . msg_type ;
 	/* assumes buffer is already allocated by calling function */
-	/* *data_buffer = malloc ( unpack_len ) ; */
+	/* *data_buffer = xmalloc ( unpack_len ) ; */
 	memcpy ( data_buffer , buffer , unpack_len ) ;
 	return unpack_len  ;
 }
@@ -400,14 +400,7 @@ void slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host
 
 void slurm_free_msg ( slurm_msg_t * msg )
 {
-/*
-	switch ( msg -> msg_type )
-	{
-		case REQUEST_BUID_INFO :
-		( ( build_table *) msg -> data ) -> free ( msg -> data ) ;
-	}
-*/
-	free ( msg ) ;
+	xfree ( msg ) ;
 }
 
 
