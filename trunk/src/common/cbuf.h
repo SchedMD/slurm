@@ -1,7 +1,7 @@
 /*****************************************************************************
  *  $Id$
  *****************************************************************************
- *  $LSDId: cbuf.h,v 1.13 2002/11/26 20:38:59 dun Exp $
+ *  $LSDId: cbuf.h,v 1.17 2002/12/03 20:34:03 dun Exp $
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -99,26 +99,9 @@ void cbuf_destroy (cbuf_t cb);
  *  Destroys the circular buffer [cb].
  */
 
-int cbuf_opt_get (cbuf_t cb, cbuf_opt_t name, int *value);
-/*
- *  Gets the [name] option for [cb] and sets [value] to the result.
- *  Returns 0 on success, or -1 on error (with errno set).
- */
-
-int cbuf_opt_set (cbuf_t cb, cbuf_opt_t name, int value);
-/*
- *  Sets the [name] option for [cb] to [value].
- *  Returns 0 on success, or -1 on error (with errno set).
- */
-
 void cbuf_flush (cbuf_t cb);
 /*
  *  Flushes all data (including replay data) in [cb].
- */
-
-int cbuf_is_empty (cbuf_t cb);
-/*
- *  Returns non-zero if [cb] is empty; o/w, returns zero.
  */
 
 int cbuf_size (cbuf_t cb);
@@ -138,30 +121,34 @@ int cbuf_used (cbuf_t cb);
  *  Returns the number of bytes in [cb] available for reading.
  */
 
-int cbuf_drop (cbuf_t cb, int len);
+int cbuf_reused (cbuf_t cb);
 /*
- *  Discards up to [len] bytes of unread data from [cb];
+ *  Returns the number of bytes in [cb] available for replaying/rewinding.
+ */
+
+int cbuf_is_empty (cbuf_t cb);
+/*
+ *  Returns non-zero if [cb] is empty; o/w, returns zero.
+ */
+
+int cbuf_opt_get (cbuf_t cb, cbuf_opt_t name, int *value);
+/*
+ *  Gets the [name] option for [cb] and sets [value] to the result.
+ *  Returns 0 on success, or -1 on error (with errno set).
+ */
+
+int cbuf_opt_set (cbuf_t cb, cbuf_opt_t name, int value);
+/*
+ *  Sets the [name] option for [cb] to [value].
+ *  Returns 0 on success, or -1 on error (with errno set).
+ */
+
+int cbuf_drop (cbuf_t src, int len);
+/*
+ *  Discards up to [len] bytes of unread data from [src];
  *    if [len] is -1, all unread data will be dropped.
  *  Dropped data is still available via the replay buffer.
  *  Returns the number of bytes dropped, or -1 on error (with errno set).
- */
-
-int cbuf_copy (cbuf_t src, cbuf_t dst, int len, int *ndropped);
-/*
- *  Copies up to [len] bytes of data from the [src] cbuf into the [dst] cbuf
- *    according to dst's CBUF_OPT_OVERWRITE behavior.  If [len] is -1,
- *    it will be set to the number of [src] bytes available for reading.
- *  Returns the number of bytes copied, or -1 on error (with errno set).
- *    Sets [ndropped] (if not NULL) to the number of [dst] bytes overwritten.
- */
-
-int cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped);
-/*
- *  Moves up to [len] bytes of data from the [src] cbuf into the [dst] cbuf
- *    according to dst's CBUF_OPT_OVERWRITE behavior.  If [len] is -1,
- *    it will be set to the number of [src] bytes available for reading.
- *  Returns the number of bytes moved, or -1 on error (with errno set).
- *    Sets [ndropped] (if not NULL) to the number of [dst] bytes overwritten.
  */
 
 int cbuf_peek (cbuf_t src, void *dstbuf, int len);
@@ -186,11 +173,82 @@ int cbuf_replay (cbuf_t src, void *dstbuf, int len);
  *  Returns the number of bytes replayed, or -1 on error (with errno set).
  */
 
+int cbuf_rewind (cbuf_t src, int len);
+/*
+ *  Rewinds [src] by up to [len] bytes, placing previously read data back in
+ *    the unread data buffer; if [len] is -1, all replay data will be rewound.
+ *  Returns the number of bytes rewound, or -1 on error (with errno set).
+ */
+
 int cbuf_write (cbuf_t dst, void *srcbuf, int len, int *ndropped);
 /*
  *  Writes up to [len] bytes of data from [srcbuf] into the [dst] cbuf
  *    according to dst's CBUF_OPT_OVERWRITE behavior.
  *  Returns the number of bytes written, or -1 on error (with errno set).
+ *    Sets [ndropped] (if not NULL) to the number of bytes overwritten.
+ */
+
+int cbuf_drop_line (cbuf_t src, int len, int lines);
+/*
+ *  Discards the specified [lines] of data from [src].  If [lines] is -1,
+ *    discards the maximum number of lines comprised of up to [len] characters.
+ *  Dropped data is still available via the replay buffer.
+ *  Returns the number of bytes dropped, or -1 on error (with errno set).
+ *    Returns 0 if the number of lines is not available (ie, all or none).
+ */
+
+int cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines);
+/*
+ *  Reads the specified [lines] of data from the [src] cbuf into [dstbuf],
+ *    but does not consume the data read from the cbuf.  If [lines] is -1,
+ *    reads the maximum number of lines that [dstbuf] can hold.  The buffer
+ *    will be NUL-terminated and contain at most ([len] - 1) characters.
+ *  The "peek" can be committed to the cbuf via a call to cbuf_drop(),
+ *    but the peek+drop combination is not atomic.
+ *  Returns strlen of the line(s) on success; truncation occurred if >= [len].
+ *    Returns 0 if the number of lines is not available (ie, all or none).
+ *    Returns -1 on error (with errno set).
+ */
+
+int cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines);
+/*
+ *  Reads the specified [lines] of data from the [src] cbuf into [dstbuf].
+ *    If [lines] is -1, reads the maximum number of lines that [dstbuf]
+ *    can hold.  The buffer will be NUL-terminated and contain at most
+ *    ([len] - 1) characters.
+ *  Returns strlen of the line(s) on success; truncation occurred if >= [len],
+ *    in which case excess line data is discarded.  Returns 0 if the number
+ *    of lines is not available (ie, all or none), in which case no data is
+ *    consumed.  Returns -1 on error (with errno set).
+ */
+
+int cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines);
+/*
+ *  Replays the specified [lines] of data from the [src] cbuf into [dstbuf].
+ *    If [lines] is -1, replays the maximum number of lines that [dstbuf]
+ *    can hold.  A newline will be appended to [dstbuf] if the last (ie, most
+ *    recently read) line does not contain a trailing newline.  The buffer
+ *    will be NUL-terminated and contain at most ([len] - 1) characters.
+ *  Returns strlen of the line(s) on success; truncation occurred if >= [len].
+ *    Returns 0 if the number of lines is not available (ie, all or none).
+ *    Returns -1 on error (with errno set).
+ */
+
+int cbuf_rewind_line (cbuf_t src, int len, int lines);
+/*
+ *  Rewinds [src] by the specified [lines] of data, placing previously read
+ *    data back in the unread data buffer.  If [lines] is -1, rewinds the
+ *    maximum number of lines comprised of up to [len] characters.
+ *  Returns the number of bytes rewound, or -1 on error (with errno set).
+ *    Returns 0 if the number of lines is not available (ie, all or none).
+ */
+
+int cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped);
+/*
+ *  Writes the entire NUL-terminated [srcbuf] string into the [dst] cbuf
+ *    according to dst's CBUF_OPT_OVERWRITE behavior.  A newline will be
+ *    appended to the cbuf if [srcbuf] does not contain a trailing newline.
+ *  Returns the number of bytes written, or -1 or error (with errno set).
  *    Sets [ndropped] (if not NULL) to the number of bytes overwritten.
  */
 
@@ -231,51 +289,22 @@ int cbuf_write_from_fd (cbuf_t dst, int srcfd, int len, int *ndropped);
  *    Sets [ndropped] (if not NULL) to the number of bytes overwritten.
  */
 
-int cbuf_peek_line (cbuf_t src, char *dstbuf, int len, int lines);
+int cbuf_copy (cbuf_t src, cbuf_t dst, int len, int *ndropped);
 /*
- *  Reads the specified [lines] of data from the [src] cbuf into [dstbuf],
- *    but does not consume the data read from the cbuf.  If ([lines] == -1),
- *    reads the maximum number of lines that [dstbuf] can hold.  The buffer
- *    will be NUL-terminated and contain at most ([len] - 1) characters.
- *  The "peek" can be committed to the cbuf via a call to cbuf_drop(),
- *    but the peek+drop combination is not atomic.
- *  Returns strlen of the line(s) on success; truncation occurred if >= [len].
- *    Returns 0 if the number of lines is not available (ie, all or none).
- *    Returns -1 on error (with errno set).
+ *  Copies up to [len] bytes of data from the [src] cbuf into the [dst] cbuf
+ *    according to dst's CBUF_OPT_OVERWRITE behavior.  If [len] is -1,
+ *    it will be set to the number of [src] bytes available for reading.
+ *  Returns the number of bytes copied, or -1 on error (with errno set).
+ *    Sets [ndropped] (if not NULL) to the number of [dst] bytes overwritten.
  */
 
-int cbuf_read_line (cbuf_t src, char *dstbuf, int len, int lines);
+int cbuf_move (cbuf_t src, cbuf_t dst, int len, int *ndropped);
 /*
- *  Reads the specified [lines] of data from the [src] cbuf into [dstbuf].
- *    If ([lines] == -1), reads the maximum number of lines that [dstbuf]
- *    can hold.  The buffer will be NUL-terminated and contain at most
- *    ([len] - 1) characters.  If [len] is 0, the lines will be discarded
- *    from the cbuf and nothing will be written into [dstbuf].
- *  Returns strlen of the line(s) on success; truncation occurred if >= [len].
- *    in which case the excess line data is discarded.  Returns 0 if the
- *    number of lines is not available (ie, all or none), in which case no
- *    data is consumed.  Returns -1 on error (with errno set).
- */
-
-int cbuf_replay_line (cbuf_t src, char *dstbuf, int len, int lines);
-/*
- *  Replays the specified [lines] of data from the [src] cbuf into [dstbuf].
- *    If ([lines] == -1), replays the maximum number of lines that [dstbuf]
- *    can hold.  A newline will be appended to [dstbuf] if the last (ie, most
- *    recently read) line does not contain a trailing newline.  The buffer
- *    will be NUL-terminated and contain at most ([len] - 1) characters.
- *  Returns strlen of the line(s) on success; truncation occurred if >= [len].
- *    Returns 0 if the number of lines is not available (ie, all or none).
- *    Returns -1 on error (with errno set).
- */
-
-int cbuf_write_line (cbuf_t dst, char *srcbuf, int *ndropped);
-/*
- *  Writes the entire NUL-terminated [srcbuf] string into the [dst] cbuf
- *    according to dst's CBUF_OPT_OVERWRITE behavior.  A newline will be
- *    appended to the cbuf if [srcbuf] does not contain a trailing newline.
- *  Returns the number of bytes written, or -1 or error (with errno set).
- *    Sets [ndropped] (if not NULL) to the number of bytes overwritten.
+ *  Moves up to [len] bytes of data from the [src] cbuf into the [dst] cbuf
+ *    according to dst's CBUF_OPT_OVERWRITE behavior.  If [len] is -1,
+ *    it will be set to the number of [src] bytes available for reading.
+ *  Returns the number of bytes moved, or -1 on error (with errno set).
+ *    Sets [ndropped] (if not NULL) to the number of [dst] bytes overwritten.
  */
 
 

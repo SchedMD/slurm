@@ -187,8 +187,6 @@ _io_thr_poll(void *job_arg)
 				eofcnt++;
 		}
 
-		debug3("eofcnt == %d", eofcnt);
-
 		/* exit if we have received EOF on all streams */
 		if (eofcnt) {
 			debug3("eofcnt == %d", eofcnt);

@@ -380,17 +380,23 @@ _io_prepare_clients(slurmd_job_t *job)
 {
 	int          i;
 	srun_info_t *srun;
+	char host[256];
+	short port;
 
-	xassert(list_count(job->sruns) == 1);
+	/* xassert(list_count(job->sruns) == 1); */
 
 	srun = list_peek(job->sruns);
 	if (srun->noconnect)
 		return SLURM_SUCCESS;
 
+	slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
+	debug2("connecting IO back to %s:%d", host, port);
+
 	/* 
 	 * connect back to clients for stdin/out/err
 	 */
 	for (i = 0; i < job->ntasks; i++) {
+		list_append(job->task[i]->srun_list, (void *) srun);
 		_io_add_connecting(job, job->task[i], srun, CLIENT_STDOUT); 
 		_io_add_connecting(job, job->task[i], srun, CLIENT_STDERR); 
 
@@ -399,6 +405,12 @@ _io_prepare_clients(slurmd_job_t *job)
 	}
 
 	return SLURM_SUCCESS;
+}
+
+int
+io_new_clients(slurmd_job_t *job)
+{
+	return _io_prepare_clients(job);
 }
 
 static int
@@ -499,7 +511,7 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 	xassert((dst == NULL) || (dst->magic == IO_MAGIC));
 
 	if (writer == NULL) { 
-		debug("connecting %s to reader only", _io_str[cli->type]);
+		debug3("connecting %s to reader only", _io_str[cli->type]);
 		/* simple case: connect client to reader only and return
 		 */
 		_io_connect_objs(client, reader);
@@ -544,17 +556,26 @@ _io_client_attach(io_obj_t *client, io_obj_t *writer,
 			_io_connect_objs(io->obj, reader);
 		xassert(io->obj->ops->writable == &_writable);
 	} else {
+		char buf[1024];
 		/* Append new client into readers list and master objList
 		 * client still copies existing eof bit, though.
 		 */
-		cli->eof = io ? io->eof : 0;
-		/* 
-		 * XXX cbuf_replay(io->buf) into client->buf 
-		 */
+		if (io) {
+			int n;
+			cli->eof = io->eof;
+
+			if ((n = cbuf_replay_line(io->buf, buf, 256, -1)) > 0)
+				cbuf_write(cli->buf, buf, n, NULL);
+		} 
 		_io_connect_objs(writer, client);
 		if (reader != NULL)
 			_io_connect_objs(client, reader);
-		list_append(objList, client);
+
+		/* Only append to objList if client is not already present.
+		 * (connecting client would already be in objList)
+		 */
+		if (!list_find_first(objList, (ListFindF) find_obj, client))
+			list_append(objList, client);
 	}
 
 	xassert(_validate_io_list(objList));
@@ -620,10 +641,15 @@ _io_disconnect_client(struct io_info *client, List objs)
 	ListIterator    i;
 
 	xassert(client->magic == IO_MAGIC);
+	xassert(_isa_client(client));
+	xassert(client == client->obj->arg);
 
 	/* Our client becomes a ghost
 	 */
 	client->disconnected = 1;
+
+	debug("%s has %d writers", _io_str[client->type], 
+			client->writers ? list_count(client->writers) : 0);
 		
 	if (client->writers) {
 		/* delete client from its writer->readers list 
@@ -633,7 +659,7 @@ _io_disconnect_client(struct io_info *client, List objs)
 			if (list_count(t->readers) > 1) {
 				destroy = true;
 				_io_disconnect(t, client);
-			}
+			} 
 		}
 		list_iterator_destroy(i);
 	}
@@ -650,7 +676,16 @@ _io_disconnect_client(struct io_info *client, List objs)
 		list_iterator_destroy(i);
 	}
 
-	if (destroy) list_delete_all(objs, (ListFindF)find_obj, client);
+	xassert(client == client->obj->arg);
+
+	if (client->buf)
+		cbuf_rewind_line(client->buf, 256, -1);
+
+	if (destroy) {
+		if (!list_delete_all(objs, (ListFindF)find_obj, client->obj))
+			error("Unable to destroy %s %d (%p)", 
+			      _io_str[client->type], client->id, client); 
+	} 
 }
 
 static bool
@@ -713,7 +748,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 io->readers = list_create(NULL);
 	 case CLIENT_STDERR:
 		 obj->ops    = _ops_copy(&client_ops);
-		 io->buf     = cbuf_create(16, 1048576);
+		 io->buf     = cbuf_create(1024, 1048576);
 		 io->writers = list_create(NULL);
 		 break;
 	 case CLIENT_STDIN:
@@ -1304,6 +1339,9 @@ _validate_io_list(List objList)
 	ListIterator i = list_iterator_create(objList);
 	while ((obj = list_next(i))) {
 		struct io_info *io = (struct io_info *) obj->arg;
+
+		xassert(io->obj == obj);
+
 		switch (io->type) {
 		case TASK_STDOUT:
 			_validate_task_out(io, CLIENT_STDOUT);

@@ -124,9 +124,8 @@ main(int ac, char **av)
 	sigset_t sigset;
 	allocation_resp *resp;
 	job_t *job;
-	pthread_attr_t attr, ioattr;
+	pthread_attr_t attr;
 	struct sigaction action;
-	int i;
 	bool old_job = false;
 	struct rlimit rlim;
 
@@ -182,6 +181,9 @@ main(int ac, char **av)
 
 		debug ("Spawned srun shell terminated");
 		exit (0);
+	} else if (mode == MODE_ATTACH) {
+		reattach();
+		exit (0);
 	} else {
 		if ( !(resp = _allocate_nodes()) ) 
 			exit(1);
@@ -206,43 +208,17 @@ main(int ac, char **av)
 
 	/* job structure should now be filled in */
 
-	for (i = 0; i < job->njfds; i++) {
-		if ((job->jfd[i] = slurm_init_msg_engine_port(0)) < 0)
-			fatal("init_msg_engine_port: %m");
-		if (slurm_get_stream_addr(job->jfd[i], &job->jaddr[i]) < 0)
-			fatal("slurm_get_stream_addr: %m");
-		debug("initialized job control port %d\n", 
-			ntohs(((struct sockaddr_in)job->jaddr[i]).sin_port));
-	}
+	if (msg_thr_create(job) < 0)
+		fatal("Unable to create msg thread");
 
-
-	for (i = 0; i < job->niofds; i++) {
-		if (net_stream_listen(&job->iofd[i], &job->ioport[i]) < 0)
-			fatal("unable to initialize stdio server port: %m");
-		debug("initialized stdio server port %d\n", 
-				ntohs(job->ioport[i]));
-		net_set_low_water(job->iofd[i], 140);
-	}
+	if (io_thr_create(job) < 0) 
+		fatal("Unable to create IO thread");
 
 	pthread_attr_init(&attr);
-	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	/* spawn msg server thread */
-	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, 
-	                            (void *) job)))
-		fatal("Unable to create message thread. %m\n");
-	debug("Started msg server thread (%d)\n", job->jtid);
-
-	pthread_attr_init(&ioattr);
-	/* spawn io server thread */
-	if ((errno = pthread_create(&job->ioid, &ioattr, &io_thr, 
-	                            (void *) job)))
-		fatal("Unable to create io thread. %m\n");
-	debug("Started IO server thread (%d)\n", job->ioid);
-
 	/* spawn signal thread */
 	if ((errno = pthread_create(&job->sigid, &attr, &_sig_thr, 
-	                            (void *) job)))
-		fatal("Unable to create signals thread. %m");
+	                            (void *) job)) != 0)
+		fatal("Unable to create signal thread. %m");
 	debug("Started signals thread (%d)", job->sigid);
 
 

@@ -109,25 +109,27 @@ job_create(resource_allocation_response_msg_t *resp)
 	/* ntask cbufs for stdout and stderr */
 	job->outbuf = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
 	job->errbuf = (cbuf_t *) xmalloc(opt.nprocs * sizeof(cbuf_t));
-	for (i = 0; i < opt.nprocs; i++) {
-		job->outbuf[i] = cbuf_create(1024, 10240);
-		job->errbuf[i] = cbuf_create(1024, 10240);
-	}
 
 	/* nhost host states */
-	job->host_state = 
-		(host_state_t *) xmalloc(job->nhosts * sizeof(host_state_t));
+	job->host_state =  xmalloc(job->nhosts * sizeof(host_state_t));
 
 	/* ntask task states and statii*/
-	job->task_state  = 
-		(task_state_t *) xmalloc(opt.nprocs * sizeof(task_state_t));
-	job->tstatus	 = (int *) xmalloc(opt.nprocs * sizeof(int));
+	job->task_state  =  xmalloc(opt.nprocs * sizeof(task_state_t));
+	job->tstatus	 =  xmalloc(opt.nprocs * sizeof(int));
+
+	for (i = 0; i < opt.nprocs; i++) {
+		job->task_state[i] = SRUN_TASK_INIT;
+		job->outbuf[i]     = cbuf_create(1024, 1048576);
+		job->errbuf[i]     = cbuf_create(1024, 1048576);
+	}
+
 
 	pthread_mutex_init(&job->task_mutex, NULL);
 
 	ntask = opt.nprocs;
-	tph = (ntask+job->nhosts-1) / 
-				job->nhosts; /* tasks per host, round up */
+
+	/* tasks per host, round up */
+	tph = (ntask+job->nhosts-1) / job->nhosts; 
 
 	for(i = 0; i < job->nhosts; i++) {
 		job->host[i]  = hostlist_shift(hl);

@@ -825,7 +825,7 @@ void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port ,
 			AF_SLURM, 
 			(void *) &hostent_buf, sizeof(hostent_buf), NULL );
 	if (host_info == NULL) {
-		fatal ("get_host_by_addr failure");
+		error ("get_host_by_addr failure: %m");
 		*port = 0;
 		strncpy ( host, "", buf_len);
 	} else {

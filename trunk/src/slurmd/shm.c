@@ -444,13 +444,29 @@ job_step_t *
 shm_get_step(uint32_t jobid, uint32_t stepid)
 {
 	int i;
-	job_step_t *s;
+	job_step_t *s = NULL;
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) 
 		s = _shm_copy_step(&slurmd_shm->step[i]);
 	_shm_unlock();
 	return s;
 }
+
+uid_t 
+shm_get_step_owner(uint32_t jobid, uint32_t stepid)
+{
+	int i;
+	uid_t owner = (uid_t) -1;
+	_shm_lock();
+	if ((i = _shm_find_step(jobid, stepid)) >= 0)
+		owner = slurmd_shm->step[i].uid;
+	else 
+		slurm_seterrno(ESRCH);
+	_shm_unlock();
+	return owner;
+}
+
+
 
 /*
  * Free a job step structure in local memory
@@ -542,7 +558,8 @@ shm_unlock_step_state(uint32_t jobid, uint32_t stepid)
 
 int 
 shm_update_step_addrs(uint32_t jobid, uint32_t stepid, 
-		      slurm_addr *ioaddr, slurm_addr *respaddr)
+		      slurm_addr *ioaddr, slurm_addr *respaddr,
+		      char *keydata)
 {
 	int i, retval = SLURM_SUCCESS;
 	_shm_lock();
@@ -550,10 +567,18 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 		job_step_t *s = &slurmd_shm->step[i];
 
 		/* Only allow one addr update at a time */
-		if (!s->io_update) {
-			s->ioaddr = *ioaddr;
-			s->respaddr = *respaddr;
+		if (1 || !s->io_update) {
+			s->ioaddr    = *ioaddr;
+			s->respaddr  = *respaddr;
+			memcpy(s->key.data, keydata, SLURM_KEY_SIZE);
 			s->io_update = true;
+
+			debug3("Going to send shm update signal to %ld", s->sid);
+			if (kill(s->sid, SIGHUP) < 0) {
+				slurm_seterrno(EPERM);
+				retval = SLURM_FAILURE;
+			}
+
 		} else {
 			slurm_seterrno(EAGAIN);
 			retval = SLURM_FAILURE;
@@ -569,7 +594,7 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 
 int
 shm_step_addrs(uint32_t jobid, uint32_t stepid, 
-	       slurm_addr *ioaddr, slurm_addr *respaddr)
+	       slurm_addr *ioaddr, slurm_addr *respaddr, srun_key_t *key)
 {
 	int i, retval = SLURM_SUCCESS;
 	xassert(ioaddr != NULL);
@@ -579,6 +604,7 @@ shm_step_addrs(uint32_t jobid, uint32_t stepid,
 		job_step_t *s = &slurmd_shm->step[i];
 		*ioaddr   = s->ioaddr;
 		*respaddr = s->respaddr;
+		memcpy(key->data, s->key.data, SLURM_KEY_SIZE);
 		s->io_update = false;
 	} else {
 		slurm_seterrno(ESRCH);
@@ -894,11 +920,13 @@ _shm_lock()
 static void
 _shm_unlock()
 {
+	int saved_errno = errno;
     restart:
 	if (sem_post(shm_lock) == -1) {
 		if (errno == EINTR)
 			goto restart;
 		fatal("_shm_unlock: %m");
 	}
+	errno = saved_errno;
 	return;
 }

@@ -162,6 +162,13 @@ int shm_delete_step(uint32_t jobid, uint32_t stepid);
 job_step_t *shm_get_step(uint32_t jobid, uint32_t stepid);
 
 /*
+ * Return the uid that the given job step is running under.
+ *
+ * Returns (uid_t) -1 if the job step is not found
+ */
+uid_t shm_get_step_owner(uint32_t jobid, uint32_t stepid);
+
+/*
  * Update an existing job step to match "step"
  * returns SLURM_FAILURE if job step cannot be found
  */
@@ -215,11 +222,11 @@ job_state_t *shm_lock_step_state(uint32_t jobid, uint32_t stepid);
 void shm_unlock_step_state(uint32_t jobid, uint32_t stepid);
 
 /* 
- * update job step io_addr 
+ * update job step io_addrs 
  */
 int shm_update_step_addrs(uint32_t jobid, uint32_t stepid, 
-		          slurm_addr *ioaddr, slurm_addr *respaddr);
-
+		          slurm_addr *ioaddr, slurm_addr *respaddr,
+			  char *keydata);
 
 /* 
  * Return true if ioaddr was updated
@@ -231,7 +238,7 @@ bool shm_addr_updated(uint32_t jobid, uint32_t stepid);
  * Atomically return current ioaddr and reset io_update field to false
  */
 int shm_step_addrs(uint32_t jobid, uint32_t stepid, 
-		   slurm_addr *ioaddr, slurm_addr *respaddr);
+		   slurm_addr *ioaddr, slurm_addr *respaddr, srun_key_t *key);
 
 
 /* 

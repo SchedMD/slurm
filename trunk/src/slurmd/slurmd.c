@@ -106,6 +106,11 @@ main (int argc, char *argv[])
 	_init_conf();
 	_process_cmdline(argc, argv);
 	_read_config();
+	_print_conf();
+
+	/* Create slurmd spool directory 
+	 * if necessary, and chdir() to it.
+	 */
 	_set_slurmd_spooldir();
 
 	if (conf->daemonize) 
@@ -131,6 +136,9 @@ main (int argc, char *argv[])
 	_msg_engine();
 
 	_slurmd_fini();
+
+	if (unlink(conf->pidfile) < 0)
+		error("Unable to remove pidfile `%s': %m", conf->pidfile);
 
 	return 0;
 }

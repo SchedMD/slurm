@@ -139,6 +139,19 @@ _confirm_launch_complete(job_t *job)
 	}
 }
 
+static void
+_reattach_handler(job_t *job, slurm_msg_t *msg)
+{
+	reattach_tasks_response_msg_t *resp = msg->data;
+
+	slurm_mutex_lock(&job->task_mutex);
+	if ((resp->srun_node_id >= 0) && (resp->srun_node_id < job->nhosts)) {
+		job->host_state[resp->srun_node_id] = SRUN_HOST_REPLIED;
+	}
+	slurm_mutex_unlock(&job->task_mutex);
+
+}
+
 static void 
 _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
@@ -190,6 +203,8 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			break;
 		case RESPONSE_REATTACH_TASKS:
 			debug("recvd reattach response\n");
+			_reattach_handler(job, msg);
+			slurm_free_reattach_tasks_response_msg(msg->data);
 			break;
 		default:
 			error("received spurious message type: %d\n",
@@ -310,3 +325,30 @@ msg_thr(void *arg)
 	_msg_thr_poll(job);
 	return (void *)1;
 }
+
+int 
+msg_thr_create(job_t *job)
+{
+	int i;
+	pthread_attr_t attr;
+
+	for (i = 0; i < job->njfds; i++) {
+		if ((job->jfd[i] = slurm_init_msg_engine_port(0)) < 0)
+			fatal("init_msg_engine_port: %m");
+		if (slurm_get_stream_addr(job->jfd[i], &job->jaddr[i]) < 0)
+			fatal("slurm_get_stream_addr: %m");
+		debug("initialized job control port %d\n",
+		      ntohs(((struct sockaddr_in)job->jaddr[i]).sin_port));
+	}
+
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, 
+			            (void *)job)))
+		fatal("Unable to start message thread: %m");
+
+	debug("Started msg server thread (%d)", job->jtid);
+
+	return SLURM_SUCCESS;
+}
+

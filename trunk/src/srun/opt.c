@@ -893,11 +893,12 @@ _opt_verify(poptContext optctx)
 			verified = false;
 		}
 
-		if (constraints_given()) {
-			error("do not specify any constraints with "
-			      "--attach (-a)");
-			verified = false;
-		}
+		/* if (constraints_given()) {
+		 *	error("do not specify any constraints with "
+		 *	      "--attach (-a)");
+		 *	verified = false;
+		 *}
+		 */
 
 
 		/* XXX check here to see if job to attach to exists ? */
