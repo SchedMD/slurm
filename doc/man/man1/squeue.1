@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "May 2003" "squeue 0.1" "Slurm components"
+.TH SQUEUE "1" "June 2003" "squeue 0.1" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -34,14 +34,10 @@ subject to any constraints specified.
 .TP
 \fB\-o\fR, \fB\-\-format\fR
 Specify the information to be displayed.  
-The default format for jobs is "%.7i %9P %8j %8u %2t %.8l %.4p %#N", where "#" 
-represents a number limiting output to the window size.
+The default format for jobs is "%.7i %9P %8j %8u %2t %.8M %.6D %N".
 If the \fB\-\-long\fR option is specified, the default job format is 
-"%.7i %9P %8j %8u %8T %.8l %.10p %11S %11e %N".
-The default format for job steps is "%.10i %9P %8u %11S %#N", where "#" 
-represents a number limiting output to the window size.
-If the \fB\-\-long\fR option is specified, the default job step format 
-is "%.10i %9P %8u %11S %N".
+"%.7i %9P %8j %8u %8T %.8M %.8l %.6D %N".
+The default format for job steps is "%.10i %9P %8u %.8M %N".
 
 The field specifications available include: 
 .br
@@ -52,6 +48,8 @@ The field specifications available include:
 \fB%C\fR Number of CPUs (processors) allocated to the job or job step
 .br
 \fB%d\fR Minimum size of temporary disk space (in MB) requested by the job
+.br
+\fB%D\fR Number of nodes allocated to the job
 .br
 \fB%e\fR Time at which the job ended or is expected to end (based upon its time
 limit)
@@ -64,10 +62,12 @@ limit)
 .br
 \fB%j\fR Job name
 .br
-\fB%l\fR Time limit of the job (in minutes). The value may be "NOT_SET" 
+\fB%l\fR Time limit of the job (in hours:minutes). The value may be "NOT_SET" 
 if not yet established or "UNLIMITED" for no limit.
 .br
 \fB%m\fR Minimum size of memory (in MB) requested by the job
+.br
+\fB%M\fR Time used by the job in hours:minutes
 .br
 \fB%n\fR List of node names explicitly requested by the job
 .br
@@ -153,15 +153,15 @@ Print the job steps in the debug partition sorted by user:
 .br
 # squeue -s -p debug -S u
 .br
- STEPID     PARTITION   USER      START_TIME    NODES
+  STEPID    PARTITION   USER     TIME_USED NODES
 .br
 -----------------------------------------------------------
 .br
- 65552.1    debug       alice     10/14-11:02   dev[1-4]
+ 65552.1    debug       alice         0:23 dev[1-4]
 .br
- 65562.2    debug       bob       10/14-11:54   dev22
+ 65562.2    debug       bob           0.18 dev22
 .br
- 65550.1    debug       candice   10/14-11:18   dev[6-12]
+ 65550.1    debug       candice     143:21 dev[6-12]
 .ec
 
 .eo
@@ -169,13 +169,13 @@ Print information only about jobs 12345 and 12346:
 .br
 # squeue --jobs 12345,12346
 .br
-  JOBID PARTITION NAME  USER   ST TIME_LIM PRIO NODES
+  JOBID PARTITION NAME USER   ST TIME_USED #NODES NODES
 .br
 -----------------------------------------------------------
 .br
-  12345 debug     pwd   david  R        30 0.98 dev[9-12]
+  12345 debug     pwd  david  R       0:21      4 dev[9-12]
 .br
-  12346 debug     pwd   david  PD  NOT_SET 0.00
+  12346 debug     pwd  david  PD         0      0
 .ec
 
 .eo
@@ -183,11 +183,11 @@ Print information only about job step 65552.1:
 .br
 # squeue --steps 65552.1
 .br
- STEPID     PARTITION   USER      START_TIME    NODES
+  STEPID    PARTITION   USER     TIME_USED NODES
 .br
 -----------------------------------------------------------
 .br
- 65552.1    debug       alice     10/14-11:02   dev[1-4]
+ 65552.1    debug       alice        12:49 dev[1-4]
 .ec
 
 .SH "COPYING"
