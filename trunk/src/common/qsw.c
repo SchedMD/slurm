@@ -879,7 +879,6 @@ char *
 qsw_capability_string(struct qsw_jobinfo *j, char *buf, size_t size)
 {
 	ELAN_CAPABILITY *cap;
-	int len;
 
 	assert(buf != NULL);
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
