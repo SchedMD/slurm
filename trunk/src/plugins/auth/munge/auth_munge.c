@@ -232,11 +232,7 @@ slurm_auth_verify( slurm_auth_credential_t *c, void *argv )
 
 /*
  * Obtain the Linux UID from the credential.  The accuracy of this data
- * is not assured until slurm_auth_activate() and slurm_auth_verify()
- * have been called for it in that order.  A plugin may choose to
- * enforce this call order by adding bookkeeping to its implementation
- * of slurm_auth_credential_t, but SLURM will guarantee to issue the
- * proper sequence of calls.
+ * is not assured until slurm_auth_verify() has been called for it.
  */
 uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred )
