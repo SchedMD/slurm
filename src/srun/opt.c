@@ -248,7 +248,7 @@ struct poptOption options[] = {
  *
  * define a new entry into env_vars[], if the option is a simple int
  * or string you may be able to get away with adding a pointer to the
- * option to set. Otherwise, process var based on "type" in opt_env.
+ * option to set. Otherwise, process var based on "type" in _opt_env.
  */
 typedef struct env_vars {
 	const char *var;
@@ -278,22 +278,22 @@ env_vars_t env_vars[] = {
 /* 
  * fill in default options 
  */
-static void opt_default(void);
+static void _opt_default(void);
 
 /* set options based upon env vars 
  */
-static void opt_env(void);
+static void _opt_env(void);
 
 /* set options based upon commandline args
  */
-static void opt_args(int, char **);
+static void _opt_args(int, char **);
 
 /* verify options sanity 
  */
-static bool opt_verify(poptContext);
+static bool _opt_verify(poptContext);
 
 /* return command name from its full path name */
-static char * base_name(char* command);
+static char * _base_name(char* command);
 
 #ifdef HAVE_TOTALVIEW
 static bool _under_totalview(void);
@@ -302,49 +302,56 @@ static bool _under_totalview(void);
 /* list known options and their settings 
  */
 #if	__DEBUG
-static void opt_list(void);
+static void _opt_list(void);
 #endif
 
 /* search PATH for command 
  * returns full path
  */
-static char * search_path(char *);
-static char * find_file_path (char *fname);
+static char * _search_path(char *);
+static char * _find_file_path (char *fname);
+
+static enum io_t _verify_iotype(char **name);
+static void _print_version(void);
+static enum distribution_t _verify_dist_type(const char *arg);
+static long _to_bytes(const char *arg);
+static void _set_allocate_mode_env_vars(void);
+static List _create_path_list(void);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
 int initialize_and_process_args(int argc, char *argv[])
 {
 	/* initialize option defaults */
-	opt_default();
+	_opt_default();
 
 	/* initialize options with env vars */
-	opt_env();
+	_opt_env();
 
 	/* initialize options with argv */
-	opt_args(argc, argv);
+	_opt_args(argc, argv);
 
 #if	__DEBUG
-	opt_list();
+	_opt_list();
 #endif
 	return 1;
 
 }
 
-static void print_version()
+static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, VERSION);
 }
 
 /*
- * verify_iotype(): helper for output/input/error arguments.
+ * _verify_iotype(): helper for output/input/error arguments.
  *
  * will return IO_NORMAL if string matches "normal" 
  *
  * prunes off trailing '%' char after setting IO_PER_TASK if such
  * a one exists.
  */
-static enum io_t verify_iotype(char **name)
+static enum io_t _verify_iotype(char **name)
 {
 	enum io_t type;
 	char *p = *name;
@@ -370,7 +377,7 @@ static enum io_t verify_iotype(char **name)
  * verify that a distribution type in arg is of a known form
  * returns the distribution_t or SRUN_DIST_UNKNOWN
  */
-static enum distribution_t verify_dist_type(const char *arg)
+static enum distribution_t _verify_dist_type(const char *arg)
 {
 	enum distribution_t result = SRUN_DIST_UNKNOWN;
 
@@ -383,7 +390,7 @@ static enum distribution_t verify_dist_type(const char *arg)
 }
 
 /* return command name from its full path name */
-char * base_name(char* command)
+static char * _base_name(char* command)
 {
 	char *char_ptr, *name;
 	int i;
@@ -404,11 +411,11 @@ char * base_name(char* command)
 }
 
 /*
- * to_bytes(): verify that arg is numeric with optional "G" or "M" at end
+ * _to_bytes(): verify that arg is numeric with optional "G" or "M" at end
  * if "G" or "M" is there, multiply by proper power of 2 and return
  * number in bytes
  */
-static long to_bytes(const char *arg)
+static long _to_bytes(const char *arg)
 {
 	char *buf;
 	char *endptr;
@@ -457,7 +464,7 @@ static long to_bytes(const char *arg)
 /* set a few env vars for allocate mode so they'll be available in
  * the resulting subshell
  */
-static void set_allocate_mode_env_vars()
+static void _set_allocate_mode_env_vars(void)
 {
 	int rc;
 
@@ -505,9 +512,9 @@ static void argerror(const char *msg, ...)
 #endif				/* USE_ARGERROR */
 
 /*
- * opt_default(): used by initialize_and_process_args to set defaults
+ * _opt_default(): used by initialize_and_process_args to set defaults
  */
-static void opt_default()
+static void _opt_default()
 {
 	char buf[MAXPATHLEN + 1];
 	struct passwd *pw;
@@ -581,11 +588,11 @@ static void opt_default()
 }
 
 /*
- * opt_env(): used by initialize_and_process_args to set options via
+ * _opt_env(): used by initialize_and_process_args to set options via
  *            environment variables. See comments above for how to
  *            extend srun to process different vars
  */
-static void opt_env()
+static void _opt_env()
 {
 	char *val;
 	char *end;
@@ -643,7 +650,7 @@ static void opt_env()
 			case OPT_DISTRIB:
 				{
 					enum distribution_t dt =
-					    verify_dist_type(val);
+					    _verify_dist_type(val);
 
 					if (dt == SRUN_DIST_UNKNOWN) {
 						error("\"%s=%s\" -- invalid distribution type."
@@ -669,9 +676,9 @@ static void opt_env()
 }
 
 /*
- * opt_args() : set options via commandline args and popt
+ * _opt_args() : set options via commandline args and popt
  */
-static void opt_args(int ac, char **av)
+static void _opt_args(int ac, char **av)
 {
 	int rc;
 	int i;
@@ -697,7 +704,7 @@ static void opt_args(int ac, char **av)
 
 		switch (rc) {
 		case OPT_VERSION:
-			print_version();
+			_print_version();
 			exit(0);
 			break;
 
@@ -748,21 +755,21 @@ static void opt_args(int ac, char **av)
 
 		case OPT_OUTPUT:
 			opt.ofname = strdup(arg);
-			opt.output = verify_iotype(&opt.ofname);
+			opt.output = _verify_iotype(&opt.ofname);
 			break;
 
 		case OPT_INPUT:
 			opt.ifname = strdup(arg);
-			opt.input = verify_iotype(&opt.ifname);
+			opt.input = _verify_iotype(&opt.ifname);
 			break;
 
 		case OPT_ERROR:
 			opt.efname = strdup(arg);
-			opt.error = verify_iotype(&opt.efname);
+			opt.error = _verify_iotype(&opt.efname);
 			break;
 
 		case OPT_DISTRIB:
-			opt.distribution = verify_dist_type(arg);
+			opt.distribution = _verify_dist_type(arg);
 			if (opt.distribution == SRUN_DIST_UNKNOWN) {
 				argerror
 				    ("Error: distribution type `%s' is not recognized",
@@ -785,7 +792,7 @@ static void opt_args(int ac, char **av)
 			break;
 
 		case OPT_REALMEM:
-			opt.realmem = (int) to_bytes(arg);
+			opt.realmem = (int) _to_bytes(arg);
 			if (opt.realmem < 0) {
 				error("invalid memory constraint %s", arg);
 				exit(1);
@@ -793,7 +800,7 @@ static void opt_args(int ac, char **av)
 			break;
 
 		case OPT_TMPDISK:
-			opt.tmpdisk = to_bytes(arg);
+			opt.tmpdisk = _to_bytes(arg);
 			if (opt.tmpdisk < 0) {
 				error("invalid tmp disk constraint %s", arg);
 				exit(1);
@@ -833,18 +840,18 @@ static void opt_args(int ac, char **av)
 	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
 	if ((opt.batch == 0) && (opt.allocate == 0) && (remote_argc > 0)) {
-		if ((fullpath = search_path(remote_argv[0])) != NULL) {
+		if ((fullpath = _search_path(remote_argv[0])) != NULL) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
 		} 
 	} else if (remote_argc > 0) {
-		if ((fullpath = find_file_path(remote_argv[0])) != NULL) {
+		if ((fullpath = _find_file_path(remote_argv[0])) != NULL) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
 		} 
 	}
 
-	if (!opt_verify(optctx)) {
+	if (!_opt_verify(optctx)) {
 		poptPrintUsage(optctx, stderr, 0);
 		exit(1);
 	}
@@ -854,11 +861,11 @@ static void opt_args(int ac, char **av)
 }
 
 /* 
- * opt_verify : perform some post option processing verification
+ * _opt_verify : perform some post option processing verification
  *
  */
 static bool
-opt_verify(poptContext optctx)
+_opt_verify(poptContext optctx)
 {
 	bool verified = true;
 
@@ -878,7 +885,7 @@ opt_verify(poptContext optctx)
 		opt.mincpus = opt.cpus_per_task;
 
 	if ((opt.job_name == NULL) && (remote_argc > 0))
-		opt.job_name = base_name(remote_argv[0]);
+		opt.job_name = _base_name(remote_argv[0]);
 
 	if (mode == MODE_ATTACH) {	/* attach to a running job */
 		if (opt.nodes_set || opt.cpus_set || opt.nprocs_set) {
@@ -906,7 +913,7 @@ opt_verify(poptContext optctx)
 			 * env vars so they will be "defaults" in allocate
 			 * subshell
 			 */
-			set_allocate_mode_env_vars();
+			_set_allocate_mode_env_vars();
 
 		} else {
 
@@ -930,7 +937,7 @@ opt_verify(poptContext optctx)
 			verified = false;
 		}
 
-		if (opt.nodes < 0) {
+		if (opt.nodes <= 0) {
 			error("%s: invalid number of nodes (-N %d)\n",
 				opt.progname, opt.nodes);
 			verified = false;
@@ -968,7 +975,7 @@ opt_verify(poptContext optctx)
 }
 
 static List
-create_path_list(void)
+_create_path_list(void)
 {
 	List l = list_create(&free);
 	char *path = strdup(getenv("PATH"));
@@ -1002,9 +1009,9 @@ create_path_list(void)
 }
 
 static char *
-search_path(char *cmd)
+_search_path(char *cmd)
 {
-	List l = create_path_list();
+	List l = _create_path_list();
 	ListIterator i = list_iterator_create(l);
 	char *path, *fullpath = NULL;
 	struct stat stat_buf;
@@ -1027,12 +1034,12 @@ search_path(char *cmd)
 	return fullpath;
 }
 
-/* find_file_path - given a filename, return the full path to a regular file 
+/* _find_file_path - given a filename, return the full path to a regular file 
  *	of that name that can be read or NULL otherwise
  * NOTE: The calling function must xfree the return value (if set) 
  */
 static char *
-find_file_path (char *fname)
+_find_file_path (char *fname)
 {
 	int modes;
 	char *pathname;
@@ -1166,7 +1173,7 @@ print_commandline()
 #define tf_(b) (b == true) ? "true" : "false"
 
 static 
-void opt_list()
+void _opt_list()
 {
 	char *str;
 
