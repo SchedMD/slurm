@@ -38,18 +38,14 @@ struct sinfo_parameters params = { partition_flag:false, partition:NULL, state_f
  * Funtions *
  ************/
 void usage ();
-char* int_to_str( int num );
 
 int query_server( partition_info_msg_t ** part_pptr, node_info_msg_t ** node_pptr  );
 
-int build_min_max_string( char* buffer, int max, int min );
 
 /* Node Functions */
 void display_all_nodes( node_info_msg_t* node_msg );
 void display_nodes_list( List nodes );
 void display_nodes_list_long( List nodes );
-int get_node_index( char* name );
-char* get_node_prefix( char* name, char* buffer );
 char* node_name_string_from_list( List nodes, char* buffer );
 
 List group_node_list( node_info_msg_t* msg );
@@ -61,6 +57,12 @@ void display_partition_node_info( struct partition_summary* partition, bool prin
 void display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_ptr );
 void display_all_partition_info_long( List partitions );
 void display_partition_summarys ( List partitions );
+
+/* Misc Display functions */
+int build_min_max_string( char* buffer, int max, int min );
+int print_int( int number, int width, bool right );
+int print_str( char* number, int width, bool right );
+char* int_to_str( int num );
 
 int 
 main (int argc, char *argv[]) 
@@ -83,8 +85,6 @@ main (int argc, char *argv[])
 	
 	else if ( params.partition_flag )
 		display_all_partition_summary( partition_msg, node_msg );
-/*		display_all_partition_info_long( partition_msg, node_msg );
-*/
 	else
 		display_all_partition_summary( partition_msg, node_msg );
 	exit (0);
@@ -349,6 +349,7 @@ setup_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_p
 			node_sum->ram_min = MIN( ninfo->real_memory, node_sum->ram_min );
 			node_sum->disk_max = MAX( ninfo->tmp_disk, node_sum->disk_max);
 			node_sum->disk_min = MIN( ninfo->tmp_disk, node_sum->disk_min);
+			hostlist_push( node_sum->nodes, ninfo->name );
 			node_sum->node_count++;
 		}
 		else
@@ -362,6 +363,7 @@ setup_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* node_p
 			node_sum->disk_max = ninfo->tmp_disk;
 			node_sum->disk_min = ninfo->tmp_disk;
 			node_sum->node_count = 1;
+			node_sum->nodes = hostlist_create( ninfo->name );
 			list_append( part_sum->states, node_sum );
 		}
 	}
@@ -379,16 +381,49 @@ display_all_partition_summary( partition_info_msg_t* part_ptr, node_info_msg_t* 
 	list_destroy( partitions );
 }
 
+/* Formating for partiton display headers... */
+int part_sz_part  = 10;
+int part_sz_num   = 6;
+int part_sz_state = 10;
+int part_sz_cpus  = 4;
+int part_sz_ram   = 8;
+int part_sz_disk  = 8;
+int part_sz_nodes = 0;
+
+void 
+print_partition_header( bool no_name )
+{
+	if ( no_name == true )
+		printf("\t");
+	else
+	{
+		print_str( "NAME", part_sz_part, false ); 
+		printf(" ");
+	}
+	print_str( "NODES", part_sz_num, true );
+	printf("  ");
+	print_str( "STATE", part_sz_state, false);
+	printf(" ");
+	print_str( "CPUS", part_sz_cpus, true);
+	printf(" ");
+	print_str( "MEM", part_sz_ram, true);
+	printf(" ");
+	print_str( "DISK", part_sz_disk, true);
+	print_str( "  NODES", part_sz_nodes, false );
+	printf("\n");
+	if ( no_name == true )
+		printf( "\t------------------------------------------------------------------------\n");
+	else
+		printf( "--------------------------------------------------------------------------------\n");
+}
+
 void 
 display_partition_summarys ( List partitions ) 
 {
-	const char* format_header = "%10s %8s %10s %8s %15s %15s\n"; 
 	struct partition_summary* partition ;
 	ListIterator part_i = list_iterator_create( partitions );
 
-	printf( format_header, "Partition", "#Nodes", "Node State", "CPUs", "Memory", "TmpDisk" ); 
-	printf( "--------------------------------------------------------------------------------\n");
-
+	print_partition_header( false );
 	while ( (partition = list_next( part_i ) ) != NULL )
 	{
 		if ( params.partition == NULL || strcmp( partition->info->name, params.partition ) == 0 )
@@ -404,9 +439,8 @@ display_partition_node_info( struct partition_summary* partition, bool print_nam
 	char cpu_buf[64];
 	char ram_buf[64];
 	char disk_buf[64];
+	char name_buf[64];
 
-	const char* format_name =  "%10s %8d %10s %8s %15s %15s\n"; 
-	const char* format =  "\t%8d %10s %8s %15s %15s\n"; 
 
 	ListIterator node_i = list_iterator_create( partition->states );
 	struct node_state_summary* state_sum = NULL;
@@ -414,12 +448,30 @@ display_partition_node_info( struct partition_summary* partition, bool print_nam
 
 	while ( ( state_sum = list_next(node_i) ) != NULL )
 	{
-		build_min_max_string( cpu_buf, state_sum->cpu_min, state_sum->cpu_max );
 		build_min_max_string( ram_buf, state_sum->ram_min, state_sum->ram_max );
 		build_min_max_string( disk_buf, state_sum->disk_min, state_sum->disk_max );
+		build_min_max_string( cpu_buf, state_sum->cpu_min, state_sum->cpu_max );
+		hostlist_ranged_string( state_sum->nodes, 64, name_buf );
+
 		if ( print_name  == true )
-			printf( format_name, part_name, state_sum->node_count, node_state_string( state_sum->state), cpu_buf, ram_buf, disk_buf );
-		else printf( format, state_sum->node_count, node_state_string( state_sum->state), cpu_buf, ram_buf, disk_buf ); 
+		{
+			print_str( part_name, part_sz_part, false ); 
+			printf(" ");
+		}
+		else printf("\t");
+
+		print_int( state_sum->node_count, part_sz_num, true );
+		printf("  ");
+		print_str( node_state_string( state_sum->state), part_sz_state, false);
+		printf(" ");
+		print_str( cpu_buf, part_sz_cpus, true);
+		printf(" ");
+		print_str( ram_buf, part_sz_ram, true);
+		printf(" ");
+		print_str( disk_buf, part_sz_disk, true);
+		printf("  ");
+		print_str( name_buf, part_sz_nodes, false );
+		printf("\n");
 		part_name = no_name;
 	}
 }
@@ -442,9 +494,6 @@ display_all_partition_info_long( List partitions )
 void
 display_partition_info_long( struct partition_summary* partition )
 {
-	const char* format_header = "\t%8s %10s %8s %15s %15s\n"; 
-/*	const char* format =        "\t%8d %10s %8s %15s %15s\n"; 
-*/
 	partition_info_t* part = partition->info ;
 	
 	printf( "================================================================================\n" );
@@ -461,82 +510,9 @@ display_partition_info_long( struct partition_summary* partition )
 	printf("\tshare nodes       = %s\n", part->shared == 2 ? "ALWAYS" : part->shared ? "YES" : "NO" );
 
 	printf("\n");
-	printf( format_header, "#Nodes", "Node State", "CPUs", "Memory", "TmpDisk" ); 
-	printf( "\t------------------------------------------------------------------------\n");
+	print_partition_header( true );
 	display_partition_node_info( partition, false );
 	
-}
-
-/* node_name_string_from_list - analyzes a list of node_info_t* and 
- * 		fills in a buffer with the appropriate nodename in a prefix[001-100]
- * 		type format.
- * @nodes - list of node_info_t* to analyze
- * @buffer - a char buffer to store the string in.
- *
- * return - return on success return buffer, NULL on failure
- */
-
-char* 
-node_name_string_from_list( List nodes, char* buffer )
-{
-	char prefix[64], *current;
-	node_info_t* curr_node = NULL;
-	int last_index = 0;
-	int curr_index = 0;
-	bool multiple = false;
-	ListIterator i = list_iterator_create( nodes );
-
-	curr_node = list_next(i);
-	get_node_prefix( curr_node->name, prefix );
-
-	while( (curr_node = list_next(i) ) != NULL )
-	{
-		if ( strcmp( get_node_prefix( curr_node->name, buffer ), prefix ) != 0 )
-			return NULL;
-	}
-	current = buffer + strlen( buffer );
-	*current = '[';
-	current++;
-	
-	list_iterator_reset(i);
-	curr_node = list_next(i);
-	last_index = get_node_index( curr_node->name );
-	current += sprintf(current, "%d", last_index );
-	
-	while( (curr_node = list_next(i) ) != NULL )
-	{
-		if ( (curr_index = get_node_index( curr_node->name )) > -1 )
-		{
-			if ( curr_index != (last_index+1) )
-			{
-				if ( multiple )
-				{
-					current += sprintf( current, "-%d,%d", last_index, curr_index );
-					multiple = false;
-				}
-				else
-				{
-					current += sprintf( current, ",%d", curr_index );
-					multiple = false;
-				}
-			}
-			else
-				multiple = true;
-
-			last_index = curr_index;
-			
-		}
-		else return NULL;	
-	}
-
-	if ( multiple == true )
-	{
-		current += sprintf( current, "-%d", curr_index );
-	}
-	*current = ']'; current ++;
-	*current = '\0';
-
-	return buffer;
 }
 
 /* int_to_str - returns an int as a string to allow formatting with printf better
@@ -567,37 +543,6 @@ int_to_str( int num )
 }
 
 
-char* 
-get_node_prefix( char* name, char* buffer )
-{
-	int length = strlen(name);
-	int i;
-	char* temp;
-
-	for ( i=0; i < length; i++ )
-	{
-		if ( name[i] >= '0' && name[i] <= '9' )
-			break;		
-	}
-
-	temp = strncpy( buffer, name, i );
-	temp[i] = '\0';
-	
-	return temp;
-}
-
-int 
-get_node_index( char* name )
-{
-	char* curr = name;
-
-	while ( ( *curr < '0' || *curr > '9' ) && *curr != '\0' )
-		curr++ ;
-	
-	return atoi( curr );
-
-}
-
 int
 build_min_max_string( char* buffer, int min, int max )
 {
@@ -607,3 +552,61 @@ build_min_max_string( char* buffer, int min, int max )
 	return sprintf( buffer, "%d-%d", min, max );
 }
 
+int
+print_str( char* str, int width, bool right )
+{
+	char format[64];
+	int printed = 0;
+
+	if ( right == true && width != 0 )
+		snprintf( format, 64, "%%%ds", width );
+	else if ( width != 0 )
+		snprintf( format, 64, "%%.%ds", width );
+	else
+		snprintf( format, 64, "%%s", width );
+
+	if ( ( printed = printf( format, str ) ) < 0  )
+		return printed;
+
+	while ( printed++ < width )
+		printf(" ");
+
+	return printed;
+
+
+}
+
+int
+print_int( int number, int width, bool right )
+{
+	char buf[32];
+	char format[64];
+	int printed = 0;
+
+	snprintf( buf, 32, "%d", number );
+	return print_str( buf, width, right );
+}
+
+/* node_name_string_from_list - analyzes a list of node_info_t* and 
+ * 		fills in a buffer with the appropriate nodename in a prefix[001-100]
+ * 		type format.
+ * @nodes - list of node_info_t* to analyze
+ * @buffer - a char buffer to store the string in.
+ *
+ * return - return on success return buffer, NULL on failure
+ */
+
+char* 
+node_name_string_from_list( List nodes, char* buffer )
+{
+	node_info_t* curr_node = NULL;
+	ListIterator i = list_iterator_create( nodes );
+	hostlist_t list = hostlist_create( NULL );
+
+	while( (curr_node = list_next(i) ) != NULL )
+		hostlist_push( list, curr_node->name );
+	
+	hostlist_ranged_string( list, 32, buffer );
+	hostlist_destroy( list );
+	return buffer;
+}
