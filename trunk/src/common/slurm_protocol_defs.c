@@ -68,6 +68,15 @@ void slurm_free_partition_info (partition_info_msg_t * msg )
 	}
 }
 
+void slurm_free_partition_table_msg ( partition_table_t * part )
+{
+	if ( part )
+	{
+		slurm_free_partition_table ( part ) ;
+		free ( part ) ;
+	}
+}
+
 void slurm_free_partition_table ( partition_table_t * part )
 {
 	if ( part )
@@ -76,7 +85,6 @@ void slurm_free_partition_table ( partition_table_t * part )
 		free ( part->allow_groups ) ;
 		free ( part->nodes ) ;
 		free ( part->node_inx ) ;
-		free ( part ) ;
 	}
 }
 
@@ -95,6 +103,15 @@ void slurm_free_job_info ( job_info_msg_t * msg )
 	}
 }
 
+void slurm_free_job_table_msg ( job_table_t * job )
+{
+	if ( job )
+	{
+		slurm_free_job_table ( job ) ;
+		free ( job ) ;
+	}
+}
+
 void slurm_free_job_table ( job_table_t * job )
 {
 	if ( job )
@@ -107,7 +124,6 @@ void slurm_free_job_table ( job_table_t * job )
 		free (job->features) ;
 		free (job->job_script) ;
 		free (job->req_node_inx) ;
-		free ( job ) ;
 	}
 }
 
@@ -126,6 +142,15 @@ void slurm_free_node_info ( node_info_msg_t * msg )
 	}
 }
 
+void slurm_free_node_table_msg ( node_table_msg_t * node )
+{
+	if ( node )
+	{
+		slurm_free_node_table ( node ) ;
+		free ( node ) ;
+	}
+}
+
 void slurm_free_node_table ( node_table_t * node )
 {
 	if ( node )
@@ -133,6 +158,5 @@ void slurm_free_node_table ( node_table_t * node )
 		free (node->name) ;
 		free (node->features) ;
 		free (node->partition) ;
-		free ( node ) ;
 	}
 }
