@@ -132,6 +132,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job is pending execution"				},
 	{ ESLURM_BAD_TASK_COUNT, 
 	  "Task count specification invalid"			},
+	{ ESLURM_INVALID_JOB_CREDENTIAL, 
+	  "Error generating job credential"			},
 
 	/* Quadrics Elan routine error codes */
 

@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by AUTHOR <AUTHOR@llnl.gov>.
+ *  Written by Mark Grondona <grondona1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -40,6 +40,7 @@
 #  include <sys/types.h>
 #endif
 
+#include "src/common/macros.h"
 #include "src/common/pack.h"
 
 /*

@@ -115,7 +115,6 @@ typedef enum {
 	RESPONSE_JOB_ATTACH,
 	REQUEST_JOB_WILL_RUN,
 	RESPONSE_JOB_WILL_RUN,
-	REQUEST_REVOKE_JOB_CREDENTIAL,
 	REQUEST_ALLOCATION_AND_RUN_JOB_STEP,
 	RESPONSE_ALLOCATION_AND_RUN_JOB_STEP,
 	REQUEST_OLD_JOB_RESOURCE_ALLOCATION,
@@ -139,6 +138,7 @@ typedef enum {
 	REQUEST_REATTACH_TASKS,
 	RESPONSE_REATTACH_TASKS,
 	REQUEST_KILL_TIMELIMIT,
+	REQUEST_KILL_JOB,
 
 	RESPONSE_SLURM_RC = 8001,
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
@@ -283,11 +283,10 @@ typedef struct return_code_msg {
 	int32_t return_code;
 } return_code_msg_t;
 
-typedef struct revoke_credential_msg {
+typedef struct kill_job_msg {
 	uint32_t job_id;
 	uint32_t job_uid;
-	time_t expiration_time;
-} revoke_credential_msg_t;
+} kill_job_msg_t;
 
 typedef struct job_time_msg {
 	uint32_t job_id;
@@ -406,7 +405,7 @@ slurm_free_reattach_tasks_request_msg(reattach_tasks_request_msg_t * msg);
 void inline
 slurm_free_reattach_tasks_response_msg(reattach_tasks_response_msg_t * msg);
 
-void inline slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg);
+void inline slurm_free_kill_job_msg(kill_job_msg_t * msg);
 void inline slurm_free_update_job_time_msg(job_time_msg_t * msg);
 
 void inline slurm_free_job_step_kill_msg(job_step_kill_msg_t * msg);

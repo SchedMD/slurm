@@ -213,7 +213,7 @@ void slurm_free_launch_tasks_response_msg(launch_tasks_response_msg_t *
 	}
 }
 
-void slurm_free_revoke_credential_msg(revoke_credential_msg_t * msg)
+void slurm_free_kill_job_msg(kill_job_msg_t * msg)
 {
 	xfree(msg);
 }

@@ -88,10 +88,8 @@ static int
  _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 				     Buf buffer);
 
-static void _pack_revoke_credential_msg(revoke_credential_msg_t * msg,
-					Buf buffer);
-static int _unpack_revoke_credential_msg(revoke_credential_msg_t ** msg,
-					 Buf buffer);
+static void _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer);
+static int _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer);
 
 static void _pack_update_job_time_msg(job_time_msg_t * msg, Buf buffer);
 static int _unpack_update_job_time_msg(job_time_msg_t ** msg, Buf buffer);
@@ -410,9 +408,8 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 break;
 
 	 case REQUEST_KILL_TIMELIMIT:
-	 case REQUEST_REVOKE_JOB_CREDENTIAL:
-		 _pack_revoke_credential_msg((revoke_credential_msg_t *)
-					     msg->data, buffer);
+	 case REQUEST_KILL_JOB:
+		 _pack_kill_job_msg((kill_job_msg_t *) msg->data, buffer);
 		 break;
 	 case REQUEST_UPDATE_JOB_TIME:
 		 _pack_update_job_time_msg((job_time_msg_t *)
@@ -619,10 +616,9 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 						    buffer);
 		 break;
 	 case REQUEST_KILL_TIMELIMIT:
-	 case REQUEST_REVOKE_JOB_CREDENTIAL:
-		 rc = _unpack_revoke_credential_msg(
-					(revoke_credential_msg_t **)
-					& (msg->data), buffer);
+	 case REQUEST_KILL_JOB:
+		 rc = _unpack_kill_job_msg((kill_job_msg_t **) & (msg->data), 
+					   buffer);
 		 break;
 	 case REQUEST_UPDATE_JOB_TIME:
 		 rc = _unpack_update_job_time_msg(
@@ -941,6 +937,7 @@ static int
 
 	if (!(tmp_ptr->cred = slurm_cred_unpack(buffer)))
 		goto unpack_error;
+
 #ifdef HAVE_LIBELAN3
 	qsw_alloc_jobinfo(&tmp_ptr->qsw_job);
 	if (qsw_unpack_jobinfo(tmp_ptr->qsw_job, buffer) < 0) {
@@ -1151,28 +1148,26 @@ _unpack_job_step_create_request_msg(job_step_create_request_msg_t ** msg,
 }
 
 static void
-_pack_revoke_credential_msg(revoke_credential_msg_t * msg, Buf buffer)
+_pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 {
 	assert(msg != NULL);
 
 	pack32(msg->job_id,  buffer);
 	pack32(msg->job_uid, buffer);
-	pack_time(msg->expiration_time, buffer);
 }
 
 static int
-_unpack_revoke_credential_msg(revoke_credential_msg_t ** msg, Buf buffer)
+_unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 {
-	revoke_credential_msg_t *tmp_ptr;
+	kill_job_msg_t *tmp_ptr;
 
 	/* alloc memory for structure */
 	assert(msg);
-	tmp_ptr = xmalloc(sizeof(*tmp_ptr));
+	tmp_ptr = xmalloc(sizeof(kill_job_msg_t));
 	*msg = tmp_ptr;
 
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
-	safe_unpack_time(& (tmp_ptr->expiration_time), buffer);
 
 	return SLURM_SUCCESS;
 
