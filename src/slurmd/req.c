@@ -435,16 +435,19 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	       goto done;
 	}
 
-	/*
-	if ((req->signal == SIGSTOP) || (req->signal == SIGCONT) || 
-	    (req->signal == SIGKILL))
-		rc = shm_signal_step(req->job_id, req->job_step_id, 
-				     req->signal); 
-	else {
-		if (killpg(step->sid, req->signal) < 0)
-			rc = errno;
-	} 
-	*/
+	if (step->state != SLURMD_JOB_STARTED) {
+		debug ("kill req for starting job step %d.%d", 
+		       step->jobid, step->stepid);
+		rc = ESLURMD_JOB_NOTRUNNING;
+	}
+
+	if (step->sid <= 0) {
+		debug ("step %ld.%d invalid in shm [mpid:%d sid:%d]", 
+			req->job_id, req->job_step_id, 
+			step->mpid, step->sid);
+		rc = ESLURM_INVALID_JOB_ID;
+		goto done;
+	}
 
 	if (kill(-step->sid, req->signal) < 0)
 		rc = errno; 
