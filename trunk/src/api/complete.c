@@ -85,7 +85,8 @@ slurm_complete_job_step ( uint32_t job_id, uint32_t step_id,
 	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
 	       return SLURM_ERROR;	
 	
-	if (rc) slurm_seterrno_ret(rc);
+	if (rc)
+		slurm_seterrno_ret(rc);
 
 	return SLURM_PROTOCOL_SUCCESS;
 }
