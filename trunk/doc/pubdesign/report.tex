@@ -69,7 +69,10 @@ controller.
 \item {\em Secure}: SLURM employs crypto technology to authenticate 
 users to services and services to services.  
 A Kerberos v5 infrastructure can be utilized if available.
-SLURM does not assume that its networks are physically secure.
+SLURM does not assume that its networks are physically secure, 
+but does assume that the entire cluster is within a single 
+administrative domain with a common user base across the 
+entire cluster.
 
 \item {\em System administrator friendly}: SLURM is configured with a few
 simple configuration files and minimizes distributed state.  Its interfaces
