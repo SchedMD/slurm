@@ -478,7 +478,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	if (!_is_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u", 
 			(unsigned int) uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
 		return;
 	}
 #endif
@@ -967,7 +967,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	if (!_is_super_user(uid)) {
 		info("Attempt to execute job step by uid=%u",
 			(unsigned int) uid);
-		slurm_send_rc_msg(msg, ESLURM_ACCESS_DENIED);
+		slurm_send_rc_msg(msg, ESLURM_BATCH_ONLY);
 		return;
 	}
 #endif
