@@ -65,7 +65,7 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	fclose(cert_file);
 
 	if (x509 == NULL) {
-		/* ERR_print_errors_fp(log_fp()); */
+		error("PEM_read_X509 error on %s",path);
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
@@ -74,7 +74,7 @@ int slurm_init_verifier(slurm_ssl_key_ctx_t * ctx, char *path)
 	X509_free(x509);
 
 	if (ctx->key.public == NULL) {
-		/* ERR_print_errors_fp(log_fp()); */
+		error("X509_get_pubkey no key in",path);
 		slurm_seterrno(ESLURMD_OPENSSL_ERROR);
 		return SLURM_ERROR;
 	}
@@ -124,7 +124,8 @@ slurm_ssl_verify(slurm_ssl_key_ctx_t * ctx, char *data_buffer,
 	if ((rc =
 	     EVP_VerifyFinal(&md_ctx, signature_buffer, signature_length,
 			     ctx->key.public)) != SLURM_OPENSSL_VERIFIED) {
-		/* ERR_print_errors_fp(log_fp()); */
+		error("EVP_VerifyFinal: %s", 
+		      ERR_error_string(ERR_get_error(), NULL));
 		slurm_seterrno_ret(ESLURMD_OPENSSL_ERROR);
 	}
 	return SLURM_SUCCESS;
