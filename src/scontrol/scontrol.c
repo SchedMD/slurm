@@ -3,10 +3,22 @@
  * provides interface to read, write, update, and configurations.
  */
 
+#if HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
-#include <stdint.h>
+
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#else  /* !HAVE_INTTYPES_H */
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#endif  /* HAVE_INTTYPES_H */
+
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
