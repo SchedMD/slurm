@@ -638,6 +638,7 @@ slurm_cred_t
 slurm_cred_unpack(Buf buffer)
 {
 	uint16_t     len;
+	uint32_t     tmpint;
 	slurm_cred_t cred = NULL;
 	char       **sigp;
 
@@ -650,7 +651,8 @@ slurm_cred_unpack(Buf buffer)
 
 	safe_unpack32(          &cred->jobid,        buffer);
 	safe_unpack32(          &cred->stepid,       buffer);
-	safe_unpack32(          &cred->uid,          buffer);
+	safe_unpack32(          &tmpint,             buffer);
+	cred->uid = tmpint;
 	safe_unpackstr_xmalloc( &cred->nodes, &len,  buffer);
 	safe_unpack_time(       &cred->ctime,        buffer);
 	safe_unpackmem_xmalloc( sigp,         &len,  buffer);
@@ -985,11 +987,11 @@ _slurm_cred_verify_signature(slurm_cred_ctx_t ctx, slurm_cred_t cred)
 static void
 _pack_cred(slurm_cred_t cred, Buf buffer)
 {
-	pack32(    cred->jobid,  buffer);
-	pack32(    cred->stepid, buffer);
-	pack32(    cred->uid,    buffer);
-	packstr(   cred->nodes,  buffer);
-	pack_time( cred->ctime,  buffer);
+	pack32(           cred->jobid,  buffer);
+	pack32(           cred->stepid, buffer);
+	pack32((uint32_t) cred->uid,    buffer);
+	packstr(          cred->nodes,  buffer);
+	pack_time(        cred->ctime,  buffer);
 }
 
 
