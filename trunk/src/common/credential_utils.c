@@ -22,6 +22,7 @@
 \*****************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
 #include <openssl/rsa.h>
 #include <openssl/evp.h>
 #include <openssl/objects.h>
@@ -106,20 +107,17 @@ verify_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred,
 	if (rc)
 		slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 
-	if (cred->expiration_time - now < 0)
-		slurm_seterrno_ret
-		    (ESLURMD_NODE_NAME_NOT_PRESENT_IN_CREDENTIAL);
+	if (cred->expiration_time < now)
+		slurm_seterrno_ret(ESLURMD_CREDENTIAL_EXPIRED);
 
 	if ((rc = getnodename(this_node_name, MAX_NAME_LEN)))
 		fatal("slurmd: getnodename: %m");
 
 	/* XXX: Fix this I suppose?
 	if ( verify_node_name_list ( this_node_name , 
-	                             credential->node_list ) ) {
-		slurm_seterrno ( ESLURMD_CREDENTIAL_EXPIRED ) ;
-		error_code = SLURM_ERROR ;
-		goto return_ ;
-	}
+	                             credential->node_list ) )
+		slurm_seterrno_ret(
+			ESLURMD_NODE_NAME_NOT_PRESENT_IN_CREDENTIAL);
 	*/
 
 	/* XXX:
@@ -127,10 +125,27 @@ verify_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred,
 	 * number of procs per node are used to launch tasks and not more
 	 */
 
-	if (is_credential_still_valid(cred, cred_state_list))
-		return SLURM_ERROR;
+	if ((rc = is_credential_still_valid(cred, cred_state_list))) {
+		slurm_seterrno_ret(rc);
+	}
 
 	return SLURM_SUCCESS;
+}
+
+void print_credential(slurm_job_credential_t * cred)
+{
+	int i;
+	long long_tmp;
+	char sig_str[SLURM_SSL_SIGNATURE_LENGTH*3];
+
+	for (i=0; i<SLURM_SSL_SIGNATURE_LENGTH; i+=sizeof(long)) {
+		memcpy(&long_tmp, &cred->signature[i], sizeof(long));
+		sprintf(&sig_str[i*9], "%8lx  ", long_tmp);
+	}
+
+	info("cred uid:%u job_id:%u time:%lx signature:%s",
+	     cred->user_id, cred->job_id, (long)cred->expiration_time, 
+	     sig_str);
 }
 
 int revoke_credential(revoke_credential_msg_t * msg, List list)
@@ -170,7 +185,7 @@ is_credential_still_valid(slurm_job_credential_t * credential, List list)
 			if (credential_state->revoked)
 				return ESLURMD_CREDENTIAL_REVOKED;
 			/* only allows one launch this is a problem but 
-			 * othrewise we have to do accounting 
+			 * otherwise we have to do accounting 
 			 * of how many proccess are running and how many 
 			 * the credential allows. */
 
