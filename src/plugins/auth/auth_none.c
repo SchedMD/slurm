@@ -144,6 +144,7 @@ enum {
  */
 int init ( void )
 {
+	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
