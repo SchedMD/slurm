@@ -155,7 +155,35 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
-%doc doc/html
+%doc doc/html/arch.gif
+%doc doc/html/authplugins.html
+%doc doc/html/bluegene.html
+%doc doc/html/coding_style.pdf
+%doc doc/html/documentation.html
+%doc doc/html/download.html
+%doc doc/html/entities.gif
+%doc doc/html/faq.html
+%doc doc/html/help.html
+%doc doc/html/jobcompplugins.html
+%doc doc/html/lll.gif
+%doc doc/html/maui.html
+%doc doc/html/news.html
+%doc doc/html/overview.html
+%doc doc/html/platforms.html
+%doc doc/html/plugins.html
+%doc doc/html/programmer_guide.html
+%doc doc/html/publications.html
+%doc doc/html/quickstart.html
+%doc doc/html/quickstart_admin.html
+%doc doc/html/schedplugins.html
+%doc doc/html/selectplugins.html
+%doc doc/html/slurm.html
+%doc doc/html/slurm_banner.jpg
+%doc doc/html/slurm_design.pdf
+%doc doc/html/slurmstyles.css
+%doc doc/html/spacer.gif
+%doc doc/switchplugins.html
+%doc doc/html/team.html
 %{_bindir}/scancel
 %{_bindir}/scontrol
 %{_bindir}/sinfo
