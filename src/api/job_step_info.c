@@ -41,9 +41,11 @@ slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_st
 {
 	int i;
 	job_step_info_t * job_step_ptr = job_step_info_msg_ptr -> job_steps ;
+	char time_str[16];
 
-	fprintf( out, "Job steps updated at %ld, record count %d\n",
-		(long) job_step_info_msg_ptr ->last_update, job_step_info_msg_ptr->job_step_count);
+	make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, time_str);
+	fprintf( out, "Job steps updated at %s, record count %d\n",
+		time_str, job_step_info_msg_ptr->job_step_count);
 
 	for (i = 0; i < job_step_info_msg_ptr-> job_step_count; i++) 
 	{

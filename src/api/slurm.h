@@ -30,6 +30,9 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <stdio.h>
 
+/* make_time_str - convert time_t to string with "month/date hour:min:sec" */
+extern void make_time_str (time_t *time, char *string);
+
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
  * NOTE: the calling function must free the allocated storage at node_list[0]
