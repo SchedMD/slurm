@@ -138,10 +138,8 @@ main(int ac, char **av)
 		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 	} else if (opt.allocate) {
-		if (!(resp = allocate_nodes()) || (resp->node_list == NULL)) {
-			info("No nodes allocated. exiting");
+		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
-		}
 		if (_verbose || _debug)
 			print_job_information(resp);
 		else
@@ -152,10 +150,8 @@ main(int ac, char **av)
 			info ("Spawned srun shell terminated");
 		exit (0);
 	} else {
-		if (!(resp = allocate_nodes()) || (resp->node_list == NULL)) {
-			info("No nodes allocated. exiting");
+		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
-		}
 		if (_verbose || _debug)
 			print_job_information(resp);
 		else
@@ -324,10 +320,14 @@ allocate_nodes(void)
 			sleep (++retries);
 		}
 		else {
-			error("Unable to allocate resources: %s", 
-					slurm_strerror(errno));
+			error("Unable to allocate resources: %s", slurm_strerror(errno));
 			return NULL;
 		}			
+	}
+
+	if (resp->node_list == NULL) {
+		info("No nodes allocated. exiting");
+		return NULL;
 	}
 
 	return resp;

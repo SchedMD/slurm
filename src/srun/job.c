@@ -114,7 +114,7 @@ job_create(resource_allocation_response_msg_t *resp)
 	pthread_mutex_init(&job->task_mutex, NULL);
 
 	ntask = opt.nprocs;
-	tph   = ntask / job->nhosts; /* expect trucation of result here */
+	tph   = (ntask+job->nhosts-1) / job->nhosts; /* tasks per host, round up */
 
 	for(i = 0; i < job->nhosts; i++) {
 		struct hostent *he;
@@ -130,9 +130,12 @@ job_create(resource_allocation_response_msg_t *resp)
 		/* actual task counts and layouts performed in launch() */
 		/* job->ntask[i] = 0; */
 
-		job->cpus[i] = resp->cpus_per_node[cpu_inx];
-		if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx])
-			cpu_inx++;
+		if (resp) {
+			job->cpus[i] = resp->cpus_per_node[cpu_inx];
+			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx])
+				cpu_inx++;
+		} else
+			job->cpus[i] = tph;
 	}
 
 	return job;
