@@ -1193,8 +1193,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	if (error_code) {
 		if (immediate && job_ptr) {
 			job_ptr->job_state = JOB_FAILED;
-			job_ptr->start_time = 0;
-			job_ptr->end_time = 0;
+			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 		}
 		return error_code;
@@ -1223,8 +1222,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		top_prio = true;	/* don't bother testing */
 	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
 		job_ptr->job_state  = JOB_FAILED;
-		job_ptr->start_time = 0;
-		job_ptr->end_time   = 0;
+		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		job_completion_logger(job_ptr);
 		if (!independent)
 			return ESLURM_DEPENDENCY;
@@ -1247,8 +1245,7 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 		/* Not fatal error, but job can't be scheduled right now */
 		if (immediate) {
 			job_ptr->job_state  = JOB_FAILED;
-			job_ptr->start_time = 0;
-			job_ptr->end_time   = 0;
+			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			job_completion_logger(job_ptr);
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) 
@@ -1258,16 +1255,14 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 
 	if (error_code) {	/* fundamental flaw in job request */
 		job_ptr->job_state  = JOB_FAILED;
-		job_ptr->start_time = 0;
-		job_ptr->end_time   = 0;
+		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		job_completion_logger(job_ptr);
 		return error_code;
 	}
 
 	if (will_run) {		/* job would run, flag job destruction */
 		job_ptr->job_state  = JOB_FAILED;
-		job_ptr->start_time = 0;
-		job_ptr->end_time   = 0;
+		job_ptr->start_time = job_ptr->end_time = time(NULL);
 	}
 
 	return SLURM_SUCCESS;
@@ -1488,6 +1483,7 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
 	bool super_user = false;
+	struct job_record *job_ptr;
 
 	*job_pptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
@@ -1635,7 +1631,8 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
 		goto cleanup;
 	}
-	if ((*job_pptr)->dependency == (*job_pptr)->job_id) {
+	job_ptr = *job_pptr;
+	if (job_ptr->dependency == job_ptr->job_id) {
 		info("User specified self as dependent job");
 		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
@@ -1643,19 +1640,19 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 
 	if (job_desc->script) {
 		if ((error_code = _copy_job_desc_to_file(job_desc,
-							 (*job_pptr)->
-							 job_id))) {
-			(*job_pptr)->job_state = JOB_FAILED;
+							 job_ptr->job_id))) {
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			error_code = ESLURM_WRITING_TO_FILE;
 			goto cleanup;
 		}
-		(*job_pptr)->batch_flag = 1;
+		job_ptr->batch_flag = 1;
 	} else
-		(*job_pptr)->batch_flag = 0;
+		job_ptr->batch_flag = 0;
 
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
-	detail_ptr = (*job_pptr)->details;
+	detail_ptr = job_ptr->details;
 	fail_reason= WAIT_NO_REASON;
 	if ((job_desc->user_id == 0) ||
 	    (job_desc->user_id == slurmctld_conf.slurm_user_id))
@@ -1664,24 +1661,24 @@ static int _job_create(job_desc_msg_t * job_desc, int allocate, int will_run,
 	    (job_desc->min_nodes > part_ptr->max_nodes)) {
 		info("Job %u requested too many nodes (%d) of "
 			"partition %s(%d)", 
-			(*job_pptr)->job_id, job_desc->min_nodes, 
+			job_ptr->job_id, job_desc->min_nodes, 
 			part_ptr->name, part_ptr->max_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if ((!super_user) &&
 	           (job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
 		info("Job %u requested too few nodes (%d) of partition %s(%d)",
-			(*job_pptr)->job_id, job_desc->max_nodes, 
+			job_ptr->job_id, job_desc->max_nodes, 
 			part_ptr->name, part_ptr->min_nodes);
 		fail_reason = WAIT_PART_NODE_LIMIT;
 	} else if (part_ptr->state_up == 0) {
 		info("Job %u requested down partition %s", 
-			(*job_pptr)->job_id, part_ptr->name);
+			job_ptr->job_id, part_ptr->name);
 		fail_reason = WAIT_PART_STATE;
 	}
 	if (fail_reason != WAIT_NO_REASON) {
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-		(*job_pptr)->priority = 1;      /* Move to end of queue */
+		job_ptr->priority = 1;      /* Move to end of queue */
 		 if (detail_ptr)
 			detail_ptr->wait_reason = fail_reason;
 	}
@@ -3174,7 +3171,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
-			job_ptr->end_time  = now;
+			job_ptr->start_time = job_ptr->end_time  = now;
 			delete_job_details(job_ptr);
 			kill_job_on_node(job_id_ptr[i], node_ptr);
 			job_completion_logger(job_ptr);

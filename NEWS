@@ -7,6 +7,8 @@ documents those changes that are of interest to users and admins.
     and copies it to StateSaveLocation (slurmctld's working directory)
  -- slurmd to always give jobs KillWait time between SIGTERM and SIGKILL
     at termination
+ -- set job's start_time and end_time = now rather than leaving zero if 
+    they fail to execute
 
 * Changes in SLURM 0.4.0-pre4
 =============================
