@@ -93,7 +93,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	fprintf ( out, "   StartTime=%s EndTime=", time_str);
 	if ((job_ptr->time_limit == INFINITE) && 
 	    (job_ptr->end_time > time(NULL)))
-		fprintf ( out, "NONE\n", time_str);
+		fprintf ( out, "NONE\n");
 	else {
 		make_time_str ((time_t *)&job_ptr->end_time, time_str);
 		fprintf ( out, "%s\n", time_str);
