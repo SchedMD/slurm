@@ -856,6 +856,7 @@ _ssl_error(void)
 	return ERR_reason_error_string(ERR_get_error()); 
 }
 
+#ifdef EXTREME_DEBUG
 static void
 _print_data(char *data, int datalen)
 {
@@ -866,6 +867,7 @@ _print_data(char *data, int datalen)
 	for (i = 0; i < datalen; i += sizeof(char))
 		len += sprintf(buf+len, "%02x", data[i]);
 }
+#endif
 
 static int
 _slurm_cred_sign(slurm_cred_ctx_t ctx, slurm_cred_t cred)
