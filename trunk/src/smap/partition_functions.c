@@ -144,7 +144,7 @@ void get_part(void)
 					if (block_ptr) {
 						block_ptr->printed = true;
 						if (block_ptr->bgl_conn_type ==
-								SELECT_TORUS)
+								SELECT_MESH)
 							lower = true;
 					}
 					part.total_nodes =  set_grid_bgl(startx, 
@@ -455,8 +455,8 @@ static int _print_rest(void *object, void *arg)
 	if (block_ptr->printed)
 		return SLURM_SUCCESS;
 
-	/* lower case letters for TORUS connect */
-	if (block_ptr->bgl_conn_type == SELECT_TORUS)
+	/* lower case letters for MESH connect */
+	if (block_ptr->bgl_conn_type == SELECT_MESH)
 		lower = true;
 	else
 		lower = false;
