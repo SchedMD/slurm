@@ -244,19 +244,23 @@ _print_time( time_t t, int level, int width, bool right )
 	struct tm time;
 	char str[FORMAT_STRING_SIZE];
 	
-	localtime_r( &t, &time );
+	if (t) {
+		localtime_r( &t, &time );
 	
-	switch ( level )
-	{
-		case 1:
-		case 2:
-		default:
-			snprintf(str, FORMAT_STRING_SIZE, "%2.2u/%2.2u-%2.2u:%2.2u", 
-				(time.tm_mon+1) ,time.tm_mday ,time.tm_hour, time.tm_min);
+		switch ( level )
+		{
+			case 1:
+			case 2:
+			default:
+				snprintf(str, FORMAT_STRING_SIZE, "%2.2u/%2.2u-%2.2u:%2.2u", 
+					(time.tm_mon+1), time.tm_mday, 
+					time.tm_hour, time.tm_min);
 			break;
-	}
+		}
 
-	_print_str( str, width, right, true );
+		_print_str( str, width, right, true );
+	} else
+		_print_str( "N/A", width, right, true );
 
 	return SLURM_SUCCESS;
 }
