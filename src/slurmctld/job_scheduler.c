@@ -36,6 +36,7 @@
 #include <unistd.h>
 
 #include <src/common/list.h>
+#include <src/common/xstring.h>
 #include <src/slurmctld/agent.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
@@ -218,16 +219,15 @@ launch_job (struct job_record *job_ptr)
 	launch_msg_ptr = (batch_job_launch_msg_t *) xmalloc (sizeof (batch_job_launch_msg_t));
 	launch_msg_ptr -> job_id = job_ptr -> job_id;
 	launch_msg_ptr -> user_id = job_ptr -> user_id;
-	launch_msg_ptr -> nodes = job_ptr -> nodes;
-	launch_msg_ptr -> script = "";	/* FIXME */
-	launch_msg_ptr -> stderr = job_ptr -> details -> stderr;
-	launch_msg_ptr -> stdin  = job_ptr -> details -> stdin;
-	launch_msg_ptr -> stdout = job_ptr -> details -> stdout;
-	launch_msg_ptr -> work_dir = job_ptr -> details -> work_dir;
+	launch_msg_ptr -> nodes = xstrdup (job_ptr -> nodes);
+	launch_msg_ptr -> stderr = xstrdup (job_ptr -> details -> stderr);
+	launch_msg_ptr -> stdin  = xstrdup (job_ptr -> details -> stdin);
+	launch_msg_ptr -> stdout = xstrdup (job_ptr -> details -> stdout);
+	launch_msg_ptr -> work_dir = xstrdup (job_ptr -> details -> work_dir);
 	launch_msg_ptr -> argc = 0;	/* FIXME */
 	launch_msg_ptr -> argv = NULL;	/* FIXME */
-	launch_msg_ptr -> env_size = 0;	/* FIXME */
-	launch_msg_ptr -> environment = NULL;	/* FIXME */
+	launch_msg_ptr -> script = get_job_script (job_ptr);
+	launch_msg_ptr -> environment = get_job_env (job_ptr, &launch_msg_ptr -> env_size);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc (sizeof (agent_arg_t));
 	agent_arg_ptr -> node_count = 1;

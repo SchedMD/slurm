@@ -95,6 +95,8 @@ int	job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate,
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
+void	read_data_from_file ( char * file_name, char ** data);
+void	read_data_array_from_file ( char * file_name, char *** data, uint16_t *size );
 void	signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_name);
 int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
@@ -189,8 +191,7 @@ delete_job_desc_files (uint32_t job_id)
 	struct stat sbuf;
 
 	dir_name = xstrdup (slurmctld_conf . state_save_location);
-	if (dir_name == NULL)
-		fatal ("Memory exhausted");
+
 	sprintf (job_dir, "/job.%d", job_id);
 	xstrcat (dir_name, job_dir);
 
@@ -1305,8 +1306,6 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 
 	/* Create state_save_location directory */
 	dir_name = xstrdup (slurmctld_conf . state_save_location);
-	if (dir_name == NULL)
-		fatal ("Memory exhausted");
 
 	/* Create job_id specific directory */
 	sprintf (job_dir, "/job.%d", job_id);
@@ -1385,7 +1384,7 @@ rmdir2 (char * path)
 int
 write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) 
 {
-	int fd, i, pos, nwrite;
+	int fd, i, pos, nwrite, amount;
 
 	if (data == NULL) {
 		(void) unlink (file_name);
@@ -1398,16 +1397,25 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 		return ESLURM_WRITING_TO_FILE;
 	}
 
+	amount = write (fd, &size, sizeof (uint16_t));
+	if (amount < sizeof (uint16_t)) {
+		error ("Error writing file %s, %m", file_name);
+		close (fd);
+		return ESLURM_WRITING_TO_FILE;
+	}
+
 	for (i = 0; i < size; i++) {
 		nwrite = strlen(data[i]) + 1;
 		pos = 0;
 		while (nwrite > 0) {
-			pos = write (fd, &data[i][pos], nwrite);
-			if (pos < 0) {
+			amount = write (fd, &data[i][pos], nwrite);
+			if (amount < 0) {
 				error ("Error writing file %s, %m", file_name);
+				close (fd);
 				return ESLURM_WRITING_TO_FILE;
 			}
-			nwrite -= pos;
+			nwrite -= amount;
+			pos += amount;
 		}
 	}
 
@@ -1419,7 +1427,7 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 int
 write_data_to_file ( char * file_name, char * data ) 
 {
-	int fd, pos, nwrite;
+	int fd, pos, nwrite, amount;
 
 	if (data == NULL) {
 		(void) unlink (file_name);
@@ -1435,15 +1443,147 @@ write_data_to_file ( char * file_name, char * data )
 	nwrite = strlen(data) + 1;
 	pos = 0;
 	while (nwrite > 0) {
-		pos = write (fd, &data[pos], nwrite);
-		if (pos < 0) {
+		amount = write (fd, &data[pos], nwrite);
+		if (amount < 0) {
 			error ("Error writing file %s, %m", file_name);
+			close (fd);
 			return ESLURM_WRITING_TO_FILE;
 		}
-		nwrite -= pos;
+		nwrite -= amount;
+		pos += amount;
 	}
 	close (fd);
 	return SLURM_SUCCESS;
+}
+
+/* get_job_env - return the environment variables and their count for a given job */
+char **
+get_job_env (struct job_record *job_ptr, uint16_t *env_size)
+{
+	char job_dir[30], *file_name, **environment = NULL;
+
+	file_name = xstrdup (slurmctld_conf . state_save_location);
+	sprintf (job_dir, "/job.%d/environment", job_ptr->job_id);
+	xstrcat (file_name, job_dir);
+
+	read_data_array_from_file (file_name, &environment, env_size);
+
+	xfree (file_name);
+	return environment;
+}
+
+/* get_job_script - return the script for a given job */
+char *
+get_job_script (struct job_record *job_ptr)
+{
+	char job_dir[30], *file_name, *script = NULL;
+
+	file_name = xstrdup (slurmctld_conf . state_save_location);
+	sprintf (job_dir, "/job.%d/script", job_ptr->job_id);
+	xstrcat (file_name, job_dir);
+
+	read_data_from_file (file_name, &script);
+
+	xfree (file_name);
+	return script;
+}
+
+void
+read_data_array_from_file ( char * file_name, char *** data, uint16_t *size )
+{
+	int fd, pos, buf_size, amount, i;
+	char *buffer, **array_ptr;
+	uint16_t rec_cnt;
+
+	if ((file_name == NULL) || (data == NULL) || (size == NULL))
+		fatal ("read_data_array_from_file passed NULL pointer");
+	*data = NULL;
+	*size = 0;
+
+	fd = open (file_name, 0);
+	if (fd < 0) {
+		error ("Error opening file %s, %m", file_name);
+		return;
+	}
+
+	amount = read (fd, &rec_cnt, sizeof (uint16_t));
+	if (amount < sizeof (uint16_t)) {
+		error ("Error reading file %s, %m", file_name);
+		close (fd);
+		return;
+	}
+
+	pos = 0;
+	buf_size = 4096;
+	buffer = xmalloc (buf_size);
+	while (1) {
+		amount = read (fd, &buffer[pos], buf_size);
+		if (amount < 0) {
+			error ("Error reading file %s, %m", file_name);
+			xfree (buffer);
+			close (fd);
+			return;
+		}
+		if (amount < buf_size)	/* end of file */
+			break;
+		pos += amount;
+		xrealloc (buffer, (pos+buf_size));
+	}
+	close (fd);
+
+	/* We have all the data, now let's compute the pointers */
+	pos = 0;
+	array_ptr = xmalloc (rec_cnt * sizeof (char *));
+	for (i=0; i<rec_cnt; i++) {
+		array_ptr[i] = &buffer[pos];
+		pos += strlen (&buffer[pos]) + 1;
+		if ((pos > buf_size) && ((i+1) < rec_cnt)) {
+			error ("Bad environment file %s", file_name);
+			break;
+		}
+	}
+
+	*size = rec_cnt;
+	*data = array_ptr;
+	return;
+}
+
+void
+read_data_from_file ( char * file_name, char ** data)
+{
+	int fd, pos, buf_size, amount;
+	char *buffer;
+
+	if ((file_name == NULL) || (data == NULL))
+		fatal ("read_data_from_file passed NULL pointer");
+	*data = NULL;
+
+	fd = open (file_name, 0);
+	if (fd < 0) {
+		error ("Error opening file %s, %m", file_name);
+		return;
+	}
+
+	pos = 0;
+	buf_size = 4096;
+	buffer = xmalloc (buf_size);
+	while (1) {
+		amount = read (fd, &buffer[pos], buf_size);
+		if (amount < 0) {
+			error ("Error reading file %s, %m", file_name);
+			xfree (buffer);
+			close (fd);
+			return;
+		}
+		if (amount < buf_size)	/* end of file */
+			break;
+		pos += amount;
+		xrealloc (buffer, (pos+buf_size));
+	}
+
+	*data = buffer;
+	close (fd);
+	return;
 }
 
 /* copy_job_desc_to_job_record - copy the job descriptor from the RPC structure 
