@@ -109,7 +109,7 @@ For all of the following informational calls, if update_time is equal to or grea
 \fBslurm_load_partitions\fR Returns a partition_info_msg_t that contains an update time, record count, and array of partition_table records for all partitions.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
+On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBSLURM_NO_CHANGE_IN_DATA\fR Data has not changed since \fBupdate_time\fR.
@@ -258,5 +258,5 @@ int main (int argc, char *argv[])
 .ec
 .SH "SEE ALSO"
 .LP 
-\fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
+\fBscontrol\fR(1), \fBsqueue\fR(1), \fBslurm_get_errno\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
 

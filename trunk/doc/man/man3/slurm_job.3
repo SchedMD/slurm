@@ -103,12 +103,10 @@ Specifies the pointer to the structure to be created and filled in by the functi
 \fBslurm_update_job\fR Update the characteristics of an existing job. Not all job characteristics may be changed (e.g. the time limit of a job may be changed, but the nodes allocated to a running job may not be changed). This function may only be successfully executed by user root.
 .SH "RETURN VALUE"
 .LP
-On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
+On success, zero is returned. On error, -1 is returned, and Slurm error code is set appropriately.
 .SH "ERRORS"
 .LP
 \fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
-.LP
-\fBESLURM_INVALID_PARTITION_SPECIFIED\fR the partition name specified does not exist.
 .LP
 \fBESLURM_DEFAULT_PARTITION_NOT_SET\fR the system lacks a valid default partition.
 .LP
@@ -142,7 +140,7 @@ On success, zero is returned. On error, -1 is returned, and errno is set appropr
 .LP
 \fBESLURM_INVALID_JOB_ID\fR the requested job id does not exist. 
 .LP
-\fBESLURM_INVALID_NODE_NAMES\fR the requested node name(s) is/are not valid. 
+\fBESLURM_INVALID_NODE_NAME\fR the requested node name(s) is/are not valid. 
 .LP
 \fBESLURM_INVALID_PARTITION_NAME\fR the requested partition name is not valid. 
 .LP
@@ -205,4 +203,4 @@ int main (int argc, char *argv[])
 .ec
 .SH "SEE ALSO"
 .LP 
-\fBslurm_free_job_info\fR(3), \fBslurm_get_errno\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
+\fBsrun\fR(1), \fBslurm_free_job_info\fR(3), \fBslurm_get_errno\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
