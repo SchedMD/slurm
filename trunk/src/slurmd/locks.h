@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * locks.h - definitions for semaphore functions for slurmd (locks.c)
+ *  locks.h - definitions for semaphore functions for slurmd (locks.c)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
