@@ -149,15 +149,16 @@ int Build_BitMaps() {
     unsigned *AllPart_NodeBitMap;
     char *Format, This_Node_Name[BUF_SIZE];
     int Start_Inx, End_Inx, Count_Inx;
-    char *str_ptr1, *str_ptr2;
+    char *My_Node_List, *str_ptr1, *str_ptr2;
 
+    Error_Code = 0;
     Last_Node_Update = time(NULL);
     Last_Part_Update = time(NULL);
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
 		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
     size *= 8;				/* Bytes in bitmap */
 
-    /* Scan all nodes and identify which are UP and IDLE */
+    /* Initialize the Idle and Up bitmaps */
     if (Idle_NodeBitMap) free(Idle_NodeBitMap);
     if (Up_NodeBitMap)   free(Up_NodeBitMap);
     Idle_NodeBitMap = (unsigned *)malloc(size);
@@ -174,13 +175,8 @@ int Build_BitMaps() {
     } /* if */
     memset(Idle_NodeBitMap, 0, size);
     memset(Up_NodeBitMap, 0, size);
-    for (i=0; i<Node_Record_Count; i++) {
-	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;	/* Defunct */
-	if ((Node_Record_Table_Ptr+i)->NodeState == STATE_IDLE) BitMapSet(Idle_NodeBitMap, i);
-	if ((Node_Record_Table_Ptr+i)->NodeState != STATE_DOWN) BitMapSet(Up_NodeBitMap, i);
-    } /* for */
 
-    /* Scan configuration records and identify nodes in each */
+    /* Initialize the configuration bitmaps */
     Config_Record_Iterator = list_iterator_create(Config_List);
     if (Config_Record_Iterator == NULL) {
 #if DEBUG_SYSTEM
@@ -190,7 +186,6 @@ int Build_BitMaps() {
 #endif
 	return ENOMEM;
     } /* if */
-
     while (Config_Record_Point = (struct Config_Record *)list_next(Config_Record_Iterator)) {
 	if (Config_Record_Point->NodeBitMap) free(Config_Record_Point->NodeBitMap);
 	Config_Record_Point->NodeBitMap = (unsigned *)malloc(size);
@@ -204,39 +199,17 @@ int Build_BitMaps() {
 	    return ENOMEM;
 	} /* if */
 	memset(Config_Record_Point->NodeBitMap, 0, size);
-
-	/* Check for each node in the configuration record */
-	Error_Code = Parse_Node_Name(Config_Record_Point->Nodes, &Format, 
-		&Start_Inx, &End_Inx, &Count_Inx);
-	if (Error_Code) continue;
-	for (i=Start_Inx; i<=End_Inx; i++) {
-	    if (Count_Inx == 0) {	/* Deal with comma separated node names here */
-		if (i == Start_Inx)
-		    str_ptr2 = strtok_r(Format, ",", &str_ptr1);
-		else
-		    str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
-		if (str_ptr2 == NULL) break;
-		End_Inx++;
-		strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
-	    } else
-		sprintf(This_Node_Name, Format, i);
-	    Node_Record_Point = Find_Node_Record(This_Node_Name);
-	    if (Node_Record_Point == NULL) continue;
-	    if (Node_Record_Point->Config_Ptr != Config_Record_Point) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Build_BitMaps: bad configuration pointer for node %s\n",
-			This_Node_Name);
-#else
-		syslog(LOG_ERR, "Build_BitMaps: bad configuration pointer for node %s\n",
-			This_Node_Name);
-#endif
-	    } /* if */
-	    j = Node_Record_Point - Node_Record_Table_Ptr;
-	    BitMapSet(Config_Record_Point->NodeBitMap, j);
-	} /* for */
-	if (Format) free(Format);
     } /* while */
     list_iterator_destroy(Config_Record_Iterator);
+
+    /* Scan all nodes and identify which are UP and IDLE and their configuration */
+    for (i=0; i<Node_Record_Count; i++) {
+	if (strlen((Node_Record_Table_Ptr+i)->Name) == 0) continue;	/* Defunct */
+	if ((Node_Record_Table_Ptr+i)->NodeState == STATE_IDLE) BitMapSet(Idle_NodeBitMap, i);
+	if ((Node_Record_Table_Ptr+i)->NodeState != STATE_DOWN) BitMapSet(Up_NodeBitMap, i);
+	if ((Node_Record_Table_Ptr+i)->Config_Ptr) 
+		BitMapSet((Node_Record_Table_Ptr+i)->Config_Ptr->NodeBitMap, i);
+    } /* for */
 
     /* Scan partition table and identify nodes in each */
     AllPart_NodeBitMap = (unsigned *)malloc(size);
@@ -268,52 +241,78 @@ int Build_BitMaps() {
 #else
 	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    free(AllPart_NodeBitMap);
-	    list_iterator_destroy(Part_Record_Iterator);
-	    return ENOMEM;
+	    Error_Code = ENOMEM;
+	    break;
 	} /* if */
 	memset(Part_Record_Point->NodeBitMap, 0, size);
 
 	/* Check for each node in the partition */
-	Error_Code = Parse_Node_Name(Part_Record_Point->Nodes, &Format, 
-		&Start_Inx, &End_Inx, &Count_Inx);
-	if (Error_Code) continue;
-	for (i=Start_Inx; i<=End_Inx; i++) {
-	    if (Count_Inx == 0) {	/* Deal with comma separated node names here */
-		if (i == Start_Inx)
-		    str_ptr2 = strtok_r(Format, ",", &str_ptr1);
-		else
-		    str_ptr2 = strtok_r(NULL, ",", &str_ptr1);
-		if (str_ptr2 == NULL) break;
-		End_Inx++;
-		strncpy(This_Node_Name, str_ptr2, sizeof(strncpy));
-	    } else
-		sprintf(This_Node_Name, Format, i);
-	    Node_Record_Point = Find_Node_Record(This_Node_Name);
-	    if (Node_Record_Point == NULL) continue;
-	    j = Node_Record_Point - Node_Record_Table_Ptr;
-	    if (BitMapValue(AllPart_NodeBitMap, j) == 1) {
+	if ((Part_Record_Point->Nodes == NULL) || 
+	    (strlen(Part_Record_Point->Nodes) == 0)) continue;
+	My_Node_List = malloc(strlen(Part_Record_Point->Nodes)+1);
+	if (My_Node_List == NULL) {
 #if DEBUG_SYSTEM
-		fprintf(stderr, "Build_BitMaps: Node %s defined in more than one partition\n", 
-			This_Node_Name);
-		fprintf(stderr, "Build_BitMaps: Only the first partition's specification is honored\n");
+	    fprintf(stderr, "Build_BitMaps: unable to allocate memory\n");
 #else
-		syslog(LOG_ERR, "Build_BitMaps: Node %s defined in more than one partition\n", 
-			This_Node_Name);
-		syslog(LOG_ERR, "Build_BitMaps: Only the first partition's specification is honored\n");
+	    syslog(LOG_ALERT, "Build_BitMaps: unable to allocate memory\n");
 #endif
-	    } else {
-		BitMapSet(Part_Record_Point->NodeBitMap, j);
-		BitMapSet(AllPart_NodeBitMap, j);
-		Part_Record_Point->TotalNodes++;
-		Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
-	    } /* else */
-	} /* for */
-	if(Format) free(Format);
-    } /* while */
-    free(AllPart_NodeBitMap);
+	    Error_Code = ENOMEM;
+	    break;
+	} /* if */
+	strcpy(My_Node_List, Part_Record_Point->Nodes);
+	str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
+	while (str_ptr2) {	/* Break apart by comma separators */
+	    Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	    if (Error_Code) continue;
+	    if (strlen(Format) >= sizeof(This_Node_Name)) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Build_BitMaps: Node name specification too long: %s\n", Format);
+#else
+		syslog(LOG_ERR, "Build_BitMaps: Node name specification too long: %s\n", Format);
+#endif
+		free(Format);
+		continue;
+	    } /* if */
+	    for (i=Start_Inx; i<=End_Inx; i++) {
+		if (Count_Inx == 0) 
+		    strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
+		else
+		    sprintf(This_Node_Name, Format, i);
+		Node_Record_Point = Find_Node_Record(This_Node_Name);
+		if (Node_Record_Point == NULL) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "Build_BitMaps: Invalid node specified %s\n", This_Node_Name);
+#else
+		    syslog(LOG_ERR, "Build_BitMaps: Invalid node specified %s\n", This_Node_Name);
+#endif
+		    continue;
+		} /* if */
+		j = Node_Record_Point - Node_Record_Table_Ptr;
+		if (BitMapValue(AllPart_NodeBitMap, j) == 1) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "Build_BitMaps: Node %s defined in more than one partition\n", 
+			This_Node_Name);
+		    fprintf(stderr, "Build_BitMaps: Only the first partition's specification is honored\n");
+#else
+		    syslog(LOG_ERR, "Build_BitMaps: Node %s defined in more than one partition\n", 
+			This_Node_Name);
+		    syslog(LOG_ERR, "Build_BitMaps: Only the first partition's specification is honored\n");
+#endif
+		} else {
+		    BitMapSet(Part_Record_Point->NodeBitMap, j);
+		    BitMapSet(AllPart_NodeBitMap, j);
+		    Part_Record_Point->TotalNodes++;
+		    Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
+		} /* else */
+	    } /* for */
+	    free(Format);
+	    str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
+	} /* while (str_ptr2 */
+	free(My_Node_List);
+    } /* while (Part_Record_Point */
     list_iterator_destroy(Part_Record_Iterator);
-    return 0;
+    free(AllPart_NodeBitMap);
+    return Error_Code;
 } /* Build_BitMaps */
 
 
@@ -718,6 +717,14 @@ int Read_SLURM_Conf (char *File_Name) {
 	return EINVAL;
     } /* if */
 
+    if (Default_Part_Loc == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Read_SLURM_Conf: Default partition not set.\n");
+#else
+	syslog(LOG_ALERT, "Read_SLURM_Conf: Default partition not set.\n");
+#endif
+	return EINVAL;
+    } /* if */
     Rehash();
     if (Error_Code=Build_BitMaps()) return Error_Code;
     list_sort(Config_List, &List_Compare_Config);

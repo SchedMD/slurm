@@ -35,7 +35,7 @@ main(int argc, char * argv[]) {
     unsigned *Map1, *Map2, *Map3;
 
     printf("Testing string manipulation functions...\n");
-    strcpy(In_Line, "Test1=UNLIMITED Test2=1234 Test3 LeftOver Test4=My_String");
+    strcpy(In_Line, "Test1=UNLIMITED Test2=1234 Test3 LeftOver Test4=My,String");
 
     Error_Code = Load_Integer(&Int_Found, "Test1=", In_Line);
     if (Error_Code) printf("Load_Integer error on Test1\n");
@@ -55,7 +55,7 @@ main(int argc, char * argv[]) {
     String_Found = NULL;	/* NOTE: arg1 of Load_String is freed if set */
     Error_Code = Load_String(&String_Found, "Test4=", In_Line);
     if (Error_Code) printf("Load_String error on Test4\n");
-    if (strcmp(String_Found,"My_String") != 0) 
+    if (strcmp(String_Found,"My,String") != 0) 
 	printf("Load_String parse error on Test4, got :%s:\n",String_Found);
     free(String_Found);
 

@@ -124,11 +124,25 @@ main(int argc, char * argv[]) {
     Config_Ptr = Create_Config_Record(&Error_Code);
     Config_Ptr->CPUs = 543;
     Config_Ptr->Nodes = "lx[03-20]";
-    Config_Ptr->Feature = "for_lx03";
+    Config_Ptr->Feature = "for_lx03,lx04";
     Config_Ptr->NodeBitMap = Map2;
     strcpy(Node_Ptr->Name, "lx03");
     if (Node_Ptr->LastResponse != (time_t)678) printf("ERROR: Node default LastResponse not set\n");
     Node_Ptr->Config_Ptr = Config_Ptr;
+    Node_Ptr   = Create_Node_Record(&Error_Code);
+    if (Error_Code) printf("ERROR: Create_Node_Record error %d\n", Error_Code);
+    strcpy(Node_Ptr->Name, "lx04");
+    Node_Ptr->Config_Ptr = Config_Ptr;
+
+    Error_Code = NodeName2BitMap("lx[01-02],lx04", &Map1);
+    if (Error_Code) printf("ERROR: NodeName2BitMap error %d\n", Error_Code);
+    Error_Code = BitMap2NodeName(Map1, &Out_Line);
+    if (Error_Code) printf("ERROR: BitMap2NodeName error %d\n", Error_Code);
+    if (strcmp(Out_Line, "lx01,lx02,lx04") != 0) 
+	printf("ERROR: BitMap2NodeName results bad %s vs %s\n", Out_Line, "lx01,lx02,lx04");
+    free(Map1);
+    free(Out_Line);
+
     Update_Time = (time_t)0;
     U_Map[0] = 0xdead;
     U_Map[1] = 0xbeef;
@@ -151,8 +165,8 @@ main(int argc, char * argv[]) {
 	printf("ERROR: Find_Node_Record failure 2\n");
     else if (Node_Ptr->LastResponse != (time_t)678) 
 	printf("ERROR: Node default LastResponse not set\n");
-    printf("NOTE: We expect Delete_Node_Record to report not finding a record for lx04\n");
-    Error_Code = Delete_Node_Record("lx04");
+    printf("NOTE: We expect Delete_Node_Record to report not finding a record for lx10\n");
+    Error_Code = Delete_Node_Record("lx10");
     if (Error_Code != ENOENT) printf("ERROR: Delete_Node_Record failure 1\n");
     Error_Code = Delete_Node_Record("lx02");
     if (Error_Code != 0) printf("ERROR: Delete_Node_Record failure 2\n");
@@ -233,6 +247,71 @@ main(int argc, char * argv[]) {
     exit(0);
 } /* main */
 #endif
+
+
+/*
+ * BitMap2NodeName - Given a bitmap, build a node list representation
+ * Input: BitMap - Bitmap pointer
+ *        Node_List - Place to put node list
+ * Output: Node_List - Set to node list or NULL on error 
+ *         Returns 0 if no error, otherwise EINVAL or ENOMEM
+ * NOTE: Consider returning the node list as a regular expression if helpful
+ * NOTE: The caller must free memory at Node_List when no longer required
+ */
+int BitMap2NodeName(unsigned *BitMap, char **Node_List) {
+    int Error_Code, Node_List_Size, size, word, bit, record;
+    struct Node_Record *Node_Ptr;
+    unsigned mask;
+
+    Node_List[0] = NULL;
+    Node_List_Size = 0;
+    if (BitMap == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "NodeName2BitMap: BitMap is NULL\n");
+#else
+	syslog(LOG_ERR, "NodeName2BitMap: BitMap is NULL\n");
+#endif
+	return EINVAL;
+    } /* if */
+
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
+    size /= sizeof(unsigned);			/* Count of unsigned's */
+    record = -1;
+    Node_List[0] = malloc(BUF_SIZE);
+    if (Node_List[0] == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "BitMap2NodeName: Can not allocate memory\n");
+#else
+	syslog(LOG_ALERT, "BitMap2NodeName: Can not allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+    strcpy(Node_List[0], "");
+
+    for (word=0; word<size; word++) {
+	for (bit=0; bit<(sizeof(unsigned)*8); bit++) {
+	    mask = (0x1 << ((sizeof(unsigned)*8)-1-bit));
+	    record++;
+	    if ((BitMap[word] & mask) == 0) continue;
+	    if (Node_List_Size < strlen(Node_List[0])+strlen((Node_Record_Table_Ptr+record)->Name)+1) {
+		Node_List_Size += BUF_SIZE;
+		Node_List[0] = realloc(Node_List[0], Node_List_Size);
+		if (Node_List[0] == NULL) {
+#if DEBUG_SYSTEM
+		    fprintf(stderr, "BitMap2NodeName: Can not allocate memory\n");
+#else
+		    syslog(LOG_ALERT, "BitMap2NodeName: Can not allocate memory\n");
+#endif
+		    return ENOMEM;
+		} /* if */
+	    } /* if need more memory */
+	    if (strlen(Node_List[0]) > 0) strcat(Node_List[0], ",");
+	    strcat(Node_List[0], (Node_Record_Table_Ptr+record)->Name);
+	} /* for (bit */
+    } /* for (word */
+    Node_List[0] = realloc(Node_List[0], strlen(Node_List[0])+1);
+    return 0;
+} /* BitMap2NodeName */
 
 
 /*
@@ -406,8 +485,8 @@ void Dump_Hash() {
 int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     ListIterator Config_Record_Iterator;	/* For iterating through Config_List */
     struct Config_Record *Config_Record_Point;	/* Pointer to Config_Record */
-    char *Buffer, *Buffer_Loc;
-    int Buffer_Allocated, i, inx, Record_Size;
+    char *Buffer;
+    int Buffer_Offset, Buffer_Allocated, i, inx, Record_Size;
     struct Config_Specs {
 	struct Config_Record *Config_Record_Point;
     };
@@ -441,37 +520,37 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     } /* if */
 
     /* Write haeader, version and time */
-    Buffer_Loc = Buffer;
+    Buffer_Offset = 0;
     i = CONFIG_STRUCT_VERSION;
-    memcpy(Buffer_Loc, &i, sizeof(i)); 
-    Buffer_Loc += sizeof(i);
-    memcpy(Buffer_Loc, &Last_Node_Update, sizeof(Last_Node_Update));
-    Buffer_Loc += sizeof(Last_Part_Update);
+    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+    Buffer_Offset += sizeof(i);
+    memcpy(Buffer+Buffer_Offset, &Last_Node_Update, sizeof(Last_Node_Update));
+    Buffer_Offset += sizeof(Last_Part_Update);
 
     /* Write up and idle node bitmaps */
     if ((Node_Record_Count > 0) && Up_NodeBitMap){
 	i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
 	i *= sizeof(unsigned);
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	memcpy(Buffer_Loc, Up_NodeBitMap, i); 
-	Buffer_Loc += i;
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, Up_NodeBitMap, i); 
+	Buffer_Offset += i;
     } else {
 	i = 0;
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
     } /* else */
     if ((Node_Record_Count > 0) && Idle_NodeBitMap){
 	i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
 	i *= sizeof(unsigned);
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
-	memcpy(Buffer_Loc, Idle_NodeBitMap, i); 
-	Buffer_Loc += i;
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, Idle_NodeBitMap, i); 
+	Buffer_Offset += i;
     } else {
 	i = 0;
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
     } /* else */
 
     /* Write configuration records */
@@ -480,7 +559,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	if (Config_Record_Point->Feature) Record_Size+=strlen(Config_Record_Point->Feature)+1;
 	if (Config_Record_Point->Nodes) Record_Size+=strlen(Config_Record_Point->Nodes)+1;
 
-	if ((Buffer_Loc-Buffer+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
+	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
 	    Buffer_Allocated += (Record_Size + BUF_SIZE);
 	    Buffer = realloc(Buffer, Buffer_Allocated);
 	    if (Buffer == NULL) {
@@ -513,54 +592,54 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	} /* if */
 	Config_Spec_List[Config_Spec_List_Cnt++].Config_Record_Point = Config_Record_Point;
 
-	memcpy(Buffer_Loc, &Config_Record_Point->CPUs, sizeof(Config_Record_Point->CPUs)); 
-	Buffer_Loc += sizeof(Config_Record_Point->CPUs);
+	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->CPUs, sizeof(Config_Record_Point->CPUs)); 
+	Buffer_Offset += sizeof(Config_Record_Point->CPUs);
 
-	memcpy(Buffer_Loc, &Config_Record_Point->RealMemory, 
+	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->RealMemory, 
 		sizeof(Config_Record_Point->RealMemory)); 
-	Buffer_Loc += sizeof(Config_Record_Point->RealMemory);
+	Buffer_Offset += sizeof(Config_Record_Point->RealMemory);
 
-	memcpy(Buffer_Loc, &Config_Record_Point->TmpDisk, sizeof(Config_Record_Point->TmpDisk)); 
-	Buffer_Loc += sizeof(Config_Record_Point->TmpDisk);
+	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->TmpDisk, sizeof(Config_Record_Point->TmpDisk)); 
+	Buffer_Offset += sizeof(Config_Record_Point->TmpDisk);
 
-	memcpy(Buffer_Loc, &Config_Record_Point->Weight, sizeof(Config_Record_Point->Weight)); 
-	Buffer_Loc += sizeof(Config_Record_Point->Weight);
+	memcpy(Buffer+Buffer_Offset, &Config_Record_Point->Weight, sizeof(Config_Record_Point->Weight)); 
+	Buffer_Offset += sizeof(Config_Record_Point->Weight);
 
 	if (Config_Record_Point->Feature) {
 	    i = strlen(Config_Record_Point->Feature) + 1;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
-	    memcpy(Buffer_Loc, Config_Record_Point->Feature, i); 
-	    Buffer_Loc += i;
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, Config_Record_Point->Feature, i); 
+	    Buffer_Offset += i;
 	} else {
 	    i = 0;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
 	} /* else */
 
 	if (Config_Record_Point->Nodes) {
 	    i = strlen(Config_Record_Point->Nodes) + 1;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
-	    memcpy(Buffer_Loc, Config_Record_Point->Nodes, i); 
-	    Buffer_Loc += i;
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, Config_Record_Point->Nodes, i); 
+	    Buffer_Offset += i;
 	} else {
 	    i = 0;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
 	} /* else */
 
 	if ((Node_Record_Count > 0) && (Config_Record_Point->NodeBitMap)){
 	    i = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / (sizeof(unsigned)*8);
 	    i *= sizeof(unsigned);
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
-	    memcpy(Buffer_Loc, Config_Record_Point->NodeBitMap, i); 
-	    Buffer_Loc += i;
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, Config_Record_Point->NodeBitMap, i); 
+	    Buffer_Offset += i;
 	} else {
 	    i = 0;
-	    memcpy(Buffer_Loc, &i, sizeof(i)); 
-	    Buffer_Loc += sizeof(i);
+	    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	    Buffer_Offset += sizeof(i);
 	} /* else */
 
     } /* while */
@@ -568,15 +647,15 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     /* Mark end of configuration data , looks like CPUs = -1 */
     i = -1;
-    memcpy(Buffer_Loc, &i, sizeof(i)); 
-    Buffer_Loc += sizeof(i);
+    memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+    Buffer_Offset += sizeof(i);
 
 
     /* Write node records */
     for (inx=0; inx<Node_Record_Count; inx++) {
 	if (strlen((Node_Record_Table_Ptr+inx)->Name) == 0) continue;
 	Record_Size = MAX_NAME_LEN + 2 * sizeof(int);
-	if ((Buffer_Loc-Buffer+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
+	if ((Buffer_Offset+Record_Size) >= Buffer_Allocated) { /* Need larger buffer */
 	    Buffer_Allocated += (Record_Size + BUF_SIZE);
 	    Buffer = realloc(Buffer, Buffer_Allocated);
 	    if (Buffer == NULL) {
@@ -590,13 +669,13 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	    } /* if */
 	} /* if */
 
-	memcpy(Buffer_Loc, (Node_Record_Table_Ptr+inx)->Name, 
+	memcpy(Buffer+Buffer_Offset, (Node_Record_Table_Ptr+inx)->Name, 
 		sizeof((Node_Record_Table_Ptr+inx)->Name)); 
-	Buffer_Loc += sizeof((Node_Record_Table_Ptr+inx)->Name);
+	Buffer_Offset += sizeof((Node_Record_Table_Ptr+inx)->Name);
 
 	i = (int)(Node_Record_Table_Ptr+inx)->NodeState;
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
 	for (i=0; i<Config_Spec_List_Cnt; i++) {
 	    if (Config_Spec_List[i].Config_Record_Point ==
 		(Node_Record_Table_Ptr+inx)->Config_Ptr) break;
@@ -605,13 +684,13 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 	    i++;
 	else
 	    i = 0;
-	memcpy(Buffer_Loc, &i, sizeof(i)); 
-	Buffer_Loc += sizeof(i);
+	memcpy(Buffer+Buffer_Offset, &i, sizeof(i)); 
+	Buffer_Offset += sizeof(i);
 
     } /* for (inx */
     free(Config_Spec_List);
 
-    Buffer = realloc(Buffer, (int)(Buffer_Loc - Buffer));
+    Buffer = realloc(Buffer, Buffer_Offset);
     if (Buffer == NULL) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Dump_Node: unable to allocate memory\n");
@@ -622,7 +701,7 @@ int Dump_Node(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     } /* if */
 
     Buffer_Ptr[0] = Buffer;
-    *Buffer_Size = (int)(Buffer_Loc - Buffer);
+    *Buffer_Size = Buffer_Offset;
     *Update_Time = Last_Node_Update;
     return 0;
 } /* Dump_Node */
@@ -796,6 +875,113 @@ int List_Find_Config(void *Config_Entry, void *key) {
 } /* List_Find_Config */
 
 
+/*
+ * NodeName2BitMap - Given a node list, build a bitmap representation
+ * Input: Node_List - List of nodes
+ *        BitMap - Place to put bitmap pointer
+ * Output: BitMap - Set to bitmap or NULL on error 
+ *         Returns 0 if no error, otherwise EINVAL or ENOMEM
+ * NOTE: The caller must free memory at BitMap when no longer required
+ */
+int NodeName2BitMap(char *Node_List, unsigned **BitMap) {
+    int Error_Code, i, size;
+    int Start_Inx, End_Inx, Count_Inx;
+    char *Format, This_Node_Name[BUF_SIZE], *My_Node_List, *str_ptr1, *str_ptr2;
+    struct Node_Record *Node_Record_Point;
+    unsigned *My_BitMap;
+
+    BitMap[0] = NULL;
+    if (Node_List == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "NodeName2BitMap: Node_List is NULL\n");
+#else
+	syslog(LOG_ERR, "NodeName2BitMap: Node_List is NULL\n");
+#endif
+	return EINVAL;
+    } /* if */
+    if (Node_Record_Count == 0) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "NodeName2BitMap: System has no nodes\n");
+#else
+	syslog(LOG_ERR, "NodeName2BitMap: System has no nodes\n");
+#endif
+	return EINVAL;
+    } /* if */
+
+    My_Node_List = malloc(strlen(Node_List)+1);
+    if (My_Node_List == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "NodeName2BitMap: unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "NodeName2BitMap: unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+    strcpy(My_Node_List, Node_List);
+
+    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
+		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
+    size *= 8;				/* Bytes in bitmap */
+    My_BitMap = (unsigned *)malloc(size);
+    if (My_BitMap == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "NodeName2BitMap: unable to allocate My_BitMap memory\n");
+#else
+	syslog(LOG_ALERT, "NodeName2BitMap: unable to allocate memory\n");
+#endif
+	free(My_Node_List);
+	return ENOMEM;
+    } /* if */
+    memset(My_BitMap, 0, size);
+
+    str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
+    while (str_ptr2) {	/* Break apart by comma separators */
+	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	if (Error_Code) {
+	    free(My_Node_List);
+	    free(My_BitMap);
+	    return EINVAL;
+	} /* if */
+	if (strlen(Format) >= sizeof(This_Node_Name)) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "NodeName2BitMap: Node name specification too long: %s\n", Format);
+#else
+	    syslog(LOG_ERR, "NodeName2BitMap: Node name specification too long: %s\n", Format);
+#endif
+	    free(My_Node_List);
+	    free(My_BitMap);
+	    free(Format);
+	    return EINVAL;
+	} /* if */
+	for (i=Start_Inx; i<=End_Inx; i++) {
+	    if (Count_Inx == 0) 
+		strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
+	    else
+		sprintf(This_Node_Name, Format, i);
+	    Node_Record_Point = Find_Node_Record(This_Node_Name);
+	    if (Node_Record_Point == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "NodeName2BitMap: Invalid node specified %s\n", This_Node_Name);
+#else
+		syslog(LOG_ERR, "NodeName2BitMap: Invalid node specified %s\n", This_Node_Name);
+#endif
+		free(My_Node_List);
+		free(My_BitMap);
+		free(Format);
+		return EINVAL;
+	    } /* if */
+	    BitMapSet(My_BitMap, (int)(Node_Record_Point - Node_Record_Table_Ptr));
+	} /* for */
+	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
+    } /* while */
+
+    free(My_Node_List);
+    free(Format);
+    BitMap[0] =My_BitMap;
+    return 0;
+} /* NodeName2BitMap */
+
+
 /* 
  * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
  * generate multiple node names as needed.
@@ -925,7 +1111,7 @@ void Rehash() {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Rehash: list_append can not allocate memory\n");
 #else
-	syslog(LOG_ERR, "Rehash: list_append can not allocate memory\n");
+	syslog(LOG_ALERT, "Rehash: list_append can not allocate memory\n");
 #endif
 	return;
     } /* if */
@@ -951,7 +1137,7 @@ int Update_Node(char *NodeName, char *Spec) {
     int Bad_Index, Error_Code, i;
     char *Format, *State, This_Node_Name[BUF_SIZE];
     int Start_Inx, End_Inx, Count_Inx, State_Val;
-    char *str_ptr1, *str_ptr2;
+    char *str_ptr1, *str_ptr2, *My_Node_List;
     struct Node_Record *Node_Record_Point;
 
     if (strcmp(NodeName, "DEFAULT") == 0) {
@@ -1006,55 +1192,61 @@ int Update_Node(char *NodeName, char *Spec) {
 	return EINVAL;
     } /* if */
 
-    Error_Code = Parse_Node_Name(NodeName, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-    if (Error_Code) return Error_Code;
-    for (i=Start_Inx; i<=End_Inx; i++) {
-	if (Count_Inx == 0) {	/* Deal with comma separated node names here */
-	    if (i == Start_Inx)
-		str_ptr2 = (char *)strtok_r(Format, ",", &str_ptr1);
+    My_Node_List = malloc(strlen(NodeName)+1);
+    if (My_Node_List == NULL) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Update_Node: Unable to allocate memory\n");
+#else
+	syslog(LOG_ALERT, "Update_Node: Unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    } /* if */
+    strcpy(My_Node_List, NodeName);
+    str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
+    while (str_ptr2) {	/* Break apart by comma separators */
+	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
+	if (Error_Code) return Error_Code;
+	if (strlen(Format) >= sizeof(This_Node_Name)) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Update_Node: Node name specification too long: %s\n", Format);
+#else
+	    syslog(LOG_ERR, "Update_Node: Node name specification too long: %s\n", Format);
+#endif
+	    free(Format);
+	    Error_Code = EINVAL;
+	    break;
+	} /* if */
+	for (i=Start_Inx; i<=End_Inx; i++) {
+	    if (Count_Inx == 0) 
+		strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
 	    else
-		str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
-	    if (str_ptr2 == NULL) break;
-	    End_Inx++;
-	    strncpy(This_Node_Name, str_ptr2, sizeof(This_Node_Name));
-	} else
-	    sprintf(This_Node_Name, Format, i);
-	if (strlen(This_Node_Name) >= MAX_NAME_LEN) {
+		sprintf(This_Node_Name, Format, i);
+	    Node_Record_Point = Find_Node_Record(This_Node_Name);
+	    if (Node_Record_Point == NULL) {
 #if DEBUG_SYSTEM
-    	    fprintf(stderr, "Update_Node: Node name %s too long\n", This_Node_Name);
+		fprintf(stderr, "Update_Node: Node name %s does not exist, can not be updated\n", This_Node_Name);
 #else
-    	    syslog(LOG_ERR, "Update_Node: Node name %s too long\n", This_Node_Name);
+		syslog(LOG_ERR, "Update_Node: Node name %s does not exist, can not be updated\n", This_Node_Name);
 #endif
-	    Error_Code = EINVAL;
-	    break;
-	} /* if */
-
-	Node_Record_Point = Find_Node_Record(This_Node_Name);
-	if (Node_Record_Point == NULL) {
+		Error_Code = EINVAL;
+		break;
+	    } /* if */
+	    if (State_Val != NO_VAL) {
+		Node_Record_Point->NodeState = State_Val;
 #if DEBUG_SYSTEM
-    	    fprintf(stderr, "Update_Node: Node name %s does not exist, can not be updated\n", 
-		This_Node_Name);
+		fprintf(stderr, "Update_Node: Node %s state set to %s\n", 
+			This_Node_Name, Node_State_String[State_Val]);
 #else
-    	    syslog(LOG_ERR, "Update_Node: Node name %s does not exist, can not be updated\n", 
-		This_Node_Name);
+		syslog(LOG_INFO, "Update_Node: Node %s state set to %s\n", 
+			This_Node_Name, Node_State_String[State_Val]);
 #endif
-	    Error_Code = EINVAL;
-	    break;
-	} /* if */
+	    } /* if */
+	} /* for */
+	free(Format);
+	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
+    } /* while */
 
-	if (State_Val != NO_VAL) {
-	    Node_Record_Point->NodeState = State_Val;
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Update_Node: Node %s state set to %s\n", 
-		This_Node_Name, Node_State_String[State_Val]);
-#else
-	    syslog(LOG_INFO, "Update_Node: Node %s state set to %s\n", 
-		This_Node_Name, Node_State_String[State_Val]);
-#endif
-	} /* if */
-    } /* for */
-
-    free(Format);
+    free(My_Node_List);
     return Error_Code;
 } /* Update_Node */
 
