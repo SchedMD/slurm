@@ -292,7 +292,8 @@ char *job_state_string(enum job_states inx)
 	static char *job_state_string[] = {
 		"PENDING",
 		"RUNNING",
-		"COMPLETE",
+		"COMPLETING",
+		"COMPLETED",
 		"FAILED",
 		"TIMEOUT",
 		"NODE_FAIL",
@@ -306,7 +307,8 @@ char *job_state_string_compact(enum job_states inx)
 	static char *job_state_string[] = {
 		"PD",
 		"R",
-		"C",
+		"CG",
+		"CD",
 		"F",
 		"TO",
 		"END"
