@@ -295,7 +295,7 @@ print_job (char * job_id_str)
 	struct job_table *job_ptr = NULL;
 
 	if (old_job_buffer_ptr) {
-		error_code = slurm_load_job (old_job_buffer_ptr->last_update, 
+		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
 					&job_buffer_ptr);
 		if (error_code == 0)
 			slurm_free_job_info (old_job_buffer_ptr);
@@ -303,7 +303,7 @@ print_job (char * job_id_str)
 			job_buffer_ptr = old_job_buffer_ptr;
 	}
 	else
-		error_code = slurm_load_job ((time_t) NULL, &job_buffer_ptr);
+		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
 	if (error_code > 0) {
 		if (quiet_flag != 1)
 			printf ("slurm_load_job error %d\n", error_code);
