@@ -145,6 +145,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Error generating job credential"			},
 	{ ESLURM_IN_STANDBY_MODE,
 	  "Slurm backup controller in standby mode"	},
+	{ ESLURM_INVALID_NODE_STATE, 
+	  "Invalid node state specified"				},
 
 	/* Quadrics Elan routine error codes */
 
