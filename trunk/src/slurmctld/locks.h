@@ -115,4 +115,6 @@ extern void init_locks ( void );
 extern void kill_locked_threads ( void );
 extern void lock_slurmctld (slurmctld_lock_t lock_levels);
 extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
+extern void inline lock_state_files ( void );
+extern void inline unlock_state_files ( void );
 

@@ -38,6 +38,7 @@
 
 pthread_mutex_t locks_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t locks_cond = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t state_mutex = PTHREAD_MUTEX_INITIALIZER;
 slurmctld_lock_flags_t slurmctld_locks;
 int kill_thread = 0;
 
@@ -185,3 +186,16 @@ kill_locked_threads ( void )
 	kill_thread = 1;
 	pthread_cond_broadcast (&locks_cond);
 }
+
+/* locks used for saving state of slurmctld */
+void
+lock_state_files ( void )
+{
+	pthread_mutex_lock (&state_mutex);
+}
+void
+unlock_state_files ( void )
+{
+	pthread_mutex_unlock (&state_mutex);
+}
+
