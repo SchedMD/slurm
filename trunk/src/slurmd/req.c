@@ -226,7 +226,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	if ((rc != SLURM_SUCCESS) && (super_user == false)) {
 		retval = errno;
-		error("Invalid credential from %ld@%s", req_uid, host);
+		error("Invalid credential from %ld@%s: %m", req_uid, host);
 		goto done;
 	}
 

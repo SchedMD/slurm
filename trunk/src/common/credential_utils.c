@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  credential_utils.c - slurm authentication credential management functions
+ *  $Id$
  *****************************************************************************
- *  Written by Jay Windley <jwindley@lnxi.com>, et. al.
+ *  Written by Kevin Tew <tewk@llnl.gov>
  *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
@@ -160,55 +161,46 @@ void print_credential(slurm_job_credential_t * cred)
 
 int revoke_credential(revoke_credential_msg_t * msg, List list)
 {
-	time_t now = time(NULL);
-	ListIterator iterator;
-	credential_state_t *credential_state;
+	time_t              now   = time(NULL);
+	uint32_t            jobid = msg->job_id;
+	ListIterator        i     = NULL;
+	credential_state_t *state = NULL;
 
-	iterator = list_iterator_create(list);
+	i = list_iterator_create(list);
 
-	while ((credential_state = list_next(iterator))) {
-		if (msg->job_id == credential_state->job_id) {
-			credential_state->revoked     = true;
-			credential_state->revoke_time = now;
-			list_iterator_destroy(iterator);
-			return SLURM_SUCCESS;
-		}
-	}
-	_insert_revoked_credential_state(msg, list);
-	list_iterator_destroy(iterator);
+	while ( (state = list_next(i)) && (state->job_id != jobid) ) {;}
+
+	list_iterator_destroy(i);
+
+	if (state) {
+		state->revoked     = true;
+		state->revoke_time = now;
+	} else
+		_insert_revoked_credential_state(msg, list);
+
 	return SLURM_SUCCESS;
 }
 
 int
 _is_credential_still_valid(slurm_job_credential_t * credential, List list)
 {
-	ListIterator iterator;
-	credential_state_t *credential_state;
+	uint32_t            jobid = credential->job_id;
+	ListIterator        i     = NULL;
+	credential_state_t *state = NULL;
 
 	_clear_expired_revoked_credentials(list);
 
-	iterator = list_iterator_create(list);
+	i = list_iterator_create(list);
 
-	while ((credential_state = list_next(iterator))) {
-		if (credential->job_id == credential_state->job_id) {
-			list_iterator_destroy(iterator);
-			if (credential_state->revoked)
-				return ESLURMD_CREDENTIAL_REVOKED;
-			/* only allows one launch this is a problem but 
-			 * otherwise we have to do accounting 
-			 * of how many proccess are running and how many 
-			 * the credential allows. */
+	while ( (state = list_next(i)) && (state->job_id != jobid)) {;}
 
-			credential_state->revoked = true;
+	list_iterator_destroy(i);
 
-			/* credential_state and is good */
-			return SLURM_SUCCESS;
-		}
-	}
-	/* credential_state does not exist */
-	_insert_credential_state(credential, list);
+	if (!state)
+		_insert_credential_state(credential, list);
+	else if (state->revoked)
+		return ESLURMD_CREDENTIAL_REVOKED;
 
-	list_iterator_destroy(iterator);
 	return SLURM_SUCCESS;
 }
 
@@ -235,24 +227,19 @@ bool credential_is_cached(List list, uint32_t jobid)
 {
 	ListIterator i;
 	credential_state_t *state;
-	bool rc = false;
 
 	debug2("checking for cached credential for job %u", jobid);
 
 	i = list_iterator_create(list);
-	while ((state = list_next(i))) {
-		if (state->job_id == jobid) {
-			rc = true;
-			break;
-		}
-	}
+	while ( (state = list_next(i)) && (state->job_id != jobid) ) {;}
 	list_iterator_destroy(i);
-	return rc;
+
+	return (state != NULL);
 }
 
 int initialize_credential_state_list(List * list)
 {
-	*list = list_create(_free_credential_state);
+	*list = list_create((ListDelF) _free_credential_state);
 	return SLURM_SUCCESS;
 }
 
@@ -272,19 +259,20 @@ _init_credential_state(credential_state_t * credential_state,
 	return SLURM_SUCCESS;
 }
 
-void _free_credential_state(void *credential_state)
+void _free_credential_state(void *state)
 {
-	if (credential_state) {
-		xfree(credential_state);
+	if (state) {
+		xfree(state);
 	}
 }
 
 int _insert_credential_state(slurm_job_credential_t * credential, List list)
 {
-	credential_state_t *credential_state;
-	credential_state = xmalloc(sizeof(*credential_state));
-	_init_credential_state(credential_state, credential);
-	list_append(list, credential_state);
+	credential_state_t *s = xmalloc(sizeof(*s));
+
+	_init_credential_state(s, credential);
+	list_append(list, s);
+
 	return SLURM_SUCCESS;
 }
 

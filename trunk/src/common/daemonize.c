@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  daemonize.c - daemonization routine
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -97,13 +98,11 @@ read_pidfile(const char *pidfile, int *pidfd)
 	unsigned long pid;
 	pid_t         lpid;
 
-	if ((fd = open(pidfile, O_RDONLY)) < 0) {
-		debug ("unable to open old pid file: %m");
+	if ((fd = open(pidfile, O_RDONLY)) < 0) 
 		return ((pid_t) 0);
-	}
 
 	if (!(fp = fdopen(fd, "r")) && (errno != ENOENT)) 
-		fatal ("Unable to access old pidfile at `%s': %m", pidfile);
+		error ("Unable to access old pidfile at `%s': %m", pidfile);
 
 	if (fscanf(fp, "%lu", &pid) < 1) {
 		error ("Possible corrupt pidfile `%s'", pidfile);
@@ -117,7 +116,7 @@ read_pidfile(const char *pidfile, int *pidfd)
 
 	if (lpid != (pid_t) pid) 
 		fatal ("pidfile locked by %ld but contains pid=%ld",
-				(long) lpid, pid);
+		       (long) lpid, pid);
 
 	if (pidfd != NULL)
 		*pidfd = fd;
