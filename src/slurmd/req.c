@@ -152,7 +152,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent, just return SUCCESS) */
 		rc = _rpc_ping(msg, cli);
-		slurm_free_node_registration_status_msg(msg->data);
+		/* No body to free */
 		/* Then initiate a separate node registration */
 		if (rc == SLURM_SUCCESS)
 			send_registration_msg(SLURM_SUCCESS, false);
