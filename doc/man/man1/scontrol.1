@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "January 2003" "scontrol 0.1" "Slurm components"
+.TH SCONTROL "1" "February 2003" "scontrol 0.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -158,8 +158,10 @@ Identify the node(s) to be updated. Multiple node names may be specified using
 simple regular expressions (e.g. "lx[10-20]"). This specification is required.
 .TP
 \fIState\fP=<state>
-Identify the state to be assigned to the node. Possible values are "DOWN", "IDLE", 
-"DRAINED", "DRAINING", and "ALLOCATED".
+Identify the state to be assigned to the node. Possible values are  "NoResp", 
+"DOWN", "IDLE", "DRAINED", "DRAINING", and "ALLOCATED". The "NoResp" state 
+will only set the "NoResp" flag for a node without changing its underlying 
+state.
 .TP
 \fBSPECIFICATIONS FOR UPDATE COMMAND, PARTITIONS\fR
 .TP
