@@ -91,7 +91,7 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-		if ((rc1 = rm_set_data(my_bp, RM_BPState, RM_BP_DOWN)) 
+		if ((rc = rm_set_data(my_bp, RM_BPState, RM_BP_DOWN)) 
 				!= STATUS_OK)
 			error("switch for node %s is bad, could not set down, "
 				"rm_set_data(RM_BPState): %s",
