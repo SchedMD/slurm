@@ -138,11 +138,12 @@ int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 
 	
 	kill_threads:
+	/*
 	for (  i-- ; i >= 0  ; i -- )
 	{
 		rc = pthread_kill ( task_start[i]->pthread_id , SIGKILL ) ;
 	}
-
+	*/
 	return_label:
 		rel_shmem ( shmem_ptr ) ;
 	return SLURM_SUCCESS ;
@@ -175,10 +176,10 @@ int forward_io ( task_start_t * task_arg )
 		
 		init_io_stream_header ( & io_header , 
 				task_arg -> launch_msg -> credential -> signature , 
-				task_arg -> launch_msg -> global_task_ids[task_arg -> 
-				local_task_id ] , SLURM_IO_STREAM_INOUT 
+				task_arg -> launch_msg -> global_task_ids[task_arg -> local_task_id ] , 
+				SLURM_IO_STREAM_INOUT 
 				) ;
-		pack_io_stream_header ( & io_header , (void **) & buf_ptr , & size ) ;
+		pack_io_stream_header ( & io_header , (void ** ) & buf_ptr , & size ) ;
 		slurm_write_stream (  task_arg->sockets[STDIN_OUT_SOCK] , buffer , buf_size - size ) ;
 	}
 	
@@ -200,7 +201,7 @@ int forward_io ( task_start_t * task_arg )
 				task_arg -> launch_msg -> global_task_ids[task_arg -> local_task_id ] , 
 				SLURM_IO_STREAM_SIGERR 
 				) ;
-		pack_io_stream_header ( & io_header , (void **) & buf_ptr , & size ) ;
+		pack_io_stream_header ( & io_header , (void ** ) & buf_ptr , & size ) ;
 		slurm_write_stream (  task_arg->sockets[SIG_STDERR_SOCK] , buffer , buf_size - size ) ;
 	}
 	
@@ -221,7 +222,7 @@ int forward_io ( task_start_t * task_arg )
 	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
 	info ( "outexit" ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
-	pthread_kill (  task_arg->io_pthread_id[STDIN_FILENO] , SIGKILL );
+	/*pthread_kill (  task_arg->io_pthread_id[STDIN_FILENO] , SIGKILL );*/
 	
 	goto return_label;
 
@@ -321,10 +322,12 @@ void * stdout_io_pipe_thread ( void * arg )
 
 	while ( true )
 	{
+		/*sleep ( 1 ) ;*/
 		/* read stderr code */
 		/*if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )*/
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
+			debug ( "bytes_read: %i , errno: %i", bytes_read , errno ) ;
 			if ( ( bytes_read == SLURM_PROTOCOL_ERROR ) && ( errno == EINTR ) ) 
 			{
 				continue ;
@@ -339,11 +342,9 @@ void * stdout_io_pipe_thread ( void * arg )
 		}
 		cir_buf_write_update ( cir_buf , bytes_read ) ;
 		/* debug */
-		/*
-		write ( 1 ,  buffer , bytes_read ) ;
+		//write ( 1 ,  buffer , bytes_read ) ;
 		write ( 1 , cir_buf->head , cir_buf->read_size ) ;
 		info ( "%i stdout bytes read", bytes_read ) ;
-		*/
 		/* debug */
 		/* reconnect code */
 		if ( attempt_reconnect )
@@ -411,10 +412,12 @@ void * stderr_io_pipe_thread ( void * arg )
 	
 	while ( true )
 	{
+		/*sleep ( 1 ) ;*/
 		/* read stderr code */
 		//if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , cir_buf->tail , cir_buf->write_size ) ) <= 0 )
 		{
+			debug ( "bytes_read: %i , errno: %i", bytes_read , errno ) ;
 			if ( ( bytes_read == SLURM_PROTOCOL_ERROR ) && ( errno == EINTR ) ) 
 			{
 				continue ;
