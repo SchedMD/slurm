@@ -371,7 +371,6 @@ AC_CONFIG_FILES([Makefile
 		 src/scancel/Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
-		 src/test/Makefile
 		 testsuite/Makefile
 		 testsuite/slurm_unit/Makefile
 		 testsuite/slurm_unit/common/Makefile
