@@ -847,6 +847,11 @@ opt_verify(poptContext optctx)
 {
 	bool verified = true;
 
+	if (opt.max_threads < 1) {
+		error("Invalid max_threads value: %d", opt.max_threads);
+		return false;
+	}
+
 	if (opt.no_alloc && !opt.nodelist) {
 		error("must specify a node list with -Z, --no-allocate.");
 		verified = false;

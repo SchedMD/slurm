@@ -50,7 +50,7 @@
 
 #include <src/common/macros.h> /* true and false */
 
-#define MAX_THREADS	1
+#define MAX_THREADS	10
 #define MAX_USERNAME	9
 
 /* global variables relating to user options */

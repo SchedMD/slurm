@@ -44,27 +44,35 @@
 extern char **environ;
 
 /* number of active threads */
-/*
 static pthread_mutex_t active_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  active_cond  = PTHREAD_COND_INITIALIZER;
 static int             active = 0;
-static int             timeout = 0;
-*/
 
+typedef enum {DSH_NEW, DSH_ACTIVE, DSH_DONE, DSH_FAILED} state_t;
 
-/* array of nnodes launch threads initialize in launch() */
-/* static launch_thr_t *thr; */
+typedef struct thd {
+        pthread_t	thread;			/* thread ID */
+        pthread_attr_t	attr;			/* thread attributes */
+        state_t		state;      		/* thread state */
+} thd_t;
 
+typedef struct task_info {
+	slurm_msg_t *req_ptr;
+	job_t *job_ptr;
+} task_info_t;
+
+static void p_launch(slurm_msg_t *req_array_ptr, job_t *job);
+static void * p_launch_task(void *args);
 static void print_launch_msg(launch_tasks_request_msg_t *msg);
 static int  envcount(char **env);
 
 void *
 launch(void *arg)
 {
-	slurm_msg_t req;
-	launch_tasks_request_msg_t msg;
+	slurm_msg_t *req_array_ptr;
+	launch_tasks_request_msg_t *msg_array_ptr;
 	job_t *job = (job_t *) arg;
-	int i, j, k, taskid;
+	int i, j, k, my_envc, taskid;
 	char hostname[MAXHOSTNAMELEN];
 	uint32_t **task_ids;
 
@@ -74,27 +82,6 @@ launch(void *arg)
 		error("gethostname: %m");
 
 	debug("going to launch %d tasks on %d hosts", opt.nprocs, job->nhosts);
-
-	/* thr = (launch_thr_t *) xmalloc(opt.nprocs * sizeof(*thr)); */
-
-	req.msg_type = REQUEST_LAUNCH_TASKS;
-	req.data     = &msg;
-
-	msg.job_id = job->jobid;
-	msg.uid = opt.uid;
-	msg.argc = remote_argc;
-	msg.argv = remote_argv;
-	msg.credential = job->cred;
-	msg.job_step_id = job->stepid;
-	msg.envc = envcount(environ);
-	msg.env = environ;
-	msg.cwd = opt.cwd;
-	msg.nnodes = job->nhosts;
-	msg.nprocs = opt.nprocs;
-
-#if HAVE_LIBELAN3
-	msg.qsw_job = job->qsw_job;
-#endif 
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
 	/* Build task id list for each host */
@@ -121,31 +108,124 @@ launch(void *arg)
 		}
 	}
 
+	msg_array_ptr = (launch_tasks_request_msg_t *) 
+			xmalloc(sizeof(launch_tasks_request_msg_t) * job->nhosts);
+	req_array_ptr = (slurm_msg_t *) 
+			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
+	my_envc = envcount(environ);
 	for (i = 0; i < job->nhosts; i++) {
+		/* Common message contents */
+		msg_array_ptr[i].job_id = job->jobid;
+		msg_array_ptr[i].uid = opt.uid;
+		msg_array_ptr[i].argc = remote_argc;
+		msg_array_ptr[i].argv = remote_argv;
+		msg_array_ptr[i].credential = job->cred;
+		msg_array_ptr[i].job_step_id = job->stepid;
+		msg_array_ptr[i].envc = my_envc;
+		msg_array_ptr[i].env = environ;
+		msg_array_ptr[i].cwd = opt.cwd;
+		msg_array_ptr[i].nnodes = job->nhosts;
+		msg_array_ptr[i].nprocs = opt.nprocs;
+#if HAVE_LIBELAN3
+		msg_array_ptr[i].qsw_job = job->qsw_job;
+#endif 
 
-		msg.tasks_to_launch = job->ntask[i];
-		msg.global_task_ids = task_ids[i];
-		msg.srun_node_id    = (uint32_t)i;
-		msg.io_port         = ntohs(job->ioport[i%job->niofds]);
-		msg.resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
+		/* Node specific message contents */
+		msg_array_ptr[i].tasks_to_launch = job->ntask[i];
+		msg_array_ptr[i].global_task_ids = task_ids[i];
+		msg_array_ptr[i].srun_node_id    = (uint32_t)i;
+		msg_array_ptr[i].io_port         = ntohs(job->ioport[i%job->niofds]);
+		msg_array_ptr[i].resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
 
-		memcpy(&req.address, &job->slurmd_addr[i], sizeof(slurm_addr));
-
-		debug2("launching on host %s", job->host[i]);
-                print_launch_msg(&msg);
-		if (slurm_send_only_node_msg(&req) < 0) {
-			error("%s: %m", job->host[i]);
-			job->host_state[i] = SRUN_HOST_UNREACHABLE;
-		}
-		xfree(task_ids[i]);
-
+		req_array_ptr[i].msg_type = REQUEST_LAUNCH_TASKS;
+		req_array_ptr[i].data     = &msg_array_ptr[i];
+		memcpy(&req_array_ptr[i].address, &job->slurmd_addr[i], sizeof(slurm_addr));
 	}
-	xfree(task_ids);
 
+	p_launch(req_array_ptr, job);
+
+	debug("All tasks have been launched");
 	update_job_state(job, SRUN_JOB_STARTING);
+
+	for (i = 0; i < job->nhosts; i++)
+		xfree(task_ids[i]);
+	xfree(task_ids);
+	xfree(msg_array_ptr);
+	xfree(req_array_ptr);
 
 	return(void *)(0);
 
+}
+
+/* p_launch - parallel (multi-threaded) task launcher */
+static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
+{
+	int i;
+	task_info_t *task_info_ptr;
+	thd_t *thread_ptr;
+
+	if (opt.max_threads > job->nhosts)	/* don't need more threads than tasks */
+		opt.max_threads = job->nhosts;
+
+	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
+	for (i = 0; i < job->nhosts; i++) {
+		pthread_mutex_lock(&active_mutex);
+		while (active >= opt.max_threads) {
+			pthread_cond_wait(&active_cond, &active_mutex);
+		}
+		active++;
+		pthread_mutex_unlock(&active_mutex);
+
+		task_info_ptr = (task_info_t *)xmalloc(sizeof(task_info_t));
+		task_info_ptr->req_ptr = &req_array_ptr[i];
+		task_info_ptr->job_ptr = job;
+
+		if (pthread_attr_init (&thread_ptr[i].attr))
+			fatal ("pthread_attr_init error %m");
+		if (pthread_attr_setdetachstate (&thread_ptr[i].attr, PTHREAD_CREATE_DETACHED))
+			error ("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		if (pthread_attr_setscope (&thread_ptr[i].attr, PTHREAD_SCOPE_SYSTEM))
+			error ("pthread_attr_setscope error %m");
+#endif
+		while ( pthread_create (&thread_ptr[i].thread, 
+		                        &thread_ptr[i].attr, 
+		                        p_launch_task, 
+		                        (void *) task_info_ptr) ) {
+			error ("pthread_create error %m");
+			/* just run it under this thread */
+			p_launch_task(task_info_ptr);
+		}
+	}
+
+	while (active > 0) {
+		pthread_cond_wait(&active_cond, &active_mutex);
+	}
+	xfree(thread_ptr);
+}
+
+/* p_launch_task - parallelized launch of a specific task */
+static void * p_launch_task(void *args)
+{
+	task_info_t *task_info_ptr = (task_info_t *)args;
+	slurm_msg_t *req_ptr = task_info_ptr->req_ptr;
+	launch_tasks_request_msg_t *msg_ptr = (launch_tasks_request_msg_t *) req_ptr->data;
+	job_t *job_ptr = task_info_ptr->job_ptr;
+	int host_inx = msg_ptr->srun_node_id;
+
+	debug2("launching on host %s", job_ptr->host[host_inx]);
+        print_launch_msg(msg_ptr);
+	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Already handles timeout */
+		error("%s: %m", job_ptr->host[host_inx]);
+		job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;
+	}
+
+	pthread_mutex_lock(&active_mutex);
+	active--;
+	pthread_cond_signal(&active_cond);
+	pthread_mutex_unlock(&active_mutex);
+	xfree(args);
+	return NULL;
 }
 
 
