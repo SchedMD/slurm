@@ -24,8 +24,6 @@ void report_results(resource_allocation_response_msg_t* resp_msg);
 int
 main( int argc, char* argv[])
 {
-	job_desc_msg_t job_mesg;
-
 	job_step_create_request_msg_t request = {   5, 5, 4,4 , 0, "" }; 
 	resource_allocation_response_msg_t* resp_msg ;
 
