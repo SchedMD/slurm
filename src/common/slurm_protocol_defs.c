@@ -292,6 +292,14 @@ void slurm_free_kill_tasks_msg(kill_tasks_msg_t * msg)
 	xfree(msg);
 }
 
+void slurm_free_epilog_complete_msg(epilog_complete_msg_t * msg)
+{
+	if (msg) {
+		xfree(msg->node_name);
+		xfree(msg);
+	}
+}
+
 char *job_state_string(enum job_states inx)
 {
 	static char *job_state_string[] = {
