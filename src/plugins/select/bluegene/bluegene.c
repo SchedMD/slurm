@@ -324,7 +324,7 @@ extern int create_static_partitions(List part_list)
 	itr = list_iterator_create(bgl_list);
 	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
 			
-		if(bgl_record->bp_count>0)
+		if(bgl_record->bp_count>0 && bgl_record->node_use==SELECT_COPROCESSOR_MODE)
 			set_bgl_part(bgl_record->bgl_part_list, 
 				     bgl_record->bp_count, 
 				     bgl_record->conn_type);
@@ -344,37 +344,39 @@ extern int create_static_partitions(List part_list)
 		list_iterator_destroy(itr_found);
 		if(found_record == NULL) {
 #ifdef HAVE_BGL_FILES
-			bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+			//bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 			configure_partition(bgl_record);
-#endif
 			print_bgl_record(bgl_record);
-#ifdef HAVE_BGL_FILES
 			/* Here we are adding some partitions manually because of the way
 			   We want to run the system.  This will need to be changed for 
 			   the real system because this is not going to work in the real
 			   deal.
 			*/
+			bgl_record = (bgl_record_t *) list_next(itr);
+			if(bgl_record == NULL)
+				break;
+			configure_partition(bgl_record);
+			print_bgl_record(bgl_record);
 			
-			found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
-			list_push(bgl_list, found_record);
+/* 			found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t)); */
+/* 			list_push(bgl_list, found_record); */
 			
-			found_record->bgl_part_list = bgl_record->bgl_part_list;			
-			found_record->hostlist = bgl_record->hostlist;
-			found_record->nodes = xstrdup(bgl_record->nodes);
-			//_process_nodes(found_record);
-	
-			found_record->bp_count = bgl_record->bp_count;
-			found_record->switch_count = bgl_record->switch_count;
-			found_record->geo[X] = bgl_record->geo[X];
-			found_record->geo[Y] = bgl_record->geo[Y];
-			found_record->geo[Z] = bgl_record->geo[Z];
+/* 			found_record->bgl_part_list = bgl_record->bgl_part_list;			 */
+/* 			found_record->hostlist = bgl_record->hostlist; */
+/* 			found_record->nodes = xstrdup(bgl_record->nodes); */
+				
+/* 			found_record->bp_count = bgl_record->bp_count; */
+/* 			found_record->switch_count = bgl_record->switch_count; */
+/* 			found_record->geo[X] = bgl_record->geo[X]; */
+/* 			found_record->geo[Y] = bgl_record->geo[Y]; */
+/* 			found_record->geo[Z] = bgl_record->geo[Z]; */
 			
-			found_record->conn_type = bgl_record->conn_type;
-			found_record->bitmap = bgl_record->bitmap;
-			found_record->node_use = SELECT_COPROCESSOR_MODE;
-			configure_partition(found_record);
-			/*********************************************************/
-			print_bgl_record(found_record);
+/* 			found_record->conn_type = bgl_record->conn_type; */
+/* 			found_record->bitmap = bgl_record->bitmap; */
+/* 			found_record->node_use = SELECT_COPROCESSOR_MODE; */
+/* 			configure_partition(found_record); */
+/* 			/\*********************************************************\/ */
+/* 			print_bgl_record(found_record); */
 #endif
 		}
 	}
@@ -400,6 +402,7 @@ extern int create_static_partitions(List part_list)
 			goto no_total;	/* don't reboot this one */
 		}
 	}
+	list_iterator_destroy(itr);
 	bgl_record->bgl_part_list = list_create(NULL);			
 	bgl_record->hostlist = hostlist_create(NULL);
 	_process_nodes(bgl_record);
@@ -420,7 +423,6 @@ extern int create_static_partitions(List part_list)
 	found_record->bgl_part_list = bgl_record->bgl_part_list;			
 	found_record->hostlist = bgl_record->hostlist;
 	found_record->nodes = xstrdup(bgl_record->nodes);
-	//_process_nodes(bgl_record);
 	
 	found_record->bp_count = bgl_record->bp_count;
 	found_record->switch_count = bgl_record->switch_count;
@@ -435,10 +437,18 @@ extern int create_static_partitions(List part_list)
 	print_bgl_record(found_record);
 
 no_total:
+	
 	rc = SLURM_SUCCESS;
-	list_iterator_destroy(itr);
-#endif
+/* 	itr = list_iterator_create(bgl_list); */
+	/* printf("\n\n"); */
+/* 	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) { */
+	       
+/* 		print_bgl_record(found_record); */
+/* 	} */
+/* 	list_iterator_destroy(itr); */
+/* 	exit(0); */
         /*********************************************************/
+#endif
 
 	return rc;
 }
@@ -550,13 +560,13 @@ static void _set_bgl_lists()
 
 static int _validate_config_nodes(void)
 {
-	int rc = 1;
+	int rc = 1, i=0;
 #ifdef HAVE_BGL_FILES
 	bgl_record_t* record;	/* records from configuration files */
 	bgl_record_t* init_record;	/* records from actual BGL config */
 	ListIterator itr_conf, itr_curr;
-
-
+	rm_partition_mode_t node_use;
+	
 	/* read current bgl partition info into bgl_curr_part_list */
 	if (read_bgl_partitions() == SLURM_ERROR)
 		return -1;
@@ -565,15 +575,18 @@ static int _validate_config_nodes(void)
 	while ((record = (bgl_record_t*) list_next(itr_conf))) {
 		/* translate hostlist to ranged string for consistent format */
         	/* search here */
+		node_use = SELECT_COPROCESSOR_MODE; 
+
 		itr_curr = list_iterator_create(bgl_curr_part_list);
 		while ((init_record = (bgl_record_t*) list_next(itr_curr)) 
-				!= NULL) {
+		       != NULL) {
 			if (strcasecmp(record->nodes, init_record->nodes)) {
 				continue;	/* wrong nodes */
 			}
-			if ((record->conn_type != init_record->conn_type)
-			    ||  (record->node_use != init_record->node_use))
-				break;		/* must reconfig this part */
+			if (record->conn_type != init_record->conn_type)
+				continue;		/* must reconfig this part */
+			if(record->node_use != init_record->node_use)
+				continue;
 			record->bgl_part_id = xstrdup(init_record->bgl_part_id);
 			break;
 		}
@@ -584,12 +597,12 @@ static int _validate_config_nodes(void)
 		} else {
 			list_push(bgl_found_part_list, record);
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
-				record->bgl_part_id, record->nodes,
-				convert_conn_type(record->conn_type),
-				convert_node_use(record->node_use));
+			     init_record->bgl_part_id, record->nodes,
+			     convert_conn_type(record->conn_type),
+			     convert_node_use(record->node_use));
 		}
-		
 	}
+	
 	list_iterator_destroy(itr_conf);
 	if(list_count(bgl_list) != list_count(bgl_curr_part_list))
 		rc = 0;
@@ -635,7 +648,7 @@ static int _delete_old_partitions(void)
 			lowest_part = part_number;
 	}
 	list_iterator_destroy(itr_curr);
-	if(lowest_part != 101) {
+//	if(lowest_part != 101) {
 	/* 	rm_get_partitions(RM_PARTITION_FREE, &part_list); */
 /* 		rm_get_data(part_list, RM_PartListSize, &size); */
 /* 		printf("This is the size %d\n",size); */
@@ -654,23 +667,29 @@ static int _delete_old_partitions(void)
 /* 			xfree(part_id); */
 /* 			rm_free_partition(my_part);			 */
 /* 		} */
-/* 		exit(0); */	
-		for(part_number=101; part_number<lowest_part; part_number++) {
-			memset(part_name,0,7);
-			sprintf(part_name, "RMP%d", part_number);
-			//debug("Checking if Partition %s is free",part_name);
-			if ((rc = rm_get_partition(part_name, &my_part))
-			    != STATUS_OK) {
-				debug("Above error is ok. "
-					"Partition %s doesn't exist.",
-					part_name);
-				continue;
-			}
-			rm_remove_partition(part_name);
-			//sleep(3);
-			//debug("Removed Freed Partition %s",part_name);
+/* 		exit(0); */
+
+	/* Here is where we clear all the partitions that exist. This will need to 
+	   be taken out when we get better code from IBM.
+	*/
+	for(part_number=101; part_number<lowest_part; part_number++) {
+		memset(part_name,0,7);
+		sprintf(part_name, "RMP%d", part_number);
+		//debug("Checking if Partition %s is free",part_name);
+		if ((rc = rm_get_partition(part_name, &my_part))
+		    != STATUS_OK) {
+			debug("Above error is ok. "
+			      "Partition %s doesn't exist.",
+			      part_name);
+			continue;
 		}
+		rm_remove_partition(part_name);
+		//sleep(3);
+		//debug("Removed Freed Partition %s",part_name);
 	}
+	
+	/*************************************************/
+//	}
 	
 	itr_curr = list_iterator_create(bgl_curr_part_list);
 	while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
@@ -835,22 +854,22 @@ static void _strip_13_10(char *word)
 static int _parse_bgl_spec(char *in_line)
 {
 	int error_code = SLURM_SUCCESS;
-	char *nodes = NULL, *conn_type = NULL;
+	char *nodes = NULL, *conn_type = NULL, *node_use = NULL;
 	char *blrts_image = NULL,   *linux_image = NULL;
 	char *mloader_image = NULL, *ramdisk_image = NULL;
 	char *change = NULL;
-	bgl_record_t* bgl_record;
+	bgl_record_t *bgl_record, *found_record;
 	
 	error_code = slurm_parser(in_line,
-				"BlrtsImage=", 's', &blrts_image,
-				"LinuxImage=", 's', &linux_image,
-				"MloaderImage=", 's', &mloader_image,
-				"ChangeNumpsets=", 's', &change,
-				"Nodes=", 's', &nodes,
-				"RamDiskImage=", 's', &ramdisk_image,
-				"Type=", 's', &conn_type,
-				  //"Use=", 's', &node_use,
-				"END");
+				  "BlrtsImage=", 's', &blrts_image,
+				  "LinuxImage=", 's', &linux_image,
+				  "MloaderImage=", 's', &mloader_image,
+				  "ChangeNumpsets=", 's', &change,
+				  "Nodes=", 's', &nodes,
+				  "RamDiskImage=", 's', &ramdisk_image,
+				  "Type=", 's', &conn_type,
+				  "Use=", 's', &node_use,
+				  "END");
 
 	if (error_code)
 		goto cleanup;
@@ -914,18 +933,38 @@ static int _parse_bgl_spec(char *in_line)
 	
 	if (conn_type)
 		xfree(conn_type);	/* pointer moved, nothing left to xfree */
+
+	if (node_use) {
+		/* First we check to see if we only want one type of mode */
+		if(!strcasecmp(conn_type,"COPROCESSOR"))
+			bgl_record->node_use = SELECT_COPROCESSOR_MODE;
+		else
+			bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+	} else {
+		/* If not then we will make both. */
+
+		/* this is here to make a co_proc and virtual partition just like each other */
+
+		bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
+			
+		found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
+		list_push(bgl_list, found_record);
 	
-/* 	if (node_use) */
-/* 		_strip_13_10(node_use); */
-/* 	if (!node_use || !strcasecmp(node_use,"COPROCESSOR")) */
-/* 		bgl_record->node_use = SELECT_COPROCESSOR_MODE; */
-/* 	else */
-/* 		bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE; */
+		found_record->bgl_part_list = bgl_record->bgl_part_list;			
+		found_record->hostlist = bgl_record->hostlist;
+		found_record->nodes = xstrdup(bgl_record->nodes);
 	
-/* 	if (node_use) */
-/* 		xfree(node_use);	/\* pointer moved, nothing left to xfree *\/ */
+		found_record->bp_count = bgl_record->bp_count;
+		found_record->switch_count = bgl_record->switch_count;
+		found_record->geo[X] = bgl_record->geo[X];
+		found_record->geo[Y] = bgl_record->geo[Y];
+		found_record->geo[Z] = bgl_record->geo[Z];
 	
+		found_record->conn_type = bgl_record->conn_type;
+		found_record->bitmap = bgl_record->bitmap;
+		found_record->node_use = SELECT_COPROCESSOR_MODE;
 	
+	}
 #if _DEBUG
 	debug("_parse_bgl_spec: added nodes=%s type=%s use=%s", 
 		bgl_record->nodes, 
