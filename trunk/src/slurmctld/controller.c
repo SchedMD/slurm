@@ -54,11 +54,14 @@
 #include "src/common/log.h"
 #include "src/common/macros.h"
 #include "src/common/pack.h"
-#include "src/common/qsw.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
+
+#if HAVE_LIBELAN3
+#  include "src/common/qsw.h"
+#endif
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
