@@ -42,20 +42,6 @@ int send_task_exit_msg ( int task_return_code , task_start_t * task_start ) ;
  *			task_exec_thread() (pthread_create) for io piping 
  ******************************************************************/			
 
-/* exported module funtion to launch tasks */
-/*launch_tasks should really be named launch_job_step*/
-int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
-{
-	return interconnect_init ( launch_msg );
-}
-
-/* Contains interconnect specific setup instructions and then calls 
- * fan_out_task_launch */
-int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
-{
-	return fan_out_task_launch ( launch_msg ) ;
-}
-
 int fan_out_task_launch ( launch_tasks_request_msg_t * launch_msg )
 {
 	int i ;
