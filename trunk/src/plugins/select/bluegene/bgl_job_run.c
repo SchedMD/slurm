@@ -604,6 +604,7 @@ extern int sync_jobs(List job_list)
 #ifdef HAVE_BGL_FILES
 	ListIterator job_iterator, block_iterator;
 	struct job_record  *job_ptr;
+	pm_partition_id_t bgl_part_id;
 	List block_list = _get_all_blocks();
 	bgl_update_t *bgl_update_ptr;
 
