@@ -147,7 +147,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
 	long *My_TmpDisk, int *Set_TmpDisk, int *My_MaxTime, int *Set_MaxTime, 
 	int *My_CpuCount, int *Set_CpuCount, int *My_NodeCount, int *Set_NodeCount) {
     char *Scratch;
-    char *str_ptr1, *str_ptr2;
+    char *str_ptr1, *str_ptr2, *str_ptr3;
     int Error_Code, i;
 
     Error_Code         = 0;
@@ -177,7 +177,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "User=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+5);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	if (strlen(str_ptr2) < MAX_NAME_LEN) 
 	    strcpy(My_Name, str_ptr2);
 	else {
@@ -194,7 +194,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "OS=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+3);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	if (strlen(str_ptr2) < MAX_OS_LEN) 
 	    strcpy(My_OS, str_ptr2);
 	else {
@@ -216,7 +216,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "MinCpus=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_CPUs = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_CPUs = 1;
     } /* if */
@@ -224,7 +224,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "MinSpeed=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+9);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_Speed = (float) strtod(str_ptr2, (char **)NULL);
 	*Set_Speed = 1;
     } /* if */
@@ -232,7 +232,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "MinRealMemory=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+14);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_RealMemory = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_RealMemory = 1;
     } /* if */
@@ -240,7 +240,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "MinVirtualMemory=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+17);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_VirtualMemory = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_VirtualMemory = 1;
     } /* if */
@@ -248,7 +248,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "MinTmpDisk=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+11);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_TmpDisk = strtol(str_ptr2, (char **)NULL, 10);
 	*Set_TmpDisk = 1;
     } /* if */
@@ -256,7 +256,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "MaxTime=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+8);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_MaxTime = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_MaxTime = 1;
     } /* if */
@@ -264,7 +264,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "CpuCount=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+9);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_CpuCount = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_CpuCount = 1;
     } /* if */
@@ -272,7 +272,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
     str_ptr1 = (char *)strstr(Specification, "NodeCount=");
     if (str_ptr1 != NULL) {
 	strcpy(Scratch, str_ptr1+10);
-	str_ptr2 = (char *)strtok(Scratch, SEPCHARS);
+	str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
 	*My_NodeCount = (int) strtol(str_ptr2, (char **)NULL, 10);
 	*Set_NodeCount = 1;
     } /* if */
@@ -607,9 +607,9 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    return (char *)NULL;
 	} /* if */
 	strcpy(Scratch, Node_List_Ptr);
-	strtok(Scratch, SEPCHARS);	/* make any white-space into end of string */
+	strtok_r(Scratch, SEPCHARS, &str_ptr2);	/* make any white-space into end of string */
 	Node_List_Size = strlen(Scratch);
-	str_ptr1 = (char *)strtok_r(Scratch, ",",&str_ptr2);
+	str_ptr1 = (char *)strtok_r(Scratch, ",", &str_ptr2);
 	CPU_Tally = 0;
 	Node_Tally = 0;
 	while (str_ptr1 != NULL) {
