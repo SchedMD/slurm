@@ -211,7 +211,8 @@ typedef struct job_info {
 	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
 	time_t start_time;	/* time execution begins, actual or expected */
 	time_t end_time;	/* time of termination, actual or expected */
-	uint32_t priority;	/* relative priority of the job */
+	uint32_t priority;	/* relative priority of the job, 
+				 * 0=held, 1=required nodes DOWN/DRAINED */
 	char *nodes;		/* list of nodes allocated to job */
 	int *node_inx;		/* list index pairs into node_table for *nodes:
 				 * start_range_1, end_range_1, 
