@@ -121,7 +121,11 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr,
 		fprintf ( out, "MaxNodes=UNLIMITED ");
 	else
 		fprintf ( out, "MaxNodes=%u ", part_ptr->max_nodes);
-	fprintf ( out, "AllowGroups=%s", part_ptr->allow_groups);
+	if ((part_ptr->allow_groups == NULL) || 
+	    (part_ptr->allow_groups[0] == '\0'))
+		fprintf ( out, "AllowGroups=ALL");
+	else
+		fprintf ( out, "AllowGroups=%s", part_ptr->allow_groups);
 	if (one_liner)
 		fprintf ( out, " ");
 	else
