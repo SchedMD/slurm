@@ -107,33 +107,84 @@ _build_tv_list(launch_tasks_response_msg_t *msg)
 #endif
 
 static void
+_process_launch_resp(job_t *job, launch_tasks_response_msg_t *msg)
+{
+	int i;
+
+	if (   (msg->srun_node_id >= 0) 
+	    && (msg->srun_node_id < job->nhosts) ) {
+
+		pthread_mutex_lock(&job->task_mutex);
+		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
+		pthread_mutex_unlock(&job->task_mutex);
+#ifdef HAVE_TOTALVIEW
+		_build_tv_list(msg);
+#endif
+		if (_verbose) {
+			hostlist_t pids = hostlist_create(NULL);
+			char buf[1024];
+			for (i = 0; i < msg->count_of_pids; i++) {
+				snprintf(buf, sizeof(buf), "pids:%d", 
+						msg->local_pids[i]);
+				hostlist_push(pids, buf);
+			}
+
+			hostlist_ranged_string(pids, sizeof(buf), buf);
+			verbose("%s: %s", msg->node_name, buf);
+		}
+
+	} else
+		error("launch resp from %s has bad task_id %d",
+				msg->node_name, msg->srun_node_id);
+}
+
+static void
+update_failed_tasks(job_t *job, uint32_t nodeid)
+{
+	int i;
+	slurm_mutex_lock(&job->task_mutex);
+	for (i = 0; i < job->ntask[nodeid]; i++) {
+		uint32_t tid = job->tids[nodeid][i];
+		if (job->err[tid] == WAITING_FOR_IO)
+			job->err[tid] = IO_DONE;
+		if (job->out[tid] == WAITING_FOR_IO)
+			job->out[tid] = IO_DONE;
+		job->task_state[tid] = SRUN_TASK_FAILED;
+		tasks_exited++;
+	}
+	slurm_mutex_unlock(&job->task_mutex);
+
+	if (tasks_exited == opt.nprocs) {
+		debug2("all tasks exited");
+		update_job_state(job, SRUN_JOB_OVERDONE);
+	}
+		
+}
+
+static void
 _launch_handler(job_t *job, slurm_msg_t *resp)
 {
-	launch_tasks_response_msg_t *msg = 
-		(launch_tasks_response_msg_t *) resp->data;
+	launch_tasks_response_msg_t *msg = resp->data;
 
 	debug2("received launch resp from %s nodeid=%d", msg->node_name,
 			msg->srun_node_id);
 	
 	if (msg->return_code != 0)  {
-		error("recvd return code %d from %s", msg->return_code,
-				msg->node_name);
-		return;
-	} else {	
-		pthread_mutex_lock(&job->task_mutex);
-		if ((msg->srun_node_id >= 0) && 
-		    (msg->srun_node_id < job->nhosts)) {
-			job->host_state[msg->srun_node_id] = 
-				SRUN_HOST_REPLIED;
-#ifdef HAVE_TOTALVIEW
-			_build_tv_list(msg);
-#endif
-		} else
-			error("launch resp from %s has bad task_id %d",
-				msg->node_name, msg->srun_node_id);
-		pthread_mutex_unlock(&job->task_mutex);
-	}
 
+		error("%s: launch failed: %s", 
+		       msg->node_name, slurm_strerror(msg->return_code));
+
+		slurm_mutex_lock(&job->task_mutex);
+		job->host_state[msg->srun_node_id] = SRUN_HOST_REPLIED;
+		slurm_mutex_unlock(&job->task_mutex);
+
+		if (!opt.no_kill)
+			update_job_state(job, SRUN_JOB_FAILED);
+		else 
+			update_failed_tasks(job, msg->srun_node_id);
+		return;
+	} else 
+		_process_launch_resp(job, msg);
 }
 
 /* _confirm_launch_complete
@@ -203,7 +254,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 			        taskid, _taskid2hostname(taskid, job), 
 			        msg->return_code);
 		else
-			verbose("task %d exited with status 0",  taskid);
+			debug("task %d exited with status 0",  taskid);
 
 		slurm_mutex_lock(&job->task_mutex);
 		job->tstatus[taskid] = msg->return_code;

@@ -62,8 +62,8 @@ typedef struct task_info {
 	job_t *job_ptr;
 } task_info_t;
 
-static void   _dist_block(job_t *job, uint32_t **task_ids);
-static void   _dist_cyclic(job_t *job, uint32_t **task_ids);
+static void   _dist_block(job_t *job);
+static void   _dist_cyclic(job_t *job);
 static void   _p_launch(slurm_msg_t *req_array_ptr, job_t *job);
 static void * _p_launch_task(void *args);
 static void   _print_launch_msg(launch_tasks_request_msg_t *msg, 
@@ -71,26 +71,26 @@ static void   _print_launch_msg(launch_tasks_request_msg_t *msg,
 static int    _envcount(char **env);
 
 static void
-_dist_block(job_t *job, uint32_t **task_ids)
+_dist_block(job_t *job)
 {
 	int i, j, taskid = 0;
 	for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
 		for (j=0; (((j*opt.cpus_per_task)<job->cpus[i]) && 
 					(taskid<opt.nprocs)); j++) {
-			task_ids[i][j] = taskid++;
+			job->tids[i][j] = taskid++;
 			job->ntask[i]++;
 		}
 	}
 }
 
 static void
-_dist_cyclic(job_t *job, uint32_t **task_ids)
+_dist_cyclic(job_t *job)
 {
 	int i, j, taskid = 0;
 	for (j=0; (taskid<opt.nprocs); j++) {	/* cycle counter */
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
 			if (j < job->cpus[i]) {
-				task_ids[i][j] = taskid++;
+				job->tids[i][j] = taskid++;
 				job->ntask[i]++;
 			}
 		}
@@ -105,7 +105,6 @@ launch(void *arg)
 	job_t *job = (job_t *) arg;
 	int i, my_envc;
 	char hostname[MAXHOSTNAMELEN];
-	uint32_t **task_ids;
 
 	update_job_state(job, SRUN_JOB_LAUNCHING);
 	if (gethostname(hostname, MAXHOSTNAMELEN) < 0)
@@ -115,10 +114,9 @@ launch(void *arg)
 	debug("sending to slurmd port %d", slurm_get_slurmd_port());
 
 	/* Build task id list for each host */
-	task_ids = (uint32_t **) xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->tids = xmalloc(job->nhosts * sizeof(uint32_t *));
 	for (i = 0; i < job->nhosts; i++)
-		task_ids[i] = (uint32_t *) xmalloc(job->cpus[i] * 
-							sizeof(uint32_t));
+		job->tids[i] = xmalloc(job->cpus[i] * sizeof(uint32_t));
 
 	if (opt.distribution == SRUN_DIST_UNKNOWN) {
 		if (opt.nprocs <= job->nhosts)
@@ -128,15 +126,12 @@ launch(void *arg)
 	}
 
 	if (opt.distribution == SRUN_DIST_BLOCK)
-		_dist_block(job, task_ids);
+		_dist_block(job);
 	else  
-		_dist_cyclic(job, task_ids);
+		_dist_cyclic(job);
 
-	msg_array_ptr = (launch_tasks_request_msg_t *) 
-			xmalloc(sizeof(launch_tasks_request_msg_t) * 
-							job->nhosts);
-	req_array_ptr = (slurm_msg_t *) 
-			xmalloc(sizeof(slurm_msg_t) * job->nhosts);
+	msg_array_ptr = xmalloc(sizeof(launch_tasks_request_msg_t)*job->nhosts);
+	req_array_ptr = xmalloc(sizeof(slurm_msg_t) * job->nhosts);
 	my_envc = _envcount(environ);
 	for (i = 0; i < job->nhosts; i++) {
 		launch_tasks_request_msg_t *r = &msg_array_ptr[i];
@@ -154,6 +149,7 @@ launch(void *arg)
 		r->cwd             = opt.cwd;
 		r->nnodes          = job->nhosts;
 		r->nprocs          = opt.nprocs;
+		r->slurmd_debug    = opt.slurmd_debug;
 
 		if (job->ofname->type == IO_PER_TASK)
 			r->ofname  = job->ofname->name;
@@ -164,7 +160,7 @@ launch(void *arg)
 
 		/* Node specific message contents */
 		r->tasks_to_launch = job->ntask[i];
-		r->global_task_ids = task_ids[i];
+		r->global_task_ids = job->tids[i];
 		r->srun_node_id    = (uint32_t)i;
 		r->io_port         = ntohs(job->ioport[i%job->niofds]);
 		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);
@@ -185,9 +181,6 @@ launch(void *arg)
 
 	_p_launch(req_array_ptr, job);
 
-	for (i = 0; i < job->nhosts; i++)
-		xfree(task_ids[i]);
-	xfree(task_ids);
 	xfree(msg_array_ptr);
 	xfree(req_array_ptr);
 

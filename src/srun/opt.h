@@ -115,6 +115,7 @@ typedef struct srun_options {
 	char *ifname;		/* --input  -i filename         */
 	char *efname;		/* --error, -e filename         */
 
+	int  slurmd_debug;	/* --slurmd-debug, -D           */
 	char *core_format;	/* --corefile-format=, -C type	*/
 	char *attach;		/* --attach=id	    -a id	*/ 
 	bool join;		/* --join, 	    -j		*/
@@ -129,9 +130,9 @@ typedef struct srun_options {
 	bool allocate;		/* --allocate, 	   -A		*/
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool batch;		/* --batch,   -b		*/
-	bool fail_kill;		/* --kill,   -k			*/
+	bool no_kill;		/* --no-kill, -k		*/
 	bool share;		/* --share,   -s		*/
-	int  max_wait;		/* --wait,   -w			*/
+	int  max_wait;		/* --wait,    -W		*/
 #ifdef HAVE_TOTALVIEW
 	bool totalview;		/* srun controlled by TotalView	*/
 #endif

@@ -230,6 +230,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Slurmd could not fork batch job"			},
 	{ ESLURMD_EXECVE_FAILED,
 	  "Slurmd could not execve batch job"			},
+	{ ESLURMD_IO_ERROR,
+	  "Slurmd could not connect IO"			        },
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,

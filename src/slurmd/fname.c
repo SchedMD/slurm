@@ -174,10 +174,8 @@ fname_trunc_all(slurmd_job_t *job, const char *fmt)
 	filei = list_iterator_create(files);
 	while ((fname = list_next(filei))) {
 		if ((rc = _trunc_file(fname)) < 0)
-			goto done;
+			break;
 	}
-
-    done:
 	list_destroy(files);
 	return rc;
 }

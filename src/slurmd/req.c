@@ -177,10 +177,8 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
-	slurm_msg_t resp_msg;
-	launch_tasks_response_msg_t resp;
+	bool     super_user = false;
 	launch_tasks_request_msg_t *req = msg->data;
-	bool super_user = false;
 
 	req_uid = slurm_auth_uid(msg->cred);
 	if ((req_uid == conf->slurm_user_id) || (req_uid == 0))
@@ -207,21 +205,10 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		return;
 	}
 
-	rc = _launch_tasks(req, cli);
-	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
-	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
-
-	resp_msg.data         = &resp;
-	resp_msg.msg_type     = RESPONSE_LAUNCH_TASKS;
-
-	resp.node_name        = conf->hostname;
-	resp.srun_node_id     = req->srun_node_id;
-	resp.return_code      = rc;
-	resp.count_of_pids    = 0;
-	resp.local_pids       = NULL;  /* array type of uint32_t */
-
-	slurm_send_only_node_msg(&resp_msg);
+	if ((rc = _launch_tasks(req, cli)))
+		slurm_send_rc_msg(msg, rc);
 }
+
 
 static void
 _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
