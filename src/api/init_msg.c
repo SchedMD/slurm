@@ -45,6 +45,7 @@ void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 	job_desc_msg->environment = ((char **) NULL);
 	job_desc_msg->env_size    = 0;
 	job_desc_msg->features    = NULL;
+	job_desc_msg->immediate   = 0;
 	job_desc_msg->job_id      = NO_VAL;
 	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
 	job_desc_msg->name        = NULL;

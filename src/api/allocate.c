@@ -38,15 +38,12 @@
  * slurm_allocate_resources - allocate resources for a job request
  * IN job_desc_msg - description of resource allocation request
  * OUT slurm_alloc_msg - response to request
- * IN immediate - if set then resource allocation must be satisfied 
- *	immediately or fail
  * RET 0 on success or slurm error code
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 int
 slurm_allocate_resources (job_desc_msg_t * job_desc_msg , 
-			resource_allocation_response_msg_t ** slurm_alloc_msg, 
-			int immediate )
+			resource_allocation_response_msg_t ** slurm_alloc_msg )
 {
 	int msg_size ;
 	int rc ;
@@ -63,10 +60,7 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 	}
 
 	/* send request message */
-	if ( immediate )
-		request_msg.msg_type = REQUEST_IMMEDIATE_RESOURCE_ALLOCATION ;
-	else
-		request_msg . msg_type = REQUEST_RESOURCE_ALLOCATION ;
+	request_msg . msg_type = REQUEST_RESOURCE_ALLOCATION ;
 	request_msg . data = job_desc_msg ; 
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
 			== SLURM_SOCKET_ERROR ) {
@@ -104,7 +98,6 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 			*slurm_alloc_msg = NULL;
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION:
-		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION:
 			/* Calling method is responsible to free this memory */
 			*slurm_alloc_msg = 
 				( resource_allocation_response_msg_t * ) 
@@ -146,6 +139,7 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 	}
 
 	/* send request message */
+	/* job_desc_msg.immediate = true;	implicit */
 	request_msg . msg_type = REQUEST_JOB_WILL_RUN ;
 	request_msg . data = job_desc_msg ; 
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
@@ -437,4 +431,3 @@ slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg ,
 
 	return SLURM_PROTOCOL_SUCCESS ;
 }
-
