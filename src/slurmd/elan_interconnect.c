@@ -37,6 +37,34 @@ int launch_tasks ( launch_tasks_request_msg_t * launch_msg )
 	return interconnect_init ( launch_msg );
 }
 
+int _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
+{
+	int i = 0;
+	int sleeptime = 1;
+
+	if (waitpid(pid, NULL, 0) < 0) {
+		error("waitpid: %m");
+		return SLURM_ERROR;
+	}
+
+	while(qsw_prgdestroy(qsw_job) < 0) {
+		i++;
+		error("qsw_prgdestroy: %m");
+		if (i == 1) {
+			debug("sending SIGTERM to remaining tasks");
+			qsw_prgsignal(qsw_job, SIGTERM);
+		} else {
+			debug("sending SIGKILL to remaining tasks");
+			qsw_prgsignal(qsw_job, SIGKILL);
+		}
+
+		debug("going to sleep for %d seconds and try again");
+		sleep(sleeptime*=2);
+	}
+
+	return SLURM_SUCCESS;
+}
+
 /* Contains interconnect specific setup instructions and then calls 
  * fan_out_task_launch */
 int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
@@ -52,33 +80,7 @@ int interconnect_init ( launch_tasks_request_msg_t * launch_msg )
 		case 0: /* child falls thru */
 			break;
 		default: /* parent */
-			if (waitpid(pid, NULL, 0) < 0) 
-			{
-				error ("elan interconnect_init waitpid error %m errno: %i",errno);
-				return SLURM_ERROR ;
-			}
-			if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
-				qsw_prgsignal( launch_msg -> qsw_job , SIGTERM) ;
-				if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
-					qsw_prgsignal( launch_msg -> qsw_job , SIGKILL) ;
-					if (qsw_prgdestroy( launch_msg -> qsw_job ) < 0) {
-						error ("elan interconnect_init qsw_prgdestroy error %m errno: %i",errno);
-						return SLURM_ERROR ;
-					}	
-					else
-					{
-						return SLURM_SUCCESS ;
-					}
-				}
-				else
-				{
-					return SLURM_SUCCESS ;
-				}
-			}
-			else
-			{
-				return SLURM_SUCCESS ;
-			}
+			return _wait_and_destroy_prg(launch_msg->qsw_job, pid);
 	}
 
 	/* Process 2: */
