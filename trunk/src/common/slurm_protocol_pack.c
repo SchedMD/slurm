@@ -1145,6 +1145,7 @@ _pack_epilog_comp_msg(epilog_complete_msg_t * msg, Buf buffer)
 	assert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
+	pack32(msg->return_code, buffer);
 	packstr(msg->node_name, buffer);
 }
 
@@ -1160,6 +1161,7 @@ _unpack_epilog_comp_msg(epilog_complete_msg_t ** msg, Buf buffer)
 	*msg = tmp_ptr;
 
 	safe_unpack32(&(tmp_ptr->job_id), buffer);
+	safe_unpack32(&(tmp_ptr->return_code), buffer);
 	safe_unpackstr_xmalloc(& (tmp_ptr->node_name), &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
