@@ -2310,8 +2310,8 @@ static int _list_find_job_old(void *job_entry, void *key)
 void
 pack_all_jobs(char **buffer_ptr, int *buffer_size)
 {
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
+	ListIterator job_iterator;
+	struct job_record *job_ptr;
 	uint32_t jobs_packed = 0, tmp_offset;
 	Buf buffer;
 	time_t now = time(NULL);
@@ -2327,16 +2327,15 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
 	pack_time(now, buffer);
 
 	/* write individual job records */
-	job_record_iterator = list_iterator_create(job_list);
-	while ((job_record_point =
-		(struct job_record *) list_next(job_record_iterator))) {
-		xassert (job_record_point->magic == JOB_MAGIC);
+	job_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		xassert (job_ptr->magic == JOB_MAGIC);
 
-		pack_job(job_record_point, buffer);
+		pack_job(job_ptr, buffer);
 		jobs_packed++;
 	}
 
-	list_iterator_destroy(job_record_iterator);
+	list_iterator_destroy(job_iterator);
 
 	/* put the real record count in the message body header */
 	tmp_offset = get_buf_offset(buffer);
