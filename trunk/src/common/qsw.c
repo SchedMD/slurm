@@ -296,7 +296,7 @@ qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
 	for (i = 0; i < 4; i++)
 		pack32(j->j_cap.UserKey.Values[i], data, len);
 	pack16(j->j_cap.Type, 		data, len);
-	pack16(j->j_cap.Generation, 	data, len);
+	pack16(j->j_cap.padding, 	data, len);
 	pack32(j->j_cap.Version,	data, len);
 	pack32(j->j_cap.LowContext, 	data, len);
 	pack32(j->j_cap.HighContext, 	data, len);
@@ -330,8 +330,8 @@ qsw_unpack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
 	for (i = 0; i < 4; i++)
 		unpack32(&j->j_cap.UserKey.Values[i], data, len);
 	unpack16(&j->j_cap.Type, 	data, len);
-	unpack16(&j->j_cap.Generation, 	data, len); 
-	unpack32(&j->j_cap.Version,	data, len);
+	unpack16(&j->j_cap.padding, 	data, len);	    
+	unpack32(&j->j_cap.Version,	data, len); 	    
 	unpack32(&j->j_cap.LowContext, 	data, len);
 	unpack32(&j->j_cap.HighContext, data, len);
 	unpack32(&j->j_cap.MyContext,	data, len);
@@ -590,11 +590,29 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		goto fail;
 	}
 #else
-	/* see qsw gnat sw-elan/4334: elan3_control_open can return -1 */
-	if ((jobinfo->j_ctx = elan3_control_open(0)) == NULL 
-			|| jobinfo->j_ctx == (void *)-1) {
-		slurm_seterrno(EELAN3CONTROL);
-		goto fail;
+	int i, nrails;
+	nrails = elan3_nrails(&jobinfo->j_cap);
+
+	for (i = 0; i < nrails; i++) {
+
+		ELAN3_CTX *ctx;
+
+		/* see qsw gnat sw-elan/4334: elan3_control_open can ret -1 */
+		if ((ctx = elan3_control_open(i)) == NULL 
+				|| ctx == (void *)-1) {
+			slurm_seterrno(EELAN3CONTROL);
+			goto fail;
+		}
+	
+		/* make cap known via rms_getcap/rms_ncaps to members 
+		 * of this prgnum */
+		if (elan3_create(ctx, &jobinfo->j_cap) < 0) {
+			/* XXX masking errno value better than not knowing 
+			 * which function failed? */
+		        error("elan3_create(%d): %m", i);
+			slurm_seterrno(EELAN3CREATE); 
+			goto fail;
+		}
 	}
 #endif
 	/* associate this process and its children with prgnum */
@@ -610,12 +628,6 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		goto fail;
 	}
 
-      	/* make cap known via rms_getcap/rms_ncaps to members of this prgnum */
-	if (elan3_create(jobinfo->j_ctx, &jobinfo->j_cap) < 0) {
-		/* XXX masking errno value better than not knowing which function failed? */
-		slurm_seterrno(EELAN3CREATE); 
-		goto fail;
-	}
 	if (rms_prgaddcap(jobinfo->j_prognum, 0, &jobinfo->j_cap) < 0) {
 		/* translate errno values to more descriptive ones */
 		switch (errno) {
@@ -682,7 +694,7 @@ qsw_getnodeid(void)
 	int nodeid = -1;
 
 	if (ctx) {
-		nodeid = ctx->devinfo.NodeId;
+		nodeid = ctx->devinfo.Position.NodeId;
 #if USE_OLD_LIBELAN
 		_elan3_fini(ctx);
 #else
@@ -818,6 +830,7 @@ void
 qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 {
 	ELAN_CAPABILITY *cap;
+	char str[8192];
 
 	assert(jobinfo->j_magic == QSW_JOBINFO_MAGIC);
 
@@ -825,12 +838,15 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 	fprintf(fp, "prognum=%d\n", jobinfo->j_prognum);
 
 	cap = &jobinfo->j_cap;
+	/* use elan3_capability_string as a shorter alternative for now */
+	fprintf(fp, "%s\n", elan3_capability_string(cap, str));
+#if 0
 	fprintf(fp, "cap.UserKey=%8.8x.%8.8x.%8.8x.%8.8x\n",
 			cap->UserKey.Values[0], cap->UserKey.Values[1],
 			cap->UserKey.Values[2], cap->UserKey.Values[3]);
-	fprintf(fp, "cap.Version=%d\n", cap->Version);
+	/*fprintf(fp, "cap.Version=%d\n", cap->Version);*/
 	fprintf(fp, "cap.Type=0x%hx\n", cap->Type);
-	fprintf(fp, "cap.Generation=%hd\n", cap->Generation);
+	fprintf(fp, "cap.padding=%hd\n", cap->padding);
 	fprintf(fp, "cap.LowContext=%d\n", cap->LowContext);
 	fprintf(fp, "cap.HighContext=%d\n", cap->HighContext);
 	fprintf(fp, "cap.MyContext=%d\n", cap->MyContext);
@@ -840,5 +856,6 @@ qsw_print_jobinfo(FILE *fp, struct qsw_jobinfo *jobinfo)
 	fprintf(fp, "cap.Railmask=0x%x\n", cap->RailMask);
 	fprintf(fp, "cap.Bitmap=");
 	_print_capbitmap(fp, cap);
+#endif
 	fprintf(fp, "\n------------------\n");
 }

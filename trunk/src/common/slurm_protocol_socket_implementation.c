@@ -419,7 +419,7 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 	const int one = 1;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
-		debug ( "Error creating slurm stream socket: errno %i", errno ) ;
+		debug ( "Error creating slurm stream socket: %m" ) ;
 		return connection_fd ;
 	}
 
@@ -431,13 +431,13 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 
 	if ( ( rc = _slurm_bind ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
-		debug ( "Error binding slurm stream socket: errno %i" , errno ) ;
+		debug ( "Error binding slurm stream socket: %m" ) ;
 		goto error_cleanup ; 
 	}
 
 	if ( ( rc = _slurm_listen ( connection_fd , SLURM_PROTOCOL_DEFAULT_LISTEN_BACKLOG ) ) == SLURM_SOCKET_ERROR )
 	{
-		debug ( "Error listening on slurm stream socket: errno %i" , errno ) ;
+		debug ( "Error listening on slurm stream socket: %m" ) ;
 		goto error_cleanup ; 
 	}
 
@@ -456,7 +456,7 @@ slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
 	slurm_fd connection_fd ;
 	if ( ( connection_fd = _slurm_accept ( open_fd , ( struct sockaddr * ) slurm_address , & addr_len ) ) == SLURM_SOCKET_ERROR )
 	{
-		debug ( "Error accepting slurm stream socket: errno %i", errno ) ;
+		debug ( "Error accepting slurm stream socket: %m" ) ;
 	}
 	return connection_fd ;
 
@@ -468,13 +468,13 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 	slurm_fd connection_fd ;
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
-		debug ( "Error creating slurm stream socket: errno %i", errno ) ;
+		debug ( "Error creating slurm stream socket: %m" ) ;
 		return connection_fd ;
 	}
 
 	if ( ( rc = _slurm_connect ( connection_fd , ( struct sockaddr const * ) slurm_address , sizeof ( slurm_addr ) ) ) == SLURM_SOCKET_ERROR )
 	{
-		debug ( "Error connecting on slurm stream socket: errno %i" , errno ) ;
+		debug ( "Error connecting on slurm stream socket: %m" ) ;
 		goto error_cleanup ; 
 	}
 
