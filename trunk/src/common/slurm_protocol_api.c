@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <src/common/slurm_protocol_interface.h>
 #include <src/common/slurm_protocol_defs.h>
@@ -96,8 +97,8 @@ uint32_t slurm_send_server_message ( slurm_fd open_fd , slurm_message_type_t mes
 
 uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_address , slurm_message_type_t message_type , slurm_message_t const * message )
 {
-	char buftemp[MAX_MESSAGE_BUFFER_SIZE] ;
-	char * buffer = buftemp ;
+	char buf_temp[MAX_MESSAGE_BUFFER_SIZE] ;
+	char * buffer = buf_temp ;
 	header_t header ;
 	uint32_t rc ;
 	uint32_t pack_len ;
@@ -113,7 +114,7 @@ uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_a
 	pack_message ( & buffer , & pack_len , message ) ;
 
 	/* send message */
-	rc = _slurm_message_sendto ( open_fd , buffer , pack_len , NO_SEND_RECV_FLAGS , destination_address ) ;
+	rc = _slurm_message_sendto ( open_fd , buf_temp , pack_len , NO_SEND_RECV_FLAGS , destination_address ) ;
 	if ( rc == SLURM_SOCKET_ERROR )
 	{
 		if ( debug )
@@ -124,34 +125,72 @@ uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr * destination_a
 	}
 	return pack_len ;
 }
-/* No overloading allowed
-   uint32_t slurm_send_server_message ( slurm_fd open_fd , slurm_message_type_t message_type , char * buffer , size_t buf_len )
-   {
-   return SLURM_NOT_IMPLEMENTED ;	
-   }
 
-   uint32_t slurm_send_node_message ( slurm_fd open_fd , slurm_addr destination_address , slurm_message_type_t message_type , char * buffer , size_t buf_len )
-   {
-   char * buffer[DEFAULT_BUFFER_SIZE] ;
-   header_t header ;
-   uint32_t rc ;
- */	
-/* initheader */
-/*
-   init_header ( header , message_type ) ;
+uint32_t slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_message_type_t * message_type , char ** data_buffer , size_t buf_len )
+{
+	char buftemp[MAX_MESSAGE_BUFFER_SIZE] ;
+	char * buffer = buftemp ;
+	header_t header ;
+	int32_t rc ;
+	uint32_t unpack_len ;
+	uint32_t receive_len = MAX_MESSAGE_BUFFER_SIZE ;
 
-   rc = _slurm_sendto ( open_fd , buffer , send_len , NO_SEND_RECV_FLAGS , destination_address ) ;
-   if ( rc == SLURM_SOCKET_ERROR )
-   {
-   if ( debug )
-   {
-   fprintf( stderr, "Error sending message socket: errno %i", errno ) ;
-   }
-   return rc ;
-   }
-   return rc ;
-   }
- */
+	rc = _slurm_message_recvfrom ( open_fd , buffer , receive_len, NO_SEND_RECV_FLAGS , source_address ) ;
+	if ( rc == SLURM_SOCKET_ERROR )
+	{
+		if ( debug )
+		{
+			fprintf( stderr, "Error recieving message socket: errno %i\n", errno ) ;
+		}
+		return rc ;
+	}
+
+	/* unpack header */
+	unpack_len = rc ;
+	unpack_header ( & buffer , & unpack_len , & header ) ;
+
+	rc = check_header_version ( & header ) ;
+	if ( rc < 0 ) return rc ;
+	*message_type = header . message_type ;
+	*data_buffer = buffer ;
+	return unpack_len ;
+}
+
+uint32_t slurm_send_server_buffer ( slurm_fd open_fd , slurm_message_type_t message_type , char * data_buffer , size_t buf_len )
+{
+	return SLURM_NOT_IMPLEMENTED ;	
+}
+
+uint32_t slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_message_type_t message_type , char * data_buffer , size_t buf_len )
+{
+	char buf_temp[MAX_MESSAGE_BUFFER_SIZE] ;
+	char * buffer = buf_temp ;
+	header_t header ;
+	uint32_t rc ;
+	uint32_t pack_len ;
+
+	/* initheader */
+	init_header ( & header , message_type , SLURM_PROTOCOL_NO_FLAGS ) ;
+
+	/* pack header */
+	pack_len = 0 ;
+	pack_header ( & buffer , & pack_len , & header ) ;
+
+	/* pack message */
+	memcpy ( buffer , data_buffer , buf_len ) ;
+	pack_len += buf_len ;
+
+	rc = _slurm_message_sendto ( open_fd , buf_temp , pack_len , NO_SEND_RECV_FLAGS , destination_address ) ;
+	if ( rc == SLURM_SOCKET_ERROR )
+	{
+		if ( debug )
+		{
+			fprintf( stderr, "Error sending message socket: errno %i", errno ) ;
+		}
+		return rc ;
+	}
+	return rc ;
+}
 
 /***** stream functions */
 slurm_fd slurm_listen_stream ( slurm_addr * slurm_address )
