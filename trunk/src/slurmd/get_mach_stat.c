@@ -169,6 +169,11 @@ get_memory(uint32_t *real_memory)
 	*real_memory = 1;
 	pages = sysconf(_SC_PHYS_PAGES);
 	if (pages < 1) {
+		/* This error is expected on AIX and the real memory size is 
+		 * available only from /dev/kmem at this time, which involves
+		 * a fair bit of code to use. If anyone is interested in
+		 * adding this support, take a look at the program "monitor": 
+		 * http://www.mesa.nl/monitor */
 		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)\n");
 		return EINVAL;
 	} 
