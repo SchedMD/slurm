@@ -435,7 +435,7 @@ load_job_state ( void )
 	int data_allocated, data_read = 0, error_code = 0;
 	uint32_t data_size = 0;
 	int state_fd;
-	char *data, *state_file;
+	char *data = NULL, *state_file;
 	Buf buffer;
 	uint32_t job_id, user_id, time_limit, priority, total_procs;
 	time_t buf_time, start_time, end_time, submit_time;

@@ -330,7 +330,7 @@ dump_part_state (struct part_record *part_record_point, Buf buffer)
 int
 load_part_state ( void )
 {
-	char *part_name, *allow_groups, *nodes, *state_file, *data;
+	char *part_name, *allow_groups, *nodes, *state_file, *data = NULL;
 	uint32_t max_time, max_nodes;
 	time_t time;
 	uint16_t name_len, def_part_flag, root_only, shared, state_up;
