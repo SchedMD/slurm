@@ -88,5 +88,6 @@ struct squeue_parameters {
 extern struct squeue_parameters params;
 
 int parse_command_line( int argc, char* argv[] );
+int parse_format( char* format );
 
 #endif

@@ -62,7 +62,6 @@ static char *_get_prefix(char *token);
 static int   _parse_state( char* str, enum job_states* states );
 static void  _parse_token( char *token, char *field, int *field_size, 
                            bool *right_justify, char **suffix);
-static int   _parse_format( char* );
 static void  _print_options( void );
 
 /*
@@ -222,9 +221,6 @@ parse_command_line( int argc, char* argv[] )
 		params.user_list = _build_user_list( params.users );
 	}
 
-	if ( params.format )
-		_parse_format( params.format );
-
 	if ( params.verbose )
 		_print_options();
 
@@ -272,10 +268,14 @@ _parse_state( char* str, enum job_states* states )
 	return SLURM_ERROR;
 }
 
-/* Take the user's format specification and use it to build build the 
- *	format specifications (internalize it to print.c data structures) */
-static int 
-_parse_format( char* format )
+/* 
+ * parse_format - Take the user's format specification and use it to build 
+ *	build the format specifications (internalize it to print.c data 
+ *	structures) 
+ * IN format - user's format specification
+ * RET zero or error code
+ */
+int parse_format( char* format )
 {
 	int field_size;
 	bool right_justify;
