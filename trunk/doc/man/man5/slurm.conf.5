@@ -175,12 +175,14 @@ this value must correspond to the checksum seed with which Maui was
 compiled.
 .TP
 \fBSchedulerPort\fR
-For polling schedulers, the port number on which slurmctld should 
-listen for connection requests.
+The port number on which slurmctld should listen for connection requests.
+This value is only used by the Maui Scheduler (see \fBSchedulerType\fR).
 .TP
 \fBSchedulerType\fR
-Identifies the type of scheduler to be used. Acceptable values 
-include "sched/builtin" for the built-in FIFO scheduler and
+Identifies the type of scheduler to be used. Acceptable values include 
+"sched/builtin" for the built-in FIFO scheduler, 
+"sched/backfill" for a backfill scheduling module to augment 
+the default FIFO scheduling, and 
 "sched/wiki" for the Wiki interface to the Maui Scheduler. 
 The default value is "sched/builtin". 
 .TP

@@ -313,6 +313,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/sched/Makefile
+		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/sched/wiki/Makefile
 		 doc/Makefile
