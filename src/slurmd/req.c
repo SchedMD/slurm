@@ -64,6 +64,7 @@ static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
 static void _rpc_launch_tasks(slurm_msg_t *, slurm_addr *);
+static void _rpc_spawn_task(slurm_msg_t *, slurm_addr *);
 static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
@@ -76,6 +77,7 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
+static int  _spawn_task(spawn_task_request_msg_t *, slurm_addr *);
 
 static bool _pause_for_job_completion (uint32_t jobid, int maxtime);
 static int _waiter_init (uint32_t jobid);
@@ -104,6 +106,12 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_mutex_lock(&launch_mutex);
 		_rpc_launch_tasks(msg, cli);
 		slurm_free_launch_tasks_request_msg(msg->data);
+		slurm_mutex_unlock(&launch_mutex);
+		break;
+	case REQUEST_SPAWN_TASK:
+		slurm_mutex_lock(&launch_mutex);
+		_rpc_spawn_task(msg, cli);
+		slurm_free_spawn_task_request_msg(msg->data);
 		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_KILL_TASKS:
@@ -268,7 +276,18 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 
 	return (retval <= 0) ? retval : 0;
 }
-				                                            
+
+static int
+_spawn_task(spawn_task_request_msg_t *req, slurm_addr *cli)
+{
+	int retval;
+
+	if ((retval = _fork_new_slurmd()) == 0)
+		exit (mgr_spawn_task(req, cli));
+
+	return (retval <= 0) ? retval : 0;
+}
+
 static int
 _check_job_credential(slurm_cred_t cred, uint32_t jobid, 
 		      uint32_t stepid, uid_t uid)
@@ -400,6 +419,74 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 }
 
 
+static void 
+_rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
+{
+	int      errnum = 0;
+	uint16_t port;
+	char     host[MAXHOSTNAMELEN];
+	uid_t    req_uid;
+	spawn_task_request_msg_t *req = msg->data;
+	uint32_t jobid  = req->job_id;
+	uint32_t stepid = req->job_step_id;
+	bool     super_user = false, run_prolog = false;
+
+	req_uid = g_slurm_auth_get_uid(msg->cred);
+
+	super_user = _slurm_authorized_user(req_uid);
+
+	if ((super_user == false) && (req_uid != req->uid)) {
+		error("spawn task request from uid %u",
+		      (unsigned int) req_uid);
+		errnum = ESLURM_USER_ID_MISSING;	/* or invalid user */
+		goto done;
+	}
+
+	slurmd_get_addr(cli, &port, host, sizeof(host));
+	info("spawn task %u.%u request from %u@%s", req->job_id, 
+	     req->job_step_id, req->uid, host);
+
+	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
+		run_prolog = true;
+
+	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
+		errnum = errno;
+		error("Invalid job credential from %ld@%s: %m", 
+		      (long) req_uid, host);
+		goto done;
+	}
+
+	/* xassert(slurm_cred_jobid_cached(conf->vctx, req->job_id));*/
+
+	/* Run job prolog if necessary */
+	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
+		error("[job %u] prolog failed", req->job_id);
+		errnum = ESLURMD_PROLOG_FAILED;
+		goto done;
+	}
+
+	if (_spawn_task(req, cli) < 0)
+		errnum = errno;
+
+    done:
+	if (slurm_send_rc_msg(msg, errnum) < 0) {
+
+		error("spawn_task: unable to send return code: %m");
+
+		/*
+		 * Rewind credential so that srun may perform retry
+		 */
+		slurm_cred_rewind(conf->vctx, req->cred); /* ignore errors */
+
+	} else if (errnum == SLURM_SUCCESS)
+		save_cred_state(conf->vctx);
+
+	/*
+	 *  If job prolog failed, indicate failure to slurmctld
+	 */
+	if (errnum == ESLURMD_PROLOG_FAILED)
+		send_registration_msg(errnum);	
+}
 static void
 _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 {

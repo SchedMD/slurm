@@ -45,6 +45,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <stdio.h>
 #include <string.h>
 
 #if HAVE_STDLIB_H
@@ -112,6 +113,7 @@ static void _send_launch_failure(launch_tasks_request_msg_t *,
 static int  _job_mgr(slurmd_job_t *job);
 static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
+static int  _setup_spawn_io(slurmd_job_t *job);
 static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
 static void _send_launch_resp(slurmd_job_t *job, int rc);
@@ -224,7 +226,31 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	return 0; 
 }
 
+/*
+ * Spawn a task / job step on the current node
+ */
+int
+mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli)
+{
+	slurmd_job_t *job = NULL;
 
+	if (!(job = job_spawn_create(msg, cli)))
+		return SLURM_ERROR;
+
+	job->spawn_task = true;
+	_set_job_log_prefix(job);
+
+	_setargs(job);
+
+	_set_launch_ip_in_env(job, cli);
+
+	if (_job_mgr(job) < 0)
+		return SLURM_ERROR;
+
+	job_destroy(job);
+
+	return SLURM_SUCCESS;
+}
 
 /*
  * Run a prolog or epilog script.
@@ -346,6 +372,23 @@ _setup_io(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 }
 
+
+static int
+_setup_spawn_io(slurmd_job_t *job)
+{
+	_slurmd_job_log_init(job);
+
+#ifndef NDEBUG
+#  ifdef PR_SET_DUMPABLE
+	if (prctl(PR_SET_DUMPABLE, 1) < 0)
+		debug ("Unable to set dumpable to 1");
+#  endif /* PR_SET_DUMPABLE */
+#endif   /* !NDEBUG         */
+
+	return SLURM_SUCCESS;
+}
+
+
 static void
 _random_sleep(slurmd_job_t *job)
 {
@@ -437,7 +480,11 @@ _job_mgr(slurmd_job_t *job)
 	xsignal_block(mgr_sigarray);
 	xsignal(SIGHUP, _hup_handler);
 
-	if ((rc = _setup_io(job))) 
+	if (job->spawn_task)
+		rc = _setup_spawn_io(job);
+	else
+		rc = _setup_io(job);
+	if (rc)
 		goto fail2;
 
 	/*
@@ -453,8 +500,7 @@ _job_mgr(slurmd_job_t *job)
 	/*
 	 * Send job launch response with list of pids
 	 */
-	if (!job->batch)
-		_send_launch_resp(job, 0);
+	_send_launch_resp(job, 0);
 
 	/*
 	 * Wait for all tasks to exit
@@ -489,10 +535,10 @@ _job_mgr(slurmd_job_t *job)
 		error("interconnect_postfini: %m");
 
 	/*
-	 * Wait for io thread to complete
+	 * Wait for io thread to complete (if there is one)
 	 */
-	_wait_for_io(job);
-
+	if (!job->spawn_task)
+		_wait_for_io(job);
 
 	job_update_state(job, SLURMD_JOB_COMPLETE);
 
@@ -503,11 +549,12 @@ _job_mgr(slurmd_job_t *job)
 	/* If interactive job startup was abnormal, 
 	 * be sure to notify client.
 	 */
-	if ((rc != 0) && !job->batch) 
+	if (rc != 0) 
 		_send_launch_resp(job, rc);
 
 	return(rc);
 }
+
 
 /*
  * update task information from "job" into shared memory
@@ -983,6 +1030,9 @@ _send_launch_resp(slurmd_job_t *job, int rc)
 	launch_tasks_response_msg_t resp;
 	srun_info_t *srun = list_peek(job->sruns);
 
+	if (job->batch || job->spawn_task)
+		return;
+
 	debug("Sending launch resp rc=%d", rc);
 
         resp_msg.address      = srun->resp_addr;
@@ -1109,14 +1159,13 @@ _reclaim_privileges(struct passwd *pwd)
 }
 
 
-
-
 static void
 _slurmd_job_log_init(slurmd_job_t *job) 
 {
 	char argv0[64];
 
-	conf->log_opts.buffered = 1;
+	if (!job->spawn_task)
+		conf->log_opts.buffered = 1;
 
 	/*
 	 * Reset stderr logging to user requested level
@@ -1133,12 +1182,12 @@ _slurmd_job_log_init(slurmd_job_t *job)
 	log_set_argv0(argv0);
 
 	/* Connect slurmd stderr to job's stderr */
-	if (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0) {
+	if ((!job->spawn_task) && 
+	    (dup2(job->task[0]->perr[1], STDERR_FILENO) < 0)) {
 		error("job_log_init: dup2(stderr): %m");
 		return;
 	}
 }
-
 
 
 static void

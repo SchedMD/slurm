@@ -53,6 +53,11 @@ man3_MANS = man3/slurm_hostlist_create.3 \
 	man3/slurm_print_partition_info_msg.3 \
 	man3/slurm_reconfigure.3 \
 	man3/slurm_shutdown.3 \
+	man3/slurm_spawn.3 \
+	man3/slurm_spawn_kill.3 \
+	man3/slurm_step_ctx_create.3 \
+	man3/slurm_step_ctx_destroy.3 \
+	man3/slurm_step_ctx_set.3 \
 	man3/slurm_strerror.3 \
 	man3/slurm_submit_batch_job.3 \
 	man3/slurm_update_job.3 \

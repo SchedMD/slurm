@@ -128,6 +128,12 @@ static void _pack_launch_tasks_request_msg(launch_tasks_request_msg_t *
 static int _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 					    msg_ptr, Buf buffer);
 
+
+static void _pack_spawn_task_request_msg(spawn_task_request_msg_t *
+					   msg, Buf buffer);
+static int _unpack_spawn_task_request_msg(spawn_task_request_msg_t **
+					    msg_ptr, Buf buffer);
+
 static void _pack_cancel_tasks_msg(kill_tasks_msg_t * msg, Buf buffer);
 static int _unpack_cancel_tasks_msg(kill_tasks_msg_t ** msg_ptr, Buf buffer);
 
@@ -372,6 +378,11 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_launch_tasks_response_msg((launch_tasks_response_msg_t
 						  *) msg->data, buffer);
 		 break;
+	 case REQUEST_SPAWN_TASK:
+		 _pack_spawn_task_request_msg(
+					(spawn_task_request_msg_t *)
+					msg->data, buffer);
+		 break;
 	 case REQUEST_KILL_TASKS:
 		 _pack_cancel_tasks_msg((kill_tasks_msg_t *) msg->data,
 					buffer);
@@ -588,6 +599,11 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case RESPONSE_LAUNCH_TASKS:
 		 rc = _unpack_launch_tasks_response_msg(
 					(launch_tasks_response_msg_t **)
+					& (msg->data), buffer);
+		 break;
+	 case REQUEST_SPAWN_TASK:
+		 rc = _unpack_spawn_task_request_msg(
+					(spawn_task_request_msg_t **)
 					& (msg->data), buffer);
 		 break;
 	 case REQUEST_REATTACH_TASKS:
@@ -2204,6 +2220,69 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 
       unpack_error:
 	slurm_free_launch_tasks_request_msg(msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+static void
+_pack_spawn_task_request_msg(spawn_task_request_msg_t * msg, Buf buffer)
+{
+	pack32(msg->job_id, buffer);
+	pack32(msg->job_step_id, buffer);
+	pack32(msg->nnodes, buffer);
+	pack32(msg->nprocs, buffer);
+	pack32(msg->uid, buffer);
+	pack32(msg->srun_node_id, buffer);
+	slurm_cred_pack(msg->cred, buffer);
+	packstr_array(msg->env, msg->envc, buffer);
+	packstr(msg->cwd, buffer);
+	packstr_array(msg->argv, msg->argc, buffer);
+	pack16(msg->io_port, buffer);
+	pack16(msg->task_flags, buffer);
+	pack16(msg->cpus_allocated, buffer);
+	pack32(msg->slurmd_debug, buffer);
+	pack32(msg->global_task_id, buffer);
+	switch_pack_jobinfo(msg->switch_job, buffer);
+}
+
+static int
+_unpack_spawn_task_request_msg(spawn_task_request_msg_t **
+				 msg_ptr, Buf buffer)
+{
+	uint16_t uint16_tmp;
+	spawn_task_request_msg_t *msg;
+
+	msg = xmalloc(sizeof(launch_tasks_request_msg_t));
+	*msg_ptr = msg;
+
+	safe_unpack32(&msg->job_id, buffer);
+	safe_unpack32(&msg->job_step_id, buffer);
+	safe_unpack32(&msg->nnodes, buffer);
+	safe_unpack32(&msg->nprocs, buffer);
+	safe_unpack32(&msg->uid, buffer);
+	safe_unpack32(&msg->srun_node_id, buffer);
+	if (!(msg->cred = slurm_cred_unpack(buffer)))
+		goto unpack_error;
+	safe_unpackstr_array(&msg->env, &msg->envc, buffer);
+	safe_unpackstr_xmalloc(&msg->cwd, &uint16_tmp, buffer);
+	safe_unpackstr_array(&msg->argv, &msg->argc, buffer);
+	safe_unpack16(&msg->io_port, buffer);
+	safe_unpack16(&msg->task_flags, buffer);
+	safe_unpack16(&msg->cpus_allocated, buffer);
+	safe_unpack32(&msg->slurmd_debug, buffer);
+	safe_unpack32(&msg->global_task_id, buffer);
+
+	switch_alloc_jobinfo(&msg->switch_job);
+	if (switch_unpack_jobinfo(msg->switch_job, buffer) < 0) {
+		error("switch_unpack_jobinfo: %m");
+		switch_free_jobinfo(msg->switch_job);
+		goto unpack_error;
+	}
+
+	return SLURM_SUCCESS;
+
+      unpack_error:
+	slurm_free_spawn_task_request_msg(msg);
 	*msg_ptr = NULL;
 	return SLURM_ERROR;
 }

@@ -34,6 +34,10 @@
 
 #include "src/slurmd/job.h"
 
+/* Spawn a task / job step on this node
+ */
+int mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *client);
+
 /* Launch a job step on this node
  */
 int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client);

@@ -5,6 +5,8 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Fix "SLURM_RLIMIT_* not found in environment" error message when
     distributing large rlimit to jobs.
+ -- Add support for slurm_spawn() and associated APIs (needed for IBM 
+    SP systems).
 
 * Changes in SLURM 0.3.4
 ========================

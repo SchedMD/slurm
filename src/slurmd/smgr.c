@@ -85,6 +85,7 @@ static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status);
 static char *_signame(int signo);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static int   _setup_env(slurmd_job_t *job, int taskid);
+static void  _setup_spawn_io(slurmd_job_t *job);
 
 /* parallel debugger support */
 static void  _pdebug_trace_process(slurmd_job_t *job, pid_t pid);
@@ -166,7 +167,7 @@ _session_mgr(slurmd_job_t *job)
 		}
 	}
 
-	if (set_user_limits(job) < 0) {
+	if ((!job->spawn_task) && (set_user_limits(job) < 0)) {
 		debug("Unable to set user limits");
 		exit(5);
 	}
@@ -195,6 +196,28 @@ _session_mgr(slurmd_job_t *job)
 	}
 
 	exit(SLURM_SUCCESS);
+}
+
+static void _setup_spawn_io(slurmd_job_t *job)
+{
+	srun_info_t *srun;
+	int fd = -1;
+
+	srun = list_peek(job->sruns);
+	xassert(srun);
+	if ((fd = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
+		error("connect io: %m");
+		exit(1);
+	}
+	fd_set_nonblocking(fd);
+	(void) close(STDIN_FILENO);
+	(void) close(STDOUT_FILENO);
+	(void) close(STDERR_FILENO);
+	if ((dup(fd) != 0) || (dup(fd) != 1) || (dup(fd) != 2)) {
+		error("dup: %m");
+		exit(1);
+	}
+	(void) close(fd);
 }
 
 /* Close write end of stdin (at the very least)
@@ -316,7 +339,10 @@ _exec_task(slurmd_job_t *job, int i)
 	 * If io_prepare_child() is moved above interconnect_attach()
 	 * this causes EBADF from qsw_attach(). Why?
 	 */
-	io_prepare_child(job->task[i]);
+	if (job->spawn_task)
+		_setup_spawn_io(job);
+	else
+		io_prepare_child(job->task[i]);
 
 	execve(job->argv[0], job->argv, job->env);
 
