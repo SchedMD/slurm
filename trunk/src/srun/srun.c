@@ -36,6 +36,7 @@ static void              print_job_information(allocation_resp *resp);
 static void		 create_job_step(job_t *job);
 static void		 sigterm_handler(int signum);
 void *                   sig_thr(void *arg);
+void 			 fwd_signal(job_t *job, int signo);
 
 #if HAVE_LIBELAN3
 #  include <src/common/qsw.h> 
@@ -139,12 +140,14 @@ main(int ac, char **av)
 	debug("Started signals thread (%d)", job->sigid);
 
 	/* launch jobs */
-	launch(job);
+	if (pthread_create(&job->lid, NULL, &launch, (void *) job))
+		fatal("Unable to create launch thread. %m");
+	debug("Started launch thread (%d)", job->lid);
 
 	/* wait for job to terminate */
 	while (job->state != SRUN_JOB_OVERDONE) {
 		pthread_cond_wait(&job->state_cond, &job->state_mutex);
-		debug("main thread woke up, state is now %d", job->state);
+		debug3("main thread woke up, state is now %d", job->state);
 		if (errno == EINTR)
 			debug("got signal");
 	}
@@ -154,6 +157,7 @@ main(int ac, char **av)
 	if (!opt.no_alloc)
 		slurm_complete_job(job->jobid);
 
+	pthread_kill(job->lid, SIGTERM);
 	pthread_kill(job->jtid, SIGTERM);
 	pthread_kill(job->ioid, SIGTERM);
 	pthread_kill(job->sigid, SIGTERM);
@@ -306,14 +310,18 @@ sig_thr(void *arg)
 		debug2("recvd signal %d", signo);
 		switch (signo) {
 		  case SIGINT:
+			  fwd_signal(job, SIGINT);
 			  pthread_mutex_lock(&job->state_mutex);
 			  job->state = SRUN_JOB_OVERDONE;
 			  pthread_cond_signal(&job->state_cond);
 			  pthread_mutex_unlock(&job->state_mutex);
 			  pthread_exit(0);
 			  break;
+		  case SIGTERM:
+			  pthread_exit(0);
+			  break;
 		  default:
-			  /* fwd_signal(job, signo); */
+			  fwd_signal(job, signo);
 			  break;
 		}
 	}
@@ -321,3 +329,30 @@ sig_thr(void *arg)
 	pthread_exit(0);
 }
 
+void 
+fwd_signal(job_t *job, int signo)
+{
+	int i;
+	slurm_msg_t req;
+	slurm_msg_t resp;
+	kill_tasks_msg_t msg;
+	
+	debug("forward signal %d to job", signo);
+
+	req.msg_type = REQUEST_KILL_TASKS;
+	req.data = &msg;
+
+	msg.job_id      = job->jobid;
+	msg.job_step_id = job->stepid;
+	msg.signal      = (uint32_t) signo;
+
+	for (i = 0; i < job->nhosts; i++) {
+		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(),
+				    ntohl(job->iaddr[i]));
+		debug("sending kill req to %s", job->host[i]);
+		if (slurm_send_recv_node_msg(&req, &resp) < 0)
+			error("Unable to send signal to host %s", 
+					job->host[i]);
+	}
+
+}
