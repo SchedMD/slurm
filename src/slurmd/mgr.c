@@ -509,10 +509,8 @@ _update_shm_task_info(slurmd_job_t *job)
 		t.pid       = job->task[i]->pid;
 		t.ppid      = job->smgr_pid;
 
-		if (shm_add_task(job->jobid, job->stepid, &t) < 0) {
-			error("shm_add_task: %m");
+		if (shm_add_task(job->jobid, job->stepid, &t) < 0)
 			retval = SLURM_ERROR;
-		}
 	}
 
 	return retval;
@@ -582,7 +580,8 @@ _create_job_session(slurmd_job_t *job)
 			goto error;
 	}
 
-	_update_shm_task_info(job);
+	if (_update_shm_task_info(job) < 0)
+		debug("shm_add_task: %m");	/* see comment above */
 
 	return SLURM_SUCCESS;
 
