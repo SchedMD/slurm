@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "July 2003" "Morris Jette" "Slurm job completion calls"
+.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm job completion calls"
 .SH "NAME"
 slurm_complete_job, slurm_complete_job_step \- Slurm job completion calls
 .SH "SYNTAX"
@@ -63,6 +63,9 @@ not be modified.
 \fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested action (e.g. trying to delete or modify another user's job). 
 .LP
 \fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect. 
+.LP
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
+SLURM controller.
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
 Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "August 2003" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "September 2003" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -211,6 +211,9 @@ the partition's time limit.
 \fBESLURM_INTERCONNECT_FAILURE\fR failed to configure the node interconnect. 
 .LP
 \fBESLURM_BAD_DIST\fR task distribution specification is invalid. 
+.LP
+\fBSLURM_PROTOCOL_SOCKET_IMPL_TIMEOUT\fR Timeout in communicating with 
+SLURM controller.
 .SH "EXAMPLE"
 .LP 
 #include <stdio.h>
