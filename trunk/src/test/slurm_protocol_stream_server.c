@@ -27,14 +27,16 @@ int32_t main ( int32_t argc , char * argv[] )
 	/* open and listen on socket */
 	listen_socket = slurm_listen_stream ( & listen_address ) ;
 	/* accept socket */
-	worker_socket = slurm_accept_stream ( listen_socket , & worker_address ) ;
+	while ( true )
+	{
+		worker_socket = slurm_accept_stream ( listen_socket , & worker_address ) ;
 
-	length_io = slurm_write_stream ( worker_socket , test_send , test_send_len ) ;
-	printf ( "Bytes Sent %i\n", length_io ) ;
+		length_io = slurm_write_stream ( worker_socket , test_send , test_send_len ) ;
+		printf ( "Bytes Sent %i\n", length_io ) ;
 
-	length_io = slurm_read_stream ( worker_socket , buffer , buffer_len ) ;
-	printf ( "Bytes Recieved %i\n", length_io ) ;
-
+		length_io = slurm_read_stream ( worker_socket , buffer , buffer_len ) ;
+		printf ( "Bytes Recieved %i\n", length_io ) ;
+	}
 	slurm_close_stream ( worker_socket ) ;
 	slurm_close_stream ( listen_socket ) ;
 
