@@ -4,6 +4,19 @@
 #ifndef _PACK_INCLUDED
 #define _PACK_INCLUDED
 
+#if HAVE_CONFIG_H
+#include <config.h>
+#if HAVE_INTTYPES_H
+#  include <inttypes.h>
+#else  /* !HAVE_INTTYPES_H */
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#endif  /* HAVE_INTTYPES_H */
+#endif  /* HAVE_CONFIG_H   */
+
+#include <assert.h>
+
 void 	_pack32(uint32_t val, void **bufp, int *lenp);
 void	_unpack32(uint32_t *valp, void **bufp, int *lenp);
 
