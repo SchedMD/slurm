@@ -31,7 +31,8 @@ void free_credential_state ( void * credential_state ) ;
 static int insert_credential_state ( slurm_job_credential_t * credential , List list ) ;
 static int insert_revoked_credential_state ( revoke_credential_msg_t * revoke_msg , List list ) ;
 	
-int sign_credential ( slurm_ssl_key_ctx_t * sign_ctx , slurm_job_credential_t * credential ) 
+int
+sign_credential ( slurm_ssl_key_ctx_t * sign_ctx , slurm_job_credential_t * credential ) 
 {
 	char buffer [4096] ;
 	char * buf_ptr = buffer ;
@@ -52,7 +53,8 @@ int sign_credential ( slurm_ssl_key_ctx_t * sign_ctx , slurm_job_credential_t * 
 	return error_code ;
 }
 
-int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_t * credential , List credential_state_list ) 
+int
+verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_t * credential , List credential_state_list ) 
 {
 	char buffer [4096] ;
 	char * buf_ptr = buffer ;
@@ -105,7 +107,8 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 	return error_code ;
 }
 
-int revoke_credential ( revoke_credential_msg_t * revoke_msg , List list ) 
+int
+revoke_credential ( revoke_credential_msg_t * revoke_msg , List list ) 
 {
 	time_t now = time ( NULL ) ;
 	ListIterator iterator ;
@@ -126,13 +129,15 @@ int revoke_credential ( revoke_credential_msg_t * revoke_msg , List list )
 	return SLURM_SUCCESS ;
 }
 
-int is_credential_still_valid ( slurm_job_credential_t * credential , List list )
+int 
+is_credential_still_valid ( slurm_job_credential_t * credential , List list )
 {
 	ListIterator iterator ;
 	credential_state_t * credential_state ;
 	
-	iterator = list_iterator_create( list ) ;
 	clear_expired_revoked_credentials ( list ) ;
+	
+	iterator = list_iterator_create( list ) ;
 
 	while ( ( credential_state = list_next ( iterator ) ) )
 	{
@@ -155,7 +160,8 @@ int is_credential_still_valid ( slurm_job_credential_t * credential , List list 
 	return SLURM_SUCCESS ;
 }
 
-int clear_expired_revoked_credentials ( List list )
+int 
+clear_expired_revoked_credentials ( List list )
 {
 	time_t now = time ( NULL ) ;
 	ListIterator iterator ;
@@ -172,19 +178,22 @@ int clear_expired_revoked_credentials ( List list )
 	return SLURM_SUCCESS ;
 }
 
-int initialize_credential_state_list ( List * list )
+int 
+initialize_credential_state_list ( List * list )
 {
 	*list = list_create ( free_credential_state ) ;
 	return SLURM_SUCCESS ;
 }
 
-int destroy_credential_state_list ( List list )
+int
+destroy_credential_state_list ( List list )
 {
 	list_destroy ( list ) ;
 	return SLURM_SUCCESS ;
 }
 
-int init_credential_state ( credential_state_t * credential_state , slurm_job_credential_t * credential )
+int
+init_credential_state ( credential_state_t * credential_state , slurm_job_credential_t * credential )
 {
 	credential_state -> job_id = credential -> job_id ;	
 	credential_state -> expiration = credential -> expiration_time  ;
@@ -192,7 +201,8 @@ int init_credential_state ( credential_state_t * credential_state , slurm_job_cr
 	return SLURM_SUCCESS ;
 }
 
-void free_credential_state ( void * credential_state )
+void
+free_credential_state ( void * credential_state )
 {
 	if ( credential_state )
 	{
@@ -200,7 +210,8 @@ void free_credential_state ( void * credential_state )
 	}
 }
 
-int insert_credential_state ( slurm_job_credential_t * credential , List list )
+int
+insert_credential_state ( slurm_job_credential_t * credential , List list )
 {
 	credential_state_t * credential_state ;
 	credential_state = xmalloc ( sizeof ( slurm_job_credential_t ) ) ;
@@ -209,7 +220,8 @@ int insert_credential_state ( slurm_job_credential_t * credential , List list )
 	return SLURM_SUCCESS ;	
 }
 
-int insert_revoked_credential_state ( revoke_credential_msg_t * revoke_msg , List list )
+int
+insert_revoked_credential_state ( revoke_credential_msg_t * revoke_msg , List list )
 {
 	time_t now = time ( NULL ) ;
 	credential_state_t * credential_state ;
@@ -222,4 +234,3 @@ int insert_revoked_credential_state ( revoke_credential_msg_t * revoke_msg , Lis
 	list_append ( list , credential_state ) ;
 	return SLURM_SUCCESS ;	
 }
-

@@ -15,21 +15,24 @@
 #include <src/common/signature_utils.h>
 
 
-int slurm_ssl_init ( )
+int
+slurm_ssl_init ( )
 {
 	ERR_load_crypto_strings();
 	OpenSSL_add_all_algorithms();
 	return SLURM_SUCCESS ;
 }
 
-int slurm_ssl_destroy ( )
+int
+slurm_ssl_destroy ( )
 {
 	EVP_cleanup();
 	ERR_free_strings();
 	return SLURM_SUCCESS ;
 }
 
-int slurm_init_signer ( slurm_ssl_key_ctx_t * ctx , char * path )
+int
+slurm_init_signer ( slurm_ssl_key_ctx_t * ctx , char * path )
 {
 	int local_errno ;
 	FILE * key_file ;
@@ -50,7 +53,8 @@ int slurm_init_signer ( slurm_ssl_key_ctx_t * ctx , char * path )
 	}
 	return SLURM_SUCCESS ;
 }
-int slurm_init_verifier ( slurm_ssl_key_ctx_t * ctx , char * path )
+int
+slurm_init_verifier ( slurm_ssl_key_ctx_t * ctx , char * path )
 {
 	int local_errno ;
 	X509 * x509 ;
@@ -84,7 +88,8 @@ int slurm_init_verifier ( slurm_ssl_key_ctx_t * ctx , char * path )
 	return SLURM_SUCCESS ;
 }
 
-int slurm_destroy_ssl_key_ctx ( slurm_ssl_key_ctx_t * ctx )
+int
+slurm_destroy_ssl_key_ctx ( slurm_ssl_key_ctx_t * ctx )
 {
 	if ( ctx )
 	{
@@ -94,7 +99,8 @@ int slurm_destroy_ssl_key_ctx ( slurm_ssl_key_ctx_t * ctx )
 }
 
 
-int slurm_ssl_sign ( slurm_ssl_key_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int * signature_length ) 
+int
+slurm_ssl_sign ( slurm_ssl_key_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int * signature_length ) 
 {
 	int rc ;
 	EVP_MD_CTX md_ctx ;
@@ -114,7 +120,8 @@ int slurm_ssl_sign ( slurm_ssl_key_ctx_t * ctx , char * data_buffer , int data_l
 	return SLURM_SUCCESS ;
 }
 
-int slurm_ssl_verify ( slurm_ssl_key_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int signature_length ) 
+int 
+slurm_ssl_verify ( slurm_ssl_key_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int signature_length ) 
 {
 	int rc ;
 	EVP_MD_CTX md_ctx ;
