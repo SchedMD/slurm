@@ -899,8 +899,6 @@ extern void *
 bluegene_agent(void *args)
 {
 	static time_t last_node_test, last_switch_test, now;
-	struct timeval tv1, tv2;
-	char tv_str[20];
 
 	last_node_test = last_switch_test = time(NULL);
 	while (!agent_fini) {
@@ -908,16 +906,17 @@ bluegene_agent(void *args)
 		now = time(NULL);
 
 		if (difftime(now, last_node_test) >= NODE_POLL_TIME) {
-			gettimeofday(&tv1, NULL);
-			test_down_nodes();
-			gettimeofday(&tv2, NULL);
-			_diff_tv_str(&tv1, &tv2, tv_str, 20);
+			if (agent_fini)		/* don't bother */
+				return NULL;	/* quit now */
+			last_node_test = now;
+			test_down_nodes();	/* can run for a while */
 		}
-		if (difftime(now, last_node_test) >= SWITCH_POLL_TIME) {
-			gettimeofday(&tv1, NULL);
-			test_down_switches();
-			gettimeofday(&tv2, NULL);
-			_diff_tv_str(&tv1, &tv2, tv_str, 20);
+
+		if (difftime(now, last_switch_test) >= SWITCH_POLL_TIME) {
+			if (agent_fini)         /* don't bother */
+				return NULL;	/* quit now */
+			last_switch_test = now;
+			test_down_switches();	/* can run for a while */
 		}
 	}
 	return NULL;

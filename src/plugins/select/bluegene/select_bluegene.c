@@ -169,7 +169,8 @@ static int _init_status_pthread(void)
 
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( bluegene_thread ) {
-		debug2( "Bluegene thread already running, not starting another" );
+		debug2("Bluegene thread already running, not starting "
+			"another");
 		pthread_mutex_unlock( &thread_flag_mutex );
 		return SLURM_ERROR;
 	}
@@ -179,22 +180,39 @@ static int _init_status_pthread(void)
 	pthread_create( &bluegene_thread, &attr, bluegene_agent, NULL);
 	pthread_mutex_unlock( &thread_flag_mutex );
 	pthread_attr_destroy( &attr );
+
 	return SLURM_SUCCESS;
+}
+
+static int _wait_for_thread (pthread_t thread_id)
+{
+	int i;
+
+	for (i=0; i<4; i++) {
+		if (pthread_kill(thread_id, 0))
+			return SLURM_SUCCESS;
+		sleep(1);
+	}
+	error("Could not kill select script pthread");
+	return SLURM_ERROR;
 }
 
 extern int fini ( void )
 {
+	int rc = SLURM_SUCCESS;
+
 	pthread_mutex_lock( &thread_flag_mutex );
 	if ( bluegene_thread ) {
 		agent_fini = true;
-		verbose( "Bluegene select plugin shutting down" );
+		verbose("Bluegene select plugin shutting down");
+		rc = _wait_for_thread(bluegene_thread);
 		bluegene_thread = 0;
 	}
 	pthread_mutex_unlock( &thread_flag_mutex );
 
 	fini_bgl();
 
-	return SLURM_SUCCESS;
+	return rc;
 }
 
 /*
