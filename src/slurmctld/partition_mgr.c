@@ -125,6 +125,7 @@ main(int argc, char * argv[]) {
     if (Part_Ptr->StateUp != 0)   printf("ERROR: Update_Part StateUp not set\n");
     if (Part_Ptr->Shared != 1)    printf("ERROR: Update_Part Shared not set\n");
 
+    Node_Record_Count = 0;	/* Delete_Part_Record dies if node count is bad */
     Error_Code = Delete_Part_Record("Batch");
     if (Error_Code != 0)  printf("Delete_Part_Record error1 %d\n", Error_Code);
     printf("NOTE: We expect Delete_Part_Record to report not finding a record for Batch\n");
@@ -171,6 +172,7 @@ main(int argc, char * argv[]) {
 
 /*
  * Build_Part_BitMap - Update the TotalCPUs, TotalNodes, and NodeBitMap for the specified partition
+ *	Also reset the partition pointers in the node back to this partition.
  * Input: Part_Record_Point - Pointer to the partition
  * Output: Returns 0 if no error, errno otherwise
  * NOTE: This does not report nodes defined in more than one partition. This is checked only  
@@ -249,7 +251,8 @@ int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
 	    BitMapSet(Part_Record_Point->NodeBitMap, 
 			(int)(Node_Record_Point - Node_Record_Table_Ptr));
 	    Part_Record_Point->TotalNodes++;
-	    Part_Record_Point->TotalCPUs += Node_Record_Point->Config_Ptr->CPUs;
+	    Part_Record_Point->TotalCPUs += Node_Record_Point->CPUs;
+	    Node_Record_Point->Partition_Ptr = Part_Record_Point;
 	} /* for */
 	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
     } /* while */
@@ -578,7 +581,13 @@ int Init_Part_Conf() {
 /* List_Delete_Part - Delete an entry from the partition list, see list.h for documentation */
 void List_Delete_Part(void *Part_Entry) {
     struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
+    int i;
+
     Part_Record_Point = (struct Part_Record *)Part_Entry;
+    for (i=0; i<Node_Record_Count; i++) {
+	if (Node_Record_Table_Ptr[i].Partition_Ptr != Part_Record_Point) continue;
+	Node_Record_Table_Ptr[i].Partition_Ptr = NULL;
+    } /* if */
     if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
     if (Part_Record_Point->Nodes)       free(Part_Record_Point->Nodes);
     if (Part_Record_Point->NodeBitMap)  free(Part_Record_Point->NodeBitMap);

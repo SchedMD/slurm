@@ -107,7 +107,7 @@ int Count_CPUs(unsigned *BitMap) {
     sum = 0;
     for (i=0; i<Node_Record_Count; i++) {
 	if (BitMapValue(BitMap, i) != 1) continue;
-	sum += (Node_Record_Table_Ptr+i)->Config_Ptr->CPUs;
+	sum += (Node_Record_Table_Ptr+i)->CPUs;
     } /* for */
     return sum;
 } /* Count_CPUs */
