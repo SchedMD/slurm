@@ -37,22 +37,20 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
 	fprintf(out, "Build updated at %lx\n", (time_t)slurm_ctl_conf_ptr->last_update);
-	fprintf(out, "BACKUP_INTERVAL	= %u\n", slurm_ctl_conf_ptr->backup_interval);
-	fprintf(out, "BACKUP_LOCATION	= %s\n", slurm_ctl_conf_ptr->backup_location);
-	fprintf(out, "BACKUP_MACHINE	= %s\n", slurm_ctl_conf_ptr->backup_machine);
-	fprintf(out, "CONTROL_DAEMON	= %s\n", slurm_ctl_conf_ptr->control_daemon);
-	fprintf(out, "CONTROL_MACHINE	= %s\n", slurm_ctl_conf_ptr->control_machine);
-	fprintf(out, "EPILOG		= %s\n", slurm_ctl_conf_ptr->epilog);
-	fprintf(out, "FAST_SCHEDULE	= %u\n", slurm_ctl_conf_ptr->fast_schedule);
-	fprintf(out, "HASH_BASE	= %u\n", slurm_ctl_conf_ptr->hash_base);
-	fprintf(out, "HEARTBEAT_INTERVAL	= %u\n", slurm_ctl_conf_ptr->heartbeat_interval);
-	fprintf(out, "KILL_WAIT	= %u\n", slurm_ctl_conf_ptr->kill_wait);
-	fprintf(out, "PRIORITIZE	= %s\n", slurm_ctl_conf_ptr->prioritize);
-	fprintf(out, "PROLOG		= %s\n", slurm_ctl_conf_ptr->prolog);
-	fprintf(out, "SERVER_DAEMON	= %s\n", slurm_ctl_conf_ptr->server_daemon);
-	fprintf(out, "SERVER_TIMEOUT	= %u\n", slurm_ctl_conf_ptr->server_timeout);
-	fprintf(out, "SLURM_CONF	= %s\n", slurm_ctl_conf_ptr->slurm_conf);
-	fprintf(out, "TMP_FS		= %s\n", slurm_ctl_conf_ptr->tmp_fs);
+	fprintf(out, "BackupController  = %s\n", slurm_ctl_conf_ptr->backup_controller);
+	fprintf(out, "ControlMachine    = %s\n", slurm_ctl_conf_ptr->control_machine);
+	fprintf(out, "Epilog            = %s\n", slurm_ctl_conf_ptr->epilog);
+	fprintf(out, "FastSchedule      = %u\n", slurm_ctl_conf_ptr->fast_schedule);
+	fprintf(out, "NodeHashBase      = %u\n", slurm_ctl_conf_ptr->hash_base);
+	fprintf(out, "HeartbeatInterval = %u\n", slurm_ctl_conf_ptr->heartbeat_interval);
+	fprintf(out, "KillWait          = %u\n", slurm_ctl_conf_ptr->kill_wait);
+	fprintf(out, "Prioritize        = %s\n", slurm_ctl_conf_ptr->prioritize);
+	fprintf(out, "Prolog            = %s\n", slurm_ctl_conf_ptr->prolog);
+	fprintf(out, "SlurmctldTimeout  = %u\n", slurm_ctl_conf_ptr->slurmctld_timeout);
+	fprintf(out, "SlurmdTimeout     = %u\n", slurm_ctl_conf_ptr->slurmd_timeout);
+	fprintf(out, "SLURM_CONFIG_FILE = %s\n", slurm_ctl_conf_ptr->slurm_conf);
+	fprintf(out, "StateSaveLocation = %s\n", slurm_ctl_conf_ptr->state_save_location);
+	fprintf(out, "TmpFS             = %s\n", slurm_ctl_conf_ptr->tmp_fs);
 }
 
 int

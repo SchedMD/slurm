@@ -834,12 +834,8 @@ int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
 void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	pack32 (build_ptr->last_update, buf_ptr, buffer_size);
-	pack16 (build_ptr->backup_interval, buf_ptr, buffer_size);
-	packstr (build_ptr->backup_location, buf_ptr, buffer_size);
-	packstr (build_ptr->backup_machine, buf_ptr, buffer_size);
-	packstr (build_ptr->control_daemon, buf_ptr, buffer_size);
+	packstr (build_ptr->backup_controller, buf_ptr, buffer_size);
 	packstr (build_ptr->control_machine, buf_ptr, buffer_size);
-	pack16 (build_ptr->controller_timeout, buf_ptr, buffer_size);
 	packstr (build_ptr->epilog, buf_ptr, buffer_size);
 	pack16 (build_ptr->fast_schedule, buf_ptr, buffer_size);
 	pack16 (build_ptr->hash_base, buf_ptr, buffer_size);
@@ -847,9 +843,10 @@ void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, void ** buf_pt
 	pack16 (build_ptr->kill_wait, buf_ptr, buffer_size);
 	packstr (build_ptr->prioritize, buf_ptr, buffer_size);
 	packstr (build_ptr->prolog, buf_ptr, buffer_size);
-	packstr (build_ptr->server_daemon, buf_ptr, buffer_size);
-	pack16 (build_ptr->server_timeout, buf_ptr, buffer_size);
+	pack16 (build_ptr->slurmctld_timeout, buf_ptr, buffer_size);
+	pack16 (build_ptr->slurmd_timeout, buf_ptr, buffer_size);
 	packstr (build_ptr->slurm_conf, buf_ptr, buffer_size);
+	packstr (build_ptr->state_save_location, buf_ptr, buffer_size);
 	packstr (build_ptr->tmp_fs, buf_ptr, buffer_size);
 }
 
@@ -867,12 +864,8 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void *
 	/* load the data values */
 	/* unpack timestamp of snapshot */
 	unpack32 (&build_ptr->last_update, buffer, buffer_size);
-	unpack16 (&build_ptr->backup_interval, buffer, buffer_size);
-	unpackstr_xmalloc (&build_ptr->backup_location, &uint16_tmp, buffer, buffer_size);
-	unpackstr_xmalloc (&build_ptr->backup_machine, &uint16_tmp, buffer, buffer_size);
-	unpackstr_xmalloc (&build_ptr->control_daemon, &uint16_tmp, buffer, buffer_size);
+	unpackstr_xmalloc (&build_ptr->backup_controller, &uint16_tmp, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->control_machine, &uint16_tmp, buffer, buffer_size);
-	unpack16 (&build_ptr->controller_timeout, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->epilog, &uint16_tmp, buffer, buffer_size);
 	unpack16 (&build_ptr->fast_schedule, buffer, buffer_size);
 	unpack16 (&build_ptr->hash_base, buffer, buffer_size);
@@ -880,9 +873,10 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, void *
 	unpack16 (&build_ptr->kill_wait, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->prioritize, &uint16_tmp, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->prolog, &uint16_tmp, buffer, buffer_size);
-	unpackstr_xmalloc (&build_ptr->server_daemon, &uint16_tmp, buffer, buffer_size);
-	unpack16 (&build_ptr->server_timeout, buffer, buffer_size);
+	unpack16 (&build_ptr->slurmctld_timeout, buffer, buffer_size);
+	unpack16 (&build_ptr->slurmd_timeout, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->slurm_conf, &uint16_tmp, buffer, buffer_size);
+	unpackstr_xmalloc (&build_ptr->state_save_location, &uint16_tmp, buffer, buffer_size);
 	unpackstr_xmalloc (&build_ptr->tmp_fs, &uint16_tmp, buffer, buffer_size);
 	*build_buffer_ptr = build_ptr ;
 	return 0 ;

@@ -21,12 +21,8 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_errno.h>
 
-
-#define SLURM_PORT 7002
-#define SLURM_PROTOCOL_DEFAULT_PORT 7002
-#define SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER "localhost"
-#define SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER "localhost"
-
+/* slurmctld_conf must be loaded with port numbers and controller names */
+extern slurm_ctl_conf_t slurmctld_conf;
 
 /* high level routines */
 /* API init routines */
@@ -149,6 +145,9 @@ void inline slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , c
 void inline slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , uint32_t buf_len ) ;
 void inline slurm_pack_slurm_addr ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
 void inline slurm_unpack_slurm_addr_no_alloc ( slurm_addr * slurm_address , void ** buffer , int * length ) ;
+
+/* function to read hostname and port numbers from configuration file */
+int read_slurm_port_config ( );
 
 /* Slurm message functions */
 void slurm_free_msg ( slurm_msg_t * msg ) ;

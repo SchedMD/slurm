@@ -252,68 +252,7 @@ print_config (char *config_param)
 	}
 	old_slurm_ctl_conf_ptr = slurm_ctl_conf_ptr;
 
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "BACKUP_INTERVAL") == 0)
-		printf ("BACKUP_INTERVAL	= %u\n", 
-			slurm_ctl_conf_ptr->backup_interval);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "BACKUP_LOCATION") == 0)
-		printf ("BACKUP_LOCATION	= %s\n", 
-			slurm_ctl_conf_ptr->backup_location);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "BACKUP_MACHINE") == 0)
-		printf ("BACKUP_MACHINE	= %s\n", 
-			slurm_ctl_conf_ptr->backup_machine);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "CONTROL_DAEMON") == 0)
-		printf ("CONTROL_DAEMON	= %s\n", 
-			slurm_ctl_conf_ptr->control_daemon);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "CONTROL_MACHINE") == 0)
-		printf ("CONTROL_MACHINE	= %s\n", 
-			slurm_ctl_conf_ptr->control_machine);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "CONTROLLER_TIMEOUT") == 0)
-		printf ("CONTROLLER_TIMEOUT	= %u\n", 
-			slurm_ctl_conf_ptr->controller_timeout);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "EPILOG") == 0)
-		printf ("EPILOG  	= %s\n", slurm_ctl_conf_ptr->epilog);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "FAST_SCHEDULE") == 0)
-		printf ("FAST_SCHEDULE	= %u\n", 
-			slurm_ctl_conf_ptr->fast_schedule);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "HASH_BASE") == 0)
-		printf ("HASH_BASE	= %u\n", 
-			slurm_ctl_conf_ptr->hash_base);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "HEARTBEAT_INTERVAL") == 0)
-		printf ("HEARTBEAT_INTERVAL	= %u\n", 
-			slurm_ctl_conf_ptr->heartbeat_interval);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "KILL_WAIT") == 0)
-		printf ("KILL_WAIT	= %u\n", slurm_ctl_conf_ptr->kill_wait);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "PRIORITIZE") == 0)
-		printf ("PRIORITIZE	= %s\n", slurm_ctl_conf_ptr->prioritize);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "PROLOG") == 0)
-		printf ("PROLOG  	= %s\n", slurm_ctl_conf_ptr->prolog);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "SERVER_DAEMON") == 0)
-		printf ("SERVER_DAEMON	= %s\n", 
-			slurm_ctl_conf_ptr->server_daemon);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "SERVER_TIMEOUT") == 0)
-		printf ("SERVER_TIMEOUT	= %u\n", 
-			slurm_ctl_conf_ptr->server_timeout);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "SLURM_CONF") == 0)
-		printf ("SLURM_CONF	= %s\n", slurm_ctl_conf_ptr->slurm_conf);
-	if (config_param == NULL ||
-	    strcmp_i (config_param, "TMP_FS") == 0)
-		printf ("TMP_FS  	= %s\n", slurm_ctl_conf_ptr->tmp_fs);
+	slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 }
 
 
