@@ -40,9 +40,6 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/partition_allocator/partition_allocator.h"
 
-//#include "bgl_job_place.h"
-//#include "bgl_job_run.h"
-
 #ifdef HAVE_BGL_FILES
 # include "rm_api.h"
 
@@ -66,10 +63,13 @@
   typedef int      rm_partition_state_t;
 #endif
 
+#include "bgl_job_place.h"
+#include "bgl_job_run.h"
+#include "state_test.h"
+
 #define USER_NAME "nobody"
 
 /* Global variables */
-extern rm_BGL_t *bgl;			/* DB2 pointer */
 extern char *bluegene_blrts;
 extern char *bluegene_linux;
 extern char *bluegene_mloader;
@@ -140,28 +140,27 @@ extern int init_bgl(void);
 extern void fini_bgl(void);
 
 /* Log a bgl_record's contents */
-void print_bgl_record(bgl_record_t* record);
-void destroy_bgl_record(void* object);
+extern void print_bgl_record(bgl_record_t* record);
+extern void destroy_bgl_record(void* object);
 
 /* Return strings representing blue gene data types */
-char *convert_lifecycle(lifecycle_type_t lifecycle);
-char *convert_conn_type(rm_connection_type_t conn_type);
-char *convert_node_use(rm_partition_mode_t pt);
+extern char *convert_lifecycle(lifecycle_type_t lifecycle);
+extern char *convert_conn_type(rm_connection_type_t conn_type);
+extern char *convert_node_use(rm_partition_mode_t pt);
 
 /* sort a list of bgl_records by size (node count) */
-void sort_bgl_record_inc_size(List records);
-/* void sort_bgl_record_dec_size(List records); */
+extern void sort_bgl_record_inc_size(List records);
 
 /* bluegene_agent - detached thread periodically tests status of bluegene 
  * nodes and switches */
-void *bluegene_agent(void *args);
+extern void *bluegene_agent(void *args);
 
 /*
  * Convert a BGL API error code to a string
  * IN inx - error code from any of the BGL Bridge APIs
  * RET - string describing the error condition
  */
-char *bgl_err_str(status_t inx);
+extern char *bgl_err_str(status_t inx);
 
 /*
  * create_static_partitions - create the static partitions that will be used
@@ -170,76 +169,17 @@ char *bgl_err_str(status_t inx);
  *   configurations. Fill in bgl_part_id                 
  * RET - success of fitting all configurations
  */
-int create_static_partitions(List part_list);
+extern int create_static_partitions(List part_list);
 
-int read_bgl_conf();
+extern int read_bgl_conf(void);
 
 /* partition_sys.c */
 /*****************************************************/
-int configure_partition(bgl_record_t * bgl_conf_record);
-int read_bgl_partitions();
-
-/* state_test.c */
-/*****************************************************/
-
-/* Test for nodes that are DOWN in BlueGene database, 
- * if so DRAIN them in SLURM */
-void test_down_nodes(void);
-
-/* Test for switches that are DOWN in BlueGene database,  
- * if so DRAIN them in SLURM and configure their base partition DOWN */
-void test_down_switches(void);
-
-
-/* bgl_job_place.c */
-/*****************************************************/
-int submit_job(struct job_record *job_ptr, bitstr_t *bitmap,
-	       int min_nodes, int max_nodes);
-
-
-/* bgl_job_run.c */
-/*****************************************************/
-/*
- * Perform any setup required to initiate a job
- * job_ptr IN - pointer to the job being initiated
- * RET - SLURM_SUCCESS or an error code 
- *
- * NOTE: This happens in parallel with srun and slurmd spawning 
- * the job. A prolog script is expected to defer initiation of 
- * the job script until the BGL block is available for use.
- */
-int start_job(struct job_record *job_ptr);
-
-/*
- * Perform any work required to terminate a jobs on a partition
- * bgl_part_id IN - partition name
- * RET - SLURM_SUCCESS or an error code
- *
- * NOTE: This happens when new partitions are created and we 
- * need to clean up jobs on them.
- */
-int term_jobs_on_part(pm_partition_id_t bgl_part_id);
-
-/* 
- * Perform any work required to terminate a job
- * job_ptr IN - pointer to the job being terminated
- * RET - SLURM_SUCCESS or an error code
- *
- * NOTE: This happens in parallel with srun and slurmd terminating
- * the job. Insure that this function, mpirun and the epilog can 
- * all deal with termination race conditions.
- */
-int term_job(struct job_record *job_ptr);
-
-/*
- * Synchronize BGL block state to that of currently active jobs.
- * This can recover from slurmctld crashes when partition ownership
- * changes were queued
- */
-int sync_jobs(List job_list);
+extern int configure_partition(bgl_record_t * bgl_conf_record);
+extern int read_bgl_partitions(void);
 
 /* bgl_switch_connections.c */
 /*****************************************************/
-int configure_partition_switches(bgl_record_t * bgl_conf_record);
+extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
 
 #endif /* _BLUEGENE_H_ */

@@ -151,22 +151,6 @@ typedef enum {false, true} bool;
 #  endif
 #endif
 
-#ifdef HAVE_BGL_FILES
-/* We can't free the data on single base partition system without wires,
- * It could also be a problem with old drivers (fails with driver 410).
- * Once this is fixed, just call rm_free_BGL() directly. The bgl pointer
- * should also be made into a non-static variable. Tests before calls
- * to rm_get_BGL should be removed.  */
-#  define slurm_rm_free_BGL(bgl)                                              \
-     _STMT_START {                                                            \
-         int i;                                                               \
-         if ((rm_get_data(bgl, RM_SwitchNum, &i) == STATUS_OK) && (i > 0)) {  \
-             if (rm_free_BGL(bgl) == STATUS_OK) bgl = NULL;                   \
-         }                                                                    \
-     } _STMT_END
-
-#endif
-
 #ifdef WITH_PTHREADS
 
 #  define slurm_mutex_init(mutex)                                             \

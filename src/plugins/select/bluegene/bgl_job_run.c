@@ -47,7 +47,6 @@
 #include "src/common/uid.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/proc_req.h"
-#include "bgl_job_run.h"
 #include "bluegene.h"
 
 #ifdef HAVE_BGL_FILES

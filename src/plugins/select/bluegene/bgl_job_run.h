@@ -52,6 +52,16 @@ extern int start_job(struct job_record *job_ptr);
 extern int term_job(struct job_record *job_ptr);
 
 /*
+ * Perform any work required to terminate a jobs on a partition
+ * bgl_part_id IN - partition name
+ * RET - SLURM_SUCCESS or an error code
+ *
+ * NOTE: This happens when new partitions are created and we
+ * need to clean up jobs on them.
+ */
+extern int term_jobs_on_part(pm_partition_id_t bgl_part_id);
+
+/*
  * Synchronize BGL block state to that of currently active jobs.
  * This can recover from slurmctld crashes when partition ownership 
  * changes were queued

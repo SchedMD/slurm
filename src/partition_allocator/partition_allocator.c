@@ -379,19 +379,17 @@ void pa_init(node_info_msg_t *node_info_ptr)
 
 #ifdef HAVE_BGL_FILES
 	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
-		static rm_BGL_t *bgl = NULL;
+		rm_BGL_t *bgl = NULL;
 		rm_size3D_t bp_size;
-		if (bgl == NULL) {
-			rm_set_serial(BGL_SERIAL);
-			rm_get_BGL(&bgl);
-		}
+		rm_set_serial(BGL_SERIAL);
+		rm_get_BGL(&bgl);
 		if ((bgl != NULL)
 		&&  (rm_get_data(bgl, RM_Msize, &bp_size) == STATUS_OK)) {
 			DIM_SIZE[X]=bp_size.X;
 			DIM_SIZE[Y]=bp_size.Y;
 			DIM_SIZE[Z]=bp_size.Z;
 		}
-		slurm_rm_free_BGL(bgl);
+		rm_free_BGL(bgl);
 	}
 #endif
 	if ((DIM_SIZE[X]==0) && (DIM_SIZE[X]==0) && (DIM_SIZE[X]==0)) {
