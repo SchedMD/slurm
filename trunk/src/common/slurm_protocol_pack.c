@@ -1160,7 +1160,8 @@ _pack_revoke_credential_msg(revoke_credential_msg_t * msg, Buf buffer)
 {
 	assert(msg != NULL);
 
-	pack32(msg->job_id, buffer);
+	pack32(msg->job_id,  buffer);
+	pack32(msg->job_uid, buffer);
 	pack_time(msg->expiration_time, buffer);
 	packmem_array(msg->signature,
 		      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);
@@ -1176,7 +1177,8 @@ _unpack_revoke_credential_msg(revoke_credential_msg_t ** msg, Buf buffer)
 	tmp_ptr = xmalloc(sizeof(slurm_job_credential_t));
 	*msg = tmp_ptr;
 
-	safe_unpack32(&(tmp_ptr->job_id), buffer);
+	safe_unpack32(&(tmp_ptr->job_id),  buffer);
+	safe_unpack32(&(tmp_ptr->job_uid), buffer);
 	safe_unpack_time(& (tmp_ptr->expiration_time), buffer);
 	safe_unpackmem_array(tmp_ptr->signature,
 			     (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, buffer);

@@ -94,6 +94,7 @@ typedef struct slurmd_job {
 	uint16_t       envc;
 	uint16_t       argc;
 	bool           batch;
+	bool           run_prolog; /* need to run prolog */
 	char         **env;
 	char         **argv;
 	char          *cwd;

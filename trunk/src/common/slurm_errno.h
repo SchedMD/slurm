@@ -32,7 +32,7 @@
 /* set errno to the specified value - then return -1 */ 
 #define slurm_seterrno_ret(errnum) do { \
 	slurm_seterrno(errnum);         \
-	return (-1);                    \
+	return (errnum ? -1 : 0);       \
         } while (0)
 
 /* general return codes */
@@ -138,6 +138,8 @@ enum {
 	ESLURMD_FORK_FAILED,
 	ESLURMD_EXECVE_FAILED,
 	ESLURMD_IO_ERROR,
+	ESLURMD_PROLOG_FAILED,
+	ESLURMD_EPILOG_FAILED,
 
 	/* slurmd errors in user batch job */
 	ESCRIPT_CHDIR_FAILED =			4100,

@@ -58,6 +58,9 @@ static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
+static int  _run_prolog(uint32_t jobid, uid_t uid);
+static int  _run_epilog(uint32_t jobid, uid_t uid);
+static void _insert_fake_cred(uint32_t jobid, time_t timelimit);
 
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
@@ -187,7 +190,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	uint16_t port;
 	char     host[MAXHOSTNAMELEN];
 	uid_t    req_uid;
-	bool     super_user = false;
+	bool     super_user = false, run_prolog = false;
 	launch_tasks_request_msg_t *req = msg->data;
 
 	req_uid = slurm_auth_uid(msg->cred);
@@ -205,6 +208,9 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	info("launch task %u.%u request from %ld@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
+	if (!credential_is_cached(conf->cred_state_list, req->job_id)) 
+		run_prolog = true;
+
 	rc = verify_credential(&conf->vctx, 
 			       req->credential, 
 			       conf->cred_state_list);
@@ -215,8 +221,16 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 		return;
 	}
 
-	if ((rc = _launch_tasks(req, cli)))
-		slurm_send_rc_msg(msg, rc);
+	/* Run job prolog if necessary */
+	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
+		error("[job %d] prolog failed", req->job_id);
+		slurm_send_rc_msg(msg, ESLURMD_PROLOG_FAILED);
+		return;
+	}
+
+	rc = _launch_tasks(req, cli);
+
+	slurm_send_rc_msg(msg, rc);
 }
 
 
@@ -232,10 +246,22 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 		      (unsigned int) req_uid);
 		rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
 	} else {
-		info("Launching batch job %u for UID %d",
-			req->job_id, req->uid);
-		if (_launch_batch_job(req, cli) < 0)
-			rc = SLURM_FAILURE;
+
+		/* 
+		 * Run job prolog on this node
+		 */
+		if (_run_prolog(req->job_id, req->uid) != 0) {
+			error("[job %d] prolog failed", req->job_id);
+			rc = ESLURMD_PROLOG_FAILED;
+		} else {
+			_insert_fake_cred(req->job_id, (time_t) -1);
+
+			info("Launching batch job %u for UID %d",
+					req->job_id, req->uid);
+
+			if (_launch_batch_job(req, cli) < 0)
+				rc = SLURM_FAILURE;
+		}
 	}
 
 	slurm_send_rc_msg(msg, rc);
@@ -471,6 +497,11 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 			      req->job_id);
 		else
 			debug("credential for job %d revoked", req->job_id);
+
+		if (_run_epilog(req->job_id, req->job_uid) != 0) {
+			error ("[job %d] epilog failed", req->job_id);
+			rc = ESLURMD_EPILOG_FAILED;
+		}
 	}
 
 	slurm_send_rc_msg(msg, rc);
@@ -499,4 +530,35 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	slurm_send_rc_msg(msg, rc);
+}
+
+static int 
+_run_prolog(uint32_t jobid, uid_t uid)
+{
+	return run_script(true, conf->prolog, jobid, uid);
+}
+
+static int 
+_run_epilog(uint32_t jobid, uid_t uid)
+{
+	return run_script(false, conf->epilog, jobid, uid);
+}
+
+/*
+ * XXX: Move some of this functionality into credential_utils
+ *
+ */
+static void
+_insert_fake_cred(uint32_t jobid, time_t timelimit)
+{
+	credential_state_t *s = xmalloc(sizeof(*s));
+
+	debug2("inserting fake cred for job %d", jobid);
+
+	s->job_id          = jobid;
+	s->revoked         = false;
+	s->procs_allocated = 0;
+	s->total_procs     = 0;
+	s->expiration      = timelimit;
+	list_append(conf->cred_state_list, (void *) s);
 }

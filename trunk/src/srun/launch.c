@@ -268,6 +268,32 @@ static void _p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 	xfree(thread_ptr);
 }
 
+static int
+_send_msg_rc(slurm_msg_t *msg)
+{
+	slurm_msg_t        resp;
+	return_code_msg_t *rcmsg = NULL;
+	int                rc    = 0;
+
+       	if ((rc = slurm_send_recv_node_msg(msg, &resp)) < 0)
+		slurm_seterrno_ret (rc);
+
+	switch (resp.msg_type) {
+	case RESPONSE_SLURM_RC:
+		rcmsg = resp.data;
+		rc = rcmsg->return_code;
+		slurm_free_return_code_msg(rcmsg);
+		break;
+	default:
+		error("recvd msg type %d. expected %d", resp.msg_type, 
+				RESPONSE_SLURM_RC);
+		rc = SLURM_UNEXPECTED_MSG_ERROR;
+	}
+
+	slurm_seterrno_ret (rc);
+}
+
+
 /* _p_launch_task - parallelized launch of a specific task */
 static void * _p_launch_task(void *args)
 {
@@ -281,8 +307,9 @@ static void * _p_launch_task(void *args)
 
 	if (_verbose)
 	        _print_launch_msg(msg_ptr, job_ptr->host[host_inx]);
-	if (slurm_send_only_node_msg(req_ptr) < 0) {	/* Has timeout */
-		error("task launch error on %s: %m", job_ptr->host[host_inx]);
+
+	if (_send_msg_rc(req_ptr) < 0) {	/* Has timeout */
+		error("launch error on %s: %m", job_ptr->host[host_inx]);
 		pthread_mutex_lock(&job_ptr->task_mutex);
 		if (job_ptr->host_state[host_inx] == SRUN_HOST_INIT)
 			job_ptr->host_state[host_inx] = SRUN_HOST_UNREACHABLE;

@@ -283,6 +283,7 @@ typedef struct return_code_msg {
 
 typedef struct revoke_credential_msg {
 	uint32_t job_id;
+	uint32_t job_uid;
 	time_t expiration_time;
 	char signature[SLURM_SSL_SIGNATURE_LENGTH];
 } revoke_credential_msg_t;

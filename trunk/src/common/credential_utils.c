@@ -215,15 +215,38 @@ int _clear_expired_revoked_credentials(List list)
 {
 	time_t now = time(NULL);
 	ListIterator iterator;
-	credential_state_t *credential_state;
+	credential_state_t *s;
+
+	debug2("clearing expired credentials");
 
 	iterator = list_iterator_create(list);
-	while ((credential_state = list_next(iterator))) {
-		if (now + EXPIRATION_WINDOW > credential_state->expiration)
+	while ((s = list_next(iterator))) {
+		if (now + EXPIRATION_WINDOW > s->expiration) {
+			debug2("expiring credential for job %d", s->job_id);
 			list_delete(iterator);
+		}
 	}
 	list_iterator_destroy(iterator);
 	return SLURM_SUCCESS;
+}
+
+bool credential_is_cached(List list, uint32_t jobid)
+{
+	ListIterator i;
+	credential_state_t *state;
+	bool rc = false;
+
+	debug2("checking for cached credential for job %u", jobid);
+
+	i = list_iterator_create(list);
+	while ((state = list_next(i))) {
+		if (state->job_id == jobid) {
+			rc = true;
+			break;
+		}
+	}
+	list_iterator_destroy(i);
+	return rc;
 }
 
 int initialize_credential_state_list(List * list)
@@ -258,7 +281,7 @@ void _free_credential_state(void *credential_state)
 int _insert_credential_state(slurm_job_credential_t * credential, List list)
 {
 	credential_state_t *credential_state;
-	credential_state = xmalloc(sizeof(slurm_job_credential_t));
+	credential_state = xmalloc(sizeof(*credential_state));
 	_init_credential_state(credential_state, credential);
 	list_append(list, credential_state);
 	return SLURM_SUCCESS;

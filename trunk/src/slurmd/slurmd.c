@@ -126,7 +126,7 @@ main (int argc, char *argv[])
 	_set_slurmd_spooldir();
 
 	if (conf->daemonize) 
-		daemon(0,0);
+		daemon(1,0);
 
 	conf->argv = &argv;
 	conf->argc = &argc;
@@ -342,6 +342,7 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 			debug("deleting stale reference to %d.%d in shm",
 			      s->jobid, (int32_t) s->stepid);
 			shm_delete_step(s->jobid, s->stepid);
+			--(msg->job_count);
 			continue;
 		}
 		if (s->stepid == NO_VAL)
@@ -526,7 +527,7 @@ _slurmd_init()
 
 	slurm_ssl_init();
 	slurm_init_verifier(&conf->vctx, conf->pubkey);
-	_restore_cred_state(&conf->cred_state_list);
+	_restore_cred_state(&conf->cred_state_list); 
 	conf->threads = list_create((ListDelF) _tid_free);
 	if (shm_init() < 0)
 		return SLURM_FAILURE;
@@ -566,19 +567,30 @@ _restore_cred_state(List *list)
 
       cleanup:
 	xfree(file_name);
-	free_buf(buffer);
+	if (buffer)
+		free_buf(buffer);
 }
 
 static void _list_recovered_creds(List list)
 {
 	ListIterator iterator;
-	credential_state_t *credential_state_ptr;
+	hostlist_t l = hostlist_create(NULL);
+	char *str = NULL;
+	char buf[1024];
+	credential_state_t *s;
 
 	iterator = list_iterator_create(list);
-	while ((credential_state_ptr = list_next(iterator)))
-		info("Recovered cred for job_id %u",
-		     credential_state_ptr->job_id);
+	while ((s = list_next(iterator))) {
+		xstrfmtcat(str, "jobs%u", s->job_id);
+		hostlist_push(l, str);
+		xfree(str);
+	}
 	list_iterator_destroy(iterator);
+
+	hostlist_ranged_string(l, 1024, buf);
+	hostlist_destroy(l);
+
+	verbose("credentials recovered for %s", buf);
 }
 
 static int
