@@ -161,8 +161,8 @@ main (int argc, char *argv[])
 			/* Do without threads on failure */
 			error ("pthread_create errno %d", errno);
 			slurmctld_req ( msg );	/* process the request */
-			/* close should only be called when the stream implementation is being used 
-			 * the following call will be a no-op in the message implementation */
+			/* close should only be called when the socket implementation is being used 
+			 * the following call will be a no-op in a message/mongo implementation */
 			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 		}
 	}			
