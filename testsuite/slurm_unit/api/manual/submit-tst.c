@@ -13,10 +13,9 @@ main (int argc, char *argv[])
 	int error_code, i, count;
 	job_desc_msg_t job_mesg;
 	
+	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1; 
-/*	job_mesg. features = "bigDisk\0"; */
 	job_mesg. groups = ("students,employee\0");
-	job_mesg. job_id = 12345;
 	job_mesg. name = ("job01\0");
 	job_mesg. partition_key = NULL;
 	job_mesg. min_procs = 4;
