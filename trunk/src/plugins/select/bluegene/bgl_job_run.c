@@ -37,6 +37,7 @@
 #  endif
 #endif
 
+#include <signal.h>
 #include <unistd.h>
 
 #include <slurm/slurm_errno.h>
@@ -133,9 +134,10 @@ static int _remove_job(db_job_id_t job_id)
 			error("rm_free_job: %s", bgl_err_str(rc));
 
 		/* Cancel or remove the job */
-		if (job_state == RM_JOB_RUNNING)
+		if (job_state == RM_JOB_RUNNING) {
+			(void) jm_signal_job(job_id, SIGKILL);
 			rc = jm_cancel_job(job_id);
-		else
+		} else
 			rc = rm_remove_job(job_id);
 		if (rc != STATUS_OK) {
 			if (rc == JOB_NOT_FOUND) {
