@@ -150,9 +150,12 @@ int print_text_job(job_info_t * job_ptr)
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "%.10s", job_ptr->partition);
 	smap_info_ptr->xcord += 10;
-	user = getpwuid((uid_t) job_ptr->user_id);
-	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
-		  smap_info_ptr->xcord, "%.8s", user->pw_name);
+	if ((user = getpwuid((uid_t) job_ptr->user_id)))
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			smap_info_ptr->xcord, "%.8s", user->pw_name);
+	else
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+			smap_info_ptr->xcord, "%8d", (int) job_ptr->user_id);
 	smap_info_ptr->xcord += 9;
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 		  smap_info_ptr->xcord, "%.9s", job_ptr->name);

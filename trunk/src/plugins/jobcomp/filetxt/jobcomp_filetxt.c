@@ -162,7 +162,7 @@ _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 		else
 			snprintf(user_name, buf_size, "Unknown");
 		cache_uid = user_id;
-		snprintf(cache_name, sizeof(cache_name), user_info->pw_name);
+		snprintf(cache_name, sizeof(cache_name), user_name);
 	}
 }
 

@@ -39,7 +39,7 @@ void get_command(void)
 {
 	command_info_t *com = xmalloc(sizeof(command_info_t));
 	//static node_info_msg_t *node_info_ptr;
-	int text_height, text_width, text_starty, text_startx, error_code;
+	int text_height, text_width, text_starty, text_startx;
 	WINDOW *command_win;
 	int torus=MESH, i=0, i2=0, i3=0, geo[PA_SYSTEM_DIMENSIONS], x,y,z;
 	bool rotate = false;
@@ -58,7 +58,9 @@ void get_command(void)
 	text_startx = smap_info_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
 	echo();
-	/*error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
+	/*
+	int error_code;
+	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code)
 		if (quiet_flag != 1) {
 			wclear(smap_info_ptr->text_win);
@@ -249,6 +251,7 @@ void print_header_command(void)
 
 int print_text_command()
 {
+	return 0;
 	/*    time_t time;
 	   int printed = 0;
 	   int tempxcord;
@@ -264,8 +267,12 @@ int print_text_command()
 	   smap_info_ptr->xcord += 8;
 	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", job_ptr->partition);
 	   smap_info_ptr->xcord += 12;
-	   user = getpwuid((uid_t) job_ptr->user_id);
-	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", user->pw_name);
+	   if ((user = getpwuid((uid_t) job_ptr->user_id)))
+		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, 
+			smap_info_ptr->xcord, "%s", user->pw_name);
+	    else
+		 mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, 
+			smap_info_ptr->xcord, "%d", (int) job_ptr->user_id);
 	   smap_info_ptr->xcord += 10;
 	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", job_ptr->name);
 	   smap_info_ptr->xcord += 12;
