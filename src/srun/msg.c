@@ -24,28 +24,32 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#  include <config.h>
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
+#if HAVE_PTHREAD_H
+#  include <pthread.h>
 #endif
 
 #include <errno.h>
-#include <pthread.h>
 #include <sys/poll.h>
 #include <fcntl.h>
 
-#include <src/common/fd.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/common/slurm_errno.h>
-#include <src/common/log.h>
-#include <src/common/slurm_auth.h>
-#include <src/common/xassert.h>
-#include <src/common/xmalloc.h>
+#include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/slurm_errno.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
 
-#include <src/srun/job.h>
-#include <src/srun/opt.h>
+#include "src/srun/job.h"
+#include "src/srun/opt.h"
+
 #ifdef HAVE_TOTALVIEW
-#include <src/srun/attach.h>
+#include "src/srun/attach.h"
 #endif
 
 static int tasks_exited = 0;

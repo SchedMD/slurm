@@ -3,18 +3,18 @@
 #ifndef _HAVE_LAUNCH_H
 #define _HAVE_LAUNCH_H
 
-#if HAVE_CONFIG_H
-#  include <config.h>
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
 #endif
 
-#if HAVE_PTHREAD_H
+#ifdef WITH_PTHREADS
 #  include <pthread.h>
 #endif
 
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/macros.h>
+#include "src/common/macros.h"
+#include "src/common/slurm_protocol_api.h"
 
-#include <src/srun/opt.h>
+#include "src/srun/opt.h"
 
 typedef struct launch_thr {
 	pthread_t	thread;
