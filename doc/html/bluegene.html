@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="6 September 2004">
+<meta name="LLNLRandRdate" content="28 September 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -58,9 +58,8 @@ structure:Laboratories and Other Field Facilities">
 <p>This document describes the unique features of SLURM on the
 <a href="http://www.research.ibm.com/bluegene">IBM Blue Gene</a> systems. 
 You should be familiar with the SLURM's mode of operation on Linux clusters 
-before studying the differences in operation described in this document. 
-Users familiar with SLURM will find that there are relatively few Blue Gene 
-specific differences.</p>
+before studying the relatively few differences in Blue Gene operation 
+described in this document.</p>
 
 <p>Blue Gene systems have several unique features making for a few 
 differences in how SLURM operates there. 
@@ -79,11 +78,15 @@ for every <i>base partition</i> on the system. </p>
 
 <p>The normal set of SLURM user tools: srun, scancel, sinfo, squeue and scontrol 
 provide all of the expected services except support for job steps. 
-SLURM performs resource allocation for the job, but initiation of job steps is performed 
-using the <i>mpirun</i> command and daemons provided with the Blue Gene system. 
-Three new srun options are available: --geometry (specify job size in each dimension),
---rotate (permit rotation of geometry), and --connect (specify connection type of 
-mesh or torus). See the srun man pages for details. </p>
+SLURM performs resource allocation for the job, but initiation of tasks is performed 
+using the <i>mpirun</i> command. SLURM has no concept of a job step on Blue Gene.
+Four new srun options are available: 
+<i>--geometry</i> (specify job size in each dimension),
+<i>--no-rotate</i> (disable rotation of geometry), 
+<i>--conn-type</i> (specify interconnect type between base partitions, mesh or torus), and 
+<i>--node-use</i> (specify how second processor on each c-node is to be used, 
+coprocessor or virual).
+See the srun man pages for details. </p>
 
 <a name="naming">
 <p>The naming of nodes includes a three-digit suffix representing the base partition's 
@@ -99,17 +102,25 @@ bgl730 and bgl731).</p></a>
 <p>One new tools provided is <i>smap</i>.
 Smap is aware of system topography and provides a map of what nodes are allocated 
 to jobs, partitions, etc. 
+See the smap man page for details.
 A sample of smap output is provided below showing the location of five jobs. 
 Note the format of the list of nodes allocated to each job.
-Also note that idle (unassigned) base partitions are indicated by a period.</p>
+Also note that idle (unassigned) base partitions are indicated by a period.
+Down and drained base partitions (those not available for use) are 
+indicated by a number sign (bgl700 in the display below).
+The legend is for illustrative purposes only. 
+The origin (zero in every dimension) is show at the bottom left corner.
+Each set of four consecutive lines represents a plane in the Z dimension.
+Values in the X dimension increase to the right.
+Values in the Y dimension increase up and toward the right.</p>
 
 <pre>
-   a a a a b b d d       Key JobId User   Nodes  NodeList
-  a a a a b b d d        a   12345 joseph    64  bgl[000x333]
- a a a a b b c c         b   12346 chris     16  bgl[420x533]
-a a a a b b c c          c   12350 danny      8  bgl[620x731]
-                         d   12356 dan       16  bgl[603x733]
-   a a a a b b d d       e   12378 joseph     4  bgl[610x711]
+   a a a a b b d d       ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
+  a a a a b b d d        a   12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
+ a a a a b b c c         b   12346 debug    chris  sim3 R  12:34   16 bgl[420x533]
+a a a a b b c c          c   12350 debug    danny  job3 R   0:12    8 bgl[620x731]
+                         d   12356 debug    dan    colu R  18:05   16 bgl[603x733]
+   a a a a b b d d       e   12378 debug    joseph asx4 R   0:34    4 bgl[610x711]
   a a a a b b d d
  a a a a b b c c
 a a a a b b c c
@@ -118,11 +129,11 @@ a a a a b b c c
   a a a a . . d d
  a a a a . . e e
 a a a a . . e e
-
-   a a a a . . d d
-  a a a a . . d d
- a a a a . . . .
-a a a a . . . .
+                           Z   Y
+   a a a a . . d d         |  /
+  a a a a . . d d          | /
+ a a a a . . . .           |/
+a a a a . . . #            0----X
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
@@ -147,7 +158,7 @@ The value of SelectType must be set to "select/bluegene" in order to have
 node selection performed using a system aware of the system's topography 
 and interfaces. </p>
 
-<p>If SLURM node and partition descriptions should make use of the 
+<p>SLURM node and partition descriptions should make use of the 
 <a href="#naming">naming</a> conventions described above. For example,
 "NodeName=bgl[000x733] NodeAddr=frontend0 Procs=1024". 
 Note that the NodeAddr value for all 128 base partitions is the name 
@@ -161,6 +172,27 @@ SLURM operation.
 If large numbers of job steps are initiated by slurmd, expect the daemon to 
 fail due to lack of memory. </p>
 
+<p>Presently the system administrator must explicitly define each of the 
+Blue Gene job partitions available to execute jobs. 
+(<b>NOTE:</b> Blue Gene job partitions are unrelated to SLURM partitions.)
+Jobs must then execute in one of these pre-defined Blue Gene job partitions. 
+This is known as <i>static partitioning</i>.
+Each of these Blue Gene job partitions is explicitly configured with
+either a mesh or torus interconnect and either coprocessor or virtual 
+c-node usage.
+In addition to the normal <i>slurm.conf</i> file, a new <i>bluegene.conf</i>
+configuration file is required with this information.
+System administrators should use the smap tool to build appropriate 
+configuration files for static partitioning. 
+See the smap man page for more information.</p>
+
+<p>At some time in the future, we expect SLURM to support <i>dynamic 
+partitioning</i> in which Blue Gene job partitions are created and destroyed 
+as needed to accomodate the workload.
+At that time the <i>bluegene.conf</i> configuration file will become obsolete.
+Dynamic partition does involve substantial overhead including the 
+rebooting of c-nodes and I/O nodes.</p>
+
 <p class="footer"><a href="#top">top</a></p></td>
 
 </tr>
@@ -168,7 +200,7 @@ fail due to lack of memory. </p>
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 6 September 2004</p></td>
+Last modified 28 September 2004</p></td>
 </tr>
 </table>
 </td>
