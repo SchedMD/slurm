@@ -42,6 +42,7 @@ typedef struct {
 	char *nodes;
 	enum connection_type bgl_conn_type;
 	enum node_use_type bgl_node_use;
+	rm_partition_state_t state;
 	hostlist_t hostlist;
 	bool printed;
 } db2_block_info_t;
@@ -53,6 +54,7 @@ static char* _convert_node_use(enum node_use_type node_use);
 static db2_block_info_t *
 _find_part_db2(char *nodelist);
 static void _print_header_part(void);
+static char *_part_state_str(rm_partition_state_t state);
 static int  _print_text_part(partition_info_t * part_ptr, 
 			     db2_block_info_t *db2_info_ptr);
 static void _read_part_db2(void);
@@ -235,20 +237,23 @@ static void _print_header_part(void)
 	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 		  pa_system_ptr->xcord, "PARTITION");
 	pa_system_ptr->xcord += 10;
-	mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-		  pa_system_ptr->xcord, "AVAIL");
-	pa_system_ptr->xcord += 7;
 	
 	if (params.display != BGLPART) {
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			  pa_system_ptr->xcord, "AVAIL");
+		pa_system_ptr->xcord += 7;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "TIMELIMIT");
 		pa_system_ptr->xcord += 11;
 	} else {
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "USER");
+			  pa_system_ptr->xcord, "BGL_BLOCK");
 		pa_system_ptr->xcord += 12;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-			  pa_system_ptr->xcord, "BGL_BLOCK");
+			  pa_system_ptr->xcord, "STATE");
+		pa_system_ptr->xcord += 8;
+		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+			  pa_system_ptr->xcord, "USER");
 		pa_system_ptr->xcord += 12;
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "CONN");
@@ -265,6 +270,31 @@ static void _print_header_part(void)
 		  pa_system_ptr->xcord, "NODELIST");
 	pa_system_ptr->xcord = 1;
 	pa_system_ptr->ycord++;
+}
+
+static char *_part_state_str(rm_partition_state_t state)
+{
+	static char tmp[16];
+
+	switch (state) {
+		case RM_PARTITION_BUSY: 
+			return "BUSY";
+		case RM_PARTITION_CONFIGURING:
+			return "CONFIG";
+		case RM_PARTITION_DEALLOCATING:
+			return "DEALLOC";
+		case RM_PARTITION_ERROR:
+			return "ERROR";
+		case RM_PARTITION_FREE:
+			return "FREE";
+		case RM_PARTITION_NAV:
+			return "NAV";
+		case RM_PARTITION_READY:
+			return "READY";
+		default:
+			snprintf(tmp, sizeof(tmp), "%d", state);
+			return tmp;
+	}
 }
 
 static int _print_text_part(partition_info_t * part_ptr, 
@@ -285,42 +315,46 @@ static int _print_text_part(partition_info_t * part_ptr,
 		mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 			  pa_system_ptr->xcord, "%.9s", part_ptr->name);
 		pa_system_ptr->xcord += 10;
-		if (part_ptr->state_up)
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-				  pa_system_ptr->xcord, "UP");
-		else
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-				  pa_system_ptr->xcord, "DOWN");
-		pa_system_ptr->xcord += 7;
-
-		if (part_ptr->max_time == INFINITE)
-			snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
-		else {
-			snprint_time(time_buf, sizeof(time_buf), 
-				     (part_ptr->max_time * 60));
-		}
-
 		if (params.display != BGLPART) {
+			if (part_ptr->state_up)
+				mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+					  pa_system_ptr->xcord, "UP");
+			else
+				mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+					  pa_system_ptr->xcord, "DOWN");
+			pa_system_ptr->xcord += 7;
+			
+			if (part_ptr->max_time == INFINITE)
+				snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
+			else {
+				snprint_time(time_buf, sizeof(time_buf), 
+					     (part_ptr->max_time * 60));
+			}
+			
 			width = strlen(time_buf);
 			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 				  pa_system_ptr->xcord + (9 - width), "%s", 
 				  time_buf);
 			pa_system_ptr->xcord += 11;
-		}
+		} 
 	} else
-		pa_system_ptr->xcord += 17;
+		pa_system_ptr->xcord += 10;
 
 	if (params.display == BGLPART) {
 		if (db2_info_ptr) {
 			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 				  pa_system_ptr->xcord, "%.11s", 
-				  db2_info_ptr->bgl_user_name);
-			pa_system_ptr->xcord += 12;
-			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
-				  pa_system_ptr->xcord, "%.11s", 
 				  db2_info_ptr->bgl_block_name);
 			pa_system_ptr->xcord += 12;
-
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, _part_state_str(db2_info_ptr->state));
+				pa_system_ptr->xcord += 8;
+				
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "%.11s", 
+				  db2_info_ptr->bgl_user_name);
+			pa_system_ptr->xcord += 12;
+			
 			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 				  pa_system_ptr->xcord, "%.5s", 
 				  _convert_conn_type(
@@ -335,6 +369,9 @@ static int _print_text_part(partition_info_t * part_ptr,
 			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 				  pa_system_ptr->xcord, "?");
 			pa_system_ptr->xcord += 12;
+			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
+				  pa_system_ptr->xcord, "?");
+			pa_system_ptr->xcord += 8;
 			mvwprintw(pa_system_ptr->text_win, pa_system_ptr->ycord,
 				  pa_system_ptr->xcord, "?");
 			pa_system_ptr->xcord += 12;
@@ -683,6 +720,14 @@ static void _read_part_db2(void)
 			block_ptr->bgl_block_name = xstrdup(part_id);
 			
 
+			if ((rc = rm_get_data(part_ptr, 
+					      RM_PartitionState, 
+					      &block_ptr->state)) != STATUS_OK) {
+				fprintf(stderr, "rm_get_data("
+					"RM_PartitionState): %s\n",
+					bgl_err_str(rc));
+			}				
+			
 			if ((rc = rm_get_data(part_ptr, 
 					      RM_PartitionUserName, 
 					      &block_ptr->bgl_user_name)) != STATUS_OK) {
