@@ -17,6 +17,10 @@
 
 #include "list.h"
 #include "pack.h"
+#include "bitstring.h"
+#ifdef HAVE_LIBELAN3
+#include "qsw.h"
+#endif
 #include "slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -124,7 +128,7 @@ delete_step_record (uint32_t job_id, uint16_t step_id)
 				fatal ("invalid step data\n");
 			list_remove (step_record_iterator);
 #ifdef HAVE_LIBELAN3
-			qsw_free_jobinfo (step_record_point->qsw_jobinfo_t);
+			qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
 			if (step_record_point->node_bitmap)
 				bit_free (step_record_point->node_bitmap);
@@ -296,8 +300,8 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 		packstr ("", buf_ptr, buf_len);
 
 #ifdef HAVE_LIBELAN3
-	if (dump_step_ptr->qsw_jobinfo_t) {
-		len = qsw_pack_jobinfo (dump_step_ptr->qsw_jobinfo_t, *buf_ptr, *buf_len);
+	if (dump_step_ptr->qsw_job) {
+		len = qsw_pack_jobinfo (dump_step_ptr->qsw_job, *buf_ptr, *buf_len);
 		if (len > 0) {		/* Need to explicitly advance pointer and index here */
 			*buf_ptr = (void *) ((char *)*buf_ptr + len);
 			*buf_len += len;
@@ -327,6 +331,7 @@ step_create (struct step_specs *step_specs)
 #ifdef HAVE_LIBELAN3
 	int first, last, i, node_id;
 	bitstr_t *nodeset;
+	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
 
 	job_ptr = find_job_record (step_specs->job_id);

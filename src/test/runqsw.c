@@ -67,7 +67,7 @@ void
 slurmd(qsw_jobinfo_t job, uid_t uid, int nodeid, int nprocs, char *cmdbuf)
 {
 	pid_t pid;
-	int cpid[QSW_MAX_PROCS];
+	int cpid[QSW_MAX_TASKS];
 	int i;
 
 	/* Process 1: */
@@ -176,7 +176,7 @@ main(int argc, char *argv[])
 	int nprocs = 0;
 	int nodeid = -1;
 	uid_t uid = getuid();
-	bitstr_t bit_decl(nodeset, 128);
+	bitstr_t bit_decl(nodeset, QSW_MAX_TASKS);
 	char cmdbuf[1024] = { 0 }; 
 
 	/*
