@@ -162,6 +162,7 @@ if {[wait_for_file $file_out] == 0} {
 		set exit_code 1
 	}
 } else {
+	send_user "\nFAILURE: Output file missing\n"
 	set exit_code 1
 }
 

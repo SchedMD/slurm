@@ -37,6 +37,7 @@ source ./globals
 set test_id          "8.2"
 set exit_code        0
 set file_in          "test$test_id.input"
+set file_out         "test$test_id.output"
 set job_id           0
 
 print_header $test_id
@@ -60,15 +61,15 @@ set env(SLURM_NO_ROTATE)    1
 # Build input script file
 #
 exec $bin_rm -f $file_in
-exec echo "#!$bin_bash"         >$file_in
-exec echo "$bin_sleep 1 &"     >>$file_in
+exec echo "#!$bin_bash"    >$file_in
+exec echo "$bin_env "     >>$file_in
 exec $bin_chmod 700 $file_in
 
 #
 # Spawn a job via srun using these environment variables
 #
 set timeout $max_job_delay
-spawn $srun --batch --output=/dev/null --error=/dev/null $file_in
+spawn $srun --batch --output=$file_out --error=/dev/null $file_in
 expect {
 	-re "jobid ($number) submitted" {
 		set job_id $expect_out(1,string)
@@ -126,12 +127,36 @@ if {$matches != 4} {
 }
 
 #
+# Check for SLURM set environment variables
+#
+if {[wait_for_file $file_out] == 0} {
+	set found_env 0
+	spawn $bin_cat $file_out
+	expect {
+		-re "BGL_PARTITION_ID" {
+			incr found_env
+			exp_continue
+		}
+		eof {
+			wait
+		}
+	}
+	if {$found_env != 1} {
+		send_user "\nFAILURE: failed to set BGL_PARTITION_ID env var\n"
+		set exit_code 1
+	}
+} else {
+	send_user "\nFAILURE: Output file missing\n"
+	set exit_code 1
+}
+
+#
 # Kill the job, running it is unimportant
 #
 exec $scancel --quiet $job_id
 
 if {$exit_code == 0} {
-	exec $bin_rm -f $file_in
+	exec $bin_rm -f $file_in $file_out
 	send_user "\nSUCCESS\n"
 }
 exit $exit_code
