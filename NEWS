@@ -1,6 +1,18 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.5
+=========================
+ -- Various fixes for cleanup of slow terminating or unkillable jobs.
+ -- Fixed some small memory leaks in communications code.
+ -- Added hack for synchronized exit of jobs on large node count.
+ -- Long lists of nodes are no longer truncated in sinfo.
+ -- Print more descriptive error message when tasks exit with nonzero status.
+ -- Fixed bug in srun where unsuccessful launch attempts weren't detected.
+ -- Elan network error resolver thread now runs from elan module in slurmd.
+ -- Slurmctld uses consecutive Elan context and program description numbers
+    instead of choosing them randomly.
+
 * Changes in SLURM 0.2.4
 ==========================
  -- Fix for file descriptor leak in slurmctld.
