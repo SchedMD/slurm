@@ -59,7 +59,7 @@
 /*
  *  Instantiate extern variables from attach.h
  */
-   struct MPIR_PROCDESC *MPIR_proctable;
+   MPIR_PROCDESC *MPIR_proctable;
    int MPIR_proctable_size;
    VOLATILE int MPIR_debug_state;
    VOLATILE int MPIR_debug_gate;

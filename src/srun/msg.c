@@ -129,7 +129,7 @@ _node_name_to_addr(const char *name, job_t *job, int *inx)
 static void
 _build_tv_list(job_t *job, char *host, int ntasks, uint32_t *pid)
 {
-	struct MPIR_PROCDESC * tv_tasks;
+	MPIR_PROCDESC * tv_tasks;
 	int i, node_inx, task_id;
 	char *node_addr;
 	static int tasks_recorded = 0;
@@ -140,7 +140,7 @@ _build_tv_list(job_t *job, char *host, int ntasks, uint32_t *pid)
 
 	if (MPIR_proctable_size == 0) {
 		MPIR_proctable_size = opt.nprocs;
-		MPIR_proctable = xmalloc(sizeof(struct MPIR_PROCDESC) * opt.nprocs);
+		MPIR_proctable = xmalloc(sizeof(MPIR_PROCDESC) * opt.nprocs);
 	}
 
 	for (i = 0; i < ntasks; i++) {
