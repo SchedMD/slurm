@@ -375,6 +375,7 @@ static void
 _dump_node_state (struct node_record *dump_node_ptr, Buf buffer) 
 {
 	packstr (dump_node_ptr->name, buffer);
+	packstr (dump_node_ptr->reason, buffer);
 	pack16  (dump_node_ptr->node_state, buffer);
 	pack32  (dump_node_ptr->cpus, buffer);
 	pack32  (dump_node_ptr->real_memory, buffer);
@@ -388,7 +389,7 @@ _dump_node_state (struct node_record *dump_node_ptr, Buf buffer)
  */
 int load_all_node_state ( void )
 {
-	char *node_name, *data = NULL, *state_file;
+	char *node_name, *reason = NULL, *data = NULL, *state_file;
 	int data_allocated, data_read = 0, error_code = 0;
 	uint16_t node_state, name_len;
 	uint32_t cpus, real_memory, tmp_disk, data_size = 0;
@@ -429,6 +430,7 @@ int load_all_node_state ( void )
 
 	while (remaining_buf (buffer) > 0) {
 		safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+		safe_unpackstr_xmalloc (&reason, &name_len, buffer);
 		safe_unpack16 (&node_state,  buffer);
 		safe_unpack32 (&cpus,        buffer);
 		safe_unpack32 (&real_memory, buffer);
@@ -451,6 +453,7 @@ int load_all_node_state ( void )
 		node_ptr = find_node_record (node_name);
 		if (node_ptr) {
 			node_ptr->node_state    = node_state;
+			node_ptr->reason        = reason;
 			node_ptr->cpus          = cpus;
 			node_ptr->real_memory   = real_memory;
 			node_ptr->tmp_disk      = tmp_disk;
@@ -458,6 +461,7 @@ int load_all_node_state ( void )
 		} else {
 			error ("Node %s has vanished from configuration", 
 			       node_name);
+			xfree(reason);
 		}
 		xfree (node_name);
 	}
@@ -799,6 +803,7 @@ static void _pack_node (struct node_record *dump_node_ptr, Buf buffer)
 		packstr (dump_node_ptr->partition_ptr->name, buffer);
 	else
 		packstr (NULL, buffer);
+	packstr (dump_node_ptr->reason, buffer);
 }
 
 
@@ -910,9 +915,9 @@ static void _split_node_name (char *name, char *prefix, char *suffix,
  */
 int update_node ( update_node_msg_t * update_node_msg ) 
 {
-	int error_code = 0, state_val, node_inx;
-	char  *this_node_name ;
+	int error_code = 0, state_val, base_state, node_inx;
 	struct node_record *node_ptr;
+	char  *this_node_name ;
 	hostlist_t host_list;
 	uint16_t no_resp_flag = 0;
 
@@ -994,6 +999,20 @@ int update_node ( update_node_msg_t * update_node_msg )
 			info ("update_node: node %s state set to %s",
 				this_node_name, node_state_string(state_val));
 		}
+
+		if ((update_node_msg -> reason) && (update_node_msg -> reason[0])) {
+			xfree(node_ptr->reason);
+			xstrcat(node_ptr->reason, update_node_msg->reason);
+			info ("update_node: node %s reason set to: %s",
+				this_node_name, node_ptr->reason);
+		}
+
+		base_state = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
+		if ((base_state != NODE_STATE_DRAINED)  && 
+		    (base_state != NODE_STATE_DRAINING) &&
+		    (base_state != NODE_STATE_DOWN))
+			xfree(node_ptr->reason);
+
 		free (this_node_name);
 	}
 
@@ -1504,6 +1523,7 @@ void make_node_alloc(struct node_record *node_ptr)
 	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND ;
 	if (base_state != NODE_STATE_COMPLETING)
 		node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
+	xfree(node_ptr->reason);
 }
 
 /* make_node_comp - flag specified node as completing a job */
@@ -1523,6 +1543,7 @@ void make_node_comp(struct node_record *node_ptr)
 					 node_ptr->node_state));
 	} else {
 		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
+		xfree(node_ptr->reason);
 	}
 
 	if (node_ptr->run_job_cnt)
@@ -1594,10 +1615,12 @@ void make_node_idle(struct node_record *node_ptr,
 		bit_clear(up_node_bitmap, inx);
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
+		xfree(node_ptr->reason);
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | no_resp_flag;
 		if (no_resp_flag == 0)
 			bit_set(idle_node_bitmap, inx);
+		xfree(node_ptr->reason);
 	}
 }
 

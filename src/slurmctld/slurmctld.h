@@ -148,6 +148,7 @@ struct node_record {
 	slurm_addr slurm_addr;		/* network address */
 	uint16_t comp_job_cnt;		/* count of jobs completing on node */
 	uint16_t run_job_cnt;		/* count of jobs running on node */
+	char *reason; 			/* why a node is DOWN or DRAINING */
 };
 
 extern struct node_record *node_record_table_ptr;  /* ptr to node records */
