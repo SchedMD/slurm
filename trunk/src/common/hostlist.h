@@ -85,6 +85,12 @@ typedef struct hostlist_iterator * hostlist_iterator_t;
  * hostlist is denoted by a common prefix followed by a list of numeric 
  * ranges contained within brackets: e.g. "tux[0-5,12,20-25]" 
  *
+ * To support systems with 3-D topography, a rectangular prism may 
+ * be described using two three digit numbers separated by "x": e.g. 
+ * "bgl[123x456]". This selects all nodes between 1 and 4 inclusive 
+ * in the first dimension, between 2 and 5 in the second, and between 
+ * 3 and 6 in the third dimension for a total of 4*4*4=64 nodes
+ *
  * Note: if this module is compiled with WANT_RECKLESS_HOSTRANGE_EXPANSION
  * defined, a much more loose interpretation of host ranges is used. 
  * Reckless hostrange expansion allows all of the following (in addition to 

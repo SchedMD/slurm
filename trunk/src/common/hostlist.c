@@ -1398,6 +1398,51 @@ static int _parse_single_range(const char *str, struct _range *range)
     seterrno_ret(EINVAL, 0);
 }
 
+/*
+ * Convert description of a rectangular prism in 3-D node space into a set of 
+ * sequential node ranges.
+ * str IN - contains "<number>x<number>" in which the two number describe the
+ *		XYZ boundaries of the nodes, each must contain three-digits
+ * ranges IN/OUT - set of high/low numeric ranges based upon sequential ordering
+ * len IN - number of entries in ranges structure
+ * count OUT - location in ranges of first unused entry
+ * RET 1 if str contained a valid number or range,
+ *	0 if conversion of str to a range failed.
+ */
+static int _parse_box_range(char *str, struct _range *ranges, int len, int *count)
+{
+	int a1, a2, a3, b1, b2, b3, i1, i2;
+	char new_str[8];
+
+	a1 = str[0] - '0';
+	a2 = str[1] - '0';
+	a3 = str[2] - '0';
+	b1 = str[4] - '0';
+	b2 = str[5] - '0';
+	b3 = str[6] - '0';
+	if ((a1 < 0) || (a1 > 9) ||
+	    (a2 < 0) || (a2 > 9) ||
+	    (a3 < 0) || (a3 > 9) ||
+	    (str[3] != 'x') ||
+	    (b1 < 0) || (b1 > 9) || (b1 < a1) ||
+	    (b2 < 0) || (b2 > 9) || (b2 < a2) ||
+	    (b3 < 0) || (b3 > 9) || (b3 < a3) ||
+	    (str[7] != '\0'))
+		return 0;
+
+	for (i1=a1; i1 <= b1; i1++) {
+		for (i2=a2; i2 <=b2; i2++) {
+			if (*count == len)
+				return -1;
+			snprintf(new_str, 8, "%d%d%d-%d%d%d", 
+				i1, i2, a3, i1, i2, b3);
+			if (!_parse_single_range(new_str,&ranges[*count]))
+				return -1;
+			(*count)++;
+		}
+	}
+	return 1;
+}
 
 /*
  * Convert 'str' containing comma separated digits and ranges into an array
@@ -1415,8 +1460,13 @@ static int _parse_range_list(char *str, struct _range *ranges, int len)
             return -1;
         if ((p = strchr(str, ',')))
             *p++ = '\0';
-        if (!_parse_single_range(str, &ranges[count++])) 
-            return -1;  
+	if ((str[3] == 'x') && (strlen(str) == 7)) {
+		if (!_parse_box_range(str, ranges, len, &count)) 
+			return -1;  
+	} else {
+		if (!_parse_single_range(str, &ranges[count++])) 
+			return -1;  
+	}
         str = p;
     }
     return count;
@@ -2583,12 +2633,20 @@ int main(int ac, char **av)
     if (!(hl1 = hostlist_create(ac > 1 ? av[1] : NULL)))
         perror("hostlist_create");
     if (!(set = hostset_create(ac > 1 ? av[1] : NULL)))
-        perror("hostlist_create");
+        perror("hostset_create");
 
     hl3 = hostlist_create("f[0-5]");
     hostlist_delete(hl3, "f[1-3]");
     hostlist_ranged_string(hl3, 102400, buf);
     printf("after delete = `%s'\n", buf);
+    hostlist_destroy(hl3);
+
+    hl3 = hostlist_create("bgl[012x123]");
+    hostlist_ranged_string(hl3, 102400, buf);
+    printf("bgl[012x123] == `%s'\n", buf);
+    i = hostlist_count(hl3);
+    assert(i == 8);
+    hostlist_ranged_string(hl3, 102400, buf);
     hostlist_destroy(hl3);
 
     for (i = 2; i < ac; i++) {
