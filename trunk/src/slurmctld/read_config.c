@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -988,7 +988,7 @@ static int _sync_nodes_to_comp_job(void)
 	return update_cnt;
 }
 
-/* Synchronize states of nodes and active jobs
+/* Synchronize states of nodes and active jobs (RUNNING or COMPLETING state)
  * RET count of jobs with state changes */
 static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
