@@ -41,6 +41,7 @@
 
 #include <src/slurmd/get_mach_stat.h>
 #include <src/slurmd/slurmd.h> 
+#include <src/slurmd/task_mgr.h> 
 
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN 1024
@@ -48,7 +49,6 @@
 
 /* global variables */
 
-static List task_list ;
 time_t init_time;
 
 /* function prototypes */
@@ -80,15 +80,10 @@ int main (int argc, char *argv[])
 */
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: errno %d from gethostname", errno);
-	init ( ) ;	
+	task_mgr_init ( ) ;	
 	send_node_registration_status_msg ( ) ;
 	slurmd_msg_engine ( NULL ) ;
 	return SLURM_SUCCESS ;
-}
-
-void init ( ) 
-{
-	task_list = list_create ( NULL ) ;
 }
 
 
@@ -223,15 +218,13 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
+	launch_tasks_msg_t * task_desc = ( launch_tasks_msg_t * ) msg->data ;
 
 	start_time = clock ();
 
 	/* do RPC call */
-	/*error_code = init_slurm_conf ();
-	if (error_code == 0)
-		error_code = read_slurm_conf (SLURM_CONF);
-	reset_job_bitmaps ();
-	*/
+	error_code = launch_tasks ( task_desc );
+
 	/* return result */
 	if (error_code)
 	{
@@ -254,15 +247,13 @@ void slurm_rpc_kill_tasks ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
+	kill_tasks_msg_t * kill_tasks_msg = ( kill_tasks_msg_t * ) msg->data ;
 
-	start_time = clock ();
+	start_time = clock ( );
 
 	/* do RPC call */
-	/*error_code = init_slurm_conf ();
-	if (error_code == 0)
-		error_code = read_slurm_conf (SLURM_CONF);
-	reset_job_bitmaps ();
-	*/
+	error_code = kill_tasks ( kill_tasks_msg );
+
 	/* return result */
 	if (error_code)
 	{
@@ -308,3 +299,4 @@ void slurm_rpc_slurmd_example ( slurm_msg_t * msg )
 	}
 
 }
+
