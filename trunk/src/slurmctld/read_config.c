@@ -746,6 +746,7 @@ int read_slurm_conf(int recover)
 		(void) load_all_part_state();
 		(void) load_all_job_state();
 	} else {
+		reset_first_job_id();
 		if (old_node_table_ptr) {
 			info("restoring original state of nodes");
 			for (i = 0; i < old_node_record_count; i++) {
