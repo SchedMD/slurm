@@ -20,11 +20,11 @@ request is sent to the <b>controller</b> executing on the <b>control machine</b>
 <p>
 The controller orchestrates all SLURM activities including: accepting the 
 job initiation request, allocating nodes to the job, enforcing partition
-constraings, enforcing job limits, and general record keeping. The three 
+constraints, enforcing job limits, and general record keeping. The three 
 primary components (threads) of the controller are the <b>Partition Manager</b> (PM), 
 <b>Node Manager</b> (NM), and <b>Job Manager</b> (JM). The partition manager
 keeps track of partition state and contraints. The node manager keeps track 
-of node state and configuration. The node manager keeps track of job state 
+of node state and configuration. The job manager keeps track of job state 
 and enforces its limits. Since all of these functions are critical to the 
 overall SLURM operation, a <b>backup controler</b> assumes thsse responsibilities
 in the event of control machine failure.
