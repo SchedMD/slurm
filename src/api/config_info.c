@@ -76,6 +76,9 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->prolog);
 	fprintf(out, "ReturnToService   = %u\n", 
 		slurm_ctl_conf_ptr->ret2service);
+	fprintf(out, "SlurmUser         = %s(%u)\n", 
+		slurm_ctl_conf_ptr->slurm_user_name,
+		slurm_ctl_conf_ptr->slurm_user_id);
 	fprintf(out, "SlurmctldLogFile  = %s\n", 
 		slurm_ctl_conf_ptr->slurmctld_logfile);
 	fprintf(out, "SlurmctldTimeout  = %u\n", 

@@ -1580,6 +1580,8 @@ static void _pack_slurm_ctl_conf_msg (
 	packstr (build_ptr->prioritize, buffer);
 	packstr (build_ptr->prolog, buffer);
 	pack16 (build_ptr->ret2service, buffer);
+	pack16 (build_ptr->slurm_user_id, buffer);
+	packstr (build_ptr->slurm_user_name, buffer);
 	packstr (build_ptr->slurmctld_logfile, buffer);
 	pack16 (build_ptr->slurmctld_timeout, buffer);
 	packstr (build_ptr->slurmd_logfile, buffer);
@@ -1625,6 +1627,9 @@ static int _unpack_slurm_ctl_conf_msg (
 	safe_unpackstr_xmalloc (&build_ptr->prolog, &uint16_tmp, 
 	                        buffer);
 	safe_unpack16 (&build_ptr->ret2service, buffer);
+	safe_unpack16 (&build_ptr->slurm_user_id, buffer);
+	safe_unpackstr_xmalloc (&build_ptr->slurm_user_name, 
+	                        &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc (&build_ptr->slurmctld_logfile, 
 	                        &uint16_tmp, buffer);
 	safe_unpack16 (&build_ptr->slurmctld_timeout, buffer);

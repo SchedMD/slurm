@@ -157,6 +157,8 @@ void slurm_free_ctl_conf(slurm_ctl_conf_info_msg_t * config_ptr)
 			xfree(config_ptr->prioritize);
 		if (config_ptr->prolog)
 			xfree(config_ptr->prolog);
+		if (config_ptr->slurm_user_name)
+			xfree(config_ptr->slurm_user_name);
 		if (config_ptr->slurmctld_logfile)
 			xfree(config_ptr->slurmctld_logfile);
 		if (config_ptr->slurmd_logfile)
