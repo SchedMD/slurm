@@ -26,9 +26,6 @@ pkginclude_HEADERS =		\
 	slurm/slurm.h 		\
 	slurm/slurm_errno.h
 
-noinst_HEADERS =		\
-	sayMessage.h
-
 MAINTAINERCLEANFILES = 					\
 	aclocal.m4 config.guess 			\
 	config.h.in config.sub configure install-sh 	\
