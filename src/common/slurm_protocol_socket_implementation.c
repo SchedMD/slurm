@@ -31,12 +31,24 @@ uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address )
 
 uint32_t _slurm_open_msg_conn ( slurm_addr * slurm_address )
 {
-	return _slurm_listen_stream ( slurm_address ) ;
+/*	return _slurm_listen_stream ( slurm_address ) ; */
+	return _slurm_open_stream ( slurm_address ) ;
+}
+
+/* this should be a no-op that just returns open_fd in a message implementation */
+slurm_fd _slurm_accept_msg_conn ( slurm_fd open_fd , slurm_addr * slurm_address )
+{
+	return _slurm_accept_stream ( open_fd , slurm_address ) ;
+}	
+/* this should be a no-op in a message implementation */
+int _slurm_close_accepted_conn ( slurm_fd open_fd ) 
+{
+	return _slurm_close ( open_fd ) ;
 }
 
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
-	slurm_fd connection_fd ;
+/*  	slurm_fd connection_fd ; */
 	size_t recv_len ;
 
 	char size_buffer_temp [8] ;
@@ -45,14 +57,15 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	uint32_t transmit_size ;
 	uint32_t total_len ;
 	
-	
+/*	
 	if ( ( connection_fd = _slurm_accept_stream ( open_fd , slurm_address ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error opening stream socket to receive msg datagram emulation layeri\n" ) ;
 		return connection_fd ;
 	}
-	
 	if ( ( recv_len = _slurm_recv ( connection_fd , size_buffer_temp , sizeof ( uint32_t ) , NO_SEND_RECV_FLAGS ) )  != sizeof ( uint32_t ) )
+*/	
+	if ( ( recv_len = _slurm_recv ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , NO_SEND_RECV_FLAGS ) )  != sizeof ( uint32_t ) )
 	{
 		debug ( "Error receiving legth of datagram.  Total Bytes Sent %i \n", recv_len ) ;
 	}
@@ -61,7 +74,8 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 	total_len = 0 ;
 	while ( total_len < transmit_size )
 	{
-		if ( ( recv_len = _slurm_recv ( connection_fd , buffer , transmit_size , NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
+/*		if ( ( recv_len = _slurm_recv ( connection_fd , buffer , transmit_size , NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR ) */
+		if ( ( recv_len = _slurm_recv ( open_fd , buffer , transmit_size , NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
 		{
 			debug ( "Error receiving legth of datagram.  errno %i \n", errno ) ;
 			return recv_len ;
@@ -71,14 +85,15 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 			total_len += recv_len ;
 		}
 	}
-
+/*
 	_slurm_close ( connection_fd ) ;
+*/
 	return recv_len ;
 }
 
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
-	slurm_fd connection_fd ;
+/*	slurm_fd connection_fd ; */
 	size_t send_len ;
 
 	char size_buffer_temp [8] ;
@@ -86,24 +101,29 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 	uint32_t size_size = 8 ;
 	
 	pack32 (  size , ( void ** ) & size_buffer , & size_size ) ;
-	
+/*	
 	if ( ( connection_fd = _slurm_open_stream ( slurm_address ) ) ==SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error opening stream socket to send msg datagram emulation layer\n" ) ;
 		return connection_fd ;
 	}
 	if ( ( send_len = _slurm_send ( connection_fd , size_buffer_temp , sizeof ( uint32_t ) , NO_SEND_RECV_FLAGS ) ) != sizeof ( uint32_t ) )
+*/
+	if ( ( send_len = _slurm_send ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , NO_SEND_RECV_FLAGS ) ) != sizeof ( uint32_t ) )
 	{
 		debug ( "Error sending length of datagram\n" ) ;
 	}
 
-	send_len = _slurm_send ( connection_fd ,  buffer , size , NO_SEND_RECV_FLAGS ) ;
+/*	send_len = _slurm_send ( connection_fd ,  buffer , size , NO_SEND_RECV_FLAGS ) ; */
+	send_len = _slurm_send ( open_fd ,  buffer , size , NO_SEND_RECV_FLAGS ) ; 
 	if ( send_len != size )
 	{
 		debug ( "_slurm_msg_sendto only transmitted %i of %i bytes\n", send_len , size ) ;
 	}
 
+/*
 	_slurm_close ( connection_fd ) ;
+*/
 	return send_len ;
 }
 
@@ -179,7 +199,7 @@ extern int _slurm_socket (int __domain, int __type, int __protocol)
 	return socket ( __domain, __type, __protocol ) ;
 }	
 
-extern int _slurm_create_socket ( slurm_socket_type_t type )
+extern slurm_fd _slurm_create_socket ( slurm_socket_type_t type )
 {
 	switch ( type )
 	{
