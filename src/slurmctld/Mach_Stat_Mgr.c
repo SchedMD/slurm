@@ -35,8 +35,8 @@ main(int argc, char * argv[]) {
     int Error_Code;
     char Out_Line[BUF_SIZE];
 
-    if (argc < 3) {
-	printf("Usage: %s <in_file> <out_file>\n", argv[0]);
+    if (argc < 4) {
+	printf("Usage: %s <in_file> <out_file1> <out_file2>\n", argv[0]);
 	exit(0);
     } /* if */
     Error_Code = Read_Node_Spec_Conf(argv[1]);
@@ -52,6 +52,9 @@ main(int argc, char * argv[]) {
 
     Error_Code = Write_Node_Spec_Conf(argv[2], 1);
     if (Error_Code != 0) printf("Error %d from Write_Node_Spec_Conf", Error_Code);
+
+    Error_Code = Dump_Node_Records(argv[3]);
+    if (Error_Code != 0) printf("Error %d from Dump_Node_Records", Error_Code);
 
     Error_Code = Validate_Node_Spec("Name=mx03.llnl.gov CPUs=4 TmpDisk=22222");
     if (Error_Code != 0) printf("Error %d from Validate_Node_Spec", Error_Code);
@@ -98,6 +101,75 @@ int Delete_Record(char *name) {
     list_iterator_destroy(Node_Record_Iterator);
     return Error_Code;
 } /* Delete_Record */
+
+
+/*
+ * Dump_Node_Records - Raw dump of node specification information into the specified file 
+ * Input: File_Name - Name of the file into which the node specification is to be written
+ * Output: return - 0 if no error, otherwise an error code
+ */
+int Dump_Node_Records (char *File_Name) {
+    FILE *Node_Spec_File;	/* Pointer to output data file */
+    int Error_Code;		/* Error returns from system functions */
+    int i;			/* Counter */
+    ListIterator Node_Record_Iterator;		/* For iterating through Node_Record_List */
+    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+
+    /* Initialization */
+    Error_Code = 0;
+    Node_Record_Iterator = list_iterator_create(Node_Record_List);
+   if (Node_Record_Iterator == NULL) {
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
+#else
+	syslog(LOG_ERR, "Dump_Node_Records: list_iterator_create unable to allocate memory\n");
+#endif
+	return ENOMEM;
+    }
+    Node_Spec_File = fopen(File_Name, "w");
+    if (Node_Spec_File == NULL) {
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Dump_Node_Records error %d opening file %s\n", errno, File_Name);
+#else
+	syslog(LOG_ERR, "Dump_Node_Records error %d opening file %s\n", errno, File_Name);
+#endif
+	return errno;
+    } /* if */
+
+    i = NODE_STRUCT_VERSION;
+    if (fwrite((void *)&i, sizeof(i), 1, Node_Spec_File) < 1) {
+	Error_Code = ferror(Node_Spec_File);
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
+#else
+	syslog(LOG_ERR, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
+#endif
+    } /* if */
+
+    /* Process the data file */
+    while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
+	if (fwrite((void *)Node_Record_Point, sizeof (struct Node_Record), 1, Node_Spec_File) < 1) {
+	    if (Error_Code == 0) Error_Code = ferror(Node_Spec_File);
+#ifdef DEBUG_MODULE
+	    fprintf(stderr, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
+#else
+	    syslog(LOG_ERR, "Dump_Node_Records error %d writing to file %s\n", Error_Code, File_Name);
+#endif
+	} /* if */
+    } /* while */
+
+    /* Termination */
+    if (fclose(Node_Spec_File) != 0) {
+	if (Error_Code == 0) Error_Code = errno;
+#ifdef DEBUG_MODULE
+	fprintf(stderr, "Dump_Node_Records error %d closing file %s\n", errno, File_Name);
+#else
+	syslog(LOG_NOTICE, "Dump_Node_Records error %d closing file %s\n", errno, File_Name);
+#endif
+    } /* if */
+    list_iterator_destroy(Node_Record_Iterator);
+    return Error_Code;
+} /* Dump_Node_Records */
 
 
 /* 
@@ -625,7 +697,7 @@ int Validate_Node_Spec (char *Specification) {
 
 /*
  * Write_Node_Spec_Conf - Dump the node specification information into the specified file 
- * Input: File_Name - Name of the file containing node specification
+ * Input: File_Name - Name of the file into which the node specification is to be written
  *        Full_Dump - Full node record dump if equal to zero
  * Output: return - 0 if no error, otherwise an error code
  */
@@ -644,9 +716,9 @@ int Write_Node_Spec_Conf (char *File_Name, int Full_Dump) {
     Node_Record_Iterator = list_iterator_create(Node_Record_List);
    if (Node_Record_Iterator == NULL) {
 #ifdef DEBUG_MODULE
-	fprintf(stderr, "Write_Node_Spec_Conf:list_iterator_create unable to allocate memory\n");
+	fprintf(stderr, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ERR, "Write_Node_Spec_Conf:list_iterator_create unable to allocate memory\n");
+	syslog(LOG_ERR, "Write_Node_Spec_Conf: list_iterator_create unable to allocate memory\n");
 #endif
 	return ENOMEM;
     }
