@@ -346,7 +346,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 			bit_set(nodeset, node_id);
 		}
 	}
-	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->dist) < 0)
+	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->node_bitmap) < 0)
 		fatal ("step_create: qsw_setup_jobinfo error");
 	bit_free (nodeset);
 #endif
