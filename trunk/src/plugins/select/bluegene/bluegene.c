@@ -560,8 +560,9 @@ static void _set_bgl_lists()
 
 static int _validate_config_nodes(void)
 {
-	int rc = 1, i=0;
+	int rc = 1;
 #ifdef HAVE_BGL_FILES
+	int i=0;
 	bgl_record_t* record;	/* records from configuration files */
 	bgl_record_t* init_record;	/* records from actual BGL config */
 	ListIterator itr_conf, itr_curr;
