@@ -657,7 +657,7 @@ int term_jobs_on_part(pm_partition_id_t bgl_part_id)
 	bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 	bgl_update_ptr->op = TERM_OP;
 	bgl_update_ptr->bgl_part_id = xstrdup(bgl_part_id);
-	_term_op(bgl_update_ptr);
+	_term_agent(bgl_update_ptr);
 	
 	return rc;
 }
