@@ -69,6 +69,9 @@ srun.wrapper.o: srun.wrapper.c
 CLEANFILES = \
 	srun.wrapper.s
 
+DISTCLEANFILES = \
+	srun.wrapper.c
+
 install-exec-local:
 	if test -n "$(SRUN_WRAPPER_OBJ)"; then \
 	  umask 022; \
