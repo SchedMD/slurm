@@ -255,7 +255,7 @@ bitstr_t *
 pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus, 
 		 char *node_list, char *relative_node_list) {
 	bitstr_t *nodes_avail = NULL, *nodes_picked = NULL, *node_tmp = NULL;
-	int error_code, nodes_picked_cnt;
+	int error_code, nodes_picked_cnt = 0, cpus_picked_cnt, i;
 
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
@@ -275,13 +275,21 @@ pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus,
 				node_list, job_ptr->job_id);
 			goto cleanup;
 		}
-		nodes_picked_cnt = bit_set_count(nodes_picked);
 	}
 	else
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
 
 	if (relative_node_list) {
+/* need to resolve format of relative_node_list */
 		info ("pick_step_nodes: relative_node_list not yet supported");
+	}
+
+	/* if user specifies step needs a specific processor count and all nodes */
+	/* have the same processor count, just translate this to a node count */
+	if (min_cpus && (job_ptr->num_cpu_groups == 1)) {
+		i = (min_cpus + (job_ptr->cpus_per_node[0] - 1) ) / job_ptr->cpus_per_node[0];
+		min_nodes = (i > min_nodes) ? i : min_nodes;
+		min_cpus = 0;
 	}
 
 	if (min_nodes) {
@@ -295,10 +303,27 @@ pick_step_nodes (struct job_record  *job_ptr, int min_nodes, int min_cpus,
 			bit_and (nodes_avail, node_tmp);
 			bit_free (node_tmp);
 			node_tmp = NULL;
+			nodes_picked_cnt = min_nodes;
 		}
 	}
 
 	if (min_cpus) {
+		cpus_picked_cnt = count_cpus(nodes_picked);
+		if (min_cpus > cpus_picked_cnt) {
+			int first_bit, last_bit;
+			first_bit = bit_ffs(nodes_avail);
+			last_bit  = bit_fls(nodes_avail);
+ 			for (i = first_bit; i <= last_bit; i++) {
+				if (bit_test (nodes_avail, i) != 1)
+					continue;
+				bit_set (nodes_picked, i);
+				cpus_picked_cnt += node_record_table_ptr[i].cpus;
+				if (cpus_picked_cnt >= min_cpus)
+					break;
+			}
+			if (min_cpus > cpus_picked_cnt)
+				goto cleanup;
+		}
 	}
 
 	if (nodes_avail)
