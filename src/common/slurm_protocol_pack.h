@@ -129,4 +129,7 @@ void unpack_io_stream_header ( slurm_io_stream_header_t * msg , void ** buffer ,
 
 void pack_task_exit_msg ( task_exit_msg_t * msg , void ** buffer , uint32_t * length ) ;
 int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , void ** buffer , uint32_t * length ) ;
+
+void pack_job_credential ( slurm_job_credential_t* cred , void ** buffer , uint32_t * length ) ;
+int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length ) ;
 #endif

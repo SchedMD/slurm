@@ -25,11 +25,10 @@ int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_
 	int buf_size = sizeof ( buffer ) ;
 	int size = sizeof ( buffer ) ;
 	int error_code = SLURM_SUCCESS ;
-	slurm_ssl_key_ctx_t verfify_ctx ;
 	time_t now = time ( NULL ) ;
 	char this_node_name[MAX_NAME_LEN] ;
 	
-	pack_job_credential ( credential , & buf_ptr , & size ) ;
+	pack_job_credential ( credential , (void ** ) & buf_ptr , & size ) ;
 	if ( slurm_ssl_verify ( verify_ctx , buffer , buf_size - size - SLURM_SSL_SIGNATURE_LENGTH , credential -> signature , SLURM_SSL_SIGNATURE_LENGTH ) )
 	{
 		slurm_seterrno ( ESLURMD_INVALID_JOB_CREDENTIAL ) ;
