@@ -154,9 +154,9 @@ static int _build_bitmaps(void)
 	list_iterator_destroy(job_iterator);
 
 	/* scan all nodes and identify which are up, idle and 
-	 * their configuration */
+	 * their configuration, resync DRAINED vs. DRAINING state */
 	for (i = 0; i < node_record_count; i++) {
-		uint16_t base_state, no_resp_flag;
+		uint16_t base_state, no_resp_flag, job_cnt;
 
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;	/* defunct */
@@ -164,6 +164,24 @@ static int _build_bitmaps(void)
 			       (~NODE_STATE_NO_RESPOND);
 		no_resp_flag = node_record_table_ptr[i].node_state & 
 			       NODE_STATE_NO_RESPOND;
+		job_cnt = node_record_table_ptr[i].run_job_cnt +
+		          node_record_table_ptr[i].comp_job_cnt;
+
+		if ((base_state == NODE_STATE_DRAINED) &&
+		    (job_cnt > 0)) {
+			error("Bad node drain state for %s", 
+				node_record_table_ptr[i].name);
+			node_record_table_ptr[i].node_state =
+				NODE_STATE_DRAINING | no_resp_flag;
+		}
+		if ((base_state == NODE_STATE_DRAINING) &&
+		    (job_cnt == 0)) {
+			error("Bad node drain state for %s",
+				node_record_table_ptr[i].name);
+			node_record_table_ptr[i].node_state =
+				NODE_STATE_DRAINED | no_resp_flag;
+		}
+
 		if ((base_state == NODE_STATE_IDLE   ) ||
 		    (base_state == NODE_STATE_DOWN   ) ||
 		    (base_state == NODE_STATE_DRAINED))
