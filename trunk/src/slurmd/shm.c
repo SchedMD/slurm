@@ -983,6 +983,8 @@ _shm_reopen()
 		return SLURM_FAILURE;
 	}
 
+	debug3("successfully attached to slurmd shm");
+
 	/* 
 	 * Lock and unlock semaphore to ensure data is initialized 
 	 */
@@ -996,6 +998,7 @@ _shm_reopen()
 	}
 
 	_shm_unlock();
+	debug3("leaving shm_init()");
 
 	return retval;
 }
@@ -1046,7 +1049,7 @@ _shm_sane(void)
 
 	sem_getvalue(shm_lock, &val);
 
-	debug("shm lock val = %d, last accessed at %s", 
+	debug3("shm lock val = %d, last accessed at %s", 
 	      val, ctime(&st.st_atime));
 
 	if ((val == 0) && ((time(NULL) - st.st_atime) > 30))
