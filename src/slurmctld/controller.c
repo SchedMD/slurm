@@ -140,7 +140,7 @@ main (int argc, char *argv[])
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
 			error ("slurm_accept_msg_conn error %d", errno) ;
-			break ;
+			continue ;
 		}
 		
 		/* receive message call that must occur before thread spawn because in message 
@@ -150,7 +150,9 @@ main (int argc, char *argv[])
 		if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 		{
 			error ("slurm_receive_msg error %d", errno);
-			break ;
+			slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
+			slurm_free_msg ( msg ) ;
+			continue ;
 		}
 
 		msg -> conn_fd = newsockfd ;	
