@@ -67,6 +67,7 @@
 #define OPT_CONTIG      0x54
 #define OPT_NODELIST    0x55
 #define OPT_CONSTRAINT  0x56
+#define OPT_NO_ALLOC	0x57
 
 
 #ifndef POPT_TABLEEND
@@ -109,6 +110,9 @@ struct poptOption constraintTable[] = {
 	{"nodelist", 'w', POPT_ARG_STRING, &opt.nodelist, OPT_NODELIST,
 	 "request a specific list of hosts",
 	 "host1,host2,..."},
+	{"no-allocate", 'Z', POPT_ARG_NONE, &opt.no_alloc, OPT_NO_ALLOC,
+	 "don't allocate nodes (must supply -w)",
+	},
 	POPT_TABLEEND
 };
 
@@ -142,8 +146,8 @@ struct poptOption runTable[] = {
 	 "prepend task number to lines of stdout/err",
 	 },
 	{"distribution", 'm', POPT_ARG_STRING, 0, OPT_DISTRIB,
-	 "distribution method for processes",
-	 "(block|cyclic)"},
+	 "distribution method for processes (type = block|cyclic)",
+	 "type"},
 	{"job-name", 'J', POPT_ARG_STRING, &opt.job_name, 0,
 	 "name of job",
 	 "jobname"},
@@ -439,7 +443,7 @@ static void opt_default()
 
 	opt.nprocs = 1;
 	opt.cpus = 1;
-	opt.nodes = 1;
+	opt.nodes = 0; /* nodes need not be set */
 	opt.partition = NULL;
 
 	opt.job_name = "";
@@ -780,8 +784,7 @@ opt_verify(poptContext optctx,
 		} else {
 
 			if (remote_argc == 0) {
-				argerror
-				    ("Error: must supply remote command");
+				error("Error: must supply remote command");
 				verified = false;
 			}
 		}
@@ -800,7 +803,7 @@ opt_verify(poptContext optctx,
 			verified = false;
 		}
 
-		if (opt.nodes <= 0) {
+		if (opt.nodes < 0) {
 			error("%s: invalid number of nodes (-N %d)\n",
 				opt.progname, opt.nodes);
 			verified = false;
@@ -821,8 +824,7 @@ opt_verify(poptContext optctx,
 				opt.nodes = opt.nprocs;
 			}
 
-		} else if (procs_set && !nodes_set) 
-			opt.nodes = opt.nprocs;
+		} /* else if (procs_set && !nodes_set) */
 
 	}
 
