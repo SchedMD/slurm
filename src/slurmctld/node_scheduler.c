@@ -998,13 +998,12 @@ void build_node_details(struct job_record *job_ptr)
 
 	job_ptr->num_cpu_groups = 0;
 	job_ptr->node_cnt = bit_set_count(job_ptr->node_bitmap);
-	job_ptr->cpus_per_node =
-	    xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
-	job_ptr->cpu_count_reps =
-	    xmalloc(sizeof(uint32_t) * job_ptr->node_cnt);
-	job_ptr->node_addr =
-	    xmalloc(sizeof(slurm_addr) * job_ptr->node_cnt);
-
+	xrealloc(job_ptr->cpus_per_node, 
+		(sizeof(uint32_t) * job_ptr->node_cnt));
+	xrealloc(job_ptr->cpu_count_reps, 
+		(sizeof(uint32_t) * job_ptr->node_cnt));
+	xrealloc(job_ptr->node_addr, 
+		(sizeof(slurm_addr) * job_ptr->node_cnt));
 	/* Use hostlist here to insure ordering of info matches that of srun */
 	if ((host_list = hostlist_create(job_ptr->nodes)) == NULL)
 		fatal("hostlist_create error for %s: %m", job_ptr->nodes);

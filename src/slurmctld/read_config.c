@@ -55,6 +55,8 @@ static int  _build_bitmaps(void);
 static int  _init_all_slurm_conf(void);
 static int  _parse_node_spec(char *in_line);
 static int  _parse_part_spec(char *in_line);
+static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
+				int old_node_record_count);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
@@ -762,7 +764,7 @@ int read_slurm_conf(int recover)
 	}
 	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
-	xfree(old_node_table_ptr);
+	_purge_old_node_state(old_node_table_ptr, old_node_record_count);
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
@@ -800,9 +802,21 @@ static void _restore_node_state(struct node_record *old_node_table_ptr,
 		node_ptr->cpus		= old_node_table_ptr[i].cpus;
 		node_ptr->real_memory	= old_node_table_ptr[i].real_memory;
 		node_ptr->tmp_disk	= old_node_table_ptr[i].tmp_disk;
+		node_ptr->reason	= old_node_table_ptr[i].reason;
+		old_node_table_ptr[i].reason = NULL;
 	}
 }
 
+/* Purge old node state information */
+static void _purge_old_node_state(struct node_record *old_node_table_ptr, 
+				int old_node_record_count)
+{
+	int i;
+
+	for (i = 0; i < old_node_record_count; i++)
+		xfree(old_node_table_ptr[i].reason);
+	xfree(old_node_table_ptr);
+}
 
 /* Set configuration parameters to default values if not initialized 
  * by the configuration file or common/read_config.c:validate_config()

@@ -66,7 +66,7 @@ static uid_t *_get_groups_members(char *group_names);
 static uid_t *_get_group_members(char *group_name);
 static time_t _get_group_tlm(void);
 static void   _list_delete_part(void *part_entry);
-static int   _uid_list_size(uid_t * uid_list_ptr);
+static int    _uid_list_size(uid_t * uid_list_ptr);
 
 
 /*
@@ -933,4 +933,11 @@ static int _uid_list_size(uid_t * uid_list_ptr)
 	}
 
 	return i;
+}
+
+/* part_fini - free all memory associated with partition records */
+void part_fini (void) 
+{
+	if (part_list)
+		list_destroy(part_list);
 }
