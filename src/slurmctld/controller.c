@@ -391,7 +391,7 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 		}
 		else
 		{
-			info ("slurm_rpc_job_step_cancel success for %u, time=%ld",
+			info ("slurm_rpc_job_step_cancel success for JobId=%u, time=%ld",
 				job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 		}
@@ -584,7 +584,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	}
 	else
 	{
-		info ("aslurm_rpc_allocate_resources allocated nodes %s to JobId=%u, time=%ld",
+		info ("slurm_rpc_allocate_resources allocated nodes %s to JobId=%u, time=%ld",
 				node_list_ptr , job_id , 	
 				(long) (clock () - start_time));
 		
@@ -705,7 +705,7 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 				(long) (clock () - start_time));
 		
 		job_step_resp.job_step_id = step_rec->step_id;
-		bitmap2node_name( step_rec->node_bitmap, &(job_step_resp.node_list) );
+		job_step_resp.node_list = bitmap2node_name( step_rec->node_bitmap );
 		job_step_resp.credentials = &cred;
 				
 #ifdef HAVE_LIBELAN3

@@ -1,12 +1,28 @@
-/* 
+/*****************************************************************************\
  * node_scheduler.c - select and allocated nodes to jobs 
- * see slurm.h for documentation on external functions and data structures
- *
- * NOTE: DEBUG_MODULE mode test with execution line
- *	node_scheduler ../../etc/slurm.conf2 ../../etc/slurm.jobs
- *
- * author: moe jette, jette@llnl.gov
- */
+ *	Note: there is a global node table (node_record_table_ptr) *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -17,9 +33,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
-#include <src/common/slurm_protocol_errno.h>
 
-#include "slurmctld.h"
+#include <src/common/slurm_protocol_errno.h>
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
 
@@ -155,8 +171,7 @@ main (int argc, char *argv[])
 #endif
 
 
-/* allocate_nodes - for a given bitmap, change the state of specified nodes to stage_in
- * this is a simple prototype for testing 
+/* allocate_nodes - for a given bitmap, change the state of specified nodes to NODE_STATE_ALLOCATED
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  *	last_node_update - last update time of node table
@@ -200,8 +215,7 @@ count_cpus (unsigned *bitmap)
 }
 
 
-/* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
- * this is a simple prototype for testing 
+/* deallocate_nodes - for a given bitmap, change the state of specified nodes to NODE_STATE_IDLE
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table
  */
@@ -223,7 +237,7 @@ deallocate_nodes (unsigned *bitmap)
 
 
 /* 
- * is_key_valid - determine if supplied key is valid
+ * is_key_valid - determine if supplied partition key is valid
  * input: key - a slurm key acquired by user root
  * output: returns 1 if key is valid, 0 otherwise
  * NOTE: this is only a placeholder for a future function
@@ -239,7 +253,7 @@ is_key_valid (void * key)
 
 
 /*
- * match_feature - determine if the desired feature (seek) is one of those available
+ * match_feature - determine if the desired feature is one of those available
  * input: seek - desired feature
  *        available - comma separated list of features
  * output: returns 1 if found, 0 otherwise
@@ -318,23 +332,18 @@ match_group (char *allow_groups, char *user_groups)
 
 
 /*
- * pick_best_quadrics - identify the nodes which best fit the req_nodes and 
- *	req_cpus counts for a system with Quadrics elan interconnect.
+ * pick_best_quadrics - Given a bitmap of nodes to select from (bitmap), a bitmap of 
+ *	nodes required by the job (req_bitmap), a count of required node (req_nodes), 
+ *	a count of required processors (req_cpus) and a flag indicating if consecutive nodes 
+ *	are required (0|1, consecutive), identify the nodes which "best" satify the request.
  * 	"best" is defined as either single set of consecutive nodes satisfying 
  *	the request and leaving the minimum number of unused nodes OR 
  *	the fewest number of consecutive node sets
- * input: bitmap - the bit map to search
- *        req_bitmap - the bit map of nodes that must be selected, if not NULL these 
- *                     have already been confirmed to be in the input bitmap
- *        req_nodes - number of nodes required
- *        req_cpus - number of cpus required
- *        consecutive - nodes must be consecutive is 1, otherwise 0
- * output: bitmap - nodes not required to satisfy the request are cleared, 
- *		other left set
+ * output: bitmap - nodes not required to satisfy the request are cleared, other left set
  *         returns zero on success, EINVAL otherwise
  * globals: node_record_count - count of nodes configured
  *	node_record_table_ptr - pointer to global node table
- * NOTE: bitmap must be a superset of req_nodes at function call time
+ * NOTE: bitmap must be a superset of req_nodes at the time that pick_best_quadrics is called
  */
 int
 pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
@@ -506,7 +515,7 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
 
 
 /*
- * pick_best_nodes - from nodes satisfying partition and configuration specifications, 
+ * pick_best_nodes - from a weigh order table of all nodes satisfying a job's specifications, 
  *	select the "best" for use
  * input: node_set_ptr - pointer to node specification information
  *        node_set_size - number of entries in records pointed to by node_set_ptr
@@ -521,6 +530,15 @@ pick_best_quadrics (bitstr_t *bitmap, bitstr_t *req_bitmap, int req_nodes,
  *         returns 0 on success, EAGAIN if request can not be satisfied now, 
  *		EINVAL if request can never be satisfied (insufficient contiguous nodes)
  * NOTE: the caller must xfree memory pointed to by req_bitmap
+ * Notes: The algorithm is
+ *	1) If required node list is specified, determine implicitly required processor and node count 
+ *	2) Determine how many disjoint required "features" are represented (e.g. "FS1|FS2")
+ *	3) For each feature: find matching node table entries, identify nodes that are up and 
+ *	   available (idle or shared) and add them to a bit map, call pick_best_quadrics() to 
+ *	   select the "best" of those based upon topology
+ *	4) If request can't be satified now, execute pick_best_quadrics() against the list 
+ *	   of nodes that exist in any state (perhaps down or busy) to determine if the 
+ *	   request can every be satified.
  */
 int
 pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
@@ -585,8 +603,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				continue;
 			if (runable == 0) {
 				if (total_set)
-					bit_or (total_bitmap,
-						   node_set_ptr[i].my_bitmap);
+					bit_or (total_bitmap, node_set_ptr[i].my_bitmap);
 				else {
 					total_bitmap = bit_copy (node_set_ptr[i].my_bitmap);
 					if (total_bitmap == NULL) 
@@ -594,19 +611,15 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 					total_set = 1;
 				}	
 				total_nodes += node_set_ptr[i].nodes;
-				total_cpus +=
-					(node_set_ptr[i].nodes * node_set_ptr[i].cpus_per_node);
+				total_cpus += (node_set_ptr[i].nodes * node_set_ptr[i].cpus_per_node);
 			}	
-			bit_and (node_set_ptr[i].my_bitmap,
-				    up_node_bitmap);
+			bit_and (node_set_ptr[i].my_bitmap, up_node_bitmap);
 			if (shared != 1)
-				bit_and (node_set_ptr[i].my_bitmap,
-					    idle_node_bitmap);
+				bit_and (node_set_ptr[i].my_bitmap, idle_node_bitmap);
 			node_set_ptr[i].nodes =
 				bit_set_count (node_set_ptr[i].my_bitmap);
 			if (avail_set)
-				bit_or (avail_bitmap,
-					   node_set_ptr[i].my_bitmap);
+				bit_or (avail_bitmap, node_set_ptr[i].my_bitmap);
 			else {
 				avail_bitmap = bit_copy (node_set_ptr[i].my_bitmap);
 				if (avail_bitmap == NULL) 
@@ -614,9 +627,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				avail_set = 1;
 			}	
 			avail_nodes += node_set_ptr[i].nodes;
-			avail_cpus +=
-				(node_set_ptr[i].nodes *
-				 node_set_ptr[i].cpus_per_node);
+			avail_cpus += (node_set_ptr[i].nodes * node_set_ptr[i].cpus_per_node);
 			if ((req_bitmap[0]) && 
 			    (bit_super_set (req_bitmap[0], avail_bitmap) == 0))
 				continue;
@@ -624,10 +635,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				continue;
 			if (avail_cpus < req_cpus)
 				continue;
-			pick_code =
-				pick_best_quadrics (avail_bitmap, req_bitmap[0],
-						req_nodes, req_cpus,
-						contiguous);
+			pick_code = pick_best_quadrics (avail_bitmap, req_bitmap[0], req_nodes, req_cpus, contiguous);
 			if ((pick_code == 0) && (max_nodes != INFINITE)
 			    && (bit_set_count (avail_bitmap) > max_nodes)) {
 				info ("pick_best_nodes: too many nodes selected %u partition maximum is %u",
@@ -644,17 +652,13 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				return 0;
 			}
 		}
+
+		/* determine if job could possibly run (if configured nodes all available) */
 		if ((error_code == 0) && (runable == 0) &&
 		    (total_nodes > req_nodes) && (total_cpus > req_cpus) &&
-		    ((req_bitmap[0] == NULL)
-		     || (bit_super_set (req_bitmap[0], total_bitmap) == 1))
-		    && ((max_nodes == INFINITE) || (req_nodes <= max_nodes))) {
-			/* determine if job could possibly run */
-			/* (if configured nodes all available) */
-			pick_code =
-				pick_best_quadrics (total_bitmap, req_bitmap[0],
-						req_nodes, req_cpus,
-						contiguous);
+		    ((req_bitmap[0] == NULL) || (bit_super_set (req_bitmap[0], total_bitmap) == 1)) &&
+		    ((max_nodes == INFINITE) || (req_nodes <= max_nodes))) {
+			pick_code = pick_best_quadrics (total_bitmap, req_bitmap[0], req_nodes, req_cpus, contiguous);
 			if ((pick_code == 0) && (max_nodes != INFINITE)
 			    && (bit_set_count (total_bitmap) > max_nodes)) {
 				error_code = EINVAL;
@@ -691,6 +695,12 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
  * globals: list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  *	config_list - global list of node configuration info
+ * Notes: The algorithm is
+ *	1) Build a table (node_set_ptr) of nodes with the requisite configuration
+ *	   Each table entry includes their weight, node_list, features, etc.
+ *	2) Call pick_best_nodes() to select those nodes best satisfying the request, 
+ *	   (e.g. best-fit or other criterion)
+ *	3) Call allocate_nodes() to perform the actual allocation
  */
 int
 select_nodes (struct job_record *job_ptr, int test_only) 
@@ -799,11 +809,10 @@ select_nodes (struct job_record *job_ptr, int test_only)
 		node_set_ptr[node_set_index].cpus_per_node = config_record_point->cpus;
 		node_set_ptr[node_set_index].weight = config_record_point->weight;
 		node_set_ptr[node_set_index].feature = tmp_feature;
-#if DEBUG_SYSTEM > 1
-		info ("found %d usable nodes from configuration with %s",
+		debug ("found %d usable nodes from configuration with %s",
 			node_set_ptr[node_set_index].nodes,
 			config_record_point->nodes);
-#endif
+
 		node_set_index++;
 		xrealloc (node_set_ptr, sizeof (struct node_set) * (node_set_index + 1));
 		node_set_ptr[node_set_size++].my_bitmap = NULL;
@@ -855,7 +864,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	}	
 
 	/* assign the nodes and stage_in the job */
-	bitmap2node_name (req_bitmap, &(job_ptr->nodes));
+	job_ptr->nodes = bitmap2node_name (req_bitmap);
 	build_node_details (req_bitmap, 
 		&(job_ptr->num_cpu_groups),
 		&(job_ptr->cpus_per_node),

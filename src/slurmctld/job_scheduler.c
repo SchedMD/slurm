@@ -1,8 +1,29 @@
-/* 
+/*****************************************************************************\
  * job_scheduler.c - manage the scheduling of pending jobs in priority order
- *
- * author: moe jette, jette@llnl.gov
- */
+ *	Note there is a global job list (job_list)
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -13,8 +34,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
-#include "slurmctld.h"
+#include <src/common/list.h>
+#include <src/slurmctld/slurmctld.h>
 
 struct job_queue {
 	int priority;
@@ -23,16 +44,6 @@ struct job_queue {
 
 int build_job_queue (struct job_queue **job_queue);
 void sort_job_queue (struct job_queue *job_queue, int job_queue_size);
-
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-int 
-main (int argc, char *argv[]) 
-{
-	printf("No test functions presently available\n");
-	exit (0);
-}
-#endif
 
 /* 
  * build_job_queue - build (non-priority ordered) list of pending jobs
@@ -83,6 +94,10 @@ build_job_queue (struct job_queue **job_queue)
  *	order until a request fails
  * global: job_list - global list of job records
  *	last_job_update - time of last update to job table
+ * Note: We re-build the queue every time. Jobs can not only be added 
+ *	or removed from the queue, but have their priority or partition 
+ *	changed with the update_job RPC. In general nodes will be in priority 
+ *	order (by submit time), so the sorting should be pretty fast.
  */
 void
 schedule()
@@ -133,7 +148,7 @@ schedule()
 
 
 /* 
- * sort_job_queue - sort a job queue in decending priority order
+ * sort_job_queue - sort job_queue in decending priority order
  * input: job_queue - pointer to un-sorted job queue
  *	job_queue_size - count of elements in the job queue
  * output: job_queue - pointer to sorted job queue

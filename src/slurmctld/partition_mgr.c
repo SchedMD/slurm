@@ -1,9 +1,30 @@
-/* 
+/*****************************************************************************\
  * partition_mgr.c - manage the partition information of slurm
- * see slurm.h for documentation on external functions and data structures
- *
- * author: moe jette, jette@llnl.gov
- */
+ *	Note: there is a global partition list (part_list) and
+ *	time stamp (last_part_update)
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -173,7 +194,8 @@ main (int argc, char *argv[])
  * NOTE: this does not report nodes defined in more than one partition. this is checked only  
  *	upon reading the configuration file, not on an update
  */
-int build_part_bitmap (struct part_record *part_record_point) 
+int 
+build_part_bitmap (struct part_record *part_record_point) 
 {
 	int i, update_nodes;
 	char  *this_node_name ;
@@ -254,7 +276,8 @@ int build_part_bitmap (struct part_record *part_record_point)
  * NOTE: the record's values are initialized to those of default_part
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
-struct part_record * create_part_record (void) 
+struct part_record * 
+create_part_record (void) 
 {
 	struct part_record *part_record_point;
 
@@ -304,7 +327,8 @@ struct part_record * create_part_record (void)
  * output: return 0 on success, errno otherwise
  * global: part_list - global partition list
  */
-int delete_part_record (char *name) 
+int 
+delete_part_record (char *name) 
 {
 	int i;
 
@@ -317,14 +341,13 @@ int delete_part_record (char *name)
 	if ((name == NULL) || (i != 0))
 		return 0;
 
-	error ("delete_part_record: attempt to delete non-existent partition %s",
-		name);
+	error ("delete_part_record: attempt to delete non-existent partition %s", name);
 	return ENOENT;
 }
 
 
 /* 
- * find_part_record - find a record for partition with specified name,
+ * find_part_record - find a record for partition with specified name
  * input: name - name of the desired partition 
  * output: return pointer to node partition or null if not found
  * global: part_list - global partition list
@@ -343,7 +366,8 @@ find_part_record (char *name){
  * global: default_part - default partition values
  *         part_list - global partition list
  */
-int init_part_conf () 
+int 
+init_part_conf () 
 {
 	last_part_update = time (NULL);
 

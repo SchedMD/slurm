@@ -39,6 +39,7 @@
 #include <src/common/hostlist.h>
 #include <src/common/list.h>
 #include <src/common/macros.h>
+#include <src/common/parse_spec.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
@@ -410,21 +411,17 @@ parse_config_spec (char *in_line)
 		slurmctld_conf.epilog = epilog;
 	}
 
-	if ( fast_schedule ) {
+	if ( fast_schedule ) 
 		slurmctld_conf.fast_schedule = fast_schedule;
-	}
 
-	if ( first_job_id ) {
+	if ( first_job_id ) 
 		slurmctld_conf.first_job_id = first_job_id;
-	}
 
-	if ( hash_base ) {
+	if ( hash_base ) 
 		slurmctld_conf.hash_base = hash_base;
-	}
 
-	if ( kill_wait ) {
+	if ( kill_wait ) 
 		slurmctld_conf.kill_wait = kill_wait;
-	}
 
 	if ( prioritize ) {
 		if ( slurmctld_conf.prioritize )
@@ -447,9 +444,8 @@ parse_config_spec (char *in_line)
 		endservent ();
 	}
 
-	if ( slurmctld_timeout ) {
+	if ( slurmctld_timeout ) 
 		slurmctld_conf.slurmctld_timeout = slurmctld_timeout;
-	}
 
 	if ( slurmd_port ) {
 		servent = getservbyname (slurmd_port, NULL);
@@ -460,9 +456,8 @@ parse_config_spec (char *in_line)
 		endservent ();
 	}
 
-	if ( slurmd_timeout ) {
+	if ( slurmd_timeout ) 
 		slurmctld_conf.slurmd_timeout = slurmd_timeout;
-	}
 
 	if ( state_save_location ) {
 		if ( slurmctld_conf.state_save_location )
@@ -910,7 +905,7 @@ read_slurm_conf ( ) {
 	list_sort (config_list, &list_compare_config);
 
 	slurmctld_conf.last_update = time (NULL) ;
-	info ("read_slurm_conf: finished loading configuration, time =%ld",
+	info ("read_slurm_conf: finished loading configuration, time=%ld",
 		(long) (clock () - start_time));
 
 	return SLURM_SUCCESS;

@@ -285,7 +285,6 @@ int list_delete_all(List l, ListFindF f, void *key)
 
     assert(l != NULL);
     assert(f != NULL);
-    assert(key != NULL);
     list_mutex_lock(&l->mutex);
     assert(l->magic == LIST_MAGIC);
     pp = &l->head;

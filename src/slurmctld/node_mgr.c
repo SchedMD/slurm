@@ -1,9 +1,31 @@
-/* 
+/*****************************************************************************\
  * node_mgr.c - manage the node records of slurm
- * see slurm.h for documentation on external functions and data structures
- *
- * author: moe jette, jette@llnl.gov
- */
+ *	Note: there is a global node table (node_record_table_ptr), its 
+ *	hash table (hash_table), time stamp (last_node_update) and 
+ *	configuration list (config_list)
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by moe jette <jette1@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -34,8 +56,7 @@ bitstr_t *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
 int delete_config_record ();
 void dump_hash ();
 int hash_index (char *name);
-void split_node_name (char *name, char *prefix, char *suffix, int *index,
-		      int *digits);
+void split_node_name (char *name, char *prefix, char *suffix, int *index, int *digits);
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -148,11 +169,7 @@ main (int argc, char *argv[])
 		printf ("ERROR: node_name2bitmap error %d\n", error_code);
 		error_count++;
 	}
-	error_code = bitmap2node_name (map3, &out_line);
-	if (error_code) {
-		printf ("ERROR: bitmap2node_name error %d\n", error_code);
-		error_count++;
-	}
+	out_line = bitmap2node_name (map3);
 	if (strcmp (out_line, "lx[01-02],lx04") != 0)
 		printf ("ERROR: bitmap2node_name results bad %s vs %s\n",
 			out_line, "lx[01-02],lx04");
@@ -237,35 +254,34 @@ main (int argc, char *argv[])
  * bitmap2node_name - given a bitmap, build a list of comma separated node names.
  *	names may include regular expressions (e.g. "lx[01-10]")
  * input: bitmap - bitmap pointer
- *        node_list - place to put node list
- * output: node_list - set to node list or NULL on error 
+ * output: returns pointer to node list or NULL on error 
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-void  
-bitmap2node_name (bitstr_t *bitmap, char **node_list) 
+char *  
+bitmap2node_name (bitstr_t *bitmap) 
 {
+	char *node_list_ptr;
 	int node_list_size, i;
 	char prefix[MAX_NAME_LEN], suffix[MAX_NAME_LEN];
 	char format[MAX_NAME_LEN], temp[MAX_NAME_LEN];
 	char last_prefix[MAX_NAME_LEN], last_suffix[MAX_NAME_LEN];
 	int first_index = 0, last_index = 0, index, digits;
 
-	node_list[0] = NULL;
 	node_list_size = 0;
 	if (bitmap == NULL)
 		fatal ("bitmap2node_name: bitmap is NULL");
 
-	node_list[0] = xmalloc (BUF_SIZE);
-	strcpy (node_list[0], "");
+	node_list_ptr = xmalloc (BUF_SIZE);
+	strcpy (node_list_ptr, "");
 
 	strcpy (last_prefix, "");
 	strcpy (last_suffix, "");
 	for (i = 0; i < node_record_count; i++) {
 		if (node_list_size <
-		    (strlen (node_list[0]) + MAX_NAME_LEN * 3)) {
+		    (strlen (node_list_ptr) + MAX_NAME_LEN * 3)) {
 			node_list_size += BUF_SIZE;
-			xrealloc (node_list[0], node_list_size);
+			xrealloc (node_list_ptr, node_list_size);
 		}
 		if (bit_test (bitmap, i) == 0)
 			continue;
@@ -279,30 +295,30 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 		}
 		if ((strlen (last_prefix) != 0) ||	/* end of a sequence */
 		    (strlen (last_suffix) != 0)) {
-			if (strlen (node_list[0]) > 0)
-				strcat (node_list[0], ",");
-			strcat (node_list[0], last_prefix);
+			if (strlen (node_list_ptr) > 0)
+				strcat (node_list_ptr, ",");
+			strcat (node_list_ptr, last_prefix);
 			if (first_index != last_index)
-				strcat (node_list[0], "[");
+				strcat (node_list_ptr, "[");
 			strcpy (format, "%0");
 			sprintf (&format[2], "%dd", digits);
 			sprintf (temp, format, first_index);
-			strcat (node_list[0], temp);
+			strcat (node_list_ptr, temp);
 			if (first_index != last_index) {
-				strcat (node_list[0], "-");
+				strcat (node_list_ptr, "-");
 				strcpy (format, "%0");
 				sprintf (&format[2], "%dd]", digits);
 				sprintf (temp, format, last_index);
-				strcat (node_list[0], temp);
+				strcat (node_list_ptr, temp);
 			}	
-			strcat (node_list[0], last_suffix);
+			strcat (node_list_ptr, last_suffix);
 			strcpy (last_prefix, "");
 			strcpy (last_suffix, "");
 		}
 		if (index == NO_VAL) {
-			if (strlen (node_list[0]) > 0)
-				strcat (node_list[0], ",");
-			strcat (node_list[0], node_record_table_ptr[i].name);
+			if (strlen (node_list_ptr) > 0)
+				strcat (node_list_ptr, ",");
+			strcat (node_list_ptr, node_record_table_ptr[i].name);
 		}
 		else {
 			strcpy (last_prefix, prefix);
@@ -313,30 +329,33 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 
 	if ((strlen (last_prefix) != 0) ||	/* end of a sequence */
 	    (strlen (last_suffix) != 0)) {
-		if (strlen (node_list[0]) > 0)
-			strcat (node_list[0], ",");
-		strcat (node_list[0], last_prefix);
+		if (strlen (node_list_ptr) > 0)
+			strcat (node_list_ptr, ",");
+		strcat (node_list_ptr, last_prefix);
 		if (first_index != last_index)
-			strcat (node_list[0], "[");
+			strcat (node_list_ptr, "[");
 		strcpy (format, "%0");
 		sprintf (&format[2], "%dd", digits);
 		sprintf (temp, format, first_index);
-		strcat (node_list[0], temp);
+		strcat (node_list_ptr, temp);
 		if (first_index != last_index) {
-			strcat (node_list[0], "-");
+			strcat (node_list_ptr, "-");
 			strcpy (format, "%0");
 			sprintf (&format[2], "%dd]", digits);
 			sprintf (temp, format, last_index);
-			strcat (node_list[0], temp);
+			strcat (node_list_ptr, temp);
 		}
-		strcat (node_list[0], last_suffix);
+		strcat (node_list_ptr, last_suffix);
 	}
-	xrealloc (node_list[0], strlen (node_list[0]) + 1);
+	xrealloc (node_list_ptr, strlen (node_list_ptr) + 1);
+	return node_list_ptr;
 }
 
 
 /*
  * create_config_record - create a config_record entry and set is values to the defaults.
+ *	each config record corresponds to a line in the slurm.conf file and typically 
+ *	describes the configuration of a large number of nodes
  * output: returns pointer to the config_record
  * global: default_config_record - default configuration values
  * NOTE: memory allocated will remain in existence until delete_config_record() is called 
@@ -447,7 +466,7 @@ delete_config_record ()
 
 
 /* 
- * delete_node_record - delete record for node with specified name
+ * delete_node_record - delete the node record for a node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to NODE_STATE_DOWN
  * input: name - name of the desired node
@@ -500,7 +519,7 @@ dump_hash ()
 
 
 /* 
- * find_node_record - find a record for node with specified name,
+ * find_node_record - find a record for node with specified name
  * input: name - name of the desired node 
  * output: return pointer to node record or NULL if not found
  * global: node_record_table_ptr - pointer to global node table
@@ -542,7 +561,8 @@ find_node_record (char *name)
  * this code is optimized for names containing a base-ten suffix (e.g. "lx04")
  * input: the node's name
  * output: return code is the hash table index
- * global: hash_table - table of hash indecies
+ * global: hash_table - table of hash indexes
+ *	slurmctld_conf.hash_base - numbering base for sequence numbers
  */
 int 
 hash_index (char *name) 
@@ -603,7 +623,7 @@ hash_index (char *name)
 
 /* 
  * init_node_conf - initialize the node configuration tables and values. 
- * this should be called before creating any node or configuration entries.
+ *	this should be called before creating any node or configuration entries.
  * output: return value - 0 if no error, otherwise an error code
  * global: node_record_table_ptr - pointer to global node table
  *         default_node_record - default values for node records
@@ -918,7 +938,7 @@ rehash ()
 
 
 /* 
- * split_node_name - split a node name into prefix, suffix, and index value 
+ * split_node_name - split a node name into prefix, suffix, index value, and digit count
  * input: name - the node name to parse
  *        prefix, suffix, index, digits - location into which to store node name's constituents
  * output: prefix, suffix, index - the node name's constituents 

@@ -1,5 +1,7 @@
 /*****************************************************************************\
  * job_mgr.c - manage the job information of slurm
+ *	Note: there is a global job list (job_list), job_count, time stamp 
+ *	(last_job_update), and hash table (job_hash, job_hash_over, max_hash_over)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -34,12 +36,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <src/slurmctld/slurmctld.h>
 #include <src/common/list.h>
 #include <src/common/macros.h>
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_errno.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
@@ -65,8 +67,8 @@ void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
 int	top_priority (struct job_record *job_ptr);
-int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap) ;
-int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
+int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap) ;
+int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -173,6 +175,7 @@ create_job_record (int *error_code)
 	struct job_record  *job_record_point;
 	struct job_details *job_details_point;
 
+	purge_old_job ();
 	if (job_count >= MAX_JOB_COUNT) {
 		error ("create_job_record: job_count exceeds limit"); 
 		*error_code = EAGAIN;
@@ -232,8 +235,8 @@ delete_job_details (struct job_record *job_entry)
  * find_job_record - return a pointer to the job record with the given job_id
  * input: job_id - requested job's id
  * output: pointer to the job's record, NULL on error
- * global: job_list - global job list pointer
  *	job_hash, job_hash_over, max_hash_over - hash table into job records
+ * global: job_list - global job list pointer
  */
 struct job_record *
 find_job_record(uint32_t job_id) 
@@ -337,12 +340,12 @@ init_job_conf ()
  *	node_list - list of nodes allocated to the job
  *	returns 0 on success, EINVAL if specification is invalid, 
  *		EAGAIN if higher priority jobs exist
- * globals: job_list - pointer to global job list 
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
  * NOTE: If allocating nodes lx[0-7] to a job and those nodes have cpu counts of 
  *	 4, 4, 4, 4, 8, 8, 4, 4 then num_cpu_groups=3, cpus_per_node={4,8,4} and
  *	cpu_count_reps={4,2,2}
+ * globals: job_list - pointer to global job list 
+ *	list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
  */
 
 int
@@ -449,27 +452,28 @@ job_cancel (uint32_t job_id)
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
-		info ("job_cancel of pending job %u successful", job_id);
+		verbose ("job_cancel of pending job %u successful", job_id);
 		return 0;
 	}
 
 	if (job_ptr->job_state == JOB_STAGE_IN) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
+		job_ptr->end_time = time(NULL);
 		deallocate_nodes (job_ptr->node_bitmap);
 		delete_job_details(job_ptr);
-		info ("job_cancel of job %u successful", job_id);
+		verbose ("job_cancel of running job %u successful", job_id);
 		return 0;
 	} 
 
-	info ("job_cancel: job %u can't be cancelled from state=%s", 
+	verbose ("job_cancel: job %u can't be cancelled from state=%s", 
 			job_id, job_state_string(job_ptr->job_state));
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
 
 /*
- * job_create - create job_records with supplied jobs specifications.
+ * job_create - create a job table record for the supplied specifications.
  *	this performs only basic tests for request validity (access to partition, 
  *	nodes count in partition, and sufficient processors in partition).
  * input: job_specs - job specifications
@@ -860,9 +864,12 @@ list_find_job_old (void *job_entry, void *key)
 
 	min_age = time(NULL) - MIN_JOB_AGE;
 
-	if (((struct job_record *) job_entry)->job_state != JOB_COMPLETE) 
+	if (((struct job_record *) job_entry)->end_time  >  min_age)
 		return 0;
-	if (((struct job_record *) job_entry)->end_time  <  min_age)
+
+	if ((((struct job_record *) job_entry)->job_state != JOB_COMPLETE)  &&
+	    (((struct job_record *) job_entry)->job_state != JOB_FAILED)  &&
+	    (((struct job_record *) job_entry)->job_state != JOB_TIMEOUT))
 		return 0;
 
 	return 1;
@@ -1062,10 +1069,17 @@ void
 purge_old_job (void) 
 {
 	int i;
+	static time_t last_purge = (time_t) 0;
+	time_t now;
 
+	now = time (NULL);
+	if (((now - last_purge) < MIN_JOB_AGE) || (job_list == NULL))
+		return;
+
+	last_purge = now;
 	i = list_delete_all (job_list, &list_find_job_old, NULL);
 	if (i) {
-		info ("purge_old_job: purged %d old job records");
+		info ("purge_old_job: purged %d old job records", i);
 		last_job_update = time (NULL);
 	}
 }

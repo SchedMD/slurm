@@ -177,35 +177,21 @@ extern List job_list;			/* list of job_record entries */
 
 /* allocate_nodes - for a given bitmap, change the state of specified nodes to stage_in
  * this is a simple prototype for testing 
- * globals: node_record_count - number of nodes in the system
- *	node_record_table_ptr - pointer to global node table
  */
 extern void  allocate_nodes (unsigned *bitmap);
 
 /*
- * bitmap2node_name - given a bitmap, build a node name list representation using 
- * 	regular expressions
- * input: bitmap - bitmap pointer
- *        node_list - place to put node list
- * output: node_list - set to node list or null on error 
- * NOTE: consider returning the node list as a regular expression if helpful
- * NOTE: the caller must free memory at node_list when no longer required
+ * bitmap2node_name - given a bitmap, build a list of comma separated node names.
+ *	names may include regular expressions (e.g. "lx[01-10]")
+ * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-extern void bitmap2node_name (bitstr_t *bitmap, char **node_list);
+extern char * bitmap2node_name (bitstr_t *bitmap) ;
 
-/*
- * count_cpus - report how many cpus are associated with the identified nodes 
- * input: bitmap - a node bitmap
- * output: returns a cpu count
- * globals: node_record_count - number of nodes configured
- *	node_record_table_ptr - pointer to global node table
- */
+/* count_cpus - report how many cpus are associated with the identified nodes */
 extern int  count_cpus (unsigned *bitmap);
 
 /*
  * create_config_record - create a config_record entry and set is values to the defaults.
- * output: returns pointer to the config_record
- * global: default_config_record - default configuration values
  * NOTE: memory allocated will remain in existence until delete_config_record() is called 
  *	to deletet all configuration records
  */
@@ -214,23 +200,12 @@ extern struct config_record *create_config_record (void);
 /* 
  * create_job_record - create an empty job_record including job_details.
  *	load its values with defaults (zeros, nulls, and magic cookie)
- * input: error_code - location to store error value in
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or NULL if error
- * global: job_list - global job list
- *         job_count - number of jobs in the system
  * NOTE: allocates memory that should be xfreed with list_delete_job
  */
 extern struct job_record * create_job_record (int *error_code);
 
 /* 
  * create_node_record - create a node record
- * input: error_code - location to store error value in
- *        config_point - pointer to node's configuration information
- *        node_name - name of the node
- * output: returns a pointer to the record or null if error
- * note the record's values are initialized to those of default_node_record, node_name and 
- *	config_point's cpus, real_memory, and tmp_disk values
  * NOTE: allocates memory that should be freed with delete_part_record
  */
 extern struct node_record *create_node_record (struct config_record
@@ -239,32 +214,23 @@ extern struct node_record *create_node_record (struct config_record
 
 /* 
  * create_part_record - create a partition record
- * output: returns a pointer to the record or NULL if error
- * global: default_part - default partition parameters
- *         part_list - global partition list
- * NOTE: the record's values are initialized to those of default_part
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
 extern struct part_record *create_part_record (void);
 
 /* 
  * create_step_record - create an empty step_record for the specified job.
- * input: job_ptr - pointer to job table entry to have step record added
- * output: returns a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
 extern struct step_record * create_step_record (struct job_record *job_ptr);
 
 /* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
  * this is a simple prototype for testing 
- * globals: node_record_count - number of nodes in the system
- *	node_record_table_ptr - pointer to global node table
  */
 extern void deallocate_nodes (unsigned *bitmap);
 
 /* 
  * delete_job_details - delete a job's detail record and clear it's pointer
- * input: job_entry - pointer to job_record to clear the record of
  */
 extern void  delete_job_details (struct job_record *job_entry);
 
@@ -272,130 +238,70 @@ extern void  delete_job_details (struct job_record *job_entry);
  * delete_node_record - delete record for node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to STATE_DOWN
- * input: name - name of the desired node 
- * output: return 0 on success, errno otherwise
  */
 extern int delete_node_record (char *name);
 
-/* 
- * delete_part_record - delete record for partition with specified name
- * input: name - name of the desired node 
- * output: return 0 on success, errno otherwise
- */
+/* delete_part_record - delete record for partition with specified name */
 extern int delete_part_record (char *name);
 
-/* 
- * delete_step_record - delete record for job step for specified job_ptr and step_id
- * input: job_ptr - pointer to job table entry to have step record added
- *	step_id - id of the desired job step
- * output: return 0 on success, errno otherwise
- */
+/* delete_step_record - delete record for job step for specified job_ptr and step_id */
 extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 
 /* dump_job_desc - dump the incoming job submit request message */
 void dump_job_desc(job_desc_msg_t * job_specs);
 
-/* 
- * find_job_record - return a pointer to the job record with the given job_id
- * input: job_id - requested job's id
- * output: pointer to the job's record, NULL on error
- * global: job_list - global job list pointer
- */
+/*  find_job_record - return a pointer to the job record with the given job_id */
 extern struct job_record *find_job_record (uint32_t job_id);
 
-/* 
- * find_node_record - find a record for node with specified name,
- * input: name - name of the desired node 
- * output: return pointer to node record or null if not found
- */
+/* find_node_record - find a record for node with specified name */
 extern struct node_record *find_node_record (char *name);
 
-/* 
- * find_part_record - find a record for partition with specified name,
- * input: name - name of the desired partition 
- * output: return pointer to node partition or null if not found
- * global: part_list - global partition list
- */
+/* find_part_record - find a record for partition with specified name */
 extern struct part_record *find_part_record (char *name);
 
-/* 
- * find_step_record - return a pointer to the step record with the given job_id and step_id
- * input: job_ptr - pointer to job table entry to have step record added
- *	step_id - id of the desired job step
- * output: pointer to the job step's record, NULL on error
- */
+/* find_step_record - return a pointer to the step record with the given job_id and step_id */
 extern struct step_record * find_step_record(struct job_record *job_ptr, uint16_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
  *	this should be called after creating node information, but 
  *	before creating any job entries.
- * output: return value - 0 if no error, otherwise an error code
- * global: last_job_update - time of last job table update
- *	job_list - pointer to global job list
  */
 extern int init_job_conf ();
 
 /* 
  * init_node_conf - initialize the node configuration values. 
  * this should be called before creating any node or configuration entries.
- * output: return value - 0 if no error, otherwise an error code
  */
 extern int init_node_conf ();
 
 /* 
  * init_part_conf - initialize the partition configuration values. 
  * this should be called before creating any partition entries.
- * output: return value - 0 if no error, otherwise an error code
  */
 extern int init_part_conf ();
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration  
  *	values. this should be called before calling read_slurm_conf.  
- * output: return value - 0 if no error, otherwise an error code
  */
 extern int init_slurm_conf ();
 
+/* is_key_valid report if the supplied partition key is valid */
 extern int  is_key_valid (void * key);
 
+/* job_allocate - allocate resource for the supplied job specifications */
 extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, 
 	uint16_t * num_cpu_groups, uint32_t ** cpus_per_node, uint32_t ** cpu_count_reps, 
 	int immediate, int will_run);
 
-/* 
- * job_cancel - cancel the specified job
- * input: job_id - id of the job to be cancelled
- * output: returns 0 on success, otherwise ESLURM error code 
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
+/* job_cancel - cancel the specified job */
 extern int job_cancel (uint32_t job_id);
 
-/* 
- * job_step_cancel - cancel the specified job step
- * input: job_id, step_id - id of the job to be cancelled
- * output: returns 0 on success, otherwise ESLURM error code 
- * global: job_list - pointer global job list
- *	last_job_update - time of last job table update
- */
+/* job_step_cancel - cancel the specified job step */
 extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id);
 
-/*
- * job_create - parse the suppied job specification and create job_records for it
- * input: job_specs - job specifications
- *	new_job_id - location for storing new job's id
- *	job_rec_ptr - place to park pointer to the job (or NULL)
- * output: new_job_id - the job's ID
- *	returns 0 on success, EINVAL if specification is invalid
- *	allocate - if set, job allocation only (no script required)
- *	will_run - if set then test only, don't create a job entry
- *	job_rec_ptr - pointer to the job (if not passed a NULL)
- * globals: job_list - pointer to global job list 
- *	list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
- *	job_hash, job_hash_over, max_hash_over - hash table into job records
- */
+/* job_create - create a job table record for the supplied specifications */
 extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
 	    int will_run, struct job_record **job_rec_ptr);
 
@@ -405,85 +311,26 @@ extern void job_lock ();
 /* job_unlock - unlock the job information */
 extern void job_unlock ();
 
-/* list_compare_config - compare two entry from the config list based upon weight, 
- * see list.h for documentation */
+/* list_compare_config - compare two entry from the config list based upon weight */
 extern int list_compare_config (void *config_entry1, void *config_entry2);
 
-/* list_delete_config - delete an entry from the configuration list, 
- *see list.h for documentation */
+/* list_delete_config - delete an entry from the configuration list */
 extern void list_delete_config (void *config_entry);
 
-/* list_find_config - find an entry in the configuration list, 
- * see list.h for documentation 
- * key is partition name or "universal_key" for all configuration */
+/* list_find_config - find an entry in the configuration list */
 extern int list_find_config (void *config_entry, void *key);
 
 /* list_delete_part - delete an entry from the partition list, 
  * see list.h for documentation */
 extern void list_delete_part (void *part_entry);
 
-/* list_find_part - find an entry in the partition list, 
- * see list.h for documentation 
- * key is partition name or "universal_key" for all partitions */
+/* list_find_part - find an entry in the partition list */
 extern int list_find_part (void *part_entry, void *key);
 
-/*
- * load_float - location into which result is stored
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
- * NOTE: in_line is overwritten, do not use a constant
- */
-extern int  load_float (float *destination, char *keyword, char *in_line);
-
-/*
- * load_integer - parse a string for a keyword, value pair  
- * input: *destination - location into which result is stored
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found, 
- *             set to 1 if keyword found without value, 
- *             set to -1 if keyword followed by "unlimited"
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
- * NOTE: in_line is overwritten, do not use a constant
- */
-extern int load_integer (int *destination, char *keyword, char *in_line);
-
-extern int load_long (long *destination, char *keyword, char *in_line);
-
-/*
- * load_string - parse a string for a keyword, value pair  
- * input: *destination - location into which result is stored
- *        keyword - string to search for
- *        in_line - string to search for keyword
- * output: *destination - set to value, no change if value not found, 
- *	     if *destination had previous value, that memory location is automatically freed
- *         in_line - the keyword and value (if present) are overwritten by spaces
- *         return value - 0 if no error, otherwise an error code
- * NOTE: destination must be free when no longer required
- * NOTE: if destination is non-null at function call time, it will be freed 
- * NOTE: in_line is overwritten, do not use a constant
- */
-extern int load_string (char **destination, char *keyword, char *in_line);
-
-/*
- * match_feature - determine if the desired feature (seek) is one of those available
- * input: seek - desired feature
- *        available - comma separated list of features
- * output: returns 1 if found, 0 otherwise
- */
+/* match_feature - determine if the desired feature (seek) is one of those available */
 extern int  match_feature (char *seek, char *available);
 
-/*
- * match_group - determine if the user is a member of any groups permitted to use this partition
- * input: allow_groups - comma delimited list of groups permitted to use the partition, 
- *			NULL is for all groups
- *        user_groups - comma delimited list of groups the user belongs to
- * output: returns 1 if user is member, 0 otherwise
- */
+/* match_group - determine if the user is a member of any groups permitted to use this partition */
 extern int match_group (char *allow_groups, char *user_groups);
 
 /* node_lock - lock the node and configuration information */
@@ -492,19 +339,14 @@ extern void node_lock ();
 /* node_unlock - unlock the node and configuration information */
 extern void node_unlock ();
 
-/*
- * node_name2bitmap - given a node name regular expression, build a bitmap representation
- * input: node_names - list of nodes
- *        bitmap - place to put bitmap pointer
- * output: bitmap - set to bitmap or null on error 
- *         returns 0 if no error, otherwise EINVAL or ENOMEM
- * NOTE: the caller must free memory at bitmap when no longer required
- */
+/* node_name2bitmap - given a node name regular expression, build a bitmap representation */
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
 
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
+ */
 extern void pack_all_jobs (char **buffer_ptr, int *buffer_size, 
 	time_t * update_time);
 
@@ -516,31 +358,39 @@ extern void pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_
 
 /* 
  * pack_all_part - dump all partition information for all partitions in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
+ */
 extern void pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
  * pack_all_step - dump all job step information for all steps in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ * NOTE: the caller must xfree the buffer at *buffer_ptr when no longer required
+ */
 extern void pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
  * pack_job - dump all configuration information about a specific job in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ */
 extern void pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
 
 /* pack_node - dump all configuration information about a specific node in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ */
 extern void pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len); 
 
 /* 
  * pack_part - dump all configuration information about a specific partition in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ */
 extern void pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
 
 /* 
  * pack_step - dump state information about a specific job step in 
- *	machine independent form (for network transmission) */
+ *	machine independent form (for network transmission)
+ */
 extern void pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
 
 /* part_lock - lock the partition information */
@@ -555,66 +405,19 @@ extern void part_unlock ();
  */
 void purge_old_job (void);
 
-/*
- * read_slurm_conf - load the slurm configuration from the configured file. 
- * read_slurm_conf can be called more than once if so desired.
- * output: return - 0 if no error, otherwise an error code
- * NOTE: call init_slurm_conf before ever calling read_slurm_conf.  
- */
+/* read_slurm_conf - load the slurm configuration from the configured file */
 extern int  read_slurm_conf ( );
 
-/* 
- * rehash - build a hash table of the node_record entries. this is a large hash table 
- * to permit the immediate finding of a record based only upon its name without regards 
- * to the number. there should be no need for a search. the algorithm is optimized for 
- * node names with a base-ten sequence number suffix. if you have a large cluster and 
- * use a different naming convention, this function and/or the hash_index function 
- * should be re-written.
- * global: node_record_table_ptr - pointer to global node table
- *         hash_table - table of hash indecies
- * NOTE: allocates memory for hash_table
- */
+/* rehash - build a hash table of the node_record entries */
 extern void rehash ();
 
-/* 
- * report_leftover - report any un-parsed (non-whitespace) characters on the
- * configuration input line.
- * input: in_line - what is left of the configuration input line.
- *        line_num - line number of the configuration file.
- * output: none
- */
-/* extern void report_leftover (char *in_line, int line_num); */
-
-
-/* 
- * reset_job_bitmaps - reestablish bitmaps for existing jobs. 
- *	this should be called after rebuilding node information, 
- *	but before using any job entries.
- * global: last_job_update - time of last job table update
- *	job_list - pointer to global job list
- */
+/* reset_job_bitmaps - reestablish bitmaps for existing jobs */
 extern void reset_job_bitmaps ();
 
-/* 
- * schedule - attempt to schedule all pending jobs
- *	pending jobs for each partition will be scheduled in priority  
- *	order until a request fails
- * global: job_list - global list of job records
- *	last_job_update - time of last update to job table
- */
+/* schedule - attempt to schedule all pending jobs */
 void schedule();
 
-/*
- * select_nodes - select and allocate nodes to a specific job
- * input: job_ptr - pointer to the job record
- *	test_only - do not allocate nodes, just confirm they could be allocated now
- * output: returns 0 on success, EINVAL if not possible to satisfy request, 
- *		or EAGAIN if resources are presently busy
- *	job_ptr->nodes is set to the node list (on success)
- * globals: list_part - global list of partition info
- *	default_part_loc - pointer to default partition 
- *	config_list - global list of node configuration info
- */
+/* select_nodes - select and allocate nodes to a specific job */
 extern int select_nodes (struct job_record *job_ptr, int test_only);
 
 /* set_job_id - set a default job_id, insure that it is unique */
@@ -623,76 +426,26 @@ extern void	set_job_id (struct job_record *job_ptr);
 /* set_job_prio - set a default job priority */
 extern void	set_job_prio (struct job_record *job_ptr);
 
-/* 
- * slurm_parser - parse the supplied specification into keyword/value pairs
- *	only the keywords supplied will be searched for. the supplied specification
- *	is altered, overwriting the keyword and value pairs with spaces.
- * input: spec - pointer to the string of specifications
- *	sets of three values (as many sets as required): keyword, type, value 
- *	keyword - string with the keyword to search for including equal sign 
- *		(e.g. "name=")
- *	type - char with value 'd' for int, 'f' for float, 's' for string
- *	value - pointer to storage location for value (char **) for type 's'
- * output: spec - everything read is overwritten by speces
- *	value - set to read value (unchanged if keyword not found)
- *	return - 0 if no error, otherwise errno code
- * NOTE: terminate with a keyword value of "END"
- * NOTE: values of type (char *) are xfreed if non-NULL. caller must xfree any 
- *	returned value
- */
-extern int slurm_parser (char *spec, ...);
-
-/*
- * step_create - parse the suppied job step specification and create step_records for it
- * input: step_specs - job step specifications
- * output: returns 0 on success, EINVAL if specification is invalid
- * NOTE: the calling program must xfree the memory pointed to by new_job_id
- */
+/* step_create - parse the suppied job step specification and create step_records for it */
 extern int step_create ( step_specs *step_specs, struct step_record** );
 
-/* step_lock - lock the step information 
- * global: step_mutex - semaphore for the step table
- */
+/* step_lock - lock the step information */
 extern void step_lock ();
 
-/* step_unlock - unlock the step information 
- * global: step_mutex - semaphore for the step table
- */
+/* step_unlock - unlock the step information */
 extern void step_unlock ();
 
-/*
- * update_job - update a job's parameters per the supplied specifications
- * output: returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
- * global: job_list - global list of job entries
- *	last_job_update - time of last job table update
- */
+/* update_job - update a job's parameters per the supplied specification */
 extern int update_job (job_desc_msg_t * job_specs);
 
-/* 
- * update_node - update the configuration data for one or more nodes
- * input: node_names - node names, may contain regular expression
- *        spec - the updates to the node's specification 
- * output:  return - 0 if no error, otherwise an error code
- */
+/* update_node - update the configuration data for one or more nodes per the supplied specification */
 extern int update_node ( update_node_msg_t * update_node_msg )  ;
 
-/* 
- * update_part - update a partition's configuration data
- * global: part_list - list of partition entries
- *	last_part_update - update time of partition records
- */
+/* update_part - update a partition's configuration data per the supplied specification */
 extern int update_part (update_part_msg_t * part_desc );
 
 
-/*
- * validate_node_specs - validate the node's specifications as valid, 
- *   if not set state to down, in any case update last_response
- * input: node_name - name of the node
- *        cpus - number of cpus measured
- *        real_memory - mega_bytes of real_memory measured
- *        tmp_disk - mega_bytes of tmp_disk measured
- * output: returns 0 if no error, enoent if no such node, einval if values too low
- */
+/* validate_node_specs - validate the node's specifications as valid */
 extern int validate_node_specs (char *node_name,
 				uint32_t cpus, uint32_t real_memory, 
 				uint32_t tmp_disk);

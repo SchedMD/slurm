@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * scancel - cancel the specified job id or step id
+ * scancel - cancel specified job(s) and/or job step(s)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -88,6 +88,7 @@ main (int argc, char *argv[])
 	exit (0);
 }
 
+/* job_cancel - process request to cancel a specific job or job step */
 void
 job_cancel (char *name, int interactive)
 {
@@ -146,6 +147,7 @@ job_cancel (char *name, int interactive)
 	}
 }
 
+/* confirmation - Confirm job cancel request interactively */
 int 
 confirmation (uint32_t job_id, int has_step, uint32_t step_id)
 {
@@ -166,10 +168,11 @@ confirmation (uint32_t job_id, int has_step, uint32_t step_id)
 
 }
 
+/* usage - print message describing command lone options for scancel */
 void
-usage(char *command) 
+usage (char *command) 
 {
-	printf ("Usage: %s job_id[.step_id] [job_id[.step_id] ...]\n", command);
+	printf ("Usage: %s [-i] [-v] job_id[.step_id] [job_id[.step_id] ...]\n", command);
 }
 
 
