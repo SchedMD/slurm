@@ -2,11 +2,10 @@
 # Sample /etc/slurm.conf.mcr for mcr.llnl.gov
 # Author: John Doe
 # Date: 11/06/2001
-# Note: "localhost" is translated by slurmctld to the actual hostname
 #
 ControlMachine=mcri   ControlAddr=emcri 
 #
-Epilog=/admin/sbin/slurm.epilog
+#Epilog=/admin/sbin/slurm.epilog
 FastSchedule=1
 FirstJobId=65536
 HashBase=10
@@ -15,8 +14,8 @@ InactiveLimit=120
 JobCredentialPrivateKey=private.key
 JobCredentialPublicCertificate=public.cert
 KillWait=30
-Prioritize=/usr/local/maui/priority
-Prolog=/admin/sbin/slurm.prolog
+#Prioritize=/usr/local/maui/priority
+#Prolog=/admin/sbin/slurm.prolog
 ReturnToService=0
 SlurmUser=jette
 #SlurmctldLogFile=/var/tmp/slurmctld.log
@@ -34,9 +33,7 @@ TmpFS=/tmp
 # Node Configurations
 #
 NodeName=DEFAULT Procs=2 RealMemory=2000 TmpDisk=64000 State=UNKNOWN
-NodeName=mcr[192-1095]  NodeAddr=emcr[192-1095]
-NodeName=mcr[1096]      NodeAddr=emcr[1096]      State=DOWN
-NodeName=mcr[1097-1151] NodeAddr=emcr[1097-1151]
+NodeName=mcr[192-1151]  NodeAddr=emcr[192-1151]
 #
 # Partition Configurations
 #
