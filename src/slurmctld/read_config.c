@@ -297,6 +297,9 @@ parse_config_spec (char *in_line)
 	if ( hash_base ) 
 		slurmctld_conf.hash_base = hash_base;
 
+	if ( heartbeat_interval ) 
+		slurmctld_conf.heartbeat_interval = heartbeat_interval;
+
 	if ( kill_wait ) 
 		slurmctld_conf.kill_wait = kill_wait;
 

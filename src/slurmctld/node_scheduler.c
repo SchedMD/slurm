@@ -42,7 +42,6 @@
 #include <src/slurmctld/agent.h>
 #include <src/slurmctld/slurmctld.h>
 
-#define AGENT_TEST 1
 #define BUF_SIZE 1024
 
 struct node_set {		/* set of nodes with same configuration */
@@ -115,7 +114,6 @@ deallocate_nodes (struct job_record  * job_ptr)
 {
 	int i;
 	revoke_credential_msg_t *revoke_job_cred;
-#if AGENT_TEST
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
@@ -123,7 +121,6 @@ deallocate_nodes (struct job_record  * job_ptr)
 
 	agent_args = xmalloc (sizeof (agent_arg_t));
 	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
-#endif
 	revoke_job_cred = xmalloc (sizeof (revoke_credential_msg_t));
 	last_node_update = time (NULL);
 	revoke_job_cred->job_id = job_ptr->job_id;
@@ -133,7 +130,6 @@ deallocate_nodes (struct job_record  * job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (job_ptr->node_bitmap, i) == 0)
 			continue;
-#if AGENT_TEST
 		if ((agent_args->addr_count+1) > buf_rec_size) {
 			buf_rec_size += 32;
 			xrealloc ((agent_args->slurm_addr), (sizeof (struct sockaddr_in) * buf_rec_size));
@@ -143,14 +139,10 @@ deallocate_nodes (struct job_record  * job_ptr)
 		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->addr_count],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->addr_count++;
-#else
-		slurm_revoke_job_cred (&node_record_table_ptr[i], revoke_job_cred);
-#endif
 		node_record_table_ptr[i].node_state = NODE_STATE_IDLE;
 		bit_set (idle_node_bitmap, i);
 	}
 
-#if AGENT_TEST
 	agent_args->msg_args = revoke_job_cred;
 	debug ("Spawning revoke credential agent");
 	if (pthread_attr_init (&attr_agent))
@@ -167,9 +159,6 @@ deallocate_nodes (struct job_record  * job_ptr)
 		if (pthread_create (&thread_agent, &attr_agent, agent, (void *)agent_args))
 			fatal ("pthread_create error %m");
 	}
-#else
-	xfree (revoke_job_cred);
-#endif
 	return;
 }
 
