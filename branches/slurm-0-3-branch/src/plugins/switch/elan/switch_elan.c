@@ -623,6 +623,7 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 			uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
 			uint32_t nprocs, uint32_t rank )
 {
+	int id = -1;
 	debug3("nodeid=%lu nnodes=%lu procid=%lu nprocs=%lu rank=%lu", 
 		(unsigned long) nodeid, (unsigned long) nnodes, 
 		(unsigned long) procid, (unsigned long) nprocs, 
@@ -644,6 +645,14 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 		return SLURM_ERROR;
 	if (setenvpf(env, "RMS_NPROCS", "%lu", (unsigned long) nprocs) < 0)
 		return SLURM_ERROR;
+
+	/* 
+	 * Tell libelan the key to use for Elan state shmem segment
+	 */
+	if ((id = qsw_statkey (jobinfo)) > 0)
+		setenvpf (env, "ELAN_STATKEY", "0x%x", id);
+	
+
 
 	return SLURM_SUCCESS;
 }
