@@ -191,6 +191,7 @@ void delete_job_details(struct job_record *job_entry)
 	if (job_entry->details->magic != DETAILS_MAGIC)
 		fatal
 		    ("delete_job_details: passed invalid job details pointer");
+	FREE_NULL(job_entry->details->credential.node_list);
 	FREE_NULL(job_entry->details->req_nodes);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	FREE_NULL(job_entry->details->features);
@@ -1923,6 +1924,8 @@ static void _list_delete_job(void *job_entry)
 
 	FREE_NULL(job_record_point->nodes);
 	FREE_NULL_BITMAP(job_record_point->node_bitmap);
+	FREE_NULL(job_record_point->cpus_per_node);
+	FREE_NULL(job_record_point->cpu_count_reps);
 	FREE_NULL(job_record_point->node_addr);
 	if (job_record_point->step_list) {
 		delete_all_step_records(job_record_point);

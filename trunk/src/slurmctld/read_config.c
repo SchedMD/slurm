@@ -48,6 +48,11 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
+#define FREE_NULL(_X)			\
+	do {				\
+		if (_X) xfree (_X);	\
+		_X	= NULL; 	\
+	} while (0)
 
 static int _build_bitmaps(void);
 static int _init_all_slurm_conf(void);
@@ -295,6 +300,7 @@ static int _parse_node_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
+		FREE_NULL(state);
 	}
 
 	if (node_addr &&
@@ -339,6 +345,7 @@ static int _parse_node_spec(char *in_line)
 					xfree(default_config_record.
 					      feature);
 				default_config_record.feature = feature;
+				feature = NULL;
 			}
 			free(this_node_name);
 			break;
@@ -363,6 +370,7 @@ static int _parse_node_spec(char *in_line)
 				if (config_point->feature)
 					xfree(config_point->feature);
 				config_point->feature = feature;
+				feature = NULL;
 			}
 		}
 
@@ -405,14 +413,16 @@ static int _parse_node_spec(char *in_line)
 	}
 
 	/* xfree allocated storage */
-	if (state)
-		xfree(state);
+	if (node_addr)
+		xfree(node_addr);
 	if (addr_list)
 		hostlist_destroy(addr_list);
 	hostlist_destroy(host_list);
 	return error_code;
 
       cleanup:
+	if (node_addr)
+		xfree(node_addr);
 	if (node_name)
 		xfree(node_name);
 	if (feature)
@@ -487,8 +497,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		xfree(default_str);
-		default_str = NULL;
+		FREE_NULL(default_str);
 	}
 
 	if (root_str) {
@@ -503,8 +512,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		xfree(root_str);
-		root_str = NULL;
+		FREE_NULL(root_str);
 	}
 
 	if (shared_str) {
@@ -521,8 +529,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		xfree(shared_str);
-		shared_str = NULL;
+		FREE_NULL(shared_str);
 	}
 
 	if (state_str) {
@@ -537,8 +544,7 @@ static int _parse_part_spec(char *in_line)
 			error_code = EINVAL;
 			goto cleanup;
 		}
-		xfree(state_str);
-		state_str = NULL;
+		FREE_NULL(state_str);
 	}
 
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {
@@ -557,11 +563,13 @@ static int _parse_part_spec(char *in_line)
 			if (default_part.allow_groups)
 				xfree(default_part.allow_groups);
 			default_part.allow_groups = allow_groups;
+			allow_groups = NULL;
 		}
 		if (nodes) {
 			if (default_part.nodes)
 				xfree(default_part.nodes);
 			default_part.nodes = nodes;
+			nodes = NULL;
 		}
 		return 0;
 	}
@@ -597,6 +605,7 @@ static int _parse_part_spec(char *in_line)
 		if (part_record_point->allow_groups)
 			xfree(part_record_point->allow_groups);
 		part_record_point->allow_groups = allow_groups;
+		allow_groups = NULL;
 	}
 	if (nodes) {
 		if (part_record_point->nodes)
@@ -609,6 +618,7 @@ static int _parse_part_spec(char *in_line)
 			getnodename(nodes, 128);
 		}
 		part_record_point->nodes = nodes;
+		nodes = NULL;
 	}
 	xfree(partition_name);
 	return 0;
