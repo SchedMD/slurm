@@ -11,6 +11,7 @@ documents those changes that are of interest to users and admins.
     at termination
  -- set job's start_time and end_time = now rather than leaving zero if 
     they fail to execute
+ -- modify srun to forward SIGTERM
 
 * Changes in SLURM 0.4.0-pre4
 =============================
