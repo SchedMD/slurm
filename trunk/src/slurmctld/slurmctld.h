@@ -199,15 +199,7 @@ struct 	step_record {
 #endif
 };
 
-struct step_specs {
-	uint32_t job_id;		/* job ID */
-	uint32_t step_id;		/* step number */
-	uint32_t user_id;		/* user the job runs as */
-	uint32_t min_nodes;		/* count of required nodes */
-	uint32_t min_cpus;		/* count of required processors */
-	char *node_list;		/* list of required nodes */
-	char *relative_node_list;	/* relative positions of required nodes */
-};
+typedef struct job_step_create_request_msg step_specs; 
 
 extern List job_list;			/* list of job_record entries */
 
@@ -690,7 +682,7 @@ extern int slurm_parser (char *spec, ...);
  * output: returns 0 on success, EINVAL if specification is invalid
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
-extern int step_create (struct step_specs *step_specs);
+extern int step_create ( step_specs *step_specs, struct step_record** );
 
 /* step_lock - lock the step information 
  * global: step_mutex - semaphore for the step table

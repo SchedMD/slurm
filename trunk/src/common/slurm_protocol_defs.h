@@ -220,11 +220,15 @@ typedef struct slurm_node_registration_status_msg
 
 typedef struct job_step_create_request_msg 
 {
+	uint32_t job_id;
+	uint32_t user_id;
 	uint32_t node_count;
-	uint32_t proc_count;
+	uint32_t cpu_count;
 	uint16_t relative;
 	char* node_list;
 } job_step_create_request_msg_t; 
+
+typedef struct job_step_create_request_msg job_step_specs_t;
 
 typedef struct job_step_create_response_msg 
 {

@@ -669,38 +669,39 @@ void
 slurm_rpc_job_step_create( slurm_msg_t* msg )
 {
 	/* init */
-	int error_code=0;
+	int error_code;
 	clock_t start_time;
 
 	slurm_msg_t resp;
+	struct step_record* step_rec;
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t * req_step_msg = 
 			( job_step_create_request_msg_t* ) msg-> data ;
 
 	start_time = clock ();
 
-	/* do RPC call */
-/*	error_code = job_step_cancel (  job_step_id_msg->job_id , 
-					job_step_id_msg->job_step_id);
-*/	/* return result */
-	if (error_code)
+	error_code = step_create ( req_step_msg, &step_rec );
+
+	/* return result */
+	if ( step_rec == NULL )
 	{
-		info ("job_step_create error %d  time=%ld", error_code, 
+		info ("job_step_create error %s  time=%ld", slurm_strerror( error_code ), 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
+		/* FIXME Needs to be fixed to really work with a credential */
 		slurm_job_credential_t cred = { 1,1,"test",start_time,0} ;
 		info ("job_step_create success time=%ld",
 				(long) (clock () - start_time));
-	
-		job_step_resp.job_step_id = 23;
-    	job_step_resp.node_list = cred.node_list;
-    	job_step_resp.credentials = &cred;
+		
+		job_step_resp.job_step_id = step_rec->step_id;
+		bitmap2node_name( step_rec->node_bitmap, &(job_step_resp.node_list) );
+		job_step_resp.credentials = &cred;
+				
 #ifdef HAVE_LIBELAN3
 	/* FIXME */
-    	resp.qsw_job;     /* Elan3 switch context, opaque data structure */
 #endif
 		resp. address = msg -> address ;
 		resp. msg_type = RESPONSE_JOB_STEP_CREATE ;
