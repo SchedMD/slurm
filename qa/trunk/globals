@@ -121,7 +121,7 @@ proc get_line_cnt { file_name } {
 #
 # Proc: kill_srun
 #
-# Purpose:  Issue three "killall -INT srun" commands
+# Purpose:  Issue three "killall -q -INT srun" commands
 #
 # Returns: A non-zero return code indicates a failure.
 #
@@ -130,9 +130,9 @@ proc get_line_cnt { file_name } {
 proc kill_srun {  } {
 	global bin_killall
 
-	exec $bin_killall -INT srun
-	exec $bin_killall -INT srun
-	exec $bin_killall -INT srun
+	exec $bin_killall -q -INT srun
+	exec $bin_killall -q -INT srun
+	exec $bin_killall -q -INT srun
 	return 0
 }
 
