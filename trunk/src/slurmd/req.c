@@ -484,7 +484,7 @@ _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 * If the reply request fails, we send an registration message to 
 	 * slurmctld in hopes of avoiding having the node set DOWN due to
 	 * slurmd paging and not being able to respond in a timely fashion. */
-	if (slurm_send_rc_msg(msg, rc)) {
+	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error responding to ping: %m");
 		send_registration_msg(SLURM_SUCCESS);
 	}
