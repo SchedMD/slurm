@@ -346,7 +346,7 @@ int load_all_part_state(void)
 	uint16_t name_len, def_part_flag, root_only, shared, state_up;
 	struct part_record *part_ptr;
 	uint32_t data_size = 0;
-	int data_allocated, data_read = 0, error_code = 0;
+	int data_allocated, data_read = 0, error_code = 0, part_cnt = 0;
 	int state_fd;
 	Buf buffer;
 
@@ -364,17 +364,21 @@ int load_all_part_state(void)
 		data = xmalloc(data_allocated);
 		while (1) {
 			data_read = read(state_fd, &data[data_size], BUF_SIZE);
-			if ((data_read == -1) && (errno == EINTR))
-				continue;
-			if (data_read == 0)     /* eof */
+			if (data_read < 0) {
+				if  (errno == EINTR)
+					continue;
+				else {
+					error("Read error on %s: %m", 
+						state_file);
+					break;
+				}
+			} else if (data_read == 0)     /* eof */
 				break;
 			data_size      += data_read;
 			data_allocated += data_read;
 			xrealloc(data, data_allocated);
 		}
 		close(state_fd);
-		if (data_read < 0)
-			error("Error reading file %s: %m", state_file);
 	}
 	xfree(state_file);
 	unlock_state_files();
@@ -414,6 +418,7 @@ int load_all_part_state(void)
 					   part_name);
 
 		if (part_ptr) {
+			part_cnt++;
 			part_ptr->max_time  = max_time;
 			part_ptr->max_nodes = max_nodes;
 			part_ptr->min_nodes = min_nodes;
@@ -436,12 +441,13 @@ int load_all_part_state(void)
 		xfree(part_name);
 	}
 
+	info("Recovered state of %d partitions", part_cnt);
 	free_buf(buffer);
 	return error_code;
 
       unpack_error:
-	error("Incomplete partition data checkpoint file. "
-		"State not completely restored");
+	error("Incomplete partition data checkpoint file");
+	info("Recovered state of %d partitions", part_cnt);
 	free_buf(buffer);
 	return EFAULT;
 }

@@ -126,9 +126,12 @@ void run_backup(void)
 	if (slurmctld_config.shutdown_time != 0) {
 		info("BackupController terminating");
 		pthread_join(slurmctld_config.thread_id_sig, NULL);
+		/* Since pidfile is created as user root (its owner is
+		 *   changed to SlurmUser) SlurmUser may not be able to 
+		 *   remove it, so this is not necessarily an error. */
 		if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
-			error("Unable to remove pidfile '%s': %m",
-		     	 slurmctld_conf.slurmctld_pidfile);
+			verbose("Unable to remove pidfile '%s': %m",
+				slurmctld_conf.slurmctld_pidfile);
 		log_fini();
 		exit(0);
 	}

@@ -232,13 +232,13 @@ int main(int argc, char *argv[])
 					SLURM_CONFIG_FILE);
 				abort();
 			}
-			info("Running primary controller");
 		} else {
 			error("this host (%s) not valid controller (%s or %s)",
 				node_name, slurmctld_conf.control_machine,
 				slurmctld_conf.backup_controller);
 			exit(0);
 		}
+		info("Running as primary controller");
 
 		if (switch_state_begin(recover)) {
 			error("switch_state_begin: %m");
@@ -289,9 +289,12 @@ int main(int argc, char *argv[])
 			break;
 	}
 
+	/* Since pidfile is created as user root (its owner is
+	 *   changed to SlurmUser) SlurmUser may not be able to 
+	 *   remove it, so this is not necessarily an error. */
 	if (unlink(slurmctld_conf.slurmctld_pidfile) < 0)
-		error("Unable to remove pidfile '%s': %m",
-		      slurmctld_conf.slurmctld_pidfile);
+		verbose("Unable to remove pidfile '%s': %m",
+			slurmctld_conf.slurmctld_pidfile);
 
 #if	MEM_LEAK_TEST
 	/* This should purge all allocated memory,   *\
@@ -305,6 +308,8 @@ int main(int argc, char *argv[])
 	free_slurm_conf(&slurmctld_conf);
 	slurm_api_clear_config();
 #endif
+
+	info("Slurmctld shutdown completing");
 	log_fini();
 
 	if (dump_core)
@@ -639,9 +644,10 @@ static void *_slurmctld_background(void *no_data)
 			if (slurmctld_config.server_thread_count)
 				info("shutdown server_thread_count=%d", 
 					slurmctld_config.server_thread_count);
-			if (_report_locks_set() == 0)
+			if (_report_locks_set() == 0) {
+				info("Saving all slurm state");
 				save_all_state();
-			else
+			} else
 				error("can not save state, semaphores set");
 			break;
 		}
@@ -903,7 +909,7 @@ static int _shutdown_backup_controller(void)
 	if ((slurmctld_conf.backup_addr == NULL) ||
 	    (strlen(slurmctld_conf.backup_addr) == 0)) {
 		debug("No backup controller to shutdown");
-		return SLURM_PROTOCOL_SUCCESS;
+		return SLURM_SUCCESS;
 	}
 
 	slurm_set_addr(&req.address, slurmctld_conf.slurmctld_port,
@@ -931,7 +937,7 @@ static int _shutdown_backup_controller(void)
 	 * here and give the backup controller time to shutdown */
 	sleep(2);
 
-	return SLURM_PROTOCOL_SUCCESS;
+	return SLURM_SUCCESS;
 }
 
 /* Reset the job credential key based upon configuration parameters */
