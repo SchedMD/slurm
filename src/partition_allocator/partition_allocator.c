@@ -325,7 +325,7 @@ void print_pa_request(pa_request_t* pa_request)
 	debug("      rotate:\t%d\n", pa_request->rotate);
 	debug("    elongate:\t%d\n", pa_request->elongate);
 	debug("force contig:\t%d\n", pa_request->force_contig);
-	debug("     co_proc:\t%d\n", pa_request->co_proc);
+	debug("     node_use:\t%d\n", pa_request->node_use);
 }
 
 /**
