@@ -56,6 +56,7 @@
  */
 
 typedef struct slurm_select_ops {
+	int		(*fini)			( void );
 	int		(*state_save)		( char *dir_name );
 	int	       	(*state_restore)	( char *dir_name );
 	int 		(*node_init)		( struct node_record *node_ptr,
@@ -109,6 +110,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 	 * Must be synchronized with slurm_select_ops_t above.
 	 */
 	static const char *syms[] = {
+		"fini",
 		"select_p_state_save",
 		"select_p_state_restore",
 		"select_p_node_init",
@@ -207,7 +209,8 @@ extern int slurm_select_init(void)
 	
 	slurm_mutex_lock( &g_select_context_lock );
 
-	if ( g_select_context ) goto done;
+	if ( g_select_context )
+		goto done;
 
 	select_type = slurm_get_select_type();
 	g_select_context = _select_context_create(select_type);
@@ -229,6 +232,14 @@ extern int slurm_select_init(void)
 	slurm_mutex_unlock( &g_select_context_lock );
 	xfree(select_type);
 	return retval;
+}
+
+extern int slurm_select_fini(void)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.fini))();
 }
 
 /*
