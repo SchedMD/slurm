@@ -133,10 +133,12 @@ void * _xrealloc(void **item, size_t newsize,
 	xmalloc_assert(newsize >= 0 && (int)newsize <= INT_MAX);
 
 	if (*item != NULL) {
+		int old_size;
 		p = (int *)*item - 2;
 
 		/* magic cookie still there? */
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);		
+		old_size = p[1];
 
 		MALLOC_LOCK();
 		p = (int *)realloc(p, newsize + 2*sizeof(int));
@@ -145,6 +147,10 @@ void * _xrealloc(void **item, size_t newsize,
 		if (p == NULL) 
 			goto error;
 
+		if (old_size < newsize) {
+			char *p_new = (char *)(&p[2]) + old_size;
+			memset(p_new, 0, (int)(newsize-old_size));
+		}
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);
 
 	} else {
@@ -183,10 +189,12 @@ int _try_xrealloc(void **item, size_t newsize,
 	xmalloc_assert(newsize >= 0 && (int)newsize <= INT_MAX);
 
 	if (*item != NULL) {
+		int old_size;
 		p = (int *)*item - 2;
 
 		/* magic cookie still there? */
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);		
+		old_size = p[1];
 
 		MALLOC_LOCK();
 		p = (int *)realloc(p, newsize + 2*sizeof(int));
@@ -195,6 +203,10 @@ int _try_xrealloc(void **item, size_t newsize,
 		if (p == NULL) 
 			return 0;
 
+		if (old_size < newsize) {
+			char *p_new = (char *)(&p[2]) + old_size;
+			memset(p_new, 0, (int)(newsize-old_size));
+		}
 		xmalloc_assert(p[0] == XMALLOC_MAGIC);
 
 	} else {
