@@ -39,6 +39,7 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
+#include <string.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
