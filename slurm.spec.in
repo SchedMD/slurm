@@ -80,6 +80,10 @@ SLURM authentication module for Brent Chun's authd
 %description auth-munge
 SLURM authentication module for Chris Dunlap's Munge
 
+%description jobcomp-filetxt
+SLURM jobcomp module which saves job information in an ascii flat-file
+before purging jobs from memory.
+
 %prep
 %setup -n %{name}-%{version}-%{release}
 
