@@ -128,6 +128,10 @@ MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
 MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
 
+if test "$MAJOR.$MINOR.$MICRO" != "$VERSION"; then
+    AC_MSG_ERROR([META information is inconsistent: $VERSION != $MAJOR.$MINOR.$MICRO!])
+fi
+
 # Check to see if we're on an unstable branch (no prereleases yet)
 if echo "$RELEASE" | grep -e "pre0" -e "UNSTABLE"; then 
    if test "$RELEASE" = "UNSTABLE"; then
