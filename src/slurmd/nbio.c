@@ -551,6 +551,7 @@ int set_max_fd ( nbio_attr_t * nbio_attr )
 	{
 		nbio_attr -> max_fd = MAX ( nbio_attr -> max_fd , nbio_attr -> fd [ i ] ) ;
 	}
+	nbio_attr -> max_fd ++ ;
 	return SLURM_SUCCESS ;
 }
 
