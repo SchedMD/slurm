@@ -91,10 +91,6 @@
 /* Check for jobs reaching their time limit every PERIODIC_TIMEOUT seconds */
 #define	PERIODIC_TIMEOUT	60
 
-/* Release a job's allocation if it does not terminate gracefully in
- * JOB_KILL_TIMEOUT seconds, leave time for large core file write */
-#define	JOB_KILL_TIMEOUT	300
-
 /* Pathname of group file record for checking update times */
 #define GROUP_FILE	"/etc/group"
 
@@ -206,7 +202,6 @@ extern time_t last_job_update;	/* time of last update to part records */
 #define JOB_MAGIC 0xf0b7392c
 #define STEP_MAGIC 0xce593bc1
 #define KILL_ON_STEP_DONE	1
-#define KILL_IN_PROGRESS	2
 
 extern int job_count;			/* number of jobs in the system */
 
