@@ -1,0 +1,261 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+
+<!-- ================================================================================  -->
+
+<!-- This HTML file was created by AbiWord.                                            -->
+
+<!-- AbiWord is a free, Open Source word processor.                                    -->
+
+<!-- You may obtain more information about AbiWord at www.abisource.com                -->
+
+<!-- ================================================================================  -->
+
+
+
+<html>
+
+<head>
+
+<meta http-equiv="content-type" content="text/html; charset=UTF-8" >
+
+<title>/home/jwindley/slurm/docs/plugins.html</title>
+
+<style type="text/css">
+
+body
+
+{
+
+	font-family: "Nimbus Roman";
+
+	font-style: normal;
+
+	text-indent: 0in;
+
+	font-weight: normal;
+
+	font-variant: normal;
+
+	color: #000000;
+
+	text-decoration: none;
+
+	text-align: left;
+
+	font-size: 12pt;
+
+	widows: 2;
+
+	font-stretch: normal;
+
+	background-color: #ffffff;
+
+}
+
+
+
+@media print
+
+{
+
+	body
+
+	{
+
+		padding-top: 1in; padding-bottom: 1in;
+
+		padding-left: 1in; padding-right: 1in;
+
+	}
+
+}
+
+
+
+h1, .Heading1
+
+{
+
+	font-size: 17pt;
+
+	margin-bottom: 0.0417in;
+
+	font-weight: bold;
+
+	font-family: "Nimbus Sans";
+
+	margin-top: 0.3056in;
+
+}
+
+
+
+h2, .Heading2
+
+{
+
+	font-size: 14pt;
+
+	margin-bottom: 0.0417in;
+
+	font-weight: bold;
+
+	font-family: "Nimbus Sans";
+
+	margin-top: 0.3056in;
+
+}
+
+
+
+p, .Normal
+
+{
+
+	font-family: "Nimbus Roman";
+
+	font-style: normal;
+
+	margin-left: 0pt;
+
+	text-indent: 0in;
+
+	margin-top: 0pt;
+
+	font-weight: normal;
+
+	font-variant: normal;
+
+	color: #000000;
+
+	text-decoration: none;
+
+	margin-bottom: 0.1667in;
+
+	text-align: left;
+
+	margin-right: 0pt;
+
+	font-size: 12pt;
+
+	widows: 2;
+
+	font-stretch: normal;
+
+}
+
+
+
+</style>
+
+</head>
+
+<body><div>
+
+
+
+<h1>SLURM Plugin API</h1>
+
+
+
+<h2>Overview</h2>
+
+<p>A SLURM plugin is a dynamically linked code object which is loaded explicitly at runtime by the SLURM libraries.&nbsp; A plugin provides a customized implementation of a well-defined API connected to tasks such as authentication, interconnect fabric, and task scheduling.</p>
+
+
+
+<h2>Identification</h2>
+
+<p>A SLURM plugin identifies itself by a short character string formatted similarly to a MIME type: <span style="font-style: italic">&lt;major&gt;/&lt;minor&gt;</span>.&nbsp; The major type identifies which API the plugin implements.&nbsp; The minor type uniquely distinguishes a plugin from other plugins that implement that same API, by such means as the intended platform or the internal algorithm.&nbsp; For example, a plugin to interface to the Maui scheduler would give its type as "sched/maui".&nbsp; It would implement the SLURM Scheduler API.</p>
+
+
+
+<h2>Versioning</h2>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.0000in; margin-top: 0.0000in; margin-right: 0.0000in"><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">SLURM plugin version numbers comprise a major and minor revision number.&nbsp;&nbsp; As SLURM evolves, changes to the individual plugin APIs may be necessary to implement new features.&nbsp; The major number identifies the version of the applicable API that the plugin implements.&nbsp; Incrementing the major version number denotes that the API has changed significantly and possibly incompatibly over prior versions.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.0000in; margin-top: 0.0000in; margin-right: 0.0000in"><br>
+
+</p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.0000in; margin-top: 0.0000in; margin-right: 0.0000in"><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Because plugins are separate code objects and perhaps under the control of third parties, version skew may occur in a SLURM installation.&nbsp; SLURM may support multiple versions of each API in a backward-compatible fashion to provide time for plugin authors to update their plugins.&nbsp; Conversely the plugin may support multiple versions of the API in order to be transparently portable across different SLURM installations.&nbsp; The version of the API spoken in an installation will be the highest-numbered version which is common to both SLURM and the plugin.&nbsp; Each SLURM release will document which API versions it supports.&nbsp; From time to time ancient API versions will be deprecated.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.0000in; margin-top: 0.0000in; margin-right: 0.0000in"><br>
+
+</p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.0000in; margin-top: 0.0000in; margin-right: 0.0000in"><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">The minor version number is incremented at the discretion of the plugin author and denotes revisions or upgrades particular to that implementation.&nbsp; If two or more plugins of the same type are provided in an installation, the plugin with the highest minor revision will be selected.</span></p>
+
+
+
+<h2>Data objects</h2>
+
+<p>A plugin must define and export the following symbols:</p>
+
+
+
+<ul class="Normal">
+
+<li><span style="text-position: ; color:#000000; font-family: 'Courier'; font-size: 12.000000pt">	</span><span style="font-family: 'Courier'">const char plugin_type[]</span> - a unique, short, formatted string to identify the plugin's purpose as described above.&nbsp; A "null" plugin (i.e., one which implements the desired API as stubs) should have a minor type of "none".</li>
+
+<li><span style="text-position: ; color:#000000; font-family: 'Courier'; font-size: 12.000000pt">	</span><span style="font-family: 'Courier'">const char plugin_name[] </span>- a free-form string which identifies the plugin in human-readable terms, such as "Kerberos authentication".&nbsp; SLURM will use this string to identify the plugin to end users.</li>
+
+<li><span style="text-position: ; color:#000000; font-family: 'Courier'; font-size: 12.000000pt">	</span><span style="font-family: 'Courier'">const uint32_t plugin_version</span> - a 32-bit unsigned integer giving the version of the plugin as described above.&nbsp; The major revision number is multiplied by 1,000 and added to the minor revision number to produce the integer value.&nbsp; Thus a plugin with a major revision number of 2 and a minor revision number of 35 will have a <span style="font-family: 'Courier'">plugin_version</span> value of 2035.</li>
+
+</ul>
+
+<p style="margin-left: 0pt; text-indent: 0in">A plugin may optionally define and export the following symbols:</p>
+
+
+
+<ul class="Normal">
+
+<li><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">	</span><span style="font-family: 'Courier'">const uint32_t plugin_legacy</span> - a 32-bit unsigned integer formatted the same as <span style="font-family: 'Courier'">plugin_version</span> giving the lowest API version number with which this plugin is compatible.&nbsp; If this symbol is omitted its value is assumed to be equivalent to the <span style="font-family: 'Courier'">plugin_version</span><span style="font-family: 'Nimbus Roman'"> rounded to the next lowest 1,000.</span>&nbsp; Only the major version number of this symbol is significant.</li>
+
+</ul>
+
+
+
+<h2>API functions</h2>
+
+<p><span style="font-family: 'Courier'">int init (void);</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in; margin-left: 0.5000in"><span style="font-weight: bold; text-position: ; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Description<br></span><span style="text-position: ; font-family: 'Nimbus Roman'; font-size: 12.000000pt">If present, this function is called just after the plugin is loaded.&nbsp; This allows the plugin to perform any global initialization prior to any actual API calls.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in; margin-left: 0.5000in"><span style="font-weight: bold; text-position: ; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Arguments<br></span><span style="text-position: ; font-family: 'Nimbus Roman'; font-size: 12.000000pt">None.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in; margin-left: 0.5000in"><span style="font-weight: bold; text-position: ; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Returns<br></span><span style="text-position: ; font-family: 'Nimbus Roman'; font-size: 12.000000pt">SLURM_SUCCESS if the plugin's initialization was successful.&nbsp; Any other return value indicates to SLURM that the plugin should be unloaded and not used.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in"><span style="font-family: 'Courier'">void fini (void);</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in; margin-left: 0.5000in"><span style="font-weight: bold; text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Description<br></span><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">If present, this function is called just before the plugin is unloaded.&nbsp; This allows the plugin to do any finalization after the last plugin-specific API call is made.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in; margin-left: 0.5000in"><span style="font-weight: bold; text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Arguments<br></span><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">None.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in; margin-left: 0.5000in"><span style="font-weight: bold; text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">Returns<br></span><span style="text-position: ; color:#000000; font-family: 'Nimbus Roman'; font-size: 12.000000pt">None.</span></p>
+
+<p dir="ltr" style="text-align: left; margin-bottom: 0.1667in; margin-top: 0.0000in; margin-right: 0.0000in">N.B. these functions are not the same as those described in the <span style="font-family: 'Courier'">dlopen(3)</span> system library.&nbsp; The C runtime system co-opts those symbols for its own initialization.&nbsp; The system <span style="font-family: 'Courier'">init()</span> is called before the SLURM plugin <span style="font-family: 'Courier'">init()</span>, and the <span style="font-family: 'Courier'">SLURM fini()</span> is called before the system's <span style="font-family: 'Courier'">fini()</span>.</p>
+
+<p style="margin-left: 0pt">The functions need not appear.&nbsp; The plugin may provide either <span style="font-family: 'Courier'">init()</span> or <span style="font-family: 'Courier'">fini()</span> or both.</p>
+
+
+
+<h2>Thread safety</h2>
+
+<p>SLURM is a multithreaded application.&nbsp; The SLURM plugin library may exercise the plugin functions in a re-entrant fashion.&nbsp; It is the responsibility of the plugin author to provide the necessarily mutual exclusion and synchronization in order to avoid the pitfalls of re-entrant code.</p>
+
+
+
+<h2>Runtime support</h2>
+
+<p>The standard system libraries are available to the plugin.&nbsp; The SLURM libraries are also available and plugin authors are encouraged to make use of them rather than develop their own substitutes.&nbsp; Plugins should use the SLURM log to print error messages.</p>
+
+<p>The plugin author is responsible for specifying any specific non-standard libraries needed for correct operation.&nbsp; Plugins will not load if their dependent libraries are not available, so it is the installer's job to make sure the specified libraries are available.</p>
+
+</div>
+
+</body>
+
+</html>
+
+
