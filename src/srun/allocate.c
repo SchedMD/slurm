@@ -65,8 +65,11 @@ allocate_nodes(void)
 
 	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {;}
 
-	if ((rc == 0) && (resp->node_list == NULL))
+	if ((rc == 0) && (resp->node_list == NULL)) {
+		if (resp->error_code)
+			info("Warning: %s", slurm_strerror(resp->error_code));
 		_wait_for_resources(&resp);
+	}
 
 	job_desc_msg_destroy(j);
 
