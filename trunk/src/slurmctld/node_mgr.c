@@ -1165,9 +1165,12 @@ void node_did_resp (char *name)
 	return;
 }
 
-/* node_not_resp - record that the specified node is not responding 
- * IN name - name of the node */
-void node_not_resp (char *name)
+/*
+ * node_not_resp - record that the specified node is not responding 
+ * IN name - name of the node
+ * IN msg_time - time message was sent 
+ */
+void node_not_resp (char *name, time_t msg_time)
 {
 	struct node_record *node_ptr;
 	int i;
@@ -1182,6 +1185,10 @@ void node_not_resp (char *name)
 	if (node_ptr->node_state & NODE_STATE_NO_RESPOND)
 		return;		/* Already known to be not responding */
 
+	if (node_ptr->last_response >= msg_time) {
+		debug("node_not_resp: node %s responded since msg sent", name);
+		return;
+	}
 	last_node_update = time (NULL);
 	error ("Node %s not responding", name);
 	bit_clear (up_node_bitmap, i);
