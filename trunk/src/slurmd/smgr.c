@@ -516,6 +516,8 @@ _setup_env(slurmd_job_t *job, int taskid)
 		return -1;
 	if (setenvpf(&job->env, "SLURM_PROCID=%d", t->gid     ) < 0)
 		return -1;
+	if (setenvpf(&job->env, "SLURM_CPUS_ON_NODE=%d", job->cpus) < 0)
+		return -1;
 
 	return SLURM_SUCCESS;
 }

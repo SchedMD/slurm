@@ -105,6 +105,7 @@ typedef struct slurmd_job {
 	uint32_t       nodeid; /* relative position of this node in job     */
 	uint32_t       ntasks; /* number of tasks on *this* node            */
 	uint32_t       debug;  /* debug level for job slurmd                */
+	uint16_t       cpus;   /* number of cpus to use for this job        */
 	uint16_t       argc;   /* number of commandline arguments           */
 	char         **env;    /* job environment                           */
 	char         **argv;   /* job argument vector                       */

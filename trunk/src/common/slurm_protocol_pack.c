@@ -2130,6 +2130,7 @@ _pack_launch_tasks_request_msg(launch_tasks_request_msg_t * msg, Buf buffer)
 	pack16(msg->resp_port, buffer);
 	pack16(msg->io_port, buffer);
 	pack16(msg->task_flags, buffer);
+	pack16(msg->cpus_allocated, buffer);
 	packstr(msg->ofname, buffer);
 	packstr(msg->efname, buffer);
 	packstr(msg->ifname, buffer);
@@ -2167,6 +2168,7 @@ _unpack_launch_tasks_request_msg(launch_tasks_request_msg_t **
 	safe_unpack16(&msg->resp_port, buffer);
 	safe_unpack16(&msg->io_port, buffer);
 	safe_unpack16(&msg->task_flags, buffer);
+	safe_unpack16(&msg->cpus_allocated, buffer);
 	safe_unpackstr_xmalloc(&msg->ofname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->efname, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&msg->ifname, &uint16_tmp, buffer);
