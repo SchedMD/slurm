@@ -2137,7 +2137,6 @@ void job_time_limit(void)
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
 		(struct job_record *) list_next(job_iterator))) {
-		bool inactive_flag = false;
 		xassert (job_ptr->magic == JOB_MAGIC);
 		if (job_ptr->job_state != JOB_RUNNING)
 			continue;
@@ -2145,19 +2144,16 @@ void job_time_limit(void)
 		if (slurmctld_conf.inactive_limit && 
 		    (job_ptr->time_last_active <= old)) {
 			/* job inactive, kill it */
-			job_ptr->end_time   = now;
-			job_ptr->time_limit = 1;
-			inactive_flag       = true;
+			info("Inactivity time limit reached for JobId=%u",
+				job_ptr->job_id);
+			_job_timed_out(job_ptr);
+			continue;
 		}
 		if ((job_ptr->time_limit != INFINITE) &&
 		    (job_ptr->end_time <= now)) {
 			last_job_update = now;
-			if (inactive_flag)
-				info("Inactivity time limit reached for "
-					"JobId=%u", job_ptr->job_id);
-			else
-				info("Time limit exhausted for JobId=%u",
-					job_ptr->job_id);
+			info("Time limit exhausted for JobId=%u",
+				job_ptr->job_id);
 			_job_timed_out(job_ptr);
 			continue;
 		}
@@ -2289,7 +2285,7 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 	if (job_desc_msg->conn_type == (uint16_t) NO_VAL)
 		job_desc_msg->conn_type = RM_NAV;  /* try TORUS, then MESH */
 	if (job_desc_msg->node_use == (uint16_t) NO_VAL)
-		job_desc_msg->node_use = RM_COPROCESSOR;
+		job_desc_msg->node_use = RM_PARTITION_COPROCESSOR_MODE;
 	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
 		job_desc_msg->rotate = true;    /* default to allow rotate */
 

@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "September 2004" "slurm.conf 0.4" "Slurm configuration file"
+.TH "slurm.conf" "5" "October 2004" "slurm.conf 0.4" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -303,7 +303,9 @@ A value of zero indicates the node should never be set DOWN if not responding.
 Fully qualified pathname of a directory into which the SLURM controller, 
 \fBslurmctld\fR, saves its state (e.g. "/usr/local/slurm/checkpoint"). 
 SLURM state will saved here to recover from system failures.
-\fBSlurmUser\fR must be able to create files in this directory. 
+\fBSlurmUser\fR must be able to create files in this directory.
+If you have a \fBBackupController\fR configured, this location should be 
+readable and writable by both systems. 
 The default value is "/tmp".
 If any slurm daemons terminate abnormally, their core files will also be written 
 into this directory.

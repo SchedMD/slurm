@@ -257,9 +257,9 @@ static int _verify_node_use(const char *arg)
 	int len = strlen(arg);
 
 	if (!strncasecmp(arg, "VIRTUAL", len))
-		return RM_VIRTUAL;
+		return RM_PARTITION_VIRTUAL_NODE_MODE;
 	else if (!strncasecmp(arg, "COPROCESSOR", len))
-		return RM_COPROCESSOR;
+		return RM_PARTITION_COPROCESSOR_MODE;
 
 	error("invalid --node-use argument %s ignored.", arg);
 	return -1;

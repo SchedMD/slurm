@@ -47,7 +47,8 @@ typedef struct partition{
 
 #else
 	ushort* bgl_part_id;	/* ID returned from CMCS	*/
-	ushort* part_type;	/* Type=Mesh/Torus/		*/
+	ushort part_type;	/* Type=Mesh/Torus/NAV		*/
+	ushort node_use;	/* Use=Virtual/Coprocessor	*/
 #endif
 } partition_t;
 
