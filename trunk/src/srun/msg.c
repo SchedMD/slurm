@@ -114,9 +114,11 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 	{
 		case RESPONSE_LAUNCH_TASKS:
 			_launch_handler(job, msg);
+			slurm_free_launch_tasks_response_msg(msg->data);
 			break;
 		case MESSAGE_TASK_EXIT:
 			_exit_handler(job, msg);
+			slurm_free_task_exit_msg(msg->data);
 			break;
 		case RESPONSE_REATTACH_TASKS_STREAMS:
 			debug("recvd reattach response\n");
@@ -127,6 +129,7 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 			break;
 	}
 	slurm_free_msg(msg);
+	return;
 }
 
 static void
@@ -134,25 +137,30 @@ _accept_msg_connection(job_t *job, int fdnum)
 {
 	slurm_fd fd;
 	slurm_msg_t *msg = NULL;
-	slurm_addr  cli_addr;
-	char addrbuf[256];
+	slurm_addr   cli_addr;
+	char         host[256];
+	short        port;
 
 	if ((fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr)) < 0) {
 		error("_accept_msg_connection/slurm_accept_msg_conn: %m");
 		return;
 	}
 
-	slurm_print_slurm_addr(&cli_addr, addrbuf, 256);
-	debug2("got message connection from %s", addrbuf);
+	slurm_get_addr(&cli_addr, &port, host, sizeof(host));
+	debug2("got message connection from %s:%d", host, ntohs(port));
 
 	msg = xmalloc(sizeof(*msg));
+  again:
 	if (slurm_receive_msg(fd, msg) == SLURM_SOCKET_ERROR) {
-		error("_accept_msg_connection/slurm_receive_msg: %m");
+		if (errno == EINTR)
+			goto again;
+		error("_accept_msg_connection/slurm_receive_msg(%s): %m",
+				host);
 		xfree(msg);
 	} else {
 
 		msg->conn_fd = fd;
-		_handle_msg(job, msg);
+		_handle_msg(job, msg); /* handle_msg frees msg */
 	}
 
 	slurm_close_accepted_conn(fd);
@@ -163,10 +171,8 @@ static void
 _set_jfds_nonblocking(job_t *job)
 {
 	int i;
-	for (i = 0; i < job->njfds; i++) {
-		if (fcntl(job->jfd[i], F_SETFL, O_NONBLOCK) < 0)
-			error("Unable to set nonblocking I/O on jfd %d", i);
-	}
+	for (i = 0; i < job->njfds; i++) 
+		fd_set_nonblocking(job->jfd[i]);
 }
 
 static void 
@@ -187,9 +193,7 @@ _msg_thr_poll(job_t *job)
 
 		while (poll(fds, nfds, -1) < 0) {
 			switch (errno) {
-				case EINTR:
-					continue;
-					break;
+				case EINTR: continue;
 				case ENOMEM:
 				case EFAULT:
 					fatal("poll: %m");

@@ -37,6 +37,7 @@
 #include <src/common/xassert.h>
 #include <src/common/xmalloc.h>
 #include <src/common/log.h>
+#include <src/common/fd.h>
 #include <src/common/macros.h>
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_defs.h>
@@ -109,10 +110,8 @@ static void
 _set_iofds_nonblocking(job_t *job)
 {
 	int i;
-	for (i = 0; i < job->niofds; i++) {
-		if (fcntl(job->iofd[i], F_SETFL, O_NONBLOCK) < 0)
-			error("Unable to set nonblocking I/O on iofd %d", i);
-	}
+	for (i = 0; i < job->niofds; i++) 
+		fd_set_nonblocking(job->iofd[i]);
 }
 
 static void *
@@ -193,8 +192,12 @@ _io_thr_poll(void *job_arg)
 		}
 
 		for (i = 0; i < job->niofds; i++) {
-			if (fds[i].revents) 
-				_accept_io_stream(job, i);
+			if (fds[i].revents) {
+				if (fds[i].revents & POLLERR)
+					error("poll error on io fd %d", i);
+				else
+					_accept_io_stream(job, i);
+			}
 		}
 
 		if (_poll_rd_isset(fds[i++]))
@@ -223,43 +226,44 @@ static void
 _accept_io_stream(job_t *job, int i)
 {
 	int len = size_io_stream_header();
-	verbose("Activity on IO server port %d", i);
+	int j;
+	int fd = job->iofd[i];
+	verbose("Activity on IO server port %d fd %d", i, fd);
 
-	for (;;) {
+	for (j = 0; j < 15; i++) {
 		int sd, size_read;
 		struct sockaddr addr;
 		struct sockaddr_in *sin;
 		int size = sizeof(addr);
 		char buf[INET_ADDRSTRLEN];
 		slurm_io_stream_header_t hdr;
-		char *msgbuf;
 		Buf buffer;
 
-		while ((sd = accept(job->iofd[i], &addr, (socklen_t *)&size)) < 0) {
+		while ((sd = accept(fd, &addr, &size)) < 0) {
 			if (errno == EINTR)
 				continue;
 			if (errno == EAGAIN)	/* No more connections */
 				return;
 			if ((errno == ECONNABORTED) || 
 			    (errno == EWOULDBLOCK)) {
-				debug("Stream connection refused: %m");
 				return;
 			}
 			error("Unable to accept new connection: %m\n");
+			return;
 		}
 
 		sin = (struct sockaddr_in *) &addr;
 		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
 
-		msgbuf = xmalloc(len);
-		size_read = _readn(sd, msgbuf, len); 
+		buffer = init_buf(len);
+		size_read = _readn(sd, buffer->head, len); 
 		if (size_read != len) {
 			/* A fatal error for this stream */
 			error("Incomplete stream header read");
-			xfree(msgbuf);
+			free_buf(buffer);
 			return;
 		}
-		buffer = create_buf(msgbuf, len);
+
 		if (unpack_io_stream_header(&hdr, buffer)) {
 			/* A fatal error for this stream */
 			error ("Bad stream header read");
@@ -273,8 +277,7 @@ _accept_io_stream(job_t *job, int i)
 		 */
 
 		/* Do I even need this? */
-		if (fcntl(sd, F_SETFL, O_NONBLOCK) < 0)
-			error("Unable to set nonblocking I/O on new connection");
+		fd_set_nonblocking(sd);
 
 		if ((hdr.task_id < 0) || (hdr.task_id >= opt.nprocs)) {
 			error ("Invalid task_id %d from %s",
@@ -396,7 +399,7 @@ _readn(int fd, void *buf, size_t nbytes)
 		else if (errno == EINTR)
 			continue;
 		else {
-			debug("read error: %m");
+			error("read error: %m");
 			break;
 		}
 	}

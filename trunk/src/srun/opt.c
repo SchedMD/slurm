@@ -987,10 +987,8 @@ search_path(char *cmd)
 {
 	List l = create_path_list();
 	ListIterator i = list_iterator_create(l);
-	char *path, *fullpath;
+	char *path, *fullpath = NULL;
 	struct stat stat_buf;
-
-	fullpath = xmalloc(1);
 
 	while ((path = list_next(i))) {
 		xstrcat(fullpath, path);
@@ -999,12 +997,15 @@ search_path(char *cmd)
 
 		if (   (stat(fullpath, &stat_buf) == 0)
 		    && (stat_buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
-			list_destroy(l);
-			return fullpath;
-		} else
+			goto done;
+		} else {
 			xfree(fullpath);
+			fullpath = NULL;
+		}
 	}
-	return NULL;
+  done:
+	list_destroy(l);
+	return fullpath;
 }
 
 /* find_file_path - given a filename, return the full path to a regular file 

@@ -84,7 +84,7 @@ job_create(resource_allocation_response_msg_t *resp)
 	/* Compute number of file descriptors / Ports needed for Job 
 	 * control info server
 	 */
-	d = div(opt.nprocs, 128);
+	d = div(opt.nprocs, 48);
 	job->njfds = d.rem > 0 ? d.quot+1 : d.quot;
 	job->jfd   = (slurm_fd *)   xmalloc(job->njfds * sizeof(slurm_fd));
 	job->jaddr = (slurm_addr *) xmalloc(job->njfds * sizeof(slurm_addr));
