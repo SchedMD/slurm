@@ -15,6 +15,7 @@ print OUT "OTESTING\n" ;
 print OUT "OTESTING\n" ;
 print OUT "OTESTING\n" ;
 close OUT ;
+sleep ( 1000 ) ;
 open OUT, ">>test.out" ;
 print "stdout 5 TESTING\n" ;
 print "stdout 6 TESTING\n" ;
