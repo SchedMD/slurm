@@ -27,8 +27,14 @@
 
 #define BUFSIZE 4096
 #define BITSIZE 128
-#define NODE_POLL_TIME 120	/* poll MMCS node state every 120 secs */
-#define SWITCH_POLL_TIME 180	/* poll MMCS switch state every 180 secs */
+
+#ifdef THE_BGL_APIS_REALLY_WORKED
+#  define NODE_POLL_TIME 120	/* poll MMCS node state every 120 secs */
+#  define SWITCH_POLL_TIME 180	/* poll MMCS switch state every 180 secs */
+#else
+#  define NODE_POLL_TIME   10000
+#  define SWITCH_POLL_TIME 10000
+#endif
 
 #define _DEBUG 0
 
@@ -246,7 +252,8 @@ extern void *bluegene_agent(void *args)
 {
 	static time_t last_node_test, last_switch_test, now;
 
-	last_node_test = last_switch_test = time(NULL);
+	last_node_test   = time(NULL) + NODE_POLL_TIME;
+	last_switch_test = time(NULL) + SWITCH_POLL_TIME;
 	while (!agent_fini) {
 		sleep(1);
 		now = time(NULL);
