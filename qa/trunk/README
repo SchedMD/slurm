@@ -78,6 +78,7 @@ test1.32   Test of srun signal forwarding
 test1.33   Test of srun application exit code reporting
 test1.34   Verify that arguments get forwarded to job script (--batch option).
 test1.35   Test of batch job with multiple concurrent job steps
+test1.36   Test parallel launch of srun (e.g. "srun srun hostname")
 **NOTE**   The following tests attempt to utilize multiple CPUs or partitions,
            The test will print "WARNING" and terminate with an exit code of 
            zero if the cluster configuration does not permit proper testing.
