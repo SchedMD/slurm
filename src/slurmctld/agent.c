@@ -771,7 +771,7 @@ static void _list_delete_retry(void *retry_entry)
  * agent_retry - Agent for retrying pending RPCs. One pending request is 
  *	issued if it has been pending for at least min_wait seconds
  * IN min_wait - Minimum wait time between re-issue of a pending RPC
- * RET count of queued requests remaining
+ * RET count of queued requests remaining (zero if none are old)
  */
 extern int agent_retry (int min_wait)
 {
@@ -782,14 +782,14 @@ extern int agent_retry (int min_wait)
 	slurm_mutex_lock(&retry_mutex);
 	if (retry_list) {
 		double age = 0;
-		list_size = list_count(retry_list);
 		queued_req_ptr = (queued_request_t *) list_peek(retry_list);
 		if (queued_req_ptr) {
 			age = difftime(now, queued_req_ptr->last_attempt);
-			if (age > min_wait)
+			if (age > min_wait) {
 				queued_req_ptr = (queued_request_t *) 
 					list_pop(retry_list);
-			else /* too new */
+				list_size = list_count(retry_list);;
+			} else /* too new */
 				queued_req_ptr = NULL;
 		}
 	}

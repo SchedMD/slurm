@@ -31,6 +31,9 @@ documents those changes that are of interest to users and admins.
     systems (QsNet and QsNetII).
  -- Added some missing read locks for references for slurmctld's 
     configuration data structure
+ -- Modify processing of queued slurmctld message traffic to get better
+    throughput (resulted in job inactivity limit being reached improperly 
+    when hundreds of jobs running simultaneously)
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================

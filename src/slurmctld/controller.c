@@ -613,6 +613,7 @@ static void *_slurmctld_background(void *no_data)
 	static time_t last_timelimit_time;
 	static time_t last_assert_primary_time;
 	time_t now;
+	int i;
 
 	/* Locks: Read config */
 	slurmctld_lock_t config_read_lock = { 
@@ -693,7 +694,11 @@ static void *_slurmctld_background(void *no_data)
 			unlock_slurmctld(job_read_lock);
 		}
 
-		(void) agent_retry(RPC_RETRY_INTERVAL);
+		/* Process pending agent work, issues several requests */
+		for (i=0; i<5; i++) {
+			if (agent_retry(RPC_RETRY_INTERVAL) == 0)
+				break;
+		}
 
 		if (difftime(now, last_group_time) >= PERIODIC_GROUP_CHECK) {
 			last_group_time = now;
