@@ -67,11 +67,12 @@ int interconnect_postfini (slurmd_job_t *job)
 	 *  Kill all processes in the job's session
 	 */
 	if (job->smgr_pid) {
-		debug2("Sending SIGKILL to pgid %d", job->smgr_pid); 
+		debug2("Sending SIGKILL to pgid %lu", 
+			(unsigned long) job->smgr_pid); 
 		kill(-job->smgr_pid, SIGKILL);
 	} else
-		debug("Job %u.%u: Bad pid valud %ld", job->jobid, 
-		      job->stepid, job->smgr_pid);
+		debug("Job %u.%u: Bad pid valud %lu", job->jobid, 
+		      job->stepid, (unsigned long) job->smgr_pid);
 
 	return SLURM_SUCCESS;
 }
