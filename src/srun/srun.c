@@ -87,10 +87,8 @@ main(int ac, char **av)
 	/* reinit log with new verbosity
 	 */
 	if (_verbose || _debug) {
-		if (_verbose) logopt.stderr_level++;
-		verbose("verbose mode on");
-		logopt.stderr_level += _debug;
-		debug("setting debug to level %d.", _debug);
+		if (_verbose) 
+			logopt.stderr_level+=_verbose;
 		logopt.prefix_level = 1;
 		log_init(xbasename(av[0]), logopt, 0, NULL);
 	}
@@ -269,8 +267,7 @@ create_job_step(job_t *job)
 	req.job_id     = job->jobid;
 	req.user_id    = opt.uid;
 	req.node_count = job->nhosts;
-/* FIXME: Need real CPU count here */
-	req.cpu_count  = job->nhosts;
+	req.cpu_count  = opt.nprocs;
 	req.node_list  = job->nodelist;
 	req.relative   = false;
 
@@ -312,7 +309,6 @@ static void
 sigterm_handler(int signum)
 {
 	if (signum == SIGTERM) {
-		debug2("thread %d canceled\n", pthread_self());
 		pthread_exit(0);
 	}
 }
@@ -340,7 +336,6 @@ sig_thr(void *arg)
 			  job->state = SRUN_JOB_OVERDONE;
 			  pthread_cond_signal(&job->state_cond);
 			  pthread_mutex_unlock(&job->state_mutex);
-			  pthread_exit(0);
 			  break;
 		  case SIGTERM:
 			  pthread_exit(0);
