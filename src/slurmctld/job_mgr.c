@@ -121,6 +121,7 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
+static bool _slurm_picks_nodes(job_desc_msg_t * job_specs);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -1081,7 +1082,9 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	int error_code;
 	bool no_alloc, top_prio, test_only;
 	struct job_record *job_ptr;
-
+#ifdef HAVE_LIBELAN3
+	bool pick_nodes = _slurm_picks_nodes(job_specs);
+#endif
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
 				 &job_ptr, submit_uid);
 	if (error_code) {
@@ -1099,7 +1102,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	top_prio = _top_priority(job_ptr);
 #ifdef HAVE_LIBELAN3
 	/* Avoid resource fragmentation if important */
-	if (top_prio && job_is_completing())
+	if (top_prio && pick_nodes && job_is_completing())
 		top_prio = false;	/* Don't scheduled job right now */
 #endif
 	if (immediate && (!top_prio)) {
@@ -1174,6 +1177,22 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	return SLURM_SUCCESS;
 }
 
+/* Return true of slurm is performing the node selection process. 
+ * This is a simplistic algorithm and does not count nodes. It just
+ * looks for a required node list a no more than one required node/task. */
+static bool _slurm_picks_nodes(job_desc_msg_t * job_specs)
+{
+	if (job_specs->req_nodes == NULL)
+		return true;
+	if ((job_specs->num_procs != NO_VAL) && (job_specs->num_procs > 1))
+		return true;
+	if ((job_specs->min_nodes != NO_VAL) && (job_specs->min_nodes > 1))
+		return true;
+	if ((job_specs->max_nodes != NO_VAL) && (job_specs->max_nodes > 1))
+		return true;
+
+	return false;
+}
 
 /* 
  * job_signal - signal the specified job
@@ -1711,8 +1730,9 @@ _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
 	char *buffer, **array_ptr;
 	uint16_t rec_cnt;
 
-	if ((file_name == NULL) || (data == NULL) || (size == NULL))
-		fatal("_read_data_array_from_file passed NULL pointer");
+	xassert(file_name);
+	xassert(data);
+	xassert(size);
 	*data = NULL;
 	*size = 0;
 
@@ -1778,8 +1798,8 @@ void _read_data_from_file(char *file_name, char **data)
 	int fd, pos, buf_size, amount;
 	char *buffer;
 
-	if ((file_name == NULL) || (data == NULL))
-		fatal("_read_data_from_file passed NULL pointer");
+	xassert(file_name);
+	xassert(data);
 	*data = NULL;
 
 	fd = open(file_name, 0);
@@ -1969,8 +1989,7 @@ void job_time_limit(void)
 /* Terminate a job that has exhausted its time limit */
 static void _job_timed_out(struct job_record *job_ptr)
 {
-	if (job_ptr == NULL)
-		fatal ("job_ptr == NULL");
+	xassert(job_ptr);
 
 	if (job_ptr->details) {
 		time_t now      = time(NULL);
@@ -2068,9 +2087,8 @@ static void _list_delete_job(void *job_entry)
 	struct job_record *job_ptr;
 	int i, j;
 
+	xassert(job_entry);
 	job_ptr = (struct job_record *) job_entry;
-	if (job_ptr == NULL)
-		fatal ("_list_delete_job: job_ptr == NULL");
 	xassert (job_ptr->magic == JOB_MAGIC);
 
 	if (job_hash[JOB_HASH_INX(job_ptr->job_id)] == job_ptr)
@@ -2311,8 +2329,7 @@ void reset_job_bitmaps(void)
 	struct part_record *part_ptr;
 	bool job_fail = false;
 
-	if (job_list == NULL) 
-		fatal ("reset_job_bitmaps: job_list == NULL");
+	xassert(job_list);
 
 	job_record_iterator = list_iterator_create(job_list);
 	while ((job_ptr =
@@ -2431,8 +2448,7 @@ static void _set_job_id(struct job_record *job_ptr)
 	if (job_id_sequence < 0)
 		job_id_sequence = slurmctld_conf.first_job_id;
 
-	if (job_ptr == NULL)
-		fatal ("_set_job_id: job_ptr == NULL");
+	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 	if ((job_ptr->partition == NULL)
 	    || (strlen(job_ptr->partition) == 0))
@@ -2458,8 +2474,7 @@ static void _set_job_id(struct job_record *job_ptr)
  */
 static void _set_job_prio(struct job_record *job_ptr)
 {
-	if (job_ptr == NULL)
-		fatal ("_set_job_prio: job_ptr == NULL");
+	xassert(job_ptr);
 	xassert (job_ptr->magic == JOB_MAGIC);
 	job_ptr->priority = default_prio--;
 }
