@@ -296,7 +296,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
 #ifdef HAVE_LIBELAN3
-	int first, last, i, node_id, nprocs;
+	int first, last, i, node_id;
+	int nprocs = step_specs->cpu_count;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
 
@@ -349,7 +350,6 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 				       node_record_table_ptr[i].name);
 		}
 	}
-	nprocs = 1;	/* allocate based upon nodeset only */
 	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->cyclic_alloc) < 0)
 		fatal ("step_create: qsw_setup_jobinfo error %m");
 	bit_free (nodeset);
