@@ -203,11 +203,10 @@ extern void  allocate_nodes (unsigned *bitmap);
  * input: bitmap - bitmap pointer
  *        node_list - place to put node list
  * output: node_list - set to node list or null on error 
- *         returns 0 if no error, otherwise einval or enomem
  * NOTE: consider returning the node list as a regular expression if helpful
  * NOTE: the caller must free memory at node_list when no longer required
  */
-extern int bitmap2node_name (bitstr_t *bitmap, char **node_list);
+extern void bitmap2node_name (bitstr_t *bitmap, char **node_list);
 
 /*
  * block_or_cycle - map string into integer

@@ -129,23 +129,9 @@ extern int slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_
  */
 extern int slurm_load_partitions (time_t update_time, partition_info_msg_t **part_buffer_ptr);
 
-/*
- * slurm_submit - submit/queue a job with supplied contraints. 
- * input: spec - specification of the job's constraints
- *	job_id - place to store id of submitted job
- * output: job_id - the job's id
- *	returns 0 if no error, EINVAL if the request is invalid
- * NOTE: required specification include: Script=<script_path_name>
- *	User=<uid>
- * NOTE: optional specifications include: Contiguous=<YES|NO> 
- *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
- *	JobId=<id> JobName=<name> Key=<key> MinProcs=<count> 
- *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
- *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
- *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
- *	TotalProcs=<count> Immediate=<YES|NO>
- */
-extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg );
+/* slurm_submit_job - load the supplied node information buffer if changed */
+extern int slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
+		submit_response_msg_t ** slurm_alloc_msg );
 
 /*
  * slurm_will_run - determine if a job would execute immediately 

@@ -20,7 +20,7 @@
 
 /* slurm_submit_job - load the supplied node information buffer if changed */
 int
-slurm_submit_batch_job (job_desc_msg_t * job_desc_msg )
+slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** slurm_alloc_msg )
 {
         int msg_size ;
         int rc ;
@@ -28,7 +28,6 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg )
         slurm_msg_t request_msg ;
         slurm_msg_t response_msg ;
         return_code_msg_t * slurm_rc_msg ;
-	resource_allocation_response_msg_t * slurm_aloc_resp_msg;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
@@ -55,9 +54,8 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg )
 			return (int) slurm_rc_msg->return_code ;
                         break ;
 		case RESPONSE_SUBMIT_BATCH_JOB:
-                        slurm_aloc_resp_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
-			job_desc_msg->job_id = slurm_aloc_resp_msg->job_id;
-			return 0;
+                        *slurm_alloc_msg = ( submit_response_msg_t * ) response_msg . data ;
+			return SLURM_SUCCESS;
 			break;
                 default:
                         return SLURM_UNEXPECTED_MSG_ERROR ;

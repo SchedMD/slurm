@@ -448,7 +448,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	struct job_record *job_rec_ptr;
 	uint32_t job_id ;
 	slurm_msg_t response_msg ;
-	job_id_msg_t job_id_msg ;
+	submit_response_msg_t submit_msg ;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 
 	start_time = clock ();
@@ -469,9 +469,9 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 		info ("slurmctld_req: job_submit success for id=%u, time=%ld",
 				job_id, (long) (clock () - start_time));
 		/* send job_ID */
-		job_id_msg . job_id = job_id ;
+		submit_msg . job_id = job_id ;
 		response_msg . msg_type = RESPONSE_SUBMIT_BATCH_JOB ;
-		response_msg . data = & job_id_msg ;
+		response_msg . data = & submit_msg ;
 		slurm_send_node_msg ( msg->conn_fd , & response_msg ) ;
 	}
 	schedule();

@@ -107,21 +107,21 @@ schedule()
 		}
 		if (j < failed_part_cnt) continue;
 		error_code = select_nodes(job_ptr, 0);
-		if (error_code == EAGAIN) {
+		if (error_code == ESLURM_NODES_BUSY) {
 			xrealloc(failed_parts, 
 			         (failed_part_cnt+1)*sizeof(struct part_record *));
 			failed_parts[failed_part_cnt++] = job_ptr->part_ptr;
 		}
-		else if (error_code == EINVAL) {
+		else if (error_code == SLURM_SUCCESS) {		/* job initiated */
+			last_job_update = time (NULL);
+			info ("schedule: job_id %u on nodes %s", 
+			      job_ptr->job_id, job_ptr->nodes);
+		}
+		else {
 			last_job_update = time (NULL);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
 			delete_job_details(job_ptr);
-		}
-		else {			/* job initiated */
-			last_job_update = time (NULL);
-			info ("schedule: job_id %u on nodes %s", 
-			      job_ptr->job_id, job_ptr->nodes);
 		}
 	}
 
