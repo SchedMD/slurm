@@ -16,7 +16,7 @@ this may need to be increased to 350k-512k */
 #define SLURM_PROTOCOL_NO_FLAGS 0 /* used in the header to set flags to empty */
 
 
-#if MONG_IMPLEMENTATION
+#if MONGO_IMPLEMENTATION
 #  include <src/common/slurm_protocol_mongo_common.h>
 #else
 #  include <src/common/slurm_protocol_socket_common.h>
