@@ -91,6 +91,8 @@ test1.55   Test of partition specification on job submission (--partition
            option).
 test1.56   Confirm node selection from within a job step on existing allocation
            (--nodelist, --exclude, --nodes and --nprocs options).
+test1.57   Confirm node selection from within a job step on existing allocation
+           (--relative, --nodes and --nprocs options).
 UNTESTED   TotalView interaction validation. Expect has limited X Window 
            support.
 
