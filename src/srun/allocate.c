@@ -37,8 +37,11 @@
 #include "src/api/slurm.h"
 
 #include "src/srun/allocate.h"
-#include "src/srun/attach.h"
 #include "src/srun/opt.h"
+
+#if HAVE_TOTALVIEW
+#  include "src/srun/attach.h"
+#endif
 
 #define MAX_RETRIES 10
 
