@@ -1473,6 +1473,7 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 	int error_code = SLURM_SUCCESS, i;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL, *exc_bitmap = NULL;
+	bool super_user = false;
 
 	*job_pptr = (struct job_record *) NULL;
 	if ((error_code = _validate_job_desc(job_desc, allocate, submit_uid)))
@@ -1620,12 +1621,17 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 
 	/* Insure that requested partition is valid right now, 
 	 * otherwise leave job queued and provide warning code */
-	if (job_desc->min_nodes > part_ptr->max_nodes) {
+	if ((job_desc->user_id == 0) ||
+	    (job_desc->user_id == getuid()))
+		super_user = true;
+	if ((!super_user) && 
+	    (job_desc->min_nodes > part_ptr->max_nodes)) {
 		info("Job %u requested too many nodes (%d) of "
 			"partition %s(%d)", *new_job_id, job_desc->min_nodes, 
 			part_ptr->name, part_ptr->max_nodes);
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
-	} else if ((job_desc->max_nodes != 0) &&    /* no max_nodes for job */
+	} else if ((!super_user) &&
+	           (job_desc->max_nodes != 0) &&    /* no max_nodes for job */
 		   (job_desc->max_nodes < part_ptr->min_nodes)) {
 		info("Job %u requested too few nodes (%d) of partition %s(%d)",
 		     *new_job_id, job_desc->max_nodes, 
