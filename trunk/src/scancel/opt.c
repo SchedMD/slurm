@@ -100,16 +100,20 @@ struct signv {
 	char *name;
 	uint16_t val;
 } sys_signame[ ] = {
-	{ "HUP",	SIGHUP },
-	{ "INT",	SIGINT },
+	{ "HUP",	SIGHUP  },
+	{ "INT",	SIGINT  },
 	{ "QUIT",	SIGQUIT },
+	{ "ABRT",	SIGABRT },
 	{ "KILL",	SIGKILL },
 	{ "ALRM",	SIGALRM },
 	{ "TERM",	SIGTERM },
 	{ "USR1",	SIGUSR1 },
 	{ "USR2",	SIGUSR2 },
+	{ "CONT",	SIGCONT },
 	{ "STOP",	SIGSTOP },
-	{ "CONT",	SIGCONT }
+	{ "TSTP",	SIGTSTP },
+	{ "TTIN",	SIGTTIN },
+	{ "TTOU",	SIGTTOU }
 };
 
 /*---[ end popt definitions ]---------------------------------------------*/
@@ -235,15 +239,15 @@ static void print_version (void)
  */
 static void opt_default()
 {
-	opt.interactive = false;
-	opt.job_cnt = 0;
-	opt.job_name = NULL;
-	opt.partition = NULL;
-	opt.signal = SIGKILL;
-	opt.state = JOB_END;
-	opt.user_name = NULL;
-	opt.user_id = 0;
-	opt.verbose = false;
+	opt.interactive	= false;
+	opt.job_cnt	= 0;
+	opt.job_name	= NULL;
+	opt.partition	= NULL;
+	opt.signal	= SIGKILL;
+	opt.state	= JOB_END;
+	opt.user_name	= NULL;
+	opt.user_id	= 0;
+	opt.verbose	= false;
 }
 
 /*
