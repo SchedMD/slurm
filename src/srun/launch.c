@@ -133,8 +133,8 @@ _dist_cyclic(job_t *job)
 		bool space_remaining = false;
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
 			if ((j<job->cpus[i]) || over_subscribe) {
-				job->hostid[taskid] = i;
-				job->tids[i][j]     = taskid++;
+				job->hostid[taskid]         = i;
+				job->tids[i][job->ntask[i]] = taskid++;
 				job->ntask[i]++;
 				if ((j+1) < job->cpus[i])
 					space_remaining = true;
