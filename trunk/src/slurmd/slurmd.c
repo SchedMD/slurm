@@ -509,7 +509,7 @@ int parse_commandline_args ( int argc , char ** argv , slurmd_config_t * slurmd_
 			{0, 0, 0, 0}
 		};
 
-		c = getopt_long (argc, argv, "ehfls:d:012", long_options, &option_index);
+		c = getopt_long (argc, argv, "e:hf:l:s:", long_options, &option_index);
 		if (c == -1)
 			break;
 
