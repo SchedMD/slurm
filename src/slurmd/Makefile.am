@@ -26,6 +26,7 @@ slurmd_SOURCES = slurmd.c \
 		signature_utils.c \
 		io.c \
 		pipes.c \
+		locks.c \
 		$(interconnect_lib)
 
 libelan_interconnect_a_SOURCES =  elan_interconnect.c
