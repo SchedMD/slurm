@@ -1,4 +1,4 @@
-.TH SCANCEL "1" "November 2003" "scancel 0.3" "Slurm components"
+.TH SCANCEL "1" "June 2004" "scancel 0.3" "Slurm components"
 .SH "NAME"
 scancel \- Used to signal jobs or job steps that are under the control of Slurm.
 .SH "SYNOPSIS"
@@ -88,10 +88,15 @@ SCANCEL_USER
 SCANCEL_VERBOSE
 \fB\-v\fR, \fB\-\-verbose\fR
 .SH "NOTES"
-.TP
-If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the jobs satisfying all of the filtering options will be signaled.
-.TP
-If a signal value of "KILL" (the default value) is to be sent to an entire job, this will result in the job's termination and its resource allocation being released. 
+.LP
+If multiple filters are supplied (e.g. \fB\-\-partition\fR and \fB\-\-name\fR) only the 
+jobs satisfying all of the filtering options will be signaled.
+.LP
+If a signal value of "KILL" (the default value) is to be sent to an entire job, this will 
+result in the job's termination and its resource allocation being released.
+.LP
+Cancelling a job step will not result in a job being terminated. 
+The job must be cancelled to release a resource allocation. 
 .SH "EXAMPLES"
 .TP
 Send SIGTERM to steps 1 and 3 of job 1234:
