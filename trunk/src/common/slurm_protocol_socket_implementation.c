@@ -216,7 +216,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			else {
 				info("_slurm_send_timeout at %d of %d, "
 				     "poll error: %s",
-				     sent, send, strerror(errno));
+				     sent, size, strerror(errno));
 				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				sent = SLURM_ERROR;
 				goto done;
@@ -229,7 +229,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
 			else {
 				info("_slurm_send_timeout at %d of %d, "
 				      "send error: %s",
-				      sent, send, strerror(errno));
+				      sent, size, strerror(errno));
  				slurm_seterrno(SLURM_COMMUNICATIONS_SEND_ERROR);
 				sent = SLURM_ERROR;
 				goto done;
@@ -237,7 +237,7 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
                 }
                 if (rc == 0) {
 				info("_slurm_send_timeout at %d of %d, "
-				     "sent zero bytes", sent, send);
+				     "sent zero bytes", sent, size);
                         slurm_seterrno(SLURM_PROTOCOL_SOCKET_ZERO_BYTES_SENT);
                         sent = SLURM_ERROR;
                         goto done;
