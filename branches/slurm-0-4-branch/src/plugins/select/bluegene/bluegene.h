@@ -56,10 +56,6 @@
   typedef int      rm_partition_state_t;
 #endif
 
-#include "bgl_job_place.h"
-#include "bgl_job_run.h"
-#include "state_test.h"
-
 #define USER_NAME "slurm"
 
 /* Global variables */
@@ -95,7 +91,7 @@ typedef struct bgl_record {
 	int bp_count;                   /* size */
 	int switch_count;
 	bitstr_t *bitmap;
-	struct bgl_record *partner;
+	time_t time_last_change;	/* time of last partition change */	
 } bgl_record_t;
 
 typedef struct {
@@ -114,6 +110,10 @@ typedef struct {
 	List switch_list;
 } bgl_bp_t;
 
+#include "bgl_part_info.h"
+#include "bgl_job_place.h"
+#include "bgl_job_run.h"
+#include "state_test.h"
 /*
  * bgl_conf_record is used to store the elements read from the bluegene.conf
  * file and is loaded by init().
@@ -179,6 +179,7 @@ extern int read_bgl_partitions(void);
 /*****************************************************/
 extern int configure_partition_switches(bgl_record_t * bgl_conf_record);
 extern int bgl_free_partition(pm_partition_id_t part_id);
+
 
 #endif /* _BLUEGENE_H_ */
  

@@ -14,6 +14,7 @@ pkglib_LTLIBRARIES = select_bluegene.la
 select_bluegene_la_SOURCES = select_bluegene.c \
 				bgl_job_place.c bgl_job_place.h \
 				bgl_job_run.c bgl_job_run.h \
+				bgl_part_info.c bgl_part_info.h \
 				bluegene.c bluegene.h \
 				state_test.c state_test.h \
 				bgl_switch_connections.c \

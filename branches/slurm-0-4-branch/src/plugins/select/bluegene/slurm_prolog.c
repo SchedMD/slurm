@@ -33,7 +33,7 @@
 #endif
 #include <stdlib.h>
 
-#ifndef HAVE_BGL_FILES
+#ifndef HAVE_BGL
 
 /* Just a stub, no synchronization to perform */
 int main(int argc, char *argv[])

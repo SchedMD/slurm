@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Dan Phung <phung4@llnl.gov>
+ *  Written by Dan Phung <phung4@llnl.gov> Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -25,6 +25,8 @@
 \*****************************************************************************/
 
 #include "bluegene.h"
+
+#define HUGE_BUF_SIZE (1024*16)
 
 /*
  * These variables are required by the generic plugin interface.  If they
@@ -248,3 +250,59 @@ extern int select_p_job_fini(struct job_record *job_ptr)
 {
 	return term_job(job_ptr);
 }
+
+extern int select_p_partition_ready(struct job_record *job_ptr)
+{
+	return part_ready(job_ptr);
+}
+
+extern void select_p_pack_all_partitions(char **buffer_ptr, int *buffer_size)
+{
+	ListIterator itr;
+	bgl_record_t *bgl_record;
+	uint32_t partitions_packed = 0, tmp_offset;
+	Buf buffer;
+	time_t now = time(NULL);
+	
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+	
+	buffer = init_buf(HUGE_BUF_SIZE);
+	pack32(partitions_packed, buffer);
+	pack_time(now, buffer);
+
+	itr = list_iterator_create(bgl_list);
+	while ((bgl_record = (bgl_record_t *) list_next(itr)) != NULL) {
+		pack_partition(bgl_record, buffer);	
+		partitions_packed++;
+	}	
+	list_iterator_destroy(itr);
+
+	tmp_offset = get_buf_offset(buffer);
+	set_buf_offset(buffer, 0);
+	pack32(partitions_packed, buffer);
+	set_buf_offset(buffer, tmp_offset);
+
+	*buffer_size = get_buf_offset(buffer);
+	buffer_ptr[0] = xfer_buf_data(buffer);
+}
+
+extern void select_p_unpack_all_partitions(char **buffer_ptr, int *buffer_size)
+{
+	bgl_record_t *bgl_record;
+	int partitions_packed, i;
+	Buf buffer;
+	time_t now;	
+	
+	safe_unpack32(&partitions_packed, buffer);
+	safe_unpack_time(&now, buffer);
+
+unpack_error:
+
+	for(i=0;i<partitions_packed;i++) {
+		bgl_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
+		list_push(bgl_list, bgl_record);
+		unpack_partition(bgl_record, buffer);	
+	}	
+}
+

@@ -439,7 +439,7 @@ static rm_partition_state_t _get_state_partition(pm_partition_id_t part_id)
 		
 	if ((rc = rm_get_partitions_info(part_state, &part_list))
 	    != STATUS_OK) {
-		error("rm_get_partitions_info(): %s\n", bgl_err_str(rc));
+		error("rm_get_partitions(): %s\n", bgl_err_str(rc));
 		return state;	
 	}
 
@@ -939,7 +939,6 @@ static int _parse_bgl_spec(char *in_line)
 			bgl_record->node_use = SELECT_COPROCESSOR_MODE;
 		else
 			bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-		bgl_record->partner = NULL;
 	} else {
 		/* If not then we will make both. */
 
@@ -951,9 +950,6 @@ static int _parse_bgl_spec(char *in_line)
 		found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 		list_push(bgl_list, found_record);
 	
-		bgl_record->partner = found_record;
-		found_record->partner = bgl_record;
-		
 		found_record->bgl_part_list = bgl_record->bgl_part_list;			
 		found_record->hostlist = bgl_record->hostlist;
 		found_record->nodes = xstrdup(bgl_record->nodes);
