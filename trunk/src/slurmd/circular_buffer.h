@@ -12,4 +12,7 @@ typedef struct circular_buffer
 	char * tail ; /* one char past the last char of the buffer */
 } circular_buffer_t ;
 
+int init_cir_buf ( circular_buffer_t ** buf_ptr ) ;
+int read_update ( circular_buffer_t * buf , unsigned int size ) ;
+int write_update ( circular_buffer_t * buf , unsigned int size ) ;
 #endif
