@@ -18,9 +18,9 @@ resource management system.
 
 \vspace{0.25in}
 
-\begin{center}
-\epsfig{file=slurm.eps,width=4in}
-\end{center}
+%\begin{center}
+%\epsfig{file=slurm.eps,width=4in}
+%\end{center}
 
 \newpage
 
@@ -551,11 +551,11 @@ daemons before designing our own.
 \subsection{Condor}
 
 
-Condor\footnote{http://www.cs.wisc.edu/condor/}
- is an open source batch system and parallel job manager 
-developed by the University of Wisconsin. Condor was the basis for 
-IBM's LoadLeveler and both share very similar underlying 
-infrastructure. Condor has a very sophisticated checkpoint/restart 
+Condor\footnote{http://www.cs.wisc.edu/condor/} is a
+batch system and parallel job manager 
+developed by the University of Wisconsin. 
+Condor was the basis for IBM's LoadLeveler and both share very similar 
+underlying infrastructure. Condor has a very sophisticated checkpoint/restart 
 service that does not rely upon kernel changes, but a variety of 
 library changes (which prevent it from being completely general). The 
 Condor checkpoint/restart service has been integrated into LSF, 
@@ -661,6 +661,18 @@ project\footnote{http://www.scidac.org/ScalableSystems}
 has a Resource Management and Accounting working group
 and a white paper\cite{Res2000}.
 
+\subsection{GNU Queue}
+
+GNU Queue\footnote{http://www.gnuqueue.org/home.html}.
+
+\subsection{Clubmask}
+Clubmask\footnote{http://clubmask.sourceforge.net} is based on bproc.
+Separate queueing system?
+
+\subsection{SQMX}
+Part of the SCE Project\footnote{http://www.opensce.org/}, 
+SQMX\footnote{http://www.beowulf.org/pipermail/beowulf-announce/2001-January/000086.html} is worth taking a look at.
+                                                                                
 \newpage
 \bibliographystyle{plain}
 \bibliography{project}
