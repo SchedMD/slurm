@@ -58,9 +58,10 @@ extern void parse_command_line(int argc, char *argv[])
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 	int option_index;
 	static struct option long_options[] = {
-		{"help",      no_argument,       0, '?'},
 		{"exact",     no_argument,       0, 'e'},
 		{"noheader",  no_argument,       0, 'h'},
+		{"help",      no_argument,       0, 'H'},
+		{"usage",     no_argument,       0, 'H'},
 		{"iterate",   required_argument, 0, 'i'},
 		{"long",      no_argument,       0, 'l'},
 		{"nodes",     required_argument, 0, 'n'},
@@ -70,25 +71,28 @@ extern void parse_command_line(int argc, char *argv[])
 		{"summarize", no_argument,       0, 's'},
 		{"sort",      required_argument, 0, 'S'},
 		{"states",    required_argument, 0, 't'},
-		{"usage",     no_argument,       0, '?'},
 		{"verbose",   no_argument,       0, 'v'},
 		{"version",   no_argument,       0, 'V'}
 	};
 
 	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "ehi:ln:No:p:sS:t:vV",
+	while((opt_char = getopt_long(argc, argv, "ehHi:ln:No:p:sS:t:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
 				_usage();
-				exit(0);
+				exit(1);
 				break;
 			case (int)'e':
 				params.exact_match = true;
 				break;
 			case (int)'h':
 				params.no_header = true;
+				break;
+			case (int) 'H':
+				_usage();
+				exit(0);
 				break;
 			case (int) 'i':
 				params.iterate= atoi(optarg);
@@ -525,5 +529,5 @@ static void _usage( void )
 	printf("  -v, --verbose                 verbosity level\n");
 	printf("  -V, --version                 output version information and exit\n");
 	printf("\nHelp options:\n");
-	printf("  -?, --help, --usage           show this help message\n");
+	printf("  -H, --help, --usage           show this help message\n");
 }
