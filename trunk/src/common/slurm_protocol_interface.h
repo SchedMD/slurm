@@ -84,6 +84,9 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address ) ;
 extern int _slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address ) ;
 extern int _slurm_close_stream ( slurm_fd open_fd ) ;
 
+extern inline int _slurm_set_stream_non_blocking ( slurm_fd open_fd ) ;
+extern inline int _slurm_set_stream_blocking ( slurm_fd open_fd ) ;
+
 /***************************/
 /* slurm address functions */
 /***************************/

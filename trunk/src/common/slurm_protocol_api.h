@@ -238,6 +238,9 @@ int inline slurm_FD_ISSET(slurm_fd, slurm_fd_set *set) ;
 void inline slurm_FD_SET(slurm_fd, slurm_fd_set *set) ;
 void inline slurm_FD_ZERO(slurm_fd_set *set) ;
 
+int inline slurm_set_stream_non_blocking ( slurm_fd open_fd ) ;
+int inline slurm_set_stream_blocking ( slurm_fd open_fd ) ;
+
 /**********************************************************************/
 /* raw msg buffer send functions */
 /* Allows the user to send a raw buffer */
