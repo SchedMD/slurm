@@ -28,6 +28,30 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 
+#define NODE_SIZE_CPUS		4
+#define NODE_SIZE_CPUS_LONG	4
+#define NODE_SIZE_DISK		8
+#define NODE_SIZE_DISK_LONG	8
+#define NODE_SIZE_FEATURES	0
+#define NODE_SIZE_MEM		6
+#define NODE_SIZE_MEM_LONG	6
+#define NODE_SIZE_NAME		15
+#define NODE_SIZE_PART		10
+#define NODE_SIZE_STATE		6
+#define NODE_SIZE_STATE_LONG	11
+#define NODE_SIZE_WEIGHT	6
+
+#define PART_SIZE_CPUS		4
+#define PART_SIZE_CPUS_LONG	6
+#define PART_SIZE_DISK		8
+#define PART_SIZE_DISK_LONG	15
+#define PART_SIZE_MEM		6
+#define PART_SIZE_MEM_LONG	11
+#define PART_SIZE_NODES		0
+#define PART_SIZE_NUM		5
+#define PART_SIZE_PART		10
+#define PART_SIZE_STATE		6
+#define PART_SIZE_STATE_LONG	11
 
 /********************
  * Global Variables *
@@ -38,6 +62,14 @@ struct sinfo_parameters params =
 	node_flag:false, node:NULL, summarize:false, long_output:false,
 	line_wrap:false, verbose:false, iterate:0, exact_match:false
 };
+static int node_sz_cpus, node_sz_name, node_sz_mem, node_sz_state;
+static int node_sz_disk, node_sz_part, node_sz_weight, node_sz_features;
+static int part_sz_num, part_sz_nodes, part_sz_part, part_sz_state;
+static int part_sz_cpus, part_sz_disk, part_sz_mem;
+static const char equal_string[] = 
+    "================================================================================\n";
+static const char dash_line[] =
+    "--------------------------------------------------------------------------------\n";
 
 /************
  * Funtions *
@@ -66,13 +98,15 @@ static void _display_partition_info_long(struct partition_summary
 					 *partition);
 static void _display_partition_node_info(struct partition_summary
 					 *partition, bool print_name);
-static void _display_partition_summarys(List partitions);
+static void _display_partition_summaries(List partitions);
 
 /* Misc Display functions */
-static int _build_min_max_string(char *buffer, int max, int min);
+static int  _build_min_max_string(char *buffer, int max, int min);
 static void _print_date(void);
-static int _print_int(int number, int width, bool right);
-static int _print_str(char *number, int width, bool right);
+static int  _print_int(int number, int width, bool right);
+static int  _print_str(char *number, int width, bool right);
+static void _set_node_field_sizes(void);
+static void _set_part_field_sizes(void);
 
 /* Display partition functions */
 static struct partition_summary *_find_partition_summary(List l, char *name);
@@ -242,20 +276,10 @@ static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node)
 /*****************************************************************************
  *                        DISPLAY NODE INFO FUNCTIONS
  *****************************************************************************/
-static const char display_line[] =
-    "--------------------------------------------------------------------------------\n";
-int node_sz_name     = 15;
-int node_sz_state    = 6;
-int node_sz_cpus     = 4;
-int node_sz_mem      = 9;
-int node_sz_disk     = 11;
-int node_sz_weight   = 6;
-int node_sz_part     = 10;
-int node_sz_features = 0;
 
 static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt)
 {
-
+	_set_node_field_sizes();
 	_display_node_info_header();
 
 	if (params.long_output == true) {
@@ -281,6 +305,25 @@ static void _display_all_nodes(node_info_msg_t * node_msg, int node_rec_cnt)
 	}
 }
 
+static void _set_node_field_sizes(void)
+{
+	node_sz_features  = NODE_SIZE_FEATURES;
+	node_sz_name      = NODE_SIZE_NAME;
+	node_sz_part      = NODE_SIZE_PART;
+	node_sz_weight    = NODE_SIZE_WEIGHT;
+	if (params.long_output) {
+		node_sz_cpus	= NODE_SIZE_CPUS_LONG;
+		node_sz_disk	= NODE_SIZE_DISK_LONG;
+		node_sz_mem	= NODE_SIZE_MEM_LONG;
+		node_sz_state	= NODE_SIZE_STATE_LONG;
+	} else {
+		node_sz_cpus	= NODE_SIZE_CPUS;
+		node_sz_disk	= NODE_SIZE_DISK;
+		node_sz_mem	= NODE_SIZE_MEM;
+		node_sz_state	= NODE_SIZE_STATE;
+	}
+}
+
 static void _display_node_info_header()
 {
 	_print_str("NODES", node_sz_name, false);
@@ -299,15 +342,19 @@ static void _display_node_info_header()
 	printf(" ");
 	_print_str("FEATURES", node_sz_features, false);
 	printf("\n");
-	printf(display_line);
+	printf(dash_line);
 }
 
 static void _display_node_info(node_info_t * node, char *name)
 {
 	_print_str(name, node_sz_name, false);
 	printf(" ");
-	_print_str(node_state_string_compact(node->node_state), 
-		   node_sz_state, false);
+	if (params.long_output)
+		_print_str(node_state_string(node->node_state), 
+			   node_sz_state, false);
+	else
+		_print_str(node_state_string_compact(node->node_state), 
+			   node_sz_state, false);
 	printf(" ");
 	_print_int(node->cpus, node_sz_cpus, true);
 	printf(" ");
@@ -535,22 +582,33 @@ _display_all_partition_summary(partition_info_msg_t * part_ptr,
 {
 	List partitions = _setup_partition_summary(part_ptr, 
 						   node_ptr, node_rec_cnt);
+	_set_part_field_sizes();
 	if (params.long_output)
 		_display_all_partition_info_long(partitions);
 	else
-		_display_partition_summarys(partitions);
+		_display_partition_summaries(partitions);
 	list_destroy(partitions);
 }
 
-/* Formating for partiton display headers... */
-int part_sz_part  = 10;
-int part_sz_num   = 5;
-int part_sz_state = 6;
-int part_sz_cpus  = 4;
-int part_sz_mem   = 9;
-int part_sz_disk  = 11;
-int part_sz_nodes = 0;
+static void _set_part_field_sizes(void)
+{
+	part_sz_part  = PART_SIZE_PART;
+	part_sz_num   = PART_SIZE_NUM;
+	part_sz_nodes = PART_SIZE_NODES;
+	if (params.long_output) {
+		part_sz_cpus	= PART_SIZE_CPUS_LONG;
+		part_sz_disk	= PART_SIZE_DISK_LONG;
+		part_sz_mem	= PART_SIZE_MEM_LONG;
+		part_sz_state	= PART_SIZE_STATE_LONG;
+	} else {
+		part_sz_cpus	= PART_SIZE_CPUS;
+		part_sz_disk	= PART_SIZE_DISK;
+		part_sz_mem	= PART_SIZE_MEM;
+		part_sz_state	= PART_SIZE_STATE;
+	}
+}
 
+/* Formating for partiton display headers... */
 static void _print_partition_header(bool no_name)
 {
 	if (no_name == true)
@@ -572,14 +630,12 @@ static void _print_partition_header(bool no_name)
 	_print_str("NODES", part_sz_nodes, false);
 	printf("\n");
 	if (no_name == true)
-		printf
-		    ("\t------------------------------------------------------------------------\n");
+		printf("\t%s", dash_line);
 	else
-		printf
-		    ("--------------------------------------------------------------------------------\n");
+		printf("%s", dash_line);
 }
 
-static void _display_partition_summarys(List partitions)
+static void _display_partition_summaries(List partitions)
 {
 	struct partition_summary *partition;
 	ListIterator part_i = list_iterator_create(partitions);
@@ -627,8 +683,12 @@ _display_partition_node_info(struct partition_summary *partition,
 
 		_print_int(state_sum->node_count, part_sz_num, true);
 		printf(" ");
-		_print_str(node_state_string_compact(state_sum->state),
-			   part_sz_state, false);
+		if (params.long_output)
+			_print_str(node_state_string(state_sum->state),
+				   part_sz_state, false);
+		else
+			_print_str(node_state_string_compact(state_sum->state),
+				   part_sz_state, false);
 		printf(" ");
 		_print_str(cpu_buf, part_sz_cpus, true);
 		printf(" ");
@@ -643,7 +703,6 @@ _display_partition_node_info(struct partition_summary *partition,
 	list_iterator_destroy(node_i);
 }
 
-
 static void _display_all_partition_info_long(List partitions)
 {
 	struct partition_summary *partition;
@@ -657,8 +716,7 @@ static void _display_all_partition_info_long(List partitions)
 			_display_partition_info_long(partition);
 		printf("\n");
 	}
-	printf
-	    ("================================================================================\n");
+	printf("%s", equal_string);
 	list_iterator_destroy(part_i);
 }
 
@@ -666,8 +724,7 @@ void _display_partition_info_long(struct partition_summary *partition)
 {
 	partition_info_t *part = partition->info;
 
-	printf
-	    ("================================================================================\n");
+	printf("%s", equal_string);
 	printf("%s\n", part->name);
 	printf("\tcurrent state     = %s\n",
 	       part->state_up ? "UP" : "DOWN");
@@ -695,8 +752,10 @@ static int _build_min_max_string(char *buffer, int min, int max)
 {
 	if (max == min)
 		return sprintf(buffer, "%d", max);
-
-	return sprintf(buffer, "%d-%d", min, max);
+	else if (params.long_output)
+		return sprintf(buffer, "%d-%d", min, max);
+	else
+		return sprintf(buffer, "%d+", min);
 }
 
 int _print_str(char *str, int width, bool right)
