@@ -1025,7 +1025,7 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
  *	last_job_update - time of last job table update
  */
 int
-job_cancel (uint32_t job_id, int uid) 
+job_cancel (uint32_t job_id, uid_t uid) 
 {
 	struct job_record *job_ptr;
 
@@ -1080,7 +1080,7 @@ job_cancel (uint32_t job_id, int uid)
  *	last_job_update - time of last job table update
  */
 int
-job_complete (uint32_t job_id, int uid) 
+job_complete (uint32_t job_id, uid_t uid) 
 {
 	struct job_record *job_ptr;
 
@@ -1523,7 +1523,7 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
  *	last_job_update - time of last job table update
  */
 int
-job_step_cancel (uint32_t job_id, uint32_t step_id, int uid) 
+job_step_cancel (uint32_t job_id, uint32_t step_id, uid_t uid) 
 {
 	struct job_record *job_ptr;
 	int error_code;
@@ -1573,7 +1573,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id, int uid)
  *	last_job_update - time of last job table update
  */
 int
-job_step_complete (uint32_t job_id, uint32_t step_id, int uid) 
+job_step_complete (uint32_t job_id, uint32_t step_id, uid_t uid) 
 {
 	struct job_record *job_ptr;
 	int error_code;
@@ -2093,7 +2093,7 @@ top_priority (struct job_record *job_ptr) {
  *	last_job_update - time of last job table update
  */
 int 
-update_job (job_desc_msg_t * job_specs, int uid) 
+update_job (job_desc_msg_t * job_specs, uid_t uid) 
 {
 	int error_code = SLURM_SUCCESS;
 	struct job_record *job_ptr;
