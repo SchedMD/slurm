@@ -507,7 +507,7 @@ _parse_node_spec (char *in_line)
 {
 	int error_code;
 	char *feature = NULL, *node_addr = NULL, *node_name = NULL;
-	char *state = NULL;
+	char *state = NULL, *reason=NULL;
 	int cpus_val, real_memory_val, tmp_disk_val, weight_val;
 
 	error_code = slurm_parser (in_line,
@@ -516,6 +516,7 @@ _parse_node_spec (char *in_line)
 		"NodeName=", 's', &node_name, 
 		"Procs=", 'd', &cpus_val, 
 		"RealMemory=", 'd', &real_memory_val, 
+		"Reason=", 's', &reason, 
 		"State=", 's', &state, 
 		"TmpDisk=", 'd', &tmp_disk_val, 
 		"Weight=", 'd', &weight_val, 
@@ -527,6 +528,7 @@ _parse_node_spec (char *in_line)
 	xfree(feature);
 	xfree(node_addr);
 	xfree(node_name);
+	xfree(reason);
 	xfree(state);
 
 	return 0;

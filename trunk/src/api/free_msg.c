@@ -278,6 +278,7 @@ static void _slurm_free_node_info_members(node_info_t * node)
 		xfree(node->name);
 		xfree(node->features);
 		xfree(node->partition);
+		xfree(node->reason);
 	}
 }
 
