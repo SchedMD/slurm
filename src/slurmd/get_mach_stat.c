@@ -33,6 +33,10 @@
 #  include "config.h"
 #endif
 
+#ifdef HAVE_SYS_SYSTEMCFG_H
+# include <sys/systemcfg.h>
+#endif
+ 
 #include <errno.h>
 #include <fcntl.h> 
 #include <stdio.h>
@@ -168,12 +172,16 @@ get_memory(uint32_t *real_memory)
 
 	*real_memory = 1;
 	pages = sysconf(_SC_PHYS_PAGES);
+
+#ifdef HAVE__SYSTEM_CONFIGURATION
+	/* Works for AIX */
 	if (pages < 1) {
-		/* This error is expected on AIX and the real memory size is 
-		 * available only from /dev/kmem at this time, which involves
-		 * a fair bit of code to use. If anyone is interested in
-		 * adding this support, take a look at the program "monitor": 
-		 * http://www.mesa.nl/monitor */
+		*real_memory = _system_configuration.physmem / (1024 * 1024);
+		return 0;
+	}
+#endif
+
+	if (pages < 1) {
 		error ("get_memory: error running sysconf(_SC_PHYS_PAGES)\n");
 		return EINVAL;
 	} 
