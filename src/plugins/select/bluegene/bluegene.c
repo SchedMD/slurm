@@ -353,6 +353,7 @@ extern int create_static_partitions(List part_list)
 
 extern int bgl_free_partition(pm_partition_id_t part_id)
 {
+#ifdef HAVE_BGL_FILES
 	rm_partition_state_t state;
 	rm_partition_t *my_part;
 	int rc;
@@ -391,6 +392,7 @@ extern int bgl_free_partition(pm_partition_id_t part_id)
 		}
 		
 	}
+#endif
 	return SLURM_SUCCESS;
 }
 
