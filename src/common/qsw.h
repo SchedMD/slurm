@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <src/common/bitstring.h>
+#include <src/common/pack.h>
 
 #ifndef _QSW_INCLUDED
 #define _QSW_INCLUDED
@@ -43,8 +44,8 @@ typedef struct qsw_jobinfo 	*qsw_jobinfo_t;
 int		qsw_alloc_libstate(qsw_libstate_t *lsp);
 void		qsw_free_libstate(qsw_libstate_t ls);
 
-int		qsw_pack_libstate(qsw_libstate_t ls, void **data, int *len);
-int		qsw_unpack_libstate(qsw_libstate_t ls, void **data, int *len);
+int		qsw_pack_libstate(qsw_libstate_t ls, Buf buffer);
+int		qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer);
 
 int 		qsw_init(qsw_libstate_t restorestate);
 void 		qsw_fini(qsw_libstate_t savestate);
@@ -52,8 +53,8 @@ void 		qsw_fini(qsw_libstate_t savestate);
 int		qsw_alloc_jobinfo(qsw_jobinfo_t *jp);
 void		qsw_free_jobinfo(qsw_jobinfo_t j);
 
-int		qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int *len);
-int		qsw_unpack_jobinfo(qsw_jobinfo_t j, void **data, int *len);
+int		qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer);
+int		qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer);
 
 int 		qsw_setup_jobinfo(qsw_jobinfo_t j, int nprocs, 
 			bitstr_t *nodeset, int cyclic_alloc);

@@ -44,6 +44,7 @@
 
 #include <src/common/hostlist.h>
 #include <src/common/list.h>
+#include <src/common/pack.h>
 #include <src/common/xstring.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
@@ -57,8 +58,7 @@ struct part_record *default_part_loc = NULL;	/* location of default partition */
 time_t last_part_update;		/* time of last update to partition records */
 
 static	int	build_part_bitmap (struct part_record *part_record_point);
-static	void	dump_part_state (struct part_record *part_record_point, 
-			void **buf_ptr, int *buf_len);
+static	void	dump_part_state (struct part_record *part_record_point, Buf buffer);
 static	uid_t 	*get_groups_members (char *group_names);
 static	uid_t 	*get_group_members (char *group_name);
 static	time_t	get_group_tlm (void);
@@ -235,20 +235,14 @@ dump_all_part_state ( void )
 {
 	ListIterator part_record_iterator;
 	struct part_record *part_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, log_fd;
-	char *buffer;
-	void *buf_ptr;
+	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read partition */
 	slurmctld_lock_t part_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
-
-	buffer_allocated = (BUF_SIZE*16);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
+	Buf buffer = init_buf(BUF_SIZE*16);
 
 	/* write header: time */
-	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
+	pack_time  (time (NULL), buffer);
 
 	/* write partition records to buffer */
 	lock_slurmctld (part_read_lock);
@@ -257,14 +251,7 @@ dump_all_part_state ( void )
 		if (part_record_point->magic != PART_MAGIC)
 			fatal ("dump_all_part_state: data integrity is bad");
 
-		dump_part_state (part_record_point, &buf_ptr, &buf_len);
-		if (buf_len > BUF_SIZE) 
-			continue;
-		buffer_allocated += (BUF_SIZE*16);
-		buf_len += (BUF_SIZE*16);
-		buffer_offset = (char *)buf_ptr - buffer;
-		xrealloc(buffer, buffer_allocated);
-		buf_ptr = buffer + buffer_offset;
+		dump_part_state (part_record_point, buffer);
 	}			
 	list_iterator_destroy (part_record_iterator);
 	unlock_slurmctld (part_read_lock);
@@ -283,8 +270,8 @@ dump_all_part_state ( void )
 		error_code = errno;
 	}
 	else {
-		buf_len = buffer_allocated - buf_len;
-		if (write (log_fd, buffer, buf_len) != buf_len) {
+		if (write (log_fd, get_buf_data(buffer), get_buf_offset(buffer)) != 
+							get_buf_offset(buffer)) {
 			error ("Can't save state, error writing file %s, %m", new_file);
 			error_code = errno;
 		}
@@ -304,20 +291,17 @@ dump_all_part_state ( void )
 	xfree (new_file);
 	unlock_state_files ();
 
-	xfree (buffer);
+	free_buf (buffer);
 	return 0;
 }
 
 /*
  * dump_part_state - dump the state of a specific partition to a buffer
- * input:  part_record_point - pointer to partition for which information is requested
- *	buf_ptr - buffer for node information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * part_record_point (I) - pointer to partition for which information is requested
+ * buffer (I/O) - location to store data, pointers automatically advanced
  */
 void 
-dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
+dump_part_state (struct part_record *part_record_point, Buf buffer) 
 {
 	uint16_t default_part_flag;
 
@@ -326,17 +310,17 @@ dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf
 	else
 		default_part_flag = 0;
 
-	packstr (part_record_point->name, buf_ptr, buf_len);
-	pack32  (part_record_point->max_time, buf_ptr, buf_len);
-	pack32  (part_record_point->max_nodes, buf_ptr, buf_len);
+	packstr (part_record_point->name, buffer);
+	pack32  (part_record_point->max_time, buffer);
+	pack32  (part_record_point->max_nodes, buffer);
 
-	pack16  (default_part_flag, buf_ptr, buf_len);
-	pack16  ((uint16_t)part_record_point->root_only, buf_ptr, buf_len);
-	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
+	pack16  (default_part_flag, buffer);
+	pack16  ((uint16_t)part_record_point->root_only, buffer);
+	pack16  ((uint16_t)part_record_point->shared, buffer);
 
-	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
-	packstr (part_record_point->allow_groups, buf_ptr, buf_len);
-	packstr (part_record_point->nodes, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->state_up, buffer);
+	packstr (part_record_point->allow_groups, buffer);
+	packstr (part_record_point->nodes, buffer);
 }
 
 /*
@@ -346,15 +330,14 @@ dump_part_state (struct part_record *part_record_point, void **buf_ptr, int *buf
 int
 load_part_state ( void )
 {
-	char *part_name, *allow_groups, *nodes, *state_file;
+	char *part_name, *allow_groups, *nodes, *state_file, *data;
 	uint32_t time, max_time, max_nodes;
 	uint16_t name_len, def_part_flag, root_only, shared, state_up;
 	struct part_record *part_ptr;
-	uint32_t buffer_size;
-	int buffer_allocated, buffer_used = 0, error_code = 0;
+	uint32_t data_size = 0;
+	int data_allocated, data_read = 0, error_code = 0;
 	int state_fd;
-	char *buffer;
-	void *buf_ptr;
+	Buf buffer;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -366,37 +349,35 @@ load_part_state ( void )
 		error_code = ENOENT;
 	}
 	else {
-		buffer_allocated = BUF_SIZE;
-		buffer = xmalloc(buffer_allocated);
-		buf_ptr = buffer;
-		while ((buffer_used = read (state_fd, buf_ptr, BUF_SIZE)) == BUF_SIZE) {
-			buffer_size += buffer_used;
-			buffer_allocated += BUF_SIZE;
-			xrealloc(buffer, buffer_allocated);
-			buf_ptr = (void *) (buffer + buffer_size);
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while ((data_read = read (state_fd, &data[data_size], BUF_SIZE)) == BUF_SIZE) {
+			data_size += data_read;
+			data_allocated += BUF_SIZE;
+			xrealloc(data, data_allocated);
 		}
-		buf_ptr = (void *) buffer;
-		buffer_size += buffer_used;
+		data_size += data_read;
 		close (state_fd);
-		if (buffer_used < 0) 
-			error ("Error reading file %s, %m", state_file);
+		if (data_read < 0) 
+			error ("Error reading file %s: %m", state_file);
 	}
 	xfree (state_file);
 	unlock_state_files ();
 
-	if (buffer_size > sizeof (uint32_t))
-		unpack32 (&time, &buf_ptr, &buffer_size);
+	buffer = create_buf (data, data_read);
+	if (data_size > sizeof (time_t))
+		unpack_time (&time, buffer);
 
-	while (buffer_size > 0) {
-		safe_unpackstr_xmalloc (&part_name, &name_len, &buf_ptr, &buffer_size);
-		safe_unpack32 (&max_time, &buf_ptr, &buffer_size);
-		safe_unpack32 (&max_nodes, &buf_ptr, &buffer_size);
-		safe_unpack16 (&def_part_flag, &buf_ptr, &buffer_size);
-		safe_unpack16 (&root_only, &buf_ptr, &buffer_size);
-		safe_unpack16 (&shared, &buf_ptr, &buffer_size);
-		safe_unpack16 (&state_up, &buf_ptr, &buffer_size);
-		safe_unpackstr_xmalloc (&allow_groups, &name_len, &buf_ptr, &buffer_size);
-		safe_unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
+	while (remaining_buf (buffer) > 0) {
+		safe_unpackstr_xmalloc (&part_name, &name_len, buffer);
+		safe_unpack32 (&max_time, buffer);
+		safe_unpack32 (&max_nodes, buffer);
+		safe_unpack16 (&def_part_flag, buffer);
+		safe_unpack16 (&root_only, buffer);
+		safe_unpack16 (&shared, buffer);
+		safe_unpack16 (&state_up, buffer);
+		safe_unpackstr_xmalloc (&allow_groups, &name_len, buffer);
+		safe_unpackstr_xmalloc (&nodes, &name_len, buffer);
 
 		/* find record and perform update */
 		part_ptr = list_find_first (part_list, &list_find_part, part_name);
@@ -425,6 +406,8 @@ load_part_state ( void )
 		if (part_name)
 			xfree (part_name);
 	}
+
+	free_buf (buffer);
 	return error_code;
 }
 
@@ -559,74 +542,57 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 {
 	ListIterator part_record_iterator;
 	struct part_record *part_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0;
-	char *buffer;
-	void *buf_ptr;
-	int parts_packed;
+	int parts_packed, tmp_offset;
+	Buf buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_part_update)
 		return;
 
-	buffer_allocated = (BUF_SIZE*16);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
-
-	part_record_iterator = list_iterator_create (part_list);		
+	buffer = init_buf (BUF_SIZE*16);
 
 	/* write haeader: version and time */
 	parts_packed = 0 ;
-	pack32  ((uint32_t) parts_packed, &buf_ptr, &buf_len);
-	pack32  ((uint32_t) last_part_update, &buf_ptr, &buf_len);
+	pack32  ((uint32_t) parts_packed, buffer);
+	pack_time  (last_part_update, buffer);
 
 	/* write individual partition records */
+	part_record_iterator = list_iterator_create (part_list);		
 	while ((part_record_point = 
 		(struct part_record *) list_next (part_record_iterator))) {
 		if (part_record_point->magic != PART_MAGIC)
 			fatal ("pack_all_part: data integrity is bad");
 
-		pack_part(part_record_point, &buf_ptr, &buf_len);
+		pack_part(part_record_point, buffer);
 		parts_packed ++ ;
-		if (buf_len > BUF_SIZE) 
-			continue;
-		buffer_allocated += (BUF_SIZE*16);
-		buf_len += (BUF_SIZE*16);
-		buffer_offset = (char *)buf_ptr - buffer;
-		xrealloc(buffer, buffer_allocated);
-		buf_ptr = buffer + buffer_offset;
 	}			
 
 	list_iterator_destroy (part_record_iterator);
-	buffer_offset = (char *)buf_ptr - buffer;
-	xrealloc (buffer, buffer_offset);
 
-	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
+	/* put the real record count in the message body header */	
+	tmp_offset = get_buf_offset (buffer);
+	set_buf_offset (buffer, 0);
+	pack32  ((uint32_t) parts_packed, buffer);
+	set_buf_offset (buffer, tmp_offset);
+
 	*update_time = last_part_update;
-
-	/* put in the real record count in the message body header */
-        buf_ptr = buffer;
-        buf_len = buffer_allocated;
-        pack32  ((uint32_t) parts_packed, &buf_ptr, &buf_len);
+	*buffer_size = get_buf_offset (buffer);
+	buffer_ptr[0] = xfer_buf_data (buffer);
 }
 
 
 /* 
  * pack_part - dump all configuration information about a specific partition in 
  *	machine independent form (for network transmission)
- * input:  dump_part_ptr - pointer to partition for which information is requested
- *	buf_ptr - buffer for node information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * dump_part_ptr (I) - pointer to partition for which information is requested
+ * buffer (I/O) - buffer in which data is place, pointers automatically updated
  * global: default_part_loc - pointer to the default partition
- * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
- *	and make the corresponding changes to load_part_config in api/partition_info.c
+ * NOTE: if you make any changes here be sure to make the corresponding 
+ *	changes to load_part_config in api/partition_info.c
  */
 void 
-pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len) 
+pack_part (struct part_record *part_record_point, Buf buffer) 
 {
 	uint16_t default_part_flag;
 	char node_inx_ptr[BUF_SIZE];
@@ -636,25 +602,25 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 	else
 		default_part_flag = 0;
 
-	packstr (part_record_point->name, buf_ptr, buf_len);
-	pack32  (part_record_point->max_time, buf_ptr, buf_len);
-	pack32  (part_record_point->max_nodes, buf_ptr, buf_len);
-	pack32  (part_record_point->total_nodes, buf_ptr, buf_len);
+	packstr (part_record_point->name, buffer);
+	pack32  (part_record_point->max_time, buffer);
+	pack32  (part_record_point->max_nodes, buffer);
+	pack32  (part_record_point->total_nodes, buffer);
 
-	pack32  (part_record_point->total_cpus, buf_ptr, buf_len);
-	pack16  (default_part_flag, buf_ptr, buf_len);
-	pack16  ((uint16_t)part_record_point->root_only, buf_ptr, buf_len);
-	pack16  ((uint16_t)part_record_point->shared, buf_ptr, buf_len);
+	pack32  (part_record_point->total_cpus, buffer);
+	pack16  (default_part_flag, buffer);
+	pack16  ((uint16_t)part_record_point->root_only, buffer);
+	pack16  ((uint16_t)part_record_point->shared, buffer);
 
-	pack16  ((uint16_t)part_record_point->state_up, buf_ptr, buf_len);
-	packstr (part_record_point->allow_groups, buf_ptr, buf_len);
-	packstr (part_record_point->nodes, buf_ptr, buf_len);
+	pack16  ((uint16_t)part_record_point->state_up, buffer);
+	packstr (part_record_point->allow_groups, buffer);
+	packstr (part_record_point->nodes, buffer);
 	if (part_record_point->node_bitmap) {
 		bit_fmt (node_inx_ptr, BUF_SIZE, part_record_point->node_bitmap);
-		packstr (node_inx_ptr, buf_ptr, buf_len);
+		packstr (node_inx_ptr, buffer);
 	}
 	else
-		packstr ("", buf_ptr, buf_len);
+		packstr ("", buffer);
 }
 
 

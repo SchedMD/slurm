@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * allocate.c - allocate nodes for a job or step with supplied contraints
+ *  allocate.c - allocate nodes for a job or step with supplied contraints
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).

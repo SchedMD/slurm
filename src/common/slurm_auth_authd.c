@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * slurm_auth_authd.c - authentication module for Brent Chun's authd
+ *  slurm_auth_authd.c - authentication module for Brent Chun's authd
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by AUTHOR <AUTHOR@llnl.gov>.
+ *  Written by Keven Tew <tew1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -145,9 +145,8 @@ slurm_auth_verify_credentials( slurm_auth_t cred )
 			 slurm_seterrno_ret(ESLURM_AUTH_CRED_INVALID);
 		}
 	}
-#else
-	return SLURM_SUCCESS;
 #endif
+	return SLURM_SUCCESS;
 }
 
 
@@ -162,34 +161,30 @@ gid_t slurm_auth_gid( slurm_auth_t cred )
 	return cred->creds.gid;
 }
 
-void slurm_auth_pack_credentials( slurm_auth_t cred,
-				  void **buffer,
-				  uint32_t *length )
+void slurm_auth_pack_credentials( slurm_auth_t cred, Buf buffer)
 {
 	uint16_t chunk_size = sizeof( signature );
   
-	pack32( cred->creds.uid, buffer, length );
-	pack32( cred->creds.gid, buffer, length );
-	pack32( cred->creds.valid_from, buffer, length );
-	pack32( cred->creds.valid_to, buffer, length );
-	packmem( cred->sig.data, chunk_size, buffer, length );
+	pack32( cred->creds.uid, buffer );
+	pack32( cred->creds.gid, buffer );
+	pack32( cred->creds.valid_from, buffer );
+	pack32( cred->creds.valid_to, buffer );
+	packmem( cred->sig.data, chunk_size, buffer );
 }
 
 
-void slurm_auth_unpack_credentials( slurm_auth_t *credp,
-				    void **buffer,
-				    uint32_t *length )
+void slurm_auth_unpack_credentials( slurm_auth_t *credp, Buf buffer)
 {
 	uint16_t dummy;
 	char *data;
 	slurm_auth_t cred;
 
 	cred = slurm_auth_alloc_credentials();
-	unpack32( &cred->creds.uid, buffer, length );
-	unpack32( &cred->creds.gid, buffer, length );
-	unpack32( (uint32_t *) &cred->creds.valid_from, buffer, length );
-	unpack32( (uint32_t *) &cred->creds.valid_to, buffer, length );
-	unpackmem_ptr( &data, &dummy, buffer, length );
+	unpack32( &cred->creds.uid, buffer );
+	unpack32( &cred->creds.gid, buffer );
+	unpack32( (uint32_t *) &cred->creds.valid_from, buffer );
+	unpack32( (uint32_t *) &cred->creds.valid_to, buffer );
+	unpackmem_ptr( &data, &dummy, buffer );
 	memcpy( cred->sig.data, data, sizeof( signature ) );
 	*credp = cred;
 	return;

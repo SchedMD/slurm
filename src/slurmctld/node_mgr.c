@@ -42,6 +42,7 @@
 #include <fcntl.h>
 
 #include <src/common/hostlist.h>
+#include <src/common/pack.h>
 #include <src/common/xstring.h>
 #include <src/slurmctld/agent.h>
 #include <src/slurmctld/locks.h>
@@ -62,9 +63,9 @@ bitstr_t *idle_node_bitmap = NULL;	/* bitmap of nodes are idle */
 
 int	delete_config_record ();
 void	dump_hash ();
-void 	dump_node_state (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len);
+void 	dump_node_state (struct node_record *dump_node_ptr, Buf buffer);
 int	hash_index (char *name);
-void 	pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len);
+void 	pack_node (struct node_record *dump_node_ptr, Buf buffer);
 void	split_node_name (char *name, char *prefix, char *suffix, int *index, int *digits);
 
 
@@ -340,20 +341,14 @@ dump_hash ()
 int
 dump_all_node_state ( void )
 {
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, inx, log_fd;
-	char *buffer;
-	void *buf_ptr;
+	int error_code = 0, inx, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read config and node */
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
-
-	buffer_allocated = (BUF_SIZE*16);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
+	Buf buffer = init_buf(BUF_SIZE*16);
 
 	/* write header: time */
-	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
+	pack_time  (time (NULL), buffer);
 
 	/* write node records to buffer */
 	lock_slurmctld (node_read_lock);
@@ -362,14 +357,7 @@ dump_all_node_state ( void )
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
 			fatal ("dump_all_node_state: data integrity is bad");
 
-		dump_node_state(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
-		if (buf_len > BUF_SIZE) 
-			continue;
-		buffer_allocated += (BUF_SIZE*16);
-		buf_len += (BUF_SIZE*16);
-		buffer_offset = (char *)buf_ptr - buffer;
-		xrealloc(buffer, buffer_allocated);
-		buf_ptr = buffer + buffer_offset;
+		dump_node_state (&node_record_table_ptr[inx], buffer);
 	}
 	unlock_slurmctld (node_read_lock);
 
@@ -387,8 +375,8 @@ dump_all_node_state ( void )
 		error_code = errno;
 	}
 	else {
-		buf_len = buffer_allocated - buf_len;
-		if (write (log_fd, buffer, buf_len) != buf_len) {
+		if (write (log_fd, get_buf_data(buffer), get_buf_offset(buffer)) != 
+					get_buf_offset(buffer)) {
 			error ("Can't save state, error writing file %s %m", new_file);
 			error_code = errno;
 		}
@@ -408,26 +396,23 @@ dump_all_node_state ( void )
 	xfree (new_file);
 	unlock_state_files ();
 
-	xfree (buffer);
+	free_buf (buffer);
 	return error_code;
 }
 
 /*
  * dump_node_state - dump the state of a specific node to a buffer
- * input:  dump_node_ptr - pointer to node for which information is requested
- *	buf_ptr - buffer for node information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * dump_node_ptr (I) - pointer to node for which information is requested
+ * buffer (I/O) - location to store data, pointers automatically advanced
  */
 void 
-dump_node_state (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len) 
+dump_node_state (struct node_record *dump_node_ptr, Buf buffer) 
 {
-	packstr (dump_node_ptr->name, buf_ptr, buf_len);
-	pack16  (dump_node_ptr->node_state, buf_ptr, buf_len);
-	pack32  (dump_node_ptr->config_ptr->cpus, buf_ptr, buf_len);
-	pack32  (dump_node_ptr->config_ptr->real_memory, buf_ptr, buf_len);
-	pack32  (dump_node_ptr->config_ptr->tmp_disk, buf_ptr, buf_len);
+	packstr (dump_node_ptr->name, buffer);
+	pack16  (dump_node_ptr->node_state, buffer);
+	pack32  (dump_node_ptr->config_ptr->cpus, buffer);
+	pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
+	pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
 }
 
 /*
@@ -437,15 +422,13 @@ dump_node_state (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len
 int
 load_node_state ( void )
 {
-	char *node_name, *state_file;
-	int buffer_allocated, buffer_used = 0, error_code = 0;
+	char *node_name, *data, *state_file;
+	int data_allocated, data_read = 0, error_code = 0;
 	uint16_t node_state, name_len;
-	uint32_t time_stamp, cpus, real_memory, tmp_disk;
+	uint32_t time_stamp, cpus, real_memory, tmp_disk, data_size = 0;
 	struct node_record *node_ptr;
-	uint32_t buffer_size = 0;
 	int state_fd;
-	char *buffer;
-	void *buf_ptr;
+	Buf buffer;
 
 	/* read the file */
 	state_file = xstrdup (slurmctld_conf.state_save_location);
@@ -457,33 +440,31 @@ load_node_state ( void )
 		error_code = ENOENT;
 	}
 	else {
-		buffer_allocated = BUF_SIZE;
-		buffer = xmalloc(buffer_allocated);
-		buf_ptr = buffer;
-		while ((buffer_used = read (state_fd, buf_ptr, BUF_SIZE)) == BUF_SIZE) {
-			buffer_size += buffer_used;
-			buffer_allocated += BUF_SIZE;
-			xrealloc(buffer, buffer_allocated);
-			buf_ptr = (void *) (buffer + buffer_size);
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while ((data_read = read (state_fd, &data[data_size], BUF_SIZE)) == BUF_SIZE) {
+			data_size += data_read;
+			data_allocated += BUF_SIZE;
+			xrealloc(data, data_allocated);
 		}
-		buf_ptr = (void *) buffer;
-		buffer_size += buffer_used;
+		data_size += data_read;
 		close (state_fd);
-		if (buffer_used < 0) 
+		if (data_read < 0) 
 			error ("Read error on %s, %m", state_file);
 	}
 	xfree (state_file);
 	unlock_state_files ();
 
-	if (buffer_size > sizeof (uint32_t))
-		unpack32 (&time_stamp, &buf_ptr, &buffer_size);
+	buffer = create_buf (data, data_size);
+	if (data_size > sizeof (uint32_t))
+		unpack_time (&time_stamp, buffer);
 
-	while (buffer_size > 0) {
-		safe_unpackstr_xmalloc (&node_name, &name_len, &buf_ptr, &buffer_size);
-		safe_unpack16 (&node_state, &buf_ptr, &buffer_size);
-		safe_unpack32 (&cpus, &buf_ptr, &buffer_size);
-		safe_unpack32 (&real_memory, &buf_ptr, &buffer_size);
-		safe_unpack32 (&tmp_disk, &buf_ptr, &buffer_size);
+	while (remaining_buf (buffer) > 0) {
+		safe_unpackstr_xmalloc (&node_name, &name_len, buffer);
+		safe_unpack16 (&node_state, buffer);
+		safe_unpack32 (&cpus, buffer);
+		safe_unpack32 (&real_memory, buffer);
+		safe_unpack32 (&tmp_disk, buffer);
 
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);
@@ -497,6 +478,8 @@ load_node_state ( void )
 		if (node_name)
 			xfree (node_name);
 	}
+
+	free_buf (buffer);
 	return error_code;
 }
 
@@ -774,25 +757,21 @@ node_name2bitmap (char *node_names, bitstr_t **bitmap)
 void 
 pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
-	int buf_len, buffer_allocated, buffer_offset = 0, inx;
-	char *buffer;
-	void *buf_ptr;
-	int nodes_packed;
+	int inx;
+	uint32_t nodes_packed, tmp_offset;
+	Buf buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_node_update)
 		return;
 
-	buffer_allocated = (BUF_SIZE*16);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
+	buffer = init_buf (BUF_SIZE*16);
 
 	/* write header: version and time */
 	nodes_packed = 0 ;
-	pack32  ((uint32_t) nodes_packed, &buf_ptr, &buf_len);
-	pack32  ((uint32_t) last_node_update, &buf_ptr, &buf_len);
+	pack32  (nodes_packed, buffer);
+	pack_time  (last_node_update, buffer);
 
 	/* write node records */
 	for (inx = 0; inx < node_record_count; inx++) {
@@ -800,63 +779,50 @@ pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		    (node_record_table_ptr[inx].config_ptr->magic != CONFIG_MAGIC))
 			fatal ("pack_all_node: data integrity is bad");
 
-		pack_node(&node_record_table_ptr[inx], &buf_ptr, &buf_len);
+		pack_node(&node_record_table_ptr[inx], buffer);
 		nodes_packed ++ ;
-		if (buf_len > BUF_SIZE) 
-			continue;
-		buffer_allocated += (BUF_SIZE*16);
-		buf_len += (BUF_SIZE*16);
-		buffer_offset = (char *)buf_ptr - buffer;
-		xrealloc(buffer, buffer_allocated);
-		buf_ptr = buffer + buffer_offset;
 	}
 
-	buffer_offset = (char *)buf_ptr - buffer;
-	xrealloc (buffer, buffer_offset);
+	tmp_offset = get_buf_offset (buffer);
+	set_buf_offset (buffer, 0);
+	pack32  ((uint32_t) nodes_packed, buffer);
+	set_buf_offset (buffer, tmp_offset);
 
-	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
 	*update_time = last_node_update;
-
-        /* put in the real record count in the message body header */
-        buf_ptr = buffer;
-        buf_len = buffer_allocated;
-        pack32  ((uint32_t) nodes_packed, &buf_ptr, &buf_len);
+	*buffer_size = get_buf_offset (buffer);
+	buffer_ptr[0] = xfer_buf_data (buffer);
 }
 
 
 /* 
  * pack_node - dump all configuration information about a specific node in 
  *	machine independent form (for network transmission)
- * input:  dump_node_ptr - pointer to node for which information is requested
- *	buf_ptr - buffer for node information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * dump_node_ptr (I) - pointer to node for which information is requested
+ * buffer (I/O) - buffer in which data is place, pointers automatically updated
  * NOTE: if you make any changes here be sure to make the corresponding changes to 
  *	load_node_config in api/node_info.c
  */
 void 
-pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len) 
+pack_node (struct node_record *dump_node_ptr, Buf buffer) 
 {
-	packstr (dump_node_ptr->name, buf_ptr, buf_len);
-	pack16  (dump_node_ptr->node_state, buf_ptr, buf_len);
+	packstr (dump_node_ptr->name, buffer);
+	pack16  (dump_node_ptr->node_state, buffer);
 	if (slurmctld_conf.fast_schedule) {	/* Only data from config_record used for scheduling */
-		pack32  (dump_node_ptr->config_ptr->cpus, buf_ptr, buf_len);
-		pack32  (dump_node_ptr->config_ptr->real_memory, buf_ptr, buf_len);
-		pack32  (dump_node_ptr->config_ptr->tmp_disk, buf_ptr, buf_len);
+		pack32  (dump_node_ptr->config_ptr->cpus, buffer);
+		pack32  (dump_node_ptr->config_ptr->real_memory, buffer);
+		pack32  (dump_node_ptr->config_ptr->tmp_disk, buffer);
 	}
 	else {			/* Individual node data used for scheduling */
-		pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
-		pack32  (dump_node_ptr->real_memory, buf_ptr, buf_len);
-		pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
+		pack32  (dump_node_ptr->cpus, buffer);
+		pack32  (dump_node_ptr->real_memory, buffer);
+		pack32  (dump_node_ptr->tmp_disk, buffer);
 	}
-	pack32  (dump_node_ptr->config_ptr->weight, buf_ptr, buf_len);
-	packstr (dump_node_ptr->config_ptr->feature, buf_ptr, buf_len);
+	pack32  (dump_node_ptr->config_ptr->weight, buffer);
+	packstr (dump_node_ptr->config_ptr->feature, buffer);
 	if (dump_node_ptr->partition_ptr)
-		packstr (dump_node_ptr->partition_ptr->name, buf_ptr, buf_len);
+		packstr (dump_node_ptr->partition_ptr->name, buffer);
 	else
-		packstr (NULL, buf_ptr, buf_len);
+		packstr (NULL, buffer);
 }
 
 

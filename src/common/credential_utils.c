@@ -9,6 +9,7 @@
 
 #include <src/common/log.h>
 #include <src/common/list.h>
+#include <src/common/pack.h>
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_api.h>
@@ -38,17 +39,18 @@ static int insert_revoked_credential_state(revoke_credential_msg_t *
 int
 sign_credential(slurm_ssl_key_ctx_t *ctx, slurm_job_credential_t *cred)
 {
-	char buf[4096];
-	char *bufp  = buf;
-	int bufsz   = sizeof(buf);
-	int size    = bufsz;
+	Buf buffer;
+	int length, rc;
 	int sigsize = SLURM_SSL_SIGNATURE_LENGTH;
-	int length;
 
-	pack_job_credential(cred, (void **)&bufp, &size);
-	length = bufsz - size - SLURM_SSL_SIGNATURE_LENGTH;
+	buffer = init_buf(4096);
+	pack_job_credential(cred, buffer);
+	length = get_buf_offset(buffer) - SLURM_SSL_SIGNATURE_LENGTH;
 
-	if (slurm_ssl_sign(ctx, buf, length, cred->signature, &sigsize)) 
+	rc = slurm_ssl_sign(ctx, get_buf_data(buffer), length, cred->signature, &sigsize);
+	free_buf(buffer);
+
+	if (rc)
 		slurm_seterrno_ret(ESLURMD_ERROR_SIGNING_CREDENTIAL);
 
 	if (sigsize != SLURM_SSL_SIGNATURE_LENGTH)
@@ -62,20 +64,20 @@ int
 verify_credential(slurm_ssl_key_ctx_t *ctx, slurm_job_credential_t *cred,
 		  List cred_state_list)
 {
-	char buf[4096];
-	char *bufp     = buf;
-	int bufsz      = sizeof(buf);
-	int size       = bufsz;
-	int rc         = SLURM_SUCCESS;
+	int rc;
 	time_t now     = time(NULL);
 	char this_node_name[MAX_NAME_LEN];
 	int length;
+	Buf buffer;
 
-	pack_job_credential(cred, (void **)&bufp, &size);
-	length = bufsz - size - SLURM_SSL_SIGNATURE_LENGTH;
+	buffer = init_buf(4096);
+	pack_job_credential(cred, buffer);
+	length = get_buf_offset(buffer) - SLURM_SSL_SIGNATURE_LENGTH;
 
-	if (slurm_ssl_verify(ctx, buf, length, cred->signature, 
-	                     SLURM_SSL_SIGNATURE_LENGTH)) 
+	rc = slurm_ssl_verify(ctx, get_buf_data(buffer), length, cred->signature, SLURM_SSL_SIGNATURE_LENGTH);
+	free_buf(buffer);
+
+	if (rc)
 		slurm_seterrno_ret(ESLURMD_INVALID_JOB_CREDENTIAL);
 
 	if (cred->expiration_time - now < 0) 

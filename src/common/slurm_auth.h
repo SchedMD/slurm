@@ -1,9 +1,9 @@
 /*****************************************************************************\
- * slurm_auth.h - implementation-independent authentication API.
+ *  slurm_auth.h - implementation-independent authentication API definitions
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by AUTHOR <AUTHOR@llnl.gov>.
+ *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -23,6 +23,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+
 #ifndef __SLURM_AUTHENTICATION_H__
 #define __SLURM_AUTHENTICATION_H__
 
@@ -38,6 +39,8 @@
 #else   /* !HAVE_CONFIG_H */
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
+
+#include <src/common/pack.h>
 
 
 /* slurm_auth_credentials_t is an opaque type whose definition is to
@@ -84,12 +87,8 @@ gid_t slurm_auth_gid( slurm_auth_t cred );
 /*
  * Methods for packing and unpacking the credentials for transport.
  */
-void slurm_auth_pack_credentials( slurm_auth_t cred,
-				  void **buffer,
-				  uint32_t *length );
-void slurm_auth_unpack_credentials( slurm_auth_t *cred,
-				    void **buffer,
-				    uint32_t *length );
+void slurm_auth_pack_credentials( slurm_auth_t cred, Buf buffer );
+void slurm_auth_unpack_credentials( slurm_auth_t *cred, Buf buffer );
 
 #if DEBUG
 void slurm_auth_print_credentials( slurm_auth_t *cred );

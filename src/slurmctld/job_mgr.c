@@ -87,9 +87,9 @@ int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 		struct job_record ** job_ptr , struct part_record *part_ptr, 
 		bitstr_t *req_bitmap) ;
 void	delete_job_desc_files (uint32_t job_id);
-void 	dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len);
-void 	dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf_len);
-void 	dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len);
+void 	dump_job_state (struct job_record *dump_job_ptr, Buf buffer);
+void 	dump_job_details_state (struct job_details *detail_ptr, Buf buffer);
+void 	dump_job_step_state (struct step_record *step_ptr, Buf buffer);
 int	job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
 	    int will_run, struct job_record **job_rec_ptr, uid_t submit_uid);
 void	list_delete_job (void *job_entry);
@@ -214,23 +214,16 @@ delete_job_desc_files (uint32_t job_id)
 int
 dump_all_job_state ( void )
 {
-	int buf_len, buffer_allocated, buffer_offset = 0, error_code = 0, log_fd;
-	char *buffer;
-	int buffer_needed;
-	void *buf_ptr;
+	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read config and job */
 	slurmctld_lock_t job_read_lock = { READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
-
-	buffer_allocated = (BUF_SIZE*16);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
+	Buf buffer = init_buf(BUF_SIZE*16);
 
 	/* write header: time */
-	pack32  ((uint32_t) time (NULL), &buf_ptr, &buf_len);
+	pack_time  (time (NULL), buffer);
 
 	/* write individual job records */
 	lock_slurmctld (job_read_lock);
@@ -238,18 +231,7 @@ dump_all_job_state ( void )
 	while ((job_record_point = (struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("dump_all_job: job integrity is bad");
-		buffer_needed = BUF_SIZE;
-#ifdef HAVE_LIBELAN3
-		buffer_needed += (step_count (job_record_point) * QSW_PACK_SIZE);
-#endif
-		if (buf_len < buffer_needed) {
-			buffer_allocated += buffer_needed;
-			buf_len += buffer_needed;
-			buffer_offset = (char *)buf_ptr - buffer;
-			xrealloc(buffer, buffer_allocated);
-			buf_ptr = buffer + buffer_offset;
-		}
-		dump_job_state (job_record_point, &buf_ptr, &buf_len);
+		dump_job_state (job_record_point, buffer);
 	}		
 	unlock_slurmctld (job_read_lock);
 	list_iterator_destroy (job_record_iterator);
@@ -268,8 +250,8 @@ dump_all_job_state ( void )
 		error_code = errno;
 	}
 	else {
-		buf_len = buffer_allocated - buf_len;
-		if (write (log_fd, buffer, buf_len) != buf_len) {
+		if (write (log_fd, get_buf_data(buffer), get_buf_offset(buffer)) != 
+							get_buf_offset(buffer)) {
 			error ("Can't save state, write file %s error %m", new_file);
 			error_code = errno;
 		}
@@ -289,166 +271,157 @@ dump_all_job_state ( void )
 	xfree (new_file);
 	unlock_state_files ();
 
-	xfree (buffer);
+	free_buf (buffer);
 	return error_code;
 }
 
 /*
  * dump_job_state - dump the state of a specific job, its details, and steps to a buffer
- * input:  dump_job_ptr - pointer to job for which information is requested
- *	buf_ptr - buffer for job information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * dump_job_ptr (I) - pointer to job for which information is requested
+ * buffer (I/O) - location to store data, pointers automatically advanced
  */
 void 
-dump_job_state (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
+dump_job_state (struct job_record *dump_job_ptr, Buf buffer) 
 {
 	struct job_details *detail_ptr;
 	ListIterator step_record_iterator;
 	struct step_record *step_record_ptr;
 
 	/* Dump basic job info */
-	pack32  (dump_job_ptr->job_id, buf_ptr, buf_len);
-	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
-	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
-	pack32  (dump_job_ptr->priority, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->job_id, buffer);
+	pack32  (dump_job_ptr->user_id, buffer);
+	pack32  (dump_job_ptr->time_limit, buffer);
+	pack32  (dump_job_ptr->priority, buffer);
 
-	pack32  ((uint32_t) dump_job_ptr->start_time, buf_ptr, buf_len);
-	pack32  ((uint32_t) dump_job_ptr->end_time, buf_ptr, buf_len);
-	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
-	pack16  ((uint16_t) dump_job_ptr->next_step_id, buf_ptr, buf_len);
+	pack_time  (dump_job_ptr->start_time, buffer);
+	pack_time  (dump_job_ptr->end_time, buffer);
+	pack16  ((uint16_t) dump_job_ptr->job_state, buffer);
+	pack16  ((uint16_t) dump_job_ptr->next_step_id, buffer);
 
-	packstr (dump_job_ptr->nodes, buf_ptr, buf_len);
-	packstr (dump_job_ptr->partition, buf_ptr, buf_len); 
-	packstr (dump_job_ptr->name, buf_ptr, buf_len);
+	packstr (dump_job_ptr->nodes, buffer);
+	packstr (dump_job_ptr->partition, buffer); 
+	packstr (dump_job_ptr->name, buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
-		pack16  ((uint16_t) DETAILS_FLAG, buf_ptr, buf_len);
-		dump_job_details_state (detail_ptr, buf_ptr, buf_len); 
+		pack16  ((uint16_t) DETAILS_FLAG, buffer);
+		dump_job_details_state (detail_ptr, buffer); 
 	}
 	else
-		pack16  ((uint16_t) 0, buf_ptr, buf_len);	/* no details flag */
+		pack16  ((uint16_t) 0, buffer);	/* no details flag */
 
 	/* Dump job steps */
 	step_record_iterator = list_iterator_create (dump_job_ptr->step_list);		
 	while ((step_record_ptr = (struct step_record *) list_next (step_record_iterator))) {
-		pack16  ((uint16_t) STEP_FLAG, buf_ptr, buf_len);
-		dump_job_step_state (step_record_ptr, buf_ptr, buf_len);
+		pack16  ((uint16_t) STEP_FLAG, buffer);
+		dump_job_step_state (step_record_ptr, buffer);
 	};
 	list_iterator_destroy (step_record_iterator);
-	pack16  ((uint16_t) 0, buf_ptr, buf_len);	/* no step flag */
+	pack16  ((uint16_t) 0, buffer);	/* no step flag */
 }
 
 /*
  * dump_job_details_state - dump the state of a specific job details to a buffer
- * input:  detail_ptr - pointer to job details for which information is requested
- *	buf_ptr - buffer for job information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * detail_ptr (I) - pointer to job details for which information is requested
+ * buffer (I/O) - location to store data, pointers automatically advanced
  */
 void 
-dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf_len) 
+dump_job_details_state (struct job_details *detail_ptr, Buf buffer) 
 {
 	char tmp_str[MAX_STR_PACK];
 
-	pack_job_credential ( &detail_ptr->credential , buf_ptr , buf_len ) ;
+	pack_job_credential ( &detail_ptr->credential , buffer ) ;
 
-	pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
-	pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->num_procs, buffer);
+	pack32  ((uint32_t) detail_ptr->num_nodes, buffer);
 
-	pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
-	pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
-	pack16  ((uint16_t) detail_ptr->kill_on_node_fail, buf_ptr, buf_len);
-	pack16  ((uint16_t) detail_ptr->batch_flag, buf_ptr, buf_len);
+	pack16  ((uint16_t) detail_ptr->shared, buffer);
+	pack16  ((uint16_t) detail_ptr->contiguous, buffer);
+	pack16  ((uint16_t) detail_ptr->kill_on_node_fail, buffer);
+	pack16  ((uint16_t) detail_ptr->batch_flag, buffer);
 
-	pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
-	pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
-	pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
-	pack32  ((uint32_t) detail_ptr->submit_time, buf_ptr, buf_len);
-	pack32  ((uint32_t) detail_ptr->total_procs, buf_ptr, buf_len);
+	pack32  ((uint32_t) detail_ptr->min_procs, buffer);
+	pack32  ((uint32_t) detail_ptr->min_memory, buffer);
+	pack32  ((uint32_t) detail_ptr->min_tmp_disk, buffer);
+	pack_time  (detail_ptr->submit_time, buffer);
+	pack32  ((uint32_t) detail_ptr->total_procs, buffer);
 
 	if ((detail_ptr->req_nodes == NULL) ||
 	    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
-		packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
+		packstr (detail_ptr->req_nodes, buffer);
 	else {
 		strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 
 	if (detail_ptr->features == NULL ||
 			strlen (detail_ptr->features) < MAX_STR_PACK)
-		packstr (detail_ptr->features, buf_ptr, buf_len);
+		packstr (detail_ptr->features, buffer);
 	else {
 		strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 
 	if (detail_ptr->stderr == NULL ||
 			strlen (detail_ptr->stderr) < MAX_STR_PACK)
-		packstr (detail_ptr->stderr, buf_ptr, buf_len);
+		packstr (detail_ptr->stderr, buffer);
 	else {
 		strncpy(tmp_str, detail_ptr->stderr, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 
 	if (detail_ptr->stdin == NULL ||
 			strlen (detail_ptr->stdin) < MAX_STR_PACK)
-		packstr (detail_ptr->stdin, buf_ptr, buf_len);
+		packstr (detail_ptr->stdin, buffer);
 	else {
 		strncpy(tmp_str, detail_ptr->stdin, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 
 	if (detail_ptr->stdout == NULL ||
 			strlen (detail_ptr->stdout) < MAX_STR_PACK)
-		packstr (detail_ptr->stdout, buf_ptr, buf_len);
+		packstr (detail_ptr->stdout, buffer);
 	else {
 		strncpy(tmp_str, detail_ptr->stdout, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 
 	if (detail_ptr->work_dir == NULL ||
 			strlen (detail_ptr->work_dir) < MAX_STR_PACK)
-		packstr (detail_ptr->work_dir, buf_ptr, buf_len);
+		packstr (detail_ptr->work_dir, buffer);
 	else {
 		strncpy(tmp_str, detail_ptr->work_dir, MAX_STR_PACK);
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 }
 
 /*
  * dump_job_step_state - dump the state of a specific job step to a buffer
- * input:  step_ptr - pointer to job step for which information is requested
- *	buf_ptr - buffer for job information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * detail_ptr (I) - pointer to job step for which information is requested
+ * buffer (I/O) - location to store data, pointers automatically advanced
  */
 void 
-dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len) 
+dump_job_step_state (struct step_record *step_ptr, Buf buffer) 
 {
 	char *node_list;
 
-	pack16  ((uint16_t) step_ptr->step_id, buf_ptr, buf_len);
-	pack16  ((uint16_t) step_ptr->cyclic_alloc, buf_ptr, buf_len);
-	pack32  ((uint32_t) step_ptr->start_time, buf_ptr, buf_len);
+	pack16  ((uint16_t) step_ptr->step_id, buffer);
+	pack16  ((uint16_t) step_ptr->cyclic_alloc, buffer);
+	pack_time  (step_ptr->start_time, buffer);
 	node_list = bitmap2node_name (step_ptr->node_bitmap);
-	packstr (node_list, buf_ptr, buf_len);
+	packstr (node_list, buffer);
 	xfree (node_list);
 #ifdef HAVE_LIBELAN3
-	qsw_pack_jobinfo (step_ptr->qsw_job, (void **)buf_ptr, buf_len);
+	qsw_pack_jobinfo (step_ptr->qsw_job, buffer);
 #endif
 }
 
@@ -459,12 +432,13 @@ dump_job_step_state (struct step_record *step_ptr, void **buf_ptr, int *buf_len)
 int
 load_job_state ( void )
 {
-	int buffer_allocated, buffer_used = 0, error_code = 0;
-	uint32_t time, buffer_size = 0;
+	int data_allocated, data_read = 0, error_code = 0;
+	uint32_t time, data_size = 0;
 	int state_fd;
-	char *buffer, *state_file;
-	void *buf_ptr;
-	uint32_t job_id, user_id, time_limit, priority, total_procs, start_time, end_time;
+	char *data, *state_file;
+	Buf buffer;
+	uint32_t job_id, user_id, time_limit, priority, total_procs;
+	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	uint32_t num_procs, num_nodes, min_procs, min_memory, min_tmp_disk, submit_time;
@@ -487,19 +461,16 @@ load_job_state ( void )
 		error_code = ENOENT;
 	}
 	else {
-		buffer_allocated = BUF_SIZE;
-		buffer = xmalloc(buffer_allocated);
-		buf_ptr = buffer;
-		while ((buffer_used = read (state_fd, buf_ptr, BUF_SIZE)) == BUF_SIZE) {
-			buffer_size += buffer_used;
-			buffer_allocated += BUF_SIZE;
-			xrealloc(buffer, buffer_allocated);
-			buf_ptr = (void *) (buffer + buffer_size);
+		data_allocated = BUF_SIZE;
+		data = xmalloc(data_allocated);
+		while ((data_read = read (state_fd, &data[data_size], BUF_SIZE)) == BUF_SIZE) {
+			data_size += data_read;
+			data_allocated += BUF_SIZE;
+			xrealloc(data, data_allocated);
 		}
-		buf_ptr = (void *) buffer;
-		buffer_size += buffer_used;
+		data_size += data_read;
 		close (state_fd);
-		if (buffer_used < 0) 
+		if (data_read < 0) 
 			error ("Error reading file %s: %m", state_file);
 	}
 	xfree (state_file);
@@ -508,54 +479,55 @@ load_job_state ( void )
 	if (job_id_sequence < 0)
 		job_id_sequence = slurmctld_conf . first_job_id;
 
-	if (buffer_size > sizeof (uint32_t))
-		unpack32 (&time, &buf_ptr, &buffer_size);
+	buffer = create_buf (data, data_read);
+	if (data_size > sizeof (time_t))
+		unpack_time (&time, buffer);
 
-	while (buffer_size > 0) {
-		safe_unpack32 (&job_id, &buf_ptr, &buffer_size);
-		safe_unpack32 (&user_id, &buf_ptr, &buffer_size);
-		safe_unpack32 (&time_limit, &buf_ptr, &buffer_size);
-		safe_unpack32 (&priority, &buf_ptr, &buffer_size);
+	while (remaining_buf (buffer) > 0) {
+		safe_unpack32 (&job_id, buffer);
+		safe_unpack32 (&user_id, buffer);
+		safe_unpack32 (&time_limit, buffer);
+		safe_unpack32 (&priority, buffer);
 
-		safe_unpack32 (&start_time, &buf_ptr, &buffer_size);
-		safe_unpack32 (&end_time, &buf_ptr, &buffer_size);
-		safe_unpack16 (&job_state, &buf_ptr, &buffer_size);
-		safe_unpack16 (&next_step_id, &buf_ptr, &buffer_size);
+		unpack_time (&start_time, buffer);
+		unpack_time (&end_time, buffer);
+		safe_unpack16 (&job_state, buffer);
+		safe_unpack16 (&next_step_id, buffer);
 
-		safe_unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
-		safe_unpackstr_xmalloc (&partition, &name_len, &buf_ptr, &buffer_size);
-		safe_unpackstr_xmalloc (&name, &name_len, &buf_ptr, &buffer_size);
+		safe_unpackstr_xmalloc (&nodes, &name_len, buffer);
+		safe_unpackstr_xmalloc (&partition, &name_len, buffer);
+		safe_unpackstr_xmalloc (&name, &name_len, buffer);
 
-		safe_unpack16 (&details, &buf_ptr, &buffer_size);
-		if ((buffer_size < (11 * sizeof (uint32_t))) && details) {
+		safe_unpack16 (&details, buffer);
+		if ((remaining_buf (buffer) < (11 * sizeof (uint32_t))) && details) {
 			/* no room for details */
 			error ("job state file problem on job %u", job_id);
 			goto cleanup;
 		}
 
 		if (details == DETAILS_FLAG ) {
-			unpack_job_credential (&credential_ptr , &buf_ptr, &buffer_size);
+			unpack_job_credential (&credential_ptr , buffer);
 
-			safe_unpack32 (&num_procs, &buf_ptr, &buffer_size);
-			safe_unpack32 (&num_nodes, &buf_ptr, &buffer_size);
+			safe_unpack32 (&num_procs, buffer);
+			safe_unpack32 (&num_nodes, buffer);
 
-			safe_unpack16 (&shared, &buf_ptr, &buffer_size);
-			safe_unpack16 (&contiguous, &buf_ptr, &buffer_size);
-			safe_unpack16 (&kill_on_node_fail, &buf_ptr, &buffer_size);
-			safe_unpack16 (&batch_flag, &buf_ptr, &buffer_size);
+			safe_unpack16 (&shared, buffer);
+			safe_unpack16 (&contiguous, buffer);
+			safe_unpack16 (&kill_on_node_fail, buffer);
+			safe_unpack16 (&batch_flag, buffer);
 
-			safe_unpack32 (&min_procs, &buf_ptr, &buffer_size);
-			safe_unpack32 (&min_memory, &buf_ptr, &buffer_size);
-			safe_unpack32 (&min_tmp_disk, &buf_ptr, &buffer_size);
-			safe_unpack32 (&submit_time, &buf_ptr, &buffer_size);
-			safe_unpack32 (&total_procs, &buf_ptr, &buffer_size);
+			safe_unpack32 (&min_procs, buffer);
+			safe_unpack32 (&min_memory, buffer);
+			safe_unpack32 (&min_tmp_disk, buffer);
+			safe_unpack_time (&submit_time, buffer);
+			safe_unpack32 (&total_procs, buffer);
 
-			safe_unpackstr_xmalloc (&req_nodes, &name_len, &buf_ptr, &buffer_size);
-			safe_unpackstr_xmalloc (&features, &name_len, &buf_ptr, &buffer_size);
-			safe_unpackstr_xmalloc (&stderr, &name_len, &buf_ptr, &buffer_size);
-			safe_unpackstr_xmalloc (&stdin, &name_len, &buf_ptr, &buffer_size);
-			safe_unpackstr_xmalloc (&stdout, &name_len, &buf_ptr, &buffer_size);
-			safe_unpackstr_xmalloc (&work_dir, &name_len, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&req_nodes, &name_len, buffer);
+			safe_unpackstr_xmalloc (&features, &name_len, buffer);
+			safe_unpackstr_xmalloc (&stderr, &name_len, buffer);
+			safe_unpackstr_xmalloc (&stdin, &name_len, buffer);
+			safe_unpackstr_xmalloc (&stdout, &name_len, buffer);
+			safe_unpackstr_xmalloc (&work_dir, &name_len, buffer);
 		}
 
 		if (nodes) {
@@ -638,17 +610,18 @@ load_job_state ( void )
 					sizeof (job_ptr->details->credential));
 		}
 
-		safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
-		while ((step_flag == STEP_FLAG) && (buffer_size > (2 * sizeof (uint32_t)))) {
+		safe_unpack16 (&step_flag, buffer);
+		while ((step_flag == STEP_FLAG) && 
+		       (remaining_buf (buffer) > (2 * sizeof (uint32_t)))) {
 			struct step_record *step_ptr;
 			uint16_t step_id, cyclic_alloc;
 			uint32_t start_time;
 			char *node_list;
 
-			safe_unpack16 (&step_id, &buf_ptr, &buffer_size);
-			safe_unpack16 (&cyclic_alloc, &buf_ptr, &buffer_size);
-			safe_unpack32 (&start_time, &buf_ptr, &buffer_size);
-			safe_unpackstr_xmalloc (&node_list, &name_len, &buf_ptr, &buffer_size);
+			safe_unpack16 (&step_id, buffer);
+			safe_unpack16 (&cyclic_alloc, buffer);
+			unpack_time (&start_time, buffer);
+			safe_unpackstr_xmalloc (&node_list, &name_len, buffer);
 
 			step_ptr = create_step_record (job_ptr);
 			if (step_ptr == NULL) 
@@ -662,12 +635,12 @@ load_job_state ( void )
 				xfree (node_list);
 			}
 #ifdef HAVE_LIBELAN3
-			if (buffer_size < QSW_PACK_SIZE)
+			if (remaining_buf (buffer) < QSW_PACK_SIZE)
 				break;
 			qsw_alloc_jobinfo(&step_ptr->qsw_job);
-			qsw_unpack_jobinfo(step_ptr->qsw_job, &buf_ptr, &buffer_size);
+			qsw_unpack_jobinfo(step_ptr->qsw_job, buffer);
 #endif
-			safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
+			safe_unpack16 (&step_flag, buffer);
 		}
 
 cleanup:
@@ -720,6 +693,8 @@ cleanup:
 			credential_ptr = NULL; 
 		}
 	}
+
+	free_buf (buffer);
 	return error_code;
 }
 
@@ -1965,26 +1940,20 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 {
 	ListIterator job_record_iterator;
 	struct job_record *job_record_point;
-	int buf_len, buffer_allocated, buffer_offset = 0;
-	char *buffer;
-	void *buf_ptr;
-	uint32_t jobs_packed ;
+	uint32_t jobs_packed = 0, tmp_offset ;
+	Buf buffer;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_job_update)
 		return;
 
-	buffer_allocated = (BUF_SIZE*16);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
+	buffer = init_buf (BUF_SIZE*16);
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
-	jobs_packed = 0 ;
-	pack32  ((uint32_t) jobs_packed, &buf_ptr, &buf_len);
-	pack32  ((uint32_t) last_job_update, &buf_ptr, &buf_len);
+	pack32  ((uint32_t) jobs_packed, buffer);
+	pack_time  (last_job_update, buffer);
 
 	/* write individual job records */
 	job_record_iterator = list_iterator_create (job_list);		
@@ -1992,124 +1961,108 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		if (job_record_point->magic != JOB_MAGIC)
 			fatal ("dump_all_job: job integrity is bad");
 
-		pack_job(job_record_point, &buf_ptr, &buf_len);
-		if (buf_len > BUF_SIZE) 
-		{
-			jobs_packed ++ ;
-			continue;
-		}
-		buffer_allocated += (BUF_SIZE*16);
-		buf_len += (BUF_SIZE*16);
-		buffer_offset = (char *)buf_ptr - buffer;
-		xrealloc(buffer, buffer_allocated);
-		buf_ptr = buffer + buffer_offset;
+		pack_job (job_record_point, buffer);
 		jobs_packed ++ ;
 	}		
 
 	list_iterator_destroy (job_record_iterator);
-	buffer_offset = (char *)buf_ptr - buffer;
-	xrealloc (buffer, buffer_offset);
-
-	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
-	*update_time = last_part_update;
 
 	/* put the real record count in the message body header */	
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
-	pack32  ((uint32_t) jobs_packed, &buf_ptr, &buf_len);
+	tmp_offset = get_buf_offset (buffer);
+	set_buf_offset (buffer, 0);
+	pack32  ((uint32_t) jobs_packed, buffer);
+	set_buf_offset (buffer, tmp_offset);
+
+	*update_time = last_job_update;
+	*buffer_size = get_buf_offset (buffer);
+	buffer_ptr[0] = xfer_buf_data (buffer);
 }
 
 
 /* 
  * pack_job - dump all configuration information about a specific job in 
  *	machine independent form (for network transmission)
- * input:  dump_job_ptr - pointer to job for which information is requested
- *	buf_ptr - buffer for job information 
- *	buf_len - byte size of buffer
- * output: buf_ptr - advanced to end of data written
- *	buf_len - byte size remaining in buffer
+ * dump_job_ptr (I) - pointer to job for which information is requested
+ * buffer (I/O) - buffer in which data is place, pointers automatically updated
  * NOTE: change unpack_job_desc() in common/slurm_protocol_pack.c whenever the
  *	 data format changes
- * NOTE: the caller must insure that the buffer is sufficiently large to hold 
- *	 the data being written (space remaining at least BUF_SIZE)
  */
 void 
-pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
+pack_job (struct job_record *dump_job_ptr, Buf buffer) 
 {
 	char tmp_str[MAX_STR_PACK];
 	struct job_details *detail_ptr;
 
-	pack32  (dump_job_ptr->job_id, buf_ptr, buf_len);
-	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
-	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
-	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->job_id, buffer);
+	pack32  (dump_job_ptr->user_id, buffer);
+	pack16  ((uint16_t) dump_job_ptr->job_state, buffer);
+	pack32  (dump_job_ptr->time_limit, buffer);
 
-	pack32  ((uint32_t) dump_job_ptr->start_time, buf_ptr, buf_len);
-	pack32  ((uint32_t) dump_job_ptr->end_time, buf_ptr, buf_len);
-	pack32  (dump_job_ptr->priority, buf_ptr, buf_len);
+	pack_time  (dump_job_ptr->start_time, buffer);
+	pack_time  (dump_job_ptr->end_time, buffer);
+	pack32  (dump_job_ptr->priority, buffer);
 
-	packstr (dump_job_ptr->nodes, buf_ptr, buf_len);
-	packstr (dump_job_ptr->partition, buf_ptr, buf_len);
-	packstr (dump_job_ptr->name, buf_ptr, buf_len);
+	packstr (dump_job_ptr->nodes, buffer);
+	packstr (dump_job_ptr->partition, buffer);
+	packstr (dump_job_ptr->name, buffer);
 	if (dump_job_ptr->node_bitmap) {
 		(void) bit_fmt(tmp_str, MAX_STR_PACK, dump_job_ptr->node_bitmap);
-		packstr (tmp_str, buf_ptr, buf_len);
+		packstr (tmp_str, buffer);
 	}
 	else 
-		packstr (NULL, buf_ptr, buf_len);
+		packstr (NULL, buffer);
 
 	detail_ptr = dump_job_ptr->details;
 	if (detail_ptr && dump_job_ptr->job_state == JOB_PENDING) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
-		pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
-		pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
-		pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->num_procs, buffer);
+		pack32  ((uint32_t) detail_ptr->num_nodes, buffer);
+		pack16  ((uint16_t) detail_ptr->shared, buffer);
+		pack16  ((uint16_t) detail_ptr->contiguous, buffer);
 
-		pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
-		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->min_procs, buffer);
+		pack32  ((uint32_t) detail_ptr->min_memory, buffer);
+		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buffer);
 
 		if ((detail_ptr->req_nodes == NULL) ||
 		    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
-			packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
+			packstr (detail_ptr->req_nodes, buffer);
 		else {
 			strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
 			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
+			packstr (tmp_str, buffer);
 		}
 
 		if (detail_ptr->req_node_bitmap) {
 			(void) bit_fmt(tmp_str, MAX_STR_PACK, detail_ptr->req_node_bitmap);
-			packstr (tmp_str, buf_ptr, buf_len);
+			packstr (tmp_str, buffer);
 		}
 		else 
-			packstr (NULL, buf_ptr, buf_len);
+			packstr (NULL, buffer);
 
 		if (detail_ptr->features == NULL ||
 				strlen (detail_ptr->features) < MAX_STR_PACK)
-			packstr (detail_ptr->features, buf_ptr, buf_len);
+			packstr (detail_ptr->features, buffer);
 		else {
 			strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
 			tmp_str[MAX_STR_PACK-1] = (char) NULL;
-			packstr (tmp_str, buf_ptr, buf_len);
+			packstr (tmp_str, buffer);
 		}
 	}
 	else {
-		pack32  ((uint32_t) 0, buf_ptr, buf_len);
-		pack32  ((uint32_t) 0, buf_ptr, buf_len);
-		pack16  ((uint16_t) 0, buf_ptr, buf_len);
-		pack16  ((uint16_t) 0, buf_ptr, buf_len);
+		pack32  ((uint32_t) 0, buffer);
+		pack32  ((uint32_t) 0, buffer);
+		pack16  ((uint16_t) 0, buffer);
+		pack16  ((uint16_t) 0, buffer);
 
-		pack32  ((uint32_t) 0, buf_ptr, buf_len);
-		pack32  ((uint32_t) 0, buf_ptr, buf_len);
-		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+		pack32  ((uint32_t) 0, buffer);
+		pack32  ((uint32_t) 0, buffer);
+		pack32  ((uint32_t) 0, buffer);
 
-		packstr (NULL, buf_ptr, buf_len);
-		packstr (NULL, buf_ptr, buf_len);
-		packstr (NULL, buf_ptr, buf_len);
+		packstr (NULL, buffer);
+		packstr (NULL, buffer);
+		packstr (NULL, buffer);
 	}
 }
 

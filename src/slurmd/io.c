@@ -36,6 +36,7 @@
 
 #include <src/common/log.h>
 #include <src/common/list.h>
+#include <src/common/pack.h>
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_errno.h>
@@ -424,40 +425,35 @@ int connect_io_stream(task_start_t * task_start, int out_or_err)
 int send_io_stream_header(task_start_t * task_start, int out_or_err)
 {
 	slurm_io_stream_header_t io_header;
-	char buffer[sizeof(slurm_io_stream_header_t)];
-	char *buf_ptr = buffer;
-	int buf_size = sizeof(slurm_io_stream_header_t);
-	int size = sizeof(slurm_io_stream_header_t);
+	Buf buffer;
+	int rc;
 
-
+	buffer = init_buf (sizeof(slurm_io_stream_header_t));
 	if (out_or_err == STDIN_OUT_SOCK) {
 		init_io_stream_header(&io_header,
 				      task_start->launch_msg->credential->
 				      signature,
 				      task_start->launch_msg->
-				      global_task_ids[task_start->
-						      local_task_id],
+				      global_task_ids[task_start->local_task_id],
 				      SLURM_IO_STREAM_INOUT);
-		pack_io_stream_header(&io_header, (void **) &buf_ptr,
-				      &size);
-		return slurm_write_stream(task_start->
-					  sockets[STDIN_OUT_SOCK], buffer,
-					  buf_size - size);
+		pack_io_stream_header(&io_header, buffer);
+		rc = slurm_write_stream(task_start->sockets[STDIN_OUT_SOCK], 
+		                        get_buf_data(buffer), get_buf_offset(buffer));
 	} else {
 
 		init_io_stream_header(&io_header,
 				      task_start->launch_msg->credential->
 				      signature,
 				      task_start->launch_msg->
-				      global_task_ids[task_start->
-						      local_task_id],
+				      global_task_ids[task_start->local_task_id],
 				      SLURM_IO_STREAM_SIGERR);
-		pack_io_stream_header(&io_header, (void **) &buf_ptr,
-				      &size);
-		return slurm_write_stream(task_start->
-					  sockets[SIG_STDERR_SOCK], buffer,
-					  buf_size - size);
+		pack_io_stream_header(&io_header, buffer);
+		rc = slurm_write_stream(task_start->sockets[SIG_STDERR_SOCK], 
+		                        get_buf_data(buffer), get_buf_offset(buffer));
 	}
+
+	free_buf(buffer);
+	return rc;
 }
 
 

@@ -148,42 +148,46 @@ qsw_free_libstate(qsw_libstate_t ls)
  * Pack libstate structure in a format that can be shipped over the
  * network and unpacked on a different architecture.
  *   ls (IN)		libstate structure to be packed
- *   data (IN/OUT)	where to store packed data
- *   len (IN/OUT)	max size of data 
+ *   buffer (IN/OUT)	where to store packed data
  *   RETURN		#bytes unused in 'data'
  */
 int
-qsw_pack_libstate(qsw_libstate_t ls, void **data, int *len)
+qsw_pack_libstate(qsw_libstate_t ls, Buf buffer)
 {
+	int offset;
+
 	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
+	offset = get_buf_offset(buffer);
 
-	pack32(ls->ls_magic, data, len);
-	pack32(ls->ls_prognum, data, len);
-	pack32(ls->ls_hwcontext, data, len);
+	pack32(ls->ls_magic, buffer);
+	pack32(ls->ls_prognum, buffer);
+	pack32(ls->ls_hwcontext, buffer);
 
-	return *len;
+	return (get_buf_offset(buffer) - offset);
 }
 
 /*
  * Unpack libstate packed by qsw_pack_libstate.
  *   ls (IN/OUT)	where to put libstate structure
- *   data (IN/OUT)	where to get packed data
- *   len (IN/OUT)	max size of data 
+ *   buffer (IN/OUT)	where to get packed data
  *   RETURN		#bytes unused or -1 on error (sets errno)
  */
 int
-qsw_unpack_libstate(qsw_libstate_t ls, void **data, int *len)
+qsw_unpack_libstate(qsw_libstate_t ls, Buf buffer)
 {
-	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
+	int offset;
 
-	unpack32(&ls->ls_magic, data, len);
-	unpack32(&ls->ls_prognum, data, len);
-	unpack32(&ls->ls_hwcontext, data, len);
+	assert(ls->ls_magic == QSW_LIBSTATE_MAGIC);
+	offset = get_buf_offset(buffer);
+
+	unpack32(&ls->ls_magic, buffer);
+	unpack32(&ls->ls_prognum, buffer);
+	unpack32(&ls->ls_hwcontext, buffer);
 
 	if (ls->ls_magic != QSW_LIBSTATE_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_QSWLIBSTATE); /* corrupted libstate */
 
-	return *len; 
+	return (get_buf_offset(buffer) - offset); 
 }
 
 /*
@@ -281,73 +285,73 @@ qsw_free_jobinfo(qsw_jobinfo_t j)
  * Pack jobinfo structure in a format that can be shipped over the
  * network and unpacked on a different architecture.
  *   j (IN)		jobinfo structure to be packed
- *   data (OUT)		where to store packed data
- *   len (IN)		max size of data 
+ *   buffer (OUT)		where to store packed data
  *   RETURN		#bytes unused in 'data' or -1 on error (sets errno)
  * NOTE: Keep in sync with QSW_PACK_SIZE above
  */
 int
-qsw_pack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
+qsw_pack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 {
-	int i;
+	int i, offset;
 
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
+	offset = get_buf_offset(buffer);
 
-	pack32(j->j_magic, 		data, len);
-	pack32(j->j_prognum, 		data, len);
+	pack32(j->j_magic, 		buffer);
+	pack32(j->j_prognum, 		buffer);
 	for (i = 0; i < 4; i++)
-		pack32(j->j_cap.UserKey.Values[i], data, len);
-	pack16(j->j_cap.Type, 		data, len);
-	pack16(j->j_cap.padding, 	data, len);
-	pack32(j->j_cap.Version,	data, len);
-	pack32(j->j_cap.LowContext, 	data, len);
-	pack32(j->j_cap.HighContext, 	data, len);
-	pack32(j->j_cap.MyContext, 	data, len);
-	pack32(j->j_cap.LowNode, 	data, len);
-	pack32(j->j_cap.HighNode, 	data, len);
-	pack32(j->j_cap.Entries, 	data, len);
-	pack32(j->j_cap.RailMask, 	data, len);
+		pack32(j->j_cap.UserKey.Values[i], buffer);
+	pack16(j->j_cap.Type, 		buffer);
+	pack16(j->j_cap.padding, 	buffer);
+	pack32(j->j_cap.Version,	buffer);
+	pack32(j->j_cap.LowContext, 	buffer);
+	pack32(j->j_cap.HighContext, 	buffer);
+	pack32(j->j_cap.MyContext, 	buffer);
+	pack32(j->j_cap.LowNode, 	buffer);
+	pack32(j->j_cap.HighNode, 	buffer);
+	pack32(j->j_cap.Entries, 	buffer);
+	pack32(j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
-		pack32(j->j_cap.Bitmap[i], data, len);
+		pack32(j->j_cap.Bitmap[i], buffer);
 
-	return *len;
+	return (get_buf_offset(buffer) - offset);
 }
 
 /*
  * Unpack jobinfo structure packed by qsw_pack_jobinfo.
  *   j (IN/OUT)		where to store libstate structure
- *   data (OUT)		where to load packed data
- *   len (IN)		max size of data 
+ *   buffer (OUT)		where to load packed data
  *   RETURN		#bytes unused in 'data' or -1 on error (sets errno)
  */
 int
-qsw_unpack_jobinfo(qsw_jobinfo_t j, void **data, int *len)
+qsw_unpack_jobinfo(qsw_jobinfo_t j, Buf buffer)
 {
-	int i;
+	int i, offset;
 
 	assert(j->j_magic == QSW_JOBINFO_MAGIC);
-
-	unpack32(&j->j_magic, 		data, len);
-	unpack32(&j->j_prognum, 	data, len);
+	offset = get_buf_offset(buffer);
+ 
+	unpack32(&j->j_magic, 		buffer);
+	unpack32(&j->j_prognum, 	buffer);
 	for (i = 0; i < 4; i++)
-		unpack32(&j->j_cap.UserKey.Values[i], data, len);
-	unpack16(&j->j_cap.Type, 	data, len);
-	unpack16(&j->j_cap.padding, 	data, len);	    
-	unpack32(&j->j_cap.Version,	data, len); 	    
-	unpack32(&j->j_cap.LowContext, 	data, len);
-	unpack32(&j->j_cap.HighContext, data, len);
-	unpack32(&j->j_cap.MyContext,	data, len);
-	unpack32(&j->j_cap.LowNode, 	data, len);
-	unpack32(&j->j_cap.HighNode,    data, len);
-	unpack32(&j->j_cap.Entries, 	data, len);
-	unpack32(&j->j_cap.RailMask, 	data, len);
+		unpack32(&j->j_cap.UserKey.Values[i], buffer);
+	unpack16(&j->j_cap.Type, 	buffer);
+	unpack16(&j->j_cap.padding, 	buffer);	    
+	unpack32(&j->j_cap.Version,	buffer); 	    
+	unpack32(&j->j_cap.LowContext, 	buffer);
+	unpack32(&j->j_cap.HighContext, buffer);
+	unpack32(&j->j_cap.MyContext,	buffer);
+	unpack32(&j->j_cap.LowNode, 	buffer);
+	unpack32(&j->j_cap.HighNode,    buffer);
+	unpack32(&j->j_cap.Entries, 	buffer);
+	unpack32(&j->j_cap.RailMask, 	buffer);
 	for (i = 0; i < ELAN_BITMAPSIZE; i++)
-		unpack32(&j->j_cap.Bitmap[i], data, len);
+		unpack32(&j->j_cap.Bitmap[i], buffer);
 	
 	if (j->j_magic != QSW_JOBINFO_MAGIC)
 		slurm_seterrno_ret(EBADMAGIC_QSWJOBINFO);
 
-	return *len;
+	return (get_buf_offset(buffer) - offset);
 }
 
 /*
