@@ -95,8 +95,9 @@ slurmd_conf_t * conf;
 
 /* Send node registration message with status to controller
  * IN status - same values slurm error codes (for node shutdown)
+ * IN startup - non-zero if slurmd just restarted
  */
-int send_registration_msg(uint32_t status);
+int send_registration_msg(uint32_t status, bool startup);
 
 /*
  * save_cred_state - save the current credential list to a file

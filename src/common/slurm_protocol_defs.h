@@ -426,7 +426,8 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t *job_id;	/* IDs of running job (if any) */
 	uint16_t *step_id;	/* IDs of running job steps (if any) */
 	uint32_t status;	/* node status code, same as return codes */
-	switch_node_info_t switch_nodeinfo;
+	uint16_t startup;	/* slurmd just restarted */
+	switch_node_info_t switch_nodeinfo;	/* set only if startup != 0 */
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;

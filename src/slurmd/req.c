@@ -155,7 +155,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_node_registration_status_msg(msg->data);
 		/* Then initiate a separate node registration */
 		if (rc == SLURM_SUCCESS)
-			send_registration_msg(SLURM_SUCCESS);
+			send_registration_msg(SLURM_SUCCESS, false);
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg, cli);
@@ -429,7 +429,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED)
-		send_registration_msg(errnum);	
+		send_registration_msg(errnum, false);	
 }
 
 
@@ -505,7 +505,7 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	 *  If job prolog failed, indicate failure to slurmctld
 	 */
 	if (errnum == ESLURMD_PROLOG_FAILED)
-		send_registration_msg(errnum);	
+		send_registration_msg(errnum, false);	
 }
 static void
 _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
@@ -641,7 +641,7 @@ _rpc_ping(slurm_msg_t *msg, slurm_addr *cli_addr)
 	 * slurmd paging and not being able to respond in a timely fashion. */
 	if (slurm_send_rc_msg(msg, rc) < 0) {
 		error("Error responding to ping: %m");
-		send_registration_msg(SLURM_SUCCESS);
+		send_registration_msg(SLURM_SUCCESS, false);
 	}
 	return rc;
 }
