@@ -87,6 +87,7 @@ int iowatch_launch (  launch_tasks_msg_t * launch_msg )
 	int * childout = &newstdout[0] ;
 	int * childerr = &newstderr[0] ;
 	*/
+	task_t * task ;
 	int pid ;
 
 	/* open pipes to be used in dup after fork */
@@ -142,7 +143,8 @@ int iowatch_launch (  launch_tasks_msg_t * launch_msg )
 		/*parent*/
 		default:
 			
-			xmalloc ( sizeof ( task_t ) ) ;
+			task = xmalloc ( sizeof ( task_t ) ) ;
+			append_task_to_list ( launch_msg , pid ) ;
 			close ( newstdin[READFD] ) ;
 			close ( newstdout[WRITEFD] ) ;
 			close ( newstderr[WRITEFD] ) ;
