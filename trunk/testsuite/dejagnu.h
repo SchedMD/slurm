@@ -100,7 +100,7 @@ totals (void) {
     if (untest)
         printf ("\t#untested:\t\t%d\n", untest);
     if (unresolve)
-        printf ("\t#unresolved:\t\t%d\n", unresolved);
+        printf ("\t#unresolved:\t\t%d\n", unresolve);
 }
 
 #ifdef __cplusplus
