@@ -368,7 +368,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	if ((rc = _slurm_msg_recvfrom( open_fd, buftemp, SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE,
 				       SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
 				       &(msg)->address)) == SLURM_SOCKET_ERROR) {
-		debug("Error receiving msg socket: %m");
+		xfree(buftemp);
 		return rc;
 	}
 	/* print_data (buftemp,rc); */
@@ -377,31 +377,34 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	/* unpack header */
 	unpack_header(&header, buffer);
 	if ((rc = check_header_version(&header)) != SLURM_SUCCESS) {
+		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
-		goto cleanup;
 	}
 
 	/* unpack cred */
-	if (slurm_auth_unpack_credentials( &creds, buffer ) )
+	if (slurm_auth_unpack_credentials( &creds, buffer ) ) {
+		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
+	}
 
 	/* verify credentials */
 	if ((rc = slurm_auth_verify_credentials(creds)) != SLURM_SUCCESS) {
+		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
-		goto cleanup;
 	}
 
 	msg->cred_type = header.cred_type;
 	msg->cred_size = header.cred_length;
-	msg->cred = creds;
+	msg->cred = (void *)creds;
 
 	/* unpack msg body */
 	msg->msg_type = header.msg_type;
 	if ((header.body_length > remaining_buf(buffer)) ||
-	    (unpack_msg(msg, buffer) != SLURM_SUCCESS))
+	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
+		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
+	}
 
-cleanup:
 	free_buf (buffer);
 	return rc;
 }
@@ -884,7 +887,6 @@ short int slurm_get_slurmd_port()
 
 void slurm_free_msg(slurm_msg_t * msg)
 {
-	if (msg->cred)
-		xfree(msg->cred);
+	slurm_auth_free_credentials((slurm_auth_t)msg->cred);
 	xfree(msg);
 }
