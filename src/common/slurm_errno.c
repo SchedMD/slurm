@@ -111,7 +111,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE,
 	  "Requested node configuration is not available"	},
 	{ ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE,
-	  "Requested partition configuration not available now, job queued" },
+	  "Requested partition configuration not available now" },
 	{ ESLURM_NODES_BUSY, 
 	  "Requested nodes are busy"				},
 	{ ESLURM_INVALID_JOB_ID, 
