@@ -13,6 +13,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
 #include <sys/socket.h>
@@ -20,11 +21,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurm.h"
+#include "pack.h"
 #include "slurmlib.h"
-
-char *job_api_buffer = NULL;
-int job_api_buffer_size = 0;
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -33,84 +31,95 @@ main (int argc, char *argv[])
 {
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i;
-	char req_name[MAX_ID_LEN];	/* name of the job_id */
-	char next_name[MAX_ID_LEN];	/* name of the next job_id */
-	char job_name[MAX_NAME_LEN], partition[MAX_NAME_LEN];
-	char job_state[MAX_NAME_LEN], node_list[FEATURE_SIZE];
-	int time_limit, user_id;
-	time_t start_time, end_time;
-	int priority;
+	struct job_buffer *job_buffer_ptr = NULL;
+	struct job_table *job_ptr;
 
-	error_code = load_job (&last_update_time);
+	error_code = slurm_load_job (last_update_time, &job_buffer_ptr);
 	if (error_code) {
-		printf ("load_job error %d\n", error_code);
+		printf ("slurm_load_job error %d\n", error_code);
 		exit (error_code);
 	}
 
-	strcpy (req_name, "");	/* start at beginning of job list */
-	for (i = 1;; i++) {
-		error_code =
-			load_job_config (req_name, next_name, job_name,
-				partition, &user_id, job_state, node_list, 
-				&time_limit, &start_time, &end_time, &priority);
+	printf("Updated at %lx, record count %d\n",
+		job_buffer_ptr->last_update, job_buffer_ptr->job_count);
+	job_ptr = job_buffer_ptr->job_table_ptr;
 
-		if (error_code != 0) {
-			printf ("load_job_config error %d on %s\n",
-				error_code, req_name);
-			break;
-		}		
-		if ((i < 10) || (i % 10 == 0)) {
-			printf ("found JobId=%s JobName=%s Partition=%s ", 
-				req_name, job_name, partition);
-			printf ("user_id=%d job_state=%s node_list=%s ", 
-				user_id, job_state, node_list);
-			printf ("time_limit=%d priority=%d ", 
-				time_limit, priority);
-			printf ("start_time=%lx end_time=%lx\n", 
-				(long)start_time, (long)end_time);
-		}
-		else if ((i==10) || (i % 10 == 1))
-			printf ("skipping...\n");
+	for (i = 0; i < job_buffer_ptr->job_count; i++) {
+			printf ("JobId=%s UserId=%u ", 
+				job_ptr[i].job_id, job_ptr[i].user_id);
+			printf ("JobState=%u TimeLimit=%u ", 
+				job_ptr[i].job_state, job_ptr[i].time_limit);
+			printf ("Priority=%u Partition=%s\n", 
+				job_ptr[i].priority, job_ptr[i].partition);
 
-		if (strlen (next_name) == 0)
-			break;
-		strcpy (req_name, next_name);
+			printf ("   Name=%s Nodes=%s ", 
+				job_ptr[i].name, job_ptr[i].nodes);
+			printf ("StartTime=%x EndTime=%x\n", 
+				(uint32_t) job_ptr[i].start_time, 
+				(uint32_t) job_ptr[i].end_time);
+
+			printf ("   ReqProcs=%u ReqNodes=%u ",
+				job_ptr[i].num_procs, job_ptr[i].num_nodes);
+			printf ("Shared=%u Contiguous=%u\n",
+				job_ptr[i].shared, job_ptr[i].contiguous);
+
+			printf ("   MinProcs=%u MinMemory=%u ",
+				job_ptr[i].min_procs, job_ptr[i].min_memory);
+			printf ("MinTmpDisk=%u TotalProcs=%u\n",
+				job_ptr[i].min_tmp_disk, job_ptr[i].total_procs);
+
+			printf ("   ReqNodes=%s Features=%s ",
+				job_ptr[i].req_nodes, job_ptr[i].features);
+			printf ("JobScript=%s\n\n",
+				job_ptr[i].job_script);
+
 	}			
-	free_job_info ();
-	exit (error_code);
+	slurm_free_job_info (job_buffer_ptr);
+	exit (0);
 }
 #endif
 
 
 /*
- * free_job_info - free the job information buffer (if allocated)
- * NOTE: buffer is loaded by load_job and used by load_job_name.
+ * slurm_free_job_info - free the job information buffer (if allocated)
+ * NOTE: buffer is loaded by load_job.
  */
 void
-free_job_info (void)
+slurm_free_job_info (struct job_buffer *job_buffer_ptr)
 {
-	if (job_api_buffer)
-		free (job_api_buffer);
+	if (job_buffer_ptr == NULL)
+		return;
+	if (job_buffer_ptr->raw_buffer_ptr)
+		free (job_buffer_ptr->raw_buffer_ptr);
+	if (job_buffer_ptr->job_table_ptr)
+		free (job_buffer_ptr->job_table_ptr);
 }
 
 
 /*
- * load_job - load the supplied job information buffer for use by info gathering 
- *	APIs if job records have changed since the time specified. 
- * input: buffer - pointer to job information buffer
- *        buffer_size - size of buffer
- * output: returns 0 if no error, EINVAL if the buffer is invalid,
- *		 ENOMEM if malloc failure
- * NOTE: buffer is used by load_job_config and freed by free_job_info.
+ * slurm_load_job - load the supplied job information buffer for use by info 
+ *	gathering APIs if job records have changed since the time specified. 
+ * input: update_time - time of last update
+ *	job_buffer_ptr - place to park job_buffer pointer
+ * output: job_buffer_ptr - pointer to allocated job_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
+ *		ENOMEM if malloc failure
+ * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
  */
 int
-load_job (time_t * last_update_time) {
-	int buffer_offset, buffer_size, error_code, in_size, version;
-	char request_msg[64], *buffer, *my_line;
-	int sockfd;
+slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr)
+{
+	int buffer_offset, buffer_size, in_size, i, sockfd;
+	char request_msg[64], *buffer;
+	void *buf_ptr;
 	struct sockaddr_in serv_addr;
-	unsigned long my_time;
+	uint16_t uint16_tmp;
+	uint32_t uint32_tmp, uint32_time;
+	struct job_table *job;
 
+	*job_buffer_ptr = NULL;
 	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
 		return EINVAL;
 	serv_addr.sin_family = PF_INET;
@@ -123,7 +132,7 @@ load_job (time_t * last_update_time) {
 		return EINVAL;
 	}			
 	sprintf (request_msg, "DumpJob LastUpdate=%lu",
-		 (long) (*last_update_time));
+		 (long) (update_time));
 	if (send (sockfd, request_msg, strlen (request_msg) + 1, 0) <
 	    strlen (request_msg)) {
 		close (sockfd);
@@ -155,143 +164,72 @@ load_job (time_t * last_update_time) {
 		return ENOMEM;
 	if (strcmp (buffer, "nochange") == 0) {
 		free (buffer);
-		return 0;
-	}			
+		return -1;
+	}
 
 	/* load buffer's header (data structure version and time) */
-	buffer_offset = 0;
-	error_code =
-		read_buffer (buffer, &buffer_offset, buffer_size, &my_line);
-	if ((error_code) || (strlen (my_line) < strlen (HEAD_FORMAT))) {
-#if DEBUG_SYSTEM
-		fprintf (stderr,
-			 "load_job: job buffer lacks valid header\n");
-#else
-		syslog (LOG_ERR,
-			"load_job: job buffer lacks valid header\n");
-#endif
+	buf_ptr = buffer;
+	unpack32 (&uint32_tmp, &buf_ptr, &buffer_size);
+	if (uint32_tmp != JOB_STRUCT_VERSION) {
 		free (buffer);
 		return EINVAL;
-	}			
-	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
+	}
+	unpack32 (&uint32_time, &buf_ptr, &buffer_size);
 
-	if (version != JOB_STRUCT_VERSION) {
-#if DEBUG_SYSTEM
-		fprintf (stderr, "load_part: expect version %d, read %d\n",
-			 NODE_STRUCT_VERSION, version);
-#else
-		syslog (LOG_ERR, "load_part: expect version %d, read %d\n",
-			NODE_STRUCT_VERSION, version);
-#endif
+	/* load individual job info */
+	job = NULL;
+	for (i = 0; buffer_size > 0; i++) {
+		job = realloc (job, sizeof(struct job_table) * (i+1));
+		if (job == NULL) {
+			free (buffer);
+			return ENOMEM;
+		}
+		unpackstr_ptr (&job[i].job_id, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpack32  (&job[i].user_id, &buf_ptr, &buffer_size);
+		unpack16  (&job[i].job_state, &buf_ptr, &buffer_size);
+		unpack32  (&job[i].time_limit, &buf_ptr, &buffer_size);
+
+		unpack32  (&uint32_tmp, &buf_ptr, &buffer_size);
+		job[i].start_time = (time_t) uint32_tmp;
+		unpack32  (&uint32_tmp, &buf_ptr, &buffer_size);
+		job[i].end_time = (time_t) uint32_tmp;
+		unpack32  (&job[i].priority, &buf_ptr, &buffer_size);
+
+		unpackstr_ptr (&job[i].nodes, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&job[i].partition, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&job[i].name, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+
+		unpack32  (&job[i].num_procs, &buf_ptr, &buffer_size);
+		unpack32  (&job[i].num_nodes, &buf_ptr, &buffer_size);
+		unpack16  (&job[i].shared, &buf_ptr, &buffer_size);
+		unpack16  (&job[i].contiguous, &buf_ptr, &buffer_size);
+
+		unpack32  (&job[i].min_procs, &buf_ptr, &buffer_size);
+		unpack32  (&job[i].min_memory, &buf_ptr, &buffer_size);
+		unpack32  (&job[i].min_tmp_disk, &buf_ptr, &buffer_size);
+		unpack32  (&job[i].total_procs, &buf_ptr, &buffer_size);
+
+		unpackstr_ptr (&job[i].req_nodes, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&job[i].features, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+		unpackstr_ptr (&job[i].job_script, &uint16_tmp, 
+			&buf_ptr, &buffer_size);
+	}
+
+	*job_buffer_ptr = malloc (sizeof (struct job_buffer));
+	if (*job_buffer_ptr == NULL) {
 		free (buffer);
-		return EINVAL;
-	}			
-
-	*last_update_time = (time_t) my_time;
-	job_api_buffer = buffer;
-	job_api_buffer_size = buffer_size;
+		free (job);
+		return ENOMEM;
+	}
+	(*job_buffer_ptr)->last_update = (time_t) uint32_time;
+	(*job_buffer_ptr)->job_count = i;
+	(*job_buffer_ptr)->raw_buffer_ptr = buffer;
+	(*job_buffer_ptr)->job_table_ptr = job;
 	return 0;
-}
-
-
-/* 
- * load_job_config - load the state information about the named job
- * input: req_name - job_id of the job for which information is requested
- *		     if "", then get info for the first job in list
- *        next_name - location into which the name of the next job_id is 
- *                   stored, "" if no more
- *        job_name, etc. - pointers into which the information is to be stored
- * output: next_name - job_id of the next job in the list
- *         job_name, etc. - the job's state information
- *         returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  req_name and next_name must be declared by the caller and 
- *		have length MAX_ID_LEN or larger
- * NOTE:  job_name, partition, and job_state must be declared by the caller and 
- *		have length MAX_NAME_LEN or larger
- * NOTE:  node_list must be declared by the caller and 
- *		have length FEATURE_SIZE or larger (NOT SUFFICIENT, TEMPORARY USE ONLY)
- * NOTE: buffer is loaded by load_job and freed by free_job_info.
- */
-int
-load_job_config (char *req_name, char *next_name, char *job_name,
-		char *partition, int *user_id, char *job_state, 
-		char *node_list, int *time_limit, time_t *start_time, 
-		time_t *end_time, int *priority)
-
-{
-	int error_code, version, buffer_offset, my_user_id;
-	static time_t last_update_time, update_time;
-	struct job_record my_job;
-	static char next_job_id_value[MAX_ID_LEN];
-	static int last_buffer_offset;
-	char my_job_id[MAX_ID_LEN], *my_line;
-	unsigned long my_time;
-	long my_start_time, my_end_time;
-
-	/* load buffer's header (data structure version and time) */
-	buffer_offset = 0;
-	error_code =
-		read_buffer (job_api_buffer, &buffer_offset,
-			     job_api_buffer_size, &my_line);
-	if (error_code)
-		return error_code;
-	sscanf (my_line, HEAD_FORMAT, &my_time, &version);
-	update_time = (time_t) my_time;
-
-	if ((update_time == last_update_time)
-	    && (strcmp (req_name, next_job_id_value) == 0)
-	    && (strlen (req_name) != 0))
-		buffer_offset = last_buffer_offset;
-	last_update_time = update_time;
-
-	while (1) {
-		/* load all information for next job */
-		error_code =
-			read_buffer (job_api_buffer, &buffer_offset,
-				     job_api_buffer_size, &my_line);
-		if (error_code == EFAULT)
-			break;	/* end of buffer */
-		if (error_code)
-			return error_code;
-		sscanf (my_line, JOB_STRUCT_FORMAT1,
-			 my_job_id, 
-			 partition, 
-			 job_name, 
-			 &my_user_id, 
-			 node_list, 
-			 job_state, 
-			 &my_job.time_limit, 
-			 &my_start_time, 
-			 &my_end_time, 
-			 &my_job.priority);
-		if (strlen (req_name) == 0)
-			strncpy (req_name, my_job_id, MAX_ID_LEN);
-
-		/* check if this is requested job */
-		if (strcmp (req_name, my_job_id) != 0)
-			continue;
-
-		/*load values to be returned */
-		*user_id = my_user_id;
-		*time_limit = my_job.time_limit;
-		*start_time = (time_t) my_start_time;
-		*end_time = (time_t) my_end_time;
-		*priority = my_job.priority;
-
-		last_buffer_offset = buffer_offset;
-		error_code =
-			read_buffer (job_api_buffer, &buffer_offset,
-				     job_api_buffer_size, &my_line);
-		if (error_code) {	/* no more records */
-			strcpy (next_job_id_value, "");
-			strcpy (next_name, "");
-		}
-		else {
-			sscanf (my_line, "JobId=%s", my_job_id);
-			strncpy (next_job_id_value, my_job_id, MAX_ID_LEN);
-			strncpy (next_name, my_job_id, MAX_ID_LEN);
-		}
-		return 0;
-	}			
-	return ENOENT;
 }

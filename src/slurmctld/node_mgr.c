@@ -44,7 +44,7 @@ void split_node_name (char *name, char *prefix, char *suffix, int *index,
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code, node_count, i;
+	int error_code, error_count, node_count, i;
 	uint32_t total_procs;
 	char *out_line;
 	bitstr_t *map1, *map2, *map3;
@@ -69,11 +69,14 @@ main (int argc, char *argv[])
 	map2 = bit_copy (map1);
 	bit_set (map2, 11);
 	node_record_count = 0;
+	error_count = 0;
 
 	/* now check out configuration and node structure functions */
 	error_code = init_node_conf ();
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: init_node_conf error %d\n", error_code);
+		error_count++;
+	}
 	default_config_record.cpus = 12;
 	default_config_record.real_memory = 345;
 	default_config_record.tmp_disk = 67;
@@ -81,14 +84,22 @@ main (int argc, char *argv[])
 	default_node_record.last_response = (time_t) 678;
 
 	config_ptr = create_config_record ();
-	if (config_ptr->cpus != 12)
+	if (config_ptr->cpus != 12) {
 		printf ("ERROR: config default cpus not set\n");
-	if (config_ptr->real_memory != 345)
+		error_count++;
+	}
+	if (config_ptr->real_memory != 345) {
 		printf ("ERROR: config default real_memory not set\n");
-	if (config_ptr->tmp_disk != 67)
+		error_count++;
+	}
+	if (config_ptr->tmp_disk != 67) {
 		printf ("ERROR: config default tmp_disk not set\n");
-	if (config_ptr->weight != 89)
+		error_count++;
+	}
+	if (config_ptr->weight != 89) {
 		printf ("ERROR: config default weight not set\n");
+		error_count++;
+	}
 	config_ptr->feature = "for_lx01,lx02";
 	config_ptr->nodes = "lx[01-02]";
 	config_ptr->node_bitmap = map1;
@@ -100,11 +111,15 @@ main (int argc, char *argv[])
 
 	printf("NOTE: We are setting lx[01-02] to state draining\n");
 	error_code = update_node ("lx[01-02]", update_spec);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: update_node error1 %d\n", error_code);
-	if (node_ptr->node_state != STATE_DRAINING)
+		error_count++;
+	}
+	if (node_ptr->node_state != STATE_DRAINING) {
 		printf ("ERROR: update_node error2 node_state=%d\n",
 			node_ptr->node_state);
+		error_count++;
+	}
 
 	config_ptr = create_config_record ();
 	config_ptr->cpus = 54;
@@ -112,19 +127,29 @@ main (int argc, char *argv[])
 	config_ptr->feature = "for_lx03,lx04";
 	config_ptr->node_bitmap = map2;
 	node_ptr = create_node_record (config_ptr, "lx03");
-	if (node_ptr->last_response != (time_t) 678)
+	if (node_ptr->last_response != (time_t) 678) {
 		printf ("ERROR: node default last_response not set\n");
-	if (node_ptr->cpus != 54)
+		error_count++;
+	}
+	if (node_ptr->cpus != 54) {
 		printf ("ERROR: node default cpus not set\n");
-	if (node_ptr->real_memory != 345)
+		error_count++;
+	}
+	if (node_ptr->real_memory != 345) {
 		printf ("ERROR: node default real_memory not set\n");
-	if (node_ptr->tmp_disk != 67)
+		error_count++;
+	}
+	if (node_ptr->tmp_disk != 67) {
 		printf ("ERROR: node default tmp_disk not set\n");
+		error_count++;
+	}
 	node_ptr = create_node_record (config_ptr, "lx04");
 
 	error_code = node_name2list (node_names, &node_list, &node_count);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: node_name2list error %d\n", error_code);
+		error_count++;
+	}
 	printf("node_name2list for %s generates\n  ", node_names);
 	for (i = 0; i < node_count; i++)
 		printf("%s ", &node_list[i*MAX_NAME_LEN]);
@@ -132,11 +157,15 @@ main (int argc, char *argv[])
 	xfree(node_list);
 
 	error_code = node_name2bitmap ("lx[01-02],lx04", &map3);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: node_name2bitmap error %d\n", error_code);
+		error_count++;
+	}
 	error_code = bitmap2node_name (map3, &out_line);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: bitmap2node_name error %d\n", error_code);
+		error_count++;
+	}
 	if (strcmp (out_line, "lx[01-02],lx04") != 0)
 		printf ("ERROR: bitmap2node_name results bad %s vs %s\n",
 			out_line, "lx[01-02],lx04");
@@ -148,59 +177,71 @@ main (int argc, char *argv[])
 	xfree (node_list);
 
 	error_code = validate_node_specs ("lx01", 12, 345, 67);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: validate_node_specs error1\n");
+		error_count++;
+	}
 
 	printf("dumping node info\n");
 	update_time = (time_t) 0;
 	error_code = pack_all_node (&dump, &dump_size, &update_time);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: pack_all_node error %d\n", error_code);
+		error_count++;
+	}
 	if (dump)
 		xfree(dump);
 
 	update_time = (time_t) 0;
-	error_code = dump_all_node (&dump, &dump_size, &update_time);
-	if (error_code)
-		printf ("ERROR: dump_all_node error %d\n", error_code);
-	else {
-		printf("\ndump of node info:\n");
-		for (i=0; i<dump_size; ) {
-			printf("%s", &dump[i]);
-			i += strlen(&dump[i]) + 1;
-		}
-		printf("\n");
+	error_code = pack_all_node (&dump, &dump_size, &update_time);
+	if (error_code) {
+		printf ("ERROR: pack_all_node error %d\n", error_code);
+		error_count++;
 	}
 	if (dump)
 		xfree(dump);
 
 	printf ("NOTE: we expect validate_node_specs to report bad cpu, real_memory and tmp_disk on lx01\n");
 	error_code = validate_node_specs ("lx01", 1, 2, 3);
-	if (error_code != EINVAL)
+	if (error_code != EINVAL) {
 		printf ("ERROR: validate_node_specs error2\n");
 
+		error_count++;
+	}
 	rehash ();
 	dump_hash ();
 	node_ptr = find_node_record ("lx02");
-	if (node_ptr == 0)
+	if (node_ptr == 0) {
 		printf ("ERROR: find_node_record failure 1\n");
-	else if (strcmp (node_ptr->name, "lx02") != 0)
+		error_count++;
+	}
+	else if (strcmp (node_ptr->name, "lx02") != 0) {
 		printf ("ERROR: find_node_record failure 2\n");
-	else if (node_ptr->last_response != (time_t) 678)
+		error_count++;
+	}
+	else if (node_ptr->last_response != (time_t) 678) {
 		printf ("ERROR: node default last_response not set\n");
+		error_count++;
+	}
 	printf ("NOTE: we expect delete_node_record to report not finding a record for lx10\n");
 	error_code = delete_node_record ("lx10");
-	if (error_code != ENOENT)
+	if (error_code != ENOENT) {
 		printf ("ERROR: delete_node_record failure 1\n");
+		error_count++;
+	}
 	error_code = delete_node_record ("lx02");
-	if (error_code != 0)
+	if (error_code != 0) {
 		printf ("ERROR: delete_node_record failure 2\n");
+		error_count++;
+	}
 	printf ("NOTE: we expect find_node_record to report not finding a record for lx02\n");
 	node_ptr = find_node_record ("lx02");
-	if (node_ptr != 0)
+	if (node_ptr != 0) {
 		printf ("ERROR: find_node_record failure 3\n");
+		error_count++;
+	}
 
-	exit (0);
+	exit (error_count);
 }
 #endif
 
@@ -963,39 +1004,19 @@ pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *buf_len)
 {
 	int state;
 	char *partition = NULL;
-	uint16_t feature_size, name_size, partition_size;
 
 	state = dump_node_ptr->node_state;
 	if (state < 0)
 		state = STATE_DOWN;
-	name_size = strlen(dump_node_ptr->name) + 1;
 
-	if (dump_node_ptr->config_ptr->feature)
-		feature_size = strlen(dump_node_ptr->config_ptr->feature) + 1;
-	else
-		feature_size = 0;
-
-	if (dump_node_ptr->partition_ptr) {
-		partition = dump_node_ptr->partition_ptr->name;
-		partition_size = strlen(dump_node_ptr->partition_ptr->name) + 1;
-	}
-	else
-		partition_size = 0;
-
-	if (name_size + feature_size + partition_size + 40 > *buf_len) {
-		error ("pack_node: buffer too small for node %s", dump_node_ptr->name);
-		return 1;
-	}
-
-	packstr (dump_node_ptr->name, name_size, buf_ptr, buf_len);
+	packstr (dump_node_ptr->name, buf_ptr, buf_len);
 	pack32  (state, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->cpus, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->real_memory, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->tmp_disk, buf_ptr, buf_len);
 	pack32  (dump_node_ptr->config_ptr->weight, buf_ptr, buf_len);
-	packstr (dump_node_ptr->config_ptr->feature, feature_size, 
-		 buf_ptr, buf_len);
-	packstr (partition, partition_size, buf_ptr, buf_len);
+	packstr (dump_node_ptr->config_ptr->feature, buf_ptr, buf_len);
+	packstr (partition, buf_ptr, buf_len);
 
 	return 0;
 }
@@ -1152,15 +1173,18 @@ update_node (char *node_names, char *spec)
 		if (state_val != NO_VAL) {
 			if ((state_val == STATE_DOWN) &&
 			    (node_record_point->node_state != STATE_UNKNOWN))
-				node_record_point->node_state = -(node_record_point->node_state);
+				node_record_point->node_state = 
+					-(node_record_point->node_state);
 			else
 				node_record_point->node_state = state_val;
 			if (state_val != STATE_IDLE)
 				bit_clear (idle_node_bitmap,
-					      (int) (node_record_point - node_record_table_ptr));
+					      (int) (node_record_point - 
+						node_record_table_ptr));
 			if (state_val == STATE_DOWN)
 				bit_clear (up_node_bitmap,
-					      (int) (node_record_point - node_record_table_ptr));
+					      (int) (node_record_point - 
+						node_record_table_ptr));
 			info ("update_node: node %s state set to %s",
 				&node_list[i*MAX_NAME_LEN], node_state_string[state_val]);
 		}

@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "slurm.h"
+#include "pack.h"
 
 #define BUF_SIZE 1024
 
@@ -75,6 +76,7 @@ main (int argc, char *argv[]) {
 	}
 	if (error_code < 0)
 		fatal ("slurmctld: error %d from bind\n", errno);
+	info ("slurmctld ready for service\n");
 		
 	listen (sockfd, 5);
 	while (1) {
@@ -113,31 +115,13 @@ dump_build (char **buffer_ptr, int *buffer_size, time_t last_update)
 	int buf_len, buffer_allocated;
 	char *buffer;
 	void *buf_ptr;
-	uint16_t backup_len, control_len, epilog_len, init_len, prio_len;
-	uint16_t prolog_len, server_len, conf_len, tmpfs_len;
-	uint16_t primary_len, secondary_len;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (init_time <= last_update) 
 		return 0;
 
-	backup_len	= strlen (BACKUP_LOCATION);
-	secondary_len	= strlen (backup_controller);
-	control_len	= strlen (CONTROL_DAEMON);
-	primary_len	= strlen (control_machine);
-	epilog_len	= strlen (EPILOG);
-	init_len	= strlen (INIT_PROGRAM);
-	prio_len	= strlen (PRIORITIZE);
-	prolog_len	= strlen (PROLOG);
-	server_len	= strlen (SERVER_DAEMON);
-	conf_len	= strlen (SLURM_CONF);
-	tmpfs_len	= strlen (TMP_FS);
-
-	buffer_allocated = (BUF_SIZE + backup_len + control_len + 
-			    epilog_len + init_len + prio_len + 
-			    prolog_len + server_len + conf_len + 
-			    tmpfs_len + primary_len + secondary_len);
+	buffer_allocated = (BUF_SIZE);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
 	buf_len = buffer_allocated;
@@ -148,23 +132,23 @@ dump_build (char **buffer_ptr, int *buffer_size, time_t last_update)
 
 	/* write data values */
 	pack16  ((uint16_t) BACKUP_INTERVAL, &buf_ptr, &buf_len);
-	packstr (BACKUP_LOCATION, backup_len, &buf_ptr, &buf_len);
-	packstr (backup_controller, secondary_len, &buf_ptr, &buf_len);
-	packstr (CONTROL_DAEMON, control_len, &buf_ptr, &buf_len);
-	packstr (control_machine, primary_len, &buf_ptr, &buf_len);
+	packstr (BACKUP_LOCATION, &buf_ptr, &buf_len);
+	packstr (backup_controller, &buf_ptr, &buf_len);
+	packstr (CONTROL_DAEMON, &buf_ptr, &buf_len);
+	packstr (control_machine, &buf_ptr, &buf_len);
 	pack16  ((uint16_t) CONTROLLER_TIMEOUT, &buf_ptr, &buf_len);
-	packstr (EPILOG, epilog_len, &buf_ptr, &buf_len);
+	packstr (EPILOG, &buf_ptr, &buf_len);
 	pack16  ((uint16_t) FAST_SCHEDULE, &buf_ptr, &buf_len);
 	pack16  ((uint16_t) HASH_BASE, &buf_ptr, &buf_len);
 	pack16  ((uint16_t) HEARTBEAT_INTERVAL, &buf_ptr, &buf_len);
-	packstr (INIT_PROGRAM, init_len, &buf_ptr, &buf_len);
+	packstr (INIT_PROGRAM, &buf_ptr, &buf_len);
 	pack16  ((uint16_t) KILL_WAIT, &buf_ptr, &buf_len);
-	packstr (PRIORITIZE, prio_len, &buf_ptr, &buf_len);
-	packstr (PROLOG, prolog_len, &buf_ptr, &buf_len);
-	packstr (SERVER_DAEMON, server_len, &buf_ptr, &buf_len);
+	packstr (PRIORITIZE, &buf_ptr, &buf_len);
+	packstr (PROLOG, &buf_ptr, &buf_len);
+	packstr (SERVER_DAEMON, &buf_ptr, &buf_len);
 	pack16  ((uint16_t) SERVER_TIMEOUT, &buf_ptr, &buf_len);
-	packstr (SLURM_CONF, conf_len, &buf_ptr, &buf_len);
-	packstr (TMP_FS, tmpfs_len, &buf_ptr, &buf_len);
+	packstr (SLURM_CONF, &buf_ptr, &buf_len);
+	packstr (TMP_FS, &buf_ptr, &buf_len);
 
 	*buffer_size = (char *)buf_ptr - buffer;
 	xrealloc (buffer, *buffer_size);
@@ -179,7 +163,7 @@ dump_build (char **buffer_ptr, int *buffer_size, time_t last_update)
  */
 void
 slurmctld_req (int sockfd) {
-	int error_code, detail, in_size, i;
+	int error_code, in_size, i;
 	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
 	int cpus, real_memory, tmp_disk;
 	char *job_id_ptr, *node_name_ptr, *part_name, *time_stamp;
@@ -268,17 +252,13 @@ slurmctld_req (int sockfd) {
 		}
 		else
 			last_update = (time_t) 0;
-		if (in_line[7] == 'L')
-			detail = 1;
-		else
-			detail = 0;
-		error_code = dump_all_job (&dump, &dump_size, 
-					   &last_update, detail);
+
+		error_code = pack_all_jobs (&dump, &dump_size, &last_update);
 		if (error_code)
-			info ("slurmctld_req: dump_all_job error %d, time=%ld",
+			info ("slurmctld_req: pack_all_jobs error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: dump_all_job returning %d bytes, time=%ld",
+			info ("slurmctld_req: pack_all_jobs returning %d bytes, time=%ld",
 				 dump_size, (long) (clock () - start_time));
 		if (dump_size == 0)
 			send (sockfd, "nochange", 9, 0);

@@ -8,6 +8,7 @@
 #define BUILD_SIZE	128
 #define BUILD_STRUCT_VERSION 1
 #define FEATURE_SIZE	1024
+#define JOB_STRUCT_VERSION 1
 #define MAX_ID_LEN	32
 #define MAX_NAME_LEN	16
 #define NODE_STRUCT_VERSION 1
@@ -19,6 +20,23 @@
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 
+/* last entry must be JOB_END	*/
+enum job_states {
+	JOB_PENDING,		/* queued waiting for initiation */
+	JOB_STAGE_IN,		/* allocated resources, not yet running */
+	JOB_RUNNING,		/* allocated resources and executing */
+	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
+	JOB_COMPLETE,		/* completed execution successfully, nodes released */
+	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
+	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
+	JOB_END			/* last entry in table */
+};
+
+enum task_dist {
+	DIST_BLOCK,		/* fill each node in turn */
+	DIST_CYCLE		/* one task each node, round-robin through nodes */
+};
+
 /* last entry must be STATE_END, keep in sync with node_state_string    	*/
 /* any value less than or equal to zero is down. if a node was in state 	*/
 /* STATE_BUSY and stops responding, its state becomes -(STATE_BUSY), etc.	*/
@@ -26,7 +44,6 @@ enum node_states {
 	STATE_DOWN,		/* node is not responding */
 	STATE_UNKNOWN,		/* node's initial state, unknown */
 	STATE_IDLE,		/* node idle and available for use */
-	STATE_STAGE_IN,		/* node has been allocated, job not yet running */
 	STATE_BUSY,		/* node has been allocated, job currently */
 	STATE_DRAINED,		/* node idle and not to be allocated future work */
 	STATE_DRAINING,		/* node in use, but not to be allocated future work */
@@ -62,6 +79,37 @@ struct build_buffer {
 	struct build_table *build_table_ptr;
 };
 
+struct job_table {
+	char *job_id;		/* job ID */
+	char *name;		/* name of the job */
+	uint32_t user_id;	/* user the job runs as */
+	uint16_t job_state;	/* state of the job, see enum job_states */
+	uint32_t time_limit;	/* maximum run time in minutes or INFINITE */
+	time_t start_time;	/* time execution begins, actual or expected*/
+	time_t end_time;	/* time of termination, actual or expected */
+	uint32_t priority;	/* relative priority of the job */
+	char *nodes;		/* comma delimited list of nodes allocated to job */
+	char *partition;	/* name of assigned partition */
+	uint32_t num_procs;	/* number of processors required by job */
+	uint32_t num_nodes;	/* number of nodes required by job */
+	uint16_t shared;	/* 1 if job can share nodes with other jobs */
+	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
+	uint32_t min_procs;	/* minimum processors required per node */
+	uint32_t min_memory;	/* minimum real memory required per node */
+	uint32_t min_tmp_disk;	/* minimum temporary disk required per node */
+	uint32_t total_procs;	/* number of allocated processors */
+	char *req_nodes;	/* comma separated list of required nodes */
+	char *features;		/* comma separated list of required features */
+	char *job_script;	/* pathname of required script */
+};
+
+struct job_buffer {
+	time_t last_update;	/* time of last buffer update */
+	uint32_t job_count;	/* count of entries in node_table */
+	void *raw_buffer_ptr;	/* raw network buffer info */
+	struct job_table *job_table_ptr;
+};
+
 struct node_table {
 	char *name;		/* name of the node. a null name indicates defunct node */
 	uint32_t node_state;	/* state of the node, see node_states */
@@ -69,13 +117,23 @@ struct node_table {
 	uint32_t real_memory;	/* megabytes of real memory on the node */
 	uint32_t tmp_disk;	/* megabytes of total disk in TMP_FS */
 	uint32_t weight;	/* desirability of use */
-	char *features;		/* comma delimited feature list */
 	char *partition;	/* partition name */ 
+	uint32_t num_procs;	/* required number of processors */
+	uint32_t num_nodes;	/* required number of nodes */
+	uint16_t shared;	/* 1 if job willing to share nodes */
+	uint16_t contiguous;	/* 1 if job requires contiguous nodes */
+	uint32_t min_procs;	/* minimum processors per node */
+	uint32_t min_memory;	/* minimum real memory per node */
+	uint32_t min_tmp_disk;	/* minimum temporary disk per node */
+	uint32_t total_procs;	/* total processor count allocated to job */
+	char *req_nodes;	/* list of nodes required by the job */
+	char *features;		/* list of features required by the job */
+	char *job_script;	/* pathname of script to execute for the job */
 };
 
 struct node_buffer {
 	time_t last_update;	/* time of last buffer update */
-	int node_count;		/* count of entries in node_table */
+	uint32_t node_count;	/* count of entries in node_table */
 	void *raw_buffer_ptr;	/* raw network buffer info */
 	struct node_table *node_table_ptr;
 };
@@ -135,6 +193,12 @@ extern int slurm_cancel (char *job_id);
 extern void slurm_free_build_info (struct build_buffer *build_buffer_ptr);
 
 /*
+ * slurm_free_job_info - free the job information buffer (if allocated)
+ * NOTE: buffer is loaded by load_job.
+ */
+extern void slurm_free_job_info (struct job_buffer *job_buffer_ptr);
+
+/*
  * slurm_free_node_info - free the node information buffer (if allocated)
  * NOTE: buffer is loaded by slurm_load_node.
  */
@@ -161,6 +225,20 @@ extern void slurm_free_part_info (struct part_buffer *part_buffer_ptr);
 extern int slurm_load_build (time_t update_time, 
 	struct build_buffer **build_buffer_ptr);
 
+
+/*
+ * slurm_load_job - load the supplied job information buffer for use by info 
+ *	gathering APIs if job records have changed since the time specified. 
+ * input: update_time - time of last update
+ *	job_buffer_ptr - place to park job_buffer pointer
+ * output: job_buffer_ptr - pointer to allocated job_buffer
+ *	returns -1 if no update since update_time, 
+ *		0 if update with no error, 
+ *		EINVAL if the buffer (version or otherwise) is invalid, 
+ *		ENOMEM if malloc failure
+ * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
+ */
+extern int slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr);
 
 /*
  * slurm_load_node - load the supplied node information buffer for use by info 
@@ -207,17 +285,6 @@ extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer
  *	TotalProcs=<count>
  */
 extern int slurm_submit (char *spec, char **job_id);
-
-/*
- * load_job - load the supplied job information buffer for use by info gathering 
- *	APIs if job records have changed since the time specified. 
- * input: buffer - pointer to job information buffer
- *        buffer_size - size of buffer
- * output: returns 0 if no error, EINVAL if the buffer is invalid,
- *		 ENOMEM if malloc failure
- * NOTE: buffer is used by load_job_config and freed by free_job_info.
- */
-extern int load_job (time_t * last_update_time);
 
 /* 
  * parse_node_name - parse the node name for regular expressions and return a sprintf format 

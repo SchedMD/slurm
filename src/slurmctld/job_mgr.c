@@ -16,9 +16,11 @@
 #include <string.h>
 
 #include "list.h"
+#include "pack.h"
 #include "slurm.h"
 
 #define BUF_SIZE 1024
+#define MAX_STR_PACK 128
 
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
@@ -27,8 +29,6 @@ static pthread_mutex_t job_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for job in
 char *job_state_string[] =
 	{ "PENDING", "STAGE_IN", "RUNNING", "STAGE_OUT", "COMPLETED", "FAILED", "TIME_OUT", "END" };
 
-int dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, 
-	int detail);
 void list_delete_job (void *job_entry);
 int list_find_job_id (void *job_entry, void *key);
 int list_find_job_old (void *job_entry, void *key);
@@ -37,9 +37,10 @@ void set_job_prio (struct job_record *job_ptr);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
+int
 main (int argc, char *argv[]) 
 {
-	int dump_size, error_code, i;
+	int dump_size, error_code, error_count = 0, i;
 	time_t update_time = (time_t) NULL;
 	struct job_record * job_rec;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
@@ -49,75 +50,80 @@ main (int argc, char *argv[])
 	printf("initialize the database and create a few jobs\n");
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	error_code = init_job_conf ();
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: init_job_conf error %d\n", error_code);
-
+		error_count++;
+	}
 	job_rec = create_job_record(&error_code);
 	if ((job_rec == NULL) || error_code) {
-		printf("ERROR:create_job_record failure %d\n",error_code);
-		exit(1);
+		printf ("ERROR:create_job_record failure %d\n", error_code);
+		error_count++;
+		exit(error_count);
 	}
-	strcpy(job_rec->name, "Name1");
-	strcpy(job_rec->partition, "batch");
+	strcpy (job_rec->name, "Name1");
+	strcpy (job_rec->partition, "batch");
 	job_rec->details->job_script = xmalloc(20);
-	strcpy(job_rec->details->job_script, "/bin/hostname");
+	strcpy (job_rec->details->job_script, "/bin/hostname");
 	job_rec->details->num_nodes = 1;
 	job_rec->details->num_procs = 1;
 	set_job_id(job_rec);
 	set_job_prio(job_rec);
-	strcpy(tmp_id, job_rec->job_id);
+	strcpy (tmp_id, job_rec->job_id);
 
 	for (i=1; i<=4; i++) {
-		job_rec = create_job_record(&error_code);
+		job_rec = create_job_record (&error_code);
 		if ((job_rec == NULL) || error_code) {
-			printf("ERROR:create_job_record failure %d\n",error_code);
-			exit(1);
+			printf ("ERROR:create_job_record failure %d\n",error_code);
+			error_count++;
+			exit (error_count);
 		}
-		strcpy(job_rec->name, "Name2");
-		strcpy(job_rec->partition, "debug");
+		strcpy (job_rec->name, "Name2");
+		strcpy (job_rec->partition, "debug");
 		job_rec->details->job_script = xmalloc(20);
-		strcpy(job_rec->details->job_script, "/bin/hostname");
+		strcpy (job_rec->details->job_script, "/bin/hostname");
 		job_rec->details->num_nodes = i;
 		job_rec->details->num_procs = i;
-		set_job_id(job_rec);
-		set_job_prio(job_rec);
+		set_job_id (job_rec);
+		set_job_prio (job_rec);
 	}
 
-	printf("\nupdate a job record\n");
+	printf ("\nupdate a job record\n");
 	error_code = update_job (tmp_id, update_spec);
-	if (error_code)
+	if (error_code) {
 		printf ("ERROR: update_job error %d\n", error_code);
+		error_count++;
+	}
 
-	error_code = dump_all_job (&dump, &dump_size, &update_time, 1);
-	if (error_code)
+	error_code = pack_all_jobs (&dump, &dump_size, &update_time);
+	if (error_code) {
 		printf ("ERROR: dump_all_job error %d\n", error_code);
-	else {
-		printf("\ndump of job info:\n");
-		for (i=0; i<dump_size; ) {
-			printf("%s", &dump[i]);
-			i += strlen(&dump[i]) + 1;
-		}
-		printf("\n");
+		error_count++;
 	}
 	if (dump)
 		xfree(dump);
 
 	job_rec = find_job_record (tmp_id);
-	if (job_rec == NULL)
+	if (job_rec == NULL) {
 		printf("find_job_record error 1\n");
+		error_count++;
+	}
 	else
-		printf("found job %s, script=%s\n", 
+		printf ("found job %s, script=%s\n", 
 			job_rec->job_id, job_rec->details->job_script);
 
-	error_code = delete_job_record(tmp_id);
-	if (error_code)
+	error_code = delete_job_record (tmp_id);
+	if (error_code) {
 		printf ("ERROR: delete_job_record error %d\n", error_code);
+		error_count++;
+	}
 
 	job_rec = find_job_record (tmp_id);
-	if (job_rec != NULL)
-		printf("find_job_record error 2\n");
+	if (job_rec != NULL) {
+		printf ("find_job_record error 2\n");
+		error_count++;
+	}
 
-	exit (0);
+	exit (error_count);
 }
 #endif
 
@@ -154,11 +160,9 @@ create_job_record (int *error_code)
 	job_details_point =
 		(struct job_details *) xmalloc (sizeof (struct job_details));
 
-	memset (job_record_point,  0, sizeof (struct job_record));
 	job_record_point->magic   = JOB_MAGIC;
 	job_record_point->details = job_details_point;
 
-	memset (job_details_point, 0, sizeof (struct job_details));
 	job_details_point->magic  = DETAILS_MAGIC;
 	job_details_point->submit_time = time (NULL);
 	job_details_point->procs_per_task = 1;
@@ -190,199 +194,6 @@ delete_job_record (char *job_id)
 			job_id);
 		return ENOENT;
 	}  
-
-	return 0;
-}
-
-
-/* 
- * dump_all_job - dump all partition information to a buffer
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *         update_time - dump new data only if job records updated since time 
- *                       specified, otherwise return empty buffer
- *         detail - report job_detail only if set
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         update_time - set to time partition records last updated
- *         returns 0 if no error, errno otherwise
- * global: job_list - global list of job records
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- */
-int 
-dump_all_job (char **buffer_ptr, int *buffer_size, time_t * update_time, 
-	int detail) 
-{
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
-	char *buffer;
-	int buffer_offset, buffer_allocated, error_code;
-	char out_line[BUF_SIZE];
-
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-	buffer = NULL;
-	buffer_offset = 0;
-	buffer_allocated = 0;
-	if (*update_time == last_job_update)
-		return 0;
-
-	job_record_iterator = list_iterator_create (job_list);		
-
-	/* write header, version and time */
-	sprintf (out_line, HEAD_FORMAT, (unsigned long) last_job_update,
-		 JOB_STRUCT_VERSION);
-	if (write_buffer
-	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-		goto cleanup;
-
-	/* write individual job records */
-	while ((job_record_point = 
-		(struct job_record *) list_next (job_record_iterator))) {
-		if (job_record_point->magic != JOB_MAGIC)
-			fatal ("dump_all_job: data integrity is bad");
-
-		error_code = dump_job(job_record_point, out_line, BUF_SIZE, detail);
-		if (error_code != 0) continue;
-
-		if (write_buffer
-		    (&buffer, &buffer_offset, &buffer_allocated, out_line))
-			goto cleanup;
-	}			
-
-	list_iterator_destroy (job_record_iterator);
-	xrealloc (buffer, buffer_offset);
-
-	buffer_ptr[0] = buffer;
-	*buffer_size = buffer_offset;
-	*update_time = last_job_update;
-	return 0;
-
-      cleanup:
-	list_iterator_destroy (job_record_iterator);
-	if (buffer)
-		xfree (buffer);
-	return EINVAL;
-}
-
-
-/* 
- * dump_job - dump all configuration information about a specific job to a buffer
- * input:  dump_job_ptr - pointer to job for which information is requested
- *         out_line - buffer for partition information 
- *         out_line_size - byte size of out_line
- *         detail - report job_detail only if set
- * output: out_line - set to partition information values
- *         return 0 if no error, 1 if out_line buffer too small
- * NOTE: if you make any changes here be sure to increment the value of 
- *       JOB_STRUCT_VERSION and make the corresponding changes to load_part_config 
- *       in api/partition_info.c
- */
-int 
-dump_job (struct job_record *dump_job_ptr, char *out_line, int out_line_size, 
-	int detail) 
-{
-	char *job_id, *name, *partition, *nodes, *req_nodes, *features;
-	char *job_script;
-	struct job_details *detail_ptr;
-
-	if (dump_job_ptr->job_id)
-		job_id = dump_job_ptr->job_id;
-	else
-		job_id = "NONE";
-
-	if (dump_job_ptr->name)
-		name = dump_job_ptr->name;
-	else
-		name = "NONE";
-
-	if (dump_job_ptr->partition)
-		partition = dump_job_ptr->partition;
-	else
-		partition = "NONE";
-
-	if (dump_job_ptr->nodes)
-		nodes = dump_job_ptr->nodes;
-	else
-		nodes = "NONE";
-
-	if (detail == 0 || (dump_job_ptr->details == NULL)) {
-		if ((strlen(JOB_STRUCT_FORMAT1) + strlen(job_id) +  
-		     strlen(partition) + strlen(name) + strlen(nodes) + 
-		     strlen(job_state_string[dump_job_ptr->job_state]) + 20) > 
-		     out_line_size) {
-			error ("dump_job: buffer too small for job %s", job_id);
-			return 1;
-		}
-
-		sprintf (out_line, JOB_STRUCT_FORMAT1,
-			 job_id, 
-			 partition, 
-			 name, 
-			 (int) dump_job_ptr->user_id, 
-			 nodes, 
-			 job_state_string[dump_job_ptr->job_state], 
-			 dump_job_ptr->time_limit, 
-			 (long) dump_job_ptr->start_time, 
-			 (long) dump_job_ptr->end_time, 
-			 dump_job_ptr->priority);
-	} 
-	else {
-		detail_ptr = dump_job_ptr->details;
-		if (detail_ptr->magic != DETAILS_MAGIC)
-			fatal ("dump_job: bad detail pointer for job_id %s", job_id);
-
-		if (detail_ptr->nodes)
-			req_nodes = detail_ptr->nodes;
-		else
-			req_nodes = "NONE";
-	
-		if (detail_ptr->features)
-			features = detail_ptr->features;
-		else
-			features = "NONE";
-
-		if (detail_ptr->job_script)
-			job_script = detail_ptr->job_script;
-		else
-			job_script = "NONE";
-	
-		if ((strlen(JOB_STRUCT_FORMAT1) + strlen(job_id) +  
-		     strlen(partition) + strlen(name) + strlen(nodes) + 
-		     strlen(job_state_string[dump_job_ptr->job_state]) + 
-		     strlen(req_nodes) + strlen(features) + 
-		     strlen(job_script) + 20) > out_line_size) {
-			error ("dump_job: buffer too small for job %s", job_id);
-			return 1;
-		}
-
-		sprintf (out_line, JOB_STRUCT_FORMAT2,
-			 job_id, 
-			 partition, 
-			 name, 
-			 (int) dump_job_ptr->user_id, 
-			 nodes, 
-			 job_state_string[dump_job_ptr->job_state], 
-			 dump_job_ptr->time_limit, 
-			 (long) dump_job_ptr->start_time, 
-			 (long) dump_job_ptr->end_time, 
-			 dump_job_ptr->priority, 
-			 detail_ptr->num_procs, 
-			 detail_ptr->num_nodes, 
-			 req_nodes, 
-			 features, 
-			 detail_ptr->shared, 
-			 detail_ptr->contiguous, 
-			 detail_ptr->min_procs, 
-			 detail_ptr->min_memory, 
-			 detail_ptr->min_tmp_disk, 
-			 (int) detail_ptr->dist, 
-			 job_script, 
-			 detail_ptr->procs_per_task, 
-			 detail_ptr->total_procs);
-	} 
 
 	return 0;
 }
@@ -877,6 +688,180 @@ list_find_job_old (void *job_entry, void *key)
 		return 0;
 
 	return 1;
+}
+
+
+/* 
+ * pack_all_jobs - dump all job information for all jobs in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if job records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: job_list - global list of job records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ */
+int 
+pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+{
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
+	int buf_len, buffer_allocated, buffer_offset = 0, error_code;
+	char *buffer;
+	void *buf_ptr;
+
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+	if (*update_time == last_part_update)
+		return 0;
+
+	buffer_allocated = (BUF_SIZE*16);
+	buffer = xmalloc(buffer_allocated);
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
+
+	job_record_iterator = list_iterator_create (job_list);		
+
+	/* write haeader: version and time */
+	pack32  ((uint32_t) JOB_STRUCT_VERSION, &buf_ptr, &buf_len);
+	pack32  ((uint32_t) last_job_update, &buf_ptr, &buf_len);
+
+	/* write individual job records */
+	while ((job_record_point = 
+		(struct job_record *) list_next (job_record_iterator))) {
+		if (job_record_point->magic != JOB_MAGIC)
+			fatal ("dump_all_job: job integrity is bad");
+
+		error_code = pack_job(job_record_point, &buf_ptr, &buf_len);
+		if (error_code != 0) continue;
+		if (buf_len > BUF_SIZE) 
+			continue;
+		buffer_allocated += (BUF_SIZE*16);
+		buf_len += (BUF_SIZE*16);
+		buffer_offset = (char *)buf_ptr - buffer;
+		xrealloc(buffer, buffer_allocated);
+		buf_ptr = buffer + buffer_offset;
+	}		
+
+	list_iterator_destroy (job_record_iterator);
+	buffer_offset = (char *)buf_ptr - buffer;
+	xrealloc (buffer, buffer_offset);
+
+	buffer_ptr[0] = buffer;
+	*buffer_size = buffer_offset;
+	*update_time = last_part_update;
+	return 0;
+}
+
+
+/* 
+ * pack_job - dump all configuration information about a specific job in 
+ *	machine independent form (for network transmission)
+ * input:  dump_job_ptr - pointer to job for which information is requested
+ *	buf_ptr - buffer for job information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if buffer too small
+ * NOTE: change JOB_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_job() in api/job_info.c whenever the data format changes
+ */
+int 
+pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len) 
+{
+	char tmp_str[MAX_STR_PACK];
+	struct job_details *detail_ptr;
+
+	if (dump_job_ptr->job_id == NULL ||
+	    strlen (dump_job_ptr->job_id) < MAX_STR_PACK)
+		packstr (dump_job_ptr->job_id, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, dump_job_ptr->job_id, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
+	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
+
+	pack32  ((uint32_t) dump_job_ptr->start_time, buf_ptr, buf_len);
+	pack32  ((uint32_t) dump_job_ptr->end_time, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->priority, buf_ptr, buf_len);
+
+	packstr (dump_job_ptr->nodes, buf_ptr, buf_len);
+	packstr (dump_job_ptr->partition, buf_ptr, buf_len);
+	if (dump_job_ptr->name == NULL || 
+	    strlen (dump_job_ptr->name) < MAX_STR_PACK)
+		packstr (dump_job_ptr->name, buf_ptr, buf_len);
+	else {
+		strncpy(tmp_str, dump_job_ptr->name, MAX_STR_PACK);
+		tmp_str[MAX_STR_PACK-1] = (char) NULL;
+		packstr (tmp_str, buf_ptr, buf_len);
+	}
+
+	detail_ptr = dump_job_ptr->details;
+	if (detail_ptr) {
+		if (detail_ptr->magic != DETAILS_MAGIC)
+			fatal ("dump_all_job: job detail integrity is bad");
+		pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
+		pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
+		pack16  ((uint16_t) detail_ptr->contiguous, buf_ptr, buf_len);
+
+		pack32  ((uint32_t) detail_ptr->min_procs, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
+		pack32  ((uint32_t) detail_ptr->total_procs, buf_ptr, buf_len);
+
+		if (detail_ptr->nodes == NULL ||
+		    strlen (detail_ptr->nodes) < MAX_STR_PACK)
+			packstr (detail_ptr->nodes, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->nodes, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+		if (detail_ptr->features == NULL ||
+		    strlen (detail_ptr->features) < MAX_STR_PACK)
+			packstr (detail_ptr->features, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->features, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+		if (detail_ptr->job_script == NULL ||
+		    strlen (detail_ptr->job_script) < MAX_STR_PACK)
+			packstr (detail_ptr->job_script, buf_ptr, buf_len);
+		else {
+			strncpy(tmp_str, detail_ptr->job_script, MAX_STR_PACK);
+			tmp_str[MAX_STR_PACK-1] = (char) NULL;
+			packstr (tmp_str, buf_ptr, buf_len);
+		}
+	}
+	else {
+		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+		pack16  ((uint16_t) 0, buf_ptr, buf_len);
+		pack16  ((uint16_t) 0, buf_ptr, buf_len);
+
+		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+		pack32  ((uint32_t) 0, buf_ptr, buf_len);
+
+		packstr (NULL, buf_ptr, buf_len);
+		packstr (NULL, buf_ptr, buf_len);
+		packstr (NULL, buf_ptr, buf_len);
+	}
+
+	return 0;
 }
 
 
