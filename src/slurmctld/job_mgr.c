@@ -1128,7 +1128,7 @@ extern void rehash_jobs(void)
 		hash_table_size = slurmctld_conf.max_job_cnt;
 		job_hash = (struct job_record **) xmalloc(hash_table_size *
 					sizeof(struct job_record *));
-	} else if (hash_table_size < (2 * slurmctld_conf.max_job_cnt)) {
+	} else if (hash_table_size < (slurmctld_conf.max_job_cnt / 2)) {
 		/* If the MaxJobCount grows by too much, the hash table will 
 		 * be ineffective without rebuilding. We don't presently bother
 		 * to rebuild the hash table, but cut MaxJobCount back as 
