@@ -20,9 +20,6 @@
 #include <string.h>
 #include <syslog.h>
 
-#include "xmalloc.h"
-#include "log.h"
-
 /*
  * bitfmt2int - convert a string describing bitmap (e.g. "0-30,45,50-60") 
  *	into an array of integer (start/end) pairs terminated by -1
@@ -73,7 +70,7 @@ bitfmt2int (char *bit_str_ptr)
 }
 
 /* 
- * parse_node_name - parse the node name for regular expressions and return a 
+ * parse_node_names - parse the node name for regular expressions and return a 
  *                   sprintf format generate multiple node names as needed.
  * input: node_name - node name to parse
  * output: format - sprintf format for generating names
@@ -85,14 +82,14 @@ bitfmt2int (char *bit_str_ptr)
  *       is no longer needed
  */
 int 
-parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
+parse_node_names (char *node_name, char **format, int *start_inx, int *end_inx,
 		 int *count_inx) 
 {
 	int base, format_pos, precision, i;
 	char type[1];
 
 	i = strlen (node_name);
-	format[0] = (char *) xmalloc (i + 1);
+	format[0] = (char *) malloc (i + 1);
 
 	*start_inx = 0;
 	*end_inx = 0;
@@ -113,9 +110,11 @@ parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
 			if (node_name[++i] == (char) NULL)
 				break;
 			if (base != 0) {
-				error ("parse_node_name: invalid '[' in node name %s\n",
-					node_name);
-				xfree (format[0]);
+#if DEBUG_SYSTEM > 1
+				printf ("parse_node_name: invalid '[' in node name %s\n", 
+					node_name); 
+#endif
+				free (format[0]);
 				return EINVAL;
 			}
 			if (node_name[i] == 'o') {
@@ -140,9 +139,11 @@ parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
 					i++;
 					break;
 				}
-				error ("parse_node_name: invalid '%c' in node name %s\n",
-					 node_name[i], node_name);
-				xfree (format[0]);
+#if DEBUG_SYSTEM > 1
+				printf ("parse_node_name: invalid '%c' in node name %s\n", 
+					 node_name[i], node_name); 
+#endif
+				free (format[0]);
 				return EINVAL;
 			}
 			while (1) {
@@ -157,9 +158,11 @@ parse_node_name (char *node_name, char **format, int *start_inx, int *end_inx,
 					i++;
 					break;
 				}
-				error ("parse_node_name: invalid '%c' in node name %s\n",
+#if DEBUG_SYSTEM > 1
+				printf ("parse_node_name: invalid '%c' in node name %s\n",
 					 node_name[i], node_name);
-				xfree (format[0]);
+#endif
+				free (format[0]);
 				return EINVAL;
 			}
 			*count_inx = (*end_inx - *start_inx) + 1;
