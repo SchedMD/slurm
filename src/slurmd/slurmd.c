@@ -830,7 +830,7 @@ _kill_old_slurmd(void)
 	int fd;
 	pid_t oldpid = read_pidfile(conf->pidfile, &fd);
 	if (oldpid != (pid_t) 0) {
-		info ("killing old slurmd[%ld]", (long) oldpid);
+		info ("killing old slurmd[%lu]", (unsigned long) oldpid);
 		kill(oldpid, SIGTERM);
 
 		/* 

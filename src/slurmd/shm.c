@@ -452,11 +452,11 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	s = &slurmd_shm->step[i];
 
 	if (stepid != NO_VAL)
-		debug2 ("signal %d for %u.%u (sid: %ld)", 
-	  	        signal, jobid, stepid, (long) s->sid);
+		debug2 ("signal %d for %u.%u (sid: %lu)", 
+	  	        signal, jobid, stepid, (unsigned long) s->sid);
 	else
-		debug2 ("signal %d for %u (sid: %ld)", 
-		        signal, jobid, (long) s->sid);
+		debug2 ("signal %d for %u (sid: %lu)", 
+		        signal, jobid, (unsigned long) s->sid);
 
 	for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
 		pid_t sid = getsid(t->pid);
@@ -465,8 +465,8 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 			continue;
 
 		if (t->pid <= (pid_t) 0) {
-			debug ("job %u.%u: Bad pid value %ld", 
-			       jobid, stepid, t->pid);
+			debug ("job %u.%u: Bad pid value %lu", 
+			       jobid, stepid, (unsigned long) t->pid);
 			continue;
 		}
 

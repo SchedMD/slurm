@@ -261,7 +261,9 @@ _exec_all_tasks(slurmd_job_t *job)
 
 		/* Parent continues: 
 		 */
-		verbose ("task %d (%ld) started %M", job->task[i]->gid, pid); 
+		verbose ("task %lu (%lu) started %M", 
+			(unsigned long) job->task[i]->gid, 
+			(unsigned long) pid); 
 
 		/* 
 		 * Send pid to job manager
@@ -477,8 +479,9 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
 
 	if (rc < len) 
-		error("failed to send task %d exit msg: rc=%d: %s",
-		      e.taskid, rc, (rc < 0 ? slurm_strerror(errno) : "")); 
+		error("failed to send task %lu exit msg: rc=%d: %s",
+			(unsigned long) e.taskid, rc, 
+			(rc < 0 ? slurm_strerror(errno) : "")); 
 	/* 
 	 * Return 1 on failure to notify slurm mgr -- this will
 	 *  allow current process to be aware that the task exited anyway
@@ -537,9 +540,9 @@ _pdebug_trace_process(slurmd_job_t *job, pid_t pid)
 		int status;
 		waitpid(pid, &status, WUNTRACED);
 		if (kill(pid, SIGSTOP) < 0)
-			error("kill(%ld): %m", (long) pid);
+			error("kill(%lu): %m", (unsigned long) pid);
 		if (ptrace(PTRACE_DETACH, (long) pid, NULL, NULL))
-			error("ptrace(%ld): %m", (long) pid);
+			error("ptrace(%lu): %m", (unsigned long) pid);
 	}
 #endif /* HAVE_TOTALVIEW */
 }
