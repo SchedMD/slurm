@@ -92,7 +92,7 @@ typedef struct _slurm_auth_credential {
 	char   *m_str;     /* munged string                                  */
 	void   *buf;       /* Application specific data                      */
 	bool    verified;  /* true if this cred has been verified            */
-	size_t  len;       /* amount of App data                             */
+	int     len;       /* amount of App data                             */
 	uid_t   uid;       /* UID. valid only if verified == true            */
 	gid_t   gid;       /* GID. valid only if verified == true            */
 	int cr_errno;
