@@ -79,6 +79,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -110,6 +111,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -134,6 +136,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -146,6 +149,7 @@ if {[wait_for_file $file_out] == 0} {
 			exp_continue
 		}
 		eof {
+			wait
 		}
 	}
 }
@@ -163,7 +167,9 @@ if {[string compare $login_grp_info $job_grp_info] != 0} {
 	set exit_code 1
 }
 
-exec $bin_rm -f $file_in $file_out $file_err
+if {$exit_code == 0} {
+	exec $bin_rm -f $file_in $file_out $file_err
+}
 
 #
 # Spawn a srun job with a really long name and confirm it is accepted or truncated
@@ -184,6 +190,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -206,6 +213,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
