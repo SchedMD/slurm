@@ -41,6 +41,7 @@
 #include <string.h>
 #include "list.h"
 #include "macros.h"
+#include "xmalloc.h"
 
 /*
 ** Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
@@ -815,7 +816,7 @@ list_alloc_aux (int size, void *pfreelist)
     assert(LIST_ALLOC > 0);
     list_mutex_lock(&list_free_lock);
     if (!*pfree) {
-        if ((*pfree = malloc(LIST_ALLOC * size))) {
+        if ((*pfree = xmalloc(LIST_ALLOC * size))) {
             px = *pfree;
             plast = (void **) ((char *) *pfree + ((LIST_ALLOC - 1) * size));
             while (px < plast)
