@@ -47,17 +47,19 @@ int forward_io ( task_start_t * task_arg ) ;
 void * stdin_io_pipe_thread ( void * arg ) ;
 void * stdout_io_pipe_thread ( void * arg ) ;
 void * stderr_io_pipe_thread ( void * arg ) ;
+int setup_task_env  (task_start_t * task_start ) ;
 /******************************************************************
  *task launch method call hierarchy
  *
  *launch_tasks()
  *	interconnect_init()
  *		fan_out_task_launch() (pthread_create)
- *			iowatch_launch_thread()
+ *			iowatch_launch_thread() (pthread_create)
  *				task_exec_thread() (pthread_create)
  ******************************************************************/			
 
 /* exported module funtion to launch tasks */
+/*launch_tasks should really be named launch_job_step*/
 int launch_tasks ( launch_tasks_msg_t * launch_msg )
 {
 	return interconnect_init ( launch_msg );
@@ -74,23 +76,33 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 {
 	int i ;
 	int rc ;
-	/*place on the stack so we don't have to worry about mem clean up should
-	 *this task_launch get brutally killed by a kill_job step message */
-	task_start_t task_start[MAX_TASKS_PER_LAUNCH] ;
+	/* shmem work */
+	slurmd_shmem_t * shmem_ptr = get_shmem ( ) ;
+	/*alloc a job_step objec in shmem for this launch_tasks request */
+	/*launch_tasks should really be named launch_job_step*/
+	job_step_t * curr_job_step = alloc_job_step ( shmem_ptr , launch_msg -> job_id , launch_msg -> job_step_id ) ;
+	/* task pointer that will point to shmem task structures as the are allocated*/
+	task_t * curr_task = NULL ;
+	/* array of pointers used in this function to point to the task_start structure for each task to be
+	 * launched*/
+	task_start_t * task_start[launch_msg->tasks_to_launch];
 
+		
 	/* launch requested number of threads */
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
-		task_start[i].launch_msg = launch_msg ;
-		task_start[i].slurmd_fanout_id = i ;
-		if ( pthread_create ( & task_start[i].pthread_id , NULL , iowatch_launch_thread , ( void * ) & task_start[i] ) )
+		curr_task = alloc_task ( shmem_ptr , curr_job_step );
+		task_start[i] = & curr_task -> task_start ;
+		task_start[i] -> launch_msg = launch_msg ;
+
+		if ( pthread_create ( & task_start[i]->pthread_id , NULL , iowatch_launch_thread , ( void * ) task_start[i] ) )
 			goto kill_threads;
 	}
 	
 	/* wait for all the launched threads to finish */
 	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
 	{
-		rc = pthread_join( task_start[i].pthread_id , & task_start[i].thread_return ) ;
+		rc = pthread_join( task_start[i]->pthread_id , NULL )  ;
 	}
 	goto return_label;
 
@@ -98,7 +110,7 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 	kill_threads:
 	for (  i-- ; i >= 0  ; i -- )
 	{
-		rc = pthread_kill ( task_start[i].pthread_id , SIGKILL ) ;
+		rc = pthread_kill ( task_start[i]->pthread_id , SIGKILL ) ;
 	}
 
 	return_label:
@@ -122,7 +134,7 @@ void * iowatch_launch_thread ( void * arg )
 	forward_io ( arg ) ;
 
 	/* wait for thread to die */
-	pthread_join ( task_start->exec_pthread_id , & task_start->exec_thread_return ) ;
+	pthread_join ( task_start->exec_pthread_id , NULL ) ;
 
 	return ( void * ) SLURM_SUCCESS ;
 }
@@ -152,9 +164,9 @@ int forward_io ( task_start_t * task_arg )
 	if ( pthread_create ( & task_arg->io_pthread_id[STDERR_FILENO] , NULL , stderr_io_pipe_thread , task_arg ) )
 		goto kill_stdout_thread;
 
-	pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , task_arg->io_thread_return[STDERR_FILENO] ) ;
-	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , task_arg->io_thread_return[STDOUT_FILENO] ) ;
-	pthread_join ( task_arg->io_pthread_id[STDIN_FILENO] , task_arg->io_thread_return[STDIN_FILENO] ) ;
+	pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , NULL ) ;
+	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
+	pthread_join ( task_arg->io_pthread_id[STDIN_FILENO] , NULL ) ;
 
 	kill_stdout_thread:
 		pthread_kill ( task_arg->io_pthread_id[STDOUT_FILENO] , SIGKILL );
@@ -176,12 +188,12 @@ void * stdin_io_pipe_thread ( void * arg )
 		if ( ( sock_bytes_written = slurm_read_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			info ( "error sending stdout stream for task %i", 1 ) ;
-			pthread_exit ( 0 ) ; 
+			pthread_exit ( NULL ) ; 
 		}
 		if ( ( bytes_read = write ( io_arg->pipes[CHILD_IN_WR] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
 			info ( "error reading stdout stream for task %i", 1 ) ;
-			pthread_exit ( 0 ) ;
+			pthread_exit ( NULL ) ;
 		}
 	}
 }
@@ -198,12 +210,12 @@ void * stdout_io_pipe_thread ( void * arg )
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_OUT_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
 			info ( "error reading stdout stream for task %i", 1 ) ;
-			pthread_exit ( 0 ) ;
+			pthread_exit ( NULL ) ;
 		}
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[0] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			info ( "error sending stdout stream for task %i", 1 ) ;
-			pthread_exit ( 0 ) ; 
+			pthread_exit ( NULL ) ; 
 		}
 	}
 }
@@ -223,12 +235,12 @@ void * stderr_io_pipe_thread ( void * arg )
 		if ( ( bytes_read = read ( io_arg->pipes[CHILD_ERR_RD] , buffer , SLURMD_IO_MAX_BUFFER_SIZE ) ) <= 0 )
 		{
 			info ( "error reading stdout stream for task %i", 1 ) ;
-			pthread_exit ( 0 ) ;
+			pthread_exit ( NULL ) ;
 		}
 		if ( ( sock_bytes_written = slurm_write_stream ( io_arg->sockets[1] , buffer , bytes_read ) ) == SLURM_PROTOCOL_ERROR )
 		{
 			info ( "error sending stdout stream for task %i", 1 ) ;
-			pthread_exit ( 0 ) ; 
+			pthread_exit ( NULL ) ; 
 		}
 	}
 }
@@ -240,11 +252,16 @@ void * task_exec_thread ( void * arg )
 	int * pipes = task_arg->pipes ;
 	int rc ;
 
+	/* setup std stream pipes */
 	setup_child_pipes ( pipes ) ;
+	
 	/* setuid and gid*/
 	if ( ( rc = setuid ( launch_msg->uid ) ) == SLURM_ERROR ) ;
 
 	if ( ( rc = setgid ( launch_msg->gid ) ) == SLURM_ERROR ) ;
+
+	/* setup requested env */
+	setup_task_env ( task_arg ) ;
 
 	/* run bash and cmdline */
 	chdir ( launch_msg->cwd ) ;
@@ -284,19 +301,31 @@ int setup_child_pipes ( int * pipes )
 
 	/*dup stdin*/
 	close ( STDIN_FILENO );
-	if ( SLURM_ERROR == ( error_code = dup ( CHILD_IN_RD ) ) ) info ("dup failed on child standard in pipe");
+	if ( SLURM_ERROR == ( error_code = dup ( CHILD_IN_RD ) ) ) 
+	{
+		info ("dup failed on child standard in pipe");
+		return error_code ;
+	}
 	close ( CHILD_IN_RD );
 	close ( CHILD_IN_WR );
 
 	/*dup stdout*/
 	close ( STDOUT_FILENO );
-	if ( SLURM_ERROR == ( error_code = dup ( CHILD_OUT_WR ) ) ) info ("dup failed on child standard out pipe");
+	if ( SLURM_ERROR == ( error_code = dup ( CHILD_OUT_WR ) ) ) 
+	{
+		info ("dup failed on child standard out pipe");
+		return error_code ;
+	}
 	close ( CHILD_OUT_RD );
 	close ( CHILD_OUT_WR );
 
 	/*dup stderr*/
 	close ( STDERR_FILENO );
-	if ( SLURM_ERROR == ( error_code = dup ( CHILD_ERR_WR ) ) ) info ("dup failed on child standard err pipe");
+	if ( SLURM_ERROR == ( error_code = dup ( CHILD_ERR_WR ) ) ) 
+	{
+		info ("dup failed on child standard err pipe");
+		return error_code ;
+	}
 	close ( CHILD_ERR_RD );
 	close ( CHILD_ERR_WR );
 
@@ -313,5 +342,17 @@ int kill_tasks ( kill_tasks_msg_t * kill_task_msg )
 
 int kill_task ( task_t * task )
 {
-	return kill ( task -> pid , SIGKILL ) ;
+	return SLURM_SUCCESS ;
+}
+
+int setup_task_env  (task_start_t * task_start )
+{
+	int i ;
+	for ( i = 0 ; i < task_start -> launch_msg -> envc ; i ++ )
+	{
+		char * env_var = xmalloc ( strlen (  task_start -> launch_msg -> env[i] ) ) ;
+		memcpy ( env_var , task_start -> launch_msg -> env[i] , strlen (  task_start -> launch_msg -> env[i] ) ) ;
+		putenv ( env_var ) ;
+	}
+	return SLURM_SUCCESS ;
 }

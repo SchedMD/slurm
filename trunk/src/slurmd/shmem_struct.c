@@ -9,12 +9,9 @@
 #include <src/slurmd/shmem_struct.h>
 
 /* function prototypes */
-void * add_task ( slurmd_shmem_t * shmem , task_t * new_task );
-void copy_task ( task_t * dest , task_t * const src );
-void copy_job_step ( job_step_t * dest , job_step_t * src );
 void clear_task ( task_t * task );
 void clear_job_step( job_step_t * job_step );
-
+int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task ) ;
 
 /* gets a pointer to the slurmd shared memory segment
  * if it doesn't exist, one is created 
@@ -62,15 +59,18 @@ void init_shmem ( slurmd_shmem_t * shmem )
  * returns - the address of the assigned job_step in the shared mem job_step array or
  * the function dies on a fatal log call if the array is full
  */
-void * add_job_step ( slurmd_shmem_t * shmem , job_step_t * new_job_step ) 
+
+void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) 
 {
 	int i ;
 	for ( i=0 ; i < MAX_JOB_STEPS ; i ++ )
         {
 		if (shmem -> job_steps[i].used == false )
 		{
+			clear_job_step ( & shmem -> job_steps[i] ) ;
 			shmem -> job_steps[i].used = true ;
-			copy_job_step ( & shmem -> job_steps[i] , new_job_step );
+			shmem -> job_steps[i].job_id=job_id;
+			shmem -> job_steps[i].job_step_id=job_step_id;
 			return & shmem -> job_steps[i] ;
 		} 
         }
@@ -85,15 +85,17 @@ void * add_job_step ( slurmd_shmem_t * shmem , job_step_t * new_job_step )
  * returns - the address of the assigned task in the shared mem task array
  * the function dies on a fatal log call if the array is full
  */
-void * add_task ( slurmd_shmem_t * shmem , task_t * new_task ) 
+
+void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) 
 {
 	int i ;
 	for ( i=0 ; i < MAX_TASKS ; i ++ )
         {
 		if (shmem -> tasks[i].used == false )
 		{
+			clear_task ( & shmem -> tasks[i] ) ;
 			shmem -> tasks[i].used = true ;
-			copy_task ( & shmem -> tasks[i] , new_task ) ;
+			prepend_task ( shmem , job_step , & shmem -> tasks[i] ) ;
 			return & shmem -> tasks[i] ;
 		} 
         }
@@ -101,22 +103,6 @@ void * add_task ( slurmd_shmem_t * shmem , task_t * new_task )
 	return (void * ) SLURM_ERROR ;
 }
 
-/* copies the contents of one task to another, has no memory allocate or dynamic length members */
-void copy_task ( task_t * dest , task_t * const src ) 
-{
-	dest -> threadid 	= src -> threadid;
-	dest -> pid		= src -> pid;
-	dest -> task_id		= src -> task_id;
-	dest -> uid		= src -> uid;
-	dest -> gid		= src -> gid;
-}
-
-/* copies the contents of one job_step to another, has no memory allocate or dynamic length members */
-void copy_job_step ( job_step_t * dest , job_step_t * src )
-{
-	dest -> job_id		= src -> job_id ;
-	dest -> job_step_id	= src -> job_step_id ;
-}
 
 /* prepends a new task onto the front of a list of tasks assocuated with a job_step.
  * it calls add_task which copies the passed task into a task array in shared memoery
@@ -126,21 +112,16 @@ void copy_job_step ( job_step_t * dest , job_step_t * src )
  * job_step - job_step to receive the new task
  * task - task to be prepended
  */
+
 int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task )
 {
-	task_t * new_task ;
-	if ( ( new_task = add_task ( shmem , task ) ) == ( void * ) SLURM_ERROR )
-	{
-		fatal ( "No available task slots in shmem segment during prepend_task call ");
-		return SLURM_ERROR ;
-	}
 	/* prepend operation*/
 	/* newtask next pointer gets head of the jobstep task list */
-	new_task -> next = job_step -> head_task ;
+	task -> next = job_step -> head_task ;
 	/* newtask pointer becomes the new head of the jobstep task list */
-	job_step -> head_task = new_task ;
+	job_step -> head_task = task ;
 	/* set back pointer from task to job_step */
-	new_task -> job_step = job_step ;
+	task -> job_step = job_step ;
 	return SLURM_SUCCESS ;
 }
 
