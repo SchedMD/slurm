@@ -98,6 +98,10 @@ int slurm_ssl_sign ( slurm_ssl_key_ctx_t * ctx , char * data_buffer , int data_l
 {
 	int rc ;
 	EVP_MD_CTX md_ctx ;
+	if ( EVP_PKEY_size ( ctx -> key . private ) > SLURM_SSL_SIGNATURE_LENGTH )
+	{
+		slurm_seterrno_ret ( ESLURMD_SIGNATURE_FIELD_TOO_SMALL ) ;
+	}
 
 	EVP_SignInit ( & md_ctx , EVP_sha1 ( ) ) ;
 	EVP_SignUpdate ( & md_ctx , data_buffer , data_length ) ;
