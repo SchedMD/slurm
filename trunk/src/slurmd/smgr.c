@@ -70,6 +70,7 @@ static int   _child_exited(void);
 static void  _wait_for_all_tasks(slurmd_job_t *job);
 static int   _local_taskid(slurmd_job_t *job, pid_t pid);
 static int   _send_exit_status(slurmd_job_t *job, pid_t pid, int status);
+static char *_signame(int signo);
 static int   _unblock_all_signals(void);
 static void  _cleanup_file_descriptors(slurmd_job_t *job);
 static int   _setup_env(slurmd_job_t *job, int taskid);
@@ -224,9 +225,7 @@ _exec_all_tasks(slurmd_job_t *job)
 
 		/* Parent continues: 
 		 */
-
-		debug2("pid %ld forked child process %ld for local task %d",
-		       (long) getpid(), (long) pid, i);
+		verbose("task %d (%ld) started %M", job->task[i]->gid, pid); 
 
 		/* 
 		 * Send pid to job manager
@@ -284,6 +283,10 @@ _exec_task(slurmd_job_t *job, int i)
 	exit(errno);
 }
 
+/*
+ *  Create the set of signals to be blocked by the slurmd
+ *    session manager (smgr).
+ */
 static void
 _smgr_sigset(sigset_t *setp)
 {
@@ -300,8 +303,7 @@ _smgr_sigset(sigset_t *setp)
 }
 
 /*
- *  Block a set of signals so that session manager process
- *   is not killed.
+ *  Block a set of signals from this process.
  */
 static int
 _block_smgr_signals(void)
@@ -317,6 +319,37 @@ _block_smgr_signals(void)
 	return e ? SLURM_ERROR : SLURM_SUCCESS;
 }
 
+/*
+ *  Translate a signal number to recognizable signal name.
+ *    Returns signal name or "signal <num>" 
+ */
+static char *
+_signame(int signo)
+{
+	int i;
+	static char str[10];
+	static struct {
+		int s_num;
+		char * s_name;
+	} sigtbl[] = {   
+		{ 1, "SIGHUP" }, { 2, "SIGINT" }, { 3, "SIGQUIT"},
+		{ 6, "SIGABRT"}, { 10,"SIGUSR1"}, { 12,"SIGUSR2"},
+		{ 13,"SIGPIPE"}, { 14,"SIGALRM"}, { 15,"SIGTERM"},
+		{ 17,"SIGCHLD"}, { 18,"SIGCONT"}, { 19,"SIGSTOP"},
+		{ 20,"SIGTSTP"}, { 21,"SIGTTIN"}, { 22,"SIGTTOU"},
+		{ 23,"SIGURG" }, { 24,"SIGXCPU"}, { 25,"SIGXFSZ"},
+		{ 0, NULL}
+	};
+
+	for (i = 0; ; i++) {
+		if ( sigtbl[i].s_num == signo )
+			return sigtbl[i].s_name;
+	}
+
+	snprintf(str, 9, "signal %d", signo);
+	return str;
+}
+
 
 /*
  *  Call sigwait on the set of signals already blocked in this
@@ -328,23 +361,20 @@ _child_exited(void)
 	int      sig;
 	sigset_t set;
 
-	_smgr_sigset(&set);
-
-	do {
+	for (;;) {
+		_smgr_sigset(&set);
 		sigwait(&set, &sig);
-		switch (sig) {
-		case SIGXCPU: 
-			error("job exceeded timelimit"); 
-		case SIGCHLD: 
-			debug2("got SIGCHLD");
-			break;
-		default: 
-			debug("slurmd got signal %d", sig); break;
-			break;
-		}
-	} while (sig != SIGCHLD);
 
-	return 1;
+		debug2 ("slurmd caught %s", _signame(sig));
+
+		switch (sig) {
+		 case SIGCHLD: return 1;
+		 case SIGXCPU: error ("job exceeded timelimit"); break;
+		 default:      break;      
+		}
+	}
+	/* NOTREACHED */
+	return 0;
 }
 
 /*
@@ -364,28 +394,12 @@ _reap_task(slurmd_job_t *job)
 	if ((pid = waitpid(-1, &status, WNOHANG)) > (pid_t) 0) 
 		return _send_exit_status(job, pid, status);
 
-	if (pid == (pid_t) 0)
-		return 0;
+	if (pid < 0)
+		error  ("waitpid: %m");
+	else
+		debug2 ("waitpid(-1, WNOHANG) returned 0");
 
-	/* 
-	 *  Else waitpid returned error:
-	 */
-	switch (errno) {
-	case ECHILD: 
-		/* 
-		 *  waitpid() may return "No child processes." if
-		 *   a debugger has attached and is tracing all tasks.
-		 *   (gnats:217)
-		 *
-		 *   Note: This should be a non-issue due to _child_exited.
-		 */
-		break;
-	default:
-		error("waitpid: %m");
-		break;
-	}
-
-	return 0; 
+	return 0;
 }
 
 
@@ -436,8 +450,12 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 		return 0;
 	e.status = status;
 
-	verbose("task %*d (%ld) exited status 0x%04x %M", 
-	        _wid(job->ntasks), e.taskid, pid, status);
+	verbose ( "task %*d (%ld) exited status 0x%04x %M", 
+	          _wid(job->ntasks), 
+		  job->task[e.taskid]->gid, 
+		  pid, 
+		  status
+		 );
 
 	while (((rc = fd_write_n(fd, &e, len)) <= 0) && retry--) {;}
 
