@@ -346,6 +346,10 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	}
 
 	auth_cred = g_slurm_auth_alloc();
+	if ( auth_cred == NULL ) {
+		xfree( buftemp );
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	}
 	
 #if	_DEBUG
 	 _print_data (buftemp,rc);
@@ -432,6 +436,7 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* initialize header */
 	auth_cred = g_slurm_auth_alloc();
+	if ( auth_cred == NULL ) return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
 	rc = g_slurm_auth_activate(auth_cred, CREDENTIAL_TTL_SEC);
 	if (rc != SLURM_SUCCESS)	/* Try once more */
