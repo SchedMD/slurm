@@ -172,9 +172,12 @@ _io_thr_poll(void *job_arg)
 				nfds++;
 			}
 
-			if ((job->out[i] == IO_DONE) && (job->err[i] == IO_DONE))
+			if ((job->out[i] == IO_DONE) 
+			   && (job->err[i] == IO_DONE))
 				eofcnt++;
 		}
+
+		debug3("eofcnt == %d", eofcnt);
 
 		/* exit if we have received eof on all streams */
 		if (eofcnt == opt.nprocs)
@@ -369,13 +372,14 @@ _close_stream(int *fd, FILE *out, int tasknum)
 static int
 _do_task_output(int *fd, FILE *out, int tasknum)
 {
-	char buf[IO_BUFSIZ];
+	char buf[IO_BUFSIZ+1];
 	char *line, *p;
 	int len = 0;
 
 	if ((len = _readx(*fd, buf, IO_BUFSIZ)) <= 0) {
 		_close_stream(fd, out, tasknum);
 	}
+	buf[IO_BUFSIZ] = '\0';
 
 	p = buf;
 	while ((line = _next_line(&p)) != NULL) {
@@ -391,6 +395,7 @@ _do_task_output(int *fd, FILE *out, int tasknum)
 static int 
 _readx(int fd, char *buf, size_t maxbytes)
 {
+	/* FIXME: This function should return ssize_t */
 	int n;
 
   again:
