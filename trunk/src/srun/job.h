@@ -80,6 +80,9 @@ typedef struct srun_job {
 	pthread_mutex_t state_mutex; 
 	pthread_cond_t  state_cond;
 
+	bool signaled;          /* True if user generated signal to job   */
+	int  rc;                /* srun return code                       */
+
 	slurm_cred_t  cred;     /* Slurm job credential    */
 	char *nodelist;		/* nodelist in string form */
 	int nhosts;
@@ -171,5 +174,10 @@ void    report_task_status(job_t *job);
  * report current node status
  */
 void    report_job_status(job_t *job);
+
+/*
+ * Returns job return code (for srun exit status)
+ */
+int    job_rc(job_t *job);
 
 #endif /* !_HAVE_JOB_H */

@@ -428,14 +428,14 @@ static void _do_poll_timeout (job_t *job)
 		debug3("job failed, exiting IO thread");
 		pthread_exit(0);
 	} else if (time_first_done && opt.max_wait && (age >= opt.max_wait)) {
-		error("First task terminated %d seconds ago", age);
-		error("Terminating remaining tasks now");
+		error("First task exited %d second%s ago", 
+		      age, age > 1 ? "s" : "" );
 		report_task_status(job);
 		update_job_state(job, SRUN_JOB_FAILED);
-		pthread_exit(0);
 	} else if (time_first_done && (term_msg_sent == false) && 
 		   (age >= MAX_TERM_WAIT_SEC)) {
-		info("Warning: First task terminated %d seconds ago", age);
+		info("Warning: First task terminated %d second%s ago", 
+		     age, age > 1 ? "s" : "");
 		term_msg_sent = true;
 	}
 }

@@ -202,12 +202,13 @@ srun(int ac, char **av)
 	slurm_mutex_unlock(&job->state_mutex);
 
 	/* job is now overdone, clean up  
+	 *
+	 * If job "failed" send SIGKILL to any remaining tasks
 	 */
 	if (job->state == SRUN_JOB_FAILED) {
-		info("sending SIGINT to job");
-		fwd_signal(job, SIGINT);
+		info("Terminating job");
+		fwd_signal(job, SIGKILL);
 	}
-
 
 	/* wait for launch thread */
 	if (pthread_join(job->lid, NULL) < 0)
@@ -228,7 +229,8 @@ srun(int ac, char **av)
 	/*pthread_kill(job->sigid, SIGHUP);*/
 
 	log_fini();
-	return 0;
+
+	return job_rc(job);
 }
 
 
@@ -598,6 +600,12 @@ _set_batch_script_env(job_t *job)
 	if ((opt.slurmd_debug) 
 	    && setenvf("SLURMD_DEBUG=%d", opt.slurmd_debug)) {
 		error("Can't set SLURMD_DEBUG environment variable");
+		rc = SLURM_FAILURE;
+	}
+
+	if (opt.labelio 
+	   && setenvf("SLURM_LABELIO=1")) {
+		error("Unable to set SLURM_LABELIO environment variable");
 		rc = SLURM_FAILURE;
 	}
 
