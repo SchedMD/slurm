@@ -55,6 +55,7 @@
 #include "src/slurmd/shm.h"
 #include "src/slurmd/mgr.h"
 #include "src/slurmd/kill_tree.h"
+#include "src/slurmd/proctrack.h"
 
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN	64
@@ -688,14 +689,12 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 		kill_proc_tree((pid_t) step->cont_id, req->signal);
 		rc = SLURM_SUCCESS;
 	} else {
-pid_t pid =(pid_t) step->cont_id;
-		if ((step->cont_id > 0)
-		&&  (kill(-pid, req->signal) < 0))
+		if  (slurm_signal_container(step->cont_id, req->signal) < 0)
 			rc = errno;
 
 		if (step->task_list 
 		&&  (step->task_list->pid > (pid_t) 0)
-		&&  (kill(-step->task_list->pid, req->signal) < 0))
+		&&  (killpg(step->task_list->pid, req->signal) < 0))
 			rc = errno;
  
 		if (rc == SLURM_SUCCESS)
@@ -722,8 +721,8 @@ _kill_running_session_mgrs(uint32_t jobid, int signum, char *signame)
 	int          cnt   = 0;	
 
 	while ((s = list_next(i))) {
-		if ((s->jobid == jobid) && (s->cont_id > 0)) {
-			kill(s->cont_id, signum);
+		if ((s->jobid == jobid) && s->cont_id) {
+			slurm_signal_container(s->cont_id, signum);
 			cnt++;
 		}
 	}
@@ -796,12 +795,13 @@ static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
 	ListIterator i     = list_iterator_create(steps);
 	job_step_t  *s     = NULL;  
 	bool         found = false; 
-	pid_t	     mysid = getsid(req->job_pid);
+	uint32_t     my_cont = slurm_find_container(req->job_pid);
 
-	if (mysid == -1)
-		error("getsid: %m");
-	while ((mysid != -1) && (s = list_next(i))) {
-		if ((pid_t)s->cont_id == mysid) {
+	if (my_cont == 0)
+		verbose("slurm_find_container(%u): process not found",
+			(uint32_t) req->job_pid);
+	while (my_cont && (s = list_next(i))) {
+		if (s->cont_id == my_cont) {
 			resp.job_id = s->jobid;
 			found = true;
 			break;
@@ -962,16 +962,15 @@ _kill_all_active_steps(uint32_t jobid, int sig, bool batch)
 		if (conf->cf.kill_tree) {
 			kill_proc_tree((pid_t) s->cont_id, sig);
 		} else {
-pid_t pid = (pid_t) s->cont_id;
 			debug2("signal %d to job %u (cont_id:%u)",
 			       sig, jobid, s->cont_id);
-			if ((pid > (pid_t) 0)
-			&&  (kill(-pid, sig) < 0))
+			if (s->cont_id
+			&&  (slurm_signal_container(s->cont_id, sig) < 0))
 				error("kill jid %d cont_id %u: %m",
 				      s->jobid, s->cont_id);
 			if (s->task_list
 			&&  (s->task_list->pid  > (pid_t) 0)
-			&&  (kill(-s->task_list->pid, sig) < 0))
+			&&  (killpg(s->task_list->pid, sig) < 0))
 				error("kill jid %d pgrp %d: %m",
 					s->jobid, s->task_list->pid);
 		}
