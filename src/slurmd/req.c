@@ -76,7 +76,15 @@ static void _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
-static int  _wait_for_procs(uint32_t job_id);
+
+static bool _pause_for_job_completion (uint32_t jobid, int maxtime);
+static int _waiter_init (uint32_t jobid);
+static int _waiter_complete (uint32_t jobid);
+
+/*
+ *  List of threads waiting for jobs to complete
+ */
+static List waiters;
 
 static pthread_mutex_t launch_mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -842,6 +850,19 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	} 
 
 	/*
+	 *  Initialize a "waiter" thread for this jobid. If another
+	 *   thread is already waiting on termination of this job, 
+	 *   _waiter_init() will return < 0. In this case, just 
+	 *   notify slurmctld that we recvd the message successfully,
+	 *   then exit this thread.
+	 */
+	if (_waiter_init (req->job_id) < 0) {
+		slurm_send_rc_msg (msg, SLURM_SUCCESS);
+		return;
+	}
+
+
+	/*
 	 * "revoke" all future credentials for this jobid
 	 */
 	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
@@ -851,7 +872,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 		debug("credential for job %u revoked", req->job_id);
 	}
 
-	nsteps = _kill_all_active_steps(req->job_id, SIGKILL);
+	nsteps = _kill_all_active_steps(req->job_id, SIGTERM);
 
 	/*
 	 *  If there are currently no active job steps, and no
@@ -878,13 +899,15 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	/*
-	 *  Block until all user processes are complete.
-	 *   If wait_for_procs returns with an error, then another
-	 *   thread is waiting for job to complete. Just exit 
-	 *   this thread.
+	 *  Check for corpses
 	 */
-	if (_wait_for_procs(req->job_id) < 0) 
-		return;
+	if ( !_pause_for_job_completion (req->job_id, 5)
+	   && _kill_all_active_steps(req->job_id, SIGKILL) ) {
+		/*
+		 *  Block until all user processes are complete.
+		 */
+		_pause_for_job_completion (req->job_id, 0);
+	}
 
 	/*
 	 *  Begin expiration period for cached information about job.
@@ -907,6 +930,7 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	
     done:
 	_epilog_complete(req->job_id, rc);
+	_waiter_complete(req->job_id);
 }
 
 /*
@@ -947,47 +971,43 @@ static void _waiter_destroy(struct waiter *wp)
 	xfree(wp);
 }
 
-/*
- *  Wait for session for jobid to expire; Only one thread
- *   per job will be in this call. 
- *   
- *  Returns SLURM_SUCCESS when session has exited, 
- *    SLURM_ERROR if there is already a thread waiting on job
- */
-static int
-_wait_for_procs(uint32_t jobid)
+static int _waiter_init (uint32_t jobid)
 {
-	ListIterator i;
-	static List waiters;
-	struct waiter *wp;
-
 	if (!waiters)
 		waiters = list_create((ListDelF) _waiter_destroy);
-
 	/* 
 	 *  Exit this thread if another thread is waiting on job
 	 */
-	i = list_iterator_create(waiters);
-	if ((wp = list_find(i, (ListFindF) _find_waiter, (void *) &jobid))) 
+	if (list_find_first (waiters, (ListFindF) _find_waiter, &jobid))
 		return SLURM_ERROR;
 	else 
 		list_append(waiters, _waiter_create(jobid));
 
-	list_iterator_destroy(i);
+	return (SLURM_SUCCESS);
+}
 
-	verbose ("Waiting for job %u to complete", jobid);
+static int _waiter_complete (uint32_t jobid)
+{
+	return (list_delete_all (waiters, (ListFindF) _find_waiter, &jobid));
+}
 
-	while (_job_still_running(jobid)) 
+/*
+ *  Like _wait_for_procs(), but only wait for up to maxtime seconds
+ *    
+ *  Returns true if all job 
+ */
+static bool
+_pause_for_job_completion (uint32_t jobid, int maxtime)
+{
+	int sec = 0, rc = 0;
+
+	while ( ((sec++ < maxtime) || (maxtime == 0))
+	      && (rc = _job_still_running (jobid)))
 		sleep (1);
-
-	verbose ("Job %u complete", jobid);
-
-	/*
-	 *  Delete all waiting threads for this process
+	/* 
+	 * Return true if job is NOT running
 	 */
-	list_delete_all(waiters, (ListFindF) _find_waiter, (void *) &jobid);
-
-	return SLURM_SUCCESS;
+	return (!rc);
 }
 
 static void 
