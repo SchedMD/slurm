@@ -14,17 +14,9 @@ OPTIONS
 .TP
 \fB\-c\fR
 Clear all previous \fBslurmctld\fR state from its last checkpoint. 
-Current default setting. 
-Also see the \fB\-r\fR option.
-.TP
-\fB\-d\fR
-Execute \fBslurmctld\fR as a daemon (in the background) with logging to syslog.
-Current default setting. 
-Also see the \fB\-D\fR option.
 .TP
 \fB\-D\fR
 Debug mode. Execute \fBslurmctld\fR in the foreground with logging to stdout. 
-Also see the \fB\-d\fR option.
 .TP
 \fB\-f <file>\fR
 Read configuration from the specified file.
@@ -34,12 +26,6 @@ Help; print a brief summary of command options.
 .TP
 \fB\-L <file>\fR
 Write log messages to the specified file.
-.TP
-\fB\-r\fR
-Recover \fBslurmctld\fR state from its last checkpoint 
-(performed periodically and at time of graceful shutdown).
-Current default setting. 
-Also see the \fB\-c\fR option.
 .TP
 \fB\-v\fR
 Verbose operation. Multiple \fB-\v\fR's increase verbosity.
