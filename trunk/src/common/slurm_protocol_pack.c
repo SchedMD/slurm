@@ -24,28 +24,74 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 
-#include <src/common/bitstring.h>
-#include <src/common/slurm_protocol_pack.h>
-#include <src/common/slurm_protocol_api.h>
-#include <src/common/slurm_protocol_defs.h>
-#include <src/common/slurm_auth.h>
-#include <src/common/pack.h>
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
+#include "src/common/bitstring.h"
+#include "src/common/log.h"
+#include "src/common/pack.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/slurm_protocol_api.h"
+#include "src/common/slurm_protocol_defs.h"
+#include "src/common/slurm_protocol_pack.h"
+#include "src/common/xmalloc.h"
 
+static void _pack_node_registration_status_msg ( 
+		slurm_node_registration_status_msg_t * msg, 
+		Buf buffer );
+static int _unpack_node_registration_status_msg ( 
+		slurm_node_registration_status_msg_t ** msg , 
+		Buf buffer );
 
-void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer );
-int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer );
+static void _pack_resource_allocation_and_run_response_msg ( 
+		resource_allocation_and_run_response_msg_t * msg, 
+		Buf buffer );
+static int _unpack_resource_allocation_and_run_response_msg ( 
+		resource_allocation_and_run_response_msg_t ** msg , 
+		Buf buffer );
+
+static void _pack_resource_allocation_response_msg ( 
+		resource_allocation_response_msg_t * msg, Buf buffer );
+static int _unpack_resource_allocation_response_msg ( 
+		resource_allocation_response_msg_t ** msg , Buf buffer );
+
+static void _pack_update_node_msg ( update_node_msg_t * msg, Buf buffer );
+static int _unpack_update_node_msg ( update_node_msg_t ** msg , Buf buffer );
+
+static void _pack_submit_response_msg ( submit_response_msg_t * msg, 
+                                        Buf buffer );
+static int _unpack_submit_response_msg ( submit_response_msg_t ** msg , 
+                                         Buf buffer );
+
+static void _pack_node_info_msg ( slurm_msg_t * msg, Buf buffer );
+static int _unpack_node_info_msg ( node_info_msg_t ** msg , Buf buffer );
+static int _unpack_node_info_members ( node_info_t * node , Buf buffer );
+
+static void _pack_update_partition_msg ( update_part_msg_t * msg , 
+                                         Buf buffer );
+static int _unpack_update_partition_msg ( update_part_msg_t ** msg , 
+                                          Buf buffer );
+
+static void _pack_job_step_create_request_msg ( 
+		job_step_create_request_msg_t* msg , Buf buffer );
+static int _unpack_job_step_create_request_msg ( 
+		job_step_create_request_msg_t** msg , Buf buffer );
+
+static void _pack_revoke_credential_msg ( revoke_credential_msg_t* msg , 
+                                          Buf buffer );
+static int _unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , 
+                                           Buf buffer );
 
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
- * header 	- the header structure to pack
- * buffer	- destination of the pack, contains pointers that are
+ * IN header - the header structure to pack
+ * IN/OUT buffer - destination of the pack, contains pointers that are
  *			automatically updated
  */
 void pack_header ( header_t * header, Buf buffer )
@@ -61,9 +107,10 @@ void pack_header ( header_t * header, Buf buffer )
 
 /* unpack_header
  * unpacks a slurm protocol header that proceeds every slurm message
- * header 	- the header structure to unpack
- * buffer	- destination of the pack, contains pointers that are 
+ * OUT header - the header structure to unpack
+ * IN/OUT buffer - source of the unpack data, contains pointers that are
  *			automatically updated
+ * RET 0 or error code
  */
 int unpack_header ( header_t * header , Buf buffer )
 {
@@ -84,32 +131,49 @@ int unpack_header ( header_t * header , Buf buffer )
 	return SLURM_ERROR;
 }
 
+/* size_io_stream_header - get the size of an I/O stream header
+ * RET number of bytes in an I/O steam header
+ */
 int size_io_stream_header (void)
 {	/* must match un/pack_io_stream_header and size_io_stream_header */
 	return (SLURM_SSL_SIGNATURE_LENGTH + 
 		2 * sizeof(uint16_t) + sizeof(uint32_t));
 }
 
-void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
+/* pack_io_stream_header
+ * packs an i/o stream protocol header used for stdin/out/err
+ * IN header - the header structure to pack
+ * IN/OUT buffer - destination of the pack, contains pointers that are
+ *			automatically updated
+ */
+void pack_io_stream_header ( slurm_io_stream_header_t * header , Buf buffer )
 {	/* must match un/pack_io_stream_header and size_io_stream_header */
 
-	assert ( msg != NULL );
+	assert ( header != NULL );
 
-	pack16( msg->version, buffer ) ;
-	packmem_array( msg->key, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, 
+	pack16( header->version, buffer ) ;
+	packmem_array( header->key, (uint32_t) SLURM_SSL_SIGNATURE_LENGTH, 
 			buffer ) ; 
-	pack32( msg->task_id, buffer ) ;	
-	pack16( msg->type, buffer ) ;
+	pack32( header->task_id, buffer ) ;	
+	pack16( header->type, buffer ) ;
 }
 
-int unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
+/* unpack_io_stream_header
+ * unpacks an i/o stream protocol header used for stdin/out/err
+ * OUT header - the header structure to unpack
+ * IN/OUT buffer - source of the unpack data, contains pointers that are
+ *			automatically updated
+ * RET 0 or error code
+ */
+int unpack_io_stream_header ( slurm_io_stream_header_t * header , Buf buffer )
 {	/* must match un/pack_io_stream_header and size_io_stream_header */
 
-	safe_unpack16( & msg->version, buffer ) ;
-	safe_unpackmem_array( msg->key, 
-			(uint32_t) SLURM_SSL_SIGNATURE_LENGTH , buffer ) ; 
-	safe_unpack32( & msg->task_id, buffer ) ;	
-	safe_unpack16( & msg->type, buffer ) ;
+	safe_unpack16( & header->version, buffer ) ;
+	safe_unpackmem_array( header->key, 
+			      (uint32_t) SLURM_SSL_SIGNATURE_LENGTH , 
+			      buffer ) ; 
+	safe_unpack32( & header->task_id, buffer ) ;	
+	safe_unpack16( & header->type, buffer ) ;
 	return SLURM_SUCCESS;
 
     unpack_error:
@@ -118,10 +182,11 @@ int unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
 
 
 /* pack_msg
- * packs a slurm protocol mesg body
- * header 	- the body structure to pack
- * buffer	- destination of the pack, contains pointers that are 
+ * packs a generic slurm protocol message body
+ * IN msg - the body structure to pack (note: includes message type)
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
  *			automatically updated
+ * RET 0 or error code
  */
 int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 {
@@ -148,11 +213,11 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 				( slurm_msg_t * ) msg , buffer ) ;
 			break ;
 		case RESPONSE_NODE_INFO:
-			pack_node_info_msg ( 
+			_pack_node_info_msg ( 
 				( slurm_msg_t * ) msg , buffer ) ;
 			break ;
 		case MESSAGE_NODE_REGISTRATION_STATUS :
-			pack_node_registration_status_msg ( 
+			_pack_node_registration_status_msg ( 
 				( slurm_node_registration_status_msg_t * ) 
 				msg -> data , buffer );
 			break ;
@@ -181,21 +246,22 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 				(shutdown_msg_t *) msg -> data, buffer )  ;
 			break;
 		case RESPONSE_SUBMIT_BATCH_JOB:
-			pack_submit_response_msg ( 
+			_pack_submit_response_msg ( 
 				( submit_response_msg_t * ) msg -> data , 
 				buffer ) ;
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			pack_resource_allocation_response_msg ( 
+			_pack_resource_allocation_response_msg ( 
 				( resource_allocation_response_msg_t * ) 
 				msg -> data , 
 				buffer ) ;
 			break ;
 		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
-			pack_resource_allocation_and_run_response_msg ( ( resource_allocation_and_run_response_msg_t * ) msg -> data , 
-				buffer ) ;
+			_pack_resource_allocation_and_run_response_msg ( 
+				(resource_allocation_and_run_response_msg_t *) 
+				msg -> data , buffer ) ;
 			break ;
 		case REQUEST_UPDATE_JOB :
 			pack_job_desc ( 
@@ -203,11 +269,11 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 			break ;
 			break ;
 		case REQUEST_UPDATE_NODE :
-			pack_update_node_msg ( 
+			_pack_update_node_msg ( 
 				 (update_node_msg_t * ) msg-> data , buffer ) ;
 			break ;
 		case REQUEST_UPDATE_PARTITION :
-			pack_update_partition_msg ( 
+			_pack_update_partition_msg ( 
 				( update_part_msg_t * ) msg->data , buffer ) ;
 			break ;
 		case REQUEST_REATTACH_TASKS_STREAMS :
@@ -242,11 +308,12 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 			break ;
 		case REQUEST_COMPLETE_JOB_STEP :
 			pack_complete_job_step ( 
-				( complete_job_step_msg_t * ) msg->data , buffer ) ;
+				( complete_job_step_msg_t * ) msg->data , 
+				buffer ) ;
 			break ;
 
 		case REQUEST_REVOKE_JOB_CREDENTIAL :
-			pack_revoke_credential_msg ( 
+			_pack_revoke_credential_msg ( 
 				( revoke_credential_msg_t * ) msg->data , 
 				buffer ) ;
 			break ;
@@ -300,7 +367,7 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 				msg -> data , buffer ) ;	
 			break;
 		case REQUEST_JOB_STEP_CREATE:
-			pack_job_step_create_request_msg(
+			_pack_job_step_create_request_msg(
 				( job_step_create_request_msg_t * ) 
 				msg -> data , buffer ) ;	
 			break;
@@ -315,10 +382,11 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 }
 
 /* unpack_msg
- * unpacks a slurm protocol msg body
- * header 	- the body structure to unpack
- * buffer	- source of the unpack, contains pointers that are 
+ * unpacks a generic slurm protocol message body
+ * OUT msg - the body structure to unpack (note: includes message type)
+ * IN/OUT buffer - source of the unpack, contains pointers that are 
  *			automatically updated
+ * RET 0 or error code
  */
 int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 {
@@ -350,12 +418,12 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 				buffer ) ;
 			break;
 		case RESPONSE_NODE_INFO:
-			rc = unpack_node_info_msg (
+			rc = _unpack_node_info_msg (
 				( node_info_msg_t ** ) &(msg -> data) , 
 				buffer) ;
 			break;
 		case MESSAGE_NODE_REGISTRATION_STATUS :
-			rc = unpack_node_registration_status_msg ( 
+			rc = _unpack_node_registration_status_msg ( 
 				( slurm_node_registration_status_msg_t ** ) 
 				&( msg -> data ), buffer );
 			break ;
@@ -386,20 +454,20 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 				buffer ) ;
 			break ;
 		case RESPONSE_SUBMIT_BATCH_JOB :
-			rc = unpack_submit_response_msg ( 
+			rc = _unpack_submit_response_msg ( 
 				( submit_response_msg_t ** ) 
 				& ( msg -> data ) , buffer ) ;
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-			rc = unpack_resource_allocation_response_msg ( 
+			rc = _unpack_resource_allocation_response_msg ( 
 				( resource_allocation_response_msg_t ** ) 
 				& ( msg -> data ) , buffer ) ;
 			break ;
 		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
-			rc = unpack_resource_allocation_and_run_response_msg ( 
-				( resource_allocation_and_run_response_msg_t ** ) 
+			rc = _unpack_resource_allocation_and_run_response_msg (
+				(resource_allocation_and_run_response_msg_t **)
 				& ( msg -> data ) , buffer ) ;
 			break ;
 		case REQUEST_UPDATE_JOB :
@@ -408,12 +476,12 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 				buffer ) ;
 			break ;
 		case REQUEST_UPDATE_NODE :
-			rc = unpack_update_node_msg ( 
+			rc = _unpack_update_node_msg ( 
 				( update_node_msg_t ** ) & ( msg-> data ) , 
 				buffer ) ;
 			break ;
 		case REQUEST_UPDATE_PARTITION :
-			rc = unpack_update_partition_msg ( 
+			rc = _unpack_update_partition_msg ( 
 				( update_part_msg_t ** ) & ( msg->data ) , 
 				buffer ) ;
 			break ;
@@ -455,7 +523,7 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 				buffer ) ;
 			break ;
 		case REQUEST_REVOKE_JOB_CREDENTIAL :
-			rc = unpack_revoke_credential_msg ( 
+			rc = _unpack_revoke_credential_msg ( 
 				( revoke_credential_msg_t ** ) 
 				& ( msg->data ) , buffer ) ;
 			break ;
@@ -510,7 +578,7 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 				&msg -> data , buffer ) ;	
 			break;
 		case REQUEST_JOB_STEP_CREATE:
-			rc = unpack_job_step_create_request_msg(
+			rc = _unpack_job_step_create_request_msg(
 				( job_step_create_request_msg_t ** ) 
 				&msg -> data , buffer ) ;	
 			break;
@@ -528,7 +596,7 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 	return rc ;
 }
 
-void pack_update_node_msg ( update_node_msg_t * msg, Buf buffer )
+static void _pack_update_node_msg ( update_node_msg_t * msg, Buf buffer )
 {
 	assert ( msg != NULL );
 
@@ -536,7 +604,7 @@ void pack_update_node_msg ( update_node_msg_t * msg, Buf buffer )
 	pack16 ( msg -> node_state , buffer ) ;
 }
 
-int unpack_update_node_msg ( update_node_msg_t ** msg , Buf buffer )
+static int _unpack_update_node_msg ( update_node_msg_t ** msg , Buf buffer )
 {
 	uint16_t uint16_tmp;
 	update_node_msg_t * tmp_ptr ;
@@ -559,7 +627,7 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , Buf buffer )
 	return SLURM_ERROR;
 }
 
-void pack_node_registration_status_msg ( 
+static void _pack_node_registration_status_msg ( 
 		slurm_node_registration_status_msg_t * msg, 
 		Buf buffer )
 {
@@ -580,7 +648,7 @@ void pack_node_registration_status_msg (
 	}
 }
 
-int unpack_node_registration_status_msg ( 
+static int _unpack_node_registration_status_msg ( 
 		slurm_node_registration_status_msg_t ** msg , 
 		Buf buffer )
 {
@@ -627,7 +695,7 @@ int unpack_node_registration_status_msg (
 	return SLURM_ERROR;
 }
 
-void pack_resource_allocation_response_msg ( 
+static void _pack_resource_allocation_response_msg ( 
 		resource_allocation_response_msg_t * msg, Buf buffer )
 {
 	assert ( msg != NULL );
@@ -646,7 +714,7 @@ void pack_resource_allocation_response_msg (
 			buffer ) ;
 }
 
-int unpack_resource_allocation_response_msg ( 
+static int _unpack_resource_allocation_response_msg ( 
 		resource_allocation_response_msg_t ** msg , Buf buffer )
 {
 	uint16_t uint16_tmp;
@@ -708,7 +776,7 @@ int unpack_resource_allocation_response_msg (
 	return SLURM_ERROR;
 }
 
-void pack_resource_allocation_and_run_response_msg ( 
+static void _pack_resource_allocation_and_run_response_msg ( 
 		resource_allocation_and_run_response_msg_t * msg, 
 		Buf buffer )
 {
@@ -733,7 +801,7 @@ void pack_resource_allocation_and_run_response_msg (
 #endif
 }
 
-int unpack_resource_allocation_and_run_response_msg ( 
+static int _unpack_resource_allocation_and_run_response_msg ( 
 		resource_allocation_and_run_response_msg_t ** msg , 
 		Buf buffer )
 {
@@ -801,16 +869,16 @@ int unpack_resource_allocation_and_run_response_msg (
 	return SLURM_ERROR;
 }
 
-void pack_submit_response_msg ( submit_response_msg_t * msg, 
-                                Buf buffer )
+static void _pack_submit_response_msg ( submit_response_msg_t * msg, 
+                                        Buf buffer )
 {
 	assert ( msg != NULL );
 	
 	pack32 ( msg->job_id , buffer ) ;
 }
 
-int unpack_submit_response_msg ( submit_response_msg_t ** msg , 
-                                 Buf buffer )
+static int _unpack_submit_response_msg ( submit_response_msg_t ** msg , 
+                                         Buf buffer )
 {
 	submit_response_msg_t * tmp_ptr ;
 
@@ -828,12 +896,12 @@ int unpack_submit_response_msg ( submit_response_msg_t ** msg ,
 	*msg = NULL;
 	return SLURM_ERROR;
 }
-void pack_node_info_msg ( slurm_msg_t * msg, Buf buffer )
+static void _pack_node_info_msg ( slurm_msg_t * msg, Buf buffer )
 {
 	packmem_array ( msg->data , msg->data_size, buffer );
 }
 
-int unpack_node_info_msg ( node_info_msg_t ** msg , Buf buffer )
+static int _unpack_node_info_msg ( node_info_msg_t ** msg , Buf buffer )
 {
 	int i;
 	node_info_t *node = NULL;
@@ -850,7 +918,7 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , Buf buffer )
 
 	/* load individual job info */
 	for (i = 0; i < (*msg)->record_count ; i++) {
-		if (unpack_node_info_members ( & node[i] , buffer ) )
+		if (_unpack_node_info_members ( & node[i] , buffer ) )
 			goto unpack_error;
 
 	}
@@ -864,21 +932,7 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , Buf buffer )
 	return SLURM_ERROR;
 }
 
-
-int unpack_node_info ( node_info_t ** node , Buf buffer )
-{
-	assert ( node != NULL );
-
-	*node = xmalloc ( sizeof(node_info_t) );
-	if (unpack_node_info_members ( *node , buffer )) {
-		xfree (*node);
-		*node = NULL;
-		return SLURM_ERROR;
-	} else
-		return SLURM_SUCCESS ;
-}
-
-int unpack_node_info_members ( node_info_t * node , Buf buffer )
+static int _unpack_node_info_members ( node_info_t * node , Buf buffer )
 {
 	uint16_t uint16_tmp;
 
@@ -912,8 +966,8 @@ int unpack_node_info_members ( node_info_t * node , Buf buffer )
 }
 
 
-void
-pack_update_partition_msg ( update_part_msg_t * msg , Buf buffer )
+static void _pack_update_partition_msg ( update_part_msg_t * msg , 
+                                         Buf buffer )
 {
 	assert ( msg != NULL );
 
@@ -928,7 +982,8 @@ pack_update_partition_msg ( update_part_msg_t * msg , Buf buffer )
 	packstr ( msg -> allow_groups, buffer ) ;
 }
 
-int unpack_update_partition_msg ( update_part_msg_t ** msg , Buf buffer  )
+static int _unpack_update_partition_msg ( update_part_msg_t ** msg , 
+                                          Buf buffer  )
 {
 	uint16_t uint16_tmp;
 	update_part_msg_t * tmp_ptr ;
@@ -963,7 +1018,7 @@ int unpack_update_partition_msg ( update_part_msg_t ** msg , Buf buffer  )
 	return SLURM_ERROR;
 }
 
-void pack_job_step_create_request_msg ( 
+static void _pack_job_step_create_request_msg ( 
 		job_step_create_request_msg_t* msg , Buf buffer )
 {
 	assert ( msg != NULL );
@@ -977,7 +1032,7 @@ void pack_job_step_create_request_msg (
 	packstr ( msg -> node_list, buffer ) ;
 }
 
-int unpack_job_step_create_request_msg ( 
+static int _unpack_job_step_create_request_msg ( 
 		job_step_create_request_msg_t** msg , Buf buffer )
 {
 	uint16_t uint16_tmp;
@@ -1007,8 +1062,8 @@ int unpack_job_step_create_request_msg (
 	return SLURM_ERROR;
 }
 
-void pack_revoke_credential_msg ( revoke_credential_msg_t* msg , 
-                                  Buf buffer )
+static void _pack_revoke_credential_msg ( revoke_credential_msg_t* msg , 
+                                          Buf buffer )
 {
 	assert ( msg != NULL );
 
@@ -1019,8 +1074,8 @@ void pack_revoke_credential_msg ( revoke_credential_msg_t* msg ,
                        buffer ) ; 
 }
 
-int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , 
-                                   Buf buffer )
+static int _unpack_revoke_credential_msg ( revoke_credential_msg_t** msg , 
+                                           Buf buffer )
 {
 	revoke_credential_msg_t* tmp_ptr ;
 
@@ -1043,6 +1098,12 @@ int unpack_revoke_credential_msg ( revoke_credential_msg_t** msg ,
 	return SLURM_ERROR;
 }
 
+/* pack_job_credential
+ * packs a slurm job credential
+ * IN cred - pointer to the credential
+ * IN/OUT buffer - destination of the pack, contains pointers that are 
+ *			automatically updated
+ */
 void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer )
 {
 	assert ( cred != NULL );
@@ -1056,14 +1117,21 @@ void pack_job_credential ( slurm_job_credential_t* cred , Buf buffer )
                        buffer ) ; 
 }
 
-int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer )
+/* unpack_job_credential
+ * unpacks a slurm job credential
+ * OUT cred - pointer to the credential pointer
+ * IN/OUT buffer - source of the unpack, contains pointers that are 
+ *			automatically updated
+ * RET 0 or error code
+ */
+int unpack_job_credential( slurm_job_credential_t** cred , Buf buffer )
 {
 	uint16_t uint16_tmp;
 	slurm_job_credential_t* tmp_ptr ;
 
 	/* alloc memory for structure */	
 	tmp_ptr = xmalloc ( sizeof ( slurm_job_credential_t ) ) ;
-	*msg = tmp_ptr;
+	*cred = tmp_ptr;
 
 	safe_unpack32( &(tmp_ptr->job_id), buffer ) ;
 	safe_unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer ) ;
@@ -1080,7 +1148,7 @@ int unpack_job_credential( slurm_job_credential_t** msg , Buf buffer )
 	if (tmp_ptr->node_list)
 		xfree (tmp_ptr->node_list);
 	xfree (tmp_ptr);
-	*msg = NULL;
+	*cred = NULL;
 	return SLURM_ERROR;
 }
 

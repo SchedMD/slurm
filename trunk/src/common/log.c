@@ -92,7 +92,11 @@ typedef struct {
 }	log_t;
 
 /* static variables */
-static pthread_mutex_t  log_lock;
+#ifdef WITH_PTHREADS
+  static pthread_mutex_t  log_lock;
+#else
+  static int	log_lock;
+#endif /* WITH_PTHREADS */
 static log_t            *log = NULL;
 
 #define LOG_INITIALIZED ((log != NULL) && log->initialized)
@@ -144,7 +148,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 
 		if (!fp) {
 			char *errmsg = NULL;
-			pthread_mutex_unlock(&log_lock);
+			slurm_mutex_unlock(&log_lock);
 			xslurm_strerrorcat(errmsg);
 			fprintf(stderr, 
 			        "%s: log_init(): Unable to open logfile"
@@ -168,16 +172,16 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 {
 	int rc = 0;
 
-	pthread_mutex_init(&log_lock, NULL);
-	pthread_mutex_lock(&log_lock);
+	slurm_mutex_init(&log_lock);
+	slurm_mutex_lock(&log_lock);
 	rc = _log_init(prog, opt, fac, logfile);
-	pthread_mutex_unlock(&log_lock);
+	slurm_mutex_unlock(&log_lock);
 	return rc;
 }
 
-int log_reinit()
+void log_reinit()
 {
-	return pthread_mutex_init(&log_lock, NULL);
+	slurm_mutex_init(&log_lock);
 }
 
 /* reinitialize log data structures. Like log_init, but do not init
@@ -186,9 +190,9 @@ int log_reinit()
 int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 {	
 	int rc = 0;
-	pthread_mutex_lock(&log_lock);
+	slurm_mutex_lock(&log_lock);
 	rc = _log_init(NULL, opt, fac, logfile);
-	pthread_mutex_unlock(&log_lock);
+	slurm_mutex_unlock(&log_lock);
 	return rc;
 }
 
@@ -197,12 +201,12 @@ int log_alter(log_options_t opt, log_facility_t fac, char *logfile)
 FILE *log_fp(void)
 {
 	FILE *fp;
-	pthread_mutex_lock(&log_lock);
+	slurm_mutex_lock(&log_lock);
 	if (log->logfp)
 		fp = log->logfp;
 	else
 		fp = stderr;
-	pthread_mutex_unlock(&log_lock);
+	slurm_mutex_unlock(&log_lock);
 	return fp;
 }
 
@@ -344,12 +348,12 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		log_init(NULL, opts, 0, NULL);
 	}
 
-	pthread_mutex_lock(&log_lock);
+	slurm_mutex_lock(&log_lock);
 
 	if (level > log->opt.syslog_level  && 
 	    level > log->opt.logfile_level && 
 	    level > log->opt.stderr_level) {
-		pthread_mutex_unlock(&log_lock);
+		slurm_mutex_unlock(&log_lock);
 		return;
 	}
 
@@ -427,7 +431,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 		xfree(msgbuf);
 	}
 
-	pthread_mutex_unlock(&log_lock);
+	slurm_mutex_unlock(&log_lock);
 
 	xfree(buf);
 }
@@ -513,7 +517,11 @@ struct fatal_cleanup {
 };
 
 /* static variables */
-static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;    
+#ifdef WITH_PTHREADS
+  static pthread_mutex_t  fatal_lock = PTHREAD_MUTEX_INITIALIZER;    
+#else
+  static int	fatal_lock;
+#endif /* WITH_PTHREADS */
 static struct fatal_cleanup *fatal_cleanups = NULL;
 
 /* Registers a cleanup function to be called by fatal() for this thread 
@@ -523,14 +531,14 @@ fatal_add_cleanup(void (*proc) (void *), void *context)
 {
 	struct fatal_cleanup *cu;
 
-	pthread_mutex_lock(&fatal_lock);
+	slurm_mutex_lock(&fatal_lock);
 	cu = xmalloc(sizeof(*cu));
 	cu->thread_id = pthread_self();
 	cu->proc = proc;
 	cu->context = context;
 	cu->next = fatal_cleanups;
 	fatal_cleanups = cu;
-	pthread_mutex_unlock(&fatal_lock);
+	slurm_mutex_unlock(&fatal_lock);
 }
 
 /* Registers a cleanup function to be called by fatal() for all threads 
@@ -540,14 +548,14 @@ fatal_add_cleanup_job(void (*proc) (void *), void *context)
 {
 	struct fatal_cleanup *cu;
 
-	pthread_mutex_lock(&fatal_lock);
+	slurm_mutex_lock(&fatal_lock);
 	cu = xmalloc(sizeof(*cu));
 	cu->thread_id = 0;
 	cu->proc = proc;
 	cu->context = context;
 	cu->next = fatal_cleanups;
 	fatal_cleanups = cu;
-	pthread_mutex_unlock(&fatal_lock);
+	slurm_mutex_unlock(&fatal_lock);
 }
 
 /* Removes a cleanup frunction to be called at fatal() for this thread. */
@@ -557,7 +565,7 @@ fatal_remove_cleanup(void (*proc) (void *context), void *context)
 	struct fatal_cleanup **cup, *cu;
 	pthread_t my_thread_id = pthread_self();
 
-	pthread_mutex_lock(&fatal_lock);
+	slurm_mutex_lock(&fatal_lock);
 	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
 		cu = *cup;
 		if (cu->thread_id == my_thread_id &&
@@ -565,11 +573,11 @@ fatal_remove_cleanup(void (*proc) (void *context), void *context)
 		    cu->context == context) {
 			*cup = cu->next;
 			xfree(cu);
-			pthread_mutex_unlock(&fatal_lock);
+			slurm_mutex_unlock(&fatal_lock);
 			return;
 		}
 	}
-	pthread_mutex_unlock(&fatal_lock);
+	slurm_mutex_unlock(&fatal_lock);
 	fatal("fatal_remove_cleanup: no such cleanup function: 0x%lx 0x%lx",
 	    (u_long) proc, (u_long) context);
 }
@@ -581,7 +589,7 @@ fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 {
 	struct fatal_cleanup **cup, *cu;
 
-	pthread_mutex_lock(&fatal_lock);
+	slurm_mutex_lock(&fatal_lock);
 	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
 		cu = *cup;
 		if (cu->thread_id == 0 &&
@@ -589,11 +597,11 @@ fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 		    cu->context == context) {
 			*cup = cu->next;
 			xfree(cu);
-			pthread_mutex_unlock(&fatal_lock);
+			slurm_mutex_unlock(&fatal_lock);
 			return;
 		}
 	}
-	pthread_mutex_unlock(&fatal_lock);
+	slurm_mutex_unlock(&fatal_lock);
 	fatal(
 	    "fatal_remove_cleanup_job: no such cleanup function: 0x%lx 0x%lx",
 	    (u_long) proc, (u_long) context);
@@ -607,7 +615,7 @@ fatal_cleanup(void)
 	struct fatal_cleanup **cup, *cu;
 	pthread_t my_thread_id = pthread_self();
 
-	pthread_mutex_lock(&fatal_lock);
+	slurm_mutex_lock(&fatal_lock);
 	for (cup = &fatal_cleanups; *cup; ) {
 		cu = *cup;
 		if (cu->thread_id != my_thread_id) {
@@ -628,7 +636,7 @@ fatal_cleanup(void)
 		      (u_long) cu->proc, (u_long) cu->context);
 		(*cu->proc) (cu->context);
 	}
-	pthread_mutex_unlock(&fatal_lock);
+	slurm_mutex_unlock(&fatal_lock);
 }
 
 /* Print a list of cleanup frunctions to be called at fatal(). */
@@ -637,12 +645,12 @@ dump_cleanup_list(void)
 {
 	struct fatal_cleanup **cup, *cu;
 
-	pthread_mutex_lock(&fatal_lock);
+	slurm_mutex_lock(&fatal_lock);
 	for (cup = &fatal_cleanups; *cup; cup = &cu->next) {
 		cu = *cup;
 		info ("loc=%ld thread_id=%ld proc=%ld, context=%ld, next=%ld",
 			(long)cu, (long)cu->thread_id, (long)cu->proc, 
 			(long)cu->context, (long)cu->next);
 	}
-	pthread_mutex_unlock(&fatal_lock);
+	slurm_mutex_unlock(&fatal_lock);
 }
