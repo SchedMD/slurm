@@ -12,7 +12,7 @@
 
 extern int errno ;
 static int shmem_gid ;
-#define OCTAL_RW_PERMISSIONS 0666
+#define OCTAL_RW_PERMISSIONS 0600
 
 /* function prototypes */
 static void clear_task ( task_t * task );
