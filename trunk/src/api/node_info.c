@@ -89,7 +89,7 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
-        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
 

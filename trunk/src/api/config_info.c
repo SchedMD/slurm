@@ -49,7 +49,7 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
 	return_code_msg_t * rc_msg ;
 	
 	/* init message connection for message communication with controller */	
-	if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
 
 	/* send request message */

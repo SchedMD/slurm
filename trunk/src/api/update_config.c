@@ -31,7 +31,7 @@ slurm_update_config (char *spec) {
 
         /* init message connection for message communication with controller */
 
-        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
 

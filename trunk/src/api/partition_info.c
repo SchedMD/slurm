@@ -84,7 +84,7 @@ slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info
 	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
-        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
         /* send request message */
