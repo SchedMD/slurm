@@ -35,10 +35,13 @@
 /* slurm_print_ctl_conf - output the contents of Slurm's configuration message */
 void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_conf_ptr )
 {
+	char time_str[16];
+
 	if ( slurm_ctl_conf_ptr == NULL )
 		return ;
 
-	fprintf(out, "Configuration updated at %ld\n", (time_t)slurm_ctl_conf_ptr->last_update);
+	make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, time_str);
+	fprintf(out, "Configuration updated at %s\n", time_str);
 	fprintf(out, "BackupController  = %s\n", slurm_ctl_conf_ptr->backup_controller);
 	fprintf(out, "ControlMachine    = %s\n", slurm_ctl_conf_ptr->control_machine);
 	fprintf(out, "Epilog            = %s\n", slurm_ctl_conf_ptr->epilog);

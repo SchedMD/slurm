@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
@@ -41,9 +42,11 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 {
 	int i;
 	job_info_t * job_ptr = job_info_msg_ptr -> job_array ;
+	char time_str[16];
 
-	fprintf( out, "Jobs updated at %ld, record count %d\n",
-		(long) job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
+	make_time_str ((time_t *)&job_info_msg_ptr->last_update, time_str);
+	fprintf( out, "Jobs updated at %s, record count %d\n",
+		time_str, job_info_msg_ptr->record_count);
 
 	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
 	{
@@ -56,12 +59,16 @@ void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 {
 	int j;
+	char time_str[16];
 
 	fprintf ( out, "JobId=%u UserId=%u Name=%s ", 
 		job_ptr->job_id, job_ptr->user_id, job_ptr->name);
 	fprintf ( out, "JobState=%s TimeLimit=%u ", job_state_string(job_ptr->job_state), job_ptr->time_limit);
 	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
-	fprintf ( out, "   StartTime=%u EndTime=%u ", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
+	make_time_str ((time_t *)&job_ptr->start_time, time_str);
+	fprintf ( out, "   StartTime=%s ", time_str);
+	make_time_str ((time_t *)&job_ptr->end_time, time_str);
+	fprintf ( out, "EndTime=%s ", time_str);
 	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
 
 	fprintf ( out, "NodeListIndecies=");
@@ -91,6 +98,18 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	}
 	fprintf( out, "\n\n");
 }
+
+/* make_time_str - convert time_t to string with "month/date hour:min:sec" */
+void
+make_time_str (time_t *time, char *string)
+{
+	struct tm time_tm;
+
+	localtime_r (time, &time_tm);
+	sprintf ( string, "%d/%d,%d:%2.2d:%2.2d", (time_tm.tm_mon+1), time_tm.tm_mday, 
+		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+}
+
 
 /* slurm_load_jobs - issue RPC to get Slurm job state information if changed since update_time */
 int

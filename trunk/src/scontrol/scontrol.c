@@ -79,7 +79,7 @@ void	usage ();
 int 
 main (int argc, char *argv[]) 
 {
-	int error_code, i, input_field_count;
+	int error_code = 0, i, input_field_count;
 	char **input_fields;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
@@ -249,8 +249,12 @@ print_job (char * job_id_str)
 	}
 	old_job_buffer_ptr = job_buffer_ptr;
 	
-	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
+	if (quiet_flag == -1) {
+		char time_str[16];
+		make_time_str ((time_t *)&job_buffer_ptr->last_update, time_str);
+		printf ("last_update_time=%s, records=%d\n", 
+			time_str, job_buffer_ptr->record_count);
+	}
 
 	if (job_id_str)
 		job_id = (uint32_t) strtol (job_id_str, (char **)NULL, 10);
@@ -349,9 +353,12 @@ print_node_list (char *node_list)
 
 	old_node_info_ptr = node_info_ptr;
 
-	if (quiet_flag == -1)
-		printf ("last_update_time=%ld, records=%d\n", 
-			(long) node_info_ptr->last_update, node_info_ptr->record_count);
+	if (quiet_flag == -1) {
+		char time_str[16];
+		make_time_str ((time_t *)&node_info_ptr->last_update, time_str);
+		printf ("last_update_time=%s, records=%d\n", 
+			time_str, node_info_ptr->record_count);
+	}
 
 	if (node_list == NULL) {
 		print_node (NULL, node_info_ptr);
@@ -412,8 +419,12 @@ print_part (char *partition_name)
 
 	old_part_info_ptr = part_info_ptr;
 
-	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) part_info_ptr->last_update);
+	if (quiet_flag == -1) {
+		char time_str[16];
+		make_time_str ((time_t *)&part_info_ptr->last_update, time_str);
+		printf ("last_update_time=%s, records=%d\n", 
+			time_str, part_info_ptr->record_count);
+	}
 
 	part_ptr = part_info_ptr->partition_array;
 	for (i = 0; i < part_info_ptr->record_count; i++) {
@@ -486,8 +497,12 @@ print_step (char *job_step_id_str)
 	last_job_id = job_id;
 	last_step_id = step_id;
 
-	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) job_step_info_ptr->last_update);
+	if (quiet_flag == -1) {
+		char time_str[16];
+		make_time_str ((time_t *)&job_step_info_ptr->last_update, time_str);
+		printf ("last_update_time=%s, records=%d\n", 
+			time_str, job_step_info_ptr->job_step_count);
+	}
 
 	job_step_ptr = job_step_info_ptr->job_steps ;
 	for (i = 0; i < job_step_info_ptr->job_step_count; i++) {

@@ -47,9 +47,11 @@ slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 {
 	int i;
 	node_info_t * node_ptr = node_info_msg_ptr -> node_array ;
+	char time_str[16];
 
-	fprintf( out, "Nodes updated at %d, record count %d\n",
-		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
+	make_time_str ((time_t *)&node_info_msg_ptr->last_update, time_str);
+	fprintf( out, "Nodes updated at %s, record count %d\n",
+		time_str, node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
 	{
