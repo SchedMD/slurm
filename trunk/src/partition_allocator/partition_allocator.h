@@ -34,13 +34,19 @@
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
 #include "src/common/xstring.h"
-#include "src/partition_allocator/graph_structs.h"
+#include "src/common/xmalloc.h"
 
 // #define DEBUG_PA
 #define BIG_MAX 9999;
 #define BUFSIZE 4096
+#define PA_SYSTEM_DIMENSIONS 3
+#define NUM_PORTS_PER_NODE 6
 
 extern bool _initialized;
+enum {X, Y, Z};
+
+/* */
+enum {MESH, TORUS};
 
 typedef struct {
 	int geometry[PA_SYSTEM_DIMENSIONS];
@@ -98,10 +104,6 @@ typedef struct {
 	/* coordinates */
 	int coord[PA_SYSTEM_DIMENSIONS];
 	pa_switch_t axis_switch[PA_SYSTEM_DIMENSIONS];
-	/* shallow copy of the conf_results.  initialized and used as
-	 * array of Lists accessed by dimension, ie conf_result_list[dim]
-	 */
-	List conf_result_list[PA_SYSTEM_DIMENSIONS]; 
 	
 } pa_node_t;
 
@@ -173,7 +175,7 @@ void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
  * 
  * return: success or error of request
  */
-int allocate_part(pa_request_t* pa_request, List* results);
+int allocate_part(pa_request_t* pa_request, List results);
 
 /** 
  * Doh!  Admin made a boo boo.  Note: Undo only has one history
@@ -182,23 +184,5 @@ int allocate_part(pa_request_t* pa_request, List* results);
  * returns SLURM_SUCCESS if undo was successful.
  */
 int undo_last_allocatation();
-
-/** 
- * get the port configuration for the nodes in the partition
- * allocation result
- *
- *
- * IN: pa_node list from result of allocate_part
- * OUT/return: char* to be appended to output of each partition in the
- * bluegene.conf file
- * 
- * NOTE, memory for returned string must be xfree'd by caller
- */
-char* get_conf_result_str(List pa_node_list);
-
-int _create_config_even(pa_node_t ***grid);
-void _switch_config(pa_node_t* source, pa_node_t* target, int dim, int port_src, int port_tar);
-void _set_external_wires(int dim, int count, pa_node_t* source, pa_node_t* target_1, pa_node_t* target_2, pa_node_t* target_first, pa_node_t* target_second);
-int _set_internal_wires(List *nodes, int size);
 
 #endif /* _PARTITION_ALLOCATOR_H_ */
