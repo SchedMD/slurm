@@ -574,7 +574,7 @@ process_command (int argc, char *argv[])
 			fprintf (stderr, "too many arguments for keyword:%s\n", argv[0]);
 		error_code = slurm_reconfigure ();
 		if ((error_code != 0) && (quiet_flag != 1))
-			fprintf (stderr, "error from reconfigure %s\n", slurm_strerror (error_code));
+			slurm_perror ("slurm_reconfigure error");
 
 	}
 	else if (strcasecmp (argv[0], "show") == 0) {
@@ -698,7 +698,7 @@ update_it (int argc, char *argv[])
 		printf("Input line must include \"NodeName\", \"PartitionName\", or \"JobId\"\n");
 	}
 	else if (error_code) {
-		printf ("slurm_update error %d %s\n", errno, slurm_strerror(errno));
+		slurm_perror ("slurm_update error");
 	}
 }
 

@@ -994,7 +994,7 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	/* init */
 	int error_code = 0;
 	clock_t start_time;
-	update_node_msg_t * update_node_msg_ptr ;
+	update_node_msg_t * update_node_msg_ptr = (update_node_msg_t * ) msg-> data ;
 	/* Locks: Write node */
 	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 #ifdef	HAVE_AUTHD
@@ -1014,9 +1014,8 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	if (error_code == 0) {
 		/* do RPC call */
 		lock_slurmctld (node_write_lock);
-		update_node_msg_ptr = (update_node_msg_t * ) msg-> data ;
 		error_code = update_node ( update_node_msg_ptr );
-		unlock_slurmctld (node_write_lock);
+		unlock_slurmctld (node_write_lock);			
 	}
 
 	/* return result */
