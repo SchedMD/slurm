@@ -21,11 +21,11 @@
 #include <time.h>
 #include <sys/types.h>
 #include "list.h"
-#include "slurmlib.h"
 #include "log.h"
 #include "bitstring.h"
 #include "xmalloc.h"
 #include "pack.h"
+#include "slurmlib.h"
 
 #define DEBUG_SYSTEM 1
 
@@ -73,19 +73,7 @@ struct config_record {
 };
 extern List config_list;	/* list of config_record entries */
 
-/* last entry must be STATE_END, keep in sync with node_state_string    	*/
-/* any value less than or equal to zero is down. if a node was in state 	*/
-/* STATE_BUSY and stops responding, its state becomes -(STATE_BUSY), etc.	*/
-enum node_states {
-	STATE_DOWN,		/* node is not responding */
-	STATE_UNKNOWN,		/* node's initial state, unknown */
-	STATE_IDLE,		/* node unassigned to job */
-	STATE_BUSY,		/* node has been allocated, job currently */
-	STATE_DRAINED,		/* node idle and not to be allocated future work */
-	STATE_DRAINING,		/* node in use, but not to be allocated future work */
-	STATE_END		/* last entry in table */
-};			
-/* last entry must be "end", keep in sync with node_state */
+/* last entry must be "end", keep in sync with node_states */
 extern char *node_state_string[];
 
 extern time_t last_bitmap_update;	/* time of last node creation or deletion */
@@ -111,7 +99,6 @@ extern struct node_record default_node_record;
 
 /* NOTE: change PART_STRUCT_VERSION value whenever the contents of PART_STRUCT_FORMAT change */
 #define PART_STRUCT_VERSION 1
-#define	INFINITE (0xffffffff)
 #define PART_STRUCT_FORMAT "PartitionName=%s MaxNodes=%u MaxTime=%u Nodes=%s Key=%s Default=%s AllowGroups=%s Shared=%s State=%s #TotalNodes=%d TotalCPUs=%d\n"
 #define PART_MAGIC 0xaefe8495
 extern time_t last_part_update;	/* time of last update to part records */

@@ -22,7 +22,6 @@
 #include <unistd.h>
 
 #include "slurm.h"
-#include "slurmlib.h"
 
 #define BUF_SIZE 1024
 
@@ -346,12 +345,12 @@ slurmctld_req (int sockfd) {
 		}
 		else
 			last_update = (time_t) 0;
-		error_code = dump_all_node (&dump, &dump_size, &last_update);
+		error_code = pack_all_node (&dump, &dump_size, &last_update);
 		if (error_code)
-			info ("slurmctld_req: dump_all_node error %d, time=%ld",
+			info ("slurmctld_req: part_all_node error %d, time=%ld",
 				 error_code, (long) (clock () - start_time));
 		else
-			info ("slurmctld_req: dump_all_node returning %d bytes, time=%ld",
+			info ("slurmctld_req: part_all_node returning %d bytes, time=%ld",
 				 dump_size, (long) (clock () - start_time));
 		if (dump_size == 0)
 			send (sockfd, "nochange", 9, 0);
