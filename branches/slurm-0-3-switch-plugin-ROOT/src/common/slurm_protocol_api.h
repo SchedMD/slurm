@@ -90,6 +90,28 @@ inline slurm_protocol_config_t *slurm_get_api_config();
  */
 int inline slurm_api_set_default_config();
 
+/* slurm_api_clear_config
+ * execute this only at program termination to free all memory */
+void inline slurm_api_clear_config(void);
+
+/* slurm_get_plugin_dir
+ * get plugin directory from slurmctld_conf object from slurmctld_conf object 
+ * RET char *   - plugin directory, MUST be xfreed by caller
+ */
+char *slurm_get_plugin_dir(void);
+
+/* slurm_get_auth_type
+ * returns the authentication type from slurmctld_conf object
+ * RET char *    - auth type, MUST be xfreed by caller
+ */
+char *slurm_get_auth_type(void);
+
+/* slurm_get_jobcomp_type
+ * returns the job completion logger type from slurmctld_conf object
+ * RET char *    - job completion type,  MUST be xfreed by caller
+ */
+char *slurm_get_jobcomp_type(void);
+
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET short int	- slurmd port
@@ -97,10 +119,22 @@ int inline slurm_api_set_default_config();
 short int inline slurm_get_slurmd_port(void);
 
 /* slurm_get_slurm_user_id
- * returns slurmd uid from slurmctld_conf object
+ * returns slurmd uid from slurmctld_conf object 
  * RET uint32_t	- slurm user id
  */
 uint32_t slurm_get_slurm_user_id(void);
+
+/* slurm_get_sched_type
+ * get sched type from slurmctld_conf object
+ * RET char *   - sched type, MUST be xfreed by caller
+ */
+char *slurm_get_sched_type(void);
+
+/* slurm_get_switch_type
+ * get switch type from slurmctld_conf object
+ * RET char *   - switch type, MUST be xfreed by caller
+ */
+char *slurm_get_switch_type(void);
 
 /* slurm_get_wait_time
  * returns wait_time from slurmctld_conf object

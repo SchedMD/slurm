@@ -326,11 +326,9 @@ create_job_step(job_t *job)
 	if ((slurm_job_step_create(req, &resp) < 0) || (resp == NULL)) 
 		fatal ("Unable to create job step: %m");
 
-	job->stepid  = resp->job_step_id;
-	job->cred    = resp->cred;
-#ifdef HAVE_ELAN
-	job->qsw_job = resp->qsw_job;
-#endif
+	job->stepid     = resp->job_step_id;
+	job->cred       = resp->cred;
+	job->switch_job = resp->switch_job;
 	/* 
 	 * Recreate filenames which may depend upon step id
 	 */

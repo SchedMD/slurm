@@ -238,9 +238,7 @@ launch(void *arg)
 		m->data            = &msg_array_ptr[i];
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
 
-#ifdef HAVE_ELAN
-		r->qsw_job = job->qsw_job;
-#endif
+		r->switch_job = job->switch_job;
 
 #ifdef HAVE_TOTALVIEW
 		if (opt.totalview)

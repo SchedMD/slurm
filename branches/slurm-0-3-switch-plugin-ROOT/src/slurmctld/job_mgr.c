@@ -41,18 +41,12 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_ELAN
-#  include "src/common/qsw.h"
-#  define BUF_SIZE (1024 + QSW_PACK_SIZE)
-#else
-#  define BUF_SIZE 1024
-#endif
-
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/switch.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -62,6 +56,8 @@
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
 
+#define BUF_SIZE 1024
+#define HUGE_BUF_SIZE (1024*1024)
 #define DETAILS_FLAG 0xdddd
 #define MAX_RETRIES  10
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
@@ -247,7 +243,7 @@ int dump_all_job_state(void)
 	    { READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	Buf buffer = init_buf(BUF_SIZE * 16);
+	Buf buffer = init_buf(HUGE_BUF_SIZE);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -336,13 +332,13 @@ int load_all_job_state(void)
 		info("No job state file (%s) to recover", state_file);
 		error_code = ENOENT;
 	} else {
-		data_allocated = BUF_SIZE;
+		data_allocated = HUGE_BUF_SIZE;
 		data = xmalloc(data_allocated);
 		while ((data_read =
 			read(state_fd, &data[data_size],
-			     BUF_SIZE)) == BUF_SIZE) {
+			     HUGE_BUF_SIZE)) == HUGE_BUF_SIZE) {
 			data_size += data_read;
-			data_allocated += BUF_SIZE;
+			data_allocated += HUGE_BUF_SIZE;
 			xrealloc(data, data_allocated);
 		}
 		data_size += data_read;
@@ -705,9 +701,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	pack_time(step_ptr->start_time, buffer);
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
-#ifdef HAVE_ELAN
-	qsw_pack_jobinfo(step_ptr->qsw_job, buffer);
-#endif
+	g_switch_pack_jobinfo(step_ptr->switch_job, buffer);
 }
 
 /* Unpack job step state information from a buffer */
@@ -754,13 +748,8 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_ptr->step_node_list = step_node_list;
 	step_node_list = NULL;	/* re-used, nothing left to free */
 	step_ptr->time_last_active = time(NULL);
-#ifdef HAVE_ELAN
-	qsw_alloc_jobinfo(&step_ptr->qsw_job);
-	if (qsw_unpack_jobinfo(step_ptr->qsw_job, buffer)) {
-		qsw_free_jobinfo(step_ptr->qsw_job);
+	if (g_switch_unpack_jobinfo(&step_ptr->switch_job, buffer))
 		goto unpack_error;
-	}
-#endif
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 
@@ -1172,11 +1161,10 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		      new_job_id);
 
 	top_prio = _top_priority(job_ptr);
-#ifdef HAVE_ELAN
 	/* Avoid resource fragmentation if important */
 	if (top_prio && job_is_completing())
 		top_prio = false;	/* Don't scheduled job right now */
-#endif
+
 	if (immediate && (!top_prio)) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
@@ -2337,7 +2325,7 @@ pack_all_jobs(char **buffer_ptr, int *buffer_size)
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 
-	buffer = init_buf(BUF_SIZE * 16);
+	buffer = init_buf(HUGE_BUF_SIZE);
 
 	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */

@@ -137,9 +137,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
 	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
 
-#ifdef HAVE_ELAN
-	job->qsw_job = msg->qsw_job;
-#endif
+	job->switch_job = msg->switch_job;
 
 	job->objs    = list_create((ListDelF) io_obj_destroy);
 	job->eio     = eio_handle_create();

@@ -1155,16 +1155,16 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		node_ptr->cpus = cpus;
 		node_ptr->real_memory = real_memory;
 		node_ptr->tmp_disk = tmp_disk;
-#ifdef 		HAVE_ELAN
-		/* Every node in a given partition must have the same 
-		 * processor count at present */
-		if ((slurmctld_conf.fast_schedule == 0) &&
-		    (node_ptr->config_ptr->cpus != cpus)) {
+		/* Every node in a given Elan partition must have the same 
+		 * processor count at given Quadrics job credential */
+		if ((slurmctld_conf.fast_schedule == 0)  &&
+		    (node_ptr->config_ptr->cpus != cpus) &&
+		    (strcmp(slurmctld_conf.switch_type, "switch/elan") == 0)) {
 			error ("Node %s processor count inconsistent with rest "
 			       "of partition", node_name);
 			return EINVAL;		/* leave node down */
 		}
-#endif
+
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 			last_node_update = time (NULL);
 			reset_job_priority();
@@ -1648,10 +1648,19 @@ void make_node_idle(struct node_record *node_ptr,
 /* node_fini - free all memory associated with node records */
 void node_fini(void)
 {
+	int i;
+
 	if (config_list) {
 		list_destroy(config_list);
 		config_list = NULL;
 	}
+	for (i=0; i< node_record_count; i++)
+		xfree(node_record_table_ptr[i].reason);
+
+	FREE_NULL_BITMAP(idle_node_bitmap);
+	FREE_NULL_BITMAP(avail_node_bitmap);
+	FREE_NULL_BITMAP(share_node_bitmap);
+
 	xfree(node_record_table_ptr);
 	xfree(node_hash_table);
 }

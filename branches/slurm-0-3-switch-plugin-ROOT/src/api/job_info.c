@@ -89,10 +89,16 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		fprintf ( out, "UserId=(%u) ", job_ptr->user_id);
 	group_info = getgrgid( (gid_t) job_ptr->group_id );
 	if ( group_info && group_info->gr_name[ 0 ] )
-		fprintf( out, "GroupId=%s(%u) ",
+		fprintf( out, "GroupId=%s(%u)",
 			 group_info->gr_name, job_ptr->group_id );
 	else
-		fprintf( out, "GroupId=(%u) ", job_ptr->group_id );
+		fprintf( out, "GroupId=(%u)", job_ptr->group_id );
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
+
+	/****** Line 2 ******/
 	fprintf ( out, "Name=%s JobState=%s", 
 		  job_ptr->name, job_state_string(job_ptr->job_state));
 	if (one_liner)
@@ -100,7 +106,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 2 ******/
+	/****** Line 3 ******/
 	fprintf ( out, "Priority=%u Partition=%s BatchFlag=%u", 
 		  job_ptr->priority, job_ptr->partition, 
 		  job_ptr->batch_flag);
@@ -109,7 +115,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 3 ******/
+	/****** Line 4 ******/
 	fprintf ( out, "AllocNode:Sid=%s:%u TimeLimit=", 
 		  job_ptr->alloc_node, job_ptr->alloc_sid);
 	if (job_ptr->time_limit == INFINITE)
@@ -123,7 +129,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 4 ******/
+	/****** Line 5 ******/
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "StartTime=%s EndTime=", time_str);
 	if ((job_ptr->time_limit == INFINITE) && 
@@ -138,7 +144,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 5 ******/
+	/****** Line 6 ******/
 	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
 	fprintf ( out, "NodeListIndecies=");
 	for (j = 0; job_ptr->node_inx; j++) {
@@ -154,7 +160,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 6 ******/
+	/****** Line 7 ******/
 	fprintf ( out, "ReqProcs=%u MinNodes=%u ", 
 		job_ptr->num_procs, job_ptr->num_nodes);
 	fprintf ( out, "Shared=%u Contiguous=%u",  
@@ -164,7 +170,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 7 ******/
+	/****** Line 8 ******/
 	fprintf ( out, "MinProcs=%u MinMemory=%u ",  
 		job_ptr->min_procs, job_ptr->min_memory);
 	fprintf ( out, "Features=%s MinTmpDisk=%u", 
@@ -174,7 +180,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 8 ******/
+	/****** Line 9 ******/
 	fprintf ( out, "ReqNodeList=%s ", job_ptr->req_nodes);
 	fprintf ( out, "ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
@@ -190,7 +196,7 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 	else
 		fprintf ( out, "\n   ");
 
-	/****** Line 9 ******/
+	/****** Line 10 ******/
 	fprintf ( out, "ExcNodeList=%s ", job_ptr->exc_nodes);
 	fprintf ( out, "ExcNodeListIndecies=");
 	for (j = 0; job_ptr->exc_node_inx; j++) {

@@ -43,7 +43,7 @@
 #include "src/common/log.h"
 #include "src/common/list.h"
 #include "src/common/hostlist.h"
-#include "src/common/qsw.h"
+#include "src/common/switch.h"
 #include "src/common/slurm_protocol_api.h"
 
 #include "src/slurmd/interconnect.h"
@@ -214,22 +214,23 @@ interconnect_node_fini(void)
 
 
 static int 
-_wait_and_destroy_prg(qsw_jobinfo_t qsw_job)
+_wait_and_destroy_prg(switch_jobinfo_t switch_job)
 {
 	int i = 0;
 	int sleeptime = 1;
 
 	debug("going to destroy program description...");
 
-	while((qsw_prgdestroy(qsw_job) < 0) && (errno == ECHILD_PRGDESTROY)) {
-		debug("qsw_prgdestroy: %m");
+	while((g_switch_prog_destroy(switch_job) < 0) && 
+	      (errno == ECHILD_PRGDESTROY)) {
+		debug("switch_prog_destroy: %m");
 		i++;
 		if (i == 1) {
 			debug("sending SIGTERM to remaining tasks");
-			qsw_prgsignal(qsw_job, SIGTERM);
+			g_switch_prog_signal(switch_job, SIGTERM);
 		} else {
 			debug("sending SIGKILL to remaining tasks");
-			qsw_prgsignal(qsw_job, SIGKILL);
+			g_switch_prog_signal(switch_job, SIGKILL);
 		}
 
 		debug("sleeping for %d sec ...", sleeptime);
@@ -257,9 +258,10 @@ interconnect_init(slurmd_job_t *job)
 
 	debug2("calling interconnect_init from process %lu", 
 		(unsigned long) getpid());
-	verbose("ELAN: %s", qsw_capability_string(job->qsw_job, buf, 4096));
+	verbose("switch_cred: %s", 
+		g_switch_sprint_jobinfo(job->switch_job, buf, 4096));
 
-	if (qsw_prog_init(job->qsw_job, job->uid) < 0) {
+	if (g_switch_prog_init(job->switch_job, job->uid) < 0) {
 		/*
 		 * Check for EBADF, which probably means the rms
 		 *  kernel module is not loaded.
@@ -268,9 +270,9 @@ interconnect_init(slurmd_job_t *job)
 			error("Initializing interconnect: "
 			      "is the rms kernel module loaded?");
 		else
-			error ("elan_interconnect_init: %m");
+			error ("g_switch_prog_init: %m");
 
-		qsw_print_jobinfo(log_fp(), job->qsw_job);
+		g_switch_print_jobinfo(log_fp(), job->switch_job);
 
 		return SLURM_ERROR;
 	}
@@ -281,14 +283,14 @@ interconnect_init(slurmd_job_t *job)
 int 
 interconnect_fini(slurmd_job_t *job)
 {
-	qsw_prog_fini(job->qsw_job); 
+	g_switch_prog_fini(job->switch_job); 
 	return SLURM_SUCCESS;
 }
 
 int
 interconnect_postfini(slurmd_job_t *job)
 {
-	_wait_and_destroy_prg(job->qsw_job);
+	_wait_and_destroy_prg(job->switch_job);
 	return SLURM_SUCCESS;
 }
 
@@ -305,8 +307,8 @@ interconnect_attach(slurmd_job_t *job, int procid)
 	debug3("nodeid=%d nnodes=%d procid=%d nprocs=%d", 
 	       nodeid, nnodes, procid, nprocs);
 	debug3("setting capability in process %lu", (unsigned long) getpid());
-	if (qsw_setcap(job->qsw_job, procid) < 0) {
-		error("qsw_setcap: %m");
+	if (g_switch_setcap(job->switch_job, procid) < 0) {
+		error("switch_setcap: %m");
 		return SLURM_ERROR;
 	}
 

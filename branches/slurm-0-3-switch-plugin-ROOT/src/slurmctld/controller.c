@@ -56,12 +56,9 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
-
-#if HAVE_ELAN
-#  include "src/common/qsw.h"
-#endif
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -82,7 +79,7 @@
 				 * 2 = recover all state saved from last shutdown */
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
 				 * check-in before we ping them */
-#define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
+#define MEM_LEAK_TEST	  1	/* Running memory leak test if set */
 
 
 /* Log to stderr and syslog until becomes a daemon */
@@ -305,8 +302,7 @@ int main(int argc, char *argv[])
 	node_fini();
 	slurm_cred_ctx_destroy(slurmctld_config.cred_ctx);
 	free_slurm_conf(&slurmctld_conf);
-	slurm_auth_fini();
-	g_slurm_jobcomp_fini();
+	slurm_api_clear_config();
 #endif
 	log_fini();
 
@@ -352,7 +348,7 @@ static void  _init_config(void)
 	slurmctld_config.thread_count_lock = 0;
 	slurmctld_config.thread_id_main    = 0;
 	slurmctld_config.thread_id_sig     = 0;
-	slurmctld_config.thread_id_rpc    = 0;
+	slurmctld_config.thread_id_rpc     = 0;
 #endif
 }
 
@@ -784,8 +780,7 @@ int slurmctld_shutdown(void)
 	/* no response */
 
 	/* shutdown message connection */
-	if ((rc = slurm_shutdown_msg_conn(sockfd))
-	    == SLURM_SOCKET_ERROR) {
+	if ((rc = slurm_shutdown_msg_conn(sockfd)) == SLURM_SOCKET_ERROR) {
 		error("slurm_shutdown_msg_conn error");
 		return SLURM_SOCKET_ERROR;
 	}

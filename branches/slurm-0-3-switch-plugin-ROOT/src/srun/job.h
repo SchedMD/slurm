@@ -38,6 +38,7 @@
 #include "src/common/cbuf.h"
 #include "src/common/macros.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/switch.h"
 #include "src/srun/fname.h"
 
 typedef enum {
@@ -127,10 +128,7 @@ typedef struct srun_job {
 	int *tstatus;	          /* ntask exit statii */
 	task_state_t *task_state; /* ntask task states */
 	pthread_mutex_t task_mutex;
-
-#ifdef HAVE_ELAN
-	qsw_jobinfo_t qsw_job;
-#endif
+	switch_jobinfo_t switch_job;
 	io_filename_t *ifname;
 	io_filename_t *ofname;
 	io_filename_t *efname;

@@ -41,11 +41,12 @@
 #include <unistd.h>
 
 #include "src/common/hostlist.h"
-#include "src/common/slurm_jobcomp.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
+#include "src/common/slurm_jobcomp.h"
+#include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
@@ -112,7 +113,7 @@ static int _build_bitmaps(void)
 	share_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if ((idle_node_bitmap     == NULL) ||
 	    (avail_node_bitmap    == NULL) ||
-	    (share_node_bitmap == NULL)) 
+	    (share_node_bitmap    == NULL)) 
 		fatal ("memory allocation failure");
 	/* Set all bits, all nodes initially available for sharing */
 	bit_nset(share_node_bitmap, 0, (node_record_count-1));
@@ -272,7 +273,8 @@ static int _init_all_slurm_conf(void)
  */
 static int _parse_node_spec(char *in_line)
 {
-	char *node_addr, *node_name, *state, *feature, *reason;
+	char *node_addr = NULL, *node_name = NULL, *state = NULL;
+	char *feature = NULL, *reason = NULL;
 	char *this_node_addr, *this_node_name;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
@@ -766,6 +768,7 @@ int read_slurm_conf(int recover)
 	validate_config(&slurmctld_conf);
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
+	g_switch_init();
 
 	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");
@@ -1018,61 +1021,10 @@ static void _validate_node_proc_count(void)
  */ 
 int switch_state_begin(int recover)
 {
-	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_ELAN
-	qsw_libstate_t old_state = NULL;
-	Buf buffer = NULL;
-	char *qsw_state_file = NULL, *data = NULL;
-	int state_fd, data_allocated, data_read= 0, data_size = 0;
-
-	if (recover) {
-		/* Read state from file into buffer */
-		qsw_state_file = xstrdup (slurmctld_conf.state_save_location);
-		xstrcat (qsw_state_file, "/qsw_state");
-		state_fd = open (qsw_state_file, O_RDONLY);
-		if (state_fd >= 0) {
-			data_allocated = BUF_SIZE;
-			data = xmalloc(data_allocated);
-			while ((data_read = 
-					read (state_fd, &data[data_size], 
-					BUF_SIZE)) == BUF_SIZE) {
-				data_size += data_read;
-				data_allocated += BUF_SIZE;
-				xrealloc(data, data_allocated);
-			}
-			data_size += data_read;
-			if (data_read < 0) {
-				error ("Read error on %s, %m", qsw_state_file);
-				error_code = SLURM_ERROR;
-				data_size = 0;
-			}
-			close (state_fd);
-		} else
-			info("No %s file to recover QSW state from", 
-				qsw_state_file);
-		xfree(qsw_state_file);
-
-		if ((error_code == SLURM_SUCCESS) && data_size) {
-			if (qsw_alloc_libstate(&old_state)) {
-				error_code = SLURM_ERROR;
-			} else {
-				buffer = create_buf (data, data_size);
-				if (qsw_unpack_libstate(old_state, buffer) < 0)
-					error_code = errno;
-			}
-		}
-		if (buffer)
-			free_buf(buffer);
-		else if (data)
-			xfree(data);
-
-	}
-	if (error_code == SLURM_SUCCESS)
-		error_code = qsw_init(old_state);
-	if (old_state)
-		qsw_free_libstate(old_state);
-#endif				/* HAVE_ELAN */
-	return error_code;
+	if (recover)
+		return g_switch_restore(slurmctld_conf.state_save_location);
+	else
+		return g_switch_restore(NULL); 
 }
 
 /*
@@ -1081,42 +1033,6 @@ int switch_state_begin(int recover)
  */ 
 int switch_state_fini(void)
 {
-	int error_code = SLURM_SUCCESS;
-#ifdef HAVE_ELAN
-	qsw_libstate_t old_state = NULL;
-	Buf buffer = NULL;
-	char *qsw_state_file = NULL;
-	int state_fd;
-
-	if (qsw_alloc_libstate(&old_state))
-		return errno;
-	qsw_fini(old_state);
-	buffer = init_buf(1024);
-	error_code = qsw_pack_libstate(old_state, buffer);
-	qsw_state_file = xstrdup (slurmctld_conf.state_save_location);
-	xstrcat (qsw_state_file, "/qsw_state");
-	(void) unlink (qsw_state_file);
-	state_fd = creat (qsw_state_file, 0600);
-	if (state_fd == 0) {
-		error ("Can't save state, error creating file %s %m", 
-		       qsw_state_file);
-		error_code = errno;
-	}
-	else {
-		if (write (state_fd, get_buf_data(buffer), 
-				get_buf_offset(buffer)) != 
-				get_buf_offset(buffer)) {
-			error ("Can't save state, error writing file %s %m", 
-			       qsw_state_file);
-			error_code = errno;
-		}
-		close (state_fd);
-	}
-	xfree (qsw_state_file);
-	if (buffer)
-		free_buf(buffer);
-	if (old_state)
-		qsw_free_libstate(old_state);
-#endif				/* HAVE_ELAN */
-	return error_code;
+	return g_switch_save(slurmctld_conf.state_save_location);
 }
+

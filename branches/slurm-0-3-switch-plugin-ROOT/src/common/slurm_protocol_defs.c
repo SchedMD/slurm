@@ -39,6 +39,7 @@
 #include "src/common/log.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_defs.h"
+#include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 
 static void _free_all_job_info (job_info_msg_t *msg);
@@ -282,9 +283,8 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 	xfree(msg->ofname);
 	xfree(msg->ofname);
 
-#	ifdef HAVE_ELAN
-	qsw_free_jobinfo(msg->qsw_job);
-#	endif
+	if (msg->switch_job)
+		g_switch_free_jobinfo(msg->switch_job);
 
 	xfree(msg);
 }
@@ -473,10 +473,8 @@ void slurm_free_resource_allocation_and_run_response_msg (
 		xfree(msg->cpu_count_reps);
 		xfree(msg->node_addr);
 		slurm_cred_destroy(msg->cred);
-#		ifdef HAVE_LIBELAN3
-		if (msg->qsw_job)
-			qsw_free_jobinfo(msg->qsw_job);
-#		endif
+		if (msg->switch_job)
+			g_switch_free_jobinfo(msg->switch_job);
 		xfree(msg);
 	}
 }
@@ -494,10 +492,8 @@ void slurm_free_job_step_create_response_msg(
 	if (msg) {
 		slurm_cred_destroy(msg->cred);
 
-#		ifdef HAVE_LIBELAN3
-		if (msg->qsw_job)
-			qsw_free_jobinfo(msg->qsw_job);
-#		endif
+		if (msg->switch_job)
+			g_switch_free_jobinfo(msg->switch_job);
 
 		xfree(msg);
 	}

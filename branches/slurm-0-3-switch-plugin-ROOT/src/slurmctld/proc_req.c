@@ -50,11 +50,8 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/switch.h"
 #include "src/common/xstring.h"
-
-#if HAVE_ELAN
-#  include "src/common/qsw.h"
-#endif
 
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
@@ -276,6 +273,7 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->slurmd_timeout      = slurmctld_conf.slurmd_timeout;
 	conf_ptr->slurm_conf          = slurmctld_conf.slurm_conf;
 	conf_ptr->state_save_location = slurmctld_conf.state_save_location;
+	conf_ptr->switch_type         = slurmctld_conf.switch_type;
 	conf_ptr->tmp_fs              = slurmctld_conf.tmp_fs;
 	conf_ptr->wait_time           = slurmctld_conf.wait_time;
 	return;
@@ -509,9 +507,8 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		alloc_msg.node_cnt       = node_cnt;
 		alloc_msg.node_addr      = node_addr;
 		alloc_msg.cred           = slurm_cred;
-#ifdef HAVE_ELAN
-		alloc_msg.qsw_job = qsw_copy_jobinfo(step_rec->qsw_job);
-#endif
+		alloc_msg.switch_job     = g_switch_copy_jobinfo(
+						step_rec->switch_job);
 		unlock_slurmctld(job_write_lock);
 		response_msg.msg_type = RESPONSE_ALLOCATION_AND_RUN_JOB_STEP;
 		response_msg.data = &alloc_msg;
@@ -519,9 +516,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		if (slurm_send_node_msg(msg->conn_fd, &response_msg) < 0)
 			_kill_job_on_msg_fail(job_id);
 		slurm_cred_destroy(slurm_cred);
-#ifdef HAVE_ELAN
-		qsw_free_jobinfo(alloc_msg.qsw_job);
-#endif
+		g_switch_free_jobinfo(alloc_msg.switch_job);
 		(void) dump_all_job_state();	/* Has its own locks */
 	}
 }
@@ -951,10 +946,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		job_step_resp.job_step_id = step_rec->step_id;
 		job_step_resp.node_list   = xstrdup(step_rec->step_node_list);
 		job_step_resp.cred        = slurm_cred;
-
-#ifdef HAVE_ELAN
-		job_step_resp.qsw_job =  qsw_copy_jobinfo(step_rec->qsw_job);
-#endif
+		job_step_resp.switch_job  = g_switch_copy_jobinfo(
+						step_rec->switch_job);
 		unlock_slurmctld(job_write_lock);
 		resp.address = msg->address;
 		resp.msg_type = RESPONSE_JOB_STEP_CREATE;
@@ -963,9 +956,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		xfree(job_step_resp.node_list);
 		slurm_cred_destroy(slurm_cred);
-#ifdef HAVE_ELAN
-		qsw_free_jobinfo(job_step_resp.qsw_job);
-#endif
+		g_switch_free_jobinfo(job_step_resp.switch_job);
 		(void) dump_all_job_state();	/* Sets own locks */
 	}
 }
@@ -1311,7 +1302,7 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		/* resume backup mode */
 		slurmctld_config.resume_backup = true;	
 	} else {
-		debug2("Performing RPC: REQUEST_SHUTDOWN");
+		info("Performing RPC: REQUEST_SHUTDOWN");
 		core_arg = shutdown_msg->core;
 	}
 
@@ -1352,10 +1343,9 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		/* save_all_state();	performed by _slurmctld_background */
 	}
 	slurm_send_rc_msg(msg, error_code);
-	if ((error_code == SLURM_SUCCESS) && core_arg) {
-		info("Aborting per RPC request");
-		abort();
-	}
+	if ((error_code == SLURM_SUCCESS) && core_arg &&
+	    (slurmctld_config.thread_id_sig))
+		pthread_kill(slurmctld_config.thread_id_sig, SIGABRT);
 }
 
 /* _slurm_rpc_shutdown_controller_immediate - process RPC to shutdown 

@@ -81,12 +81,10 @@ BEGIN_C_DECLS
    typedef struct slurm_job_credential * slurm_cred_t;
 #endif
 
-/* Define qsw_jobinfo_t below to avoid including extraneous slurm headers */
-#ifdef	HAVE_ELAN
-#  ifndef __qsw_jobinfo_t_defined
-#    define  __qsw_jobinfo_t_defined
-     typedef struct qsw_jobinfo *qsw_jobinfo_t;	/* opaque data type */
-#  endif
+/* Define switch_jobinfo_t below to avoid including extraneous slurm headers */
+#ifndef __switch_jobinfo_t_defined
+#  define  __switch_jobinfo_t_defined
+   typedef struct switch_jobinfo *switch_jobinfo_t;	/* opaque data type */
 #endif
 
 /*****************************************************************************\
@@ -265,9 +263,7 @@ typedef struct job_step_create_response_msg {
 	uint32_t job_step_id;	/* assigned job step id */
 	char *node_list;	/* list of allocated nodes */
 	slurm_cred_t cred;      /* slurm job credential */
-#ifdef	HAVE_ELAN
-	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
-#endif
+	switch_jobinfo_t switch_job;	/* switch context, opaque data structure */
 } job_step_create_response_msg_t;
 
 typedef struct {
@@ -356,9 +352,7 @@ typedef struct resource_allocation_and_run_response_msg {
 
 	uint32_t job_step_id;	/* assigned step id */
 	slurm_cred_t cred;      /* slurm job credential */
-#ifdef HAVE_ELAN
-	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data type */
-#endif
+	switch_jobinfo_t switch_job;	/* switch context, opaque data type */
 } resource_allocation_and_run_response_msg_t;
 
 typedef struct partition_info_msg {
@@ -414,6 +408,7 @@ typedef struct slurm_ctl_conf {
 	char *slurm_conf;	/* pathname of slurm config file */
 	char *state_save_location;/* pathname of slurmctld state save
 				 * directory */
+	char *switch_type;	/* switch or interconnect type */
 	char *tmp_fs;		/* pathname of temporary file system */
 	uint16_t wait_time;	/* default job --wait time */
 	char *job_credential_private_key;	/* path to private key */
