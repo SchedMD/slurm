@@ -54,26 +54,22 @@ time_t init_time;
 slurmd_shmem_t * shmem_seg ;
 
 /* function prototypes */
-void slurmd_req ( slurm_msg_t * msg );
-int send_node_registration_status_msg ( ) ;
-int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
-int slurmd_msg_engine ( void * args ) ;
 void * request_thread ( void * arg ) ;
-void init ( ) ;
-
-void slurm_rpc_launch_tasks ( slurm_msg_t * msg ) ;
+void slurmd_req ( slurm_msg_t * msg );
+int slurmd_msg_engine ( void * args ) ;
+int send_node_registration_status_msg ( ) ;
 void slurm_rpc_kill_tasks ( slurm_msg_t * msg ) ;
+void slurm_rpc_launch_tasks ( slurm_msg_t * msg ) ;
+int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
 
 int main (int argc, char *argv[]) 
 {
 	int error_code ;
-	
-	
 	char node_name[MAX_NAME_LEN];
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
-
 	init_time = time (NULL);
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
+
 /*
 	if ( ( error_code = init_slurm_conf () ) ) 
 		fatal ("slurmd: init_slurm_conf error %d", error_code);
@@ -81,17 +77,22 @@ int main (int argc, char *argv[])
 		fatal ("slurmd: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
 */
 
+	/* shared memory init */
 	shmem_seg = get_shmem ( ) ;
 	init_shmem ( shmem_seg ) ;
+
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: errno %d from gethostname", errno);
-	task_mgr_init ( ) ;	
+
+	/* send registration message to slurmctld*/
 	send_node_registration_status_msg ( ) ;
+
 	slurmd_msg_engine ( NULL ) ;
 	return SLURM_SUCCESS ;
 }
 
-
+/* sends a node_registration_status_msg to the slurmctld upon boot
+ * announcing availibility for computationt */
 int send_node_registration_status_msg ( )
 {
 	slurm_msg_t request_msg ;
@@ -107,21 +108,31 @@ int send_node_registration_status_msg ( )
 	return SLURM_SUCCESS ;
 }
 
+/* calls machine dependent system info calls to fill structure
+ * node_reg_msg - structure to fill with system info
+ * returns - return code
+ */
 int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg )
 {
 	int error_code ;
 	char node_name[MAX_NAME_LEN];
+
+	/* get hostname */
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) )
 		fatal ("slurmd: errno %d from gethostname", errno);
 
+	/* fill in data structure */
 	node_reg_msg -> timestamp = time ( NULL ) ;
 	node_reg_msg -> node_name = xstrdup ( node_name ) ; 
 	get_procs ( & node_reg_msg -> cpus );
 	get_memory ( & node_reg_msg -> real_memory_size ) ;
 	get_tmp_disk ( & node_reg_msg -> temporary_disk_space ) ;
+
 	return SLURM_SUCCESS ;
 }
 
+/* accept thread for incomming slurm messages 
+ * args - do nothing right now */
 int slurmd_msg_engine ( void * args )
 {
 	int error_code ;
@@ -185,6 +196,10 @@ int slurmd_msg_engine ( void * args )
 	return 0 ;
 }
 
+/* worker thread method for accepted message connections
+ * arg - a slurm_msg_t representing the accepted incomming message
+ * returns - nothing, void * because of pthread def
+ */
 void * request_thread ( void * arg )
 {
 	slurm_msg_t * msg = ( slurm_msg_t * ) arg ;
@@ -196,6 +211,9 @@ void * request_thread ( void * arg )
 	return NULL ;
 }
 
+/* multiplexing message handler
+ * msg - incomming request message 
+ */
 void slurmd_req ( slurm_msg_t * msg )
 {
 	
@@ -216,6 +234,11 @@ void slurmd_req ( slurm_msg_t * msg )
 	}
 	slurm_free_msg ( msg ) ;
 }
+
+
+/******************************/
+/* rpc methods */
+/******************************/
 
 /* Launches tasks */
 void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
@@ -274,7 +297,6 @@ void slurm_rpc_kill_tasks ( slurm_msg_t * msg )
 	}
 }
 
-/* Reconfigure - re-initialized from configuration files */
 void slurm_rpc_slurmd_example ( slurm_msg_t * msg )
 {
 	/* init */

@@ -36,11 +36,7 @@ typedef struct slurmd_shmem
 void * get_shmem ( );
 void init_shmem ( slurmd_shmem_t * shmem );
 void * add_job_step ( slurmd_shmem_t * shmem , job_step_t * new_job_step ) ;
-void * add_task ( slurmd_shmem_t * shmem , task_t * new_task );
-void copy_task ( task_t * dest , task_t * const src );
-void copy_job_step ( job_step_t * dest , job_step_t * src );
-int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task );
 int deallocate_job_step ( job_step_t * jobstep );
-void clear_task ( task_t * task );
-void clear_job_step( job_step_t * job_step );
+int prepend_task ( slurmd_shmem_t * shmem , job_step_t * job_step , task_t * task );
+
 #endif
