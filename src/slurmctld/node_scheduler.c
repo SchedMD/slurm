@@ -163,10 +163,12 @@ allocate_nodes (unsigned *bitmap)
 {
 	int i;
 
+	last_node_update = time (NULL);
+
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		node_record_table_ptr[i].node_state = STATE_ALLOCATED;
+		node_record_table_ptr[i].node_state = NODE_STATE_ALLOCATED;
 		bit_clear (idle_node_bitmap, i);
 	}
 	return;
@@ -208,7 +210,7 @@ deallocate_nodes (unsigned *bitmap)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (bitmap, i) == 0)
 			continue;
-		node_record_table_ptr[i].node_state = STATE_IDLE;
+		node_record_table_ptr[i].node_state = NODE_STATE_IDLE;
 		bit_set (idle_node_bitmap, i);
 	}
 	return;

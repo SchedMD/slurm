@@ -32,7 +32,7 @@
 #define block_or_cycle(in_string) \
 		(strcmp((in_string),"BLOCK")? \
 			(strcmp((in_string),"CYCLE")? \
-				-1 : SLURM_JOB_DESC_CYCLE ) : SLURM_JOB_DESC_BLOCK ) 
+				-1 : DIST_CYCLE ) : DIST_BLOCK ) 
 
 #define yes_or_no(in_string) \
 		(( strcmp ((in_string),"YES"))? \
@@ -43,8 +43,6 @@ int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
 time_t last_job_update;			/* time of last update to job records */
 static pthread_mutex_t job_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for job info */
-char *job_state_string[] =
-{ "PENDING", "STAGE_IN", "RUNNING", "STAGE_OUT", "COMPLETED", "FAILED", "TIME_OUT", "END" };
 static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
@@ -457,7 +455,7 @@ job_cancel (uint32_t job_id)
 	} 
 
 	info ("job_cancel: job %u can't be cancelled from state=%s", 
-			job_id, job_state_string[job_ptr->job_state]);
+			job_id, job_state_string(job_ptr->job_state));
 	return EAGAIN;
 
 }
@@ -537,7 +535,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 			error_code = EAGAIN;	/* no memory */
 			goto cleanup;
 		}		
-		if (job_desc->contiguous == SLURM_JOB_DESC_CONTIGUOUS )
+		if (job_desc->contiguous)
 			bit_fill_gaps (req_bitmap);
 		if (bit_super_set (req_bitmap, part_ptr->node_bitmap) != 1) {
 			info ("job_create: requested nodes %s not in partition %s",
@@ -685,11 +683,11 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		return ESLURM_JOB_NAME_TOO_LONG;
 	}	
 	if (job_desc_msg->contiguous == NO_VAL)
-		job_desc_msg->contiguous = SLURM_JOB_DESC_NONCONTIGUOUS ;
+		job_desc_msg->contiguous = 0 ;
 	if (job_desc_msg->shared == NO_VAL)
-		job_desc_msg->shared = SLURM_JOB_DESC_NOT_SHARED ;
+		job_desc_msg->shared =  0 ;
 	if (job_desc_msg->dist == NO_VAL)
-		job_desc_msg->shared = SLURM_JOB_DESC_BLOCK ;
+		job_desc_msg->shared = DIST_BLOCK ;
 
 	if (job_desc_msg->job_id != NO_VAL && find_job_record ((uint32_t) job_desc_msg->job_id))
 	{

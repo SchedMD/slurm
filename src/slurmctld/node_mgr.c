@@ -14,16 +14,13 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "slurmctld.h"
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 	1024
 #define SEPCHARS 	" \n\t"
 
 List config_list = NULL;		/* list of config_record entries */
 struct node_record *node_record_table_ptr = NULL;	/* location of the node records */
-char *node_state_string[] =
-	{ "DOWN", "UNKNOWN", "IDLE", "ALLOCATED", "STAGE_IN", "RUNNING", "STAGE_OUT", 
-	  "DRAINED", "DRAINING", "END" };
 int *hash_table = NULL;		/* table of hashed indicies into node_record */
 struct config_record default_config_record;
 struct node_record default_node_record;
@@ -516,7 +513,7 @@ delete_config_record ()
 /* 
  * delete_node_record - delete record for node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
- *   set its state to STATE_DOWN
+ *   set its state to NODE_STATE_DOWN
  * input: name - name of the desired node
  * output: return 0 on success, errno otherwise
  * global: node_record_table_ptr - pointer to global node table
@@ -539,7 +536,7 @@ delete_node_record (char *name)
 			node_record_point->cpus;
 	}
 	strcpy (node_record_point->name, "");
-	node_record_point->node_state = STATE_DOWN;
+	node_record_point->node_state = NODE_STATE_DOWN;
 	last_bitmap_update = time (NULL);
 	return 0;
 }
@@ -691,7 +688,7 @@ init_node_conf ()
 	}
 
 	strcpy (default_node_record.name, "DEFAULT");
-	default_node_record.node_state = STATE_UNKNOWN;
+	default_node_record.node_state = NODE_STATE_UNKNOWN;
 	default_node_record.last_response = (time_t) 0;
 	default_node_record.cpus = 1;
 	default_node_record.real_memory = 1;
@@ -1249,7 +1246,7 @@ update_node ( update_node_msg_t * update_node_msg )
 		}
 
 		if (state_val != NO_VAL) {
-			if (state_val == STATE_DOWN) {
+			if (state_val == NODE_STATE_DOWN) {
 				bit_clear (up_node_bitmap,
 					      (int) (node_record_point - 
 						node_record_table_ptr));
@@ -1257,11 +1254,11 @@ update_node ( update_node_msg_t * update_node_msg )
 					      (int) (node_record_point - 
 						node_record_table_ptr));
 			}
-			else if (state_val != STATE_IDLE)
+			else if (state_val != NODE_STATE_IDLE)
 				bit_clear (idle_node_bitmap,
 					      (int) (node_record_point - 
 						node_record_table_ptr));
-			else	/* (state_val == STATE_IDLE) */
+			else	/* (state_val == NODE_STATE_IDLE) */
 				bit_set (idle_node_bitmap,
 					      (int) (node_record_point - 
 						node_record_table_ptr));
@@ -1269,7 +1266,7 @@ update_node ( update_node_msg_t * update_node_msg )
 			node_record_point->node_state = state_val;
 			info ("update_node: node %s state set to %s",
 				&node_list[i*MAX_NAME_LEN], 
-				node_state_string[state_val]);
+				node_state_string(state_val));
 		}
 	}
 
@@ -1327,16 +1324,16 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	if (error_code) {
 		error ("validate_node_specs: setting node %s state to DOWN",
 			node_name);
-		node_ptr->node_state = STATE_DOWN;
+		node_ptr->node_state = NODE_STATE_DOWN;
 		bit_clear (up_node_bitmap, (node_ptr - node_record_table_ptr));
 
 	}
 	else {
 		info ("validate_node_specs: node %s has registered", node_name);
-		node_ptr->node_state &= (uint16_t) (~STATE_NO_RESPOND);
-		if ((node_ptr->node_state == STATE_DOWN) ||
-		    (node_ptr->node_state == STATE_UNKNOWN))
-			node_ptr->node_state = STATE_IDLE;
+		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
+		if ((node_ptr->node_state == NODE_STATE_DOWN) ||
+		    (node_ptr->node_state == NODE_STATE_UNKNOWN))
+			node_ptr->node_state = NODE_STATE_IDLE;
 		bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
 

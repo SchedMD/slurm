@@ -14,7 +14,44 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-#define NO_VAL	     0x7f7f7f7f
+/* INFINITE is used to identify unlimited configurations,  */
+/* eg. the maximum count of nodes any job may use in some partition */
+#define	INFINITE (0xffffffff)
+#define NO_VAL	 (0x7f7f7f7f)
+
+/* last entry must be STATE_END, keep in sync with node_state_string    		*/
+/* if a node ceases to respond, its last state is ORed with NODE_STATE_NO_RESPOND	*/
+enum node_states {
+	NODE_STATE_DOWN,	/* node is not responding */
+	NODE_STATE_UNKNOWN,	/* node's initial state, unknown */
+	NODE_STATE_IDLE,	/* node idle and available for use */
+	NODE_STATE_ALLOCATED,	/* node has been allocated, job not currently running */
+	NODE_STATE_STAGE_IN,	/* node has been allocated, job is starting execution */
+	NODE_STATE_RUNNING,	/* node has been allocated, job currently running */
+	NODE_STATE_STAGE_OUT,	/* node has been allocated, job is terminating */
+	NODE_STATE_DRAINED,	/* node idle and not to be allocated future work */
+	NODE_STATE_DRAINING,	/* node in use, but not to be allocated future work */
+	NODE_STATE_END		/* last entry in table */
+};
+#define NODE_STATE_NO_RESPOND (0x8000)
+
+/* last entry must be JOB_END, keep in sync with job_state_string    	*/
+enum job_states {
+	JOB_PENDING,		/* queued waiting for initiation */
+	JOB_STAGE_IN,		/* allocated resources, not yet running */
+	JOB_RUNNING,		/* allocated resources and executing */
+	JOB_STAGE_OUT,		/* completed execution, nodes not yet released */
+	JOB_COMPLETE,		/* completed execution successfully, nodes released */
+	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
+	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
+	JOB_END			/* last entry in table */
+};
+
+/* keep in sync with job_dist_string    	*/
+enum task_dist {
+	DIST_BLOCK,		/* fill each node in turn */
+	DIST_CYCLE		/* one task each node, round-robin through nodes */
+};
 
 #include <src/common/macros.h>
 #include <src/common/slurm_protocol_common.h>
@@ -65,7 +102,6 @@ typedef enum { test1, test2
 
 #define REQUEST_UPDATE_NODE			3081
 #define REQUEST_UPDATE_PARTITION		3091
-
 
 #define REQUEST_CREATE_JOB_STEP			5001
 #define RESPONSE_CREATE_JOB_STEP		5002
@@ -295,7 +331,7 @@ typedef struct partition_info_msg {
 
 struct node_table {
 	char *name;		/* node name */
-	uint16_t node_state;	/* enum node_states, ORed with STATE_NO_RESPOND if down */
+	uint16_t node_state;	/* see node_state_string below for translation */
 	uint32_t cpus;		/* configured count of cpus running on the node */
 	uint32_t real_memory;	/* configured megabytes of real memory on the node */
 	uint32_t tmp_disk;	/* configured megabytes of total disk in TMP_FS */
@@ -342,15 +378,9 @@ void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
 void inline slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg ) ;
 void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
 
-/* stuct init functions */
-#define SLURM_JOB_DESC_NONCONTIGUOUS		0
-#define SLURM_JOB_DESC_CONTIGUOUS		1 
-#define SLURM_JOB_DESC_NOT_SHARED		0
-#define SLURM_JOB_DESC_SHARED			1	
-#define SLURM_JOB_DESC_FORCED_SHARED		2
-#define SLURM_JOB_DESC_CYCLE			0
-#define SLURM_JOB_DESC_BLOCK			1	
-
+extern char *job_dist_string(uint16_t inx);
+extern char *job_state_string(uint16_t inx);
+extern char *node_state_string(uint16_t inx);
 
 #define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_DIST		NO_VAL	
