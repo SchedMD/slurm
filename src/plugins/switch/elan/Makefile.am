@@ -30,7 +30,5 @@ switch_elan_la_LDFLAGS = $(PLUGIN_FLAGS)
 else
 EXTRA_switch_elan_la_SOURCES =  \
 	switch_elan.c           \
-	elanhosts.c elanhosts.h \
 	qsw.c qsw.h
-
 endif
