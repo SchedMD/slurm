@@ -1717,7 +1717,8 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 	{
 		/* FIXME Needs to be fixed to really work with a credential */
 		//slurm_job_credential_t cred = { 1,1,"test",start_time, "signature"} ;
-		info ("slurm_rpc_job_step_create success time=%ld",
+		info ("slurm_rpc_job_step_create %u.%u success time=%ld",
+				step_rec->job_ptr->job_id, step_rec->step_id, 
 				(long) (clock () - start_time));
 		
 		job_step_resp.job_step_id = step_rec->step_id;
