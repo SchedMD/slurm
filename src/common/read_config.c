@@ -122,7 +122,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
- *	values.   
+ *	values to defaults (NULL or NO_VAL). Note that the configuration
+ *	file pathname (slurm_conf) is not changed.    
  * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
  */
 void

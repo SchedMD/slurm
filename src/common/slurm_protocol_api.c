@@ -98,6 +98,18 @@ slurm_protocol_config_t *slurm_get_api_config()
         return proto_conf;
 }
 
+/* slurm_api_set_conf_file
+ *      set slurm configuration file to a non-default value
+ */
+extern void  slurm_api_set_conf_file(char *pathname)
+{
+        if (pathname == NULL)
+                return;
+        xfree(slurmctld_conf.slurm_conf);
+        slurmctld_conf.slurm_conf = xstrdup(pathname);
+        return;
+}
+
 /* slurm_api_set_default_config
  *        called by the send_controller_msg function to insure that at least 
  *        the compiled in default slurm_protocol_config object is initialized
@@ -110,8 +122,9 @@ int slurm_api_set_default_config()
         static time_t last_config_update = (time_t) 0;
 
         slurm_mutex_lock(&config_lock);
-        if (stat(SLURM_CONFIG_FILE, &config_stat) < 0) {
-                error("Can't stat %s: %m", SLURM_CONFIG_FILE);
+        if ( (slurmctld_conf.slurm_conf) &&
+             (stat(slurmctld_conf.slurm_conf, &config_stat) < 0)) {
+                error("Can't stat %s: %m", slurmctld_conf.slurm_conf);
                 rc = SLURM_ERROR;
                 goto cleanup;
         }
@@ -121,7 +134,7 @@ int slurm_api_set_default_config()
                 goto cleanup;
 
         last_config_update = config_stat.st_mtime;
-        free_slurm_conf(&slurmctld_conf);
+        init_slurm_conf(&slurmctld_conf);
         read_slurm_conf_ctl(&slurmctld_conf);
 
         if ((slurmctld_conf.control_addr == NULL) ||

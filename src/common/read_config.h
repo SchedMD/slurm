@@ -54,7 +54,8 @@
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration 
- *	values.   
+ *	values defaults (NULL or NO_VAL). Note that the configuration
+ *	file pathname (slurm_conf) is not changed.    
  * IN/OUT ctl_conf_ptr - pointer to data structure to be initialized
  */
 extern void init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr);

@@ -446,6 +446,7 @@ _read_config()
         char *path_pubkey;
 
 	conf->cf.slurm_conf = xstrdup(conf->conffile);
+	slurm_api_set_conf_file(conf->conffile);
 
 	read_slurm_conf_ctl(&conf->cf);
 
