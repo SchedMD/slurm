@@ -351,7 +351,6 @@ slurmctld_background ( void * no_data )
 
 	}
 	debug3 ("slurmctld_background shutting down");
-	remove_locks ( );
 	pthread_exit ((void *)0);
 }
 
@@ -364,21 +363,21 @@ report_locks_set ( void )
 
 	get_lock_values (&lock_flags);
 
-	if (lock_flags.config.read) strcat (config, "R");
-	if (lock_flags.config.write) strcat (config, "W");
-	if (lock_flags.config.write_wait) strcat (config, "P");
+	if (lock_flags.entity[read_lock (CONFIG_LOCK)]) strcat (config, "R");
+	if (lock_flags.entity[write_lock (CONFIG_LOCK)]) strcat (config, "W");
+	if (lock_flags.entity[write_wait_lock (CONFIG_LOCK)]) strcat (config, "P");
 
-	if (lock_flags.job.read) strcat (job, "R");
-	if (lock_flags.job.write) strcat (job, "W");
-	if (lock_flags.job.write_wait) strcat (job, "P");
+	if (lock_flags.entity[read_lock (JOB_LOCK)]) strcat (job, "R");
+	if (lock_flags.entity[write_lock (JOB_LOCK)]) strcat (job, "W");
+	if (lock_flags.entity[write_wait_lock (JOB_LOCK)]) strcat (job, "P");
 
-	if (lock_flags.node.read) strcat (node, "R");
-	if (lock_flags.node.write) strcat (node, "W");
-	if (lock_flags.node.write_wait) strcat (node, "P");
+	if (lock_flags.entity[read_lock (NODE_LOCK)]) strcat (node, "R");
+	if (lock_flags.entity[write_lock (NODE_LOCK)]) strcat (node, "W");
+	if (lock_flags.entity[write_wait_lock (NODE_LOCK)]) strcat (node, "P");
 
-	if (lock_flags.partition.read) strcat (partition, "R");
-	if (lock_flags.partition.write) strcat (partition, "W");
-	if (lock_flags.partition.write_wait) strcat (partition, "P");
+	if (lock_flags.entity[read_lock (PART_LOCK)]) strcat (partition, "R");
+	if (lock_flags.entity[write_lock (PART_LOCK)]) strcat (partition, "W");
+	if (lock_flags.entity[write_wait_lock (PART_LOCK)]) strcat (partition, "P");
 
 	if ((strlen (config) + strlen (job) + strlen (node) + strlen (partition)) > 0)
 		error ("The following locks were left set config:%s, job:%s, node:%s, part:%s",

@@ -25,8 +25,6 @@
 \*****************************************************************************/
 
 /*****************************************************************************\
- * Read/write locks implemented using UNIX semaphores.
- * 
  * Read/write locks are implemented by the routines in this directory by using
  * a set of three (3) UNIX semaphores to lock a resource.
  * 
@@ -64,6 +62,14 @@
  * unspecified number of readers are blocked because they are waiting for the
  * number of writers waiting semaphore to become 0, meaning that there are no
  * writers waiting to lock the resource.
+ *
+ * use init_locks() to initialize the locks then
+ * lock_slurmctld() and unlock_slurmctld() to get the ordering so as to 
+ * prevent deadlock. The arguments indicate the lock type required for 
+ * each entity (job, node, etc.) in a well defined order.
+ * For example: no lock on the config data structure, read lock on the job 
+ * and node data structures, and write lock on the partition data structure 
+ * would look like this: "{ NO_LOCK, READ_LOCK, READ_LOCK, WRITE_LOCK }"
 \*****************************************************************************/
 
 /* levels of locking required for each data structure */
@@ -73,7 +79,7 @@ typedef enum {
 	WRITE_LOCK
 }	lock_level_t;
 
-/* slurmctld specific data structures to lock */
+/* slurmctld specific data structures to lock via APIs */
 typedef struct {
 	lock_level_t	config;
 	lock_level_t	job;
@@ -81,23 +87,31 @@ typedef struct {
 	lock_level_t	partition;
 }	slurmctld_lock_t;
 
-typedef struct {
-	unsigned read;
-	unsigned write;
-	unsigned write_wait;
-}	lock_flags_t;
+/* Interval lock structure
+ * we actually use three semaphores for each data type, see macros below
+ *	(lock_datatype_t * 3 + 0) = read_lock
+ *	(lock_datatype_t * 3 + 1) = write_lock
+ *	(lock_datatype_t * 3 + 2) = write_wait_lock
+ */
+typedef enum {
+	CONFIG_LOCK,
+	JOB_LOCK, 
+	NODE_LOCK, 
+	PART_LOCK,
+	ENTITY_COUNT
+}	lock_datatype_t;
+
+#define read_lock(data_type)		(data_type * 3 + 0) 
+#define write_lock(data_type)		(data_type * 3 + 1) 
+#define write_wait_lock(data_type)	(data_type * 3 + 2)
 
 typedef struct {
-	lock_flags_t	config;
-	lock_flags_t	job;
-	lock_flags_t	node;
-	lock_flags_t	partition;
+	int entity[ENTITY_COUNT * 3];
 }	slurmctld_lock_flags_t;
 
 
 extern void get_lock_values (slurmctld_lock_flags_t *lock_flags);
-extern void init_locks ( );
+extern void init_locks ( void );
 extern void lock_slurmctld (slurmctld_lock_t lock_levels);
-extern void remove_locks ( void );
 extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
 
