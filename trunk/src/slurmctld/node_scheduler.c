@@ -76,7 +76,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 			    int node_set_size, bitstr_t ** req_bitmap,
 			    uint32_t req_cpus, 
 			    uint32_t min_nodes, uint32_t max_nodes,
-			    int contiguous, int shared);
+			    int contiguous, int shared,
+			    uint32_t node_lim);
 static int _valid_features(char *requested, char *available);
 
 
@@ -488,6 +489,8 @@ _enough_nodes(int avail_nodes, int rem_nodes, int min_nodes, int max_nodes)
  * IN max_nodes - maximum count of nodes required by the job (0==no limit)
  * IN contiguous - 1 if allocated nodes must be contiguous, 0 otherwise
  * IN shared - set to 1 if nodes may be shared, 0 otherwise
+ * IN node_lim - maximum number of nodes permitted for job, 
+ *	INFINITE for no limit (partition limit)
  * RET 0 on success, EAGAIN if request can not be satisfied now, EINVAL if
  *	request can never be satisfied (insufficient contiguous nodes)
  * NOTE: the caller must xfree memory pointed to by req_bitmap
@@ -508,7 +511,7 @@ static int
 _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		 bitstr_t ** req_bitmap, uint32_t req_cpus,
 		 uint32_t min_nodes, uint32_t max_nodes,
-		 int contiguous, int shared)
+		 int contiguous, int shared, uint32_t node_lim)
 {
 	int error_code = SLURM_SUCCESS, i, j, pick_code;
 	int total_nodes = 0, total_cpus = 0;	/* total resources configured 
@@ -534,6 +537,10 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		if (total_nodes > max_nodes) {
 			info("_pick_best_nodes: required nodes exceed limit");
 			return EINVAL;
+		}
+		if (total_nodes > node_lim) {
+			/* exceed partition node limit */
+			return EAGAIN;
 		}
 		if ((min_nodes <= total_nodes) && 
 		    (max_nodes <= min_nodes  ) &&
@@ -587,6 +594,12 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							max_nodes, req_cpus, 
 							contiguous);
 			if (pick_code == SLURM_SUCCESS) {
+				if ((node_lim != INFINITE) && 
+				    (bit_set_count(avail_bitmap) > node_lim)) {
+					/* end of tests for this feature */
+					avail_nodes = 0; 
+					break;
+				}
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(*req_bitmap);
 				*req_bitmap = avail_bitmap;
@@ -595,13 +608,16 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 		}
 
 		/* try to get max_nodes now for this feature */
-		if ((max_nodes > min_nodes) && (avail_nodes >= min_nodes) &&
-		    (avail_nodes < max_nodes)) {
-			pick_code =
-			    _pick_best_quadrics(avail_bitmap, *req_bitmap,
-						min_nodes, max_nodes, 
-						req_cpus, contiguous);
-			if (pick_code == SLURM_SUCCESS) {
+		if ((max_nodes   >  min_nodes) && 
+		    (avail_nodes >= min_nodes) &&
+		    (avail_nodes <  max_nodes)) {
+			pick_code = _pick_best_quadrics(avail_bitmap, 
+							*req_bitmap, min_nodes,
+							max_nodes, req_cpus, 
+							contiguous);
+			if ((pick_code == SLURM_SUCCESS) &&
+			    ((node_lim == INFINITE) ||
+			     (bit_set_count(avail_bitmap) <= node_lim))) {
 				FREE_NULL_BITMAP(total_bitmap);
 				FREE_NULL_BITMAP(*req_bitmap);
 				*req_bitmap = avail_bitmap;
@@ -619,7 +635,9 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 							*req_bitmap, min_nodes,
 							max_nodes, req_cpus, 
 							contiguous);
-			if (pick_code == SLURM_SUCCESS)
+			if ((pick_code == SLURM_SUCCESS) &&
+			    ((node_lim == INFINITE) ||
+			     (bit_set_count(avail_bitmap) <= node_lim)))
 				runable = true;
 		}
 		FREE_NULL_BITMAP(avail_bitmap);
@@ -728,9 +746,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 
 	/* pick the nodes providing a best-fit */
 	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
-	if (job_ptr->details->max_nodes == 0)
-		max_nodes = 0;
-	else if (part_ptr->max_nodes == INFINITE)
+	if ((job_ptr->details->max_nodes == 0) ||
+	    (part_ptr->max_nodes == INFINITE))
 		max_nodes = job_ptr->details->max_nodes;
 	else
 		max_nodes = MIN(job_ptr->details->max_nodes, 
@@ -746,7 +763,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 	error_code = _pick_best_nodes(node_set_ptr, node_set_size,
 				      &req_bitmap, job_ptr->details->num_procs,
 				      min_nodes, max_nodes,
-				      job_ptr->details->contiguous, shared);
+				      job_ptr->details->contiguous, 
+				      shared, part_ptr->max_nodes);
 	if (error_code == EAGAIN) {
 		error_code = ESLURM_NODES_BUSY;
 		goto cleanup;
