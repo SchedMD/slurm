@@ -14,15 +14,18 @@
 
 AC_DEFUN([X_AC_NCURSES],
 [
-      AC_SUBST(NCURSES)
-      ncurses_dir="/usr/lib /usr/lib/curses"
+   AC_SUBST(NCURSES)
+   ncurses_dir="/usr/lib /usr/lib/curses"
 
+   for curse_dir in $ncurses_dir; do
       # Search for "libncurses.a" in the directory
-      if test -z "$have_ncurses_ar" -a -f "$ncurses_dir/libncurses.a" ; then
+      if test -z "$have_ncurses_ar" -a -f "$curse_dir/libncurses.a" ; then
          have_ncurses_ar=yes
-         NCURSES="ncurses"
+         NCURSES="-lncurses"
       fi
-      if test -z "$have_ncurses_ar" -a -f "$ncurses_dir/libcurses.a" ; then
-         NCURSES="curses"
+      if test -z "$have_ncurses_ar" -a -f "$curse_dir/libcurses.a" ; then
+         have_ncurses_ar=yes
+         NCURSES="-lcurses"
       fi
+   done
 ])

@@ -26,7 +26,7 @@ AUTOMAKE_OPTIONS = foreign
 
 # smap_LDFLAGS = -export-dynamic $(CMD_LDFLAGS)
 
-LIBS=-l$(NCURSES) 
+LIBS=$(NCURSES) 
 INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES) 
 bin_PROGRAMS = smap
 
