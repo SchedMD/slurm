@@ -379,7 +379,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 
 		tasks_exited++;
 		if (tasks_exited == opt.nprocs) {
-			debug2("all tasks exited");
+			debug2("All tasks exited");
 			update_job_state(job, SRUN_JOB_OVERDONE);
 		}
 	}
