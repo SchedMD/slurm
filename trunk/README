@@ -1,26 +1,27 @@
 TO BUILD:
-./autogen.sh
-./configure
-make
+  cd slurm
+  ./autogen.sh
+  ./configure
+  make
 
 
 TO TEST:
-cd src/slurmctld
-./slurmctld &		# start the controller
+  cd slurm/src/slurmctld
+  ./slurmctld		# start the controller
 
-cd ../api
-./node_info		# get node info
-./partition_info	# get partition info
-etc...
+Submit jobs and exercise the other APIs using the DejaGnu scripts
+  cd slurm/testsuite/slurm_unit/api/manual
+  make
+  ./submit-tst [number of jobs]
+  ./allocate-tst [number of jobs]
+  ./update_config-tst
+  ./reconfigure-tst
+  ./cancel-tst [job_id]
 
+You can also use the tools scontrol, squeue, and scancel.
+These tools are in sub-directories of "slurm/src". 
+All of these tools also have man pages in "slurm/doc/man".
+The job initiation tool srun is not quite ready for use (as of 7/22/2002)
 
 NOTES:
-The machines lx##.llnl.gov have an old version of libtool. 
-	To build there, execute "./autogen.sh" on linux.llnl.gov, 
-	then "./configure" and "make" on lx##.llnl.gov.
-The smurf##.llnl.gov systems have an old version of libtool
-	and gcc in an unusual location. To build there, execute 
-	"./autogen.sh" on linux.llnl.gov. Then prepend 
-	"/opt/freeware/GNUPro/bin/gcc" to your path or configure with
-	"CC=/opt/freeware/GNUPro/bin/gcc ./configure" and 
-	execute "gmake" rather than the AIX "make" program.
+You should have autoconf version 2.52 or higher (see "autoconf -V").
