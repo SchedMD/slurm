@@ -8,8 +8,6 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
-#define DEBUG_SYSTEM  1
-
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -683,6 +681,8 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
     Config_Record_Iterator = NULL;
     Node_List[0] = NULL;
     Config_Record_Iterator = (ListIterator)NULL;
+    Node_Lock();
+    Part_Lock();
 
     /* Setup and basic parsing */
     Error_Code = Parse_Job_Specs(Job_Specs, &Req_Features, &Req_Node_List, &Job_Name, &Req_Group, 
@@ -965,6 +965,8 @@ int Select_Nodes(char *Job_Specs, char **Node_List) {
 
 
 cleanup:
+    Part_Unlock();
+    Node_Unlock();
     if (Req_Features)	free(Req_Features);
     if (Req_Node_List)	free(Req_Node_List);
     if (Job_Name)	free(Job_Name);

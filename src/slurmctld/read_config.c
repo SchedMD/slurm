@@ -9,8 +9,6 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
-#define DEBUG_SYSTEM 1
-
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif

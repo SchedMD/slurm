@@ -5,9 +5,6 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
-#define DEBUG_SYSTEM  1
-#define PROTOTYPE_API 1
-
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
@@ -30,21 +27,11 @@ List	Part_List = NULL;			/* Partition List */
 char	Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
 struct	Part_Record *Default_Part_Loc = NULL;	/* Location of default partition */
 time_t	Last_Part_Update;			/* Time of last update to Part Records */
+static pthread_mutex_t Part_Mutex= PTHREAD_MUTEX_INITIALIZER;	/* Lock for partition info */
 
 int 	Build_Part_BitMap(struct Part_Record *Part_Record_Point);
 void	List_Delete_Part(void *Part_Entry);
 int	List_Find_Part(void *Part_Entry, void *key);
-
-#if PROTOTYPE_API
-char *Part_API_Buffer = NULL;
-int  Part_API_Buffer_Size = 0;
-
-int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time);
-int Load_Part(char *Buffer, int Buffer_Size);
-int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
-	char **Nodes, char **AllowGroups, unsigned **NodeBitMap, int *BitMap_Size);
-#endif
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -71,6 +58,7 @@ main(int argc, char * argv[]) {
 
     Error_Code = Init_Node_Conf();
     if (Error_Code) printf("Init_Node_Conf error %d\n", Error_Code);
+    Part_Lock();
     Error_Code = Init_Part_Conf();
     if (Error_Code) printf("Init_Part_Conf error %d\n", Error_Code);
     Default_Part.MaxTime	= 223344;
@@ -131,39 +119,7 @@ main(int argc, char * argv[]) {
     printf("NOTE: We expect Delete_Part_Record to report not finding a record for Batch\n");
     Error_Code = Delete_Part_Record("Batch");
     if (Error_Code != ENOENT)  printf("ERROR: Delete_Part_Record error2 %d\n", Error_Code);
-
-#if PROTOTYPE_API
-    Error_Code = Load_Part(Dump, Dump_Size);
-    if (Error_Code) printf("Load_Part error %d\n", Error_Code);
-    strcpy(Req_Name, "");	/* Start at beginning of partition list */
-    while (Error_Code == 0) {
-	Error_Code = Load_Part_Name(Req_Name, Next_Name, &MaxTime, &MaxNodes, 
-	    &TotalNodes, &TotalCPUs, &Key, &StateUp, &Shared,
-	    &Nodes, &AllowGroups, &NodeBitMap, &BitMapSize);
-	if (Error_Code != 0)  {
-	    printf("Load_Part_Name error %d finding %s\n", Error_Code, Req_Name);
-	    break;
-	} /* if */
-	if (MaxTime != 223344) 
-	    printf("ERROR: API data not preserved MaxTime %d vs 223344\n", MaxTime);
-	if (MaxNodes != 556677) 
-	    printf("ERROR: API data not preserved MaxNodes %d vs 556677\n", MaxNodes);
-	if (TotalNodes != 4) 
-	    printf("ERROR: API data not preserved TotalNodes %d vs 4\n", TotalNodes);
-	if (TotalCPUs != 16) 
-	    printf("ERROR: API data not preserved TotalCPUs %d vs 16\n", TotalCPUs);
-
-	printf("Found partition Name=%s, TotalNodes=%d, Nodes=%s, MaxTime=%d, MaxNodes=%d\n", 
-	    Req_Name, TotalNodes, Nodes, MaxTime, MaxNodes);
-	printf("  TotalNodes=%d, TotalCPUs=%d, Key=%d StateUp=%d, Shared=%d, AllowGroups=%s\n", 
-	    TotalNodes, TotalCPUs, Key, StateUp, Shared, AllowGroups);
-	if (BitMapSize > 0) 
-	    printf("  BitMap[0]=0x%x, BitMapSize=%d\n", NodeBitMap[0], BitMapSize);
-	if (strlen(Next_Name) == 0) break;
-	strcpy(Req_Name, Next_Name);
-    } /* while */
-#endif
-    free(Dump);
+    Part_Unlock();
 
     exit(0);
 } /* main */
@@ -315,7 +271,9 @@ struct Part_Record *Create_Part_Record(int *Error_Code) {
     Part_Record_Point->TotalNodes  = Default_Part.TotalNodes;
     Part_Record_Point->TotalCPUs   = Default_Part.TotalCPUs;
     Part_Record_Point->NodeBitMap  = NULL;
+#if DEBUG_SYSTEM
     Part_Record_Point->Magic       = PART_MAGIC;
+#endif
 
     if (Default_Part.AllowGroups) {
 	Part_Record_Point->AllowGroups = (char *)malloc(strlen(Default_Part.AllowGroups)+1);
@@ -410,6 +368,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     Buffer_Allocated = 0;
    if (*Update_Time == Last_Part_Update) return 0;
 
+    Part_Lock();
     Part_Record_Iterator = list_iterator_create(Part_List);
     if (Part_Record_Iterator == NULL) {
 #if DEBUG_SYSTEM
@@ -433,6 +392,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 
     /* Write partition records */
     while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
+#if DEBUG_SYSTEM
 	if (Part_Record_Point->Magic != PART_MAGIC) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Dump_Part: Data integrity is bad\n");
@@ -441,6 +401,7 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
 #endif
 	    abort();
 	} /* if */
+#endif
 
 	if (Write_Value(&Buffer, &Buffer_Offset, &Buffer_Allocated, "PartName", 
 		Part_Record_Point->Name, sizeof(Part_Record_Point->Name))) goto cleanup;
@@ -508,9 +469,11 @@ int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
     Buffer_Ptr[0] = Buffer;
     *Buffer_Size = Buffer_Offset;
     *Update_Time = Last_Part_Update;
+    Part_Unlock();
     return 0;
 
 cleanup:
+    Part_Unlock();
     list_iterator_destroy(Part_Record_Iterator);
     if (Buffer) free(Buffer);
     return EINVAL;
@@ -590,6 +553,36 @@ int List_Find_Part(void *Part_Entry, void *key) {
 } /* List_Find_Part */
 
 
+/* Part_Lock - Lock the partition information */
+void Part_Lock() {
+    int Error_Code;
+    Error_Code = pthread_mutex_lock(&Part_Mutex);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Part_Lock: pthread_mutex_lock error %d\n", Error_Code);
+#else
+	syslog(LOG_ALERT, "Part_Lock: pthread_mutex_lock error %d\n", Error_Code);
+#endif
+	abort();
+    } /* if */
+} /* Part_Lock */
+
+
+/* Part_Unlock - Unlock the partition information */
+void Part_Unlock() {
+    int Error_Code;
+    Error_Code = pthread_mutex_unlock(&Part_Mutex);
+    if (Error_Code) {
+#if DEBUG_SYSTEM
+	fprintf(stderr, "Part_Unlock: pthread_mutex_unlock error %d\n", Error_Code);
+#else
+	syslog(LOG_ALERT, "Part_Unlock: pthread_mutex_unlock error %d\n", Error_Code);
+#endif
+	abort();
+    } /* if */
+} /* Part_Unlock */
+
+
 /* 
  * Update_Part - Update a partition's configuration data
  * Input: PartitionName - Partition's name
@@ -613,6 +606,8 @@ int Update_Part(char *PartitionName, char *Spec) {
 	return EINVAL;
     } /* if */
 
+    Node_Lock();
+    Part_Lock();
     Part_Ptr   = list_find_first(Part_List, &List_Find_Part, PartitionName);
     if (Part_Ptr == 0) {
 #if DEBUG_SYSTEM
@@ -621,52 +616,52 @@ int Update_Part(char *PartitionName, char *Spec) {
 	syslog(LOG_ALERT, "Update_Part: Partition %s does not exist, being created.\n", PartitionName);
 #endif
 	Part_Ptr = Create_Part_Record(&Error_Code);
-	if (Error_Code) return Error_Code;
+	if (Error_Code) goto cleanup;
     } /* if */
 
     MaxTime_Val = NO_VAL;
     Error_Code = Load_Integer(&MaxTime_Val, "MaxTime=", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     MaxNodes_Val = NO_VAL;
     Error_Code = Load_Integer(&MaxNodes_Val, "MaxNodes=", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     Key_Val = NO_VAL;
     Error_Code = Load_Integer(&Key_Val, "Key=NO", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
     if (Key_Val == 1) Key_Val = 0;
     Error_Code = Load_Integer(&Key_Val, "Key=YES", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     State_Val = NO_VAL;
     Error_Code = Load_Integer(&State_Val, "State=DOWN", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
     if (State_Val == 1) State_Val = 0;
     Error_Code = Load_Integer(&State_Val, "State=UP", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     Shared_Val = NO_VAL;
     Error_Code = Load_Integer(&Shared_Val, "Shared=NO", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
     if (Shared_Val == 1) Shared_Val = 0;
     Error_Code = Load_Integer(&Shared_Val, "Shared=FORCE", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
     if (Shared_Val == 1) Shared_Val = 2;
     Error_Code = Load_Integer(&Shared_Val, "Shared=YES", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     Default_Val = NO_VAL;
     Error_Code = Load_Integer(&Default_Val, "Default=YES", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     AllowGroups = NULL;
     Error_Code = Load_String (&AllowGroups, "AllowGroups=", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     Nodes = NULL;
     Error_Code = Load_String (&Nodes, "Nodes=", Spec);
-    if (Error_Code) return Error_Code;
+    if (Error_Code) goto cleanup;
 
     Bad_Index = -1;
     for (i=0; i<strlen(Spec); i++) {
@@ -684,7 +679,8 @@ int Update_Part(char *PartitionName, char *Spec) {
 	syslog(LOG_ERR, "Update_Part: Ignored partition %s update specification: %s\n", 
 		PartitionName, &Spec[Bad_Index]);
 #endif
-	return EINVAL;
+	Error_Code = EINVAL;
+	goto cleanup;
     } /* if */
 
     if (MaxTime_Val  != NO_VAL) {
@@ -778,150 +774,11 @@ int Update_Part(char *PartitionName, char *Spec) {
 #endif
 	/* Now we need to update TotalCPUs, TotalNodes, and NodeBitMap */
 	Error_Code = Build_Part_BitMap(Part_Ptr);
-	if (Error_Code) return Error_Code;
+	if (Error_Code) goto cleanup;
     } /* if */
-    return 0;
+
+cleanup:
+    Part_Unlock();
+    Node_Unlock();
+    return Error_Code;
 } /* Update_Part */
-
-
-#if PROTOTYPE_API
-/*
- * Load_Part - Load the supplied partition information buffer for use by info gathering APIs
- * Input: Buffer - Pointer to partition information buffer
- *        Buffer_Size - size of Buffer
- * Output: Returns 0 if no error, EINVAL if the buffer is invalid
- */
-int Load_Part(char *Buffer, int Buffer_Size) {
-    int Buffer_Offset, Error_Code, Version;
-
-    Buffer_Offset = 0;
-    Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "PartVersion", &Version);
-    if (Error_Code) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Load_Part: Partition buffer lacks valid header\n");
-#else
-	syslog(LOG_ERR, "Load_Part: Partition buffer lacks valid header\n");
-#endif
-	return EINVAL;
-    } /* if */
-    if (Version != PART_STRUCT_VERSION) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Load_Part: expect version %d, read %d\n", PART_STRUCT_VERSION, Version);
-#else
-	syslog(LOG_ERR, "Load_Part: expect version %d, read %d\n", PART_STRUCT_VERSION, Version);
-#endif
-	return EINVAL;
-    } /* if */
-
-    Part_API_Buffer = Buffer;
-    Part_API_Buffer_Size = Buffer_Size;
-    return 0;
-} /* Load_Part */
-
-
-/* 
- * Load_Part_Name - Load the state information about the named partition
- * Input: Req_Name - Name of the partition for which information is requested
- *		     if "", then get info for the first partition in list
- *        Next_Name - Location into which the name of the next partition is 
- *                   stored, "" if no more
- *        MaxTime, etc. - Pointers into which the information is to be stored
- * Output: Req_Name - The partition's name is stored here
- *         Next_Name - The name of the next partition in the list is stored here
- *         MaxTime, etc. - The partition's state information
- *         BitMap_Size - Size of BitMap in bytes
- *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name and Next_Name must have length MAX_NAME_LEN
- */
-int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared,
-	char **Nodes, char **AllowGroups, unsigned **NodeBitMap, int *BitMap_Size) {
-    int i, Error_Code, Version, Buffer_Offset;
-    time_t Update_Time;
-    struct Part_Record My_Part;
-    int My_BitMap_Size;
-    char Next_Name_Value[MAX_NAME_LEN];
-
-    /* Load buffer's header (data structure version and time) */
-    Buffer_Offset = 0;
-    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"PartVersion", &Version)) return Error_Code;
-    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size,
-		"UpdateTime", &Update_Time)) return Error_Code;
-    if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size,
-		"BitMapSize", &My_BitMap_Size)) return Error_Code;
-
-    while (1) {	
-	/* Load all info for next partition */
-	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"PartName", &My_Part.Name);
-	if (Error_Code == EFAULT) break; /* End of buffer */
-	if (Error_Code) return Error_Code;
-	if (strlen(Req_Name) == 0)  strcpy(Req_Name,My_Part.Name);
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"MaxTime", &My_Part.MaxTime)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"MaxNodes", &My_Part.MaxNodes)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"TotalNodes", &My_Part.TotalNodes)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"TotalCPUs", &My_Part.TotalCPUs)) return Error_Code;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"Key", &i)) return Error_Code;
-	My_Part.Key = i;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"StateUp", &i)) return Error_Code;
-	My_Part.StateUp = i;
-
-	if (Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"Shared", &i)) return Error_Code;
-	My_Part.Shared = i;
-
-	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"NodeList", (void **)&My_Part.Nodes, (int *)NULL)) return Error_Code;
-
-	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"AllowGroups", (void **)&My_Part.AllowGroups, (int *)NULL)) return Error_Code;
-
-	if (Error_Code = Read_Array(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"NodeBitMap", (void **)&My_Part.NodeBitMap, (int *)NULL)) return Error_Code;
-
-	if (Error_Code = Read_Tag(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"EndPart")) return Error_Code;
-
-	/* Check if this is requested partition */ 
-	if (strcmp(Req_Name, My_Part.Name) != 0) continue;
-
-	/*Load values to be returned */
-	*MaxTime 	= My_Part.MaxTime;
-	*MaxNodes 	= My_Part.MaxNodes;
-	*TotalNodes	= My_Part.TotalNodes;
-	*TotalCPUs	= My_Part.TotalCPUs;
-	*Key    	= (int)My_Part.Key;
-	*StateUp 	= (int)My_Part.StateUp;
-	*Shared 	= (int)My_Part.Shared;
-	Nodes[0]	= My_Part.Nodes;
-	AllowGroups[0]	= My_Part.AllowGroups;
-	NodeBitMap[0]	= My_Part.NodeBitMap;
-	if (My_Part.NodeBitMap == NULL)
-	    *BitMap_Size = 0;
-	else
-	    *BitMap_Size = My_BitMap_Size;
-
-	Error_Code = Read_Value(Part_API_Buffer, &Buffer_Offset, Part_API_Buffer_Size, 
-		"PartName", &Next_Name_Value);
-	if (Error_Code)		/* No more records or bad tag */
-	    strcpy(Next_Name, "");
-	else
-	    strcpy(Next_Name, Next_Name_Value);
-	return 0;
-    } /* while */
-    return ENOENT;
-} /* Load_Part_Name */
-#endif
