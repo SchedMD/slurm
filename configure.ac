@@ -33,10 +33,10 @@ AC_ARG_ENABLE(debug,
 )
 AC_MSG_RESULT(${debug=no})
 if test "x$debug" = "xtrue"; then 
-  CFLAGS="${CFLAGS--g -Wall}"
+  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith -Wstrict-prototypes}"
   AC_DEFINE(DEBUG_SYSTEM, 1, [Define for extra debug messages.])
 else
-  CFLAGS="${CFLAGS--g -O2}"
+  CFLAGS="${CFLAGS--g -O2 -Wall -Wpointer-arith -Wstrict-prototypes}"
 fi
 AM_CONDITIONAL(DEBUG_MODULES, test "x$debug" = "xtrue")
 
