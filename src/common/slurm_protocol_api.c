@@ -39,7 +39,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <time.h>
+#include <unistd.h>
 
 /* PROJECT INCLUDES */
 #include "src/common/macros.h"
@@ -103,12 +106,22 @@ slurm_protocol_config_t *slurm_get_api_config()
 int slurm_api_set_default_config()
 {
         int rc = SLURM_SUCCESS;
+        struct stat config_stat;
+        static time_t last_config_update = (time_t) 0;
 
         slurm_mutex_lock(&config_lock);
-        if ((slurmctld_conf.control_addr != NULL) &&
+        if (stat(SLURM_CONFIG_FILE, &config_stat) < 0) {
+                error("Can't stat %s: %m", SLURM_CONFIG_FILE);
+                rc =SLURM_ERROR;
+                goto cleanup;
+        }
+        if ((last_config_update == config_stat.st_mtime) &&
+            (slurmctld_conf.control_addr != NULL)        &&
             (slurmctld_conf.slurmctld_port != 0))
                 goto cleanup;
 
+        last_config_update = config_stat.st_mtime;
+        free_slurm_conf(&slurmctld_conf);
         read_slurm_conf_ctl(&slurmctld_conf);
 
         if ((slurmctld_conf.control_addr == NULL) ||
