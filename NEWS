@@ -18,6 +18,7 @@ documents those changes that are of interest to users and admins.
     still processing job completion. This will work properly for 
     shared nodes.
  -- Set SLURM_DISTRIBUTION environment varible for user tasks.
+ -- Fix for file descriptor leak in slurmd.
 
 * Changes in SLURM 0.3.0.0-pre9
 ===============================
