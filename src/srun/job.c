@@ -140,10 +140,10 @@ job_create_noalloc(void)
 	}
 
 	srand48(getpid());
+	info->jobid          = MIN_NOALLOC_JOBID +
+				((uint32_t) lrand48() % 
+				(MAX_NOALLOC_JOBID - MIN_NOALLOC_JOBID + 1));
 	info->stepid         = (uint32_t) (lrand48());
-	info->jobid          = (uint32_t) (lrand48());
-	if (info->jobid == 0)
-		info->jobid  = 1;
 	info->nodelist       = opt.nodelist;
 	info->nnodes         = hostlist_count(hl);
 

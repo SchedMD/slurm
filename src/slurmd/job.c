@@ -440,9 +440,9 @@ job_update_shm(slurmd_job_t *job)
 		return SLURM_ERROR;
 
 	if (job->stepid == NO_VAL)
-		debug("updated shm with job %d", job->jobid);
+		debug("updated shm with job %u", job->jobid);
 	else
-		debug("updated shm with step %d.%d", job->jobid, job->stepid);
+		debug("updated shm with step %u.%u", job->jobid, job->stepid);
 
 	return SLURM_SUCCESS;
 }

@@ -369,16 +369,16 @@ _fill_registration_msg(slurm_node_registration_status_msg_t *msg)
 	n = 0;
 	while ((s = list_next(i))) {
 		if (!shm_step_still_running(s->jobid, s->stepid)) {
-			debug("deleting stale reference to %d.%d in shm",
+			debug("deleting stale reference to %u.%u in shm",
 			      s->jobid, (int32_t) s->stepid);
 			shm_delete_step(s->jobid, s->stepid);
 			--(msg->job_count);
 			continue;
 		}
 		if (s->stepid == NO_VAL)
-			debug("found apparently running job %d", s->jobid);
+			debug("found apparently running job %u", s->jobid);
 		else
-			debug("found apparently running step %d.%d", 
+			debug("found apparently running step %u.%u", 
 			      s->jobid, s->stepid);
 		msg->job_id[n]  = s->jobid;
 		msg->step_id[n] = s->stepid;

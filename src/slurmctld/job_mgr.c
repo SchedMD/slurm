@@ -2432,9 +2432,11 @@ static void _set_job_id(struct job_record *job_ptr)
 	    || (strlen(job_ptr->partition) == 0))
 		fatal("_set_job_id: partition not set");
 
-	/* Include below code only if fear of rolling over 32 bit job IDs */
+	/* Insure no conflict in job id if we roll over 32 bits */
 	while (1) {
-		new_id = job_id_sequence++;
+		if (++job_id_sequence >= MIN_NOALLOC_JOBID)
+			job_id_sequence = slurmctld_conf.first_job_id;
+		new_id = job_id_sequence;
 		if (find_job_record(new_id) == NULL) {
 			job_ptr->job_id = new_id;
 			break;
@@ -2779,6 +2781,13 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 
 	/* Check that jobs running are really supposed to be there */
 	for (i = 0; i < *job_count; i++) {
+		if ( (job_id_ptr[i] >= MIN_NOALLOC_JOBID) && 
+		     (job_id_ptr[i] <= MAX_NOALLOC_JOBID) ) {
+			info("NoAllocate job %u.%u reported on node %s",
+				job_id_ptr[i], step_id_ptr[i], node_name);
+			continue;
+		}
+
 		job_ptr = find_job_record(job_id_ptr[i]);
 		if (job_ptr == NULL) {
 			error("Orphan job %u.%u reported on node %s",
