@@ -56,7 +56,6 @@
 #  include "src/common/qsw.h"
 #endif
 
-#include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"

@@ -2878,7 +2878,17 @@ static void _purge_lost_batch_jobs(int node_inx, time_t now)
 	list_iterator_destroy(job_record_iterator);
 }
 
-/* _kill_job_on_node - Kill the specific job_id on a specific node */
+/*
+ * _kill_job_on_node - Kill the specific job_id on a specific node,
+ *	the request is not processed immediately, but queued. 
+ *	This is to prevent a flood of pthreads if slurmctld restarts 
+ *	without saved state and slurmd daemons register with a 
+ *	multitude of running jobs. Slurmctld will not recognize 
+ *	these jobs and use this function to kill them - one 
+ *	agent request per node as they register.
+ * IN job_id - id of the job to be killed
+ * IN node_ptr - pointer to the node on which the job resides
+ */
 static void
 _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 {
@@ -2892,7 +2902,7 @@ _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 
 	agent_info = xmalloc(sizeof(agent_arg_t));
 	agent_info->node_count	= 1;
-	agent_info->retry	    = 0;
+	agent_info->retry	= 0;
 	agent_info->slurm_addr	= xmalloc(sizeof(slurm_addr));
 	memcpy(agent_info->slurm_addr, 
 	       &node_ptr->slurm_addr, sizeof(slurm_addr));
@@ -2900,9 +2910,6 @@ _kill_job_on_node(uint32_t job_id, struct node_record *node_ptr)
 	agent_info->msg_type	= REQUEST_KILL_JOB;
 	agent_info->msg_args	= kill_req;
 
-	/* Since we can get a flood of these requests at startup, 
-	 * just queue the request rather than creating a pthread 
-	 * and possibly creating an unmanagable number of threads */
 	agent_queue_request(agent_info);
 }
 

@@ -51,6 +51,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 	4096
+#define MAX_RETRIES	10
 
 /* Global variables */
 List config_list = NULL;		/* list of config_record entries */
@@ -1084,7 +1085,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	int error_code, node_inx;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
-	uint16_t resp_state;
 	char *reason_down = NULL;
 
 	node_ptr = find_node_record (node_name);
@@ -1098,9 +1098,10 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	if (cpus < config_ptr->cpus) {
 		error ("Node %s has low cpu count %u", node_name, cpus);
 		error_code  = EINVAL;
-		reason_down = "Low CPUs";	}
+		reason_down = "Low CPUs";
+	}
 	node_ptr->cpus = cpus;
-	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr))		
+	if ((config_ptr->cpus != cpus) && (node_ptr->partition_ptr))
 		node_ptr->partition_ptr->total_cpus += 
 						(cpus - config_ptr->cpus);
 
@@ -1120,7 +1121,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
-	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	if (error_code) {
 		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
@@ -1171,7 +1171,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			info ("validate_node_specs: node %s returned to service", 
 			      node_name);
 			xfree(node_ptr->reason);
-			resp_state = 1;	/* just started responding */
 			reset_job_priority();
 		} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
@@ -1184,8 +1183,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		node_inx = node_ptr - node_record_table_ptr;
 		if (job_count == 0)
 			bit_set (idle_node_bitmap, node_inx);
-		if (resp_state)	/* Do all pending RPCs now */
-			retry_pending (node_name);
 
 		if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 		    (node_ptr->node_state == NODE_STATE_DRAINING) ||
@@ -1221,10 +1218,8 @@ void node_did_resp (char *name)
 		node_ptr->node_state = NODE_STATE_IDLE;
 	if (node_ptr->node_state == NODE_STATE_IDLE)
 		bit_set (idle_node_bitmap, node_inx);
-	if (resp_state) {
+	if (resp_state)
 		info("Node %s now responding", name);
-		retry_pending (name);	/* Do all pending RPCs now */
-	}
 	if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 	    (node_ptr->node_state == NODE_STATE_DRAINING) ||
 	    (node_ptr->node_state == NODE_STATE_DRAINED))
@@ -1389,6 +1384,7 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 	agent_arg_t *kill_agent_args;
 	pthread_attr_t kill_attr_agent;
 	pthread_t kill_thread_agent;
+	int retries = 0;
 
 	kill_agent_args = xmalloc (sizeof (agent_arg_t));
 	kill_agent_args->msg_type = msg_type;
@@ -1431,11 +1427,12 @@ void msg_to_slurmd (slurm_msg_type_t msg_type)
 						PTHREAD_SCOPE_SYSTEM))
 			error ("pthread_attr_setscope error %m");
 #endif
-		if (pthread_create (&kill_thread_agent, &kill_attr_agent, 
+		while (pthread_create (&kill_thread_agent, &kill_attr_agent, 
 					agent, (void *)kill_agent_args)) {
 			error ("pthread_create error %m");
-			/* Queue the request for later processing */
-			agent_queue_request(kill_agent_args);
+			if (++retries > MAX_RETRIES)
+				fatal("Can't create pthread");
+			sleep(1);	/* sleep and try again */
 		}
 	}
 }

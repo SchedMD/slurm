@@ -64,15 +64,12 @@ extern void *agent (void *args);
 extern void agent_queue_request(agent_arg_t *agent_arg_ptr);
 
 /*
- * agent_retry - Agent for retrying pending RPCs (top one on the queue), 
- * IN args - unused
- * RET count of queued requests
+ * agent_retry - Agent for retrying pending RPCs. One pending request is 
+ *	issued if it has been pending for at least min_wait seconds
+ * IN min_wait - Minimum wait time between re-issue of a pending RPC
+ * RET count of queued requests remaining
  */
-extern int agent_retry (void *args);
-
-/* retry_pending - retry all pending RPCs for the given node name
- * IN node_name - name of a node to executing pending RPCs for */
-extern void retry_pending (char *node_name);
+extern int agent_retry (int min_wait);
 
 /* agent_purge - purge all pending RPC requests */
 extern void agent_purge (void);
