@@ -47,7 +47,8 @@ typedef struct srun_job {
 	char *nodelist;		/* nodelist in string form */
 	int nhosts;
 	char **host;		/* hostname vector */
-	int *ntask; 		/* number of tasks to run on each host*/
+	int *cpus; 		/* number of processors on each host */
+	int *ntask; 		/* number of tasks to run on each host */
         uint32_t *iaddr;	/* in_addr vector  */
 
 	pthread_t sigid;	/* signals thread tid		  */

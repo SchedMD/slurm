@@ -29,18 +29,17 @@
 #include <sys/socket.h>
 #include <stdlib.h>
 
-#include "job.h"
-#include "opt.h"
-
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
 #include <src/common/hostlist.h>
 #include <src/common/log.h>
+#include <src/srun/job.h>
+#include <src/srun/opt.h>
 
 job_t *
 job_create(resource_allocation_response_msg_t *resp)
 {
-	int i; 
+	int i, cpu_cnt = 0, cpu_inx = 0; 
 	int ntask, tph;		/* ntasks left to assign and tasks per host */
 	int ncpu;
 	div_t d;
@@ -78,6 +77,7 @@ job_create(resource_allocation_response_msg_t *resp)
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
 	job->iaddr = (uint32_t *) xmalloc(job->nhosts * sizeof(uint32_t));
+	job->cpus = (int *)   xmalloc(job->nhosts * sizeof(int *) );
 	job->ntask = (int *)   xmalloc(job->nhosts * sizeof(int *) );
 
 	/* Compute number of file descriptors / Ports needed for Job 
@@ -127,8 +127,12 @@ job_create(resource_allocation_response_msg_t *resp)
 		}
 		memcpy(&job->iaddr[i], *he->h_addr_list, sizeof(job->iaddr[i]));
 
-		/* XXX: temporary, need function to lay out tasks later */
-		job->ntask[i] = (ntask - tph) > 0 ? tph : ntask; 
+		/* actual task counts and layouts performed in launch() */
+		/* job->ntask[i] = 0; */
+
+		job->cpus[i] = resp->cpus_per_node[cpu_inx];
+		if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx])
+			cpu_inx++;
 	}
 
 	return job;

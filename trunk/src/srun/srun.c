@@ -200,7 +200,6 @@ main(int ac, char **av)
 	debug("Started signals thread (%d)", job->sigid);
 
 
-
 	/* launch jobs */
 	if ((errno = pthread_create(&job->lid, &attr, &launch, (void *) job)))
 		fatal("Unable to create launch thread. %m");
