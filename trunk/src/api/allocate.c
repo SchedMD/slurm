@@ -87,7 +87,7 @@ slurm_allocate_resources (job_desc_msg_t *req,
 		req->alloc_node = NULL;
 
 	if (rc == SLURM_SOCKET_ERROR) 
-		slurm_seterrno_ret(SLURM_COMMUNICATIONS_SEND_ERROR);
+		return SLURM_SOCKET_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
@@ -125,7 +125,7 @@ int slurm_job_will_run (job_desc_msg_t *req,
 	req_msg.data     = req; 
 
 	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
-		slurm_seterrno_ret(SLURM_COMMUNICATIONS_SEND_ERROR);
+		return SLURM_SOCKET_ERROR;
 
 	switch (resp_msg.msg_type) {
 	case RESPONSE_SLURM_RC:
@@ -181,7 +181,7 @@ slurm_allocate_resources_and_run (job_desc_msg_t *req,
 		req->alloc_node = NULL;
 
 	if (rc == SLURM_SOCKET_ERROR) 
-		slurm_seterrno_ret(SLURM_COMMUNICATIONS_SEND_ERROR);
+		return SLURM_SOCKET_ERROR;
 
 
 	switch (resp_msg.msg_type) {

@@ -72,6 +72,15 @@ static slurm_errtab_t slurm_errtab[] = {
         { SLURM_PROTOCOL_INSANE_MSG_LENGTH,
           "Insane message length"                               },
 
+	/* communication failures to/from slurmctld */
+	{ SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR,
+	  "Unable to contact slurm controller (connect failure)" },
+	{ SLURMCTLD_COMMUNICATIONS_SEND_ERROR,
+	  "Unable to contact slurm controller (send failure)"    },
+	{ SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR,
+	  "Unable to contact slurm controller (receive failure)" },
+	{ SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR,
+	  "Unable to contact slurm controller (shutdown failure)"},
 
 	/* _info.c/communcation layer RESPONSE_SLURM_RC message codes */
 

@@ -65,6 +65,9 @@ static slurm_protocol_config_t proto_conf_default;
 static slurm_protocol_config_t *proto_conf = &proto_conf_default;
 static slurm_ctl_conf_t slurmctld_conf;
 
+/* STATIC FUNCTIONS */
+static void _remap_slurmctld_errno(void);
+
 /**********************************************************************\
  * protocol configuration functions                
 \**********************************************************************/
@@ -170,6 +173,21 @@ uint16_t slurm_get_wait_time(void)
         return slurmctld_conf.wait_time;
 }
 
+/* Change general slurm communication errors to slurmctld specific errors */
+static void _remap_slurmctld_errno(void)
+{
+	int err = slurm_get_errno();
+
+	if (err == SLURM_COMMUNICATIONS_CONNECTION_ERROR)
+		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
+	else if (err ==  SLURM_COMMUNICATIONS_SEND_ERROR)
+		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_SEND_ERROR);
+	else if (err == SLURM_COMMUNICATIONS_RECEIVE_ERROR)
+		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_RECEIVE_ERROR);
+	else if (err == SLURM_COMMUNICATIONS_SHUTDOWN_ERROR)
+		slurm_seterrno(SLURMCTLD_COMMUNICATIONS_SHUTDOWN_ERROR);
+}
+
 /**********************************************************************\
  * general message management functions used by slurmctld, slurmd
 \**********************************************************************/
@@ -208,7 +226,10 @@ slurm_fd slurm_init_msg_engine(slurm_addr *addr)
  */
 int slurm_shutdown_msg_engine(slurm_fd fd)
 {
-        return _slurm_close(fd);
+	int rc = _slurm_close(fd);
+	if (rc)
+		slurm_seterrno(SLURM_COMMUNICATIONS_SHUTDOWN_ERROR);
+	return rc;
 }
 
 /* 
@@ -265,7 +286,7 @@ slurm_fd slurm_open_controller_conn()
         debug("Failed to contact secondary controller: %m");
 
     fail:
-        slurm_seterrno_ret(SLURM_COMMUNICATIONS_CONNECTION_ERROR);
+        slurm_seterrno_ret(SLURMCTLD_COMMUNICATIONS_CONNECTION_ERROR);
 }
 
 /* calls connect to make a connection-less datagram connection to the 
@@ -276,6 +297,7 @@ slurm_fd slurm_open_controller_conn()
 slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 {
         slurm_addr *addr;
+	slurm_fd rc;
 
         if (slurm_api_set_default_config() < 0) {
                 debug3("Error: Unable to set default config");
@@ -288,7 +310,10 @@ slurm_fd slurm_open_controller_conn_spec(enum controller_id dest)
 
         if (!addr) return SLURM_ERROR;
 
-        return slurm_open_msg_conn(addr);
+	rc = slurm_open_msg_conn(addr);
+	if (rc == -1)
+		_remap_slurmctld_errno();
+	return rc;
 }
 
 /* In the bsd implmentation maps directly to a accept call 
@@ -781,10 +806,12 @@ _send_and_recv_msg(slurm_fd fd, slurm_msg_t *req, slurm_msg_t *resp,
 int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
 {
         slurm_fd fd = -1;
-	int rc;
+	int rc = SLURM_SUCCESS;
 
-	if ((fd = slurm_open_controller_conn()) < 0)
-                return SLURM_SOCKET_ERROR;
+	if ((fd = slurm_open_controller_conn()) < 0) {
+		rc = SLURM_SOCKET_ERROR;
+		goto cleanup;
+	}
 
         rc =_send_and_recv_msg(fd, req, resp, 0);
 	/* If the backup controller is in the process of assuming 
@@ -802,6 +829,10 @@ int slurm_send_recv_controller_msg(slurm_msg_t *req, slurm_msg_t *resp)
                 	return SLURM_SOCKET_ERROR;
 		rc =_send_and_recv_msg(fd, req, resp, 0);
 	}
+
+      cleanup:
+	if (rc != SLURM_SUCCESS) 
+ 		_remap_slurmctld_errno(); 
 	return rc;
 }
 
@@ -837,16 +868,22 @@ int slurm_send_only_controller_msg(slurm_msg_t *req)
         /*
          *  Open connection to SLURM controller:
          */
-        if ((fd = slurm_open_controller_conn()) < 0)
-                return SLURM_SOCKET_ERROR;
+	if ((fd = slurm_open_controller_conn()) < 0) {
+		rc = SLURM_SOCKET_ERROR;
+		goto cleanup;
+	}
 
         rc = slurm_send_node_msg(fd, req);
 
-        if (slurm_shutdown_msg_conn(fd) < 0)
-                return SLURM_SOCKET_ERROR;
+	if (slurm_shutdown_msg_conn(fd) < 0) {
+		rc = SLURM_SOCKET_ERROR;
+		goto cleanup;
+	}
 
-        return rc;
-
+      cleanup:
+	if (rc != SLURM_SUCCESS)
+		_remap_slurmctld_errno();
+	return rc;
 }
 
 /* 
