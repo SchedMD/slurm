@@ -25,6 +25,7 @@
 #include <errno.h>
 #include <syslog.h>
 #include <pthread.h>
+#include <printf.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>	/* for abort() */
@@ -115,7 +116,6 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	return rc;
 }
 
-
 /* retun a heap allocated string formed from fmt and ap arglist
  * returned string is allocated with xmalloc, so must free with xfree.
  * 
@@ -124,6 +124,11 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
  * - %t expands to strftime("%x %X") [ locally preferred short date/time ]
  * - %T expands to rfc822 date time  [ "dd Mon yyyy hh:mm:ss GMT offset" ]
  *
+ * simple format specifiers are handled explicitly to avoid calls to 
+ * vsnprintf and allow dynamic sizing of the message buffer. If a call
+ * is made to vsnprintf, however, the message will be limited to 1024 bytes.
+ * (inc. newline)
+ *
  */
 static char *vxstrfmt(const char *fmt, va_list ap)
 {
@@ -131,14 +136,14 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 	char        *p;
 	size_t      len = (size_t) 0;
 	char        tmp[LINEBUFSIZE];
-	char        tmp2[LINEBUFSIZE];
+	int         unprocessed = 0;
 
 
 	while (*fmt != '\0') {
 
 		if ((p = (char *)strchr(fmt, '%')) == NULL) {  /* no more format chars */
 			xstrcat(buf, fmt);
-			return buf;
+			break;
 
 		} else {        /* *p == '%' */
 
@@ -169,47 +174,46 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
 				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");   
 				break;
-
-			case 's':	/* "%s" => append string   */
-				xstrcat(buf, va_arg(ap, char *));
+			case 's':	/* "%s" => append string */
+				/* we deal with this case for efficiency */
+				if (unprocessed == 0) 
+					xstrcat(buf, va_arg(ap, char *));
+				else
+					xstrcat(buf, "%s");
 				break;
-
-			case 'f':	/* "%f" => float (actually double)  */
-				snprintf(tmp2, sizeof(tmp2), "%f", 
-					 va_arg(ap, double));
-				xstrcat(buf, tmp2);
+			case 'f': 	/* "%f" => append double */
+				/* again, we only handle this for efficiency */
+				if (unprocessed == 0) {
+					snprintf(tmp, sizeof(tmp), "%f",
+						 va_arg(ap, double));
+					xstrcat(buf, tmp);
+				} else
+					xstrcat(buf, "%f");
 				break;
-
+			case 'd':
+				if (unprocessed == 0) {
+					snprintf(tmp, sizeof(tmp), "%d",
+						 va_arg(ap, int));
+					xstrcat(buf, tmp);
+				} else
+					xstrcat(buf, "%d");
+				break;
 			default:	/* try to handle the rest  */
-
-				/* back up to `%' char */
-				p--;
-
-				/* take len just after this '%' to next '%' */
-				len = (size_t) ((int)strchr(p+1, '%') - (int)p);
-
-				if ((int)len <= 0)
-					len = strlen(p);
-
-				memcpy(tmp, p, len);
-				tmp[len] = '\0';
-
-				/* XXX this is really lame way to do this
-				 * and should be changed asap
-				 * (not a trivial fix to do what I want, though)
-				 */
-				snprintf(tmp2, sizeof(tmp2), 
-					 tmp, va_arg(ap, double));
-
-				xstrcat(buf, tmp2);
-
-				p+=len-1;
+				xstrcatchar(buf, '%');
+				xstrcatchar(buf, *p);
+				unprocessed++;
 				break;
 			}
 
 		}
 
 		fmt = p + 1;
+	}
+
+	if (unprocessed > 0) {
+		vsnprintf(tmp, sizeof(tmp)-1, buf, ap);
+		xfree(buf);
+		return xstrdup(tmp);
 	}
 
 	return buf;
