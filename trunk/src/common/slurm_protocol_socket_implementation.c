@@ -81,8 +81,8 @@ int _slurm_close_accepted_conn ( slurm_fd open_fd )
 
 ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
-	struct timeval * SLURM_MESSGE_TIMEOUT_SEC = & SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
-	return _slurm_msg_recvfrom_timeout ( open_fd , buffer , size , flags , slurm_address , SLURM_MESSGE_TIMEOUT_SEC ) ;
+	struct timeval SLURM_MESSGE_TIMEOUT_SEC = SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
+	return _slurm_msg_recvfrom_timeout ( open_fd , buffer , size , flags , slurm_address , & SLURM_MESSGE_TIMEOUT_SEC ) ;
 }
 
 ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout)
@@ -173,8 +173,8 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 
 ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address )
 {
-	struct timeval * SLURM_MESSGE_TIMEOUT_SEC = & SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
-	return _slurm_msg_sendto_timeout ( open_fd, buffer , size , flags, slurm_address , SLURM_MESSGE_TIMEOUT_SEC ) ;
+	struct timeval SLURM_MESSGE_TIMEOUT_SEC = SLURM_MESSGE_TIMEOUT_SEC_STATIC ;
+	return _slurm_msg_sendto_timeout ( open_fd, buffer , size , flags, slurm_address , & SLURM_MESSGE_TIMEOUT_SEC ) ;
 }
 
 ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_t flags, slurm_addr * slurm_address , struct timeval * timeout )
