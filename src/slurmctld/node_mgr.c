@@ -501,15 +501,16 @@ delete_node_record (char *name)
 void 
 dump_hash () 
 {
-	int i;
+	int i, inx;
 
 	if (hash_table == NULL)
 		return;
 	for (i = 0; i < node_record_count; i++) {
-		if (strlen (node_record_table_ptr[hash_table[i]].name) == 0)
+		inx = hash_table[i];
+		if ((inx >= node_record_count) ||
+		    (strlen (node_record_table_ptr[inx].name) == 0))
 			continue;
-		debug ("hash:%d:%s", i,
-			node_record_table_ptr[hash_table[i]].name);
+		debug ("hash:%d:%s", i, node_record_table_ptr[inx].name);
 	}
 }
 
@@ -524,15 +525,15 @@ dump_hash ()
 struct node_record * 
 find_node_record (char *name) 
 {
-	int i;
+	int i, inx;
 
 	/* try to find in hash table first */
 	if (hash_table) {
 		i = hash_index (name);
-		if (strncmp
-		    ((node_record_table_ptr + hash_table[i])->name,
-		     name, MAX_NAME_LEN) == 0)
-			return (node_record_table_ptr + hash_table[i]);
+		if ( (i <= node_record_count) &&
+		     ((inx = hash_table[i]) <= node_record_count ) &&
+		     (strncmp ((node_record_table_ptr[inx]).name, name, MAX_NAME_LEN) == 0) )
+			return (node_record_table_ptr + inx);
 		debug ("find_node_record: hash table lookup failure for %s", name);
 #if DEBUG_SYSTEM
 		dump_hash ();
