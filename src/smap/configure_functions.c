@@ -39,6 +39,7 @@ static void	_delete_allocated_parts(List allocated_partitions);
 static allocated_part_t *_make_request(pa_request_t *request);
 static int	_create_allocation(char *com, List allocated_partitions);
 static int	_resolve(char *com);
+static int	_down_bps(char *com);
 static int	_remove_allocation(char *com, List allocated_partitions);
 static int	_alter_allocation(char *com, List allocated_partitions);
 static int	_copy_allocation(char *com, List allocated_partitions);
@@ -236,7 +237,70 @@ static int _resolve(char *com)
 	doupdate();
 	return 1;
 }
+static int _down_bps(char *com)
+{
+	int i=4,x,y,z;
+	int len = strlen(com);
+	int start[PA_SYSTEM_DIMENSIONS], end[PA_SYSTEM_DIMENSIONS];
+	int number;
 
+	while(com[i-1] != ' ' && i<len)
+		i++;
+	if(i>(len-1)) {
+		memset(error_string,0,255);
+		sprintf(error_string, "You didn't specify any nodes to down.");	
+		return 0;
+	}
+		
+	if ((com[i]   == '[')
+	    && (com[i+8] == ']')
+	    && ((com[i+4] == 'x')
+		|| (com[i+4] == '-'))) {
+		i++;
+		number = atoi(com + i);
+		start[X] = number / 100;
+		start[Y] = (number % 100) / 10;
+		start[Z] = (number % 10);
+		i += 4;
+		number = atoi(com + i);
+		end[X] = number / 100;
+		end[Y] = (number % 100) / 10;
+		end[Z] = (number % 10);		
+		
+	} else if ((com[i] < 58 && com[i] > 47)
+		   && (com[i+6] < 58 && com[i+6] > 47)
+		   && ((com[i+3] == 'x')
+		|| (com[i+3] == '-'))) {
+		
+		number = atoi(com + i);
+		start[X] = number / 100;
+		start[Y] = (number % 100) / 10;
+		start[Z] = (number % 10);
+		i += 4;
+		number = atoi(com + i);
+		end[X] = number / 100;
+		end[Y] = (number % 100) / 10;
+		end[Z] = (number % 10);		
+		
+	} else if((com[i] < 58 && com[i] > 47) 
+		  && com[i-1] != '[') {
+		number = atoi(com + i);
+		start[X] = end[X] = number / 100;
+		start[Y] = end[Y] = (number % 100) / 10;
+		start[Z] = end[Z] = (number % 10);		
+	}
+
+	for(x=start[X];x<=end[X];x++) {
+		for(y=start[Y];y<=end[Y];y++) {
+			for(z=start[Z];z<=end[Z];z++) {
+				pa_system_ptr->grid[x][y][z].color = 0;
+				pa_system_ptr->grid[x][y][z].letter = '#';
+				pa_system_ptr->grid[x][y][z].used = true;
+			}
+		}
+	}
+	return 1;
+}
 static int _remove_allocation(char *com, List allocated_partitions)
 {
 	ListIterator results_i;
@@ -662,6 +726,8 @@ void get_command(void)
 			mvwprintw(pa_system_ptr->text_win, 
 				pa_system_ptr->ycord, 
 				pa_system_ptr->xcord, "%s", com);
+		} else if (!strncasecmp(com, "down", 4)) {
+			_down_bps(com);
 		} else if (!strncasecmp(com, "remove", 6)
 			|| !strncasecmp(com, "delete", 6) 
 			|| !strncasecmp(com, "drop", 4)) {

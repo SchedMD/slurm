@@ -48,6 +48,7 @@ int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	node_info_msg_t *node_info_ptr=NULL;
+	node_info_msg_t *new_node_ptr=NULL;
 	int error_code;
 	int height = 40;
 	int width = 100;
@@ -61,7 +62,7 @@ int main(int argc, char *argv[])
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
 #ifdef HAVE_BGL
-	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
+	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
 
 	if (error_code) {
 #ifdef HAVE_BGL_FILES
@@ -91,7 +92,7 @@ int main(int argc, char *argv[])
 #endif
 		pa_init(NULL);
 	} else {
-		pa_init(node_info_ptr);
+		pa_init(new_node_ptr);
 	}
 	
 #else
@@ -165,7 +166,7 @@ int main(int argc, char *argv[])
 			_get_option();
 		redraw:
 			
-			init_grid(node_info_ptr);
+			init_grid(new_node_ptr);
 			wclear(pa_system_ptr->text_win);
 			wclear(pa_system_ptr->grid_win);        
 			
@@ -196,6 +197,35 @@ int main(int argc, char *argv[])
 			wnoutrefresh(pa_system_ptr->text_win);
 			wnoutrefresh(pa_system_ptr->grid_win);
 			doupdate();
+
+			node_info_ptr = new_node_ptr;
+			if (node_info_ptr) {
+				error_code = slurm_load_node(node_info_ptr->last_update, 
+								   &new_node_ptr, 0);
+				if (error_code == SLURM_SUCCESS)
+					slurm_free_node_info_msg(node_info_ptr);
+				else if (slurm_get_errno() == SLURM_NO_CHANGE_IN_DATA) {
+					error_code = SLURM_SUCCESS;
+					new_node_ptr = node_info_ptr;
+				}
+			} else {
+				error_code = slurm_load_node((time_t) NULL, 
+								   &new_node_ptr, 0);
+			}
+			if (error_code) {
+				if (quiet_flag != 1) {
+					if(!params.commandline) {
+						mvwprintw(pa_system_ptr->text_win,
+							  pa_system_ptr->ycord, 1,
+							  "slurm_load_node: %s",
+							  slurm_strerror(slurm_get_errno()));
+						pa_system_ptr->ycord++;
+					} else {
+						printf("slurm_load_node: %s",
+						       slurm_strerror(slurm_get_errno()));
+					}
+				}
+			}
 		}
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
@@ -213,11 +243,13 @@ int main(int argc, char *argv[])
 		} else
 			break;
 	}
-
-	nodelay(stdscr, FALSE);
-	getch();
-	if (params.iterate) 
-		endwin();
+	
+	if(!params.commandline) {
+		nodelay(stdscr, FALSE);
+		getch();
+		if (params.iterate) 
+			endwin();
+	}
 	pa_fini();
         
 	exit(0);
