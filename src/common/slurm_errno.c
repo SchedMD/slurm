@@ -54,7 +54,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{-1, "Unspecified error"},
 	/*General Message error codes */
 	{ SLURM_UNEXPECTED_MSG_ERROR, 
-	  "Unexpected message recieved" 			},
+	  "Unexpected message received" 			},
 	{ SLURM_COMMUNICATIONS_CONNECTION_ERROR,
 	  "Communication connection failure"   			},
 	{ SLURM_COMMUNICATIONS_SEND_ERROR, 

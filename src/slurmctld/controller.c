@@ -1470,7 +1470,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	}
 
 	if (error_code == 0) {
-		int immediate = job_desc_msg->immediate;
+		int immediate = true; /* job_desc_msg->immediate == true */
 		lock_slurmctld(job_write_lock);
 		error_code = job_allocate(job_desc_msg, &job_id,
 					  &node_list_ptr, &num_cpu_groups,
