@@ -396,6 +396,9 @@ int mkdir2 (char * path, int modes);
 /* node_name2bitmap - given a node name regular expression, build a bitmap representation */
 extern int node_name2bitmap (char *node_names, bitstr_t **bitmap);
 
+/* node_not_resp - record that the specified node is not responding */
+extern void node_not_resp (char *name);
+
 /* 
  * pack_all_jobs - dump all job information for all jobs in 
  *	machine independent form (for network transmission)

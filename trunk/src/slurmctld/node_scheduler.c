@@ -119,6 +119,7 @@ deallocate_nodes (struct job_record  * job_ptr)
 	agent_arg_t *agent_args;
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
+	int buf_rec_size = 0;
 
 	agent_args = xmalloc (sizeof (agent_arg_t));
 	agent_args->msg_type = REQUEST_REVOKE_JOB_CREDENTIAL;
@@ -133,10 +134,15 @@ deallocate_nodes (struct job_record  * job_ptr)
 		if (bit_test (job_ptr->node_bitmap, i) == 0)
 			continue;
 #if AGENT_TEST
-		xrealloc ((agent_args->slurm_addr), 
-		          (sizeof (struct sockaddr_in) * (agent_args->addr_count+1)));
-		agent_args->slurm_addr[(agent_args->addr_count++)] = 
-			node_record_table_ptr[i].slurm_addr;
+		if ((agent_args->addr_count+1) > buf_rec_size) {
+			buf_rec_size += 32;
+			xrealloc ((agent_args->slurm_addr), (sizeof (struct sockaddr_in) * buf_rec_size));
+			xrealloc ((agent_args->node_names), (MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->addr_count] = node_record_table_ptr[i].slurm_addr;
+		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->addr_count],
+		         node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->addr_count++;
 #else
 		slurm_revoke_job_cred (&node_record_table_ptr[i], revoke_job_cred);
 #endif

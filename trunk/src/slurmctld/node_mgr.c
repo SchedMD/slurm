@@ -1072,3 +1072,26 @@ validate_node_specs (char *node_name, uint32_t cpus,
 
 	return error_code;
 }
+
+/* node_not_resp - record that the specified node is not responding */
+void 
+node_not_resp (char *name)
+{
+	struct node_record *node_ptr;
+	int i;
+
+	node_ptr = find_node_record (name);
+	if (node_ptr == NULL) {
+		error ("node_not_resp unable to find node %s", name);
+		return;
+	}
+
+	i = node_ptr - node_record_table_ptr;
+	last_node_update = time (NULL);
+	error ("Node %s not responding", name);
+	bit_clear (up_node_bitmap, i);
+	bit_clear (idle_node_bitmap, i);
+	node_record_table_ptr[i].node_state |= NODE_STATE_NO_RESPOND;
+	return;
+}
+

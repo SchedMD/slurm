@@ -39,6 +39,7 @@
 typedef struct agent_arg {
 	uint32_t	addr_count;		/* number of network addresses to communicate with */
 	struct sockaddr_in *slurm_addr;		/* array of network addresses */
+	char		*node_names;		/* array with MAX_NAME_LEN bytes per node */
 	slurm_msg_type_t msg_type;		/* RPC to be issued */
 	void		*msg_args;		/* RPC data to be transmitted */
 } agent_arg_t;
