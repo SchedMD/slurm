@@ -40,13 +40,12 @@
 #include "src/squeue/print.h"
 #include "src/squeue/squeue.h"
 
-static int _filter_job(job_info_t * job);
-static int _filter_step(job_step_info_t * step);
-static int _get_node_cnt(job_info_t * job);
-int _nodes_in_list(char *node_list);
-static int _print_str(char *str, int width, bool right, bool cut_output);
-
-static int _adjust_completing (job_info_t *j, hostlist_t *compptr);
+static int	_adjust_completing (job_info_t *j, node_info_msg_t **ni);
+static int	_filter_job(job_info_t * job);
+static int	_filter_step(job_step_info_t * step);
+static int	_get_node_cnt(job_info_t * job);
+static int	_nodes_in_list(char *node_list);
+static int	_print_str(char *str, int width, bool right, bool cut_output);
 
 /*****************************************************************************
  * Global Print Functions
@@ -72,7 +71,7 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 {
 	int i = 0;
 	List l;
-	hostlist_t comp = NULL;
+	node_info_msg_t *ni = NULL;
 
 	l = list_create(NULL);
 	if (!params.no_header)
@@ -90,8 +89,9 @@ int print_jobs_array(job_info_t * jobs, int size, List format)
 	 * Adjust nodelists for any completing jobs
 	 */
 	sort_jobs_by_start_time (l);
-	list_for_each (l, (ListForF) _adjust_completing, (void *) &comp);
-	if (comp) hostlist_destroy (comp);
+	list_for_each (l, (ListForF) _adjust_completing, (void *) &ni);
+	if (ni) 
+		slurm_free_node_info_msg (ni);
 
 	sort_job_list (l);
 
@@ -564,7 +564,7 @@ int _print_job_num_nodes(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _get_node_cnt(job_info_t * job)
+static int _get_node_cnt(job_info_t * job)
 {
 	int node_cnt = 0, round;
 	bool completing = job->job_state & JOB_COMPLETING;
@@ -581,7 +581,7 @@ int _get_node_cnt(job_info_t * job)
 	return node_cnt;
 }
 
-int _nodes_in_list(char *node_list)
+static int _nodes_in_list(char *node_list)
 {
 	hostset_t host_set = hostset_create(node_list);
 	int count = hostset_count(host_set);
@@ -1041,67 +1041,44 @@ static int _filter_step(job_step_info_t * step)
 	return 0;
 }
 
-static hostlist_t _completing_nodelist (void)
-{
-	hostlist_t hl;
-	node_info_msg_t *ni;
-	int i;
-	
-	if (slurm_load_node (0, &ni) < 0) {
-		error ("Unable to load node information: %m");
-		return (NULL);
-	}
-
-	if (!(hl = hostlist_create (NULL)))
-		return (NULL);
-
-	for (i = 0; i < ni->record_count; i++) {
-		node_info_t *n = ni->node_array + i;
-		uint16_t state = n->node_state ^ NODE_STATE_NO_RESPOND;
-		if (state == NODE_STATE_COMPLETING) 
-			hostlist_push_host (hl, n->name);
-	}
-
-	slurm_free_node_info_msg (ni);
-
-	return (hl);
-}
-
-static int _adjust_completing (job_info_t *j, hostlist_t *compp)
+static int _adjust_completing (job_info_t *job_ptr, node_info_msg_t **ni)
 {
 	hostlist_t hl = NULL; 
-	hostlist_iterator_t i = NULL;
+	int i, j;
 	char buf[8192];
-	char *host = NULL;
 
-	if (!(j->job_state & JOB_COMPLETING))
+	if (!(job_ptr->job_state & JOB_COMPLETING))
 		return (0);
 
-	if (*compp == NULL) 
-		*compp = _completing_nodelist ();
-
-	hl = hostlist_create (j->nodes);
-	i = hostlist_iterator_create (hl);
-
-	j->num_nodes = hostlist_count (hl);
-
-	while ((host = hostlist_next (i))) {
-		/* 
-		 * Delete completing nodes as they are encountered 
-		 * (a completing node is only assigned to one completing job)
-		 */
-		if (hostlist_delete_host (*compp, host) == 0) 
-			hostlist_remove (i);
-		free (host);
+	if ((*ni == NULL) && (slurm_load_node (0, ni) < 0)) {
+		error ("Unable the load node information: %m");
+		return (0);
 	}
-	hostlist_iterator_destroy (i);
 
+	hl = hostlist_create ("");
+	for (i=0; ; i+=2) {
+		if (job_ptr->node_inx[i] == -1)
+			break;
+		if (i >= (*ni)->record_count) {
+			error ("Invalid node index for job %u", 
+					job_ptr->job_id);
+			break;
+		}
+		for (j=job_ptr->node_inx[i]; j<=job_ptr->node_inx[i+1]; j++) {
+			if (j >= (*ni)->record_count) {
+				error ("Invalid node index for job %u",
+						job_ptr->job_id);
+				break;
+			}
+			hostlist_push(hl, (*ni)->node_array[j].name);
+		}
+	}
 
+	hostlist_uniq(hl);
 	hostlist_ranged_string (hl, 8192, buf);
-	xfree (j->nodes);
-	j->nodes = xstrdup (buf); 
-
+	job_ptr->num_nodes = MAX(job_ptr->num_nodes, hostlist_count(hl));
+	hostlist_destroy(hl);
+	xfree (job_ptr->nodes);
+	job_ptr->nodes = xstrdup (buf); 
 	return (0);
 }
-
-
