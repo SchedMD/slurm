@@ -192,6 +192,7 @@ AC_CONFIG_FILES([Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 src/smap/Makefile
+		 src/partition_allocator/Makefile
 		 src/plugins/Makefile
 		 src/plugins/auth/Makefile
 		 src/plugins/auth/authd/Makefile
