@@ -134,7 +134,7 @@ int slurmd_init ( )
 	shmem_seg = get_shmem ( ) ;
 	init_shmem ( shmem_seg ) ;
 	slurm_ssl_init ( ) ;
-	slurm_init_verifier ( & verify_ctx , "pub_key_file" ) ;
+	slurm_init_verifier ( & verify_ctx , "public.cert" ) ;
 	initialize_credential_state_list ( & credential_state_list ) ;
 	return SLURM_SUCCESS ;
 }
@@ -241,6 +241,7 @@ int slurmd_msg_engine ( void * args )
 			service_connection ( ( void * ) conn_arg ) ;
 		}
 	}			
+	slurm_shutdown_msg_engine ( sockfd ) ;
 	return 0 ;
 }
 

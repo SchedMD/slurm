@@ -12,6 +12,13 @@ void setup_parent_pipes ( int * pipes )
 	close ( pipes[CHILD_ERR_WR] ) ;
 }
 
+void cleanup_parent_pipes ( int * pipes )
+{
+	close ( pipes[CHILD_IN_WR] ) ;
+	close ( pipes[CHILD_OUT_RD] ) ;
+	close ( pipes[CHILD_ERR_RD] ) ;
+}
+
 int init_parent_pipes ( int * pipes )
 {
 	int rc ;

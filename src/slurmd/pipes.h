@@ -5,6 +5,7 @@
 int init_parent_pipes ( int * pipes ) ;
 void setup_parent_pipes ( int * pipes ) ; 
 int setup_child_pipes ( int * pipes ) ;
+void cleanup_parent_pipes ( int * pipes ) ;
 
 #endif
 

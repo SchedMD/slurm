@@ -169,6 +169,7 @@ void * stdin_io_pipe_thread ( void * arg )
 	}
 	stdin_return:
 	free_circular_buffer ( cir_buf ) ;
+	close ( task_start->pipes[CHILD_IN_WR] ) ;
 	pthread_exit ( NULL ) ;
 }
 
@@ -263,6 +264,7 @@ void * stdout_io_pipe_thread ( void * arg )
 	stdout_return:
 	free_circular_buffer ( cir_buf ) ;
 	slurm_close_stream ( task_start->sockets[STDIN_OUT_SOCK] ) ;
+	close ( task_start->pipes[CHILD_OUT_RD] ) ;
 	pthread_exit ( NULL ) ; 
 }
 
@@ -364,6 +366,7 @@ void * stderr_io_pipe_thread ( void * arg )
 	stderr_return:
 	free_circular_buffer ( cir_buf ) ;
 	slurm_close_stream ( task_start->sockets[SIG_STDERR_SOCK] ) ;
+	close ( task_start->pipes[CHILD_ERR_RD] ) ;
 	pthread_exit ( NULL ) ; 
 }
 
