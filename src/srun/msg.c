@@ -138,15 +138,14 @@ _accept_msg_connection(job_t *job, int fdnum)
 	msg = xmalloc(sizeof(*msg));
 	if (slurm_receive_msg(fd, msg) == SLURM_SOCKET_ERROR) {
 		error("_accept_msg_connection/slurm_receive_msg: %m");
-		return;
+		xfree(msg);
+	} else {
+
+		msg->conn_fd = fd;
+		_handle_msg(job, msg);
 	}
 
-	msg->conn_fd = fd;
-
-	_handle_msg(job, msg);
-
 	slurm_close_accepted_conn(fd);
-
 	return;
 }
 
@@ -242,18 +241,16 @@ _msg_thr_one(void *arg)
 		msg = xmalloc(sizeof(*msg));
 		if (slurm_receive_msg(newfd, msg) == SLURM_SOCKET_ERROR) {
 			error("_msg_thr_one/slurm_receive_msg: %m");
+			slurm_close_accepted_conn(newfd);
 			break;
 		}
 
 		msg->conn_fd = newfd;
-
 		_handle_msg(job, msg);
-
 		slurm_close_accepted_conn(newfd);
-
 	}
 
-	/* not reached */
+	/* reached only on receive error */
 	return (void *)(0);
 }
 
