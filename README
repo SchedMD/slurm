@@ -1,0 +1,13 @@
+To build:
+./autogen.sh
+./configure
+make
+
+To test:
+cd src/slurmctld
+./slurmctld		# start the controller
+
+cd ../api
+./node_info		# get node info
+./partition_info	# get partition info
+etc...
