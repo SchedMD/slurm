@@ -61,8 +61,8 @@ Users select the supported interconnects at compile time via GNU autoconf.
 \item {\em Scalability}: SLURM is designed for scalability to clusters of
 thousands of nodes.
 Prototypes of SLURM components thus far developed indicate that the
-controller for a cluster with 1000 nodes will occupy on the order of 2 MB 
-of memory and performance will be excellent. 
+controller for a cluster with 1000 nodes occupies on the order of 2 MB 
+of memory and performance is excellent. 
 
 \item {\em Fault tolerance}: SLURM can handle a variety of failure modes
 without terminating workloads, including crashes of the node running the SLURM
@@ -169,7 +169,7 @@ logical disjoint sets, {\em jobs}, or allocations of resources assigned
 to a user for a specified amount of time, and {\em job steps}, which are
 sets of parallel tasks within a job.  Jobs are allocated nodes within partitions
 until the resources (nodes) within that partition are exhausted. Once
-a job is assigned a set of nodes, the user will be able to initiate
+a job is assigned a set of nodes, the user is able to initiate
 parallel work in the form of job steps in any configuration within the
 allocation. For instance a single job step may be started which utilizes
 all nodes allocated to the job, or several job steps may independently 
@@ -199,7 +199,6 @@ shell daemon:  it waits for work, executes the work, returns status,
 then waits for more work.  It also asynchronously exchanges node and job
 status with {\tt slurmctld}.  The only job information it has at any given time
 pertains to its currently executing jobs.
-
 \slurmd\ reads its configuration from a file: {\tt /etc/slurm.conf}
 and has three major components:
 
@@ -224,7 +223,7 @@ of a process group and executing an epilog script.
 stdin of remote tasks. Job input may be redirected from a file or files, a
 \srun\ process, or /dev/null.  Job output may be saved into local files or
 sent back to the \srun\ command. Regardless of the location of stdout/err,
-all job output will be locally buffered to avoid blocking local tasks.
+all job output is locally buffered to avoid blocking local tasks.
 
 \item {\em Job Control}: Allow asynchronous interaction with the
 Remote Execution environment by propagating signals or explicit job
@@ -259,7 +258,7 @@ to administratively alter node and partition configurations.
 
 \item {\em Job Manager}: Accepts user job requests and (if applicable)
 places pending jobs in a priority ordered queue. By default, the job
-priority will be a simple age based algorithm providing FIFO ordering.
+priority is a simple sequence number providing FIFO ordering.
 An interface is provided for an external scheduler to establish a job's
 initial priority and API's are available to alter this priority through
 time for customers wishing a more sophisticated scheduling algorithm.
@@ -274,7 +273,7 @@ that partition are considered for initiation.
 After completing the scheduling cycle, the job manager's scheduling
 thread sleeps.  Once a job has been allocated resources, the job manager
 transfers necessary state information to those nodes and commences
-its execution.  Once executing, the job manager will monitor and record
+its execution.  Once executing, the job manager monitors and records
 the job's resource consumption (CPU time used, CPU time allocated, and
 real memory used) in near real-time.  When the job manager detects that
 all nodes associated with a job have completed their work, it initiates
@@ -316,10 +315,9 @@ format options are available.
 
 \item {\tt srun}: Allocate resources, submit jobs to the SLURM queue,
 and initiate parallel tasks (job steps). 
-Every set of executing parallel tasks will
-have an associated \srun\ process which is managing it. 
+Every set of executing parallel tasks has an associated \srun\ process managing it. 
 Jobs may be submitted for later execution (e.g. batch), in which case 
-\srun\ will terminate after job submission. 
+\srun\ terminates after job submission. 
 Jobs may also be submitted for interactive execution, where \srun\ keeps 
 running to shepherd the running job. In this case, 
 \srun\ negotiates connections with remote {\tt slurmd}'s 
@@ -364,7 +362,7 @@ permissions to specific users.
 %{\em The secret key is readable by TotalView unless the executable 
 %file is not readable, but that prevents proper TotalView operation. 
 %For an alternative see authd documentation at 
-%$http://www.cs.berkeley.edu/~bnc/authd/$. Here are some benefits:
+%$http://www.cs.berkeley.edu/\~bnc/authd/$. Here are some benefits:
 %\begin{itemize}
 %\item With authd, command line utilities do not need to be suid or sgid.
 %\item Because of the above, users could compile their own utilities against 
@@ -375,16 +373,15 @@ permissions to specific users.
 %Drawbacks:
 %\begin{itemize}
 %\item Authd must be running on every node
-%\item Need to worry about how Mongo will interact with authd
 %\item We would still need to manage a cluster-wide public/private key pair 
 %and assure they key has not been compromised.
 %\end{itemize}
 %}
 
 We presently support two authentication mechanisms: 
-authd\footnote{http://www.cs.berkeley.edu/~bnc/authd/} and 
+{\tt authd}\footnote{http://www.cs.berkeley.edu/\~bnc/authd/} and 
 {\tt munged}. Both are quite similar and the \munged\ 
-implementation will be described below.
+implementation is described below.
 
 Trust between SLURM components and utilities is established through use
 of communication-layer encryption. A \munged\ daemon running as 
@@ -392,8 +389,8 @@ user {\tt root} on each node confirms the identify of the user requesting
 a credential and generates one. The credential contains a user id, 
 group id, time-stamp, lifetime, some pseudo-random information, and 
 any user supplied information. \munged\ uses a private key to 
-generate a Mesage Authentication Code (MAC) for the credential.
-\munged\ will then use a public key to symmetrically encrypt 
+generate a Message Authentication Code (MAC) for the credential.
+\munged\ then uses a public key to symmetrically encrypt 
 the credential including the MAC. 
 SLURM daemons and programs transmit this encrypted 
 credential with communications. The SLURM daemon receiving the message 
@@ -416,7 +413,7 @@ The ``job credential'' differs from the \munged\ credential in that
 it contains a list of nodes and is valid until explicitly revoked by 
 \slurmctld\ upon job termination.
 
-Both the \slurmd\ and \slurmctld\ will also support the use
+Both the \slurmd\ and \slurmctld\ also support the use
 of Pluggable Authentication Modules (PAM) for additional authentication 
 beyond communication encryption and job credentials. In particular, if a
 job credential is not forwarded to \slurmd\ on a job initiation request,
@@ -428,7 +425,7 @@ may be represented in a PAM module.
 
 Access to partitions may be restricted via a `` RootOnly'' flag.  
 If this flag is set, job submit or allocation requests to this 
-partition will only be accepted if the effective user ID originating 
+partition are only accepted if the effective user ID originating 
 the request is {\tt root} or the {\tt SlurmUser} per the SLURM configuration 
 file.  The request from such a user may submit a job as any other user. 
 This may be used, for example, to provide specific external schedulers
@@ -441,8 +438,8 @@ members of specific Unix groups using a ``AllowGroups'' specification.
 
 \subsection{Example:  Executing a Batch Job}
 
-A user wishes to run a job in batch mode, in which \srun\ will return 
-immediately and the job will execute ``in the background'' when resources
+A user wishes to run a job in batch mode, in which \srun\ returns 
+immediately and the job executes ``in the background'' when resources
 are available.
 
 The job is a two-node run of {\em mping}, a simple MPI application.
@@ -458,7 +455,7 @@ and command line option information. By default, stdout and stderr are
 sent to files in the current working directory and stdin is copied from
 {\tt /dev/null}.
 
-The controller consults the partition manager to test whether the job will
+The controller consults the partition manager to test whether the job 
 will ever be able to run.  If the user has requested a non-existent partition,
 more nodes than are configured in the partition, a non-existent constraint, 
 etc., the partition manager returns an error and the request is discarded.
@@ -493,7 +490,7 @@ the job's resources, such as the slurm job id ({\em 42}) and the
 allocated nodes ({\em dev[6-7]}).
 
 The remote \slurmd\ establishes the new environment, execute a SLURM 
-prolog program as user {\tt root} (if one is configured), and executes the
+prolog program (if one is configured) as user {\tt root}, and executes the
 job script as the submitting user. The \srun\ within the job script
 detects that it is running with allocated resources from the presence
 of the {\tt SLURM\_JOBID} environment variable. \srun\ connects to
@@ -506,7 +503,7 @@ information. The {\tt slurmd}'s verify the valid job credential, connect
 stdout and stderr back to \srun , establish the environment, and execute
 the command as the submitting user.
 
-Unless instructed otherwise by the user, stdout and stderr will be
+Unless instructed otherwise by the user, stdout and stderr are
 copied to files in the current working directory by \srun :
 
 \begin{verbatim}
@@ -534,12 +531,12 @@ and begins cleanup. It directs the {\tt slurmd}'s formerly assigned to the
 job to run the SLURM epilog program (if so configured). Finally,
 the job manager releases the resources allocated to job {\em 42}
 and updates the job status to {\em complete}. The record of a job's
-existence will eventually be purged.
+existence is eventually purged.
 
 \subsection{Example:  Executing an Interactive Job}
 
 A user wishes to run the same job in interactive mode, in which \srun\
-will block while the job executes and stdout/stderr of the job will be 
+blocks while the job executes and stdout/stderr of the job are 
 copied onto stdout/stderr of {\tt srun}.
 
 The user submits the job, this time requesting an interactive run:
@@ -551,7 +548,7 @@ The \srun\ command authenticates the user to the controller and
 makes a request for a resource allocation {\em and} job step. The job manager
 responds with a list of nodes, a job credential, and interconnect
 resources on successful allocation. If resources are not immediately
-available, the request will terminate or block depending upon user
+available, the request terminates or block depending upon user
 option.
 
 If the request is successful, \srun\ forwards the job run request
@@ -615,8 +612,8 @@ Each of these subsystems is described in detail below.
 
 \subsection{Node Management}
 
-The node manager will monitor the state of nodes.  Node information
-monitored includes:
+The node manager monitors the state of nodes.  
+Node information monitored includes:
 
 \begin{itemize}
 \item Count of processors on the node
@@ -632,15 +629,15 @@ The SLURM administrator can specify a list of system node
 names using a regular expression in the SLURM configuration file 
 or in the SLURM tools (e.g. "NodeName=linux[001-512] CPUs=4
 RealMemory=1024 TmpDisk=4096 Weight=4 Feature=Linux").  These values
-for CPUs, RealMemory, and TmpDisk would be considered the minimal
+for CPUs, RealMemory, and TmpDisk are considered the minimal
 node configuration values which are acceptable for the node to enter
-into service.  The \slurmd\ will register whatever resources actually
-exist on the node and this will be recorded by the Node Manager.
-Actual node resources will be checked on \slurmd\ initialization and
-periodically
-thereafter.  If a node registers with less resources than configured, it
-will be placed in {\em DOWN} state and the event will be logged.  Otherwise the
-actual resources reported will be recorded and possibly used as a basis 
+into service.  The \slurmd\ registers whatever resources actually
+exist on the node and this is recorded by the Node Manager.
+Actual node resources are checked on \slurmd\ initialization and
+periodically thereafter.  
+If a node registers with less resources than configured, it
+is placed in {\em DOWN} state and the event logged.  Otherwise the
+actual resources reported are recorded and possibly used as a basis 
 for scheduling (e.g. if the node has more RealMemory than recorded in 
 the configuration file, the actual node configuration may be used for 
 determining suitability for any application, alternately the data in 
@@ -654,8 +651,8 @@ The {\tt weight} is used to order available nodes in assigning work to them.
 In a heterogeneous cluster, more capable nodes (e.g. larger memory
 or faster processors) should be assigned a larger weight.  The units
 are arbitrary and should reflect the relative value of each resource.
-Pending jobs will be assigned the least capable nodes (i.e. lowest
-weight) which satisfy their requirements.  This will tend to leave the
+Pending jobs are assigned the least capable nodes (i.e. lowest
+weight) which satisfy their requirements.  This tends to leave the
 more capable nodes available for those jobs requiring those capabilities.
 
 The {\tt feature} is an arbitrary string describing the node, such as
@@ -671,16 +668,16 @@ nodes that all have the feature "FS1" or they all have feature "FS2", etc.).
 
 Node records are kept in an array with hash table lookup. 
 If nodes are given names containing sequence numbers (e.g. "lx01", "lx02", 
-etc.), the hash table will permit specific node records to be located 
+etc.), the hash table permits specific node records to be located 
 very quickly and this is our recommended naming convention for larger 
 clusters.
 
 An API is available to view any of this information and to update some 
 node information (e.g. state). APIs designed to return SLURM
-state information will permit the specification of a time-stamp.  If the
+state information permit the specification of a time-stamp.  If the
 requested data has not changed since the time-stamp specified by the
 application, the application's current information need not be updated.
-The API will return a brief "no\_change" response rather than returning
+The API returns a brief "no\_change" response rather than returning
 relatively verbose state information.
 Changes in node configurations (e.g. node count, memory, etc.) or the nodes 
 actually in the cluster should be reflected in the SLURM configuration 
@@ -689,7 +686,7 @@ that are currently executing.
 
 \subsection{Partition Management}
 
-The partition manager will identify groups of nodes to be used for
+The partition manager identifies groups of nodes to be used for
 execution of user jobs. One might consider this the actual resource 
 scheduling component. 
 Data associated with a partition includes:
@@ -717,10 +714,10 @@ The nodes in a partition may be designated for exclusive or non-exclusive
 use by a job.  A {\tt shared} value of "YES" indicates that jobs may share nodes
 upon request.  A {\tt shared} value of "NO" indicates that jobs are always given
 exclusive use of allocated nodes.  A {\tt shared} value of "FORCE" indicates
-that jobs will never be ensured exclusive access to nodes, but SLURM
+that jobs are never ensured exclusive access to nodes, but SLURM
 may initiate multiple jobs on the nodes for high system utilization
 and responsiveness.  In this case, job requests for exclusive node
-access will not be honored.  Non-exclusive access may negatively impact
+access are honored.  Non-exclusive access may negatively impact
 the performance of parallel jobs or cause them to fail upon exhausting
 shared resources (e.g. memory or disk space). However, shared resources
 may improve overall system utilization and responsiveness. The
@@ -735,7 +732,7 @@ allocate nodes to pending jobs upon request by the job manager.
 
 Submitted jobs can specify desired partition, CPU count, node count,
 task count,  the need for contiguous nodes assignment, and (optionally)
-an explicit list of nodes.  Nodes will be selected so as to satisfy all
+an explicit list of nodes.  Nodes are selected so as to satisfy all
 job requirements.  For example a job requesting four CPUs and four nodes
 will actually be allocated eight CPUs and four nodes in the case of all
 nodes having two CPUs each.  
@@ -777,19 +774,20 @@ sets of contiguous nodes can be allocated to a job, the one which most
 closely fits the job's requirements will be used.  This technique will
 leave the largest continuous sets of nodes intact for jobs requiring them.
 
-The partition manager will build a list of nodes to satisfy a job's
-request.  It will also cache the IP addresses of
+The partition manager buildw a list of nodes to satisfy a job's
+request.  It also cachew the IP addresses of
 each node and provide this information to \srun\ at job initiation
 time for improved performance.
 
-The failure of any node to respond to the partition manager will only
-effect jobs associated with that node.  In fact, jobs may indicate they
+The failure of any node to respond to the partition manager only
+effects jobs associated with that node.  In fact, jobs may indicate they
 should continue executing even if nodes allocated to it cease responding.
-In this case, the job will need to provide for its own fault-tolerance.
+In this case, the job needs to provide for its own fault-tolerance.
 All other jobs and nodes in the cluster will continue to operate after
-a node failure.  No additional work will be allocated to the failed
-node and it will be pinged periodically to determine when it has been
-restored to serviced.
+a node failure.  No additional work is allocated to the failed
+node and it will be pinged periodically to determine when it is 
+responding. The node may then be returned to service (depending 
+upon the {\tt ReturnToService} value in the SLURM configuration. 
 
 A sample configuration file follows.
 
@@ -808,8 +806,6 @@ FirstJobId=65536
 HashBase=10
 HeartbeatInterval=60
 InactiveLimit=120
-JobCredentialPrivateKey=/usr/local/slurm/etc/private.key
-JobCredentialPublicCertificate=/usr/local/slurm/etc/public.cert
 KillWait=30
 Prioritize=/usr/local/slurm/etc/priority
 Prolog=/usr/local/slurm/etc/slurm.prolog
@@ -842,8 +838,9 @@ PartitionName=DEFAULT MaxTime=30 MaxNodes=2
 PartitionName=login Nodes=lx[0000-0002] State=DOWN   # Don't schedule work here
 PartitionName=debug Nodes=lx[0003-0030] State=UP    Default=YES
 PartitionName=class Nodes=lx[0031-0040] AllowGroups=students,teachers
-PartitionName=batch Nodes=lx[0041-9999] MaxTime=UNLIMITED MaxNodes=4096
-RootOnly=YES
+#
+PartitionName=DEFAULT MaxTime=UNLIMITED RootOnly=YES
+PartitionName=batch Nodes=lx[0041-9999] MaxNodes=4096
 \end{verbatim}
 
 \subsection{Job Manager}
@@ -877,17 +874,17 @@ The core functions to be supported by the job manager include:
 available, future)
 \end{itemize}
 
-Jobs will be placed in a priority ordered queue and allocated nodes as 
+Jobs are placed in a priority ordered queue and allocated nodes as 
 selected by the Partition Manager. 
 SLURM implements a very simple scheduling algorithm, namely FIFO. 
-An attempt will be made to schedule pending jobs on a periodic basis
+An attempt is made to schedule pending jobs on a periodic basis
 and whenever any change in job, partition, or node state might permit
-the scheduling of a job.  All nodes allocated to a job will remain so
+the scheduling of a job.  All nodes allocated to a job remain so
 until {\em all} processes associated with that job terminate.  If a
 node allocated to a job fails, the job may either continue execution or
 terminate depending upon its configuration.
 
-We are well aware this scheduling algorithm will not satisfy the needs of many
+We are well aware this scheduling algorithm does satisfy the needs of many
 customers and provide the means for establishing other scheduling
 algorithms. Before a newly arrived job is placed into the queue, it
 is assigned a priority that may be established by an administrator
@@ -903,7 +900,7 @@ has flexible scheduling algorithms that suit our needs well and provides
 the scalability required for this application. Most of the resource
 accounting and some of the job management functions presently within
 DPCS would be moved into the proposed SLURM Job Management component.
-DPCS will require some modification to operate within this new, richer
+DPCS does require some modification to operate within this new, richer
 environment.
 
 System specific scripts can be executed as user root on each allocated 
@@ -913,23 +910,23 @@ These scripts are executed as user {\tt root} and can be used to establish
 an appropriate environment for the user (e.g. permit logins, disable
 logins, terminate "orphan" processes, etc.).  
 
-The job manager will collect resource consumption information (CPU
+The job manager collects resource consumption information (CPU
 time used, CPU time allocated, and real memory used) associated with
 a job from the \slurmd\ daemons.  When a job approaches its time limit
 (as defined by wall-clock execution time) or an imminent system shutdown
-has been scheduled, the job will be terminated.  The actual termination
+has been scheduled, the job is terminated.  The actual termination
 process is to notify \slurmd\ daemons on nodes allocated to the job of
 the termination request along with a time period in which to complete
 the termination.  The \slurmd\ job termination procedure, including job
-signaling, is described in the slrumd section.
+signaling, is described in the slurmd section.
 
 If for some reason, there are non-killable processes associated with 
-the job, nodes associated with those processes will be drained and 
+the job, nodes associated with those processes are drained and 
 the other nodes relinquished for other uses.
 
 One may think of a ``job'' as described above as an allocation of resource 
 and a user script rather than a collection of parallel tasks. For that, 
-the script will execute \srun\ commands to initiate the parallel tasks 
+the scripts execute \srun\ commands to initiate the parallel tasks 
 or ``job steps''. The job may include multiple job steps, executing 
 sequentially and or concurrently either on separate or overlapping nodes. 
 Job steps have associated with them specific nodes (some or all of those 
@@ -947,107 +944,95 @@ manager. Supported job step functions include:
 Job step information includes a list of 
 nodes (entire set or subset of those allocated to the job) and a 
 credential used to bind communications between the tasks across 
-the interconnect. The \slurmctld\ will construct this credential, 
-distribute it the the relevant \slurmd\ daemons, and send it to 
+the interconnect. The \slurmctld\ constructs this credential, 
+distributes it the the relevant \slurmd\ daemons, and sends it to 
 the \srun\ initiating the job step.
-
-%\subsection{Switch Manager}
-%
-%The switch manager would be responsible for allocating switch channels and
-%assigning them to user jobs. The switch channels would be de-allocated
-%upon job termination.  The slurmd (on each compute node) would provide
-%user jobs with the authentication required for switch use as directed
-%by the switch manager. Switch health monitoring tools will also be
-%implemented in phase two. It may be desirable for the SLURM daemons
-%to use the switch directly for communications, particularly for the
-%movement of a large executable and/or standard input file. This option
-%will be investigated in phase three.
 
 \subsection{Fault Tolerance}
 
-A backup \slurmctld\, if one is configured, will periodically ping
+A backup \slurmctld\, if one is configured, periodically pings
 the primary {\tt slurmctld}.  Should the primary \slurmctld\ cease
-responding, the backup will load state information from the last 
-\slurmctld\ state save, and assume control.  All \slurmd\ daemons
-will be notify of the new controller location and be requested to upload
+responding, the backup loads state information from the last 
+\slurmctld\ state save, and assumes control.  All \slurmd\ daemons
+are notified of the new controller location and requested to upload
 current state information to it.  When the primary \slurmctld\ is
-returned to service, it will tell the backup \slurmctld\ to save
-state and terminate.  The primary will then load state, assume control,
-and notify \slurmd\ daemons.
+returned to service, it tells the backup \slurmctld\ to save
+state and terminate.  The primary then loads state, assumes control,
+and notifies \slurmd\ daemons.
 
-SLURM utilities and the APIs will read the /etc/slrumd.conf files 
+SLURM utilities and the APIs read the /etc/slurmd.conf 
 and initially try to contact the primary {\tt slurmctld}. 
-Should that attempt fail, an attempt will be made to contact the 
+Should that attempt fail, an attempt is made to contact the 
 backup \slurmctld\ before terminating.
 
 \section{Slurmd}
 
 The \slurmd\ daemon is a multi-threaded daemon for managing
-user jobs and monitoring system state.  Upon initiation it will read
-the /etc/slurm.conf file, capture system state, attempt an initial
+user jobs and monitoring system state.  Upon initiation it reads
+the /etc/slurm.conf file, captures system state, attempts an initial
 connection to the SLURM controller, and subsequently await requests.
-It will service requests for system state, accounting information,
+It services requests for system state, accounting information,
 job initiation, job state, job termination, and job attachment. On the
-local node it will offer an API to translate local process id's into
+local node it offers an API to translate local process ID's into
 SLURM job id's. 
 
-It's most common action will be to report system state upon request. Upon
-\slurmd\ startup and periodically thereafter, it will gather the processor
+It's most common action is to report system state upon request. Upon
+\slurmd\ startup and periodically thereafter, it gathers the processor
 count, real memory size, and temporary disk space for the node. Should
-those values change, the controller will be notified.  Another thread will
-be created to capture CPU, real-memory and virtual-memory consumption from
+those values change, the controller is notified.  Another thread is
+created to capture CPU, real-memory and virtual-memory consumption from
 the process table entries.  Differences in resource utilization values
-from one process table snapshot to the next will be accumulated. \slurmd\ 
-will insure these accumulated values are not decremented if resource
+from one process table snapshot to the next are accumulated. \slurmd\ 
+insures these accumulated values are not decremented if resource
 consumption for a user happens to decrease from snapshot to snapshot,
 which would simply reflect the termination of one or more processes.
-Both the real and virtual memory high-water marks will be recorded and
+Both the real and virtual memory high-water marks are recorded and
 the integral of memory consumption (e.g. megabyte-hours).  Resource
-consumption will be grouped by user ID and SLURM job ID (if any). Data
-will be collected for system users (root, ftp, ntp, etc.) as well as
+consumption is grouped by user ID and SLURM job ID (if any). Data
+is collected for system users (root, ftp, ntp, etc.) as well as
 customer accounts. The intent is to capture all resource use including
-kernel, idle and down time.  Upon request, the accumulated values will be
+kernel, idle and down time.  Upon request, the accumulated values are
 uploaded to \slurmctld\ and cleared.  
 
-\slurmd\ will accept requests from \srun\ and \slurmctld\ to initiate
+\slurmd\ accepts requests from \srun\ and \slurmctld\ to initiate
 and terminate user jobs. The initiate job request contains: 
 real and effective user IDs, environment variables, working directory, task
 numbers, job credential, interconnect specifications and authorization,
 core paths, SLURM job id, and the command line to execute. 
-\slurmd\ will execute the prolog script (if any), reset its
-session ID, and then initiate the job as requested. It will record to
+\slurmd\ executes the prolog script (if any), resets its
+session ID, and then initiates the job as requested. It records to
 disk the SLURM job ID, session ID, process ID associated with each task,
 and user associated with the job.  In the event of \slurmd\ failure,
-this information will be recovered from disk in order to identify a
-specific job. This  job identity will be used in communications with
+this information is recovered from disk in order to identify a
+specific job. This  job identity is used in communications with
 the SLURM controller.
 
-The job termination request will contain the SLURM job ID and a delay
-period.  Jobs will have an API made available to register with \slurmd\
-exactly which process(s) should be sent what signals with how much lead
-time prior to termination.  \slurmd\ will send the requested signal (or
+The job termination request contains the SLURM job ID and a delay
+period.  Jobs have an API made available to register with \slurmd\
+exactly which process(s) should be sent what signals how long before
+termination.  \slurmd\ sends the requested signal (or
 SIGNXCPU if none specified) to the identified process(es) associated with
 the SLURM job (or all processes associated with that session ID or process
 tree by default), sleep for the delay specified, and send SIGKILL to all
-of the job's processes.  If the processes do not terminate, SIGKILL will
-be sent again.  If the processes still do not terminate \slurmd\ will notify
-the {\tt slurmctld}, which will log the event and set node's state to DRAINED.
-After all processes terminate, \slurmd\ will execute the epilog program
+of the job's processes.  If the processes do not terminate, SIGKILL is
+sent again.  If the processes still do not terminate \slurmd\ notifies
+the {\tt slurmctld}, which logs the event and sets node's state to DRAINED.
+After all processes terminate, \slurmd\ executes the epilog program
 (if any).
 
 \section{Command Line Utilities}
 
 \subsection{scancel}
 
-\scancel\ will prematurely terminate queued or running jobs or job steps.
-If the job is in the queue, it will just be removed.  If the job is
-running, it will be signaled and terminated as described in the \slurmd\
-section of this document.  It will identify the job(s) to be terminated
+\scancel\ terminate queued or running jobs or job steps.
+If the job is queued, it is just removed.  If the job is
+running, it is signaled and terminated as described in the \slurmd\
+section of this document.  It identifies the job(s) to be terminated
 through input specification of: SLURM job ID, job step ID, user name, 
 partition name, and/or job state. 
-If a job ID is supplied, all job steps associated with the job will be
+If a job ID is supplied, all job steps associated with the job are
 terminated as well as the job and its resource allocation. 
-If a job ID and job step ID are supplied, only that job step will be terminated.
+If a job ID and job step ID are supplied, only that job step is terminated.
 \scancel\ can only be executed by the job's owner or a privileged user.
 
 \subsection{scontrol}
@@ -1084,16 +1069,16 @@ file and cause it to be re-read using the "Reconfigure" command described above.
 
 \subsection{squeue}
 
-\squeue\ will report the state of SLURM jobs.  It can filter these
+\squeue\ reports the state of SLURM jobs.  It can filter these
 jobs input specification of job state (RUN, PENDING, etc.), job ID,
 user name, job name, etc.  If no specification is supplied, the state of
-all jobs will be reported. \squeue\ also has a variety of sorting and 
+all jobs is reported. \squeue\ also has a variety of sorting and 
 output options.
 
 \subsection{sinfo}
 
-\sinfo\ will report the state of SLURM partitions and nodes.  By
-default, it will report a summary of partition state with node counts and
+\sinfo\ reports the state of SLURM partitions and nodes.  By
+default, it reports a summary of partition state with node counts and
 a summary of the configuration of those nodes (e.g.  "PartitionName=batch
 Nodes=lx[1000-9999] RealMemory=2048-4096 IdleNodes=1234 ..."). A variety 
 of output formatting options exist.
@@ -1108,7 +1093,7 @@ supports a full range of options to specify job constraints and
 characteristics, for example minimum real memory, temporary disk space,
 and cpus per node, as well as time limits, stdin/stdout/stderr 
 handling, signal handling, and working directory for job.
-The full range of options are detailed in Table~\ref{srun_opts}.
+The full range of options are detailed in table~\ref{srun_opts}.
 
 \begin{table}[htb]
 \begin{center}
@@ -1158,21 +1143,21 @@ manages stdout/stderr/stdin and forwards signals to the remote tasks, {\em
 batch} in which \srun\ submits a job script to the SLURM queue for later
 execution, {\em allocate} in which \srun\ requests resources from
 the SLURM controller and spawns a shell with access to those resources,
-and finally {\em attach} in which \srun\ will attach to a currently
+and finally {\em attach} in which \srun\ attaches to a currently
 running job and display stdout/stderr in real time from the remote tasks,
 forward signals from the user's terminal and so on.
 
 An interactive job may also be forced into the ``background'' with a
-special control sequence typed at the user's terminal. This sequence will
-cause another \srun\ to attach to the running job while the interactive
-\srun\ terminates. Output from the running job will subsequently be
-redirected to files in the current working directory and stdin will be
+special control sequence typed at the user's terminal. This sequence 
+causes another \srun\ to attach to the running job while the interactive
+\srun\ terminates. Output from the running job is subsequently 
+redirected to files in the current working directory and stdin is
 copied from {\tt /dev/null}. A backgrounded job may be reattached
 to a user's terminal at a later time by running
 \begin{verbatim}
   srun --attach jobid 
 \end{verbatim}
-at any time, though the remote \srun\ will not be terminated as the result 
+at any time, though the remote \srun\ is not terminated as the result 
 of an attach.
 
 \section{Job Initiation Design}
@@ -1199,9 +1184,9 @@ manually run job steps via a script or in a subshell spawned by \srun .
 \end{figure}
 
 Figure~\ref{connections} gives a high-level depiction of the connections
-that will occur between SLURM components during a general interactive job
-startup. \srun\ will request resources from the {\tt slurmctld}, which will 
-respond with the list of allocated nodes, timelimit, job credential, etc.
+that occur between SLURM components during a general interactive job
+startup. \srun\ requests resources from the {\tt slurmctld}, which 
+responds with the list of allocated nodes, timelimit, job credential, etc.
 if the request is granted. \srun\ then initializes listen ports for each
 task and sends a message to the \slurmd 's on the allocated nodes requesting
 that the remote processes be initiated. The {\tt slurmd}'s begin execution of
@@ -1247,7 +1232,7 @@ working directory, and interconnect resources if needed.
 
 Once the user process exits, the task thread records the exit status and
 sends a task exit message back to \srun . When all local processes
-terminate, the job thread exits. The \srun\ process will either wait
+terminate, the job thread exits. The \srun\ process either waits
 for all tasks to exit, or attempt to clean up the remaining processes
 when a single task exits based upon user option. Regardless, once all
 tasks are finished, \srun\ sends a message to the \slurmctld\ releasing
@@ -1314,18 +1299,18 @@ is illustrated in figure~\ref{init-allocate}. The invoked \srun\ sends
 an allocate request to \slurmctld , which, if resources are available,
 responds with a list of nodes allocated, time limit, etc. The \srun\
 process spawns a shell on the user's terminal with access to the
-allocation,  then waits for the shell to exit (at which time the job
-will be considered complete). 
+allocation, then waits for the shell to exit (at which time the job
+is considered complete). 
 
-An \srun\ initiated within the allocate subshell will recognize that it
+An \srun\ initiated within the allocate subshell recognizes that it
 is running under an allocation and therefore already within a job. Provided
-with no other arguments, \srun\ started in this manner will initiate a job
+with no other arguments, \srun\ started in this manner initiates a job
 step on all nodes within the current job. However, the user may select
 a subset of these nodes implicitly by using the \srun\ {\tt --nodes}  
 option, or explicitly by specifying a relative nodelist 
 ( {\tt --nodelist=[0-5]} ). 
 
-An \srun\ executed from the subshell will read the environment and
+An \srun\ executed from the subshell reads the environment and
 user options, then notify the controller that it is starting a job step
 under the current job. The \slurmctld\ registers the job step and responds
 with a job credential. \srun\ then initiates the job step using the same
@@ -1336,53 +1321,20 @@ exit status, notifies \slurmctld\ that the job is complete, and exits.
 The controller runs the epilog on each of the allocated nodes, returning
 nodes to the partition as they complete the epilog.
 
-
-%\section{Infrastructure: Communications Library}
-%
-%\begin{figure}[htb]
-%\centerline{\epsfig{file=LCM.communicate.eps,scale=0.5}}
-%\caption{Sample communications with fanout = 2}
-%\label{communicate}
-%\end{figure}
-%Optimal communications performance will depend upon hierarchical communications
-%patterned after DPCS and GangLL work. The SLURM control machine will generate a
-%list of nodes for each communication. The message will then be sent to one of
-%the nodes. 
-%The daemon on that node receiving the message will divide the node list into
-%two or more new lists of similar size and retransmit the message to one node on
-%each list. Figure~\ref{communicate} shows the communications for a fan-out of 
-%two.  Acknowledgments will optionally be sent for the messages to confirm 
-%receipt with a third message to commit the action. Our design permits the 
-%control machine to delegate one or more compute machine daemons as responsible 
-%for fault-tolerance, collection of acknowledgment messages, and the commit
-%decision. This design minimizes the control machine overhead for performance
-%reasons. This design also offers excellent scalability and fault 
-%tolerance.\footnote{Arguments to the communications request include:
-%\begin{itemize}
-%\item Request ID
-%\item Request (command or acknowledgment or commit)
-%\item List of nodes to be effected
-%\item Fan-out (count)
-%\item Commit of request to be required (Yes or No or Delegate node receiving
-%      message) 
-%\item Acknowledgment requested to node (name of node or NULL)
-%\item Acknowledgment requested to port (number)
-%\end{itemize} }
-
 \section{Infrastructure}
 
-The state of \slurmctld\ will be written periodically to disk for
-fault tolerance. Daemons will be initiated via {\tt inittab} using 
+The state of \slurmctld\ is written periodically to disk for fault tolerance. 
+SLURM daemons are initiated via {\tt inittab} using 
 the {\tt respawn} option to insure their continuous execution. 
 If the control machine itself becomes inoperative, its functions can
 easily be moved in an automated fashion to another computer. In fact, the
 computer designated as alternative control machine can easily be relocated as
 the workload on the compute nodes changes. 
 
-A single machine will serve as a centralized cluster manager and database. We
-do not anticipate user applications executing on this machine. 
+A single machine serves as a centralized cluster manager and database. 
+We do not anticipate user applications executing on this machine. 
 
-The syslog tools will be used for logging purposes and take advantage of the 
+The syslog tools are used for logging purposes and take advantage of the 
 severity level parameter.
 
 Direct use of the Elan interconnect is provided a version of MPI developed 
@@ -1397,7 +1349,7 @@ the application's tasks.
 \section{Results}
 
 \begin{figure}[htb]
-\centerline{\epsfig{file=times.eps}}
+\centerline{\epsfig{file=figures/times.eps}}
 \caption{Time to execute /bin/hostname with various node counts}
 \label{timing}
 \end{figure}
@@ -1410,6 +1362,22 @@ We found SLURM performance to be comparable to RMS for all job
 sizes and about 100 times faster than LoadLeveler at small job sizes.
 (While not shown on this chart, LoadLeveler reaches 1200 seconds to 
 launch an 8000 task job on 500 nodes.)
+
+\section{Future plans}
+
+As of December 2002, some work remains before we feel ready to 
+distributed SLURM for general use. Work needed at that time was 
+primarily in configurability, MPICH support, TotalView support, 
+scalability, fault-tolerance and testing. 
+We expect SLURM to begin production use on LLNL Linux clusters 
+in January 2003.
+
+Looking ahead, we anticipate porting SLURM to the  
+IBM Blue Gene\footnote{http://www.llnl.gov/asci/platforms/bluegenel}
+in 2003. 
+Blue Gene has a different interconnect than any supported 
+by SLURM. 
+It also has a 3-D topography with restrictive allocation constraints.
 
 \appendix
 \newpage
