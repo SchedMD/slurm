@@ -89,7 +89,7 @@ typedef struct slurm_protocol_config
 {
 	slurm_addr primary_controller;
 	slurm_addr secondary_controller;
-}
+} slurm_protocol_config_t ;
 
 /*core api protocol message structures */
 typedef struct slurm_protocol_header

@@ -21,15 +21,14 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_errno.h>
 
-#define SLURM_PORT 7000
-/*#define PRIMARY_SLURM_CONTROLLER	"pri_slrumctld.llnl.gov" */
-/*#define SECONDARY_SLURM_CONTROLLER	"sec_slrumctld.llnl.gov" */
-#define PRIMARY_SLURM_CONTROLLER	"localhost" 
-#define SECONDARY_SLURM_CONTROLLER	"localhost" 
 
-//WHAT ABOUT THESE INCLUDES
+
 
 /* high level routines */
+/* API init routines */
+int slurm_api_init ( slurm_protocol_config_t * protocol_conf ) ;
+int slurm_api_cleanup ( ) ;
+
 /* msg functions */
 
 /* In the socket implementation it creates a socket, binds to it, and listens for connections.
@@ -130,11 +129,11 @@ int inline slurm_close_stream ( slurm_fd open_fd ) ;
 
 /* Low level routines */
 /* msg functions 
+*/
 
 int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_type_t * msg_type , char * data_buffer , size_t buf_len ) ;
 int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
 int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
-*/
 
 /* Address Conversion Functions */
 
