@@ -46,7 +46,7 @@ void pack_header ( header_t * header, char ** buffer , uint32_t * length )
 {
 	pack16 ( header -> version , ( void ** ) buffer , length ) ;
 	pack16 ( header -> flags , ( void ** ) buffer , length ) ;
-	pack16 ( header -> msg_type , ( void ** ) buffer , length ) ;
+	pack16 ( (uint16_t)header -> msg_type , ( void ** ) buffer , length ) ;
 	pack32 ( header -> body_length , ( void ** ) buffer , length ) ;
 }
 
@@ -58,9 +58,11 @@ void pack_header ( header_t * header, char ** buffer , uint32_t * length )
  */
 void unpack_header ( header_t * header , char ** buffer , uint32_t * length )
 {
+	uint16_t tmp=0;
 	unpack16 ( & header -> version , ( void ** ) buffer , length ) ;
 	unpack16 ( & header -> flags , ( void ** ) buffer , length ) ;
-	unpack16 ( & header -> msg_type , ( void ** ) buffer , length ) ;
+	unpack16 ( & tmp , ( void ** ) buffer , length ) ;
+	header -> msg_type = (slurm_msg_type_t )tmp;
 	unpack32 ( & header -> body_length , ( void ** ) buffer , length ) ;
 }
 
@@ -177,6 +179,14 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			break ;
 		case RESPONSE_SLURM_RC:
 			pack_return_code ( ( return_code_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
+			break;
+
+		case RESPONSE_JOB_STEP_CREATE:
+			pack_job_step_create_response_msg(( job_step_create_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;	
+			break;
+		case REQUEST_JOB_STEP_CREATE:
+			pack_job_step_create_request_msg(( job_step_create_request_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;	
+		
 			break;
 		default :
 			error ( "No pack method for msg type %i",  msg -> msg_type ) ;
@@ -300,7 +310,14 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_SLURM_RC:
 			unpack_return_code ( ( return_code_msg_t **) &(msg -> data)  , ( void ** ) buffer , buf_len ) ;
 			break;
-		default :
+		case RESPONSE_JOB_STEP_CREATE:
+			unpack_job_step_create_response_msg(( job_step_create_response_msg_t ** ) &msg -> data , ( void ** ) buffer , buf_len ) ;	
+			break;
+		case REQUEST_JOB_STEP_CREATE:
+			unpack_job_step_create_request_msg(( job_step_create_request_msg_t ** ) &msg -> data , ( void ** ) buffer , buf_len ) ;	
+		
+			break;
+			default :
 			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
 			return EINVAL ;
 			break;
@@ -511,6 +528,125 @@ unpack_update_partition_msg ( update_part_msg_t ** msg , void ** buffer, uint32_
 	*msg = tmp_ptr;
 	return 0;
 }
+
+void pack_job_step_create_request_msg ( job_step_create_request_msg_t* msg , void ** buffer , uint32_t * length )
+{
+	assert ( msg != NULL );
+
+	pack32 ( msg -> node_count, ( void ** ) buffer , length ) ;
+	pack32 ( msg -> proc_count, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> relative, ( void ** ) buffer , length ) ;
+	packstr ( msg -> node_list, ( void ** ) buffer , length ) ;
+}
+
+int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	job_step_create_request_msg_t * tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( job_step_create_request_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	unpack32 ( &( tmp_ptr -> node_count), ( void ** ) buffer , length ) ;
+	unpack32 ( &( tmp_ptr -> proc_count), ( void ** ) buffer , length ) ;
+	unpack16 ( &( tmp_ptr -> relative), ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( &( tmp_ptr -> node_list ), &uint16_tmp,  ( void ** ) buffer , length ) ;
+
+	*msg = tmp_ptr;
+	return 0;
+}
+
+void pack_job_credential ( slurm_job_credential_t* msg , void ** buffer , uint32_t * length )
+{
+	assert ( msg != NULL );
+
+	pack32( msg->job_id, buffer, length ) ;
+	pack16( (uint16_t) msg->user_id, buffer, length ) ;
+	packstr( msg->node_list, buffer, length ) ;
+	pack32( msg->experation_time, buffer, length ) ;	
+	pack32( msg->signature, buffer, length ) ; 
+}
+
+int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	slurm_job_credential_t* tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( slurm_job_credential_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	unpack32( &(tmp_ptr->job_id), buffer, length ) ;
+	unpack16( (uint16_t*) &(tmp_ptr->user_id), buffer, length ) ;
+	unpackstr_xmalloc ( &(tmp_ptr->node_list), &uint16_tmp,  ( void ** ) buffer , length ) ;
+	unpack32( (uint32_t*) &(tmp_ptr->experation_time), buffer, length ) ;	/* What are we going to do about time_t ? */
+	unpack32( &(tmp_ptr->signature), buffer, length ) ; 
+
+	*msg = tmp_ptr;
+	return 0;
+}
+
+#ifdef HAVE_LIBELAN3
+/* I'm pretty sure this isn't how I want to do this... */
+void pack_qsw_jobinfo( qsw_jobinfo *msg, void ** buffer , uint32_t * length )
+{
+	int len = qsw_pack_jobinfo ( msg , *buf_ptr, *buf_len);
+	if (len > 0) {      /* Need to explicitly advance pointer and index here */
+		*buffer = (void *) ((char *)*buf_ptr + len);
+		*length += len;
+	}
+
+}
+
+void unpack_qsw_jobinfo( qsw_jobinfo ** msg, void ** buffer , uint32_t * length )
+{
+	int len=0;
+	qsw_jobinfo_t temp ;
+
+	qsw_alloc_jobinfo( temp ) ;
+
+	len = qsw_unpack_jobinfo ( *msg, *buf_ptr, *buf_len);
+	if (len > 0) {      /* Need to explicitly advance pointer and index here */
+		*buffer = (void *) ((char *)*buf_ptr - len);
+		*length -= len;
+	}
+}
+#endif
+
+void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , void ** buffer , uint32_t * length )
+{
+	assert ( msg != NULL );
+
+	pack32 ( msg -> job_step_id , ( void ** ) buffer , length ) ;
+	packstr ( msg -> node_list, ( void ** ) buffer , length ) ;
+	pack_job_credential( msg->credentials, ( void ** ) buffer , length ) ;
+#ifdef HAVE_LIBELAN3
+	/* put the elan3 stuff here */	
+#endif
+ 	
+}
+
+int unpack_job_step_create_response_msg (job_step_create_response_msg_t** msg , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	job_step_create_response_msg_t * tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( job_step_create_response_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	unpack32 ( &tmp_ptr -> job_step_id, ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( &tmp_ptr -> node_list, &uint16_tmp,  ( void ** ) buffer , length ) ;
+	unpack_job_credential( &tmp_ptr->credentials, ( void ** ) buffer , length ) ;
+
+	*msg = tmp_ptr;
+#ifdef HAVE_LIBELAN3
+	/* put the elan3 stuff here */	
+#endif
+	return 0;
+}
+
 
 void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
@@ -886,7 +1022,7 @@ void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
 	pack32 ( msg -> uid , buffer , length ) ;
-	packstr ( msg -> credentials , buffer , length ) ;
+	pack_job_credential ( msg -> credentials , buffer , length ) ;
 	pack32 ( msg -> tasks_to_launch , buffer , length ) ;
 	packstring_array ( msg -> env , msg -> envc , buffer , length ) ;
 	packstr ( msg -> cwd , buffer , length ) ;
@@ -910,7 +1046,7 @@ int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , u
 	unpack32 ( & msg -> job_id , buffer , length ) ;
 	unpack32 ( & msg -> job_step_id , buffer , length ) ;
 	unpack32 ( & msg -> uid , buffer , length ) ;
-	unpackstr_xmalloc ( & msg -> credentials , & uint16_tmp , buffer , length ) ;
+	unpack_job_credential( & msg -> credentials ,  buffer , length ) ;
 	unpack32 ( & msg -> tasks_to_launch , buffer , length ) ;
 	unpackstring_array ( & msg -> env , & msg -> envc , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cwd , & uint16_tmp , buffer , length ) ;

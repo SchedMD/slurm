@@ -47,6 +47,12 @@
 
 #define DEBUG_SYSTEM 1
 
+#if DEBUG_MODULE
+slurm_ctl_conf_t slurmctld_conf;
+#else
+extern slurm_ctl_conf_t slurmctld_conf;
+#endif
+
 #define BACKUP_INTERVAL		60
 #define BACKUP_LOCATION		"/usr/local/slurm/slurm.state"
 #define CONTROL_DAEMON  	"/usr/local/slurm/slurmd.control"
@@ -129,7 +135,10 @@ extern struct part_record *default_part_loc;	/* location of default partition */
 
 /* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
 extern time_t last_job_update;	/* time of last update to part records */
-extern time_t last_step_update;	/* time of last update to job steps */
+/*
+	FIXME: this should be taken out.
+	Maybe there should be an update for the step_list in every job.
+extern time_t last_step_update;	*//* time of last update to job steps */
 
 /* Don't accept more jobs once there are MAX_JOB_COUNT in the system */
 /* Purge OK for jobs over MIN_JOB_AGE seconds old (since completion) */
@@ -201,8 +210,6 @@ struct step_specs {
 };
 
 extern List job_list;			/* list of job_record entries */
-extern List step_list;			/* list of job_step entries */
-
 
 /* allocate_nodes - for a given bitmap, change the state of specified nodes to stage_in
  * this is a simple prototype for testing 
@@ -352,7 +359,6 @@ extern struct part_record *find_part_record (char *name);
  * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: pointer to the job step's record, NULL on error
- * global: step_list - global step list
  */
 extern struct step_record * find_step_record(struct job_record *job_ptr, uint16_t step_id);
 
@@ -710,7 +716,6 @@ extern int slurm_parser (char *spec, ...);
  * step_create - parse the suppied job step specification and create step_records for it
  * input: step_specs - job step specifications
  * output: returns 0 on success, EINVAL if specification is invalid
- * globals: step_list - pointer to global job step list 
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
 extern int step_create (struct step_specs *step_specs);

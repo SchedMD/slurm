@@ -37,6 +37,11 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, void ** buffer , int * 
 void pack_last_update ( last_update_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_last_update ( last_update_msg_t ** msg , void ** buffer , uint32_t * length );
 
+void pack_job_step_create_request_msg ( job_step_create_request_msg_t* msg , void ** buffer , uint32_t * length );
+int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , void ** buffer , uint32_t * length );
+void pack_job_step_create_response_msg (  job_step_create_response_msg_t* msg , void ** buffer , uint32_t * length );
+int unpack_job_step_create_response_msg (job_step_create_response_msg_t** msg , void ** buffer , uint32_t * length );
+
 void pack_return_code ( return_code_msg_t * msg , void ** buffer , uint32_t * length );
 int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * length );
 

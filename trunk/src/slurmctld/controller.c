@@ -63,6 +63,7 @@ inline static void slurm_rpc_update_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;	
 
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
 
@@ -190,6 +191,10 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_UPDATE_NODE:
 			slurm_rpc_update_node ( msg ) ;
+			break;
+		case REQUEST_JOB_STEP_CREATE:
+			slurm_rpc_job_step_create( msg ) ;	
+			slurm_free_job_step_create_request_msg( msg->data );
 			break;
 		case REQUEST_UPDATE_PARTITION:
 			slurm_rpc_update_partition ( msg ) ;
@@ -655,6 +660,57 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	}
 
 	schedule();
+}
+
+
+/* slurm_rpc_create_job_step - creates/registers a job step with the step_mgr
+ */
+void 
+slurm_rpc_job_step_create( slurm_msg_t* msg )
+{
+	/* init */
+	int error_code=0;
+	clock_t start_time;
+
+	slurm_msg_t resp;
+	job_step_create_response_msg_t job_step_resp;
+	job_step_create_request_msg_t * req_step_msg = 
+			( job_step_create_request_msg_t* ) msg-> data ;
+
+	start_time = clock ();
+
+	/* do RPC call */
+/*	error_code = job_step_cancel (  job_step_id_msg->job_id , 
+					job_step_id_msg->job_step_id);
+*/	/* return result */
+	if (error_code)
+	{
+		info ("job_step_create error %d  time=%ld", error_code, 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		slurm_job_credential_t cred = { 1,1,"test",start_time,0} ;
+		info ("job_step_create success time=%ld",
+				(long) (clock () - start_time));
+	
+		job_step_resp.job_step_id = 23;
+    	job_step_resp.node_list = cred.node_list;
+    	job_step_resp.credentials = &cred;
+#ifdef HAVE_LIBELAN3
+	/* FIXME */
+    	resp.qsw_job;     /* Elan3 switch context, opaque data structure */
+#endif
+		resp. address = msg -> address ;
+		resp. msg_type = RESPONSE_JOB_STEP_CREATE ;
+		resp. data = &job_step_resp  ;
+
+		slurm_send_node_msg ( msg->conn_fd , &resp);
+	}
+
+	schedule();
+
 }
 
 /* slurm_rpc_node_registration - determine if a node's actual configuration satisfies the
