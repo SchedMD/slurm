@@ -13,7 +13,7 @@ REPORT = report
 TEX = llnl.tex $(REPORT).tex
 FIGS =
 PLOTS = 
-BIB = 
+BIB = project.bib
 
 %.eps: %.gnuplot %.data
 	gnuplot $<
@@ -31,8 +31,8 @@ all: $(REPORT).ps
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl
 	latex llnl
-	#bibtex llnl
-	#latex llnl
+	bibtex llnl
+	latex llnl
 	latex llnl
 	mv llnl.dvi $(REPORT).dvi
 
