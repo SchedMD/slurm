@@ -29,7 +29,6 @@
 #endif
 
 #include <time.h>
-#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
@@ -63,7 +62,8 @@ create_step_record (struct job_record *job_ptr)
 {
 	struct step_record *step_record_point;
 
-	assert (job_ptr);
+	if (job_ptr == NULL)
+		fatal ("create_step_record: job_ptr == NULL");
 	step_record_point = 
 		(struct step_record *) xmalloc (sizeof (struct step_record));
 
@@ -88,7 +88,8 @@ delete_all_step_records (struct job_record *job_ptr)
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
 
-	assert (job_ptr);
+	if (job_ptr == NULL)
+		fatal ("delete_all_step_records: job_ptr == NULL");
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
 	while ((step_record_point = 
@@ -120,7 +121,8 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 	struct step_record *step_record_point;
 	int error_code;
 
-	assert (job_ptr);
+	if (job_ptr == NULL)
+		fatal ("delete_step_record: job_ptr == NULL");
 	error_code = ENOENT;
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
@@ -174,21 +176,21 @@ struct step_record *
 find_step_record(struct job_record *job_ptr, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
-	struct step_record *step_record_point;
+	struct step_record *step_ptr;
 
 	if (job_ptr == NULL)
 		return NULL;
 
 	step_record_iterator = list_iterator_create (job_ptr->step_list);		
-	while ((step_record_point = 
-		(struct step_record *) list_next (step_record_iterator))) {
-		if (step_record_point->step_id == step_id) {
+	while ((step_ptr = (struct step_record *) 
+			   list_next (step_record_iterator))) {
+		if (step_ptr->step_id == step_id) {
 			break;
 		}
 	}		
 
 	list_iterator_destroy (step_record_iterator);
-	return step_record_point;
+	return step_ptr;
 }
 
 
@@ -215,10 +217,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 		return ESLURM_INVALID_JOB_ID;
 	}
 
-	if ((job_ptr->job_state == JOB_FAILED)    ||
-	    (job_ptr->job_state == JOB_COMPLETE)  ||
-	    (job_ptr->job_state == JOB_NODE_FAIL) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
@@ -231,7 +230,7 @@ int job_step_signal(uint32_t job_id, uint32_t step_id,
 	if (step_ptr == NULL) {
 		info("job_step_cancel step %u.%u not found",
 		     job_id, step_id);
-		return ESLURM_ALREADY_DONE;
+		return ESLURM_INVALID_JOB_ID;
 	}
 
 	signal_step_tasks(step_ptr, signal);
@@ -337,9 +336,7 @@ int job_step_complete(uint32_t job_id, uint32_t step_id, uid_t uid,
 	    (list_count(job_ptr->step_list) <= 1))
 		return job_complete(job_id, uid, requeue, job_return_code);
 
-	if ((job_ptr->job_state == JOB_FAILED) ||
-	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	if (IS_JOB_FINISHED(job_ptr))
 		return ESLURM_ALREADY_DONE;
 
 	if ((job_ptr->user_id != uid) && (uid != 0) && (uid != getuid())) {
@@ -510,9 +507,10 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	    (step_specs->user_id != 0))
 		return ESLURM_ACCESS_DENIED ;
 
-	if ((job_ptr->job_state == JOB_COMPLETE) || 
-	    (job_ptr->job_state == JOB_FAILED) ||
-	    (job_ptr->job_state == JOB_TIMEOUT) ||
+	if (IS_JOB_PENDING(job_ptr))
+		return ESLURM_INVALID_JOB_ID ;
+
+	if (IS_JOB_FINISHED(job_ptr) || 
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 

@@ -54,7 +54,9 @@ static int  _init_all_slurm_conf(void);
 static int  _parse_node_spec(char *in_line);
 static int  _parse_part_spec(char *in_line);
 static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
+static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
+static int  _sync_nodes_to_run_job(struct job_record *job_ptr);
 #ifdef 	HAVE_LIBELAN3
 static void _validate_node_proc_count(void);
 #endif
@@ -95,25 +97,22 @@ static int _build_bitmaps(void)
 	FREE_NULL_BITMAP(idle_node_bitmap);
 	FREE_NULL_BITMAP(up_node_bitmap);
 	idle_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	up_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
-	if ((idle_node_bitmap == NULL) || (up_node_bitmap == NULL))
-		fatal("bit_alloc memory allocation failure");
-
+	up_node_bitmap   = (bitstr_t *) bit_alloc(node_record_count);
+	if ((idle_node_bitmap == NULL) ||
+	    (up_node_bitmap   == NULL)) 
+		fatal ("memory allocation failure");
 	/* initialize the configuration bitmaps */
 	config_record_iterator = list_iterator_create(config_list);
 	if (config_record_iterator == NULL)
-		fatal
-		    ("_build_bitmaps: list_iterator_create unable to allocate memory");
+		fatal ("memory allocation failure");
 
-	while ((config_record_point =
-		(struct config_record *)
-		list_next(config_record_iterator))) {
+	while ((config_record_point = (struct config_record *)
+				      list_next(config_record_iterator))) {
 		FREE_NULL_BITMAP(config_record_point->node_bitmap);
-
 		config_record_point->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
 		if (config_record_point->node_bitmap == NULL)
-			fatal("bit_alloc memory allocation failure");
+			fatal ("memory allocation failure");
 	}
 	list_iterator_destroy(config_record_iterator);
 
@@ -124,15 +123,13 @@ static int _build_bitmaps(void)
 
 		if (node_record_table_ptr[i].name[0] == '\0')
 			continue;	/* defunct */
-		base_state =
-		    node_record_table_ptr[i].node_state & 
-		    (~NODE_STATE_NO_RESPOND);
-		no_resp_flag =
-		    node_record_table_ptr[i].node_state & 
-		    NODE_STATE_NO_RESPOND;
+		base_state   = node_record_table_ptr[i].node_state & 
+			       (~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_record_table_ptr[i].node_state & 
+			       NODE_STATE_NO_RESPOND;
 		if (base_state == NODE_STATE_IDLE)
 			bit_set(idle_node_bitmap, i);
-		if ((base_state != NODE_STATE_DOWN) &&
+		if ((base_state != NODE_STATE_DOWN)    &&
 		    (base_state != NODE_STATE_UNKNOWN) &&
 		    (base_state != NODE_STATE_DRAINED) &&
 		    (no_resp_flag == 0))
@@ -145,11 +142,10 @@ static int _build_bitmaps(void)
 	/* scan partition table and identify nodes in each */
 	all_part_node_bitmap = (bitstr_t *) bit_alloc(node_record_count);
 	if (all_part_node_bitmap == NULL)
-		fatal("bit_alloc memory allocation failure");
+		fatal ("memory allocation failure");
 	part_record_iterator = list_iterator_create(part_list);
 	if (part_record_iterator == NULL)
-		fatal
-		    ("_build_bitmaps: list_iterator_create unable to allocate memory");
+		fatal ("memory allocation failure");
 
 	while ((part_record_point =
 		(struct part_record *) list_next(part_record_iterator))) {
@@ -157,7 +153,7 @@ static int _build_bitmaps(void)
 		part_record_point->node_bitmap =
 		    (bitstr_t *) bit_alloc(node_record_count);
 		if (part_record_point->node_bitmap == NULL)
-			fatal("bit_alloc memory allocation failure");
+			fatal ("memory allocation failure");
 
 		/* check for each node in the partition */
 		if ((part_record_point->nodes == NULL) ||
@@ -209,9 +205,10 @@ static int _build_bitmaps(void)
 
 /* 
  * _init_all_slurm_conf - initialize or re-initialize the slurm 
- *	configuration values.   
- * RET 0 if no error, otherwise an error code
- * Note: Operates on common variables, no arguments
+ *	configuration values.  
+ * RET 0 if no error, otherwise an error code.
+ * NOTE: We leave the job table intact
+ * NOTE: Operates on common variables, no arguments
  */
 static int _init_all_slurm_conf(void)
 {
@@ -314,7 +311,7 @@ static int _parse_node_spec(char *in_line)
 			free(this_node_name);
 			this_node_name = malloc(128);
 			if (this_node_name == NULL)
-				fatal("memory allocation failure");
+				fatal ("memory allocation failure");
 			getnodename(this_node_name, 128);
 		}
 		if (strcasecmp(this_node_name, "DEFAULT") == 0) {
@@ -593,7 +590,7 @@ static int _parse_part_spec(char *in_line)
 			xfree(nodes);
 			nodes = xmalloc(128);
 			if (nodes == NULL)
-				fatal("memory allocation failure");
+				fatal ("memory allocation failure");
 			getnodename(nodes, 128);
 		}
 		part_record_point->nodes = nodes;
@@ -728,33 +725,35 @@ int read_slurm_conf(int recover)
 	}
 
 	rehash();
-	if (old_node_table_ptr) {
-		info("restoring original state of nodes");
-		for (i = 0; i < old_node_record_count; i++) {
-			node_record_point =
-			    find_node_record(old_node_table_ptr[i].name);
-			if (node_record_point)
-				node_record_point->node_state =
-				    old_node_table_ptr[i].node_state;
-		}
-		xfree(old_node_table_ptr);
-	}
 	set_slurmd_addr();
 
 	if (recover) {
 		(void) load_all_node_state();
 		(void) load_all_part_state();
 		(void) load_all_job_state();
+	} else {
+		if (old_node_table_ptr) {
+			info("restoring original state of nodes");
+			for (i = 0; i < old_node_record_count; i++) {
+				node_record_point  = 
+				  find_node_record(old_node_table_ptr[i].name);
+				if (node_record_point)
+					node_record_point->node_state =
+					    old_node_table_ptr[i].node_state;
+			}
+		}
+		reset_job_bitmaps();
 	}
+	(void) _sync_nodes_to_jobs();
 	(void) sync_job_files();
+	xfree(old_node_table_ptr);
 
 	if ((error_code = _build_bitmaps()))
 		return error_code;
 #ifdef 	HAVE_LIBELAN3
 	_validate_node_proc_count();
 #endif
-	if (recover)
-		(void) _sync_nodes_to_jobs();
+	(void) _sync_nodes_to_comp_job();
 
 	load_part_uid_allow_list(1);
 
@@ -816,10 +815,8 @@ static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
 
 /*
  * _sync_nodes_to_jobs - sync node state to job states on slurmctld restart.
- *	we perform "lazy" updates on node states due to their number (assumes  
- *	number of jobs is much smaller than the number of nodes). This   
- *	routine marks nodes allocated to a job as busy no matter what the  
- *	node's last saved state 
+ *	This routine marks nodes allocated to a job as busy no matter what 
+ *	the node's last saved state 
  * RET count of nodes having state changed
  * Note: Operates on common variables, no arguments
  */
@@ -827,34 +824,73 @@ static int _sync_nodes_to_jobs(void)
 {
 	struct job_record *job_ptr;
 	ListIterator job_record_iterator;
-	int i, update_cnt = 0;
-	uint16_t no_resp_flag;
+	int update_cnt = 0;
 
 	job_record_iterator = list_iterator_create(job_list);
-	while ((job_ptr =
-		(struct job_record *) list_next(job_record_iterator))) {
-		if (job_ptr->job_state > JOB_COMPLETING)
-			continue;
+	while ((job_ptr = (struct job_record *) 
+			  list_next(job_record_iterator))) {
 		if (job_ptr->node_bitmap == NULL)
 			continue;
-		for (i = 0; i < node_record_count; i++) {
-			if (bit_test(job_ptr->node_bitmap, i) == 0)
-				continue;
-			node_record_table_ptr[i].job_cnt++;
-			if (node_record_table_ptr[i].node_state ==
-			    NODE_STATE_ALLOCATED)
-				continue;	/* already in proper state */
+
+		if ((job_ptr->job_state == JOB_RUNNING) ||
+		    (job_ptr->job_state &  JOB_COMPLETING))
+			update_cnt += _sync_nodes_to_run_job(job_ptr);
+	}
+	if (update_cnt)
+		info("_sync_nodes_to_jobs updated state of %d nodes",
+		     update_cnt);
+	return update_cnt;
+}
+
+/* For jobs which are in state COMPLETING, deallocate the nodes and 
+ * issue the RPC to revoke credentials */
+static int _sync_nodes_to_comp_job(void)
+{
+	struct job_record *job_ptr;
+	ListIterator job_record_iterator;
+	int update_cnt = 0;
+
+	job_record_iterator = list_iterator_create(job_list);
+	while ((job_ptr = (struct job_record *) 
+			  list_next(job_record_iterator))) {
+		if ((job_ptr->node_bitmap) &&
+		    (job_ptr->job_state & JOB_COMPLETING)) {
 			update_cnt++;
-			no_resp_flag = node_record_table_ptr[i].node_state & 
-				       NODE_STATE_NO_RESPOND;
-			node_record_table_ptr[i].node_state =
-				    NODE_STATE_ALLOCATED | no_resp_flag;
+			info("Revoking credentials for job_id %u",
+			     job_ptr->job_id);
+			deallocate_nodes(job_ptr);
 		}
 	}
 	if (update_cnt)
 		info("_sync_nodes_to_jobs updated state of %d nodes",
 		     update_cnt);
 	return update_cnt;
+}
+
+static int _sync_nodes_to_run_job(struct job_record *job_ptr)
+{
+	int i, cnt = 0;
+	uint16_t base_state, no_resp_flag;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		node_record_table_ptr[i].run_job_cnt++;
+		base_state = node_record_table_ptr[i].node_state & 
+			     (~NODE_STATE_NO_RESPOND);
+		if (base_state == NODE_STATE_DOWN)
+			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
+		if ((base_state == NODE_STATE_UNKNOWN) || 
+		    (base_state == NODE_STATE_IDLE)    ||
+		    (base_state == NODE_STATE_DRAINED)) {
+			cnt++;
+			no_resp_flag = node_record_table_ptr[i].node_state & 
+				       NODE_STATE_NO_RESPOND;
+			node_record_table_ptr[i].node_state =
+				    NODE_STATE_ALLOCATED | no_resp_flag;
+		}
+	}
+	return cnt;
 }
 
 #ifdef 	HAVE_LIBELAN3
