@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
  -- Added support for job account information (arbitrary string)
  -- Added support for job dependencies (start job X after job Y completes)
  -- Added support for configuration parameter CheckpointType
+ -- Added new job state "CANCELLED".
 
 * Changes in SLURM 0.3.7
 ========================
