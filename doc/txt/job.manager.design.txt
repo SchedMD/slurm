@@ -1,6 +1,5 @@
 SLURM Job Manager
 Moe Jette
-December 17, 2001
 
 
 Job Submission
@@ -10,13 +9,56 @@ which is expected to be constructed by a front-end program (e.g.
 prun or poe). The specification contains the following fields:
 
 Name       The name of the user submitting the job (required)
-Partition  The name of the partition on which the job should execute (optional)
-Time       Maximum execution period of the job. This execution may be 
+JobType    INTERACTIVE or BATCH (required)
+MaxTime    Maximum execution period of the job. This execution may be 
            provided in more than one piece via gang scheduling (job preemption). 
            The default value is unlimited, which is indicated with a value of -1.
-CPUs       Count of CPUs desired, default value is 1
+Distribute Distribution patter of tasks, FILL or ROUND. FILL will place a 
+           full complement of tasks in sequential order on each node before 
+           scheduling the next node. ROUND will distribute tasks in sequential 
+           order one per node before scheduling additional tasks on any node.
+CpuCount   Total count of CPUs desired
+NodeCount  Total number of nodes desired
 NodeList   Explicit comma separated list of desired nodes. This is optional. 
            If specified, the CPUs parameter will be computed and all partition  
            configuration specifications must still be satisfied. These nodes need  
            not be in a single partition.
-JobType    INTERACTIVE, BATCH, or ALL (required)
+TaskCount  Total count of tasks desired
+
+Node configuration requirements, all optional:
+MinCpus           Minimum acceptable processor count per node
+MinSpeed          Minimum acceptable processor speed
+MinOS             Minimum acceptable operating system level
+MinTmpDisk        Minimum acceptable temporary disk space per node in MegaBytes
+MinRealMemory     Minimum acceptable real memory per node in MegaBytes
+MinVirtualMemory  Minimum acceptable real memory per node in MegaBytes
+Partition         The name of the partition on which the job should execute
+
+
+Node Selection Process:
+
+IF NodeList provided THEN
+    IF each node satisfies job configuration requirements 
+      AND each node is available to the user  
+      AND all partition limits satisfied 
+      AND CpuCount limit satisfied 
+      AND NodeCount limit satisfied THEN allocate the nodes
+
+ELSE IF NodeCount provided THEN
+    build list of nodes that satisfy job configuration requirements 
+    FOR each node in list
+      IF node satisfies job configuration requirements 
+        AND node is available to the user  
+        AND all partition limits satisfied 
+        THEN include the node in selection list until NodeCount and CpuCount satisfied
+    IF NodeCount and CpuCount satisfied THEN allocate the selection nodes
+
+ELSE IF CpuCount provided THEN
+    build list of nodes that satisfy job configuration requirements 
+    FOR each node in list
+      IF node satisfies job configuration requirements 
+        AND node is available to the user  
+        AND all partition limits satisfied 
+        THEN include the node in selection list until CpuCount satisfied
+    IF NodeCount and CpuCount satisfied THEN allocate the selection nodes
+
