@@ -198,7 +198,7 @@ slurm_auth_get_arg_desc( void )
 	return auth_args;
 }
 
-void **
+static void **
 slurm_auth_marshal_args( void *hosts, int timeout )
 {
 	static int hostlist_idx = -1;
@@ -222,12 +222,6 @@ slurm_auth_marshal_args( void *hosts, int timeout )
 	argv[ timeout_idx ] = (void *) timeout;
 
 	return argv;
-}
-
-
-void slurm_auth_free_args( void **argv )
-{
-	xfree( argv );
 }
 
 
@@ -346,12 +340,21 @@ slurm_auth_init( void )
  */
 	  
 void *
-g_slurm_auth_create( void *argv[] )
+g_slurm_auth_create( void *hosts, int timeout )
 {
+	void **argv;
+	void *ret;
+	
 	if ( slurm_auth_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.create))( argv );
+	if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
+		return NULL;
+	}
+
+	ret = (*(g_context->ops.create))( argv );
+	xfree( argv );
+	return ret;
 }
 
 int
@@ -364,12 +367,21 @@ g_slurm_auth_destroy( void *cred )
 }
 
 int
-g_slurm_auth_verify( void *cred, void *argv[] )
+g_slurm_auth_verify( void *cred, void *hosts, int timeout )
 {
+	int ret;
+	void **argv;
+	
 	if ( slurm_auth_init() < 0 )
 		return SLURM_ERROR;
+
+	if ( ( argv = slurm_auth_marshal_args( hosts, timeout ) ) == NULL ) {
+		return SLURM_ERROR;
+	}
 	
-	return (*(g_context->ops.verify))( cred, argv );
+	ret = (*(g_context->ops.verify))( cred, argv );
+	xfree( argv );
+	return ret;
 }
 
 uid_t

@@ -334,7 +334,6 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	int rc;
 	void *auth_cred;
 	Buf buffer;
-	void **argv;
 
 	buftemp = xmalloc(SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE);
 	if ((rc = _slurm_msg_recvfrom(open_fd, buftemp,
@@ -366,14 +365,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	}
 
 	/* verify credentials */
-	argv = slurm_auth_marshal_args( NULL, 2 );
-	if ( argv == NULL ) {
-		(void) g_slurm_auth_destroy( auth_cred );
-		free_buf( buffer );
-		slurm_seterrno_ret( SLURM_PROTOCOL_AUTHENTICATION_ERROR );
-	}
-	rc = g_slurm_auth_verify( auth_cred, argv );	
-	slurm_auth_free_args( argv );
+	rc = g_slurm_auth_verify( auth_cred, NULL, 2 );	
 	if ( rc != SLURM_SUCCESS) {
 		error( "authentication: %s ",
 			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
@@ -439,16 +431,9 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	unsigned int msg_len, tmp_len;
 	Buf buffer;
 	void *auth_cred;
-	void **argv;
 
 	/* initialize header */
-	argv = slurm_auth_marshal_args( NULL, 1 );
-	if ( argv == NULL ) {
-		error( "cannot marshal arguments to create credential" );
-		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
-	}	
-	auth_cred = g_slurm_auth_create( argv );
-	slurm_auth_free_args( argv );
+	auth_cred = g_slurm_auth_create( NULL, 2 );
 	if ( auth_cred == NULL ) {
 		error( "authentication: %s",
 			   g_slurm_auth_errstr( g_slurm_auth_errno( NULL ) ) );
