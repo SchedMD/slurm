@@ -19,8 +19,9 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 
-#include "slurmlib.h"
 #include "pack.h"
+
+#include "slurm.h"
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */

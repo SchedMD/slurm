@@ -22,8 +22,8 @@
 #include <unistd.h>
 
 #include "pack.h"
-#include "slurmlib.h"
-#include "bits_bytes.h"
+#include "slurm.h"
+#include "nodelist.h"
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
