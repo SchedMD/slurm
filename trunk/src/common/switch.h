@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -41,7 +41,8 @@
 /* opaque data structures - no peeking! */
 #ifndef __switch_jobinfo_t_defined
 #  define __switch_jobinfo_t_defined
-   typedef struct switch_jobinfo *switch_jobinfo_t;
+   typedef struct switch_jobinfo   *switch_jobinfo_t;
+   typedef struct switch_node_info *switch_node_info_t;
 #endif
 typedef struct slurm_switch_context * slurm_switch_context_t;
 
