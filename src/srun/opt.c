@@ -65,18 +65,6 @@
 #include "src/srun/opt.h"
 #include "src/srun/attach.h"
 
-/*
- *  Instantiate extern variables from attach.h
- */
-   MPIR_PROCDESC *MPIR_proctable;
-   int MPIR_proctable_size;
-   VOLATILE int MPIR_debug_state;
-   VOLATILE int MPIR_debug_gate;
-   int MPIR_being_debugged;
-   int MPIR_i_am_starter;
-   int MPIR_acquired_pre_main;
-   char *totalview_jobid;
-
 /* generic OPT_ definitions -- mainly for use with env vars  */
 #define OPT_NONE        0x00
 #define OPT_INT         0x01
