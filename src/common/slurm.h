@@ -114,6 +114,17 @@ extern char Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
 extern struct Part_Record *Default_Part_Loc;	/* Location of default partition */
 
 /*
+ * BitMap2NodeName - Given a bitmap, build a node list representation
+ * Input: BitMap - Bitmap pointer
+ *        Node_List - Place to put node list
+ * Output: Node_List - Set to node list or NULL on error 
+ *         Returns 0 if no error, otherwise EINVAL or ENOMEM
+ * NOTE: Consider returning the node list as a regular expression if helpful
+ * NOTE: The caller must free memory at Node_List when no longer required
+ */
+int BitMap2NodeName(unsigned *BitMap, char **Node_List);
+
+/*
  * BitMapAND - AND two bitmaps together
  * Input: BitMap1 and BitMap2 - The bitmaps to AND
  * Output: BitMap1 is set to the value of BitMap1 & BitMap2
@@ -320,6 +331,16 @@ extern int Load_Integer(int *destination, char *keyword, char *In_Line);
  * NOTE: In_Line is overwritten, DO NOT USE A CONSTANT
  */
 extern int Load_String(char **destination, char *keyword, char *In_Line);
+
+/*
+ * NodeName2BitMap - Given a node list, build a bitmap representation
+ * Input: Node_List - List of nodes
+ *        BitMap - Place to put bitmap pointer
+ * Output: BitMap - Set to bitmap or NULL on error 
+ *         Returns 0 if no error, otherwise EINVAL or ENOMEM
+ * NOTE: The caller must free memory at BitMap when no longer required
+ */
+int NodeName2BitMap(char *Node_List, unsigned **BitMap);
 
 /* 
  * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
