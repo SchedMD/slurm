@@ -41,6 +41,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include <src/common/hostlist.h>
 #include <src/common/log.h>
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_api.h>
@@ -1335,30 +1336,4 @@ usage (char *prog_name)
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");
-}
-
-/* getnodename - equivalent to gethostname, but return only the first component of the fully 
- *	qualified name (e.g. "linux123.foo.bar" becomes "linux123") */
-int
-getnodename (char *name, size_t len)
-{
-	int error_code, name_len;
-	char *dot_ptr, path_name[1024];
-
-	error_code = gethostname (path_name, sizeof(path_name));
-	if (error_code)
-		return error_code;
-
-	dot_ptr = strchr (path_name, '.');
-	if (dot_ptr == NULL)
-		dot_ptr = path_name + strlen(path_name);
-	else
-		dot_ptr[0] = '\0';
-
-	name_len = (dot_ptr - path_name);
-	if (name_len > len)
-		return ENAMETOOLONG;
-
-	strcpy (name, path_name);
-	return 0;
 }

@@ -1,10 +1,29 @@
-/* $Id$
- *
- * by Mark Grondona <mgrondona@llnl.gov>
- *
- * See hostlist.h for documentation of public interface.
- *
- */
+/*****************************************************************************\
+ *  hostlist.c - hostname list manipulation routines
+ *  See hostlist.h for documentation of public interface.
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <mgrondona@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
@@ -24,8 +43,9 @@
 #include <assert.h>
 #include <errno.h>
 #include <ctype.h>
+#include <unistd.h>
 
-#include "hostlist.h"
+#include <src/common/hostlist.h>
 
 /* number of elements to allocate when extending the hostlist array */
 #define HOSTLIST_CHUNK	16
@@ -2343,7 +2363,32 @@ hostset_count(hostset_t set)
 	return hostlist_count((hostlist_t) set);
 }
 
-		
+/* getnodename - equivalent to gethostname, but return only the first component of the fully 
+ *	qualified name (e.g. "linux123.foo.bar" becomes "linux123") */
+int
+getnodename (char *name, size_t len)
+{
+	int error_code, name_len;
+	char *dot_ptr, path_name[1024];
+
+	error_code = gethostname (path_name, sizeof(path_name));
+	if (error_code)
+		return error_code;
+
+	dot_ptr = strchr (path_name, '.');
+	if (dot_ptr == NULL)
+		dot_ptr = path_name + strlen(path_name);
+	else
+		dot_ptr[0] = '\0';
+
+	name_len = (dot_ptr - path_name);
+	if (name_len > len)
+		return ENAMETOOLONG;
+
+	strcpy (name, path_name);
+	return 0;
+}
+
 #if TEST_MAIN 
 
 int hostlist_nranges(hostlist_t hl)

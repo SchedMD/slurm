@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 
 #include <src/common/slurm_protocol_defs.h>
@@ -56,7 +57,7 @@ int read_io_stream_header ( slurm_io_stream_header_t * header , int fd )
 	int size = sizeof ( slurm_io_stream_header_t ) ;
 	int read_size ;
 	
-	read_size = slurm_read_stream ( fd , buffer , sizeof ( slurm_io_stream_header_t ) ) ;
+	read_size = slurm_read_stream ( fd , buffer , buf_size ) ;
 	unpack_io_stream_header ( header , (void ** ) & buf_ptr , & size ) ;
 	return read_size ;
 }
