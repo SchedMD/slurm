@@ -130,8 +130,12 @@ main (int argc, char *argv[]) {
 
 	cycles = atoi (argv[2]);
 	printf ("let's reinitialize the database %d times.\n", cycles);
-	if (getrusage (RUSAGE_SELF, &begin_usage))
+	if (getrusage (RUSAGE_CHILDREN, &begin_usage))
 		printf ("ERROR %d from getrusage\n", errno);
+	else if (begin_usage.ru_maxrss == 0) {
+		printf ("WARNING: getrusage inopeative, run /bin/ps and check for memory leak\n");
+		sleep (5);
+	}
 	for (i = 0; i < cycles; i++) {
 		error_code = init_slurm_conf ();
 		if (error_code) {
@@ -147,12 +151,16 @@ main (int argc, char *argv[]) {
 			exit (error_code);
 		}		
 	}			
-	if (getrusage (RUSAGE_SELF, &end_usage))
+	if (getrusage (RUSAGE_CHILDREN, &end_usage))
 		printf ("error %d from getrusage\n", errno);
 	i = (int) (end_usage.ru_maxrss - begin_usage.ru_maxrss);
 	if (i > 0) {
-	    printf ("ERROR: Change in maximum RSS is %d.\n", i);
-	    error_code = ENOMEM;
+		printf ("ERROR: Change in maximum RSS is %d.\n", i);
+		error_code = ENOMEM;
+	}
+	else if (end_usage.ru_maxrss == 0) {
+		printf ("WARNING: getrusage inopeative, run /bin/ps and check for memory leak\n");
+		sleep (10);
 	}
 
 	exit (error_code);
