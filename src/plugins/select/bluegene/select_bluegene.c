@@ -180,6 +180,7 @@ extern int fini ( void )
 		fatal("Error, could not create the static partitions");
 		return SLURM_ERROR;
 	}
+	sort_bgl_record_inc_size(bgl_list);
 #endif
 
 	return SLURM_SUCCESS; 
