@@ -14,7 +14,6 @@ int32_t main ( int32_t argc , char * argv[] )
 	/* declare address structures */
 	slurm_addr listen_address ;
 	slurm_addr worker_address ;
-	struct sockaddr_in test ;
 
 	uint32_t buffer_len = 1024 ;
 	char buf_temp [ buffer_len ] ;
@@ -24,10 +23,7 @@ int32_t main ( int32_t argc , char * argv[] )
 	uint32_t length_io ;
 		
 	/* init address sturctures */
-	set_slurm_addr_hton ( & listen_address , 32000 , 0x7f000001 ) ;
-	test . sin_family = AF_INET ;
-	test . sin_addr . s_addr = htonl ( 0x7f000001 ) ;
-	test . sin_port = htons ( 32000 ) ;
+	set_slurm_addr_hton ( & listen_address , 7000, 0x7f000001 ) ;
 	/* open and listen on socket */
 	listen_socket = slurm_listen_stream ( & listen_address ) ;
 	/* accept socket */
