@@ -55,11 +55,14 @@
 #include "src/api/slurm.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/parse_spec.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 #include "src/common/cbuf.h"
 
 #define	BUF_SIZE 1024
+#define MAX_NAME_LEN 64
 #define	MAX_INPUT_FIELDS 128
 
 static char *command_name;
@@ -68,8 +71,11 @@ static int quiet_flag;			/* quiet=1, verbose=-1, normal=0 */
 static int input_words;			/* number of words of input permitted */
 
 static int	_get_command (int *argc, char *argv[]);
+static void	_parse_conf_line (char *in_line, bool *have_slurmctld, 
+				  bool *have_slurmd);
 static void	_pid2jid(pid_t job_pid);
 static void	_print_config (char *config_param);
+static void     _print_daemons (void);
 static void	_print_job (char * job_id_str);
 static void	_print_node (char *node_name, node_info_msg_t *node_info_ptr);
 static void	_print_node_list (char *node_list);
@@ -132,6 +138,7 @@ main (int argc, char *argv[])
 	exit (error_code);
 }
 
+#if !HAVE_READLINE
 /*
  * Alternative to readline if readline is not available
  */
@@ -149,7 +156,7 @@ getline(const char *prompt)
 	line = malloc (len * sizeof(char));
 	return strncpy(line, buf, len);
 }
-
+#endif
 
 /*
  * _get_command - get a command from the user
@@ -271,6 +278,127 @@ _print_config (char *config_param)
 	slurm_print_ctl_conf (stdout, slurm_ctl_conf_ptr) ;
 }
 
+
+/*
+ * _print_daemons - report what daemons should be running on this node
+ */
+static void
+_print_daemons (void)
+{
+	char daemon_list[] = "slurmctld slurmd";
+	FILE *slurm_spec_file;
+	int line_num, line_size, i, j;
+	char in_line[BUF_SIZE];
+	bool have_slurmctld = false, have_slurmd = false;
+
+	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
+	if (slurm_spec_file == NULL) {
+		if (quiet_flag == -1)
+			fprintf(stderr, "Can't open %s\n", 
+				SLURM_CONFIG_FILE);
+		exit(1);
+	}
+
+	/* process the data file */
+	line_num = 0;
+	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
+		line_num++;
+		line_size = strlen (in_line);
+		if (line_size >= (BUF_SIZE - 1)) {
+			if (quiet_flag == -1)
+				fprintf(stderr, 
+					"Line %d of config file %s too long\n", 
+					line_num, SLURM_CONFIG_FILE);
+			continue;	/* bad config file */
+		}
+
+		/* everything after a non-escaped "#" is a comment      */
+		/* replace comment flag "#" with a `\0' (End of string) */
+		/* an escaped value "\#" is translated to "#"           */
+		/* this permitted embedded "#" in node/partition names  */
+		for (i = 0; i < line_size; i++) {
+			if (in_line[i] == '\0')
+				break;
+			if (in_line[i] != '#')
+				continue;
+			if ((i > 0) && (in_line[i - 1] == '\\')) {
+				for (j = i; j < line_size; j++) {
+					in_line[j - 1] = in_line[j];
+				}
+				line_size--;
+				continue;
+			}
+			in_line[i] = '\0';
+			break;
+		}
+
+		_parse_conf_line (in_line, 
+				  &have_slurmctld, &have_slurmd);
+		if (have_slurmctld && have_slurmd)
+			break;
+	}
+	fclose (slurm_spec_file);
+
+	strcpy(daemon_list, "");
+	if (have_slurmctld)
+		strcat(daemon_list, "slurmctld ");
+	if (have_slurmd)
+		strcat(daemon_list, "slurmd");
+	fprintf (stdout, "%s\n", daemon_list) ;
+}
+
+/*  _parse_conf_line - determine if slurmctld or slurmd location identified */
+static void _parse_conf_line (char *in_line, 
+			      bool *have_slurmctld, bool *have_slurmd)
+{
+	int error_code;
+	char *backup_controller = NULL, *control_machine = NULL;
+	char *node_name = NULL;
+	static char *this_host = NULL;
+
+	error_code = slurm_parser (in_line,
+		"BackupController=", 's', &backup_controller,
+		"ControlMachine=", 's', &control_machine,
+		"NodeName=", 's', &node_name,
+		"END");
+	if (error_code) {
+		if (quiet_flag == -1)
+			fprintf(stderr, "Can't parse %s of %s\n",
+				in_line, SLURM_CONFIG_FILE);
+		return;
+	}
+
+	if (this_host == NULL) {
+		this_host = xmalloc(MAX_NAME_LEN);
+		getnodename(this_host, MAX_NAME_LEN);
+	}
+
+	if (backup_controller) {
+		if ((strcmp(backup_controller, this_host) == 0) ||
+		    (strcasecmp(backup_controller, "localhost") == 0))
+			*have_slurmctld = true;
+		xfree(backup_controller);
+	}
+	if (control_machine) {
+		if ((strcmp(control_machine, this_host) == 0) ||
+		    (strcasecmp(control_machine, "localhost") == 0))
+			*have_slurmctld = true;
+		xfree(control_machine);
+	}
+	if (node_name) {
+		char *node_entry;
+		hostlist_t node_list = hostlist_create(node_name);
+		while ((*have_slurmd == false) && 
+		       (node_entry = hostlist_shift(node_list)) ) {
+			if ((strcmp(node_entry, this_host) == 0) || 
+			    (strcmp(node_entry, "localhost") == 0))
+				*have_slurmd = true;
+			free(node_entry);
+		}
+		hostlist_destroy(node_list);
+		xfree(node_name);
+	}
+}
 
 /*
  * _print_job - print the specified job's information
@@ -680,6 +808,13 @@ _process_command (int argc, char *argv[])
 			else
 				_print_config (NULL);
 		}
+		else if (strncasecmp (argv[1], "daemons", 5) == 0) {
+			if ((argc > 2) && (quiet_flag != 1))
+				fprintf(stderr,
+				        "too many arguments for keyword:%s\n", 
+				        argv[0]);
+			_print_daemons ();
+		}
 		else if (strncasecmp (argv[1], "jobs", 3) == 0) {
 			if (argc > 2)
 				_print_job (argv[2]);
@@ -1062,7 +1197,7 @@ _usage () {
 	printf ("     version                  display tool version number.\n");
 	printf ("     pid2jid <process_id>     return slurm job id for given pid.\n");
 	printf ("     !!                       Repeat the last command entered.\n");
-	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or \"step\".\n");
+	printf ("  <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\" or \"step\".\n");
 	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
 	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
 	printf ("     The job step id is the job id followed by a period and the step id.\n");
