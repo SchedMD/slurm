@@ -83,7 +83,7 @@ parse_command_line( int argc, char* argv[] )
 
 	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	while((opt_char = getopt_long(argc, argv, "?hi:j::lo:p:s::S:t:u:vV",
+	while((opt_char = getopt_long(argc, argv, "hHi:j::lo:p:s::S:t:u:vV",
 			long_options, &option_index)) != -1) {
 		switch (opt_char) {
 			case (int)'?':
