@@ -262,7 +262,10 @@ extern int delete_part_record (char *name);
 extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 
 /* dump_job_desc - dump the incoming job submit request message */
-void dump_job_desc(job_desc_msg_t * job_specs);
+extern void dump_job_desc(job_desc_msg_t * job_specs);
+
+/* dump_step_desc - dump the incoming step initiate request message */
+extern void dump_step_desc(step_specs *step_spec);
 
 /*  find_job_record - return a pointer to the job record with the given job_id */
 extern struct job_record *find_job_record (uint32_t job_id);

@@ -59,7 +59,7 @@ create_step_record (struct job_record *job_ptr)
 
 	step_record_point->job_ptr = job_ptr; 
 	step_record_point->step_id = (job_ptr->next_step_id)++;
-	step_record_point->start_time = time( NULL ) ;
+	step_record_point->start_time = time ( NULL ) ;
 
 	if (list_append (job_ptr->step_list, step_record_point) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
@@ -102,6 +102,20 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 
 	list_iterator_destroy (step_record_iterator);
 	return error_code;
+}
+
+
+/* dump_step_desc - dump the incoming step initiate request message */
+void
+dump_step_desc(step_specs *step_spec)
+{
+	if (step_spec == NULL) 
+		return;
+
+	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u\n", 
+		step_spec->user_id, step_spec->job_id, step_spec->node_count, step_spec->cpu_count);
+	debug3("   relative=%u node_list=%s\n", 
+		step_spec->relative, step_spec->node_list);
 }
 
 
@@ -266,29 +280,35 @@ pick_step_nodes (struct job_record  *job_ptr, step_specs *step_spec ) {
 	if (job_ptr->node_bitmap == NULL)
 		return NULL;
 	
-	nodes_avail = bit_copy(job_ptr->node_bitmap);
+	nodes_avail = bit_copy (job_ptr->node_bitmap);
 
 	if ( step_spec->node_count == INFINITE)	/* return all available nodes */
 		return nodes_avail;
 
 	if (step_spec->node_list) {
-		if ( step_spec->relative ) {
-			/* FIXME need to resolve format of relative_node_list */
-			info ("pick_step_nodes: relative_node_list not yet supported");
-
-		} 
-		else {
-			error_code = node_name2bitmap (step_spec->node_list, &nodes_picked);
-			if (error_code) {
-				info ("pick_step_nodes: invalid node list %s", step_spec->node_list);
-				goto cleanup;
-			}
-			if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
-				info ("pick_step_nodes: requested nodes %s not part of job %u",
-					step_spec->node_list, job_ptr->job_id);
-				goto cleanup;
-			}
+		error_code = node_name2bitmap (step_spec->node_list, &nodes_picked);
+		if (error_code) {
+			info ("pick_step_nodes: invalid node list %s", step_spec->node_list);
+			goto cleanup;
 		}
+		if (bit_super_set (nodes_picked, job_ptr->node_bitmap) == 0) {
+			info ("pick_step_nodes: requested nodes %s not part of job %u",
+				step_spec->node_list, job_ptr->job_id);
+			goto cleanup;
+		}
+	}
+	else if (step_spec->relative) {
+		/* Remove first (step_spec->relative) nodes from available list */
+		bitstr_t *relative_nodes = NULL;
+		relative_nodes = bit_pick_cnt (nodes_avail, step_spec->relative);
+		if (relative_nodes == NULL) {
+			info ("pick_step_nodes: Invalid relative value (%u) for job %u",
+				step_spec->relative, job_ptr->job_id);
+			goto cleanup;
+		}
+		bit_not (relative_nodes);
+		bit_and (nodes_avail, relative_nodes);
+		bit_free (relative_nodes);
 	}
 	else
 		nodes_picked = bit_alloc (bit_size (nodes_avail) );
@@ -376,6 +396,12 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	if (step_specs->user_id != job_ptr->user_id &&
 	    	step_specs->user_id != 0) 
 		return ESLURM_ACCESS_DENIED ;
+
+	if ((job_ptr->job_state == JOB_COMPLETE) || 
+	    (job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_TIMEOUT) ||
+	    (job_ptr->job_state == JOB_STAGE_OUT))
+		return ESLURM_ALREADY_DONE;
 
 	nodeset = pick_step_nodes (job_ptr, step_specs );
 

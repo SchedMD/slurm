@@ -300,7 +300,7 @@ dump_job_desc(job_desc_msg_t * job_specs)
 		return;
 
 	job_id = (job_specs->job_id != NO_VAL) ? job_specs->job_id : -1 ;
-	debug3("JobDesc: user_id=%u job_id=%ld partition=%s, name=%s\n", 
+	debug3("JobDesc: user_id=%u job_id=%ld partition=%s name=%s\n", 
 		job_specs->user_id, job_id, 
 		job_specs->partition, job_specs->name);
 

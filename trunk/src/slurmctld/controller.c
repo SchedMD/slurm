@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * controller.c - main control machine daemon for slurm
+ *  controller.c - main control machine daemon for slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -1184,6 +1184,8 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 
 	start_time = clock ();
 
+	/* issue the RPC */
+	dump_step_desc ( req_step_msg );
 	error_code = step_create ( req_step_msg, &step_rec );
 
 	/* return result */
