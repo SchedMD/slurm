@@ -185,6 +185,7 @@ AC_MSG_RESULT(${elan=no})
 AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
 HAVE_ELAN=0
 if test $with_elan; then
+  savedLIBS="$LIBS"
   AC_CHECK_LIB(elan3, elan3_create,
     [], 
     [AC_MSG_ERROR([unable to find the Elan3 library needed for Elan support.])], 
@@ -194,10 +195,13 @@ if test $with_elan; then
     [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
   )
   HAVE_ELAN=1
+  ELAN_LIBS="-lelan3 -lrmscall"
+  LIBS="$savedLIBS" 
 fi
 
 AC_DEFINE_UNQUOTED(HAVE_ELAN, "$HAVE_ELAN", [Define to enable Elan support.])
 AC_SUBST(HAVE_ELAN)
+AC_SUBST(ELAN_LIBS)
 
 dnl Check for whether to include readline support
 dnl 
