@@ -37,6 +37,7 @@ char* bgl_conf = BLUEGENE_CONFIG_FILE;
 /* Global variables */
 rm_BGL_t *bgl;
 List bgl_list = NULL;			/* list of bgl_record entries */
+List bgl_curr_part_list = NULL;  	/* current bgl partitions */
 char *bluegene_blrts = NULL, *bluegene_linux = NULL, *bluegene_mloader = NULL;
 char *bluegene_ramdisk = NULL;
 bool agent_fini = false;
@@ -70,7 +71,7 @@ int create_static_partitions(List part_list)
 #ifdef HAVE_BGL_FILES
 /* FIXME: we really do want to validate configuration here in any case,
  * I just took this out on a temporary basis */
-	ListIterator itr;
+	ListIterator itr, itr_curr;
 	int number, j=0;
 	int x, y, z;
 	int start[PA_SYSTEM_DIMENSIONS];
@@ -108,7 +109,7 @@ int create_static_partitions(List part_list)
 /* 	printf("done copying\n"); */
 /* 	_process_config(); */
 
-/* 	if ((rc = _validate_config_nodes())) { */
+ 	if ((rc = _validate_config_nodes())) { 
 
 	/******************************************************************/
 
@@ -136,10 +137,11 @@ int create_static_partitions(List part_list)
 	part_id[18]="RMP119";
 	part_id[19]="RMP120";
 	bp_num=1;
-	//rm_get_data(bgl, RM_BPNum, &bp_num);
-	//rm_get_data(bgl, RM_FirstBP, &bp);
+
 	for (i=0; i<bp_num; i++){
-		//	rm_get_data(bp, RM_BPPartID, &part_id);
+//        itr_curr = list_iterator_create(bgl_curr_part_list);
+//        while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
+//                part_id=init_record->bgl_part_id;
 		if ((rc = rm_get_partition(part_id[i], &my_part))
 		    != STATUS_OK) {
 		} else {
@@ -236,7 +238,7 @@ int create_static_partitions(List part_list)
 	
 	list_iterator_destroy(itr);
 	rc = SLURM_SUCCESS;
-/* 	} */
+ 	} 
 #else
 	if (bgl_list) {
 		bgl_record_t *record;
@@ -283,10 +285,10 @@ static int  _validate_config_nodes(void)
 #ifdef HAVE_BGL_FILES
 	bgl_record_t* record;	/* records from configuration files */
 	bgl_record_t* init_record;	/* records from actual BGL config */
-	ListIterator itr_conf, itr_init;
+	ListIterator itr_conf, itr_curr;
 	char nodes[1024];
 
-	/* read current bgl partition info into bgl_init_part_list */
+	/* read current bgl partition info into bgl_curr_part_list */
 	if ((rc = read_bgl_partitions()))
 		return rc;
 
@@ -294,8 +296,8 @@ static int  _validate_config_nodes(void)
 	while ((record = (bgl_record_t*) list_next(itr_conf))) {
 		/* translate hostlist to ranged string for consistent format */
         	/* search here */
-		itr_init = list_iterator_create(bgl_init_part_list);
-		while ((init_record = (bgl_record_t*) list_next(itr_init))) {
+		itr_curr = list_iterator_create(bgl_curr_part_list);
+		while ((init_record = (bgl_record_t*) list_next(itr_curr))) {
 //info("%s:%s",nodes, init_record->nodes);
 //info("%d:%d", record->conn_type, init_record->conn_type);
 //info("%d:%d", record->node_use, init_record->node_use);
@@ -310,14 +312,14 @@ static int  _validate_config_nodes(void)
 		}
 		if (!record->bgl_part_id) {
 			info("BGL PartitionID:NONE Nodes:%s", nodes);
-			rc = EINVAL;
+			return rc;
 		} else {
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
 				record->bgl_part_id, nodes,
 				convert_conn_type(record->conn_type),
 				convert_node_use(record->node_use));
 		}
-		list_iterator_destroy(itr_init);
+		list_iterator_destroy(itr_curr);
 	}
 	list_iterator_destroy(itr_conf);
 #endif
@@ -803,9 +805,9 @@ extern void fini_bgl(void)
 		bgl_list = NULL;
 	}
 	
-	if (bgl_init_part_list) {
-		list_destroy(bgl_init_part_list);
-		bgl_init_part_list = NULL;
+	if (bgl_curr_part_list) {
+		list_destroy(bgl_curr_part_list);
+		bgl_curr_part_list = NULL;
 	}
 
 	xfree(bluegene_blrts);
