@@ -35,6 +35,7 @@ libcommon_la_SOURCES = 	\
 	pack.c		\
 	hostlist.c	\
 	parse_spec.c	\
+	plugin.c	\
 	read_config.c	\
 	slurm_errno.c	\
 	slurm_protocol_api.c	\
@@ -63,6 +64,7 @@ noinst_HEADERS = 	\
 	pack.h		\
 	hostlist.h	\
 	parse_spec.h	\
+	plugin.h	\
 	read_config.h	\
 	slurm_auth.h    \
 	slurm_protocol_api.h	\
