@@ -727,6 +727,22 @@ _exec_all_tasks(slurmd_job_t *job)
 		if (shm_add_task(job->jobid, job->stepid, &t) < 0)
 			error("shm_add_task: %m");
 		debug2("task %d added to shm", i);
+#ifdef HAVE_TOTALVIEW
+		/* If task to be debugged, wait for it to stop via
+		 * child's ptrace(PTRACE_TRACEME), then SIGSTOP, and 
+		 * ptrace(PTRACE_DETACH). This requires a kernel patch,
+ 		 * which you probably already have in place for TotalView:
+ 		 * http://hypermail.idiosynkrasia.net/linux-kernel/
+		 *	archived/2001/week51/1193.html */
+		if (job->task_flags & TASK_TOTALVIEW_DEBUG) {
+			int status;
+			waitpid(t.pid, &status, WUNTRACED);
+			if (kill(t.pid, SIGSTOP))
+				error("kill %ld: %m", (long) t.pid);
+			if (ptrace(PTRACE_DETACH, (long) t.pid, NULL, NULL))
+				error("ptrace %ld: %m", (long) t.pid);
+		}
+#endif
 
 	}
 
