@@ -1,6 +1,13 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.4.18
+========================
+ -- Added error checking of rm_remove_partition calls.
+ -- job_term() was terminating a job in real time rather than 
+    queueing the request. This would result in slurmctld hanging 
+    for many seconds when a job termination was required.
+
 * Changes in SLURM 0.4.17
 ========================
  -- Bug fixes from testing .16.
