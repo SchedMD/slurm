@@ -720,6 +720,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 	packstr(step_ptr->host,  buffer);
 	packstr(step_ptr->step_node_list,  buffer);
 	switch_pack_jobinfo(step_ptr->switch_job, buffer);
+	checkpoint_pack_jobinfo(step_ptr->check_job, buffer);
 }
 
 /* Unpack job step state information from a buffer */
@@ -731,6 +732,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	time_t start_time;
 	char *step_node_list = NULL, *host = NULL;
 	switch_jobinfo_t switch_tmp = NULL;
+	check_jobinfo_t check_tmp = NULL;
 
 	safe_unpack16(&step_id, buffer);
 	safe_unpack16(&cyclic_alloc, buffer);
@@ -741,6 +743,9 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	safe_unpackstr_xmalloc(&step_node_list, &name_len, buffer);
 	switch_alloc_jobinfo(&switch_tmp);
         if (switch_unpack_jobinfo(switch_tmp, buffer))
+                goto unpack_error;
+	checkpoint_alloc_jobinfo(&check_tmp);
+        if (checkpoint_unpack_jobinfo(check_tmp, buffer))
                 goto unpack_error;
 
 	/* validity test as possible */
@@ -771,6 +776,7 @@ static int _load_step_state(struct job_record *job_ptr, Buf buffer)
 	step_node_list         =  NULL;	/* re-used, nothing left to free */
 	step_ptr->time_last_active = time(NULL);
 	step_ptr->switch_job   = switch_tmp;
+	step_ptr->check_job   = check_tmp;
 	info("recovered job step %u.%u", job_ptr->job_id, step_id);
 	return SLURM_SUCCESS;
 

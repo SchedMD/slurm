@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for checkpoint plugins
 
-SUBDIRS = none
+SUBDIRS = aix none

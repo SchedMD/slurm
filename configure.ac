@@ -193,6 +193,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/auth/munge/Makefile
 		 src/plugins/auth/none/Makefile
 		 src/plugins/checkpoint/Makefile
+		 src/plugins/checkpoint/aix/Makefile
 		 src/plugins/checkpoint/none/Makefile
 		 src/plugins/jobcomp/Makefile
 		 src/plugins/jobcomp/filetxt/Makefile

@@ -395,12 +395,13 @@ typedef struct srun_timeout_msg {
 
 typedef struct checkpoint_msg {
 	uint16_t op;		/* checkpoint operation, see enum check_opts */
+	uint16_t data;		/* operation specific data */
 	uint32_t job_id;	/* slurm job_id */
 	uint32_t step_id;	/* slurm step_id */
 } checkpoint_msg_t;
 
 typedef struct checkpoint_resp_msg {
-	uint32_t ckpt_errno;	/* errno from last checkpoint operation */
+	uint16_t ckpt_errno;	/* errno from last checkpoint operation */
 	char * ckpt_strerror;	/* string descriptive of ckpt_errno */
 } checkpoint_resp_msg_t;
 

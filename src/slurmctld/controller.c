@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
 	 */
 	if ( slurm_sched_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize scheduling plugin" );
-	if ( g_slurm_checkpoint_init() != SLURM_SUCCESS )
+	if ( checkpoint_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );
 
 	while (1) {

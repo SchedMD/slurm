@@ -28,17 +28,53 @@
 #define __CHECKPOINT_H__
 
 #include "slurm/slurm.h"
-#include "src/slurmctld/slurmctld.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
 
-#define CHECK_ERROR 100		/* Used like enum checkopts, but not exported to user */
+/* Define checkpoint options */
+enum check_opts {
+	CHECK_DISABLE,		/* disable checkpointing */
+	CHECK_ENABLE,		/* enable checkpointing */
+	CHECK_CREATE,		/* create a checkpoint for this job, 
+				 * job continues execution afterwards */
+	CHECK_VACATE,		/* create a checkpoint for this job,
+				 * job terminates afterwards */
+	CHECK_RESUME,		/* resume a previously checkpointed job */
+	CHECK_COMPLETE,		/* a checkpoint of this job has completed */
+	CHECK_FAILED,		/* a checkpoint of this job has failed */
+	CHECK_ERROR		/* get error info */
+};
 
+/* opaque data structures - no peeking! */
+#ifndef __check_jobinfo_t_defined
+#  define __check_jobinfo_t_defined
+   typedef struct check_jobinfo *check_jobinfo_t;
+#endif
 typedef struct slurm_checkpoint_context * slurm_checkpoint_context_t;
 
-extern int g_slurm_checkpoint_init(void);
-extern void g_slurm_checkpoint_fini(void);
-extern int g_slurm_checkpoint_op(enum check_opts op, struct step_record * step_ptr);
-extern int g_slurm_checkpoint_error(struct step_record * step_ptr, 
-		uint32_t *ckpt_errno, char **ckpt_strerror);
+/* initialize checkpoint plugin */
+extern int checkpoint_init(void);
+
+/* shutdown checkpoint plugin */
+extern void checkpoint_fini(void);
+
+/* perform some checkpoint operation */
+extern int checkpoint_op(uint16_t op, uint16_t data,
+		void * step_ptr);
+
+/* gather checkpoint error info */
+extern int checkpoint_error(void * step_ptr, 
+		uint16_t *ckpt_errno, char **ckpt_strerror);
+
+/* allocate and initialize a job step's checkpoint context */
+extern int checkpoint_alloc_jobinfo(check_jobinfo_t *jobinfo);
+
+/* free storage for a job step's checkpoint context */
+extern int checkpoint_free_jobinfo(check_jobinfo_t jobinfo);
+
+/* un/pack a job step's checkpoint context */
+extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
+extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer);
 
 #endif /*__CHECKPOINT_H__*/
 

@@ -45,9 +45,15 @@
  * at the end of the structure.
  */
 typedef struct slurm_checkpoint_ops {
-	int     (*ckpt_op) (enum check_opts op, struct step_record * step_ptr);
-	int	(*ckpt_error) (struct step_record * step_ptr, uint32_t *ckpt_errno, 
+	int     (*ckpt_op) (uint16_t op, uint16_t data, 
+			struct step_record * step_ptr);
+	int	(*ckpt_error) (struct step_record * step_ptr, uint16_t *ckpt_errno, 
 			char **ckpt_strerror);
+
+	int	(*ckpt_alloc_jobinfo) (check_jobinfo_t *jobinfo);
+	int	(*ckpt_free_jobinfo) (check_jobinfo_t jobinfo);
+	int	(*ckpt_pack_jobinfo) (check_jobinfo_t jobinfo, Buf buffer);
+	int	(*ckpt_unpack_jobinfo) (check_jobinfo_t jobinfo, Buf buffer);
 } slurm_checkpoint_ops_t;
 
 /*
@@ -126,7 +132,11 @@ _slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
          */
 	static const char *syms[] = {
 		"slurm_ckpt_op",
-		"slurm_ckpt_error"
+		"slurm_ckpt_error",
+		"slurm_ckpt_alloc_job",
+		"slurm_ckpt_free_job",
+		"slurm_ckpt_pack_job",
+		"slurm_ckpt_unpack_job"
 	};
         int n_syms = sizeof( syms ) / sizeof( char * );
 
@@ -168,8 +178,9 @@ _slurm_checkpoint_get_ops( slurm_checkpoint_context_t c )
         return &c->ops;
 }
 
+/* initialize checkpoint plugin */
 extern int
-g_slurm_checkpoint_init(void)
+checkpoint_init(void)
 {
 	int retval = SLURM_SUCCESS;
 	char *checkpoint_type;
@@ -205,8 +216,9 @@ g_slurm_checkpoint_init(void)
 	return retval;
 }
 
+/* shutdown checkpoint plugin */
 extern void
-g_slurm_checkpoint_fini(void)
+checkpoint_fini(void)
 {
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
@@ -214,14 +226,18 @@ g_slurm_checkpoint_fini(void)
 	slurm_mutex_unlock( &context_lock );
 }
 
+
+/* perform some checkpoint operation */
 extern int
-g_slurm_checkpoint_op(enum check_opts op, struct step_record * step_ptr)
+checkpoint_op(uint16_t op, uint16_t data,
+		void * step_ptr)
 {
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_op))(op, step_ptr);
+		retval = (*(g_context->ops.ckpt_op))(op, data, 
+			(struct step_record *) step_ptr);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
 		retval = ENOENT;
@@ -230,15 +246,17 @@ g_slurm_checkpoint_op(enum check_opts op, struct step_record * step_ptr)
 	return retval;
 }
 
+/* gather checkpoint error info */
 extern int
-g_slurm_checkpoint_error(struct step_record * step_ptr, 
-		uint32_t *ckpt_errno, char **ckpt_strerror)
+checkpoint_error(void * step_ptr, 
+		uint16_t *ckpt_errno, char **ckpt_strerror)
 {
 	int retval = SLURM_SUCCESS;
 
 	slurm_mutex_lock( &context_lock );
 	if ( g_context )
-		retval = (*(g_context->ops.ckpt_error))(step_ptr, 
+		retval = (*(g_context->ops.ckpt_error))(
+				(struct step_record *) step_ptr, 
 				ckpt_errno, ckpt_strerror);
 	else {
 		error ("slurm_checkpoint plugin context not initialized");
@@ -248,3 +266,69 @@ g_slurm_checkpoint_error(struct step_record * step_ptr,
 	return retval;
 }
 
+/* allocate and initialize a job step's checkpoint context */
+extern int checkpoint_alloc_jobinfo(check_jobinfo_t *jobinfo)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.ckpt_alloc_jobinfo))(
+				jobinfo);
+	else {
+		error ("slurm_checkpoint plugin context not initialized");
+		retval = ENOENT;
+	}
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
+
+/* free storage for a job step's checkpoint context */
+extern int checkpoint_free_jobinfo(check_jobinfo_t jobinfo)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.ckpt_free_jobinfo))(
+				jobinfo);
+	else {
+		error ("slurm_checkpoint plugin context not initialized");
+		retval = ENOENT;
+	}
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
+
+/* un/pack a job step's checkpoint context */
+extern int  checkpoint_pack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.ckpt_pack_jobinfo))(
+				jobinfo, buffer);
+	else {
+		error ("slurm_checkpoint plugin context not initialized");
+		retval = ENOENT;
+	}
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
+
+extern int  checkpoint_unpack_jobinfo  (check_jobinfo_t jobinfo, Buf buffer)
+{
+	int retval = SLURM_SUCCESS;
+
+	slurm_mutex_lock( &context_lock );
+	if ( g_context )
+		retval = (*(g_context->ops.ckpt_unpack_jobinfo))(
+				jobinfo, buffer);
+	else {
+		error ("slurm_checkpoint plugin context not initialized");
+		retval = ENOENT;
+	}
+	slurm_mutex_unlock( &context_lock );
+	return retval;
+}
