@@ -1129,14 +1129,11 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		}
 
 		node_inx = node_ptr - node_record_table_ptr;
-		if (job_count == 0) {
+		if (job_count == 0)
 			bit_set (idle_node_bitmap, node_inx);
-			if (resp_state)	{
-				/* Node just started responding, 
-				 * do all pending RPCs now */
-				retry_pending (node_name);
-			}
-		}
+		if (resp_state)	/* Do all pending RPCs now */
+			retry_pending (node_name);
+
 		if ((node_ptr->node_state == NODE_STATE_DOWN)     ||
 		    (node_ptr->node_state == NODE_STATE_DRAINING) ||
 		    (node_ptr->node_state == NODE_STATE_DRAINED))
@@ -1169,16 +1166,12 @@ void node_did_resp (char *name)
 	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 		node_ptr->node_state = NODE_STATE_IDLE;
-	if (node_ptr->node_state == NODE_STATE_IDLE) {
+	if (node_ptr->node_state == NODE_STATE_IDLE)
 		bit_set (idle_node_bitmap, node_inx);
-		if (resp_state)	{
-			/* Node just started responding, 
-			 * do all its pending RPCs now */
-			retry_pending (name);
-		}
-	}
-	if (resp_state)
+	if (resp_state) {
 		info("Node %s now responding", name);
+		retry_pending (name);	/* Do all pending RPCs now */
+	}
 	if (node_ptr->node_state != NODE_STATE_DOWN)
 		bit_set (up_node_bitmap, node_inx);
 	return;
