@@ -21,6 +21,7 @@
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/log.h>
+#include <src/common/pack.h>
 
 /* high level calls */
 uint32_t _slurm_init_msg_engine ( slurm_addr * slurm_address )
@@ -32,13 +33,43 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 {
 	slurm_fd connection_fd ;
 	size_t recv_len ;
+
+	char size_buffer_temp [8] ;
+	char * size_buffer = size_buffer_temp ;
+	uint32_t size_size = 8 ;
+	uint32_t transmit_size ;
+	uint32_t total_len ;
+	
+	
 	connection_fd = _slurm_accept_stream ( open_fd , slurm_address ) ;
 	if ( connection_fd == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error opening stream socket to receive msg datagram emulation layeri\n" ) ;
 		return connection_fd ;
 	}
-	recv_len = _slurm_recv ( connection_fd , buffer , size , NO_SEND_RECV_FLAGS ) ;
+	
+	recv_len = _slurm_recv ( connection_fd , size_buffer_temp , sizeof ( uint32_t ) , NO_SEND_RECV_FLAGS ) ;
+	if ( recv_len != sizeof ( uint32_t ) )
+	{
+		debug ( "Error receiving legth of datagram.  Total Bytes Sent %i \n", recv_len ) ;
+	}
+	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_size ) ;
+
+	total_len = 0 ;
+	while ( total_len < transmit_size )
+	{
+		recv_len = _slurm_recv ( connection_fd , buffer , transmit_size , NO_SEND_RECV_FLAGS ) ;
+		if ( recv_len == SLURM_SOCKET_ERROR )
+		{
+			debug ( "Error receiving legth of datagram.  errno %i \n", errno ) ;
+			return recv_len ;
+		}
+		if ( recv_len >= 0 )
+		{
+			total_len += recv_len ;
+		}
+	}
+
 	_slurm_close ( connection_fd ) ;
 	return recv_len ;
 }
@@ -47,13 +78,31 @@ ssize_t _slurm_msg_sendto ( slurm_fd open_fd, char *buffer , size_t size , uint3
 {
 	slurm_fd connection_fd ;
 	size_t send_len ;
+
+	char size_buffer_temp [8] ;
+	char * size_buffer = size_buffer_temp ;
+	uint32_t size_size = 8 ;
+	
+	pack32 (  size , ( void ** ) & size_buffer , & size_size ) ;
+	
 	connection_fd = _slurm_open_stream ( slurm_address ) ;
 	if ( connection_fd == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error opening stream socket to send msg datagram emulation layer\n" ) ;
 		return connection_fd ;
 	}
+	send_len = _slurm_send ( connection_fd , size_buffer_temp , sizeof ( uint32_t ) , NO_SEND_RECV_FLAGS ) ;
+	if ( send_len != sizeof ( uint32_t ) )
+	{
+		debug ( "Error sending length of datagram\n" ) ;
+	}
+
 	send_len = _slurm_send ( connection_fd ,  buffer , size , NO_SEND_RECV_FLAGS ) ;
+	if ( send_len != size )
+	{
+		debug ( "_slurm_msg_sendto only transmitted %i of %i bytes\n", send_len , size ) ;
+	}
+
 	_slurm_close ( connection_fd ) ;
 	return send_len ;
 }
