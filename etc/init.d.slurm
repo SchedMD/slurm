@@ -77,8 +77,7 @@ case "$1" in
 	done
         ;;
     restart)
-        $0 stop
-        $0 start
+        $0 stop && $0 start
         ;;
     condrestart)
         for prog in `scontrol show daemons`; do

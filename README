@@ -42,9 +42,17 @@ TO TEST:
 
 NOTES:
   You should have autoconf version 2.52 or higher (see "autoconf -V").
+
   There is no authentication of communications between commands and 
      daemons without the the authd daemon in operation. For more 
      information, see "http://www.theether.org/authd/".
+
+  To generate your own slurm job credential private and public keypair,
+  run the following commands:
+ 
+  > openssl genrsa -out <name of private key> 1024
+  > openssl rsa -in <name of private key> -pubout -out <name of public key>
+
 
 STATUS (As of 12/19/2002): 
   Most functionality is in place and working.
