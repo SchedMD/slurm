@@ -849,8 +849,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	if (job_ptr->time_limit == INFINITE)
 		job_ptr->end_time = INFINITE;
 	else
-		job_ptr->end_time = 
-			job_ptr->start_time + (job_ptr->time_limit * 60);
+		job_ptr->end_time = job_ptr->start_time + (job_ptr->time_limit * 60);
 
       cleanup:
 	if (req_bitmap)

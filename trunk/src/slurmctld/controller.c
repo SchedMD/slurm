@@ -39,6 +39,7 @@
 #include <netinet/in.h>
 #include <unistd.h>
 
+#include <src/common/log.h>
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/macros.h>
@@ -58,6 +59,7 @@ void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
+void *slurmctld_background ( void * no_data );
 inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
@@ -86,16 +88,12 @@ main (int argc, char *argv[])
 	slurm_msg_t * msg = NULL ;
 	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
-	pthread_attr_t thread_attr;
+	pthread_attr_t thread_attr_rpc, thread_attr_bg;
 
 	/*
 	 * Establish initial configuration
 	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
-	if (pthread_attr_init (&thread_attr))
-		fatal ("pthread_attr_init errno %d", errno);
-	if (pthread_attr_setdetachstate (&thread_attr, PTHREAD_CREATE_DETACHED))
-		fatal ("pthread_attr_setdetachstate errno %d", errno);
 
 	init_ctld_conf ( &slurmctld_conf );
 	init_locks ( );
@@ -111,7 +109,20 @@ main (int argc, char *argv[])
 	     strcmp ("localhost", slurmctld_conf.control_machine) &&
 	     strcmp ("localhost", slurmctld_conf.backup_controller) )
 	       	fatal ("this machine (%s) is not the primary (%s) or backup (%s) controller", 
-			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_controller);
+			node_name, slurmctld_conf.control_machine, 
+			slurmctld_conf.backup_controller);
+
+	/* create attached thread for background activities */
+	if (pthread_attr_init (&thread_attr_bg))
+		fatal ("pthread_attr_init errno %d", errno);
+	if (pthread_create ( &thread_id, &thread_attr_bg, slurmctld_background, NULL))
+		fatal ("pthread_create errno %d", errno);
+
+	/* threads to process RPC's are detached */
+	if (pthread_attr_init (&thread_attr_rpc))
+		fatal ("pthread_attr_init errno %d", errno);
+	if (pthread_attr_setdetachstate (&thread_attr_rpc, PTHREAD_CREATE_DETACHED))
+		fatal ("pthread_attr_setdetachstate errno %d", errno);
 
 	/* initialize port for RPCs */
 	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
@@ -144,7 +155,7 @@ main (int argc, char *argv[])
 
 		msg -> conn_fd = newsockfd ;	
 
-		if (pthread_create ( &thread_id, &thread_attr, process_rpc, (void *) msg)) {
+		if (pthread_create ( &thread_id, &thread_attr_rpc, process_rpc, (void *) msg)) {
 			/* Do without threads on failure */
 			error ("pthread_create errno %d", errno);
 			slurmctld_req ( msg );	/* process the request */
@@ -154,6 +165,48 @@ main (int argc, char *argv[])
 		}
 	}			
 	return 0 ;
+}
+
+/* slurmctld_background - process slurmctld background activities */
+void *
+slurmctld_background ( void * no_data )
+{
+	static time_t last_sched_time = (time_t) NULL;
+	static time_t last_checkpoint_time = (time_t) NULL;
+	static time_t last_timelimit_time = (time_t) NULL;
+	time_t now;
+	/* Locks: Write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+	/* Locks: Read config, write job, write node, write partition */
+	slurmctld_lock_t state_write_lock = { READ_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+
+	while (1) {
+		now = time (NULL);
+
+		if ((now - last_timelimit_time) > PERIODIC_TIMEOUT) {
+			last_timelimit_time = now;
+			job_time_limit ();
+		}
+
+		if ((now - last_sched_time) > PERIODIC_SCHEDULE) {
+			last_sched_time = now;
+			/* locking is done outside of schedule() because it is called  
+			 * from other many functions that already have their locks set */
+			lock_slurmctld (job_write_lock);
+			purge_old_job ();	/* remove defunct job records */
+			schedule ();
+			unlock_slurmctld (job_write_lock);
+		}
+
+		if ((now - last_checkpoint_time) > PERIODIC_CHECKPOINT) {
+			last_checkpoint_time = now;
+			lock_slurmctld (state_write_lock);
+			/* issue call to save state */
+			unlock_slurmctld (state_write_lock);
+		}
+
+		sleep (5);
+	}
 }
 
 /* process_rpc - process an RPC request and close the connection */
