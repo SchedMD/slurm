@@ -1207,7 +1207,7 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
 			last_job_update    = now;
-			job_ptr->end_time  = now;
+			job_ptr->start_time = job_ptr->end_time  = now;
 			delete_job_details(job_ptr);
 			kill_job_on_node(job_id_ptr[i], node_ptr);
 			job_completion_logger(job_ptr);
