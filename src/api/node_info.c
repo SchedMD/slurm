@@ -46,7 +46,7 @@ void
 slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 {
 	int i;
-	node_table_t * node_ptr = node_info_msg_ptr -> node_array ;
+	node_info_t * node_ptr = node_info_msg_ptr -> node_array ;
 
 	fprintf( out, "Nodes updated at %d, record count %d\n",
 		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
@@ -60,7 +60,7 @@ slurm_print_node_info_msg ( FILE* out, node_info_msg_t * node_info_msg_ptr )
 
 /* slurm_print_node_table - output information about a specific Slurm node */
 void
-slurm_print_node_table ( FILE* out, node_table_t * node_ptr )
+slurm_print_node_table ( FILE* out, node_info_t * node_ptr )
 {
 	fprintf ( out, "NodeName=%s State=%s CPUs=%u ", 
 		node_ptr->name, node_state_string(node_ptr->node_state), node_ptr->cpus);

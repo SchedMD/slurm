@@ -37,22 +37,22 @@
 
 
 /* slurm_print_partition_info - output information about all Slurm partitions */
-void slurm_print_partition_info ( FILE* out, partition_info_msg_t * part_info_ptr )
+void slurm_print_partition_info_msg ( FILE* out, partition_info_msg_t * part_info_ptr )
 {
 	int i ;
-	partition_table_t * part_ptr = part_info_ptr->partition_array ;
+	partition_info_t * part_ptr = part_info_ptr->partition_array ;
 
 	fprintf( out, "Partitions updated at %ld, record count %d\n",
 		(long) part_info_ptr ->last_update, part_info_ptr->record_count);
 
 	for (i = 0; i < part_info_ptr->record_count; i++) {
-		slurm_print_partition_table ( out, & part_ptr[i] ) ;
+		slurm_print_partition_info ( out, & part_ptr[i] ) ;
 	}
 
 }
 
 /* slurm_print_partition_table - output information about a specific Slurm partition */
-void slurm_print_partition_table ( FILE* out, partition_table_t * part_ptr )
+void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 {
 	int j ;
 
