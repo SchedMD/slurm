@@ -87,8 +87,8 @@ typedef struct srun_options {
 	char *progname;		/* argv[0] of this program 	*/
 	char user[MAX_USERNAME];/* local username		*/
 	uid_t uid;		/* local uid			*/
-	char *euid;		/* effective user --uid=user	*/
-	char *egid;		/* effective group --gid=group	*/
+	uid_t euid;		/* effective user --uid=user	*/
+	gid_t egid;		/* effective group --gid=group	*/
 	char *cwd;		/* current working directory	*/
 
 	int  nprocs;		/* --nprocs=n,      -n n	*/
@@ -126,6 +126,7 @@ typedef struct srun_options {
 	bool labelio;		/* --label-output, -l		*/
 	bool unbuffered;        /* --unbuffered,   -u           */
 	bool allocate;		/* --allocate, 	   -A		*/
+	bool noshell;		/* --noshell                    */
 	bool overcommit;	/* --overcommit,   -O		*/
 	bool batch;		/* --batch,   -b		*/
 	bool no_kill;		/* --no-kill, -k		*/

@@ -102,6 +102,7 @@
 #define LONG_OPT_GID      0x10b
 #define LONG_OPT_MPI      0x10c
 #define LONG_OPT_CORE	  0x10e
+#define LONG_OPT_NOSHELL  0x10f
 
 /*---- forward declarations of static functions  ----*/
 
@@ -131,9 +132,6 @@ static void  _opt_list(void);
 
 /* verify options sanity  */
 static bool _opt_verify(void);
-
-/* demote to regular user */
-static uid_t _become_user( char *uid_string, char *gid_string );
 
 static void  _print_version(void);
 
@@ -409,6 +407,7 @@ static void _opt_default()
 	opt.immediate	= false;
 
 	opt.allocate	= false;
+	opt.noshell	= false;
 	opt.attach	= NULL;
 	opt.join	= false;
 	opt.max_wait	= slurm_get_wait_time();
@@ -433,8 +432,8 @@ static void _opt_default()
 	opt.max_exit_timeout= 60; /* Warn user 60 seconds after task exit */
 	opt.msg_timeout     = 5;  /* Default launch msg timeout           */
 
-	opt.euid	    = NULL;
-	opt.egid	    = NULL;
+	opt.euid	    = (uid_t) -1;
+	opt.egid	    = (gid_t) -1;
 	
 	mode	= MODE_NORMAL;
 
@@ -644,6 +643,7 @@ static void _opt_args(int argc, char **argv)
 		{"mincpus",          required_argument, 0, LONG_OPT_MINCPU},
 		{"mem",              required_argument, 0, LONG_OPT_MEM},
 		{"mpi",              required_argument, 0, LONG_OPT_MPI},
+		{"no-shell",         no_argument,       0, LONG_OPT_NOSHELL},
 		{"tmp",              required_argument, 0, LONG_OPT_TMP},
 		{"jobid",            required_argument, 0, LONG_OPT_JOBID},
 		{"msg-timeout",      required_argument, 0, LONG_OPT_TIMEO},
@@ -847,6 +847,9 @@ static void _opt_args(int argc, char **argv)
 			if (strncasecmp(optarg, "lam",  3) == 0)
 			       opt.mpi_type = MPI_LAM;	
 			break;
+		case LONG_OPT_NOSHELL:
+			opt.noshell = true;
+			break;
 		case LONG_OPT_TMP:
 			opt.tmpdisk = _to_bytes(optarg);
 			if (opt.tmpdisk < 0) {
@@ -870,16 +873,14 @@ static void _opt_args(int argc, char **argv)
 				_get_int(optarg, "max-exit-timeout");
 			break;
 		case LONG_OPT_UID:
-			xfree( opt.euid );
-			opt.euid = xstrdup( optarg );
-			if ( getuid() )
-				info( "UID ignored for non-root user" );
+			opt.euid = uid_from_string (optarg);
+			if (opt.euid == (uid_t) -1)
+				fatal ("--uid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_GID:
-			xfree( opt.egid );
-			opt.egid = xstrdup( optarg );
-			if ( getuid() )
-				info( "GID ignored for non-root user" );
+			opt.egid = gid_from_string (optarg);
+			if (opt.egid == (gid_t) -1)
+				fatal ("--gid=\"%s\" invalid", optarg);
 			break;
 		case LONG_OPT_HELP:
 			_help();
@@ -924,7 +925,6 @@ static void _opt_args(int argc, char **argv)
 static bool _opt_verify(void)
 {
 	bool verified = true;
-	uid_t euid;
 
 	/*
 	 *  Do not set slurmd debug level higher than DEBUG2,
@@ -939,22 +939,6 @@ static bool _opt_verify(void)
 	if (opt.quiet && _verbose) {
 		error ("don't specify both --verbose (-v) and --quiet (-Q)");
 		verified = false;
-	}
-
-	/*
-	 * If we are root and have been asked to submit as another
-	 * user, become that user now.
-	 */
-	if ( getuid() == 0 ) {
-		if ( opt.euid ) {
-			euid = _become_user( opt.euid, opt.egid );
-			if ( euid != NFS_NOBODY ) {
-				opt.uid = euid;
-				strncpy( opt.user, opt.euid, MAX_USERNAME );
-			} else {
-				verified = false;
-			}
-		}
 	}
 
 	if (opt.no_alloc && !opt.nodelist) {
@@ -1078,6 +1062,14 @@ static bool _opt_verify(void)
 	if (opt.time_limit == 0)
 		opt.time_limit = INFINITE;
 
+	if ((opt.euid != (uid_t) -1) && (opt.euid != opt.uid)) 
+		opt.uid = opt.euid;
+
+	if (opt.noshell && !opt.allocate) {
+		error ("--no-shell only valid with -A (--allocate)");
+		verified = false;
+	}
+
 	return verified;
 }
 
@@ -1152,54 +1144,6 @@ _search_path(char *cmd, bool check_current_dir, int access_mode)
   done:
 	list_destroy(l);
 	return fullpath;
-}
-
-
-static uid_t
-_become_user( char *uid_string, char *gid_string )
-{
-	uid_t euid = 0;
-	gid_t egid = 0;
-
-	/*
-	 * The group is not strictly necessary but we have to change
-	 * the group before we change the user, else we lose the
-	 * ability to change the group after having become a normal
-	 * user.
-	 */
-	if ( gid_string ) {
-
-		/* Resolve group name/ID to numerical form. */
-		if ( is_digit_string( gid_string ) ) {
-			egid = atoi( gid_string );
-		} else {
-			egid = gid_from_name( gid_string );
-		}
-
-		/* Assume this group. */
-		if ( egid ) {
-			if ( setregid( egid, egid ) < 0 ) {
-				error( "can't assume group %s", gid_string );
-			}
-		}
-	}
-	
-	/* Resolve user name/ID to numerical form. */
-	if ( is_digit_string( uid_string ) ) {
-		euid = atoi( uid_string );
-	} else {
-		euid = uid_from_name( uid_string );
-	}
-
-	/* Become this user. */
-	if ( euid ) {
-		if ( setreuid( euid, euid ) < 0 ) {
-			error( "can't become user %s", uid_string );
-			return 0;
-		}
-	}
-
-	return euid;
 }
 
 
@@ -1351,6 +1295,7 @@ Parallel run options:\n\
 \n\
 Allocate only:\n\
   -A, --allocate              allocate resources and spawn a shell\n\
+      --no-shell              don't spawn shell in allocate mode\n\
 \n\
 Attach to running job:\n\
   -a, --attach=jobid          attach to running job with specified id\n\

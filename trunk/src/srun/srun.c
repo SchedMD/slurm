@@ -51,6 +51,7 @@
 #include <signal.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <grp.h>
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
@@ -96,6 +97,7 @@ static int   _set_batch_script_env(job_t *job);
 static int   _set_rlimit_env(void);
 static char *_sprint_task_cnt(job_t *job);
 static void  _switch_standalone(job_t *job);
+static int   _become_user (void);
 
 int srun(int ac, char **av)
 {
@@ -159,6 +161,12 @@ int srun(int ac, char **av)
 		sig_setup_sigmask();
 		if ( !(resp = allocate_nodes()) ) 
 			exit(1);
+		if (opt.noshell) {
+			fprintf (stdout, "SLURM_JOBID=%u\n", resp->job_id);
+			exit (0);
+		}
+		if (_become_user () < 0)
+			info ("Warning: unable to assume uid=%lu\n", opt.uid);
 		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp); 
@@ -185,6 +193,12 @@ int srun(int ac, char **av)
 		create_job_step(job);
 		slurm_free_resource_allocation_response_msg(resp);
 	}
+
+	/*
+	 *  Become --uid user
+	 */
+	if (_become_user () < 0)
+		info ("Warning: Unable to assume uid=%lu\n", opt.uid);
 
 	/* job structure should now be filled in */
 
@@ -839,4 +853,22 @@ static void _run_job_script (job_t *job)
 		return;
 	}
 
+}
+
+static int _become_user (void)
+{
+	struct passwd *pwd = getpwuid (opt.uid);
+
+	if (opt.uid == getuid ())
+		return (0);
+
+	if ((opt.egid != (gid_t) -1) && (setgid (opt.egid) < 0))
+		return (error ("setgid: %m"));
+
+	initgroups (pwd->pw_name, pwd->pw_gid); /* Ignore errors */
+
+	if (setuid (opt.uid) < 0)
+		return (error ("setuid: %m"));
+
+	return (0);
 }

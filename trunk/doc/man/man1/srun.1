@@ -238,10 +238,13 @@ Quiet operation. Suppress informational messages. Errors will still
 be displayed.
 .TP
 \fB\-\-uid\fR=\fIuser\fR
-If
-.B srun
-is run as root, submit the job with \fIuser\fR's access permissions.
-\fIuser\fR may be the user name or the numerical user ID.
+Attempt to submit and/or run a job as \fIuser\fR instead of the
+invoking user id. The invoking user's credentials will be used
+to check access permissions for the target partition. User root
+may use this option to run jobs as a normal user in a RootOnly
+partition for example. If run as root, \fBsrun\fR will drop
+its permissions to the uid specified after node allocation is
+successful. \fIuser\fR may be the user name or numerical user ID.
 .TP
 \fB\-\-gid\fR=\fIgroup\fR
 If \fBsrun\fR is run as root, and the \fB\-\-gid\fR option is used, 
@@ -261,6 +264,10 @@ allocate resources and spawn a shell. When \fB\-\-allocate\fR is specified to
 \fBsrun\fR, no remote tasks are started. Instead a subshell is started that 
 has access to the allocated resources. Multiple jobs can then be run on the 
 same cpus from within this subshell. See \fBAllocate Mode\fR below.
+.TP
+\fB\-\-no\-shell\fR
+immediately exit after allocating resources instead of spawning a
+shell when used with the \fB\-A\fR, \fB\-\-allocate\fR option.
 .PP
 Attach to running job:
 .TP
