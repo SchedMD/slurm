@@ -471,7 +471,7 @@ _print_completing_job(job_info_t *job_ptr, node_info_msg_t *node_info_msg)
 	for (i=0; i<node_info_msg->record_count; i++) {
 		if (hostlist_find(all_nodes, node_info[i].name) == -1)
 			continue;	/* node not assigned to this job */
-		node_state = node_info[i].node_state;
+		node_state = node_info[i].node_state & (~NODE_STATE_NO_RESPOND);
 		if (node_state == NODE_STATE_COMPLETING)
 			hostlist_push_host(comp_nodes, node_info[i].name);
 		if (node_state == NODE_STATE_DOWN)
