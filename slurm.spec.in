@@ -155,7 +155,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
-%doc arch.gif
+%doc doc/html/arch.gif
 %doc doc/html/authplugins.html
 %doc doc/html/bluegene.html
 %doc doc/html/coding_style.pdf
