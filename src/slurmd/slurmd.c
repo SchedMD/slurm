@@ -93,8 +93,7 @@ inline static void slurm_rpc_revoke_credential(slurm_msg_t * msg);
 inline static void slurmd_rpc_shutdown_slurmd(slurm_msg_t * msg);
 
 inline static int
-fill_in_node_registration_status_msg(slurm_node_registration_status_msg_t *
-				     node_reg_msg);
+fill_in_node_registration_status_msg(slurm_node_registration_status_msg_t * node_reg_msg);
 static void *service_connection(void *arg);
 static void *slurmd_handle_signals(void *args);
 inline int slurmd_init();
@@ -297,10 +296,11 @@ fill_in_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	get_procs(&node_reg_msg->cpus);
 	get_memory(&node_reg_msg->real_memory_size);
 	get_tmp_disk(&node_reg_msg->temporary_disk_space);
-/* FIXME: Need to set correct count of currently running jobs and their ID's below */
+/* FIXME: Need to set correct count of currently running job stepss and their ID's below */
 /* This is needed to more reliably recover from restarts of daemons */
 	node_reg_msg->job_count = 0;
 	node_reg_msg->job_id = NULL;
+	node_reg_msg->step_id = NULL;
 	info("Configuration name=%s cpus=%u real_memory=%u, tmp_disk=%u, job_count=%u",
 	     hostname, node_reg_msg->cpus,
 	     node_reg_msg->real_memory_size,
