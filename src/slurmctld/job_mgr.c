@@ -1051,6 +1051,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		packstr (NULL, buf_ptr, buf_len);
 	}
 }
+
 /*
  * purge_old_job - purge old job records. 
  *	the jobs must have completed at least MIN_JOB_AGE minutes ago
