@@ -33,6 +33,7 @@
 
 #include "src/common/macros.h"
 #include "src/common/log.h"
+#include "src/common/xassert.h"
 
 /* closeall FDs >= a specified value */
 static void
@@ -80,3 +81,33 @@ daemon(int nochdir, int noclose)
 	return 0;
 
 }
+
+int
+create_pidfile(const char *pidfile)
+{
+	FILE *fp;
+
+	xassert(pidfile != NULL);
+	xassert(pidfile[0] == '/');
+
+	if (!(fp = fopen(pidfile, "w"))) {
+		error("Unable to open pidfile `%s': %m", pidfile);
+		return -1;
+	}
+	if (fprintf(fp, "%d\n", (int) getpid()) == EOF) {
+		error("Unable to write to pidfile `%s': %m", pidfile);
+		goto error;
+	}
+	if (fclose(fp) == EOF) {
+		error("Unable to close pidfile `%s': %m", pidfile);
+		goto error;
+	}
+
+	return 0;
+
+  error:
+	if (unlink(pidfile) < 0)
+		error("Unable to remove pidfile `%s': %m", pidfile);
+	return -1;
+}
+

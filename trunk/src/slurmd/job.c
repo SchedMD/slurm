@@ -376,7 +376,10 @@ job_update_shm(slurmd_job_t *job)
 	if (shm_insert_step(&s) < 0)
 		error("Updating shmem with new step info: %m");
 
-	verbose("shm_insert job %d.%d", job->jobid, job->stepid);
+	if (job->stepid == NO_VAL)
+		debug("updated shm with job %d", job->jobid);
+	else
+		debug("updated shm with step %d.%d", job->jobid, job->stepid);
 }
 
 void 

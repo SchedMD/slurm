@@ -58,16 +58,17 @@
 #include <stdlib.h>
 #include <signal.h>
 
-#include <src/common/list.h>
-#include <src/common/log.h>
-#include <src/common/xmalloc.h>
-#include <src/common/xassert.h>
-#include <src/common/slurm_errno.h>
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xassert.h"
+#include "src/common/slurm_errno.h"
 
-#include <src/slurmd/shm.h>
+#include "src/slurmd/slurmd.h"
+#include "src/slurmd/shm.h"
 
 /* We use Chris Dunlap's POSIX semaphore implementation if necessary */
-#include <src/slurmd/semaphore.h>
+#include "src/slurmd/semaphore.h"
 
 #define MAX_JOB_STEPS	16
 #define MAX_BATCH_JOBS	128
@@ -118,7 +119,7 @@ static pid_t         attach_pid = (pid_t) 0;
  */
 static int  _is_valid_ipc_name(const char *name);
 static char *_create_ipc_name(const char *name);
-static int _shm_unlink_lock(void);
+static int  _shm_unlink_lock(void);
 static int  _shm_lock_and_initialize(void);
 static void _shm_lock(void);
 static void _shm_unlock(void);
@@ -155,9 +156,12 @@ shm_fini(void)
 
 	debug3("%ld calling shm_fini() (attached by %ld)", 
 		getpid(), attach_pid);
-	xassert(attach_pid == getpid());
+	/* xassert(attach_pid == getpid()); */
 
-	if ((attach_pid == getpid()) && (--slurmd_shm->users == 0))
+	/* if ((attach_pid == getpid()) && (--slurmd_shm->users == 0))
+         *		destroy = 1;
+	 */
+	if (--slurmd_shm->users == 0)
 		destroy = 1;
 
 	/* detach segment from local memory */
@@ -272,7 +276,7 @@ _create_ipc_name(const char *name)
 #if defined(POSIX_IPC_PREFIX) && defined(HAVE_POSIX_SEMS)
 	dir = POSIX_IPC_PREFIX;
 #else
-	if (!(dir = getenv("TMPDIR")) || !strlen(dir)) 
+	if (!(dir = conf->spooldir) || !(dir = getenv("TMPDIR")) || !strlen(dir)) 
 		dir = "/tmp";
 #endif /* POSIX_IPC_PREFIX */
 
@@ -290,7 +294,7 @@ _create_ipc_name(const char *name)
 static int
 _shm_unlink_lock()
 {
-	verbose("process %ld removing shm lock", getpid());
+	debug("process %ld removing shm lock", getpid());
 	if (sem_unlink(lockname) == -1) 
 		return 0;
 	xfree(lockname);
@@ -643,7 +647,7 @@ shm_add_task(uint32_t jobid, uint32_t stepid, task_t *task)
 	} 
 	s = &slurmd_shm->step[i];
 
-	debug2("adding task %d to step %d.%d", task->id, jobid, stepid);
+	debug3("adding task %d to step %d.%d", task->id, jobid, stepid);
 
 	if (_shm_find_task_in_step(s, task->id)) {
 		_shm_unlock();
@@ -815,7 +819,7 @@ _shm_reopen()
 
 	if ((shm_lock = _sem_open(SHM_LOCKNAME, 0)) == SEM_FAILED) {
 		if (errno == ENOENT) {
-			info("Lockfile found but semaphore deleted:"
+			debug("Lockfile found but semaphore deleted:"
 			     " creating new shm segment");
 			shm_cleanup();
 			return _shm_lock_and_initialize();
@@ -855,7 +859,9 @@ _shm_reopen()
 static int
 _shm_lock_and_initialize()
 {
-	if (slurmd_shm && slurmd_shm->version == SHM_VERSION) {           
+	if (slurmd_shm 
+	   && (slurmd_shm->version == SHM_VERSION)
+	   && (shm_lock != SEM_FAILED)) {           
 		/* we've already opened shared memory */
 		_shm_lock();
 		if (attach_pid != getpid()) {

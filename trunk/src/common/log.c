@@ -264,11 +264,14 @@ static char *vxstrfmt(const char *fmt, va_list ap)
 				xslurm_strerrorcat(buf);
 				break;
 
-			case 't': 	/* "%t" => locally date/time*/ 
+			case 't': 	/* "%t" => locally preferred date/time */ 
 				xstrftimecat(buf, "%x %X");
 				break;
-			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off" */
+			case 'T': 	/* "%T" => "dd Mon yyyy hh:mm:ss off"  */
 				xstrftimecat(buf, "%a %d %b %Y %H:%M:%S %z");   
+				break;
+			case 'M':       /* "%M" => "Mon DD hh:mm:ss"           */
+				xstrftimecat(buf, "%b %d %T");
 				break;
 			case 's':	/* "%s" => append string */
 				/* we deal with this case for efficiency */
@@ -411,7 +414,7 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	}
 
 	if (level <= log->opt.logfile_level && log->logfp != NULL) {
-		xstrfmtcat(&msgbuf, "[%T] %s%s", pfx, buf);
+		xstrfmtcat(&msgbuf, "[%M] %s%s", pfx, buf);
 
 		if (strlen(buf) > 0 && buf[strlen(buf) - 1] == '\n')
 			fprintf(log->logfp, "%s", msgbuf);

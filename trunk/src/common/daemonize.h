@@ -37,4 +37,8 @@
  */
 int daemon(int nochdir, int noclose);
 
+/* Write pid into file pidfile
+ */
+int create_pidfile(char *pidfilename);
+
 #endif /* !_HAVE_DAEMONIZE_H */

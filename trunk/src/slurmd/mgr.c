@@ -68,7 +68,7 @@ static int  _seteuid_and_chdir(slurmd_job_t *job);
 static int  _setuid(slurmd_job_t *job);
 static int  _unblock_all_signals(void);
 static int  _send_exit_msg(int rc, task_info_t *t);
-static int  _complete_job(slurmd_job_t *job);
+static int  _complete_job(slurmd_job_t *job, int rc, int status);
 
 /* Launch a job step on this node
  */
@@ -94,7 +94,7 @@ mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 	shm_fini();
 	return(SLURM_SUCCESS);
   error:
-	job_error(job, "cannot run job");
+	job_error(job, "cannot run job: %m");
 	shm_fini();
 	return(SLURM_ERROR);
 }
@@ -110,7 +110,6 @@ _make_batch_dir(slurmd_job_t *job)
 		error("mkdir(%s): %m", path);
 		goto error;
 	}
-
 
 	if (chown(path, (uid_t) -1, (gid_t) job->pwd->pw_gid) < 0) {
 		error("chown(%s): %m", path);
@@ -170,63 +169,75 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 
 }
 
-static void
+static int
 _setup_batch_env(slurmd_job_t *job, char *nodes)
 {
 	char       buf[1024];
 	int        envc;
 	hostlist_t hl = hostlist_create(nodes);
 
+	if (!hl)
+		return SLURM_ERROR;
 
 	envc = (int)job->envc;
 
+	hostlist_ranged_string(hl, 1024, buf);
 	setenvpf(&job->env, &envc, "SLURM_JOBID=%u",    job->jobid);
-	if (hl) {
-		hostlist_ranged_string(hl, 1024, buf);
-		setenvpf(&job->env, &envc, "SLURM_NNODES=%u",   
-				           hostlist_count(hl));
-		setenvpf(&job->env, &envc, "SLURM_NODELIST=%s", buf);
-		hostlist_destroy(hl);
-	}
+	setenvpf(&job->env, &envc, "SLURM_NNODES=%u",   hostlist_count(hl));
+	setenvpf(&job->env, &envc, "SLURM_NODELIST=%s", buf);
+	hostlist_destroy(hl);
 
 	job->envc = envc;
+
+	return 0;
 }
 
 
 int
 mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 {
+	int           rc     = 0;
+	int           status = 0;
 	slurmd_job_t *job;
 	char         *batchdir;
 
 	/* New process, so must reinit shm */
-	if (shm_init() < 0)
-		goto cleanup;
+	if ((rc = shm_init()) < 0) 
+		goto cleanup1;
 
 	if (!(job = job_batch_job_create(msg))) 
-		goto cleanup;
+		goto cleanup2;
+
+	job_update_shm(job);
 
 	if ((batchdir = _make_batch_dir(job)) == NULL) 
-		goto cleanup;
+		goto cleanup2;
 
 	if (job->argv[0])
 		xfree(job->argv[0]);
 
 	if ((job->argv[0] = _make_batch_script(msg, batchdir)) == NULL)
+		goto cleanup3;
+
+	if ((rc = _setup_batch_env(job, msg->nodes)) < 0)
 		goto cleanup;
 
-	_setup_batch_env(job, msg->nodes);
-
-	_run_batch_job(job);
+	status = _run_batch_job(job);
 		
    cleanup:
-	_complete_job(job);
-	shm_fini();
 	if (job->argv[0] && (unlink(job->argv[0]) < 0))
 		error("unlink(%s): %m", job->argv[0]);
+   cleanup3:
 	if (batchdir && (rmdir(batchdir) < 0))
 		error("rmdir(%s): %m",  batchdir);
 	xfree(batchdir);
+   cleanup2:
+	shm_delete_step(job->jobid, job->stepid);
+	shm_fini();
+   cleanup1:
+	verbose("job %d completed with slurm_rc = %d, job_rc = %d", 
+		job->jobid, rc, status);
+	_complete_job(job, rc, status);
 	return 0; 
 }
 
@@ -255,23 +266,23 @@ _run_job(slurmd_job_t *job)
 	 * Need to detach from shared memory
 	 * We don't know what will happen in interconnect_init()
 	 */
-	shm_fini();
+	/* shm_fini(); */
 
 	if (interconnect_init(job) == SLURM_ERROR) {
 		job_error(job, "interconnect_init: %m");
 		rc = -2;
-		shm_init();
+		/* shm_init(); */
 		goto done;
 	}
 
 	/* Reattach to shared memory after interconnect is initialized
 	 */
-	job_debug(job, "%ld reattaching to shm", getpid());
-	if (shm_init() < 0) {
+	/* job_debug(job, "%ld reattaching to shm", getpid()); */
+	/* if (shm_init() < 0) {
 		job_error(job, "unable to reattach to shm: %m");
 		rc = -1;
 		goto done;
-	}
+	}*/
 	
 	/* initialize I/O, connect back to srun, and spawn thread for
 	 * forwarding I/O.
@@ -280,7 +291,7 @@ _run_job(slurmd_job_t *job)
 	/* Temporarily drop permissions and attempt to chdir()
 	 *
 	 */
-	if ((rc = _seteuid_and_chdir(job)) < 0) 
+	 if ((rc = _seteuid_and_chdir(job)) < 0) 
 		goto done;
 
 	/* Option: connect slurmd stderr to srun local task 0: stderr? */
@@ -291,18 +302,18 @@ _run_job(slurmd_job_t *job)
 	}
 
 	if ((seteuid(suid) < 0) || (setegid(sgid) < 0)) 
-		error("seteuid(0): %m");
+		error("sete{u/g}id(%ld/%ld): %m", suid, sgid);
 
 	_exec_all_tasks(job);
-	job_debug(job, "job complete, waiting on IO");
+	job_debug2(job, "job complete, waiting on IO");
 	io_close_all(job);
 	pthread_join(job->ioid, NULL);
-	job_debug(job, "IO complete");
+	job_debug2(job, "IO complete");
 
-done:
+   done:
 	interconnect_fini(job); /* ignore errors        */
 	job_delete_shm(job);    /* again, ignore errors */
-	job_verbose(job, "completed");
+	job_verbose(job, "job complete with rc = %d", rc);
 	if (rc < 0) {
 		for (i = 0; i < job->ntasks; i++)
 			_send_exit_msg(-rc, job->task[i]);
@@ -311,7 +322,7 @@ done:
 }
 
 static int
-_complete_job(slurmd_job_t *job)
+_complete_job(slurmd_job_t *job, int err, int status)
 {
 	int                rc;
 	size_t             size;
@@ -323,8 +334,8 @@ _complete_job(slurmd_job_t *job)
 
 	req.job_id	= job->jobid;
 	req.job_step_id	= NO_VAL; 
-	req.job_rc	= 0; 
-	req.slurm_rc	= SLURM_SUCCESS; 
+	req.job_rc	= status;
+	req.slurm_rc	= err; 
 	req.node_name	= conf->hostname;
 	msg.msg_type	= REQUEST_COMPLETE_JOB_STEP;
 	msg.data	= &req;	
@@ -369,14 +380,12 @@ _complete_job(slurmd_job_t *job)
 static int
 _run_batch_job(slurmd_job_t *job)
 {
-	int    rc;
+	int    status = 0;
+	int    rc     = 0;
 	task_t t;
 	pid_t  sid, pid;
-	int status;
-	gid_t sgid = getgid();
-	uid_t suid = getuid();
-
-	job_update_shm(job);
+	gid_t  sgid = getgid();
+	uid_t  suid = getuid();
 
 	/* Temporarily drop permissions to initiate
 	 * IO thread. This will ensure that calling user
@@ -385,26 +394,31 @@ _run_batch_job(slurmd_job_t *job)
 	 */
 	_seteuid_and_chdir(job);
 
-	if (io_spawn_handler(job) == SLURM_ERROR) {
-		job_error(job, "unable to spawn io handler");
-		rc = SLURM_ERROR;
-		goto done;
-	}
+	rc = io_spawn_handler(job);
 
 	/* seteuid/gid back to saved uid/gid
 	 */
 	if ((seteuid(suid) < 0) || (setegid(sgid) < 0)) {
-		fatal("set{e/g}uid(%ld/%ld) : %m", suid, sgid);
+		error("set{e/g}uid(%ld/%ld) : %m", suid, sgid);
+		return ESLURMD_SET_UID_OR_GID_ERROR;
 	}
+
+	/* Give up if we couldn't spawn IO handler for whatever reason
+	 */
+	if (rc < 0)
+		return ESLURMD_CANNOT_SPAWN_IO_THREAD;
 
 	xsignal(SIGPIPE, SIG_IGN);
 
 	if ((sid = setsid()) < (pid_t) 0) {
 		error("job %d: setsid: %m", job->jobid);
+		return ESLURMD_SET_SID_ERROR;
 	}
 
-	if (shm_update_step_sid(job->jobid, job->stepid, sid) < 0)
+	if (shm_update_step_sid(job->jobid, job->stepid, sid) < 0) {
 		error("job %d: shm_update_step_sid: %m", job->jobid);
+		return ESLURMD_SHARED_MEMORY_ERROR;
+	}
 
 	t.id = 0;
 	t.global_id = 0;
@@ -412,8 +426,7 @@ _run_batch_job(slurmd_job_t *job)
 
 	if ((t.pid = fork()) < 0) {
 		error("fork: %m");
-		exit(1);
-		/* job_cleanup() */
+		return ESLURMD_FORK_FAILED;
 	} else if (t.pid == 0)   /* child */
 		_task_exec(job, 0, true);
 
@@ -421,13 +434,13 @@ _run_batch_job(slurmd_job_t *job)
 
 	job->task[0]->pid = t.pid;
 
-	if (shm_add_task(job->jobid, job->stepid, &t) < 0)
+	if (shm_add_task(job->jobid, job->stepid, &t) < 0) {
 		job_error(job, "shm_add_task: %m");
+		return ESLURMD_SHARED_MEMORY_ERROR;
+	}
 
 	while ((pid = waitpid(0, &status, 0)) < 0 && (pid != t.pid)) {
-		if (pid > 0)
-			continue;
-		if (errno == EINTR)
+		if ((pid > 0) || (errno == EINTR))
 			continue;
 		else
 			error("waitpid: %m");
@@ -439,12 +452,7 @@ _run_batch_job(slurmd_job_t *job)
 	io_close_all(job);
 	pthread_join(job->ioid, NULL);
 
-	_complete_job(job);
-
-done:
-	shm_delete_step(job->jobid, job->stepid);
-	return rc;
-
+	return status;
 }
 
 static void
