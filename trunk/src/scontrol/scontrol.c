@@ -398,7 +398,7 @@ _pid_info(pid_t job_pid)
 	}
 
 	/* printf("Slurm job id: %u\n", job_id);   old format */
-	printf("Slurm job id: %u ends at %s", job_id, ctime(&end_time));
+	printf("Slurm job id %u ends at %s", job_id, ctime(&end_time));
 	return;
 }
 
