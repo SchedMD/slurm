@@ -5,8 +5,7 @@
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Dan Phung <phung4@llnl.gov> and Morris Jette <jette1@llnl.gov>
- *  and Danny Auble <da@llnl.gov>
- *
+ *  
  *  This file is part of SLURM, a resource management program.
  *  For details, see <http://www.llnl.gov/linux/slurm/>.
  *  
@@ -42,9 +41,11 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/common/node_select.h"
 #include "bluegene.h"
+#include "partition_sys.h"
 
 #define BUFSIZE 4096
 #define BITSIZE 128
+#define DEFAULT_BLUEGENE_SERIAL "BGL"
 
 #define _DEBUG 0
 
@@ -68,26 +69,25 @@ static void _rotate_geo(uint16_t *req_geometry, int rot_cnt)
 
 	switch (rot_cnt) {
 		case 0:		/* ABC -> ACB */
-			SWAP(req_geometry[Y], req_geometry[Z], tmp);
+			SWAP(req_geometry[1], req_geometry[2], tmp);
 			break;
 		case 1:		/* ACB -> CAB */
-			SWAP(req_geometry[X], req_geometry[Y], tmp);
+			SWAP(req_geometry[0], req_geometry[1], tmp);
 			break;
 		case 2:		/* CAB -> CBA */
-			SWAP(req_geometry[Y], req_geometry[Z], tmp);
+			SWAP(req_geometry[1], req_geometry[2], tmp);
 			break;
 		case 3:		/* CBA -> BCA */
-			SWAP(req_geometry[X], req_geometry[Y], tmp);
+			SWAP(req_geometry[0], req_geometry[1], tmp);
 			break;
 		case 4:		/* BCA -> BAC */
-			SWAP(req_geometry[Y], req_geometry[Z], tmp);
+			SWAP(req_geometry[1], req_geometry[2], tmp);
 			break;
 		case 5:		/* BAC -> ABC */
-			SWAP(req_geometry[X], req_geometry[Y], tmp);
+			SWAP(req_geometry[0], req_geometry[1], tmp);
 			break;
 	}
 }
-
 /*
  * finds the best match for a given job request 
  * 
@@ -140,11 +140,18 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/*
 		 * check that the number of nodes is suitable
 		 */
- 		if ((record->bp_count < min_nodes)
-		||  (max_nodes != 0 && record->bp_count > max_nodes)
-		||  (record->bp_count < target_size)) {
+ 		if ((record->size < min_nodes)
+		||  (max_nodes != 0 && record->size > max_nodes)
+		||  (record->size < target_size)) {
 			debug("partition %s node count not suitable",
-				record->bgl_part);
+				record->slurm_part_id);
+			continue;
+		}
+
+		/* Check that configured */
+		if (!record->alloc_part) {
+			error("warning, bgl_record %s undefined in "
+				"bluegene.conf", record->nodes);
 			continue;
 		}
 
@@ -199,17 +206,20 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 			;	/* Geometry not specified */
 		else {	/* match requested geometry */
 			bool match = false;
-			int rot_cnt;	/* attempt six rotations  */
+			int rot_cnt = 0;	/* attempt six rotations  */
 
 			for (rot_cnt=0; rot_cnt<6; rot_cnt++) {
-				if ((record->coord[X] >= req_geometry[X])
-				&&  (record->coord[Y] >= req_geometry[Y])
-				&&  (record->coord[Z] >= req_geometry[Z])) {
+				for (i=0; i<SYSTEM_DIMENSIONS; i++) {
+					if (record->alloc_part->dimensions[i] <
+							req_geometry[i])
+						break;
+				}
+				if (i == SYSTEM_DIMENSIONS) {
 					match = true;
 					break;
 				}
-				if (!rotate)
-					break;
+				if (rotate == 0)
+					break;		/* not usable */
 				_rotate_geo(req_geometry, rot_cnt);
 			}
 
@@ -218,18 +228,17 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		}
 
 		if ((*found_bgl_record == NULL)
-		||  (record->bp_count < (*found_bgl_record)->bp_count)) {
+		||  (record->size < (*found_bgl_record)->size)) {
 			*found_bgl_record = record;
-			if (record->bp_count == target_size)
+			if (record->size == target_size)
 				break;
 		}
-	}
-	list_iterator_destroy(itr);	
+	}	
 	
 	/* set the bitmap and do other allocation activities */
 	if (*found_bgl_record) {
 		debug("_find_best_partition_match %s <%s>", 
-			(*found_bgl_record)->bgl_part, 
+			(*found_bgl_record)->slurm_part_id, 
 			(*found_bgl_record)->nodes);
 		bit_and(slurm_part_bitmap, (*found_bgl_record)->bitmap);
 		return SLURM_SUCCESS;

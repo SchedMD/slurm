@@ -24,8 +24,30 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  endif
+#  if WITH_PTHREADS
+#    include <pthread.h>
+#  endif
+#endif
+
+#include <unistd.h>
+
+#include <slurm/slurm_errno.h>
+
+#include "src/common/list.h"
+#include "src/common/macros.h"
 #include "src/common/node_select.h"
 #include "src/common/uid.h"
+#include "src/common/xstring.h"
+#include "src/slurmctld/proc_req.h"
+#include "bgl_job_run.h"
 #include "bluegene.h"
 
 #ifdef HAVE_BGL_FILES
@@ -210,6 +232,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 		error("Could not free partition %s", bgl_part_id);
 		return SLURM_ERROR;
 	}
+
 	if ((rc = rm_set_part_owner(bgl_part_id, user)) != STATUS_OK) {
 		error("rm_set_part_owner(%s,%s): %s", bgl_part_id, user,
 			bgl_err_str(rc));
@@ -226,10 +249,6 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
  */
 static int _boot_part(pm_partition_id_t bgl_part_id)
 {
-#ifdef USE_BGL_FILES
-/* Due to various system problems, we do not want to boot BGL
- * partitions when each job is started, but only at slurmctld 
- * startup on an as needed basis. */
 	int rc;
 
 	info("Booting partition %s", bgl_part_id);
@@ -238,7 +257,6 @@ static int _boot_part(pm_partition_id_t bgl_part_id)
 			bgl_part_id, bgl_err_str(rc));
 		return SLURM_ERROR;
 	}
-#endif
 	return SLURM_SUCCESS;
 }
 
@@ -418,8 +436,8 @@ static List _get_all_blocks(void)
 
 	if (!ret_list)
 		fatal("malloc error");
-	
-	itr = list_iterator_create(bgl_curr_part_list);
+
+	itr = list_iterator_create(bgl_init_part_list);
 	while ((block_ptr = (bgl_record_t *) list_next(itr))) {
 		if ((block_ptr->owner_name == NULL)
 		||  (block_ptr->owner_name[0] == '\0') 
@@ -515,7 +533,7 @@ extern int term_job(struct job_record *job_ptr)
  * This can recover from slurmctld crashes when partition ownership
  * changes were queued
  */
-int sync_jobs(List job_list)
+extern int sync_jobs(List job_list)
 {
 #ifdef HAVE_BGL_FILES
 	ListIterator job_iterator, block_iterator;
@@ -539,12 +557,12 @@ int sync_jobs(List job_list)
 		bgl_update_ptr->uid = job_ptr->user_id;
 		bgl_update_ptr->job_id = job_ptr->job_id;
 		bgl_update_ptr->bgl_part_id = bgl_part_id;
-		_part_op(bgl_update_ptr);
 #else
 		info("Queue sync of job %u in BGL partition %s",
 			job_ptr->job_id, bgl_part_id);
 #endif
 		_excise_block(block_list, bgl_part_id);
+		_part_op(bgl_update_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 

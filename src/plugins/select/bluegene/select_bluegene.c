@@ -24,6 +24,33 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include "config.h"
+#  if HAVE_STDINT_H
+#    include <stdint.h>
+#  endif
+#  if HAVE_INTTYPES_H
+#    include <inttypes.h>
+#  endif
+#  if WITH_PTHREADS
+#    include <pthread.h>
+#  endif
+#endif
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
+
+#include "src/common/slurm_xlator.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/slurmctld/slurmctld.h"
+#include "bgl_job_place.h"
+#include "bgl_job_run.h"
 #include "bluegene.h"
 
 /*
@@ -186,7 +213,9 @@ extern int fini ( void )
  extern int select_p_part_init(List part_list)
 {
 	xassert(part_list);
-	/*looking for partitions only I created */
+	if (read_bgl_conf())
+		return SLURM_ERROR;
+
 	if (create_static_partitions(part_list)) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
@@ -214,9 +243,7 @@ extern int select_p_state_restore(char *dir_name)
 /* Sync BGL blocks to currently active jobs */
 extern int select_p_job_init(List job_list)
 {
-	/* change back when done testing */
-	//return sync_jobs(job_list);
-	return SLURM_SUCCESS;
+	return sync_jobs(job_list);
 }
 
 /* All initialization is performed by select_p_part_init() */
@@ -227,9 +254,7 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 /*
  * select_p_job_test - Given a specification of scheduling requirements, 
- *	identify the nodes which "best" satify the request. The specified 
- *	nodes may be DOWN or BUSY at the time of this test as may be used 
- *	to deterime if a job could ever run.
+ *	identify the nodes which "best" satify the request.
  * IN job_ptr - pointer to job being scheduled
  * IN/OUT bitmap - usable nodes are set on input, nodes not required to 
  *	satisfy the request are cleared, other left set
