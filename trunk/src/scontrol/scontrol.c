@@ -1511,10 +1511,13 @@ _update_job (int argc, char *argv[])
 static int
 _update_node (int argc, char *argv[]) 
 {
-	int i, j, k, rc;
+	int i, j, k, rc = 0;
 	uint16_t state_val;
 	update_node_msg_t node_msg;
 	char *reason_str = NULL;
+	char time_buf[64];
+	struct tm *time_ptr;
+	time_t now;
 
 	node_msg.node_names = NULL;
 	node_msg.reason = NULL;
@@ -1533,6 +1536,13 @@ _update_node (int argc, char *argv[])
 			len = strlen(reason_str) - 1;
 			if ((len >= 0) && (reason_str[len] == '"'))
 				reason_str[len] = '\0';
+
+			/* Append date and time */
+			now = time(NULL);
+			time_ptr = localtime(&now);
+			strftime(time_buf, sizeof(time_buf), " %b %d %H:%M", 
+				time_ptr);
+			xstrcat(reason_str, time_buf);
 				
 			node_msg.reason = reason_str;
 		}
@@ -1563,7 +1573,7 @@ _update_node (int argc, char *argv[])
 						         node_state_string(k));
 					}
 					fprintf (stderr, "\n");
-					return 0;
+					goto done;
 				}
 			}	
 			node_msg.node_state = state_val;
@@ -1572,13 +1582,21 @@ _update_node (int argc, char *argv[])
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);
 			fprintf (stderr, "Request aborted\n");
-			return 0;
+			goto done;
 		}
 	}
 
-	rc = slurm_update_node(&node_msg);
-	xfree(reason_str);
+	if (((node_msg.node_state == NODE_STATE_DRAINING) ||
+	     (node_msg.node_state == NODE_STATE_DRAINING)) &&
+	    (node_msg.reason == NULL)) {
+		fprintf (stderr, "You must specify a reason when DRAINING a node\n");
+		fprintf (stderr, "Request aborted\n");
+		goto done;
+	}
 
+	rc = slurm_update_node(&node_msg);
+
+done:	xfree(reason_str);
 	if (rc) {
 		exit_code = 1;
 		return slurm_get_errno ();
