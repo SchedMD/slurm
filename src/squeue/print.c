@@ -1076,8 +1076,9 @@ static int _adjust_completing (job_info_t *job_ptr, node_info_msg_t **ni)
 
 	hostlist_uniq(hl);
 	hostlist_ranged_string (hl, 8192, buf);
-	job_ptr->num_nodes = MAX(job_ptr->num_nodes, hostlist_count(hl));
 	hostlist_destroy(hl);
+	job_ptr->num_nodes = MAX(job_ptr->num_nodes, 
+				_nodes_in_list(job_ptr->nodes));
 	xfree (job_ptr->nodes);
 	job_ptr->nodes = xstrdup (buf); 
 	return (0);
