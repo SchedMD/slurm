@@ -1048,8 +1048,8 @@ list_delete_job (void *job_entry)
 	if (job_record_point->magic != JOB_MAGIC)
 		fatal ("list_delete_job: passed invalid job pointer");
 
-	if (job_hash[job_record_point->job_id] == job_record_point)
-		job_hash[job_record_point->job_id] = NULL;
+	if (job_hash[job_record_point->job_id % MAX_JOB_COUNT] == job_record_point)
+		job_hash[job_record_point->job_id % MAX_JOB_COUNT] = NULL;
 	else {
 		for (i=0; i<max_hash_over; i++) {
 			if (job_hash_over[i] != job_record_point)
