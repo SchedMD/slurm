@@ -582,7 +582,7 @@ static void *_thread_per_node_rpc(void *args)
 		slurm_rc_msg = (return_code_msg_t *) response_msg->data;
 		rc = slurm_rc_msg->return_code;
 		slurm_free_return_code_msg(slurm_rc_msg);
-		if (rc == 0) {
+		if (rc == SLURM_SUCCESS) {
 			debug3("agent processed RPC to node %s",
 			       thread_ptr->node_name);
 			thread_state = DSH_DONE;
@@ -594,6 +594,11 @@ static void *_thread_per_node_rpc(void *args)
 			error("Prolog failure on host %s, setting DOWN",
 			      thread_ptr->node_name);
 			thread_state = DSH_FAILED;
+		} else if (rc == ESLURM_INVALID_JOB_ID) {
+			/* Not indicative of a real error */
+			debug2("agent processed RPC to node %s, error %s",
+			       thread_ptr->node_name, "Invalid Job Id");
+			thread_state = DSH_DONE;
 		} else {
 			error("agent error from host %s: %s",
 			      thread_ptr->node_name,
