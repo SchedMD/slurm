@@ -14,14 +14,9 @@
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <syslog.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <unistd.h>
 
-#include "slurmlib.h"
+#include <src/api/slurm.h>
+#include <src/common/slurm.h>
 
 #if DEBUG_MODULE
 /* main is used here for testing purposes only */
@@ -46,79 +41,44 @@ main (int argc, char *argv[])
 }
 #endif
 
-
-/*
- * slurm_cancel - cancel the specified job 
- * input: job_id - the job_id to be cancelled
- * output: returns 0 if no error, EINVAL if the request is invalid, 
- *			EAGAIN if the request can not be satisfied at present
- */
-int
-slurm_cancel (uint32_t job_id) 
+slurm_cancel_job ( uint32_t job_id )
 {
-	int buffer_offset, buffer_size, in_size;
-	char *request_msg, *buffer, id_str[20];
-	int sockfd;
-	struct sockaddr_in serv_addr;
+        int msg_size ;
+        int rc ;
+        slurm_fd sockfd ;
+        slurm_msg_t request_msg ;
+        slurm_msg_t response_msg ;
+	job_id_msg_t job_id_msg ;
+        return_code_msg_t * rc_msg ;
 
-	sprintf (id_str, "%u", job_id);
-	request_msg = malloc (strlen (id_str) + 11);
-	if (request_msg == NULL)
-		return EAGAIN;
-	strcpy (request_msg, "JobCancel ");
-	strcat (request_msg, id_str);
+        /* init message connection for message communication with controller */
+        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
 
-	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0)
-		return EINVAL;
-	serv_addr.sin_family = PF_INET;
-	serv_addr.sin_addr.s_addr = inet_addr (SLURMCTLD_HOST);
-	serv_addr.sin_port = htons (SLURMCTLD_PORT);
-	if (connect
-	    (sockfd, (struct sockaddr *) &serv_addr,
-	     sizeof (serv_addr)) < 0) {
-		close (sockfd);
-		return EAGAIN;
-	}			
-	if (send (sockfd, request_msg, strlen (request_msg) + 1, 0) <
-	    strlen (request_msg)) {
-		close (sockfd);
-		return EAGAIN;
-	}			
+        /* send request message */
+	job_id_msg . job_id = job_id ;
+        request_msg . msg_type = REQUEST_JOB_CANCEL ;
+        request_msg . data = &job_id_msg ;
+        if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
 
-	buffer = NULL;
-	buffer_offset = 0;
-	buffer_size = 8 * 1024;
-	while (1) {
-		buffer = realloc (buffer, buffer_size);
-		if (buffer == NULL) {
-			close (sockfd);
-			return EAGAIN;
-		}		
-		in_size =
-			recv (sockfd, &buffer[buffer_offset],
-			      (buffer_size - buffer_offset), 0);
-		if (in_size <= 0) {	/* end of input */
-			in_size = 0;
-			break;
-		}		
-		buffer_offset += in_size;
-		buffer_size += in_size;
-	}
-	close (sockfd);
-	buffer_size = buffer_offset + in_size;
-	buffer = realloc (buffer, buffer_size);
-	if (buffer == NULL)
-		return EAGAIN;
+        /* receive message */
+        if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
+        /* shutdown message connection */
+        if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
+                return SLURM_SOCKET_ERROR ;
 
-	if (strcmp (buffer, "EAGAIN") == 0) {
-		free (buffer);
-		return EAGAIN;
-	}			
-	if (strcmp (buffer, "EINVAL") == 0) {
-		free (buffer);
-		return EINVAL;
-	}
-	printf ("%s\n", buffer);
-	free (buffer);
-	return 0;
+        switch ( response_msg . msg_type )
+        {
+                case RESPONSE_SLURM_RC:
+                        rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			return rc_msg -> return_code ;
+                        break ;
+                default:
+                        return SLURM_UNEXPECTED_MSG_ERROR ;
+                        break ;
+        }
+
+        return SLURM_SUCCESS ;
 }

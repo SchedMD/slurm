@@ -46,6 +46,7 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
         last_update_msg_t last_time_msg ; 
+	return_code_msg_t * rc_msg ;
 	
 	/* init message connection for message communication with controller */
 	
@@ -77,7 +78,8 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
         		return SLURM_SUCCESS ;
                         break ;
                 case RESPONSE_SLURM_RC:
-			return SLURM_NO_CHANGE_IN_DATA ;
+                        rc_msg = ( return_code_msg_t * ) response_msg . data ; 
+			return rc_msg->return_code ;
                         break ;
                 default:
 			return SLURM_UNEXPECTED_MSG_ERROR ;
