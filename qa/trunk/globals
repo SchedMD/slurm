@@ -65,6 +65,7 @@ set max_stress_tasks 4
 set alpha          "\[a-zA-Z\]+"
 set alpha_cap      "\[A-Z\]+"
 set alpha_numeric  "\[a-zA-Z0-9\]+"
+set alpha_under    "\[A-Z_\]+"
 set end_of_line    "\[\r\n\]"
 set number         "\[0-9\]+"
 

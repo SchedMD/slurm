@@ -72,7 +72,7 @@ test1.28   Verify that user environment variables are propogated to the job.
 test1.29   Verify that user user limits are propogated to the job.
 test1.30   Test of increasing job sizes.
 test1.31   Verify that SLURM directed environment variables are processed:
-           SLURM_DEBUG, SLURM_NNODES, SLURN_NPROCS, SLURM_OVERCOMMIT, 
+           SLURM_DEBUG, SLURM_NNODES, SLURM_NPROCS, SLURM_OVERCOMMIT, 
            SLURM_STDOUTMODE.
 test1.32   Test of srun signal forwarding
 test1.33   Test of srun application exit code reporting
