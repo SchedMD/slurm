@@ -5,16 +5,21 @@ documents those changes that are of interest to users and admins.
 ========================
  -- Set SLURM_TASKS_PER_NODE env var for batch jobs (and LAM/MPI).
  -- Fix for slurmd spinning when stdin buffers full (gnats:434)
- -- Change some slurmctld malloc sizes to reduce demand for realloc
-    calls, improves performance and eliminates realloc failure on 
-    RH EL3 under extremely heavy workload apparently due to memory 
-    fragmentation.
+ -- Change some slurmctld malloc sizes to reduce demand for realloc calls, 
+    improves performance and eliminates realloc failure on RH EL3 under 
+    extremely heavy workload apparently due to memory fragmentation.
  -- Fix scheduling logic for heterogeneous processor count.
  -- Modify security_2_2 test to function with release 0.3
  -- Fix broken rpm build when libslurm not already installed.
  -- New slurmd option -M to mlock() slurmd process into memory.
- -- Fix node processing if state change requested via scontrol 
-    prior to initial node registration.
+ -- New srun option --no-shell causes srun to exit instead of spawning 
+    shell when using --allocate, -A.
+ -- Modify  srun --uid=user and --gid=group options to maintain invoking 
+    user's credentials until after nodes have been allocated to requested 
+    user/group (allows root to run jobs and allocate nodes for other users 
+    in a RootOnly partition).
+ -- Fix node processing if state change requested via scontrol prior to 
+    initial node registration.
  
 * Changes in SLURM 0.3.0
 ========================

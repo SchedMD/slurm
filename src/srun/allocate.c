@@ -230,7 +230,11 @@ job_desc_msg_create(void)
 	j->min_nodes      = opt.min_nodes;
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
-	j->group_id	  = getgid();
+
+	if (opt.egid == (gid_t) -1)
+		j->group_id = getgid ();
+	else
+		j->group_id = opt.egid;
 
 	if (opt.hold)
 		j->priority     = 0;
@@ -255,10 +259,11 @@ job_desc_msg_create(void)
 	if (opt.share)
 		j->shared              = 1;
 
-	if (slurmctld_comm_addr.port) {
+	j->port = slurmctld_comm_addr.port;
+	if (slurmctld_comm_addr.hostname) 
 		j->host = xstrdup(slurmctld_comm_addr.hostname);
-		j->port = slurmctld_comm_addr.port;
-	}
+	else
+		j->host = NULL;
 
 	return (j);
 }

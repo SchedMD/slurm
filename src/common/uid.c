@@ -1,3 +1,30 @@
+/*****************************************************************************\
+ * src/common/uid.c - uid/gid lookup utility functions
+ * $Id$
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Mark Grondona <mgrondona@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #include <stdlib.h>
 #include <pwd.h>
 #include <grp.h>
@@ -5,28 +32,33 @@
 
 #include "uid.h"
 
-int
-is_digit_string( char *str )
-{
-	char *p;
-
-	for ( p = str; *p; ++p ) {
-		if ( ! isdigit( *p ) ) return 0;
-	}
-	return 1;
-}
-
 uid_t
-uid_from_name( char *name )
+uid_from_string (char *name)
 {
-	struct passwd *p = getpwnam( name );
-	return p ? p->pw_uid : NFS_NOBODY;
+	struct passwd *pwd = NULL;
+	char *p = NULL;
+	uid_t uid = (uid_t) strtoul (name, &p, 10);
+
+	if (*p != '\0')
+		pwd = getpwnam (name);
+	else
+		pwd = getpwuid (uid);
+
+	return pwd ? pwd->pw_uid : (uid_t) -1; 
 }
 
 gid_t
-gid_from_name( char *name )
+gid_from_string (char *name)
 {
-	struct group *g = getgrnam( name );
-	return g ? g->gr_gid : NFS_NOBODY;
+	struct group *g = NULL;
+	char *p = NULL;
+	gid_t gid = (gid_t) strtoul (name, &p, 10);
+
+	if (*p != '\0')
+		g = getgrnam (name);
+	else
+		g = getgrgid (gid);
+
+	return g ? g->gr_gid : (gid_t) -1;
 }
 
