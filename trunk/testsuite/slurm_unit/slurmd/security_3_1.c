@@ -89,7 +89,7 @@ static int _send_launch_msg(batch_job_launch_msg_t *launch_msg_ptr)
 	}
 
 	/* receive message */
-	if ((msg_size = slurm_receive_msg(sockfd, &response_msg))
+	if ((msg_size = slurm_receive_msg(sockfd, &response_msg, 0))
 	     == SLURM_SOCKET_ERROR) {
 		slurm_perror("slurm_receive_msg");
 		return SLURM_ERROR;
