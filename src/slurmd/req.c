@@ -68,6 +68,7 @@ static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _run_prolog(uint32_t jobid, uid_t uid);
 static int  _run_epilog(uint32_t jobid, uid_t uid);
 static void _wait_for_procs(uint32_t job_id, uid_t job_uid);
+
 void
 slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 {
@@ -384,7 +385,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 }
 
 /* For the specified job_id: Send SIGXCPU, reply to slurmctld, 
-	sleep(configured kill_wait), then send SIGKILL */
+ *	sleep(configured kill_wait), then send SIGKILL */
 static void
 _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 {
@@ -404,8 +405,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	info("Timeout for job=%u, step_cnt=%d, kill_wait=%u", 
 	     req->job_id, step_cnt, conf->cf.kill_wait);
 	if (step_cnt)
-		sleep(1);
-//		sleep(conf->cf.kill_wait);
+		sleep(conf->cf.kill_wait);
 	_rpc_revoke_credential(msg, cli_addr); /* SIGKILL and send response */
 }
 
