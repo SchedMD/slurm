@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for scheduler plugins
 
-SUBDIRS = builtin wiki
+SUBDIRS = backfill builtin wiki
