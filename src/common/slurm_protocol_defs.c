@@ -256,6 +256,16 @@ void slurm_free_launch_tasks_request_msg(launch_tasks_request_msg_t * msg)
 		}
 		if (msg->global_task_ids)
 			xfree(msg->global_task_ids);
+
+		if (msg->ofname)
+			xfree(msg->ofname);
+
+		if (msg->efname)
+			xfree(msg->ofname);
+
+		if (msg->ifname)
+			xfree(msg->ofname);
+
 #		ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo(msg->qsw_job);
 #		endif

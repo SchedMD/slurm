@@ -238,6 +238,11 @@ typedef struct launch_tasks_request_msg {
 	uint16_t  task_flags;
 	uint32_t *global_task_ids;
 
+	/* stdout/err/in per task filenames */
+	char     *ofname;
+	char     *efname;
+	char     *ifname;
+
 	slurm_job_credential_t *credential;	/* job credential            */
 
 #ifdef HAVE_LIBELAN3

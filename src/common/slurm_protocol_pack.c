@@ -1838,6 +1838,9 @@ void pack_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg ,
 	pack16 (  msg -> resp_port , buffer ) ;
 	pack16 (  msg -> io_port , buffer ) ;
 	pack16 (  msg -> task_flags , buffer ) ;
+	packstr ( msg -> ofname, buffer );
+	packstr ( msg -> efname, buffer );
+	packstr ( msg -> ifname, buffer );
 	pack32_array ( msg -> global_task_ids , 
 	               (uint16_t) msg -> tasks_to_launch , buffer ) ;
 #ifdef HAVE_LIBELAN3
@@ -1870,6 +1873,9 @@ int unpack_launch_tasks_request_msg (
 	safe_unpack16 ( & msg -> resp_port , buffer  ) ;
 	safe_unpack16 ( & msg -> io_port , buffer  ) ;
 	safe_unpack16 ( & msg -> task_flags , buffer  ) ;
+	safe_unpackstr_xmalloc ( &msg -> ofname, &uint16_tmp, buffer );
+	safe_unpackstr_xmalloc ( &msg -> efname, &uint16_tmp, buffer );
+	safe_unpackstr_xmalloc ( &msg -> ifname, &uint16_tmp, buffer );
 	safe_unpack32_array ( & msg -> global_task_ids , 
 	                      & uint16_tmp , buffer ) ;
 
@@ -1883,15 +1889,7 @@ int unpack_launch_tasks_request_msg (
 	return SLURM_SUCCESS ;
 
     unpack_error:
-	if (msg -> env)
-		xfree (msg -> env);
-	if (msg -> cwd)
-		xfree (msg -> cwd);
-	if (msg -> argv)
-		xfree (msg -> argv);
-	if (msg -> global_task_ids)
-		xfree (msg -> global_task_ids);
-        xfree (msg);
+	slurm_free_launch_tasks_request_msg(msg);
         *msg_ptr = NULL;
         return SLURM_ERROR;
 }
