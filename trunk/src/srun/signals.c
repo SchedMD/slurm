@@ -52,7 +52,7 @@
  */
 static int srun_sigarray[] = {
 	SIGINT,  SIGQUIT, SIGTSTP, SIGCONT, 
-	SIGALRM, SIGUSR1, SIGUSR2, 0
+	SIGALRM, SIGUSR1, SIGUSR2, SIGPIPE, 0
 };
 
 /* number of active threads */
