@@ -33,8 +33,6 @@ main (int argc, char *argv[])
 	strcpy (job_rec->partition, "batch");
 	job_rec->details->num_nodes = 1;
 	job_rec->details->num_procs = 1;
-	set_job_id (job_rec);
-	set_job_prio (job_rec);
 	tmp_id = job_rec->job_id;
 
 	for (i=1; i<=4; i++) {
@@ -49,8 +47,6 @@ main (int argc, char *argv[])
 		strcpy (job_rec->partition, "debug");
 		job_rec->details->num_nodes = i;
 		job_rec->details->num_procs = i;
-		set_job_id (job_rec);
-		set_job_prio (job_rec);
 	}
 
 	error_code = 0;
