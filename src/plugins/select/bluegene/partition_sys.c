@@ -47,7 +47,7 @@
 
 /****************************/
 /*   for testing purposes   */
-int BGL_PARTITION_NUMBER = 0;
+uint16_t BGL_PARTITION_NUMBER = 0;
 /****************************/
 
 #ifdef _UNIT_TEST_
@@ -70,8 +70,8 @@ List bgl_sys_free = NULL;
 List bgl_sys_allocated = NULL;
 
 void _init_sys(partition_t*);
-int _isNotEqualsAllCoord(int* A, int* B);
-int _isNotEqualsSomeCoord(int* A, int* B);
+int _isNotEqualsAllCoord(uint16_t* A, uint16_t* B);
+int _isNotEqualsSomeCoord(uint16_t* A, uint16_t* B);
 
 #ifdef _RM_API_H__
 /** 
@@ -98,11 +98,11 @@ int create_bgl_partitions(List requests);
 #endif
 
 int break_up_partition(List sys, partition_t* partition_to_break, int index);
-int fit_request(List sys, List allocated, int* request);
+int fit_request(List sys, List allocated, uint16_t* request);
 
 
 void int_array_destroy(void* object);
-int intArray_CmpF(int* A, int* B);
+int intArray_CmpF(uint16_t* A, uint16_t* B);
 
 int partition_CmpF_inc(struct partition* A, struct partition* B);
 int partition_CmpF_dec(struct partition* A, struct partition* B);
@@ -169,9 +169,9 @@ int partition_sys(List requests)
 	printList(requests);
 #endif
 
-	int* request;
+	uint16_t* request;
 	int all_success = 0; // 0 = yes, 1 = no
-	while ((request = (int*) list_next(itr))) {
+	while ((request = (uint16_t*) list_next(itr))) {
 		if (fit_request(bgl_sys_free, bgl_sys_allocated, request)){
 #ifdef DEBUG_PART
 			debug("failure in allocation!!!\n");
@@ -219,7 +219,7 @@ int create_bgl_partitions(List requests)
  * we assume that the partitioning done before hand
  * 
  */
-int fit_request(List sys, List allocated, int* request)
+int fit_request(List sys, List allocated, uint16_t* request)
 {
 	if (sys == NULL || allocated == NULL || request == NULL)
 		return 1;
@@ -237,7 +237,7 @@ int fit_request(List sys, List allocated, int* request)
 #endif
 	/* ??? FIXME wtf, if rotate_part doesn't have something printed before it....it segfaults */
 	debug("");
-	int* new_request;
+	uint16_t* new_request;
 	rotate_part(request, &new_request);
 	free(request);
 	request = new_request;
@@ -415,7 +415,7 @@ int isPartitionNotEquals(partition_t* A, partition_t* B)
 /** 
  * return - the int array's size
  */
-int intArray_size(int* part_geometry){
+int intArray_size(uint16_t* part_geometry){
 	if (part_geometry == NULL)
 		return 0;
 
@@ -514,7 +514,7 @@ void sortIntArrayByDecSize(List configs){
  * Note: return values are "reversed" so that we can have the list
  * sorted in decreasing order (largest to smallest)
  */
-int intArray_CmpF(int* A, int* B)
+int intArray_CmpF(uint16_t* A, uint16_t* B)
 {
 	if (A == NULL || B == NULL)
 		return -9;
@@ -700,7 +700,7 @@ int configure_switches(rm_partition_t* partition, partition_t* partition)
  * find if the cur_part fits the same dimensions as the given request
  * return 0 for affirmative (correct dimension), and 1 for negative (not correct dimension)
  */
-int isNotCorrectDimension(int* cur_part, int* request)
+int isNotCorrectDimension(uint16_t* cur_part, uint16_t* request)
 {
 	if (cur_part == NULL || request == NULL)
 		return 1;
@@ -776,7 +776,7 @@ int max_dim_index(int* array)
  * 
  * note: this is for 3d only!
  */
-void rotate_part(const int* config, int** new_config)
+void rotate_part(const uint16_t* config, uint16_t** new_config)
 {
 	if (config == NULL)
 		return;
@@ -785,7 +785,7 @@ void rotate_part(const int* config, int** new_config)
 		free(*new_config);
 	}
 
-	(*new_config) = (int*) calloc(SYSTEM_DIMENSIONS, sizeof(int));
+	(*new_config) = (uint16_t*) calloc(SYSTEM_DIMENSIONS, sizeof(uint16_t));
 	if (!(*new_config)){
 		// printf("error: rotate_part: not enough memory for new array\n");
 		return;
@@ -1017,7 +1017,7 @@ int get_BP_by_location(int* cur_coord, rm_BP_t* BP)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _isNotEqualsSomeCoord(int* A, int* B)
+int _isNotEqualsSomeCoord(uint16_t* A, uint16_t* B)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -1032,7 +1032,7 @@ int _isNotEqualsSomeCoord(int* A, int* B)
  * 
  * returns 0 if equals, 1 if not equals
  */
-int _isNotEqualsAllCoord(int* A, int* B)
+int _isNotEqualsAllCoord(uint16_t* A, uint16_t* B)
 {
 	int i;
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){

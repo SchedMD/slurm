@@ -34,8 +34,8 @@
 
 // #include "rm_api.h"
 #ifndef _RM_API_H__
-typedef int pm_partition_id_t;
-typedef int rm_partition_t;
+typedef uint16_t pm_partition_id_t;
+typedef uint16_t rm_partition_t;
 #else 
 rm_BGL_t *bgl;
 #endif
@@ -47,7 +47,6 @@ typedef int lifecycle_type_t;
 enum part_lifecycle {DYNAMIC, STATIC};
 
 typedef struct bgl_record {
-	int used;
 	char* slurm_part_id;		/* ID specified by admins	*/
 	pm_partition_id_t* bgl_part_id;	/* ID returned from CMCS	*/
 	char* nodes;			/* String of nodes in partition */
