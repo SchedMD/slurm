@@ -101,14 +101,17 @@ int forward_io ( task_start_t * task_start )
 
 int wait_on_io_threads ( task_start_t * task_start ) 
 {
+	info ( "%i: err pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDERR_FILENO] ) ;
+	info ( "%i: out pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDOUT_FILENO] ) ;
+	info ( "%i: in pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDIN_FILENO] ) ;
 	/* threads have been detatched*/
 	waitpid (  task_start->io_pthread_id[STDERR_FILENO] , NULL , 0 ) ;
-	info ( "errexit" ) ;
+	info ( "%i: errexit pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDERR_FILENO] ) ;
 	waitpid ( task_start->io_pthread_id[STDOUT_FILENO] , NULL , 0 ) ;
-	info ( "outexit" ) ;
+	info ( "%i: outexit pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDOUT_FILENO] ) ;
 	/* waitpid ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;*/
 	kill ( task_start->io_pthread_id[STDIN_FILENO] , SIGKILL );
-	info ( "inexit" ) ;
+	info ( "%i: inexit pid: %i " , task_start -> local_task_id , task_start->io_pthread_id[STDIN_FILENO] ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	return SLURM_SUCCESS ;
 }
