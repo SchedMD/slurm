@@ -71,20 +71,12 @@ struct job_buffer {
 	struct job_table *job_table_ptr;
 };
 
-struct part_table {
-	char *name;		/* name of the partition */
-	uint32_t max_time;	/* minutes or INFINITE */
-	uint32_t max_nodes;	/* per job or INFINITE */
-	uint32_t total_nodes;	/* total number of nodes in the partition */
-	uint32_t total_cpus;	/* total number of cpus in the partition */
-	uint16_t default_part;	/* 1 if this is default partition */
-	uint16_t key;		/* 1 if slurm distributed key is required for use  */
-	uint16_t shared;	/* 1 if job can share nodes, 2 if job must share nodes */
-	uint16_t state_up;	/* 1 if state is up, 0 if down */
-	char *nodes;		/* comma delimited list names of nodes in partition */
-	int *node_inx;		/* list index pairs into node_table:
-				   start_range_1, end_range_1, start_range_2, .., -1  */
-	char *allow_groups;	/* comma delimited list of groups, null indicates all */
+
+struct node_buffer {
+	time_t last_update;	/* time of last buffer update */
+	uint32_t node_count;	/* count of entries in node_table */
+	void *raw_buffer_ptr;	/* raw network buffer info */
+	struct node_table *node_table_ptr;
 };
 
 struct part_buffer {
@@ -172,7 +164,9 @@ extern void slurm_print_node_table (node_table_t * node_ptr );
  * slurm_free_part_info - free the partition information buffer (if allocated)
  * NOTE: buffer is loaded by load_part.
  */
-extern void slurm_free_part_info (struct part_buffer *part_buffer_ptr);
+extern void slurm_free_partition_info ( partition_info_msg_t * part_info_ptr);
+extern void slurm_print_partition_info ( partition_info_msg_t * part_info_ptr ) ;
+extern void slurm_print_partition_table ( partition_table_t * part_ptr ) ;
 
 /*
  * slurm_load_build - load the slurm build information buffer for use by info 
@@ -208,7 +202,7 @@ extern int slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_
  *		ENOMEM if malloc failure
  * NOTE: the allocated memory at part_buffer_ptr freed by slurm_free_part_info.
  */
-extern int slurm_load_part (time_t update_time, struct part_buffer **part_buffer_ptr);
+extern int slurm_load_partitions (time_t update_time, partition_info_msg_t **part_buffer_ptr);
 
 /*
  * slurm_submit - submit/queue a job with supplied contraints. 
@@ -263,7 +257,7 @@ extern int parse_node_name (char *node_name, char **format, int *start_inx,
  * reconfigure - _ request that slurmctld re-read the configuration files
  * output: returns 0 on success, errno otherwise
  */
-extern int reconfigure ();
+extern int slurm_reconfigure ();
 
 /* 
  * update_config - request that slurmctld update its configuration per request
