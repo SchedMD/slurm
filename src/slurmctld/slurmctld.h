@@ -276,10 +276,6 @@ extern struct part_record *find_part_record (char *name);
 /* find_step_record - return a pointer to the step record with the given job_id and step_id */
 extern struct step_record * find_step_record(struct job_record *job_ptr, uint16_t step_id);
 
-/* getnodename - equivalent to gethostname, but return only the first component of the fully 
- *	qualified name (e.g. "linux123.foo.bar" becomes "linux123") */
-extern int getnodename (char *name, size_t len);
-
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
  *	this should be called after creating node information, but 
