@@ -156,9 +156,9 @@ static void print_launch_msg(launch_tasks_request_msg_t *msg)
 	int len = 0;
 
 	len = snprintf(buf, 4096, "%d.%d uid:%ld n:%ld `%s' %d [%d-%d]",
-			msg->job_id, msg->job_step_id, msg->uid, 
-			msg->tasks_to_launch, msg->cwd, msg->srun_node_id,
-			msg->global_task_ids[0],
+			msg->job_id, msg->job_step_id, (long) msg->uid, 
+			(long) msg->tasks_to_launch, msg->cwd, 
+			msg->srun_node_id, msg->global_task_ids[0],
 			msg->global_task_ids[msg->tasks_to_launch-1]);
 	debug3("%s", buf);
 }
