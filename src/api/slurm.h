@@ -264,4 +264,4 @@ extern int slurm_reconfigure ();
  * input: a line containing configuration information per the configuration file format
  * output: returns 0 on success, errno otherwise
  */
-extern int update_config (char *spec);
+extern int slurm_update_config (char *spec);
