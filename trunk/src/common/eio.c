@@ -28,18 +28,30 @@
 #endif 
 
 #include <sys/poll.h>
+#include <unistd.h>
 #include <errno.h>
 
 #include "src/common/xmalloc.h"
 #include "src/common/xassert.h"
 #include "src/common/log.h"
 #include "src/common/list.h"
+#include "src/common/fd.h"
 #include "src/common/eio.h"
+
+
+struct eio_handle_components {
+#ifndef NDEBUG
+#       define EIO_MAGIC 0xe1e10
+	int  magic;
+#endif
+	int  fds[2];
+};
+
 
 /* Function prototypes
  */
 
-static int          _poll_loop_internal(List objs);
+static int          _poll_loop_internal(eio_t eio, List objs);
 static int          _poll_internal(struct pollfd *pfds, unsigned int nfds);
 static unsigned int _poll_setup_pollfds(struct pollfd *, io_obj_t **, List);
 static void         _poll_dispatch(struct pollfd *, unsigned int, io_obj_t **,
@@ -47,13 +59,63 @@ static void         _poll_dispatch(struct pollfd *, unsigned int, io_obj_t **,
 static void         _poll_handle_event(short revents, io_obj_t *obj,
 		                       List objList);
 
-int io_handle_events(List objs)
+eio_t eio_handle_create(void)
 {
-	return _poll_loop_internal(objs);
+	eio_t eio = xmalloc(sizeof(*eio));
+
+	if (pipe(eio->fds) < 0) {
+		error ("eio_create: pipe: %m");
+		eio_handle_destroy(eio);
+		return (NULL);
+	}
+
+	fd_set_nonblocking(eio->fds[0]);
+
+	xassert(eio->magic = EIO_MAGIC);
+
+	return eio;
+}
+
+void eio_handle_destroy(eio_t eio)
+{
+	xassert(eio != NULL);
+	xassert(eio->magic == EIO_MAGIC);
+	close(eio->fds[0]);
+	close(eio->fds[1]);
+	xassert(eio->magic = ~EIO_MAGIC);
+	xfree(eio);
+}
+
+int eio_handle_signal(eio_t eio)
+{
+	char c = 0;
+	if (write(eio->fds[1], &c, sizeof(char)) != 1) 
+		return error("eio_signal: write; %m");
+	return 0;
+}
+
+static int _eio_clear(eio_t eio)
+{
+	char buf[1024];
+	int rc = 0;
+
+	while ((rc = (read(eio->fds[0], buf, 1024)) > 0))  {;}
+
+	if (rc < 0) return error("eio_clear: read: %m");
+
+	return 0;
+}
+
+int io_handle_events(eio_t eio, List objs)
+{
+	xassert (eio != NULL);
+	xassert (eio->magic == EIO_MAGIC);
+
+	return _poll_loop_internal(eio, objs);
 }
 
 static int
-_poll_loop_internal(List objs)
+_poll_loop_internal(eio_t eio, List objs)
 {
 	int            retval  = 0;
 	struct pollfd *pollfds = NULL;
@@ -66,8 +128,8 @@ _poll_loop_internal(List objs)
 		/* Alloc memory for pfds and map if needed */                  
 		if (maxnfds < (n = list_count(objs))) {
 			maxnfds = n;
-			xrealloc(pollfds, maxnfds*sizeof(struct pollfd));
-			xrealloc(map,     maxnfds*sizeof(io_obj_t *   ));
+			xrealloc(pollfds, (maxnfds+1) * sizeof(struct pollfd));
+			xrealloc(map,     maxnfds     * sizeof(io_obj_t *   ));
 			/* 
 			 * Note: xrealloc() also handles initial malloc 
 			 */
@@ -75,13 +137,31 @@ _poll_loop_internal(List objs)
 
 		debug3("eio: handling events for %d objects", 
 				list_count(objs));
+		/*
+		 *  Clear any pending eio signals
+		 */
+		_eio_clear(eio);
+
 		if ((nfds = _poll_setup_pollfds(pollfds, map, objs)) <= 0) 
 			goto done;
+
+		/*
+		 *  Setup eio handle poll fd
+		 */
+		pollfds[nfds].fd     = eio->fds[0];
+		pollfds[nfds].events = POLLIN;
+		nfds++;
+
+		xassert(nfds <= maxnfds + 1);
+
 
 		if (_poll_internal(pollfds, nfds) < 0)
 			goto error;
 
-		_poll_dispatch(pollfds, nfds, map, objs);
+		if (pollfds[nfds-1].revents & POLLIN) 
+			_eio_clear(eio);
+
+		_poll_dispatch(pollfds, nfds-1, map, objs);
 	}
   error:
 	retval = -1;

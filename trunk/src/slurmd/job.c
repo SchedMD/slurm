@@ -140,6 +140,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 #endif
 
 	job->objs    = list_create((ListDelF) io_obj_destroy);
+	job->eio     = eio_handle_create();
 
 	srun = srun_info_create(msg->cred, &resp_addr, &io_addr);
 
