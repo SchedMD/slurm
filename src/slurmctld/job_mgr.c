@@ -449,12 +449,12 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 {
 	int i; 
 	int error_code;
-	uint32_t key;
 	int shared;
 	struct part_record *part_ptr;
 	bitstr_t *req_bitmap = NULL ;
 
-	validate_job_desc ( job_desc , allocate ) ;
+	if ( (error_code = validate_job_desc ( job_desc , allocate ) ) )
+		return error_code;
 
 	/* find selected partition */
 	if (job_desc->partition) {
@@ -480,7 +480,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 
 
 	/* can this user access this partition */
-	if (part_ptr->key && (is_key_valid (key) == 0)) {
+	if (part_ptr->key && (is_key_valid (job_desc->partition_key) == 0)) {
 		info ("job_create: job lacks key required of partition %s",
 				part_ptr->name);
 		error_code = ESLURM_JOB_MISSING_PARTITION_KEY ;
@@ -497,9 +497,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	if (job_desc->req_nodes) {	/* insure that selected nodes are in this partition */
 		error_code = node_name2bitmap (job_desc->req_nodes, &req_bitmap);
 		if (error_code == EINVAL)
-		{
 			goto cleanup;
-		}
 		if (error_code != 0) {
 			error_code = EAGAIN;	/* no memory */
 			goto cleanup;
@@ -547,7 +545,8 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	else if ((shared != 1) || (part_ptr->shared == 0)) /* user or partition want no sharing */
 		shared = 0;
 
-	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , req_bitmap ) ) == SLURM_ERROR ) 
+	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , 
+							req_bitmap ) ) == SLURM_ERROR ) 
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY ;
 		goto cleanup ;
 
@@ -567,8 +566,6 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	int error_code ;
 	struct job_details *detail_ptr;
 	struct job_record *job_ptr ;
-	int job_id ;
-
 
 	job_ptr = create_job_record (&error_code);
 	if ((job_ptr == NULL) || error_code)
@@ -577,7 +574,7 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
 	job_ptr->part_ptr = part_ptr;
 	if (job_desc->job_id != NO_VAL)
-		job_ptr->job_id = (uint32_t) job_id;
+		job_ptr->job_id = job_desc->job_id;
 	else
 		set_job_id(job_ptr);
 	if (job_hash[job_ptr->job_id % MAX_JOB_COUNT]) 
@@ -591,7 +588,7 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	job_ptr->user_id = (uid_t) job_desc->user_id;
 	job_ptr->job_state = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
-	if (job_desc->partition_key && is_key_valid (!NO_VAL) && (job_desc->priority != NO_VAL))
+	if (is_key_valid (job_desc->partition_key) && (job_desc->priority != NO_VAL))
 		job_ptr->priority = job_desc->priority;
 	else
 		set_job_prio (job_ptr);
@@ -629,26 +626,26 @@ int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 	if ((job_desc_msg->num_procs == NO_VAL) && (job_desc_msg->num_nodes == NO_VAL) && 
 			(job_desc_msg->req_nodes == NULL)) {
 		info ("job_create: job failed to specify ReqNodes, TotalNodes or TotalProcs");
-		return EINVAL;
+		return ESLURM_JOB_MISSING_SIZE_SPECIFICATION;
 	}
 	if (allocate == SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 && job_desc_msg->job_script == NULL) {
 		info ("job_create: job failed to specify Script");
-		return EINVAL;
+		return ESLURM_JOB_SCRIPT_MISSING;
 	}			
 	if (job_desc_msg->user_id == NO_VAL) {
 		info ("job_create: job failed to specify User");
-		return EINVAL;
+		return ESLURM_USER_ID_MISSING;
 	}	
 	if (job_desc_msg->name && strlen(job_desc_msg->name) > MAX_NAME_LEN) {
 		info ("job_create: job name %s too long", job_desc_msg->name);
-		return EINVAL;
+		return ESLURM_JOB_NAME_TOO_LONG;
 	}	
 	if (job_desc_msg->contiguous == NO_VAL)
 		job_desc_msg->contiguous = SLURM_JOB_DESC_DEFAULT_CONTIGUOUS ;		/* default not contiguous */
 	if (job_desc_msg->job_id != NO_VAL && find_job_record ((uint32_t) job_desc_msg->job_id))
 	{
 		info  ("job_create: Duplicate job id %d", job_desc_msg->job_id);
-		return EINVAL;
+		return ESLURM_DUPLICATE_JOB_ID;
 	}
 	if (job_desc_msg->num_procs == NO_VAL)
 		job_desc_msg->num_procs = 1;		/* default cpu count of 1 */
@@ -657,7 +654,7 @@ int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 	if (job_desc_msg->min_memory == NO_VAL)
 		job_desc_msg->min_memory = 1;		/* default is 1 MB memory per node */
 	if (job_desc_msg->min_tmp_disk == NO_VAL)
-		job_desc_msg->min_tmp_disk = 1;	/* default is 1 MB disk per node */
+		job_desc_msg->min_tmp_disk = 1;		/* default is 1 MB disk per node */
 	if (job_desc_msg->shared == NO_VAL)
 		job_desc_msg->shared = 0;		/* default is not shared nodes */
 	if (job_desc_msg->dist == NO_VAL)
@@ -666,13 +663,14 @@ int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 		job_desc_msg->procs_per_task = 1;	/* default is 1 processor per task */
 	else if (job_desc_msg->procs_per_task <= 0) {
 		info ("job_create: Invalid procs_per_task");
-		return EINVAL;
+		return ESLURM_INVALID_PROCS_PER_TASK;
 	}
 
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;		/* default is 1 processor per node */
 	if (job_desc_msg->min_procs < job_desc_msg->procs_per_task) {
-		info ("job_create: min_cpus < procs_per_task, reset to equal");
+		info ("job_create: min_cpus(%d) < procs_per_task, reset to equal(%d)", 
+		       job_desc_msg->min_procs, job_desc_msg->procs_per_task);
 		job_desc_msg->min_procs = job_desc_msg->procs_per_task;
 	}	
 	return SLURM_SUCCESS ;

@@ -14,7 +14,7 @@ main (int argc, char *argv[])
 	job_desc_msg_t job_mesg;
 	
 	job_mesg. contiguous = 1; 
-	job_mesg. features = "bigDisk\0";
+/*	job_mesg. features = "bigDisk\0"; */
 	job_mesg. groups = ("students,employee\0");
 	job_mesg. job_id = 12345;
 	job_mesg. name = ("job01\0");

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
@@ -669,8 +670,8 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 	packstr (job_desc_ptr->partition, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->priority, buf_ptr, buffer_size);
 	
-	packstr (job_desc_ptr->partition, buf_ptr, buffer_size);
-	packstr (job_desc_ptr->partition, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->req_nodes, buf_ptr, buffer_size);
+	packstr (job_desc_ptr->job_script, buf_ptr, buffer_size);
 	pack16 (job_desc_ptr->shared, buf_ptr, buffer_size);
 
 	pack32 (job_desc_ptr->time_limit, buf_ptr, buffer_size);
@@ -710,7 +711,8 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 	unpackstr_xmalloc (&job_desc_ptr->groups, &uint16_tmp, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->job_id, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job_desc_ptr->name, &uint16_tmp, buf_ptr, buffer_size);
-	unpackmem_xmalloc ( ( char ** ) &job_desc_ptr->partition_key, &uint16_tmp, buf_ptr, buffer_size);
+	unpackmem_xmalloc ( ( char ** ) &job_desc_ptr->partition_key, &uint16_tmp, 
+				buf_ptr, buffer_size);
 	
 	unpack32 (&job_desc_ptr->min_procs, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->min_memory, buf_ptr, buffer_size);
@@ -719,8 +721,8 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 	unpackstr_xmalloc (&job_desc_ptr->partition, &uint16_tmp, buf_ptr, buffer_size);
 	unpack32 (&job_desc_ptr->priority, buf_ptr, buffer_size);
 	
-	unpackstr_xmalloc (&job_desc_ptr->partition, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_xmalloc (&job_desc_ptr->partition, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&job_desc_ptr->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstr_xmalloc (&job_desc_ptr->job_script, &uint16_tmp, buf_ptr, buffer_size);
 	unpack16 (&job_desc_ptr->shared, buf_ptr, buffer_size);
 	
 	unpack32 (&job_desc_ptr->time_limit, buf_ptr, buffer_size);
