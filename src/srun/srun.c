@@ -217,10 +217,10 @@ srun(int ac, char **av)
 	}
 
 	/* kill launch thread */
-	pthread_kill(job->lid, SIGTERM);
+	pthread_cancel(job->lid);
 
 	/* kill msg server thread */
-	pthread_kill(job->jtid, SIGTERM);
+	pthread_cancel(job->jtid);
 
 	/* wait for stdio */
 	if (pthread_join(job->ioid, NULL) < 0) {

@@ -275,7 +275,7 @@ job_force_termination(job_t *job)
 		update_job_state(job, SRUN_JOB_OVERDONE);
 	}
 
-	pthread_kill(job->ioid, SIGTERM);
+	pthread_cancel(job->ioid);
 }
 
 void job_fatal(job_t *job, const char *msg)

@@ -493,7 +493,7 @@ int reattach()
 		error ("Attach to job failed!");
 	}
 
-	pthread_kill(job->jtid, SIGTERM);
+	pthread_cancel(job->jtid);
 	pthread_join(job->ioid, NULL);
 
 	/* _complete_job(job); */
