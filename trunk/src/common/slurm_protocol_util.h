@@ -1,4 +1,5 @@
 #ifndef _SLURM_PROTOCOL_UTIL_H
+#define _SLURM_PROTOCOL_UTIL_H
 
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_protocol_common.h>
