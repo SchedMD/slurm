@@ -2240,6 +2240,11 @@ _test_box(void)
 	||  (axis_min_z > axis_max_z))
 		return false;
 
+	if ((axis_min_x == axis_max_x) 
+	&&  (axis_min_y == axis_max_y)
+	&&  (axis_min_z == axis_max_z))
+		return false;	/* single node */
+
 	for (temp = axis_min_x; temp<=axis_max_x; temp++) {
 		for (temp1 = axis_min_y; temp1<=axis_max_y; temp1++) {
 			for (temp2 = axis_min_z; temp2<=axis_max_z; temp2++) {
@@ -2263,6 +2268,8 @@ size_t hostlist_ranged_string(hostlist_t hl, size_t n, char *buf)
 	LOCK_HOSTLIST(hl);
 
 #ifdef HAVE_BGL
+	if (hl->hr[0]->width != 3)
+		goto notbox;
 	_clear_grid();
 	for (i=0;i<hl->nranges;i++)
 		_set_grid(hl->hr[i]->lo, hl->hr[i]->hi);
