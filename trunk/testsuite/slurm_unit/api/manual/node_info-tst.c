@@ -21,7 +21,8 @@ main (int argc, char *argv[])
 	}
 
 	printf("Nodes updated at %ld, record count %d\n",
-		(long)node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
+		(long)node_info_msg_ptr ->last_update, 
+		node_info_msg_ptr->record_count);
 
 	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
 	{
@@ -29,7 +30,8 @@ main (int argc, char *argv[])
 		 * last 1 entry, and every 200th entry */
 		if ((i < 10) || (i % 200 == 0) || 
 		    ((i + 1)  == node_info_msg_ptr-> record_count)) {
-			slurm_print_node_table ( stdout, & node_info_msg_ptr -> node_array[i] ) ;
+			slurm_print_node_table ( stdout, & node_info_msg_ptr ->
+							 node_array[i] ) ;
 		}
 		else if ((i==10) || (i % 200 == 1))
 			printf ("skipping...\n");
