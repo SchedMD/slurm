@@ -209,12 +209,12 @@ print_job_steps( void )
 		step_format_add_start_time( params.format_list, 11, false );
 		out_size += (11 + 1);
 		if (params.long_list) {
-			job_format_add_nodes( params.format_list, 0, false );
+			step_format_add_nodes( params.format_list, 0, false );
 		} else {
 			out_size  = max_line_size - out_size - 1;
 			if (out_size < 8)
 				out_size = 8;
-			job_format_add_nodes( params.format_list, out_size, false );
+			step_format_add_nodes( params.format_list, out_size, false );
 		}
 	}
 		
