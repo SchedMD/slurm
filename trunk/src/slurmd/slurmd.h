@@ -50,6 +50,7 @@
 
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
+extern pid_t getpgid(pid_t pid);
 #endif
 
 
