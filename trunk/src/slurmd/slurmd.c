@@ -114,7 +114,8 @@ int main(int argc, char *argv[])
 	slurmd_conf.daemonize = false;
 
 
-	parse_commandline_args(argc, argv, &slurmd_conf);
+	if (parse_commandline_args(argc, argv, &slurmd_conf))
+		exit (1);
 	log_init(argv[0], slurmd_conf.log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	if (slurmd_conf.daemonize == true) {
@@ -758,7 +759,6 @@ int parse_commandline_args(int argc, char **argv,
 			     c);
 			usage(argv[0]);
 			exit(1);
-			break;
 		}
 
 		if (optind < argc) {
@@ -767,6 +767,8 @@ int parse_commandline_args(int argc, char **argv,
 				printf("%s ", argv[optind++]);
 			}
 			printf("\n");
+			usage(argv[0]);
+			exit(1);
 		}
 	}
 	return SLURM_SUCCESS;
