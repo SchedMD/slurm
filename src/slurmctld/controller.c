@@ -7,6 +7,9 @@
  *
  * author: moe jette, jette@llnl.gov
  */
+ /* Changes
+  * Kevin Tew June 3, 2002 
+  * reimplemented the entire routine to use the new communication library*/
 
 #ifdef have_config_h
 #  include <config.h>
@@ -23,74 +26,126 @@
 
 #include "slurmctld.h"
 #include "pack.h"
+#include <src/common/slurm_protocol_api.h>
 
 #define BUF_SIZE 1024
 
 time_t init_time;
 
-int dump_build (char **buffer_ptr, int *buffer_size, time_t last_update);
 int msg_from_root (void);
-void slurmctld_req (int sockfd);
+void slurmctld_req ( slurm_msg_t * msg );
+void fill_build_table ( struct build_table * build_ptr );
+inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_cancel ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 
 int 
-main (int argc, char *argv[]) {
-	int error_code;
-	int cli_len, newsockfd, sockfd;
-	struct sockaddr_in cli_addr, serv_addr;
+main (int argc, char *argv[]) 
+{
+	int error_code ;
+	slurm_fd newsockfd;
+        slurm_fd sockfd;
+	slurm_msg_t * msg = NULL ;
+	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
-	log_options_t opts = LOG_OPTS_STDERR_ONLY;
+	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
 
 	init_time = time (NULL);
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	error_code = init_slurm_conf ();
-	if (error_code)
+	if ( ( error_code = init_slurm_conf () ) ) 
 		fatal ("slurmctld: init_slurm_conf error %d", error_code);
+	if ( ( error_code = read_slurm_conf (SLURM_CONF) ) ) 
+		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
+	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
+		fatal ("slurmctld: errno %d from gethostname", errno);
+	if ( ( strcmp (node_name, control_machine) ) )
+	       	fatal ("slurmctld: this machine (%s) is not the primary control machine (%s)", node_name, control_machine);
 
-	error_code = read_slurm_conf (SLURM_CONF);
-	if (error_code)
-		fatal ("slurmctld: error %d from read_slurm_conf reading %s",
-			 error_code, SLURM_CONF);
-
-	error_code = gethostname (node_name, MAX_NAME_LEN);
-	if (error_code != 0) 
-		fatal ("slurmctld: error %d from gethostname", error_code);
 	
-	if (strcmp (node_name, control_machine) != 0)
-		fatal ("slurmctld: this machine (%s) is not the primary control machine (%s)",
-			 node_name, control_machine);
-
-	if ((sockfd = socket (AF_INET, SOCK_STREAM, 0)) < 0) 
-		fatal ("slurmctld: error %d from socket", errno);
-
-	memset (&serv_addr, 0, sizeof (serv_addr));
-	serv_addr.sin_family = PF_INET;
-	serv_addr.sin_addr.s_addr = htonl (INADDR_ANY);
-	serv_addr.sin_port = htons (SLURMCTLD_PORT);
-	error_code = bind (sockfd, (struct sockaddr *) &serv_addr, sizeof (serv_addr));
-	if ((error_code < 0) && (errno == EADDRINUSE)) {
-		printf("waiting to bind\n");
-		sleep (10);
-		error_code = bind (sockfd, (struct sockaddr *) &serv_addr, 
-			sizeof (serv_addr));
-	}
-	if (error_code < 0)
-		fatal ("slurmctld: error %d from bind\n", errno);
-	info ("slurmctld ready for service\n");
+	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+		fatal ("slurmctld: error starting message engine \n", errno);
 		
-	listen (sockfd, 5);
-	while (1) {
-		cli_len = sizeof (cli_addr);
-		if ((newsockfd =
-		     accept (sockfd, (struct sockaddr *) &cli_addr,
-			     &cli_len)) < 0)
-			fatal ("slurmctld: error %d from accept", errno);
+	while (1) 
+	{
+		/* accept needed for stream implementation 
+		 * is a no-op in message implementation that just passes sockfd to newsockfd
+		 */
+		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
+		{
+			error ("slurmctld: error %d from connect", errno) ;
+			break ;
+		}
+		
+		/* receive message call that must occur before thread spawn because in message 
+		 * implementation their is no connection and the message is the sign of a new connection */
+		msg = malloc ( sizeof ( slurm_msg_t ) ) ;	
+		if (msg == NULL)
+			return ENOMEM;
+		
+		if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
+		{
+			error ("slurmctld: error %d from accept", errno);
+			break ;
+		}
 
-/* convert to pthread, tbd */
-		slurmctld_req (newsockfd);	/* process the request */
-		close (newsockfd);		/* close the new socket */
-
+		msg -> conn_fd = newsockfd ;	
+/************************* 
+ * convert to pthread, tbd 
+ *************************/
+		slurmctld_req ( msg );	/* process the request */
+		/* close should only be called when the stream implementation is being used 
+		 * the following call will be a no-op in the message implementation */
+		slurm_close_accepted_conn ( newsockfd ); /* close the new socket */
 	}			
+	return 0 ;
+}
+
+void
+slurmctld_req ( slurm_msg_t * msg )
+{
+	
+	switch ( msg->msg_type )
+	{	
+		case REQUEST_BUILD_INFO:
+			slurm_rpc_dump_build ( msg ) ;
+			slurm_free_last_update_msg ( msg -> data ) ;
+			break;
+		case REQUEST_NODE_INFO:
+			slurm_rpc_dump_nodes ( msg ) ;
+			slurm_free_last_update_msg ( msg -> data ) ;
+			break ;
+		case REQUEST_JOB_INFO:
+			slurm_rpc_dump_jobs ( msg ) ;
+			slurm_free_last_update_msg ( msg -> data ) ;
+			break;
+		case REQUEST_PARTITION_INFO:
+			slurm_rpc_dump_partitions ( msg ) ;
+			slurm_free_last_update_msg ( msg -> data ) ;
+			break;
+		case REQUEST_RESOURCE_ALLOCATION:
+			break;
+		case REQUEST_CANCEL_JOB:
+			slurm_rpc_job_cancel ( msg ) ;
+			slurm_free_job_id_msg ( msg -> data ) ;
+			break;
+		case REQUEST_SUBMIT_BATCH_JOB: 
+			break;
+		case REQUEST_NODE_REGISRATION_STATUS:
+			break;
+		case REQUEST_RECONFIGURE:
+			break;
+		default:
+			error ("slurmctld_req: invalid request msg type %d\n", msg-> msg_type);
+			slurm_send_rc_msg ( msg , EINVAL );
+			break;
+	}
+	slurm_free_msg ( msg ) ;
 }
 
 
@@ -109,51 +164,336 @@ main (int argc, char *argv[]) {
  *	 	BUILD_STRUCT_VERSION and make the corresponding changes to 
  *		load_build in api/build_info.c
  */
-int
-dump_build (char **buffer_ptr, int *buffer_size, time_t last_update)
+void
+slurm_rpc_dump_build ( slurm_msg_t * msg )
 {
-	int buf_len, buffer_allocated;
-	char *buffer;
-	void *buf_ptr;
+	clock_t start_time;
+	slurm_msg_t response_msg ;
+	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
+	build_info_msg_t build_tbl ;
 
-	buffer_ptr[0] = NULL;
-	*buffer_size = 0;
-	if (init_time <= last_update) 
-		return 0;
+	start_time = clock ();
+	
+	
+	/* check to see if build_data has changed */	
+	if ( last_time_msg -> last_update >= init_time )
+	{
+		info ("slurmctld_req: dump_build time=%ld", (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
+	}
+	else
+	{
+		/* success */
+		fill_build_table ( & build_tbl ) ;
+		/* init response_msg structure */
+		response_msg . address = msg -> address ;
+		response_msg . msg_type = RESPONSE_BUILD_INFO ;
+		response_msg . data = & build_tbl ;
 
-	buffer_allocated = (BUF_SIZE);
-	buffer = xmalloc(buffer_allocated);
-	buf_ptr = buffer;
-	buf_len = buffer_allocated;
+		/* send message */
+		info ("slurmctld_req: dump_build time=%ld", (long) (clock () - start_time));
+		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+	}
+}
 
-	/* write header: version and time */
-	pack32  ((uint32_t) BUILD_STRUCT_VERSION, &buf_ptr, &buf_len);
-	pack32  ((uint32_t) init_time, &buf_ptr, &buf_len);
+/* DumpJob - dump the Job configurations */
+void
+slurm_rpc_dump_jobs ( slurm_msg_t * msg )
+{
+	int error_code;
+	clock_t start_time;
+	char *dump;
+	int dump_size;
+	slurm_msg_t response_msg ;
+	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
+	time_t last_update = last_time_msg -> last_update ;
+	
 
-	/* write data values */
-	pack16  ((uint16_t) BACKUP_INTERVAL, &buf_ptr, &buf_len);
-	packstr (BACKUP_LOCATION, &buf_ptr, &buf_len);
-	packstr (backup_controller, &buf_ptr, &buf_len);
-	packstr (CONTROL_DAEMON, &buf_ptr, &buf_len);
-	packstr (control_machine, &buf_ptr, &buf_len);
-	pack16  ((uint16_t) CONTROLLER_TIMEOUT, &buf_ptr, &buf_len);
-	packstr (EPILOG, &buf_ptr, &buf_len);
-	pack16  ((uint16_t) FAST_SCHEDULE, &buf_ptr, &buf_len);
-	pack16  ((uint16_t) HASH_BASE, &buf_ptr, &buf_len);
-	pack16  ((uint16_t) HEARTBEAT_INTERVAL, &buf_ptr, &buf_len);
-	packstr (INIT_PROGRAM, &buf_ptr, &buf_len);
-	pack16  ((uint16_t) KILL_WAIT, &buf_ptr, &buf_len);
-	packstr (PRIORITIZE, &buf_ptr, &buf_len);
-	packstr (PROLOG, &buf_ptr, &buf_len);
-	packstr (SERVER_DAEMON, &buf_ptr, &buf_len);
-	pack16  ((uint16_t) SERVER_TIMEOUT, &buf_ptr, &buf_len);
-	packstr (SLURM_CONF, &buf_ptr, &buf_len);
-	packstr (TMP_FS, &buf_ptr, &buf_len);
+	start_time = clock ();
 
-	*buffer_size = (char *)buf_ptr - buffer;
-	xrealloc (buffer, *buffer_size);
-	buffer_ptr[0] = buffer;
-	return 0;
+	error_code = pack_all_jobs (&dump, &dump_size, &last_update);
+	if (error_code)
+		info ("slurmctld_req: pack_all_jobs error %d, time=%ld",
+			 error_code, (long) (clock () - start_time));
+	else
+		info ("slurmctld_req: pack_all_jobs returning %d bytes, time=%ld",
+			 dump_size, (long) (clock () - start_time));
+
+	/* no changed data */
+	if (dump_size == 0)
+	{
+		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
+	}
+	/* successful call */
+	else if (error_code == 0)
+	{
+		/* success */
+		/* init response_msg structure */
+		response_msg . address = msg -> address ;
+		response_msg . msg_type = RESPONSE_JOB_INFO ;
+		response_msg . data = dump ;
+		response_msg . data_size = dump_size ;
+
+		/* send message */
+		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+	}
+	/* error code returned */
+	else
+	{
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	if (dump)
+		xfree (dump);
+}
+
+/* DumpNode - dump the node configurations */
+void
+slurm_rpc_dump_nodes ( slurm_msg_t * msg )
+{
+	int error_code;
+	clock_t start_time;
+	char *dump;
+	int dump_size;
+	slurm_msg_t response_msg ;
+	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
+	time_t last_update = last_time_msg -> last_update ;
+
+	start_time = clock ();
+
+	error_code = pack_all_node (&dump, &dump_size, &last_update);
+	if (error_code)
+		info ("slurmctld_req: part_all_node error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+	else
+		info ("slurmctld_req: part_all_node returning %d bytes, time=%ld",
+				dump_size, (long) (clock () - start_time));
+
+	/* no changed data */
+	if (dump_size == 0)
+	{
+		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
+	}
+	/* successful call */
+	else if (error_code == 0)
+	{
+		/* success */
+		/* init response_msg structure */
+		response_msg . address = msg -> address ;
+		response_msg . msg_type = RESPONSE_NODE_INFO ;
+		response_msg . data = dump ;
+		response_msg . data_size = dump_size ;
+
+		/* send message */
+		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+	}
+	/* error code returned */
+	else
+	{
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	if (dump)
+		xfree (dump);
+}
+
+/* DumpPart - dump the partition configurations */
+void
+slurm_rpc_dump_partitions ( slurm_msg_t * msg )
+{
+	int error_code;
+	clock_t start_time;
+	char *dump;
+	int dump_size;
+	slurm_msg_t response_msg ;
+	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
+	time_t last_update = last_time_msg -> last_update ;
+
+	start_time = clock ();
+
+	error_code = pack_all_part (&dump, &dump_size, &last_update);
+	if (error_code)
+		info ("slurmctld_req: dump_part error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+	else
+		info ("slurmctld_req: dump_part returning %d bytes, time=%ld",
+				dump_size, (long) (clock () - start_time));
+
+	/* no changed data */
+	if (dump_size == 0)
+	{
+		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
+	}
+	/* successful call */
+	else if (error_code == 0)
+	{
+		/* success */
+		/* init response_msg structure */
+		response_msg . address = msg -> address ;
+		response_msg . msg_type = RESPONSE_PARTITION_INFO ;
+		response_msg . data = dump ;
+		response_msg . data_size = dump_size ;
+
+		/* send message */
+		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
+	}
+	/* error code returned */
+	else
+	{
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	if (dump)
+		xfree (dump);
+}
+
+/* JobCancel - cancel a slurm job or reservation */
+void 
+slurm_rpc_job_cancel ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	job_id_msg_t * job_id_msg = ( job_id_msg_t * ) msg-> data ;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = job_cancel ( job_id_msg->job_id );
+
+	/* return result */
+	if (error_code)
+	{
+		info ("slurmctld_req: job_cancel error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: job_cancel success for %d, time=%ld",
+				job_id_msg->job_id, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+
+}
+
+/* JobWillRun - determine if job with given configuration can be initiated now */
+void 
+slurm_rpc_job_will_run ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = EINVAL;
+	
+	/* return result */
+	if (error_code)
+	{
+		info ("slurmctld_req: job_will_run error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: job_will_run success for , time=%ld",
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+
+}
+/* Reconfigure - re-initialized from configuration files */
+void 
+slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	error_code = init_slurm_conf ();
+	if (error_code == 0)
+		error_code = read_slurm_conf (SLURM_CONF);
+	reset_job_bitmaps ();
+
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmctld_req: reconfigure error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+
+}
+
+/* NodeConfig - determine if a node's actual configuration satisfies the
+ * configured specification */
+void 
+slurm_rpc_node_registration ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code;
+	clock_t start_time;
+	node_registration_status_msg_t * node_reg_stat_msg = ( node_registration_status_msg_t * ) msg-> data ;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	/*cpus = real_memory = tmp_disk = NO_VAL;
+	 * this should be done client side now */
+	error_code = validate_node_specs (
+		node_reg_stat_msg -> node_name ,
+		node_reg_stat_msg -> cpus ,
+		node_reg_stat_msg -> real_memory_size ,
+		node_reg_stat_msg -> temporary_disk_space ) ;
+
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmctld_req: node_config error %d for %s, time=%ld",
+				error_code, node_reg_stat_msg -> node_name, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmctld_req: node_config for %s, time=%ld",
+				node_reg_stat_msg -> node_name, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+}
+
+
+
+void
+fill_build_table ( struct build_table * build_ptr )
+{
+	build_ptr->last_update		= init_time ;
+	build_ptr->backup_interval	= BACKUP_INTERVAL ;
+	build_ptr->backup_location	= BACKUP_LOCATION ;
+	build_ptr->backup_machine	= backup_controller ;
+	build_ptr->control_daemon	= CONTROL_DAEMON ;
+	build_ptr->control_machine	= control_machine ;
+	build_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
+	build_ptr->epilog		= EPILOG ;
+	build_ptr->fast_schedule	= FAST_SCHEDULE ;
+	build_ptr->hash_base		= HASH_BASE ;
+	build_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
+	build_ptr->init_program		= INIT_PROGRAM ;
+	build_ptr->kill_wait		= KILL_WAIT ;
+	build_ptr->prioritize		= PRIORITIZE ;
+	build_ptr->prolog		= PROLOG ;
+	build_ptr->server_daemon	= SERVER_DAEMON ;
+	build_ptr->server_timeout	= SERVER_TIMEOUT ;
+	build_ptr->slurm_conf		= SLURM_CONF ;
+	build_ptr->tmp_fs		= TMP_FS ;
 }
 
 
@@ -162,7 +502,7 @@ dump_build (char **buffer_ptr, int *buffer_size, time_t last_update)
  * input: sockfd - the socket with a request to be processed
  */
 void
-slurmctld_req (int sockfd) {
+slurmctld_req_old (int sockfd) {
 	int error_code, in_size, i;
 	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
 	int cpus, real_memory, tmp_disk;
@@ -177,6 +517,7 @@ slurmctld_req (int sockfd) {
 	start_time = clock ();
 
 	/* Allocate:  allocate resources for a job */
+
 	if (strncmp ("Allocate", in_line, 8) == 0) {
 		node_name_ptr = NULL;
 		error_code = job_allocate(&in_line[8], 	/* skip "Allocate" */
@@ -205,162 +546,6 @@ slurmctld_req (int sockfd) {
 			xfree (node_name_ptr);
 	}
 
-	/* DumpBuild - dump the SLURM build parameters */
-	else if (strncmp ("DumpBuild", in_line, 9) == 0) {
-		time_stamp = NULL;
-		error_code =
-			load_string (&time_stamp, "LastUpdate=", in_line);
-		if (time_stamp) {
-			last_update = strtol (time_stamp, (char **) NULL, 10);
-			xfree (time_stamp);
-		}
-		else
-			last_update = (time_t) 0;
-
-		error_code = dump_build (&dump, &dump_size, last_update);
-		if (error_code)
-			info ("slurmctld_req: dump_build error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: dump_build returning %d bytes, time=%ld",
-				 dump_size, (long) (clock () - start_time));
-		if (dump_size == 0)
-			send (sockfd, "nochange", 9, 0);
-		else if (error_code == 0) {
-			dump_loc = 0;
-			while (dump_size > 0) {
-				i = send (sockfd, &dump[dump_loc], dump_size, 0);
-				dump_loc += i;
-				dump_size -= i;
-			}	
-		}
-		else
-			send (sockfd, "EINVAL", 7, 0);
-		if (dump)
-			xfree (dump);
-	}
-
-	/* DumpJob - dump the job state information */
-	else if (strncmp ("DumpJob", in_line, 7) == 0) {
-		time_stamp = NULL;
-		error_code =
-			load_string (&time_stamp, "LastUpdate=", in_line);
-		if (time_stamp) {
-			last_update = strtol (time_stamp, (char **) NULL, 10);
-			xfree (time_stamp);
-		}
-		else
-			last_update = (time_t) 0;
-
-		error_code = pack_all_jobs (&dump, &dump_size, &last_update);
-		if (error_code)
-			info ("slurmctld_req: pack_all_jobs error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: pack_all_jobs returning %d bytes, time=%ld",
-				 dump_size, (long) (clock () - start_time));
-		if (dump_size == 0)
-			send (sockfd, "nochange", 9, 0);
-		else if (error_code == 0) {
-			dump_loc = 0;
-			while (dump_size > 0) {
-				i = send (sockfd, &dump[dump_loc], dump_size,
-					  0);
-				dump_loc += i;
-				dump_size -= i;
-			}	
-		}
-		else
-			send (sockfd, "EINVAL", 7, 0);
-		if (dump)
-			xfree (dump);
-	}
-
-	/* DumpNode - dump the node configurations */
-	else if (strncmp ("DumpNode", in_line, 8) == 0) {
-		time_stamp = NULL;
-		error_code =
-			load_string (&time_stamp, "LastUpdate=", in_line);
-		if (time_stamp) {
-			last_update = strtol (time_stamp, (char **) NULL, 10);
-			xfree (time_stamp);
-		}
-		else
-			last_update = (time_t) 0;
-		error_code = pack_all_node (&dump, &dump_size, &last_update);
-		if (error_code)
-			info ("slurmctld_req: part_all_node error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: part_all_node returning %d bytes, time=%ld",
-				 dump_size, (long) (clock () - start_time));
-		if (dump_size == 0)
-			send (sockfd, "nochange", 9, 0);
-		else if (error_code == 0) {
-			dump_loc = 0;
-			while (dump_size > 0) {
-				i = send (sockfd, &dump[dump_loc], dump_size,
-					  0);
-				dump_loc += i;
-				dump_size -= i;
-			}	
-		}
-		else
-			send (sockfd, "EINVAL", 7, 0);
-		if (dump)
-			xfree (dump);
-	}
-
-	/* DumpPart - dump the partition configurations */
-	else if (strncmp ("DumpPart", in_line, 8) == 0) {
-		time_stamp = NULL;
-		error_code =
-			load_string (&time_stamp, "LastUpdate=", in_line);
-		if (time_stamp) {
-			last_update = strtol (time_stamp, (char **) NULL, 10);
-			xfree (time_stamp);
-		}
-		else
-			last_update = (time_t) 0;
-		error_code = pack_all_part (&dump, &dump_size, &last_update);
-		if (error_code)
-			info ("slurmctld_req: dump_part error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: dump_part returning %d bytes, time=%ld",
-				 dump_size, (long) (clock () - start_time));
-		if (dump_size == 0)
-			send (sockfd, "nochange", 9, 0);
-		else if (error_code == 0) {
-			dump_loc = 0;
-			while (dump_size > 0) {
-				i = send (sockfd, &dump[dump_loc], dump_size,
-					  0);
-				dump_loc += i;
-				dump_size -= i;
-			}	
-		}
-		else
-			send (sockfd, "EINVAL", 7, 0);
-		if (dump)
-			xfree (dump);
-	}
-
-	/* JobCancel - cancel a slurm job or reservation */
-	else if (strncmp ("JobCancel", in_line, 9) == 0) {
-		job_id = (uint32_t) strtol (&in_line[10], (char **)NULL, 10);
-		error_code = job_cancel (job_id);
-		if (error_code)
-			info ("slurmctld_req: job_cancel error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: job_cancel success for %s, time=%ld",
-				 &in_line[10], (long) (clock () - start_time));
-		if (error_code == 0)
-			send (sockfd, "Job killed", 11, 0);
-		else
-			send (sockfd, "EINVAL", 7, 0);
-	}
 
 	/* JobSubmit - submit a job to the slurm queue */
 	else if (strncmp ("JobSubmit", in_line, 9) == 0) {
@@ -383,74 +568,6 @@ slurmctld_req (int sockfd) {
 		else
 			send (sockfd, "EINVAL", 7, 0);
 		schedule();
-	}
-
-	/* JobWillRun - determine if job with given configuration can be initiated now */
-	else if (strncmp ("JobWillRun", in_line, 10) == 0) {
-		error_code = EINVAL;
-		if (error_code)
-			info ("slurmctld_req: job_will_run error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: job_will_run success for %s, time=%ld",
-				 &in_line[10], (long) (clock () - start_time));
-		if (error_code == 0)
-			send (sockfd, dump, dump_size, 0);
-		else
-			send (sockfd, "EINVAL", 7, 0);
-	}
-
-	/* NodeConfig - determine if a node's actual configuration satisfies the
-	 * configured specification */
-	else if (strncmp ("NodeConfig", in_line, 10) == 0) {
-		node_name_ptr = NULL;
-		cpus = real_memory = tmp_disk = NO_VAL;
-		error_code = load_string (&node_name_ptr, "NodeName=", in_line);
-		if (node_name == NULL)
-			error_code = EINVAL;
-		if (error_code == 0)
-			error_code = load_integer (&cpus, "CPUs=", in_line);
-		if (error_code == 0)
-			error_code =
-				load_integer (&real_memory, "RealMemory=",
-					      in_line);
-		if (error_code == 0)
-			error_code =
-				load_integer (&tmp_disk, "TmpDisk=",
-					      in_line);
-		if (error_code == 0)
-			error_code =
-				validate_node_specs (node_name_ptr, cpus,
-						     real_memory, tmp_disk);
-		if (error_code)
-			error ("slurmctld_req: node_config error %d for %s, time=%ld",
-				 error_code, node_name_ptr, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: node_config for %s, time=%ld",
-				 node_name_ptr, (long) (clock () - start_time));
-		if (error_code == 0)
-			send (sockfd, dump, dump_size, 0);
-		else
-			send (sockfd, "EINVAL", 7, 0);
-		if (node_name_ptr)
-			xfree (node_name_ptr);
-	}
-
-	/* Reconfigure - re-initialized from configuration files */
-	else if (strncmp ("Reconfigure", in_line, 11) == 0) {
-		error_code = init_slurm_conf ();
-		if (error_code == 0)
-			error_code = read_slurm_conf (SLURM_CONF);
-		reset_job_bitmaps ();
-
-		if (error_code)
-			error ("slurmctld_req: reconfigure error %d, time=%ld",
-				 error_code, (long) (clock () - start_time));
-		else
-			info ("slurmctld_req: reconfigure completed successfully, time=%ld", 
-				(long) (clock () - start_time));
-		sprintf (in_line, "%d", error_code);
-		send (sockfd, in_line, strlen (in_line) + 1, 0);
 	}
 
 	/* Update - modify node or partition configuration */
@@ -497,8 +614,6 @@ slurmctld_req (int sockfd) {
 
 	}
 	else {
-		error ("slurmctld_req: invalid request %s\n", in_line);
-		send (sockfd, "EINVAL", 7, 0);
 	}			
 	return;
 }

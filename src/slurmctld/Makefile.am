@@ -5,7 +5,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir)/src/common
-CFLAGS = 
+CFLAGS = -g -Wall 
 
 # should we build individual modules?
 # (--enable-debug)
