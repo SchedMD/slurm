@@ -79,13 +79,13 @@ main (int argc, char *argv[])
 		slurm_init_job_desc_msg( &job_mesg );
 		job_mesg. contiguous = 1;
 		job_mesg. name = ("more.big\0");
-		job_mesg. min_procs = 4;
+		job_mesg. min_procs = 2;
 		job_mesg. min_memory = 1024;
 		job_mesg. min_tmp_disk = 2034;
 		job_mesg. priority = 100;
 		job_mesg. shared = 0;
 		job_mesg. time_limit = 200;
-		job_mesg. num_procs = 4000;
+		job_mesg. num_procs = 8 + job_count;
 		job_mesg. user_id = getuid();
 		job_mesg. immediate = 1;
 
