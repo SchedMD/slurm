@@ -353,9 +353,7 @@ extern int create_static_partitions(List part_list)
 		}
 		list_iterator_destroy(itr_found);
 		if(found_record == NULL) {
-			printf("yeap\n");
 #ifdef HAVE_BGL_FILES
-			printf("found one %s\n",bgl_record->nodes);
 			//bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 			configure_partition(bgl_record);
 			print_bgl_record(bgl_record);

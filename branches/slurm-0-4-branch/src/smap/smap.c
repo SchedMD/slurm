@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
 	} else {
 		pa_init(new_node_ptr);
 	}	
-
 	if(params.partition) {
 		if(params.partition[0] == 'r')
 			params.partition[0] = 'R';

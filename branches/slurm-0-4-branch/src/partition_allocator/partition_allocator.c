@@ -474,7 +474,7 @@ void pa_init(node_info_msg_t *node_info_ptr)
 	_create_pa_system();
 	
 	pa_system_ptr->fill_in_value = (pa_node_t *) 
-		xmalloc(sizeof(pa_node_t) * pa_system_ptr->num_of_proc);
+		xmalloc(sizeof(pa_node_t) * 128);
 	
 	init_grid(node_info_ptr);
 	
