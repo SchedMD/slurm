@@ -91,6 +91,7 @@ static void       _create_conf();
 static void       _init_conf();
 static void       _print_conf();
 static void       _read_config();
+static void 	  _kill_old_slurmd();
 static void       _reconfigure();
 static void       _wait_for_all_threads();
 static void       _set_slurmd_spooldir(void);
@@ -124,8 +125,15 @@ main (int argc, char *argv[])
 	conf->argv = &argv;
 	conf->argc = &argc;
 
+
+	log_init(argv[0], conf->log_opts, LOG_DAEMON, conf->logfile);
+	_print_conf();
+
+	_kill_old_slurmd();
 	create_pidfile(conf->pidfile);
+
 	info("%s started on %T", xbasename(argv[0]));
+
 	_create_msg_socket();
 	conf->pid = getpid();
 
@@ -575,6 +583,16 @@ _set_slurmd_spooldir(void)
 		fatal("chdir(%s): %m", conf->spooldir);
 }
 
+static void
+_kill_old_slurmd(void)
+{
+	pid_t oldpid = read_pidfile(conf->pidfile);
+	if (oldpid != (pid_t) 0) {
+		info ("killing old slurmd[%ld]", (long) oldpid);
+		kill(oldpid, SIGTERM);
+		sleep(2);
+	}
+}
 
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(void) 

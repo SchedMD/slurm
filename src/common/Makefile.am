@@ -79,7 +79,8 @@ noinst_HEADERS = 	\
 
 libdaemonize_la_SOURCES =  \
 	daemonize.c        \
-	daemonize.h
+	daemonize.h        \
+        fd.c fd.h
 
 libcred_la_SOURCES =       \
         credential_utils.c \
