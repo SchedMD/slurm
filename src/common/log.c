@@ -227,13 +227,13 @@ int log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile)
 
 void log_fini()
 {
-	if (!log) return;
+	if (!log)
+		return;
+
 	log_flush();
 	slurm_mutex_lock(&log_lock);
-	if (log->argv0)
-		xfree(log->argv0);
-	if (log->fpfx)
-		xfree(log->fpfx);
+	xfree(log->argv0);
+	xfree(log->fpfx);
 	if (log->buf)
 		cbuf_destroy(log->buf);
 	if (log->fbuf)
@@ -254,8 +254,7 @@ void log_reinit()
 void log_set_fpfx(char *prefix)
 {
 	slurm_mutex_lock(&log_lock);
-	if (log->fpfx)
-		xfree(log->fpfx);
+	xfree(log->fpfx);
 	if (!prefix)
 		log->fpfx = xstrdup("");
 	else {
