@@ -606,7 +606,10 @@ void init_grid(node_info_msg_t * node_info_ptr)
 					}
 					pa_system_ptr->grid[x][y][z].state = node_ptr->node_state;
 				} else {
-					pa_system_ptr->grid[x][y][z].state = NODE_STATE_IDLE;
+					pa_system_ptr->grid[x][y][z].color = 7;
+					pa_system_ptr->grid[x][y][z].letter = '.';
+					pa_system_ptr->grid[x][y][z].state = 
+						NODE_STATE_IDLE;
 				}
 				pa_system_ptr->grid[x][y][z].indecies = i++;
 			}
