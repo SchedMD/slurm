@@ -460,7 +460,7 @@ _io_add_connecting(slurmd_job_t *job, task_info_t *t, srun_info_t *srun,
 	fd_set_close_on_exec(sock);
 
 	obj      = _io_obj(job, t, sock, type);
-	obj->ops = &connecting_client_ops;
+	obj->ops = _ops_copy(&connecting_client_ops);
 	_io_write_header(obj->arg, srun);
 
 	if ((type == CLIENT_STDOUT) && !srun->ifname) {
@@ -919,6 +919,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 	 case CLIENT_STDOUT:
 		 io->readers = list_create(NULL);
 	 case CLIENT_STDERR:
+		 _ops_destroy(obj->ops);
 		 obj->ops    = _ops_copy(&client_ops);
 		 io->buf     = cbuf_create(1024, 1048576);
 		 io->writers = list_create(NULL);
@@ -926,6 +927,7 @@ _io_obj(slurmd_job_t *job, task_info_t *t, int fd, int type)
 		 cbuf_opt_set(io->buf, CBUF_OPT_OVERWRITE, CBUF_WRAP_ONCE);
 		 break;
 	 case CLIENT_STDIN: 
+		 _ops_destroy(obj->ops);
 		 obj->ops    = _ops_copy(&client_ops);
 		 _obj_set_unwritable(obj);
 		 io->readers = list_create(NULL);
@@ -973,15 +975,15 @@ io_obj_destroy(io_obj_t *obj)
 		 break;
 	 case CLIENT_STDOUT:
 		 list_destroy(io->readers);
+		 _ops_destroy(obj->ops);
 	 case CLIENT_STDERR:
 		 cbuf_destroy(io->buf);
 		 list_destroy(io->writers);
-		 if (obj->ops)
-			 xfree(obj->ops);
+		 _ops_destroy(obj->ops);
 		 break;
 	 case CLIENT_STDIN:
 		 cbuf_destroy(io->buf);
-		 xfree(obj->ops);
+		 _ops_destroy(obj->ops);
 		 list_destroy(io->readers);
 		 break;
 	 default:
@@ -1225,6 +1227,7 @@ _do_attach(struct io_info *io)
 	xassert(io->magic == IO_MAGIC);
 	xassert(_isa_client(io));
 
+	_ops_destroy(io->obj->ops);
 	io->obj->ops = _ops_copy(&client_ops);
 
 	t  = io->task;
