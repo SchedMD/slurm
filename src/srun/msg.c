@@ -126,9 +126,6 @@ _build_tv_list(job_t *job, char *host, int ntasks, uint32_t *pid)
 	char *node_addr;
 	static int tasks_recorded = 0;
 
-	if (!opt.totalview)
-		return;
-
 	node_addr = _node_name_to_addr(host, job, &node_inx);
 	if ((node_addr == NULL) || (node_inx < 0))
 		return;
@@ -311,11 +308,19 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 	/* 
 	 * store global task id information as returned from slurmd
 	 */
-	job->tids[resp->srun_node_id] = xmalloc(resp->ntasks * sizeof(uint32_t));
+	job->tids[resp->srun_node_id] = xmalloc(resp->ntasks * 
+						sizeof(uint32_t));
 	for (i = 0; i < resp->ntasks; i++)
 		job->tids[resp->srun_node_id][i] = resp->gids[i];
 
 #if HAVE_TOTALVIEW
+	if ((remote_argc == 0) && (resp->executable_name)) {
+		remote_argc = 1;
+		xrealloc(remote_argv, 2 * sizeof(char *));
+		remote_argv[0] = resp->executable_name;
+		resp->executable_name = NULL; /* nothing left to free */
+		remote_argv[1] = NULL;
+	}
 	_build_tv_list(job, resp->node_name, resp->ntasks, resp->local_pids);
 #endif
 	_print_pid_list(resp->node_name, resp->ntasks, resp->local_pids);
