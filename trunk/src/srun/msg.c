@@ -75,7 +75,6 @@ static inline bool _job_msg_done(job_t *job);
 static void	_launch_handler(job_t *job, slurm_msg_t *resp);
 static void 	_msg_thr_poll(job_t *job);
 static void	_set_jfds_nonblocking(job_t *job);
-static char *	_taskid2hostname(int task_id, job_t * job);
 static void     _print_pid_list(const char *host, int ntasks, 
 				uint32_t *pid, char *executable_name);
 
@@ -345,28 +344,27 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 static void 
 _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 {
-	int i;
-	task_exit_msg_t *msg = (task_exit_msg_t *) exit_msg->data;
+	task_exit_msg_t *msg       = (task_exit_msg_t *) exit_msg->data;
+	hostlist_t       hl        = hostlist_create(NULL);
+	int              status    = msg->return_code;
+	int              i;
+	char             buf[1024];
 
-	for (i=0; i<msg->num_tasks; i++) {
+	for (i = 0; i < msg->num_tasks; i++) {
 		uint32_t taskid = msg->task_id_list[i];
 
 		if ((taskid < 0) || (taskid >= opt.nprocs)) {
 			error("task exit resp has bad task id %d", taskid);
-			return;
+			continue;
 		}
 
-		if (msg->return_code)
-			verbose("task %d from node %s exited with status %d",  
-			        taskid, _taskid2hostname(taskid, job), 
-			        msg->return_code);
-		else
-			debug("task %d exited with status 0",  taskid);
+		snprintf(buf, sizeof(buf), "task%d", taskid);
+		hostlist_push(hl, buf);
 
 		slurm_mutex_lock(&job->task_mutex);
-		job->tstatus[taskid] = msg->return_code;
-		if (msg->return_code) 
-			job->task_state[taskid] = SRUN_TASK_FAILED;
+		job->tstatus[taskid] = status;
+		if (status) 
+			job->task_state[taskid] = SRUN_TASK_ABNORMAL_EXIT;
 		else {
 			if (   (job->err[taskid] != IO_DONE) 
 			    || (job->out[taskid] != IO_DONE) )
@@ -382,32 +380,12 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 			update_job_state(job, SRUN_JOB_TERMINATED);
 		}
 	}
+
+	hostlist_ranged_string(hl, sizeof(buf), buf);
+	verbose("%s exited with status %d", buf, status);
+	hostlist_destroy(hl);
 }
 
-static char *   _taskid2hostname (int task_id, job_t * job)
-{
-	int i, j, id = 0;
-
-	if (opt.distribution == SRUN_DIST_BLOCK) {
-		for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
-			id += job->ntask[i];
-			if (task_id < id)
-				return job->host[i];
-		}
-
-	} else {	/* cyclic */
-		for (j=0; (id<opt.nprocs); j++) {	/* cycle counter */
-			for (i=0; ((i<job->nhosts) && (id<opt.nprocs)); i++) {
-				if (j >= job->cpus[i])
-					continue;
-				if (task_id == (id++))
-					return job->host[i];
-			}
-		}
-	}
-
-	return "Unknown";
-}
 
 static void
 _handle_msg(job_t *job, slurm_msg_t *msg)
