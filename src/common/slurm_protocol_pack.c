@@ -192,11 +192,6 @@ static void _pack_job_id_response_msg(job_id_response_msg_t * msg, Buf buffer);
 static int  _unpack_job_id_response_msg(job_id_response_msg_t ** msg, 
 					Buf buffer);
 
-static void _pack_batch_job_resp_msg(batch_launch_response_msg_t * msg,
-				     Buf buffer);
-static int  _unpack_batch_job_resp_msg(batch_launch_response_msg_t ** msg, 
-				       Buf buffer);
-
 static void _pack_job_step_kill_msg(job_step_kill_msg_t * msg, Buf buffer);
 static int  _unpack_job_step_kill_msg(job_step_kill_msg_t ** msg_ptr, 
 				      Buf buffer);
@@ -461,10 +456,6 @@ pack_msg(slurm_msg_t const *msg, Buf buffer)
 		 _pack_batch_job_launch_msg((batch_job_launch_msg_t *)
 					    msg->data, buffer);
 		 break;
-	 case RESPONSE_BATCH_JOB_LAUNCH:
-		 _pack_batch_job_resp_msg((batch_launch_response_msg_t *)
-					    msg->data, buffer);
-		 break;
 	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
 		 break;
 	 case RESPONSE_SLURM_RC:
@@ -677,11 +668,6 @@ unpack_msg(slurm_msg_t * msg, Buf buffer)
 	 case REQUEST_BATCH_JOB_LAUNCH:
 		 rc = _unpack_batch_job_launch_msg((batch_job_launch_msg_t **)
 						   & (msg->data), buffer);
-		 break;
-	 case RESPONSE_BATCH_JOB_LAUNCH:
-		 rc = _unpack_batch_job_resp_msg(
-					(batch_launch_response_msg_t **)
-					& (msg->data), buffer);
 		 break;
 	 case MESSAGE_UPLOAD_ACCOUNTING_INFO:
 		 break;
@@ -1551,7 +1537,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 
 	safe_unpack16(&job->job_state,  buffer);
 	safe_unpack16(&job->batch_flag, buffer);
-	safe_unpack32(&job->batch_sid,  buffer);
+	safe_unpack32(&job->alloc_sid,  buffer);
 	safe_unpack32(&job->time_limit, buffer);
 
 	safe_unpack_time(&job->start_time, buffer);
@@ -1561,6 +1547,7 @@ _unpack_job_info_members(job_info_t * job, Buf buffer)
 	safe_unpackstr_xmalloc(&job->nodes, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->partition, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&job->name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&job->alloc_node, &uint16_tmp, buffer);
 	safe_unpackstr_xmalloc(&node_inx_str, &uint16_tmp, buffer);
 	if (node_inx_str == NULL)
 		job->node_inx = bitfmt2int("");
@@ -1721,6 +1708,8 @@ _pack_job_desc_msg(job_desc_msg_t * job_desc_ptr, Buf buffer)
 	pack32(job_desc_ptr->job_id, buffer);
 	packstr(job_desc_ptr->name, buffer);
 
+	packstr(job_desc_ptr->alloc_node, buffer);
+	pack32(job_desc_ptr->alloc_sid, buffer);
 	pack32(job_desc_ptr->min_procs, buffer);
 	pack32(job_desc_ptr->min_memory, buffer);
 	pack32(job_desc_ptr->min_tmp_disk, buffer);
@@ -1775,6 +1764,8 @@ _unpack_job_desc_msg(job_desc_msg_t ** job_desc_buffer_ptr, Buf buffer)
 	safe_unpack32(&job_desc_ptr->job_id, buffer);
 	safe_unpackstr_xmalloc(&job_desc_ptr->name, &uint16_tmp, buffer);
 
+	safe_unpackstr_xmalloc(&job_desc_ptr->alloc_node, &uint16_tmp, buffer);
+	safe_unpack32(&job_desc_ptr->alloc_sid, buffer);
 	safe_unpack32(&job_desc_ptr->min_procs, buffer);
 	safe_unpack32(&job_desc_ptr->min_memory, buffer);
 	safe_unpack32(&job_desc_ptr->min_tmp_disk, buffer);
@@ -2476,36 +2467,6 @@ _unpack_job_id_response_msg(job_id_response_msg_t ** msg, Buf buffer)
 	*msg = tmp_ptr;
 
 	/* load the data values */
-	safe_unpack32(&tmp_ptr->job_id, buffer);
-	return SLURM_SUCCESS;
-
-      unpack_error:
-	xfree(tmp_ptr);
-	*msg = NULL;
-	return SLURM_ERROR;
-}
-
-static void
-_pack_batch_job_resp_msg(batch_launch_response_msg_t * msg, Buf buffer)
-{
-	assert(msg != NULL);
-
-	pack32(msg->sid,    buffer);
-	pack32(msg->job_id, buffer);
-}
-
-static int
-_unpack_batch_job_resp_msg(batch_launch_response_msg_t ** msg, Buf buffer)
-{
-	batch_launch_response_msg_t *tmp_ptr;
-
-	/* alloc memory for structure */
-	assert(msg != NULL);
-	tmp_ptr = xmalloc(sizeof(batch_launch_response_msg_t));
-	*msg = tmp_ptr;
-
-	/* load the data values */
-	safe_unpack32(&tmp_ptr->sid,    buffer);
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	return SLURM_SUCCESS;
 
