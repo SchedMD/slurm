@@ -201,4 +201,8 @@ typedef enum {false, true} bool;
 
 #endif /* WITH_PTHREADS */
 
+#ifndef strong_alias
+#  define strong_alias(name, aliasname) \
+   extern __typeof (name) aliasname __attribute ((alias (#name)))
+#endif
 #endif /* !_MACROS_H */

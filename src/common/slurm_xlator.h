@@ -9,19 +9,21 @@
  *  should be avoided.
  *
  *  All SLURM functions referenced from the switch and auth plugins should
- *  be aliased here.
+ *  have aliases established. Functions not referenced from the plugins 
+ *  need not be aliased.  
  *
  *  To use this header file:
- *  1. Add the strong_alias functions for the functions being exported
- *  2. Include the header file defining the functions (needed before
- *     strong_alias is executed)
- *  3. In the header file defining the functions, include
- *     "src/common/slurm_xlator.h" _before_ any "#ifndef" test. This insures
- *     that strong_alias() is always executed after the functions are defined.
- *  4. If the module containing the relevant function does not include its
- *     matching header (e.g. "log.c" does not include "log.h") then explicitly
- *     include "src/common/slurm_xlator.h"
- *  Note: Items 3 and 4 result in minimal changes to existing modules
+ *  1. In the module containing the exported function code, establish an 
+ *     alias for each of the functions after they are defined. 
+ *     #include "src/common/macros.h"
+ *     strong_alias(<name>, slurm_<name>); 
+ *  2. For each function, change it's name then include the appropriate 
+ *     header file with definitions.
+ *     #define <name> slurm_<name>
+ *  3. In the plugin modules using the functions, include this header file
+ *     and remove other slurm header files (they should all be in this header).
+ *     This logic will have the plugin link only to the function names with 
+ *     the "slurm_" prefix.
  *****************************************************************************
  *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -49,22 +51,230 @@
 #ifndef __SLURM_XLATOR_H__
 #define __SLURM_XLATOR_H__
 
-#include "src/common/log.h"
+/* arg_desc.[ch] functions*/
+#define	arg_count		slurm_arg_count
+#define	arg_idx_by_name		slurm_arg_idx_by_name
+#define	arg_name_by_inx		slurm_arg_name_by_inx
 
-#define strong_alias(name, aliasname) \
-extern __typeof (name) aliasname __attribute ((alias (#name)))
+/* bitstring.[ch] functions*/
+#define	bit_alloc		slurm_bit_alloc
+#define	bit_test		slurm_bit_test
+#define	bit_set			slurm_bit_set
+#define	bit_clear		slurm_bit_clear
+#define	bit_nclear		slurm_bit_nclear
+#define	bit_nset		slurm_bit_nset
+#define	bit_ffc			slurm_bit_ffc
+#define	bit_ffs			slurm_bit_ffs
+#define	bit_free		slurm_bit_free
+#define	bit_realloc		slurm_bit_realloc
+#define	bit_size		slurm_bit_size
+#define	bit_and			slurm_bit_and
+#define	bit_not			slurm_bit_not
+#define	bit_or			slurm_bit_or
+#define	bit_set_count		slurm_bit_set_count
+#define	bit_clear_count		slurm_bit_clear_count
+#define	bit_fmt			slurm_bit_fmt
+#define	bit_fls			slurm_bit_fls
+#define	bit_fill_gaps		slurm_bit_fill_gaps
+#define	bit_super_set		slurm_bit_super_set
+#define	bit_copy		slurm_bit_copy
+#define	bit_pick_cnt		slurm_bit_pick_cnt
+#define	bitfmt2int		slurm_bitfmt2int
 
-/* 
- * rename all functions via gcc alias
- */
+/* hostlist.[ch] functions */
+#define	hostlist_create		slurm_hostlist_create
+#define	hostlist_copy		slurm_hostlist_copy
+#define	hostlist_count		slurm_hostlist_count
+#define	hostlist_delete		slurm_hostlist_delete
+#define	hostlist_delete_host	slurm_hostlist_delete_host
+#define	hostlist_delete_nth	slurm_hostlist_delete_nth
+#define	hostlist_deranged_string slurm_hostlist_deranged_string
+#define	hostlist_destroy	slurm_hostlist_destroy
+#define	hostlist_find		slurm_hostlist_find
+#define	hostlist_iterator_create  slurm_hostlist_iterator_create
+#define	hostlist_iterator_destroy slurm_hostlist_iterator_destroy
+#define	hostlist_iterator_reset	slurm_hostlist_iterator_reset
+#define	hostlist_next		slurm_hostlist_next
+#define	hostlist_next_range	slurm_hostlist_next_range
+#define	hostlist_nth		slurm_hostlist_nth
+#define	hostlist_pop            slurm_hostlist_pop
+#define	hostlist_pop_range      slurm_hostlist_pop_range
+#define	hostlist_push		slurm_hostlist_push
+#define	hostlist_push_host	slurm_hostlist_push_host
+#define	hostlist_push_list	slurm_hostlist_push_list
+#define	hostlist_ranged_string	slurm_hostlist_ranged_string
+#define	hostlist_remove		slurm_hostlist_remove
+#define	hostlist_shift		slurm_hostlist_shift
+#define	hostlist_shift_range	slurm_hostlist_shift_range
+#define	hostlist_sort		slurm_hostlist_soft
+#define	hostlist_uniq		slurm_hostlist_uniq
+#define	hostset_copy		slurm_hostset_copy
+#define	hostset_count		slurm_hostset_count
+#define	hostset_create		slurm_hostset_create
+#define	hostset_delete		slurm_hostset_delete
+#define	hostset_destroy		slurm_hostset_destroy
+#define	hostset_insert		slurm_hostset_insert
+#define	hostset_shift		slurm_hostset_shift
+#define	hostset_shift_range	slurm_hostset_shift_range
+#define	hostset_within		slurm_hostset_within
+
+/* list.[ch] functions */
+#define	list_create		slurm_list_create
+#define	list_destroy		slurm_list_destroy
+#define	list_is_empty		slurm_list_is_empty
+#define	list_count		slurm_list_count
+#define	list_append		slurm_list_append
+#define	list_prepend		slurm_list_prepend
+#define	list_find_first		slurm_list_find_first
+#define	list_delete_all		slurm_list_delete_all
+#define	list_for_each		slurm_list_for_each
+#define	list_sort		slurm_list_sort
+#define	list_push		slurm_list_push
+#define	list_pop		slurm_list_pop
+#define	list_peek		slurm_list_peek
+#define	list_enqueue		slurm_list_enqueue
+#define	list_dequeue		slurm_list_dequeue
+#define	list_iterator_create	slurm_list_iterator_create
+#define	list_iterator_reset	slurm_list_iterator_reset
+#define	list_iterator_destroy	slurm_list_iterator_destroy
+#define	list_next		slurm_list_next
+#define	list_insert		slurm_list_insert
+#define	list_find		slurm_list_find
+#define	list_remove		slurm_list_remove
+#define	list_delete		slurm_list_delete
+#define	list_install_fork_handlers slurm_list_install_fork_handlers
 
 /* log.[ch] functions */
-strong_alias(fatal,	slurm_fatal);
-strong_alias(error,	slurm_error);
-strong_alias(info,	slurm_info);
-strong_alias(verbose,	slurm_verbose);
-strong_alias(debug,	slurm_debug);
-strong_alias(debug2,	slurm_debug2);
-strong_alias(debug3,	slurm_debug3);
+#define	log_init		slurm_log_init
+#define	log_reinit		slurm_log_reinit
+#define	log_fini		slurm_log_fini
+#define	log_alter		slurm_log_alter
+#define	log_set_fpfx		slurm_log_set_fpfx
+#define	log_fp			slurm_log_fp
+#define	log_has_data		slurm_log_has_data
+#define	log_flush		slurm_log_flush
+#define	dump_cleanup_list	slurm_dump_cleanup_list
+#define	fatal_add_cleanup	slurm_fatal_add_cleanup
+#define	fatal_add_cleanup_job	slurm_fatal_add_cleanup_job
+#define	fatal_remove_cleanup	slurm_fatal_remove_cleanup
+#define	fatal_remove_cleanup_job slurm_fatal_remove_cleanup_job
+#define	fatal_cleanup		slurm_fatal_cleanup
+#define	fatal			slurm_fatal
+#define	error			slurm_error
+#define	info			slurm_info
+#define	verbose			slurm_verbose
+#define	debug			slurm_debug
+#define	debug2			slurm_debug2
+#define	debug3			slurm_debug3
+
+/* macros.h functions
+ * None exported today. 
+ * The header file used only for #define values. */
+
+/* pack.[ch] functions */
+#define	create_buf		slurm_create_buf
+#define	free_buf		slurm_free_buf
+#define	init_buf		slurm_init_buf
+#define	xfer_buf_data		slurm_xfer_buf_data
+#define	pack_time		slurm_pack_time
+#define	unpack_time		slurm_unpack_time
+#define	pack32			slurm_pack32
+#define	unpack32		slurm_unpack32
+#define	pack16			slurm_pack16
+#define	unpack16		slurm_unpack16
+#define	pack8			slurm_pack8
+#define	unpack8			slurm_unpack8
+#define	pack32_array		slurm_pack32_array
+#define	unpack32_array		slurm_unpack32_array
+#define	packmem			slurm_packmem
+#define	unpackmem		slurm_unpackmem
+#define	unpackmem_ptr		slurm_unpackmem_ptr
+#define	unpackmem_xmalloc	slurm_unpackmem_xmalloc
+#define	unpackmem_malloc	slurm_unpackmem_malloc
+#define	packstr_array		slurm_packstr_array
+#define	unpackstr_array		slurm_unpackstr_array
+#define	packmem_array		slurm_packmem_array
+#define	unpackmem_array		slurm_unpackmem_array
+
+/* setenvpf.[ch] functions */
+#define	setenvpf		slurm_setenvpf
+#define	unsetenvp		slurm_unsetenvp
+#define	getenvp			slurm_getenvp
+
+/* slurm_auth.[ch] functions
+ * None exported today. 
+ * The header file used only for #define values. */
+
+/* strlcpy.[ch] functions */
+#define	strlcpy			slurm_strlcpy
+
+/* switch.[ch] functions */
+#define	switch_init		slurm_switch_init
+#define	switch_save		slurm_switch_save
+#define	switch_restore		slurm_switch_restore
+#define	switch_no_frag		slurm_switch_no_frag
+#define	switch_get_errno	slurm_switch_get_errno
+#define	switch_strerror		slurm_switch_strerror
+#define	switch_alloc_jobinfo	slurm_switch_alloc_jobinfo
+#define	switch_build_jobinfo	slurm_switch_build_jobinfo
+#define	switch_copy_jobinfo	slurm_switch_copy_jobinfo
+#define	switch_free_jobinfo	slurm_switch_free_jobinfo
+#define	switch_pack_jobinfo	slurm_switch_pack_jobinfo
+#define	switch_unpack_jobinfo	slurm_switch_unpack_jobinfo
+#define	switch_print_jobinfo	slurm_switch_print_jobinfo
+#define	switch_sprint_jobinfo	slurm_switch_sprint_jobinfo
+#define	interconnect_node_init	slurm_interconnect_node_init
+#define	interconnect_node_fini	slurm_interconnect_node_fini
+#define	interconnect_preinit	slurm_interconnect_preinit
+#define	interconnect_init	slurm_interconnect_init
+#define	interconnect_fini	slurm_interconnect_fini
+#define	interconnect_postfini	slurm_interconnect_postfini
+#define	interconnect_attach	slurm_interconnect_attach
+
+/* xassert.[ch] functions */
+#define	__xassert_failed	slurm_xassert_failed
+
+/* xmalloc.[ch] functions */
+#define	_xmalloc		slurm_xmalloc
+#define	_try_xmalloc		slurm_try_xmalloc
+#define	_xfree			slurm_xfree
+#define	_xrealloc		slurm_xrealloc
+#define	_try_xrealloc		slurm_try_xrealloc
+#define	_xsize			slurm_xsize
+
+/* xsignal.[ch] functions */
+#define	xsignal			slurm_xsignal
+#define	xsignal_save_mask	slurm_xsignal_save_mask
+#define	xsignal_set_mask	slurm_xsignal_set_mask
+#define	xsignal_block		slurm_xsignal_block
+#define	xsignal_unblock		slurm_xsignal_unblock
+#define	xsignal_sigset_create	slurm_xsignal_sigset_create
+
+/* xstring.[ch] functions */
+#define	_xstrcat		slurm_xstrcat
+#define	_xstrcatchar		slurm_xstrcatchar
+#define	_xslurm_strerrorcat	slurm_xslurm_strerrorcat
+#define	_xstrftimecat		slurm_xstrftimecat
+#define	_xstrfmtcat		slurm_xstrfmtcat
+#define	_xmemcat		slurm_xmemcat
+#define	xstrdup			slurm_xstrdup
+#define	xbasename		slurm_xbasename
+
+/* Include the function definitions after redefining their names. */
+#include "src/common/arg_desc.h"
+#include "src/common/bitstring.h"
+#include "src/common/hostlist.h"
+#include "src/common/list.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/pack.h"
+#include "src/common/setenvpf.h"
+#include "src/common/slurm_auth.h"
+#include "src/common/strlcpy.h"
+#include "src/common/switch.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
+#include "src/common/xstring.h"
 
 #endif /*__SLURM_XLATOR_H__*/

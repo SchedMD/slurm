@@ -28,11 +28,21 @@
  */
 
 #if defined(LIBC_SCCS) && !defined(lint)
-static char *rcsid = "$OpenBSD: strlcpy.c,v 1.5 2001/05/13 15:40:16 deraadt Exp $";
+static char *rcsid = "$OpenBSD: strlcpy.c,v 1.5 2001/05/13 15:40:16 deraadt Exp
+$";
 #endif /* LIBC_SCCS and not lint */
 
 #include <sys/types.h>
 #include <string.h>
+
+#include "src/common/macros.h"
+#include "src/common/strlcpy.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(strlcpy,		slurm_strlcpy);
 
 /*
  * Copy src to string dst of size siz.  At most siz-1 characters

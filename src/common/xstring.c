@@ -46,6 +46,7 @@
 
 #include <slurm/slurm_errno.h>
 
+#include "src/common/macros.h"
 #include "src/common/strlcpy.h"
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
@@ -53,6 +54,18 @@
 
 #define XFGETS_CHUNKSIZE 64
 
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(_xstrcat,		slurm_xstrcat);
+strong_alias(_xstrcatchar,	slurm_xstrcatchar);
+strong_alias(_xslurm_strerrorcat, slurm_xslurm_strerrorcat);
+strong_alias(_xstrftimecat,	slurm_xstrftimecat);
+strong_alias(_xstrfmtcat,	slurm_xstrfmtcat);
+strong_alias(_xmemcat,		slurm_xmemcat);
+strong_alias(xstrdup,		slurm_xstrdup);
+strong_alias(xbasename,		slurm_xbasename);
 
 /*
  * Ensure that a string has enough space to add 'needed' characters.

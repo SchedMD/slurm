@@ -32,9 +32,7 @@
 #include <sys/types.h>
 
 #include <slurm/slurm_errno.h>
-
-#include "src/common/macros.h"
-#include "src/common/switch.h"
+#include "src/common/slurm_xlator.h"
 
 /*
  * These variables are required by the generic plugin interface.  If they

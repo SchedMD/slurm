@@ -45,6 +45,33 @@
 
 #define BUF_SIZE 4096
 
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(create_buf,	slurm_create_buf);
+strong_alias(free_buf,		slurm_free_buf);
+strong_alias(init_buf,		slurm_init_buf);
+strong_alias(xfer_buf_data,	slurm_xfer_buf_data);
+strong_alias(pack_time,		slurm_pack_time);
+strong_alias(unpack_time,	slurm_unpack_time);
+strong_alias(pack32,		slurm_pack32);
+strong_alias(unpack32,		slurm_unpack32);
+strong_alias(pack16,		slurm_pack16);
+strong_alias(unpack16,		slurm_unpack16);
+strong_alias(pack8,		slurm_pack8);
+strong_alias(unpack8,		slurm_unpack8);
+strong_alias(pack32_array,	slurm_pack32_array);
+strong_alias(unpack32_array,	slurm_unpack32_array);
+strong_alias(packmem,		slurm_packmem);
+strong_alias(unpackmem,		slurm_unpackmem);
+strong_alias(unpackmem_ptr,	slurm_unpackmem_ptr);
+strong_alias(unpackmem_xmalloc,	slurm_unpackmem_xmalloc);
+strong_alias(unpackmem_malloc,	slurm_unpackmem_malloc);
+strong_alias(packstr_array,	slurm_packstr_array);
+strong_alias(unpackstr_array,	slurm_unpackstr_array);
+strong_alias(packmem_array,	slurm_packmem_array);
+strong_alias(unpackmem_array,	slurm_unpackmem_array);
 
 /* Basic buffer management routines */
 /* create_buf - create a buffer with the supplied contents, contents must

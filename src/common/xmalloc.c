@@ -40,6 +40,18 @@
 
 #include "src/common/xmalloc.h"
 #include "src/common/log.h"
+#include "src/common/macros.h"
+
+/*
+ * Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+ * for details. 
+ */
+strong_alias(_xmalloc,		slurm_xmalloc);
+strong_alias(_try_xmalloc,	slurm_try_xmalloc);
+strong_alias(_xfree,		slurm_xfree);
+strong_alias(_xrealloc,		slurm_xrealloc);
+strong_alias(_try_xrealloc,	slurm_try_xrealloc);
+strong_alias(_xsize,		slurm_xsize);
 
 #if	HAVE_UNSAFE_MALLOC
 #  include <pthread.h>

@@ -83,6 +83,32 @@
 #  define LINEBUFSIZE 256
 #endif
 
+/*
+** Define slurm-specific aliases for use by plugins, see slurm_xlator.h 
+** for details. 
+ */
+strong_alias(log_init,		slurm_log_init);
+strong_alias(log_reinit,	slurm_log_reinit);
+strong_alias(log_fini,		slurm_log_fini);
+strong_alias(log_alter,		slurm_log_alter);
+strong_alias(log_set_fpfx,	slurm_log_set_fpfx);
+strong_alias(log_fp,		slurm_log_fp);
+strong_alias(log_has_data,	slurm_log_has_data);
+strong_alias(log_flush,		slurm_log_flush);
+strong_alias(dump_cleanup_list,	slurm_dump_cleanup_list);
+strong_alias(fatal_add_cleanup,	slurm_fatal_add_cleanup);
+strong_alias(fatal_add_cleanup_job,	slurm_fatal_add_cleanup_job);
+strong_alias(fatal_remove_cleanup,	slurm_fatal_remove_cleanup);
+strong_alias(fatal_remove_cleanup_job,	slurm_fatal_remove_cleanup_job);
+strong_alias(fatal_cleanup,	slurm_fatal_cleanup);
+strong_alias(fatal,		slurm_fatal);
+strong_alias(error,		slurm_error);
+strong_alias(info,		slurm_info);
+strong_alias(verbose,		slurm_verbose);
+strong_alias(debug,		slurm_debug);
+strong_alias(debug2,		slurm_debug2);
+strong_alias(debug3,		slurm_debug3);
+
 /* 
 ** struct defining a "log" type
 */

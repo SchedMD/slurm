@@ -57,14 +57,7 @@
 #include <munge.h>
 
 #include <slurm/slurm_errno.h>
-
-#include "src/common/xassert.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xsignal.h"
-#include "src/common/pack.h"
-#include "src/common/log.h"
-#include "src/common/slurm_auth.h"
-#include "src/common/arg_desc.h"
+#include "src/common/slurm_xlator.h"
 
 #define MUNGE_ERRNO_OFFSET	1000
 

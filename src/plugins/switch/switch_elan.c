@@ -42,14 +42,7 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/bitstring.h"
-#include "src/common/hostlist.h"
-#include "src/common/log.h"
-#include "src/common/macros.h"
-#include "src/common/setenvpf.h"
-#include "src/common/switch.h"
-#include "src/common/xmalloc.h"
-#include "src/common/xstring.h"
+#include "src/common/slurm_xlator.h"
 
 #include "src/plugins/switch/qsw.h"
 

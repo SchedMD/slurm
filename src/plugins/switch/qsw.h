@@ -31,8 +31,7 @@
 #  include "config.h"
 #endif
 
-#include "src/common/bitstring.h"
-#include "src/common/pack.h"
+#include "src/common/slurm_xlator.h"
 
 #ifndef _QSW_INCLUDED
 #define _QSW_INCLUDED
