@@ -1085,8 +1085,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			set_node_down(node_name);
 		}
 	} else {
-		info ("validate_node_specs: node %s has registered", 
-		      node_name);
 		node_ptr->cpus = cpus;
 		node_ptr->real_memory = real_memory;
 		node_ptr->tmp_disk = tmp_disk;
@@ -1101,6 +1099,8 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		}
 #endif
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
+			info ("validate_node_specs: node %s has registered", 
+				node_name);
 			if (job_count)
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
 			else

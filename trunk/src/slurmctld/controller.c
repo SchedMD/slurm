@@ -1992,7 +1992,7 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 		     slurm_strerror(error_code));
 		slurm_send_rc_msg(msg, error_code);
 	} else {
-		info(
+		verbose(
 		   "_slurm_rpc_node_registration complete for %s, time=%ld", 
 		   node_reg_stat_msg->node_name, 
 		   (long) (clock() - start_time));
