@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "August 2003" "squeue 0.2" "Slurm components"
+.TH SQUEUE "1" "September 2003" "squeue 0.2" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -131,7 +131,9 @@ name then within a given partition by increasing step id).
 Specify the states of jobs to view.  Accepts a comma separated list of
 state names or "all". If "all" is specified then jobs of all states will be 
 reported. If no state is specified then pending, running, and completing
- jobs are reported.
+jobs are reported. Valid states (in both extended and compact form) include:
+pending (pd), running (r), completing (cg), completed (cd), failed (f),
+timeout (to), and node_fail (nf).
 .TP
 \fB\-u <user_list>\fR, \fB\-\-users=<user_list>\fR
 Specifies a comma separated list of users whose jobs or job steps are to be
