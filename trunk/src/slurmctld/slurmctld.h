@@ -251,6 +251,7 @@ struct 	step_record {
 	uint16_t step_id;		/* step number */
 	uint16_t cyclic_alloc;		/* set for cyclic task allocation 
 					   across nodes */
+	uint32_t num_tasks;		/* number of tasks required */
 	time_t start_time;      	/* step allocation time */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job 
 					   step */
@@ -266,7 +267,8 @@ extern List job_list;			/* list of job_record entries */
  *  Global slurmctld functions
 \*****************************************************************************/
 
-/* allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
+/*
+ * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
  * IN bitmap - map of nodes to be allocated
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table

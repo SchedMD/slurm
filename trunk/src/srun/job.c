@@ -137,7 +137,11 @@ job_create(resource_allocation_response_msg_t *resp)
 		/* job->ntask[i] = 0; */
 
 		if (resp) {
-			job->cpus[i] = resp->cpus_per_node[cpu_inx];
+			if (opt.overcommit)
+				job->cpus[i] = tph;
+			else
+				job->cpus[i] = resp->cpus_per_node[cpu_inx];
+
 			if ((++cpu_cnt) >= resp->cpu_count_reps[cpu_inx]) {
 				/* move to next record */
 				cpu_inx++;
@@ -151,6 +155,7 @@ job_create(resource_allocation_response_msg_t *resp)
 			slurm_set_addr (&job->slurmd_addr[i], 
 					slurm_get_slurmd_port(), job->host[i]);
 		}
+
 	}
 
 	return job;

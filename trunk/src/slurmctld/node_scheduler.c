@@ -65,7 +65,8 @@ static int _pick_best_nodes(struct node_set *node_set_ptr,
 static int _valid_features(char *requested, char *available);
 
 
-/* allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
+/*
+ * allocate_nodes - change state of specified nodes to NODE_STATE_ALLOCATED
  * IN bitmap - map of nodes to be allocated
  * globals: node_record_count - number of nodes in the system
  *	node_record_table_ptr - pointer to global node table

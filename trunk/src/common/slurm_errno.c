@@ -128,6 +128,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Task distribution specification invalid"		},
 	{ ESLURM_JOB_PENDING, 
 	  "Job is pending execution"				},
+	{ ESLURM_BAD_TASK_COUNT, 
+	  "Task count specification invalid"			},
 
 	/* Quadrics Elan routine error codes */
 

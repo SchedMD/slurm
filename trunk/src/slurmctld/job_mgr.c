@@ -438,6 +438,7 @@ static void _dump_job_step_state(struct step_record *step_ptr, Buf buffer)
 
 	pack16((uint16_t) step_ptr->step_id, buffer);
 	pack16((uint16_t) step_ptr->cyclic_alloc, buffer);
+	pack32(step_ptr->num_tasks, buffer);
 	pack_time(step_ptr->start_time, buffer);
 	node_list = bitmap2node_name(step_ptr->node_bitmap);
 	packstr(node_list, buffer);
@@ -687,11 +688,13 @@ int load_job_state(void)
 		while (step_flag == STEP_FLAG) {
 			struct step_record *step_ptr;
 			uint16_t step_id, cyclic_alloc;
+			uint32_t num_tasks;
 			time_t start_time;
 			char *node_list;
 
 			safe_unpack16(&step_id, buffer);
 			safe_unpack16(&cyclic_alloc, buffer);
+			safe_unpack32(&num_tasks, buffer);
 			safe_unpack_time(&start_time, buffer);
 			safe_unpackstr_xmalloc(&node_list, &name_len,
 					       buffer);
@@ -712,6 +715,7 @@ int load_job_state(void)
 				break;
 			step_ptr->step_id = step_id;
 			step_ptr->cyclic_alloc = cyclic_alloc;
+			step_ptr->num_tasks = num_tasks;
 			step_ptr->start_time = start_time;
 			info("recovered job step %u.%u", job_id, step_id);
 			if (node_list) {

@@ -156,9 +156,9 @@ dump_step_desc(step_specs *step_spec)
 	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u", 
 		step_spec->user_id, step_spec->job_id, 
 		step_spec->node_count, step_spec->cpu_count);
-	debug3("   relative=%u task_dist=%u node_list=%s", 
-		step_spec->relative, step_spec->task_dist, 
-		step_spec->node_list);
+	debug3("   num_tasks=%u relative=%u task_dist=%u node_list=%s", 
+		step_spec->num_tasks, step_spec->relative, 
+		step_spec->task_dist, step_spec->node_list);
 }
 
 
@@ -410,7 +410,7 @@ cleanup:
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
- *	accoding to the step_specs.
+ *	according to the step_specs.
  * IN step_specs - job step specifications
  * OUT new_step_record - pointer to the new step_record (NULL on error)
  * RET - 0 or error code
@@ -423,9 +423,9 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 	bitstr_t *nodeset;
+	int node_count;
 #ifdef HAVE_LIBELAN3
 	int first, last, i, node_id;
-	int nprocs = step_specs->cpu_count;
 	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
 #endif
 
@@ -434,15 +434,14 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	if (job_ptr == NULL)
 		return ESLURM_INVALID_JOB_ID ;
 
-	if (step_specs->user_id != job_ptr->user_id &&
-	    	step_specs->user_id != 0)
+	if ((step_specs->user_id != job_ptr->user_id) &&
+	    (step_specs->user_id != 0))
 		return ESLURM_ACCESS_DENIED ;
 
 	if ((job_ptr->job_state == JOB_COMPLETE) || 
 	    (job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
-	job_ptr->time_last_active = time(NULL);
 
 #ifdef HAVE_LIBELAN3
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
@@ -450,10 +449,25 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 		return ESLURM_BAD_DIST;
 #endif
 
-	nodeset = _pick_step_nodes (job_ptr, step_specs );
-
+	job_ptr->time_last_active = time(NULL);
+	nodeset = _pick_step_nodes (job_ptr, step_specs);
 	if (nodeset == NULL)
 		return ESLURM_REQUESTED_NODE_CONFIG_UNAVAILABLE ;
+	node_count = bit_set_count(nodeset);
+
+	if (step_specs->num_tasks == NO_VAL) {
+		if (step_specs->cpu_count != NO_VAL)
+			step_specs->num_tasks = step_specs->cpu_count;
+		else
+			step_specs->num_tasks = node_count;
+	}
+	if ((step_specs->num_tasks < 1) ||
+	    (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE)))
+		return ESLURM_BAD_TASK_COUNT;
+#ifdef HAVE_LIBELAN3
+	if (step_specs->num_tasks > node_set_size)
+		return ESLURM_BAD_TASK_COUNT;
+#endif
 
 	step_ptr = create_step_record (job_ptr);
 	if (step_ptr == NULL)
@@ -463,6 +477,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	step_ptr->node_bitmap = nodeset;
 	step_ptr->cyclic_alloc = 
 		(uint16_t) (step_specs->task_dist == SLURM_DIST_CYCLIC);
+	step_ptr->num_tasks = step_specs->num_tasks;
 
 #ifdef HAVE_LIBELAN3
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
@@ -488,7 +503,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 			}
 		}
 	}
-	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, 
+	if (qsw_setup_jobinfo (step_ptr->qsw_job, step_specs->num_tasks, 
 				nodeset, step_ptr->cyclic_alloc) < 0) {
 		error ("step_create: qsw_setup_jobinfo error %m");
 		delete_step_record (job_ptr, step_ptr->step_id);
@@ -520,6 +535,7 @@ static void _pack_ctld_job_step_info(struct step_record *step, Buf buffer)
 	pack_job_step_info_members(step->job_ptr->job_id,
 				   step->step_id,
 				   step->job_ptr->user_id,
+				   step->num_tasks,
 				   step->start_time,
 				   step->job_ptr->partition,
 				   node_list, buffer);
