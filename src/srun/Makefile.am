@@ -6,7 +6,7 @@ AUTOMAKE_OPTIONS = foreign
 INCLUDES = -I$(top_srcdir) 
 
 if WITH_TOTALVIEW
-TVFLAGS = -g -gstabs
+AM_CFLAGS = -gstabs
 SRUN_WRAPPER_OBJ = srun.wrapper.o
 endif
 
@@ -40,10 +40,6 @@ convenience_libs =  \
 	$(top_builddir)/src/common/libhostlist.la \
 	$(top_builddir)/src/common/libeio.la      \
 	$(top_builddir)/src/api/libslurm.la
-
-srun_CFLAGS = \
-	$(CFLAGS) \
-	$(TVFLAGS)
 
 srun_LDADD = \
 	$(SRUN_WRAPPER_OBJ) \
