@@ -87,8 +87,8 @@
 #
 # Example:
 #
-# SlurmctldPort=7010 	# default: @SLURMCTLD_PORT@
-# SlurmdPort=7011       # default: @SLURMD_PORT@
+# SlurmctldPort=7010 	# 
+# SlurmdPort=7011       #
 
 
 #
@@ -141,7 +141,7 @@
 #   colon-separated list of directories, just like the PATH
 #   environment variable.
 #
-# PluginDir=/usr/local/lib # default
+# PluginDir=/usr/local/lib # default: PREFIX/lib/slurm
 
 #
 # o Define some timeout values for the slurm controller and backup
@@ -152,7 +152,8 @@
 #
 #    "SlurmdTimeout"    : amount of time, in seconds, the controller
 #                         waits for slurmd to respond before setting the
-#                         node's state to DOWN.
+#                         node's state to DOWN. If set to 0, this feature
+#                         is disabled.
 #
 #    "HeartbeatInterval": The interval, in seconds, at which the SLURM
 #                         controller tests the status of other daemons.
