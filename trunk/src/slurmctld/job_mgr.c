@@ -1211,23 +1211,24 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 	}
 
 	if (job_ptr->job_state == JOB_RUNNING) {
-		ListIterator step_record_iterator;
-		struct step_record *step_ptr;
-
-		step_record_iterator = 
-				list_iterator_create (job_ptr->step_list);		
-		while ((step_ptr = (struct step_record *)
-					list_next (step_record_iterator))) {
-			signal_step_tasks(step_ptr, signal);
-		}
-		list_iterator_destroy (step_record_iterator);
-
 		if (signal == SIGKILL) {
+			/* No need to signal steps, deallocate kills them */
 			job_ptr->time_last_active	= now;
 			job_ptr->end_time		= now;
 			last_job_update			= now;
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 			deallocate_nodes(job_ptr, false);
+		} else {
+			ListIterator step_record_iterator;
+			struct step_record *step_ptr;
+
+			step_record_iterator = 
+				list_iterator_create (job_ptr->step_list);		
+			while ((step_ptr = (struct step_record *)
+					list_next (step_record_iterator))) {
+				signal_step_tasks(step_ptr, signal);
+			}
+			list_iterator_destroy (step_record_iterator);
 		}
 		verbose("job_signal %u of running job %u successful", 
 			signal, job_id);
