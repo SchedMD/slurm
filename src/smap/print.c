@@ -1,0 +1,721 @@
+/*****************************************************************************\
+ *  print.c - smap print job functions
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov> and 
+ *  Morris Jette <jette1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
+#include <ctype.h>
+#include <time.h>
+#include <stdio.h>
+#include <string.h>
+#include <pwd.h>
+#include <sys/types.h>
+#include <ncurses.h>
+
+#include "src/common/list.h"
+#include "src/common/hostlist.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
+#include "src/smap/print.h"
+#include "src/smap/smap.h"
+
+#define MIN_NODE_FIELD_SIZE 9
+
+static int   _build_min_max_string(char *buffer, int buf_size, int min, 
+                                   int max, bool range);
+static int   _print_secs(long time, int width, bool right, bool cut_output);
+static int   _print_str(char *str, int width, bool right, bool cut_output);
+static void  _set_node_field_size(List smap_list);
+static char *_str_tolower(char *upper_str);
+
+
+/*****************************************************************************
+ * Global Print Functions
+ *****************************************************************************/
+
+void print_date(void)
+{
+  time_t now;
+  
+  now = time(NULL);
+  mvwprintw(text_win,ycord,xcord,"%s", ctime(&now));
+  ycord++;
+}
+
+int print_smap_list(List smap_list)
+{
+  ListIterator i = list_iterator_create(smap_list);
+  smap_data_t *current;
+  
+  if (params.node_field_flag)
+    _set_node_field_size(smap_list);
+  
+  if (!params.no_header)
+    print_smap_entry(NULL);
+  
+  while ((current = list_next(i)) != NULL)
+    print_smap_entry(current);
+  
+  list_iterator_destroy(i);
+  return SLURM_SUCCESS;
+}
+
+int print_smap_entry(smap_data_t *smap_data)
+{
+  ListIterator i = list_iterator_create(params.format_list);
+  smap_format_t *current;
+  
+  while ((current = (smap_format_t *) list_next(i)) != NULL) {
+    if (current->
+	function(smap_data, current->width, 
+		 current->right_justify, current->suffix)
+	!= SLURM_SUCCESS)
+      return SLURM_ERROR;
+  }
+ 
+  list_iterator_destroy(i);
+  xcord=1;
+  ycord++;
+  return SLURM_SUCCESS;
+}
+
+/*****************************************************************************
+ * Local Print Functions
+ *****************************************************************************/
+
+static int _print_str(char *str, int width, bool right, bool cut_output)
+{
+  char format[64];
+  int printed = 0;
+  int tempxcord = xcord;
+  int prefixlen;
+  int i=0;
+  
+  if (right == true && width != 0)
+    snprintf(format, 64, "%%%ds", width);
+  else if (width != 0)
+    snprintf(format, 64, "%%.%ds", width);
+  else {
+    format[0] = '%';
+    format[1] = 's';
+    format[2] = '\0';
+  }
+  
+  if ((width == 0) || (cut_output == false)) {
+    width = text_win->_maxx - xcord;
+    while(str[i]!='\0')
+    {
+      if ((printed = mvwaddch(text_win,ycord,xcord,str[i])) < 0)
+	return printed;
+      xcord++;
+      width = text_win->_maxx - xcord;
+      if(str[i]=='[')
+	prefixlen=i+1;
+      else if(str[i]==',' && (width-9)<=0)
+	{
+	  ycord++;
+	  xcord=tempxcord+prefixlen;
+	}
+      i++;
+    } 
+ } else {
+    char temp[width + 1];
+    snprintf(temp, width + 1, format, str);
+    if ((printed = mvwprintw(text_win,ycord,xcord,temp)) < 0)
+      return printed;
+  }
+  
+  xcord+=width+1;
+  
+  return printed;
+}
+
+static int _print_secs(long time, int width, bool right, bool cut_output)
+{
+  char str[FORMAT_STRING_SIZE];
+  long days, hours, minutes, seconds;
+  
+  seconds =  time % 60;
+  minutes = (time / 60)   % 60;
+  hours   = (time / 3600) % 24;
+  days    =  time / 86400;
+  
+  if (days) 
+    snprintf(str, FORMAT_STRING_SIZE,
+	     "%ld:%2.2ld:%2.2ld:%2.2ld",
+	     days, hours, minutes, seconds);
+  else if (hours)
+    snprintf(str, FORMAT_STRING_SIZE,
+	     "%ld:%2.2ld:%2.2ld",
+	     hours, minutes, seconds);
+  else
+    snprintf(str, FORMAT_STRING_SIZE,
+	     "%ld:%2.2ld",
+	     minutes, seconds);
+  
+  _print_str(str, width, right, cut_output);
+  return SLURM_SUCCESS;
+}
+
+static int 
+_build_min_max_string(char *buffer, int buf_size, int min, int max, bool range)
+{
+	if (max == min)
+		return snprintf(buffer, buf_size, "%d", max);
+	else if (range) {
+		if (max == INFINITE)
+			return snprintf(buffer, buf_size, "%d-infinite", min);
+		else
+			return snprintf(buffer, buf_size, "%d-%d", min, max);
+	} else
+		return snprintf(buffer, buf_size, "%d+", min);
+}
+
+int
+format_add_function(List list, int width, bool right, char *suffix, 
+			int (*function) (smap_data_t *, int, bool, char*))
+{
+	smap_format_t *tmp = 
+		(smap_format_t *) xmalloc(sizeof(smap_format_t));
+	tmp->function = function;
+	tmp->width = width;
+	tmp->right_justify = right;
+	tmp->suffix = suffix;
+
+	if (list_append(list, tmp) == NULL) {
+		fprintf(stderr, "Memory exhausted\n");
+		exit(1);
+	}
+	return SLURM_SUCCESS;
+}
+
+static void _set_node_field_size(List smap_list)
+{
+	char tmp[1024];
+	ListIterator i = list_iterator_create(smap_list);
+	smap_data_t *current;
+	int max_width = MIN_NODE_FIELD_SIZE, this_width = 0;
+
+	while ((current = (smap_data_t *) list_next(i)) != NULL) {
+		this_width = hostlist_ranged_string(current->nodes, 
+					sizeof(tmp), tmp);
+		max_width = MAX(max_width, this_width);
+	}
+	list_iterator_destroy(i);
+	params.node_field_size = max_width;
+}
+
+/*
+ * _str_tolower - convert string to all lower case
+ * upper_str IN - upper case input string
+ * RET - lower case version of upper_str, caller must be xfree
+ */ 
+static char *_str_tolower(char *upper_str)
+{
+	int i = strlen(upper_str) + 1;
+	char *lower_str = xmalloc(i);
+
+	for (i=0; upper_str[i]; i++)
+		lower_str[i] = tolower((int) upper_str[i]);
+
+	return lower_str;
+}
+
+/*****************************************************************************
+ * Smap Print Functions
+ *****************************************************************************/
+
+int _print_avail(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else if (smap_data->part_info->state_up)
+      _print_str("up", width, right_justify, true);
+    else
+      _print_str("down", width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("AVAIL", width, right_justify, true);
+  
+  if (suffix)
+    {
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_cpus(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _build_min_max_string(id, FORMAT_STRING_SIZE, 
+			  smap_data->min_cpus, 
+			  smap_data->max_cpus, false);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("CPUS", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  
+  return SLURM_SUCCESS;
+}
+
+int _print_disk(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _build_min_max_string(id, FORMAT_STRING_SIZE, 
+			  smap_data->min_disk, 
+			  smap_data->max_disk, false);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("TMP_DISK", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+	return SLURM_SUCCESS;
+}
+
+int _print_features(smap_data_t * smap_data, int width,
+		    bool right_justify, char *suffix)
+{
+  if (smap_data)
+    {
+      wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+      _print_str(smap_data->features, width, right_justify, true);
+      wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    }
+  else
+    _print_str("FEATURES", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_groups(smap_data_t * smap_data, int width,
+		  bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else if (smap_data->part_info->allow_groups)
+      _print_str(smap_data->part_info->allow_groups, 
+		 width, right_justify, true);
+    else
+      _print_str("all", width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("GROUPS", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_memory(smap_data_t * smap_data, int width,
+		  bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _build_min_max_string(id, FORMAT_STRING_SIZE, 
+			  smap_data->min_mem, 
+			  smap_data->max_mem, false);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("MEMORY", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+
+int _print_node_list(smap_data_t * smap_data, int width,
+		     bool right_justify, char *suffix)
+{
+  if (params.node_field_flag)
+    width = params.node_field_size;
+  
+  if (smap_data) {
+    char tmp[1024];
+    hostlist_ranged_string(smap_data->nodes, 
+		      sizeof(tmp), tmp);
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount-1].color));
+    _print_str(tmp, width, right_justify, true);      
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount-1].color));
+  } else
+    _print_str("NODELIST", width, right_justify, true);
+  
+  if (suffix)
+    mvwprintw(text_win,ycord,xcord,"%s", suffix);
+    
+  return SLURM_SUCCESS;
+}
+
+int _print_nodes_t(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    snprintf(id, FORMAT_STRING_SIZE, "%u", smap_data->nodes_tot);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("NODES", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_nodes_ai(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    snprintf(id, FORMAT_STRING_SIZE, "%u/%u", 
+	     smap_data->nodes_alloc, smap_data->nodes_idle);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("NODES(A/I)", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_nodes_aiot(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    snprintf(id, FORMAT_STRING_SIZE, "%u/%u/%u/%u", 
+	     smap_data->nodes_alloc, smap_data->nodes_idle,
+	     smap_data->nodes_other, smap_data->nodes_tot);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("NODES(A/I/O/T)", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_partition(smap_data_t * smap_data, int width,
+		     bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else {
+      char *tmp;
+      tmp = xstrdup(smap_data->part_info->name);
+      if (smap_data->part_info->default_part) {
+	if (strlen(tmp) < width)
+	  xstrcat(tmp, "*");
+	else if (width > 0)
+	  tmp[width-1] = '*';
+      }
+      _print_str(tmp, width, right_justify, true);
+      xfree(tmp);
+      wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    }
+  } else
+    _print_str("PARTITION", width, right_justify, true);
+  
+  if (suffix)
+    printf("%s", suffix);
+  return SLURM_SUCCESS;
+}
+
+int _print_prefix(smap_data_t * job, int width, bool right_justify, 
+		char* suffix)
+{
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+      wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_reason(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    char * reason = smap_data->reason ? smap_data->reason:"none";
+    if (strncmp(reason, "(null)", 6) == 0) 
+      reason = "none";
+    _print_str(reason, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("REASON", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_root(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else if (smap_data->part_info->root_only)
+      _print_str("yes", width, right_justify, true);
+    else
+      _print_str("no", width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("ROOT", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_share(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else if (smap_data->part_info->shared > 1)
+      _print_str("force", width, right_justify, true);
+    else if (smap_data->part_info->shared)
+      _print_str("yes", width, right_justify, true);
+    else
+      _print_str("no", width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("SHARE", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_size(smap_data_t * smap_data, int width,
+		bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else {
+      if ((smap_data->part_info->min_nodes < 1) &&
+	  (smap_data->part_info->max_nodes > 0))
+	smap_data->part_info->min_nodes = 1;
+      _build_min_max_string(id, FORMAT_STRING_SIZE, 
+			    smap_data->part_info->min_nodes, 
+			    smap_data->part_info->max_nodes,
+			    true);
+      _print_str(id, width, right_justify, true);
+      wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    }
+  } else
+    _print_str("JOB_SIZE", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_state_compact(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  if (smap_data && smap_data->nodes_tot) {
+    char *upper_state = node_state_string_compact(smap_data->node_state);
+    char *lower_state = _str_tolower(upper_state);
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _print_str(lower_state, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    xfree(lower_state);
+  } else if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _print_str("n/a", width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("STATE", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_state_long(smap_data_t * smap_data, int width,
+		      bool right_justify, char *suffix)
+{
+  if (smap_data && smap_data->nodes_tot) {
+    char *upper_state = node_state_string(smap_data->node_state);
+    char *lower_state = _str_tolower(upper_state);
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _print_str(lower_state, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    xfree(lower_state);
+  } else if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _print_str("n/a", width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("STATE", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+
+int _print_time(smap_data_t * smap_data, int width,
+			bool right_justify, char *suffix)
+{
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    if (smap_data->part_info == NULL)
+      _print_str("n/a", width, right_justify, true);
+    else if (smap_data->part_info->max_time == INFINITE)
+      _print_str("infinite", width, right_justify, true);
+    else
+      _print_secs((smap_data->part_info->max_time * 60L),
+		  width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("TIMELIMIT", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
+
+int _print_weight(smap_data_t * smap_data, int width,
+		  bool right_justify, char *suffix)
+{
+  char id[FORMAT_STRING_SIZE];
+  if (smap_data) {
+    wattron(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+    _build_min_max_string(id, FORMAT_STRING_SIZE, 
+			  smap_data->min_weight, 
+			  smap_data->max_weight, false);
+    _print_str(id, width, right_justify, true);
+    wattroff(text_win,COLOR_PAIR(FillInValue[GridCount].color));
+  } else
+    _print_str("WEIGHT", width, right_justify, true);
+  
+  if (suffix)
+    {
+      //printf("%s", suffix);
+      mvwprintw(text_win,ycord,xcord,"%s", suffix);
+      xcord+=strlen(suffix);
+    }
+  return SLURM_SUCCESS;
+}
