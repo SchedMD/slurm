@@ -1071,6 +1071,7 @@ void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_
 	packstring_array ( msg -> env , msg -> envc , buffer , length ) ;
 	packstr ( msg -> cwd , buffer , length ) ;
 	packstr ( msg -> cmd_line , buffer , length ) ;
+	slurm_pack_slurm_addr ( & msg -> response_addr , buffer , length ) ;
 	pack_slurm_addr_array ( msg -> streams , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
 	pack32_array ( msg -> global_task_ids , ( uint16_t ) msg -> tasks_to_launch , buffer , length ) ;
 }
@@ -1095,6 +1096,7 @@ int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , u
 	unpackstring_array ( & msg -> env , & msg -> envc , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cwd , & uint16_tmp , buffer , length ) ;
 	unpackstr_xmalloc ( & msg -> cmd_line , & uint16_tmp , buffer , length ) ;
+	slurm_unpack_slurm_addr_no_alloc ( & msg -> response_addr , buffer , length ) ;
 	unpack_slurm_addr_array ( & msg -> streams , & uint16_tmp , buffer , length ) ;
 	unpack32_array ( & msg -> global_task_ids , & uint16_tmp , buffer , length ) ;
 	*msg_ptr = msg ;
