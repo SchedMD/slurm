@@ -77,17 +77,17 @@ License\cite{GPL2002}.
 {\em autoconf} configuration engine.  
 While initially written for Linux, other UNIX-like operating systems 
 should be easy porting targets.
-SLURM also supports a {\em plug-in} mechanism, which permits a variety 
+SLURM also supports a {\em plugin} mechanism, which permits a variety 
 of different infrastructures to be easily supported. 
-The SLURM configuration file specifies which set of plug-in modules 
+The SLURM configuration file specifies which set of plugin modules 
 should be used. 
 
 \item {\em Interconnect independence}: SLURM supports UDP/IP based
 communication and the Quadrics Elan3 interconnect.  Adding support for 
 other interconnects, including topography constraints, is straightforward 
-and will utilize the plug-in mechanism described above\footnote{SLURM 
+and will utilize the plugin mechanism described above\footnote{SLURM 
 presently requires the specification of interconnect at build time. 
-It will be converted to a plug-in with the next version of SLURM.}.
+It will be converted to a plugin with the next version of SLURM.}.
 
 \item {\em Scalability}: SLURM is designed for scalability to clusters of
 thousands of nodes. The SLURM controller for a cluster with 1000 nodes 
@@ -111,7 +111,7 @@ scheduling of those tardy nodes will be effected.
 
 \item {\em Secure}: SLURM employs crypto technology to authenticate 
 users to services and services to each other with a variety of options 
-available through the plug-in mechanism.  
+available through the plugin mechanism.  
 SLURM does not assume that its networks are physically secure, 
 but does assume that the entire cluster is within a single 
 administrative domain with a common user base across the 
@@ -169,7 +169,7 @@ parallel job management while leaving scheduling decisions to an
 external entity. 
 Its default scheduler implements First-In First-Out (FIFO). 
 An external entity can establish a job's initial priority 
-through a plug-in.
+through a plugin.
 An external scheduler may also submit, signal, hold, reorder and 
 terminate jobs via the API.
 
@@ -361,10 +361,36 @@ spawn a shell with access to those resources.
 
 \end{itemize}
 
+\subsubsection{Plugins}
+
+In order to make the use of different infrastructures possible, 
+SLURM uses a general purpose plugin mechanism. 
+A SLURM plugin is a dynamically linked code object which is 
+loaded explicitly at run time by the SLURM libraries. 
+A plugin provides a customized implemenation of a well-defined
+API connected to tasks such as authentication, interconnect fabric, 
+task scheduling, etc.
+A set of functions is defined for use by all of the different 
+infrastructures of a particular variety. 
+For example, the authentication plugin must define functions 
+such as: 
+{\em slurm_auth_activate} to create a credential,
+{\em slurm_auth_verify} to verify a credential to 
+approve or deny authentication, 
+{\em slurm_auth_get_uid} to get the user id associated with 
+a specific credential, etc.
+It also must define the data structure used, a plugin type, 
+a plugin version number, etc. 
+When a slurm daemon is initiated, it reads the configuration 
+file to determine which of the available plugins should be used. 
+For example {\em AuthType=auth/authd} says to use the plugin for 
+authd based authentication and {\em PluginDir=/usr/local/lib} 
+identifies the directory in which to find the plugin.
+
 \subsubsection{Communications Layer}
 
 SLURM presently uses Berkeley sockets for communications. 
-However, we anticipate using the plug-in mechanism to easily 
+However, we anticipate using the plugin mechanism to easily 
 permit use of other communications layers. 
 At LLNL we are using an Ethernet for SLURM communications and 
 the Quadrics Elan switch exclusively for user applications. 
@@ -405,10 +431,10 @@ If permission to modify SLURM configuration is
 required by others, set-uid programs may be used to grant specific
 permissions to specific users.
 
-We presently support three authentication mechanisms via plug-ins: 
+We presently support three authentication mechanisms via plugins: 
 {\tt authd}\cite{Authd2002}, {\tt munged} and {\tt none} 
 (ie. trust message contents). 
-A plug-in can easily be developed for Kerberos or authentication 
+A plugin can easily be developed for Kerberos or authentication 
 mechanisms as desired.
 The \munged\ implementation is described below.
 A \munged\ daemon running as user {\tt root} on each node confirms the 
@@ -623,7 +649,7 @@ application programming interfaces (APIs) and the flexibility
 to satisfy the needs of others working on scheduling issues.  
 
 When jobs are submitted to SLURM they are assigned an initial 
-scheduling priority through a plug-in library function. It 
+scheduling priority through a plugin library function. It 
 maintains a priority ordered queue of pending jobs
 
 to perform gang scheduling, namely an API 
@@ -655,7 +681,7 @@ starting in March 2003 and be available for distribution shortly
 thereafter. 
 
 Looking ahead, we anticipate moving the interconnect topography 
-and API functions into plug-in modules and adding support for 
+and API functions into plugin modules and adding support for 
 additional systems. 
 We plan to add support for additional operating systems 
 (IA64 and x86-64) and interconnects (InfiniBand, Myrinet, and 
