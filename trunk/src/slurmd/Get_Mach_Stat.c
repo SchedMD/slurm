@@ -107,7 +107,7 @@ int Get_OS_Name(char *OS_Name) {
 	return Error_Code;
     } /* if */
 
-    if ((strlen(Sys_Info.sysname) + strlen(Sys_Info.release)) >= MAX_OS_LEN) {
+    if ((strlen(Sys_Info.sysname) + strlen(Sys_Info.release) + 2) >= MAX_OS_LEN) {
 #if DEBUG_SYSTEM
 	fprintf(stderr, "Get_OS_Name: OS name too long\n");
 #else
@@ -117,6 +117,7 @@ int Get_OS_Name(char *OS_Name) {
     } /* if */
 
     strcpy(OS_Name, Sys_Info.sysname);
+    strcat(OS_Name, ".");
     strcat(OS_Name, Sys_Info.release);
     return 0;
 } /* Get_OS_Name */

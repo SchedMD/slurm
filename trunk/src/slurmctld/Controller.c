@@ -18,6 +18,7 @@
 #define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
+int OS_Comp(char *OS_1, char *OS_2);
 int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS, 
 	int *My_CPUs, int *Set_CPUs, float *My_Speed, int *Set_Speed,
 	int *My_RealMemory, int *Set_RealMemory, int *My_VirtualMemory, int *Set_VirtualMemory, 
@@ -82,6 +83,39 @@ main(int argc, char * argv[]) {
 } /* main */
 #endif
 
+/* 
+ * OS_Comp - Compare two OS versions 
+ * Output: returns an integer less than, equal to, or greater than zero if  OS_1 is found 
+ *         respectively to be less than, equal to, or greater than OS_2
+ */
+int OS_Comp(char *OS_1, char *OS_2) {
+    char Tmp_OS_1[MAX_OS_LEN], Tmp_OS_2[MAX_OS_LEN];
+    char *OS1_Ptr1, *OS1_Ptr2;
+    char *OS2_Ptr1, *OS2_Ptr2;
+    int i;
+
+    if (strcmp(OS_1, OS_2) == 0) return 0;
+
+    strcpy(Tmp_OS_1, OS_1);
+    strcpy(Tmp_OS_2, OS_2);
+
+    OS1_Ptr1 = (char *)strtok_r(Tmp_OS_1, ".", &OS1_Ptr2);
+    OS2_Ptr1 = (char *)strtok_r(Tmp_OS_2, ".", &OS2_Ptr2);
+    while (1) {
+	i = strcmp(OS1_Ptr1, OS1_Ptr1);
+	if (i != 0) return i;
+	OS1_Ptr1 = (char *)strtok_r(NULL, ".", &OS1_Ptr2);
+	OS2_Ptr1 = (char *)strtok_r(NULL, ".", &OS2_Ptr2);
+    } /* while */
+
+#if DEBUG_SYSTEM
+     fprintf(stderr, "OS_Comp: OS compare failure:%s:%s:\n", OS_1, OS_2);
+#else
+     syslog(LOG_ERR, "OS_Comp: OS compare failure:%s:%s:\n", OS_1, OS_2);
+#endif
+    return 0; /* Punt */
+} /* OS_Comp */
+
 
 /* 
  * Parse_Job_Spec - Parse the job input specification, return values and set flags
@@ -131,6 +165,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
 #else
     	    syslog(LOG_ERR, "Parse_Job_Spec: User name too long\n");
 #endif
+	    free(Scratch);
 	    return EINVAL;
 	} /* else */
     } /* if */
@@ -147,6 +182,7 @@ int Parse_Job_Spec(char *Specification, char *My_Name, char *My_OS,
 #else
     	    syslog(LOG_ERR, "Parse_Job_Spec: OS name too long\n");
 #endif
+	    free(Scratch);
 	    return EINVAL;
 	} /* else */
     } /* if */
@@ -275,7 +311,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
     Node_List_Ptr = (char *)strstr(Specification, "NodeList=");
     if (Node_List_Ptr != NULL) {
 	Node_List_Ptr += 9;   /* Skip over "NodeList=" */
-	Scratch = malloc(strlen(Node_List_Ptr));
+	Scratch = malloc(strlen(Node_List_Ptr)+1);
 	if (Scratch == NULL) {
 #if DEBUG_SYSTEM
 	    fprintf(stderr, "Will_Job_Run: unable to allocate memory\n");
@@ -306,7 +342,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 
 	    /* Validate the node's use */
 	    Fail_Mode = (char *)NULL;
-	    if ((strlen(My_OS) != 0) && (strcmp(My_OS, Node_Record_Point->OS) < 0)) 
+	    if ((strlen(My_OS) != 0) && (OS_Comp(My_OS, Node_Record_Point->OS) < 0)) 
 		Fail_Mode = "OS";
 	    if ((Partition & Node_Record_Point->Partition) == 0) 
 		Fail_Mode = "Partition";
@@ -320,7 +356,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 		Fail_Mode = "VirtualMemory";
 	    if ((Set_TmpDisk != 0) && (My_TmpDisk > Node_Record_Point->TmpDisk)) 
 		Fail_Mode = "TmpDisk";
-	    if ((Node_Record_Point->NodeState != STATE_IDLE) && (Node_Record_Point->NodeState != STATE_BUSY)) 
+	    if (Node_Record_Point->NodeState != STATE_IDLE) 
 		Fail_Mode = "NodeState";
 
 	    if (Fail_Mode != (char *)NULL) {
@@ -342,13 +378,12 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	    Node_Tally++;
 	    str_ptr1 = (char *)strtok_r(NULL, ",", &str_ptr2);
 	} /* while */
+	free(Scratch);
 	if (((Set_CpuCount != 0) && (My_CpuCount > CPU_Tally)) ||
 	     ((Set_NodeCount != 0) && (My_NodeCount > Node_Tally))) {
 	    *Error_Code = EINVAL;
-	    free(Scratch);
 	    return (char *)NULL;
 	} /* if */
-	free(Scratch);
 	Scratch = malloc(Node_List_Size+1);
 	strncpy(Scratch, Node_List_Ptr, Node_List_Size);
 	Scratch[Node_List_Size] = (char)NULL;
@@ -377,6 +412,7 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 #else
 	    syslog(LOG_ERR, "Find_Node_Record: list_iterator_create unable to allocate memory\n");
 #endif
+	    free(Scratch);
 	    *Error_Code = EINVAL;
 	    return (char *)NULL;
 	} /* if */
@@ -384,14 +420,14 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 	CPU_Tally = 0;
 	Node_Tally = 0;
 	while (Node_Record_Point = (struct Node_Record *)list_next(Node_Record_Iterator)) {
-	    if (((strlen(My_OS) != 0) && (strcmp(My_OS, Node_Record_Point->OS) < 0)) || 
+	    if (((strlen(My_OS) != 0) && (OS_Comp(My_OS, Node_Record_Point->OS) < 0)) || 
 	        ((Partition & Node_Record_Point->Partition) == 0) ||
 	        ((Set_CPUs != 0) && (My_CPUs > Node_Record_Point->CPUs)) ||
 	        ((Set_Speed != 0) && (My_Speed > Node_Record_Point->Speed)) ||
 	        ((Set_RealMemory != 0) && (My_RealMemory > Node_Record_Point->RealMemory)) ||
 	        ((Set_VirtualMemory != 0) && (My_VirtualMemory > Node_Record_Point->VirtualMemory)) ||
-	        ((Set_TmpDisk != 0) && (My_TmpDisk > Node_Record_Point->TmpDisk)) &&
-	         (Node_Record_Point->NodeState != STATE_BUSY)) continue;
+	        ((Set_TmpDisk != 0) && (My_TmpDisk > Node_Record_Point->TmpDisk)) ||
+	        (Node_Record_Point->NodeState != STATE_IDLE)) continue;
 
 	    /* Node is usable */
 	    if ((strlen(Scratch)+strlen(Node_Record_Point->Name)+1) >= Node_List_Size) {
@@ -403,12 +439,14 @@ char *Will_Job_Run(char *Specification, int *Error_Code) {
 		    syslog(LOG_ERR, "Will_Job_Run: unable to allocate memory\n");
 #endif
 		    list_iterator_destroy(Node_Record_Iterator);
+		    free(Scratch);
 		    *Error_Code =  ENOMEM;
 		    return (char *)NULL;
 		} /* if */
 
 	    } /* if */
-	    if (strlen(Scratch) > 0) strcat(Scratch,",");
+	    if (strlen(Scratch) > 0) strcat(Scratch, ",");
+	    strcat(Scratch, Node_Record_Point->Name);
 	    CPU_Tally += Node_Record_Point->CPUs;
 	    Node_Tally++;
 	    if ((Set_CpuCount  != 0) && (Node_Tally < My_CpuCount )) continue;
