@@ -63,6 +63,7 @@ typedef enum {false, true} bool;
 
 #define SLURM_IO_KEY_SIZE 8
 
+/* Avoid going over 32 bits for a constant to avoid warnings on some systems */
 #  define UINT64_SWAP_LE_BE(val)      ((uint64_t) (                           \
         (((uint64_t) (val) &                                                  \
           (uint64_t) (0x00000000000000ffU)) << 56) |                          \
@@ -72,14 +73,14 @@ typedef enum {false, true} bool;
           (uint64_t) (0x0000000000ff0000U)) << 24) |                          \
         (((uint64_t) (val) &                                                  \
           (uint64_t) (0x00000000ff000000U)) <<  8) |                          \
-        (((uint64_t) (val) &                                                  \
-          (uint64_t) (0x000000ff00000000U)) >>  8) |                          \
-        (((uint64_t) (val) &                                                  \
-          (uint64_t) (0x0000ff0000000000U)) >> 24) |                          \
-        (((uint64_t) (val) &                                                  \
-          (uint64_t) (0x00ff000000000000U)) >> 40) |                          \
-        (((uint64_t) (val) &                                                  \
-          (uint64_t) (0xff00000000000000U)) >> 56)))
+	(((uint64_t) (val)                  >>  8) &                          \
+	  (uint64_t) (0x00000000ff000000U))        |                          \
+	(((uint64_t) (val)                  >> 24) &                          \
+	  (uint64_t) (0x0000000000ff0000U))        |                          \
+	(((uint64_t) (val)                  >> 40) &                          \
+	  (uint64_t) (0x000000000000ff00U))        |                          \
+	(((uint64_t) (val)                  >> 56) &                          \
+	  (uint64_t) (0x00000000000000ffU)) ))
 
 #if SLURM_BIGENDIAN
 # define HTON_int64(x)	  ((int64_t)  (x))
