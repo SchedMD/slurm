@@ -1,4 +1,4 @@
-.TH SCONTROL "1" "February 2003" "scontrol 0.1" "Slurm components"
+.TH SCONTROL "1" "March 2003" "scontrol 0.1" "Slurm components"
 
 .SH "NAME"
 scontrol \- Used view and modify Slurm configuration and state.
@@ -200,6 +200,10 @@ must be explicitly canceled to force their termination.
 \fIMaxNodes\fP=<count>
 Set the maximum number of nodes which will be allocated to any single job 
 in the partition. Specify a number or "INFINITE".
+.TP
+\fIMinNodes\fP=<count>
+Set the minimum number of nodes which will be allocated to any single job 
+in the partition. 
 .SH "EXAMPLE"
 .eo
 .br 
