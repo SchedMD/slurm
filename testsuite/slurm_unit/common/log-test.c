@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include <src/common/slurm_errno.h>
 #include <src/common/log.h>
