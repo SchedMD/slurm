@@ -233,7 +233,6 @@ extern int job_count;			/* number of jobs in the system */
  * can be purged after initiation */
 struct job_details {
 	uint32_t magic;			/* magic cookie for data integrity */
-	uint32_t num_procs;		/* minimum number of processors */
 	uint32_t min_nodes;		/* minimum number of nodes */
 	uint32_t max_nodes;		/* maximum number of nodes */
 	char *req_nodes;		/* required nodes */
@@ -277,6 +276,7 @@ struct job_record {
 					 * in progress */
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
+	uint32_t num_procs;		/* count of required/allocated processors */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE,
 					 * NO_VAL implies partition max_time */
 	time_t start_time;		/* time execution begins, 
