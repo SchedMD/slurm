@@ -11,6 +11,8 @@ documents those changes that are of interest to users and admins.
  -- Fix squeue output format for "%s" (node select data).
  -- Queue job requesting more resources than exist in a partition if 
     that partition's state is DOWN (rather than just abort it).
+ -- Add prolog/epilog for bluegene to code base (moved from mpirun in CVS)
+ -- Add prolog, epilog and bluegene.conf.example to bluegene RMP
 
 * Changes in SLURM 0.4.4
 ========================
