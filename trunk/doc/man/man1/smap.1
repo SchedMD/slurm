@@ -1,4 +1,4 @@
-.TH SMAP "1" "October 2004" "smap 0.4" "Slurm components"
+.TH SMAP "1" "January 2005" "smap 0.4" "Slurm components"
 
 .SH "NAME"
 smap \- graphically view information about SLURM jobs, partitions, and set 
@@ -177,27 +177,22 @@ Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 .I "CREATE" 
 Submit request for partition creation. There are two main ways this 
 can be used. Primarily the admin can specify either a size number or on 
-a BGL system a XYZ coord can be given like this 1x1x1.
+a BGL system a XYZ coord can be given like this 1x1x1. Command options 
+include: \fBConnection = MESH | TORUS\fR, \fBRotation = TRUE | FALSE\fR,
+\fBElongation = TRUE | FALSE\fR, \fBMode = COPROC | VIRTUAL\fR, and
+\fBRotation = TRUE | FALSE\fR. All command entries are case insensitive.
+The default settings are Connection=mesh, Rotation=false, Elongation=false, 
+and Mode=Coproc.
 
-exp: \fBcreate 8\fR this will request a creation of 8 meaning a cube of 1x2x4 
-or 2x2x2 which ever fits into the configuration.
-
-.nf
-You can also add options like 
-	Connection=TORUS 
-	Mode=VIRTUAL
-	Rotate 
-	Elongate.
-
-All command entries are case insensitive.   
-
-There are a few defaults that exist, namely,
-
-\fBConnection = MESH\fR 
-\fBRotation   = FALSE\fR 
-\fBElongation = FALSE\fR 
-\fBMode       = COPROC\fR 
-.fi
+.RS
+.TP 10
+.I \fBcreate 8\fR
+This will request a creation of 8 meaning a block of 1x2x4 
+or 2x2x2 base partitions which ever fits into the configuration.
+.TP
+.I \fBcreate 1 mode=virtual\fR
+This will create a block of one base partition with virtual mode.
+.RE
 
 .TP
 .I "COPY"
@@ -207,36 +202,54 @@ will copy the last entry configured.  If you want to copy a specific
 partition you can specify a particular ID.  If a number is placed behind then 
 there will be that many copies made.
 
-.nf
-exp: \fBc\fR this will request a copy of the last partition created.
-exp: \fBc A\fR this will request a copy of partition A.
-exp: \fBc A 8\fR this will request 8 copies of partition A.
-.fi
+.RS
+.TP 10
+.I \fBcopy\fR
+This will request a copy of the last partition created.
+.TP
+.I \fBcopy A\fR
+This will request a copy of partition A.
+.TP
+.I \fBcopy A 8\fR
+This will request 8 copies of partition A.
+.RE
 
 .TP
 .I "DELETE"
-Delete last partition created. (Also can use REMOVE, or DROP)
+Delete the specified block or (default) the last partition created. 
+(Also can use REMOVE, or DROP)
 
-.nf
-exp: \fBdelete\fR this will delete last partition created.
-.fi
+.RS
+.TP 10
+.I \fBdelete\fR
+This will delete last partition created.
+.TP
+.I \fBdelete C\fR
+This will delete the block with key A.
+.RE
 
 .TP
 .I "SAVE"
 Save system into a bluegene.conf file into the path of the user.
 
-.nf
-exp: \fBsave\fR this will save system into a bluegene.conf.timestamp file.
-exp: \fBsave mybluegenefile.conf\fR this will save system into a file named mybluegenefile.conf file.
-.fi
+.RS
+.TP 10
+.I \fBsave\fR
+This will save system into a bluegene.conf.timestamp file.
+.TP
+.I \fBsave mybluegenefile.conf\fR
+This will save system into a file named mybluegenefile.conf file.
+.RE
 
 .TP
 .I "CLEAR ALL"
 Clear all partitions created. (Also can use CLEAR)
 
-.nf
-exp: \fBclear all\fR this will clear the entire system.
-.fi
+.RS
+.TP 10
+.I \fBclear all\fR
+This will clear all previously created blocks.
+.RE
 
 .SH "NODE STATE CODES"
 .PP
