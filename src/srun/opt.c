@@ -230,7 +230,7 @@ struct poptOption runTable[] = {
 	 "threads"},
 	{"wait", 'W', POPT_ARG_INT, &opt.max_wait, OPT_WAIT,
 	 "seconds to wait after first task ends before killing job",
-	 "seconds"},
+	 "sec"},
 	POPT_TABLEEND
 };
 
@@ -327,8 +327,7 @@ static void _opt_list(void);
 /* search PATH for command 
  * returns full path
  */
-static char * _search_path(char *);
-static char * _find_file_path (char *fname);
+static char * _search_path(char *, bool);
 
 static void _print_version(void);
 static bool _valid_node_list(char **node_list_pptr);
@@ -397,7 +396,7 @@ static bool _valid_node_list(char **node_list_pptr)
 	}
 	(void) fclose(fd);
 
-/* 	free(*node_list_pptr);	orphanned */
+        /*  free(*node_list_pptr);	orphanned */
 	*node_list_pptr = node_list;
 	return true;
 }
@@ -558,7 +557,7 @@ static void _opt_default()
 
 	if ((getcwd(buf, MAXPATHLEN)) == NULL) 
 		fatal("getcwd failed: %m");
-	opt.cwd = strdup(buf);
+	opt.cwd = xstrdup(buf);
 
 	opt.progname = NULL;
 
@@ -736,9 +735,7 @@ static void _opt_args(int ac, char **av)
 
 	optctx = poptGetContext("srun", ac, (const char **) av, options,
 				POPT_CONTEXT_POSIXMEHARDER);
-
 	poptSetOtherOptionHelp(optctx, "[OPTIONS...] executable [args...]");
-
 	poptReadDefaultConfig(optctx, 0);
 
 	/* first pass through args to see if attach or allocate mode
@@ -774,7 +771,8 @@ static void _opt_args(int ac, char **av)
 
 		case OPT_BATCH:
 			if (opt.allocate || opt.attach) {
-				error("can only specify one mode: allocate, attach or batch.");
+				error("can only specify one mode: "
+				      "allocate, attach or batch.");
 				exit(1);
 			}
 			mode = MODE_BATCH;
@@ -811,9 +809,8 @@ static void _opt_args(int ac, char **av)
 		case OPT_DISTRIB:
 			opt.distribution = _verify_dist_type(arg);
 			if (opt.distribution == SRUN_DIST_UNKNOWN) {
-				argerror
-				    ("Error: distribution type `%s' is not recognized",
-				     arg);
+				error("Error: distribution type `%s' " 
+				       "is not recognized", arg);
 				poptPrintUsage(optctx, stderr, 0);
 				exit(1);
 			}
@@ -897,13 +894,11 @@ static void _opt_args(int ac, char **av)
 		remote_argv[i] = strdup(rest[i]);
 	remote_argv[i] = NULL;	/* End of argv's (for possible execv) */
 
-	if ((opt.batch == 0) && (opt.allocate == 0) && (remote_argc > 0)) {
-		if ((fullpath = _search_path(remote_argv[0])) != NULL) {
-			free(remote_argv[0]);
-			remote_argv[0] = fullpath;
-		} 
-	} else if (remote_argc > 0) {
-		if ((fullpath = _find_file_path(remote_argv[0])) != NULL) {
+
+	if (remote_argc > 0) {
+		bool search_cwd = (opt.batch || opt.allocate);
+
+		if ((fullpath = _search_path(remote_argv[0], search_cwd))) {
 			free(remote_argv[0]);
 			remote_argv[0] = fullpath;
 		} 
@@ -915,7 +910,6 @@ static void _opt_args(int ac, char **av)
 	}
 
 	poptFreeContext(optctx);
-
 }
 
 /* 
@@ -1021,11 +1015,17 @@ _opt_verify(poptContext optctx)
 	return verified;
 }
 
+static void
+_freeF(void *data)
+{
+	xfree(data);
+}
+
 static List
 _create_path_list(void)
 {
-	List l = list_create(&free);
-	char *path = strdup(getenv("PATH"));
+	List l = list_create(&_freeF);
+	char *path = xstrdup(getenv("PATH"));
 	char *c, *lc;
 
 	if (!path) {
@@ -1041,107 +1041,44 @@ _create_path_list(void)
 			/* nullify and push token onto list */
 			*c = '\0';
 			if (lc != NULL && strlen(lc) > 0)
-				list_append(l, strdup(lc));
+				list_append(l, xstrdup(lc));
 			lc = ++c;
 		} else
 			c++;
 	}
 
 	if (strlen(lc) > 0)
-		list_append(l, strdup(lc));
+		list_append(l, xstrdup(lc));
 
-	free(path);
+	xfree(path);
 
 	return l;
 }
 
 static char *
-_search_path(char *cmd)
+_search_path(char *cmd, bool check_current_dir)
 {
 	List l = _create_path_list();
 	ListIterator i = list_iterator_create(l);
 	char *path, *fullpath = NULL;
-	struct stat stat_buf;
+
+	if (check_current_dir) 
+		list_prepend(l, xstrdup(opt.cwd));
 
 	while ((path = list_next(i))) {
 		xstrcat(fullpath, path);
 		xstrcatchar(fullpath, '/');
 		xstrcat(fullpath, cmd);
 
-		if (   (stat(fullpath, &stat_buf) == 0)
-		    && (stat_buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
+		if (access(fullpath, R_OK | X_OK) == 0)
 			goto done;
-		} else {
-			xfree(fullpath);
-			fullpath = NULL;
-		}
+
+		xfree(fullpath);
+		fullpath = NULL;
 	}
   done:
 	list_destroy(l);
 	return fullpath;
-}
-
-/* _find_file_path - given a filename, return the full path to a regular file 
- *	of that name that can be read or NULL otherwise
- * NOTE: The calling function must xfree the return value (if set) 
- */
-static char *
-_find_file_path (char *fname)
-{
-	int modes;
-	char *pathname;
-	struct stat stat_buf;
-
-	if (fname == NULL)
-		return NULL;
-
-	pathname = xmalloc (PATH_MAX);
-
-	/* generate a fully qualified pathname */
-	if (fname[0] == '/') {
-		if ((strlen (fname) + 1) > PATH_MAX) {
-			error ("Supplied filename too long: %s", fname);
-			goto cleanup;
-		}
-		strcpy (pathname, fname);
-	} else {
-		getcwd (pathname, PATH_MAX);
-		if ((strlen (pathname) + strlen (fname) + 2) > PATH_MAX) {
-			error ("Supplied filename too long: %s", fname);
-			goto cleanup;
-		}
-		strcat (pathname, "/");
-		strcat (pathname, fname);
-	}
-
-	/* determine if the file is accessable */
-	if (stat (pathname, &stat_buf) < 0) {
-		error ("Unable to stat file %s: %m", pathname);
-		goto cleanup;
-	}
-
-	if (S_ISREG (stat_buf.st_mode) == 0) {
-		error ("%s is not a regular file", pathname);
-		goto cleanup;
-	}
-
-	if (stat_buf.st_uid == getuid())
-		modes = (stat_buf.st_mode >> 6) & 0x7;
-	else if (stat_buf.st_gid == getgid())
-		modes = (stat_buf.st_mode >> 3) & 0x7;
-	else
-		modes =  stat_buf.st_mode       & 0x7;
-
-	if ((modes & 0x4) == 0) {
-		error ("%s can not be read", pathname);
-		goto cleanup;
-	}
-
-	return pathname;
-
-    cleanup:
-	xfree (pathname);
-	return NULL;
 }
 
 #if	__DEBUG

@@ -44,10 +44,11 @@ typedef enum {
 
 
 typedef struct srun_job {
-	uint32_t jobid;		/* assigned job id 	*/
-	uint32_t stepid;	/* assigned step id 	*/
+	uint32_t jobid;		/* assigned job id 	                  */
+	uint32_t stepid;	/* assigned step id 	                  */
+	bool old_job;           /* run job step under previous allocation */
 
-	job_state_t state;	/* job state	   	*/
+	job_state_t state;	/* job state	   	                  */
 	pthread_mutex_t state_mutex; 
 	pthread_cond_t  state_cond;
 
@@ -112,5 +113,7 @@ void    job_force_termination(job_t *job);
 job_t * job_create_noalloc(void);
 job_t * job_create_allocation(resource_allocation_response_msg_t *resp);
 
+void    job_fatal(job_t *job, const char *msg);
+void    job_destroy(job_t *job);
 
 #endif /* !_HAVE_JOB_H */
