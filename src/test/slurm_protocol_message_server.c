@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <src/common/log.h>
 
 int main ( int argc , char * argv[] )
 {
@@ -16,6 +17,10 @@ int main ( int argc , char * argv[] )
 
 	slurm_msg_type_t msg_type;
 
+        log_options_t log_opts = LOG_OPTS_INITIALIZER;
+
+        log_opts.stderr_level = LOG_LEVEL_DEBUG;
+
 	unsigned int buffer_len = 1024 ;
 	char buf_temp [ buffer_len ] ;
 	char * buffer = buf_temp ;
@@ -24,10 +29,12 @@ int main ( int argc , char * argv[] )
 	unsigned int length_io ;
 		
 	/* init address sturctures */
-	slurm_set_addr_uint ( & listen_address , 7001 , 0x7f000001 ) ;
+	slurm_set_addr_uint ( & listen_address , 7001 , SLURM_INADDR_ANY ) ;
 	/* open and listen on socket */
 	listen_socket = slurm_init_msg_engine ( & listen_address ) ;
+	printf ( "listen socket %i\n", listen_socket ) ;
 	worker_socket = slurm_accept_msg_conn (  listen_socket , & peer_address ) ;
+	printf ( "worker socket %i\n", worker_socket ) ;
 
 
 	msg_type = 1 ;
