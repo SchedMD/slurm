@@ -130,10 +130,9 @@ int main (int argc, char *argv[])
 	slurmd_init ( ) ;
 	
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
-		fatal ("slurmd: %m errno %d from getnodename", errno);
+		fatal ("getnodename: %m", errno);
 
-	if ( ( error_code = getnodename (hostname, MAX_NAME_LEN) ) ) 
-		fatal ("slurmd: %m errno %d from getnodename", errno);
+	strncpy(hostname, node_name, MAX_NAME_LEN);
 
 	/* send registration message to slurmctld*/
 	send_node_registration_status_msg ( ) ;
@@ -144,9 +143,9 @@ int main (int argc, char *argv[])
 
 	/* create attached thread to process RPCs */
 	if (pthread_attr_init (&thread_attr_rpc))
-		fatal ("pthread_attr_init errno %d", errno);
+		fatal ("pthread_attr_init: %m");
 	if (pthread_create ( &thread_id_rpc, &thread_attr_rpc, slurmd_msg_engine, NULL))
-		fatal ("pthread_create errno %d", errno);
+		fatal ("pthread_create: %m");
 	/* slurmd_msg_engine ( NULL ) ; */
 
 	slurmd_handle_signals ( NULL ) ;
@@ -266,21 +265,18 @@ void * slurmd_msg_engine ( void * args )
 	pthread_t request_thread_id ;
 	pthread_attr_t thread_attr ;
 
-	if ( ( error_code = read_slurm_port_config ( ) ) )
-		fatal ("slurmd: error reading configuration file \n", error_code);
+	if ((error_code = read_slurm_port_config ()) != 0)
+		fatal("error code %d reading config file", error_code);
 
-	if ( ( sockfd = slurm_init_msg_engine_port ( slurm_get_slurmd_port ( ) ) )
-			 == SLURM_SOCKET_ERROR )
-		fatal ("slurmd: error starting message engine \n", errno);
+	if ((sockfd = slurm_init_msg_engine_port(slurm_get_slurmd_port()))
+			== SLURM_SOCKET_ERROR )
+		fatal("slurm_init_msg_engine_port: %m");
 	
 	if ( ( error_code = pthread_attr_init ( & thread_attr ) ) ) 
-	{
-		error ("slurmd: %m error %d initializing thread attr", error_code ) ;
-	}
+		error("pthread_attr_init returned %d", error_code ) ;
+
 	if ( ( error_code = pthread_attr_setdetachstate  ( & thread_attr , PTHREAD_CREATE_DETACHED ) ) )
-	{
-		error ("slurmd: %m error %d setting detach thread state", error_code ) ;
-	}
+		error("pthread_attr_setdetachstate return %d", error_code);
 	
 	while (true) 
 	{
@@ -291,7 +287,7 @@ void * slurmd_msg_engine ( void * args )
 		 */
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
-			error ("slurmd: %m error %d from connect", errno) ;
+			error ("slurmd_msg_engine: accept: %m") ;
 			continue ;
 		}
 		
@@ -309,8 +305,9 @@ void * slurmd_msg_engine ( void * args )
 		if ( ( error_code = pthread_create ( & request_thread_id , & thread_attr , service_connection , ( void * ) conn_arg ) ) ) 
 		{
 			/* Do without threads on failure */
-			error ("slurmd: pthread_create %m errno: %d", errno);
-			service_connection ( ( void * ) conn_arg ) ;
+			error ("slurmd_msg_engine: pthread_create errno: %d", 
+					error_code);
+			service_connection ((void *)conn_arg);
 		}
 	}			
 	slurm_shutdown_msg_engine ( sockfd ) ;
@@ -331,7 +328,7 @@ void * service_connection ( void * arg )
 
 	if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 	{
-		error ("slurmd: service_connection: %m errno: %d from slurm_receive_msg", errno);
+		error ("service_connection: accept: %m");
 		slurm_free_msg ( msg ) ;
 	}
 	else
@@ -376,7 +373,8 @@ void slurmd_req ( slurm_msg_t * msg )
 			slurmd_rpc_shutdown_slurmd ( msg ) ;
 			break ;
 		default:
-			error ("slurmd_req: invalid request msg type %d\n", msg-> msg_type);
+			error ("slurmd_req: invalid request msg type %d\n", 
+					msg-> msg_type);
 			slurm_send_rc_msg ( msg , EINVAL );
 			break;
 	}
@@ -406,7 +404,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 
 	/* get nodename */
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) )
-		fatal ("slurmd: errno %d from getnodename", errno);
+		fatal ("errno %d from getnodename", errno);
 
 
 	/* do RPC call */
@@ -423,8 +421,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 	
 
 	/* return result */
-	if (error_code)
-	{
+	if (error_code) {
 		error ("slurmd_req: launch tasks error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_only_node_msg ( & resp_msg );

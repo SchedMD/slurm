@@ -50,6 +50,8 @@ int _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 	while(qsw_prgdestroy(qsw_job) < 0) {
 		i++;
 		error("qsw_prgdestroy: %m");
+		if (errno == ESRCH)
+			break;
 		if (i == 1) {
 			debug("sending SIGTERM to remaining tasks");
 			qsw_prgsignal(qsw_job, SIGTERM);
@@ -58,7 +60,7 @@ int _wait_and_destroy_prg(qsw_jobinfo_t qsw_job, pid_t pid)
 			qsw_prgsignal(qsw_job, SIGKILL);
 		}
 
-		debug("going to sleep for %d seconds and try again");
+		debug("going to sleep for %d seconds and try again", sleeptime);
 		sleep(sleeptime*=2);
 	}
 
