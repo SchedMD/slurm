@@ -62,7 +62,8 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 				int old_node_record_count);
 static void _restore_node_state(struct node_record *old_node_table_ptr, 
 				int old_node_record_count);
-static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr);
+static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr, 
+				char * auth_type, char *job_comp_type);
 static int  _sync_nodes_to_comp_job(void);
 static int  _sync_nodes_to_jobs(void);
 static int  _sync_nodes_to_active_job(struct job_record *job_ptr);
@@ -662,6 +663,8 @@ int read_slurm_conf(int recover)
 	int i, j, error_code;
 	int old_node_record_count;
 	struct node_record *old_node_table_ptr;
+	char *save_auth_type     = xstrdup(slurmctld_conf.authtype); 
+	char *save_job_comp_type = xstrdup(slurmctld_conf.job_comp_type);
 
 	/* initialization */
 	START_TIMER;
@@ -743,7 +746,8 @@ int read_slurm_conf(int recover)
 	}
 	fclose(slurm_spec_file);
 
-	_set_config_defaults(&slurmctld_conf);
+	_set_config_defaults(&slurmctld_conf, save_auth_type, 
+			save_job_comp_type);
 	validate_config(&slurmctld_conf);
 	update_logging();
 	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
@@ -841,8 +845,15 @@ static void _purge_old_node_state(struct node_record *old_node_table_ptr,
 /* Set configuration parameters to default values if not initialized 
  * by the configuration file or common/read_config.c:validate_config()
  */
-static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr)
+static void _set_config_defaults(slurm_ctl_conf_t * ctl_conf_ptr, 
+		char *auth_type, char *job_comp_type)
 {
+	xfree(ctl_conf_ptr->authtype);
+	ctl_conf_ptr->authtype = auth_type;
+
+	xfree(ctl_conf_ptr->job_comp_type);
+	ctl_conf_ptr->job_comp_type = job_comp_type;
+
 	if (ctl_conf_ptr->backup_controller == NULL)
 		info("read_slurm_conf: backup_controller not specified.");
 
