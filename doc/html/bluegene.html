@@ -107,33 +107,33 @@ A sample of smap output is provided below showing the location of five jobs.
 Note the format of the list of nodes allocated to each job.
 Also note that idle (unassigned) base partitions are indicated by a period.
 Down and drained base partitions (those not available for use) are 
-indicated by a number sign (bgl700 in the display below).
+indicated by a number sign (bgl703 in the display below).
 The legend is for illustrative purposes only. 
-The origin (zero in every dimension) is show at the bottom left corner.
-Each set of four consecutive lines represents a plane in the Z dimension.
+The origin (zero in every dimension) is shown at the rear left corner of the bottom plane.
+Each set of four consecutive lines represents a plane in the Y dimension.
 Values in the X dimension increase to the right.
-Values in the Y dimension increase up and toward the right.</p>
+Values in the Z dimension increase down and toward the left.</p>
 
 <pre>
    a a a a b b d d       ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
   a a a a b b d d        a   12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
  a a a a b b c c         b   12346 debug    chris  sim3 R  12:34   16 bgl[420x533]
-a a a a b b c c          c   12350 debug    danny  job3 R   0:12    8 bgl[620x731]
-                         d   12356 debug    dan    colu R  18:05   16 bgl[603x733]
-   a a a a b b d d       e   12378 debug    joseph asx4 R   0:34    4 bgl[610x711]
+a a a a b b c c          c   12350 debug    danny  job3 R   0:12    8 bgl[622x733]
+                         d   12356 debug    dan    colu R  18:05   16 bgl[600x731]
+   a a a a b b d d       e   12378 debug    joseph asx4 R   0:34    4 bgl[612x713]
   a a a a b b d d
  a a a a b b c c
 a a a a b b c c
 
    a a a a . . d d
   a a a a . . d d
- a a a a . . e e
-a a a a . . e e
-                           Z   Y
-   a a a a . . d d         |  /
-  a a a a . . d d          | /
- a a a a . . . .           |/
-a a a a . . . #            0----X
+ a a a a . . e e              Y
+a a a a . . e e               |
+                              |
+   a a a a . . d d            0----X
+  a a a a . . d d            /
+ a a a a . . . .            /
+a a a a . . . #            Z
 </pre>
 
 <p class="footer"><a href="#top">top</a></p>
