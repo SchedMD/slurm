@@ -74,6 +74,7 @@
 				 * check-in before we ping them */
 #define MAX_SERVER_THREADS 20	/* Max threads to service RPCs */
 #define MEM_LEAK_TEST	  0	/* Running memory leak test if set */
+#define DEFAULT_PIDFILE   "/var/run/slurmctld.pid"
 
 #ifndef MAX
 #  define MAX(x,y) (((x) >= (y)) ? (x) : (y))
@@ -145,6 +146,7 @@ inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 static void *       _slurmctld_background(void *no_data);
 static void         _slurmctld_req(slurm_msg_t * msg);
 static void *       _slurmctld_rpc_mgr(void *no_data);
+static void         _init_pidfile(void);
 inline static int   _slurmctld_shutdown(void);
 static void *       _slurmctld_signal_hand(void *no_data);
 inline static void  _update_logging(void);
@@ -174,6 +176,12 @@ int main(int argc, char *argv[])
 	_parse_commandline(argc, argv, &slurmctld_conf);
 	init_locks();
 
+	/* 
+	 * Need to create pidfile here in case we setuid() below
+	 * (init_pidfile() exits if it can't initialize pid file)
+	 */
+	_init_pidfile();
+
 	if (getrlimit(RLIMIT_NOFILE, &rlim) == 0) {
 		rlim.rlim_cur = rlim.rlim_max;
 		setrlimit(RLIMIT_NOFILE, &rlim);
@@ -183,6 +191,7 @@ int main(int argc, char *argv[])
 		fatal("read_slurm_conf error %d reading %s",
 		      error_code, SLURM_CONFIG_FILE);
 	_update_logging();
+	
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
 	    (setuid(slurmctld_conf.slurm_user_id))) {
@@ -289,6 +298,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 	int sig;
 	int error_code;
 	sigset_t set;
+	char *pidfile = "/var/run/slurmctld.pid";
 	/* Locks: Write configuration, job, node, and partition */
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK,
 		WRITE_LOCK, WRITE_LOCK
@@ -298,7 +308,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 	(void) pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
 	if (slurmctld_conf.slurmctld_pidfile)
-		create_pidfile(slurmctld_conf.slurmctld_pidfile);
+		pidfile = slurmctld_conf.slurmctld_pidfile;
+	create_pidfile(pidfile);
 
 	if (sigemptyset(&set))
 		error("sigemptyset error: %m");
@@ -2502,4 +2513,27 @@ static void _update_logging(void)
 
 	log_alter(log_opts, SYSLOG_FACILITY_DAEMON,
 		  slurmctld_conf.slurmctld_logfile);
+}
+
+static void 
+_init_pidfile(void)
+{
+	int   fd      = -1;
+	uid_t uid     = slurmctld_conf.slurm_user_id;
+	char *pidfile = slurmctld_conf.slurmctld_pidfile;
+
+	pidfile = pidfile ? pidfile : DEFAULT_PIDFILE;
+
+	if ((fd = create_pidfile(pidfile)) < 0) 
+		exit(1);
+	if (uid && (fchown(fd, uid, -1) < 0)) {
+		error ("Unable to reset owner of pidfile: %m");
+		exit(1);
+	}
+
+	/*
+	 * Close fd here, otherwise we'll deadlock since create_pidfile()
+	 * flocks the pidfile.
+	 */
+	close(fd);
 }
