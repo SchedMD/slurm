@@ -601,14 +601,13 @@ static void *_slurmctld_background(void *no_data)
 		if (slurmctld_config.shutdown_time) {
 			int i;
 			/* wait for RPC's to complete */
-			for (i=0; ((i<2) && slurmctld_config.
-					server_thread_count); i++) {
-				debug2("server_thread_count=%d",
-					slurmctld_config.server_thread_count);
+			for (i = 1; i < CONTROL_TIMEOUT; i++) {
+				if (slurmctld_config.server_thread_count == 0)
+					break;
 				sleep(1);
 			}
 			if (slurmctld_config.server_thread_count)
-				info("shutdown server_thread_count %d", 
+				info("shutdown server_thread_count=%d", 
 					slurmctld_config.server_thread_count);
 			if (_report_locks_set() == 0)
 				save_all_state();
@@ -883,7 +882,7 @@ static int _shutdown_backup_controller(void)
 	req.msg_type = REQUEST_CONTROL;
 	req.data = NULL;
 
-	if (slurm_send_recv_rc_msg(&req, &rc, 0) < 0) {
+	if (slurm_send_recv_rc_msg(&req, &rc, CONTROL_TIMEOUT) < 0) {
 		error("shutdown_backup:send/recv: %m");
 		return SLURM_SOCKET_ERROR;
 	}
