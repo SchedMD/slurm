@@ -35,15 +35,20 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_print_job_step_info_msg - output information about all Slurm job steps */
+/*
+ * slurm_print_job_step_info_msg - output information about all Slurm 
+ *	job steps based upon message as loaded using slurm_get_job_steps
+ */
 void 
-slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_step_info_msg_ptr )
+slurm_print_job_step_info_msg ( FILE* out, 
+		job_step_info_response_msg_t * job_step_info_msg_ptr )
 {
 	int i;
-	job_step_info_t * job_step_ptr = job_step_info_msg_ptr -> job_steps ;
+	job_step_info_t *job_step_ptr = job_step_info_msg_ptr->job_steps ;
 	char time_str[16];
 
-	make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, time_str);
+	make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, 
+			time_str);
 	fprintf( out, "Job steps updated at %s, record count %d\n",
 		time_str, job_step_info_msg_ptr->job_step_count);
 
@@ -53,19 +58,31 @@ slurm_print_job_step_info_msg ( FILE* out, job_step_info_response_msg_t * job_st
 	}
 }
 
-/* slurm_print_job_step_info - output information about a specific Slurm job step */
+/*
+ * slurm_print_job_step_info - output information about a specific Slurm 
+ *	job step based upon message as loaded using slurm_get_job_steps
+ */
 void
 slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr )
 {
 	fprintf ( out, "JobId=%u StepId=%u UserId=%u ", 
-		job_step_ptr->job_id, job_step_ptr->step_id, job_step_ptr->user_id);
+		job_step_ptr->job_id, job_step_ptr->step_id, 
+		job_step_ptr->user_id);
 	fprintf ( out, "StartTime=%ld Partition=%s Nodes=%s\n\n", 
-		(long)job_step_ptr->start_time, job_step_ptr->partition, job_step_ptr->nodes);
+		(long)job_step_ptr->start_time, job_step_ptr->partition, 
+		job_step_ptr->nodes);
 }
 
-/* slurm_load_job_steps - issue RPC to get Slurm job_step state information */
+/*
+ * slurm_get_job_steps - issue RPC to get specific slurm job step   
+ *	configuration information if changed since update_time.
+ *	a job_id value of zero implies all jobs, a step_id value of 
+ *	zero implies all steps
+ * NOTE: free the response using slurm_free_job_step_info_response_msg
+ */
 int
-slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, job_step_info_response_msg_t **step_response_pptr)
+slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, 
+		job_step_info_response_msg_t **step_response_pptr)
 {
 	int msg_size ;
 	int rc ;
@@ -77,7 +94,8 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, job_
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -88,19 +106,22 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, job_
 	step_request . step_id = step_id ;
 	request_msg . msg_type = REQUEST_JOB_STEP_INFO ;
 	request_msg . data = &step_request;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -110,11 +131,12 @@ slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, job_
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_JOB_STEP_INFO:
-			*step_response_pptr = ( job_step_info_response_msg_t * ) response_msg . data ;
+			*step_response_pptr = 
+				(job_step_info_response_msg_t *) response_msg.data ;
 			return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {

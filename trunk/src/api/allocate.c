@@ -51,30 +51,34 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* send request message */
 	if ( immediate )
-		request_msg . msg_type = REQUEST_IMMEDIATE_RESOURCE_ALLOCATION ;
+		request_msg.msg_type = REQUEST_IMMEDIATE_RESOURCE_ALLOCATION ;
 	else
 		request_msg . msg_type = REQUEST_RESOURCE_ALLOCATION ;
 	request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -84,7 +88,8 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -95,8 +100,10 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION:
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION:
-			/* Calling methos is responsible to free this memory */
-			*slurm_alloc_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
+			/* Calling method is responsible to free this memory */
+			*slurm_alloc_msg = 
+				( resource_allocation_response_msg_t * ) 
+				response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break ;
 		default:
@@ -109,7 +116,8 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg ,
 }
 
 /*
- * slurm_job_will_run - determine if a job would execute immediately if submitted now
+ * slurm_job_will_run - determine if a job would execute immediately if 
+ *	submitted now
  * NOTE: free the allocated using slurm_free_resource_allocation_response_msg
  */
 int slurm_job_will_run (job_desc_msg_t * job_desc_msg , 
@@ -123,7 +131,8 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -131,19 +140,22 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 	/* send request message */
 	request_msg . msg_type = REQUEST_JOB_WILL_RUN ;
 	request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -153,7 +165,8 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -163,7 +176,9 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 			*slurm_alloc_msg = NULL;
 			break ;
 		case RESPONSE_JOB_WILL_RUN:
-			*slurm_alloc_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
+			*slurm_alloc_msg = 
+				( resource_allocation_response_msg_t * ) 
+				response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break ;
 		default:
@@ -176,12 +191,14 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg ,
 }
 
 /*
- * slurm_allocate_resources_and_run - allocate resources for a job request and initiate a job step
- * NOTE: free the allocated using slurm_free_resource_allocation_and_run_response_msg
+ * slurm_allocate_resources_and_run - allocate resources for a job request and 
+ *	initiate a job step
+ * NOTE: free the response using 
+ *	slurm_free_resource_allocation_and_run_response_msg
  */
 int
 slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg , 
-			resource_allocation_and_run_response_msg_t ** slurm_alloc_msg )
+		resource_allocation_and_run_response_msg_t ** slurm_alloc_msg )
 {
 	int msg_size ;
 	int rc ;
@@ -191,7 +208,8 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -199,19 +217,22 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 	/* send request message */
 	request_msg . msg_type = REQUEST_ALLOCATION_AND_RUN_JOB_STEP ;
 	request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -221,7 +242,8 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -232,7 +254,9 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
 			break ;
 		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
 			/* Calling method is responsible to free this memory */
-			*slurm_alloc_msg = ( resource_allocation_and_run_response_msg_t * ) response_msg . data ;
+			*slurm_alloc_msg = 
+				( resource_allocation_and_run_response_msg_t * ) 
+				response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break ;
 		default:
@@ -250,7 +274,7 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
  */
 int
 slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg, 
-			job_step_create_response_msg_t ** slurm_step_alloc_resp_msg )
+		job_step_create_response_msg_t ** slurm_step_alloc_resp_msg )
 {
 	int msg_size ;
 	int rc ;
@@ -260,7 +284,8 @@ slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg,
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -268,19 +293,22 @@ slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg,
 	/* send request message */
 	request_msg . msg_type = REQUEST_JOB_STEP_CREATE ;
 	request_msg . data = slurm_step_alloc_req_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -290,7 +318,8 @@ slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg,
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -301,7 +330,9 @@ slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg,
 			break ;
 		case RESPONSE_JOB_STEP_CREATE:
 			/* Calling method is responsible to free this memory */
-			*slurm_step_alloc_resp_msg = ( job_step_create_response_msg_t * ) response_msg . data ;
+			*slurm_step_alloc_resp_msg = 
+				( job_step_create_response_msg_t * ) 
+				response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break ;
 		default:
@@ -329,7 +360,8 @@ slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg ,
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -337,19 +369,22 @@ slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg ,
 	/* send request message */
 	request_msg . msg_type = REQUEST_OLD_JOB_RESOURCE_ALLOCATION ;
 	request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -359,7 +394,8 @@ slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg ,
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = 
+				( return_code_msg_t * ) response_msg . data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
@@ -370,7 +406,9 @@ slurm_confirm_allocation (old_job_alloc_msg_t * job_desc_msg ,
 			break ;
 		case RESPONSE_RESOURCE_ALLOCATION:
 			/* Calling methos is responsible to free this memory */
-			*slurm_alloc_msg = ( resource_allocation_response_msg_t * ) response_msg . data ;
+			*slurm_alloc_msg = 
+				( resource_allocation_response_msg_t * ) 
+				response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break ;
 		default:

@@ -35,9 +35,13 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-/* slurm_submit_batch_job - issue RPC to submit a job for later execution */
+/*
+ * slurm_submit_batch_job - issue RPC to submit a job for later execution
+ * NOTE: free the response using slurm_free_submit_response_response_msg
+ */
 int
-slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** slurm_alloc_msg )
+slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, 
+		submit_response_msg_t ** slurm_alloc_msg )
 {
         int msg_size ;
         int rc ;
@@ -47,7 +51,8 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** 
         return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -55,19 +60,22 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** 
         /* send request message */
         request_msg . msg_type = REQUEST_SUBMIT_BATCH_JOB ;
         request_msg . data = job_desc_msg ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
         /* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
         /* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -86,7 +94,8 @@ slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** 
 			}
 			break ;
 		case RESPONSE_SUBMIT_BATCH_JOB:
-                        *slurm_alloc_msg = ( submit_response_msg_t * ) response_msg . data ;
+                        *slurm_alloc_msg = 
+				( submit_response_msg_t * ) response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS;
 			break;
                 default:

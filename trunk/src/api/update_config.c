@@ -36,21 +36,30 @@
 
 int slurm_update (void * data, slurm_msg_type_t msg_type);
 
-/* slurm_update_job - issue RPC to a job's configuration per request */
+/*
+ * slurm_update_job - issue RPC to a job's configuration per request, 
+ *	only usable by user root or (for some parameters) the job's owner
+ */
 int 
 slurm_update_job ( job_desc_msg_t * job_msg ) 
 {
 	return slurm_update ((void *) job_msg, REQUEST_UPDATE_JOB);
 }
 
-/* slurm_update_node - issue RPC to a node's configuration per request */
+/*
+ * slurm_update_node - issue RPC to a nodes's configuration per request, 
+ *	only usable by user root
+ */
 int 
 slurm_update_node ( update_node_msg_t * node_msg ) 
 {
 	return slurm_update ((void *) node_msg, REQUEST_UPDATE_NODE);
 }
 
-/* slurm_update_partition - issue RPC to a partition's configuration per request */
+/*
+ * slurm_update_partition - issue RPC to a partition's configuration per  
+ *	request, only usable by user root
+ */
 int 
 slurm_update_partition ( update_part_msg_t * part_msg ) 
 {
@@ -70,7 +79,8 @@ slurm_update (void * data, slurm_msg_type_t msg_type)
 	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -78,19 +88,22 @@ slurm_update (void * data, slurm_msg_type_t msg_type)
 	/* send request message */
 	request_msg . msg_type = msg_type ;
 	request_msg . data = data ; 
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -100,7 +113,7 @@ slurm_update (void * data, slurm_msg_type_t msg_type)
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = ( return_code_msg_t *) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {

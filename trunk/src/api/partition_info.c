@@ -36,8 +36,12 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-/* slurm_print_partition_info_msg - output information about all Slurm partitions */
-void slurm_print_partition_info_msg ( FILE* out, partition_info_msg_t * part_info_ptr )
+/*
+ * slurm_print_partition_info_msg - output information about all Slurm 
+ *	partitions based upon message as loaded using slurm_load_partitions
+ */
+void slurm_print_partition_info_msg ( FILE* out, 
+		partition_info_msg_t * part_info_ptr )
 {
 	int i ;
 	partition_info_t * part_ptr = part_info_ptr->partition_array ;
@@ -53,7 +57,10 @@ void slurm_print_partition_info_msg ( FILE* out, partition_info_msg_t * part_inf
 
 }
 
-/* slurm_print_partition_info - output information about a specific Slurm partition */
+/*
+ * slurm_print_partition_info - output information about a specific Slurm 
+ *	partition based upon message as loaded using slurm_load_partitions
+ */
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 {
 	int j ;
@@ -88,7 +95,8 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 	else
 		fprintf ( out, "State=DOWN ");
 
-	fprintf ( out, "Nodes=%s AllowGroups=%s\n", part_ptr->nodes, part_ptr->allow_groups);
+	fprintf ( out, "Nodes=%s AllowGroups=%s\n", part_ptr->nodes, 
+			part_ptr->allow_groups);
 	fprintf ( out, "   NodeIndecies=");
 	for (j = 0; part_ptr->node_inx; j++) {
 		if (j > 0)
@@ -103,9 +111,14 @@ void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 
 
 
-/* slurm_load_partitions - issue RPC to get Slurm partition state information if changed since update_time */
+/*
+ * slurm_load_partitions - issue RPC to get slurm all partition configuration  
+ *	information if changed since update_time 
+ * NOTE: free the response using slurm_free_partition_info_msg
+ */
 int
-slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info_msg_pptr)
+slurm_load_partitions (time_t update_time, 
+		partition_info_msg_t **partition_info_msg_pptr)
 {
         int msg_size ;
         int rc ;
@@ -116,7 +129,8 @@ slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info
 	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -125,19 +139,22 @@ slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info
         last_time_msg . last_update = update_time ;
         request_msg . msg_type = REQUEST_PARTITION_INFO ;
         request_msg . data = &last_time_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
         /* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
         /* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -147,7 +164,8 @@ slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_PARTITION_INFO:
-        		*partition_info_msg_pptr = ( partition_info_msg_t * ) response_msg . data ;
+        		*partition_info_msg_pptr = 
+				( partition_info_msg_t * ) response_msg . data ;
 			return SLURM_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:

@@ -36,7 +36,10 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_print_job_info_msg - output information about all Slurm jobs */
+/*
+ * slurm_print_job_info_msg - output information about all Slurm 
+ *	jobs based upon message as loaded using slurm_load_jobs
+ */
 void 
 slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 {
@@ -54,7 +57,10 @@ slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
 	}
 }
 
-/* slurm_print_job_info - output information about a specific Slurm job */
+/*
+ * slurm_print_job_info - output information about a specific Slurm 
+ *	job based upon message as loaded using slurm_load_jobs
+ */
 void
 slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 {
@@ -63,8 +69,10 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 
 	fprintf ( out, "JobId=%u UserId=%u Name=%s ", 
 		job_ptr->job_id, job_ptr->user_id, job_ptr->name);
-	fprintf ( out, "JobState=%s TimeLimit=%u ", job_state_string(job_ptr->job_state), job_ptr->time_limit);
-	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
+	fprintf ( out, "JobState=%s TimeLimit=%u ", 
+		job_state_string(job_ptr->job_state), job_ptr->time_limit);
+	fprintf ( out, "Priority=%u Partition=%s\n", 
+		job_ptr->priority, job_ptr->partition);
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "   StartTime=%s ", time_str);
 	make_time_str ((time_t *)&job_ptr->end_time, time_str);
@@ -82,11 +90,15 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	}
 	fprintf( out, "\n");
 
-	fprintf ( out, "   ReqProcs=%u ReqNodes=%u ", job_ptr->num_procs, job_ptr->num_nodes);
-	fprintf ( out, "Shared=%u Contiguous=%u ", job_ptr->shared, job_ptr->contiguous);
-	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, job_ptr->min_memory);
+	fprintf ( out, "   ReqProcs=%u ReqNodes=%u ", 
+		job_ptr->num_procs, job_ptr->num_nodes);
+	fprintf ( out, "Shared=%u Contiguous=%u ", job_ptr->shared, 
+		job_ptr->contiguous);
+	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, 
+		job_ptr->min_memory);
 	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
-	fprintf ( out, "   Features=%s ReqNodeList=%s ", job_ptr->features, job_ptr->req_nodes);
+	fprintf ( out, "   Features=%s ReqNodeList=%s ", job_ptr->features, 
+		job_ptr->req_nodes);
 	fprintf ( out, "ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
@@ -106,12 +118,16 @@ make_time_str (time_t *time, char *string)
 	struct tm time_tm;
 
 	localtime_r (time, &time_tm);
-	sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", (time_tm.tm_mon+1), time_tm.tm_mday, 
-		time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
+	sprintf ( string, "%2.2u/%2.2u-%2.2u:%2.2u:%2.2u", (time_tm.tm_mon+1), 
+		time_tm.tm_mday, time_tm.tm_hour, time_tm.tm_min, time_tm.tm_sec);
 }
 
 
-/* slurm_load_jobs - issue RPC to get Slurm job state information if changed since update_time */
+/*
+ * slurm_load_jobs - issue RPC to get slurm all job configuration  
+ *	information if changed since update_time 
+ * NOTE: free the response using slurm_free_job_info_msg
+ */
 int
 slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 {
@@ -133,19 +149,22 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	last_time_msg . last_update = update_time ;
 	request_msg . msg_type = REQUEST_JOB_INFO ;
 	request_msg . data = &last_time_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
 
 	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
+			== SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
 		return SLURM_SOCKET_ERROR ;
 	}
@@ -155,11 +174,11 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	switch ( response_msg . msg_type )
 	{
 		case RESPONSE_JOB_INFO:
-			*job_info_msg_pptr = ( job_info_msg_t * ) response_msg . data ;
+			*job_info_msg_pptr = (job_info_msg_t *) response_msg.data ;
 			return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			slurm_rc_msg = (return_code_msg_t *) response_msg.data ;
 			rc = slurm_rc_msg->return_code;
 			slurm_free_return_code_msg ( slurm_rc_msg );	
 			if (rc) {
