@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "September 2003" "srun 0.2" "slurm components"
+.TH SRUN "1" "October 2003" "srun 0.2" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -63,7 +63,8 @@ printed and the \fB\-\-relative\fR option will take precedence.
 .TP
 \fB\-p\fR, \fB\-\-partition\fR=\fIpartition\fR
 Request resources from partition "\fIpartition\fR." Partitions
-are created by the slurm administrator.
+are created by the slurm administrator, who also identify one 
+of those partitions as the default. 
 .TP
 \fB\-t\fR, \fB\-\-time\fR=\fIminutes\fR
 Establish a time limit to terminate the job after the specified number of 
@@ -188,13 +189,13 @@ with "#!" followed by the fully qualified pathname of a valid shell.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
-.B srun.
+.B srun. By default only errors will be displayed.
 .TP
 \fB\-d\fR, \fB\-\-slurmd-debug\fR=\fIlevel\fR
 Specify a debug level for slurmd(8). \fIlevel\fR may be an integer value
 between 0 [quiet, only errors are displayed] and 5 [insanely verbose
 operation]. The slurmd debug information is copied onto the stderr of
-the job. 
+the job. By default only errors are displayed. 
 .TP
 \fB\-W\fR, \fB\-\-wait\fR=\fIseconds\fR
 Specify how long to wait after the first task terminates before terminating 
