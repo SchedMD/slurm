@@ -2,9 +2,7 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES =        -I$(top_srcdir) 
 LDADD    =        $(top_builddir)/src/api/libslurm.la
-check_PROGRAMS =  $(TESTS)
-
-TESTS = \
+check_PROGRAMS = \
 	cancel-tst \
 	complete-tst \
 	allocate-tst \
@@ -14,5 +12,3 @@ TESTS = \
 	reconfigure-tst \
 	submit-tst \
 	update_config-tst
-		
-

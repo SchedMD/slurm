@@ -54,6 +54,9 @@ libslurm_la_DEPENDENCIES   = libslurm.sym $(common_dir)/libcommon.la
 libslurm.sym : $(top_builddir)/slurm/slurm.h 
 	sed -n 's/^extern.* \(slurm[^ ]*\).*$$/\1/p' $< >libslurm.sym
 
+distclean-local: 
+	-rm libslurm.sym
+
 force:
 $(libslurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`

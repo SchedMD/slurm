@@ -1,10 +1,10 @@
 #!/usr/bin/expect
 
 set cwd [ file dirname [ info script] ]
-spawn -noecho "$cwd/stream_server" "4002"
+spawn "$cwd/stream_server" "4002"
 set server_id $spawn_id
 
-spawn -noecho "$cwd/stream_client" "4002"
+spawn "$cwd/stream_client" "4002"
 set client_id $spawn_id
 
 proc send_recv_test { id_1 id_2 message } {
