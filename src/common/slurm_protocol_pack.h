@@ -58,6 +58,13 @@ int unpack_node_info_msg ( node_info_msg_t ** msg , void ** buf_ptr , int * buff
 int unpack_node_table_msg ( node_table_msg_t ** node , void ** buf_ptr , int * buffer_size );
 int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer_size );
 
+void pack_cancel_job_msg ( job_id_msg_t * msg , void ** buffer , uint32_t * length );
+int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+void pack_cancel_job_step_msg ( job_step_id_msg_t * msg , void ** buffer , uint32_t * length );
+int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length );
+int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length );
+
 void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , int * length );
 int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , int * length );
 

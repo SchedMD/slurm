@@ -132,13 +132,17 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_launch_tasks_msg ( ( launch_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_KILL_TASKS :
-			pack_kill_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
+			pack_cancel_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
 			break ;
 
 
 		case REQUEST_CANCEL_JOB :
+			pack_cancel_job_msg ( ( job_id_msg_t * ) msg->data , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
+			pack_cancel_job_step_msg ( ( job_step_id_msg_t * ) msg->data , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_SIGNAL_JOB :
 			break ;
@@ -256,12 +260,16 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 				( void ** ) buffer , buf_len ) ;
 			break ; 
 		case REQUEST_KILL_TASKS :
-			unpack_kill_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , 
+			unpack_cancel_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_CANCEL_JOB :
+			unpack_cancel_job_msg ( ( job_id_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
+			unpack_cancel_job_step_msg ( ( job_step_id_msg_t ** ) & ( msg->data ) , 
+				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_SIGNAL_JOB :
 			break ;
@@ -931,17 +939,61 @@ int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , u
 	return 0 ;
 }
 
-void pack_kill_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length )
+void pack_cancel_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length )
 {
 	pack32 ( msg -> job_id , buffer , length ) ;
 	pack32 ( msg -> job_step_id , buffer , length ) ;
 }
 
-int unpack_kill_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
 {
 	kill_tasks_msg_t * msg ;
 
 	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	if ( msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> job_id , buffer , length ) ;
+	unpack32 ( & msg -> job_step_id , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
+void pack_cancel_job_msg ( job_id_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> job_id , buffer , length ) ;
+}
+
+int unpack_cancel_job_msg ( job_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	job_id_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( job_id_msg_t ) ) ;
+	if ( msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> job_id , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
+void pack_cancel_job_step_msg ( job_step_id_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> job_id , buffer , length ) ;
+	pack32 ( msg -> job_step_id , buffer , length ) ;
+}
+
+int unpack_cancel_job_step_msg ( job_step_id_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	job_step_id_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( job_step_id_msg_t ) ) ;
 	if ( msg == NULL) 
 	{
 		*msg_ptr = NULL ;
