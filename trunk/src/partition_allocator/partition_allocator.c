@@ -1412,10 +1412,21 @@ int allocate_part(pa_request_t* pa_request, List* results)
 #endif
 
 	// _backup_pa_system();
-	if (!_find_first_match(pa_request, results))
+	if (!_find_first_match(pa_request, results)){
+		ListIterator itr = list_iterator_create(*results);
+		pa_node_t* pa_node;
+		while((pa_node = list_next(itr))){
+			pa_node->used = true;
+		}
+
+		/** THIS IS where we might should call the graph
+		 * solver to see if the allocation can be wired,
+		 * before returning a definitive TRUE */
+		
 		return 1;
-	else 
+	} else {
 		return 0;
+	}
 }
 
 /** 
@@ -1578,6 +1589,9 @@ int main(int argc, char** argv)
 	} else {
 		printf("request failed\n");
 	}
+
+	results = list_create(NULL);
+	allocate_part(request, &results);
 	// time(&end);
 	// printf("allocate: %ld\n", (end-start));
 
