@@ -433,6 +433,24 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	slurm_send_rc_msg(msg, rc);
 }
 
+static void
+_kill_running_session_mgrs(uint32_t jobid, int signum)
+{
+	List         steps = shm_get_steps();
+	ListIterator i     = list_iterator_create(steps);
+	job_step_t  *s     = NULL; 
+	int step_cnt       = 0;  
+
+	while ((s = list_next(i))) {
+		if (s->jobid == jobid) {
+			kill(s->sid, signum);
+		}
+	}
+	list_destroy(steps);
+
+	return step_cnt;
+}
+
 /* For the specified job_id: Send SIGXCPU, reply to slurmctld, 
  *	sleep(configured kill_wait), then send SIGKILL */
 static void
@@ -451,7 +469,13 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 		return;
 	}
 
-	step_cnt = _kill_all_active_steps(req->job_id, SIGXCPU);
+	/*
+	 * Send SIGXCPU to warn session managers of job steps for this
+	 * job that the job is about to be terminated
+	 */
+	_kill_running_session_mgrs(req->job_id, SIGXCPU);
+
+	step_cnt = _kill_all_active_steps(req->job_id, SIGTERM);
 
 	info("Timeout for job=%u, step_cnt=%d, kill_wait=%u", 
 	     req->job_id, step_cnt, conf->cf.kill_wait);
