@@ -10,7 +10,10 @@ EXTRA_DIST =	\
 	autogen.sh	\
 	Make-rpm.mk	\
 	slurm.spec	\
-	META
+	README	\
+	DISCLAIMER	\
+	COPYING	\
+ 	META
 
 MAINTAINERCLEANFILES = 			\
 	aclocal.m4 config.guess 	\

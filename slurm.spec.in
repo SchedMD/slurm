@@ -43,7 +43,7 @@ Development package for SLURM.  This package includes the header files and stati
 %endif
 
 
-%configure --with-slurm-conf=/etc/slurm $WITHELAN $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
+./configure --prefix=%{_prefix} --mandir=%{_mandir} --bindir=%{_bindir} --sbindir=%{_sbindir} --libdir=%{_libdir} --with-slurm-conf=/etc/slurm $WITHELAN $WITH_ELAN $WITH_AUTHD $WITH_TOTALVIEW
 make
 
 %install
@@ -60,14 +60,14 @@ rm -rf $RPM_BUILD_ROOT
 # where does slurm.conf belong ??? Or should be throw it in the doc directory?
 %defattr(-,root,root)
 %doc README 
-%doc ChangeLog 
 %doc DISCLAIMER
+%doc COPYIN
 %attr(755, root, root) %{_bindir}/scancel
 %attr(755, root, root) %{_bindir}/scontrol
 %attr(755, root, root) %{_bindir}/sinfo
 %attr(755, root, root) %{_bindir}/squeue
 %attr(755, root, root) %{_bindir}/srun 
-%attr(755, root, root) %{_sbindir}/slurmcltd
+%attr(755, root, root) %{_sbindir}/slurmctld
 %attr(755, root, root) %{_sbindir}/slurmd
 %config(noreplace) %attr(755, root, root) /etc/rc.d/init.d/slurm
 %config(noreplace) %attr(755, root, root) /etc/slurm.conf
