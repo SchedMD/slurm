@@ -229,13 +229,17 @@ int main(int argc, char *argv[])
 		    (strcmp(node_name,
 			    slurmctld_conf.backup_controller) == 0))
 			_run_backup();
-		else if (strcmp(node_name, slurmctld_conf.control_machine))
-			fatal
+		else if (slurmctld_conf.control_machine &&
+			 (strcmp(node_name, slurmctld_conf.control_machine) 
+			  == 0))
+			(void) _shutdown_backup_controller();
+		else {
+			error
 			    ("this host (%s) not valid controller (%s or %s)",
 			     node_name, slurmctld_conf.control_machine,
 			     slurmctld_conf.backup_controller);
-		else		/* primary tells secondary to shutdown */
-			(void) _shutdown_backup_controller();
+			exit(0);
+		}
 
 		/*
 		 * create attached thread for signal handling

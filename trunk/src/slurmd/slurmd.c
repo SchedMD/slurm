@@ -409,6 +409,12 @@ _read_config()
 	_free_and_set(&conf->pidfile,    
 		      xstrdup(slurmctld_conf.slurmd_pidfile));
 	slurm_mutex_unlock(&conf->config_mutex);
+
+	if ((slurmctld_conf.control_addr == NULL) || 
+	    (slurmctld_conf.slurmctld_port == 0)) {
+		error("Unable to establish control machine or port");
+		exit(1);
+	}
 }
 
 static void
