@@ -174,10 +174,10 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/slurm/sched_wiki.so
 #############################################################################
 
-%if %(test -f %{_libdir}/slurm/switch-elan.so && echo 1 || echo 0)
+%if %(test -f %{_libdir}/slurm/switch_elan.so && echo 1 || echo 0)
 %files switch-elan
 %defattr(-,root,root)
-%{_libdir}/slurm/switch-elan.so
+%{_libdir}/slurm/switch_elan.so
 %endif
 #############################################################################
 
