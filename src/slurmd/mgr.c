@@ -85,7 +85,6 @@ static int exit_errno[] =
 #define MAX_SMGR_EXIT_STATUS 6
 
 
-
 /* 
  * Prototypes
  */
@@ -94,6 +93,7 @@ static int exit_errno[] =
  * Job manager related prototypes
  */
 static int  _job_mgr(slurmd_job_t *job);
+static void _set_job_log_prefix(slurmd_job_t *job);
 static int  _setup_io(slurmd_job_t *job);
 static int  _drop_privileges(struct passwd *pwd);
 static int  _reclaim_privileges(struct passwd *pwd);
@@ -131,13 +131,11 @@ int
 mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *cli)
 {
 	slurmd_job_t *job = NULL;
-	char buf[256];
-
-	snprintf(buf, sizeof(buf), "[%d.%d]", msg->job_id, msg->job_step_id);
-	log_set_fpfx(buf);
 
 	if (!(job = job_create(msg, cli)))
 		return SLURM_ERROR;
+
+	_set_job_log_prefix(job);
 
 	_setargs(job, *conf->argv, *conf->argc);
 
@@ -157,13 +155,11 @@ mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *cli)
 	int           status = 0;
 	slurmd_job_t *job;
 	char         *batchdir;
-	char         buf[256];
-
-	snprintf(buf, sizeof(buf), "[%d]", msg->job_id);
-	log_set_fpfx(buf);
 
 	if (!(job = job_batch_job_create(msg))) 
 		goto cleanup;
+
+	_set_job_log_prefix(job);
 
 	_setargs(job, *conf->argv, *conf->argc);
 
@@ -254,6 +250,20 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
 }
 
 
+static void
+_set_job_log_prefix(slurmd_job_t *job)
+{
+	char buf[256];
+
+	if (job->stepid == NO_VAL)
+		snprintf(buf, sizeof(buf), "[%d]", job->jobid);
+	else
+		snprintf(buf, sizeof(buf), "[%d.%d]", 
+			 job->jobid, job->stepid);
+
+	log_set_fpfx(buf);
+}
+
 static int
 _setup_io(slurmd_job_t *job)
 {
@@ -296,25 +306,20 @@ _setup_io(slurmd_job_t *job)
 
 
 /*
- * Send task exit message for n tasks. tid is the list of _local_
+ * Send task exit message for n tasks. tid is the list of _global_
  * task ids that have exited
  */
 static int
 _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status)
 {
-	int             j;
 	slurm_msg_t     resp;
 	task_exit_msg_t msg;
-	uint32_t        gid[n];
 	ListIterator    i       = NULL;
 	srun_info_t    *srun    = NULL;
 
 	debug3("sending task exit msg for %d tasks", n);
 
-	for (j = 0; j < n; j++)
-		gid[j] = job->task[tid[j]]->gid;
-
-	msg.task_id_list = gid;
+	msg.task_id_list = tid;
 	msg.num_tasks    = n;
 	msg.return_code  = status;
 	resp.data        = &msg;
@@ -323,7 +328,7 @@ _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status)
 	/*
 	 * XXX: Should srun_list be associated with each task?
 	 */
-	i = list_iterator_create(job->task[tid[0]]->srun_list);
+	i = list_iterator_create(job->sruns);
 	while ((srun = list_next(i))) {
 		resp.address = srun->resp_addr;
 		if (resp.address.sin_family != 0)
@@ -370,15 +375,10 @@ _job_mgr(slurmd_job_t *job)
 
 	/*
 	 * Create slurmd session manager and read task pids from pipe
+	 * (waits for session manager process on failure)
 	 */
-	if ((rc = _create_job_session(job))) {
-		/* 
-		 * Get exit code from session manager
-		 */
-		if (rc < 0)
-			rc = _wait_for_session(job);
+	if ((rc = _create_job_session(job))) 
 		goto fail2;
-	}
 
 	/*
 	 * Send job launch response with list of pids
@@ -506,53 +506,121 @@ _create_job_session(slurmd_job_t *job)
 	return SLURM_SUCCESS;
 
     error:
-	rc = _wait_for_session(job);
-	return rc;
-}
-
-static int 
-_handle_task_exit(slurmd_job_t *job)
-{
-	int len;
-	int tid[1];
-	exit_status_t e;
-
-	if ((len = _readn(job->fdpair[0], &e, sizeof(e))) < 0) {
-		error("read from session mgr: %m");
-		return SLURM_ERROR;
-	}
-
-	if (len == 0) /* EOF */
-		return len;
-
-	tid[0] = e.taskid;
-
-	debug2("global task %d exited with status %d", tid[0], e.status);
-
-	_send_exit_msg(job, tid, 1, e.status);
-
-	return SLURM_SUCCESS;
+	return _wait_for_session(job);
 }
 
 /*
- * Wait for tasks to exit by reading task exit codes from slurmd
- * session manager pipe. On EOF or when waiting == 0, the job is 
- * complete
+ * Read task exit codes from session pipe.
+ * read as many as possible until nonblocking fd returns EAGAIN.
+ *
+ * Returns number of exit codes read
+ */
+static int 
+_handle_task_exit(slurmd_job_t *job)
+{
+	exit_status_t e;
+	int i       = 0;
+	int len     = 0;
+	int nexited = 0;
+
+	/*
+	 * read at most ntask task exit codes from session manager
+	 */
+	for (i = 0; i < job->ntasks; i++) {
+		
+		if ((len = read(job->fdpair[0], &e, sizeof(e))) < 0) {
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+				break;
+			error("read from session mgr: %m");
+			return SLURM_ERROR;
+		}
+
+		if (len == 0) /* EOF */
+			break;
+
+		job->task[e.taskid]->estatus = e.status;
+		job->task[e.taskid]->exited  = true;
+		job->task[e.taskid]->esent   = false;
+		nexited++;
+
+		debug2("global task %d exited with status %d", 
+		       e.taskid, e.status);
+	} 
+
+	return nexited;
+}
+
+
+static int 
+_send_pending_exit_msgs(slurmd_job_t *job)
+{
+	int  i;
+	int  n       = 0;
+	int  nsent   = 0;
+	int  status  = 0;
+	bool gotStatus = false;
+	int  tid[job->ntasks];
+	
+	/* 
+	 * Collect all exit codes with the same status into a 
+	 * single message. Count no. of exit codes sent as a 
+	 * side effect.
+	 *
+	 */
+	for (i = 0; i < job->ntasks; i++) {
+		task_info_t *t = job->task[i];
+
+		if (!t->exited)
+			continue;
+
+		if (t->esent) {
+			nsent++;
+			continue;
+		}
+
+		if (!gotStatus) { 
+			status = t->estatus;
+			gotStatus = true;
+		} else if (status != t->estatus)
+			continue;
+
+		tid[n++] = t->gid;
+		t->esent = true;
+		nsent++;
+	}
+
+	if (n) {
+		debug2("Aggregated %d task exit messages", n);
+		_send_exit_msg(job, tid, n, status);
+	}
+
+	return nsent;
+}
+
+/*
+ * Wait for tasks to exit by reading task exit codes from session manger.
+ *
+ * Send exit messages to client(s), aggregating where possible.
+ *
  */
 static int
 _wait_for_task_exit(slurmd_job_t *job)
 {
 	int           rc      = 0;
-	int           waiting = job->ntasks;
+	int           nsent   = 0;
+	int           timeout = -1;
+	int           rfd     = job->fdpair[0];
 	struct pollfd pfd[1]; 
 
-	pfd[0].fd     = job->fdpair[0];
+	pfd[0].fd     = rfd;
 	pfd[0].events = POLLIN;
 
-	while (waiting > 0) {
+	fd_set_nonblocking(rfd);
+
+	do {
 		int revents;
 
-		if ((rc = poll(pfd, 1, -1)) < 0) {
+		if ((rc = poll(pfd, 1, timeout)) < 0) {
 			if (errno == EINTR) {
 				_handle_attach_req(job);
 				continue;
@@ -561,29 +629,33 @@ _wait_for_task_exit(slurmd_job_t *job)
 
 		revents = pfd[0].revents;
 
-		if (revents & POLLNVAL)
-			return SLURM_ERROR;
+		xassert (!(revents & POLLNVAL));
 
-		if (   (revents & POLLERR) 
-		    || (revents & POLLHUP) ) { 
-			/* 
-			 * smgr exited. XXX: Needs work
-			 */
-			while (waiting && (_handle_task_exit(job) == 0)) {
-				waiting--;
-			}
-			if (waiting != 0)
-				return SLURM_ERROR;
-			else
-				return SLURM_SUCCESS;
+		if ((revents & (POLLIN|POLLHUP|POLLERR))) {
+
+		     if ((rc = _handle_task_exit(job)) <= 0) {
+			     if (rc < 0)
+				     error ("Unable to read task exit codes");
+			     goto done;
+		     } 
+
+		     if (rc < (job->ntasks - nsent)) {
+			     timeout = 50;
+			     continue;
+		     }
 		}
 
-		if ((revents & POLLIN) 
-		    && (_handle_task_exit(job) == SLURM_SUCCESS))
-			waiting--;
-	}
+		nsent = _send_pending_exit_msgs(job);
+
+		timeout = -1;
+
+	} while (nsent < job->ntasks);
 
 	return SLURM_SUCCESS;
+
+    done:
+	_send_pending_exit_msgs(job);
+	return SLURM_FAILURE;
 }
 
 
