@@ -40,7 +40,7 @@ expect {
 		exit $exit_code
 	}
 	-re "configuration not available" {
-		send_user "WARNING: partition too small for test"
+		send_user "WARNING: partition too small for test\n"
 		kill_srun
 		exit 0
 	}
