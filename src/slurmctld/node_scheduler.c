@@ -171,10 +171,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
 			bit_clear(job_ptr->node_bitmap, i);
-			if ((--job_ptr->node_cnt == 0) &&
-			    (base_state == NODE_STATE_DRAINING))
-				node_record_table_ptr[i].node_state =
-					NODE_STATE_DRAINED | no_resp_flag;
+			job_ptr->node_cnt--;
 		}
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 32;
