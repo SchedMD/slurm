@@ -391,7 +391,7 @@ _init_conf()
 		exit(1);
 	}
 	conf->hostname = xstrdup(host);
-	if (read_slurm_port_config() < 0)
+	if (slurm_api_set_default_config() < 0)
 		error("Unable to get slurmd listen port");
 	conf->conffile  = xstrdup(SLURM_CONFIG_FILE);
 	conf->port      = slurm_get_slurmd_port();
