@@ -3,6 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.5.0-pre2
 =============================
+ -- Fix bug in srun to clean-up upon failure of an allocated node
+    (srun -A would generate a segmentation fault, Chris Holmes, HP).
 
 * Changes in SLURM 0.5.0-pre1
 =============================
