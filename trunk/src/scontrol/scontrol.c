@@ -18,11 +18,12 @@ int Quiet_Flag;		/* Quiet=1, verbose=-1, normal=0 */
 int Input_Words;	/* Number of words of input permitted */
 
 void Dump_Command(int argc, char *argv[]);
-int Get_Command(int *argc, char *argv[]);
+int  Get_Command(int *argc, char *argv[]);
 void Print_Node(char *node_name);
 void Print_Node_List(char *node_list);
 void Print_Part(char *partition_name);
-int Process_Command(int argc, char *argv[]);
+int  Process_Command(int argc, char *argv[]);
+int  Update_It(int argc, char *argv[]);
 void Usage();
 
 main(int argc, char *argv[]) {
@@ -171,10 +172,6 @@ void Print_Node(char *node_name) {
 	Error_Code = Load_Node_Config(Req_Name, Next_Name, &CPUs, &RealMemory, &TmpDisk, &Weight, 
 	    Features, Partition, Node_State);
 	if (Error_Code != 0)  {
-	    printf("Load_Node_Config error %d on %s\n", Error_Code, Req_Name);
-	    break;
-	} /* if */
-	if (Error_Code != 0)  {
 	    if (Quiet_Flag != 1) {
 		if (Error_Code == ENOENT) 
 		    printf("No node %s found\n", Req_Name);
@@ -252,6 +249,8 @@ void Print_Node_List(char *node_list) {
  */
 void Print_Part(char *partition_name) {
     static time_t Last_Update_Time  = (time_t)NULL;	/* Time desired for data */
+    static char *Yes_No[0] = {"NO", "YES"};
+    static char *Up_Down[0] = {"DOWN", "UP"};
     char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
     char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
     int MaxTime;			/* -1 if unlimited */
@@ -292,10 +291,10 @@ void Print_Part(char *partition_name) {
 	    break;
 	} /* if */
 
-	printf("PartitionName=%s Nodes=%s  MaxTime=%d  MaxNodes=%d Default=%d ", 
-	    Req_Name, Nodes, MaxTime, MaxNodes, Default);
-	printf("TotalNodes=%d TotalCPUs=%d Key=%d StateUp=%d Shared=%d AllowGroups=%s\n", 
-	    TotalNodes, TotalCPUs, Key, StateUp, Shared, AllowGroups);
+	printf("PartitionName=%s Nodes=%s  MaxTime=%d  MaxNodes=%d Default=%s ", 
+	    Req_Name, Nodes, MaxTime, MaxNodes, Yes_No[Default]);
+	printf("Key=%s State=%s Shared=%s AllowGroups=%s TotalNodes=%d TotalCPUs=%d \n", 
+	    Yes_No[Key], Up_Down[StateUp], Yes_No[Shared], AllowGroups, TotalNodes, TotalCPUs);
 
 	if (partition_name || (strlen(Next_Name) == 0)) break;
 	strcpy(Req_Name, Next_Name);
@@ -311,6 +310,7 @@ void Print_Part(char *partition_name) {
  * Ourput: Return code is 0 or errno (ONLY for errors fatal to scontrol)
  */
 int Process_Command(int argc, char *argv[]) {
+    int Error_Code;
 
     if ((strcmp(argv[0], "exit") == 0) || 
         (strcmp(argv[0], "quit") == 0)) {
@@ -325,15 +325,19 @@ int Process_Command(int argc, char *argv[]) {
 	if (argc > 1)  fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
 	Quiet_Flag = 1;
 
-    } else if (strcmp(argv[0], "reconfigure") == 0) {
+    } else if (strncmp(argv[0], "reconfigure", 7) == 0) {
 	if (argc > 2) fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
-	printf("%s keyword not yet implemented\n", argv[0]);
+	Error_Code = Reconfigure();
+	if ((Error_Code != 0) && (Quiet_Flag != 1))
+	    fprintf(stderr, "Error %d from reconfigure\n", Error_Code);
 
     } else if (strcmp(argv[0], "show") == 0) {
 	if (argc > 3) {
 	    if (Quiet_Flag != 1) fprintf(stderr, "Too many arguments for keyword:%s\n", argv[0]);
 	} else if (argc < 2) {
 	    if (Quiet_Flag != 1) fprintf(stderr, "Too few arguments for keyword:%s\n", argv[0]);
+	} else if (strncmp(argv[1],"build", 3) == 0) {
+	    if (Quiet_Flag != 1) printf("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
 	} else if (strncmp(argv[1],"jobs", 3) == 0) {
 	    if (Quiet_Flag != 1) printf("keyword:%s entity:%s command not yet implemented\n", argv[0], argv[1]);
 	} else if (strncmp(argv[1],"nodes", 3) == 0) {
@@ -351,23 +355,11 @@ int Process_Command(int argc, char *argv[]) {
 	} /* if */
 
     } else if (strcmp(argv[0], "update") == 0) {
-	if (argc < 3) {
+	if (argc < 2) {
 	    fprintf(stderr, "Too few arguments for %s keyword\n", argv[0]);
 	    return 0;
 	} /* if */
-	if ((strcmp(argv[1],"job") != 0)  && 
-	    (strcmp(argv[1],"node") != 0) && (strcmp(argv[1],"partition") != 0)) {
-	    fprintf(stderr, "Invalid entity %s for %s keyword\n", argv[1], argv[0]);
-	    return 0;
-	} /* if */
-	printf("%s keyword not yet implemented\n", argv[0]);
-
-    } else if (strcmp(argv[0], "upload") == 0) {
-	if (argc > 2) {
-	    fprintf(stderr, "Too many arguments for %s keyword\n", argv[0]);
-	    return 0;
-	} /* if */
-	printf("%s keyword not yet implemented\n", argv[0]);
+	Update_It((argc-1), &argv[1]);
 
     } else if (strcmp(argv[0], "verbose") == 0) {
 	if (argc > 1) {
@@ -388,22 +380,59 @@ int Process_Command(int argc, char *argv[]) {
 } /* Process_Command */
 
 
+/* 
+ * Update_It - Update the SLURM configuration per the supplied arguments 
+ * Input: argc - count of arguments
+ *        argv - list of arguments
+ * Output: Returns 0 if no error, errno otherwise
+ */
+int  Update_It(int argc, char *argv[]) {
+    char *In_Line;
+    int Error_Code, i, In_Line_Size;
+
+    In_Line_Size = BUF_SIZE;
+    In_Line = (char *)malloc(In_Line_Size);
+    if (In_Line == NULL) {
+	fprintf(stderr, "%s: Error %d allocating memory\n", Command_Name, errno);
+	return ENOMEM;
+    } /* if */
+    strcpy(In_Line, "");
+	
+    for (i=0; i<argc; i++) {
+	if ((strlen(In_Line) + strlen(argv[i]) + 2) > In_Line_Size) {
+	    In_Line_Size += BUF_SIZE;
+	    In_Line = (char *)realloc(In_Line, In_Line_Size);
+	    if (In_Line == NULL) {
+		fprintf(stderr, "%s: Error %d allocating memory\n", Command_Name, errno);
+		return ENOMEM;
+	    } /* if */
+	} /* if */
+
+	strcat(In_Line, argv[i]);
+	strcat(In_Line, " ");
+    } /* for */
+
+    Error_Code = Update_Config(In_Line);
+    free(In_Line);
+    return Error_Code;
+} /* Update_It */
+
 /* Usage - Show the valid scontrol commands */
 void Usage() {
     printf("%s [-q | -v] [<keyword>]\n", Command_Name);
-    printf("    -q is equivalent to the keyword \"quiet\" described below.\n");
-    printf("    -v is equivalent to the keyword \"verbose\" described below.\n");
-    printf("    <keyword> may be omitted from the execute line and %s will execute in interactive\n");
-    printf("     mode to process multiple keywords (i.e. commands). Valid <entity> values are: job,\n");
-    printf("     node, and partition. Valid <keyword> values are:\n\n");
-    printf("     exit                         Terminate this command.\n");
-    printf("     help                         Print this description of use.\n");
-    printf("     quiet                        Print no messages other than error messages.\n");
-    printf("     quit                         Terminate this command.\n");
-    printf("     reconfigure [<NodeName>]     Re-read configuration files, default is all nodes.\n");
-    printf("     show <entity> [<ID>]         Display state of identified entity, default is all records.\n");
-    printf("     update <entity> <options>    Update state of identified entity.\n");
-    printf("     upload [<NodeName>]          Upload node configuration, default is from all nodes.\n");
-    printf("     verbose                      Enable detailed logging.\n");
-    printf("     version                      Display tool version number.\n");
+    printf("  -q is equivalent to the keyword \"quiet\" described below.\n");
+    printf("  -v is equivalent to the keyword \"verbose\" described below.\n");
+    printf("  <keyword> may be omitted from the execute line and %s will execute in interactive\n");
+    printf("    mode to process multiple keywords (i.e. commands). Valid <entity> values are:\n");
+    printf("    build, job, node, and partition. Node names may be sepcified using regular simple \n");
+    printf("    expressions. Valid <keyword> values are:\n");
+    printf("     exit                     Terminate this command.\n");
+    printf("     help                     Print this description of use.\n");
+    printf("     quiet                    Print no messages other than error messages.\n");
+    printf("     quit                     Terminate this command.\n");
+    printf("     reconfigure              Re-read configuration files.\n");
+    printf("     show <entity> [<ID>]     Display state of identified entity, default is all records.\n");
+    printf("     update <options>         Update configuration per configuration file format.\n");
+    printf("     verbose                  Enable detailed logging.\n");
+    printf("     version                  Display tool version number.\n");
 } /* Usage */

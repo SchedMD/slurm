@@ -103,3 +103,16 @@ int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes,
  * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
  */
 extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
+
+/* 
+ * Reconfigure - _ Request that slurmctld re-read the configuration files
+ * Output: Returns 0 on success, errno otherwise
+ */
+extern int Reconfigure();
+
+/* 
+ * Update_Config - _ Request that slurmctld update its configuration per request
+ * Input: A line containing configuration information per the configuration file format
+ * Output: Returns 0 on success, errno otherwise
+ */
+extern int Update_Config(char *Spec);
