@@ -29,6 +29,8 @@
 
 #include <sys/time.h>
 
+#include "src/common/slurm_protocol_api.h"
+
 #define PRINT_TIMES      1	/* Set to print timing info */
 
 #if PRINT_TIMES

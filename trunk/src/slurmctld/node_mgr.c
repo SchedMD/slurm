@@ -48,6 +48,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 	4096
@@ -304,7 +305,9 @@ int dump_all_node_state ( void )
 	slurmctld_lock_t node_read_lock = { READ_LOCK, NO_LOCK, READ_LOCK, 
 						NO_LOCK };
 	Buf buffer = init_buf(BUF_SIZE*16);
+	DEF_TIMERS;
 
+	START_TIMER;
 	/* write header: time */
 	pack_time  (time (NULL), buffer);
 
@@ -363,6 +366,8 @@ int dump_all_node_state ( void )
 	unlock_state_files ();
 
 	free_buf (buffer);
+	END_TIMER;
+	debug3("dump_all_node_state %s", TIME_STR);
 	return error_code;
 }
 
