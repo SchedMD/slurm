@@ -39,7 +39,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_submit_batch_job( &job_mesg, &resp_msg );
 	if (error_code) {
-		printf ("submit error %d\n", errno);
+		slurm_perror ("slurm_submit_batch_job");
 		return (error_code);
 	}
 	else {
@@ -67,7 +67,7 @@ main (int argc, char *argv[])
 		job_mesg. user_id = 1500;
 		error_code = slurm_submit_batch_job( &job_mesg, &resp_msg );
 		if (error_code) {
-			printf ("submit error %d\n", errno);
+			slurm_perror ("slurm_submit_batch_job");
 			break;
 		}
 		else {
