@@ -13,269 +13,86 @@ management, job management, and scheduling modules.  The design also
 includes a scalable, general-purpose communication infrastructure.
 SLURM requires no kernel modifications and is relatively self-contained.
 
-<h2>Component Overview</h2>
-The <b>Job Initiator</b> (JI) is the tool used by the customer to initiate 
-a job. The job initiator can execute on any computer in the cluster. Its 
-request is sent to the <b>controller</b> executing on the <b>control machine</b>. 
-<p>
-The controller (<b>ControlDaemon</b>) orchestrates all SLURM activities including: accepting the 
-job initiation request, allocating nodes to the job, enforcing partition
-constraints, enforcing job limits, and general record keeping. The three 
-primary components (threads) of the controller are the <b>Partition Manager</b> (PM), 
-<b>Node Manager</b> (NM), and <b>Job Manager</b> (JM). The partition manager
-keeps track of partition state and constraints. The node manager keeps track 
-of node state and configuration. The job manager keeps track of job state 
-and enforces its limits. Since all of these functions are critical to the 
-overall SLURM operation, a <b>backup controller</b> assumes these responsibilities
-in the event of control machine failure.
-<p>
-The final component of interest is the <b>Job Shepherd</b> (JS), which is 
-part of the <b>ServerDaemon</b>. The ServerDaemon executes on every SLURM 
-compute server.  The job shepherd initiates 
-the job's tasks. It allocates switch resources. It also monitors job 
-state and resources utilization. Finally, it delivers signals to the 
-processes as needed.
-<p align=center>
-<img src="SLURM.components.gif">
-<p>Figure 1: SLURM components
-<p>
-Interconnecting all of these components is a highly scalable and reliable 
-communications library. The general mode of operation is for each every 
-node to initiate a <b>MasterDaemon</b>. This daemon will in turn 
-execute any defined <b>InitProgram</b> to insure the node is fully ready 
-for service. The InitProgram can, for example, insure that all required 
-file systems are mounted. 
-MasterDaemon will subsequently initiate a <b>ControlDaemon</b>
-and/or <b>ServerDaemon</b> as defined in the SLURM configuration file 
-and terminate itself.
-<i>Is this model good, it does eliminate unique configuration files on 
-the controller and backup controller nodes (RC files).?</i>
-<p>
-The ControlDaemon will read the node and partition information from 
-the appropriate SLURM configuration files. It will then contact each 
-ServerDaemon to gather current job and system state information. 
-The <b>BackupController</b> will ping the ControlDaemon periodically 
-to insure that it is operative. If the ControlDaemon fails to respond 
-for a period specified as <b>ControllerTimeout</b>, the BackupController
-will assume those responsibilities. The original ControlDaemon will 
-reclaim those responsibilities when returned to service. 
-Whenever the machine responsible for control responsibilities changes, 
-it must notify every other SLURM daemon to insure that messages are 
-routed in an appropriate fashion.
-<p>
-The Job Initiator will contact the ControlDaemon in order to be allocated 
-appropriate resources as possible, including authorization for 
-interconnect use. The Job Initiator itself will be responsible 
-for distributing the program, environment variables, identification of 
-the current directory, standard input, etc. Standard output and standard 
-error from the program will be transmitted to the Job Initiator. Should 
-the Job Initiator terminate prior to the parallel job's termination 
-(for example, if the node fails), the ControlDaemon will initiate a 
-new Job Initiator. While the new Job Initiator will not be capable of 
-transmitting additional standard input data, it will log the standard 
-output and error data.
-<p>
-ServerDaemon's Job Shepherd will initiate the user program's tasks 
-and monitor their state. The ServerDaemon will also monitor and report 
-overall node state information periodically to the ControlDaemon. 
-Should any node associated with a user task fail (ServerDaemon 
-fails to respond within <b>ServerTimeout</b>), the entire application 
-will be terminated by the Job Initiator.
+<h2>Overview</h2>
+There is a description of the components and their interactions available 
+in a separate document, <a href="overview.ps">SLURM: Simple Linux Utility 
+for Resource Management</a>.
 
-<h2>Controller Details</h2>
-The controller is the overall manager of SLURM activities. For 
-scalability, the controller code is multi-threaded. Upon initiation, 
-the controller reads the SLURM configuration files: /etc/SLURM.conf 
-(overall SLURM configuration), plus node and partition configurations 
-as described in the <a href="admin.guide.html">SLURM Administrator's Guide</a>. 
-SLURM is designed to support thousands of nodes and to facilitate 
-locating node records quickly, uses a hash table. Several 
-different hashing schemes are supported based upon the node name. 
-Each table entry can be directly accessed without any searching
-if the name contains a sequence number suffix. SLURM can be built 
-with the HASH_BASE set to indicate the hashing algorithm. Possible 
-values are "10" and "8" for names containing decimal or octal sequence numbers 
-or "0" which processes mixed alpha-numeric without sequence numbers. 
-HASH_BASE is defined in the Mach_Stat_Mgr.c module. 
-If you use a naming convention lacking a sequence number, it may be 
-desirable to review the hashing function Hash_Index in the 
-Mach_Stat_Mgr.c module. 
-<p>
-The controller will then load the last known node, partition, and job 
-state information from primary or secondary backup locations. This state 
-recovery mechanism facilitates the recovery process, especially if 
-the control machine changes. Each SLURM machine is then requested 
-to send current state information. State is saved on a periodical 
-bases from that point forward based upon interval and filename 
-specifications identified in the SLURM configuration file. 
-Both primary and secondary intervals and files can be configured. 
-Ideally the primary and secondary backup files will be made to 
-distinct file systems and/or devices for greater fault tolerance. 
-Upon receipt of a shutdown request, the controller will save 
-state to both the primary and backup files and terminate.
-<p>
-At this point, the controller enters a reactive mode. Node and job state 
-information is logged when received, requests for getting and/or setting 
-state information are processed, resources are allocated to jobs, etc.
-<p>
-The allocation of resources to jobs is fairly complex. When a job 
-initiation request is received, a record  of each partition that might 
-be used to satisfy the request is made. Each available node is then 
-checked for possible use. This involves many tests:
-<ul>
-<li>Is the node in a partition that might be used?
-<li>Does the partition have sufficient real memory?
-<li>Does the partition have sufficient temporary disk space?
-<li>and so forth.
-</ul>
-The node selection process can have a great influence upon job 
-performance with some interconnects. If SLURM is built with 
-INTERCONNECT defined as QUADRICS, the selection process will build 
-a list of all possible nodes. The nodes are selected so as to 
-allocate the smallest set of consecutive nodes satisfying the 
-request. If no single set of consecutive nodes satisfies the 
-request, the smallest number of such sets will be allocated 
-to the job. If INTERCONNECT is not defined as QUADRICS, the 
-node selection process is much faster. As soon as sufficient 
-resources have been identified which can satisfy the request, 
-the allocation is made and the selection process ends.
-<p>
-The controller expects each SLURM Job Shepherd (on the computer 
-servers) to report its state every <b>ServerTimeout</b> seconds. 
-If it fails to do so, the node will have its state set to DOWN 
-and no further jobs will be scheduled on that node until it 
-reports a valid state. The controller will also send a state 
-request message to the wayward node. The controller collects 
-node and job resource use information. When a job has reached 
-its prescribed time-limit, its termination is initiated through 
-signals to the appropriate Job Shepherds.
-<p>
-The controller also reports its state to the backup controller 
-(if any) at the <b>HeartbeatInterval</b>. If the backup controller 
-has not received any state information from the primary controller 
-in <b>ControllerTimeout</b> seconds, it begins to provide controller 
-functions using an identical startup process.
-When the primary controller resumes operation, it notifies the 
-backup controller to save state and terminate, waits for the 
-backup controller to notify the primary controller of termination 
-(or waits for the HeartbeatInterval if no response), reads the saved 
-state files, and resumes operation.
-<p>
-The controller, like all other SLURM daemons, logs all significant 
-activities using the syslog function. This not only identifies the 
-event, but its significance.
 
-<h2>Job Shepherd</h2>
-The job shepherd is a relatively light-weight daemon. It too is 
-multi-threaded and performs five primary functions:
-<ol>
-<li>Initiate jobs
-<li>Manage running jobs
-<li>Monitor job state
-<li>Monitor system state
-<li>Forward authenticated user and administrator requests to the controller
-</ol>
-The job shepherd, as its name implies, is primarily responsible for managing 
-the tasks of a user job. When a request to initiate a job is received, its 
-environment is established, the executable and standard-input files received, 
-the interconnect configured and allocated, the epilog executed, the executable 
-is forked and executed. 
-<p>
-While the job is running, standard-output and standard-error 
-is collected and reported back to the Job Initiator. Signals sent to 
-the job from the controller (e.g. time-limit enforcement) or from the 
-Job Initiator (e.g. user initiated termination) are forwarded. 
-<p>
-The job shepherd collects resource use by all processes on the 
-node. Resource use monitored includes:
-<ul>
-<li>User and system CPU use
-<li>Real memory use (resident set size)
-<li>Virtual memory use
-</ul>
-This data is then coalesced by session ID for all sessions and 
-not only those which can be associated with the running the job
-(e.g. kernel resource use, idle time, system daemon time, interactively 
-initiated jobs, and multiple parallel jobs if SLURM is so configured). 
-This data is reported to the controller every HeartbeatInterval seconds.
-The job shepherd is state-less and maintains no record of past 
-resource use (unlike the controller). If there are no executing 
-jobs, system state information (e.g. kernel resource use, idle time, 
-system daemon time) is still reported.
-<p>
-The job shepherd accepts connections from the the SLURM 
-administrative tool and Job Initiators. It can then confirm 
-the identity of the user executing the command and forward 
-the authenticated request to the control machine. Responses 
-to the request from the control machine are forwarded as 
-needed.
+<h2>Common Modules</h2>
+This directory contains modules of general use throughout the SLURM cod. 
+The modules are described below.
 
-<h2>Communications Summary</h2>
-BackupController pings ControlDaemon periodically and assumes 
-control after ControllerTimeout. When there is a change in the 
-node on which the ControlDaemon executes, all SLURM daemons are 
-notified in order to route their messages appropriately.
-<p>
-ControlDaemon collects state information from ServerDaemon. If there 
-have been no communications for a while, it pings the ServerDaemon. 
-If there is no response within ServerTimeout, the node is considered 
-DOWN and unavailable for use. The appropriate Job Initiator is also 
-notified in order to terminate the job. The ControlDaemon also processes 
-administrator and user requests.
-<p>
-The ServerDaemon wait for work requests from the Job Initiators. 
-It spawns user tasks as required. It transfers standard input, output 
-and error as required. It reports job and system state information 
-as requested by the Job Initiator and ControlDaemon.
-
-<h2>Authentication and Authorization</h2>
-<i>I am inclined for the administrator tool and job initiator work through 
-a SLURM daemon. The SLURM daemon can confirm the identify of the user 
-and forward the communications through low-numbered sockets. This eliminates 
-the authentication problems without introducing the complexity of Kerberos 
-or PKI, which I would really like to avoid. - Moe</i>
-
-<h2>Code Modules</h2>
 <dl>
-
-<dt>Controller.c
-<dd> Primary SLURM daemon to execute on control machine. 
-It manages the Partition Manager, Node Manager, and Job Manager threads.
-
-<dt>Get_Mach_Stat.c
-<dd>Module gets the machine's status and configuration. 
-This includes: operating system version, size of real memory, size 
-of virtual memory, size of /tmp disk storage, number of processors, 
-and speed of processors. This is a module of the Job Shepherd component.
-
 <dt>list.c
 <dd>Module is a general purpose list manager. One can define a 
-list, add and delete entries, search for entries, etc. This module 
-is used by multiple SLURM components.
+list, add and delete entries, search for entries, etc. 
 
 <dt>list.h
 <dd>Module contains definitions for list.c and documentation for its functions.
 
-<dt>Mach_Stat_Mgr.c
+<dt>slurm.h
+<dd>Definitions for common SLURM data structures and functions.
+</dl>
+
+
+<h2>Scancel Modules</h2>
+Scancel is a command to cancel running or pending jobs.
+
+
+<h2>Slurmadmin Modules</h2>
+Slurmadmin is the administrator tool for monitoring and modifying SLURM state.
+
+
+<h2>Slurmctld Modules</h2>
+Slurmctld executes on the control machine and orchestrates SLURM activities 
+across the entire cluster including monitoring node and partition state, 
+scheduling, job queue management, job dispatching, and switch management. 
+The slurmctld modules and their functionality are described below.
+
+<dl>
+<dt>bits_bytes.c
+<dd>A collection of functions for processing bit maps and strings for parsing.
+
+<dt>controller.c
+<dd>Primary SLURM daemon to execute on control machine. 
+It manages communications the Partition Manager, Switch Manager, and Job Manager threads.
+
+<dt>node_mgr.c
 <dd>Module reads, writes, records, updates, and otherwise 
 manages the state information for all nodes (machines) in the 
-cluster managed by SLURM. This module performs much of the Node Manager 
-component functionality.
+cluster managed by SLURM. 
 
-<dt>Partition_Mgr.c
+<dt>node_scheduler.c
+<dd>Selects the nodes to be allocated to pending jobs. This makes extensive use 
+of bit maps in representing the nodes. It also considers the locality of nodes 
+to improve communications performance.
+
+<dt>partition_mgr.c
 <dd>Module reads, writes, records, updates, and otherwise 
 manages the state information associated with partitions in the 
-cluster managed by SLURM. This module is the Partition Manager component.
+cluster managed by SLURM. 
 
-<dt>Read_Config.c
-<dd>Module reads overall SLURM configuration file.
+<dt>read_config.c
+<dd>Read the SLURM configuration file and use it to build node and 
+partition data structures.
+</dl>
 
-<dt>Read_Proc.c
-<dd>Module reads system process table state. Used to determine job state 
-including resource usage.
 
-<dt>Slurm_Admin.c
-<dd>Administration tool for reading, writing, and updating SLURM configuration.
+<h2>Slurmd Modules</h2>
+Slurmd executes on each compute node. It initiates and terminates user 
+jobs and monitors both system and job state. The slurmd modules and their 
+functionality are described below.
+
+<dl>
+<dt>get_mach_stat.c
+<dd>This module gets the machine's status and configuration. 
+This includes: size of real memory, size of temporary disk storage, and 
+the number of processors.
+
+<dt>read_proc.c
+This module collects job state information including real memory use, 
+virtual memory use, and CPU time use.
 </dl>
 
 <h2>Design Issues</h2>
@@ -305,19 +122,7 @@ be allocated the smallest number of consecutive sets (e.g. if there
 are sets of available consecutive nodes of sizes 6, 4, 3, 3, 2, 1, 
 and 1 then a request for 10 nodes will always be allocated the 6 
 and 4 node sets rather than use the smaller sets).
-<p>
-We have tried to develop the SLURM code to be quite general and
-flexible, but compromises were made in several areas for the sake of 
-simplicity and ease of support. Entire nodes are dedicated to user 
-applications. Our customers at LLNL have expressed the opinion that sharing of 
-nodes can severely reduce their job's performance and even reliability. 
-This is due to contention for shared resources such as local disk space, 
-real memory, virtual memory and processor cycles. The proper support of 
-shared resources, including the enforcement of limits on these resources, 
-entails a substantial amount of additional effort. Given such a cost to 
-benefit situation at LLNL, we have decided to not support shared nodes. 
-However, we have designed SLURM so as to not preclude the addition of 
-such a capability at a later time if so desired.
+
 
 <h2>Application Program Interface (API)</h2>
 All functions described below can be issued from any node in the SLURM cluster. 
@@ -640,42 +445,25 @@ Returns 1 if the job can be initiated immediately.
 
 <h2>To Do</h2>
 <ul>
-<li>We need to build up a reasonable Makefile.</li>
-
 <li>How do we interface with TotalView?</li>
 
-<li>If we develop a simple scheduler (outside of DPCS), the addition of 
-parameters makes things get really complex very quickly. Trying to 
-map jobs onto consecutive nodes in particular is difficult. To keep 
-things simple, we probably just want to something simple like FCFS 
-or trying to start jobs in priority order.</li>
-
-<li>The SLURM scheduler component would be responsible for enforcing 
+<li>The SLURM Job Manager component would be responsible for enforcing 
 job time and size limits plus group access controls.</li>
-
-<li>Features with associated values may be desirable.</li>
-
-<li>The slurm_admin tool probably needs a very simple user interface 
-to show jobs and node information. Perhaps key off the program 
-name to treat "slurm_jobs" and "slurm_admin show jobs".<li>
 
 <li>Deadlines: MCR to be built in July 2002, accepted August 2002.</li>
 
 <li>SLURM needs to use switch for timely distribution of executable and 
 stdin files.</li>
 
-<li>Get_Mach_Stat.c is quite system dependent. We probably want to 
+<li>get_mach_stat.c is quite system dependent. We probably want to 
 construct multiple file names containing the system name (e.g. 
 Get_Mach_Stat.aix.c, Get_Mach_Stat.linux.c, etc.) and build accordingly.</li>
 
-<li>We may want to define multiple partition configurations (e.g. 
-day, night, weekend, holiday) and permit a simple mechanism (API) 
-to switch between them. </li>
 </ul>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified February 12, 2002</p>
+<p>Last Modified March 14, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
