@@ -54,7 +54,7 @@ slurm_print_job_step_info_msg ( FILE* out,
 	job_step_info_t *job_step_ptr = job_step_info_msg_ptr->job_steps ;
 	char time_str[16];
 
-	make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, 
+	slurm_make_time_str ((time_t *)&job_step_info_msg_ptr->last_update, 
 			time_str);
 	fprintf( out, "Job step data as of %s, record count %d\n",
 		time_str, job_step_info_msg_ptr->job_step_count);
@@ -80,7 +80,7 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
 	char time_str[16];
 
 	/****** Line 1 ******/
-	make_time_str ((time_t *)&job_step_ptr->start_time, time_str);
+	slurm_make_time_str ((time_t *)&job_step_ptr->start_time, time_str);
 	fprintf ( out, "StepId=%u.%u UserId=%u Tasks=%u StartTime=%s", 
 		job_step_ptr->job_id, job_step_ptr->step_id, 
 		job_step_ptr->user_id, job_step_ptr->num_tasks, time_str);

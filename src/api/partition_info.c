@@ -51,7 +51,7 @@ void slurm_print_partition_info_msg ( FILE* out,
 	partition_info_t * part_ptr = part_info_ptr->partition_array ;
 	char time_str[16];
 
-	make_time_str ((time_t *)&part_info_ptr->last_update, time_str);
+	slurm_make_time_str ((time_t *)&part_info_ptr->last_update, time_str);
 	fprintf( out, "Partition data as of %s, record count %d\n",
 		time_str, part_info_ptr->record_count);
 
