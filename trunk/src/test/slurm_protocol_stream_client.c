@@ -20,7 +20,7 @@ int32_t main ( int32_t argc , char * argv[] )
 	uint32_t length_io ;
 		
 	/* init address sturctures */
-	set_slurm_addr_hton ( & worker_address , 7000 , 0x7f000001 ) ;
+	slurm_set_addr_uint ( & worker_address , 7000 , 0x7f000001 ) ;
 	/* connect socket */
 	worker_socket = slurm_open_stream ( & worker_address ) ;
 

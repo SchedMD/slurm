@@ -23,7 +23,7 @@ int32_t main ( int32_t argc , char * argv[] )
 	uint32_t length_io ;
 		
 	/* init address sturctures */
-	set_slurm_addr_hton ( & listen_address , 7000, 0x7f000001 ) ;
+	slurm_set_addr_uint ( & listen_address , 7000, 0x7f000001 ) ;
 	/* open and listen on socket */
 	listen_socket = slurm_listen_stream ( & listen_address ) ;
 	/* accept socket */
