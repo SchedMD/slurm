@@ -239,11 +239,10 @@ static int _resolve(char *com)
 }
 static int _down_bps(char *com)
 {
-	int i=4,x,y,z;
+	int i=4,x;
 	int len = strlen(com);
 	int start[PA_SYSTEM_DIMENSIONS], end[PA_SYSTEM_DIMENSIONS];
-	int number;
-
+	
 	while(com[i-1] != ' ' && i<len)
 		i++;
 	if(i>(len-1)) {
@@ -252,6 +251,8 @@ static int _down_bps(char *com)
 		return 0;
 	}
 		
+#if HAVE_BGL
+	int number, y, z;
 	if ((com[i]   == '[')
 	    && (com[i+8] == ']')
 	    && ((com[i+4] == 'x')
@@ -299,6 +300,35 @@ static int _down_bps(char *com)
 			}
 		}
 	}
+#else
+	if ((com[i]   == '[')
+	    && (com[i+8] == ']')
+	    && ((com[i+4] == 'x')
+		|| (com[i+4] == '-'))) {
+		i++;
+		start[X] = atoi(com + i);
+		i += 4;
+		end[X] = atoi(com + i);	
+	} else if ((com[i] < 58 && com[i] > 47)
+		   && (com[i+6] < 58 && com[i+6] > 47)
+		   && ((com[i+3] == 'x')
+		|| (com[i+3] == '-'))) {
+		
+		start[X] = atoi(com + i);
+		i += 4;
+		end[X] = atoi(com + i);		
+	} else if((com[i] < 58 && com[i] > 47) 
+		  && com[i-1] != '[') {
+		start[X] = end[X] = atoi(com + i);
+				
+	}
+
+	for(x=start[X];x<=end[X];x++) {
+		pa_system_ptr->grid[x].color = 0;
+		pa_system_ptr->grid[x].letter = '#';
+		pa_system_ptr->grid[x].used = true;
+	}	
+#endif
 	return 1;
 }
 static int _remove_allocation(char *com, List allocated_partitions)
@@ -669,7 +699,7 @@ void get_command(void)
 
 	
 	while (strcmp(com, "quit")) {
-		print_grid();
+		print_grid(0);
 		wclear(pa_system_ptr->text_win);
 		box(pa_system_ptr->text_win, 0, 0);
 		box(pa_system_ptr->grid_win, 0, 0);

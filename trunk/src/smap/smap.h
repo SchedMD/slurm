@@ -124,11 +124,12 @@ extern int quiet_flag;
 void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
 extern int set_grid_bgl(int *start, int *end, int count, int set);
-extern void print_grid(void);
+extern void print_grid(int dir);
 
 void parse_command_line(int argc, char *argv[]);
 void snprint_time(char *buf, size_t buf_size, time_t time);
 void print_date();
+void clear_window(WINDOW *win);
 
 void get_slurm_part();
 void get_bgl_part();

@@ -36,14 +36,17 @@
 smap_parameters_t params;
 
 int quiet_flag = 0;
-
+int line_cnt = 0;
+int max_display;
+		
 /************
  * Functions *
  ************/
 
-int _get_option();
-void *_resize_handler(int sig);
-int _set_pairs();
+static int _get_option();
+static void *_resize_handler(int sig);
+static int _set_pairs();
+static int _scroll_grid(int dir);
 
 int main(int argc, char *argv[])
 {
@@ -57,17 +60,16 @@ int main(int argc, char *argv[])
 	int starty = 0;
 	int end = 0;
 	int i;
-	//char *name;
-	
+	int rc;
+		
+	//char *name;	
         	
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
-#ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &new_node_ptr, 0);
 
 	if (error_code) {
 #ifdef HAVE_BGL_FILES
-		int rc;
 		rm_BGL_t *bgl;
 		rm_size3D_t bp_size;
 		if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
@@ -94,12 +96,8 @@ int main(int argc, char *argv[])
 		pa_init(NULL);
 	} else {
 		pa_init(new_node_ptr);
-	}
-	
-#else
-	error("This will only run on a BGL system right now.\n");
-	exit(0);
-#endif
+	}	
+
 	if(params.partition) {
 		if(params.partition[0] == 'r')
 			params.partition[0] = 'R';
@@ -132,19 +130,26 @@ int main(int argc, char *argv[])
 	}
 	if(!params.commandline) {
 		_set_pairs();
+		
+		signal(SIGWINCH, (sighandler_t) _resize_handler);
+		initscr();
+		
+#if HAVE_BGL
 		height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 		width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
-			
-		signal(SIGWINCH, (sighandler_t) _resize_handler);
-			
-		initscr();
 		if (COLS < (75 + width) || LINES < height) {
+#else
+		height = 10;
+		width = COLS;
+	        if (COLS < 75 || LINES < height) {
+#endif
+			
 			endwin();
 			error("Screen is too small make sure the screen is at least %dx%d\n"
 			      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 			exit(0);
 		}
-			
+		
 		raw();
 		keypad(stdscr, TRUE);
 		noecho();
@@ -152,26 +157,37 @@ int main(int argc, char *argv[])
 		curs_set(1);
 		nodelay(stdscr, TRUE);
 		start_color();
-			
+		
 		pa_system_ptr->grid_win = newwin(height, width, starty, startx);
-		box(pa_system_ptr->grid_win, 0, 0);
-			
+		max_display = pa_system_ptr->grid_win->_maxy*pa_system_ptr->grid_win->_maxx;
+		//scrollok(pa_system_ptr->grid_win, TRUE);
+		
+#if HAVE_BGL
 		startx = width;
 		COLS -= 2;
 		width = COLS - width;
 		height = LINES;
+#else
+		startx = 0;
+		starty = height;
+		height = LINES - height;
+		
+#endif
+		
 		pa_system_ptr->text_win = newwin(height, width, starty, startx);
-		box(pa_system_ptr->text_win, 0, 0);
-	}
+        }
 	while (!end) {
 		if(!params.commandline) {
 			_get_option();
 		redraw:
 			
-			init_grid(new_node_ptr);
-			wclear(pa_system_ptr->text_win);
-			wclear(pa_system_ptr->grid_win);        
+			line_cnt = 0;
+			clear_window(pa_system_ptr->text_win);
+			clear_window(pa_system_ptr->grid_win);
+			doupdate();
+			move(0,0);
 			
+			init_grid(new_node_ptr);
 			pa_system_ptr->xcord = 1;
 			pa_system_ptr->ycord = 1;
 		}
@@ -192,14 +208,16 @@ int main(int argc, char *argv[])
 		}
 			
 		if(!params.commandline) {
-			print_grid();
-			move(0,0);
+			//wscrl(pa_system_ptr->grid_win,-1);
 			box(pa_system_ptr->text_win, 0, 0);
-			box(pa_system_ptr->grid_win, 0, 0);
 			wnoutrefresh(pa_system_ptr->text_win);
+			
+			print_grid(0);
+			box(pa_system_ptr->grid_win, 0, 0);
 			wnoutrefresh(pa_system_ptr->grid_win);
+			
 			doupdate();
-
+			
 			node_info_ptr = new_node_ptr;
 			if (node_info_ptr) {
 				error_code = slurm_load_node(node_info_ptr->last_update, 
@@ -229,13 +247,16 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
+	scrolling_grid:
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
 
 				sleep(1);
 				if(!params.commandline) {
-					if (_get_option())
+					if ((rc = _get_option()) == 1)
 						goto redraw;
+					else if (rc == 2)
+						goto scrolling_grid;
 					else if (pa_system_ptr->resize_screen) {
 						pa_system_ptr->resize_screen = 0;
 						goto redraw;
@@ -244,20 +265,142 @@ int main(int argc, char *argv[])
 			}
 		} else
 			break;
+		
 	}
 	
 	if(!params.commandline) {
 		nodelay(stdscr, FALSE);
 		getch();
-		if (params.iterate) 
-			endwin();
+		endwin();
 	}
 	pa_fini();
         
 	exit(0);
 }
 
-int _set_pairs()
+static int _get_option()
+{
+	char ch;
+
+	ch = getch();
+	switch (ch) {
+	case 'b':
+		params.display = BGLPART;
+		return 1;
+		break;
+	case 's':
+		params.display = SLURMPART;
+		return 1;
+		break;
+	case 'j':
+		params.display = JOBS;
+		return 1;
+		break;
+	case 'c':
+		params.display = COMMANDS;
+		return 1;
+		break;
+	case 'u':
+	case KEY_UP:
+		line_cnt--;
+		if(line_cnt<0)
+			line_cnt = 0;
+		_scroll_grid(line_cnt*(pa_system_ptr->grid_win->_maxx-1));
+		return 2;
+		break;
+	case 'd':
+	case KEY_DOWN:
+		if((((line_cnt-1)*(pa_system_ptr->grid_win->_maxx-1)) + 
+		    max_display) > DIM_SIZE[X]) {
+			line_cnt--;
+			return 2;
+		}
+		line_cnt++;
+		_scroll_grid(line_cnt*(pa_system_ptr->grid_win->_maxx-1));
+		return 2;
+		break;
+	case 'q':
+	case '\n':
+		endwin();
+		exit(0);
+		break;
+	}
+	return 0;
+}
+
+static void *_resize_handler(int sig)
+{
+	int startx=0, starty=0;
+	pa_system_ptr->ycord = 1;
+	
+	delwin(pa_system_ptr->grid_win);
+	delwin(pa_system_ptr->text_win);
+	
+	endwin();
+	initscr();
+
+#if HAVE_BGL
+	int height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
+	int width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
+	if (COLS < (75 + width) || LINES < height) {
+#else
+	int height = 10;
+	int width = COLS;
+	if (COLS < 75 || LINES < height) {
+#endif
+
+		endwin();
+		error("Screen is too small make sure the screen is at least %dx%d\n"
+		      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
+		exit(0);
+	}
+	int tempwidth = width;
+        
+	pa_system_ptr->grid_win = newwin(height, width, starty, startx);
+	max_display = pa_system_ptr->grid_win->_maxy*
+		pa_system_ptr->grid_win->_maxx;
+		
+#if HAVE_BGL
+	startx = width;
+	COLS -= 2;
+	width = COLS - width;
+	height = LINES;
+#else
+	startx = 0;
+	starty = height;
+	height = LINES - height;
+	
+#endif
+	
+	pa_system_ptr->text_win = newwin(height, width, starty, startx);
+	
+	print_date();
+	switch (params.display) {
+	case JOBS:
+		get_job();
+		break;
+	case COMMANDS:
+		get_command();
+		break;
+	case BGLPART:
+		get_bgl_part();
+		break;
+	default:
+		get_slurm_part();
+		break;
+	}
+
+	print_grid(0);
+	box(pa_system_ptr->text_win, 0, 0);
+	box(pa_system_ptr->grid_win, 0, 0);
+	wnoutrefresh(pa_system_ptr->text_win);
+	wnoutrefresh(pa_system_ptr->grid_win);
+	doupdate();
+	pa_system_ptr->resize_screen = 1;
+	return NULL;
+}
+
+static int _set_pairs()
 {
 	int x,y,z;
 
@@ -288,83 +431,10 @@ int _set_pairs()
 	return 1;
 }
 
-int _get_option()
+static int _scroll_grid(int dir)
 {
-	char ch;
-
-	ch = getch();
-	switch (ch) {
-	case 'b':
-		params.display = BGLPART;
-		return 1;
-		break;
-	case 's':
-		params.display = SLURMPART;
-		return 1;
-		break;
-	case 'j':
-		params.display = JOBS;
-		return 1;
-		break;
-	case 'c':
-		params.display = COMMANDS;
-		return 1;
-		break;
-	case 'q':
-	case '\n':
-		endwin();
-		exit(0);
-		break;
-	}
-	return 0;
-}
-
-void *_resize_handler(int sig)
-{
-        int height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
-        int width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
-        int tempwidth = width;
-        pa_system_ptr->ycord = 1;
-	
-	delwin(pa_system_ptr->grid_win);
-	delwin(pa_system_ptr->text_win);
-	
-	endwin();
-	initscr();
-	if (COLS < (75 + width) || LINES < height) {
-		endwin();
-		error("Screen is too small make sure the screen is at least %dx%d\n"
-		      "Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
-		exit(0);
-	}
-	
-	pa_system_ptr->grid_win = newwin(height, width, 0, 0);
-
-	width = COLS - width;
-	pa_system_ptr->text_win = newwin(LINES, width, 0, tempwidth);
-
-	print_date();
-	switch (params.display) {
-	case JOBS:
-		get_job();
-		break;
-	case COMMANDS:
-		get_command();
-		break;
-	case BGLPART:
-		get_bgl_part();
-		break;
-	default:
-		get_slurm_part();
-		break;
-	}
-
-	print_grid();
-	box(pa_system_ptr->text_win, 0, 0);
-	box(pa_system_ptr->grid_win, 0, 0);
-	wnoutrefresh(pa_system_ptr->text_win);
+	print_grid(dir);
 	wnoutrefresh(pa_system_ptr->grid_win);
 	doupdate();
-	pa_system_ptr->resize_screen = 1;
-	return NULL;
+	return 1;
 }
