@@ -22,7 +22,7 @@
 #include <sys/vfs.h>
 #include <unistd.h>
 
-#include "slurm.h"
+#include <src/slurmctld/slurmctld.h>
 
 int get_procs(uint32_t *procs);
 int get_mach_name(char *node_name);
