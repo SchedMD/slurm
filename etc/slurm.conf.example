@@ -127,6 +127,21 @@
 # SlurmctldPidFile=/var/slurm/slurmctld.pid  # default: "/var/run/slurmctld.pid"
 # SlurmdPidFile=/var/slurm/slurmctld.pid     # default: "/var/run/slurmd.pid"
 
+#
+# o Define the authentication method for communicating between SLURM
+#   components
+#
+# "auth/none" : no authentication, the default
+# "auth/authd" : Brett Chun's authd
+#
+# AuthType=auth/none
+
+#
+# o Define the places to look for SLURM plugins.  This is a
+#   colon-separated list of directories, just like the PATH
+#   environment variable.
+#
+# PluginDir=/usr/local/lib # default
 
 #
 # o Define some timeout values for the slurm controller and backup

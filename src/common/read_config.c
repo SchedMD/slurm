@@ -128,6 +128,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->slurmd_spooldir);
 	ctl_conf_ptr->slurmd_timeout		= (uint16_t) NO_VAL;
 	xfree (ctl_conf_ptr->state_save_location);
+	xfree (ctl_conf_ptr->plugindir);
+	xfree (ctl_conf_ptr->authtype );
 	xfree (ctl_conf_ptr->tmp_fs);
 	return;
 }
@@ -163,6 +165,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *slurmctld_logfile = NULL, *slurmctld_port = NULL;
 	char *slurmd_logfile = NULL, *slurmd_port = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
+	char *plugindir = NULL, *authtype = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
 	long first_job_id = -1;
@@ -198,7 +201,9 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmdPort=", 's', &slurmd_port,
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
-		"StateSaveLocation=", 's', &state_save_location, 
+		"StateSaveLocation=", 's', &state_save_location,
+		"PluginDir=", 's', &plugindir,
+		"AuthType=", 's', &authtype,
 		"TmpFS=", 's', &tmp_fs,
 		"END");
 
@@ -415,6 +420,22 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 			xfree (ctl_conf_ptr->state_save_location);
 		}
 		ctl_conf_ptr->state_save_location = state_save_location;
+	}
+
+	if ( plugindir ) {
+		if ( ctl_conf_ptr->plugindir ) {
+			error( MULTIPLE_VALUE_MSG, "PluginDir" );
+			xfree( ctl_conf_ptr->plugindir );
+		}
+		ctl_conf_ptr->plugindir = plugindir;
+	}
+	
+	if ( authtype ) {
+		if ( ctl_conf_ptr->authtype ) {
+			error( MULTIPLE_VALUE_MSG, "AuthType" );
+			xfree( ctl_conf_ptr->authtype );
+		}
+		ctl_conf_ptr->authtype = authtype;
 	}
 
 	if ( tmp_fs ) {

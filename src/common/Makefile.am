@@ -11,12 +11,6 @@ else
 elan_sources = 
 endif
 
-if WITH_AUTHD
-auth_sources = slurm_auth_authd.c
-else
-auth_sources = slurm_auth_authd.c
-endif
-
 noinst_LTLIBRARIES = 	\
 	libcommon.la 	\
 	libdaemonize.la \
@@ -40,10 +34,11 @@ libcommon_la_SOURCES = 			\
 	pack.c pack.h			\
 	parse_spec.c parse_spec.h	\
 	plugin.c plugin.h		\
+	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
 	slurm_errno.c			\
 	slurm_protocol_api.c		\
- 	slurm_protocol_api.h		\
+	slurm_protocol_api.h		\
 	slurm_protocol_pack.c		\
 	slurm_protocol_pack.h		\
 	slurm_protocol_util.c		\
@@ -55,10 +50,9 @@ libcommon_la_SOURCES = 			\
 	slurm_protocol_defs.c		\
 	slurm_protocol_defs.h		\
 	util-net.c util-net.h		\
-	slurm_auth.h			\
+	slurm_auth.c slurm_auth.h	\
 	macros.h			\
-	$(elan_sources) \
-        $(auth_sources)
+	$(elan_sources) 
 
 libdaemonize_la_SOURCES =  \
 	daemonize.c        \
@@ -80,6 +74,6 @@ libeio_la_SOURCES = 	   \
 EXTRA_libcommon_la_SOURCES = \
 	qsw.c qsw.h
 
-libcommon_la_LIBADD   = $(AUTHD_LIBS) $(SSL_LIBS)
+libcommon_la_LIBADD   = $(SSL_LIBS)
 libcred_la_LIBADD     = $(SSL_LIBS) 
 libcred_la_LDFLAGS    = $(SSL_LDFLAGS)	

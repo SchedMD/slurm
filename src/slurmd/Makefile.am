@@ -22,7 +22,7 @@ slurmd_LDADD = 					   \
 	$(top_builddir)/src/common/libeio.la       \
 	$(SSL_LIBS) 
 
-	
+
 common_sources = 	        \
 	slurmd.c slurmd.h       \
 	req.c req.h		\
@@ -41,6 +41,8 @@ common_sources = 	        \
 	interconnect.h
 
 slurmd_SOURCES = $(common_sources) $(interconnect_sources)
+
+slurmd_LDFLAGS = -export-dynamic
 
 EXTRA_slurmd_SOURCES = no_interconnect.c elan_interconnect.c
 

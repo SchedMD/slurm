@@ -24,10 +24,13 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#if HAVE_CONFIG_H
+#  include "config.h"
+#endif
+
 #include <sys/types.h>
 #include <stdio.h>
-#include <assert.h>
-#include <dlfcn.h>
+#include <dlfcn.h>	/* don't know if there's an autoconf for this. */
 
 #include "src/common/plugin.h"
 
@@ -38,52 +41,69 @@ plugin_load_from_file( const char *fq_path )
 	plugin_handle_t plug;
 
 	/* Try to open the shared object. */
-	plug = dlopen( fq_path, RTLD_LAZY );
+	plug = dlopen( fq_path, RTLD_NOW );
 	if ( plug == NULL ) {
-		return NULL;
+		return PLUGIN_INVALID_HANDLE;
 	}
 
 	/* Now see if our required symbols are defined. */
 	if ( ( dlsym( plug, PLUGIN_NAME ) == NULL ) ||
 	     ( dlsym( plug, PLUGIN_TYPE ) == NULL ) ||
 	     ( dlsym( plug, PLUGIN_VERSION ) == NULL ) ) {
-		return NULL;
+		return PLUGIN_INVALID_HANDLE;
 	}
 
 	return plug;
 }
 
 
+/*
+ * Must test plugin validity before doing dlopen() and dlsym()
+ * operations because some implementations of these functions
+ * crash if the library handle is not valid.
+ */
+
 void
 plugin_unload( plugin_handle_t plug )
 {
-	assert( plug );
-	(void) dlclose( plug );
+	if ( plug != PLUGIN_INVALID_HANDLE ) (void) dlclose( plug );
 }
 
 
 void *
 plugin_get_sym( plugin_handle_t plug, const char *name )
 {
-	return dlsym( plug, name );
+	if ( plug != PLUGIN_INVALID_HANDLE )
+		return dlsym( plug, name );
+	else
+		return NULL;
 }
 
 const char *
 plugin_get_name( plugin_handle_t plug )
 {
-	return (const char *) dlsym( plug, PLUGIN_NAME );
+	if ( plug != PLUGIN_INVALID_HANDLE )
+		return (const char *) dlsym( plug, PLUGIN_NAME );
+	else
+		return NULL;
 }
 
 const char *
 plugin_get_type( plugin_handle_t plug )
 {
-	return (const char *) dlsym( plug, PLUGIN_TYPE );
+	if ( plug != PLUGIN_INVALID_HANDLE )
+		return (const char *) dlsym( plug, PLUGIN_TYPE );
+	else
+		return NULL;
 }
 
 uint32_t
 plugin_get_version( plugin_handle_t plug )
 {
-	uint32_t *ptr = (uint32_t *) dlsym( plug, PLUGIN_VERSION );
+	uint32_t *ptr;
+
+	if ( plug == PLUGIN_INVALID_HANDLE ) return 0;	
+	ptr = (uint32_t *) dlsym( plug, PLUGIN_VERSION );
 	return ptr ? *ptr : 0;
 }
 

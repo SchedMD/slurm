@@ -257,6 +257,7 @@ slurm_fd slurm_open_controller_conn()
 			debug
 			    ("Open connection to secondary controller failed: %m");
 	}
+
 	return connection_fd;
 }
 
@@ -332,7 +333,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	char *buftemp;
 	header_t header;
 	int rc;
-	slurm_auth_t creds;
+	void *auth_cred;
 	Buf buffer;
 
 	buftemp = xmalloc(SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE);
@@ -343,6 +344,9 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		xfree(buftemp);
 		return rc;
 	}
+
+	auth_cred = g_slurm_auth_alloc();
+	
 #if	_DEBUG
 	 _print_data (buftemp,rc);
 #endif
@@ -355,15 +359,15 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 	}
 
-	/* unpack cred */
-	if (slurm_auth_unpack_credentials(&creds, buffer)) {
+	/* unpack authentication cred */
+	if (g_slurm_auth_unpack( auth_cred, buffer)) {
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
 
 	/* verify credentials */
-	if ((rc = slurm_auth_verify_credentials(creds)) != SLURM_SUCCESS) {
-		slurm_auth_free_credentials(creds);
+	if ((rc = g_slurm_auth_verify(auth_cred)) != SLURM_SUCCESS) {
+		g_slurm_auth_free(auth_cred);
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
@@ -372,14 +376,12 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	msg->msg_type = header.msg_type;
 	if ((header.body_length > remaining_buf(buffer)) ||
 	    (unpack_msg(msg, buffer) != SLURM_SUCCESS)) {
-		slurm_auth_free_credentials(creds);
+		g_slurm_auth_free(auth_cred);
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
 
-	msg->cred = (void *) creds;
-	msg->cred_type = header.cred_type;
-	msg->cred_size = header.cred_length;
+	msg->cred = (void *) auth_cred;
 
 	free_buf(buffer);
 	return SLURM_SUCCESS;
@@ -424,19 +426,16 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 {
 	header_t header;
 	int rc;
-	unsigned int cred_len, msg_len, tmp_len;
+	unsigned int msg_len, tmp_len;
 	Buf buffer;
-	slurm_auth_t creds = slurm_auth_alloc_credentials();
-
-	if (creds == NULL)
-		error("unable to alloc credentials");
+	void *auth_cred;
 
 	/* initialize header */
+	auth_cred = g_slurm_auth_alloc();
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
-	rc = slurm_auth_activate_credentials(creds, CREDENTIAL_TTL_SEC);
+	rc = g_slurm_auth_activate(auth_cred, CREDENTIAL_TTL_SEC);
 	if (rc != SLURM_SUCCESS)	/* Try once more */
-		rc = slurm_auth_activate_credentials(creds, 
-						     CREDENTIAL_TTL_SEC);
+		rc = g_slurm_auth_activate(auth_cred, CREDENTIAL_TTL_SEC);
 	if (rc != SLURM_SUCCESS) {
 		error
 		    ("slurm_send_node_msg: sending msg with unsigned credential, rc=%d)",
@@ -448,10 +447,8 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	pack_header(&header, buffer);
 
 	/* pack creds */
-	tmp_len = get_buf_offset(buffer);
-	slurm_auth_pack_credentials(creds, buffer);
-	slurm_auth_free_credentials(creds);
-	cred_len = get_buf_offset(buffer) - tmp_len;
+	g_slurm_auth_pack(auth_cred, buffer);
+	g_slurm_auth_free(auth_cred);
 
 	/* pack msg */
 	tmp_len = get_buf_offset(buffer);
@@ -459,7 +456,8 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	msg_len = get_buf_offset(buffer) - tmp_len;
 
 	/* update header with correct cred and msg lengths */
-	update_header(&header, cred_len, msg_len);
+	update_header(&header, msg_len);
+	
 	/* repack updated header */
 	tmp_len = get_buf_offset(buffer);
 	set_buf_offset(buffer, 0);
@@ -763,8 +761,9 @@ int slurm_send_recv_controller_msg(slurm_msg_t * request_msg,
 	int error_code = 0;
 
 	/* init message connection for communication with controller */
-	if ((sockfd = slurm_open_controller_conn()) == SLURM_SOCKET_ERROR)
+	if ((sockfd = slurm_open_controller_conn()) == SLURM_SOCKET_ERROR) {
 		return SLURM_SOCKET_ERROR;
+	}
 
 	/* send request message */
 	if ((rc =
@@ -913,6 +912,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 /* Slurm message functions */
 void slurm_free_msg(slurm_msg_t * msg)
 {
-	slurm_auth_free_credentials((slurm_auth_t) msg->cred);
+	g_slurm_auth_free(msg->cred);
 	xfree(msg);
 }

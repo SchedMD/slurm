@@ -426,7 +426,7 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 static void
 _handle_msg(job_t *job, slurm_msg_t *msg)
 {
-	uid_t req_uid = slurm_auth_uid(msg->cred);
+	uid_t req_uid = g_slurm_auth_get_uid(msg->cred);
 	uid_t uid     = getuid();
 
 	if ((req_uid != slurm_uid) && (req_uid != 0) && (req_uid != uid)) {

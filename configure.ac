@@ -80,7 +80,7 @@ dnl Checks for header files.
 dnl
 AC_CHECK_HEADERS(popt.h mcheck.h values.h socket.h sys/socket.h  \
                  stdbool.h sys/ipc.h sys/shm.h sys/sem.h errno.h \
-                 stdlib.h \
+                 stdlib.h dirent.h \
 		 )
 AC_HEADER_SYS_WAIT
 AC_HEADER_TIME
@@ -484,6 +484,8 @@ AC_CONFIG_FILES([Makefile
 		 src/scancel/Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
+		 src/plugins/Makefile
+		 src/plugins/auth/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile

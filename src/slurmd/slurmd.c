@@ -168,8 +168,10 @@ main (int argc, char *argv[])
 
 	info("%s started on %T", xbasename(argv[0]));
 
-	if (_slurmd_init() < 0)
+	if (_slurmd_init() < 0) {
+		error( "slurmd initialization failed" );
 		exit(1);
+	}
 
         if (send_registration_msg(SLURM_SUCCESS) < 0) 
 		error("Unable to register with slurm controller");

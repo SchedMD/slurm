@@ -27,6 +27,8 @@
 #ifndef __SLURM_AUTHENTICATION_H__
 #define __SLURM_AUTHENTICATION_H__
 
+#include <stdio.h>
+
 #if HAVE_CONFIG_H
 #  include "config.h"
 #  if HAVE_INTTYPES_H
@@ -40,58 +42,97 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
+#include "src/common/plugrack.h"
 #include "src/common/pack.h"
 
-
-/* slurm_auth_credentials_t is an opaque type whose definition is to
- * be completed in the implementation specific module
+/*
+ * This is really two APIs.  We provide an authentication context object
+ * which can be bound to any authentication type available in the system
+ * and several of which may happily exist together.  The API thunks with
+ * a "c_" prefix operate on these.  The typical order of calls is:
+ *
+ * 	slurm_auth_context_t foo = slurm_auth_context_create( my type );
+ *     	void *bar = c_slurm_auth_alloc( foo );
+ *	c_slurm_auth_activate( foo, bar, 1 );
+ *	c_slurm_auth_verify( foo, bar );
+ *	c_slurm_auth_free( foo, bar );
+ *	slurm_auth_context_destroy( foo );
+ *
+ * There is also a parallel API operating on a global authentication
+ * context, one per application.  The API thunks with the "g_" prefix
+ * operate on that global instance.  It is initialized implicitly if
+ * necessary when any API thunk is called, or explicitly with
+ *
+ *	slurm_auth_init();
+ *
+ * The authentication type and other parameters are taken from the
+ * system's global configuration.  A typical order of calls is:
+ *
+ *	void *bar = g_slurm_auth_alloc();
+ *	g_slurm_auth_activate( bar, 1 );
+ *	g_slurm_auth_verify( bar );
+ *	g_slurm_auth_free( bar );
+ *
  */
-typedef struct slurm_auth_credentials * slurm_auth_t;
 
 /*
- * Allocation a new set of credentials from the free store.  Returns
- * NULL if no allocation is possible.
+ * SLURM authentication context opaque type.
  */
-slurm_auth_t slurm_auth_alloc_credentials( void );
+typedef struct slurm_auth_context * slurm_auth_context_t;
 
 /*
- * Deallocate credentials allocated with slurm_auth_alloc_credentials().
+ * Create an authentication context.
+ *
+ * Returns NULL on failure.
  */
-void slurm_auth_free_credentials( slurm_auth_t cred );
+slurm_auth_context_t slurm_auth_context_create( const char *auth_type );
 
 /*
- * Populate the credentials and validate them for use.
- * cred - The credential to activate.
- * seconds_to_live - the number of seconds after validation that
- *	the credential expires
- * Returns SLURM_ERROR if the credentials could not be populated,
- * validated, or if the authentication daemon is not running.
+ * Destroy an authentication context.  Any jumptables returned by
+ * calls to slurm_auth_get_ops() for this context will silently become
+ * invalid, and calls to their functions may result in core dumps and
+ * other nasty behavior.
+ *
+ * Returns a SLURM errno.
  */
-int slurm_auth_activate_credentials( slurm_auth_t cred,
-				     time_t seconds_to_live );
+int slurm_auth_context_destroy( slurm_auth_context_t ctxt );
 
 /*
- * Verify the credentials.  Returns SLURM_ERROR if the credentials are
- * invalid or has expired.
+ * This is what the UID and GID accessors return on error.  The value
+ * is currently RedHat Linux's ID for the user "nobody".
  */
-int slurm_auth_verify_credentials( slurm_auth_t cred );
+#define SLURM_AUTH_NOBODY		99
 
 /*
- * Extract user and group identification from the credentials.
- * They are trustworthy only if the credentials have first been
- * verified.
+ * Static bindings for an arbitrary authentication context.  We avoid
+ * exposing the API directly to avoid object lifetime issues.
  */
-uid_t slurm_auth_uid( slurm_auth_t cred );
-gid_t slurm_auth_gid( slurm_auth_t cred );
+void	*c_slurm_auth_alloc( slurm_auth_context_t c );
+void	c_slurm_auth_free( slurm_auth_context_t c, void *cred );
+int	c_slurm_auth_activate( slurm_auth_context_t c, void *cred, int secs );
+int	c_slurm_auth_verify( slurm_auth_context_t c, void *cred );
+uid_t	c_slurm_auth_get_uid( slurm_auth_context_t c, void *cred );
+gid_t	c_slurm_auth_get_gid( slurm_auth_context_t c, void *cred );
+void	c_slurm_auth_pack( slurm_auth_context_t c, void *cred, Buf buf );
+int	c_slurm_auth_unpack( slurm_auth_context_t c, void *cred, Buf buf );
+void	c_slurm_auth_print( slurm_auth_context_t c, void *cred, FILE *fp );
 
 /*
- * Methods for packing and unpacking the credentials for transport.
+ * Prepare the global context.
  */
-void slurm_auth_pack_credentials( slurm_auth_t cred, Buf buffer );
-int  slurm_auth_unpack_credentials( slurm_auth_t *cred, Buf buffer );
+int slurm_auth_init( void );
 
-#if DEBUG
-void slurm_auth_print_credentials( slurm_auth_t *cred );
-#endif
+/*
+ * Static bindings for the global authentication context.
+ */
+void	*g_slurm_auth_alloc( void );
+void	g_slurm_auth_free( void *cred );
+int	g_slurm_auth_activate( void *cred, int secs );
+int	g_slurm_auth_verify( void *cred );
+uid_t	g_slurm_auth_get_uid( void *cred );
+gid_t	g_slurm_auth_get_gid( void *cred );
+void	g_slurm_auth_pack( void *cred, Buf buf );
+int	g_slurm_auth_unpack( void *cred, Buf buf );
+void	g_slurm_auth_print( void *cred, FILE *fp );
 
 #endif /*__SLURM_AUTHENTICATION_H__*/
