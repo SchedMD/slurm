@@ -82,6 +82,9 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
+		case RESPONSE_SUBMIT_BATCH_JOB:
+			pack_submit_response_msg ( ( submit_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
+			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
@@ -145,7 +148,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_return_code ( ( return_code_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break;
 		default :
-			debug ( "No pack method for msg type %i",  msg -> msg_type ) ;
+			error ( "No pack method for msg type %i",  msg -> msg_type ) ;
 			return EINVAL ;
 			break;
 		
@@ -196,12 +199,14 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_RECONFIGURE :
 			/* Message contains no body/information */
 			break ;
+		case RESPONSE_SUBMIT_BATCH_JOB :
+			unpack_submit_response_msg ( ( submit_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
+			break ;
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
 			unpack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
-
 		case REQUEST_UPDATE_NODE :
 			unpack_update_node_msg ( ( update_node_msg_t ** ) & ( msg-> data ) , ( void ** ) buffer , buf_len ) ;
 
@@ -351,6 +356,24 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 	return 0 ;
 }
 
+void pack_submit_response_msg ( submit_response_msg_t * msg, void ** buffer , int * length )
+{
+	pack32 ( msg->job_id , ( void ** ) buffer , length ) ;
+}
+
+int unpack_submit_response_msg ( submit_response_msg_t ** msg , void ** buffer , int * length )
+{
+	submit_response_msg_t * tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( submit_response_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	/* load the data values */
+	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
+	*msg = tmp_ptr ;
+	return 0 ;
+}
 void pack_node_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
 {	
 	assert ( msg != NULL );

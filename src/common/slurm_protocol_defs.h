@@ -215,6 +215,11 @@ typedef struct resource_allocation_response_msg
 	int32_t* cpu_count_reps;
 } resource_allocation_response_msg_t ;
 
+typedef struct submit_response_msg
+{
+	uint32_t job_id;
+} submit_response_msg_t ;
+
 typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
 				 * default=0 */

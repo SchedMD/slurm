@@ -250,11 +250,10 @@ main (int argc, char *argv[])
  * input: bitmap - bitmap pointer
  *        node_list - place to put node list
  * output: node_list - set to node list or NULL on error 
- *         returns 0 if no error, errno otherwise
  * globals: node_record_table_ptr - pointer to node table
  * NOTE: the caller must xfree the memory at node_list when no longer required
  */
-int 
+void  
 bitmap2node_name (bitstr_t *bitmap, char **node_list) 
 {
 	int node_list_size, i;
@@ -344,7 +343,6 @@ bitmap2node_name (bitstr_t *bitmap, char **node_list)
 		strcat (node_list[0], last_suffix);
 	}
 	xrealloc (node_list[0], strlen (node_list[0]) + 1);
-	return 0;
 }
 
 

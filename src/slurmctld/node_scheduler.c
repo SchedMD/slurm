@@ -698,6 +698,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	struct part_record *part_ptr;
 	int tmp_feature, check_node_config;
 
+	error_code = SLURM_SUCCESS;
 	req_bitmap = scratch_bitmap = NULL;
 	config_record_iterator = (ListIterator) NULL;
 	node_set_ptr = NULL;
@@ -849,11 +850,7 @@ select_nodes (struct job_record *job_ptr, int test_only)
 	}	
 
 	/* assign the nodes and stage_in the job */
-	error_code = bitmap2node_name (req_bitmap, &(job_ptr->nodes));
-	if (error_code) {
-		error ("bitmap2node_name error %d", error_code);
-		goto cleanup;
-	}
+	bitmap2node_name (req_bitmap, &(job_ptr->nodes));
 	build_node_list (req_bitmap, 
 		&job_ptr->details->node_list, 
 		&job_ptr->details->total_procs);

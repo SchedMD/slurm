@@ -61,6 +61,9 @@ int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer
 void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , int * length );
 int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , int * length );
 
+void pack_submit_response_msg ( submit_response_msg_t * msg, void ** buffer , int * length );
+int unpack_submit_response_msg ( submit_response_msg_t ** msg , void ** buffer , int * length );
+
 void pack_update_node_msg ( update_node_msg_t * msg, void ** buffer , uint32_t * length );
 int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_t * length );
 
