@@ -1,9 +1,10 @@
 /*****************************************************************************\
  *  complete.c - note the completion a slurm job or job step
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Moe Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -66,70 +67,26 @@ slurm_complete_job_step ( uint32_t job_id, uint32_t step_id,
                           uint32_t job_return_code, 
                           uint32_t system_return_code )
 {
-	int msg_size ;
-	int rc ;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	complete_job_step_msg_t complete_job_step_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+	int rc;
+	slurm_msg_t req_msg;
+	complete_job_step_msg_t req;
 	char host[128];
 
-	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* send request message */
-	complete_job_step_msg . job_id		= job_id ;
-	complete_job_step_msg . job_step_id	= step_id ;
-	complete_job_step_msg . job_rc		= job_return_code ;
-	complete_job_step_msg . slurm_rc	= system_return_code ;
 	(void) getnodename (host, sizeof(host)) ;
-	complete_job_step_msg . node_name	= host;
-	request_msg . msg_type	= REQUEST_COMPLETE_JOB_STEP ;
-	request_msg . data	= &complete_job_step_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
 
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	req.job_id      = job_id;
+	req.job_step_id	= step_id;
+	req.job_rc      = job_return_code;
+	req.slurm_rc    = system_return_code;
+	req.node_name   = host;
 
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
+	req_msg.msg_type= REQUEST_COMPLETE_JOB_STEP;
+	req_msg.data	= &req;
 
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				( return_code_msg_t * ) response_msg . data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
+	if (slurm_send_recv_controller_rc_msg(&req_msg, &rc) < 0)
+	       return SLURM_ERROR;	
+	
+	if (rc) slurm_seterrno_ret(rc);
 
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_PROTOCOL_SUCCESS;
 }

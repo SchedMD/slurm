@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  job_info.c - get/print the job state information of slurm
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -47,21 +48,18 @@
  * IN one_liner - print as a single line if true
  */
 void 
-slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr,
-			   int one_liner )
+slurm_print_job_info_msg ( FILE* out, job_info_msg_t *jinfo, int one_liner )
 {
 	int i;
-	job_info_t * job_ptr = job_info_msg_ptr -> job_array ;
+	job_info_t *job_ptr = jinfo->job_array;
 	char time_str[16];
 
-	make_time_str ((time_t *)&job_info_msg_ptr->last_update, time_str);
+	make_time_str ((time_t *)&jinfo->last_update, time_str);
 	fprintf( out, "Job data as of %s, record count %d\n",
-		time_str, job_info_msg_ptr->record_count);
+		 time_str, jinfo->record_count);
 
-	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
-	{
-		slurm_print_job_info ( out, & job_ptr[i], one_liner ) ;
-	}
+	for (i = 0; i < jinfo->record_count; i++) 
+		slurm_print_job_info(out, &job_ptr[i], one_liner);
 }
 
 /*
@@ -207,74 +205,38 @@ make_time_str (time_t *time, char *string)
  * NOTE: free the response using slurm_free_job_info_msg
  */
 int
-slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
+slurm_load_jobs (time_t update_time, job_info_msg_t **resp)
 {
-	int msg_size ;
-	int rc ;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	job_info_request_msg_t last_time_msg ;
-	return_code_msg_t * slurm_rc_msg ;
+	int rc;
+	slurm_msg_t resp_msg;
+	slurm_msg_t req_msg;
+	job_info_request_msg_t req;
 
-	/* init message connection for communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	req.last_update  = update_time;
+	req_msg.msg_type = REQUEST_JOB_INFO;
+	req_msg.data     = &req;
 
-	/* send request message */
-	last_time_msg . last_update = update_time ;
-	request_msg . msg_type = REQUEST_JOB_INFO ;
-	request_msg . data = &last_time_msg ;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
 
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_JOB_INFO:
-			*job_info_msg_pptr = 
-				(job_info_msg_t *) response_msg.data ;
-			return SLURM_PROTOCOL_SUCCESS ;
-			break ;
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				(return_code_msg_t *) response_msg.data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_INFO:
+		*resp = (job_info_msg_t *)resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);	
+		if (rc) 
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
 	}
 
 	return SLURM_PROTOCOL_SUCCESS ;
 }
+
 
 /*
  * slurm_pid2jobid - issue RPC to get the slurm job_id given a process_id 
@@ -284,78 +246,42 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
  * RET 0 or a slurm error code
  */
 int
-slurm_pid2jobid (pid_t job_pid, uint32_t *job_id_ptr)
+slurm_pid2jobid (pid_t job_pid, uint32_t *jobid)
 {
-	int msg_size ;
-	int rc ;
-	slurm_addr slurm_address;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
-	job_id_request_msg_t pid2jobid_msg ;
-	return_code_msg_t * slurm_rc_msg ;
-	job_id_response_msg_t * slurm_job_id_msg ;
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	job_id_request_msg_t req;
 
-	/* init message connection for communication with local slurmd */
-	slurm_set_addr(&slurm_address, (uint16_t)slurm_get_slurmd_port(), 
+	/*
+	 *  Set request message address to slurmd on localhost
+	 */
+	slurm_set_addr(&req_msg.address, (uint16_t)slurm_get_slurmd_port(), 
 		       "localhost");
-	if ( ( sockfd = slurm_open_msg_conn ( &slurm_address ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
+
+	req.job_pid      = job_pid;
+	req_msg.msg_type = REQUEST_JOB_ID;
+	req_msg.data     = &req;
+
+	if (slurm_send_recv_node_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_ID:
+		*jobid = ((job_id_response_msg_t *) resp_msg.data)->job_id;
+		slurm_free_job_id_response_msg(resp_msg.data);
+		break;
+	case RESPONSE_SLURM_RC:
+	        rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);	
+		if (rc) 
+			slurm_seterrno_ret(rc);
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
 	}
 
-	/* send request message */
-	pid2jobid_msg . job_pid = job_pid ;
-	request_msg . msg_type = REQUEST_JOB_ID ;
-	request_msg . data = &pid2jobid_msg ;
-	if ( ( rc = slurm_send_node_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_JOB_ID:
-			slurm_job_id_msg = 
-				(job_id_response_msg_t *) response_msg.data ;
-			*job_id_ptr = slurm_job_id_msg -> job_id;
-			slurm_free_job_id_response_msg ( slurm_job_id_msg );
-			return SLURM_PROTOCOL_SUCCESS ;
-			break ;
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				(return_code_msg_t *) response_msg.data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_PROTOCOL_SUCCESS;
 }
 

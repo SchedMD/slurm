@@ -1,10 +1,11 @@
 /*****************************************************************************\
  *  job_step_info.c - get/print the job step state information of slurm
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>, Joey Ekstrom <ekstrom1@llnl.gov> 
- *	et. al.
+ *  Written by Moe Jette <jette1@llnl.gov>, 
+ *             Joey Ekstrom <ekstrom1@llnl.gov>,  et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -108,76 +109,38 @@ slurm_print_job_step_info ( FILE* out, job_step_info_t * job_step_ptr,
  */
 int
 slurm_get_job_steps (time_t update_time, uint32_t job_id, uint32_t step_id, 
-		job_step_info_response_msg_t **step_response_pptr)
+		     job_step_info_response_msg_t **resp)
 {
-	int msg_size ;
-	int rc ;
-	slurm_fd sockfd ;
-	slurm_msg_t request_msg ;
-	slurm_msg_t response_msg ;
+	int rc;
+	slurm_msg_t req_msg;
+	slurm_msg_t resp_msg;
+	job_step_info_request_msg_t req;
 
-	job_step_info_request_msg_t step_request;
-	return_code_msg_t * slurm_rc_msg ;
+	req.last_update  = update_time;
+	req.job_id       = job_id;
+	req.step_id      = step_id;
+	req_msg.msg_type = REQUEST_JOB_STEP_INFO;
+	req_msg.data     = &req;
 
-	/* init message connection for message communication with controller */
-	if ( ( sockfd = slurm_open_controller_conn ( ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
-		return SLURM_SOCKET_ERROR ;
+	if (slurm_send_recv_controller_msg(&req_msg, &resp_msg) < 0)
+		return SLURM_ERROR;
+
+	switch (resp_msg.msg_type) {
+	case RESPONSE_JOB_STEP_INFO:
+		*resp = (job_step_info_response_msg_t *) resp_msg.data;
+		break;
+	case RESPONSE_SLURM_RC:
+		rc = ((return_code_msg_t *) resp_msg.data)->return_code;
+		slurm_free_return_code_msg(resp_msg.data);	
+		if (rc) 
+			slurm_seterrno_ret(rc);
+		*resp = NULL;
+		break;
+	default:
+		slurm_seterrno_ret(SLURM_UNEXPECTED_MSG_ERROR);
+		break;
 	}
 
-	/* send request message */
-	step_request . last_update = update_time ;
-	step_request . job_id = job_id ;
-	step_request . step_id = step_id ;
-	request_msg . msg_type = REQUEST_JOB_STEP_INFO ;
-	request_msg . data = &step_request;
-	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* receive message */
-	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-
-	/* shutdown message connection */
-	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) 
-			== SLURM_SOCKET_ERROR ) {
-		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
-		return SLURM_SOCKET_ERROR ;
-	}
-	if ( msg_size )
-		return msg_size;
-
-	switch ( response_msg . msg_type )
-	{
-		case RESPONSE_JOB_STEP_INFO:
-			*step_response_pptr = 
-				(job_step_info_response_msg_t *) 
-				response_msg.data ;
-			return SLURM_PROTOCOL_SUCCESS ;
-			break ;
-		case RESPONSE_SLURM_RC:
-			slurm_rc_msg = 
-				( return_code_msg_t * ) response_msg.data ;
-			rc = slurm_rc_msg->return_code;
-			slurm_free_return_code_msg ( slurm_rc_msg );	
-			if (rc) {
-				slurm_seterrno ( rc );
-				return SLURM_PROTOCOL_ERROR;
-			}
-			break ;
-		default:
-			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
-			return SLURM_PROTOCOL_ERROR;
-			break ;
-	}
-
-	return SLURM_PROTOCOL_SUCCESS ;
+	return SLURM_PROTOCOL_SUCCESS;
 }
 
