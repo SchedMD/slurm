@@ -167,6 +167,8 @@ int main(int ac, char **av)
 		if (_verbose)
 			_print_job_information(resp);
 		job = job_create_allocation(resp); 
+		if (msg_thr_create(job) < 0)
+			job_fatal(job, "Unable to create msg thread");
 		_run_job_script(job);
 		job_destroy(job, 0);
 
