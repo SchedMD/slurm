@@ -41,31 +41,30 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
-	job_desc_msg->contiguous =
-			(uint16_t) SLURM_JOB_DESC_DEFAULT_CONTIGUOUS;
-	job_desc_msg->kill_on_node_fail =
-			(uint16_t) SLURM_JOB_DESC_DEFAULT_KILL_NODE_FAIL;
-	job_desc_msg->environment = SLURM_JOB_DESC_DEFAULT_ENVIRONMENT;
-	job_desc_msg->env_size    = SLURM_JOB_DESC_DEFAULT_ENV_SIZE;
-	job_desc_msg->features    = SLURM_JOB_DESC_DEFAULT_FEATURES;
-	job_desc_msg->job_id      = SLURM_JOB_DESC_DEFAULT_JOB_ID;
-	job_desc_msg->name        = SLURM_JOB_DESC_DEFAULT_JOB_NAME;
-	job_desc_msg->min_procs   = SLURM_JOB_DESC_DEFAULT_MIN_PROCS;
-	job_desc_msg->min_memory  = SLURM_JOB_DESC_DEFAULT_MIN_MEMORY;
-	job_desc_msg->min_tmp_disk= SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK;
-	job_desc_msg->partition   = SLURM_JOB_DESC_DEFAULT_PARTITION;
-	job_desc_msg->priority    = SLURM_JOB_DESC_DEFAULT_PRIORITY;
-	job_desc_msg->req_nodes   = SLURM_JOB_DESC_DEFAULT_REQ_NODES;
-	job_desc_msg->script      = SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT;
-	job_desc_msg->shared      = (uint16_t) SLURM_JOB_DESC_DEFAULT_SHARED;
-	job_desc_msg->time_limit  = SLURM_JOB_DESC_DEFAULT_TIME_LIMIT;
-	job_desc_msg->num_procs   = SLURM_JOB_DESC_DEFAULT_NUM_PROCS;
-	job_desc_msg->num_nodes   = SLURM_JOB_DESC_DEFAULT_NUM_NODES;
+	job_desc_msg->contiguous  = (uint16_t) NO_VAL;
+	job_desc_msg->environment = ((char **) NULL);
+	job_desc_msg->env_size    = 0;
+	job_desc_msg->features    = NULL;
+	job_desc_msg->job_id      = NO_VAL;
+	job_desc_msg->kill_on_node_fail = (uint16_t) NO_VAL;
+	job_desc_msg->name        = NULL;
+	job_desc_msg->min_procs   = NO_VAL;
+	job_desc_msg->min_memory  = NO_VAL;
+	job_desc_msg->min_tmp_disk= NO_VAL;
+	job_desc_msg->partition   = NULL;
+	job_desc_msg->priority    = NO_VAL;
+	job_desc_msg->req_nodes   = NULL;
+	job_desc_msg->script      = NULL;
+	job_desc_msg->shared      = (uint16_t) NO_VAL;
+	job_desc_msg->time_limit  = NO_VAL;
+	job_desc_msg->num_procs   = NO_VAL;
+	job_desc_msg->num_nodes   = NO_VAL;
+	job_desc_msg->num_tasks   = NO_VAL;
 	job_desc_msg->err         = NULL;
 	job_desc_msg->in          = NULL;
 	job_desc_msg->out         = NULL;
-	job_desc_msg->user_id     = SLURM_JOB_DESC_DEFAULT_USER_ID;
-	job_desc_msg->work_dir    = SLURM_JOB_DESC_DEFAULT_WORKING_DIR;
+	job_desc_msg->user_id     = NO_VAL;
+	job_desc_msg->work_dir    = NULL;
 }
 
 /*

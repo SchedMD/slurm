@@ -287,7 +287,8 @@ slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg ,
  * NOTE: free the response using slurm_free_job_step_create_response_msg
  */
 int
-slurm_job_step_create (job_step_create_request_msg_t * slurm_step_alloc_req_msg, 
+slurm_job_step_create (
+		job_step_create_request_msg_t * slurm_step_alloc_req_msg, 
 		job_step_create_response_msg_t ** slurm_step_alloc_resp_msg )
 {
 	int msg_size ;

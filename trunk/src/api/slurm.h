@@ -71,27 +71,7 @@
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 #define NO_VAL	 (0xfffffffe)
-
-#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_KILL_NODE_FAIL	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
-#define SLURM_JOB_DESC_DEFAULT_ENV_SIZE 	0
-#define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
-#define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
-#define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
-#define SLURM_JOB_DESC_DEFAULT_PRIORITY		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
-#define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
-#define SLURM_JOB_DESC_DEFAULT_SHARED	 	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_WORKING_DIR	NULL
+#define MAX_TASKS_PER_NODE 64
 
 /* last entry must be JOB_END
  * NOTE: keep in sync with job_state_string and job_state_string_compact */
@@ -172,6 +152,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	uint32_t num_nodes;	/* number of nodes required by job, 
 				 * default=0 */
+	uint32_t num_tasks;	/* number of tasks required by job, 
+				 * default=0, used only by 
+				 * slurm_allocate_resources_and_run() */
 	char *script;		/* the actual job script, default NONE */
 	char *err;		/* pathname of stderr */
 	char *in;		/* pathname of stdin */
@@ -220,6 +203,7 @@ typedef struct job_step_specs {
 	uint32_t user_id;	/* user the job runs as */
 	uint32_t node_count;	/* count of required nodes */
 	uint32_t cpu_count;	/* count of required processors */
+	uint32_t num_tasks;	/* number of tasks required */
 	uint16_t relative;	/* first node to use of job's allocation */
 	uint16_t task_dist;	/* see enum task_dist_state */
 	char *node_list;	/* list of required nodes */
@@ -238,6 +222,7 @@ typedef struct {
 	uint32_t job_id;	/* job ID */
 	uint16_t step_id;	/* step ID */
 	uint32_t user_id;	/* user the job runs as */
+	uint32_t num_tasks;	/* number of tasks */
 	time_t start_time;	/* step start time */
 	char *partition;	/* name of assigned partition */
 	char *nodes;		/* list of nodes allocated to job_step */
