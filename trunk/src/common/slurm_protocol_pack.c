@@ -68,7 +68,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_node_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
 			break ;
 		case MESSAGE_NODE_REGISTRATION_STATUS :
-			pack_node_registration_status_msg ( ( slurm_node_registration_status_msg_t * ) msg , ( void ** ) buffer , buf_len );
+			pack_node_registration_status_msg ( ( slurm_node_registration_status_msg_t * ) msg -> data , ( void ** ) buffer , buf_len );
 			break ;
 		case REQUEST_RESOURCE_ALLOCATION :
 		case REQUEST_SUBMIT_BATCH_JOB :
@@ -85,13 +85,20 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_JOB_WILL_RUN :
 			pack_job_allocation_response_msg ( ( job_allocation_response_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
-
-			
 		case REQUEST_UPDATE_NODE :
 			pack_update_node_msg ( ( update_node_msg_t * ) msg-> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_PARTITION :
+			//pack_partition_table_msg ( ( partition_desc_msg_t * ) msg->data , ( void ** ) buffer ,  buf_len ) ;
 			break ;
+		case REQUEST_LAUNCH_TASKS :
+			pack_launch_tasks_msg ( ( launch_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
+			break ;
+		case REQUEST_KILL_TASKS :
+			pack_kill_tasks_msg ( ( kill_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
+			break ;
+
+
 		case REQUEST_CANCEL_JOB :
 			break ;
 		case REQUEST_CANCEL_JOB_STEP :
@@ -109,8 +116,6 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_JOB_ATTACH :
 			break ;
 		case RESPONSE_JOB_ATTACH :
-			break ;
-		case REQUEST_LAUNCH_TASKS :
 			break ;
 		case REQUEST_GET_JOB_STEP_INFO :
 			break ;
@@ -197,8 +202,16 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 
 		case REQUEST_UPDATE_NODE :
 			unpack_update_node_msg ( ( update_node_msg_t ** ) & ( msg-> data ) , ( void ** ) buffer , buf_len ) ;
+
 			break ;
 		case REQUEST_UPDATE_PARTITION :
+			unpack_partition_table_msg ( ( partition_desc_msg_t ** ) & ( msg->data ) , ( void ** ) buffer ,  buf_len ) ;
+			break ;
+		case REQUEST_LAUNCH_TASKS :
+			unpack_launch_tasks_msg ( ( launch_tasks_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
+			break ; 
+		case REQUEST_KILL_TASKS :
+			unpack_kill_tasks_msg ( ( kill_tasks_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_CANCEL_JOB :
 			break ;
@@ -217,8 +230,6 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_JOB_ATTACH :
 			break ;
 		case RESPONSE_JOB_ATTACH :
-			break ;
-		case REQUEST_LAUNCH_TASKS :
 			break ;
 		case REQUEST_GET_JOB_STEP_INFO :
 			break ;
@@ -766,26 +777,100 @@ int unpack_return_code ( return_code_msg_t ** msg , void ** buffer , uint32_t * 
 	return 0 ;
 }
 
+void pack_launch_tasks_msg ( launch_tasks_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	
+	pack32 ( msg -> job_id , buffer , length ) ;
+	pack32 ( msg -> job_step_id , buffer , length ) ;
+	pack32 ( msg -> uid , buffer , length ) ;
+	pack32 ( msg -> gid , buffer , length ) ;
+	packstr ( msg -> credentials , buffer , length ) ;
+	pack32 ( msg -> tasks_to_launch , buffer , length ) ;
+	packstr ( msg -> env , buffer , length ) ;
+	packstr ( msg -> cwd , buffer , length ) ;
+	packstr ( msg -> cmd_line , buffer , length ) ;
+	/*stdin location*/
+	/*stdout location*/
+	/*stderr location*/
+	/*task completion location*/
+}
+
+int unpack_launch_tasks_msg ( launch_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	launch_tasks_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	if (msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> job_id , buffer , length ) ;
+	unpack32 ( & msg -> job_step_id , buffer , length ) ;
+	unpack32 ( & msg -> uid , buffer , length ) ;
+	unpack32 ( & msg -> gid , buffer , length ) ;
+	unpackstr_xmalloc ( & msg -> credentials , & uint16_tmp , buffer , length ) ;
+	unpack32 ( & msg -> tasks_to_launch , buffer , length ) ;
+	unpackstr_xmalloc ( & msg -> env , & uint16_tmp , buffer , length ) ;
+	unpackstr_xmalloc ( & msg -> cwd , & uint16_tmp , buffer , length ) ;
+	unpackstr_xmalloc ( & msg -> cmd_line , & uint16_tmp , buffer , length ) ;
+	/*stdin location*/
+	/*stdout location*/
+	/*stderr location*/
+	/*task completion location*/
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
+void pack_kill_tasks_msg ( kill_tasks_msg_t * msg , void ** buffer , uint32_t * length )
+{
+	pack32 ( msg -> job_id , buffer , length ) ;
+	pack32 ( msg -> job_step_id , buffer , length ) ;
+}
+
+int unpack_kill_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
+{
+	kill_tasks_msg_t * msg ;
+
+	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	if ( msg == NULL) 
+	{
+		*msg_ptr = NULL ;
+		return ENOMEM ;
+	}
+
+	unpack32 ( & msg -> job_id , buffer , length ) ;
+	unpack32 ( & msg -> job_step_id , buffer , length ) ;
+	*msg_ptr = msg ;
+	return 0 ;
+}
+
 /* template 
 void pack_ ( * msg , void ** buffer , uint32_t * length )
 {
 	pack16 ( msg -> , buffer , length ) ;
 	pack32 ( msg -> , buffer , length ) ;
+	packstr ( msg -> , buffer , length ) ;
 }
 
-void unpack_ ( ** msg , void char ** buffer , uint32_t * length )
+void unpack_ ( ** msg_ptr , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
-	job_desc_msg_t * job_desc_ptr ;
+	* msg ;
 
-	job_desc_ptr = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
-	if (job_desc_ptr== NULL) 
+	msg = xmalloc ( sizeof ( job_desc_msg_t ) ) ;
+	if (msg == NULL) 
 	{
-		*msg = NULL ;
+		*msg_ptr = NULL ;
 		return ;
 	}
 
 	unpack16 ( & msg -> , buffer , length ) ;
 	unpack32 ( & msg -> , buffer , length ) ;
+	unpackstr_xmalloc ( & msg -> , & uint16_tmp , buffer , length ) ;
+	*msg_ptr = msg ;
 }
 */
+

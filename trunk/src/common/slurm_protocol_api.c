@@ -39,23 +39,18 @@ slurm_protocol_config_t * slurm_get_api_config ( )
 
 int slurm_api_set_default_config ( )
 {
-	if ( proto_conf == NULL )
-	{
-		slurm_set_addr ( & proto_conf_default . primary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER ) ;
-		slurm_set_addr ( & proto_conf_default . secondary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER ) ;
+	slurm_set_addr ( & proto_conf_default . primary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER ) ;
+	slurm_set_addr ( & proto_conf_default . secondary_controller , SLURM_PROTOCOL_DEFAULT_PORT , SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER ) ;
+	proto_conf = & proto_conf_default ;
 
-	}	
 	return SLURM_SUCCESS ;
 }
 
 int slurm_set_default_controllers ( char * primary_controller_hostname , char * secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port )
 {
-	if ( proto_conf == NULL )
-	{
-		slurm_set_addr ( & proto_conf_default . primary_controller , pri_port , primary_controller_hostname ) ;
-		slurm_set_addr ( & proto_conf_default . secondary_controller , sec_port , secondary_controller_hostnme ) ;
+	slurm_set_addr ( & proto_conf_default . primary_controller , pri_port , primary_controller_hostname ) ;
+	slurm_set_addr ( & proto_conf_default . secondary_controller , sec_port , secondary_controller_hostnme ) ;
 
-	}	
 	return SLURM_SUCCESS ;
 }
 
@@ -121,7 +116,7 @@ slurm_fd slurm_open_msg_conn ( slurm_addr * slurm_address )
 slurm_fd slurm_open_controller_conn ( )
 {
 	slurm_fd connection_fd ;
-	
+	slurm_api_set_default_config ( ) ;
 	/* try to send to primary first then secondary */	
 	if ( ( connection_fd = slurm_open_msg_conn ( & proto_conf -> primary_controller ) ) == SLURM_SOCKET_ERROR )
 	{
@@ -453,7 +448,7 @@ int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * r
         slurm_fd sockfd ;
 
         /* init message connection for message communication with controller */
-        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
         /* send request message */
@@ -476,7 +471,7 @@ int slurm_send_only_controller_msg ( slurm_msg_t * request_msg )
         slurm_fd sockfd ;
 
         /* init message connection for message communication with controller */
-        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
         /* send request message */
@@ -496,7 +491,7 @@ int slurm_send_only_node_msg ( slurm_msg_t * request_msg )
         slurm_fd sockfd ;
 
         /* init message connection for message communication with controller */
-        if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
+        if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
 
         /* send request message */

@@ -81,6 +81,7 @@ typedef enum { test1, test2
 #define REQUEST_LAUNCH_TASKS			6001	
 #define RESPONSE_LAUNCH_TASKS			6002
 #define MESSAGE_TASK_EXIT		 	6003	
+#define REQUEST_KILL_TASKS			6004
 
 /*DPCS get key to sign submissions*/
 #define REQUEST_GET_KEY				8001	
@@ -141,6 +142,30 @@ typedef struct slurm_node_registration_status_msg
 	uint32_t real_memory_size ;
  	uint32_t temporary_disk_space ;
 } slurm_node_registration_status_msg_t ;
+
+typedef struct launch_tasks_msg
+{
+	uint32_t job_id ;
+	uint32_t job_step_id ;
+	uint32_t uid ;
+	uint32_t gid ;
+	char * credentials ;
+	uint32_t tasks_to_launch ;
+	char * env ;
+	char * cwd ;
+	char * cmd_line ;
+	/*stdin location*/
+	/*stdout location*/
+	/*stderr location*/
+	/*task completion location*/
+} launch_tasks_msg_t ;
+
+typedef struct kill_tasks_msg
+{
+	uint32_t job_id ;
+	uint32_t job_step_id ;
+} kill_tasks_msg_t ;
+
 
 typedef struct slurm_job_allocation_response_msg
 {
@@ -311,6 +336,8 @@ void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
 void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 void inline slurm_free_update_node_msg ( update_node_msg_t * msg ) ;
+void inline slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg ) ;
+void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
 
 /* stuct init functions */
 #define SLURM_JOB_DESC_NONCONTIGUOUS		0

@@ -224,11 +224,40 @@ void slurm_free_update_node_msg ( update_node_msg_t * msg )
 		xfree ( msg ) ;
 	}
 }
+
+void slurm_free_launch_tasks_msg ( launch_tasks_msg_t * msg )
+{
+	if ( msg )
+	{
+		if ( msg -> credentials )
+			xfree ( msg -> credentials );
+		if ( msg -> env )
+			xfree ( msg -> env );
+		if ( msg -> cwd )
+			xfree ( msg -> cwd );
+		if ( msg -> cmd_line )
+			xfree ( msg -> cmd_line );
+		xfree ( msg ) ;
+	}
+	/*stdin location*/
+	/*stdout location*/
+	/*stderr location*/
+	/*task completion location*/
+} 
+
+void slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg )
+{
+	if ( msg )
+	{
+		xfree ( msg ) ;
+	}
+}
+
 /**********************
-***********************
-Init functions
-***********************
-**********************/
+ ***********************
+ Init functions
+ ***********************
+ **********************/
 
 
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg )
