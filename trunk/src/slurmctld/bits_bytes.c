@@ -236,9 +236,11 @@ unsigned *BitMapCopy(unsigned *BitMap) {
  * BitMapCount - Return the count of set bits in the specified bitmap
  * Input: BitMap - The bit map to get count from
  * Output: Returns the count of set bits
+ * NOTE: This routine adapted from Linux 2.4.9 <linux/bitops.h>.
+ */
  */
 int BitMapCount(unsigned *BitMap) {
-    int count, byte, size, word;
+    int count, quad_byte, size, word, res;
     unsigned scan;
 
     if (BitMap == NULL) {
@@ -254,17 +256,15 @@ int BitMapCount(unsigned *BitMap) {
     size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 8;	/* Bytes */
     size /= sizeof(unsigned);			/* Count of unsigned's */
     for (word=0; word<size; word++) {
-	for (byte=0; byte<(sizeof(unsigned)*8); byte+=8) {
-	    scan = BitMap[word] >> ((sizeof(unsigned)*8)-8-byte);
-	    if (scan & 0x01) count++;
-	    if (scan & 0x02) count++;
-	    if (scan & 0x04) count++;
-	    if (scan & 0x08) count++;
-	    if (scan & 0x10) count++;
-	    if (scan & 0x20) count++;
-	    if (scan & 0x40) count++;
-	    if (scan & 0x80) count++;
-	} /* for (byte */
+	for (quad_byte=0; quad_byte<(sizeof(unsigned)*8); quad_byte+=32) {
+	    scan = BitMap[word] >> ((sizeof(unsigned)*8)-32-quad_byte);
+	    res = (scan & 0x55555555) + ((scan >> 1)  & 0x55555555);
+	    res = (res  & 0x33333333) + ((res  >> 2)  & 0x33333333);
+	    res = (res  & 0x0F0F0F0F) + ((res  >> 4)  & 0x0F0F0F0F);
+	    res = (res  & 0x00FF00FF) + ((res  >> 8)  & 0x00FF00FF);
+	    res = (res  & 0x0000FFFF) + ((res  >> 16) & 0x0000FFFF);
+	    count += res;
+	} /* for (quad_byte */
     } /* for (word */
     return count;
 } /* BitMapCount */
