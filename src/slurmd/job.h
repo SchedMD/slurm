@@ -84,31 +84,40 @@ typedef struct srun_info {
 } srun_info_t;
 
 typedef struct slurmd_job {
-	uint32_t       jobid;
-	uint32_t       stepid;
-	uint32_t       nnodes;
-	uint32_t       nprocs;
-	uint32_t       nodeid;
-	uint32_t       ntasks;
-	uint32_t       debug;
-	uint16_t       envc;
-	uint16_t       argc;
-	bool           batch;
-	bool           run_prolog; /* need to run prolog */
-	char         **env;
-	char         **argv;
-	char          *cwd;
+	uint32_t       jobid;  /* Current SLURM job id                      */
+	uint32_t       stepid; /* Current step id (or NO_VAL)               */
+	uint32_t       nnodes; /* number of nodes in current job            */
+	uint32_t       nprocs; /* total number of processes in current job  */
+	uint32_t       nodeid; /* relative position of this node in job     */
+	uint32_t       ntasks; /* number of tasks on *this* node            */
+	uint32_t       debug;  /* debug level for job slurmd                */
+	uint16_t       envc;   /* Environment variable count                */
+	uint16_t       argc;   /* number of commandline arguments           */
+	char         **env;    /* job environment                           */
+	char         **argv;   /* job argument vector                       */
+	char          *cwd;    /* path to current working directory         */
 #ifdef HAVE_LIBELAN3
-	qsw_jobinfo_t qsw_job;
+	qsw_jobinfo_t qsw_job; /* Elan-specific job information             */
 #endif
-	uid_t         uid;
-	struct passwd *pwd;
-	time_t         timelimit;
-	task_info_t  **task;
-	List           objs; 
-	List 	       sruns;
-	pthread_t      ioid;
-	uint16_t       task_flags;
+	uid_t         uid;     /* user id for job                           */
+
+	bool           batch;      /* true if this is a batch job           */
+	bool           run_prolog; /* true if need to run prolog            */
+	time_t         timelimit;  /* time at which job must stop           */
+
+	struct passwd *pwd;   /* saved passwd struct for user job           */
+	task_info_t  **task;  /* list of task information pointers          */
+	List           objs;  /* list of IO objects                         */
+	List 	       sruns; /* List of sruns                              */
+	pthread_t      ioid;  /* pthread id of IO thread                    */
+
+	pid_t          jmgr_pid;   /* job manager pid                       */
+	pid_t          smgr_pid;   /* session manager pid                   */
+
+	int            fdpair[2];  /* file descriptor pair for              */
+	                           /* communication between slurmds         */
+
+	uint16_t       task_flags; 
 } slurmd_job_t;
 
 

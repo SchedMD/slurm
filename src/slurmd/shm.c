@@ -79,7 +79,7 @@
 #define SHM_LOCKNAME	"/.slurm.lock"
 
 /* Increment SHM_VERSION if format changes */
-#define SHM_VERSION	1004
+#define SHM_VERSION	1005
 
 /* These macros convert shared memory pointers to local memory
  * pointers and back again. Pointers in shared memory are relative
@@ -422,13 +422,18 @@ shm_signal_step(uint32_t jobid, uint32_t stepid, uint32_t signal)
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		s = &slurmd_shm->step[i];
 		for (t = _taskp(s->task_list); t; t = _taskp(t->next)) {
-			if (getsid(t->pid) != s->sid)
+
+			if (getsid(t->pid) != s->sid) {
+				error ("Task pid is not in my session!");
 				continue;
+			}
+
 			if (t->pid > 0 && kill(t->pid, signo) < 0) {
 				error("kill %d.%d task %d pid %ld: %m", 
 				      jobid, stepid, t->id, (long)t->pid);
 				retval = errno;
 			}
+
 		}	
 	} else
 		retval = ESRCH;
@@ -486,7 +491,6 @@ shm_get_step_owner(uint32_t jobid, uint32_t stepid)
 }
 
 
-
 /*
  * Free a job step structure in local memory
  */
@@ -501,6 +505,21 @@ shm_free_step(job_step_t *step)
 		p = t->next;
 		xfree(t);
 	} while ((t = p));
+}
+
+int 
+shm_update_step_mpid(uint32_t jobid, uint32_t stepid, int mpid)
+{
+	int i, retval = SLURM_SUCCESS;
+	_shm_lock();
+	if ((i = _shm_find_step(jobid, stepid)) >= 0)
+		slurmd_shm->step[i].mpid = mpid;
+	else {
+		slurm_seterrno(ESRCH);
+		retval = SLURM_FAILURE;
+	}
+	_shm_unlock();
+	return retval;
 }
 
 int 
@@ -593,8 +612,8 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 			s->io_update = true;
 
 			debug3("Going to send shm update signal to %ld", 
-				s->sid);
-			if (kill(s->sid, SIGHUP) < 0) {
+				s->mpid);
+			if ((s->mpid > 0) && (kill(s->mpid, SIGHUP) < 0)) {
 				slurm_seterrno(EPERM);
 				retval = SLURM_FAILURE;
 			}
@@ -617,8 +636,14 @@ shm_step_addrs(uint32_t jobid, uint32_t stepid,
 	       slurm_addr *ioaddr, slurm_addr *respaddr, srun_key_t *key)
 {
 	int i, retval = SLURM_SUCCESS;
-	xassert(ioaddr != NULL);
+
+	xassert(jobid  >= 0);
+	xassert(stepid >= 0);
+
+	xassert(ioaddr   != NULL);
 	xassert(respaddr != NULL);
+	xassert(key      != NULL);
+
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0) {
 		job_step_t *s = &slurmd_shm->step[i];

@@ -185,7 +185,7 @@ _launch_tasks(launch_tasks_request_msg_t *req, slurm_addr *cli)
 			break;
 		default:
 			debug("created process %ld for job %d.%d",
-					pid, req->job_id, req->job_step_id);
+			      pid, req->job_id, req->job_step_id);
 			break;
 	}
 
@@ -336,7 +336,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
 		debug("kill for nonexistent job %d.%d requested",
-				req->job_id, req->job_step_id);
+		      req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
 	} 
@@ -436,7 +436,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	memcpy(&resp_msg.address, cli, sizeof(slurm_addr));
 	slurm_set_addr(&resp_msg.address, req->resp_port, NULL); 
 
-	if ((step = shm_get_step(req->job_id, req->job_step_id)) < 0) {
+	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
 		rc = ESRCH;
 		goto done;
 	}
