@@ -17,7 +17,7 @@ INCLUDES = -I$(top_srcdir)
 # partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
 
 # making a .la
-lib_LTLIBRARIES = libpartition_allocator.la 
+noinst_LTLIBRARIES = libpartition_allocator.la 
 libpartition_allocator_la_SOURCES =    \
 	partition_allocator.c partition_allocator.h
 
