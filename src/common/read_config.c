@@ -98,6 +98,7 @@ void
 init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 {
 	ctl_conf_ptr->last_update		= time(NULL);
+	xfree (ctl_conf_ptr->authtype);
 	xfree (ctl_conf_ptr->backup_addr);
 	xfree (ctl_conf_ptr->backup_controller);
 	xfree (ctl_conf_ptr->control_addr);
@@ -111,6 +112,7 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->plugindir);
 	xfree (ctl_conf_ptr->prioritize);
 	xfree (ctl_conf_ptr->prolog);
 	ctl_conf_ptr->ret2service		= (uint16_t) NO_VAL; 
@@ -172,6 +174,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	struct servent *servent;
 
 	error_code = slurm_parser (in_line,
+		"AuthType=", 's', &authtype,
 		"BackupAddr=", 's', &backup_addr, 
 		"BackupController=", 's', &backup_controller, 
 		"ControlAddr=", 's', &control_addr, 
@@ -186,6 +189,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"JobCredentialPublicCertificate=", 's', 
 					&job_credential_public_certificate,
 		"KillWait=", 'd', &kill_wait,
+		"PluginDir=", 's', &plugindir,
 		"Prioritize=", 's', &prioritize,
 		"Prolog=", 's', &prolog,
 		"ReturnToService=", 'd', &ret2service,
@@ -202,13 +206,19 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"SlurmdSpoolDir=", 's', &slurmd_spooldir,
 		"SlurmdTimeout=", 'd', &slurmd_timeout,
 		"StateSaveLocation=", 's', &state_save_location,
-		"PluginDir=", 's', &plugindir,
-		"AuthType=", 's', &authtype,
 		"TmpFS=", 's', &tmp_fs,
 		"END");
 
 	if (error_code)
 		return error_code;
+
+	if ( authtype ) {
+		if ( ctl_conf_ptr->authtype ) {
+			error( MULTIPLE_VALUE_MSG, "AuthType" );
+			xfree( ctl_conf_ptr->authtype );
+		}
+		ctl_conf_ptr->authtype = authtype;
+	}
 
 	if ( backup_addr ) {
 		if ( ctl_conf_ptr->backup_addr ) {
@@ -286,6 +296,14 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->kill_wait = kill_wait;
 	}
 
+	if ( plugindir ) {
+		if ( ctl_conf_ptr->plugindir ) {
+			error( MULTIPLE_VALUE_MSG, "PluginDir" );
+			xfree( ctl_conf_ptr->plugindir );
+		}
+		ctl_conf_ptr->plugindir = plugindir;
+	}
+	
 	if ( prioritize ) {
 		if ( ctl_conf_ptr->prioritize ) {
 			error (MULTIPLE_VALUE_MSG, "Prioritize");
@@ -422,21 +440,6 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->state_save_location = state_save_location;
 	}
 
-	if ( plugindir ) {
-		if ( ctl_conf_ptr->plugindir ) {
-			error( MULTIPLE_VALUE_MSG, "PluginDir" );
-			xfree( ctl_conf_ptr->plugindir );
-		}
-		ctl_conf_ptr->plugindir = plugindir;
-	}
-	
-	if ( authtype ) {
-		if ( ctl_conf_ptr->authtype ) {
-			error( MULTIPLE_VALUE_MSG, "AuthType" );
-			xfree( ctl_conf_ptr->authtype );
-		}
-		ctl_conf_ptr->authtype = authtype;
-	}
 
 	if ( tmp_fs ) {
 		if ( ctl_conf_ptr->tmp_fs ) {
