@@ -53,7 +53,7 @@ main(int argc, char * argv[]) {
 
     if (argc < 3) {
 	printf("Usage: %s <slurm_conf_file> <slurm_job_file>\n", argv[0]);
-	exit(0);
+	exit(1);
     } /* if */
 
     Error_Code = Init_SLURM_Conf();
@@ -279,7 +279,7 @@ int Parse_Job_Specs(char *Job_Specs, char **Req_Features, char **Req_Node_List, 
 #else
 	syslog(LOG_ALERT, "Parse_Job_Specs: unable to allocate memory\n");
 #endif
-	exit(ENOMEM);
+	abort();
     } /* if */
     strcpy(Temp_Specs, Job_Specs);
 
@@ -384,7 +384,7 @@ int Pick_Best_CPUs(unsigned *BitMap, unsigned *Req_BitMap, int Req_Nodes, int Re
 #else
 	syslog(LOG_ALERT, "Pick_Best_CPUs: BitMap pointer is NULL\n");
 #endif
-	exit(EINVAL);
+	abort();
     } /* if */
 
     Error_Code = EINVAL;	/* Default is no fit */
