@@ -4,9 +4,10 @@
 #include <grp.h>
 #include <sys/wait.h>
 #include <errno.h>
-#include <string.h>
 #include <unistd.h>
+#include <string.h>
 #include <pthread.h>
+
 #include <src/common/log.h>
 #include <src/common/list.h>
 #include <src/common/xerrno.h>
@@ -97,7 +98,11 @@ int fan_out_task_launch ( launch_tasks_msg_t * launch_msg )
 
 	if ( ( session_id = setsid () ) == SLURM_ERROR )
 	{
-		info ( "set sid failed" );	
+		info ( "set sid failed" );
+		//if ( ( session_id = getsid (0) ) == SLURM_ERROR )
+		{
+			info ( "getsid also failed" ) ;
+		}
 	}
 	curr_job_step -> session_id = session_id ;
 
@@ -173,11 +178,13 @@ int forward_io ( task_start_t * task_arg )
 	if ( pthread_create ( & task_arg->io_pthread_id[STDERR_FILENO] , NULL , stderr_io_pipe_thread , task_arg ) )
 		goto kill_stdout_thread;
 
-	/* threads have been detatched*/
+	///* threads have been detatched*/
+	
 	pthread_join ( task_arg->io_pthread_id[STDERR_FILENO] , NULL ) ;
 	info ( "errexit" ) ;
 	pthread_join ( task_arg->io_pthread_id[STDOUT_FILENO] , NULL ) ;
 	info ( "outexit" ) ;
+	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	pthread_kill (  task_arg->io_pthread_id[STDIN_FILENO] , SIGKILL );
 	
 	goto return_label;
