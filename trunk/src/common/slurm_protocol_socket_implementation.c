@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>
+ *  Written by Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -24,6 +24,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+
 #include <unistd.h>
 #include <string.h>
 #include <netdb.h>
@@ -49,6 +50,8 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/log.h>
 #include <src/common/pack.h>
+
+#define TEMP_BUFFER_SIZE 1024
 
 /* global constants */
 struct timeval SLURM_MESSGE_TIMEOUT_SEC_STATIC = { tv_sec:10L , tv_usec:0 } ;
@@ -89,12 +92,13 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 {
 	size_t recv_len ;
 
-	char size_buffer_temp [8] ;
+	char size_buffer_temp [TEMP_BUFFER_SIZE] ;
 	char * size_buffer = size_buffer_temp ;
 	char * moving_buffer = NULL ;
 	unsigned int size_buffer_len = 8 ;
-	unsigned int transmit_size ;
+	uint32_t transmit_size ;
 	unsigned int total_len ;
+	unsigned int excess_len = 0 ;
 
 	moving_buffer = size_buffer ;
 	total_len = 0 ;
@@ -131,13 +135,20 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 		}
 	}
 	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
+	if (transmit_size > size) {
+		error ("_slurm_msg_recvfrom_timeout buffer too small (%d of %u), excess discarded", 
+			size, transmit_size);
+		excess_len = transmit_size - size;
+		transmit_size = size;
+
+	}
 
 	moving_buffer = buffer ;
 	total_len = 0 ;
 	while ( total_len < transmit_size )
 	{
-		//if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
-		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , transmit_size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR )
+		//if ( ( recv_len = _slurm_recv ( open_fd , moving_buffer , (transmit_size-total_len) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_SOCKET_ERROR )
+		if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , (transmit_size-total_len) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR )
 		{
 			if ( errno ==  EINTR )
 			{
@@ -168,6 +179,43 @@ ssize_t _slurm_msg_recvfrom_timeout ( slurm_fd open_fd, char *buffer , size_t si
 		}
 	}
 	
+	if ( excess_len ) {
+		/* read and toss any data transmitted that we lack the buffer for */
+		moving_buffer = size_buffer ;
+		size_buffer_len = TEMP_BUFFER_SIZE;
+		while ( excess_len )
+		{
+			if (size_buffer_len > excess_len)
+				size_buffer_len = excess_len;
+			if ( ( recv_len = _slurm_recv_timeout ( open_fd , moving_buffer , size_buffer_len , 
+						SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , timeout ) ) == SLURM_SOCKET_ERROR  )
+			{
+				if ( errno ==  EINTR )
+					continue ;
+				else
+					return SLURM_PROTOCOL_ERROR ;
+			}
+			else if ( recv_len > 0 )
+			{
+				excess_len -= recv_len ;
+			}
+			else if ( recv_len == 0 )
+			{
+				/*debug ( "Error receiving length of datagram. recv_len = 0 ") ; */
+				slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_ZERO_RECV_LENGTH ) ;
+				return SLURM_PROTOCOL_ERROR ;
+			}
+			else 
+			{
+				/*debug ( "We don't handle negative return codes > -1") ;*/
+				slurm_seterrno ( SLURM_PROTOCOL_SOCKET_IMPL_NEGATIVE_RECV_LENGTH ) ;
+				return SLURM_PROTOCOL_ERROR ;
+			}
+		}
+		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR ) ;
+		return SLURM_PROTOCOL_ERROR ;
+	}
+
 	return total_len ;
 }
 
@@ -184,6 +232,7 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size
 	char size_buffer_temp [8] ;
 	char * size_buffer = size_buffer_temp ;
 	unsigned int size_buffer_len = 8 ;
+	uint32_t usize;
 
 	struct sigaction newaction ;
 	struct sigaction oldaction ;
@@ -193,7 +242,8 @@ ssize_t _slurm_msg_sendto_timeout ( slurm_fd open_fd, char *buffer , size_t size
 	/* ignore SIGPIPE so that send can return a error code if the other side closes the socket */
 	sigaction(SIGPIPE, &newaction , & oldaction );
 
-	pack32 (  size , ( void ** ) & size_buffer , & size_buffer_len ) ;
+	usize = size;
+	pack32 (  usize , ( void ** ) & size_buffer , & size_buffer_len ) ;
 
 	while ( true )
 	{
@@ -296,7 +346,7 @@ int _slurm_send_timeout ( slurm_fd open_fd, char *buffer , size_t size , uint32_
 		}
 		else 
 		{
-			rc = _slurm_send ( open_fd, buffer , size , flags ) ;
+			rc = _slurm_send ( open_fd, &buffer[bytes_sent] , (size-bytes_sent) , flags ) ;
 			if ( rc  == SLURM_PROTOCOL_ERROR || rc < 0 )
 			{
 				if ( errno == EINTR )
