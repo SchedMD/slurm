@@ -23,8 +23,13 @@
 /* this is the slurm equivalent of the operating system file descriptor, which in linux is just an int */
 typedef int32_t slurm_fd ;
 
-/* this is the slurm equivalent of the BSD sockets sockaddr */
-typedef struct sockaddr_in slurm_addr ; 
+/* this is the slurm equivalent of the BSD sockets sockaddr
+ * also defined in api/slurm.h for user */
+#ifndef __slurm_addr_defined
+#  define  __slurm_addr_defined
+   typedef struct sockaddr_in slurm_addr ;
+#endif
+
 /* this is the slurm equivalent of the BSD sockets fd_set */
 typedef fd_set slurm_fd_set ;
 typedef fd_set _slurm_fd_set ;
