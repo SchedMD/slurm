@@ -438,7 +438,7 @@ _send_exit_status(slurmd_job_t *job, pid_t pid, int status)
 	 *   but return 0 since the task has not exited.
 	 */
 	if ( WIFSTOPPED(status) ) {
-		verbose ( "task %*d (%ld) stopped by %s",
+		verbose ( "task %*d (%ld) stopped by %s %M",
 		          _wid(job->ntasks), 
 			  job->task[e.taskid]->gid,
 			  pid, 
