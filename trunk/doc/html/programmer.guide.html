@@ -16,9 +16,8 @@ SLURM requires no kernel modifications for it operation and is
 relatively self-contained.
 <p>
 There is an overview the components and their interactions available 
-in a separate document, SLURM: Simple Linux Utility for Resource Management
-[<a href="http://www.llnl.gov/linux/slurm/slurm_design.pdf">PDF</a>] 
-[<a href="http://www.llnl.gov/linux/slurm/slurm_design.ps">PS</a>].
+in a separate document, 
+<a href="slurm_design.pdf"> SLURM: Simple Linux Utility for Resource Management</a>.
 <p>
 SLURM is written in the C language and uses a GNU <i>autoconf</i> 
 configuration engine.  
@@ -40,23 +39,16 @@ In order to make the use of different infrastructures possible,
 SLURM uses a general purpose plugin mechanism. 
 A SLURM plugin is a dynamically linked code object which is 
 loaded explicitly at run time by the SLURM libraries. 
-It provides a customized implemenation of a well-defined
+It provides a customized implementation of a well-defined
 API connected to tasks such as authentication, interconnect fabric, 
 task scheduling, etc.
 A set of functions is defined for use by all of the different 
 infrastructures of a particular variety. 
 When a SLURM daemon is initiated, it reads the configuration 
-file to determine which of the available plugins should be used. 
-For details, see <a href="plugins.html">plugins.html</a> and
-<a href="authplugins.html">authplugins.html</a>.
-<p>
-Our intent is to make more full use of the plugin mechanism in the future. 
-Work is underway to support scheduling through a plugin, with the 
-<a href="http://supercluster.org/maui">Maui Scheduler</a> 
-and FIFO plugin modules initially available. 
-Work is also underway to support additional interconnects via a plugin 
-with support for Myrinet being added to the currently supported Quadrics 
-Elan3 and TCP/IP communications.
+file to determine which of the available plugins should be used.
+A <a href="plugins.html">plugin developer's guide</a> and an 
+<a href="authplugins.html">authentication plugin developer's guide</a>
+are available with details.
 
 <h2>Directory Structure</h2>
 
@@ -73,12 +65,7 @@ directory.
 SLURM in an automated fashion. NOTE: <i>autoconf</i> version 2.52 
 or higher is required to build SLURM. Execute "autoconf -V" to check 
 your version number. The build process is described in the <i>README</i>
-file and may be as simple as executing a sequence of three commands:
-<pre>
-./autogen.sh
-./configure [OPTIONS]
-make
-</pre>
+file.
 <p>
 Copyright and disclaimer information are in the files <i>COPYING</i> and <i>DISCLAIMER</i>.
 
@@ -121,7 +108,7 @@ A survey of available resource managers as of 2001 is in
 
 <h2>Source Code</h2>
 
-Functions are divided into several catagories, each in its own 
+Functions are divided into several categories, each in its own 
 subdirectory. The details of each directory's contents are proved 
 below. The directories are as follows:
 
@@ -136,11 +123,12 @@ These are the functions user applications might utilize.
 
 <dt>plugins
 <dd>Plugin functions for various infrastructure. 
-A separate subdirectory is used for each plugin class: <i>auth</i> 
-for user authentication, <i>prio</i> for job prioritization, etc.
-
-<dt>popt
-<dd>Command line option parsing tools from Red Hat Software, Inc.
+A separate subdirectory is used for each plugin class: 
+<i>auth</i> for user authentication, 
+<i>jobcomp</i> for job completion logging,
+<i>sched</i> for job scheduler, 
+<i>switch</i> for switch (interconnect) specific functions, 
+etc.
 
 <dt>scancel
 <dd>User command to cancel (or signal) a job or job step.
@@ -169,20 +157,19 @@ a parallel job step.
 
 <h2>Configuration</h2>
 
-Several configuration files are included in the <i>etc</i> subdirectory.
+Configuration files are included in the <i>etc</i> subdirectory.
 <i>slurm.conf.example</i> includes a description of all configuration 
 options and default settings. See <i>doc/man/man5/slurm.conf.5</i> for 
 more details.
 <i>init.d.slurm</i> is a script that determines which SLURM daemon(s) 
 should execute on any node based upon the configuration file contents. 
-This can be used as part of a daemon startup/shutdown mechanism.
+It will also manage these daemons: starting, signalling, restarting, 
+and stopping them.
 
 <h2>Test Suite</h2>
 
-The test suite uses a Dega GNU framework for testing. 
-Some of these tests directly test modules in the daemons.
-Other tests are more general and exercise API functionality. 
-Be aware that some of these tests are dated and some no longer function. 
+The <i>testsuite</i> files use a DejaGnu framework for testing. 
+These tests are very limited in scope.
 
 We also have a set of Expect SLURM tests available as a separate 
 distribution. These tests are executed after SLURM has been installed 
@@ -190,8 +177,10 @@ and the daemons initiated. About 100 test scripts exercise all SLURM
 commands and options including stress tests. 
 
 <hr>
-URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified July 4, 2003</p>
+<a href="http://www.llnl.gov/disclaimer.html">Privacy and Legal Notice</a>
+<p>URL = http://www.llnl.gov/linux/slurm/programmer.guide.html
+<p>UCRL-WEB-TBD
+<p>Last Modified January 8, 2004</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>

@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>SLURM: Frequently Asked Questions</title>
+</head>
+
+<body>
+<h1>SLURM: Frequently Asked Questions</h1>
+
+<ol>
+<li><a href="#comp">Why is my job/node in <i>completing</i> state?</a></li>
+<li><a href="#rlimit">Why do I see the error "Can't propagate RLIMIT_..."?</a></li>
+</ol>
+
+<p>
+<a name="comp">
+<b>1. Why is my job/node in <i>completing</i> state?</b><br />
+When a job is terminating both the job and its nodes enter the state
+<i>completing</i>.
+As the SLURM daemon on each node determines that all processes associated 
+with the job have terminated, that node changes state to <i>idle</i> or 
+some other appropriate state.
+When every node allocated to a job has determined that all processes 
+associated with it have terminated, the job changes state to <i>completed</i> 
+or some other appropriate state.
+Normally this happens within a fraction of one second. 
+However if the job has processes which can not be terminated with a SIGKILL, 
+the job and one or more nodes can remain in the <i>completing</i> state for 
+an extended period of time.
+This may be indicative of processes hung waiting for a core file to completed 
+I/O or operating system failure. 
+If this state persists, the system administrator should use the <b>scontrol</b>
+command to change the node's state to <i>down</i>, reboot the node, then reset 
+the node's state to <i>idle</i>.
+<p>
+<a name="rlimit">
+<b>2. Why do I see the error "Can't propagate RLIMIT_..."?</b><br />
+When the <b>srun</b> command executes, it captures the resource limits in 
+effect at that time.
+These limits are propagated to the allocated nodes before initiating the 
+user's job.
+If the soft resource limits on the job submit host are higher than the 
+hard resource limits on the allocated host, SLURM will be unable to 
+propagate the resource limits and print an error of the type shown above. 
+It is recommended that the system administrator establish uniform hard 
+resource limits on all nodes within a cluster to prevent this from occurring.
+<hr>
+<a href="http://www.llnl.gov/disclaimer.html">Privacy and Legal Notice</a>
+<p>URL = http://www.llnl.gov/linux/slurm/faq.html
+<p>UCRL-WEB-TBD
+<p>Last Modified January 8, 2004</p>
+<address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
+slurm-dev@lists.llnl.gov</a></address>
+</body>
+</html>
