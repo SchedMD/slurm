@@ -5,7 +5,7 @@ noinst_PROGRAMS = task_mgr-test circular_buffer-test task_launch-test credential
 if WITH_ELAN
 interconnect_lib = $(top_srcdir)/src/slurmd/libelan_interconnect.la
 process_lib = $(top_srcdir)/src/slurmd/libforked.la
-io_lib = $(top_srcdir)/src/slurmd/libforked_io.la
+io_lib = $(top_srcdir)/src/slurmd/libnbio.la
 else
 interconnect_lib = $(top_srcdir)/src/slurmd/libno_interconnect.la
 process_lib = $(top_srcdir)/src/slurmd/libthreaded.la
