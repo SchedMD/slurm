@@ -383,7 +383,11 @@ slurmctld_background ( void * no_data )
 void
 save_all_state ( void )
 {
+	clock_t start_time;
+
+	start_time = clock ();
 	dump_all_node_state ( );
+	info ("save_all_state complete, time=%ld", (long) (clock () - start_time));
 }
 
 /* report_locks_set - report any slurmctld locks left set */
