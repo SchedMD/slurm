@@ -2,7 +2,7 @@
  *  get_mach_stat.c - Get the status of the current machine 
  *
  *  NOTE: Some of these functions are system dependent. Built on RedHat2.4
- *  NOTE: While not currently used by SLURM, this code can also get a nodes
+ *  NOTE: While not currently used by SLURM, this code can also get a node's
  *       OS name and CPU speed. See code ifdef'ed out via USE_OS_NAME and 
  *       USE_CPU_SPEED
  *****************************************************************************

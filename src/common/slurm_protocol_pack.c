@@ -427,6 +427,7 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 
 void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg, void ** buffer , uint32_t * length )
 {
+	int i;
 	assert ( msg != NULL );
 	
 	pack32 ( msg -> timestamp , ( void ** ) buffer , length ) ;
@@ -434,11 +435,16 @@ void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * 
 	pack32 ( msg -> cpus , ( void ** ) buffer , length ) ;
 	pack32 ( msg -> real_memory_size , ( void ** ) buffer , length ) ;
 	pack32 ( msg -> temporary_disk_space , ( void ** ) buffer , length ) ;
+	pack32 ( msg -> job_count , ( void ** ) buffer , length ) ;
+	for (i = 0; i < msg->job_count ; i++) {
+		pack32 ( msg -> job_id[i] , ( void ** ) buffer , length ) ;
+	}
 }
 
 int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t ** msg , void ** buffer , uint32_t * length )
 {
 	uint16_t uint16_tmp;
+	int i;
 	slurm_node_registration_status_msg_t * node_reg_ptr ;
 	/* alloc memory for structure */	
 
@@ -457,6 +463,11 @@ int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t *
 	unpack32 ( & node_reg_ptr -> cpus , ( void ** ) buffer , length ) ;
 	unpack32 ( & node_reg_ptr -> real_memory_size , ( void ** ) buffer , length ) ;
 	unpack32 ( & node_reg_ptr -> temporary_disk_space , ( void ** ) buffer , length ) ;
+	unpack32 ( & node_reg_ptr -> job_count , ( void ** ) buffer , length ) ;
+	node_reg_ptr -> job_id = xmalloc (sizeof (uint32_t) * node_reg_ptr->job_count);
+	for (i = 0; i < node_reg_ptr->job_count ; i++) {
+		unpack32 ( & node_reg_ptr->job_id[i] , ( void ** ) buffer , length ) ;
+	}
 	*msg = node_reg_ptr ;
 	return 0 ;
 }

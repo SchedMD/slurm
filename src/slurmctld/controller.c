@@ -1559,7 +1559,7 @@ void
 slurm_rpc_node_registration ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code = 0;
+	int error_code = 0, i;
 	clock_t start_time;
 	slurm_node_registration_status_msg_t * node_reg_stat_msg = 
 			( slurm_node_registration_status_msg_t * ) msg-> data ;
@@ -1587,6 +1587,9 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 			node_reg_stat_msg -> real_memory_size ,
 			node_reg_stat_msg -> temporary_disk_space ) ;
 		unlock_slurmctld (node_write_lock);
+		for (i=0; i<node_reg_stat_msg->job_count; i++) {
+			debug ("Register with job_id %u", node_reg_stat_msg->job_id[i]);
+		}
 	}
 
 	/* return result */

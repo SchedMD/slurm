@@ -267,7 +267,7 @@ int slurmd_destroy()
 }
 
 /* sends a node_registration_status_msg to the slurmctld upon boot
- * announcing availibility for computationt */
+ * announcing availibility for computation */
 int send_node_registration_status_msg()
 {
 	slurm_msg_t request_msg;
@@ -297,10 +297,15 @@ fill_in_node_registration_status_msg(slurm_node_registration_status_msg_t *
 	get_procs(&node_reg_msg->cpus);
 	get_memory(&node_reg_msg->real_memory_size);
 	get_tmp_disk(&node_reg_msg->temporary_disk_space);
-	info("Configuration name=%s cpus=%u real_memory=%u, tmp_disk=%u",
+/* FIXME: Need to set correct count of currently running jobs and their ID's below */
+/* This is needed to more reliably recover from restarts of daemons */
+	node_reg_msg->job_count = 0;
+	node_reg_msg->job_id = NULL;
+	info("Configuration name=%s cpus=%u real_memory=%u, tmp_disk=%u, job_count=%u",
 	     hostname, node_reg_msg->cpus,
 	     node_reg_msg->real_memory_size,
-	     node_reg_msg->temporary_disk_space);
+	     node_reg_msg->temporary_disk_space,
+	     node_reg_msg->job_count);
 	return SLURM_SUCCESS;
 }
 
