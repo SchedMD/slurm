@@ -139,25 +139,10 @@ int interconnect_set_capabilities(task_start_t * task_start)
 	debug3("setting capability in process %ld", getpid());
 	if (qsw_setcap(task_start->launch_msg->qsw_job, procid) < 0) {
 		error("qsw_setcap: %m");
-		return SLURM_ERROR ;
+		return SLURM_ERROR;
 	}
 
-	pid = fork();
-	switch (pid) {
-		case -1:        /* error */
-			error("set_capabilities: fork: %m");
-			return SLURM_ERROR ;
-		case 0:         /* child falls thru */
-			return SLURM_SUCCESS ;
-		default:        /* parent */
-			if (waitpid(pid, NULL, 0) < 0) {
-				error("set_capabilities: waitpid: %m");
-				return SLURM_ERROR;
-			}
-			_exit(0); /* XXX; why does parent exit here but return
-				          above on an error from waitpid??     */
-			return SLURM_SUCCESS; /* huh? */
-	}
+	return SLURM_SUCCESS;
 }
 
 /*
