@@ -576,13 +576,23 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 static int 
 _run_prolog(uint32_t jobid, uid_t uid)
 {
-	return run_script(true, conf->prolog, jobid, uid);
+	int error_code;
+
+	slurm_mutex_lock(&conf->config_mutex);
+	error_code = run_script(true, conf->prolog, jobid, uid);
+	slurm_mutex_unlock(&conf->config_mutex);
+	return error_code;
 }
 
 static int 
 _run_epilog(uint32_t jobid, uid_t uid)
 {
-	return run_script(false, conf->epilog, jobid, uid);
+	int error_code;
+
+	slurm_mutex_lock(&conf->config_mutex);
+	error_code = run_script(false, conf->epilog, jobid, uid);
+	slurm_mutex_unlock(&conf->config_mutex);
+	return error_code;
 }
 
 /*
