@@ -330,6 +330,12 @@ extern struct part_record *find_part_record (char *name);
  *	job currently running on that node */
 extern struct job_record *find_running_job_by_node_name (char *node_name);
 
+/* get_job_env - return the environment variables and their count for a given job */
+extern char **get_job_env (struct job_record *job_ptr, uint16_t *env_size);
+
+/* get_job_script - return the script for a given job */
+extern char *get_job_script (struct job_record *job_ptr);
+
 /* find_step_record - return a pointer to the step record with the given job_id and step_id */
 extern struct step_record * find_step_record(struct job_record *job_ptr, uint16_t step_id);
 
