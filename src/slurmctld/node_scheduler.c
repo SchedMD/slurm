@@ -142,6 +142,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 	int buf_rec_size = 0, down_node_cnt = 0;
+	uint16_t base_state, no_resp_flag;
 
 	if (job_ptr == NULL)
 		fatal ("job_ptr == NULL");
@@ -162,12 +163,18 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
-		if ((node_record_table_ptr[i].node_state & 
-		     (~NODE_STATE_NO_RESPOND)) == NODE_STATE_DOWN) {
-			/* We issue the KILL RPC, but don't verify on DOWN nodes */
+		base_state = node_record_table_ptr[i].node_state &
+				(~NODE_STATE_NO_RESPOND);
+		no_resp_flag = node_record_table_ptr[i].node_state &
+				NODE_STATE_NO_RESPOND;
+		if ((base_state == NODE_STATE_DOWN) || no_resp_flag) {
+			/* Issue the KILL RPC, but don't verify response */
 			down_node_cnt++;
 			bit_clear(job_ptr->node_bitmap, i);
-			job_ptr->node_cnt--;
+			if ((--job_ptr->node_cnt == 0) &&
+			    (base_state == NODE_STATE_DRAINING))
+				node_record_table_ptr[i].node_state =
+					NODE_STATE_DRAINED | no_resp_flag;
 		}
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 32;
