@@ -24,6 +24,7 @@ REQUEST_PARTITION_INFO:		V Common	partition_mgr.c:pack_all_part
 	Read	Partition
 
 
+REQUEST_JOB_STEP_CREATE:
 REQUEST_RESOURCE_ALLOCATION :	Common		job_mgr.c:job_allocate
 REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 	(Both use slurm_rpc_allocate_resources)	
 	Read	Node, Partition
@@ -54,14 +55,11 @@ REQUEST_RECONFIGURE:		V Rare		read_config.c:read_slurm_conf
 
 REQUEST_UPDATE_JOB:		Rare		job_mgr.c:update_job
 	Write	Job
-	Read	Node
+	Read	Node, Partition
 
 
 REQUEST_UPDATE_NODE:		Rare		node_mgr.c:update_node
 	Write	Node
-
-
-REQUEST_JOB_STEP_CREATE:
 
 
 REQUEST_UPDATE_PARTITION:	Rare		partition_mgr.c:update_part
