@@ -181,7 +181,7 @@
 #
 # FastSchedule=0	# default is `1'
 # FirstJobid=1000       # default is `1'
-# HashBase=16		# default is `10'
+# HashBase=8		# default is `10'
 # Prioritize=/etc/prio  # default is none
 # ReturnToService=1     # default is `0'
 
@@ -299,7 +299,8 @@
 #    "MaxNodes"      : Maximum count of nodes that will be allocated to any
 #                      single job. The default is unlimited or `-1'
 #
-#    "MaxTime"       : Maximum timelimit of jobs in this partition
+#    "MaxTime"       : Maximum timelimit of jobs in this partition in minutes.
+#                      The default is unlimited or `-1'
 #
 #    "Shared"        : Allow sharing of nodes by jobs. Possible values are
 #                      "YES" "NO" or "FORCE"
