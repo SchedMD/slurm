@@ -17,7 +17,7 @@
 #include "slurm.h"
 
 struct job_queue {
-	float priority;
+	int priority;
 	struct job_record *job_ptr;
 };
 
@@ -140,7 +140,7 @@ void
 sort_job_queue (struct job_queue *job_queue, int job_queue_size) 
 {
 	int i, j, top_prio_inx;
-	float tmp_prio, top_prio;
+	int tmp_prio, top_prio;
 	struct job_record *tmp_job_ptr;
 
 	for (i=0; i<job_queue_size; i++) {

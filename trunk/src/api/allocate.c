@@ -85,7 +85,7 @@ main (int argc, char *argv[]) {
  *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
  *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>
  *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
- *	Priority=<float> ProcsPerTask=<count> ReqNodes=<node_list>
+ *	Priority=<integer> ProcsPerTask=<count> ReqNodes=<node_list>
  *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
  *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]

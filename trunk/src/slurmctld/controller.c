@@ -148,7 +148,7 @@ dump_build (char **buffer_ptr, int *buffer_size)
 	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
 		goto cleanup;
 
-	sprintf (out_line, BUILD_STRUCT_FORMAT, "FAST_SCHEDULE", FAST_SCHEDULE);
+	sprintf (out_line, BUILD_STRUCT2_FORMAT, "FAST_SCHEDULE", FAST_SCHEDULE);
 	if (write_buffer
 	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
 		goto cleanup;
