@@ -22,16 +22,23 @@
 
 #define DEFAULT_NODE_SPEC_CONF  "/usr/local/SLURM/NodeSpecConf"
 #define DEFAULT_PARTITION_CONF  "/usr/local/SLURM/PartitionConf"
+#define DEFAULT_MASTER_DAEMON   "/usr/local/SLURM/Slurmd.Master"
 #define DEFAULT_CONTROL_DAEMON  "/usr/local/SLURM/Slurmd.Control"
-#define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd"
+#define DEFAULT_SERVER_DAEMON   "/usr/local/SLURM/Slurmd.Server"
+#define DEFAULT_CONTROLLER_TIMEOUT 300
+#define DEFAULT_SERVER_TIMEOUT  300
 
 char *Administrators;		/* List of SLURM administrators */
 char *ControlMachine;		/* Name of computer acting as SLURM controller */
 char *BackupController;		/* Name of computer acting as SLURM backup controller */
 char *NodeSpecConf;		/* Location of SLURM node configuration file */
 char *PartitionConf;		/* Location of SLURM partition configuration file */
+char *InitProgram;		/* Location of MasterDaemon prolog, execute first and need exit code of zero */
+char *MasterDaemon;		/* Location of daemon to start other SLURM daemons */
 char *ControlDaemon;		/* Location of daemon executing on SLURM  controller */
 char *ServerDaemon;		/* Location of daemon executing on SLURM compute servers */
+int  ControllerTimeout;		/* How long to wait for ControlDeamon response to ping */
+int  ServerTimeout;		/* How long to wait for ServerDaemon to respond to ping */
 int  Node_Count;		/* Number of nodes in SLURM database */
 
 /* Last entry must be "END" */

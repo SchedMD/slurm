@@ -12,7 +12,7 @@
 #include "slurm.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 0
+#define DEBUG_MODULE 1
 #define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
 
@@ -39,8 +39,12 @@ main(int argc, char * argv[]) {
     printf("BackupController=%s\n", BackupController);
     printf("NodeSpecConf=%s\n", NodeSpecConf);
     printf("PartitionConf=%s\n", PartitionConf);
+    printf("MasterDaemon=%s\n", MasterDaemon);
+    printf("InitProgram=%s\n", InitProgram);
     printf("ControlDaemon=%s\n", ControlDaemon);
     printf("ServerDaemon=%s\n", ServerDaemon);
+    printf("ControllerTimeout=%d\n", ControllerTimeout);
+    printf("ServerTimeout=%d\n", ServerTimeout);
 
     exit(0);
 } /* main */
@@ -57,8 +61,12 @@ void Init_SLURM_Conf() {
     BackupController = NULL;
     NodeSpecConf = NULL;
     PartitionConf = NULL;
+    MasterDaemon = NULL;
+    InitProgram = NULL;
     ControlDaemon = NULL;
     ServerDaemon = NULL;
+    ControllerTimeout = DEFAULT_CONTROLLER_TIMEOUT;
+    ServerTimeout = DEFAULT_SERVER_TIMEOUT;
 } /* Init_SLURM_Conf */
 
 
@@ -198,6 +206,42 @@ int Read_SLURM_Conf (char *File_Name) {
 	    strcpy(PartitionConf, str_ptr2);
 	} /* if */
 
+	str_ptr1 = (char *)strstr(In_Line, "MasterDaemon=");
+	if (str_ptr1 != NULL) {
+	    strcpy(Scratch, str_ptr1+13);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
+	    str_len = strlen(str_ptr2);
+	    if (MasterDaemon != NULL) free(MasterDaemon);
+	    MasterDaemon = (char *)malloc(str_len+1);
+	    if (MasterDaemon == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
+#else
+		syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n")
+#endif
+		return ENOMEM;
+	    } /* if */
+	    strcpy(MasterDaemon, str_ptr2);
+	} /* if */
+
+	str_ptr1 = (char *)strstr(In_Line, "InitProgram=");
+	if (str_ptr1 != NULL) {
+	    strcpy(Scratch, str_ptr1+12);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
+	    str_len = strlen(str_ptr2);
+	    if (InitProgram != NULL) free(InitProgram);
+	    InitProgram = (char *)malloc(str_len+1);
+	    if (InitProgram == NULL) {
+#if DEBUG_SYSTEM
+		fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
+#else
+		syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n")
+#endif
+		return ENOMEM;
+	    } /* if */
+	    strcpy(InitProgram, str_ptr2);
+	} /* if */
+
 	str_ptr1 = (char *)strstr(In_Line, "ControlDaemon=");
 	if (str_ptr1 != NULL) {
 	    strcpy(Scratch, str_ptr1+14);
@@ -233,6 +277,21 @@ int Read_SLURM_Conf (char *File_Name) {
 	    } /* if */
 	    strcpy(ServerDaemon, str_ptr2);
 	} /* if */
+
+	str_ptr1 = (char *)strstr(In_Line, "ControllerTimeout=");
+	if (str_ptr1 != NULL) {
+	    strcpy(Scratch, str_ptr1+18);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
+	    ControllerTimeout = atoi(str_ptr2);
+	} /* if */
+
+	str_ptr1 = (char *)strstr(In_Line, "ServerTimeout=");
+	if (str_ptr1 != NULL) {
+	    strcpy(Scratch, str_ptr1+14);
+	    str_ptr2 = (char *)strtok_r(Scratch, SEPCHARS, &str_ptr3);
+	    ServerTimeout = atoi(str_ptr2);
+	} /* if */
+
     } /* while */
 
     /* Termination */
@@ -307,6 +366,32 @@ int Read_SLURM_Conf (char *File_Name) {
 	strcpy(PartitionConf, DEFAULT_PARTITION_CONF);
     } /* if */
 
+    if (MasterDaemon == NULL) {
+	MasterDaemon = (char *)malloc(strlen(DEFAULT_MASTER_DAEMON)+1);
+	if (MasterDaemon == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n")
+#endif
+	    return ENOMEM;
+	} /* if */
+	strcpy(MasterDaemon, DEFAULT_MASTER_DAEMON);
+    } /* if */
+
+    if (InitProgram == NULL) {
+	InitProgram = (char *)malloc(1);
+	if (InitProgram == NULL) {
+#if DEBUG_SYSTEM
+	    fprintf(stderr, "Read_SLURM_Conf: unable to allocate memory\n");
+#else
+	    syslog(LOG_ALERT, "Read_SLURM_Conf: unable to allocate memory\n")
+#endif
+	    return ENOMEM;
+	} /* if */
+	strcpy(InitProgram, "");
+    } /* if */
+
     if (ControlDaemon == NULL) {
 	ControlDaemon = (char *)malloc(strlen(DEFAULT_CONTROL_DAEMON)+1);
 	if (ControlDaemon == NULL) {
@@ -320,7 +405,6 @@ int Read_SLURM_Conf (char *File_Name) {
 	strcpy(ControlDaemon, DEFAULT_CONTROL_DAEMON);
     } /* if */
 
-
     if (ServerDaemon == NULL) {
 	ServerDaemon = (char *)malloc(strlen(DEFAULT_SERVER_DAEMON)+1);
 	if (ServerDaemon == NULL) {
@@ -333,8 +417,6 @@ int Read_SLURM_Conf (char *File_Name) {
 	} /* if */
 	strcpy(ServerDaemon, DEFAULT_SERVER_DAEMON);
     } /* if */
-
-
 
     return 0;
 } /* Read_SLURM_Conf */
