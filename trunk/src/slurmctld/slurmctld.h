@@ -799,12 +799,11 @@ extern int update_node ( update_node_msg_t * update_node_msg )  ;
 
 /* 
  * update_part - update a partition's configuration data
- * input: partition_name - partition's name
- *        spec - the updates to the partition's specification 
- * output:  return - 0 if no error, otherwise an error code
- * NOTE: the contents of spec are overwritten by white space
+ * global: part_list - list of partition entries
+ *	last_part_update - update time of partition records
  */
-extern int update_part ( partition_desc_t * part_desc );
+extern int update_part (update_part_msg_t * part_desc );
+
 
 /*
  * validate_node_specs - validate the node's specifications as valid, 

@@ -158,7 +158,7 @@ get_command (int *argc, char **argv)
 	in_line_pos = 0;
 
 	while (1) {
-		temp_char = getc (stdin);
+		temp_char = getchar();
 		if (temp_char == EOF)
 			break;
 		if (temp_char == (int) '\n')
@@ -749,7 +749,6 @@ update_node (int argc, char *argv[])
 		}
 	}
 
-printf("Node=%s,State=%u\n",node_msg.node_names,node_msg.node_state);
 	error_code = slurm_update_node(&node_msg);
 	return error_code;
 }
@@ -763,8 +762,92 @@ printf("Node=%s,State=%u\n",node_msg.node_names,node_msg.node_state);
 int
 update_part (int argc, char *argv[]) 
 {
-	printf("Not yet implemented\n");
-	return EINVAL;
+	int error_code, i;
+	update_part_msg_t part_msg;
+
+	error_code = 0;
+	part_msg.name		= NULL;
+	part_msg.max_time	= (uint32_t) NO_VAL;
+	part_msg.max_nodes	= (uint32_t) NO_VAL;
+	part_msg.default_part	= (uint16_t) NO_VAL;
+	part_msg.key		= (uint16_t) NO_VAL;
+	part_msg.shared		= (uint16_t) NO_VAL;
+	part_msg.state_up	= (uint16_t) NO_VAL;
+	part_msg.nodes		= NULL;
+	part_msg.allow_groups	= NULL;
+	for (i=0; i<argc; i++) {
+		if (strncmp(argv[i], "PartitionName=", 14) == 0)
+			part_msg.name = &argv[i][14];
+		else if (strncmp(argv[i], "MaxTime=", 8) == 0) {
+			if (strcmp(&argv[i][8],"INFINITE") == 0)
+				part_msg.max_time = INFINITE;
+			else
+				part_msg.max_time = (uint32_t) strtol(&argv[i][8], (char **) NULL, 10);
+		}
+		else if (strncmp(argv[i], "MaxNodes=", 9) == 0)
+			if (strcmp(&argv[i][9],"INFINITE") == 0)
+				part_msg.max_nodes = INFINITE;
+			else
+				part_msg.max_nodes = (uint32_t) strtol(&argv[i][9], (char **) NULL, 10);
+		else if (strncmp(argv[i], "Default=", 8) == 0) {
+			if (strcmp(&argv[i][8], "NO") == 0)
+				part_msg.default_part = 0;
+			else if (strcmp(&argv[i][8], "YES") == 0)
+				part_msg.default_part = 1;
+			else {
+				fprintf (stderr, "Invalid input: %s\n", argv[i]);
+				fprintf (stderr, "Acceptable Default values are YES and NO\n");
+				return EINVAL;
+			}
+		}
+		else if (strncmp(argv[i], "Key=", 4) == 0) {
+			if (strcmp(&argv[i][4], "NO") == 0)
+				part_msg.key = 0;
+			else if (strcmp(&argv[i][4], "YES") == 0)
+				part_msg.key = 1;
+			else {
+				fprintf (stderr, "Invalid input: %s\n", argv[i]);
+				fprintf (stderr, "Acceptable Key values are YES and NO\n");
+				return EINVAL;
+			}
+		}
+		else if (strncmp(argv[i], "Shared=", 7) == 0) {
+			if (strcmp(&argv[i][7], "NO") == 0)
+				part_msg.shared = SHARED_NO;
+			else if (strcmp(&argv[i][7], "YES") == 0)
+				part_msg.shared = SHARED_YES;
+			else if (strcmp(&argv[i][7], "FORCE") == 0)
+				part_msg.shared = SHARED_FORCE;
+			else {
+				fprintf (stderr, "Invalid input: %s\n", argv[i]);
+				fprintf (stderr, "Acceptable Shared values are YES, NO and FORCE\n");
+				return EINVAL;
+			}
+		}
+		else if (strncmp(argv[i], "State=", 6) == 0) {
+			if (strcmp(&argv[i][6], "DOWN") == 0)
+				part_msg.state_up = 0;
+			else if (strcmp(&argv[i][6], "UP") == 0)
+				part_msg.state_up = 1;
+			else {
+				fprintf (stderr, "Invalid input: %s\n", argv[i]);
+				fprintf (stderr, "Acceptable State values are UP and DOWN\n");
+				return EINVAL;
+			}
+		}
+		else if (strncmp(argv[i], "Nodes=", 6) == 0)
+			part_msg.nodes = &argv[i][6];
+		else if (strncmp(argv[i], "AllowGroups=", 12) == 0)
+			part_msg.allow_groups = &argv[i][12];
+		else {
+			fprintf (stderr, "Invalid input: %s\n", argv[i]);
+			fprintf (stderr, "Request aborted\n");
+			return EINVAL;
+		}
+	}
+
+	error_code = slurm_update_partition(&part_msg);
+	return error_code;
 }
 
 /* usage - show the valid scontrol commands */

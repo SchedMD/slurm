@@ -91,7 +91,7 @@ main (int argc, char *argv[])
 		printf ("ERROR: partition default state_up not set\n");
 		error_count++;
 	}
-	if (part_ptr->shared != 0) {
+	if (part_ptr->shared != SHARED_NO) {
 		printf ("ERROR: partition default shared not set\n");
 		error_count++;
 	}
@@ -141,7 +141,7 @@ main (int argc, char *argv[])
 		printf ("ERROR: update_part state_up not set\n");
 		error_count++;
 	}
-	if (part_ptr->shared != 2) {
+	if (part_ptr->shared != SHARED_FORCE) {
 		printf ("ERROR: update_part shared not set\n");
 		error_count++;
 	}
@@ -175,7 +175,7 @@ main (int argc, char *argv[])
  */
 int build_part_bitmap (struct part_record *part_record_point) 
 {
-	int i, error_code, node_count;
+	int i, error_code, node_count, update_nodes;
 	char *node_list;
 	bitstr_t *old_bitmap;
 	struct node_record *node_record_point;	/* pointer to node_record */
@@ -190,8 +190,8 @@ int build_part_bitmap (struct part_record *part_record_point)
 		old_bitmap = NULL;
 	}
 	else {
-		bit_nclear (part_record_point->node_bitmap, 0, node_record_count-1);
 		old_bitmap = bit_copy (part_record_point->node_bitmap);
+		bit_nclear (part_record_point->node_bitmap, 0, node_record_count-1);
 	}
 
 	if (part_record_point->nodes == NULL) {		/* no nodes in partition */
@@ -220,7 +220,8 @@ int build_part_bitmap (struct part_record *part_record_point)
 		part_record_point->total_nodes++;
 		part_record_point->total_cpus += node_record_point->cpus;
 		node_record_point->partition_ptr = part_record_point;
-		bit_clear (old_bitmap,
+		if (old_bitmap) 
+			bit_clear (old_bitmap,
 			      (int) (node_record_point - node_record_table_ptr));
 		bit_set (part_record_point->node_bitmap,
 			    (int) (node_record_point - node_record_table_ptr));
@@ -228,14 +229,19 @@ int build_part_bitmap (struct part_record *part_record_point)
 	xfree(node_list);
 
 	/* unlink nodes removed from the partition */
-	for (i = 0; i < node_record_count; i++) {
-		if (bit_test (old_bitmap, i) == 0)
-			continue;
-		node_record_table_ptr[i].partition_ptr = NULL;
+	if (old_bitmap) {
+		update_nodes = 0;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test (old_bitmap, i) == 0)
+				continue;
+			node_record_table_ptr[i].partition_ptr = NULL;
+			update_nodes = 1;
+		}
+		bit_free (old_bitmap);
+		if (update_nodes)
+			last_node_update = time (NULL);
 	}			
 
-	if (old_bitmap)
-		xfree (old_bitmap);
 	return 0;
 }
 
@@ -347,7 +353,7 @@ int init_part_conf ()
 	default_part.max_nodes = INFINITE;
 	default_part.key = 0;
 	default_part.state_up = 1;
-	default_part.shared = 0;
+	default_part.shared = SHARED_NO;
 	default_part.total_nodes = 0;
 	default_part.total_cpus = 0;
 	if (default_part.nodes)
@@ -574,24 +580,22 @@ part_unlock ()
 
 /* 
  * update_part - update a partition's configuration data
- * input: partition_name - partition's name
- *        spec - the updates to the partition's specification 
- * output: return - 0 if no error, otherwise an error code
  * global: part_list - list of partition entries
- * NOTE: the contents of spec are overwritten by white space
+ *	last_part_update - update time of partition records
  */
 int 
-update_part (partition_desc_t * part_desc ) 
+update_part (update_part_msg_t * part_desc ) 
 {
-	int error_code;
+	int error_code, i;
 	struct part_record *part_ptr;
 
-	if ((part_desc -> name = NULL ) ||
+	if ((part_desc -> name == NULL ) ||
 			(strlen (part_desc->name ) >= MAX_NAME_LEN)) {
 		error ("update_part: invalid partition name  %s", part_desc->name);
 		return ESLURM_PROTOCOL_INVALID_PARTITION_NAME ;
 	}			
 
+	error_code = 0;
 	part_ptr = list_find_first (part_list, &list_find_part, part_desc->name);
 
 	if (part_ptr == NULL) {
@@ -605,40 +609,35 @@ update_part (partition_desc_t * part_desc )
 	if (part_desc->max_time != NO_VAL) {
 		info ("update_part: setting max_time to %d for partition %s",
 				part_desc->max_time, part_desc->name);
-		if (part_desc->max_time == -1)
-			part_ptr->max_time = INFINITE;
-		else
-			part_ptr->max_time = part_desc->max_time;
+		part_ptr->max_time = part_desc->max_time;
 	}			
 
 	if (part_desc->max_nodes != NO_VAL) {
 		info ("update_part: setting max_nodes to %d for partition %s",
 				part_desc->max_nodes, part_desc->name);
-		if (part_ptr->max_nodes == -1)
-			part_ptr->max_nodes = INFINITE;
-		else
-			part_ptr->max_nodes = part_desc->max_nodes;
+		part_ptr->max_nodes = part_desc->max_nodes;
 	}			
 
-	if (part_desc->key != NO_VAL) {
+	if (part_desc->key != (uint16_t) NO_VAL) {
 		info ("update_part: setting key to %d for partition %s",
 				part_desc->key, part_desc->name);
 		part_ptr->key = part_desc->key;
 	}			
 
-	if (part_desc->state_up != NO_VAL) {
+	if (part_desc->state_up != (uint16_t) NO_VAL) {
 		info ("update_part: setting state_up to %d for partition %s",
 				part_desc->state_up, part_desc->name);
 		part_ptr->state_up = part_desc->state_up;
 	}			
 
-	if (part_desc->shared != NO_VAL) {
+	if (part_desc->shared != (uint16_t) NO_VAL) {
 		info ("update_part: setting shared to %d for partition %s",
 				part_desc->shared, part_desc->name);
 		part_ptr->shared = part_desc->shared;
 	}			
 
-	if (part_desc->default_part == 1) {
+	if ((part_desc->default_part == 1) && 
+	     (strcmp(default_part_name, part_desc->name) != 0)) {
 		info ("update_part: changing default partition from %s to %s",
 				default_part_name, part_desc->name);
 		strcpy (default_part_name, part_desc->name);
@@ -648,6 +647,8 @@ update_part (partition_desc_t * part_desc )
 	if (part_desc->allow_groups != NULL) {
 		if (part_ptr->allow_groups)
 			xfree (part_ptr->allow_groups);
+		i = strlen(part_desc->allow_groups) + 1;
+		part_ptr->allow_groups = xmalloc(i);
 		strcpy ( part_ptr->allow_groups , part_desc->allow_groups ) ;
 		info ("update_part: setting allow_groups to %s for partition %s",
 				part_desc->allow_groups, part_desc->name);
@@ -656,6 +657,8 @@ update_part (partition_desc_t * part_desc )
 	if (part_desc->nodes != NULL) {
 		if (part_ptr->nodes)
 			xfree (part_ptr->nodes);
+		i = strlen(part_desc->nodes) + 1;
+		part_ptr->nodes = xmalloc(i);
 		strcpy ( part_ptr->nodes , part_desc->nodes ) ;
 		info ("update_part: setting nodes to %s for partition %s",
 				part_desc->nodes, part_desc->name);
