@@ -5,7 +5,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov> et. al.
+ *  Written by Morris Jette <jette@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -95,10 +95,12 @@ static int _build_part_bitmap(struct part_record *part_ptr)
 		part_ptr->node_bitmap = 
 			(bitstr_t *) bit_alloc(node_record_count);
 		if (part_ptr->node_bitmap == NULL)
-			fatal("bit_alloc memory allocation failure");
+			fatal("bit_alloc malloc failure");
 		old_bitmap = NULL;
 	} else {
 		old_bitmap = bit_copy(part_ptr->node_bitmap);
+		if (old_bitmap == NULL)
+			fatal("bit_copy malloc failure");
 		bit_nclear(part_ptr->node_bitmap, 0,
 			   node_record_count - 1);
 	}

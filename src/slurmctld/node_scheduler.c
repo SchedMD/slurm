@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -527,6 +527,9 @@ _node_load_bitmaps(bitstr_t * bitmap, bitstr_t ** no_load_bit,
 	bitstr_t *bitmap1 = bit_alloc(size);
 	bitstr_t *bitmap2 = bit_alloc(size);
 
+	if ((bitmap0 == NULL) || (bitmap1 == NULL) || (bitmap2 == NULL))
+		fatal("bit_alloc malloc failure");
+
 	for (i = 0; i < size; i++) {
 		if (!bit_test(bitmap, i))
 			continue;
@@ -740,6 +743,8 @@ _pick_best_nodes(struct node_set *node_set_ptr, int node_set_size,
 			if (!runable_avail) {
 				FREE_NULL_BITMAP(avail_bitmap);
 				avail_bitmap = bit_copy(total_bitmap);
+				if (avail_bitmap == NULL)
+					fatal("bit_copy malloc failure");
 				bit_and(avail_bitmap, avail_node_bitmap);
 				pick_code = _pick_best_layout(
 							avail_bitmap, 
@@ -876,6 +881,8 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 			goto cleanup;
 		}
 		req_bitmap = bit_copy(job_ptr->details->req_node_bitmap);
+		if (req_bitmap == NULL)
+			fatal("bit_copy malloc failure");
 	}
 
 	/* pick the nodes providing a best-fit */
@@ -975,6 +982,8 @@ static int _build_node_list(struct job_record *job_ptr,
 	node_set_ptr[node_set_inx+1].my_bitmap = NULL;
 	if (detail_ptr->exc_node_bitmap) {
 		exc_node_mask = bit_copy(detail_ptr->exc_node_bitmap);
+		if (exc_node_mask == NULL)
+			fatal("bit_copy malloc failure");
 		bit_not(exc_node_mask);
 	}
 
@@ -1009,7 +1018,7 @@ static int _build_node_list(struct job_record *job_ptr,
 		node_set_ptr[node_set_inx].my_bitmap =
 		    bit_copy(config_ptr->node_bitmap);
 		if (node_set_ptr[node_set_inx].my_bitmap == NULL)
-			fatal("bit_copy memory allocation failure");
+			fatal("bit_copy malloc failure");
 		bit_and(node_set_ptr[node_set_inx].my_bitmap,
 			part_ptr->node_bitmap);
 		if (exc_node_mask)

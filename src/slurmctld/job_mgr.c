@@ -6,7 +6,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette1@llnl.gov>
+ *  Written by Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -1553,6 +1553,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		bitstr_t *tmp_bitmap = NULL;
 		bitoff_t first_set;
 		tmp_bitmap = bit_copy(exc_bitmap);
+		if (tmp_bitmap == NULL)
+			fatal("bit_copy malloc failure");
 		bit_and(tmp_bitmap, req_bitmap);
 		first_set = bit_ffs(tmp_bitmap);
 		FREE_NULL_BITMAP(tmp_bitmap);
