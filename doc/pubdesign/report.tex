@@ -46,35 +46,44 @@ characteristics:
 to understand its source code and add functionality.  The authors will 
 avoid the temptation to add features unless they are of general appeal. 
 
-\item {\em Open Source}: SLURM is available to everyone and will remain free;
-its source code is distributed under the GNU General Public License.
+\item {\em Open Source}: SLURM is available to everyone and will remain 
+free; its source code is distributed under the GNU General Public 
+License\cite{GPL2002}.
 
 \item {\em Portability}: SLURM is written in the C language, with a GNU 
-autoconf configuration engine.  While initially written for Linux, 
-other UNIX-like operating systems should be easy porting targets.
+{\em autoconf} configuration engine.  SLURM also supports a {\em plug-in} 
+mechanism, which permits a variety of different infrastructures to be 
+easily supported. The SLURM configuration file specifies which set of 
+plug-in modules should be used. While initially written for Linux, other 
+UNIX-like operating systems should be easy porting targets.
 
 \item {\em Interconnect independence}: SLURM supports UDP/IP based
-communication and the Quadrics Elan3 interconnect.  Adding support for other
-interconnects, including topography constraints, is straightforward.  
-Users select from the supported interconnects at compile time via GNU autoconf.
+communication and the Quadrics Elan3 interconnect.  Adding support for 
+other interconnects, including topography constraints, is straightforward 
+and will utilize the plug-in mechanism described above\footnote{SLURM 
+presently requires the specification of interconnect at build time}.
 
 \item {\em Scalability}: SLURM is designed for scalability to clusters of
-thousands of nodes.
-The SLURM controller for a cluster with 1000 nodes occupies on the 
-order of 2 MB of memory and performance is excellent. 
-Users may also request ranges of node counts - the job begins as soon as 
-possible with the maximum number of nodes then available.
+thousands of nodes. The SLURM controller for a cluster with 1000 nodes 
+occupies on the order of 2 MB of memory and excellent performance has 
+been demonstrated. Jobs may request a range of nodes, potentially 
+permitting faster initiation than otherwise possible.
 
 \item {\em Fault tolerance}: SLURM can handle a variety of failure modes
 without terminating workloads, including crashes of the node running 
 the SLURM controller. 
 User jobs may be configured to continue execution despite the failure 
 of one or more nodes. 
-The user  command controlling a job, {\tt srun}, may detach and reattach 
-from the parallel tasks at any time.
+The user command controlling a job, {\tt srun}, may detach and reattach 
+from the parallel tasks at any time. 
+Nodes allocated to a job are available for reuse as soon as the allocated 
+job on that node terminates. If some nodes fail to complete job termination 
+in a timely fashion due to hardware of software problems, only the 
+scheduling of those nodes will be effected.
 
 \item {\em Secure}: SLURM employs crypto technology to authenticate 
-users to services and services to each other.  
+users to services and services to each other with a variety of options 
+available through the plug-in mechanism.  
 SLURM does not assume that its networks are physically secure, 
 but does assume that the entire cluster is within a single 
 administrative domain with a common user base across the 
@@ -92,8 +101,8 @@ deterministic.
 \subsection{What is SLURM?}
 
 As a cluster resource manager, SLURM has three key functions.  First,
-it allocates exclusive and/or non-exclusive access to resources (compute nodes)
-to users for 
+it allocates exclusive and/or non-exclusive access to resources 
+(compute nodes) to users for 
 some duration of time so they can perform work.  Second, it provides 
 a framework for starting, executing, and monitoring work (normally a 
 parallel job) on the set of allocated nodes.  Finally, it arbitrates 
@@ -108,14 +117,14 @@ interactively,
 System administrators perform privileged operations through an additional
 command line utility: {\tt scontrol}.
 
-External schedulers and meta-batch systems can submit jobs to SLURM, 
-order its queues, and monitor SLURM state through an application 
-programming interface (API).
-
 The central controller daemon, {\tt slurmctld}, maintains the global state 
 and directs operations.
 Compute nodes simply run a \slurmd\ daemon (similar to a remote shell 
 daemon) to export control to SLURM.  
+
+External schedulers and meta-batch systems can submit jobs to SLURM, 
+order its queues, and monitor SLURM state through an application 
+programming interface (API).
 
 \subsection{What SLURM is Not}
 
