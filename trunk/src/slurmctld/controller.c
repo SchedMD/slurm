@@ -940,7 +940,8 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 
 	/* do RPC call */
 	if (job_step_kill_msg->job_step_id == NO_VAL) {
-		error_code = job_cancel(job_step_kill_msg->job_id, uid);
+		error_code = job_signal(job_step_kill_msg->job_id, 
+					job_step_kill_msg->signal, uid);
 		unlock_slurmctld(job_write_lock);
 
 		/* return result */

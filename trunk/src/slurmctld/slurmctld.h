@@ -580,14 +580,15 @@ extern int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	     uint16_t * node_cnt, slurm_addr ** node_addr);
 
 /* 
- * job_cancel - cancel the specified job
- * IN job_id - id of the job to be cancelled
+ * job_signal - signal the specified job
+ * IN job_id - id of the job to be signaled
+ * IN signal - signal to send, SIGKILL == cancel the job
  * IN uid - uid of requesting user
  * RET 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_cancel (uint32_t job_id, uid_t uid);
+extern int job_signal(uint32_t job_id, uint16_t signal, uid_t uid);
 
 /* 
  * job_step_cancel - cancel the specified job step
@@ -885,6 +886,13 @@ extern int set_batch_job_sid(uid_t uid, uint32_t job_id, uint32_t batch_sid);
 /* set_slurmd_addr - establish the slurm_addr for the slurmd on each node
  *	Uses common data structures. */
 extern void set_slurmd_addr (void);
+
+/*
+ * signal_step_tasks - send specific signal to specific job step
+ * IN step_ptr - step record pointer
+ * IN signal - signal to send
+ */
+extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
 
 /*
  * step_create - creates a step_record in step_specs->job_id, sets up the
