@@ -58,4 +58,5 @@ man5_MANS = man5/slurm.conf.5
 man8_MANS = man8/slurmctld.8 \
 	man8/slurmd.8
 
-EXTRA_DIST = $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS) 
+EXTRA_DIST = man1 man3 man5 man8 
+#EXTRA_DIST = $(man1_MANS) $(man3_MANS) $(man5_MANS) $(man8_MANS) 
