@@ -84,7 +84,7 @@ static int _parse_bgl_spec(char *in_line);
 /** */
 static int _copy_slurm_partition_list();
 /** */
-static int _find_part_type(char* nodes, rm_partition_t** return_part_type);
+static void _find_part_type(char* nodes, rm_partition_t** return_part_type);
 /** */
 static int _listfindf_conf_part_record(bgl_conf_record_t* record, char *nodes);
 /** */
@@ -237,12 +237,7 @@ static int _copy_slurm_partition_list()
 			bgl_record->slurm_part_id = xstrdup(slurm_part->name);
 			bgl_record->part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
 
-			if (_find_part_type(cur_nodes, &bgl_record->part_type)){
-				error("_copy_slurm_partition_list: not enough memory for bgl_record->part_type");
-				err = 1;
-				goto cleanup_while;
-			}
-
+			_find_part_type(cur_nodes, &bgl_record->part_type);
 			bgl_record->hostlist = (hostlist_t *) xmalloc(sizeof(hostlist_t));
 			*(bgl_record->hostlist) = hostlist_create(cur_nodes);
 			bgl_record->size = hostlist_count(*(bgl_record->hostlist));
@@ -258,7 +253,6 @@ static int _copy_slurm_partition_list()
 			// print_bgl_record(bgl_record);
 			list_push(bgl_list, bgl_record);
 			
-		cleanup_while: 
 			nodes_tmp = next_ptr;
 			cur_nodes = strtok_r(nodes_tmp, delimiter, &next_ptr);
 			if (err) {
@@ -385,21 +379,8 @@ static int _parse_bgl_spec(char *in_line)
 	// debug("partition type %s", part_type);
 
 	new_record = (bgl_conf_record_t*) xmalloc(sizeof(bgl_conf_record_t));
-	if (!new_record){
-		error("_parse_bgl_spec: not enough memory for new_record");
-		return SLURM_ERROR;
-	}
-
 	new_record->nodes = xstrdup(nodes);
-	if (!(new_record->nodes)){
-		error("_parse_bgl_spec: not enough memory for new_record nodes string");
-		return SLURM_ERROR;		
-	}
 	new_record->part_type = xmalloc(sizeof(rm_partition_t));
-	if (!(new_record->part_type)){
-		error("_parse_bgl_spec: not enough memory for new_record part type");
-		return SLURM_ERROR;
-	}
 
 	if (strcasecmp(part_type, "TORUS") == 0){
 		// error("warning, TORUS specified, but I can't handle those yet!  Defaulting to mesh");
@@ -478,7 +459,7 @@ static void _destroy_bgl_conf_record(void* object)
  * search through the list of nodes,types to find the partition type
  * for the given nodes
  */
-static int _find_part_type(char* nodes, rm_partition_t** return_part_type)
+static void _find_part_type(char* nodes, rm_partition_t** return_part_type)
 {
 	bgl_conf_record_t* record = NULL;
 
@@ -487,19 +468,12 @@ static int _find_part_type(char* nodes, rm_partition_t** return_part_type)
 						      nodes);
 
 	*return_part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
-	if (!(*return_part_type)) {
-		error("_find_part_type: not enough memory for return_part_type");
-		return SLURM_ERROR;
-	}
-
 	if (record != NULL && record->part_type != NULL){
 		**return_part_type = *(record->part_type);
 	} else {
 		// error("warning: nodes not found in slurm.conf, defaulting to type RM_MESH");
 		**return_part_type = RM_MESH;
 	}
-	
-	return SLURM_SUCCESS;
 }
 
 /** nodes example: 000x111 */
@@ -534,11 +508,6 @@ static int _char2intptr(char* request, int** bl, int** tr)
 	request_tmp = xstrdup(request);
 	(*bl) = (int*) xmalloc(sizeof(int) * SYSTEM_DIMENSIONS);
 	(*tr) = (int*) xmalloc(sizeof(int) * SYSTEM_DIMENSIONS);
-
-	if (!request_tmp || !bl || !tr){
-		error("_char2intptr: not enough memory for new structs");
-		goto cleanup;
-	}
 
 	orig_ptr = request_tmp;
 	token = strtok_r(request_tmp, delimit, &next_ptr);
@@ -591,10 +560,6 @@ static int _parse_request(char* request_string, partition_t** request_result)
 	
 	debug("incoming request %s", request_string);
 	*request_result = (partition_t*) xmalloc(sizeof(partition_t));
-	if (!(*request_result)) {
-		error("parse_request: not enough memory for request");
-		goto cleanup;
-	}
 	
 	/** token needs to be of the form 000x000 */
 	if(_extract_range(request_string, &range)){
@@ -652,10 +617,6 @@ static int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
 	}
 		
 	*dim = (uint16_t*) xmalloc(sizeof(uint16_t) * SYSTEM_DIMENSIONS);
-	if (!(*dim)) {
-		error("get_request_dimensions: not enough memory for dim");
-		return SLURM_ERROR;
-	}
 	for (i=0; i<SYSTEM_DIMENSIONS; i++){
 		(*dim)[i] = tr[i] - bl[i] + 1; /* plus one because we're
 						  counting current
@@ -701,10 +662,6 @@ static int _extract_range(char* request, char** result)
 	if (!request)
 		return SLURM_ERROR;
 	*result = (char*) xmalloc(sizeof(RANGE_SIZE) + 1); /* +1 for NULL term */
-	if (!(*result)) {
-		error("_extract_range: not enough memory for *result");
-		return SLURM_ERROR;
-	}
 
 	request_length = strlen(request);
 	for(i=0; i<request_length; i++){
