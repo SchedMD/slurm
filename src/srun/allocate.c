@@ -357,6 +357,9 @@ job_desc_msg_create_from_opts (char *script)
 	j->min_nodes      = opt.min_nodes;
 	j->num_tasks      = opt.nprocs;
 	j->user_id        = opt.uid;
+	j->dependency     = opt.dependency;
+	if (opt.account)
+		j->account = xstrdup(opt.account);
 
 	if (opt.egid == (gid_t) -1)
 		j->group_id = getgid ();
@@ -417,6 +420,7 @@ void
 job_desc_msg_destroy(job_desc_msg_t *j)
 {
 	if (j) {
+		xfree(j->account);
 		xfree(j->host);
 		xfree(j);
 	}

@@ -1,6 +1,6 @@
 \." $Id$
 .\"
-.TH SRUN "1" "April 2004" "srun 0.3" "slurm components"
+.TH SRUN "1" "August 2004" "srun 0.4" "slurm components"
 .SH "NAME"
 srun \- run parallel jobs
 .SH SYNOPSIS
@@ -65,6 +65,19 @@ printed and the \fB\-\-relative\fR option will take precedence.
 Request resources from partition "\fIpartition\fR." Partitions
 are created by the slurm administrator, who also identify one 
 of those partitions as the default. 
+.TP
+\fB\-P\fR, \fB\-\-dependency\fR=\fIjobid\fR
+Defer initiation of this job until the specified jobid
+has completed execution.  Many jobs can share the same 
+dependency and these jobs may belong to different users.
+The value may be changed after job submission using the 
+\fBscontrol\fR command.
+.TP
+\fB\-U\fR, \fB\-\-account\fR=\fIaccount\fR
+Change resource use by this job to specified account.
+The \fIaccount\fR is an arbitrary string. The may 
+be changed after job submission using the \fBscontrol\fR 
+command.
 .TP
 \fB\-t\fR, \fB\-\-time\fR=\fIminutes\fR
 Establish a time limit to terminate the job after the specified number of 
@@ -557,6 +570,9 @@ options may be set via environment variables. These environment
 variables, along with their corresponding options, are listed below.
 (Note: commandline options will always override these settings)
 .TP 20
+SLURM_ACCOUNT
+\fB\-U, \-\-account\fR=\fIaccount\fR
+.TP
 SLURM_CPUS_PER_TASK
 \fB\-c, \-\-ncpus\-per\-task\fR=\fIn\fR
 .TP

@@ -77,11 +77,13 @@ static int _build_job_queue(struct job_queue **job_queue)
 
 	job_iterator = list_iterator_create(job_list);
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
+		xassert (job_ptr->magic == JOB_MAGIC);
 		if ((job_ptr->job_state != JOB_PENDING)    ||
 		    (job_ptr->job_state &  JOB_COMPLETING) ||
 		    (job_ptr->priority == 0))	/* held */
 			continue;
-		xassert (job_ptr->magic == JOB_MAGIC);
+		if (!job_independent(job_ptr))	/* waiting for other job */
+			continue;
 		if (job_buffer_size <= job_queue_size) {
 			job_buffer_size += 50;
 			xrealloc(my_job_queue, job_buffer_size *

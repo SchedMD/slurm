@@ -299,6 +299,8 @@ struct job_record {
 	List step_list;			/* list of job's steps */
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
+	char *account;			/* account number to charge */
+	uint32_t dependency;		/* defer until this job completes */
 };
 
 struct 	step_record {
@@ -697,6 +699,13 @@ extern int job_step_checkpoint(uint16_t op, uint16_t data,
  */
 extern int job_complete (uint32_t job_id, uid_t uid, bool requeue, 
 		uint32_t job_return_code);
+
+/*
+ * job_independent - determine if this job has a depenentent job pending
+ * IN job_ptr - pointer to job being tested
+ * RET - true if job no longer must be defered for another job
+ */
+extern bool job_independent(struct job_record *job_ptr);
 
 /* 
  * job_step_complete - note normal completion the specified job step

@@ -404,6 +404,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->time_limit, buffer);
 	pack32(dump_job_ptr->priority, buffer);
 	pack32(dump_job_ptr->alloc_sid, buffer);
+	pack32(dump_job_ptr->dependency, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -420,6 +421,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
+	packstr(dump_job_ptr->account, buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -445,11 +447,12 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 static int _load_job_state(Buf buffer)
 {
 	uint32_t job_id, user_id, group_id, time_limit, priority, alloc_sid;
+	uint32_t dependency;
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
-	char *alloc_node = NULL, *host = NULL;
+	char *alloc_node = NULL, *host = NULL, *account = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -460,6 +463,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&time_limit, buffer);
 	safe_unpack32(&priority, buffer);
 	safe_unpack32(&alloc_sid, buffer);
+	safe_unpack32(&dependency, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -476,6 +480,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
+	safe_unpackstr_xmalloc(&account, &name_len, buffer);
 
 	/* validity test as possible */
 	if (((job_state & (~JOB_COMPLETING)) >= JOB_END) || 
@@ -536,6 +541,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->end_time     = end_time;
 	job_ptr->job_state    = job_state;
 	job_ptr->next_step_id = next_step_id;
+	job_ptr->dependency   = dependency;
 	job_ptr->time_last_active = time(NULL);
 	strncpy(job_ptr->name, name, MAX_NAME_LEN);
 	xfree(name);
@@ -547,6 +553,8 @@ static int _load_job_state(Buf buffer)
 	alloc_node          = NULL;	/* reused, nothing left to free */
 	strncpy(job_ptr->partition, partition, MAX_NAME_LEN);
 	xfree(partition);
+	job_ptr->account = account;
+	account          = NULL;  /* reused, nothing left to free */
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
 	job_ptr->kill_on_step_done = kill_on_step_done;
@@ -574,6 +582,7 @@ static int _load_job_state(Buf buffer)
 	xfree(partition);
 	xfree(name);
 	xfree(alloc_node);
+	xfree(account);
 	return SLURM_FAILURE;
 }
 
@@ -1007,7 +1016,7 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 {
 	long job_id, min_procs, min_memory, min_tmp_disk, num_procs;
 	long min_nodes, max_nodes, time_limit, priority, contiguous;
-	long kill_on_node_fail, shared, task_dist, immediate;
+	long kill_on_node_fail, shared, task_dist, immediate, dependency;
 
 	if (job_specs == NULL)
 		return;
@@ -1096,8 +1105,11 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	       job_specs->work_dir,
 	       job_specs->alloc_node, job_specs->alloc_sid);
 
-	debug3("   host=%s port=%u",
-	       job_specs->host, job_specs->port);
+	dependency = (job_specs->dependency != NO_VAL) ?
+                        (long) job_specs->dependency : -1L;
+	debug3("   host=%s port=%u dependency=%ld account=%s",
+	       job_specs->host, job_specs->port,
+	       dependency, job_specs->account);
 }
 
 
@@ -1183,7 +1195,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		 slurm_addr ** node_addr)
 {
 	int error_code;
-	bool no_alloc, top_prio, test_only, too_fragmented;
+	bool no_alloc, top_prio, test_only, too_fragmented, independent;
 	struct job_record *job_ptr;
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
 				 &job_ptr, submit_uid);
@@ -1200,8 +1212,10 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		fatal("job_allocate: allocated job %u lacks record",
 		      new_job_id);
 
+	independent = job_independent(job_ptr);
+
 	/* Avoid resource fragmentation if important */
-	if (switch_no_frag() && 
+	if (independent && switch_no_frag() && 
 	    (submit_uid || (job_specs->req_nodes == NULL)) && 
 	    job_is_completing())
 		too_fragmented = true;	/* Don't pick nodes for job now */
@@ -1214,13 +1228,18 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	else
 		too_fragmented = false;
 
-	top_prio = _top_priority(job_ptr);
-	if (immediate && (too_fragmented || (!top_prio))) {
+	if (independent && (!too_fragmented))
+		top_prio = _top_priority(job_ptr);
+	else
+		top_prio = true;	/* don't bother testing */
+	if (immediate && (too_fragmented || (!top_prio) || (!independent))) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
 		job_ptr->end_time   = 0;
 		job_completion_logger(job_ptr);
-		if (too_fragmented)
+		if (!independent)
+			return ESLURM_DEPENDENCY;
+		else if (too_fragmented)
 			return ESLURM_FRAGMENTATION;
 		else
 			return ESLURM_NOT_TOP_PRIORITY;
@@ -1244,7 +1263,8 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		last_job_update = time(NULL);
 	}
 
-	no_alloc = test_only || too_fragmented || (!top_prio);
+	no_alloc = test_only || too_fragmented || 
+			(!top_prio) || (!independent);
 
 	error_code = select_nodes(job_ptr, no_alloc);
 	if ((error_code == ESLURM_NODES_BUSY) ||
@@ -1626,6 +1646,11 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 						       &req_bitmap,
 						       &exc_bitmap))) {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY;
+		goto cleanup;
+	}
+	if ((*job_pptr)->dependency == (*job_pptr)->job_id) {
+		info("User specified self as dependent job");
+		error_code = ESLURM_DEPENDENCY;
 		goto cleanup;
 	}
 
@@ -2017,6 +2042,9 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->time_limit = job_desc->time_limit;
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
+	job_ptr->account    = xstrdup(job_desc->account);
+	if (job_desc->dependency != NO_VAL) /* leave as zero */
+		job_ptr->dependency = job_desc->dependency;
 
 	if (job_desc->priority != NO_VAL) /* already confirmed submit_uid==0 */
 		job_ptr->priority = job_desc->priority;
@@ -2440,6 +2468,9 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
+	packstr(dump_job_ptr->account, buffer);
+	pack32(dump_job_ptr->dependency, buffer);
+
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	pack_bit_fmt(dump_job_ptr->node_bitmap, buffer);
@@ -2731,6 +2762,8 @@ static bool _top_priority(struct job_record *job_ptr)
 			continue;
 		if (job_ptr2->job_state != JOB_PENDING)
 			continue;
+		if (!job_independent(job_ptr2))
+			continue;
 		if ((job_ptr2->priority >  job_ptr->priority) &&
 		    (job_ptr2->part_ptr == job_ptr->part_ptr)) {
 			top = false;
@@ -2987,6 +3020,19 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			      job_specs->job_id);
 			error_code = ESLURM_ACCESS_DENIED;
 		}
+	}
+
+	if (job_specs->account) {
+		xfree(job_ptr->account);
+		job_ptr->account = xstrdup(job_specs->account);
+		job_specs->account = NULL;
+	}
+
+	if (job_specs->dependency != NO_VAL) {
+		if (job_specs->dependency == job_ptr->job_id)
+			error_code = ESLURM_DEPENDENCY;
+		else
+			job_ptr->dependency = job_specs->dependency;
 	}
 
 	return error_code;
@@ -3403,3 +3449,26 @@ extern void job_completion_logger(struct job_record  *job_ptr)
 	xassert(job_ptr);
 	g_slurm_jobcomp_write(job_ptr);
 }
+
+/*
+ * job_independent - determine if this job has a depenentent job pending
+ * IN job_ptr - pointer to job being tested
+ * RET - true if job no longer must be defered for another job
+ */
+extern bool job_independent(struct job_record *job_ptr)
+{
+	struct job_record *dep_ptr;
+
+	if (job_ptr->dependency == 0)
+		return true;
+
+	dep_ptr = find_job_record(job_ptr->dependency);
+	if (dep_ptr == NULL)
+		return true;
+
+	if (((dep_ptr->job_state & JOB_COMPLETING) == 0) &&
+	    (dep_ptr->job_state >= JOB_COMPLETE))
+		return true;
+	return false;	/* job exists and incomplete */
+}
+

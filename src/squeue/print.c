@@ -297,10 +297,10 @@ job_format_add_function(List list, int width, bool right, char *suffix,
 
 int _print_job_job_id(job_info_t * job, int width, bool right, char* suffix)
 {
-	char id[FORMAT_STRING_SIZE];
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("JOBID", width, right, true);
 	else {
+		char id[FORMAT_STRING_SIZE];
 		snprintf(id, FORMAT_STRING_SIZE, "%u", job->job_id);
 		_print_str(id, width, right, true);
 	}
@@ -732,6 +732,32 @@ int _print_job_features(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
+int _print_job_account(job_info_t * job, int width, bool right_justify,
+			char* suffix)
+{
+	if (job == NULL)	 /* Print the Header instead */
+		_print_str("ACCOUNT", width, right_justify, true);
+	else
+		_print_str(job->account, width, right_justify, true);
+	if (suffix)
+		printf("%s", suffix);
+	return SLURM_SUCCESS;
+}
+
+int _print_job_dependency(job_info_t * job, int width, bool right_justify,
+			char* suffix) 
+{
+	if (job == NULL)	/* Print the Header instead */
+		_print_str("DEPENDENCY", width, right_justify, true);
+	else {
+		char id[FORMAT_STRING_SIZE];
+		snprintf(id, FORMAT_STRING_SIZE, "%u", job->dependency);
+		_print_str(id, width, right_justify, true);
+	}
+	if (suffix)
+		printf("%s", suffix); 
+	return SLURM_SUCCESS;
+}
 
 /*****************************************************************************
  * Job Step Print Functions

@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Moe Jette <jette1@llnl.gov>
+ *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, Morris Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *
  *  This file is part of SLURM, a resource management program.
@@ -368,7 +368,12 @@ extern int parse_format( char* format )
 				error ("Invalid job step format specification: %c",
 				       field[0] );
 		} else {
-			if      (field[0] == 'b')
+			if (field[0] == 'a')
+				job_format_add_account( params.format_list,
+							field_size,
+							right_justify,
+							suffix  );
+			else if (field[0] == 'b')
 				job_format_add_time_start( params.format_list, 
 				                           field_size, 
 				                           right_justify, 
@@ -399,6 +404,11 @@ extern int parse_format( char* format )
 				                         field_size, 
 				                         right_justify, 
 				                         suffix );
+			else if (field[0] == 'E')
+				job_format_add_dependency( params.format_list,
+							field_size,
+							right_justify,
+							suffix );
 			else if (field[0] == 'f')
 				job_format_add_features( params.format_list, 
 				                         field_size, 

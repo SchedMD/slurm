@@ -4,7 +4,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by moe jette <jette1@llnl.gov>.
+ *  Written by Morris Jette <jette1@llnl.gov>.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -43,9 +43,11 @@
  */
 void slurm_init_job_desc_msg(job_desc_msg_t * job_desc_msg)
 {
+	job_desc_msg->account     = NULL;
 	job_desc_msg->alloc_node  = NULL;
 	job_desc_msg->alloc_sid   = NO_VAL;
 	job_desc_msg->contiguous  = (uint16_t) NO_VAL;
+	job_desc_msg->dependency  = NO_VAL;
 	job_desc_msg->environment = ((char **) NULL);
 	job_desc_msg->env_size    = 0;
 	job_desc_msg->features    = NULL;

@@ -2,6 +2,12 @@ This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
 
+* Changes in SLURM 0.4.0-pre1
+=============================
+ -- NOTE: "startclean" when transitioning from version 0.3, JOBS ARE LOST
+ -- Added support for job account information (arbitrary string)
+ -- Added support for job dependencies (start job X after job Y completes)
+
 * Changes in SLURM 0.3.7
 ========================
  -- Fixes required for TotalView operability under RHEL3.0

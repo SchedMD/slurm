@@ -106,6 +106,8 @@ typedef struct srun_options {
 	char *job_name;		/* --job-name=,     -J name	*/
 	unsigned int jobid;     /* --jobid=jobid                */
 	enum mpi_t mpi_type;	/* --mpi=type			*/
+	unsigned int dependency;/* --dependency, -P jobid	*/
+	char *account;		/* --account, -U acct_name	*/
 
 	char *ofname;		/* --output -o filename         */
 	char *ifname;		/* --input  -i filename         */
