@@ -209,37 +209,45 @@ keywords on an interactive basis. The slurm_admin keywords are shown below.
 A <a href="#SampleAdmin">sample slurm_admin session</a> with examples is appended.
 
 <p>
-Usage: slurm_admin [-q] [-v] [&lt;keyword&gt;]<br>
+Usage: slurm_admin [-q | -v] [&lt;keyword&gt;]<br>
 -q is equivalent to the "quiet" keyword<br>
 -v is equivalent to the "verbose" keyword<br>
 </pre>
 <dl>
 <dt>exit
 <dd>Terminate slurm_admin.
+
 <dt>help
 <dd>Display this list of slurm_admin commands and options.
+
 <dt>quiet
 <dd>Print no messages other than error messages.
+
 <dt>quit
 <dd>Terminate slurm_admin.
-<dt>reconfigure &lt;NodeName&gt;
+
+<dt>reconfigure [&lt;NodeName&gt;]
 <dd>The SLURM daemons on the specified node are instructed to re-read 
 the configuration files. The default is that all daemons on all nodes 
 are reconfigured.
-<dt>restart &lt;NodeName&gt;
+
+<dt>restart [&lt;NodeName&gt;]
 <dd>The SLURM daemons on the specified node are stopped and restarted. 
 The default is that all daemons on all nodes are stopped and restarted. 
 All state information for the daemons are preserved.
-<dt>show &lt;entity&gt; &lt;ID&gt;
+
+<dt>show &lt;entity&gt; [&lt;ID&gt;]
 <dd>Show the configuration for a given entity. Entity must 
 be "job", "node", or "partition". By default, state information 
 for all records is reported. If you only wish to see the 
 state of one entity record, specify either its ID number
 (assumed if entirely numberic) or its name. 
-<dt>start &lt;NodeName&gt;
+
+<dt>start [&lt;NodeName&gt;]
 <dd>The SLURM daemons on the specified node are started as needed. 
 The default is that all daemons on all nodes are started.
-<dt>stop &lt;NodeName&gt;
+
+<dt>stop [&lt;NodeName&gt;]
 <dd>The SLURM daemons on the specified node are stopped. 
 The default is that all daemons on all nodes are stopped. 
 All state information for the daemons are preserved for 
@@ -248,14 +256,28 @@ terminate any job executing on the node. You may set a
 node's state to "DRAINING", set any running job's state to 
 "ENDING", wait for the job to terminate, then stop the 
 daemon on a node to leave no active jobs.
+
 <dt>update &lt;entity&gt; &lt;options&gt;
 <dd>Update the configuration for a given entity. Entity 
 must be "job", "node", or "partition". Options are of the same 
 format as the configuration files. 
+
+<dt>upload [&lt;NodeName&gt;]
+<dd>Upload into the SLURM node configuration table actual configuration 
+as actually reported by the node (memory, CPU count, temporary disk, etc.).
+This can be used to establish a baseline configuration rather than 
+entering the configurations manually into a file. By default information 
+from all nodes is uploaded. 
+
 <dt>verbose
 <dd>Enable detailed logging of slurm_admin execution state information.
+
 <dt>version
 <dd>Display the slurm_admin tool version number.
+
+<dt>write &lt;entity&gt; &lt;filename&gt;
+Write current entity configuration information to the specified file. 
+Entity must be "job", "node", or "partition". 
 </dl>
 
 <h2>Miscellaneous</h2>
@@ -334,25 +356,33 @@ Name=class   Number=4 JobType=ALL         MaxCpus=16  MaxTime=10        AllowUse
 
 <a name="SampleAdmin"><h2>Sample slurm_admin Execution</h2></a>
 <pre>
-# slurm_admin
-slurm_admin: reconfigure lx31
-slurm_admin: reconfigure lx32
-slurm_admin: update node Name=lx30 State=DRAINING
-slurm_admin: show job
-ID=1234 Name=Simulation JobType=BATCH MaxTime=100 Nodes=lx29,lx30 State=RUNNING User=grondo
-ID=1235 Name=MyBigTest  JobType=BATCH MaxTime=100 Nodes=lx20,lx21 State=RUNNING User=grondo
-slurm_admin: update job ID=1234 State=ENDING
-slurm_admin: show job 1234
-Job 1234 not found
-slurm_admin: stop lx30
-slurm_admin: show node lx30
-Name=lx30 Partition=0,3 State=DOWN OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384
-slurm_admin: quit
+Upload actual node configurations to review:
+  # slurm_admin
+  slurm_admin: upload
+  slurm_admin: write node baseline_node_config
+  slurm_admin: reload
+  slurm_admin: quit
+  # cat baseline_node_config
+  .....
+
+Remove node lx30 from service, removing jobs as needed:
+  # slurm_admin
+  slurm_admin: update node Name=lx30 State=DRAINING
+  slurm_admin: show job
+  ID=1234 Name=Simulation JobType=BATCH MaxTime=100 Nodes=lx29,lx30 State=RUNNING User=grondo
+  ID=1235 Name=MyBigTest  JobType=BATCH MaxTime=100 Nodes=lx20,lx21 State=RUNNING User=grondo
+  slurm_admin: update job ID=1234 State=ENDING
+  slurm_admin: show job 1234
+  Job 1234 not found
+  slurm_admin: stop lx30
+  slurm_admin: show node lx30
+  Name=lx30 Partition=0,3 State=DOWN OS=Linux.2.4.7-1 CPUs=16 Speed=345.0 RealMemory=2048 VirtualMemory=4096 TmpDisk=16384
+  slurm_admin: quit
 </pre>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/user.administrator.html
-<p>Last Modified January 3, 2002</p>
+<p>Last Modified January 4, 2002</p>
 <address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
 jette1@llnl.gov</a></address>
 </body>
