@@ -1411,6 +1411,7 @@ _signal_batch_job(struct job_record *job_ptr, uint16_t signal)
 	agent_args = xmalloc(sizeof(agent_arg_t));
 	agent_args->msg_type	= REQUEST_KILL_TASKS;
 	agent_args->retry	= 1;
+	agent_args->node_count  = 1;
 	agent_args->slurm_addr	= xmalloc(sizeof(struct sockaddr_in));
 	memcpy(agent_args->slurm_addr, &node_record_table_ptr[i].slurm_addr,
 			sizeof(struct sockaddr_in));
