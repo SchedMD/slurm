@@ -194,9 +194,6 @@ typedef struct slurm_protocol_header {
 	uint32_t body_length;
 } header_t;
 
-/* SLURM_IO_HEADER_SIZE is the packed data structure size,	*\
-\*	not necessarily sizeof(slurm_io_stream_header_t)	*/
-#define SLURM_IO_HEADER_SIZE (SLURM_SSL_SIGNATURE_LENGTH + 8)
 typedef struct slurm_io_stream_header {
 	uint16_t version;	/*version/magic number */
 	char key[SLURM_SSL_SIGNATURE_LENGTH];

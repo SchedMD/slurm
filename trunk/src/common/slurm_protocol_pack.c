@@ -76,10 +76,13 @@ void unpack_header ( header_t * header , Buf buffer )
 	unpack32 ( & header -> body_length , buffer ) ;
 }
 
-/* SLURM_IO_HEADER_SIZE is the packed data structure size,	*\
-\*	not necessarily sizeof(slurm_io_stream_header_t)	*/
+int size_io_stream_header (void)
+{	/* must match un/pack_io_stream_header and size_io_stream_header */
+	return (SLURM_SSL_SIGNATURE_LENGTH + 2 * sizeof(uint16_t) + sizeof(uint32_t));
+}
+
 void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
-{
+{	/* must match un/pack_io_stream_header and size_io_stream_header */
 	uint32_t tmp=SLURM_SSL_SIGNATURE_LENGTH;
 	
 	assert ( msg != NULL );
@@ -91,7 +94,7 @@ void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
 }
 
 void unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer )
-{
+{	/* must match un/pack_io_stream_header and size_io_stream_header */
 	uint32_t tmp=SLURM_SSL_SIGNATURE_LENGTH;
 	
 	unpack16( & msg->version, buffer ) ;

@@ -272,6 +272,7 @@ io_thr(void *arg)
 static void
 _accept_io_stream(job_t *job, int i)
 {
+	int len = size_io_stream_header();
 	verbose("Activity on IO server port %d", i);
 
 	for (;;) {
@@ -297,9 +298,9 @@ _accept_io_stream(job_t *job, int i)
 		sin = (struct sockaddr_in *) &addr;
 		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
 
-		msgbuf = xmalloc(SLURM_IO_HEADER_SIZE);
-		_readn(sd, msgbuf, SLURM_IO_HEADER_SIZE); 
-		buffer = create_buf(msgbuf, SLURM_IO_HEADER_SIZE);
+		msgbuf = xmalloc(len);
+		_readn(sd, msgbuf, len); 
+		buffer = create_buf(msgbuf, len);
 		unpack_io_stream_header(&hdr, buffer); 
 		free_buf(buffer); /* NOTE: this frees msgbuf */
 

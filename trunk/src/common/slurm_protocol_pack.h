@@ -48,6 +48,7 @@ void pack_header ( header_t  * header , Buf buffer );
 void unpack_header ( header_t * header , Buf buffer );
 
 /* Pack / Unpack methods for slurm io pipe streams header */
+int size_io_stream_header (void);
 void pack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
 void unpack_io_stream_header ( slurm_io_stream_header_t * msg , Buf buffer ) ;
 
