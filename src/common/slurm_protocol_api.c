@@ -74,27 +74,19 @@ int read_slurm_port_config ( )
 	int slurmctld_port = 0, slurmd_port = 0;
 	struct servent *servent;
 
-#ifdef SLURMCTLD_PORT
 	servent = getservbyname (SLURMCTLD_PORT, NULL);
 	if (servent)
 		slurmctld_conf.slurmctld_port   = servent -> s_port;
 	else
 		slurmctld_conf.slurmctld_port   = strtol (SLURMCTLD_PORT, (char **) NULL, 10);
 	endservent ();
-#else
-	slurmctld_conf.slurmctld_port   	= 0 ;
-#endif
 
-#ifdef SLURMD_PORT
 	servent = getservbyname (SLURMD_PORT, NULL);
 	if (servent)
 		slurmctld_conf.slurmd_port   = servent -> s_port;
 	else
 		slurmctld_conf.slurmd_port   = strtol (SLURMD_PORT, (char **) NULL, 10);
 	endservent ();
-#else
-	slurmctld_conf.slurmd_port   	= 0 ;
-#endif
 
 	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
 	if (slurm_spec_file == NULL) {
