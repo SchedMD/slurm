@@ -50,6 +50,14 @@
 #ifndef __USE_XOPEN_EXTENDED
 extern pid_t getsid(pid_t pid);		/* missing from <unistd.h> */
 #endif
+
+#define FREE_NULL(_X)			\
+	do {				\
+		if (_X) xfree (_X);	\
+		_X	= NULL; 	\
+	} while (0)
+
+
 /*
  * Global config type
  */
