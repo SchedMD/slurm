@@ -148,9 +148,13 @@ main (int argc, char *argv[])
 		fatal ("getnodename error %d", error_code);
 
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
-	     strcmp (node_name, slurmctld_conf.backup_controller) &&
 	     strcmp ("localhost", slurmctld_conf.control_machine) &&
-	     strcmp ("localhost", slurmctld_conf.backup_controller) )
+		/* this is not the control machine AND */
+	     ((slurmctld_conf.backup_controller == NULL) ||
+		/* there is no backup controller OR */
+	      (strcmp (node_name, slurmctld_conf.backup_controller) &&
+	       strcmp ("localhost", slurmctld_conf.backup_controller))) )
+		/* this is not the backup controller */
 	       	fatal ("this machine (%s) is not the primary (%s) or backup (%s) controller", 
 			node_name, slurmctld_conf.control_machine, 
 			slurmctld_conf.backup_controller);
