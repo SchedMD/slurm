@@ -11,17 +11,34 @@ int
 main (int argc, char *argv[]) 
 {
 	int error_code, i, count;
-	uint32_t job_id;
+	job_desc_msg_t job_mesg;
+	
+	job_mesg. contiguous = 1; 
+	job_mesg. features = "bigDisk\0";
+	job_mesg. groups = ("students,employee\0");
+	job_mesg. job_id = 12345;
+	job_mesg. name = ("job01\0");
+	job_mesg. partition_key = NULL;
+	job_mesg. min_procs = 4;
+	job_mesg. min_memory = 1024;
+	job_mesg. min_tmp_disk = 2034;
+	job_mesg. partition = "batch\0";
+	job_mesg. priority = 100;
+	job_mesg. req_nodes = "lx[3000-3003]\0";
+	job_mesg. job_script = "/bin/hostname\0";
+	job_mesg. shared = 0;
+	job_mesg. time_limit = 100;
+	job_mesg. num_procs = 1000;
+	job_mesg. num_nodes = 400;
+	job_mesg. user_id = 1500;
 
-	error_code = slurm_submit_batch_job
-		("User=1500 Script=/bin/hostname JobName=job01 TotalNodes=400 TotalProcs=1000 ReqNodes=lx[3000-3003] Partition=batch MinRealMemory=1024 MinTmpDisk=2034 Groups=students,employee MinProcs=4 Contiguous=YES Key=1234",
-		 &job_id);
+	error_code = slurm_submit_batch_job( &job_mesg );
 	if (error_code) {
 		printf ("submit error %d\n", error_code);
 		return (error_code);
 	}
 	else
-		printf ("job %u submitted\n", job_id);
+		printf ("job %u submitted\n", job_mesg.job_id);
 
 	if (argc > 1) 
 		count = atoi (argv[1]);
@@ -29,15 +46,14 @@ main (int argc, char *argv[])
 		count = 5;
 
 	for (i=0; i<count; i++) {
-		error_code = slurm_submit_batch_job
-			("User=1500 Script=/bin/hostname JobName=more TotalProcs=4000 Partition=batch Key=1234 ",
-			 &job_id);
+		job_mesg.job_id = job_mesg.job_id + i;
+		error_code = slurm_submit_batch_job( &job_mesg);
 		if (error_code) {
 			printf ("submit error %d\n", error_code);
 			break;
 		}
 		else {
-			printf ("job %u submitted\n", job_id);
+			printf ("job %u submitted\n", job_mesg.job_id);
 		}
 	}
 
