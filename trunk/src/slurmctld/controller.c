@@ -1391,7 +1391,9 @@ void slurm_rpc_old_job_alloc ( slurm_msg_t * msg )
 	resource_allocation_response_msg_t alloc_msg ;
 	/* Locks: Read job, read node */
 	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK, READ_LOCK, NO_LOCK };
+#ifdef	HAVE_AUTHD
 	uid_t uid = 0;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_OLD_JOB_RESOURCE_ALLOCATION");
