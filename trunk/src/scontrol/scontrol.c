@@ -1042,25 +1042,28 @@ _update_node (int argc, char *argv[])
 	for (i=0; i<argc; i++) {
 		if (strncasecmp(argv[i], "NodeName=", 9) == 0)
 			node_msg.node_names = &argv[i][9];
+		else if (strncasecmp(argv[i], "State=NoResp", 12) == 0)
+			node_msg.node_state = NODE_STATE_NO_RESPOND;
 		else if (strncasecmp(argv[i], "State=", 6) == 0) {
 			state_val = (uint16_t) NO_VAL;
 			for (j = 0; j <= NODE_STATE_END; j++) {
+				if (strcasecmp (node_state_string(j), 
+				                &argv[i][6]) == 0) {
+					state_val = (uint16_t) j;
+					break;
+				}
 				if (strcmp(node_state_string(j),"END") == 0) {
 					fprintf(stderr, "Invalid input: %s\n", 
 						argv[i]);
-					fprintf (stderr, 
-						 "Request aborted\n Valid states are:");
+					fprintf (stderr, "Request aborted\n");
+					fprintf (stderr, "Valid states are: ");
+					fprintf (stderr, "NoResp ");
 					for (k = 0; k <= NODE_STATE_END; k++) {
 						fprintf (stderr, "%s ", 
 						         node_state_string(k));
 					}
 					fprintf (stderr, "\n");
 					return 0;
-				}
-				if (strcasecmp (node_state_string(j), 
-				                &argv[i][6]) == 0) {
-					state_val = (uint16_t) j;
-					break;
 				}
 			}	
 			node_msg.node_state = state_val;
