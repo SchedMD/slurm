@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-noinst_PROGRAMS = task_mgr-test circular_buffer-test
+noinst_PROGRAMS = task_mgr-test circular_buffer-test task_launch-test
 
 INCLUDES = -I$(top_srcdir)/src/common
 LDADD   = $(top_srcdir)/src/common/libcommon.la \
