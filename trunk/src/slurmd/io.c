@@ -1148,7 +1148,7 @@ _writable(io_obj_t *obj)
 	      && ((cbuf_used(io->buf) > 0) || io->eof));
 
 	if ((io->type == CLIENT_STDERR) && (io->id == 0))
-		rc = (rc || log_has_data());
+		rc = rc || (log_has_data() && !io->disconnected);
 
 	if (rc)
 		debug3("%d %s is writable", io->id, _io_str[io->type]);
