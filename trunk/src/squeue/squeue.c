@@ -24,12 +24,17 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <sys/ioctl.h>
+#include <termcap.h>
+#include <termios.h>
 #include <src/squeue/squeue.h>
 
 static char *command_name;
 struct squeue_parameters params;
-int quiet_flag=0;
+int quiet_flag = 0;
+int max_line_size;
 
+int  get_window_width( void );
 void print_date( void );
 void print_job (void);
 void print_job_steps( void );
@@ -45,6 +50,7 @@ main (int argc, char *argv[])
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line( argc, argv );
+	max_line_size = get_window_width( );
 	
 	while (1) 
 	{
@@ -65,6 +71,29 @@ main (int argc, char *argv[])
 	}
 
 	exit (0);
+}
+
+
+int  
+get_window_width( void )
+{
+	int width = 80;
+
+#ifdef TIOCGSIZE
+	struct ttysize win;
+	if (ioctl (STDOUT_FILENO, TIOCGSIZE, &win) == 0)
+		width = win.ts_cols;
+#elif defined TIOCGWINSZ
+	struct winsize win;
+	if (ioctl (STDOUT_FILENO, TIOCGWINSZ, &win) == 0)
+		width = win.ws_col;
+#else
+	const char *s;
+	s = getenv("COLUMNS");
+	if (s)
+		width = strtol(s,NULL,10);
+#endif
+	return width;
 }
 
 
@@ -98,23 +127,42 @@ print_job ( void )
 		printf ("last_update_time=%ld\n", (long) new_job_ptr->last_update);
 
 	if (params.format_list == NULL) {
+		int out_size = 0;
 		params.format_list = list_create( NULL );
 		job_format_add_job_id( params.format_list, 7, true );
-		job_format_add_partition( params.format_list, 10, false );
-		job_format_add_name( params.format_list, 10, false );
-		job_format_add_user_name( params.format_list, 10, false );
-		if (params.long_list)
-			job_format_add_job_state( params.format_list, 10, false );
-		else
-			job_format_add_job_state_compact( params.format_list, 3, false );
-		job_format_add_start_time( params.format_list, 12, false );
-		job_format_add_end_time( params.format_list, 12, false);
-		job_format_add_priority( params.format_list, 8, true );
+		out_size += (7 + 1);
+		job_format_add_partition( params.format_list, 9, false );
+		out_size += (9 + 1);
+		job_format_add_name( params.format_list, 8, false );
+		out_size += (8 + 1);
+		job_format_add_user_name( params.format_list, 8, false );
+		out_size += (8 + 1);
 		if (params.long_list) {
-			job_format_add_time_limit( params.format_list, 10, true );
+			job_format_add_job_state( params.format_list, 8, false );
+			out_size += (8 + 1);
+		} else {
+			job_format_add_job_state_compact( params.format_list, 2, false );
+			out_size += (2 + 1);
 		}
-		/* Leave nodes at the end, length is hightly variable */
-		job_format_add_nodes( params.format_list, 0, false );
+		job_format_add_start_time( params.format_list, 11, false );
+		out_size += (11 + 1);
+		job_format_add_end_time( params.format_list, 11, false);
+		out_size += (11 + 1);
+		if (params.long_list) {
+			job_format_add_priority( params.format_list, 8, true );
+			out_size += (8 + 1);
+			job_format_add_time_limit( params.format_list, 10, true );
+			out_size += (10 + 1);
+		}
+		/* Leave nodes at the end, length is highly variable */
+		if (params.long_list) {
+			job_format_add_nodes( params.format_list, 0, false );
+		} else {
+			out_size  = max_line_size - out_size - 1;
+			if (out_size < 8)
+				out_size = 8;
+			job_format_add_nodes( params.format_list, out_size, false );
+		}
 	}
 
 	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , 
