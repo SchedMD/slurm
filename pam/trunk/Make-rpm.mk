@@ -112,7 +112,7 @@ rpm-internal: tar-internal
 	  echo "ERROR: Cannot create $$proj.spec." 1>&2; exit 1; fi; \
 	rpm --showrc | egrep "[[:space:]]_(gpg|pgp)_name[[:space:]]" \
 	  >/dev/null && sign="--sign"; \
-	if ! rpm -ba --define "_tmppath $$tmp/TMP" --define "_topdir $$tmp" \
+	if ! rpmbuild -ba --define "_tmppath $$tmp/TMP" --define "_topdir $$tmp" \
 	  $$sign --quiet $$tmp/SPECS/$$proj.spec >$$tmp/rpm.log 2>&1; then \
 	    cat $$tmp/rpm.log; exit 1; fi; \
 	cp -p $$tmp/RPMS/*/$$proj-*.rpm $$tmp/SRPMS/$$proj-*.src.rpm . \
