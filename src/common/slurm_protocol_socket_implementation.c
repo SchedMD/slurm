@@ -68,7 +68,8 @@ ssize_t _slurm_msg_recvfrom ( slurm_fd open_fd, char *buffer , size_t size , uin
 */	
 	if ( ( recv_len = _slurm_recv ( open_fd , size_buffer_temp , sizeof ( uint32_t ) , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) )  != sizeof ( uint32_t ) )
 	{
-		info ( "Error receiving length of datagram.  Total Bytes Sent %i \n", recv_len ) ;
+		info ( "Error receiving length of datagram.  Total bytes received %i \n", recv_len ) ;
+		return 0 ;
 	}
 	unpack32 ( & transmit_size , ( void ** ) & size_buffer , & size_buffer_len ) ;
 
