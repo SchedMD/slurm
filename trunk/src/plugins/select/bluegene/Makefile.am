@@ -23,7 +23,7 @@ select_bluegene_la_LDFLAGS = $(SO_LDFLAGS) $(PLUGIN_FLAGS)
 
 select_bluegene_la_LIBADD  = $(top_builddir)/src/partition_allocator/libpartition_allocator.la 
 
-bin_PROGRAMS = slurm_prolog slurm_epilog
+sbin_PROGRAMS = slurm_prolog slurm_epilog
 
 slurm_prolog_SOURCES = slurm_prolog.c
 slurm_epilog_SOURCES = slurm_epilog.c
