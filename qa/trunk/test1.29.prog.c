@@ -19,7 +19,11 @@ main (int argc, char **argv)
 	printf("USER_FSIZE=%d\n", u_limit.rlim_cur);
 	(void) getrlimit(RLIMIT_NOFILE, &u_limit);
 	printf("USER_NOFILE=%d\n", u_limit.rlim_cur);
+#ifdef RLIMIT_NPROC
 	(void) getrlimit(RLIMIT_NPROC, &u_limit);
 	printf("USER_NPROC=%d\n", u_limit.rlim_cur);
+#else
+	printf("USER_NPROC unsupported\n");
+#endif
 	exit(exit_code);
 }

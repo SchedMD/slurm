@@ -7,6 +7,9 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
+# Note:    AIX does not support the NPROC limit, but this test should 
+#          otherwise succeed
+#
 source ./globals
 
 set test_id          "1.29"
@@ -19,7 +22,7 @@ set job_id           0
 set limit_core       943
 set limit_fsize      274515
 set limit_nofile     1386
-set limit_nproc      863
+set limit_nproc      123
 set matches          0
 
 print_header $test_id
@@ -59,6 +62,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 
@@ -107,11 +111,16 @@ expect {
 		}
 		exp_continue
 	}
+	-re "USER_NPROC unsupported" {
+		incr matches
+		exp_continue
+	}
 	timeout {
 		send_user "\nFAILURE: sort not responding\n"
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
