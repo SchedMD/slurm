@@ -961,8 +961,13 @@ static size_t hostrange_numstr(hostrange_t hr, size_t n, char *buf)
 
     len += snprintf(buf, n, "%0*lu", hr->width, hr->lo);
 
-    if (hr->lo < hr->hi)
-        len += snprintf(buf+len, n-len, "-%0*lu", hr->width, hr->hi);
+    if ((len >= 0) && (hr->lo < hr->hi)) {
+        int len2 = snprintf(buf+len, n-len, "-%0*lu", hr->width, hr->hi);
+        if (len2 < 0)
+            len = -1;
+        else
+            len += len2;
+    }
 
     return len;
 }
