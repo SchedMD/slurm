@@ -908,6 +908,13 @@ void slurm_free_msg(slurm_msg_t * msg)
         xfree(msg);
 }
 
+/* 
+ * Free just the credential of a message
+ */
+void slurm_free_cred(void *cred)
+{
+        (void) g_slurm_auth_destroy(cred);
+}
 
 #if _DEBUG
 
