@@ -62,12 +62,6 @@
 
 #define BUF_SIZE	  1024	/* Temporary buffer size */
 
-#ifdef WITH_PTHREADS
-	static pthread_t thread_id_sig  = (pthread_t) 0;
-#else
-	static int thread_id_sig = 0;
-#endif		
-
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static int          _make_step_cred(struct step_record *step_rec, 
 				    slurm_cred_t *slurm_cred);
@@ -716,6 +710,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 			update_node_msg.node_names =
 			    complete_job_step_msg->node_name;
 			update_node_msg.node_state = NODE_STATE_DOWN;
+			update_node_msg.reason = "step complete failure";
 			error_code = update_node(&update_node_msg);
 			if (complete_job_step_msg->job_rc != SLURM_SUCCESS)
 				job_requeue = true;
@@ -1192,8 +1187,8 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 			msg_to_slurmd(REQUEST_SHUTDOWN);
 			unlock_slurmctld(node_read_lock);
 		}
-		if (thread_id_sig)		/* signal clean-up */
-			pthread_kill(thread_id_sig, SIGTERM);
+		if (slurmctld_config.thread_id_sig)		/* signal clean-up */
+			pthread_kill(slurmctld_config.thread_id_sig, SIGTERM);
 		else {
 			error("thread_id_sig undefined, hard shutdown");
 			slurmctld_config.shutdown_time = time(NULL);
