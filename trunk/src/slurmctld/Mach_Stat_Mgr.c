@@ -16,7 +16,7 @@
 #define DEBUG_MODULE 0
 #define DEBUG_SYSTEM 1
 #define SEPCHARS " \n\t"
-
+#define HASH_BASE 10
 struct Node_Record **Hash_Table = NULL;
 char *Node_State_String[] = {"UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED", "DRAINING", "END"};
 
@@ -260,13 +260,43 @@ int Hash_Index(char *name) {
 
     if (Node_Count == 0) return 0;		/* Degenerate case */
     inx = 0;
+
+#if ( HASH_BASE == 10 )
     for (i=0; ;i++) { 
 	tmp = (int) name[i];
 	if (tmp == 0) break;			/* end if string */
 	if (tmp < (int)'0') continue;
-	if (tmp > (int)'9') continue;		/* Change to '7' for octal */
-	inx = (inx * 10) + (tmp - (int)'0');	/* Change multiplier to eight for base eight */
+	if (tmp > (int)'9') continue;		
+	inx = (inx * 10) + (tmp - (int)'0');
     } /* for */
+#elif ( HASH_BASE == 8 )
+    for (i=0; ;i++) { 
+	tmp = (int) name[i];
+	if (tmp == 0) break;			/* end if string */
+	if (tmp < (int)'0') continue;
+	if (tmp > (int)'7') continue;		
+	inx = (inx * 8) + (tmp - (int)'0');
+    } /* for */
+
+#else
+    for (i=0; i<5;i++) { 
+	tmp = (int) name[i];
+	if (tmp == 0) break;					/* end if string */
+	if ((tmp >= (int)'0') && (tmp <= (int)'9')) {		/* value 0-9 */
+	    tmp -= (int)'0';
+	} else if ((tmp >= (int)'a') && (tmp <= (int)'z')) {	/* value 10-35 */
+	    tmp -= (int)'a';
+	    tmp += 10;
+	} else if ((tmp >= (int)'A') && (tmp <= (int)'Z')) {	/* value 10-35 */
+	    tmp -= (int)'A';
+	    tmp += 10;
+	} else {
+	    tmp = 36;
+	}
+	inx = (inx * 37) + tmp;
+    } /* for */
+ #endif
+
     inx = inx % Node_Count;
     return inx;
 } /* Hash_Index */
@@ -661,7 +691,7 @@ int Read_Node_Spec_Conf (char *File_Name) {
  * to permit the immediate finding of a record based only upon its name without regards 
  * to the number. There should be no need for a search. The algorithm is optimized for 
  * node names with a base-ten sequence number suffix. If you have a large cluster and 
- * use a different naming convention, this function along with the Hash_Index function 
+ * use a different naming convention, this function and/or the Hash_Index function 
  * should be re-written.
  */
 void Rehash() {
