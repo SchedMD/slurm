@@ -35,7 +35,8 @@
 #define RANGE_MAX 8192
 #define BUF_SIZE 4096
 
-static char* bgl_conf = "/home/phung4/root/etc/bluegene.conf";
+/* "etc/bluegene.conf"; */
+char* bgl_conf = BLUEGENE_CONFIG_FILE;
 
 /** some internally used functions */
 
@@ -960,6 +961,11 @@ void _print_bitmap(bitstr_t* bitmap)
 
 /** 
  * global - bgl: 
+ * 
+ * hmm, so it seems here we have to parse through the entire list of
+ * base partitions to update our system.  so since we have to go
+ * through the list anyways, we should have instant access (O(1)) to
+ * the nodelist that we have to update.
  */
 void update_bgl_node_bitmap(bitstr_t* bitmap)
 {
@@ -968,33 +974,39 @@ void update_bgl_node_bitmap(bitstr_t* bitmap)
 	rm_BP_t *my_bp;
 	rm_switch_t *my_switch;
 	rm_wire_t *my_wire;
-	rm_size3D_t bp_size,size_in_bp,m_size;
+	// rm_size3D_t bp_size,size_in_bp,m_size;
+	// rm_size3D_t bp_size,size_in_bp,m_size;
 
 	if (!bgl){
 		error("error, BGL is not initialized");
 	}
 
-	  printf("---------rm_get_BGL------------\n");
-	  rm_get_data(bgl,RM_BPsize,&bp_size);
-	  rm_get_data(bgl,RM_Msize,&m_size);
+	printf("---------rm_get_BGL------------\n");
+	// rm_get_data(bgl,RM_BPsize,&bp_size);
+	// rm_get_data(bgl,RM_Msize,&m_size);
 
-	  printf("BP Size = (%d x %d x %d)\n",bp_size.X,bp_size.Y,bp_size.Z);
+	printf("BP Size = (%d x %d x %d)\n",bp_size.X,bp_size.Y,bp_size.Z);
 
-	  rm_get_data(bgl,RM_BPNum,&bp_num);
-	  printf("- - - - - BPS (%d) - - - - - -\n",bp_num);
+	rm_get_data(bgl,RM_BPNum,&bp_num);
+	printf("- - - - - BPS (%d) - - - - - -\n",bp_num);
 
-	  for(i=0;i<bp_num;i++){
-		  if(i==0)
-			  rm_get_data(bgl,RM_FirstBP,&my_bp);
-		  else
-			  rm_get_data(bgl,RM_NextBP,&my_bp);
-		    rm_BP_state_t bp_state;
-		    rm_get_data(my_bp,RM_BPState,&bp_state);
-		    /* from here we either update the node or bitmap
-		       entry */
-		    if ()
+	for(i=0;i<bp_num;i++){
+		if(i==0)
+			rm_get_data(bgl,RM_FirstBP,&my_bp);
+		else
+			rm_get_data(bgl,RM_NextBP,&my_bp);
+		rm_BP_state_t bp_state;
 
-	  }
+		// is this blocking call?
+		rm_get_data(my_bp,RM_BPState,&bp_state);
+		rm_get_data(my_bp,RM_BPState,&bp_state);
+		/* from here we either update the node or bitmap
+		   entry */
+		// convert_partition_state(BPPartState);
+		// BPID,convert_bp_state(BPState),BPLoc.X,BPLoc.Y,BPLoc.Z,BPPartID
+		    
+ 
+	}
 	  
 #endif
 }
@@ -1003,17 +1015,36 @@ void update_bgl_node_bitmap(bitstr_t* bitmap)
 #ifdef _RM_API_H__
 /** */
 char *convert_bp_state(rm_BP_state_t state){
-  switch(state){ 
-  case RM_BP_UP:
-    return "RM_BP_UP";
-    break;
-  case RM_BP_DOWN:
-    return "RM_BP_DOWN";
-    break;
-  case RM_BP_NAV:
-    return "RM_BP_NAV";
-  defalt:
-    return "BP_STATE_UNIDENTIFIED!";
-  }
+	switch(state){ 
+	case RM_BP_UP:
+		return "RM_BP_UP";
+		break;
+	case RM_BP_DOWN:
+		return "RM_BP_DOWN";
+		break;
+	case RM_BP_NAV:
+		return "RM_BP_NAV";
+	defalt:
+		return "BP_STATE_UNIDENTIFIED!";
+	}
+};
+
+
+/** */
+void set_bp_node_state(rm_BP_state_t state, node_record node){
+	switch(state){ 
+	case RM_BP_UP:
+		debug("RM_BP_UP");
+		break;
+	case RM_BP_DOWN:
+		debug("RM_BP_DOWN");
+		break;
+	case RM_BP_NAV:
+		debug("BGL state update returned UNKNOWN state");
+		break;
+	defalt:
+		debug("BGL state update returned UNKNOWN state");
+		break;
+	}
 };
 #endif
