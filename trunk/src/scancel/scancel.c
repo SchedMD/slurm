@@ -51,7 +51,7 @@
 
 #define MAX_CANCEL_RETRY 10
 
-static void cancel_jobs (void);
+static void _cancel_jobs (void);
 static void _cancel_job_id (uint32_t job_id, uint16_t signal);
 static void _cancel_step_id (uint32_t job_id, uint32_t step_id, 
 			     uint16_t signal);
@@ -82,7 +82,7 @@ main (int argc, char *argv[])
 		filter_job_records ();
 	}
 
-	cancel_jobs ();
+	_cancel_jobs ();
 
 	exit (0);
 }
@@ -159,9 +159,9 @@ filter_job_records (void)
 }
 
 
-/* cancel_jobs - filter then cancel jobs or job steps per request */
+/* _cancel_jobs - filter then cancel jobs or job steps per request */
 static void
-cancel_jobs (void)
+_cancel_jobs (void)
 {
 	int i, j;
 	job_info_t *job_ptr = NULL;
