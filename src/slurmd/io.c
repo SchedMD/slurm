@@ -82,6 +82,21 @@ static char *_io_str[] =
 	"client stdin",
 };
 
+enum error_type {
+	E_NONE,
+	E_WRITE,
+	E_READ,
+	E_POLL
+};
+
+struct error_state {
+	enum error_type e_type;
+	int             e_last;
+	int             e_count;
+	time_t          e_time;
+};
+
+
 /* The IO information structure
  */
 struct io_info {
@@ -97,6 +112,9 @@ struct io_info {
 	List             readers;        /* list of current readers    */
 	List             writers;        /* list of current writers    */
 	slurmd_io_type_t type;           /* type of IO object          */
+
+	struct error_state err;          /* error state information    */
+
 	unsigned         eof:1;          /* obj recvd or generated EOF */
 
 	unsigned         disconnected:1; /* signifies that fd is not 
@@ -132,6 +150,9 @@ static struct io_obj  * _io_obj_create(int fd, void *arg);
 static struct io_info * _io_info_create(uint32_t id);
 static struct io_obj  * _io_obj(slurmd_job_t *, task_info_t *, int, int);
 static void           * _io_thr(void *arg);
+
+static void   _clear_error_state(struct io_info *io);
+static int    _update_error_state(struct io_info *, enum error_type, int);
 
 #ifndef NDEBUG
 static bool   _isa_task(struct io_info *io);
@@ -1183,10 +1204,14 @@ _write(io_obj_t *obj, List objs)
 	debug3("Need to write %d bytes to %s %d", 
 		cbuf_used(io->buf), _io_str[io->type], io->id);
 
-	/* If obj has recvd EOF, and there is no more data to write,
-	 * close the descriptor and remove object from event lists
+	/*  
+	 *  If obj has recvd EOF, and there is no more data to write
+	 *   (or there are many pending errors for this object),
+	 *   close the descriptor and remove object from event lists.
 	 */
-	if (io->eof && (cbuf_used(io->buf) == 0)) {
+	if ( io->eof 
+	   && (  (cbuf_used(io->buf) == 0) 
+	      || (io->err.e_count > 1)    ) ) {
 		_obj_close(obj, objs);
 		return 0;
 	}
@@ -1203,7 +1228,7 @@ _write(io_obj_t *obj, List objs)
 			_obj_close(obj, objs); 
 			break;
 		default:
-			error("write failed: <task %d>: %m", io->id);
+			_update_error_state(io, E_WRITE, errno);
 		}
 		return -1;
 	}
@@ -1346,8 +1371,7 @@ _task_read(io_obj_t *obj, List objs)
 			       _io_str[t->type], t->id);
 			return 0;
 		}
-		error("Unable to read from task %ld fd %d errno %d %m", 
-				(long) t->id, obj->fd, errno);
+		_update_error_state(t, E_READ, errno);
 		return -1;
 	}
 	debug3("read %d bytes from %s %d", n, _io_str[t->type], t->id);
@@ -1385,9 +1409,7 @@ _task_error(io_obj_t *obj, List objs)
 
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
 		error ("getsockopt: %m");
-
-	error("error on %s %d: %s", _io_str[t->type], t->id, 
-			slurm_strerror(err));
+	_update_error_state(t, E_POLL, err);
 	_obj_close(obj, objs);
 	return -1;
 }
@@ -1428,7 +1450,7 @@ _client_read(io_obj_t *obj, List objs)
 	if ((n = read(obj->fd, (void *) buf, len)) < 0) {
 		if (errno == EINTR)
 			goto again;
-		error("read from client %ld: %m", (long) client->id);
+		_update_error_state(client, E_READ, errno);
 		return -1;
 	}
 
@@ -1501,14 +1523,93 @@ _client_error(io_obj_t *obj, List objs)
 	if (getsockopt(obj->fd, SOL_SOCKET, SO_ERROR, &err, &size) < 0)
 		error ("getsockopt: %m");
 
-	if (err) {
-		debug("task %d %s: poll error: %s", 
-		     io->id, _io_str[io->type], slurm_strerror(err));
-	}
+	if (err) 
+		_update_error_state(io, E_POLL, err);
 
 	return 0;
 }
 
+static char *
+err_string(enum error_type type)
+{
+	switch (type) {
+	case E_NONE:
+		return "";
+	case E_WRITE:
+		return "write failed";
+	case E_READ:
+		return "read failed";
+	case E_POLL:
+		return "poll error";
+	}
+
+	return "";
+}
+
+static void
+_clear_error_state(struct io_info *io)
+{
+	io->err.e_time  = time(NULL);
+	io->err.e_count = 0;
+}
+
+static void
+_error_print(struct io_info *io)
+{
+	struct error_state *err = &io->err;
+
+	if (!err->e_count) {
+		error("%s: <task %d> %s: %s", 
+		      err_string(err->e_type), io->id, _io_str[io->type],
+		      slurm_strerror(err->e_last));
+	} else {
+		error("%s: <task %d> %s: %s (repeated %d times)", 
+		      err_string(err->e_type), io->id, _io_str[io->type],
+		      slurm_strerror(err->e_last), err->e_count);
+	}
+}
+
+
+static int
+_update_error_state(struct io_info *io, enum error_type type, int err) 
+{
+	xassert(io != NULL);
+	xassert(io->magic == IO_MAGIC);
+	xassert(err > 0);
+
+	if (  (io->err.e_type == type)
+	   && (io->err.e_last == err ) ) {
+		/* 
+		 * If the current and last error were the same,
+		 *  update the error counter
+		 */
+		io->err.e_count++;
+
+		/*
+		 * If it has been less than 5 seconds since the
+		 *  original error, don't print anything.
+		 */
+		if (  ((io->err.e_time + 5) > time(NULL))
+		   && (io->err.e_count < 65000)         ) 
+			return 0;
+
+	} else {
+		/*
+		 * Update error values
+		 */
+		io->err.e_count = 0;
+		io->err.e_type  = type;
+		io->err.e_last  = err;
+		io->err.e_time  = time(NULL);
+	}
+
+	_error_print(io);
+
+	if (io->err.e_count > 0)
+		_clear_error_state(io);
+
+	return 0;
+}
 
 #ifndef NDEBUG
 static void
