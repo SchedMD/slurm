@@ -226,7 +226,7 @@ _accept_io_stream(job_t *job, int i)
 	verbose("Activity on IO server port %d", i);
 
 	for (;;) {
-		int sd;
+		int sd, size_read;
 		struct sockaddr addr;
 		struct sockaddr_in *sin;
 		int size = sizeof(addr);
@@ -251,10 +251,20 @@ _accept_io_stream(job_t *job, int i)
 		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
 
 		msgbuf = xmalloc(len);
-		_readn(sd, msgbuf, len); 
+		size_read = _readn(sd, msgbuf, len); 
+		if (size_read != len) {
+			/* A fatal error for this stream */
+			error("Incomplete stream header read");
+			xfree(msgbuf);
+			return;
+		}
 		buffer = create_buf(msgbuf, len);
-		if (unpack_io_stream_header(&hdr, buffer))
+		if (unpack_io_stream_header(&hdr, buffer)) {
+			/* A fatal error for this stream */
 			error ("Bad stream header read");
+			free_buf(buffer); /* NOTE: this frees msgbuf */
+			return;
+		}
 		free_buf(buffer); /* NOTE: this frees msgbuf */
 
 		/* Assign new fds arbitrarily for now, until slurmd
