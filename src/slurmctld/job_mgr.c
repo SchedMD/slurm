@@ -45,6 +45,7 @@
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_errno.h>
 #include <src/common/xstring.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
@@ -60,7 +61,6 @@
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
 time_t last_job_update;			/* time of last update to job records */
-static pthread_mutex_t job_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for job info */
 static struct job_record *job_hash[MAX_JOB_COUNT];
 static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
@@ -420,10 +420,15 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 {
 	int error_code;
 	struct job_record *job_ptr;
+	/* Locks: Write job, write node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
 
+	lock_slurmctld (job_write_lock);
 	error_code = job_create (job_specs, new_job_id, allocate, will_run, &job_ptr);
-	if (error_code || will_run || (allocate == 0))
+	if (error_code || will_run || (allocate == 0)) {
+		unlock_slurmctld (job_write_lock);
 		return error_code;
+	}
 	if (job_ptr == NULL)
 		fatal ("job_allocate: allocated job %u lacks record", new_job_id);
 
@@ -437,6 +442,7 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 	if (immediate && top_priority(job_ptr) != 1) {
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_NOT_TOP_PRIORITY; 
 	}
 
@@ -445,15 +451,17 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 		if (immediate) {
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->end_time  = 0;
-			return ESLURM_NODES_BUSY;
 		}
 		else 	/* job remains queued */
-			return 0;
+			error_code = 0;
+		unlock_slurmctld (job_write_lock);
+		return error_code;
 	}
 
 	if (error_code) {	/* fundamental flaw in job request */
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
+		unlock_slurmctld (job_write_lock);
 		return error_code; 
 	}
 
@@ -466,6 +474,7 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 	*num_cpu_groups   = job_ptr->num_cpu_groups;
 	cpus_per_node[0]  = job_ptr->cpus_per_node;
 	cpu_count_reps[0] = job_ptr->cpu_count_reps;
+	unlock_slurmctld (job_write_lock);
 	return 0;
 }
 
@@ -481,23 +490,31 @@ int
 job_cancel (uint32_t job_id) 
 {
 	struct job_record *job_ptr;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
+
+	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
+		unlock_slurmctld (job_write_lock);
 		info ("job_cancel: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	    (job_ptr->job_state == JOB_TIMEOUT)) {
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_ALREADY_DONE;
+	}
 
 	if (job_ptr->job_state == JOB_PENDING) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
+		unlock_slurmctld (job_write_lock);
 		verbose ("job_cancel of pending job %u successful", job_id);
 		return 0;
 	}
@@ -508,14 +525,15 @@ job_cancel (uint32_t job_id)
 		job_ptr->end_time = time(NULL);
 		deallocate_nodes (job_ptr->node_bitmap);
 		delete_job_details(job_ptr);
+		unlock_slurmctld (job_write_lock);
 		verbose ("job_cancel of running job %u successful", job_id);
 		return 0;
 	} 
 
 	verbose ("job_cancel: job %u can't be cancelled from state=%s", 
 			job_id, job_state_string(job_ptr->job_state));
+	unlock_slurmctld (job_write_lock);
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
-
 }
 
 /*
@@ -922,21 +940,28 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 {
 	struct job_record *job_ptr;
 	int error_code;
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
+	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
+		unlock_slurmctld (job_write_lock);
 		info ("job_step_cancel: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	    (job_ptr->job_state == JOB_TIMEOUT)) {
+		unlock_slurmctld (job_write_lock);
 		return ESLURM_ALREADY_DONE;
+	}
 
 	if (job_ptr->job_state == JOB_STAGE_IN) {
 		last_job_update = time (NULL);
 		error_code = delete_step_record (job_ptr, step_id);
+		unlock_slurmctld (job_write_lock);
 		if (error_code == ENOENT) {
 			info ("job_step_cancel step %u.%u not found", job_id, step_id);
 			return ESLURM_ALREADY_DONE;
@@ -947,6 +972,7 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 
 	info ("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
 			job_id, step_id, job_state_string(job_ptr->job_state));
+	unlock_slurmctld (job_write_lock);
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
@@ -998,32 +1024,6 @@ validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;		/* default is 1 processor per node */
 	return SLURM_SUCCESS ;
-}
-
-/* job_lock - lock the job information 
- * global: job_mutex - semaphore for the job table
- */
-	void 
-job_lock () 
-{
-	int error_code;
-	error_code = pthread_mutex_lock (&job_mutex);
-	if (error_code)
-		fatal ("job_lock: pthread_mutex_lock error %d", error_code);
-
-}
-
-
-/* job_unlock - unlock the job information 
- * global: part_mutex - semaphore for the job table
- */
-	void 
-job_unlock () 
-{
-	int error_code;
-	error_code = pthread_mutex_unlock (&job_mutex);
-	if (error_code)
-		fatal ("job_unlock: pthread_mutex_unlock error %d", error_code);
 }
 
 /* 
@@ -1136,12 +1136,16 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	char *buffer;
 	void *buf_ptr;
 	uint32_t jobs_packed ;
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_job_update)
 		return;
 
+	lock_slurmctld (job_read_lock);
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
@@ -1174,6 +1178,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		jobs_packed ++ ;
 	}		
 
+	unlock_slurmctld (job_read_lock);
 	list_iterator_destroy (job_record_iterator);
 	buffer_offset = (char *)buf_ptr - buffer;
 	xrealloc (buffer, buffer_offset);
@@ -1221,8 +1226,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	packstr (dump_job_ptr->partition, buf_ptr, buf_len);
 	packstr (dump_job_ptr->name, buf_ptr, buf_len);
 	if (dump_job_ptr->node_bitmap) {
-		(void) bit_fmt(tmp_str, MAX_STR_PACK, 
-			       dump_job_ptr->node_bitmap);
+		(void) bit_fmt(tmp_str, MAX_STR_PACK, dump_job_ptr->node_bitmap);
 		packstr (tmp_str, buf_ptr, buf_len);
 	}
 	else 
@@ -1242,8 +1246,8 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		pack32  ((uint32_t) detail_ptr->min_memory, buf_ptr, buf_len);
 		pack32  ((uint32_t) detail_ptr->min_tmp_disk, buf_ptr, buf_len);
 
-		if (detail_ptr->req_nodes == NULL ||
-				strlen (detail_ptr->req_nodes) < MAX_STR_PACK)
+		if ((detail_ptr->req_nodes == NULL) ||
+		    (strlen (detail_ptr->req_nodes) < MAX_STR_PACK))
 			packstr (detail_ptr->req_nodes, buf_ptr, buf_len);
 		else {
 			strncpy(tmp_str, detail_ptr->req_nodes, MAX_STR_PACK);
@@ -1252,8 +1256,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		}
 
 		if (detail_ptr->req_node_bitmap) {
-			(void) bit_fmt(tmp_str, MAX_STR_PACK, 
-				       detail_ptr->req_node_bitmap);
+			(void) bit_fmt(tmp_str, MAX_STR_PACK, detail_ptr->req_node_bitmap);
 			packstr (tmp_str, buf_ptr, buf_len);
 		}
 		else 
@@ -1452,9 +1455,14 @@ update_job (job_desc_msg_t * job_specs)
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
 	bitstr_t *req_bitmap = NULL ;
+	/* Locks: Write job, read node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
+
+	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record (job_specs -> job_id);
 	if (job_ptr == NULL) {
+		unlock_slurmctld (job_write_lock);
 		error ("update_job: job_id %u does not exist.", job_specs -> job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}			
@@ -1533,8 +1541,10 @@ update_job (job_desc_msg_t * job_specs)
 
 	if (job_specs -> partition) {
 		tmp_part_ptr = find_part_record (job_specs -> partition);
-		if (tmp_part_ptr == NULL)
+		if (tmp_part_ptr == NULL) {
+			unlock_slurmctld (job_write_lock);
 			return ESLURM_INVALID_PARTITION_NAME;
+		}
 		strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
 		job_ptr -> part_ptr = tmp_part_ptr;
 		info ("update_job: setting partition to %s for job_id %u",
@@ -1545,6 +1555,7 @@ update_job (job_desc_msg_t * job_specs)
 	if (job_specs -> req_nodes && detail_ptr) {
 		error_code = node_name2bitmap (job_specs->req_nodes, &req_bitmap);
 		if (error_code == EINVAL) {
+			unlock_slurmctld (job_write_lock);
 			if ( req_bitmap )
 				bit_free (req_bitmap);
 			return ESLURM_INVALID_NODE_NAME;
@@ -1561,5 +1572,6 @@ update_job (job_desc_msg_t * job_specs)
 		job_specs -> req_nodes = NULL;
 	}
 
+	unlock_slurmctld (job_write_lock);
 	return SLURM_PROTOCOL_SUCCESS;
 }

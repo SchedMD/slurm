@@ -66,7 +66,7 @@ void
 init_locks ( )
 {
 	if (sem_id == -1)
-		sem_id = semget ( IPC_PRIVATE, (COUNT_OF_LOCKS * 3), IPC_CREAT );
+		sem_id = semget ( IPC_PRIVATE, (COUNT_OF_LOCKS * 3), IPC_CREAT | 0600 );
 
 	if (sem_id < 0)
 		fatal ("semget errno %d", errno);
@@ -103,7 +103,7 @@ lock_slurmctld (slurmctld_lock_t lock_levels)
 		wr_wrlock (PART_LOCK);
 }
 
-/* Issue the required unlock requests in a well defined order */
+/* unlock_slurmctld - Issue the required unlock requests in a well defined order */
 void 
 unlock_slurmctld (slurmctld_lock_t lock_levels)
 {
@@ -128,6 +128,7 @@ unlock_slurmctld (slurmctld_lock_t lock_levels)
 		wr_wrunlock (CONFIG_LOCK);
 }
 
+/* wr_rdlock - Issue a read lock on the specified data type */
 void 
 wr_rdlock (lock_datatype_t datatype)
 {
@@ -145,6 +146,7 @@ wr_rdlock (lock_datatype_t datatype)
 		fatal ("semop errno %d", errno);
 }
 
+/* wr_rdunlock - Issue a read unlock on the specified data type */
 void
 wr_rdunlock (lock_datatype_t datatype)
 {
@@ -154,10 +156,11 @@ wr_rdunlock (lock_datatype_t datatype)
 
 	rdunlock_op[0] . sem_num = read_lock (datatype);
 
-	if (semop (sem_id, rdunlock_op, 3) == -1)
+	if (semop (sem_id, rdunlock_op, 1) == -1)
 		fatal ("semop errno %d", errno);
 }
 
+/* wr_wrlock - Issue a write lock on the specified data type */
 void
 wr_wrlock (lock_datatype_t datatype)
 {
@@ -179,13 +182,14 @@ wr_wrlock (lock_datatype_t datatype)
 	wrlock_op[2] . sem_num = write_wait_lock (datatype);
 	wrlock_op[3] . sem_num = write_lock (datatype);
 
-	if (semop (sem_id, waitlock_op, 3) == -1)
+	if (semop (sem_id, waitlock_op, 1) == -1)
 		fatal ("semop errno %d", errno);
 
-	if (semop (sem_id, wrlock_op, 3) == -1)
+	if (semop (sem_id, wrlock_op, 4) == -1)
 		fatal ("semop errno %d", errno);
 }
 
+/* wr_wrunlock - Issue a write unlock on the specified data type */
 void
 wr_wrunlock (lock_datatype_t datatype)
 {

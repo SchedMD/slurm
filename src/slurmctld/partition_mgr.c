@@ -38,6 +38,7 @@
 
 #include <src/common/hostlist.h>
 #include <src/common/list.h>
+#include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
@@ -47,11 +48,10 @@ List part_list = NULL;			/* partition list */
 char default_part_name[MAX_NAME_LEN];	/* name of default partition */
 struct part_record *default_part_loc = NULL;	/* location of default partition */
 time_t last_part_update;		/* time of last update to partition records */
-static pthread_mutex_t part_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for partition info */
 
-int build_part_bitmap (struct part_record *part_record_point);
-void list_delete_part (void *part_entry);
-int list_find_part (void *part_entry, void *key);
+int	build_part_bitmap (struct part_record *part_record_point);
+void	list_delete_part (void *part_entry);
+int	list_find_part (void *part_entry, void *key);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -447,12 +447,15 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	char *buffer;
 	void *buf_ptr;
 	int parts_packed;
+	/* Locks: Read partition */
+	slurmctld_lock_t part_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_part_update)
 		return;
 
+	lock_slurmctld (part_read_lock);
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
@@ -486,6 +489,7 @@ pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	}			
 
 	list_iterator_destroy (part_record_iterator);
+	unlock_slurmctld (part_read_lock);
 	buffer_offset = (char *)buf_ptr - buffer;
 	xrealloc (buffer, buffer_offset);
 
@@ -545,33 +549,6 @@ pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len)
 }
 
 
-/* part_lock - lock the partition information 
- * global: part_mutex - semaphore for the partition table
- */
-void 
-part_lock () 
-{
-	int error_code;
-	error_code = pthread_mutex_lock (&part_mutex);
-	if (error_code)
-		fatal ("part_lock: pthread_mutex_lock error %d", error_code);
-	
-}
-
-
-/* part_unlock - unlock the partition information 
- * global: part_mutex - semaphore for the partition table
- */
-void 
-part_unlock () 
-{
-	int error_code;
-	error_code = pthread_mutex_unlock (&part_mutex);
-	if (error_code)
-		fatal ("part_unlock: pthread_mutex_unlock error %d", error_code);
-}
-
-
 /* 
  * update_part - update a partition's configuration data
  * global: part_list - list of partition entries
@@ -582,6 +559,8 @@ update_part (update_part_msg_t * part_desc )
 {
 	int error_code, i;
 	struct part_record *part_ptr;
+	/* Locks: Read node, write partition */
+	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
 
 	if ((part_desc -> name == NULL ) ||
 			(strlen (part_desc->name ) >= MAX_NAME_LEN)) {
@@ -590,6 +569,7 @@ update_part (update_part_msg_t * part_desc )
 	}			
 
 	error_code = 0;
+	lock_slurmctld (part_write_lock);
 	part_ptr = list_find_first (part_list, &list_find_part, part_desc->name);
 
 	if (part_ptr == NULL) {
@@ -667,7 +647,8 @@ update_part (update_part_msg_t * part_desc )
 			if (backup_node_list)
 				xfree(backup_node_list);
 		}
-		return error_code;
-	}			
+	}
+			
+	unlock_slurmctld (part_write_lock);
 	return error_code;
 }
