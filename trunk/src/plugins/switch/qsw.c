@@ -728,8 +728,11 @@ qsw_prog_init(qsw_jobinfo_t jobinfo, uid_t uid)
 		if (elanctrl_create_cap(handle, &jobinfo->j_cap) < 0) {
 			error("elanctrl_create_cap: %m");
 			slurm_seterrno(EELAN3CREATE);
+			elanctrl_close(handle);
 			goto fail;
 		}
+
+		elanctrl_close (handle);
 	}
 
 #else /* !HAVE_LIBELANCTRL */
@@ -843,11 +846,14 @@ qsw_getnodeid(void)
 	if (elanctrl_open(&handle) != 0) 
 		slurm_seterrno_ret(EGETNODEID);
 
-	if (elanctrl_get_position(handle, devidx, &position) != 0)
+	if (elanctrl_get_position(handle, devidx, &position) != 0) {
+		elanctrl_close (handle);
 		slurm_seterrno_ret(EGETNODEID);
+	}
 
 	nodeid = position.pos_nodeid;
 
+	elanctrl_close (handle);
 #else
 	ELAN3_CTX *ctx = _elan3_init(0); /* rail 0 */
 	if (ctx) {
