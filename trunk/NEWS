@@ -3,7 +3,8 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.7
 ========================
- -- Remove some BGL specific headers that IBM now distributes.
+ -- Remove some BGL specific headers that IBM now distributes, NOTE
+    BGL driver 080 or greater required.
  -- Change autogen.sh to deal with problems running autoconf on one
     system and configure on another with different software versions.
 
