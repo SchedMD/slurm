@@ -287,7 +287,8 @@ static int _valid_agent_arg(agent_arg_t *agent_arg_ptr)
 	    (agent_arg_ptr->msg_type != REQUEST_NODE_REGISTRATION_STATUS) && 
 	    (agent_arg_ptr->msg_type != REQUEST_KILL_TASKS) && 
 	    (agent_arg_ptr->msg_type != REQUEST_PING) && 
-	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH))
+	    (agent_arg_ptr->msg_type != REQUEST_BATCH_JOB_LAUNCH) &&
+	    (agent_arg_ptr->msg_type != REQUEST_UPDATE_JOB_TIME))
 		fatal("agent passed invalid message type %d",
 		      agent_arg_ptr->msg_type);
 	return SLURM_SUCCESS;

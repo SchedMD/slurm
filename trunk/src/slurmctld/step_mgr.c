@@ -448,7 +448,8 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 
 	if ((job_ptr->job_state == JOB_COMPLETE) || 
 	    (job_ptr->job_state == JOB_FAILED) ||
-	    (job_ptr->job_state == JOB_TIMEOUT))
+	    (job_ptr->job_state == JOB_TIMEOUT) ||
+	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 
 #ifdef HAVE_LIBELAN3
