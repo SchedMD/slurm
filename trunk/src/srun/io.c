@@ -164,8 +164,12 @@ _io_thr_poll(void *job_arg)
 			unsigned short revents = fds[i].revents;
 			xassert(!(revents & POLLNVAL));
 			if (revents & POLLERR || revents & POLLHUP) {
-				error("poll error condition on fd %d", 
-						fds[i].fd);
+				int err;
+				socklen_t size = sizeof(int);
+				getsockopt(fds[i].fd, SOL_SOCKET, 
+					   SO_ERROR, (void *)&err, &size);
+				error("poll error condition %d on fd %d", 
+						err, fds[i].fd);
 				_shutdown_fd_poll(&map[i]);
 			}
 
