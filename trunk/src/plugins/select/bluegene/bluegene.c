@@ -217,7 +217,7 @@ static int _copy_slurm_partition_list()
 
 			bgl_record->nodes = strdup(cur_nodes);
 			bgl_record->slurm_part_id = slurm_part->name;
-			bgl_record->part_type = (rm_partition_t*) malloc(sizeof(rm_partition_t));
+			bgl_record->part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
 			if (!bgl_record->part_type){
 				error("_copy_slurm_partition_list: not enough memory for bgl_record->part_type");
 				err = 1;
@@ -369,7 +369,7 @@ static int _parse_bgl_spec(char *in_line)
 	}
 
 	new_record->nodes = strdup(nodes);
-	new_record->part_type = malloc(sizeof(rm_partition_t));
+	new_record->part_type = xmalloc(sizeof(rm_partition_t));
 	if (strcasecmp(part_type, "TORUS") == 0){
 		// error("warning, TORUS specified, but I can't handle those yet!  Defaulting to mesh");
 		/** FIXME */
@@ -437,7 +437,7 @@ int _find_part_type(char* nodes, rm_partition_t** return_part_type)
 						      (ListFindF) _ListFindF_conf_part_record, 
 						      nodes);
 
-	*return_part_type = (rm_partition_t*) malloc(sizeof(rm_partition_t));
+	*return_part_type = (rm_partition_t*) xmalloc(sizeof(rm_partition_t));
 	if (!(*return_part_type)) {
 		error("_find_part_type: not enough memory for return_part_type");
 		return SLURM_ERROR;
@@ -511,9 +511,9 @@ int char2intptr(char* request, int** bl, int** tr)
 
  cleanup:
 	error("char2intptr request string insufficient dimensions");
-	free(request_tmp);
-	free(bl);
-	free(tr);
+	xfree(request_tmp);
+	xfree(bl);
+	xfree(tr);
 	bl = NULL; tr = NULL;
 	return SLURM_ERROR;
 }
@@ -528,7 +528,7 @@ int _parse_request(char* request_string, partition_t** request)
 	int *bl=NULL, *tr=NULL;
 	uint16_t *dim=NULL;
 	int i;
-	(*request) = (partition_t*) malloc(sizeof(partition_t));
+	(*request) = (partition_t*) xmalloc(sizeof(partition_t));
 	if (!(*request)) {
 		error("parse_request: not enough memory for request");
 		return SLURM_ERROR;
@@ -574,7 +574,7 @@ int _get_request_dimensions(int* bl, int* tr, uint16_t** dim)
 		return SLURM_ERROR;
 	}
 		
-	*dim = (uint16_t*) malloc(sizeof(uint16_t) * SYSTEM_DIMENSIONS);
+	*dim = (uint16_t*) xmalloc(sizeof(uint16_t) * SYSTEM_DIMENSIONS);
 	if (!(*dim)) {
 		error("get_request_dimensions: not enough memory for dim");
 		return SLURM_ERROR;
@@ -623,7 +623,7 @@ int _extract_range(char* request, char** result)
 	if (!request)
 		return 1;
 	if (!(*result)) {
-		*result = (char*) malloc(sizeof(RANGE_SIZE));
+		*result = (char*) xmalloc(sizeof(RANGE_SIZE));
 		if (!(*result)) {
 			error("_extract_range: not enough memory for *result");
 			return SLURM_ERROR;
@@ -652,7 +652,7 @@ int _extract_range(char* request, char** result)
 	return SLURM_SUCCESS;
 
  cleanup:
-	free(*result);
+	xfree(*result);
 	*result = NULL;
 	return SLURM_ERROR;
 }
@@ -687,7 +687,7 @@ void print_bgl_record(bgl_record_t* record)
 
 	if (record->bitmap){
 		int bitsize = 128;
-		char* bitstring = (char*) malloc(sizeof(char)*bitsize);
+		char* bitstring = (char*) xmalloc(sizeof(char)*bitsize);
 		bit_fmt(bitstring, bitsize, record->bitmap);
 		debug("\tbitmap: %s", bitstring);
 	}
@@ -953,10 +953,10 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 void _print_bitmap(bitstr_t* bitmap)
 {
 	int bitsize = 128;
-	char* bitstring = (char*) malloc(sizeof(char)*bitsize);
+	char* bitstring = (char*) xmalloc(sizeof(char)*bitsize);
 	bit_fmt(bitstring, bitsize, bitmap);
 	debug("bitmap:\t%s", bitstring);
-	free(bitstring);
+	xfree(bitstring);
 }
 
 /** 
@@ -993,6 +993,8 @@ void update_bgl_node_bitmap(bitstr_t* bitmap)
 		    rm_get_data(my_bp,RM_BPState,&bp_state);
 		    /* from here we either update the node or bitmap
 		       entry */
+		    if ()
+
 	  }
 	  
 #endif

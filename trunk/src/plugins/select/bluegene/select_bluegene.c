@@ -40,14 +40,6 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/slurm_xlator.h"
-
-/*
-#include "src/common/list.h"
-#include "src/common/plugin.h"
-
-#include "src/common/log.h"
-#include "src/common/macros.h"
-*/
 #include "src/slurmctld/slurmctld.h"
 
 #ifdef WITH_PTHREADS
@@ -171,7 +163,8 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 
 	// error("select/bluegene plugin not yet functional");
 	debug("select_p_node_init should be doing a system wide status "
-	      "check on all the nodes to updated the system bitmap.");
+	      "check on all the nodes to updated the system bitmap, "
+	      "along with killing old jobs, etc");
 	// return SLURM_ERROR;
 	return SLURM_SUCCESS;
 }

@@ -275,6 +275,9 @@ struct job_record {
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
 					 * the job step completes, 2 if kill
 					 * in progress */
+	uint16_t geometry[SYSTEM_DIMENSIONS]; /* geometry of the requested job */
+	uint16_t type;			 /* type of connection for request */
+	bool rotate;			 /* allow rotation of request?	  */
 	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	uint32_t num_procs;		/* count of required/allocated processors */

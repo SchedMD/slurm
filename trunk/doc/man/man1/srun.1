@@ -344,6 +344,21 @@ allocated to this job. The host list will be assumed to be a filename
 if it contains a "/"character.
 
 .PP
+BGL related options
+.TP
+\fB\-\-geometry\fR, \fB-g\fR
+Specify the geometry requirements for the job.
+.TP
+\fB\-\-conn-type\fR
+Require the partition connection type to be of a certain type.  The
+possible options are Mesh, Torus, or Nav.  If Nav, or if not set, then
+SLURM will try to fit a Torus else Mesh.
+.TP
+\fB\-\-rotate\fR, \fB-R\fR
+Specify whether SLURM is allowed to rotate the job request in order to
+fit an appropriate partition.
+
+.PP
 Help options
 .TP
 \fB\-\-help\fR

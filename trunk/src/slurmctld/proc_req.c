@@ -118,7 +118,6 @@ inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  */
 void slurmctld_req (slurm_msg_t * msg)
 {
-
 	switch (msg->msg_type) {
 	case REQUEST_RESOURCE_ALLOCATION:
 		_slurm_rpc_allocate_resources(msg);
@@ -1440,6 +1439,7 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 	slurm_msg_t response_msg;
 	submit_response_msg_t submit_msg;
 	job_desc_msg_t *job_desc_msg = (job_desc_msg_t *) msg->data;
+
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };

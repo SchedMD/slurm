@@ -239,7 +239,7 @@ int fit_request(List sys, List allocated, uint16_t* request)
 	debug("");
 	uint16_t* new_request;
 	rotate_part(request, &new_request);
-	free(request);
+	xfree(request);
 	request = new_request;
 
 	/** */
@@ -684,7 +684,7 @@ int configure_switches(rm_partition_t* partition, partition_t* partition)
 
 #else 
 
-	bgl_part_id = (pm_partition_id_t*) malloc(sizeof(pm_partition_id_t));
+	bgl_part_id = (pm_partition_id_t*) xmalloc(sizeof(pm_partition_id_t));
 	// *bgl_part_id = (int)(rand()%100);
 	*bgl_part_id = BGL_PARTITION_NUMBER++;
 	bgl_record_t* bgl_rec = (bgl_record_t*) partition->bgl_record_ptr;
@@ -782,7 +782,7 @@ void rotate_part(const uint16_t* config, uint16_t** new_config)
 		return;
 
 	if (*new_config != NULL){
-		free(*new_config);
+		xfree(*new_config);
 	}
 
 	(*new_config) = (uint16_t*) calloc(SYSTEM_DIMENSIONS, sizeof(uint16_t));

@@ -28,6 +28,12 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
+#define SYSTEM_DIMENSIONS 3
+#define X_DIMENSION 8
+#define Y_DIMENSION 4
+#define Z_DIMENSION 4
+enum connection_type {RM_MESH, RM_TORUS, RM_NAV};
+
 /* BEGIN_C_DECLS should be used at the beginning of your declarations,
    so that C++ compilers don't mangle their names.  Use _END_C_DECLS at
    the end of C declarations. */
@@ -252,6 +258,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *host;		/* host to contact initiating srun */
 	uint32_t dependency;	/* defer until specified job completes */
 	char *account;		/* charge to specified account */
+        uint16_t geometry[SYSTEM_DIMENSIONS];
+	uint16_t type;
+	uint16_t rotate;
 } job_desc_msg_t;
 
 typedef struct job_info {

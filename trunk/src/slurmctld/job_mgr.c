@@ -2089,6 +2089,15 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		detail_ptr->out = xstrdup(job_desc->out);
 	if (job_desc->work_dir)
 		detail_ptr->work_dir = xstrdup(job_desc->work_dir);
+	if (job_desc->geometry){
+		int i=0;
+		for (; i<SYSTEM_DIMENSIONS; i++)
+			job_ptr->geometry[i] = job_desc->geometry[i];
+	}
+	if (job_desc->type)
+		job_ptr->type = job_desc->type;
+	if (job_desc->rotate)
+		job_ptr->rotate = job_desc->rotate;
 
 	*job_rec_ptr = job_ptr;
 	return SLURM_SUCCESS;
@@ -2274,6 +2283,14 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
 		job_desc_msg->shared = 0;	/* default not shared nodes */
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;	/* default 1 cpu per node */
+	if (job_desc_msg->geometry[0] == (uint16_t) NO_VAL)
+		job_desc_msg->geometry[0] = 0;  /* this will indicate that geometry doesn't matter */
+	if (job_desc_msg->type == (uint16_t) NO_VAL)
+		job_desc_msg->type = RM_NAV;    /* default to try TORUS, then MESH */
+	if (job_desc_msg->rotate == (uint16_t) NO_VAL)
+		job_desc_msg->rotate = true;    /* default to allow rotate */
+	debug("validate after job_mgr type %d rotate %d RM_NAV %d NOVAL %d", job_desc_msg->type, job_desc_msg->rotate, RM_NAV, NO_VAL);
+
 	return SLURM_SUCCESS;
 }
 
@@ -3034,6 +3051,20 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			error_code = ESLURM_DEPENDENCY;
 		else
 			job_ptr->dependency = job_specs->dependency;
+	}
+
+	if (job_specs->geometry[0] != NO_VAL) {
+		int i;
+		for (i=0; i<SYSTEM_DIMENSIONS; i++)
+			job_ptr->geometry[i] = job_specs->geometry[i];
+	}
+
+	if (job_specs->type != NO_VAL) {
+		job_ptr->type = job_specs->type;
+	}
+
+	if (job_specs->rotate != NO_VAL) {
+		job_ptr->rotate = job_specs->rotate;
 	}
 
 	return error_code;
