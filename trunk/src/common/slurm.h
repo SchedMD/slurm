@@ -78,6 +78,7 @@ enum Node_State {
 /* Last entry must be "END", keep in sync with Node_State */
 extern char *Node_State_String[];
 
+extern time_t Last_BitMap_Update;	/* Time of last node creation or deletion */
 extern time_t Last_Node_Update;		/* Time of last update to Node Records */
 struct Node_Record {
     char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
@@ -146,15 +147,6 @@ extern void BitMapAND(unsigned *BitMap1, unsigned *BitMap2);
 extern void BitMapClear(unsigned *BitMap, int Position);
 
 /*
- * BitMapConsecutive - Return the count of consecutive set bits in the specified bitmap
- * Input: BitMap - The bit map to get count from
- *        Position - Location into which the node index of the first entry is stored
- * Output: Position - Location of the first node index in the sequence
- *         Returns the count of set bits
- */
-extern int BitMapConsecutive(unsigned *BitMap, int *Position);
- 
-/*
  * BitMapCopy - Create a copy of a bitmap
  * Input: BitMap - The bitmap create a copy of
  * Output: Returns pointer to copy of BitMap or NULL if error (no memory)
@@ -176,16 +168,6 @@ extern int BitMapCount(unsigned *BitMap);
  * Output: BitMap - The filled in bitmap
  */
 extern void BitMapFill(unsigned *BitMap);
-
-/*
- * BitMapFit - Identify the nodes which best fit the Request count
- * Input: BitMap - The bit map to search
- *        Req_Nodes - Number of nodes required
- *        Consecutive - Nodes must be consecutive is 1, otherwise 0
- * Output: BitMap - Nodes NOT required to satisfy the request are cleared, other left set
- *         Returns zero on success, EINVAL otherwise
- */
-int BitMapFit(unsigned *BitMap, int Req_Nodes, int Consecutive);
 
 /* 
  * BitMapIsSuper - Report if one bitmap's contents are a superset of another
