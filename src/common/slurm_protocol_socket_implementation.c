@@ -252,7 +252,7 @@ int _slurm_get_stream_addr ( slurm_fd open_fd , slurm_addr * address )
 	int size ;
 	
 	size = sizeof ( address ) ;
-	return _slurm_getsockname ( open_fd , address , & size ) ;
+	return _slurm_getsockname ( open_fd , ( struct sockaddr * ) address , & size ) ;
 }
 
 int _slurm_close_stream ( slurm_fd open_fd )
