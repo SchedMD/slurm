@@ -193,13 +193,6 @@ extern void print_grid(int dir)
 			break;
 		}
 	}
-	if(grid_xcord!=1 && grid_xcord<(pa_system_ptr->grid_win->_maxx-1))
-		for(x=grid_xcord; x<pa_system_ptr->grid_win->_maxx; x++) {
-			mvwprintw(pa_system_ptr->grid_win,
-				  grid_ycord, grid_xcord, "-");
-			grid_xcord++;
-		}
-	
 #endif
 	return;
 }
