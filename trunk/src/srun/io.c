@@ -139,7 +139,7 @@ _handle_task_output(int *fd, FILE *out, int tasknum)
 
 	if ((len = _readx(*fd, buf, IO_BUFSIZ)) <= 0) {
 		debug("%d: <%s disconnected>", tasknum, 
-				out = stdout ? "stdout" : "stderr");
+				out == stdout ? "stdout" : "stderr");
 		fflush(stderr);
 		shutdown(*fd, SHUT_RDWR);
 		close(*fd);
