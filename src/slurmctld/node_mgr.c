@@ -1046,6 +1046,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	int error_code;
 	struct config_record *config_ptr;
 	struct node_record *node_ptr;
+	uint16_t resp_state;
 
 	node_ptr = find_node_record (node_name);
 	if (node_ptr == NULL)
@@ -1084,11 +1085,17 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	else {
 		info ("validate_node_specs: node %s has registered", node_name);
+		resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 			node_ptr->node_state = NODE_STATE_IDLE;
-		if (node_ptr->node_state == NODE_STATE_IDLE)
+		if (node_ptr->node_state == NODE_STATE_IDLE) {
 			bit_set (idle_node_bitmap, (node_ptr - node_record_table_ptr));
+			if (resp_state)	{
+				/* Node just started responding, do all pending RPCs now */
+				retry_pending (node_name);
+			}
+		}
 		if (node_ptr->node_state != NODE_STATE_DOWN)
 			bit_set (up_node_bitmap, (node_ptr - node_record_table_ptr));
 	}
@@ -1102,6 +1109,7 @@ node_did_resp (char *name)
 {
 	struct node_record *node_ptr;
 	int node_inx;
+	uint16_t resp_state;
 
 	node_ptr = find_node_record (name);
 	if (node_ptr == NULL) {
@@ -1112,11 +1120,17 @@ node_did_resp (char *name)
 	node_inx = node_ptr - node_record_table_ptr;
 	last_node_update = time (NULL);
 	node_record_table_ptr[node_inx].last_response = time (NULL);
+	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	if (node_ptr->node_state == NODE_STATE_UNKNOWN)
 		node_ptr->node_state = NODE_STATE_IDLE;
-	if (node_ptr->node_state == NODE_STATE_IDLE)
+	if (node_ptr->node_state == NODE_STATE_IDLE) {
 		bit_set (idle_node_bitmap, node_inx);
+		if (resp_state)	{
+			/* Node just started responding, do all its pending RPCs now */
+			retry_pending (name);
+		}
+	}
 	if (node_ptr->node_state != NODE_STATE_DOWN)
 		bit_set (up_node_bitmap, node_inx);
 	return;
@@ -1198,40 +1212,40 @@ ping_nodes (void)
 
 		if (base_state == NODE_STATE_UNKNOWN) {
 			debug3 ("attempt to register %s now", node_record_table_ptr[i].name);
-			if ((reg_agent_args->addr_count+1) > reg_buf_rec_size) {
+			if ((reg_agent_args->node_count+1) > reg_buf_rec_size) {
 				reg_buf_rec_size += 32;
 				xrealloc ((reg_agent_args->slurm_addr), 
 				          (sizeof (struct sockaddr_in) * reg_buf_rec_size));
 				xrealloc ((reg_agent_args->node_names), 
 				          (MAX_NAME_LEN * reg_buf_rec_size));
 			}
-			reg_agent_args->slurm_addr[reg_agent_args->addr_count] = 
+			reg_agent_args->slurm_addr[reg_agent_args->node_count] = 
 						node_record_table_ptr[i].slurm_addr;
-			pos = MAX_NAME_LEN * reg_agent_args->addr_count;
+			pos = MAX_NAME_LEN * reg_agent_args->node_count;
 			strncpy (&reg_agent_args->node_names[pos],
 			         node_record_table_ptr[i].name, MAX_NAME_LEN);
-			reg_agent_args->addr_count++;
+			reg_agent_args->node_count++;
 			continue;
 		}
 
 		debug3 ("ping %s now", node_record_table_ptr[i].name);
-		if ((ping_agent_args->addr_count+1) > ping_buf_rec_size) {
+		if ((ping_agent_args->node_count+1) > ping_buf_rec_size) {
 			ping_buf_rec_size += 32;
 			xrealloc ((ping_agent_args->slurm_addr), 
 			          (sizeof (struct sockaddr_in) * ping_buf_rec_size));
 			xrealloc ((ping_agent_args->node_names), 
 			          (MAX_NAME_LEN * ping_buf_rec_size));
 		}
-		ping_agent_args->slurm_addr[ping_agent_args->addr_count] = 
+		ping_agent_args->slurm_addr[ping_agent_args->node_count] = 
 						node_record_table_ptr[i].slurm_addr;
-		pos = MAX_NAME_LEN * ping_agent_args->addr_count;
+		pos = MAX_NAME_LEN * ping_agent_args->node_count;
 		strncpy (&ping_agent_args->node_names[pos],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
-		ping_agent_args->addr_count++;
+		ping_agent_args->node_count++;
 
 	}
 
-	if (ping_agent_args->addr_count == 0)
+	if (ping_agent_args->node_count == 0)
 		xfree (ping_agent_args);
 	else {
 		debug ("Spawning ping agent");
@@ -1253,7 +1267,7 @@ ping_nodes (void)
 		}
 	}
 
-	if (reg_agent_args->addr_count == 0)
+	if (reg_agent_args->node_count == 0)
 		xfree (reg_agent_args);
 	else {
 		debug ("Spawning node registration agent");

@@ -132,18 +132,18 @@ deallocate_nodes (struct job_record  * job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test (job_ptr->node_bitmap, i) == 0)
 			continue;
-		if ((agent_args->addr_count+1) > buf_rec_size) {
+		if ((agent_args->node_count+1) > buf_rec_size) {
 			buf_rec_size += 32;
 			xrealloc ((agent_args->slurm_addr), 
 			          (sizeof (struct sockaddr_in) * buf_rec_size));
 			xrealloc ((agent_args->node_names), 
 			          (MAX_NAME_LEN * buf_rec_size));
 		}
-		agent_args->slurm_addr[agent_args->addr_count] = 
+		agent_args->slurm_addr[agent_args->node_count] = 
 							node_record_table_ptr[i].slurm_addr;
-		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->addr_count],
+		strncpy (&agent_args->node_names[MAX_NAME_LEN*agent_args->node_count],
 		         node_record_table_ptr[i].name, MAX_NAME_LEN);
-		agent_args->addr_count++;
+		agent_args->node_count++;
 		base_state = node_record_table_ptr[i].node_state & (~NODE_STATE_NO_RESPOND);
 		no_resp_flag = node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND;
 		if (base_state == NODE_STATE_DRAINING) {
