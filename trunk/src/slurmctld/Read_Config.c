@@ -6,16 +6,19 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "slurm.h"
+#include "list.h"
 
 #define BUF_SIZE 1024
-#define DEBUG_MODULE 1
-#define DEBUG_SYSTEM 1
 #define NO_VAL (-99)
 #define SEPCHARS " \n\t"
 
