@@ -134,8 +134,8 @@ main(int argc, char * argv[]) {
     Buffer_Offset = 0;
     Error_Code = Read_Value(Buffer, &Buffer_Offset, Buffer_Size, "Val1", &size);
     if (Error_Code || (size != 123)) printf("Read_Value error on Test1\n");
-    Error_Code = Read_Array(Buffer, &Buffer_Offset, Buffer_Size, "Val2", (void**)&Map2);
-    if (Error_Code || (strncmp((char *)Map1, (char *)Map2,1) != 0)) 
+    Error_Code = Read_Array(Buffer, &Buffer_Offset, Buffer_Size, "Val2", (void**)&Map2, &i);
+    if (Error_Code || (strncmp((char *)Map1, (char *)Map2,1) != 0) || (i != 8)) 
 	printf("Read_Array error on Test1\n");
     Error_Code = Read_Tag(Buffer, &Buffer_Offset, Buffer_Size, "EndRec");
     if (Error_Code) printf("Read_Tag error on Test4\n");
@@ -580,12 +580,14 @@ int Load_String(char **destination, char *keyword, char *In_Line) {
  *        Buffer_Size - Byte size of Buffer
  *        Tag - Unique identification for information
  *        Value - Pointer to value to be loaded with POINTER TO ARRAY, NOT THE VALUE
+ *        Size - Pointer to storeage for size of Value in bytes (NULL if not desired)
  * Output: Buffer_Offset - Incremented by  size of size plus the Value size itself
  *         Value - Set to the buffer contents or location
+ *         Size - Set to the byte size of Value (if pointer non NULL)
  *         Returns 0 if no error or EFAULT on end of buffer, EINVAL on bad tag 
  */
 int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size, 
-		char *Tag, void **Value) {
+		char *Tag, void **Value, int* Size) {
     char Read_Tag[TAG_SIZE], Err_Msg[128];
     int size;
 
@@ -617,6 +619,7 @@ int Read_Array(char *Buffer, int *Buffer_Offset, int Buffer_Size,
     else
 	Value[0] = NULL;
     (*Buffer_Offset) += size;
+    if (Size != NULL) (*Size) = size;
     return 0;
 } /* Read_Array */
 
