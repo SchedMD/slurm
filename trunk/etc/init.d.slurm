@@ -11,6 +11,9 @@
 # processname: /usr/sbin/slurmctld
 # pidfile: /var/run/slurmctld.pid
 #
+# processname: /usr/sbin/slurm_tv_clean
+# pidfile: /var/run/slurm_tv_clean.pid
+#
 # config: /etc/sysconfig/slurm
 #
 
@@ -26,6 +29,7 @@ if [ -f /etc/sysconfig/slurm ] ; then
 else
     SLURMCTLD_OPTIONS=""
     SLURMD_OPTIONS=""
+    SLURM_TV_CLEAN_OPTIONS=""
 fi
 
 [ -f /etc/slurm/slurm.conf ] || exit 1
@@ -55,7 +59,11 @@ startall() {
     for prog in `scontrol show daemons`; do 
         optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
         start $prog ${!optvar} 
-     done 
+    done 
+
+    prog="slurm_tv_clean"
+    optvar=`echo ${prog}_OPTIONS | tr "a-z" "A-Z"`
+    start $prog ${!optvar} 
 }
 
 # status() with slight modifications to take into account
@@ -125,11 +133,13 @@ case "$1" in
 	for prog in `scontrol show daemons`; do
 	    stop $prog
 	done
+	stop slurm_tv_clean
         ;;
     status)
 	for prog in `scontrol show daemons`; do
 	   slurmstatus $prog
 	done
+	status slurm_tv_clean
         ;;
     restart)
         $0 stop && $0 start
@@ -140,6 +150,8 @@ case "$1" in
                  stop $prog
                  start $prog
             done
+	    stop  slurm_tv_clean
+	    start slurm_tv_clean
         fi
         ;;
     reconfig)
@@ -151,6 +163,7 @@ case "$1" in
 	for prog in `scontrol show daemons`; do   
 	    echo "$prog runs here"
 	done
+	echo "slurm_tv_clean runs here"
 	;;
     *)
         echo "Usage: $0 {start|startclean|stop|status|restart|reconfig|condrestart|test}"
