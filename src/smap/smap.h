@@ -106,8 +106,6 @@ time_t now;
 axis ***grid;
 axis *fill_in_value;
 
-void clear_window(WINDOW * win);
-
 void init_grid(node_info_msg_t * node_info_ptr);
 int set_grid(int start, int end, int count);
 int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,

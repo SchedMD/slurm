@@ -27,15 +27,6 @@
 
 #include "src/smap/smap.h"
 
-void clear_window(WINDOW * win)
-{
-	int x, y;
-	for (x = 1; x < win->_maxx; x++)
-		for (y = 1; y < win->_maxy; y++)
-			mvwaddch(win, y, x, ' ');
-	return;
-}
-
 /* _init_grid - set values of every grid point */
 void init_grid(node_info_msg_t * node_info_ptr)
 {

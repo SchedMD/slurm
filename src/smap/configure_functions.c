@@ -53,7 +53,7 @@ void get_command(void)
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code)
 		if (quiet_flag != 1) {
-			clear_window(text_win);
+			wclear(text_win);
 			ycord = text_win->_maxy / 2;
 			mvwprintw(text_win, ycord, 1, "slurm_load_node");
 			return;
@@ -68,7 +68,7 @@ void get_command(void)
 		box(grid_win, 0, 0);
 		wrefresh(text_win);
 		wrefresh(grid_win);
-		clear_window(command_win);
+		wclear(command_win);
 		box(command_win, 0, 0);
 		mvwprintw(command_win, 0, 3,
 			  "Input Command: (type quit to change view, exit to exit)");
@@ -98,7 +98,7 @@ void get_command(void)
 	params.display = 0;
 	noecho();
 	init_grid(node_info_ptr);
-	clear_window(text_win);
+	wclear(text_win);
 	xcord = 1;
 	ycord = 1;
 	print_date();

@@ -53,7 +53,7 @@ void get_job()
 
 	if (error_code)
 		if (quiet_flag != 1) {
-			clear_window(text_win);
+			wclear(text_win);
 			ycord = text_win->_maxy / 2;
 			xcord = text_win->_maxx;
 			mvwprintw(text_win, ycord, 1, "slurm_load_job");

@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 	} else {
 		for (i = 0; i < node_info_ptr->record_count; i++) {
 			node_ptr = &node_info_ptr->node_array[i];
+			node_ptr->node_state = NODE_STATE_DRAINED;
 			start = atoi(node_ptr->name + 3);
 			temp = start / 100;
 			if (X < temp)
@@ -104,12 +105,12 @@ int main(int argc, char *argv[])
 
 
 	}
-        signal(SIGWINCH, _resize_handler);
+	signal(SIGWINCH, _resize_handler);
 #else
 	printf("This will only run on a BGL system right now.\n");
 	exit(0);
 #endif
-        initscr();
+	initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
 		printf
@@ -129,7 +130,7 @@ int main(int argc, char *argv[])
 	box(grid_win, 0, 0);
 
 	startx = width;
-        COLS -= 2;
+	COLS -= 2;
 	width = COLS - width;
 	height = LINES;
 	text_win = newwin(height, width, starty, startx);
@@ -139,12 +140,12 @@ int main(int argc, char *argv[])
 
 	while (!end) {
 		_get_option();
-	      redraw:		
-                
- 
-                init_grid(node_info_ptr);
+	      redraw:
+
+
+		init_grid(node_info_ptr);
 		wclear(text_win);
-                //wclear(grid_win);        
+		//wclear(grid_win);        
 		xcord = 1;
 		ycord = 1;
 
@@ -169,14 +170,14 @@ int main(int argc, char *argv[])
 
 		if (params.iterate) {
 			for (i = 0; i < params.iterate; i++) {
-                          
-                          sleep(1);
-                          if (_get_option())
-                            goto redraw;
-                          else if (resize_screen) {
-                            resize_screen=0;
-                            goto redraw;
-                          }
+
+				sleep(1);
+				if (_get_option())
+					goto redraw;
+				else if (resize_screen) {
+					resize_screen = 0;
+					goto redraw;
+				}
 			}
 		} else
 			break;
@@ -206,8 +207,8 @@ void print_date(void)
 int _get_option(void)
 {
 	char ch;
-	
-        ch = getch();
+
+	ch = getch();
 	switch (ch) {
 	case 'b':
 		params.display = BGLPART;
@@ -236,38 +237,38 @@ int _get_option(void)
 
 void *_resize_handler(int sig)
 {
- 	int height = Y * Z + Y * 2;
+	int height = Y * Z + Y * 2;
 	int width = X * 2;
 	int startx = 0;
 	int starty = 0;
-	
-        ycord=1;
-        wclear(grid_win);
-        wclear(text_win);
-        endwin();
-        initscr();
-        getmaxyx(stdscr,LINES,COLS);
-        wresize(grid_win,height,width);
-        width = COLS - width;
-	wresize(text_win,LINES,width);
-        print_date();
-        switch (params.display) {
-        case JOBS:
-          get_job();
-          break;
-        case COMMANDS:
-          get_command();
-          break;
-        default:
-          get_part();
-          break;
-        }
-        
-        print_grid();
-        box(text_win, 0, 0);
-        box(grid_win, 0, 0);
-        wrefresh(text_win);
-        wrefresh(grid_win);
-        resize_screen=1;
-        return NULL;
+
+	ycord = 1;
+	wclear(grid_win);
+	wclear(text_win);
+	endwin();
+	initscr();
+	getmaxyx(stdscr, LINES, COLS);
+	wresize(grid_win, height, width);
+	width = COLS - width;
+	wresize(text_win, LINES, width);
+	print_date();
+	switch (params.display) {
+	case JOBS:
+		get_job();
+		break;
+	case COMMANDS:
+		get_command();
+		break;
+	default:
+		get_part();
+		break;
+	}
+
+	print_grid();
+	box(text_win, 0, 0);
+	box(grid_win, 0, 0);
+	wrefresh(text_win);
+	wrefresh(grid_win);
+	resize_screen = 1;
+	return NULL;
 }
