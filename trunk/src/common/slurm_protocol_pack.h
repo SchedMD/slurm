@@ -37,6 +37,11 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_msg_ptr, void ** buffer , int * 
 void pack_last_update ( last_update_msg_t * msg , void ** buffer , uint32_t * length ) ;
 int unpack_last_update ( last_update_msg_t ** msg , void ** buffer , uint32_t * length ) ;
 
-void pack_build_info ( struct build_table * build_ptr, void ** buffer , int * buffer_size ) ;
-int unpack_build_info ( struct build_table **build_buffer_ptr, void ** buffer , int * buffer_size ) ;
+void pack_build_info ( build_info_msg_t * build_ptr, void ** buffer , int * buffer_size ) ;
+int unpack_build_info ( build_info_msg_t **build_buffer_ptr, void ** buffer , int * buffer_size ) ;
+
+void pack_job_info_msg ( slurm_msg_t * msg , void ** buffer , int * buffer_size ) ;
+int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buffer , int * buffer_size ) ;
+int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size ) ;
+
 #endif

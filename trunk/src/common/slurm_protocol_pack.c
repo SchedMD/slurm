@@ -5,6 +5,7 @@
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/pack.h>
 #include <src/common/log.h>
+#include <src/api/nodelist.h>
 #include <src/slurmctld/slurmctld.h>
 
 /* pack_header
@@ -56,6 +57,9 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_BUILD_INFO:
 			pack_build_info ( ( build_info_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
 			break ;
+		case RESPONSE_JOB_INFO:
+			pack_job_info_msg ( ( slurm_msg_t * ) msg , (void ** ) buffer , buf_len ) ;
+			break ;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
 		case MESSAGE_NODE_REGISRATION_STATUS :
@@ -83,8 +87,6 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_CANCEL_JOB_STEP :
 		case RESPONSE_SIGNAL_JOB :
 		case RESPONSE_SIGNAL_JOB_STEP :
-			break ;
-		case RESPONSE_JOB_INFO :
 			break ;
 		case REQUEST_JOB_ATTACH :
 			break ;
@@ -143,6 +145,9 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			break;
 		case RESPONSE_BUILD_INFO:
 			unpack_build_info ( ( build_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
+			break;
+		case RESPONSE_JOB_INFO:
+			unpack_job_info_msg ( ( job_info_msg_t ** ) &(msg -> data) , (void ** ) buffer , buf_len ) ;
 			break;
 		case REQUEST_NODE_REGISRATION_STATUS :
 			break ;
@@ -240,7 +245,102 @@ int unpack_node_registration_status_msg ( node_registration_status_msg_t ** msg 
 	return 0 ;
 }
 
-void pack_build_info ( build_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
+void pack_job_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )
+{	
+	memcpy ( *buf_ptr , msg->data , msg->data_size );
+	(*buf_ptr) += msg->data_size;
+	(*buffer_size) -= msg->data_size;
+}
+
+int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer_size )
+{
+	int i;
+	job_table_t *job;
+	
+	*msg = malloc ( sizeof ( job_info_msg_t ) );
+	if ( *msg == NULL )
+		return ENOMEM ;
+
+
+	/* load buffer's header (data structure version and time) */
+	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
+	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
+
+	job = (*msg) -> job_array = malloc ( sizeof ( job_table_t ) * (*msg)->record_count ) ;
+
+	/* load individual job info */
+	job = NULL;
+	for (i = 0; i < (*msg)->record_count ; i++) {
+	unpack_job_table ( & job[i] , buf_ptr , buffer_size ) ;
+
+	}
+	return 0;
+}
+
+int unpack_job_table_msg ( job_table_msg_t ** msg , void ** buf_ptr , int * buffer_size )
+{
+	*msg = malloc ( sizeof ( job_table_t ) ) ;
+	if ( *msg == NULL )
+		return ENOMEM ;
+	unpack_job_table ( *msg , buf_ptr , buffer_size ) ;
+	return 0 ;
+}
+
+int unpack_job_table ( job_table_t * job , void ** buf_ptr , int * buffer_size )
+{
+	uint16_t uint16_tmp;
+	uint32_t uint32_tmp;
+	char * node_inx_str;
+
+	unpack32  (&job->job_id, buf_ptr, buffer_size);
+	unpack32  (&job->user_id, buf_ptr, buffer_size);
+	unpack16  (&job->job_state, buf_ptr, buffer_size);
+	unpack32  (&job->time_limit, buf_ptr, buffer_size);
+
+	unpack32  (&uint32_tmp, buf_ptr, buffer_size);
+	job->start_time = (time_t) uint32_tmp;
+	unpack32  (&uint32_tmp, buf_ptr, buffer_size);
+	job->end_time = (time_t) uint32_tmp;
+	unpack32  (&job->priority, buf_ptr, buffer_size);
+
+	unpackstr_ptr_malloc (&job->nodes, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->nodes == NULL)
+		job->nodes = "";
+	unpackstr_ptr_malloc (&job->partition, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->partition == NULL)
+		job->partition = "";
+	unpackstr_ptr_malloc (&job->name, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->name == NULL)
+		job->name = "";
+	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
+	if (node_inx_str == NULL)
+		node_inx_str = "";
+	job->node_inx = bitfmt2int(node_inx_str);
+
+	unpack32  (&job->num_procs, buf_ptr, buffer_size);
+	unpack32  (&job->num_nodes, buf_ptr, buffer_size);
+	unpack16  (&job->shared, buf_ptr, buffer_size);
+	unpack16  (&job->contiguous, buf_ptr, buffer_size);
+
+	unpack32  (&job->min_procs, buf_ptr, buffer_size);
+	unpack32  (&job->min_memory, buf_ptr, buffer_size);
+	unpack32  (&job->min_tmp_disk, buf_ptr, buffer_size);
+
+	unpackstr_ptr_malloc (&job->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->req_nodes == NULL)
+		job->req_nodes = "";
+	unpackstr_ptr (&node_inx_str, &uint16_tmp, buf_ptr, buffer_size);
+	if (node_inx_str == NULL)
+		node_inx_str = "";
+	job->req_node_inx = bitfmt2int(node_inx_str);
+	unpackstr_ptr_malloc (&job->features, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->features == NULL)
+		job->features = "";
+	unpackstr_ptr_malloc (&job->job_script, &uint16_tmp, buf_ptr, buffer_size);
+	if (job->job_script == NULL)
+		job->job_script = "";
+	return 0 ;
+}void pack_build_info ( build_info_msg_t * build_ptr, void ** buf_ptr , int * buffer_size )
 {	
 	pack32 (build_ptr->last_update, buf_ptr, buffer_size);
 	pack16 (build_ptr->backup_interval, buf_ptr, buffer_size);
