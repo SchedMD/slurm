@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 		pa_init(node_info_ptr);
         }
 #else
-     		printf("This will only run on a BGL system right now.\n");
+     		error("This will only run on a BGL system right now.\n");
 		exit(0);
 #endif
 
@@ -107,7 +107,7 @@ int main(int argc, char *argv[])
 	initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
-		printf("Screen is too small make sure the screen is at least %dx%d\n"
+		error("Screen is too small make sure the screen is at least %dx%d\n"
 			"Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 		exit(0);
 	}
@@ -232,7 +232,7 @@ void *_resize_handler(int sig)
 	initscr();
 	if (COLS < (75 + width) || LINES < height) {
 		endwin();
-		printf("Screen is too small make sure the screen is at least %dx%d\n"
+		error("Screen is too small make sure the screen is at least %dx%d\n"
 			"Right now it is %dx%d\n", 75 + width, height, COLS, LINES);
 		exit(0);
 	}
