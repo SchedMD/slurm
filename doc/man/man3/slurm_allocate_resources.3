@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "December 2002" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -232,7 +232,7 @@ int main (int argc, char *argv[])
 .br
 	}
 .br 
-	printf ("Allocated nodes %s to job_id %u\n", 
+	printf ("Allocated nodes %s to job_id %u\\n", 
 .br 
 	        slurm_alloc_msg_ptr->node_list, 
 .br
@@ -242,13 +242,13 @@ int main (int argc, char *argv[])
 .br
 	                     job_id)) {
 .br 
-		printf ("cancel errno %d\n", slurm_get_errno());
+		printf ("cancel errno %d\\n", slurm_get_errno());
 .br 
 		exit (1);
 .br 
 	}
 .br
-	printf ("canceled job_id %u\n", 
+	printf ("canceled job_id %u\\n", 
 .br
 	        slurm_alloc_msg_ptr->job_id );
 .br 

@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm node informational calls"
+.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm node informational calls"
 .SH "NAME"
 slurm_free_node_info, slurm_load_node, 
 slurm_print_node_info_msg, slurm_print_node_table
@@ -141,7 +141,7 @@ int main (int argc, char *argv[])
 .br
 	for (i = 0; i < node_buffer_ptr->node_count; i++) {
 .br
-		printf ("NodeName=%s CPUs=%u\n", 
+		printf ("NodeName=%s CPUs=%u\\n", 
 .br
 			node_buffer_ptr->node_array[i].name, 
 .br
@@ -195,7 +195,7 @@ int main (int argc, char *argv[])
 .br
 		}
 .br
-		printf("\n\n");
+		printf("\\n\\n");
 .br
 	}
 .br

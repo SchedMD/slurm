@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "October 2002" "Morris Jette" "Slurm job step information functions"
+.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm job step information functions"
 .SH "NAME"
 \fBslurm_free_job_step_info_response_msg, slurm_get_job_steps,
 slurm_print_job_step_info, slurm_print_job_step_info_msg
@@ -142,7 +142,7 @@ int main (int argc, char *argv[])
 .LP
 	/* The hardest way. */
 .br
-	printf ("Steps updated at %lx, record count %d\n",
+	printf ("Steps updated at %lx, record count %d\\n",
 .br
 	        step_info_ptr->last_update, 
 .br
@@ -150,7 +150,7 @@ int main (int argc, char *argv[])
 .br
 	for (i = 0; i < step_info_ptr->job_step_count; i++) {
 .br
-		printf ("JobId=%u StepId=%u\n", 
+		printf ("JobId=%u StepId=%u\\n", 
 .br
 			step_info_ptr->job_steps[i].job_id, 
 .br
