@@ -70,39 +70,37 @@ _find_name_in_env(char **env, const char *name)
 
 /*
  *  Extend memory allocation for env by 1 entry. Make last entry == NULL.
+ *   return pointer to last env entry;
  */
-static void
+static char **
 _extend_env(char ***envp)
 {
-	size_t newsize = xsize (*envp) + sizeof (char *);
-	xrealloc (*envp, newsize);
-	(*envp)[newsize - 1] = NULL;
-	return;
+	size_t newcnt = (xsize (*envp) / sizeof (char *)) + 1;
+	*envp = xrealloc (*envp, newcnt * sizeof (char *));
+	(*envp)[newcnt - 1] = NULL;
+	return (&((*envp)[newcnt - 2]));
 }
 
 int 
 setenvpf(char ***envp, const char *name, const char *fmt, ...)
 {
-	char *str = NULL;
 	char buf[BUFSIZ];
 	char **ep = NULL;
+	char *str = NULL;
 	va_list ap;
-
-	str = xstrdup (name);
-	xstrcatchar (str, '=');
 
 	va_start(ap, fmt);
 	vsnprintf (buf, BUFSIZ, fmt, ap);
 	va_end(ap);
 
-	xstrcat (str, buf);
+	xstrfmtcat (str, "%s=%s", name, buf);
 
 	ep = _find_name_in_env (*envp, name);
 
 	if (*ep != NULL) 
 		xfree (*ep);
 	else
-		_extend_env (envp);
+		ep = _extend_env (envp);
 		
 	*ep = str;
 
@@ -124,16 +122,14 @@ unsetenvp(char **env, const char *name)
 	ep = env;
 	while ((ep = _find_name_in_env (ep, name)) && (*ep != NULL)) {
 		char **dp = ep;
-
+		xfree (*ep);
 		do 
 			dp[0] = dp[1];
 		while (*dp++);
 
 		/*  Continue loop in case `name' appears again. */
-
 		++ep;
 	}
-
 	return;
 }
 
