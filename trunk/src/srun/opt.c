@@ -276,7 +276,9 @@ static bool opt_verify(poptContext, bool, bool, bool);
 
 /* list known options and their settings 
  */
+#if	__DEBUG
 static void opt_list(void);
+#endif
 
 /* search PATH for command 
  * returns full path
@@ -778,10 +780,12 @@ static void opt_args(int ac, char **av)
 	for (i = 0; i < remote_argc; i++)
 		remote_argv[i] = strdup(rest[i]);
 
-	if ((fullpath = search_path(remote_argv[0])) != NULL) {
-		free(remote_argv[0]);
-		remote_argv[0] = fullpath;
-	} 
+	if (opt.batch == 0) {
+		if ((fullpath = search_path(remote_argv[0])) != NULL) {
+			free(remote_argv[0]);
+			remote_argv[0] = fullpath;
+		} 
+	}
 
 	
 	if (!opt_verify(optctx, nnodes_set, cpus_set, nprocs_set)) {
