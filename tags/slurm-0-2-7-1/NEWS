@@ -1,0 +1,92 @@
+This file describes changes in recent versions of SLURM. It primarily
+documents those changes that are of interest to users and admins. 
+
+* Changes in SLURM 0.2.6
+=========================
+ -- Fix for bug in Elan module that results in slurmd hang.
+ -- Added completing job state to default list of states to print with squeue.
+
+* Changes in SLURM 0.2.6
+=========================
+ -- More fixes for handling cleanup of slow terminating jobs.
+ -- Fixed bug in srun that might leave nodes allocated after a Ctrl-C.
+
+* Changes in SLURM 0.2.5
+=========================
+ -- Various fixes for cleanup of slow terminating or unkillable jobs.
+ -- Fixed some small memory leaks in communications code.
+ -- Added hack for synchronized exit of jobs on large node count.
+ -- Long lists of nodes are no longer truncated in sinfo.
+ -- Print more descriptive error message when tasks exit with nonzero status.
+ -- Fixed bug in srun where unsuccessful launch attempts weren't detected.
+ -- Elan network error resolver thread now runs from elan module in slurmd.
+ -- Slurmctld uses consecutive Elan context and program description numbers
+    instead of choosing them randomly.
+
+* Changes in SLURM 0.2.4
+==========================
+ -- Fix for file descriptor leak in slurmctld.
+ -- auth_munge plugin now prints credential info on decode failure.
+ -- Minor changes to scancel interface.
+ -- Filename format option "%J" now works again for srun --output and --error.
+ 
+* Changes in SLURM 0.2.3
+==========================
+ -- Fix bug in srun when using per-task files for stderr.
+ -- Better error reporting on failure to open per-task input/output files.
+ -- Update auth_munge plugin for munge 0.1.
+ -- Minor changes to squeue interface.
+ -- New srun option `--hold' to submit job in "held" state.
+
+* Changes in SLURM 0.2.2
+==========================
+ -- Fixes for reported problems:
+   - Execution of script allocate mode fails in some cases. (gnats:161)
+   - Errors using per-task input files with Elan support. (gnats:162)
+   - srun doesn't handle all environment variables properly. (gnats:164)
+ -- Parallel job is now terminated if a task is killed by a signal.
+ -- Exit status of srun is set based on exit codes of tasks.
+ -- Redesign of sinfo interface and options.
+ -- Shutdown of slurmctld no longer propagates shutdown to all nodes.
+
+* Changes in SLURM 0.2.1
+===========================
+ -- Fix bug where reconfigure request to slurmctld killed the daemon.
+
+* Changes in SLURM 0.2.0
+============================
+
+ -- SlurmdTimeout of 0 means never set a non-responding node to DOWN.
+ -- New srun option, -u,--unbuffered, for unbuffered stdout.
+ -- Enhancements for sinfo
+   - Non-responding nodes show "*" character appended instead of "NoResp+".
+   - Node states show abbreviated variant by default
+ -- Enhancements for scontrol.
+   - Added "ping" command to show current state of SLURM controllers.
+   - Job dump in scontrol shows user name as well as UID. 
+   - Node state of DRAIN is appropriately mapped to DRAINING or DRAINED.
+ -- Fix for bug where request for task count greater than partition limit
+    was queued anyway.
+ -- Fix for bugs in job end time handling.
+ -- Modifications for error free builds on 64 bit architectures.
+ -- Job cancel immediately deallocates nodes instead of waiting on srun.
+ -- Attempt to create slurmd spool if it does not exist.
+ -- Fixed signal handling bug in srun allocate mode.
+ -- Earlier error detection in slurmd startup.
+ -- "fatal: _shm_unlock: Numerical result out of range" bug fixed in slurmd.
+ -- Config file parsing is now case insensitive.
+ -- SLURM_NODELIST environment variable now set in allocate mode.
+
+* Changes in SLURM 0.2.0-pre2
+=============================
+
+ -- Fix for reconfigure when public/private key path is changed.
+ -- Shared memory fixes in slurmd. 
+   - fix for infinite semaphore incrementation bug.
+ -- Semaphore fixes in slurmctld.
+ -- Slurmctld now remembers which nodes have registered after recover.
+ -- Fixed reattach bug when tasks have exited.
+ -- Change directory to /tmp in slurmd if daemonizing.
+ -- Logfiles are reopened on reconfigure.
+
+$Id$
