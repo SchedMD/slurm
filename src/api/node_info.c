@@ -137,7 +137,6 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
 
 
         /* send request message */
-        /* pack32 ( update_time , &buf_ptr , &buffer_size ); */
         last_time_msg . last_update = update_time ;
         request_msg . msg_type = REQUEST_NODE_INFO ;
         request_msg . data = &last_time_msg ;

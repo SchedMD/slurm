@@ -55,7 +55,6 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
 
 	
 	/* send request message */
-	/* pack32 ( update_time , &buf_ptr , &buffer_size ); */
 	last_time_msg . last_update = update_time ;
 	request_msg . msg_type = REQUEST_BUILD_INFO ;
 	request_msg . data = &last_time_msg ;

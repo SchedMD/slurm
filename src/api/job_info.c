@@ -133,7 +133,6 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
                 return SLURM_SOCKET_ERROR ;
 
         /* send request message */
-        /* pack32 ( update_time , &buf_ptr , &buffer_size ); */
         last_time_msg . last_update = update_time ;
         request_msg . msg_type = REQUEST_JOB_INFO ;
         request_msg . data = &last_time_msg ;

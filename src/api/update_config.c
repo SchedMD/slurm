@@ -63,7 +63,6 @@ slurm_update_config (char *spec) {
 
 
         /* send request message */
-        /* pack32 ( update_time , &buf_ptr , &buffer_size ); */
         /*request_msg . msg_type = REQUEST_UPDATE_CONFIG_INFO ;*/
         request_msg . data = NULL ; 
 
