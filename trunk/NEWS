@@ -7,7 +7,11 @@ documents those changes that are of interest to users and admins.
     of communication protocol over IBM Federation switch.
  -- Add new slurm.conf parameter ProctrackType (process tracking) and 
     associated plugin in the slurmd module.
- 
+ -- Send node's switch state with job epilog completion RPC and 
+    node registration (only when slurmd starts, not on periodic 
+    registrtions).
+ -- Add federation switch plugin.
+
 * Changes in SLURM 0.4.7
 ========================
  -- Remove some BGL specific headers that IBM now distributes, NOTE
