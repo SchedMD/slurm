@@ -91,6 +91,7 @@ enum part_shared {
 #endif
 #include <src/common/macros.h>
 #include <src/common/slurm_protocol_common.h>
+#include <src/common/slurm_authentication.h>
 
 /* SLURM Message types */
 typedef enum { 
@@ -164,6 +165,11 @@ typedef enum {
 	MESSAGE_UPLOAD_ACCOUNTING_INFO,
 } slurm_msg_type_t ;
 
+typedef enum
+{
+	CREDENTIAL1
+} slurm_credential_type_t ;
+
 /******************************************************************************
  * core api configuration struct 
  ******************************************************************************/
@@ -178,6 +184,8 @@ typedef struct slurm_protocol_header
 {
 	uint16_t version ;
 	uint16_t flags ;
+	slurm_credential_type_t cred_type;
+	uint32_t cred_length ;
 	slurm_msg_type_t  msg_type ;
 	uint32_t body_length ;
 } header_t ;
@@ -195,6 +203,9 @@ typedef struct slurm_msg
 	slurm_msg_type_t msg_type ;
 	slurm_addr address ;
 	slurm_fd conn_fd ;
+	slurm_credential_type_t cred_type ;
+	void * cred ;
+	uint32_t cred_size ;
 	void * data ;
 	uint32_t data_size ;
 } slurm_msg_t ;

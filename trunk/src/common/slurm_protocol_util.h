@@ -27,6 +27,7 @@ void init_header ( header_t * header , slurm_msg_type_t msg_type , uint16_t flag
 /* io stream header functions */
 uint32_t check_io_stream_header_version( slurm_io_stream_header_t * header) ;
 void init_io_stream_header ( slurm_io_stream_header_t * header , char * key , uint32_t task_id , uint16_t type ) ;
+void update_header ( header_t * header , uint32_t cred_length , uint32_t msg_length ) ;
 
 /* debug print methods */
 void slurm_print_job_credential ( FILE * stream , slurm_job_credential_t * credential ) ;

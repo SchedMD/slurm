@@ -11,6 +11,7 @@
 #include <src/common/slurm_protocol_common.h>
 #include <src/common/slurm_protocol_pack.h>
 #include <src/common/slurm_protocol_util.h>
+#include <src/common/slurm_authentication.h>
 #include <src/common/xmalloc.h>
 #include <src/common/log.h>
 
@@ -18,6 +19,7 @@
 
 /* #DEFINES */
 #define BUF_SIZE 1024
+#define CREDENTIAL_TTL_SEC 5 
 
 /* STATIC VARIABLES */
 static slurm_protocol_config_t proto_conf_default ;
@@ -269,6 +271,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	char * buffer = buftemp ;
 	header_t header ;
 	int rc ;
+	slurm_client_credentials_t * client_cred ;
 	unsigned int unpack_len ;
 	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
 
@@ -286,10 +289,35 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	{
 		return rc;
 	}
+	
+	/* unpack cred */
+	if ( header . cred_length <= unpack_len )
+	{
+		slurm_auth_unpack_credentials ( & client_cred , (void ** ) & buffer , & unpack_len ) ;
+	}
+	else
+	{
+		slurm_seterrno_ret ( ESLURM_PROTOCOL_INCOMPLETE_PACKET ) ;
+	}
+	
+	/* verify credentials */
+	if ( (rc = slurm_auth_verify_credentials( client_cred ) ) < 0 ) {
+		return rc;
+	}
+	msg -> cred_type = header . cred_type ;
+	msg -> cred_size = header . cred_length ;
+	msg -> cred = client_cred ;
 
 	/* unpack msg body */
-	(msg) -> msg_type = header . msg_type ;
-	unpack_msg ( msg , & buffer , & unpack_len ) ;
+	msg -> msg_type = header . msg_type ;
+	if ( header . body_length <= unpack_len )
+	{
+		unpack_msg ( msg , & buffer , & unpack_len ) ;
+	}
+	else
+	{
+		slurm_seterrno_ret ( ESLURM_PROTOCOL_INCOMPLETE_PACKET ) ;
+	}
 
 	return rc ;
 }
@@ -332,19 +360,43 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buf_temp ;
 	header_t header ;
+	slurm_client_credentials_t client_cred ;
 	int rc ;
 	unsigned int pack_len ;
+	unsigned int cred_len = 0;
+	unsigned int msg_len = 0;
+	unsigned int tmp_len = 0;
 
 	/* initheader */
 	init_header ( & header , msg->msg_type , SLURM_PROTOCOL_NO_FLAGS ) ;
 
+	if ( slurm_auth_activate_credentials( & client_cred , CREDENTIAL_TTL_SEC ) != SLURM_SUCCESS ) {
+		/* Should probably do something more meaningful. */
+		error ( "init_header: failed to sign client credentials\n" );
+	}
+		
 	/* pack header */
 	pack_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
 	pack_header ( &header , & buffer , & pack_len ) ;
 
 	/* pack msg */
+	tmp_len = pack_len ;
+	slurm_auth_pack_credentials ( & client_cred , (void ** ) & buffer , & pack_len ) ;
+	cred_len = tmp_len - pack_len ;
+	
+	/* pack msg */
+	tmp_len = pack_len ;
 	pack_msg ( msg , & buffer , & pack_len ) ;
+	msg_len = tmp_len - pack_len ;
 
+	/* update header with packed cred and msg lengths */
+	update_header (  & header , cred_len , msg_len ) ;
+
+	/* repack updated header */
+	buffer = buf_temp ;
+	tmp_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
+	pack_header ( &header , & buffer , & tmp_len ) ;
+	
 	/* send msg */
 	if (  ( rc = _slurm_msg_sendto ( open_fd , buf_temp , SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE - pack_len , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , &msg->address ) ) == SLURM_SOCKET_ERROR )
 	{
@@ -356,60 +408,17 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 
 /*
  *
- * open_fd              - file descriptor to receive msg on
- * destination_address  - address of destination nodes
- * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
- * data_buffer		- buffer for data to be received into
- * buf_len		- length of data buffer 
- * int			- size of msg received in bytes
- */
-int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_type_t * msg_type , char * data_buffer , size_t buf_len )
-{
-	char buftemp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
-	char * buffer = buftemp ;
-	header_t header ;
-	int rc ;
-	unsigned int unpack_len ; /* length left to upack */
-	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ; /* buffer size */
-
-	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , source_address ) ) == SLURM_SOCKET_ERROR ) ;
-	{
-		int local_errno = errno ;
-		debug ( "Error receiving msg socket: errno %i", local_errno ) ;
-		return rc ;
-	}
-
-	/* unpack header */
-	unpack_len = rc ;
-	unpack_header ( &header , & buffer , & unpack_len ) ;
-
-	/* unpack_header decrements the unpack_len by the size of the header, so 
-	 * unpack_len not holds the size of the data left in the buffer */
-	if ( ( rc = check_header_version ( & header ) ) < 0 ) 
-	{
-		return rc ;
-	}
-
-	*msg_type = header . msg_type ;
-	/* assumes buffer is already allocated by calling function */
-	/* *data_buffer = xmalloc ( unpack_len ) ; */
-	memcpy ( data_buffer , buffer , unpack_len ) ;
-	return unpack_len  ;
-}
-
-/*
- *
  * open_fd              - file descriptor to send buffer on
  * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
  * data_buffer          - buffer to be sent
  * buf_len              - length of buffer to be sent
  * int			- size of msg sent in bytes
  */
+/*
 int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
 	int rc ;
 
-	/* try to send to primary first then secondary */	
 	if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> primary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )	
 	{
 
@@ -423,7 +432,7 @@ int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type 
 	}
 	return rc ;
 }
-
+*/
 /* sends a buffer to an arbitrary node
  *
  * open_fd		- file descriptor to send buffer on
@@ -433,6 +442,7 @@ int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type 
  * buf_len		- length of buffer to be sent 
  * int			- size of msg sent in bytes
  */
+/*
 int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
 {
 	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
@@ -441,14 +451,11 @@ int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address
 	unsigned int rc ;
 	unsigned int pack_len ;
 
-	/* initheader */
 	init_header ( & header , msg_type , SLURM_PROTOCOL_NO_FLAGS ) ;
 
-	/* pack header */
 	pack_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
 	pack_header ( &header, & buffer , & pack_len ) ;
 
-	/* pack msg */
 	memcpy ( buffer , data_buffer , buf_len ) ;
 	pack_len -= buf_len ;
 
@@ -459,7 +466,7 @@ int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address
 	}
 	return rc ;
 }
-
+*/
 /************************/
 /***** stream functions */
 /************************/

@@ -245,10 +245,11 @@ int inline slurm_set_stream_blocking ( slurm_fd open_fd ) ;
 /* raw msg buffer send functions */
 /* Allows the user to send a raw buffer */
 /**********************************************************************/
+/*
 int slurm_receive_buffer ( slurm_fd open_fd , slurm_addr * source_address , slurm_msg_type_t * msg_type , char * data_buffer , size_t buf_len ) ;
 int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
 int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len ) ;
-
+*/
 
 /**********************************************************************/
 /* Address Conversion Functions */

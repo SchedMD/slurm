@@ -15,6 +15,12 @@ else
 elan_sources = 
 endif
 
+if WITH_AUTHD
+authd_sources = slurm_auth_impl.c
+else
+authd_sources = slurm_auth_impl.c
+endif
+
 noinst_LTLIBRARIES = 	libcommon.la libdaemonize.la libcred.la 
 
 libcommon_la_SOURCES = 	xmalloc.c 	\
@@ -35,7 +41,8 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			slurm_protocol_socket_implementation.c	\
 			slurm_protocol_defs.c	\
 			util_signals.c \
-			$(elan_sources)
+			$(elan_sources) \
+			$(authd_sources)
 
 noinst_HEADERS = 	xmalloc.h 	\
 		 	xassert.h 	\
@@ -65,3 +72,6 @@ libdaemonize_la_SOURCES =	daemonize.c
 libcred_la_SOURCES = credential_utils.c signature_utils.c list.c
 EXTRA_libcommon_la_SOURCES =		\
 			qsw.c
+
+libcommon_la_LIBADD = $(SSL_LIBS)
+
