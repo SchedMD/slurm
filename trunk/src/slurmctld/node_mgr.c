@@ -970,6 +970,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			else if (state_val == NODE_STATE_IDLE) {
 				bit_set (avail_node_bitmap, node_inx);
 				bit_set (idle_node_bitmap, node_inx);
+				reset_job_priority();
 			}
 			else if (state_val == NODE_STATE_ALLOCATED) {
 				bit_set   (avail_node_bitmap, node_inx);
@@ -1157,6 +1158,7 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			      node_name);
 			xfree(node_ptr->reason);
 			resp_state = 1;	/* just started responding */
+			reset_job_priority();
 		} else if ((node_ptr->node_state == NODE_STATE_ALLOCATED) &&
 			   (job_count == 0)) {	/* job vanished */
 			node_ptr->node_state = NODE_STATE_IDLE;

@@ -913,6 +913,10 @@ extern void reset_first_job_id(void);
  */
 extern void reset_job_bitmaps (void);
 
+/* After a node is returned to service, reset the priority of jobs 
+ * which may have been held due to that node being unavailable */
+extern void reset_job_priority(void);
+
 /* run_backup - this is the backup controller, it should run in standby 
  *	mode, assuming control when the primary controller stops responding */
 extern void run_backup(void);

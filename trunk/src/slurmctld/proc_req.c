@@ -1410,9 +1410,9 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 	DEF_TIMERS;
 	update_node_msg_t *update_node_msg_ptr =
 	    			(update_node_msg_t *) msg->data;
-	/* Locks: Write node */
+	/* Locks: Write job and write node */
 	slurmctld_lock_t node_write_lock = { 
-		NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 	uid_t uid;
 
 	START_TIMER;
