@@ -243,6 +243,33 @@ int _create_format(char *buffer, const char *type, int width, bool right)
 	return SLURM_SUCCESS;
 }
 
+int _print_secs(long time, int width, bool right, bool cut_output)
+{
+	char str[FORMAT_STRING_SIZE];
+	long days, hours, minutes, seconds;
+
+	seconds =  time % 60;
+	minutes = (time / 60)   % 60;
+	hours   = (time / 3600) % 24;
+	days    =  time / 86400;
+
+	if (days) 
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%2.2ld:%2.2ld:%2.2ld:%2.2ld",
+		         days, hours, minutes, seconds);
+	else if (hours)
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%2.2ld:%2.2ld:%2.2ld",
+		         hours, minutes, seconds);
+	else
+		snprintf(str, FORMAT_STRING_SIZE,
+			 "%2.2ld:%2.2ld",
+		         minutes, seconds);
+
+	_print_str(str, width, right, cut_output);
+	return SLURM_SUCCESS;
+}
+
 int _print_time(time_t t, int level, int width, bool right)
 {
 	struct tm time;
@@ -448,19 +475,14 @@ int _print_job_time_used(job_info_t * job, int width, bool right,
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("TIME_USED", width, false, true);
 	else {
-		char time_str[64];
 		long delta_t;
 		if (job->job_state == JOB_PENDING)
 			delta_t = 0;
 		else if (job->job_state == JOB_RUNNING)
-			delta_t = difftime(time(NULL), job->start_time) / 60;
+			delta_t = difftime(time(NULL), job->start_time);
 		else
-			delta_t = difftime(job->end_time, job->start_time) / 60;
-		/* format is "hours:minutes" */
-		snprintf(time_str, FORMAT_STRING_SIZE, "%ld:%2.2ld",
-			 delta_t / 60, delta_t % 60);
-
-		_print_str(time_str, width, right, true);
+			delta_t = difftime(job->end_time, job->start_time);
+		_print_secs(delta_t, width, right, false);
 	}
 	if (suffix)
 		printf("%s", suffix);
@@ -816,13 +838,8 @@ int _print_step_time_used(job_step_info_t * step, int width, bool right,
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("TIME_USED", width, false, true);
 	else {
-		char time_str[64];
-		long delta_t = difftime(time(NULL), step->start_time) / 60;
-		/* format is "hours:minutes" */
-		snprintf(time_str, FORMAT_STRING_SIZE, "%ld:%2.2ld",
-			 delta_t / 60, delta_t % 60);
-
-		_print_str(time_str, width, right, true);
+		long delta_t = difftime(time(NULL), step->start_time);
+		_print_secs(delta_t, width, right, false);
 	}
 	if (suffix)
 		printf("%s", suffix);
