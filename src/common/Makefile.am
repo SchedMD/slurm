@@ -42,6 +42,7 @@ libcommon_la_SOURCES = 	\
 	slurm_protocol_util.c	\
 	slurm_protocol_socket_implementation.c	\
 	slurm_protocol_defs.c	\
+	util-net.c	\
 	$(elan_sources) \
         $(auth_sources)
 
@@ -72,7 +73,9 @@ noinst_HEADERS = 	\
 	slurm_protocol_socket_common.h	\
 	slurm_protocol_mongo_common.h	\
 	slurm_protocol_interface.h	\
-	slurm_errno.h		\
+	slurm_errno.h	\
+	util-net.h	\
+	wrapper.h	\
 	qsw.h			
 
 libdaemonize_la_SOURCES =  \
