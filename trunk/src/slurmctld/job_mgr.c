@@ -3115,8 +3115,10 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 /* job_fini - free all memory associated with job records */
 void job_fini (void) 
 {
-	if (job_list)
+	if (job_list) {
 		list_destroy(job_list);
+		job_list = NULL;
+	}
 	xfree(job_hash);
 	xfree(job_hash_over);
 }
