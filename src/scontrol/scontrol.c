@@ -344,31 +344,24 @@ print_job (char * job_id_str)
  * input: node_name - NULL to print all node information
  *	  node_ptr - pointer to node table of information
  * NOTE: call this only after executing load_node, called from print_node_list
+ * NOTE: To avoid linear searches, we remember the location of the last name match
  */
 void
 print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
 {
 	int i, j;
 	static int last_inx = 0;
-	struct node_table *node_ptr;
 
-	node_ptr = node_buffer_ptr->node_array;
 	for (j = 0; j < node_buffer_ptr->record_count; j++) {
 		if (node_name) {
 			i = (j + last_inx) % node_buffer_ptr->record_count;
-			if (strcmp (node_name, node_ptr[i].name) != 0)
+			if (strcmp (node_name, node_buffer_ptr->node_array[i].name) != 0)
 				continue;
 		}
 		else
 			i = j;
-		printf ("NodeName=%s CPUs=%u ", 
-			node_ptr[i].name, node_ptr[i].cpus);
-		printf ("RealMemory=%u TmpDisk=%u ", 
-			node_ptr[i].real_memory, node_ptr[i].tmp_disk);
-		printf ("State=%u Weight=%u ", 
-			node_ptr[i].node_state, node_ptr[i].weight);
-		printf ("Features=%s Partition=%s\n", 
-			node_ptr[i].features, node_ptr[i].partition);
+		slurm_print_node_table (stdout, & node_buffer_ptr->node_array[i]);
+
 		if (node_name) {
 			last_inx = i;
 			break;
@@ -416,10 +409,11 @@ print_node_list (char *node_list)
 		old_node_info_ptr = node_info_ptr;
 
 	if (quiet_flag == -1)
-		printf ("last_update_time=%ld\n", (long) node_info_ptr->last_update);
+		printf ("last_update_time=%ld, records=%d\n", 
+			(long) node_info_ptr->last_update, node_info_ptr->record_count);
 
 	if (node_list == NULL) {
-		/*print_node (NULL, node_info_ptr);*/
+		print_node (NULL, node_info_ptr);
 	}
 	else {
 		format = NULL;
@@ -459,7 +453,7 @@ print_node_list (char *node_list)
 						 sizeof (this_node_name));
 				else
 					sprintf (this_node_name, format, i);
-				/*print_node (this_node_name, node_info_ptr);*/
+				print_node (this_node_name, node_info_ptr);
 			}
 			if (format)
 				xfree (format);
@@ -484,10 +478,8 @@ print_part (char *partition_name)
 	partition_table_msg_t *part_ptr = NULL;
 
 	if (old_part_info_ptr) {
-printf("old1=%ld, time1=%ld\n",(long)old_part_info_ptr, (long)old_part_info_ptr->last_update);
 		error_code = slurm_load_partitions (old_part_info_ptr->last_update, 
 					&part_info_ptr);
-printf("time2=%ld, err=%d\n",(long)part_info_ptr->last_update, error_code);
 		if (error_code == 0) {
 /*			slurm_free_partition_info (old_part_info_ptr); */
 		}
@@ -507,7 +499,6 @@ printf("time2=%ld, err=%d\n",(long)part_info_ptr->last_update, error_code);
 	}
 	else
 		old_part_info_ptr = part_info_ptr;
-printf("old2=%ld\n",(long)old_part_info_ptr);
 
 	if (quiet_flag == -1)
 		printf ("last_update_time=%ld\n", (long) part_info_ptr->last_update);
@@ -521,6 +512,7 @@ printf("old2=%ld\n",(long)old_part_info_ptr);
 		if (partition_name)
 			break;
 	}
+/* Temporary logic to clean out immediately */
 slurm_free_partition_info (old_part_info_ptr);
 old_part_info_ptr=NULL;
 }
