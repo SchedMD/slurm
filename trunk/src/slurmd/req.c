@@ -522,7 +522,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	select_g_get_jobinfo(req->select_jobinfo, SELECT_DATA_PART_ID, 
 			&bgl_part_id);
 
-#ifdef HAVE_BGL_FILES
+#ifdef HAVE_BGL
 	/* BlueGene prolog waits for partition boot and is very slow,
 	 * just reply now */
 	slurm_send_rc_msg(msg, rc);
