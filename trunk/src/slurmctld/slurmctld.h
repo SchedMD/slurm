@@ -266,7 +266,8 @@ struct job_record {
 	char name[MAX_NAME_LEN];	/* name of the job */
 	char partition[MAX_NAME_LEN];	/* name of the partition */
 	struct part_record *part_ptr;	/* pointer to the partition record */
-	uint16_t batch_flag;		/* 1 if batch job (with script) */
+	uint16_t batch_flag;		/* 1 or 2 if batch job (with script),
+					 * 2 indicates retry mode (one retry) */
 	uint32_t user_id;		/* user the job runs as */
 	uint32_t group_id;		/* group submitted under */
 	enum job_states job_state;	/* state of the job */

@@ -489,7 +489,6 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 			batch_job_launch_msg_t *launch_msg_ptr = 
 					*agent_ptr->msg_args_pptr;
 			uint32_t job_id = launch_msg_ptr->job_id;
-			info("Non-responding node, requeue JobId=%u", job_id);
 			job_complete(job_id, 0, true, 0);
 		}
 		unlock_slurmctld(node_write_lock);

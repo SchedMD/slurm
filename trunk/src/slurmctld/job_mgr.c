@@ -491,7 +491,7 @@ static int _load_job_state(Buf buffer)
 
 	/* validity test as possible */
 	if (((job_state & (~JOB_COMPLETING)) >= JOB_END) || 
-	    (batch_flag > 1)) {
+	    (batch_flag > 2)) {
 		error("Invalid data for job %u: job_state=%u batch_flag=%u",
 		      job_id, job_state, batch_flag);
 		goto unpack_error;
@@ -1419,9 +1419,18 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	if (job_ptr->job_state == JOB_RUNNING)
 		job_comp_flag = JOB_COMPLETING;
+
+	if (requeue && (job_ptr->batch_flag > 1)) {
+		requeue = 0;
+		if (job_return_code == 0)
+			job_return_code = 1;
+		info("Batch job launch failure, JobId=%u", job_ptr->job_id);	
+	}
+
 	if (requeue && job_ptr->details && job_ptr->batch_flag) {
+		job_ptr->batch_flag++;	/* only one retry */
 		job_ptr->job_state = JOB_PENDING | job_comp_flag;
-		info("Requeing job %u", job_ptr->job_id);
+		info("Non-responding node, requeue JobId=%u", job_ptr->job_id);
 	} else if (job_ptr->job_state == JOB_PENDING) {
 		job_ptr->job_state  = JOB_COMPLETE;
 		job_ptr->start_time = 0;
