@@ -194,6 +194,11 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
+	if (switch_state_begin(recover)) {
+		error("switch_state_begin: %m");
+		exit(1);
+	}
+
 	/* 
 	 * Need to create pidfile here in case we setuid() below
 	 * (init_pidfile() exits if it can't initialize pid file)
@@ -354,6 +359,7 @@ static void *_slurmctld_signal_hand(void *no_data)
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			_slurmctld_shutdown();
 			pthread_join(thread_id_rpc, NULL);
+			switch_state_fini();
 			return NULL;	/* Normal termination */
 			break;
 		case SIGHUP:	/* kill -1 */
@@ -625,6 +631,7 @@ static void *_slurmctld_background(void *no_data)
 #endif
 	return NULL;
 }
+
 
 /* _save_all_state - save entire slurmctld state for later recovery */
 static void _save_all_state(void)

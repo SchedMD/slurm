@@ -924,6 +924,19 @@ extern bool step_on_node(struct job_record  *job_ptr,
 			 struct node_record *node_ptr);
 
 /*
+ * switch_state_fini - save switch state and shutdown switch
+ * RET 0 if no error, otherwise an error code
+ */ 
+extern int switch_state_fini(void);
+
+/*
+ * switch_state_begin - Recover or initialize switch state
+ * IN recover - If set, recover switch state as previously saved
+ * RET 0 if no error, otherwise an error code
+ */ 
+extern int switch_state_begin(int recover);
+
+/*
  * Synchronize the batch job in the system with their files.
  * All pending batch jobs must have script and environment files
  * No other jobs should have such files
