@@ -15,17 +15,29 @@
 /*
  * slurm_allocate - allocate nodes for a job with supplied contraints. 
  * input: spec - specification of the job's constraints
- *        node_list - place into which a node list pointer can be placed
- * output: node_list - list of allocated nodes
- *         returns 0 if no error, einval if the request is invalid, 
- *			eagain if the request can not be satisfied at present
- * NOTE: acceptable specifications include: JobName=<name> NodeList=<list>, 
- *	Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
- *	TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
- *	MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
+ *        job_id - place into which a job_id pointer can be placed
+ * output: job_id - node_list - list of allocated nodes
+ *         returns 0 if no error, EINVAL if the request is invalid, 
+ *			EAGAIN if the request can not be satisfied at present
+ * NOTE: required specifications include: User=<uid> Script=<pathname>
+ *	optional specifications include: Contiguous=<YES|NO> 
+ *	Distribution=<BLOCK|CYCLE> Features=<features> Groups=<groups>
+ *	JobId=<id> JobName=<name> Key=<credential> MinProcs=<count>
+ *	MinRealMemory=<MB> MinTmpDisk=<MB> Partition=<part_name>
+ *	Priority=<float> ProcsPerTask=<count> ReqNodes=<node_list>
+ *	Shared=<YES|NO> TimeLimit=<minutes> TotalNodes=<count>
+ *	TotalProcs=<count>
  * NOTE: the calling function must free the allocated storage at node_list[0]
  */
-extern int slurm_allocate (char *spec, char **node_list);
+extern int slurm_allocate (char *spec, char **node_list, char **job_id);
+
+/*
+ * slurm_cancel - cancel the specified job 
+ * input: job_id - the job_id to be cancelled
+ * output: returns 0 if no error, EINVAL if the request is invalid, 
+ *			EAGAIN if the request can not be satisfied at present
+ */
+extern int slurm_cancel (char *job_id);
 
 /*
  * slurm_free_build_info - free the build information buffer (if allocated).
