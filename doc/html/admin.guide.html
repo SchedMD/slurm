@@ -3,7 +3,9 @@
 <title>SLURM Administrator's Guide</title>
 </head>
 <body>
+
 <h1>SLURM Administrator's Guide</h1>
+
 <h2>Overview</h2>
 Simple Linux Utility for Resource Management (SLURM) is an open source,
 fault-tolerant, and highly scalable cluster management and job 
@@ -16,6 +18,10 @@ There is a "control" machine, which orchestrates SLURM activities. A "backup
 controller" is also desirable to assume control functions in the event 
 of a failure in the control machine. There are also compute servers on 
 which applications execute, which can number in the thousands.
+
+<h2>Build Information</h2>
+TBD
+Include PKI build instructions.
 
 <h2>Configuration</h2>
 There a single SLURM configuration file containing: 
@@ -40,7 +46,7 @@ The following parameters may be specified:
 <dl>
 <dt>BackupController
 <dd>The name of the machine where SLURM control functions are to be 
-executed in the event that ControlMachine fails . This node
+executed in the event that ControlMachine fails. This node
 may also be used as a compute server if so desired. It will come into service 
 as a controller only upon the failure of ControlMachine and will revert 
 to a "standby" mode when the ControlMachine becomes available once again. 
@@ -68,7 +74,10 @@ much faster scheduling decisions to be made. The default value is 1.
 <dt>FirstJobId
 <dd>The job id to be used for the first submitted to SLURM without a 
 specific requested value. Job id values generated will incremented by 1 
-for each subsequent job. The default value is 0.
+for each subsequent job. This may be used to provide a meta-scheduler 
+with a job id space which is disjoint from the interactive jobs. 
+The use of node names containing a numeric suffix will provide faster 
+operation for larger clusters. The default value is 10.
 
 <dt>HashBase
 <dd>If the node names include a sequence number, this value defines the 
@@ -79,7 +88,7 @@ The default value is 10.
 
 <dt>HeartbeatInterval
 <dd>The interval, in seconds, at which the SLURM controller tests the 
-status of other nodes. The default value is 30 seconds.
+status of other daemons. The default value is 30 seconds.
 
 <dt>InactiveLimit
 <dd>The interval, in seconds, a job is permitted to be inactive (with 
@@ -87,9 +96,18 @@ no active job steps) before it is terminated. This prevents forgotten
 jobs to be purged in a timely fashion without waiting for their time 
 limit to be reached. The default value is unlimited (zero). 
 
+<dt>JobCredentialPrivateKey
+<dd>Fully qualified pathname of a file containing a private key used for 
+authentication by Slurm daemons.
+
+<dt>JobCredentialPublicCertificate
+<dd>Fully qualified pathname of a file containing a public key used for 
+authentication by Slurm daemons.
+
 <dt>KillWait
 <dd>The interval, in seconds, given to a job's processes between the 
-SIGTERM and SIGKILL signals. If the job fails to terminate gracefully 
+SIGTERM and SIGKILL signals upon reaching its time limit. 
+If the job fails to terminate gracefully 
 in the interval specified, it will be forcably terminated. The default 
 value is 30 seconds.
 
@@ -106,8 +124,8 @@ This may be used to purge files, enable user login, etc. By default there
 is no prolog.
 
 <dt>ReturnToService
-<dd>If set to 1, then nodes a node's state with transistion from DOWN to 
-the appropriate state upon registration. The default value is 0, which 
+<dd>If set to 1, then a DOWN node will become available for use 
+upon registration. The default value is 0, which 
 means that a node will remain DOWN until a system administrator explicitly 
 makes it available for use.
 
@@ -172,10 +190,13 @@ TmpFS=/tmp
 </pre>
 <p>
 The node configuration permits you to identify the nodes (or machines) 
-to be managed by SLURM. You may also identify the 
-characteristics of the nodes in the configuration file. SLURM operates 
-in a heterogeneous environment and users are able to specify resource 
-requirements for each job 
+to be managed by Slurm. You may also identify the characteristics of the 
+nodes in the configuration file. Slurm operates in a heterogeneous environment 
+and users are able to specify resource requirements for each job.
+Slurm is optimized for scheduling systems in which the number of 
+unique configurations is small. It is recommended that the system 
+node configuration be provided in a minimal number of entries. 
+In many systems, this may be accomplished in only a few lines.
 The node configuration specifies the following information: 
 <dl>
 
@@ -183,7 +204,7 @@ The node configuration specifies the following information:
 <dd>Name of a node as returned by hostname (e.g. "lx0012"). 
 <a name="NodeExp">A simple regular expression may optionally 
 be used to specify ranges 
-of nodes to avoid building a configuration file with thousands 
+of nodes to avoid building a configuration file with large numbers 
 of entries. The regular expression can contain one  
 pair of square brackets with a sequence of comma separated 
 numbers and/or ranges of numbers separated by a "-"
@@ -221,7 +242,7 @@ The <a href="#NodeStates">node states</a> are fully described below.
 The default value is "UNKNOWN".
 
 <dt>TmpDisk
-<dd>Total size of temporary disk storage in TMP_FS in MegaBytes 
+<dd>Total size of temporary disk storage in TmpFS in MegaBytes 
 (e.g. "16384"). TmpFS (for "Temporary File System") 
 identifies the location which jobs should use for temporary storage. 
 Note this does not indicate the amount of free 
@@ -259,7 +280,7 @@ avoid scheduling jobs on them.
 Establishing baseline configurations will also speed SLURM's 
 scheduling process by permitting it to compare job requirements 
 against these (relatively few) configuration parameters and 
-possibly avoid having to perform checks job requirements 
+possibly avoid having to perform job requirements  
 against every individual node's configuration.
 The resources checked at node registration time are: Procs, 
 RealMemory and TmpDisk. 
@@ -275,8 +296,6 @@ configuration file and the default values can be reset multiple times
 in the configuration file with multiple entries where "NodeName=DEFAULT".
 The "NodeName="  specification must be placed on every line 
 describing the configuration of nodes. 
-Each nodes configuration must be specified on a single line 
-rather than having the various values established on multiple lines. 
 In fact, it is generally possible and desirable to define the 
 configurations of all nodes in only a few lines.
 This convention permits significant optimization in the scheduling 
@@ -676,7 +695,7 @@ Remove node lx0030 from service, removing jobs as needed:
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified October 10, 2002</p>
+<p>Last Modified October 22, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
