@@ -1208,6 +1208,7 @@ void ping_nodes (void)
 	int i, pos, age;
 	time_t now;
 	uint16_t base_state;
+	bool force_reg;
 
 	int ping_buf_rec_size = 0;
 	agent_arg_t *ping_agent_args;
@@ -1226,6 +1227,7 @@ void ping_nodes (void)
 	reg_agent_args->msg_type = REQUEST_NODE_REGISTRATION_STATUS;
 	reg_agent_args->retry = 0;
 	now = time (NULL);
+	force_reg = ((now % 17) == 0);
 
 	for (i = 0; i < node_record_count; i++) {
 		base_state = node_record_table_ptr[i].node_state & 
@@ -1253,7 +1255,9 @@ void ping_nodes (void)
 			node_record_table_ptr[i].last_response = 
 						slurmctld_conf.last_update;
 
-		if (base_state == NODE_STATE_UNKNOWN) {
+		/* Request a node registration if its state is UNKNOWN  
+		 * and periodically otherwise (about every 17th ping) */
+		if ((base_state == NODE_STATE_UNKNOWN) || force_reg) {
 			debug3 ("attempt to register %s now", 
 			        node_record_table_ptr[i].name);
 			if ((reg_agent_args->node_count+1) > 
