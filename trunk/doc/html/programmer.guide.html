@@ -93,11 +93,12 @@ locating node records quickly, uses a hash table. Several
 different hashing schemes are supported based upon the node name. 
 Each table entry can be directly accessed without any searching
 if the name contains a sequence number suffix. SLURM can be built 
-with the HASH_MODE set to indicate the hashing mechanism. Possible 
-values are "DECIMAL" and "OCTAL" for names containing sequence numbers 
-or "OTHER" which processes mixed alpha-numeric without sequence numbers. 
+with the HASH_BASE set to indicate the hashing mechanism. Possible 
+values are "10" and "8" for names containing decimal or octal sequence numbers 
+or "0" which processes mixed alpha-numeric without sequence numbers. 
+HASH_BASE is defined in the Mach_Stat_Mgr.c module. 
 If you use a naming convention lacking a sequence number, it may be 
-desirable to review the hashing functions Hash_Index and Rehash in the 
+desirable to review the hashing function Hash_Index in the 
 Mach_Stat_Mgr.c module. 
 <p>
 The controller will then load the last known node, partition, and job 
@@ -317,6 +318,125 @@ benefit situation at LLNL, we have decided to not support shared nodes.
 However, we have designed SLURM so as to not preclude the addition of 
 such a capability at a later time if so desired.
 
+<h2>Application Program Interface (API)</h2>
+All functions described below can be issued from any node in the SLURM cluster. 
+
+<dl>
+<dt>Get_Acctg_Info(TBD);
+<dd>Return job and system accounting information.
+The function has yet to be defined.
+
+<dt>int Get_Build_Info(char *Info_Req, char **Build_Info);
+<dd>Return SLURM build information. 
+Specify the names of configuration parameters requested in the string Info_Req. 
+All configuration information is returned if the length of Info_Req is zero.
+The keywords and values are returned in the buffer Build_Info using the 
+format "keyword=value" with white-space between each pair.
+The buffer Build_Info is created or its size changed as needed. 
+The application is responsible for setting *Build_Info to NULL initially and executing "free(*Build_Info)" 
+when the buffer is no longer needed.
+Returns an error code or zero if no error.
+Possible error codes include: TBD.
+
+<dt>int Get_Job_Info(time_t *Last_Update, int *Version_Job_Record, struct Job_Record *Job_Info);
+<dd>Load into the buffer Job_Info the current job state information only if changed since Last_Update. 
+The buffer Job_Info is created or its size changed as needed. 
+The application is responsible for setting *Job_Info to NULL initially and executing "free(*Job_Info)" 
+when the buffer is no longer needed.
+The values of Last_Update and Version_Job_Record are returned. 
+Version_Job_Record can be checked by the applicationto insure it is built with the appropriate structure format.
+Returns an error code or zero if no error.
+Possible error codes include: TBD.
+
+<dt>int Get_Key(int *key);
+<dd>Load into the location key the value of an authorization key. 
+This key can be used as part of a job specification (see Job_Spec in the Run_Job and 
+Will_Job_Run functions) to grant access to partitions with access restrictions. 
+This call can only be successfully executed by user <b>root</b>.
+The key can only be used once to initiate a job. 
+A key that has been issued and not utilized in KEY_TIMEOUT seconds (defined at 
+SLURM build time) will be revoked.
+Returns an error code or zero if no error.
+Possible error codes include: TBD.
+
+<dt>int Get_Node_Info(time_t *Last_Update, int *Version_Node_Record, struct Node_Record **Node_Info);
+<dd>Load into the buffer Node_Info the current node state information only if changed since Last_Update. 
+The buffer Node_Info is created or its size changed as needed. 
+The application is responsible for setting *Node_Info to NULL initially and executing "free(*Node_Info)" 
+when the buffer is no longer needed.
+The values of Last_Update and Version_Node_Record are returned. 
+Version_Node_Record can be checked by the applicationto insure it is built with the appropriate structure format.
+Returns an error code or zero if no error.
+Possible error codes include: TBD.
+
+<dt>int Get_Part_Info(time_t *Last_Update, int *Version_Part_Record, struct Part_Record *Part_Info);
+<dd>Load into the buffer Part_Info the current partition state information only if changed since Last_Update. 
+The buffer Part_Info is created or its size changed as needed. 
+The application is responsible for setting *Part_Info to NULL initially and executing "free(*Node_Info)" 
+when the buffer is no longer needed.
+The values of Last_Update and Version_Part_Record are returned. 
+Version_Part_Record can be checked by the applicationto insure it is built with the appropriate structure format.
+Returns an error code or zero if no error.
+Possible error codes include: TBD.
+
+<dt>int Kill_Job(int Job_Id);
+<dd>Terminate the specified SLURM job. 
+The SIGTERM signal is sent to task zero of the job followed by SIGKILL to all processes KILL_WAIT seconds later. 
+KILL_WAIT is specified at SLURM build time.
+This command can only be issued by user <b>root</b> or the user whose job is specified by Job_Id.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int Reconfigure(char *NodeList);
+<dd>The SLURM daemons on the specified nodes will re-read the configuration file. 
+NodeList contains a comma separated list of nodes. 
+All nodes are reconfigured if NodeList has zero length. 
+This command can only be issued by user <b>root</b>.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int Run_Job(char *Job_Spec);
+<dd>Initiate the job with the specification Job_Spec.
+Returns -2 if Job_Spec can not be successfully parsed.
+Returns -1 if the job can not be initiated given current SLURM configuration. 
+Returns 0 if the job can not presently be initiated due to busy nodes.
+Returns a SLURM job ID greater than zero if the job is being initiated.
+
+<dt>int Signal_Job(int Job_Id, int Signal);
+<dd>Send the specified signal to the specified SLURM job. 
+The signal is sent only to task zero of the job. 
+This command can only be issued by user <b>root</b> or the user whose job 
+is specified by Job_Id.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int Update(char *Config_Spec);
+<dd>Update the SLURM configuration per Config_Spec. 
+The format of Config_Spec is identical to that of the SLURM configuration file 
+as described in the <a href="admin.guide.html">SLURM Administrator's Guide</a>. 
+This command can only be issued by user <b>root</b>.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int Upload(char *NodeList);
+<dd>Upload into the SLURM node configuration table actual configuration 
+as actually reported by SERVER_DAEMON on each node (memory, CPU count, temporary disk, etc.).
+This could be used to establish a baseline configuration rather than 
+entering the configurations manually into a file. 
+Information from all nodes is uploaded if NodeList has zero length. 
+This command can only be issued by user <b>root</b>.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int Will_Job_Run(char *Job_Spec);
+<dd>Determine if a job with the specification Job_Spec can be initiated.
+Returns -2 if Job_Spec can not be successfully parsed.
+Returns -1 if the job can not be initiated given current SLURM configuration. 
+Returns 0 if the job can not presently be initiated due to busy nodes.
+Returns 1 if the job can be initiated immediately.
+
+</dl>
+
 <h2>To Do</h2>
 <ul>
 <li>We need to build up a reasonable Makefile.</li>
@@ -333,8 +453,8 @@ stdin files.</li>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified January 25, 2002</p>
-<address>Maintained by Moe Jette <a href="mailto:jette@llnl.gov">
-jette1@llnl.gov</a></address>
+<p>Last Modified February 6, 2002</p>
+<address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
+slurm-dev@lists.llnl.gov</a></address>
 </body>
 </html>
