@@ -459,6 +459,7 @@ int reattach()
 	job->jobid  = s->jobid;
 	job->stepid = s->stepid;
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
+	job->hostid = xmalloc(s->ntasks   * sizeof(uint32_t *));
 
 	if (job->stepid == NO_VAL) {
 		char *new_argv0 = NULL;

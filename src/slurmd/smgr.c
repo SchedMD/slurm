@@ -162,15 +162,17 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 {
 	int i;
 	for (i = 0; i < j->ntasks; i++) {
-		close(j->task[i]->pin[1]); /* Ignore errors */
-		close(j->task[i]->pout[0]);
-
-		/* Leave stderr open for slurmd error logging
+		task_info_t *t = j->task[i];
+		/*
+		 * Ignore errors on close()
 		 */
+		close(t->pin[1]); 
+		close(t->pout[0]);
+		close(t->perr[0]);
 	}
 }
 
-static int
+	static int
 _become_user(slurmd_job_t *job)
 {
 	if (setgid(job->pwd->pw_gid) < 0) {

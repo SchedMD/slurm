@@ -106,8 +106,11 @@ static int  _create_job_session(slurmd_job_t *job);
 static int  _wait_for_task_exit(slurmd_job_t *job);
 static int  _wait_for_session(slurmd_job_t *job);
 static void _wait_for_io(slurmd_job_t *job);
+static void _set_unexited_task_status(slurmd_job_t *job, int status);
 static void _handle_attach_req(slurmd_job_t *job);
 static int  _send_exit_msg(slurmd_job_t *job, int tid[], int n, int status);
+static void _set_unexited_task_status(slurmd_job_t *job, int status);
+static int  _send_pending_exit_msgs(slurmd_job_t *job);
 
 static void _setargs(slurmd_job_t *job, char **argv, int argc);
 
@@ -396,6 +399,14 @@ _job_mgr(slurmd_job_t *job)
 	 */
 	_wait_for_session(job);
 
+	/*
+	 * Set status of any unexited tasks to that of 
+	 * the session manager. Then send any pending 
+	 * exit messages back to clients.
+	 */
+	_set_unexited_task_status(job, job->smgr_status);
+	while (_send_pending_exit_msgs(job)) {;}
+
     fail2:
 	/*
 	 * Wait for io thread to complete
@@ -527,6 +538,7 @@ _handle_task_exit(slurmd_job_t *job)
 	 * read at most ntask task exit codes from session manager
 	 */
 	for (i = 0; i < job->ntasks; i++) {
+		task_info_t *t;
 		
 		if ((len = read(job->fdpair[0], &e, sizeof(e))) < 0) {
 			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
@@ -538,13 +550,15 @@ _handle_task_exit(slurmd_job_t *job)
 		if (len == 0) /* EOF */
 			break;
 
-		job->task[e.taskid]->estatus = e.status;
-		job->task[e.taskid]->exited  = true;
-		job->task[e.taskid]->esent   = false;
+		t = job->task[e.taskid];
+
+		t->estatus = e.status;
+		t->exited  = true;
+		t->esent   = false;
 		nexited++;
 
 		debug2("global task %d exited with status %d", 
-		       e.taskid, e.status);
+		        t->gid, t->estatus);
 	} 
 
 	return nexited;
@@ -594,6 +608,7 @@ _send_pending_exit_msgs(slurmd_job_t *job)
 	return nsent;
 }
 
+
 /*
  * Wait for tasks to exit by reading task exit codes from session manger.
  *
@@ -619,10 +634,11 @@ _wait_for_task_exit(slurmd_job_t *job)
 		int nsent   = 0;
 
 		if ((rc = poll(pfd, 1, timeout)) < 0) {
-			if (errno == EINTR) {
+			if (errno == EINTR)
 				_handle_attach_req(job);
-				continue;
-			}
+			else
+				error("wait_for_task_exit: poll: %m");
+			continue;
 		}
 
 		revents = pfd[0].revents;
@@ -653,13 +669,27 @@ _wait_for_task_exit(slurmd_job_t *job)
 
 	} while (waiting);
 
+	close(rfd);
 	return SLURM_SUCCESS;
 
     done:
-	while (_send_pending_exit_msgs(job)) {;}
+	close(rfd);
 	return SLURM_FAILURE;
 }
 
+static void
+_set_unexited_task_status(slurmd_job_t *job, int status)
+{
+	int i;
+	for (i = 0; i < job->ntasks; i++) {
+		task_info_t *t = job->task[i];
+
+		if (t->exited) continue;
+
+		t->exited  = true;
+		t->estatus = status;
+	}
+}
 
 /*
  * read task exit status from slurmd session manager process,
@@ -668,8 +698,12 @@ _wait_for_task_exit(slurmd_job_t *job)
 static int
 _wait_for_session(slurmd_job_t *job)
 {
-	int           status = -1;
-	pid_t         pid;
+	int   status = job->smgr_status;
+	int   rc     = 0;
+	pid_t pid;
+
+	if (status != -1) 
+		goto done;
 
 	while ((pid = waitpid(job->smgr_pid, &status, 0)) < (pid_t) 0) {
 		if (errno == EINTR) 
@@ -680,9 +714,21 @@ _wait_for_session(slurmd_job_t *job)
 		}
 	}
 
-	status = WEXITSTATUS(status);
+	job->smgr_status = status;
 
-	return (status < MAX_SMGR_EXIT_STATUS) ? exit_errno[status] : status;
+    done:
+	if (WIFSIGNALED(status)) {
+		/*
+		 * Make sure all processes in session are dead
+		 */
+		killpg(job->smgr_pid, SIGKILL);
+		return ESLURMD_SESSION_KILLED;
+	}
+
+	if (!WIFEXITED(status))
+		rc = WEXITSTATUS(status);
+
+	return (rc <= MAX_SMGR_EXIT_STATUS) ? exit_errno[rc] : rc;
 }
 
 /*

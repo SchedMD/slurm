@@ -76,8 +76,8 @@ sign_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred)
 			    cred->signature, &sigsize);
 	free_buf(buffer);
 
-	if (rc)
-		slurm_seterrno_ret(ESLURMD_ERROR_SIGNING_CREDENTIAL);
+	if (rc != 0)
+	       return SLURM_ERROR;
 
 	if (sigsize != SLURM_SSL_SIGNATURE_LENGTH)
 		error("signature size not correct in ssl_sign!");
