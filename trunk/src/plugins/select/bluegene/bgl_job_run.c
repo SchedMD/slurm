@@ -56,6 +56,8 @@
 #define MAX_PTHREAD_RETRIES  1
 #define POLL_INTERVAL        2
 
+#define KILL_PARTS_ON_REBOOT 1	/* FIXME: Temporaroy */
+
 enum update_op {START_OP, TERM_OP, SYNC_OP};
 
 typedef struct bgl_update {
@@ -629,10 +631,19 @@ int term_job(struct job_record *job_ptr)
 extern int sync_jobs(List job_list)
 {
 #ifdef HAVE_BGL_FILES
+#if KILL_PARTS_ON_REBOOT
+	static int have_run = 0;
+#endif
 	ListIterator job_iterator, block_iterator;
 	struct job_record  *job_ptr;
 	pm_partition_id_t bgl_part_id;
 	bgl_update_t *bgl_update_ptr;
+
+#if KILL_PARTS_ON_REBOOT
+	if (have_run)
+		return SLURM_SUCCESS;
+	have_run = 1;
+#endif
 
 	/* Insure that all running jobs own the specified partition */
 	job_iterator = list_iterator_create(job_list);
@@ -653,6 +664,11 @@ extern int sync_jobs(List job_list)
 			error("Running job %u has nodes==NULL",
 				job_ptr->job_id);
 			good_block = false;
+#if KILL_PARTS_ON_REBOOT
+		} else if (1) {
+			info("Running job %u being killed", job_ptr->job_id);
+			good_block = false;
+#endif
 		} else if (_excise_block(bgl_update_ptr->
 				bgl_part_id, job_ptr->nodes) != SLURM_SUCCESS) {
 			error("Kill job %u belongs to defunct bglblock %s",
