@@ -19,15 +19,4 @@ void task_mgr_init ( ) ;
 int launch_tasks ( launch_tasks_msg_t * launch_msg ) ;
 int kill_tasks ( kill_tasks_msg_t * kill_task_msg ) ;
 
-typedef struct task
-{
-	pthread_t	threadid;
-	uint32_t	pid;
-	uint32_t	job_id;
-	uint32_t	job_step_id;
-	uint32_t	task_id;
-	uint32_t	uid;
-	uint32_t	gid;
-} task_t ;
-
 
