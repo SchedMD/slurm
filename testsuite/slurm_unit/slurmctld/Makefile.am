@@ -6,6 +6,7 @@ TESTS =
 #	job_mgr-test 
 
 check_PROGRAMS = \
+	security_2_2 \
 	security_2_4 \
 	$(TESTS) 
 #
