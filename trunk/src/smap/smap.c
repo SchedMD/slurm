@@ -59,10 +59,10 @@ int main(int argc, char *argv[])
 	int end = 0;
 	int i, j, start, temp;
 	//char *name;
-
+        
 	log_init(xbasename(argv[0]), opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
-
+        
 	smap_info_ptr = xmalloc(sizeof(smap_info));
 	smap_info_ptr->xcord = 1;
 	smap_info_ptr->ycord = 1;
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
 	smap_info_ptr->Z = 0;
 	smap_info_ptr->num_of_proc = 0;
 	smap_info_ptr->resize_screen = 0;
-
+        
 #ifdef HAVE_BGL
 	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code) {
@@ -94,28 +94,21 @@ int main(int argc, char *argv[])
 		smap_info_ptr->X++;
 		smap_info_ptr->Y++;
 		smap_info_ptr->Z++;
-		smap_info_ptr->grid =
-		    (axis ***) xmalloc(sizeof(axis **) * smap_info_ptr->X);
+		
+                smap_info_ptr->grid = (axis ***) xmalloc(sizeof(axis **) * smap_info_ptr->X);
 		for (i = 0; i < smap_info_ptr->X; i++) {
-			smap_info_ptr->grid[i] =
-			    (axis **) xmalloc(sizeof(axis *) *
-					      smap_info_ptr->Y);
+			smap_info_ptr->grid[i] = (axis **) xmalloc(sizeof(axis *) * smap_info_ptr->Y);
 			for (j = 0; j < smap_info_ptr->Y; j++)
-				smap_info_ptr->grid[i][j] =
-				    (axis *) xmalloc(sizeof(axis) *
-						     smap_info_ptr->Z);
+				smap_info_ptr->grid[i][j] = (axis *) xmalloc(sizeof(axis) * smap_info_ptr->Z);
 		}
-		smap_info_ptr->num_of_proc = node_info_ptr->record_count;
-
-		smap_info_ptr->fill_in_value =
-		    (axis *) xmalloc(sizeof(axis) *
-				     smap_info_ptr->num_of_proc);
-
-		height =
-		    smap_info_ptr->Y * smap_info_ptr->Z +
-		    smap_info_ptr->Y * 2;
-		width = smap_info_ptr->X * 2;
-		init_grid(node_info_ptr);
+		
+                smap_info_ptr->num_of_proc = node_info_ptr->record_count;
+                
+		smap_info_ptr->fill_in_value = (axis *) xmalloc(sizeof(axis) * smap_info_ptr->num_of_proc);
+                
+                height = smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y + 3;
+                width = smap_info_ptr->X + smap_info_ptr->Z + 3;
+                init_grid(node_info_ptr);
 	}
 	signal(SIGWINCH, (sighandler_t) _resize_handler);
 #else
@@ -276,11 +269,10 @@ int _get_option(void)
 
 void *_resize_handler(int sig)
 {
-	int height =
-	    smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y * 2;
-	int width = smap_info_ptr->X * 2;
-
-	smap_info_ptr->ycord = 1;
+        int height = smap_info_ptr->Y * smap_info_ptr->Z + smap_info_ptr->Y + 3;
+        int width = smap_info_ptr->X + smap_info_ptr->Z + 3;
+        
+        smap_info_ptr->ycord = 1;
 	wclear(smap_info_ptr->grid_win);
 	wclear(smap_info_ptr->text_win);
 

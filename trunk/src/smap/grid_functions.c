@@ -38,26 +38,17 @@ void init_grid(node_info_msg_t * node_info_ptr)
 		for (y = 0; y < smap_info_ptr->Y; y++)
 			for (z = 0; z < smap_info_ptr->Z; z++) {
 				node_ptr = &node_info_ptr->node_array[i];
-				node_base_state = (node_ptr->node_state) &
-					(~NODE_STATE_NO_RESPOND);
+				node_base_state = (node_ptr->node_state) & (~NODE_STATE_NO_RESPOND);
 				smap_info_ptr->grid[x][y][z].color = 7;
-				if ((node_base_state == NODE_STATE_DOWN)
-				||  (node_base_state == NODE_STATE_DRAINED)
-				||  (node_base_state == NODE_STATE_DRAINING)) {
-					smap_info_ptr->grid[x][y][z].
-					    color = 0;
-					smap_info_ptr->grid[x][y][z].
-					    letter = '#';
+				if ((node_base_state == NODE_STATE_DOWN) ||  (node_base_state == NODE_STATE_DRAINED) || (node_base_state == NODE_STATE_DRAINING)) {
+					smap_info_ptr->grid[x][y][z].color = 0;
+					smap_info_ptr->grid[x][y][z].letter = '#';
 				} else {
-					smap_info_ptr->grid[x][y][z].
-					    color = 7;
-					smap_info_ptr->grid[x][y][z].
-					    letter = '.';
+					smap_info_ptr->grid[x][y][z].color = 7;
+					smap_info_ptr->grid[x][y][z].letter = '.';
 				}
-				smap_info_ptr->grid[x][y][z].state =
-				    node_ptr->node_state;
-				smap_info_ptr->grid[x][y][z].indecies =
-				    i++;
+				smap_info_ptr->grid[x][y][z].state = node_ptr->node_state;
+				smap_info_ptr->grid[x][y][z].indecies = i++;
 			}
 	y = 65;
 	z = 0;
@@ -82,28 +73,10 @@ int set_grid(int start, int end, int count)
 	for (y = smap_info_ptr->Y - 1; y >= 0; y--)
 		for (z = 0; z < smap_info_ptr->Z; z++)
 			for (x = 0; x < smap_info_ptr->X; x++) {
-				if (smap_info_ptr->grid[x][y][z].
-				    indecies >= start
-				    && smap_info_ptr->grid[x][y][z].
-				    indecies <= end) {
-					if (smap_info_ptr->grid[x][y][z].
-					    state != NODE_STATE_DOWN
-					    || smap_info_ptr->
-					    grid[x][y][z].state !=
-					    NODE_STATE_DRAINED
-					    || smap_info_ptr->
-					    grid[x][y][z].state !=
-					    NODE_STATE_DRAINING) {
-						smap_info_ptr->
-						    grid[x][y][z].letter =
-						    smap_info_ptr->
-						    fill_in_value[count].
-						    letter;
-						smap_info_ptr->
-						    grid[x][y][z].color =
-						    smap_info_ptr->
-						    fill_in_value[count].
-						    color;
+				if (smap_info_ptr->grid[x][y][z].indecies >= start && smap_info_ptr->grid[x][y][z].indecies <= end) {
+					if (smap_info_ptr->grid[x][y][z].state != NODE_STATE_DOWN || smap_info_ptr->grid[x][y][z].state != NODE_STATE_DRAINED || smap_info_ptr->grid[x][y][z].state != NODE_STATE_DRAINING) {
+						smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
+						smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
 					}
 				}
 			}
@@ -127,12 +100,8 @@ int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
 	for (x = startx; x <= endx; x++)
 		for (y = starty; y <= endy; y++)
 			for (z = startz; z <= endz; z++) {
-				smap_info_ptr->grid[x][y][z].letter =
-				    smap_info_ptr->fill_in_value[count].
-				    letter;
-				smap_info_ptr->grid[x][y][z].color =
-				    smap_info_ptr->fill_in_value[count].
-				    color;
+				smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
+				smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
 				i++;
 			}
 
@@ -151,28 +120,22 @@ void print_grid(void)
 
 			for (x = 0; x < smap_info_ptr->X; x++) {
 				if (smap_info_ptr->grid[x][y][z].color)
-					init_pair(smap_info_ptr->
-						  grid[x][y][z].color,
-						  smap_info_ptr->
-						  grid[x][y][z].color,
+					init_pair(smap_info_ptr->grid[x][y][z].color,
+						  smap_info_ptr->grid[x][y][z].color,
 						  COLOR_BLACK);
 				else
-					init_pair(smap_info_ptr->
-						  grid[x][y][z].color,
-						  smap_info_ptr->
-						  grid[x][y][z].color, 7);
+					init_pair(smap_info_ptr->grid[x][y][z].color,
+						  smap_info_ptr->grid[x][y][z].color, 
+                                                  7);
 
 				wattron(smap_info_ptr->grid_win,
-					COLOR_PAIR(smap_info_ptr->
-						   grid[x][y][z].color));
+					COLOR_PAIR(smap_info_ptr->grid[x][y][z].color));
 
 				mvwprintw(smap_info_ptr->grid_win,
 					  grid_ycord, grid_xcord, "%c",
-					  smap_info_ptr->grid[x][y][z].
-					  letter);
+					  smap_info_ptr->grid[x][y][z].letter);
 				wattroff(smap_info_ptr->grid_win,
-					 COLOR_PAIR(smap_info_ptr->
-						    grid[x][y][z].color));
+					 COLOR_PAIR(smap_info_ptr->grid[x][y][z].color));
 				grid_xcord++;
 				i++;
 			}
