@@ -54,7 +54,7 @@ slurm_update_config (char *spec) {
         {
                 case RESPONSE_SLURM_RC:
                         rc_msg = ( return_code_msg_t * ) response_msg . data ;
-                        return rc_msg->return_code ;
+                        return (int) rc_msg->return_code ;
                         break ;
                 default:
                         return SLURM_UNEXPECTED_MSG_ERROR ;

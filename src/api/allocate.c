@@ -51,6 +51,7 @@ slurm_allocate_resources (job_desc_msg_t * job_desc_msg )
         {
                 case RESPONSE_SLURM_RC:
                         slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			return (int) slurm_rc_msg->return_code;
                         break ;
                 default:
                         return SLURM_UNEXPECTED_MSG_ERROR ;
