@@ -4,9 +4,9 @@
 AUTOMAKE_OPTIONS = foreign
 
 if WITH_ELAN
-interconnect_lib = libelan_interconnect.a
+interconnect_lib = libelan_interconnect.la
 else
-interconnect_lib = libno_interconnect.a
+interconnect_lib = libno_interconnect.la
 endif
 
 sbin_PROGRAMS = slurmd
@@ -19,7 +19,9 @@ noinst_LTLIBRARIES = libelan_interconnect.la \
 LDADD = $(top_srcdir)/src/common/libcommon.la \
 	$(top_srcdir)/src/common/libdaemonize.la \
 	$(top_srcdir)/src/common/libcred.la \
-	$(SSL_LIBS) libno_interconnect.la
+	$(interconnect_lib) \
+	libthreaded_io.la \
+	$(SSL_LIBS)
 
 
 slurmd_SOURCES = slurmd.c \
@@ -28,15 +30,12 @@ slurmd_SOURCES = slurmd.c \
 		task_mgr.c \
 		shmem_struct.c \
 		circular_buffer.c \
-		threaded_io.c \
 		pipes.c \
-		locks.c \
-		reconnect_utils.c \
-		io_threads.c \
-		$(interconnect_lib)
+		locks.c
 
-libforked_io_la_SOURCES =  forked_io.c reconnect_utils.c io_threads.c 
-libthreaded_io_la_SOURCES =  threaded_io.c reconnect_utils.c io_threads.c 
+libforked_io_la_SOURCES = forked_io.c reconnect_utils.c io_threads.c 
+libthreaded_io_la_SOURCES = threaded_io.c reconnect_utils.c io_threads.c 
+
 libnbio_la_SOURCES =  threaded_io.c nbio.c reconnect_utils.c
 
 libelan_interconnect_la_SOURCES =  elan_interconnect.c

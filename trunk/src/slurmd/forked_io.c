@@ -111,3 +111,50 @@ int wait_on_io_threads ( task_start_t * task_start )
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	return SLURM_SUCCESS ;
 }
+
+int launch_task ( task_start_t * task_start )
+{
+	pid_t pid = fork ( ) ;
+	switch ( pid ) 
+	{
+		case -1:
+			slurm_perror("fork");
+			exit(1);
+			break;
+		case 0:
+			task_exec_thread ( task_start ) ;
+			exit(1);
+			break;
+		default:
+			return SLURM_SUCCESS ;
+			break;
+			
+	}
+	return SLURM_SUCCESS ;
+}
+
+int wait_for_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** task_start )
+{
+	int i ;
+	int rc ;
+	for ( i = 0 ; i < launch_msg->tasks_to_launch ; i ++ )
+	{
+		rc = waitpid ( task_start[i]->pthread_id , NULL , 0 )  ;
+		debug3 ( "fan_out_task_launch: thread %i pthread_id %i joined " , i , task_start[i]->pthread_id ) ;
+	}
+	return SLURM_SUCCESS ;
+}
+	
+int kill_launched_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** task_start , int i )
+{
+	/*
+	int rc ;
+	for (  i-- ; i >= 0  ; i -- )
+	{
+		rc = kill ( task_start[i]->pthread_id , SIGKILL ) ;
+	}
+	*/
+	return SLURM_SUCCESS ;
+}
+
+

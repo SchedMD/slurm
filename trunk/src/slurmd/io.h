@@ -46,4 +46,9 @@ void * stderr_io_pipe_thread ( void * arg ) ;
  */
 int wait_on_io_threads ( task_start_t * task_start ) ;
 
+int launch_task ( task_start_t * task_start ) ;
+
+int wait_for_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** task_start ) ;
+
+int kill_launched_tasks ( launch_tasks_request_msg_t * launch_msg , task_start_t ** task_start , int i ) ;
 #endif
