@@ -1,4 +1,5 @@
 
-EXTRA_DIST = txt html
+EXTRA_DIST = txt html pubdesign 
 
-SUBDIRS = pubdesign
+SUBDIRS = man
+
