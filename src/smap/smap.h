@@ -1,7 +1,7 @@
 /****************************************************************************\
  *  smap.h - definitions used for smap data functions
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *  UCRL-CODE-2002-040.
@@ -122,6 +122,7 @@ int set_grid_bgl(int startx, int starty, int startz, int endx, int endy,
 void print_grid(void);
 
 void print_date(void);
+extern void snprint_time(char *buf, size_t buf_size, time_t time);
 
 void get_part(void);
 void get_job(void);

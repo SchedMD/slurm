@@ -2,7 +2,7 @@
  *  partition_functions.c - Functions related to partition display 
  *  mode of smap.
  *****************************************************************************
- *  Copyright (C) 2002 The Regents of the University of California.
+ *  Copyright (C) 2004 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Danny Auble <da@llnl.gov>
  *
@@ -190,23 +190,12 @@ int print_text_part(partition_info_t * part_ptr)
 		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 			  smap_info_ptr->xcord, "DOWN");
 	smap_info_ptr->xcord += 7;
+
 	if (part_ptr->max_time == INFINITE)
 		snprintf(time_buf, sizeof(time_buf), "UNLIMITED");
 	else {
-		long minutes, hours, days;
-		minutes = part_ptr->max_time % 60;
-		hours = (part_ptr->max_time / 60) % 24;
-		days = (part_ptr->max_time / (24 * 60));
-		if (days)
-			snprintf(time_buf, sizeof(time_buf),
-				"%ld:%2.2ld:%2.2ld:00",
-				 days, hours, minutes);
-		else if (hours)
-			snprintf(time_buf, sizeof(time_buf),
-				"%ld:%2.2ld:00", hours, minutes);
-		else
-			snprintf(time_buf, sizeof(time_buf),
-				"%ld:00", minutes);
+		snprint_time(time_buf, sizeof(time_buf), 
+			(part_ptr->max_time * 60));
 	}
 	width = strlen(time_buf);
 	mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
