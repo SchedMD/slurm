@@ -78,6 +78,7 @@ void get_part(void)
 	char node_entry[13];
 	int start, startx, starty, startz, endx, endy, endz;
 	db2_block_info_t *block_ptr;
+	bool lower;
 
 	if (part_info_ptr) {
 		error_code = slurm_load_partitions(part_info_ptr->last_update, 
@@ -138,17 +139,24 @@ void get_part(void)
 					endz = (start % 10);
 					j += 5;
 
+					block_ptr = _find_part_db2(part.allow_groups);
+					lower = false;
+					if (block_ptr) {
+						block_ptr->printed = true;
+						if (block_ptr->bgl_conn_type ==
+								SELECT_TORUS)
+							lower = true;
+					}
 					part.total_nodes =  set_grid_bgl(startx, 
 							starty, startz, endx, 
-							endy, endz, count);
+							endy, endz, count, lower);
 					part.root_only = (int) pa_system_ptr->
 							fill_in_value[count].letter;
+					if (lower)
+						part.root_only += 32;
 					wattron(pa_system_ptr->text_win, 
 							COLOR_PAIR(pa_system_ptr->
 							fill_in_value[count].color));
-					block_ptr = _find_part_db2(part.allow_groups);
-					if (block_ptr)
-						block_ptr->printed = true;
 					_print_text_part(&part, block_ptr);
 					wattroff(pa_system_ptr->text_win, 
 							COLOR_PAIR(pa_system_ptr->
@@ -442,9 +450,16 @@ static int _print_rest(void *object, void *arg)
 	int *count = (int *) arg;
 	int start, startx, starty, startz, endx, endy, endz;
 	partition_info_t part;
+	bool lower;
 
 	if (block_ptr->printed)
 		return SLURM_SUCCESS;
+
+	/* lower case letters for TORUS connect */
+	if (block_ptr->bgl_conn_type == SELECT_TORUS)
+		lower = true;
+	else
+		lower = false;
 
 	if (block_ptr->nodes[11] == ']') {	/* "bgl[###x###]" */
 		start = atoi(block_ptr->nodes + 4);
@@ -456,7 +471,7 @@ static int _print_rest(void *object, void *arg)
 		endy = (start % 100) / 10;
 		endz = (start % 10);
 		set_grid_bgl(startx, starty, startz,
-			endx, endy, endz, *count);
+			endx, endy, endz, *count, lower);
 	} else {				/* any other format */
 		hostlist_t hostlist;
 		hostlist_iterator_t host_iter;
@@ -472,7 +487,7 @@ static int _print_rest(void *object, void *arg)
 			starty = endy = (start % 100) / 10;
 			startz = endz = (start % 10);
 			set_grid_bgl(startx, starty, startz,
-				endx, endy, endz, *count);
+				endx, endy, endz, *count, lower);
 			free(host_name);
 		}
 		hostlist_iterator_destroy(host_iter);
@@ -482,10 +497,10 @@ static int _print_rest(void *object, void *arg)
 	part.name = NULL;
 	part.allow_groups = block_ptr->nodes;
 	part.root_only = (int) pa_system_ptr->fill_in_value[*count].letter;
-//	if (block_ptr->bgl_conn_type == SELECT_TORUS)
-//		part.root_only += 32;
 	wattron(pa_system_ptr->text_win, 
 		COLOR_PAIR(pa_system_ptr->fill_in_value[*count].color));
+	if (lower)
+		part.root_only += 32;
 	_print_text_part(&part, block_ptr);
 	wattroff(pa_system_ptr->text_win,
 		COLOR_PAIR(pa_system_ptr->fill_in_value[*count].color));
