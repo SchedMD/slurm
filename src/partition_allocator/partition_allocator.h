@@ -45,6 +45,7 @@
 #define NUM_PORTS_PER_NODE 6
 
 extern bool _initialized;
+
 enum {X, Y, Z};
 
 /* */
@@ -212,7 +213,7 @@ void pa_fini();
  * 
  * IN c: coordinate of the node to put down
  */
-void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
+void pa_set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
 
 /** 
  * Try to allocate a partition.
@@ -246,6 +247,8 @@ int alter_part(List nodes, int conn_type);
  *
  */
 int redo_part(List nodes, int conn_type, int new_count);
+
+int set_bgl_part(List nodes, int size, int conn_type);
 
 void init_grid(node_info_msg_t *node_info_ptr);
 
