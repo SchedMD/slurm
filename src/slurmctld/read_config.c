@@ -47,10 +47,10 @@
 
 #define BUF_SIZE 1024
 
-int	init_slurm_conf ();
-int	parse_config_spec (char *in_line);
-int	parse_node_spec (char *in_line);
-int	parse_part_spec (char *in_line);
+static int	init_slurm_conf ();
+static int	parse_config_spec (char *in_line);
+static int	parse_node_spec (char *in_line);
+static int	parse_part_spec (char *in_line);
 
 static char highest_node_name[MAX_NAME_LEN] = "";
 int node_record_count = 0;
@@ -329,7 +329,7 @@ build_bitmaps ()
  * init_slurm_conf - initialize or re-initialize the slurm configuration values.   
  * output: return value - 0 if no error, otherwise an error code
  */
-int
+static int
 init_slurm_conf () {
 	int error_code;
 
@@ -351,7 +351,7 @@ init_slurm_conf () {
  * parse_config_spec - parse the overall configuration specifications, build table and set values
  * output: 0 if no error, error code otherwise
  */
-int 
+static int 
 parse_config_spec (char *in_line) 
 {
 	int error_code;
@@ -493,7 +493,7 @@ parse_config_spec (char *in_line)
  * global: default_config_record - default configuration values for group of nodes
  *	default_node_record - default node configuration values
  */
-int
+static int
 parse_node_spec (char *in_line) {
 	char *node_name, *state, *feature, *this_node_name;
 	int error_code, first, i;
@@ -606,9 +606,9 @@ parse_node_spec (char *in_line) {
 		}
 
 		if (node_record_point == NULL) {
-			node_record_point =
-				create_node_record (config_point, this_node_name);
-			if (state_val != NO_VAL)
+			node_record_point = create_node_record (config_point, this_node_name);
+			if ((state_val != NO_VAL) && 
+			    (state_val != NODE_STATE_UNKNOWN))
 				node_record_point->node_state = state_val;
 		}
 		else {
@@ -641,7 +641,7 @@ parse_node_spec (char *in_line) {
  * global: part_list - global partition list pointer
  *	default_part - default parameters for a partition
  */
-int 
+static int 
 parse_part_spec (char *in_line) {
 	char *allow_groups, *nodes, *partition_name;
 	char *default_str, *root_str, *shared_str, *state_str;
@@ -847,11 +847,18 @@ read_slurm_conf (int recover) {
 	int i, j, error_code;
 	/* Locks: Write configuration, write job, write node, write partition */
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+	int old_node_record_count;
+	struct node_record *old_node_table_ptr;
+	struct node_record *node_record_point;
 
 	/* initialization */
 	lock_slurmctld (config_write_lock);
 	start_time = clock ();
+	old_node_record_count = node_record_count;
+	old_node_table_ptr = node_record_table_ptr;	/* save node states for reconfig RPC */
+	node_record_table_ptr = NULL;
 	if ( (error_code = init_slurm_conf ()) ) {
+		node_record_table_ptr = old_node_table_ptr;
 		unlock_slurmctld (config_write_lock);
 		return error_code;
 	}
@@ -870,6 +877,8 @@ read_slurm_conf (int recover) {
 		if (strlen (in_line) >= (BUF_SIZE - 1)) {
 			error ("read_slurm_conf line %d, of input file %s too long\n",
 				 line_num, slurmctld_conf.slurm_conf);
+			if (old_node_table_ptr)
+				xfree (old_node_table_ptr);
 			fclose (slurm_spec_file);
 			unlock_slurmctld (config_write_lock);
 			return E2BIG;
@@ -898,6 +907,8 @@ read_slurm_conf (int recover) {
 		/* overall configuration parameters */
 		if ((error_code = parse_config_spec (in_line))) {
 			fclose (slurm_spec_file);
+			if (old_node_table_ptr)
+				xfree (old_node_table_ptr);
 			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}
@@ -905,6 +916,8 @@ read_slurm_conf (int recover) {
 		/* node configuration parameters */
 		if ((error_code = parse_node_spec (in_line))) {
 			fclose (slurm_spec_file);
+			if (old_node_table_ptr)
+				xfree (old_node_table_ptr);
 			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}		
@@ -912,6 +925,8 @@ read_slurm_conf (int recover) {
 		/* partition configuration parameters */
 		if ((error_code = parse_part_spec (in_line))) {
 			fclose (slurm_spec_file);
+			if (old_node_table_ptr)
+				xfree (old_node_table_ptr);
 			unlock_slurmctld (config_write_lock);
 			return error_code;
 		}		
@@ -933,17 +948,30 @@ read_slurm_conf (int recover) {
 
 	if (default_part_loc == NULL) {
 		error ("read_slurm_conf: default partition not set.");
+		if (old_node_table_ptr)
+			xfree (old_node_table_ptr);
 		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}	
 
 	if (node_record_count < 1) {
 		error ("read_slurm_conf: no nodes configured.");
+		if (old_node_table_ptr)
+			xfree (old_node_table_ptr);
 		unlock_slurmctld (config_write_lock);
 		return EINVAL;
 	}	
 		
 	rehash ();
+	if (old_node_table_ptr) {
+		info ("restoring original state of nodes");
+		for (i=0; i<old_node_record_count; i++) {
+			node_record_point = find_node_record (old_node_table_ptr[i].name);
+			if (node_record_point)
+				node_record_point->node_state = old_node_table_ptr[i].node_state;
+		}
+		xfree (old_node_table_ptr);
+	}
 	set_slurmd_addr ();
 
 	if (recover) {
