@@ -401,7 +401,7 @@ int load_all_part_state(void)
 			     state_up);
 			error
 			    ("No more partition data will be processed from the checkpoint file");
-			FREE_NULL(part_name);
+			xfree(part_name);
 			error_code = EINVAL;
 			break;
 		}
@@ -420,16 +420,16 @@ int load_all_part_state(void)
 			part_ptr->root_only = root_only;
 			part_ptr->shared = shared;
 			part_ptr->state_up = state_up;
-			FREE_NULL(part_ptr->allow_groups);
+			xfree(part_ptr->allow_groups);
 			part_ptr->allow_groups = allow_groups;
-			FREE_NULL(part_ptr->nodes);
+			xfree(part_ptr->nodes);
 			part_ptr->nodes = nodes;
 		} else {
 			info("load_all_part_state: partition %s removed from configuration file", 
 			     part_name);
 		}
 
-		FREE_NULL(part_name);
+		xfree(part_name);
 	}
 
 	free_buf(buffer);
@@ -513,9 +513,9 @@ static void _list_delete_part(void *part_entry)
 			continue;
 		node_record_table_ptr[i].partition_ptr = NULL;
 	}
-	FREE_NULL(part_record_point->allow_groups);
-	FREE_NULL(part_record_point->allow_uids);
-	FREE_NULL(part_record_point->nodes);
+	xfree(part_record_point->allow_groups);
+	xfree(part_record_point->allow_uids);
+	xfree(part_record_point->nodes);
 	FREE_NULL_BITMAP(part_record_point->node_bitmap);
 	xfree(part_entry);
 }
@@ -706,13 +706,13 @@ int update_part(update_part_msg_t * part_desc)
 	}
 
 	if (part_desc->allow_groups != NULL) {
-		FREE_NULL(part_ptr->allow_groups);
+		xfree(part_ptr->allow_groups);
 		i = strlen(part_desc->allow_groups) + 1;
 		part_ptr->allow_groups = xmalloc(i);
 		strcpy(part_ptr->allow_groups, part_desc->allow_groups);
 		info("update_part: setting allow_groups to %s for partition %s", 
 		     part_desc->allow_groups, part_desc->name);
-		FREE_NULL(part_ptr->allow_uids);
+		xfree(part_ptr->allow_uids);
 		part_ptr->allow_uids =
 		    _get_groups_members(part_desc->allow_groups);
 	}
@@ -726,12 +726,12 @@ int update_part(update_part_msg_t * part_desc)
 
 		error_code = _build_part_bitmap(part_ptr);
 		if (error_code) {
-			FREE_NULL(part_ptr->nodes);
+			xfree(part_ptr->nodes);
 			part_ptr->nodes = backup_node_list;
 		} else {
 			info("update_part: setting nodes to %s for partition %s", 
 			     part_desc->nodes, part_desc->name);
-			FREE_NULL(backup_node_list);
+			xfree(backup_node_list);
 		}
 	}
 
@@ -787,7 +787,7 @@ void load_part_uid_allow_list(int force)
 	part_record_iterator = list_iterator_create(part_list);
 	while ((part_record_point =
 		(struct part_record *) list_next(part_record_iterator))) {
-		FREE_NULL(part_record_point->allow_uids);
+		xfree(part_record_point->allow_uids);
 		part_record_point->allow_uids =
 		    _get_groups_members(part_record_point->allow_groups);
 	}

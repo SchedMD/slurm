@@ -96,9 +96,9 @@ delete_all_step_records (struct job_record *job_ptr)
 #ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
-		FREE_NULL(step_record_point->step_node_list);
+		xfree(step_record_point->step_node_list);
 		FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
-		FREE_NULL(step_record_point);
+		xfree(step_record_point);
 	}		
 
 	list_iterator_destroy (step_record_iterator);
@@ -130,9 +130,9 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 #ifdef HAVE_LIBELAN3
 			qsw_free_jobinfo (step_record_point->qsw_job);
 #endif
-			FREE_NULL(step_record_point->step_node_list);
+			xfree(step_record_point->step_node_list);
 			FREE_NULL_BITMAP(step_record_point->step_node_bitmap);
-			FREE_NULL(step_record_point);
+			xfree(step_record_point);
 			error_code = 0;
 			break;
 		}
