@@ -135,7 +135,7 @@ if {[wait_for_job $job_id1 RUNNING] != 0} {
 	send_user "\nFAILURE: waiting for job $job_id1 to run\n"
 	set exit_code 1
 }
-sleep 2
+sleep 5
 
 #
 # Look at all job steps with scontrol
