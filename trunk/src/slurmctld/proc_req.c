@@ -878,18 +878,16 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 							 request->step_id,
 							 buffer);
 		unlock_slurmctld(job_read_lock);
-		resp_buffer_size = get_buf_offset(buffer);
-		resp_buffer = xfer_buf_data(buffer);
-		if (error_code == ESLURM_INVALID_JOB_ID)
-			info("_slurm_rpc_job_step_get_info, no such "
-				"job step %u.%u, time=%ld", 
-				request->job_id, request->step_id, 
-				(long) (clock() - start_time));
-		else if (error_code)
+		if (error_code) {
 			error("_slurm_rpc_job_step_get_info, time=%ld, "
 				"error=%s",
 				(long) (clock() - start_time),
 				slurm_strerror(error_code));
+			free_buf(buffer);
+		} else {
+			resp_buffer_size = get_buf_offset(buffer);
+			resp_buffer = xfer_buf_data(buffer);
+		}
 	}
 
 	if (error_code)
@@ -904,7 +902,7 @@ static void _slurm_rpc_job_step_get_info(slurm_msg_t * msg)
 		response_msg.data = resp_buffer;
 		response_msg.data_size = resp_buffer_size;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-
+		xfree(resp_buffer);
 	}
 }
 
