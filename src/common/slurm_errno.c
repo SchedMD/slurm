@@ -102,8 +102,6 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Job script not specified"				},
 	{ ESLURM_USER_ID_MISSING, 
 	  "Invalid user id"					},
-	{ ESLURM_JOB_NAME_TOO_LONG, 
-	  "Job name too long"					},
 	{ ESLURM_DUPLICATE_JOB_ID, 
 	  "Duplicate job id"					},
 	{ ESLURM_PATHNAME_TOO_LONG,
