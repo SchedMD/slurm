@@ -285,7 +285,6 @@ static void _print_header_part(void)
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
-		printf("ID\t");
 		printf("PARTITION\t");
 		if (params.display != BGLPART) {
 			printf("AVAIL\t");
@@ -457,11 +456,10 @@ static int _print_text_part(partition_info_t *part_ptr,
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
-		printf("%c\t", part_ptr->root_only);
-		
 		if (part_ptr->name) {
-			printf("%s\t", part_ptr->name);
-			pa_system_ptr->xcord += 10;
+			printf("%.9s\t", part_ptr->name);
+			if(!params.parse)
+				printf("\t");
 			if (params.display != BGLPART) {
 				if (part_ptr->state_up)
 					printf("UP\t");
@@ -484,21 +482,31 @@ static int _print_text_part(partition_info_t *part_ptr,
 
 		if (params.display == BGLPART) {
 			if (db2_info_ptr) {
-				printf("%s\t", db2_info_ptr->bgl_block_name);
+				printf("%.11s\t", db2_info_ptr->bgl_block_name);
+				if(!params.parse)
+					printf("\t");
 				printf("%s\t", _part_state_str(db2_info_ptr->state));
 				
-				printf("%s\t", db2_info_ptr->bgl_user_name);
+				printf("%.11s\t", db2_info_ptr->bgl_user_name);
 				
-				printf("%s\t", _convert_conn_type(
+				printf("%.5s\t", _convert_conn_type(
 					       db2_info_ptr->bgl_conn_type));
-				printf("%s\t",  _convert_node_use(
+				printf("%.9s\t",  _convert_node_use(
 					       db2_info_ptr->bgl_node_use));
+				if(!params.parse)
+					if(db2_info_ptr->bgl_node_use != 
+					   SELECT_COPROCESSOR_MODE)
+						printf("\t");
 			} else {
 				printf("?\t");
+				if(!params.parse)
+					printf("\t");
 				printf("?\t");
 				printf("?\t");
 				printf("?\t");
 				printf("?\t");
+				if(!params.parse)
+					printf("\t");
 			}
 		}
 

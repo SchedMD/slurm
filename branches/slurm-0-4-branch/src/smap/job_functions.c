@@ -169,7 +169,6 @@ static void _print_header_job(void)
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
-		printf("ID\t");
 		printf("JOBID\t");
 		printf("PARTITION\t");
 #ifdef HAVE_BGL
@@ -177,6 +176,8 @@ static void _print_header_job(void)
 #endif
 		printf("USER\t");
 		printf("NAME\t");
+		if(!params.parse)
+			printf("\t");
 		printf("ST\t");
 		printf("TIME\t");
 		printf("NODES\t");
@@ -262,19 +263,22 @@ static int _print_text_job(job_info_t * job_ptr)
 		pa_system_ptr->xcord = 1;
 		pa_system_ptr->ycord++;
 	} else {
-		printf("%c\t", job_ptr->num_procs);
 		printf("%d\t", job_ptr->job_id);
-		printf("%s\t", job_ptr->partition);
+		printf("%.10s\t", job_ptr->partition);
+		if(!params.parse)
+			printf("\t");
 #ifdef HAVE_BGL
-		printf("%s\t", 
+		printf("%.10s\t", 
 		       select_g_sprint_jobinfo(job_ptr->select_jobinfo, 
 					       time_buf, 
 					       sizeof(time_buf), 
 					       SELECT_PRINT_BGL_ID));
+		if(!params.parse)
+			printf("\t");
 #endif
-		printf("%s\t", uid_to_string((uid_t) job_ptr->user_id));
-		printf("%s\t", job_ptr->name);
-		printf("%s\t",
+		printf("%.8s\t", uid_to_string((uid_t) job_ptr->user_id));
+		printf("%.9s\t", job_ptr->name);
+		printf("%.2s\t",
 		       job_state_string_compact(job_ptr->job_state));
 		if(!strcasecmp(job_ptr->nodes,"waiting...")) {
 			sprintf(time_buf,"0:00:00");
@@ -284,7 +288,7 @@ static int _print_text_job(job_info_t * job_ptr)
 		}
 		
 		printf("%s\t", time_buf);
-		printf("%d\t", job_ptr->num_nodes);
+		printf("%5d\t", job_ptr->num_nodes);
 		printf("%s\n", job_ptr->nodes);
 	}
 	return printed;

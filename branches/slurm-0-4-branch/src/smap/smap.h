@@ -104,6 +104,7 @@ typedef struct {
 
 	bool long_output;
 	bool commandline;
+	bool parse;
 
 	char *nodes;
 	char *partition;
