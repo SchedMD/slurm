@@ -45,7 +45,6 @@
 
 #define BUF_SIZE 1024
 
-time_t init_time;
 log_options_t log_opts = LOG_OPTS_STDERR_ONLY ;
 slurm_ctl_conf_t slurmctld_conf;
 
@@ -80,7 +79,6 @@ main (int argc, char *argv[])
 	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
 
-	init_time = time (NULL);
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	init_ctld_conf ( &slurmctld_conf );
@@ -223,7 +221,7 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	
 	
 	/* check to see if build_data has changed */	
-	if ( last_time_msg -> last_update >= init_time )
+	if ( last_time_msg -> last_update >= slurmctld_conf.last_update )
 	{
 		info ("dump_build, no change, time=%ld", 
 			(long) (clock () - start_time));
@@ -767,7 +765,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
 	struct servent *servent;
 
-	conf_ptr->last_update		= init_time ;
+	conf_ptr->last_update		= time (NULL) ;
 	conf_ptr->backup_controller   	= NULL ;
 	conf_ptr->control_machine    	= NULL ;
 	conf_ptr->epilog           	= NULL ;
@@ -802,7 +800,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 void
 fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
-	conf_ptr->last_update		= init_time ;
+	conf_ptr->last_update		= slurmctld_conf.last_update ;
 	conf_ptr->backup_controller   	= slurmctld_conf.backup_controller ;
 	conf_ptr->control_machine    	= slurmctld_conf.control_machine ;
 	conf_ptr->epilog           	= slurmctld_conf.epilog ;

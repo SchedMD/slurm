@@ -852,7 +852,7 @@ read_slurm_conf ( ) {
 		info ("read_slurm_conf: backup_controller value not specified.");		
 
 	if (slurmctld_conf.control_machine == NULL) {
-		error ("read_slurm_conf: control_machine value not specified.");
+		fatal ("read_slurm_conf: control_machine value not specified.");
 		return EINVAL;
 	}			
 
@@ -865,6 +865,7 @@ read_slurm_conf ( ) {
 		return error_code;
 	list_sort (config_list, &list_compare_config);
 
+	slurmctld_conf.last_update = time (NULL) ;
 	info ("read_slurm_conf: finished loading configuration, time =%ld",
 		(long) (clock () - start_time));
 
