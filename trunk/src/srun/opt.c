@@ -48,7 +48,9 @@
 #include <src/common/xstring.h>
 #include <src/common/list.h>
 
-
+#if HAVE_TOTALVIEW
+#include <src/srun/attach.h>
+#endif
 #include <src/srun/env.h>
 #include <src/srun/opt.h>
 
@@ -287,6 +289,10 @@ static bool opt_verify(poptContext);
 
 /* return command name from its full path name */
 static char * base_name(char* command);
+
+#if HAVE_TOTALVIEW
+static bool _under_totalview(void);
+#endif
 
 /* list known options and their settings 
  */
@@ -542,6 +548,9 @@ static void opt_default()
 	opt.batch = false;
 	opt.share = false;
 	opt.fail_kill = false;
+#if HAVE_TOTALVIEW
+	opt.totalview = _under_totalview();
+#endif
 
 	opt.immediate = false;
 
@@ -1193,3 +1202,15 @@ void opt_list()
 
 }
 #endif				/* __DEBUG */
+
+#if HAVE_TOTALVIEW
+/* Determine if srun is under the control of a TotalView debugger or not */
+static bool _under_totalview(void)
+{
+	if (MPIR_being_debugged) {
+		debug("Being executed under totalview");
+		return true;
+	} else
+		return false;
+}
+#endif

@@ -136,6 +136,9 @@ typedef struct srun_options {
 	bool batch;		/* --batch,   -b		*/
 	bool fail_kill;		/* --kill,   -k			*/
 	bool share;		/* --share,   -s		*/
+#if HAVE_TOTALVIEW
+	bool totalview;		/* srun controlled by TotalView	*/
+#endif
 
 	/* constraint options */
 	int mincpus;		/* --mincpus=n			*/

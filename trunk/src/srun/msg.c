@@ -44,6 +44,9 @@
 
 #include <src/srun/job.h>
 #include <src/srun/opt.h>
+#if HAVE_TOTALVIEW
+#include <src/srun/attach.h>
+#endif
 
 static int tasks_exited = 0;
 
@@ -77,10 +80,20 @@ _launch_handler(job_t *job, slurm_msg_t *resp)
 		return;
 	} else {	
 		pthread_mutex_lock(&job->task_mutex);
-		if (msg->srun_node_id >= 0 && msg->srun_node_id < job->nhosts)
+		if (msg->srun_node_id >= 0 && msg->srun_node_id < job->nhosts) {
 			job->host_state[msg->srun_node_id] = 
 				SRUN_HOST_REPLIED;
-		else
+#if HAVE_TOTALVIEW
+			if (opt.totalview) {
+				MPIR_PROCDESC * tv_tasks;
+				tv_tasks = &MPIR_proctable[MPIR_proctable_size++];
+				tv_tasks->host_name = msg->node_name;
+				msg->node_name = NULL;	/* nothing left to free */
+				tv_tasks->executable_name = opt.progname;
+				tv_tasks->pid = msg->local_pid;
+			}
+#endif
+		} else
 			error("launch resp from %s has bad task_id %d",
 				msg->node_name, msg->srun_node_id);
 		pthread_mutex_unlock(&job->task_mutex);
