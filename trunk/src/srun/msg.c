@@ -488,13 +488,6 @@ _msg_thr_poll(job_t *job)
 
 	while (1) {
 		while ((rc = poll(fds, nfds, POLL_TIMEOUT_MSEC)) <= 0) {
-#ifdef HAVE_TOTALVIEW
-			if (MPIR_being_debugged && MPIR_debug_gate &&
-			    (!sent_task_cont)) {
-				sent_task_cont = true;
-				fwd_signal(job, SIGCONT);
-			}
-#endif
 			if (rc == 0) {	/* timeout */
 				if (job->state == SRUN_JOB_FAILED)
 					pthread_exit(0);
