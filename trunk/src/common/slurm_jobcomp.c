@@ -50,7 +50,7 @@ typedef struct slurm_jobcomp_ops {
 				char *job_state, char *partition, uint32_t time_limit,
 				time_t start_time, time_t end_time, char *node_list);
 	int          (*sa_errno)  ( void );
-	char *       (*job_strerror)  ( int errno );
+	char *       (*job_strerror)  ( int errnum );
 } slurm_jobcomp_ops_t;
 
 
