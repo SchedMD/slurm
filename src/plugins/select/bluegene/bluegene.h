@@ -55,6 +55,7 @@
   typedef char *   rm_component_id_t;
   typedef rm_component_id_t rm_bp_id_t;
   typedef int      rm_BP_state_t;
+  typedef int      status_t;
 #endif
 
 /* Global variables */
