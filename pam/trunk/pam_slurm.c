@@ -247,7 +247,7 @@ _slurm_match_allocation(uid_t uid)
 
 /*
  *  Sends a message to the application informing the user
- *  that access was denied due to RMS.
+ *  that access was denied due to SLURM.
  */
 static void
 _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
@@ -301,7 +301,7 @@ _send_denial_msg(pam_handle_t *pamh, struct _options *opts,
 
 #ifdef PAM_STATIC
 struct pam_module _pam_rms_modstruct = {
-    "pam_rms",
+    "pam_slurm",
     NULL,
     NULL,
     pam_sm_acct_mgmt,

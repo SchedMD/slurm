@@ -3,8 +3,8 @@
 ##
 
 Name:		pam_slurm
-Version:	0.1.0
-Release:	0.pre1
+Version:	1.0
+Release:	1
 
 Summary:	PAM module for restricting access to compute nodes via SLURM.
 Group:		System Environment/Base
@@ -17,7 +17,7 @@ BuildRequires:	/usr/lib/libslurm.so
 Source0:	%{name}-%{version}.tgz
 
 %description
-This module restricts access to compute nodes in a cluster where Simple 
+This module restricts access to compute nodes in a cluster where the Simple 
 Linux Utility for Resource Managment (SLURM) is in use.  Access is granted
 to root, any user with an SLURM-launched job currently running on the node,
 or any user who has allocated resources on the node according to the SLURM
