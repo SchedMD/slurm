@@ -14,4 +14,9 @@ EXTRA_DIST = \
 	html/plugins.html \
 	html/authplugins.html \
 	html/slurm.png \
+	pubdesign/Makefile \
+	pubdesign/report.tex \
+	pubdesign/sample.config \
+	figures \
+	common \
 	$(html_DATA)
