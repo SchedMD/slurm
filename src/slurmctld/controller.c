@@ -51,6 +51,7 @@
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
 #if HAVE_LIBELAN3
@@ -87,11 +88,20 @@ slurmctld_config_t slurmctld_config;
 static int	daemonize = DEFAULT_DAEMONIZE;
 static int	debug_level = 0;
 static char	*debug_logfile = NULL;
+static bool     dump_core = false;
 static int	recover   = DEFAULT_RECOVER;
 static pthread_cond_t server_thread_cond = PTHREAD_COND_INITIALIZER;
 static pid_t	slurmctld_pid;
+/*
+ * Static list of signals to block in this process
+ * *Must be zero-terminated*
+ */
+static int controller_sigarray[] = {
+	SIGINT,  SIGTERM, SIGCHLD, SIGUSR1,
+	SIGUSR2, SIGTSTP, SIGXCPU, SIGQUIT,
+	SIGPIPE, SIGALRM, SIGABRT, SIGHUP, 0
+};
 
-inline static void  _disable_signals(void);
 inline static void  _free_server_thread(void);
 static void         _init_config(void);
 static void         _init_pidfile(void);
@@ -183,7 +193,8 @@ int main(int argc, char *argv[])
 	 *                    SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
 	 */
 
-	_disable_signals();
+	if (xsignal_block(controller_sigarray) < 0)
+		error("Unable to block signals");
 
 	while (1) {
 		/* initialization for each primary<->backup switch */
@@ -281,36 +292,10 @@ int main(int argc, char *argv[])
 #endif
 	log_fini();
 
-	exit(0);
-}
-
-/* Disable selected signals for all threads by default */
-static void _disable_signals(void)
-{
-	sigset_t set;
-
-	if (sigemptyset(&set))
-		error("sigemptyset error: %m");
-
-	if (sigaddset(&set, SIGALRM))
-		error("sigaddset error on SIGALRM: %m");
-	if (sigaddset(&set, SIGPIPE))
-		error("sigaddset error on SIGPIPE: %m");
-#ifdef	SIGIO
-	if (sigaddset(&set, SIGIO))
-		error("sigaddset error on SIGIO: %m");
-#endif
-#ifdef	SIGPWR
-	if (sigaddset(&set, SIGPWR))
-		error("sigaddset error on SIGPWR: %m");
-#endif
-#ifdef	SIGLOST
-	if (sigaddset(&set, SIGLOST))
-		error("sigaddset error on SIGLOST: %m");
-#endif
-
-	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
-		fatal("sigprocmask error: %m");
+	if (dump_core)
+		abort();
+	else
+		exit(0);
 }
 
 /* initialization of common slurmctld configuration */
@@ -369,21 +354,8 @@ static void *_slurmctld_signal_hand(void *no_data)
 
 	create_pidfile(slurmctld_conf.slurmctld_pidfile);
 
-	if (sigemptyset(&set))
-		error("sigemptyset error: %m");
-	if (sigaddset(&set, SIGINT))
-		error("sigaddset error on SIGINT: %m");
-	if (sigaddset(&set, SIGTERM))
-		error("sigaddset error on SIGTERM: %m");
-	if (sigaddset(&set, SIGHUP))
-		error("sigaddset error on SIGHUP: %m");
-	if (sigaddset(&set, SIGABRT))
-		error("sigaddset error on SIGABRT: %m");
-
-	if (sigprocmask(SIG_BLOCK, &set, NULL) != 0)
-		fatal("sigprocmask error: %m");
-
 	while (1) {
+		xsignal_sigset_create(controller_sigarray, &set);
 		sigwait(&set, &sig);
 		switch (sig) {
 		case SIGINT:	/* kill -2  or <CTRL-C> */
@@ -408,8 +380,11 @@ static void *_slurmctld_signal_hand(void *no_data)
 			break;
 		case SIGABRT:	/* abort */
 			info("SIGABRT received");
-			abort();
-			break;
+			slurmctld_config.shutdown_time = time(NULL);
+			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+			slurmctld_shutdown();
+			dump_core = true;
+			return NULL;
 		default:
 			error("Invalid signal (%d) received", sig);
 		}
