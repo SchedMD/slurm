@@ -6,7 +6,7 @@
   Meta:		1
   Name:		slurm
   Major:	0
-  Minor:	2
-  Micro:        21
-  Version:	0.2.21
-  Release:	1
+  Minor:	3
+  Micro:        0
+  Version:	0.3.0
+  Release:	UNSTABLE

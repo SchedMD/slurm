@@ -124,9 +124,21 @@ MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
 MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
 MICRO="`perl -ne 'print,exit if s/^\s*MICRO:\s*(\S*).*/\1/i' $srcdir/META`"
 RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
-SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
-SLURM_VERSION="$MAJOR.$MINOR.$MICRO"
-test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
+
+# Check to see if we're on an unstable branch (no prereleases yet)
+if echo "$RELEASE" | grep -e "pre0" -e "UNSTABLE"; then 
+   if test "$RELEASE" = "UNSTABLE"; then
+      DATE=`date +"%Y%m%d%H%M"`
+   else
+      DATE=`echo $RELEASE | cut -d'.'-f3`
+   fi
+   SLURM_RELEASE="unstable cvs build $DATE" 
+   SLURM_VERSION="$MAJOR.$MINOR ($SLURM_RELEASE)"
+else
+   SLURM_RELEASE="`echo $RELEASE | sed 's/^.*\.//'`"
+   SLURM_VERSION="$MAJOR.$MINOR.$MICRO"
+   test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
+fi
 AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$MAJOR", 
                    [Define the project's major version.])
 AC_DEFINE_UNQUOTED(SLURM_MINOR, "$MINOR",
