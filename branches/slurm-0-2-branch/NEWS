@@ -8,7 +8,7 @@ documents those changes that are of interest to users and admins.
    - slurm/328: slurmd uses different shared memory key on restart.
    - slurm/329: Job processes may be left running when one task dies.
  -- Allow more digits for priority values in scontrol.
- -- 
+ -- Fix for minor memory leaks in SLURM API.
 
 * Changes in SLURM 0.2.21
 =========================

@@ -796,10 +796,6 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 
 	safe_unpack16(&tmp_ptr->num_cpu_groups, buffer);
 	if (tmp_ptr->num_cpu_groups > 0) {
-		tmp_ptr->cpus_per_node = (uint32_t *)
-		    xmalloc(sizeof(uint32_t) * tmp_ptr->num_cpu_groups);
-		tmp_ptr->cpu_count_reps = (uint32_t *)
-		    xmalloc(sizeof(uint32_t) * tmp_ptr->num_cpu_groups);
 		safe_unpack32_array((uint32_t **) &
 				    (tmp_ptr->cpus_per_node), &uint32_tmp,
 				    buffer);
