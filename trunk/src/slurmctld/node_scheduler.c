@@ -126,7 +126,7 @@ int count_cpus(unsigned *bitmap)
 /*
  * deallocate_nodes - for a given job, deallocate its nodes and make 
  *	their state NODE_STATE_COMPLETING
- * IN job_ptr - pointer to terminating job
+ * IN job_ptr - pointer to terminating job (already in some COMPLETING state)
  * IN timeout - true of job exhausted time limit, send REQUEST_KILL_TIMELIMIT
  *	RPC instead of REQUEST_KILL_JOB
  * globals: node_record_count - number of nodes in the system
@@ -159,6 +159,9 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+		if (node_record_table_ptr[i].node_state ==
+		    (NODE_STATE_DOWN | NODE_STATE_NO_RESPOND))
+			continue;	/* don't bother with dead nodes */
 		if ((agent_args->node_count + 1) > buf_rec_size) {
 			buf_rec_size += 32;
 			xrealloc((agent_args->slurm_addr),
@@ -180,6 +183,7 @@ void deallocate_nodes(struct job_record *job_ptr, bool timeout)
 		error("Job %u allocated no nodes to be killed on",
 		      job_ptr->job_id);
 		xfree(agent_args);
+		job_ptr->job_state &= (~JOB_COMPLETING);
 		return;
 	}
 

@@ -912,8 +912,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 {
 	int error_code = 0, state_val, node_inx;
 	char  *this_node_name ;
-	struct node_record *node_record_point;
+	struct node_record *node_ptr;
 	hostlist_t host_list;
+	uint16_t no_resp_flag = 0;
 
 	if (update_node_msg -> node_names == NULL ) {
 		error ("update_node: invalid node name  %s", 
@@ -932,9 +933,9 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 	last_node_update = time (NULL);
 	while ( (this_node_name = hostlist_shift (host_list)) ) {
-		node_record_point = find_node_record (this_node_name);
-		node_inx = node_record_point - node_record_table_ptr;
-		if (node_record_point == NULL) {
+		node_ptr = find_node_record (this_node_name);
+		node_inx = node_ptr - node_record_table_ptr;
+		if (node_ptr == NULL) {
 			error ("update_node: node %s does not exist", 
 				this_node_name);
 			error_code = ESLURM_INVALID_NODE_NAME;
@@ -944,8 +945,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 
 		if (state_val != NO_VAL) {
 			if (state_val == NODE_STATE_DOWN) {
-				bit_clear (up_node_bitmap, node_inx);
-				bit_clear (idle_node_bitmap, node_inx);
+				/* We must set node down before killing its jobs */
+				_make_node_down(node_ptr);
 				kill_running_job_by_node_name (this_node_name,
 							       false);
 			}
@@ -977,8 +978,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 			else if (state_val == NODE_STATE_NO_RESPOND) {
 				bit_clear (up_node_bitmap,   node_inx);
 				bit_clear (idle_node_bitmap, node_inx);
-				node_record_point->node_state |=
-						NODE_STATE_NO_RESPOND;
+				node_ptr->node_state |= NODE_STATE_NO_RESPOND;
 				info ("update_node: node %s state set to %s",
 				      this_node_name, "NoResp");
 				continue;
@@ -989,7 +989,8 @@ int update_node ( update_node_msg_t * update_node_msg )
 				continue;
 			}
 
-			node_record_point->node_state = state_val;
+			no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+			node_ptr->node_state = state_val | no_resp_flag;
 			info ("update_node: node %s state set to %s",
 				this_node_name, node_state_string(state_val));
 		}
@@ -1209,8 +1210,8 @@ void set_node_down (char *name)
 		return;
 	}
 
-	(void) kill_running_job_by_node_name(name, false);
 	_make_node_down(node_ptr);
+	(void) kill_running_job_by_node_name(name, false);
 
 	return;
 }
@@ -1278,9 +1279,9 @@ void ping_nodes (void)
 		    (base_state != NODE_STATE_DOWN)) {
 			error ("Node %s not responding, setting DOWN", 
 			       node_record_table_ptr[i].name);
+			_make_node_down(&node_record_table_ptr[i]);
 			kill_running_job_by_node_name (
 					node_record_table_ptr[i].name, false);
-			_make_node_down(&node_record_table_ptr[i]);
 			continue;
 		}
 
