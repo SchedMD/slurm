@@ -956,6 +956,9 @@ read_slurm_conf (int recover) {
 		unlock_slurmctld (config_write_lock);
 		return error_code;
 	}
+	if (recover) {
+		(void) sync_nodes_to_jobs ();
+	}
 
 	/* sort config_list by weight for scheduling */
 	list_sort (config_list, &list_compare_config);
@@ -966,4 +969,46 @@ read_slurm_conf (int recover) {
 
 	unlock_slurmctld (config_write_lock);
 	return SLURM_SUCCESS;
+}
+
+/*
+ * sync_nodes_to_jobs - sync the node state to job states on slurmctld restart.
+ *	we perform "lazy" updates on node states due to their number (assumes  
+ *	number of jobs is much smaller than the number of nodes). This routine  
+ *	marks nodes allocated to a job as busy no matter what the node's last 
+ *	saved state 
+ * output: returns count of nodes having state changed
+ */
+int 
+sync_nodes_to_jobs (void)
+{
+	struct job_record *job_ptr;
+	ListIterator job_record_iterator;
+	int i, update_cnt = 0;
+
+	job_record_iterator = list_iterator_create (job_list);		
+	while ((job_ptr = (struct job_record *) list_next (job_record_iterator))) {
+		if ((job_ptr->job_state == JOB_PENDING) || 
+		    (job_ptr->job_state == JOB_COMPLETE) || 
+		    (job_ptr->job_state == JOB_FAILED) || 
+		    (job_ptr->job_state == JOB_TIMEOUT))
+			continue;
+		if (job_ptr->node_bitmap == NULL) 
+			continue;
+		for (i = 0; i < node_record_count; i++) {
+			if (bit_test (job_ptr->node_bitmap, i) == 0)
+				continue;
+			if (node_record_table_ptr[i].node_state == NODE_STATE_ALLOCATED)
+				continue; 	/* already in proper state */
+			update_cnt++;
+			if (node_record_table_ptr[i].node_state & NODE_STATE_NO_RESPOND)
+				node_record_table_ptr[i].node_state = NODE_STATE_ALLOCATED | 
+				                                      NODE_STATE_NO_RESPOND;
+			else
+				node_record_table_ptr[i].node_state = NODE_STATE_ALLOCATED;
+		}
+	}
+	if (update_cnt)
+		info ("sync_nodes_to_jobs updated state of %d nodes", update_cnt);
+	return update_cnt;
 }

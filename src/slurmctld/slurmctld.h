@@ -95,7 +95,8 @@ extern time_t last_node_update;		/* time of last update to node records */
 struct node_record {
 	uint32_t magic;			/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];	/* name of the node. a null name indicates defunct node */
-	uint16_t node_state;		/* enum node_states, ORed with STATE_NO_RESPOND if down */
+	uint16_t node_state;		/* enum node_states, ORed with 
+					   NODE_STATE_NO_RESPOND if not responding */
 	time_t last_response;		/* last response from the node */
 	uint32_t cpus;			/* actual count of cpus running on the node */
 	uint32_t real_memory;		/* actual megabytes of real memory on the node */
@@ -448,10 +449,10 @@ void purge_old_job (void);
 extern int  read_slurm_conf (int recover);
 
 /* rehash - build a hash table of the node_record entries */
-extern void rehash ();
+extern void rehash (void);
 
 /* reset_job_bitmaps - reestablish bitmaps for existing jobs */
-extern void reset_job_bitmaps ();
+extern void reset_job_bitmaps (void);
 
 /* rmdir2 - issues system call to rmdir (if root) */
 extern int rmdir2 (char * path);
@@ -475,10 +476,13 @@ extern void set_slurmd_addr (void);
 extern int step_create ( step_specs *step_specs, struct step_record** );
 
 /* step_lock - lock the step information */
-extern void step_lock ();
+extern void step_lock (void);
 
 /* step_unlock - unlock the step information */
-extern void step_unlock ();
+extern void step_unlock (void);
+
+/* sync_nodes_to_jobs - sync the node state to job states on slurmctld restart */
+extern int sync_nodes_to_jobs (void);
 
 /* update_job - update a job's parameters per the supplied specification */
 extern int update_job (job_desc_msg_t * job_specs);
