@@ -1096,7 +1096,7 @@ _print_table(NTBL **table, int size)
  * Used by: slurmctld
  */
 int
-fed_build_jobinfo(fed_jobinfo_t *j, hostlist_t hl, int nprocs, int cyclic)
+fed_build_jobinfo(fed_jobinfo_t *jp, hostlist_t hl, int nprocs, int cyclic)
 {
 	int nnodes;
 	hostlist_iterator_t hi;
@@ -1105,11 +1105,12 @@ fed_build_jobinfo(fed_jobinfo_t *j, hostlist_t hl, int nprocs, int cyclic)
 	int min_procs_per_node;
 	int max_procs_per_node;
 	int proc_cnt = 0;
+	int task_cnt;
 	NTBL **tmp_table;
-	int i;
+	int i, j;
 	
-	assert(j);
-	assert(j->magic == FED_JOBINFO_MAGIC);
+	assert(jp);
+	assert(jp->magic == FED_JOBINFO_MAGIC);
 	assert(!hostlist_is_empty(hl));
 
 	if((nprocs <= 0) || (nprocs > FED_MAX_PROCS))
@@ -1119,12 +1120,12 @@ fed_build_jobinfo(fed_jobinfo_t *j, hostlist_t hl, int nprocs, int cyclic)
 	if(tmp_table == NULL)
 		slurm_seterrno_ret(ENOMEM);
 	
-	j->job_key = _next_key();
+	jp->job_key = _next_key();
 	/* FIX ME! skip setting job_desc for now, will default to
 	 * "no_job_description_given".  Also, let the adapter
 	 * determine our window memory size.
 	 */
-	j->window_memory = FED_AUTO_WINMEM;	
+	jp->window_memory = FED_AUTO_WINMEM;	
 		
 	nnodes = hostlist_count(hl);
 	full_node_cnt = nprocs % nnodes;
@@ -1132,23 +1133,40 @@ fed_build_jobinfo(fed_jobinfo_t *j, hostlist_t hl, int nprocs, int cyclic)
 	max_procs_per_node = (nprocs + nnodes - 1) / nnodes;
 	
 	hi = hostlist_iterator_create(hl);
-	while(proc_cnt < nprocs) {
-		host = hostlist_next(hi);
-		if(!host) {
-			hostlist_iterator_reset(hi);
+
+	if(cyclic) {
+		// allocate 1 window per node
+		debug("Allocating windows in cyclic mode");
+		hostlist_iterator_reset(hi);
+		while(proc_cnt < nprocs) {
 			host = hostlist_next(hi);
-		}
-		if(cyclic) {	
-			// allocate 1 window per node
+			if(!host) {
+				hostlist_iterator_reset(hi);
+				host = hostlist_next(hi);
+			}	
 			tmp_table[proc_cnt] = malloc(sizeof(NTBL));
 			if(_setup_table_entry(tmp_table[proc_cnt], host, proc_cnt)) {
 				free(tmp_table);
 				slurm_seterrno_ret(EWINDOW);
 			}
 			proc_cnt++;
-		} else {
-			// allocate windows up to max_procs_per_node
-			for(i = 0; i < max_procs_per_node; i++) {
+			free(host);
+		}
+	} else {
+		// allocate windows up to max_procs_per_node
+		debug("Allocating windows in block mode");
+		hostlist_iterator_reset(hi);
+		for(i = 0; i < nnodes; i++) {
+			host = hostlist_next(hi);
+			if(!host)
+				error("Failed to get next host");
+	
+			if(i < full_node_cnt)
+				task_cnt = max_procs_per_node;
+			else
+				task_cnt = min_procs_per_node;
+			
+			for (j = 0; j < task_cnt; j++) {
 				tmp_table[proc_cnt] = malloc(sizeof(NTBL));
 				if(_setup_table_entry(tmp_table[proc_cnt], host, 
 					proc_cnt)) {
@@ -1156,17 +1174,15 @@ fed_build_jobinfo(fed_jobinfo_t *j, hostlist_t hl, int nprocs, int cyclic)
 					slurm_seterrno_ret(EWINDOW);
 				}
 				proc_cnt++;
-				if(proc_cnt >= nprocs)
-					break;
 			}
+			free(host);
 		}
-		free(host);
-	}
+	}	
 
-	j->table_size = nprocs;
-	j->table = tmp_table;
+	jp->table_size = nprocs;
+	jp->table = tmp_table;
 #if FED_DEBUG
-	_print_table(j->table, j->table_size);
+	_print_table(jp->table, jp->table_size);
 #endif
 			
 	return SLURM_SUCCESS;
