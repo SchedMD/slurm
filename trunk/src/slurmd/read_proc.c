@@ -1,5 +1,5 @@
 /*
- * Read_Proc.c - Read the system's process table. This is used to 
+ * read_proc.c - Read the system's process table. This is used to 
  * determine if a job is still executing and how many resources 
  * are being allocated to it.
  *
@@ -254,7 +254,7 @@ int Read_Proc() {
 	while ((n = read(Proc_FD, Proc_Stat, Proc_Stat_Size)) > 0) {
 	    if (n < (Proc_Stat_Size-1)) break;
 	    Proc_Stat_Size += BUF_SIZE;
-	    Proc_Stat = (char *)realloc(Proc_Stat_Size);
+	    Proc_Stat = (char *)realloc(Proc_Stat, Proc_Stat_Size);
 	    if (Proc_Stat == NULL) {
 #if DEBUG_SYSTEM
 		fprintf(stderr, "Read_Proc: unable to allocate memory\n");
