@@ -14,13 +14,4 @@
 #endif  /*  HAVE_CONFIG_H */
 #endif
 
-typedef struct tasks_req
-{
-	List		thread_list;
-	pthread_t	threadid;
-	uint32_t	job_id;
-	uint32_t	job_step_id;
-	uint32_t	task_id;
-	uint32_t	uid;
-	uint32_t	gid;
-} tasks_req_t ;
+
