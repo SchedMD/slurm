@@ -77,6 +77,7 @@ static void  _session_mgr(slurmd_job_t *job);
 static int   _exec_all_tasks(slurmd_job_t *job);
 static void  _exec_task(slurmd_job_t *job, int i);
 static int   _become_user(slurmd_job_t *job);
+static void  _make_tmpdir(slurmd_job_t *job);
 static int   _child_exited(void);
 static void  _wait_for_all_tasks(slurmd_job_t *job);
 static int   _local_taskid(slurmd_job_t *job, pid_t pid);
@@ -168,6 +169,8 @@ _session_mgr(slurmd_job_t *job)
 		debug("Unable to set user limits");
 		exit(5);
 	}
+
+	_make_tmpdir(job);
 
 	if (_exec_all_tasks(job) < 0) {
 		debug("exec_all_tasks failed");
@@ -511,7 +514,6 @@ static int
 _setup_env(slurmd_job_t *job, int taskid)
 {
 	task_info_t *t = job->task[taskid];
-	char *tmpdir;
 
 	if (setenvpf(&job->env, "SLURM_NODEID",       "%d", job->nodeid) < 0)
 		return -1;
@@ -519,16 +521,24 @@ _setup_env(slurmd_job_t *job, int taskid)
 		return -1;
 	if (setenvpf(&job->env, "SLURM_PROCID",       "%d", t->gid     ) < 0)
 		return -1;
-	if ((tmpdir = getenv("TMPDIR"))) {
-		int rc = mkdir(tmpdir, 0700);
-		if ((rc < 0) && (errno != EEXIST)) {
-			error("can not make TMPDIR %s: %m", tmpdir);
-			return -1;
-		}
-	}
 
 	return SLURM_SUCCESS;
 }
+
+static void
+_make_tmpdir(slurmd_job_t *job)
+{
+	char *tmpdir;
+
+	if (!(tmpdir = getenvp(job->env, "TMPDIR")))
+		return;
+
+	if ((mkdir(tmpdir, 0700) < 0) && (errno != EEXIST))
+		error ("Unable to create TMPDIR [%s]: %m", tmpdir);
+
+	return;
+}
+
 
 /*
  * Prepare task for parallel debugger attach

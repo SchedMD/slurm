@@ -136,7 +136,6 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	memcpy(&io_addr,   cli_addr, sizeof(slurm_addr));
 	slurm_set_addr(&io_addr,   msg->io_port,   NULL); 
 
-
 #ifdef HAVE_ELAN
 	job->qsw_job = msg->qsw_job;
 #endif
@@ -320,7 +319,7 @@ _array_copy(int n, char **src)
 {
 	char **dst = xmalloc((n+1) * sizeof(char *));
 	dst[n] = NULL;
-	while (--n >= 0)
+	while ((--n >= 0) && (src[n] != NULL))
 		dst[n] = xstrdup(src[n]);
 	return dst;
 }
