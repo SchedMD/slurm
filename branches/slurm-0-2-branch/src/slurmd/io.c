@@ -1148,17 +1148,44 @@ _obj_close(io_obj_t *obj, List objs)
 	return SLURM_SUCCESS;
 }
 
+
+static int 
+_min_free (struct io_info *reader, int *lenp)
+{
+	int nfree = cbuf_free (reader->buf);
+	if (nfree < *lenp)
+		*lenp = nfree;
+	return (0);
+}
+
+
+static int 
+_max_readable (struct io_info *io, int max)
+{
+	if (!io->readers)
+		return (0);
+	/*
+	 * Determine the maximum amount of data we will
+	 * safely be able to read (starting at max)
+	 */
+	list_for_each (io->readers, (ListForF) _min_free, (void *) &max);
+	return (max);
+}
+
 static bool 
 _readable(io_obj_t *obj)
 {
-	bool rc;
 	struct io_info *io = (struct io_info *) obj->arg;
 
 	xassert(io->magic == IO_MAGIC);
 
-	rc = (!io->disconnected && !io->eof && (obj->fd > 0));
+	if (io->disconnected || io->eof || (obj->fd < 0))
+		return (false);
 
-	return rc;
+	if (_max_readable(io, 1024) == 0)
+		return (false);
+
+	return (true);
 }
 
 static bool 
@@ -1216,7 +1243,7 @@ _write(io_obj_t *obj, List objs)
 		return 0;
 	}
 
-	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
+	while ((n = cbuf_read_to_fd(io->buf, obj->fd, 1)) < 0) {
 		switch (errno) {
 		case EAGAIN:
 			return 0; 
@@ -1415,7 +1442,6 @@ _task_error(io_obj_t *obj, List objs)
 	_obj_close(obj, objs);
 	return -1;
 }
-
 static int 
 _client_read(io_obj_t *obj, List objs)
 {
@@ -1431,22 +1457,7 @@ _client_read(io_obj_t *obj, List objs)
 	xassert(_validate_io_list(objs));
 	xassert(_isa_client(client));
 
-	/*
-	 * Determine the maximum amount of data we will
-	 * safely be able to read
-	 */
-	if (client->readers) {
-		i = list_iterator_create(client->readers);
-		while ((reader = list_next(i))) {
-			if (cbuf_free(reader->buf) < len)
-				len = cbuf_free(reader->buf);
-		}
-		list_iterator_destroy(i);
-
-		if (len == 0)
-			return 0;
-	}
-	
+	len = _max_readable (client, len);
 
    again:
 	if ((n = read(obj->fd, (void *) buf, len)) < 0) {
