@@ -1447,7 +1447,7 @@ static bool _under_parallel_debugger (void)
 static void _usage(void)
 {
  	printf(
-"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err] [-e err]\n"
+"Usage: srun [-N nnodes] [-n ntasks] [-i in] [-o out] [-e err]\n"
 "            [-c ncpus] [-r n] [-p partition] [--hold] [-t minutes]\n"
 "            [-D path] [--immediate] [--overcommit] [--no-kill]\n"
 "            [--share] [--label] [--unbuffered] [-m dist] [-J jobname]\n"
