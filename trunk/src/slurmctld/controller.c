@@ -48,7 +48,6 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/credential_utils.h"
 #include "src/common/daemonize.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
@@ -56,6 +55,7 @@
 #include "src/common/pack.h"
 #include "src/common/read_config.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 
@@ -68,6 +68,7 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE	  1024	/* Temporary buffer size */
+#define CRED_LIFE         60	/* Job credential lifetime in seconds */
 #define DEFAULT_DAEMONIZE 1	/* Run as daemon by default if set */
 #define DEFAULT_RECOVER   1	/* Recover state by default if set */
 #define MIN_CHECKIN_TIME  3	/* Nodes have this number of seconds to 
@@ -85,7 +86,6 @@ log_options_t log_opts = LOG_OPTS_INITIALIZER;
 
 /* Global variables */
 slurm_ctl_conf_t slurmctld_conf;
-extern slurm_ssl_key_ctx_t sign_ctx;
 
 /* Local variables */
 static int	daemonize = DEFAULT_DAEMONIZE;
@@ -96,6 +96,7 @@ static bool	resume_backup = false;
 static time_t	shutdown_time = (time_t) 0;
 static int	server_thread_count = 0;
 static pid_t	slurmctld_pid;
+static slurm_cred_ctx_t cred_ctx;
 
 #ifdef WITH_PTHREADS
 	static pthread_mutex_t thread_count_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -113,6 +114,8 @@ static int          _background_process_msg(slurm_msg_t * msg);
 static void *       _background_rpc_mgr(void *no_data);
 static void *       _background_signal_hand(void *no_data);
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
+static int          _make_step_cred(struct step_record *step_rec, 
+				    slurm_cred_t slurm_cred);
 static void         _parse_commandline(int argc, char *argv[], 
                                        slurm_ctl_conf_t *);
 static int          _ping_controller(void);
@@ -149,6 +152,7 @@ static void *       _slurmctld_rpc_mgr(void *no_data);
 static void         _init_pidfile(void);
 inline static int   _slurmctld_shutdown(void);
 static void *       _slurmctld_signal_hand(void *no_data);
+inline static void  _update_cred_key(void);
 inline static void  _update_logging(void);
 inline static void  _usage(char *prog_name);
 
@@ -216,10 +220,12 @@ int main(int argc, char *argv[])
 	if ((error_code = getnodename(node_name, MAX_NAME_LEN)))
 		fatal("getnodename error %s", slurm_strerror(error_code));
 
-	/* init ssl job credential stuff */
-	slurm_ssl_init();
-	slurm_init_signer(&sign_ctx,
-			  slurmctld_conf.job_credential_private_key);
+	/* init job credential stuff */
+	cred_ctx = slurm_cred_creator_ctx_create(slurmctld_conf.
+						 job_credential_private_key);
+	if (!cred_ctx)
+		fatal("slurm_cred_creator_ctx_create: %m");
+	slurm_cred_ctx_set(cred_ctx, SLURM_CRED_OPT_EXPIRY_WINDOW, CRED_LIFE);
 
 	/* Block SIGALRM everyone not explicitly enabled */
 	if (sigemptyset(&set))
@@ -332,14 +338,10 @@ static void *_slurmctld_signal_hand(void *no_data)
 		case SIGTERM:	/* kill -15 */
 			info("Terminate signal (SIGINT or SIGTERM) received");
 			shutdown_time = time(NULL);
+			slurm_cred_ctx_destroy(cred_ctx);
 			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
 			_slurmctld_shutdown();
 			pthread_join(thread_id_rpc, NULL);
-
-			/* ssl clean up */
-			slurm_destroy_ssl_key_ctx(&sign_ctx);
-			slurm_ssl_destroy();
-
 			return NULL;	/* Normal termination */
 			break;
 		case SIGHUP:	/* kill -1 */
@@ -350,8 +352,10 @@ static void *_slurmctld_signal_hand(void *no_data)
 			if (error_code)
 				error("read_slurm_conf error %s",
 				      slurm_strerror(error_code));
-			else 
+			else {
 				_update_logging();
+				_update_cred_key();
+			}
 			break;
 		case SIGABRT:	/* abort */
 			fatal("SIGABRT received");
@@ -1461,6 +1465,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	uint32_t job_id;
 	resource_allocation_and_run_response_msg_t alloc_msg;
 	struct step_record *step_rec;
+	slurm_cred_t slurm_cred;
 	job_step_create_request_msg_t req_step_msg;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { 
@@ -1510,6 +1515,9 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	req_step_msg.num_tasks  = job_desc_msg->num_tasks;
 	req_step_msg.task_dist  = job_desc_msg->task_dist;
 	error_code = step_create(&req_step_msg, &step_rec, true);
+	if (error_code == SLURM_SUCCESS)
+		error_code = _make_step_cred(step_rec, slurm_cred);
+
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
 		job_complete(job_id, job_desc_msg->user_id, false, 0);
@@ -1534,8 +1542,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		alloc_msg.job_step_id    = step_rec->step_id;
 		alloc_msg.node_cnt       = node_cnt;
 		alloc_msg.node_addr      = node_addr;
-		alloc_msg.credentials    =
-			    &step_rec->job_ptr->details->credential;
+		alloc_msg.cred           = slurm_cred;
 #ifdef HAVE_LIBELAN3
 		alloc_msg.qsw_job = qsw_copy_jobinfo(step_rec->qsw_job);
 #endif
@@ -1545,6 +1552,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 		response_msg.data = &alloc_msg;
 
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
+		slurm_cred_destroy(slurm_cred);
 #ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo(alloc_msg.qsw_job);
 #endif
@@ -1723,6 +1731,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 	}
 	if (error_code == SLURM_SUCCESS) {  /* Stuff to do after unlock */
 		_update_logging();
+		_update_cred_key();
 		if (daemonize) {
 			if (chdir(slurmctld_conf.state_save_location))
 				fatal("chdir to %s error %m",
@@ -1839,6 +1848,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t *req_step_msg =
 	    (job_step_create_request_msg_t *) msg->data;
+	slurm_cred_t slurm_cred;
 	/* Locks: Write jobs, read nodes */
 	slurmctld_lock_t job_write_lock = { 
 		NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
@@ -1861,6 +1871,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		lock_slurmctld(job_write_lock);
 		error_code = step_create(req_step_msg, &step_rec, false);
 	}
+	if (error_code == SLURM_SUCCESS)
+		error_code = _make_step_cred(step_rec, slurm_cred);
 
 	/* return result */
 	if (error_code) {
@@ -1875,9 +1887,8 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		     (long) (clock() - start_time));
 
 		job_step_resp.job_step_id = step_rec->step_id;
-		job_step_resp.node_list = xstrdup(step_rec->step_node_list);
-		job_step_resp.credentials =
-		    &step_rec->job_ptr->details->credential;
+		job_step_resp.node_list   = xstrdup(step_rec->step_node_list);
+		job_step_resp.cred        = slurm_cred;
 
 #ifdef HAVE_LIBELAN3
 		job_step_resp.qsw_job =  qsw_copy_jobinfo(step_rec->qsw_job);
@@ -1889,11 +1900,29 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 
 		slurm_send_node_msg(msg->conn_fd, &resp);
 		xfree(job_step_resp.node_list);
+		slurm_cred_destroy(slurm_cred);
 #ifdef HAVE_LIBELAN3
 		qsw_free_jobinfo(job_step_resp.qsw_job);
 #endif
 		(void) dump_all_job_state();	/* Sets own locks */
 	}
+}
+
+/* create a credential for a given job step, return error code */
+static int _make_step_cred(struct step_record *step_rec, 
+			   slurm_cred_t slurm_cred)
+{
+	slurm_cred_arg_t cred_arg;
+
+	cred_arg.jobid    = step_rec->job_ptr->job_id;
+	cred_arg.stepid   = step_rec->step_id;
+	cred_arg.uid      = step_rec->job_ptr->user_id;
+	cred_arg.hostlist = step_rec->step_node_list;
+	if ((slurm_cred = slurm_cred_create(cred_ctx, &cred_arg)) == NULL) {
+		error("slurm_cred_create error");
+		return ESLURM_INVALID_JOB_CREDENTIAL;
+	}
+	return SLURM_SUCCESS;
 }
 
 /* _slurm_rpc_node_registration - process RPC to determine if a node's 
@@ -2480,6 +2509,13 @@ static int _shutdown_backup_controller(void)
 	 * here and give the backup controller time to shutdown */
 	sleep(2);
 	return SLURM_PROTOCOL_SUCCESS;
+}
+
+/* Reset the job credential key based upon configuration parameters */
+static void _update_cred_key(void) 
+{
+	slurm_cred_ctx_key_update(cred_ctx, 
+				  slurmctld_conf.job_credential_private_key);
 }
 
 /* Reset slurmctld logging based upon configuration parameters */

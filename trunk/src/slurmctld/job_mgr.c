@@ -63,9 +63,6 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"
 
-#include "src/common/credential_utils.h"
-slurm_ssl_key_ctx_t sign_ctx;
-
 #define DETAILS_FLAG 0xdddd
 #define MAX_STR_PACK 1024
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
@@ -205,7 +202,6 @@ void delete_job_details(struct job_record *job_entry)
 	xfree(job_entry->details->exc_nodes);
 	FREE_NULL_BITMAP(job_entry->details->req_node_bitmap);
 	FREE_NULL_BITMAP(job_entry->details->exc_node_bitmap);
-	xfree(job_entry->details->credential.node_list);
 	xfree(job_entry->details->features);
 	xfree(job_entry->details->err);
 	xfree(job_entry->details->in);
@@ -566,8 +562,6 @@ static int _load_job_state(Buf buffer)
  */
 void _dump_job_details(struct job_details *detail_ptr, Buf buffer)
 {
-	pack_job_credential(&detail_ptr->credential, buffer);
-
 	pack32((uint32_t) detail_ptr->num_procs, buffer);
 	pack32((uint32_t) detail_ptr->min_nodes, buffer);
 	pack32((uint32_t) detail_ptr->max_nodes, buffer);
@@ -597,16 +591,12 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	char *req_nodes = NULL, *exc_nodes = NULL, *features = NULL;
 	char *err = NULL, *in = NULL, *out = NULL, *work_dir = NULL;
 	bitstr_t *req_node_bitmap = NULL, *exc_node_bitmap = NULL;
-	slurm_job_credential_t *credential_ptr = NULL;
 	uint32_t num_procs, min_nodes, max_nodes, min_procs;
 	uint16_t shared, contiguous, name_len;
 	uint32_t min_memory, min_tmp_disk, total_procs;
 	time_t submit_time;
 
 	/* unpack the job's details from the buffer */
-	if (unpack_job_credential(&credential_ptr, buffer))
-		goto unpack_error;
-
 	safe_unpack32(&num_procs, buffer);
 	safe_unpack32(&min_nodes, buffer);
 	safe_unpack32(&max_nodes, buffer);
@@ -658,8 +648,6 @@ static int _load_job_details(struct job_record *job_ptr, Buf buffer)
 	xfree(job_ptr->details->work_dir);
 
 	/* now put the details into the job record */
-	memcpy(&job_ptr->details->credential, credential_ptr,
-	       sizeof(job_ptr->details->credential));
 	job_ptr->details->num_procs = num_procs;
 	job_ptr->details->min_nodes = min_nodes;
 	job_ptr->details->max_nodes = max_nodes;
@@ -1868,31 +1856,6 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	return SLURM_SUCCESS;
 }
 
-/*
- * build_job_cred - build a credential for a job, only valid after 
- *	allocation made
- * IN job_ptr - pointer to the job record 
- */
-void build_job_cred(struct job_record *job_ptr)
-{
-	struct job_details *detail_ptr;
-	if (job_ptr == NULL)
-		return;
-
-	detail_ptr = job_ptr->details;
-	if (detail_ptr == NULL)
-		return;
-
-	detail_ptr->credential.job_id = job_ptr->job_id;
-	detail_ptr->credential.user_id = job_ptr->user_id;
-	detail_ptr->credential.node_list = xstrdup(job_ptr->nodes);
-	detail_ptr->credential.expiration_time = job_ptr->end_time;
-	if (sign_credential(&sign_ctx, &detail_ptr->credential)) {
-		error("Error building credential for job_id %u: %m",
-		      job_ptr->job_id);
-	}
-}
-
 /* 
  * job_time_limit - terminate jobs which have exceeded their time limit
  * global: job_list - pointer global job list
@@ -2504,7 +2467,6 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 			else
 				job_ptr->end_time = job_ptr->start_time +
 						    (job_ptr->time_limit * 60);
-			build_job_cred(job_ptr);      /* with new end time */
 			if ((job_ptr->job_state == JOB_RUNNING) &&
 			    (list_is_empty(job_ptr->step_list) == 0))
 				_xmit_new_end_time(job_ptr);
