@@ -41,10 +41,10 @@
 #define NUM_CONNECTIONS_PER_PORT 2
 #define INTERNAL_CONNECTIONS_PER_NODE NUM_PORTS_PER_NODE/2
 
-// #ifdef SYSTEM_DIMENSIONS
+#ifndef SYSTEM_DIMENSIONS
 // #undef SYSTEM_DIMENSIONS
 #define SYSTEM_DIMENSIONS 1 // 999
-// #endif
+#endif
 
 /* a connection could be an internal or external wire */
 typedef enum placement {INTERNAL, EXTERNAL} placement_t;

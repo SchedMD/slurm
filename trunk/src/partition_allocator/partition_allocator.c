@@ -30,19 +30,10 @@
 #include <math.h>
 
 // #define AUBLE_STUB
-// #define DEBUG_PA
-#define PA_SYSTEM_DIMENSIONS 3
+#define DEBUG_PA
+
 #define BIG_MAX 9999;
 int DIM_SIZE[PA_SYSTEM_DIMENSIONS] = {4,4,4};
-
-typedef struct pa_request {
-	int* geometry;
-	int size; 
-	int conn_type;
-	bool rotate;
-	bool elongate; 
-	bool force_contig;
-} pa_request_t; 
 
 /**
  * These lists hold the partition data and corresponding
@@ -889,7 +880,7 @@ int _cmpf_int(int* A, int* B)
  * return SUCCESS of operation.
  */
 int new_pa_request(pa_request_t** pa_request, 
-		   int* geometry, int size, 
+		   int geometry[PA_SYSTEM_DIMENSIONS], int size, 
 		   bool rotate, bool elongate, 
 		   bool force_contig, int conn_type)
 {
@@ -903,7 +894,7 @@ int new_pa_request(pa_request_t** pa_request,
 	*pa_request = (pa_request_t*) xmalloc(sizeof(pa_request_t));
 	(*pa_request)->geometry = (int*) xmalloc(sizeof(int)* PA_SYSTEM_DIMENSIONS);
 	/* size will be overided by geometry size if given */
-	if (geometry){
+	if (geometry[0]){
 		for (i=0; i<PA_SYSTEM_DIMENSIONS; i++){
 			if (geometry[i] < 1 || geometry[i] > DIM_SIZE[i]){
 				printf("new_pa_request Error, request geometry is invalid\n"); 
@@ -1039,7 +1030,7 @@ void partition_allocator_fini()
  * 
  * IN c: coordinate of the node to put down
  */
-void set_node_down(int c[3])
+void set_node_down(int c[PA_SYSTEM_DIMENSIONS])
 {
 	if (!_initialized){
 		printf("Error, configuration not initialized, call init_configuration first\n");
@@ -1068,12 +1059,12 @@ int allocate_part(pa_request_t* pa_request, List* results)
 {
 	if (!_initialized){
 		printf("allocate_part Error, configuration not initialized, call init_configuration first\n");
-		return 1;
+		return 0;
 	}
 
 	if (!pa_request){
 		printf("allocate_part Error, request not initialized\n");
-		return 1;
+		return 0;
 	}
 
 #ifdef DEBUG_PA
@@ -1121,7 +1112,7 @@ int allocate_part(pa_request_t* pa_request, List* results)
 	list_append(*results, coord);
 #endif
 	
-	return 0;
+	return 1;
 }
 
 /** */

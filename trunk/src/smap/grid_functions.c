@@ -32,7 +32,7 @@ void init_grid(node_info_msg_t * node_info_ptr)
 {
 	node_info_t *node_ptr;
 	int x, y, z, i = 0;
-	int c[3];
+	int c[PA_SYSTEM_DIMENSIONS];
 	uint16_t node_base_state;
 
 	for (x = 0; x < smap_info_ptr->X; x++)

@@ -30,9 +30,20 @@
 #include "src/common/list.h"
 #include "src/common/bitstring.h"
 #include "src/common/macros.h"
+#include "src/partition_allocator/graph_structs.h"
+
+#define PA_SYSTEM_DIMENSIONS 3
 
 extern bool _initialized;
 struct pa_request;
+typedef struct pa_request {
+	int* geometry;
+	int size; 
+	int conn_type;
+	bool rotate;
+	bool elongate; 
+	bool force_contig;
+} pa_request_t; 
 /**
  * create a partition request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try
@@ -51,8 +62,8 @@ struct pa_request;
  * 
  * return success of allocation/validation of params
  */
-int new_pa_request(struct pa_request** pa_request, 
-		    int* geometry, int size, 
+int new_pa_request(pa_request_t** pa_request, 
+		    int geometry[PA_SYSTEM_DIMENSIONS], int size, 
 		    bool rotate, bool elongate, 
 		    bool force_contig, int conn_type);
 
@@ -85,7 +96,7 @@ void partition_allocator_fini();
  * 
  * IN c: coordinate of the node to put down
  */
-void set_node_down(int c[3]);
+void set_node_down(int c[PA_SYSTEM_DIMENSIONS]);
 
 /** 
  * Try to allocate a partition.

@@ -41,19 +41,28 @@ void get_command(void)
 	//static node_info_msg_t *node_info_ptr;
 	int text_height, text_width, text_starty, text_startx, error_code;
 	WINDOW *command_win;
-	int torus=0, i=0, i2, c[3];
+	int torus=MESH, i=0, i2, geo[PA_SYSTEM_DIMENSIONS];
+	bool rotate = false;
+	bool elongate = false;
+	bool force_contig = false;
+	List results;
+	pa_request_t * request; 
+				
 	text_height = smap_info_ptr->text_win->_maxy;	// - smap_info_ptr->text_win->_begy;
 	text_width = smap_info_ptr->text_win->_maxx;	// - smap_info_ptr->text_win->_begx;
 	text_starty = smap_info_ptr->text_win->_begy;
 	text_startx = smap_info_ptr->text_win->_begx;
 	command_win = newwin(3, text_width - 1, LINES - 4, text_startx + 1);
-	/*
-	error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
+	echo();
+	/*error_code = slurm_load_node((time_t) NULL, &node_info_ptr, 0);
 	if (error_code)
 		if (quiet_flag != 1) {
 			wclear(smap_info_ptr->text_win);
-			smap_info_ptr->ycord = smap_info_ptr->text_win->_maxy / 2;
-			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, 1, "slurm_load_node");
+			smap_info_ptr->ycord =
+			    smap_info_ptr->text_win->_maxy / 2;
+			mvwprintw(smap_info_ptr->text_win,
+				  smap_info_ptr->ycord, 1,
+				  "slurm_load_node");
 			return;
 		}
 	init_grid(node_info_ptr);
@@ -86,37 +95,68 @@ void get_command(void)
 				  smap_info_ptr->ycord,
 				  smap_info_ptr->xcord, "%s", com->str);
 		} else if (!strncmp(com->str, "create", 6)) {
-			torus=0;
-			mvwprintw(smap_info_ptr->text_win,
-				  smap_info_ptr->ycord,
-				  smap_info_ptr->xcord, "%s", com->str);
+			/*defaults*/
+			geo[0] = -1;
+			geo[1] = -1;
+			geo[2] = -1;
+			torus=MESH;
+			rotate = false;
+			elongate = false;
+			force_contig = true;
 			i=6;
-			while(com->str[i-1]!=' ' && com->str[i]!='\0')
-				i++;
-			if(!strncmp(com->str+i, "torus", 5)) 
-				torus=1;
-			while(com->str[i-1]!=' ' && com->str[i]!='\0')
-				i++;
-			i2=i;
-			while(com->str[i-1]!='x' && com->str[i]!='\0')
-				i++;
-			if(com->str[i]=='\0') {
-				if(i2>i+1) {
+			/*********/
+
+			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+				  smap_info_ptr->xcord, "%s", com->str);
+			while(com->str[i]!='\0') {
+				
+				while(com->str[i-1]!=' ' && com->str[i]!='\0') {
+					if(!i2 && (com->str[i] < 58 && com->str[i] > 47))
+						i2=i;
+					i++;
+				}
+				if(!strncmp(com->str+i, "torus", 5)) {
+					torus=TORUS;
+					i+=5;
+				}
+				else if(!strncmp(com->str+i, "rotate", 6)) {
+					rotate=true;
+					i+=6;
+				}
+				else if(!strncmp(com->str+i, "elongate", 8)) {
+					elongate=true;
+					i+=8;
+				}
+				else if(!strncmp(com->str+i, "force", 5)) {
+					force_contig=false;				
+					i+=5;
+				}
+			}
+
+			if(!i2) {
+				smap_info_ptr->ycord++;
+				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+					  smap_info_ptr->xcord, "No size or dimension specified, please re-enter");
+			} else {
+				if(com->str[i2+1] != 'x') { /* for size */
 					i = atoi(&com->str[i2]);
-					//allocate_part();
+				} else { /* for geometery */
+					geo[0] = atoi(&com->str[i2]);
+					i2+=2;
+					geo[1] = atoi(&com->str[i2]);
+					i2+=2;
+					geo[2] = atoi(&com->str[i2]);
+					i = -1;
 				}
-				else {
-					smap_info_ptr->ycord++;
-					mvwprintw(smap_info_ptr->text_win,
-						  smap_info_ptr->ycord,
-						  smap_info_ptr->xcord, "No size or dimension specified, please re-enter");
-					
+				new_pa_request(&request, geo, i, rotate, elongate, force_contig, torus);
+				if (!allocate_part(request, &results)){
+					printf("allocate success for %d%d%d\n", 
+					       geo[0], geo[1], geo[2]);
+					list_destroy(results);
 				}
 			}
-			if(!strncmp(com->str+7, "mesh", 4)) {
-			}
-			if(!strncmp(com->str+7, "torus", 5)) {
-			}
+
+
 		} else if (!strncmp(com->str, "save", 4)) {
 			mvwprintw(smap_info_ptr->text_win,
 				  smap_info_ptr->ycord,
