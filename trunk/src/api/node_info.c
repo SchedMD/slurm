@@ -61,19 +61,25 @@ main (int argc, char *argv[])
 	}
 	node_ptr = node_info_msg_ptr -> node_array ;
 
-	printf("Nodes updated at %d, record count %d\n",
-		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
+	/* print everything only on smaller clusters */
+	if (node_info_msg_ptr-> record_count <= 100)
+			slurm_print_node_info_msg ( node_info_msg_ptr ) ;
 
-	for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
-	{
-		/* to limit output we print only the first 10 entries, 
-		 * last 1 entry, and every 200th entry */
-		if ((i < 10) || (i % 200 == 0) || 
-		    ((i + 1)  == node_info_msg_ptr-> record_count)) {
-			slurm_print_node_table ( & node_ptr[i] ) ;
+	else {
+		printf("Nodes updated at %d, record count %d\n",
+			node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
+
+		for (i = 0; i < node_info_msg_ptr-> record_count; i++) 
+		{
+			/* to limit output we print only the first 10 entries, 
+			 * last 1 entry, and every 200th entry */
+			if ((i < 10) || (i % 200 == 0) || 
+			    ((i + 1)  == node_info_msg_ptr-> record_count)) {
+				slurm_print_node_table ( & node_ptr[i] ) ;
+			}
+			else if ((i==10) || (i % 200 == 1))
+				printf ("skipping...\n");
 		}
-		else if ((i==10) || (i % 200 == 1))
-			printf ("skipping...\n");
 	}
 
 	slurm_free_node_info ( node_info_msg_ptr ) ;
