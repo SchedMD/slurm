@@ -114,6 +114,7 @@ extern struct part_record *default_part_loc;	/* location of default partition */
 
 /* NOTE: change JOB_STRUCT_VERSION value whenever the contents of JOB_STRUCT_FORMAT change */
 extern time_t last_job_update;	/* time of last update to part records */
+extern time_t last_step_update;	/* time of last update to job steps */
 
 /* last entry must be "end", keep in sync with node_state */
 extern char *job_state_string[];
@@ -121,10 +122,12 @@ extern char *job_state_string[];
 /* Don't accept more jobs once there are MAX_JOB_COUNT in the system */
 /* Purge OK for jobs over MIN_JOB_AGE minues old (since completion) */
 /* This should prevent exhausting memory */
+#define DETAILS_MAGIC 0xdea84e7
+#define JOB_MAGIC 0xf0b7392c
 #define MAX_JOB_COUNT 1000
 #define MIN_JOB_AGE 10
-#define JOB_MAGIC 0xf0b7392c
-#define DETAILS_MAGIC 0xdea84e7
+#define STEP_MAGIC 0xce593bc1
+
 extern int job_count;			/* number of jobs in the system */
 
 struct job_details {
@@ -161,9 +164,23 @@ struct job_record {
 	time_t end_time;		/* time of termination, actual or expected */
 	uint32_t priority;		/* relative priority of the job */
 	struct job_details *details;	/* job details (set until job terminates) */
+	uint16_t next_step_id;		/* next step id to be used */
+};
+
+struct 	step_record {
+	struct job_record *job_ptr;	/* pointer to job_record (for job_id) */
+	uint16_t step_id;		/* step number */
+	uint32_t magic;			/* magic cookie to test data integrity */
+	uint16_t dist;			/* task distribution 1=cycle, 0=block */
+	uint16_t procs_per_task;	/* processors required per task */
+	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job step */
+#ifdef HAVE_LIBELAN3
+	struct qsw_jobinfo *qsw_jobinfo_t; /* Elan3 switch context, opaque data structure */
+#endif
 };
 
 extern List job_list;			/* list of job_record entries */
+extern List step_list;			/* list of job_step entries */
 
 
 /* allocate_nodes - for a given bitmap, change the state of specified nodes to stage_in
@@ -262,6 +279,17 @@ extern struct node_record *create_node_record (struct config_record
  */
 extern struct part_record *create_part_record (void);
 
+/* 
+ * create_step_record - create an empty step_record.
+ *	load its values with defaults (zeros, nulls, and magic cookie)
+ * input: error_code - location to store error value in
+ * output: error_code - set to zero if no error, errno otherwise
+ *         returns a pointer to the record or NULL if error
+ * global: step_list - global step list
+ * NOTE: allocates memory that should be xfreed with delete_step_record
+ */
+extern struct step_record * create_step_record (int *error_code);
+
 /* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
  * this is a simple prototype for testing 
  * globals: node_record_count - number of nodes in the system
@@ -300,12 +328,21 @@ extern int delete_node_record (char *name);
 extern int delete_part_record (char *name);
 
 /* 
+ * delete_step_record - delete record for job step with specified job_id and step_id
+ * input: job_id - job_id of the desired job
+ *	step_id - id of the desired job step
+ * output: return 0 on success, errno otherwise
+ * global: step_list - global step list
+ */
+extern int delete_step_record (char *job_id, uint16_t step_id);
+
+/* 
  * find_job_record - return a pointer to the job record with the given job_id
  * input: job_id - requested job's id
  * output: pointer to the job's record, NULL on error
  * global: job_list - global job list pointer
  */
-extern struct job_record *find_job_record(char *job_id);
+extern struct job_record *find_job_record (char *job_id);
 
 /* 
  * find_node_record - find a record for node with specified name,
@@ -321,6 +358,15 @@ extern struct node_record *find_node_record (char *name);
  * global: part_list - global partition list
  */
 extern struct part_record *find_part_record (char *name);
+
+/* 
+ * find_step_record - return a pointer to the step record with the given job_id and step_id
+ * input: job_id - requested job's id
+ *	step_id - id of the desired job step
+ * output: pointer to the job step's record, NULL on error
+ * global: step_list - global step list
+ */
+extern struct step_record *find_step_record (char *job_id, uint16_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
@@ -345,6 +391,14 @@ extern int init_node_conf ();
  * output: return value - 0 if no error, otherwise an error code
  */
 extern int init_part_conf ();
+
+/* 
+ * init_step_conf - initialize the job step configuration tables and values. 
+ *	this should be called before creating any job step entries.
+ * output: return value - 0 if no error, otherwise an error code
+ * global: step_list - global step list
+ */
+extern int init_step_conf ();
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration  
@@ -578,6 +632,25 @@ extern int pack_all_node (char **buffer_ptr, int *buffer_size, time_t * update_t
 extern int pack_all_part (char **buffer_ptr, int *buffer_size, time_t * update_time);
 
 /* 
+ * pack_all_step - dump all job step information for all steps in 
+ *	machine independent form (for network transmission)
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the calling function must xfree the storage.
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if partition records updated since time 
+ *                       specified, otherwise return empty buffer
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * global: step_list - global list of partition records
+ * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
+ * NOTE: change STEP_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_step() in api/step_info.c whenever the data format changes
+ */
+extern int pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time);
+
+/* 
  * pack_job - dump all configuration information about a specific job in 
  *	machine independent form (for network transmission)
  * input:  dump_job_ptr - pointer to job for which information is requested
@@ -618,6 +691,22 @@ extern int pack_node (struct node_record *dump_node_ptr, void **buf_ptr, int *bu
  *	and make the corresponding changes to load_part_config in api/partition_info.c
  */
 extern int pack_part (struct part_record *part_record_point, void **buf_ptr, int *buf_len);
+
+/* 
+ * pack_step - dump state information about a specific job step in 
+ *	machine independent form (for network transmission)
+ * input:  dump_step_ptr - pointer to step for which information is requested
+ *	buf_ptr - buffer for step information 
+ *	buf_len - byte size of buffer
+ * output: buf_ptr - advanced to end of data written
+ *	buf_len - byte size remaining in buffer
+ *	return 0 if no error, 1 if buffer too small
+ * NOTE: change STEP_STRUCT_VERSION in common/slurmlib.h whenever the format changes
+ * NOTE: change slurm_load_step() in api/step_info.c whenever the data format changes
+ * NOTE: the caller must insure that the buffer is sufficiently large to hold 
+ *	 the data being written (space remaining at least BUF_SIZE)
+ */
+extern int pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
 
 /* 
  * parse_job_specs - pick the appropriate fields out of a job request specification
@@ -744,6 +833,30 @@ extern int select_nodes (struct job_record *job_ptr);
  *	returned value
  */
 extern int slurm_parser (char *spec, ...);
+
+/*
+ * step_create - parse the suppied job specification and create job_records for it
+ * input: job_specs - job specifications
+ *	new_job_id - location for storing new job's id
+ * output: new_job_id - the job's ID
+ *	returns 0 on success, EINVAL if specification is invalid
+ *	allocate - if set, job allocation only (no script required)
+ * globals: job_list - pointer to global job list 
+ *	list_part - global list of partition info
+ *	default_part_loc - pointer to default partition 
+ * NOTE: the calling program must xfree the memory pointed to by new_job_id
+ */
+extern int step_create (char *step_specs, char **new_job_id, int allocate);
+
+/* step_lock - lock the step information 
+ * global: step_mutex - semaphore for the step table
+ */
+extern void step_lock ();
+
+/* step_unlock - unlock the step information 
+ * global: step_mutex - semaphore for the step table
+ */
+extern void step_unlock ();
 
 /*
  * update_job - update a job's parameters

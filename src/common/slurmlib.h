@@ -16,6 +16,7 @@
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
 #define STATE_NO_RESPOND 0x8000
+#define STEP_STRUCT_VERSION 1
 
 /* INFINITE is used to identify unlimited configurations,  */
 /* eg. the maximum count of nodes any job may use in some partition */
