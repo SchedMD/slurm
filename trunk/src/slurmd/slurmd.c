@@ -433,6 +433,7 @@ _read_config()
 	_free_and_set(&conf->prolog,   xstrdup(conf->cf.prolog));
 	_free_and_set(&conf->tmpfs,    xstrdup(conf->cf.tmp_fs));
 	_free_and_set(&conf->spooldir, xstrdup(conf->cf.slurmd_spooldir));
+	_free_and_set(&conf->logfile,  xstrdup(conf->cf.slurmd_logfile));
 	_free_and_set(&conf->pidfile,  xstrdup(conf->cf.slurmd_pidfile));
 	_free_and_set(&conf->pubkey,   path_pubkey);     
 		      
@@ -785,6 +786,8 @@ _kill_old_slurmd(void)
 /* Reset slurmctld logging based upon configuration parameters */
 static void _update_logging(void) 
 {
+	info("In update logging");
+
 	/* 
 	 * Initialize debug level if not already set
 	 */
@@ -794,6 +797,8 @@ static void _update_logging(void)
 			conf->debug_level = conf->cf.slurmd_debug; 
 
 	} 
+
+	info("conf->debug_level = %d", conf->debug_level);
 
 	conf->log_opts.stderr_level  = conf->debug_level;
 	conf->log_opts.logfile_level = conf->debug_level;
@@ -805,6 +810,8 @@ static void _update_logging(void)
 			conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
 	} else
 		conf->log_opts.syslog_level = LOG_LEVEL_QUIET;
+
+	info("conf->logfile = [%s]", conf->logfile);
 
 	log_alter(conf->log_opts, SYSLOG_FACILITY_DAEMON, conf->logfile);
 }
