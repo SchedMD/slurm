@@ -98,33 +98,33 @@ struct sinfo_match_flags {
 /* Input parameters */
 struct sinfo_parameters {
 	bool exact_match;
+	bool filtering;
 	bool long_output;
 	bool line_wrap;
 	bool no_header;
 	bool node_field_flag;
 	bool node_flag;
-	bool state_flag;
 	bool summarize;
 	struct sinfo_match_flags match_flags;
 
 	char* format;
 	char* nodes;
 	char* partition;
+	char* sort;
+	char* states;
 
 	int iterate;
 	int node_field_size;
-	enum node_states state;
 	int verbose;
 
 	List  format_list;
+	List  state_list;
 };
 
 extern struct sinfo_parameters params;
 
 int  parse_command_line( int argc, char* argv[] );
-int  parse_state( char* str, enum job_states* states );
-void print_date(void);
-int  print_sinfo_entry(sinfo_data_t *sinfo_data , List format);
-int  print_sinfo_list(List sinfo_list, List format);
+int  parse_state( char* str, uint16_t* states );
+void sort_sinfo_list( List sinfo_list );
 
 #endif

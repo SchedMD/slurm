@@ -47,16 +47,18 @@
 #define OPT_VERBOSE   	0x07
 #define OPT_ITERATE   	0x08
 #define OPT_EXACT   	0x09
-#define OPT_LONG   	    0x0a
-#define OPT_SHORT  	    0x0b
+#define OPT_LONG    	0x0a
+#define OPT_SHORT  		0x0b
 #define OPT_NO_HEAD   	0x0c
 #define OPT_VERSION     0x0d
-
+#define OPT_SORT    	0x0e
 
 /* FUNCTIONS */
+static List  _build_state_list( char* str );
+static List  _build_all_states_list( void );
 static char *_get_prefix(char *token);
 static int   _parse_format( char* );
-static int   _parse_state(char *str, enum node_states *states);
+static int   _parse_state(char *str, uint16_t *states);
 static void  _parse_token( char *token, char *field, int *field_size, 
                            bool *right_justify, char **suffix);
 static void  _print_options( void );
@@ -74,34 +76,39 @@ int parse_command_line(int argc, char *argv[])
 	int curr_opt;
 	int rc = 0;
 	char *env_val = NULL;
-	static char *temp_state = NULL;
 
 	/* Declare the Options */
 	static const struct poptOption options[] = {
 		{"exact", 'e', POPT_ARG_NONE, &params.exact_match, OPT_EXACT,
-		 "group nodes only on exact match of configuration",NULL},
+			"group nodes only on exact match of configuration",
+			NULL},
 		{"iterate", 'i', POPT_ARG_INT, &params.iterate,
-		 OPT_ITERATE, "specify an interation period", "seconds"},
-		{"state", 't', POPT_ARG_STRING, &temp_state,
-		 OPT_NODE_STATE, "specify the what state of nodes to view",
-		 "node_state"},
+			OPT_ITERATE, "specify an interation period", 
+			"seconds"},
+		{"states", 't', POPT_ARG_STRING, &params.states,
+			OPT_NODE_STATE, 
+			"specify the what states of nodes to view",
+			"node_state"},
 		{"partition", 'p', POPT_ARG_STRING, &params.partition,
-		 OPT_PARTITION, "report on specific partition", "PARTITION"},
+			OPT_PARTITION, "report on specific partition", 
+			"PARTITION"},
 		{"nodes", 'n', POPT_ARG_STRING, &params.nodes, OPT_NODES,
-		 "report on specific node(s)", "NODES"},
+			"report on specific node(s)", "NODES"},
 		{"Node", 'N', POPT_ARG_NONE, &params.node_flag, OPT_NODE,
-		 "Node-centric format", NULL},
+			"Node-centric format", NULL},
 		{"long", 'l', POPT_ARG_NONE, &params.long_output,
-		 OPT_LONG, "long output - displays more information",
-		 NULL},
+			OPT_LONG, "long output - displays more information",
+			NULL},
+		{"sort", 'S', POPT_ARG_STRING, &params.sort, OPT_SORT,
+			"comma seperated list of fields to sort on", "fields"},
 		{"summarize", 's', POPT_ARG_NONE, &params.summarize,
-		 OPT_SHORT,"report state summary only", NULL},
+			OPT_SHORT,"report state summary only", NULL},
 		{"verbose", 'v', POPT_ARG_NONE, &params.verbose,
-		 OPT_VERBOSE, "verbosity level", "level"},
+			OPT_VERBOSE, "verbosity level", "level"},
 		{"noheader", 'h', POPT_ARG_NONE, &params.no_header, 
-		 OPT_NO_HEAD, "no headers on output", NULL},
+			OPT_NO_HEAD, "no headers on output", NULL},
 		{"format", 'o', POPT_ARG_STRING, &params.format, OPT_FORMAT, 
-		 "format specification", "format"},
+			"format specification", "format"},
 		{"version", 'V', POPT_ARG_NONE, 0, OPT_VERSION,
 			"output version information and exit", NULL},
 		POPT_AUTOHELP 
@@ -118,14 +125,7 @@ int parse_command_line(int argc, char *argv[])
 		switch ( curr_opt )
 		{
 			case OPT_NODE_STATE:
-				params.state_flag = true;
-				if (_parse_state(temp_state, &params.state)
-				    == SLURM_ERROR) {
-					fprintf(stderr,
-						"%s: %s is invalid node state\n",
-						argv[0], temp_state);
-					exit(1);
-				}
+				params.state_list = _build_state_list( params.states );
 				break;
 			case OPT_VERSION:
 				_print_version();
@@ -146,28 +146,32 @@ int parse_command_line(int argc, char *argv[])
 	}
 
 	if ( ( params.format == NULL ) && 
-	     ( env_val = getenv("SINFO_FORMAT") ) ) 
+	     ( env_val = getenv("SINFO_FORMAT") ) )
 		params.format = xstrdup(env_val);
 
 	if ( ( params.partition == NULL ) && 
-	     ( env_val = getenv("SINFO_PARTITION") ) ) 
+	     ( env_val = getenv("SINFO_PARTITION") ) )
 		params.partition = xstrdup(env_val);
+
+	if ( ( params.partition == NULL ) && 
+	     ( env_val = getenv("SINFO_SORT") ) )
+		params.sort = xstrdup(env_val);
 
 	if ( params.format == NULL ) {
 		if ( params.summarize ) 
-			params.format = "%9P %5a %.8l %15F %N";
+			params.format = "%9P %5a %.9l %15F %N";
 		else if ( params.node_flag ) {
 			params.node_field_flag = true;	/* compute size later */
 			if ( params.long_output ) {
-				params.format = "%N %.6D %9P %11T %.4c %.6m %.8d %.6w %8f";
+				params.format = "%N %.5D %9P %11T %.4c %.6m %.8d %.6w %8f";
 			} else {
-				params.format = "%N %.6D %9P %6t";
+				params.format = "%N %.5D %9P %6t";
 			}
 		} else {
 			if ( params.long_output )
-				params.format = "%9P %5a %.8l %.8s %4r %5h %10g %.6D %11T %N";
+				params.format = "%9P %5a %.9l %.8s %4r %5h %10g %.5D %11T %N";
 			else
-				params.format = "%9P %5a %.8l %.6D %6t %N";
+				params.format = "%9P %5a %.9l %.5D %6t %N";
 		}
 	}
 	_parse_format( params.format );
@@ -178,13 +182,65 @@ int parse_command_line(int argc, char *argv[])
 }
 
 /*
+ * _build_state_list - build a list of job states
+ * IN str - comma separated list of job states
+ * RET List of enum job_states values
+ */
+static List 
+_build_state_list( char* str )
+{
+	List my_list;
+	char *state, *tmp_char, *my_state_list;
+	uint16_t *state_id;
+
+	if ( str == NULL)
+		return NULL;
+	if ( strcasecmp( str, "all" ) == 0 )
+		return _build_all_states_list ();
+
+	my_list = list_create( NULL );
+	my_state_list = xstrdup( str );
+	state = strtok_r( my_state_list, ",", &tmp_char );
+	while (state) 
+	{
+		state_id = xmalloc( sizeof( uint16_t ) );
+		if ( _parse_state( state, state_id ) != SLURM_SUCCESS )
+			exit( 1 );
+		list_append( my_list, state_id );
+		state = strtok_r( NULL, ",", &tmp_char );
+	}
+	xfree( my_state_list );
+	return my_list;
+}
+
+/*
+ * _build_all_states_list - build a list containing all possible job states
+ * RET List of enum job_states values
+ */
+static List 
+_build_all_states_list( void )
+{
+	List my_list;
+	int i;
+	uint16_t *state_id;
+
+	my_list = list_create( NULL );
+	for (i = 0; i<NODE_STATE_END; i++) {
+		state_id = xmalloc( sizeof( uint16_t ) );
+		*state_id = (uint16_t) i;
+		list_append( my_list, state_id );
+	}
+	return my_list;
+}
+
+/*
  * _parse_state - convert node state name string to numeric value
  * IN str - state name
- * OUT states - enum node_states value corresponding to str
+ * OUT states - node_state value corresponding to str
  * RET 0 or error code
  */
 static int
-_parse_state( char* str, enum node_states* states )
+_parse_state( char* str, uint16_t* states )
 {	
 	int i;
 	char *state_names;
@@ -230,10 +286,7 @@ _parse_format( char* format )
 	if ((prefix = _get_prefix(format)))
 		format_add_prefix( params.format_list, 0, 0, prefix); 
 
-	field_size = strlen( format );
-	tmp_format = xmalloc( field_size + 1 );
-	strcpy( tmp_format, format );
-
+	tmp_format = xstrdup( format );
 	token = strtok_r( tmp_format, "%", &tmp_char);
 	if (token && (format[0] != '%'))	/* toss header */
 		token = strtok_r( NULL, "%", &tmp_char );
@@ -408,13 +461,6 @@ _parse_token( char *token, char *field, int *field_size, bool *right_justify,
 /* print the parameters specified */
 void _print_options( void )
 {
-	char *node_state;
-	
-	if (params.state_flag)
-		node_state = node_state_string(params.state);
-	else
-		node_state = "N/A";
-
 	printf("-----------------------------\n");
 	printf("exact       = %d\n", params.exact_match);
 	printf("format      = %s\n", params.format);
@@ -424,18 +470,19 @@ void _print_options( void )
 	printf("node_field  = %s\n", params.node_field_flag ? 
 					"true" : "false");
 	printf("node_format = %s\n", params.node_flag   ? "true" : "false");
-	printf("nodes       = %s\n", params.nodes ? params.nodes : "N/A");
+	printf("nodes       = %s\n", params.nodes ? params.nodes : "n/a");
 	printf("partition   = %s\n", params.partition ? 
-					params.partition: "N/A");
-	printf("state       = %s\n", node_state);
+					params.partition: "n/a");
+	printf("states      = %s\n", params.states);
+	printf("sort        = %s\n", params.sort);
 	printf("summarize   = %s\n", params.summarize   ? "true" : "false");
 	printf("verbose     = %d\n", params.verbose);
 	printf("-----------------------------\n\n");
 }
 
+
 static void _print_version(void)
 {
 	printf("%s %s\n", PACKAGE, SLURM_VERSION);
 }
-
 

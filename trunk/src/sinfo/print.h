@@ -50,7 +50,10 @@ typedef struct sinfo_format {
 int format_add_function(List list, int width, bool right_justify,
 		char * suffix, 
 		int (*function) (sinfo_data_t  *, int, bool, char *));
+
 void print_date(void);
+int  print_sinfo_entry(sinfo_data_t *sinfo_data);
+int  print_sinfo_list(List sinfo_list);
 
 #define format_add_avail(list,wid,right,suffix) \
 	format_add_function(list,wid,right,suffix,_print_avail)

@@ -44,22 +44,24 @@ static void _sinfo_list_delete(void *data);
 static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt);
 static partition_info_t *_find_part(char *part_name, 
 		partition_info_msg_t *partition_msg);
+static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
+                             node_info_t *node_ptr);
+static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
+                             partition_info_t* part_ptr);
 static int  _query_server(partition_info_msg_t ** part_pptr,
 		node_info_msg_t ** node_pptr);
-static int  _part_order (void *data1, void *data2);
-static void _sort_sinfo_data(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
 static void _swap_char(char **from, char **to);
 static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node);
-static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr, 
-		node_info_t *node_ptr);
+static void _update_sinfo(sinfo_data_t *sinfo_ptr, 
+		partition_info_t* part_ptr, node_info_t *node_ptr);
 
 int main(int argc, char *argv[])
 {
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
-	List sinfo_list;
+	List sinfo_list = NULL;
 	int node_rec_cnt = 0;
 
 	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
@@ -77,8 +79,8 @@ int main(int argc, char *argv[])
 		sinfo_list = list_create(_sinfo_list_delete);
 		_build_sinfo_data(sinfo_list, partition_msg, 
 				node_msg, node_rec_cnt);
-		_sort_sinfo_data(sinfo_list);
-		print_sinfo_list(sinfo_list, params.format_list);
+		sort_sinfo_list(sinfo_list);
+		print_sinfo_list(sinfo_list);
 
 		if (params.iterate) {
 			list_destroy(sinfo_list);
@@ -123,7 +125,6 @@ _query_server(partition_info_msg_t ** part_pptr,
 		return error_code;
 	}
 
-
 	old_part_ptr = new_part_ptr;
 	*part_pptr = new_part_ptr;
 
@@ -161,12 +162,14 @@ static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt)
 
 	if (((params.nodes == NULL) && 
 	     (params.partition 	== NULL) && 
-	     (!params.state_flag)) ||
+	     (params.state_list == NULL)) ||
 	     params.summarize) {
+		params.filtering = false;
 		/* Nothing to filter out */
 		*node_rec_cnt = node_msg->record_count;
 		return;
 	}
+	params.filtering = true;
 
 	if (params.nodes)
 		hosts = hostlist_create(params.nodes);
@@ -179,12 +182,26 @@ static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt)
 			 (node_msg->node_array[i].partition,
 			  params.partition))
 			continue;
-		if (params.state_flag && 
-		    (node_msg->node_array[i].node_state !=
-			    params.state) && 
-		    ((node_msg->node_array[i].node_state & 
-		      (~NODE_STATE_NO_RESPOND)) != params.state)) 
-			continue;
+		if (params.state_list) {
+			int *node_state;
+			bool match = false;
+			ListIterator iterator;
+			iterator = list_iterator_create(params.state_list);
+			while ((node_state = list_next(iterator))) {
+				if ((node_msg->node_array[i].node_state ==
+				     *node_state) || 
+				    ((node_msg->node_array[i].node_state & 
+		      		     (~NODE_STATE_NO_RESPOND)) == 
+				     *node_state)) {
+					match = true;
+					break;
+				}
+			}
+			list_iterator_destroy(iterator);
+			if (!match) 
+				continue;
+		}
+
 		_swap_node_rec(&node_msg->node_array[i], 
 			       &node_msg->node_array[new_rec_cnt]);
 		new_rec_cnt++;
@@ -238,7 +255,13 @@ static int _build_sinfo_data(List sinfo_list,
 	ListIterator i;
 	int j;
 
-	/* remove any existing sinfo_list entries */
+	/* by default every partition is shown, even if no nodes */
+	if ((!params.filtering) && (!params.node_flag)) {
+		for (j=0; j<partition_msg->record_count; j++) {
+			part_ptr = partition_msg->partition_array + j;
+			_create_sinfo(sinfo_list, part_ptr, NULL);
+		}
+	}
 
 	/* make sinfo_list entries for each node */
 	for (j=0; j<node_cnt; j++) {
@@ -249,42 +272,11 @@ static int _build_sinfo_data(List sinfo_list,
 
 		/* test if node can be added to existing sinfo_data entry */
 		while ((sinfo_ptr = list_next(i))) {
-			if (params.match_flags.avail_flag &&
-			    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
-					continue;
-			if (params.match_flags.features_flag &&
-			    (_strcmp(node_ptr->features, sinfo_ptr->features)))
-					continue;
-			
-			if (params.match_flags.groups_flag &&
-			    (_strcmp(part_ptr->allow_groups, 
-			             sinfo_ptr->part_info->allow_groups)))
-					continue;
-			if (params.match_flags.job_size_flag &&
-			    (part_ptr->min_nodes != 
-			     sinfo_ptr->part_info->min_nodes))
-					continue;
-			if (params.match_flags.job_size_flag &&
-			    (part_ptr->max_nodes != 
-			     sinfo_ptr->part_info->max_nodes))
-					continue;
-			if (params.match_flags.max_time_flag &&
-			    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
-					continue;
-			if (params.match_flags.partition_flag &&
-			    (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
-					continue;
-			if (params.match_flags.root_flag &&
-			    (part_ptr->root_only != 
-			     sinfo_ptr->part_info->root_only))
-					continue;
-			if (params.match_flags.share_flag &&
-			    (part_ptr->shared != 
-			     sinfo_ptr->part_info->shared))
-					continue;
-			if (params.match_flags.state_flag &&
-			    (node_ptr->node_state != sinfo_ptr->node_state))
-					continue;
+			if (!_match_part_data(sinfo_ptr, part_ptr))
+				continue;
+			if (sinfo_ptr->nodes_tot &&
+			    (!_match_node_data(sinfo_ptr, node_ptr)))
+				continue;
 
 			/* This node has the same configuration as this 
 			 * sinfo_data, just add to this record */
@@ -301,9 +293,112 @@ static int _build_sinfo_data(List sinfo_list,
 	return SLURM_SUCCESS;
 }
 
+static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
+                             node_info_t *node_ptr)
+{
+	if (sinfo_ptr->nodes &&
+	    params.match_flags.features_flag &&
+	    (_strcmp(node_ptr->features, sinfo_ptr->features)))
+		return false;
+
+	if (params.match_flags.state_flag &&
+	    (node_ptr->node_state != sinfo_ptr->node_state))
+		return false;
+
+	/* If no need to exactly match sizes, just return here 
+	 * otherwise check cpu count, memory, disk, etc. */
+	if (!params.exact_match)
+		return true;
+	if (node_ptr->cpus        != sinfo_ptr->min_cpus)
+		return false;
+	if (node_ptr->tmp_disk    != sinfo_ptr->min_disk)
+		return false;
+	if (node_ptr->real_memory != sinfo_ptr->min_mem)
+		return false;
+	if (node_ptr->weight      != sinfo_ptr->min_weight)
+		return false;
+
+	return true;
+}
+
+static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
+                             partition_info_t* part_ptr)
+{
+	if (part_ptr == sinfo_ptr->part_info) /* identical partition */
+		return true;
+
+	if (params.match_flags.avail_flag &&
+	    (part_ptr->state_up != sinfo_ptr->part_info->state_up))
+		return false;
+			
+	if (params.match_flags.groups_flag &&
+	    (_strcmp(part_ptr->allow_groups, 
+	             sinfo_ptr->part_info->allow_groups)))
+		return false;
+
+	if (params.match_flags.job_size_flag &&
+	    (part_ptr->min_nodes != sinfo_ptr->part_info->min_nodes))
+		return false;
+
+	if (params.match_flags.job_size_flag &&
+	    (part_ptr->max_nodes != sinfo_ptr->part_info->max_nodes))
+		return false;
+
+	if (params.match_flags.max_time_flag &&
+	    (part_ptr->max_time != sinfo_ptr->part_info->max_time))
+		return false;
+
+	if (params.match_flags.partition_flag &&
+	    (_strcmp(part_ptr->name, sinfo_ptr->part_info->name)))
+		return false;
+
+	if (params.match_flags.root_flag &&
+	    (part_ptr->root_only != sinfo_ptr->part_info->root_only))
+		return false;
+
+	if (params.match_flags.share_flag &&
+	    (part_ptr->shared != sinfo_ptr->part_info->shared))
+		return false;
+
+	return true;
+}
+
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr, 
 		node_info_t *node_ptr)
 {
+	if (sinfo_ptr->nodes_tot == 0) {	/* first node added */
+		sinfo_ptr->node_state = node_ptr->node_state;
+		sinfo_ptr->features   = node_ptr->features;
+		sinfo_ptr->min_cpus   = node_ptr->cpus;
+		sinfo_ptr->max_cpus   = node_ptr->cpus;
+		sinfo_ptr->min_disk   = node_ptr->tmp_disk;
+		sinfo_ptr->max_disk   = node_ptr->tmp_disk;
+		sinfo_ptr->min_mem    = node_ptr->real_memory;
+		sinfo_ptr->max_mem    = node_ptr->real_memory;
+		sinfo_ptr->min_weight = node_ptr->weight;
+		sinfo_ptr->max_weight = node_ptr->weight;
+	} else {
+		if (sinfo_ptr->min_cpus > node_ptr->cpus)
+			sinfo_ptr->min_cpus = node_ptr->cpus;
+		if (sinfo_ptr->max_cpus < node_ptr->cpus)
+			sinfo_ptr->max_cpus = node_ptr->cpus;
+
+		if (sinfo_ptr->min_disk > node_ptr->tmp_disk)
+			sinfo_ptr->min_disk = node_ptr->tmp_disk;
+		if (sinfo_ptr->max_disk < node_ptr->tmp_disk)
+			sinfo_ptr->max_disk = node_ptr->tmp_disk;
+
+		if (sinfo_ptr->min_mem > node_ptr->real_memory)
+			sinfo_ptr->min_mem = node_ptr->real_memory;
+		if (sinfo_ptr->max_mem < node_ptr->real_memory)
+			sinfo_ptr->max_mem = node_ptr->real_memory;
+
+		if (sinfo_ptr->min_weight> node_ptr->weight)
+			sinfo_ptr->min_weight = node_ptr->weight;
+		if (sinfo_ptr->max_weight < node_ptr->weight)
+			sinfo_ptr->max_weight = node_ptr->weight;
+	}
+
 	if (node_ptr->node_state == NODE_STATE_ALLOCATED)
 		sinfo_ptr->nodes_alloc++;
 	else if (node_ptr->node_state == NODE_STATE_IDLE)
@@ -311,26 +406,6 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr,
 	else 
 		sinfo_ptr->nodes_other++;
 	sinfo_ptr->nodes_tot++;
-
-	if (sinfo_ptr->min_cpus > node_ptr->cpus)
-		sinfo_ptr->min_cpus = node_ptr->cpus;
-	if (sinfo_ptr->max_cpus < node_ptr->cpus)
-		sinfo_ptr->max_cpus = node_ptr->cpus;
-
-	if (sinfo_ptr->min_disk > node_ptr->tmp_disk)
-		sinfo_ptr->min_disk = node_ptr->tmp_disk;
-	if (sinfo_ptr->max_disk < node_ptr->tmp_disk)
-		sinfo_ptr->max_disk = node_ptr->tmp_disk;
-
-	if (sinfo_ptr->min_mem > node_ptr->real_memory)
-		sinfo_ptr->min_mem = node_ptr->real_memory;
-	if (sinfo_ptr->max_mem < node_ptr->real_memory)
-		sinfo_ptr->max_mem = node_ptr->real_memory;
-
-	if (sinfo_ptr->min_weight> node_ptr->weight)
-		sinfo_ptr->min_weight = node_ptr->weight;
-	if (sinfo_ptr->max_weight < node_ptr->weight)
-		sinfo_ptr->max_weight = node_ptr->weight;
 
 	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
 }
@@ -343,31 +418,36 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 	/* create an entry */
 	sinfo_ptr = xmalloc(sizeof(sinfo_data_t));
 
-	sinfo_ptr->node_state = node_ptr->node_state;
-	if (node_ptr->node_state == NODE_STATE_ALLOCATED)
-		sinfo_ptr->nodes_alloc++;
-	else if (node_ptr->node_state == NODE_STATE_IDLE)
-		sinfo_ptr->nodes_idle++;
-	else 
-		sinfo_ptr->nodes_other++;
-	sinfo_ptr->nodes_tot++;
-
-	sinfo_ptr->min_cpus = node_ptr->cpus;
-	sinfo_ptr->max_cpus = node_ptr->cpus;
-
-	sinfo_ptr->min_disk = node_ptr->tmp_disk;
-	sinfo_ptr->max_disk = node_ptr->tmp_disk;
-
-	sinfo_ptr->min_mem = node_ptr->real_memory;
-	sinfo_ptr->max_mem = node_ptr->real_memory;
-
-	sinfo_ptr->min_weight = node_ptr->weight;
-	sinfo_ptr->max_weight = node_ptr->weight;
-
-	sinfo_ptr->features = node_ptr->features;
 	sinfo_ptr->part_info = part_ptr;
 
-	sinfo_ptr->nodes = hostlist_create(node_ptr->name);
+	if (node_ptr) {
+		sinfo_ptr->node_state = node_ptr->node_state;
+		if (node_ptr->node_state == NODE_STATE_ALLOCATED)
+			sinfo_ptr->nodes_alloc++;
+		else if (node_ptr->node_state == NODE_STATE_IDLE)
+			sinfo_ptr->nodes_idle++;
+		else 
+			sinfo_ptr->nodes_other++;
+		sinfo_ptr->nodes_tot++;
+
+		sinfo_ptr->min_cpus = node_ptr->cpus;
+		sinfo_ptr->max_cpus = node_ptr->cpus;
+
+		sinfo_ptr->min_disk = node_ptr->tmp_disk;
+		sinfo_ptr->max_disk = node_ptr->tmp_disk;
+
+		sinfo_ptr->min_mem = node_ptr->real_memory;
+		sinfo_ptr->max_mem = node_ptr->real_memory;
+
+		sinfo_ptr->min_weight = node_ptr->weight;
+		sinfo_ptr->max_weight = node_ptr->weight;
+
+		sinfo_ptr->features = node_ptr->features;
+
+		sinfo_ptr->nodes = hostlist_create(node_ptr->name);
+	} else {
+		sinfo_ptr->nodes = hostlist_create("");
+	}
 
 	list_append(sinfo_list, sinfo_ptr);
 }
@@ -378,34 +458,19 @@ static partition_info_t *_find_part(char *part_name,
 {
 	int i;
 	for (i=0; i<partition_msg->record_count; i++) {
-		if (_strcmp(part_name, partition_msg->partition_array[i].name))
+		if (_strcmp(part_name, 
+		            partition_msg->partition_array[i].name))
 			continue;
 		return &(partition_msg->partition_array[i]);
 	}
 	return NULL;
 }
 
-static void _sort_sinfo_data(List sinfo_list)
-{
-	if (params.node_field_flag) 	/* already in node order */
-		return;
-
-	/* sort list in partition order */
-	list_sort(sinfo_list, _part_order);
-}
-static int _part_order (void *data1, void *data2)
-{
-	sinfo_data_t *sinfo_ptr1 = data1;
-	sinfo_data_t *sinfo_ptr2 = data2;
-
-	return _strcmp(sinfo_ptr1->part_info->name,
-	               sinfo_ptr2->part_info->name);
-}
-
 static void _sinfo_list_delete(void *data)
 {
 	sinfo_data_t *sinfo_ptr = data;
 
+	xfree(sinfo_ptr->features);
 	hostlist_destroy(sinfo_ptr->nodes);
 	xfree(sinfo_ptr);
 }
