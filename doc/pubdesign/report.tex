@@ -128,6 +128,13 @@ programming interface (API).
 
 \subsection{What SLURM is Not}
 
+SLURM is not a comprehensive cluster administration or monitoring package.  
+While SLURM knows the state of its compute nodes, it makes no attempt to put
+this information to use in other ways, such as with a general purpose event
+logging mechanism or a back-end database for recording historical state.
+It is expected that SLURM will be deployed in a cluster with other 
+tools performing these functions. 
+
 SLURM is not a sophisticated batch system.  Its default scheduler
 implements First-In First-Out (FIFO) and is not 
 intended to directly implement complex site policy.
@@ -140,25 +147,14 @@ Multiple jobs may be allocated the same nodes
 if the administrator has configured nodes for shared access and/or 
 the job has requested shared resources for improved responsiveness.
 SLURM does not directly perform gang scheduling (time-slicing 
-of parallel jobs). However it does does provide the infrastructure 
-for a meta-scheduler to perform gang scheduling, namely an API 
-to explicit preempt and later resume a job.
-An external scheduler may submit, signal, hold, 
+of parallel jobs). An external scheduler may submit, signal, hold, 
 reorder and terminate jobs via the API.
 
 SLURM is not a meta-batch system like Globus\cite{Globus2002}
 or DPCS (Distributed Production Control System)\cite{DPCS2002}.  
 SLURM supports resource management across a single cluster.
 
-SLURM is not a comprehensive cluster administration or monitoring package.  
-While SLURM knows the state of its compute nodes, it makes no attempt to put
-this information to use in other ways, such as with a general purpose event
-logging mechanism or a back-end database for recording historical state.
-It is expected that SLURM will be deployed in a cluster with other 
-tools performing these functions. 
-
 \subsection{Architecture}
-
 
 \begin{figure}[tb]
 \centerline{\epsfig{file=figures/arch.eps}}
@@ -1385,32 +1381,35 @@ the application's tasks.
 \label{timing}
 \end{figure}
 
-We were able to perform some SLURM tests on a 1000 node cluster in November
-2002. Some development was still underway at that time and tuning had not been 
-performed. The results for executing the program /bin/hostname on two tasks 
-per node and various node counts is show in Figure~\ref{timing}. 
-We found SLURM performance to be comparable to RMS for all job 
-sizes and about 100 times faster than LoadLeveler at small job sizes.
+We were able to perform some SLURM tests on a 1000 node cluster in 
+November 2002. Some development was still underway at that time and 
+tuning had not been performed. The results for executing the program 
+/bin/hostname on two tasks per node and various node counts is show 
+in Figure~\ref{timing}. We found SLURM performance to be comparable 
+to the Quadrics Resource Management System (RMS)\cite{Quadrics2002} 
+for all job sizes and about 80 times faster than IBM 
+LoadLeveler\cite{LL2002} at small job sizes.
 (While not shown on this chart, LoadLeveler reaches 1200 seconds to 
 launch an 8000 task job on 500 nodes.)
 
 \section{Future plans}
 
-As of January 2003, some work remains before we feel ready to 
-distribute SLURM for general use. Work needed at that time was 
-primarily in scalability, fault-tolerance, and testing. 
 We expect SLURM to begin production use on LLNL Linux clusters 
-in February 2003.
-While SLURM does properly support job and partition time limits, 
-the resource utilization information by job (CPU cycles used, 
-memory used, etc.) is still under development. 
+starting in March 2003 and be available for distribution shortly 
+thereafter. 
 
-Looking ahead, we anticipate porting SLURM to the  
-IBM Blue Gene\cite{BlueGene2002}
-in the fall of 2003. 
-Blue Gene has a different interconnect than any supported 
-by SLURM. 
-It also has a 3-D topography with restrictive allocation constraints.
+Looking ahead, we anticipate moving the interconnect topography 
+and API functions into plug-in modules and adding support for 
+additional systems. 
+We plan to add support for additional operating systems 
+(IA64 and x86-64) and interconnects (InfiniBand, Myrinet, and 
+the IBM Blue Gene\cite{BlueGene2002} system\footnote{Blue Gene 
+has a different interconnect than any supported by SLURM and 
+a 3-D topography with restrictive allocation constraints.}). 
+We plan to add support for suspending and resuming jobs, which 
+provides the infrastructure needed to support gang scheduling. 
+We also plan to support changing the node count associated 
+with running jobs (as needed for MPI2).
 
 \section{Acknowledgments}
 
