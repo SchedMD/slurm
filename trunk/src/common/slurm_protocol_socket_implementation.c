@@ -216,14 +216,14 @@ int _slurm_send_timeout(slurm_fd fd, char *buf, size_t size,
                         goto done;
                 }
                 if ((rc = poll(&ufds, 1, timeout)) <= 0) {
-                        if ((rc == 0) || (errno == EINTR)) {
+                        if ((rc == 0) || (errno == EINTR)) 
                                 continue;
                          else {
                                 sent = SLURM_ERROR;
                                 goto done;
                          }
                 }
-                rc = _slurm_send(fd, &buf[sent], (size - sent), flags)
+                rc = _slurm_send(fd, &buf[sent], (size - sent), flags);
                 if (rc < 0) {
                         if (errno == EINTR)
                                 continue;

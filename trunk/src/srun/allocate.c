@@ -45,7 +45,6 @@
 #define MAX_ALLOC_WAIT 60	/* seconds */
 #define MIN_ALLOC_WAIT  2	/* seconds */
 #define MAX_RETRIES    10
-#define MIN(x,y) (((x)<(y))?(x):(y))
 
 /*
  * Static Prototypes
