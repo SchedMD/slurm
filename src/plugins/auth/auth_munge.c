@@ -67,6 +67,12 @@ const char plugin_name[]       	= "auth plugin for Chris Dunlap's Munge";
 const char plugin_type[]       	= "auth/munge";
 const uint32_t plugin_version	= 10;
 
+static int plugin_errno = SLURM_SUCCESS;
+
+enum {
+	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR
+};
+
 /* 
  * The Munge implementation of the slurm AUTH credential
  */
@@ -80,7 +86,8 @@ typedef struct _slurm_auth_credential {
 	bool    verified;  /* true if this cred has been verified            */
 	size_t  len;       /* amount of App data                             */
 	uid_t   uid;       /* UID. valid only if verified == true            */
-	gid_t   gid;       /* GID. valid only if verified == true            */ 
+	gid_t   gid;       /* GID. valid only if verified == true            */
+	int cr_errno;
 } slurm_auth_credential_t;
 
 /*
@@ -137,6 +144,7 @@ slurm_auth_alloc( void )
 	cred->m_str    = NULL;
 	cred->buf      = NULL;
 	cred->len      = 0;
+	cred->cr_errno = SLURM_SUCCESS;
 
 	xassert(cred->magic = MUNGE_MAGIC);
 
@@ -146,10 +154,13 @@ slurm_auth_alloc( void )
 /*
  * Free a credential that was allocated with slurm_auth_alloc().
  */
-void
+int
 slurm_auth_free( slurm_auth_credential_t *cred )
 {
-	if (!cred) return;
+	if (!cred) {
+		plugin_errno = SLURM_BADARG;
+		return SLURM_ERROR;
+	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
@@ -179,11 +190,15 @@ slurm_auth_activate( slurm_auth_credential_t *cred, int secs )
 	munge_err_t e = EMUNGE_SUCCESS; 
 	munge_ctx_t *ctx = NULL;
 
-	if (!cred) return SLURM_ERROR;
+	if (!cred) {
+		plugin_errno = SLURM_BADARG;
+		return SLURM_ERROR;
+	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
 	if ((e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len))) {
+		cred->cr_errno = SLURM_ERROR;
 		error("munge_encode: %s", munge_strerror(e));
 		return SLURM_ERROR;
 	}
@@ -199,15 +214,20 @@ slurm_auth_activate( slurm_auth_credential_t *cred, int secs )
 int
 slurm_auth_verify( slurm_auth_credential_t *c )
 {
-	if (!c) return SLURM_ERROR;
+	if (!c) {
+		plugin_errno = SLURM_BADARG;
+		return SLURM_ERROR;
+	}
 
 	xassert(c->magic == MUNGE_MAGIC);
 
 	if (c->verified) 
 		return SLURM_SUCCESS;
 
-	if (_decode_cred(c->m_str, c) < 0) 
+	if (_decode_cred(c->m_str, c) < 0) {
+		cred->cr_errno = SLURM_ERROR;
 		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 }
@@ -223,8 +243,14 @@ slurm_auth_verify( slurm_auth_credential_t *c )
 uid_t
 slurm_auth_get_uid( slurm_auth_credential_t *cred )
 {
-	if ((cred == NULL) || !cred->verified) 
+	if (cred == NULL) {
+		plugin_errno = SLURM_BADARG;
 		return SLURM_AUTH_NOBODY;
+	}
+	if (!cred->verified) {
+		cred->cr_errno = SLURM_AUTH_INVALID;
+		return SLURM_AUTH_NOBODY;
+	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
@@ -238,8 +264,14 @@ slurm_auth_get_uid( slurm_auth_credential_t *cred )
 gid_t
 slurm_auth_get_gid( slurm_auth_credential_t *cred )
 {
-	if ((cred == NULL) || !cred->verified) 
+	if (cred == NULL) {
+		plugin_errno = SLURM_BADARG;
 		return SLURM_AUTH_NOBODY;
+	}
+	if (!cred->verified) {
+		cred->cr_errno = SLURM_AUTH_INVALID;
+		return SLURM_AUTH_NOBODY;
+	}
 
 	xassert(cred->magic == MUNGE_MAGIC);
 
@@ -250,12 +282,16 @@ slurm_auth_get_gid( slurm_auth_credential_t *cred )
  * Marshall a credential for transmission over the network, according to
  * SLURM's marshalling protocol.
  */
-void
+int
 slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 {
-	if ((cred == NULL) || (buf == NULL)) {
-		error( "malformed slurm_auth_pack call in auth/munge plugin" );
-		return;
+	if (cred == NULL) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+	if (buf == NULL) {
+		cred->cr_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
 	}
 	
 	xassert(cred->magic == MUNGE_MAGIC);
@@ -270,6 +306,8 @@ slurm_auth_pack( slurm_auth_credential_t *cred, Buf buf )
 	 * Pack the data.
 	 */
 	packstr(cred->m_str, buf);
+
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -284,8 +322,12 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	uint16_t size;
 	uint32_t version;
 	
-	if ((cred == NULL) || (buf == NULL)) {
-		error("malformed slurm_auth_unpack call in auth/munge plugin");
+	if (cred == NULL) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+	if ( buf == NULL ) {
+		cred->cr_errno = SLURM_AUTH_BADARG;
 		return SLURM_ERROR;
 	}
 	
@@ -293,25 +335,27 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
 	 * Get the authentication type.
 	 */
 	if ( unpackmem_ptr( &type, &size, buf ) != SLURM_SUCCESS ) {
-		error( "cannot unpack authentication type: %m" );
+		cred->cr_errno = SLURM_AUTH_PACK;
 		return SLURM_ERROR;
 	}
 	if ( strcmp( type, plugin_type ) != 0 ) {
-		error( "runtime authentication plugin type mismatch" );
-		error( "plugin expected 'auth/munge' and got '%s'", type );
+		cred->cr_errno = SLURM_AUTH_MISMATCH;
 		return SLURM_ERROR;
 	}
 	if ( unpack32( &version, buf ) != SLURM_SUCCESS ) {
+		cred->cr_errno = SLURM_AUTH_PACK;
 		return SLURM_ERROR;
 	}	
 
 	if (unpackmem_ptr(&m, &size, buf) < 0) {
-		error("error retrieving munge cred in auth/munge plugin");
+		cred->cr_errno = SLURM_AUTH_PACK;
 		return SLURM_ERROR;
 	}
 
-	if (_decode_cred(m, cred) < 0)
+	if (_decode_cred(m, cred) < 0) {
+		cred->cr_errno = SLURM_AUTH_INVALID;
 		return SLURM_ERROR;
+	}
 
 	return SLURM_SUCCESS;
 
@@ -322,13 +366,48 @@ slurm_auth_unpack( slurm_auth_credential_t *cred, Buf buf )
  * credential for debugging or logging purposes.  The format is left
  * to the imagination of the plugin developer.
  */
-void
+int
 slurm_auth_print( slurm_auth_credential_t *cred, FILE *fp )
 {
-	if ((cred == NULL) || (fp == NULL)) 
-		return;
+	if (cred == NULL) {
+		plugin_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
+	if ( fp == NULL ) {
+		cred->cr_errno = SLURM_AUTH_BADARG;
+		return SLURM_ERROR;
+	}
 
 	fprintf(fp, "BEGIN SLURM MUNGE AUTHENTICATION CREDENTIAL\n" );
 	fprintf(fp, "%s\n", cred->m_str );
 	fprintf(fp, "END SLURM MUNGE AUTHENTICATION CREDENTIAL\n" );
+}
+
+int
+slurm_auth_errno( slurm_auth_credential_t *cred )
+{
+	if ( cred == NULL )
+		return plugin_errno;
+	else
+		return cred->cr_errno;
+}
+
+
+const char *
+slurm_auth_errstr( int slurm_errno )
+{
+	static struct {
+		int err;
+		char *msg;
+	} tbl[] = {
+		{ SLURM_AUTH_UNPACK, "cannot unpack authentication type" },
+		{ 0, NULL }
+	};
+
+	int i;
+
+	for ( i = 0; ; ++i ) {
+		if ( tbl[ i ].msg == NULL ) return "unknown error";
+		if ( tbl[ i ].err == slurm_errno ) return tbl[ i ].msg;
+	}
 }

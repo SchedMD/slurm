@@ -348,6 +348,8 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	auth_cred = g_slurm_auth_alloc();
 	if ( auth_cred == NULL ) {
 		xfree( buftemp );
+		error( "authentication: %s",
+			   g_slurm_auth_errstr( g_slurm_auth_errno( NULL ) ) );
 		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
 	}
 	
@@ -365,13 +367,17 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* unpack authentication cred */
 	if (g_slurm_auth_unpack( auth_cred, buffer)) {
+		error( "authentication: %s ",
+			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
 		free_buf(buffer);
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 	}
 
 	/* verify credentials */
 	if ((rc = g_slurm_auth_verify(auth_cred)) != SLURM_SUCCESS) {
-		g_slurm_auth_free(auth_cred);
+		error( "authentication: %s ",
+			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
+		(void) g_slurm_auth_free(auth_cred);
 		free_buf(buffer);
 		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
 	}
@@ -436,7 +442,11 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 
 	/* initialize header */
 	auth_cred = g_slurm_auth_alloc();
-	if ( auth_cred == NULL ) return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	if ( auth_cred == NULL ) {
+		error( "authentication: %s",
+			   g_slurm_auth_errstr( g_slurm_auth_errno( NULL ) ) );
+		return SLURM_PROTOCOL_AUTHENTICATION_ERROR;
+	}
 	init_header(&header, msg->msg_type, SLURM_PROTOCOL_NO_FLAGS);
 	rc = g_slurm_auth_activate(auth_cred, CREDENTIAL_TTL_SEC);
 	if (rc != SLURM_SUCCESS)	/* Try once more */
@@ -452,8 +462,11 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	pack_header(&header, buffer);
 
 	/* pack creds */
-	g_slurm_auth_pack(auth_cred, buffer);
-	g_slurm_auth_free(auth_cred);
+	if ( g_slurm_auth_pack(auth_cred, buffer) ) {
+		error( "authentication: %s",
+			   g_slurm_auth_errstr( g_slurm_auth_errno( auth_cred ) ) );
+	}
+	(void) g_slurm_auth_free(auth_cred);
 
 	/* pack msg */
 	tmp_len = get_buf_offset(buffer);
@@ -917,6 +930,6 @@ int slurm_send_only_node_msg(slurm_msg_t * request_msg)
 /* Slurm message functions */
 void slurm_free_msg(slurm_msg_t * msg)
 {
-	g_slurm_auth_free(msg->cred);
+	(void) g_slurm_auth_free(msg->cred);
 	xfree(msg);
 }
