@@ -314,8 +314,7 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	buftemp = xmalloc(SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE);
 	if ((rc = _slurm_msg_recvfrom(open_fd, buftemp,
 				      SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE,
-				      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				      &(msg)->address))
+				      SLURM_PROTOCOL_NO_SEND_RECV_FLAGS))
 	    == SLURM_SOCKET_ERROR) {
 		xfree(buftemp);
 		return rc;
@@ -446,8 +445,8 @@ int slurm_send_node_msg(slurm_fd open_fd, slurm_msg_t * msg)
 #endif
 	if ((rc = _slurm_msg_sendto(open_fd, get_buf_data(buffer),
 				    get_buf_offset(buffer),
-				    SLURM_PROTOCOL_NO_SEND_RECV_FLAGS,
-				    &msg->address)) == SLURM_SOCKET_ERROR)
+				    SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ))
+	     == SLURM_SOCKET_ERROR)
 		error("Error sending msg socket: %m");
 
 	free_buf(buffer);
@@ -594,14 +593,14 @@ void slurm_set_addr_any(slurm_addr * slurm_address, uint16_t port)
 }
 
 /* slurm_set_addr
- * initializes the slurm_address with the supplied port and ip_address
+ * initializes the slurm_address with the supplied port and host name
  * OUT slurm_address	- slurm_addr to be filled in
  * IN port		- port in host order
  * IN host		- hostname or dns name 
  */
 void slurm_set_addr(slurm_addr * slurm_address, uint16_t port, char *host)
 {
-	_slurm_set_addr(slurm_address, port, host);
+	_slurm_set_addr_char(slurm_address, port, host);
 }
 
 /* reset_slurm_addr
@@ -627,7 +626,7 @@ void slurm_set_addr_char(slurm_addr * slurm_address, uint16_t port,
 }
 
 /* slurm_get_addr 
- * given a slurm_address it returns to port and hostname
+ * given a slurm_address it returns its port and hostname
  * IN slurm_address	- slurm_addr to be queried
  * OUT port		- port number
  * OUT host		- hostname
@@ -661,7 +660,8 @@ int slurm_get_peer_addr(slurm_fd fd, slurm_addr * slurm_address)
  * IN address		- slurm_addr to print
  * IN buf		- space for string representation of slurm_addr
  * IN n			- max number of bytes to write (including NUL)
- */void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)
+ */
+void slurm_print_slurm_addr(slurm_addr * address, char *buf, size_t n)
 {
 	_slurm_print_slurm_addr(address, buf, n);
 }
