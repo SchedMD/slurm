@@ -718,7 +718,7 @@ int update_part(update_part_msg_t * part_desc)
 					part_desc->name);
 
 	if (part_ptr == NULL) {
-		error("update_part: partition %s does not exist, "
+		info("update_part: partition %s does not exist, "
 			"being created", part_desc->name);
 		part_ptr = create_part_record();
 		strcpy(part_ptr->name, part_desc->name);
