@@ -14,3 +14,6 @@ JobName=Job03		NodeList=lx0031 Partition=class Groups=employee,students,teacher
 JobName=FAIL_Groups	NodeList=lx0031 Partition=class Groups=employee,teacher
 JobName=Job04		NodeList=lx0301,lx0310 Contiguous    Partition=batch Key=1234 
 JobName=FAIL_NoSpecs	Partition=class Groups=students
+JobName=Job05		NodeList=lx[8000-8002] TotalNodes=400 Partition=batch Key=1234
+JobName=Job06		TotalCPUs=400  Partition=batch Key=1234
+JobName=Job06		TotalNodes=4   TotalCPUs=400 Partition=batch Key=1234
