@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov> et. al.
+ *  Written by Moe Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -70,6 +70,7 @@ inline static void slurm_rpc_job_step_create( slurm_msg_t* msg ) ;
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
 void usage (char *prog_name);
 
+/* main - slurmctld main function, start various threads and process RPCs */
 int 
 main (int argc, char *argv[]) 
 {
@@ -80,29 +81,36 @@ main (int argc, char *argv[])
 	slurm_addr cli_addr ;
 	char node_name[MAX_NAME_LEN];
 
+	/*
+	 * Establish initial configuration
+	 */
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 
 	init_ctld_conf ( &slurmctld_conf );
 	parse_commandline ( argc, argv, &slurmctld_conf );
 
 	if ( ( error_code = init_slurm_conf () ) ) 
-		fatal ("slurmctld: init_slurm_conf error %d", error_code);
+		fatal ("init_slurm_conf error %d", error_code);
 	if ( ( error_code = read_slurm_conf ()) ) 
-		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONFIG_FILE);
+		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
-		fatal ("slurmctld: errno %d from getnodename", errno);
+		fatal ("getnodename errno %d", error_code);
 
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
 	     strcmp (node_name, slurmctld_conf.backup_controller) &&
 	     strcmp ("localhost", slurmctld_conf.control_machine) &&
 	     strcmp ("localhost", slurmctld_conf.backup_controller) )
-	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
+	       	fatal ("this machine (%s) is not the primary (%s) or backup (%s) controller", 
 			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_controller);
-	
+
+	/* initialize port for RPCs */
 	if ( ( sockfd = slurm_init_msg_engine_port ( slurmctld_conf . slurmctld_port ) ) 
 			== SLURM_SOCKET_ERROR )
-		fatal ("slurmctld: error starting message engine \n", errno);
-		
+		fatal ("slurm_init_msg_engine_port error %d \n", errno);
+
+	/*
+	 * Procss incoming RPCs indefinitely
+	 */
 	while (1) 
 	{
 		/* accept needed for stream implementation 
@@ -110,7 +118,7 @@ main (int argc, char *argv[])
 		 */
 		if ( ( newsockfd = slurm_accept_msg_conn ( sockfd , & cli_addr ) ) == SLURM_SOCKET_ERROR )
 		{
-			error ("slurmctld: error %d from connect", errno) ;
+			error ("slurm_accept_msg_conn error %d", errno) ;
 			break ;
 		}
 		
@@ -122,7 +130,7 @@ main (int argc, char *argv[])
 		
 		if ( ( error_code = slurm_receive_msg ( newsockfd , msg ) ) == SLURM_SOCKET_ERROR )
 		{
-			error ("slurmctld: error %d from accept", errno);
+			error ("slurm_receive_msg error %d", errno);
 			break ;
 		}
 
@@ -138,6 +146,7 @@ main (int argc, char *argv[])
 	return 0 ;
 }
 
+/* slurmctld_req - Process an individual RPC request */
 void
 slurmctld_req ( slurm_msg_t * msg )
 {
@@ -193,6 +202,7 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_UPDATE_NODE:
 			slurm_rpc_update_node ( msg ) ;
+			slurm_free_update_node_msg ( msg -> data ) ;
 			break;
 		case REQUEST_JOB_STEP_CREATE:
 			slurm_rpc_job_step_create( msg ) ;	
@@ -200,16 +210,17 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_UPDATE_PARTITION:
 			slurm_rpc_update_partition ( msg ) ;
+			slurm_free_update_part_msg ( msg -> data ) ;
 			break;
 		default:
-			error ("invalid request msg type %d\n", msg-> msg_type);
+			error ("invalid RPC message type %d\n", msg-> msg_type);
 			slurm_send_rc_msg ( msg , EINVAL );
 			break;
 	}
 	slurm_free_msg ( msg ) ;
 }
 
-
+/* slurm_rpc_dump_build - process RPC for Slurm configuration information */
 void
 slurm_rpc_dump_build ( slurm_msg_t * msg )
 {
@@ -220,11 +231,10 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 
 	start_time = clock ();
 	
-	
-	/* check to see if build_data has changed */	
+	/* check to see if configuration data has changed */	
 	if ( last_time_msg -> last_update >= slurmctld_conf.last_update )
 	{
-		info ("dump_build, no change, time=%ld", 
+		info ("slurm_rpc_dump_build, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -238,11 +248,12 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 		response_msg . data = & build_tbl ;
 
 		/* send message */
-		info ("dump_build time=%ld", (long) (clock () - start_time));
+		info ("slurm_rpc_dump_build time=%ld", (long) (clock () - start_time));
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
 	}
 }
 
+/* slurm_rpc_dump_jobs - process RPC for job state information */
 void
 slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 {
@@ -253,12 +264,11 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
 	time_t last_update = last_time_msg -> last_update ;
 	
-
 	start_time = clock ();
 
 	if ( last_time_msg -> last_update >= last_job_update )
 	{
-		info ("dump_job, no change, time=%ld", 
+		info ("slurm_rpc_dump_jobs, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -274,13 +284,14 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("dump_job, size=%d, time=%ld", 
+		info ("slurm_rpc_dump_jobs, size=%d, time=%ld", 
 		      dump_size, (long) (clock () - start_time));
 		if (dump)
 			xfree (dump);
 	}
 }
 
+/* slurm_rpc_dump_nodes - process RPC for node state information */
 void
 slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 {
@@ -295,7 +306,7 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 
 	if ( last_time_msg -> last_update >= last_node_update )
 	{
-		info ("dump_node, no change, time=%ld", 
+		info ("slurm_rpc_dump_nodes, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -311,13 +322,14 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("dump_node, size=%d, time=%ld", 
+		info ("slurm_rpc_dump_nodes, size=%d, time=%ld", 
 		      dump_size, (long) (clock () - start_time));
 		if (dump)
 			xfree (dump);
 	}
 }
 
+/* slurm_rpc_dump_partitions - process RPC for partition state information */
 void
 slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 {
@@ -332,7 +344,7 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 
 	if ( last_time_msg -> last_update >= last_part_update )
 	{
-		info ("dump_part, no change, time=%ld", 
+		info ("slurm_rpc_dump_partitions, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
@@ -348,13 +360,14 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 
 		/* send message */
 		slurm_send_node_msg( msg -> conn_fd , &response_msg ) ;
-		info ("dump_part, size=%d, time=%ld", 
+		info ("slurm_rpc_dump_partitions, size=%d, time=%ld", 
 		      dump_size, (long) (clock () - start_time));
 		if (dump)
 			xfree (dump);
 	}
 }
 
+/* slurm_rpc_job_step_cancel - process RPC to cancel an entire job or an individual job step */
 void 
 slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 {
@@ -372,13 +385,13 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 		/* return result */
 		if (error_code)
 		{
-			info ("job_cancel error %d for %u, time=%ld",
+			info ("slurm_rpc_job_step_cancel error %d for %u, time=%ld",
 				error_code, job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , error_code );
 		}
 		else
 		{
-			info ("job_cancel success for %u, time=%ld",
+			info ("slurm_rpc_job_step_cancel success for %u, time=%ld",
 				job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 		}
@@ -389,14 +402,14 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 		/* return result */
 		if (error_code)
 		{
-			info ("job_step_cancel error %d for %u.%u, time=%ld", error_code, 
+			info ("slurm_rpc_job_step_cancel error %d for %u.%u, time=%ld", error_code, 
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , error_code );
 		}
 		else
 		{
-			info ("job_step_cancel success for %u.%u, time=%ld",
+			info ("slurm_rpc_job_step_cancel success for %u.%u, time=%ld",
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
@@ -406,6 +419,7 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 	schedule();
 }
 
+/* slurm_rpc_update_job - process RPC to update the configuration of a job (e.g. priority) */
 void 
 slurm_rpc_update_job ( slurm_msg_t * msg )
 {
@@ -422,14 +436,14 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("update error %d on job id %u, time=%ld",
+		error ("slurm_rpc_update_job error %d for job id %u, time=%ld",
 				error_code, job_desc_msg->job_id, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("updated job id %u, time=%ld",
+		info ("slurm_rpc_update_job complete for job id %u, time=%ld",
 				job_desc_msg->job_id, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
@@ -438,6 +452,7 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 	schedule();
 }
 
+/* slurm_rpc_update_node - process RPC to update the configuration of a node (e.g. UP/DOWN) */
 void 
 slurm_rpc_update_node ( slurm_msg_t * msg )
 {
@@ -455,24 +470,22 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("update error %d on node %s, time=%ld",
+		error ("slurm_rpc_update_node error %d for node %s, time=%ld",
 				error_code, update_node_msg_ptr->node_names, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("updated node %s, time=%ld",
+		info ("slurm_rpc_update_node complete for node %s, time=%ld",
 				update_node_msg_ptr->node_names, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	if (update_node_msg_ptr->node_names)
-		xfree (update_node_msg_ptr->node_names);
-
 	schedule();
 }
 
+/* slurm_rpc_update_partition - process RPC to update the configuration of a partition (e.g. UP/DOWN) */
 void 
 slurm_rpc_update_partition ( slurm_msg_t * msg )
 {
@@ -488,26 +501,20 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("update error %d on partition %s, time=%ld",
+		error ("slurm_rpc_update_partition error %d for partition %s, time=%ld",
 				error_code, part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("updated partition %s, time=%ld",
+		info ("slurm_rpc_update_partition complete for partition %s, time=%ld",
 				part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
-	if (part_desc_ptr->name)
-		xfree (part_desc_ptr->name);
-	if (part_desc_ptr->nodes)
-		xfree (part_desc_ptr->nodes);
-	if (part_desc_ptr->allow_groups)
-		xfree (part_desc_ptr->allow_groups);
-
 	schedule();
 }
 
+/* slurm_rpc_submit_batch_job - process RPC to submit a batch job */
 void
 slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 {
@@ -529,13 +536,13 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		info ("job_submit error %d, time=%ld",
+		info ("slurm_rpc_submit_batch_job error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("job_submit success for id=%u, time=%ld",
+		info ("slurm_rpc_submit_batch_job success for id=%u, time=%ld",
 				job_id, (long) (clock () - start_time));
 		/* send job_ID */
 		submit_msg . job_id = job_id ;
@@ -546,7 +553,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	schedule();
 }
 
-/* slurm_rpc_allocate_resources:  allocate resources for a job */
+/* slurm_rpc_allocate_resources:  process RPC to allocate resources for a job */
 void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 {
 	/* init */
@@ -571,13 +578,13 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	/* return result */
 	if (error_code)
 	{
-		info ("error %d allocating resources, time=%ld",
+		info ("slurm_rpc_allocate_resources error %d allocating resources, time=%ld",
 				error_code,  (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("allocated nodes %s, JobId=%u, time=%ld",
+		info ("aslurm_rpc_allocate_resources allocated nodes %s to JobId=%u, time=%ld",
 				node_list_ptr , job_id , 	
 				(long) (clock () - start_time));
 		
@@ -596,7 +603,7 @@ void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	}
 }
 
-/* slurm_rpc_job_will_run - determine if job with given configuration can be initiated now */
+/* slurm_rpc_job_will_run - process RPC to determine if job with given configuration can be initiated */
 void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 {
 	/* init */
@@ -619,19 +626,19 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		info ("job_will_run error %d, time=%ld",
+		info ("slurm_rpc_job_will_run error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("job_will_run success for , time=%ld",
+		info ("slurm_rpc_job_will_run success for , time=%ld",
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
 }
 
-/* slurm_rpc_reconfigure_controller - re-initialize controller from configuration files */
+/* slurm_rpc_reconfigure_controller - process RPC to re-initialize slurmctld from configuration file */
 void 
 slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 {
@@ -650,13 +657,13 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("reconfigure error %d, time=%ld",
+		error ("slurm_rpc_reconfigure_controller error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("reconfigure completed successfully, time=%ld", 
+		info ("slurm_rpc_reconfigure_controller completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
@@ -665,8 +672,7 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 }
 
 
-/* slurm_rpc_create_job_step - creates/registers a job step with the step_mgr
- */
+/* slurm_rpc_create_job_step - process RPC to creates/registers a job step with the step_mgr */
 void 
 slurm_rpc_job_step_create( slurm_msg_t* msg )
 {
@@ -687,7 +693,7 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 	/* return result */
 	if ( step_rec == NULL )
 	{
-		info ("job_step_create error %s  time=%ld", slurm_strerror( error_code ), 
+		info ("slurm_rpc_job_step_create error %s  time=%ld", slurm_strerror( error_code ), 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
@@ -695,7 +701,7 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 	{
 		/* FIXME Needs to be fixed to really work with a credential */
 		slurm_job_credential_t cred = { 1,1,"test",start_time,0} ;
-		info ("job_step_create success time=%ld",
+		info ("slurm_rpc_job_step_create success time=%ld",
 				(long) (clock () - start_time));
 		
 		job_step_resp.job_step_id = step_rec->step_id;
@@ -716,7 +722,7 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 
 }
 
-/* slurm_rpc_node_registration - determine if a node's actual configuration satisfies the
+/* slurm_rpc_node_registration - process RPC to determine if a node's actual configuration satisfies the
  * configured specification */
 void 
 slurm_rpc_node_registration ( slurm_msg_t * msg )
@@ -741,13 +747,13 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	/* return result */
 	if (error_code)
 	{
-		error ("validate_node_specs error %d for %s, time=%ld",
+		error ("slurm_rpc_node_registration error %d for %s, time=%ld",
 			error_code, node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
-		info ("validate_node_specs for %s, time=%ld",
+		info ("slurm_rpc_node_registration complete for %s, time=%ld",
 			node_reg_stat_msg -> node_name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
@@ -759,7 +765,7 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
  *	if SLURMCTLD_PORT/SLURMD_PORT are set then
  *		get the port number based upon a look-up in /etc/services
  *		if the lookup fails, translate SLURMCTLD_PORT/SLURMD_PORT into a number
- *	These port numbers are over-ridden if set in the configuration file
+ *	These port numbers are overridden if set in the configuration file
  */
 void
 init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
@@ -820,11 +826,11 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->tmp_fs            	= slurmctld_conf.tmp_fs ;
 }
 
-
 /* Variables for commandline passing using getopt */
 extern char *optarg;
 extern int optind, opterr, optopt;
 
+/* parse_commandline - parse and process any command line arguments */
 void 
 parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 {
@@ -880,12 +886,14 @@ parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * conf_ptr )
 	log_init(argv[0], log_opts, SYSLOG_FACILITY_DAEMON, NULL);
 }
 
+/* usage - print a message describing the command line arguments of slurmctld */
 void
 usage (char *prog_name) 
 {
 	printf ("%s [OPTIONS]\n", prog_name);
 	printf ("  -e <errlev>  Set stderr logging to the specified level\n");
 	printf ("  -f <file>    Use specified configuration file name\n");
+	printf ("  -h           Print a help message describing usage\n");
 	printf ("  -l <errlev>  Set logfile logging to the specified level\n");
 	printf ("  -s <errlev>  Set syslog logging to the specified level\n");
 	printf ("<errlev> is an integer between 0 and 7 with higher numbers providing more detail.\n");

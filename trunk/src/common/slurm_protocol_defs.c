@@ -258,6 +258,20 @@ void slurm_free_update_node_msg ( update_node_msg_t * msg )
 	}
 }
 
+void slurm_free_update_part_msg ( update_part_msg_t * msg )
+{
+	if ( msg )
+	{
+		if ( msg -> name )
+			xfree ( msg -> name ) ;
+		if ( msg -> nodes )
+			xfree ( msg -> nodes ) ;
+		if ( msg -> allow_groups )
+			xfree ( msg -> allow_groups ) ;
+		xfree ( msg ) ;
+	}
+}
+
 void slurm_free_job_step_create_request_msg ( job_step_create_request_msg_t * msg )
 { 
 	if ( msg )
