@@ -41,6 +41,7 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+#include "src/common/list.h"
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xassert.h"
@@ -143,6 +144,11 @@ extern int select_p_node_init(struct node_record *node_ptr, int node_cnt)
 	select_node_cnt = node_cnt;
 	select_fast_schedule = slurm_get_fast_schedule();
 
+	return SLURM_SUCCESS;
+}
+
+extern int select_p_part_init(List part_list)
+{
 	return SLURM_SUCCESS;
 }
 

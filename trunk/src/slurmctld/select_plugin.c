@@ -30,6 +30,7 @@
 
 #include <pthread.h>
 
+#include "src/common/list.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
 #include "src/common/slurm_protocol_api.h"
@@ -45,6 +46,7 @@ typedef struct slurm_select_ops {
 	int	       	(*state_restore)	( char *dir_name );
 	int 		(*node_init)		( struct node_record *node_ptr,
 						  int node_cnt);
+	int 		(*part_init)		( List part_list );
 	int		(*job_test)		( struct job_record *job_ptr,
 						  bitstr_t *bitmap, int min_nodes, 
 						  int max_nodes );
@@ -83,6 +85,7 @@ static slurm_select_ops_t * _select_get_ops(slurm_select_context_t *c)
 		"select_p_state_save",
 		"select_p_state_restore",
 		"select_p_node_init",
+		"select_p_part_init",
 		"select_p_job_test",
 		"select_p_job_init",
 		"select_p_job_fini"
@@ -225,7 +228,7 @@ extern int select_g_state_restore(char *dir_name)
 }
 
 /*
- * Note initialization of node record data structure
+ * Note re/initialization of node record data structure
  */
 extern int select_g_node_init(struct node_record *node_ptr, int node_cnt)
 {
@@ -233,6 +236,18 @@ extern int select_g_node_init(struct node_record *node_ptr, int node_cnt)
 		return SLURM_ERROR;
 
 	return (*(g_select_context->ops.node_init))(node_ptr, node_cnt);
+}
+
+
+/*
+ * Note re/initialization of partition record data structure
+ */
+extern int select_g_part_init(List part_list)
+{
+	if (slurm_select_init() < 0)
+		return SLURM_ERROR;
+
+	return (*(g_select_context->ops.part_init))(part_list);
 }
 
 /*

@@ -27,6 +27,7 @@
 #ifndef __SELECT_PLUGIN_API_H__
 #define __SELECT_PLUGIN_API_H__
 
+#include "src/common/list.h"
 #include "src/slurmctld/slurmctld.h"
 
 /*
@@ -46,9 +47,14 @@ extern int select_g_state_save(char *dir_name);
 extern int select_g_state_restore(char *dir_name);
 
 /*
- * Note initialization of node record data structure
+ * Note re/initialization of node record data structure
  */
 extern int select_g_node_init(struct node_record *node_ptr, int node_cnt);
+
+/*
+ * Note re/initialization of partition record data structure
+ */
+extern int select_g_part_init(List part_list);
 
 /*
  * Select the "best" nodes for given job from those available
