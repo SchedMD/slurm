@@ -177,14 +177,16 @@ struct job_record {
 };
 
 struct 	step_record {
+	struct job_record* job_ptr; /* ptr to the job that owns the step */
 	uint16_t step_id;		/* step number */
+	time_t start_time;      /* step allocation time */
 	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job step */
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque data structure */
 #endif
 };
 
-typedef struct job_step_create_request_msg step_specs; 
+typedef struct job_step_specs step_specs; 
 
 extern List job_list;			/* list of job_record entries */
 
