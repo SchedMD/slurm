@@ -28,37 +28,33 @@
 #ifndef _SLURM_H
 #define _SLURM_H
 
-/* FIXME: Need better way to pick up uint16_t, uint32_t, etc. */
-#if HAVE_CONFIG_H
-#  include <config.h>
-#  if HAVE_INTTYPES_H
-#    include <inttypes.h>
-#  else
-#    if HAVE_STDINT_H
-#      include <stdint.h>
-#    endif
-#  endif			/* HAVE_INTTYPES_H */
-#else				/* !HAVE_CONFIG_H */
-#  include <inttypes.h>
-#endif				/*  HAVE_CONFIG_H */
+/* FIXME: Need need better way to get configuration info */
+#include <config.h>		/* used for possible HAVE_LIBELAN3 */
 
+#include <stdint.h>		/* for uint16_t, uint32_t definitions */
 #include <stdio.h>		/* for FILE definitions */
 #include <time.h>		/* for time_t definitions */
 
-/* FIXME: Need better way to define qsw_jobinfo_t */
-#ifdef	HAVE_LIBELAN3
-#include <src/common/qsw.h>
-#endif
-
-/* FIXME: Need better way to define slurm_addr */
-#if MONGO_IMPLEMENTATION
-#include <src/common/slurm_protocol_mongo_common.h>
-#else
-#include <src/common/slurm_protocol_socket_common.h>
-#endif
-
+/* FIXME: Need to park these headers in generally available location */
 #include <src/common/slurm_errno.h>
 #include <src/common/hostlist.h>
+
+/* Define slurm_addr below to avoid including extraneous slurm headers */
+#ifdef	HAVE_SYS_SOCKET_H
+#  ifndef __slurm_addr_defined
+#    include <netinet/in.h>
+#    define  __slurm_addr_defined
+     typedef struct sockaddr_in slurm_addr ;
+#  endif
+#endif
+
+/* Define qsw_jobinfo_t below to avoid including extraneous slurm headers */
+#ifdef	HAVE_LIBELAN3
+#  ifndef __qsw_jobinfo_t_defined
+#    define  __qsw_jobinfo_t_defined
+     typedef struct qsw_jobinfo *qsw_jobinfo_t;	/* opaque data type */
+#  endif
+#endif
 
 /* FIXME: For the slurm library, we need to link
  * api (everything)
