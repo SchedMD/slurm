@@ -1789,19 +1789,21 @@ static void _slurm_rpc_shutdown_controller(slurm_msg_t * msg)
 		info("performing immeditate shutdown without state save");
 	else if (shutdown_time)
 		debug3("shutdown RPC issued when already in progress");
-	else if (thread_id_sig) {
-		lock_slurmctld(node_read_lock);
-		msg_to_slurmd(REQUEST_SHUTDOWN);
-		unlock_slurmctld(node_read_lock);
-		pthread_kill(thread_id_sig, SIGTERM);	/* signal clean-up */
-	} else {
-		lock_slurmctld(node_read_lock);
-		msg_to_slurmd(REQUEST_SHUTDOWN);
-		unlock_slurmctld(node_read_lock);
-		error("thread_id_sig undefined, doing shutdown the hard way");
-		shutdown_time = time(NULL);
-		/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
-		_slurmctld_shutdown();
+	else {
+		if (msg->msg_type == REQUEST_SHUTDOWN) {
+			/* This means (msg->msg_type != REQUEST_CONTROL) */
+			lock_slurmctld(node_read_lock);
+			msg_to_slurmd(REQUEST_SHUTDOWN);
+			unlock_slurmctld(node_read_lock);
+		}
+		if (thread_id_sig)		/* signal clean-up */
+			pthread_kill(thread_id_sig, SIGTERM);
+		else {
+			error("thread_id_sig undefined, hard shutdown");
+			shutdown_time = time(NULL);
+			/* send REQUEST_SHUTDOWN_IMMEDIATE RPC */
+			_slurmctld_shutdown();
+		}
 	}
 
 	if (msg->msg_type == REQUEST_CONTROL) {
