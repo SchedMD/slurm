@@ -282,6 +282,20 @@ char *slurm_get_sched_type(void)
         return sched_type;
 }
 
+/* slurm_get_select_type
+ * get select_type from slurmctld_conf object
+ * RET char *   - select_type, MUST be xfreed by caller
+ */
+char *slurm_get_select_type(void)
+{
+        char *select_type;
+
+        _lock_update_config();
+        select_type = xstrdup(slurmctld_conf.select_type);
+        slurm_mutex_unlock(&config_lock);
+        return select_type;
+}
+
 /* slurm_get_switch_type
  * get switch type from slurmctld_conf object
  * RET char *   - switch type, MUST be xfreed by caller

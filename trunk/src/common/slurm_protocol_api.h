@@ -143,6 +143,12 @@ uint32_t slurm_get_slurm_user_id(void);
  */
 char *slurm_get_sched_type(void);
 
+/* slurm_get_select_type
+ * get select_type from slurmctld_conf object
+ * RET char *   - select_type, MUST be xfreed by caller
+ */
+char *slurm_get_select_type(void);
+
 /* slurm_get_switch_type
  * get switch type from slurmctld_conf object
  * RET char *   - switch type, MUST be xfreed by caller

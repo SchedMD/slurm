@@ -213,6 +213,15 @@ The \fBscontrol\fR command can be used to change job priorities.
 The \fBslurmctld\fR daemon must be restarted for a change in 
 scheduler type to become effective.
 .TP
+\fBSelectType\fR
+Identifies the type of node selection algorithm to be used. 
+Acceptable values include 
+"select/linear" for a one-dimentional array of nodes in which 
+sequentially ordered nodes are preferable, and
+"select/bluegene" for a three-dimentional Blue Gene system. 
+The default value is "select/bgl" for Blue Gene systems 
+and "select/linear" for all other systems.
+.TP
 \fBSlurmUser\fR
 The name of the user that the \fBslurmctld\fR daemon executes as. 
 For security purposes, a user other than "root" is recommended.

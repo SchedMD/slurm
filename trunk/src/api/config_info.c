@@ -115,6 +115,8 @@ void slurm_print_ctl_conf ( FILE* out,
 		slurm_ctl_conf_ptr->schedport);
 	fprintf(out, "SchedulerType     = %s\n",
 		slurm_ctl_conf_ptr->schedtype);
+	fprintf(out, "SelectType        = %s\n",
+		slurm_ctl_conf_ptr->select_type);
 	fprintf(out, "SlurmUser         = %s(%u)\n", 
 		slurm_ctl_conf_ptr->slurm_user_name,
 		slurm_ctl_conf_ptr->slurm_user_id);
