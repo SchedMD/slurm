@@ -448,7 +448,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 	 * two processes on node 4) and bits 4,5 (corresponding to the two 
 	 * processes running on node 6) are set.  
 	 */
-	for (i = 0; i < bit_size(nodeset); i++) {
+	for (i = cap->LowNode; i <= cap->HighNode; i++) {
 		if (bit_test(nodeset, i)) {
 			int j, proc0;
 
