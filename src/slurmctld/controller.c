@@ -90,7 +90,8 @@ main (int argc, char *argv[])
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmctld: errno %d from gethostname", errno);
 
-	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  strcmp (node_name, slurmctld_conf.backup_machine) )
+	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  
+	     strcmp (node_name, slurmctld_conf.backup_machine) )
 	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
 			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_machine);
 	
@@ -648,7 +649,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->control_daemon    	= NULL ;
 	conf_ptr->control_machine   	= NULL ;
 	conf_ptr->controller_timeout	= 0 ;
-	conf_ptr->epilog           		= NULL ;
+	conf_ptr->epilog           	= NULL ;
 	conf_ptr->fast_schedule     	= 0 ;
 	conf_ptr->hash_base         	= 0 ;
 	conf_ptr->heartbeat_interval	= 0;
@@ -665,23 +666,25 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 void
 fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
-	conf_ptr->last_update = init_time ;
-	if ( !conf_ptr->backup_interval )    conf_ptr->backup_interval   	= BACKUP_INTERVAL ;
-	if ( !conf_ptr->backup_location )    conf_ptr->backup_location   	= BACKUP_LOCATION ;
-	if ( !conf_ptr->control_daemon )     conf_ptr->control_daemon    	= CONTROL_DAEMON ;
-	if ( !conf_ptr->controller_timeout ) conf_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
-	if ( !conf_ptr->epilog )             conf_ptr->epilog           	= EPILOG ;
-	if ( !conf_ptr->fast_schedule )      conf_ptr->fast_schedule     	= FAST_SCHEDULE ;
-	if ( !conf_ptr->hash_base )          conf_ptr->hash_base         	= HASH_BASE ;
-	if ( !conf_ptr->heartbeat_interval ) conf_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
-	if ( !conf_ptr->init_program )       conf_ptr->init_program      	= INIT_PROGRAM ;
-	if ( !conf_ptr->kill_wait )          conf_ptr->kill_wait         	= KILL_WAIT ;
-	if ( !conf_ptr->prioritize )         conf_ptr->prioritize        	= PRIORITIZE ;
-	if ( !conf_ptr->prolog )             conf_ptr->prolog            	= PROLOG ;
-	if ( !conf_ptr->server_daemon )      conf_ptr->server_daemon     	= SERVER_DAEMON ;
-	if ( !conf_ptr->server_timeout )     conf_ptr->server_timeout   	= SERVER_TIMEOUT ;
-	if ( !conf_ptr->slurm_conf )         conf_ptr->slurm_conf       	= SLURM_CONF ;
-	if ( !conf_ptr->tmp_fs )             conf_ptr->tmp_fs            	= TMP_FS ;
+	conf_ptr->last_update		= init_time ;
+	conf_ptr->backup_interval   	= BACKUP_INTERVAL ;
+	conf_ptr->backup_location   	= BACKUP_LOCATION ;
+	conf_ptr->backup_machine   	= slurmctld_conf.backup_machine ;
+	conf_ptr->control_daemon    	= CONTROL_DAEMON ;
+	conf_ptr->control_machine    	= slurmctld_conf.control_machine ;
+	conf_ptr->controller_timeout	= CONTROLLER_TIMEOUT ;
+	conf_ptr->epilog           	= EPILOG ;
+	conf_ptr->fast_schedule     	= FAST_SCHEDULE ;
+	conf_ptr->hash_base         	= HASH_BASE ;
+	conf_ptr->heartbeat_interval	= HEARTBEAT_INTERVAL;
+	conf_ptr->init_program      	= INIT_PROGRAM ;
+	conf_ptr->kill_wait         	= KILL_WAIT ;
+	conf_ptr->prioritize        	= PRIORITIZE ;
+	conf_ptr->prolog            	= PROLOG ;
+	conf_ptr->server_daemon     	= SERVER_DAEMON ;
+	conf_ptr->server_timeout   	= SERVER_TIMEOUT ;
+	conf_ptr->slurm_conf       	= SLURM_CONF ;
+	conf_ptr->tmp_fs            	= TMP_FS ;
 }
 
 

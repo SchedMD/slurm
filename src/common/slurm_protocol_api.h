@@ -22,8 +22,8 @@
 #include <src/common/slurm_protocol_errno.h>
 
 
-#define SLURM_PORT 7000
-#define SLURM_PROTOCOL_DEFAULT_PORT 7000
+#define SLURM_PORT 7001
+#define SLURM_PROTOCOL_DEFAULT_PORT 7001
 #define SLURM_PROTOCOL_DEFAULT_PRIMARY_CONTROLLER "localhost"
 #define SLURM_PROTOCOL_DEFAULT_SECONDARY_CONTROLLER "localhost"
 
