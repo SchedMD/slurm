@@ -20,7 +20,6 @@ set cycle_count   100
 set exit_code     0
 set file_in       "test$test_id.input"
 set file_in_task  "test$test_id.%t.input"
-set file_out      "test$test_id.output"
 set file_out_task "test$test_id.%t.output"
 set node_cnt      "1-4"
 set other_opts    "-O"
@@ -49,7 +48,7 @@ proc run_cat_job { input_file output_file } {
 #
 # Create a sizable text file
 #
-exec $bin_rm -f $file_in $file_out
+exec $bin_rm -f $file_in
 exec $bin_cat /etc/hosts   >$file_in
 exec $bin_cat /etc/passwd >>$file_in
 set stdin_lines [get_line_cnt $file_in]
@@ -74,11 +73,10 @@ expect {
 set success_cnt 0
 set timeout $max_job_delay
 for {set inx 0} {$inx < $cycle_count} {incr inx} {
-#	Destroy output files then create empty ones (to avoid NFS delays)
+#	Create empty output files (to avoid NFS delays)
 	for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
 		set file_out_glob "test$test_id.$tsk.output"
-		exec $bin_rm -f $file_out_glob
-		exec $bin_touch $file_out_glob
+		exec $bin_cp /dev/null $file_out_glob
 	}
 	if {[run_cat_job $file_in_task $file_out_task]} {
 		set exit_code 1
@@ -99,7 +97,7 @@ for {set inx 0} {$inx < $cycle_count} {incr inx} {
 # Destroy all input/output files
 exec $bin_rm -f $file_in
 for {set tsk 0} {$tsk < $task_cnt} {incr tsk} {
-	set file_in_glob "test$test_id.$tsk.input"
+	set file_in_glob  "test$test_id.$tsk.input"
 	set file_out_glob "test$test_id.$tsk.output"
 	exec $bin_rm -f $file_in_glob $file_out_glob
 }

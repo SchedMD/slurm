@@ -8,11 +8,11 @@ global scancel scontrol sinfo squeue srun
 # Specify location of slurm executable files
 # These may be just the command names or full pathnames
 #
-set scancel	"scancel"
-set scontrol	"scontrol"
-set sinfo	"sinfo"
-set squeue	"squeue"
-set srun	"srun"
+set scancel     "scancel"
+set scontrol    "scontrol"
+set sinfo       "sinfo"
+set squeue      "squeue"
+set srun        "srun"
 
 #
 # Specify locations of other executable files used
@@ -22,6 +22,7 @@ set bin_awk 	"awk"
 set bin_bash	"/bin/bash"
 set bin_cat	"cat"
 set bin_chmod	"chmod"
+set bin_cp	"cp"
 set bin_echo	"echo"
 set bin_env	"env"
 set bin_id	"id"
