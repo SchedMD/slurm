@@ -496,6 +496,9 @@ static void *_thread_per_node_rpc(void *args)
 	/* Locks: Write write node */
 	slurmctld_lock_t node_write_lock =
 	    { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { 
+		NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 #endif
 	xassert(args != NULL);
 
@@ -549,7 +552,19 @@ static void *_thread_per_node_rpc(void *args)
 			 * only do when last node registers */
 		}
 		unlock_slurmctld(node_write_lock);
-	} 
+	}
+
+	/* SPECIAL CASE: Kill non-startable batch job */
+	if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
+		batch_job_launch_msg_t *launch_msg_ptr = task_ptr->msg_args_ptr;
+		uint32_t job_id = launch_msg_ptr->job_id;
+		info("Killing non-startable batch job %u: %s", job_id, slurm_strerror(rc));
+		thread_state = DSH_DONE;
+		lock_slurmctld(job_write_lock);
+		job_signal(job_id, SIGKILL, 0);
+		unlock_slurmctld(job_write_lock);
+		goto cleanup;
+	}
 #endif
 
 	switch (rc) {
