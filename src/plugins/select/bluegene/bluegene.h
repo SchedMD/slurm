@@ -43,13 +43,6 @@
 #ifdef HAVE_BGL_FILES
 # include "rm_api.h"
 
-/*
- * There is presently a huge amount of untested code to use the APIs.
- * Surround the code with "#ifdef USE_BGL_FILES". When it is confirmed 
- * to work, use "#ifdef HAVE_BGL_FILES" around the code using the APIs.
- */
-/* #define USE_BGL_FILES 1 */
-
 #else
   typedef char *   pm_partition_id_t;
   typedef int      rm_connection_type_t;

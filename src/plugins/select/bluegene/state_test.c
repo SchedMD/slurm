@@ -91,7 +91,6 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 
 		snprintf(bgl_down_node, sizeof(bgl_down_node), "bgl%d%d%d",
 			bp_loc.X, bp_loc.Y, bp_loc.Z);
-#ifdef USE_BGL_FILES
 		if ((rc1 = rm_set_data(my_bp, RM_BPState, RM_BP_DOWN)) 
 				!= STATUS_OK)
 			error("switch for node %s is bad, could not set down, "
@@ -100,9 +99,6 @@ static void _configure_node_down(rm_bp_id_t bp_id, rm_BGL_t *bgl)
 		else
 			info("switch for node %s is bad, set down", 
 				bgl_down_node);
-#else
-		info("FIXME: switch for node %s is bad, set down", bgl_down_node);
-#endif
 	}
 }
 #endif

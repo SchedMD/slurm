@@ -607,9 +607,7 @@ extern int sync_jobs(List job_list)
 	struct job_record  *job_ptr;
 	pm_partition_id_t bgl_part_id;
 	List block_list = _get_all_blocks();
-#ifdef USE_BGL_BLOCK
 	bgl_update_t *bgl_update_ptr;
-#endif
 
 	/* Insure that all running jobs own the specified partition */
 	job_iterator = list_iterator_create(job_list);
@@ -618,7 +616,6 @@ extern int sync_jobs(List job_list)
 			continue;
 		select_g_get_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, &bgl_part_id);
-#ifdef USE_BGL_BLOCK
 		debug3("Queue sync of job %u in BGL partition %s",
 			job_ptr->job_id, bgl_part_id);
 		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
@@ -627,10 +624,6 @@ extern int sync_jobs(List job_list)
 		bgl_update_ptr->job_id = job_ptr->job_id;
 		bgl_update_ptr->bgl_part_id = bgl_part_id;
 		_part_op(bgl_update_ptr);
-#else
-		info("Queue sync of job %u in BGL partition %s",
-			job_ptr->job_id, bgl_part_id);
-#endif
 		_excise_block(block_list, bgl_part_id);
 	}
 	list_iterator_destroy(job_iterator);
@@ -638,17 +631,12 @@ extern int sync_jobs(List job_list)
 	/* Insure that all other partitions are free */
 	block_iterator = list_iterator_create(block_list);
 	while ((bgl_part_id = (pm_partition_id_t) list_next(block_iterator))) {
-#ifdef USE_BGL_BLOCK
 		debug3("Queue clearing of vestigial owner in BGL partition %s",
 			bgl_part_id);
 		bgl_update_ptr = xmalloc(sizeof(bgl_update_t));
 		bgl_update_ptr->op = TERM_OP;
 		bgl_update_ptr->bgl_part_id = bgl_part_id;
 		_part_op(bgl_update_ptr);
-#else
-		info("Queue clearing of vestigial owner in BGL partition %s",
-			bgl_part_id);
-#endif
 	}
 	list_iterator_destroy(block_iterator);
 	list_destroy(block_list);

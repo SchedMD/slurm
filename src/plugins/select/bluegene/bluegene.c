@@ -163,6 +163,9 @@ extern void print_bgl_record(bgl_record_t* bgl_record)
 		bit_fmt(bitstring, BITSIZE, bgl_record->bitmap);
 		info("\tbitmap: %s", bitstring);
 	}
+#else
+	info("bgl_part_id=%s nodes=%s", bgl_record->bgl_part_id, 
+		bgl_record->nodes);
 #endif
 }
 
@@ -699,7 +702,7 @@ extern int read_bgl_conf(void)
 	if (!_validate_config_nodes()) { 
 		_delete_old_partitions();
 	}
-	/*looking for partitions only I created */
+	/* looking for partitions only I created */
 	if (create_static_partitions(NULL)) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
