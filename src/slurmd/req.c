@@ -143,7 +143,6 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_send_rc_msg(msg, EINVAL);
 		break;
 	}
-	slurm_free_msg(msg);
 	return;
 }
 
@@ -359,7 +358,7 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 
 	/* Run job prolog if necessary */
 	if (run_prolog && (_run_prolog(req->job_id, req->uid) != 0)) {
-		error("[job %d] prolog failed", req->job_id);
+		error("[job %u] prolog failed", req->job_id);
 		errnum = ESLURMD_PROLOG_FAILED;
 		goto done;
 	}
@@ -395,7 +394,7 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * Run job prolog on this node
 	 */
 	if (_run_prolog(req->job_id, req->uid) != 0) {
-		error("[job %d] prolog failed", req->job_id);
+		error("[job %u] prolog failed", req->job_id);
 		rc = ESLURMD_PROLOG_FAILED;
 		goto done;
 	} 
@@ -468,7 +467,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 	kill_tasks_msg_t *req = (kill_tasks_msg_t *) msg->data;
 
 	if (!(step = shm_get_step(req->job_id, req->job_step_id))) {
-		debug("kill for nonexistent job %d.%d requested",
+		debug("kill for nonexistent job %u.%u requested",
 		      req->job_id, req->job_step_id);
 		rc = ESLURM_INVALID_JOB_ID;
 		goto done;
@@ -476,7 +475,7 @@ _rpc_kill_tasks(slurm_msg_t *msg, slurm_addr *cli_addr)
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != step->uid) && (!_slurm_authorized_user(req_uid))) {
-	       debug("kill req from uid %ld for job %d.%d owned by uid %ld",
+	       debug("kill req from uid %ld for job %u.%u owned by uid %ld",
 		     (long) req_uid, req->job_id, req->job_step_id, 
 		     (long) step->uid);       
 	       rc = ESLURM_USER_ID_MISSING;	/* or bad in this case */
@@ -657,7 +656,7 @@ _rpc_reattach_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	}
 	
 	if ((step->uid != req_uid) && (req_uid != 0)) {
-		error("uid %ld attempt to attach to job %d.%d owned by %ld",
+		error("uid %ld attempt to attach to job %u.%u owned by %ld",
 				(long) req_uid, req->job_id, req->job_step_id,
 				(long) step->uid);
 		rc = EPERM;
@@ -798,7 +797,7 @@ _epilog_complete(uint32_t jobid, int rc)
 		error("Unable to send epilog complete message: %m");
 		return SLURM_ERROR;
 	}
-	debug ("Job %ld: sent epilog complete msg: rc = %d", jobid, rc);
+	debug ("Job %u: sent epilog complete msg: rc = %d", jobid, rc);
 
 	return SLURM_SUCCESS;
 }
@@ -825,10 +824,10 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * "revoke" all future credentials for this jobid
 	 */
 	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
-		debug("revoking cred for job %d: %m", req->job_id);
+		debug("revoking cred for job %u: %m", req->job_id);
 	} else {
 		save_cred_state(conf->vctx);
-		debug("credential for job %d revoked", req->job_id);
+		debug("credential for job %u revoked", req->job_id);
 	}
 
 	nsteps = _kill_all_active_steps(req->job_id, SIGKILL);
@@ -845,10 +844,16 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 		return;
 	}
 
+	/*
+	 *  At this point, if connection still open, we send controller
+	 *   a "success" reply to indicate that we've recvd the msg.
+	 */
 	if (msg->conn_fd >= 0) {
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		if (slurm_close_accepted_conn(msg->conn_fd) < 0)
 			error ("rpc_kill_job: close(%d): %m", msg->conn_fd);
+		msg->conn_fd = -1;
+		
 	}
 
 	/*
@@ -872,10 +877,10 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	}
 
 	if (_run_epilog(req->job_id, req->job_uid) != 0) {
-		error ("[job %d] epilog failed", req->job_id);
+		error ("[job %u] epilog failed", req->job_id);
 		rc = ESLURMD_EPILOG_FAILED;
 	} else
-		debug("completed epilog for jobid %d", req->job_id);
+		debug("completed epilog for jobid %u", req->job_id);
 	
     done:
 	_epilog_complete(req->job_id, rc);
@@ -977,10 +982,10 @@ _rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
 	} 
 
 	if (shm_update_job_timelimit(req->job_id, req->expiration_time) < 0) {
-		error("updating lifetime for job %d: %m", req->job_id);
+		error("updating lifetime for job %u: %m", req->job_id);
 		rc = ESLURM_INVALID_JOB_ID;
 	} else
-		debug("reset job %d lifetime", req->job_id);
+		debug("reset job %u lifetime", req->job_id);
 
     done:
 	slurm_send_rc_msg(msg, rc);
