@@ -781,21 +781,16 @@ static void _read_part_db2(void)
 			goto next_partition;
 		
 		//printf("Checking if Partition %s is free",part_name);
-		if ((rc = rm_get_partition(part_name, &part_ptr))
-			    != STATUS_OK) {
-				break;
-			}		
+		if ((rc = rm_get_partition(part_name, &part_ptr)) != STATUS_OK)
+			break;
 			
 		if ((rc = rm_get_data(part_ptr, RM_PartitionBPNum, &bp_num)) != STATUS_OK) {
 			error("rm_get_data(RM_BPNum): %s", bgl_err_str(rc));
 			bp_num = 0;
 		}
-		/* if(bp_num==0) */
-/* 			continue; */
 		if ((rc = rm_get_data(part_ptr, RM_PartitionFirstBP, &bp_ptr))
 		    != STATUS_OK) {
-			error("rm_get_data(RM_FirstBP): %s",
-			      bgl_err_str(rc));
+			error("rm_get_data(RM_FirstBP): %s", bgl_err_str(rc));
 			rc = SLURM_ERROR;
 			return;
 		}
@@ -852,8 +847,6 @@ static void _read_part_db2(void)
 			block_ptr->bgl_node_use = node_use;
 			
 	next_partition:
-		/* if ((rc = rm_free_partition(part_ptr)) != STATUS_OK) { */
-/* 		} */
 		rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
 	}
 	rm_free_partition_list(part_list);
