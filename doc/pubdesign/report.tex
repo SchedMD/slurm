@@ -28,21 +28,132 @@ resource management system.
 
 \section{Overview}
 
-Our objective is to design and develop an open source Simple Linux Utility for
-Resource Management (SLURM) suitable for use on Linux clusters with a few
-thousand nodes.  It must be flexible, secure, fault-tolerant and highly
-scalable.  Capabilities will include: 
+SLURM\footnote{A tip of the hat to Matt Groening and creators of {\em Futurama},
+where Slurm is the highly addictive soda-like beverage made from worm
+excrement.} (Simple Linux Utility for Resource Management) 
+is a resource managment 
+system suitable for use on large Linux clusters.  After surveying resource
+managers available for Linux (see Appendix~\ref{survey}) and finding none
+that were simple, highly scalable, and portable to different cluster 
+architectures and interconnects, the authors set out to design a new system.
+
+The result is a resource management system with the following general
+characteristics:
 
 \begin{itemize}
-\item Machine and job status: Monitor and record the state of each node in the
-cluster. 
-\item Partition management: Distinct functionality or capabilities would be
-associated with different sets of nodes in the cluster. Each such set of nodes
-would be considered a partition. 
-\item Switch management: Monitor and manage the node interconnect.
-\item Job management: Accept, initiate, delete and otherwise manage the state of
-all jobs in the system.
-\item Scheduling: Decide when and where to initiate pending jobs.
+\item {\em Simplicity}: SLURM is simple enough to allow motivated end users
+to understand its source code and add functionality.  The authors will 
+avoid the temptation to add features unless they are of general appeal.
+
+\item {\em Open Source}: SLURM is available to everyone and will remain free;
+its source code is distributed under the GNU General Public License.
+
+\item {\em Portability}: SLURM is written in the C language, with a GNU 
+autoconf configuration engine.  While initially written for Linux, 
+other UNIX-like operating systems should be easy porting targets.
+
+\item {\em Interconnect independence}: Initially, SLURM supports TCP/IP based
+communication and the Quadrics Elan3 interconnect.  Adding support for other
+interconnects is straightforward.  Users select the supported interconnects
+at compile time via GNU autoconf.
+
+\item {\em Scalability}: SLURM is designed for scalability to a 
+{\em ludicrious}\footnote{The authors define a {\em ludicrious} 
+number of nodes to be $2^{16} = 65536$.} number of nodes.
+
+\item {\em Fault tolerence}: SLURM can enter a variety of failure modes
+without terminating workloads, including crashes of the node running the SLURM
+controller.
+
+\item {\em Secure}: SLURM employs crypto technology to authenticate 
+users to services and services to services.  
+A Kerberos V / DCE infrastructure can be utillized if available.
+SLURM does not assume that its physical networks are secure.
+
+\item {\em System administrator friendly}: SLURM is configured with a few
+simple configuration files and minimizes distributed state.  Its interfaces
+are scriptable and its behavior is highly deterministic.
+
+\end{itemize}
+
+\subsection{What is SLURM?}
+
+As a cluster resource manager, SLURM has three key functions.  First,
+it allocates exclusive access to resources (compute nodes) to users for 
+some duration of time so they can perform work.  Second, it provides 
+a framework for starting up, executing, and monitoring work (normally a 
+parallel job) on the set of allocated nodes.  Finally, it arbitrates 
+conflicting requests for resources by managing batch queues.
+
+Users interact with SLURM through three command line utilities: 
+{\tt srun} for submitting a job for execution and optionally controlling it
+interactively; 
+{\tt scancel} for early termination of a job; 
+and {\tt squeue} for monitoring queues.
+
+System administrators, responsible for installing, configuring, and operating 
+SLURM, have an expanded view of the system which includes the {\tt slurmadmin} 
+command line utility for priviledged operations.  For ease of installation
+on Linux, SLURM is distributed as a set of RedHat Package Manager (RPM) 
+packages.  Configuration is limited to two config files.  Since SLURM 
+maintains its global state centrally, compute nodes simply run a {\tt slurmd} 
+daemon (simiar to a remote shell daemon) to export control to SLURM.  The 
+central controller\footnote{There may be two central controllers, one acting
+as a failover twin, if SLURM is configured that way.}
+({\tt slurmctrld}) maintains all global state and its configuration is 
+contained in a single file.
+
+\subsection{What SLURM is Not}
+
+SLURM is not a sophisticated batch system.  It manages queues
+using a simple builtin scheduler (FIFO with backfill) and does not
+include the bells and whistles needed to implement complex site policy.
+It does however export sufficient information via an application programming 
+interface (API) for an external scheduler or metabatch system to order its
+queues based on site policy.
+
+SLURM is not a gang scheduler and does not support time sharing of any kind.
+A SLURM cluster is space shared, and parallel jobs are always assigned whole 
+nodes.  SLURM will not preempt an executing job to run a higher priority one 
+(since it has no concept of priorities), but it is possible for an external 
+scheduler to terminate jobs and requeue them in a different order via the API.
+
+SLURM is not a metabatch system like Globus or DPCS (Distributed Production 
+Control System).  SLURM supports resource management across a single cluster.
+
+SLURM is not a comprehensive cluster administration or monitoring package.  
+While SLURM knows the state of its compute nodes, it makes no attempt to put
+this information to use in other ways, such as with a general purpose event
+logging mechanism or a back-end database for recording historical state.
+It is expected that SLURM will be deployed in a cluster along side other 
+tools that perform these functions. 
+
+\section{Architecture}
+
+As described in the preceeding section, SLURM consists of a central
+{\tt slurmctrld} daemon\footnote{The controller has has an optional failover
+twin on another node.}, a {\tt slurmd} daemon running on each compute node, 
+and a set of command line utilities.
+
+This structure can be further broken down into subsystems:
+
+\begin{itemize}
+\item {\em Machine and job status}: Monitor and record the state of each 
+node in the cluster ({\tt slurmctrld}.
+
+\item {\em Partition management}: Distinct functionality or capabilities 
+are associated with different sets of nodes in the cluster.  Each such set 
+of nodes is considered a partition. 
+
+\item {\em Switch management}: Perform interconnect-related 
+initialization needed to run a parallel job, e.g. on Quadrics Elan issue
+unique Elan capabilities and program numbers.
+
+\item {\em Job management}: Accept, initiate, delete and otherwise manage 
+the state of all jobs in the system.
+
+\item {\em Scheduling}: Decide when and where to initiate pending jobs.
+
 \end{itemize}
 
 We will strive to complement existing OSCAR work, but replace some of the
@@ -375,7 +486,7 @@ DPCS Controller on Linux           & 0.5 FTE months \\
 
 
 \newpage
-\section{Review of Related work}
+\section{Review of Related work}\label{survey}
 
 \subsection{PBS (Portable Batch System)}
 
