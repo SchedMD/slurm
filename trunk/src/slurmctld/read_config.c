@@ -239,7 +239,8 @@ static int _build_bitmaps(void)
 			j = node_ptr - node_record_table_ptr;
 			if (bit_test(all_part_node_bitmap, j) == 1) {
 				error("_build_bitmaps: node %s defined in "
-					"more than one partition", this_node_name);
+					"more than one partition", 
+					this_node_name);
 				error("_build_bitmaps: only the first "
 					"specification is honored");
 			} else {

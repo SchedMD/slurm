@@ -58,6 +58,8 @@
 #include "src/slurmd/smgr.h"
 #include "src/slurmd/ulimits.h"
 #include "src/slurmd/io.h"
+#include "src/slurmd/proctrack.h"
+#include "src/slurmd/shm.h"
 
 /*
  * Static list of signals to block in this process
@@ -143,6 +145,7 @@ smgr_create(slurmd_job_t *job)
 static void
 _session_mgr(slurmd_job_t *job)
 {
+	uint32_t cont_id;
 	xassert(job != NULL);
 
 	/* 
@@ -162,10 +165,22 @@ _session_mgr(slurmd_job_t *job)
 	if (_become_user(job) < 0) 
 		exit(2);
 
-	if (setsid() < (pid_t) 0) {
-		error("setsid: %m");
-		exit(3);
-	}
+//	cont_id = slurm_create_container(job->jobid);
+//	if (cont_id == 0)
+//		exit(3);
+if (setsid() < (pid_t) 0) {
+error("setsid: %m");
+exit(3);
+}
+//info("cont_id=%u",cont_id);
+	/*
+	 * If the created job terminates immediately, the shared memory
+	 * record can be purged before we can set the cont_id below.
+	 * This does not truly indicate an error condition, but a rare 
+	 * timing anomaly. Thus we log the event using debug()
+	 */
+//	if (shm_update_step_cont_id(job->jobid, job->stepid, cont_id) < 0)
+//		debug("shm_update_step_cont_id: %m");
 
 	if (chdir(job->cwd) < 0) {
 		error("couldn't chdir to '%s': %m: going to /tmp instead",

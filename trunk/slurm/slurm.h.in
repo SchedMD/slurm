@@ -295,6 +295,7 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	char *host;		/* host to contact initiating srun */
 	uint32_t dependency;	/* defer until specified job completes */
 	char *account;		/* charge to specified account */
+	char *network;		/* network use spec */
 /*
  * The following parameters are only meaningful on a Blue Gene
  * system at present. Some will be of value on other system.
@@ -501,6 +502,7 @@ typedef struct slurm_ctl_conf {
 	                         * purged from in memory records */
 	uint16_t mpich_gm_dir;  /* MPICH-GM direct support */
 	char *plugindir;	/* pathname to plugins */
+	char *proctrack_type;	/* process tracking plugin type */
 	char *prolog;		/* pathname of job prolog */
 	uint16_t ret2service;	/* 1 return DOWN node to service at 
 				 * registration */

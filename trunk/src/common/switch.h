@@ -105,10 +105,12 @@ extern int  switch_alloc_jobinfo (switch_jobinfo_t *jobinfo);
  * IN  nodelist - list of nodes to be used by the job
  * IN  nprocs   - count of tasks in the job
  * IN  cyclic_alloc - task distribution pattern, 1=cyclic, 0=block
+ * IN  network  - plugin-specific network info (e.g. protocol)
  * NOTE: storage must be freed using g_switch_free_jobinfo
  */
 extern int  switch_build_jobinfo (switch_jobinfo_t jobinfo, 
-		char *nodelist, int nprocs, int cyclic_alloc);
+		char *nodelist, int nprocs, int cyclic_alloc, 
+		char *network);
 
 /* copy a switch job credential
  * IN jobinfo - the switch job credential to be copied

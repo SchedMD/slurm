@@ -421,6 +421,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->name, buffer);
 	packstr(dump_job_ptr->alloc_node, buffer);
 	packstr(dump_job_ptr->account, buffer);
+	packstr(dump_job_ptr->network, buffer);
 	select_g_pack_jobinfo(dump_job_ptr->select_jobinfo,
 		buffer);
 
@@ -454,6 +455,7 @@ static int _load_job_state(Buf buffer)
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len, port;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
 	char *alloc_node = NULL, *host = NULL, *account = NULL;
+	char *network = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
 	int error_code;
@@ -484,6 +486,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
 	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 	safe_unpackstr_xmalloc(&account, &name_len, buffer);
+	safe_unpackstr_xmalloc(&network, &name_len, buffer);
 
 	if (select_g_alloc_jobinfo(&select_jobinfo)
 	||  select_g_unpack_jobinfo(select_jobinfo, buffer))
@@ -563,6 +566,8 @@ static int _load_job_state(Buf buffer)
 	xfree(partition);
 	job_ptr->account = account;
 	account          = NULL;  /* reused, nothing left to free */
+	job_ptr->network = network;
+	network          = NULL;  /* reused, nothing left to free */
 	job_ptr->part_ptr = part_ptr;
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
 	job_ptr->kill_on_step_done = kill_on_step_done;
@@ -1108,6 +1113,8 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   host=%s port=%u dependency=%ld account=%s",
 	       job_specs->host, job_specs->port,
 	       dependency, job_specs->account);
+
+	debug3("   network=%s", job_specs->network);
 
 	select_g_sprint_jobinfo(job_specs->select_jobinfo, 
 		buf, sizeof(buf), SELECT_PRINT_MIXED);
@@ -2068,6 +2075,7 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	job_ptr->alloc_sid  = job_desc->alloc_sid;
 	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
 	job_ptr->account    = xstrdup(job_desc->account);
+	job_ptr->network    = xstrdup(job_desc->network);
 	if (job_desc->dependency != NO_VAL) /* leave as zero */
 		job_ptr->dependency = job_desc->dependency;
 
@@ -2376,6 +2384,7 @@ static void _list_delete_job(void *job_entry)
 	xfree(job_ptr->node_addr);
 	xfree(job_ptr->host);
 	xfree(job_ptr->account);
+	xfree(job_ptr->network);
 	select_g_free_jobinfo(&job_ptr->select_jobinfo);
 	if (job_ptr->step_list) {
 		delete_all_step_records(job_ptr);

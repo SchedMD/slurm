@@ -50,7 +50,8 @@ typedef struct slurm_switch_ops {
 	int          (*alloc_jobinfo)     ( switch_jobinfo_t *jobinfo );
 	int          (*build_jobinfo)     ( switch_jobinfo_t jobinfo,
 						char *nodelist, int nprocs, 
-						int cyclic_alloc);
+						int cyclic_alloc, 
+						char *network);
 	switch_jobinfo_t (*copy_jobinfo)  ( switch_jobinfo_t jobinfo );
 	void         (*free_jobinfo)      ( switch_jobinfo_t jobinfo );
 	int          (*pack_jobinfo)      ( switch_jobinfo_t jobinfo, 
@@ -309,13 +310,14 @@ extern int  switch_alloc_jobinfo(switch_jobinfo_t *jobinfo)
 }
 
 extern int  switch_build_jobinfo(switch_jobinfo_t jobinfo, 
-		char *nodelist, int nprocs, int cyclic_alloc)
+		char *nodelist, int nprocs, int cyclic_alloc,
+		char *network)
 {
 	if ( switch_init() < 0 )
 		return SLURM_ERROR;
 
 	return (*(g_context->ops.build_jobinfo))( jobinfo, nodelist, 
-			nprocs, cyclic_alloc );
+			nprocs, cyclic_alloc, network );
 }
 
 extern switch_jobinfo_t switch_copy_jobinfo(switch_jobinfo_t jobinfo)

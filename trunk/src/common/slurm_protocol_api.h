@@ -130,6 +130,12 @@ extern uint16_t slurm_get_fast_schedule(void);
  */
 char *slurm_get_jobcomp_type(void);
 
+/* slurm_get_proctrack_type
+ * get ProctrackType from slurmctld_conf object
+ * RET char *   - proctrack type, MUST be xfreed by caller
+ */
+char *slurm_get_proctrack_type(void);
+
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET uint16_t	- slurmd port

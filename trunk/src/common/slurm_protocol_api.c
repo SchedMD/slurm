@@ -256,6 +256,20 @@ char *slurm_get_jobcomp_type(void)
         return jobcomp_type;
 }
 
+/* slurm_get_proctrack_type
+ * get ProctrackType from slurmctld_conf object
+ * RET char *   - proctrack type, MUST be xfreed by caller
+ */
+char *slurm_get_proctrack_type(void)
+{
+        char *proctrack_type;
+
+        _lock_update_config();
+        proctrack_type = xstrdup(slurmctld_conf.proctrack_type);
+        slurm_mutex_unlock(&config_lock);
+        return proctrack_type;
+}
+
 /* slurm_get_slurmd_port
  * returns slurmd port from slurmctld_conf object
  * RET uint16_t        - slurmd port

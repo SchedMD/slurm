@@ -280,12 +280,12 @@ shm_step_still_running(uint32_t jobid, uint32_t stepid)
 
 	/*
 	 *  Consider a job step running if the step state is less 
-	 *   than STARTED or if s->sid has not yet been set then 
-	 *   validate that the sid is a valid slurmd process. 
+	 *   than STARTED or if s->cont_id has not yet been set then 
+	 *   validate that the cont_id has a valid slurmd process. 
 	 */
 	if (  (s->state < SLURMD_JOB_STARTED)
-	   || (s->sid <= (pid_t) 0) 
-	   || (_valid_slurmd_sid(s->sid)) )
+	   || (s->cont_id == 0) 
+	   || (_valid_slurmd_sid((pid_t) s->cont_id)) )
 		retval = true;
 
     done:
@@ -526,12 +526,12 @@ shm_update_step_mpid(uint32_t jobid, uint32_t stepid, int mpid)
 }
 
 int 
-shm_update_step_sid(uint32_t jobid, uint32_t stepid, int sid)
+shm_update_step_cont_id(uint32_t jobid, uint32_t stepid, uint32_t cont_id)
 {
 	int i, retval = SLURM_SUCCESS;
 	_shm_lock();
 	if ((i = _shm_find_step(jobid, stepid)) >= 0)
-		slurmd_shm->step[i].sid = sid;
+		slurmd_shm->step[i].cont_id = cont_id;
 	else {
 		slurm_seterrno(ESRCH);
 		retval = SLURM_FAILURE;
@@ -539,22 +539,6 @@ shm_update_step_sid(uint32_t jobid, uint32_t stepid, int sid)
 	_shm_unlock();
 	return retval;
 }
-
-int 
-shm_step_sid(uint32_t jobid, uint32_t stepid)
-{
-	int i, sid;
-	_shm_lock();
-	if ((i = _shm_find_step(jobid, stepid)) >= 0)
-		sid = slurmd_shm->step[i].sid;
-	else {
-		slurm_seterrno(ESRCH);
-		sid = SLURM_FAILURE;
-	}
-	_shm_unlock();
-	return sid;
-}
-
 
 int 
 shm_update_step_state(uint32_t jobid, uint32_t stepid, job_state_t state)
@@ -858,10 +842,10 @@ _shm_clear_stale_entries(void)
 		job_step_t *s = &slurmd_shm->step[i];
 		task_t     *t = s->task_list;
 		bool        active_tasks = false;
-
+pid_t pid = (pid_t) s->cont_id;
 		if ((s->state == SLURMD_JOB_UNUSED)	/* unused */
-		||  (s->sid <= (pid_t) 0)		/* empty */
-		||  (kill(-s->sid, 0) == 0))		/* still active */ 
+		||  (s->cont_id == 0)			/* empty */
+		||  (kill(-pid, 0) == 0))	/* still active */ 
 			continue;
 
 		while (t && !active_tasks) {
@@ -1093,11 +1077,11 @@ _shm_validate(void)
 		 * by attempting to signal the running session.
 		 */
 		if ((s->state >= SLURMD_JOB_STARTED) &&
-		    (s->sid   >  (pid_t) 0) &&
-		    (!_valid_slurmd_sid(s->sid))) {
-			info ("Clearing defunct job %u.%u sid %u from shm",
+		    (s->cont_id > 0) &&
+		    (!_valid_slurmd_sid((pid_t) s->cont_id))) {
+			info ("Clearing defunct job %u.%u cont_id %u from shm",
 					s->jobid, s->stepid, 
-					(unsigned int) s->sid);
+					s->cont_id);
 			_shm_clear_step(s);
 		} else
 			debug3 ("Preserving shm for job %u.%u",

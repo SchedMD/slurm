@@ -630,7 +630,7 @@ _create_job_session(slurmd_job_t *job)
 
 	/*
 	 * If the created job terminates immediately, the shared memory
-	 * record can be purged before we can set the mpid and sid below.
+	 * record can be purged before we can set the mpid below.
 	 * This does not truly indicate an error condition, but a rare 
 	 * timing anomaly. Thus we log the event using debug()
 	 */
@@ -638,8 +638,10 @@ _create_job_session(slurmd_job_t *job)
 		debug("shm_update_step_mpid: %m");
 
 	job->smgr_pid = spid;
-	if (shm_update_step_sid(job->jobid, job->stepid, spid) < 0)
-		debug("shm_update_step_sid: %m");
+	if (shm_update_step_cont_id(job->jobid, job->stepid, 
+			(uint32_t) spid) < 0) {
+		debug("shm_update_step_cont_id: %m");
+	}
 
 	/*
 	 * Read information from session manager slurmd

@@ -306,6 +306,7 @@ struct job_record {
 	char *host;			/* host for srun communications */
 	char *account;			/* account number to charge */
 	uint32_t dependency;		/* defer until this job completes */
+	char *network;			/* network/switch requirement spec */
 	struct job_record *job_next;	/* next entry with same hash index */
 };
 
