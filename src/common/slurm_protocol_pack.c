@@ -914,7 +914,7 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 	pack32 (job_desc_ptr->priority, buf_ptr, buffer_size);
 	
 	packstr (job_desc_ptr->req_nodes, buf_ptr, buffer_size);
-	packstr (job_desc_ptr->environment, buf_ptr, buffer_size);
+	packstring_array (job_desc_ptr->environment, job_desc_ptr->env_size, buf_ptr, buffer_size);
 	packstr (job_desc_ptr->script, buf_ptr, buffer_size);
 
 	packstr (job_desc_ptr->stderr, buf_ptr, buffer_size);
@@ -969,7 +969,7 @@ int unpack_job_desc ( job_desc_msg_t **job_desc_buffer_ptr, void ** buf_ptr , in
 	unpack32 (&job_desc_ptr->priority, buf_ptr, buffer_size);
 	
 	unpackstr_xmalloc (&job_desc_ptr->req_nodes, &uint16_tmp, buf_ptr, buffer_size);
-	unpackstr_xmalloc (&job_desc_ptr->environment, &uint16_tmp, buf_ptr, buffer_size);
+	unpackstring_array (&job_desc_ptr->environment, &job_desc_ptr->env_size, buf_ptr, buffer_size);
 	unpackstr_xmalloc (&job_desc_ptr->script, &uint16_tmp, buf_ptr, buffer_size);
 
 	unpackstr_xmalloc (&job_desc_ptr->stderr, &uint16_tmp, buf_ptr, buffer_size);

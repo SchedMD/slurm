@@ -41,6 +41,7 @@
 #include <src/common/pack.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/macros.h>
+#include <src/common/xstring.h>
 #include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024

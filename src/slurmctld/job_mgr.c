@@ -78,6 +78,7 @@ int 	rmdir2 (char * path);
 int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
 int	write_data_to_file ( char * file_name, char * data ) ;
+int	write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) ;
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
@@ -334,8 +335,15 @@ dump_job_desc(job_desc_msg_t * job_specs)
 	debug3("   script=\"%s\"", 
 		job_specs->script);
 
-	debug3("   environment=\"%s\"", 
-		job_specs->environment);
+	if (job_specs->env_size == 1)
+		debug3("   environment=\"%s\"", job_specs->environment[0]);
+	else if (job_specs->env_size == 2)
+		debug3("   environment=%s,%s", 
+			job_specs->environment[0], job_specs->environment[1]);
+	else if (job_specs->env_size > 2)
+		debug3("   environment=%s,%s,%s,...", 
+			job_specs->environment[0], job_specs->environment[1],
+			job_specs->environment[2]);
 
 	debug3("   stdin=%s stdout=%s stderr=%s work_dir=%s groups=%s", 
 		job_specs->stdin, job_specs->stdout, job_specs->stderr, 
@@ -709,7 +717,7 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 	/* Create environment file, and write data to it */
 	file_name = xstrdup (dir_name);
 	xstrcat (file_name, "/environment");
-	error_code = write_data_to_file (file_name, job_desc->environment);
+	error_code = write_data_array_to_file (file_name, job_desc->environment, job_desc->env_size);
 	xfree (file_name);
 
 	/* Create script file */
@@ -768,6 +776,40 @@ rmdir2 (char * path)
 			return error_code;
 	}
 
+	return 0;
+}
+
+/* Create file with specified name and write the supplied data array to it */
+int
+write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) 
+{
+	int fd, i, pos, nwrite;
+
+	if (data == NULL) {
+		(void) unlink (file_name);
+		return 0;
+	}
+
+	fd = creat (file_name, 0600);
+	if (fd < 0) {
+		error ("create file %s errno %d", file_name, errno);
+		return ESLURM_WRITING_TO_FILE;
+	}
+
+	for (i = 0; i < size; i++) {
+		nwrite = strlen(data[i]) + 1;
+		pos = 0;
+		while (nwrite > 0) {
+			pos = write (fd, &data[i][pos], nwrite);
+			if (pos < 0) {
+				error ("write file %s errno %d", file_name, errno);
+				return ESLURM_WRITING_TO_FILE;
+			}
+			nwrite -= pos;
+		}
+	}
+
+	close (fd);
 	return 0;
 }
 

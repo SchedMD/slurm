@@ -293,8 +293,9 @@ typedef struct submit_response_msg
 typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
 				 * default=0 */
-	char *environment;      /* environment variables to set for job, 
+	char **environment;      /* environment variables to set for job, 
 	                         *	name=value pairs, one per line */
+	uint16_t env_size;	/* element count in environment */
 	char *features;         /* comma separated list of required features, default NONE */
 	char *groups;           /* comma separated list of groups the user can access,
 				 * default set output of "/usr/bin/groups" by API,
@@ -469,7 +470,8 @@ extern char *job_state_string(uint16_t inx);
 extern char *node_state_string(uint16_t inx);
 
 #define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
-#define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	NULL
+#define SLURM_JOB_DESC_DEFAULT_ENVIRONMENT	((char **) NULL)
+#define SLURM_JOB_DESC_DEFAULT_ENV_SIZE 	0
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
 #define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	

@@ -13,6 +13,7 @@ main (int argc, char *argv[])
 	int error_code, i, count;
 	job_desc_msg_t job_mesg;
 	submit_response_msg_t *resp_msg;
+	char *env[2];
 	
 	slurm_init_job_desc_msg( &job_mesg );
 	job_mesg. contiguous = 1; 
@@ -35,7 +36,10 @@ main (int argc, char *argv[])
 	job_mesg. stdin = "/tmp/slurm.stdin";
 	job_mesg. stdout = "/tmp/slurm.stdout";
 	job_mesg. work_dir = "/tmp\0";
-	job_mesg. environment = "SLURM_ENV=looking_good\n";
+	job_mesg. env_size = 2;
+	env[0] = "SLURM_ENV_0=looking_good";
+	env[1] = "SLURM_ENV_1=still_good";
+	job_mesg. environment = env;
 
 	error_code = slurm_submit_batch_job( &job_mesg, &resp_msg );
 	if (error_code) {
