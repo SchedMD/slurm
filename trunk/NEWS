@@ -1,6 +1,16 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.15
+=========================
+ -- Fixes for reported problems:
+   - slurm/265: Job was orphaned when allocation response message could 
+     not be sent. Job is now killed on allocation response message transmit 
+     failure and socket error details are logged.
+ -- Squeue job TIMELIMIT format changed from "h:mm" to "d:h:mm:ss".
+ -- DPCS initiated jobs have steps execute properly without explicit 
+    specification of node count.
+
 * Changes in SLURM 0.2.14
 =========================
  -- Fixes for reported problems:
