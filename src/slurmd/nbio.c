@@ -72,6 +72,7 @@ typedef struct io_debug {
  * timers on reconnect
  * line oriented code
  */
+int forward_io(task_start_t *tsk);
 int nbio_set_init(nbio_attr_t * nbio_attr, slurm_fd_set * set_ptr);
 int memcpy_sets(slurm_fd_set * init_set, slurm_fd_set * next_set);
 int write_task_socket(circular_buffer_t * cir_buf, slurm_fd write_fd,
@@ -89,6 +90,22 @@ int nbio_cleanup(nbio_attr_t * nbio_attr);
 int reconnect(nbio_attr_t * nbio_attr);
 int test_error_conditions(nbio_attr_t * nbio_attr);
 int print_nbio_sets(nbio_attr_t * nbio_attr, slurm_fd_set * set_ptr);
+
+int forward_io(task_start_t *tsk)
+{
+	return do_nbio((void *)tsk);
+}
+
+int wait_on_io_threads(task_start_t *tsk)
+{
+	return SLURM_SUCCESS;
+}
+
+static void delay(struct timeval *tv)
+{
+	select(0, NULL, NULL, NULL, tv);
+}
+
 
 int init_io_debug(io_debug_t * io_dbg, task_start_t * task_start,
 		  char *name)
@@ -136,13 +153,18 @@ int do_nbio(void *arg)
 	io_debug_t in_dbg;
 	io_debug_t out_dbg;
 	io_debug_t err_dbg;
+	struct timeval tv;
+
+	debug3("do_nbio: enter");
 
 	/* init_io_debug(&in_dbg, task_start, "stdin");   */
 	/* init_io_debug(&out_dbg, task_start, "stdout"); */
 	/* init_io_debug(&err_dbg, task_start, "stderr"); */
 	init_nbio_attr(&nbio_attr, task_start);
+	debug3("after init_nbio_attr()");
 
 	posix_signal_pipe_ignore();
+	debug3("after posix_signal_pipe_ignore()");
 
 	reconnect(&nbio_attr);
 
@@ -152,11 +174,14 @@ int do_nbio(void *arg)
 		set_max_fd(&nbio_attr);
 
 		/* print_nbio_sets(&nbio_attr, nbio_attr.init_set); */
+		debug3("entering slurm_select");
 		rc = slurm_select(nbio_attr.max_fd,
 				  &nbio_attr.init_set[RD_SET],
 				  &nbio_attr.init_set[WR_SET],
 				  &nbio_attr.init_set[ER_SET],
 				  &nbio_attr.select_timer);
+
+		debug3("returned from slurm_select() with rc = %d", rc);
 
 		/* print_nbio_sets(&nbio_attr, nbio_attr.init_set); */
 		if (rc == SLURM_ERROR) {
@@ -315,6 +340,8 @@ int read_task_pipe(circular_buffer_t * cir_buf, slurm_fd read_fd,
 	int bytes_read;
 	int local_errno;
 
+	debug3("read_task_pipe: enter");
+
 	/* test for wierd state */
 	if ((cir_buf->write_size == 0)) {
 		if (dbg)
@@ -326,16 +353,14 @@ int read_task_pipe(circular_buffer_t * cir_buf, slurm_fd read_fd,
 	/* read stdout code */
 	if ((bytes_read = read_EINTR(read_fd, cir_buf->tail,
 			             cir_buf->write_size    )) <= 0) {
-		local_errno = errno;
 		if (dbg)
-			debug3
-			    ("%i error reading %s pipe stream, %m errno: %i , bytes read %i ",
+			debug3("%d: read_EINTR: %m: bytes read %d",
 			     dbg->global_task_id, dbg->name, local_errno,
 			     bytes_read);
 		slurm_seterrno_ret(ESLURMD_PIPE_DISCONNECT);
 	} else {
 		cir_buf_write_update(cir_buf, bytes_read);
-		debug3("read_task_pipe fd: %i bytes_read %i", read_fd,
+		debug3("read_task_pipe fd: %d bytes_read %d", read_fd,
 		       bytes_read);
 		return SLURM_SUCCESS;
 	}
@@ -351,8 +376,7 @@ int write_task_pipe(circular_buffer_t * cir_buf, slurm_fd write_fd,
 	/* test for wierd state */
 	if ((cir_buf->read_size == 0)) {
 		if (dbg)
-			debug3
-			    ("%s cir_buf->read_size == 0 this shouldn't happen",
+			debug3("%s read_size == 0 this shouldn't happen",
 			     dbg->name);
 		slurm_seterrno_ret(ESLURMD_CIRBUF_POINTER_0);
 	}
@@ -362,10 +386,8 @@ int write_task_pipe(circular_buffer_t * cir_buf, slurm_fd write_fd,
 			 cir_buf->read_size)) <= 0) {
 		local_errno = errno;
 		if (dbg)
-			debug3
-			    ("%i error sending %s pipe stream, %m errno: %i , bytes written %i ",
-			     dbg->global_task_id, dbg->name, local_errno,
-			     bytes_written);
+			debug3("%d: %s: write_EINTR: %m: bytes written %d",
+			     dbg->global_task_id, bytes_written);
 		slurm_seterrno_ret(ESLURMD_PIPE_DISCONNECT);
 	} else {
 		cir_buf_read_update(cir_buf, bytes_written);
@@ -443,6 +465,7 @@ int write_task_socket(circular_buffer_t * cir_buf, slurm_fd write_fd,
 	int sock_bytes_written;
 	int local_errno;
 
+	debug3("write_task_socket: entered");
 	/* test for wierd state */
 	if ((cir_buf->read_size == 0)) {
 		if (dbg)
@@ -527,10 +550,9 @@ int error_task_socket(nbio_attr_t * nbio_attr, int fd_index)
 	case ESLURMD_UNKNOWN_SOCKET_ERROR:
 	case ESLURMD_SOCKET_DISCONNECT:
 	case ESLURMD_EOF_ON_SOCKET:
-		if (!slurm_close_stream(nbio_attr->fd[fd_index]));
-		{
+		if (!slurm_close_stream(nbio_attr->fd[fd_index])); 
 			nbio_attr->fd[fd_index] = -1;
-		}
+
 		switch (nbio_attr->reconnect_flags[fd_index]) {
 		case CONNECTED:
 			nbio_attr->reconnect_flags[fd_index] = RECONNECT;
@@ -620,8 +642,7 @@ int nbio_cleanup(nbio_attr_t * nbio_attr)
 int reconnect(nbio_attr_t * nbio_attr)
 {
 	if (nbio_attr->reconnect_flags[IN_OUT_FD] == RECONNECT) {
-		if (connect_io_stream
-		    (nbio_attr->task_start, STDIN_OUT_SOCK) > 0) {
+		if (connect_io_stream(nbio_attr->task_start, STDIN_OUT_SOCK) > 0) {
 			nbio_attr->fd[IN_OUT_FD] =
 			    nbio_attr->task_start->sockets[STDIN_OUT_SOCK];
 			slurm_set_stream_non_blocking(nbio_attr->
