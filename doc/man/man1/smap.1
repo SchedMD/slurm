@@ -59,13 +59,17 @@ Print version information and exit.
 \fBAVAIL\fR
 Partition state: \fBup\fR or \fBdown\fR.
 .TP
+\fBBGL_BLOCK\fR
+BGL Block Name\fR.
+.TP
+\fBCONN\fR
+Connection Type: \fBTORUS\fR or \fBMESH\fR.
+.TP
 \fBID\fR
 Key to identify the nodes associated with this entity in the node chart.
 .TP
-\fBTIMELIMIT\fR
-Maximum time limit for any user job in
-days:hours:minutes:seconds.  \fBinfinite\fR is used to identify
-jobs or partitions without a job time limit.
+\fBMODE\fR
+Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
 .TP
 \fBNAME\fR
 Name of the job.
@@ -93,6 +97,11 @@ abbreviated forms: down, unk, idle, alloc, drain, drng, and
 comp respectively.  Note that the suffix "*" identifies nodes
 that are presently not responding.
 See \fBNODE STATE CODES\fR section below for more information.
+\fBTIMELIMIT\fR
+Maximum time limit for any user job in
+days:hours:minutes:seconds.  \fBinfinite\fR is used to identify
+jobs or partitions without a job time limit.
+.TP
 
 .SH "TOPOGRAPHY INFORMATION"
 .PP
@@ -103,6 +112,7 @@ array of nodes. Larger clusters will utilize multiple as needed
 with right side of one line being logically followed by the 
 left side of the next line.
 .PP
+.nf
 On Blue Gene systems, the node chart will indicate the three 
 dimensional topography of the system.
 The X dimension will increase from left to right on a given line.
@@ -110,7 +120,6 @@ The Y dimension will increase in planes from bottom to top.
 The Z dimension will increase within a plane from the back 
 line to the front line of a plane.
 Note the example below:
-.nf
 
 ID JOBID PARTITION USER   NAME ST TIME NODES NODELIST
 a  12345 batch    joseph tst1 R  43:12   64 bgl[000x333]
@@ -139,6 +148,85 @@ a a a a . . e e               |
  a a a a . . . .            /
 a a a a . . . #            Z
 
+.fi
+
+.SH "CONFIGURATION INSTRUCTIONS"
+.PP
+For Admin use. From this screen one can create a configuration 
+file that is used to partition and wire the system into usable
+blocks.  
+
+.TP
+\fBOUTPUT\fR
+
+.TP
+.I "BGL_BLOCK" BGL Block Name.
+.TP
+.I "CONN"
+Connection Type: \fBTORUS\fR or \fBMESH\fR.
+.TP
+.I "ID"
+Key to identify the nodes associated with this entity in the node chart.
+.TP
+.I "MODE"
+Mode Type: \fBCOPROCESS\fR or \fBVIRTUAL\fR.
+	
+.TP
+\fBINPUT COMMANDS\fR
+.TP
+.I "CREATE" 
+Submit request for partition creation. There are two main ways this 
+can be used. Primarily the admin can specify either a size number or on 
+a BGL system a XYZ coord can be given like this 1x1x1.
+
+exp: \fBcreate 8\fR this will request a creation of 8 meaning a cube of 1x2x4 
+or 2x2x2 which ever fits into the configuration.
+
+.nf
+You can also add options like 
+	Connection=TORUS 
+	Mode=VIRTUAL
+	Rotate 
+	Elongate.
+
+All command entries are case insensitive.   
+
+There are a few defaults that exist, namely,
+
+\fBConnection = MESH\fR 
+\fBRotation   = FALSE\fR 
+\fBElongation = FALSE\fR 
+\fBMode       = COPROC\fR 
+.fi
+
+.TP
+.I "COPY"
+Submit request for partition to be copied. There are two main ways this 
+can be used. Primarily the admin can either type 'c' or 'copy' and smap
+will copy the last entry configured.  If you want to copy a specific 
+partition you can specify a particular ID.  If a number is placed behind then 
+there will be that many copies made.
+
+.nf
+exp: \fBc\fR this will request a copy of the last partition created.
+exp: \fBc A\fR this will request a copy of partition A.
+exp: \fBc A 8\fR this will request 8 copies of partition A.
+.fi
+
+.TP
+.I "DELETE"
+Delete last partition created.
+
+.nf
+exp: \fBdelete\fR this will delete last partition created.
+.fi
+
+.TP
+.I "CLEAR ALL"
+Clear all partitions created.
+
+.nf
+exp: \fBclear all\fR this will clear the entire system.
 .fi
 
 .SH "NODE STATE CODES"
