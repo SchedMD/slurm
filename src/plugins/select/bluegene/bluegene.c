@@ -508,7 +508,7 @@ static int _parse_request(char* request_string, partition_t** request_result)
 		return SLURM_ERROR;
 	}
 
-	debug("incoming request %s", request_string);
+	debug3("bluegene config request %s", request_string);
 	*request_result = (partition_t*) xmalloc(sizeof(partition_t));
 
 	for (i=0; ; i++) {
