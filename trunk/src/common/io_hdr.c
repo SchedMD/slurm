@@ -68,7 +68,8 @@ io_hdr_unpack(io_hdr_t *hdr, Buf buffer)
 
 	safe_unpackmem(hdr->key, &val, buffer);
 
-	xassert(val == SLURM_IO_KEY_SIZE);
+	if (val != SLURM_IO_KEY_SIZE)
+		goto unpack_error;
 
 	safe_unpack32(&hdr->taskid, buffer);
 	safe_unpack16(&hdr->type, buffer);
