@@ -173,7 +173,7 @@ typedef struct resource_allocation_response_msg
 	uint32_t* cpu_count_reps;
 } resource_allocation_response_msg_t ;
 
-typedef struct job_desc_msg {    /* Job descriptor for submit, allocate, and update requests */
+typedef struct job_desc_msg {   /* Job descriptor for submit, allocate, and update requests */
 	uint16_t contiguous;    /* 1 if job requires contiguous nodes, 0 otherwise,
 				 * default=0 */
 	char *features;         /* comma separated list of required features, default NONE */
@@ -344,11 +344,15 @@ void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
 /* stuct init functions */
 #define SLURM_JOB_DESC_NONCONTIGUOUS		0
 #define SLURM_JOB_DESC_CONTIGUOUS		1 
-#define SLURM_JOB_DESC_SHARED			1	
 #define SLURM_JOB_DESC_NOT_SHARED		0
+#define SLURM_JOB_DESC_SHARED			1	
 #define SLURM_JOB_DESC_FORCED_SHARED		2
+#define SLURM_JOB_DESC_CYCLE			0
+#define SLURM_JOB_DESC_BLOCK			1	
 
-#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	SLURM_JOB_DESC_NONCONTIGUOUS
+
+#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_DIST		NO_VAL	
 #define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
 #define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	
@@ -362,7 +366,7 @@ void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
 #define SLURM_JOB_DESC_DEFAULT_PROCS_PER_TASK 	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
 #define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
-#define SLURM_JOB_DESC_DEFAULT_SHARED	 	SLURM_JOB_DESC_NOT_SHARED	
+#define SLURM_JOB_DESC_DEFAULT_SHARED	 	NO_VAL	
 #define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL
 #define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
