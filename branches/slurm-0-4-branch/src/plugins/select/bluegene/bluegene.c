@@ -330,8 +330,10 @@ extern int create_static_partitions(List part_list)
 		if(found_record == NULL) {
 #ifdef HAVE_BGL_FILES
 			//bgl_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-			configure_partition(bgl_record);
 			print_bgl_record(bgl_record);
+			if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+				return rc;
+			
 			/* Here we are adding some partitions manually because of the way
 			   We want to run the system.  This will need to be changed for 
 			   the real system because this is not going to work in the real
@@ -340,9 +342,9 @@ extern int create_static_partitions(List part_list)
 			bgl_record = (bgl_record_t *) list_next(itr);
 			if(bgl_record == NULL)
 				break;
-			configure_partition(bgl_record);
 			print_bgl_record(bgl_record);
-			
+			if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+				return rc;
 #endif
 		}
 	}
@@ -384,9 +386,10 @@ extern int create_static_partitions(List part_list)
 		     bgl_record->bp_count, 
 		     bgl_record->conn_type);
 	bgl_record->node_use = SELECT_COPROCESSOR_MODE;
-	configure_partition(bgl_record);
 	print_bgl_record(bgl_record);
-
+	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+		return rc;
+	
 	found_record = (bgl_record_t*) xmalloc(sizeof(bgl_record_t));
 	list_push(bgl_list, found_record);
 			
@@ -403,15 +406,16 @@ extern int create_static_partitions(List part_list)
 	found_record->conn_type = bgl_record->conn_type;
 	found_record->bitmap = bgl_record->bitmap;
 	found_record->node_use = SELECT_VIRTUAL_NODE_MODE;
-	configure_partition(found_record);
 	print_bgl_record(found_record);
-
+	if((rc = configure_partition(bgl_record)) == SLURM_ERROR)
+		return rc;
+	
 no_total:
 	
 	rc = SLURM_SUCCESS;
 #ifdef _PRINT_PARTS_AND_EXIT
  	itr = list_iterator_create(bgl_list);
-	printf("\n\n");
+	debug("\n\n");
  	while ((found_record = (bgl_record_t *) list_next(itr)) != NULL) {
  		print_bgl_record(found_record);
  	}
@@ -519,12 +523,14 @@ static int _addto_node_list(bgl_record_t *bgl_record, int *start, int *end)
 	int node_count=0;
 	int x,y,z;
 	char node_name_tmp[7];
+	
 	assert(end[X] < DIM_SIZE[X]);
 	assert(start[X] >= 0);
 	assert(end[Y] < DIM_SIZE[Y]);
 	assert(start[Y] >= 0);
 	assert(end[Z] < DIM_SIZE[Z]);
 	assert(start[Z] >= 0);
+	
 	for (x = start[X]; x <= end[X]; x++) {
 		for (y = start[Y]; y <= end[Y]; y++) {
 			for (z = start[Z]; z <= end[Z]; z++) {
@@ -589,7 +595,7 @@ static int _validate_config_nodes(void)
 		return SLURM_ERROR;
 	
 	if(!bgl_recover) 
-		return SLURM_SUCCESS;
+		return SLURM_ERROR;
 	
 	itr_conf = list_iterator_create(bgl_list);
 	while ((record = (bgl_record_t*) list_next(itr_conf))) {
@@ -613,7 +619,7 @@ static int _validate_config_nodes(void)
 		list_iterator_destroy(itr_curr);
 		if (!record->bgl_part_id) {
 			info("BGL PartitionID:NONE Nodes:%s", record->nodes);
-			rc = SLURM_SUCCESS;
+			rc = SLURM_ERROR;
 		} else {
 			list_push(bgl_found_part_list, record);
 			info("BGL PartitionID:%s Nodes:%s Conn:%s Mode:%s",
@@ -687,7 +693,7 @@ static int _delete_old_partitions(void)
 				term_jobs_on_part(init_record->bgl_part_id);
 			
 				debug("destroying %s\n",(char *)init_record->bgl_part_id);
-				rc = bgl_free_partition(init_record->bgl_part_id);
+				bgl_free_partition(init_record->bgl_part_id);
 			
 				rm_remove_partition(init_record->bgl_part_id);
 				debug("done\n");
@@ -785,26 +791,25 @@ extern int read_bgl_conf(void)
 		fatal("RamDiskImage not configured in bluegene.conf");
 	if (!bridge_api_file)
 		info("BridgeAPILogFile not configured in bluegene.conf");
+	else
+		_reopen_bridge_log();	
 	if (!numpsets)
 		info("Warning: Numpsets not configured in bluegene.conf");
 	
 	/* Check to see if the configs we have are correct */
-	if (!_validate_config_nodes()) { 
+	if (_validate_config_nodes() == SLURM_ERROR) { 
 		_delete_old_partitions();
-		/* FIXME: Wait for MMCS to actually complete the 
-		 * partition deletions */
-		sleep(3);
 	}
 	
 	/* looking for partitions only I created */
-	if (create_static_partitions(NULL)) {
+	if (create_static_partitions(NULL) == SLURM_ERROR) {
 		/* error in creating the static partitions, so
 		 * partitions referenced by submitted jobs won't
 		 * correspond to actual slurm partitions/bgl
 		 * partitions.
 		 */
 		fatal("Error, could not create the static partitions");
-		return error_code;
+		return SLURM_ERROR;
 	}
 	return error_code;
 }

@@ -315,8 +315,8 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 				is_ready = 1;
 				break;
 			}
-			if (destroyed)
-				continue;
+			if (destroyed) 
+				break;
 			if ((rc = pm_destroy_partition(bgl_part_id))
 					!= STATUS_OK)  {
 				error("pm_destroy_partition(%s): %s", 
@@ -326,6 +326,8 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 		}
 		if ((rc = rm_free_partition_list(part_list)) != STATUS_OK)
 			error("rm_free_partition_list(): %s", bgl_err_str(rc));
+		if(is_ready)
+			break;
 	}
 
 	if (!is_ready) {
@@ -339,7 +341,7 @@ static int _set_part_owner(pm_partition_id_t bgl_part_id, char *user)
 		return SLURM_ERROR;
 	}
 
-	verbose("rm_set_part_owner(%s,%s) completed", bgl_part_id, user);
+	debug("rm_set_part_owner(%s,%s) completed", bgl_part_id, user);
 	return SLURM_SUCCESS;
 #endif
 }
@@ -409,7 +411,10 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	int i, jobs, rc;
 	rm_job_list_t *job_list;
 	int live_states;
-
+	rm_element_t *job_elem;
+	pm_partition_id_t part_id;
+	db_job_id_t job_id;
+	printf("getting the job info\n");
 	live_states = JOB_ALL_FLAG & (~RM_JOB_TERMINATED) & (~RM_JOB_KILLED);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs(): %s", bgl_err_str(rc));
@@ -419,14 +424,11 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	if ((rc = rm_get_data(job_list, RM_JobListSize, &jobs)) != STATUS_OK) {
 		error("rm_get_data(RM_JobListSize): %s", bgl_err_str(rc));
 		jobs = 0;
-	} else if (jobs > 128)
+	} else if (jobs > 300)
 		fatal("Active job count (%d) invalid, restart MMCS", jobs);
+	printf("job count %d\n",jobs);
 		
-	for (i=0; i<jobs; i++) {
-		rm_element_t *job_elem;
-		pm_partition_id_t part_id;
-		db_job_id_t job_id;
-		
+	for (i=0; i<jobs; i++) {		
 		if (i) {
 			if ((rc = rm_get_data(job_list, RM_JobListNextJob, 
 					&job_elem)) != STATUS_OK) {
@@ -453,7 +455,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				part_id, bgl_err_str(rc));
 			continue;
 		}
-
+		printf("looking at partition %s looking for %s\n",part_id, bgl_update_ptr->bgl_part_id);
 		if (strcmp(part_id, bgl_update_ptr->bgl_part_id) != 0)
 			continue;
 		if ((rc = rm_get_data(job_elem, RM_JobDBJobID, &job_id))
@@ -462,7 +464,8 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 				bgl_err_str(rc));
 			continue;
 		}
-		(void) _remove_job(job_id);
+		printf("got job_idr %d\n",job_id);
+		_remove_job(job_id);
 	}
 
 	/* Free the partition */
@@ -685,7 +688,8 @@ int term_job(struct job_record *job_ptr)
 		SELECT_DATA_PART_ID, &(bgl_update_ptr->bgl_part_id));
 	info("Queue termination of job %u in BGL partition %s",
 		job_ptr->job_id, bgl_update_ptr->bgl_part_id);
-	_part_op(bgl_update_ptr);
+	_term_agent(bgl_update_ptr);
+//_part_op(bgl_update_ptr);
 #endif
 	return rc;
 }

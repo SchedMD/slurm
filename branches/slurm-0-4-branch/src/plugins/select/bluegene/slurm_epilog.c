@@ -161,13 +161,14 @@ static void  _wait_part_owner(char *part_name, char *user_id)
 					bgl_err_str(rc));
 				break;
 			}
-
+			
+			/* Now test this owner */
 			if (name[0] == '\0')
 				break;
 			if ((pw_ent = getpwnam(name)) == NULL) {
 				fprintf(stderr, "getpwnam(%s) errno=%d\n",
 					name, errno);
-				break;
+				continue;
 			}
 #if (_DEBUG > 1)
 			printf("\nowner = %s(%d)\n", name, pw_ent->pw_uid);

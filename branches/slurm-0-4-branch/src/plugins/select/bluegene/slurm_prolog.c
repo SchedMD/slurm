@@ -172,6 +172,7 @@ static void _wait_part_ready(char *part_name)
 						bgl_err_str(rc));
 					break;
 				}
+				
 				if ((state == RM_PARTITION_READY)
 				||  (state == RM_PARTITION_ERROR))
 					is_ready = 1;

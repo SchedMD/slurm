@@ -49,8 +49,6 @@ static int _get_bp_by_location(rm_BGL_t* my_bgl, int* curr_coord, rm_BP_t** bp)
 		return SLURM_ERROR;
 	}
 
-	
-	
 	for (i=0; i<bp_num; i++){
 		if(i) {
 			if ((rc = rm_get_data(my_bgl, RM_NextBP, bp)) 
