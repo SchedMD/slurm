@@ -3,6 +3,10 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.2.18
 =========================
+ -- Fixes for reported problems:
+   - slurm/287: slurm protocol timeouts when using TotalView.
+   - slurm/291: srun fails using ``-n 1'' under multi-node allocation.
+   - slurm/294: srun IO buffer reports ENOSPC.
  -- Memory corruption bug fixed, it was causing slurmctld to seg-fault
  -- Non-responding nodes now go from DRAINING to DRAINED state when 
     jobs complete
@@ -17,6 +21,9 @@ documents those changes that are of interest to users and admins.
  -- Slurmctld logging is more concise, using hostlists more
  -- srun --no-allocate used special job_id range to avoid conflicts 
     or premature job termination (purging by slurmctld)
+ -- New --jobid=id option in srun to initiate job step under an existing 
+    allocation.
+ -- Support in srun for TotalView bulk launch.
 
 * Changes in SLURM 0.2.17
 =========================
