@@ -43,7 +43,7 @@ int
 main (int argc, char *argv[]) 
 {
 	int error_code, error_count = 0, line_num, i;
-	uint16_t job_id;
+	uint32_t job_id;
 	FILE *command_file;
 	char in_line[BUF_SIZE], *node_list;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY;

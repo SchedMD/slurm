@@ -39,6 +39,7 @@ slurm_parser (char *spec, ...)
 	va_list ap;
 	char *keyword, **str_ptr;
 	int error_code, *int_ptr, type;
+	long *long_ptr;
 	float *float_ptr;
 	
 	error_code = 0;
@@ -56,6 +57,10 @@ slurm_parser (char *spec, ...)
 		case 'f':
 			float_ptr = va_arg(ap, float *);
 			error_code = load_float(float_ptr, keyword, spec);
+			break;
+		case 'l':
+			long_ptr = va_arg(ap, long *);
+			error_code = load_long(long_ptr, keyword, spec);
 			break;
 		case 's':
 			str_ptr = va_arg(ap, char **);
@@ -145,6 +150,58 @@ load_integer (int *destination, char *keyword, char *in_line)
 			}
 			else {
 				error ("load_integer: bad value for keyword %s\n",
+					keyword);
+				return EINVAL;
+			}
+		}
+
+		for (i = 0; i < (str_len1 + str_len2); i++) {
+			str_ptr1[i] = ' ';
+		}
+	}
+	return 0;
+}
+
+
+/*
+ * load_long - parse a string for a keyword, value pair  
+ * input: *destination - location into which result is stored
+ *        keyword - string to search for
+ *        in_line - string to search for keyword
+ * output: *destination - set to value, no change if value not found, 
+ *             set to 1 if keyword found without value, 
+ *             set to -1 if keyword followed by "unlimited"
+ *         in_line - the keyword and value (if present) are overwritten by spaces
+ *         return value - 0 if no error, otherwise an error code
+ * NOTE: in_line is overwritten, do not use a constant
+ */
+int 
+load_long (long *destination, char *keyword, char *in_line) 
+{
+	char scratch[BUF_SIZE];	/* scratch area for parsing the input line */
+	char *str_ptr1, *str_ptr2, *str_ptr3;
+	int i, str_len1, str_len2;
+
+	str_ptr1 = (char *) strstr (in_line, keyword);
+	if (str_ptr1 != NULL) {
+		str_len1 = strlen (keyword);
+		strcpy (scratch, str_ptr1 + str_len1);
+		if ((scratch[0] == (char) NULL) || 
+		    (isspace ((int) scratch[0]))) {	/* keyword with no value set */
+			*destination = 1;
+			str_len2 = 0;
+		}
+		else {
+			str_ptr2 =
+				(char *) strtok_r (scratch, SEPCHARS, &str_ptr3);
+			str_len2 = strlen (str_ptr2);
+			if (strcmp (str_ptr2, "UNLIMITED") == 0)
+				*destination = -1L;
+			else if ((str_ptr2[0] >= '0') && (str_ptr2[0] <= '9')) {
+				*destination = strtol (scratch, (char **) NULL, 10);
+			}
+			else {
+				error ("load_long: bad value for keyword %s\n",
 					keyword);
 				return EINVAL;
 			}

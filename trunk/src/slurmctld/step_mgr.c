@@ -107,7 +107,7 @@ create_step_record (int *error_code)
  * global: step_list - global step list
  */
 int 
-delete_step_record (uint16_t job_id, uint16_t step_id) 
+delete_step_record (uint32_t job_id, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
@@ -147,7 +147,7 @@ delete_step_record (uint16_t job_id, uint16_t step_id)
  * global: step_list - global step list
  */
 struct step_record *
-find_step_record(uint16_t job_id, uint16_t step_id) 
+find_step_record(uint32_t job_id, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
@@ -279,9 +279,9 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 	char node_inx_ptr[BUF_SIZE];
 
 	if (dump_step_ptr->job_ptr)
-		pack16 (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
+		pack32 (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
 	else
-		pack16 (0, buf_ptr, buf_len);
+		pack32 (0, buf_ptr, buf_len);
 
 	pack16  (dump_step_ptr->step_id, buf_ptr, buf_len);
 	pack16  (dump_step_ptr->dist, buf_ptr, buf_len);
@@ -318,7 +318,7 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
  * NOTE: the calling program must xfree the memory pointed to by new_job_id
  */
 int
-step_create (char *step_specs, uint16_t *new_job_id, int allocate)
+step_create (char *step_specs, uint32_t *new_job_id, int allocate)
 {
 	return EINVAL;
 }

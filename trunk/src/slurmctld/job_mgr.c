@@ -22,13 +22,15 @@
 #define BUF_SIZE 1024
 #define MAX_STR_PACK 128
 
-int max_job_id = 0;			/* highest job id, for quicker searches */
 int job_count;				/* job's in the system */
 List job_list = NULL;			/* job_record list */
 time_t last_job_update;			/* time of last update to job records */
 static pthread_mutex_t job_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for job info */
 char *job_state_string[] =
 	{ "PENDING", "STAGE_IN", "RUNNING", "STAGE_OUT", "COMPLETED", "FAILED", "TIME_OUT", "END" };
+static struct job_record *job_hash[MAX_JOB_COUNT];
+static struct job_record *job_hash_over[MAX_JOB_COUNT];
+static int max_hash_over = 0;
 
 void list_delete_job (void *job_entry);
 int list_find_job_id (void *job_entry, void *key);
@@ -208,21 +210,37 @@ delete_job_details (struct job_record *job_entry)
  * output: return 0 on success, errno otherwise
  * global: job_list - pointer to global job list
  *	last_job_update - time of last job table update
+ * NOTE: Slow as currently constructed due to singly linked list and linear search.
+ *	This would be faster with hash table and doubly linked list. We intend to 
+ *	purge entries through purge_old_job() anyway.
  */
 int 
-delete_job_record (uint16_t job_id) 
+delete_job_record (uint32_t job_id) 
 {
-	int i;
+	ListIterator job_record_iterator;
+	struct job_record *job_record_point;
 
 	last_job_update = time (NULL);
+	job_record_iterator = list_iterator_create (job_list);		
 
-	i = list_delete_all (job_list, &list_find_job_id, &job_id);
-	if (i == 0) {
+	while ((job_record_point = 
+		    (struct job_record *) list_next (job_record_iterator))) {
+		if (job_record_point->job_id != job_id)
+			continue;
+
+		if (job_record_point->details) 
+			xfree (job_record_point->details);
+		xfree (job_record_point);
+		list_remove (job_record_iterator);
+		break;
+	}
+	list_iterator_destroy (job_record_iterator);
+
+	if (job_record_point == NULL) {
 		error ("delete_job_record: attempt to delete non-existent job %u", 
 			job_id);
 		return ENOENT;
-	}  
-
+	} 
 	return 0;
 }
 
@@ -232,19 +250,26 @@ delete_job_record (uint16_t job_id)
  * input: job_id - requested job's id
  * output: pointer to the job's record, NULL on error
  * global: job_list - global job list pointer
+ *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
 struct job_record *
-find_job_record(uint16_t job_id) 
+find_job_record(uint32_t job_id) 
 {
-	struct job_record *job_ptr;
+	int i;
 
-	if (job_id > max_job_id)
-		return NULL;
+	/* First try to find via hash table */
+	if (job_hash[job_id % MAX_JOB_COUNT] &&
+	    job_hash[job_id % MAX_JOB_COUNT]->job_id == job_id)
+		return job_hash[job_id % MAX_JOB_COUNT];
 
-	job_ptr = list_find_first (job_list, &list_find_job_id, &job_id);
-	if ((job_ptr != NULL) && (job_ptr->magic != JOB_MAGIC))
-		fatal ("job_list invalid");
-	return job_ptr;
+	/* linear search of overflow hash table overflow */
+	for (i=0; i<max_hash_over; i++) {
+		if (job_hash_over[i] != NULL &&
+		    job_hash_over[i]->job_id == job_id)
+			return job_hash_over[i];
+	}
+
+	return NULL;
 }
 
 
@@ -288,19 +313,18 @@ init_job_conf ()
  * NOTE: the calling program must xfree the memory pointed to by node_list
  */
 int
-job_allocate (char *job_specs, uint16_t *new_job_id, char **node_list)
+job_allocate (char *job_specs, uint32_t *new_job_id, char **node_list)
 {
 	int error_code, i;
 	struct job_record *job_ptr;
 
 	node_list[0] = NULL;
 
-	error_code = job_create (job_specs, new_job_id, 1);
+	error_code = job_create (job_specs, new_job_id, 1, &job_ptr);
 	if (error_code)
 		return error_code;
-	job_ptr = find_job_record (*new_job_id);
 	if (job_ptr == NULL)
-		fatal ("job_allocate allocated job %u lacks record", 
+		fatal ("job_allocate: allocated job %u lacks record", 
 			new_job_id);
 
 /*	if (top_priority(new_job_id) != 0)
@@ -325,7 +349,7 @@ job_allocate (char *job_specs, uint16_t *new_job_id, char **node_list)
  *	last_job_update - time of last job table update
  */
 int
-job_cancel (uint16_t job_id) 
+job_cancel (uint32_t job_id) 
 {
 	struct job_record *job_ptr;
 
@@ -363,21 +387,26 @@ job_cancel (uint16_t job_id)
  * job_create - parse the suppied job specification and create job_records for it
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
+ *	job_rec_ptr - place to park pointer to the job (or NULL)
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
  *	allocate - if set, job allocation only (no script required)
+ *	job_rec_ptr - pointer to the job (if not passed a NULL)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
+ *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
 int
-job_create (char *job_specs, uint16_t *new_job_id, int allocate)
+job_create (char *job_specs, uint32_t *new_job_id, int allocate, 
+	    struct job_record **job_rec_ptr)
 {
 	char *req_features, *req_node_list, *job_name, *req_group;
 	char *req_partition, *script;
 	int contiguous, req_cpus, req_nodes, min_cpus, min_memory;
 	int i, min_tmp_disk, time_limit, procs_per_task, user_id;
-	int error_code, dist, job_id, key, shared;
+	int error_code, dist, key, shared;
+	long job_id;
 	struct part_record *part_ptr;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
@@ -387,9 +416,10 @@ job_create (char *job_specs, uint16_t *new_job_id, int allocate)
 	req_features = req_node_list = job_name = req_group = NULL;
 	req_partition = script = NULL;
 	req_bitmap = NULL;
-	contiguous = dist = job_id = req_cpus = req_nodes = min_cpus = NO_VAL;
+	contiguous = dist = req_cpus = req_nodes = min_cpus = NO_VAL;
 	min_memory = min_tmp_disk = time_limit = procs_per_task = NO_VAL;
 	key = shared = user_id = NO_VAL;
+	job_id = (long) NO_VAL;
 	priority = NO_VAL;
 
 	/* setup and basic parsing */
@@ -429,7 +459,7 @@ job_create (char *job_specs, uint16_t *new_job_id, int allocate)
 	if (contiguous == NO_VAL)
 		contiguous = 0;		/* default not contiguous */
 	if (job_id != NO_VAL && 
-	    find_job_record ((uint16_t) job_id)) {
+	    find_job_record ((uint32_t) job_id)) {
 		info  ("job_create: Duplicate job id %d", job_id);
 		error_code = EINVAL;
 		goto cleanup;
@@ -556,11 +586,14 @@ job_create (char *job_specs, uint16_t *new_job_id, int allocate)
 	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
 	job_ptr->part_ptr = part_ptr;
 	if (job_id != NO_VAL)
-		job_ptr->job_id = (uint16_t) job_id;
+		job_ptr->job_id = (uint32_t) job_id;
 	else
 		set_job_id(job_ptr);
-	if (job_ptr->job_id > max_job_id)
-		max_job_id = job_ptr->job_id;
+	if (job_hash[job_ptr->job_id % MAX_JOB_COUNT]) 
+		job_hash_over[max_hash_over++] = job_ptr;
+	else
+		job_hash[job_ptr->job_id % MAX_JOB_COUNT] = job_ptr;
+
 	if (job_name) {
 		strcpy (job_ptr->name, job_name);
 		xfree (job_name);
@@ -597,6 +630,8 @@ job_create (char *job_specs, uint16_t *new_job_id, int allocate)
 	/* detail_ptr->total_procs	*leave as NULL pointer for now */
 
 	*new_job_id = job_ptr->job_id;
+	if (job_rec_ptr)
+		*job_rec_ptr = job_ptr;
 	return 0;
 
       cleanup:
@@ -650,17 +685,33 @@ job_unlock ()
  * input: job_entry - pointer to job_record to delete
  * global: job_list - pointer to global job list
  *	job_count - count of job list entries
+ *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
 void 
 list_delete_job (void *job_entry)
 {
 	struct job_record *job_record_point;
+	int i, j;
 
 	job_record_point = (struct job_record *) job_entry;
 	if (job_record_point == NULL)
 		fatal ("list_delete_job: passed null job pointer");
 	if (job_record_point->magic != JOB_MAGIC)
 		fatal ("list_delete_job: passed invalid job pointer");
+
+	if (job_hash[job_record_point->job_id] == job_record_point)
+		job_hash[job_record_point->job_id] = NULL;
+	else {
+		for (i=0; i<max_hash_over; i++) {
+			if (job_hash_over[i] != job_record_point)
+				continue;
+			for (j=i+1; j<max_hash_over; j++) {
+				job_hash_over[j-1] = job_hash_over[j];
+			}
+			job_hash_over[--max_hash_over] = NULL;
+			break;
+		}
+	}
 
 	delete_job_details (job_record_point);
 
@@ -681,10 +732,7 @@ list_delete_job (void *job_entry)
 int 
 list_find_job_id (void *job_entry, void *key) 
 {
-	if (*((uint16_t *) key) > max_job_id)
-		return 0;
-
-	if (((struct job_record *) job_entry)->job_id == *((uint16_t *) key))
+	if (((struct job_record *) job_entry)->job_id == *((uint32_t *) key))
 		return 1;
 	return 0;
 }
@@ -801,7 +849,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 	char tmp_str[MAX_STR_PACK];
 	struct job_details *detail_ptr;
 
-	pack16  (dump_job_ptr->job_id, buf_ptr, buf_len);
+	pack32  (dump_job_ptr->job_id, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->user_id, buf_ptr, buf_len);
 	pack16  ((uint16_t) dump_job_ptr->job_state, buf_ptr, buf_len);
 	pack32  (dump_job_ptr->time_limit, buf_ptr, buf_len);
@@ -905,7 +953,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		 int *contiguous, int *req_cpus, int *req_nodes,
 		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
 		 int *shared, int *dist, char **script, int *time_limit, 
-		 int *procs_per_task, int *job_id, int *priority, 
+		 int *procs_per_task, long *job_id, int *priority, 
 		 int *user_id) {
 	int bad_index, error_code, i;
 	char *temp_specs, *contiguous_str, *dist_str, *shared_str;
@@ -926,7 +974,7 @@ parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
 		"Distribution=", 's', &dist_str, 
 		"Features=", 's', req_features, 
 		"Groups=", 's', req_group, 
-		"JobId=", 'd', job_id, 
+		"JobId=", 'l', job_id, 
 		"JobName=", 's', job_name, 
 		"Key=", 'd', key, 
 		"MinProcs=", 'd', min_cpus, 
@@ -1096,22 +1144,27 @@ reset_job_bitmaps ()
 void
 set_job_id (struct job_record *job_ptr)
 {
-	static uint16_t id_sequence = 0;
-	uint16_t new_id;
+	static uint32_t id_sequence = (1 << 16);
+	uint32_t new_id;
 
 	if ((job_ptr == NULL) || 
 	    (job_ptr->magic != JOB_MAGIC)) 
 		fatal ("set_job_id: invalid job_ptr");
 	if ((job_ptr->partition == NULL) || (strlen(job_ptr->partition) == 0))
 		fatal ("set_job_id: partition not set");
+
+/* Include below code only if fear of rolling over 32 bit job IDs */
+#ifdef HUGE_JOB_ID
 	while (1) {
 		new_id = id_sequence++;
 		if (find_job_record(new_id) == NULL) {
 			job_ptr->job_id = new_id;
-			max_job_id = new_id;
 			break;
 		}
 	}
+#else
+	job_ptr->job_id = id_sequence++;
+#endif
 }
 
 
@@ -1143,13 +1196,13 @@ set_job_prio (struct job_record *job_ptr)
  * NOTE: only the job's priority and time_limt may be changed
  */
 int 
-update_job (uint16_t job_id, char *spec) 
+update_job (uint32_t job_id, char *spec) 
 {
 	int bad_index, error_code, i, time_limit;
 	int prio;
 	struct job_record *job_ptr;
 
-	job_ptr = list_find_first (job_list, &list_find_job_id, &job_id);
+	job_ptr = find_job_record (job_id);
 	if (job_ptr == NULL) {
 		error ("update_job: job_id %u does not exist.", job_id);
 		return ENOENT;

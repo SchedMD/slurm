@@ -120,12 +120,12 @@ extern time_t last_step_update;	/* time of last update to job steps */
 extern char *job_state_string[];
 
 /* Don't accept more jobs once there are MAX_JOB_COUNT in the system */
-/* Purge OK for jobs over MIN_JOB_AGE minues old (since completion) */
+/* Purge OK for jobs over MIN_JOB_AGE seconds old (since completion) */
 /* This should prevent exhausting memory */
 #define DETAILS_MAGIC 0xdea84e7
 #define JOB_MAGIC 0xf0b7392c
 #define MAX_JOB_COUNT 1000
-#define MIN_JOB_AGE 10
+#define MIN_JOB_AGE 600
 #define STEP_MAGIC 0xce593bc1
 
 extern int job_count;			/* number of jobs in the system */
@@ -151,7 +151,7 @@ struct job_details {
 };
 
 struct job_record {
-	uint16_t job_id;		/* job ID */
+	uint32_t job_id;		/* job ID */
 	uint32_t magic;			/* magic cookie to test data integrity */
 	char name[MAX_NAME_LEN];	/* name of the job */
 	char partition[MAX_NAME_LEN];	/* name of the partition */
@@ -310,7 +310,7 @@ extern void  delete_job_details (struct job_record *job_entry);
  * output: return 0 on success, errno otherwise
  * global: job_list - pointer to global job list
  */
-extern int delete_job_record (uint16_t job_id);
+extern int delete_job_record (uint32_t job_id);
 
 /* 
  * delete_node_record - delete record for node with specified name
@@ -335,7 +335,7 @@ extern int delete_part_record (char *name);
  * output: return 0 on success, errno otherwise
  * global: step_list - global step list
  */
-extern int delete_step_record (uint16_t job_id, uint16_t step_id);
+extern int delete_step_record (uint32_t job_id, uint16_t step_id);
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -343,7 +343,7 @@ extern int delete_step_record (uint16_t job_id, uint16_t step_id);
  * output: pointer to the job's record, NULL on error
  * global: job_list - global job list pointer
  */
-extern struct job_record *find_job_record (uint16_t job_id);
+extern struct job_record *find_job_record (uint32_t job_id);
 
 /* 
  * find_node_record - find a record for node with specified name,
@@ -367,7 +367,7 @@ extern struct part_record *find_part_record (char *name);
  * output: pointer to the job step's record, NULL on error
  * global: step_list - global step list
  */
-extern struct step_record *find_step_record (uint16_t job_id, uint16_t step_id);
+extern struct step_record *find_step_record (uint32_t job_id, uint16_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
@@ -434,7 +434,7 @@ extern int  is_key_valid (int key);
  *	default_part_loc - pointer to default partition 
  * NOTE: the calling program must xfree the memory pointed to by node_list
  */
-extern int job_allocate (char *job_specs, uint16_t *new_job_id, char **node_list);
+extern int job_allocate (char *job_specs, uint32_t *new_job_id, char **node_list);
 
 /* 
  * job_cancel - cancel the specified job
@@ -444,20 +444,23 @@ extern int job_allocate (char *job_specs, uint16_t *new_job_id, char **node_list
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
-extern int job_cancel (uint16_t job_id);
+extern int job_cancel (uint32_t job_id);
 
 /*
  * job_create - parse the suppied job specification and create job_records for it
  * input: job_specs - job specifications
  *	new_job_id - location for storing new job's id
+ *	job_rec_ptr - place to park pointer to the job (or NULL)
  * output: new_job_id - the job's ID
  *	returns 0 on success, EINVAL if specification is invalid
  *	allocate - if set, job allocation only (no script required)
+ *	job_rec_ptr - pointer to the job (if not passed a NULL)
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  */
-extern int job_create (char *job_specs, uint16_t *new_job_id, int allocate);
+extern int job_create (char *job_specs, uint32_t *new_job_id, int allocate, 
+	    struct job_record **job_rec_ptr);
 
 /* job_lock - lock the job information */
 extern void job_lock ();
@@ -721,7 +724,7 @@ extern int parse_job_specs (char *job_specs, char **req_features, char **req_nod
 		 int *contiguous, int *req_cpus, int *req_nodes,
 		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
 		 int *shared, int *dist, char **script, int *time_limit, 
-		 int *procs_per_task, int *job_id, int *priority, 
+		 int *procs_per_task, long *job_id, int *priority, 
 		 int *user_id);
 
 /* part_lock - lock the partition information */
@@ -844,7 +847,7 @@ extern int slurm_parser (char *spec, ...);
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
  */
-extern int step_create (char *step_specs, uint16_t *new_job_id, int allocate);
+extern int step_create (char *step_specs, uint32_t *new_job_id, int allocate);
 
 /* step_lock - lock the step information 
  * global: step_mutex - semaphore for the step table
@@ -865,7 +868,7 @@ extern void step_unlock ();
  * NOTE: the contents of spec are overwritten by white space
  * NOTE: only the job's priority and time_limt may be changed once queued
  */
-extern int update_job (uint16_t job_id, char *spec);
+extern int update_job (uint32_t job_id, char *spec);
 
 /* 
  * update_node - update the configuration data for one or more nodes
