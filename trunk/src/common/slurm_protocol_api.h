@@ -23,6 +23,10 @@
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_errno.h>
 
+enum controller_id {
+PRIMARY_CONTROLLER   = 1,
+SECONDARY_CONTROLLER = 2 };
+
 /*****************************/
 /* configuration functions   */
 /*****************************/
@@ -142,10 +146,13 @@ int slurm_send_node_msg ( slurm_fd open_fd , slurm_msg_t * msg ) ;
 /* msg connection establishment functions used by msg clients         */
 /**********************************************************************/
 
-/* calls connect to make a connection-less datagram connection to the the primary or secondary slurmctld message engine
- * RET slurm_fd		- file descriptor of the connection created
+/* calls connect to make a connection-less datagram connection to the primary or 
+ * secondary slurmctld message engine
+ * RET slurm_fd	- file descriptor of the connection created
+ * dest 	- controller to contact, primary or secondary
  */
 slurm_fd inline slurm_open_controller_conn ( ) ;
+slurm_fd inline slurm_open_controller_conn_spec ( enum controller_id dest ) ;
 
 /* In the bsd socket implementation it creates a SOCK_STREAM socket and calls connect on it
  * In the mongo implementation it creates a SOCK_DGRAM socket and calls connect on it

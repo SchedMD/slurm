@@ -278,8 +278,7 @@ slurm_fd slurm_open_msg_conn(slurm_addr * slurm_address)
 	return _slurm_open_msg_conn(slurm_address);
 }
 
-/* calls connect to make a connection-less datagram connection to the the primary or secondary slurmctld message engine
- * slurm_address 	- for now it is really just a sockaddr_in
+/* calls connect to make a connection-less datagram connection to the primary or secondary slurmctld message engine
  * int			- the return code
  */
 slurm_fd slurm_open_controller_conn()
@@ -298,6 +297,33 @@ slurm_fd slurm_open_controller_conn()
 								SLURM_SOCKET_ERROR))
 			debug ("Open connection to secondary controller failed: %m");
 	}
+	return connection_fd;
+}
+
+/* calls connect to make a connection-less datagram connection to the primary or secondary slurmctld message engine
+ * dest 	- controller to contact, 1=primary, 2=secondary
+ * int		- the return code
+ */
+slurm_fd slurm_open_controller_conn_spec (enum controller_id dest)
+{
+	slurm_fd connection_fd;
+	slurm_api_set_default_config();
+
+	if (dest == PRIMARY_CONTROLLER) {
+		if ((connection_fd =
+		     slurm_open_msg_conn(&proto_conf->primary_controller)) ==
+		    SLURM_SOCKET_ERROR)
+			debug("Open connection to primary controller failed: %m");
+	} else if (slurmctld_conf.backup_controller) {
+		if ((connection_fd =
+		     slurm_open_msg_conn(&proto_conf->secondary_controller)) ==
+		    SLURM_SOCKET_ERROR)
+			debug("Open connection to secondary controller failed: %m");
+	} else {
+		debug("No secondary controller to contact");
+		connection_fd = SLURM_SOCKET_ERROR;
+	}
+
 	return connection_fd;
 }
 

@@ -491,6 +491,14 @@ slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )
 {
 	int rc ;
 	slurm_fd connection_fd ;
+
+	if ( (slurm_address->sin_family == 0) &&
+	     (slurm_address->sin_port == 0) ) 
+	{
+		error ( "Attempt to open socket with null address" );
+		return SLURM_SOCKET_ERROR;
+	}
+
 	if ( ( connection_fd =_slurm_create_socket ( SLURM_STREAM ) ) == SLURM_SOCKET_ERROR )
 	{
 		debug ( "Error creating slurm stream socket: %m" ) ;
@@ -774,19 +782,21 @@ void _slurm_set_addr ( slurm_addr * slurm_address , uint16_t port , char * host 
 }
 void _slurm_set_addr_char ( slurm_addr * slurm_address , uint16_t port , char * host )
 {
-	struct hostent * host_info; 
-	if (host != NULL) {
+	struct hostent * host_info = NULL; 
+
+	if (host != NULL)
 		host_info = gethostbyname ( host ) ;
-		if (host_info == NULL) {
-			error ("gethostbyname failure on %s", host);
-			slurm_address->sin_family = 0;
-			slurm_address->sin_port = 0;
-		}
+
+	if (host_info == NULL) {
+		error ("gethostbyname failure on %s", host);
+		slurm_address->sin_family = 0;
+		slurm_address->sin_port = 0;
+	} else {
 		memcpy ( & slurm_address -> sin_addr . s_addr , 
 			host_info -> h_addr , host_info -> h_length ) ;
+		slurm_address -> sin_family = AF_SLURM ;
+		slurm_address -> sin_port = htons ( port ) ;
 	}
-	slurm_address -> sin_family = AF_SLURM ;
-	slurm_address -> sin_port = htons ( port ) ;
 }
 
 void _slurm_get_addr ( slurm_addr * slurm_address , uint16_t * port , char * host , unsigned int buf_len )
