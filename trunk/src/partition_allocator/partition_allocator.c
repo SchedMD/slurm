@@ -57,25 +57,6 @@ typedef struct pa_node*** pa_system_t;
 pa_system_t _pa_system;
 List _pa_system_list;
 
-/** 
- * pa_node: node within the allocation system.  Note that this node is
- * hard coded for 1d-3d only!  (just have the higher order dims as
- * null if you want lower dimensions).
- */
-typedef struct pa_node {
-	/* set if using this node in a partition*/
-	bool used;
-
-	/* coordinates */
-	int coord[PA_SYSTEM_DIMENSIONS];
-
-	/* shallow copy of the conf_results.  initialized and used as
-	 * array of Lists accessed by dimension, ie conf_result_list[dim]
-	 */
-	List* conf_result_list; 
-	
-} pa_node_t;
-
 /** internal helper functions */
 /** */
 void _new_pa_node(pa_node_t* pa_node, int* coordinates);
@@ -1258,10 +1239,10 @@ void pa_init()
 	}
 
 	/* see if we can load in the filenames from the env */
-	filenames[X] = getenv("X_DIM_CONF");
-	filenames[Y] = getenv("Y_DIM_CONF");
-	filenames[Z] = getenv("Z_DIM_CONF");
-
+	filenames[X] = "Y_dim_torus.conf";
+	filenames[Y] = "Y_dim_torus.conf";
+	filenames[Z] = "Z_dim_torus.conf";
+	
 	/* create the X configuration (8 nodes) */
 	if (filenames[X]){
 		_load_part_config(filenames[X], _conf_result_list[X]);

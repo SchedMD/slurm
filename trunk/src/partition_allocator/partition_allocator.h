@@ -36,21 +36,12 @@
 #include "src/common/xstring.h"
 #include "src/partition_allocator/graph_structs.h"
 
-#define PA_SYSTEM_DIMENSIONS 3
 // #define DEBUG_PA
 #define BIG_MAX 9999;
 #define BUFSIZE 4096
 
 extern bool _initialized;
-struct pa_request;
-typedef struct pa_request {
-	int* geometry;
-	int size; 
-	int conn_type;
-	bool rotate;
-	bool elongate; 
-	bool force_contig;
-} pa_request_t; 
+
 /**
  * create a partition request.  Note that if the geometry is given,
  * then size is ignored.  If elongate is true, the algorithm will try

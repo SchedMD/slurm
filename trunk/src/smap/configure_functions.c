@@ -41,14 +41,17 @@ void get_command(void)
 	//static node_info_msg_t *node_info_ptr;
 	int text_height, text_width, text_starty, text_startx, error_code;
 	WINDOW *command_win;
-	int torus=MESH, i=0, i2, geo[PA_SYSTEM_DIMENSIONS];
+	int torus=MESH, i=0, i2=0, i3=0, geo[PA_SYSTEM_DIMENSIONS], x,y,z;
 	bool rotate = false;
 	bool elongate = false;
 	bool force_contig = false;
 	List results;
-	pa_request_t * request; 
-				
+	pa_request_t *request; 
+	ListIterator results_i;
+	pa_node_t *current;
+	int count=0, len;		
 	pa_init();
+	
 	text_height = smap_info_ptr->text_win->_maxy;	// - smap_info_ptr->text_win->_begy;
 	text_width = smap_info_ptr->text_win->_maxx;	// - smap_info_ptr->text_win->_begx;
 	text_starty = smap_info_ptr->text_win->_begy;
@@ -83,7 +86,8 @@ void get_command(void)
 			  "Input Command: (type quit to change view, exit to exit)");
 		wmove(command_win, 1, 1);
 		wgetstr(command_win, com->str);
-
+		len = strlen(com->str);
+		
 		if (!strcmp(com->str, "exit")) {
 			endwin();
 			exit(0);
@@ -101,57 +105,103 @@ void get_command(void)
 			elongate = false;
 			force_contig = true;
 			i=6;
+			i2=-1;
 			/*********/
 
 			mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", com->str);
-			while(com->str[i]!='\0') {
+			
+			while(i<len) {
 				
-				while(com->str[i-1]!=' ' && com->str[i]!='\0') {
-					if(!i2 && (com->str[i] < 58 && com->str[i] > 47))
-						i2=i;
+				while(com->str[i-1]!=' ' && i<len) {
 					i++;
 				}
 				if(!strncmp(com->str+i, "torus", 5)) {
 					torus=TORUS;
 					i+=5;
-				}
-				else if(!strncmp(com->str+i, "rotate", 6)) {
+				} else if(!strncmp(com->str+i, "rotate", 6)) {
 					rotate=true;
 					i+=6;
-				}
-				else if(!strncmp(com->str+i, "elongate", 8)) {
+				} else if(!strncmp(com->str+i, "elongate", 8)) {
 					elongate=true;
 					i+=8;
-				}
-				else if(!strncmp(com->str+i, "force", 5)) {
+				} else if(!strncmp(com->str+i, "force", 5)) {
 					force_contig=false;				
 					i+=5;
+				} else if(i2<0 && (com->str[i] < 58 && com->str[i] > 47)) {
+					i2=i;
+					smap_info_ptr->ycord++;
+					mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+						  smap_info_ptr->xcord, "yes i2 = %d i= %d",i2, i);
+					wrefresh(smap_info_ptr->text_win);
+				} else {
+					i++;
 				}
 
 			}
-
-			if(!i2) {
+					
+			if(i2<0) {
 				smap_info_ptr->ycord++;
 				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 					  smap_info_ptr->xcord, "No size or dimension specified, please re-enter");
 			} else {
-				if(com->str[i2+1] != 'x') { /* for size */
-					i = atoi(&com->str[i2]);
-				} else { /* for geometery */
-					geo[0] = atoi(&com->str[i2]);
-					i2+=2;
-					geo[1] = atoi(&com->str[i2]);
-					i2+=2;
-					geo[2] = atoi(&com->str[i2]);
-					i = -1;
+				i3=i2;
+				while(i3<len) {
+					if(com->str[i3]==' ' || i3==(len-1)) {
+						/* for size */
+						i = atoi(&com->str[i2]);
+						break;
+					}
+					if(com->str[i3]=='x') {
+				
+						/* for geometery */
+						geo[0] = atoi(&com->str[i2]);
+						i2++;						
+						while(com->str[i2-1]!='x' && i2<len)
+							i2++;
+						if(i2==len){
+							smap_info_ptr->ycord++;
+							mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+								  smap_info_ptr->xcord, "Error in dimension specified, please re-enter");
+							break;
+						} 
+						geo[1] = atoi(&com->str[i2]);
+						i2++;	
+						while(com->str[i2-1]!='x' && i2<len)
+							i2++;
+						if(i2==len){
+							smap_info_ptr->ycord++;
+							mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+								  smap_info_ptr->xcord, "Error in dimension specified, please re-enter");
+							break;
+						} 
+						geo[2] = atoi(&com->str[i2]);
+						i = -1;
+						break;
+					}
+					i3++;
 				}
+				smap_info_ptr->ycord++;
+				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
+					  smap_info_ptr->xcord, "input is Create with geo of X=%d Y=%d Z=%d Size=%d Torus=%d Rotate=%d",geo[0],geo[1],geo[2],i,torus, rotate);
 				new_pa_request(&request, geo, i, rotate, elongate, force_contig, torus);
 				if (!allocate_part(request, &results)){
 					printf("allocate failure for %d%d%d\n", 
 					       geo[0], geo[1], geo[2]);
 					list_destroy(results);
 				}
+				results_i = list_iterator_create(results);
 				
+				while ((current = list_next(results_i)) != NULL) {
+					x = current->coord[0]; 
+					y = current->coord[1]; 
+					z = current->coord[2]; 
+					smap_info_ptr->grid[x][y][z].letter = smap_info_ptr->fill_in_value[count].letter;
+					smap_info_ptr->grid[x][y][z].color = smap_info_ptr->fill_in_value[count].color;
+					}
+				count++;
+				
+				
+				delete_pa_request(request);
 			}
 
 		} else if (!strncmp(com->str, "save", 4)) {
@@ -166,7 +216,8 @@ void get_command(void)
 		//count++;
 
 	}
-	//slurm_free_node_info_msg(node_info_ptr);
+	pa_fini();
+        //slurm_free_node_info_msg(node_info_ptr);
 	params.display = 0;
 	noecho();
 	//init_grid(node_info_ptr);
