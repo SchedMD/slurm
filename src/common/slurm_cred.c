@@ -154,6 +154,7 @@ static void           _job_state_destroy(job_state_t   *js);
 
 static job_state_t  * _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid);
 static job_state_t  * _insert_job_state(slurm_cred_ctx_t ctx,  uint32_t jobid);
+static int            _find_cred_state(cred_state_t *c, slurm_cred_t cred);
 
 static void _insert_cred_state(slurm_cred_ctx_t ctx, slurm_cred_t cred);
 static void _clear_expired_job_states(slurm_cred_ctx_t ctx);
@@ -526,6 +527,25 @@ slurm_cred_insert_jobid(slurm_cred_ctx_t ctx, uint32_t jobid)
 	slurm_mutex_unlock(&ctx->mutex);
 
 	return SLURM_SUCCESS;
+}
+
+int 
+slurm_cred_rewind(slurm_cred_ctx_t ctx, slurm_cred_t cred)
+{
+	int rc = 0;
+
+	xassert(ctx != NULL);
+
+	slurm_mutex_lock(&ctx->mutex);
+
+	xassert(ctx->magic == CRED_CTX_MAGIC);
+	xassert(ctx->type  == SLURM_CRED_VERIFIER);
+
+	rc = list_delete_all(ctx->state_list, (ListFindF) _find_cred_state, cred);
+
+	slurm_mutex_unlock(&ctx->mutex);
+
+	return (rc > 0 ? SLURM_SUCCESS : SLURM_FAILURE); 
 }
 
 int
@@ -1053,6 +1073,11 @@ _find_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
 	return j;
 }
 
+static int
+_find_cred_state(cred_state_t *c, slurm_cred_t cred)
+{
+	return ((c->jobid == cred->jobid) && (c->stepid == cred->stepid));
+}
 
 static job_state_t *
 _insert_job_state(slurm_cred_ctx_t ctx, uint32_t jobid)
