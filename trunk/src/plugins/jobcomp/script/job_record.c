@@ -47,7 +47,7 @@
  */
 job_record job_record_create(uint32_t job_id, uint32_t user_id, char *job_name,
     char *job_state, char *partition, uint32_t limit, time_t start, time_t end,
-    char *node_list)
+    time_t submit, uint16_t batch_flag, char *node_list)
 {
 	job_record ret;
 
@@ -59,6 +59,8 @@ job_record job_record_create(uint32_t job_id, uint32_t user_id, char *job_name,
 	ret->partition = xstrdup(partition);
 	ret->limit = limit;
 	ret->start = start;
+	ret->submit = submit;
+	ret->batch_flag = batch_flag;
 	ret->end = end;
 	ret->node_list = xstrdup(node_list);
 	return ret;
