@@ -89,8 +89,8 @@ static pthread_cond_t  active_cond    = PTHREAD_COND_INITIALIZER;
 /*
  * static shutdown and reconfigure flags:
  */
-static sig_atomic_t shutdown = 0;
-static sig_atomic_t reconfig = 0;
+static sig_atomic_t _shutdown = 0;
+static sig_atomic_t _reconfig = 0;
 
 static void      _term_handler(int);
 static void      _hup_handler(int);
@@ -202,16 +202,16 @@ _msg_engine()
 	slurm_addr cli;
 
 	while (1) {
-		if (shutdown)
+		if (_shutdown)
 			break;
   again:
 		if ((sock = slurm_accept_msg_conn(conf->lfd, &cli)) < 0) {
 			if (errno == EINTR) {
-				if (shutdown) {
+				if (_shutdown) {
 					verbose("got shutdown request");
 					break;
 				}
-				if (reconfig) {
+				if (_reconfig) {
 					_reconfigure();
 					verbose("got reconfigure request");
 				}
@@ -763,14 +763,14 @@ static void
 _term_handler(int signum)
 {
 	if (signum == SIGTERM || signum == SIGINT) 
-		shutdown = 1;
+		_shutdown = 1;
 }
 
 static void 
 _hup_handler(int signum)
 {
 	if (signum == SIGHUP)
-		reconfig = 1;
+		_reconfig = 1;
 }
 
 
