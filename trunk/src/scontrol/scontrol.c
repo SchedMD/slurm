@@ -40,7 +40,7 @@ void dump_command (int argc, char *argv[]);
 int get_command (int *argc, char *argv[]);
 void print_build (char *build_param);
 void print_job (char * job_id_str);
-void print_node (char *node_name, struct node_buffer *node_buffer_ptr);
+void print_node (char *node_name, node_info_msg_t *node_info_ptr);
 void print_node_list (char *node_list);
 void print_part (char *partition_name);
 int process_command (int argc, char *argv[]);
@@ -367,16 +367,16 @@ print_job (char * job_id_str)
  * NOTE: call this only after executing load_node, called from print_node_list
  */
 void
-print_node (char *node_name, struct node_buffer *node_buffer_ptr) 
+print_node (char *node_name, node_info_msg_t  * node_buffer_ptr) 
 {
 	int i, j;
 	static int last_inx = 0;
 	struct node_table *node_ptr;
 
-	node_ptr = node_buffer_ptr->node_table_ptr;
-	for (j = 0; j < node_buffer_ptr->node_count; j++) {
+	node_ptr = node_buffer_ptr->node_array;
+	for (j = 0; j < node_buffer_ptr->record_count; j++) {
 		if (node_name) {
-			i = (j + last_inx) % node_buffer_ptr->node_count;
+			i = (j + last_inx) % node_buffer_ptr->record_count;
 			if (strcmp (node_name, node_ptr[i].name) != 0)
 				continue;
 		}
