@@ -80,7 +80,7 @@ typedef struct slurmd_config {
 	log_options_t log_opts;         /* current logging options         */
 	int           debug_level;	/* logging detail level            */ 
 	int           daemonize:1;	/* daemonize flag	           */ 
-	int	      shm_cleanup:1;
+	int	      cleanstart:1;     /* clean start requested (-c)      */
 
 	slurm_cred_ctx_t vctx;          /* slurm_cred_t verifier context   */
 

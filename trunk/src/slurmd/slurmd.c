@@ -168,7 +168,7 @@ main (int argc, char *argv[])
 	/* 
 	 * Restore any saved revoked credential information
 	 */
-	if (_restore_cred_state(conf->vctx))
+	if (!conf->cleanstart && (_restore_cred_state(conf->vctx) < 0))
 		return SLURM_FAILURE;
 	
 	if (interconnect_node_init() < 0)
@@ -537,7 +537,7 @@ _init_conf()
 	conf->port        =  0;
 	conf->daemonize   =  1;
 	conf->lfd         = -1;
-	conf->shm_cleanup =  0;
+	conf->cleanstart  =  0;
 	conf->log_opts    = lopts;
 	conf->debug_level = LOG_LEVEL_INFO;
 	conf->pidfile     = xstrdup(DEFAULT_SLURMD_PIDFILE);
@@ -573,7 +573,7 @@ _process_cmdline(int ac, char **av)
 			conf->logfile = xstrdup(optarg);
 			break;
 		case 'c':
-			conf->shm_cleanup = 1;
+			conf->cleanstart = 1;
 			break;
 		default:
 			_usage(c);
@@ -658,7 +658,7 @@ _slurmd_init()
 	/*
 	 * Cleanup shared memory if so configured
 	 */
-	if (conf->shm_cleanup) {
+	if (conf->cleanstart) {
 		/* 
 		 * Need to kill any running slurmd's here so they do
 		 *  not fail to lock shared memory on exit
@@ -695,8 +695,7 @@ _restore_cred_state(slurm_cred_ctx_t ctx)
 	int cred_fd, data_allocated, data_read = 0;
 	Buf buffer = NULL;
 
-	if ( (mkdir(conf->spooldir, 0755) < 0) 
-	   && (errno != EEXIST) ) {
+	if ( (mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST) ) {
 		fatal("mkdir(%s): %m", conf->spooldir);
 		return SLURM_ERROR;
 	}
