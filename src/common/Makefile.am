@@ -27,6 +27,10 @@ libcommon_a_SOURCES = 	xmalloc.c 	\
 		      	bits_bytes.c	\
 			bitstring.c     \
 			pack.c		\
+			slurm_protocol_api.c	\
+			slurm_protocol_pack.c	\
+			slurm_protocol_util.c	\
+			slurm_protocol_socket_implementation.c	\
 			$(elan_sources)
 
 noinst_HEADERS = 	xmalloc.h 	\
@@ -42,6 +46,9 @@ noinst_HEADERS = 	xmalloc.h 	\
 			bitstring.h     \
 			bits_bytes.h    \
 			pack.h		\
+			slurm_protocol_api.h	\
+			slurm_protocol_pack.h	\
+			slurm_protocol_util.h	\
 			qsw.h	
 
 EXTRA_libcommon_a_SOURCES =		\
