@@ -58,23 +58,10 @@
 
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE	  1024	/* Temporary buffer size */
-#define PRINT_TIMES      0	/* Set to print RPC timers */
-
-#if PRINT_TIMES
-#	define DEF_TIMERS	struct timeval tv1, tv2; char tv_str[20]
-#	define START_TIMER	gettimeofday(&tv1, NULL)
-#	define END_TIMER	gettimeofday(&tv2, NULL); \
-				_diff_tv_str(&tv1, &tv2, tv_str, 20)
-#	define TIME_STR 	tv_str
-#else
-#	define DEF_TIMERS	int tv1, tv2, tv_str
-#	define START_TIMER	tv1 = 0
-#	define END_TIMER	tv2 = tv_str = 0
-#	define TIME_STR 	""
-#endif
 
 static void         _fill_ctld_conf(slurm_ctl_conf_t * build_ptr);
 static inline bool 	_is_super_user(uid_t uid);
@@ -104,8 +91,14 @@ inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 
-#if PRINT_TIMES
-static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
+/*
+ * diff_tv_str - build a string showing the time difference between two times
+ * tv1 IN - start of event
+ * tv2 IN - end of event
+ * tv_str OUT - place to put delta time in format "usec=%ld"
+ * len_tv_str IN - size of tv_str in bytes
+ */
+inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2, 
 		char *tv_str, int len_tv_str)
 {
 	long delta_t;
@@ -113,7 +106,6 @@ static void _diff_tv_str(struct timeval *tv1,struct timeval *tv2,
 	delta_t +=  tv2->tv_usec - tv1->tv_usec;
 	snprintf(tv_str, len_tv_str, "usec=%ld", delta_t);
 }
-#endif
 
 /*
  * slurmctld_req  - Process an individual RPC request
@@ -762,7 +754,7 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 				slurm_strerror(error_code));
 			slurm_send_rc_msg(msg, error_code);
 		} else {
-			info("_slurm_rpc_job_step_complete JobId=%u %s", 
+			debug2("_slurm_rpc_job_step_complete JobId=%u %s", 
 				complete_job_step_msg->job_id, TIME_STR);
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 			schedule();	/* Has own locking */

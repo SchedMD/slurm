@@ -47,6 +47,7 @@
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
@@ -654,7 +655,7 @@ static int _parse_part_spec(char *in_line)
  */
 int read_slurm_conf(int recover)
 {
-	clock_t start_time;
+	DEF_TIMERS;
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	int line_num;		/* line number in input file */
 	char in_line[BUF_SIZE];	/* input line */
@@ -664,7 +665,7 @@ int read_slurm_conf(int recover)
 	char node_name[MAX_NAME_LEN];
 
 	/* initialization */
-	start_time = clock();
+	START_TIMER;
 	old_node_record_count = node_record_count;
 	old_node_table_ptr = 
 		node_record_table_ptr;  /* save node states for reconfig RPC */
@@ -801,8 +802,9 @@ int read_slurm_conf(int recover)
 	list_sort(config_list, &list_compare_config);
 
 	slurmctld_conf.last_update = time(NULL);
-	debug("read_slurm_conf: finished loading configuration, time=%ld",
-	     (long) (clock() - start_time));
+	END_TIMER;
+	debug("read_slurm_conf: finished loading configuration %s",
+	     TIME_STR);
 
 	return SLURM_SUCCESS;
 }

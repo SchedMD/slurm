@@ -60,6 +60,7 @@
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
+#include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
@@ -607,15 +608,15 @@ static void *_slurmctld_background(void *no_data)
 /* save_all_state - save entire slurmctld state for later recovery */
 void save_all_state(void)
 {
-	clock_t start_time;
+	DEF_TIMERS;
 
-	start_time = clock();
+	START_TIMER;
 	/* Each of these functions lock their own databases */
 	(void) dump_all_node_state();
 	(void) dump_all_part_state();
 	(void) dump_all_job_state();
-	info("save_all_state complete, time=%ld",
-	     (long) (clock() - start_time));
+	END_TIMER;
+	debug2("save_all_state complete %s", TIME_STR);
 }
 
 /* 

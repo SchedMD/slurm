@@ -1257,7 +1257,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		info("job_complete: invalid job id %u", job_id);
+		info("job_complete: invalid JobId=%u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
@@ -1294,9 +1294,9 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 	last_job_update = now;
 	if (job_comp_flag) {	/* job was running */
 		deallocate_nodes(job_ptr, false);
-		verbose("job_complete for job id %u successful", job_id);
+		verbose("job_complete for JobId=%u successful", job_id);
 	} else {
-		verbose("job_complete for job id %u successful", job_id);
+		verbose("job_complete for JobId=%u successful", job_id);
 	}
 
 	return SLURM_SUCCESS;
