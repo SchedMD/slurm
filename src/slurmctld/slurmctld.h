@@ -155,9 +155,7 @@ struct job_details {
 	uint32_t min_procs;		/* minimum processors per node, MB */
 	uint32_t min_memory;		/* minimum memory per node, MB */
 	uint32_t min_tmp_disk;		/* minimum temporary disk per node, MB */
-	enum task_dist dist;		/* distribution of tasks, 0=fill, 0=cyclic */
 	char *job_script;		/* name of job script to execute */
-	uint16_t procs_per_task;	/* processors required per task */
 	uint32_t total_procs;		/* total number of allocated processors, for accounting */
 	time_t submit_time;		/* time of submission */
 };
@@ -195,8 +193,6 @@ struct 	step_record {
 struct step_specs {
 	uint32_t job_id;		/* job ID */
 	uint16_t step_id;		/* step number */
-	uint16_t dist;			/* task distribution 1=cycle, 0=block */
-	uint16_t procs_per_task;	/* processors required per task */
 	uint32_t user_id;		/* user the job runs as */
 };
 
@@ -221,13 +217,6 @@ extern void  allocate_nodes (unsigned *bitmap);
  * NOTE: the caller must free memory at node_list when no longer required
  */
 extern void bitmap2node_name (bitstr_t *bitmap, char **node_list);
-
-/*
- * block_or_cycle - map string into integer
- * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
- * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
- */
-extern enum task_dist block_or_cycle (char *in_string);
 
 /*
  * count_cpus - report how many cpus are associated with the identified nodes 
@@ -595,23 +584,6 @@ extern void pack_part (struct part_record *part_record_point, void **buf_ptr, in
  * pack_step - dump state information about a specific job step in 
  *	machine independent form (for network transmission) */
 extern void pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len);
-
-/* 
- * parse_job_specs - pick the appropriate fields out of a job request specification
- * input: job_specs - string containing the specification
- *        req_features, etc. - pointers to storage for the specifications
- * output: req_features, etc. - the job's specifications
- *         returns 0 if no error, errno otherwise
- * NOTE: the calling function must xfree memory at req_features[0], req_node_list[0],
- *	job_name[0], req_group[0], and req_partition[0]
- */
-extern int parse_job_specs (char *job_specs, char **req_features, char **req_node_list,
-		 char **job_name, char **req_group, char **req_partition,
-		 int *contiguous, int *req_cpus, int *req_nodes,
-		 int *min_cpus, int *min_memory, int *min_tmp_disk, int *key,
-		 int *shared, int *dist, char **script, int *time_limit, 
-		 int *procs_per_task, long *job_id, int *priority, 
-		 int *user_id);
 
 extern int parse_node_name(char *name, char **fmt, int *start, int *end, int *count); 
 
