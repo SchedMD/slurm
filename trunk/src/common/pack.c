@@ -160,4 +160,34 @@ _unpackmem_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 		*valp = NULL;
 
 }
+	/*
+ * Given 'bufp' pointing to a network byte order 32-bit integer
+ * (size) and an arbitrary data string, return a pointer to the 
+ * data string in 'valp'.  Also return the sizes of 'valp' in bytes. 
+ * Advance bufp and decrement lenp by 4 bytes (size of memory 
+ * size records) plus the actual buffer size.
+ * NOTE: valp is set to point into a newly created buffer, 
+ *	the caller is responsible for calling xfree on *valp
+ *	if non-NULL (set to NULL on zero size buffer value)
+ */
+void
+_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
+{
+	uint16_t nl;
+
+	memcpy(&nl, *bufp, sizeof(nl));
+	*size_valp = ntohs(nl);
+	(size_t)*bufp += sizeof(nl);
+	*lenp -= sizeof(nl);
+
+	if (*size_valp > 0) {
+		*valp = malloc(*size_valp);
+		memcpy (*valp, *bufp, *size_valp);
+		(size_t)*bufp += *size_valp;
+		*lenp -= *size_valp;
+	}
+	else
+		*valp = NULL;
+
+}
 	
