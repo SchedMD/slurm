@@ -536,6 +536,7 @@ typedef struct slurm_node_registration_status_msg {
 	uint32_t temporary_disk_space;
 	uint32_t job_count;	/* number of associate job_id's */
 	uint32_t *job_id;	/* IDs of running job (if any) */
+	uint16_t *step_id;	/* IDs of running job steps (if any) */
 } slurm_node_registration_status_msg_t;
 
 typedef struct slurm_ctl_conf slurm_ctl_conf_info_msg_t;

@@ -439,6 +439,9 @@ void pack_node_registration_status_msg ( slurm_node_registration_status_msg_t * 
 	for (i = 0; i < msg->job_count ; i++) {
 		pack32 ( msg -> job_id[i] , ( void ** ) buffer , length ) ;
 	}
+	for (i = 0; i < msg->job_count ; i++) {
+		pack16 ( msg -> step_id[i] , ( void ** ) buffer , length ) ;
+	}
 }
 
 int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t ** msg , void ** buffer , uint32_t * length )
@@ -467,6 +470,10 @@ int unpack_node_registration_status_msg ( slurm_node_registration_status_msg_t *
 	node_reg_ptr -> job_id = xmalloc (sizeof (uint32_t) * node_reg_ptr->job_count);
 	for (i = 0; i < node_reg_ptr->job_count ; i++) {
 		unpack32 ( & node_reg_ptr->job_id[i] , ( void ** ) buffer , length ) ;
+	}
+	node_reg_ptr -> step_id = xmalloc (sizeof (uint16_t) * node_reg_ptr->job_count);
+	for (i = 0; i < node_reg_ptr->job_count ; i++) {
+		unpack16 ( & node_reg_ptr->step_id[i] , ( void ** ) buffer , length ) ;
 	}
 	*msg = node_reg_ptr ;
 	return 0 ;
