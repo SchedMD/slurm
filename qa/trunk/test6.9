@@ -43,10 +43,10 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id == 0} {
@@ -59,7 +59,7 @@ if {[wait_for_job $job_id RUNNING] != 0} {
 	send_user "\nFAILURE: error on job\n"
 	exit 1
 }
-sleep 2
+exec $bin_sleep 2
 
 #
 # Kill single job steps individually
@@ -77,6 +77,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 1} {
@@ -97,6 +98,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 1} {

@@ -41,6 +41,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id1 == 0} {
@@ -61,6 +62,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id2 == 0} {
@@ -90,6 +92,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_found == 0} {
@@ -114,6 +117,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -127,6 +131,7 @@ expect {
 		exp_continue
 	}
 	eof {
+		wait
 	}
 }
 spawn $squeue --format=%u --noheader --user=$this_user 
@@ -143,6 +148,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -168,6 +174,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {[string compare partition2 ""]} {
@@ -187,6 +194,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -195,7 +203,7 @@ expect {
 # started its job steps. Check the squeue job step filter option
 #
 wait_for_job $job_id1 "RUNNING"
-sleep 5
+exec $bin_sleep 5
 set job_found 0
 spawn $squeue --format=%i --steps $job_id1.0 
 expect {
@@ -214,6 +222,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_found == 0} {

@@ -39,10 +39,10 @@ expect {
 	timeout {
 		send_user "\nFAILURE: srun not responding\n"
 		kill_srun
-		set exit_code 1
-		exp_continue
+		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id1 == 0} {
@@ -64,6 +64,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$job_id2 == 0} {
@@ -94,6 +95,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 2} {
@@ -121,6 +123,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 1} {
@@ -135,7 +138,7 @@ if {[wait_for_job $job_id1 RUNNING] != 0} {
 	send_user "\nFAILURE: waiting for job $job_id1 to run\n"
 	set exit_code 1
 }
-sleep 5
+exec $bin_sleep 5
 
 #
 # Look at all job steps with scontrol
@@ -152,6 +155,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 1} {
@@ -179,6 +183,7 @@ expect {
 		set exit_code 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches != 1} {
