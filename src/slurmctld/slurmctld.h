@@ -182,11 +182,7 @@ struct job_record {
 };
 
 struct 	step_record {
-	struct job_record *job_ptr;	/* pointer to job_record (for job_id) */
 	uint16_t step_id;		/* step number */
-	uint32_t magic;			/* magic cookie to test data integrity */
-	uint16_t dist;			/* task distribution 1=cycle, 0=block */
-	uint16_t procs_per_task;	/* processors required per task */
 	bitstr_t *node_bitmap;		/* bitmap of nodes in allocated to job step */
 #ifdef HAVE_LIBELAN3
 	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque data structure */
