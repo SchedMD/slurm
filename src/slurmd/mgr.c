@@ -621,7 +621,7 @@ _create_job_session(slurmd_job_t *job)
 
 	job->jmgr_pid = getpid();
 	if (setpgrp() < 0)
-		error("setpgid(): %m");
+		error("setpgrp(): %m");
 
 	if ((spid = smgr_create(job)) < (pid_t) 0) {
 		error("Unable to create session manager: %m");
