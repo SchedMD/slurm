@@ -57,6 +57,7 @@ time_t init_time;
 slurmd_shmem_t * shmem_seg ;
 char hostname[MAX_NAME_LEN] ;
 slurm_ssl_key_ctx_t verify_ctx ;
+List credential_state_list ;
 
 /* function prototypes */
 static void slurmd_req ( slurm_msg_t * msg );
@@ -96,7 +97,7 @@ int main (int argc, char *argv[])
 
 	/* shared memory init */
 	slurmd_init ( ) ;
-
+	
 	if ( ( error_code = getnodename (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmd: %m errno %d from getnodename", errno);
 
@@ -119,11 +120,13 @@ int slurmd_init ( )
 	init_shmem ( shmem_seg ) ;
 	slurm_ssl_init ( ) ;
 	slurm_init_verifier ( & verify_ctx , "pub_key_file" ) ;
+	initialize_credential_state_list ( & credential_state_list ) ;
 	return SLURM_SUCCESS ;
 }
 
 int slurmd_destroy ( )
 {
+	destroy_credential_state_list ( credential_state_list ) ;
 	rel_shmem ( shmem_seg ) ;
 	slurm_destroy_ssl_key_ctx ( & verify_ctx ) ;
 	slurm_ssl_destroy ( ) ;
@@ -314,7 +317,7 @@ void slurm_rpc_launch_tasks ( slurm_msg_t * msg )
 
 	/* do RPC call */
 	/* test credentials */
-	verify_credential ( & verify_ctx , task_desc -> credential ) ;
+	verify_credential ( & verify_ctx , task_desc -> credential , credential_state_list ) ;
 
 	task_resp . return_code = error_code ;
 	task_resp . node_name = node_name ;
@@ -408,8 +411,7 @@ void slurm_rpc_revoke_credential ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	
-	/*error_code = revoke credential ( revoke_credential_msg ); */
+	error_code = expire_credential ( revoke_credential_msg, credential_state_list ) ;
 	
 	/* return result */
 	if (error_code)
