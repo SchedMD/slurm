@@ -322,11 +322,12 @@ typedef struct partition_info {
 typedef struct resource_allocation_response_msg {
 	uint32_t job_id;	/* assigned job id */
 	char *node_list;	/* assigned list of nodes */
-	int16_t num_cpu_groups;	/* elements in below cpu arrays */
-	int32_t *cpus_per_node;	/* cpus per node */
-	int32_t *cpu_count_reps;/* how many nodes have same cpu count */
+	uint16_t num_cpu_groups;/* elements in below cpu arrays */
+	uint32_t *cpus_per_node;/* cpus per node */
+	uint32_t *cpu_count_reps;/* how many nodes have same cpu count */
 	uint16_t node_cnt;	/* count of nodes */
 	slurm_addr *node_addr;	/* network addresses */
+	uint32_t error_code;	/* error code for warning message */
 } resource_allocation_response_msg_t;
 
 typedef struct resource_allocation_and_run_response_msg {
@@ -399,6 +400,7 @@ typedef struct slurm_ctl_conf {
 
 typedef struct submit_response_msg {
 	uint32_t job_id;	/* job ID */
+	uint32_t error_code;	/* error code for warning message */
 } submit_response_msg_t;
 
 typedef struct slurm_update_node_msg {

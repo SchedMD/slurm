@@ -803,6 +803,7 @@ _pack_resource_allocation_response_msg(resource_allocation_response_msg_t *
 {
 	assert(msg != NULL);
 
+	pack32(msg->error_code, buffer);
 	pack32(msg->job_id, buffer);
 	packstr(msg->node_list, buffer);
 
@@ -828,6 +829,7 @@ _unpack_resource_allocation_response_msg(resource_allocation_response_msg_t
 	*msg = tmp_ptr;
 
 	/* load the data values */
+	safe_unpack32(&tmp_ptr->error_code, buffer);
 	safe_unpack32(&tmp_ptr->job_id, buffer);
 	safe_unpackstr_xmalloc(&tmp_ptr->node_list, &uint16_tmp, buffer);
 
@@ -963,6 +965,7 @@ _pack_submit_response_msg(submit_response_msg_t * msg, Buf buffer)
 	assert(msg != NULL);
 
 	pack32(msg->job_id, buffer);
+	pack32(msg->error_code, buffer);
 }
 
 static int
@@ -977,6 +980,7 @@ _unpack_submit_response_msg(submit_response_msg_t ** msg, Buf buffer)
 
 	/* load the data values */
 	safe_unpack32(&tmp_ptr->job_id, buffer);
+	safe_unpack32(&tmp_ptr->error_code, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
