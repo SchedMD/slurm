@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "May 2003" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -176,8 +176,6 @@ On success, zero is returned. On error, -1 is returned, and Slurm error code is 
 \fBESLURM_JOB_SCRIPT_MISSING\fR failed to identify executable program to be queued. 
 .LP
 \fBESLURM_USER_ID_MISSING\fR identification of the job's owner was not provided. 
-.LP
-\fBESLURM_JOB_NAME_TOO_LONG\fR the name to be associated with the job was too long. 
 .LP
 \fBESLURM_DUPLICATE_JOB_ID\fR the requested job id is already in use. 
 .LP
