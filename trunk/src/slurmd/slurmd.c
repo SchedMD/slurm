@@ -81,31 +81,30 @@ typedef struct connection {
 static sig_atomic_t shutdown = 0;
 static sig_atomic_t reconfig = 0;
 
-static void       _term_handler(int);
-static void       _hup_handler(int);
-static void       _process_cmdline(int ac, char **av);
-static void       _create_msg_socket();
-static void       _tid_free(pthread_t *);
+static void      _term_handler(int);
+static void      _hup_handler(int);
+static void      _process_cmdline(int ac, char **av);
+static void      _create_msg_socket();
+static void      _tid_free(pthread_t *);
 static pthread_t *_tid_copy(pthread_t *);
-static void       _msg_engine();
-static int        _slurmd_init();
-static int        _slurmd_fini();
-static void       _create_conf();
-static void       _init_conf();
-static void       _print_conf();
-static void       _read_config();
-static void 	  _kill_old_slurmd();
-static void       _list_recovered_creds(List list);
-static void       _reconfigure();
-static void       _restore_cred_state(List *list);
-static void       _wait_for_all_threads();
-static void       _set_slurmd_spooldir(void);
-static void       _usage();
-static void       _handle_connection(slurm_fd fd, slurm_addr *client);
-static void      *_service_connection(void *);
-static void       _fill_registration_msg(
-				slurm_node_registration_status_msg_t *);
-static void       _update_logging(void);
+static void      _msg_engine();
+static int       _slurmd_init();
+static int       _slurmd_fini();
+static void      _create_conf();
+static void      _init_conf();
+static void      _print_conf();
+static void      _read_config();
+static void 	 _kill_old_slurmd();
+static void      _list_recovered_creds(List list);
+static void      _reconfigure();
+static void      _restore_cred_state(List *list);
+static void      _wait_for_all_threads();
+static void      _set_slurmd_spooldir(void);
+static void      _usage();
+static void      _handle_connection(slurm_fd fd, slurm_addr *client);
+static void     *_service_connection(void *);
+static void      _fill_registration_msg(slurm_node_registration_status_msg_t *);
+static void      _update_logging(void);
 
 static slurm_ctl_conf_t slurmctld_conf;
 
@@ -244,12 +243,16 @@ _handle_connection(slurm_fd fd, slurm_addr *cli)
 		return;
 	}
 
-	rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-	if (rc != 0) {
-		error("Unable to set detachstate on attr: %s", 
-				slurm_strerror(rc));
-		return;
-	}
+	/* 
+	 * Do not create a detached thread.
+	 *
+	 * rc = pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
+	 * if (rc != 0) {
+	 * 	error("Unable to set detachstate on attr: %s", 
+	 *			slurm_strerror(rc));
+	 *	return;
+	 * }
+	 */
 
 	fd_set_close_on_exec(fd);
 
