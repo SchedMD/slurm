@@ -35,7 +35,7 @@ rm -rf "$RPM_BUILD_ROOT"
 mkdir -p "$RPM_BUILD_ROOT"
 # make install DESTDIR="$RPM_BUILD_ROOT"
 # for multilib support, we install into /%{_lib}/security instead
-install -D -m0755 -groot -oroot pam_slurm.so $RPM_BUILD_ROOT/%{_lib}/security/
+install -D -m0755 -groot -oroot pam_slurm.so $RPM_BUILD_ROOT/%{_lib}/security/pam_slurm.so
 
 %clean
 rm -rf "$RPM_BUILD_ROOT"
