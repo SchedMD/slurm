@@ -301,8 +301,10 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 	/* unpack header */
 	unpack_len = rc;
 	unpack_header(&header, &buffer, &unpack_len);
-	if ((rc = check_header_version(&header)) < 0) 
+	if ((rc = check_header_version(&header)) != SLURM_SUCCESS) {
+		slurm_seterrno_ret(SLURM_PROTOCOL_VERSION_ERROR);
 		return rc;
+	}
 
 	/* unpack cred */
 	if (header.cred_length <= unpack_len) {
@@ -312,8 +314,10 @@ int slurm_receive_msg(slurm_fd open_fd, slurm_msg_t * msg)
 		slurm_seterrno_ret(ESLURM_PROTOCOL_INCOMPLETE_PACKET);
 
 	/* verify credentials */
-	if ((rc = slurm_auth_verify_credentials(creds)) != SLURM_SUCCESS)
-		slurm_seterrno_ret(rc);
+	if ((rc = slurm_auth_verify_credentials(creds)) != SLURM_SUCCESS) {
+		slurm_seterrno_ret(SLURM_PROTOCOL_AUTHENTICATION_ERROR);
+		return rc;
+	}
 
 	msg->cred_type = header.cred_type;
 	msg->cred_size = header.cred_length;
