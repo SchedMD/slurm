@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = controller job_mgr job_scheduler node_mgr node_scheduler partition_mgr read_config 
+test_modules = controller job_mgr job_scheduler node_mgr node_scheduler partition_mgr read_config step_mgr
 else
 test_modules = 
 endif
@@ -27,7 +27,8 @@ slurmctld_SOURCES = controller.c \
 		    node_mgr.c \
 		    node_scheduler.c \
 		    partition_mgr.c \
-		    read_config.c 
+		    read_config.c \
+		    step_mgr.c
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
@@ -40,6 +41,7 @@ slurmctld_SOURCES = controller.c \
 #node_scheduler_CFLAGS = -DDEBUG_MODULE $(AM_CFLAGS)
 #partition_mgr_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
 #read_config_CFLAGS    = -DDEBUG_MODULE $(AM_CFLAGS)
+#step_mgr_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
 
 # debug modules to built as binaries:
 #
@@ -48,13 +50,14 @@ slurmctld_SOURCES = controller.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-controller     : controller_d.o job_mgr.o job_scheduler.o node_mgr.o node_scheduler.o partition_mgr.o read_config.o 
+controller     : controller_d.o job_mgr.o job_scheduler.o node_mgr.o node_scheduler.o partition_mgr.o read_config.o step.o
 job_mgr        : job_mgr_d.o node_mgr.o node_scheduler.o partition_mgr.o
 job_scheduler  : job_scheduler_d.o job_mgr.o node_mgr.o node_scheduler.o partition_mgr.o
 node_mgr       : node_mgr_d.o  
 node_scheduler : node_scheduler_d.o job_mgr.o node_mgr.o partition_mgr.o read_config.o
 partition_mgr  : partition_mgr_d.o node_mgr.o
 read_config    : read_config_d.o job_mgr.o node_mgr.o node_scheduler.o partition_mgr.o
+step_mgr       : step_mgr_d.o
 
 % : %_d.o
 	$(LINK) $(LDFLAGS) $^ $(LDADD) $(LIBS)
