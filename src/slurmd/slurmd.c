@@ -82,6 +82,7 @@ slurmd_config_t slurmd_conf;
 /* function prototypes */
 static char *public_cert_filename();
 inline static void reset_cwd(void);
+inline static void reset_addr(slurm_msg_t * msg);
 inline static char *state_save_location (void);
 static void slurmd_req(slurm_msg_t * msg);
 static void *slurmd_msg_engine(void *args);
@@ -512,8 +513,11 @@ void slurm_rpc_launch_tasks(slurm_msg_t * msg)
 	/* rc =  */ verify_credential(&verify_ctx, req->credential, 
 			       credential_state_list);
 
-	if (rc == SLURM_SUCCESS)
+	if (rc == SLURM_SUCCESS) {
+		reset_addr(msg);
+		/* slurm_print_launch_task_msg(req); */
 		rc = _launch_tasks(req);
+	}
 	task_resp.node_name = hostname;
 	task_resp.srun_node_id = req->srun_node_id;
 
@@ -532,6 +536,31 @@ void slurm_rpc_launch_tasks(slurm_msg_t * msg)
 		     "successfully, time=%ld", (long) (clock() - start_time));
 		slurm_send_only_node_msg(&resp_msg);
 	}
+}
+
+/* reset_addr - the sender does not necesarily know its communication 
+ * path, so it just sends its hostname in the return address. For example, 
+ * the node's name might be "lx123", but it might use the ethernet port to 
+ * communicate. In that case, the return address should be changed to 
+ * something like "elx123". This function will get the source of the 
+ * transmission and reset the return addresses imbedded within the message
+ */
+void reset_addr(slurm_msg_t * msg)
+{
+	launch_tasks_request_msg_t *req = 
+		(launch_tasks_request_msg_t *) msg->data;
+	slurm_addr slurm_address;
+	char buf[128];
+
+	if (slurm_get_peer_addr(msg->conn_fd, &slurm_address)) {
+		error("slurm_get_peer_addr: %m");
+		return;
+	}
+	slurm_print_slurm_addr(&slurm_address, buf, 128);
+	debug("peer_addr(host:port)=%s",buf);
+	reset_slurm_addr(&req->response_addr, slurm_address);
+	reset_slurm_addr(&req->streams,       slurm_address);
+	return;
 }
 
 /* Just respond to ping */
