@@ -5,12 +5,6 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
-if WITH_ELAN
-elan_sources = qsw.c qsw.h elanhosts.c elanhosts.h
-else
-elan_sources = 
-endif
-
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
@@ -34,6 +28,7 @@ libcommon_la_SOURCES = 			\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
+	setenvpf.c setenvpf.h		\
 	slurm_cred.h       		\
 	slurm_cred.c			\
 	slurm_errno.c			\
@@ -53,10 +48,10 @@ libcommon_la_SOURCES = 			\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
 	slurm_jobcomp.c slurm_jobcomp.h	\
+	switch.c switch.h		\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
-	hostlist.c hostlist.h		\
-	$(elan_sources) 
+	hostlist.c hostlist.h
 
 libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\
@@ -67,9 +62,5 @@ libeio_la_SOURCES = 	   		\
 	eio.c eio.h	   		\
 	io_hdr.c io_hdr.h
 
-EXTRA_libcommon_la_SOURCES =    	\
-	qsw.c qsw.h          		\
-	elanhosts.c elanhosts.h
-
-libcommon_la_LIBADD   = $(SSL_LIBS) $(ELAN_LIBS) -ldl
+libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
 libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)	

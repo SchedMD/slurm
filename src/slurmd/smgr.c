@@ -51,12 +51,12 @@
 
 #include "src/common/fd.h"
 #include "src/common/log.h"
+#include "src/common/setenvpf.h"
+#include "src/common/switch.h"
 #include "src/common/xsignal.h"
 
 #include "src/slurmd/smgr.h"
 #include "src/slurmd/ulimits.h"
-#include "src/slurmd/interconnect.h"
-#include "src/slurmd/setenvpf.h"
 #include "src/slurmd/io.h"
 
 /*
@@ -143,7 +143,8 @@ _session_mgr(slurmd_job_t *job)
 	/*
 	 * Call interconnect_init() before becoming user
 	 */
-	if (!job->batch && (interconnect_init(job) < 0)) {
+	if (!job->batch && 
+	    (interconnect_init(job->switch_job, job->uid) < 0)) {
 		/* error("interconnect_init: %m"); already logged */
 		exit(1);
 	}
@@ -187,7 +188,8 @@ _session_mgr(slurmd_job_t *job)
 
         _wait_for_all_tasks(job);
 
-	if (!job->batch && (interconnect_fini(job) < 0)) {
+	if (!job->batch && 
+	    (interconnect_fini(job->switch_job) < 0)) {
 		error("interconnect_fini: %m");
 		exit(1);
 	}
@@ -297,7 +299,9 @@ _exec_task(slurmd_job_t *job, int i)
 	}
 
 	if (!job->batch) {
-		if (interconnect_attach(job, i) < 0) {
+		if (interconnect_attach(job->switch_job, &job->env,
+				job->nodeid, i, job->nnodes,
+				job->nprocs, job->task[i]->gid) < 0) {
 			error("Unable to attach to interconnect: %m");
 			exit(1);
 		}

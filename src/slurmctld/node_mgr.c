@@ -1155,16 +1155,15 @@ validate_node_specs (char *node_name, uint32_t cpus,
 		node_ptr->cpus = cpus;
 		node_ptr->real_memory = real_memory;
 		node_ptr->tmp_disk = tmp_disk;
-#ifdef 		HAVE_ELAN
 		/* Every node in a given partition must have the same 
 		 * processor count at present */
-		if ((slurmctld_conf.fast_schedule == 0) &&
-		    (node_ptr->config_ptr->cpus != cpus)) {
+		if ((slurmctld_conf.fast_schedule == 0)  &&
+		    (node_ptr->config_ptr->cpus != cpus) && 
+		    (strcmp(slurmctld_conf.switch_type, "switch/elan") == 0)) {
 			error ("Node %s processor count inconsistent with rest "
 			       "of partition", node_name);
 			return EINVAL;		/* leave node down */
 		}
-#endif
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 			last_node_update = time (NULL);
 			reset_job_priority();

@@ -160,54 +160,32 @@ AC_SUBST(SLURMD_PORT)
 dnl check for whether to include Elan support
 dnl
 AC_MSG_CHECKING(whether to include Elan support)
-AC_ARG_WITH(elan,
-  AC_HELP_STRING([--with-elan],[compile with Elan support]),
-  [ case "${withval}" in
-      yes) elan=yes ;;
-      no)  elan=no ;;
-      *) AC_MSG_ERROR([bad value ${enableval} for --with-elan]) ;;
-    esac
-  ]
+savedLIBS="$LIBS"
+AC_CHECK_LIB([elanctrl], [elanctrl_open], 
+             [ have_elanctrl=yes
+               have_elan=yes
+               ELAN_LIBS="-lelanctrl"
+               AC_DEFINE(HAVE_LIBELANCTRL, 1, 
+                         [define if you have libelanctrl.]) ], 
+             [ have_elanctrl=no ]
 )
-AC_MSG_RESULT(${elan=no})
-AM_CONDITIONAL(WITH_ELAN, test "x$with_elan" = "xyes")
-HAVE_ELAN=0
-if test "$with_elan" = "yes"; then
-  savedLIBS="$LIBS"
-  AC_CHECK_LIB([elanctrl], [elanctrl_open], 
-               [ have_elanctrl=yes
-                 ELAN_LIBS="-lelanctrl"
-                 AC_DEFINE(HAVE_LIBELANCTRL, 1, 
-                           [define if you have libelanctrl.])
-               ], 
-               [ have_elanctrl=no
-               ]
+AC_CHECK_LIB([elan3], [elan3_create], 
+             [ have_elan3=yes
+               have_elan=yes
+               ELAN_LIBS="-lelan3"
+               AC_DEFINE(HAVE_LIBELAN3, 1, 
+                         [define if you have libelan3.]) ], 
+             [ have_elan3=no ]
   )
-
-  AC_CHECK_LIB([elan3], [elan3_create], 
-               [ have_elan3=yes
-                 ELAN_LIBS="-lelan3"
-                 AC_DEFINE(HAVE_LIBELAN3, 1, 
-                           [define if you have libelan3.])
-               ], 
-               [ have_elan3=no
-               ]
-  )
-
-  if test "$have_elanctrl" = "no" -a "$have_elan3" = "no"; then
-      AC_MSG_ERROR([Unable to find libelan3 or libelanctrl for Elan support!])
-  fi
-
+AM_CONDITIONAL(HAVE_ELAN, test "x$have_elan" = "xyes")
+if test "x$have_elan" = "xyes"; then
+  AC_DEFINE(HAVE_ELAN, 1, [Define to enable Elan support.])
   AC_CHECK_LIB(rmscall, rms_prgcreate, 
-    [],
+    [ELAN_LIBS="$ELAN_LIBS -lrmscall"],
     [AC_MSG_ERROR([unable to find the RMS library needed for Elan support])],
   )
-  HAVE_ELAN=1
-  AC_DEFINE(HAVE_ELAN, 1, [Define to enable Elan support.])
-  ELAN_LIBS="$ELAN_LIBS -lrmscall"
-  LIBS="$savedLIBS" 
 fi
-
+LIBS="$savedLIBS" 
 AC_SUBST(HAVE_ELAN)
 AC_SUBST(ELAN_LIBS)
 
@@ -316,6 +294,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/sched/backfill/Makefile
 		 src/plugins/sched/builtin/Makefile
 		 src/plugins/sched/wiki/Makefile
+		 src/plugins/switch/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile

@@ -1,6 +1,6 @@
 AUTOMAKE_OPTIONS = foreign
 
-if WITH_ELAN
+if HAVE_ELAN
 elan_testprogs = runqsw
 else
 elan_testprogs =

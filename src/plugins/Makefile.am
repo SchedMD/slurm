@@ -1,3 +1,3 @@
 # $Id$
 
-SUBDIRS = auth jobcomp sched
+SUBDIRS = auth jobcomp sched switch

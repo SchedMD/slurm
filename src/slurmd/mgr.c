@@ -58,6 +58,8 @@
 #include "src/common/log.h"
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
+#include "src/common/setenvpf.h"
+#include "src/common/switch.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -66,12 +68,10 @@
 #include "src/slurmd/mgr.h"
 
 #include "src/slurmd/slurmd.h"
-#include "src/slurmd/setenvpf.h"
 #include "src/slurmd/setproctitle.h"
 #include "src/slurmd/smgr.h"
 #include "src/slurmd/io.h"
 #include "src/slurmd/shm.h"
-#include "src/slurmd/interconnect.h"
 
 
 /* 
@@ -428,7 +428,8 @@ _job_mgr(slurmd_job_t *job)
 		goto fail0;
 	}
 
-	if (!job->batch && (interconnect_preinit(job) < 0)) {
+	if (!job->batch && 
+	    (interconnect_preinit(job->switch_job) < 0)) {
 		rc = ESLURM_INTERCONNECT_FAILURE;
 		goto fail1;
 	}
@@ -482,7 +483,9 @@ _job_mgr(slurmd_job_t *job)
 	 *    is moved behind wait_for_io(), we may block waiting for IO
 	 *    on a hung process.
 	 */
-	if (!job->batch && (interconnect_postfini(job) < 0))
+	if (!job->batch && 
+	    (interconnect_postfini(job->switch_job, job->smgr_pid,
+			job->jobid, job->stepid) < 0))
 		error("interconnect_postfini: %m");
 
 	/*

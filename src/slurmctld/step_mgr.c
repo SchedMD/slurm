@@ -37,13 +37,10 @@
 #include <string.h>
 #include <unistd.h>
 
-#ifdef HAVE_ELAN
-#  include "src/common/qsw.h"
-#endif
-
 #include <slurm/slurm_errno.h>
 
 #include "src/common/bitstring.h"
+#include "src/common/switch.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
@@ -97,9 +94,7 @@ delete_all_step_records (struct job_record *job_ptr)
 	last_job_update = time(NULL);
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		list_remove (step_iterator);
-#ifdef HAVE_ELAN
-		qsw_free_jobinfo (step_ptr->qsw_job);
-#endif
+		switch_free_jobinfo(step_ptr->switch_job);
 		xfree(step_ptr->host);
 		xfree(step_ptr->step_node_list);
 		FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -132,9 +127,7 @@ delete_step_record (struct job_record *job_ptr, uint32_t step_id)
 	while ((step_ptr = (struct step_record *) list_next (step_iterator))) {
 		if (step_ptr->step_id == step_id) {
 			list_remove (step_iterator);
-#ifdef HAVE_ELAN
-			qsw_free_jobinfo (step_ptr->qsw_job);
-#endif
+			switch_free_jobinfo (step_ptr->switch_job);
 			xfree(step_ptr->host);
 			xfree(step_ptr->step_node_list);
 			FREE_NULL_BITMAP(step_ptr->step_node_bitmap);
@@ -495,10 +488,6 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	bitstr_t *nodeset;
 	int node_count;
 	time_t now = time(NULL);
-#ifdef HAVE_ELAN
-	int first, last, i, node_id;
-	int node_set_size = QSW_MAX_TASKS; /* overkill but safe */
-#endif
 
 	*new_step_record = NULL;
 	job_ptr = find_job_record (step_specs->job_id);
@@ -516,11 +505,9 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	    (job_ptr->end_time <= time(NULL)))
 		return ESLURM_ALREADY_DONE;
 
-#ifdef HAVE_ELAN
 	if ((step_specs->task_dist != SLURM_DIST_CYCLIC) &&
 	    (step_specs->task_dist != SLURM_DIST_BLOCK))
 		return ESLURM_BAD_DIST;
-#endif
 
 	if (job_ptr->kill_on_step_done)
 		/* Don't start more steps, job already being cancelled */
@@ -542,10 +529,6 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	if ((step_specs->num_tasks < 1) ||
 	    (step_specs->num_tasks > (node_count*MAX_TASKS_PER_NODE)))
 		return ESLURM_BAD_TASK_COUNT;
-#ifdef HAVE_ELAN
-	if (step_specs->num_tasks > node_set_size)
-		return ESLURM_BAD_TASK_COUNT;
-#endif
 
 	step_ptr = create_step_record (job_ptr);
 	if (step_ptr == NULL)
@@ -561,39 +544,16 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record,
 	step_ptr->port = step_specs->port;
 	step_ptr->host = xstrdup(step_specs->host);
 
-#ifdef HAVE_ELAN
-	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)
-		fatal ("step_create: qsw_alloc_jobinfo error");
-	first = bit_ffs (step_ptr->step_node_bitmap);
-	last  = bit_fls (step_ptr->step_node_bitmap);
-	nodeset = bit_alloc (node_set_size);
-	if (nodeset == NULL)
-		fatal ("step_create: bit_alloc error");
-	for (i = first; i <= last; i++) {
-		if (bit_test (step_ptr->step_node_bitmap, i)) {
-			node_id = qsw_getnodeid_byhost (
-					node_record_table_ptr[i].name);
-			if (node_id >= 0)	/* no lookup error */
-				bit_set(nodeset, node_id);
-			else {
-				error ("qsw_getnodeid_byhost lookup failure on %s",
-				       node_record_table_ptr[i].name);
-				delete_step_record (job_ptr, 
-							step_ptr->step_id);
-				bit_free (nodeset);
-				return ESLURM_INTERCONNECT_FAILURE;
-			}
-		}
-	}
-	if (qsw_setup_jobinfo (step_ptr->qsw_job, step_specs->num_tasks, 
-				nodeset, step_ptr->cyclic_alloc) < 0) {
-		error ("step_create: qsw_setup_jobinfo error %m");
+	if (switch_alloc_jobinfo (&step_ptr->switch_job) < 0)
+		fatal ("step_create: switch_alloc_jobinfo error");
+	if (switch_build_jobinfo(step_ptr->switch_job, 
+				step_ptr->step_node_list,
+				step_specs->num_tasks, 
+				step_ptr->cyclic_alloc) < 0) {
+		error("switch_build_jobinfo: %m");
 		delete_step_record (job_ptr, step_ptr->step_id);
-		bit_free (nodeset);
 		return ESLURM_INTERCONNECT_FAILURE;
 	}
-	bit_free (nodeset);
-#endif
 
 	*new_step_record = step_ptr;
 	return SLURM_SUCCESS;

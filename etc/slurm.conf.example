@@ -157,6 +157,7 @@
 # SchedulerAuth=42
 # SchedulerPort=7321
 
+
 #
 # o Define the job completion logging mechanism to be used
 #
@@ -164,6 +165,18 @@
 # "jobcomp/filetxt" : log job record to a text file
 #
 # JobCompType=jobcomp/filetxt
+
+
+#
+# o Define the switch or interconnect in use.
+#
+# "SwitchType"        : the type of switch or interconnect.
+#     "switch/none"   : the default, supports all switches not requiring
+#                       special set-up for job launch including Myrinet, 
+#                       Ethernet, and InfiniBand.
+#     "switch/elan"   : Quadrics Elan 3 or Elan 4 interconnect.
+#
+# SwitchType=switch/none
 
 
 #

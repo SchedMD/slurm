@@ -267,6 +267,14 @@ The default value is "/tmp".
 If any slurm daemons terminate abnormally, their core files will also be written 
 into this directory.
 .TP
+\fBSwitchType\fR
+Identifies the type of switch or interconnect used for application communications. 
+Acceptable values include
+"switch/none" for switches not requiring special processing for job launch 
+or termination (Myrinet, Ethernet, and InfiniBand),
+"switch/elan" for Quadrics Elan 3 or Elan 4 interconnect.
+The default value is "switch/none".
+.TP
 \fBTmpFS\fR
 Fully qualified pathname of the file system available to user jobs for 
 temporary storage. This parameter is used in establishing a node's \fBTmpDisk\fR space. 
@@ -546,6 +554,8 @@ SlurmctldTimeout=300 SlurmdTimeout=300
 SlurmdSpoolDir=/usr/local/slurm/slurmd.spool
 .br
 StateSaveLocation=/usr/local/slurm/slurm.state
+.br
+SwitchType=switch/elan
 .br
 TmpFS=/tmp
 .br

@@ -45,10 +45,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#ifdef HAVE_ELAN
-#  include "src/common/qsw.h"
-#endif				/* HAVE_ELAN */
-
 #ifdef WITH_PTHREADS
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
@@ -62,6 +58,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/switch.h"
 #include "src/common/xmalloc.h"
 
 #define FREE_NULL_BITMAP(_X)		\
@@ -314,9 +311,7 @@ struct 	step_record {
 	time_t time_last_active;	/* time of last job activity */
 	uint16_t port;			/* port for srun communications */
 	char *host;			/* host for srun communications */
-#ifdef HAVE_ELAN
-	qsw_jobinfo_t qsw_job;		/* Elan3 switch context, opaque */
-#endif
+	switch_jobinfo_t switch_job;	/* switch context, opaque */
 };
 
 typedef struct job_step_specs step_specs; 

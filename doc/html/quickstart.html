@@ -248,9 +248,6 @@ The most commonly used arguments to the <i>configure</i> command include:
 value is <i>/usr/local</i>
 <dt>--sysconfdir=<i>DIR</i>
 <dd>Specify location of SLURM configuration file
-<dt>--with-elan
-<dd>Ccompile with support for the Quadrics Elan switch (see
-<a href="http://www.quadrics.com">http://www.quadrics.com</a>)
 <dt>--with-totalview
 <dd>compile with support for the TotalView debugger (see 
 <a href="http://www.etnus.com/">http://www.etnus.com</a>)
@@ -304,6 +301,7 @@ SlurmdPort=7003
 SlurmdSpoolDir=/var/tmp/slurmd.spool
 SlurmdTimeout=300
 StateSaveLocation=/tmp/slurm.state
+SwitchType=switch/elan
 #
 # Node Configurations
 #
