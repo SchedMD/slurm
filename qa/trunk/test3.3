@@ -24,16 +24,24 @@ print_header $test_id
 #
 spawn $scontrol show node  
 expect {
-	-re "NodeName=($alpha_numeric) " {
+        -re "NodeName=($alpha_numeric) State=IDLE" {
+                if {[string compare $node_name ""] == 0} {
+                        set node_name $expect_out(1,string)
+                        set node_old_state "IDLE"
+                }
+                exp_continue
+        }
+        -re "NodeName=($alpha_numeric) State=ALLOCATED" {
+                if {[string compare $node_name ""] == 0} {
+                        set node_name $expect_out(1,string)
+                        set node_old_state "ALLOCATED" 
+                }
+                exp_continue
+        }
+	-re "NodeName=($alpha_numeric) State=($alpha_cap)" {
 		if {[string compare $node_name ""] == 0} {
 			set node_name $expect_out(1,string)
-			set node_old_state ""
-		}
-		exp_continue
-	}
-	-re "State=($alpha_cap) " {
-		if {[string compare $node_old_state ""] == 0} {
-			set node_old_state $expect_out(1,string)
+			set node_old_state $expect_out(2,string)
 		}
 		exp_continue
 	}
@@ -61,9 +69,21 @@ if {[string compare $node_old_state "UNKNOWN"] == 0} {
 	send_user "\nWarning: Unusable node state $node_old_state\n"
 	exit 0
 }
-if {[string compare $node_old_state "COMPLETING"] == 0} {
+if {[string compare $node_old_state "DRAINING"] == 0} {
 	send_user "\nWarning: Unusable node state $node_old_state\n"
 	exit 0
+}
+if {[string compare $node_old_state "DRAINED"] == 0} {
+        send_user "\nWarning: Unusable node state $node_old_state\n"
+        exit 0
+}
+if {[string compare $node_old_state "DOWN"] == 0} {
+        send_user "\nWarning: Unusable node state $node_old_state\n"
+        exit 0
+}
+if {[string compare $node_old_state "COMPLETING"] == 0} {
+        send_user "\nWarning: Unusable node state $node_old_state\n"
+        exit 0
 }
 
 #
@@ -102,7 +122,7 @@ expect {
 #
 spawn $scontrol show node $node_name
 expect {
-	-re "State=($alpha_cap) " {
+	-re "State=($alpha_cap)" {
 		set read_state $expect_out(1,string)
 		exp_continue
 	}
