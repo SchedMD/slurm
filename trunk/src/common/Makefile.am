@@ -7,6 +7,14 @@ else
 test_modules = 
 endif
 
+if WITH_ELAN
+elan_sources = qsw.c
+elan_headers = qsw.h
+else
+elan_sources = 
+elan_headers = 
+endif
+
 AUTOMAKE_OPTIONS = foreign
 
 noinst_LIBRARIES = libcommon.a
@@ -18,7 +26,9 @@ libcommon_a_SOURCES = 	xmalloc.c 	\
                       	list.c  	\
 		      	log.c		\
 		      	bits_bytes.c	\
-			bitstring.c
+			bitstring.c     \
+			pack.c		\
+			$(elan_sources)
 
 noinst_HEADERS = 	xmalloc.h 	\
 		 	xassert.h 	\
@@ -28,7 +38,9 @@ noinst_HEADERS = 	xmalloc.h 	\
 		 	strlcpy.h	\
 		 	slurm.h 	\
 		 	slurmlib.h	\
-			bitstring.h
+			bitstring.h     \
+			pack.h		\
+			$(elan_headers)
 
 # target specific CFLAGS do not work until automake 1.5, use explicit rules
 # for now. If we ever move to 1.5, the CFLAGS defs below should work in
