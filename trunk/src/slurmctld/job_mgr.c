@@ -966,7 +966,8 @@ job_cancel (uint32_t job_id, uid_t uid)
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
 
-	if ((job_ptr->user_id != uid) && (uid != 0)) {
+	if ( (job_ptr->user_id != uid) && 
+	     (uid != 0) && (uid != getuid ()) ) {
 		error ("Security violation, JOB_CANCEL RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -1021,7 +1022,8 @@ job_complete (uint32_t job_id, uid_t uid)
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
 
-	if ((job_ptr->user_id != uid) && (uid != 0)) {
+	if ( (job_ptr->user_id != uid) &&
+	     (uid != 0) && (uid != getuid ()) ) {
 		error ("Security violation, JOB_COMPLETE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -1467,7 +1469,8 @@ job_step_cancel (uint32_t job_id, uint32_t step_id, uid_t uid)
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
 
-	if ((job_ptr->user_id != uid) && (uid != 0)) {
+	if ( (job_ptr->user_id != uid) && 
+	     (uid != 0) && (uid != getuid ()) ) {
 		error ("Security violation, JOB_CANCEL RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -1516,7 +1519,8 @@ job_step_complete (uint32_t job_id, uint32_t step_id, uid_t uid)
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
 
-	if ((job_ptr->user_id != uid) && (uid != 0)) {
+	if ( (job_ptr->user_id != uid) && 
+	     (uid != 0) && (uid != getuid ()) ) {
 		error ("Security violation, JOB_COMPLETE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -2023,6 +2027,7 @@ int
 update_job (job_desc_msg_t * job_specs, uid_t uid) 
 {
 	int error_code = SLURM_SUCCESS;
+	int super_user = 0;
 	struct job_record *job_ptr;
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
@@ -2033,7 +2038,10 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 		error ("update_job: job_id %u does not exist.", job_specs -> job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
-	if ((job_ptr->user_id != uid) && (uid != 0)) {
+	if ( (uid == 0) || (uid = getuid ()) )
+		super_user = 1;
+	if ( (job_ptr->user_id != uid) && 
+	     (super_user == 0) ) {
 		error ("Security violation, JOB_UPDATE RPC from uid %d", uid);
 		return ESLURM_USER_ID_MISSING;
 	}
@@ -2042,8 +2050,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	last_job_update = time (NULL);
 
 	if (job_specs -> time_limit != NO_VAL) {
-		if ((uid == 0) ||
-		    (job_ptr -> time_limit > job_specs -> time_limit)) {
+		if ( super_user || 
+		     (job_ptr -> time_limit > job_specs -> time_limit) ) {
 			job_ptr -> time_limit = job_specs -> time_limit;
 			job_ptr -> end_time = job_ptr -> start_time + (job_ptr -> time_limit * 60);
 			info ("update_job: setting time_limit to %u for job_id %u",
@@ -2056,8 +2064,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> priority != NO_VAL) {
-		if ((uid == 0) ||
-		    (job_ptr -> priority > job_specs -> priority)) {
+		if ( super_user ||
+		     (job_ptr -> priority > job_specs -> priority) ) {
 			job_ptr -> priority = job_specs -> priority;
 			info ("update_job: setting priority to %u for job_id %u",
 				job_specs -> priority, job_specs -> job_id);
@@ -2069,8 +2077,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> min_procs != NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> min_procs > job_specs -> min_procs)) {
+		if ( super_user ||
+		     (detail_ptr -> min_procs > job_specs -> min_procs) ) {
 			detail_ptr -> min_procs = job_specs -> min_procs;
 			info ("update_job: setting min_procs to %u for job_id %u",
 				job_specs -> min_procs, job_specs -> job_id);
@@ -2082,8 +2090,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> min_memory != NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> min_memory > job_specs -> min_memory)) {
+		if ( super_user ||
+		     (detail_ptr -> min_memory > job_specs -> min_memory) ) {
 			detail_ptr -> min_memory = job_specs -> min_memory;
 			info ("update_job: setting min_memory to %u for job_id %u",
 				job_specs -> min_memory, job_specs -> job_id);
@@ -2095,8 +2103,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> min_tmp_disk != NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> min_tmp_disk > job_specs -> min_tmp_disk)) {
+		if ( super_user ||
+		     (detail_ptr -> min_tmp_disk > job_specs -> min_tmp_disk) ) {
 			detail_ptr -> min_tmp_disk = job_specs -> min_tmp_disk;
 			info ("update_job: setting min_tmp_disk to %u for job_id %u",
 				job_specs -> min_tmp_disk, job_specs -> job_id);
@@ -2108,8 +2116,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> num_procs != NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> num_procs > job_specs -> num_procs)) {
+		if ( super_user ||
+		     (detail_ptr -> num_procs > job_specs -> num_procs) ) {
 			detail_ptr -> num_procs = job_specs -> num_procs;
 			info ("update_job: setting num_procs to %u for job_id %u",
 				job_specs -> num_procs, job_specs -> job_id);
@@ -2121,8 +2129,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> num_nodes != NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> num_nodes > job_specs -> num_nodes)) {
+		if ( super_user ||
+		     (detail_ptr -> num_nodes > job_specs -> num_nodes) ) {
 			detail_ptr -> num_nodes = job_specs -> num_nodes;
 			info ("update_job: setting num_nodes to %u for job_id %u",
 				job_specs -> num_nodes, job_specs -> job_id);
@@ -2134,8 +2142,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> shared != (uint16_t) NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> shared > job_specs -> shared)) {
+		if ( super_user ||
+		     (detail_ptr -> shared > job_specs -> shared) ) {
 			detail_ptr -> shared = job_specs -> shared;
 			info ("update_job: setting shared to %u for job_id %u",
 				job_specs -> shared, job_specs -> job_id);
@@ -2147,8 +2155,8 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> contiguous != (uint16_t) NO_VAL && detail_ptr) {
-		if ((uid == 0) ||
-		    (detail_ptr -> contiguous > job_specs -> contiguous)) {
+		if ( super_user ||
+		     (detail_ptr -> contiguous > job_specs -> contiguous) ) {
 			detail_ptr -> contiguous = job_specs -> contiguous;
 			info ("update_job: setting contiguous to %u for job_id %u",
 				job_specs -> contiguous, job_specs -> job_id);
@@ -2160,7 +2168,7 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> features && detail_ptr) {
-		if (uid == 0) {
+		if ( super_user ) {
 			if (detail_ptr -> features)
 				xfree (detail_ptr -> features);
 			detail_ptr -> features = job_specs -> features;
@@ -2184,7 +2192,7 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 		tmp_part_ptr = find_part_record (job_specs -> partition);
 		if (tmp_part_ptr == NULL)
 			error_code =  ESLURM_INVALID_PARTITION_NAME;
-		if ((uid == 0) && (tmp_part_ptr)) {
+		if ( (super_user && tmp_part_ptr) ) {
 			strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
 			job_ptr -> part_ptr = tmp_part_ptr;
 			info ("update_job: setting partition to %s for job_id %u",
@@ -2198,7 +2206,7 @@ update_job (job_desc_msg_t * job_specs, uid_t uid)
 	}
 
 	if (job_specs -> req_nodes && detail_ptr) {
-		if (uid == 0) {
+		if (super_user){
 			if (node_name2bitmap (job_specs->req_nodes, &req_bitmap)) {
 				error ("Invalid node list specified for job_update: %s", 
 					job_specs->req_nodes);
