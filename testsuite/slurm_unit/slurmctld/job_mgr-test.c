@@ -1,7 +1,7 @@
 
 /*#define _DEJAGNU_WAIT_
 */
-#include <src/slurmctld/slurmctld.h>
+#include "src/slurmctld/slurmctld.h"
 #include <testsuite/dejagnu.h>
 
 slurm_ctl_conf_t slurmctld_conf;

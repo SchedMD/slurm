@@ -31,9 +31,9 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "src/common/slurm_protocol_api.h"
-#include "src/slurm/slurm.h"
+#include <slurm/slurm.h>
 
+#include "src/common/slurm_protocol_api.h"
 
 /*
  * slurm_submit_batch_job - issue RPC to submit a job for later execution

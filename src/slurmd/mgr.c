@@ -46,12 +46,13 @@
 #  include <stdlib.h>
 #endif
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/cbuf.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"

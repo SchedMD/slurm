@@ -42,11 +42,12 @@
 #  endif
 #endif  /* HAVE_INTTYPES_H */
 
+#include <slurm/slurm.h>
+
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/scancel/scancel.h"
-#include "src/slurm/slurm.h"
 
 #define MAX_CANCEL_RETRY 10
 

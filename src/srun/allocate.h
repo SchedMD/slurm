@@ -28,7 +28,8 @@
 #ifndef _HAVE_ALLOCATE_H
 #define _HAVE_ALLOCATE_H
 
-#include "src/slurm/slurm.h"
+#include <slurm/slurm.h>
+
 #include "src/srun/job.h"
 
 /* 

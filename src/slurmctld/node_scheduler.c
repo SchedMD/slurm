@@ -37,8 +37,9 @@
 #include <syslog.h>
 #include <unistd.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/hostlist.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/xmalloc.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/slurmctld.h"

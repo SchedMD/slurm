@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "src/common/slurm_errno.h"
+#include <slurm/slurm_errno.h>
 
 /* Type for error string table entries */
 typedef struct {

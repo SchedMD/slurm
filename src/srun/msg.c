@@ -39,10 +39,11 @@
 #include <sys/poll.h>
 #include <time.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/fd.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
-#include "src/common/slurm_errno.h"
 #include "src/common/slurm_auth.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/slurm_protocol_defs.h"

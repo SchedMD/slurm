@@ -31,7 +31,7 @@
 #include <sys/time.h>
 #include <time.h>
 
-#include "src/common/slurm_errno.h"
+#include <slurm/slurm_errno.h>
 
 /* for sendto and recvfrom commands */
 #define SLURM_PROTOCOL_NO_SEND_RECV_FLAGS 0

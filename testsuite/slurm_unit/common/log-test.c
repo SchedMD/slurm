@@ -2,8 +2,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <src/common/slurm_errno.h>
-#include <src/common/log.h>
+#include <slurm/slurm_errno.h>
+#include "src/common/log.h"
 
 int bad_func()
 {

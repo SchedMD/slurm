@@ -52,6 +52,8 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
+#include <slurm/slurm.h>
+
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -59,7 +61,6 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
-#include "src/slurm/slurm.h"
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\
@@ -929,7 +930,7 @@ extern int sync_job_files(void);
  * update_job - update a job's parameters per the supplied specifications
  * IN job_specs - a job's specification
  * IN uid - uid of user issuing RPC
- * RET returns an error code from common/slurm_errno.h
+ * RET returns an error code from slurm_errno.h
  * global: job_list - global list of job entries
  *	last_job_update - time of last job table update
  */

@@ -40,6 +40,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/log.h"
 #include "src/common/macros.h"
@@ -47,7 +49,6 @@
 #include "src/common/read_config.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
-#include "src/slurm/slurm.h"
 
 #define BUF_SIZE 1024
 #define MAX_NAME_LEN	32

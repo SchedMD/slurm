@@ -37,10 +37,11 @@
 #include <time.h>
 #include <inttypes.h>
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/pack.h"
-#include "src/common/slurm_errno.h"
-#include "src/common/xmalloc.h"
 #include "src/common/macros.h"
+#include "src/common/xmalloc.h"
 
 #define BUF_SIZE 4096
 

@@ -34,8 +34,9 @@
 #include <sys/types.h>
 #include <time.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurm/slurm.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 

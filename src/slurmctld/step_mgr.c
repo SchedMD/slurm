@@ -42,8 +42,9 @@
 #  include "src/common/qsw.h"
 #endif
 
+#include <slurm/slurm_errno.h>
+
 #include "src/common/bitstring.h"
-#include "src/common/slurm_errno.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/slurmctld.h"

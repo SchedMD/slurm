@@ -32,8 +32,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <slurm/slurm.h>
+
 #include "src/common/slurm_protocol_api.h"
-#include "src/slurm/slurm.h"
 
 /*
  * slurm_kill_job - send the specified signal to all steps of an existing job
