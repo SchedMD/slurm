@@ -136,6 +136,7 @@ typedef struct srun_options {
 	bool batch;		/* --batch,   -b		*/
 	bool fail_kill;		/* --kill,   -k			*/
 	bool share;		/* --share,   -s		*/
+	int  max_wait;		/* --wait,   -w			*/
 #ifdef HAVE_TOTALVIEW
 	bool totalview;		/* srun controlled by TotalView	*/
 #endif

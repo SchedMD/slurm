@@ -88,6 +88,7 @@
 #define OPT_BATCH       0x16
 #define OPT_TIME        0x17
 #define OPT_THREADS     0x18
+#define OPT_WAIT	0x19
 
 /* constraint type options */
 #define OPT_MINCPUS     0x50
@@ -207,6 +208,9 @@ struct poptOption runTable[] = {
 	{"threads", 'T', POPT_ARG_INT, &opt.max_threads, OPT_THREADS,
 	 "number of threads in srun",
 	 "threads"},
+	{"wait", 'W', POPT_ARG_INT, &opt.max_wait, OPT_WAIT,
+	 "seconds to wait after first task ends before killing job",
+	 "seconds"},
 	POPT_TABLEEND
 };
 
@@ -557,6 +561,7 @@ static void opt_default()
 	opt.allocate = false;
 	opt.attach = NULL;
 	opt.join = false;
+	opt.max_wait = 0;
 
 	_verbose = 0;
 	_debug = 0;
@@ -1193,6 +1198,7 @@ void opt_list()
 	info("overcommit     : %s", tf_(opt.overcommit));
 	info("batch          : %s", tf_(opt.batch));
 	info("threads        : %d", opt.max_threads);
+	info("wait           : %d", opt.max_wait);
 	str = print_constraints();
 	info("constraints    : %s", str);
 	xfree(str);
