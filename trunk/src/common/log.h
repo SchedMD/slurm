@@ -66,15 +66,35 @@ typedef struct {
     { 1, LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
 
 /* 
- * init/reinit log, call before log_file_init 
+ * initialize/reinitialize log module (may be called multiple times)
  *
- * calls to 
+ * example:
+ *
+ * To initialize log module to print fatal messages to stderr, and
+ * all messages up to and including info() to syslog:
+ *
+ * log_options_t logopts = LOG_OPTS_INITIALIZER;
+ * logopts.stderr_level  = LOG_LEVEL_FATAL;
+ * logopts.syslog_level  = LOG_LEVEL_INFO;
+ *
+ * rc = log_init(argv[0], logopts, SYSLOG_FACILITY_DAEMON, NULL);
+ *
  */
 int log_init(char *argv0, log_options_t opts, 
               log_facility_t fac, char *logfile);
 
 /* 
  * the following log a message to the log facility at the appropriate level:
+ *
+ * Messages do not need a newline!
+ *
+ * args are printf style with the following exceptions:
+ *
+ * fmt     expands to
+ * ~~~~    ~~~~~~~~~~~
+ * "%m" => strerror(errno)
+ * "%t" => strftime "%x %X"  (locally preferred short date/time) 
+ * "%T" => strftime "%a %d %b %Y %H:%M:%S %z" (rfc822 date/time)
  */
 
 /* fatal() aborts program unless NDEBUG defined
