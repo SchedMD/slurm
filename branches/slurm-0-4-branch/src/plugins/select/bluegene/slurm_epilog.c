@@ -65,9 +65,9 @@ int main(int argc, char *argv[])
 	if (!job_id)
 		fprintf(stderr, "SLURM_JOBID not set\n");
 
-	part_name = getenv("BGL_PARTITION_ID");	/* get partition ID */
+	part_name = getenv("MPIRUN_PARTITION");	/* get partition ID */
 	if (!part_name) {
-		fprintf(stderr, "BGL_PARTITION_ID not set for job %s\n",
+		fprintf(stderr, "MPIRUN_PARTITION not set for job %s\n", 
 			job_id);
 		exit(0);
 	}

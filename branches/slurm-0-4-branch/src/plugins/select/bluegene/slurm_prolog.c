@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
 #define MIN_DELAY  300			/* time in seconds */
 #define INCR_DELAY 20			/* time in seconds per BP */
 int max_delay=MIN_DELAY;
-int cur_delay=0;
+int cur_delay=0; 
 
 static char *_part_state_str(rm_partition_state_t state);
 static void  _wait_part_ready(char *part_name);
@@ -76,9 +76,9 @@ int main(int argc, char *argv[])
 	if (!job_id)
 		fprintf(stderr, "SLURM_JOBID not set\n");
 
-	part_name = getenv("BGL_PARTITION_ID");	/* get partition ID */
+	part_name = getenv("MPIRUN_PARTITION");	/* get partition ID */
 	if (!part_name) {
-		fprintf(stderr, "BGL_PARTITION_ID not set for job %s\n",
+		fprintf(stderr, "MPIRUN_PARTITION not set for job %s\n",
 			job_id);
 		exit(0);
 	}
