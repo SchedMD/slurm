@@ -141,7 +141,8 @@ case "$1" in
 	done
         ;;
     restart)
-        $0 stop && $0 start
+        $0 stop
+	$0 start
         ;;
     condrestart)
         if [ -f /var/lock/subsys/slurm ]; then
