@@ -194,7 +194,11 @@ getline(const char *prompt)
 	printf("%s", prompt);
 
 	fgets(buf, 4096, stdin);
-	len = strlen(buf) + 1;
+	len = strlen(buf);
+	if ((len > 0) && (buf[len-1] == '\n'))
+		buf[len-1] = '\0';
+	else
+		len++;
 	line = malloc (len * sizeof(char));
 	return strncpy(line, buf, len);
 }
@@ -220,7 +224,6 @@ _get_command (int *argc, char **argv)
 #else
 	in_line = getline("scontrol: ");
 #endif
-
 	if (in_line == NULL)
 		return 0;
 	else if (strcmp (in_line, "!!") == 0) {
