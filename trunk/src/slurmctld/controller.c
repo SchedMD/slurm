@@ -1901,7 +1901,8 @@ static void _slurm_rpc_node_registration(slurm_msg_t * msg)
 					real_memory_size,
 					node_reg_stat_msg->
 					temporary_disk_space,
-					node_reg_stat_msg->job_count);
+					node_reg_stat_msg->job_count,
+					node_reg_stat_msg->status);
 		unlock_slurmctld(job_write_lock);
 	}
 

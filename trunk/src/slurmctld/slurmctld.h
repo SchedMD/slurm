@@ -985,11 +985,13 @@ extern void validate_jobs_on_node ( char *node_name, uint32_t *job_count,
  * IN cpus - number of cpus measured
  * IN real_memory - mega_bytes of real_memory measured
  * IN tmp_disk - mega_bytes of tmp_disk measured
+ * IN status - node status code
  * RET 0 if no error, ENOENT if no such node, EINVAL if values too low
  * global: node_record_table_ptr - pointer to global node table
  */
 extern int validate_node_specs (char *node_name,
 				uint32_t cpus, uint32_t real_memory, 
-				uint32_t tmp_disk, uint32_t job_count);
+				uint32_t tmp_disk, uint32_t job_count,
+				uint32_t status);
 
 #endif /* !_HAVE_SLURM_H */
