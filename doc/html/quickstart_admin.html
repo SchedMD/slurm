@@ -75,7 +75,7 @@ per the SLURM configuration.</p>
 <p>All communications between SLURM components are authenticated. The authentication 
 infrastructure used is specified in the SLURM configuration file and options include: 
 <a href="http://www.theether.org/authd/">authd</a>, 
-<a href="http://www.llnl.gov/linux/munge/">munge</a>, and none.
+<a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a>, and none.
 The default authentication infrastructure is "none". This permits any user to execute 
 any job as another user. This may be fine for testing purposes, but certainly not for production 
 use. <b>Configure some AuthType value other than "none" if you want any security.</b>
@@ -209,7 +209,7 @@ You will need to have at least one &quot;auth&quot; plugin. Currently, only thre
 authentication plugins are supported: <b>auth/none</b>, <b>auth/authd</b>, and 
 <b>auth/munge</b>. The auth/none plugin is built and used by default, but either 
 Brent Chun's <a href="http://www.theether.org/authd/">authd</a>, or Chris Dunlap's 
-<a href="http://www.llnl.gov/linux/munge/">munge</a> should be installed in order to 
+<a href="ftp://ftp.llnl.gov/pub/linux/munge/">munge</a> should be installed in order to 
 get properly authenticated communications. 
 Unless you are experience with authd, we recommend the use of munge.
 The configure script in the top-level directory of this distribution will determine 
