@@ -1052,15 +1052,16 @@ _pack_update_partition_msg(update_part_msg_t * msg, Buf buffer)
 {
 	assert(msg != NULL);
 
-	packstr(msg->name, buffer);
-	pack32(msg->max_time, buffer);
-	pack32(msg->max_nodes, buffer);
-	pack16(msg->default_part, buffer);
-	pack16(msg->root_only, buffer);
-	pack16(msg->shared, buffer);
-	pack16(msg->state_up, buffer);
-	packstr(msg->nodes, buffer);
 	packstr(msg->allow_groups, buffer);
+	pack16(msg-> default_part, buffer);
+	pack32(msg-> max_time,     buffer);
+	pack32(msg-> max_nodes,    buffer);
+	pack32(msg-> min_nodes,    buffer);
+	packstr(msg->name,         buffer);
+	packstr(msg->nodes,        buffer);
+	pack16(msg-> root_only,    buffer);
+	pack16(msg-> shared,       buffer);
+	pack16(msg-> state_up,     buffer);
 }
 
 static int
@@ -1075,15 +1076,16 @@ _unpack_update_partition_msg(update_part_msg_t ** msg, Buf buffer)
 	tmp_ptr = xmalloc(sizeof(update_part_msg_t));
 	*msg = tmp_ptr;
 
-	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->allow_groups, &uint16_tmp, buffer);
+	safe_unpack16(&tmp_ptr->default_part, buffer);
 	safe_unpack32(&tmp_ptr->max_time, buffer);
 	safe_unpack32(&tmp_ptr->max_nodes, buffer);
-	safe_unpack16(&tmp_ptr->default_part, buffer);
+	safe_unpack32(&tmp_ptr->min_nodes, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->name, &uint16_tmp, buffer);
+	safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint16_tmp, buffer);
 	safe_unpack16(&tmp_ptr->root_only, buffer);
 	safe_unpack16(&tmp_ptr->shared, buffer);
 	safe_unpack16(&tmp_ptr->state_up, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->nodes, &uint16_tmp, buffer);
-	safe_unpackstr_xmalloc(&tmp_ptr->allow_groups, &uint16_tmp, buffer);
 	return SLURM_SUCCESS;
 
       unpack_error:
@@ -1355,14 +1357,15 @@ _unpack_partition_info_members(partition_info_t * part, Buf buffer)
 	safe_unpackstr_xmalloc(&part->name, &uint16_tmp, buffer);
 	if (part->name == NULL)
 		part->name = xmalloc(1);	/* part->name = "" implicit */
-	safe_unpack32(&part->max_time, buffer);
-	safe_unpack32(&part->max_nodes, buffer);
-	safe_unpack32(&part->total_nodes, buffer);
+	safe_unpack32(&part->max_time,     buffer);
+	safe_unpack32(&part->max_nodes,    buffer);
+	safe_unpack32(&part->min_nodes,    buffer);
+	safe_unpack32(&part->total_nodes,  buffer);
 
-	safe_unpack32(&part->total_cpus, buffer);
+	safe_unpack32(&part->total_cpus,   buffer);
 	safe_unpack16(&part->default_part, buffer);
-	safe_unpack16(&part->root_only, buffer);
-	safe_unpack16(&part->shared, buffer);
+	safe_unpack16(&part->root_only,    buffer);
+	safe_unpack16(&part->shared,       buffer);
 
 	safe_unpack16(&part->state_up, buffer);
 	safe_unpackstr_xmalloc(&part->allow_groups, &uint16_tmp, buffer);

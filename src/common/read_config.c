@@ -520,7 +520,7 @@ _parse_part_spec (char *in_line)
 	char *allow_groups = NULL, *default_str = NULL;
 	char *partition = NULL, *root_str = NULL;
 	char *nodes = NULL, *shared_str = NULL, *state_str = NULL;
-	int max_time_val, max_nodes_val;
+	int max_time_val, max_nodes_val, min_nodes_val;
 
 	error_code = slurm_parser (in_line,
 		"AllowGroups=", 's', &allow_groups, 
@@ -529,6 +529,7 @@ _parse_part_spec (char *in_line)
 		"RootOnly=", 's', &root_str, 
 		"MaxTime=", 'd', &max_time_val, 
 		"MaxNodes=", 'd', &max_nodes_val, 
+		"MinNodes=", 'd', &min_nodes_val, 
 		"Nodes=", 's', &nodes, 
 		"Shared=", 's', &shared_str, 
 		"State=", 's', &state_str, 

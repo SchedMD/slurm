@@ -427,7 +427,8 @@ static int _parse_part_spec(char *in_line)
 {
 	char *allow_groups, *nodes, *partition_name;
 	char *default_str, *root_str, *shared_str, *state_str;
-	int max_time_val, max_nodes_val, root_val, default_val;
+	int max_time_val, max_nodes_val, min_nodes_val;
+	int root_val, default_val;
 	int state_val, shared_val;
 	int error_code;
 	struct part_record *part_record_point;
@@ -458,6 +459,7 @@ static int _parse_part_spec(char *in_line)
 				  "RootOnly=", 's', &root_str,
 				  "MaxTime=", 'd', &max_time_val,
 				  "MaxNodes=", 'd', &max_nodes_val,
+				  "MinNodes=", 'd', &min_nodes_val,
 				  "Nodes=", 's', &nodes,
 				  "Shared=", 's', &shared_str,
 				  "State=", 's', &state_str, "END");
@@ -530,15 +532,17 @@ static int _parse_part_spec(char *in_line)
 	if (strcasecmp(partition_name, "DEFAULT") == 0) {
 		xfree(partition_name);
 		if (max_time_val != NO_VAL)
-			default_part.max_time = max_time_val;
+			default_part.max_time  = max_time_val;
 		if (max_nodes_val != NO_VAL)
 			default_part.max_nodes = max_nodes_val;
+		if (min_nodes_val != NO_VAL)
+			default_part.min_nodes = min_nodes_val;
 		if (root_val != NO_VAL)
 			default_part.root_only = root_val;
 		if (state_val != NO_VAL)
-			default_part.state_up = state_val;
+			default_part.state_up  = state_val;
 		if (shared_val != NO_VAL)
-			default_part.shared = shared_val;
+			default_part.shared    = shared_val;
 		if (allow_groups) {
 			xfree(default_part.allow_groups);
 			default_part.allow_groups = allow_groups;
@@ -570,15 +574,17 @@ static int _parse_part_spec(char *in_line)
 		default_part_loc = part_record_point;
 	}
 	if (max_time_val != NO_VAL)
-		part_record_point->max_time = max_time_val;
+		part_record_point->max_time  = max_time_val;
 	if (max_nodes_val != NO_VAL)
 		part_record_point->max_nodes = max_nodes_val;
+	if (min_nodes_val != NO_VAL)
+		part_record_point->min_nodes = min_nodes_val;
 	if (root_val != NO_VAL)
 		part_record_point->root_only = root_val;
 	if (state_val != NO_VAL)
-		part_record_point->state_up = state_val;
+		part_record_point->state_up  = state_val;
 	if (shared_val != NO_VAL)
-		part_record_point->shared = shared_val;
+		part_record_point->shared    = shared_val;
 	if (allow_groups) {
 		xfree(part_record_point->allow_groups);
 		part_record_point->allow_groups = allow_groups;

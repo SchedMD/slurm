@@ -174,6 +174,7 @@ struct part_record {
 	char name[MAX_NAME_LEN];/* name of the partition */
 	uint32_t max_time;	/* minutes or INFINITE */
 	uint32_t max_nodes;	/* per job or INFINITE */
+	uint32_t min_nodes;	/* per job */
 	uint32_t total_nodes;	/* total number of nodes in the partition */
 	uint32_t total_cpus;	/* total number of cpus in the partition */
 	uint16_t root_only;	/* 1 if allocate/submit RPC can only be 
