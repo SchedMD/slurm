@@ -30,6 +30,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -54,18 +55,23 @@ typedef struct node_space_map {
 	time_t time;
 } node_space_map_t;
 
-List pend_job_list = NULL;
-List run_job_list  = NULL;
+/*********************** local variables *********************/
+static bool run_now = true;
+static pthread_mutex_t thread_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+static List pend_job_list = NULL;
+static List run_job_list  = NULL;
 
 #define MAX_JOB_CNT 100
-int node_space_recs;
-node_space_map_t node_space[MAX_JOB_CNT + 1];
+static int node_space_recs;
+static node_space_map_t node_space[MAX_JOB_CNT + 1];
 
 /* Set __DEBUG to get detailed logging for this thread without 
  * detailed logging for the entire slurmctld daemon */
 #define __DEBUG        0
-#define SLEEP_TIME     60
+#define SLEEP_TIME     2
 
+/*********************** local functions *********************/
 static int  _add_pending_job(job_info_t *job_ptr, partition_info_t *part_ptr,
 		part_specs_t *part_specs);
 static int  _add_running_job(job_info_t *job_ptr, node_info_msg_t *node_info);
@@ -86,6 +92,7 @@ static int  _load_jobs(job_info_msg_t ** job_buffer_pptr);
 static int  _load_nodes(node_info_msg_t ** node_buffer_pptr);
 static int  _load_partitions(partition_info_msg_t **part_buffer_pptr);
 static int  _loc_restrict(job_info_t *job_ptr, part_specs_t *part_specs);
+static bool _more_work(void);
 static int  _sort_by_prio(void *x, void *y);
 static int  _sort_by_end(void *x, void *y);
 
@@ -130,7 +137,9 @@ backfill_agent(void *args)
 	partition_info_t *part_ptr      = NULL;
 
 	while (1) {
-		sleep(SLEEP_TIME);
+		sleep(SLEEP_TIME);	/* don't run continuously */
+		if (!_more_work())
+			continue;
 
 		/* load all state info */
 		if ( _load_jobs(&job_info)         || 
@@ -151,6 +160,28 @@ backfill_agent(void *args)
 			_attempt_backfill(part_ptr, node_info, job_info);
 		}
 	}
+}
+
+/* trigger the attempt of a backfill */
+extern void
+run_backfill (void)
+{
+	pthread_mutex_lock( &thread_flag_mutex );
+	run_now = true;
+	pthread_mutex_unlock( &thread_flag_mutex );
+}
+
+static bool
+_more_work (void)
+{
+	bool result = false;
+
+	pthread_mutex_lock( &thread_flag_mutex );
+	if (run_now)
+		result = true;
+	run_now = false;
+	pthread_mutex_unlock( &thread_flag_mutex );
+	return result;
 }
 
 /* Load current job table information into *job_buffer_pptr */

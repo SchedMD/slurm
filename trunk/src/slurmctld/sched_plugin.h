@@ -27,6 +27,11 @@ int slurm_sched_schedule( void );
 u_int32_t slurm_sched_initial_priority( u_int32_t max_prio );
 
 /*
+ * Note that some job is pending.
+ */
+void slurm_sched_job_is_pending( void );
+
+/*
  **************************************************************************
  *                              U P C A L L S                             *
  **************************************************************************
