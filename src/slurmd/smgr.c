@@ -198,6 +198,15 @@ _become_user(slurmd_job_t *job)
 }	
 
 
+static sig_atomic_t got_sigchld = 0;
+
+static void
+_chld_handler(int signo)
+{
+	got_sigchld = 1;
+}
+
+
 /* Execute N tasks and send pids back to job manager process.
  */ 
 static int
@@ -208,6 +217,8 @@ _exec_all_tasks(slurmd_job_t *job)
 
 	xassert(job != NULL);
 	xassert(fd >= 0);
+
+	xsignal(SIGCHLD, _chld_handler);
 
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid = fork();
@@ -296,6 +307,81 @@ static void
 _term_handler()
 { }
 
+static void
+_block_on_sigchld(void)
+{
+    again:
+	if (got_sigchld) 
+		goto done;
+
+	poll(NULL, 0, -1);
+	if (errno != EINTR) {
+		error("poll (waiting on sigchld): %m");
+		goto again;
+	}
+	if (timelimit_exceeded)
+		error("job exceeded timelimit");
+	if (!got_sigchld)
+		goto again;
+
+    done:
+	got_sigchld = 0;
+	return;
+}
+
+/*
+ *  Collect a single task's exit status and send it up to the
+ *   slurmd job manager. 
+ *
+ *  Returns the number of tasks actually reaped
+ *   (i.e. 1 for success, 0 for failure)
+ *
+ */
+static int
+_reap_task(slurmd_job_t *job)
+{
+	pid_t pid;
+	int   status = 0;
+	int   i      = 0;
+	int   fd     = job->fdpair[1];
+
+
+	if ((pid = waitpid(-1, &status, WNOHANG)) > (pid_t) 0) {
+		for (i = 0; i < job->ntasks; i++) {
+			if (job->task[i]->pid == pid) {
+				_send_exit_status(job, fd, i, status);
+				return 1;
+			}
+		}
+		return 0;
+	} 
+
+	if (pid == (pid_t) 0)
+		return 0;
+
+	/* 
+	 *  Else waitpid returned error:
+	 */
+	switch (errno) {
+	case ECHILD: 
+		/* 
+		 *  waitpid() may return "No child processes." if
+		 *   a debugger has attached and is tracing all tasks.
+		 *   (gnats:217)
+		 */
+		break;
+	case EINTR:
+		if (timelimit_exceeded)
+			error("job exceeded timelimit");
+		break;
+	default:
+		error("waitpid: %m");
+		break;
+	}
+
+	return 0; 
+}
+
 
 /* wait for N tasks to exit, reporting exit status back to slurmd mgr
  * process over file descriptor fd.
@@ -304,40 +390,22 @@ _term_handler()
 static void
 _wait_for_all_tasks(slurmd_job_t *job)
 {
-	int waiting = job->ntasks;
-	int i  = 0;
-	int id = 0;
-	int fd = job->fdpair[1];
-	pid_t spid = getpid();
+	int active = job->ntasks;
 
 	xsignal(SIGXCPU, _xcpu_handler);
 	xsignal(SIGTERM, _term_handler);
 	xsignal(SIGINT,  _term_handler);
 
-	while (waiting > 0) {
-		int status  = 0;
-		pid_t pid;
+	/*
+	 *  While there are still active tasks, block waiting
+	 *   for SIGCHLD, then reap as many children as possible.
+	 */
 
-		if ((pid = waitpid(-spid, &status, 0)) < (pid_t) 0) {
-			if (errno == EINTR) {
-				if (timelimit_exceeded)
-					error("job exceeded timelimit");
-			} else
-				error("waitpid: %m");
-			continue;
-		}
-
-		for (i = 0; i < job->ntasks; i++) {
-			if (job->task[i]->pid == pid) {
-				waiting--;
-				id = i; 
-				break;
-			}
-		}
-
-		_send_exit_status(job, fd, id, status);
-		status = 0;
+	while (active > 0) {
+		_block_on_sigchld();
+		while (_reap_task(job)) active--;
 	}
+
 	return;
 }
 
