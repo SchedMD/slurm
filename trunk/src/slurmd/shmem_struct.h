@@ -47,13 +47,15 @@ void init_shmem ( slurmd_shmem_t * shmem );
 int rel_shmem ( void * shmem_addr );
 
 /* allocates job step from shared memory array */
-void * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) ;
+job_step_t * alloc_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) ;
 /* allocates task from shared memory array */
-void * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) ;
+task_t * alloc_task ( slurmd_shmem_t * shmem , job_step_t * job_step ) ;
 /* api call for DPCS to return a job_id given a session_id */
 int find_job_id_for_session ( slurmd_shmem_t * shmem , int session_id ) ;
 /* clears a job_step and associated task list for future use */
 int deallocate_job_step ( job_step_t * jobstep ) ;
 /* find a particular job_step */
-void * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) ;
+job_step_t * find_job_step ( slurmd_shmem_t * shmem , int job_id , int job_step_id ) ;
+/* find a particular task */
+task_t * find_task ( job_step_t * job_step, int task_id ) ;
 #endif
