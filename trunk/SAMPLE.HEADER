@@ -1,5 +1,5 @@
 /*****************************************************************************\
- *  FILE.c,v 1.21 2002/05/19 03:13:51 USER_ID Exp
+ * partition_info.c - get the partition information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -20,6 +20,6 @@
  *  details.
  *  
  *  You should have received a copy of the GNU General Public License along
- *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
