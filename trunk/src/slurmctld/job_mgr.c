@@ -236,6 +236,7 @@ static void _delete_job_desc_files(uint32_t job_id)
  * RET 0 or error code */
 int dump_all_job_state(void)
 {
+	static int high_buffer_size = (1024 * 1024);
 	int error_code = 0, log_fd;
 	char *old_file, *new_file, *reg_file;
 	/* Locks: Read config and job */
@@ -243,7 +244,7 @@ int dump_all_job_state(void)
 	    { READ_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 	ListIterator job_iterator;
 	struct job_record *job_ptr;
-	Buf buffer = init_buf(HUGE_BUF_SIZE);
+	Buf buffer = init_buf(high_buffer_size);
 	DEF_TIMERS;
 
 	START_TIMER;
@@ -279,7 +280,7 @@ int dump_all_job_state(void)
 	} else {
 		int pos = 0, nwrite = get_buf_offset(buffer), amount;
 		char *data = (char *)get_buf_data(buffer);
-
+		high_buffer_size = MAX(nwrite, high_buffer_size);
 		while (nwrite > 0) {
 			amount = write(log_fd, &data[pos], nwrite);
 			if ((amount < 0) && (errno != EINTR)) {
@@ -1884,7 +1885,7 @@ _read_data_array_from_file(char *file_name, char ***data, uint16_t * size)
 	}
 
 	pos = 0;
-	buf_size = 4096;
+	buf_size = HUGE_BUF_SIZE;
 	buffer = xmalloc(buf_size);
 	while (1) {
 		amount = read(fd, &buffer[pos], buf_size);
@@ -1940,7 +1941,7 @@ void _read_data_from_file(char *file_name, char **data)
 	}
 
 	pos = 0;
-	buf_size = 4096;
+	buf_size = HUGE_BUF_SIZE;
 	buffer = xmalloc(buf_size);
 	while (1) {
 		amount = read(fd, &buffer[pos], buf_size);
@@ -3304,7 +3305,7 @@ _xmit_new_end_time(struct job_record *job_ptr)
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
 		if ((agent_args->node_count + 1) > buf_rec_size) {
-			buf_rec_size += 32;
+			buf_rec_size += 128;
 			xrealloc((agent_args->slurm_addr),
 				 (sizeof(struct sockaddr_in) *
 				  buf_rec_size));
