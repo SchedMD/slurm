@@ -242,7 +242,7 @@ struct job_record {
 	uint16_t kill_on_step_done;	/* 1 if job should be killed when 
 					   the job step completes, 2 if kill
 					   in progress */
-	char *nodes;			/*  list of nodes allocated to job */
+	char *nodes;			/* list of nodes allocated to job */
 	bitstr_t *node_bitmap;		/* bitmap of nodes allocated to job */
 	uint32_t time_limit;		/* time_limit minutes or INFINITE */
 	time_t start_time;		/* time execution begins, 
@@ -258,7 +258,8 @@ struct job_record {
 	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with 
 					   same cpu count */
-	uint32_t batch_sid;		/* local session id for batch job */
+	uint32_t alloc_sid;		/* local sid making resource alloc */
+	char    *alloc_node;		/* local node making resource alloc */
 	uint16_t next_step_id;		/* next step id to be used */
 	uint16_t node_cnt;		/* count of nodes allocated to job */
 	slurm_addr *node_addr;		/* addresses of the nodes allocated to 
@@ -876,16 +877,6 @@ extern int schedule (void);
  *	3) Call allocate_nodes() to perform the actual allocation
  */
 extern int select_nodes (struct job_record *job_ptr, bool test_only);
-
-/*
- * set_batch_job_sid - set the batch_sid for a specified job_id
- * IN uid - originating uid of the RPC
- * IN job_id - the id of a batch job
- * IN batch_sid - local session id for the job
- * RET int - 0 or an error code
- * global: job_list - global list of job entries is updated
- */
-extern int set_batch_job_sid(uid_t uid, uint32_t job_id, uint32_t batch_sid);
 
 /* set_node_down - make the specified node's state DOWN 
  * IN name - name of the node */

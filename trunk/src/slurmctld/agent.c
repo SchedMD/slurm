@@ -459,7 +459,7 @@ static void *_wdog(void *args)
  */
 static void *_thread_per_node_rpc(void *args)
 {
-	int msg_size;
+	int msg_size = 0;
 	int rc;
 	slurm_fd sockfd;
 	slurm_msg_t request_msg;
