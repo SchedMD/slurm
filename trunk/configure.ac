@@ -238,6 +238,7 @@ fi
 AC_DEFINE_UNQUOTED(HAVE_ELAN, "$HAVE_ELAN", [Define to enable Elan support.])
 AC_SUBST(HAVE_ELAN)
 
+
 dnl OpenSSL location (taken from openssh configure.ac)
 dnl
 AC_SUBST(SSL_LDFLAGS)
@@ -377,6 +378,28 @@ if test x$authd = xyes; then
    AC_SUBST(AUTHD_CFLAGS)
 fi
 AM_CONDITIONAL(WITH_AUTHD, test "x$with_authd" = "xyes")
+
+
+dnl check for whether to include TotalView support
+dnl
+AC_MSG_CHECKING([Whether to include TotalView support])
+totalview=no
+AC_ARG_WITH(totalview,
+  AC_HELP_STRING([--with-totalview],[compile with TotalView support]),
+  [ totalview=yes 
+    AC_DEFINE(HAVE_TOTALVIEW, 1, [Define if you have TotalView support])
+    TOTALVIEW_LIBS="-ltvmpich"
+  ]
+)
+AC_MSG_RESULT(${totalview=no})
+if test x$totalview = xyes; then
+   savedLIBS="$LIBS"
+   LIBS="$TOTALVIEW_LIBS $LIBS"
+   AC_DEFINE(HAVE_TOTALVIEW, 1, [Define if you have TotalView support])
+   LIBS="$savedLIBS"
+   AC_SUBST(TOTALVIEW_LIBS)
+fi
+AM_CONDITIONAL(WITH_TOTALVIEW, test "x$with_totalview" = "xyes")
 
 
 dnl All slurm Makefiles:
