@@ -59,7 +59,7 @@
 #define FED_AUTO_WINMEM 0
 #define FED_MAX_WIN 15
 #define FED_MIN_WIN 0
-#define FED_DEBUG 1
+#define FED_DEBUG 0
 
 #define ZERO 48
 
