@@ -460,7 +460,7 @@ _read_config()
 
 	conf->cf.slurm_conf = xstrdup(conf->conffile);
 
-	read_slurm_conf_ctl(&conf->cf);
+	read_slurm_conf_ctl(&conf->cf, false);
 
 	slurm_mutex_lock(&conf->config_mutex);
 

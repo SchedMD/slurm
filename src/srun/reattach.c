@@ -291,10 +291,8 @@ static int
 _attach_to_job(job_t *job)
 {
 	int i;
-	uint16_t port = slurm_get_slurmd_port();
 	reattach_tasks_request_msg_t *req;
 	slurm_msg_t *msg;
-	char *nd;
 
 	req = xmalloc(job->nhosts * sizeof(*req));
 	msg = xmalloc(job->nhosts * sizeof(*msg));

@@ -113,9 +113,13 @@ extern int parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr);
  * read_slurm_conf_ctl - load the slurm configuration from the configured 
  *	file. 
  * OUT ctl_conf_ptr - pointer to data structure to be filled
+ * IN  slurmd_hosts - if true then build a list of hosts on which slurmd runs
+ *	(only useful for "scontrol show daemons" command). Otherwise only 
+ *	record nodes in which NodeName and NodeHostname differ.
  * RET 0 if no error, otherwise an error code
  */
-extern int read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr);
+extern int read_slurm_conf_ctl (slurm_ctl_conf_t *ctl_conf_ptr,
+	bool slurmd_hosts);
 
 /* 
  * report_leftover - report any un-parsed (non-whitespace) characters on the
