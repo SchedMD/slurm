@@ -524,6 +524,33 @@ int slurm_close_stream ( slurm_fd open_fd )
 	return _slurm_close_stream ( open_fd ) ;
 }
 
+int slurm_select(int n, slurm_fd_set *readfds, slurm_fd_set *writefds, slurm_fd_set *exceptfds, struct timeval *timeout)
+{
+	return _slurm_select(n, readfds, writefds, exceptfds, timeout);
+}
+
+void slurm_FD_CLR(slurm_fd fd, slurm_fd_set *set)
+{
+	return _slurm_FD_CLR(fd, set);
+}
+
+int slurm_FD_ISSET(slurm_fd fd, slurm_fd_set *set)
+{
+	return _slurm_FD_ISSET(fd, set);
+}
+
+void slurm_FD_SET(slurm_fd fd, slurm_fd_set *set)
+{
+	return _slurm_FD_SET(fd, set);
+}
+
+void slurm_FD_ZERO(slurm_fd_set *set)
+{
+	return _slurm_FD_ZERO(set);
+}
+
+
+
 /************************/
 /***** slurm addr functions */
 /************************/

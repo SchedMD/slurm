@@ -146,7 +146,7 @@ int slurm_send_controller_msg ( slurm_fd open_fd , slurm_msg_t * msg ) ;
 int slurm_send_node_msg ( slurm_fd open_fd , slurm_msg_t * msg ) ;
 
 /**********************************************************************/
-/* connection establishment functions used by msg clients             */
+/* msg connection establishment functions used by msg clients         */
 /**********************************************************************/
 
 /* calls connect to make a connection-less datagram connection to the the primary or secondary slurmctld message engine
@@ -229,6 +229,11 @@ size_t inline slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size
  */
 int inline slurm_get_stream_addr  ( slurm_fd open_fd , slurm_addr * address ) ;
 	
+int inline slurm_select(int n, slurm_fd_set *readfds, slurm_fd_set *writefds, slurm_fd_set *exceptfds, struct timeval *timeout) ;
+void inline slurm_FD_CLR(slurm_fd, slurm_fd_set *set) ;
+int inline slurm_FD_ISSET(slurm_fd, slurm_fd_set *set) ;
+void inline slurm_FD_SET(slurm_fd, slurm_fd_set *set) ;
+void inline slurm_FD_ZERO(slurm_fd_set *set) ;
 
 /**********************************************************************/
 /* raw msg buffer send functions */
