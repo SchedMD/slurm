@@ -48,9 +48,9 @@
 #include <src/srun/job.h>
 #include <src/srun/launch.h>
 
-#include "net.h"
-#include "msg.h"
-#include "io.h"
+#include <src/srun/net.h>
+#include <src/srun/msg.h>
+#include <src/srun/io.h>
 
 typedef resource_allocation_response_msg_t allocation_resp;
 
@@ -75,7 +75,7 @@ main(int ac, char **av)
 	allocation_resp *resp;
 	job_t *job;
 	struct sigaction action;
-	int i;
+	int n, i;
 
 	log_options_t logopt = LOG_OPTS_STDERR_ONLY;
 
@@ -105,7 +105,7 @@ main(int ac, char **av)
 		qsw_standalone(job);
 #endif
 	} else {
-		if (!(resp = allocate_nodes())) {
+		if (!(resp = allocate_nodes()) || (resp->node_list == NULL)) {
 			info("No nodes allocated. exiting");
 			exit(1);
 		}
@@ -119,9 +119,12 @@ main(int ac, char **av)
 		slurm_free_resource_allocation_response_msg(resp);
 	}
 
-	/* block all signals in all threads, except sigterm */
+	/* block most signals in all threads, except sigterm */
 	sigfillset(&sigset);
 	sigdelset(&sigset, SIGTERM);
+	sigdelset(&sigset, SIGABRT);
+	sigdelset(&sigset, SIGSEGV);
+	sigdelset(&sigset, SIGQUIT);
 	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
 		fatal("sigprocmask: %m");
 	action.sa_handler = &sigterm_handler;
@@ -187,17 +190,29 @@ main(int ac, char **av)
 	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGTERM);
 
+	if (!opt.no_alloc) {
+		debug("cancelling job %d", job->jobid);
+		slurm_complete_job(job->jobid);
+	}
+
 	/* kill signal thread */
 	pthread_kill(job->sigid, SIGTERM);
 
 	/* wait for  stdio */
+	n = 0;
 	for (i = 0; i < opt.nprocs; i++) {
 		if (job->out[i] == -1)
 			job->out[i] = -9;
 		if (job->err[i] == -1)
 			job->err[i] = -9;
+		if (job->err[i] == -9 && job->out[i] == -9)
+			n++;
 	}
-	pthread_join(job->ioid, NULL);
+	if (n < opt.nprocs)
+		pthread_join(job->ioid, NULL);
+	else
+		pthread_kill(job->ioid, SIGTERM);
+
 
 	exit(0);
 }
@@ -358,14 +373,21 @@ sig_thr(void *arg)
 			  break;
 		  case SIGINT:
 			  if (time(NULL) - last_intr > 1) {
-				  info("sending Ctrl-C to remote tasks");
-				  last_intr = time(NULL);
-				  fwd_signal(job, signo);
+				  if (job->state != SRUN_JOB_OVERDONE) {
+					  info("sending Ctrl-C to job");
+					  last_intr = time(NULL);
+					  fwd_signal(job, signo);
+				  } else
+					  info("attempting cleanup");
+
 			  } else  { /* second Ctrl-C in half as many seconds */
 				    /* terminate job */
-				  info("forcing termination");
 				  pthread_mutex_lock(&job->state_mutex);
-				  job->state = SRUN_JOB_OVERDONE;
+				  if (job->state != SRUN_JOB_OVERDONE) {
+					  info("forcing termination");
+					  job->state = SRUN_JOB_OVERDONE;
+				  } else 
+					  info("attempting cleanup");
 				  pthread_cond_signal(&job->state_cond);
 				  pthread_mutex_unlock(&job->state_mutex);
 				  suddendeath = true;
