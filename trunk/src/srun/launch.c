@@ -169,6 +169,8 @@ static void p_launch(slurm_msg_t *req_array_ptr, job_t *job)
 
 	thread_ptr = xmalloc (job->nhosts * sizeof (thd_t));
 	for (i = 0; i < job->nhosts; i++) {
+		if (job->ntask[i] == 0)		/* No tasks for this node */
+			continue;
 		pthread_mutex_lock(&active_mutex);
 		while (active >= opt.max_threads) {
 			pthread_cond_wait(&active_cond, &active_mutex);
