@@ -10,7 +10,7 @@ INCLUDES = -I$(top_srcdir)/src/common
 # (--enable-debug)
 #
 if DEBUG_MODULES
-test_modules = allocate build_info node_info partition_info reconfigure submit update_config
+test_modules = allocate build_info cancel node_info partition_info reconfigure submit update_config
 else
 test_modules = 
 endif
@@ -27,6 +27,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.a
 
 #allocate_CFLAGS        = -DDEBUG_MODULE $(AM_CFLAGS)
 #build_info_CFLAGS      = -DDEBUG_MODULE $(AM_CFLAGS)
+#cancel_CFLAGS          = -DDEBUG_MODULE $(AM_CFLAGS)
 #node_info_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
 #partition_info_CFLAGS  = -DDEBUG_MODULE $(AM_CFLAGS)
 #reconfigure_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
@@ -42,6 +43,7 @@ LDADD = $(top_srcdir)/src/common/libcommon.a
 #
 allocate       : allocate_d.o
 build_info     : build_info_d.o
+cancel         : cancel_d.o
 node_info      : node_info_d.o
 partition_info : partition_info_d.o
 reconfigure    : reconfigure_d.o
