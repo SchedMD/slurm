@@ -812,7 +812,7 @@ until {\em all} processes associated with that job terminate.  If a
 node allocated to a job fails, the job may either continue execution or
 terminate depending upon its configuration.
 
-We are well aware this algorithm will not satisfy the needs of many
+We are well aware this scheduling algorithm will not satisfy the needs of many
 customers and provide the means for establishing other scheduling
 algorithms. Before a newly arrived job is placed into the queue, it
 is assigned a priority that may be established by an administrator
@@ -828,7 +828,7 @@ the scalability required for this application. Most of the resource
 accounting and some of the job management functions presently within
 DPCS would be moved into the proposed SLURM Job Management component.
 DPCS will require some modification to operate within this new, richer
-environment. The DPCS Central Manager requires porting to Linux.
+environment and the DPCS Central Manager requires porting to Linux.
 
 The DPCS writes job accounting records to Unix files. Presently, these are
 moved to a machine with the Sybase database. This data can be accessed
@@ -930,7 +930,7 @@ count, real memory size, and temporary disk space for the node. Should
 those values change, the controller will be notified.  Another thread will
 be created to capture CPU, real-memory and virtual-memory consumption from
 the process table entries.  Differences in resource utilization values
-from process table snapshot to snapshot will be accumulated. \slurmd\ 
+from one process table snapshot to the next will be accumulated. \slurmd\ 
 will insure these accumulated values are not decremented if resource
 consumption for a user happens to decrease from snapshot to snapshot,
 which would simply reflect the termination of one or more processes.
@@ -940,7 +940,7 @@ consumption will be grouped by user ID and SLURM job ID (if any). Data
 will be collected for system users (root, ftp, ntp, etc.) as well as
 customer accounts. The intent is to capture all resource use including
 kernel, idle and down time.  Upon request, the accumulated values will be
-uploaded to the controller and cleared.  
+uploaded to \slurmctld\ and cleared.  
 
 %When all processes associated
 %with a SLURM job have terminated, \slurmd\ with notify the controller.
@@ -1002,6 +1002,8 @@ was built with such as locations of files and values of timers. This can
 either display the value of specific parameters or all parameters.
 \item Show job state - Display the state information of a particular job 
 or all jobs in the system.
+\item Show job step state - Display the state information of a particular 
+job step or all job steps in the system.
 \item Show node state - Display the state and configuration information 
 of a particular node, a set of nodes (using regular expressions to 
 identify their names, or all nodes.
