@@ -473,7 +473,16 @@ _job_create_internal(allocation_info_t *info)
 
 	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);
+#ifdef HAVE_BGL
+	/* All jobs execute through front-end on Blue Gene/L.
+	 * Normally we would not permit execution of job steps, 
+	 * but can fake it by just allocating all tasks to 
+	 * one of the allocated nodes. */
+	job->nhosts    = 1;
+	opt.overcommit = true;
+#else
 	job->nhosts = hostlist_count(hl);
+#endif
 
 	job->jobid   = info->jobid;
 	job->stepid  = info->stepid;
