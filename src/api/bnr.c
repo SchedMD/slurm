@@ -239,14 +239,17 @@ int BNR_Finalize()
 
 int BNR_Rank(BNR_gid group, int *myrank)
 {
-	int rc = -1;
+	int rc;
 
 	slurm_mutex_lock(&bnr_lock);
 	if ( (group >= 0) && (group < BNR_MAX_GROUPS) &&
-	     (bnr_groups[group].active) )
-		rc =  bnr_groups[group].my_rank;
-	else
+	     (bnr_groups[group].active) ) {
+		*myrank = bnr_groups[group].my_rank;
+		rc = BNR_SUCCESS; 
+	} else {
 		fprintf(stderr, "BNR_Rank: Invalid group id %d\n", group);
+		rc = BNR_ERROR;
+	}
 
 	slurm_mutex_unlock(&bnr_lock);
 	return rc;
@@ -254,16 +257,19 @@ int BNR_Rank(BNR_gid group, int *myrank)
 
 int BNR_Nprocs(BNR_gid group, int *nprocs)
 {
-	int rc = -1;
+	int rc;
 
 	slurm_mutex_lock(&bnr_lock);
 
 	if ( (group >= 0) && (group < BNR_MAX_GROUPS) &&
-	     (bnr_groups[group].active) )
-		 rc = bnr_groups[group].nprocs;
-	else
+	     (bnr_groups[group].active) ) {
+		*nprocs = bnr_groups[group].nprocs;
+		rc = BNR_SUCCESS;
+	} else {
 		fprintf(stderr, "BNR_Nprocsk: Invalid group id %d\n", group);
+		rc = BNR_ERROR;
+	}
 
 	slurm_mutex_unlock(&bnr_lock);
-	return -1;
+	return rc;
 }
