@@ -13,6 +13,7 @@ set test_id          "1.29"
 set exit_code        0
 set file_in          "test$test_id.input"
 set file_out         "test$test_id.output"
+set file_prog_get    "test$test_id.prog"
 set job_id           0
 set limit_core       943
 set limit_fsize      27451
@@ -25,14 +26,16 @@ print_header $test_id
 #
 # Delete left-over programs and rebuild them
 #
-exec $bin_rm -f $file_in $file_out
+exec $bin_rm -f $file_prog_get $file_in $file_out
+exec $bin_make $file_prog_get
+exec $bin_chmod 700 $file_prog_get
 
 exec echo "#!$bin_bash"               >$file_in
 exec echo "ulimit -c $limit_core"    >>$file_in
 exec echo "ulimit -f $limit_fsize"   >>$file_in
 exec echo "ulimit -n $limit_nofile"  >>$file_in
 exec echo "ulimit -u $limit_nproc"   >>$file_in
-exec echo "$srun -N1 $bin_bash -c 'ulimit -a'" >>$file_in
+exec echo "$srun -N1 $file_prog_get" >>$file_in
 
 
 #
@@ -67,6 +70,7 @@ if {[wait_for_job $job_id "DONE"] != 0} {
 	send_user "\nFAILURE: waiting for job to complete\n"
 	exit 1
 }
+exec $bin_rm -f $file_in $file_prog_get
 
 #
 # Inspect the job's output file
@@ -76,26 +80,26 @@ if {[wait_for_file $file_out] != 0} {
 }
 spawn $bin_sort $file_out
 expect {
-	-re "core file size .blocks. *($number)" {
-		if {$expect_out(1,string) == $limit_core} {
+	-re "USER_CORE=($number)" {
+		if {$expect_out(1,string) == [expr $limit_core * 1024]} {
 			incr matches
 		}
 		exp_continue
 	}
-	-re "file size .blocks. *($number)" {
-		if {$expect_out(1,string) == $limit_fsize} {
+	-re "USER_FSIZE=($number)" {
+		if {$expect_out(1,string) == [expr $limit_fsize * 1024]} {
 			incr matches
 		}
 		exp_continue
 	}
-	-re "max user processes *($number)" {
-		if {$expect_out(1,string) == $limit_nproc} {
-			incr matches
-		}
-		exp_continue
-	}
-	-re "open files *($number)" {
+	-re "USER_NOFILE=($number)" {
 		if {$expect_out(1,string) == $limit_nofile} {
+			incr matches
+		}
+		exp_continue
+	}
+	-re "USER_NPROC=($number)" {
+		if {$expect_out(1,string) == $limit_nproc} {
 			incr matches
 		}
 		exp_continue
