@@ -173,10 +173,13 @@ int parse_command_line(int argc, char *argv[])
 				params.format = "%9P %.5a %.9l %.8s %.4r %.5h "
 					        "%.10g %.5D %.11T %N";
 			else
-				params.format = "%9P %.5a %.9l %.5D %.6t  %N";
+				params.format = "%9P %.5a %.9l %.5D %.6t %N";
 		}
 	}
 	_parse_format( params.format );
+
+	if (params.nodes || params.partition || params.state_list)
+		params.filtering = true;
 
 	if (params.verbose)
 		_print_options();
@@ -471,6 +474,7 @@ void _print_options( void )
 {
 	printf("-----------------------------\n");
 	printf("exact       = %d\n", params.exact_match);
+	printf("filtering   = %s\n", params.filtering ? "true" : "false");
 	printf("format      = %s\n", params.format);
 	printf("iterate     = %d\n", params.iterate );
 	printf("long        = %s\n", params.long_output ? "true" : "false");

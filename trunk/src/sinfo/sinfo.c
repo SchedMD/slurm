@@ -24,6 +24,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include "src/common/macros.h"
 #include "src/sinfo/sinfo.h"
 #include "src/sinfo/print.h"
 
@@ -37,11 +38,11 @@ struct sinfo_parameters params;
  ************/
 static int  _build_sinfo_data(List sinfo_list, 
 		partition_info_msg_t *partition_msg,
-		node_info_msg_t *node_msg, int node_cnt);
+		node_info_msg_t *node_msg);
 static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr, 
 		node_info_t *node_ptr);
+static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
-static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt);
 static partition_info_t *_find_part(char *part_name, 
 		partition_info_msg_t *partition_msg);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
@@ -52,8 +53,6 @@ static int  _query_server(partition_info_msg_t ** part_pptr,
 		node_info_msg_t ** node_pptr);
 static void _sort_hostlist(List sinfo_list);
 static int  _strcmp(char *data1, char *data2);
-static void _swap_char(char **from, char **to);
-static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node);
 static void _update_sinfo(sinfo_data_t *sinfo_ptr, 
 		partition_info_t* part_ptr, node_info_t *node_ptr);
 
@@ -63,7 +62,6 @@ int main(int argc, char *argv[])
 	partition_info_msg_t *partition_msg = NULL;
 	node_info_msg_t *node_msg = NULL;
 	List sinfo_list = NULL;
-	int node_rec_cnt = 0;
 
 	log_init("sinfo", opts, SYSLOG_FACILITY_DAEMON, NULL);
 	parse_command_line(argc, argv);
@@ -75,11 +73,8 @@ int main(int argc, char *argv[])
 		if (_query_server(&partition_msg, &node_msg) != 0)
 			exit(1);
 
-		_filter_nodes(node_msg, &node_rec_cnt);
-
 		sinfo_list = list_create(_sinfo_list_delete);
-		_build_sinfo_data(sinfo_list, partition_msg, 
-				node_msg, node_rec_cnt);
+		_build_sinfo_data(sinfo_list, partition_msg, node_msg);
 		sort_sinfo_list(sinfo_list);
 		print_sinfo_list(sinfo_list);
 
@@ -152,104 +147,15 @@ _query_server(partition_info_msg_t ** part_pptr,
 }
 
 /*
- * _filter_nodes - Filter the node list based upon user options
- * node_msg IN/OUT - node info message with usable entries at the front
- * node_rec_cnt OUT - number of usable node records
- */
-static void _filter_nodes(node_info_msg_t *node_msg, int *node_rec_cnt)
-{
-	int i, new_rec_cnt = 0;
-	hostlist_t hosts = NULL;
-
-	if ((params.nodes      == NULL) && 
-	    (params.partition  == NULL) && 
-	    (params.state_list == NULL)) {
-		params.filtering = false;
-		/* Nothing to filter out */
-		*node_rec_cnt = node_msg->record_count;
-		return;
-	}
-	params.filtering = true;
-
-	if (params.nodes)
-		hosts = hostlist_create(params.nodes);
-
-	for (i = 0; i < node_msg->record_count; i++) {
-		if (params.nodes && hostlist_find
-		      (hosts, node_msg->node_array[i].name) == -1)
-			continue;
-		if (params.partition && _strcmp
-			 (node_msg->node_array[i].partition,
-			  params.partition))
-			continue;
-		if (params.state_list) {
-			int *node_state;
-			bool match = false;
-			ListIterator iterator;
-			iterator = list_iterator_create(params.state_list);
-			while ((node_state = list_next(iterator))) {
-				if ((node_msg->node_array[i].node_state ==
-				     *node_state) || 
-				    ((node_msg->node_array[i].node_state & 
-		      		     (~NODE_STATE_NO_RESPOND)) == 
-				     *node_state)) {
-					match = true;
-					break;
-				}
-			}
-			list_iterator_destroy(iterator);
-			if (!match) 
-				continue;
-		}
-
-		_swap_node_rec(&node_msg->node_array[i], 
-			       &node_msg->node_array[new_rec_cnt]);
-		new_rec_cnt++;
-	}
-
-	if (hosts)
-		hostlist_destroy(hosts);
-	*node_rec_cnt = new_rec_cnt;
-}
-
-static void _swap_char(char **from, char **to) 
-{
-	char *tmp;
-	tmp   = *to;
-	*to   = *from;
- 	*from = tmp;
-}
-
-/* _swap_node_rec - Swap the data associated with two node records. 
- * trade type *char values, just overwrite the numbers (from_node 
- * data is not used) */
-static void _swap_node_rec(node_info_t *from_node, node_info_t *to_node)
-{
-	if (from_node != to_node) {
-		_swap_char(&from_node->name,      &to_node->name);
-		_swap_char(&from_node->features,  &to_node->features);
-		_swap_char(&from_node->partition, &to_node->partition);
-		_swap_char(&from_node->reason,    &to_node->reason);
-		to_node->node_state	= from_node->node_state;
-		to_node->cpus		= from_node->cpus;
-		to_node->real_memory	= from_node->real_memory;
-		to_node->tmp_disk	= from_node->tmp_disk;
-		to_node->weight	= from_node->weight;
-	}
-}
-
-/*
  * _build_sinfo_data - make a sinfo_data entry for each unique node 
  * configuration and add it to the sinfo_list for later printing.
  * sinfo_list IN/OUT - list of unique sinfo_dataa records to report
  * partition_msg IN - partition info message
  * node_msg IN - node info message
- * node_cnt IN - number of usable records in node_msg (others filtered out)
  * RET zero or error code 
  */
 static int _build_sinfo_data(List sinfo_list, 
-		partition_info_msg_t *partition_msg, 
-		node_info_msg_t *node_msg, int node_cnt)
+		partition_info_msg_t *partition_msg, node_info_msg_t *node_msg)
 {
 	node_info_t *node_ptr;
 	partition_info_t* part_ptr;
@@ -257,21 +163,25 @@ static int _build_sinfo_data(List sinfo_list,
 	int j;
 
 	/* by default every partition is shown, even if no nodes */
-	if ((!params.filtering) && (!params.node_flag) && 
-	    params.match_flags.partition_flag) {
-		for (j=0; j<partition_msg->record_count; j++) {
-			part_ptr = partition_msg->partition_array + j;
-			_create_sinfo(sinfo_list, part_ptr, NULL);
+	if ((!params.node_flag) && params.match_flags.partition_flag) {
+		part_ptr = partition_msg->partition_array;
+		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
+			if ((!params.partition) || 
+			    (_strcmp(params.partition, part_ptr->name) == 0))
+				_create_sinfo(sinfo_list, part_ptr, NULL);
 		}
 	}
 
 	/* make sinfo_list entries for each node */
-	for (j=0; j<node_cnt; j++) {
+	for (j=0; j<node_msg->record_count; j++) {
 		sinfo_data_t *sinfo_ptr;
-		i = list_iterator_create(sinfo_list);
 		node_ptr = &(node_msg->node_array[j]);
-		part_ptr = _find_part(node_ptr->partition, partition_msg);
 
+		if (params.filtering && _filter_out(node_ptr))
+			continue;
+
+		part_ptr = _find_part(node_ptr->partition, partition_msg);
+		i = list_iterator_create(sinfo_list);
 		/* test if node can be added to existing sinfo_data entry */
 		while ((sinfo_ptr = list_next(i))) {
 			if (!_match_part_data(sinfo_ptr, part_ptr))
@@ -294,6 +204,48 @@ static int _build_sinfo_data(List sinfo_list,
 
 	_sort_hostlist(sinfo_list);
 	return SLURM_SUCCESS;
+}
+
+/*
+ * _filter_out - Determine if the specified node should be filtered out or 
+ *	reported.
+ * node_ptr IN - node to consider filtering out
+ * RET - true if node should not be reported, false otherwise
+ */
+static bool _filter_out(node_info_t *node_ptr)
+{
+	static hostlist_t host_list = NULL;
+
+	if (params.partition && 
+	    _strcmp(node_ptr->partition, params.partition))
+		return true;
+
+	if (params.nodes) {
+		if (host_list == NULL)
+			host_list = hostlist_create(params.nodes);
+		if (hostlist_find (host_list, node_ptr->name) == -1)
+			return true;
+	}
+
+	if (params.state_list) {
+		int *node_state;
+		bool match = false;
+		ListIterator iterator;
+		iterator = list_iterator_create(params.state_list);
+		while ((node_state = list_next(iterator))) {
+			if ((node_ptr->node_state == *node_state) || 
+				((node_ptr->node_state & (~NODE_STATE_NO_RESPOND)) == 
+				     *node_state)) {
+					match = true;
+					break;
+			}
+		}
+		list_iterator_destroy(iterator);
+		if (!match)
+			return true;
+	}
+
+	return false;
 }
 
 static void _sort_hostlist(List sinfo_list)
