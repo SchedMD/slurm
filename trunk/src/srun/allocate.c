@@ -51,27 +51,43 @@
  */
 static void  _wait_for_resources(resource_allocation_response_msg_t **rp);
 static bool  _retry();
-static bool  _destroy_job(bool set);
 static void  _intr_handler(int signo);
 
 static job_step_create_request_msg_t * _step_req_create(job_t *j);
 static void _step_req_destroy(job_step_create_request_msg_t *r);
 
+static sig_atomic_t destroy_job = 0;
 
 resource_allocation_response_msg_t *
 allocate_nodes(void)
 {
 	int rc = 0;
+	SigFunc *oquitf, *ointf, *otermf;
 	resource_allocation_response_msg_t *resp = NULL;
 	job_desc_msg_t *j = job_desc_msg_create();
 
-	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {;}
+	xsignal_unblock(SIGINT);
+	oquitf = xsignal(SIGINT,   _intr_handler);
+	xsignal_unblock(SIGQUIT);
+	ointf  = xsignal(SIGQUIT,  _intr_handler);
+	xsignal_unblock(SIGTERM);
+	otermf = xsignal(SIGTERM,  _intr_handler);
+
+	while ((rc = slurm_allocate_resources(j, &resp) < 0) && _retry()) {
+		if (destroy_job)
+			goto done;
+	} 
 
 	if ((rc == 0) && (resp->node_list == NULL)) {
 		if (resp->error_code)
 			info("Warning: %s", slurm_strerror(resp->error_code));
 		_wait_for_resources(&resp);
 	}
+
+    done:
+	xsignal(SIGINT,  ointf);
+	xsignal(SIGTERM, otermf);
+	xsignal(SIGQUIT, oquitf);
 
 	job_desc_msg_destroy(j);
 
@@ -124,15 +140,11 @@ existing_allocation(void)
 static void
 _wait_for_resources(resource_allocation_response_msg_t **resp)
 {
-	SigFunc *old_handler;
 	old_job_alloc_msg_t old_job;
 	resource_allocation_response_msg_t *r = *resp;
 	int sleep_time = MIN_ALLOC_WAIT;
 
 	info ("job %u queued and waiting for resources", r->job_id);
-
-	xsignal_unblock(SIGINT);
-	old_handler = xsignal(SIGINT,  _intr_handler);
 
 	old_job.job_id = r->job_id;
 	old_job.uid = (uint32_t) getuid();
@@ -151,7 +163,7 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 			exit (1);
 		}
 
-		if (_destroy_job(0)) {
+		if (destroy_job) {
 			verbose("cancelling job %u", old_job.job_id);
 			slurm_complete_job(old_job.job_id, 0, 0);
 #ifdef HAVE_TOTALVIEW
@@ -162,8 +174,6 @@ _wait_for_resources(resource_allocation_response_msg_t **resp)
 
 	}
 	info ("job %u has been allocated resources", (*resp)->job_id);
-
-	xsignal(SIGINT, SIG_IGN);
 }
 
 
@@ -191,24 +201,13 @@ _retry()
 	return true;
 }
 
-/* Returns true if user requested immediate destruction of pending job
- * _destroy_job() will return false until it has been called once with
- * parameter `set' equal to TRUE.
- */
-static bool
-_destroy_job(bool set)
-{
-	static bool destroy = false; 
-	return (set ? (destroy = true) : destroy);
-}
-
 /*
  * SIGINT handler while waiting for resources to become available.
  */
 static void
 _intr_handler(int signo)
 {
-	_destroy_job(true);
+	destroy_job = 1;
 }
 
 
