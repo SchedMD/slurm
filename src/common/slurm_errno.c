@@ -231,9 +231,9 @@ static slurm_errtab_t slurm_errtab[] = {
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,
-	  "Script unable to change directory to work directory"	},
+	  "unable to change directory to work directory"	},
 	{ ESCRIPT_OPEN_OUTPUT_FAILED,
-	  "Script cound not open output file"			},
+	  "cound not open output file"			        },
 	{ ESCRIPT_NON_ZERO_RETURN,
 	  "Script terminated with non-zero exit code"		},
 

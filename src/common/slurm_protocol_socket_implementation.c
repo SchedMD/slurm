@@ -498,18 +498,10 @@ slurm_fd _slurm_listen_stream ( slurm_addr * slurm_address )
 	
 }
 
-slurm_fd _slurm_accept_stream ( slurm_fd open_fd , slurm_addr * slurm_address )
+slurm_fd _slurm_accept_stream(slurm_fd fd, slurm_addr *addr)
 {
-	size_t addr_len = sizeof ( slurm_addr ) ;
-	slurm_fd connection_fd ;
-	if ( ( connection_fd = _slurm_accept ( open_fd , 
-				( struct sockaddr * ) slurm_address , 
-				& addr_len ) ) == SLURM_SOCKET_ERROR )
-	{
-		debug ( "Error accepting slurm stream socket: %m" ) ;
-	}
-	return connection_fd ;
-
+	size_t len = sizeof(slurm_addr);
+	return _slurm_accept(fd, (struct sockaddr *)addr, &len);
 }
 
 slurm_fd _slurm_open_stream ( slurm_addr * slurm_address )

@@ -57,10 +57,10 @@ static void malloc_assert_failed(char *, const char *, int,
 #if NDEBUG
 #  define xmalloc_assert  ((void)0)
 #else
-#  define xmalloc_assert(expr)  _STMT_START {  			    \
-          (expr) ? ((void)(0)) :                                    \
-          malloc_assert_failed(__STRING(expr), file, line, func,    \
-                               __CURRENT_FUNC__)                    \
+#  define xmalloc_assert(expr)  _STMT_START {                                 \
+          (expr) ? ((void)(0)) :                                              \
+          malloc_assert_failed(__STRING(expr), file, line, func,              \
+                               __CURRENT_FUNC__);                             \
           } _STMT_END
 #endif /* NDEBUG */
 

@@ -17,13 +17,13 @@
 
 #ifdef NDEBUG
 
-#  define assert(expr)	((void)0)
+#  define xassert(expr)	((void)0)
 
 #else /* !NDEBUG */
 
 #  define xassert(__ex)  _STMT_START { \
      (__ex) ? ((void)0) : \
-     __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __CURRENT_FUNC__) \
+     __xassert_failed(__STRING(__ex), __FILE__,  __LINE__, __CURRENT_FUNC__);\
      } _STMT_END 
 
 /*  This prints the assertion failed message to the slurm log facility

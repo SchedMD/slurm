@@ -1,5 +1,6 @@
 /*****************************************************************************\
- *  loc.c - slurm logging facilities
+ *  log.c - slurm logging facilities
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -436,6 +437,23 @@ static void log_msg(log_level_t level, const char *fmt, va_list args)
 	xfree(buf);
 }
 
+/* LLNL Software development Toolbox (LSD-Tools)
+ * fatal() and nomem() functions
+ */
+void
+lsd_fatal_error(char *file, int line, char *msg)
+{
+	fatal("%s:%d %s: %m", file, line, msg);
+}
+
+void *
+lsd_nomem_error(char *file, int line, char *msg)
+{
+	error("%s:%d %s: %m", file, line, msg);
+	slurm_seterrno(ENOMEM);
+	return NULL;
+}
+
 /*
  * attempt to log message and abort()
  */
@@ -446,9 +464,9 @@ void fatal(const char *fmt, ...)
 	va_start(ap, fmt);
 	log_msg(LOG_LEVEL_FATAL, fmt, ap);
 	va_end(ap);
+	fatal_cleanup();
 
 #ifndef  NDEBUG
-	fatal_cleanup();
 	abort();
 #endif
 }
@@ -602,9 +620,8 @@ fatal_remove_cleanup_job(void (*proc) (void *context), void *context)
 		}
 	}
 	slurm_mutex_unlock(&fatal_lock);
-	fatal(
-	    "fatal_remove_cleanup_job: no such cleanup function: 0x%lx 0x%lx",
-	    (u_long) proc, (u_long) context);
+	fatal("fatal_remove_cleanup_job: no such cleanup function: "
+	      "0x%lx 0x%lx", (u_long) proc, (u_long) context);
 }
 
 /* Execute cleanup functions, first thread-specific then those for the 
