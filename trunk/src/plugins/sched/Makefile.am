@@ -1,4 +1,4 @@
 # $Id$
 # Makefile for scheduler plugins
 
-SUBDIRS = backfill builtin maui
+SUBDIRS = backfill builtin hold maui
