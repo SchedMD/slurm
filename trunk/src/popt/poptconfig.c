@@ -58,7 +58,7 @@ int poptReadConfigFile(poptContext con, const char * fn) {
     char * file, * chptr, * end;
     char * buf, * dst;
     int fd, rc;
-    int fileLength;
+    size_t fileLength;
 
     fd = open(fn, O_RDONLY);
     if (fd < 0) {
