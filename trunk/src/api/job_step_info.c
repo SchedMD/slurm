@@ -35,73 +35,17 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_print_job_info_msg - output information about all Slurm jobs */
-void 
-slurm_print_job_info_msg ( FILE* out, job_info_msg_t * job_info_msg_ptr )
-{
-	int i;
-	job_info_t * job_ptr = job_info_msg_ptr -> job_array ;
-
-	fprintf( out, "Jobs updated at %ld, record count %d\n",
-		(long) job_info_msg_ptr ->last_update, job_info_msg_ptr->record_count);
-
-	for (i = 0; i < job_info_msg_ptr-> record_count; i++) 
-	{
-		slurm_print_job_info ( out, & job_ptr[i] ) ;
-	}
-}
-
-/* slurm_print_job_info - output information about a specific Slurm job */
-void
-slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
-{
-	int j;
-
-	fprintf ( out, "JobId=%u UserId=%u Name=%s ", 
-		job_ptr->job_id, job_ptr->user_id, job_ptr->name);
-	fprintf ( out, "JobState=%s TimeLimit=%u ", job_state_string(job_ptr->job_state), job_ptr->time_limit);
-	fprintf ( out, "Priority=%u Partition=%s\n", job_ptr->priority, job_ptr->partition);
-	fprintf ( out, "   StartTime=%u EndTime=%u ", (uint32_t) job_ptr->start_time, (uint32_t) job_ptr->end_time);
-	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
-
-	fprintf ( out, "NodeListIndecies=");
-	for (j = 0; job_ptr->node_inx; j++) {
-		if (j > 0)
-			fprintf( out, ",%d", job_ptr->node_inx[j]);
-		else
-			fprintf( out, "%d", job_ptr->node_inx[j]);
-		if (job_ptr->node_inx[j] == -1)
-			break;
-	}
-	fprintf( out, "\n");
-
-	fprintf ( out, "   ReqProcs=%u ReqNodes=%u ", job_ptr->num_procs, job_ptr->num_nodes);
-	fprintf ( out, "Shared=%u Contiguous=%u ", job_ptr->shared, job_ptr->contiguous);
-	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, job_ptr->min_memory);
-	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
-	fprintf ( out, "   Features=%s ReqNodeList=%s ", job_ptr->features, job_ptr->req_nodes);
-	fprintf ( out, "ReqNodeListIndecies=");
-	for (j = 0; job_ptr->req_node_inx; j++) {
-		if (j > 0)
-			fprintf( out, ",%d", job_ptr->req_node_inx[j]);
-		else
-			fprintf( out, "%d", job_ptr->req_node_inx[j]);
-		if (job_ptr->req_node_inx[j] == -1)
-			break;
-	}
-	fprintf( out, "\n\n");
-}
-
-/* slurm_load_jobs - issue RPC to get Slurm job state information if changed since update_time */
+/* slurm_load_job_steps - issue RPC to get Slurm job_step state information */
 int
-slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
+slurm_get_job_steps ( uint32_t job_id, int16_t step_id, job_step_info_response_msg_t **step_response_pptr)
 {
 	int msg_size ;
 	int rc ;
 	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
-	job_info_request_msg_t last_time_msg ;
+
+	job_step_info_request_msg_t step_request;
 	return_code_msg_t * slurm_rc_msg ;
 
 	/* init message connection for message communication with controller */
@@ -111,9 +55,10 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	}
 
 	/* send request message */
-	last_time_msg . last_update = update_time ;
-	request_msg . msg_type = REQUEST_JOB_INFO ;
-	request_msg . data = &last_time_msg ;
+	step_request . job_id = job_id ;
+	step_request . job_step_id = step_id ;
+	request_msg . msg_type = REQUEST_JOB_STEP_INFO ;
+	request_msg . data = &step_request;
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
 		return SLURM_SOCKET_ERROR ;
@@ -135,8 +80,8 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 
 	switch ( response_msg . msg_type )
 	{
-		case RESPONSE_JOB_INFO:
-			*job_info_msg_pptr = ( job_info_msg_t * ) response_msg . data ;
+		case RESPONSE_JOB_STEP_INFO:
+			*step_response_pptr = ( job_step_info_response_msg_t * ) response_msg . data ;
 			return SLURM_PROTOCOL_SUCCESS ;
 			break ;
 		case RESPONSE_SLURM_RC:
