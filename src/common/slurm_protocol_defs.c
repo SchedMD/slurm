@@ -82,8 +82,9 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 		for (i = 0; i < msg->env_size; i++) {
 			if ( msg->environment[i] )
 				xfree ( msg->environment[i] ) ;
-			xfree( msg->environment );
 		}
+		if ( msg->environment )
+			xfree( msg->environment );
 		if ( msg->features )
 			xfree ( msg->features ) ;
 		if ( msg->groups )
