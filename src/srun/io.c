@@ -217,6 +217,7 @@ _io_thr_poll(void *job_arg)
 				_do_task_output_poll(&map[i]);
 		}
 	}
+	xfree(fds);
 }
 
 static void 
@@ -233,8 +234,8 @@ static void
 	_set_iofds_nonblocking(job);
 
 	for (i = 0; i < opt.nprocs; i++) {
-		job->out[i] = -1; 
-		job->err[i] = -1;
+		job->out[i] = WAITING_FOR_IO; 
+		job->err[i] = WAITING_FOR_IO;
 	}
 
 	while (1) {
@@ -463,7 +464,7 @@ _readn(int fd, void *buf, size_t nbytes)
 static void
 _bcast_stdin(int fd, job_t *job)
 {
-	int i;
+	int i, disc=0;
 	char buf[IO_BUFSIZ];
 	size_t len;
 
@@ -476,8 +477,17 @@ _bcast_stdin(int fd, job_t *job)
 		}
 	}
 
-	for (i = 0; i < opt.nprocs; i++)
-		write(job->out[i], buf, len);
+	/* broadcast to every connected task */
+	for (i = 0; i < opt.nprocs; i++) {
+		if ((job->out[i] == WAITING_FOR_IO) || 
+		    (job->out[i] == IO_DONE)) 
+			disc++;
+		else
+			write(job->out[i], buf, len);
+	}
+	if (disc)
+		error("Stdin could not be sent to %d disconnected tasks", 
+		      disc);
 	return;
 }
 

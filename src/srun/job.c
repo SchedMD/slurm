@@ -65,7 +65,6 @@ job_create(resource_allocation_response_msg_t *resp)
 		job->cred->signature[0] = 'a';
 
 		job->nodelist = xstrdup(opt.nodelist);
-debug("nodelist=%s",job->nodelist);
 		hl = hostlist_create(opt.nodelist);
 		srand48(getpid());
 		job->jobid = (uint32_t) (lrand48() % 65550L + 1L);
@@ -76,7 +75,6 @@ debug("nodelist=%s",job->nodelist);
 
 
 	job->nhosts = hostlist_count(hl);
-debug("nhosts=%d",job->nhosts);
 
 	job->host  = (char **) xmalloc(job->nhosts * sizeof(char *));
 	job->slurmd_addr = (slurm_addr *) xmalloc(job->nhosts * sizeof(slurm_addr));

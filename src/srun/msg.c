@@ -130,7 +130,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 	char addrbuf[256];
 
 	if ((fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr)) < 0) {
-		error("slurm_accept_msg_conn: %m");
+		error("_accept_msg_connection/slurm_accept_msg_conn: %m");
 		return;
 	}
 
@@ -139,7 +139,7 @@ _accept_msg_connection(job_t *job, int fdnum)
 
 	msg = xmalloc(sizeof(*msg));
 	if (slurm_receive_msg(fd, msg) == SLURM_SOCKET_ERROR) {
-		error("slurm_receive_msg: %m");
+		error("_accept_msg_connection/slurm_receive_msg: %m");
 		return;
 	}
 
@@ -232,7 +232,7 @@ _msg_thr_one(void *arg)
 	while (1) {
 
 		if ((newfd = slurm_accept_msg_conn(fd, &cli_addr)) < 0) {
-			error("slurm_accept_msg_conn: rc=%d", errno);
+			error("_msg_thr_one/slurm_accept_msg_conn: %m");
 			break;
 		}
 
@@ -242,7 +242,7 @@ _msg_thr_one(void *arg)
 
 		msg = xmalloc(sizeof(*msg));
 		if (slurm_receive_msg(newfd, msg) == SLURM_SOCKET_ERROR) {
-			error("slurm_receive_msg: rc=%d\n", errno);
+			error("_msg_thr_one/slurm_receive_msg: %m");
 			break;
 		}
 
