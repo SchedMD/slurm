@@ -30,6 +30,7 @@ slurmctld_SOURCES = 	\
 	ping_nodes.c	\
 	ping_nodes.h	\
 	proc_req.c	\
+	proc_req.h	\
 	read_config.c	\
 	slurmctld.h	\
 	step_mgr.c

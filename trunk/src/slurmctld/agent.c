@@ -514,7 +514,8 @@ static void *_thread_per_node_rpc(void *args)
 		timeout = slurmctld_conf.kill_wait + 2;
 		thread_ptr->end_time = thread_ptr->start_time + timeout;
 	} else
-		thread_ptr->end_time = thread_ptr->start_time + COMMAND_TIMEOUT; 
+		thread_ptr->end_time = thread_ptr->start_time + 
+		                       COMMAND_TIMEOUT; 
 
 	if (task_ptr->get_reply) {
 		if (slurm_send_recv_rc_msg(&msg, &rc, timeout) < 0) {
@@ -552,7 +553,8 @@ static void *_thread_per_node_rpc(void *args)
 	if ((msg_type == REQUEST_BATCH_JOB_LAUNCH) && rc) {
 		batch_job_launch_msg_t *launch_msg_ptr = task_ptr->msg_args_ptr;
 		uint32_t job_id = launch_msg_ptr->job_id;
-		info("Killing non-startable batch job %u: %s", job_id, slurm_strerror(rc));
+		info("Killing non-startable batch job %u: %s", 
+			job_id, slurm_strerror(rc));
 		thread_state = DSH_DONE;
 		lock_slurmctld(job_write_lock);
 		job_signal(job_id, SIGKILL, 0);

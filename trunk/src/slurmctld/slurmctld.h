@@ -958,12 +958,6 @@ extern int shutdown_backup_controller(void);
 extern void signal_step_tasks(struct step_record *step_ptr, uint16_t signal);
 
 /*
- * slurmctld_req  - Process an individual RPC request
- * IN/OUT - the request message, data associated with the message is freed
- */
-extern void slurmctld_req (slurm_msg_t * msg);
-
-/*
  * slurmctld_shutdown - issue RPC to have slurmctld shutdown, knocks
  *	loose an slurm_accept_msg_conn() if we have a thread hung there
  * RET 0 or error code
