@@ -55,9 +55,9 @@ static void _cancel_jobs (void);
 static void _cancel_job_id (uint32_t job_id, uint16_t signal);
 static void _cancel_step_id (uint32_t job_id, uint32_t step_id, 
 			     uint16_t signal);
-static int  confirmation (int i);
-static void filter_job_records (void);
-static void load_job_records (void);
+static int  _confirmation (int i, uint32_t step_id);
+static void _filter_job_records (void);
+static void _load_job_records (void);
 
 static job_info_msg_t * job_buffer_ptr = NULL;
 
@@ -78,8 +78,8 @@ main (int argc, char *argv[])
 	    (opt.partition) ||
 	    (opt.state != JOB_END) ||
 	    (opt.user_name)) {
-		load_job_records ();
-		filter_job_records ();
+		_load_job_records ();
+		_filter_job_records ();
 	}
 
 	_cancel_jobs ();
@@ -88,9 +88,9 @@ main (int argc, char *argv[])
 }
 
 
-/* load_job_records - load all job information for filtering and verification */
+/* _load_job_records - load all job information for filtering and verification */
 static void 
-load_job_records (void)
+_load_job_records (void)
 {
 	int error_code;
 
@@ -103,9 +103,9 @@ load_job_records (void)
 }
 
 
-/* filter_job_records - filtering job information per user specification */
+/* _filter_job_records - filtering job information per user specification */
 static void 
-filter_job_records (void)
+_filter_job_records (void)
 {
 	int i, j;
 	job_info_t *job_ptr = NULL;
@@ -166,13 +166,14 @@ _cancel_jobs (void)
 	int i, j;
 	job_info_t *job_ptr = NULL;
 
-	if (opt.job_cnt && opt.interactive) {	/* delete jobs with interactive */
+	if (opt.job_cnt && opt.interactive) {	/* confirm cancel */
 		job_ptr = job_buffer_ptr->job_array ;
 		for (j = 0; j < opt.job_cnt; j++ ) {
 			for (i = 0; i < job_buffer_ptr->record_count; i++) {
 				if (job_ptr[i].job_id != opt.job_id[j]) 
 					continue;
-				if (opt.interactive && (confirmation(i) == 0))
+				if (opt.interactive && 
+				    (_confirmation(i, opt.step_id[j]) == 0))
 					break;
 				if (opt.step_id[j] == NO_VAL)
 					_cancel_job_id (opt.job_id[j], 
@@ -204,7 +205,8 @@ _cancel_jobs (void)
 		for (i = 0; i < job_buffer_ptr->record_count; i++) {
 			if (job_ptr[i].job_id == 0) 
 				continue;
-			if (opt.interactive && (confirmation(i) == 0))
+			if (opt.interactive && 
+			    (_confirmation(i, NO_VAL) == 0))
 				continue;
 			_cancel_job_id (job_ptr[i].job_id, opt.signal);
 		}
@@ -251,18 +253,24 @@ _cancel_step_id (uint32_t job_id, uint32_t step_id, uint16_t signal)
 	}
 }
 
-/* confirmation - Confirm job cancel request interactively */
+/* _confirmation - Confirm job cancel request interactively */
 static int 
-confirmation (int i)
+_confirmation (int i, uint32_t step_id)
 {
 	char in_line[128];
 	job_info_t *job_ptr = NULL;
 
 	job_ptr = job_buffer_ptr->job_array ;
 	while (1) {
-		printf ("Cancel job_id=%u name=%s partition=%s [y/n]? ", 
-		        job_ptr[i].job_id, job_ptr[i].name, 
-			job_ptr[i].partition);
+		if (step_id == NO_VAL) {
+			printf ("Cancel job_id=%u name=%s partition=%s [y/n]? ", 
+			        job_ptr[i].job_id, job_ptr[i].name, 
+				job_ptr[i].partition);
+		} else {
+			printf ("Cancel step_id=%u.%u name=%s partition=%s [y/n]? ", 
+			        job_ptr[i].job_id, step_id, job_ptr[i].name, 
+				job_ptr[i].partition);
+		}
 
 		fgets (in_line, sizeof (in_line), stdin);
 		if ((in_line[0] == 'y') || (in_line[0] == 'Y'))
