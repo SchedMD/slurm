@@ -271,7 +271,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	char * buffer = buftemp ;
 	header_t header ;
 	int rc ;
-	slurm_client_credentials_t * client_cred ;
+	slurm_auth_credentials_t * client_cred ;
 	unsigned int unpack_len ;
 	unsigned int receive_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
 
@@ -360,7 +360,7 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
 	char * buffer = buf_temp ;
 	header_t header ;
-	slurm_client_credentials_t client_cred ;
+	slurm_auth_credentials_t client_cred ;
 	int rc ;
 	unsigned int pack_len ;
 	unsigned int cred_len = 0;
@@ -406,67 +406,6 @@ int slurm_send_node_msg ( slurm_fd open_fd ,  slurm_msg_t * msg )
 	return rc ;
 }
 
-/*
- *
- * open_fd              - file descriptor to send buffer on
- * msg_type             - type of msg to be sent ( see slurm_protocol_defs.h for msg types )
- * data_buffer          - buffer to be sent
- * buf_len              - length of buffer to be sent
- * int			- size of msg sent in bytes
- */
-/*
-int slurm_send_controller_buffer ( slurm_fd open_fd , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
-{
-	int rc ;
-
-	if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> primary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )	
-	{
-
-		int local_errno = errno ;
-		debug ( "Send message to primary controller failed errno: %i", local_errno ) ;
-		if ( ( rc = slurm_send_node_buffer ( open_fd ,  & proto_conf -> secondary_controller , msg_type , data_buffer , buf_len ) ) == SLURM_SOCKET_ERROR )
-		{
-			int local_errno = errno ;
-			debug ( "Send message to secondary controller failed errno: %i", local_errno ) ;
-		}
-	}
-	return rc ;
-}
-*/
-/* sends a buffer to an arbitrary node
- *
- * open_fd		- file descriptor to send buffer on
- * destination_address	- address of destination nodes
- * msg_type		- type of msg to be sent ( see slurm_protocol_defs.h for msg types )
- * data_buffer		- buffer to be sent
- * buf_len		- length of buffer to be sent 
- * int			- size of msg sent in bytes
- */
-/*
-int slurm_send_node_buffer ( slurm_fd open_fd , slurm_addr * destination_address , slurm_msg_type_t msg_type , char * data_buffer , size_t buf_len )
-{
-	char buf_temp[SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE] ;
-	char * buffer = buf_temp ;
-	header_t header ;
-	unsigned int rc ;
-	unsigned int pack_len ;
-
-	init_header ( & header , msg_type , SLURM_PROTOCOL_NO_FLAGS ) ;
-
-	pack_len = SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE ;
-	pack_header ( &header, & buffer , & pack_len ) ;
-
-	memcpy ( buffer , data_buffer , buf_len ) ;
-	pack_len -= buf_len ;
-
-	if ( ( rc = _slurm_msg_sendto ( open_fd , buf_temp , SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE - pack_len , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , destination_address ) ) == SLURM_SOCKET_ERROR )
-	{
-		int local_errno = errno ;
-		debug ( "Error sending msg socket: errno %i", local_errno ) ;
-	}
-	return rc ;
-}
-*/
 /************************/
 /***** stream functions */
 /************************/
