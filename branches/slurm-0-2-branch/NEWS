@@ -1,12 +1,12 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.2.22 (IN PROGRESS)
+* Changes in SLURM 0.2.22
 =========================
  -- Fixes for reported problems:
    - slurm/326: Node stays in completing state indefinitely.
    - slurm/328: slurmd uses different shared memory key on restart.
-   - slurm/329: Job processes may be left running when one task dies.
+   - slurm/329: Job step processes may be left running when one task dies.
    - slurm/334: slurmd segv with multiple simultaneous job steps.
  -- Allow more digits for priority values in scontrol.
  -- Applied various fixes for memory leaks.
