@@ -29,12 +29,14 @@
 #  include <config.h>
 #endif
 
-#include <unistd.h>
 #include <fcntl.h>
+#include <unistd.h>
 
-#include "src/common/macros.h"
-#include "src/common/log.h"
+#include "src/common/daemonize.h"
 #include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
+#include "src/common/safeopen.h"
 #include "src/common/xassert.h"
 
 /* closeall FDs >= a specified value */
@@ -156,6 +158,7 @@ create_pidfile(const char *pidfile)
 	xassert(pidfile != NULL);
 	xassert(pidfile[0] == '/');
 
+	(void) mkdir_parent(pidfile, 0755);
 	if (!(fp = fopen(pidfile, "w"))) {
 		error("Unable to open pidfile `%s': %m", pidfile);
 		return -1;

@@ -11,12 +11,17 @@
 #if HAVE_UNISTD_H
 #  include <unistd.h>
 #endif
+#include <errno.h>
+#include <fcntl.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 
-#include "safeopen.h"
+#include "src/common/safeopen.h"
+#include "src/common/xassert.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xstring.h"
 
 FILE * safeopen(const char *path, const char *mode, int flags)
 {
@@ -52,3 +57,37 @@ FILE * safeopen(const char *path, const char *mode, int flags)
 	return fdopen(fd, mode);
 
 }
+
+int
+mkdir_parent(const char *path_name, mode_t mode)
+{
+	char *dir_path, *tmp_ptr;
+	int i, rc = 0;
+
+	xassert(path_name);
+	xassert(path_name[0] == '/');
+
+	/* copy filename and strip off final element */
+	dir_path = xstrdup(path_name);
+	tmp_ptr  = strrchr(dir_path, (int)'/');
+	tmp_ptr[0] = (char) 0;
+
+	/* now create the parent directories */
+	for (i=1; ; i++) {
+		if (dir_path[i] == (char) 0) {
+			if (mkdir(dir_path, mode) && (errno != EEXIST))
+				rc = -1;
+			break;
+		}
+		if (dir_path[i] == '/') {
+			dir_path[i] = (char) 0;
+			if (mkdir(dir_path, mode) && (errno != EEXIST))
+				rc = -1;
+			dir_path[i] = '/';
+		}
+	}
+
+	xfree(dir_path);
+	return rc;
+}
+

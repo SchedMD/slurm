@@ -40,6 +40,7 @@
 #include <unistd.h>
 
 #include "src/common/macros.h"
+#include "src/common/safeopen.h"
 #include "src/common/slurm_jobcomp.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
@@ -115,6 +116,7 @@ int slurm_jobcomp_set_location ( char * location )
 	slurm_mutex_lock( &file_lock );
 	if (job_comp_fd >= 0)
 		close(job_comp_fd);
+	(void) mkdir_parent(location, 0755);
 	job_comp_fd = open(location, O_WRONLY | O_CREAT | O_APPEND, 0644);
 	if (job_comp_fd == -1) {
 		error("open %s: %m", location);
