@@ -58,8 +58,12 @@ slurmd_shmem_t * shmem_seg ;
 static void slurmd_req ( slurm_msg_t * msg );
 static int slurmd_msg_engine ( void * args ) ;
 inline static int send_node_registration_status_msg ( ) ;
+
 inline static void slurm_rpc_kill_tasks ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_launch_tasks ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_reattach_tasks_streams ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_revoke_credential ( slurm_msg_t * msg ) ;
+
 inline static int fill_in_node_registration_status_msg ( slurm_node_registration_status_msg_t * node_reg_msg ) ;
 static void * service_connection ( void * arg ) ;
 
@@ -241,6 +245,14 @@ void slurmd_req ( slurm_msg_t * msg )
 			slurm_rpc_kill_tasks ( msg ) ;
 			slurm_free_kill_tasks_msg ( msg -> data ) ;
 			break ;
+		case REQUEST_REATTACH_TASKS_STREAMS:
+			slurm_rpc_reattach_tasks_streams ( msg ) ;
+			slurm_free_reattach_tasks_streams_msg ( msg -> data ) ;
+			break ;
+		case REQUEST_REVOKE_JOB_CREDENTIAL:
+			slurm_rpc_revoke_credential ( msg ) ;
+			slurm_free_revoke_credential_msg ( msg -> data ) ;
+			break ;
 		default:
 			error ("slurmctld_req: invalid request msg type %d\n", msg-> msg_type);
 			slurm_send_rc_msg ( msg , EINVAL );
@@ -357,6 +369,35 @@ void slurm_rpc_reattach_tasks_streams ( slurm_msg_t * msg )
 
 }
 
+void slurm_rpc_revoke_credential ( slurm_msg_t * msg )
+{
+	/* init */
+	int error_code = SLURM_SUCCESS;
+	clock_t start_time;
+	revoke_credential_msg_t * revoke_credential_msg = ( revoke_credential_msg_t * ) msg->data ;
+
+	start_time = clock ();
+
+	/* do RPC call */
+	
+	/*error_code = revoke credential ( revoke_credential_msg ); */
+	
+	/* return result */
+	if (error_code)
+	{
+		error ("slurmd_req:  error %d, time=%ld",
+				error_code, (long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , error_code );
+	}
+	else
+	{
+		info ("slurmd_req:  completed successfully, time=%ld", 
+				(long) (clock () - start_time));
+		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	}
+
+}
+
 void slurm_rpc_slurmd_template ( slurm_msg_t * msg )
 {
 	/* init */
@@ -368,7 +409,7 @@ void slurm_rpc_slurmd_template ( slurm_msg_t * msg )
 
 	/* do RPC call */
 	
-	/*error_code = init_slurm_conf (); */
+	/*error_code = (); */
 	
 	/* return result */
 	if (error_code)

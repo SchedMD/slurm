@@ -394,6 +394,7 @@ void * stdout_io_pipe_thread ( void * arg )
 
 	stdout_return:
 	free_circular_buffer ( cir_buf ) ;
+	slurm_close_stream ( io_arg->sockets[STDIN_OUT_SOCK] ) ;
 	pthread_exit ( NULL ) ; 
 }
 
@@ -486,6 +487,7 @@ void * stderr_io_pipe_thread ( void * arg )
 
 	stderr_return:
 	free_circular_buffer ( cir_buf ) ;
+	slurm_close_stream ( io_arg->sockets[SIG_STDERR_SOCK] ) ;
 	pthread_exit ( NULL ) ; 
 }
 
@@ -494,10 +496,13 @@ void * task_exec_thread ( void * arg )
 {
 	task_start_t * task_start = ( task_start_t * ) arg ;
 	launch_tasks_request_msg_t * launch_msg = task_start -> launch_msg ;
+	slurm_msg_t resp_msg ;
+	task_exit_msg_t task_exit ;
 	int * pipes = task_start->pipes ;
 	int rc ;
 	int cpid ;
 	struct passwd * pwd ;
+	int task_return_code ;
 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
@@ -561,12 +566,23 @@ void * task_exec_thread ( void * arg )
 			close ( STDOUT_FILENO );
 			close ( STDERR_FILENO );
 			_exit ( SLURM_SUCCESS ) ;
+			break;
 			
 		default: /*parent proccess */
 			setup_parent_pipes ( task_start->pipes ) ;
 			forward_io ( arg ) ;
 			task_start->exec_pid = cpid ;
-			waitpid ( cpid , NULL , 0 ) ;
+			waitpid ( cpid , & task_return_code , 0 ) ;
+
+
+			task_exit . return_code = task_return_code ;
+			task_exit . task_id = launch_msg -> global_task_ids[task_start -> local_task_id ] ;
+
+			resp_msg . address = launch_msg -> response_addr ;	
+			resp_msg . data = & task_exit ;
+			resp_msg . msg_type = RESPONSE_LAUNCH_TASKS ;
+			slurm_send_only_node_msg ( & resp_msg ) ;
+			break;
 	}
 	return ( void * ) SLURM_SUCCESS ;
 }

@@ -435,6 +435,12 @@ typedef struct launch_tasks_response_msg
 	char * node_name ;
 } launch_tasks_response_msg_t ;
 
+typedef struct task_ext_msg
+{
+	uint32_t task_id;
+	uint32_t return_code;
+} task_exit_msg_t ;
+
 typedef struct node_info_msg {
 	uint32_t last_update;
 	uint32_t record_count;
@@ -547,7 +553,10 @@ void inline slurm_free_job_step_create_request_msg ( job_step_create_request_msg
 void inline slurm_free_job_step_create_response_msg ( job_step_create_response_msg_t * msg );
 void inline slurm_free_launch_tasks_request_msg ( launch_tasks_request_msg_t * msg ) ;
 void inline slurm_free_launch_tasks_response_msg ( launch_tasks_response_msg_t * msg ) ;
+void inline slurm_free_task_exit_msg ( task_exit_msg_t * msg ) ;
 void inline slurm_free_kill_tasks_msg ( kill_tasks_msg_t * msg ) ;
+void inline slurm_free_reattach_tasks_streams_msg ( reattach_tasks_streams_msg_t * msg ) ;
+void inline slurm_free_revoke_credential_msg ( revoke_credential_msg_t * msg ) ;
 
 extern char *job_dist_string(uint16_t inx);
 extern char *job_state_string(uint16_t inx);
