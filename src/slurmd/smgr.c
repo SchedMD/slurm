@@ -296,8 +296,11 @@ _exec_all_tasks(slurmd_job_t *job)
 		if (pid < 0) {
 			error("fork: %m");
 			return SLURM_ERROR;
-		} else if (pid == 0)  /* child */
+		} else if (pid == 0) {  /* child */
 			_exec_task(job, i, cpipe[1]);
+			/* Should never return */
+			exit(0);
+		}
 
 		/* Parent continues: 
 		 */

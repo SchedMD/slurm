@@ -616,7 +616,8 @@ shm_update_step_addrs(uint32_t jobid, uint32_t stepid,
 
 			debug3("Going to send shm update signal to %ld", 
 				(long) s->mpid);
-			if ((s->mpid > 0) && (kill(s->mpid, SIGHUP) < 0)) {
+			if ((s->mpid > (pid_t) 0) 
+			&&  (kill(s->mpid, SIGHUP) < 0)) {
 				slurm_seterrno(EPERM);
 				retval = SLURM_FAILURE;
 			}
@@ -864,7 +865,7 @@ _shm_clear_stale_entries(void)
 			continue;
 
 		while (t && !active_tasks) {
-			if (t->pid && (kill(-t->pid, 0) == 0))
+			if (kill(-t->pid, 0) == 0)
 				active_tasks = true;
 			t = t->next;
 		}
