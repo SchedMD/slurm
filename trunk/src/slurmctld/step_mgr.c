@@ -342,10 +342,15 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	for (i = first; i <= last; i++) {
 		if (bit_test (step_ptr->node_bitmap, i)) {
 			node_id = qsw_getnodeid_byhost (node_record_table_ptr[i].name);
-			bit_set(nodeset, node_id);
+			if (node_id >= 0)	/* no lookup error */
+				bit_set(nodeset, node_id);
+			else
+				error ("qsw_getnodeid_byhost lookup failure on %s",
+				       node_record_table_ptr[i].name);
 		}
 	}
-	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->node_bitmap) < 0)
+	nprocs = 1;	/* allocate based upon nodeset only */
+	if (qsw_setup_jobinfo (step_ptr->qsw_job, nprocs, nodeset, step_ptr->cyclic_alloc) < 0)
 		fatal ("step_create: qsw_setup_jobinfo error %m");
 	bit_free (nodeset);
 #endif
@@ -353,3 +358,30 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	*new_step_record = step_ptr;
 	return SLURM_SUCCESS;
 }
+
+/* 
+ * step_count - return a count of steps associated with a specific job
+ * input: job_ptr - pointer to job table entry to have step record added
+ * output: returns count of job steps
+ */
+int
+step_count (struct job_record *job_ptr) 
+{
+	int step_count = 0;
+	ListIterator step_record_iterator;
+	struct step_record *step_record_point;
+
+	if (job_ptr == NULL)
+		return step_count;
+
+	step_record_iterator = list_iterator_create (job_ptr->step_list);		
+
+	while ((step_record_point = (struct step_record *) list_next (step_record_iterator))) {
+		step_count++;
+	}		
+
+	list_iterator_destroy (step_record_iterator);
+	return step_count;
+}
+
+
