@@ -42,7 +42,7 @@
 #    if !HAVE_STRCHR
 #      define strchr index
 #      define strrchr rindex
-       char *strchr(), *strrchr();
+char *strchr(), *strrchr();
 #    endif /* HAVE_STRCHR */
 #  endif /* STDC_HEADERS */
 
@@ -163,19 +163,25 @@ accept_path_paranoia( plugrack_t rack,
         xassert( fq_path );
   
         if ( stat( fq_path, &st ) < 0 ) {
+		debug3( "accept_path_paranoia: stat(%s) failed", fq_path );
                 return 0;
         }
   
         /* Is path owned by authorized user? */
         if ( check_own ) {
-                if ( st.st_uid != rack->uid ) return 0;
+                if ( st.st_uid != rack->uid ) {
+			debug3( "accept_path_paranoia: %s not owned by proper user", fq_path );
+			return 0;
+		}
         }
 
         /* Is path writable by others? */
         if ( check_write ) {
                 if (  ( st.st_mode & S_IWGRP ) 
-		   || ( st.st_mode & S_IWOTH ) ) 
+		      || ( st.st_mode & S_IWOTH ) ) {
+			debug3( "accept_path_paranoia: %s writable by others", fq_path );
 			return 0;
+		}
         }
 
         return 1;
@@ -250,13 +256,17 @@ plugrack_open_plugin( plugrack_t rack, const char *fq_path )
   
         /* See if we can actually load the plugin. */
         plug = plugin_load_from_file( fq_path );
-        if ( plug == PLUGIN_INVALID_HANDLE ) return PLUGIN_INVALID_HANDLE;
+        if ( plug == PLUGIN_INVALID_HANDLE ) {
+		debug3( "plugrack_open_plugin: can't open %s", fq_path );
+		return PLUGIN_INVALID_HANDLE;
+	}
 
         /* Now see if this is the right type. */
         if (   rack->major_type 
-			   && ( strncmp( rack->major_type,
-                          plugin_get_type( plug ),
-                          strlen( rack->major_type ) ) != 0 ) ) {
+	       && ( strncmp( rack->major_type,
+			     plugin_get_type( plug ),
+			     strlen( rack->major_type ) ) != 0 ) ) {
+		debug3( "plugrack_open_plugin: %s is of wrong type", fq_path );
                 plugin_unload( plug );
                 return PLUGIN_INVALID_HANDLE;
         }
@@ -297,6 +307,7 @@ plugrack_destroy( plugrack_t rack )
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
                 if ( e->refcount > 0 ) {
+			debug2( "plugrack_destroy: attempt to destroy plugin rack that is still in use" );
                         list_iterator_destroy( it );
                         return SLURM_ERROR; /* plugins still in use. */
                 }
@@ -323,7 +334,10 @@ plugrack_set_major_type( plugrack_t rack, const char *type )
         /* Install a new one. */
         if ( type != NULL ) {
                 rack->major_type = xstrdup( type );
-                if ( rack->major_type == NULL ) return SLURM_ERROR;
+                if ( rack->major_type == NULL ) {
+			debug3( "plugrack_set_major_type: unable to set type" );
+			return SLURM_ERROR;
+		}
         }
   
         return SLURM_SUCCESS;
@@ -348,8 +362,8 @@ plugrack_set_paranoia( plugrack_t rack,
 
 static int
 plugrack_add_plugin_path( plugrack_t rack,
-						  const char *full_type,
-						  const char *fq_path )
+			  const char *full_type,
+			  const char *fq_path )
 {
         plugrack_entry_t *e;
   
@@ -372,8 +386,8 @@ plugrack_add_plugin_path( plugrack_t rack,
 int
 plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
 {
-		static const size_t type_len = 64;
-		char plugin_type[ type_len ];
+	static const size_t type_len = 64;
+	char plugin_type[ type_len ];
 
         if ( ! rack ) return SLURM_ERROR;
         if ( ! fq_path ) return SLURM_ERROR;
@@ -385,18 +399,18 @@ plugrack_add_plugin_file( plugrack_t rack, const char *fq_path )
          */
         if ( ! accept_paranoia( rack, fq_path ) ) return SLURM_ERROR;
 
-		/* Test the type. */
-		if ( plugin_peek( fq_path,
-						  plugin_type,
-						  type_len,
-						  NULL ) == SLURM_ERROR ) {
-			return SLURM_ERROR;
-		}
-		if (   rack->major_type 
-			   && ( strncmp( rack->major_type,
-							 plugin_type,
-                          strlen( rack->major_type ) ) != 0 ) ) {
-			return SLURM_ERROR;
+	/* Test the type. */
+	if ( plugin_peek( fq_path,
+			  plugin_type,
+			  type_len,
+			  NULL ) == SLURM_ERROR ) {
+		return SLURM_ERROR;
+	}
+	if (   rack->major_type 
+	       && ( strncmp( rack->major_type,
+			     plugin_type,
+			     strlen( rack->major_type ) ) != 0 ) ) {
+		return SLURM_ERROR;
         }
 
         /* Add it to the list. */
@@ -414,8 +428,8 @@ plugrack_read_dir( plugrack_t rack,
         DIR *dirp;
         struct dirent *e;
         struct stat st;
-		static const size_t type_len = 64;
-		char plugin_type[ type_len ];
+	static const size_t type_len = 64;
+	char plugin_type[ type_len ];
 
         if ( ! rack ) return SLURM_ERROR;
         if ( ! dir ) return SLURM_ERROR;
@@ -446,7 +460,10 @@ plugrack_read_dir( plugrack_t rack,
   
         /* Open the directory. */
         dirp = opendir( dir );
-        if ( dirp == NULL ) return SLURM_ERROR;
+        if ( dirp == NULL ) {
+		error( "cannot open plugin directory %s", dir );
+		return SLURM_ERROR;
+	}
   
         while ( 1 ) {
                 e = readdir( dirp );
@@ -454,9 +471,9 @@ plugrack_read_dir( plugrack_t rack,
 
                 /*
                  * Compose file name.  Where NAME_MAX is defined it represents 
-				 * the largest file name given in a dirent.  This macro is used
-				 * in the  allocation of "tail" above, so this unbounded copy 
-				 * should work.
+		 * the largest file name given in a dirent.  This macro is used
+		 * in the  allocation of "tail" above, so this unbounded copy 
+		 * should work.
                  */
                 strcpy( tail, e->d_name );
 
@@ -466,27 +483,28 @@ plugrack_read_dir( plugrack_t rack,
 
                 /* See if we should be paranoid about this file. */
                 if (!accept_path_paranoia( rack,
-                                           dir,
+                                           fq_path,
                                            rack->paranoia & 
                                            PLUGRACK_PARANOIA_FILE_OWN,
                                            rack->paranoia & 
                                            PLUGRACK_PARANOIA_FILE_WRITABLE )) {
+			debug3( "plugin_read_dir: skipping %s for security reasons", fq_path );
                         continue;
                 }
 
                 /* Test the type. */
-				if ( plugin_peek( fq_path,
-						   plugin_type,
-						   type_len,
-						   NULL ) == SLURM_ERROR ) {
-					continue;
-				}
-				if (   rack->major_type 
-					   && ( strncmp( rack->major_type,
-									 plugin_type,
-									 strlen( rack->major_type ) ) != 0 ) ) {
-					continue;
-				}
+		if ( plugin_peek( fq_path,
+				  plugin_type,
+				  type_len,
+				  NULL ) == SLURM_ERROR ) {
+			continue;
+		}
+		if (   rack->major_type 
+		       && ( strncmp( rack->major_type,
+				     plugin_type,
+				     strlen( rack->major_type ) ) != 0 ) ) {
+			continue;
+		}
 
                 /* Add it to the list. */
                 (void) plugrack_add_plugin_path( rack, plugin_type, fq_path );
@@ -518,7 +536,7 @@ plugrack_purge_idle( plugrack_t rack )
         it = list_iterator_create( rack->entries );
         while ( ( e = list_next( it ) ) != NULL ) {
                 if ( ( e->plug != PLUGIN_INVALID_HANDLE ) &&
-                         ( e->refcount == 0 ) ){
+		     ( e->refcount == 0 ) ){
                         plugin_unload( e->plug );
                         e->plug = PLUGIN_INVALID_HANDLE;
                 }

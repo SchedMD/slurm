@@ -33,6 +33,7 @@
 #include <dlfcn.h>        /* don't know if there's an autoconf for this. */
 #include <string.h>
 
+#include "src/common/log.h"
 #include "src/common/plugin.h"
 #include <slurm/slurm_errno.h>
 
@@ -49,6 +50,7 @@ plugin_peek( const char *fq_path,
 	
 	plug = dlopen( fq_path, RTLD_LAZY );
 	if ( plug == NULL ) {
+		debug2( "plugin_peek: dlopen(%s): %s", fq_path, dlerror() );
 		return SLURM_ERROR;
 	}
 
@@ -58,6 +60,7 @@ plugin_peek( const char *fq_path,
 		}
 	} else {
 		dlclose( plug );
+		error( "%s: not a SLURM plugin", fq_path );
 		return SLURM_ERROR;
 	}
 	if ( ( version = (uint32_t *) dlsym( plug, PLUGIN_VERSION ) ) != NULL ) {
@@ -66,6 +69,7 @@ plugin_peek( const char *fq_path,
 		}
 	} else {
 		dlclose( plug );
+		error( "%s: not a SLURM plugin", fq_path );
 		return SLURM_ERROR;
 	}
 
@@ -89,9 +93,12 @@ plugin_load_from_file( const char *fq_path )
          */
         plug = dlopen( fq_path, RTLD_NOW );
         if ( plug == NULL ) {
+		debug2( "plugin_load_from_file: dlopen(%s): %s",
+			fq_path,
+			dlerror() );
                 return PLUGIN_INVALID_HANDLE;
         }
-
+	
         /* Now see if our required symbols are defined. */
         if ( ( dlsym( plug, PLUGIN_NAME ) == NULL ) ||
              ( dlsym( plug, PLUGIN_TYPE ) == NULL ) ||
@@ -106,6 +113,7 @@ plugin_load_from_file( const char *fq_path )
          */
         if ( ( init = dlsym( plug, "init" ) ) != NULL ) {
                 if ( (*init)() != 0 ) {
+			debug( "plugin_load_from_file(%s): init() returned SLURM_ERROR", fq_path );
                         (void) dlclose( plug );
                         return PLUGIN_INVALID_HANDLE;
                 }
