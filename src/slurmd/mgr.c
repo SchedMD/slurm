@@ -269,20 +269,13 @@ _set_job_log_prefix(slurmd_job_t *job)
 {
 	char buf[256];
 
-	if (job->jobid > MAX_NOALLOC_JOBID) {
+	if (job->jobid > MAX_NOALLOC_JOBID) 
 		return;
 
-	} else if (job->jobid >= MIN_NOALLOC_JOBID) {
-		snprintf(buf, sizeof(buf), "[no-alloc:%u]",
-		         job->jobid - MIN_NOALLOC_JOBID);
-
-	} else {
-		if (job->stepid == NO_VAL)
-			snprintf(buf, sizeof(buf), "[%u]", job->jobid);
-		else
-			snprintf(buf, sizeof(buf), "[%u.%u]", 
-				job->jobid, job->stepid);
-	}
+	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL)) 
+		snprintf(buf, sizeof(buf), "[%u]", job->jobid);
+	else
+		snprintf(buf, sizeof(buf), "[%u.%u]", job->jobid, job->stepid);
 
 	log_set_fpfx(buf);
 }
@@ -1074,15 +1067,7 @@ _setargs(slurmd_job_t *job)
 	if (job->jobid > MAX_NOALLOC_JOBID)
 		return;
 
-	if (job->jobid >= MIN_NOALLOC_JOBID) {
-		setproctitle("no-alloc [%u]", job->jobid - MIN_NOALLOC_JOBID);
-		return;
-	}
-
-	/*
-	 *  Otherwise, a normal job
-	 */
-	if (job->stepid == NO_VAL)
+	if ((job->jobid >= MIN_NOALLOC_JOBID) || (job->stepid == NO_VAL))
 		setproctitle("[%u]",    job->jobid);
 	else
 		setproctitle("[%u.%u]", job->jobid, job->stepid); 
