@@ -23,6 +23,7 @@ AM_INIT_AUTOMAKE(slurm, $VERSION)
 AM_CONFIG_HEADER(config.h)
 AM_CONFIG_HEADER(slurm/slurm.h)
 
+X_AC_AIX
 
 dnl Checks for programs.
 dnl
@@ -102,7 +103,6 @@ LDFLAGS="$LDFLAGS "
 CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
 LIBS="$PTHREAD_LIBS $LIBS"
 
-X_AC_AIX
 X_AC_BGL
 X_AC_SLURM_SEMAPHORE
 X_AC_NCURSES
@@ -134,6 +134,12 @@ dnl
 X_AC_ELAN
 AM_CONDITIONAL(HAVE_ELAN, test "x$ac_have_elan" = "xyes")
 AC_SUBST(HAVE_ELAN)
+
+dnl check for whether to include Federation support
+dnl
+X_AC_FEDERATION
+AM_CONDITIONAL(HAVE_FEDERATION, test "x$ac_have_federation" = "xyes")
+AC_SUBST(HAVE_FEDERATION)
 
 dnl Check for whether to include readline support
 dnl 
@@ -220,6 +226,7 @@ AC_CONFIG_FILES([Makefile
 		 src/plugins/switch/Makefile
 		 src/plugins/switch/elan/Makefile
 		 src/plugins/switch/none/Makefile
+		 src/plugins/switch/federation/Makefile
 		 doc/Makefile
 		 doc/man/Makefile
 		 testsuite/Makefile
