@@ -168,13 +168,13 @@ main (int argc, char *argv[])
 /*
  * block_or_cycle - map string into integer
  * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
- * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
+ * output: returns DIST_BLOCK for "BLOCK", DIST_CYCLE for "CYCLE", -1 otherwise
  */
-int
+eunm task_dist
 block_or_cycle (char *in_string)
 {
-	if (strcmp (in_string, "BLOCK") == 0) return 1;
-	if (strcmp (in_string, "CYCLE")  == 0) return 0;
+	if (strcmp (in_string, "BLOCK") == 0) return DIST_BLOCK;
+	if (strcmp (in_string, "CYCLE")  == 0) return DIST_CYCLE;
 	return -1;
 }
 

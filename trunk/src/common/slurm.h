@@ -56,7 +56,7 @@ extern char *backup_controller;	/* name of computer acting as slurm backup contr
 
 /* NOTE: change NODE_STRUCT_VERSION value whenever the contents of NODE_STRUCT_FORMAT change */
 #define NODE_STRUCT_VERSION 1
-#define NODE_STRUCT_FORMAT "NodeName=%s Atate=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
+#define NODE_STRUCT_FORMAT "NodeName=%s State=%s CPUs=%d RealMemory=%d TmpDisk=%d Weight=%d Feature=%s #Partition=%s\n"
 #define CONFIG_MAGIC 0xc065eded
 #define NODE_MAGIC   0x0de575ed
 #define NO_VAL   (-9812)
@@ -148,7 +148,11 @@ enum job_states {
 	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
 	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
 	JOB_END			/* last entry in table */
-};			
+};
+enum task_dist {
+	DIST_BLOCK,		/* fill each node in turn */
+	DIST_CYCLE		/* one task each node, round-robin through nodes */
+};	
 /* last entry must be "end", keep in sync with node_state */
 extern char *job_state_string[];
 
@@ -172,10 +176,11 @@ struct job_details {
 	int min_procs;			/* minimum processors per node, MB */
 	int min_memory;			/* minimum memory per node, MB */
 	int min_tmp_disk;		/* minimum temporary disk per node, MB */
-	int dist;			/* distribution of tasks, 0=fill, 0=cyclic */
+	enum task_dist dist;		/* distribution of tasks, 0=fill, 0=cyclic */
 	char *job_script;		/* name of job script to execute */
 	int procs_per_task;		/* processors required per task */
 	int total_procs;		/* total number of allocated processors, for accounting */
+	char *node_list;		/* comma separated assigned node list (by task) */
 	time_t submit_time;		/* time of submission */
 };
 
@@ -221,7 +226,22 @@ extern int bitmap2node_name (bitstr_t *bitmap, char **node_list);
  * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
  * output: returns 1 for "BLOCK", 0 for "CYCLE", -1 otherwise
  */
-extern int block_or_cyclic (char *in_string);
+extern enum task_dist block_or_cyclic (char *in_string);
+
+/*
+ * build_node_list - build a node_list for a job laying out the actual
+ *	task distributions on the nodes
+ * input: bitmap - bitmap of nodes to use
+ *	dist - distribution of tasks, BLOCK or CYCLE
+ *	procs_per_task - how many processor each task will consume
+ *	node_list - place to store node list
+ *	total_procs - place to store count of total processors allocated
+ * output: node_list - comma separated list of nodes on which the tasks 
+ *		are to be initiated (ordered)
+ *	total_procs - count of total processors allocated
+ */
+extern void build_node_list (bitstr_t *bitmap, enum task_dist dist, 
+		int procs_per_task, char **node_list, int *total_procs);
 
 /*
  * count_cpus - report how many cpus are associated with the identified nodes 
