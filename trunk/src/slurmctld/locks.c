@@ -23,6 +23,9 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+/* NOTE: These functions closely resemble the semget/semop/semctl functions, 
+ *	but are written using the pthread_mutex_ functions
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
@@ -35,6 +38,18 @@
 
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
+
+#if defined(__GNU_LIBRARY__) && !defined(_SEM_SEMUN_UNDEFINED)
+/* union semun is defined by including <sys/sem.h> */
+#else
+/* according to X/OPEN we have to define it ourselves */
+union semun {
+	int val;                    /* value for SETVAL */
+	struct semid_ds *buf;       /* buffer for IPC_STAT, IPC_SET */
+	unsigned short int *array;  /* array for GETALL, SETALL */
+	struct seminfo *__buf;      /* buffer for IPC_INFO */
+};
+#endif
 
 /* available data structure locks 
  * we actually use three semaphores for each, see macros below
@@ -65,8 +80,10 @@ void wr_wrunlock (lock_datatype_t datatype);
 void
 init_locks ( )
 {
-	if (sem_id == -1)
-		sem_id = semget ( IPC_PRIVATE, (COUNT_OF_LOCKS * 3), IPC_CREAT | 0600 );
+	if (sem_id >= 0)
+		return;
+
+	sem_id = semget ( IPC_PRIVATE, (COUNT_OF_LOCKS * 3), IPC_CREAT | 0600 );
 
 	if (sem_id < 0)
 		fatal ("semget errno %d", errno);
@@ -201,4 +218,44 @@ wr_wrunlock (lock_datatype_t datatype)
 
 	if (semop (sem_id, wrunlock_op, 1) == -1)
 		fatal ("semop errno %d", errno);
+}
+
+/* get_lock_values - Get the current value of all locks */
+void
+get_lock_values (slurmctld_lock_flags_t *lock_flags)
+{
+	union semun arg;
+	unsigned short int array[12];
+
+	arg.array = array;
+	if (semctl (sem_id, 0, GETALL, arg)) {
+		error ("semctld GETALL errno %d", errno);
+		return;
+	}
+
+	lock_flags -> config.read = arg.array[0];
+	lock_flags -> config.write = arg.array[1];
+	lock_flags -> config.write_wait = arg.array[2];
+
+	lock_flags -> job.read = arg.array[3];
+	lock_flags -> job.write = arg.array[4];
+	lock_flags -> job.write_wait = arg.array[5];
+
+	lock_flags -> node.read = arg.array[6];
+	lock_flags -> node.write = arg.array[7];
+	lock_flags -> node.write_wait = arg.array[8];
+
+	lock_flags -> partition.read = arg.array[9];
+	lock_flags -> partition.write = arg.array[10];
+	lock_flags -> partition.write_wait = arg.array[11];
+
+}
+
+/* remove_locks - remove semaphores associated with our locks */
+void
+remove_locks ( void )
+{
+	union semun arg;
+	if (semctl (sem_id, 0, IPC_RMID, arg))
+		error ("semctl IPC_RMID errno %d", errno);
 }

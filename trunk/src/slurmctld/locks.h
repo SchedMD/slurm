@@ -81,7 +81,23 @@ typedef struct {
 	lock_level_t	partition;
 }	slurmctld_lock_t;
 
+typedef struct {
+	unsigned read;
+	unsigned write;
+	unsigned write_wait;
+}	lock_flags_t;
+
+typedef struct {
+	lock_flags_t	config;
+	lock_flags_t	job;
+	lock_flags_t	node;
+	lock_flags_t	partition;
+}	slurmctld_lock_flags_t;
+
+
+extern void get_lock_values (slurmctld_lock_flags_t *lock_flags);
 extern void init_locks ( );
 extern void lock_slurmctld (slurmctld_lock_t lock_levels);
+extern void remove_locks ( void );
 extern void unlock_slurmctld (slurmctld_lock_t lock_levels);
 

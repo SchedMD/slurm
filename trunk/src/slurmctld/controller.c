@@ -66,6 +66,7 @@ void fill_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void init_ctld_conf ( slurm_ctl_conf_t * build_ptr );
 void parse_commandline( int argc, char* argv[], slurm_ctl_conf_t * );
 void *process_rpc ( void * req );
+void report_locks_set ( void );
 void *slurmctld_background ( void * no_data );
 void *slurmctld_rpc_mgr( void * no_data );
 int slurm_shutdown ( void );
@@ -335,17 +336,53 @@ slurmctld_background ( void * no_data )
 					sleep (1);
 				if (server_thread_count)
 					info ("warning: shutting down with server_thread_count of %d", server_thread_count);
+				report_locks_set ( );
+				last_checkpoint_time = now;
+				/* don't lock to insure checkpoint never blocks */
+				/* issue call to save state */
 			}
-			
-			last_checkpoint_time = now;
-			lock_slurmctld (state_write_lock);
-			/* issue call to save state */
-			unlock_slurmctld (state_write_lock);
+			else {
+				last_checkpoint_time = now;
+				lock_slurmctld (state_write_lock);
+				/* issue call to save state */
+				unlock_slurmctld (state_write_lock);
+			}
 		}
 
 	}
 	debug3 ("slurmctld_background shutting down");
+	remove_locks ( );
 	pthread_exit ((void *)0);
+}
+
+/* report_locks_set - report any slurmctld locks left set */
+void
+report_locks_set ( void )
+{
+	slurmctld_lock_flags_t lock_flags;
+	char config[4]="", job[4]="", node[4]="", partition[4]="";
+
+	get_lock_values (&lock_flags);
+
+	if (lock_flags.config.read) strcat (config, "R");
+	if (lock_flags.config.write) strcat (config, "W");
+	if (lock_flags.config.write_wait) strcat (config, "P");
+
+	if (lock_flags.job.read) strcat (job, "R");
+	if (lock_flags.job.write) strcat (job, "W");
+	if (lock_flags.job.write_wait) strcat (job, "P");
+
+	if (lock_flags.node.read) strcat (node, "R");
+	if (lock_flags.node.write) strcat (node, "W");
+	if (lock_flags.node.write_wait) strcat (node, "P");
+
+	if (lock_flags.partition.read) strcat (partition, "R");
+	if (lock_flags.partition.write) strcat (partition, "W");
+	if (lock_flags.partition.write_wait) strcat (partition, "P");
+
+	if ((strlen (config) + strlen (job) + strlen (node) + strlen (partition)) > 0)
+		error ("The following locks were left set config:%s, job:%s, node:%s, part:%s",
+			config, job, node, partition);
 }
 
 /* process_rpc - process an RPC request and close the connection */
@@ -1300,7 +1337,7 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->slurmd_timeout   	= 300 ;
 	conf_ptr->slurm_conf       	= SLURM_CONFIG_FILE ;
 	conf_ptr->state_save_location   = xstrdup ("/tmp") ;
-	conf_ptr->tmp_fs            	= NULL ;
+	conf_ptr->tmp_fs            	= xstrdup ("/tmp") ;
 
 	servent = getservbyname (SLURMCTLD_PORT, NULL);
 	if (servent)
