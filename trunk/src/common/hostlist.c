@@ -940,7 +940,7 @@ static int hostlist_push_range(hostlist_t hl, hostrange_t hr)
 	assert(hr != NULL);
 	LOCK_HOSTLIST(hl);
 
-	tail = hl->hr[hl->nranges - 1];
+	tail = (hl->nranges > 0) ? hl->hr[hl->nranges-1] : hl->hr[0];
 
 	if (hl->size == hl->nranges && !hostlist_expand(hl))
 		goto error;
@@ -1498,9 +1498,7 @@ char *hostlist_pop_range(hostlist_t hl)
 	hostrange_t tail;
 
 	LOCK_HOSTLIST(hl);
-
-	hltmp = hostlist_new();
-	if (hl->nranges < 1 || !hltmp) {
+	if (hl->nranges < 1 || !(hltmp = hostlist_new())) {
 		UNLOCK_HOSTLIST(hl);
 		return NULL;
 	}
