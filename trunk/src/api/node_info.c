@@ -52,13 +52,14 @@ main (int argc, char *argv[])
 	static time_t last_update_time = (time_t) NULL;
 	int error_code, i;
 	node_info_msg_t * node_info_msg_ptr = NULL;
-	node_table_t * node_ptr = node_info_msg_ptr -> node_array ;
+	node_table_t * node_ptr;
 
 	error_code = slurm_load_node (last_update_time, &node_info_msg_ptr);
 	if (error_code) {
 		printf ("slurm_load_node error %d\n", error_code);
 		exit (error_code);
 	}
+	node_ptr = node_info_msg_ptr -> node_array ;
 
 	printf("Nodes updated at %d, record count %d\n",
 		node_info_msg_ptr ->last_update, node_info_msg_ptr->record_count);
@@ -75,7 +76,7 @@ main (int argc, char *argv[])
 			printf ("skipping...\n");
 	}
 
-	slurm_free_node_info ( node_info_msg_ptr ) ;
+	//slurm_free_node_info ( node_info_msg_ptr ) ;
 	exit (0);
 }
 #endif
