@@ -150,7 +150,7 @@ shm_fini(void)
 	xassert(slurmd_shm != NULL);
 	_shm_lock();
 
-	verbose("%ld calling shm_fini() on %ld", getpid(), attach_pid);
+	debug2("%ld calling shm_fini() on %ld", getpid(), attach_pid);
 	xassert(attach_pid == getpid());
 
 	if ((attach_pid == getpid()) && (--slurmd_shm->users == 0))
@@ -183,7 +183,7 @@ shm_cleanup(void)
 	char *s;
 
 	if ((s = _create_ipc_name(SHM_LOCKNAME))) {
-		info("going to destroy shm lock `%s'", s);
+		verbose("request to destroy shm lock `%s'", s);
 		if (sem_unlink(s) < 0)
 			error("sem_unlink: %m");
 		xfree(s);
@@ -756,9 +756,13 @@ _shm_attach()
 static int
 _shm_new()
 {
-	if ((_shm_create() < 0) && (_shm_attach() < 0)) {
-		error("shm_attach: %m");
-		return SLURM_FAILURE;
+	if (_shm_create() < 0) {
+		if (_shm_attach() < 0) {
+			error("shm_attach: %m");
+			return SLURM_FAILURE;
+		}
+		debug("Existing shm segment found, going to reinitialize it.");
+		_shm_initialize();
 	}
 	attach_pid = getpid();
 	slurmd_shm->users = 1;
@@ -778,6 +782,12 @@ _shm_reopen()
 	int retval = SLURM_SUCCESS;
 
 	if ((shm_lock = _sem_open(SHM_LOCKNAME, 0)) == SEM_FAILED) {
+		if (errno == ENOENT) {
+			info("Lockfile found but semaphore deleted:"
+			     " creating new shm segment");
+			shm_cleanup();
+			return _shm_lock_and_initialize();
+		}
 		error("Unable to initialize semaphore: %m");
 		return SLURM_FAILURE;
 	}
@@ -825,9 +835,6 @@ _shm_lock_and_initialize()
 	}
 
 	shm_lock = _sem_open(SHM_LOCKNAME, O_CREAT|O_EXCL, S_IRUSR|S_IWUSR, 0);
-
-	debug3("Initial open of semaphore: %m");
-
 	if (shm_lock != SEM_FAILED) /* lock didn't exist. Create shmem      */
 		return _shm_new();
 	else                        /* lock exists. Attach to shared memory */

@@ -49,7 +49,7 @@
 #include "semaphore.h"
 
 
-#define MAX_TRIES 32
+#define MAX_TRIES 3
 
 
 sem_t * sem_open(const char *name, int oflag, ...)

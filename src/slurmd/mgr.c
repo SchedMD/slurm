@@ -37,13 +37,13 @@
 #include <unistd.h>
 #include <pwd.h>
 #include <grp.h>
-#include <signal.h>
 
 #if HAVE_STDLIB_H
 #  include <stdlib.h>
 #endif
 
 #include <src/common/log.h>
+#include <src/common/xsignal.h>
 
 #include <src/slurmd/mgr.h>
 #include <src/slurmd/io.h>
@@ -142,18 +142,6 @@ slurmd_run_job(slurmd_job_t *job)
 }
 
 static void
-xsignal(int signo, void (*handler)(int))
-{
-	struct sigaction sa, old_sa;
-
-	sa.sa_handler = handler;
-	sigemptyset(&sa.sa_mask);
-	sigaddset(&sa.sa_mask, signo);
-	sa.sa_flags = 0;
-	sigaction(signo, &sa, &old_sa);
-}
-
-static void
 _wait_for_all_tasks(slurmd_job_t *job)
 {
 	int waiting = job->ntasks;
@@ -187,7 +175,7 @@ _task_exec(slurmd_job_t *job, int i)
 	/* 
 	 * Reinitialize slurm log facility to send errors back to client 
 	 */
-	log_init("slurmd", opts, 0, NULL);
+	log_init("slurmd", opts, 0, NULL); 
 
 	if (_unblock_all_signals() == SLURM_ERROR) {
 		error("unable to unblock signals");

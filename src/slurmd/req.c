@@ -72,15 +72,18 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_SHUTDOWN:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
 		kill(conf->pid, SIGTERM);
+		slurm_free_shutdown_msg(msg->data);
 		break;
 	case REQUEST_NODE_REGISTRATION_STATUS:
 		/* Treat as ping (for slurmctld agent) */
 		_rpc_ping(msg, cli);
 		/* Then initiate a separate node registration */
+		slurm_free_node_registration_status_msg(msg->data);
 		send_registration_msg();
 		break;
 	case REQUEST_PING:
 		_rpc_ping(msg, cli);
+		/* XXX: Is there a slurm_free_blahblah* for this one? */
 		break;
 	default:
 		error("slurmd_req: invalid request msg type %d\n",
@@ -211,8 +214,10 @@ _kill_all_active_steps(uint32_t jobid)
 	job_step_t  *s     = NULL;   
 
 	while ((s = list_next(i))) {
-		if (s->jobid == jobid)
+		if (s->jobid == jobid) {
 			shm_signal_step(jobid, s->stepid, SIGKILL);
+			shm_delete_step(jobid, s->stepid);
+		}
 	}
 	list_iterator_destroy(i);
 	list_destroy(steps);

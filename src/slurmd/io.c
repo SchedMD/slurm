@@ -50,6 +50,7 @@
 #include <src/common/fd.h>
 #include <src/common/list.h>
 #include <src/common/xmalloc.h>
+#include <src/common/xsignal.h>
 
 #include <src/slurmd/job.h>
 #include <src/slurmd/shm.h>
@@ -138,10 +139,21 @@ struct io_operations client_ops = {
 	handle_error:	&_client_error,
 };
 
+/* 
+ * Empty SIGHUP handler used to interrupt EIO thread 
+ * system calls
+ */
+static void
+_hup_handler(int sig)
+{
+}
+
 int
 io_spawn_handler(slurmd_job_t *job) 
 {
 	pthread_attr_t attr;
+
+	xsignal(SIGHUP, &_hup_handler);
 	
 	if (io_init_pipes(job) == SLURM_FAILURE) {
 		error("io_handler: init_pipes failed: %m");
@@ -154,11 +166,6 @@ io_spawn_handler(slurmd_job_t *job)
 	 */
 	_io_prepare_tasks(job);
 
-	/* open 2*ntask initial connections or files for stdout/err 
-	 * append these to objs list 
-	 */
-	_io_prepare_clients(job);
-
 	if ((errno = pthread_attr_init(&attr)) != 0)
 		error("pthread_attr_init: %m");
 
@@ -168,7 +175,14 @@ io_spawn_handler(slurmd_job_t *job)
 #endif 
 	xassert(_validate_io_list(job->objs));
 
-	return pthread_create(&job->ioid, &attr, &_io_thr, (void *)job);
+	pthread_create(&job->ioid, &attr, &_io_thr, (void *)job);
+
+	/* open 2*ntask initial connections or files for stdout/err 
+	 * append these to objs list 
+	 */
+	_io_prepare_clients(job);
+
+	return 0;
 }
 
 static int
@@ -278,13 +292,12 @@ _io_prepare_clients(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++) {
 		task_info_t *t = job->task[i];
 
-		sock = (int) slurm_open_stream(&srun->ioaddr);
-		if (sock < 1) {
+		if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
 			error("connect io: %m");
-			return;
+		} else {
+			fd_set_nonblocking(sock);
+			fd_set_close_on_exec(sock);
 		}
-		fd_set_nonblocking(sock);
-		fd_set_close_on_exec(sock);
 		obj  = _io_obj(sock, t->gid, CLIENT_STDOUT);
 		_io_write_header(obj->arg, srun);
 		list_append(job->objs, obj);
@@ -292,14 +305,19 @@ _io_prepare_clients(slurmd_job_t *job)
 		_io_connect_objs(t->out, obj);
 		_io_connect_objs(obj, t->in );
 
-		sock = (int) slurm_open_stream(&srun->ioaddr);
-		fd_set_nonblocking(sock);
-		fd_set_close_on_exec(sock);
+		if ((sock = (int) slurm_open_stream(&srun->ioaddr)) < 0) {
+			error("connect io: %m");
+		} else {
+			fd_set_nonblocking(sock);
+			fd_set_close_on_exec(sock);
+		}
 		obj  = _io_obj(sock, t->gid, CLIENT_STDERR);
 		_io_write_header(obj->arg, srun);
 		list_append(job->objs, obj);
 
 		_io_connect_objs(t->err, obj);
+
+		pthread_kill(job->ioid, SIGHUP);
 	}
 }
 
@@ -705,6 +723,9 @@ _writable(io_obj_t *obj)
 	rc = (!io->disconnected 
 		&& ((cbuf_used(io->buf) > 0) || io->eof));
 
+	if (rc)
+		debug3("%d %s is writable", io->id, _io_str[io->type]);
+
 	return rc;
 }
 
@@ -725,6 +746,7 @@ _write(io_obj_t *obj, List objs)
 
 
 	if (io->eof && (cbuf_used(io->buf) == 0)) {
+		debug3("Need to close %d %s", io->id, _io_str[io->type]);
 		if (close(obj->fd) < 0)
 			error("close: %m");
 		obj->fd = -1;
@@ -801,8 +823,7 @@ _task_read(io_obj_t *obj, List objs)
 				t->id, obj->fd, errno);
 		return -1;
 	}
-	debug3("read %d bytes from %s %d", 
-		n, _io_str[t->type], t->id);
+	debug3("read %d bytes from %s %d", n, _io_str[t->type], t->id);
 
 	if (n == 0) {  /* got eof */
 		debug3("got eof on task %ld", t->id);
@@ -817,9 +838,13 @@ _task_read(io_obj_t *obj, List objs)
 	/* copy buf to all readers */
 	i = list_iterator_create(t->readers);
 	while((r = list_next(i))) {
-		n = cbuf_write(r->buf, (void *) buf, n, NULL);
-		debug3("wrote %ld bytes into %s buf", n, 
-				_io_str[r->type]);
+		int dropped;
+		n = cbuf_write(r->buf, (void *) buf, n, &dropped);
+		debug3("wrote %ld bytes into %s buf", n, _io_str[r->type]);
+		if (dropped) {
+			debug3("dropped %ld bytes from %s buf", 
+				dropped, _io_str[r->type]);
+		}
 	}
 	list_iterator_destroy(i);
 
