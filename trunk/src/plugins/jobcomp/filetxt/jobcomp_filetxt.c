@@ -46,8 +46,10 @@
 #include <unistd.h>
 
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/slurm_protocol_defs.h"
 #include "src/common/slurm_jobcomp.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
@@ -151,19 +153,13 @@ _get_user_name(uint32_t user_id, char *user_name, int buf_size)
 {
 	static uint32_t cache_uid      = 0;
 	static char     cache_name[32] = "root";
-	struct passwd * user_info      = NULL;
 
-	if (user_id == cache_uid)
-		snprintf(user_name, buf_size, cache_name);
-	else {
-		user_info = getpwuid((uid_t) user_id);
-		if (user_info && user_info->pw_name[0])
-			snprintf(user_name, buf_size, "%s",user_info->pw_name);
-		else
-			snprintf(user_name, buf_size, "Unknown");
+	if (user_id != cache_uid) {
 		cache_uid = user_id;
-		snprintf(cache_name, sizeof(cache_name), user_name);
+		snprintf(cache_name, sizeof(cache_name), "%s", 
+			uid_to_string((uid_t) user_id));
 	}
+	snprintf(user_name, buf_size, "%s", cache_name);
 }
 
 /*

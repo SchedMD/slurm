@@ -25,6 +25,7 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#include "src/common/uid.h"
 #include "src/smap/smap.h"
 
 typedef struct {
@@ -185,7 +186,7 @@ void get_command(void)
 				smap_info_ptr->ycord++;
 				mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord,
 					  smap_info_ptr->xcord, "input is Create with geo of X=%d Y=%d Z=%d Size=%d Torus=%d Rotate=%d",geo[0],geo[1],geo[2],i,torus, rotate);
-				new_pa_request(&request, geo, i, rotate, elongate, force_contig, torus);
+				new_pa_request(request, geo, i, rotate, elongate, force_contig, torus);
 				if (!allocate_part(request, &results)){
 					printf("allocate failure for %d%d%d\n", 
 					       geo[0], geo[1], geo[2]);
@@ -267,12 +268,8 @@ int print_text_command()
 	   smap_info_ptr->xcord += 8;
 	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", job_ptr->partition);
 	   smap_info_ptr->xcord += 12;
-	   if ((user = getpwuid((uid_t) job_ptr->user_id)))
-		mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, 
-			smap_info_ptr->xcord, "%s", user->pw_name);
-	    else
-		 mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, 
-			smap_info_ptr->xcord, "%d", (int) job_ptr->user_id);
+	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", 
+		uid_to_string((uid_t) job_ptr->user_id));
 	   smap_info_ptr->xcord += 10;
 	   mvwprintw(smap_info_ptr->text_win, smap_info_ptr->ycord, smap_info_ptr->xcord, "%s", job_ptr->name);
 	   smap_info_ptr->xcord += 12;

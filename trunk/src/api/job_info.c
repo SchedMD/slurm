@@ -43,6 +43,7 @@
 #include "src/api/job_info.h"
 #include "src/common/node_select.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/uid.h"
 
 /*
  * slurm_print_job_info_msg - output information about all Slurm 
@@ -83,12 +84,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 
 	/****** Line 1 ******/
 	fprintf ( out, "JobId=%u ", job_ptr->job_id);
-	user_info = getpwuid((uid_t) job_ptr->user_id);
-	if (user_info && user_info->pw_name[0])
-		fprintf ( out, "UserId=%s(%u) ", 
-			  user_info->pw_name, job_ptr->user_id);
-	else
-		fprintf ( out, "UserId=(%u) ", job_ptr->user_id);
+	fprintf ( out, "UserId=%s(%u) ", 
+		uid_to_string((uid_t) job_ptr->user_id), job_ptr->user_id);
 	group_info = getgrgid( (gid_t) job_ptr->group_id );
 	if ( group_info && group_info->gr_name[ 0 ] )
 		fprintf( out, "GroupId=%s(%u)",

@@ -36,6 +36,7 @@
 #include "src/common/list.h"
 #include "src/common/macros.h"
 #include "src/common/node_select.h"
+#include "src/common/uid.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/squeue/print.h"
@@ -370,17 +371,11 @@ int _print_job_user_id(job_info_t * job, int width, bool right, char* suffix)
 
 int _print_job_user_name(job_info_t * job, int width, bool right, char* suffix)
 {
-	struct passwd *user_info = NULL;
-
 	if (job == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
-	else {
-		user_info = getpwuid((uid_t) job->user_id);
-		if (user_info && user_info->pw_name[0])
-			_print_str(user_info->pw_name, width, right, true);
-		else
-			_print_int(job->user_id, width, right, true);
-	}
+	else
+		_print_str(uid_to_string((uid_t) job->user_id), width, 
+			right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
@@ -919,17 +914,11 @@ int _print_step_user_id(job_step_info_t * step, int width, bool right,
 int _print_step_user_name(job_step_info_t * step, int width, bool right, 
 			  char* suffix)
 {
-	struct passwd *user_info = NULL;
-
 	if (step == NULL)	/* Print the Header instead */
 		_print_str("USER", width, right, true);
-	else {
-		user_info = getpwuid((uid_t) step->user_id);
-		if (user_info && user_info->pw_name[0])
-			_print_str(user_info->pw_name, width, right, true);
-		else
-			_print_int(step->user_id, width, right, true);
-	}
+	else
+		_print_str(uid_to_string((uid_t) step->user_id), width, 
+			right, true);
 	if (suffix)
 		printf("%s", suffix);
 	return SLURM_SUCCESS;
