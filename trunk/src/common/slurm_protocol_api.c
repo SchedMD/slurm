@@ -367,12 +367,48 @@ slurm_fd slurm_open_stream ( slurm_addr * slurm_address )
 
 size_t slurm_write_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
-	return _slurm_send ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ;
+	int rc ;
+	while ( true )
+	{
+		if ( ( rc = _slurm_send ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		{
+			if ( errno == EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				return rc ;
+			}
+		}
+		else
+		{
+			return rc ;
+		}
+	}
 }
 
 size_t slurm_read_stream ( slurm_fd open_fd , char * buffer , size_t size )
 {
-	return _slurm_recv ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ;
+	int rc ;
+	while ( true )
+	{
+		if (( rc = _slurm_recv ( open_fd , buffer , size , SLURM_PROTOCOL_NO_SEND_RECV_FLAGS ) ) == SLURM_PROTOCOL_ERROR )
+		{
+			if ( errno == EINTR )
+			{
+				continue ;
+			}
+			else
+			{
+				return rc ;
+			}
+		}
+		else
+		{
+			return rc ;
+		}
+	}
 }
 
 int slurm_close_stream ( slurm_fd open_fd )
