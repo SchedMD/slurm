@@ -106,6 +106,8 @@ slurm_load_node (time_t update_time, node_info_msg_t **node_info_msg_pptr)
         /* shutdown message connection */
         if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
+	if ( msg_size )
+		return msg_size;
 
 	switch ( response_msg . msg_type )
 	{

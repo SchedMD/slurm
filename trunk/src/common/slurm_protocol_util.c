@@ -8,7 +8,7 @@ uint32_t check_header_version( header_t * header)
 {
 	if ( header -> version != SLURM_PROTOCOL_VERSION )
 	{
-		debug ( "Invalid Protocol Version from " ) ;
+		info ( "Invalid Protocol Version %d ", header -> version ) ;
 		return SLURM_PROTOCOL_VERSION_ERROR ;
 	}
 	return SLURM_PROTOCOL_SUCCESS ;

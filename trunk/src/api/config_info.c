@@ -60,14 +60,15 @@ slurm_load_build (time_t update_time, struct build_table **build_table_ptr )
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
 	
-
 	/* receive message */
 	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
 	/* shutdown message connection */
 	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;	
-	
+	if ( msg_size )
+		return msg_size;
+
 	switch ( response_msg . msg_type )
         {
                 case RESPONSE_BUILD_INFO:
