@@ -870,8 +870,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 			xstrdup(DEFAULT_SLURMCTLD_PIDFILE);
 
 	if (ctl_conf_ptr->slurmctld_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmctld_port = strtol(SLURMCTLD_PORT,
-				 (char **)NULL, 10);
+		ctl_conf_ptr->slurmctld_port = SLURMCTLD_PORT;
 
 	if (ctl_conf_ptr->slurmctld_timeout == (uint16_t) NO_VAL)
 		ctl_conf_ptr->slurmctld_timeout = DEFAULT_SLURMCTLD_TIMEOUT;
@@ -885,8 +884,7 @@ validate_config (slurm_ctl_conf_t *ctl_conf_ptr)
 		ctl_conf_ptr->slurmd_pidfile = xstrdup(DEFAULT_SLURMD_PIDFILE);
 
 	if (ctl_conf_ptr->slurmd_port == (uint32_t) NO_VAL) 
-		ctl_conf_ptr->slurmd_port = strtol(SLURMD_PORT, 
-				(char **)NULL, 10);
+		ctl_conf_ptr->slurmd_port = SLURMD_PORT;
 
 	if (ctl_conf_ptr->slurmd_spooldir == NULL)
 		ctl_conf_ptr->slurmd_spooldir = xstrdup(DEFAULT_SPOOLDIR);
