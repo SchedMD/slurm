@@ -121,11 +121,11 @@ struct poptOption constraintTable[] = {
  * above
  */
 struct poptOption runTable[] = {
-	{"nprocs", 'n', POPT_ARG_INT, &opt.nprocs, OPT_NPROCS,
-	 "number of processes to run",
-	 "nprocs"},
+	{"ntasks", 'n', POPT_ARG_INT, &opt.nprocs, OPT_NPROCS,
+	 "number of tasks to run",
+	 "ntasks"},
 	{"cpus-per-task", 'c', POPT_ARG_INT, &opt.cpus, OPT_CPUS,
-	 "number of cpus required per process",
+	 "number of cpus required per task",
 	 "ncpus"},
 	{"nodes", 'N', POPT_ARG_INT, &opt.nodes, OPT_NODES,
 	 "number of nodes on which to run",
@@ -910,39 +910,39 @@ void opt_list()
 {
 	char *str;
 
-	info("defined options for program `%s'", opt.progname);
-	info("------------ ---------------------");
+	debug2("defined options for program `%s'", opt.progname);
+	debug2("------------ ---------------------");
 
-	info("user        : `%s'", opt.user);
-	info("uid         : %ld", (long) opt.uid);
-	info("cwd         : %s", opt.cwd);
-	info("nprocs      : %d", opt.nprocs);
-	info("cpus/proc   : %d", opt.cpus);
-	info("nodes       : %d", opt.nodes);
-	info("total cpus  : %d", opt.nprocs * opt.cpus);
-	info("partition   : %s",
+	debug2("user        : `%s'", opt.user);
+	debug2("uid         : %ld", (long) opt.uid);
+	debug2("cwd         : %s", opt.cwd);
+	debug2("nprocs      : %d", opt.nprocs);
+	debug2("cpus/proc   : %d", opt.cpus);
+	debug2("nodes       : %d", opt.nodes);
+	debug2("total cpus  : %d", opt.nprocs * opt.cpus);
+	debug2("partition   : %s",
 	     opt.partition == NULL ? "default" : opt.partition);
-	info("job name    : `%s'", opt.job_name);
-	info("distribution: %s", format_distribution_t(opt.distribution));
-	info("output      : %s",
+	debug2("job name    : `%s'", opt.job_name);
+	debug2("distribution: %s", format_distribution_t(opt.distribution));
+	debug2("output      : %s",
 	     print_io_t_with_filename(opt.output, opt.ofname));
-	info("error       : %s",
+	debug2("error       : %s",
 	     print_io_t_with_filename(opt.error, opt.efname));
-	info("input       : %s",
+	debug2("input       : %s",
 	     print_io_t_with_filename(opt.input, opt.ifname));
-	info("core format : %s", opt.core_format);
-	info("verbose     : %d", _verbose);
-	info("debug       : %d", _debug);
-	info("immediate   : %s", tf_(opt.immediate));
-	info("label output: %s", tf_(opt.labelio));
-	info("allocate    : %s", tf_(opt.allocate));
-	info("attach      : `%s'", opt.attach);
-	info("overcommit  : %s", tf_(opt.overcommit));
+	debug2("core format : %s", opt.core_format);
+	debug2("verbose     : %d", _verbose);
+	debug2("debug       : %d", _debug);
+	debug2("immediate   : %s", tf_(opt.immediate));
+	debug2("label output: %s", tf_(opt.labelio));
+	debug2("allocate    : %s", tf_(opt.allocate));
+	debug2("attach      : `%s'", opt.attach);
+	debug2("overcommit  : %s", tf_(opt.overcommit));
 	str = print_constraints();
-	info("constraints : %s", str);
+	debug2("constraints : %s", str);
 	xfree(str);
 	str = print_commandline();
-	info("remote command : `%s'", str);
+	debug2("remote command : `%s'", str);
 	xfree(str);
 
 }

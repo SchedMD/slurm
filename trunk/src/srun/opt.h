@@ -3,6 +3,7 @@
 /* Options for srun */
 
 #ifndef _HAVE_OPT_H
+#define _HAVE_OPT_H
 
 #include "config.h"
 
@@ -72,7 +73,7 @@ typedef struct srun_options {
 	char *cwd;		/* current working directory	*/
 
 	int  nprocs;		/* --nprocs=n,      -n n	*/
-	int  cpus;		/* --cpus=n,        -c n	*/
+	int  cpus;		/* --cpus_per_task=n, -c n	*/
 	int  nodes;		/* --nodes=n,       -N n	*/ 
 	char *partition;	/* --partition=n,   -p n   	*/
 	enum distribution_t
