@@ -383,7 +383,7 @@ _add_pending_job(struct job_record *job_ptr, struct part_record *part_ptr,
 	}
 
 	/* figure out how many nodes this job needs */
-	min_node_cnt = (detail_ptr->num_procs + part_specs->max_cpus - 1) /
+	min_node_cnt = (job_ptr->num_procs + part_specs->max_cpus - 1) /
 			part_specs->max_cpus;	/* round up */
 	detail_ptr->min_nodes = MAX(min_node_cnt, detail_ptr->min_nodes);
 	if (detail_ptr->min_nodes > part_ptr->max_nodes) {
@@ -605,7 +605,7 @@ _loc_restrict(struct job_record *job_ptr, part_specs_t *part_specs)
 
 	if (part_specs->max_cpus != part_specs->min_cpus) {
 		int max_node_cnt;
-		max_node_cnt = (detail_ptr->num_procs + part_specs->min_cpus 
+		max_node_cnt = (job_ptr->num_procs + part_specs->min_cpus 
 				- 1) / part_specs->min_cpus;
 		if (max_node_cnt > detail_ptr->min_nodes)
 			return true;
