@@ -82,9 +82,9 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "   StartTime=%s ", time_str);
 	make_time_str ((time_t *)&job_ptr->end_time, time_str);
-	fprintf ( out, "EndTime=%s ", time_str);
-	fprintf ( out, "NodeList=%s ", job_ptr->nodes);
+	fprintf ( out, "EndTime=%s\n", time_str);
 
+	fprintf ( out, "   NodeList=%s ", job_ptr->nodes);
 	fprintf ( out, "NodeListIndecies=");
 	for (j = 0; job_ptr->node_inx; j++) {
 		if (j > 0)
@@ -98,14 +98,15 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 
 	fprintf ( out, "   ReqProcs=%u ReqNodes=%u ", 
 		job_ptr->num_procs, job_ptr->num_nodes);
-	fprintf ( out, "Shared=%u Contiguous=%u ", job_ptr->shared, 
-		job_ptr->contiguous);
-	fprintf ( out, "MinProcs=%u MinMemory=%u ", job_ptr->min_procs, 
-		job_ptr->min_memory);
-	fprintf ( out, "MinTmpDisk=%u\n", job_ptr->min_tmp_disk);
-	fprintf ( out, "   Features=%s ReqNodeList=%s ", job_ptr->features, 
-		job_ptr->req_nodes);
+	fprintf ( out, "Shared=%u Contiguous=%u\n",  
+		job_ptr->shared, job_ptr->contiguous);
 
+	fprintf ( out, "   MinProcs=%u MinMemory=%u ",  
+		job_ptr->min_procs, job_ptr->min_memory);
+	fprintf ( out, "Features=%s  MinTmpDisk=%u\n", 
+		job_ptr->features, job_ptr->min_tmp_disk);
+
+	fprintf ( out, "   ReqNodeList=%s ", job_ptr->req_nodes);
 	fprintf ( out, "ReqNodeListIndecies=");
 	for (j = 0; job_ptr->req_node_inx; j++) {
 		if (j > 0)
