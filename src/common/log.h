@@ -94,11 +94,14 @@ typedef struct {
 
 /* some useful initializers for log_options_t
  */
-#define LOG_OPTS_INITIALIZER	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
+#define LOG_OPTS_INITIALIZER	\
+	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
 
-#define LOG_OPTS_SYSLOG_DEFAULT	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET }  
+#define LOG_OPTS_SYSLOG_DEFAULT	\
+	{ 1, LOG_LEVEL_QUIET, LOG_LEVEL_INFO, LOG_LEVEL_QUIET }  
 
-#define LOG_OPTS_STDERR_ONLY	{ 1, LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
+#define LOG_OPTS_STDERR_ONLY	\
+	{ 1, LOG_LEVEL_INFO,  LOG_LEVEL_QUIET, LOG_LEVEL_QUIET }
 
 /* 
  * initialize log module (called only once)
@@ -118,6 +121,13 @@ typedef struct {
  */
 int log_init(char *argv0, log_options_t opts, 
               log_facility_t fac, char *logfile);
+
+/* reinitialize log module.
+ * Keep same log options as previously initialized log, but reinit mutex
+ * that protects the log. This call is needed after a fork() in a threaded
+ * program
+ */
+int log_reinit(void);
 
 /* Alter log facility, options are like log_init() above, except that
  * an argv0 argument is not passed. 
