@@ -31,6 +31,12 @@
 #include <time.h>
 
 /*
+ * srun_allocate - notify srun of a resource allocation
+ * IN job_id - id of the job allocated resource
+ */
+extern void srun_allocate (uint32_t job_id);
+
+/*
  * srun_node_fail - notify srun of a node's failure
  * IN job_id    - id of job to notify
  * IN node_name - name of failed node
