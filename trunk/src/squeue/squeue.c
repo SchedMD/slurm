@@ -146,8 +146,8 @@ _print_job ( void )
 			                                  2, false );
 			out_size += (2 + 1);
 		}
-		job_format_add_time_limit( params.format_list, 9, true );
-		out_size += (9 + 1);
+		job_format_add_time_limit( params.format_list, 7, true );
+		out_size += (7 + 1);
 		if (params.long_list) {
 			job_format_add_priority( params.format_list, 10, true );
 			out_size += (10 + 1);
