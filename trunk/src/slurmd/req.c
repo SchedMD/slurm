@@ -36,10 +36,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "src/common/slurm_cred.h"
-#include "src/common/log.h"
 #include "src/common/hostlist.h"
+#include "src/common/log.h"
+#include "src/common/macros.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/slurm_cred.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xstring.h"
 #include "src/common/xmalloc.h"
@@ -60,7 +61,7 @@ static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_timelimit(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
-static void _rpc_kill_job(slurm_msg_t *, slurm_addr *);
+static void _rpc_kill_job(slurm_msg_t *, slurm_addr *, bool found_job);
 static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static void _rpc_reconfig(slurm_msg_t *msg, slurm_addr *cli_addr);
@@ -97,7 +98,7 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 		slurm_free_reattach_tasks_request_msg(msg->data);
 		break;
 	case REQUEST_KILL_JOB:
-		_rpc_kill_job(msg, cli);
+		_rpc_kill_job(msg, cli, false);
 		slurm_free_kill_job_msg(msg->data);
 		break;
 	case REQUEST_UPDATE_JOB_TIME:
@@ -440,6 +441,7 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	uid_t           req_uid;
 	int             step_cnt;
 	kill_job_msg_t *req = msg->data;
+	bool 		found_job = false;
 
 	req_uid = g_slurm_auth_get_uid(msg->cred);
 	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
@@ -454,10 +456,13 @@ _rpc_timelimit(slurm_msg_t *msg, slurm_addr *cli_addr)
 	info("Timeout for job=%u, step_cnt=%d, kill_wait=%u", 
 	     req->job_id, step_cnt, conf->cf.kill_wait);
 
-	if (step_cnt)
+	if (step_cnt) {
+		found_job = true;
 		sleep(conf->cf.kill_wait);
+	}
 
-	_rpc_kill_job(msg, cli_addr); /* SIGKILL and send response */
+	/* SIGKILL and send response */
+	_rpc_kill_job(msg, cli_addr, found_job); 
 }
 
 static void  _rpc_pid2jid(slurm_msg_t *msg, slurm_addr *cli)
@@ -635,7 +640,7 @@ _job_still_running(uint32_t job_id)
 }
 
 static void 
-_rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
+_rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli, bool found_job)
 {
 	int             rc      = SLURM_SUCCESS;
 	kill_job_msg_t *req     = msg->data;
@@ -655,9 +660,11 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	/*
 	 * "revoke" all future credentials for this jobid
 	 */
-	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0)
-		error("revoking credential for job %d: %m", req->job_id);
-	else {
+	if (slurm_cred_revoke(conf->vctx, req->job_id) < 0) {
+		/* credential not found for job, 
+		 * not an error if no steps started */
+		debug("revoking credential for job %d: %m", req->job_id);
+	} else {
 		debug("credential for job %d revoked", req->job_id);
 		save_cred_state(conf->vctx);
 	}
@@ -668,6 +675,8 @@ _rpc_kill_job(slurm_msg_t *msg, slurm_addr *cli)
 	 */
 	if (_kill_all_active_steps(req->job_id, SIGKILL) != 0)
 		_wait_for_procs(req->job_id, req->job_uid);
+	else if (!found_job)
+		rc = ESLURM_INVALID_JOB_ID;	/* no such job */
 
 	if (_run_epilog(req->job_id, req->job_uid) != 0) {
 		error ("[job %d] epilog failed", req->job_id);
