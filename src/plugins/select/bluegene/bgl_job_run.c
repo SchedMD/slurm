@@ -534,12 +534,12 @@ int sync_jobs(List job_list)
 		bgl_update_ptr->uid = job_ptr->user_id;
 		bgl_update_ptr->job_id = job_ptr->job_id;
 		bgl_update_ptr->bgl_part_id = bgl_part_id;
+		_part_op(bgl_update_ptr);
 #else
 		info("Queue sync of job %u in BGL partition %s",
 			job_ptr->job_id, bgl_part_id);
 #endif
 		_excise_block(block_list, bgl_part_id);
-		_part_op(bgl_update_ptr);
 	}
 	list_iterator_destroy(job_iterator);
 
