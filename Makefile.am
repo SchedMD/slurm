@@ -16,7 +16,8 @@ EXTRA_DIST =			\
 	AUTHORS			\
 	INSTALL			\
 	NEWS			\
-	ChangeLog		
+	ChangeLog		\
+	META
 	
 slurmincludedir=$(includedir)/slurm
 slurminclude_HEADERS =		\

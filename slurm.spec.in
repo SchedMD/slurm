@@ -25,7 +25,6 @@ Requires: openssl >= 0.9.6
 %if %{?_with_debug:1}%{!?_with_debug:0}
   %define _enable_debug --enable-debug
   %define __os_install_post /usr/lib/rpm/brp-compress
-  CFLAGS="-g -Wall"
 %endif
 
 #
@@ -80,17 +79,12 @@ SLURM authentication module for Chris Dunlap's Munge
 %setup -n %{name}-%{version}-%{release}
 
 %build
-PFX_FIX=--program-prefix=%{?_program_prefix:%{_program_prefix}} 
-WITHCONF=--sysconfdir=/etc/slurm
-
-# for now we build with debugging symbols
-
-%configure \
-    $PFX_FIX $WITHCONF                   \
-    %{?_enable_debug}                    \
-    %{?_with_elan}                       \
-    %{?_without_elan}                    \
-    %{?_with_totalview}                  \
+%configure --program-prefix=%{?_program_prefix:%{_program_prefix}} \
+    --sysconfdir=/etc/slurm		\
+    %{?_enable_debug}                   \
+    %{?_with_elan}                      \
+    %{?_without_elan}                   \
+    %{?_with_totalview}                 \
     %{?_without_totalview}
 
 #
