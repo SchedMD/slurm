@@ -96,8 +96,8 @@ int main (int argc, char *argv[])
 	if (argc > 3)
 		tasks = atoi(argv[3]);
 	if (tasks < 1)
-		tasks = max_nodes * TASKS_PER_NODE;
-	if (tasks < max_nodes) {
+		tasks = nodes * TASKS_PER_NODE;
+	if (tasks < nodes) {
 		fprintf(stderr, "Invalid task count argument\n");
 		exit(1);
 	}
