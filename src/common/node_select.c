@@ -373,7 +373,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
  * IN data - the data to enter into job credential
  */
 extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
-		int data_type, void *data)
+		enum select_data_type data_type, void *data)
 {
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *tmp_16 = (uint16_t *) data;
@@ -414,7 +414,7 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
  * IN/OUT data - the data to enter into job credential
  */
 extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
-		int data_type, void *data)
+		enum select_data_type data_type, void *data)
 {
 	int i, rc = SLURM_SUCCESS;
 	uint16_t *tmp_16 = (uint16_t *) data;
@@ -626,7 +626,7 @@ extern int select_g_alloc_jobinfo (select_jobinfo_t *jobinfo)
  * IN data - the data to enter into job credential
  */
 extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
-		int data_type, void *data)
+		enum select_data_type data_type, void *data)
 {
 	return SLURM_SUCCESS;
 }
@@ -637,9 +637,9 @@ extern int select_g_set_jobinfo (select_jobinfo_t jobinfo,
  * IN/OUT data - the data to enter into job credential
  */
 extern int select_g_get_jobinfo (select_jobinfo_t jobinfo,
-		int data_type, void *data)
+		enum select_data_type data_type, void *data)
 {
-	return SLURM_SUCCESS;
+	return SLURM_ERROR;
 }
 
 /* copy a select job credential
