@@ -201,17 +201,12 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/ldconfig %{_libdir}
-if [ -x /etc/rc.d/init.d/slurm ]; then
-    [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
+if [ $1 = 1 && -x /etc/rc.d/init.d/slurm ]; then
     [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
-#    if ! /etc/rc.d/init.d/slurm status | grep -q running \
-#      || ! /etc/rc.d/init.d/slurm test | grep -q  slurmctld; then
-#        /etc/rc.d/init.d/slurm start
-#    fi 
 fi
 
 %preun
-if [ "$1" = 0 ]; then
+if [ $1 = 0 ]; then
     if [ -x /etc/rc.d/init.d/slurm ]; then
         [ -x /sbin/chkconfig ] && /sbin/chkconfig --del slurm
         if /etc/rc.d/init.d/slurm status | grep -q running; then
@@ -228,6 +223,8 @@ fi
 
 
 %changelog
+* Fri Oct 01 2004 Mark Grondona <mgrondona@llnl.gov>
+- don't delete and add service in %post
 * Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
 - don't allow rpm to strip binaries since this breaks interface to parallel
   debuggers.
