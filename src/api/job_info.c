@@ -77,8 +77,9 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 	fprintf ( out, "JobState=%s TimeLimit=%u\n", 
 		job_state_string(job_ptr->job_state), job_ptr->time_limit);
 
-	fprintf ( out, "   Priority=%u Partition=%s BatchFlag=%u\n", 
-		job_ptr->priority, job_ptr->partition, job_ptr->batch_flag);
+	fprintf ( out, "   Priority=%u Partition=%s BatchFlag:Sid=%u:%u\n", 
+		job_ptr->priority, job_ptr->partition, 
+		job_ptr->batch_flag, job_ptr->batch_sid);
 
 	make_time_str ((time_t *)&job_ptr->start_time, time_str);
 	fprintf ( out, "   StartTime=%s ", time_str);
