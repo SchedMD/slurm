@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * job_step.c - manage the job step information of slurm
+ * step_mgr.c - manage the job step information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -68,7 +68,7 @@ create_step_record (struct job_record *job_ptr)
  * output: return 0 on success, errno otherwise
  */
 int 
-delete_step_record (struct job_record *job_ptr, uint16_t step_id) 
+delete_step_record (struct job_record *job_ptr, uint32_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;

@@ -17,10 +17,8 @@
  */
 extern int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , resource_allocation_response_msg_t ** job_alloc_resp_msg, int immediate ) ;
 
-/*
- * slurm_cancel - cancel the specified job 
- */
 extern int slurm_cancel_job (uint32_t job_id);
+extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);
 
 
 /***************************

@@ -118,8 +118,8 @@ typedef enum { test1, test2
 #define RESPONSE_BATCH_JOB_LAUNCH		4022
 #define REQUEST_SIGNAL_JOB			4031
 #define RESPONSE_SIGNAL_JOB			4032
-#define REQUEST_CANCEL_JOB			4041
-#define RESPONSE_CANCEL_JOB			4042	
+#define REQUEST_CANCEL_JOB_STEP			4041
+#define RESPONSE_CANCEL_JOB_STEP		4042	
 #define REQUEST_JOB_RESOURCE			4051
 #define RESPONSE_JOB_RESOURCE			4052
 #define REQUEST_JOB_ATTACH			4061
@@ -389,7 +389,7 @@ typedef struct node_info_msg {
 /* free message functions */
 void inline slurm_free_last_update_msg ( last_update_msg_t * msg ) ;
 void inline slurm_free_return_code_msg ( return_code_msg_t * msg ) ;
-void inline slurm_free_job_id_msg ( job_id_msg_t * msg ) ;
+void inline slurm_free_job_step_id_msg ( job_step_id_msg_t * msg ) ;
 
 void inline slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 
