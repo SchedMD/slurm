@@ -244,9 +244,6 @@ fi
 - added new package, bluegene, for select_bluegene.so
 * Fri Oct 01 2004 Mark Grondona <mgrondona@llnl.gov>
 - don't delete and add service in %post
-* Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
-- don't allow rpm to strip binaries since this breaks interface to parallel
-  debuggers.
 * Thu Sep 29 2004 Morris Jette <jette1@llnl.gov>
 - added select_linear.so plugin
 * Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
