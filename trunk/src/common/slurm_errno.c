@@ -222,6 +222,8 @@ static slurm_errtab_t slurm_errtab[] = {
 	  "Too many job steps on node"		        	},
 	{ ESLURMD_STEP_EXISTS,
 	  "Job step already in shared memory"	        	},
+	{ ESLURMD_JOB_NOTRUNNING,
+	  "Job step not running"	        	        },
 
 	/* slurmd errors in user batch job */
 	{ ESCRIPT_CHDIR_FAILED,
