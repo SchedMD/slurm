@@ -14,7 +14,32 @@ includes a scalable, general-purpose communication infrastructure.
 SLURM requires no kernel modifications and is relatively self-contained.
 
 <h2>Components</h2>
-<b>Controller.c</b> Primary SLURM daemon to execute on server machine.
+The <b>Job Initiator</b> (JI) is the tool used by the customer to initiate 
+a job. The job initiator can execute on any computer in the cluser. Its 
+request is sent to the <b>controller</b> executing on the <b>control machine</b>. 
+<p>
+The controller orchestrates all SLURM activities including: accepting the 
+job initiation request, allocating nodes to the job, enforcing partition
+constraings, enforcing job limits, and general record keeping. The three 
+primary components (threads) of the controller are the <b>Partition Manager</b> (PM), 
+<b>Node Manager</b> (NM), and <b>Job Manager</b> (JM). The partition manager
+keeps track of partition state and contraints. The node manager keeps track 
+of node state and configuration. The node manager keeps track of job state 
+and enforces its limits. Since all of these functions are critical to the 
+overall SLURM operation, a <b>backup controler</b> assumes thsse responsibilities
+in the event of control machine failure.
+<p>
+The final component of interest is the <b>Job Shepherd</b> (JS). The 
+job shepherd executes on each of the compute server nodes and initiates 
+the job's tasks. It allocates switch resources. It also monitors job 
+state and resources utilization. Finally, it delivers signals to the 
+processes as needed.
+<p align=center>
+<img src="SLURM.components.gif">
+Figure 1: SLURM components
+
+<h2>Code Modules</h2>
+<b>Controller.c</b> Primary SLURM daemon to execute on control machine.
 <p>
 <b>Get_Mach_Stat.c</b> gets the machine's status and configuration. 
 This includes: operating system version, size of real memory, size 
