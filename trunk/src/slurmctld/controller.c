@@ -60,7 +60,13 @@ main (int argc, char *argv[]) {
 	serv_addr.sin_family = PF_INET;
 	serv_addr.sin_addr.s_addr = htonl (INADDR_ANY);
 	serv_addr.sin_port = htons (SLURMCTLD_PORT);
-	if (bind (sockfd, (struct sockaddr *) &serv_addr, sizeof (serv_addr)) < 0)
+	error_code = bind (sockfd, (struct sockaddr *) &serv_addr, sizeof (serv_addr));
+	if ((error_code < 0) && (errno == EADDRINUSE)) {
+		sleep (10);
+		error_code = bind (sockfd, (struct sockaddr *) &serv_addr, 
+			sizeof (serv_addr));
+	}
+	if (error_code < 0)
 		fatal ("slurmctld: error %d from bind\n", errno);
 		
 	listen (sockfd, 5);
@@ -428,6 +434,7 @@ slurmctld_req (int sockfd) {
 			send (sockfd, "EINVAL", 7, 0);
 		if (job_id_ptr)
 			xfree (job_id_ptr);
+		schedule();
 	}
 
 	/* JobWillRun - determine if job with given configuration can be initiated now */

@@ -48,9 +48,9 @@ slurmctld_SOURCES = controller.c \
 #
 # Note: automake 1.5 will complain about these...
 #
-controller     : controller_d.o job_mgr.o node_mgr.o node_scheduler.o partition_mgr.o read_config.o 
+controller     : controller_d.o job_mgr.o job_scheduler.o node_mgr.o node_scheduler.o partition_mgr.o read_config.o 
 job_mgr        : job_mgr_d.o node_mgr.o node_scheduler.o partition_mgr.o
-job_scheduler  : job_scheduler_d.o job_mgr.o
+job_scheduler  : job_scheduler_d.o job_mgr.o node_mgr.o node_scheduler.o partition_mgr.o
 node_mgr       : node_mgr_d.o  
 node_scheduler : node_scheduler_d.o job_mgr.o node_mgr.o partition_mgr.o read_config.o
 partition_mgr  : partition_mgr_d.o node_mgr.o
