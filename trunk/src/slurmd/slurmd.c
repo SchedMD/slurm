@@ -59,6 +59,7 @@
 #include "src/slurmd/req.h"
 #include "src/slurmd/shm.h"
 #include "src/slurmd/setproctitle.h"
+#include "src/slurmd/interconnect.h"
 #include "src/slurmd/get_mach_stat.h"
 
 #define GETOPT_ARGS	"L:f:Dvhc"
