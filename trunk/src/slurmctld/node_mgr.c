@@ -1053,13 +1053,21 @@ validate_node_specs (char *node_name, uint32_t cpus,
 	}
 	node_ptr->tmp_disk = tmp_disk;
 
+	resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
+	node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 	if (error_code) {
-		error ("Setting node %s state to DOWN", node_name);
-		set_node_down(node_name);
+		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
+		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
+			error ("Setting node %s state to DOWN", node_name);
+			set_node_down(node_name);
+		}
 	} else if (status == ESLURMD_PROLOG_FAILED) {
-		error ("Prolog failure on node %s, state to DOWN",
-			node_name);
-		set_node_down(node_name);
+		if ((node_ptr->node_state != NODE_STATE_DRAINING) &&
+		    (node_ptr->node_state != NODE_STATE_DRAINED)) {
+			error ("Prolog failure on node %s, state to DOWN",
+				node_name);
+			set_node_down(node_name);
+		}
 	} else {
 		info ("validate_node_specs: node %s has registered", 
 		      node_name);
@@ -1076,8 +1084,6 @@ validate_node_specs (char *node_name, uint32_t cpus,
 			return EINVAL;		/* leave node down */
 		}
 #endif
-		resp_state = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-		node_ptr->node_state &= (uint16_t) (~NODE_STATE_NO_RESPOND);
 		if (node_ptr->node_state == NODE_STATE_UNKNOWN) {
 			if (job_count)
 				node_ptr->node_state = NODE_STATE_ALLOCATED;
