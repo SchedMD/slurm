@@ -72,10 +72,9 @@ main (int argc, char *argv[])
 
 		printf ("   ReqProcs=%u ReqNodes=%u ",
 			job_ptr[i].num_procs, job_ptr[i].num_nodes);
-		printf ("Shared=%u Contiguous=%u\n",
+		printf ("Shared=%u Contiguous=%u ",
 			job_ptr[i].shared, job_ptr[i].contiguous);
-
-		printf ("   MinProcs=%u MinMemory=%u ",
+		printf ("MinProcs=%u MinMemory=%u ",
 			job_ptr[i].min_procs, job_ptr[i].min_memory);
 		printf ("MinTmpDisk=%u\n",
 			job_ptr[i].min_tmp_disk);
