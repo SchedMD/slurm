@@ -844,7 +844,11 @@ extern int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
 		 */
 		char bgl_part_id[BITSIZE];
+#ifdef _RM_API_H__
 		snprintf(bgl_part_id, BITSIZE, "LLNL_%i", *(record->bgl_part_id));
+#else
+		snprintf(bgl_part_id, BITSIZE, "LLNL_128_16");
+#endif
 		debug("found fake bgl_part_id %s", bgl_part_id);
 		select_g_set_jobinfo(job_ptr->select_jobinfo,
 			SELECT_DATA_PART_ID, bgl_part_id);
