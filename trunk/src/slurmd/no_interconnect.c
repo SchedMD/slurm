@@ -48,18 +48,6 @@ int interconnect_attach (slurmd_job_t *job, int taskid)
  */
 int interconnect_env (slurmd_job_t *job, int taskid)
 {
-	int cnt = job->envc;
-	task_info_t *t = job->task[taskid];
-
-	if (setenvpf(&job->env, &cnt, "SLURM_NODEID=%d", job->nodeid) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_PROCID=%d", t->gid     ) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NNODES=%d", job->nnodes) < 0)
-		return -1;
-	if (setenvpf(&job->env, &cnt, "SLURM_NPROCS=%d", job->nprocs) < 0)
-		return -1;
-
 	return SLURM_SUCCESS;
 }
 
