@@ -9,6 +9,10 @@
  * Author: Moe Jette, jette@llnl.gov
  */
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <errno.h>
 #include <fcntl.h> 
 #include <stdio.h>
@@ -20,9 +24,6 @@
 #include <unistd.h>
 
 #include "slurm.h"
-
-#define DEBUG_MODULE 1
-#define DEBUG_SYSTEM 1
 
 int Get_CPUs(int *CPUs);
 int Get_Mach_Name(char *Node_Name);
