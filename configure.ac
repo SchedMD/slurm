@@ -205,6 +205,118 @@ if test $with_elan; then
 fi
 
 
+dnl OpenSSL location (taken from openssh configure.ac)
+dnl
+AC_SUBST(SSL_LDFLAGS)
+AC_SUBST(SSL_LIBS)
+AC_SUBST(SSL_CPPFLAGS)
+SSL_LIBS="-lcrypto"
+AC_ARG_WITH(ssl-dir,
+	[  --with-ssl-dir=PATH     Specify path to OpenSSL installation ],
+	[
+		if test "x$withval" != "xno" ; then
+			tryssldir=$withval
+		fi
+	]
+)
+
+saved_LIBS="$LIBS"
+saved_LDFLAGS="$LDFLAGS"
+saved_CPPFLAGS="$CPPFLAGS"
+if test "x$prefix" != "xNONE" ; then
+	tryssldir="$tryssldir $prefix"
+fi
+AC_CACHE_CHECK([for OpenSSL directory], ac_cv_openssldir, [
+	for ssldir in $tryssldir "" /usr/local/openssl /usr/lib/openssl /usr/local/ssl /usr/lib/ssl /usr/local /usr/pkg /opt /opt/openssl ; do
+		CPPFLAGS="$saved_CPPFLAGS"
+		LDFLAGS="$saved_LDFLAGS"
+		LIBS="$saved_LIBS $SSL_LIBS"
+		
+		# Skip directories if they don't exist
+		if test ! -z "$ssldir" -a ! -d "$ssldir" ; then
+			continue;
+		fi
+		if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+			# Try to use $ssldir/lib if it exists, otherwise 
+			# $ssldir
+			if test -d "$ssldir/lib" ; then
+				LDFLAGS="-L$ssldir/lib $saved_LDFLAGS"
+				if test ! -z "$need_dash_r" ; then
+					LDFLAGS="-R$ssldir/lib $LDFLAGS"
+				fi
+			else
+				LDFLAGS="-L$ssldir $saved_LDFLAGS"
+				if test ! -z "$need_dash_r" ; then
+					LDFLAGS="-R$ssldir $LDFLAGS"
+				fi
+			fi
+			# Try to use $ssldir/include if it exists, otherwise 
+			# $ssldir
+			if test -d "$ssldir/include" ; then
+				CPPFLAGS="-I$ssldir/include $saved_CPPFLAGS"
+			else
+				CPPFLAGS="-I$ssldir $saved_CPPFLAGS"
+			fi
+		fi
+
+		# Basic test to check for compatible version and correct linking
+		AC_TRY_RUN(
+			[
+#include <string.h>
+#include <openssl/rand.h>
+int main(void) 
+{
+	char a[2048];
+	memset(a, 0, sizeof(a));
+	RAND_add(a, sizeof(a), sizeof(a));
+	return(RAND_status() <= 0);
+}
+			],
+			[
+				found_crypto=1
+				break;
+			], []
+		)
+
+		if test ! -z "$found_crypto" ; then
+			break;
+		fi
+	done
+
+	if test -z "$found_crypto" ; then
+		AC_MSG_ERROR([Could not find working OpenSSL library, please install or check config.log])	
+	fi
+	if test -z "$ssldir" ; then
+		ssldir="(system)"
+	fi
+
+	ac_cv_openssldir=$ssldir
+])
+
+if (test ! -z "$ac_cv_openssldir" && test "x$ac_cv_openssldir" != "x(system)") ; then
+	dnl Need to recover ssldir - test above runs in subshell
+	ssldir=$ac_cv_openssldir
+	if test ! -z "$ssldir" -a "x$ssldir" != "x/usr"; then
+		# Try to use $ssldir/lib if it exists, otherwise 
+		# $ssldir
+		if test -d "$ssldir/lib" ; then
+			SSL_LDFLAGS="-L$ssldir/lib"
+		else
+			SSL_LDFLAGS="-L$ssldir"
+		fi
+		# Try to use $ssldir/include if it exists, otherwise 
+		# $ssldir
+		if test -d "$ssldir/include" ; then
+			SSL_CPPFLAGS="-I$ssldir/include"
+		else
+			SSL_CPPFLAGS="-I$ssldir"
+		fi
+	fi
+fi
+LIBS="$saved_LIBS"
+CPPFLAGS="$saved_CPPFLAGS"
+LDFLAGS="$saved_LDFLAGS"
+
 
 dnl All slurm Makefiles:
 dnl need to add squeue and scancel when they're there
