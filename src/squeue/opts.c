@@ -28,6 +28,7 @@
 #include <pwd.h>
 #include <sys/types.h>
 
+#include <src/common/xstring.h>
 #include <src/popt/popt.h>
 #include <src/squeue/squeue.h>
 
@@ -182,11 +183,9 @@ int
 parse_state( char* str, enum job_states* states )
 {	
 	int i;
+	char *state_names;
 
-	for (i = 0; ; i++) {
-		if (strcasecmp (job_state_string(i), "END") == 0)
-			break;
-
+	for (i = 0; i<JOB_END; i++) {
 		if (strcasecmp (job_state_string(i), str) == 0) {
 			*states = i;
 			return SLURM_SUCCESS;
@@ -195,7 +194,16 @@ parse_state( char* str, enum job_states* states )
 			*states = i;
 			return SLURM_SUCCESS;
 		}	
-	}	
+	}
+	
+	fprintf (stderr, "Invalid job state specified: %s\n", str);
+	state_names = xstrdup(job_state_string(0));
+	for (i=1; i<JOB_END; i++) {
+		xstrcat(state_names, ",");
+		xstrcat(state_names, job_state_string(i));
+	}
+	fprintf (stderr, "Valid job states include: %s\n", state_names);
+	xfree (state_names);
 	return SLURM_ERROR;
 }
 
@@ -468,7 +476,6 @@ build_state_list( char* str )
 		state_id = xmalloc( sizeof( enum job_states ) );
 		if ( parse_state( state, state_id ) != SLURM_SUCCESS )
 		{
-			fprintf( stderr, "Invalid node state: %s\n", state );
 			exit( 1 );
 		}
 		list_append( my_list, state_id );
