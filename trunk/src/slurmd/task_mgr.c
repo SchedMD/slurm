@@ -565,7 +565,8 @@ void * task_exec_thread ( void * arg )
 			close ( STDIN_FILENO );
 			close ( STDOUT_FILENO );
 			close ( STDERR_FILENO );
-			_exit ( SLURM_SUCCESS ) ;
+			error("execve(): %s: %m", launch_msg->argv[0]);
+			_exit ( SLURM_EXIT_FAILURE_CODE ) ;
 			break;
 			
 		default: /*parent proccess */
