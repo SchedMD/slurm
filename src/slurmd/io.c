@@ -737,7 +737,7 @@ _write(io_obj_t *obj, List objs)
 		return 0;
 	}
 
-	while ((n = cbuf_read_fd(io->buf, obj->fd, -1)) < 0) {
+	while ((n = cbuf_read_to_fd(io->buf, obj->fd, -1)) < 0) {
 		if ((errno == EAGAIN) || (errno == EWOULDBLOCK)) 
 			continue;
 		error("task <%ld> write failed: %m", io->id);
