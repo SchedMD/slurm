@@ -55,7 +55,7 @@ void *_xmalloc(size_t size, const char *file, int line, const char *func)
 	void *new;
 	int *p;
 
-	xmalloc_assert(size > 0 && size <= INT_MAX);
+	xmalloc_assert(size >= 0 && size <= INT_MAX);
 	MALLOC_LOCK();
 	p = (int *)malloc(size + 2*sizeof(int));
 	MALLOC_UNLOCK();
@@ -82,7 +82,7 @@ void *_try_xmalloc(size_t size, const char *file, int line, const char *func)
 	void *new;
 	int *p;
 
-	xmalloc_assert(size > 0 && size <= INT_MAX);
+	xmalloc_assert(size >= 0 && size <= INT_MAX);
 	MALLOC_LOCK();
 	p = (int *)malloc(size + 2*sizeof(int));
 	MALLOC_UNLOCK();

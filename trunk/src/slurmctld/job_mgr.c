@@ -39,8 +39,6 @@ static int max_hash_over = 0;
 void	list_delete_job (void *job_entry);
 int	list_find_job_id (void *job_entry, void *key);
 int	list_find_job_old (void *job_entry, void *key);
-void	set_job_id (struct job_record *job_ptr);
-void	set_job_prio (struct job_record *job_ptr);
 int	top_priority (struct job_record *job_ptr);
 int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record ** job_ptr , struct part_record *part_ptr, bitstr_t *req_bitmap) ;
 int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
@@ -1157,8 +1155,7 @@ reset_job_bitmaps ()
 
 
 /*
- * set_job_id - set a default job_id: partition name, ".", sequence number
- *	insure that the job_id is unique
+ * set_job_id - set a default job_id, insure that it is unique
  * input: job_ptr - pointer to the job_record
  */
 	void

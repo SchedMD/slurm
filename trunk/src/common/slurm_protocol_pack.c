@@ -429,11 +429,9 @@ int unpack_job_info_msg ( job_info_msg_t ** msg , void ** buf_ptr , int * buffer
 	if ( *msg == NULL )
 		return ENOMEM ;
 
-
 	/* load buffer's header (data structure version and time) */
 	unpack32 (&((*msg) -> record_count), buf_ptr, buffer_size);
 	unpack32 (&((*msg) -> last_update ) , buf_ptr, buffer_size);
-
 	job = (*msg) -> job_array = xmalloc ( sizeof ( job_table_t ) * (*msg)->record_count ) ;
 
 	/* load individual job info */
@@ -577,7 +575,14 @@ void pack_job_desc ( job_desc_msg_t * job_desc_ptr, void ** buf_ptr , int * buff
 	packstr (job_desc_ptr->groups, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->job_id, buf_ptr, buffer_size);
 	packstr (job_desc_ptr->name, buf_ptr, buffer_size);
-	packmem (job_desc_ptr->partition_key, 32, buf_ptr, buffer_size);
+	if (job_desc_ptr->partition_key)
+		packmem (job_desc_ptr->partition_key, 32, buf_ptr, buffer_size);
+	else {
+		char *no_key;
+		no_key = xmalloc (32);
+		packmem (no_key, 32, buf_ptr, buffer_size);
+		xfree (no_key);
+	}
 	
 	pack32 (job_desc_ptr->min_procs, buf_ptr, buffer_size);
 	pack32 (job_desc_ptr->min_memory, buf_ptr, buffer_size);

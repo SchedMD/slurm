@@ -742,6 +742,12 @@ void schedule();
  */
 extern int select_nodes (struct job_record *job_ptr, int test_only);
 
+/* set_job_id - set a default job_id, insure that it is unique */
+extern void	set_job_id (struct job_record *job_ptr);
+
+/* set_job_prio - set a default job priority */
+extern void	set_job_prio (struct job_record *job_ptr);
+
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs
  *	only the keywords supplied will be searched for. the supplied specification
