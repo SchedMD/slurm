@@ -2049,7 +2049,7 @@ run_backup (void)
 
 	/* repeatedly ping ControlMachine */
 	while (shutdown_time == 0) {
-		sleep (1);
+		sleep (5);	/* Give the primary slurmctld time to get set up */
 		if (difftime (time(NULL), last_ping) < slurmctld_conf.heartbeat_interval)
 			continue;
 
