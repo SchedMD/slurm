@@ -12,6 +12,12 @@ documents those changes that are of interest to users and admins.
     and FastSchedule=0 and the cluster is heterogeneous.
  -- Fix srun bug when --input, --output and --error are all "none"
  -- Allow single task id to be selected with --input, --output, and --error.
+ -- Create shared memory segment for Elan statistics when using the 
+    switch/elan plugin.
+
+* Changes in SLURM 0.3.8
+========================
+ -- More fixes necessary for TotalView.
 
 * Changes in SLURM 0.3.7
 ========================
