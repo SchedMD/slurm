@@ -610,9 +610,9 @@ static int _validate_config_nodes(void)
 			if (strcasecmp(record->nodes, init_record->nodes))
 				continue;	/* wrong nodes */
 			if (record->conn_type != init_record->conn_type)
-				continue;		/* must reconfig this part */
+				continue;      /* wrong conn_type */
 			if(record->node_use != init_record->node_use)
-				continue;
+				continue;     /* wrong mode */
 			record->bgl_part_id = xstrdup(init_record->bgl_part_id);
 			break;
 		}
@@ -630,7 +630,7 @@ static int _validate_config_nodes(void)
 	}
 	
 	list_iterator_destroy(itr_conf);
-	if(list_count(bgl_list) != list_count(bgl_curr_part_list))
+	if(list_count(bgl_list) == list_count(bgl_curr_part_list))
 		rc = SLURM_SUCCESS;
 #endif
 
@@ -688,7 +688,7 @@ static int _delete_old_partitions(void)
 			       != NULL) {
 				if (!strcmp(init_record->bgl_part_id, 
 					    found_record->bgl_part_id)) {
-					break;	/* don't reboot this one */
+					break;	/* delete this one */
 				}
 			}
 			list_iterator_destroy(itr_found);
