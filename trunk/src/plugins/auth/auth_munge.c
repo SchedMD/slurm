@@ -101,7 +101,7 @@ static int
 _decode_cred(char *m, slurm_auth_credential_t *c)
 {
 	munge_err_t e;
-	munge_ctx_t *ctx = NULL;
+	munge_ctx_t ctx = NULL;
 
 	if ((c == NULL) || (m == NULL)) 
 		return SLURM_ERROR;
@@ -140,7 +140,7 @@ slurm_auth_create( void *argv[] )
 {
 	slurm_auth_credential_t *cred = NULL;
 	munge_err_t e = EMUNGE_SUCCESS;
-	munge_ctx_t *ctx = NULL;
+	munge_ctx_t ctx = NULL;
 
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
