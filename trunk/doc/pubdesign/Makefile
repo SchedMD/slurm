@@ -43,6 +43,9 @@ all: $(JSSPP).ps $(REPORT).ps
 
 $(JSSPP).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	latex $(JSSPP)
+	bibtex $(JSSPP)
+	latex $(JSSPP)
+	latex $(JSSPP)
 
 $(REPORT).dvi: $(TEX) $(FIGS) $(PLOTS) $(BIB)
 	rm -f *.log *.aux *.blg *.bbl

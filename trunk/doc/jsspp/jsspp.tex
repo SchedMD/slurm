@@ -3,6 +3,16 @@
 \usepackage{epsfig}
 \usepackage{hhline}
 
+% define some macros:
+\newcommand{\munged}{{\tt munged}}
+\newcommand{\srun}{{\tt srun}}
+\newcommand{\scancel}{{\tt scancel}}
+\newcommand{\squeue}{{\tt squeue}}
+\newcommand{\scontrol}{{\tt scontrol}}
+\newcommand{\sinfo}{{\tt sinfo}}
+\newcommand{\slurmctld}{{\tt slurmctld}}
+\newcommand{\slurmd}{{\tt slurmd}}
+
 \title{SLURM: Simple Linux Utility for Resource Management\thanks{
 This document was prepared as an account of work sponsored by an
 agency of the United States Government.  Neither the United States
@@ -42,6 +52,101 @@ and stream copy modules.  This paper presents a overview of the SLURM architectu
 
 \section{Overview}
 
-TBD
+SLURM\footnote{A tip of the hat to Matt Groening and creators of {\em Futurama},
+where Slurm is the highly addictive soda-like beverage made from worm
+excrement.} (Simple Linux Utility for Resource Management) 
+is a resource management 
+system suitable for use on Linux clusters, large and small.  After 
+surveying\cite{Jette2002} resource managers available for Linux and finding 
+none that were simple, highly scalable, and portable to different cluster 
+architectures and interconnects, the authors set out to design a new system.
+
+The result is a resource management system with the following general
+characteristics:
+
+\begin{itemize}
+\item {\em Simplicity}: SLURM is simple enough to allow motivated end users
+to understand its source code and add functionality.  The authors will 
+avoid the temptation to add features unless they are of general appeal. 
+
+\item {\em Open Source}: SLURM is available to everyone and will remain 
+free; its source code is distributed under the GNU General Public 
+License\cite{GPL2002}.
+
+\item {\em Portability}: SLURM is written in the C language, with a GNU 
+{\em autoconf} configuration engine.  SLURM also supports a {\em plug-in} 
+mechanism, which permits a variety of different infrastructures to be 
+easily supported. The SLURM configuration file specifies which set of 
+plug-in modules should be used. While initially written for Linux, other 
+UNIX-like operating systems should be easy porting targets.
+
+\item {\em Interconnect independence}: SLURM supports UDP/IP based
+communication and the Quadrics Elan3 interconnect.  Adding support for 
+other interconnects, including topography constraints, is straightforward 
+and will utilize the plug-in mechanism described above\footnote{SLURM 
+presently requires the specification of interconnect at build time}.
+
+\item {\em Scalability}: SLURM is designed for scalability to clusters of
+thousands of nodes. The SLURM controller for a cluster with 1000 nodes 
+occupies on the order of 2 MB of memory and excellent performance has 
+been demonstrated. Jobs may request a range of nodes, potentially 
+permitting faster initiation than otherwise possible.
+
+\item {\em Fault tolerance}: SLURM can handle a variety of failure modes
+without terminating workloads, including crashes of the node running 
+the SLURM controller. 
+User jobs may be configured to continue execution despite the failure 
+of one or more nodes. 
+The user command controlling a job, {\tt srun}, may detach and reattach 
+from the parallel tasks at any time. 
+Nodes allocated to a job are available for reuse as soon as the allocated 
+job on that node terminates. If some nodes fail to complete job termination 
+in a timely fashion due to hardware of software problems, only the 
+scheduling of those nodes will be effected.
+
+\item {\em Secure}: SLURM employs crypto technology to authenticate 
+users to services and services to each other with a variety of options 
+available through the plug-in mechanism.  
+SLURM does not assume that its networks are physically secure, 
+but does assume that the entire cluster is within a single 
+administrative domain with a common user base across the 
+entire cluster.
+
+\item {\em System administrator friendly}: SLURM is configured a 
+simple configuration file and minimizes distributed state.  
+Its configuration may be changed at any time without impacting running jobs. 
+Heterogeneous nodes within a cluster may be easily managed.
+Its interfaces are usable by scripts and its behavior is highly 
+deterministic.
+
+\end{itemize}
+
+\subsection{What is SLURM?}
+
+As a cluster resource manager, SLURM has three key functions.  First,
+it allocates exclusive and/or non-exclusive access to resources 
+(compute nodes) to users for 
+some duration of time so they can perform work.  Second, it provides 
+a framework for starting, executing, and monitoring work (normally a 
+parallel job) on the set of allocated nodes.  Finally, it arbitrates 
+conflicting requests for resources by managing a queue of pending work.
+
+Users interact with SLURM through four command line utilities: 
+\srun\ for submitting a job for execution and optionally controlling it
+interactively, 
+\scancel\ for early termination of a pending or running job, 
+\squeue\ for monitoring job queues, and 
+\sinfo\ for monitoring partition and overall system state.
+System administrators perform privileged operations through an additional
+command line utility: {\tt scontrol}.
+
+The central controller daemon, {\tt slurmctld}, maintains the global state 
+and directs operations.
+Compute nodes simply run a \slurmd\ daemon (similar to a remote shell 
+daemon) to export control to SLURM.  
+
+
+\bibliographystyle{plain}
+\bibliography{project}
 
 \end{document}
