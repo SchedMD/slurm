@@ -5,15 +5,18 @@ AUTOMAKE_OPTIONS = foreign
 SUBDIRS    = src testsuite doc
 
 EXTRA_DIST =			\
+	Make-rpm.mk		\
 	etc/slurm.conf.example	\
 	etc/init.d.slurm	\
 	autogen.sh		\
-	Make-rpm.mk		\
 	slurm.spec		\
 	README			\
 	DISCLAIMER		\
 	COPYING			\
- 	META
+	AUTHORS			\
+	INSTALL			\
+	NEWS			\
+	ChangeLog		\
 	
 slurmincludedir=$(includedir)/slurm
 slurminclude_HEADERS =		\
@@ -37,3 +40,4 @@ distclean-local:
 	-rm -rf autom4te*.cache autoscan.*
 	-find $(PACKAGE)-* -exec chmod u+w {} \;
 	-rm -rf $(PACKAGE)-*
+

@@ -25,6 +25,7 @@ Requires: openssl >= 0.9.6
 %if %{?_with_debug:1}%{!?_with_debug:0}
   %define _enable_debug --enable-debug
   %define __os_install_post /usr/lib/rpm/brp-compress
+  CFLAGS="-g -Wall"
 %endif
 
 #
@@ -83,7 +84,7 @@ PFX_FIX=--program-prefix=%{?_program_prefix:%{_program_prefix}}
 WITHCONF=--sysconfdir=/etc/slurm
 
 # for now we build with debugging symbols
-CFLAGS="-g -Wall"
+
 %configure \
     $PFX_FIX $WITHCONF                   \
     %{?_enable_debug}                    \
@@ -111,16 +112,22 @@ DESTDIR="$RPM_BUILD_ROOT" make install
 
 install -D -m755 etc/init.d.slurm $RPM_BUILD_ROOT/etc/rc.d/init.d/slurm
 install -D -m644 etc/slurm.conf.example $RPM_BUILD_ROOT/etc/slurm/slurm.conf
+#############################################################################
 
 %clean
 rm -rf $RPM_BUILD_ROOT
+#############################################################################
 
 %files
 %defattr(-,root,root,0755)
+%doc ChangeLog
 %doc README 
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
+%doc doc/html/quick.start.guide.html
+%doc doc/html/arch.png
+%doc doc/html/entities.png
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
@@ -129,6 +136,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man8/*
 %config(noreplace) /etc/rc.d/init.d/slurm
 %config(noreplace) /etc/slurm/slurm.conf
+#############################################################################
 
 %files devel
 %defattr(-,root,root)
@@ -136,24 +144,28 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.a
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
+#############################################################################
 
 %if %(test -f %{_libdir}/slurm/auth_none.so && echo 1 || echo 0)
 %files auth-none
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_none.so
 %endif
+#############################################################################
 
 %if %(test -f %{_libdir}/slurm/auth_munge.so && echo 1 || echo 0)
 %files auth-munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
 %endif
+#############################################################################
 
 %if %(test -f %{_libdir}/slurm/auth_authd.so && echo 1 || echo 0)
 %files auth-authd
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_authd.so
 %endif
+#############################################################################
 
 %pre
 if [ -x /etc/rc.d/init.d/slurm ]; then
@@ -186,6 +198,7 @@ fi
 if [ "$1" = 0 ]; then
     /sbin/ldconfig %{_libdir}
 fi
+#############################################################################
 
 
 %changelog

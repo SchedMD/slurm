@@ -1,11 +1,13 @@
 # $Id$
 
-SUBDIRS = man
+SUBDIRS = man 
 
-EXTRA_DIST =		\
+EXTRA_DIST = \
 	html/LCM.arch.png \
 	html/LCM.communicate.png \
 	html/SLURM.components.gif \
-	html/admin.guide.html \
 	html/programmer.guide.html \
-	html/slurm.png \
+	html/quick.start.guide.html \
+	html/plugins.html \
+	html/authplugins.html \
+	html/slurm.png 
