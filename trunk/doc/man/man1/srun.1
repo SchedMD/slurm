@@ -115,11 +115,19 @@ redirected to different locations.
 See \fBIO Redirection\fR below for more options.
 .TP
 \fB\-b\fR, \fB\-\-batch\fR
-Submit in "batch mode." \fBsrun\fR will allocate resources and "detach" -
-starting another \fBsrun\fR on the first allocated node to manage the
-job.  stdin will be redirected from /dev/null, stdout and stderr will be
+Submit in "batch mode." \fBsrun\fR will make a copy of the \fIexecutable\fR 
+file (a script) and submit the request for execution when resouces are 
+available. \fBsrun\fR will terminate after the request has been submitted. 
+The \fIexecutable\fR file will run on the first node allocated to the 
+job and must contain \fBsrun\fR commands to initiate parallel tasks.
+stdin will be redirected from /dev/null, stdout and stderr will be
 redirected to a file (default is \fIjobname\fR.out or \fIjobid\fR.out in
-current working directory, see \fB\-o\fR for other IO options).
+current working directory, see \fB\-o\fR for other IO options). 
+\fIexecutable\fR must be specified using either a fully qualified 
+pathname or its pathname will be relative to the current working directory. 
+The search path will not be used to locate the file. \fIexecutable\fR 
+will be interpretted by the user's default shell unless the file begins 
+with "#!" followed by the fully qualified pathname of a valid shell.
 .TP
 \fB\-v\fR, \fB\-\-verbose\fR
 verbose operation. Multiple \fB-v\fR's will further increase the verbosity of
