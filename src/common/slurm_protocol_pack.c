@@ -23,6 +23,7 @@
  *  with SLURM; if not, write to the Free Software Foundation, Inc.,
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -126,6 +127,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SUBMIT_BATCH_JOB :
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case REQUEST_JOB_WILL_RUN : 
+		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP : 
 			pack_job_desc ( (job_desc_msg_t * )  msg -> data , ( void ** ) buffer , buf_len )  ;
 			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
@@ -140,6 +142,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
+		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
 			pack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
@@ -268,6 +271,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case REQUEST_SUBMIT_BATCH_JOB :
 		case REQUEST_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case REQUEST_JOB_WILL_RUN : 
+		case REQUEST_ALLOCATION_AND_RUN_JOB_STEP : 
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_NODE_REGISTRATION_STATUS :
@@ -282,6 +286,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
+		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
 			unpack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_JOB :
@@ -1245,7 +1250,6 @@ void pack_task_exit_msg ( task_exit_msg_t * msg , void ** buffer , uint32_t * le
 
 int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , void ** buffer , uint32_t * length )
 {
-	uint16_t uint16_tmp;
 	task_exit_msg_t * msg ;
 
 	msg = xmalloc ( sizeof ( launch_tasks_response_msg_t ) ) ;
