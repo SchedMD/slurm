@@ -456,8 +456,14 @@ job_cancel (uint32_t job_id)
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
 		info ("job_cancel: invalid job id %u", job_id);
-		return EINVAL;
+		return ESLURM_INVALID_JOB_ID;
 	}
+
+	if ((job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_COMPLETE) ||
+	    (job_ptr->job_state == JOB_TIMEOUT))
+		return ESLURM_ALREADY_DONE;
+
 	if (job_ptr->job_state == JOB_PENDING) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
@@ -478,7 +484,7 @@ job_cancel (uint32_t job_id)
 
 	info ("job_cancel: job %u can't be cancelled from state=%s", 
 			job_id, job_state_string(job_ptr->job_state));
-	return EAGAIN;
+	return ESLURM_TRANSISTION_STATE_NO_UPDATE;
 
 }
 
