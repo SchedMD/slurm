@@ -317,6 +317,27 @@ PartitionName=pdebug Nodes=mcr[0-191] MaxTime=30 MaxNodes=32 Default=YES
 PartitionName=pbatch Nodes=mcr[192-1151] 
 </pre>
 
+<p>
+A Portable Authentication Manager (PAM) module is available for SLURM 
+that can prevent a user from accessing a node which he has not been 
+allocated, if that mode of operation is desired.
+
+<h3>Starting the Daemons</h3>
+
+For testing purposes you may want to start by just running 
+slurmctld and slurmd on one node. By default, they execute 
+in the background. Use the "-D" option for each daemon to 
+execute them in the foreground and logging will be done to 
+your terminal. The "-v" option will log events in more detail 
+with more v's increasing the level of detail (e.g. "-vvvvvv").
+You can use one window to execute "slurmctld -D -vvvvvv", 
+a second window to execute "slurmd -D -vvvvv", and a third 
+window to execute commands such as "srun -N1 /bin/hostname" 
+to confirm basic functionality.
+<p>
+A thorough battery of tests written in the "expect" language
+are also available. 
+
 <h3>Administration Examples</h3>
 
 scontrol can be used to print all system information and 
