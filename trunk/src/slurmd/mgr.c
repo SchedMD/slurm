@@ -1076,9 +1076,9 @@ static void
 _setargs(slurmd_job_t *job)
 {
 	if (job->stepid == NO_VAL)
-		setproctitle("%s [%d]", "slurmd", job->jobid);
+		setproctitle("[%d]",    job->jobid);
 	else
-		setproctitle("%s %d.%d", "slurmd", job->jobid, job->stepid); 
+		setproctitle("[%d.%d]", job->jobid, job->stepid); 
 }
 
 /*
