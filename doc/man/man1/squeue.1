@@ -1,4 +1,4 @@
-.TH SQUEUE "1" "October 2003" "squeue 0.2" "Slurm components"
+.TH SQUEUE "1" "October 2003" "squeue 0.3" "Slurm components"
 
 .SH "NAME"
 squeue \- Used to view information of jobs located in the scheduling queue.
@@ -62,6 +62,10 @@ limit)
 .br
 \fB%f\fR Features required by the job
 .br
+\fB%g\fR Group name
+.br
+\fB%G\fR Group ID
+.br
 \fB%h\fR Can the nodes allocated to the job be shared with other jobs
 .br
 \fB%i\fR Job or job step id
@@ -99,9 +103,7 @@ between 0.0 and 1.0
 .br
 \fB%u\fR User name
 .br
-\fB%G\fR Group ID
-.br
-\fB%g\fR Group name
+\fB%x\fR List of node names explicitly excluded by the job
 .br
 \fB%.<*>\fR right justification of the field
 .br 

@@ -91,6 +91,7 @@ inline static void  _slurm_rpc_submit_batch_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_job(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_node(slurm_msg_t * msg);
 inline static void  _slurm_rpc_update_partition(slurm_msg_t * msg);
+inline static void  _slurm_rpc_delete_partition(slurm_msg_t * msg);
 inline static void  _update_cred_key(void);
 
 /*
@@ -209,7 +210,11 @@ void slurmctld_req (slurm_msg_t * msg)
 		_slurm_rpc_update_partition(msg);
 		slurm_free_update_part_msg(msg->data);
 		break;
-	case  REQUEST_NODE_REGISTRATION_STATUS:
+	case REQUEST_DELETE_PARTITION:
+		_slurm_rpc_delete_partition(msg);
+		slurm_free_delete_part_msg(msg->data);
+		break;
+	case REQUEST_NODE_REGISTRATION_STATUS:
 		error("slurmctld is talking with itself. SlurmctldPort == SlurmdPort");
 		slurm_send_rc_msg(msg, EINVAL);
 		break;
@@ -239,6 +244,8 @@ void _fill_ctld_conf(slurm_ctl_conf_t * conf_ptr)
 	conf_ptr->hash_base           = slurmctld_conf.hash_base;
 	conf_ptr->heartbeat_interval  = slurmctld_conf.heartbeat_interval;
 	conf_ptr->inactive_limit      = slurmctld_conf.inactive_limit;
+	conf_ptr->job_comp_loc        = slurmctld_conf.job_comp_loc;
+	conf_ptr->job_comp_type       = slurmctld_conf.job_comp_type;
 	conf_ptr->job_credential_private_key = 
 			slurmctld_conf.job_credential_private_key;
 	conf_ptr->job_credential_public_certificate = 
@@ -1511,6 +1518,54 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
+		(void) dump_all_part_state();
+		if (schedule())
+			(void) dump_all_job_state();
+	}
+}
+
+/* _slurm_rpc_delete_partition - process RPC to delete a partition */
+static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
+{
+	/* init */
+	int error_code = SLURM_SUCCESS;
+	DEF_TIMERS;
+	delete_part_msg_t *part_desc_ptr = (delete_part_msg_t *) msg->data;
+	/* Locks: Read job, write partition */
+	slurmctld_lock_t part_write_lock = { 
+		NO_LOCK, WRITE_LOCK, NO_LOCK, WRITE_LOCK };
+	uid_t uid;
+
+	START_TIMER;
+	debug2("Processing RPC: REQUEST_DELETE_PARTITION");
+	uid = g_slurm_auth_get_uid(msg->cred);
+	if (!_is_super_user(uid)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error
+		    ("Security violation, DELETE_PARTITION RPC from uid=%u",
+		     (unsigned int) uid);
+	}
+
+	if (error_code == SLURM_SUCCESS) {
+		/* do RPC call */
+		lock_slurmctld(part_write_lock);
+		error_code = delete_partition(part_desc_ptr);
+		unlock_slurmctld(part_write_lock);
+		END_TIMER;
+	}
+
+	/* return result */
+	if (error_code) {
+		info("_slurm_rpc_delete_partition partition=%s: %s",
+			part_desc_ptr->name, slurm_strerror(error_code));
+		slurm_send_rc_msg(msg, error_code);
+	} else {
+		info("_slurm_rpc_delete_partition complete for %s %s",
+			part_desc_ptr->name, TIME_STR);
+		slurm_send_rc_msg(msg, SLURM_SUCCESS);
+
+		/* NOTE: These functions provide their own locks */
+		(void) dump_all_job_state();
 		(void) dump_all_part_state();
 		if (schedule())
 			(void) dump_all_job_state();

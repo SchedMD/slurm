@@ -41,12 +41,13 @@
 #include <unistd.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/slurm_jobcomp.h"
 #include "src/common/list.h"
-#include "src/slurmctld/locks.h"
 #include "src/common/macros.h"
 #include "src/common/parse_spec.h"
 #include "src/common/read_config.h"
 #include "src/common/xstring.h"
+#include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
@@ -747,12 +748,10 @@ int read_slurm_conf(int recover)
 	_set_config_defaults(&slurmctld_conf);
 	validate_config(&slurmctld_conf);
 	update_logging();
+	g_slurm_jobcomp_init(slurmctld_conf.job_comp_loc);
 
-	if (default_part_loc == NULL) {
+	if (default_part_loc == NULL)
 		error("read_slurm_conf: default partition not set.");
-		xfree(old_node_table_ptr);
-		return EINVAL;
-	}
 
 	if (node_record_count < 1) {
 		error("read_slurm_conf: no nodes configured.");
@@ -962,6 +961,7 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			job_ptr->end_time = MIN(job_ptr->end_time, now);
 			delete_all_step_records(job_ptr);
+			job_completion_logger(job_ptr);
 			cnt++;
 		} else {
 			no_resp_flag = node_record_table_ptr[i].node_state & 

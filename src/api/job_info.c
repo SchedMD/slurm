@@ -184,6 +184,22 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr, int one_liner )
 		if (job_ptr->req_node_inx[j] == -1)
 			break;
 	}
+	if (one_liner)
+		fprintf ( out, " ");
+	else
+		fprintf ( out, "\n   ");
+
+	/****** Line 9 ******/
+	fprintf ( out, "ExcNodeList=%s ", job_ptr->exc_nodes);
+	fprintf ( out, "ExcNodeListIndecies=");
+	for (j = 0; job_ptr->exc_node_inx; j++) {
+		if (j > 0)
+			fprintf( out, ",%d", job_ptr->exc_node_inx[j]);
+		else
+			fprintf( out, "%d", job_ptr->exc_node_inx[j]);
+		if (job_ptr->exc_node_inx[j] == -1)
+			break;
+	}
 	fprintf( out, "\n\n");
 }
 

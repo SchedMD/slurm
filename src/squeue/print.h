@@ -120,8 +120,12 @@ int job_format_add_function(List list, int width, bool right_justify,
 	job_format_add_function(list,wid,right,suffix,_print_job_min_tmp_disk)
 #define job_format_add_req_nodes(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_req_nodes)
+#define job_format_add_exc_nodes(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_exc_nodes)
 #define job_format_add_req_node_inx(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_req_node_inx)
+#define job_format_add_exc_node_inx(list,wid,right,suffix) \
+	job_format_add_function(list,wid,right,suffix,_print_job_exc_node_inx)
 #define job_format_add_features(list,wid,right,suffix) \
 	job_format_add_function(list,wid,right,suffix,_print_job_features)
 
@@ -180,7 +184,11 @@ int _print_job_min_tmp_disk(job_info_t * job, int width, bool right_justify,
 			char* suffix);
 int _print_job_req_nodes(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
+int _print_job_exc_nodes(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
 int _print_job_req_node_inx(job_info_t * job, int width, bool right_justify, 
+			char* suffix);
+int _print_job_exc_node_inx(job_info_t * job, int width, bool right_justify, 
 			char* suffix);
 int _print_job_features(job_info_t * job, int width, bool right_justify, 
 			char* suffix);

@@ -100,6 +100,8 @@ free_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	xfree (ctl_conf_ptr->control_addr);
 	xfree (ctl_conf_ptr->control_machine);
 	xfree (ctl_conf_ptr->epilog);
+	xfree (ctl_conf_ptr->job_comp_loc);
+	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	xfree (ctl_conf_ptr->plugindir);
@@ -138,6 +140,8 @@ init_slurm_conf (slurm_ctl_conf_t *ctl_conf_ptr)
 	ctl_conf_ptr->hash_base			= (uint16_t) NO_VAL;
 	ctl_conf_ptr->heartbeat_interval	= (uint16_t) NO_VAL;
 	ctl_conf_ptr->inactive_limit		= (uint16_t) NO_VAL;
+	xfree (ctl_conf_ptr->job_comp_loc);
+	xfree (ctl_conf_ptr->job_comp_type);
 	xfree (ctl_conf_ptr->job_credential_private_key);
 	xfree (ctl_conf_ptr->job_credential_public_certificate);
 	ctl_conf_ptr->kill_wait			= (uint16_t) NO_VAL;
@@ -199,6 +203,7 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 	char *slurmd_logfile = NULL, *slurmd_port = NULL;
 	char *slurmd_spooldir = NULL, *slurmd_pidfile = NULL;
 	char *plugindir = NULL, *authtype = NULL;
+	char *job_comp_loc = NULL, *job_comp_type = NULL;
 	char *job_credential_private_key = NULL;
 	char *job_credential_public_certificate = NULL;
 	long first_job_id = -1;
@@ -216,6 +221,8 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		"HashBase=", 'd', &hash_base,
 		"HeartbeatInterval=", 'd', &heartbeat_interval,
 		"InactiveLimit=", 'd', &inactive_limit,
+		"JobCompLoc=", 's', &job_comp_loc,
+		"JobCompType=", 's', &job_comp_type,
 		"JobCredentialPrivateKey=", 's', &job_credential_private_key,
 		"JobCredentialPublicCertificate=", 's', 
 					&job_credential_public_certificate,
@@ -322,6 +329,42 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->inactive_limit != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "InactiveLimit");
 		ctl_conf_ptr->inactive_limit = inactive_limit;
+	}
+
+	if ( job_comp_loc ) {
+		if ( ctl_conf_ptr->job_comp_loc ) {
+			error( MULTIPLE_VALUE_MSG, "JobCompLoc" );
+			xfree( ctl_conf_ptr->job_comp_loc );
+		}
+		ctl_conf_ptr->job_comp_loc = job_comp_loc;
+	}
+
+	if ( job_comp_type ) {
+		if ( ctl_conf_ptr->job_comp_type ) {
+			error( MULTIPLE_VALUE_MSG, "JobCompType" );
+			xfree( ctl_conf_ptr->job_comp_type );
+		}
+		ctl_conf_ptr->job_comp_type = job_comp_type;
+	}
+
+	if ( job_credential_private_key ) {
+		if ( ctl_conf_ptr->job_credential_private_key ) {
+			error (MULTIPLE_VALUE_MSG, "JobCredentialPrivateKey");
+			xfree (ctl_conf_ptr->job_credential_private_key);
+		}
+		ctl_conf_ptr->job_credential_private_key = 
+						job_credential_private_key;
+	}
+
+	if ( job_credential_public_certificate ) {
+		if ( ctl_conf_ptr->job_credential_public_certificate ) {
+			error (MULTIPLE_VALUE_MSG, 
+			       "JobCredentialPublicCertificate");
+			xfree (ctl_conf_ptr->
+			       job_credential_public_certificate);
+		}
+		ctl_conf_ptr->job_credential_public_certificate = 
+					job_credential_public_certificate;
 	}
 
 	if ( kill_wait != -1) {
@@ -499,26 +542,6 @@ parse_config_spec (char *in_line, slurm_ctl_conf_t *ctl_conf_ptr)
 		if ( ctl_conf_ptr->wait_time != (uint16_t) NO_VAL)
 			error (MULTIPLE_VALUE_MSG, "WaitTime");
 		ctl_conf_ptr->wait_time = wait_time;
-	}
-
-	if ( job_credential_private_key ) {
-		if ( ctl_conf_ptr->job_credential_private_key ) {
-			error (MULTIPLE_VALUE_MSG, "JobCredentialPrivateKey");
-			xfree (ctl_conf_ptr->job_credential_private_key);
-		}
-		ctl_conf_ptr->job_credential_private_key = 
-						job_credential_private_key;
-	}
-
-	if ( job_credential_public_certificate ) {
-		if ( ctl_conf_ptr->job_credential_public_certificate ) {
-			error (MULTIPLE_VALUE_MSG, 
-			       "JobCredentialPublicCertificate");
-			xfree (ctl_conf_ptr->
-			       job_credential_public_certificate);
-		}
-		ctl_conf_ptr->job_credential_public_certificate = 
-					job_credential_public_certificate;
 	}
 
 	return 0;

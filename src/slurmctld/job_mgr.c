@@ -51,6 +51,7 @@
 #include <slurm/slurm_errno.h>
 
 #include "src/common/hostlist.h"
+#include "src/common/slurm_jobcomp.h"
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
@@ -58,7 +59,6 @@
 #include "src/slurmctld/slurmctld.h"
 
 #define DETAILS_FLAG 0xdddd
-#define MAX_NODE_FRAGMENTS 8
 #define MAX_RETRIES  10
 #define SLURM_CREATE_JOB_FLAG_NO_ALLOCATE_0 0
 #define STEP_FLAG 0xbbbb
@@ -121,8 +121,6 @@ static int  _reset_detail_bitmaps(struct job_record *job_ptr);
 static void _reset_step_bitmaps(struct job_record *job_ptr);
 static void _set_job_id(struct job_record *job_ptr);
 static void _set_job_prio(struct job_record *job_ptr);
-static bool _slurm_picks_nodes(job_desc_msg_t * job_specs);
-static bool _too_many_fragments(bitstr_t *req_bitmap);
 static bool _top_priority(struct job_record *job_ptr);
 static int  _validate_job_create_req(job_desc_msg_t * job_desc);
 static int  _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
@@ -271,12 +269,18 @@ int dump_all_job_state(void)
 		      new_file);
 		error_code = errno;
 	} else {
-		if (write
-		    (log_fd, get_buf_data(buffer),
-		     get_buf_offset(buffer)) != get_buf_offset(buffer)) {
-			error("Can't save state, write file %s error %m",
-			      new_file);
-			error_code = errno;
+		int pos = 0, nwrite = get_buf_offset(buffer), amount;
+		char *data = (char *)get_buf_data(buffer);
+
+		while (nwrite > 0) {
+			amount = write(log_fd, &data[pos], nwrite);
+			if ((amount < 0) && (errno != EINTR)) {
+				error("Error writing file %s, %m", new_file);
+				error_code = errno;
+				break;
+			}
+			nwrite -= amount;
+			pos    += amount;
 		}
 		close(log_fd);
 	}
@@ -470,8 +474,7 @@ static int _load_job_state(Buf buffer)
 		      nodes, job_id);
 		goto unpack_error;
 	}
-	part_ptr = list_find_first(part_list, &list_find_part,
-				   partition);
+	part_ptr = find_part_record (partition);
 	if (part_ptr == NULL) {
 		error("Invalid partition (%s) for job_id %u", 
 		     partition, job_id);
@@ -834,6 +837,50 @@ struct job_record *find_running_job_by_node_name(char *node_name)
 }
 
 /*
+ * kill_job_by_part_name - Given a partition name, deallocate resource for 
+ *	its jobs and kill them. All jobs associated with this partition 
+ *	will have their partition pointer cleared.
+ * IN part_name - name of a partition
+ * RET number of jobs associated with this partition
+ */
+extern int kill_job_by_part_name(char *part_name)
+{
+	ListIterator job_record_iterator;
+	struct job_record  *job_ptr;
+	struct part_record *part_ptr;
+	int job_count = 0;
+
+	part_ptr = find_part_record (part_name);
+	if (part_ptr == NULL)	/* No such partition */
+		return 0;
+
+	job_record_iterator = list_iterator_create(job_list);
+	while ((job_ptr =
+		(struct job_record *) list_next(job_record_iterator))) {
+		if (job_ptr->part_ptr != part_ptr)
+			continue;
+		job_ptr->part_ptr = NULL;
+
+		if (job_ptr->job_state == JOB_RUNNING) {
+			job_count++;
+			info("Killing job_id %u on defunct partition %s",
+			      job_ptr->job_id, part_name);
+			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
+			job_ptr->end_time = time(NULL);
+			deallocate_nodes(job_ptr, false);
+			delete_all_step_records(job_ptr);
+			job_completion_logger(job_ptr);
+		}
+
+	}
+	list_iterator_destroy(job_record_iterator);
+
+	if (job_count)
+		last_job_update = time(NULL);
+	return job_count;
+}
+
+/*
  * kill_running_job_by_node_name - Given a node name, deallocate RUNNING 
  *	or COMPLETING jobs from the node or kill them 
  * IN node_name - name of a node
@@ -890,6 +937,7 @@ int kill_running_job_by_node_name(char *node_name, bool step_test)
 				job_ptr->end_time = time(NULL);
 				deallocate_nodes(job_ptr, false);
 				delete_all_step_records(job_ptr);
+				job_completion_logger(job_ptr);
 			} else {
 				error("Removing failed node %s from job_id %u",
 				      node_name, job_ptr->job_id);
@@ -1083,9 +1131,6 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	int error_code;
 	bool no_alloc, top_prio, test_only;
 	struct job_record *job_ptr;
-#ifdef HAVE_ELAN
-	bool pick_nodes = _slurm_picks_nodes(job_specs);
-#endif
 	error_code = _job_create(job_specs, new_job_id, allocate, will_run,
 				 &job_ptr, submit_uid);
 	if (error_code) {
@@ -1093,6 +1138,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->start_time = 0;
 			job_ptr->end_time = 0;
+			job_completion_logger(job_ptr);
 		}
 		return error_code;
 	}
@@ -1103,13 +1149,14 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	top_prio = _top_priority(job_ptr);
 #ifdef HAVE_ELAN
 	/* Avoid resource fragmentation if important */
-	if (top_prio && pick_nodes && job_is_completing())
+	if (top_prio && job_is_completing())
 		top_prio = false;	/* Don't scheduled job right now */
 #endif
 	if (immediate && (!top_prio)) {
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
 		job_ptr->end_time   = 0;
+		job_completion_logger(job_ptr);
 		return ESLURM_NOT_TOP_PRIORITY;
 	}
 
@@ -1141,6 +1188,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 			job_ptr->job_state  = JOB_FAILED;
 			job_ptr->start_time = 0;
 			job_ptr->end_time   = 0;
+			job_completion_logger(job_ptr);
 		} else		/* job remains queued */
 			if (error_code == ESLURM_NODES_BUSY) 
 				error_code = SLURM_SUCCESS;
@@ -1151,6 +1199,7 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 		job_ptr->job_state  = JOB_FAILED;
 		job_ptr->start_time = 0;
 		job_ptr->end_time   = 0;
+		job_completion_logger(job_ptr);
 		return error_code;
 	}
 
@@ -1176,23 +1225,6 @@ int job_allocate(job_desc_msg_t * job_specs, uint32_t * new_job_id,
 	}
 
 	return SLURM_SUCCESS;
-}
-
-/* Return true of slurm is performing the node selection process. 
- * This is a simplistic algorithm and does not count nodes. It just
- * looks for a required node list a no more than one required node/task. */
-static bool _slurm_picks_nodes(job_desc_msg_t * job_specs)
-{
-	if (job_specs->req_nodes == NULL)
-		return true;
-	if ((job_specs->num_procs != NO_VAL) && (job_specs->num_procs > 1))
-		return true;
-	if ((job_specs->min_nodes != NO_VAL) && (job_specs->min_nodes > 1))
-		return true;
-	if ((job_specs->max_nodes != NO_VAL) && (job_specs->max_nodes > 1))
-		return true;
-
-	return false;
 }
 
 /* 
@@ -1231,6 +1263,7 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 		job_ptr->start_time	= now;
 		job_ptr->end_time	= now;
 		delete_job_details(job_ptr);
+		job_completion_logger(job_ptr);
 		verbose("job_signal of pending job %u successful", job_id);
 		return SLURM_SUCCESS;
 	}
@@ -1243,6 +1276,7 @@ int job_signal(uint32_t job_id, uint16_t signal, uid_t uid)
 			last_job_update			= now;
 			job_ptr->job_state = JOB_COMPLETE | JOB_COMPLETING;
 			deallocate_nodes(job_ptr, false);
+			job_completion_logger(job_ptr);
 		} else {
 			ListIterator step_record_iterator;
 			struct step_record *step_ptr;
@@ -1307,6 +1341,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 		job_ptr->job_state  = JOB_COMPLETE;
 		job_ptr->start_time = 0;
 		job_ptr->end_time   = 0;
+		job_completion_logger(job_ptr);
 	} else {
 		if (job_return_code)
 			job_ptr->job_state = JOB_FAILED   | job_comp_flag;
@@ -1317,15 +1352,13 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
 			job_ptr->job_state = JOB_COMPLETE | job_comp_flag;
 		job_ptr->end_time = now;
 		delete_all_step_records(job_ptr);
+		job_completion_logger(job_ptr);
 	}
 
 	last_job_update = now;
-	if (job_comp_flag) {	/* job was running */
+	if (job_comp_flag) 	/* job was running */
 		deallocate_nodes(job_ptr, false);
-		verbose("job_complete for JobId=%u successful", job_id);
-	} else {
-		verbose("job_complete for JobId=%u successful", job_id);
-	}
+	info("job_complete for JobId=%u successful", job_id);
 
 	return SLURM_SUCCESS;
 }
@@ -1413,10 +1446,6 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 			info("_job_create: requested nodes %s not in partition %s",
 			     job_desc->req_nodes, part_ptr->name);
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
-			goto cleanup;
-		}
-		if (_too_many_fragments(req_bitmap)) {
-			error_code = ESLURM_TOO_MANY_REQUESTED_NODES;
 			goto cleanup;
 		}
 		i = count_cpus(req_bitmap);
@@ -1630,14 +1659,14 @@ _write_data_array_to_file(char *file_name, char **data, uint16_t size)
 		pos = 0;
 		while (nwrite > 0) {
 			amount = write(fd, &data[i][pos], nwrite);
-			if (amount < 0) {
+			if ((amount < 0) && (errno != EINTR)) {
 				error("Error writing file %s, %m",
 				      file_name);
 				close(fd);
 				return ESLURM_WRITING_TO_FILE;
 			}
 			nwrite -= amount;
-			pos += amount;
+			pos    += amount;
 		}
 	}
 
@@ -1669,13 +1698,13 @@ static int _write_data_to_file(char *file_name, char *data)
 	pos = 0;
 	while (nwrite > 0) {
 		amount = write(fd, &data[pos], nwrite);
-		if (amount < 0) {
+		if ((amount < 0) && (errno != EINTR)) {
 			error("Error writing file %s, %m", file_name);
 			close(fd);
 			return ESLURM_WRITING_TO_FILE;
 		}
 		nwrite -= amount;
-		pos += amount;
+		pos    += amount;
 	}
 	close(fd);
 	return SLURM_SUCCESS;
@@ -1884,12 +1913,14 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 	detail_ptr->min_nodes = job_desc->min_nodes;
 	detail_ptr->max_nodes = job_desc->max_nodes;
 	if (job_desc->req_nodes) {
-		detail_ptr->req_nodes = _copy_nodelist_no_dup(job_desc->req_nodes);
+		detail_ptr->req_nodes = 
+				_copy_nodelist_no_dup(job_desc->req_nodes);
 		detail_ptr->req_node_bitmap = *req_bitmap;
 		*req_bitmap = NULL;	/* Reused nothing left to free */
 	}
 	if (job_desc->exc_nodes) {
-		detail_ptr->exc_nodes = _copy_nodelist_no_dup(job_desc->exc_nodes);
+		detail_ptr->exc_nodes = 
+				_copy_nodelist_no_dup(job_desc->exc_nodes);
 		detail_ptr->exc_node_bitmap = *exc_bitmap;
 		*exc_bitmap = NULL;	/* Reused nothing left to free */
 	}
@@ -2003,6 +2034,7 @@ static void _job_timed_out(struct job_record *job_ptr)
 		job_ptr->time_last_active   = now;
 		job_ptr->job_state          = JOB_TIMEOUT | JOB_COMPLETING;
 		deallocate_nodes(job_ptr, true);
+		job_completion_logger(job_ptr);
 	} else
 		job_signal(job_ptr->job_id, SIGKILL, 0);
 	return;
@@ -2281,6 +2313,8 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 
 		packstr(detail_ptr->req_nodes, buffer);
 		pack_bit_fmt(detail_ptr->req_node_bitmap, buffer);
+		packstr(detail_ptr->exc_nodes, buffer);
+		pack_bit_fmt(detail_ptr->exc_node_bitmap, buffer);
 		packstr(detail_ptr->features, buffer);
 	} 
 
@@ -2294,6 +2328,8 @@ static void _pack_job_details(struct job_details *detail_ptr, Buf buffer)
 		pack32((uint32_t) 0, buffer);
 		pack32((uint32_t) 0, buffer);
 
+		packstr(NULL, buffer);
+		packstr(NULL, buffer);
 		packstr(NULL, buffer);
 		packstr(NULL, buffer);
 		packstr(NULL, buffer);
@@ -2390,6 +2426,7 @@ void reset_job_bitmaps(void)
 						     JOB_COMPLETING;
 			}
 			delete_all_step_records(job_ptr);
+			job_completion_logger(job_ptr);
 		}
 	}
 
@@ -2762,9 +2799,8 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user) {
 			if (node_name2bitmap
 			    (job_specs->req_nodes, &req_bitmap)) {
-				error
-				    ("Invalid node list specified for job_update: %s",
-				     job_specs->req_nodes);
+				error("Invalid node list for job_update: %s",
+					job_specs->req_nodes);
 				FREE_NULL_BITMAP(req_bitmap);
 				req_bitmap = NULL;
 				error_code = ESLURM_INVALID_NODE_NAME;
@@ -2775,8 +2811,9 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 				    job_specs->req_nodes;
 				FREE_NULL_BITMAP(detail_ptr->req_node_bitmap);
 				detail_ptr->req_node_bitmap = req_bitmap;
-				info("update_job: setting req_nodes to %s for job_id %u", 
-				     job_specs->req_nodes, job_specs->job_id);
+				info("update_job: setting req_nodes to %s "
+					"for job_id %u", job_specs->req_nodes, 
+					job_specs->job_id);
 				job_specs->req_nodes = NULL;
 			}
 		} else {
@@ -2862,6 +2899,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			job_ptr->end_time = time(NULL);
 			delete_job_details(job_ptr);
 			_kill_job_on_node(job_id_ptr[i], node_ptr);
+			job_completion_logger(job_ptr);
 		}
 
 		else {		/* else job is supposed to be done */
@@ -3064,6 +3102,7 @@ static void _validate_job_files(List batch_dirs)
 			      job_ptr->job_id);
 			job_ptr->job_state = JOB_FAILED;
 			job_ptr->start_time = job_ptr->end_time = time(NULL);
+			job_completion_logger(job_ptr);
 		}
 	}
 	list_iterator_destroy(job_record_iterator);
@@ -3176,7 +3215,6 @@ bool job_epilog_complete(uint32_t job_id, char *node_name,
 
 	if (job_ptr == NULL)
 		return true;
-
 	if (return_code) {
 		set_node_down(node_name, "Epilog error");
 	} else {
@@ -3202,20 +3240,16 @@ void job_fini (void)
 	xfree(job_hash_over);
 }
 
-static bool _too_many_fragments(bitstr_t *req_bitmap)
+/* log the completion of the specified job */
+extern void job_completion_logger(struct job_record  *job_ptr)
 {
-#ifdef MAX_NODE_FRAGMENTS
-	int i, frags=0;
-	int last_bit = 0, next_bit;
+	char *log_state; 
+	xassert(job_ptr);
 
-	for (i = 0; i < node_record_count; i++) {
-		next_bit = bit_test(req_bitmap, i);
-		if (next_bit == last_bit)
-			continue;
-		last_bit = next_bit;
-		if (next_bit && (++frags > MAX_NODE_FRAGMENTS))
-			return true;
-	}
-#endif
-	return false;
+	log_state = job_state_string(job_ptr->job_state & (~JOB_COMPLETING));
+
+	g_slurm_jobcomp_write(job_ptr->job_id, job_ptr->user_id,
+			job_ptr->name, log_state, job_ptr->partition,
+			job_ptr->time_limit, job_ptr->start_time, 
+			job_ptr->end_time, job_ptr->nodes);
 }
