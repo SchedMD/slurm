@@ -117,7 +117,8 @@ print_job ( void )
 		job_format_add_nodes( params.format_list, 0, false );
 	}
 
-	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , params.format_list ) ;
+	print_jobs_array( new_job_ptr->job_array, new_job_ptr->record_count , 
+			params.format_list ) ;
 	return;
 }
 
@@ -157,7 +158,8 @@ print_job_steps( void )
 		step_format_add_nodes( params.format_list, 0, false );
 	}
 		
-	print_steps_array( new_step_ptr->job_steps, new_step_ptr->job_step_count, params.format_list );
+	print_steps_array( new_step_ptr->job_steps, new_step_ptr->job_step_count, 
+			params.format_list );
 	return;
 }
 
