@@ -5,18 +5,36 @@
 .SH "SYNTAX"
 .LP 
 #include <slurm.h>
+.LP 
+void \fBslurm_free_ctl_conf\fR (
 .br 
+	slurm_ctl_conf_info_msg_t *\fIconf_info_msg_ptr\fP
+.br 
+);
+.LP
+void \fBslurm_free_job_info\fR (
+.br 
+	job_info_msg_t *\fIjob_info_msg_ptr\fP
+.br 
+);
+.LP
+void \fBslurm_free_node_info\fR (
+.br 
+	node_info_msg_t *\fInode_info_msg_ptr\fP
+.br 
+);
+.LP
+void \fBslurm_free_partition_info\fR (
+.br 
+	partition_info_msg_t *\fIpartition_info_msg_ptr\fP
+.br 
+);
+.LP
 int \fBslurm_load_ctl_conf\fR (
 .br 
 	time_t \fIupdate_time\fP,
 .br 
 	slurm_ctl_conf_info_msg_t **\fIconf_info_msg_pptr\fP
-.br 
-);
-.LP
-void \fBslurm_free_ctl_conf\fR (
-.br 
-	slurm_ctl_conf_info_msg_t *\fIconf_info_msg_ptr\fP
 .br 
 );
 .LP 
@@ -27,24 +45,12 @@ int \fBslurm_load_jobs\fR (
 	job_info_msg_t **\fIjob_info_msg_pptr\fP
 .br 
 );
-.LP
-void \fBslurm_free_job_info\fR (
-.br 
-	job_info_msg_t *\fIjob_info_msg_ptr\fP
-.br 
-);
 .LP 
 int \fBslurm_load_node\fR (
 .br 
 	time_t \fIupdate_time\fP, 
 .br 
 	node_info_msg_t **\fInode_info_msg_pptr\fP
-.br 
-);
-.LP
-void \fBslurm_free_node_info\fR (
-.br 
-	node_info_msg_t *\fInode_info_msg_ptr\fP
 .br 
 );
 .LP 
@@ -55,17 +61,8 @@ int \fBslurm_load_partitions\fR (
 	partition_info_msg_t **\fIpartition_info_msg_pptr\fP
 .br 
  );
-.LP
-void \fBslurm_free_partition_info\fR (
-.br 
-	partition_info_msg_t *\fIpartition_info_msg_ptr\fP
-.br 
-);
 .SH "ARGUMENTS"
 .LP 
-.TP 
-\fIupdate_time\fP
-For all of the following informational calls, if update_time is equal to or greater than the last time changes where made to that information, new information is not returned.  Otherwise all the configuration. job, node, or partition records are returned.
 .TP 
 \fIconf_info_msg_pptr\fP
 Specifies the double pointer to the structure to be created and filled with the time of the last configuration update and detailed configuration information. Configuration information includes control machine names, file names, timer values, etc. See slurm.h for full details on the data structure's contents. 
@@ -74,7 +71,7 @@ Specifies the double pointer to the structure to be created and filled with the 
 Specifies the pointer to the structure created by slurm_load_ctl_conf. 
 .TP 
 \fIjob_info_msg_pptr\fP
-Specifies the double pointer to the structure to be created and filled with the time of the last job update, a record count, and detailed information about each job. Detailed job information is written to fixed sized records and includes: ID number, name, user ID, state, assigned or requested node names, indecies into the node table, etc. In the case of indecies into the node table, this is an array of integers with pairs of start and end index number ino the node infomration records and the data is terminated with a value of -1. See slurm.h for full details on the data structure's contents. 
+Specifies the double pointer to the structure to be created and filled with the time of the last job update, a record count, and detailed information about each job. Detailed job information is written to fixed sized records and includes: ID number, name, user ID, state, assigned or requested node names, indexes into the node table, etc. In the case of indexes into the node table, this is an array of integers with pairs of start and end index number into the node information records and the data is terminated with a value of -1. See slurm.h for full details on the data structure's contents. 
 .TP 
 \fIjob_info_msg_ptr\fP
 Specifies the pointer to the structure created by slurm_load_jobs. 
@@ -86,27 +83,30 @@ Specifies the double pointer to the structure to be created and filled with the 
 Specifies the pointer to the structure created by slurm_load_node. 
 .TP 
 \fIpartition_info_msg_pptr\fP
-Specifies the double pointer to the structure to be created and filled with the time of the last partition update, a record count, and detailed information about each partition. Detailed partition information is written to fixed sized records and includes: name, state, job time limit, job size limit, node names, indecies into the node table, etc. In the case of indecies into the node table, this is an array of integers with pairs of start and end index number ino the node infomration records and the data is terminated with a value of -1. See slurm.h for full details on the data structure's contents. 
+Specifies the double pointer to the structure to be created and filled with the time of the last partition update, a record count, and detailed information about each partition. Detailed partition information is written to fixed sized records and includes: name, state, job time limit, job size limit, node names, indexes into the node table, etc. In the case of indexes into the node table, this is an array of integers with pairs of start and end index number into the node information records and the data is terminated with a value of -1. See slurm.h for full details on the data structure's contents. 
 .TP 
 \fIpartition_info_msg_ptr\fP
 Specifies the pointer to the structure created by slurm_load_partitions. 
+.TP 
+\fIupdate_time\fP
+For all of the following informational calls, if update_time is equal to or greater than the last time changes where made to that information, new information is not returned.  Otherwise all the configuration. job, node, or partition records are returned.
 .SH "DESCRIPTION"
-.LP 
-\fBslurm_load_ctl_conf\fR Returns a slurm_ctl_conf_info_msg_t that contains an slurm configuration records.
 .LP 
 \fBslurm_free_ctl_conf\fR Release the storage generated by the slurm_load_ctl_conf function.
 .LP 
-\fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time, record count, and array of job_table records for all jobs.
-.LP 
 \fBslurm_free_job_info\fR Release the storage generated by the slurm_load_jobs function.
-.LP 
-\fBslurm_load_node\fR Returns a node_info_msg_t that contains an update time, record count, and array of node_table records for all nodes.
 .LP 
 \fBslurm_free_node_info\fR Release the storage generated by the slurm_load_node function.
 .LP 
-\fBslurm_load_partitions\fR Returns a partition_info_msg_t that contains an update time, record count, and array of partition_table records for all partitions.
-.LP 
 \fBslurm_free_partition_info\fR Release the storage generated by the slurm_load_partitions function.
+.LP 
+\fBslurm_load_ctl_conf\fR Returns a slurm_ctl_conf_info_msg_t that contains an slurm configuration records.
+.LP 
+\fBslurm_load_jobs\fR Returns a job_info_msg_t that contains an update time, record count, and array of job_table records for all jobs.
+.LP 
+\fBslurm_load_node\fR Returns a node_info_msg_t that contains an update time, record count, and array of node_table records for all nodes.
+.LP 
+\fBslurm_load_partitions\fR Returns a partition_info_msg_t that contains an update time, record count, and array of partition_table records for all partitions.
 .SH "RETURN VALUE"
 .LP
 On success, zero is returned. On error, -1 is returned, and errno is set appropriately.
@@ -126,7 +126,7 @@ int main (int argc, char *argv[])
 .br 
 {
 .br 
-	int error_code, i, j, k;
+	int i, j, k;
 .br
 	slurm_ctl_conf_info_msg_t * conf_info_msg_ptr = NULL;
 .br
