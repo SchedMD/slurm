@@ -96,6 +96,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 
@@ -163,6 +164,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches < 2} {
@@ -209,6 +211,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches < 2} {
@@ -261,6 +264,7 @@ expect {
 		exit 1
 	}
 	eof {
+		wait
 	}
 }
 if {$matches < 2} {
@@ -276,6 +280,17 @@ if {$warning < 1} {
 # Post-processing
 #
 send "exit\n"
+expect {
+	timeout {
+		send_user "\nFAILURE: srun not responding\n"
+		kill_srun
+		exit 1
+	}
+	eof {
+		wait
+	}
+}
+
 if {$exit_code == 0} {
 	send_user "\nSUCCESS\n"
 }
