@@ -3,20 +3,30 @@ Kevin Tew
 June 17, 2002
 
 Necessary include files
-<src/common/slurm_protocol_api.h>
+<slurm.h>
 
 All interaction with slurm consists of structured messages
 All messages returned to a double pointer **, must be freed by calling the corresponding free function
 
+---------------------------
 API Layer init/destroy functions
-int slurm_api_init ( slurm_protocol_config_t * slurm_api_conf )
-int slurm_api_cleanup ( )
+---------------------------
+int slurm_set_api_config ( slurm_protocol_config_t * slurm_api_conf )
+	Sets the current api configuration
 
+slurm_protocol_config_t * slurm_get_api_config ( )
+	Returns the current api configuration
 
+int slurm_set_default_controllers ( char * primary_controller_hostname , char *
+secondary_controller_hostnme, uint16_t pri_port , uint16_t sec_port )
+	This will set the default controllers' addresses and ports.  This is
+the minimal amount of initialization that must occur before using the api
+functions
 
+---------------------------
 INFO Message functions
-if update_time is equal to the last time changes where made, nothing is
-returned.  Otherwise all the node, job, or partition records are returned.
+---------------------------
+For all of the following inforamational calls, if update_time is equal to the last time changes where made, nothing is returned.  Otherwise all the node, job, or partition records are returned.
 
 int slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 	Returns a job_info_msg_t that contains an array of job_table records
@@ -28,8 +38,9 @@ int slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_
 	Returns a partition_info_msg_t that contains an array of partition_table records
 
 
-
+---------------------------
 JOB Allocation functions
+---------------------------
 Once a job_desc_msg_t structure has been declared it must first be initializediby the following function before it is used.
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg ) ;
 
@@ -43,14 +54,17 @@ int slurm_allocate_resources (job_desc_msg_t * job_desc_msg , job_allocation_res
 Blocks until resources are allocated
 
 
-
+---------------------------
 JOB Cancel function
+---------------------------
 int slurm_cancel_job ( uint32_t job_id )
 	the job id of the job to cancel.
 
 
 
+---------------------------
 Error Code Functions
+---------------------------
 Slurm Functions will return -1 on error and will provide detailed error information using the following functions
 
 	int slurm_get_errno () 
@@ -58,7 +72,9 @@ Slurm Functions will return -1 on error and will provide detailed error informat
 
 
 
+---------------------------
 Free Functions
+---------------------------
 void slurm_free_job_allocation_response_msg ( job_allocation_response_msg_t * msg ) ;
 void slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
 
@@ -73,7 +89,9 @@ void slurm_free_node_table ( node_table_t * node ) ;
 
 
 
+---------------------------
 Message Structure definitions
+---------------------------
 typedef struct slurm_job_allocation_response_msg
 {
 	uint32_t job_id;
