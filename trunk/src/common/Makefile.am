@@ -1,3 +1,4 @@
+# $Id$
 # Makefile for common library 
 
 AUTOMAKE_OPTIONS = foreign

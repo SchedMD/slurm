@@ -1,6 +1,6 @@
 # $Id$
 #
-# Makefile for slurmlib
+# Makefile for slurm API library
 
 AUTOMAKE_OPTIONS = foreign
 
@@ -34,3 +34,6 @@ libslurm_la_LIBADD        = $(common_dir)/libcommon.la
 libslurm_la_LDFLAGS       = -export-symbols $(srcdir)/libslurm.sym
 libslurm_la_DEPENDENCIES  = $(srcdir)/libslurm.sym $(libslurm_la_LIBADD)
 
+force:
+$(libslurm_la_LIBADD) : force
+	@cd `dirname $@` && $(MAKE) `basename $@`

@@ -1,3 +1,5 @@
+# $Id$
+
 if USE_INCLUDED_POPT
 SUBDIRS = popt common api slurmctld slurmd srun scontrol scancel squeue sinfo
 else
