@@ -71,7 +71,7 @@
 #include "src/common/log.h"
 #include "src/common/arg_desc.h"
 
-const char plugin_name[]	= "Brett Chun's authd authentication plugin";
+const char plugin_name[]	= "Brent Chun's authd authentication plugin";
 const char plugin_type[]	= "auth/authd";
 const uint32_t plugin_version = 90;
 
@@ -153,7 +153,7 @@ read_bytes( int fd, char *buf, size_t size )
 /*
  * These two cribbed from auth.c in the authd distribution.  They would
  * normally be available in the authd library, but the library relies on
- * Brett Chun's enormous and irrelevant convenience library, and we only
+ * Brent Chun's enormous and irrelevant convenience library, and we only
  * need to make one call to that library here.  So we inline the code
  * from his library and sever the dependency.
  */
