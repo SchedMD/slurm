@@ -1,4 +1,5 @@
 /* 
+ * $Id$
  *
  * env.c : environment manipulation 
  */
