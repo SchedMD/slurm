@@ -53,10 +53,77 @@ A valid node state. Possible values include: DOWN, UNKNOWN, IDLE, ALLOCATED, DRA
 .TP
 \fBtime\fR
 Number of seconds to wait between each iteration.
-.SH "EXAMPLE"
+.SH "EXAMPLES"
 .eo
-PUT THE EXAMPLE HERE...
-.br 
+Report basic system configuration:
+.br
+# ./sinfo
+.br
+PARTITION   NODES  STATE      CPUS      MEM     DISK  NODES
+.br
+-----------------------------------------------------------------
+.br
+debug          18  IDLE          2      128      512  dev[1-18]
+.br
+debug           2  DRAINED       2      128      512  dev[19-20]
+.br
+pbatch         60  ALLOCATED     2      128      512  dev[21-80]
+.br
+pbatch         19  IDLE          2      128      512  dev[81-99]
+.br
+ 
+.br
+Report more complete information about the partition debug:
+.br
+# ./sinfo --long --partition debug
+.br
+PARTITION INFORMATION
+.br
+=================================================================
+.br
+debug
+.br
+        current state     = UP
+.br
+        default partition = YES
+.br
+        total nodes       = 20
+.br
+        total cpus        = 40
+.br
+        max jobtime       = 30
+.br
+        max nodes/job     = 10
+.br
+        root only         = NO
+.br
+        share nodes       = NO
+.br
+
+.br
+        NODES  STATE      CPUS      MEM     DISK  NODES
+.br
+        -----------------------------------------------------------
+.br
+           18  IDLE          2      128      512  dev[1-18]
+.br
+            2  DRAINED       2      128      512  dev[19-20]
+.br
+
+.br
+=================================================================
+.br
+ 
+.br
+Report only those nodes that are in state DRAINED:
+.br
+# ./sinfo --state DRAINED
+.br
+PARTITION   NODES  STATE      CPUS      MEM     DISK  NODES
+.br
+-----------------------------------------------------------------
+.br
+debug           2  DRAINED       2      128      512  dev[19-20]
 .ec
 
 .SH "COPYING"

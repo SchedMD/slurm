@@ -100,21 +100,27 @@ Repeat the last command executed.
 .br 
 scontrol: show part class
 .br 
-PartitionName=class MaxTime=30 MaxNodes=2 TotalNodes=10 TotalCPUs=160 RootOnly=NO
+PartitionName=class MaxTime=30 MaxNodes=2 TotalNodes=10
 .br 
-   Default=NO Shared=NO State=UP Nodes=lx[0031-0040] AllowGroups=students
+   TotalCPUs=160 RootOnly=NO Default=NO Shared=NO State=UP
+.br
+   Nodes=lx[0031-0040] AllowGroups=students
 .br 
-scontrol: update PartitionName=class MaxTime=300 MaxNodes=4
+scontrol: update PartitionName=class MaxTime=99 MaxNodes=4
 .br 
 scontrol: show job 65539
 .br 
-JobId=65539 UserId=1500 JobState=PENDING TimeLimit=100 Priority=100 Partition=batch
+JobId=65539 UserId=1500 JobState=PENDING TimeLimit=100
 .br 
-   Name=job01 NodeList=(null) StartTime=0 EndTime=0 Shared=0 
+   Priority=100 Partition=batch Name=job01 NodeList=(null) 
 .br 
-   ReqProcs=1000 ReqNodes=400 Contiguous=1 MinProcs=4 MinMemory=1024 MinTmpDisk=2034
+   StartTime=0 EndTime=0 Shared=0 ReqProcs=1000
+.br
+   ReqNodes=400 Contiguous=1 MinProcs=4 MinMemory=1024
 .br 
-   ReqNodeList=lx[3000-3003] Features=(null) JobScript=/bin/hostname 
+   MinTmpDisk=2034ReqNodeList=lx[3000-3003] 
+.br
+   Features=(null) JobScript=/bin/hostname 
 .br 
 scontrol: update JobId=65539 TimeLimit=200 Priority=500
 .br 
@@ -138,8 +144,12 @@ SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
 details.
+.SH "FILES"
+.LP
+/etc/slurm.conf
 .SH "SEE ALSO"
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
 \fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
+\fBslurm.conf\fR(5)

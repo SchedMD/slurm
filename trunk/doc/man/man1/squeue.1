@@ -113,13 +113,13 @@ Specifies a comma separated list of users whose jobs or job steps are to be repo
 Report details of squeues actions.
 
 
-.SH "EXAMPLE"
+.SH "EXAMPLES"
 .eo
-squeue -p debug -t C -o "%.6i%p"
-.br
-would print the jobs scheduled in the debug partition and in the 
+Print the jobs scheduled in the debug partition and in the 
 completed state in the format with six right justified digits for 
 the job id followed by the priority with an arbitrary fields size:
+.br
+# squeue -p debug -t C -o "%.6i%p"
 .br
  JobId Prio 
 .br
@@ -131,17 +131,17 @@ the job id followed by the priority with an arbitrary fields size:
 .ec
 
 .eo
-squeue -s -p debug -S u
+Print the job steps in the debug partition sorted by user:
 .br
-would print the job steps in the debug partition sorted by user:
+# squeue -s -p debug -S u
 .br
-StepId      Partition   User        StartTime     Nodes
+ StepId     Partition   User      StartTime     Nodes
 .br
-65552.1     debug       alice       10/14-11:02   dev[1-4]
+ 65552.1    debug       alice     10/14-11:02   dev[1-4]
 .br
-65562.2     debug       bob         10/14-11:54   dev22
+ 65562.2    debug       bob       10/14-11:54   dev22
 .br
-65550.1     debug       candice     10/14-11:18   dev[10-12]
+ 65550.1    debug       candice   10/14-11:18   dev[6-12]
 .ec
 
 .SH "COPYING"
