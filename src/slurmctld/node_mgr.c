@@ -1226,7 +1226,15 @@ extern int validate_nodes_via_front_end(uint32_t job_count,
 	while ((job_ptr = (struct job_record *) list_next(job_iterator))) {
 		if ((job_ptr->job_state != JOB_RUNNING) ||
 		    (job_ptr->batch_flag == 0)          ||
-		    (job_ptr->time_last_active == now))
+#ifdef HAVE_BGL
+		    /* slurmd does not report job presence until after prolog 
+		     * completes which waits for bglblock boot to complete.  
+		     * This can take several minutes on BlueGene. */
+		    (difftime(now, job_ptr->time_last_active) <= 
+				(300 + 20 * job_ptr->node_cnt)))
+#else
+		    (difftime(now, job_ptr->time_last_active) <= 5))
+#endif
 			continue;
 
 		info("Killing orphan batch job %u", job_ptr->job_id);

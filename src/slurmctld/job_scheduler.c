@@ -300,7 +300,8 @@ static void _launch_job(struct job_record *job_ptr)
 	memcpy(launch_msg_ptr->cpu_count_reps, job_ptr->cpu_count_reps,
 			(sizeof(uint32_t) * job_ptr->num_cpu_groups));
 
-	launch_msg_ptr->select_jobinfo = select_g_copy_jobinfo(job_ptr->select_jobinfo);
+	launch_msg_ptr->select_jobinfo = select_g_copy_jobinfo(
+			job_ptr->select_jobinfo);
 
 	agent_arg_ptr = (agent_arg_t *) xmalloc(sizeof(agent_arg_t));
 	agent_arg_ptr->node_count = 1;
