@@ -1,7 +1,8 @@
 /*****************************************************************************\
  *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), job_count, time stamp 
- *	(last_job_update), and hash table (job_hash, job_hash_over, max_hash_over)
+ *	(last_job_update), and hash table (job_hash, job_hash_over, 
+ *	max_hash_over)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -82,10 +83,12 @@ static struct job_record *job_hash_over[MAX_JOB_COUNT];
 static int max_hash_over = 0;
 
 void 	add_job_hash (struct job_record *job_ptr);
-int 	copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id ) ;
-int 	copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
-		struct job_record ** job_ptr , struct part_record *part_ptr, 
-		bitstr_t *req_bitmap) ;
+static int 	_copy_job_desc_to_file ( job_desc_msg_t * job_desc , 
+                                         uint32_t job_id ) ;
+static int 	_copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
+			struct job_record ** job_ptr , 
+			struct part_record *part_ptr, 
+			bitstr_t *req_bitmap) ;
 void	delete_job_desc_files (uint32_t job_id);
 void 	dump_job_state (struct job_record *dump_job_ptr, Buf buffer);
 void 	dump_job_details_state (struct job_details *detail_ptr, Buf buffer);
@@ -100,8 +103,8 @@ void	read_data_array_from_file ( char * file_name, char *** data, uint16_t *size
 void	signal_job_on_node (uint32_t job_id, uint16_t step_id, int signum, char *node_name);
 int	top_priority (struct job_record *job_ptr);
 int 	validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate ) ;
-int	write_data_to_file ( char * file_name, char * data ) ;
-int	write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) ;
+static int	_write_data_to_file ( char * file_name, char * data ) ;
+static int	_write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) ;
 static inline void x_clear (void * arg);
 
 /* 
@@ -1196,8 +1199,11 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		return error_code;
 	}
 
-	/* check if select partition has sufficient resources to satisfy request */
-	if (job_desc->req_nodes) {	/* insure that selected nodes are in this partition */
+	/* check if select partition has sufficient resources to satisfy
+	 * the request */
+
+	/* insure that selected nodes are in this partition */
+	if (job_desc->req_nodes) {
 		error_code = node_name2bitmap (job_desc->req_nodes, &req_bitmap);
 		if (error_code == EINVAL)
 			goto cleanup;
@@ -1209,7 +1215,7 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 			bit_fill_gaps (req_bitmap);
 		if (bit_super_set (req_bitmap, part_ptr->node_bitmap) != 1) {
 			info ("job_create: requested nodes %s not in partition %s",
-					job_desc->req_nodes, part_ptr->name);
+			      job_desc->req_nodes, part_ptr->name);
 			error_code = ESLURM_REQUESTED_NODES_NOT_IN_PARTITION;
 			goto cleanup;
 		}		
@@ -1222,12 +1228,13 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 	}			
 	if (job_desc->num_procs > part_ptr->total_cpus) {
 		info ("job_create: too many cpus (%d) requested of partition %s(%d)",
-				job_desc->num_procs, part_ptr->name, part_ptr->total_cpus);
+				job_desc->num_procs, part_ptr->name, 
+				part_ptr->total_cpus);
 		error_code = ESLURM_TOO_MANY_REQUESTED_CPUS;
 		goto cleanup;
 	}			
-	if ((job_desc->num_nodes > part_ptr->total_nodes) || 
-			(job_desc->num_nodes > part_ptr->max_nodes)) {
+	if ( (job_desc->num_nodes > part_ptr->total_nodes) || 
+	     (job_desc->num_nodes > part_ptr->max_nodes) ) {
 		if (part_ptr->total_nodes > part_ptr->max_nodes)
 			i = part_ptr->max_nodes;
 		else
@@ -1238,25 +1245,30 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		goto cleanup;
 	}
 
-	/* Perform some size checks on strings we store to prevent malicious user */
-	/* from filling slurmctld's memory */
+	/* Perform some size checks on strings we store to prevent
+	 * malicious user filling slurmctld's memory */
+
 	if (job_desc->err && (strlen (job_desc->err) > BUF_SIZE)) {
-		info ("job_create: strlen(err) too big (%d)", strlen (job_desc->err));
+		info ("job_create: strlen(err) too big (%d)", 
+		      strlen (job_desc->err));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
 	if (job_desc->in && (strlen (job_desc->in) > BUF_SIZE)) {
-		info ("job_create: strlen(in) too big (%d)", strlen (job_desc->in));
+		info ("job_create: strlen(in) too big (%d)", 
+		      strlen (job_desc->in));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
 	if (job_desc->out && (strlen (job_desc->out) > BUF_SIZE)) {
-		info ("job_create: strlen(out) too big (%d)", strlen (job_desc->out));
+		info ("job_create: strlen(out) too big (%d)", 
+		      strlen (job_desc->out));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
 	if (job_desc->work_dir && (strlen (job_desc->work_dir) > BUF_SIZE)) {
-		info ("job_create: strlen(work_dir) too big (%d)", strlen (job_desc->work_dir));
+		info ("job_create: strlen(work_dir) too big (%d)", 
+		      strlen (job_desc->work_dir));
 		error_code = ESLURM_PATHNAME_TOO_LONG;
 		goto cleanup;
 	}
@@ -1266,14 +1278,18 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		goto cleanup;
 	}
 
-	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , 
-							req_bitmap ) ) )  {
+	if ( ( error_code = _copy_job_desc_to_job_record ( job_desc , 
+							  job_rec_ptr , 
+							  part_ptr , 
+							  req_bitmap ) ) )  {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY ;
 		goto cleanup ;
 	}
 
 	if (job_desc->script) {
-		if ( ( error_code = copy_job_desc_to_file ( job_desc , (*job_rec_ptr)->job_id ) ) )  {
+		if ( ( error_code = _copy_job_desc_to_file ( job_desc , 
+		                               (*job_rec_ptr)->job_id ) ) )  {
+			(*job_rec_ptr)->job_state = JOB_FAILED;
 			error_code = ESLURM_WRITING_TO_FILE ;
 			goto cleanup ;
 		}
@@ -1284,23 +1300,23 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 
 	if (part_ptr->shared == SHARED_FORCE)		/* shared=force */
 		(*job_rec_ptr)->details->shared = 1;
-	else if (((*job_rec_ptr)->details->shared != 1) || 
-	         (part_ptr->shared == SHARED_NO))	/* user or partition want no sharing */
+	else if ( ((*job_rec_ptr)->details->shared != 1) || 
+	          (part_ptr->shared == SHARED_NO))	/* can't share */
 		(*job_rec_ptr)->details->shared = 0;
 
 	*new_job_id = (*job_rec_ptr)->job_id;
 	return SLURM_SUCCESS ;
 
-	cleanup:
-		if ( req_bitmap )
-			bit_free (req_bitmap);
-		return error_code ;
+      cleanup:
+	if ( req_bitmap )
+		bit_free (req_bitmap);
+	return error_code ;
 }
 
-/* copy_job_desc_to_file - copy the job script and environment from the RPC structure 
- *	into a file */
-int 
-copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
+/* _copy_job_desc_to_file - copy the job script and environment from the RPC  
+ *	structure into a file */
+static int 
+_copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 {
 	int error_code = 0;
 	char *dir_name, job_dir[20], *file_name;
@@ -1316,14 +1332,18 @@ copy_job_desc_to_file ( job_desc_msg_t * job_desc , uint32_t job_id )
 	/* Create environment file, and write data to it */
 	file_name = xstrdup (dir_name);
 	xstrcat (file_name, "/environment");
-	error_code = write_data_array_to_file (file_name, job_desc->environment, job_desc->env_size);
+	error_code = _write_data_array_to_file (file_name, 
+	                                        job_desc->environment, 
+	                                        job_desc->env_size);
 	xfree (file_name);
 
-	/* Create script file */
-	file_name = xstrdup (dir_name);
-	xstrcat (file_name, "/script");
-	error_code = write_data_to_file (file_name, job_desc->script);
-	xfree (file_name);
+	if (error_code == 0) {
+		/* Create script file */
+		file_name = xstrdup (dir_name);
+		xstrcat (file_name, "/script");
+		error_code = _write_data_to_file (file_name, job_desc->script);
+		xfree (file_name);
+	}
 
 	xfree (dir_name);
 	return error_code;
@@ -1383,8 +1403,8 @@ rmdir2 (char * path)
 }
 
 /* Create file with specified name and write the supplied data array to it */
-int
-write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) 
+static int
+_write_data_array_to_file ( char * file_name, char ** data, uint16_t size ) 
 {
 	int fd, i, pos, nwrite, amount;
 
@@ -1426,8 +1446,8 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 }
 
 /* Create file with specified name and write the supplied data to it */
-int
-write_data_to_file ( char * file_name, char * data ) 
+static int
+_write_data_to_file ( char * file_name, char * data ) 
 {
 	int fd, pos, nwrite, amount;
 
@@ -1588,10 +1608,10 @@ read_data_from_file ( char * file_name, char ** data)
 	return;
 }
 
-/* copy_job_desc_to_job_record - copy the job descriptor from the RPC structure 
- *	into the actual slurmctld job record */
-int 
-copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
+/* _copy_job_desc_to_job_record - copy the job descriptor from the RPC  
+ *	structure into the actual slurmctld job record */
+static int 
+_copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , 
 	struct job_record ** job_rec_ptr , struct part_record *part_ptr, 
 	bitstr_t *req_bitmap )
 {
@@ -1612,12 +1632,13 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 	add_job_hash (job_ptr);
 
 	if (job_desc->name) {
-		strncpy (job_ptr->name, job_desc->name , sizeof (job_ptr->name)) ;
+		strncpy (job_ptr->name, job_desc->name , 
+		         sizeof (job_ptr->name)) ;
 	}
 	job_ptr->user_id = (uid_t) job_desc->user_id;
 	job_ptr->job_state = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
-	if ((job_desc->priority != NO_VAL) /* also check that submit UID is root */)
+	if ((job_desc->priority != NO_VAL) /* also check submit UID is root */)
 		job_ptr->priority = job_desc->priority;
 	else
 		set_job_prio (job_ptr);
