@@ -8,23 +8,39 @@ AC_CONFIG_SRCDIR([configure.ac])
 AC_CONFIG_AUX_DIR(auxdir)
 AC_CANONICAL_TARGET([])
 
-# determine project/version 
-# XXX generate VERSION information automatically at some point
-SLURM_MAJOR=0
-SLURM_MINOR=1
-SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR"
+#
+# Determine project/version from META file.
+# These are substituted into the Makefile and config.h.
+#
+PROJECT="`perl -ne 'print,exit if s/^\s*NAME:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(PROJECT, "$PROJECT", [Define the project's name.])
+AC_SUBST(PROJECT)
 
-VERSION=$SLURM_VERSION
+# Automake desires "PACKAGE" variable instead of PROJECT
+PACKAGE=$PROJECT
+
+# rpm make target needs Version in META, not major and minor version nubmers
+VERSION="`perl -ne 'print,exit if s/^\s*VERSION:\s*(\S*).*/\1/i' $srcdir/META`"
 AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
 AC_SUBST(VERSION)
 
-AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION", [slurm version number])
-AC_SUBST(SLURM_VERSION)
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", [slurm major version number])
+SLURM_MAJOR="`perl -ne 'print,exit if s/^\s*MAJOR:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$SLURM_MAJOR", [Define the project's major version.])
 AC_SUBST(SLURM_MAJOR)
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", [slurm minor version number])
+
+SLURM_MINOR="`perl -ne 'print,exit if s/^\s*MINOR:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(SLURM_MINOR, "$SLURM_MINOR", [Define the project's minor version.])
 AC_SUBST(SLURM_MINOR)
 
+#SLURM_VERSION="$SLURM_MAJOR.$SLURM_MINOR"
+
+#VERSION=$SLURM_VERSION
+#AC_DEFINE_UNQUOTED(VERSION, "$VERSION", [Define the project's version.])
+#AC_SUBST(VERSION)
+
+RELEASE="`perl -ne 'print,exit if s/^\s*RELEASE:\s*(\S*).*/\1/i' $srcdir/META`"
+AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
+AC_SUBST(RELEASE)
 
 dnl Initialize Automake
 dnl
