@@ -142,8 +142,9 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 				 * default=0 */
 	char *partition;	/* name of requested partition, 
 				 * default in SLURM config */
-	uint32_t priority;	/* relative priority of the job, explicitly 
-				 * set only for user root */
+	uint32_t priority;	/* relative priority of the job,  
+				 * explicitly set only for user root, 
+				 * 0 == held (don't initiate) */
 	char *req_nodes;	/* comma separated list of required nodes
 				 * default NONE */
 	uint16_t shared;	/* 1 if job can share nodes with other jobs,
