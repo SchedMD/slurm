@@ -1517,7 +1517,8 @@ void make_node_comp(struct node_record *node_ptr)
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED) ||
 	    (base_state == NODE_STATE_DRAINING)) {
-		debug3("Node %s being left in state %s", node_ptr->name, 
+		debug3("make_node_comp: Node %s being left in state %s", 
+		       node_ptr->name, 
 		       node_state_string((enum node_states)
 					 node_ptr->node_state));
 	} else {
@@ -1584,7 +1585,8 @@ void make_node_idle(struct node_record *node_ptr,
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED)) {
-		debug3("Node %s being left in state %s", node_ptr->name, 
+		debug3("make_node_idle: Node %s being left in state %s", 
+		       node_ptr->name, 
 		       node_state_string((enum node_states)base_state));
 	} else if (base_state == NODE_STATE_DRAINING) {
 		node_ptr->node_state = NODE_STATE_DRAINED;
