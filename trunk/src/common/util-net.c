@@ -41,9 +41,9 @@
 #include <string.h>
 #include <sys/socket.h>
 
-#include "strlcpy.h"
-#include "util-net.h"
-#include "wrapper.h"
+#include "src/common/strlcpy.h"
+#include "src/common/util-net.h"
+#include "src/common/wrapper.h"
 
 
 #ifndef INET_ADDRSTRLEN
