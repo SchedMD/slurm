@@ -46,6 +46,7 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/agent.h"
 #include "src/slurmctld/locks.h"
+#include "src/slurmctld/node_scheduler.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define MAX_RETRIES 10
@@ -276,8 +277,8 @@ void signal_step_tasks(struct step_record *step_ptr, uint16_t signal)
 			node_names[MAX_NAME_LEN * agent_args->node_count],
 			node_record_table_ptr[i].name, MAX_NAME_LEN);
 		agent_args->node_count++;
-#ifdef HAVE_BGL
-		break;	/* only do the one front-end node */
+#ifdef HAVE_BGL			/* only do the one front-end node */
+		break;
 #endif
 	}
 

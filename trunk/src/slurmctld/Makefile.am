@@ -24,7 +24,7 @@ slurmctld_SOURCES = 	\
 	locks.c   	\
 	locks.h  	\
 	node_mgr.c 	\
-	node_scheduler.c\
+	node_scheduler.c node_scheduler.h \
 	partition_mgr.c \
 	ping_nodes.c	\
 	ping_nodes.h	\
@@ -35,8 +35,6 @@ slurmctld_SOURCES = 	\
 	sched_plugin.c	\
 	sched_plugin.h	\
 	sched_upcalls.c	\
-	select_plugin.c	\
-	select_plugin.h	\
 	slurmctld.h	\
 	srun_comm.c	\
 	srun_comm.h	\

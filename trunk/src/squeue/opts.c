@@ -492,6 +492,11 @@ extern int parse_format( char* format )
 							field_size,
 							right_justify,
 							suffix );
+			else if (field[0] == 's')
+				job_format_add_select_jobinfo( params.format_list, 
+				                         field_size, 
+				                         right_justify, 
+				                         suffix );
 			else if (field[0] == 'S')
 				job_format_add_time_start( params.format_list, 
 				                           field_size, 
@@ -523,26 +528,6 @@ extern int parse_format( char* format )
 				                          field_size, 
 				                          right_justify, 
 				                          suffix );
-			else if (field[0] == 'y')
-				job_format_add_geometry( params.format_list, 
-				                         field_size, 
-				                         right_justify, 
-				                         suffix );
-			else if (field[0] == 'Y')
-				job_format_add_conn_type( params.format_list, 
-				                         field_size, 
-				                         right_justify, 
-				                         suffix );
-			else if (field[0] == 'z')
-				job_format_add_rotate( params.format_list, 
-				                         field_size, 
-				                         right_justify, 
-				                         suffix );
-			else if (field[0] == 'Z')
-				job_format_add_node_use( params.format_list, 
-				                         field_size, 
-				                         right_justify, 
-				                         suffix );
 			else 
 				error( "Invalid job format specification: %c", 
 				       field[0] );

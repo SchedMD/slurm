@@ -35,6 +35,7 @@ libcommon_la_SOURCES = 			\
 	plugin.c plugin.h		\
 	plugrack.c plugrack.h		\
 	read_config.c read_config.h	\
+	node_select.c node_select.h	\
 	setenvpf.c setenvpf.h		\
 	slurm_cred.h       		\
 	slurm_cred.c			\

@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include "src/slurmctld/proc_req.h"
 #include "src/common/list.h"
+#include "src/common/node_select.h"
 #include "src/common/read_config.h"
 #include "src/common/parse_spec.h"
 #include "src/common/xstring.h"
@@ -818,7 +819,18 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 	bgl_record_t* record;
 	int i, num_dim_best, cur_dim_match;
 	uint16_t* geometry = NULL;
+	uint16_t req_geometry[SYSTEM_DIMENSIONS];
+	uint16_t conn_type, node_use, rotate;
 	sort_bgl_record_inc_size(bgl_list);
+
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_CONN_TYPE, &conn_type);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_GEOMETRY, req_geometry);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_NODE_USE, &node_use);
+	select_g_get_jobinfo(job_ptr->select_jobinfo,
+		SELECT_DATA_ROTATE, &rotate);
 
 	/** this is where we should have the control flow depending on
 	    the spec arguement*/
@@ -877,21 +889,21 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 			error("find_best_partition_match record->part_type is NULL"); 
 			continue;
 		}
-		debug("conn_type %d", job_ptr->conn_type);
-		if (job_ptr->conn_type != *(record->part_type) &&
-		    job_ptr->conn_type != RM_NAV){
+		debug("conn_type %d", conn_type);
+		if (conn_type != *(record->part_type) &&
+		    conn_type != RM_NAV){
 			continue;
 		} 
 		/*****************************************/
 		/** match up geometry as "best" possible */
 		/*****************************************/
-		if (job_ptr->geometry[0] == 0){
+		if (req_geometry[0] == 0){
 			debug("find_best_partitionmatch: we don't care about geometry");
 			*found_bgl_record = record;
 			break;
 		}
-		if (job_ptr->rotate)
-			rotate_part(job_ptr->geometry, &geometry); 
+		if (rotate)
+			rotate_part(req_geometry, &geometry); 
 		
 		cur_dim_match = 0;
 		for (i=0; i<SYSTEM_DIMENSIONS; i++){
@@ -905,7 +917,7 @@ int _find_best_partition_match(struct job_record* job_ptr, bitstr_t* slurm_part_
 			 * we should distinguish between an exact match and a
 			 * fuzzy match (being greater than
 			 */
-			if (record->alloc_part->dimensions[i] >= job_ptr->geometry[i]){
+			if (record->alloc_part->dimensions[i] >= req_geometry[i]){
 				cur_dim_match++;
 			}
 		}
@@ -989,6 +1001,7 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 {
 	int spec = 1; // this will be like, keep TYPE a priority, etc, blah blah.
 	bgl_record_t* record;
+	char buf[100];
 
 	debug("bluegene::submit_job");
 	/*
@@ -998,9 +1011,9 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 	}
 	*/
 	debug("******** job request ********");
-	debug("geometry:\t%d %d %d", job_ptr->geometry[0], job_ptr->geometry[1], job_ptr->geometry[2]);
-	debug("conn_type:\t%s", convert_part_type(&job_ptr->conn_type));
-	debug("rotate:\t%d", job_ptr->rotate);
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo, buf, sizeof(buf), 
+		SELECT_PRINT_MIXED);
+	debug("%s", buf);
 	debug("min_nodes:\t%d", min_nodes);
 	debug("max_nodes:\t%d", max_nodes);
 	_print_bitmap(slurm_part_bitmap);
@@ -1014,15 +1027,12 @@ int submit_job(struct job_record *job_ptr, bitstr_t *slurm_part_bitmap,
 		/* since the bgl_part_id is a number, (most likely single digit), 
 		 * we'll create an LLNL_#, i.e. LLNL_4 = 6 chars + 1 for NULL
 		 */
-		job_ptr->bgl_part_id = (char*) xmalloc(sizeof(char)*7);
-		if (!(job_ptr->bgl_part_id)){
-			error("submit_job: not enough memory for fake bgl_part_id");
-			return SLURM_ERROR;
-		}
-
-		xstrfmtcat(job_ptr->bgl_part_id, "LLNL_%i", *(record->bgl_part_id));
-		debug("found fake bgl_part_id %s", job_ptr->bgl_part_id);
-		/* calling function must free the bgl_part_id */
+		char *bgl_part_id = NULL;
+		xstrfmtcat(bgl_part_id, "LLNL_%i", *(record->bgl_part_id));
+		debug("found fake bgl_part_id %s", bgl_part_id);
+		select_g_set_jobinfo(job_ptr->select_jobinfo,
+			SELECT_DATA_PART_ID, bgl_part_id);
+		xfree(bgl_part_id);
 	}
 
 	/** we should do the BGL stuff here like, init BGL job stuff... */

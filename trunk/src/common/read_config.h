@@ -45,10 +45,10 @@
 #define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_SAVE_STATE_LOC      "/tmp"
 #define DEFAULT_SCHEDTYPE           "sched/builtin"
-#ifdef HAVE_BGL
-#define DEFAULT_SELECT_TYPE         "select/bluegene"
+#ifdef HAVE_BGL		/* Blue Gene specific default configuration parameters */
+#  define DEFAULT_SELECT_TYPE         "select/bluegene"
 #else
-#define DEFAULT_SELECT_TYPE         "select/linear"
+#  define DEFAULT_SELECT_TYPE         "select/linear"
 #endif
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMCTLD_TIMEOUT   120

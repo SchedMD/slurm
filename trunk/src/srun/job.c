@@ -64,9 +64,7 @@ typedef struct allocation_info {
 	int                     num_cpu_groups;
 	int                    *cpus_per_node;
 	int                    *cpu_count_reps;
-#ifdef HAVE_BGL
-	char                   *bgl_part_id;
-#endif
+	select_jobinfo_t select_jobinfo;
 } allocation_info_t;
 
 
@@ -182,9 +180,7 @@ job_create_allocation(resource_allocation_response_msg_t *resp)
 	i->cpu_count_reps = resp->cpu_count_reps;
 	i->addrs          = resp->node_addr;
 
-#ifdef HAVE_BGL
-	i->bgl_part_id    = resp->bgl_part_id;
-#endif
+	i->select_jobinfo = select_g_copy_jobinfo(resp->select_jobinfo);
 
 	job = _job_create_internal(i);
 
@@ -480,18 +476,18 @@ _job_create_internal(allocation_info_t *info)
 
 	job->nodelist = xstrdup(info->nodelist);
 	hl = hostlist_create(job->nodelist);
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Run only on front-end */
 	/* All jobs execute through front-end on Blue Gene/L.
 	 * Normally we would not permit execution of job steps, 
 	 * but can fake it by just allocating all tasks to 
 	 * one of the allocated nodes. */
 	job->nhosts    = 1;
 	opt.overcommit = true;
-	job->bgl_part_id = xstrdup(info->bgl_part_id);
 #else
 	job->nhosts = hostlist_count(hl);
 #endif
 
+	job->select_jobinfo = info->select_jobinfo;
 	job->jobid   = info->jobid;
 	job->stepid  = info->stepid;
 	job->old_job = false;

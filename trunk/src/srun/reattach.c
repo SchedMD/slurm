@@ -193,7 +193,7 @@ _get_job_info(srun_step_t *s)
 	job_info_msg_t *resp = NULL;
 	job_info_t     *job  = NULL;
 	hostlist_t      hl;
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Fake address for front-end node */
 	old_job_alloc_msg_t                 alloc_req;
 	resource_allocation_response_msg_t *alloc_resp = NULL;
 #endif
@@ -239,7 +239,7 @@ _get_job_info(srun_step_t *s)
 
 	hostlist_destroy(hl);
 
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Fake address for front-end node */
 	/* now get actual node name for systems using front-end node */
 	alloc_req.job_id = s->jobid;
 	alloc_req.uid    = getuid();

@@ -161,6 +161,14 @@ For pending jobs: the reason a job is waiting for execution
 is printed within parenthesis. 
 See the \fBJOB REASON CODES\fR section below for more information.
 .TP
+\fB%s\fR 
+Node selection plugin specific data. Possible data includes:
+Geometry requirement of resource allocation (X,Y,Z dimensions), 
+Connection type (TORUS, MESH, or NAV == torus else mesh), 
+Permit rotation of geometry (yes or no), 
+Node use (VIRTUAL or COPROCESSOR),
+etc.
+.TP
 \fB%S\fR 
 Start time of the job or job step
 .TP
@@ -184,18 +192,6 @@ User ID
 .TP
 \fB%x\fR 
 List of node names explicitly excluded by the job
-.TP
-\fB%y\fR 
-Geometry requirement of resource allocation (X,Y,Z dimensions).
-.TP
-\fB%Y\fR 
-Connection type: TORUS, MESH, or NAV (torus else mesh).
-.TP
-\fB%z\fR 
-Permit rotation of geometry (yes or no).
-.TP
-\fB%Z\fR 
-Node use: VIRTUAL or COPROCESSOR.
 .TP
 \fB%.<*>\fR 
 right justification of the field

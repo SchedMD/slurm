@@ -1402,7 +1402,7 @@ static void _usage(void)
 "            [--core=type] [-T threads] [-W sec] [--attach] [--join] \n"
 "            [--contiguous] [--mincpus=n] [--mem=MB] [--tmp=MB] [-C list]\n"
 "            [--mpi=type] [--account=name] [--dependency=jobid]\n"
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL		/* Blue gene specific options */
 "            [--geometry=XxYxZ] [--conn-type=type] [--no-rotate]\n"
 "            [--node-use=type]\n"
 #endif
@@ -1469,7 +1469,7 @@ static void _help(void)
 "  -x, --exclude=hosts...      exclude a specific list of hosts\n"
 "  -Z, --no-allocate           don't allocate nodes (must supply -w)\n"
 "\n"
-#ifdef HAVE_BGL
+#ifdef HAVE_BGL				/* Blue gene specific options */
   "Blue Gene related options:\n"
   "  -g, --geometry=XxYxZ        geometry constraints of the job\n"
   "  -R, --no-rotate             disable geometry rotation\n"

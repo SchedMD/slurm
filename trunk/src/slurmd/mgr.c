@@ -57,6 +57,7 @@
 #include "src/common/cbuf.h"
 #include "src/common/hostlist.h"
 #include "src/common/log.h"
+#include "src/common/node_select.h"
 #include "src/common/fd.h"
 #include "src/common/safeopen.h"
 #include "src/common/setenvpf.h"
@@ -959,7 +960,7 @@ _make_batch_script(batch_job_launch_msg_t *msg, char *path)
 static int
 _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 {
-	char       buf[1024], *task_buf;
+	char       buf[1024], *task_buf, *bgl_part_id = NULL;
 	hostlist_t hl = hostlist_create(msg->nodes);
 
 	if (!hl)
@@ -975,9 +976,12 @@ _setup_batch_env(slurmd_job_t *job, batch_job_launch_msg_t *msg)
 	setenvpf(&job->env, "SLURM_TASKS_PER_NODE", "%s", task_buf);
 	xfree(task_buf); 
 
-#ifdef HAVE_BGL
-	setenvpf(&job->env, "BGL_PARTITION_ID", "%s", msg->bgl_part_id);
-#endif
+	select_g_get_jobinfo(msg->select_jobinfo, 
+		SELECT_DATA_PART_ID, &bgl_part_id);
+	if (bgl_part_id) {
+		setenvpf(&job->env, "BGL_PARTITION_ID", "%s", bgl_part_id);
+		xfree(bgl_part_id);
+	}
 
 	return 0;
 }

@@ -1518,7 +1518,6 @@ _update_job (int argc, char *argv[])
 			job_msg.dependency =
 				(uint32_t) strtol(&argv[i][11],
 					(char **) NULL, 10);
-#ifdef HAVE_BGL
 		else if (strncasecmp(argv[i], "Geometry=", 9) == 0) {
 			char* token, *delimiter = ",x", *next_ptr;
 			int j, rc = 0;
@@ -1585,7 +1584,6 @@ _update_job (int argc, char *argv[])
 					(uint16_t) strtol(&argv[i][8], 
 							(char **) NULL, 10);
 		}
-#endif
 		else {
 			exit_code = 1;
 			fprintf (stderr, "Invalid input: %s\n", argv[i]);

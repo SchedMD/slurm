@@ -52,14 +52,8 @@
 #include "src/common/xstring.h"
 #include "src/slurmctld/slurmctld.h"
 
-#ifdef HAVE_BGL
-#  define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
-		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s "\
-		"Geometry=%ux%ux%u Rotate=%u ConnType=%s NodeUse=%s\n"
-#else
-#  define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
-		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s\n"
-#endif
+#define JOB_FORMAT "JobId=%lu UserId=%s(%lu) Name=%s JobState=%s Partition=%s "\
+		"TimeLimit=%s StartTime=%s EndTime=%s NodeList=%s %s\n"
  
 /* Type for error string table entries */
 typedef struct {
@@ -194,6 +188,7 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	int rc = SLURM_SUCCESS;
 	char job_rec[256];
 	char usr_str[32], start_str[32], end_str[32], lim_str[32];
+	char select_buf[80];
 	size_t offset = 0, tot_size, wrote;
 	enum job_states job_state;
 
@@ -218,19 +213,16 @@ int slurm_jobcomp_log_record ( struct job_record *job_ptr )
 	_make_time_str(&(job_ptr->start_time), start_str, sizeof(start_str));
 	_make_time_str(&(job_ptr->end_time),   end_str,   sizeof(end_str));
 
+	select_g_sprint_jobinfo(job_ptr->select_jobinfo,
+		select_buf, sizeof(select_buf), SELECT_PRINT_MIXED);
+
 	snprintf(job_rec, sizeof(job_rec), JOB_FORMAT,
 			(unsigned long) job_ptr->job_id, usr_str, 
 			(unsigned long) job_ptr->user_id, job_ptr->name, 
 			job_state_string(job_state), 
 			job_ptr->partition, lim_str, start_str, 
-			end_str, job_ptr->nodes
-#ifdef HAVE_BGL
-			, job_ptr->geometry[0], job_ptr->geometry[1], 
-			job_ptr->geometry[2], job_ptr->rotate,
-			job_conn_type_string(job_ptr->conn_type),
-			job_node_use_string(job_ptr->node_use)
-#endif
-			);
+			end_str, job_ptr->nodes,
+			select_buf);
 	tot_size = strlen(job_rec);
 
 	while ( offset < tot_size ) {

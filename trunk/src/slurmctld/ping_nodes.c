@@ -175,8 +175,8 @@ void ping_nodes (void)
 			continue;
 		}
 
-#ifdef HAVE_BGL
-		if (i > 0)	/* Only one front-end node to ping/register */
+#ifdef HAVE_BGL			/* Only one front-end node */
+		if (i > 0)
 			continue;
 #endif
 

@@ -92,6 +92,12 @@ BEGIN_C_DECLS
    typedef struct switch_jobinfo *switch_jobinfo_t;	/* opaque data type */
 #endif
 
+/* Define select_jobinfo_t below to avoid including extraneous slurm headers */
+#ifndef __select_jobinfo_t_defined
+#  define  __select_jobinfo_t_defined
+   typedef struct select_jobinfo *select_jobinfo_t;     /* opaque data type */
+#endif
+
 /*****************************************************************************\
  *      DEFINITIONS FOR VERSION MANAGEMENT
 \*****************************************************************************/
@@ -160,6 +166,20 @@ enum connection_type {
 enum node_use_type {
 	RM_VIRTUAL,		/* application uses both processors */
 	RM_COPROCESSOR		/* use second processor for communications */
+};
+
+enum select_data_type {
+	SELECT_DATA_GEOMETRY,	/* data-> uint16_t geometry[SYSTEM_DIMENSIONS] */
+	SELECT_DATA_ROTATE,	/* data-> uint16_t rotate */
+	SELECT_DATA_NODE_USE,	/* data-> uint16_t node_use */
+	SELECT_DATA_CONN_TYPE,	/* data-> uint16_t connection_type */
+	SELECT_DATA_PART_ID	/* data-> char bgl_part_id */
+};
+
+enum select_print_mode {
+	SELECT_PRINT_HEAD,	/* Print just the header */
+	SELECT_PRINT_DATA,	/* Print just the data */
+	SELECT_PRINT_MIXED	/* Print "field=value" */
 };
 
 /* Possible task distributions across the nodes */
@@ -279,6 +299,8 @@ typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t rotate;	/* permit geometry rotation if set */
 	uint16_t node_use;	/* see enum node_use_type */
 /* End of Blue Gene specific values */
+	select_jobinfo_t select_jobinfo; /* opaque data type,
+			* SLURM internal use only */
 } job_desc_msg_t;
 
 typedef struct job_info {
@@ -320,17 +342,8 @@ typedef struct job_info {
 	char *account;		/* charge to specified account */
 	uint16_t wait_reason;	/* reason job still pending, see
 				 * slurm.h:enum job_wait_reason */
-/*
- * The following parameters are only meaningful on a Blue Gene
- * system at present. Some will be of value on other system.
- */
-	char *bgl_part_id;	/* Blue Gene partition ID */
-	uint16_t geometry[SYSTEM_DIMENSIONS];	/* node count in various
-				 * dimensions, e.g. X, Y, and Z */
-	uint16_t conn_type;	/* see enum connection_type */
-	uint16_t rotate;	/* permit geometry rotation if set */
-	uint16_t node_use;	/* see enum node_use_type */
-/* End of Blue Gene specific values */
+	select_jobinfo_t select_jobinfo; /* opaque data type,
+			* process using select_g_get_jobinfo() */
 } job_info_t;
 
 typedef struct job_info_msg {
@@ -433,12 +446,8 @@ typedef struct resource_allocation_response_msg {
 	uint16_t node_cnt;	/* count of nodes */
 	slurm_addr *node_addr;	/* network addresses */
 	uint32_t error_code;	/* error code for warning message */
-/*
- * The following parameters are only meaningful on a Blue Gene
- * system at present. Some will be of value on other system.
- */
-	char *bgl_part_id;	/* Blue Gene partition ID */
-/* End of Blue Gene specific values */
+	select_jobinfo_t select_jobinfo;	/* opaque data structure,
+			* use select_g_get_jobinfo() to access conents */
 } resource_allocation_response_msg_t;
 
 typedef struct resource_allocation_and_run_response_msg {

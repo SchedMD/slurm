@@ -4,7 +4,7 @@
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Joey Ekstrom <ekstrom1@llnl.gov>, 
- *             Moe Jette <jette1@llnl.gov>, et. al.
+ *             Morris Jette <jette1@llnl.gov>, et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -35,6 +35,7 @@
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
 #include "src/common/macros.h"
+#include "src/common/node_select.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xstring.h"
 #include "src/squeue/print.h"
@@ -792,69 +793,19 @@ int _print_job_dependency(job_info_t * job, int width, bool right_justify,
 	return SLURM_SUCCESS;
 }
 
-int _print_job_geometry(job_info_t * job, int width, bool right_justify,
+int _print_job_select_jobinfo(job_info_t * job, int width, bool right_justify,
 			char* suffix) 
 {
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("GEOMETRY", width, right_justify, true);
-	else {
-#ifdef HAVE_BGL
-		char id[FORMAT_STRING_SIZE];
-		snprintf(id, FORMAT_STRING_SIZE, "%u,%u,%u", 
-			job->geometry[0], job->geometry[1], job->geometry[2]);
-		_print_str(id, width, right_justify, true);
-#else
-		_print_str("n/a", width, right_justify, true);
-#endif
-	}
-	if (suffix)
-		printf("%s", suffix); 
-	return SLURM_SUCCESS;
-}
+	char select_buf[100];
 
-int _print_job_conn_type(job_info_t * job, int width, bool right_justify,
-			char* suffix) 
-{
 	if (job == NULL)	/* Print the Header instead */
-		_print_str("CONN_TYPE", width, right_justify, true);
+		select_g_sprint_jobinfo(NULL,
+			select_buf, sizeof(select_buf), SELECT_PRINT_HEAD);
 	else
-		_print_str(job_conn_type_string(job->conn_type), 
-			width, right_justify, true);
-	if (suffix)
-		printf("%s", suffix); 
-	return SLURM_SUCCESS;
-}
+		select_g_sprint_jobinfo(job->select_jobinfo,
+			select_buf, sizeof(select_buf), SELECT_PRINT_DATA);
+	_print_str(select_buf, width, right_justify, true);
 
-int _print_job_node_use(job_info_t * job, int width, bool right_justify,
-			char* suffix) 
-{
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("NODE_USE", width, right_justify, true);
-	else
-		_print_str(job_node_use_string(job->node_use), 
-			width, right_justify, true);
-	if (suffix)
-		printf("%s", suffix); 
-	return SLURM_SUCCESS;
-}
-
-int _print_job_rotate(job_info_t * job, int width, bool right_justify,
-			char* suffix) 
-{
-	if (job == NULL)	/* Print the Header instead */
-		_print_str("ROTATE", width, right_justify, true);
-	else {
-		char *id;
-#ifdef HAVE_BGL
-		if (job->rotate == 0)
-			id = "no";
-		else
-			id = "yes";
-#else
-		id = "n/a";
-#endif
-		_print_str(id, width, right_justify, true);
-	}
 	if (suffix)
 		printf("%s", suffix); 
 	return SLURM_SUCCESS;

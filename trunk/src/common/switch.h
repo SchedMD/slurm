@@ -42,13 +42,16 @@
 #ifndef __switch_jobinfo_t_defined
 #  define __switch_jobinfo_t_defined
    typedef struct switch_jobinfo   *switch_jobinfo_t;
+#endif
+#ifndef __switch_node_info_t_defined
+#  define __switch_node_info_t_defined
    typedef struct switch_node_info *switch_node_info_t;
 #endif
 typedef struct slurm_switch_context * slurm_switch_context_t;
 
 /*****************************************\
  * GLOBAL SWITCH STATE MANGEMENT FUNCIONS *
-\ *****************************************/
+\*****************************************/
 
 /* initialize the switch plugin */
 extern int  switch_init   (void);

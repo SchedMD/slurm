@@ -44,11 +44,12 @@
 
 #include "src/common/hostlist.h"
 #include "src/common/list.h"
+#include "src/common/node_select.h"
 #include "src/common/pack.h"
 #include "src/common/xstring.h"
+
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/proc_req.h"
-#include "src/slurmctld/select_plugin.h"
 #include "src/slurmctld/slurmctld.h"
 
 #define BUF_SIZE 1024
