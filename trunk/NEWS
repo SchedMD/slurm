@@ -3,6 +3,9 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.2.20
 =========================
+ -- Fixes for reported problems:
+   - slurm/298: Elan initialization error (Invalid vp 2147483674).
+   - slurm/299: srun fails to exit with multiple ^C's.
  -- Temporarily prevent DPCS from allocating jobs with more than eight 
     sets of consecutive nodes. This was likely causing user applications 
     to fail with libelan errors. This will be removed after DPCS is updated.
