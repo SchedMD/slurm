@@ -25,5 +25,5 @@ NodeName=dev[0-25] Weight=16
 # Partition Configurations
 #
 PartitionName=DEFAULT MaxTime=30 MaxNodes=1
-PartitionName=debug Nodes=dev[0-8,16-25] State=UP    Default=YES
+PartitionName=debug Nodes=dev[0-8,18-25] State=UP    Default=YES
 PartitionName=batch Nodes=dev[9-17] State=UP
