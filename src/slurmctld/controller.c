@@ -232,6 +232,14 @@ int main(int argc, char *argv[])
 		fatal( "failed to initialize scheduling plugin" );
 	if ( slurm_select_init() != SLURM_SUCCESS )
 		fatal( "failed to initialize node selection plugin" );
+/********************************************/
+/* Don't check this in */
+	
+	//printf("I am quiting\n");
+	//exit(0);
+
+
+/********************************************/
 	if ( checkpoint_init(slurmctld_conf.checkpoint_type) != 
 			SLURM_SUCCESS )
 		fatal( "failed to initialize checkpoint plugin" );

@@ -85,16 +85,19 @@ int main(int argc, char *argv[])
 		DIM_SIZE[Y]=bp_size.Y;
 		DIM_SIZE[Z]=bp_size.Z;
 		slurm_rm_free_BGL(bgl);
-#endif	
-       		//slurm_perror("slurm_load_node");
+#else
+     		slurm_perror("slurm_load_node");
+		exit(0);
+#endif
 		pa_init(NULL);
 	} else {
 		pa_init(node_info_ptr);
         }
 #else
-	printf("This will only run on a BGL system right now.\n");
-	exit(0);
+     		printf("This will only run on a BGL system right now.\n");
+		exit(0);
 #endif
+
 	height = DIM_SIZE[Y] * DIM_SIZE[Z] + DIM_SIZE[Y] + 3;
 	width = DIM_SIZE[X] + DIM_SIZE[Z] + 3;
 	
@@ -145,8 +148,11 @@ int main(int argc, char *argv[])
 		case COMMANDS:
 			get_command();
 			break;
+		case BGLPART:
+			get_bgl_part();
+			break;
 		default:
-			get_part();
+			get_slurm_part();
 			break;
 		}
 
@@ -243,8 +249,11 @@ void *_resize_handler(int sig)
 	case COMMANDS:
 		get_command();
 		break;
+	case BGLPART:
+		get_bgl_part();
+		break;
 	default:
-		get_part();
+		get_slurm_part();
 		break;
 	}
 

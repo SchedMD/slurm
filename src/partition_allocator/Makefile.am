@@ -15,6 +15,7 @@ INCLUDES = -I$(top_srcdir)
 # 	$(top_builddir)/src/api/libslurm.la
 
 # partition_allocator_LDFLAGS = -export-dynamic -lm $(CMD_LDFLAGS)
+# CFLAGS = -DBUILD_EXE
 
 # making a .la
 noinst_LTLIBRARIES = libpartition_allocator.la 
