@@ -126,7 +126,6 @@ static int _sync_partitions(void)
 {
 	int rc = SLURM_SUCCESS;
 
-#if 0
 	/* Check if partitions configured in SLURM are already configured on
 	 * the system */
 	if ((rc = _validate_config_nodes())) {
@@ -134,7 +133,6 @@ static int _sync_partitions(void)
 		 * configure from scratch */
 		rc = _wire_bgl_partitions();
 	}
-#endif
 
 	return rc;
 }
