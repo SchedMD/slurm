@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>
+ *  Written by Moe Jette <jette1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -145,12 +145,6 @@ main (int argc, char *argv[])
 		printf ("found job %u, script=%s\n", 
 				job_rec->job_id, job_rec->details->job_script);
 
-	error_code = delete_job_record (tmp_id);
-	if (error_code) {
-		printf ("ERROR: delete_job_record error %d\n", error_code);
-		error_count++;
-	}
-
 	job_rec = find_job_record (tmp_id);
 	if (job_rec != NULL) {
 		printf ("find_job_record error 2\n");
@@ -171,8 +165,7 @@ main (int argc, char *argv[])
  * global: job_list - global job list
  *	job_count - number of jobs in the system
  *	last_job_update - time of last job table update
- * NOTE: allocates memory that should be xfreed with either
- *	delete_job_record or list_delete_job
+ * NOTE: allocates memory that should be xfreed with list_delete_job
  */
 struct job_record * 
 create_job_record (int *error_code) 
@@ -196,6 +189,9 @@ create_job_record (int *error_code)
 
 	job_record_point->magic   = JOB_MAGIC;
 	job_record_point->details = job_details_point;
+	job_record_point->step_list = list_create(NULL);
+	if (job_record_point->step_list == NULL)
+		fatal ("list_create can not allocate memory");
 
 	job_details_point->magic  = DETAILS_MAGIC;
 	job_details_point->submit_time = time (NULL);
@@ -231,46 +227,6 @@ delete_job_details (struct job_record *job_entry)
 	xfree(job_entry->details);
 	job_entry->details = NULL;
 }
-
-/* 
- * delete_job_record - delete record for job with specified job_id
- * input: job_id - job_id of the desired job
- * output: return 0 on success, errno otherwise
- * global: job_list - pointer to global job list
- *	last_job_update - time of last job table update
- * NOTE: Slow as currently constructed due to singly linked list and linear search, 
- *	which is forced by the common/list.c functions. We intend to purge entries 
- *	through purge_old_job() anyway.
- */
-int 
-delete_job_record (uint32_t job_id) 
-{
-	ListIterator job_record_iterator;
-	struct job_record *job_record_point;
-
-	last_job_update = time (NULL);
-	job_record_iterator = list_iterator_create (job_list);		
-
-	while ((job_record_point = 
-				(struct job_record *) list_next (job_record_iterator))) {
-		if (job_record_point->job_id != job_id)
-			continue;
-
-		delete_job_details (job_record_point);
-		xfree (job_record_point);
-		list_remove (job_record_iterator);
-		break;
-	}
-	list_iterator_destroy (job_record_iterator);
-
-	if (job_record_point == NULL) {
-		error ("delete_job_record: attempt to delete non-existent job %u", 
-				job_id);
-		return ENOENT;
-	} 
-	return 0;
-}
-
 
 /* 
  * find_job_record - return a pointer to the job record with the given job_id
@@ -468,8 +424,7 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 /* 
  * job_cancel - cancel the specified job
  * input: job_id - id of the job to be cancelled
- * output: returns 0 on success, EINVAL if specification is invalid
- *	EAGAIN of job available for cancellation now 
+ * output: returns 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
@@ -716,6 +671,47 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 	return 0;
 }
 
+/* 
+ * job_step_cancel - cancel the specified job step
+ * input: job_id, step_id - id of the job to be cancelled
+ * output: returns 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+int
+job_step_cancel (uint32_t job_id, uint32_t step_id) 
+{
+	struct job_record *job_ptr;
+	int error_code;
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		info ("job_step_cancel: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_COMPLETE) ||
+	    (job_ptr->job_state == JOB_TIMEOUT))
+		return ESLURM_ALREADY_DONE;
+
+	if (job_ptr->job_state == JOB_STAGE_IN) {
+		last_job_update = time (NULL);
+		error_code = delete_step_record (job_ptr, step_id);
+		if (error_code == ENOENT) {
+			info ("job_step_cancel step %u.%u not found", job_id, step_id);
+			return ESLURM_ALREADY_DONE;
+		}
+
+		return 0;
+	} 
+
+	info ("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
+			job_id, step_id, job_state_string(job_ptr->job_state));
+	return ESLURM_TRANSISTION_STATE_NO_UPDATE;
+
+}
+
 /* validate_job_desc - validate that a job descriptor for job submit or 
  *	allocate has valid data, set values to defaults as required */
 int 
@@ -831,6 +827,8 @@ list_delete_job (void *job_entry)
 		xfree(job_record_point->nodes);
 	if (job_record_point->node_bitmap)
 		bit_free(job_record_point->node_bitmap);
+	if (job_record_point->step_list)
+		list_destroy(job_record_point->step_list);
 	job_count--;
 	xfree(job_record_point);
 }

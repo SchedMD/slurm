@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * scancel - cancel the specified job id
+ * scancel - cancel the specified job id or step id
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -46,26 +46,52 @@
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/xmalloc.h>
 
+void usage(char * command);
 
 int 
 main (int argc, char *argv[]) 
 {
 	int error_code = 0, i;
 	log_options_t opts = LOG_OPTS_STDERR_ONLY ;
+	long tmp_l;
+	uint32_t job_id, step_id;
+	char *next_str;
 
-	if (argc < 2) {
-		printf ("Usage: %s job_id\n", argv[0]);
-		exit (1);
-	}
+	if (argc < 2) 
+		usage(argv[0]);
 
 	log_init(argv[0], opts, SYSLOG_FACILITY_DAEMON, NULL);
 
-	for (i=0; i<10; i++) {
-		error_code = slurm_cancel_job ((uint32_t) atoi(argv[1]));
-		if (error_code != ESLURM_TRANSISTION_STATE_NO_UPDATE)
-			break;
-		printf ("Job is in transistional state, retrying\n");
-		sleep ( 5 + i );
+	tmp_l = strtol(argv[1], &next_str, 10);
+	if (tmp_l <= 0)
+		usage(argv[0]);
+	job_id = tmp_l;
+
+	/* cancelling individual job step */
+	if (next_str[0] == '.') {
+		tmp_l = strtol(&next_str[1], NULL, 10);
+		if (tmp_l < 0)
+			usage(argv[0]);
+		step_id = tmp_l;
+
+		for (i=0; i<10; i++) {
+			error_code = slurm_cancel_job_step (job_id, step_id);
+			if (error_code != ESLURM_TRANSISTION_STATE_NO_UPDATE)
+				break;
+			printf ("Job is in transistional state, retrying\n");
+			sleep ( 5 + i );
+		}
+	}
+
+	/* job only, no job step */
+	else {
+		for (i=0; i<10; i++) {
+			error_code = slurm_cancel_job (job_id);
+			if (error_code != ESLURM_TRANSISTION_STATE_NO_UPDATE)
+				break;
+			printf ("Job is in transistional state, retrying\n");
+			sleep ( 5 + i );
+		}
 	}
 
 	if (error_code) {
@@ -74,6 +100,13 @@ main (int argc, char *argv[])
 		exit (1);
 	}
 	exit (0);
+}
+
+void
+usage(char *command) 
+{
+	printf ("Usage: %s job_id[.step_id]\n", command);
+	exit (1);
 }
 
 

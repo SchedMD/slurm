@@ -55,7 +55,7 @@ inline static void slurm_rpc_dump_build ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_nodes ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_partitions ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_dump_jobs ( slurm_msg_t * msg ) ;
-inline static void slurm_rpc_job_cancel ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_job_step_cancel ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_submit_batch_job ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
@@ -169,9 +169,9 @@ slurmctld_req ( slurm_msg_t * msg )
 			slurm_rpc_job_will_run ( msg -> data ) ;
 			slurm_free_job_desc_msg ( msg -> data ) ;
 			break;
-		case REQUEST_CANCEL_JOB:
-			slurm_rpc_job_cancel ( msg ) ;
-			slurm_free_job_id_msg ( msg -> data ) ;
+		case REQUEST_CANCEL_JOB_STEP:
+			slurm_rpc_job_step_cancel ( msg ) ;
+			slurm_free_job_step_id_msg ( msg -> data ) ;
 			break;
 		case REQUEST_SUBMIT_BATCH_JOB: 
 			slurm_rpc_submit_batch_job ( msg ) ;
@@ -349,30 +349,51 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 }
 
 void 
-slurm_rpc_job_cancel ( slurm_msg_t * msg )
+slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 {
 	/* init */
 	int error_code;
 	clock_t start_time;
-	job_id_msg_t * job_id_msg = ( job_id_msg_t * ) msg-> data ;
+	job_step_id_msg_t * job_step_id_msg = ( job_step_id_msg_t * ) msg-> data ;
 
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = job_cancel ( job_id_msg->job_id );
+	if (job_step_id_msg->job_step_id == NO_VAL) {
+		error_code = job_cancel ( job_step_id_msg->job_id );
 
-	/* return result */
-	if (error_code)
-	{
-		info ("job_cancel error %d for %u, time=%ld",
-			error_code, job_id_msg->job_id, (long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , error_code );
+		/* return result */
+		if (error_code)
+		{
+			info ("job_cancel error %d for %u, time=%ld",
+				error_code, job_step_id_msg->job_id, (long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , error_code );
+		}
+		else
+		{
+			info ("job_cancel success for %u, time=%ld",
+				job_step_id_msg->job_id, (long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		}
 	}
-	else
-	{
-		info ("job_cancel success for %u, time=%ld",
-			job_id_msg->job_id, (long) (clock () - start_time));
-		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+	else {
+		error_code = job_step_cancel (  job_step_id_msg->job_id , 
+						job_step_id_msg->job_step_id);
+		/* return result */
+		if (error_code)
+		{
+			info ("job_step_cancel error %d for %u.%u, time=%ld", error_code, 
+				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
+				(long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , error_code );
+		}
+		else
+		{
+			info ("job_step_cancel success for %u.%u, time=%ld",
+				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
+				(long) (clock () - start_time));
+			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		}
 	}
 
 	schedule();

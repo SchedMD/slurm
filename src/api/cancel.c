@@ -18,15 +18,21 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
+int 
+slurm_cancel_job ( uint32_t job_id )
+{
+	return slurm_cancel_job_step ( job_id, NO_VAL);
+}
 
-int slurm_cancel_job ( uint32_t job_id )
+int 
+slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
 {
 	int msg_size ;
 	int rc ;
 	slurm_fd sockfd ;
 	slurm_msg_t request_msg ;
 	slurm_msg_t response_msg ;
-	job_id_msg_t job_id_msg ;
+	job_step_id_msg_t job_step_id_msg ;
 	return_code_msg_t * rc_msg ;
 
 	/* init message connection for message communication with controller */
@@ -34,9 +40,10 @@ int slurm_cancel_job ( uint32_t job_id )
 		return SLURM_SOCKET_ERROR ;
 
 	/* send request message */
-	job_id_msg . job_id = job_id ;
-	request_msg . msg_type = REQUEST_CANCEL_JOB ;
-	request_msg . data = &job_id_msg ;
+	job_step_id_msg . job_id = job_id ;
+	job_step_id_msg . job_step_id = step_id ;
+	request_msg . msg_type = REQUEST_CANCEL_JOB_STEP ;
+	request_msg . data = &job_step_id_msg ;
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR )
 		return SLURM_SOCKET_ERROR ;
 

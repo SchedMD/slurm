@@ -244,8 +244,7 @@ extern struct config_record *create_config_record (void);
  *         returns a pointer to the record or NULL if error
  * global: job_list - global job list
  *         job_count - number of jobs in the system
- * NOTE: allocates memory that should be xfreed with either
- *	delete_job_record or list_delete_job
+ * NOTE: allocates memory that should be xfreed with list_delete_job
  */
 extern struct job_record * create_job_record (int *error_code);
 
@@ -295,14 +294,6 @@ extern void deallocate_nodes (unsigned *bitmap);
 extern void  delete_job_details (struct job_record *job_entry);
 
 /* 
- * delete_job_record - delete record for job with specified job_id
- * input: job_id - job_id of the desired job
- * output: return 0 on success, errno otherwise
- * global: job_list - pointer to global job list
- */
-extern int delete_job_record (uint32_t job_id);
-
-/* 
  * delete_node_record - delete record for node with specified name
  *   to avoid invalidating the bitmaps and hash table, we just clear the name 
  *   set its state to STATE_DOWN
@@ -324,7 +315,7 @@ extern int delete_part_record (char *name);
  *	step_id - id of the desired job step
  * output: return 0 on success, errno otherwise
  */
-extern int delete_step_record (struct job_record *job_ptr, uint16_t step_id);
+extern int delete_step_record (struct job_record *job_ptr, uint32_t step_id);
 
 /* dump_job_desc - dump the incoming job submit request message */
 void dump_job_desc(job_desc_msg_t * job_specs);
@@ -403,12 +394,20 @@ extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char 
 /* 
  * job_cancel - cancel the specified job
  * input: job_id - id of the job to be cancelled
- * output: returns 0 on success, EINVAL if specification is invalid
- *	EAGAIN of job available for cancellation now 
+ * output: returns 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 extern int job_cancel (uint32_t job_id);
+
+/* 
+ * job_step_cancel - cancel the specified job step
+ * input: job_id, step_id - id of the job to be cancelled
+ * output: returns 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id);
 
 /*
  * job_create - parse the suppied job specification and create job_records for it
