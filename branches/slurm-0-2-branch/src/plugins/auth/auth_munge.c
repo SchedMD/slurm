@@ -462,6 +462,7 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 	 *  Block all signals to allow munge_decode() to proceed
 	 *   uninterrupted. (Testing for gnats slurm/223)
 	 */
+	sigemptyset(&oset);
 	sigfillset(&set);
 	sigdelset(&set, SIGABRT);
 	sigdelset(&set, SIGSEGV);
