@@ -76,6 +76,11 @@ BEGIN_C_DECLS
 #  endif
 #endif
 
+#ifndef __slurm_cred_t_defined
+#  define __slurm_cred_t_defined
+   typedef struct slurm_job_credential * slurm_cred_t;
+#endif
+
 /* Define qsw_jobinfo_t below to avoid including extraneous slurm headers */
 #ifdef	HAVE_LIBELAN3
 #  ifndef __qsw_jobinfo_t_defined
@@ -137,11 +142,6 @@ enum node_states {
 /*****************************************************************************\
  *	PROTOCOL DATA STRUCTURE DEFINITIONS
 \*****************************************************************************/
-
-#ifndef __slurm_cred_t_defined
-#  define __slurm_cred_t_defined
-   typedef struct slurm_job_credential * slurm_cred_t;
-#endif
 
 typedef struct job_descriptor {	/* For submit, allocate, and update requests */
 	uint16_t contiguous;	/* 1 if job requires contiguous nodes,
@@ -339,7 +339,7 @@ typedef struct resource_allocation_and_run_response_msg {
 	uint32_t job_step_id;	/* assigned step id */
 	slurm_cred_t cred;      /* slurm job credential */
 #ifdef HAVE_LIBELAN3
-	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data structure */
+	qsw_jobinfo_t qsw_job;	/* Elan3 switch context, opaque data type */
 #endif
 } resource_allocation_and_run_response_msg_t;
 
