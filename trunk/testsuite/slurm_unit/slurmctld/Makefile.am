@@ -1,7 +1,12 @@
 AUTOMAKE_OPTIONS = foreign
 
 noinst_HEADERS = get_resp.h
+
+TESTS =
+#	job_mgr-test 
+
 check_PROGRAMS = \
+	security_2_4 \
 	$(TESTS) 
 #
 # None of these tests can be compiled until functions called
@@ -16,8 +21,6 @@ check_PROGRAMS = \
 #	step_create
 #	
 
-TESTS =
-#	job_mgr-test 
 
 
 INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
@@ -39,19 +42,19 @@ INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
 #		$(top_builddir)/src/api/libslurm.la
 
 LDADD  = $(top_builddir)/src/common/libcommon.la \
-		$(top_builddir)/src/common/libhostlist.la	\
-		$(top_builddir)/src/slurmctld/agent.o \
-		$(top_builddir)/src/slurmctld/job_scheduler.o \
-		$(top_builddir)/src/slurmctld/node_scheduler.o \
-		$(top_builddir)/src/slurmctld/partition_mgr.o \
-		$(top_builddir)/src/slurmctld/step_mgr.o \
-		$(top_builddir)/src/slurmctld/job_mgr.o \
-		$(top_builddir)/src/slurmctld/node_mgr.o \
-		$(top_builddir)/src/slurmctld/locks.o \
-		$(top_builddir)/src/slurmctld/read_config.o \
-		$(top_builddir)/src/common/parse_spec.o  \
-		$(top_builddir)/src/api/libslurm.la \
+		$(top_builddir)/src/api/libslurm.la
 		$(SSL_LIBS)
+#		$(top_builddir)/src/common/libhostlist.la	\
+#		$(top_builddir)/src/slurmctld/agent.o \
+#		$(top_builddir)/src/slurmctld/job_scheduler.o \
+#		$(top_builddir)/src/slurmctld/node_scheduler.o \
+#		$(top_builddir)/src/slurmctld/partition_mgr.o \
+#		$(top_builddir)/src/slurmctld/step_mgr.o \
+#		$(top_builddir)/src/slurmctld/job_mgr.o \
+#		$(top_builddir)/src/slurmctld/node_mgr.o \
+#		$(top_builddir)/src/slurmctld/locks.o \
+#		$(top_builddir)/src/slurmctld/read_config.o \
+#		$(top_builddir)/src/common/parse_spec.o  \
 
 force :
 $(LDADD) : force
