@@ -134,18 +134,18 @@ verify_credential(slurm_ssl_key_ctx_t * ctx, slurm_job_credential_t * cred,
 
 void print_credential(slurm_job_credential_t * cred)
 {
-	int i;
+	int i, j = 0;
 	long long_tmp;
-	char sig_str[SLURM_SSL_SIGNATURE_LENGTH*3];
+	char sig_str[SLURM_SSL_SIGNATURE_LENGTH*4];
 
 	for (i=0; i<SLURM_SSL_SIGNATURE_LENGTH; i+=sizeof(long)) {
 		memcpy(&long_tmp, &cred->signature[i], sizeof(long));
-		sprintf(&sig_str[i*9], "%8lx  ", long_tmp);
+		sprintf(&sig_str[(j++)*9], "%8lx  ", long_tmp);
 	}
 
-	info("cred uid:%u job_id:%u time:%lx signature:%s",
-	     cred->user_id, cred->job_id, (long)cred->expiration_time, 
-	     sig_str);
+	info("cred uid:%u job_id:%u time:%lx",
+	     cred->user_id, cred->job_id, (long)cred->expiration_time);
+	info("cred signature:%s", sig_str);
 }
 
 int revoke_credential(revoke_credential_msg_t * msg, List list)
