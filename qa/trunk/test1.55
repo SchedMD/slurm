@@ -25,7 +25,7 @@ print_header $test_id
 #
 spawn $sinfo --summarize  
 expect {
-	-re "($end_of_line)($alpha_numeric)(\[ \*\]) *UP" {
+	-re "($end_of_line)($alpha_numeric)(\[ \*\]) *up" {
 		if (![string compare $expect_out(3,string) "*"]) {
 			set def_part_name   $expect_out(2,string)
 		} else {

@@ -72,10 +72,6 @@ expect {
 		set have_header 1
 		exp_continue
 	}
-	-re "---------" {
-		set have_header 1
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: squeue not responding\n"
 		cancel_job $job_id2

@@ -134,7 +134,8 @@ test4.7    Confirm that sinfo verbose option works (--verbose option).
 test4.8    Check sinfo output without header (--noheader option).
 test4.9    Check sinfo formating options (--format option and SINFO_FORMAT
            environment variable).
-test4.10   Confirm that sinfo reports a proper version number (--version option).
+test4.10   Confirm that sinfo reports a proper version number (--version 
+           option).
 
 test5.#    Testing of squeue options.
 =====================================
@@ -167,10 +168,10 @@ test6.10   Test scancel user and partition filters, delete all remaining jobs
 
 test9.#    System stress testing. Exercises all commands and daemons.
 =====================================================================
-test9.1    Stress test of stdin broadcast
-test9.2    Stress test of stdout with stdin closed
-test9.3    Stress test of per-task output files with stdin closed
-test9.4    Stress test of per-task output and input files
-test9.5    Stress test of per-task input files
-test9.6    Stress test of per-task output files
-test9.7    Stress test multiple simultaneous commands via multiple threads
+test9.1    Stress test of stdin broadcast.
+test9.2    Stress test of stdout with stdin closed.
+test9.3    Stress test of per-task output files with stdin closed.
+test9.4    Stress test of per-task output and input files.
+test9.5    Stress test of per-task input files.
+test9.6    Stress test of per-task output files.
+test9.7    Stress test multiple simultaneous commands via multiple threads.

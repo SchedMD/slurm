@@ -25,10 +25,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "-------" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sinfo not responding\n"
 		set exit_code 1
@@ -52,10 +48,6 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "-------" {
-		incr matches
-		exp_continue
-	}
 	timeout {
 		send_user "\nFAILURE: sinfo not responding\n"
 		set exit_code 1
@@ -76,10 +68,6 @@ if {$matches != 0} {
 spawn $sinfo --noheader --summarize
 expect {
 	-re "PARTITION" {
-		incr matches
-		exp_continue
-	}
-	-re "-------" {
 		incr matches
 		exp_continue
 	}

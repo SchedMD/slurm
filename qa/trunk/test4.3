@@ -10,10 +10,11 @@
 #
 source ./globals
 
-set test_id     "4.3"
-set def_part    0
-set exit_code   0
-set matches     0
+set test_id       "4.3"
+set def_part      0
+set def_part_name ""
+set exit_code     0
+set matches       0
 
 print_header $test_id
 
@@ -21,7 +22,7 @@ print_header $test_id
 # Check the sinfo summarize format
 # Just looking for the regular expression "\*" causes errors in 
 # looking for the default partition, so the logic looks for an 
-# alpha-numeric partition name followed by the state (UP|DOWN) 
+# alpha-numeric partition name followed by the state (up|down) 
 # then looks for the partition name suffix of "*"
 #
  
@@ -35,15 +36,15 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "MAX_TIME" {
+	-re "TIMELIMIT" {
 		incr matches
 		exp_continue
 	}
-	-re "#NODES.A/I/O/T" {
+	-re "NODES.A/I/O/T" {
 		incr matches
 		exp_continue
 	}
-	-re "NODE_LIST" {
+	-re "NODELIST" {
 		incr matches
 		exp_continue
 	}
@@ -51,7 +52,7 @@ expect {
 		incr matches -10
 		exp_continue
 	}
-	-re "($end_of_line)($alpha_numeric)(\[ \*\]) *UP" {
+	-re "($end_of_line)($alpha_numeric)(\[ \*\]) *up" {
 		if (![string compare $expect_out(3,string) "*"]) {
 			set def_part 1
 			set def_part_name $expect_out(2,string)
@@ -82,11 +83,11 @@ if {$def_part == 0} {
 set matches     0
 spawn $sinfo --summarize --partition=$def_part_name
 expect {
-	-re "UP" {
+	-re "up" {
 		incr matches
 		exp_continue
 	}
-	-re "DOWN" {
+	-re "down" {
 		incr matches
 		exp_continue
 	}
@@ -118,11 +119,11 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "MAX_TIME" {
+	-re "TIMELIMIT" {
 		incr matches
 		exp_continue
 	}
-	-re "#NODES " {
+	-re "NODES " {
 		incr matches
 		exp_continue
 	}
@@ -130,7 +131,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "NODE_LIST" {
+	-re "NODELIST" {
 		incr matches
 		exp_continue
 	}
@@ -174,7 +175,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "MAX_TIME" {
+	-re "TIMELIMIT" {
 		incr matches
 		exp_continue
 	}
@@ -194,7 +195,7 @@ expect {
 		incr matches
 		exp_continue
 	}
-	-re "#NODES " {
+	-re "NODES " {
 		incr matches
 		exp_continue
 	}
@@ -203,7 +204,7 @@ expect {
 		exp_continue
 	}
 
-	-re "NODE_LIST" {
+	-re "NODELIST" {
 		incr matches
 		exp_continue
 	}

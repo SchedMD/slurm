@@ -22,11 +22,11 @@ print_header $test_id
  
 spawn $sinfo --Node  
 expect {
-	-re "NODE_LIST" {
+	-re "NODELIST" {
 		incr matches
 		exp_continue
 	}
-	-re "#NODES " {
+	-re "NODES " {
 		incr matches
 		exp_continue
 	}
@@ -64,11 +64,11 @@ set matches     0
 set ranges      0
 spawn $sinfo --Node --long --exact
 expect {
-	-re "NODE_LIST" {
+	-re "NODELIST" {
 		incr matches
 		exp_continue
 	}
-	-re "#NODES " {
+	-re "NODES " {
 		incr matches
 		exp_continue
 	}
@@ -81,6 +81,10 @@ expect {
 		exp_continue
 	}
 	-re "CPUS" {
+		incr matches
+		exp_continue
+	}
+	-re "REASON" {
 		incr matches
 		exp_continue
 	}
@@ -103,7 +107,7 @@ if {$ranges != 0} {
 	set exit_code 1
 }
 
-if {$matches != 5} {
+if {$matches != 6} {
 	send_user "\nFAILURE: sinfo node long format error\n"
 	set exit_code 1
 }
