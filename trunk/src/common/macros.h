@@ -13,12 +13,18 @@
 #  include <stddef.h>	/* for NULL */
 #endif 
 
+#if HAVE_STDBOOL_H
+#  include <stdbool.h>
+#else
+typedef enum {false, true} bool;
+#endif /* !HAVE_STDBOOL_H */
+
 #ifndef FALSE
-#define FALSE	(0)
+#define FALSE	false
 #endif
 
 #ifndef TRUE
-#define TRUE	(!FALSE)
+#define TRUE	true
 #endif
 
 /* 

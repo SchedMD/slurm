@@ -14,11 +14,9 @@
 #  include <inttypes.h>
 #endif  /*  HAVE_CONFIG_H */
 
-/* true, false */
-#define true -1
-#define false 0
 #define NO_VAL	     0x7f7f7f7f
 
+#include <src/common/macros.h>
 #include <src/common/slurm_protocol_common.h>
 
 /* SLURM Message types */
