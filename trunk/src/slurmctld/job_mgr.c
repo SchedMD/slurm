@@ -2989,6 +2989,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 	int i, node_inx, jobs_on_node;
 	struct node_record *node_ptr;
 	struct job_record *job_ptr;
+	time_t now = time(NULL);
 
 	node_ptr = find_node_record(node_name);
 	if (node_ptr == NULL) {
@@ -3018,6 +3019,13 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 				debug3("Registered job %u.%u on node %s ",
 				       job_id_ptr[i], step_id_ptr[i], 
 				       node_name);
+				if ((job_ptr->batch_flag) &&
+				    (node_inx == bit_ffs(
+						job_ptr->node_bitmap))) {
+					/* NOTE: Used for purging defunct
+					 * batch jobs */
+					job_ptr->time_last_active = now;
+				}
 			} else {
 				error
 				    ("Registered job %u.%u on wrong node %s ",
@@ -3038,8 +3046,8 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 			      job_id_ptr[i], step_id_ptr[i], node_name);
 			/* FIXME: Could possibly recover the job */
 			job_ptr->job_state = JOB_FAILED;
-			last_job_update = time(NULL);
-			job_ptr->end_time = time(NULL);
+			last_job_update    = now;
+			job_ptr->end_time  = now;
 			delete_job_details(job_ptr);
 			_kill_job_on_node(job_id_ptr[i], node_ptr);
 			job_completion_logger(job_ptr);
@@ -3057,7 +3065,7 @@ validate_jobs_on_node(char *node_name, uint32_t * job_count,
 
 	jobs_on_node = node_ptr->run_job_cnt + node_ptr->comp_job_cnt;
 	if (jobs_on_node)
-		_purge_lost_batch_jobs(node_inx, time(NULL));
+		_purge_lost_batch_jobs(node_inx, now);
 
 	if (jobs_on_node != *job_count) {
 		/* slurmd will not know of a job unless the job has

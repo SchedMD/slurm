@@ -9,6 +9,8 @@ documents those changes that are of interest to users and admins.
     SP systems).
  -- Fix bug in update of node state to DRAINING/DRAINED when update 
     request occurs prior to initial node registration.
+ -- Fix bug in purging of batch jobs (active batch jobs were being 
+    improperly purged starting in version 0.3.0).
 
 * Changes in SLURM 0.3.4
 ========================
