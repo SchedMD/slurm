@@ -398,7 +398,7 @@ static int _parse_node_spec(char *in_line)
 			}
 		} else {
 			error
-			    ("_parse_node_spec: reconfiguration for node %s ignored.",
+			    ("_parse_node_spec: reconfiguration for node %s ignored",
 			     this_node_name);
 		}
 		free(this_node_name);
@@ -902,8 +902,7 @@ static void _validate_node_proc_count(void)
 		last_bit = bit_fls(part_record_point->node_bitmap);
 		part_size = -1;
 		for (i = first_bit; i <= last_bit; i++) {
-			if (bit_test(part_record_point->node_bitmap, i) ==
-			    0)
+			if (bit_test(part_record_point->node_bitmap, i) == 0)
 				continue;
 
 			if (slurmctld_conf.fast_schedule)
