@@ -222,5 +222,6 @@ int fini ( void )
 {
 	if (job_comp_fd >= 0)
 		close(job_comp_fd);
+	xfree(log_name);
 	return SLURM_SUCCESS;
 }
