@@ -26,7 +26,7 @@ _pack32(uint32_t val, void **bufp, int *lenp)
 	memcpy(*bufp, &nl, sizeof(nl));
 
 	(size_t)*bufp += sizeof(nl);
-	(size_t)*lenp -= sizeof(nl);
+	*lenp -= sizeof(nl);
 }
 
 /*
@@ -43,7 +43,7 @@ _unpack32(uint32_t *valp, void **bufp, int *lenp)
 	*valp = ntohl(nl);
 
 	(size_t)*bufp += sizeof(nl);
-	(size_t)*lenp -= sizeof(nl);
+	*lenp -= sizeof(nl);
 }
 	
 /*
@@ -58,7 +58,7 @@ _pack16(uint16_t val, void **bufp, int *lenp)
 	memcpy(*bufp, &ns, sizeof(ns));
 
 	(size_t)*bufp += sizeof(ns);
-	(size_t)*lenp -= sizeof(ns);
+	*lenp -= sizeof(ns);
 }
 
 /*
@@ -75,7 +75,7 @@ _unpack16(uint16_t *valp, void **bufp, int *lenp)
 	*valp = ntohs(ns);
 
 	(size_t)*bufp += sizeof(ns);
-	(size_t)*lenp -= sizeof(ns);
+	*lenp -= sizeof(ns);
 }
 
 /*
@@ -91,11 +91,11 @@ _packstr(char *valp, uint16_t size_val, void **bufp, int *lenp)
 
 	memcpy(*bufp, &nl, sizeof(nl));
 	(size_t)*bufp += sizeof(nl);
-	(size_t)*lenp -= sizeof(nl);
+	*lenp -= sizeof(nl);
 
 	memcpy(*bufp, valp, size_val);
 	(size_t)*bufp += size_val;
-	(size_t)*lenp -= size_val;
+	*lenp -= size_val;
 
 }
 
@@ -117,12 +117,12 @@ _unpackstr_ptr(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	memcpy(&nl, *bufp, sizeof(nl));
 	*size_valp = ntohs(nl);
 	(size_t)*bufp += sizeof(nl);
-	(size_t)*lenp -= sizeof(nl);
+	*lenp -= sizeof(nl);
 
 	if (*size_valp > 0) {
 		*valp = *bufp;
 		(size_t)*bufp += *size_valp;
-		(size_t)*lenp -= *size_valp;
+		*lenp -= *size_valp;
 	}
 	else
 		*valp = NULL;
@@ -148,13 +148,13 @@ _unpackstr_xmalloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	memcpy(&nl, *bufp, sizeof(nl));
 	*size_valp = ntohs(nl);
 	(size_t)*bufp += sizeof(nl);
-	(size_t)*lenp -= sizeof(nl);
+	*lenp -= sizeof(nl);
 
 	if (*size_valp > 0) {
 		*valp = xmalloc(*size_valp);
 		memcpy (*valp, *bufp, *size_valp);
 		(size_t)*bufp += *size_valp;
-		(size_t)*lenp -= *size_valp;
+		*lenp -= *size_valp;
 	}
 	else
 		*valp = NULL;
