@@ -1,0 +1,54 @@
+<html>
+<head>
+<title>SLURM: Download</title>
+</head>
+
+<body>
+<h1>SLURM: Download</h1>
+
+We expect to post SLURM for download when version 0.3 
+is completed and tested in the first quarter of 2003.
+However, we will provide the code upon request (notify  
+<a href="mailto:jette@llnl.gov">jette@llnl.gov</a>). 
+The available components include:
+<dl>
+<dt><b>Source code</b>
+<dd>Includes the code for all SLURM daemons, commands and libraries.
+Man pages and other documents are included.
+<dt><b>Test suite</b>
+<dd>Includes a collection of about 100 functionality and stress tests 
+for SLURM. 
+Approximately 1000 SLURM jobs will be executed by this test suite. 
+Total execution time will vary by system type, but be on the order 
+of 40 minutes.
+<dt><b>PAM module</b>
+<dd>Pluggable Authentication Module (PAM) for restricting access to 
+compute nodes where SLURM performs resource management.  
+Access to the node is restricted to user root and users who have 
+been allocated resources on that node
+<dt><b>MPICH patch</b>
+<dd>MPICH normally uses the <b>rsh</b> program to initiate tasks. 
+Since these processes are not directly under the control of SLURM 
+daemons, SLURM functionality is restricted. 
+For example, SLURM has not reliable means of determining which processes 
+are associated with a given job. 
+This patch improves the integration of SLURM and MPICH.
+</dl>
+
+<h2>SLURM version 0.3.0</h2>
+<ul>
+<li>Source code</li>
+<li>Test suite</li>
+<li>PAM module</li>
+<li>MPICH patch</li>
+</ul>
+
+<hr>
+<a href="http://www.llnl.gov/disclaimer.html">Privacy and Legal Notice</a>
+<p>URL = http://www.llnl.gov/linux/slurm/download.html
+<p>UCRL-WEB-TBD
+<p>Last Modified January 8, 2004</p>
+<address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
+slurm-dev@lists.llnl.gov</a></address>
+</body>
+</html>
