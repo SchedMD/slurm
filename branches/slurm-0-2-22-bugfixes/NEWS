@@ -1,6 +1,11 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
+* Changes in SLURM 0.2.23
+=========================
+ -- Fixes for reported problems:
+   - slurm/381: Hold jobs requesting more resources than partition limit
+
 * Changes in SLURM 0.2.22
 =========================
  -- Fixes for reported problems:

@@ -1517,6 +1517,8 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		     *new_job_id, part_ptr->name);
 		error_code = ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE;
 	}
+	if (error_code == ESLURM_REQUESTED_PART_CONFIG_UNAVAILABLE)
+		(*job_rec_ptr)->priority = 1;  /* Move to end of queue */
 
       cleanup:
 	FREE_NULL_BITMAP(req_bitmap);

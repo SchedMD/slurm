@@ -731,6 +731,9 @@ int update_part(update_part_msg_t * part_desc)
 		}
 	}
 
+	if (error_code == SLURM_SUCCESS)
+		reset_job_priority();   /* free jobs */
+
 	return error_code;
 }
 
