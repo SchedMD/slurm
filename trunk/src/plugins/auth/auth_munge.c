@@ -124,6 +124,7 @@ int init ( void )
 	if (host_list_idx == -1) 
 		return SLURM_ERROR;
 
+	verbose("%s loaded", plugin_name);
 	return SLURM_SUCCESS;
 }
 
