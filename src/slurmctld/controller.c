@@ -196,8 +196,16 @@ slurmctld_signal_hand ( void * no_data )
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 	info ("Send signals to slurmctld_signal_hand, pid = %u", getpid ());
 
-	if (sigfillset (&set))
-		error ("sigfillset error: %m");
+	if (sigemptyset (&set))
+		error ("sigemptyset error: %m");
+	if (sigaddset (&set, SIGINT))
+		error ("sigaddset error on SIGINT: %m");
+	if (sigaddset (&set, SIGTERM))
+		error ("sigaddset error on SIGTERM: %m");
+	if (sigaddset (&set, SIGHUP))
+		error ("sigaddset error on SIGHUP: %m");
+	if (sigaddset (&set, SIGABRT))
+		error ("sigaddset error on SIGABRT: %m");
 
 	if (sigprocmask (SIG_BLOCK, &set, NULL) != 0)
 		fatal ("sigprocmask error: %m");
@@ -229,7 +237,7 @@ slurmctld_signal_hand ( void * no_data )
 					error ("read_slurm_conf error %d", error_code);
 				break;
 			default:
-				error ("Invalid signal (%d) received\n", sig);
+				error ("Invalid signal (%d) received", sig);
 		}
 	}
 
