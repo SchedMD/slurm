@@ -71,6 +71,10 @@ partition management, job management, and scheduling modules.
 Development package for SLURM.  This package includes the header files
 and static libraries for the SLURM API.
 
+%description doc
+Extra documentation for SLURM.  This package contains some HTML
+documentation for SLURM users and administrators.
+
 %description auth-none
 SLURM NULL authentication module 
 
