@@ -62,7 +62,7 @@ plugin_peek( const char *fq_path,
 	
 	plug = dlopen( fq_path, RTLD_LAZY );
 	if ( plug == NULL ) {
-		debug2( "plugin_peek: dlopen(%s): %s", fq_path, _dlerror() );
+		debug3( "plugin_peek: dlopen(%s): %s", fq_path, _dlerror() );
 		return SLURM_ERROR;
 	}
 
