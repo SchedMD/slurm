@@ -70,6 +70,7 @@
 #include "src/slurmctld/locks.h"
 #include "src/slurmctld/ping_nodes.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 #include "src/slurmctld/srun_comm.h"
 
 #define MAX_RETRIES	10
@@ -523,7 +524,11 @@ static void _notify_slurmctld_nodes(agent_info_t *agent_ptr,
 
 	if (run_scheduler) {
 		run_scheduler = false;
-		schedule();	/* has own locks */
+		/* below functions all have their own locking */
+		if (schedule())	{
+			schedule_job_save();
+			schedule_node_save();
+		}
 	}
 	if ((agent_ptr->msg_type == REQUEST_PING) ||
 	    (agent_ptr->msg_type == REQUEST_NODE_REGISTRATION_STATUS))

@@ -68,6 +68,7 @@
 #include "src/slurmctld/slurmctld.h"
 #include "src/slurmctld/sched_plugin.h"
 #include "src/slurmctld/srun_comm.h"
+#include "src/slurmctld/state_save.h"
 
 
 #define CRED_LIFE         60	/* Job credential lifetime in seconds */
@@ -134,7 +135,7 @@ typedef struct connection_arg {
 int main(int argc, char *argv[])
 {
 	int error_code;
-	pthread_attr_t thread_attr_sig, thread_attr_rpc;
+	pthread_attr_t thread_attr_save, thread_attr_sig, thread_attr_rpc;
 
 	/*
 	 * Establish initial configuration
@@ -279,11 +280,32 @@ int main(int argc, char *argv[])
 				 NULL))
 			fatal("pthread_create %m");
 
-		_slurmctld_background(NULL);	/* could run as pthread */
+		/*
+		 * create attached thread for state save
+		 */
+		if (pthread_attr_init(&thread_attr_save))
+			fatal("pthread_attr_init error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+		/* we want 1:1 threads if there is a choice */
+		if (pthread_attr_setscope(&thread_attr_save,
+					PTHREAD_SCOPE_SYSTEM))
+			error("pthread_attr_setscope error %m");
+#endif
+		if (pthread_create(&slurmctld_config.thread_id_save,
+				&thread_attr_save, slurmctld_state_save,
+				NULL))
+			fatal("pthread_create %m");
+
+		/*
+		 * process slurm background activities, could run as pthread
+		 */
+		_slurmctld_background(NULL);
 
 		/* termination of controller */
-		pthread_join(slurmctld_config.thread_id_sig, NULL);
-		pthread_join(slurmctld_config.thread_id_rpc, NULL);
+		shutdown_state_save();
+		pthread_join(slurmctld_config.thread_id_sig,  NULL);
+		pthread_join(slurmctld_config.thread_id_rpc,  NULL);
+		pthread_join(slurmctld_config.thread_id_save, NULL);
 		switch_state_fini();
 		if (slurmctld_config.resume_backup == false)
 			break;
@@ -747,15 +769,10 @@ static void *_slurmctld_background(void *no_data)
 /* save_all_state - save entire slurmctld state for later recovery */
 void save_all_state(void)
 {
-	DEF_TIMERS;
-
-	START_TIMER;
 	/* Each of these functions lock their own databases */
-	(void) dump_all_node_state();
-	(void) dump_all_part_state();
-	(void) dump_all_job_state();
-	END_TIMER;
-	debug2("save_all_state complete %s", TIME_STR);
+	schedule_job_save();
+	schedule_part_save();
+	schedule_node_save();
 }
 
 /* 

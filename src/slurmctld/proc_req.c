@@ -57,6 +57,7 @@
 #include "src/slurmctld/proc_req.h"
 #include "src/slurmctld/read_config.h"
 #include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 #define BUF_SIZE	  1024	/* Temporary buffer size */
 
@@ -454,7 +455,8 @@ static void _slurm_rpc_allocate_resources(slurm_msg_t * msg)
 		xfree(alloc_msg.cpus_per_node);
 		xfree(alloc_msg.node_addr);
 		xfree(alloc_msg.node_list);
-		(void) dump_all_job_state();
+		schedule_job_save();	/* has own locks */
+		schedule_node_save();	/* has own locks */
 	} else {	/* allocate error */
 		if (do_unlock)
 			unlock_slurmctld(job_write_lock);
@@ -562,7 +564,8 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 			_kill_job_on_msg_fail(job_id);
 		slurm_cred_destroy(slurm_cred);
 		switch_free_jobinfo(alloc_msg.switch_job);
-		(void) dump_all_job_state();	/* Has its own locks */
+		schedule_job_save();	/* has own locks */
+		schedule_node_save();	/* has own locks */
 	}
 }
 
@@ -762,8 +765,8 @@ static void  _slurm_rpc_epilog_complete(slurm_msg_t * msg)
 	/* Functions below provide their own locking */
 	if (run_scheduler) {
 		(void) schedule();
-		(void) dump_all_node_state();
-		(void) dump_all_job_state();
+		schedule_node_save();
+		schedule_job_save();
 	}
 
 	/* NOTE: RPC has no response */
@@ -808,7 +811,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 			/* Below function provides its own locking */
-			(void) dump_all_job_state();
+			schedule_job_save();
 		}
 	} else {
 		error_code = job_step_signal(job_step_kill_msg->job_id,
@@ -832,7 +835,7 @@ static void _slurm_rpc_job_step_kill(slurm_msg_t * msg)
 			slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 			/* Below function provides its own locking */
-			(void) dump_all_job_state();
+			schedule_job_save();
 		}
 	}
 }
@@ -937,9 +940,9 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 		}
 	}
 	if (dump_job)
-		(void) dump_all_job_state();	/* Has own locking */
+		(void) schedule_job_save();	/* Has own locking */
 	if (dump_node)
-		(void) dump_all_node_state();	/* Has own locking */
+		(void) schedule_node_save();	/* Has own locking */
 }
 
 /* _slurm_rpc_job_step_create - process RPC to creates/registers a job step 
@@ -1003,7 +1006,7 @@ static void _slurm_rpc_job_step_create(slurm_msg_t * msg)
 		xfree(job_step_resp.node_list);
 		slurm_cred_destroy(slurm_cred);
 		switch_free_jobinfo(job_step_resp.switch_job);
-		(void) dump_all_job_state();	/* Sets own locks */
+		schedule_job_save();	/* Sets own locks */
 	}
 }
 
@@ -1465,8 +1468,9 @@ static void _slurm_rpc_submit_batch_job(slurm_msg_t * msg)
 		response_msg.msg_type = RESPONSE_SUBMIT_BATCH_JOB;
 		response_msg.data = &submit_msg;
 		slurm_send_node_msg(msg->conn_fd, &response_msg);
-		schedule();	/* has own locks */
-		(void) dump_all_job_state();	/* has own locks */
+		schedule();		/* has own locks */
+		schedule_job_save();	/* has own locks */
+		schedule_node_save();	/* has own locks */
 	}
 }
 
@@ -1504,7 +1508,8 @@ static void _slurm_rpc_update_job(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 		/* Below functions provide their own locking */
 		schedule();
-		(void) dump_all_job_state();
+		schedule_job_save();
+		schedule_node_save();
 	}
 }
 
@@ -1553,8 +1558,8 @@ static void _slurm_rpc_update_node(slurm_msg_t * msg)
 
 	/* Below functions provide their own locks */
 	if (schedule())
-		(void) dump_all_job_state();
-	(void) dump_all_node_state();
+		schedule_job_save();
+	schedule_node_save();
 }
 
 /* _slurm_rpc_update_partition - process RPC to update the configuration 
@@ -1599,9 +1604,11 @@ static void _slurm_rpc_update_partition(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
-		(void) dump_all_part_state();
-		if (schedule())
-			(void) dump_all_job_state();
+		schedule_part_save();
+		if (schedule()) {
+			schedule_job_save();
+			schedule_node_save();
+		}
 	}
 }
 
@@ -1612,7 +1619,7 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 	int error_code = SLURM_SUCCESS;
 	DEF_TIMERS;
 	delete_part_msg_t *part_desc_ptr = (delete_part_msg_t *) msg->data;
-	/* Locks: Read job, write partition */
+	/* Locks: write job, write partition */
 	slurmctld_lock_t part_write_lock = { 
 		NO_LOCK, WRITE_LOCK, NO_LOCK, WRITE_LOCK };
 	uid_t uid;
@@ -1646,10 +1653,9 @@ static void _slurm_rpc_delete_partition(slurm_msg_t * msg)
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
 
 		/* NOTE: These functions provide their own locks */
-		(void) dump_all_job_state();
-		(void) dump_all_part_state();
-		if (schedule())
-			(void) dump_all_job_state();
+		schedule();
+		save_all_state();
+
 	}
 }
 

@@ -36,9 +36,10 @@
 #include "src/common/xassert.h"
 #include "src/common/xstring.h"
 
-#include "sched_plugin.h"
-#include "slurmctld.h"
-#include "locks.h"
+#include "src/slurmctld/locks.h"
+#include "src/slurmctld/sched_plugin.h"
+#include "src/slurmctld/slurmctld.h"
+#include "src/slurmctld/state_save.h"
 
 /*
  * Implementation of the opaque list of nodes, jobs, etc., passed down
@@ -1086,7 +1087,11 @@ sched_start_job( const uint32_t job_id, uint32_t new_prio )
 	}
 	list_iterator_destroy( i );
 	unlock_slurmctld( job_write_lock );
-	schedule();
+	/* Below functions provide their own locks */
+	if (schedule()) {
+		schedule_job_save();
+		schedule_node_save();
+	}
 	return rc;
 }
 

@@ -283,6 +283,7 @@ int dump_all_part_state(void)
 			nwrite -= amount;
 			pos    += amount;
 		}
+		fsync(log_fd);
 		close(log_fd);
 	}
 	if (error_code)
