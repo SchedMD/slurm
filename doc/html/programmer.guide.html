@@ -156,8 +156,9 @@ has not received any state information from the primary controller
 in <b>ControllerTimeout</b> seconds, it begins to provide controller 
 functions using an identical startup process.
 When the primary controller resumes operation, it notifies the 
-backup controller, sleeps for HeartbeatInterval to permit the 
-backup controller to save state and terminate, reads the saved 
+backup controller to save state and terminate, waits for the 
+backup controller to notify the primary controller of termination 
+(or waits for the HeartbeatInterval if no response), reads the saved 
 state files, and resumes operation.
 <p>
 The controller, like all other SLURM daemons, logs all significant 
@@ -322,9 +323,25 @@ such a capability at a later time if so desired.
 All functions described below can be issued from any node in the SLURM cluster. 
 
 <dl>
+<dt>int Allocate_Resources(char *Job_Spec);
+<dd>Allocate resources for the job with the specification Job_Spec.
+This call can only be successfully executed by user <b>root</b>.
+Returns -2 if Job_Spec can not be successfully parsed.
+Returns -1 if the job can not be initiated given current SLURM configuration. 
+Returns 0 if the job can not presently be initiated due to busy nodes.
+Returns a SLURM job ID greater than zero.
+
 <dt>Get_Acctg_Info(TBD);
 <dd>Return job and system accounting information.
 This function has yet to be defined.
+
+<dt>int Deallocate_Resources(int Job_Id);
+<dd>Deallocated the resources associated with the specified SLURM Job_Id. 
+This call can only be successfully executed by user <b>root</b>. 
+If there is an active job associated with this resource allocation, it will 
+be terminated.
+Returns zero or an error code.
+Possible error codes include: TBD.
 
 <dt>int Get_Build_Info(char *Info_Req, char **Build_Info);
 <dd>Return SLURM build information. 
@@ -389,7 +406,26 @@ Possible error codes include: TBD.
 <dd>Terminate the specified SLURM job. 
 The SIGTERM signal is sent to task zero of the job followed by SIGKILL to all processes KILL_WAIT seconds later. 
 KILL_WAIT is specified at SLURM build time.
-This command can only be issued by user <b>root</b> or the user whose job is specified by Job_Id.
+This command can only be issued by user <b>root</b> or the user whose job is specified by Job_Id. 
+The Kill_Job request must succeed in removing the job record and releasing its nodes 
+for re-use even if one or more of the nodes allocated to the job is not responding. 
+The job will be terminated on that node when it returns to service.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int NodeBitMap2List(char **NodeList, char *BitMap, time_t BitMapTime);
+<dd>Translate the supplied Node BitMap into its List into its equivalent List. 
+The calling program must execute free(NodeList[0]) to release allocated 
+memory. A time stamp associated with the BitMap is supplied in order to 
+invalidate old BitMaps when the nodes defined to SLURM change.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int NodeList2BitMap(char *NodeList, char **BitMap, time_t *BitMapTime);
+<dd>Translate the supplied NodeList string into its equivalent BitMap. 
+The calling program must execute free(BitMap[0]) to release allocated 
+memory. A time stamp associated with the BitMap is returned in order to 
+invalidate old BitMaps when the nodes defined to SLURM change.
 Returns zero or an error code.
 Possible error codes include: TBD.
 
@@ -413,6 +449,13 @@ Returns a SLURM job ID greater than zero if the job is being initiated.
 The signal is sent only to task zero of the job. 
 This command can only be issued by user <b>root</b> or the user whose job 
 is specified by Job_Id.
+Returns zero or an error code.
+Possible error codes include: TBD.
+
+<dt>int Transfer_Resources(pid_t Pid, int Job_Id);
+<dd>Transfer the ownership of resources associated with the specified 
+SLURM Job_Id to the indicated process. 
+This call can only be successfully executed by user <b>root</b>.
 Returns zero or an error code.
 Possible error codes include: TBD.
 
@@ -446,6 +489,7 @@ Returns 1 if the job can be initiated immediately.
 <pre>
     char *Build_Info;
     int Error_Code, i, Job_Id, Signal;
+    pid_t Proc_Id;
     time_t Last_Update;
     struct Job_Record  *Job_Info;
     struct Node_Record *Node_Info;
@@ -454,6 +498,7 @@ Returns 1 if the job can be initiated immediately.
     int Version_Job_Record, Version_Node_Record, Version_Part_Record;
     int Key;
     char Scratch[128];
+    char *BitMap, *Node_List;
 
     Build_Info = NULL;
     Error_Code = Get_Build_Info("PROLOG", &Build_Info);
@@ -530,6 +575,20 @@ Returns 1 if the job can be initiated immediately.
     if (Error_Code != 0) 
         printf("Error %d executing Reconfigure on node %s\n", Error_Code, Scratch);
 
+    strcpy(Scratch, "lx[01-10]");
+    Error_Code = NodeList2BitMap(Scratch, &BitMap, &Last_Update);
+    if (Error_Code != 0) 
+        printf("Error %d executing NodeList2BitMap on nodes %s\n", Error_Code, Scratch);
+
+    Error_Code = NodeBitMap2List(&NodeList, BitMap, Last_Update);
+    if (Error_Code != 0) 
+        printf("Error %d executing NodeBitMap2List on nodes %s\n", Error_Code, Scratch);
+    else {
+	printf("NodeBitMap2List returned %s, expected %s\n", NodeList, Scratch);
+	free(BitMap);
+	free(NodeList);
+    } /* else */
+
     printf("Enter job specification: ");
     fgets(Scratch, sizeof(Scratch), stdin);
     Error_Code = Will_Job_Run(Scratch);
@@ -538,6 +597,23 @@ Returns 1 if the job can be initiated immediately.
     Error_Code = Run_Job(Scratch);
     if (Error_Code != 0) 
         printf("Error %d executing Run_Job on specification %s\n", Error_Code, Scratch);
+
+    Job_Id = Allocate_Resources(Scratch);
+    if (Job_Id <= 0) 
+        printf("Error %d executing Allocate_Resources on specification %s\n", Error_Code, Scratch);
+    else
+        printf("Allocate_Resources to Job ID %d with specification %s\n", Error_Code, Job_Id, Scratch);
+
+    printf("Enter process ID of process to be given the allocated resources: ");
+    fgets(Scratch, sizeof(Scratch), stdin);
+    Proc_Id = atoi(Scratch);
+    Error_Code = Transfer_Resources(Proc_Id, Job_Id);
+    if (Error_Code != 0) 
+        printf("Error %d executing Transfer_Resources on Job ID %d to Proc ID %d\n", Error_Code, Job_Id, Proc_Id);
+
+    Error_Code = Deallocate_Resources(Job_Id);
+    if (Error_Code != 0) 
+        printf("Error %d executing Deallocate_Resources on Job ID %d\n", Error_Code, Job_Id);
 
     printf("Enter SLURM Job_Id of job to be signalled: ");
     fgets(Scratch, sizeof(Scratch), stdin);
@@ -565,23 +641,41 @@ Returns 1 if the job can be initiated immediately.
 <h2>To Do</h2>
 <ul>
 <li>We need to build up a reasonable Makefile.</li>
+
 <li>How do we interface with TotalView?</li>
+
 <li>If we develop a simple scheduler (outside of DPCS), the addition of 
 parameters makes things get really complex very quickly. Trying to 
 map jobs onto consecutive nodes in particular is difficult. To keep 
 things simple, we probably just want to something simple like FCFS 
 or trying to start jobs in priority order.</li>
+
+<li>The SLURM scheduler component would be responsible for enforcing 
+job time and size limits plus group access controls.</li>
+
+<li>Features with associated values may be desirable.</li>
+
+<li>The slurm_admin tool probably needs a very simple user interface 
+to show jobs and node information. Perhaps key off the program 
+name to treat "slurm_jobs" and "slurm_admin show jobs".<li>
+
 <li>Deadlines: MCR to be built in July 2002, accepted August 2002.</li>
+
 <li>SLURM needs to use switch for timely distribution of executable and 
 stdin files.</li>
+
 <li>Get_Mach_Stat.c is quite system dependent. We probably want to 
 construct multiple file names containing the system name (e.g. 
-Get_Mach_Stat.aix.c, Get_Mach_Stat.linux.c, etc.) and build accordingly.
+Get_Mach_Stat.aix.c, Get_Mach_Stat.linux.c, etc.) and build accordingly.</li>
+
+<li>We may want to define multiple partition configurations (e.g. 
+day, night, weekend, holiday) and permit a simple mechanism (API) 
+to switch between them. </li>
 </ul>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/programmer.guide.html
-<p>Last Modified February 7, 2002</p>
+<p>Last Modified February 12, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
