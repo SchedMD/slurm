@@ -31,6 +31,8 @@ AC_PROG_CXX
 AC_PROG_MAKE_SET
 AC_PROG_LIBTOOL
 
+AM_CONDITIONAL(WITH_GNU_LD, test "$with_gnu_ld" = "yes")
+
 
 dnl Checks for libraries
 dnl
@@ -231,16 +233,6 @@ else
 fi
 
 AC_SUBST(READLINE_LIBS)
-
-dnl Check for getopt_long
-dnl
-AC_CHECK_HEADERS([getopt.h])
-AC_CHECK_FUNCS([getopt_long],,
-   [# FreeBSD has a gnugetopt library for this
-    AC_CHECK_LIB([gnugetopt],[getopt_long],[have_getopt_long=yes])
-     ])
-AM_CONDITIONAL(HAVE_GETOPT_LONG, test "x$have_getopt_long" = "xyes")
-
 
 dnl OpenSSL location (taken from openssh configure.ac)
 dnl

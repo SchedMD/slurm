@@ -6,6 +6,13 @@ AUTOMAKE_OPTIONS = foreign
 
 INCLUDES = -I$(top_srcdir)
 
+if WITH_GNU_LD
+VERSION_SCRIPT = \
+	version.map
+OTHER_FLAGS = \
+	-Wl,--version-script=$(VERSION_SCRIPT)
+endif
+
 # libslurm version information : 
 #
 # Update this information before a public release only!
@@ -42,12 +49,14 @@ libslurm_la_SOURCES =    \
 	reconfigure.c    \
 	update_config.c  
 
+BUILT_SOURCES = 	\
+	$(VERSION_SCRIPT)
+
 common_dir = $(top_builddir)/src/common
 
 libslurm_la_LIBADD         = $(common_dir)/libcommon.la -lpthread
 
-libslurm_la_LDFLAGS        = -export-symbols libslurm.sym \
-		             -version-info $(current):$(rev):$(age)
+libslurm_la_LDFLAGS        = $(OTHER_FLAGS)
 
 libslurm_la_DEPENDENCIES   = libslurm.sym $(common_dir)/libcommon.la
 
@@ -63,3 +72,12 @@ distclean-local:
 force:
 $(libslurm_la_LIBADD) : force
 	@cd `dirname $@` && $(MAKE) `basename $@`
+
+$(VERSION_SCRIPT) :
+	(echo "{ global:";   \
+	 echo "   slurm_*;"; \
+	 echo "  local: *;"; \
+	 echo "};") > $(VERSION_SCRIPT)
+	
+DISTCLEANFILES = \
+	$(VERSION_SCRIPT)

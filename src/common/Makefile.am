@@ -3,14 +3,6 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-if HAVE_GETOPT_LONG
-build_getopt_src = 
-extra_getopt_src = getopt.h getopt.c getopt1.c
-else
-build_getopt_src = getopt.h getopt.c getopt1.c
-extra_getopt_src = 
-endif
-
 if HAVE_UNSETENV
 build_unsetenv_src = 
 extra_unsetenv_src = unsetenv.c unsetenv.h
@@ -67,13 +59,12 @@ libcommon_la_SOURCES = 			\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
 	malloc.c malloc.h		\
-	$(build_getopt_src)		\
+	getopt.h getopt.c getopt1.c     \
 	$(build_unsetenv_src)		\
 	hostlist.c hostlist.h		\
 	slurm_xlator.h
 
 EXTRA_libcommon_la_SOURCES = 	\
-	$(extra_getopt_src)	\
 	$(extra_unsetenv_src)
 
 libdaemonize_la_SOURCES =  		\
