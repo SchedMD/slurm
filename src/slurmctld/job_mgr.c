@@ -903,7 +903,7 @@ init_job_conf ()
 			fatal ("init_job_conf: list_create can not allocate memory");
 	}
 	last_job_update = time (NULL);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -1020,7 +1020,7 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 		cpu_count_reps[0] = job_ptr->cpu_count_reps;
 	}
 	unlock_slurmctld (job_write_lock);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -1035,33 +1035,25 @@ int
 job_cancel (uint32_t job_id) 
 {
 	struct job_record *job_ptr;
-	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
-
-	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		unlock_slurmctld (job_write_lock);
 		info ("job_cancel: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT)) {
-		unlock_slurmctld (job_write_lock);
+	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
-	}
 
 	if (job_ptr->job_state == JOB_PENDING) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->start_time = job_ptr->end_time = time(NULL);
 		delete_job_details(job_ptr);
-		unlock_slurmctld (job_write_lock);
 		verbose ("job_cancel of pending job %u successful", job_id);
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
@@ -1072,14 +1064,12 @@ job_cancel (uint32_t job_id)
 		job_ptr->end_time = time(NULL);
 		deallocate_nodes (job_ptr);
 		delete_job_details(job_ptr);
-		unlock_slurmctld (job_write_lock);
 		verbose ("job_cancel of running job %u successful", job_id);
-		return 0;
+		return SLURM_SUCCESS;
 	} 
 
 	verbose ("job_cancel: job %u can't be cancelled from state=%s", 
 			job_id, job_state_string(job_ptr->job_state));
-	unlock_slurmctld (job_write_lock);
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 }
 
@@ -1094,30 +1084,22 @@ int
 job_complete (uint32_t job_id) 
 {
 	struct job_record *job_ptr;
-	/* Locks: Write job, write node */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
-	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		unlock_slurmctld (job_write_lock);
 		info ("job_complete: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT)) {
-		unlock_slurmctld (job_write_lock);
+	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
-	}
 
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
 	    (job_ptr->job_state == JOB_RUNNING) ||
 	    (job_ptr->job_state == JOB_STAGE_OUT)) {
-		unlock_slurmctld (job_write_lock);
 		deallocate_nodes (job_ptr);
-		lock_slurmctld(job_write_lock);
 		verbose ("job_complete for job id %u successful", job_id);
 	} 
 	else {
@@ -1128,8 +1110,7 @@ job_complete (uint32_t job_id)
 	job_ptr->job_state = JOB_COMPLETE;
 	job_ptr->end_time = time(NULL);
 	delete_job_details(job_ptr);
-	unlock_slurmctld (job_write_lock);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /*
@@ -1355,7 +1336,7 @@ mkdir2 (char * path, int modes)
 		(void) chmod (path, modes);
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /* rmdir2 - Remove a directory, does system call if root, runs rmdir otherwise */
@@ -1379,7 +1360,7 @@ rmdir2 (char * path)
 			return error_code;
 	}
 
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /* Create file with specified name and write the supplied data array to it */
@@ -1390,7 +1371,7 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 
 	if (data == NULL) {
 		(void) unlink (file_name);
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	fd = creat (file_name, 0600);
@@ -1413,7 +1394,7 @@ write_data_array_to_file ( char * file_name, char ** data, uint16_t size )
 	}
 
 	close (fd);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /* Create file with specified name and write the supplied data to it */
@@ -1424,7 +1405,7 @@ write_data_to_file ( char * file_name, char * data )
 
 	if (data == NULL) {
 		(void) unlink (file_name);
-		return 0;
+		return SLURM_SUCCESS;
 	}
 
 	fd = creat (file_name, 0600);
@@ -1444,7 +1425,7 @@ write_data_to_file ( char * file_name, char * data )
 		nwrite -= pos;
 	}
 	close (fd);
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /* copy_job_desc_to_job_record - copy the job descriptor from the RPC structure 
@@ -1525,7 +1506,7 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 	}
 
 	*job_rec_ptr = job_ptr;
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -1540,41 +1521,34 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 {
 	struct job_record *job_ptr;
 	int error_code;
-	/* Locks: Write job */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		unlock_slurmctld (job_write_lock);
+
 		info ("job_step_cancel: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT)) {
-		unlock_slurmctld (job_write_lock);
+	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
-	}
 
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
 	    (job_ptr->job_state == JOB_RUNNING) ||
 	    (job_ptr->job_state == JOB_STAGE_OUT)) {
 		last_job_update = time (NULL);
 		error_code = delete_step_record (job_ptr, step_id);
-		unlock_slurmctld (job_write_lock);
 		if (error_code == ENOENT) {
 			info ("job_step_cancel step %u.%u not found", job_id, step_id);
 			return ESLURM_ALREADY_DONE;
 		}
 
-		return 0;
+		return SLURM_SUCCESS;
 	} 
 
 	info ("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
 			job_id, step_id, job_state_string(job_ptr->job_state));
-	unlock_slurmctld (job_write_lock);
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 
 }
@@ -1591,36 +1565,25 @@ job_step_complete (uint32_t job_id, uint32_t step_id)
 {
 	struct job_record *job_ptr;
 	int error_code;
-	/* Locks: Write job */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
 
-	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record(job_id);
 	if (job_ptr == NULL) {
-		unlock_slurmctld (job_write_lock);
 		info ("job_step_complete: invalid job id %u", job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}
 
 	if ((job_ptr->job_state == JOB_FAILED) ||
 	    (job_ptr->job_state == JOB_COMPLETE) ||
-	    (job_ptr->job_state == JOB_TIMEOUT)) {
-		unlock_slurmctld (job_write_lock);
+	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
-	}
 
 	last_job_update = time (NULL);
 	error_code = delete_step_record (job_ptr, step_id);
-	unlock_slurmctld (job_write_lock);
 	if (error_code == ENOENT) {
 		info ("job_step_complete step %u.%u not found", job_id, step_id);
 		return ESLURM_ALREADY_DONE;
 	}
-	return 0;
-
-	unlock_slurmctld (job_write_lock);
-	return ESLURM_TRANSITION_STATE_NO_UPDATE;
-
+	return SLURM_SUCCESS;
 }
 
 /* 
@@ -1771,7 +1734,7 @@ list_find_job_id (void *job_entry, void *key)
 {
 	if (((struct job_record *) job_entry)->job_id == *((uint32_t *) key))
 		return 1;
-	return 0;
+	return SLURM_SUCCESS;
 }
 
 
@@ -1788,12 +1751,12 @@ list_find_job_old (void *job_entry, void *key)
 	min_age = time(NULL) - MIN_JOB_AGE;
 
 	if (((struct job_record *) job_entry)->end_time  >  min_age)
-		return 0;
+		return SLURM_SUCCESS;
 
 	if ((((struct job_record *) job_entry)->job_state != JOB_COMPLETE)  &&
 	    (((struct job_record *) job_entry)->job_state != JOB_FAILED)  &&
 	    (((struct job_record *) job_entry)->job_state != JOB_TIMEOUT))
-		return 0;
+		return SLURM_SUCCESS;
 
 	return 1;
 }
@@ -1824,16 +1787,12 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	char *buffer;
 	void *buf_ptr;
 	uint32_t jobs_packed ;
-	/* Locks: Read job */
-	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
-
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
 	if (*update_time == last_job_update)
 		return;
 
-	lock_slurmctld (job_read_lock);
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
@@ -1865,7 +1824,6 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 		jobs_packed ++ ;
 	}		
 
-	unlock_slurmctld (job_read_lock);
 	list_iterator_destroy (job_record_iterator);
 	buffer_offset = (char *)buf_ptr - buffer;
 	xrealloc (buffer, buffer_offset);
@@ -2128,14 +2086,9 @@ update_job (job_desc_msg_t * job_specs)
 	struct job_details *detail_ptr;
 	struct part_record *tmp_part_ptr;
 	bitstr_t *req_bitmap = NULL ;
-	/* Locks: Write job, read node, read partition */
-	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
-
-	lock_slurmctld (job_write_lock);
 	job_ptr = find_job_record (job_specs -> job_id);
 	if (job_ptr == NULL) {
-		unlock_slurmctld (job_write_lock);
 		error ("update_job: job_id %u does not exist.", job_specs -> job_id);
 		return ESLURM_INVALID_JOB_ID;
 	}			
@@ -2215,10 +2168,8 @@ update_job (job_desc_msg_t * job_specs)
 
 	if (job_specs -> partition) {
 		tmp_part_ptr = find_part_record (job_specs -> partition);
-		if (tmp_part_ptr == NULL) {
-			unlock_slurmctld (job_write_lock);
+		if (tmp_part_ptr == NULL)
 			return ESLURM_INVALID_PARTITION_NAME;
-		}
 		strncpy(job_ptr -> partition, job_specs -> partition, MAX_NAME_LEN);
 		job_ptr -> part_ptr = tmp_part_ptr;
 		info ("update_job: setting partition to %s for job_id %u",
@@ -2229,7 +2180,6 @@ update_job (job_desc_msg_t * job_specs)
 	if (job_specs -> req_nodes && detail_ptr) {
 		error_code = node_name2bitmap (job_specs->req_nodes, &req_bitmap);
 		if (error_code == EINVAL) {
-			unlock_slurmctld (job_write_lock);
 			if ( req_bitmap )
 				bit_free (req_bitmap);
 			return ESLURM_INVALID_NODE_NAME;
@@ -2246,6 +2196,5 @@ update_job (job_desc_msg_t * job_specs)
 		job_specs -> req_nodes = NULL;
 	}
 
-	unlock_slurmctld (job_write_lock);
 	return SLURM_PROTOCOL_SUCCESS;
 }

@@ -305,7 +305,7 @@ match_feature (char *seek, char *available)
 	if (seek == NULL)
 		return 1;	/* nothing to look for */
 	if (available == NULL)
-		return 0;	/* nothing to find */
+		return SLURM_SUCCESS;	/* nothing to find */
 
 	tmp_available = xmalloc (strlen (available) + 1);
 	strcpy (tmp_available, available);
@@ -620,7 +620,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 			if ((shared != 1) &&
 			    (bit_super_set (req_bitmap[0], idle_node_bitmap) != 1))
 				return EAGAIN;
-			return 0;	/* user can have selected nodes, we're done! */
+			return SLURM_SUCCESS;	/* user can have selected nodes, we're done! */
 		}		
 		total_nodes = total_cpus = 0;	/* reinitialize */
 	}			
@@ -688,7 +688,7 @@ pick_best_nodes (struct node_set *node_set_ptr, int node_set_size,
 				if (req_bitmap[0])
 					bit_free (req_bitmap[0]);
 				req_bitmap[0] = avail_bitmap;
-				return 0;
+				return SLURM_SUCCESS;
 			}
 		}
 

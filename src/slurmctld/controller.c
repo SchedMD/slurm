@@ -218,6 +218,8 @@ slurmctld_signal_hand ( void * no_data )
 	int sig ;
 	int error_code;
 	sigset_t set;
+	/* Locks: Write configuration, write job, write node, write partition */
+	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	(void) pthread_setcancelstate (PTHREAD_CANCEL_ENABLE, NULL);
 	(void) pthread_setcanceltype (PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
@@ -246,7 +248,11 @@ slurmctld_signal_hand ( void * no_data )
 				break;
 			case SIGHUP:	/* kill -1 */
 				info ("Reconfigure signal (SIGHUP) received\n");
+				lock_slurmctld (config_write_lock);
 				error_code = read_slurm_conf (0);
+				if (error_code == 0)
+					reset_job_bitmaps ();
+				unlock_slurmctld (config_write_lock);
 				if (error_code)
 					error ("read_slurm_conf error %d", error_code);
 				break;
@@ -600,20 +606,26 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	slurm_msg_t response_msg ;
 	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
 	slurm_ctl_conf_info_msg_t build_tbl ;
+	/* Locks: Read config */
+	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST BUILD_INFO");
+	lock_slurmctld (config_read_lock);
 	
 	/* check to see if configuration data has changed */	
 	if ( last_time_msg -> last_update >= slurmctld_conf.last_update )
 	{
+		unlock_slurmctld (config_read_lock);
 		info ("slurm_rpc_dump_build, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
 	else
 	{
-		/* success */
 		fill_ctld_conf ( & build_tbl ) ;
+		unlock_slurmctld (config_read_lock);
+
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_BUILD_INFO ;
@@ -635,19 +647,25 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 	slurm_msg_t response_msg ;
 	job_info_request_msg_t * last_time_msg = ( job_info_request_msg_t * ) msg-> data ;
 	time_t last_update = last_time_msg -> last_update ;
-	
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
+
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_JOB_INFO");
+	lock_slurmctld (job_read_lock);
 
 	if ( last_time_msg -> last_update >= last_job_update )
 	{
+		unlock_slurmctld (job_read_lock);
 		info ("slurm_rpc_dump_jobs, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
 	else
 	{
-		/* success */
 		pack_all_jobs (&dump, &dump_size, &last_update);
+		unlock_slurmctld (job_read_lock);
+
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_JOB_INFO ;
@@ -673,19 +691,25 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 	slurm_msg_t response_msg ;
 	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
 	time_t last_update = last_time_msg -> last_update ;
+	/* Locks: Read node */
+	slurmctld_lock_t node_read_lock = { NO_LOCK, NO_LOCK, READ_LOCK, NO_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_NODE_INFO");
+	lock_slurmctld (node_read_lock);
 
 	if ( last_time_msg -> last_update >= last_node_update )
 	{
+		unlock_slurmctld (node_read_lock);
 		info ("slurm_rpc_dump_nodes, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
 	else
 	{
-		/* success */
 		pack_all_node (&dump, &dump_size, &last_update);
+		unlock_slurmctld (node_read_lock);
+
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_NODE_INFO ;
@@ -711,19 +735,25 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 	slurm_msg_t response_msg ;
 	last_update_msg_t * last_time_msg = ( last_update_msg_t * ) msg-> data ;
 	time_t last_update = last_time_msg -> last_update ;
+	/* Locks: Read partition */
+	slurmctld_lock_t part_read_lock = { NO_LOCK, NO_LOCK, NO_LOCK, READ_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_PARTITION_INFO");
+	lock_slurmctld (part_read_lock);
 
 	if ( last_time_msg -> last_update >= last_part_update )
 	{
+		unlock_slurmctld (part_read_lock);
 		info ("slurm_rpc_dump_partitions, no change, time=%ld", 
 			(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_NO_CHANGE_IN_DATA );
 	}
 	else
 	{
-		/* success */
 		pack_all_part (&dump, &dump_size, &last_update);
+		unlock_slurmctld (part_read_lock);
+
 		/* init response_msg structure */
 		response_msg . address = msg -> address ;
 		response_msg . msg_type = RESPONSE_PARTITION_INFO ;
@@ -747,12 +777,17 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 	int error_code;
 	clock_t start_time;
 	job_step_id_msg_t * job_step_id_msg = ( job_step_id_msg_t * ) msg-> data ;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_CANCEL_JOB_STEP");
+	lock_slurmctld (job_write_lock);
 
 	/* do RPC call */
 	if (job_step_id_msg->job_step_id == NO_VAL) {
 		error_code = job_cancel ( job_step_id_msg->job_id );
+		unlock_slurmctld (job_write_lock);
 
 		/* return result */
 		if (error_code)
@@ -766,6 +801,8 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 			info ("slurm_rpc_job_step_cancel success for JobId=%u, time=%ld",
 				job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+
+			/* Below functions provide their own locking */
 			schedule ();
 			(void) dump_all_job_state ( );
 
@@ -774,6 +811,8 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 	else {
 		error_code = job_step_cancel (  job_step_id_msg->job_id , 
 						job_step_id_msg->job_step_id);
+		unlock_slurmctld (job_write_lock);
+
 		/* return result */
 		if (error_code)
 		{
@@ -788,6 +827,8 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+
+			/* Below function provides its own locking */
 			(void) dump_all_job_state ( );
 		}
 	}
@@ -798,16 +839,21 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 void 
 slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 {
-	/* init */
 	int error_code;
 	clock_t start_time;
 	job_step_id_msg_t * job_step_id_msg = ( job_step_id_msg_t * ) msg-> data ;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
 
+	/* init */
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_COMPLETE_JOB_STEP");
+	lock_slurmctld (job_write_lock);
 
 	/* do RPC call */
 	if (job_step_id_msg->job_step_id == NO_VAL) {
 		error_code = job_complete ( job_step_id_msg->job_id );
+		unlock_slurmctld (job_write_lock);
 
 		/* return result */
 		if (error_code)
@@ -821,13 +867,15 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 			info ("slurm_rpc_job_step_complete success for JobId=%u, time=%ld",
 				job_step_id_msg->job_id, (long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
-			schedule ();
-			(void) dump_all_job_state ();
+			schedule ();		/* Has own locking */
+			(void) dump_all_job_state ();	/* Has own locking */
 		}
 	}
 	else {
-		error_code = job_step_complete (  job_step_id_msg->job_id , 
+		error_code = job_step_complete (  job_step_id_msg->job_id, 
 						job_step_id_msg->job_step_id);
+		unlock_slurmctld (job_write_lock);
+
 		/* return result */
 		if (error_code)
 		{
@@ -842,7 +890,7 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 				job_step_id_msg->job_id, job_step_id_msg->job_step_id, 
 				(long) (clock () - start_time));
 			slurm_send_rc_msg ( msg , SLURM_SUCCESS );
-			(void) dump_all_job_state ( );
+			(void) dump_all_job_state ( );	/* Has own locking */
 		}
 	}
 }
@@ -855,18 +903,25 @@ slurm_rpc_job_step_get_info ( slurm_msg_t * msg )
 	int resp_buffer_size = 0;
 	int error_code = 0;
 	job_step_info_request_msg_t* request = ( job_step_info_request_msg_t * ) msg-> data ;
+	/* Locks: Read job */
+	slurmctld_lock_t job_read_lock = { NO_LOCK, READ_LOCK, NO_LOCK, NO_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_JOB_STEP_INFO");
+	lock_slurmctld (job_read_lock);
 
 	if ( request -> last_update >= last_job_update )
 	{
+		unlock_slurmctld (job_read_lock);
 		info ("slurm_rpc_job_step_get_info, no change, time=%ld", 
 			(long) (clock () - start_time));
 		error_code = SLURM_NO_CHANGE_IN_DATA;
 	}
 	else {
-		error_code = pack_ctld_job_step_info_reponse_msg (&resp_buffer, &resp_buffer_size, 
-							 request->job_id, request->step_id);
+		error_code = pack_ctld_job_step_info_reponse_msg (&resp_buffer, 
+					&resp_buffer_size, 
+					request->job_id, request->step_id);
+		unlock_slurmctld (job_read_lock);
 		if (error_code == ESLURM_INVALID_JOB_ID)
 			info ("slurm_rpc_job_step_get_info, no such job step %u.%u, time=%ld", 
 				request->job_id, request->step_id, (long) (clock () - start_time));
@@ -899,9 +954,14 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 	int error_code;
 	clock_t start_time;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
+	/* Locks: Write job, read node, read partition */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
 
 	start_time = clock ();
-		
+	debug ("Processing RPC: REQUEST_UPDATE_JOB");
+	lock_slurmctld (job_write_lock);
+	unlock_slurmctld (job_write_lock);
+
 	/* do RPC call */
 	error_code = update_job ( job_desc_msg );
 
@@ -919,6 +979,7 @@ slurm_rpc_update_job ( slurm_msg_t * msg )
 				job_desc_msg->job_id, 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+		/* Below functions provide their own locking */
 		schedule ();
 		(void) dump_all_job_state ();
 	}
@@ -932,12 +993,18 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 	int error_code;
 	clock_t start_time;
 	update_node_msg_t * update_node_msg_ptr ;
+	/* Locks: Write node */
+	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
+
 	start_time = clock ();
-	
+	debug ("Processing RPC: REQUEST_UPDATE_NODE");
+	lock_slurmctld (node_write_lock);
+
 	update_node_msg_ptr = (update_node_msg_t * ) msg-> data ;
 	
 	/* do RPC call */
 	error_code = update_node ( update_node_msg_ptr );
+	unlock_slurmctld (node_write_lock);
 
 	/* return result */
 	if (error_code)
@@ -954,6 +1021,8 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
+
+	/* Below functions provide their own locks */
 	if (schedule ())
 		(void) dump_all_job_state ();
 	(void) dump_all_node_state ();
@@ -967,10 +1036,16 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 	int error_code;
 	clock_t start_time;
 	update_part_msg_t * part_desc_ptr = (update_part_msg_t * ) msg-> data ;
+	/* Locks: Read node, write partition */
+	slurmctld_lock_t part_write_lock = { NO_LOCK, NO_LOCK, READ_LOCK, WRITE_LOCK };
+
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_UPDATE_PARTITION");
+	lock_slurmctld (part_write_lock);
 
 	/* do RPC call */
 	error_code = update_part ( part_desc_ptr );
+	unlock_slurmctld (part_write_lock);
 
 	/* return result */
 	if (error_code)
@@ -984,6 +1059,8 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 		info ("slurm_rpc_update_partition complete for partition %s, time=%ld",
 				part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
+
+		/* NOTE: These functions provide their own locks */
 		(void) dump_all_part_state ();
 		if (schedule ())
 			(void) dump_all_job_state ();
@@ -1194,12 +1271,19 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
+	/* Locks: Write configuration, write job, write node, write partition */
+	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_RECONFIGURE");
 /* must be user root */
 
 	/* do RPC call */
+	lock_slurmctld (config_write_lock);
 	error_code = read_slurm_conf (0);
+	if (error_code == 0)
+		reset_job_bitmaps ();
+	unlock_slurmctld (config_write_lock);
 
 	/* return result */
 	if (error_code)
@@ -1210,7 +1294,6 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 	}
 	else
 	{
-		reset_job_bitmaps ();
 		info ("slurm_rpc_reconfigure_controller completed successfully, time=%ld", 
 				(long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
@@ -1257,16 +1340,21 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 	job_step_create_response_msg_t job_step_resp;
 	job_step_create_request_msg_t * req_step_msg = 
 			( job_step_create_request_msg_t* ) msg-> data ;
+	/* Locks: Write jobs, read nodes */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, NO_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: REQUEST_JOB_STEP_CREATE");
 
 	/* issue the RPC */
 	dump_step_desc ( req_step_msg );
+	lock_slurmctld (job_write_lock);
 	error_code = step_create ( req_step_msg, &step_rec );
 
 	/* return result */
 	if ( error_code )
 	{
+		unlock_slurmctld (job_write_lock);
 		info ("slurm_rpc_job_step_create error %s, time=%ld", 
 			slurm_strerror( error_code ), (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
@@ -1285,12 +1373,13 @@ slurm_rpc_job_step_create( slurm_msg_t* msg )
 #ifdef HAVE_LIBELAN3
 		job_step_resp.qsw_job = step_rec-> qsw_job ;
 #endif
+		unlock_slurmctld (job_write_lock);
 		resp. address = msg -> address ;
 		resp. msg_type = RESPONSE_JOB_STEP_CREATE ;
 		resp. data = &job_step_resp  ;
 
 		slurm_send_node_msg ( msg->conn_fd , &resp);
-		(void) dump_all_job_state ( );
+		(void) dump_all_job_state ( );	/* Sets own locks */
 	}
 }
 
@@ -1304,17 +1393,20 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 	clock_t start_time;
 	slurm_node_registration_status_msg_t * node_reg_stat_msg = 
 			( slurm_node_registration_status_msg_t * ) msg-> data ;
+	/* Locks: Write node */
+	slurmctld_lock_t node_write_lock = { NO_LOCK, NO_LOCK, WRITE_LOCK, NO_LOCK };
 
 	start_time = clock ();
+	debug ("Processing RPC: MESSAGE_NODE_REGISTRATION_STATUS");
+	lock_slurmctld (node_write_lock);
 
 	/* do RPC call */
-	/*cpus = real_memory = tmp_disk = NO_VAL;
-	 * this should be done client side now */
 	error_code = validate_node_specs (
 		node_reg_stat_msg -> node_name ,
 		node_reg_stat_msg -> cpus ,
 		node_reg_stat_msg -> real_memory_size ,
 		node_reg_stat_msg -> temporary_disk_space ) ;
+	unlock_slurmctld (node_write_lock);
 
 	/* return result */
 	if (error_code)
@@ -1412,10 +1504,6 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 void
 fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
-	/* Locks: Read config */
-	slurmctld_lock_t config_read_lock = { READ_LOCK, NO_LOCK, NO_LOCK, NO_LOCK };
-
-	lock_slurmctld (config_read_lock);
 	conf_ptr->last_update		= slurmctld_conf.last_update ;
 	conf_ptr->backup_controller   	= slurmctld_conf.backup_controller ;
 	conf_ptr->control_machine    	= slurmctld_conf.control_machine ;
@@ -1433,8 +1521,7 @@ fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	conf_ptr->slurm_conf       	= slurmctld_conf.slurm_conf ;
 	conf_ptr->state_save_location   = slurmctld_conf.state_save_location ;
 	conf_ptr->tmp_fs            	= slurmctld_conf.tmp_fs ;
-
-	unlock_slurmctld (config_read_lock);
+	return;
 }
 
 /* Variables for commandline passing using getopt */
