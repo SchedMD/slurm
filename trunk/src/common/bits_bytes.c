@@ -170,7 +170,7 @@ main (int argc, char *argv[])
  * input: in_string: pointer to string containing "BLOCK" or "CYCLE"
  * output: returns DIST_BLOCK for "BLOCK", DIST_CYCLE for "CYCLE", -1 otherwise
  */
-eunm task_dist
+enum task_dist
 block_or_cycle (char *in_string)
 {
 	if (strcmp (in_string, "BLOCK") == 0) return DIST_BLOCK;
