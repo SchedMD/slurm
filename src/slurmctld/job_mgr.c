@@ -519,7 +519,9 @@ job_cancel (uint32_t job_id)
 		return 0;
 	}
 
-	if (job_ptr->job_state == JOB_STAGE_IN) {
+	if ((job_ptr->job_state == JOB_STAGE_IN) || 
+	    (job_ptr->job_state == JOB_RUNNING) ||
+	    (job_ptr->job_state == JOB_STAGE_OUT)) {
 		last_job_update = time (NULL);
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time = time(NULL);
@@ -534,6 +536,53 @@ job_cancel (uint32_t job_id)
 			job_id, job_state_string(job_ptr->job_state));
 	unlock_slurmctld (job_write_lock);
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
+}
+
+/* 
+ * job_complete - note the normal termination the specified job
+ * input: job_id - id of the job which completed
+ * output: returns 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+int
+job_complete (uint32_t job_id) 
+{
+	struct job_record *job_ptr;
+	/* Locks: Write job, write node */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+
+	lock_slurmctld (job_write_lock);
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		unlock_slurmctld (job_write_lock);
+		info ("job_complete: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_COMPLETE) ||
+	    (job_ptr->job_state == JOB_TIMEOUT)) {
+		unlock_slurmctld (job_write_lock);
+		return ESLURM_ALREADY_DONE;
+	}
+
+	if ((job_ptr->job_state == JOB_STAGE_IN) || 
+	    (job_ptr->job_state == JOB_RUNNING) ||
+	    (job_ptr->job_state == JOB_STAGE_OUT)) {
+		deallocate_nodes (job_ptr->node_bitmap);
+		verbose ("job_complete for job id %u successful", job_id);
+	} 
+	else {
+		error ("job_complete for job id %u from bad state", job_id, job_ptr->job_state);
+	}
+
+	last_job_update = time (NULL);
+	job_ptr->job_state = JOB_COMPLETE;
+	job_ptr->end_time = time(NULL);
+	delete_job_details(job_ptr);
+	unlock_slurmctld (job_write_lock);
+	return 0;
 }
 
 /*
@@ -958,7 +1007,9 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 		return ESLURM_ALREADY_DONE;
 	}
 
-	if (job_ptr->job_state == JOB_STAGE_IN) {
+	if ((job_ptr->job_state == JOB_STAGE_IN) || 
+	    (job_ptr->job_state == JOB_RUNNING) ||
+	    (job_ptr->job_state == JOB_STAGE_OUT)) {
 		last_job_update = time (NULL);
 		error_code = delete_step_record (job_ptr, step_id);
 		unlock_slurmctld (job_write_lock);
@@ -972,6 +1023,50 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 
 	info ("job_step_cancel: step %u.%u can't be cancelled from state=%s", 
 			job_id, step_id, job_state_string(job_ptr->job_state));
+	unlock_slurmctld (job_write_lock);
+	return ESLURM_TRANSITION_STATE_NO_UPDATE;
+
+}
+
+/* 
+ * job_step_complete - note normal completion the specified job step
+ * input: job_id, step_id - id of the job to be completed
+ * output: returns 0 on success, otherwise ESLURM error code 
+ * global: job_list - pointer global job list
+ *	last_job_update - time of last job table update
+ */
+int
+job_step_complete (uint32_t job_id, uint32_t step_id) 
+{
+	struct job_record *job_ptr;
+	int error_code;
+	/* Locks: Write job */
+	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, NO_LOCK, NO_LOCK };
+
+	lock_slurmctld (job_write_lock);
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		unlock_slurmctld (job_write_lock);
+		info ("job_step_complete: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if ((job_ptr->job_state == JOB_FAILED) ||
+	    (job_ptr->job_state == JOB_COMPLETE) ||
+	    (job_ptr->job_state == JOB_TIMEOUT)) {
+		unlock_slurmctld (job_write_lock);
+		return ESLURM_ALREADY_DONE;
+	}
+
+	last_job_update = time (NULL);
+	error_code = delete_step_record (job_ptr, step_id);
+	unlock_slurmctld (job_write_lock);
+	if (error_code == ENOENT) {
+		info ("job_step_complete step %u.%u not found", job_id, step_id);
+		return ESLURM_ALREADY_DONE;
+	}
+	return 0;
+
 	unlock_slurmctld (job_write_lock);
 	return ESLURM_TRANSITION_STATE_NO_UPDATE;
 

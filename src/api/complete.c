@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * cancel.c - cancel a slurm job or job step
+ * complete.c - note the completion a slurm job or job step
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,16 +35,17 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
-/* slurm_cancel_job - cancel a job and all of its steps */
+/* slurm_complete_job - note the completion of a job and all of its steps */
 int 
-slurm_cancel_job ( uint32_t job_id )
+slurm_complete_job ( uint32_t job_id )
 {
-	return slurm_cancel_job_step ( job_id, NO_VAL);
+	return slurm_complete_job_step ( job_id, NO_VAL);
 }
 
-/* slurm_cancel_job_step - cancel a specific job step (or all steps if step_id==NO_VAL) */
+/* slurm_complete_job_step - note the completion of a specific job step 
+ *	(or all steps if step_id==NO_VAL) */
 int 
-slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
+slurm_complete_job_step ( uint32_t job_id, uint32_t step_id  )
 {
 	int msg_size ;
 	int rc ;
@@ -63,7 +64,7 @@ slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
 	/* send request message */
 	job_step_id_msg . job_id = job_id ;
 	job_step_id_msg . job_step_id = step_id ;
-	request_msg . msg_type = REQUEST_CANCEL_JOB_STEP ;
+	request_msg . msg_type = REQUEST_COMPLETE_JOB_STEP ;
 	request_msg . data = &job_step_id_msg ;
 	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
 		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );

@@ -24,14 +24,15 @@ lib_LTLIBRARIES = libslurm.la
 
 libslurm_la_SOURCES =    \
 	allocate.c       \
-	config_info.c     \
+	cancel.c         \
+	complete.c       \
+	config_info.c    \
 	job_info.c       \
 	node_info.c      \
 	partition_info.c \
 	submit.c         \
 	reconfigure.c    \
-	update_config.c  \
-	cancel.c
+	update_config.c   
 
 common_dir = $(top_srcdir)/src/common
 
@@ -62,7 +63,7 @@ libslurm_la_DEPENDENCIES  = libslurm.sym $(libslurm_la_LIBADD)
 # place of the rules that follow.
 
 #allocate_CFLAGS        = -DDEBUG_MODULE $(AM_CFLAGS)
-#config_info_CFLAGS      = -DDEBUG_MODULE $(AM_CFLAGS)
+#config_info_CFLAGS     = -DDEBUG_MODULE $(AM_CFLAGS)
 #cancel_CFLAGS          = -DDEBUG_MODULE $(AM_CFLAGS)
 #job_info_CFLAGS        = -DDEBUG_MODULE $(AM_CFLAGS)
 #node_info_CFLAGS       = -DDEBUG_MODULE $(AM_CFLAGS)
@@ -82,7 +83,7 @@ libslurm_la_DEPENDENCIES  = libslurm.sym $(libslurm_la_LIBADD)
 maintests      : allocate cancel job_info node_info partition_info  reconfigure submit update_config
 
 allocate       : allocate_d.o
-config_info     : config_info_d.o
+config_info    : config_info_d.o
 cancel         : cancel_d.o
 job_info       : job_info_d.o
 node_info      : node_info_d.o
