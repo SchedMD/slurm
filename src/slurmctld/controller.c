@@ -1507,6 +1507,7 @@ static void _slurm_rpc_allocate_and_run(slurm_msg_t * msg)
 	error_code = step_create(&req_step_msg, &step_rec, true);
 	/* note: no need to free step_rec, pointer to global job step record */
 	if (error_code) {
+		job_complete(job_id, job_desc_msg->user_id, false, 0);
 		unlock_slurmctld(job_write_lock);
 		info(
 		   "_slurm_rpc_allocate_and_run error %d creating job step, time=%ld", 
