@@ -10,6 +10,7 @@
 #  include <config.h>
 #endif 
 
+#include <stdlib.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -20,7 +21,8 @@
 #include <syslog.h>
 #include <unistd.h>
 
-#include <src/slurmctld/slurmctld.h>
+#include <src/common/log.h>
+
 #define SESSION_RECS 50
 
 int hertz = 0;
