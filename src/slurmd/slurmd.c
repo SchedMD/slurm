@@ -174,6 +174,7 @@ main (int argc, char *argv[])
 	xsignal(SIGTERM, &_term_handler);
 	xsignal(SIGINT,  &_term_handler);
 	xsignal(SIGHUP,  &_hup_handler );
+	xsignal(SIGCHLD, SIG_IGN);
 
 	_msg_engine();
 
