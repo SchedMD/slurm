@@ -1,0 +1,136 @@
+.TH "Slurm API" "3" "Release 0.0.0" "Morris Jette" "Slurm administrative calls"
+.SH "NAME"
+.LP 
+\fBslurm_job\fR \- Slurm administrative calls
+.SH "SYNTAX"
+.LP 
+#include <slurm.h>
+.LP 
+int \fBslurm_reconfigure\fR ( );
+.LP
+int \fBslurm_update_job\fR (
+.br 
+	job_desc_msg_t *\fIupdate_job_msg_ptr\fP
+.br 
+);
+.LP
+void \fBslurm_init_part_desc_msg\fR (
+.br
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
+);
+.LP
+int \fBslurm_update_node\fR ( 
+.br 
+	update_node_msg_t *\fIupdate_node_msg_ptr\fP 
+.br 
+);
+.LP
+int \fBslurm_update_partition\fR ( 
+.br 
+	update_part_msg_t *\fIupdate_part_msg_ptr\fP 
+.br 
+);
+.SH "ARGUMENTS"
+.LP 
+.TP 
+\fIupdate_job_msg_ptr\fP
+Specifies the pointer to a job update request specification. See slurm.h for full details on the data structure's contents. 
+.TP 
+\fIupdate_node_msg_ptr\fP
+Specifies the pointer to a node update request specification. See slurm.h for full details on the data structure's contents. 
+.TP 
+\fIupdate_part_msg_ptr\fP
+Specifies the pointer to a partition update request specification. See slurm.h for full details on the data structure's contents. 
+.SH "DESCRIPTION"
+.LP 
+\fBslurm_reconfigure\fR Request that the Slurm controller re-read its configuration file. The new configuration parameters take effect immediately. This function may only be successfully executed by user root.
+.LP 
+\fBslurm_init_part_desc_msg\fR Initialize the contents of a partition descriptor with default values. Execute this function before executing \fBslurm_update_part\fR.
+.LP 
+\fBslurm_update_job\fR Request that the configuration of a job be updated. Note that most, but not all paramters of a job may be changed by this function. Initialize the data structure using the \fBslurm_init_job_desc_msg\fR function to avoid making unanticipated changes to a job's configuration. This function may only be successfully executed by user root.
+.LP 
+\fBslurm_update_node\fR Request that the state of one or more nodes be updated. Note that the state of a node (e.g. DRAINING, IDLE, etc.) may be changed, but its hardware configuration may not be changed by this function. If the hardware configuration of a node changes, update the Slurm configuration file and execute the \fBslurm_reconfigure\fR function. This function may only be successfully executed by user root.
+.LP 
+\fBslurm_update_part\fR Request that the configuration of a partition be updated. Note that most, but not all paramters of a partition may be changed by this function. This function may only be successfully executed by user root.
+.SH "RETURN VALUE"
+.LP
+On success, zero is returned. On error, -1 is returned, and the Slurm error code is set appropriately.
+.SH "ERRORS"
+.LP
+\fBSLURM_PROTOCOL_VERSION_ERROR\fR Protocol version has changed, re-link your code.
+.LP
+\fBESLURM_INVALID_NODE_NAME\fR the requested node name(s) is/are not valid. 
+.LP
+\fBESLURM_INVALID_PARTITION_NAME\fR the requested partition name is not valid. 
+.LP
+\fBESLURM_ACCESS_DENIED\fR the requesting user lacks authorization for the requested action (e.g. trying to delete or modify another user's job). 
+.SH "EXAMPLE"
+.eo
+.LP 
+#include <stdio.h>
+.br
+#include <slurm.h>
+.LP 
+int main (int argc, char *argv[])
+.br 
+{
+.br 
+	job_desc_msg_t update_job_msg;
+.br
+	update_node_msg_t update_node_msg;
+.br
+	partition_desc_msg_t update_part_msg ;
+.LP 
+	if (slurm_reconfigure ( )) {
+.br
+		printf ("reconfigure errno %d\n", slurm_get_errno());
+.br 
+		exit (1);
+	}
+.LP 
+	slurm_init_job_desc_msg( &update_job_msg );
+.br 
+	update_job_msg. job_id = 1234;
+.br 
+	update_job_msg. time_limit = 200;
+.br 
+	if (slurm_update_job (&update_job_msg)) { 
+.br
+		printf ("job update errno %d\n", slurm_get_errno());
+.br 
+		exit (1);
+	}
+.LP 
+	slurm_init_part_desc_msg ( &update_part_msg );
+.br
+	update_part_msg . name = "test.partition";
+.br
+	update_part_msg . state_up = 0;	/* make partition down */
+.br 
+	if (slurm_update_partition (&update_part_msg)) { 
+.br
+		printf ("partition update errno %d\n", slurm_get_errno());
+.br 
+		exit (1);
+	}
+.LP 
+	update_node_msg . node_names = "lx[10-12]";
+.br
+	update_node_msg . node_state = NODE_STATE_DRAINING ;
+.br 
+	if (slurm_update_node (&update_node_msg)) { 
+.br
+		printf ("node update errno %d\n", slurm_get_errno());
+.br 
+		exit (1);
+.br 
+	}
+.br 
+	exit (0);
+.br 
+}
+.ec
+.SH "SEE ALSO"
+.LP 
+\fBscontrol\fR(1), \fBslurm_get_errno\fR(3), \fBslurm_init_job_desc_msg\fR(3), \fBslurm_perror\fR(3), \fBslurm_strerror\fR(3)
