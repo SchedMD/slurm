@@ -142,8 +142,8 @@ dump_step_desc(step_specs *step_spec)
 
 	debug3("StepDesc: user_id=%u job_id=%u node_count=%u, cpu_count=%u\n", 
 		step_spec->user_id, step_spec->job_id, step_spec->node_count, step_spec->cpu_count);
-	debug3("   relative=%u node_list=%s\n", 
-		step_spec->relative, step_spec->node_list);
+	debug3("   relative=%u task_dist=%u node_list=%s\n", 
+		step_spec->relative, step_spec->task_dist, step_spec->node_list);
 }
 
 
@@ -315,6 +315,15 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	    (job_ptr->job_state == JOB_STAGE_OUT))
 		return ESLURM_ALREADY_DONE;
 
+#ifdef HAVE_LIBELAN3
+	if (step_specs->task_dist == SLURM_DIST_CYCLIC)
+		step_specs->task_dist = ELAN_CAP_TYPE_CYCLIC;
+	else if (step_specs->task_dist == SLURM_DIST_BLOCK)
+		step_specs->task_dist = ELAN_CAP_TYPE_BLOCK;
+	else
+		return ESLURM_BAD_DIST;
+#endif
+
 	nodeset = pick_step_nodes (job_ptr, step_specs );
 
 	if (nodeset == NULL)
@@ -327,6 +336,7 @@ step_create ( step_specs *step_specs, struct step_record** new_step_record  )
 	/* set the step_record values */
 	step_ptr->step_id = (job_ptr->next_step_id)++;
 	step_ptr->node_bitmap = nodeset;
+	step_ptr->cyclic_alloc = step_specs->task_dist;
 
 #ifdef HAVE_LIBELAN3
 	if (qsw_alloc_jobinfo (&step_ptr->qsw_job) < 0)

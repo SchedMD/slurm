@@ -49,8 +49,10 @@
 #include <src/common/xstring.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
-
 #include <src/common/credential_utils.h>
+#ifdef	HAVE_AUTHD
+#include <src/common/authentication.h>
+#endif
 
 #define BUF_SIZE 1024
 #define DEFAULT_DAEMONIZE 0
@@ -761,19 +763,23 @@ void
 slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	job_step_id_msg_t * job_step_id_msg = ( job_step_id_msg_t * ) msg-> data ;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
-
+	int uid = 0;
+	
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_CANCEL_JOB_STEP");
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+#endif
 	lock_slurmctld (job_write_lock);
 
 	/* do RPC call */
 	if (job_step_id_msg->job_step_id == NO_VAL) {
-		error_code = job_cancel ( job_step_id_msg->job_id );
+		error_code = job_cancel ( job_step_id_msg->job_id, uid );
 		unlock_slurmctld (job_write_lock);
 
 		/* return result */
@@ -797,7 +803,8 @@ slurm_rpc_job_step_cancel ( slurm_msg_t * msg )
 	}
 	else {
 		error_code = job_step_cancel (  job_step_id_msg->job_id , 
-						job_step_id_msg->job_step_id);
+						job_step_id_msg->job_step_id ,
+						uid );
 		unlock_slurmctld (job_write_lock);
 
 		/* return result */
@@ -831,15 +838,19 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 	job_step_id_msg_t * job_step_id_msg = ( job_step_id_msg_t * ) msg-> data ;
 	/* Locks: Write job, write node */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, NO_LOCK };
+	int uid = 0;
 
 	/* init */
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_COMPLETE_JOB_STEP");
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+#endif
 	lock_slurmctld (job_write_lock);
 
 	/* do RPC call */
 	if (job_step_id_msg->job_step_id == NO_VAL) {
-		error_code = job_complete ( job_step_id_msg->job_id );
+		error_code = job_complete ( job_step_id_msg->job_id, uid );
 		unlock_slurmctld (job_write_lock);
 
 		/* return result */
@@ -860,7 +871,7 @@ slurm_rpc_job_step_complete ( slurm_msg_t * msg )
 	}
 	else {
 		error_code = job_step_complete (  job_step_id_msg->job_id, 
-						job_step_id_msg->job_step_id);
+						job_step_id_msg->job_step_id, uid);
 		unlock_slurmctld (job_write_lock);
 
 		/* return result */
@@ -1059,7 +1070,7 @@ void
 slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	uint32_t job_id ;
 	slurm_msg_t response_msg ;
@@ -1067,17 +1078,30 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_SUBMIT_BATCH_JOB");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-	lock_slurmctld (job_write_lock);
-	error_code = job_allocate (job_desc_msg, &job_id, (char **) NULL, 
-		(uint16_t *) NULL, (uint32_t **) NULL, (uint32_t **) NULL,
-		false, false, false);
-	unlock_slurmctld (job_write_lock);
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if ((uid != job_desc_msg.user_ID) &&
+	    (uid != 0)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Bogus SUBMIT_JOB from uid %d", uid);
+	}
+#endif
+	if (error_code == 0) {
+		lock_slurmctld (job_write_lock);
+		error_code = job_allocate (job_desc_msg, &job_id, (char **) NULL, 
+			(uint16_t *) NULL, (uint32_t **) NULL, (uint32_t **) NULL,
+			false, false, false);
+		unlock_slurmctld (job_write_lock);
+	}
 
 	/* return result */
 	if (error_code)
@@ -1105,7 +1129,7 @@ void
 slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	slurm_msg_t response_msg ;
 	clock_t start_time;
 	job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
@@ -1116,6 +1140,9 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 	resource_allocation_response_msg_t alloc_msg ;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	if (immediate)
@@ -1125,11 +1152,21 @@ slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate )
 
 	/* do RPC call */
 	dump_job_desc (job_desc_msg);
-	lock_slurmctld (job_write_lock);
-	error_code = job_allocate(job_desc_msg, &job_id, 
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if ((uid != job_desc_msg.user_ID) && 
+	    (uid != 0)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Bogus RESOURCE_ALLOCATE from uid %d", uid);
+	}	
+#endif
+	if (error_code == 0) {
+		lock_slurmctld (job_write_lock);
+		error_code = job_allocate (job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
 			immediate , false, true );
-	unlock_slurmctld (job_write_lock);
+		unlock_slurmctld (job_write_lock);
+	}
 
 	/* return result */
 	if (error_code)
@@ -1166,7 +1203,7 @@ void
 slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 {
         /* init */
-        int error_code;
+        int error_code = 0;
         slurm_msg_t response_msg ;
         clock_t start_time;
         job_desc_msg_t * job_desc_msg = ( job_desc_msg_t * ) msg-> data ;
@@ -1179,16 +1216,28 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 	job_step_create_request_msg_t req_step_msg;
 	/* Locks: Write job, write node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, WRITE_LOCK, READ_LOCK };
-
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
         start_time = clock ();
 	debug ("Processing RPC: REQUEST_ALLOCATE_AND_RUN_JOB_STEP");
 
         /* do RPC call */
         dump_job_desc (job_desc_msg);
-	lock_slurmctld (job_write_lock);
-        error_code = job_allocate(job_desc_msg, &job_id,
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if ((uid != job_desc_msg.user_ID) &&
+	    (uid != 0)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Bogus ALLOCATE_AND_RUN RPC from uid %d", uid);
+	}
+#endif
+	if (error_code == 0) {
+		lock_slurmctld (job_write_lock);
+        	error_code = job_allocate(job_desc_msg, &job_id,
                         &node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps,
                         true , false, true );
+	}
 
         /* return result */
         if (error_code) {
@@ -1240,7 +1289,7 @@ slurm_rpc_allocate_and_run ( slurm_msg_t * msg )
 void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	uint16_t num_cpu_groups = 0;
 	uint32_t * cpus_per_node = NULL, * cpu_count_reps = NULL;
@@ -1249,21 +1298,34 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	char * node_list_ptr = NULL;
 	/* Locks: Write job, read node, read partition */
 	slurmctld_lock_t job_write_lock = { NO_LOCK, WRITE_LOCK, READ_LOCK, READ_LOCK };
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_JOB_WILL_RUN");
 
 	/* do RPC call */
 	dump_job_desc(job_desc_msg);
-	lock_slurmctld (job_write_lock);
-	error_code = job_allocate(job_desc_msg, &job_id, 
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if ((uid != job_desc_msg.user_ID) &&
+	    (uid != 0)) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Bogus JOB_WILL_RUN RPC from uid %d", uid);
+	}
+#endif
+
+	if (error_code == 0) {
+		lock_slurmctld (job_write_lock);
+		error_code = job_allocate(job_desc_msg, &job_id, 
 			&node_list_ptr, &num_cpu_groups, &cpus_per_node, &cpu_count_reps, 
 			false , true, true );
-	unlock_slurmctld (job_write_lock);
+		unlock_slurmctld (job_write_lock);
+	}
 
 	/* return result */
-	if (error_code)
-	{
+	if (error_code) {
 		info ("slurm_rpc_job_will_run error %d, time=%ld",
 				error_code, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
@@ -1281,27 +1343,38 @@ void
 slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	/* Locks: Write configuration, write job, write node, write partition */
 	slurmctld_lock_t config_write_lock = { WRITE_LOCK, WRITE_LOCK, WRITE_LOCK, WRITE_LOCK };
+#ifdef HAVE_AUTHD
+	int uid;
+#endif
 
 	start_time = clock ();
 	debug ("Processing RPC: REQUEST_RECONFIGURE");
-/* must be user root */
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if (uid != 0) {
+		error ("Bogus RECONFIGURE RPC from uid %d", uid);
+		error_code = ESLURM_USER_ID_MISSING;
+	}
+#endif
 
 	/* do RPC call */
-	lock_slurmctld (config_write_lock);
-	error_code = read_slurm_conf (0);
-	if (error_code == 0)
-		reset_job_bitmaps ();
+	if (error_code == 0) {
+		lock_slurmctld (config_write_lock);
+		error_code = read_slurm_conf (0);
+		if (error_code == 0)
+			reset_job_bitmaps ();
 
-	if (daemonize) {
-		if (chdir (slurmctld_conf.state_save_location))
-			fatal ("chdir to %s error %m", slurmctld_conf.state_save_location);
+		if (daemonize) {
+			if (chdir (slurmctld_conf.state_save_location))
+				fatal ("chdir to %s error %m", slurmctld_conf.state_save_location);
+		}
+		unlock_slurmctld (config_write_lock);
 	}
-	unlock_slurmctld (config_write_lock);
-
+	
 	/* return result */
 	if (error_code)
 	{
@@ -1324,13 +1397,25 @@ slurm_rpc_reconfigure_controller ( slurm_msg_t * msg )
 void 
 slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 {
+	int error_code = 0;
 	shutdown_msg_t * shutdown_msg = (shutdown_msg_t *) msg->data;
-/* must be user root */
+#ifdef	HAVE_AUTHD
+	int uid;
+#endif
 
 	/* do RPC call */
 	debug ("Performing RPC: REQUEST_SHUTDOWN");
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if (uid != 0) {
+		error ("Bogus SHUTDOWN RPC from uid %d", uid);
+		error_code = ESLURM_USER_ID_MISSING;
+	}
+#endif
 
-	if (shutdown_msg->core)
+	if (error_code)
+		;
+	else if (shutdown_msg->core)
 		debug3 ("performing immeditate shutdown without state save");
 	else if (shutdown_time)
 		debug3 ("slurm_rpc_shutdown_controller RPC issued after shutdown in progress");
@@ -1345,8 +1430,8 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 		slurmctld_shutdown ();
 	}
 
-	slurm_send_rc_msg ( msg , SLURM_SUCCESS );
-	if (shutdown_msg->core)
+	slurm_send_rc_msg ( msg , error_code );
+	if ((error_code == 0) && (shutdown_msg->core))
 		fatal ("Aborting per RPC request");
 }
 
@@ -1354,7 +1439,13 @@ slurm_rpc_shutdown_controller ( slurm_msg_t * msg )
 void 
 slurm_rpc_shutdown_controller_immediate ( slurm_msg_t * msg )
 {
-/* must be user root */
+#ifdef	HAVE_AUTHD
+	int uid;
+
+	uid = slurm_auth_uid (msg.cred);
+	if (uid != 0)
+		error ("Bogus SHUTDOWN_IMMEDIATE RPC from uid %d", uid);
+#endif
 
 	/* do RPC call */
 	debug ("Performing RPC: REQUEST_SHUTDOWN_IMMEDIATE");
@@ -1422,7 +1513,7 @@ void
 slurm_rpc_node_registration ( slurm_msg_t * msg )
 {
 	/* init */
-	int error_code;
+	int error_code = 0;
 	clock_t start_time;
 	slurm_node_registration_status_msg_t * node_reg_stat_msg = 
 			( slurm_node_registration_status_msg_t * ) msg-> data ;
@@ -1431,15 +1522,23 @@ slurm_rpc_node_registration ( slurm_msg_t * msg )
 
 	start_time = clock ();
 	debug ("Processing RPC: MESSAGE_NODE_REGISTRATION_STATUS");
-	lock_slurmctld (node_write_lock);
-
-	/* do RPC call */
-	error_code = validate_node_specs (
-		node_reg_stat_msg -> node_name ,
-		node_reg_stat_msg -> cpus ,
-		node_reg_stat_msg -> real_memory_size ,
-		node_reg_stat_msg -> temporary_disk_space ) ;
-	unlock_slurmctld (node_write_lock);
+#ifdef	HAVE_AUTHD
+	uid = slurm_auth_uid (msg.cred);
+	if (uid != 0) {
+		error_code = ESLURM_USER_ID_MISSING;
+		error ("Bogus NODE_REGISTER RPC from uid %d", uid);
+	}
+#endif
+	if (error_code == 0) {
+		/* do RPC call */
+		lock_slurmctld (node_write_lock);
+		error_code = validate_node_specs (
+			node_reg_stat_msg -> node_name ,
+			node_reg_stat_msg -> cpus ,
+			node_reg_stat_msg -> real_memory_size ,
+			node_reg_stat_msg -> temporary_disk_space ) ;
+		unlock_slurmctld (node_write_lock);
+	}
 
 	/* return result */
 	if (error_code)

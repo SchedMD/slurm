@@ -1019,12 +1019,13 @@ job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list
 /* 
  * job_cancel - cancel the specified job
  * input: job_id - id of the job to be cancelled
+ *	uid - uid of requesting user
  * output: returns 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int
-job_cancel (uint32_t job_id) 
+job_cancel (uint32_t job_id, int uid) 
 {
 	struct job_record *job_ptr;
 
@@ -1038,6 +1039,11 @@ job_cancel (uint32_t job_id)
 	    (job_ptr->job_state == JOB_COMPLETE) ||
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
+
+	if ((job_ptr->user_id != uid) && (uid != 0)) {
+		error ("Bogus JOB_CANCEL RPC from uid %d", uid);
+		return ESLURM_USER_ID_MISSING;
+	}
 
 	if (job_ptr->job_state == JOB_PENDING) {
 		last_job_update = time (NULL);
@@ -1068,12 +1074,13 @@ job_cancel (uint32_t job_id)
 /* 
  * job_complete - note the normal termination the specified job
  * input: job_id - id of the job which completed
+ *	uid - user id of user issuing the RPC
  * output: returns 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int
-job_complete (uint32_t job_id) 
+job_complete (uint32_t job_id, int uid) 
 {
 	struct job_record *job_ptr;
 
@@ -1087,6 +1094,11 @@ job_complete (uint32_t job_id)
 	    (job_ptr->job_state == JOB_COMPLETE) ||
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
+
+	if ((job_ptr->user_id != uid) && (uid != 0)) {
+		error ("Bogus JOB_COMPLETE RPC from uid %d", uid);
+		return ESLURM_USER_ID_MISSING;
+	}
 
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
 	    (job_ptr->job_state == JOB_RUNNING) ||
@@ -1102,6 +1114,7 @@ job_complete (uint32_t job_id)
 	job_ptr->job_state = JOB_COMPLETE;
 	job_ptr->end_time = time(NULL);
 	delete_job_details(job_ptr);
+	delete_all_step_records(job_ptr);
 	return SLURM_SUCCESS;
 }
 
@@ -1504,12 +1517,13 @@ copy_job_desc_to_job_record ( job_desc_msg_t * job_desc ,
 /* 
  * job_step_cancel - cancel the specified job step
  * input: job_id, step_id - id of the job to be cancelled
+ *	uid - user id of user issuing the RPC
  * output: returns 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int
-job_step_cancel (uint32_t job_id, uint32_t step_id) 
+job_step_cancel (uint32_t job_id, uint32_t step_id, int uid) 
 {
 	struct job_record *job_ptr;
 	int error_code;
@@ -1525,6 +1539,11 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 	    (job_ptr->job_state == JOB_COMPLETE) ||
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
+
+	if ((job_ptr->user_id != uid) && (uid != 0)) {
+		error ("Bogus JOB_CANCEL RPC from uid %d", uid);
+		return ESLURM_USER_ID_MISSING;
+	}
 
 	if ((job_ptr->job_state == JOB_STAGE_IN) || 
 	    (job_ptr->job_state == JOB_RUNNING) ||
@@ -1548,12 +1567,13 @@ job_step_cancel (uint32_t job_id, uint32_t step_id)
 /* 
  * job_step_complete - note normal completion the specified job step
  * input: job_id, step_id - id of the job to be completed
+ *	uid - user id of user issuing RPC
  * output: returns 0 on success, otherwise ESLURM error code 
  * global: job_list - pointer global job list
  *	last_job_update - time of last job table update
  */
 int
-job_step_complete (uint32_t job_id, uint32_t step_id) 
+job_step_complete (uint32_t job_id, uint32_t step_id, int uid) 
 {
 	struct job_record *job_ptr;
 	int error_code;
@@ -1568,6 +1588,11 @@ job_step_complete (uint32_t job_id, uint32_t step_id)
 	    (job_ptr->job_state == JOB_COMPLETE) ||
 	    (job_ptr->job_state == JOB_TIMEOUT))
 		return ESLURM_ALREADY_DONE;
+
+	if ((job_ptr->user_id != uid) && (uid != 0)) {
+		error ("Bogus JOB_COMPLETE RPC from uid %d", uid);
+		return ESLURM_USER_ID_MISSING;
+	}
 
 	last_job_update = time (NULL);
 	error_code = delete_step_record (job_ptr, step_id);
@@ -1930,7 +1955,7 @@ purge_old_job (void)
 {
 	int i;
 
-	i = list_delete_all (job_list, &list_find_job_old, NULL);
+	i = list_delete_all (job_list, &list_find_job_old, "");
 	if (i) {
 		info ("purge_old_job: purged %d old job records", i);
 		last_job_update = time (NULL);

@@ -33,6 +33,8 @@
 #  include <stdlib.h>
 #endif
 
+#include <stdio.h>
+
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/xmalloc.h>
 

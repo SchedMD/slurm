@@ -338,16 +338,16 @@ extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char 
 	int immediate, int will_run, int allocate);
 
 /* job_cancel - cancel the specified job */
-extern int job_cancel (uint32_t job_id);
+extern int job_cancel (uint32_t job_id, int uid);
 
 /* job_step_cancel - cancel the specified job step */
-extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id);
+extern int job_step_cancel (uint32_t job_id, uint32_t job_step_id, int uid );
 
 /* job_complete - note the completion the specified job */
-extern int job_complete (uint32_t job_id);
+extern int job_complete (uint32_t job_id, int uid);
 
 /* job_step_complete - note the completion the specified job step*/
-extern int job_step_complete (uint32_t job_id, uint32_t job_step_id);
+extern int job_step_complete (uint32_t job_id, uint32_t job_step_id, int uid);
 
 /* job_create - create a job table record for the supplied specifications */
 extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 

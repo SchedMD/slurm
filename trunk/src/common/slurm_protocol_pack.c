@@ -707,6 +707,7 @@ void pack_job_step_create_request_msg ( job_step_create_request_msg_t* msg , voi
 	pack32 ( msg -> node_count, ( void ** ) buffer , length ) ;
 	pack32 ( msg -> cpu_count, ( void ** ) buffer , length ) ;
 	pack16 ( msg -> relative, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> task_dist, ( void ** ) buffer , length ) ;
 	packstr ( msg -> node_list, ( void ** ) buffer , length ) ;
 }
 
@@ -727,6 +728,7 @@ int unpack_job_step_create_request_msg ( job_step_create_request_msg_t** msg , v
 	unpack32 ( &( tmp_ptr -> node_count), ( void ** ) buffer , length ) ;
 	unpack32 ( &( tmp_ptr -> cpu_count), ( void ** ) buffer , length ) ;
 	unpack16 ( &( tmp_ptr -> relative), ( void ** ) buffer , length ) ;
+	unpack16 ( &( tmp_ptr -> task_dist), ( void ** ) buffer , length ) ;
 	unpackstr_xmalloc ( &( tmp_ptr -> node_list ), &uint16_tmp,  ( void ** ) buffer , length ) ;
 
 	*msg = tmp_ptr;

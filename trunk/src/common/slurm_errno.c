@@ -69,7 +69,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ ESLURM_ERROR_ON_DESC_TO_RECORD_COPY,	"Unable to create job record, try again" },
 	{ ESLURM_JOB_MISSING_SIZE_SPECIFICATION,"Job size specification needs to be provided" },
 	{ ESLURM_JOB_SCRIPT_MISSING,	 	"Job script not specified" },
-	{ ESLURM_USER_ID_MISSING , 		"User id missing" },
+	{ ESLURM_USER_ID_MISSING , 		"User id is missing or invalid" },
 	{ ESLURM_JOB_NAME_TOO_LONG,		"Job name too long" },
 	{ ESLURM_DUPLICATE_JOB_ID , 		"Duplicate job id" },
 	{ ESLURM_PATHNAME_TOO_LONG , 		"Pathname of a file or directory too long" },
