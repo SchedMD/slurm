@@ -1,8 +1,6 @@
 /*****************************************************************************\
  *  $Id$
  *****************************************************************************
- *  $LSDId: hostlist.h,v 1.3 2003/04/25 23:38:30 grondo Exp $
- *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
  *  Written by Mark Grondona <mgrondona@llnl.gov>
@@ -162,6 +160,8 @@ int hostlist_push_list(hostlist_t hl1, hostlist_t hl2);
  */
 char * hostlist_pop(hostlist_t hl);
 
+
+char * hostlist_nth(hostlist_t hl, int n);
 
 /* hostlist_shift():
  *
