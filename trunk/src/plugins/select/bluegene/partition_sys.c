@@ -80,9 +80,9 @@ void _init_sys(partition_t*);
 		      rm_connection_type_t part_conn);
    int _post_allocate(rm_partition_t *my_part, 
 		pm_partition_id_t *part_id);
-int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list);
-     // int _get_switch_list(partition_t* partition, List* switch_list);
-int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp);
+   int _get_switch_list(int cur_coord[SYSTEM_DIMENSIONS], List* switch_list);
+// int _get_switch_list(partition_t* partition, List* switch_list);
+   int _get_bp_by_location(rm_BGL_t* my_bgl, int* cur_coord, rm_BP_t** bp);
 #endif
 
 int _create_bgl_partitions(List requests);
