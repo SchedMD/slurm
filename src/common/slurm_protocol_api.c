@@ -278,7 +278,7 @@ int slurm_receive_msg ( slurm_fd open_fd , slurm_msg_t * msg )
 	if ( ( rc = _slurm_msg_recvfrom ( open_fd , buffer , receive_len, SLURM_PROTOCOL_NO_SEND_RECV_FLAGS , & (msg)->address ) ) == SLURM_SOCKET_ERROR ) 
 	{
 		int local_errno = errno ;
-		debug ( "Error receiving msg socket: errno %i", local_errno ) ;
+		debug ( "slurm_receive_msg: Error receiving msg socket: %m errno %i", local_errno ) ;
 		return rc ;
 	}
 
@@ -635,6 +635,7 @@ int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * r
         int msg_size ;
         int rc ;
         slurm_fd sockfd ;
+	int error_code = 0 ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
@@ -642,15 +643,24 @@ int slurm_send_recv_controller_msg ( slurm_msg_t * request_msg , slurm_msg_t * r
 
         /* send request message */
         if ( ( rc = slurm_send_controller_msg ( sockfd , request_msg ) ) == SLURM_SOCKET_ERROR )
-                return SLURM_SOCKET_ERROR ;
+	{
+		error_code = 1 ;
+                goto slurm_send_recv_controller_msg_cleanup;
+	}
 
         /* receive message */
         if ( ( msg_size = slurm_receive_msg ( sockfd , response_msg ) ) == SLURM_SOCKET_ERROR )
-                return SLURM_SOCKET_ERROR ;
+	{
+		error_code = 1 ;
+                goto slurm_send_recv_controller_msg_cleanup;
+	}
+	
+	slurm_send_recv_controller_msg_cleanup:
         /* shutdown message connection */
         if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
-
+	if ( error_code ) return SLURM_SOCKET_ERROR ;
+	
         return SLURM_SUCCESS ;
 }
 
@@ -659,6 +669,7 @@ int slurm_send_recv_node_msg ( slurm_msg_t * request_msg , slurm_msg_t * respons
         int msg_size ;
         int rc ;
         slurm_fd sockfd ;
+	int error_code = 0 ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_msg_conn ( & request_msg -> address ) ) == SLURM_SOCKET_ERROR )
@@ -666,26 +677,33 @@ int slurm_send_recv_node_msg ( slurm_msg_t * request_msg , slurm_msg_t * respons
 
         /* send request message */
         if ( ( rc = slurm_send_node_msg ( sockfd , request_msg ) ) == SLURM_SOCKET_ERROR )
-                return SLURM_SOCKET_ERROR ;
+	{
+		error_code = 1 ;
+                goto slurm_send_recv_node_msg_cleanup;
+	}
 
         /* receive message */
         if ( ( msg_size = slurm_receive_msg ( sockfd , response_msg ) ) == SLURM_SOCKET_ERROR )
-                return SLURM_SOCKET_ERROR ;
+	{
+		error_code = 1 ;
+                goto slurm_send_recv_node_msg_cleanup;
+	}
+
+        slurm_send_recv_node_msg_cleanup:
         /* shutdown message connection */
         if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
+	if ( error_code ) return SLURM_SOCKET_ERROR ;
 
         return SLURM_SUCCESS ;
 
-slurm_send_recv_node_msg_error:
-	slurm_close_stream ( sockfd ) ;
-	 return SLURM_SOCKET_ERROR ;
 }
 
 int slurm_send_only_controller_msg ( slurm_msg_t * request_msg )
 {
         int rc ;
         slurm_fd sockfd ;
+	int error_code = 0 ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR )
@@ -693,19 +711,26 @@ int slurm_send_only_controller_msg ( slurm_msg_t * request_msg )
 
         /* send request message */
         if ( ( rc = slurm_send_controller_msg ( sockfd , request_msg ) ) == SLURM_SOCKET_ERROR )
-                return SLURM_SOCKET_ERROR ;
-
+	{
+		error_code = 1 ;
+                goto slurm_send_only_controller_msg_cleanup;
+	}
+	slurm_send_only_controller_msg_cleanup:
         /* shutdown message connection */
         if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
+	if ( error_code ) return SLURM_SOCKET_ERROR ;
+
 
         return SLURM_SUCCESS ;
+	
 }
 
 int slurm_send_only_node_msg ( slurm_msg_t * request_msg )
 {
         int rc ;
         slurm_fd sockfd ;
+	int error_code = 0 ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_msg_conn ( & request_msg -> address ) ) == SLURM_SOCKET_ERROR )
@@ -713,11 +738,16 @@ int slurm_send_only_node_msg ( slurm_msg_t * request_msg )
 
         /* send request message */
         if ( ( rc = slurm_send_node_msg ( sockfd , request_msg ) ) == SLURM_SOCKET_ERROR )
-                return SLURM_SOCKET_ERROR ;
-
+	{
+		error_code = 1 ;
+                goto slurm_send_only_node_msg_cleanup;
+	}
+	slurm_send_only_node_msg_cleanup:
         /* shutdown message connection */
         if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR )
                 return SLURM_SOCKET_ERROR ;
+	if ( error_code ) return SLURM_SOCKET_ERROR ;
+
 
         return SLURM_SUCCESS ;
 }
