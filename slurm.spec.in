@@ -111,17 +111,23 @@ rm -rf $RPM_BUILD_ROOT
 %{_libdir}/libslurm.la
 %{_mandir}/man3/*
 
+%if %(test -f %{_libdir}/slurm/auth_none.so)
 %files auth-none
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_none.so
+%endif
 
+%if %(test -f %{_libdir}/slurm/auth_munge.so)
 %files auth-munge
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_munge.so
+%endif
 
+%if %(test -f %{_libdir}/slurm/auth_authd.so)
 %files auth-authd
 %defattr(-,root,root)
 %{_libdir}/slurm/auth_authd.so
+%endif
 
 %pre
 if [ -x /etc/rc.d/init.d/slurm ]; then
