@@ -5,7 +5,7 @@
 AUTOMAKE_OPTIONS = foreign
 
 LIBS=-l$(NCURSES)
-INCLUDES = -I$(top_srcdir) -I 
+INCLUDES = -I$(top_srcdir) $(BGL_INCLUDES) 
 bin_PROGRAMS = smap
 
 smap_LDADD =					  \
