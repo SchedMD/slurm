@@ -1232,9 +1232,6 @@ void ping_nodes (void)
 	for (i = 0; i < node_record_count; i++) {
 		base_state = node_record_table_ptr[i].node_state & 
 				(~NODE_STATE_NO_RESPOND);
-		if (base_state == NODE_STATE_DOWN)
-			continue;
-
 		age = difftime (now, node_record_table_ptr[i].last_response);
 		if (age < slurmctld_conf.heartbeat_interval)
 			continue;
@@ -1257,7 +1254,8 @@ void ping_nodes (void)
 
 		/* Request a node registration if its state is UNKNOWN  
 		 * and periodically otherwise (about every 17th ping) */
-		if ((base_state == NODE_STATE_UNKNOWN) || force_reg) {
+		if ((base_state == NODE_STATE_UNKNOWN) || 
+		    (base_state == NODE_STATE_DOWN   ) || force_reg) {
 			debug3 ("attempt to register %s now", 
 			        node_record_table_ptr[i].name);
 			if ((reg_agent_args->node_count+1) > 
