@@ -1,0 +1,53 @@
+.TH SINFO "1" "August 2002" "sinfo 0.1" "Slurm components"
+
+.SH "NAME"
+sinfo \- Used to view information of jobs located in the scheduling queue.
+
+.SH "SYNOPSIS"
+\fBsinfo\fR [\fIOPTIONS\fR...] 
+.SH "DESCRIPTION"
+\fBsinfo\fR is used to view partition and node status and information for a 
+system running SLURM. 
+
+.TP
+OPTIONS
+.TP
+\fB-?\fR, \fB--help\fR
+Print a help message describing the usage of \fBsinfo\fR.
+.TP
+\fB-s\fR, \fB--state\fR
+List nodes of a given state.
+.TP
+\fB-p\fR, \fB--partition\fR
+Display information about the specified partition.  If \fB-p\fR is used with a
+\fB-n\fR with no arguments, all the nodes of the specified partition will be
+displayed.
+.TP
+.SH "EXAMPLE"
+.eo
+PUT THE EXAMPLE HERE...
+.br 
+.ec
+
+.SH "COPYING"
+Copyright (C) 2002 The Regents of the University of California.
+Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+UCRL-CODE-2002-040.
+.LP
+This file is part of SLURM, a resource management program.
+For details, see <http://www.llnl.gov/linux/slurm/>.
+.LP
+SLURM is free software; you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free
+Software Foundation; either version 2 of the License, or (at your option)
+any later version.
+.LP
+SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+details.
+.SH "SEE ALSO"
+\fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
+\fBslurm_load_partitions\fR(3), 
+\fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
