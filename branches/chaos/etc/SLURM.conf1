@@ -1,0 +1,19 @@
+# 
+# Sample /etc/SLURM.conf
+# Author: John Doe
+# Date: 11/06/2001
+#
+Administrators=cdunlap,garlick,grondo,jette
+#
+ControlMachine=linux
+BackupController=lx02
+#
+NodeSpecConf=/usr/local/SLURM/NodeSpecConf
+PartitionConf=/usr/local/SLURM/PartitionConf
+#
+MasterDaemon=/usr/local/SLURM/Slurmd.Master"
+InitProgram=/usr/local/SLURM/Slurmd.Prolog"
+ControlDaemon=/usr/local/SLURM/Slurmd.Control"
+ServerDaemon=/usr/local/SLURM/Slurmd.Server"
+ControllerTimeout=120
+ServerTimeout=90
