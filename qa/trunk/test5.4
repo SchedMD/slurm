@@ -2,7 +2,7 @@
 #
 # Purpose: Test of SLURM functionality
 #          Check squeue formating options (--noheader, --format and --step 
-#          options).
+#          options and SQUEUE_FORMAT environment variable).
 #
 # Output:  "TEST: #.#" followed by "SUCCESS" if test was successful, OR
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
@@ -91,7 +91,7 @@ if {$have_header > 0} {
 }
 
 #
-# Check the squeue format output
+# Check the squeue format output via command line option
 #
 
 # For some reason, quoting the format value breaks expect, 
@@ -116,6 +116,42 @@ expect {
 	eof {
 	}
 }
+
+if {$have_job_ids == 0} {
+	send_user "\nFAILURE: squeue format error\n"
+	set exit_code 1
+}
+if {$have_job_ids == 1} {
+	send_user "\nFAILURE: squeue found only 1 of 2 jobs\n"
+	set exit_code 1
+}
+
+#
+# Check the squeue format output via SQUEUE_FORMAT environment 
+# variable
+#
+
+set env(SQUEUE_FORMAT) "JID=%i UID=%U"
+set have_job_ids 0
+spawn $squeue
+expect {
+	-re "($end_of_line)JID=($number) UID=($number)" {
+		if {$expect_out(2,string) == $job_id1} {
+			incr have_job_ids
+		}
+		if {$expect_out(2,string) == $job_id2} {
+			incr have_job_ids
+		}
+		exp_continue
+	}
+	timeout {
+		send_user "\nFAILURE: squeue not responding\n"
+		set exit_code 1
+	}
+	eof {
+	}
+}
+unset env(SQUEUE_FORMAT)
 
 if {$have_job_ids == 0} {
 	send_user "\nFAILURE: squeue format error\n"
