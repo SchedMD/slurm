@@ -619,6 +619,28 @@ shm_step_addrs(uint32_t jobid, uint32_t stepid,
 }
 
 int 
+shm_update_job_timelimit(uint32_t jobid, time_t newlim)
+{
+	int i, found = 0, retval = SLURM_SUCCESS;
+
+	_shm_lock();
+	for (i = 0; i < MAX_JOB_STEPS; i++) {
+		job_step_t *s = &slurmd_shm->step[i];
+		if (s->jobid == jobid) {
+			slurmd_shm->step[i].timelimit = newlim;
+			found = 1;
+		}
+	}
+	_shm_unlock();
+
+	if (found == 0) { 
+		slurm_seterrno(ESRCH);
+		retval = SLURM_FAILURE;
+	}
+	return retval;
+}
+
+int 
 shm_update_step_timelimit(uint32_t jobid, uint32_t stepid, time_t newlim)
 {
 	int i, retval = SLURM_SUCCESS;

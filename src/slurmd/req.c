@@ -52,6 +52,7 @@ static void _rpc_batch_job(slurm_msg_t *, slurm_addr *);
 static void _rpc_kill_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_reattach_tasks(slurm_msg_t *, slurm_addr *);
 static void _rpc_revoke_credential(slurm_msg_t *, slurm_addr *);
+static void _rpc_update_time(slurm_msg_t *, slurm_addr *);
 static void _rpc_shutdown(slurm_msg_t *msg, slurm_addr *cli_addr);
 static int  _rpc_ping(slurm_msg_t *, slurm_addr *);
 static int  _launch_tasks(launch_tasks_request_msg_t *, slurm_addr *);
@@ -79,6 +80,10 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 	case REQUEST_REVOKE_JOB_CREDENTIAL:
 		_rpc_revoke_credential(msg, cli);
 		slurm_free_revoke_credential_msg(msg->data);
+		break;
+	case REQUEST_UPDATE_JOB_TIME:
+		_rpc_update_time(msg, cli);
+		slurm_free_update_job_time_msg(msg->data);
 		break;
 	case REQUEST_SHUTDOWN:
 	case REQUEST_SHUTDOWN_IMMEDIATE:
@@ -409,6 +414,31 @@ _rpc_revoke_credential(slurm_msg_t *msg, slurm_addr *cli)
 			      req->job_id);
 		else
 			debug("credential for job %d revoked", req->job_id);
+	}
+
+	slurm_send_rc_msg(msg, rc);
+}
+
+static void 
+_rpc_update_time(slurm_msg_t *msg, slurm_addr *cli)
+{
+	int   rc      = SLURM_SUCCESS;
+	uid_t req_uid = slurm_auth_uid(msg->cred);
+	job_time_msg_t *req = (job_time_msg_t *) msg->data;
+
+	if ((req_uid != conf->slurm_user_id) && (req_uid != 0)) {
+		rc = ESLURM_USER_ID_MISSING;
+		error("Security violation, uid %u can't update time limit",
+		      (unsigned int) req_uid);
+	} else {
+		rc = shm_update_job_timelimit(req->job_id, 
+					      req->expiration_time);
+		if (rc < 0) {
+			error("updating lifetime for job %d: %m", 
+			      req->job_id);
+			rc = ESLURM_INVALID_JOB_ID;
+		} else
+			debug("reset job %d lifetime", req->job_id);
 	}
 
 	slurm_send_rc_msg(msg, rc);
