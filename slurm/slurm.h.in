@@ -53,10 +53,14 @@
 # define PARAMS(protos)	()
 #endif
 
+/* Define to 1 if you have the `elan3' library (-lelan3). */
+#undef HAVE_LIBELAN3
+
+/* Define to 1 if you have the <sys/socket.h> header file. */
+#undef HAVE_SYS_SOCKET_H
+
 BEGIN_C_DECLS
 
-/* FIXME: Need need better way to get configuration info */
-#include "config.h"		/* used for possible HAVE_LIBELAN3 */
 #include <slurm/slurm_errno.h>
 
 #include <stdint.h>		/* for uint16_t, uint32_t definitions */
