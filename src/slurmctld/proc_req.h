@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Moe Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette1@llnl.gov> and Kevin Tew <tew1@llnl.gov> 
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -62,5 +62,25 @@ extern inline void diff_tv_str(struct timeval *tv1,struct timeval *tv2,
  */
 void slurmctld_req (slurm_msg_t * msg);
 
+/*
+ * slurm_drain_nodes - process a request to drain a list of nodes,
+ *	no-op for nodes already drained or draining
+ * node_list IN - list of nodes to drain
+ * reason IN - reason to drain the nodes
+ * RET SLURM_SUCCESS or error code
+ * NOTE: This is utilzed by plugins and not via RPC and it sets its
+ *	own locks.
+ */
+extern int slurm_drain_nodes(char *node_list, char *reason);
+
+/*
+ * slurm_fail_job - terminate a job due to a launch failure
+ *	no-op for jobs already terminated
+ * job_id IN - slurm job id
+ * RET SLURM_SUCCESS or error code
+ * NOTE: This is utilzed by plugins and not via RPC and it sets its
+ *	own locks.
+ */
+extern int slurm_fail_job(uint32_t job_id);
 #endif /* !_HAVE_PROC_REQ_H */
 

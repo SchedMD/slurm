@@ -1268,6 +1268,41 @@ extern int job_allocate(job_desc_msg_t * job_specs, int immediate, int will_run,
 	return SLURM_SUCCESS;
 }
 
+/*
+ * job_fail - terminate a job due to initiation failure
+ * IN job_id - id of the job to be killed
+ * RET 0 on success, otherwise ESLURM error code
+ */
+extern int job_fail(uint32_t job_id)
+{
+	struct job_record *job_ptr;
+	time_t now = time(NULL);
+
+	job_ptr = find_job_record(job_id);
+	if (job_ptr == NULL) {
+		error("job_fail: invalid job id %u", job_id);
+		return ESLURM_INVALID_JOB_ID;
+	}
+
+	if (IS_JOB_FINISHED(job_ptr))
+		return ESLURM_ALREADY_DONE;
+	if (job_ptr->job_state == JOB_RUNNING) {
+		/* No need to signal steps, deallocate kills them */
+		job_ptr->time_last_active       = now;
+		job_ptr->end_time               = now;
+		last_job_update                 = now;
+		job_ptr->job_state = JOB_FAILED | JOB_COMPLETING;
+		deallocate_nodes(job_ptr, false);
+		job_completion_logger(job_ptr);
+		return SLURM_SUCCESS;
+	}
+	/* All other states */
+	verbose("job_fail: job %u can't be killed from state=%s",
+		job_id, job_state_string(job_ptr->job_state));
+	return ESLURM_TRANSITION_STATE_NO_UPDATE;
+
+}
+
 /* 
  * job_signal - signal the specified job
  * IN job_id - id of the job to be signaled
