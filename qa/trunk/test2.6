@@ -7,10 +7,6 @@
 #          "FAILURE: ..." otherwise with an explanation of the failure, OR
 #          anything else indicates a failure mode that must be investigated.
 #
-# NOTE: The interaction processing is a bit strange to deal with the 
-# behavior of readline() in RedHat 9, that keeps printing the prompt 
-# for each keystroke.
-#
 
 source ./globals
 
@@ -22,36 +18,9 @@ print_header $test_id
 #
 # Report all slurm partitions with verbose option
 #
-set iteration     0
 set matches       0
-set part_name     ""
-set verb_sent     0
-set show_sent     0
-set quit_sent     0
-spawn $scontrol
+spawn $scontrol -v show partition
 expect {
-	-re "scontrol: " {
-		if {$iteration == 0} {
-			if {$verb_sent == 0} {
-				send "verbose\n"
-				set verb_sent 1
-				incr iteration
-			}
-		} elseif {$iteration == 1} {
-			if {$show_sent == 0} {
-				send "show partition\n"
-				set show_sent 1
-				incr iteration
-			}
-		} elseif {$iteration == 2} {
-			if {$quit_sent == 0} {
-				send "quit\n"
-				set quit_sent 1
-				incr iteration
-			}
-		}
-		exp_continue
-	}
 	-re "last_update_time" {
 		incr matches
 		exp_continue
@@ -75,36 +44,9 @@ if {$matches != 2} {
 #
 # Report all slurm partitions with quiet option
 #
-set iteration     0
 set matches       0
-set part_name     ""
-set quiet_sent     0
-set show_sent     0
-set quit_sent     0
-spawn $scontrol
+spawn $scontrol -q show partition
 expect {
-	-re "scontrol: " {
-		if {$iteration == 0} {
-			if {$quiet_sent == 0} {
-				send "quiet\n"
-				set quiet_sent 1
-				incr iteration
-			}
-		} elseif {$iteration == 1} {
-			if {$show_sent == 0} {
-				send "show partition\n"
-				set show_sent 1
-				incr iteration
-			}
-		} elseif {$iteration == 2} {
-			if {$quit_sent == 0} {
-				send "quit\n"
-				set quit_sent 1
-				incr iteration
-			}
-		}
-		exp_continue
-	}
 	-re "last_update_time" {
 		send_user "\nFAILURE: quiet format failure\n:
 		set exit_code 1
