@@ -901,6 +901,8 @@ static int _sync_nodes_to_comp_job(void)
 	return update_cnt;
 }
 
+/* Synchronize states of nodes and active jobs
+ * RET count of jobs with state changes */
 static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 {
 	int i, cnt = 0;
@@ -909,17 +911,20 @@ static int _sync_nodes_to_active_job(struct job_record *job_ptr)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(job_ptr->node_bitmap, i) == 0)
 			continue;
+
 		base_state = node_record_table_ptr[i].node_state & 
 			     (~NODE_STATE_NO_RESPOND);
+		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
+				* This counter moved to comp_job_cnt 
+				* by _sync_nodes_to_comp_job() */
+
 		if (base_state == NODE_STATE_DOWN) {
 			time_t now = time(NULL);
 			job_ptr->job_state = JOB_NODE_FAIL | JOB_COMPLETING;
 			job_ptr->end_time = MIN(job_ptr->end_time, now);
 			delete_all_step_records(job_ptr);
+			cnt++;
 		} else {
-	 		node_record_table_ptr[i].run_job_cnt++; /* NOTE:
-					* This counter moved to comp_job_cnt 
-					* by _sync_nodes_to_comp_job() */
 			no_resp_flag = node_record_table_ptr[i].node_state & 
 				       NODE_STATE_NO_RESPOND;
 			if ((base_state == NODE_STATE_UNKNOWN) || 
