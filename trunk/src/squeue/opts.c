@@ -627,9 +627,7 @@ _build_job_list( char* str )
 	if ( str == NULL)
 		return NULL;
 	my_list = list_create( NULL );
-	i = strlen( str );
-	my_job_list = xmalloc( i+1 );
-	strcpy( my_job_list, str );
+	my_job_list = xstrdup( str );
 	job = strtok_r( my_job_list, ",", &tmp_char );
 	while (job) 
 	{
@@ -656,14 +654,11 @@ _build_part_list( char* str )
 {
 	List my_list;
 	char *part, *tmp_char, *my_part_list;
-	int i;
 
 	if ( str == NULL)
 		return NULL;
 	my_list = list_create( NULL );
-	i = strlen( str );
-	my_part_list = xmalloc( i+1 );
-	strcpy( my_part_list, str );
+	my_part_list = xstrdup( str );
 	part = strtok_r( my_part_list, ",", &tmp_char );
 	while (part) 
 	{
