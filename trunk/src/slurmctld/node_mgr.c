@@ -471,8 +471,7 @@ int load_all_node_state ( void )
 			error ("Invalid data for node %s: cpus=%u, state=%u",
 				node_name, cpus, node_state);
 			error ("No more node data will be processed from the checkpoint file");
-			if (node_name)
-				xfree (node_name);
+			FREE_NULL (node_name);
 			error_code = EINVAL;
 			break;
 			
@@ -490,8 +489,7 @@ int load_all_node_state ( void )
 			error ("Node %s has vanished from configuration", 
 			       node_name);
 		}
-		if (node_name)
-			xfree (node_name);
+		FREE_NULL (node_name);
 	}
 
 	free_buf (buffer);
@@ -627,14 +625,8 @@ int init_node_conf (void)
 	last_node_update = time (NULL);
 
 	node_record_count = 0;
-	if (node_record_table_ptr) {
-		xfree (node_record_table_ptr);
-		node_record_table_ptr = NULL;
-	}
-	if (hash_table) {
-		xfree (hash_table);
-		hash_table = NULL;
-	}
+	FREE_NULL (node_record_table_ptr);
+	FREE_NULL (hash_table);
 
 	strcpy (default_node_record.name, "DEFAULT");
 	default_node_record.node_state = NODE_STATE_UNKNOWN;
@@ -648,15 +640,9 @@ int init_node_conf (void)
 	default_config_record.real_memory = 1;
 	default_config_record.tmp_disk = 1;
 	default_config_record.weight = 1;
-	if (default_config_record.feature)
-		xfree (default_config_record.feature);
-	default_config_record.feature = (char *) NULL;
-	if (default_config_record.nodes)
-		xfree (default_config_record.nodes);
-	default_config_record.nodes = (char *) NULL;
-	if (default_config_record.node_bitmap)
-		bit_free (default_config_record.node_bitmap);
-	default_config_record.node_bitmap = (bitstr_t *) NULL;
+	FREE_NULL (default_config_record.feature);
+	FREE_NULL(default_config_record.nodes);
+	FREE_NULL_BITMAP (default_config_record.node_bitmap);
 
 	if (config_list)	/* delete defunct configuration entries */
 		(void) _delete_config_record ();
@@ -687,12 +673,9 @@ static void _list_delete_config (void *config_entry)
 	struct config_record *config_record_point;
 
 	config_record_point = (struct config_record *) config_entry;
-	if (config_record_point->feature)
-		xfree (config_record_point->feature);
-	if (config_record_point->nodes)
-		xfree (config_record_point->nodes);
-	if (config_record_point->node_bitmap)
-		bit_free (config_record_point->node_bitmap);
+	FREE_NULL (config_record_point->feature);
+	FREE_NULL (config_record_point->nodes);
+	FREE_NULL (config_record_point->node_bitmap);
 	xfree (config_record_point);
 }
 
