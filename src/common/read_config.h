@@ -30,6 +30,8 @@
 
 #include "src/common/slurm_protocol_defs.h"
 
+#define DEFAULT_AUTH_TYPE          "auth/none"
+#define DEFAULT_JOB_COMP_TYPE      "jobcomp/none"
 #define DEFAULT_KILL_WAIT           30
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
