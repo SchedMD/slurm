@@ -5,6 +5,7 @@
 #
 ControlMachine=mcri   ControlAddr=emcri 
 #
+AuthType=auth/none
 #Epilog=/admin/sbin/slurm.epilog
 FastSchedule=1
 FirstJobId=65536
@@ -14,6 +15,7 @@ InactiveLimit=120
 JobCredentialPrivateKey=private.key
 JobCredentialPublicCertificate=public.cert
 KillWait=30
+PluginDir=/var/tmp/slurm/lib/slurm
 #Prioritize=/usr/local/maui/priority
 #Prolog=/admin/sbin/slurm.prolog
 ReturnToService=0
