@@ -82,6 +82,9 @@ struct Node_Record {
     char Name[MAX_NAME_LEN];		/* Name of the node. A NULL name indicates defunct node */
     enum Node_State NodeState;		/* State of the node */
     time_t LastResponse;		/* Last response from the node */
+    int CPUs;				/* Actual count of CPUs running on the node */
+    int RealMemory;			/* Actual megabytes of real memory on the node */
+    int TmpDisk;			/* Actual megabytes of total storage in TMP_FS file system */
     struct Config_Record *Config_Ptr;	/* Configuration specification for this node */
 };
 extern struct Node_Record *Node_Record_Table_Ptr; /* Location of the node records */
@@ -223,12 +226,16 @@ extern struct Config_Record *Create_Config_Record(int *Error_Code);
 /* 
  * Create_Node_Record - Create a node record
  * Input: Error_Code - Location to store error value in
+ *        Config_Point - Pointer to node's configuration information
+ *        Node_Name - Name of the node
  * Output: Error_Code - Set to zero if no error, errno otherwise
  *         Returns a pointer to the record or NULL if error
- * NOTE The record's values are initialized to those of Default_Node_Record
+ * NOTE The record's values are initialized to those of Default_Node_Record, Node_Name and 
+ *	Config_Point's CPUs, RealMemory, and TmpDisk values
  * NOTE: Allocates memory that should be freed with Delete_Part_Record
  */
-extern struct Node_Record *Create_Node_Record(int *Error_Code);
+extern struct Node_Record *Create_Node_Record(int *Error_Code, struct Config_Record *Config_Point,
+	char *Node_Name);
 
 /* 
  * Create_Part_Record - Create a partition record
