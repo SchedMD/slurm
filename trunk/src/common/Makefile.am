@@ -52,6 +52,7 @@ libcommon_la_SOURCES = 			\
 	slurm_protocol_defs.h		\
 	util-net.c util-net.h		\
 	slurm_auth.c slurm_auth.h	\
+	arg_desc.c arg_desc.h		\
 	macros.h			\
 	$(elan_sources) 
 

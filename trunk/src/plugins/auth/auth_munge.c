@@ -62,12 +62,15 @@
 #include "src/common/pack.h"
 #include "src/common/log.h"
 #include "src/common/slurm_auth.h"
+#include "src/common/arg_desc.h"
 
 const char plugin_name[]       	= "auth plugin for Chris Dunlap's Munge";
 const char plugin_type[]       	= "auth/munge";
 const uint32_t plugin_version	= 10;
 
 static int plugin_errno = SLURM_SUCCESS;
+
+static int host_list_idx = -1;
 
 enum {
 	SLURM_AUTH_UNPACK = SLURM_AUTH_FIRST_LOCAL_ERROR
@@ -120,12 +123,10 @@ _decode_cred(char *m, slurm_auth_credential_t *c)
 
 int init ( void )
 {
-	/* 
-	 * Perhaps we could init a global context here? 
-	 * Do nothing for now.
-	 *
-	 */
-	return 0;
+	host_list_idx = arg_idx_by_name( slurm_auth_get_arg_desc(),
+									 ARG_HOST_LIST );
+	if ( host_list_idx == -1 ) return SLURM_ERROR;
+	return SLURM_SUCCESS;
 }
 
 
@@ -135,7 +136,7 @@ int init ( void )
  * data at this time is implementation-dependent.
  */
 slurm_auth_credential_t *
-slurm_auth_create( void )
+slurm_auth_create( void *argv[] )
 {
 	slurm_auth_credential_t *cred = NULL;
 	munge_err_t e = EMUNGE_SUCCESS;
@@ -189,7 +190,7 @@ slurm_auth_destroy( slurm_auth_credential_t *cred )
  * Return SLURM_SUCCESS if the credential is in order and valid.
  */
 int
-slurm_auth_verify( slurm_auth_credential_t *c )
+slurm_auth_verify( slurm_auth_credential_t *c, void *argv[] )
 {
 	if (!c) {
 		plugin_errno = SLURM_AUTH_BADARG;

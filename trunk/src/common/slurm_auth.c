@@ -37,6 +37,7 @@
 #include "src/common/slurm_auth.h"
 #include "src/common/plugin.h"
 #include "src/common/plugrack.h"
+#include "src/common/arg_desc.h"
 
 /*
  * WARNING:  Do not change the order of these fields or add additional
@@ -45,9 +46,9 @@
  * end of the structure.
  */
 typedef struct slurm_auth_ops {
-	void *	(*create)	( void );
+	void *	(*create)	( void *argv[] );
 	int	(*destroy)		( void *cred );
-	int	(*verify)	( void *cred );
+	int	(*verify)	( void *cred, void *argv[] );
 	uid_t	(*get_uid)	( void *cred );
 	gid_t	(*get_gid)	( void *cred );
 	int	(*pack)		( void *cred, Buf buf );
@@ -93,6 +94,15 @@ static pthread_mutex_t      context_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static slurm_ctl_conf_t conf;
 static pthread_mutex_t config_lock = PTHREAD_MUTEX_INITIALIZER;
+
+/*
+ * Order of advisory arguments passed to some of the plugins.
+ */
+static arg_desc_t auth_args[] = {
+	{ ARG_HOST_LIST },
+	{ ARG_TIMEOUT },
+	{ NULL }
+};
 
 
 static char *
@@ -180,6 +190,44 @@ slurm_auth_get_ops( slurm_auth_context_t c )
 	}
 
 	return &c->ops;
+}
+
+const arg_desc_t *
+slurm_auth_get_arg_desc( void )
+{
+	return auth_args;
+}
+
+void **
+slurm_auth_marshal_args( void *hosts, int timeout )
+{
+	static int hostlist_idx = -1;
+	static int timeout_idx = -1;
+	static int count = sizeof( auth_args ) / sizeof( struct _arg_desc ) - 1;
+	void **argv;
+	
+	/* Get indices from descriptor, if we haven't already. */
+	if ( ( hostlist_idx == -1 ) &&
+		 ( timeout_idx == -1 ) ) {
+		hostlist_idx = arg_idx_by_name( auth_args, ARG_HOST_LIST );
+		timeout_idx = arg_idx_by_name( auth_args, ARG_TIMEOUT );		
+	}
+
+	argv = xmalloc( count * sizeof( void * ) );
+	
+	/* Marshal host list.  Don't quite know how to do this yet. */
+	argv[ hostlist_idx ] = hosts;
+
+	/* Marshal timeout. */
+	argv[ timeout_idx ] = (void *) timeout;
+
+	return argv;
+}
+
+
+void slurm_auth_free_args( void **argv )
+{
+	xfree( argv );
 }
 
 
@@ -298,12 +346,12 @@ slurm_auth_init( void )
  */
 	  
 void *
-g_slurm_auth_create( void )
+g_slurm_auth_create( void *argv[] )
 {
 	if ( slurm_auth_init() < 0 )
 		return NULL;
 
-	return (*(g_context->ops.create))();
+	return (*(g_context->ops.create))( argv );
 }
 
 int
@@ -316,12 +364,12 @@ g_slurm_auth_destroy( void *cred )
 }
 
 int
-g_slurm_auth_verify( void *cred )
+g_slurm_auth_verify( void *cred, void *argv[] )
 {
 	if ( slurm_auth_init() < 0 )
 		return SLURM_ERROR;
 	
-	return (*(g_context->ops.verify))( cred );
+	return (*(g_context->ops.verify))( cred, argv );
 }
 
 uid_t

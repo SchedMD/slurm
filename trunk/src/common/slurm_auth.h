@@ -44,6 +44,7 @@
 
 #include "src/common/plugrack.h"
 #include "src/common/pack.h"
+#include "src/common/arg_desc.h"
 
 /*
  * This API operates on a global authentication
@@ -62,16 +63,48 @@
  *
  */
 
+/*
+ * General error codes that plugins (or the plugin system) can
+ * generate.  Plugins may produce additional codes starting with
+ * SLURM_AUTH_FIRST_LOCAL_ERROR.  They are responsible for providing
+ * text messages to accompany the codes.  This API resolves string
+ * messages for these codes.
+ */
 enum {
-    SLURM_AUTH_NOPLUGIN,
-    SLURM_AUTH_BADARG,
-    SLURM_AUTH_MEMORY,
-    SLURM_AUTH_NOUSER,
-    SLURM_AUTH_INVALID,
-    SLURM_AUTH_MISMATCH,
+    SLURM_AUTH_NOPLUGIN,            /* No plugin for this type.          */
+    SLURM_AUTH_BADARG,              /* Bad argument to an API func.      */
+    SLURM_AUTH_MEMORY,              /* Problem allocating memory.        */
+    SLURM_AUTH_NOUSER,              /* User not defined on host.         */
+    SLURM_AUTH_INVALID,             /* Invalid credential.               */
+    SLURM_AUTH_MISMATCH,            /* Credential from another plugin.   */
 
-    SLURM_AUTH_FIRST_LOCAL_ERROR	/* Always keep me last. */
+    SLURM_AUTH_FIRST_LOCAL_ERROR    /* Always keep me last. */
 };
+
+/*
+ * Text labels for advisory arguments passed to plugin functions.
+ * Use these labels rather than string literals in order to avoid
+ * misspellings.
+ */
+#define ARG_HOST_LIST		"HostList"
+#define ARG_TIMEOUT		"Timeout"
+
+/*
+ * Return the argument descriptor for the argument vectors in the
+ * plugin API.
+ */
+const arg_desc_t *slurm_auth_get_arg_desc( void );
+
+/*
+ * Marshal the arguments into a generic argument vector according to
+ * the authentication argument layout.
+ */
+void **slurm_auth_marshal_args( void *hosts, int timeout );
+
+/*
+ * Free an argument list created by slurm_auth_marshal_args().
+ */
+void slurm_auth_free_args( void **args );
 
 /*
  * SLURM authentication context opaque type.
@@ -109,9 +142,9 @@ int slurm_auth_init( void );
 /*
  * Static bindings for the global authentication context.
  */
-void	*g_slurm_auth_create( void );
+void	*g_slurm_auth_create( void *argv[] );
 int	g_slurm_auth_destroy( void *cred );
-int	g_slurm_auth_verify( void *cred );
+int	g_slurm_auth_verify( void *cred, void *argv[] );
 uid_t	g_slurm_auth_get_uid( void *cred );
 gid_t	g_slurm_auth_get_gid( void *cred );
 int	g_slurm_auth_pack( void *cred, Buf buf );
