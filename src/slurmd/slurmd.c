@@ -138,13 +138,23 @@ main (int argc, char *argv[])
 	 */
 	if (_slurmd_init() < 0) {
 		error( "slurmd initialization failed" );
+		fflush( NULL );
 		exit(1);
 	}
 
+	debug3("slurmd initialization successful");
+
+	/* 
+	 * Become a daemon if desired.
+	 * Do not chdir("/") or close all fd's
+	 */
 	if (conf->daemonize) 
-		daemon(1,0);
+		daemon(1,1);
+
+	debug3("finished daemonize");
 
 	_kill_old_slurmd();
+
 	_create_msg_socket();
 
 	conf->pid = getpid();
@@ -550,6 +560,8 @@ _create_msg_socket()
 
 	conf->lfd = ld;
 
+	debug3("succesfully opened slurm listen port %d", conf->port);
+
 	return;
 }
 
@@ -584,6 +596,13 @@ _slurmd_init()
 		setrlimit(RLIMIT_NOFILE,&rlim);
 	}
 
+#ifndef NDEBUG
+	if (getrlimit(RLIMIT_CORE, &rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		setrlimit(RLIMIT_CORE, &rlim);
+	}
+#endif /* !NDEBUG */
+
 	/*
 	 * Create a context for verifying slurm job credentials
 	 */
@@ -599,8 +618,15 @@ _slurmd_init()
 	/*
 	 * Cleanup shared memory if so configured
 	 */
-	if (conf->shm_cleanup)
+	if (conf->shm_cleanup) {
+		/* 
+		 * Need to kill any running slurmd's here so they do
+		 *  not fail to lock shared memory on exit
+		 */
+		_kill_old_slurmd(); 
+
 		shm_cleanup();
+	}
 
 	/*
 	 * Initialize slurmd shared memory
@@ -764,6 +790,7 @@ _usage()
 static int
 _set_slurmd_spooldir(void)
 {
+	debug3("initializing slurmd spool directory");
 	if ((mkdir(conf->spooldir, 0755) < 0) && (errno != EEXIST)) {
 		error("mkdir(%s): %m", conf->spooldir);
 		return SLURM_ERROR;
