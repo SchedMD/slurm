@@ -27,6 +27,7 @@ libcommon_la_SOURCES = 	xmalloc.c 	\
 			bitstring.c     \
 			pack.c		\
 			xerrno.c	\
+			nodelist.c	\
 			slurm_protocol_api.c	\
 			slurm_protocol_pack.c	\
 			slurm_protocol_util.c	\
