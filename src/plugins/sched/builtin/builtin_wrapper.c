@@ -67,11 +67,7 @@ slurm_sched_plugin_schedule( void )
 /* TAG(                   slurm_sched_plugin_initial_priority           ) */ 
 /**************************************************************************/
 u_int32_t
-slurm_sched_plugin_initial_priority( void )
+slurm_sched_plugin_initial_priority( u_int32_t max_prio )
 {
-	/*
-	 * Any non-zero number will do.  The built-in scheduler
-	 * is FIFO by nature and so priority is not really important.
-	 */
-	return 1;
+	return (max_prio - 1);
 }
