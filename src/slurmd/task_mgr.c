@@ -126,7 +126,6 @@ void * task_exec_thread ( void * arg )
 
 	/* create pipes to read child stdin, stdout, sterr */
 	init_parent_pipes ( task_start->pipes ) ;
-	forward_io ( arg ) ;
 
 #define FORK_ERROR -1
 #define CHILD_PROCCESS 0
@@ -205,6 +204,7 @@ void * task_exec_thread ( void * arg )
 			/* ask me how I know :) */
 			/* think once, twice, 10^100000000 times before changeing the below */
 			/*1*/setup_parent_pipes ( task_start->pipes ) ;
+			/*1.5*/forward_io ( arg ) ;
 			/*2*/waitpid ( cpid , & task_return_code , 0 ) ;
 			/*3*/wait_on_io_threads ( task_start ) ;
 			
