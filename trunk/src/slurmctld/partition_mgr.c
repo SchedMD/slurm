@@ -1,8 +1,8 @@
 /* 
- * partition_mgr.c - Manage the partition information of SLURM
- * See slurm.h for documentation on external functions and data structures
+ * partition_mgr.c - manage the partition information of slurm
+ * see slurm.h for documentation on external functions and data structures
  *
- * Author: Moe Jette, jette@llnl.gov
+ * author: moe jette, jette@llnl.gov
  */
 
 #ifdef HAVE_CONFIG_H
@@ -22,756 +22,901 @@
 #define NO_VAL   -99
 #define SEPCHARS " \n\t"
 
-struct	Part_Record Default_Part;		/* Default configuration values */
-List	Part_List = NULL;			/* Partition List */
-char	Default_Part_Name[MAX_NAME_LEN];	/* Name of default partition */
-struct	Part_Record *Default_Part_Loc = NULL;	/* Location of default partition */
-time_t	Last_Part_Update;			/* Time of last update to Part Records */
-static pthread_mutex_t Part_Mutex= PTHREAD_MUTEX_INITIALIZER;	/* Lock for partition info */
+struct part_record default_part;	/* default configuration values */
+List part_list = NULL;			/* partition list */
+char default_part_name[MAX_NAME_LEN];	/* name of default partition */
+struct part_record *default_part_loc = NULL;	/* location of default partition */
+time_t last_part_update;		/* time of last update to part records */
+static pthread_mutex_t part_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for partition info */
 
-int 	Build_Part_BitMap(struct Part_Record *Part_Record_Point);
-void	List_Delete_Part(void *Part_Entry);
-int	List_Find_Part(void *Part_Entry, void *key);
+int build_part_bitmap (struct part_record *part_record_point);
+void list_delete_part (void *part_entry);
+int list_find_part (void *part_entry, void *key);
 
 #if DEBUG_MODULE
 /* main is used here for module testing purposes only */
-main(int argc, char * argv[]) {
-    int Error_Code;
-    time_t Update_Time;
-    struct Part_Record *Part_Ptr;
-    char *Dump;
-    int Dump_Size;
-    char Req_Name[MAX_NAME_LEN];	/* Name of the partition */
-    char Next_Name[MAX_NAME_LEN];	/* Name of the next partition */
-    int MaxTime;		/* -1 if unlimited */
-    int MaxNodes;		/* -1 if unlimited */
-    int TotalNodes;		/* Total number of nodes in the partition */
-    int TotalCPUs;		/* Total number of CPUs in the partition */
-    char *Nodes;		/* Names of nodes in partition */
-    char *AllowGroups;		/* NULL indicates ALL */
-    int Key;    	 	/* 1 if SLURM distributed key is required for use of partition */
-    int StateUp;		/* 1 if state is UP */
-    int Shared;			/* 1 if partition can be shared */
-    unsigned *NodeBitMap;	/* Bitmap of nodes in partition */
-    int BitMapSize;		/* Bytes in NodeBitMap */
-    char Update_Spec[] = "MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
+main (int argc, char *argv[]) {
+	int error_code;
+	time_t update_time;
+	struct part_record *part_ptr;
+	char *dump;
+	int dump_size;
+	char req_name[MAX_NAME_LEN];	/* name of the partition */
+	char next_name[MAX_NAME_LEN];	/* name of the next partition */
+	int max_time;		/* -1 if unlimited */
+	int max_nodes;		/* -1 if unlimited */
+	int total_nodes;	/* total number of nodes in the partition */
+	int total_cpus;		/* total number of cpus in the partition */
+	char *nodes;		/* names of nodes in partition */
+	char *allow_groups;	/* NULL indicates all */
+	int key;		/* 1 if slurm distributed key is required for use of partition */
+	int state_up;		/* 1 if state is up */
+	int shared;		/* 1 if partition can be shared */
+	unsigned *node_bitmap;	/* bitmap of nodes in partition */
+	int bitmap_size;	/* bytes in node_bitmap */
+	char update_spec[] =
+		"MaxTime=34 MaxNodes=56 Key=NO State=DOWN Shared=FORCE";
 
-    Error_Code = Init_Node_Conf();
-    if (Error_Code) printf("Init_Node_Conf error %d\n", Error_Code);
-    Part_Lock();
-    Error_Code = Init_Part_Conf();
-    if (Error_Code) printf("Init_Part_Conf error %d\n", Error_Code);
-    Default_Part.MaxTime	= 223344;
-    Default_Part.MaxNodes	= 556677;
-    Default_Part.TotalNodes	= 4;
-    Default_Part.TotalCPUs	= 16;
-    Default_Part.Key	   	= 1;
-    Node_Record_Count 		= 8;
+	error_code = init_node_conf ();
+	if (error_code)
+		printf ("init_node_conf error %d\n", error_code);
+	error_code = init_part_conf ();
+	if (error_code)
+		printf ("init_part_conf error %d\n", error_code);
+	default_part.max_time = 223344;
+	default_part.max_nodes = 556677;
+	default_part.total_nodes = 4;
+	default_part.total_cpus = 16;
+	default_part.key = 1;
+	node_record_count = 8;
 
-    printf("Create some partitions and test defaults\n");
-    Part_Ptr = Create_Part_Record(&Error_Code);
-    if (Error_Code) 
-	printf("Create_Part_Record error %d\n", Error_Code);
-    else {
-	static int Tmp_BitMap;
-	if (Part_Ptr->MaxTime  != 223344) printf("ERROR: Partition default MaxTime not set\n");
-	if (Part_Ptr->MaxNodes != 556677) printf("ERROR: Partition default MaxNodes not set\n");
-	if (Part_Ptr->TotalNodes != 4)    printf("ERROR: Partition default TotalNodes not set\n");
-	if (Part_Ptr->TotalCPUs != 16)    printf("ERROR: Partition default MaxNodes not set\n");
-	if (Part_Ptr->Key != 1)           printf("ERROR: Partition default Key not set\n");
-	if (Part_Ptr->StateUp != 1)       printf("ERROR: Partition default StateUp not set\n");
-	if (Part_Ptr->Shared != 0)        printf("ERROR: Partition default Shared not set\n");
-	strcpy(Part_Ptr->Name, "Interactive");
-	Part_Ptr->Nodes = "lx[01-04]";
-	Part_Ptr->AllowGroups = "students";
-	Tmp_BitMap = 0x3c << (sizeof(unsigned)*8-8);
-	Part_Ptr->NodeBitMap = &Tmp_BitMap;
-    } /* else */
-    Part_Ptr = Create_Part_Record(&Error_Code);
-    if (Error_Code) 
-	printf("Create_Part_Record error %d\n", Error_Code);
-    else 
-	strcpy(Part_Ptr->Name, "Batch");
-    Part_Ptr = Create_Part_Record(&Error_Code);
-    if (Error_Code) 
-	printf("ERROR: Create_Part_Record error %d\n", Error_Code);
-    else 
-	strcpy(Part_Ptr->Name, "Class");
+	printf ("create some partitions and test defaults\n");
+	part_ptr = create_part_record (&error_code);
+	if (error_code)
+		printf ("create_part_record error %d\n", error_code);
+	else {
+		int tmp_bitmap;
+		if (part_ptr->max_time != 223344)
+			printf ("ERROR: partition default max_time not set\n");
+		if (part_ptr->max_nodes != 556677)
+			printf ("ERROR: partition default max_nodes not set\n");
+		if (part_ptr->total_nodes != 4)
+			printf ("ERROR: partition default total_nodes not set\n");
+		if (part_ptr->total_cpus != 16)
+			printf ("ERROR: partition default max_nodes not set\n");
+		if (part_ptr->key != 1)
+			printf ("ERROR: partition default key not set\n");
+		if (part_ptr->state_up != 1)
+			printf ("ERROR: partition default state_up not set\n");
+		if (part_ptr->shared != 0)
+			printf ("ERROR: partition default shared not set\n");
+		strcpy (part_ptr->name, "interactive");
+		part_ptr->nodes = "lx[01-04]";
+		part_ptr->allow_groups = "students";
+		tmp_bitmap = 0x3c << (sizeof (unsigned) * 8 - 8);
+		part_ptr->node_bitmap = &tmp_bitmap;
+	}			
+	part_ptr = create_part_record (&error_code);
+	if (error_code)
+		printf ("create_part_record error %d\n", error_code);
+	else
+		strcpy (part_ptr->name, "batch");
+	part_ptr = create_part_record (&error_code);
+	if (error_code)
+		printf ("ERROR: create_part_record error %d\n", error_code);
+	else
+		strcpy (part_ptr->name, "class");
 
-    Update_Time = (time_t)0;
-    Error_Code = Dump_Part(&Dump, &Dump_Size, &Update_Time);
-    if (Error_Code) printf("ERROR: Dump_Part error %d\n", Error_Code);
+	update_time = (time_t) 0;
+	error_code = dump_part (&dump, &dump_size, &update_time);
+	if (error_code)
+		printf ("ERROR: dump_part error %d\n", error_code);
 
-    Error_Code = Update_Part("Batch", Update_Spec);
-    if (Error_Code) printf("ERROR: Update_Part error %d\n", Error_Code);
+	error_code = update_part ("batch", update_spec);
+	if (error_code)
+		printf ("ERROR: update_part error %d\n", error_code);
 
-    Part_Ptr   = list_find_first(Part_List, &List_Find_Part, "Batch");
-    if (Part_Ptr == NULL) printf("ERROR: list_find failure\n");
-    if (Part_Ptr->MaxTime  != 34) printf("ERROR: Update_Part MaxTime not reset\n");
-    if (Part_Ptr->MaxNodes != 56) printf("ERROR: Update_Part MaxNodes not reset\n");
-    if (Part_Ptr->Key != 0)       printf("ERROR: Update_Part Key not reset\n");
-    if (Part_Ptr->StateUp != 0)   printf("ERROR: Update_Part StateUp not set\n");
-    if (Part_Ptr->Shared != 2)    printf("ERROR: Update_Part Shared not set\n");
+	part_ptr = list_find_first (part_list, &list_find_part, "batch");
+	if (part_ptr == NULL)
+		printf ("ERROR: list_find failure\n");
+	if (part_ptr->max_time != 34)
+		printf ("ERROR: update_part max_time not reset\n");
+	if (part_ptr->max_nodes != 56)
+		printf ("ERROR: update_part max_nodes not reset\n");
+	if (part_ptr->key != 0)
+		printf ("ERROR: update_part key not reset\n");
+	if (part_ptr->state_up != 0)
+		printf ("ERROR: update_part state_up not set\n");
+	if (part_ptr->shared != 2)
+		printf ("ERROR: update_part shared not set\n");
 
-    Node_Record_Count = 0;	/* Delete_Part_Record dies if node count is bad */
-    Error_Code = Delete_Part_Record("Batch");
-    if (Error_Code != 0)  printf("Delete_Part_Record error1 %d\n", Error_Code);
-    printf("NOTE: We expect Delete_Part_Record to report not finding a record for Batch\n");
-    Error_Code = Delete_Part_Record("Batch");
-    if (Error_Code != ENOENT)  printf("ERROR: Delete_Part_Record error2 %d\n", Error_Code);
-    Part_Unlock();
+	node_record_count = 0;	/* delete_part_record dies if node count is bad */
+	error_code = delete_part_record ("batch");
+	if (error_code != 0)
+		printf ("delete_part_record error1 %d\n", error_code);
+	printf ("NOTE: we expect delete_part_record to report not finding a record for batch\n");
+	error_code = delete_part_record ("batch");
+	if (error_code != ENOENT)
+		printf ("ERROR: delete_part_record error2 %d\n", error_code);
 
-    exit(0);
-} /* main */
+	exit (0);
+}
 #endif
 
 
 /*
- * Build_Part_BitMap - Update the TotalCPUs, TotalNodes, and NodeBitMap for the specified partition
- *	Also reset the partition pointers in the node back to this partition.
- * Input: Part_Record_Point - Pointer to the partition
- * Output: Returns 0 if no error, errno otherwise
- * NOTE: This does not report nodes defined in more than one partition. This is checked only  
+ * build_part_bitmap - update the total_cpus, total_nodes, and node_bitmap for the specified partition
+ *	also reset the partition pointers in the node back to this partition.
+ * input: part_record_point - pointer to the partition
+ * output: returns 0 if no error, errno otherwise
+ * NOTE: this does not report nodes defined in more than one partition. this is checked only  
  *	upon reading the configuration file, not on an update
  */
-int Build_Part_BitMap(struct Part_Record *Part_Record_Point) {
-    int Start_Inx, End_Inx, Count_Inx;
-    int i, j, Error_Code, size;
-    char *str_ptr1, *str_ptr2, *Format, *My_Node_List, This_Node_Name[BUF_SIZE];
-    unsigned *Old_BitMap;
-    struct Node_Record *Node_Record_Point;	/* Pointer to Node_Record */
+int build_part_bitmap (struct part_record *part_record_point) {
+	int start_inx, end_inx, count_inx;
+	int i, j, error_code, size;
+	char *str_ptr1, *str_ptr2, *format, *my_node_list,
+		this_node_name[BUF_SIZE];
+	unsigned *old_bitmap;
+	struct node_record *node_record_point;	/* pointer to node_record */
 
-    Format = My_Node_List = NULL;
-    Part_Record_Point->TotalCPUs  = 0;
-    Part_Record_Point->TotalNodes = 0;
-    
-    size = (Node_Record_Count + (sizeof(unsigned)*8) - 1) / 
-		(sizeof(unsigned)*8); 	/* Unsigned int records in bitmap */
-    size *= 8;				/* Bytes in bitmap */
-    if (Part_Record_Point->NodeBitMap == NULL) {
-	Part_Record_Point->NodeBitMap = malloc(size);
-	if (Part_Record_Point->NodeBitMap == NULL) {
+	format = my_node_list = NULL;
+	part_record_point->total_cpus = 0;
+	part_record_point->total_nodes = 0;
+
+	size = (node_record_count + (sizeof (unsigned) * 8) - 1) / (sizeof (unsigned) * 8);	/* unsigned int records in bitmap */
+	size *= 8;		/* bytes in bitmap */
+	if (part_record_point->node_bitmap == NULL) {
+		part_record_point->node_bitmap = malloc (size);
+		if (part_record_point->node_bitmap == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Build_Part_BitMap: unable to allocate memory\n");
+			fprintf (stderr,
+				 "build_part_bitmap: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
+			syslog (LOG_ALERT,
+				"build_part_bitmap: unable to allocate memory\n");
 #endif
-	    abort();
-	} /* if */
-	Old_BitMap = NULL;
-    } else
-	Old_BitMap = BitMapCopy(Part_Record_Point->NodeBitMap);
-    memset(Part_Record_Point->NodeBitMap, 0, size);
+			abort ();
+		}		
+		old_bitmap = NULL;
+	}
+	else
+		old_bitmap = bitmap_copy (part_record_point->node_bitmap);
+	memset (part_record_point->node_bitmap, 0, size);
 
-    if (Part_Record_Point->Nodes == NULL) {
-	if (Old_BitMap) free(Old_BitMap);
+	if (part_record_point->nodes == NULL) {
+		if (old_bitmap)
+			free (old_bitmap);
+		return 0;
+	}			
+	my_node_list = malloc (strlen (part_record_point->nodes) + 1);
+	if (my_node_list == NULL) {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "build_part_bitmap: unable to allocate memory\n");
+#else
+		syslog (LOG_ALERT,
+			"build_part_bitmap: unable to allocate memory\n");
+#endif
+		if (old_bitmap)
+			free (old_bitmap);
+		abort ();
+	}			
+	strcpy (my_node_list, part_record_point->nodes);
+
+	str_ptr2 = (char *) strtok_r (my_node_list, ",", &str_ptr1);
+	while (str_ptr2) {	/* break apart by comma separators */
+		error_code =
+			parse_node_name (str_ptr2, &format, &start_inx,
+					 &end_inx, &count_inx);
+		if (error_code) {
+			free (my_node_list);
+			if (old_bitmap)
+				free (old_bitmap);
+			return EINVAL;
+		}		
+		if (strlen (format) >= sizeof (this_node_name)) {
+#if DEBUG_SYSTEM
+			fprintf (stderr,
+				 "build_part_bitmap: node name specification too long: %s\n",
+				 format);
+#else
+			syslog (LOG_ERR,
+				"build_part_bitmap: node name specification too long: %s\n",
+				format);
+#endif
+			free (my_node_list);
+			free (format);
+			if (old_bitmap)
+				free (old_bitmap);
+			return EINVAL;
+		}		
+		for (i = start_inx; i <= end_inx; i++) {
+			if (count_inx == 0)
+				strncpy (this_node_name, format,
+					 sizeof (this_node_name));
+			else
+				sprintf (this_node_name, format, i);
+			node_record_point = find_node_record (this_node_name);
+			if (node_record_point == NULL) {
+#if DEBUG_SYSTEM
+				fprintf (stderr,
+					 "build_part_bitmap: invalid node specified %s\n",
+					 this_node_name);
+#else
+				syslog (LOG_ERR,
+					"build_part_bitmap: invalid node specified %s\n",
+					this_node_name);
+#endif
+				free (my_node_list);
+				free (format);
+				if (old_bitmap)
+					free (old_bitmap);
+				return EINVAL;
+			}	
+			bitmap_set (part_record_point->node_bitmap,
+				    (int) (node_record_point -
+					   node_record_table_ptr));
+			part_record_point->total_nodes++;
+			part_record_point->total_cpus +=
+				node_record_point->cpus;
+			node_record_point->partition_ptr = part_record_point;
+			bitmap_clear (old_bitmap,
+				      (int) (node_record_point -
+					     node_record_table_ptr));
+		}		
+		str_ptr2 = (char *) strtok_r (NULL, ",", &str_ptr1);
+	}			
+
+	/* unlink nodes removed from the partition */
+	for (i = 0; i < node_record_count; i++) {
+		if (bitmap_value (old_bitmap, i) == 0)
+			continue;
+		node_record_table_ptr[i].partition_ptr = NULL;
+	}			
+
+	if (my_node_list)
+		free (my_node_list);
+	if (format)
+		free (format);
+	if (old_bitmap)
+		free (old_bitmap);
 	return 0;
-    } /* if */
-    My_Node_List = malloc(strlen(Part_Record_Point->Nodes)+1);
-    if (My_Node_List == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Build_Part_BitMap: unable to allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Build_Part_BitMap: unable to allocate memory\n");
-#endif
-	if (Old_BitMap) free(Old_BitMap);
-	abort();
-    } /* if */
-    strcpy(My_Node_List, Part_Record_Point->Nodes);
-
-    str_ptr2 = (char *)strtok_r(My_Node_List, ",", &str_ptr1);
-    while (str_ptr2) {	/* Break apart by comma separators */
-	Error_Code = Parse_Node_Name(str_ptr2, &Format, &Start_Inx, &End_Inx, &Count_Inx);
-	if (Error_Code) {
-	    free(My_Node_List);
-	    if (Old_BitMap) free(Old_BitMap);
-	    return EINVAL;
-	} /* if */
-	if (strlen(Format) >= sizeof(This_Node_Name)) {
-#if DEBUG_SYSTEM
-	    fprintf(stderr, "Build_Part_BitMap: Node name specification too long: %s\n", Format);
-#else
-	    syslog(LOG_ERR, "Build_Part_BitMap: Node name specification too long: %s\n", Format);
-#endif
-	    free(My_Node_List);
-	    free(Format);
-	    if (Old_BitMap) free(Old_BitMap);
-	    return EINVAL;
-	} /* if */
-	for (i=Start_Inx; i<=End_Inx; i++) {
-	    if (Count_Inx == 0) 
-		strncpy(This_Node_Name, Format, sizeof(This_Node_Name));
-	    else
-		sprintf(This_Node_Name, Format, i);
-	    Node_Record_Point = Find_Node_Record(This_Node_Name);
-	    if (Node_Record_Point == NULL) {
-#if DEBUG_SYSTEM
-		fprintf(stderr, "Build_Part_BitMap: Invalid node specified %s\n", This_Node_Name);
-#else
-		syslog(LOG_ERR, "Build_Part_BitMap: Invalid node specified %s\n", This_Node_Name);
-#endif
-		free(My_Node_List);
-		free(Format);
-		if (Old_BitMap) free(Old_BitMap);
-		return EINVAL;
-	    } /* if */
-	    BitMapSet(Part_Record_Point->NodeBitMap, 
-			(int)(Node_Record_Point - Node_Record_Table_Ptr));
-	    Part_Record_Point->TotalNodes++;
-	    Part_Record_Point->TotalCPUs += Node_Record_Point->CPUs;
-	    Node_Record_Point->Partition_Ptr = Part_Record_Point;
-	    BitMapClear(Old_BitMap, (int)(Node_Record_Point - Node_Record_Table_Ptr));
-	} /* for */
-	str_ptr2 = (char *)strtok_r(NULL, ",", &str_ptr1);
-    } /* while */
-
-    /* Unlink nodes removed from the partition */
-    for (i=0; i<Node_Record_Count; i++) {
-	if (BitMapValue(Old_BitMap, i) == 0) continue;
-	Node_Record_Table_Ptr[i].Partition_Ptr = NULL;
-    } /* for */
-
-    if(My_Node_List) free(My_Node_List);
-    if(Format) free(Format);
-    if (Old_BitMap) free(Old_BitMap);
-    return 0;
-} /* Build_Part_BitMap */
+}
 
 
 /* 
- * Create_Part_Record - Create a partition record
- * Input: Error_Code - Location to store error value in
- * Output: Error_Code - Set to zero if no error, errno otherwise
- *         Returns a pointer to the record or NULL if error
- * NOTE: The record's values are initialized to those of Default_Part
- * NOTE: Allocates memory that should be freed with Delete_Part_Record
+ * create_part_record - create a partition record
+ * input: error_code - location to store error value in
+ * output: error_code - set to zero if no error, errno otherwise
+ *         returns a pointer to the record or NULL if error
+ * NOTE: the record's values are initialized to those of default_part
+ * NOTE: allocates memory that should be freed with delete_part_record
  */
-struct Part_Record *Create_Part_Record(int *Error_Code) {
-    struct Part_Record *Part_Record_Point;
+struct part_record * create_part_record (int *error_code) {
+	struct part_record *part_record_point;
 
-    *Error_Code = 0;
-    Last_Part_Update = time(NULL);
+	*error_code = 0;
+	last_part_update = time (NULL);
 
-    Part_Record_Point = (struct Part_Record *)malloc(sizeof(struct Part_Record));
-    if (Part_Record_Point == NULL) {
+	part_record_point =
+		(struct part_record *) malloc (sizeof (struct part_record));
+	if (part_record_point == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
+		fprintf (stderr,
+			 "create_part_record: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
+		syslog (LOG_ALERT,
+			"create_part_record: unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
+		abort ();
+	}			
 
-    strcpy(Part_Record_Point->Name, "DEFAULT");
-    Part_Record_Point->MaxTime     = Default_Part.MaxTime;
-    Part_Record_Point->MaxNodes    = Default_Part.MaxNodes;
-    Part_Record_Point->Key         = Default_Part.Key;
-    Part_Record_Point->StateUp     = Default_Part.StateUp;
-    Part_Record_Point->Shared      = Default_Part.Shared;
-    Part_Record_Point->TotalNodes  = Default_Part.TotalNodes;
-    Part_Record_Point->TotalCPUs   = Default_Part.TotalCPUs;
-    Part_Record_Point->NodeBitMap  = NULL;
+	strcpy (part_record_point->name, "default");
+	part_record_point->max_time = default_part.max_time;
+	part_record_point->max_nodes = default_part.max_nodes;
+	part_record_point->key = default_part.key;
+	part_record_point->state_up = default_part.state_up;
+	part_record_point->shared = default_part.shared;
+	part_record_point->total_nodes = default_part.total_nodes;
+	part_record_point->total_cpus = default_part.total_cpus;
+	part_record_point->node_bitmap = NULL;
 #if DEBUG_SYSTEM
-    Part_Record_Point->Magic       = PART_MAGIC;
+	part_record_point->magic = PART_MAGIC;
 #endif
 
-    if (Default_Part.AllowGroups) {
-	Part_Record_Point->AllowGroups = (char *)malloc(strlen(Default_Part.AllowGroups)+1);
-	if (Part_Record_Point->AllowGroups == NULL) {
+	if (default_part.allow_groups) {
+		part_record_point->allow_groups =
+			(char *) malloc (strlen (default_part.allow_groups) +
+					 1);
+		if (part_record_point->allow_groups == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
+			fprintf (stderr,
+				 "create_part_record: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
+			syslog (LOG_ALERT,
+				"create_part_record: unable to allocate memory\n");
 #endif
-	    abort();
-	} /* if */
-	strcpy(Part_Record_Point->AllowGroups, Default_Part.AllowGroups);
-    } else
-	Part_Record_Point->AllowGroups = NULL;
+			abort ();
+		}		
+		strcpy (part_record_point->allow_groups,
+			default_part.allow_groups);
+	}
+	else
+		part_record_point->allow_groups = NULL;
 
-    if (Default_Part.Nodes) {
-	Part_Record_Point->Nodes = (char *)malloc(strlen(Default_Part.Nodes)+1);
-	if (Part_Record_Point->Nodes == NULL) {
+	if (default_part.nodes) {
+		part_record_point->nodes =
+			(char *) malloc (strlen (default_part.nodes) + 1);
+		if (part_record_point->nodes == NULL) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
+			fprintf (stderr,
+				 "create_part_record: unable to allocate memory\n");
 #else
-	    syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
+			syslog (LOG_ALERT,
+				"create_part_record: unable to allocate memory\n");
 #endif
-	    abort();
-	} /* if */
-	strcpy(Part_Record_Point->Nodes, Default_Part.Nodes);
-    } else
-	Part_Record_Point->Nodes = NULL;
+			abort ();
+		}		
+		strcpy (part_record_point->nodes, default_part.nodes);
+	}
+	else
+		part_record_point->nodes = NULL;
 
-    if (list_append(Part_List, Part_Record_Point) == NULL) {
+	if (list_append (part_list, part_record_point) == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Create_Part_Record: unable to allocate memory\n");
+		fprintf (stderr,
+			 "create_part_record: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Create_Part_Record: unable to allocate memory\n");
+		syslog (LOG_ALERT,
+			"create_part_record: unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
+		abort ();
+	}			
 
-    return Part_Record_Point;
-} /* Create_Part_Record */
+	return part_record_point;
+}
 
 
 /* 
- * Delete_Part_Record - Delete record for partition with specified name
- * Input: name - Name of the desired node, Delete all partitions if pointer is NULL 
- * Output: return 0 on success, errno otherwise
+ * delete_part_record - delete record for partition with specified name
+ * input: name - name of the desired node, delete all partitions if pointer is NULL 
+ * output: return 0 on success, errno otherwise
  */
-int Delete_Part_Record(char *name) {
-    int i;
+int delete_part_record (char *name) {
+	int i;
 
-    Last_Part_Update = time(NULL);
-    if (name == NULL) 
-	i = list_delete_all(Part_List, &List_Find_Part, "UNIVERSAL_KEY");
-    else
-	i = list_delete_all(Part_List, &List_Find_Part, name);
-    if ((name == NULL) || (i != 0)) return 0;
+	last_part_update = time (NULL);
+	if (name == NULL)
+		i = list_delete_all (part_list, &list_find_part,
+				     "universal_key");
+	else
+		i = list_delete_all (part_list, &list_find_part, name);
+	if ((name == NULL) || (i != 0))
+		return 0;
 
 #if DEBUG_SYSTEM
-    fprintf(stderr, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
+	fprintf (stderr,
+		 "delete_part_record: attempt to delete non-existent partition %s\n",
+		 name);
 #else
-    syslog(LOG_ERR, "Delete_Part_Record: Attempt to delete non-existent partition %s\n", name);
+	syslog (LOG_ERR,
+		"delete_part_record: attempt to delete non-existent partition %s\n",
+		name);
 #endif
-    return ENOENT;
-} /* Delete_Part_Record */
+	return ENOENT;
+}
 
 
 /* 
- * Dump_Part - Dump all partition information to a buffer
- * Input: Buffer_Ptr - Location into which a pointer to the data is to be stored.
- *                     The data buffer is actually allocated by Dump_Part and the 
+ * dump_part - dump all partition information to a buffer
+ * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ *                     the data buffer is actually allocated by dump_part and the 
  *                     calling function must free the storage.
- *         Buffer_Size - Location into which the size of the created buffer is in bytes
- *         Update_Time - Dump new data only if partition records updated since time 
+ *         buffer_size - location into which the size of the created buffer is in bytes
+ *         update_time - dump new data only if partition records updated since time 
  *                       specified, otherwise return empty buffer
- * Output: Buffer_Ptr - The pointer is set to the allocated buffer.
- *         Buffer_Size - Set to size of the buffer in bytes
- *         Update_Time - set to time partition records last updated
- *         Returns 0 if no error, errno otherwise
- * NOTE: The buffer at *Buffer_Ptr must be freed by the caller
- * NOTE: IF YOU MAKE ANY CHANGES HERE be sure to increment the value of PART_STRUCT_VERSION
- *       and make the corresponding changes to Load_Part_Name in api/partition_info.c
+ * output: buffer_ptr - the pointer is set to the allocated buffer.
+ *         buffer_size - set to size of the buffer in bytes
+ *         update_time - set to time partition records last updated
+ *         returns 0 if no error, errno otherwise
+ * NOTE: the buffer at *buffer_ptr must be freed by the caller
+ * NOTE: if you make any changes here be sure to increment the value of PART_STRUCT_VERSION
+ *       and make the corresponding changes to load_part_name in api/partition_info.c
  */
-int Dump_Part(char **Buffer_Ptr, int *Buffer_Size, time_t *Update_Time) {
-    ListIterator Part_Record_Iterator;		/* For iterating through Part_Record_List */
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-    char *Buffer;
-    int Buffer_Offset, Buffer_Allocated, i, Record_Size;
-    char Out_Line[BUF_SIZE*2], *Nodes, *Key, *Default, *AllowGroups, *Shared, *State;
+int dump_part (char **buffer_ptr, int *buffer_size, time_t * update_time) {
+	ListIterator part_record_iterator;	/* for iterating through part_record_list */
+	struct part_record *part_record_point;	/* pointer to part_record */
+	char *buffer;
+	int buffer_offset, buffer_allocated, i, record_size;
+	char out_line[BUF_SIZE * 2], *nodes, *key, *default_flag, *allow_groups,
+		*shared, *state;
 
-    Buffer_Ptr[0] = NULL;
-    *Buffer_Size = 0;
-    Buffer = NULL;
-    Buffer_Offset = 0;
-    Buffer_Allocated = 0;
-   if (*Update_Time == Last_Part_Update) return 0;
+	buffer_ptr[0] = NULL;
+	*buffer_size = 0;
+	buffer = NULL;
+	buffer_offset = 0;
+	buffer_allocated = 0;
+	if (*update_time == last_part_update)
+		return 0;
 
-    Part_Lock();
-    Part_Record_Iterator = list_iterator_create(Part_List);
-    if (Part_Record_Iterator == NULL) {
+	part_record_iterator = list_iterator_create (part_list);
+	if (part_record_iterator == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Dump_Part: list_iterator_create unable to allocate memory\n");
+		fprintf (stderr,
+			 "dump_part: list_iterator_create unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Dump_Part: list_iterator_create unable to allocate memory\n");
+		syslog (LOG_ALERT,
+			"dump_part: list_iterator_create unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
+		abort ();
+	}			
 
-    /* Write haeader, version and time */
-    sprintf(Out_Line, HEAD_FORMAT, (unsigned long)Last_Part_Update, PART_STRUCT_VERSION);
-    if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
+	/* write haeader, version and time */
+	sprintf (out_line, HEAD_FORMAT, (unsigned long) last_part_update,
+		 PART_STRUCT_VERSION);
+	if (write_buffer
+	    (&buffer, &buffer_offset, &buffer_allocated, out_line))
+		goto cleanup;
 
-    /* Write partition records */
-    while (Part_Record_Point = (struct Part_Record *)list_next(Part_Record_Iterator)) {
+	/* write partition records */
+	while (part_record_point =
+	       (struct part_record *) list_next (part_record_iterator)) {
 #if DEBUG_SYSTEM
-	if (Part_Record_Point->Magic != PART_MAGIC) {
+		if (part_record_point->magic != PART_MAGIC) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Dump_Part: Data integrity is bad\n");
+			fprintf (stderr,
+				 "dump_part: data integrity is bad\n");
 #else
-	    syslog(LOG_ALERT, "Dump_Part: Data integrity is bad\n");
+			syslog (LOG_ALERT,
+				"dump_part: data integrity is bad\n");
 #endif
-	    abort();
-	} /* if */
+			abort ();
+		}		
 #endif
 
-	if (Part_Record_Point->Nodes)
-	    Nodes = Part_Record_Point->Nodes;
-	else
-	    Nodes = "NONE";
-	if (Part_Record_Point == Default_Part_Loc)
-	    Default = "YES";
-	else
-	    Default = "NO";
-	if (Part_Record_Point->Key)
-	    Key = "YES";
-	else
-	    Key = "NO";
-	if (Part_Record_Point->StateUp)
-	    State = "UP";
-	else
-	    State = "DOWN";
-	if (Part_Record_Point->Shared)
-	    Shared = "YES";
-	else
-	    Shared = "NO";
-	if (Part_Record_Point->AllowGroups)
-	    AllowGroups = Part_Record_Point->AllowGroups;
-	else
-	    AllowGroups = "ALL";
-	sprintf(Out_Line, PART_STRUCT_FORMAT, 
-		Part_Record_Point->Name,
-		Part_Record_Point->MaxNodes,
-		Part_Record_Point->MaxTime,
-		Nodes,
-		Key,
-		Default,
-		AllowGroups,
-		Shared,
-		State,
-		Part_Record_Point->TotalNodes,
-		Part_Record_Point->TotalCPUs);
+		if (part_record_point->nodes)
+			nodes = part_record_point->nodes;
+		else
+			nodes = "NONE";
+		if (part_record_point == default_part_loc)
+			default_flag = "YES";
+		else
+			default_flag = "NO";
+		if (part_record_point->key)
+			key = "YES";
+		else
+			key = "NO";
+		if (part_record_point->state_up)
+			state = "UP";
+		else
+			state = "DONW";
+		if (part_record_point->shared)
+			shared = "YES";
+		else
+			shared = "NO";
+		if (part_record_point->allow_groups)
+			allow_groups = part_record_point->allow_groups;
+		else
+			allow_groups = "ALL";
+		sprintf (out_line, PART_STRUCT_FORMAT,
+			 part_record_point->name,
+			 part_record_point->max_nodes,
+			 part_record_point->max_time,
+			 nodes,
+			 key,
+			 default_flag,
+			 allow_groups,
+			 shared,
+			 state,
+			 part_record_point->total_nodes,
+			 part_record_point->total_cpus);
 
-	if (strlen(Out_Line) > BUF_SIZE) {
+		if (strlen (out_line) > BUF_SIZE) {
 #if DEBUG_SYSTEM
-	    fprintf(stderr, "Dump_Part: buffer overflow for partition %s\n", Part_Record_Point->Name);
+			fprintf (stderr,
+				 "dump_part: buffer overflow for partition %s\n",
+				 part_record_point->name);
 #else
-	    syslog(LOG_ALERT, "Dump_Part: buffer overflow for partition %s\n", Part_Record_Point->Name);
+			syslog (LOG_ALERT,
+				"dump_part: buffer overflow for partition %s\n",
+				part_record_point->name);
 #endif
-	    if (strlen(Out_Line) > (2*BUF_SIZE)) abort();
-	} /* if */
+			if (strlen (out_line) > (2 * BUF_SIZE))
+				abort ();
+		}		
 
-	if (Write_Buffer(&Buffer, &Buffer_Offset, &Buffer_Allocated, Out_Line)) goto cleanup;
-    } /* while */
+		if (write_buffer
+		    (&buffer, &buffer_offset, &buffer_allocated, out_line))
+			goto cleanup;
+	}			
 
-    list_iterator_destroy(Part_Record_Iterator);
-    Buffer = realloc(Buffer, Buffer_Offset);
-    if (Buffer == NULL) {
+	list_iterator_destroy (part_record_iterator);
+	buffer = realloc (buffer, buffer_offset);
+	if (buffer == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Dump_Part: unable to allocate memory\n");
+		fprintf (stderr, "dump_part: unable to allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Dump_Part: unable to allocate memory\n");
+		syslog (LOG_ALERT, "dump_part: unable to allocate memory\n");
 #endif
-	abort();
-    } /* if */
+		abort ();
+	}			
 
-    Buffer_Ptr[0] = Buffer;
-    *Buffer_Size = Buffer_Offset;
-    *Update_Time = Last_Part_Update;
-    Part_Unlock();
-    return 0;
+	buffer_ptr[0] = buffer;
+	*buffer_size = buffer_offset;
+	*update_time = last_part_update;
+	return 0;
 
-cleanup:
-    Part_Unlock();
-    list_iterator_destroy(Part_Record_Iterator);
-    if (Buffer) free(Buffer);
-    return EINVAL;
-} /* Dump_Part */
-
-
-/* 
- * Init_Part_Conf - Initialize the partition configuration values. 
- * This should be called before creating any partition entries.
- * Output: return value - 0 if no error, otherwise an error code
- */
-int Init_Part_Conf() {
-    Last_Part_Update = time(NULL);
-
-    strcpy(Default_Part.Name, "DEFAULT");
-    Default_Part.AllowGroups = (char *)NULL;
-    Default_Part.MaxTime     = -1;
-    Default_Part.MaxNodes    = -1;
-    Default_Part.Key         = 0;
-    Default_Part.StateUp     = 1;
-    Default_Part.Shared      = 0;
-    Default_Part.TotalNodes  = 0;
-    Default_Part.TotalCPUs   = 0;
-    if (Default_Part.Nodes) free(Default_Part.Nodes);
-    Default_Part.Nodes       = (char *)NULL;
-    if (Default_Part.AllowGroups) free(Default_Part.AllowGroups);
-    Default_Part.AllowGroups = (char *)NULL;
-    if (Default_Part.NodeBitMap) free(Default_Part.NodeBitMap);
-    Default_Part.NodeBitMap  = (unsigned *)NULL;
-
-    if (Part_List) 	/* Delete defunct partitions */
-	(void)Delete_Part_Record(NULL);
-    else
-	Part_List = list_create(&List_Delete_Part);
-
-    if (Part_List == NULL) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Init_Part_Conf: list_create can not allocate memory\n");
-#else
-	syslog(LOG_ALERT, "Init_Part_Conf: list_create can not allocate memory\n");
-#endif
-	abort();
-    } /* if */
-
-    strcpy(Default_Part_Name, "");
-    Default_Part_Loc = (struct Part_Record *)NULL;
-
-    return 0;
-} /* Init_Part_Conf */
-
-
-/* List_Delete_Part - Delete an entry from the partition list, see list.h for documentation */
-void List_Delete_Part(void *Part_Entry) {
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-    int i;
-
-    Part_Record_Point = (struct Part_Record *)Part_Entry;
-    for (i=0; i<Node_Record_Count; i++) {
-	if (Node_Record_Table_Ptr[i].Partition_Ptr != Part_Record_Point) continue;
-	Node_Record_Table_Ptr[i].Partition_Ptr = NULL;
-    } /* if */
-    if (Part_Record_Point->AllowGroups) free(Part_Record_Point->AllowGroups);
-    if (Part_Record_Point->Nodes)       free(Part_Record_Point->Nodes);
-    if (Part_Record_Point->NodeBitMap)  free(Part_Record_Point->NodeBitMap);
-    free(Part_Entry);
-} /* List_Delete_Part */
-
-
-/* List_Find_Part - Find an entry in the partition list, see list.h for documentation 
- * Key is partition name or "UNIVERSAL_KEY" for all partitions */
-int List_Find_Part(void *Part_Entry, void *key) {
-    struct Part_Record *Part_Record_Point;	/* Pointer to Part_Record */
-    if (strcmp(key, "UNIVERSAL_KEY") == 0) return 1;
-    Part_Record_Point = (struct Part_Record *)Part_Entry;
-    if (strcmp(Part_Record_Point->Name, (char *)key) == 0) return 1;
-    return 0;
-} /* List_Find_Part */
-
-
-/* Part_Lock - Lock the partition information */
-void Part_Lock() {
-    int Error_Code;
-    Error_Code = pthread_mutex_lock(&Part_Mutex);
-    if (Error_Code) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Part_Lock: pthread_mutex_lock error %d\n", Error_Code);
-#else
-	syslog(LOG_ALERT, "Part_Lock: pthread_mutex_lock error %d\n", Error_Code);
-#endif
-	abort();
-    } /* if */
-} /* Part_Lock */
-
-
-/* Part_Unlock - Unlock the partition information */
-void Part_Unlock() {
-    int Error_Code;
-    Error_Code = pthread_mutex_unlock(&Part_Mutex);
-    if (Error_Code) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Part_Unlock: pthread_mutex_unlock error %d\n", Error_Code);
-#else
-	syslog(LOG_ALERT, "Part_Unlock: pthread_mutex_unlock error %d\n", Error_Code);
-#endif
-	abort();
-    } /* if */
-} /* Part_Unlock */
-
-
-/* 
- * Update_Part - Update a partition's configuration data
- * Input: PartitionName - Partition's name
- *        Spec - The updates to the partition's specification 
- * Output:  Return - 0 if no error, otherwise an error code
- * NOTE: The contents of Spec are overwritten by white space
- */
-int Update_Part(char *PartitionName, char *Spec) {
-    int Error_Code;
-    struct Part_Record *Part_Ptr;
-    int MaxTime_Val, MaxNodes_Val, Key_Val, State_Val, Shared_Val, Default_Val;
-    char *AllowGroups, *Nodes;
-    int Bad_Index, i;
-
-    if (strcmp(PartitionName, "DEFAULT") == 0) {
-#if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: Invalid partition name %s\n", PartitionName);
-#else
-	syslog(LOG_ALERT, "Update_Part: Invalid partition name  %s\n", PartitionName);
-#endif
+      cleanup:
+	list_iterator_destroy (part_record_iterator);
+	if (buffer)
+		free (buffer);
 	return EINVAL;
-    } /* if */
+}
 
-    Node_Lock();
-    Part_Lock();
-    Part_Ptr   = list_find_first(Part_List, &List_Find_Part, PartitionName);
-    if (Part_Ptr == 0) {
+
+/* 
+ * init_part_conf - initialize the partition configuration values. 
+ * this should be called before creating any partition entries.
+ * output: return value - 0 if no error, otherwise an error code
+ */
+int init_part_conf () {
+	last_part_update = time (NULL);
+
+	strcpy (default_part.name, "DEFAULT");
+	default_part.allow_groups = (char *) NULL;
+	default_part.max_time = -1;
+	default_part.max_nodes = -1;
+	default_part.key = 0;
+	default_part.state_up = 1;
+	default_part.shared = 0;
+	default_part.total_nodes = 0;
+	default_part.total_cpus = 0;
+	if (default_part.nodes)
+		free (default_part.nodes);
+	default_part.nodes = (char *) NULL;
+	if (default_part.allow_groups)
+		free (default_part.allow_groups);
+	default_part.allow_groups = (char *) NULL;
+	if (default_part.node_bitmap)
+		free (default_part.node_bitmap);
+	default_part.node_bitmap = (unsigned *) NULL;
+
+	if (part_list)		/* delete defunct partitions */
+		(void) delete_part_record (NULL);
+	else
+		part_list = list_create (&list_delete_part);
+
+	if (part_list == NULL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: Partition %s does not exist, being created.\n", PartitionName);
+		fprintf (stderr,
+			 "init_part_conf: list_create can not allocate memory\n");
 #else
-	syslog(LOG_ALERT, "Update_Part: Partition %s does not exist, being created.\n", PartitionName);
+		syslog (LOG_ALERT,
+			"init_part_conf: list_create can not allocate memory\n");
 #endif
-	Part_Ptr = Create_Part_Record(&Error_Code);
-	if (Error_Code) goto cleanup;
-    } /* if */
+		abort ();
+	}			
 
-    MaxTime_Val = NO_VAL;
-    Error_Code = Load_Integer(&MaxTime_Val, "MaxTime=", Spec);
-    if (Error_Code) goto cleanup;
+	strcpy (default_part_name, "");
+	default_part_loc = (struct part_record *) NULL;
 
-    MaxNodes_Val = NO_VAL;
-    Error_Code = Load_Integer(&MaxNodes_Val, "MaxNodes=", Spec);
-    if (Error_Code) goto cleanup;
+	return 0;
+}
 
-    Key_Val = NO_VAL;
-    Error_Code = Load_Integer(&Key_Val, "Key=NO", Spec);
-    if (Error_Code) goto cleanup;
-    if (Key_Val == 1) Key_Val = 0;
-    Error_Code = Load_Integer(&Key_Val, "Key=YES", Spec);
-    if (Error_Code) goto cleanup;
+/* list_delete_part - delete an entry from the partition list, see list.h for documentation */
+void list_delete_part (void *part_entry) {
+	struct part_record *part_record_point;	/* pointer to part_record */
+	int i;
 
-    State_Val = NO_VAL;
-    Error_Code = Load_Integer(&State_Val, "State=DOWN", Spec);
-    if (Error_Code) goto cleanup;
-    if (State_Val == 1) State_Val = 0;
-    Error_Code = Load_Integer(&State_Val, "State=UP", Spec);
-    if (Error_Code) goto cleanup;
+	part_record_point = (struct part_record *) part_entry;
+	for (i = 0; i < node_record_count; i++) {
+		if (node_record_table_ptr[i].partition_ptr !=
+		    part_record_point)
+			continue;
+		node_record_table_ptr[i].partition_ptr = NULL;
+	}			
+	if (part_record_point->allow_groups)
+		free (part_record_point->allow_groups);
+	if (part_record_point->nodes)
+		free (part_record_point->nodes);
+	if (part_record_point->node_bitmap)
+		free (part_record_point->node_bitmap);
+	free (part_entry);
+}
 
-    Shared_Val = NO_VAL;
-    Error_Code = Load_Integer(&Shared_Val, "Shared=NO", Spec);
-    if (Error_Code) goto cleanup;
-    if (Shared_Val == 1) Shared_Val = 0;
-    Error_Code = Load_Integer(&Shared_Val, "Shared=FORCE", Spec);
-    if (Error_Code) goto cleanup;
-    if (Shared_Val == 1) Shared_Val = 2;
-    Error_Code = Load_Integer(&Shared_Val, "Shared=YES", Spec);
-    if (Error_Code) goto cleanup;
 
-    Default_Val = NO_VAL;
-    Error_Code = Load_Integer(&Default_Val, "Default=YES", Spec);
-    if (Error_Code) goto cleanup;
+/* list_find_part - find an entry in the partition list, see list.h for documentation 
+ * key is partition name or "universal_key" for all partitions */
+int list_find_part (void *part_entry, void *key) {
+	struct part_record *part_record_point;	/* pointer to part_record */
+	if (strcmp (key, "universal_key") == 0)
+		return 1;
+	part_record_point = (struct part_record *) part_entry;
+	if (strcmp (part_record_point->name, (char *) key) == 0)
+		return 1;
+	return 0;
+}
 
-    AllowGroups = NULL;
-    Error_Code = Load_String (&AllowGroups, "AllowGroups=", Spec);
-    if (Error_Code) goto cleanup;
 
-    Nodes = NULL;
-    Error_Code = Load_String (&Nodes, "Nodes=", Spec);
-    if (Error_Code) goto cleanup;
-
-    Bad_Index = -1;
-    for (i=0; i<strlen(Spec); i++) {
-	if (Spec[i] == '\n') Spec[i]=' ';
-	if (isspace((int)Spec[i])) continue;
-	Bad_Index=i;
-	break;
-    } /* if */
-
-    if (Bad_Index != -1) {
+/* part_lock - lock the partition information */
+void part_lock () {
+	int error_code;
+	error_code = pthread_mutex_lock (&part_mutex);
+	if (error_code) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: Ignored partition %s update specification: %s\n", 
-		PartitionName, &Spec[Bad_Index]);
+		fprintf (stderr, "part_lock: pthread_mutex_lock error %d\n",
+			 error_code);
 #else
-	syslog(LOG_ERR, "Update_Part: Ignored partition %s update specification: %s\n", 
-		PartitionName, &Spec[Bad_Index]);
+		syslog (LOG_ALERT, "part_lock: pthread_mutex_lock error %d\n",
+			error_code);
 #endif
-	Error_Code = EINVAL;
-	goto cleanup;
-    } /* if */
+		abort ();
+	}			
+}
 
-    Last_Part_Update = time(NULL);
-    if (MaxTime_Val  != NO_VAL) {
+
+/* part_unlock - unlock the partition information */
+void part_unlock () {
+	int error_code;
+	error_code = pthread_mutex_unlock (&part_mutex);
+	if (error_code) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting MaxTime to %d for partition %s\n", 
-		    MaxTime_Val, PartitionName);
+		fprintf (stderr,
+			 "part_unlock: pthread_mutex_unlock error %d\n",
+			 error_code);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting MaxTime to %d for partition %s\n", 
-		    MaxTime_Val, PartitionName);
+		syslog (LOG_ALERT,
+			"part_unlock: pthread_mutex_unlock error %d\n",
+			error_code);
 #endif
-	Part_Ptr->MaxTime  = MaxTime_Val;
-    }/* if */
+		abort ();
+	}			
+}
 
-    if (MaxNodes_Val != NO_VAL) {
+
+/* 
+ * update_part - update a partition's configuration data
+ * input: partition_name - partition's name
+ *        spec - the updates to the partition's specification 
+ * output:  return - 0 if no error, otherwise an error code
+ * NOTE: the contents of spec are overwritten by white space
+ */
+int update_part (char *partition_name, char *spec) {
+	int error_code;
+	struct part_record *part_ptr;
+	int max_time_val, max_nodes_val, key_val, state_val, shared_val,
+		default_val;
+	char *allow_groups, *nodes;
+	int bad_index, i;
+
+	if (strcmp (partition_name, "DEFAULT") == 0) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting MaxNodes to %d for partition %s\n", 
-		    MaxNodes_Val, PartitionName);
+		fprintf (stderr, "update_part: invalid partition name %s\n",
+			 partition_name);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting MaxNodes to %d for partition %s\n", 
-		    MaxNodes_Val, PartitionName);
+		syslog (LOG_ALERT,
+			"update_part: invalid partition name  %s\n",
+			partition_name);
 #endif
-	Part_Ptr->MaxNodes = MaxNodes_Val;
-    }/* if */
+		return EINVAL;
+	}			
 
-    if (Key_Val      != NO_VAL) {
+	part_ptr =
+		list_find_first (part_list, &list_find_part, partition_name);
+	if (part_ptr == 0) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting Key to %d for partition %s\n", 
-		    Key_Val, PartitionName);
+		fprintf (stderr,
+			 "update_part: partition %s does not exist, being created.\n",
+			 partition_name);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting Key to %d for partition %s\n", 
-		    Key_Val, PartitionName);
+		syslog (LOG_ALERT,
+			"update_part: partition %s does not exist, being created.\n",
+			partition_name);
 #endif
-	Part_Ptr->Key      = Key_Val;
-    }/* if */
+		part_ptr = create_part_record (&error_code);
+		if (error_code)
+			goto cleanup;
+	}			
 
-    if (State_Val    != NO_VAL) {
+	max_time_val = NO_VAL;
+	error_code = load_integer (&max_time_val, "MaxTime=", spec);
+	if (error_code)
+		goto cleanup;
+
+	max_nodes_val = NO_VAL;
+	error_code = load_integer (&max_nodes_val, "MaxNodes=", spec);
+	if (error_code)
+		goto cleanup;
+
+	key_val = NO_VAL;
+	error_code = load_integer (&key_val, "Key=NO", spec);
+	if (error_code)
+		goto cleanup;
+	if (key_val == 1)
+		key_val = 0;
+	error_code = load_integer (&key_val, "Key=YES", spec);
+	if (error_code)
+		goto cleanup;
+
+	state_val = NO_VAL;
+	error_code = load_integer (&state_val, "State=DOWN", spec);
+	if (error_code)
+		goto cleanup;
+	if (state_val == 1)
+		state_val = 0;
+	error_code = load_integer (&state_val, "State=UP", spec);
+	if (error_code)
+		goto cleanup;
+
+	shared_val = NO_VAL;
+	error_code = load_integer (&shared_val, "Shared=NO", spec);
+	if (error_code)
+		goto cleanup;
+	if (shared_val == 1)
+		shared_val = 0;
+	error_code = load_integer (&shared_val, "Shared=FORCE", spec);
+	if (error_code)
+		goto cleanup;
+	if (shared_val == 1)
+		shared_val = 2;
+	error_code = load_integer (&shared_val, "Shared=YES", spec);
+	if (error_code)
+		goto cleanup;
+
+	default_val = NO_VAL;
+	error_code = load_integer (&default_val, "Default=YES", spec);
+	if (error_code)
+		goto cleanup;
+
+	allow_groups = NULL;
+	error_code = load_string (&allow_groups, "AllowGroups=", spec);
+	if (error_code)
+		goto cleanup;
+
+	nodes = NULL;
+	error_code = load_string (&nodes, "Nodes=", spec);
+	if (error_code)
+		goto cleanup;
+
+	bad_index = -1;
+	for (i = 0; i < strlen (spec); i++) {
+		if (spec[i] == '\n')
+			spec[i] = ' ';
+		if (isspace ((int) spec[i]))
+			continue;
+		bad_index = i;
+		break;
+	}			
+
+	if (bad_index != -1) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting StateUp to %d for partition %s\n", 
-		    State_Val, PartitionName);
+		fprintf (stderr,
+			 "update_part: ignored partition %s update specification: %s\n",
+			 partition_name, &spec[bad_index]);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting StateUp to %d for partition %s\n", 
-		    State_Val, PartitionName);
+		syslog (LOG_ERR,
+			"update_part: ignored partition %s update specification: %s\n",
+			partition_name, &spec[bad_index]);
 #endif
-	Part_Ptr->StateUp  = State_Val;
-    }/* if */
+		error_code = EINVAL;
+		goto cleanup;
+	}			
 
-    if (Shared_Val    != NO_VAL) {
+	last_part_update = time (NULL);
+	if (max_time_val != NO_VAL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting Shared to %d for partition %s\n", 
-		    Shared_Val, PartitionName);
+		fprintf (stderr,
+			 "update_part: setting max_time to %d for partition %s\n",
+			 max_time_val, partition_name);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting Shared to %d for partition %s\n", 
-		    Shared_Val, PartitionName);
+		syslog (LOG_NOTICE,
+			"update_part: setting max_time to %d for partition %s\n",
+			max_time_val, partition_name);
 #endif
-	Part_Ptr->Shared  = Shared_Val;
-    }/* if */
+		part_ptr->max_time = max_time_val;
+	}			
 
-    if (Default_Val == 1) {
+	if (max_nodes_val != NO_VAL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: changing default partition from %s to %s\n", 
-		    Default_Part_Name, PartitionName);
+		fprintf (stderr,
+			 "update_part: setting max_nodes to %d for partition %s\n",
+			 max_nodes_val, partition_name);
 #else
-	syslog(LOG_NOTICE, "Update_Part: changing default partition from %s to %s\n", 
-		    Default_Part_Name, PartitionName);
+		syslog (LOG_NOTICE,
+			"update_part: setting max_nodes to %d for partition %s\n",
+			max_nodes_val, partition_name);
 #endif
-	strcpy(Default_Part_Name, PartitionName);
-	Default_Part_Loc = Part_Ptr;
-    } /* if */
+		part_ptr->max_nodes = max_nodes_val;
+	}			
 
-    if (AllowGroups != NULL) {
-	if (Part_Ptr->AllowGroups) free(Part_Ptr->AllowGroups);
-	Part_Ptr->AllowGroups = AllowGroups;
+	if (key_val != NO_VAL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting AllowGroups to %s for partition %s\n", 
-		    AllowGroups, PartitionName);
+		fprintf (stderr,
+			 "update_part: setting key to %d for partition %s\n",
+			 key_val, partition_name);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting AllowGroups to %s for partition %s\n", 
-		    AllowGroups, PartitionName);
+		syslog (LOG_NOTICE,
+			"update_part: setting key to %d for partition %s\n",
+			key_val, partition_name);
 #endif
-    } /* if */
+		part_ptr->key = key_val;
+	}			
 
-    if (Nodes != NULL) {
-	if (Part_Ptr->Nodes) free(Part_Ptr->Nodes);
-	Part_Ptr->Nodes = Nodes;
+	if (state_val != NO_VAL) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Update_Part: setting Nodes to %s for partition %s\n", 
-		    Nodes, PartitionName);
+		fprintf (stderr,
+			 "update_part: setting state_up to %d for partition %s\n",
+			 state_val, partition_name);
 #else
-	syslog(LOG_NOTICE, "Update_Part: setting Nodes to %s for partition %s\n", 
-		    Nodes, PartitionName);
+		syslog (LOG_NOTICE,
+			"update_part: setting state_up to %d for partition %s\n",
+			state_val, partition_name);
 #endif
-	/* Now we need to update TotalCPUs, TotalNodes, and NodeBitMap */
-	Error_Code = Build_Part_BitMap(Part_Ptr);
-	if (Error_Code) goto cleanup;
-    } /* if */
+		part_ptr->state_up = state_val;
+	}			
 
-cleanup:
-    Part_Unlock();
-    Node_Unlock();
-    return Error_Code;
-} /* Update_Part */
+	if (shared_val != NO_VAL) {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "update_part: setting shared to %d for partition %s\n",
+			 shared_val, partition_name);
+#else
+		syslog (LOG_NOTICE,
+			"update_part: setting shared to %d for partition %s\n",
+			shared_val, partition_name);
+#endif
+		part_ptr->shared = shared_val;
+	}			
+
+	if (default_val == 1) {
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "update_part: changing default partition from %s to %s\n",
+			 default_part_name, partition_name);
+#else
+		syslog (LOG_NOTICE,
+			"update_part: changing default partition from %s to %s\n",
+			default_part_name, partition_name);
+#endif
+		strcpy (default_part_name, partition_name);
+		default_part_loc = part_ptr;
+	}			
+
+	if (allow_groups != NULL) {
+		if (part_ptr->allow_groups)
+			free (part_ptr->allow_groups);
+		part_ptr->allow_groups = allow_groups;
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "update_part: setting allow_groups to %s for partition %s\n",
+			 allow_groups, partition_name);
+#else
+		syslog (LOG_NOTICE,
+			"update_part: setting allow_groups to %s for partition %s\n",
+			allow_groups, partition_name);
+#endif
+	}			
+
+	if (nodes != NULL) {
+		if (part_ptr->nodes)
+			free (part_ptr->nodes);
+		part_ptr->nodes = nodes;
+#if DEBUG_SYSTEM
+		fprintf (stderr,
+			 "update_part: setting nodes to %s for partition %s\n",
+			 nodes, partition_name);
+#else
+		syslog (LOG_NOTICE,
+			"update_part: setting nodes to %s for partition %s\n",
+			nodes, partition_name);
+#endif
+		/* now we need to update total_cpus, total_nodes, and node_bitmap */
+		error_code = build_part_bitmap (part_ptr);
+		if (error_code)
+			goto cleanup;
+	}			
+
+      cleanup:
+	return error_code;
+}

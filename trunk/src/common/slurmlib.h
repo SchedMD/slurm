@@ -1,8 +1,8 @@
 /* 
- * slurmlib.h - Descriptions of SLURM APIs
- * See slurm.h for documentation on external functions and data structures
+ * slurmlib.h - descriptions of slurm APIs
+ * see slurm.h for documentation on external functions and data structures
  *
- * Author: Moe Jette, jette@llnl.gov
+ * author: moe jette, jette@llnl.gov
  */
 
 #define MAX_NAME_LEN	16
@@ -11,136 +11,146 @@
 #define SLURMCTLD_HOST	"134.9.55.42"
 #define SLURMCTLD_PORT	1543
 
-
-
 /*
- * Allocate - Allocate nodes for a job with supplied contraints. 
- * Input: Spec - Specification of the job's constraints
- *        NodeList - Place into which a node list pointer can be placed
- * Output: NodeList - List of allocated nodes
- *         Returns 0 if no error, EINVAL if the request is invalid, 
- *			EAGAIN if the request can not be satisfied at present
- * NOTE: Acceptable specifications include: JobName=<name> NodeList=<list>, 
+ * slurm_allocate - allocate nodes for a job with supplied contraints. 
+ * input: spec - specification of the job's constraints
+ *        node_list - place into which a node list pointer can be placed
+ * output: node_list - list of allocated nodes
+ *         returns 0 if no error, einval if the request is invalid, 
+ *			eagain if the request can not be satisfied at present
+ * NOTE: acceptable specifications include: JobName=<name> NodeList=<list>, 
  *	Features=<features>, Groups=<groups>, Partition=<part_name>, Contiguous, 
  *	TotalCPUs=<number>, TotalNodes=<number>, MinCPUs=<number>, 
  *	MinMemory=<number>, MinTmpDisk=<number>, Key=<number>, Shared=<0|1>
- * NOTE: The calling function must free the allocated storage at NodeList[0]
+ * NOTE: the calling function must free the allocated storage at node_list[0]
  */
-extern int Allocate(char *Spec, char **NodeList);
+extern int slurm_allocate (char *spec, char **node_list);
 
 /*
- * Free_Build_Info - Free the build information buffer (if allocated)
+ * slurm_free_build_info - free the build information buffer (if allocated).
+ * NOTE: buffer is loaded by slurm_load_build and used by slurm_load_build_name.
  */
-extern void Free_Build_Info(void);
+extern void slurm_free_build_info (void);
 
 /*
- * Free_Node_Info - Free the node information buffer (if allocated)
+ * free_node_info - free the node information buffer (if allocated)
+ * NOTE: buffer is loaded by load_node and used by load_node_name.
  */
-extern void Free_Node_Info(void);
+extern void free_node_info (void);
 
 /*
- * Free_Part_Info - Free the partition information buffer (if allocated)
+ * free_part_info - free the partition information buffer (if allocated)
+ * NOTE: buffer is loaded by load_part and used by load_part_name.
  */
-extern void Free_Part_Info(void);
+extern void free_part_info (void);
 
 /*
- * Load_Build - Update the build information buffer for use by info gathering APIs
- * Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+ * slurm_load_build - update the build information buffer for use by info gathering APIs
+ * output: returns 0 if no error, einval if the buffer is invalid, enomem if malloc failure.
+ * NOTE: buffer is used by slurm_load_build_name and freed by slurm_free_build_info.
  */
-extern int Load_Build();
+extern int slurm_load_build ();
 
 /* 
- * Load_Build_Name - Load the state information about the named build parameter
- * Input: Req_Name - Name of the parameter for which information is requested
+ * slurm_load_build_name - load the state information about the named build parameter
+ * input: req_name - name of the parameter for which information is requested
  *		     if "", then get info for the first parameter in list
- *        Next_Name - Location into which the name of the next parameter is 
+ *        next_name - location into which the name of the next parameter is 
  *                   stored, "" if no more
- *        Value - Pointer to location into which the information is to be stored
- * Output: Req_Name - The parameter's name is stored here
- *         Next_Name - The name of the next parameter in the list is stored here
- *         Value - The parameter's state information
- *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name, Next_Name, and Value must be declared by caller with have 
+ *        value - pointer to location into which the information is to be stored
+ * output: req_name - the parameter's name is stored here
+ *         next_name - the name of the next parameter in the list is stored here
+ *         value - the parameter's state information
+ *         returns 0 on success, enoent if not found, or einval if buffer is bad
+ * NOTE:  req_name, next_name, and value must be declared by caller with have 
  *        length BUILD_SIZE or larger
+ * NOTE: buffer is loaded by slurm_load_build and freed by slurm_free_build_info.
  */
-extern int Load_Build_Name(char *Req_Name, char *Next_Name, char *Value);
- 
+extern int slurm_load_build_name (char *req_name, char *next_name, char *value);
+
 /*
- * Load_Node - Load the supplied node information buffer for use by info gathering APIs if
+ * load_node - load the supplied node information buffer for use by info gathering APIs if
  *	node records have changed since the time specified. 
- * Input: Buffer - Pointer to node information buffer
- *        Buffer_Size - size of Buffer
- * Output: Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+ * input: buffer - pointer to node information buffer
+ *        buffer_size - size of buffer
+ * output: returns 0 if no error, einval if the buffer is invalid, enomem if malloc failure
+ * NOTE: buffer is used by load_node_config and freed by free_node_info.
  */
-extern int Load_Node(time_t *Last_Update_Time);
- 
+extern int load_node (time_t * last_update_time);
+
 /* 
- * Load_Node_Config - Load the state information about the named node
- * Input: Req_Name - Name of the node for which information is requested
+ * load_node_config - load the state information about the named node
+ * input: req_name - name of the node for which information is requested
  *		     if "", then get info for the first node in list
- *        Next_Name - Location into which the name of the next node is 
+ *        next_name - location into which the name of the next node is 
  *                   stored, "" if no more
- *        CPUs, etc. - Pointers into which the information is to be stored
- * Output: Next_Name - Name of the next node in the list
- *         CPUs, etc. - The node's state information
- *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name, Next_Name, Partition, and NodeState must be declared by the 
+ *        cpus, etc. - pointers into which the information is to be stored
+ * output: next_name - name of the next node in the list
+ *         cpus, etc. - the node's state information
+ *         returns 0 on success, enoent if not found, or einval if buffer is bad
+ * NOTE:  req_name, next_name, partition, and node_state must be declared by the 
  *        caller and have length MAX_NAME_LEN or larger
- *        Features must be declared by the caller and have length FEATURE_SIZE or larger
+ *        features must be declared by the caller and have length FEATURE_SIZE or larger
+ * NOTE: buffer is loaded by load_node and freed by free_node_info.
  */
-extern int Load_Node_Config(char *Req_Name, char *Next_Name, int *CPUs, 
-	int *RealMemory, int *TmpDisk, int *Weight, char *Features,
-	char *Partition, char *NodeState);
+extern int load_node_config (char *req_name, char *next_name, int *cpus,
+			     int *real_memory, int *tmp_disk, int *weight,
+			     char *features, char *partition,
+			     char *node_state);
 
 /*
- * Load_Part - Update the partition information buffer for use by info gathering APIs if 
+ * load_part - update the partition information buffer for use by info gathering APIs if 
  *	partition records have changed since the time specified. 
- * Input: Last_Update_Time - Pointer to time of last buffer
- * Output: Last_Update_Time - Time reset if buffer is updated
- *         Returns 0 if no error, EINVAL if the buffer is invalid, ENOMEM if malloc failure
+ * input: last_update_time - pointer to time of last buffer
+ * output: last_update_time - time reset if buffer is updated
+ *         returns 0 if no error, einval if the buffer is invalid, enomem if malloc failure
+ * NOTE: buffer is used by load_part_name and free by free_part_info.
  */
-int Load_Part(time_t *Last_Update_Time);
+extern int load_part (time_t * last_update_time);
 
 /* 
- * Load_Part_Name - Load the state information about the named partition
- * Input: Req_Name - Name of the partition for which information is requested
+ * load_part_name - load the state information about the named partition
+ * input: req_name - name of the partition for which information is requested
  *		     if "", then get info for the first partition in list
- *        Next_Name - Location into which the name of the next partition is 
+ *        next_name - location into which the name of the next partition is 
  *                   stored, "" if no more
- *        MaxTime, etc. - Pointers into which the information is to be stored
- * Output: Req_Name - The partition's name is stored here
- *         Next_Name - The name of the next partition in the list is stored here
- *         MaxTime, etc. - The partition's state information
- *         Returns 0 on success, ENOENT if not found, or EINVAL if buffer is bad
- * NOTE:  Req_Name and Next_Name must be declared by caller with have length MAX_NAME_LEN or larger
- *        Nodes and AllowGroups must be declared by caller with length of FEATURE_SIZE or larger
+ *        max_time, etc. - pointers into which the information is to be stored
+ * output: req_name - the partition's name is stored here
+ *         next_name - the name of the next partition in the list is stored here
+ *         max_time, etc. - the partition's state information
+ *         returns 0 on success, enoent if not found, or einval if buffer is bad
+ * NOTE:  req_name and next_name must be declared by caller with have length MAX_NAME_LEN or larger.
+ *        nodes and allow_groups must be declared by caller with length of FEATURE_SIZE or larger.
+ * NOTE: buffer is loaded by load_part and free by free_part_info.
  */
-int Load_Part_Name(char *Req_Name, char *Next_Name, int *MaxTime, int *MaxNodes, 
-	int *TotalNodes, int *TotalCPUs, int *Key, int *StateUp, int *Shared, int *Default,
-	char *Nodes, char *AllowGroups);
+extern int load_part_name (char *req_name, char *next_name, int *max_time,
+		    int *max_nodes, int *total_nodes, int *total_cpus,
+		    int *key, int *state_up, int *shared, int *default_flag,
+		    char *nodes, char *allow_groups);
 
 /* 
- * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
+ * parse_node_name - parse the node name for regular expressions and return a sprintf format 
  * generate multiple node names as needed.
- * Input: NodeName - Node name to parse
- * Output: Format - sprintf format for generating names
- *         Start_Inx - First index to used
- *         End_Inx - Last index value to use
- *         Count_Inx - Number of index values to use (will be zero if none)
+ * input: node_name - node name to parse
+ * output: format - sprintf format for generating names
+ *         start_inx - first index to used
+ *         end_inx - last index value to use
+ *         count_inx - number of index values to use (will be zero if none)
  *         return 0 if no error, error code otherwise
- * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
+ * NOTE: the calling program must execute free(format) when the storage location is no longer needed
  */
-extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
+extern int parse_node_name (char *node_name, char **format, int *start_inx,
+			    int *end_inx, int *count_inx);
 
 /* 
- * Reconfigure - _ Request that slurmctld re-read the configuration files
- * Output: Returns 0 on success, errno otherwise
+ * reconfigure - _ request that slurmctld re-read the configuration files
+ * output: returns 0 on success, errno otherwise
  */
-extern int Reconfigure();
+extern int reconfigure ();
 
 /* 
- * Update_Config - _ Request that slurmctld update its configuration per request
- * Input: A line containing configuration information per the configuration file format
- * Output: Returns 0 on success, errno otherwise
+ * update_config - _ request that slurmctld update its configuration per request
+ * input: a line containing configuration information per the configuration file format
+ * output: returns 0 on success, errno otherwise
  */
-extern int Update_Config(char *Spec);
+extern int update_config (char *spec);
