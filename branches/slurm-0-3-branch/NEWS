@@ -1,7 +1,7 @@
 This file describes changes in recent versions of SLURM. It primarily
 documents those changes that are of interest to users and admins. 
 
-* Changes in SLURM 0.3.8
+* Changes in SLURM 0.3.9
 ========================
  -- Create new allocation as needed for debugger in case old allocation
     has been purged
