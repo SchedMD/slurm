@@ -47,7 +47,7 @@
 #define SLURM_PROTOCOL_MAX_MESSAGE_BUFFER_SIZE (512*1024)
 
 /* slurm protocol header defines */ 
-#define SLURM_PROTOCOL_VERSION 2
+#define SLURM_PROTOCOL_VERSION 3
 
 /* used to set flags to empty */
 #define SLURM_PROTOCOL_NO_FLAGS 0 
