@@ -381,6 +381,8 @@ _run_batch_job(void)
 	
 	if (rc == SLURM_SUCCESS) {
 		info("jobid %u submitted",resp->job_id);
+		if (resp->error_code)
+			info("Warning: %s", slurm_strerror(resp->error_code));
 		slurm_free_submit_response_response_msg (resp);
 	}
 	xfree (job_script);
