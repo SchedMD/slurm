@@ -86,13 +86,15 @@ void	_unpackmem_malloc(char **valp, uint16_t *size_valp, void **bufp, int *lenp)
 	_packmem(str,(uint16_t)_size,bufp,lenp);	\
 } while (0)				
 
-#define packint_array(array,_size,bufp,lenp) do {			\
+#define pack32_array(array,_size,bufp,lenp) packint_array(array,_size,bufp,lenp)
+#define packint_array(array,_size,bufp,lenp) do {	\
 	assert((bufp) != NULL && *(bufp) != NULL);	\
         assert((lenp) != NULL);				\
         assert(*(lenp) >= (sizeof(_size)+_size));	\
 	_pack32array(array,(uint16_t)_size,bufp,lenp);	\
 } while (0)				
 
+#define unpack32_array(array,_size,bufp,lenp) unpackint_array(array,_size,bufp,lenp)
 #define unpackint_array(valp,size_valp,bufp,lenp) do {	\
 	assert(valp != NULL);				\
 	assert(sizeof(size_valp) == sizeof(uint16_t *));\
