@@ -1,4 +1,4 @@
-.TH "slurm.conf" "5" "April 2004" "Morris Jette" "Slurm configuration file"
+.TH "slurm.conf" "5" "May 2004" "Morris Jette" "Slurm configuration file"
 .SH "NAME"
 slurm.conf \- Slurm configuration file 
 .SH "DESCRIPTION"
@@ -21,13 +21,17 @@ The overall configuration parameters available include:
 \fBAuthType\fR
 Define the authentication method for communications between SLURM 
 components. 
-Acceptable values at present include "auth/none" and "auth/authd".
+Acceptable values at present include "auth/none", "auth/authd", 
+and "auth/munge".
 The default value is "auth/none", which means the UID included in 
 communication messages is not verified. 
 This may be fine for testing purposes, but 
 \fBdo not use "auth/none" if you desire any security\fR.
 "auth/authd" indicates that Brett Chun's authd is to be used (see
 "http://www.theether.org/authd/" for more information).
+"auth/munge" indicates that Chris Dunlap's munge is to be used
+(this is the best supported authentication mechanism for SLURM, 
+see "http://www.llnl.gov/linux/munge/" for more information).
 All SLURM daemons and commands must be terminated prior to changing 
 the value of \fBAuthType\fR and later restarted (SLURM jobs can be 
 preserved).
