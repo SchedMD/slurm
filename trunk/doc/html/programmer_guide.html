@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="13 September 2004">
+<meta name="LLNLRandRdate" content="12 October 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -105,9 +105,9 @@ of subdirectories for each type of file.</p>
 <b>slurm.spec.in</b>, and the contents of the <b>auxdir</b> directory. <span class="commandline">autoconf</span> 
 and <span class="commandline">make</span> commands are used to build and install 
 SLURM in an automated fashion. NOTE: <span class="commandline">autoconf</span> 
-version 2.52 or higher is required to build SLURM. Execute <span class="commandline">autoconf 
--V</span> to check your version number. The build process is described in the 
-README file. 
+version 2.52 or higher is required to build SLURM. Execute 
+<span class="commandline">autoconf -V</span> to check your version number. 
+The build process is described in the README file. 
 
 <p>Copyright and disclaimer information are in the files COPYING and DISCLAIMER. 
 All of the top-level subdirectories are described below.</p>
@@ -166,25 +166,36 @@ a parallel job step.</p>
 <p class="footer"><a href="#top">top</a></p>
 
 <h3>Configuration</h3>
-Configuration files are included in the <b>etc</b> subdirectory. <b>slurm.conf.example</b> 
+<p>Configuration files are included in the <b>etc</b> subdirectory. <b>slurm.conf.example</b> 
 includes a description of all configuration options and default settings. See 
-<b>doc/man/man5/slurm.conf.5</b> for more details.<span class="commandline"> </span><b>init.d.slurm</b> 
+<b>doc/man/man5/slurm.conf.5</b> for more details.
+<span class="commandline">init.d.slurm</span> 
 is a script that determines which SLURM daemon(s) should execute on any node based 
 upon the configuration file contents. It will also manage these daemons: starting, 
-signalling, restarting, and stopping them. 
+signalling, restarting, and stopping them.</p> 
+
 <h3>Test Suite</h3>
 <p>The <b>testsuite</b> files use a DejaGnu framework for testing. These tests 
 are very limited in scope. We also have a set of Expect SLURM tests available 
 as a separate distribution. These tests are executed after SLURM has been installed 
-and the daemons initiated. About 100 test scripts exercise all SLURM commands 
-and options including stress tests.</p>
+and the daemons initiated. About 110 test scripts exercise all SLURM commands 
+and options including stress tests. Get these test from
+<a href="ftp://ftp.llnl.gov/pub/linux/slurm-qa">ftp://ftp.llnl.gov/pub/linux/slurm-qa</a></p>
+
+<h3>Cheats</h3>
+<p>You can make a single node appear to SLURM as a Linux cluster by manually 
+defining <b>HAVE_FRONT_END</b> to have a non-zero value in the file <b>config.h</b>.
+All nodes should be defined in the <b>slurm.conf</b> file to have a <b>NodeAddr</b> 
+value of the node on which the <span class="commandline">slurmd</span> daemon executes.
+
 <p class="footer"><a href="#top">top</a></p></td>
+
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified 13 September 2004</p></td>
+Last modified 12 October 2004</p></td>
 </tr>
 </table>
 </td>
