@@ -1,4 +1,97 @@
-% define some macros:
+% Presenter info: 
+% http://www.linuxclustersinstitute.org/Linux-HPC-Revolution/presenterinfo.html
+%
+% Main Text Layout
+% Set the main text in 10 point Times Roman or Times New Roman (normal), 
+% (no boldface), using single line spacing. All text should be in a single 
+% column and justified. 
+%
+% Opening Style (First Page)
+% This includes the title of the paper, the author names, organization and 
+% country, the abstract, and the first part of the paper.
+% * Start the title 35mm down from the top margin in Times Roman font, 16 
+%   point bold, range left. Capitalize only the first letter of the first 
+%   word and proper nouns.
+% * On a new line, type the authors' names, organizations, and country only 
+%   (not the full postal address, although you may add the name of your 
+%   department), in Times Roman, 11 point italic, range left.
+% * Start the abstract with the heading two lines below the last line of the 
+%   address. Set the abstract in Times Roman, 12 point bold.
+% * Leave one line, then type the abstract in Times Roman 10 point, justified 
+%   with single line spacing.
+%
+% Other Pages
+% For the second and subsequent pages, use the full 190 x 115mm area and type 
+% in one column beginning at the upper right of each page, inserting tables 
+% and figures as required.
+% 
+% We're recommending the Lecture Notes in Computer Science styles from
+% Springer Verlag --- google on Springer Verlag LaTeX.  These work nicely,
+% *except* that it does not work with the hyperref package. Sigh.
+%
+% http://www.springer.de/comp/lncs/authors.html
+
+
+\documentclass[10pt,onecolumn]{llncs}
+
+% Needed for LLNL cover page / TID bibliography style
+\usepackage{calc}
+\usepackage{epsfig}
+\usepackage{graphics}
+\usepackage{hhline}
+\input{pstricks}
+\input{pst-node}
+\usepackage{chngpage}
+\input{llnlCoverPage}
+
+% Uncomment for DRAFT "watermark"
+%\usepackage{draftcopy}
+
+% Times font as default roman
+\usepackage{times}
+
+\setlength{\textwidth}{115mm}
+\setlength{\textheight}{190mm}
+\setlength{\oddsidemargin}{(\paperwidth-\textwidth)/2 - 1in}
+\setlength{\topmargin}{(\paperheight-\textheight -\headheight-\headsep-\footskip
+)/2 - 1in + .5in }
+
+% couple of macros for the title page and document
+\def\ctit{SLURM: Simple Linux Utility for Resource Management}
+\def\ucrl{UCRL-MA-147996 REV 3}
+\def\auth{Morris Jette \\ Mark Grondona}
+\def\pubdate{June 23, 2003}
+\def\journal{ClusterWorld Conference and Expo}
+
+\begin{document}
+
+% make the cover page
+%\makeLLNLCover{\ucrl}{\ctit}{\auth}{\journal}{\pubdate}{0in}{0in}
+
+% Title - 16pt bold
+\vspace*{35mm}
+\noindent\Large
+\textbf{\ctit}
+\vskip1\baselineskip
+% Authors - 11pt
+\noindent\large
+{Morris Jette \&  Mark Grondona \\
+{\em Lawrence Livermore National Laboratory, USA}
+\vskip2\baselineskip
+% Abstract heading - 12pt bold
+\noindent\large
+\textbf{Abstract}
+\vskip1\baselineskip
+% Abstract itself - 10pt
+\noindent\normalsize
+Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job 
+scheduling system for Linux clusters of thousands of nodes.  
+Components include machine status, partition
+management, job management, scheduling and stream copy modules.  
+This paper presents a overview of the SLURM architecture and functionality. 
+
+% define some additional macros for the body
 \newcommand{\munged}{{\tt munged}}
 \newcommand{\srun}{{\tt srun}}
 \newcommand{\scancel}{{\tt scancel}}
@@ -7,25 +100,6 @@
 \newcommand{\sinfo}{{\tt sinfo}}
 \newcommand{\slurmctld}{{\tt slurmctld}}
 \newcommand{\slurmd}{{\tt slurmd}}
-
-\maketitle
-
-\begin{abstract}
-Simple Linux Utility for Resource Management (SLURM) is an open source,
-fault-tolerant, and highly scalable cluster management and job 
-scheduling system for Linux clusters of 
-thousands of nodes.  Components include machine status, partition
-management, job management, scheduling and stream copy modules.  
-This paper presents a overview of the SLURM architecture and functionality. 
-\end{abstract}
-
-\vspace{0.25in}
-
-%\begin{center}
-%\epsfig{file=slurm.eps,width=4in}
-%\end{center}
-
-\newpage
 
 \section{Overview}
 
@@ -1445,27 +1519,30 @@ integrate SLURM with STORM communications
 mechanism and work on the security components
 \end{itemize}
 
-\appendix
-\newpage
+%\appendix
+%\newpage
+%\section{Glossary}
+%
+%\begin{description}
+%\item[Authd]    User authentication mechanism
+%\item[DCE]	Distributed Computing Environment
+%\item[DFS]	Distributed File System (part of DCE)
+%\item[DPCS]	Distributed Production Control System, a meta-batch system 
+%		and resource manager developed by LLNL
+%\item[Globus]	Grid scheduling infrastructure
+%\item[Kerberos]	Authentication mechanism
+%\item[LoadLeveler] IBM's parallel job management system
+%\item[LLNL]	Lawrence Livermore National Laboratory
+%\item[Munged]   User authentication mechanism developed by LLNL
+%\item[NQS]	Network Queuing System (a batch system)
+%\item[RMS]	Quadrics' Resource Management System
+%\item[TotalView] Etnus' debugger
+%\end{description}
 
-\section{Glossary}
-
-\begin{description}
-\item[Authd]    User authentication mechanism
-\item[DCE]	Distributed Computing Environment
-\item[DFS]	Distributed File System (part of DCE)
-\item[DPCS]	Distributed Production Control System, a meta-batch system 
-		and resource manager developed by LLNL
-\item[Globus]	Grid scheduling infrastructure
-\item[Kerberos]	Authentication mechanism
-\item[LoadLeveler] IBM's parallel job management system
-\item[LLNL]	Lawrence Livermore National Laboratory
-\item[Munged]   User authentication mechanism developed by LLNL
-\item[NQS]	Network Queuing System (a batch system)
-\item[RMS]	Quadrics' Resource Management System
-\item[TotalView] Etnus' debugger
-\end{description}
-
-\newpage
+% make the bibliography
 \bibliographystyle{plain}
 \bibliography{project}
+
+% make the back cover page
+%\makeLLNLBackCover
+\end{document}
