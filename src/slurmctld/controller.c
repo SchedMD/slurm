@@ -2525,11 +2525,10 @@ _init_pidfile(void)
 	pidfile = pidfile ? pidfile : DEFAULT_PIDFILE;
 
 	if ((fd = create_pidfile(pidfile)) < 0) 
-		exit(1);
-	if (uid && (fchown(fd, uid, -1) < 0)) {
+		return;
+
+	if (uid && (fchown(fd, uid, -1) < 0))
 		error ("Unable to reset owner of pidfile: %m");
-		exit(1);
-	}
 
 	/*
 	 * Close fd here, otherwise we'll deadlock since create_pidfile()
