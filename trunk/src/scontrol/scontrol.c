@@ -248,6 +248,10 @@ print_build (char *build_param)
 		printf ("CONTROL_MACHINE	= %s\n", 
 			slurm_ctl_conf_ptr->control_machine);
 	if (build_param == NULL ||
+	    strcmp (build_param, "CONTROLLER_TIMEOUT") == 0)
+		printf ("CONTROLLER_TIMEOUT	= %u\n", 
+			slurm_ctl_conf_ptr->controller_timeout);
+	if (build_param == NULL ||
 	    strcmp (build_param, "EPILOG") == 0)
 		printf ("EPILOG  	= %s\n", slurm_ctl_conf_ptr->epilog);
 	if (build_param == NULL ||
@@ -656,6 +660,7 @@ update_it (int argc, char *argv[])
 	char *in_line;
 	int error_code, i, in_line_size;
 
+	error_code = 0;
 	in_line_size = BUF_SIZE;
 	in_line = (char *) xmalloc (in_line_size);
 	if (in_line == NULL) {
