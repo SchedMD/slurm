@@ -36,7 +36,7 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-/* slurm_print_partition_info - output information about all Slurm partitions */
+/* slurm_print_partition_info_msg - output information about all Slurm partitions */
 void slurm_print_partition_info_msg ( FILE* out, partition_info_msg_t * part_info_ptr )
 {
 	int i ;
@@ -51,7 +51,7 @@ void slurm_print_partition_info_msg ( FILE* out, partition_info_msg_t * part_inf
 
 }
 
-/* slurm_print_partition_table - output information about a specific Slurm partition */
+/* slurm_print_partition_info - output information about a specific Slurm partition */
 void slurm_print_partition_info ( FILE* out, partition_info_t * part_ptr )
 {
 	int j ;
