@@ -26,7 +26,7 @@ set env_valu_stdout  "test$test_id.output"
 set env_name_overcom "SLURM_OVERCOMMIT"
 set env_valu_overcom 1
 set exit_code        0
-set jobid            0
+set job_id           0
 
 global env
 set env($env_name_debug) $env_valu_debug
