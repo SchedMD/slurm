@@ -77,7 +77,7 @@ main (int argc, char *argv[])
 	}
 	job_rec = create_job_record(&error_code);
 	if ((job_rec == NULL) || error_code) {
-		printf ("ERROR:create_job_record failure %d\n", error_code);
+		printf ("ERROR: create_job_record failure %d\n", error_code);
 		error_count++;
 		exit(error_count);
 	}
@@ -94,7 +94,7 @@ main (int argc, char *argv[])
 	for (i=1; i<=4; i++) {
 		job_rec = create_job_record (&error_code);
 		if ((job_rec == NULL) || error_code) {
-			printf ("ERROR:create_job_record failure %d\n",error_code);
+			printf ("ERROR: create_job_record failure %d\n",error_code);
 			error_count++;
 			exit (error_count);
 		}
@@ -321,8 +321,7 @@ init_job_conf ()
  *	node_list - location for storing new job's allocated nodes
  * output: new_job_id - the job's ID
  *	node_list - list of nodes allocated to the job
- *	returns 0 on success, EINVAL if specification is invalid, 
- *		EAGAIN if higher priority jobs exist
+ *	returns 0 on success, otherwise an error code from common/slurm_protocol_errno.h
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
@@ -330,18 +329,21 @@ init_job_conf ()
  * NOTE: the calling program must xfree the memory pointed to by node_list
  */
 
-int immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, int immediate , int will_run )
+int immediate_job_launch (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
+                         int immediate , int will_run )
 {
 	return job_allocate (job_specs, new_job_id, node_list, true , false );
 }
 
-int will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, int immediate , int will_run )
+int will_job_run (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
+                  int immediate , int will_run )
 {
 	return job_allocate (job_specs, new_job_id, node_list, false , true );
 }
 
 int
-job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, int immediate , int will_run )
+job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list, 
+	      int immediate , int will_run )
 {
 	int error_code;
 	struct job_record *job_ptr;
@@ -356,29 +358,34 @@ job_allocate (job_desc_msg_t * job_specs, uint32_t *new_job_id, char **node_list
 				new_job_id);
 	last_job_update = time (NULL);
 
-	if (immediate == 0) {
-		node_list[0] = xmalloc (10);
-		strcpy(node_list[0], "queued");
-		return 0;
-	}
-
-	if (top_priority(job_ptr) != 0) {
+	if (immediate && top_priority(job_ptr) != 0) {
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
-		return EAGAIN; 
+		return ESLURM_NOT_TOP_PRIORITY; 
 	}
 
 	error_code = select_nodes(job_ptr, will_run);
-	if (error_code) {
-		job_ptr->job_state = JOB_FAILED;
-		job_ptr->end_time  = 0;
-		return EAGAIN; 
+	if (error_code == ESLURM_NODES_BUSY) {
+		if (immediate) {
+			job_ptr->job_state = JOB_FAILED;
+			job_ptr->end_time  = 0;
+			return ESLURM_NODES_BUSY;
+		}
+		else 	/* job remains queued */
+			return 0;
 	}
 
-	if (will_run) {			/* job would run now */
+	if (error_code) {	/* fundamental flaw in job request */
+		job_ptr->job_state = JOB_FAILED;
+		job_ptr->end_time  = 0;
+		return error_code; 
+	}
+
+	if (will_run) {			/* job would run now, flag job record destruction */
 		job_ptr->job_state = JOB_FAILED;
 		job_ptr->end_time  = 0;
 	}
+
 	node_list[0] = xmalloc (strlen(job_ptr->nodes) + 1);
 	strcpy(node_list[0], job_ptr->nodes);
 	return 0;
@@ -546,17 +553,15 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		shared = 0;
 
 	if ( ( error_code = copy_job_desc_to_job_record ( job_desc , job_rec_ptr , part_ptr , 
-							req_bitmap ) ) == SLURM_ERROR ) 
+							req_bitmap ) ) )  {
 		error_code = ESLURM_ERROR_ON_DESC_TO_RECORD_COPY ;
 		goto cleanup ;
-
+	}
 	*new_job_id = (*job_rec_ptr)->job_id;
-	error_code = SLURM_SUCCESS ;
-	goto cleanup;
-
+	return SLURM_SUCCESS ;
 
 	cleanup:
-		if ( req_bitmap)
+		if ( req_bitmap )
 			bit_free (req_bitmap);
 		return error_code ;
 }
@@ -568,7 +573,7 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	struct job_record *job_ptr ;
 
 	job_ptr = create_job_record (&error_code);
-	if ((job_ptr == NULL) || error_code)
+	if ( error_code )
 		return error_code ;
 
 	strncpy (job_ptr->partition, part_ptr->name, MAX_NAME_LEN);
@@ -606,7 +611,7 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 
 	detail_ptr->shared = job_desc->shared;
 	detail_ptr->contiguous = job_desc->contiguous;
-	detail_ptr->min_procs = job_desc->num_procs;
+	detail_ptr->min_procs = job_desc->min_procs;
 	detail_ptr->min_memory = job_desc->min_memory;
 	detail_ptr->min_tmp_disk = job_desc->min_tmp_disk;
 	detail_ptr->dist = (enum task_dist) job_desc->dist;
@@ -669,7 +674,7 @@ int validate_job_desc ( job_desc_msg_t * job_desc_msg , int allocate )
 	if (job_desc_msg->min_procs == NO_VAL)
 		job_desc_msg->min_procs = 1;		/* default is 1 processor per node */
 	if (job_desc_msg->min_procs < job_desc_msg->procs_per_task) {
-		info ("job_create: min_cpus(%d) < procs_per_task, reset to equal(%d)", 
+		info ("job_create: min_cpus(%d) < procs_per_task, reset to equal (%d)", 
 		       job_desc_msg->min_procs, job_desc_msg->procs_per_task);
 		job_desc_msg->min_procs = job_desc_msg->procs_per_task;
 	}	
@@ -901,7 +906,7 @@ pack_job (struct job_record *dump_job_ptr, void **buf_ptr, int *buf_len)
 		packstr (NULL, buf_ptr, buf_len);
 
 	detail_ptr = dump_job_ptr->details;
-	if (detail_ptr && 
+	if (detail_ptr &&  
 			dump_job_ptr->job_state == JOB_PENDING) {
 		if (detail_ptr->magic != DETAILS_MAGIC)
 			fatal ("dump_all_job: job detail integrity is bad");
