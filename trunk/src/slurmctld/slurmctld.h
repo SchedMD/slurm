@@ -104,19 +104,6 @@
 /* Seconds to wait for backup controller response to REQUEST_CONTROL RPC */
 #define CONTROL_TIMEOUT 4
 
-/* Default configuration configuration file values */
-#define DEFAULT_FAST_SCHEDULE       1
-#define DEFAULT_FIRST_JOB_ID        1
-#define DEFAULT_HASH_BASE           10
-#define DEFAULT_HEARTBEAT_INTERVAL  60
-#define DEFAULT_INACTIVE_LIMIT      0
-#define DEFAULT_MAX_JOB_COUNT       2000
-#define DEFAULT_MIN_JOB_AGE         300
-#define DEFAULT_RETURN_TO_SERVICE   0
-#define DEFAULT_SLURMCTLD_TIMEOUT   300
-#define DEFAULT_SLURMD_TIMEOUT      300
-#define DEFAULT_TMP_FS              "/tmp"
-
 /*****************************************************************************\
  *  General configuration parameters and data structures
 \*****************************************************************************/

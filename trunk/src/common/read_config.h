@@ -31,11 +31,23 @@
 #include "src/common/slurm_protocol_defs.h"
 
 #define DEFAULT_AUTH_TYPE          "auth/none"
+#define DEFAULT_FAST_SCHEDULE       1
+#define DEFAULT_FIRST_JOB_ID        1
+#define DEFAULT_HASH_BASE           10
+#define DEFAULT_HEARTBEAT_INTERVAL  60
+#define DEFAULT_INACTIVE_LIMIT      0
 #define DEFAULT_JOB_COMP_TYPE      "jobcomp/none"
 #define DEFAULT_KILL_WAIT           30
+#define DEFAULT_MAX_JOB_COUNT       2000
+#define DEFAULT_MIN_JOB_AGE         300
+#define DEFAULT_RETURN_TO_SERVICE   0
 #define DEFAULT_SLURMCTLD_PIDFILE   "/var/run/slurmctld.pid"
+#define DEFAULT_SLURMCTLD_TIMEOUT   300
 #define DEFAULT_SLURMD_PIDFILE      "/var/run/slurmd.pid"
+#define DEFAULT_SLURMD_TIMEOUT      300
 #define DEFAULT_SPOOLDIR            "/var/spool/slurmd"
+#define DEFAULT_SAVE_STATE_LOC      "/tmp"
+#define DEFAULT_TMP_FS              "/tmp"
 #define DEFAULT_WAIT_TIME           0
 
 /* 
