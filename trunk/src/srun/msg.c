@@ -24,17 +24,23 @@
  *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
 \*****************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #include <errno.h>
 #include <pthread.h>
 #include <sys/poll.h>
 #include <fcntl.h>
 
-#include <src/common/xmalloc.h>
+#include <src/common/fd.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_protocol_defs.h>
 #include <src/common/slurm_errno.h>
 #include <src/common/log.h>
+#include <src/common/slurm_auth.h>
 #include <src/common/xassert.h>
+#include <src/common/xmalloc.h>
 
 #include <src/srun/job.h>
 #include <src/srun/opt.h>
@@ -110,6 +116,17 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 static void
 _handle_msg(job_t *job, slurm_msg_t *msg)
 {
+#ifdef HAVE_AUTHD
+	uid_t uid = 0;
+
+	uid = slurm_auth_uid (msg->cred);
+	if ( (uid != 0) && (uid != getuid ()) ) {
+		error ("Security violation, slurm message from uid %u", 
+		       (unsigned int) uid);
+		return;
+	}
+#endif
+
 	switch (msg->msg_type)
 	{
 		case RESPONSE_LAUNCH_TASKS:
