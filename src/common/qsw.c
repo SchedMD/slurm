@@ -198,7 +198,7 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 
 	/* UserKey is 128 bits of randomness which should be kept private */
         for (i = 0; i < 4; i++)
-		key->Values[i] = lrand48();
+		cap->UserKey.Values[i] = lrand48();
 
 	/* set up hardware context range */
 	cap->LowContext = _generate_hwcontext(procs_per_node);
@@ -241,7 +241,8 @@ _init_elan_capability(ELAN_CAPABILITY *cap, int nprocs, int nnodes,
 
 /*
  * Create all the QsNet related information needed to set up a QsNet parallel
- * program and store it in the qsw_jobinfo struct.
+ * program and store it in the qsw_jobinfo struct.  This would be called once
+ * centrally and distributed to each node that is running the job.
  */
 int
 qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, bitstr_t *nodeset, 
@@ -253,9 +254,8 @@ qsw_create_jobinfo(struct qsw_jobinfo **jp, int nprocs, bitstr_t *nodeset,
 	assert(jp != NULL);
 
 	/* sanity check on args */
-	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS
-			|| nnodes == 0 
-			|| nprocs % nnodes != 0) {
+	if (nprocs <= 0 || nprocs > ELAN_MAX_VPS || nnodes == 0 
+			|| (nprocs % nnodes) != 0) {
 		errno = EINVAL;
 		return -1;
 	}
