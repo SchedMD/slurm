@@ -209,7 +209,7 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 	rm_job_list_t *job_list;
 	int live_states;
 
-	live_states = JOB_ALL_FLAG;// & (~RM_JOB_TERMINATED) & (~RM_JOB_KILLED);
+	live_states = JOB_ALL_FLAG & (~RM_JOB_TERMINATED) & (~RM_JOB_KILLED);
 	if ((rc = rm_get_jobs(live_states, &job_list)) != STATUS_OK) {
 		error("rm_get_jobs() errno=%d", rc);
 		return;
@@ -219,8 +219,6 @@ static void _term_agent(bgl_update_t *bgl_update_ptr)
 		error("rm_get_data(RM_JobListSize) errno=%d", rc);
 		return;
 	}
-/* FIXME: job count is bogus */
-info("job count=%d", jobs);
 
 #ifdef USE_BGL_FILES
 	for (i=0; i<jobs; i++) {
