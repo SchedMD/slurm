@@ -33,6 +33,10 @@
 #  include <pthread.h>
 #endif
 
+#ifndef HAVE_UNSETENV
+#  include "src/common/unsetenv.h"
+#endif
+
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/time.h>

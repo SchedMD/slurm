@@ -3,13 +3,28 @@
 
 AUTOMAKE_OPTIONS = foreign
 
+if HAVE_GETOPT_LONG
+build_getopt_src = 
+extra_getopt_src = getopt.h getopt.c getopt1.c
+else
+build_getopt_src = getopt.h getopt.c getopt1.c
+extra_getopt_src = 
+endif
+
+if HAVE_UNSETENV
+build_unsetenv_src = 
+extra_unsetenv_src = unsetenv.c unsetenv.h
+else
+build_unsetenv_src = unsetenv.c unsetenv.h
+extra_unsetenv_src = 
+endif
+
 INCLUDES     = -I$(top_srcdir) $(SSL_CPPFLAGS) 
 
 noinst_LTLIBRARIES = 			\
 	libcommon.la 			\
 	libdaemonize.la 		\
 	libeio.la  	
-
 
 libcommon_la_SOURCES = 			\
 	xmalloc.c xmalloc.h 		\
@@ -52,7 +67,13 @@ libcommon_la_SOURCES = 			\
 	arg_desc.c arg_desc.h		\
 	macros.h			\
 	malloc.c malloc.h		\
+	$(build_getopt_src)		\
+	$(build_unsetenv_src)		\
 	hostlist.c hostlist.h
+
+EXTRA_libcommon_la_SOURCES = 	\
+	$(extra_getopt_src)	\
+	$(extra_unsetenv_src)
 
 libdaemonize_la_SOURCES =  		\
 	daemonize.c       	 	\
@@ -64,4 +85,4 @@ libeio_la_SOURCES = 	   		\
 	io_hdr.c io_hdr.h
 
 libcommon_la_LIBADD   = $(SSL_LIBS) -ldl
-libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)	
+libcommon_la_LDFLAGS  = $(SSL_LDFLAGS)

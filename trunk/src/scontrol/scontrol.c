@@ -29,9 +29,14 @@
 #  include "config.h"
 #endif
 
+#if HAVE_GETOPT_H
+#  include <getopt.h>
+#else
+#  include "src/common/getopt.h"
+#endif
+
 #include <ctype.h>
 #include <errno.h>
-#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
