@@ -398,19 +398,6 @@ extern void Node_Unlock();
  */
 extern int NodeName2BitMap(char *Node_List, unsigned **BitMap);
 
-/* 
- * Parse_Node_Name - Parse the node name for regular expressions and return a sprintf format 
- * generate multiple node names as needed.
- * Input: NodeName - Node name to parse
- * Output: Format - sprintf format for generating names
- *         Start_Inx - First index to used
- *         End_Inx - Last index value to use
- *         Count_Inx - Number of index values to use (will be zero if none)
- *         return 0 if no error, error code otherwise
- * NOTE: The calling program must execute free(Format) when the storage location is no longer needed
- */
-extern int Parse_Node_Name(char *NodeName, char **Format, int *Start_Inx, int *End_Inx, int *Count_Inx);
-
 /* Part_Lock - Lock the partition information */
 extern void Part_Lock();
 
