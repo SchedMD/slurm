@@ -61,6 +61,7 @@
 #endif
 
 
+static int  _abort_job(uint32_t job_id);
 static bool _slurm_authorized_user(uid_t uid);
 static bool _job_still_running(uint32_t job_id);
 static int  _kill_all_active_steps(uint32_t jobid, int sig, bool batch);
@@ -101,10 +102,11 @@ slurmd_req(slurm_msg_t *msg, slurm_addr *cli)
 
 	switch(msg->msg_type) {
 	case REQUEST_BATCH_JOB_LAUNCH:
-		slurm_mutex_lock(&launch_mutex);
+		/* Mutex locking moved into _rpc_batch_job() due to 
+		 * very slow prolog on Blue Gene system. Only batch 
+		 * jobs are supported on Blue Gene (no job steps). */
 		_rpc_batch_job(msg, cli);
 		slurm_free_job_launch_msg(msg->data);
-		slurm_mutex_unlock(&launch_mutex);
 		break;
 	case REQUEST_LAUNCH_TASKS:
 		slurm_mutex_lock(&launch_mutex);
@@ -383,8 +385,10 @@ _rpc_launch_tasks(slurm_msg_t *msg, slurm_addr *cli)
 	info("launch task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
+#ifndef HAVE_BGL
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
 		run_prolog = true;
+#endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
 		errnum = errno;
@@ -457,8 +461,10 @@ _rpc_spawn_task(slurm_msg_t *msg, slurm_addr *cli)
 	info("spawn task %u.%u request from %u@%s", req->job_id, 
 	     req->job_step_id, req->uid, host);
 
+#ifndef HAVE_BGL
 	if (!slurm_cred_jobid_cached(conf->vctx, req->job_id)) 
 		run_prolog = true;
+#endif
 
 	if (_check_job_credential(req->cred, jobid, stepid, req_uid) < 0) {
 		errnum = errno;
@@ -523,8 +529,9 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 			&bgl_part_id);
 
 #ifdef HAVE_BGL
-	/* BlueGene prolog waits for partition boot and is very slow,
-	 * just reply now */
+	/* BlueGene prolog waits for partition boot and is very slow.
+	 * Just reply now and send a separate kill job request if the 
+	 * prolog or launch fail. */
 	slurm_send_rc_msg(msg, rc);
 	replied = true;
 #endif
@@ -541,15 +548,38 @@ _rpc_batch_job(slurm_msg_t *msg, slurm_addr *cli)
 	 * Insert jobid into credential context to denote that
 	 * we've now "seen" an instance of the job
 	 */
+	slurm_mutex_lock(&launch_mutex);
 	slurm_cred_insert_jobid(conf->vctx, req->job_id);
 
 	info("Launching batch job %u for UID %d", req->job_id, req->uid);
 
 	rc = _launch_batch_job(req, cli);
+	slurm_mutex_unlock(&launch_mutex);
 
     done:
 	if (!replied)
 		slurm_send_rc_msg(msg, rc);
+	else if (rc != 0) {
+		/* prolog or job launch failure, 
+		 * tell slurmctld that the job failed */
+		(void) _abort_job(req->job_id);
+	}
+}
+
+static int
+_abort_job(uint32_t job_id)
+{
+	complete_job_step_msg_t  resp;
+	slurm_msg_t resp_msg;
+
+	resp.job_id       = job_id;
+	resp.job_step_id  = NO_VAL;
+	resp.job_rc       = 1;
+	resp.slurm_rc     = 0;
+	resp.node_name    = NULL;	/* unused */
+	resp_msg.msg_type = REQUEST_COMPLETE_JOB_STEP;
+	resp_msg.data     = &resp;
+	return slurm_send_only_controller_msg(&resp_msg);
 }
 
 static void
@@ -1194,10 +1224,15 @@ static int
 _run_prolog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
+	static char *my_prolog;
 
 	slurm_mutex_lock(&conf->config_mutex);
-	error_code = run_script(true, conf->prolog, jobid, uid, bgl_part_id);
+	my_prolog = xstrdup(conf->prolog);
 	slurm_mutex_unlock(&conf->config_mutex);
+
+	error_code = run_script(true, my_prolog, jobid, uid, bgl_part_id);
+	xfree(my_prolog);
+
 	return error_code;
 }
 
@@ -1205,9 +1240,14 @@ static int
 _run_epilog(uint32_t jobid, uid_t uid, char *bgl_part_id)
 {
 	int error_code;
+	static char *my_epilog;
 
 	slurm_mutex_lock(&conf->config_mutex);
-	error_code = run_script(false, conf->epilog, jobid, uid, bgl_part_id);
+	my_epilog = xstrdup(conf->epilog);
 	slurm_mutex_unlock(&conf->config_mutex);
+
+	error_code = run_script(false, my_epilog, jobid, uid, bgl_part_id);
+	xfree(my_epilog);
+
 	return error_code;
 }
