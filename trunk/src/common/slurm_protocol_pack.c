@@ -237,9 +237,12 @@ int pack_msg ( slurm_msg_t const * msg , Buf buffer )
 		/********  job_step_id_t Messages  ********/
 		case REQUEST_JOB_INFO :
 		case REQUEST_CANCEL_JOB_STEP :
-		case REQUEST_COMPLETE_JOB_STEP :
 			pack_job_step_id ( 
 				( job_step_id_t * ) msg->data , buffer ) ;
+			break ;
+		case REQUEST_COMPLETE_JOB_STEP :
+			pack_complete_job_step ( 
+				( complete_job_step_msg_t * ) msg->data , buffer ) ;
 			break ;
 
 		case REQUEST_REVOKE_JOB_CREDENTIAL :
@@ -442,10 +445,14 @@ int unpack_msg ( slurm_msg_t * msg , Buf buffer )
 		/********  job_step_id_t Messages  ********/
 		case REQUEST_JOB_INFO :
 		case REQUEST_CANCEL_JOB_STEP :
-		case REQUEST_COMPLETE_JOB_STEP :
 			rc = unpack_job_step_id ( 
 				( job_step_id_t ** ) 
 				& ( msg->data ) , buffer ) ;
+			break ;
+		case REQUEST_COMPLETE_JOB_STEP :
+			rc = unpack_complete_job_step ( 
+				( complete_job_step_msg_t ** ) &(msg->data) , 
+				buffer ) ;
 			break ;
 		case REQUEST_REVOKE_JOB_CREDENTIAL :
 			rc = unpack_revoke_credential_msg ( 
@@ -1957,6 +1964,36 @@ int unpack_job_step_id ( job_step_id_t ** msg_ptr , Buf buffer )
 	safe_unpack_time ( & msg -> last_update , buffer ) ;
 	safe_unpack32 ( & msg -> job_id , buffer ) ;
 	safe_unpack32 ( & msg -> job_step_id , buffer ) ;
+	return SLURM_SUCCESS ;
+
+    unpack_error:
+	xfree (msg);
+	*msg_ptr = NULL;
+	return SLURM_ERROR;
+}
+
+void pack_complete_job_step ( complete_job_step_msg_t * msg , Buf buffer )
+{
+	pack32 ( msg -> job_id , buffer ) ;
+	pack32 ( msg -> job_step_id , buffer ) ;
+	pack32 ( msg -> job_rc , buffer ) ;
+	pack32 ( msg -> slurm_rc , buffer ) ;
+	packstr ( msg -> node_name , buffer ) ;
+}
+
+int unpack_complete_job_step ( complete_job_step_msg_t ** msg_ptr , Buf buffer )
+{
+	complete_job_step_msg_t * msg ;
+	uint16_t uint16_tmp;
+
+	msg = xmalloc ( sizeof ( complete_job_step_msg_t ) ) ;
+	*msg_ptr = msg ;
+
+	safe_unpack32 ( & msg -> job_id , buffer ) ;
+	safe_unpack32 ( & msg -> job_step_id , buffer ) ;
+	safe_unpack32 ( & msg -> job_rc , buffer ) ;
+	safe_unpack32 ( & msg -> slurm_rc , buffer ) ;
+	safe_unpackstr_xmalloc ( & msg -> node_name , & uint16_tmp , buffer ) ;
 	return SLURM_SUCCESS ;
 
     unpack_error:

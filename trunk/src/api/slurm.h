@@ -472,10 +472,13 @@ extern int slurm_cancel_job_step (uint32_t job_id, uint32_t step_id);
 \*****************************************************************************/
 
 /* slurm_complete_job - note the completion of a job and all of its steps */
-extern int slurm_complete_job (uint32_t job_id);
+extern int slurm_complete_job (uint32_t job_id, uint32_t job_return_code,
+                               uint32_t system_return_code );
 
 /* slurm_complete_job_step - note the completion of a specific job step */
-extern int slurm_complete_job_step (uint32_t job_id, uint32_t step_id);
+extern int slurm_complete_job_step (uint32_t job_id, uint32_t step_id, 
+                                    uint32_t job_return_code,
+                                    uint32_t system_return_code );
 
 
 /*****************************************************************************\

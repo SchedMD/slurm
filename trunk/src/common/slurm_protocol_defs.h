@@ -28,7 +28,7 @@
 #define _SLURM_PROTOCOL_DEFS_H
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
@@ -43,10 +43,10 @@
 #  include <inttypes.h>
 #endif				/*  HAVE_CONFIG_H */
 
-#include <src/api/slurm.h>
-#include <src/common/macros.h>
-#include <src/common/xassert.h>
-#include <src/common/slurm_protocol_common.h>
+#include "src/api/slurm.h"
+#include "src/common/macros.h"
+#include "src/common/xassert.h"
+#include "src/common/slurm_protocol_common.h"
 
 
 /* used to define the type of the io_stream_header_t.type
@@ -206,6 +206,14 @@ typedef struct job_step_info_request_msg {
 	uint32_t step_id;
 } job_step_info_request_msg_t;
 
+typedef struct complete_job_step_msg {
+	uint32_t job_id;
+	uint32_t job_step_id;
+	uint32_t job_rc;
+	uint32_t slurm_rc;
+	char *node_name;
+} complete_job_step_msg_t;
+
 typedef struct kill_tasks_msg {
 	uint32_t job_id;
 	uint32_t job_step_id;
@@ -332,6 +340,7 @@ void inline slurm_free_job_step_id(job_step_id_t * msg);
 void inline slurm_free_shutdown_msg (shutdown_msg_t * msg);
 
 void inline slurm_free_job_desc_msg(job_desc_msg_t * msg);
+void inline slurm_free_job_complete_msg(complete_job_step_msg_t * msg);
 
 void inline slurm_free_node_registration_status_msg (
 			slurm_node_registration_status_msg_t * msg);
