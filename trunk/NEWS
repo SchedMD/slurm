@@ -6,6 +6,8 @@ documents those changes that are of interest to users and admins.
  -- Fixes for reported problems:
    - slurm/253: Try using different port if connect() fails (was rarely 
      failing when an existing defunct connection was in TIME_WAIT state)
+   - slurm/300: Possibly killing wrong job on slurmd restart
+   - slurm/312: Freeing non-allocated memory and killing slurmd
  -- Assorted changes to support RedHat Enterprise Linux 3.0 and IA64
  -- Slurmctld was sometimes inappropriately setting a job's priority 
     to 1 when a node was down (even if up nodes could be used for the 
