@@ -13,6 +13,7 @@
 
 /* general return codes */
 #define SLURM_SUCCESS 0
+#define SLURM_ERROR -1 
 #define SLURM_FAILURE -1
 
 

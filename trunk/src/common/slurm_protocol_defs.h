@@ -147,6 +147,8 @@ typedef struct job_desc_msg {    /* Job descriptor for submit, allocate, and upd
 				 *                                  * value is #fffffffe */
 	uint32_t num_procs;     /* number of processors required by job, default=0 */
 	uint32_t num_nodes;     /* number of nodes required by job, default=0 */
+	uint32_t dist;    
+	uint32_t procs_per_task;   
 	uint32_t user_id;       /* set only if different from current UID, default set
 				 * to UID by API, can only be set if user is root */
 } job_desc_msg_t ;
@@ -279,6 +281,29 @@ void inline slurm_free_node_table ( node_table_t * node ) ;
 void inline slurm_free_node_table_msg ( node_table_t * node ) ;
 
 /* stuct init functions */
+#define SLURM_JOB_DESC_NONCONTIGUOUS		0
+#define SLURM_JOB_DESC_CONTIGUOUS		1 
+#define SLURM_JOB_DESC_DEFAULT_CONTIGUOUS	SLURM_JOB_DESC_NONCONTIGUOUS		
+#define SLURM_JOB_DESC_DEFAULT_FEATURES		NULL
+#define SLURM_JOB_DESC_DEFAULT_GROUPS		NULL
+#define SLURM_JOB_DESC_DEFAULT_JOB_ID		NO_VAL	
+#define SLURM_JOB_DESC_DEFAULT_JOB_NAME 	NULL
+#define SLURM_JOB_DESC_DEFAULT_PARITION_KEY	NULL
+#define SLURM_JOB_DESC_DEFAULT_MIN_PROCS	NO_VAL	
+#define SLURM_JOB_DESC_DEFAULT_MIN_MEMORY	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_MIN_TMP_DISK	NO_VAL	
+#define SLURM_JOB_DESC_DEFAULT_PARTITION	NULL
+#define SLURM_JOB_DESC_DEFAULT_PRIORITY		NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_REQ_NODES	NULL
+#define SLURM_JOB_DESC_DEFAULT_JOB_SCRIPT	NULL
+#define SLURM_JOB_DESC_SHARED			1	
+#define SLURM_JOB_DESC_NOT_SHARED		0
+#define SLURM_JOB_DESC_FORCED_SHARED		2
+#define SLURM_JOB_DESC_DEFAULT_SHARED	 	SLURM_JOB_DESC_NOT_SHARED	
+#define SLURM_JOB_DESC_DEFAULT_TIME_LIMIT	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_NUM_PROCS	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_NUM_NODES	NO_VAL
+#define SLURM_JOB_DESC_DEFAULT_USER_ID		NO_VAL
 void slurm_init_job_desc_msg ( job_desc_msg_t * job_desc_msg ) ;
 
 #endif

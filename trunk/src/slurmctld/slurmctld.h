@@ -445,7 +445,7 @@ extern int  is_key_valid (int key);
  *	default_part_loc - pointer to default partition 
  * NOTE: the calling program must xfree the memory pointed to by node_list
  */
-extern int job_allocate (char *job_specs, uint32_t *new_job_id, char **node_list);
+extern int job_allocate (job_desc_msg_t  *job_specs, uint32_t *new_job_id, char **node_list, int immediate, int will_run);
 
 /* 
  * job_cancel - cancel the specified job
@@ -472,7 +472,7 @@ extern int job_cancel (uint32_t job_id);
  *	default_part_loc - pointer to default partition 
  *	job_hash, job_hash_over, max_hash_over - hash table into job records
  */
-extern int job_create (char *job_specs, uint32_t *new_job_id, int allocate, 
+extern int job_create (job_desc_msg_t * job_specs, uint32_t *new_job_id, int allocate, 
 	    int will_run, struct job_record **job_rec_ptr);
 
 /* job_lock - lock the job information */
