@@ -41,19 +41,20 @@ expect {
 		set waiting 1
 		exp_continue
 	}
-	-re "0: ($alpha)($number)" {
-		set host_0_name $expect_out(1,string)
-		set host_0_num  $expect_out(2,string)
-		exp_continue
-	}
-	-re "1: ($alpha)($number)" {
-		set host_1_name $expect_out(1,string)
-		set host_1_num  $expect_out(2,string)
-		exp_continue
-	}
-	-re "2: ($alpha)($number)" {
-		set host_2_name $expect_out(1,string)
-		set host_2_num  $expect_out(2,string)
+	-re "($number): ($alpha)($number)" {
+		set task_id $expect_out(1,string)
+		if {$task_id == 0} {
+			set host_0_name $expect_out(2,string)
+			set host_0_num  $expect_out(3,string)
+		}
+		if {$task_id == 1} {
+			set host_1_name $expect_out(2,string)
+			set host_1_num  $expect_out(3,string)
+		}
+		if {$task_id == 2} {
+			set host_2_name $expect_out(2,string)
+			set host_2_num  $expect_out(3,string)
+		}
 		exp_continue
 	}
 	timeout {
@@ -67,6 +68,7 @@ expect {
 		}
 	}
 	eof {
+		wait
 	}
 }
 
