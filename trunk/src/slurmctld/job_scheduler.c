@@ -209,7 +209,7 @@ static void _launch_job(struct job_record *job_ptr)
 	pthread_attr_t attr_agent;
 	pthread_t thread_agent;
 
-	if (job_ptr->details->batch_flag == 0)
+	if (job_ptr->batch_flag == 0)
 		return;
 
 	node_ptr = find_first_node_record(job_ptr->node_bitmap);
