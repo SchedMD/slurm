@@ -36,21 +36,22 @@
  ******************************************************************/			
 int forward_io ( task_start_t * task_start ) 
 {
-	pthread_attr_t pthread_attr ;
+	//pthread_attr_t pthread_attr ;
 
-	pthread_attr_init( & pthread_attr ) ;
+	//pthread_attr_init( & pthread_attr ) ;
 	/* set detatch state */
 	/*pthread_attr_setdetachstate ( & pthread_attr , PTHREAD_CREATE_DETACHED ) ;*/
-	if ( pthread_create ( & task_start->io_pthread_id[STDIN_FILENO] , NULL , do_nbio , task_start ) )
-	{
-		return SLURM_FAILURE ;
-	}
-	return SLURM_SUCCESS ;
+	//if ( pthread_create ( & task_start->io_pthread_id[STDIN_FILENO] , NULL , do_nbio , task_start ) )
+	//{
+	//	return SLURM_FAILURE ;
+	//}
+	//return SLURM_SUCCESS ;
+	return do_nbio ( task_start ) ;
 }
 
 int wait_on_io_threads ( task_start_t * task_start ) 
 {
-	pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;
+	//pthread_join ( task_start->io_pthread_id[STDIN_FILENO] , NULL ) ;
 	info ( "%i: nbio exit" , task_start -> local_task_id ) ;
 	/* thread join on stderr or stdout signifies task termination we should kill the stdin thread */
 	return SLURM_SUCCESS ;
