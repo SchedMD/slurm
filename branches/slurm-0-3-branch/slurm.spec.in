@@ -201,7 +201,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %post
 /sbin/ldconfig %{_libdir}
-if [ $1 = 1 && -x /etc/rc.d/init.d/slurm ]; then
+if [ $1 = 1 ]; then
     [ -x /sbin/chkconfig ] && /sbin/chkconfig --add slurm
 fi
 
