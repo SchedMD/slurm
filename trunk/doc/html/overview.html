@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="11 October 2004">
+<meta name="LLNLRandRdate" content="26 October 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -52,10 +52,26 @@ structure:Laboratories and Other Field Facilities">
 <a href="quickstart_admin.html" class="nav">Guide</a></p></td>
 <td><img src="spacer.gif" width="10" height="1" alt=""></td>
 <td valign="top"><h2><a name="top">Overview</a></h2>
-<p>SLURM is an open-source resource manager designed for Linux clusters of all 
-sizes. It was developed by the collaborative efforts of <a href="http://www.llnl.gov/">Lawrence 
-Livermore National Laboratory (LLNL)</a> and <a href="http://www.lnxi.com/">Linux 
-NetworX</a>.</p>
+<p>The Simple Linux Utility for Resource Management (SLURM) is an open source,
+fault-tolerant, and highly scalable cluster management and job scheduling system 
+for large and small Linux clusters. SLURM requires no kernel modifications for
+its operation and is relatively self-contained. As a cluster resource manager,
+SLURM has three key functions. First, it allocates exclusive and/or non-exclusive 
+access to resources (compute nodes) to users for some duration of time so they
+can perform work. Second, it provides a framework for starting, executing, and
+monitoring work (normally a parallel job) on the set of allocated nodes. Finally, 
+it arbitrates conflicting requests for resources by managing a queue of pending
+work.</p>
+
+<p>SLURM was developed through the collaborative efforts of 
+<a href="http://www.llnl.gov/">Lawrence Livermore National Laboratory 
+(LLNL)</a>,
+<a href="http://www.lnxi.com/">Linux NetworX</a>, and
+<a href="http://www.hp.com/">HP</a>.
+Linux NetworX distributes SLURM as a component in their ClusterWorX 
+software.
+HP distributes and supports SLURM as a component in their XC System 
+Software (version 2.0).</p>
 <h3>Architecture</h3>
 <p>SLURM has a centralized manager, <b>slurmctld</b>, to monitor resources and 
 work. There may also be a backup manager to assume those responsibilities in the 
@@ -142,7 +158,7 @@ excellent. The throughput rate of simple 2000 task jobs across 1000 nodes is ove
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified 11 October 2004</p></td>
+Last modified 26 October 2004</p></td>
 </tr>
 </table>
 </td>
