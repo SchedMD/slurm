@@ -180,7 +180,7 @@ static int _find_best_partition_match(struct job_record* job_ptr,
 		/* check the connection type specified matches */
 		/***********************************************/
 		if ((conn_type != record->conn_type)
-		&&  (conn_type != RM_NAV)) {
+		&&  (conn_type != SELECT_NAV)) {
 			debug("bgl partition %s conn-type not usable", 
 				record->nodes);
 			continue;

@@ -516,29 +516,29 @@ static int _parse_bgl_spec(char *in_line)
 	nodes = NULL;	/* pointer moved, nothing left to xfree */
 
 	if (!conn_type)
-		new_record->conn_type = RM_MESH;
+		new_record->conn_type = SELECT_MESH;
 	else if (strcasecmp(conn_type, "TORUS") == 0)
-		new_record->conn_type = RM_TORUS;
+		new_record->conn_type = SELECT_TORUS;
 	else if (strcasecmp(conn_type, "MESH") == 0)
-		new_record->conn_type = RM_MESH;
+		new_record->conn_type = SELECT_MESH;
 	else {
 		error("_parse_bgl_spec: partition type %s invalid for nodes "
 			"%s, defaulting to type: MESH", 
 			conn_type, new_record->nodes);
-		new_record->conn_type = RM_MESH;
+		new_record->conn_type = SELECT_MESH;
 	}
 
 	if (!node_use)
-		new_record->node_use = RM_PARTITION_COPROCESSOR_MODE;
+		new_record->node_use = SELECT_COPROCESSOR_MODE;
 	else if (strcasecmp(node_use, "COPROCESSOR") == 0)
-		new_record->node_use = RM_PARTITION_COPROCESSOR_MODE;
+		new_record->node_use = SELECT_COPROCESSOR_MODE;
 	else if (strcasecmp(node_use, "VIRTUAL") == 0)
-		new_record->node_use = RM_PARTITION_VIRTUAL_NODE_MODE;
+		new_record->node_use = SELECT_VIRTUAL_NODE_MODE;
 	else {
 		error("_parse_bgl_spec: node use %s invalid for nodes %s, "
 			"defaulting to type: COPROCESSOR", 
 			node_use, new_record->nodes);
-		new_record->node_use = RM_PARTITION_COPROCESSOR_MODE;
+		new_record->node_use = SELECT_COPROCESSOR_MODE;
 	}
 	list_push(bgl_conf_list, new_record);
 
@@ -813,11 +813,11 @@ extern char* convert_lifecycle(lifecycle_type_t lifecycle)
 extern char* convert_conn_type(rm_connection_type_t conn_type)
 {
 	switch (conn_type) {
-		case (RM_MESH): 
+		case (SELECT_MESH): 
 			return "RM_MESH"; 
-		case (RM_TORUS): 
+		case (SELECT_TORUS): 
 			return "RM_TORUS"; 
-		case (RM_NAV):
+		case (SELECT_NAV):
 			return "RM_NAV";
 		default:
 			break;
@@ -828,9 +828,9 @@ extern char* convert_conn_type(rm_connection_type_t conn_type)
 extern char* convert_node_use(rm_partition_mode_t pt)
 {
 	switch (pt) {
-		case (RM_PARTITION_COPROCESSOR_MODE): 
+		case (SELECT_COPROCESSOR_MODE): 
 			return "RM_COPROCESSOR"; 
-		case (RM_PARTITION_VIRTUAL_NODE_MODE): 
+		case (SELECT_VIRTUAL_NODE_MODE): 
 			return "RM_VIRTUAL"; 
 		default:
 			break;

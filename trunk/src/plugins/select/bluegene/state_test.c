@@ -33,14 +33,15 @@
 #include <slurm/slurm.h>
 
 #include "src/common/log.h"
+#include "bluegene.h"
 #include "partition_sys.h"
 
 #define BUFSIZE 4096
 
+#ifdef HAVE_BGL_FILES
 /* Find the specified BlueGene node ID and configure it down in CMCS */
 static void _configure_node_down(rm_bp_id_t bp_id)
 {
-#ifdef HAVE_BGL_FILES
 	int bp_num, i;
 	rm_bp_id_t bpid;
 	rm_BP_t *my_bp;
@@ -92,13 +93,13 @@ static void _configure_node_down(rm_bp_id_t bp_id)
 		info("switch for node %s is bad, set down", bgl_down_node);
 #endif
 	}
-#endif	
 }
+#endif
 
+#ifdef HAVE_BGL_FILES
 /* Convert base partition state value to a string */
 static char *_convert_bp_state(rm_BP_state_t state)
 {
-#ifdef HAVE_BGL_FILES
 	switch(state){ 
 	case RM_BP_UP:
 		return "RM_BP_UP";
@@ -109,9 +110,9 @@ static char *_convert_bp_state(rm_BP_state_t state)
 	case RM_BP_NAV:
 		return "RM_BP_NAV";
 	}
-#endif
 	return "BP_STATE_UNIDENTIFIED!";
 }
+#endif
 
 /* Test for nodes that are DOWN in BlueGene database, 
  * if so DRAIN them in SLURM */ 
