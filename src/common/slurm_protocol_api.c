@@ -87,21 +87,21 @@ slurm_protocol_config_t *slurm_get_api_config()
 
 int slurm_api_set_default_config()
 {
-	if ((slurmctld_conf.control_machine == NULL) ||
+	if ((slurmctld_conf.control_addr == NULL) ||
 	    (slurmctld_conf.slurmctld_port == 0)) {
 		read_slurm_port_config();
-		if ((slurmctld_conf.control_machine == NULL) ||
+		if ((slurmctld_conf.control_addr == NULL) ||
 		    (slurmctld_conf.slurmctld_port == 0))
 			fatal ("Unable to establish control machine or port");
 	}
 
 	slurm_set_addr(&proto_conf_default.primary_controller,
 		       slurmctld_conf.slurmctld_port,
-		       slurmctld_conf.control_machine);
-	if (slurmctld_conf.backup_controller) {
+		       slurmctld_conf.control_addr);
+	if (slurmctld_conf.backup_addr) {
 		slurm_set_addr(&proto_conf_default.secondary_controller,
 			       slurmctld_conf.slurmctld_port,
-			       slurmctld_conf.backup_controller);
+			       slurmctld_conf.backup_addr);
 	}
 	proto_conf = &proto_conf_default;
 
@@ -120,8 +120,8 @@ int read_slurm_port_config()
 {
 	FILE *slurm_spec_file;	/* pointer to input data file */
 	char in_line[BUF_SIZE];	/* input line */
-	char *control_machine = NULL;
-	char *backup_controller = NULL;
+	char *control_addr = NULL, *control_machine   = NULL;
+	char *backup_addr  = NULL, *backup_controller = NULL;
 	int error_code, i, j, line_num = 0;
 	int slurmctld_port = 0, slurmd_port = 0;
 	struct servent *servent;
@@ -181,8 +181,10 @@ int read_slurm_port_config()
 		/* parse what is left */
 		/* overall slurm configuration parameters */
 		error_code = slurm_parser(in_line,
-					  "ControlMachine=", 's', &control_machine,
+					  "BackupAddr=", 's', &backup_addr,
 					  "BackupController=", 's', &backup_controller,
+					  "ControlAddr=", 's', &control_addr,
+					  "ControlMachine=", 's', &control_machine,
 					  "SlurmctldPort=", 'd',&slurmctld_port, 
 					  "SlurmdPort=", 'd', &slurmd_port, 
 					  "END");
@@ -193,10 +195,25 @@ int read_slurm_port_config()
 
 		if (slurmctld_conf.control_machine == NULL)
 			slurmctld_conf.control_machine = control_machine;
+		if (slurmctld_conf.control_addr == NULL) {
+			if (control_addr)
+				slurmctld_conf.control_addr = control_addr;
+			else
+				slurmctld_conf.control_addr = control_machine;
+		}
+
 		if (slurmctld_conf.backup_controller == NULL)
 			slurmctld_conf.backup_controller = backup_controller;
+		if (slurmctld_conf.backup_addr == NULL) {
+			if (backup_addr)
+				slurmctld_conf.backup_addr = backup_addr;
+			else
+				slurmctld_conf.backup_addr = backup_controller;
+		}
+
 		if (slurmctld_port)
 			slurmctld_conf.slurmctld_port = slurmctld_port;
+
 		if (slurmd_port)
 			slurmctld_conf.slurmd_port = slurmd_port;
 	}

@@ -1810,7 +1810,9 @@ init_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 	struct servent *servent;
 
 	conf_ptr->last_update		= time (NULL) ;
+	conf_ptr->backup_addr   	= NULL ;
 	conf_ptr->backup_controller   	= NULL ;
+	conf_ptr->control_addr    	= NULL ;
 	conf_ptr->control_machine    	= NULL ;
 	conf_ptr->epilog           	= NULL ;
 	conf_ptr->fast_schedule     	= 1 ;
@@ -1848,7 +1850,9 @@ void
 fill_ctld_conf ( slurm_ctl_conf_t * conf_ptr )
 {
 	conf_ptr->last_update		= slurmctld_conf.last_update ;
+	conf_ptr->backup_addr   	= slurmctld_conf.backup_addr ;
 	conf_ptr->backup_controller   	= slurmctld_conf.backup_controller ;
+	conf_ptr->control_addr    	= slurmctld_conf.control_addr ;
 	conf_ptr->control_machine    	= slurmctld_conf.control_machine ;
 	conf_ptr->epilog           	= slurmctld_conf.epilog ;
 	conf_ptr->fast_schedule     	= slurmctld_conf.fast_schedule ;

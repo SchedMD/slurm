@@ -886,7 +886,8 @@ set_slurmd_addr (void)
 		if (strlen (node_record_table_ptr[i].name) == 0)
 			continue;
 		slurm_set_addr (& node_record_table_ptr[i].slurm_addr, 
-				slurmctld_conf.slurmd_port, node_record_table_ptr[i].name);
+				slurmctld_conf.slurmd_port, 
+				node_record_table_ptr[i].comm_name);
 	}
 
 	return;

@@ -43,7 +43,9 @@ void slurm_print_ctl_conf ( FILE* out, slurm_ctl_conf_info_msg_t * slurm_ctl_con
 
 	make_time_str ((time_t *)&slurm_ctl_conf_ptr->last_update, time_str);
 	fprintf(out, "Configuration updated at %s\n", time_str);
+	fprintf(out, "BackupAddr        = %s\n", slurm_ctl_conf_ptr->backup_addr);
 	fprintf(out, "BackupController  = %s\n", slurm_ctl_conf_ptr->backup_controller);
+	fprintf(out, "ControlAddr       = %s\n", slurm_ctl_conf_ptr->control_addr);
 	fprintf(out, "ControlMachine    = %s\n", slurm_ctl_conf_ptr->control_machine);
 	fprintf(out, "Epilog            = %s\n", slurm_ctl_conf_ptr->epilog);
 	fprintf(out, "FastSchedule      = %u\n", slurm_ctl_conf_ptr->fast_schedule);

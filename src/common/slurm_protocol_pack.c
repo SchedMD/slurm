@@ -1069,7 +1069,9 @@ int unpack_job_info_members ( job_info_t * job , Buf buffer )
 void pack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr, Buf buffer )
 {	
 	pack_time (build_ptr->last_update, buffer);
+	packstr (build_ptr->backup_addr, buffer);
 	packstr (build_ptr->backup_controller, buffer);
+	packstr (build_ptr->control_addr, buffer);
 	packstr (build_ptr->control_machine, buffer);
 	packstr (build_ptr->epilog, buffer);
 	pack16 (build_ptr->fast_schedule, buffer);
@@ -1101,7 +1103,9 @@ int unpack_slurm_ctl_conf ( slurm_ctl_conf_info_msg_t **build_buffer_ptr, Buf bu
 	/* load the data values */
 	/* unpack timestamp of snapshot */
 	unpack_time (&build_ptr->last_update, buffer);
+	unpackstr_xmalloc (&build_ptr->backup_addr, &uint16_tmp, buffer);
 	unpackstr_xmalloc (&build_ptr->backup_controller, &uint16_tmp, buffer);
+	unpackstr_xmalloc (&build_ptr->control_addr, &uint16_tmp, buffer);
 	unpackstr_xmalloc (&build_ptr->control_machine, &uint16_tmp, buffer);
 	unpackstr_xmalloc (&build_ptr->epilog, &uint16_tmp, buffer);
 	unpack16 (&build_ptr->fast_schedule, buffer);

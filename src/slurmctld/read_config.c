@@ -43,6 +43,7 @@
 #include <src/common/list.h>
 #include <src/common/macros.h>
 #include <src/common/parse_spec.h>
+#include <src/common/xstring.h>
 #include <src/slurmctld/locks.h>
 #include <src/slurmctld/slurmctld.h>
 
@@ -248,7 +249,8 @@ parse_config_spec (char *in_line)
 	int fast_schedule = -1, hash_base = -1, heartbeat_interval = -1;
 	int inactive_limit = -1, kill_wait = -1;
 	int ret2service = -1, slurmctld_timeout = -1, slurmd_timeout = -1;
-	char *backup_controller = NULL, *control_machine = NULL, *epilog = NULL;
+	char *backup_addr = NULL, *backup_controller = NULL;
+	char *control_addr = NULL, *control_machine = NULL, *epilog = NULL;
 	char *prioritize = NULL, *prolog = NULL, *state_save_location = NULL, *tmp_fs = NULL;
 	char *slurmctld_port = NULL, *slurmd_port = NULL;
 	char *job_credential_private_key = NULL , *job_credential_public_certificate = NULL;
@@ -257,7 +259,9 @@ parse_config_spec (char *in_line)
 	struct stat sbuf;
 
 	error_code = slurm_parser(in_line,
+		"BackupAddr=", 's', &backup_addr, 
 		"BackupController=", 's', &backup_controller, 
+		"ControlAddr=", 's', &control_addr, 
 		"ControlMachine=", 's', &control_machine, 
 		"Epilog=", 's', &epilog, 
 		"FastSchedule=", 'd', &fast_schedule,
@@ -281,10 +285,30 @@ parse_config_spec (char *in_line)
 	if (error_code)
 		return error_code;
 
+	if ( backup_addr ) {
+		if ( slurmctld_conf.backup_addr )
+			xfree (slurmctld_conf.backup_addr);
+		slurmctld_conf.backup_addr = backup_addr;
+	} else if ( backup_controller ) {
+		if ( slurmctld_conf.backup_addr )
+			xfree (slurmctld_conf.backup_addr);
+		slurmctld_conf.backup_addr = xstrdup (backup_controller);
+	}
+
 	if ( backup_controller ) {
 		if ( slurmctld_conf.backup_controller )
 			xfree (slurmctld_conf.backup_controller);
 		slurmctld_conf.backup_controller = backup_controller;
+	}
+
+	if ( control_addr ) {
+		if ( slurmctld_conf.control_addr )
+			xfree (slurmctld_conf.control_addr);
+		slurmctld_conf.control_addr = control_addr;
+	} else if ( control_machine ) {
+		if ( slurmctld_conf.control_addr )
+			xfree (slurmctld_conf.control_addr);
+		slurmctld_conf.control_addr = xstrdup (control_machine);
 	}
 
 	if ( control_machine ) {
@@ -397,14 +421,15 @@ parse_config_spec (char *in_line)
  */
 static int
 parse_node_spec (char *in_line) {
-	char *node_name, *state, *feature, *this_node_name;
+	char *node_addr, *node_name, *state, *feature;
+	char *this_node_addr , *this_node_name;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
 	struct node_record *node_record_point;
 	struct config_record *config_point = NULL;
-	hostlist_t host_list = NULL;
+	hostlist_t addr_list = NULL, host_list = NULL;
 
-	node_name = state = feature = (char *) NULL;
+	node_addr = node_name = state = feature = (char *) NULL;
 	cpus_val = real_memory_val = state_val = NO_VAL;
 	tmp_disk_val = weight_val = NO_VAL;
 	if ((error_code = load_string (&node_name, "NodeName=", in_line)))
@@ -413,8 +438,9 @@ parse_node_spec (char *in_line) {
 		return 0;	/* no node info */
 
 	error_code = slurm_parser(in_line,
-		"Procs=", 'd', &cpus_val, 
 		"Feature=", 's', &feature, 
+		"NodeAddr=", 's', &node_addr, 
+		"Procs=", 'd', &cpus_val, 
 		"RealMemory=", 'd', &real_memory_val, 
 		"State=", 's', &state, 
 		"TmpDisk=", 'd', &tmp_disk_val, 
@@ -442,8 +468,15 @@ parse_node_spec (char *in_line) {
 		}	
 	}			
 
+	if ( node_addr && 
+	     ((addr_list = hostlist_create (node_addr)) == NULL)) {
+		error ("hostlist_create error for %s: %m", node_addr);
+		error_code = errno;
+		goto cleanup;
+	}
+
 	if ( (host_list = hostlist_create (node_name)) == NULL) {
-		error ("hostlist_create error for %s, %m", node_name);
+		error ("hostlist_create error for %s: %m", node_name);
 		error_code = errno;
 		goto cleanup;
 	}
@@ -513,6 +546,18 @@ parse_node_spec (char *in_line) {
 			    (state_val != NODE_STATE_UNKNOWN))
 				node_record_point->node_state = state_val;
 			node_record_point->last_response = time (NULL);
+			if (node_addr)
+				this_node_addr = hostlist_shift (addr_list);
+			else
+				this_node_addr = NULL;
+			if (this_node_addr) {
+				strncpy (node_record_point->comm_name,
+				         this_node_addr, MAX_NAME_LEN);
+				free (this_node_addr);
+			} else {
+				strncpy (node_record_point->comm_name,
+				         node_record_point->name, MAX_NAME_LEN);
+			}
 		}
 		else {
 			error ("parse_node_spec: reconfiguration for node %s ignored.",
@@ -524,6 +569,8 @@ parse_node_spec (char *in_line) {
 	/* xfree allocated storage */
 	if (state)
 		xfree(state);
+	if (addr_list)
+		hostlist_destroy (addr_list);
 	hostlist_destroy (host_list);
 	return error_code;
 
