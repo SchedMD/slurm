@@ -49,8 +49,9 @@
 
 #include <slurm/slurm_errno.h>
 
-#include "src/common/log.h"
 #include "src/common/fd.h"
+#include "src/common/log.h"
+#include "src/common/safeopen.h"
 #include "src/common/xsignal.h"
 
 #include "src/slurmd/smgr.h"
@@ -533,6 +534,7 @@ _make_tmpdir(slurmd_job_t *job)
 	if (!(tmpdir = getenvp(job->env, "TMPDIR")))
 		return;
 
+	(void) mkdir_parent(tmpdir, 0700);
 	if ((mkdir(tmpdir, 0700) < 0) && (errno != EEXIST))
 		error ("Unable to create TMPDIR [%s]: %m", tmpdir);
 

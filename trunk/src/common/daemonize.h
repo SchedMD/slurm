@@ -35,11 +35,11 @@
  *
  * returns -1 on error.
  */
-int daemon(int nochdir, int noclose);
+extern int daemon(int nochdir, int noclose);
 
 /* Write pid into file pidfile
  */
-int create_pidfile(char *pidfilename);
+extern int create_pidfile(const char *pidfilename);
 
 /*
  * Attempt to read an old pid from the configured pidfile
@@ -47,6 +47,6 @@ int create_pidfile(char *pidfilename);
  * If pidfilefd is not NULL, returns open file descriptor for
  * pidfile (when pid != 0).
  */
-pid_t read_pidfile(char *pidfilename, int *pidfilefd);
+extern pid_t read_pidfile(const char *pidfilename, int *pidfilefd);
 
 #endif /* !_HAVE_DAEMONIZE_H */

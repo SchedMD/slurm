@@ -183,6 +183,7 @@ _log_init(char *prog, log_options_t opt, log_facility_t fac, char *logfile )
 	if (logfile && (log->opt.logfile_level > LOG_LEVEL_QUIET)) {
 		FILE *fp; 
 
+		(void) mkdir_parent(logfile, 0700);
 		fp = safeopen(logfile, "a", SAFEOPEN_LINK_OK);
 
 		if (!fp) {
