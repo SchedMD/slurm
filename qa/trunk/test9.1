@@ -25,7 +25,7 @@ print_header $test_id
 # Execute an srun job to cat input_file to output_file, wait for completion
 # Returns 0 on successful completion, returns 1 otherwise
 proc run_cat_job { input_file output_file } {
-	global bin_cat bin_rm srun node_cnt other_opts task_cnt
+	global bin_cat bin_rm srun node_cnt other_opts task_cnt timeout
 	exec $bin_rm -f $output_file
 
 	spawn $srun --input=$input_file --output=$output_file --error=/dev/null -n$task_cnt -N$node_cnt $other_opts -t1 $bin_cat -
