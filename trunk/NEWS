@@ -8,6 +8,7 @@ documents those changes that are of interest to users and admins.
     prolog is running (which can be slow on BlueGene).
  -- Add new error code, ESLURM_BATCH_ONLY for attepts to launch 
     job steps on front-end system (e.g. Blue Gene).
+ -- Updates to html documents.
 
 * Changes in SLURM 0.4.0-pre9
 =============================

@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="13 October 2004">
+<meta name="LLNLRandRdate" content="27 January 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -53,7 +53,7 @@ structure:Laboratories and Other Field Facilities">
 <td><img src="spacer.gif" width="10" height="1" alt=""></td>
 <td valign="top"><h2>What's New</h2>
 <h3>Major Updates in SLURM Version 0.3</h3>
-<p>SLURM Version 0.3 become available in May 2004. 
+<p>SLURM Version 0.3 became available in May 2004. 
 Major enhancements included: 
 <ul>
 <li>Scheduler plugin developed for backfill scheduling and <a href="http://supercluster.org/maui">
@@ -73,8 +73,8 @@ For a complete list of enhancements in SLURM version 0.3, please see the NEWS
 file with the code distribution.</p>
 
 <h3>Major Updates in SLURM Version 0.4</h3>
-<p>We expect to make SLURM Version 0.4 available in Deccember 2004. 
-Major enhancements include: 
+<p>SLURM Version 0.4 became available in January 2005. 
+Major enhancements included: 
 <ul>
 <li>Support for <a href="http://www.platform.com/">Load Sharing Facility (LSF)</a></li>
 <li>Add support for <a href="http://www.myri.com/scs/">MPICH-GM</a>
@@ -93,9 +93,9 @@ Major enhancements include:
 Major enhancements include:
 <ul>
 <li>Support for the IBM Federation switch.</li>
-<li>Checkpoint plugin added with support for IBM system checkpoint.</li>
-<li>I/O streams for all tasks on a node are transmitted through one pair of sockets
-instead of distinct sockets for each task. This improves performance and scalability.</li>
+<li>I/O streams for all tasks on a node are transmitted through one pair of 
+sockets instead of distinct sockets for each task. This improves performance 
+and scalability.</li>
 <li>Support for task communication/synchronization primitives.</li>
 </ul>
 
@@ -105,6 +105,8 @@ not been finalized. Anyone desiring to perform SLURM development should notify
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>
 to coordinate activies. Future development plans includes:
 <ul>
+<li>Support for Infiniband</li>
+<li>Support for IBM system-level checkpoint</li>
 <li>Support of various MPI types via a plugin mechanism.</li>
 <li>Permit resource allocations (jobs) to change size.</li>
 <li>Manage consumable resources on a per-node (e.g,. memory, disk space) 

@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="11 November 2004">
+<meta name="LLNLRandRdate" content="27 January 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -138,17 +138,23 @@ auth/munge plugin for communication, the clocks on all nodes will need to
 be synchronized. </p>
 
 <h4>MPI support</h4>
-<p>Quadrics MPI works directly with SLURM on systems having Quadrics interconnects. 
-For non-Quadrics interconnect systems, <a href="http://www.lam-mpi.org/">LAM/MPI</a> 
-is the preferred MPI infrastructure. LAM/MPI uses the command <i>lamboot</i> to 
-initiate job-specific daemons on each node using SLURM's 
+<p>Quadrics MPI works directly with SLURM on systems having Quadrics 
+interconnects and is the prefered version of MPI for those systems.</p>
+
+<p>For <a href="http://www.myricom.com/">Myrinet</a> systems, MPICH-GM
+is prefered. In order to use MPICH-GM, set the <b>MpichGmDirectSupport</b> 
+and <b>KillTree </b> configuration parameters in slurm.conf.</p>
+
+<p>HP customers would be well served by using 
+<a href="http://www.hp.com/go/mpi">HP-MPI</a>.</p>
+
+<p>A good open-source MPI for use with SLURM is 
+<a href="http://www.lam-mpi.org/">LAM/MPI</a>. LAM/MPI uses the command 
+<i>lamboot</i> to initiate job-specific daemons on each node using SLURM's 
 <span class="commandline">srun</span> 
 command. This places all MPI processes in a process-tree under the control of 
 the <b>slurmd</b> daemon. LAM/MPI version 7.1 or higher contains support for 
 SLURM.</p>
-
-<p>In order to use MPICH-GM, set the <b>MpichGmDirectSupport</b> and <b>KillTree</b> 
-configuration parameters.</p>
 
 <p>Note that the ordering of tasks within an job's allocation matches that of 
 nodes in the slurm.conf configuration file. SLURM presently lacks the ability 
@@ -455,7 +461,7 @@ in the NEWS file.
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified 11 November 2004</p></td>
+Last modified 27 January 2005</p></td>
 </tr>
 </table>
 </td>

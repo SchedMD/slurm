@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324">
-<meta name="LLNLRandRdate" content="12 January 2004">
+<meta name="LLNLRandRdate" content="27 January 2005">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -59,6 +59,7 @@ structure:Laboratories and Other Field Facilities">
 <li><a href="#sharing">Why does the srun --overcommit option not permit multiple jobs 
 to run on nodes?</a></li>
 <li><a href="#purge">Why is my job killed prematurely?</a></li>
+<li><a href="#opts">Why are my srun options ignored?</a></li>
 </ol>
 <p><a name="comp"><b>1. Why is my job/node in &quot;completing&quot; state?</b></a><br>
 When a job is terminating, both the job and its nodes enter the state &quot;completing.&quot; 
@@ -82,6 +83,7 @@ submit host are higher than the hard resource limits on the allocated host, SLUR
 will be unable to propagate the resource limits and print an error of the type 
 shown above. It is recommended that the system administrator establish uniform 
 hard resource limits on all nodes within a cluster to prevent this from occurring.</p>
+
 <p><a name="pending"><b>3. Why is my job not running?</b></a><br>
 The answer to this question depends upon the scheduler used by SLURM. Executing 
 the command</p>
@@ -131,7 +133,7 @@ SLURM has a job purging mechanism to remove inactive jobs (resource allocations)
 before reaching its time limit, which could be infinite.
 This inactivity time limit is configurable by the system administrator. 
 You can check it's value with the command
-<blockquite>
+<blockquote>
 <p><span class="commandline">scontrol show config | grep InactiveLimit</span></p>
 </blockquote>
 The value of InactiveLimit is in seconds. 
@@ -143,13 +145,30 @@ is submitted.
 Therefore batch job pre- and post-processing is limited to the InactiveLimit.
 Contact your system administrator if you believe the InactiveLimit value 
 should be changed. 
+
+<p><a name="opts"><b>6. Why are my srun options ignored?</b></a><br>
+Everything after the command <span class="commandline">srun</span> is 
+examined to determine if it is a valid option for srun. The first 
+token that is not a valid option for srun is considered the command 
+to execute and everything after that is treated as an option to 
+the command. For example:
+<blockquote>
+<p><span class="commandline">srun -N2 hostname -pdebug</span></p>
+</blockquote>
+srun processes "-N2" as an option to itself. "hostname" is the 
+command to execute and "-pdebug" is treated as an option to the 
+hostname command. Which will change the name of the computer 
+on which SLURM executes the command - Very bad, <b>Don't run 
+this command as user root!</b></p>
+
+<br>
 </td>
 </tr>
 <tr> 
 <td colspan="3"><hr> <p>For information about this page, contact <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-207187<br>
-Last modified March 24, 2004</p></td>
+Last modified 27 January 2005</p></td>
 </tr>
 </table>
 </td>
