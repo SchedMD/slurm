@@ -139,6 +139,7 @@ static void _validate_job_files(List batch_dirs);
 static int  _write_data_to_file(char *file_name, char *data);
 static int  _write_data_array_to_file(char *file_name, char **data,
 				     uint16_t size);
+static void _xmit_new_end_time(struct job_record *job_ptr);
 
 /* 
  * create_job_record - create an empty job_record including job_details.
@@ -2307,9 +2308,12 @@ int update_job(job_desc_msg_t * job_specs, uid_t uid)
 		if (super_user ||
 		    (job_ptr->time_limit > job_specs->time_limit)) {
 			job_ptr->time_limit = job_specs->time_limit;
-			job_ptr->end_time =
-			    job_ptr->start_time +
-			    (job_ptr->time_limit * 60);
+			job_ptr->end_time = job_ptr->start_time +
+					    (job_ptr->time_limit * 60);
+			build_job_cred(job_ptr);      /* with new end time */
+			if ((job_ptr->job_state == JOB_RUNNING) &&
+			    (list_is_empty(job_ptr->step_list) == 0))
+				_xmit_new_end_time(job_ptr);
 			info("update_job: setting time_limit to %u for job_id %u", 
 			     job_specs->time_limit, job_specs->job_id);
 		} else {
@@ -2787,4 +2791,69 @@ static void _remove_defunct_batch_dirs(List batch_dirs)
 		_delete_job_desc_files(*job_id_ptr);
 	}
 	list_iterator_destroy(batch_dir_inx);
+}
+
+/*
+ *  _xmit_new_end_time
+ *	Tell all slurmd's associated with a job of its new end time
+ * IN job_ptr - pointer to terminating job
+ * globals: node_record_count - number of nodes in the system
+ *	node_record_table_ptr - pointer to global node table
+ */
+static void 
+_xmit_new_end_time(struct job_record *job_ptr)
+{
+	job_time_msg_t *job_time_msg_ptr;
+	agent_arg_t *agent_args;
+	pthread_attr_t attr_agent;
+	pthread_t thread_agent;
+	int buf_rec_size = 0, i;
+
+	agent_args = xmalloc(sizeof(agent_arg_t));
+	agent_args->msg_type = REQUEST_UPDATE_JOB_TIME;
+	agent_args->retry = 1;
+	job_time_msg_ptr = xmalloc(sizeof(job_time_msg_t));
+	job_time_msg_ptr->job_id          = job_ptr->job_id;
+	job_time_msg_ptr->expiration_time = job_ptr->end_time;
+
+	for (i = 0; i < node_record_count; i++) {
+		if (bit_test(job_ptr->node_bitmap, i) == 0)
+			continue;
+		if ((agent_args->node_count + 1) > buf_rec_size) {
+			buf_rec_size += 32;
+			xrealloc((agent_args->slurm_addr),
+				 (sizeof(struct sockaddr_in) *
+				  buf_rec_size));
+			xrealloc((agent_args->node_names),
+				 (MAX_NAME_LEN * buf_rec_size));
+		}
+		agent_args->slurm_addr[agent_args->node_count] =
+		    node_record_table_ptr[i].slurm_addr;
+		strncpy(&agent_args->
+			node_names[MAX_NAME_LEN * agent_args->node_count],
+			node_record_table_ptr[i].name, MAX_NAME_LEN);
+		agent_args->node_count++;
+	}
+
+	agent_args->msg_args = job_time_msg_ptr;
+	debug("Spawning job time limit update agent");
+	if (pthread_attr_init(&attr_agent))
+		fatal("pthread_attr_init error %m");
+	if (pthread_attr_setdetachstate
+	    (&attr_agent, PTHREAD_CREATE_DETACHED))
+		error("pthread_attr_setdetachstate error %m");
+#ifdef PTHREAD_SCOPE_SYSTEM
+	if (pthread_attr_setscope(&attr_agent, PTHREAD_SCOPE_SYSTEM))
+		error("pthread_attr_setscope error %m");
+#endif
+	if (pthread_create
+	    (&thread_agent, &attr_agent, agent, (void *) agent_args)) {
+		error("pthread_create error %m");
+		sleep(1);	/* sleep and try once more */
+		if (pthread_create
+		    (&thread_agent, &attr_agent, agent,
+		     (void *) agent_args))
+			fatal("pthread_create error %m");
+	}
+	return;
 }

@@ -1021,6 +1021,14 @@ static void _slurm_rpc_job_step_complete(slurm_msg_t * msg)
 
 	/* do RPC call */
 	/* First set node down as needed on fatal error */
+	if (complete_job_step_msg->slurm_rc == ESLURM_ALREADY_DONE) {
+		/* race condition on job termination, not a real error */
+		info("slurmd error running job %u from node %s: %s",
+		      complete_job_step_msg->job_id,
+		      complete_job_step_msg->node_name,
+		      slurm_strerror(complete_job_step_msg->slurm_rc));
+		complete_job_step_msg->slurm_rc = SLURM_SUCCESS;
+	}
 	if (complete_job_step_msg->slurm_rc != SLURM_SUCCESS) {
 		error("Fatal slurmd error running job %u from node %s: %s",
 		      complete_job_step_msg->job_id,
