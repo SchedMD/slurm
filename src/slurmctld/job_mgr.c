@@ -386,7 +386,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	pack32(dump_job_ptr->user_id, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 	pack32(dump_job_ptr->priority, buffer);
-	pack32(dump_job_ptr->batch_sid, buffer);
+	pack32(dump_job_ptr->alloc_sid, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
 	pack_time(dump_job_ptr->end_time, buffer);
@@ -400,6 +400,7 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
+	packstr(dump_job_ptr->alloc_node, buffer);
 
 	/* Dump job details, if available */
 	detail_ptr = dump_job_ptr->details;
@@ -426,11 +427,12 @@ static void _dump_job_state(struct job_record *dump_job_ptr, Buf buffer)
 /* Unpack a job's state information from a buffer */
 static int _load_job_state(Buf buffer)
 {
-	uint32_t job_id, user_id, time_limit, priority, batch_sid;
+	uint32_t job_id, user_id, time_limit, priority, alloc_sid;
 	time_t start_time, end_time;
 	uint16_t job_state, next_step_id, details, batch_flag, step_flag;
 	uint16_t kill_on_node_fail, kill_on_step_done, name_len;
 	char *nodes = NULL, *partition = NULL, *name = NULL;
+	char *alloc_node = NULL;
 	bitstr_t *node_bitmap = NULL;
 	struct job_record *job_ptr;
 	struct part_record *part_ptr;
@@ -440,7 +442,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpack32(&user_id, buffer);
 	safe_unpack32(&time_limit, buffer);
 	safe_unpack32(&priority, buffer);
-	safe_unpack32(&batch_sid, buffer);
+	safe_unpack32(&alloc_sid, buffer);
 
 	safe_unpack_time(&start_time, buffer);
 	safe_unpack_time(&end_time, buffer);
@@ -454,6 +456,7 @@ static int _load_job_state(Buf buffer)
 	safe_unpackstr_xmalloc(&nodes, &name_len, buffer);
 	safe_unpackstr_xmalloc(&partition, &name_len, buffer);
 	safe_unpackstr_xmalloc(&name, &name_len, buffer);
+	safe_unpackstr_xmalloc(&alloc_node, &name_len, buffer);
 
 	/* validity test as possible */
 	if ((job_state >= JOB_END) || (batch_flag > 1)) {
@@ -511,7 +514,7 @@ static int _load_job_state(Buf buffer)
 	job_ptr->user_id      = user_id;
 	job_ptr->time_limit   = time_limit;
 	job_ptr->priority     = priority;
-	job_ptr->batch_sid    = batch_sid;
+	job_ptr->alloc_sid    = alloc_sid;
 	job_ptr->start_time   = start_time;
 	job_ptr->end_time     = end_time;
 	job_ptr->time_last_active = time(NULL);
@@ -521,6 +524,8 @@ static int _load_job_state(Buf buffer)
 	xfree(name);
 	job_ptr->nodes = nodes;
 	nodes = NULL;	/* reused, nothing left to free */
+	job_ptr->alloc_node = alloc_node;
+	alloc_node = NULL;	/* reused, nothing left to free */
 	job_ptr->node_bitmap = node_bitmap;
 	xfree(partition);
 	job_ptr->kill_on_node_fail = kill_on_node_fail;
@@ -541,6 +546,7 @@ static int _load_job_state(Buf buffer)
 	xfree(nodes);
 	xfree(partition);
 	xfree(name);
+	xfree(alloc_node);
 	FREE_NULL_BITMAP(node_bitmap);
 	return SLURM_FAILURE;
 }
@@ -963,9 +969,12 @@ void dump_job_desc(job_desc_msg_t * job_specs)
 		       job_specs->environment[1],
 		       job_specs->environment[2]);
 
-	debug3("   in=%s out=%s err=%s work_dir=%s",
-	       job_specs->in, job_specs->out, job_specs->err,
-	       job_specs->work_dir);
+	debug3("   in=%s out=%s err=%s",
+	       job_specs->in, job_specs->out, job_specs->err);
+
+	debug3("   work_dir=%s alloc_node:sid=%s:%u",
+	       job_specs->work_dir,
+	       job_specs->alloc_node, job_specs->alloc_sid);
 
 }
 
@@ -1774,9 +1783,11 @@ _copy_job_desc_to_job_record(job_desc_msg_t * job_desc,
 		strncpy(job_ptr->name, job_desc->name,
 			sizeof(job_ptr->name));
 	}
-	job_ptr->user_id = (uid_t) job_desc->user_id;
-	job_ptr->job_state = JOB_PENDING;
+	job_ptr->user_id    = (uid_t) job_desc->user_id;
+	job_ptr->job_state  = JOB_PENDING;
 	job_ptr->time_limit = job_desc->time_limit;
+	job_ptr->alloc_sid  = job_desc->alloc_sid;
+	job_ptr->alloc_node = xstrdup(job_desc->alloc_node);
 	if ((job_desc->priority !=
 	     NO_VAL) /* also check submit UID is root */ )
 		job_ptr->priority = job_desc->priority;
@@ -2020,6 +2031,7 @@ static void _list_delete_job(void *job_entry)
 
 	delete_job_details(job_record_point);
 
+	xfree(job_record_point->alloc_node);
 	xfree(job_record_point->nodes);
 	FREE_NULL_BITMAP(job_record_point->node_bitmap);
 	xfree(job_record_point->cpus_per_node);
@@ -2145,7 +2157,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 
 	pack16((uint16_t) dump_job_ptr->job_state, buffer);
 	pack16((uint16_t) dump_job_ptr->batch_flag, buffer);
-	pack32(dump_job_ptr->batch_sid, buffer);
+	pack32(dump_job_ptr->alloc_sid, buffer);
 	pack32(dump_job_ptr->time_limit, buffer);
 
 	pack_time(dump_job_ptr->start_time, buffer);
@@ -2155,6 +2167,7 @@ void pack_job(struct job_record *dump_job_ptr, Buf buffer)
 	packstr(dump_job_ptr->nodes, buffer);
 	packstr(dump_job_ptr->partition, buffer);
 	packstr(dump_job_ptr->name, buffer);
+	packstr(dump_job_ptr->alloc_node, buffer);
 	safe_pack_bit_fmt(dump_job_ptr->node_bitmap, 
 			  MAX_STR_PACK, buffer);
 
@@ -2947,36 +2960,4 @@ _xmit_new_end_time(struct job_record *job_ptr)
 	}
 	return;
 }
-
-/*
- * set_batch_job_sid - set the batch_sid for a specified job_id
- * IN uid - originating uid of the RPC
- * IN job_id - the id of a batch job
- * IN batch_sid - local session id for the job
- * RET int - 0 or an error code
- * global: job_list - global list of job entries is updated
- */
-int set_batch_job_sid(uid_t uid, uint32_t job_id, uint32_t batch_sid)
-{
-	struct job_record *job_ptr;
-
-	job_ptr = find_job_record(job_id);
-	if (job_ptr == NULL) {
-		error("set_batch_job_sid: job_id %u does not exist.", job_id);
-		return ESLURM_INVALID_JOB_ID;
-	}
-
-	if ((uid != 0) && 
-	    (uid != getuid()) && 
-	    (uid != job_ptr->user_id)) {
-		error("Security violation, RESPONSE_BATCH_JOB_LAUNCH RPC from uid %d",
-		      uid);
-		return ESLURM_USER_ID_MISSING;
-	}
-
-	/* debug3("set_batch_job_sid:%u,%u,%u",uid, job_id, batch_sid); */
-	job_ptr->batch_sid = batch_sid;
-	return SLURM_SUCCESS;
-}
-
 
