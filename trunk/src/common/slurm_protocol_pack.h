@@ -1,3 +1,29 @@
+/****************************************************************************\
+ *  slurm_protocol_pack.h - definitions for all pack and unpack functions
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
+
 #ifndef _SLURM_PROTOCOL_PACK_H
 #define _SLURM_PROTOCOL_PACK_H
 
@@ -154,5 +180,8 @@ int unpack_task_exit_msg ( task_exit_msg_t ** msg_ptr , void ** buffer , uint32_
 
 void pack_job_credential ( slurm_job_credential_t* cred , void ** buffer , uint32_t * length ) ;
 int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length ) ;
+
+void pack_batch_job_launch ( batch_job_launch_msg_t* cred , void ** buffer , uint32_t * length ) ;
+void unpack_batch_job_launch( batch_job_launch_msg_t** msg , void ** buffer , uint32_t * length ) ;
 
 #endif

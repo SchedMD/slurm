@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Kevin Tew <tew1@llnl.gov>.
+ *  Written by Kevin Tew <tew1@llnl.gov> et. al.
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -229,6 +229,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_task_exit_msg ( ( task_exit_msg_t * ) msg -> data , (void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_BATCH_JOB_LAUNCH :
+			pack_batch_job_launch ( ( batch_job_launch_msg_t * ) msg -> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case MESSAGE_UPLOAD_ACCOUNTING_INFO :
 			break ;
@@ -380,6 +381,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 			unpack_task_exit_msg ( ( task_exit_msg_t ** ) & (msg->data )  , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_BATCH_JOB_LAUNCH :
+			unpack_batch_job_launch ( ( batch_job_launch_msg_t **) &(msg -> data) , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case MESSAGE_UPLOAD_ACCOUNTING_INFO :
 			break ;
@@ -1518,6 +1520,91 @@ int unpack_get_job_step_info ( job_step_info_request_msg_t ** msg , void ** buff
 }
 
 
+void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, void ** buffer , int * length )
+{
+	int i=0;
+	uint16_t nl = htons(size_val);
+	pack16( nl, buffer, length);
+
+	for ( i=0; i < size_val; i++ ) 
+	{
+		slurm_pack_slurm_addr ( slurm_address + i , buffer , length ) ;
+	}
+	
+}
+
+void unpack_slurm_addr_array ( slurm_addr ** slurm_address , uint16_t * size_val , void ** buffer , int * length )
+{
+	int i=0;
+	uint16_t nl ;
+	unpack16( & nl , buffer , length );
+	*size_val = ntohs ( nl ) ;
+	*slurm_address = xmalloc( (*size_val) * sizeof( slurm_addr ) );
+
+	for ( i=0; i < *size_val; i++ ) 
+	{
+		slurm_unpack_slurm_addr_no_alloc ( (*slurm_address) + i , buffer , length );
+	}
+}
+
+void 
+pack_batch_job_launch ( batch_job_launch_msg_t* msg , void ** buffer , uint32_t * length )
+{
+	assert ( msg != NULL );
+
+	pack32 ( msg -> job_id, buffer , length ) ;
+	pack32 ( msg -> user_id, buffer , length ) ;
+
+	packstr ( msg -> nodes, buffer , length ) ;
+	packstr ( msg -> script, buffer , length ) ;
+	packstr ( msg -> work_dir, buffer , length ) ;
+
+	packstr ( msg -> stderr, buffer , length ) ;
+	packstr ( msg -> stdin, buffer , length ) ;
+	packstr ( msg -> stdout, buffer , length ) ;
+
+	pack16 ( msg -> argc, buffer , length ) ;
+	packstring_array (msg -> argv, msg -> argc, buffer, length);
+
+	pack16 ( msg -> env_size, buffer , length ) ;
+	packstring_array (msg -> environment, msg -> env_size, buffer, length);
+}
+
+void 
+unpack_batch_job_launch( batch_job_launch_msg_t** msg , void ** buffer , uint32_t * length )
+{
+	uint16_t uint16_tmp;
+	batch_job_launch_msg_t *launch_msg_ptr ;
+
+	assert ( msg != NULL );
+
+	launch_msg_ptr = xmalloc ( sizeof (batch_job_launch_msg_t) ) ;
+	*msg = launch_msg_ptr ;
+	if (launch_msg_ptr == NULL) 
+		return ;
+
+	unpack32 ( & launch_msg_ptr -> job_id, buffer , length ) ;
+	unpack32 ( & launch_msg_ptr -> user_id, buffer , length ) ;
+
+	unpackstr_xmalloc ( & launch_msg_ptr -> nodes, & uint16_tmp , buffer , length ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> script, & uint16_tmp , buffer , length ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> work_dir, & uint16_tmp , buffer , length ) ;
+
+	unpackstr_xmalloc ( & launch_msg_ptr -> stderr, & uint16_tmp , buffer , length ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> stdin, & uint16_tmp , buffer , length ) ;
+	unpackstr_xmalloc ( & launch_msg_ptr -> stdout, & uint16_tmp , buffer , length ) ;
+
+	unpack16 ( & launch_msg_ptr -> argc, buffer , length ) ;
+	unpackstring_array (& launch_msg_ptr -> argv, &launch_msg_ptr -> argc, 
+			buffer, length);
+
+	unpack16 ( & launch_msg_ptr -> env_size, buffer , length ) ;
+	unpackstring_array (& launch_msg_ptr -> environment, &launch_msg_ptr -> env_size, 
+			buffer, length);
+
+	return;
+}
+
 /* template 
 void pack_ ( * msg , void ** buffer , uint32_t * length )
 {
@@ -1549,29 +1636,3 @@ void unpack_ ( ** msg_ptr , void ** buffer , uint32_t * length )
 }
 */
 
-void pack_slurm_addr_array ( slurm_addr * slurm_address , uint16_t size_val, void ** buffer , int * length )
-{
-	int i=0;
-	uint16_t nl = htons(size_val);
-	pack16( nl, buffer, length);
-
-	for ( i=0; i < size_val; i++ ) 
-	{
-		slurm_pack_slurm_addr ( slurm_address + i , buffer , length ) ;
-	}
-	
-}
-
-void unpack_slurm_addr_array ( slurm_addr ** slurm_address , uint16_t * size_val , void ** buffer , int * length )
-{
-	int i=0;
-	uint16_t nl ;
-	unpack16( & nl , buffer , length );
-	*size_val = ntohs ( nl ) ;
-	*slurm_address = xmalloc( (*size_val) * sizeof( slurm_addr ) );
-
-	for ( i=0; i < *size_val; i++ ) 
-	{
-		slurm_unpack_slurm_addr_no_alloc ( (*slurm_address) + i , buffer , length );
-	}
-}
