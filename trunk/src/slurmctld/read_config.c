@@ -247,11 +247,11 @@ static int _init_all_slurm_conf(void)
  */
 static int _parse_node_spec(char *in_line)
 {
-	char *node_addr, *node_name, *state, *feature;
+	char *node_addr, *node_name, *state, *feature, *reason;
 	char *this_node_addr, *this_node_name;
 	int error_code, first, i;
 	int state_val, cpus_val, real_memory_val, tmp_disk_val, weight_val;
-	struct node_record *node_record_point;
+	struct node_record *node_ptr;
 	struct config_record *config_point = NULL;
 	hostlist_t addr_list = NULL, host_list = NULL;
 
@@ -268,6 +268,7 @@ static int _parse_node_spec(char *in_line)
 				  "NodeAddr=", 's', &node_addr,
 				  "Procs=", 'd', &cpus_val,
 				  "RealMemory=", 'd', &real_memory_val,
+				  "Reason=", 's', &reason,
 				  "State=", 's', &state,
 				  "TmpDisk=", 'd', &tmp_disk_val,
 				  "Weight=", 'd', &weight_val, "END");
@@ -364,35 +365,32 @@ static int _parse_node_spec(char *in_line)
 		}
 
 		if (strcmp(this_node_name, highest_node_name) <= 0)
-			node_record_point =
-				    find_node_record(this_node_name);
+			node_ptr = find_node_record(this_node_name);
 		else {
 			strncpy(highest_node_name, this_node_name,
 				MAX_NAME_LEN);
-			node_record_point = NULL;
+			node_ptr = NULL;
 		}
 
-		if (node_record_point == NULL) {
-			node_record_point =
-			    create_node_record(config_point,
-					       this_node_name);
+		if (node_ptr == NULL) {
+			node_ptr = create_node_record(config_point, 
+			                              this_node_name);
 			if ((state_val != NO_VAL) &&
 			    (state_val != NODE_STATE_UNKNOWN))
-				node_record_point->node_state = state_val;
-			node_record_point->last_response = (time_t) 0;
+				node_ptr->node_state = state_val;
+			node_ptr->last_response = (time_t) 0;
 			if (node_addr)
 				this_node_addr = hostlist_shift(addr_list);
 			else
 				this_node_addr = NULL;
 			if (this_node_addr) {
-				strncpy(node_record_point->comm_name,
-					this_node_addr, MAX_NAME_LEN);
+				strncpy(node_ptr->comm_name, 
+				        this_node_addr, MAX_NAME_LEN);
 				free(this_node_addr);
-			} else {
-				strncpy(node_record_point->comm_name,
-					node_record_point->name,
-					MAX_NAME_LEN);
-			}
+			} else
+				strncpy(node_ptr->comm_name, 
+				        node_ptr->name, MAX_NAME_LEN);
+			xstrcat(node_ptr->reason, reason);
 		} else {
 			error
 			    ("_parse_node_spec: reconfiguration for node %s ignored",
@@ -403,6 +401,7 @@ static int _parse_node_spec(char *in_line)
 
 	/* free allocated storage */
 	xfree(node_addr);
+	xfree(reason);
 	if (addr_list)
 		hostlist_destroy(addr_list);
 	hostlist_destroy(host_list);
@@ -412,6 +411,7 @@ static int _parse_node_spec(char *in_line)
 	xfree(node_addr);
 	xfree(node_name);
 	xfree(feature);
+	xfree(reason);
 	xfree(state);
 	return error_code;
 }
