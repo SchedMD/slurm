@@ -1035,12 +1035,6 @@ _shm_lock_and_initialize()
 static void 
 _shm_lock()
 {
-#ifndef NDEBUG
-	int semval = 0;
-	sem_getvalue(shm_lock, &semval);
-	debug("_shm_lock: semval = %d", semval);
-#endif /* !NDEBUG */
-
     restart:
 	if (sem_wait(shm_lock) == -1) {
 		if (errno == EINTR)
