@@ -159,7 +159,7 @@ static slurm_errtab_t slurm_errtab[] = {
 	{ EBADMAGIC_QSWJOBINFO, 
 	  "Bad magic in QSW jobinfo"				},
 	{ EINVAL_PRGCREATE,
-	  "Program identifier in use or number of CPUs invalid"	},
+	  "Program identifier in use or CPU count invalid, try again" },
 	{ ECHILD_PRGDESTROY,
 	  "Processes belonging to this program are still running" },
 	{ EEXIST_PRGDESTROY, 
