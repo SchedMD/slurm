@@ -53,6 +53,33 @@ void slurm_free_job_desc_msg ( job_desc_msg_t * msg )
 	}
 }
 
+void slurm_free_partition_info (partition_info_msg_t * msg )
+{
+	int i; 
+	if ( msg )
+	{
+		if ( msg -> partition_array )
+		{
+			for (i = 0; i < msg -> record_count; i++) {
+				slurm_free_partition_table ( & ( msg->partition_array[i] ) ) ;
+			}
+		}
+		free ( msg );
+	}
+}
+
+void slurm_free_partition_table ( partition_table_t * part )
+{
+	if ( part )
+	{
+		free ( part->name ) ;
+		free ( part->allow_groups ) ;
+		free ( part->nodes ) ;
+		free ( part->node_inx ) ;
+		free ( part ) ;
+	}
+}
+
 void slurm_free_job_info ( job_info_msg_t * msg )
 {
 	int i; 

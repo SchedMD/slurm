@@ -205,12 +205,35 @@ struct job_table {
 typedef struct job_table job_table_t ;
 typedef struct job_table job_table_msg_t ;
 
+struct part_table {
+        char *name;             /* name of the partition */
+        uint32_t max_time;      /* minutes or INFINITE */
+        uint32_t max_nodes;     /* per job or INFINITE */
+        uint32_t total_nodes;   /* total number of nodes in the partition */
+        uint32_t total_cpus;    /* total number of cpus in the partition */
+        uint16_t default_part;  /* 1 if this is default partition */
+        uint16_t key;           /* 1 if slurm distributed key is required for use  */
+        uint16_t shared;        /* 1 if job can share nodes, 2 if job must share nodes */
+        uint16_t state_up;      /* 1 if state is up, 0 if down */
+        char *nodes;            /* comma delimited list names of nodes in partition */
+        int *node_inx;          /* list index pairs into node_table:
+                                   start_range_1, end_range_1, start_range_2, .., -1  */
+        char *allow_groups;     /* comma delimited list of groups, null indicates all */
+} ;
+typedef struct part_table partition_table_t ;
+typedef struct part_table partition_table_msg_t ;
+
 typedef struct job_info_msg {
 	uint32_t last_update;
 	uint32_t record_count;
 	job_table_t * job_array;
 } job_info_msg_t ;
 
+typedef struct partition_info_msg {
+	uint32_t last_update;
+	uint32_t record_count;
+	partition_table_t * partition_array;
+} partition_info_msg_t ;
 
 struct node_table {
 	char *name;		/* node name */
@@ -245,6 +268,9 @@ void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
 void inline slurm_free_job_table ( job_table_t * job ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
+
+void inline slurm_free_partition_info ( partition_info_msg_t * msg ) ;
+void inline slurm_free_partition_table ( partition_table_t * part ) ;
 
 void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
 void inline slurm_free_node_table ( node_table_t * node ) ;
