@@ -309,7 +309,7 @@ io_close_all(slurmd_job_t *job)
 	for (i = 0; i < job->ntasks; i++)
 		_io_finalize(job->task[i]);
 
-	/* No more debug info will be recieved by client after this point
+	/* No more debug info will be received by client after this point
 	 */
 	debug("Closing debug channel");
 	close(STDERR_FILENO);

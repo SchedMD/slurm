@@ -296,7 +296,7 @@ _reattach_handler(job_t *job, slurm_msg_t *msg)
 	reattach_tasks_response_msg_t *resp = msg->data;
 
 	if ((resp->srun_node_id < 0) || (resp->srun_node_id >= job->nhosts)) {
-		error ("Invalid reattach response recieved~");
+		error ("Invalid reattach response received");
 		return;
 	}
 
