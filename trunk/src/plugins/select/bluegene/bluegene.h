@@ -67,6 +67,7 @@
 #include "bgl_job_run.h"
 #include "state_test.h"
 
+#define PSETS_PER_BP 8
 #define USER_NAME "nobody"
 
 /* Global variables */
