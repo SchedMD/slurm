@@ -134,6 +134,22 @@ extern int  switch_pack_jobinfo  (switch_jobinfo_t jobinfo, Buf buffer);
  */
 extern int  switch_unpack_jobinfo(switch_jobinfo_t jobinfo, Buf buffer);
 
+/* get some field from a switch job credential
+ * IN jobinfo - the switch job credential
+ * IN data_type - the type of data to get from the credential
+ * OUT data - the desired data from the credential
+ * RET         - slurm error code
+ */
+extern int  switch_g_get_jobinfo(switch_jobinfo_t jobinfo, 
+	int data_type, void *data);
+
+/*
+ * Note that the job step associated with the specified node 
+ * has completed execution.
+ */
+extern int switch_g_job_complete(switch_jobinfo_t jobinfo,
+	char *nodelist);
+
 /* write job credential string representation to a file
  * IN fp      - an open file pointer
  * IN jobinfo - a switch job credential
@@ -238,5 +254,41 @@ extern int interconnect_postfini(switch_jobinfo_t jobinfo, uid_t pgid,
 extern int interconnect_attach(switch_jobinfo_t jobinfo, char ***env,
 		uint32_t nodeid, uint32_t procid, uint32_t nnodes, 
 		uint32_t nprocs, uint32_t rank);
+
+/*
+ * Allocate storage for a node's switch state record
+ */
+extern int switch_g_alloc_node_info(switch_node_info_t *switch_node);
+
+/*
+ * Fill in a previously allocated switch state record for the node on which 
+ * this function is executed. 
+ */
+extern int switch_g_build_node_info(switch_node_info_t switch_node);
+
+/* 
+ * Pack the data associated with a node's switch state into a buffer 
+ * for network transmission.
+ */
+extern int switch_g_pack_node_info(switch_node_info_t switch_node, 
+	Buf buffer);
+
+/*
+ * Unpack the data associated with a node's switch state record 
+ * from a buffer.
+ */
+extern int switch_g_unpack_node_info(switch_node_info_t switch_node,
+	Buf buffer);
+
+/*
+ * Release the storage associated with a node's switch state record.
+ */
+extern int switch_g_free_node_info(switch_node_info_t *switch_node);
+
+/*
+ * Print the contents of a node's switch state record to a buffer.
+ */
+extern char*switch_g_sprintf_node_info(switch_node_info_t switch_node,
+	char *buf, size_t size);
 
 #endif /* _SWITCH_H */

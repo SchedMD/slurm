@@ -13,6 +13,8 @@ documents those changes that are of interest to users and admins.
  -- Propogate job's task count (if set) for batch job via SLURM_NPROCS.
  -- Add new job parameters for Blue Gene: geometry, rotate, mode (virtual
     or co-processor), communications type (mesh or torus), and partition ID.
+ -- Exercise a bunch of new switch plugin functions for Federation 
+    switch support.
 
 * Changes in SLURM 0.4.0-pre2
 =============================

@@ -648,10 +648,11 @@ int switch_p_job_attach ( switch_jobinfo_t jobinfo, char ***env,
 	return SLURM_SUCCESS;
 }
 
-extern int switch_get_data_jobinfo(switch_jobinfo_t switch_job,
+extern int switch_p_get_jobinfo(switch_jobinfo_t switch_job,
 	int key, void *resulting_data)
 {
-	return SLURM_SUCCESS;
+	slurm_seterrno(EINVAL);
+	return SLURM_ERROR;
 }
 
 static int 
@@ -710,37 +711,46 @@ extern char *switch_p_strerror(int errnum)
  * node switch state monitoring functions
  * required for IBM Federation switch
  */
-extern int switch_alloc_node_info(switch_node_info_t *switch_node)
+extern int switch_p_alloc_node_info(switch_node_info_t *switch_node)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_build_node_info(switch_node_info_t switch_node)
+extern int switch_p_build_node_info(switch_node_info_t switch_node)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_pack_node_info(switch_node_info_t switch_node,
+extern int switch_p_pack_node_info(switch_node_info_t switch_node,
 	Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_unpack_node_info(switch_node_info_t switch_node,
+extern int switch_p_unpack_node_info(switch_node_info_t switch_node,
 	Buf buffer)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_free_node_info(switch_node_info_t switch_node)
+extern int switch_p_free_node_info(switch_node_info_t *switch_node)
 {
 	return SLURM_SUCCESS;
 }
 
-extern int switch_job_complete(switch_node_info_t switch_node,
+extern char*switch_p_sprintf_node_info(switch_node_info_t switch_node,
+	char *buf, size_t size)
+{
+	if ((buf != NULL) && size) {
+		buf[0] = '\0';
+		return buf;
+	}
+
+	return NULL;
+}
+
+extern int switch_p_job_complete(switch_jobinfo_t jobinfo,
 	char *nodelist)
 {
 	return SLURM_SUCCESS;
 }
-
-
