@@ -605,9 +605,6 @@ int copy_job_desc_to_job_record ( job_desc_msg_t * job_desc , struct job_record 
 	detail_ptr->num_procs = job_desc->num_procs;
 	detail_ptr->num_nodes = job_desc->num_nodes;
 	if (job_desc->req_nodes) {
-char tmp_str[128];
-bit_fmt(tmp_str, 128,req_bitmap);
-printf("moe_debug_%s\n",tmp_str);
 		detail_ptr->req_nodes = xstrdup ( job_desc->req_nodes );
 		detail_ptr->req_node_bitmap = req_bitmap;
 	}

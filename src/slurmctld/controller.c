@@ -87,10 +87,11 @@ main (int argc, char *argv[])
 		fatal ("slurmctld: error %d from read_slurm_conf reading %s", error_code, SLURM_CONF);
 	if ( ( error_code = gethostname (node_name, MAX_NAME_LEN) ) ) 
 		fatal ("slurmctld: errno %d from gethostname", errno);
+#if MOE_DEBUG
 	if ( strcmp (node_name, slurmctld_conf.control_machine) &&  strcmp (node_name, slurmctld_conf.backup_machine) )
 	       	fatal ("slurmctld: this machine (%s) is not the primary (%s) or backup (%s) controller", 
 			node_name, slurmctld_conf.control_machine, slurmctld_conf.backup_machine);
-
+#endif
 	
 	if ( ( sockfd = slurm_init_msg_engine_port ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )
 		fatal ("slurmctld: error starting message engine \n", errno);
@@ -188,21 +189,6 @@ slurmctld_req ( slurm_msg_t * msg )
 }
 
 
-/* 
- * dump_build - dump all build parameters to a buffer
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
- *                     the data buffer is actually allocated by dump_part and the 
- *                     calling function must xfree the storage.
- *         buffer_size - location into which the size of the created buffer is in bytes
- *	   last_update - only perform dump if updated since time specified
- * output: buffer_ptr - the pointer is set to the allocated buffer.
- *         buffer_size - set to size of the buffer in bytes
- *         returns 0 if no error, errno otherwise
- * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: if you make any changes here be sure to increment the value of 
- *	 	BUILD_STRUCT_VERSION and make the corresponding changes to 
- *		load_build in api/slurm_ctl_conf.c
- */
 void
 slurm_rpc_dump_build ( slurm_msg_t * msg )
 {
@@ -235,7 +221,6 @@ slurm_rpc_dump_build ( slurm_msg_t * msg )
 	}
 }
 
-/* slurm_rpc_dump_jobs - dump the descriptors for all jobs */
 void
 slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 {
@@ -274,7 +259,6 @@ slurm_rpc_dump_jobs ( slurm_msg_t * msg )
 	}
 }
 
-/* DumpNode - dump the node configurations */
 void
 slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 {
@@ -312,7 +296,6 @@ slurm_rpc_dump_nodes ( slurm_msg_t * msg )
 	}
 }
 
-/* DumpPart - dump the partition configurations */
 void
 slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 {
@@ -350,7 +333,6 @@ slurm_rpc_dump_partitions ( slurm_msg_t * msg )
 	}
 }
 
-/* JobCancel - cancel a slurm job or reservation */
 void 
 slurm_rpc_job_cancel ( slurm_msg_t * msg )
 {
@@ -380,8 +362,6 @@ slurm_rpc_job_cancel ( slurm_msg_t * msg )
 
 }
 
-/* UpdateNode - */
-/* Update - modify node or partition configuration */
 void 
 slurm_rpc_update_node ( slurm_msg_t * msg )
 {
@@ -415,9 +395,7 @@ slurm_rpc_update_node ( slurm_msg_t * msg )
 
 }
 
-/* UpdatePartition - */
-/* Update - modify node or partition configuration */
-	void 
+void 
 slurm_rpc_update_partition ( slurm_msg_t * msg )
 {
 	/* init */
@@ -444,7 +422,6 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 	}
 }
 
-/* JobSubmit - submit a job to the slurm queue */
 void
 slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 {
@@ -460,7 +437,7 @@ slurm_rpc_submit_batch_job ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = job_create(job_desc_msg, &job_id, 0, 0, &job_rec_ptr);	/* skip "JobSubmit" */
+	error_code = job_create(job_desc_msg, &job_id, 0, 0, &job_rec_ptr);
 
 	/* return result */
 	if (error_code)
@@ -533,7 +510,7 @@ void slurm_rpc_job_will_run ( slurm_msg_t * msg )
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = job_allocate(job_desc_msg, 	/* skip "Allocate" */
+	error_code = job_allocate(job_desc_msg,
 			&job_id, &node_name_ptr, false , true );
 	
 	/* return result */
