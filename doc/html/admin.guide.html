@@ -116,7 +116,7 @@ space available to the user on the node, only the total file
 system size. The system administration should insure this file 
 system is purged as needed so that user jobs have access to 
 most of this space. 
-The PROLOG and/or EPILOG files (specified at build time) might 
+The PROLOG and/or EPILOG programs (specified at build time) might 
 be used to insure the file system is kept clean. 
 The default value is 1.
 
@@ -127,6 +127,14 @@ Acceptable values are "UNKNOWN", "IDLE", "BUSY", "DOWN", "DRAINED",
 not be used for initiation of user jobs and its state could thus 
 be set to "DRAINED". The default value is "UNKNOWN".
 
+<dt>Feature
+<dd>A comma delimited list of arbitrary strings indicative of some 
+characteristic associated with the node. 
+There is no value associated with a feature at this time, a node 
+either has a feature or it does not.  
+If desired a feature may contain a numeric component indicating, 
+for example, processor speed. 
+By default a node has no features.
 </dl>
 <p>
 Only the NodeName must be supplied in the configuration file; all other 
@@ -197,6 +205,7 @@ with the HASH_BASE set at build time to indicate the hashing algorithm.
 Possible contains values are "10" and "8" for names containing 
 decimal and octal sequence numbers respectively
 or "0" which processes mixed alpha-numeric without sequence numbers. 
+The default value of HASH_BASE is "10".
 If you use a naming convention lacking a sequence number, it may be 
 desirable to review the hashing function Hash_Index in the 
 Mach_Stat_Mgr.c module. This is especially important in clusters having 
@@ -212,29 +221,42 @@ A sample SLURM configuration file (node information only) follows.
 NodeName=DEFAULT   CPUs=16 RealMemory=2048 TmpDisk=16384
 NodeName=lx[01-02] State=DRAINED
 NodeName=lx[03-16]
-NodeName=lx[17-32] CPUs=32 RealMemory=4096
+NodeName=lx[17-32] CPUs=32 RealMemory=4096 Feature=1200MHz,VizTools
 </pre>
 <p>
 The partition configuration permits you to establish different job 
 limits or access controls for various groups (or partitions) of nodes. 
-Nodes may be in more than one partition. The partition configuration 
+Nodes may be in only one partition. The partition configuration 
 file contains the following information: 
 <dl>
-<dt>PartitionName
-<dd>Name by which the partition may be referenced (e.g. "Interactive"). 
-This name can be specified by users when submitting jobs.
+<dt>AllowGroups
+<dd>Comma separated list of group IDs which may use the partition. 
+If at least one group associated with the user submitting the 
+job is in AllowGroups, he will be permitted to use this partition.
+The default value is "ALL". 
 
 <dt>MaxTime
 <dd>Maximum wall-time limit for any job in minutes. The default 
 value is "UNLIMITED", which is represented internally as -1.
 
+<dt>Default
+<dd>If this keyword is set, jobs submitted without a partition 
+specification will utilize this partition.
+
 <dt>MaxNodes
 <dd>Maximum count of nodes which may be allocated to any single job,
 The default value is "UNLIMITED", which is represented internally as -1.
 
-<dt>State
-<dd>State of partition or availability for use.  Possible values 
-are "UP" or "DOWN". The default value is "UP".
+<dt>Nodes
+<dd>Comma separated list of nodes which are associated with this 
+partition. Node names may be specified using the <a href="#NodeExp">
+real expression syntax</a> described above. A blank list of nodes 
+(i.e. "Nodes= ") can be used if one wants a partition to exist, 
+but have no resources (possibly on a temporary basis).
+
+<dt>PartitionName
+<dd>Name by which the partition may be referenced (e.g. "Interactive"). 
+This name can be specified by users when submitting jobs.
 
 <dt>RootKey
 <dd>If this keyword is set, the job must be submitted with a 
@@ -250,24 +272,16 @@ The non-privileged user would not be able to submit jobs
 directly to this partition for lack of a key.
 Issued keys will remain valid for a single use only.
 
-<dt>AllowGroups
-<dd>Comma separated list of group IDs which may use the partition. 
-If at least one group associated with the user submitting the 
-job is in AllowGroups, he will be permitted to use this partition.
-The default value is "ALL". 
-
-<dt>Nodes
-<dd>Comma separated list of nodes which are associated with this 
-partition. Node names may be specified using the <a href="#NodeExp">
-real expression syntax</a> described above. A blank list of nodes 
-(i.e. "Nodes= ") can be used if one wants a partition to exist, 
-but have no resources (possibly on a temporary basis).
-
 <dt>Shared
 <dd>Specify if more than one job may execute on each node in 
 a partition simultaneously. Possible values are 
 "YES" and "NO". The default value is "NO". 
 If nodes are shared, job performance will vary.
+
+<dt>State
+<dd>State of partition or availability for use.  Possible values 
+are "UP" or "DOWN". The default value is "UP".
+
 </dl>
 <p>
 Only the PartitionName must be supplied in the configuration file.
@@ -287,37 +301,27 @@ or subsequent lines will be set (SLURM will not re-apply default values).
 The size of each line in the file is limited to 1024 characters.
 A sample SLURM configuration file (partition information only) follows.
 <p>
-A single job may be allocated nodes from more than one partition if the 
-job satisfies the configuration specifications from all partitions used. 
-<i>We could restrict jobs to use of a single partition, but this could 
-reduce flexibility in scheduling. - Moe</i> 
-The job may specify a particular PartitionName, if so desired.
+A single job may be allocated nodes from only one partition and 
+satisfy the configuration specifications for that partitions. 
+The job may specify a particular PartitionName, if so desired, 
+or use the system's default partition.
 <pre>
 # Partition specifications
-PartitionName=batch MaxNodes=10        MaxTime=UNLIMITED Nodes=lx[10-30] RootKey
-PartitionName=debug MaxNodes=2         MaxTime=60        Nodes=lx[03-09]
-PartitionName=super MaxNodes=UNLIMITED MaxTime=UNLIMITED Nodes=lx[03-32] AllowGroups=dunlap,garlick,grondo,jette
-PartitionName=class MaxNodes=1         MaxTime=10        Nodes=lx[31-32] AllowGroups=students
+PartitionName=batch MaxNodes=10 MaxTime=UNLIMITED Nodes=lx[10-30] RootKey
+PartitionName=debug MaxNodes=2  MaxTime=60        Nodes=lx[03-09] Default
+PartitionName=class MaxNodes=1  MaxTime=10        Nodes=lx[31-32] AllowGroups=students
 </pre>
 <p>
-Several sets of system configurations may be placed into a single 
-SLURM configuration file with associated names. 
-For example, one might establish a "night" and "weekend" 
-configuration. 
-One should establish a default configuration to be used 
-when SLURM is initialized. 
-The named configurations may be used when explicitly 
-requested using the slurm_admin tool described below.
-Named configurations are followed by a set of applicable 
-configuration parameters to be applied enclosed within 
-braces "{}".
-<i>I am not entirely happy with this. It seems we would need 
-to specify time ranges, day of week ranges, holiday flags, etc. 
-It would seem simpler to specify a general partition configuration 
-in the file and use CRON to make changes. For example, we could 
-create a PartitionName=class with State=DOWN and change the State 
-as desired. - Moe</i>
-A <a href="#SampleConfig">SLURM configuration file</a> is included at the end of this document.
+APIs and an administrative tool can be used to alter the SLRUM 
+configuration in real time. 
+When the SLURM controller restarts, it's state will be restored 
+to that at the time it terminated unless the SLURM configuration 
+file is newer, it which case the configuration will be rebuilt 
+from that file. 
+State information not incorporated in the configuration file, 
+such as job state, will be preserved.
+A <a href="#SampleConfig">SLURM configuration file</a> is included 
+at the end of this document.
 
 <h3>Job Configuration</h3>
 The job configuration format specified below is used by the 
@@ -346,6 +350,9 @@ This value may not be changed by slurm_admin.
 
 <dt>User
 <dd>Name of the user executing this job.
+
+<dt>Group
+<dd>Comma separated list of group names to which the user belongs.
 
 </dl>
 
@@ -463,7 +470,7 @@ Usage: slurm_admin [-q | -v] [&lt;keyword&gt;]<br>
 <dt>reconfigure [&lt;NodeName&gt;]
 <dd>The SLURM daemons on the specified node are instructed to re-read 
 the configuration files. The default is that all daemons on all nodes 
-are reconfigured.
+are reconfigured. NodeName may be specified using a real expression.
 
 <dt>show &lt;entity&gt; [&lt;ID&gt;]
 <dd>Show the configuration for a given entity. Entity must 
@@ -483,6 +490,7 @@ as actually reported by SERVER_DAEMON on each node (memory, CPU count, temporary
 This could be used to establish a baseline configuration rather than 
 entering the configurations manually into a file. 
 By default information from all nodes is uploaded. 
+NodeName may be specified using a real expression. 
 This command can only be issued by user <b>root</b>.
 
 <dt>verbose
@@ -517,30 +525,14 @@ ControlMachine=lx01
 BackupController=lx02
 #
 # Node specifications
-NodeName=DEFAULT   CPUs=16 Speed=345.6 RealMemory=2048 TmpDisk=16384
+NodeName=DEFAULT   CPUs=16 RealMemory=2048 TmpDisk=16384
 NodeName=lx[01-02] State=DRAINED
 NodeName=lx[03-16] Feature=CoolDebugger
 #
 # Default partition specification
-PartitionName=batch MaxCpus=128       MaxTime=240       Nodes=lx[10-30] RootKey
-PartitionName=debug MaxCpus=16        MaxTime=60        Nodes=lx[03-09] Shared=YES
-PartitionName=super MaxCpus=UNLIMITED MaxTime=UNLIMITED Nodes=lx[03-32] AllowGroups=dunlap,garlick,grondo,jette
-PartitionName=class MaxCpus=16        MaxTime=10        Nodes=lx[31-32] AllowGroups=students
-#
-# night configuration used 17:00 (Sunday through Thursday) until 8:00 (the next morning)
-#   absorb class partition into batch and reset time limit
-night day-of-week_range time-of-day_range holiday_flag {
-  PartitionName=batch Nodes=lx[10-32] MaxTime=480
-  PartitionName=class Nodes=
-}
-#
-# weekend configuration used Friday 17:00 until Sunday 17:00
-#   absorb class and merge debug partition into batch and reset time limit
-weekend day-of-week_range time-of-day_range holiday_flag {
-  PartitionName=batch Nodes=lx[03-32] MaxTime=960
-  PartitionName=debug Nodes=lx[03-09] Shared=NO
-  PartitionName=class Nodes=
-}
+PartitionName=batch MaxCpus=128 MaxTime=240 Nodes=lx[10-30] RootKey
+PartitionName=debug MaxCpus=16  MaxTime=60  Nodes=lx[03-09] Default Shared=YES
+PartitionName=class MaxCpus=16  MaxTime=10  Nodes=lx[31-32] AllowGroups=students
 </pre>
 
 <a name="SampleAdmin"><h2>Sample slurm_admin Execution</h2></a>
@@ -549,7 +541,7 @@ Upload actual node configurations to review:
   # slurm_admin
   slurm_admin: upload
   slurm_admin: write node baseline_node_config
-  slurm_admin: reload
+  slurm_admin: reconfigure
   slurm_admin: quit
   # cat baseline_node_config
   .....
@@ -558,19 +550,19 @@ Remove node lx30 from service, removing jobs as needed:
   # slurm_admin
   slurm_admin: update NodeName=lx30 State=DRAINING
   slurm_admin: show job
-  ID=1234 Name=Simulation MaxTime=100 Nodes=lx29,lx30 State=RUNNING User=grondo
-  ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx20,lx21 State=RUNNING User=grondo
+  ID=1234 Name=Simulation MaxTime=100 Nodes=lx[29-30] State=RUNNING User=grondo
+  ID=1235 Name=MyBigTest  MaxTime=100 Nodes=lx20,lx23 State=RUNNING User=grondo
   slurm_admin: update job ID=1234 State=ENDING
   slurm_admin: show job 1234
   Job 1234 not found
   slurm_admin: show node lx30
-  Name=lx30 Partition=super,class State=DRAINED CPUs=16 Speed=345.0 RealMemory=2048 TmpDisk=16384
+  Name=lx30 Partition=class State=DRAINED CPUs=16 RealMemory=2048 TmpDisk=16384
   slurm_admin: quit
 </pre>
 
 <hr>
 URL = http://www-lc.llnl.gov/dctg-lc/slurm/admin.guide.html
-<p>Last Modified February 6, 2002</p>
+<p>Last Modified February 12, 2002</p>
 <address>Maintained by <a href="mailto:slurm-dev@lists.llnl.gov">
 slurm-dev@lists.llnl.gov</a></address>
 </body>
