@@ -254,7 +254,10 @@ interconnect_preinit(slurmd_job_t *job)
 int 
 interconnect_init(slurmd_job_t *job)
 {
+	char buf[4096];
+
 	debug2("calling interconnect_init from process %ld", (long) getpid());
+	debug("Elan info: %s", qsw_capability_string(job->qsw_job, buf, 4096));
 
 	if (qsw_prog_init(job->qsw_job, job->uid) < 0) {
 		/*
@@ -263,7 +266,7 @@ interconnect_init(slurmd_job_t *job)
 		 */
 		if (errno == EBADF)
 			error("Initializing interconnect: "
-			      "rms kernel module  may not be loaded.");
+			      "is the rms kernel module loaded?");
 		else
 			error ("elan_interconnect_init: %m");
 
