@@ -344,8 +344,8 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
 	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack16 ( & tmp_ptr -> num_cpu_groups , ( void ** ) buffer , length ) ;
-	unpackint_array ( &tmp_ptr->cpus_per_node, &uint16_tmp, ( void ** ) buffer  , length ) ;
-	unpackint_array ( &tmp_ptr->cpu_count_reps,&uint16_tmp,  ( void ** ) buffer  , length ) ;
+	unpackint_array ( (uint32_t **) &(tmp_ptr->cpus_per_node), &uint16_tmp, ( void ** ) buffer  , length ) ;
+	unpackint_array ( (uint32_t **) &(tmp_ptr->cpu_count_reps), &uint16_tmp,  ( void ** ) buffer  , length ) ;
 	*msg = tmp_ptr ;
 	return 0 ;
 }
