@@ -158,7 +158,9 @@ get_command (int *argc, char **argv)
 	}
 
 	for (i = 0; i < in_line_size; i++) {
-		if ((in_line[i] == '\0') && (isspace ((int) in_line[i])))
+		if (in_line[i] == '\0')
+			break;
+		if (isspace ((int) in_line[i]))
 			continue;
 		if (((*argc) + 1) > MAX_INPUT_FIELDS) {	/* really bogus input line */
 			fprintf (stderr, "%s: can not process over %d words as configured\n",
