@@ -313,6 +313,7 @@ static int expand_buffer ( circular_buffer_t * buf )
 /*	info ( "EXPANDING BUFFER" ) ; */
 	/*print_circular_buffer ( buf ) ; */
 
+	/* buffer has reached its maximum size going to dump some data out the bit bucket */
 	if ( buf->buf_size == buf -> max_size )
 	{
 		/*print_circular_buffer ( buf ) ; */
@@ -329,7 +330,6 @@ static int expand_buffer ( circular_buffer_t * buf )
 			{
 				/* read_size stays the same */
 			}
-			/*adjust read and write size */
 		}
 		else
 		{
