@@ -1,3 +1,6 @@
+
+popt_dirs =
+
 if USE_INCLUDED_POPT
   popt_dirs = popt
 else 
