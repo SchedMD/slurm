@@ -9,7 +9,7 @@
 <meta http-equiv="keywords" content="Simple Linux Utility for Resource Management, SLURM, resource management, 
 Linux clusters, high-performance computing, Livermore Computing">
 <meta name="LLNLRandR" content="UCRL-WEB-204324"
-<meta name="LLNLRandRdate" content="17 July 2004">
+<meta name="LLNLRandRdate" content="2 August 2004">
 <meta name="distribution" content="global">
 <meta name="description" content="Simple Linux Utility for Resource Management">
 <meta name="copyright"
@@ -56,7 +56,14 @@ structure:Laboratories and Other Field Facilities">
 <h3> Overview</h3>
 <p> This document describes SLURM switch (interconnect) plugins and the API that defines 
 them. It is intended as a resource to programmers wishing to write their own SLURM 
-switch plugins. This is version 0 of the API.</p>
+switch plugins. This is version 0 of the API.
+Note that many of the API functions are used only by one of the daemons. For
+example the slurmctld daemon builds a job step's switch credential  
+(<span class="commandline">switch_p_build_jobinfo</span>) while the
+slurmd daemon enables and disables that credential for the job step's 
+tasks on a particular node(<span class="commandline">switch_p_job_init</span>, 
+etc.). </p>
+
 <p>SLURM switch plugins are SLURM plugins that implement the SLURM switch or interconnect
 API described herein. They must conform to the SLURM Plugin API with the following 
 specifications:</p>
@@ -461,7 +468,7 @@ to maintain data format compatibility across different versions of the plugin.</
 <a href="mailto:slurm-dev@lists.llnl.gov">slurm-dev@lists.llnl.gov</a>.</p>
 <p><a href="http://www.llnl.gov/"><img align=middle src="lll.gif" width="32" height="32" border="0"></a></p>
 <p class="footer">UCRL-WEB-204324<br>
-Last modified July 17, 2004</p></td>
+Last modified August 2, 2004</p></td>
 </tr>
 </table>
 </td>
