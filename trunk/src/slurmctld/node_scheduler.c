@@ -126,7 +126,10 @@ int count_cpus(unsigned *bitmap)
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(bitmap, i) != 1)
 			continue;
-		sum += node_record_table_ptr[i].cpus;
+		if (slurmctld_conf.fast_schedule)
+			sum += node_record_table_ptr[i].config_ptr->cpus;
+		else
+			sum += node_record_table_ptr[i].cpus;
 	}
 	return sum;
 }
@@ -411,7 +414,12 @@ _pick_best_layout(bitstr_t * bitmap, bitstr_t * req_bitmap,
 					continue;
 				bit_set(bitmap, i);
 				rem_nodes--;
-				rem_cpus -= node_record_table_ptr[i].cpus;
+				if (slurmctld_conf.fast_schedule)
+					rem_cpus -= node_record_table_ptr[i].
+							config_ptr->cpus;
+				else
+					rem_cpus -= node_record_table_ptr[i].
+							cpus;
 			}
 			for (i = (best_fit_req - 1);
 			     i >= consec_start[best_fit_location]; i--) {
@@ -421,7 +429,12 @@ _pick_best_layout(bitstr_t * bitmap, bitstr_t * req_bitmap,
 					continue;  cleared above earlier */
 				bit_set(bitmap, i);
 				rem_nodes--;
-				rem_cpus -= node_record_table_ptr[i].cpus;
+				if (slurmctld_conf.fast_schedule)
+					rem_cpus -= node_record_table_ptr[i].
+							config_ptr->cpus;
+				else
+					rem_cpus -= node_record_table_ptr[i].
+							cpus;
 			}
 		} else {
 			for (i = consec_start[best_fit_location];
@@ -432,7 +445,12 @@ _pick_best_layout(bitstr_t * bitmap, bitstr_t * req_bitmap,
 					continue;
 				bit_set(bitmap, i);
 				rem_nodes--;
-				rem_cpus -= node_record_table_ptr[i].cpus;
+				if (slurmctld_conf.fast_schedule)
+					rem_cpus -= node_record_table_ptr[i].
+							config_ptr->cpus;
+				else
+					rem_cpus -= node_record_table_ptr[i].
+							cpus;
 			}
 		}
 		if (consecutive || 
@@ -1075,13 +1093,23 @@ static void _filter_nodes_in_set(struct node_set *node_set_ptr,
 	for (i = 0; i < node_record_count; i++) {
 		if (bit_test(node_set_ptr->my_bitmap, i) == 0)
 			continue;
-		if ((detail_ptr->min_procs <= 
-		     node_record_table_ptr[i].cpus) && 
-		    (detail_ptr->min_memory <=
+
+		if (slurmctld_conf.fast_schedule) {
+			if (detail_ptr->min_procs <=
+			    node_record_table_ptr[i].config_ptr->cpus)
+				continue;
+		} else {
+			if (detail_ptr->min_procs <=
+			    node_record_table_ptr[i].cpus)
+				continue;
+		}
+
+		if ((detail_ptr->min_memory <=
 		     node_record_table_ptr[i].real_memory) && 
 		    (detail_ptr->min_tmp_disk <=
 		     node_record_table_ptr[i].tmp_disk))
 			continue;
+
 		bit_clear(node_set_ptr->my_bitmap, i);
 		if ((--(node_set_ptr->nodes)) == 0)
 			break;
