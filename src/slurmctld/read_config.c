@@ -754,7 +754,7 @@ int read_slurm_conf(int recover)
 	} else {
 		reset_first_job_id();
 		if (old_node_table_ptr) {
-			info("restoring original state of nodes");
+			debug("restoring original state of nodes");
 			_restore_node_state(old_node_table_ptr, 
 					    old_node_record_count);
 		}
@@ -777,7 +777,7 @@ int read_slurm_conf(int recover)
 	list_sort(config_list, &list_compare_config);
 
 	slurmctld_conf.last_update = time(NULL);
-	info("read_slurm_conf: finished loading configuration, time=%ld",
+	debug("read_slurm_conf: finished loading configuration, time=%ld",
 	     (long) (clock() - start_time));
 
 	return SLURM_SUCCESS;
