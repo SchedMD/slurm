@@ -29,8 +29,12 @@
 #endif
 
 /* GLOBAL INCLUDES */
+
+#ifdef WITH_PTHREADS
+#  include <pthread.h>
+#endif /* WITH_PTHREADS */
+
 #include <errno.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

@@ -47,7 +47,8 @@
 
 #include <syslog.h> 	
 #include <stdio.h>
-#include <src/common/macros.h>
+
+#include "src/common/macros.h"
 
 /* supported syslog facilities and levels */
 typedef enum {
