@@ -11,10 +11,12 @@
 REPORT = report
 
 TEX = llnl.tex $(REPORT).tex
-FIGS = arch.eps
+FIGS = arch.eps slurm-arch.eps
 PLOTS = 
 BIB = project.bib
 
+%.eps: %.dia
+	dia --nosplash -e $@ $< 
 %.eps: %.gnuplot %.data
 	gnuplot $<
 %.eps: %.fig
