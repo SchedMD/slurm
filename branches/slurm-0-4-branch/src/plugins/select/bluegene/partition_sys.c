@@ -88,24 +88,43 @@ static void _print_list(List list)
  */
 static void _pre_allocate(bgl_record_t *bgl_record)
 {
-	rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   
-		bluegene_blrts);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   
-		bluegene_linux);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionMloaderImg, 
-		bluegene_mloader);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionRamdiskImg, 
-		bluegene_ramdisk);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionConnection, 
-		&bgl_record->conn_type);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
-		&bgl_record->node_use);
-	rm_set_data(bgl_record->bgl_part, RM_PartitionPsetsPerBP, &numpsets); 
-	rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, USER_NAME);
+	int rc;
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionBlrtsImg,   
+			bluegene_blrts)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionBlrtsImg)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionLinuxImg,   
+			bluegene_linux)) != STATUS_OK) 
+		error("rm_set_data(RM_PartitionLinuxImg)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionMloaderImg, 
+			bluegene_mloader)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionMloaderImg)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionRamdiskImg, 
+			bluegene_ramdisk)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionRamdiskImg)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionConnection, 
+			&bgl_record->conn_type)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionConnection)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionMode, 
+			&bgl_record->node_use)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionMode)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionPsetsPerBP, 
+			&numpsets)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionPsetsPerBP)", bgl_err_str(rc));
+
+	if ((rc = rm_set_data(bgl_record->bgl_part, RM_PartitionUserName, 
+			USER_NAME)) != STATUS_OK)
+		error("rm_set_data(RM_PartitionUserName)", bgl_err_str(rc));
 }
 
 /** 
- * add the partition record to the DB and boot it up!
+ * add the partition record to the DB
  */
 static int _post_allocate(bgl_record_t *bgl_record)
 {
@@ -114,26 +133,23 @@ static int _post_allocate(bgl_record_t *bgl_record)
 	/* Add partition record to the DB */
 	debug("adding partition\n");
 	
-	rc = rm_add_partition(bgl_record->bgl_part);
-	if (rc != STATUS_OK) {
-		error("Error adding partition");
+	if ((rc = rm_add_partition(bgl_record->bgl_part)) != STATUS_OK) {
+		error("rm_add_partition(): %s", bgl_err_str(rc));
 		return(-1);
 	}
 	debug("done adding\n");
 	
 	/* Get back the new partition id */
-	rm_get_data(bgl_record->bgl_part, RM_PartitionID, &part_id);
-	bgl_record->bgl_part_id = xstrdup(part_id);
-	/* We are done with the partition */
-	rm_free_partition(bgl_record->bgl_part);
+	if ((rc = rm_get_data(bgl_record->bgl_part, RM_PartitionID, &part_id))
+			 != STATUS_OK) {
+		error("rm_get_data(RM_PartitionID): %s", bgl_err_str(rc));
+		bgl_record->bgl_part_id = xstrdup("UNKNOWN");
+	} else
+		bgl_record->bgl_part_id = xstrdup(part_id);
 
-	/* Initiate boot of the partition */
-	/* debug("Booting Partition %s", bgl_record->bgl_part_id); */
-/* 	rc = pm_create_partition(bgl_record->bgl_part_id); */
-/* 	if (rc != STATUS_OK) { */
-/* 		error("Error booting_partition partition"); */
-/* 		return(-1); */
-/* 	} */
+	/* We are done with the partition */
+	if ((rc = rm_free_partition(bgl_record->bgl_part)) != STATUS_OK)
+		error("rm_free_partition(): %s", bgl_err_str(rc));
 
 	return 0;
 }
@@ -173,27 +189,48 @@ int read_bgl_partitions()
 	
 
 	if ((rc = rm_set_serial(BGL_SERIAL)) != STATUS_OK) {
-		error("rm_set_serial(): %d\n", rc);
+		error("rm_set_serial(): %s\n", bgl_err_str(rc));
 		return SLURM_ERROR;
 	}			
 	if ((rc = rm_get_partitions_info(state, &part_list))
-	    != STATUS_OK) {
-		error("rm_get_partitions(): %s",
-		      bgl_err_str(rc));
+			!= STATUS_OK) {
+		error("rm_get_partitions(): %s", bgl_err_str(rc));
 		return SLURM_ERROR;
 		
 	}
 	
-	rm_get_data(part_list, RM_PartListSize, &part_count);
-	
-	rm_get_data(part_list, RM_PartListFirstPart, &part_ptr);
+	if ((rc = rm_get_data(part_list, RM_PartListSize, &part_count))
+			!= STATUS_OK) {
+		error("rm_get_data(RM_PartListSize): %s", bgl_err_str(rc));
+		part_count = 0;
+	}
 	
 	for(part_number=0; part_number<part_count; part_number++) {
-		rm_get_data(part_ptr, RM_PartitionID, &part_name);
+		if (part_number) {
+			if ((rc = rm_get_data(part_list, RM_PartListNextPart,
+					&part_ptr)) != STATUS_OK) {
+				error("rm_get_data(RM_PartListNextPart): %s",
+					bgl_err_str(rc));
+				break;
+			}
+		} else {
+			if ((rc = rm_get_data(part_list, RM_PartListFirstPart, 
+					&part_ptr)) != STATUS_OK) {
+				error("rm_get_data(RM_PartListFirstPart): %s",
+					bgl_err_str(rc));
+				break;
+			}
+		}
+
+		if ((rc = rm_get_data(part_ptr, RM_PartitionID, &part_name))
+				!= STATUS_OK) {
+			error("rm_get_data(RM_PartitionID): %s", 
+				bgl_err_str(rc));
+			continue;
+		}
 		if(strncmp("RMP",part_name,3))
-			goto next_partition;
+			continue;
 		
-		//debug("Checking if Partition %s is free",part_name);
 		if(bgl_recover) 
 			if ((rc = rm_get_partition(part_name, &part_ptr))
 			    != STATUS_OK) {
@@ -214,7 +251,7 @@ int read_bgl_partitions()
 			bp_cnt = 0;
 		}
 		if(bp_cnt==0)
-			goto next_partition;
+			continue;
 		
 		bgl_record->bgl_part_list = list_create(NULL);
 		bgl_record->hostlist = hostlist_create(NULL);
@@ -303,9 +340,6 @@ int read_bgl_partitions()
 			error("rm_free_partition(): %s",
 			      bgl_err_str(rm_rc));
 		}
-	
-	next_partition:
-		rm_get_data(part_list, RM_PartListNextPart, &part_ptr);
 	}
 	rm_free_partition_list(part_list);
 		
