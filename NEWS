@@ -32,6 +32,9 @@ documents those changes that are of interest to users and admins.
     (version 7.0.4+)
  -- The TMPDIR directory is created as needed before job launch
  -- Do not create duplicate SLURM environment variables with the same name
+ -- Insure proper enforcement of node sharing by job
+ -- Treat lack of SpoolDir or StateSaveDir as a fatal error
+ -- Quickstart.html guide expanded
 
 * Changes in SLURM 0.3.0-pre2
 =============================
