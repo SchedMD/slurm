@@ -67,6 +67,7 @@ void	print_job (char * job_id_str);
 void	print_node (char *node_name, node_info_msg_t *node_info_ptr);
 void	print_node_list (char *node_list);
 void	print_part (char *partition_name);
+void	print_step (char *job_step_id_str);
 int	process_command (int argc, char *argv[]);
 int	strcmp_i (const char *s1, const char *s2);
 int	strncmp_i (const char *s1, const char *s2, int len);
@@ -478,6 +479,72 @@ print_part (char *partition_name)
 
 
 /*
+ * print_step - print the specified job step's information
+ * input: job_step_id_str - job step's id or NULL to print information about all job steps
+ */
+void 
+print_step (char *job_step_id_str)
+{
+	int error_code, i, print_cnt = 0;
+	uint32_t job_id = 0, step_id = 0;
+	static job_info_msg_t *old_job_buffer_ptr = NULL;
+	job_info_msg_t * job_buffer_ptr = NULL;
+	job_info_t *job_ptr = NULL;
+	char *next_str;
+
+printf ("only printing job info at present\n");
+
+	if (old_job_buffer_ptr) {
+		error_code = slurm_load_jobs (old_job_buffer_ptr->last_update, 
+					&job_buffer_ptr);
+		if (error_code == 0)
+			slurm_free_job_info_msg (old_job_buffer_ptr);
+		else if (slurm_get_errno () == SLURM_NO_CHANGE_IN_DATA) {
+			job_buffer_ptr = old_job_buffer_ptr;
+			error_code = 0;
+			if (quiet_flag == -1)
+ 				printf ("slurm_free_job_info no change in data\n");
+		}
+	}
+	else
+		error_code = slurm_load_jobs ((time_t) NULL, &job_buffer_ptr);
+	if (error_code) {
+		if (quiet_flag != 1)
+			slurm_perror ("slurm_load_jobs error");
+		return;
+	}
+	else if (error_code == 0)
+		old_job_buffer_ptr = job_buffer_ptr;
+	
+	if (quiet_flag == -1)
+		printf ("last_update_time=%ld\n", (long) job_buffer_ptr->last_update);
+
+	if (job_step_id_str) {
+		job_id = (uint32_t) strtol (job_step_id_str, &next_str, 10);
+		if (next_str[0] == '.')
+			step_id = (uint32_t) strtol (&next_str[1], NULL, 10);
+	}
+
+	job_ptr = job_buffer_ptr->job_array ;
+	for (i = 0; i < job_buffer_ptr->record_count; i++) {
+		if (job_step_id_str && job_id != job_ptr[i].job_id) 
+			continue;
+		print_cnt++;
+		slurm_print_job_info (stdout, & job_ptr[i] ) ;
+		if (job_step_id_str)
+			break;
+	}
+
+	if ((print_cnt == 0) && (quiet_flag != 1)) {
+		if (job_buffer_ptr->record_count)
+			printf ("Job step %u.%u not found\n", job_id, step_id);
+		else
+			printf ("No job steps in the system\n");
+	}
+}
+
+
+/*
  * process_command - process the user's command
  * input: argc - count of arguments
  *        argv - the arguments
@@ -560,6 +627,12 @@ process_command (int argc, char *argv[])
 				print_part (argv[2]);
 			else
 				print_part (NULL);
+		}
+		else if (strncmp_i (argv[1], "steps", 4) == 0) {
+			if (argc > 2)
+				print_step (argv[2]);
+			else
+				print_step (NULL);
 		}
 		else if (quiet_flag != 1) {
 			fprintf (stderr,
@@ -881,9 +954,10 @@ usage () {
 	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
 	printf ("     verbose                  enable detailed logging.\n");
 	printf ("     version                  display tool version number.\n");
-	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", or \"partition\".\n");
-	printf ("  <ID> may be a configuration parametername , job id, node name or partition name.\n");
+	printf ("  <ENTITY> may be \"config\", \"job\", \"node\", \"partition\" or \"step\".\n");
+	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
 	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
+	printf ("     The job step id is the job id followed by a period and the step id.\n");
 	printf ("  <SPECIFICATIONS> are specified in the same format as the configuration file. You may\n");
 	printf ("     wish to use the \"show\" keyword then use its output as input for the update keyword,\n");
 	printf ("     editing as needed.\n");

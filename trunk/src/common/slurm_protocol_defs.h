@@ -490,6 +490,20 @@ typedef struct resource_allocation_response_msg
 	int32_t* cpu_count_reps;
 } resource_allocation_response_msg_t ;
 
+typedef struct resource_allocation_and_run_response_msg
+{
+	uint32_t job_id;
+	char* node_list;
+	int16_t num_cpu_groups;
+	int32_t* cpus_per_node;
+	int32_t* cpu_count_reps;
+	uint32_t job_step_id;
+	slurm_job_credential_t* credentials;
+#ifdef HAVE_LIBELAN3
+    qsw_jobinfo_t qsw_job;     /* Elan3 switch context, opaque data structure */
+#endif
+} resource_allocation_and_run_response_msg_t ;
+
 typedef struct submit_response_msg
 {
 	uint32_t job_id;
@@ -529,6 +543,7 @@ void inline slurm_free_ctl_conf ( slurm_ctl_conf_info_msg_t * build_ptr ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
 void inline slurm_free_resource_allocation_response_msg( resource_allocation_response_msg_t * msg );
+void inline slurm_free_resource_allocation_and_run_response_msg( resource_allocation_and_run_response_msg_t * msg );
 void inline slurm_free_submit_response_response_msg( submit_response_msg_t * msg );
 
 void inline slurm_free_node_registration_status_msg ( slurm_node_registration_status_msg_t * msg ) ;

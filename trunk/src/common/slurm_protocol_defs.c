@@ -284,6 +284,26 @@ void slurm_free_resource_allocation_response_msg ( resource_allocation_response_
 	}
 }
 
+void slurm_free_resource_allocation_and_run_response_msg ( resource_allocation_and_run_response_msg_t * msg )
+{
+	if ( msg )
+	{
+		if ( msg->node_list )
+			xfree ( msg->node_list ) ;
+		if ( msg->cpus_per_node )
+			xfree ( msg->cpus_per_node ) ;
+		if ( msg->cpu_count_reps )
+			xfree ( msg->cpu_count_reps ) ;
+		if (msg->credentials )
+			xfree( msg->credentials );
+#		ifdef HAVE_LIBELAN3
+		if ( msg->qsw_job )
+			xfree( msg->qsw_job );
+#		endif
+		xfree ( msg ) ;
+	}
+}
+
 void slurm_free_submit_response_response_msg ( submit_response_msg_t * msg )
 {
 	if ( msg )

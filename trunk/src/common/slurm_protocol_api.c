@@ -90,7 +90,7 @@ int read_slurm_port_config ( )
 
 	slurm_spec_file = fopen (SLURM_CONFIG_FILE, "r");
 	if (slurm_spec_file == NULL) {
-		debug ( "read_slurm_conf error %d opening file %s", 
+		error ( "read_slurm_conf error %d opening file %s", 
 			errno, SLURM_CONFIG_FILE);
 		return SLURM_ERROR ;
 	}
@@ -98,7 +98,7 @@ int read_slurm_port_config ( )
 	while (fgets (in_line, BUF_SIZE, slurm_spec_file) != NULL) {
 		line_num++;
 		if (strlen (in_line) >= (BUF_SIZE - 1)) {
-			debug ("read_slurm_conf line %d, of input file %s too long\n",
+			error ("read_slurm_conf line %d, of input file %s too long\n",
 				 line_num, SLURM_CONFIG_FILE);
 			fclose (slurm_spec_file);
 			return E2BIG;

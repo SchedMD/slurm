@@ -37,6 +37,9 @@
 #include <src/common/xmalloc.h>
 
 
+void pack_job_credential ( slurm_job_credential_t* cred , void ** buffer , uint32_t * length );
+int unpack_job_credential( slurm_job_credential_t** msg , void ** buffer , uint32_t * length );
+
 /* pack_header
  * packs a slurm protocol header that proceeds every slurm message
  * header 	- the header structure to pack
@@ -142,8 +145,11 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
 			pack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t * ) msg -> data , 
+				( void ** ) buffer , buf_len ) ;
+			break ;
+		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
+			pack_resource_allocation_and_run_response_msg ( ( resource_allocation_and_run_response_msg_t * ) msg -> data , 
 				( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_JOB :
@@ -287,8 +293,10 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 		case RESPONSE_RESOURCE_ALLOCATION :
 		case RESPONSE_IMMEDIATE_RESOURCE_ALLOCATION : 
 		case RESPONSE_JOB_WILL_RUN :
-		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
 			unpack_resource_allocation_response_msg ( ( resource_allocation_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
+			break ;
+		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP :
+			unpack_resource_allocation_and_run_response_msg ( ( resource_allocation_and_run_response_msg_t ** ) & ( msg -> data ) , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_JOB :
 			unpack_job_desc ( ( job_desc_msg_t **) & ( msg-> data ), 
@@ -484,6 +492,60 @@ int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t
 		tmp_ptr->cpus_per_node = NULL;
 		tmp_ptr->cpu_count_reps = NULL;
 	}
+	*msg = tmp_ptr ;
+	return 0 ;
+}
+
+void pack_resource_allocation_and_run_response_msg ( resource_allocation_and_run_response_msg_t * msg, void ** buffer , int * length )
+{
+	assert ( msg != NULL );
+	
+	pack32 ( msg->job_id , ( void ** ) buffer , length ) ;
+	packstr ( msg->node_list , ( void ** ) buffer , length ) ;
+	pack16 ( msg->num_cpu_groups , ( void ** ) buffer , length ) ;
+	pack32_array ( msg->cpus_per_node, msg->num_cpu_groups , ( void ** ) buffer  , length ) ;
+	pack32_array ( msg->cpu_count_reps, msg->num_cpu_groups, ( void ** ) buffer  , length ) ;
+	pack32 ( msg -> job_step_id , ( void ** ) buffer , length ) ;
+	pack_job_credential( msg->credentials, ( void ** ) buffer , length ) ;
+#ifdef HAVE_LIBELAN3
+	/* put the elan3 stuff here */	
+#endif
+}
+
+int unpack_resource_allocation_and_run_response_msg ( resource_allocation_and_run_response_msg_t ** msg , void ** buffer , int * length )
+{
+	uint16_t uint16_tmp;
+	resource_allocation_and_run_response_msg_t * tmp_ptr ;
+
+	assert ( msg != NULL );
+	
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( resource_allocation_and_run_response_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	/* load the data values */
+	unpack32 ( & tmp_ptr -> job_id , ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( & tmp_ptr -> node_list , &uint16_tmp,  ( void ** ) buffer , length ) ;
+	unpack16 ( & tmp_ptr -> num_cpu_groups , ( void ** ) buffer , length ) ;
+
+	if ( tmp_ptr -> num_cpu_groups > 0 ){ 
+		tmp_ptr->cpus_per_node = (uint32_t*) xmalloc( sizeof(uint32_t) * tmp_ptr -> num_cpu_groups );
+		tmp_ptr->cpu_count_reps = (uint32_t*) xmalloc( sizeof(uint32_t) * tmp_ptr -> num_cpu_groups );
+		unpack32_array ( (uint32_t **) &(tmp_ptr->cpus_per_node), &uint16_tmp, ( void ** ) buffer  , length ) ;
+		unpack32_array ( (uint32_t **) &(tmp_ptr->cpu_count_reps), &uint16_tmp,  ( void ** ) buffer  , length ) ;
+	}
+	else
+	{
+		tmp_ptr->cpus_per_node = NULL;
+		tmp_ptr->cpu_count_reps = NULL;
+	}
+	unpack32 ( &tmp_ptr -> job_step_id, ( void ** ) buffer , length ) ;
+	unpack_job_credential( &tmp_ptr->credentials, ( void ** ) buffer , length ) ;
+#ifdef HAVE_LIBELAN3
+	/* put the elan3 stuff here */	
+#endif
+
 	*msg = tmp_ptr ;
 	return 0 ;
 }

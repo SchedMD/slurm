@@ -165,3 +165,68 @@ int slurm_job_will_run (job_desc_msg_t * job_desc_msg , resource_allocation_resp
 	return SLURM_PROTOCOL_SUCCESS ;
 }
 
+/* slurm_allocate_resources_and_run - allocated resources for a job request and run a job step */
+int
+slurm_allocate_resources_and_run (job_desc_msg_t * job_desc_msg , 
+			resource_allocation_and_run_response_msg_t ** slurm_alloc_msg )
+{
+	int msg_size ;
+	int rc ;
+	slurm_fd sockfd ;
+	slurm_msg_t request_msg ;
+	slurm_msg_t response_msg ;
+	return_code_msg_t * slurm_rc_msg ;
+
+	/* init message connection for message communication with controller */
+	if ( ( sockfd = slurm_open_controller_conn ( ) ) == SLURM_SOCKET_ERROR ) {
+		slurm_seterrno ( SLURM_COMMUNICATIONS_CONNECTION_ERROR );
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* send request message */
+	request_msg . msg_type = REQUEST_ALLOCATION_AND_RUN_JOB_STEP ;
+	request_msg . data = job_desc_msg ; 
+	if ( ( rc = slurm_send_controller_msg ( sockfd , & request_msg ) ) == SLURM_SOCKET_ERROR ) {
+		slurm_seterrno ( SLURM_COMMUNICATIONS_SEND_ERROR );
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* receive message */
+	if ( ( msg_size = slurm_receive_msg ( sockfd , & response_msg ) ) == SLURM_SOCKET_ERROR ) {
+		slurm_seterrno ( SLURM_COMMUNICATIONS_RECEIVE_ERROR );
+		return SLURM_SOCKET_ERROR ;
+	}
+
+	/* shutdown message connection */
+	if ( ( rc = slurm_shutdown_msg_conn ( sockfd ) ) == SLURM_SOCKET_ERROR ) {
+		slurm_seterrno ( SLURM_COMMUNICATIONS_SHUTDOWN_ERROR );
+		return SLURM_SOCKET_ERROR ;
+	}
+	if ( msg_size )
+		return msg_size;
+
+	switch ( response_msg . msg_type )
+	{
+		case RESPONSE_SLURM_RC:
+			slurm_rc_msg = ( return_code_msg_t * ) response_msg . data ;
+			rc = slurm_rc_msg->return_code;
+			slurm_free_return_code_msg ( slurm_rc_msg );	
+			if (rc) {
+				slurm_seterrno ( rc );
+				return SLURM_PROTOCOL_ERROR;
+			}
+			break ;
+		case RESPONSE_ALLOCATION_AND_RUN_JOB_STEP:
+			/* Calling method is responsible to free this memory */
+			*slurm_alloc_msg = ( resource_allocation_and_run_response_msg_t * ) response_msg . data ;
+			return SLURM_PROTOCOL_SUCCESS;
+			break ;
+		default:
+			slurm_seterrno ( SLURM_UNEXPECTED_MSG_ERROR );
+			return SLURM_PROTOCOL_ERROR;
+			break ;
+	}
+
+	return SLURM_PROTOCOL_SUCCESS ;
+}
+

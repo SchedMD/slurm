@@ -94,6 +94,9 @@ int unpack_cancel_tasks_msg ( kill_tasks_msg_t ** msg_ptr , void ** buffer , uin
 void pack_resource_allocation_response_msg ( resource_allocation_response_msg_t * msg, void ** buffer , int * length );
 int unpack_resource_allocation_response_msg ( resource_allocation_response_msg_t ** msg , void ** buffer , int * length );
 
+void pack_resource_allocation_and_run_response_msg ( resource_allocation_and_run_response_msg_t * msg, void ** buffer , int * length );
+int unpack_resource_allocation_and_run_response_msg ( resource_allocation_and_run_response_msg_t ** msg , void ** buffer , int * length );
+
 void pack_submit_response_msg ( submit_response_msg_t * msg, void ** buffer , int * length );
 int unpack_submit_response_msg ( submit_response_msg_t ** msg , void ** buffer , int * length );
 
