@@ -139,12 +139,12 @@ else
    SLURM_VERSION="$MAJOR.$MINOR.$MICRO"
    test $RELEASE = "1" || SLURM_VERSION="$SLURM_VERSION-$SLURM_RELEASE"
 fi
-AC_DEFINE_UNQUOTED(SLURM_MAJOR, "$MAJOR", 
+AC_DEFINE_UNQUOTED(SLURM_MAJOR, $MAJOR, 
                    [Define the project's major version.])
-AC_DEFINE_UNQUOTED(SLURM_MINOR, "$MINOR",
+AC_DEFINE_UNQUOTED(SLURM_MINOR, $MINOR,
                    [Define the project's minor version.])
-AC_DEFINE_UNQUOTED(SLURM_MICRO, "$MICRO",
-                   [Define the project's minor version.])
+AC_DEFINE_UNQUOTED(SLURM_MICRO, $MICRO,
+                   [Define the project's micro version.])
 AC_DEFINE_UNQUOTED(RELEASE, "$RELEASE", [Define the project's release.])
 AC_DEFINE_UNQUOTED(SLURM_VERSION, "$SLURM_VERSION",
                    [Define the project's version string.])

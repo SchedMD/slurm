@@ -10,6 +10,16 @@ documents those changes that are of interest to users and admins.
  -- Updates to node pinging for large numbers of unresponsive nodes 
  -- Explicitly set default action for SIGTERM (action on Thunder was 
     to ignore SIGTERM)
+ -- Sinfo "--exact" option only applies to fields actually displayed
+ -- Partition processor count not correctly computed for heterogeneous 
+    clusters with FastSchedule=0 configuration
+ -- Only return DOWN nodes to service if the reason for them being in 
+    that state is non-responsiveness and "ReturnToService=1" configuration
+ -- Partition processor count now correctly computed for heterogeneous 
+    clusters with FastSchedule configured off
+ -- Only return DOWN nodes to service if the reason for them being in 
+    that state is non-responsiveness and ReturnToService configured on
+ -- New macros and function to export SLURM version number
 
 * Changes in SLURM 0.3.0.0-pre5
 ===============================
