@@ -1,5 +1,6 @@
 /*****************************************************************************\
  *  opt.c - options processing for srun
+ *  $Id$
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -562,7 +563,7 @@ static void _opt_default()
 
 	opt.nprocs = 1;
 	opt.nprocs_set = false;
-	opt.cpus_per_task = 1;
+	opt.cpus_per_task = 1; 
 	opt.cpus_set = false;
 	opt.min_nodes = 1;
 	opt.max_nodes = 0;
