@@ -587,7 +587,7 @@ int switch_p_job_init ( switch_jobinfo_t jobinfo, uid_t uid )
 {
 	char buf[4096];
 
-	debug2("calling interconnect_init from process %lu", 
+	debug2("calling qsw_prog_init from process %lu", 
 		(unsigned long) getpid());
 	verbose("ELAN: %s", qsw_capability_string(
 		(qsw_jobinfo_t)jobinfo, buf, 4096));
@@ -601,7 +601,7 @@ int switch_p_job_init ( switch_jobinfo_t jobinfo, uid_t uid )
 			error("Initializing interconnect: "
 			      "is the rms kernel module loaded?");
 		else
-			error ("elan_interconnect_init: %m");
+			error ("qsw_prog_init: %m");
 
 		qsw_print_jobinfo(log_fp(), (qsw_jobinfo_t)jobinfo);
 		return SLURM_ERROR;
