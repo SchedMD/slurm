@@ -1181,33 +1181,49 @@ _update_part (int argc, char *argv[])
 /* _usage - show the valid scontrol commands */
 void
 _usage () {
-	printf ("scontrol [-q | -v] [<COMMAND>]\n");
-	printf ("  -q is equivalent to the keyword \"quiet\" described below.\n");
-	printf ("  -v is equivalent to the keyword \"verbose\" described below.\n");
-	printf ("  <keyword> may be omitted from the execute line and scontrol will execute in interactive\n");
-	printf ("    mode. It will process commands as entered until explicitly terminated.\n");
-	printf ("    Valid <COMMAND> values are:\n");
-	printf ("     abort                    shutdown slurm controller immediately generating a core file.\n");
-	printf ("     exit                     terminate this command.\n");
-	printf ("     help                     print this description of use.\n");
-	printf ("     pid2jid <process_id>     return slurm job id for given pid.\n");
-	printf ("     quiet                    print no messages other than error messages.\n");
-	printf ("     quit                     terminate this command.\n");
-	printf ("     reconfigure              re-read configuration files.\n");
-	printf ("     show <ENTITY> [<ID>]     display state of identified entity, default is all records.\n");
-	printf ("     shutdown                 shutdown slurm controller.\n");
-	printf ("     update <SPECIFICATIONS>  update job, node, or partition configuration.\n");
-	printf ("     verbose                  enable detailed logging.\n");
-	printf ("     version                  display tool version number.\n");
-	printf ("     pid2jid <process_id>     return slurm job id for given pid.\n");
-	printf ("     !!                       Repeat the last command entered.\n");
-	printf ("  <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\" or \"step\".\n");
-	printf ("  <ID> may be a configuration parametername , job id, node name, partition name or job step id.\n");
-	printf ("     Node names mayspecified using simple regular expressions, (e.g. \"lx[10-20]\").\n");
-	printf ("     The job step id is the job id followed by a period and the step id.\n");
-	printf ("  <SPECIFICATIONS> are specified in the same format as the configuration file. You may\n");
-	printf ("     wish to use the \"show\" keyword then use its output as input for the update keyword,\n");
-	printf ("     editing as needed.\n");
-	printf ("  All commands and options are case-insensitive, although node names and partition\n");
-	printf ("     names tests are case-sensitive (node names \"LX\" and \"lx\" are distinct).\n");
+	printf ("\
+scontrol [-q | -v] [<COMMAND>]                                             \n\
+  -q is equivalent to the keyword \"quiet\" described below.               \n\
+  -v is equivalent to the keyword \"verbose\" described below.             \n\
+                                                                           \n\
+  <keyword> may be omitted from the execute line and scontrol will execute \n\
+  in interactive mode. It will process commands as entered until explicitly\n\
+  terminated.                                                              \n\
+                                                                           \n\
+    Valid <COMMAND> values are:                                            \n\
+     abort                    shutdown slurm controller immediately        \n\
+                              generating a core file.                      \n\
+     exit                     terminate scontrol                           \n\
+     help                     print this description of use.               \n\
+     pid2jid <pid>            return slurm job id for given pid.           \n\
+     quiet                    print no messages other than error messages. \n\
+     quit                     terminate this command.                      \n\
+     reconfigure              re-read configuration files.                 \n\
+     show <ENTITY> [<ID>]     display state of identified entity, default  \n\
+                              is all records.                              \n\
+     shutdown                 shutdown slurm controller.                   \n\
+     update <SPECIFICATIONS>  update job, node, or partition configuration.\n\
+     verbose                  enable detailed logging.                     \n\
+     version                  display tool version number.                 \n\
+     !!                       Repeat the last command entered.             \n\
+                                                                           \n\
+  <ENTITY> may be \"config\", \"daemons\", \"job\", \"node\", \"partition\"\n\
+           or \"step\".                                                    \n\
+                                                                           \n\
+  <ID> may be a configuration parameter name , job id, node name, partition\n\
+       name or job step id.                                                \n\
+                                                                           \n\
+  Node names may be specified using simple range expressions,              \n\
+  (e.g. \"lx[10-20]\" corresponsds to lx10, lx11, lx12, ...)               \n\
+  The job step id is the job id followed by a period and the step id.      \n\
+                                                                           \n\
+  <SPECIFICATIONS> are specified in the same format as the configuration   \n\
+  file. You may wish to use the \"show\" keyword then use its output as    \n\
+  input for the update keyword, editing as needed.                         \n\
+                                                                           \n\
+  All commands and options are case-insensitive, although node names and   \n\
+  partition names tests are case-sensitive (node names \"LX\" and \"lx\"   \n\
+  are distinct).                                                           \n\
+\n");
+
 }
