@@ -137,10 +137,8 @@ extern void test_down_nodes(void)
 	rm_location_t bp_loc;
 	char down_node_list[BUFSIZE];
 	char bgl_down_node[128];
-	static rm_BGL_t *bgl = NULL;
+	rm_BGL_t *bgl;
 
-	if (bgl)
-		return;
 	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
 		error("rm_get_BGL(): %s", bgl_err_str(rc));
 		return;
@@ -194,7 +192,7 @@ extern void test_down_nodes(void)
 		} else
 			error("down_node_list overflow");
 	}
-	slurm_rm_free_BGL(bgl);
+	rm_free_BGL(bgl);
 
 	if (down_node_list[0]) {
 		char reason[128];
@@ -217,10 +215,7 @@ extern void test_down_switches(void)
 	rm_switch_t *my_switch;
 	rm_bp_id_t bp_id;
 	rm_switch_state_t switch_state;
-	static rm_BGL_t *bgl = NULL;
-
-	if (bgl)
-		return;
+	rm_BGL_t *bgl;
 
 	if ((rc = rm_get_BGL(&bgl)) != STATUS_OK) {
 		error("rm_get_BGL(): %s", bgl_err_str(rc));
@@ -266,6 +261,6 @@ extern void test_down_switches(void)
 		_configure_node_down(bp_id, bgl);
 	}
 	
-	slurm_rm_free_BGL(bgl);
+	rm_free_BGL(bgl);
 #endif
 }
