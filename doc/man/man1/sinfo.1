@@ -1,4 +1,4 @@
-.TH SINFO "1" "November 2003" "sinfo 0.3" "Slurm components"
+.TH SINFO "1" "January 2004" "sinfo 0.3" "Slurm components"
 
 .SH "NAME"
 sinfo \- Used to view information about Slurm nodes and partitions.
@@ -119,12 +119,15 @@ This uses the same field specifciation as the <output_format>.
 Multiple sorts may be performed by listing multiple sort fields 
 separated by commas.
 The field specifications may be preceeded by "+" or "-" for 
-assending (default) and desending order respectively. 
-For example, a sort value of "P,-m" requests that records be 
+assending (default) and desending order respectively.
+The partition field specification, "P", may be preceeded by 
+a "#" to report partitions in the same order that they 
+appear in SLURM's  configuration file, \fBslurm.conf\fR.  
+For example, a sort value of "+P,-m" requests that records be 
 printed in order of increasing partition name and within a 
 partition by decreasing memory size.
-The default value of sort is "P,-t" (increasing partition name 
-then decreasing node state).
+The default value of sort is "#P,-t" (partitions ordered as 
+configured then decreasing node state).
 If the "--Node" option is selected, the default sort value is 
 "N" (increasing node name). 
 .TP
@@ -327,4 +330,6 @@ details.
 \fBslurm_load_ctl_conf\fR(3), \fBslurm_load_jobs\fR(3), \fBslurm_load_node\fR(3), 
 \fBslurm_load_partitions\fR(3), 
 \fBslurm_reconfigure\fR(3), \fBslurm_shutdown\fR(3), 
-\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), \fBslurm_update_partition\fR(3)
+\fBslurm_update_job\fR(3), \fBslurm_update_node\fR(3), 
+\fBslurm_update_partition\fR(3),
+\fBslurm.conf\fR(5)

@@ -41,11 +41,11 @@ static int  _build_sinfo_data(List sinfo_list,
 		partition_info_msg_t *partition_msg,
 		node_info_msg_t *node_msg);
 static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr, 
-		node_info_t *node_ptr);
+		uint16_t part_inx, node_info_t *node_ptr);
 static bool _filter_out(node_info_t *node_ptr);
 static void _sinfo_list_delete(void *data);
 static partition_info_t *_find_part(char *part_name, 
-		partition_info_msg_t *partition_msg);
+		partition_info_msg_t *partition_msg, uint16_t *part_inx);
 static bool _match_node_data(sinfo_data_t *sinfo_ptr, 
                              node_info_t *node_ptr);
 static bool _match_part_data(sinfo_data_t *sinfo_ptr, 
@@ -162,6 +162,7 @@ static int _build_sinfo_data(List sinfo_list,
 	partition_info_t* part_ptr;
 	ListIterator i;
 	int j;
+	uint16_t part_inx;
 
 	/* by default every partition is shown, even if no nodes */
 	if ((!params.node_flag) && params.match_flags.partition_flag) {
@@ -169,7 +170,8 @@ static int _build_sinfo_data(List sinfo_list,
 		for (j=0; j<partition_msg->record_count; j++, part_ptr++) {
 			if ((!params.partition) || 
 			    (_strcmp(params.partition, part_ptr->name) == 0))
-				_create_sinfo(sinfo_list, part_ptr, NULL);
+				_create_sinfo(sinfo_list, part_ptr, 
+						(uint16_t) j, NULL);
 		}
 	}
 
@@ -181,7 +183,8 @@ static int _build_sinfo_data(List sinfo_list,
 		if (params.filtering && _filter_out(node_ptr))
 			continue;
 
-		part_ptr = _find_part(node_ptr->partition, partition_msg);
+		part_ptr = _find_part(node_ptr->partition, partition_msg, 
+				&part_inx);
 		if ( ! part_ptr )
 			continue;
 		i = list_iterator_create(sinfo_list);
@@ -201,7 +204,7 @@ static int _build_sinfo_data(List sinfo_list,
 	
 		/* no match, create new sinfo_data entry */
 		if (sinfo_ptr == NULL)
-			_create_sinfo(sinfo_list, part_ptr, node_ptr);
+			_create_sinfo(sinfo_list, part_ptr, part_inx, node_ptr);
 		list_iterator_destroy(i);
 	}
 
@@ -393,8 +396,15 @@ static void _update_sinfo(sinfo_data_t *sinfo_ptr, partition_info_t* part_ptr,
 	hostlist_push(sinfo_ptr->nodes, node_ptr->name);
 }
 
+/* 
+ * _create_sinfo - create an sinfo record for the given node and partition
+ * sinfo_list IN/OUT - table of accumulated sinfo records
+ * part_ptr IN       - pointer to partition record to add
+ * part_inx IN       - index of partition record (0-origin)
+ * node_ptr IN       - pointer to node record to add
+ */
 static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr, 
-		node_info_t *node_ptr)
+		uint16_t part_inx, node_info_t *node_ptr)
 {
 	sinfo_data_t *sinfo_ptr;
 
@@ -430,6 +440,8 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 		sinfo_ptr->reason   = node_ptr->reason;
 
 		sinfo_ptr->nodes = hostlist_create(node_ptr->name);
+
+		sinfo_ptr->part_inx = part_inx;
 	} else {
 		sinfo_ptr->nodes = hostlist_create("");
 	}
@@ -437,17 +449,26 @@ static void _create_sinfo(List sinfo_list, partition_info_t* part_ptr,
 	list_append(sinfo_list, sinfo_ptr);
 }
 
-/* Return a pointer to the given partition name or NULL on error */
+/* 
+ * _find_part - find a partition by name
+ * part_name IN     - name of partition to locate
+ * partition_msg IN - partition information message from API
+ * part_inx OUT     - index of the partition within the table (0-origin)
+ */
 static partition_info_t *_find_part(char *part_name, 
-			partition_info_msg_t *partition_msg) 
+			partition_info_msg_t *partition_msg, 
+			uint16_t *part_inx) 
 {
 	int i;
 	for (i=0; i<partition_msg->record_count; i++) {
 		if (_strcmp(part_name, 
 		            partition_msg->partition_array[i].name))
 			continue;
+		*part_inx = i;
 		return &(partition_msg->partition_array[i]);
 	}
+
+	*part_inx = 0;	/* not correct, but better than random data */
 	return NULL;
 }
 
