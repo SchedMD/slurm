@@ -964,7 +964,7 @@ int update_node ( update_node_msg_t * update_node_msg )
 		node_record_point = find_node_record (this_node_name);
 		node_inx = node_record_point - node_record_table_ptr;
 		if (node_record_point == NULL) {
-			error ("update_node: node %s does not exist, can't be updated", 
+			error ("update_node: node %s does not exist", 
 				this_node_name);
 			error_code = ESLURM_INVALID_NODE_NAME;
 			free (this_node_name);
@@ -1001,9 +1001,19 @@ int update_node ( update_node_msg_t * update_node_msg )
 				}
 				bit_clear (up_node_bitmap, node_inx);
 			}
+			else if (state_val == NODE_STATE_NO_RESPOND) {
+				bit_clear (up_node_bitmap,   node_inx);
+				bit_clear (idle_node_bitmap, node_inx);
+				node_record_point->node_state |=
+						NODE_STATE_NO_RESPOND;
+				info ("update_node: node %s state set to %s",
+				      this_node_name, "NoResp");
+				continue;
+			}
 			else {
 				error ("Invalid node state specified %d", 
 				       state_val);
+				continue;
 			}
 
 			node_record_point->node_state = state_val;
