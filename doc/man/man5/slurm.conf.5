@@ -360,12 +360,16 @@ Possible values are "YES" and "NO".
 The default value is "NO".
 .TP
 \fBMaxNodes\fR
-Maximum count of nodes which may be allocated to any single job,
+Maximum count of nodes which may be allocated to any single job.
 The default value is "UNLIMITED", which is represented internally as -1.
 .TP
 \fBMaxTime\fR
 Maximum wall-time limit for any job in minutes. The default 
 value is "UNLIMITED", which is represented internally as -1.
+.TP
+\fBMinNodes\fR
+Minimum count of nodes which may be allocated to any single job.
+The default value is 1.
 .TP
 \fBNodes\fR
 Comma separated list of nodes which are associated with this 
@@ -473,7 +477,7 @@ PartitionName=DEFAULT MaxTime=30 MaxNodes=10
 .br
 PartitionName=debug Nodes=dev[0-8,18-25] State=UP Default=YES
 .br
-PartitionName=batch Nodes=dev[9-17] State=UP
+PartitionName=batch Nodes=dev[9-17] State=UP MinNodes=4
 
 .SH "COPYING"
 Copyright (C) 2002 The Regents of the University of California.
