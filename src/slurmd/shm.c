@@ -905,10 +905,17 @@ _shm_clear_stale_entries(void)
 	int count = 0;
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		job_step_t *s = &slurmd_shm->step[i];
+		task_t     *t = s->task_list;
+
 		if (s->state == SLURMD_JOB_UNUSED) 
 			continue;
+
+		while (t->next && t->id != 0) 
+			t = t->next;
 		
-		if ((s->sid > (pid_t) 0) && (kill(-s->sid, 0) != 0)) {
+		if (  (s->sid > (pid_t) 0) 
+		   && (kill(-s->sid, 0) != 0)
+		   && (kill(-t->pid, 0) != 0)) {
 			debug ("Clearing stale job %u.%u from shm",
 					s->jobid, s->stepid);
 			_shm_clear_step(s);

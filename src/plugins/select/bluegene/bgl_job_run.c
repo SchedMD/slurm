@@ -305,7 +305,9 @@ static void _sync_agent(bgl_update_t *bgl_update_ptr)
 	cur_part_owner = _get_part_owner(bgl_update_ptr->bgl_part_id);
 	new_part_owner = uid_to_string(bgl_update_ptr->uid);
 	if (strcmp(cur_part_owner, new_part_owner)) {
-		/* need to change owner */
+		error("changing owner of bgl_part %s from %s to %s",
+			bgl_update_ptr->bgl_part_id, cur_part_owner, 
+			new_part_owner);
 		_term_agent(bgl_update_ptr);
 		_start_agent(bgl_update_ptr);
 	}
