@@ -71,7 +71,7 @@ _unpack32array( uint32_t **valp, uint16_t* size_val, void **bufp, int *lenp)
 	valp = xmalloc( (*size_val) * sizeof( uint32_t ) );
 	
 	for ( i=0; i < *size_val; i++ ) {
-		_unpack32( valp + i , bufp, lenp );
+		_unpack32( (*valp) + i , bufp, lenp );
 	}
 }	
 /*

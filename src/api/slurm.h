@@ -22,7 +22,7 @@
 /* eg. the maximum count of nodes any job may use in some partition */
 #define	INFINITE (0xffffffff)
 
-#include <src/common/slurm_protocol_api.h>
+#include <src/common/slurm_protocol_defs.h>
 #include <stdio.h>
 
 /* last entry must be JOB_END	*/

@@ -87,7 +87,7 @@ main (int argc, char *argv[])
 			break;
 		}
 		else {
-			printf ("allocate nodes %s to job %u\n", resp_msg->node_list, &resp_msg->job_id);
+			printf ("allocate nodes %s to job %u\n", resp_msg->node_list, resp_msg->job_id);
 		}
 	}
 
