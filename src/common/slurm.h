@@ -195,6 +195,13 @@ struct job_record {
 extern List job_list;			/* list of job_record entries */
 
 
+/* allocate_nodes - for a given bitmap, change the state of specified nodes to stage_in
+ * this is a simple prototype for testing 
+ * globals: node_record_count - number of nodes in the system
+ *	node_record_table_ptr - pointer to global node table
+ */
+extern void  allocate_nodes (unsigned *bitmap);
+
 /*
  * bitmap2node_name - given a bitmap, build a node name list representation using 
  * 	regular expressions
@@ -268,6 +275,13 @@ extern struct node_record *create_node_record (struct config_record
  * NOTE: allocates memory that should be xfreed with delete_part_record
  */
 extern struct part_record *create_part_record (void);
+
+/* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
+ * this is a simple prototype for testing 
+ * globals: node_record_count - number of nodes in the system
+ *	node_record_table_ptr - pointer to global node table
+ */
+extern void deallocate_nodes (unsigned *bitmap);
 
 /* 
  * delete_job_record - delete record for job with specified job_id
