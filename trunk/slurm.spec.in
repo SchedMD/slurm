@@ -12,12 +12,17 @@ Source: %{name}-%{version}-%{release}.tgz
 Requires: readline popt
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}
 
-%define _with_elan  1
-%define _with_totalview 1
+#
+# Defaults are --with-elan --with-totalview
+#
+%{!?_with_elan: %{!?_without_elan: %define _with_elan --with-elan}}
+%{!?_with_totalview: %{!?_without_totalview: %define _with_totalview --with-totalview}}
+
+%{?_with_elan:BuildRequires: qsnetdevkit}
 
 %package devel
 Summary: Development package for SLURM.
-Group: System Environment/Base
+Group: Development/System
 Requires: slurm
 
 %package auth-none
@@ -59,18 +64,18 @@ SLURM authentication module for Chris Dunlap's Munge
 %setup -n %{name}-%{version}-%{release}
 
 %build
-%if %{_with_elan}
-	WITHELAN=--with-elan
-%endif
-%if %{_with_totalview}
-	WITHTV=--with-totalview
-%endif
-
 PFX_FIX=--program-prefix=%{?_program_prefix:%{_program_prefix}} 
+WITHCONF=--sysconfdir=/etc/slurm
 
-WITHCONF=--with-slurm-conf=/etc/slurm
-
-%configure --enable-debug $PFX_FIX $WITHCONF $WITHELAN $WITHTV
+# for now we build with debugging symbols
+CFLAGS="-g -Wall"
+%configure \
+    --enable-debug                       \
+    $PFX_FIX $WITHCONF $WITHELAN $WITHTV \
+    %{?_with_elan}                       \
+    %{?_without_elan}                    \
+    %{?_with_totalview}                  \
+    %{?_without_totalview}
 
 make
 
