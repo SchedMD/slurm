@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <src/common/nodelist.h>
 
 /*
  * bitfmt2int - convert a string describing bitmap (e.g. "0-30,45,50-60") 

@@ -1,9 +1,29 @@
-/* 
- * job_info.c - get the job records of slurm
- * see slurm.h for documentation on external functions and data structures
- *
- * author: moe jette, jette@llnl.gov
- */
+/*****************************************************************************\
+ *  job_info.c - get the job records of slurm
+ *  see slurm.h for documentation on external functions and data structures
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette1@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #define DEBUG_SYSTEM 1
 
@@ -29,7 +49,7 @@ main (int argc, char *argv[])
 
 	error_code = slurm_load_jobs (last_update_time, &job_info_msg_ptr);
 	if (error_code) {
-		printf ("slurm_load_job error %d\n", error_code);
+		printf ("slurm_load_jobs error %d\n", error_code);
 		exit (error_code);
 	}
 
@@ -56,7 +76,7 @@ slurm_print_job_info_msg ( job_info_msg_t * job_info_msg_ptr )
 	}
 }
 
-/* print an individual job_table row */
+/* print an individual job_table entry */
 void
 slurm_print_job_table (job_table_t * job_ptr )
 {
@@ -96,18 +116,7 @@ slurm_print_job_table (job_table_t * job_ptr )
 	printf("\n\n");
 }
 
-/*
- * slurm_load_job - load the supplied job information buffer for use by info 
- *	gathering APIs if job records have changed since the time specified. 
- * input: update_time - time of last update
- *	job_buffer_ptr - place to park job_buffer pointer
- * output: job_buffer_ptr - pointer to allocated job_buffer
- *	returns -1 if no update since update_time, 
- *		0 if update with no error, 
- *		EINVAL if the buffer (version or otherwise) is invalid, 
- *		ENOMEM if malloc failure
- * NOTE: the allocated memory at job_info_msg_pptr freed by slurm_free_job_info.
- */
+/* slurm_load_job - load the supplied job information buffer if changed */
 int
 slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
 {
@@ -117,7 +126,7 @@ slurm_load_jobs (time_t update_time, job_info_msg_t **job_info_msg_pptr)
         slurm_msg_t request_msg ;
         slurm_msg_t response_msg ;
         last_update_msg_t last_time_msg ;
-		return_code_msg_t * slurm_rc_msg ;
+	return_code_msg_t * slurm_rc_msg ;
 
         /* init message connection for message communication with controller */
         if ( ( sockfd = slurm_open_controller_conn ( SLURM_PORT ) ) == SLURM_SOCKET_ERROR )

@@ -1,15 +1,28 @@
-/* 
+/*****************************************************************************\
  * controller.c - main control machine daemon for slurm
- * see slurm.h for documentation on external functions and data structures
- *
- * NOTE: DEBUG_MODULE of read_config requires that it be loaded with 
- *       bits_bytes, partition_mgr, read_config, and node_mgr
- *
- * author: moe jette, jette@llnl.gov
- */
- /* Changes
-  * Kevin Tew June 3, 2002 
-  * reimplemented the entire routine to use the new communication library*/
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Kevin Tew <tew1@llnl.gov> et. al.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with ConMan; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef have_config_h
 #  include <config.h>
@@ -504,14 +517,11 @@ fill_build_table ( struct build_table * build_ptr )
 void
 slurmctld_req_old (int sockfd) {
 	int error_code, in_size, i;
-	char in_line[BUF_SIZE], node_name[MAX_NAME_LEN];
-	int cpus, real_memory, tmp_disk;
-	char *node_name_ptr, *part_name, *time_stamp;
+	char in_line[BUF_SIZE];
+	char *node_name_ptr, *part_name;
 	uint32_t job_id;
-	time_t last_update;
 	clock_t start_time;
 	char *dump;
-	int dump_size, dump_loc;
 
 	in_size = recv (sockfd, in_line, sizeof (in_line), 0);
 	start_time = clock ();

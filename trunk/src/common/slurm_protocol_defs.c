@@ -83,3 +83,29 @@ void slurm_free_job_table ( job_table_t * job )
 		free ( job ) ;
 	}
 }
+
+void slurm_free_node_info ( node_info_msg_t * msg )
+{
+	int i; 
+	if ( msg )
+	{
+		if ( msg -> node_array )
+		{
+			for (i = 0; i < msg -> record_count; i++) {
+				slurm_free_node_table ( & ( msg->node_array[i] ) ) ;
+			}
+		}
+		free ( msg );
+	}
+}
+
+void slurm_free_node_table ( node_table_t * node )
+{
+	if ( node )
+	{
+		free (node->name) ;
+		free (node->features) ;
+		free (node->partition) ;
+		free ( node ) ;
+	}
+}

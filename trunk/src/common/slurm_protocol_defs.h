@@ -211,6 +211,27 @@ typedef struct job_info_msg {
 	job_table_t * job_array;
 } job_info_msg_t ;
 
+
+struct node_table {
+	char *name;		/* node name */
+	uint16_t node_state;	/* enum node_states, ORed with STATE_NO_RESPOND if down */
+	uint32_t cpus;		/* configured count of cpus running on the node */
+	uint32_t real_memory;	/* configured megabytes of real memory on the node */
+	uint32_t tmp_disk;	/* configured megabytes of total disk in TMP_FS */
+	uint32_t weight;	/* arbitrary priority of node for scheduling work on */
+	char *features;		/* arbitrary list of features associated with a node */
+	char *partition;	/* name of partition node configured to */
+};
+
+typedef struct node_table node_table_t ;
+typedef struct node_table node_table_msg_t ;
+
+typedef struct node_info_msg {
+	uint32_t last_update;
+	uint32_t record_count;
+	node_table_t * node_array;
+} node_info_msg_t ;
+
 /* the following typedefs follow kevin's communication message naming comvention */
 
 /* free message functions */
@@ -224,4 +245,7 @@ void inline slurm_free_job_info ( job_info_msg_t * msg ) ;
 void inline slurm_free_job_table ( job_table_t * job ) ;
 
 void inline slurm_free_job_desc_msg ( job_desc_msg_t * msg ) ;
+
+void inline slurm_free_node_info ( node_info_msg_t * msg ) ;
+void inline slurm_free_node_table ( node_table_t * node ) ;
 #endif
