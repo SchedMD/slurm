@@ -91,7 +91,7 @@ int pack_msg ( slurm_msg_t const * msg , char ** buffer , uint32_t * buf_len )
 			pack_update_node_msg ( ( update_node_msg_t * ) msg-> data , ( void ** ) buffer , buf_len ) ;
 			break ;
 		case REQUEST_UPDATE_PARTITION :
-			//pack_partition_table_msg ( ( partition_desc_msg_t * ) msg->data , ( void ** ) buffer ,  buf_len ) ;
+			pack_update_partition_msg ( ( update_part_msg_t * ) msg->data , ( void ** ) buffer ,  buf_len ) ;
 			break ;
 		case REQUEST_LAUNCH_TASKS :
 			pack_launch_tasks_msg ( ( launch_tasks_msg_t * ) msg->data , ( void ** ) buffer , buf_len ) ;
@@ -207,7 +207,7 @@ int unpack_msg ( slurm_msg_t * msg , char ** buffer , uint32_t * buf_len )
 
 			break ;
 		case REQUEST_UPDATE_PARTITION :
-			unpack_partition_table_msg ( ( partition_desc_msg_t ** ) & ( msg->data ) , ( void ** ) buffer ,  buf_len ) ;
+			unpack_update_partition_msg ( ( update_part_msg_t ** ) & ( msg->data ) , ( void ** ) buffer ,  buf_len ) ;
 			break ;
 		case REQUEST_LAUNCH_TASKS :
 			unpack_launch_tasks_msg ( ( launch_tasks_msg_t ** ) & ( msg->data ) , ( void ** ) buffer , buf_len ) ;
@@ -282,9 +282,7 @@ int unpack_update_node_msg ( update_node_msg_t ** msg , void ** buffer , uint32_
 	/* alloc memory for structure */	
 	tmp_ptr = xmalloc ( sizeof ( update_node_msg_t ) ) ;
 	if (tmp_ptr == NULL) 
-	{
 		return ENOMEM;
-	}
 
 	unpackstr_xmalloc ( & tmp_ptr -> node_names , &uint16_tmp,  ( void ** ) buffer , length ) ;
 	unpack16 ( & tmp_ptr -> node_state , ( void ** ) buffer , length ) ;
@@ -414,6 +412,46 @@ int unpack_node_table ( node_table_msg_t * node , void ** buf_ptr , int * buffer
 	unpackstr_xmalloc (&node->partition, &uint16_tmp, buf_ptr, buffer_size);
 
         return 0;
+}
+
+
+void
+pack_update_partition_msg ( update_part_msg_t * msg , void ** buffer, uint32_t * length  )
+{
+	assert ( msg != NULL );
+
+	packstr ( msg -> name, ( void ** ) buffer , length ) ;
+	pack32 ( msg -> max_time, ( void ** ) buffer , length ) ;
+	pack32 ( msg -> max_nodes, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> default_part, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> key, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> shared, ( void ** ) buffer , length ) ;
+	pack16 ( msg -> state_up, ( void ** ) buffer , length ) ;
+	packstr ( msg -> nodes, ( void ** ) buffer , length ) ;
+	packstr ( msg -> allow_groups, ( void ** ) buffer , length ) ;
+}
+
+int 
+unpack_update_partition_msg ( update_part_msg_t ** msg , void ** buffer, uint32_t * length  )
+{
+	uint16_t uint16_tmp;
+	update_part_msg_t * tmp_ptr ;
+	/* alloc memory for structure */	
+	tmp_ptr = xmalloc ( sizeof ( update_part_msg_t ) ) ;
+	if (tmp_ptr == NULL) 
+		return ENOMEM;
+
+	unpackstr_xmalloc ( &tmp_ptr -> name, &uint16_tmp,  ( void ** ) buffer , length ) ;
+	unpack32 ( &tmp_ptr -> max_time, ( void ** ) buffer , length ) ;
+	unpack32 ( &tmp_ptr -> max_nodes, ( void ** ) buffer , length ) ;
+	unpack16 ( &tmp_ptr -> default_part, ( void ** ) buffer , length ) ;
+	unpack16 ( &tmp_ptr -> key, ( void ** ) buffer , length ) ;
+	unpack16 ( &tmp_ptr -> shared, ( void ** ) buffer , length ) ;
+	unpack16 ( &tmp_ptr -> state_up, ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( &tmp_ptr -> nodes, &uint16_tmp,  ( void ** ) buffer , length ) ;
+	unpackstr_xmalloc ( &tmp_ptr -> allow_groups, &uint16_tmp,  ( void ** ) buffer , length ) ;
+	*msg = tmp_ptr;
+	return 0;
 }
 
 void pack_partition_info_msg ( slurm_msg_t * msg, void ** buf_ptr , int * buffer_size )

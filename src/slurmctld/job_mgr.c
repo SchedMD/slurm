@@ -579,10 +579,10 @@ job_create ( job_desc_msg_t *job_desc, uint32_t *new_job_id, int allocate,
 		goto cleanup ;
 	}
 
-	if (part_ptr->shared == 2)		/* shared=force */
+	if (part_ptr->shared == SHARED_FORCE)		/* shared=force */
 		(*job_rec_ptr)->details->shared = 1;
 	else if (((*job_rec_ptr)->details->shared != 1) || 
-	         (part_ptr->shared == 0))	/* user or partition want no sharing */
+	         (part_ptr->shared == SHARED_NO))	/* user or partition want no sharing */
 		(*job_rec_ptr)->details->shared = 0;
 
 	*new_job_id = (*job_rec_ptr)->job_id;

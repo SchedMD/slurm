@@ -62,6 +62,7 @@ inline static void slurm_rpc_reconfigure_controller ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_node_registration ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_register_node_status ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_update_node ( slurm_msg_t * msg ) ;
+inline static void slurm_rpc_update_partition ( slurm_msg_t * msg ) ;
 inline static void slurm_rpc_job_will_run ( slurm_msg_t * msg ) ;
 
 inline static void slurm_rpc_allocate_resources ( slurm_msg_t * msg , uint8_t immediate ) ;
@@ -185,6 +186,9 @@ slurmctld_req ( slurm_msg_t * msg )
 			break;
 		case REQUEST_UPDATE_NODE:
 			slurm_rpc_update_node ( msg ) ;
+			break;
+		case REQUEST_UPDATE_PARTITION:
+			slurm_rpc_update_partition ( msg ) ;
 			break;
 		default:
 			error ("slurmctld_req: invalid request msg type %d\n", msg-> msg_type);
@@ -408,25 +412,31 @@ slurm_rpc_update_partition ( slurm_msg_t * msg )
 	/* init */
 	int error_code;
 	clock_t start_time;
-	partition_desc_t * part_desc = (partition_desc_t * ) msg-> data ;
+	update_part_msg_t * part_desc_ptr = (update_part_msg_t * ) msg-> data ;
 	start_time = clock ();
 
 	/* do RPC call */
-	error_code = update_part ( part_desc ); /* skip "Update" */
+	error_code = update_part ( part_desc_ptr );
 
 	/* return result */
 	if (error_code)
 	{
 		error ("slurmctld_req: update error %d on partition %s, time=%ld",
-				error_code, part_desc->name, (long) (clock () - start_time));
+				error_code, part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , error_code );
 	}
 	else
 	{
 		info ("slurmctld_req: updated partition %s, time=%ld",
-				part_desc->name, (long) (clock () - start_time));
+				part_desc_ptr->name, (long) (clock () - start_time));
 		slurm_send_rc_msg ( msg , SLURM_SUCCESS );
 	}
+	if (part_desc_ptr->name)
+		xfree (part_desc_ptr->name);
+	if (part_desc_ptr->nodes)
+		xfree (part_desc_ptr->nodes);
+	if (part_desc_ptr->allow_groups)
+		xfree (part_desc_ptr->allow_groups);
 }
 
 void

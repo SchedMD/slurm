@@ -561,11 +561,11 @@ parse_part_spec (char *in_line) {
 
 	if (shared_str) {
 		if (strcmp(shared_str, "YES") == 0)
-			shared_val = 1;
+			shared_val = SHARED_YES;
 		else if (strcmp(shared_str, "NO") == 0)
-			shared_val = 0;
+			shared_val = SHARED_NO;
 		else if (strcmp(shared_str, "FORCE") == 0)
-			shared_val = 2;
+			shared_val = SHARED_FORCE;
 		else {
 			error ("update_part: ignored partition %s update, bad shared %s",
 			    partition_name, shared_str);

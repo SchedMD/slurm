@@ -53,6 +53,12 @@ enum task_dist {
 	DIST_CYCLE		/* one task each node, round-robin through nodes */
 };
 
+enum part_shared {
+	SHARED_NO,		/* Nodes never shared in partition */
+	SHARED_YES,		/* Nodes possible to share in partition */
+	SHARED_FORCE		/* Nodes always shares in partition */
+};
+
 #include <src/common/macros.h>
 #include <src/common/slurm_protocol_common.h>
 
@@ -315,6 +321,7 @@ typedef struct part_table partition_desc_t ;
 typedef struct part_table partition_desc_msg_t ;
 typedef struct part_table partition_table_t ;
 typedef struct part_table partition_table_msg_t ;
+typedef struct part_table update_part_msg_t ;
 
 typedef struct job_info_msg {
 	uint32_t last_update;

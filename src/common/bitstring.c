@@ -351,13 +351,15 @@ bitstr_t *
 bit_copy(bitstr_t *b)
 {
 	bitstr_t *new;
-	int newsize;
+	int newsize_words, newsize_bits;
 
 	_assert_bitstr_valid(b);
 
-	newsize = _bitstr_words(_bitstr_bits(b)) * sizeof(bitstr_t);
-	if ((new = (bitstr_t *)malloc(newsize)))
-		memcpy(new, b, newsize);
+	newsize_bits  = bit_size(b);
+	newsize_words = (newsize_bits + 7) / 8;
+	new = bit_alloc(newsize_bits);
+	if (new)
+		memcpy(new, b, newsize_words);
 
 	return new;
 }
