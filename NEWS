@@ -4,29 +4,31 @@ documents those changes that are of interest to users and admins.
 * Changes in SLURM 0.3.0.0-pre7 (not tagged yet)
 ===============================
  -- Fixes for reported problems:
-   - slurm/381: Hold jobs requesting more resources than partition limit
-   - slurm/387: Jobs lost and nodes DOWN on slurmctld restart
- -- Add support for getting node's real memory size on AIX
- -- Sinfo sort partitions in slurm.conf order, new sort option ("#P")
- -- Document how to gracefully change plugin values
- -- Slurmctld does not attempt to recover jobs when the switch plugin 
-    value changes (decision reached when any job's switch state recovery 
-    fails)
- -- Node does not transition from COMPLETING to DOWN state due to 
-    not responding. Wait for tasks to complete or admin to set DOWN
+   - slurm/381: Hold jobs requesting more resources than partition limit.
+   - slurm/387: Jobs lost and nodes DOWN on slurmctld restart.
+ -- Add support for getting node's real memory size on AIX.
+ -- Sinfo sort partitions in slurm.conf order, new sort option ("#P").
+ -- Document how to gracefully change plugin values.
+ -- Slurmctld does not attempt to recover jobs when the switch plugin
+    value changes (decision reached when any job's switch state recovery
+    fails).
+ -- Node does not transition from COMPLETING to DOWN state due to
+    not responding. Wait for tasks to complete or admin to set DOWN.
  -- Always chmod SlurmdSpoolDir to 755 (a umask of 007 was resulting 
-    in batch jobs failing)
+    in batch jobs failing).
  -- Return errors when trying to change configuration parameters
     AuthType, SchedulerType, and SwitchType via "scontrol reconfig"
     or SIGHUP. Document how to safely change these parameters.
  -- Plugin-specific error number definitions and descriptive strings 
-    moved from common into plugin modules
+    moved from common into plugin modules.
  -- Documentation for writing scheduler, switch, and job completion 
-    logging plugins added
- -- Added job and node state descriptions to the squeue and sinfo man pages
- -- Backup slurmctld to generate core file on SIGABRT
- -- Backup slurmctld to re-read slurm.conf on SIGHUP
+    logging plugins added.
+ -- Added job and node state descriptions to the squeue and sinfo man pages.
+ -- Backup slurmctld to generate core file on SIGABRT.
+ -- Backup slurmctld to re-read slurm.conf on SIGHUP.
  -- Added -q,--quit-on-interrupt option to srun.
+ -- Elan switch plugin now starts neterr resolver thread on all Elan3
+    systems (QsNet and QsNetII).
 
 * Changes in SLURM 0.3.0.0-pre6
 ===============================
