@@ -63,7 +63,7 @@ enum {
 	EUNLOAD
 };
 
-#define FED_MAXADAPTERS 8
+#define FED_MAXADAPTERS 2
 #define FED_LIBSTATE_LEN (1024 * 128)
 
 int fed_alloc_nodeinfo(fed_nodeinfo_t **nh);
