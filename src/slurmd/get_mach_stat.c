@@ -1,10 +1,9 @@
 /*
- * Get_Mach_Stat - Get the status of the current machine and return it in the standard 
+ * get_mach_stat.c - Get the status of the current machine and return it in the standard 
  *	node configuration format "Name=linux.llnl.gov CPUs=4 ..."
  * NOTE: Most of these modules are very much system specific. Built on RedHat2.4
- * NOTE: While not currently used by SLURM, this code can also get a nodes OS name, 
- *       virtual memory size, and CPU speed. See code ifdef'ed out via USE_OS_NAME,
- *       USE_CPU_SPEED, and USE_VIRTUAL_MEMORY
+ * NOTE: While not currently used by SLURM, this code can also get a nodes OS name 
+ *       and CPU speed. See code ifdef'ed out via USE_OS_NAME and USE_CPU_SPEED
  *
  * Author: Moe Jette, jette@llnl.gov
  */
@@ -57,6 +56,7 @@ main(int argc, char * argv[]) {
 } /* main */
 #endif
 
+
 /*
  * Get_CPUs - Return the count of CPUs on this system 
  * Input: CPUs - buffer for the CPU count
@@ -79,7 +79,8 @@ int Get_CPUs(int *CPUs) {
 
     *CPUs = My_CPU_Tally;
     return 0;
-}
+} /* Get_CPUs */
+
 
 #ifdef USE_OS_NAME
 /*
@@ -119,6 +120,7 @@ int Get_OS_Name(char *OS_Name) {
 } /* Get_OS_Name */
 #endif
 
+
 /*
  * Get_Mach_Name - Return the name of this node 
  * Input: Node_Name - buffer for the node name, must be at least MAX_NAME_LEN characters
@@ -140,6 +142,7 @@ int Get_Mach_Name(char *Node_Name) {
     return Error_Code;
 } /* Get_Mach_Name */
 
+
 /*
  * Get_Memory - Return the count of CPUs on this system 
  * Input: RealMemory - buffer for the Real Memory size
@@ -147,35 +150,20 @@ int Get_Mach_Name(char *Node_Name) {
  *         return code - 0 if no error, otherwise errno
  */
 int Get_Memory(int *RealMemory) {
-    char buffer[128];
-    FILE *Mem_Info_File;
-    char *buf_ptr;
+    long pages;
 
     *RealMemory = 1;
-    Mem_Info_File = fopen("/proc/meminfo", "r");
-    if (Mem_Info_File == NULL) {
+    pages = sysconf(_SC_PHYS_PAGES);
+    if (pages < 1) {
 #if DEBUG_SYSTEM
-	fprintf(stderr, "Get_Memory: error %d opening /proc/meminfo\n", errno);
+	fprintf(stderr, "Get_Memory: error running sysconf(_SC_PHYS_PAGES)\n");
 #else
-	syslog(LOG_ALERT, "Get_Memory: error %d opening /proc/meminfo\n", errno);
+	syslog(LOG_ALERT, "Get_Memory: error running sysconf(_SC_PHYS_PAGES)\n");
 #endif
-	return errno;
+	return EINVAL;
     } /* if */
 
-    while (fgets(buffer, sizeof(buffer), Mem_Info_File) != NULL) {
-	if ((buf_ptr=strstr(buffer, "MemTotal:")) != NULL) {
-	    *RealMemory = (int)strtol(buf_ptr+9, (char **)NULL, 10);
-	    if (strstr(buf_ptr, "kB") != NULL) *RealMemory /= 1024;
-	} /* if */
-#ifdef USE_VIRTUAL_MEMORY
-	if ((buf_ptr=strstr(buffer, "SwapTotal:")) != NULL) {
-	    *VirtualMemory = (int)strtol(buf_ptr+10, (char **)NULL, 10);
-	    if (strstr(buf_ptr, "kB") != NULL) *VirtualMemory /= 1024;
-	} /* if */
-#endif
-    } /* while */
-
-    fclose(Mem_Info_File);
+    *RealMemory = (int)((float)pages * getpagesize() / 1048576.0); /* Megabytes of memory */
     return 0;
 }
 
@@ -215,6 +203,7 @@ int Get_Speed(float *Speed) {
     return 0;
 } /* Get_Speed */
 #endif
+
 
 /*
  * Get_TmpDisk - Return the total size of /tmp file system on 
