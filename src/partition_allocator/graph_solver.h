@@ -85,6 +85,8 @@ void new_conf_result(conf_result_t** conf_result, conf_data_t* conf_data);
 void delete_conf_result(void* object);
 /** print out a conf_result */
 void print_conf_result(conf_result_t* conf_result);
+/* */
+void print_conf_result_list(List conf_result_list);
 /** create a conf_data_t */
 void new_conf_data(conf_data_t** conf_data, int num_partitions);
 /** delete a conf_data_t */
