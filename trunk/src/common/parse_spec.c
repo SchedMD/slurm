@@ -1,8 +1,29 @@
 /* $Id$ */
-
-/* slurm_parser() functionality - split out from bits_bytes.c  and
- * moved into slurmctld/ srcdir
- */
+/*****************************************************************************\
+ * parse_spec.c - configuration file parser
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by Moe Jette <jette1@llnl.gov>
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -83,7 +104,7 @@ slurm_parser (char *spec, ...)
 
 
 /*
- * load_float - location into which result is stored
+ * load_float - parse a string for a keyword, value pair, and load the float value
  *        keyword - string to search for
  *        in_line - string to search for keyword
  * output: *destination - set to value, no change if value not found
@@ -118,7 +139,7 @@ load_float (float *destination, char *keyword, char *in_line)
 
 
 /*
- * load_integer - parse a string for a keyword, value pair  
+ * load_integer - parse a string for a keyword, value pair, and load the integer value
  * input: *destination - location into which result is stored
  *        keyword - string to search for
  *        in_line - string to search for keyword
@@ -171,7 +192,7 @@ load_integer (int *destination, char *keyword, char *in_line)
 
 
 /*
- * load_long - parse a string for a keyword, value pair  
+ * load_long - parse a string for a keyword, value pair, and load the long value
  * input: *destination - location into which result is stored
  *        keyword - string to search for
  *        in_line - string to search for keyword
@@ -223,7 +244,7 @@ load_long (long *destination, char *keyword, char *in_line)
 
 
 /*
- * load_string - parse a string for a keyword, value pair  
+ * load_string - parse a string for a keyword, value pair, and load the char value
  * input: *destination - location into which result is stored
  *        keyword - string to search for
  *        in_line - string to search for keyword
