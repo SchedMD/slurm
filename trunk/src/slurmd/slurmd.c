@@ -189,6 +189,8 @@ main (int argc, char *argv[])
 	
 	if (interconnect_node_init() < 0)
 		fatal("Unable to initialize interconnect.");
+	if (conf->cleanstart && switch_g_clear_node_state())
+		fatal("Unable to clear interconnect state.");
 
 	_create_msg_socket();
 

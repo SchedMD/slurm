@@ -79,6 +79,7 @@ typedef struct slurm_switch_ops {
 						uint32_t nprocs, uint32_t rank);
 	char *	     (*switch_strerror)   ( int errnum );
 	int          (*switch_errno)      ( void );
+	int          (*clear_node)        ( void );
 	int          (*alloc_nodeinfo)    ( switch_node_info_t *nodeinfo );
 	int          (*build_nodeinfo)    ( switch_node_info_t nodeinfo );
 	int          (*pack_nodeinfo)     ( switch_node_info_t nodeinfo,
@@ -184,6 +185,7 @@ _slurm_switch_get_ops( slurm_switch_context_t c )
 		"switch_p_job_attach",
 		"switch_p_strerror",
 		"switch_p_get_errno",
+		"switch_p_clear_node_state",
 		"switch_p_alloc_node_info",
 		"switch_p_build_node_info",
 		"switch_p_pack_node_info",
@@ -456,6 +458,14 @@ extern char *switch_strerror(int errnum)
  * node switch state monitoring functions
  * required for IBM Federation switch 
  */
+extern int switch_g_clear_node_state(void)
+{
+	if ( switch_init() < 0 )
+		return SLURM_ERROR;
+
+	return (*(g_context->ops.clear_node))();
+}
+
 extern int switch_g_alloc_node_info(switch_node_info_t *switch_node)
 {
 	if ( switch_init() < 0 )

@@ -724,6 +724,11 @@ extern char *switch_p_strerror(int errnum)
  * node switch state monitoring functions
  * required for IBM Federation switch
  */
+extern int switch_p_clear_node_state(void)
+{
+	return SLURM_SUCCESS;
+}
+
 extern int switch_p_alloc_node_info(switch_node_info_t *switch_node)
 {
 	return SLURM_SUCCESS;
