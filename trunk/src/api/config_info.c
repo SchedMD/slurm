@@ -40,24 +40,24 @@ main (int argc, char *argv[])
 
 	printf("Build updated at %lx\n", build_buffer_ptr->last_update);
 	build_table_ptr = build_buffer_ptr->build_table_ptr;
-	printf("backup_interval	= %u\n", build_table_ptr->backup_interval);
-	printf("backup_location	= %s\n", build_table_ptr->backup_location);
-	printf("backup_machine	= %s\n", build_table_ptr->backup_machine);
-	printf("control_daemon	= %s\n", build_table_ptr->control_daemon);
-	printf("control_machine	= %s\n", build_table_ptr->control_machine);
-	printf("epilog		= %s\n", build_table_ptr->epilog);
-	printf("fast_schedule	= %u\n", build_table_ptr->fast_schedule);
-	printf("hash_base	= %u\n", build_table_ptr->hash_base);
-	printf("heartbeat_interval	= %u\n", 
+	printf("BACKUP_INTERVAL	= %u\n", build_table_ptr->backup_interval);
+	printf("BACKUP_LOCATION	= %s\n", build_table_ptr->backup_location);
+	printf("BACKUP_MACHINE	= %s\n", build_table_ptr->backup_machine);
+	printf("CONTROL_DAEMON	= %s\n", build_table_ptr->control_daemon);
+	printf("CONTROL_MACHINE	= %s\n", build_table_ptr->control_machine);
+	printf("EPILOG		= %s\n", build_table_ptr->epilog);
+	printf("FAST_SCHEDULE	= %u\n", build_table_ptr->fast_schedule);
+	printf("HASH_BASE	= %u\n", build_table_ptr->hash_base);
+	printf("HEARTBEAT_INTERVAL	= %u\n", 
 				build_table_ptr->heartbeat_interval);
-	printf("init_program	= %s\n", build_table_ptr->init_program);
-	printf("kill_wait	= %u\n", build_table_ptr->kill_wait);
-	printf("prioritize	= %s\n", build_table_ptr->prioritize);
-	printf("prolog		= %s\n", build_table_ptr->prolog);
-	printf("server_daemon	= %s\n", build_table_ptr->server_daemon);
-	printf("server_timeout	= %u\n", build_table_ptr->server_timeout);
-	printf("slurm_conf	= %s\n", build_table_ptr->slurm_conf);
-	printf("tmp_fs		= %s\n", build_table_ptr->tmp_fs);
+	printf("INIT_PROGRAM	= %s\n", build_table_ptr->init_program);
+	printf("KILL_WAIT	= %u\n", build_table_ptr->kill_wait);
+	printf("PRIORITIZE	= %s\n", build_table_ptr->prioritize);
+	printf("PROLOG		= %s\n", build_table_ptr->prolog);
+	printf("SERVER_DAEMON	= %s\n", build_table_ptr->server_daemon);
+	printf("SERVER_TIMEOUT	= %u\n", build_table_ptr->server_timeout);
+	printf("SLURM_CONF	= %s\n", build_table_ptr->slurm_conf);
+	printf("TMP_FS		= %s\n", build_table_ptr->tmp_fs);
 
 	slurm_free_build_info (build_buffer_ptr);
 	exit (0);
