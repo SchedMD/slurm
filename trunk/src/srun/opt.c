@@ -847,11 +847,6 @@ opt_verify(poptContext optctx)
 {
 	bool verified = true;
 
-	if (opt.max_threads < 1) {
-		error("Invalid max_threads value: %d", opt.max_threads);
-		return false;
-	}
-
 	if (opt.no_alloc && !opt.nodelist) {
 		error("must specify a node list with -Z, --no-allocate.");
 		verified = false;
@@ -943,6 +938,15 @@ opt_verify(poptContext optctx)
 
 		} /* else if (opt.nprocs_set && !opt.nodes_set) */
 
+	}
+
+	if (opt.max_threads <= 0) {	/* set default */
+		error("Thread value invalid, reset to 1");
+		opt.max_threads = 1;
+	} else if (opt.max_threads > MAX_THREADS) {
+		error("Thread value exceeds system limit, reset to %d", 
+			MAX_THREADS);
+		opt.max_threads = MAX_THREADS;
 	}
 
 	return verified;
