@@ -758,7 +758,7 @@ extern void make_node_alloc(struct node_record *node_ptr);
 extern void make_node_comp(struct node_record *node_ptr);
 
 /*
- * make_node_idle - flag specified node as having completed a job
+ * make_node_idle - flag specified node as having finished with a job
  * IN node_ptr - pointer to node reporting job completion
  * IN job_ptr - pointer to job that just completed
  */
