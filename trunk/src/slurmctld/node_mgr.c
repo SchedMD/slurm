@@ -1816,6 +1816,12 @@ void make_node_idle(struct node_record *node_ptr,
 		bit_clear(job_ptr->node_bitmap, inx);
 		if (job_ptr->node_cnt) {
 			if ((--job_ptr->node_cnt) == 0) {
+				time_t delay;
+				delay = last_job_update - job_ptr->end_time;
+				if (delay > 60)
+					info("Job %u completion process took "
+						"%ld second", job_ptr->job_id,
+						(long) delay);
 				delete_all_step_records(job_ptr);
 				job_ptr->job_state &= (~JOB_COMPLETING);
 			}
