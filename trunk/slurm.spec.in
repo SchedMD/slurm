@@ -78,7 +78,7 @@ Summary: SLURM switch plugin for Quadrics Elan3 or Elan4.
 Group: System Environment/Base
 Requires: slurm qsnetlibs
 
-%packages switch-federation
+%package switch-federation
 Summary: SLURM switch plugin for IBM Federation switch.
 Group: System Environment/Base
 Requires: slurm
