@@ -1,8 +1,7 @@
 /*****************************************************************************\
  *  job_mgr.c - manage the job information of slurm
  *	Note: there is a global job list (job_list), job_count, time stamp 
- *	(last_job_update), and hash table (job_hash, job_hash_over, 
- *	max_hash_over)
+ *	(last_job_update), and hash table (job_hash)
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -76,8 +75,6 @@ static int    hash_table_size = 0;
 static int    job_count = 0;        /* job's in the system */
 static long   job_id_sequence = -1; /* first job_id to assign new job */
 static struct job_record **job_hash = NULL;
-static struct job_record **job_hash_over = NULL;
-static int    max_hash_over = 0;
 
 /* Local functions */
 static void _add_job_hash(struct job_record *job_ptr);
@@ -805,12 +802,8 @@ void _add_job_hash(struct job_record *job_ptr)
 	int inx;
 
 	inx = JOB_HASH_INX(job_ptr->job_id);
-	if (job_hash[inx]) {
-		if (max_hash_over >= hash_table_size)
-			fatal("Job hash table overflow");
-		job_hash_over[max_hash_over++] = job_ptr;
-	} else
-		job_hash[inx] = job_ptr;
+	job_ptr->job_next = job_hash[inx];
+	job_hash[inx] = job_ptr;
 }
 
 
@@ -819,27 +812,17 @@ void _add_job_hash(struct job_record *job_ptr)
  * IN job_id - requested job's id
  * RET pointer to the job's record, NULL on error
  * global: job_list - global job list pointer
- *	job_hash, job_hash_over, max_hash_over - hash table into job records
+ *	job_hash - hash table into job records
  */
 struct job_record *find_job_record(uint32_t job_id)
 {
-	int i;
 	struct job_record *job_ptr;
 
-	/* First try to find via hash table */
 	job_ptr = job_hash[JOB_HASH_INX(job_id)];
-	if (job_ptr && (job_ptr->job_id == job_id)) {
-		xassert (job_ptr->magic == JOB_MAGIC);
-		return job_ptr;
-	}
-
-	/* linear search of overflow hash table overflow */
-	for (i = 0; i < max_hash_over; i++) {
-		job_ptr = job_hash_over[i];
-		if (job_ptr && (job_ptr->job_id == job_id)) {
-			xassert (job_ptr->magic == JOB_MAGIC);
+	while (job_ptr) {
+		if (job_ptr->job_id == job_id)
 			return job_ptr;
-		}
+		job_ptr = job_ptr->job_next;
 	}
 
 	return NULL;
@@ -1135,20 +1118,17 @@ int init_job_conf(void)
 	return SLURM_SUCCESS;
 }
 
-/* rehash_jobs - Create or rebuild the job rehash table. Actually for now we 
- * just preserve it
+/*
+ * rehash_jobs - Create or rebuild the job hash table.
  * NOTE: run lock_slurmctld before entry: Read config, write job
  */
-void rehash_jobs(void)
+extern void rehash_jobs(void)
 {
 	if (job_hash == NULL) {
 		hash_table_size = slurmctld_conf.max_job_cnt;
 		job_hash = (struct job_record **) xmalloc(hash_table_size *
 					sizeof(struct job_record *));
-		job_hash_over = (struct job_record **) 
-					xmalloc(hash_table_size *
-					sizeof(struct job_record *));
-	} else if (hash_table_size < slurmctld_conf.max_job_cnt) {
+	} else if (hash_table_size < (2 * slurmctld_conf.max_job_cnt)) {
 		/* If the MaxJobCount grows by too much, the hash table will 
 		 * be ineffective without rebuilding. We don't presently bother
 		 * to rebuild the hash table, but cut MaxJobCount back as 
@@ -1508,7 +1488,7 @@ job_complete(uint32_t job_id, uid_t uid, bool requeue,
  * globals: job_list - pointer to global job list 
  *	list_part - global list of partition info
  *	default_part_loc - pointer to default partition 
- *	job_hash, job_hash_over, max_hash_over - hash table into job records
+ *	job_hash - hash table into job records
  */
 
 static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
@@ -2303,30 +2283,25 @@ static int _validate_job_desc(job_desc_msg_t * job_desc_msg, int allocate,
  * IN job_entry - pointer to job_record to delete
  * global: job_list - pointer to global job list
  *	job_count - count of job list entries
- *	job_hash, job_hash_over, max_hash_over - hash table into job records
+ *	job_hash - hash table into job records
  */
 static void _list_delete_job(void *job_entry)
 {
-	struct job_record *job_ptr;
-	int i, j;
+	struct job_record *job_ptr = (struct job_record *) job_entry;
+	struct job_record **job_pptr;
 
 	xassert(job_entry);
-	job_ptr = (struct job_record *) job_entry;
 	xassert (job_ptr->magic == JOB_MAGIC);
 
-	if (job_hash[JOB_HASH_INX(job_ptr->job_id)] == job_ptr)
-		job_hash[JOB_HASH_INX(job_ptr->job_id)] = NULL;
-	else {
-		for (i = 0; i < max_hash_over; i++) {
-			if (job_hash_over[i] != job_ptr)
-				continue;
-			for (j = i + 1; j < max_hash_over; j++) {
-				job_hash_over[j - 1] = job_hash_over[j];
-			}
-			job_hash_over[--max_hash_over] = NULL;
-			break;
-		}
+	/* Remove the record from the hash table */
+	job_pptr = &job_hash[JOB_HASH_INX(job_ptr->job_id)];
+	while ((job_pptr != NULL) && 
+	       ((job_ptr = *job_pptr) != (struct job_record *) job_entry)) {
+		job_pptr = &job_ptr->job_next;		
 	}
+	if (job_pptr == NULL)
+		fatal("job hash error"); 
+	*job_pptr = job_ptr->job_next;
 
 	delete_job_details(job_ptr);
 	xfree(job_ptr->alloc_node);
@@ -3483,7 +3458,6 @@ void job_fini (void)
 		job_list = NULL;
 	}
 	xfree(job_hash);
-	xfree(job_hash_over);
 }
 
 /* log the completion of the specified job */
