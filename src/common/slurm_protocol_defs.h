@@ -91,6 +91,7 @@ enum job_states {
 	JOB_COMPLETE,		/* completed execution successfully, nodes released */
 	JOB_FAILED,		/* completed execution unsuccessfully, nodes released */
 	JOB_TIMEOUT,		/* terminated on reaching time limit, nodes released */
+	JOB_NODE_FAIL,		/* terminated on node failure, nodes released */
 	JOB_END			/* last entry in table */
 };
 
