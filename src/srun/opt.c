@@ -18,10 +18,15 @@
 #include <pwd.h>		/* getpwuid   */
 #include <ctype.h>		/* isdigit    */
 #include <sys/param.h>		/* MAXPATHLEN */
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #include <src/common/log.h>
 #include <src/common/xmalloc.h>
 #include <src/common/xstring.h>
+#include <src/common/list.h>
+
 
 #include "opt.h"
 #include "env.h"
@@ -161,10 +166,10 @@ struct poptOption runTable[] = {
 	 "location of stderr redirection",
 	 "err"},
         {"verbose", 'v', 0, 0, OPT_VERBOSE,
-	 "verbose operation", },
-	{"debug", 'd', 0, 0, OPT_DEBUG,
+	 "verbose operation (multiple -v's increase verbosity)", },
+	/*{"debug", 'd', 0, 0, OPT_DEBUG,
 	 "enable debug",
-	 },
+	 },*/
 	POPT_TABLEEND
 };
 
@@ -247,6 +252,11 @@ static bool opt_verify(poptContext, bool, bool, bool);
 /* list known options and their settings 
  */
 static void opt_list(void);
+
+/* search PATH for command 
+ * returns full path
+ */
+static char * search_path(char *);
 
 /*---[ end forward declarations of static functions ]---------------------*/
 
@@ -579,6 +589,7 @@ static void opt_args(int ac, char **av)
 	bool nprocs_set, nnodes_set, cpus_set;
 	const char **rest;
 	const char *arg;
+	char *fullpath;
 	poptContext optctx;
 
 	opt.progname = xbasename(av[0]);
@@ -733,6 +744,12 @@ static void opt_args(int ac, char **av)
 	for (i = 0; i < remote_argc; i++)
 		remote_argv[i] = strdup(rest[i]);
 
+	if ((fullpath = search_path(remote_argv[0])) != NULL) {
+		free(remote_argv[0]);
+		remote_argv[0] = fullpath;
+	} 
+
+	
 	if (!opt_verify(optctx, nnodes_set, cpus_set, nprocs_set)) {
 		poptPrintUsage(optctx, stderr, 0);
 		exit(1);
@@ -752,6 +769,10 @@ opt_verify(poptContext optctx,
 {
 	bool verified = true;
 
+	if (opt.no_alloc && !opt.nodelist) {
+		error("must specify a node list with -Z, --no-allocate.");
+		verified = false;
+	}
 
 	if (mode == MODE_ATTACH) {	/* attach to a running job */
 		if (nodes_set || cpus_set || procs_set) {
@@ -771,7 +792,7 @@ opt_verify(poptContext optctx,
 
 		/* XXX what other args are incompatible with attach mode? */
 
-	} else {
+	} else { /* mode != MODE_ATTACH */
 
 		if (mode == MODE_ALLOCATE) {
 
@@ -829,6 +850,65 @@ opt_verify(poptContext optctx,
 	}
 
 	return verified;
+}
+
+static List
+create_path_list(void)
+{
+	List l = list_create(&free);
+	char *path = strdup(getenv("PATH"));
+	char *c, *lc;
+
+	if (!path) {
+		error("Error in PATH environment variable");
+		list_destroy(l);
+		return NULL;
+	}
+
+	c = lc = path;
+
+	while (*c != '\0') {
+		if (*c == ':') {
+			/* nullify and push token onto list */
+			*c = '\0';
+			if (lc != NULL && strlen(lc) > 0)
+				list_append(l, strdup(lc));
+			lc = ++c;
+		} else
+			c++;
+	}
+
+	if (strlen(lc) > 0)
+		list_append(l, strdup(lc));
+
+	free(path);
+
+	return l;
+}
+
+static char *
+search_path(char *cmd)
+{
+	List l = create_path_list();
+	ListIterator i = list_iterator_create(l);
+	char *path, *fullpath;
+	struct stat stat_buf;
+
+	fullpath = xmalloc(1);
+
+	while ((path = list_next(i))) {
+		xstrcat(fullpath, path);
+		xstrcatchar(fullpath, '/');
+		xstrcat(fullpath, cmd);
+
+		if (   (stat(fullpath, &stat_buf) == 0)
+		    && (stat_buf.st_mode & (S_IXUSR | S_IXGRP | S_IXOTH))) {
+			list_destroy(l);
+			return fullpath;
+		} else
+			xfree(fullpath);
+	}
+	return NULL;
 }
 
 #ifdef __DEBUG

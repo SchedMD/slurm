@@ -178,9 +178,16 @@ main(int ac, char **av)
 	if (!opt.no_alloc)
 		slurm_complete_job(job->jobid);
 
+	/* kill launch thread */
 	pthread_kill(job->lid, SIGTERM);
+
+	/* kill msg server thread */
 	pthread_kill(job->jtid, SIGTERM);
+
+	/* kill signal thread */
 	pthread_kill(job->sigid, SIGTERM);
+
+	/* flush stdio and kill io thread */
 	fflush(stderr);
 	fflush(stdout);
 	pthread_kill(job->ioid, SIGTERM);
@@ -359,7 +366,7 @@ sig_thr(void *arg)
 	pthread_exit(0);
 }
 
-	void 
+void 
 fwd_signal(job_t *job, int signo)
 {
 	int i;
@@ -377,6 +384,9 @@ fwd_signal(job_t *job, int signo)
 	msg.signal      = (uint32_t) signo;
 
 	for (i = 0; i < job->nhosts; i++) {
+		if (job->host_state[i] != SRUN_HOST_REPLIED)
+			continue;
+
 		slurm_set_addr_uint(&req.address, slurm_get_slurmd_port(),
 				ntohl(job->iaddr[i]));
 		debug("sending kill req to %s", job->host[i]);
