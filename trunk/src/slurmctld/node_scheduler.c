@@ -728,13 +728,14 @@ int select_nodes(struct job_record *job_ptr, bool test_only)
 
 	/* pick the nodes providing a best-fit */
 	min_nodes = MAX(job_ptr->details->min_nodes, part_ptr->min_nodes);
-	if (part_ptr->max_nodes == INFINITE)
+	if (job_ptr->details->max_nodes == 0)
+		max_nodes = 0;
+	else if (part_ptr->max_nodes == INFINITE)
 		max_nodes = job_ptr->details->max_nodes;
-	else if (job_ptr->details->max_nodes == 0)
-		max_nodes = part_ptr->max_nodes;
 	else
 		max_nodes = MIN(job_ptr->details->max_nodes, 
 				part_ptr->max_nodes);
+
  	if (part_ptr->shared == SHARED_FORCE)	/* shared=force */
  		shared = 1;
 	else if (part_ptr->shared == SHARED_NO)	/* can't share */
