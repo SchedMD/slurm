@@ -15,9 +15,8 @@
 #include "net.h"
 
 #ifndef NET_DEFAULT_BACKLOG
-#  define NET_DEFAULT_BACKLOG	16
+#  define NET_DEFAULT_BACKLOG	1024
 #endif 
-
 
 static int _sock_bind_wild(int sockfd)
 {
@@ -54,7 +53,8 @@ int net_stream_listen(int *fd, int *port)
 	*port = _sock_bind_wild(*fd);
 	if (*port < 0)
 		goto cleanup;
-
+#undef SOMAXCONN
+#define SOMAXCONN	1024
 	rc = listen(*fd, NET_DEFAULT_BACKLOG);
 	if (rc < 0)
 		goto cleanup;

@@ -76,6 +76,7 @@ main(int ac, char **av)
 	sigset_t sigset;
 	allocation_resp *resp;
 	job_t *job;
+	pthread_attr_t attr, ioattr;
 	struct sigaction action;
 	int n, i;
 
@@ -122,11 +123,10 @@ main(int ac, char **av)
 	}
 
 	/* block most signals in all threads, except sigterm */
-	sigfillset(&sigset);
-	sigdelset(&sigset, SIGTERM);
-	sigdelset(&sigset, SIGABRT);
-	sigdelset(&sigset, SIGSEGV);
-	sigdelset(&sigset, SIGQUIT);
+	sigemptyset(&sigset);
+	sigaddset(&sigset, SIGINT);
+	sigaddset(&sigset, SIGTSTP);
+	sigaddset(&sigset, SIGSTOP);
 	if (sigprocmask(SIG_BLOCK, &sigset, NULL) != 0)
 		fatal("sigprocmask: %m");
 	action.sa_handler = &sigterm_handler;
@@ -135,40 +135,46 @@ main(int ac, char **av)
 
 	/* job structure should now be filled in */
 
-	if ((job->jfd = slurm_init_msg_engine_port(0)) == SLURM_SOCKET_ERROR)
-		fatal("init_msg_engine_port: %s", slurm_strerror(errno));
+	for (i = 0; i < job->njfds; i++) {
+		if ((job->jfd[i] = slurm_init_msg_engine_port(0)) < 0)
+			fatal("init_msg_engine_port: %m");
+		if (slurm_get_stream_addr(job->jfd[i], &job->jaddr[i]) < 0)
+			fatal("slurm_get_stream_addr: %m");
+		debug("initialized job control port %d\n", 
+			ntohs(((struct sockaddr_in)job->jaddr[i]).sin_port));
+	}
 
-	if (slurm_get_stream_addr(job->jfd, &job->jaddr) < 0)
-		fatal("slurm_get_stream_addr: %m");
 
-	debug("initialized job control port %d\n", 
-			ntohs(((struct sockaddr_in)job->jaddr).sin_port));
+	for (i = 0; i < job->niofds; i++) {
+		if (net_stream_listen(&job->iofd[i], &job->ioport[i]) < 0)
+			fatal("unable to initialize stdio server port: %m");
+		debug("initialized stdio server port %d\n", 
+				ntohs(job->ioport[i]));
+	}
 
-	if (net_stream_listen(&job->iofd, &job->ioport) < 0)
-		fatal("unable to initialize stdio server port: %m");
+	pthread_attr_init(&attr);
 
-	debug("initialized stdio server port %d\n", ntohs(job->ioport));
-
-						
-	/* spawn io server thread */
-
-	if (pthread_create(&job->ioid, NULL, &io_thr, (void *) job))
-		fatal("Unable to create io thread. %m\n");
-	debug("Started IO server thread (%d)\n", job->ioid);
-
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	/* spawn msg server thread */
-
-	if (pthread_create(&job->jtid, NULL, &msg_thr, (void *) job))
+	if ((errno = pthread_create(&job->jtid, &attr, &msg_thr, (void *) job)))
 		fatal("Unable to create message thread. %m\n");
 	debug("Started msg server thread (%d)\n", job->jtid);
 
+	pthread_attr_init(&ioattr);
+	/* spawn io server thread */
+	if ((errno = pthread_create(&job->ioid, &ioattr, &io_thr, (void *) job)))
+		fatal("Unable to create io thread. %m\n");
+	debug("Started IO server thread (%d)\n", job->ioid);
+
 	/* spawn signal thread */
-	if (pthread_create(&job->sigid, NULL, &sig_thr, (void *) job))
+	if ((errno = pthread_create(&job->sigid, &attr, &sig_thr, (void *) job)))
 		fatal("Unable to create signals thread. %m");
 	debug("Started signals thread (%d)", job->sigid);
 
+
+
 	/* launch jobs */
-	if (pthread_create(&job->lid, NULL, &launch, (void *) job))
+	if ((errno = pthread_create(&job->lid, &attr, &launch, (void *) job)))
 		fatal("Unable to create launch thread. %m");
 	debug("Started launch thread (%d)", job->lid);
 
@@ -287,13 +293,13 @@ qsw_standalone(job_t *job)
 		if ((nodeid = qsw_getnodeid_byhost(job->host[i])) < 0)
 				fatal("qsw_getnodeid_byhost: %m");
 		bit_set(nodeset, nodeid);
-
 	}
 
 	if (qsw_alloc_jobinfo(&job->qsw_job) < 0)
 		fatal("qsw_alloc_jobinfo: %m");
 	if (qsw_setup_jobinfo(job->qsw_job, opt.nprocs, nodeset, 0) < 0)
 		fatal("qsw_setup_jobinfo: %m");
+
 }
 #endif /* HAVE_LIBELAN3 */
 

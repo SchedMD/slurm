@@ -1,9 +1,12 @@
 #include <errno.h>
 #include <pthread.h>
+#include <sys/poll.h>
+#include <fcntl.h>
 
 #include <src/common/xmalloc.h>
 #include <src/common/slurm_protocol_api.h>
 #include <src/common/slurm_protocol_defs.h>
+#include <src/common/slurm_errno.h>
 #include <src/common/log.h>
 #include <src/common/xassert.h>
 
@@ -11,6 +14,21 @@
 #include "opt.h"
 
 static int tasks_exited = 0;
+
+#define _poll_set_rd(_pfd, _fd) do {    \
+	(_pfd).fd = _fd;                \
+	(_pfd).events = POLLIN;         \
+	} while (0)
+
+#define _poll_set_wr(_pfd, _fd) do {    \
+	(_pfd).fd = _fd;                \
+	(_pfd).events = POLLOUT;        \
+	} while (0)
+
+#define _poll_rd_isset(pfd) ((pfd).revents & POLLIN )
+#define _poll_wr_isset(pfd) ((pfd).revents & POLLOUT)
+#define _poll_err(pfd)      ((pfd).revents & POLLERR)
+
 
 static void
 _launch_handler(job_t *job, slurm_msg_t *resp)
@@ -73,9 +91,99 @@ _handle_msg(job_t *job, slurm_msg_t *msg)
 	slurm_free_msg(msg);
 }
 
+static void
+_accept_msg_connection(job_t *job, int fdnum)
+{
+	slurm_fd fd;
+	slurm_msg_t *msg = NULL;
+	slurm_addr  cli_addr;
+	char addrbuf[256];
+
+	if ((fd = slurm_accept_msg_conn(job->jfd[fdnum], &cli_addr)) < 0) {
+		error("slurm_accept_msg_conn: %m");
+		return;
+	}
+
+	slurm_print_slurm_addr(&cli_addr, addrbuf, 256);
+	debug2("got message connection from %s", addrbuf);
+
+	msg = xmalloc(sizeof(*msg));
+	if (slurm_receive_msg(fd, msg) == SLURM_SOCKET_ERROR) {
+		error("slurm_receive_msg: %m");
+		return;
+	}
+
+	msg->conn_fd = fd;
+
+	_handle_msg(job, msg);
+
+	slurm_close_accepted_conn(fd);
+
+	return;
+}
+
+static void
+_set_jfds_nonblocking(job_t *job)
+{
+	int i;
+	for (i = 0; i < job->njfds; i++) {
+		if (fcntl(job->jfd[i], F_SETFL, O_NONBLOCK) < 0)
+			error("Unable to set nonblocking I/O on jfd %d", i);
+	}
+}
+
+static void 
+_msg_thr_poll(job_t *job)
+{
+	struct pollfd *fds;
+	nfds_t nfds = job->njfds;
+	int i;
+
+	fds = xmalloc(job->njfds * sizeof(*fds));
+
+	_set_jfds_nonblocking(job);
+
+	for (i = 0; i < job->njfds; i++)
+		_poll_set_rd(fds[i], job->jfd[i]);
+
+	for (;;) {
+
+		while (poll(fds, nfds, -1) < 0) {
+			switch (errno) {
+				case EINTR:
+					continue;
+					break;
+				case ENOMEM:
+				case EFAULT:
+					fatal("poll: %m");
+					break;
+				default:
+					error("poll: %m. trying again");
+					break;
+			}
+		}
+
+		for (i = 0; i < job->njfds; i++) {
+			unsigned short revents = fds[i].revents;
+			if (revents & POLLERR)
+				error("poll error on jfd %d: %m", fds[i].fd);
+			else if (revents & POLLIN) 
+				_accept_msg_connection(job, i);
+		}
+	}
+}
 
 void *
 msg_thr(void *arg)
+{
+	job_t *job = (job_t *) arg;
+	debug3("msg thread pid = %ld", getpid());
+	_msg_thr_poll(job);
+	return (void *)1;
+}
+
+void *
+_msg_thr_one(void *arg)
 {
 	job_t *job = (job_t *) arg;
 	slurm_fd fd;
@@ -89,7 +197,7 @@ msg_thr(void *arg)
 	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
 	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
 
-	fd = job->jfd;
+	fd = job->jfd[0];
 
 	while (1) {
 

@@ -50,15 +50,18 @@ typedef struct srun_job {
 	int *ntask; 		/* number of tasks to run on each host*/
         uint32_t *iaddr;	/* in_addr vector  */
 
-	pthread_t sigid;	/* signals thread tid	*/
+	pthread_t sigid;	/* signals thread tid		  */
 
-	pthread_t jtid;		/* job control thread id */
-	slurm_fd jfd;		/* job control info fd   */
-	slurm_addr jaddr;	/* job control info port */
+	pthread_t jtid;		/* job control thread id 	  */
+	int njfds;		/* number of job control info fds */
+	slurm_fd *jfd;		/* job control info fd   	  */
+	slurm_addr *jaddr;	/* job control info port 	  */
 
-	pthread_t ioid;		/* stdio thread id */
-	int iofd;		/* stdio listen fd */
-	int ioport;		/* stdio listen port */
+	pthread_t ioid;		/* stdio thread id 		  */
+	int niofds;		/* Number of IO fds  		  */
+	int *iofd;		/* stdio listen fds 		  */
+	int *ioport;		/* stdio listen ports 		  */
+
 	int *out;		/* ntask stdout fds */
 	int *err;		/* ntask stderr fds */
 

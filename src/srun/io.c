@@ -32,7 +32,7 @@ typedef struct fd_info {
 	FILE *fp;	/* fp on which to write output		*/
 } fd_info_t;
 
-static void _accept_io_stream(job_t *job);
+static void _accept_io_stream(job_t *job, int i);
 static int  _do_task_output_poll(fd_info_t *info);
 static int  _do_task_output(int *fd, FILE *out, int tasknum);
 static void _bcast_stdin(int fd, job_t *job);	
@@ -60,34 +60,48 @@ _do_task_output_poll(fd_info_t *info)
 	return _do_task_output(info->fd, info->fp, info->taskid);
 }
 
-static void 
-*_io_thr_poll(void *job_arg)
+static void
+_set_iofds_nonblocking(job_t *job)
+{
+	int i;
+	for (i = 0; i < job->niofds; i++) {
+		if (fcntl(job->iofd[i], F_SETFL, O_NONBLOCK) < 0)
+			error("Unable to set nonblocking I/O on iofd %d", i);
+	}
+}
+
+static void *
+_io_thr_poll(void *job_arg)
 {
 	job_t *job = (job_t *) job_arg;
 	struct pollfd *fds;
 	nfds_t nfds = 0;
-	fd_info_t map[opt.nprocs*2+3];	/* map fd in pollfd array to fd info */
+	int numfds = (opt.nprocs*2) + job->niofds + 2;
+	fd_info_t map[numfds];	/* map fd in pollfd array to fd info */
 	int i;
 
 	xassert(job != NULL);
 
-	/* need ioport + msgport + stdin + 2*nprocs fds */
-	fds = xmalloc((3+2*opt.nprocs)*sizeof(*fds));
+	debug3("IO thread pid = %ld", getpid());
 
-	if (fcntl(job->iofd, F_SETFL, O_NONBLOCK) < 0)
-		error("Unable to set nonblocking I/O on iofd\n");
+	/* need ioport + msgport + stdin + 2*nprocs fds */
+	fds = xmalloc(numfds*sizeof(*fds));
+
+	_set_iofds_nonblocking(job);
 
 	for (i = 0; i < opt.nprocs; i++) {
 		job->out[i] = -1; 
 		job->err[i] = -1;
 	}
 
-	_poll_set_rd(fds[0], job->iofd   );
-	_poll_set_rd(fds[1], STDIN_FILENO);
+	for (i = 0; i < job->niofds; i++) {
+		_poll_set_rd(fds[i], job->iofd[i]);
+	}
+	_poll_set_rd(fds[i], STDIN_FILENO);
 
 	while (1) {
 		int eofcnt = 0;
-		nfds = 2;
+		nfds = job->niofds+1; /* already have n ioport fds + stdin */
 
 		for (i = 0; i < opt.nprocs; i++) {
 			if (job->out[i] > 0) {
@@ -114,7 +128,7 @@ static void
 		if (eofcnt == opt.nprocs)
 			pthread_exit(0);
 
-		while (poll(fds, nfds, 500) < 0) {
+		while (poll(fds, nfds, -1) < 0) {
 			switch(errno) {
 				case EINTR:
 					continue;
@@ -129,21 +143,23 @@ static void
 			}
 		}
 
-		if (fds[0].revents) {
-			_accept_io_stream(job);
+		for (i = 0; i < job->niofds; i++) {
+			if (fds[i].revents) 
+				_accept_io_stream(job, i);
 		}
 
-		for (i = 2; i < nfds; i++) {
+		if (_poll_rd_isset(fds[i++]))
+			_bcast_stdin(STDIN_FILENO, job);
+
+		for (; i < nfds; i++) {
 			unsigned short revents = fds[i].revents;
 			if (revents & POLLERR)
-				error("poll error on fd %d", fds[i].fd);
+				error("poll error on fd %d: %m", fds[i].fd);
 			else if (revents & POLLIN) {
 				_do_task_output_poll(&map[i]);
 			} 
 		}
 
-		if (_poll_rd_isset(fds[1]))
-			_bcast_stdin(STDIN_FILENO, job);
 	}
 }
 
@@ -158,8 +174,7 @@ static void
 
 	xassert(job != NULL);
 
-	if (fcntl(job->iofd, F_SETFL, O_NONBLOCK) < 0)
-		error("Unable to set nonblocking I/O on fd\n");
+	_set_iofds_nonblocking(job);
 
 	for (i = 0; i < opt.nprocs; i++) {
 		job->out[i] = -1; 
@@ -172,9 +187,12 @@ static void
 		FD_ZERO(&rset);
 		FD_ZERO(&wset);
 
-		maxfd = MAX(job->iofd, STDIN_FILENO);
-		FD_SET(job->iofd, &rset);
 		FD_SET(STDIN_FILENO, &rset);
+		maxfd = MAX(job->iofd[0], STDIN_FILENO);
+		for (i = 0; i < job->niofds; i++) {
+			FD_SET(job->iofd[i], &rset);
+			maxfd = MAX(maxfd, job->iofd[i]);
+		}
 
 		for (i = 0; i < opt.nprocs; i++) {
 			maxfd = MAX(maxfd, job->out[i]);
@@ -198,8 +216,10 @@ static void
 				fatal("Unable to handle I/O: %m", errno);
 		}	
 
-		if (FD_ISSET(job->iofd, &rset)) 
-			_accept_io_stream(job);
+		for (i = 0; i < job->niofds; i++) {
+			if (FD_ISSET(job->iofd[i], &rset)) 
+				_accept_io_stream(job, i);
+		}
 
 		for (i = 0; i < opt.nprocs; i++) {
 			if (job->err[i] > 0 && FD_ISSET(job->err[i], &rset)) 
@@ -222,51 +242,55 @@ io_thr(void *arg)
 }
 
 static void
-_accept_io_stream(job_t *job)
+_accept_io_stream(job_t *job, int i)
 {
-	int sd;
-	struct sockaddr addr;
-	struct sockaddr_in *sin;
-	int size = sizeof(addr);
-	char buf[INET_ADDRSTRLEN];
-	slurm_io_stream_header_t hdr;
-	uint32_t len = sizeof(hdr) - 4;
-	char msgbuf[len];
-	char *bufptr = msgbuf;
+	verbose("Activity on IO server port %d", i);
 
+	for (;;) {
+		int sd;
+		struct sockaddr addr;
+		struct sockaddr_in *sin;
+		int size = sizeof(addr);
+		char buf[INET_ADDRSTRLEN];
+		slurm_io_stream_header_t hdr;
+		uint32_t len = sizeof(hdr) - 4;
+		char msgbuf[len];
+		char *bufptr = msgbuf;
 
-	while ((sd = accept(job->iofd, &addr, (socklen_t *) &size)) < 0) {
-		if (errno == EINTR)
-			continue;
-		if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
-			return;
-		if (errno == ECONNABORTED)
-			return;
-		error("Unable to accept new connection: %m\n");
+		while ((sd = accept(job->iofd[i], &addr, (socklen_t *)&size)) < 0) {
+			if (errno == EINTR)
+				continue;
+			if ((errno == EAGAIN) || (errno == EWOULDBLOCK))
+				return;
+			if (errno == ECONNABORTED)
+				return;
+			error("Unable to accept new connection: %m\n");
+		}
+
+		sin = (struct sockaddr_in *) &addr;
+		inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
+
+		_readn(sd, &msgbuf, len); 
+		unpack_io_stream_header(&hdr, (void **) &bufptr, &len); 
+
+		/* Assign new fds arbitrarily for now, until slurmd
+		 * sends along some control information
+		 */
+
+		/* Do I even need this? */
+		if (fcntl(sd, F_SETFL, O_NONBLOCK) < 0)
+			error("Unable to set nonblocking I/O on new connection");
+
+		if (hdr.type == SLURM_IO_STREAM_INOUT)
+			job->out[hdr.task_id] = sd;
+		else
+			job->err[hdr.task_id] = sd;
+
+		/* XXX: Need to check key */
+		verbose("accepted %s connection from %s task %ld, sd=%d", 
+				(hdr.type ? "stderr" : "stdout"), 
+				buf, hdr.task_id, sd                   );
 	}
-
-	sin = (struct sockaddr_in *) &addr;
-	inet_ntop(AF_INET, &sin->sin_addr, buf, INET_ADDRSTRLEN);
-
-	_readn(sd, &msgbuf, len); 
-	unpack_io_stream_header(&hdr, (void **) &bufptr, &len); 
-
-	/* Assign new fds arbitrarily for now, until slurmd
-	 * sends along some control information
-	 */
-
-	/* Do I even need this? */
-	if (fcntl(sd, F_SETFL, O_NONBLOCK) < 0)
-		error("Unable to set nonblocking I/O on new connection");
-
-	if (hdr.type == SLURM_IO_STREAM_INOUT)
-		job->out[hdr.task_id] = sd;
-	else
-		job->err[hdr.task_id] = sd;
-
-	debug("accepted %s connection from %s task %ld, sd=%d", 
-			(hdr.type ? "stderr" : "stdout"), 
-			buf, hdr.task_id, sd                   );
 
 }
 
