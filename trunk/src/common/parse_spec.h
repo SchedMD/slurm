@@ -28,7 +28,7 @@
 #define	_SLURM_PARSE_H_
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #  if HAVE_INTTYPES_H
 #    include <inttypes.h>
 #  else
@@ -42,21 +42,26 @@
 
 /* 
  * slurm_parser - parse the supplied specification into keyword/value pairs
- *	only the keywords supplied will be searched for. the supplied specification
- *	is altered, overwriting the keyword and value pairs with spaces.
+ *	only the keywords supplied will be searched for. the supplied 
+ *	specification is altered, overwriting the keyword and value pairs 
+ *	with spaces.
  */
 extern int slurm_parser (char *spec, ...) ;
 
-/* load_float - parse a string for a keyword, value pair, and load the float value */
+/* load_float - parse a string for a keyword, value pair, and load the 
+ *	float value */
 extern int load_float (float *destination, char *keyword, char *in_line) ;
 
-/* load_integer - parse a string for a keyword, value pair, and load the integer value */
+/* load_integer - parse a string for a keyword, value pair, and load the 
+ *	integer value */
 extern int load_integer (int *destination, char *keyword, char *in_line) ;
 
-/* load_long - parse a string for a keyword, value pair, and load the long value */
+/* load_long - parse a string for a keyword, value pair, and load the 
+ *	long value */
 extern int load_long (long *destination, char *keyword, char *in_line) ;
 
-/* load_string - parse a string for a keyword, value pair, and load the char value */
+/* load_string - parse a string for a keyword, value pair, and load the 
+ *	char value */
 extern int load_string (char **destination, char *keyword, char *in_line) ;
 
 #endif

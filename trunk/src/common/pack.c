@@ -27,8 +27,9 @@
 \****************************************************************************/
 
 #if HAVE_CONFIG_H
-#  include <config.h>
+#  include "config.h"
 #endif
+
 #include <stdlib.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -36,16 +37,17 @@
 #include <time.h>
 #include <inttypes.h>
 
-#include <src/common/pack.h>
-#include <src/common/slurm_errno.h>
-#include <src/common/xmalloc.h>
-#include <src/common/macros.h>
+#include "src/common/pack.h"
+#include "src/common/slurm_errno.h"
+#include "src/common/xmalloc.h"
+#include "src/common/macros.h"
 
 #define BUF_SIZE 4096
 
 
 /* Basic buffer management routines */
-/* create_buf - create a buffer with the supplied contents, contents must be xalloc'ed */
+/* create_buf - create a buffer with the supplied contents, contents must
+ * be xalloc'ed */
 Buf create_buf(char *data, int size)
 {
 	Buf my_buf;
@@ -82,7 +84,8 @@ Buf init_buf(int size)
 	return my_buf;
 }
 
-/* xfer_buf_data - return a pointer to the buffer's data and release the buffer's structure */
+/* xfer_buf_data - return a pointer to the buffer's data and release the
+ * buffer's structure */
 void *xfer_buf_data(Buf my_buf)
 {
 	void *data_ptr;
@@ -398,9 +401,9 @@ int unpackmem_malloc(char **valp, uint16_t * size_valp, Buf buffer)
 }
 
 /*
- * Given a pointer to array of char * (char ** or char *[] ) and a size (size_val),  
- * convert size_val to network byte order and store in the buffer followed by 
- * the data at valp. Adjust buffer counters. 
+ * Given a pointer to array of char * (char ** or char *[] ) and a size  
+ * (size_val), convert size_val to network byte order and store in the  
+ * buffer followed by the data at valp. Adjust buffer counters. 
  */
 void packstr_array(char **valp, uint16_t size_val, Buf buffer)
 {
