@@ -86,6 +86,8 @@ slurm_print_job_info ( FILE* out, job_info_t * job_ptr )
 		  job_ptr->alloc_node, job_ptr->alloc_sid);
 	if (job_ptr->time_limit == INFINITE)
 		fprintf ( out, "UNLIMITED\n");
+	else if (job_ptr->time_limit == NO_VAL)
+		fprintf ( out, "Partition_Limit\n");
 	else
 		fprintf ( out, "%u\n", job_ptr->time_limit);
 
