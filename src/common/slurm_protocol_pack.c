@@ -1267,6 +1267,7 @@ _pack_kill_job_msg(kill_job_msg_t * msg, Buf buffer)
 
 	pack32(msg->job_id,  buffer);
 	pack32(msg->job_uid, buffer);
+	select_g_pack_jobinfo(msg->select_jobinfo, buffer);
 }
 
 static int
@@ -1281,6 +1282,10 @@ _unpack_kill_job_msg(kill_job_msg_t ** msg, Buf buffer)
 
 	safe_unpack32(&(tmp_ptr->job_id),  buffer);
 	safe_unpack32(&(tmp_ptr->job_uid), buffer);
+
+	if (select_g_alloc_jobinfo (&tmp_ptr->select_jobinfo)
+	||  select_g_unpack_jobinfo(tmp_ptr->select_jobinfo, buffer))
+		goto unpack_error;
 
 	return SLURM_SUCCESS;
 

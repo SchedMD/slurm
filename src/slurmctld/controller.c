@@ -3,7 +3,7 @@
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
- *  Written by Morris Jette <jette@llnl.gov>, Kevin Tew <tew1@llnl.gov>, et. al.
+ *  Written by Morris Jette <jette1@llnl.gov>, Kevin Tew <tew1@llnl.gov>
  *  UCRL-CODE-2002-040.
  *  
  *  This file is part of SLURM, a resource management program.
@@ -345,9 +345,9 @@ int main(int argc, char *argv[])
 
 	/* Plugins are needed to purge job/node data structures,
 	 * unplug after other data structures are purged */
-	slurm_select_fini();
 	g_slurm_jobcomp_fini();
 	slurm_sched_fini();
+	slurm_select_fini();
 	checkpoint_fini();
 	slurm_auth_fini();
 	switch_fini();

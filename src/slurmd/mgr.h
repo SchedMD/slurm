@@ -50,8 +50,12 @@ int mgr_launch_tasks(launch_tasks_request_msg_t *msg, slurm_addr *client,
 int mgr_launch_batch_job(batch_job_launch_msg_t *msg, slurm_addr *client);
 
 /*
- * Run epilog or prolog on this node
+ * Run a prolog or epilog script. Sets environment variables:
+ *   SLURM_JOBID = jobid, SLURM_UID=uid, and
+ *   BGL_PARTITION_ID=bgl_part_id (if not NULL)
+ * Returns -1 on failure.
  */
-int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid);
+extern int run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid,
+		char *bgl_part_id);
 
 #endif

@@ -256,12 +256,14 @@ mgr_spawn_task(spawn_task_request_msg_t *msg, slurm_addr *cli,
 }
 
 /*
- * Run a prolog or epilog script.
- * returns -1 on failure. 
- *
+ * Run a prolog or epilog script. Sets environment variables:
+ *   SLURM_JOBID = jobid, SLURM_UID=uid, and
+ *   BGL_PARTITION_ID=bgl_part_id (if not NULL)
+ * Returns -1 on failure. 
  */
-int 
-run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
+extern int 
+run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid, 
+		char *bgl_part_id)
 {
 	int status;
 	pid_t cpid;
@@ -293,6 +295,8 @@ run_script(bool prolog, const char *path, uint32_t jobid, uid_t uid)
 		env[0]  = NULL;
 		setenvpf(&env, "SLURM_JOBID", "%u", jobid);
 		setenvpf(&env, "SLURM_UID",   "%u", uid);
+		if (bgl_part_id)
+			setenvpf(&env, "BGL_PARTITION_ID", "%s", bgl_part_id);
 
 		execve(path, argv, env);
 		error("help! %m");
