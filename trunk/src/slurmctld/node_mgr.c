@@ -665,12 +665,12 @@ load_node_state ( void )
 	if (buffer_size > sizeof (uint32_t))
 		unpack32 (&time, &buf_ptr, &buffer_size);
 
-	while (buffer_size >= (4 *sizeof (uint32_t))) {
-		unpackstr_xmalloc (&node_name, &name_len, &buf_ptr, &buffer_size);
-		unpack16 (&node_state, &buf_ptr, &buffer_size);
-		unpack32 (&cpus, &buf_ptr, &buffer_size);
-		unpack32 (&real_memory, &buf_ptr, &buffer_size);
-		unpack32 (&tmp_disk, &buf_ptr, &buffer_size);
+	while (buffer_size > 0) {
+		safe_unpackstr_xmalloc (&node_name, &name_len, &buf_ptr, &buffer_size);
+		safe_unpack16 (&node_state, &buf_ptr, &buffer_size);
+		safe_unpack32 (&cpus, &buf_ptr, &buffer_size);
+		safe_unpack32 (&real_memory, &buf_ptr, &buffer_size);
+		safe_unpack32 (&tmp_disk, &buf_ptr, &buffer_size);
 
 		/* find record and perform update */
 		node_ptr = find_node_record (node_name);

@@ -480,16 +480,16 @@ load_part_state ( void )
 	if (buffer_size > sizeof (uint32_t))
 		unpack32 (&time, &buf_ptr, &buffer_size);
 
-	while (buffer_size >= (6 *sizeof (uint32_t))) {
-		unpackstr_xmalloc (&part_name, &name_len, &buf_ptr, &buffer_size);
-		unpack32 (&max_time, &buf_ptr, &buffer_size);
-		unpack32 (&max_nodes, &buf_ptr, &buffer_size);
-		unpack16 (&def_part_flag, &buf_ptr, &buffer_size);
-		unpack16 (&root_only, &buf_ptr, &buffer_size);
-		unpack16 (&shared, &buf_ptr, &buffer_size);
-		unpack16 (&state_up, &buf_ptr, &buffer_size);
-		unpackstr_xmalloc (&allow_groups, &name_len, &buf_ptr, &buffer_size);
-		unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
+	while (buffer_size > 0) {
+		safe_unpackstr_xmalloc (&part_name, &name_len, &buf_ptr, &buffer_size);
+		safe_unpack32 (&max_time, &buf_ptr, &buffer_size);
+		safe_unpack32 (&max_nodes, &buf_ptr, &buffer_size);
+		safe_unpack16 (&def_part_flag, &buf_ptr, &buffer_size);
+		safe_unpack16 (&root_only, &buf_ptr, &buffer_size);
+		safe_unpack16 (&shared, &buf_ptr, &buffer_size);
+		safe_unpack16 (&state_up, &buf_ptr, &buffer_size);
+		safe_unpackstr_xmalloc (&allow_groups, &name_len, &buf_ptr, &buffer_size);
+		safe_unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
 
 		/* find record and perform update */
 		part_ptr = list_find_first (part_list, &list_find_part, part_name);

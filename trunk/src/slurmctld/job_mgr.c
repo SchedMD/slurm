@@ -414,6 +414,8 @@ dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf
 {
 	char tmp_str[MAX_STR_PACK];
 
+	pack_job_credential ( &detail_ptr->credential , buf_ptr , buf_len ) ;
+
 	pack32  ((uint32_t) detail_ptr->num_procs, buf_ptr, buf_len);
 	pack32  ((uint32_t) detail_ptr->num_nodes, buf_ptr, buf_len);
 	pack16  ((uint16_t) detail_ptr->shared, buf_ptr, buf_len);
@@ -478,8 +480,6 @@ dump_job_details_state (struct job_details *detail_ptr, void **buf_ptr, int *buf
 		tmp_str[MAX_STR_PACK-1] = (char) NULL;
 		packstr (tmp_str, buf_ptr, buf_len);
 	}
-
-	pack_job_credential ( &detail_ptr->credential , buf_ptr , buf_len ) ;
 }
 
 /*
@@ -564,22 +564,22 @@ load_job_state ( void )
 	if (buffer_size > sizeof (uint32_t))
 		unpack32 (&time, &buf_ptr, &buffer_size);
 
-	while (buffer_size >= (8 *sizeof (uint32_t))) {
-		unpack32 (&job_id, &buf_ptr, &buffer_size);
-		unpack32 (&user_id, &buf_ptr, &buffer_size);
-		unpack32 (&time_limit, &buf_ptr, &buffer_size);
-		unpack32 (&priority, &buf_ptr, &buffer_size);
+	while (buffer_size > 0) {
+		safe_unpack32 (&job_id, &buf_ptr, &buffer_size);
+		safe_unpack32 (&user_id, &buf_ptr, &buffer_size);
+		safe_unpack32 (&time_limit, &buf_ptr, &buffer_size);
+		safe_unpack32 (&priority, &buf_ptr, &buffer_size);
 
-		unpack32 (&start_time, &buf_ptr, &buffer_size);
-		unpack32 (&end_time, &buf_ptr, &buffer_size);
-		unpack16 (&job_state, &buf_ptr, &buffer_size);
-		unpack16 (&next_step_id, &buf_ptr, &buffer_size);
+		safe_unpack32 (&start_time, &buf_ptr, &buffer_size);
+		safe_unpack32 (&end_time, &buf_ptr, &buffer_size);
+		safe_unpack16 (&job_state, &buf_ptr, &buffer_size);
+		safe_unpack16 (&next_step_id, &buf_ptr, &buffer_size);
 
-		unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
-		unpackstr_xmalloc (&partition, &name_len, &buf_ptr, &buffer_size);
-		unpackstr_xmalloc (&name, &name_len, &buf_ptr, &buffer_size);
+		safe_unpackstr_xmalloc (&nodes, &name_len, &buf_ptr, &buffer_size);
+		safe_unpackstr_xmalloc (&partition, &name_len, &buf_ptr, &buffer_size);
+		safe_unpackstr_xmalloc (&name, &name_len, &buf_ptr, &buffer_size);
 
-		unpack16 (&details, &buf_ptr, &buffer_size);
+		safe_unpack16 (&details, &buf_ptr, &buffer_size);
 		if ((buffer_size < (11 * sizeof (uint32_t))) && details) {
 			/* no room for details */
 			error ("job state file problem on job %u", job_id);
@@ -587,24 +587,25 @@ load_job_state ( void )
 		}
 
 		if (details == 0xdddd ) {
-			unpack32 (&num_procs, &buf_ptr, &buffer_size);
-			unpack32 (&num_nodes, &buf_ptr, &buffer_size);
-			unpack16 (&shared, &buf_ptr, &buffer_size);
-			unpack16 (&contiguous, &buf_ptr, &buffer_size);
+			unpack_job_credential (&credential_ptr , &buf_ptr, &buffer_size);
 
-			unpack32 (&min_procs, &buf_ptr, &buffer_size);
-			unpack32 (&min_memory, &buf_ptr, &buffer_size);
-			unpack32 (&min_tmp_disk, &buf_ptr, &buffer_size);
-			unpack32 (&submit_time, &buf_ptr, &buffer_size);
-			unpack32 (&total_procs, &buf_ptr, &buffer_size);
+			safe_unpack32 (&num_procs, &buf_ptr, &buffer_size);
+			safe_unpack32 (&num_nodes, &buf_ptr, &buffer_size);
+			safe_unpack16 (&shared, &buf_ptr, &buffer_size);
+			safe_unpack16 (&contiguous, &buf_ptr, &buffer_size);
 
-			unpackstr_xmalloc (&req_nodes, &name_len, &buf_ptr, &buffer_size);
-			unpackstr_xmalloc (&features, &name_len, &buf_ptr, &buffer_size);
-			unpackstr_xmalloc (&stderr, &name_len, &buf_ptr, &buffer_size);
-			unpackstr_xmalloc (&stdin, &name_len, &buf_ptr, &buffer_size);
-			unpackstr_xmalloc (&stdout, &name_len, &buf_ptr, &buffer_size);
-			unpackstr_xmalloc (&work_dir, &name_len, &buf_ptr, &buffer_size);
-			unpack_job_credential ( &credential_ptr , &buf_ptr, &buffer_size);
+			safe_unpack32 (&min_procs, &buf_ptr, &buffer_size);
+			safe_unpack32 (&min_memory, &buf_ptr, &buffer_size);
+			safe_unpack32 (&min_tmp_disk, &buf_ptr, &buffer_size);
+			safe_unpack32 (&submit_time, &buf_ptr, &buffer_size);
+			safe_unpack32 (&total_procs, &buf_ptr, &buffer_size);
+
+			safe_unpackstr_xmalloc (&req_nodes, &name_len, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&features, &name_len, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&stderr, &name_len, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&stdin, &name_len, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&stdout, &name_len, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&work_dir, &name_len, &buf_ptr, &buffer_size);
 		}
 
 		if (nodes) {
@@ -643,7 +644,7 @@ load_job_state ( void )
 			strncpy (job_ptr->partition, partition, MAX_NAME_LEN);
 			job_ptr->part_ptr = part_ptr;
 			add_job_hash (job_ptr);
-			info ("recovering job id %u", job_id);
+			info ("recovered job id %u", job_id);
 		}
 
 		job_ptr->user_id = user_id;
@@ -685,29 +686,33 @@ load_job_state ( void )
 					sizeof (job_ptr->details->credential));
 		}
 
-		unpack16 (&step_flag, &buf_ptr, &buffer_size);
+		safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
 		while ((step_flag == 0xbbbb) && (buffer_size > (2 * sizeof (uint32_t)))) {
 			struct step_record *step_ptr;
 			uint16_t step_id;
 			uint32_t start_time;
 			char *node_list;
 
+			safe_unpack16 (&step_id, &buf_ptr, &buffer_size);
+			safe_unpack32 (&start_time, &buf_ptr, &buffer_size);
+			safe_unpackstr_xmalloc (&node_list, &name_len, &buf_ptr, &buffer_size);
+
 			step_ptr = create_step_record (job_ptr);
-			unpack16 (&step_id, &buf_ptr, &buffer_size);
-			unpack32 (&start_time, &buf_ptr, &buffer_size);
+			if (step_ptr == NULL) 
+				break;
 			step_ptr->step_id = step_id;
 			step_ptr->start_time = start_time;
-
-			unpackstr_xmalloc (&node_list, &name_len, &buf_ptr, &buffer_size);
+			info ("recovered job step %u.%u", job_id, step_id);
 			if (node_list) {
 				(void) node_name2bitmap (node_list, &(step_ptr->node_bitmap));
 				xfree (node_list);
 			}
 #ifdef HAVE_LIBELAN3
+			if (buffer_size < (2 * sizeof (uint16_t)))
+				break;
 			qsw_unpack_jobinfo(step_ptr->qsw_job, buf_ptr, &buffer_size);
 #endif
-			info ("recovering job step %u.%u", job_id, step_id);
-			unpack16 (&step_flag, &buf_ptr, &buffer_size);
+			safe_unpack16 (&step_flag, &buf_ptr, &buffer_size);
 		}
 
 cleanup:
