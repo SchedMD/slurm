@@ -654,7 +654,7 @@ extern int slurm_load_ctl_conf PARAMS((
 /*
  * slurm_free_ctl_conf - free slurm control information response message
  * IN msg - pointer to slurm control information response message
- * NOTE: buffer is loaded by slurm_load_jobs
+ * NOTE: buffer is loaded by slurm_load_ctl_conf
  */
 extern void slurm_free_ctl_conf PARAMS((slurm_ctl_conf_t* slurm_ctl_conf_ptr));
 
@@ -686,7 +686,7 @@ extern int slurm_load_jobs PARAMS((
 /*
  * slurm_free_job_info - free the job information response message
  * IN msg - pointer to job information response message
- * NOTE: buffer is loaded by slurm_load_job.
+ * NOTE: buffer is loaded by slurm_load_jobs.
  */
 extern void slurm_free_job_info_msg PARAMS((job_info_msg_t * job_buffer_ptr));
 
