@@ -402,7 +402,7 @@ parse_config_spec (char *in_line)
 
 	if ( job_credential_private_key ) {
 		if ( slurmctld_conf.job_credential_private_key )
-			xfree ( job_credential_private_key ) ;
+			xfree ( slurmctld_conf.job_credential_private_key ) ;
 		slurmctld_conf.job_credential_private_key = job_credential_private_key ;
 	}
 
@@ -880,12 +880,28 @@ read_slurm_conf (int recover) {
 
 	/* if values not set in configuration file, set defaults */
 	if (slurmctld_conf.backup_controller == NULL)
-		info ("read_slurm_conf: backup_controller value not specified.");		
+		info ("read_slurm_conf: backup_controller value not specified.");
+	else if (strcmp("localhost", slurmctld_conf.backup_controller) == 0) {
+		xfree (slurmctld_conf.backup_controller);
+		slurmctld_conf.backup_controller = xmalloc (MAX_NAME_LEN);
+		if ( ( error_code = getnodename (slurmctld_conf.backup_controller, 
+		                                 MAX_NAME_LEN) ) ) 
+			fatal ("getnodename: %m");
+	}
 
-	if (slurmctld_conf.control_machine == NULL) {
+	if (slurmctld_conf.control_machine == NULL)
 		fatal ("read_slurm_conf: control_machine value not specified.");
-		return EINVAL;
-	}			
+	else if (strcmp("localhost", slurmctld_conf.control_machine) == 0) {
+		xfree (slurmctld_conf.control_machine);
+		slurmctld_conf.control_machine = xmalloc (MAX_NAME_LEN);
+		if ( ( error_code = getnodename (slurmctld_conf.control_machine, 
+		                                 MAX_NAME_LEN) ) ) 
+			fatal ("getnodename: %m");
+	}
+
+	if (slurmctld_conf.backup_controller &&
+	    (strcmp(slurmctld_conf.control_machine, slurmctld_conf.backup_controller) == 0))
+		fatal ("read_slurm_conf: control_machine and backup_controller are identical");
 
 	if (default_part_loc == NULL) {
 		error ("read_slurm_conf: default partition not set.");
