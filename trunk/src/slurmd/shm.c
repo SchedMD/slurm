@@ -856,16 +856,20 @@ _shm_clear_stale_entries(void)
 	for (i = 0; i < MAX_JOB_STEPS; i++) {
 		job_step_t *s = &slurmd_shm->step[i];
 		task_t     *t = s->task_list;
+		bool        active_tasks = false;
 
-		if (s->state == SLURMD_JOB_UNUSED) 
+		if ((s->state == SLURMD_JOB_UNUSED)	/* unused */
+		||  (s->sid <= (pid_t) 0)		/* empty */
+		||  (kill(-s->sid, 0) == 0))		/* still active */ 
 			continue;
 
-		while (t->next && t->id != 0) 
+		while (t && !active_tasks) {
+			if (t->pid && (kill(-t->pid, 0) == 0))
+				active_tasks = true;
 			t = t->next;
+		}
 		
-		if (  (s->sid > (pid_t) 0) 
-		   && (kill(-s->sid, 0) != 0)
-		   && (kill(-t->pid, 0) != 0)) {
+		if (!active_tasks) {
 			debug ("Clearing stale job %u.%u from shm",
 					s->jobid, s->stepid);
 			_shm_clear_step(s);
