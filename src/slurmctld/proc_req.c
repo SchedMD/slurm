@@ -1214,7 +1214,7 @@ static void _slurm_rpc_reconfigure_controller(slurm_msg_t * msg)
 		info("_slurm_rpc_reconfigure_controller: completed %s", 
 			TIME_STR);
 		slurm_send_rc_msg(msg, SLURM_SUCCESS);
-		schedule();
+		schedule();	/* has its own locks */
 		save_all_state();
 	}
 }
