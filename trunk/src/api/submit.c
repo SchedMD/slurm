@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * submit.c - submit a job with supplied contraints
+ *  submit.c - submit a job with supplied contraints
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -35,7 +35,7 @@
 #include <src/common/slurm_protocol_api.h>
 
 
-/* slurm_submit_batch_job - load the supplied node information buffer if changed */
+/* slurm_submit_batch_job - issue RPC to submit a job for later execution */
 int
 slurm_submit_batch_job (job_desc_msg_t * job_desc_msg, submit_response_msg_t ** slurm_alloc_msg )
 {

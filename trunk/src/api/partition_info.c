@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * partition_info.c - get the partition information of slurm
+ *  partition_info.c - get/print the partition state information of slurm
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -36,10 +36,14 @@
 #include <src/common/slurm_protocol_api.h>
 
 
+/* slurm_print_partition_info - output information about all Slurm partitions */
 void slurm_print_partition_info ( FILE* out, partition_info_msg_t * part_info_ptr )
 {
 	int i ;
 	partition_table_t * part_ptr = part_info_ptr->partition_array ;
+
+	fprintf( out, "Partitions updated at %ld, record count %d\n",
+		(long) part_info_ptr ->last_update, part_info_ptr->record_count);
 
 	for (i = 0; i < part_info_ptr->record_count; i++) {
 		slurm_print_partition_table ( out, & part_ptr[i] ) ;
@@ -47,6 +51,7 @@ void slurm_print_partition_info ( FILE* out, partition_info_msg_t * part_info_pt
 
 }
 
+/* slurm_print_partition_table - output information about a specific Slurm partition */
 void slurm_print_partition_table ( FILE* out, partition_table_t * part_ptr )
 {
 	int j ;
@@ -96,6 +101,7 @@ void slurm_print_partition_table ( FILE* out, partition_table_t * part_ptr )
 
 
 
+/* slurm_load_partitions - issue RPC to get Slurm partition state information if changed since update_time */
 int
 slurm_load_partitions (time_t update_time, partition_info_msg_t **partition_info_msg_pptr)
 {

@@ -35,12 +35,14 @@
 #include <src/api/slurm.h>
 #include <src/common/slurm_protocol_api.h>
 
+/* slurm_cancel_job - cancel a job and all of its steps */
 int 
 slurm_cancel_job ( uint32_t job_id )
 {
 	return slurm_cancel_job_step ( job_id, NO_VAL);
 }
 
+/* slurm_cancel_job_step - cancel a specific job step (or all steps if step_id==NO_VAL) */
 int 
 slurm_cancel_job_step ( uint32_t job_id, uint32_t step_id  )
 {

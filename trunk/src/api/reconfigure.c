@@ -1,5 +1,5 @@
 /*****************************************************************************\
- * reconfigure.c - request that slurmctld re-read the configuration files
+ *  reconfigure.c - request that slurmctld re-read the configuration files
  *****************************************************************************
  *  Copyright (C) 2002 The Regents of the University of California.
  *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
@@ -37,6 +37,7 @@
 #include <src/common/slurm_protocol_api.h>
 
 
+/* slurm_reconfigure - issue RPC to have slurmctld reload its configuration file */
 int
 slurm_reconfigure ()
 {
