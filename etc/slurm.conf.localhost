@@ -2,6 +2,7 @@
 # Sample /etc/slurm.conf.localhost
 # Author: John Doe
 # Date: 11/06/2001
+# Note: "localhost" is translated by slurmctld to the actual hostname
 #
 ControlMachine=localhost BackupController=localhost
 Epilog="" Prolog=""
@@ -18,10 +19,10 @@ TmpFS=/tmp
 #
 # Node Configurations
 #
-NodeName=DEFAULT TmpDisk=16384 State=IDLE
-NodeName=localhost Procs=16 RealMemory=2048 Weight=16
+NodeName=DEFAULT TmpDisk=8096 State=IDLE
+NodeName=localhost Procs=1 RealMemory=128 Weight=16
 #
 # Partition Configurations
 #
-PartitionName=DEFAULT MaxTime=30 MaxNodes=2
+PartitionName=DEFAULT MaxTime=30 MaxNodes=1
 PartitionName=debug Nodes=localhost State=UP    Default=YES
