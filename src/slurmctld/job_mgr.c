@@ -316,7 +316,7 @@ init_job_conf ()
 int
 job_allocate (char *job_specs, uint32_t *new_job_id, char **node_list)
 {
-	int error_code, i, immediate, will_run;
+	int error_code, immediate, will_run;
 	struct job_record *job_ptr;
 
 	node_list[0] = NULL;
@@ -1183,7 +1183,9 @@ void
 set_job_id (struct job_record *job_ptr)
 {
 	static uint32_t id_sequence = (1 << 16);
+#ifdef HUGE_JOB_ID
 	uint32_t new_id;
+#endif
 
 	if ((job_ptr == NULL) || 
 	    (job_ptr->magic != JOB_MAGIC)) 

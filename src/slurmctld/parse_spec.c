@@ -11,6 +11,7 @@
 #include <errno.h>
 
 #include "log.h"
+#include "slurmctld.h"
 #include "xmalloc.h"
 
 #define BUF_SIZE 1024

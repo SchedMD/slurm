@@ -528,6 +528,8 @@ extern int  load_float (float *destination, char *keyword, char *in_line);
  */
 extern int load_integer (int *destination, char *keyword, char *in_line);
 
+extern int load_long (long *destination, char *keyword, char *in_line);
+
 /*
  * load_string - parse a string for a keyword, value pair  
  * input: *destination - location into which result is stored
