@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <testsuite/dejagnu.h>
+#include "src/slurm/slurm.h"
+#include "testsuite/dejagnu.h"
 
 /* main is used here for module testing purposes only */
 int 

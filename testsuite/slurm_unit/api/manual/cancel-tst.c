@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <src/api/slurm.h>
-#include <testsuite/dejagnu.h>
+#include "src/slurm/slurm.h"
+#include "testsuite/dejagnu.h"
 
 /* this program takes as and arguments a list of jobids to cancel
  */

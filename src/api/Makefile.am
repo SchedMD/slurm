@@ -4,9 +4,9 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-EXTRA_DIST = slurm.h libslurm.sym
+EXTRA_DIST = libslurm.sym
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/common
+INCLUDES = -I$(top_srcdir)
 
 # libslurm version information : 
 #
@@ -42,9 +42,6 @@ libslurm_la_SOURCES =    \
 	submit.c         \
 	reconfigure.c    \
 	update_config.c   
-
-include_HEADERS =	 \
-	slurm.h
 
 common_dir = $(top_builddir)/src/common
 

@@ -52,8 +52,6 @@
 #  include <pthread.h>
 #endif				/* WITH_PTHREADS */
 
-#include "src/api/slurm.h"
-
 #include "src/common/bitstring.h"
 #include "src/common/list.h"
 #include "src/common/log.h"
@@ -61,6 +59,7 @@
 #include "src/common/pack.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
+#include "src/slurm/slurm.h"
 
 #define FREE_NULL_BITMAP(_X)		\
 	do {				\

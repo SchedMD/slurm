@@ -4,7 +4,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = $(POPT_INCLUDES) -I$(top_srcdir) -I$(top_srcdir)/src/api
+INCLUDES = $(POPT_INCLUDES) -I$(top_srcdir)
 bin_PROGRAMS = sinfo
 
 sinfo_LDADD =					  \

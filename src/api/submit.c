@@ -31,8 +31,8 @@
 #include <errno.h>
 #include <stdio.h>
 
-#include "src/api/slurm.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/slurm/slurm.h"
 
 
 /*

@@ -52,7 +52,7 @@
 typedef int32_t slurm_fd ;
 
 /* this is the slurm equivalent of the BSD sockets sockaddr
- * also defined in api/slurm.h for user */
+ * also defined in slurm/slurm.h for users */
 #ifndef __slurm_addr_defined
 #  define  __slurm_addr_defined
    typedef struct sockaddr_in slurm_addr ;

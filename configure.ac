@@ -461,6 +461,7 @@ AC_CONFIG_FILES([Makefile
 		 src/slurmctld/Makefile 
 		 src/scontrol/Makefile
 		 src/scancel/Makefile
+		 src/slurm/Makefile
 		 src/squeue/Makefile
 		 src/sinfo/Makefile
 		 doc/Makefile

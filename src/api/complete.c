@@ -32,9 +32,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "src/api/slurm.h"
 #include "src/common/hostlist.h"
 #include "src/common/slurm_protocol_api.h"
+#include "src/slurm/slurm.h"
 
 /*
  * slurm_complete_job - note the completion of a job and all of its steps 

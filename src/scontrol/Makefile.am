@@ -3,7 +3,7 @@
 
 AUTOMAKE_OPTIONS = foreign
 
-INCLUDES = -I$(top_srcdir) -I$(top_srcdir)/src/api
+INCLUDES = -I$(top_srcdir)
 
 bin_PROGRAMS = scontrol
 

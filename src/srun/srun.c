@@ -48,26 +48,22 @@
 #include <signal.h>
 #include <unistd.h>
 
-#include "src/api/slurm.h"
-
 #include "src/common/log.h"
 #include "src/common/slurm_protocol_api.h"
 #include "src/common/xmalloc.h"
 #include "src/common/xsignal.h"
 #include "src/common/xstring.h"
 
+#include "src/srun/allocate.h"
 #include "src/srun/env.h"
 #include "src/srun/io.h"
 #include "src/srun/job.h"
 #include "src/srun/launch.h"
+#include "src/srun/msg.h"
+#include "src/srun/net.h"
+#include "src/srun/opt.h"
 #include "src/srun/signals.h"
 #include "src/srun/reattach.h"
-#include "src/srun/allocate.h"
-#include "src/srun/opt.h"
-
-#include "src/srun/net.h"
-#include "src/srun/msg.h"
-#include "src/srun/io.h"
 
 #ifdef HAVE_TOTALVIEW
 #  include "src/srun/attach.h"

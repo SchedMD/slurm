@@ -31,10 +31,9 @@
 
 #include <stdlib.h>
 
-#include "src/common/xsignal.h"
-#include "src/common/xmalloc.h"
 #include "src/common/log.h"
-#include "src/api/slurm.h"
+#include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 
 #include "src/srun/allocate.h"
 #include "src/srun/opt.h"
