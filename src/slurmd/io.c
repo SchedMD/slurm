@@ -481,16 +481,19 @@ static int
 _io_prepare_clients(slurmd_job_t *job)
 {
 	int          i;
-	char         host[256];
-	short        port;
 	srun_info_t *srun;
 
 	srun = list_peek(job->sruns);
 	xassert(srun != NULL);
 
-	slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
-	if (port)
-		debug2("connecting IO back to %s:%d", host, ntohs(port));
+	if (srun->ioaddr.sin_addr.s_addr) {
+		char         host[256];
+		short        port;
+		slurm_get_addr(&srun->ioaddr, &port, host, sizeof(host));
+		if (port)
+			debug2("connecting IO back to %s:%d", 
+			       host, ntohs(port));
+	} 
 
 	/* Connect stdin/out/err to either a remote srun or
 	 * local file
