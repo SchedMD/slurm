@@ -1154,7 +1154,7 @@ _clear_expired_job_states(slurm_cred_ctx_t ctx)
 	while ((j = list_next(i))) {
 		debug3 ("job state %u: ctime:%s%s%s",
 		        j->jobid, timestr (&j->ctime, t1, 64),
-			j->revoked ? " revoked: expires:" : "",
+			j->revoked ? " revoked:" : " expires:",
 		        timestr (&j->ctime, t1, 64),
 			j->revoked ? timestr (&j->expiration, t2, 64) : "");
 
@@ -1262,7 +1262,7 @@ _job_state_unpack_one(Buf buffer)
 	debug3("cred_unpack:job %d ctime:%s%s%s",
                j->jobid, 
 	       timestr (&j->ctime, buf1, 64), 
-	       (revoked ? " revoked: expires:" : ""),
+	       (revoked ? " revoked:" : " expires:"),
 	       revoked ? timestr (&j->expiration, buf2, 64) : "");
 
 	if (revoked) {
