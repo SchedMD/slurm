@@ -201,7 +201,7 @@ extern int slurm_load_build (time_t update_time,
  *		ENOMEM if malloc failure
  * NOTE: the allocated memory at job_buffer_ptr freed by slurm_free_job_info.
  */
-extern int slurm_load_job (time_t update_time, struct job_buffer **job_buffer_ptr);
+extern int slurm_load_job (time_t update_time, job_info_msg_t **job_info_msg_ptr);
 
 /*
  * slurm_load_node - load the supplied node information buffer for use by info 
