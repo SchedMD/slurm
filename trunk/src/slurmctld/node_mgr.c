@@ -1457,12 +1457,28 @@ void make_node_alloc(struct node_record *node_ptr)
 /* make_node_comp - flag specified node as completing a job */
 void make_node_comp(struct node_record *node_ptr)
 {
+	int inx = node_ptr - node_record_table_ptr;
 	uint16_t no_resp_flag, base_state;
 
 	xassert(node_ptr);
 	last_node_update = time (NULL);
+	if (node_ptr->run_job_cnt)
+		(node_ptr->run_job_cnt)--;
+	else
+		error("Node %s run_job_cnt underflow", node_ptr->name);
+
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state &   NODE_STATE_NO_RESPOND;
+	if ((base_state != NODE_STATE_DOWN) && (!no_resp_flag))
+		(node_ptr->comp_job_cnt)++;	/* Don't verify  RPC */
+
+	if ((base_state == NODE_STATE_DRAINING) && 
+	    (node_ptr->run_job_cnt  == 0) &&
+	    (node_ptr->comp_job_cnt == 0)) {
+		bit_set(idle_node_bitmap, inx);
+		node_ptr->node_state = NODE_STATE_DRAINED | no_resp_flag;
+	}
+
 	if ((base_state == NODE_STATE_DOWN) ||
 	    (base_state == NODE_STATE_DRAINED) ||
 	    (base_state == NODE_STATE_DRAINING)) {
@@ -1474,13 +1490,6 @@ void make_node_comp(struct node_record *node_ptr)
 		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
 		xfree(node_ptr->reason);
 	}
-
-	if (node_ptr->run_job_cnt)
-		(node_ptr->run_job_cnt)--;
-	else
-		error("Node %s run_job_cnt underflow", node_ptr->name);
-	if ((base_state != NODE_STATE_DOWN) && (!no_resp_flag))
-		(node_ptr->comp_job_cnt)++;	/* Don't verify  RPC */
 }
 
 /* _make_node_down - flag specified node as down */
@@ -1498,7 +1507,7 @@ static void _make_node_down(struct node_record *node_ptr)
 }
 
 /*
- * make_node_idle - flag specified node as having completed a job
+ * make_node_idle - flag specified node as having finished with a job
  * IN node_ptr - pointer to node reporting job completion
  * IN job_ptr - pointer to job that just completed
  */
@@ -1509,7 +1518,7 @@ void make_node_idle(struct node_record *node_ptr,
 	uint16_t no_resp_flag, base_state;
 
 	xassert(node_ptr);
-	if ((job_ptr) &&			/* Specific job completed */
+	if (job_ptr &&			/* Specific job completed */
 	    (bit_test(job_ptr->node_bitmap, inx))) {	/* Not a replay */
 		last_job_update = time (NULL);
 		bit_clear(job_ptr->node_bitmap, inx);
@@ -1523,35 +1532,50 @@ void make_node_idle(struct node_record *node_ptr,
 			      job_ptr->job_id);
 		}
 
-		if (node_ptr->comp_job_cnt)
-			(node_ptr->comp_job_cnt)--;
-		else
-			error("Node %s comp_job_cnt underflow, job_id %u", 
-			      node_ptr->name, job_ptr->job_id);
-		if (node_ptr->comp_job_cnt > 0) 
-			return;		/* More jobs completing */
+		if (job_ptr->job_state == JOB_RUNNING) {
+			/* Remove node from running job */
+			if (node_ptr->run_job_cnt)
+				(node_ptr->run_job_cnt)--;
+			else
+				error("Node %s run_job_cnt underflow", 
+				      node_ptr->name);
+		} else {
+			if (node_ptr->comp_job_cnt)
+				(node_ptr->comp_job_cnt)--;
+			else
+				error("Node %s comp_job_cnt underflow, job_id %u", 
+				      node_ptr->name, job_ptr->job_id);
+			if (node_ptr->comp_job_cnt > 0) 
+				return;		/* More jobs completing */
+		}
 	}
 
 	last_node_update = time (NULL);
 	base_state   = node_ptr->node_state & (~NODE_STATE_NO_RESPOND);
 	no_resp_flag = node_ptr->node_state & NODE_STATE_NO_RESPOND;
-	if ((base_state == NODE_STATE_DOWN) ||
-	    (base_state == NODE_STATE_DRAINED)) {
+	if ((base_state == NODE_STATE_DRAINING) && 
+	    (node_ptr->run_job_cnt == 0) && 
+	    (node_ptr->comp_job_cnt == 0)) {
+		node_ptr->node_state = NODE_STATE_DRAINED;
+		bit_set(idle_node_bitmap, inx);
+		bit_clear(avail_node_bitmap, inx);
+		debug3("make_node_idle: Node %s is %s", 
+		       node_ptr->name, 
+		       node_state_string((enum node_states)base_state));
+	} else if ((base_state == NODE_STATE_DOWN)     ||
+	           (base_state == NODE_STATE_DRAINING) ||
+	           (base_state == NODE_STATE_DRAINED)) {
 		debug3("make_node_idle: Node %s being left in state %s", 
 		       node_ptr->name, 
 		       node_state_string((enum node_states)base_state));
-	} else if (base_state == NODE_STATE_DRAINING) {
-		node_ptr->node_state = NODE_STATE_DRAINED;
-		bit_clear(idle_node_bitmap, inx);
-		bit_clear(avail_node_bitmap, inx);
+	} else if (node_ptr->comp_job_cnt) {
+		node_ptr->node_state = NODE_STATE_COMPLETING | no_resp_flag;
 	} else if (node_ptr->run_job_cnt) {
 		node_ptr->node_state = NODE_STATE_ALLOCATED | no_resp_flag;
-		xfree(node_ptr->reason);
 	} else {
 		node_ptr->node_state = NODE_STATE_IDLE | no_resp_flag;
 		if (no_resp_flag == 0)
 			bit_set(idle_node_bitmap, inx);
-		xfree(node_ptr->reason);
 	}
 }
 
