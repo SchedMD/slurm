@@ -32,16 +32,18 @@
 #include <time.h>
 #include <sys/types.h>
 
-#include "list.h"
-#include "log.h"
-#include "bitstring.h"
-#include "xmalloc.h"
-#include "pack.h"
 #ifdef HAVE_LIBELAN3
-#include "qsw.h"
+#include <src/common/qsw.h>
 #endif
+
 #include <src/api/slurm.h>
+#include <src/common/bitstring.h>
+#include <src/common/list.h>
+#include <src/common/log.h>
+#include <src/common/macros.h>
+#include <src/common/pack.h>
 #include <src/common/slurm_protocol_defs.h>
+#include <src/common/xmalloc.h>
 
 #define DEBUG_SYSTEM 1
 
@@ -175,10 +177,11 @@ struct job_record {
 	time_t end_time;		/* time of termination, actual or expected */
 	uint32_t priority;		/* relative priority of the job */
 	struct job_details *details;	/* job details (set until job terminates) */
-	uint16_t next_step_id;		/* next step id to be used */
 	uint16_t num_cpu_groups;	/* element count in arrays cpus_per_node and cpu_count_reps */
 	uint32_t *cpus_per_node;	/* array of cpus per node allocated */
 	uint32_t *cpu_count_reps;	/* array of consecutive nodes with same cpu count */
+	uint16_t next_step_id;		/* next step id to be used */
+	List step_list;			/* list of job's steps */
 };
 
 struct 	step_record {
@@ -282,15 +285,12 @@ extern struct node_record *create_node_record (struct config_record
 extern struct part_record *create_part_record (void);
 
 /* 
- * create_step_record - create an empty step_record.
- *	load its values with defaults (zeros, nulls, and magic cookie)
- * input: error_code - location to store error value in
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or NULL if error
- * global: step_list - global step list
+ * create_step_record - create an empty step_record for the specified job.
+ * input: job_ptr - pointer to job table entry to have step record added
+ * output: returns a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
-extern struct step_record * create_step_record (int *error_code);
+extern struct step_record * create_step_record (struct job_record *job_ptr);
 
 /* deallocate_nodes - for a given bitmap, change the state of specified nodes to idle
  * this is a simple prototype for testing 
@@ -330,13 +330,12 @@ extern int delete_node_record (char *name);
 extern int delete_part_record (char *name);
 
 /* 
- * delete_step_record - delete record for job step with specified job_id and step_id
- * input: job_id - job_id of the desired job
+ * delete_step_record - delete record for job step for specified job_ptr and step_id
+ * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: return 0 on success, errno otherwise
- * global: step_list - global step list
  */
-extern int delete_step_record (uint32_t job_id, uint16_t step_id);
+extern int delete_step_record (struct job_record *job_ptr, uint16_t step_id);
 
 /* dump_job_desc - dump the incoming job submit request message */
 void dump_job_desc(job_desc_msg_t * job_specs);
@@ -366,12 +365,12 @@ extern struct part_record *find_part_record (char *name);
 
 /* 
  * find_step_record - return a pointer to the step record with the given job_id and step_id
- * input: job_id - requested job's id
+ * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: pointer to the job step's record, NULL on error
  * global: step_list - global step list
  */
-extern struct step_record *find_step_record (uint32_t job_id, uint16_t step_id);
+extern struct step_record * find_step_record(struct job_record *job_ptr, uint16_t step_id);
 
 /* 
  * init_job_conf - initialize the job configuration tables and values. 
@@ -396,14 +395,6 @@ extern int init_node_conf ();
  * output: return value - 0 if no error, otherwise an error code
  */
 extern int init_part_conf ();
-
-/* 
- * init_step_conf - initialize the job step configuration tables and values. 
- *	this should be called before creating any job step entries.
- * output: return value - 0 if no error, otherwise an error code
- * global: step_list - global step list
- */
-extern int init_step_conf ();
 
 /* 
  * init_slurm_conf - initialize or re-initialize the slurm configuration  

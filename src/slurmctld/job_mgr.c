@@ -927,7 +927,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	int buf_len, buffer_allocated, buffer_offset = 0;
 	char *buffer;
 	void *buf_ptr;
-	int jobs_packed ;
+	uint32_t jobs_packed ;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
@@ -939,15 +939,14 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	buf_ptr = buffer;
 	buf_len = buffer_allocated;
 
-	job_record_iterator = list_iterator_create (job_list);		
-
-	/* write message body header : version and time */
+	/* write message body header : size and time */
 	/* put in a place holder job record count of 0 for now */
 	jobs_packed = 0 ;
 	pack32  ((uint32_t) jobs_packed, &buf_ptr, &buf_len);
 	pack32  ((uint32_t) last_job_update, &buf_ptr, &buf_len);
 
 	/* write individual job records */
+	job_record_iterator = list_iterator_create (job_list);		
 	while ((job_record_point = 
 				(struct job_record *) list_next (job_record_iterator))) {
 		if (job_record_point->magic != JOB_MAGIC)
@@ -975,7 +974,7 @@ pack_all_jobs (char **buffer_ptr, int *buffer_size, time_t * update_time)
 	*buffer_size = buffer_offset;
 	*update_time = last_part_update;
 
-	/* put in the real record count in the message body header */	
+	/* put the real record count in the message body header */	
 	buf_ptr = buffer;
 	buf_len = buffer_allocated;
 	pack32  ((uint32_t) jobs_packed, &buf_ptr, &buf_len);

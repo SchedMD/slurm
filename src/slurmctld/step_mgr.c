@@ -1,132 +1,86 @@
-/* 
+/*****************************************************************************\
  * job_step.c - manage the job step information of slurm
- * see slurm.h for documentation on external functions and data structures
- *
- * author: moe jette, jette@llnl.gov
- */
+ *****************************************************************************
+ *  Copyright (C) 2002 The Regents of the University of California.
+ *  Produced at Lawrence Livermore National Laboratory (cf, DISCLAIMER).
+ *  Written by moe jette <jette1@llnl.gov>.
+ *  UCRL-CODE-2002-040.
+ *  
+ *  This file is part of SLURM, a resource management program.
+ *  For details, see <http://www.llnl.gov/linux/slurm/>.
+ *  
+ *  SLURM is free software; you can redistribute it and/or modify it under
+ *  the terms of the GNU General Public License as published by the Free
+ *  Software Foundation; either version 2 of the License, or (at your option)
+ *  any later version.
+ *  
+ *  SLURM is distributed in the hope that it will be useful, but WITHOUT ANY
+ *  WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ *  FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+ *  details.
+ *  
+ *  You should have received a copy of the GNU General Public License along
+ *  with SLURM; if not, write to the Free Software Foundation, Inc.,
+ *  59 Temple Place, Suite 330, Boston, MA  02111-1307  USA.
+\*****************************************************************************/
 
 #ifdef HAVE_CONFIG_H
 #  include <config.h>
 #endif
 
+#include <assert.h>
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "list.h"
-#include "pack.h"
-#include "bitstring.h"
-#ifdef HAVE_LIBELAN3
-#include "qsw.h"
-#endif
-#include "slurmctld.h"
+#include <src/slurmctld/slurmctld.h>
 
 #define BUF_SIZE 1024
-#define STEP_STRUCT_VERSION 1
-
-List step_list = NULL;			/* job_step list */
-static pthread_mutex_t step_mutex = PTHREAD_MUTEX_INITIALIZER;	/* lock for step info */
-time_t last_step_update = (time_t) NULL;
-
-#if DEBUG_MODULE
-/* main is used here for module testing purposes only */
-int
-main (int argc, char *argv[]) 
-{
-	int error_code, error_count = 0;
-	struct step_record *step_ptr;
-	char *dump;
-	int dump_size;
-	time_t update_time;
-
-	printf ("exercise basic job step functions\n");
-	error_code = init_step_conf ();
-	if (error_code) {
-		printf ("init_step_conf error %d\n", error_code);
-		error_count++;
-	}
-
-	step_ptr = create_step_record (&error_code);
-	if (error_code) {
-		printf ("create_step_record error %d\n", error_code);
-		error_count++;
-	}
-	step_ptr->step_id = 99;
-	step_ptr->dist = 1;
-	step_ptr->procs_per_task = 2;
-
-	step_ptr = find_step_record ((uint32_t) 123, (uint16_t) 99);
-	if (step_ptr) {
-		printf ("step_ptr failure\n");
-		error_count++;
-	}
-
-	step_lock ();
-	step_unlock ();
-
-	error_code = pack_all_step (&dump, &dump_size, &update_time);
-	if (error_code) {
-		printf ("ERROR: pack_all_step error %d\n", error_code);
-		error_count++;
-	}
-	xfree (dump);
-
-	printf ("tests completed with %d errors\n", error_count);
-	exit (error_count);
-}
-#endif
-
 
 /* 
- * create_step_record - create an empty step_record.
- *	load its values with defaults (zeros, nulls, and magic cookie)
- * input: error_code - location to store error value in
- * output: error_code - set to zero if no error, errno otherwise
- *         returns a pointer to the record or NULL if error
- * global: step_list - global step list
+ * create_step_record - create an empty step_record for the specified job.
+ * input: job_ptr - pointer to job table entry to have step record added
+ * output: returns a pointer to the record or NULL if error
  * NOTE: allocates memory that should be xfreed with delete_step_record
  */
 struct step_record * 
-create_step_record (int *error_code) 
+create_step_record (struct job_record *job_ptr) 
 {
 	struct step_record *step_record_point;
 
-	*error_code = 0;
-	step_record_point =
-		(struct step_record *) xmalloc (sizeof (struct step_record));
+	assert (job_ptr);
+	step_record_point = (struct step_record *) xmalloc (sizeof (struct step_record));
 
-	step_record_point->magic   = STEP_MAGIC;
-	if (list_append (step_list, step_record_point) == NULL)
+	step_record_point->step_id = (job_ptr->next_step_id)++;
+	if (list_append (job_ptr->step_list, step_record_point) == NULL)
 		fatal ("create_step_record: unable to allocate memory");
+
 	return step_record_point;
 }
 
 
 /* 
- * delete_step_record - delete record for job step with specified job_id and step_id
- * input: job_id - job_id of the desired job
+ * delete_step_record - delete record for job step for specified job_ptr and step_id
+ * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: return 0 on success, errno otherwise
- * global: step_list - global step list
  */
 int 
-delete_step_record (uint32_t job_id, uint16_t step_id) 
+delete_step_record (struct job_record *job_ptr, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
 	int error_code;
 
+	assert (job_ptr);
 	error_code = ENOENT;
-	step_record_iterator = list_iterator_create (step_list);		
+	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
-		if (step_record_point->step_id == step_id &&
-		    step_record_point->job_ptr->job_id == job_id) {
-			if (step_record_point->magic != STEP_MAGIC)
-				fatal ("invalid step data\n");
+		if (step_record_point->step_id == step_id) {
 			list_remove (step_record_iterator);
 #ifdef HAVE_LIBELAN3
 			qsw_free_jobinfo (step_record_point->qsw_job);
@@ -146,26 +100,23 @@ delete_step_record (uint32_t job_id, uint16_t step_id)
 
 /* 
  * find_step_record - return a pointer to the step record with the given job_id and step_id
- * input: job_id - requested job's id
+ * input: job_ptr - pointer to job table entry to have step record added
  *	step_id - id of the desired job step
  * output: pointer to the job step's record, NULL on error
  * global: step_list - global step list
  */
 struct step_record *
-find_step_record(uint32_t job_id, uint16_t step_id) 
+find_step_record(struct job_record *job_ptr, uint16_t step_id) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
 
-	step_record_iterator = list_iterator_create (step_list);		
+	assert (job_ptr);
+	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
-		if (step_record_point->step_id == step_id &&
-		    step_record_point->job_ptr &&
-		    step_record_point->job_ptr->job_id == job_id) {
-			if (step_record_point->magic != STEP_MAGIC)
-				fatal ("invalid step data\n");
+		if (step_record_point->step_id == step_id) {
 			break;
 		}
 	}		
@@ -176,28 +127,10 @@ find_step_record(uint32_t job_id, uint16_t step_id)
 
 
 /* 
- * init_step_conf - initialize the job step configuration tables and values. 
- *	this should be called before creating any job step entries.
- * output: return value - 0 if no error, otherwise an error code
- * global: step_list - global step list
- */
-int 
-init_step_conf () 
-{
-	if (step_list == NULL) {
-		step_list = list_create (NULL);
-		if (step_list == NULL)
-			fatal ("init_step_conf: list_create can not allocate memory");
-	}
-	last_step_update = time (NULL);
-	return 0;
-}
-
-
-/* 
- * pack_all_step - dump all job step information for all steps in 
+ * pack_all_steps - for a specifiied job dump all step information in 
  *	machine independent form (for network transmission)
- * input: buffer_ptr - location into which a pointer to the data is to be stored.
+ * input:  job_ptr - pointer to job for which step info is requested
+ *         buffer_ptr - location into which a pointer to the data is to be stored.
  *                     the calling function must xfree the storage.
  *         buffer_size - location into which the size of the created buffer is in bytes
  *         update_time - dump new data only if partition records updated since time 
@@ -207,43 +140,42 @@ init_step_conf ()
  *         update_time - set to time partition records last updated
  * global: step_list - global list of partition records
  * NOTE: the buffer at *buffer_ptr must be xfreed by the caller
- * NOTE: change STEP_STRUCT_VERSION in common/slurmlib.h whenever the format changes
- * NOTE: change slurm_load_step() in api/step_info.c whenever the data format changes
+ * NOTE: change unpack_step_desc() in common/slurm_protocol_pack.c whenever the
+ *	data format changes
  */
 void 
-pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time) 
+pack_all_steps (struct job_record *job_ptr, char **buffer_ptr, int *buffer_size, time_t * update_time) 
 {
 	ListIterator step_record_iterator;
 	struct step_record *step_record_point;
 	int buf_len, buffer_allocated, buffer_offset = 0;
 	char *buffer;
 	void *buf_ptr;
+	uint32_t steps_packed ;
 
 	buffer_ptr[0] = NULL;
 	*buffer_size = 0;
-	if (*update_time == last_step_update)
-		return;
 
 	buffer_allocated = (BUF_SIZE*16);
 	buffer = xmalloc(buffer_allocated);
 	buf_ptr = buffer;
 	buf_len = buffer_allocated;
 
-	step_record_iterator = list_iterator_create (step_list);		
-
-	/* write haeader: version and time */
-	pack32  ((uint32_t) STEP_STRUCT_VERSION, &buf_ptr, &buf_len);
-	pack32  ((uint32_t) last_step_update, &buf_ptr, &buf_len);
+	/* write message body header : size only */
+	/* put in a place holder job record count of 0 for now */
+	steps_packed = 0 ;
+	pack32  ((uint32_t) steps_packed, &buf_ptr, &buf_len);
 
 	/* write individual job step records */
+	step_record_iterator = list_iterator_create (job_ptr->step_list);		
 	while ((step_record_point = 
 		(struct step_record *) list_next (step_record_iterator))) {
-		if (step_record_point->magic != STEP_MAGIC)
-			fatal ("pack_all_step: data integrity is bad");
 
 		pack_step (step_record_point, &buf_ptr, &buf_len);
-		if (buf_len > BUF_SIZE) 
+		if (buf_len > BUF_SIZE) {
+			steps_packed ++ ;
 			continue;
+		}
 		buffer_allocated += (BUF_SIZE*16);
 		buf_len += (BUF_SIZE*16);
 		buffer_offset = (char *)buf_ptr - buffer;
@@ -257,7 +189,11 @@ pack_all_step (char **buffer_ptr, int *buffer_size, time_t * update_time)
 
 	buffer_ptr[0] = buffer;
 	*buffer_size = buffer_offset;
-	*update_time = last_step_update;
+
+	/* put the real record count in the message body header */	
+	buf_ptr = buffer;
+	buf_len = buffer_allocated;
+	pack32  ((uint32_t) steps_packed, &buf_ptr, &buf_len);
 }
 
 
@@ -283,14 +219,8 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 #endif
 	char node_inx_ptr[BUF_SIZE];
 
-	if (dump_step_ptr->job_ptr)
-		pack32 (dump_step_ptr->job_ptr->job_id, buf_ptr, buf_len);
-	else
-		pack32 (0, buf_ptr, buf_len);
 
 	pack16  (dump_step_ptr->step_id, buf_ptr, buf_len);
-	pack16  (dump_step_ptr->dist, buf_ptr, buf_len);
-	pack16  (dump_step_ptr->procs_per_task, buf_ptr, buf_len);
 
 	if (dump_step_ptr->node_bitmap) {
 		bit_fmt (node_inx_ptr, BUF_SIZE, dump_step_ptr->node_bitmap);
@@ -323,7 +253,6 @@ pack_step (struct step_record *dump_step_ptr, void **buf_ptr, int *buf_len)
 int
 step_create (struct step_specs *step_specs)
 {
-	int error_code;
 	struct step_record *step_ptr;
 	struct job_record  *job_ptr;
 #ifdef HAVE_LIBELAN3
@@ -334,20 +263,16 @@ step_create (struct step_specs *step_specs)
 
 	job_ptr = find_job_record (step_specs->job_id);
 	if (job_ptr == NULL)
-		return ENOENT;;
+		return ENOENT;
 	if (step_specs->user_id != job_ptr->user_id &&
 	    step_specs->user_id != 0)
 		return EACCES;
 
-	step_ptr = create_step_record (&error_code);
-	if (error_code)
-		return error_code;
+	step_ptr = create_step_record (job_ptr);
+	if (step_ptr == NULL)
+		return ENOMEM;
 
-	step_ptr->job_ptr = job_ptr;
 	step_ptr->step_id = (job_ptr->next_step_id)++;
-	step_ptr->magic = STEP_MAGIC;
-	step_ptr->dist = step_specs->dist;
-	step_ptr->procs_per_task = step_specs->procs_per_task;
 /* we need to be able to filter out some of the bitmap entries here for partial allocation */
 	step_ptr->node_bitmap = bit_copy (job_ptr->node_bitmap);
 #ifdef HAVE_LIBELAN3
@@ -370,32 +295,3 @@ step_create (struct step_specs *step_specs)
 #endif
 	return 0;
 }
-
-
-/* step_lock - lock the step information 
- * global: step_mutex - semaphore for the step table
- */
-void 
-step_lock () 
-{
-	int error_code;
-	error_code = pthread_mutex_lock (&step_mutex);
-	if (error_code)
-		fatal ("step_lock: pthread_mutex_lock error %d", error_code);
-	
-}
-
-
-/* step_unlock - unlock the step information 
- * global: step_mutex - semaphore for the step table
- */
-void 
-step_unlock () 
-{
-	int error_code;
-	error_code = pthread_mutex_unlock (&step_mutex);
-	if (error_code)
-		fatal ("step_unlock: pthread_mutex_unlock error %d", error_code);
-}
-
-
