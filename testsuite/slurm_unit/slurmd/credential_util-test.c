@@ -10,23 +10,23 @@ int main ( int argc , char * argv[] )
 	char data2 [] = "This is test data to sign and verify" ;
 	char signature [4096]  ;
 	
-	credential_tools_ctx_t signer_ctx ;
-	credential_tools_ctx_t verifier_ctx ;
+	slurm_ssl_key_ctx_t signer_ctx ;
+	slurm_ssl_key_ctx_t verifier_ctx ;
 
-	ssl_init ( ) ;
+	slurm_ssl_init ( ) ;
 
-	init_signer ( & signer_ctx , "newreq.pem" ) ;
-	init_verifier ( & verifier_ctx , "newcert.pem" ) ;
+	slurm_init_signer ( & signer_ctx , "newreq.pem" ) ;
+	slurm_init_verifier ( & verifier_ctx , "newcert.pem" ) ;
 
-	if ( credential_sign ( & signer_ctx , data , strlen ( data ) , signature , & signature_length ) ) ;
+	if ( slurm_ssl_sign ( & signer_ctx , data , strlen ( data ) , signature , & signature_length ) ) ;
 		info ( " sign succeeded %i", signature_length ) ;
 
-	if ( credential_verify ( & verifier_ctx , data2 , strlen ( data2 ) , signature , signature_length ) ) ;
+	if ( slurm_ssl_verify ( & verifier_ctx , data2 , strlen ( data2 ) , signature , signature_length ) ) ;
 		info ( " verify succeeded " ) ;
 	
 
-	destroy_credential_ctx ( & signer_ctx ) ;
-	destroy_credential_ctx ( & verifier_ctx ) ;
+	slurm_destroy_ssl_key_ctx ( & signer_ctx ) ;
+	slurm_destroy_ssl_key_ctx ( & verifier_ctx ) ;
 
-	ssl_destroy ( ) ;
+	slurm_ssl_destroy ( ) ;
 }

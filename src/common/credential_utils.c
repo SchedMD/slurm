@@ -12,115 +12,58 @@
 #include <src/common/slurm_errno.h>
 #include <src/common/slurm_protocol_errno.h>
 #include <src/common/slurm_protocol_api.h>
+#include <src/common/slurm_protocol_pack.h>
 #include <src/slurmd/credential_utils.h>
+#include <src/slurmd/signature_utils.h>
+#include <src/common/hostlist.h>
+#define MAX_NAME_LEN 1024
 
-
-int ssl_init ( )
+int verify_credential ( slurm_ssl_key_ctx_t * verify_ctx , slurm_job_credential_t * credential )
 {
-	ERR_load_crypto_strings();
-	OpenSSL_add_all_algorithms();
-	return SLURM_SUCCESS ;
-}
-
-int ssl_destroy ( )
-{
-	EVP_cleanup();
-	ERR_free_strings();
-	return SLURM_SUCCESS ;
-}
-
-int init_signer ( credential_tools_ctx_t * ctx , char * path )
-{
-	int local_errno ;
-	FILE * key_file ;
-	if ( ( key_file = fopen ( path , "r" ) ) == NULL )
-	{
-		local_errno = errno ;
-		error ( "error opening credential sign key file , errno %i" , local_errno ) ;
-	};
-	ctx -> key . private = PEM_read_PrivateKey ( key_file, NULL , NULL , NULL ) ;
-	fclose ( key_file ) ;
-
-	if ( ctx -> key . private == NULL )
-	{
-		ERR_print_errors_fp (stderr);
-		slurm_seterrno ( ESLURMD_OPENSSL_ERROR ) ;
-		return SLURM_ERROR ;
-	}
-	return SLURM_SUCCESS ;
-}
-
-int init_verifier ( credential_tools_ctx_t * ctx , char * path )
-{
-	int local_errno ;
-	X509 * x509 ;
-	FILE * cert_file ;
-	if ( ( cert_file = fopen ( path , "r" ) ) == NULL )
-	{
-		local_errno = errno ;
-		error ( "error opening certificate file , errno %i" , local_errno ) ;
-	};
+	char buffer [4096] ;
+	char * buf_ptr = buffer ;
+	int buf_size = sizeof ( buffer ) ;
+	int size = sizeof ( buffer ) ;
+	int error_code = SLURM_SUCCESS ;
+	slurm_ssl_key_ctx_t verfify_ctx ;
+	time_t now = time ( NULL ) ;
+	char this_node_name[MAX_NAME_LEN] ;
 	
-	x509 = PEM_read_X509 ( cert_file, NULL , NULL , NULL ) ;
-	fclose ( cert_file ) ;
-
-	if ( x509 == NULL )
+	pack_job_credential ( credential , & buf_ptr , & size ) ;
+	if ( slurm_ssl_verify ( verify_ctx , buffer , buf_size - size - SLURM_SSL_SIGNATURE_LENGTH , credential -> signature , SLURM_SSL_SIGNATURE_LENGTH ) )
 	{
-		ERR_print_errors_fp (stderr);
-		slurm_seterrno ( ESLURMD_OPENSSL_ERROR ) ;
-		return SLURM_ERROR ;
+		slurm_seterrno ( ESLURMD_INVALID_JOB_CREDENTIAL ) ;
+		error_code = SLURM_ERROR ;
+		goto return_ ;
 	}
 
-	ctx -> key . public = X509_get_pubkey ( x509 ) ;
-	X509_free ( x509 ) ;
-
-	if ( ctx -> key . public == NULL )
+	if ( credential -> expiration_time - now < 0 )
 	{
-		ERR_print_errors_fp (stderr);
-		slurm_seterrno ( ESLURMD_OPENSSL_ERROR ) ;
-		return SLURM_ERROR ;
+		slurm_seterrno ( ESLURMD_NODE_NAME_NOT_PRESENT_IN_CREDENTIAL ) ;
+		error_code = SLURM_ERROR ;
+		goto return_ ;
 	}
-	return SLURM_SUCCESS ;
-}
-
-int destroy_credential_ctx ( credential_tools_ctx_t * ctx )
-{
-	if ( ctx )
+	
+        if ( ( error_code = getnodename (this_node_name, MAX_NAME_LEN) ) )
+		                fatal ("slurmd: errno %d from getnodename", errno);
+	
+	/*
+	if ( verify_node_name_list ( this_node_name , credential -> node_list ) ) 
 	{
-	EVP_PKEY_free ( ctx -> key . private ) ;
+		slurm_seterrno ( ESLURMD_CREDENTIAL_EXPIRED ) ;
+		error_code = SLURM_ERROR ;
+		goto return_ ;
+
 	}
-	return SLURM_SUCCESS ;
-}
 
-
-int credential_sign ( credential_tools_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int * signature_length ) 
-{
-	int rc ;
-	EVP_MD_CTX md_ctx ;
-
-	EVP_SignInit ( & md_ctx , EVP_sha1 ( ) ) ;
-	EVP_SignUpdate ( & md_ctx , data_buffer , data_length ) ;
-	if ( ( rc = EVP_SignFinal ( & md_ctx , signature_buffer , signature_length , ctx -> key . private ) ) != SLURM_OPENSSL_SIGNED )
+	if ( is_credential_still_valid ( credential -> job_id ) )
 	{
-		ERR_print_errors_fp (stderr);
-		slurm_seterrno ( ESLURMD_OPENSSL_ERROR ) ;
-		return SLURM_ERROR ;
+		slurm_seterrno ( ESLURMD_CREDENTIAL_REVOKED ) ;
+		error_code = SLURM_ERROR ;
+		goto return_ ;
 	}
-	return SLURM_SUCCESS ;
-}
+	*/
 
-int credential_verify ( credential_tools_ctx_t * ctx , char * data_buffer , int data_length , char * signature_buffer , int signature_length ) 
-{
-	int rc ;
-	EVP_MD_CTX md_ctx ;
-
-	EVP_VerifyInit ( & md_ctx , EVP_sha1 ( ) ) ;
-	EVP_VerifyUpdate ( & md_ctx , data_buffer , data_length ) ;
-	if ( ( rc = EVP_VerifyFinal ( & md_ctx , signature_buffer , signature_length ,  ctx -> key . public ) ) != SLURM_OPENSSL_VERIFIED )
-	{
-		ERR_print_errors_fp (stderr);
-		slurm_seterrno ( ESLURMD_OPENSSL_ERROR ) ;
-		return SLURM_ERROR ;
-	}
-	return SLURM_SUCCESS ;
+	return_:
+	return error_code ;
 }

@@ -16,6 +16,7 @@ slurmd_SOURCES = slurmd.c \
 		shmem_struct.c \
 		circular_buffer.c \
 		credential_utils.c \
+		signature_utils.c \
 		io.c \
 		pipes.c
 
