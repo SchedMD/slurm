@@ -1,9 +1,9 @@
-.TH "Slurm API" "3" "January 2003" "Morris Jette" "Slurm error handling functions"
+.TH "Slurm API" "3" "July 2003" "Morris Jette" "Slurm error handling functions"
 .SH "NAME"
 slurm_get_errno, slurm_perror, slurm_strerror \- Slurm error handling functions
 .SH "SYNTAX"
-.LP 
-#include <slurm.h>
+.LP
+#include <slurm/slurm_errno.h>
 .LP 
 int \fBslurm_get_errno\fR ( );
 .LP
@@ -40,7 +40,9 @@ A pointer to a string used as a message header for printing along with an error 
 .LP 
 #include <stdio.h>
 .br
-#include <slurm.h>
+#include <slurm/slurm.h>
+.br
+#include <slurm/slur_errno.h>
 .LP 
 int main (int argc, char *argv[])
 .br 

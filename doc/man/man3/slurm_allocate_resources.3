@@ -1,4 +1,4 @@
-.TH "Slurm API" "3" "May 2003" "Morris Jette" "Slurm job initiation functions"
+.TH "Slurm API" "3" "July 2003" "Morris Jette" "Slurm job initiation functions"
 .SH "NAME"
 slurm_allocate_resources, slurm_allocate_resources_and_run,
 slurm_confirm_allocation, 
@@ -8,7 +8,7 @@ slurm_job_will_run, slurm_submit_batch_job
 \- Slurm job initiation functions
 .SH "SYNTAX"
 .LP 
-#include <slurm.h>
+#include <slurm/slurm.h>
 .LP 
 int \fBslurm_allocate_resources\fR (
 .br 
@@ -213,7 +213,9 @@ the partition's time limit.
 .LP 
 #include <stdio.h>
 .br
-#include <slurm.h>
+#include <slurm/slurm.h>
+.br
+#include <slurm/slurm_errno.h>
 .LP 
 int main (int argc, char *argv[])
 .br 
