@@ -146,11 +146,9 @@ int main(int argc, char *argv[])
 	init_locks();
 
 	/* Get SlurmctldPidFile for _kill_old_slurmctld */
-	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf))) {
-		error("read_slurm_conf_ctl reading %s: %m",
+	if ((error_code = read_slurm_conf_ctl (&slurmctld_conf)))
+		fatal("read_slurm_conf_ctl reading %s: %m",
 		      SLURM_CONFIG_FILE);
-		exit(1);
-	}
 	update_logging();
 	_kill_old_slurmctld();
 
@@ -164,10 +162,8 @@ int main(int argc, char *argv[])
 
 	if ((slurmctld_conf.slurm_user_id) && 
 	    (slurmctld_conf.slurm_user_id != getuid()) &&
-	    (setuid(slurmctld_conf.slurm_user_id))) {
-		error("setuid(%d): %m", slurmctld_conf.slurm_user_id);
-		exit(1);
-	}
+	    (setuid(slurmctld_conf.slurm_user_id)))
+		fatal("setuid(%d): %m", slurmctld_conf.slurm_user_id);
 
 #ifndef NDEBUG
 #  ifdef PR_SET_DUMPABLE
@@ -179,10 +175,8 @@ int main(int argc, char *argv[])
 	/* 
 	 * Create StateSaveLocation directory if necessary, and chdir() to it.
 	 */
-	if (_set_slurmctld_state_loc() < 0) {
-		error("Unable to initialize StateSaveLocation");
-		exit(1);
-	}
+	if (_set_slurmctld_state_loc() < 0)
+		fatal("Unable to initialize StateSaveLocation");
 
 	if (daemonize) {
 		error_code = daemon(1, 1);
