@@ -64,8 +64,6 @@ struct signv {
 	{ "TTOU",	SIGTTOU }
 };
 
-/*---[ end popt definitions ]---------------------------------------------*/
-
 /* forward declarations of static functions 
  *
  */
@@ -257,7 +255,7 @@ static void _opt_env()
 }
 
 /*
- * opt_args() : set options via commandline args and popt
+ * opt_args() : set options via commandline args and getopt_long
  */
 static void _opt_args(int argc, char **argv)
 {
