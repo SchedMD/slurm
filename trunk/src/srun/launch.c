@@ -128,6 +128,7 @@ launch(void *arg)
 		r->nnodes          = job->nhosts;
 		r->nprocs          = opt.nprocs;
 		r->slurmd_debug    = opt.slurmd_debug;
+		r->switch_job      = job->switch_job;
 
 		if (job->ofname->type == IO_PER_TASK)
 			r->ofname  = job->ofname->name;
@@ -136,9 +137,12 @@ launch(void *arg)
 		if (job->ifname->type == IO_PER_TASK)
 			r->ifname  = job->ifname->name;
 
+		if (opt.parallel_debug)
+			r->task_flags |= TASK_PARALLEL_DEBUG;
+
 		/* Node specific message contents */
 		if (opt.mpi_type == MPI_LAM)
-			r->tasks_to_launch = 1;	/* just launch one task */
+			r->tasks_to_launch = 1; /* just launch one task */
 		else
 			r->tasks_to_launch = job->ntask[i];
 		r->global_task_ids = job->tids[i];
@@ -149,11 +153,6 @@ launch(void *arg)
 		m->msg_type        = REQUEST_LAUNCH_TASKS;
 		m->data            = &msg_array_ptr[i];
 		memcpy(&m->address, &job->slurmd_addr[i], sizeof(slurm_addr));
-		r->switch_job = job->switch_job;
-
-		if (opt.parallel_debug)
-			r->task_flags |= TASK_PARALLEL_DEBUG;
-
 	}
 
 	_p_launch(req_array_ptr, job);
