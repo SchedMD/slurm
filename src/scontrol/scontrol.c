@@ -298,7 +298,7 @@ _ping_slurmctld(slurm_ctl_conf_info_msg_t  *slurm_ctl_conf_ptr)
 		slurm_ctl_conf_ptr->control_machine, state[primary]);
 
 	if (slurm_ctl_conf_ptr->backup_addr) {
-		if (slurm_ping(0) == SLURM_SUCCESS)
+		if (slurm_ping(2) == SLURM_SUCCESS)
 			secondary = 0;
 		fprintf(stdout, "Slurmctld(secondary) at %s is %s\n\n", 
 			slurm_ctl_conf_ptr->backup_controller, 
