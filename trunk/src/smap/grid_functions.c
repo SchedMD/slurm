@@ -55,23 +55,22 @@ extern int set_grid(int start, int end, int count)
 	return 1;
 }
 
-extern int set_grid_bgl(int startx, int starty, int startz, 
-		int endx, int endy, int endz, int count)
+extern int set_grid_bgl(int *start, int *end, int count)
 {
 	int x, y, z;
 	int i = 0;
-	assert(endx < DIM_SIZE[X]);
-	assert(startx >= 0);
-	assert(endy < DIM_SIZE[Y]);
-	assert(starty >= 0);
-	assert(endz < DIM_SIZE[Z]);
-	assert(startz >= 0);
+	assert(end[X] < DIM_SIZE[X]);
+	assert(start[X] >= 0);
+	assert(end[Y] < DIM_SIZE[Y]);
+	assert(start[Y] >= 0);
+	assert(end[Z] < DIM_SIZE[Z]);
+	assert(start[Z] >= 0);
 	assert(count < pa_system_ptr->num_of_proc);
 	assert(count >= 0);
 
-	for (x = startx; x <= endx; x++) {
-		for (y = starty; y <= endy; y++) {
-			for (z = startz; z <= endz; z++) {
+	for (x = start[X]; x <= end[X]; x++) {
+		for (y = start[Y]; y <= end[Y]; y++) {
+			for (z = start[Z]; z <= end[Z]; z++) {
 				pa_system_ptr->grid[x][y][z].letter = 
 					pa_system_ptr->
 					fill_in_value[count].letter;

@@ -76,6 +76,8 @@
 #include <slurm/slurm.h>
 
 #include "src/common/slurm_protocol_api.h"
+#include "src/common/bitstring.h"
+#include "src/slurmctld/slurmctld.h"
 #include "src/partition_allocator/partition_allocator.h"
 
 /* getopt_long options, integers but not characters */
@@ -119,10 +121,9 @@ extern pa_system_t *pa_system_ptr;
 extern int quiet_flag;
 
 
-void init_grid(node_info_msg_t * node_info_ptr);
+void init_grid(node_info_msg_t *node_info_ptr);
 extern int set_grid(int start, int end, int count);
-extern int set_grid_bgl(int startx, int starty, int startz, 
-		int endx, int endy, int endz, int count);
+extern int set_grid_bgl(int *start, int *end, int count);
 extern void print_grid(void);
 
 void parse_command_line(int argc, char *argv[]);
