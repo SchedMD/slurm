@@ -146,11 +146,12 @@ _exit_handler(job_t *job, slurm_msg_t *exit_msg)
 
 	if (msg->task_id < 0 || msg->task_id >= opt.nprocs) {
 		error("task exit resp has bad task_id %d",
-			msg->task_id);
+		      msg->task_id);
 		return;
 	}
 
-	debug2("task %d exited with status %d", msg->task_id, msg->return_code);
+	debug2("task %d exited with status %d", msg->task_id, 
+	       msg->return_code);
 
 	pthread_mutex_lock(&job->task_mutex);
 	job->tstatus[msg->task_id] = msg->return_code;
