@@ -514,6 +514,14 @@ extern int init_bgl(void)
 {
 #ifdef _RM_API_H__
 	int rc;
+	
+	// FIXME, this needs to be read in from conf file.
+	rc = set_rm_serial("BGL");
+	if (rc != STATUS_OK){
+		error("init_bgl: rm_set_serial failed");
+		return SLURM_ERROR;
+	}
+
 	rc = rm_get_BGL(&bgl);
 	if (rc != STATUS_OK){
 		error("init_bgl: rm_get_BGL failed");
@@ -522,6 +530,8 @@ extern int init_bgl(void)
 #endif
 	/** global variable */
 	bgl_conf_list = (List) list_create(_destroy_bgl_conf_record);
+
+	// for testing purposes
 	init_bgl_partition_num();
 
 	return SLURM_SUCCESS;
