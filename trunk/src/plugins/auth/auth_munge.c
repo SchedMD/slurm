@@ -60,6 +60,7 @@
 
 #include "src/common/xassert.h"
 #include "src/common/xmalloc.h"
+#include "src/common/xsignal.h"
 #include "src/common/pack.h"
 #include "src/common/log.h"
 #include "src/common/slurm_auth.h"
@@ -226,6 +227,7 @@ slurm_auth_create( void *argv[] )
 	slurm_auth_credential_t *cred = NULL;
 	munge_err_t e = EMUNGE_SUCCESS;
 	munge_ctx_t ctx = NULL;
+	SigFunc *ohandler;
 
 	cred = xmalloc(sizeof(*cred));
 	cred->verified = false;
@@ -236,12 +238,22 @@ slurm_auth_create( void *argv[] )
 
 	xassert(cred->magic = MUNGE_MAGIC);
 
+	/*
+	 *  Temporarily block SIGALARM to avoid misleading 
+	 *    "Munged communication error" from libmunge if we 
+	 *    happen to time out the connection in this secion of
+	 *    code.
+	 */
+	ohandler = xsignal(SIGALRM, SIG_BLOCK);
+
 	if ((e = munge_encode(&cred->m_str, ctx, cred->buf, cred->len))) {
 		plugin_errno = SLURM_ERROR;
 		error("munge_encode: %s", munge_strerror(e));
 		xfree( cred );
 		return NULL;
 	}
+
+	xsignal(SIGALRM, ohandler);
 
 	return cred;
 }
