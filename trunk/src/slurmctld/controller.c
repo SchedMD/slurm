@@ -35,6 +35,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <sys/resource.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -128,6 +130,7 @@ main (int argc, char *argv[])
 	char node_name[MAX_NAME_LEN];
 	pthread_attr_t thread_attr_sig, thread_attr_rpc;
 	sigset_t set;
+	struct rlimit rlim;
 
 	/*
 	 * Establish initial configuration
@@ -144,6 +147,11 @@ main (int argc, char *argv[])
 			error ("daemon error %d", error_code);
 	}
 	init_locks ( );
+
+	if (getrlimit(RLIMIT_NOFILE,&rlim) == 0) {
+		rlim.rlim_cur = rlim.rlim_max;
+		setrlimit(RLIMIT_NOFILE,&rlim);
+	}
 
 	if ( ( error_code = read_slurm_conf (recover)) ) 
 		fatal ("read_slurm_conf error %d reading %s", error_code, SLURM_CONFIG_FILE);
