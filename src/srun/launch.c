@@ -77,42 +77,71 @@ static void   _print_launch_msg(launch_tasks_request_msg_t *msg,
 		                char * hostname);
 static int    _envcount(char **env);
 
+/* to effectively deal with heterogeneous nodes, we fake a cyclic 
+ * distribution to figure out how many tasks go on each node and 
+ * then make those assignments in a block fashion */
 static void
 _dist_block(job_t *job)
 {
-	int i, min_tpn, max_tpn, fullnodes, taskid = 0;
+	int i, j, taskid = 0;
+	bool over_subscribe = false;
 
-	fullnodes = opt.nprocs % job->nhosts;
-	min_tpn   = max_tpn = opt.nprocs / job->nhosts;
+	/* figure out how many tasks go to each node */
+	for (j=0; (taskid<opt.nprocs); j++) {   /* cycle counter */
+		bool space_remaining = false;
+		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
+			if ((j<job->cpus[i]) || over_subscribe) {
+				taskid++;
+				job->ntask[i]++;
+				if ((j+1) < job->cpus[i])
+					space_remaining = true;
+			}
+		}
+		if (!space_remaining)
+			over_subscribe = true;
+	}
 
-	if (fullnodes) 
-		max_tpn++;
-
+	/* now distribute the tasks */
+	taskid = 0;
 	for (i=0; i < job->nhosts; i++) {
-		int j, task_cnt;
-
-		task_cnt = i < fullnodes ? max_tpn : min_tpn;
-
-		for (j = 0; j < task_cnt; j++) {
+		for (j=0; j<job->ntask[i]; j++) {
 			job->hostid[taskid] = i;
 			job->tids[i][j]     = taskid++;
-			job->ntask[i]++;
 		}
 	}
 }
 
+/* distribute tasks across available nodes: allocate tasks to nodes 
+ * in a cyclic fashion using available processors. once all available 
+ * processors are allocated, continue to allocate task over-subscribing
+ * nodes as needed. for example
+ * cpus per node        4  2  4  2
+ *                     -- -- -- --
+ * task distribution:   0  1  2  3
+ *                      4  5  6  7
+ *                      8     9
+ *                     10    11     all processors allocated now
+ *                     12 13 14 15  etc.
+ */ 
 static void
 _dist_cyclic(job_t *job)
 {
 	int i, j, taskid = 0;
+	bool over_subscribe = false;
+
 	for (j=0; (taskid<opt.nprocs); j++) {	/* cycle counter */
+		bool space_remaining = false;
 		for (i=0; ((i<job->nhosts) && (taskid<opt.nprocs)); i++) {
-			if (j < job->cpus[i]) {
+			if ((j<job->cpus[i]) || over_subscribe) {
 				job->hostid[taskid] = i;
 				job->tids[i][j]     = taskid++;
 				job->ntask[i]++;
+				if ((j+1) < job->cpus[i])
+					space_remaining = true;
 			}
 		}
+		if (!space_remaining)
+			over_subscribe = true;
 	}
 }
 
@@ -150,8 +179,12 @@ launch(void *arg)
 	/* Build task id list for each host */
 	job->tids   = xmalloc(job->nhosts * sizeof(uint32_t *));
 	job->hostid = xmalloc(opt.nprocs  * sizeof(uint32_t));
-	for (i = 0; i < job->nhosts; i++)
-		job->tids[i] = xmalloc(job->cpus[i] * sizeof(uint32_t));
+	for (i = 0; i < job->nhosts; i++) {
+		if (opt.overcommit)
+			job->tids[i] = xmalloc(opt.nprocs * sizeof(uint32_t));
+		else
+			job->tids[i] = xmalloc(job->cpus[i] * sizeof(uint32_t));
+	}
 
 	if (opt.distribution == SRUN_DIST_UNKNOWN) {
 		if (opt.nprocs <= job->nhosts)
@@ -197,6 +230,7 @@ launch(void *arg)
 		/* Node specific message contents */
 		r->tasks_to_launch = job->ntask[i];
 		r->global_task_ids = job->tids[i];
+		r->cpus_allocated  = job->cpus[i];
 		r->srun_node_id    = (uint32_t)i;
 		r->io_port         = ntohs(job->ioport[i%job->niofds]);
 		r->resp_port       = ntohs(job->jaddr[i%job->njfds].sin_port);

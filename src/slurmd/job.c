@@ -120,6 +120,7 @@ job_create(launch_tasks_request_msg_t *msg, slurm_addr *cli_addr)
 	job->nodeid  = msg->srun_node_id;
 	job->ntasks  = msg->tasks_to_launch;
 	job->debug   = msg->slurmd_debug;
+	job->cpus    = msg->cpus_allocated;
 
 	job->timelimit   = (time_t) -1;
 	job->task_flags  = msg->task_flags;

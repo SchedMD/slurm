@@ -381,7 +381,6 @@ _job_create_internal(allocation_info_t *info)
 	int i;
 	int cpu_cnt = 0;
 	int cpu_inx = 0;
-	int tph     = 0;
 	hostlist_t hl;
 	job_t *job;
 
@@ -474,17 +473,10 @@ _job_create_internal(allocation_info_t *info)
 
 	slurm_mutex_init(&job->task_mutex);
 
-	/* tasks per host, round up */
-	tph = (opt.nprocs+job->nhosts-1) / job->nhosts; 
-
 	for(i = 0; i < job->nhosts; i++) {
 		job->host[i]  = hostlist_shift(hl);
 
-		if (opt.overcommit)
-			job->cpus[i] = tph;
-		else
-			job->cpus[i] = info->cpus_per_node[cpu_inx];
-
+		job->cpus[i] = info->cpus_per_node[cpu_inx];
 		if ((++cpu_cnt) >= info->cpu_count_reps[cpu_inx]) {
 			/* move to next record */
 			cpu_inx++;
