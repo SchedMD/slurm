@@ -21,7 +21,7 @@ JobCredentialPublicCertificate=public.cert
 #
 # Node Configurations
 #
-NodeName=DEFAULT TmpDisk=512 State=IDLE
+NodeName=DEFAULT TmpDisk=512 State=UNKNOWN
 NodeName=localhost Procs=1 RealMemory=128 Weight=16
 #
 # Partition Configurations
