@@ -149,7 +149,7 @@ _session_mgr(slurmd_job_t *job)
 
 	if (_become_user(job) < 0) 
 		exit(2);
-		
+
 	if (setsid() < (pid_t) 0) {
 		error("setsid: %m");
 		exit(3);
@@ -212,7 +212,7 @@ _cleanup_file_descriptors(slurmd_job_t *j)
 static int
 _become_user(slurmd_job_t *job)
 {
-	if (setgid(job->pwd->pw_gid) < 0) {
+	if (setgid(job->gid) < 0) {
 		error("setgid: %m");
 		return -1;
 	}
@@ -248,7 +248,6 @@ _exec_all_tasks(slurmd_job_t *job)
 	 */
 	if (xsignal_block(smgr_sigarray) < 0)
 		return error ("Unable to block signals");
-
 
 	for (i = 0; i < job->ntasks; i++) {
 		pid_t pid = fork();
