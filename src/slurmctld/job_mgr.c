@@ -1504,9 +1504,10 @@ static int _job_create(job_desc_msg_t * job_desc, uint32_t * new_job_id,
 		error_code = ESLURM_ACCESS_DENIED;
 		return error_code;
 	}
-	if (validate_group(part_ptr, submit_uid) == 0) {
+	if (validate_group(part_ptr, job_desc->user_id) == 0) {
 		info("_job_create: uid %u access to partition %s denied, %s",
-		     (unsigned int) submit_uid, part_ptr->name, "bad group");
+			(unsigned int) job_desc->user_id, part_ptr->name, 
+			"bad group");
 		error_code = ESLURM_JOB_MISSING_REQUIRED_PARTITION_GROUP;
 		return error_code;
 	}
