@@ -10,7 +10,6 @@
 #include <errno.h>
 #include <netinet/in.h>
 #include <string.h>
-#include <assert.h>
 #include "pack.h"
 	
 	
@@ -116,9 +115,13 @@ _unpackstr(char **valp, uint32_t *size_valp, void **bufp, int *lenp)
 	(size_t)*bufp += sizeof(nl);
 	(size_t)*lenp -= sizeof(nl);
 
-	*valp = *bufp;
-	(size_t)*bufp += nl;
-	(size_t)*lenp -= nl;
+	if (*size_valp > 0) {
+		*valp = *bufp;
+		(size_t)*bufp += *size_valp;
+		(size_t)*lenp -= *size_valp;
+	}
+	else
+		*valp = NULL;
 
 }
 	
