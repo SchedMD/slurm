@@ -52,6 +52,10 @@ Summary: SLURM auth implementation using Chris Dunlap's Munge
 Group: System Environment/Base
 Requires: slurm munge
 
+%package bluegene
+Summary: SLURM plugin interfaces to IBM Blue Gene system
+Requires: slurm
+
 %package sched-wiki
 Summary: SLURM scheduling plugin for the Maui scheduler.
 Group: System Environment/Base
@@ -80,6 +84,9 @@ SLURM authentication module for Brent Chun's authd
 
 %description auth-munge
 SLURM authentication module for Chris Dunlap's Munge
+
+%description bluegene
+SLURM plugin interfaces to IBM Blue Gene system
 
 %description sched-wiki
 SLURM scheduling plugin for the Maui scheduler.
@@ -140,7 +147,7 @@ rm -rf $RPM_BUILD_ROOT
 %doc DISCLAIMER
 %doc COPYING
 %doc etc/slurm.conf.example
-%doc doc/html
+%doc doc/html/*
 %{_bindir}/*
 %{_sbindir}/*
 %{_libdir}/*.so*
@@ -182,6 +189,11 @@ rm -rf $RPM_BUILD_ROOT
 
 %files -f auth_authd.files auth-authd
 %defattr(-,root,root)
+#############################################################################
+
+%files bluegene
+%defattr(-,root,root)
+%{_libdir}/slurm/select_bluegene.so
 #############################################################################
 
 %files sched-wiki
@@ -229,6 +241,8 @@ fi
 
 
 %changelog
+* Wed Oct 13 2004 Morris Jette <jette1@llnl.gov>
+- added new package "bluegene" for select_bluegene.so
 * Thu Sep 29 2004 Morris Jette <jette1@llnl.gov>
 - Added select_linear.so plugin
 * Wed Aug 04 2004 Mark Grondona <mgrondona@llnl.gov>
@@ -238,7 +252,7 @@ fi
 - added checkpoint_none.so and jobcomp_script.so plugins
 * Fri Mar 07 2004 Mark Grondona <mgrondona@llnl.gov>
 - package optional plugins based on file lists instead of tests
-* Tue Jan 27 2004 Moe Jette <jette@llnl.gov>
+* Tue Jan 27 2004 Morris Jette <jette1@llnl.gov>
 - package slurm switch plugins - none and elan
 * Thu Dec 11 2003 Mark Grondona <mgrondona@llnl.gov>
 - package slurm sched plugins 
