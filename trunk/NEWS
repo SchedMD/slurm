@@ -3,14 +3,18 @@ documents those changes that are of interest to users and admins.
 
 * Changes in SLURM 0.4.0-pre2
 =============================
+ -- NOTE: "startclean" when transitioning from version 0.4.0-pre1, JOBS ARE LOST
  -- Fixes for reported problems:
    - slurm/477: Signal of batch job script (scancel -b) fixed
- -- NOTE: "startclean" when transitioning from version 0.4.0-pre1, JOBS ARE LOST
+   - slurm/481: Permit clearing of AllowGroups field for a partition
+   - slurm/482: Adjust Elan base context number to match RMS range
  -- Preserve job's requested processor count info after job is initiated 
     (for viewing by squeue and scontrol)
  -- Added a lots of Blue Gene/L support logic: slurmd executes on a single 
     node to front-end the 512-CPU base-partitions (Blue Gene/L's nodes)
  -- srun cancels created job if job step creation fails
+ -- Add SelectType configuration parameter for node selection plugin
+ -- Modify node hashing algorithm for better performance on Blue Gene/L
 
 * Changes in SLURM 0.4.0-pre1
 =============================
