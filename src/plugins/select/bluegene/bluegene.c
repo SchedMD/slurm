@@ -1127,9 +1127,13 @@ void _update_bgl_node_bitmap()
 		}
 	}
 	if (!down_node_list){
-		reason = xstrdup("bluegene_select: RM_BP_DOWN");
+		char reason[128];
+		time_t now = time(NULL);
+		struct tm * time_ptr = localtime(&now);
+		strftime(reason, sizeof(reason), 
+			"bluegene_select: RM_BP_DOWN [SLURM @%b %d %H:%M]", 
+			time_ptr);
 		slurm_drain_nodes(down_node_list, reason);
-		xfree(reason);
 	}
 
  cleanup:
